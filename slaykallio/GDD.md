@@ -278,14 +278,53 @@ so re-rendering the hand on every play does not repaint ten canvases. A gate
 fails on a card with no picture, on a picture `cardart.js` cannot draw, and on a
 set of pictures that has collapsed to fewer than fifteen distinct drawings.
 
+## 8b. The ascension ladder
+
+Six rungs, cumulative, each **one rule**, and the constraint that shaped them
+is that every rung rides a lever the engine already had — the step an elite is
+guaranteed at, the nightfall mutation level, the rest heal, a curse, boss
+Strength, the between-acts heal. Nothing new was built for it. That is the
+design rule, not an economy: **a difficulty ladder that needs new mechanics is
+a second game**, and the reason to have one at all is that a deckbuilder is
+worth a hundred runs or it is worth two, and what carries the difference is a
+difficulty that keeps asking a new question.
+
+Two things a rung may never do, and both are enforced where the rung is read:
+
+- **It may not make a run non-deterministic from the seed.** The act-two
+  harness's whole value is that a change which cannot touch a character
+  reproduces that character's column exactly. A rung that rolled dice would
+  take that away from every future measurement.
+- **It may not hide information.** This is a full-information game. Rung 5
+  makes a boss hit harder and the intent line quotes the bigger number the
+  turn it happens; the gate asserts that.
+
+Only rung 0 can be an exact control, because the rungs stack. `core.mjs`
+proves it is one by driving whole bot runs at rung 0 and at no rung at all and
+comparing the logs entry by entry — so every balance number this project
+recorded before the ladder still describes rung 0.
+
+**It is a decision, not a comparison.** The look switches (`art`, `cut`,
+`figures`) are reset when the house answer moves, because a value picked while
+comparing four options should not beat the default for good. A difficulty
+somebody earned is the opposite case, so the rung is deliberately not among
+those keys. It is stored per character — a win on the Cart Pusher says nothing
+about the Drinker — and **only a win opens the next rung**, raised by one
+rather than to the rung played.
+
 ## 9. What is still NOT in, and why
 
 - **A DAG you can see ahead.** v12 draws the act as a torn-paper sheet with
   every span pinned on it, but the fork is still a choice of two or three at
   the step you are standing on, not a Slay-the-Spire lattice you route through
   from the start. That is a design question, not a missing art pass.
-- **Shops, potions, a third act, ascension.** No gold economy exists yet, and
-  each of those is a system, not a table.
+- **Shops, potions, a third act.** No gold economy exists yet, and each of
+  those is a system, not a table.
+- ~~**Ascension.**~~ **WITHDRAWN, v36.** The reason given here was that it is
+  "a system, not a table", and that turned out to be false about this engine
+  specifically: every rung the ladder needed was a lever that already existed
+  (see §8b), so it IS a table. The claim was about difficulty ladders in
+  general and should have been about this codebase.
 - **Sound beyond a synth kit.** No samples anywhere on this site.
 
 ## 10. The gates

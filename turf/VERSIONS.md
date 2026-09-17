@@ -8,6 +8,117 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v37 — 2026-09-10
+**The owner's own 26 characters, cut out of the sheets at last**
+_Numbered v35 on `claude/slay-kallio-project-3lv3l9`; `main` had already taken v35 and v36
+from another lane by the time this merged, so it is v37 here — the third collision in this
+log. Fetch and read the other lineage's log before writing a heading._
+
+
+> **Numbered 35, not 34, and the near-miss is worth recording.** This entry was
+> written as v34 because v33 was the top of the log *on this branch*. It is not
+> the top of the log on `gh-pages`: a **different v34** (2026-09-05, the zoom
+> pass) shipped from another lane and never came back here, and the collision
+> only surfaced while hand-deploying something else and reading the site's own
+> `VERSIONS.md`. Eeri's rule generalises — **never write a version heading
+> without reading the other lineage's log first**, and "the other lineage"
+> includes the deployed tree, because a release can exist there and nowhere
+> else. This branch is still missing that v34; bringing it back is its own job
+> and not this one's.
+
+No game code changed. `art-src/sprites/cast/roster/` is new and holds
+twenty-six 192×288 transparent plates — **every character on both casting
+sheets**, front-facing, cut from the owner's own pixels with no model in the
+loop.
+
+**Why it had never been done.** The thirty `*-plate.png` files are *new*
+characters generated in the sheets' technique — `turfGrim` says in as many
+words to copy the technique and never the reference's specific character — so
+"we have 32 characters" was true and "we have the owner's roster" was not. His
+own twenty-six lived here as two magenta PNGs. Two of them (`gunner`,
+`leopard`) had been cropped by hand and carried through a whole pose table; the
+other twenty-four had never been cut out at all. `cast/README.md` already said
+Idle needs no generation — *"the highest-fidelity Idle this pipeline can
+produce, and a free one"* — so this is that, for all of them, in one pass.
+
+**`tools/sheet-cut.mjs`**, and three things it gets right that a nominal grid
+does not:
+
+- **Cells are found by PROJECTION.** `cast/README.md` records that the sheets'
+  rows and columns "bleed slightly past their nominal boundary", and that a
+  nominal crop put a sliver of a neighbouring character into `gunner-idle`
+  twice. Asking where the ink stops cannot make that mistake.
+- **Each figure's own top is tightened out of its row band.** A band is as tall
+  as its tallest member, so a short character cut to the band stands in the air.
+- **A PROP CAN BRIDGE TWO CELLS.** `sledge` holds his hammer across his body
+  and the handle reaches into his own back view, merging two figures into one
+  300px run and silently shifting every name after it in that row. Any run much
+  wider than the row's own median is split at its thinnest interior column,
+  which is where the two bodies very nearly stop touching.
+
+**The key is two-stage, and that is the whole difference between a cut-out and
+a sticker.** The sheets are antialiased **against magenta**, so the pixel ring
+where a figure meets the background is the figure's colour *blended with the
+key* — nowhere near the key, kept by any distance threshold, and every
+character comes out wearing a magenta rim. Stage two recognises contamination
+rather than proximity (magenta has no green in it, so it reads as R and B both
+well above G) and tests **edge pixels only** — otherwise `mohawk-green`'s
+purple trousers get eaten out of the middle of him. Two passes, ~2px of
+erosion. Residual: single specks on thin shapes fully enclosed by antialiasing
+(a blade held clear of the body, a bandaged hand), two figures of twenty-six.
+Left rather than chased, because the fix is a stronger colour test and a
+stronger colour test starts eating purple.
+
+**Fronts by default, `--all` for both.** The board here is isometric and does
+need both facings; a game that mirrors its row in code does not, and that is
+who asked for this.
+
+**What it unlocks.** A pose set for any of the twenty-six is now **12
+generations against a local reference crop** — the budget `cast/README.md`
+measured — rather than a re-derivation of the recipe. Nothing here needed an
+API key. That step does, and this environment has none.
+
+## (spec only, no code) — 2026-09-07
+**The cutout direction: move the OBJECT, not the frames**
+Owner: *"can the Turf asset pipeline just make a standing cardboard character,
+that is then just moved to animate, while only the art frame changes when it's
+an already approved concept like 'attack with knife'... similar to Paper Mario"*,
+plus a second roster under a swappable "style B".
+
+No game files moved, so this takes no version number and no `?v=` bump. What
+landed is `ART_REQUEST.md` §12 (the request, and what a plate must deliver to
+be MOVEABLE) and `CUTOUT_BRIEF.md` (the implementation contract, written to be
+handed to another agent whole).
+
+The counting that decides it: **30 character plates, 2 characters with a pose
+set**, and `scripts/assets.mjs doctor` reports no `GEMINI_API_KEY` and no
+`MESHY_API_KEY` — so 28 of 30 characters cannot get a second frame here at all,
+and today they slide between tiles and flash red. §6's budget is 12 generations
+per character; covering the roster that way is 336. A transform layer costs
+zero art and lands on all thirty at once. With motion carrying idle, move and
+death, the only pose still worth generating is attack-release — **1–2
+generations per character rather than 12.**
+
+One correction to the direction, recorded because it is the part that does not
+work as asked: a pose plate cannot be shared between characters the way a prop
+can, because the whole body is in the picture. "Attack with knife" is an
+approved PROMPT (§8's `turfCastPose` block, reference image attached), never an
+approved file.
+
+The topple is the strongest single case and is already solved in this repo —
+`slaykallio/js/puppet.js` tips a cutout about its feet on an axis between the
+camera's x and the depth axis, because a flat cutout rotating *in* the picture
+plane reads as a sprite spinning. It retires four of the pilot's 28 frames.
+
+**Two fixes from review, on this same version.** The cell namer divided `col`
+by 1 under `--all`, which gave each half of a front/back pair its own cell
+number (`r1c1f`, `r1c2b`) and broke the `f`/`b` pairing exactly where it is
+needed, since TURF is the caller that asks for both facings. `col` is the index
+of the run on the SHEET and the fronts-only filter drops odd ones without
+renumbering, so the divisor is 2 in both modes. And `index.html` still showed
+`v36` while `VERSIONS.md` and `hub/versions.json` said v37 — the same
+number-in-one-file-disagreeing-with-another class this repo keeps paying for.
+
 ## v36 — 2026-09-11
 Playable-control pass: explicit 44px attack/ability target buttons use the same
 decision path as board taps, including choosing a firing position. Reload,

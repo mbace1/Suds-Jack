@@ -3,11 +3,11 @@
 // Everything is driven off game state from a fixed seed, so a number that
 // changes here changed in the rules, not in the clock.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from '../js/data.js';
-import { readFileSync, existsSync } from 'node:fs';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from '../js/data.js';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { poseAt, frameAt, FRAME_NAMES, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
 import { CAST, WITH_GUNS, POSES, WITH_POSES, castFiles, plateFor, posesFor } from '../js/plates.js';
-import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable, WHEN } from '../js/engine.js';
+import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable, WHEN, rung, enemyDamage } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
 
@@ -666,6 +666,134 @@ check('the Bear is never mutated — a boss IS the night', s.hour === 1 && s.ene
 s = startRun(createRun({ seed: 5, character: 'boxer' })); jumpTo(s, ENC('bridge'));
 check('nor is the Bridge King, at dusk', s.enemies[0].mutated === 0 && s.enemies[0].hp === 104 && nightfall(s.hour) === 1);
 
+// ── act two is an ESCALATION, not act one after dark ─────────────────────
+// v35. The act-two harness priced every span and found eight of the thirteen
+// ordinary fights costing under 11 HP and killing 1% of the runs that met
+// them, which is what "act two has no middle" actually means: the pool was
+// act-one shapes with a mutation multiplier on top, so the whole act was an
+// HP tax that the Bear collected. These two hold the floor the retune set.
+{
+  const body = id => {
+    const e = ENCOUNTERS.find(x => x.id === id);
+    return e.enemies.reduce((a, x) => a + ENEMIES[x].hp, 0);
+  };
+  const med = xs => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+  const one = ACTS[0].fights.map(body), two = ACTS[1].fights.map(body);
+  check(`no act-two fight is lighter than act one's middle one (${Math.min(...two)} vs ${med(one)} HP of bodies)`,
+    Math.min(...two) >= med(one));
+  check(`and act two's middle fight is half again act one's (${med(two)} vs ${med(one)})`,
+    med(two) >= med(one) * 1.25);
+  check('every act-two fight fields at least two bodies that can attack',
+    ACTS[1].fights.every(id => ENCOUNTERS.find(x => x.id === id).enemies
+      .filter(e => ENEMIES[e].moves.some(m => m.dmg)).length >= 2));
+}
+// The number on the screen and the number in the log are the same number.
+// v34 shipped with VERSION left at 33 while VERSIONS.md and hub/versions.json
+// both said 34 — the arcade advertised a release the cabinet denied.
+check('the version on screen is the version in the log', (() => {
+  const top = readFileSync(new URL('../VERSIONS.md', import.meta.url), 'utf8').match(/^## v(\d+)/m)?.[1];
+  const code = readFileSync(new URL('../js/main.js', import.meta.url), 'utf8').match(/^const VERSION = (\d+);/m)?.[1];
+  return top && code && top === code;
+})());
+check('a won fight records the hour it was won at', (() => {
+  const st = botRun(startRun(createRun({ seed: 3, character: 'boxer' })));
+  const w = st.log.filter(l => l.t === 'fightWon');
+  return w.length > 1 && w.every(l => [0, 1, 2].includes(l.lvl)) && w.every((l, i) => i === 0 || l.lvl >= w[i - 1].lvl);
+})());
+
+// ── the ascension ladder ─────────────────────────────────────────────────
+// Six rungs, each one rule, each riding a lever the engine already had. The
+// checks below are about the TABLE and about each rule firing — the ladder is
+// cumulative (rung 6 is every rung), which is Slay the Spire's own shape and
+// the reason only rung 0 can be an exact control.
+{
+  check(`the ladder is ${ASC_MAX} rungs, numbered from one with no gaps and no repeated id`,
+    ASCENSION.length === ASC_MAX && ASCENSION.every((r, i) => r.n === i + 1)
+    && new Set(ASCENSION.map(r => r.id)).size === ASC_MAX
+    && ASCENSION.every(r => typeof r.text === 'string' && r.text.length > 10));
+  check('a rung out of range is clamped, never obeyed',
+    createRun({ seed: 1, asc: -3 }).asc === 0 && createRun({ seed: 1, asc: 99 }).asc === ASC_MAX
+    && createRun({ seed: 1 }).asc === 0);
+
+  // THE CONTROL, BY CONSTRUCTION. A run at rung 0 must be the run this game
+  // had before the ladder existed — not nearly, exactly — or every number
+  // measured before v36 is measuring a different game.
+  // `uid` is a MODULE-level counter, so two identical runs number their cards
+  // and their enemies differently purely by running second — and it rides on
+  // `target`, `enemy`, `src` and `from` as well as on `uid` itself. Renumber each log
+  // by order of first appearance instead of stripping those keys, because
+  // WHICH body was hit is exactly what the control is checking.
+  const UIDKEY = new Set(['uid', 'target', 'enemy', 'src', 'from']);
+  const logOf = st => {
+    const seen = new Map();
+    return JSON.stringify(botRun(st).log, (k, v) => {
+      if (!UIDKEY.has(k) || typeof v !== 'number') return v;
+      if (!seen.has(v)) seen.set(v, seen.size);
+      return seen.get(v);
+    });
+  };
+  check('rung 0 is the old game, to the log entry',
+    [3, 11, 29].every(seed =>
+      logOf(startRun(createRun({ seed, character: 'boxer' })))
+      === logOf(startRun(createRun({ seed, character: 'boxer', asc: 0 })))));
+  check('and the ladder is cumulative — the top rung is every rung',
+    ASCENSION.every(r => rung({ asc: ASC_MAX }, r.id)) && !ASCENSION.some(r => rung({ asc: 0 }, r.id)));
+
+  // 1 — an elite is offered a span earlier
+  const eliteStep = st => st.route.steps.findIndex(o => o.some(n => n.kind === 'elite'));
+  const first = a => Array.from({ length: 40 }, (_, i) =>
+    eliteStep(startRun(createRun({ seed: i + 1, character: 'boxer', asc: a })))).filter(x => x >= 0);
+  check('rung 1 puts an elite on the route by step three, where rung 0 may wait for four',
+    first(1).every(x => x <= 3) && first(0).some(x => x === 4));
+
+  // 2 — the dark comes sooner
+  const firstFight = a => { const st = startRun(createRun({ seed: 5, character: 'boxer', asc: a })); chooseNode(st, 0); return st; };
+  check('rung 2 mutates the first fight of the run, which rung 0 leaves alone',
+    firstFight(0).enemies.every(e => e.mutated === 0) && firstFight(2).enemies.every(e => e.mutated === 1));
+  check('and it does not touch the HOUR — the sky, the plates and the map still read the same clock',
+    firstFight(0).hour === firstFight(2).hour);
+
+  // 3 — a thinner rest
+  const rested = a => {
+    const st = startRun(createRun({ seed: 5, character: 'boxer', asc: a }));
+    st.hero.hp = 10; st.phase = 'rest'; chooseRest(st, 'heal'); return st.hero.hp - 10;
+  };
+  check(`rung 3 gives back a fifth (${rested(3)}) where rung 0 gives a third (${rested(0)})`,
+    rested(3) === Math.floor(CHARACTERS.boxer.hp * RULES.restHealHard)
+    && rested(0) === Math.floor(CHARACTERS.boxer.hp * RULES.restHeal) && rested(3) < rested(0));
+
+  // 4 — the carried curse
+  const deckOf = a => startRun(createRun({ seed: 5, character: 'boxer', asc: a })).hero.deck;
+  check('rung 4 puts one Doubt in the deck, and exactly one',
+    deckOf(4).filter(c => c.id === 'doubt').length === 1
+    && deckOf(3).every(c => c.id !== 'doubt')
+    && deckOf(4).length === deckOf(3).length + 1);
+
+  // 5 — a boss with a point of Strength, and the telegraph says so
+  const bossAt = a => { const st = startRun(createRun({ seed: 5, character: 'boxer', asc: a })); jumpTo(st, ENC('bridge')); return st; };
+  check('rung 5 stands a boss up with 1 Strength; rung 0 does not',
+    (bossAt(5).enemies[0].status.strength ?? 0) === 1 && (bossAt(0).enemies[0].status.strength ?? 0) === 0);
+  {
+    const st = bossAt(5), e = st.enemies[0];
+    e.intent = { ...ENEMIES.bridge_king.moves.find(m => m.dmg), shown: 0 };
+    e.intent.shown = enemyDamage(st, e, e.intent.dmg);
+    check(`and the intent line quotes the bigger number (${e.intent.shown} for a ${e.intent.dmg})`,
+      e.intent.shown === e.intent.dmg + 1);
+  }
+
+  // 6 — a shorter breath between the acts
+  check('rung 6 hands back a third between acts where rung 0 hands back a half',
+    RULES.healBetweenActsHard < RULES.healBetweenActs
+    && Math.abs(RULES.healBetweenActsHard - 1 / 3) < 1e-9);
+
+  // and the whole ladder is still playable — a bot must be able to finish a
+  // run at every rung, or a rung is a wall rather than a difficulty
+  for (const a of [0, 2, 4, ASC_MAX]) {
+    const ends = [1, 2, 3, 4, 5].map(seed => botRun(startRun(createRun({ seed, character: 'cart', asc: a }))).phase);
+    check(`a run at rung ${a} still ends`, ends.every(p => p === 'won' || p === 'lost'));
+  }
+}
+
 // ── a whole run, six times ───────────────────────────────────────────────
 const results = {};
 for (const ch of Object.keys(CHARACTERS)) {
@@ -773,6 +901,12 @@ check(`every cast plate is really in the tree${missing.length ? ` — ${missing}
 check('the plates ship from figures/, which a deploy carries — not from art-src/',
   castFiles().every(f => f.startsWith('figures/')));
 check('a figure with no plate returns null rather than a broken path', plateFor('rat') === null && plateFor('nobody') === null);
+// THE CAST IS THE OWNER'S OWN 26 (v34). v27 cut them out of his casting
+// sheets and v34 put them on the bridge; a generated `*-plate` creeping back
+// into the cast would be a copy standing in for the person it was copied from.
+const ROSTER = readdirSync(new URL('../../turf/art-src/sprites/cast/roster/', import.meta.url)).filter(f => f.endsWith('.png')).map(f => f.slice(0, -4));
+const strangers = [...new Set(Object.values(CAST))].filter(n => !ROSTER.includes(n));
+check(`every cast plate is one of the owner's own 26${strangers.length ? ` — ${strangers}` : ''} (${new Set(Object.values(CAST)).size} of ${ROSTER.length} cast)`, strangers.length === 0);
 // v19 refused eight plates for carrying firearms; the owner reversed that on
 // 2026-09-09 (*"of course they can have firearms"*), so there is nothing left
 // here to enforce and the gate that enforced it is gone rather than left
@@ -819,6 +953,99 @@ endTurn(bs);
 check(`under half he goes for it — ${sableIntent(bs)}`, sableIntent(bs) === 'finish_it');
 check('and it is the biggest number he has',
   ENEMIES.sable.moves.find(m => m.id === 'finish_it').dmg > Math.max(...ENEMIES.sable.moves.filter(m => m.id !== 'finish_it').map(m => m.dmg ?? 0)));
+// v39, and this one is a SOFTLOCK that predates the rule which found it. The
+// row can die during its OWN phase — thorns answer every blow, so the last
+// attacker can kill itself coming in — and `endTurn` only asked whether the
+// phase had already changed, which `enemyPhase` does for a dead HERO and never
+// did for a dead row. The fight then never resolved: a fresh hand against an
+// empty board, turn after turn, with no way on.
+s = rig('boxer', []);
+s.hero.status.thorns = 50;
+s.enemies.forEach(e => { e.intent = { id: 't', intent: 'attack', dmg: 1, shown: 1 }; });
+endTurn(s);
+check('a row that kills itself on the thorns still ends the fight',
+  s.enemies.every(e => !e.alive) && s.phase !== 'fight', `phase ${s.phase}`);
+
+// v39. The Boxer's mechanic returned him to par and never above it, and it did
+// not compound — thorns were re-bought every fight where the Cart's block
+// accumulates. Being struck deepens them now, so the round spent being hit is
+// the round they become worth having.
+s = rig('boxer', []);
+s.hero.status.thorns = 2;
+s.enemies.forEach(e => { e.intent = { id: 't', intent: 'attack', dmg: 3, shown: 3 }; });
+const hit = s.enemies.filter(e => e.alive).length;
+endTurn(s);
+check(`thorns grow on the blow they answer (2 + ${hit} hits = ${2 + hit})`,
+  s.hero.status.thorns === 2 + hit * RULES.thornsOnStruck);
+// It DEEPENS a mechanic rather than handing one out: no thorns, no growth.
+s = rig('boxer', []);
+s.enemies.forEach(e => { e.intent = { id: 't', intent: 'attack', dmg: 3, shown: 3 }; });
+endTurn(s);
+check('someone carrying none does not grow any', !s.hero.status.thorns);
+// 1 and not 2: measured at 400 seeds, 2 is strictly better for him on every
+// line and takes his best to 33%, near the top of the roster, which is a
+// different character rather than a fixed one. Same call as v28's buzz carry.
+check('the slope is one, not two', RULES.thornsOnStruck === 1);
+
+// v38. Eight cards for the two thinnest pools, and these three are the ones
+// that do something the character could not do before — the rest are numbers.
+// The Boxer's question is "take the hit to get paid", and `take_it` is the
+// whole question in one card: it buys nothing now and makes the next turn
+// WORSE on purpose, because thorns only pay when something hits you.
+s = rig('boxer', ['take_it']);
+playCard(s, 0);
+check('Take It buys thorns with your own ribs (5 thorns, 1 vulnerable)',
+  s.hero.status.thorns === 5 && s.hero.status.vulnerable === 1);
+// `second_wind` turns a round of absorbing into BLOCK. This turns it into the
+// punch, so a round on the ropes has two ways out rather than one.
+s = rig('boxer', ['on_the_ropes']);
+s.struck = 3;  // state, not a hero status: the fight counts the hits, not the man
+check('On The Ropes counts the hits he took (4 + 3x4 = 16)', preview(s, 0, 0).damage === 16);
+// The Dog Walker fed `fetch` all turn and spent it exactly one way. The dog
+// can stand in front of you now, so holding the stack is a question rather
+// than a countdown.
+s = rig('walker', ['guard_dog']);
+s.hero.status.fetch = 9;
+playCard(s, 0);
+check('Guard Dog spends the whole stack on block (9)', s.hero.block === 9);
+// Every new card is draftable, or it is decoration.
+for (const id of ['take_it', 'body_shot', 'on_the_ropes', 'sparring',
+                  'guard_dog', 'slip_lead', 'park_run', 'spare_lead'])
+  check(`${id} is a real card with a drawable picture`,
+    !!CARDS[id] && drawable.has(CARDS[id].pic) && !!CARDS[id].char);
+
+// `hale` is `bleeding`'s MIRROR, and it is the condition the list was missing:
+// every other rule reads the row or reads a hero who is already hurt, so
+// nothing in the game cost you anything for arriving healthy. The Chancer is
+// its one user — he sizes up whoever is still worth taking off, ONCE.
+let ch = fight3('chancers');
+const chanIntent = st => st.enemies.find(e => e.id === 'chancer')?.intent?.id;
+check(`healthy, he sizes you up — ${chanIntent(ch)}`, chanIntent(ch) === 'sizes_you_up');
+// and it is exactly the inverse of sable: hurt, he loses interest.
+let ch2 = fight3('chancers');
+ch2.hero.hp = Math.floor(ch2.hero.maxHp / 2);
+for (const e of ch2.enemies) e.intent = null;
+endTurn(ch2);
+check(`under half he is a pushover — ${chanIntent(ch2)}`, chanIntent(ch2) !== 'sizes_you_up');
+// ONCE, like the Bottle Thief's second wind: a spike that repeated every turn
+// while you were above half would be a wall, not a spike.
+const chMark = ch.log.length;
+for (const e of ch.enemies) e.intent = null;
+endTurn(ch); endTurn(ch);
+check('and he only does it once', chanIntent(ch) !== 'sizes_you_up');
+check('it is his biggest number',
+  ENEMIES.chancer.moves.find(m => m.id === 'sizes_you_up').dmg
+    > Math.max(...ENEMIES.chancer.moves.filter(m => m.id !== 'sizes_you_up').map(m => m.dmg ?? 0)));
+check('hale and bleeding cannot both hold', !WHEN.hale(ch2) || !WHEN.bleeding(ch2));
+check('nor can both be false', WHEN.hale(ch) || WHEN.bleeding(ch));
+// The spike is the ENCOUNTER, not the enemy: two of them open on a healthy
+// hero for more than any single ordinary act-two fight asks.
+const pair = ENCOUNTERS.find(e => e.id === 'chancers');
+check('the pair is two chancers', pair.enemies.filter(x => x === 'chancer').length === 2);
+check('both new fights are in act two',
+  ['chancers', 'chance_rat'].every(id => ACTS[1].fights.includes(id)));
+check('the Chancer is cast from one of the owner 26', !!plateFor('chancer'));
+
 // Six new people, and each is cast for a picture rather than for a hole in a
 // stat table — which a gate cannot see. What it CAN see is that each one is a
 // real plate, is person-shaped, and is not a second copy of a rotation the
