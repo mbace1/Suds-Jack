@@ -310,6 +310,7 @@ option is spelled out and the reading is flagged so it can be corrected.
 | — | What ends a round, once pulses spread across it? | *"3 likely but I would like to test 1"* — **empty-floor-only is the likely rule; test clock-only first.** Both need the last pulse early enough to clear. | test, then decide |
 | 12 | Rush: the campaign, or an ingredient? | First pass: *"2 sounds right but I don't understand 1 and 3"*; after rewording: **"Likely Rush IS the campaign — but that may not have exactly the current Rush rules, as those are copied from Blade Rush and are tested as optional mechanics that may be used somewhere."** | lean; see note |
 | 11 | What to take from Blade Rush's campaign? | **"Like Geometry Wars 3, which we can use as reference. It has different rooms with timed goals and S, A, B, C, F tiers. Along with added mechanics, level shapes, etc."** — so the campaign unit is a *room* with a *timed goal*, graded **S/A/B/C/F** (an F tier we do not have), and the path adds **mechanics and level shapes** as it goes. GW3 is the reference to read. | decided (reference) |
+| 16 | What are the families built on? | **"Domes are one family, same with cubes, others are other family, and more may arise."** — family = **shape class**. Dome, cube, and each one-off silhouette is its own family; new shapes are new families. | decided |
 | — | Colour for shooting vs non-shooting? | Not that axis — **families**. Owner's direction verbatim in §8. | direction; questions in §8.3 |
 
 **The Rush note matters.** The campaign door being "Rush" does not commit it
@@ -491,3 +492,28 @@ What the picture says, with the geometry to back it (`enemy.js:672–727`):
 >    roles; the cubes to two. The roster gets smaller and every survivor gets
 >    its own silhouette. Colour = family.
 > d) Something else — what would you draw?
+
+### 8.5 Q16 answered — family = shape
+
+> "Domes are one family, same with cubes, others are other family, and more
+> may arise."
+
+So the family is the **shape class**, full stop: the gel dome is one family
+(ten species today), the cube is one (five), and each distinct silhouette —
+torus, stack, ring, wings, spire, slab — is its own; new shapes are new
+families. Not a movement role, not a gun. This makes the roster's existing
+shape split the law rather than an accident, and it means the ten domes are
+*meant* to be one thing to the eye.
+
+What follows, and is now the next question: inside a family of ten, what
+tells one dome from another — and is colour still the answer there.
+
+**Q17, next:** within one family (the ten domes), how are species told apart?
+a) **One family hue; species differ by size and behaviour only** — a dome is
+   a dome, you learn what it does by what it does.
+b) **Family hue with a per-species tint** — all domes in one hue range
+   (say, cool), each species a step within it.
+c) **Colour stays per species** (as now) and the family is carried by shape
+   alone — colour is identity, not family.
+d) **Colour = what it does to you**: one reserved hue per *effect* (green =
+   leaves something, red = shoots, etc.) that crosses families.
