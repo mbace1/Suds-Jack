@@ -1,0 +1,70 @@
+name: Night Shift package integrity
+on:
+  pull_request:
+    paths:
+      - 'piritori-c17/**'
+      - 'hub/games.js'
+      - 'hub/hub.js'
+      - 'hub/hub-entry.js'
+      - 'hub/versions.json'
+      - 'index.html'
+      - 'test/piritori-c18-package.mjs'
+      - 'test/piritori-c18-package-regressions.mjs'
+      - 'test/piritori-c18-entry.cjs'
+      - '.github/workflows/piritori-c18-package.yml'
+permissions:
+  contents: read
+concurrency:
+  group: night-shift-package-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+jobs:
+  package-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node test/piritori-c18-package-regressions.mjs
+      - run: node test/piritori-c18-package.mjs
+  deployment-entry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify every shipping file on this exact head
+        run: node test/piritori-c18-package.mjs
+      - run: npm install --prefix /tmp/piritori-test playwright
+      - run: /tmp/piritori-test/node_modules/.bin/playwright install --with-deps chromium
+      - name: Play through the actual Hub link on portrait and landscape
+        env:
+          NODE_PATH: /tmp/piritori-test/node_modules
+          HUB_BASE_URL: http://127.0.0.1:8781/
+          C18_ENTRY_OUTPUT: /tmp/night-shift-entry
+        run: |
+          python3 -m http.server 8781 --bind 127.0.0.1 --directory . > /tmp/night-shift-server.log 2>&1 &
+          SERVER=$!
+          trap 'kill "$SERVER"' EXIT
+          node test/piritori-c18-entry.cjs
+      - name: Record tested checkout
+        if: always()
+        run: |
+          mkdir -p /tmp/night-shift-entry
+          git rev-parse HEAD > /tmp/night-shift-entry/hub-commit.txt
+          cp piritori-c17/release.json /tmp/night-shift-entry/release.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: night-shift-deployment-entry
+          path: /tmp/night-shift-entry
+          retention-days: 3
