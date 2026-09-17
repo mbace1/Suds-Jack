@@ -1,5 +1,5 @@
 // Explicit release URL avoids reusing an older cached Slay HTML document.
-const launchPath = game => game.id === 'slaykallio' ? `${game.path}?release=33` : game.path;
+const launchPath = game => game.id === 'slaykallio' ? `${game.path}?release=39` : game.path;
 // The arcade — every playable thing in the repo on one page, each with a way
 // in (Play) and a way back (Feedback).
 //
