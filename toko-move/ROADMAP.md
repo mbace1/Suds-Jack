@@ -10,6 +10,26 @@ and draw from them a bit. Maybe roguelikes too."*
 Rejected or unmentioned from the same list, so not on this roadmap: city bikes,
 full trams, doors-closing drama, interchange sprint.
 
+
+## UI direction (owner, 2026-09-17, same day): *"make the UI feel a bit more
+## fun, approachable, and simplistic. The Mini Metro and Motorways are succinct
+## experiences."*
+
+So the UI pass comes BEFORE the event deck and the deck is built in its
+language. What "succinct" means here, concretely:
+- **No ticks on screen.** `~145t` and `deadline 337t` are a dev unit leaking
+  into the game; the clock is 07:04, so everything is minutes: *in 3 min*,
+  *~4 min*, a deadline ring. Ticks stay in the engine and the tests.
+- **Shapes before words.** A boarding option is the line's own badge (the
+  same one on the map) → destination · *now* / *in 3 min* · price. Lit means
+  tap. No heading sentence, no DIRECT/VIA — a transfer is two badges.
+- **One sentence of guidance, on job one, then none.**
+- **The HUD is three glyphs**: the clock, deliveries as dots (●●○), the
+  current job's deadline as a ring around its cargo icon. No labels.
+- **The feed goes on a phone**; the map and the one card say it.
+- **The map is the hero** and grows as the sheet shrinks.
+- **An event is a face, one line, two big buttons priced in seconds.**
+
 ## What the references say (read from memory — Steam, Wikipedia and the press
 ## are blocked from the build sandbox, so this is a designer's recall, not a
 ## fetch; Trafficity itself is still unread)

@@ -1,5 +1,31 @@
 # Toko Move — versions
 
+## v2.37 — 2026-09-17
+
+**The succinct UI** (owner: *"make the UI feel a bit more fun, approachable,
+and simplistic. The Mini Metro and Motorways are succinct experiences"*). One
+rule: shapes before words, and no ticks on screen.
+
+- **Minutes, not ticks.** `~145t` and `deadline 337t` were the engine's unit
+  leaking into the game. `js/ui.js` reads ticks-per-minute off the clock and
+  everything on screen says *now*, *in 3 min*, *~4 min*, *8 min left*. Ticks
+  stay in the engine and every test.
+- **The HUD is glyphs**: the clock, deliveries as dots (`●○○ +2`), the score,
+  and the current job as its cargo glyph inside a RING that empties with the
+  deadline. The words "deliveries" and "deadline" are gone.
+- **Every option is one row**: the line's own badge (the block that rides on
+  the map, so a plan and its tram look like one thing) → where it is headed ·
+  *now* or *in 3 min* · the price. A transfer is two badges. No DIRECT/VIA, no
+  "YOU ARE AT", no "Lit says…" past the first job.
+- **Dispatch is one row per job**: cargo glyph, destination, the first badge
+  that gets you there and when, what it pays. It was four lines of prose.
+- The feed and the read-only panel are gone on a phone; the map grew to
+  50dvh; the title card is two sentences.
+- Cargo is a glyph (✉ ♨ ⚙ ◇ ▣ ⚡ ❀ ▤), the three-letter code its title.
+
+Gate note: phone.cjs's "dispatch list is gone" check keyed on the old heading
+text and would have passed vacuously; it keys on `DISPATCH ·` now.
+
 ## v2.36 — 2026-09-17
 
 **ON YOUR WAY — Paperboy's loop on a tram.** Waiting was still 22% of a shift
