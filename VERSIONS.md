@@ -93,6 +93,8 @@
   re-asked with a/b/c. Q11 answered: the campaign unit is a GW3-style room
   with a timed goal, S/A/B/C/F tiers, mechanics and level shapes added
   along the path.
+- **Docs:** Q16 answered — family = shape class (dome, cube, each one-off;
+  more may arise). §8.5. Q17 (within-family differentiation) queued.
 
 **Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
 break and the lying version line were mine and are both verified here. The
