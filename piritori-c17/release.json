@@ -1,7 +1,7 @@
 {
   "build": "C.19",
   "source_repository": "mbace1/piritori-eden",
-  "source_commit": "792e7bdc28f07884755d91e58891c78b29e7b3ed",
+  "source_commit": "c4cef33799d2296fa29fe2fc75d00a8b315cf9dd",
   "entry": "web/crew-run/?campaign=1&release=19",
   "status": "connected-crew-pilot",
   "character_provider": "neutral stand-ins",
@@ -10,7 +10,7 @@
     "Scope runtime art register; preserve immutable fighter URLs"
   ],
   "sha256": {
-    "VERSIONS.md": "0bec749e72fceb273078cd1948d5712fceef461d0611a64636e330c05b830f9f",
+    "VERSIONS.md": "3a11aaa20de5f17fa77eb947701730c16f0e89243887acf3253db1fd1d89580d",
     "art/v3/environment3d/bear-landmark-v01.glb": "fc3fc41681d5c7dbcec7a7471d75b248597412ffd8664cee2489db4a9b7240f1",
     "art/v3/environment3d/park-ground-study-v01.png": "ee1dfc3c2794a18bf48c15be1eef36aed48be7f9c999720f91b3e8ba1239e0e3",
     "art/v3/manifest.json": "dfce58c98aa133530d534d9d35cc259b6468e28a2fd1601c2fedd5abd9c11361",
@@ -54,7 +54,7 @@
     "web/fight-module/framing.js": "9a3341aa25fe911c55d12efb6248a3cd27bd4573f722345af623d04d5396e03d",
     "web/fight-module/main.js": "8141867787f9e070013493be46bd780e030ad7c7ff4f044050fb1aad4744b8a9",
     "web/fight-module/motion-player.js": "9fce68032cfb4ffe710eba331131fe76adb849b408772f921743dca338d5959d",
-    "web/fight-module/readability.js": "7c6469d5b66519c53783ae450f645c0ed1bf01605b5702f94b8c16be9b67e273",
+    "web/fight-module/readability.js": "4e7356a2fd4d7f0c3f656fc5946e546400caa079158bdc8d33625490a1da59cb",
     "web/fight-module/render-profile.js": "3a90ca6e0066d6566ba4e0eccbc18c0236f29b201586dc3ea76f45f9e7dd752d",
     "web/fight-module/resolver.js": "4c4f89519dc1ac72188af215cfeb826657b04579742625f359f1adc160c475bc",
     "web/fight-module/session.js": "f6fa53780ec8442ca3801a1cf21ea2c41cd458ad45af921ed4d31869c1d49fbc",
@@ -72,5 +72,5 @@
     "web/vendor/jsm/utils/BufferGeometryUtils.js": "c25b7930e570e9ec56173cd3b866ec8d2e10016630db3937efb439daf1cedbf6",
     "web/vendor/three.module.min.js": "54a7a52ddce0ad06fbd1d021fd03b1e1812d946114a2111e1260bcd490c6b840"
   },
-  "tested_source_head": "792e7bdc28f07884755d91e58891c78b29e7b3ed"
+  "tested_source_head": "c4cef33799d2296fa29fe2fc75d00a8b315cf9dd"
 }
