@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>TOKO DROP — shape sketchbook</title>
+<link rel="icon" href="favicon.png">
+<!-- SKETCHBOOK (owner: "let's play with shapes more"). Candidate silhouettes
+     for the arc-mover family — PROGRESSION_DESIGN.md §8.8. Renders the real
+     gel material through enemy.js's makeSatinMat so what is judged here is
+     what would ship. Nothing on this page is in the game's module graph. -->
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:#07071a;touch-action:none;
+    -webkit-user-select:none;user-select:none;
+    font-family:ui-monospace,'Cascadia Code',Menlo,monospace;color:#dfe6ff}
+  #view{position:fixed;inset:0}
+  #info{position:fixed;top:14px;left:12px;right:12px;text-align:center;pointer-events:none}
+  #info b{font-size:14px;letter-spacing:.12em}
+  #info small{display:block;margin-top:4px;font-size:11px;color:#8890b8;line-height:1.5}
+  #said{position:fixed;top:50%;left:0;right:0;text-align:center;pointer-events:none;
+    font-size:22px;font-weight:bold;letter-spacing:.14em;color:#ffdd44;
+    text-shadow:0 0 14px #000;opacity:0;transition:opacity .18s}
+  #said.on{opacity:1}
+  #bar{position:fixed;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;gap:6px;
+    padding:10px 10px calc(10px + env(safe-area-inset-bottom));
+    background:rgba(8,8,26,.82);backdrop-filter:blur(8px);border-top:1px solid #23264a}
+  button{flex:1 1 auto;font:inherit;font-size:11px;padding:11px 10px;border-radius:9px;
+    border:1px solid #39406e;background:#151833;color:#cfd8ff;cursor:pointer;letter-spacing:.06em}
+  button.on{border-color:#6cf;color:#9df}
+  button:active{background:#1d2148}
+  #stat{position:fixed;left:12px;bottom:66px;font-size:11px;color:#7f88b5}
+</style>
+</head>
+<body>
+<div id="view"></div>
+<div id="info"><b id="name"></b><small id="desc"></small></div>
+<div id="said"></div>
+<div id="stat"></div>
+<div id="bar">
+  <button id="bRibbon">RIBBON</button>
+  <button id="bSlug">GEL SLUG</button>
+  <button id="bEnd">SHOOT AN END</button>
+  <button id="bMid">SHOOT THE MIDDLE</button>
+  <button id="bReset">RESET</button>
+</div>
+
+<script>
+  (function () {
+    var gpu = false;
+    try { gpu = localStorage.getItem('tokoDropGpu') === '1'; } catch (e) {}
+    var three = gpu ? './vendor/three.webgpu.min.js?v=203'
+                    : './vendor/three.module.min.js?v=203';
+    document.write('<script type="importmap">' + JSON.stringify({
+      imports: {
+        'three': three,
+        'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=203',
+        'three/addons/': './vendor/jsm/'
+      }
+    }) + '<\/script>');
+  })();
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { applySatinValues } from './js/enemy.js?v=203';
+import { createRibbon, createSlug } from './js/sketch-shapes.js?v=203';
+
+const isGpu = typeof THREE.WebGPURenderer === 'function';
+const renderer = isGpu ? new THREE.WebGPURenderer({ antialias: true })
+                       : new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.getElementById('view').appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x07071a);
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xffffff, 1.35);
+sun.position.set(6, 16, 9);
+scene.add(sun);
+// the floor grid, so an arc reads as an arc across ground and not in a void
+const grid = new THREE.GridHelper(24, 24, 0x2a3358, 0x161c38);
+grid.position.y = 0;
+scene.add(grid);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 80);
+camera.position.set(0, 10, 9.5);
+camera.lookAt(0, 0, 0);
+addEventListener('resize', () => {
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+});
+applySatinValues();
+
+// the thing they swim at — a slow orbit, so the arcs never straighten out
+const target = { x: 0, z: 0 };
+let tT = 0;
+
+const nameEl = document.getElementById('name');
+const descEl = document.getElementById('desc');
+const statEl = document.getElementById('stat');
+const saidEl = document.getElementById('said');
+let saidT = 0;
+function say(text) { saidEl.textContent = text; saidEl.classList.add('on'); saidT = 1.1; }
+
+const DESC = {
+  ribbon: 'the body IS its own recent path — turn it and the whole silhouette changes. ' +
+          'costs: rebuilt geometry every frame, no shape when it stops, hitbox unanswered.',
+  slug:   'a gel chain with a RULE — eat it from an end and it shortens; hit the middle ' +
+          'and it SPLITS, and the back half turns round to face you.',
+};
+
+let subject = null, kind = null;
+function spawn(which) {
+  if (subject) subject.removeFrom(scene);
+  kind = which;
+  subject = which === 'ribbon'
+    ? createRibbon(scene, { color: 0x66ddee, x: -4, z: 4 })
+    : createSlug(scene,   { color: 0x88ff22, x: -4, z: 4 });
+  nameEl.textContent = which === 'ribbon' ? 'CANDIDATE — RIBBON' : 'CANDIDATE — GEL SLUG';
+  descEl.textContent = DESC[which];
+  for (const [id, k] of [['bRibbon', 'ribbon'], ['bSlug', 'slug']]) {
+    document.getElementById(id).classList.toggle('on', k === which);
+  }
+  const slugOnly = which === 'slug';
+  for (const id of ['bEnd', 'bMid']) document.getElementById(id).style.opacity = slugOnly ? 1 : 0.35;
+}
+
+document.getElementById('bRibbon').onclick = () => spawn('ribbon');
+document.getElementById('bSlug').onclick   = () => spawn('slug');
+document.getElementById('bReset').onclick  = () => spawn(kind);
+document.getElementById('bEnd').onclick = () => {
+  if (kind !== 'slug') return;
+  const r = subject.hitNearestEnd(target.x, target.z);
+  if (r === 'shorten') say('SHORTER');
+  else if (r === 'killed') say('CLEAN KILL');
+};
+document.getElementById('bMid').onclick = () => {
+  if (kind !== 'slug') return;
+  if (subject.hitMiddle() === 'split') say('SPLIT — NOW THERE ARE TWO');
+};
+
+spawn('slug');
+
+let last = performance.now();
+renderer.setAnimationLoop(() => {
+  const now = performance.now();
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  tT += dt * 0.35;
+  target.x = Math.cos(tT) * 4.0;
+  target.z = Math.sin(tT * 1.3) * 3.2;
+  if (subject) subject.update(dt, target);
+  if (saidT > 0) { saidT -= dt; if (saidT <= 0) saidEl.classList.remove('on'); }
+  statEl.textContent = kind === 'slug'
+    ? `slugs ${subject.count}   segments ${subject.segmentCount}`
+    : '';
+  renderer.render(scene, camera);
+});
+
+window._SKETCH = { spawn, subject: () => subject, target, say };   // headless hook
+</script>
+<script type="module" src="../hub/shell.js?v=66"></script>
+</body>
+</html>

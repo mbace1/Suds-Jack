@@ -593,3 +593,61 @@ species · size ≈ speed · the gun is learned, not shown · domes, cubes, the
 one-offs and now the arc-movers are families, and more may arise. What is
 left is §5's remaining questions (what campaign progress buys, difficulty
 tiers, what we measure) and the drawing above.
+
+### 8.9 Two candidates built and driven (owner: "test a ribbon and test a long gel slug")
+
+Both are in **`toko-drop/js/sketch-shapes.js`**, shown by
+**`toko-drop/shape-sketch.html`**. They render through `enemy.js`'s real
+`makeSatinMat`, so the gel being judged is the gel that ships. Neither is in
+the game's module graph; if one wins it gets rebuilt as an `EnemyType` and
+this file is deleted.
+
+| | |
+|---|---|
+| ![ribbon](design/sketch-ribbon.gif) | ![slug](design/sketch-slug.gif) |
+| **RIBBON** — the body is its own recent path | **GEL SLUG** — a chain with a damage rule |
+
+![the slug splitting](design/sketch-slug-split.gif)
+
+*Hit in the middle: it splits, and the back half turns round — its old rear
+is now a head, pointed at you.*
+
+**The slug's rule, as built and exercised:** hit an **end** and the slug
+**shortens**; hit the **middle** and it **splits in two**. Measured through
+the page: `1 slug / 7 segments` → one middle hit → `2 slugs / 6 segments` →
+three end hits → `2 slugs / 3 segments`. So spraying is punished by making
+two problems out of one, and the clean kill is **positional** — get to a head
+or a tail and eat it down the line. That is a movement problem, which is what
+this family is for. The head is the largest segment and carries the only
+white mark, because the rule is a coin-flip if you cannot see which end is
+which.
+
+**What building them actually taught** — three findings, in order of how much
+they matter:
+
+1. **SCHOOL needs a TURN-RATE LIMIT, and the shipped movement model has
+   none.** `movement.roles` has `weave`, `flock`, `dodge` and `current`, but
+   nothing stops a body changing heading arbitrarily fast: it is re-pointed at
+   the player every frame. A dome gets away with that. **A long body cannot** —
+   the ribbon draws its own recent heading, so an instant turn renders as a
+   hard corner in the mesh, and the first builds looked like bent planks. This
+   is a finding about the *family*, not about either candidate: whatever shape
+   wins, an arc-mover needs a turn rate or it will not arc. The sketch steers
+   with `turnRate` 2.2 rad/s and the serpentine applied as a heading *offset*
+   rather than a sideways shove, which is what makes the path curve instead of
+   the body crabbing along a straight line.
+2. **A long body's length must be a design number, not a frame-rate
+   artefact.** Sampling the trail every frame made the ribbon one metre long
+   at 60 fps and longer on a slow phone. It samples by *distance* now
+   (`length × step`), so the silhouette is the same on every device.
+3. **The ribbon's open costs, not solved here and not to be waved away:** its
+   geometry is rebuilt every frame (fine for one or two, an allocation storm
+   at twenty — it would have to become a fixed-topology strip with rewritten
+   vertices, or a TSL job); **it has no silhouette when it stops**, which is a
+   real problem for a fixed-screen arena where bodies pause; and its
+   **hitbox is unanswered** — §8.8's "hitbox shown in style" is exactly the
+   question a curve does not answer the way a sphere does. The slug has none
+   of these problems: it is spheres, so it hit-tests, stands still and
+   instances like everything else already does.
+
+**Not decided.** These are two built things to look at, not a recommendation.

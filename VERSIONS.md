@@ -102,6 +102,14 @@
 - **Docs:** Q19 answered — the arc-movers get their own shape family, but
   the silhouette (fish / bugs / squiggly lines) is deliberately left open to
   explore in the lab. §8.8; the family RULES are now settled.
+- **Sketchbook (owner: "test a ribbon and test a long gel slug"):**
+  `js/sketch-shapes.js` + `shape-sketch.html` — two arc-mover candidates on
+  the real gel material, recorded moving (`design/sketch-*.gif`). The slug's
+  rule works and was exercised: end hit shortens, middle hit SPLITS (1 slug/7
+  segs → 2 slugs/6 segs). Findings in §8.9: **SCHOOL needs a turn-rate limit,
+  which the shipped movement model lacks** — a long body draws its own
+  heading, so an instant turn renders as a corner; and a long body's length
+  must be sampled by distance, not per frame. Not in the game's module graph.
 
 **Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
 break and the lying version line were mine and are both verified here. The
