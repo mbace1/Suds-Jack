@@ -7,14 +7,14 @@ import {TransitLayers} from './transit-layers.js?v=6';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=5';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
-import {SHIFT} from './live-network.js?v=9';
+import {SHIFT} from './live-network.js?v=10';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {dots,cargoGlyph,minutes} from './ui.js?v=1';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.37';
+const BUILD_VERSION='2.38';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -385,7 +385,7 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
 // THE HUD IS GLYPHS. Clock, deliveries as dots, a score, and the current job
 // as its cargo glyph inside a ring that empties with the deadline — no
 // "deliveries" / "deadline" labels and no ticks (owner: Mini Metro succinct).
-function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?minutes(challenge.remaining()):'';$('score').textContent=challenge.score?String(challenge.score):'';{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.textContent=c?cargoGlyph(c.icon):'▪';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
+function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.textContent=c?cargoGlyph(c.icon):'▪';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
 // THE JOB SHEET HAS THREE WRITERS AND HAD NO OWNER.
 // paintSheet (this file), the dispatch board (job-board-v212.js) and the catch
 // panel (route-choice.js) all wrote into #sheet on their own timers, and each
@@ -415,7 +415,7 @@ function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challen
 //
 // While riding, the two things you can DO are get off early and change plan, so
 // those lead; standing at a stop, boarding leads.
-const SHEET_SLOTS=['rideStatus','recoveryControls','routeChoices','alongBoard','jobHead','hubTactics','jobBoard'];
+const SHEET_SLOTS=['eventCard','rideStatus','recoveryControls','routeChoices','alongBoard','jobHead','hubTactics','jobBoard'];
 function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=$('sheet');if(!sheet)return null;
   for(const s of SHEET_SLOTS){let el=document.getElementById(s);
     if(!el){el=document.createElement('section');el.id=s;sheet.append(el);}

@@ -72,7 +72,12 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
     if (policy.plan === 'total') return priced.sort((x, y) => x.total - y.total)[0].c;
     return pick(choices); };
 
+  let eventsSeen = 0, eventCost = 0;
   while (flow.clock.tick < DAY && !ch.complete) {
+    // Events: 'help' takes the first option, 'skip' the free one, 'random' either.
+    if (tm.events?.pending) { const opts = tm.events.options(); const free = opts.findIndex(o => !o.cost);
+      const i = policy.events === 'help' ? 0 : policy.events === 'skip' ? Math.max(0, free) : (rnd() < 0.5 ? 0 : Math.max(0, free));
+      const r = tm.events.choose(i); eventsSeen++; eventCost += r.cost || 0; say('EVENT', `${opts[i]?.label}`); }
     const st = mob.status();
     if (st.kind !== lastKind) { timeline.push([flow.clock.tick, st.kind]); lastKind = st.kind; }
     if (!ch.active) { const job = chooseJob(); if (job) { const r = ch.acceptOffer(job.id); say('JOB', `${job.stops[0]}>${job.stops[1]} ${job.cargo} limit ${job.limit} ${r.error || ''}`); chosen = null; } }
@@ -95,7 +100,7 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
     flow.runTicks(1);
   }
   const dropped = log.filter(l => / DROPPED/.test(l)).length;
-  return { won: ch.complete, delivered: ch.index, tick: flow.clock.tick, score: ch.score, late: ch.late, drops, dropped,
+  return { won: ch.complete, delivered: ch.index, eventsSeen, eventCost, holds: (tm.events?.holds || []).length, tick: flow.clock.tick, score: ch.score, late: ch.late, drops, dropped,
     waitTicks, rideTicks, catches, transfers, lastKind, activeJob: ch.active ? `${ch.active.stops[0]}>${ch.active.stops[1]}` : null,
     leg: ch.leg, log, timeline };
 }, policy);
@@ -145,13 +150,13 @@ server.listen(0, '127.0.0.1', async () => {
   }
   console.log(`\nRANDOM-BUT-SANE BOTS × ${N}`);
   let wins = 0; const byDelivered = [0, 0, 0, 0, 0, 0, 0], endedIn = {}, t0 = Date.now();
-  for (let i = 1; i <= N; i++) { const r = await run({ job: 'random', plan: 'random', seed: i, along: 'random' }, `random ${i}`);
+  for (let i = 1; i <= N; i++) { const r = await run({ job: 'random', plan: 'random', seed: i, along: 'random', events: 'random' }, `random ${i}`);
     if (r.won) wins++; byDelivered[Math.min(6, r.delivered)]++; endedIn[r.lastKind] = (endedIn[r.lastKind] || 0) + 1;
     if (i % 25 === 0) process.stdout.write(`  ${i}… `); }
   console.log(`\n  win rate ${(wins / N * 100).toFixed(1)}% · deliveries 0/1/2/3/4/5/6+: ${byDelivered.join(' / ')} · ended while ${JSON.stringify(endedIn)} · ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   const rnd = results.filter(r => r.policy.job === 'random');
   const avg = k => (rnd.reduce((a, r) => a + r[k], 0) / rnd.length).toFixed(0);
-  console.log(`  mean waiting ${avg('waitTicks')}t · riding ${avg('rideTicks')}t · catches ${avg('catches')} · transfers ${avg('transfers')} · drops taken ${avg('drops')} made ${avg('dropped')}`);
+  console.log(`  mean waiting ${avg('waitTicks')}t · riding ${avg('rideTicks')}t · catches ${avg('catches')} · transfers ${avg('transfers')} · drops taken ${avg('drops')} made ${avg('dropped')} · events answered ${avg('eventsSeen')} (cost ${avg('eventCost')}t) · holds ${avg('holds')}`);
   // First-job anatomy: how long from shift start to the first delivery.
   const firstDelivery = rnd.map(r => { const l = r.log.find(x => / OFF .* deliver| DROPPED/.test(x)); return l ? Number(l.split(':')[0]) : null; }).filter(x => x != null);
   firstDelivery.sort((a, b) => a - b);
@@ -175,7 +180,10 @@ server.listen(0, '127.0.0.1', async () => {
     ok(byDelivered[0] === 0, `no bot ends a shift with nothing delivered (${byDelivered[0]} did)`);
     const made = rnd.reduce((a, r) => a + r.dropped, 0);
     ok(made > 0, `drops on the way are offered, taken and handed over (${made} across ${rnd.length} bots)`);
-    console.log(`\nshifts: ${4 - fail} passed, ${fail} failed`);
+    const answered = rnd.reduce((a, r) => a + r.eventsSeen, 0), held = rnd.reduce((a, r) => a + r.holds, 0);
+    ok(answered >= rnd.length, `events fire and get answered — at least one a shift on average (${answered} across ${rnd.length} bots)`);
+    ok(held >= rnd.length * 0.5, `disruptions happen (${held} holds across ${rnd.length} bots)`);
+    console.log(`\nshifts: ${6 - fail} passed, ${fail} failed`);
     process.exit(fail ? 1 : 0);
   }
 });

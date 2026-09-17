@@ -1,5 +1,40 @@
 # Toko Move — versions
 
+## v2.38 — 2026-09-17
+
+**The event deck** (owner: *"roguelike random events type deal… help the
+granny across the street (10 sec delay)"*). `js/events.js`, two kinds:
+
+- **Disruptions are facts.** A car on the rails, a points failure, a
+  passenger unwell: one line is HELD at its stops for four to six game-minutes.
+  `LiveNetwork.hold()` makes it real rather than announced — positions are a
+  closed form in the tick, so a hold is ticks the layer does not experience
+  (`effectiveTick`), and both the fleet and `nextArrival` read it, so the catch
+  panel's *in 3 min* becomes *in 9 min* and the plan you made visibly goes
+  wrong. An estimate never looks through a FUTURE hold: you learn of a
+  disruption when it happens, which is what makes it one. Shown as a banner
+  with the line's badge and the minutes left on it.
+- **Encounters are a choice** — 80 Days' shape: a face, one line, options as
+  rows priced in seconds. The granny (walk her across, −10 s, +goodwill), the
+  tourist, the inspector (documents cargo: *waved through* — FTL's blue option;
+  otherwise show your ticket, −3 s), the wallet (hand it in, or pocket it for
+  more score and −3 goodwill — the trap), the busker, the stroller, an old
+  friend. Every card has a free way past. **A card never blocks the tram**:
+  catching while one is up takes the free option for you — boarding IS walking
+  on. Only having chosen to help holds you (`busy`), and that is the cost.
+  Goodwill accrues on the challenge and nothing spends it yet; Regulars will.
+
+The deck is DRAWN, never rolled: the schedule is a hash of the shift seed, so
+a shift replays and the bot can play it. Budget: three encounters and one
+disruption a shift, worst-case encounter cost under 280 ticks. Measured:
+random-but-sane bots answer ~3 events a shift at ~85 ticks and 37 of 40 meet
+a hold; the win rate reads 62.5%, inside the noise of v2.36's 63.5%.
+
+Gates: `test/events.mjs` (53, bare node, in CI) — a free option on every card,
+a seeded draw, no card twice, the budget, and a 240-tick hold moving the next
+arrival by exactly 240; `shifts.cjs --gate` gained two checks (events are
+answered, holds happen). misses.cjs stays green because a card never blocks.
+
 ## v2.37 — 2026-09-17
 
 **The succinct UI** (owner: *"make the UI feel a bit more fun, approachable,
