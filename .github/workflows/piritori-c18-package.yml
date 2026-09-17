@@ -4,6 +4,7 @@ on:
     paths:
       - 'piritori-c17/**'
       - 'test/piritori-c18-package.mjs'
+      - 'test/piritori-c18-package-regressions.mjs'
       - 'test/piritori-c18-entry.cjs'
       - '.github/workflows/piritori-c18-package.yml'
 permissions:
@@ -17,6 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: node test/piritori-c18-package-regressions.mjs
       - run: node test/piritori-c18-package.mjs
   deployment-entry:
     runs-on: ubuntu-latest
@@ -26,7 +28,7 @@ jobs:
       - name: Check out the exact scoped deployment candidate
         uses: actions/checkout@v4
         with:
-          ref: b8aba32185f5f569d4141c8cf13f455781d879fc
+          ref: ff46ac1a7e613c6932763e330b5417cd0ff2441b
           path: candidate
       - uses: actions/setup-node@v4
         with:

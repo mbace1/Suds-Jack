@@ -2,7 +2,7 @@
   "build": "C.18",
   "source_repository": "mbace1/piritori-eden",
   "source_commit": "f28c72c71d126aeef65b332ed8020c631ce03563",
-  "tested_source_head": "ef7b4785831aacf54cf00d77c5625b9e1c95f6d4",
+  "tested_source_head": "f28c72c71d126aeef65b332ed8020c631ce03563",
   "entry": "web/crew-run/?campaign=1&release=18",
   "status": "unified-ui-direct-rendering",
   "character_provider": "procedural development stand-ins",
@@ -16,7 +16,7 @@
     "C.18 help-text/build-identity correction from f28c72c71d126aeef65b332ed8020c631ce03563; no JavaScript, CSS, character or rule changes"
   ],
   "sha256": {
-    "VERSIONS.md": "149af198447c2b20f5ca7117f6465b77d76ddce5cc5debbf94d6f97fb2b18c70",
+    "VERSIONS.md": "172a5f87428c744ef76c70d0ba5f5bc1a998e625c686915821c1a79e3672249c",
     "art/v3/environment3d/bear-landmark-v01.glb": "fc3fc41681d5c7dbcec7a7471d75b248597412ffd8664cee2489db4a9b7240f1",
     "art/v3/environment3d/park-ground-study-v01.png": "ee1dfc3c2794a18bf48c15be1eef36aed48be7f9c999720f91b3e8ba1239e0e3",
     "art/v3/manifest.json": "dfce58c98aa133530d534d9d35cc259b6468e28a2fd1601c2fedd5abd9c11361",
