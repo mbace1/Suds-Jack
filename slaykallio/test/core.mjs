@@ -383,7 +383,10 @@ check(`and dusk falls: you catch your breath for ${Math.floor(78 * RULES.healBet
 check('act two draws from its own pool', s.route.steps[0].every(o => ACTS[1].fights.includes(o.id)));
 jumpTo(s, ENC('bear'));
 check('the bear is the last thing on the bridge', s.phase === 'fight' && s.enemies[0].id === 'the_bear' && s.enemies[0].hp === 140);
-s.enemies[0].intent = { ...ENEMIES.the_bear.moves[0] };
+// By ID, never by index: v23 paid for this once already - a conditional move
+// put at the FRONT of a list shifts every index behind it, and v40's `press`
+// broke these two checks the same way.
+s.enemies[0].intent = { ...ENEMIES.the_bear.moves.find(m => m.id === 'granite') };
 s.hand = []; endTurn(s);
 check('granite: 20 block and 3 thorns', s.enemies[0].block === 20 && s.enemies[0].status.thorns === 3);
 s.hand = [{ uid: 1, id: 'strike', ...CARDS.strike }]; s.hero.energy = 3; s.enemies[0].block = 0;
@@ -1180,6 +1183,33 @@ const acted = (st, from) => st.log.slice(from).filter(l => l.t === 'enemyAct').m
 let mark = r.log.length;
 r.hero.block = 14; hard.intent = null; endTurn(r);
 check('but answers a wall of block with frail', acted(r, mark).includes('shoulder'), `${acted(r, mark)}`);
+
+// v40. THE BEAR READS THE BOARD NOW, and it is the only boss that did not.
+// Seven ordinary enemies react and the act-one boss answers `hurt`; the fight
+// that ends 84% of act-two runs walked a fixed loop of five.
+r = startRun(createRun({ seed: 11, character: 'cart' })); jumpTo(r, ENC('bear'));
+const bear = r.enemies.find(e => e.id === 'the_bear');
+check('the Bear leaves you alone while you are not turtling', bear.intent.id !== 'press');
+let bmark = r.log.length;
+r.hero.block = 14; bear.intent = null; endTurn(r);
+check('but leans on a wall of block', acted(r, bmark).includes('press'), `${acted(r, bmark)}`);
+
+// And the move has to be a PUNISH rather than a discount. A conditional move
+// REPLACES the rotation's next one, so anything weaker than what it displaces
+// rewards the condition: at 16 against `maul`'s 12x2 this measured as act two
+// getting THIRTEEN POINTS EASIER. The gate is the relationship, not the number.
+{
+  const mv = id => ENEMIES.the_bear.moves.find(m => m.id === id);
+  const swing = m => (m.dmg || 0) * (m.times || 1);
+  check('the wall answer is not cheaper than the swing it replaces',
+    swing(mv('press')) >= swing(mv('maul')) * 0.8, `${swing(mv('press'))} vs ${swing(mv('maul'))}`);
+  check('and it carries a rider, or it is just a smaller maul', !!mv('press').status);
+  // The blind rising tide is gone: `stir` healed AND handed itself +2 Strength
+  // every cycle for ever, which is what made a 140 HP boss a DPS check.
+  check('the Bear no longer ramps its own Strength unconditionally',
+    !ENEMIES.the_bear.moves.some(m => !m.when && m.status?.key === 'strength'));
+  check('but it still heals — it is granite', mv('stir').heal > 0);
+}
 
 // `hurt` + `once` — the Jaw Worm's bellow: a single second wind.
 r = startRun(createRun({ seed: 6, character: 'cart' })); jumpTo(r, ENC('thief'));

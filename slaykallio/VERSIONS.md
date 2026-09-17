@@ -6,6 +6,74 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
+## v40 — 2026-09-17
+**The Bear reads the board, and the Boxer's own bot was built on a rule the engine never had**
+
+Two things, and only one of them is a game change.
+
+**THE BOXER'S POLICY WAS WRONG, AND IT COST HIM 11 POINTS.** `native`'s boxer
+line carried the comment *"block only what would actually kill, and let the
+rest land"* — being hit is the resource, so do not waste cards stopping it.
+That is a rule `engine.js` HAS NEVER HAD. `dealDamage` subtracts block first
+and then, unconditionally, increments `struck`, fires thorns and grows them:
+a fully blocked blow still counts, still retaliates, still compounds. (Slay
+the Spire's own Thorns works this way, so the engine is right and the comment
+was the thing that was wrong.) Letting a punch land buys him nothing block
+would not also buy, and costs him the HP.
+
+Measured from the door of act two, 600 arrivals, the other five characters'
+columns reproducing byte-identically because the change cannot touch them:
+
+  native, the Boxer        16% -> 27%
+  the card-mechanic gap    native minus synergist, +2 -> +9
+
+Confirmed on an independent 900-arrival block. He is still below `defensive`
+(46%), and that gap is NOT card play: `native` is defined as synergist's walk
+plus a per-character card policy, and `defensive` avoids elites and sleeps at
+rests. That is a finding about the Boxer — he wants to duck elites — and not
+a licence to break the instrument's one stated property.
+
+**THE BEAR WAS THE ONLY BOSS THAT READ NOTHING.** Seven ordinary enemies
+carry a `when` and the act-one boss answers `hurt`; the fight that ends 84%
+of act-two runs walked a fixed loop of five. Two changes, measured
+separately against identical arrivals:
+
+  base                     mean 34%   Bear 41.4 HP, kills 63%
+  A: no blind Strength     mean 40%   Bear 40.0 HP, kills 57%
+  A + `walled` answer      mean 37%   Bear 41.5 HP, kills 60%
+
+`stir` used to hand itself +2 Strength every cycle, unconditionally and for
+ever — a blind rising tide on a 140 HP boss, which is exactly what made it a
+DPS check: the longer you lasted the worse it got, whatever you did. The heal
+stays; the ramp is gone. `press` is the `walled` answer the Cart Pusher has
+been walking past — he wins act two from the door by a mile on block that
+stays, and a boss that never answers a wall is why.
+
+**A CONDITIONAL MOVE REPLACES THE ROTATION'S NEXT ONE, SO IT IS ONLY A PUNISH
+IF IT IS WORSE THAN WHAT IT DISPLACES.** The first cut of `press` was 16
+damage against `maul`'s 12x2, and it measured as act two getting THIRTEEN
+POINTS EASIER — "the Bear hits softer when you turtle", the opposite of the
+thing it is named for. Swept 18/20/22; 20 plus Frail changes the fight's
+texture without changing its price. `core.mjs` gates the RELATIONSHIP rather
+than the number, so the next person cannot reintroduce a discount.
+
+**Built, measured and CUT**: a `hale` opener — v35 named "spikes that threaten
+a HEALTHY hero" as one of two untried levers, and this is it. At 22 it was a
+wash against a routine of 20-24; at 30, a real spike, it cost 10 points of
+mean and pushed the Bear's kill rate UP. Recorded rather than kept: the lever
+works, the boss is not where to pull it.
+
+**AND THE BEAR'S SHARE OF THE DEATHS IS ARITHMETIC, NOT TUNING.** It is met
+by 2,679 runs where each ordinary act-two fight is met by ~400, so it
+dominates the deaths list by exposure at any kill rate: base 86% of where
+`native`'s act two ends, 84% after a change that takes six points off its
+kill rate. v35's "moving THAT needs a cheaper Bear" is withdrawn as a way to
+move the SHARE — nothing that leaves the route shape alone can.
+
+One brittleness of the `hp === 68` family fell out, and v23 had already paid
+for it once: `ENEMIES.the_bear.moves[0]` shifted when a conditional move went
+to the front of the list, failing two checks that are not about it. Read by
+id now.
 
 ## v39 — 2026-09-15
 **The Boxer compounds: thorns grow on the blow they answer**

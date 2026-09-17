@@ -789,11 +789,27 @@ export const ENEMIES = {
     fantasy: { name: 'The Prybar', look: { skin: '#c09878', hair: '#4a3c2c', hairStyle: 'shaggy', top: '#34405a', bottom: '#2e2c38', shoes: '#c8c4bc', hat: 'none', prop: 'plank', accent: '#6a8ac8', base: 'card', grime: 0.6, shape: 'person' } } },
   the_bear: { hp: 140, boss: true, pattern: 'cycle', scale: 1.32,
     moves: [
+      // v40. The one boss in the game that read NOTHING. Seven ordinary enemies
+      // react and the act-one boss answers `hurt`; the fight that ends 84% of
+      // runs walked a fixed loop. `walled` is the condition it was missing -
+      // the Cart Pusher wins act two from the door by a mile on block that
+      // stays, and a boss that never answers a wall is why.
+      // CALIBRATED, because a conditional move REPLACES the rotation's next
+      // one and `maul` is 12x2 = 24: at 16 this read as "the Bear hits softer
+      // when you turtle" and made act two EASIER by 13 points, which is the
+      // opposite of a punish. Swept 18/20/22 against the same arrivals; 20
+      // plus Frail changes the fight's texture without changing its price.
+      { id: 'press', when: 'walled', intent: 'attack', dmg: 20,
+        status: { key: 'frail', n: 2 } },
       { id: 'granite', intent: 'buff', block: 20, status: { key: 'thorns', n: 3 } },
       { id: 'maul', intent: 'attack', dmg: 12, times: 2 },
       { id: 'roar', intent: 'debuff', status: { key: 'vulnerable', n: 2 }, status2: { key: 'weak', n: 2 } },
       { id: 'crush', intent: 'attack', dmg: 20 },
-      { id: 'stir', intent: 'heal', heal: 10, status: { key: 'strength', n: 2 } },
+      // v40. `stir` used to hand itself +2 Strength every cycle, unconditionally
+      // and for ever: a blind rising tide on a 140 HP boss, which is what made
+      // it a DPS check rather than a fight - the longer you lasted the worse it
+      // got, whatever you did. The heal stays (it is granite); the ramp is gone.
+      { id: 'stir', intent: 'heal', heal: 10 },
     ],
     kallio: { name: 'The Bear', look: { body: '#6a6260', head: '#7a726e', wing: '#4a4442', beak: '#2a2624', moss: '#3a4a2a', eye: '#e8a84a', shape: 'bear' } },
     fantasy: { name: 'The Stone Bear', look: { body: '#5a5a6a', head: '#6a6a7a', wing: '#3a3a48', beak: '#20202a', moss: '#3a3a5a', eye: '#8ac8e8', shape: 'bear' } } },

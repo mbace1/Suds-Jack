@@ -195,9 +195,20 @@ const SCORE = {
     return 20 + dmgOf(st, i) * 0.8 + Math.min(blkOf(st, i), need);
   },
 
-  // BEING HIT IS THE RESOURCE. Thorns answer a blow, and his best punches
-  // count the blows he took — so block only what would actually kill, and
-  // let the rest land.
+  // BEING HIT IS THE RESOURCE — AND BLOCK DOES NOT COST HIM ANY OF IT.
+  // This policy used to read "block only what would actually kill, and let
+  // the rest land", which is a rule the ENGINE HAS NEVER HAD. `dealDamage`
+  // subtracts block first and then, unconditionally, counts the hit, fires
+  // thorns and grows them: a fully blocked blow still increments `struck`,
+  // still retaliates, still compounds. (That is Slay the Spire's own Thorns,
+  // so the engine is right and this comment was the thing that was wrong.)
+  // So letting a punch land buys him nothing block would not also buy, and
+  // costs him the HP. Measured, the old line got him 16% from the door of act
+  // two while plain `defensive` got the same character 43% — a bespoke policy
+  // 27 points WORSE than a generic one, on the one character it exists for.
+  // He is a defensive character whose damage arrives through thorns: every
+  // extra turn he survives is another round of blows answered and another
+  // point on the stack.
   boxer: (st, i, c) => {
     if (c.type === 'power') return 200;
     if (grants(c, 'thorns')) return 150 - (c.cost || 0) * 2;
@@ -205,8 +216,8 @@ const SCORE = {
       const more = st.hand.some((x, j) => j !== i && canPlay(st, j) && !scaleOn(x, 'struck'));
       return more ? -Infinity : 90 + dmgOf(st, i);
     }
-    const lethal = incoming(st) - st.hero.block >= st.hero.hp;
-    return 30 + dmgOf(st, i) + (lethal ? blkOf(st, i) * 3 : blkOf(st, i) * 0.15) - (c.cost || 0);
+    const need = Math.max(0, incoming(st) - st.hero.block);
+    return 30 + dmgOf(st, i) * 0.8 + Math.min(blkOf(st, i), need) * 2 - (c.cost || 0);
   },
 };
 
