@@ -28,14 +28,14 @@
 
 export const GAMES = [
   {
-    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.18', status: 'active',
-    path: 'piritori-c17/web/crew-run/?campaign=1&release=18', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
+    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.19', status: 'active',
+    path: 'piritori-c17/web/crew-run/?campaign=1&release=19', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'Choose your crew. Bring someone home. Live with the aftermath.',
     lineage: 'Kallio 2003 · Dream Loop crew pilot', tags: ['3D', 'tactics', 'prototype'],
     controls: 'Choose 2–3 crew · Move + Act · Help / Extract · Aim view then confirm · drag camera',
-    note:'C.18 — One command bar, character portraits and clearer mission/turn information. Secondary controls live in Menu. Direct scene rendering and optional safe graphics; C.17 campaign rules retained. Procedural characters only. Physical phone retest pending.',
-    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.18 — Yhtenäinen komentopalkki, hahmomuotokuvat ja selkeämpi tehtävä- ja vuorotieto. Lisätoiminnot Menussa. Suora 3D-piirto ja valinnainen kevyt grafiikka. C.17-pelisäännöt säilyvät; puhelintesti odottaa.'},
-    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.18 — コマンドバー、人物ポートレート、任務とターン表示を統一。補助操作はMenuへ。直接描画と安全な描画設定を追加。C.17のルールと仮キャラクターを維持。実機確認は未完了。'},
+    note:'C.19 — Focused fighter badges, selected/target rings and a labelled exit. VIEW restores all statistics. Crew selection clears the command area. Rescue, retreat, defeat and reload acceptance expanded; combat rules and procedural characters retained. Physical phone/iPad retest pending.',
+    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.19 — Tiiviit hahmotunnukset, valinta- ja kohdemerkit sekä merkitty uloskäynti. VIEW näyttää kaikki tilastot. Hahmovalinta sulkee ryhmävalikon. Pelisäännöt ja väliaikaishahmot säilyvät; puhelimen ja iPadin laitetesti odottaa.'},
+    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.19 — 人物ラベルを簡潔化し、選択対象と出口を明示。VIEWで全数値を表示。人物選択で名簿を閉じます。既存ルールと仮キャラクターを維持。実機確認は未完了。'},
   },
   {
     id: 'concrete', title: 'CONCRETE', status: 'active', path: 'concrete/',
