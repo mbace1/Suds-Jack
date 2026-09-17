@@ -1,5 +1,20 @@
 // Explicit release URL avoids reusing an older cached Slay HTML document.
-const launchPath = game => game.id === 'slaykallio' ? `${game.path}?release=39` : game.path;
+// The number is READ from versions.json rather than typed here: hard-coded, it
+// is a third place a release number lives and the third one nobody remembers to
+// move — v34 shipped with this at 33, the cabinet's own VERSION at 33 and
+// versions.json at 34, three files and three answers. `RELEASE_PINNED` names
+// which cabinets want the parameter at all; the number arrives with
+// showVersions() and relink() rewrites the links that were built before it.
+const RELEASE_PINNED = new Set(['slaykallio']);
+const release = {};
+const launchPath = game => RELEASE_PINNED.has(game.id) && release[game.id]
+  ? `${game.path}?release=${release[game.id]}` : game.path;
+function relink() {
+  for (const a of document.querySelectorAll('a[data-game]')) {
+    const g = GAMES.find(x => x.id === a.dataset.game);
+    if (g) a.href = launchPath(g);
+  }
+}
 // The arcade — every playable thing in the repo on one page, each with a way
 // in (Play) and a way back (Feedback).
 //
@@ -43,6 +58,7 @@ function cabinet(game) {
   const frame = el(playable ? 'a' : 'div', 'marquee');
   if (playable) {
     frame.href = launchPath(game);
+    frame.dataset.game = game.id;
     frame.setAttribute('aria-label', t('play.aria', { x: game.title }));
     frame.tabIndex = -1;                 // the Play button below is the real target
   }
@@ -99,6 +115,7 @@ function cabinet(game) {
   if (playable) {
     go = el('a', 'btn play', `[ ${t('play')} ]`);
     go.href = launchPath(game);
+    go.dataset.game = game.id;
     // pressing Play is the only honest signal the hub has that you tried it —
     // it cannot know whether you liked it, and does not ask
     go.addEventListener('click', e => {
@@ -451,6 +468,8 @@ async function showVersions() {
     slot.title = t('ver.from', { x: v.from });
   }
   window.__hub.versions = versions;
+  for (const id of RELEASE_PINNED) if (versions[id]) release[id] = versions[id].v;
+  relink();
   markFresh(versions);
 }
 
