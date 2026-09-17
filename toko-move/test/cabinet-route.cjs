@@ -43,6 +43,12 @@ server.listen(0, '127.0.0.1', async () => {
 
   await page.goto(`${base}/`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__hub?.games?.length, null, { timeout: 15000 }).catch(() => {});
+  // The version is FETCHED (hub/versions.json) and painted onto the card when
+  // it lands; on the deployed floor — 26 cabinets, the counter, the power-on —
+  // that is later than on this branch's, and a single sample read the card
+  // before it. Wait for a version to appear, then read; the timeout leaves the
+  // check to fail honestly if none ever does.
+  await page.waitForFunction(() => /v\d+\.\d+/.test(document.getElementById('cab-tokomove')?.innerText || ''), null, { timeout: 8000 }).catch(() => {});
 
   // ---- the cabinet is on the floor, and findable ------------------------
   const cab = await page.evaluate(() => {
