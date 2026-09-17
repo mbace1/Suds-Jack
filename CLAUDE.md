@@ -169,6 +169,31 @@ more than one direction, and a plain byte comparison says *that* two copies diff
 stripped, since a deployed file has been renumbered); if not, that is somebody else's
 work, it is left alone, and the run stops and tells you to bring it back first. It found
 three files that way on its first real run. **Deploys never merge.**
+**That guard compares CODE, so it has to see through every number a DEPLOY
+writes** — and for a long time it did not. `hub/hub.js` is CRLF here and the
+site's copy had been reflowed to LF, so not one byte lined up, `held()` matched
+nothing, and the tool called the whole arcade shell somebody else's work: a
+reflow is a change of transport, not of authorship. `?release=` was the second
+blind spot, and the funnier one — a cabinet's typed release pin made its own
+shell unshippable, so the literal defended itself against the code that retires
+it. Both are normalised alongside `?v=` now, and the fix is gated four ways in
+`bare()` itself, the fourth asserting two genuinely different files still read
+as different — the proof it is a fix rather than a hole is that the OTHER five
+disagreements stayed blocked.
+**What it still cannot do is renumber a file it did not deploy.** With five
+shell modules and both catalogue files left as the site has them, the
+regenerated precache list took its tokens from this tree anyway and moved
+`art.js` 24→19, `pad.js` 10→9 and `toko-cabinet-dom.js` 5→1 — all BACKWARDS,
+which is the precache-behind-the-page bug the walk exists to prevent. Until
+those files are reconciled a shell deploy is hand-verified and narrow, and the
+way to prove one is to run the gate on BOTH trees and read the delta: the pin
+change measured 181/8 on each, the same eight.
+**And the arcade gate cannot see a typed pin.** Its release check passed on the
+untouched site, because the typed number happened to equal the log that day —
+a pin is right until the day it is not. Move the log and the two separate: at
+`versions.json` 77 the old hub answered `?release=39` and the new one answered
+`?release=77`. Any check of a number that is supposed to FOLLOW another number
+has to move the one it follows.
 **`hub/hub.js` and `test/hub-smoke.cjs` are CRLF** while everything around
 them is LF, so a rewrite through any tool that normalises newlines reflows the
 whole file and buries a three-line change in a two-thousand-line diff. Check

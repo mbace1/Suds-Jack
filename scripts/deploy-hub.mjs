@@ -174,7 +174,37 @@ for (const f of [...files, 'sw.js']) {
 // ...and with the tail newline normalised: a tool on the site side wrote a
 // file without one, and "every byte identical except the last is missing"
 // spent a run being reported as foreign work.
-const bare = s => s.replace(/\?v=\d+/g, '').replace(/\s*$/, '\n');
+// ...and with LINE ENDINGS normalised, for the same reason one step further
+// out. hub/hub.js is a CRLF file here and the site's copy has been reflowed to
+// LF by some tool on that side, so not one byte of it lined up and the guard
+// called the whole arcade shell foreign work for as long as that has been
+// true. A reflow is a change of transport, not of authorship, and a guard that
+// cannot see through one refuses the deploys it exists to make safe. Proof it
+// is a fix and not a hole: with this in, hub.js resolves to a real commit of
+// ours and the OTHER five disagreements stay blocked.
+// ...and with ?release= taken out alongside ?v=, because it is the same kind of
+// number - written INTO a deployed file by a deploy, never by an author.
+// Leaving it in meant a cabinet's release pin made its own shell unshippable,
+// which is how a typed pin defends itself against the code that retires it.
+const bare = s => s
+  .replace(/\?v=\d+/g, '')
+  .replace(/\?release=\d+/g, '')
+  .replace(/\r\n/g, '\n')
+  .replace(/\s*$/, '\n');
+
+// Each of these three cost a refused deploy, so each is asserted here rather
+// than remembered. They run on every invocation because the whole guard rests
+// on this one function: if it stops seeing through a reflow, the tool goes back
+// to calling the arcade shell somebody else's work and saying so confidently.
+// The fourth asserts the guard still HAS teeth - two genuinely different files
+// must not collapse to equal, or the three above have been over-applied.
+{
+  const same = (a, b) => bare(a) === bare(b);
+  if (!same("a\r\nb\r\n", "a\nb\n")) throw new Error('bare(): a CRLF reflow must not read as foreign work');
+  if (!same("x?v=3\n", "x?v=91\n")) throw new Error('bare(): a module token must not read as foreign work');
+  if (!same("p?release=33\n", "p?release=39\n")) throw new Error('bare(): a release pin must not read as foreign work');
+  if (same("const a = 1;\n", "const a = 2;\n")) throw new Error('bare(): real content differences must still read as different');
+}
 
 const held = (f, text) => {
   const want = bare(text);
