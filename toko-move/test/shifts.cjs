@@ -22,6 +22,7 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '../..');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 const GATE = process.argv.includes('--gate');
+const SURVEY = process.argv.includes('--survey');   // play the whole day with no target: how many deliveries does a day hold?
 const N = Number(process.argv.find(a => /^\d+$/.test(a)) || (GATE ? 40 : 200));
 const server = http.createServer((req, res) => {
   let p = path.join(ROOT, decodeURIComponent(req.url.split('?')[0]));
@@ -35,6 +36,7 @@ const server = http.createServer((req, res) => {
 // rule or 'random' (drawn from a seeded rng so a run can be replayed).
 const playShift = async (page, policy) => page.evaluate(async (policy) => {
   const tm = window.__tm, flow = tm.flow, ch = tm.challenge, mob = tm.mobility, city = tm.city;
+  if (policy.target) ch.targetOverride = policy.target;
   const { routeChoices } = globalThis.__tmRouteChoiceCore;
   const DAY = flow.clock.ticksPerDay;
   let s = (policy.seed * 2654435761) >>> 0;
@@ -50,8 +52,9 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
     if (near) return { ready: true, eta: 0, vehicle: near.vehicle };
     return { ready: false, eta: tm.liveNetwork.nextArrival(layer, idx, flow.clock.tick, dir), vehicle: null }; };
   const log = [], timeline = [];
-  let waitTicks = 0, rideTicks = 0, chosen = null, chosenAt = 0, lastKind = null, catches = 0, transfers = 0;
+  let waitTicks = 0, rideTicks = 0, chosen = null, chosenAt = 0, lastKind = null, catches = 0, transfers = 0, drops = 0;
   const say = (k, x) => log.push(`${flow.clock.tick}: ${k} ${x || ''}`.trim());
+  { const realSay = ch.say; ch.say = m => { if (/^DROPPED/.test(String(m))) log.push(`${flow.clock.tick}: DROPPED ${m}`); return realSay?.(m); }; }
 
   // Which job. 'first' = the one the dispatcher lists first (Loop 47 puts the
   // reachable one there on job 1); 'cheapest' = lowest door-to-door estimate;
@@ -81,12 +84,18 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
       // re-choose only if it has been more than 60 ticks with nothing lit.
       if (!chosen || flow.clock.tick - chosenAt > 60) { chosen = choosePlan(choices); chosenAt = flow.clock.tick;
         if (chosen) say('PLAN', `${chosen.legs.map(l => l.line.label).join('>')} wait ${arrival(chosen).eta}`); }
+      // ON YOUR WAY: what the chosen line passes. 'yes' takes every drop on
+      // the chosen line, 'random' flips a coin per offer, 'no' ignores them.
+      if (chosen && policy.along && policy.along !== 'no' && tm.alongOffers) {
+        for (const o of tm.alongOffers()) { if (o.line !== chosen.legs[0].line.label) continue;
+          if (policy.along === 'yes' || rnd() < 0.5) { const r = ch.acceptAlong(o); if (!r.error) { drops++; say('DROP-TAKEN', `${o.stops[1]} on ${o.line}`); } } } }
       if (chosen) { const a = arrival(chosen); if (a.ready) { const r = mob.catchChoice(chosen, a.vehicle); if (!r.error) { catches++; say('CATCH', chosen.legs[0].line.label); } else say('CATCH-FAIL', r.error); } }
     }
     else if (st.kind === 'riding') rideTicks++;
     flow.runTicks(1);
   }
-  return { won: ch.complete, delivered: ch.index, tick: flow.clock.tick, score: ch.score, late: ch.late,
+  const dropped = log.filter(l => / DROPPED/.test(l)).length;
+  return { won: ch.complete, delivered: ch.index, tick: flow.clock.tick, score: ch.score, late: ch.late, drops, dropped,
     waitTicks, rideTicks, catches, transfers, lastKind, activeJob: ch.active ? `${ch.active.stops[0]}>${ch.active.stops[1]}` : null,
     leg: ch.leg, log, timeline };
 }, policy);
@@ -116,23 +125,35 @@ server.listen(0, '127.0.0.1', async () => {
     { name: 'first job · best total', job: 'first', plan: 'total', seed: 1 },
     { name: 'cheapest job · soonest tram', job: 'cheapest', plan: 'soonest', seed: 1 },
     { name: 'cheapest job · best total', job: 'cheapest', plan: 'total', seed: 1 },
+    { name: 'cheapest · total · every drop', job: 'cheapest', plan: 'total', seed: 1, along: 'yes' },
+    { name: 'first · soonest · every drop', job: 'first', plan: 'soonest', seed: 1, along: 'yes' },
   ];
   const results = [];
   const run = async (policy, label) => { await boot(); const r = await playShift(page, policy); results.push({ label, policy, ...r }); return r; };
   console.log('NAMED POLICIES');
   for (const p of named) { const r = await run(p, p.name);
-    console.log(`  ${r.won ? 'WIN ' : 'LOSS'} ${p.name.padEnd(30)} ${r.delivered}/3 at tick ${r.tick} · wait ${r.waitTicks} ride ${r.rideTicks} · catches ${r.catches} transfers ${r.transfers} · ended ${r.lastKind}${r.activeJob ? ' on ' + r.activeJob : ''}`); }
+    console.log(`  ${r.won ? 'WIN ' : 'LOSS'} ${p.name.padEnd(30)} ${r.delivered} delivered at tick ${r.tick} · wait ${r.waitTicks} ride ${r.rideTicks} · catches ${r.catches} transfers ${r.transfers} · drops taken ${r.drops} made ${r.dropped} · ended ${r.lastKind}${r.activeJob ? ' on ' + r.activeJob : ''}`); }
+  if (SURVEY) {
+    console.log(`\nSURVEY × ${N} — random-but-sane bots, whole day, no target`);
+    const got = [], scores = [], drops = [];
+    for (let i = 1; i <= N; i++) { const r = await run({ job: 'random', plan: 'random', seed: i, along: 'random', target: 99 }, `survey ${i}`); got.push(r.delivered + r.dropped); scores.push(r.score); drops.push(r.dropped); if (i % 25 === 0) process.stdout.write(`  ${i}… `); }
+    got.sort((a, b) => a - b); const hist = {}; for (const g of got) hist[g] = (hist[g] || 0) + 1;
+    console.log(`\n  deliveries + drops per day: ${Object.entries(hist).map(([k, v]) => `${k}:${v}`).join(' ')}`);
+    for (const t of [3, 4, 5, 6, 7, 8]) console.log(`  target ${t} → ${(got.filter(g => g >= t).length / N * 100).toFixed(0)}% would finish`);
+    console.log(`  mean score ${(scores.reduce((a, b) => a + b, 0) / N).toFixed(0)} · mean drops made ${(drops.reduce((a, b) => a + b, 0) / N).toFixed(1)}`);
+    await browser.close(); server.close(); return;
+  }
   console.log(`\nRANDOM-BUT-SANE BOTS × ${N}`);
-  let wins = 0; const byDelivered = [0, 0, 0, 0], endedIn = {}, t0 = Date.now();
-  for (let i = 1; i <= N; i++) { const r = await run({ job: 'random', plan: 'random', seed: i }, `random ${i}`);
-    if (r.won) wins++; byDelivered[Math.min(3, r.delivered)]++; endedIn[r.lastKind] = (endedIn[r.lastKind] || 0) + 1;
+  let wins = 0; const byDelivered = [0, 0, 0, 0, 0, 0, 0], endedIn = {}, t0 = Date.now();
+  for (let i = 1; i <= N; i++) { const r = await run({ job: 'random', plan: 'random', seed: i, along: 'random' }, `random ${i}`);
+    if (r.won) wins++; byDelivered[Math.min(6, r.delivered)]++; endedIn[r.lastKind] = (endedIn[r.lastKind] || 0) + 1;
     if (i % 25 === 0) process.stdout.write(`  ${i}… `); }
-  console.log(`\n  win rate ${(wins / N * 100).toFixed(1)}% · deliveries 0/1/2/3: ${byDelivered.join(' / ')} · ended while ${JSON.stringify(endedIn)} · ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+  console.log(`\n  win rate ${(wins / N * 100).toFixed(1)}% · deliveries 0/1/2/3/4/5/6+: ${byDelivered.join(' / ')} · ended while ${JSON.stringify(endedIn)} · ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   const rnd = results.filter(r => r.policy.job === 'random');
   const avg = k => (rnd.reduce((a, r) => a + r[k], 0) / rnd.length).toFixed(0);
-  console.log(`  mean waiting ${avg('waitTicks')}t · riding ${avg('rideTicks')}t · catches ${avg('catches')} · transfers ${avg('transfers')}`);
+  console.log(`  mean waiting ${avg('waitTicks')}t · riding ${avg('rideTicks')}t · catches ${avg('catches')} · transfers ${avg('transfers')} · drops taken ${avg('drops')} made ${avg('dropped')}`);
   // First-job anatomy: how long from shift start to the first delivery.
-  const firstDelivery = rnd.map(r => { const l = r.log.find(x => / OFF .* deliver/.test(x)); return l ? Number(l.split(':')[0]) : null; }).filter(x => x != null);
+  const firstDelivery = rnd.map(r => { const l = r.log.find(x => / OFF .* deliver| DROPPED/.test(x)); return l ? Number(l.split(':')[0]) : null; }).filter(x => x != null);
   firstDelivery.sort((a, b) => a - b);
   const q = p => firstDelivery[Math.floor(p * (firstDelivery.length - 1))];
   console.log(`  first delivery lands at tick: min ${q(0)} · median ${q(.5)} · p90 ${q(.9)} · max ${q(1)} (${firstDelivery.length} of ${rnd.length} ever delivered once)`);
@@ -152,7 +173,9 @@ server.listen(0, '127.0.0.1', async () => {
     const best = results.filter(r => r.policy.job === 'cheapest');
     ok(best.every(r => r.won), `a player who takes the cheapest job finishes the shift (${best.map(r => r.delivered + '/3').join(', ')})`);
     ok(byDelivered[0] === 0, `no bot ends a shift with nothing delivered (${byDelivered[0]} did)`);
-    console.log(`\nshifts: ${3 - fail} passed, ${fail} failed`);
+    const made = rnd.reduce((a, r) => a + r.dropped, 0);
+    ok(made > 0, `drops on the way are offered, taken and handed over (${made} across ${rnd.length} bots)`);
+    console.log(`\nshifts: ${4 - fail} passed, ${fail} failed`);
     process.exit(fail ? 1 : 0);
   }
 });

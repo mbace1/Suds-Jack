@@ -54,12 +54,12 @@ function rideStops(tm,r){const nodes=r.stops||[],a=nodes.indexOf(r.from),b=nodes
 function rideEtaText(tm){const m=tm.mobility,r=m?.rideProgress?.();if(!r?.position||!r.vehicleId)return'';const v=tm.liveNetwork?.vehicle?.(r.vehicleId);if(!v)return'';const idx=m.pathIndexFor(v.layer,r.to);if(idx==null)return'';const rest=Math.round(Math.abs(idx-r.position.pathIndex)*tm.liveNetwork.ticksPerIndex(v));return rest<=3?'ARRIVING':`~${rest}t`;}
 function rideStrip(tm){const m=tm.mobility,r=m?.rideProgress?.();if(!r)return'';const stops=rideStops(tm,r);if(stops.length<2)return'';const cur=stops.indexOf(r.current);
   const n=stops.length;
-  return `<div class="rideStrip" data-cur="${esc(String(r.current))}" style="position:relative;height:34px;margin:8px 4px 4px">${stops.map((id,i)=>{const passed=cur>=0&&i<cur,here=i===cur,last=i===n-1,first=i===0,x=(i/(n-1)*100).toFixed(2);
+  return `<div class="rideStrip" data-cur="${esc(String(r.current))}:${(tm.challenge?.along||[]).length}" style="position:relative;height:34px;margin:8px 4px 4px">${stops.map((id,i)=>{const passed=cur>=0&&i<cur,here=i===cur,last=i===n-1,first=i===0,x=(i/(n-1)*100).toFixed(2);
     const seg=last?'':`<span style="position:absolute;left:${x}%;width:${(100/(n-1)).toFixed(2)}%;top:6px;height:2px;background:${passed?'#233d4d':'#c5cec8'}"></span>`;
     const size=here?12:last?10:7;
     const dot=`<span style="position:absolute;left:${x}%;top:7px;width:${size}px;height:${size}px;margin-left:-${size/2}px;margin-top:-${size/2}px;border-radius:50%;background:${passed||here?'#233d4d':'#fffdf7'};border:2px solid ${last?'#e2683c':'#233d4d'};box-sizing:border-box"></span>`;
     const label=first||last||here?`<span style="position:absolute;top:16px;${last?'right:0;text-align:right':first?'left:0':`left:${x}%;transform:translateX(-50%)`};font-size:9px;white-space:nowrap;color:${here?'#233d4d':'#69777a'};font-weight:${here?800:400}">${esc(nodeName(tm.city,id))}</span>`:'';
-    return seg+dot+label;}).join('')}</div>`;}
+    return seg+dot+label;}).join('')}${(m.dropProgress?.()||[]).map(d=>{const x=(d.fraction*100).toFixed(2);return `<span title="${esc(d.name)}" style="position:absolute;left:${x}%;top:7px;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#e2683c;border:2px solid #fffdf7;box-sizing:border-box"></span><span style="position:absolute;left:${x}%;top:-6px;transform:translateX(-50%);font-size:8px;color:#b34a36;white-space:nowrap">${esc(d.name)}</span>`;}).join('')}</div>`;}
 function wireMobility(tm,box){const m=tm.mobility;if(!m)return;box.querySelector('#getOff')?.addEventListener('click',()=>{m.getOff();render(tm,true);});box.querySelectorAll('.exitChoice').forEach(btn=>btn.onclick=()=>{const res=m.getOffEarly(btn.dataset.at);if(res?.error)box.insertAdjacentHTML('beforeend',`<p style="font-size:11px;color:#b34a36">${esc(res.error)}</p>`);render(tm,true);});const walks=m.walks?.()||[];box.querySelectorAll('.walkChoice').forEach(btn=>btn.onclick=()=>{const res=m.beginWalk(walks[Number(btn.dataset.walk)]);if(res?.error)box.insertAdjacentHTML('beforeend',`<p style="font-size:11px;color:#b34a36">${esc(res.error)}</p>`);render(tm,true);});}
 // THE KEY IS STRUCTURAL, and the clock is deliberately not in it.
 //
@@ -83,7 +83,7 @@ function structuralKey(tm){const ch=tm.challenge,st=tm.mobility?.status?.();
 // tree. Everything it writes is text or an attribute on an element that stays
 // exactly where it was, so a press in flight still lands.
 function refreshArrivals(tm){const box=document.getElementById('routeChoices');
-  {const eta=box?.querySelector?.('#rideEta');if(eta){eta.textContent=rideEtaText(tm);const strip=box.querySelector('.rideStrip'),r=tm.mobility?.rideProgress?.();if(strip&&r&&strip.dataset.cur!==String(r.current)){strip.outerHTML=rideStrip(tm);}}}
+  {const eta=box?.querySelector?.('#rideEta');if(eta){eta.textContent=rideEtaText(tm);const strip=box.querySelector('.rideStrip'),r=tm.mobility?.rideProgress?.();if(strip&&r&&strip.dataset.cur!==`${r.current}:${(tm.challenge?.along||[]).length}`){strip.outerHTML=rideStrip(tm);}}}
   const choices=box?._choices;if(!box||!choices)return;
   for(const btn of box.querySelectorAll('.catchChoice')){
     const c=choices[Number(btn.dataset.choice)];if(!c)continue;
