@@ -97,6 +97,8 @@
   more may arise). §8.5. Q17 (within-family differentiation) queued.
 - **Docs:** Q17 answered — within a family colour = species, size ≈ speed;
   §8.6 notes WEEVA/SPITTOR/SPLITTA break the size-speed rule. Q18 queued.
+- **Docs:** Q18 answered — no pre-fire tell; the first shot teaches it. §8.7.
+  Q19 (the fish / SCHOOL) queued.
 
 **Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
 break and the lying version line were mine and are both verified here. The
