@@ -7,11 +7,11 @@
 // synced to the real state so nothing can drift. `window.__sk` is the seam
 // the smoke test drives, and it can set the replay delays to zero.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES } from './data.js?v=31';
-import * as engine from './engine.js?v=31';
+import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=39';
+import * as engine from './engine.js?v=39';
 import { Arena } from './scene.js?v=32';
-import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=31';
-import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=31';
+import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=37';
+import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=37';
 import { paintCardPic } from './cardart.js?v=31';
 import { drawMap } from './map.js?v=31';
 import { sfx, unlock, setMuted, isMuted } from './audio.js?v=31';
@@ -25,7 +25,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 33;
+const VERSION = 39;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -115,7 +115,7 @@ setMuted(store.get('mute', false));
 // whenever the house answer moves, and a stored style older than it is
 // dropped rather than obeyed. Everything else the game remembers — the theme,
 // the seed, the run — is untouched: this is only for the look.
-const LOOK_REV = 2;                       // 2 = plates, die-cut, paper motion
+const LOOK_REV = 3;                       // 3 = plates, the CUT-OUT card, paper motion
 const LOOK_KEYS = ['art', 'cut', 'figures'];
 if (store.get('lookRev', 0) < LOOK_REV) {
   for (const k of LOOK_KEYS) { try { localStorage.removeItem('slayKallio.' + k); } catch { /* private mode */ } }
@@ -128,7 +128,18 @@ setFigureMotion(store.get('figures', 'paper'));
 // starts on 'drawn' and the roster repaints itself once the plates land, so a
 // slow decode never shows a blank card.
 setFigureArt(store.get('art', 'turf'));
-setFigureCut(store.get('cut', 'silhouette'));
+setFigureCut(store.get('cut', 'card'));
+
+// THE LADDER IS A DECISION, NOT A COMPARISON, so unlike `art`/`cut`/`figures`
+// it is deliberately NOT in LOOK_KEYS: a bump to the house look must never
+// reset the difficulty somebody earned. The highest rung reached is per
+// character, because a win on the Cart Pusher says nothing about the Drinker.
+const ascHighOf = ch => Math.min(ASC_MAX, store.get(`asc.${ch}`, 0));
+let ascSel = 0;
+const ascRaise = ch => {
+  const at = Math.min(ASC_MAX, ascHighOf(ch) + 1);
+  if (at > ascHighOf(ch)) store.set(`asc.${ch}`, at);
+};
 // The plates are the default now, so the preload is on the critical path for
 // how the game LOOKS on arrival rather than for a toggle nobody has touched.
 // A figure whose plate has not decoded falls back to the drawn cutout and
@@ -668,6 +679,18 @@ function renderMenu() {
   $('#figs').textContent = `figures: ${figureMotion()}`;
   $('#art').textContent = `art: ${figureArt()}`;
   $('#cut').textContent = `cut: ${figureCut()}`;
+  // The rung is per character, so the control has to follow the roster
+  // selection — and it names the rule you are about to take on rather than a
+  // number, because "ascension 4" tells a first-time player nothing.
+  const ch = chars[menuSel.char];
+  const high = ascHighOf(ch);
+  ascSel = Math.min(ascSel, high);
+  $('#asc').textContent = `ascension ${ascSel}${high ? ` of ${high}` : ''}`;
+  $('#asc').disabled = high === 0;
+  $('#asc').title = high === 0 ? 'Win a run with this one to open the ladder.' : '';
+  $('#ascnote').textContent = high === 0
+    ? 'Win with this one and the ladder opens.'
+    : ascSel === 0 ? 'The run as it was built.' : ASCENSION.slice(0, ascSel).map(r => r.text).join(' ');
   const best = store.get('best', null);
   $('#best').textContent = best ? `best: ${best.won ? 'cleared the run' : `fight ${best.fights + 1}`} as ${CHARACTERS[best.character]?.[theme].name ?? best.character}` : '';
 }
@@ -688,6 +711,11 @@ bindActivation($('#mute'), () => { setMuted(!isMuted()); store.set('mute', isMut
 bindActivation($('#art'), () => { setArt(figureArt() === 'turf' ? 'drawn' : 'turf'); });
 // The cut is baked into the texture like the art is, so it respawns too.
 bindActivation($('#cut'), () => { setCut(figureCut() === 'card' ? 'silhouette' : 'card'); });
+bindActivation($('#asc'), () => {
+  const high = ascHighOf(chars[menuSel.char]);
+  ascSel = high === 0 ? 0 : (ascSel + 1) % (high + 1);
+  renderMenu();
+});
 function setCut(k) {
   setFigureCut(k); store.set('cut', figureCut());
   renderMenu();
@@ -715,7 +743,7 @@ function setTheme(t) {
 function startRun(character) {
   unlock();
   const seed = Number(params.get('seed')) || ((Date.now() ^ (Math.random() * 1e9)) >>> 0);
-  state = engine.createRun({ seed, character, theme });
+  state = engine.createRun({ seed, character, theme, asc: Math.min(ascSel, ascHighOf(character)) });
   cursor = 0; queue.length = 0; busy = false; sel = -1; target = 0;
   plateStage = null;
   engine.startRun(state);
@@ -968,8 +996,22 @@ function showResult(won) {
   const fellAt = state.phase === 'lost' ? (ENCOUNTERS[state.encounter]?.[theme].name ?? 'the road') : '';
   p.querySelector('.stats').textContent = `${won ? 'cleared both acts' : `fell in act ${state.act + 1} at ${fellAt}`} · ${s.fights} fights · ${s.events} events · ${s.cardsPlayed} cards · ${s.damageDealt} damage · biggest hit ${s.biggestHit} · ${state.jokers.length} ${T().jokerWord}`;
   const best = store.get('best', null);
-  const score = { won, fights: s.fights, character: state.character, at: Date.now() };
+  const score = { won, fights: s.fights, character: state.character, at: Date.now(), asc: state.asc ?? 0 };
   if (!best || (won && !best.won) || (won === !!best.won && s.fights > best.fights)) store.set('best', score);
+  // A WIN OPENS THE NEXT RUNG, and only a win — reaching act two at rung 3 is
+  // not rung 4. It raises the ladder by one rather than to the rung played, so
+  // a player who is handed a high rung some other way cannot skip the ones
+  // under it. The next screen names what just opened, because an unlock
+  // nobody notices is not a reward.
+  if (won && (state.asc ?? 0) >= ascHighOf(state.character)) {
+    const before = ascHighOf(state.character);
+    ascRaise(state.character);
+    const now = ascHighOf(state.character);
+    if (now > before) {
+      const r = ASCENSION.find(x => x.n === now);
+      p.querySelector('.stats').textContent += ` · ASCENSION ${now} OPENS — ${r.text}`;
+    }
+  }
 }
 
 // ── deck view ────────────────────────────────────────────────────────────
