@@ -312,6 +312,7 @@ option is spelled out and the reading is flagged so it can be corrected.
 | 11 | What to take from Blade Rush's campaign? | **"Like Geometry Wars 3, which we can use as reference. It has different rooms with timed goals and S, A, B, C, F tiers. Along with added mechanics, level shapes, etc."** — so the campaign unit is a *room* with a *timed goal*, graded **S/A/B/C/F** (an F tier we do not have), and the path adds **mechanics and level shapes** as it goes. GW3 is the reference to read. | decided (reference) |
 | 16 | What are the families built on? | **"Domes are one family, same with cubes, others are other family, and more may arise."** — family = **shape class**. Dome, cube, and each one-off silhouette is its own family; new shapes are new families. | decided |
 | 17 | Within one family, how are species told apart? | **"Domes are different hues and different sizes. Big are likely slower, may move differently. Some divide etc. Colour is main difference."** — colour = species identity within the family; size correlates with speed/behaviour. | decided |
+| 18 | How does a dome show it shoots, before it does? | **a) They don't — the first shot teaches it**, like every other trait. No stance, core or spout. | decided |
 | — | Colour for shooting vs non-shooting? | Not that axis — **families**. Owner's direction verbatim in §8. | direction; questions in §8.3 |
 
 **The Rush note matters.** The campaign door being "Rush" does not commit it
@@ -542,3 +543,18 @@ b) A **stance**: shooters stop to fire (HOLDER already holds its ground); the
 c) A **lit core** while armed, dark when muzzled (CLOSE COMBAT).
 d) A silhouette detail on the gel (spout / aperture) — a within-family
    modifier, not a new family.
+
+### 8.7 Q18 answered — the gun is learned, not shown
+
+**a)** No pre-fire tell on the body. A species' gun is one more thing its
+colour means, learned by being shot at once. This closes the shooter/non-
+shooter thread where it began: colour = species, and species = everything it
+does, gun included. (BOTFLY's charge flicker and VOLATILE's strobe stay —
+those telegraph a *shot*, not a *shooter*.)
+
+**Q19, next:** the fish. The arc-movers (`SCHOOL` role: SPLITTA, the MINIs,
+GRUNT, FLIT, GHOST) are the Blade Rush lineage — a movement pattern, not a
+shape. Under "family = shape", SPLITTA is a dome. Is SCHOOL:
+a) just a behaviour some domes have (as now),
+b) its own shape family (a fish silhouette, "hitbox shown in style"),
+c) the campaign door's own roster, separate from ARCADE's?
