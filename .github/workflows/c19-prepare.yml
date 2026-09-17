@@ -1,0 +1,98 @@
+name: Prepare C19 hub candidates
+on:
+  push:
+    branches: [qa/c19-hub-delivery]
+    paths: [.github/workflows/c19-prepare.yml]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch pinned source and preserve the published comparison package
+        run: |
+          git init /tmp/c19-source
+          git -C /tmp/c19-source remote add origin https://github.com/mbace1/piritori-eden.git
+          git -C /tmp/c19-source fetch --depth=1 origin dcaadd8a1103adbd9838503180e5d9ac7af6152a
+          git -C /tmp/c19-source checkout --detach FETCH_HEAD
+          git fetch origin main gh-pages
+          git worktree add --detach /tmp/c19-live origin/gh-pages
+          python3 /tmp/c19-source/tools/publish/arena_lab_release.py --source /tmp/c19-source --commit dcaadd8a1103adbd9838503180e5d9ac7af6152a --deployed-manifest /tmp/c19-live/piritori-c17/art/v3/manifest.json --previous-cabinet /tmp/c19-live/piritori-c17 --output /tmp/c19-package
+      - name: Prepare scoped content changes on both actual baselines
+        run: |
+          cat > /tmp/c19-hub-edit.py <<'PY'
+          from pathlib import Path
+          import json,re,shutil,subprocess
+          def read(p):return Path(p).read_bytes().decode()
+          def write(p,s):Path(p).parent.mkdir(parents=True,exist_ok=True);Path(p).write_bytes(s.encode())
+          # Replace this cabinet only. Do not copy another game's source/deployment history.
+          shutil.rmtree('piritori-c17');shutil.copytree('/tmp/c19-package','piritori-c17')
+          s=read('hub/games.js');start=s.index("id: 'optionc-lab'");end=s.index('\n  },',start)
+          part=s[start:end].replace('NIGHT SHIFT C.18','NIGHT SHIFT C.19').replace('campaign=1&release=18','campaign=1&release=19')
+          notes=[
+           'C.19 — Focused fighter badges, selected/target rings and a labelled exit. VIEW restores all statistics. Crew selection clears the command area. Rescue, retreat, defeat and reload acceptance expanded; combat rules and procedural characters retained. Physical phone/iPad retest pending.',
+           'C.19 — Tiiviit hahmotunnukset, valinta- ja kohdemerkit sekä merkitty uloskäynti. VIEW näyttää kaikki tilastot. Hahmovalinta sulkee ryhmävalikon. Pelisäännöt ja väliaikaishahmot säilyvät; puhelimen ja iPadin laitetesti odottaa.',
+           'C.19 — 人物ラベルを簡潔化し、選択対象と出口を明示。VIEWで全数値を表示。人物選択で名簿を閉じます。既存ルールと仮キャラクターを維持。実機確認は未完了。'
+          ]
+          count=[0]
+          def note(m):
+              i=count[0];count[0]+=1;return m[1]+notes[i]+m[3]
+          part=re.sub(r"(note:\s*')([^']*)(')",note,part);assert count[0]==3
+          assert "release=19" in part and 'NIGHT SHIFT C.19' in part
+          write('hub/games.js',s[:start]+part+s[end:])
+          versions=json.loads(read('hub/versions.json'));assert versions['optionc-lab']['v']=='18'
+          versions['optionc-lab'].update(v='19',n=19000);write('hub/versions.json',json.dumps(versions,ensure_ascii=False,indent=2)+'\n')
+          # Advance only the three catalogue import layers, preserving concurrent hub work.
+          files=[Path('index.html'),*Path('hub').rglob('*.js')]
+          for module in ['games.js','hub.js','hub-entry.js']:
+              pattern=re.compile(r'((?:\./|hub/)?'+re.escape(module)+r'\?v=)(\d+)')
+              tokens={int(m[2]) for p in files for m in pattern.finditer(read(p))}
+              assert len(tokens)==1,(module,tokens)
+              version=next(iter(tokens))+1;hits=0
+              for p in files:
+                  text=read(p);new,n=pattern.subn(lambda m:m[1]+str(version),text)
+                  if n:write(p,new);hits+=n
+              assert hits>0
+          # The validators come from the current development baseline; no historical pin.
+          for name in ['test/piritori-c18-package.mjs','test/piritori-c18-package-regressions.mjs','test/piritori-c18-entry.cjs']:
+              write(name,subprocess.check_output(['git','show','origin/main:'+name]).decode())
+          s=read('test/piritori-c18-entry.cjs')
+          old="const fs=require('node:fs');";assert s.count(old)==1
+          s=s.replace(old,old+"\nconst {resolve}=require('node:path');\nconst build=JSON.parse(fs.readFileSync(resolve(__dirname,'../piritori-c17/release.json'),'utf8')).build;\nconst version=build.slice(2);")
+          assert s.count("'18'")==2;s=s.replace("'18'",'version').replace("'C.18'",'build')
+          old="assert.match(await about.locator('p').textContent(),/^C\\.18 —/);";assert old in s
+          s=s.replace(old,"assert.ok((await about.locator('p').textContent()).startsWith(build+' —'));")
+          write('test/piritori-c18-entry.cjs',s)
+          PY
+          mkdir -p /tmp/c19-candidates
+          for ITEM in 'main release/c19-night-shift' 'gh-pages deploy/c19-night-shift'; do
+            read -r BASE BRANCH <<< "$ITEM"
+            git checkout -B "c19-$BASE-work" "origin/$BASE"
+            python3 /tmp/c19-hub-edit.py
+            node test/piritori-c18-package.mjs
+            node test/piritori-c18-package-regressions.mjs
+            node --check test/piritori-c18-entry.cjs
+            node --check hub/hub.js
+            node --check hub/games.js
+            git add piritori-c17 hub/games.js hub/hub.js hub/hub-entry.js hub/versions.json index.html test/piritori-c18-entry.cjs test/piritori-c18-package.mjs test/piritori-c18-package-regressions.mjs
+            git -c core.whitespace=cr-at-eol diff --cached --check
+            git config user.name 'Piritori release worker'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'C.19: scoped Night Shift battlefield clarity and outcome acceptance'
+            git push origin "HEAD:refs/heads/$BRANCH"
+            git rev-parse HEAD > "/tmp/c19-candidates/$BASE-commit.txt"
+            git diff --stat HEAD^ HEAD > "/tmp/c19-candidates/$BASE-changes.txt"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c19-hub-candidates
+          path: /tmp/c19-candidates
+          retention-days: 3
