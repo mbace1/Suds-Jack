@@ -1,0 +1,19 @@
+name: Piritori C18 package integrity
+on:
+  pull_request:
+    paths:
+      - 'piritori-c17/**'
+      - 'test/piritori-c18-package.mjs'
+      - '.github/workflows/piritori-c18-package.yml'
+permissions:
+  contents: read
+jobs:
+  package-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node test/piritori-c18-package.mjs
