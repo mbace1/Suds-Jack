@@ -2,8 +2,8 @@
 // Keep the deployed brand-board implementation intact, then load the newer
 // self-mounting conversation/brain/layout layers exactly once.
 import './board-base.js';
-import './project-conversation.js?v=1';
-import './brain-conversation.js?v=1';
+import './project-conversation.js?v=3';
+import './brain-conversation.js?v=2';
 import './chat-layout-fix.js';
 import './news-wire.js';
 import './news-conversation.js';

@@ -1,6 +1,6 @@
 // TOKO MIDORI GAMES — local small-brain layer.
 // Retrieval + corrections + associations + composition. No network/model call.
-import projects from './project-knowledge.js?v=1';
+import projects from './project-knowledge.js?v=2';
 const KEY='tokoBrain.v1';
 const SOURCE_WEIGHT={owner:100,authority:95,lock:92,design:85,roadmap:78,code:72,catalogue:60,memory:50,inferred:35};
 const read=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{corrections:[],links:{},queries:[]}}catch{return{corrections:[],links:{},queries:[]}}};
