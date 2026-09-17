@@ -110,6 +110,8 @@
   which the shipped movement model lacks** — a long body draws its own
   heading, so an instant turn renders as a corner; and a long body's length
   must be sampled by distance, not per frame. Not in the game's module graph.
+- **Sketchbook, owner ask:** slug lengthened to 11 segments; a middle hit
+  now leaves two five-segment slugs that still read as slugs. GIFs updated.
 
 **Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
 break and the lying version line were mine and are both verified here. The
