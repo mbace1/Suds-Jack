@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=12';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=13';
 import {TransitLayers} from './transit-layers.js?v=6';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=5';
@@ -13,7 +13,7 @@ import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.35';
+const BUILD_VERSION='2.36';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -381,7 +381,7 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
     ctx.fillStyle=col;ctx.strokeStyle=ink;ctx.lineWidth=1.5*d;ctx.beginPath();ctx.roundRect(x,y-7*d,w,14*d,3*d);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(name,x+4*d,y+.5*d);}}
   ctx.restore();}
 
-function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').textContent=`${challenge.index}/${DELIVERY_TARGET}`;$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?`${challenge.remaining()}t`:`${challenge.score} pts`;$('cargoHud').textContent=c?c.icon:'JOB';$('cargoHud').style.borderColor=challenge.active?cargoColour(challenge.active.cargo):'';{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
+function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').textContent=`${challenge.index}/${challenge.target}${challenge.drops?` +${challenge.drops}`:''}`;$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?`${challenge.remaining()}t`:`${challenge.score} pts`;$('cargoHud').textContent=c?c.icon:'JOB';$('cargoHud').style.borderColor=challenge.active?cargoColour(challenge.active.cargo):'';{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
 // THE JOB SHEET HAS THREE WRITERS AND HAD NO OWNER.
 // paintSheet (this file), the dispatch board (job-board-v212.js) and the catch
 // panel (route-choice.js) all wrote into #sheet on their own timers, and each
@@ -411,7 +411,7 @@ function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challen
 //
 // While riding, the two things you can DO are get off early and change plan, so
 // those lead; standing at a stop, boarding leads.
-const SHEET_SLOTS=['rideStatus','recoveryControls','routeChoices','jobHead','hubTactics','jobBoard'];
+const SHEET_SLOTS=['rideStatus','recoveryControls','routeChoices','alongBoard','jobHead','hubTactics','jobBoard'];
 function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=$('sheet');if(!sheet)return null;
   for(const s of SHEET_SLOTS){let el=document.getElementById(s);
     if(!el){el=document.createElement('section');el.id=s;sheet.append(el);}
@@ -422,7 +422,7 @@ function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=
 
 function paintSheet(){if(!challenge)return;const b=sheetSlot('jobHead');if(!b)return;if(!challenge.active){b.innerHTML=document.getElementById('jobBoard')?.innerHTML?'':'<p class="hint">Dispatching local jobs…</p>';return;}const j=challenge.active,c=challenge.cargoRule();b.innerHTML=`<div class="jobTop"><span class="cargoBadge" style="border-color:${cargoColour(j.cargo)}">${c.icon}</span><div><h2>JOB ${challenge.index+1}/${DELIVERY_TARGET} · ${esc(challenge.routeLabel())}</h2><p class="cargoRule">${esc(c.rule)}</p></div></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%"></i></div><p class="hint">${challenge.remaining()}t left · score ${challenge.score}</p>`;}
 function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m of msgs.slice(0,2)){const d=document.createElement('div');d.textContent=m;f.append(d);}}
-function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${DELIVERY_TARGET}</b></p><p>score <b>${challenge.score}</b></p><p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}$('end').hidden=false;}
+function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}$('end').hidden=false;}
 
 // THE GROUND IS CACHED. Water, streets and place names are three of the four
 // most expensive layers on the board and NONE of them moves: they change when

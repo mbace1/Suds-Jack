@@ -1,5 +1,50 @@
 # Toko Move — versions
 
+## v2.36 — 2026-09-17
+
+**ON YOUR WAY — Paperboy's loop on a tram.** Waiting was still 22% of a shift
+and riding was 600 ticks with nothing to press. The main job says where you
+are going; these say what you could drop at the REAL stops you will pass
+getting there — the HSL stop table (292 stops), not the twenty-node game
+graph, because between two graph nodes a tram calls at three to eight stops
+nobody could deliver to before. A drop is made from aboard while the vehicle
+stands at the stop: no headway, no get-off. One ride serves two or three
+jobs, and choosing a line is choosing what it passes — every offer names the
+line that passes it, which is the point. Two offers per stop, a bag of two.
+
+**Drops pay score and count in their own tally; the shift's ask stays the
+authored A→B jobs.** Measured first the other way with a survey bot playing
+the whole day with no target: a day held ~12 deliveries of which ten were
+drops, and the jobs had become a chauffeur for a drop route. The owner's brief
+says A→B jobs are the objective, so the HUD reads `1/3 +4`, the end screen
+gets a *drops on the way* line, and a shift is won the same way it was.
+Random-but-sane bots (which take a drop on their chosen line half the time)
+win 75% of 40 and hand over ~6 drops each.
+
+**Found on the way: the first drop stranded the courier.** The mobility
+controller keyed its leg on `ch.index`, and a drop bumped index without
+changing the job, so `syncLeg` read a new leg and wiped the ride from under
+the courier — status "riding", aboard nothing, for the rest of the shift. The
+random bots fell 60% → 37% the moment drops existed and every loss was
+"ended riding, 1 delivered". The key is the job's id now.
+
+The target is a per-shift property (`challenge.target`, `DELIVERY_TARGET` the
+default) so a campaign city or the survey bot can carry its own; the HUD and
+the end screen read it from the challenge.
+
+UI: the ON YOUR WAY panel sits under the boarding options (its own sheet slot,
+`alongBoard`) and vanishes once you board; the ride strip marks each drop at
+its true fraction of the leg with its name. `shifts.cjs` gained `--survey`
+and a fourth gate check (drops are offered, taken and handed over — mutation
+that never hands one over: caught).
+
+Reference note: the owner pointed at Trafficity (Steam). Steam, SteamDB,
+Reddit, YouTube, Wikipedia and the games press are all blocked from this
+sandbox and nothing about it is indexed by search yet, so the reference pass
+against it has not happened. The insight built here is from the reference in
+the repo — Paperboy — whose whole loop is deliveries along a route you are
+already travelling.
+
 ## v2.35 — 2026-09-13
 
 **The shift could not be won, and now it can — measured, not felt.** Nothing in
