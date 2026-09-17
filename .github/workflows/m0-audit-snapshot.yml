@@ -1,0 +1,43 @@
+name: M0 city audit snapshot
+on:
+  push:
+    branches: [qa/c19-hub-delivery]
+    paths: [.github/workflows/m0-audit-snapshot.yml]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Export tracked city text on both baselines
+        run: |
+          mkdir -p /tmp/m0-audit
+          python3 - <<'PY'
+          import pathlib,subprocess,json,hashlib
+          out=pathlib.Path('/tmp/m0-audit')
+          suffixes={'.js','.mjs','.cjs','.css','.html','.json','.md','.yml','.py'}
+          for ref,label in [('origin/main','main'),('origin/gh-pages','pages')]:
+              sha=subprocess.check_output(['git','rev-parse',ref]).decode().strip()
+              (out/(label+'-commit.txt')).write_text(sha+'\n')
+              names=subprocess.check_output(['git','ls-tree','-r','--name-only',ref]).decode().splitlines()
+              hashes={}
+              for name in names:
+                  p=pathlib.Path(name)
+                  allowed=name in ('index.html','sw.js','AGENTS.md','DEPLOY_SPEC.md') or name.startswith(('piritori/js/','piritori/test/','piritori/map/','piritori/content/','piritori/missions/','piritori/market/','piritori/people/','hub/','test/','scripts/','.github/workflows/')) or (p.parent==pathlib.Path('piritori') and p.suffix in {'.md','.html','.css'})
+                  if not allowed or p.suffix not in suffixes:continue
+                  raw=subprocess.check_output(['git','show',ref+':'+name])
+                  target=out/label/p;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(raw)
+                  hashes[name]=hashlib.sha256(raw).hexdigest()
+              (out/(label+'-hashes.json')).write_text(json.dumps(hashes,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: m0-city-audit
+          path: /tmp/m0-audit
+          include-hidden-files: true
+          retention-days: 3
