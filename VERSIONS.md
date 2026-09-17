@@ -99,6 +99,9 @@
   §8.6 notes WEEVA/SPITTOR/SPLITTA break the size-speed rule. Q18 queued.
 - **Docs:** Q18 answered — no pre-fire tell; the first shot teaches it. §8.7.
   Q19 (the fish / SCHOOL) queued.
+- **Docs:** Q19 answered — the arc-movers get their own shape family, but
+  the silhouette (fish / bugs / squiggly lines) is deliberately left open to
+  explore in the lab. §8.8; the family RULES are now settled.
 
 **Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
 break and the lying version line were mine and are both verified here. The

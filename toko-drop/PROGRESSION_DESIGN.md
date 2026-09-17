@@ -313,6 +313,7 @@ option is spelled out and the reading is flagged so it can be corrected.
 | 16 | What are the families built on? | **"Domes are one family, same with cubes, others are other family, and more may arise."** — family = **shape class**. Dome, cube, and each one-off silhouette is its own family; new shapes are new families. | decided |
 | 17 | Within one family, how are species told apart? | **"Domes are different hues and different sizes. Big are likely slower, may move differently. Some divide etc. Colour is main difference."** — colour = species identity within the family; size correlates with speed/behaviour. | decided |
 | 18 | How does a dome show it shoots, before it does? | **a) They don't — the first shot teaches it**, like every other trait. No stance, core or spout. | decided |
+| 19 | The fish / SCHOOL — behaviour, shape family, or the campaign's roster? | **b), loosely: "We can have a family for those, but let's play with shapes more. The fish can be bugs as well or just squiggly lines."** — the arc-movers get their own shape family; what that shape IS stays open and wants exploration, not a decision. | decided (family yes, shape open) |
 | — | Colour for shooting vs non-shooting? | Not that axis — **families**. Owner's direction verbatim in §8. | direction; questions in §8.3 |
 
 **The Rush note matters.** The campaign door being "Rush" does not commit it
@@ -558,3 +559,37 @@ shape. Under "family = shape", SPLITTA is a dome. Is SCHOOL:
 a) just a behaviour some domes have (as now),
 b) its own shape family (a fish silhouette, "hitbox shown in style"),
 c) the campaign door's own roster, separate from ARCADE's?
+
+### 8.8 Q19 answered — the arc-movers get a family; the shape is open
+
+> "We can have a family for those, but let's play with shapes more. The fish
+> can be bugs as well or just squiggly lines."
+
+So SCHOOL becomes a **shape family** — not a behaviour some domes have. But
+the silhouette is not chosen: *fish*, *bugs* and *squiggly lines* are three
+different readings of the same movement, and the instruction is to play with
+them rather than pick one from a doc.
+
+**This is the first family whose shape has to be designed rather than
+observed**, and it is the natural end of the Q&A: the remaining work is
+drawing, not answering. Three notes for whoever picks it up:
+
+- **The method is `ART_PIPELINE.md`'s — every stage ends in a picture.**
+  `scripts/enemy-loop.mjs` records a looping GIF of an enemy *behaving*,
+  driven by the real game code. An arc-mover is a movement first, so a still
+  silhouette cannot settle it; the loop can. Add a SCENARIO rather than
+  hand-rolling a capture.
+- **The lab is the place, not the game.** `enemy-lab.html` is the visual
+  source of truth and is rebuilt on `js/specimen.js`, so a candidate shape
+  can be looked at without touching the shipped roster.
+- **"Squiggly lines" is a real third option, not a joke about the other
+  two.** A tube/ribbon along the movement path is a different rendering
+  problem from a rigid body — closer to `DRAPER`'s loom or a trail than to
+  a mesh — and would be the roster's first non-solid silhouette. If that is
+  the direction, it belongs in the TSL pass, not a `BoxGeometry`.
+
+**Q&A status: the family rules are settled.** shape = family · colour =
+species · size ≈ speed · the gun is learned, not shown · domes, cubes, the
+one-offs and now the arc-movers are families, and more may arise. What is
+left is §5's remaining questions (what campaign progress buys, difficulty
+tiers, what we measure) and the drawing above.
