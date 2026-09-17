@@ -1,0 +1,54 @@
+# One-shot post-publication evidence, run only when this QA branch is pushed.
+name: Piritori C18 public acceptance
+on:
+  push:
+    branches: ['qa/piritori-c18-public-check']
+permissions:
+  contents: read
+jobs:
+  public-cabinet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify public release receipt and every public cabinet hash
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,mkdirSync,writeFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const base='https://mbace1.github.io/Suds-Jack/piritori-c17/';
+          const expected=JSON.parse(readFileSync('piritori-c17/release.json','utf8'));
+          async function get(path){
+            const r=await fetch(new URL(path,base),{signal:AbortSignal.timeout(45000),headers:{'Cache-Control':'no-cache'}});
+            assert.equal(r.status,200,`${path} HTTP status`);
+            return Buffer.from(await r.arrayBuffer());
+          }
+          const actual=JSON.parse((await get('release.json')).toString('utf8'));
+          assert.deepEqual(actual,expected,'public release receipt is the tested deployment');
+          const files=Object.entries(expected.sha256);
+          for(let i=0;i<files.length;i+=6)await Promise.all(files.slice(i,i+6).map(async([path,hash])=>{
+            assert.equal(createHash('sha256').update(await get(path)).digest('hex'),hash,`public bytes: ${path}`);
+          }));
+          mkdirSync('/tmp/c18-public',{recursive:true});
+          const receipt={checkedAt:new Date().toISOString(),build:actual.build,source:actual.source_commit,files:files.length,base,physicalDevicesVerified:false};
+          writeFileSync('/tmp/c18-public/public-hashes.json',JSON.stringify(receipt,null,2));
+          console.log(receipt);
+          JS
+      - run: npm install --prefix /tmp/piritori-test playwright
+      - run: /tmp/piritori-test/node_modules/.bin/playwright install --with-deps chromium
+      - name: Follow the public Hub card through an actual outing and return
+        env:
+          NODE_PATH: /tmp/piritori-test/node_modules
+          HUB_BASE_URL: https://mbace1.github.io/Suds-Jack/
+          C18_ENTRY_OUTPUT: /tmp/c18-public
+        run: node test/piritori-c18-entry.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c18-public-acceptance
+          path: /tmp/c18-public
+          retention-days: 3
