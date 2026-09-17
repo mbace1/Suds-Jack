@@ -650,4 +650,10 @@ they matter:
    of these problems: it is spheres, so it hit-tests, stands still and
    instances like everything else already does.
 
+**Owner: "Try the longer slug, 11 segments."** Done; the GIFs above are the
+11-segment build (`segments 11, spacing 0.50, tail 0.18`). A middle hit now
+leaves `2 slugs / 10 segments` — five each, still slug-shaped, still with a
+readable head at each end — instead of 7's two three-segment blobs. The
+split reads as *two animals* now, which is what the rule needs.
+
 **Not decided.** These are two built things to look at, not a recommendation.

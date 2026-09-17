@@ -159,7 +159,7 @@ export function createRibbon(scene, {
 // segment and the only one carrying the bright core; the tail tapers away.
 export function createSlug(scene, {
   color = 0x88ff22, x = 0, z = 0, speed = 2.2, weave = 0.8,
-  segments = 7, spacing = 0.52, headRadius = 0.46, tailRadius = 0.20,
+  segments = 11, spacing = 0.50, headRadius = 0.46, tailRadius = 0.18,
 } = {}) {
   const slugs = [];
 
