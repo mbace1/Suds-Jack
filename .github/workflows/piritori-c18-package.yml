@@ -4,6 +4,7 @@ on:
     paths:
       - 'piritori-c17/**'
       - 'test/piritori-c18-package.mjs'
+      - 'test/piritori-c18-entry.cjs'
       - '.github/workflows/piritori-c18-package.yml'
 permissions:
   contents: read
@@ -17,3 +18,34 @@ jobs:
         with:
           node-version: '22'
       - run: node test/piritori-c18-package.mjs
+  deployment-entry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out the exact scoped deployment candidate
+        uses: actions/checkout@v4
+        with:
+          ref: b8aba32185f5f569d4141c8cf13f455781d879fc
+          path: candidate
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify every shipping file against the corrected receipt
+        run: node test/piritori-c18-package.mjs candidate/piritori-c17
+      - run: npm install --prefix /tmp/piritori-test playwright
+      - run: /tmp/piritori-test/node_modules/.bin/playwright install --with-deps chromium
+      - name: Play through the actual Hub link on portrait and landscape
+        env:
+          NODE_PATH: /tmp/piritori-test/node_modules
+          HUB_BASE_URL: http://127.0.0.1:8781/
+          C18_ENTRY_OUTPUT: /tmp/c18-entry
+        run: |
+          python3 -m http.server 8781 --bind 127.0.0.1 --directory candidate > /tmp/c18-server.log 2>&1 &
+          node test/piritori-c18-entry.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c18-deployment-entry
+          path: /tmp/c18-entry
+          retention-days: 3
