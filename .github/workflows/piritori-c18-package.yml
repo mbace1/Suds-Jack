@@ -8,6 +8,7 @@ on:
       - 'hub/hub-entry.js'
       - 'hub/versions.json'
       - 'index.html'
+      - 'sw.js'
       - 'test/piritori-c18-package.mjs'
       - 'test/piritori-c18-package-regressions.mjs'
       - 'test/piritori-c18-entry.cjs'
@@ -31,11 +32,31 @@ jobs:
           node-version: '22'
       - run: node test/piritori-c18-package-regressions.mjs
       - run: node test/piritori-c18-package.mjs
-      - name: Check shipped presentation entry syntax
+      - name: Check shipped presentation and offline shell
         run: |
           node --check piritori-c17/web/fight-module/readability.js
           node --check piritori-c17/web/fight-module/main.js
           node --check piritori-c17/web/crew-run/ui.js
+          node --check sw.js
+          node --input-type=module - <<'JS'
+          import assert from 'node:assert/strict';
+          import {readFileSync,existsSync} from 'node:fs';
+          import {resolve} from 'node:path';
+          const sw=readFileSync('sw.js','utf8');
+          const block=sw.match(/const SHELL = \[([\s\S]*?)\];/)?.[1];assert.ok(block);
+          const entries=[...block.matchAll(/'([^']+)'/g)].map(m=>m[1]);
+          assert.equal(new Set(entries).size,entries.length);assert.ok(entries.length>20);
+          assert.match(sw,/const VERSION = 'v\d+';/);
+          for(const entry of entries)assert.ok(existsSync(resolve(entry.split('?')[0])),entry+' must exist');
+          for(const file of ['index.html','hub/hub-entry.js','hub/hub.js']){
+            const text=readFileSync(file,'utf8');
+            for(const m of text.matchAll(/["']([^"'\s]+\.(?:js|css)\?v=\d+)["']/g)){
+              const url=new URL(m[1],'https://package.invalid/'+file);
+              if(url.origin==='https://package.invalid')assert.ok(entries.includes('.'+url.pathname+url.search),file+' offline cache missing '+url.pathname+url.search);
+            }
+          }
+          console.log('Offline shell covers the actual root import chain with existing unique files');
+          JS
   deployment-entry:
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -51,7 +72,7 @@ jobs:
         run: node test/piritori-c18-package.mjs
       - run: npm install --prefix /tmp/piritori-test playwright
       - run: /tmp/piritori-test/node_modules/.bin/playwright install --with-deps chromium
-      - name: Play through the actual Hub link on portrait and landscape
+      - name: Actual Hub link, portrait/landscape playthrough and existing bookmark
         env:
           NODE_PATH: /tmp/piritori-test/node_modules
           HUB_BASE_URL: http://127.0.0.1:8781/
