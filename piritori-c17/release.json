@@ -1,7 +1,7 @@
 {
   "build": "C.19",
   "source_repository": "mbace1/piritori-eden",
-  "source_commit": "c4cef33799d2296fa29fe2fc75d00a8b315cf9dd",
+  "source_commit": "69b23168653d6dccb0c0a626755eac890ac686ad",
   "entry": "web/crew-run/?campaign=1&release=19",
   "status": "connected-crew-pilot",
   "character_provider": "neutral stand-ins",
@@ -10,7 +10,7 @@
     "Scope runtime art register; preserve immutable fighter URLs"
   ],
   "sha256": {
-    "VERSIONS.md": "3a11aaa20de5f17fa77eb947701730c16f0e89243887acf3253db1fd1d89580d",
+    "VERSIONS.md": "6375386f546cc74531526e52be95f3eefe407bf16136a480d02dd73c90e6516f",
     "art/v3/environment3d/bear-landmark-v01.glb": "fc3fc41681d5c7dbcec7a7471d75b248597412ffd8664cee2489db4a9b7240f1",
     "art/v3/environment3d/park-ground-study-v01.png": "ee1dfc3c2794a18bf48c15be1eef36aed48be7f9c999720f91b3e8ba1239e0e3",
     "art/v3/manifest.json": "dfce58c98aa133530d534d9d35cc259b6468e28a2fd1601c2fedd5abd9c11361",
@@ -19,7 +19,7 @@
     "market/model.mjs": "6d367dbefb38a8a5667ba0d57d557b2722b9ff6aaa198aabcebc0a2b274ba563",
     "people/hiring.mjs": "45f7388605cb0efcea379033896bd4a8fca06fcdefeca0444c95350f2763f997",
     "people/roster.mjs": "62a0394348455a38c99806c11480e701cf3d5e0428706e0e87aa3d0d8f57aa2b",
-    "web/arena-lab/index.html": "d38d5ca09ca08215f966582301946f18d0b6f98f6f6918744c22c58056f284e3",
+    "web/arena-lab/index.html": "5afac8a3782222cebafc0022b855e14858463222d8e4ac8c335c1216ea38392b",
     "web/arena-lab/style.css": "481e6418fa8af4d769ce09b3f517c65088245adef84358f9fe38381b00a178f3",
     "web/bear-path/assets.js": "7d912bb194663fa8f621d5a32d576fd087782ce9cb2d4e6edb701c00169622e0",
     "web/bear-path/development-look.js": "1687ef8804868ded38d3ef728e80c61b11518601d9c72efec7965f4976f16118",
@@ -32,6 +32,7 @@
     "web/crew-run/assets/kallio-kit-v02.manifest.json": "a89bcd97c64bf64bedfc62cd43ee939090f80cbb0ce4d3272a27463d32b8a47b",
     "web/crew-run/assets/painted-plaster-v01.png": "ad8eebdd04e322912e35a9f6fe72e510ba81d6c6e38e6d7cc639d2004bd31282",
     "web/crew-run/assets/painted-setts-v01.png": "ba37ce50317a95803a54423a468eb0ffa013fc960d6636f555210d14bd89a8be",
+    "web/crew-run/c17/index.html": "960ff696ed3e31e80924df25ce0324f8eadcbe3f56e9054b55d32100641ace29",
     "web/crew-run/campaign-adapter.js": "5546e74ced28b2164001d656ccd218ef9fe1fd0324ff5fae4a2679834382bd89",
     "web/crew-run/compact.css": "4ec645295f59119da4ca7d22c15bc7343156e4fd0f2846a704a9f7c15c16ce9b",
     "web/crew-run/fonts/BarlowCondensed-SemiBold.ttf": "7b619d14bc2327509a9ef32b0890f709626f7ecc9ff61191c2a4314c5499d2d9",
@@ -72,5 +73,5 @@
     "web/vendor/jsm/utils/BufferGeometryUtils.js": "c25b7930e570e9ec56173cd3b866ec8d2e10016630db3937efb439daf1cedbf6",
     "web/vendor/three.module.min.js": "54a7a52ddce0ad06fbd1d021fd03b1e1812d946114a2111e1260bcd490c6b840"
   },
-  "tested_source_head": "c4cef33799d2296fa29fe2fc75d00a8b315cf9dd"
+  "tested_source_head": "69b23168653d6dccb0c0a626755eac890ac686ad"
 }
