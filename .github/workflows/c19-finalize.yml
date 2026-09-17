@@ -1,0 +1,59 @@
+name: Finalize reviewed C19 candidates
+on:
+  push:
+    branches: [qa/c19-hub-delivery]
+    paths: [.github/workflows/c19-finalize.yml]
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Stage reviewed source on unchanged published baseline
+        run: |
+          git init /tmp/c19-source
+          git -C /tmp/c19-source remote add origin https://github.com/mbace1/piritori-eden.git
+          git -C /tmp/c19-source fetch --depth=1 origin c4cef33799d2296fa29fe2fc75d00a8b315cf9dd
+          git -C /tmp/c19-source checkout --detach FETCH_HEAD
+          node /tmp/c19-source/web/test/c19-readability.mjs
+          git fetch origin gh-pages release/c19-night-shift deploy/c19-night-shift
+          git worktree add --detach /tmp/c19-live origin/gh-pages
+          python3 /tmp/c19-source/tools/publish/arena_lab_release.py --source /tmp/c19-source --commit c4cef33799d2296fa29fe2fc75d00a8b315cf9dd --deployed-manifest /tmp/c19-live/piritori-c17/art/v3/manifest.json --previous-cabinet /tmp/c19-live/piritori-c17 --output /tmp/c19-package
+      - name: Change only helper text and its release receipt on each candidate
+        run: |
+          mkdir -p /tmp/c19-final
+          for BRANCH in release/c19-night-shift deploy/c19-night-shift; do
+            git checkout --detach "origin/$BRANCH"
+            python3 - <<'PY'
+          import pathlib,shutil
+          shutil.rmtree('piritori-c17');shutil.copytree('/tmp/c19-package','piritori-c17')
+          PY
+            python3 - <<'PY'
+          import subprocess
+          actual=set(subprocess.check_output(['git','diff','--name-only']).decode().splitlines())
+          expected={'piritori-c17/VERSIONS.md','piritori-c17/release.json','piritori-c17/web/fight-module/readability.js'}
+          assert actual==expected,(actual,expected)
+          PY
+            node test/piritori-c18-package.mjs
+            node test/piritori-c18-package-regressions.mjs
+            git add piritori-c17
+            git -c core.whitespace=cr-at-eol diff --cached --check
+            git config user.name 'Piritori release worker'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'C19: reviewed kit-carrier recovery guidance and exact source receipt'
+            git push origin "HEAD:refs/heads/$BRANCH"
+            git rev-parse HEAD > "/tmp/c19-final/$(echo "$BRANCH" | tr / _).txt"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c19-final-candidates
+          path: /tmp/c19-final
+          retention-days: 3
