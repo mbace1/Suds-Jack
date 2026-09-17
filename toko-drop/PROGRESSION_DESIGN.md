@@ -657,3 +657,14 @@ readable head at each end — instead of 7's two three-segment blobs. The
 split reads as *two animals* now, which is what the rule needs.
 
 **Not decided.** These are two built things to look at, not a recommendation.
+
+### 8.10 In the game (v251)
+
+Owner: *"push the ribbon and slugs into the game around wave 2 as a tester."*
+Done — `EnemyType.RIBBON` / `EnemyType.SLUG`, in both pools from wave 2 at
+cost 3 (about one wave in eight each). The split works under real bullets,
+and the game showed one thing the sketch page could not: **shoot at a head
+from the wrong angle and the bullet passes it and slices the body behind —
+a split.** The positional rule punishes bad angles, not just bad aim. Details
+and the two bugs found on the way in `VERSIONS.md` v251. What comes next is a
+hand on the stick, not another gate.

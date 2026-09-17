@@ -7,6 +7,55 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v251 — 2026-09-17
+**Two arc-mover TESTERS in the real waves from wave 2 — the RIBBON and the GEL SLUG** *(owner: "push the ribbon and slugs into the game around wave 2 as a tester")*
+- **`EnemyType.RIBBON` (40) and `EnemyType.SLUG` (41)**, the sketchbook's two
+  candidates (v250 docs, `PROGRESSION_DESIGN.md` §8.9) promoted to real bodies:
+  in `waves.pool` and `poolMelee` from **wave 2, cost 3 each**, movement role
+  `SCHOOL`, in `MELEE_TYPES` so touch hurts. Measured through the director:
+  across 60 waves (2–6, twelve fresh games) RIBBON was drawn 8 times and SLUG
+  7 — about one wave in eight each. A first cut at cost 2 drew RIBBON 35
+  times, because cost ≤ 2 qualifies a body for swarm-group draws; 3 keeps it
+  out of them.
+- **The SLUG's rule, in the real loop:** hit an **end** and it shortens; hit
+  the **middle** and it **splits**, the back half reversed so its old rear is
+  a head pointed at you. Under a real player bullet: `[11]` → `[6, 4]`. And a
+  thing the sketch page could not show: **aim at the head from the wrong
+  angle and the bullet passes it and slices the body behind — a split.** That
+  is the positional tension working. `main.js` spawns the second animal from
+  `_splitPts` beside the SPLITTA/MINI child-spawn block, through the same
+  `_buildChain()` a fresh slug uses, so a split slug is not a special case
+  anywhere.
+- **Long bodies hit-test THEMSELVES.** A `_longBody` flag routes the three
+  contact sites (player bullets, the dash-cut, melee contact) to
+  `hitTest()`/`touches()` — the chain by segment (recording which one, for
+  the rule), the strip along its length at the width it has there. Everything
+  else keeps the head circle it always had. **The first cut gated on
+  `e.hitTest ?` — but the method exists on every Enemy, so GLOBBO took the
+  ribbon path and read an undefined `_trail`: four cabinets, the WebGPU
+  smoke and a level smoke all went red on "Cannot read properties of
+  undefined (reading 'length')".** A method's existence is not a type test.
+- **Both carry a TURN-RATE LIMIT** (`TUNING.arc.turnRate` 2.2 rad/s), which no
+  other body has — the shipped model re-points a dome at the player every
+  frame and a dome hides that; a long body draws its own recent heading, so
+  an instant turn is a visible corner. The serpentine is a heading offset, not
+  a sideways shove, so the *path* curves. Both are group-bodied like TORO
+  (`GROUP_BODY` set replaces the three-way TORO/BAMBU/PYRA test in
+  `position`/`destroy`/`updateDeath`); chain and strip are group-local
+  children, so the death pop, flash and removal come for free.
+- **Costs stated, not hidden:** the RIBBON rebuilds its strip every frame
+  (`getSpacedPoints` allocates; fine at one or two, not at twenty), has no
+  silhouette when it stops, and its `hitTest` walks the trail per bullet. The
+  SLUG rebuilds its chain meshes on every hit. Testers, not shipping bodies —
+  the point is to ask "is it fun to fight", which no gate can answer.
+- Gates: `smoke` (42 types) · `cabinets` 6/6 · `webgpu-smoke` · `level-check`
+  · `arena-check` · `crowd-check` · `framing-check` · `shader-lint` ·
+  `level-smoke` ×3 · `editor-smoke` 27. The Godot port does not have these
+  types; no bundled level uses them, so cross-build parity is unaffected.
+- Cache-bust `?v=203` → `?v=204`; HUD label → v251
+
+---
+
 ## v250 — 2026-09-16
 **The zoom was v247 dollying the camera in on phones; v249's memory budget never bound on the phone it was written for** *(and the version is on the title screen now, so a bug report can name its own build)*
 - **"Zooms in weirdly" — found, and it was not the context loss.** Measured on

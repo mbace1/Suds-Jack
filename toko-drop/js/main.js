@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=203';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=203';
-import { Player, PLAYER_RADIUS } from './player.js?v=203';
+import { InputManager } from './input.js?v=204';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=204';
+import { Player, PLAYER_RADIUS } from './player.js?v=204';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=203';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=203';
-import { audio } from './audio.js?v=203';
-import { haptics } from './haptics.js?v=203';
-import { initDesigner } from './designer.js?v=203';
-import { createSpecimen } from './specimen.js?v=203';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=203';
-import { TUNING } from './tuning.js?v=203';
-import { Arena, rectShape } from './arena.js?v=203';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=203';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=203';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=203';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=204';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=204';
+import { audio } from './audio.js?v=204';
+import { haptics } from './haptics.js?v=204';
+import { initDesigner } from './designer.js?v=204';
+import { createSpecimen } from './specimen.js?v=204';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=204';
+import { TUNING } from './tuning.js?v=204';
+import { Arena, rectShape } from './arena.js?v=204';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=204';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=204';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=204';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -382,7 +382,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '250';
+const GAME_VERSION = '251';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -2293,6 +2293,7 @@ const MELEE_TYPES = new Set([
   EnemyType.YELA_CUBE, EnemyType.SLUDGE_CUBE, EnemyType.REDD_CUBE, EnemyType.PURP_CUBE,
   EnemyType.REDD_MINI, EnemyType.PURP_MINI,
   EnemyType.TORO,
+  EnemyType.RIBBON, EnemyType.SLUG,                 // v251 arc-mover testers: touch hurts along the body
   EnemyType.GRUNT, EnemyType.BRUTE,                 // v155 tokotron
   EnemyType.GHOST, EnemyType.WRAITH,                // v156 gaundrop
   EnemyType.FLIT, EnemyType.CHARGER, EnemyType.HOPPER,  // v157 binding
@@ -4468,6 +4469,8 @@ const ENEMY_LABEL = {
   [EnemyType.TORO]:        'Toro charger',
   [EnemyType.BAMBU]:       'Bambu lobber',
   [EnemyType.PYRA]:        'Pyra spinner',
+  [EnemyType.RIBBON]:      'cyan ribbon',      // v251 tester
+  [EnemyType.SLUG]:        'green slug',       // v251 tester
   [EnemyType.OMEGA]:       'Omega boss',
   [EnemyType.BOTFLY]:      'pink Botfly',
   [EnemyType.WARDEN]:      'teal Warden',
@@ -9280,8 +9283,9 @@ function loop() {
       }
       for (const e of enemies) {
         if (!e.alive || (e._nxHitT ?? 0) > 0) continue;
-        if (Math.hypot(e.position.x - player.position.x,
-                       e.position.z - player.position.z) < e.radius + PLAYER_RADIUS + 0.2) {
+        if (e._longBody ? e.touches(player.position.x, player.position.z, PLAYER_RADIUS + 0.2)
+                      : Math.hypot(e.position.x - player.position.x,
+                                   e.position.z - player.position.z) < e.radius + PLAYER_RADIUS + 0.2) {
           e._nxHitT = 0.45;                // one cut per pass, not per frame
           if (e.type === EnemyType.CUSTODIAN && !(e._crackT > 0)) {
             e._crackT = 3.0;               // v186: the shell opens — unload
@@ -9703,6 +9707,18 @@ function loop() {
     c._spawnChild = true;   // v211: marks a body born from a parent (MINNOW BOUNTY)
     enemies.push(c);
   }
+  // v251: a SLUG hit in the middle SPLITS — the back half, reversed, becomes
+  // a second animal with its own head. The chain rebuild is the same path a
+  // fresh slug takes, so a split slug is not a special case anywhere else.
+  for (const e of enemies) {
+    if (!e._splitPts) continue;
+    const pts = e._splitPts; e._splitPts = null;
+    if (!pts.length) continue;
+    const c = new Enemy(scene, EnemyType.SLUG, pts[0].x, pts[0].z, e._speedMult, e._intervalMult);
+    c._buildChain(pts);
+    c._spawnChild = true;
+    enemies.push(c);
+  }
 
   // Collision: player bullets → enemies
   for (let i = bullets.active.length - 1; i >= 0; i--) {
@@ -9716,7 +9732,11 @@ function loop() {
       if (_piercing && b._hitIds && b._hitIds.has(e)) continue;
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
-      if (Math.hypot(dx, dz) < BULLET_R * BULLET_CONFIG.playerBulletScale + e.radius) {
+      const _br = BULLET_R * BULLET_CONFIG.playerBulletScale;
+      // v251: a long body (SLUG chain, RIBBON strip) hit-tests itself along
+      // its length; everything else is the head circle it always was.
+      if (e._longBody ? e.hitTest(b.mesh.position.x, b.mesh.position.z, _br)
+                    : Math.hypot(dx, dz) < _br + e.radius) {
         // TOKOTRON BRUTE (v155): unkillable — bullets shove it back instead
         // of hurting it. The wave ends around it; herd it away from the family.
         if (e.type === EnemyType.BRUTE) {
@@ -9957,7 +9977,9 @@ function loop() {
       if (e.type === EnemyType.HOPPER && e.mesh.position.y > 0.5) continue;  // v157: airborne
       const dx = player.position.x - e.position.x;
       const dz = player.position.z - e.position.z;
-      if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
+      // v251: a long body touches along its length, not just at the head
+      if (e._longBody ? e.touches(player.position.x, player.position.z, PLAYER_RADIUS)
+                    : Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
         const died = tryHitPlayer('melee', e.type);
         if (!died && e.type === EnemyType.TORO && e._state === 'dashing') addShake(0.27);
         // v156: ghosts and wraiths spend themselves on the touch — no score,
@@ -10634,7 +10656,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=203').then(async m => {
+  import('./editor.js?v=204').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10665,6 +10687,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=203').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=204').catch(() => {});
   });
 }
