@@ -10,10 +10,11 @@ import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
 import {SHIFT} from './live-network.js?v=9';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
+import {dots,cargoGlyph,minutes} from './ui.js?v=1';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.36';
+const BUILD_VERSION='2.37';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -381,7 +382,10 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
     ctx.fillStyle=col;ctx.strokeStyle=ink;ctx.lineWidth=1.5*d;ctx.beginPath();ctx.roundRect(x,y-7*d,w,14*d,3*d);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.fillText(name,x+4*d,y+.5*d);}}
   ctx.restore();}
 
-function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').textContent=`${challenge.index}/${challenge.target}${challenge.drops?` +${challenge.drops}`:''}`;$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?`${challenge.remaining()}t`:`${challenge.score} pts`;$('cargoHud').textContent=c?c.icon:'JOB';$('cargoHud').style.borderColor=challenge.active?cargoColour(challenge.active.cargo):'';{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
+// THE HUD IS GLYPHS. Clock, deliveries as dots, a score, and the current job
+// as its cargo glyph inside a ring that empties with the deadline — no
+// "deliveries" / "deadline" labels and no ticks (owner: Mini Metro succinct).
+function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?minutes(challenge.remaining()):'';$('score').textContent=challenge.score?String(challenge.score):'';{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.textContent=c?cargoGlyph(c.icon):'▪';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
 // THE JOB SHEET HAS THREE WRITERS AND HAD NO OWNER.
 // paintSheet (this file), the dispatch board (job-board-v212.js) and the catch
 // panel (route-choice.js) all wrote into #sheet on their own timers, and each
@@ -420,7 +424,7 @@ function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=
   for(const s of SHEET_SLOTS)sheet.append(document.getElementById(s));
   return document.getElementById(id);}
 
-function paintSheet(){if(!challenge)return;const b=sheetSlot('jobHead');if(!b)return;if(!challenge.active){b.innerHTML=document.getElementById('jobBoard')?.innerHTML?'':'<p class="hint">Dispatching local jobs…</p>';return;}const j=challenge.active,c=challenge.cargoRule();b.innerHTML=`<div class="jobTop"><span class="cargoBadge" style="border-color:${cargoColour(j.cargo)}">${c.icon}</span><div><h2>JOB ${challenge.index+1}/${DELIVERY_TARGET} · ${esc(challenge.routeLabel())}</h2><p class="cargoRule">${esc(c.rule)}</p></div></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%"></i></div><p class="hint">${challenge.remaining()}t left · score ${challenge.score}</p>`;}
+function paintSheet(){if(!challenge)return;const b=sheetSlot('jobHead');if(!b)return;if(!challenge.active){b.innerHTML='';return;}const j=challenge.active,c=challenge.cargoRule(),constrained=c.modes||c.fragile||c.freshness||c.express;b.innerHTML=`<div class="jobTop" style="align-items:center"><span class="cargoBadge" style="border-color:${cargoColour(j.cargo)};font-size:18px">${cargoGlyph(c.icon)}</span><div style="flex:1;min-width:0"><h2 style="font-size:14px">${esc(challenge.name(challenge.currentTo()))}</h2><p class="hint">from ${esc(challenge.name(challenge.currentFrom()))} · ${minutes(challenge.remaining())} left${constrained?` · ${esc(c.rule.toLowerCase().split(';')[0].split(' — ')[0])}`:''}</p></div></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%;background:${cargoColour(j.cargo)}"></i></div>`;}
 function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m of msgs.slice(0,2)){const d=document.createElement('div');d.textContent=m;f.append(d);}}
 function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}$('end').hidden=false;}
 

@@ -15,16 +15,16 @@
   "drops": 0,
   "dropped": 0,
   "waitTicks": 108,
-  "rideTicks": 743,
+  "rideTicks": 742,
   "catches": 3,
   "transfers": 0,
   "lastKind": "getoff",
   "activeJob": null,
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>ooppera equipment limit 346",
-   "2: PLAN 1H wait 0",
-   "2: CATCH 1H",
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1H wait 0",
+   "3: CATCH 1H",
    "138: OFF ooppera deliver",
    "139: JOB ooppera>katajanokka equipment limit 656",
    "140: PLAN 4T wait 32",
@@ -38,15 +38,15 @@
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
-    3,
+    4,
     "riding"
    ],
    [
@@ -463,17 +463,17 @@
   "drops": 3,
   "dropped": 3,
   "waitTicks": 108,
-  "rideTicks": 743,
+  "rideTicks": 742,
   "catches": 3,
   "transfers": 0,
   "lastKind": "getoff",
   "activeJob": null,
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>ooppera equipment limit 346",
-   "2: PLAN 1H wait 0",
-   "2: DROP-TAKEN 1130432 on 1H",
-   "2: CATCH 1H",
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1H wait 0",
+   "3: DROP-TAKEN 1130432 on 1H",
+   "3: CATCH 1H",
    "44: DROPPED DROPPED · ON TIME · +57 · Kansallismuseo",
    "138: OFF ooppera deliver",
    "139: JOB ooppera>katajanokka equipment limit 656",
@@ -492,15 +492,15 @@
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
-    3,
+    4,
     "riding"
    ],
    [
@@ -556,7 +556,7 @@
   "late": 1,
   "drops": 6,
   "dropped": 6,
-  "waitTicks": 709,
+  "waitTicks": 708,
   "rideTicks": 1809,
   "catches": 4,
   "transfers": 1,
@@ -564,13 +564,13 @@
   "activeJob": null,
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>ooppera equipment limit 346",
-   "2: PLAN 1T wait 148",
-   "63: PLAN 1T wait 87",
-   "124: PLAN 1H wait 176",
-   "126: DROP-TAKEN 1130432 on 1H",
-   "185: PLAN 1 wait 61",
-   "185: DROP-TAKEN 1130434 on 1",
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1T wait 147",
+   "64: PLAN 1T wait 86",
+   "125: PLAN 1H wait 175",
+   "127: DROP-TAKEN 1130432 on 1H",
+   "186: PLAN 1 wait 60",
+   "186: DROP-TAKEN 1130434 on 1",
    "224: CATCH 1",
    "298: DROPPED DROPPED · ON TIME · +57 · Kansallismuseo",
    "342: DROPPED DROPPED · EXPRESS BONUS · +97 · Hesperian puisto",
@@ -604,11 +604,11 @@
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
@@ -675,64 +675,76 @@
   },
   "won": true,
   "delivered": 3,
-  "tick": 2741,
-  "score": 1179,
-  "late": 1,
-  "drops": 8,
-  "dropped": 7,
-  "waitTicks": 339,
-  "rideTicks": 2392,
-  "catches": 5,
-  "transfers": 2,
+  "tick": 2829,
+  "score": 798,
+  "late": 2,
+  "drops": 6,
+  "dropped": 5,
+  "waitTicks": 980,
+  "rideTicks": 1837,
+  "catches": 8,
+  "transfers": 5,
   "lastKind": "getoff",
   "activeJob": null,
   "leg": 0,
   "log": [
-   "2: JOB lasipalatsi>meilahti fragile limit 789",
-   "3: PLAN 4T wait 106",
-   "3: DROP-TAKEN 1140446 on 4T",
-   "5: DROP-TAKEN 1140436 on 4T",
-   "64: PLAN 4 wait 29",
+   "1: JOB lasipalatsi>meilahti fragile limit 789",
+   "2: PLAN 4T wait 107",
+   "2: DROP-TAKEN 1140446 on 4T",
+   "4: DROP-TAKEN 1140436 on 4T",
+   "63: PLAN 4 wait 30",
    "71: CATCH 4",
    "219: DROPPED DROPPED · FRESH BONUS · +101 · Ooppera",
    "327: DROPPED DROPPED · FRESH BONUS · +131 · Kansaneläkelaitos",
    "461: OFF meilahti deliver",
-   "462: JOB meilahti>kalasatama fresh food limit 1352",
-   "463: PLAN 7>13H wait 35",
-   "464: DROP-TAKEN 1171416 on 7",
-   "465: DROP-TAKEN 1171457 on 7",
-   "477: CATCH 7",
-   "673: DROPPED DROPPED · ON TIME · +81 · Eläintarha",
-   "773: DROPPED DROPPED · ON TIME · +81 · Palkkatilanportti",
-   "810: OFF pasila transfer",
-   "811: PLAN 13 wait 135",
-   "813: DROP-TAKEN 1210403 on 13",
-   "815: DROP-TAKEN 1210401 on 13",
-   "872: PLAN 13 wait 74",
-   "925: CATCH 13",
-   "1332: DROPPED DROPPED · ON TIME · +93 · Haukilahdenkatu",
-   "1339: DROPPED DROPPED · ON TIME · +93 · Sörnäistenkatu",
-   "1486: OFF kalasatama deliver",
-   "1487: JOB kalasatama>lansiterminaali hot food limit 1084",
-   "1488: PLAN M1>1T wait 0",
-   "1488: DROP-TAKEN 1000106 on M1",
-   "1488: CATCH M1",
-   "1575: OFF sornainen transfer",
-   "1576: PLAN 8T wait 186",
-   "1637: PLAN 1H wait 76",
-   "1638: DROP-TAKEN 1040437 on 1H",
-   "1698: PLAN 1H wait 15",
-   "1714: CATCH 1H",
-   "2304: DROPPED DROPPED · ON TIME · +165 · Erottaja",
-   "2740: OFF lansiterminaali deliver"
+   "462: JOB meilahti>kamppi hot food limit 1026",
+   "463: PLAN 4>2H wait 200",
+   "464: DROP-TAKEN 1130435 on 4",
+   "464: DROP-TAKEN 1140441 on 4",
+   "524: PLAN 4>2 wait 139",
+   "585: PLAN 4>2H wait 78",
+   "642: CATCH 4",
+   "778: DROPPED DROPPED · EXPRESS BONUS · +109 · Kansaneläkelaitos",
+   "913: OFF ooppera transfer",
+   "914: PLAN 2 wait 262",
+   "914: DROP-TAKEN 1140447 on 2",
+   "975: PLAN 2>2H wait 201",
+   "1036: PLAN 2 wait 140",
+   "1097: PLAN 2>2H wait 79",
+   "1155: CATCH 2",
+   "1238: DROPPED DROPPED · FRESH BONUS · +71 · Töölöntori",
+   "1251: OFF toolontori transfer",
+   "1252: PLAN 8H>5 wait 45",
+   "1275: CATCH 8H",
+   "1562: OFF ruoholahti transfer",
+   "1563: PLAN M1 wait 66",
+   "1608: CATCH M1",
+   "1714: OFF kamppi deliver",
+   "1715: JOB kamppi>hietalahti parts limit 824",
+   "1716: PLAN 2H>6 wait 45",
+   "1740: CATCH 2H",
+   "1843: OFF rautatientori transfer",
+   "1844: PLAN 7>1H wait 158",
+   "1905: PLAN 7>1H wait 97",
+   "1966: PLAN 3>6 wait 231",
+   "1967: DROP-TAKEN 1020463 on 3",
+   "2027: PLAN 7>1H wait 287",
+   "2088: PLAN 7>1H wait 226",
+   "2149: PLAN 3>6 wait 48",
+   "2175: CATCH 3",
+   "2382: OFF hakaniemi transfer",
+   "2383: PLAN 6 wait 82",
+   "2443: CATCH 6",
+   "2691: DROPPED DROPPED · COOLED · +46 · Ylioppilastalo",
+   "2828: OFF hietalahti deliver"
   ],
   "timeline": [
    [
-    2,
+    1,
     "riding"
    ],
    [
-    3,
+    2,
     "waiting"
    ],
    [
@@ -752,51 +764,87 @@
     "waiting"
    ],
    [
-    478,
+    643,
     "riding"
    ],
    [
-    810,
+    913,
     "getoff"
    ],
    [
-    811,
+    914,
     "waiting"
    ],
    [
-    926,
+    1156,
     "riding"
    ],
    [
-    1486,
+    1251,
     "getoff"
    ],
    [
-    1487,
-    "riding"
-   ],
-   [
-    1488,
+    1252,
     "waiting"
    ],
    [
-    1489,
+    1276,
     "riding"
    ],
    [
-    1575,
+    1562,
     "getoff"
    ],
    [
-    1576,
+    1563,
     "waiting"
+   ],
+   [
+    1609,
+    "riding"
+   ],
+   [
+    1714,
+    "getoff"
    ],
    [
     1715,
     "riding"
    ],
    [
-    2740,
+    1716,
+    "waiting"
+   ],
+   [
+    1741,
+    "riding"
+   ],
+   [
+    1843,
+    "getoff"
+   ],
+   [
+    1844,
+    "waiting"
+   ],
+   [
+    2176,
+    "riding"
+   ],
+   [
+    2382,
+    "getoff"
+   ],
+   [
+    2383,
+    "waiting"
+   ],
+   [
+    2444,
+    "riding"
+   ],
+   [
+    2828,
     "getoff"
    ]
   ]
@@ -1210,79 +1258,72 @@
    "seed": 6,
    "along": "random"
   },
-  "won": false,
-  "delivered": 2,
-  "tick": 3000,
-  "score": 870,
+  "won": true,
+  "delivered": 3,
+  "tick": 2854,
+  "score": 1261,
   "late": 0,
-  "drops": 8,
-  "dropped": 6,
-  "waitTicks": 990,
-  "rideTicks": 2000,
-  "catches": 6,
-  "transfers": 4,
-  "lastKind": "waiting",
-  "activeJob": "hakaniemi>toolontori",
+  "drops": 9,
+  "dropped": 9,
+  "waitTicks": 549,
+  "rideTicks": 2295,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>arabia express limit 1878",
-   "2: PLAN 1>6H wait 244",
-   "3: DROP-TAKEN 1130434 on 1",
-   "4: DROP-TAKEN 1140450 on 1",
-   "63: PLAN 1>6 wait 183",
-   "124: PLAN 1>8 wait 122",
-   "185: PLAN 1>6H wait 61",
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>6H wait 243",
+   "4: DROP-TAKEN 1130434 on 1",
+   "5: DROP-TAKEN 1140450 on 1",
+   "64: PLAN 1>6 wait 182",
+   "125: PLAN 1>8 wait 121",
+   "186: PLAN 1>6H wait 60",
    "224: CATCH 1",
    "342: DROPPED DROPPED · ON TIME · +69 · Hesperian puisto",
    "397: DROPPED DROPPED · ON TIME · +69 · Ooppera",
    "858: OFF sornainen transfer",
    "859: PLAN 6 wait 201",
    "859: DROP-TAKEN 1230409 on 6",
-   "862: DROP-TAKEN 1220408 on 6",
-   "920: PLAN 6H wait 90",
+   "860: DROP-TAKEN 1220408 on 6",
+   "920: PLAN 8 wait 235",
    "981: PLAN 6 wait 79",
    "1039: CATCH 6",
    "1121: DROPPED DROPPED · ON TIME · +69 · Hauhon puisto",
    "1319: DROPPED DROPPED · ON TIME · +117 · Kumtähdenkenttä",
    "1493: OFF arabia deliver",
-   "1494: JOB arabia>hakaniemi market goods limit 987",
-   "1495: PLAN 6>7H wait 7",
-   "1495: DROP-TAKEN 1220408 on 6",
-   "1496: DROP-TAKEN 1220410 on 6",
+   "1494: JOB arabia>lasipalatsi parts limit 1555",
+   "1495: PLAN 6>1T wait 7",
+   "1495: DROP-TAKEN 1220403 on 6",
+   "1497: DROP-TAKEN 1220410 on 6",
    "1502: CATCH 6",
-   "1794: DROPPED DROPPED · ON TIME · +105 · Vallilan varikko",
-   "1839: DROPPED DROPPED · ON TIME · +117 · Hauhon puisto",
+   "1769: DROPPED DROPPED · FRAGILE SAFE · +128 · Paavalinkirkko",
+   "1794: DROPPED DROPPED · FRAGILE SAFE · +128 · Vallilan varikko",
    "1934: OFF sornainen transfer",
-   "1935: PLAN 6 wait 0",
-   "1935: CATCH 6",
-   "2145: OFF hakaniemi deliver",
-   "2146: JOB hakaniemi>toolontori parts limit 874",
-   "2147: PLAN 3>2H wait 154",
-   "2148: DROP-TAKEN 1122415 on 3",
-   "2149: DROP-TAKEN 1112433 on 3",
-   "2208: PLAN 3>2 wait 93",
-   "2269: PLAN 3>2 wait 32",
-   "2280: CATCH 3",
-   "2486: OFF rautatientori transfer",
-   "2487: PLAN 2>2H wait 0",
-   "2487: CATCH 2",
-   "2557: OFF kamppi transfer",
-   "2558: PLAN 2H wait 240",
-   "2619: PLAN 5>8H wait 103",
-   "2680: PLAN 2H wait 118",
-   "2741: PLAN 2 wait 109",
-   "2802: PLAN 5>8H wait 206",
-   "2863: PLAN 5>8H wait 145",
-   "2924: PLAN 2H wait 199",
-   "2985: PLAN 2H wait 138"
+   "1935: PLAN 1 wait 225",
+   "1937: DROP-TAKEN 1121482 on 1",
+   "1940: DROP-TAKEN 1140452 on 1",
+   "1996: PLAN 1H wait 14",
+   "2010: CATCH 1H",
+   "2139: DROPPED DROPPED · ON TIME · +69 · Urheilutalo",
+   "2300: DROPPED DROPPED · ON TIME · +81 · Kaupunginpuutarha",
+   "2523: OFF lasipalatsi deliver",
+   "2524: JOB lasipalatsi>hietalahti parts limit 508",
+   "2525: PLAN 1>1H wait 99",
+   "2586: PLAN 1T wait 0",
+   "2586: DROP-TAKEN 1040440 on 1T",
+   "2586: CATCH 1T",
+   "2686: DROPPED DROPPED · ON TIME · +81 · Aleksant. teatteri",
+   "2853: OFF hietalahti deliver"
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
@@ -1326,44 +1367,28 @@
     "waiting"
    ],
    [
-    1936,
+    2011,
     "riding"
    ],
    [
-    2145,
+    2523,
     "getoff"
    ],
    [
-    2146,
+    2524,
     "riding"
    ],
    [
-    2147,
+    2525,
     "waiting"
    ],
    [
-    2281,
+    2587,
     "riding"
    ],
    [
-    2486,
+    2853,
     "getoff"
-   ],
-   [
-    2487,
-    "waiting"
-   ],
-   [
-    2488,
-    "riding"
-   ],
-   [
-    2557,
-    "getoff"
-   ],
-   [
-    2558,
-    "waiting"
    ]
   ]
  },
@@ -1378,73 +1403,70 @@
   "won": false,
   "delivered": 2,
   "tick": 3000,
-  "score": 1084,
+  "score": 958,
   "late": 0,
   "drops": 8,
-  "dropped": 8,
-  "waitTicks": 860,
-  "rideTicks": 2131,
-  "catches": 5,
+  "dropped": 6,
+  "waitTicks": 705,
+  "rideTicks": 2285,
+  "catches": 6,
   "transfers": 3,
-  "lastKind": "waiting",
-  "activeJob": "lasipalatsi>kauppatori",
+  "lastKind": "riding",
+  "activeJob": "lasipalatsi>hietalahti",
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>arabia express limit 1878",
-   "2: PLAN 1>6H wait 244",
-   "3: DROP-TAKEN 1140450 on 1",
-   "3: DROP-TAKEN 1130434 on 1",
-   "63: PLAN 1>8 wait 183",
-   "124: PLAN 1>6 wait 122",
-   "185: PLAN 1>6 wait 61",
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>6H wait 243",
+   "4: DROP-TAKEN 1140450 on 1",
+   "4: DROP-TAKEN 1130434 on 1",
+   "64: PLAN 1>8 wait 182",
+   "125: PLAN 1>6 wait 121",
+   "186: PLAN 1>6 wait 60",
    "224: CATCH 1",
    "342: DROPPED DROPPED · ON TIME · +69 · Hesperian puisto",
    "397: DROPPED DROPPED · ON TIME · +81 · Ooppera",
    "858: OFF sornainen transfer",
-   "859: PLAN 6 wait 201",
-   "862: DROP-TAKEN 1230409 on 6",
-   "863: DROP-TAKEN 1220408 on 6",
+   "859: PLAN 8 wait 296",
    "920: PLAN 6 wait 140",
-   "981: PLAN 6 wait 79",
-   "1039: CATCH 6",
-   "1121: DROPPED DROPPED · ON TIME · +69 · Hauhon puisto",
-   "1319: DROPPED DROPPED · ON TIME · +117 · Kumtähdenkenttä",
-   "1493: OFF arabia deliver",
-   "1494: JOB arabia>lasipalatsi parts limit 1555",
-   "1495: PLAN 6>1H wait 7",
-   "1495: DROP-TAKEN 1220403 on 6",
-   "1496: DROP-TAKEN 1220410 on 6",
+   "920: DROP-TAKEN 1230409 on 6",
+   "924: DROP-TAKEN 1220408 on 6",
+   "981: PLAN 6H wait 29",
+   "989: CATCH 6H",
+   "1076: DROPPED DROPPED · ON TIME · +69 · Hauhon puisto",
+   "1288: DROPPED DROPPED · ON TIME · +117 · Kumtähdenkenttä",
+   "1415: OFF arabia deliver",
+   "1416: JOB arabia>lasipalatsi parts limit 1600",
+   "1417: PLAN 6>1H wait 85",
+   "1418: DROP-TAKEN 1220408 on 6",
+   "1418: DROP-TAKEN 1220403 on 6",
+   "1478: PLAN 6>1H wait 24",
    "1502: CATCH 6",
    "1769: DROPPED DROPPED · FRAGILE SAFE · +128 · Paavalinkirkko",
-   "1794: DROPPED DROPPED · FRAGILE SAFE · +128 · Vallilan varikko",
+   "1839: DROPPED DROPPED · FRAGILE SAFE · +152 · Hauhon puisto",
    "1934: OFF sornainen transfer",
-   "1935: PLAN 1 wait 225",
-   "1936: DROP-TAKEN 1121482 on 1",
-   "1937: DROP-TAKEN 1140452 on 1",
-   "1996: PLAN 1 wait 164",
-   "2057: PLAN 1H wait 249",
-   "2118: PLAN 1T wait 156",
-   "2179: PLAN 1H wait 127",
-   "2240: PLAN 1 wait 217",
-   "2301: PLAN 1H wait 5",
-   "2307: CATCH 1H",
-   "2435: DROPPED DROPPED · ON TIME · +69 · Urheilutalo",
-   "2596: DROPPED DROPPED · ON TIME · +81 · Kaupunginpuutarha",
-   "2819: OFF lasipalatsi deliver",
-   "2820: JOB lasipalatsi>kauppatori fresh food limit 405",
-   "2821: PLAN 4>2 wait 0",
-   "2821: CATCH 4",
-   "2925: OFF senaatintori transfer",
-   "2926: PLAN H wait 212",
-   "2987: PLAN 2H wait 256"
+   "1935: PLAN 1T wait 41",
+   "1954: CATCH 1T",
+   "2554: OFF lasipalatsi deliver",
+   "2555: JOB lasipalatsi>hietalahti parts limit 508",
+   "2556: PLAN 1H wait 274",
+   "2556: DROP-TAKEN 1040401 on 1H",
+   "2558: DROP-TAKEN 1040440 on 1H",
+   "2617: PLAN 1>1H wait 0",
+   "2617: CATCH 1",
+   "2785: OFF ooppera transfer",
+   "2786: PLAN 1H wait 196",
+   "2847: PLAN 1H wait 135",
+   "2908: PLAN 1T wait 91",
+   "2969: PLAN 1H wait 0",
+   "2969: CATCH 1H"
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
@@ -1460,19 +1482,19 @@
     "waiting"
    ],
    [
-    1040,
+    990,
     "riding"
    ],
    [
-    1493,
+    1415,
     "getoff"
    ],
    [
-    1494,
+    1416,
     "riding"
    ],
    [
-    1495,
+    1417,
     "waiting"
    ],
    [
@@ -1488,32 +1510,36 @@
     "waiting"
    ],
    [
-    2308,
+    1955,
     "riding"
    ],
    [
-    2819,
+    2554,
     "getoff"
    ],
    [
-    2820,
+    2555,
     "riding"
    ],
    [
-    2821,
+    2556,
     "waiting"
    ],
    [
-    2822,
+    2618,
     "riding"
    ],
    [
-    2925,
+    2785,
     "getoff"
    ],
    [
-    2926,
+    2786,
     "waiting"
+   ],
+   [
+    2970,
+    "riding"
    ]
   ]
  },
@@ -1525,68 +1551,59 @@
    "seed": 8,
    "along": "random"
   },
-  "won": false,
-  "delivered": 2,
-  "tick": 3000,
-  "score": 745,
+  "won": true,
+  "delivered": 3,
+  "tick": 1851,
+  "score": 673,
   "late": 1,
-  "drops": 8,
-  "dropped": 6,
-  "waitTicks": 419,
-  "rideTicks": 2572,
-  "catches": 6,
-  "transfers": 3,
-  "lastKind": "riding",
-  "activeJob": "kalasatama>messukeskus",
+  "drops": 4,
+  "dropped": 4,
+  "waitTicks": 309,
+  "rideTicks": 1532,
+  "catches": 5,
+  "transfers": 2,
+  "lastKind": "getoff",
+  "activeJob": null,
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>meilahti fragile limit 789",
-   "2: PLAN 4 wait 91",
-   "3: DROP-TAKEN 1140437 on 4",
-   "6: DROP-TAKEN 1130435 on 4",
-   "63: PLAN 4 wait 30",
+   "2: JOB lasipalatsi>meilahti fragile limit 789",
+   "3: PLAN 4 wait 90",
+   "4: DROP-TAKEN 1140437 on 4",
+   "7: DROP-TAKEN 1130435 on 4",
+   "64: PLAN 4 wait 29",
    "71: CATCH 4",
    "179: DROPPED DROPPED · ON TIME · +69 · Hesperian puisto",
    "207: DROPPED DROPPED · ON TIME · +81 · Ooppera",
    "461: OFF meilahti deliver",
-   "462: JOB meilahti>kalasatama fresh food limit 1352",
-   "463: PLAN 7>M1 wait 35",
-   "464: DROP-TAKEN 1171457 on 7",
-   "464: DROP-TAKEN 1171416 on 7",
+   "462: JOB meilahti>ooppera documents limit 550",
+   "463: PLAN 7>2 wait 35",
    "477: CATCH 7",
-   "673: DROPPED DROPPED · ON TIME · +81 · Eläintarha",
-   "773: DROPPED DROPPED · ON TIME · +81 · Palkkatilanportti",
+   "810: OFF pasila transfer",
+   "811: PLAN 7>1H wait 0",
+   "811: CATCH 7",
    "1194: OFF sornainen transfer",
-   "1195: PLAN 7>13 wait 59",
-   "1233: CATCH 7",
-   "1629: OFF pasila transfer",
-   "1630: PLAN 13H wait 24",
-   "1630: DROP-TAKEN 1210405 on 13H",
-   "1631: DROP-TAKEN 1173407 on 13H",
-   "1655: CATCH 13H",
-   "1691: DROPPED DROPPED · ON TIME · +57 · Asemapäällikönkatu",
-   "1944: DROPPED DROPPED · ON TIME · +81 · Nylanderinpuisto",
-   "2179: OFF kalasatama deliver",
-   "2180: JOB kalasatama>messukeskus parts limit 1291",
-   "2181: PLAN M1>2 wait 124",
-   "2242: PLAN 13>2 wait 244",
-   "2244: DROP-TAKEN 1210403 on 13",
-   "2245: DROP-TAKEN 1100411 on 13",
-   "2303: PLAN M1>2 wait 0",
-   "2303: CATCH M1",
-   "2630: OFF kamppi transfer",
-   "2631: PLAN 2H>2 wait 167",
-   "2692: PLAN 2 wait 158",
-   "2753: PLAN 2H>2 wait 45",
-   "2776: CATCH 2H"
+   "1195: PLAN 1T wait 184",
+   "1256: PLAN 1H wait 161",
+   "1256: DROP-TAKEN 1121446 on 1H",
+   "1259: DROP-TAKEN 1121450 on 1H",
+   "1317: PLAN 1H wait 100",
+   "1378: PLAN 1H wait 39",
+   "1417: CATCH 1H",
+   "1489: DROPPED DROPPED · FRESH BONUS · +71 · Helsinginkatu",
+   "1598: DROPPED DROPPED · COOLED · +55 · Linnanmäki (etelä)",
+   "1785: OFF ooppera deliver",
+   "1786: JOB ooppera>toolontori fresh food limit 265",
+   "1787: PLAN 8H wait 0",
+   "1787: CATCH 8H",
+   "1850: OFF toolontori deliver"
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
@@ -1610,6 +1627,18 @@
     "riding"
    ],
    [
+    810,
+    "getoff"
+   ],
+   [
+    811,
+    "waiting"
+   ],
+   [
+    812,
+    "riding"
+   ],
+   [
     1194,
     "getoff"
    ],
@@ -1618,48 +1647,28 @@
     "waiting"
    ],
    [
-    1234,
+    1418,
     "riding"
    ],
    [
-    1629,
+    1785,
     "getoff"
    ],
    [
-    1630,
-    "waiting"
-   ],
-   [
-    1656,
+    1786,
     "riding"
    ],
    [
-    2179,
+    1787,
+    "waiting"
+   ],
+   [
+    1788,
+    "riding"
+   ],
+   [
+    1850,
     "getoff"
-   ],
-   [
-    2180,
-    "riding"
-   ],
-   [
-    2181,
-    "waiting"
-   ],
-   [
-    2304,
-    "riding"
-   ],
-   [
-    2630,
-    "getoff"
-   ],
-   [
-    2631,
-    "waiting"
-   ],
-   [
-    2777,
-    "riding"
    ]
   ]
  },
@@ -1780,67 +1789,76 @@
    "seed": 10,
    "along": "random"
   },
-  "won": true,
-  "delivered": 3,
-  "tick": 2674,
-  "score": 897,
-  "late": 1,
-  "drops": 6,
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 955,
+  "late": 0,
+  "drops": 8,
   "dropped": 6,
-  "waitTicks": 744,
-  "rideTicks": 1922,
-  "catches": 4,
-  "transfers": 1,
-  "lastKind": "getoff",
-  "activeJob": null,
+  "waitTicks": 991,
+  "rideTicks": 1999,
+  "catches": 5,
+  "transfers": 3,
+  "lastKind": "waiting",
+  "activeJob": "senaatintori>sornainen",
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>arabia express limit 1878",
-   "2: PLAN 1>6H wait 244",
-   "2: DROP-TAKEN 1130434 on 1",
-   "3: DROP-TAKEN 1140450 on 1",
-   "63: PLAN 1>6H wait 183",
-   "124: PLAN 1>8 wait 122",
-   "185: PLAN 1>6H wait 61",
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>6H wait 243",
+   "3: DROP-TAKEN 1130434 on 1",
+   "4: DROP-TAKEN 1140450 on 1",
+   "64: PLAN 1>6H wait 182",
+   "125: PLAN 1>8 wait 121",
+   "186: PLAN 1>6H wait 60",
    "224: CATCH 1",
    "342: DROPPED DROPPED · ON TIME · +69 · Hesperian puisto",
    "397: DROPPED DROPPED · ON TIME · +69 · Ooppera",
    "858: OFF sornainen transfer",
-   "859: PLAN 8 wait 296",
-   "920: PLAN 6H wait 90",
-   "921: DROP-TAKEN 1220411 on 6H",
-   "922: DROP-TAKEN 1240419 on 6H",
+   "859: PLAN 6H wait 151",
+   "861: DROP-TAKEN 1220411 on 6H",
+   "863: DROP-TAKEN 1240419 on 6H",
+   "920: PLAN 8 wait 235",
    "981: PLAN 8 wait 174",
-   "1042: PLAN 8 wait 113",
-   "1103: PLAN 6 wait 269",
+   "1042: PLAN 6H wait 264",
+   "1103: PLAN 6H wait 203",
    "1164: PLAN 8 wait 0",
    "1164: CATCH 8",
    "1259: DROPPED DROPPED · ON TIME · +81 · Vallilan varikko",
    "1377: DROPPED DROPPED · ON TIME · +93 · Kumpulan kampus",
    "1596: OFF arabia deliver",
-   "1597: JOB arabia>ooppera hot food limit 1184",
-   "1598: PLAN 8T wait 0",
-   "1598: DROP-TAKEN 1220406 on 8T",
-   "1599: DROP-TAKEN 1220408 on 8T",
-   "1599: CATCH 8T",
-   "1951: DROPPED DROPPED · ON TIME · +105 · Hauhon puisto",
-   "1990: DROPPED DROPPED · ON TIME · +129 · Lautatarhankatu",
-   "2363: OFF ooppera deliver",
-   "2364: JOB ooppera>toolontori fresh food limit 278",
-   "2365: PLAN 8H wait 254",
-   "2426: PLAN 8H wait 193",
-   "2487: PLAN 2 wait 112",
-   "2548: PLAN 2 wait 51",
-   "2577: CATCH 2",
-   "2673: OFF toolontori deliver"
+   "1597: JOB arabia>senaatintori equipment limit 1403",
+   "1598: PLAN 6>7 wait 215",
+   "1598: DROP-TAKEN 1220403 on 6",
+   "1599: DROP-TAKEN 1220410 on 6",
+   "1659: PLAN 6>7 wait 154",
+   "1720: PLAN 6>7 wait 93",
+   "1781: PLAN 6>7H wait 32",
+   "1814: CATCH 6",
+   "2080: DROPPED DROPPED · EXPRESS BONUS · +133 · Paavalinkirkko",
+   "2105: DROPPED DROPPED · EXPRESS BONUS · +133 · Vallilan varikko",
+   "2456: OFF hakaniemi transfer",
+   "2457: PLAN 7 wait 152",
+   "2458: DROP-TAKEN 1010421 on 7",
+   "2459: DROP-TAKEN 1010420 on 7",
+   "2518: PLAN 3>2 wait 66",
+   "2563: CATCH 3",
+   "2769: OFF rautatientori transfer",
+   "2770: PLAN 5 wait 0",
+   "2770: CATCH 5",
+   "2860: OFF senaatintori deliver",
+   "2861: JOB senaatintori>sornainen parts limit 717",
+   "2862: PLAN 7>6 wait 193",
+   "2923: PLAN 7 wait 132",
+   "2984: PLAN 7 wait 71"
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
@@ -1872,28 +1890,44 @@
     "waiting"
    ],
    [
-    1600,
+    1815,
     "riding"
    ],
    [
-    2363,
+    2456,
     "getoff"
    ],
    [
-    2364,
-    "riding"
-   ],
-   [
-    2365,
+    2457,
     "waiting"
    ],
    [
-    2578,
+    2564,
     "riding"
    ],
    [
-    2673,
+    2769,
     "getoff"
+   ],
+   [
+    2770,
+    "waiting"
+   ],
+   [
+    2771,
+    "riding"
+   ],
+   [
+    2860,
+    "getoff"
+   ],
+   [
+    2861,
+    "riding"
+   ],
+   [
+    2862,
+    "waiting"
    ]
   ]
  },
@@ -2839,7 +2873,7 @@
   "late": 0,
   "drops": 8,
   "dropped": 6,
-  "waitTicks": 534,
+  "waitTicks": 533,
   "rideTicks": 2189,
   "catches": 5,
   "transfers": 2,
@@ -2847,11 +2881,11 @@
   "activeJob": null,
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>ooppera equipment limit 346",
-   "2: PLAN 1T wait 148",
-   "63: PLAN 1H wait 237",
-   "67: DROP-TAKEN 1130432 on 1H",
-   "124: PLAN 1T wait 26",
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1T wait 147",
+   "64: PLAN 1H wait 236",
+   "68: DROP-TAKEN 1130432 on 1H",
+   "125: PLAN 1T wait 25",
    "128: CATCH 1T",
    "198: DROPPED DROPPED · ON TIME · +57 · Kansallismuseo",
    "301: OFF ooppera deliver",
@@ -2889,11 +2923,11 @@
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
@@ -3547,17 +3581,17 @@
   "drops": 5,
   "dropped": 5,
   "waitTicks": 890,
-  "rideTicks": 1571,
+  "rideTicks": 1570,
   "catches": 3,
   "transfers": 0,
   "lastKind": "getoff",
   "activeJob": null,
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>ooppera equipment limit 346",
-   "2: PLAN 1H wait 0",
-   "2: DROP-TAKEN 1130432 on 1H",
-   "2: CATCH 1H",
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1H wait 0",
+   "3: DROP-TAKEN 1130432 on 1H",
+   "3: CATCH 1H",
    "44: DROPPED DROPPED · ON TIME · +57 · Kansallismuseo",
    "138: OFF ooppera deliver",
    "139: JOB ooppera>lansiterminaali fresh food limit 1276",
@@ -3593,15 +3627,15 @@
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
-    3,
+    4,
     "riding"
    ],
    [
@@ -4424,64 +4458,63 @@
   "won": true,
   "delivered": 3,
   "tick": 2942,
-  "score": 1010,
+  "score": 929,
   "late": 0,
   "drops": 7,
-  "dropped": 6,
-  "waitTicks": 572,
-  "rideTicks": 2360,
+  "dropped": 5,
+  "waitTicks": 555,
+  "rideTicks": 2378,
   "catches": 5,
   "transfers": 2,
   "lastKind": "getoff",
   "activeJob": null,
   "leg": 0,
   "log": [
-   "2: JOB lasipalatsi>arabia express limit 1878",
-   "3: PLAN 1>8 wait 243",
-   "3: DROP-TAKEN 1140450 on 1",
-   "3: DROP-TAKEN 1130434 on 1",
-   "64: PLAN 1>6 wait 182",
-   "125: PLAN 1>6 wait 121",
-   "186: PLAN 1>6 wait 60",
+   "1: JOB lasipalatsi>arabia express limit 1878",
+   "2: PLAN 1>8 wait 244",
+   "2: DROP-TAKEN 1140450 on 1",
+   "2: DROP-TAKEN 1130434 on 1",
+   "63: PLAN 1>6 wait 183",
+   "124: PLAN 1>6 wait 122",
+   "185: PLAN 1>6 wait 61",
    "224: CATCH 1",
    "342: DROPPED DROPPED · ON TIME · +69 · Hesperian puisto",
    "397: DROPPED DROPPED · ON TIME · +81 · Ooppera",
    "858: OFF sornainen transfer",
-   "859: PLAN 6H wait 151",
-   "859: DROP-TAKEN 1220411 on 6H",
-   "862: DROP-TAKEN 1240419 on 6H",
-   "920: PLAN 6 wait 140",
-   "981: PLAN 6H wait 29",
-   "989: CATCH 6H",
-   "1129: DROPPED DROPPED · ON TIME · +81 · Vallilan varikko",
-   "1245: DROPPED DROPPED · ON TIME · +93 · Kumpulan kampus",
-   "1415: OFF arabia deliver",
-   "1416: JOB arabia>lasipalatsi parts limit 1600",
-   "1417: PLAN 6>1 wait 85",
-   "1418: DROP-TAKEN 1220408 on 6",
-   "1421: DROP-TAKEN 1113432 on 6",
-   "1478: PLAN 6>1H wait 24",
+   "859: PLAN 8 wait 296",
+   "920: PLAN 6H wait 90",
+   "920: DROP-TAKEN 1220411 on 6H",
+   "921: DROP-TAKEN 1240419 on 6H",
+   "981: PLAN 6 wait 79",
+   "1039: CATCH 6",
+   "1162: DROPPED DROPPED · ON TIME · +81 · Vallilan varikko",
+   "1278: DROPPED DROPPED · ON TIME · +93 · Kumpulan kampus",
+   "1493: OFF arabia deliver",
+   "1494: JOB arabia>lasipalatsi parts limit 1555",
+   "1495: PLAN 6>1 wait 7",
+   "1496: DROP-TAKEN 1220403 on 6",
+   "1497: DROP-TAKEN 1113432 on 6",
    "1502: CATCH 6",
-   "1839: DROPPED DROPPED · FRAGILE SAFE · +152 · Hauhon puisto",
+   "1769: DROPPED DROPPED · FRAGILE SAFE · +128 · Paavalinkirkko",
    "1934: OFF sornainen transfer",
    "1935: PLAN 1T wait 41",
    "1954: CATCH 1T",
    "2554: OFF lasipalatsi deliver",
    "2555: JOB lasipalatsi>kauppatori fresh food limit 616",
-   "2556: PLAN H wait 134",
-   "2556: DROP-TAKEN 1020454 on H",
-   "2617: PLAN H wait 73",
-   "2668: CATCH H",
-   "2720: DROPPED DROPPED · ON TIME · +57 · Päärautatieasema",
+   "2556: PLAN 4>2 wait 268",
+   "2557: DROP-TAKEN 1020446 on 4",
+   "2617: PLAN 4>2H wait 207",
+   "2678: PLAN H wait 0",
+   "2678: CATCH H",
    "2941: OFF kauppatori deliver"
   ],
   "timeline": [
    [
-    2,
+    1,
     "riding"
    ],
    [
-    3,
+    2,
     "waiting"
    ],
    [
@@ -4497,19 +4530,19 @@
     "waiting"
    ],
    [
-    990,
+    1040,
     "riding"
    ],
    [
-    1415,
+    1493,
     "getoff"
    ],
    [
-    1416,
+    1494,
     "riding"
    ],
    [
-    1417,
+    1495,
     "waiting"
    ],
    [
@@ -4541,7 +4574,7 @@
     "waiting"
    ],
    [
-    2669,
+    2679,
     "riding"
    ],
    [
@@ -4675,7 +4708,7 @@
   "late": 0,
   "drops": 6,
   "dropped": 4,
-  "waitTicks": 370,
+  "waitTicks": 369,
   "rideTicks": 1572,
   "catches": 5,
   "transfers": 2,
@@ -4683,12 +4716,12 @@
   "activeJob": null,
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>ooppera equipment limit 346",
-   "2: PLAN 1T wait 148",
-   "63: PLAN 1 wait 183",
-   "66: DROP-TAKEN 1130434 on 1",
-   "70: DROP-TAKEN 1130432 on 1",
-   "124: PLAN 1T wait 26",
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1T wait 147",
+   "64: PLAN 1 wait 182",
+   "67: DROP-TAKEN 1130434 on 1",
+   "71: DROP-TAKEN 1130432 on 1",
+   "125: PLAN 1T wait 25",
    "128: CATCH 1T",
    "198: DROPPED DROPPED · EXPRESS BONUS · +97 · Kansallismuseo",
    "239: DROPPED DROPPED · EXPRESS BONUS · +109 · Hesperian puisto",
@@ -4719,11 +4752,11 @@
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
@@ -4800,77 +4833,72 @@
    "seed": 33,
    "along": "random"
   },
-  "won": true,
-  "delivered": 3,
-  "tick": 2905,
-  "score": 1300,
+  "won": false,
+  "delivered": 2,
+  "tick": 3000,
+  "score": 1292,
   "late": 0,
-  "drops": 9,
-  "dropped": 9,
-  "waitTicks": 673,
-  "rideTicks": 2222,
-  "catches": 6,
-  "transfers": 3,
-  "lastKind": "getoff",
-  "activeJob": null,
+  "drops": 10,
+  "dropped": 8,
+  "waitTicks": 669,
+  "rideTicks": 2322,
+  "catches": 4,
+  "transfers": 2,
+  "lastKind": "waiting",
+  "activeJob": "olympiaterminaali>kamppi",
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>arabia express limit 1878",
-   "2: PLAN 1>6H wait 244",
-   "2: DROP-TAKEN 1140450 on 1",
-   "4: DROP-TAKEN 1130434 on 1",
-   "63: PLAN 1>6H wait 183",
-   "124: PLAN 1>6H wait 122",
-   "185: PLAN 1>6 wait 61",
+   "2: JOB lasipalatsi>arabia express limit 1878",
+   "3: PLAN 1>6H wait 243",
+   "3: DROP-TAKEN 1140450 on 1",
+   "5: DROP-TAKEN 1130434 on 1",
+   "64: PLAN 1>6H wait 182",
+   "125: PLAN 1>6H wait 121",
+   "186: PLAN 1>6 wait 60",
    "224: CATCH 1",
    "342: DROPPED DROPPED · ON TIME · +69 · Hesperian puisto",
    "397: DROPPED DROPPED · ON TIME · +81 · Ooppera",
    "858: OFF sornainen transfer",
    "859: PLAN 6 wait 201",
-   "861: DROP-TAKEN 1230409 on 6",
-   "870: DROP-TAKEN 1220408 on 6",
+   "860: DROP-TAKEN 1230409 on 6",
+   "863: DROP-TAKEN 1220408 on 6",
    "920: PLAN 8 wait 235",
-   "981: PLAN 6 wait 79",
-   "1039: CATCH 6",
-   "1121: DROPPED DROPPED · ON TIME · +69 · Hauhon puisto",
-   "1319: DROPPED DROPPED · ON TIME · +117 · Kumtähdenkenttä",
-   "1493: OFF arabia deliver",
-   "1494: JOB arabia>lasipalatsi parts limit 1555",
-   "1495: PLAN 6>1H wait 7",
-   "1495: DROP-TAKEN 1220408 on 6",
-   "1495: DROP-TAKEN 1220403 on 6",
+   "981: PLAN 6H wait 29",
+   "989: CATCH 6H",
+   "1076: DROPPED DROPPED · ON TIME · +69 · Hauhon puisto",
+   "1288: DROPPED DROPPED · ON TIME · +117 · Kumtähdenkenttä",
+   "1415: OFF arabia deliver",
+   "1416: JOB arabia>olympiaterminaali fragile limit 1939",
+   "1417: PLAN 6>3 wait 85",
+   "1417: DROP-TAKEN 1113434 on 6",
+   "1418: DROP-TAKEN 1121436 on 6",
+   "1478: PLAN 6>3 wait 24",
    "1502: CATCH 6",
-   "1769: DROPPED DROPPED · FRAGILE SAFE · +128 · Paavalinkirkko",
-   "1839: DROPPED DROPPED · FRAGILE SAFE · +152 · Hauhon puisto",
-   "1934: OFF sornainen transfer",
-   "1935: PLAN 1H wait 75",
-   "1935: DROP-TAKEN 1140452 on 1H",
-   "1936: DROP-TAKEN 1121482 on 1H",
-   "1996: PLAN 1H wait 14",
-   "2010: CATCH 1H",
-   "2139: DROPPED DROPPED · ON TIME · +69 · Urheilutalo",
-   "2300: DROPPED DROPPED · ON TIME · +81 · Kaupunginpuutarha",
-   "2523: OFF lasipalatsi deliver",
-   "2524: JOB lasipalatsi>kauppatori fresh food limit 658",
-   "2525: PLAN 4>2 wait 0",
-   "2525: DROP-TAKEN 1020446 on 4",
-   "2525: CATCH 4",
-   "2597: DROPPED DROPPED · ON TIME · +57 · Ylioppilastalo",
-   "2629: OFF senaatintori transfer",
-   "2630: PLAN 2H wait 288",
-   "2691: PLAN H wait 165",
-   "2752: PLAN 2H wait 166",
-   "2813: PLAN 2 wait 0",
-   "2813: CATCH 2",
-   "2904: OFF kauppatori deliver"
+   "1922: DROPPED DROPPED · FRAGILE SAFE · +176 · Sörnäinen (M)",
+   "2008: DROPPED DROPPED · FRAGILE SAFE · +176 · Lintulahti",
+   "2145: OFF hakaniemi transfer",
+   "2146: PLAN 3 wait 155",
+   "2146: DROP-TAKEN 1020463 on 3",
+   "2146: DROP-TAKEN 1020453 on 3",
+   "2207: PLAN 6>3 wait 258",
+   "2268: PLAN 3 wait 33",
+   "2280: CATCH 3",
+   "2474: DROPPED DROPPED · ON TIME · +81 · Päärautatieasema",
+   "2553: DROPPED DROPPED · ON TIME · +93 · Ylioppilastalo",
+   "2903: OFF olympiaterminaali deliver",
+   "2904: JOB olympiaterminaali>kamppi equipment limit 848",
+   "2905: PLAN 2H wait 188",
+   "2906: DROP-TAKEN 1030425 on 2H",
+   "2907: DROP-TAKEN 1020449 on 2H",
+   "2966: PLAN 2 wait 59"
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
@@ -4886,19 +4914,19 @@
     "waiting"
    ],
    [
-    1040,
+    990,
     "riding"
    ],
    [
-    1493,
+    1415,
     "getoff"
    ],
    [
-    1494,
+    1416,
     "riding"
    ],
    [
-    1495,
+    1417,
     "waiting"
    ],
    [
@@ -4906,48 +4934,28 @@
     "riding"
    ],
    [
-    1934,
+    2145,
     "getoff"
    ],
    [
-    1935,
+    2146,
     "waiting"
    ],
    [
-    2011,
+    2281,
     "riding"
    ],
    [
-    2523,
+    2903,
     "getoff"
-   ],
-   [
-    2524,
-    "riding"
-   ],
-   [
-    2525,
-    "waiting"
-   ],
-   [
-    2526,
-    "riding"
-   ],
-   [
-    2629,
-    "getoff"
-   ],
-   [
-    2630,
-    "waiting"
-   ],
-   [
-    2814,
-    "riding"
    ],
    [
     2904,
-    "getoff"
+    "riding"
+   ],
+   [
+    2905,
+    "waiting"
    ]
   ]
  },
@@ -5214,17 +5222,17 @@
   "drops": 6,
   "dropped": 5,
   "waitTicks": 587,
-  "rideTicks": 1515,
+  "rideTicks": 1514,
   "catches": 4,
   "transfers": 1,
   "lastKind": "getoff",
   "activeJob": null,
   "leg": 0,
   "log": [
-   "1: JOB lasipalatsi>ooppera equipment limit 346",
-   "2: PLAN 1H wait 0",
-   "2: DROP-TAKEN 1130432 on 1H",
-   "2: CATCH 1H",
+   "2: JOB lasipalatsi>ooppera equipment limit 346",
+   "3: PLAN 1H wait 0",
+   "3: DROP-TAKEN 1130432 on 1H",
+   "3: CATCH 1H",
    "44: DROPPED DROPPED · ON TIME · +57 · Kansallismuseo",
    "138: OFF ooppera deliver",
    "139: JOB ooppera>lansiterminaali fresh food limit 1276",
@@ -5259,15 +5267,15 @@
   ],
   "timeline": [
    [
-    1,
+    2,
     "riding"
    ],
    [
-    2,
+    3,
     "waiting"
    ],
    [
-    3,
+    4,
     "riding"
    ],
    [

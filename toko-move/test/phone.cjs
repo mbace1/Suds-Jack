@@ -120,7 +120,7 @@ server.listen(0, '127.0.0.1', async () => {
     const rc = document.getElementById('routeChoices'), r = rc?.getBoundingClientRect();
     return { active: !!window.__tm.challenge.active, order: ids,
       text: sheet.innerText.slice(0, 200),
-      dispatchStillListed: /DISPATCH · \d+\/\d+ COMPLETE/.test(sheet.innerText),
+      dispatchStillListed: /DISPATCH · /.test(sheet.innerText),
       catchPanel: rc?.innerText.slice(0, 90) || '',
       catchTop: r ? Math.round(r.top) : null, catchButtons: rc?.querySelectorAll('.catchChoice').length || 0,
       firstButtonBottom: (() => { const b = rc?.querySelector('.catchChoice')?.getBoundingClientRect(); return b ? Math.round(b.bottom) : null; })() };
