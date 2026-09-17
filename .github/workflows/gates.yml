@@ -293,6 +293,9 @@ jobs:
       - name: one token per module, moved when and only when its bytes move
         run: node toko-move/test/tokens.mjs
 
+      - name: the event deck — a free way past, a seeded draw, holds that shift arrivals exactly
+        run: node toko-move/test/events.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 

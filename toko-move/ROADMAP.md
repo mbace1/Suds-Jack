@@ -65,7 +65,7 @@ language. What "succinct" means here, concretely:
 Every one is measured with `test/shifts.cjs` before it ships, and the floor
 holds: random-but-sane bots ≥ 40%, the cheapest-job bot wins.
 
-### 1. Events — the roguelike deck
+### 1. Events — the roguelike deck — SHIPPED v2.38 (seven encounters, three disruptions; goodwill accrues and nothing spends it yet)
 `data/events.js`: a deck of short cards, each `{ id, where, when, text,
 options }`. `where` is `stop | aboard | walking`; `when` is a tick window and
 a weight; every option is `{ label, cost: {ticks, score}, needs: cargo|drop|

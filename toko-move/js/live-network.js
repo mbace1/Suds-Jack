@@ -94,7 +94,16 @@ export class LiveNetwork{
   // headway is 556. Evenly spaced, the worst wait on a line is one headway and
   // the average is half of one — which is what a timetable is.
   const base=(hash(layer.id)%10000)/10000;for(let i=0;i<count;i++)this.vehicles.push({id:`${layer.id}:${i}`,layer,phase:(base+i*(2/count))%2,speed:speedForLayer(layer,ticksPerDay)});}}
- position(v,tick){const path=v.layer.path||[];if(path.length<2)return null;const cycle=(v.phase+tick*v.speed)%2,q=cycle<=1?cycle:2-cycle,at=q*(path.length-1),i=Math.min(path.length-2,Math.floor(at)),f=at-i,a=path[i],b=path[i+1];return{lat:a[0]+(b[0]-a[0])*f,lon:a[1]+(b[1]-a[1])*f,pathIndex:at,direction:cycle<=1?1:-1};}
+ // A HOLD is a disruption: every vehicle on a layer stands where it is from
+ // `from` to `until`. Positions are a closed form in the tick, so a hold is
+ // just ticks the layer does not experience — `effectiveTick` subtracts the
+ // held time so far, and both the position and the next-arrival read it. An
+ // estimate does not look through a FUTURE hold: you learn of a disruption
+ // when it happens, which is what makes it one.
+ hold(layer,from,until){(this.holds||=[]).push({layerId:layer.id,from,until});}
+ heldNow(layer,tick){return (this.holds||[]).find(h=>h.layerId===layer.id&&tick>=h.from&&tick<h.until)||null;}
+ effectiveTick(layer,tick){let t=tick;for(const h of this.holds||[]){if(h.layerId!==layer.id)continue;const a=Math.min(tick,h.until),b=h.from;if(a>b)t-=(a-b);}return t;}
+ position(v,tick){const path=v.layer.path||[];if(path.length<2)return null;tick=this.effectiveTick(v.layer,tick);const cycle=(v.phase+tick*v.speed)%2,q=cycle<=1?cycle:2-cycle,at=q*(path.length-1),i=Math.min(path.length-2,Math.floor(at)),f=at-i,a=path[i],b=path[i+1];return{lat:a[0]+(b[0]-a[0])*f,lon:a[1]+(b[1]-a[1])*f,pathIndex:at,direction:cycle<=1?1:-1};}
  vehicle(id){return this.vehicles.find(v=>v.id===id)||null;}
  // Unit screen-space direction of travel at a vehicle, from the path tangent
  // around its index and the sign of the leg it is on; null on a degenerate path.
@@ -148,6 +157,10 @@ export class LiveNetwork{
   // the catch window with a whole cycle — the single case where it and the old
   // scan disagreed, and it disagreed by 548 ticks.
   if(this.nearestTo(layer,nodePathIndex,tick,2.2,direction))return 0;
+  // Held: nothing arrives until the hold lifts, then the timetable resumes
+  // from where it stood.
+  const held=this.heldNow(layer,tick);if(held)return (held.until-tick)+(this.nextArrival(layer,nodePathIndex,held.until,direction)??0);
+  tick=this.effectiveTick(layer,tick);
   const n=Math.max(1,(layer.path?.length||2)-1),q=Math.max(0,Math.min(1,nodePathIndex/n));
   const targets=direction===1?[q]:direction===-1?[2-q]:[q,2-q];
   let best=null;
