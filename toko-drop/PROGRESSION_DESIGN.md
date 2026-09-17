@@ -311,6 +311,7 @@ option is spelled out and the reading is flagged so it can be corrected.
 | 12 | Rush: the campaign, or an ingredient? | First pass: *"2 sounds right but I don't understand 1 and 3"*; after rewording: **"Likely Rush IS the campaign — but that may not have exactly the current Rush rules, as those are copied from Blade Rush and are tested as optional mechanics that may be used somewhere."** | lean; see note |
 | 11 | What to take from Blade Rush's campaign? | **"Like Geometry Wars 3, which we can use as reference. It has different rooms with timed goals and S, A, B, C, F tiers. Along with added mechanics, level shapes, etc."** — so the campaign unit is a *room* with a *timed goal*, graded **S/A/B/C/F** (an F tier we do not have), and the path adds **mechanics and level shapes** as it goes. GW3 is the reference to read. | decided (reference) |
 | 16 | What are the families built on? | **"Domes are one family, same with cubes, others are other family, and more may arise."** — family = **shape class**. Dome, cube, and each one-off silhouette is its own family; new shapes are new families. | decided |
+| 17 | Within one family, how are species told apart? | **"Domes are different hues and different sizes. Big are likely slower, may move differently. Some divide etc. Colour is main difference."** — colour = species identity within the family; size correlates with speed/behaviour. | decided |
 | — | Colour for shooting vs non-shooting? | Not that axis — **families**. Owner's direction verbatim in §8. | direction; questions in §8.3 |
 
 **The Rush note matters.** The campaign door being "Rush" does not commit it
@@ -517,3 +518,27 @@ c) **Colour stays per species** (as now) and the family is carried by shape
    alone — colour is identity, not family.
 d) **Colour = what it does to you**: one reserved hue per *effect* (green =
    leaves something, red = shoots, etc.) that crosses families.
+
+### 8.6 Q17 answered — within a family, colour is the species
+
+> "Domes are different hues and different sizes. Big are likely slower, may
+> move differently. Some divide etc. Colour is main difference."
+
+So: **shape = family, colour = species, size ≈ speed and behaviour class.**
+Colour is not asked to carry the gun or the role; you learn what a hue does
+by what it does. The original complaint ("colour differences for non-shooting
+don't make sense") resolves to a *consistency* rule rather than a
+re-colouring: within a family, no two species may share a hue, and size must
+track speed (big = slower). Today that second rule is broken in places —
+WEEVA (r 0.8, spd 0.6) and SPITTOR (r 0.9, spd 1.6) are near-equal domes at
+very different speeds; SPLITTA (r 1.1, spd 1.0) is the biggest dome and
+mid-speed. Worth a pass, not a redesign.
+
+**Q18, next:** if colour is species and shape is family, how does a player
+know a dome *shoots* before it does?
+a) They don't — the first shot teaches it, like every other trait.
+b) A **stance**: shooters stop to fire (HOLDER already holds its ground); the
+   stop is the tell.
+c) A **lit core** while armed, dark when muzzled (CLOSE COMBAT).
+d) A silhouette detail on the gel (spout / aperture) — a within-family
+   modifier, not a new family.
