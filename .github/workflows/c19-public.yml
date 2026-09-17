@@ -1,0 +1,76 @@
+name: C19 public acceptance
+on:
+  push:
+    branches: [qa/c19-hub-delivery]
+    paths: [.github/workflows/c19-public.yml]
+permissions:
+  contents: read
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 4d758244583b1d5cb8a8ab5d27ec953c4c40f805
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify normal public URLs against the exact merged release
+        run: |
+          mkdir -p /tmp/c19-public
+          python3 - <<'PY'
+          import concurrent.futures,hashlib,json,pathlib,time,urllib.request
+          base='https://mbace1.github.io/Suds-Jack/piritori-c17/'
+          expected=pathlib.Path('piritori-c17/release.json').read_bytes()
+          for attempt in range(12):
+              try:
+                  with urllib.request.urlopen(base+'release.json',timeout=30) as response:raw=response.read()
+                  if raw==expected:break
+              except Exception:pass
+              time.sleep(10)
+          else:raise SystemExit('Public release receipt has not reached this tested candidate')
+          release=json.loads(raw)
+          assert release['source_commit']=='69b23168653d6dccb0c0a626755eac890ac686ad'
+          assert release['tested_source_head']==release['source_commit']
+          assert release['build']=='C.19' and release['physical_devices_verified'] is False
+          pathlib.Path('/tmp/c19-public/release.json').write_bytes(raw)
+          def check(item):
+              name,digest=item
+              with urllib.request.urlopen(base+name,timeout=30) as response:data=response.read()
+              actual=hashlib.sha256(data).hexdigest()
+              assert actual==digest,'public bytes differ: '+name
+              return {'path':name,'sha256':actual,'bytes':len(data)}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:rows=list(pool.map(check,release['sha256'].items()))
+          pathlib.Path('/tmp/c19-public/public-files.json').write_text(json.dumps(rows,indent=2)+'\n')
+          print('Every public C19 package file matches the tested source receipt:',len(rows))
+          hub='https://mbace1.github.io/Suds-Jack/'
+          hub_rows=[]
+          for name in ['index.html','AnotherHUB/index.html','sw.js','hub/games.js','hub/hub.js','hub/hub-entry.js','hub/versions.json']:
+              expected_hash=hashlib.sha256(pathlib.Path(name).read_bytes()).hexdigest()
+              with urllib.request.urlopen(hub+name,timeout=30) as response:actual_hash=hashlib.sha256(response.read()).hexdigest()
+              assert actual_hash==expected_hash,'public hub drift: '+name
+              hub_rows.append({'path':name,'sha256':actual_hash})
+          pathlib.Path('/tmp/c19-public/public-hub-files.json').write_text(json.dumps(hub_rows,indent=2)+'\n')
+          print('Public hub, short entry and offline shell match the tested deployment')
+          PY
+      - run: npm install --prefix /tmp/c19-test playwright
+      - run: /tmp/c19-test/node_modules/.bin/playwright install --with-deps chromium
+      - name: Follow the public hub link and play both orientations
+        env:
+          NODE_PATH: /tmp/c19-test/node_modules
+          HUB_BASE_URL: https://mbace1.github.io/Suds-Jack/
+          C18_ENTRY_OUTPUT: /tmp/c19-public
+        run: node test/piritori-c18-entry.cjs
+      - name: Record merged deployment identity
+        if: always()
+        run: |
+          mkdir -p /tmp/c19-public
+          git rev-parse HEAD > /tmp/c19-public/deploy-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: c19-public-acceptance
+          path: /tmp/c19-public
+          retention-days: 7
