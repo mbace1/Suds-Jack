@@ -31,6 +31,11 @@ jobs:
           node-version: '22'
       - run: node test/piritori-c18-package-regressions.mjs
       - run: node test/piritori-c18-package.mjs
+      - name: Check shipped presentation entry syntax
+        run: |
+          node --check piritori-c17/web/fight-module/readability.js
+          node --check piritori-c17/web/fight-module/main.js
+          node --check piritori-c17/web/crew-run/ui.js
   deployment-entry:
     runs-on: ubuntu-latest
     timeout-minutes: 12
