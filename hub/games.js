@@ -28,14 +28,14 @@
 
 export const GAMES = [
   {
-    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.17.1', status: 'active',
-    path: 'piritori-c17/web/crew-run/?campaign=1&release=17.1', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
+    id: 'optionc-lab', hubHome: 'native', title: 'PIRITORI · NIGHT SHIFT C.18', status: 'active',
+    path: 'piritori-c17/web/crew-run/?campaign=1&release=18', inRepo: true, pad: 'native', accent: '#9aebc7', art: 'tacticsyard',
     tagline: 'Choose your crew. Bring someone home. Live with the aftermath.',
     lineage: 'Kallio 2003 · Dream Loop crew pilot', tags: ['3D', 'tactics', 'prototype'],
     controls: 'Choose 2–3 crew · Move + Act · Help / Extract · Aim view then confirm · drag camera',
-    note: 'C.17.1 — The Crew Matters: campaign crew identity/builds enter Night Shift; wounds, missing/recovery and fight growth write back exactly once. Strength/Toughness matter in combat. C.16.1 cameras and wet courtyard retained; procedural stand-ins remain temporary. Physical Pixel/iPad and final-art acceptance remain open.',
-    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.17.1 — Syvemmät ikkunat ja käytävät, kuluneet pinnat ja märän pihan heijastukset. Kolme kamerakulmaa. Erillinen prototyyppi, väliaikaiset hahmot.'},
-    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.17.1 — 窓と通路の奥行き、使い込まれた表面、雨の反射を更新。3種類のカメラ。仮キャラクターによる独立した試作です。'},
+    note:'C.18 — One command bar, character portraits and clearer mission/turn information. Secondary controls live in Menu. Direct scene rendering and optional safe graphics; C.17 campaign rules retained. Procedural characters only. Physical phone retest pending.',
+    fi: {tagline:'Valitse ryhmä. Tuo kaveri kotiin. Kohtaa seuraukset.', controls:'Valitse 2–3 hahmoa · Move + Act · Help / Extract · vedä kameraa', note:'C.18 — Yhtenäinen komentopalkki, hahmomuotokuvat ja selkeämpi tehtävä- ja vuorotieto. Lisätoiminnot Menussa. Suora 3D-piirto ja valinnainen kevyt grafiikka. C.17-pelisäännöt säilyvät; puhelintesti odottaa.'},
+    ja: {tagline:'仲間を選び、救出し、その夜の結果を引き受ける。', controls:'2～3人を選択 · 移動＋行動 · 救助と脱出 · ドラッグでカメラ回転', note:'C.18 — コマンドバー、人物ポートレート、任務とターン表示を統一。補助操作はMenuへ。直接描画と安全な描画設定を追加。C.17のルールと仮キャラクターを維持。実機確認は未完了。'},
   },
   {
     id: 'concrete', title: 'CONCRETE', status: 'active', path: 'concrete/',
