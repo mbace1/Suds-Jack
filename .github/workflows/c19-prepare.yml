@@ -20,11 +20,11 @@ jobs:
         run: |
           git init /tmp/c19-source
           git -C /tmp/c19-source remote add origin https://github.com/mbace1/piritori-eden.git
-          git -C /tmp/c19-source fetch --depth=1 origin dcaadd8a1103adbd9838503180e5d9ac7af6152a
+          git -C /tmp/c19-source fetch --depth=1 origin 792e7bdc28f07884755d91e58891c78b29e7b3ed
           git -C /tmp/c19-source checkout --detach FETCH_HEAD
           git fetch origin main gh-pages
           git worktree add --detach /tmp/c19-live origin/gh-pages
-          python3 /tmp/c19-source/tools/publish/arena_lab_release.py --source /tmp/c19-source --commit dcaadd8a1103adbd9838503180e5d9ac7af6152a --deployed-manifest /tmp/c19-live/piritori-c17/art/v3/manifest.json --previous-cabinet /tmp/c19-live/piritori-c17 --output /tmp/c19-package
+          python3 /tmp/c19-source/tools/publish/arena_lab_release.py --source /tmp/c19-source --commit 792e7bdc28f07884755d91e58891c78b29e7b3ed --deployed-manifest /tmp/c19-live/piritori-c17/art/v3/manifest.json --previous-cabinet /tmp/c19-live/piritori-c17 --output /tmp/c19-package
       - name: Prepare scoped content changes on both actual baselines
         run: |
           cat > /tmp/c19-hub-edit.py <<'PY'
@@ -32,7 +32,6 @@ jobs:
           import json,re,shutil,subprocess
           def read(p):return Path(p).read_bytes().decode()
           def write(p,s):Path(p).parent.mkdir(parents=True,exist_ok=True);Path(p).write_bytes(s.encode())
-          # Replace this cabinet only. Do not copy another game's source/deployment history.
           shutil.rmtree('piritori-c17');shutil.copytree('/tmp/c19-package','piritori-c17')
           s=read('hub/games.js');start=s.index("id: 'optionc-lab'");end=s.index('\n  },',start)
           part=s[start:end].replace('NIGHT SHIFT C.18','NIGHT SHIFT C.19').replace('campaign=1&release=18','campaign=1&release=19')
@@ -49,8 +48,8 @@ jobs:
           write('hub/games.js',s[:start]+part+s[end:])
           versions=json.loads(read('hub/versions.json'));assert versions['optionc-lab']['v']=='18'
           versions['optionc-lab'].update(v='19',n=19000);write('hub/versions.json',json.dumps(versions,ensure_ascii=False,indent=2)+'\n')
-          # Advance only the three catalogue import layers, preserving concurrent hub work.
-          files=[Path('index.html'),*Path('hub').rglob('*.js')]
+          # Only the real arcade import chain. Other games' shared shells keep their URLs.
+          files=[Path('index.html'),Path('hub/hub.js'),Path('hub/hub-entry.js')]
           for module in ['games.js','hub.js','hub-entry.js']:
               pattern=re.compile(r'((?:\./|hub/)?'+re.escape(module)+r'\?v=)(\d+)')
               tokens={int(m[2]) for p in files for m in pattern.finditer(read(p))}
@@ -60,7 +59,6 @@ jobs:
                   text=read(p);new,n=pattern.subn(lambda m:m[1]+str(version),text)
                   if n:write(p,new);hits+=n
               assert hits>0
-          # The validators come from the current development baseline; no historical pin.
           for name in ['test/piritori-c18-package.mjs','test/piritori-c18-package-regressions.mjs','test/piritori-c18-entry.cjs']:
               write(name,subprocess.check_output(['git','show','origin/main:'+name]).decode())
           s=read('test/piritori-c18-entry.cjs')
