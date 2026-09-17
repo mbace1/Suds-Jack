@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=203';
+import { TUNING } from './tuning.js?v=204';
 const _apt = { x: 0, z: 0 };   // v236: scratch for arena queries — no per-frame alloc
-import { nesSnap, NEON } from './retro.js?v=203';
+import { nesSnap, NEON } from './retro.js?v=204';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -509,6 +509,13 @@ export const EnemyType = {
   // Never touches you — it drags its schoolmates into a tight knot around you
   // (main.js applies the pull). Kill the shepherd and the knot loosens.
   SHEPHERD:    39,
+  // v251 TESTERS (owner: "push the ribbon and slugs into the game around
+  // wave 2 as a tester"). The arc-mover family's two candidates from the
+  // sketchbook (PROGRESSION_DESIGN.md §8.9), promoted to real bodies in real
+  // waves so the question "is it fun to fight" can be asked. Both are
+  // GROUP-bodied like TORO: group.position is the head, the body hangs off it.
+  RIBBON:      40,
+  SLUG:        41,
 };
 // SHEPHERD herd radius (world units) — main.js pulls flockmates inside it,
 // enemy.js draws the ring, so the rule and the tell can't drift.
@@ -566,6 +573,8 @@ export const CFG = {
   // v203: fragile, slow, keeps its distance — the threat is what it does to
   // the OTHERS, so it must be killable the moment you read the ring.
   [EnemyType.SHEPHERD]:    { color: 0x66ffcc, radius: 0.6, speed: 1.6, hp: 3, bulletColor: null, fireInterval: null },
+  [EnemyType.RIBBON]:      { color: 0x66ddee, radius: 0.40, speed: 2.6, hp: 4,  bulletColor: null, fireInterval: null },  // v251 tester
+  [EnemyType.SLUG]:        { color: 0x88ff22, radius: 0.46, speed: 2.2, hp: 11, bulletColor: null, fireInterval: null },  // v251 tester (hp = segments)
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -589,6 +598,9 @@ export const BLOB_TYPES = new Set([
   EnemyType.SIREN, EnemyType.CLOAKER, EnemyType.MAGNA,
   EnemyType.SPITTLE, EnemyType.HOPPER,   // v157: binding's gel-bodied pair
 ]);
+
+// v251: the bodies whose transform lives on `group`, not `mesh`.
+const GROUP_BODY = new Set([EnemyType.TORO, EnemyType.BAMBU, EnemyType.PYRA, EnemyType.RIBBON, EnemyType.SLUG]);
 
 const CUBE_TYPES = new Set([
   EnemyType.YELA_CUBE, EnemyType.ORANGE_CUBE, EnemyType.SLUDGE_CUBE,
@@ -750,6 +762,7 @@ export class Enemy {
       // Specialists (v96): TORO wheel, OMEGA crystal — per-family satin looks.
       // TOKOTRON boxes (v155) borrow the firmer cube family.
       const fam = isToro ? 'toro'
+        : (type === EnemyType.RIBBON || type === EnemyType.SLUG) ? 'blob'   // v251: the arc-movers are gel
         : (type === EnemyType.GRUNT || type === EnemyType.BRUTE || type === EnemyType.PROG) ? 'cube'
         : 'omega';
       this.mat = makeSatinMat(cfg.color, fam, cfg.radius);
@@ -918,6 +931,23 @@ export class Enemy {
       this._spinSpeed = 1.8;
       this._pyraFireTimer = cfg.fireInterval * intervalMult;
 
+    } else if (type === EnemyType.RIBBON || type === EnemyType.SLUG) {
+      // v251 arc-mover testers. The head is the group; the SLUG's chain and
+      // the RIBBON's strip are children in group-local space, so the death
+      // pop, flash and removal all work through the group like TORO's.
+      this.group = new THREE.Group();
+      this.group.position.set(x, 0, z);
+      scene.add(this.group);
+      this._arc = { heading: Math.atan2(-z, -x), phase: Math.random() * Math.PI * 2 };
+      this._longBody = true;              // main.js: hit-test the BODY, not the head circle
+      this.mat.side = THREE.DoubleSide;   // the strip has no thickness
+      if (type === EnemyType.SLUG) {
+        const S = TUNING.arc.slug, h = this._arc.heading;
+        this._buildChain(Array.from({ length: S.segments }, (_, k) =>
+          ({ x: x - Math.cos(h) * k * S.spacing, z: z - Math.sin(h) * k * S.spacing })));
+      } else {
+        this._buildRibbon(x, z);
+      }
     } else {
       // Blob dome origin sits at the floor contact → rest y = 0. Cubes rest at
       // their half-extent (the RoundedBox is radius*1.8 wide → 0.9·radius; the
@@ -1193,8 +1223,171 @@ export class Enemy {
     }
   }
 
+
+  // ── v251 ARC-MOVERS (testers) — PROGRESSION_DESIGN.md §8.9 ──────────────────
+  // Steering with a TURN-RATE LIMIT, which no other body has: the movement
+  // model re-points a dome at the player every frame and a dome hides that; a
+  // long body draws its own recent heading, so an instant turn renders as a
+  // corner. The serpentine is a heading OFFSET (the path curves), not a
+  // sideways shove (the body crabs). Numbers in TUNING.arc.
+  _arcSteer(dt, tx, tz, speed, arena) {
+    const A = this._arc, T = TUNING.arc, gp = this.group.position;
+    const want = Math.atan2(tz - gp.z, tx - gp.x);
+    A.phase += dt * T.weaveHz;
+    const desired = want + Math.sin(A.phase) * T.weaveAmp;
+    let d = desired - A.heading;
+    while (d >  Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    const max = T.turnRate * dt;
+    A.heading += Math.max(-max, Math.min(max, d));
+    const nx = gp.x + Math.cos(A.heading) * speed * dt;
+    const nz = gp.z + Math.sin(A.heading) * speed * dt;
+    const c = arena.clamp(nx, nz, CFG[this.type].radius);
+    const cx = c.x, cz = c.z;
+    if (cx !== nx || cz !== nz) A.heading += T.turnRate * dt * 2;   // on a wall: bend off it
+    gp.x = cx; gp.z = cz;
+  }
+
+  // THE SLUG — a chain of gel domes, head first, each pulled to a fixed
+  // distance behind the one ahead (no springs: a slug must not wobble like a
+  // rope). Rebuilt from points on every change so a split or a shortened chain
+  // is the same code path as a fresh one. `this.mesh` is always the head.
+  _buildChain(pts) {
+    const S = TUNING.arc.slug, n = pts.length;
+    if (this._chain) {
+      for (const g of this._chain) { if (g.mesh !== this.mesh) this.group.remove(g.mesh); g.mesh.geometry.dispose(); }
+    }
+    if (this._eye) { this.group.remove(this._eye); this._eye.geometry.dispose(); this._eye.material.dispose(); }
+    this.group.position.set(pts[0].x, 0, pts[0].z);
+    this._chain = pts.map((p, i) => {
+      const t = n > 1 ? i / (n - 1) : 0;
+      const r = S.headR + (S.tailR - S.headR) * t;     // fat head, tapering tail
+      const geo = new THREE.SphereGeometry(r, 12, 9);
+      geo.scale(1, 0.82, 1);                          // squat, so the chain reads as ONE animal
+      let mesh;
+      if (i === 0) { mesh = this.mesh; mesh.geometry = geo; }
+      else { mesh = new THREE.Mesh(geo, this.mat); mesh.castShadow = true; this.group.add(mesh); }
+      return { mesh, r, x: p.x, z: p.z };
+    });
+    if (this.mesh.parent !== this.group) this.group.add(this.mesh);
+    this.mesh.position.set(0, S.headR * 0.82, 0);
+    // the head's eye: the ONE mark that says which end you must attack from —
+    // the rule is a coin flip if you cannot tell a head from a tail
+    this._eye = new THREE.Mesh(new THREE.SphereGeometry(S.headR * 0.3, 8, 6),
+                               new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    this.group.add(this._eye);
+    this.hp = n;
+    this._placeChain();
+  }
+  _placeChain() {
+    const S = TUNING.arc.slug, gp = this.group.position, ch = this._chain;
+    ch[0].x = gp.x; ch[0].z = gp.z;
+    for (let i = 1; i < ch.length; i++) {
+      const a = ch[i - 1], b = ch[i];
+      const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz) || 1;
+      b.x = a.x + (dx / d) * S.spacing;
+      b.z = a.z + (dz / d) * S.spacing;
+      b.mesh.position.set(b.x - gp.x, b.r * 0.82, b.z - gp.z);
+    }
+    const h = ch[0], hd = this._arc.heading;
+    this._eye.position.set(Math.cos(hd) * h.r * 0.7, h.r * 1.05, Math.sin(hd) * h.r * 0.7);
+  }
+  // THE RULE (owner): hit an END and the slug SHORTENS; hit the MIDDLE and it
+  // SPLITS — the back half is reversed, so its old rear is now a head pointed
+  // at you. Spraying makes two problems out of one; the clean kill is
+  // positional. Returns true only when the whole animal is gone.
+  _slugHit(ix, iz) {
+    this._flashT = 0.12; this._sqV -= 0.4;
+    const ch = this._chain, n = ch.length;
+    let i = this._hitSeg ?? -1; this._hitSeg = -1;
+    if (i < 0) {   // no segment recorded (env kill, AoE): the one nearest the impact
+      let bd = Infinity;
+      for (let k = 0; k < n; k++) { const d = Math.hypot(ch[k].x - ix, ch[k].z - iz); if (d < bd) { bd = d; i = k; } }
+    }
+    if (this.hp <= 1 || n <= 1) { this.destroy(); return true; }   // env kills set hp = 1 first
+    const pts = ch.map(g => ({ x: g.x, z: g.z }));
+    if (i === 0 || i === n - 1) {
+      pts.splice(i, 1);
+      this._buildChain(pts);
+      this._slugEvent = 'shorten';
+      return false;
+    }
+    const front = pts.slice(0, i), back = pts.slice(i + 1).reverse();
+    this._buildChain(front);
+    this._splitPts = back;          // main.js spawns the second animal from these
+    this._slugEvent = 'split';
+    return false;
+  }
+
+  // THE RIBBON — the body is its own recent path: a strip swept along the
+  // positions the head has occupied, sampled BY DISTANCE (its length is a
+  // design number, not a frame-rate artefact), resampled through a spline so
+  // turns come out round, tapering to nothing at the tail. Vertices are
+  // group-local, so the strip rides the head like any other body part.
+  _buildRibbon(x, z) {
+    const T = TUNING.arc.ribbon;
+    this._trail = [];
+    for (let i = 0; i < T.samples; i++) this._trail.push({ x, z: z - i * T.step });
+    const N = (T.samples - 1) * 3 + 1;
+    const geo = new THREE.BufferGeometry();
+    this._ribVerts = new Float32Array(N * 6);
+    geo.setAttribute('position', new THREE.BufferAttribute(this._ribVerts, 3));
+    const idx = [];
+    for (let i = 0; i < N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    geo.setIndex(idx);
+    this.mesh.geometry = geo;
+    this.mesh.position.set(0, 0, 0);
+    this.group.add(this.mesh);
+    this._ribPts = this._trail.map(() => new THREE.Vector3());
+    this._updateRibbon();
+  }
+  _updateRibbon() {
+    const T = TUNING.arc.ribbon, gp = this.group.position, tr = this._trail;
+    if (Math.hypot(gp.x - tr[0].x, gp.z - tr[0].z) >= T.step) { tr.pop(); tr.unshift({ x: gp.x, z: gp.z }); }
+    const p3 = this._ribPts;
+    for (let i = 0; i < tr.length; i++) p3[i].set(tr[i].x - gp.x, 0, tr[i].z - gp.z);
+    const curve = new THREE.CatmullRomCurve3(p3, false, 'catmullrom', 0.5);
+    const N = (tr.length - 1) * 3 + 1;
+    const pts = curve.getSpacedPoints(N - 1);
+    const v = this._ribVerts;
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1);                              // 0 head, 1 tail
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(N - 1, i + 1)];
+      let tx = b.x - a.x, tz = b.z - a.z;
+      const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
+      const w = T.width * Math.sin(Math.min(1, t * 6) * Math.PI / 2) * (1 - t * t);
+      const y = 0.30 + Math.sin(t * Math.PI) * 0.10;      // a slight arch, to catch light
+      v[i * 6 + 0] = pts[i].x - tz * w; v[i * 6 + 1] = y; v[i * 6 + 2] = pts[i].z + tx * w;
+      v[i * 6 + 3] = pts[i].x + tz * w; v[i * 6 + 4] = y; v[i * 6 + 5] = pts[i].z - tx * w;
+    }
+    const g = this.mesh.geometry;
+    g.attributes.position.needsUpdate = true;
+    g.computeVertexNormals();
+    g.computeBoundingSphere();
+  }
+
+  // The body hit-tests ITSELF — main.js asks these instead of the head circle
+  // when they exist. A SLUG records which segment took the hit for the rule;
+  // a RIBBON is hittable along its length, at the width it has there.
+  hitTest(bx, bz, br) {
+    if (this.type === EnemyType.SLUG) {
+      const ch = this._chain;
+      for (let i = 0; i < ch.length; i++) {
+        if (Math.hypot(ch[i].x - bx, ch[i].z - bz) < ch[i].r + br) { this._hitSeg = i; return true; }
+      }
+      return false;
+    }
+    const T = TUNING.arc.ribbon, tr = this._trail, n = tr.length;
+    for (let i = 0; i < n; i++) {
+      const w = i === 0 ? CFG[this.type].radius : T.width * (1 - i / n);
+      if (Math.hypot(tr[i].x - bx, tr[i].z - bz) < w + br) return true;
+    }
+    return false;
+  }
+  touches(px, pz, r) { return this.hitTest(px, pz, r); }   // contact is the same body
+
   get position() {
-    return (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA)
+    return (GROUP_BODY.has(this.type))
       ? this.group.position : this.mesh.position;
   }
   get color()  { return CFG[this.type].color; }
@@ -1211,7 +1404,7 @@ export class Enemy {
   }
   // Vertical anchor for FX/HUD at the body's mid-height. Blob dome origin sits
   // at the floor contact (Part 2), so their position.y is 0, not the center.
-  get fxY() { return BLOB_TYPES.has(this.type) ? this.radius : this.position.y; }
+  get fxY() { return (BLOB_TYPES.has(this.type) || this.type === EnemyType.RIBBON || this.type === EnemyType.SLUG) ? this.radius : this.position.y; }
   // Uniform base scale for the death pop/reset: blobs carry radius in
   // mesh.scale (shared unit dome); everything else bakes size into geometry.
   _deathBaseScale() {
@@ -1337,6 +1530,7 @@ export class Enemy {
 
   hit(impactX, impactZ) {
     if (!this.alive) return false;
+    if (this.type === EnemyType.SLUG) return this._slugHit(impactX, impactZ);   // v251: the rule
     this._flashT    = 0.12;
     this._sqV      -= 0.75;
 
@@ -1435,6 +1629,14 @@ export class Enemy {
 
     // ── Movement ──────────────────────────────────────────────────────────────
     switch (this.type) {
+      case EnemyType.RIBBON:
+      case EnemyType.SLUG: {
+        // v251 arc-movers: turn-rate-limited steering, then the body follows.
+        this._arcSteer(dt, playerPos.x, playerPos.z, spd, arena);
+        if (this.type === EnemyType.SLUG) this._placeChain(); else this._updateRibbon();
+        break;
+      }
+
       case EnemyType.GLOBBO: {
         // Pouncer: stalks at base speed, crouches to telegraph, then leaps.
         this._pounceT -= dt;
@@ -2450,7 +2652,7 @@ export class Enemy {
     this._visAcc = (this._visAcc || 0) + dt;
     if (!VIS.hz || this._visAcc >= 1 / VIS.hz) { this._wobbleT += this._visAcc; this._visAcc = 0; } // keep for WEEVA movement
 
-    if (this.type !== EnemyType.BAMBU && this.type !== EnemyType.PYRA) {
+    if (this.type !== EnemyType.BAMBU && this.type !== EnemyType.PYRA && this.type !== EnemyType.RIBBON) {
       const spring = BLOB_TYPES.has(this.type) ? 0.24 : 0.18;
       const damp   = BLOB_TYPES.has(this.type) ? 0.86 : 0.90;
       this._sqV = (this._sqV - (this._sq - 1.0) * spring) * damp;
@@ -2699,7 +2901,7 @@ export class Enemy {
     // v132: pop growth 3.2× → 2.3× and a squared fade (mostly transparent by
     // the time it's large) — the death stays readable without the old
     // screen-filling flash panels.
-    if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
+    if (GROUP_BODY.has(this.type)) {
       this.group.scale.setScalar(1 + t * 1.3);
     } else {
       // Blobs: the shared dome is unit-sized, so the death pop scales from the
@@ -2735,6 +2937,7 @@ export class Enemy {
     if (this._herdRing) this._herdRing.visible = false;  // v203: the herd is released
     if (this._plate) this._plate.visible = false;         // plate falls with the bulwark
     if (this._tether) this._tether.visible = false;       // pull dies with the magna
+    if (this._eye) this._eye.visible = false;              // v251: the slug's eye goes with it
     this._sq     = 1.0;
     this._sqV    = 0.0;
     if (this._flopActive) { this.mesh.quaternion.identity(); this._flopActive = false; }
@@ -2745,7 +2948,7 @@ export class Enemy {
     this._setEmissive(_deathFlash.setHex(CFG[this.type].color).lerp(_deathWhite, 0.4).getHex());
     this.mat.transparent = true;
     this.mat.depthWrite  = false;
-    if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
+    if (GROUP_BODY.has(this.type)) {
       this.group.scale.setScalar(1);
     } else {
       this.mesh.scale.setScalar(this._deathBaseScale());
@@ -2811,6 +3014,11 @@ export class Enemy {
     if (this.type === EnemyType.TORO) {
       scene.remove(this.group);
       if (this._indicator) scene.remove(this._indicator);
+    } else if (this.type === EnemyType.RIBBON || this.type === EnemyType.SLUG) {
+      scene.remove(this.group);   // v251: chain / strip are children of the group
+      if (this._chain) for (const g of this._chain) g.mesh.geometry.dispose();
+      if (this._eye) { this._eye.geometry.dispose(); this._eye.material.dispose(); }
+      if (this.type === EnemyType.RIBBON) this.mesh.geometry.dispose();
     } else if (this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
       scene.remove(this.group);
       if (this._lobBlob) { scene.remove(this._lobBlob); scene.remove(this._lobRing); }

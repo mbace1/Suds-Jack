@@ -141,6 +141,7 @@ export const TUNING = {
       TURRET: 'FIXED', TROOPER: 'HOLDER',
       THUG: 'DRIFTER', DRAPER: 'HOLDER',
       PRISM: 'MASS', CUSTODIAN: 'MASS', SHEPHERD: 'HERDER',
+      RIBBON: 'SCHOOL', SLUG: 'SCHOOL',   // v251: the arc-movers (steer themselves; the role is for the flock)
     },
     fallback: 'DRIFTER',
     weaveSpeed: 1.7,     // rad/s of the serpentine
@@ -157,6 +158,16 @@ export const TUNING = {
   // reordering entries reshuffles every seeded run (and the daily). Append new
   // types at the end. Boss-wave choreography (OMEGA/PRISM alternation, WARDEN
   // escorts) stays scripted in main.js — it is a set piece, not a table.
+  // v251 ARC-MOVERS (testers) — the shipped movement model has no turn-rate
+  // limit; these two bodies carry their own (PROGRESSION_DESIGN.md §8.9).
+  arc: {
+    turnRate: 2.2,      // rad/s — the ceiling on how fast a heading may change
+    weaveHz: 1.7,       // the serpentine's rate (matches movement.weaveSpeed)
+    weaveAmp: 0.55,     // rad of heading offset at full swing
+    slug:   { segments: 11, spacing: 0.50, headR: 0.46, tailR: 0.18 },
+    ribbon: { samples: 22, step: 0.30, width: 0.34 },   // body = samples x step long
+  },
+
   waves: {
     // escalation — getWaveScale: difficulty knees at `knee`, then slow creep
     scale: {
@@ -182,6 +193,8 @@ export const TUNING = {
       MAGNA:      [10, 5],   // magnet — pulls you off your line, dash breaks it
       DRAPER:      [7, 5],   // wall-weaver — looms marching bullet curtains
       SHEPHERD:    [4, 4],   // herds the flock — its mechanic is its identity
+      RIBBON:      [2, 3],   // v251 TESTER — arc-mover candidate (PROGRESSION_DESIGN §8.9); cost 3 keeps it out of swarm groups
+      SLUG:        [2, 3],   // v251 TESTER — eat it from an end, or it splits
     },
     // v221 (field call: "different enemies for each mode"): CLOSE COMBAT
     // draws its OWN table. The gun ecology's stationary artillery (BAMBU,
@@ -195,6 +208,7 @@ export const TUNING = {
       ORANGE_CUBE: [2, 2], WEEVA:     [2, 3],
       SLUDGE_CUBE: [3, 2], SPLITTA:   [3, 3],
       REDD_CUBE:   [4, 3], SHEPHERD:  [4, 4],
+      RIBBON:      [2, 3], SLUG:      [2, 3],   // v251 testers, both modes
       PURP_CUBE:   [5, 3], CLOAKER:   [5, 4],
       TORO:        [6, 5], BULWARK:   [6, 4],
       SIREN:       [7, 5], WARDEN:    [7, 5],
