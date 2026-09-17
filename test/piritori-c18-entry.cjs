@@ -76,8 +76,13 @@ fs.mkdirSync(out,{recursive:true});
     await page.screenshot({path:`${out}/${spec.name}-aftermath.png`,timeout:90000});
     await tap(page.locator('#crew-next'));await idle();
     assert.ok(await page.locator('#crew-deploy').isVisible(),'aftermath returns to preparation');
+    // Existing public bookmarks must continue to reach the same canonical build.
+    await page.goto(new URL('piritori-c17/web/crew-run/c17/',base).href);
+    await page.waitForURL(url=>url.pathname===entry.pathname&&url.searchParams.get('campaign')==='1'&&url.searchParams.get('release')===version,{timeout:60000});
+    await idle();assert.equal(await page.locator('h1 span').textContent(),build);
+    assert.ok(await page.locator('#crew-deploy').isVisible(),'compatibility entry preserves preparation');
     assert.deepEqual(errors,[],'no JavaScript page errors along the actual route');
-    results.push({view:spec.name,entry:entry.href,build:build,pixels,loop:'Hub → prepare → deploy → confirmed move → next round → retreat → aftermath → prepare',errors});
+    results.push({view:spec.name,entry:entry.href,build:build,compatibilityRoute:true,pixels,loop:'Hub → prepare → deploy → confirmed move → next round → retreat → aftermath → prepare',errors});
     fs.writeFileSync(`${out}/results.json`,JSON.stringify(results,null,2));
     console.log(JSON.stringify(results.at(-1)));
    }catch(e){

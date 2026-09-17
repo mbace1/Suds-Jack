@@ -1,7 +1,7 @@
 # C.19 — Night Shift
 
-Source head: c4cef33799d2296fa29fe2fc75d00a8b315cf9dd.
-Tested source head: c4cef33799d2296fa29fe2fc75d00a8b315cf9dd.
+Source head: 69b23168653d6dccb0c0a626755eac890ac686ad.
+Tested source head: 69b23168653d6dccb0c0a626755eac890ac686ad.
 
 Focused fighter labels, full statistics in VIEW, selected/target rings, labelled south exit, and honest rescue guidance. Enemy plans, action costs, rules, campaign settlement and procedural characters remain unchanged. Physical Pixel/iPad and owner visual acceptance remain pending.
 
