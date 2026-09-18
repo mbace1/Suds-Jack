@@ -6,7 +6,7 @@ import assert from 'node:assert';
 import {DeliveryChallenge,HANDOFF_WINDOW,HANDOFF_BONUS} from '../js/deliveries.js';
 import {CARGO} from '../js/deliveries.js';
 const CARGO_KEYS=Object.keys(CARGO);
-import {REGULARS,MAX_STANDING,regularAt,standingOf,bumpStanding,tipFor,loadStanding,saveStanding,standingWord} from '../js/regulars.js';
+import {REGULARS,MAX_STANDING,regularAt,standingOf,bumpStanding,tipFor,loadStanding,saveStanding,standingPips} from '../js/regulars.js';
 let n=0;const ok=(c,m)=>{assert.ok(c,m);n++;};
 const eq=(a,b,m)=>{assert.strictEqual(a,b,`${m} (got ${a}, wanted ${b})`);n++;};
 
@@ -27,7 +27,10 @@ eq(tipFor(200,0),0,'a stranger tips nothing');
 eq(tipFor(200,MAX_STANDING),120,'the cap is 60% of the job');
 eq(tipFor(200,0,6),tipFor(200,3),'goodwill counts as standing with everybody (2 goodwill = 1 step)');
 eq(tipFor(200,4,20),tipFor(200,MAX_STANDING),'goodwill cannot outrun the cap');
-ok(new Set([0,1,2,3,4,5].map(standingWord)).size===6,'every standing has its own words');
+// v2.43: a standing is PIPS, not a phrase — the owner's "recipients names
+// aren't needed" applies to the sentence about them as much as to the name.
+ok([0,1,2,3,4,5].every(n=>standingPips(n).filled===n),'every standing draws its own number of pips');
+ok(standingPips(0).total===MAX_STANDING,'against the full row');
 
 // ── a challenge on a fake network ────────────────────────────────────────
 const NODES=['lasipalatsi','ooppera','hakaniemi','meilahti','arabia','kauppatori','lansiterminaali','rautatientori','kamppi','pasila'];
@@ -78,7 +81,7 @@ const makeCh=()=>{const clock={tick:0,ticksPerDay:3000};
  ok(h&&h.handoff,'delivering ON TIME to a regular builds a hand-off');
  eq(h.stops[0],'ooppera','it leaves from where you are standing');
  ok(h.stops[1]!=='ooppera','and goes somewhere else');
- ok(/Riikka/.test(h.from),'the regular hands it to you by name');
+ ok(!/Riikka/.test(h.from)&&/regular/.test(h.from),'a hand-off names no one — the door is who hands it to you');
  eq(h.bonusUntil,100+HANDOFF_WINDOW,'the door price has a window');
  ok(ch.handoffLive(),'which is open now');
  ch.flow.clock.tick=100+HANDOFF_WINDOW+1;ok(!ch.handoffLive(),'and shut later');
@@ -96,7 +99,7 @@ const makeCh=()=>{const clock={tick:0,ticksPerDay:3000};
  const h2=ch2.pendingHandoff,base2=h2.value;ch2.flow.clock.tick=HANDOFF_WINDOW+50;
  ch2.location='ooppera';ch2.refreshOffers();ch2.acceptOffer(h2.id);
  eq(ch2.active.value,base2,'let it lapse and it is an ordinary job at an ordinary price');
- {const c=makeCh();let found=null;for(let i=0;i<20&&!found;i++){c.index=i%3;c.buildHandoff(NODES[i%NODES.length],null,false);if(c.pendingHandoff&&!regularAt(c.pendingHandoff.stops[0]))found=c.pendingHandoff;}ok(found&&/person at the door/.test(found.from),'a stop with no regular can still hand you one');}
+ {const c=makeCh();let found=null;for(let i=0;i<20&&!found;i++){c.index=i%3;c.buildHandoff(NODES[i%NODES.length],null,false);if(c.pendingHandoff&&!regularAt(c.pendingHandoff.stops[0]))found=c.pendingHandoff;}ok(found&&found.from==='the door','a stop with no regular can still hand you one');}
  // a hand-off from somewhere you no longer stand is not offered
  const ch3=makeCh();ch3.buildHandoff('ooppera',regularAt('ooppera'));ch3.location='kamppi';ch3.refreshOffers();
  ok(!ch3.offers.some(o=>o.handoff),'and only where it was handed over');

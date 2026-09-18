@@ -1,7 +1,8 @@
 // Toko Move v2.12.2 — concurrent courier jobs expose live tradeoffs without naming a correct answer.
-import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=16';
+import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=17';
 import {badge,inMinutes,about,cargoGlyph,minutes} from './ui.js?v=1';
-import {regularAt,standingOf,standingWord} from './regulars.js?v=2';
+import {regularAt,standingOf,standingPips} from './regulars.js?v=3';
+import {parcelHtml,bagHtml,colourOf,unitsOf} from './parcels.js?v=1';
 import {planEstimate,nextDeparture,layerFor} from './timetable.js?v=1';
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c));
 const nodeName=(tm,id)=>tm.city?.nodes?.find(n=>n.id===id)?.name||id;
@@ -54,13 +55,25 @@ function offerButton(tm,offer,info,label='TAKE JOB'){const seen=new Set(),live=(
  // WHO IS AT THE OTHER END, when there is somebody: a regular's name and how
  // you stand with them, instead of a stop. And a hand-off wears its window —
  // the price at the door is only the price for fifteen seconds.
+ // THE ROW IS A PARCEL AND A PLACE (v2.43). It used to open with a person —
+ // "Riikka · Ooppera · asks for you" — and a name is a word you read before you
+ // reach the thing you are choosing between. The parcel says what it is and how
+ // much of your bag it takes; the pips say you have been here before, without
+ // saying who lives there.
  const reg=regularAt(offer.stops[1]),st=reg?standingOf(tm.challenge.standing,reg.id):0;
+ const pips=reg?(()=>{const p=standingPips(st);return `<span class="pips" title="you have delivered here before">${'<i class="on"></i>'.repeat(p.filled)}${'<i></i>'.repeat(p.total-p.filled)}</span>`;})():'';
  const hand=offer.handoff&&tm.flow.clock.tick<=offer.bonusUntil,left=hand?Math.max(1,Math.ceil((offer.bonusUntil-tm.flow.clock.tick)/10)):0;
  const claimed=tm.rival?.pressure?.(offer.id),rivalLeft=claimed!=null?Math.max(0,Math.ceil(claimed/10)):null;
- const who=reg?`<b style="color:#233d4d">${esc(reg.name)}</b> · ${esc(nodeName(tm,offer.stops[1]))}`:esc(nodeName(tm,offer.stops[1]));
- const sub=reg?`${esc(standingWord(st))} · ${via}`:via;
- return `<button class="jobOffer row${info.unreachable?' dim':''}${hand?' hand':''}" data-id="${esc(offer.id)}" ${info.unreachable?'disabled':''} title="${esc(c.rule)}"><span class="cg" style="font-size:18px;color:${esc(cargoColourOf(offer.cargo))}">${cargoGlyph(c.icon)}</span><span class="to">${who}<small>${hand?`<b style="color:#e2683c">${esc(offer.from)} hands you one</b> · `:''}${rivalLeft!=null?`<b style="color:#9b59b6">${esc(tm.rival.name)} wants it · ${rivalLeft} s</b> · `:''}${sub}${first?.eta!=null?` · ${about(first.eta,tm)}`:''}</small></span><span class="rt"><b>+${hand?Math.round(offer.value*(1+offer.bonus)):offer.value}</b>${hand?`<small style="color:#e2683c">+${Math.round(offer.bonus*100)}% · ${left} s</small>`:label==='TAKE JOB'?'':'<small>2nd</small>'}</span></button>`;}
-function cargoColourOf(cargo){return {documents:'#2f9fb8','hot food':'#e2683c',parts:'#69777a',fragile:'#9b59b6',equipment:'#233d4d',express:'#c8a03a','fresh food':'#5aa860','market goods':'#b5651d'}[cargo]||'#233d4d';}
+ const who=`${esc(nodeName(tm,offer.stops[1]))}${pips}`;
+ const sub=via;
+ // A PARCEL THAT WILL NOT FIT IS NOT AN OFFER. The bag went from a count to a
+ // space in v2.43, and the first build still listed every drop and every second
+ // job at full strength and then refused the tap with "the bag is full" — which
+ // is the game keeping a rule to itself until you break it.
+ const noRoom=Boolean(tm.challenge.active&&tm.challenge.fits&&!tm.challenge.fits(offer.cargo));
+ const off=info.unreachable||noRoom;
+ return `<button class="jobOffer row${off?' dim':''}${hand&&!noRoom?' hand':''}" data-id="${esc(offer.id)}" ${off?'disabled':''} title="${esc(c.rule)}"><span class="cg">${parcelHtml(offer.cargo,{title:`${offer.cargo} · ${c.rule}`})}</span><span class="to">${who}<small>${noRoom?'<b>no room in the bag</b> · ':''}${hand&&!noRoom?'<b style="color:#e2683c">handed to you here</b> · ':''}${rivalLeft!=null?`<b style="color:#9b59b6">${esc(tm.rival.name)} wants it · ${rivalLeft} s</b> · `:''}${sub}${first?.eta!=null?` · ${about(first.eta,tm)}`:''}</small></span><span class="rt"><b>+${hand?Math.round(offer.value*(1+offer.bonus)):offer.value}</b>${hand?`<small style="color:#e2683c">+${Math.round(offer.bonus*100)}% · ${left} s</small>`:label==='TAKE JOB'?'':'<small>2nd</small>'}</span></button>`;}
+const cargoColourOf=colourOf;   // one palette, in parcels.js
 // ON YOUR WAY. The drops the current boarding options would pass. One line
 // each — the offer names the line, because taking it is a reason to choose
 // that line over the others, which is the point.
@@ -79,8 +92,11 @@ export function alongOffersFor(tm){return tm.challenge?.alongOffers?.(alongCandi
 // each — the offer names the line, because taking it is a reason to choose
 // that line over the others, which is the point.
 function alongHtml(tm){const ch=tm.challenge;if(!ch?.active||!ch.waitingForCatch)return'';const offers=alongOffersFor(tm),bag=ch.along||[];if(!offers.length&&!bag.length)return'';
- const carried=bag.length?`<p style="font-size:10px;color:#233d4d;margin:4px 0"><b>BAG</b> ${bag.map(j=>`${esc(CARGO[j.cargo]?.icon||'JOB')} → ${esc(j.name||nodeName(tm,j.stops[1]))}`).join(' · ')}</p>`:'';
- return `<section class="alongList" style="margin-top:9px;padding-top:9px;border-top:2px solid #e2683c"><b style="font-size:11px">ON YOUR WAY</b>${carried}${offers.map(o=>{const layer=tm.transit?.layers?.find(x=>x.name===o.line);return `<button class="alongOffer row" data-id="${esc(o.id)}"><span class="cg" style="font-size:18px;color:#e2683c">↓</span><span class="to">${esc(o.name)}<small>${badge(o.line,layer?.colour)} drop on the way · ${esc(cargoGlyph(CARGO[o.cargo]?.icon))}</small></span><span class="rt"><b>+${o.value}</b></span></button>`;}).join('')}</section>`;}
+ // THE BAG, drawn as the space it is: what you carry at its own width and the
+ // room left over. "One more small would fit and a large would not" is then
+ // something you see rather than something you work out.
+ const carried=`<div class="bagRow">${bagHtml(ch.carrying?.()||[])}<span class="bagWhat">${bag.map(j=>`${parcelHtml(j.cargo)}<b>${esc(j.name||nodeName(tm,j.stops[1]))}</b>`).join('')}</span></div>`;
+ return `<section class="alongList" style="margin-top:9px;padding-top:9px;border-top:2px solid #e2683c"><b style="font-size:11px">ON YOUR WAY</b>${carried}${offers.map(o=>{const layer=tm.transit?.layers?.find(x=>x.name===o.line);const room=ch.fits?.(o.cargo)!==false;return `<button class="alongOffer row${room?'':' dim'}" data-id="${esc(o.id)}" ${room?'':'disabled'}><span class="cg">${parcelHtml(o.cargo,{title:o.cargo})}</span><span class="to">${esc(o.name)}<small>${badge(o.line,layer?.colour)} ${room?'drop on the way':'<b>no room in the bag</b>'}</small></span><span class="rt"><b>+${o.value}</b></span></button>`;}).join('')}</section>`;}
 function carryHtml(tm){const ch=tm.challenge;if(!ch?.active)return'';const q=ch.queued,canSecond=ch.canTakeSecond?.();if(!canSecond&&!q)return'';const activeDest=nodeName(tm,ch.active.stops[1]);if(q)return `<section id="carryBoard" style="margin-top:9px;padding:9px;border:2px solid #233d4d;border-radius:9px;background:#f7f5ee"><b>CARRYING 2</b><p style="font-size:11px;color:#69777a;margin:4px 0">${esc(activeDest)} first, then ${esc(nodeName(tm,q.originalStops?.[1]||q.stops[1]))}.</p><button id="swapJobs" style="width:100%;min-height:44px;border:1px solid #233d4d;border-radius:7px;background:#fffdf7;font:inherit;font-weight:900">SWAP DELIVERY ORDER</button></section>`;const rows=(ch.offers||[]).map(o=>({offer:o,info:rankOffer(tm,o)}));if(!rows.length)return'';return `<section id="carryBoard" style="margin-top:9px;padding-top:9px;border-top:2px solid #233d4d"><b style="font-size:11px">TAKE ONE MORE?</b><p class="hint">Both clocks run at once.</p>${rows.map(({offer,info})=>offerButton(tm,offer,info,'CARRY AS SECOND JOB')).join('')}</section>`;}
 export function mountJobBoard(tm){let last='';const render=()=>{const ch=tm.challenge,sheet=document.getElementById('sheet');if(!ch||!sheet||ch.complete)return;if(!ch.active||!ch.waitingForCatch){const al=tm.sheetSlot?.('alongBoard');if(al&&al.innerHTML)al.innerHTML='';}const bucket=Math.floor((tm.flow?.clock?.tick||0)/2);if(ch.active){const key=`active:${ch.index}:${ch.queued?.id||''}:${ch.offers?.map(x=>x.id).join(',')}:${(ch.along||[]).map(j=>j.id).join(',')}:${ch.waitingForCatch?'w':'r'}:${ch.currentFrom()}:${bucket}`;if(key===last)return;last=key;
  // The dispatch list is what you choose FROM, and you have already chosen. It

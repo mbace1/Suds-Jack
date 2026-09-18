@@ -268,6 +268,57 @@ server.listen(0, '127.0.0.1', async () => {
     await c2.close();
   }
 
+  // ── THE BAG MAY NOT OFFER WHAT IT WILL REFUSE ────────────────────────
+  //
+  // v2.43 turned the bag from a count into a space, and the first build still
+  // listed every drop at full strength and then refused the tap with "the bag
+  // is full" — a rule the game kept to itself until you broke it. Driven here
+  // rather than asserted in the module, and driven BOTH WAYS on its own page,
+  // because the moment this is true of is the one right after a job is taken
+  // and before a tram is caught. A check that passed because the sheet was
+  // empty would be worth nothing, so it fails if it never sees a drop row.
+  {
+    const c3 = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+    const p3 = await c3.newPage();
+    await p3.goto(`${base}/toko-move/?shift=1&day=none`, { waitUntil: 'load' });
+    await p3.waitForFunction(() => window.__tm?.mobility, null, { timeout: 30000 });
+    await p3.tap('#play');
+    await p3.waitForFunction(() => { const ch = window.__tm?.challenge; if (ch?.active) return true;
+      const o = (ch?.offers || [])[0]; if (o) ch.acceptOffer(o.id); return false; }, null, { timeout: 20000 }).catch(() => {});
+    const ready = await p3.waitForFunction(() => {
+      const tm = window.__tm, ch = tm.challenge;
+      return Boolean(ch?.active && ch.waitingForCatch && (tm.alongOffers?.() || []).length);
+    }, null, { timeout: 30000 }).then(() => true).catch(() => false);
+    ok('drops on the way appear, so the bag can be tested against real rows', ready);
+    if (ready) {
+      const read = (cargo) => p3.evaluate(async (cargo) => {
+        const tm = window.__tm, ch = tm.challenge;
+        ch.along = []; ch.queued = null; ch.active = { ...ch.active, cargo };
+        await new Promise(r => setTimeout(r, 800));
+        const rows = [...document.querySelectorAll('#sheet .alongOffer, #sheet .jobOffer')]
+          .map(b => ({ id: b.dataset.id, disabled: b.disabled, text: b.textContent }));
+        const offers = [...(tm.alongOffers?.() || []), ...(ch.offers || [])];
+        const refused = rows.filter(r => !r.disabled).filter(r => {
+          const o = offers.find(x => x.id === r.id);
+          return o && ch.fits(o.cargo) === false;
+        }).map(r => r.id);
+        return { rows: rows.length, live: rows.filter(r => !r.disabled).length,
+          saysNoRoom: rows.some(r => /no room/i.test(r.text)), refused,
+          used: ch.spaceUsed(), left: ch.spaceLeft() };
+      }, cargo);
+
+      const small = await read('documents'), large = await read('fragile');
+      ok(`a small parcel leaves room (${small.used} used, ${small.left} free)`, small.left > 0);
+      ok(`one large parcel fills the bag (${large.used} used, ${large.left} free)`, large.left === 0);
+      ok(`with room, a drop is tappable (${small.live} of ${small.rows} rows)`, small.rows > 0 && small.live > 0);
+      ok('with none, the sheet says so instead of refusing the tap', large.saysNoRoom, JSON.stringify(large).slice(0, 160));
+      ok('no row is ever offered that the bag would refuse',
+        small.refused.length === 0 && large.refused.length === 0,
+        [...small.refused, ...large.refused].join(' '));
+    }
+    await c3.close();
+  }
+
   ok('no console or page errors on a phone', errs.length === 0, errs.slice(0, 3).join(' | '));
 
   console.log(`\n  phone: ${pass} passed, ${fail} failed  (${ROOT})`);

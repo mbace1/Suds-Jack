@@ -1,5 +1,78 @@
 # Toko Move — versions
 
+## v2.43 — 2026-09-18
+
+**A job is a PARCEL now, not a person.** Owner, 2026-09-18: *"Recipients names
+aren't needed. Maybe package size is relevant, can carry many smaller but only
+few or one larger. They can be also color coded rather than named."* Both halves
+of that are the same change, and it lands on the one row the whole game is
+played from.
+
+**Names are gone.** A dispatch row used to open *Riikka · Ooppera · asks for
+you* — three words of reading before you reach the thing you are choosing
+between. It opens with the parcel now: a coloured box whose SIZE is what it
+costs you to carry, then the place, then the tram and the price. The hand-off
+says *handed to you here* rather than naming a person, and a standing is PIPS
+instead of a phrase (`standingWord` is deleted rather than left unused — a
+phrase with no reader is dead code). The regulars still exist, still remember
+you and still tip; what is gone is their names on screen, which is exactly what
+was asked.
+
+**THE BAG IS SPACE, AND THE SENTENCE IS THE ARITHMETIC.** *Many smaller but only
+few or one larger* is a capacity of 5 with small 1, medium 2, large 5 — five
+smalls, two mediums with a small beside them, or ONE large and nothing else.
+That replaces two separate caps (one queued job, two drops) with one rule, and
+it is the first time this game has asked you to give something up to take
+something. `test/parcels.mjs` asserts the sentence as arithmetic rather than
+trusting three constants that look about right.
+
+| size | units | cargoes | pays |
+|---|---|---|---|
+| small | 1 | documents, express, hot food | ×0.82 |
+| medium | 2 | parts, fresh food, market goods | ×1 |
+| large | 5 | fragile, equipment | ×1.45 |
+
+A large has to pay for the drops it stops you taking or nobody would take one,
+and must not pay so well that the packing stops mattering — gated both ways: a
+bagful of smalls still out-earns one large, and a large still beats a small by
+half again.
+
+**ONE PALETTE, because there were two.** `cargoColour` in core-v212.js and
+`cargoColourOf` in job-board-v212.js disagreed on all eight cargoes, so the
+deadline ring and the offer row drew the same parcel in two different colours.
+Colour that means something may only be defined once, and it lives in
+`js/parcels.js`. The eight are measured against each other in CIE Lab, not
+picked by eye — **the first set failed its own gate at dE 19.6 between hot food
+and market goods**, which is two parcels a player cannot separate and therefore
+no colour coding at all. Market goods is a deep red-brown now and the closest
+pair is 25.2.
+
+**THE GAME WAS OFFERING WHAT IT WOULD REFUSE.** The first build of the capacity
+rule listed every drop and every second job at full strength and then answered
+the tap with *the bag is full* — a rule kept to itself until you break it, which
+is the same fault as quoting a number you then do not use. A parcel that will
+not fit is drawn dim, disabled, and says *no room in the bag*. Gated in the
+browser and driven BOTH WAYS on its own page: with a small parcel in hand the
+drops are tappable, with a large one they are not, and no row the sheet leaves
+enabled is one the engine would turn down.
+
+**The cost, measured.** 80 bots a cell, the walking bot, ordinary day, against
+v2.42's identical cell:
+
+| | v2.42 | v2.43 |
+|---|---|---|
+| win rate | 85.0% | 80.0% |
+| mean score | 1793 | 1565 |
+| drops taken / made | 7 / 6 | 6 / 5 |
+
+Five points of win rate and 13% of score is what the bag costs, and it is the
+mechanic working rather than a regression: a quarter of all jobs are large, and
+a large one means the leg carries nothing else. Well clear of the 40% floor.
+
+Gates: `test/parcels.mjs` (71, bare node) and four new checks in
+`test/phone.cjs` (43). Six mutations, six caught. `regulars.mjs` moved to pips
+and a nameless door.
+
 ## v2.42 — 2026-09-18
 
 **The shift has a name now.** Roadmap item 7. Four city days, one per shift,

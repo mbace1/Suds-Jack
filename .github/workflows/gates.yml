@@ -302,6 +302,13 @@ jobs:
       - name: the city you know, and the courier who shares it
         run: node toko-move/test/city.mjs
 
+      # A parcel is a size and a colour since v2.43. The sentence the owner gave
+      # — many smaller, few or one larger — is arithmetic about the capacity, and
+      # colour coding is only coding if the eight fills can be told apart, so
+      # both are measured rather than eyeballed.
+      - name: parcels are a size and a colour
+        run: node toko-move/test/parcels.mjs
+
       # Four city days, one per shift. The bare half asks whether each day is
       # well formed and whether every name it uses is real in the shipped pack:
       # a market at a stop that does not exist is v2.40's inert rule in a hat.
