@@ -31,7 +31,8 @@ export const JOBS=[
  {stops:['kalasatama','olympiaterminaali'],label:'Harbour manifest south',cargo:'documents',limit:320,value:270},
  {stops:['olympiaterminaali','rautatientori'],label:'Final market run to Central',cargo:'market goods',limit:360,value:320}
 ];
-import {regularAt,standingOf,bumpStanding,loadStanding,saveStanding,tipFor} from './regulars.js?v=2';
+import {regularAt,standingOf,bumpStanding,loadStanding,saveStanding,tipFor} from './regulars.js?v=3';
+import {CAPACITY,unitsOf,payFor} from './parcels.js?v=1';
 const sameNodes=(a,b)=>a.length===b.length&&a.every((n,i)=>n===b[i]);
 const CARGO_KEYS=Object.keys(CARGO);
 const DESTINATIONS=['rautatientori','hakaniemi','sornainen','kalasatama','pasila','toolontori','kamppi','kauppatori','katajanokka','lansiterminaali','hietalahti','meilahti','arabia','olympiaterminaali','eira','kapyla','messukeskus','lasipalatsi','ooppera','senaatintori'];
@@ -72,7 +73,7 @@ export class DeliveryChallenge{
   if(Number.isFinite(est)&&est>0)return Math.round(est*DEADLINE_GRACE+30*scale);
   return Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*scale);}
  refreshOffers(){if(this.index>=this.target){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];
-  for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=90+dist*9+(cargo==='fragile'||cargo==='equipment'?35:0);cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
+  for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=Math.round((90+dist*9)*payFor(cargo));cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
   // Loop 47: a procedural job is constrained by a network relationship, never
   // rolled blind. Measured before this: the first offer taken had no compatible
   // vehicle for 1204 ticks — two minutes of wall time on the tutorial job —
@@ -105,9 +106,17 @@ export class DeliveryChallenge{
   if(typeof judge==='function'&&this.index===0){const soon=kept.filter(o=>judge(o));if(soon.length)kept=[soon[0],...kept.filter(o=>o!==soon[0])];}
   if(this.pendingHandoff&&this.pendingHandoff.stops[0]===from)kept=[this.pendingHandoff,...kept.filter(o=>!o.handoff)].slice(0,3);
   this.offers=kept;this.say(`DISPATCH · ${this.offers.length} jobs available at ${this.name(from)}.`);}
- canTakeSecond(){return Boolean(this.active&&!this.queued&&this.waitingForCatch&&!this.activeTrip&&this.leg===0&&this.currentFrom()===this.location);}
+ // THE BAG IS SPACE, NOT A COUNT (v2.43, owner: "can carry many smaller but
+ // only few or one larger"). Everything you are carrying takes room in one
+ // bag — the job in hand, the second job, and every drop — which replaces two
+ // separate caps (one queued job, two drops) with one rule a player can see.
+ carrying(){const out=[];if(this.active)out.push(this.active.cargo);if(this.queued)out.push(this.queued.cargo);for(const j of this.along)out.push(j.cargo);return out;}
+ spaceUsed(){return this.carrying().reduce((a,c)=>a+unitsOf(c),0);}
+ spaceLeft(){return Math.max(0,CAPACITY-this.spaceUsed());}
+ fits(cargo){return unitsOf(cargo)<=this.spaceLeft();}
+ canTakeSecond(cargo){return Boolean(this.active&&!this.queued&&this.waitingForCatch&&!this.activeTrip&&this.leg===0&&this.currentFrom()===this.location&&(cargo==null||this.fits(cargo)));}
  canReorder(){return Boolean(this.active&&this.queued&&this.waitingForCatch&&!this.activeTrip&&this.leg===0&&this.currentFrom()===this.location);}
- acceptOffer(id){let job=this.offers.find(x=>x.id===id);if(!job)return{error:'job offer expired'};if(this.index>=this.target)return{error:'shift complete'};if(this.active){if(!this.canTakeSecond())return{error:'second job can only be collected before leaving this pickup hub'};this.queued={...job,originalStops:[...job.stops],acceptedAt:this.flow.clock.tick};this.offers=this.offers.filter(x=>x.id!==id);this.say(`CARRY 2 · ${CARGO[job.cargo]?.icon||'JOB'} · ${this.name(job.stops[1])} queued. Choose which destination to tackle first.`);return{job:this.queued,queued:true};}if(job.handoff){const live=this.flow.clock.tick<=job.bonusUntil;if(live){job={...job,value:Math.round(job.value*(1+job.bonus))};this.say(`STRAIGHT ON · +${Math.round(job.bonus*100)}% for taking it at the door.`);}this.pendingHandoff=null;}this.active={...job,originalStops:[...job.stops],acceptedAt:this.flow.clock.tick};this.offers=this.offers.filter(x=>x.id!==id);this.leg=0;this.startedAt=this.active.acceptedAt;this.launchLeg();const c=this.cargoRule();this.say(`${this.index+1}/${this.target} · ${c.icon} · ${this.routeLabel()} · ${c.rule}`);return{job:this.active};}
+ acceptOffer(id){let job=this.offers.find(x=>x.id===id);if(!job)return{error:'job offer expired'};if(this.index>=this.target)return{error:'shift complete'};if(this.active&&!this.fits(job.cargo))return{error:'the bag is full'};if(this.active){if(!this.canTakeSecond(job.cargo))return{error:'second job can only be collected before leaving this pickup hub'};this.queued={...job,originalStops:[...job.stops],acceptedAt:this.flow.clock.tick};this.offers=this.offers.filter(x=>x.id!==id);this.say(`CARRY 2 · ${CARGO[job.cargo]?.icon||'JOB'} · ${this.name(job.stops[1])} queued. Choose which destination to tackle first.`);return{job:this.queued,queued:true};}if(job.handoff){const live=this.flow.clock.tick<=job.bonusUntil;if(live){job={...job,value:Math.round(job.value*(1+job.bonus))};this.say(`STRAIGHT ON · +${Math.round(job.bonus*100)}% for taking it at the door.`);}this.pendingHandoff=null;}this.active={...job,originalStops:[...job.stops],acceptedAt:this.flow.clock.tick};this.offers=this.offers.filter(x=>x.id!==id);this.leg=0;this.startedAt=this.active.acceptedAt;this.launchLeg();const c=this.cargoRule();this.say(`${this.index+1}/${this.target} · ${c.icon} · ${this.routeLabel()} · ${c.rule}`);return{job:this.active};}
  swapJobs(){if(!this.canReorder())return{error:'job order can only change before departure'};const a=this.active,q=this.queued;this.active={...q,stops:[this.location,q.originalStops?.[1]||q.stops[1]]};this.queued={...a,stops:[this.location,a.originalStops?.[1]||a.stops[1]]};this.startedAt=this.active.acceptedAt;this.leg=0;this.launchLeg();this.say(`ORDER CHANGED · deliver ${this.name(this.active.stops[1])} first, then ${this.name(this.queued.stops[1])}.`);return{ok:true};}
  launchLeg(){this.activeTrip=null;this.selectedPlan=null;this.waitingForCatch=true;this.say(`WAITING · ${this.name(this.currentFrom())} → ${this.name(this.currentTo())} · choose a tram or metro to catch.`);}
  runtimeRoute(line){return this.flow.routes.list.find(r=>r.fixed&&r.mode===line.mode&&r.label===line.label&&sameNodes(r.nodes,line.nodes));}
@@ -169,7 +178,7 @@ export class DeliveryChallenge{
    const isMk=pick===mk;
    const cargo=CARGO_KEYS[(seed>>>3)%CARGO_KEYS.length],passed=Math.max(1,between.indexOf(pick)+1);
    const marketPay=isMk?1+(this.market.bonus||0):1;
-   out.push({id:`along:${this.index}:${c.line?.label}:${pick.id}`,stops:[c.from,pick.id],name:pick.name,lat:pick.lat,lon:pick.lon,label:`${this.name(c.from)} → ${pick.name}`,cargo,limit:this.active.limit,value:Math.round((45+passed*12)*marketPay),market:isMk,line:c.line?.label,along:true});}}
+   out.push({id:`along:${this.index}:${c.line?.label}:${pick.id}`,stops:[c.from,pick.id],name:pick.name,lat:pick.lat,lon:pick.lon,label:`${this.name(c.from)} → ${pick.name}`,cargo,limit:this.active.limit,value:Math.round((45+passed*12)*marketPay*payFor(cargo)),market:isMk,line:c.line?.label,along:true});}}
   return out.slice(0,this.market?.offers||2);}
  // Inside the market quarter: the named stop, or anything within its radius of
  // the platforms that carry the name. Coordinates come from the pack (resolved
@@ -178,7 +187,7 @@ export class DeliveryChallenge{
   if(!Number.isFinite(m.lat)||!Number.isFinite(m.radiusM))return false;
   const lat=(m.lat+st.lat)*.5*Math.PI/180,dy=(m.lat-st.lat)*111320,dx=(m.lon-st.lon)*111320*Math.cos(lat);
   return Math.hypot(dx,dy)<=m.radiusM;}
- acceptAlong(offer){if(!offer?.along||!this.active||!this.waitingForCatch)return{error:'drops are taken before boarding'};if(this.along.length>=(this.market?.offers||2))return{error:'the bag is full'};if(this.along.some(j=>j.stops[1]===offer.stops[1]))return{error:'already carrying one for that stop'};const c=CARGO[offer.cargo]||CARGO.documents;if(c.modes&&!c.modes.includes(this.cargoRule().modes?.[0]||'TRAM')){/* cargo rule is per main job; drops ride whatever you ride */}
+ acceptAlong(offer){if(!offer?.along||!this.active||!this.waitingForCatch)return{error:'drops are taken before boarding'};if(!this.fits(offer.cargo))return{error:'the bag is full'};if(this.along.some(j=>j.stops[1]===offer.stops[1]))return{error:'already carrying one for that stop'};const c=CARGO[offer.cargo]||CARGO.documents;if(c.modes&&!c.modes.includes(this.cargoRule().modes?.[0]||'TRAM')){/* cargo rule is per main job; drops ride whatever you ride */}
   this.along.push({...offer,acceptedAt:this.flow.clock.tick});this.say(`DROP ON THE WAY · ${CARGO[offer.cargo]?.icon||'JOB'} · ${offer.name||this.name(offer.stops[1])} · from aboard ${offer.line}`);return{job:offer};}
  // The vehicle is standing at `stopId`: anything in the bag for that stop is
  // handed over. Drops pay SCORE and count in their own tally; the shift's ask
@@ -215,8 +224,11 @@ export class DeliveryChallenge{
   const pick=fits.length?fits[(seed>>>7)%fits.length]:cands.sort((a,b)=>a.est-b.est)[0];if(!pick){this.pendingHandoff=null;return;}
   const cargo=CARGO_KEYS[(seed>>>5)%CARGO_KEYS.length],dist=Math.max(1,Math.round(pick.est/40));
   this.pendingHandoff={id:`handoff:${this.index}:${pick.to}`,stops:[at,pick.to],label:`${this.name(at)} → ${this.name(pick.to)}`,cargo,
-   limit:this.deadlineFor({from:at,to:pick.to,cargo,dist}),value:90+dist*9,handoff:true,
-   from:regular?`${regular.name}, ${regular.what}`:'the person at the door',
+   limit:this.deadlineFor({from:at,to:pick.to,cargo,dist}),value:Math.round((90+dist*9)*payFor(cargo)),handoff:true,
+   // No name on the door (v2.43, owner: "recipients names aren't needed"). A
+   // hand-off is a parcel put in your hand where you stand, and who put it
+   // there was never a decision — the window and the bonus are.
+   from:regular?'a regular':'the door',
    bonus:HANDOFF_BONUS,bonusUntil:this.flow.clock.tick+HANDOFF_WINDOW};}
  handoffLive(){const h=this.pendingHandoff;return h&&this.flow.clock.tick<=h.bonusUntil?h:null;}
  step(){return false;}

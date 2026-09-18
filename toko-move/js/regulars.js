@@ -42,4 +42,9 @@ export function bumpStanding(s,id,late){const cur=standingOf(s,id),next=Math.max
 export function tipFor(value,standing,goodwill=0){const s=Math.max(0,Math.min(MAX_STANDING,standing+Math.floor((goodwill||0)/2)));return s?Math.round(value*0.12*s):0;}
 
 // One line for the card: who they are and how you stand.
-export function standingWord(n){return ['new to you','seen you once','knows your face','asks for you','saves you coffee','would vouch for you'][Math.max(0,Math.min(MAX_STANDING,n))];}
+// STANDING IS PIPS, NOT WORDS (v2.43). `standingWord` turned a standing into a
+// phrase — "asks for you" — which was three more words on the one row the game
+// is played from, and the owner's direction is that recipients need no names.
+// The number is still real and still pays a tip; it draws as filled pips beside
+// the parcel, and a pip needs no reading.
+export function standingPips(n,max=MAX_STANDING){const k=Math.max(0,Math.min(max,n|0));return{filled:k,total:max};}
