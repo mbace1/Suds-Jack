@@ -1,5 +1,45 @@
 # Toko Move — versions
 
+## v2.41 — 2026-09-18
+
+**The UI pass, from six screenshots.** Phone and desktop, title / dispatch /
+waiting, looked at rather than gated — the owner's direction is Mini Metro and
+Mini Motorways: *fun, approachable, simplistic, succinct*. The night map stays
+(owner, 2026-09-02); what moved is everything around it.
+
+- **A badge budget.** A phone at CITY scale carried fifty labelled trams and
+  the crowd rule could only stop them overlapping; the map was a wall of
+  chips. `LiveNetwork.draw` takes a `budget` — at most N labelled badges,
+  in rank order, the rest dots at their true position even where there is
+  room — and main sizes it to the canvas (one label per ~11k CSS px², 10–32).
+  Rank fills the budget with the lines you can use, and **the dispatch
+  offers' lines now count as relevant** (they did not: with no job taken the
+  rank was flat and the budget went to whichever line sorted first).
+- **No key on a phone.** Seventeen chips over the bottom of a 390px map were
+  the loudest thing on it, and every badge and every row already wears its
+  line. The legend draws only on a canvas 600 CSS px or wider.
+- **Desktop is map-first.** The sheet was two thirds of a 1280px screen and
+  mostly empty; the map is the game. The grid is now `1fr` map + a 380–440px
+  column, the canvas fills its cell (the inline board aspect is overridden),
+  and the feed is one quiet ellipsed line at the foot of the column instead
+  of a two-line log at its head. The vehicle counter (`CITY · 64/310 near`)
+  is gone from the HUD; on a phone the layer inspector button goes too, so
+  the top row is clock · pause · speed.
+- **The surround is the land grey.** With a canvas wider than the board, the
+  near-black outside it read as a slab on a black sheet with a fifth of the
+  screen dead each side. Same grey as the paper now; the frame line says where
+  the data ends.
+- **The zoom rail is one pill**, not three shadowed slabs; the version hero is
+  a line under the title, not the loudest thing on the card.
+- **Copy.** *a stranger* → *new to you*; *Vesa is going for this* → *Vesa
+  wants it*; and the waiting panel's *Lit says CATCH — tap it* no longer
+  shows over three dim rows — it reads *Tap the lit one* when one is lit and
+  *Nothing to catch yet · first in N min* when none is.
+
+Gates: badges (20), phone (37), misses (8), cabinet route (19), the bare-node
+suite, tokens, version sync, shifts --gate — the budget is a draw-time rule
+and the sim is untouched. Nine tokens moved.
+
 ## v2.40 — 2026-09-18
 
 **Local knowledge, and the obvious rule is INERT.** The walking network was
