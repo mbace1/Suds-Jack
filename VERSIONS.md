@@ -7,6 +7,43 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v252 — 2026-09-18
+**The testers cost less; a bot played ten games and the numbers are in `PLAYTEST_2026-09-17.md`** *(owner: "test the game and come up with balance and polish", then "pick up on the previous" — the enemies' looks, TORO first)*
+- **Perf fix on my own v251 bodies.** The RIBBON built a fresh
+  `CatmullRomCurve3` every frame and called `getSpacedPoints()` — a
+  200-sample arc-length table rebuilt 60 times a second — then
+  `computeVertexNormals()` on a near-flat strip. One curve is reused,
+  `getPoints()` (uniform in the parameter, which on distance-spaced samples
+  is already even), and an up-normal set once. The SLUG's tail segments and
+  eye cast no shadow (the head does), and `DoubleSide` — needed by the strip,
+  which has no thickness — was also being set on 88 spheres. **Draw calls
+  per slug 23 → 13**; ribbon update 8 → 0.03 ms.
+- **Measured honestly:** swiftshader's ms/frame is a software rasteriser
+  stalling and timed "8 GLOBBO" *cheaper than an empty floor*, so it is not
+  a phone number and is not quoted. What is hardware-independent: update
+  CPU (negligible for both), **draw calls** (dome 1 · ribbon 2 · slug 13 ·
+  **TORO 6** — the torus and five separate spike meshes) and triangles.
+- **`toko-drop/PLAYTEST_2026-09-17.md`** — a scripted player on a frozen
+  clock through the real loop, 5 CLOSE COMBAT + 5 classic runs, every hit and
+  kill attributed. The findings that change plans: **a round lasts 5–8 s, not
+  20** (wave ends on an empty floor; wave 1 in classic is 3.5 s and two
+  bodies; wave 10 at 61 s), so pulses across 20 s would make the game 3×
+  easier per minute unless escalation reads the clock; **CLOSE COMBAT has 37
+  enemy bullets in flight at wave 2, all from corpses** (classic: 0.8), and
+  kills the bot in two-thirds the time; **SLUDGE_CUBE is classic's top
+  killer** and second most spawned; **the RIBBON dealt 1 hit in 10 runs**;
+  **the SLUG multiplied** — 22 splits in one run, 43 bodies at wave 8,
+  one-segment "slugs", and in the default mode the dash-cut can only split
+  it, never kill it cleanly. Balance pitches B1–B7, polish P1–P6, and the
+  TORO look (rim spikes invisible at game scale; the rev-up spin cannot be
+  seen on a featureless torus — its only tell is the arrow) with five
+  pitches and three variations. Pitches, not decisions.
+- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
+  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
+- Cache-bust `?v=204` → `?v=205`; HUD label → v252
+
+---
+
 ## v251 — 2026-09-17
 **Two arc-mover TESTERS in the real waves from wave 2 — the RIBBON and the GEL SLUG** *(owner: "push the ribbon and slugs into the game around wave 2 as a tester")*
 - **`EnemyType.RIBBON` (40) and `EnemyType.SLUG` (41)**, the sketchbook's two

@@ -668,3 +668,10 @@ from the wrong angle and the bullet passes it and slices the body behind —
 a split.** The positional rule punishes bad angles, not just bad aim. Details
 and the two bugs found on the way in `VERSIONS.md` v251. What comes next is a
 hand on the stick, not another gate.
+
+### 8.11 Played by a bot (v252)
+
+Ten scripted runs through the real loop — numbers, balance and polish
+pitches, and the enemies' looks (TORO first) in **`PLAYTEST_2026-09-17.md`**.
+Two findings bear on §7 directly: a round lasts 5–8 s today, not 20 (Q2/Q4),
+and the default mode carries ~37 corpse bullets at wave 2 (Q3/Q5).
