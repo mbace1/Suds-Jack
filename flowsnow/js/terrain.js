@@ -125,6 +125,31 @@ export function normal(x, z, out = [0, 1, 0]) {
   return out;
 }
 
+// --- the sun on the ground ---------------------------------------------------
+// How much of the sun a point sees: a horizon march along the sun's azimuth over
+// the height function. 1 is full sun, 0 is the lee of a wall. Baked per vertex
+// when a tile is built, so the far field carries the shadow of every swell and
+// gully wall without a shadow map — the sun moves slowly enough down the run
+// that a tile keeps its bake for the metres it is on screen.
+const OCC_STEPS = [1.2, 2.4, 4.2, 7, 11, 17, 26, 40];
+export function occlusion(x, z, sun, y = height(x, z)) {
+  const hz = Math.hypot(sun[0], sun[2]) || 1e-6;
+  const ux = sun[0] / hz, uz = sun[2] / hz;
+  const tanE = sun[1] / hz;
+  const y0 = y + 0.12;                        // a hair above the surface: no acne on the flat
+  let maxTan = -10;
+  for (let i = 0; i < OCC_STEPS.length; i++) {
+    const d = OCC_STEPS[i];
+    const h = height(x + ux * d, z + uz * d);
+    const t = (h - y0) / d;
+    if (t > maxTan) maxTan = t;
+  }
+  // a soft edge: the sun is a disc, and a hard line on a 2 m grid is a sawtooth
+  const k = (maxTan - tanE + 0.05) / 0.16;
+  const shade = k <= 0 ? 0 : k >= 1 ? 1 : k * k * (3 - 2 * k);
+  return 1 - shade;
+}
+
 // --- standing things ---------------------------------------------------------
 // Monoliths per tile: a dark slab or an arch stood on the snow, deterministic
 // from the tile index so both the renderer and the collision read one truth.
@@ -144,5 +169,5 @@ export function monolithsIn(ix, iz) {
   return out;
 }
 
-export const terrain = { height, base, depth, normal, lineX, kickerAt, monolithsIn, TILE, GRADE, DEEP };
+export const terrain = { height, base, depth, normal, occlusion, lineX, kickerAt, monolithsIn, TILE, GRADE, DEEP };
 export default terrain;

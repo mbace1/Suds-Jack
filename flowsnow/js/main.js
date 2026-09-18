@@ -3,18 +3,18 @@
 // snow in particles.js, both pure; this file is the only one that touches the
 // DOM or the clock.
 import * as THREE from 'three';
-import { terrain } from './terrain.js?v=1';
+import { terrain } from './terrain.js?v=2';
 import { createRider, stepRider, RUN_LENGTH } from './physics.js?v=1';
 import { SnowSim } from './particles.js?v=1';
 import { hour } from './palette.js?v=1';
-import { makeUniforms, skyMaterial, snowPointsMaterial } from './snowmat.js?v=1';
+import { makeUniforms, skyMaterial, snowPointsMaterial } from './snowmat.js?v=2';
 import { Figure } from './figure.js?v=1';
-import { Field, Trail, Shadow } from './world.js?v=1';
+import { Field, Trail, Shadow } from './world.js?v=2';
 import { Input } from './input.js?v=1';
 import { Audio } from './audio.js?v=1';
 import { pickLang, t } from './lang.js?v=1';
 
-export const VERSION = 3;
+export const VERSION = 4;
 const BEST_KEY = 'flowsnow.best';
 const STEP = 1 / 120;
 const MAX_SNOW = 5000;
@@ -116,6 +116,7 @@ const events = {
 function applyHour(p) {
   const h = hour(p);
   u.uSun.value.set(h.sunDir[0], h.sunDir[1], h.sunDir[2]);
+  field.setSun(h.sunDir[0], h.sunDir[1], h.sunDir[2]);
   u.uSunCol.value.setRGB(...h.sun); u.uLit.value.setRGB(...h.lit); u.uShade.value.setRGB(...h.shade);
   u.uZenith.value.setRGB(...h.zenith); u.uHorizon.value.setRGB(...h.horizon); u.uFog.value.setRGB(...h.fog);
   u.uFogDensity.value = h.fogDensity;

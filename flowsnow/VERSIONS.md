@@ -7,6 +7,50 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v4 — 2026-09-13
+**The snow gets form: a real terminator, a skin, baked sun, and a horizon**
+- **The snow had no form and the cause was one line.** v3's `wrap = ndl*0.55+0.45`
+  compressed the whole Lambert range, so a board-length facet moved the pixel by
+  about 2% luminance and the mountain read as a flat gradient for most of the
+  descent. There are **two terms** now: the sun keeps a real terminator (a lit face
+  and a shadow face, softened only by the sun's own width) and the sky term stays
+  WRAPPED, because snow really is lit from every direction by every other bit of
+  snow. `uForm` mixes them, at 0.72.
+- **The terminator has to SPAN the range the ground occupies.** The first cut ramped
+  `smoothstep(-0.05, 0.32, ndl)`, and with the sun at 20-31° over a field tilted ~17°
+  every pixel sits past 0.32 — fully lit, flatter than the wrap it replaced, and two
+  captures came back as paper. It ramps `-0.10 .. 0.92` now, which is where a real
+  slope lives.
+- **Sun occlusion is BAKED per vertex** (`terrain.occlusion`, a horizon march along the
+  sun's azimuth over `height()`), so the far field carries the shadow of every swell
+  and gully wall with no shadow map. `Field` re-bakes a tile a frame once the sun has
+  drifted 0.05 down the run.
+- **A skin, and the amplitude is a SLOPE.** Sastrugi lie across the wind, long along it
+  and short across, their crests wandering; under them a coarser dune grain. The first
+  cut used 0.028 m over a 0.47 m period, which is a **21° facet** — a field of those is
+  corrugated iron, and the frame read as corduroy. 0.005 m is a skin, and what makes it
+  read is the light raking across it, not its size.
+- **Fade detail on the FOOTPRINT, not on distance.** A 1-2.4 m grain seen at 200 m down
+  a grazing surface covers a fraction of a pixel and beats against the grid; fading on
+  distance alone drew metre-wide rake lines to the horizon. A pixel's footprint is
+  distance over `dot(n, V)`, and on that the skin simply runs out.
+- **The sky has mountains in it.** Two ranges of ridgeline read off the azimuth, the far
+  one all but dissolved in the haze — so the frame has a scale beyond the gully wall,
+  and `skyAt()` being shared by the dome and the fog means a far slope fogs into the
+  range that is actually behind it.
+- **Snow scatters forward**, so looking into the sun across it lifts the whole field —
+  but as a lift in the SHADOWS (`1 - 0.7*sun`), not a second specular. Stacked on the
+  sheen it blew two frames to white through ACES.
+- **A gate caught what four screenshots could not.** `SKY` grew a dependency on `hash21`
+  and on `uShade`; `skyMaterial` declared neither, so the DOME failed to compile while
+  the ground compiled fine — the pictures still looked right. `smoke.cjs` and
+  `playthrough.cjs` both failed on `VALIDATE_STATUS false`. The house rule has a mirror:
+  a screenshot cannot see *works* any more than a gate can see *looks*.
+- Gates: `core.mjs` 72, `smoke.cjs` 41, `playthrough.cjs` 9. Tokens: `terrain.js?v=2`,
+  `snowmat.js?v=2`, `world.js?v=2`, `js/main.js?v=4`.
+- Honest limits: this is the ground only. The spray is still Points bokeh, the snowpack
+  still does not deform, and the run is still one seed with no chapters in it.
+
 ## v3 — 2026-09-10
 **A crash on an ordinary landing, and the gate that rides the mountain**
 - **A landing with no impact threw.** `impact` is `max(0, -vn)`, so a grazing
