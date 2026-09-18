@@ -299,6 +299,9 @@ jobs:
       - name: streaks, hand-offs and the people at the other end
         run: node toko-move/test/regulars.mjs
 
+      - name: the city you know, and the courier who shares it
+        run: node toko-move/test/city.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 

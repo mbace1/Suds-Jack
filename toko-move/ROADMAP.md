@@ -104,12 +104,12 @@ often you have been on time for them, remembered across shifts
 (`localStorage`). They appear in dispatch with their name and your standing.
 Goodwill from encounters feeds the same number.
 
-### 5. Local knowledge
+### 5. Local knowledge — SHIPPED v2.40 (visited STOPS, not streets — see VERSIONS.md for why the obvious rule is inert)
 A walking street appears on the board only after you have walked it, or a
 tourist showed you. The known map is persisted; a new player sees hubs and
 lines, a tenth-shift player sees the shortcuts. Events 1 and 4 both write to it.
 
-### 6. Rival
+### 6. Rival — SHIPPED v2.40
 One AI courier on the board, drawn like you in another colour, running the
 bot's cheapest-job policy off the same dispatch. A job the rival takes first
 is gone. Visible on the map and in the end screen (*the rival delivered 4*).

@@ -21,8 +21,8 @@ const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=M
 export const ENCOUNTERS=[
  {id:'granny',where:'stop',glyph:'👵',text:'An old lady wants to cross Mannerheimintie. The lights are short.',
   options:[{label:'Walk her across',cost:100,goodwill:2,score:20},{label:'Walk on',cost:0}]},
- {id:'tourist',where:'stop',glyph:'🧳',text:'A tourist with a paper map is looking for the cathedral.',
-  options:[{label:'Show the way',cost:40,goodwill:1,score:15},{label:'Shrug',cost:0}]},
+ {id:'tourist',where:'stop',glyph:'🧳',text:'A tourist with a paper map is looking for the cathedral. They have the whole city on it.',
+  options:[{label:'Trade directions',cost:40,goodwill:1,score:15,teaches:true},{label:'Shrug',cost:0}]},
  {id:'inspector',where:'aboard',glyph:'🎫',text:'Ticket inspection. Everyone is looking for their phone.',
   options:[{label:'Papers, please — waved through',cost:0,needs:'documents',score:10},{label:'Show your ticket',cost:30},{label:'Look busy',cost:0}]},
  {id:'wallet',where:'stop',glyph:'👛',text:'A wallet on the bench. Nobody around.',
@@ -65,6 +65,7 @@ export class EventDirector{
  options(){const p=this.pending;if(!p)return[];const cargo=this.tm.challenge?.active?.cargo;return p.card.options.filter(o=>!o.needs||o.needs===cargo);}
  choose(i){const p=this.pending;if(!p)return{error:'nothing to answer'};const opts=this.options(),o=opts[i];if(!o)return{error:'no such option'};const ch=this.tm.challenge,tick=this.tm.flow.clock.tick;
   if(o.cost)this.busyUntil=tick+o.cost;ch.goodwill=(ch.goodwill||0)+(o.goodwill||0);if(o.score){ch.score+=o.score;}
+  if(o.teaches)this.tm.teachStreet?.(this.seed+tick);
   this.seen.push({id:p.card.id,option:o.label,cost:o.cost||0,tick});this.pending=null;
   ch.say?.(`${o.label}${o.cost?` · ${Math.round(o.cost/10)} s`:''}${o.score?` · +${o.score}`:''}`);return{ok:true,cost:o.cost||0};}
  busy(){return this.tm.flow.clock.tick<this.busyUntil;}
