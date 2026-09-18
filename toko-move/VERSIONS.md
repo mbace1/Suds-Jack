@@ -1,5 +1,55 @@
 # Toko Move — versions
 
+## v2.39 — 2026-09-18
+
+**Three things that share one currency**, which is why they shipped together.
+
+**The streak is the LAST multiplier** — Balatro's shape, which this engine
+already uses and had nowhere else to put: every bonus adds, then the chain
+multiplies the lot. Consecutive on-time deliveries pay ×1 ×1.25 ×1.5 ×1.75 ×2,
+capped, and **one late parcel takes all of it**. That asymmetry is the whole
+decision: at four, do you take the fast job or the paying one? A drop on the
+way counts — it is a delivery. Live on the HUD in green beside the score.
+
+**The hand-off**: the person you just delivered to has another one going out,
+in your hand before dispatch hears about it. It is not a new kind of job — an
+ordinary offer from where you stand, listed first, with **+25% that expires in
+fifteen seconds**. Let it lapse and it is still there at the ordinary price.
+**Measured and then made harder**: offered at every door it took the random
+bots from 62% to **87%**, because it removes the walk back to a hub and
+dispatch stops being a decision. So it is EARNED — only after an on-time
+delivery, and then at about half the doors, except a regular, who always has
+one. Back to 62.5%, the same as v2.38.
+
+**Regulars** (`js/regulars.js`): six named people at six stops — Riikka the
+florist at Ooppera, Seppo's print shop at Hakaniemi, Mirja at the harbour
+office, Tuomas the lab courier, Anneli at the market café, Kaarlo's ceramics.
+Standing 0-5 in `localStorage`, raised by an on-time delivery to them and cut
+by a late one; it pays a **tip** on the standing you ARRIVED with — today's
+delivery is what moves it for next time — and the board shows their name and
+how you stand (*seen you once*, *asks for you*). **This is what goodwill was
+for**: the event deck's granny has been accruing a number with nothing to
+spend it on, and goodwill now counts as standing with EVERYBODY for the rest
+of the shift. Word gets around, one number reaches six people, and helping is
+never a charity the score punishes you for.
+
+**A REAL BUG, found because a gate refused to build**: the hash is `>>> 0`
+(unsigned) and three shifts off it used `>>` (signed). Half of all seeds have
+the top bit set, so `CARGO_KEYS[-1234]` is `undefined` — silently — and
+`CARGO[undefined] || CARGO.documents` had been giving **38% of all drops no
+cargo at all** since v2.36, falling back to documents. The hand-off hit the
+same thing and simply was never built. `events.js` masks with `&0xffff` and
+was never affected; its `>>>` is defensive. The gate that sees it is not
+variety (a negative index tallies as its own key and the histogram looks
+healthy) but the direct question: **every drop must carry something real**.
+
+Gates: `test/regulars.mjs` (63, bare node, in CI) — the ladder and its cap, one
+late breaking it, a drop counting, the tip paid on arrival standing, goodwill
+capped, the door window, the hand-off listed first and only where handed over,
+and the signed-shift trap. Nine mutations, nine caught. `events.mjs` grew a
+600-check sweep asserting every drawn card is a real card. `shifts.cjs --gate`
+is 8: an on-time chain is reachable, hand-offs are taken.
+
 ## v2.38 — 2026-09-17
 
 **The event deck** (owner: *"roguelike random events type deal… help the
