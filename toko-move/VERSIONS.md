@@ -1,5 +1,44 @@
 # Toko Move — versions
 
+## v2.40 — 2026-09-18
+
+**Local knowledge, and the obvious rule is INERT.** The walking network was
+fully known from the first second of the first shift, which is nobody's
+experience of a city. The obvious fix — learn a street by standing on it —
+was built, and it changed nothing: walking is only ever offered FROM where you
+are, and arriving is what teaches you, so by the time the filter could bite
+you already knew the street. Every walk was still offered. Caught in a browser
+probe before it shipped, and the check that would have caught it is now in the
+gate so it cannot come back.
+
+What is learned is the **FAR END**: you know a way on foot when you have been
+to BOTH stops it joins. Not circular (you reach stops by tram), granular (half
+a street can be known), and arriving somewhere new really does open the map —
+one new stop, one new walk, and the feed says so. Three central stops are known
+from the start. Persisted in `localStorage`; the end screen counts them. **The
+tourist card is the payoff**: it shows you a stop you have never been to, and
+never one that joins nothing you know.
+
+**The other courier.** Vesa works the same board: a purple figure on the map
+with a dashed line to where they are heading, and a claim on ONE ordinary
+offer — *Vesa is going for this · 15 s*. Let it run out and the job is theirs,
+with a line in the feed and a count on the end screen. Never the hand-off
+(that was put in your hand), never the last job of the shift, and never inside
+the first six seconds of a board. It is deliberately NOT a second simulation:
+a rival with its own route planner is a second game running beside yours and
+none of it is visible.
+
+**A decisive player never loses a job to them, and that is the design** — so
+the only bot that can measure the claim is one that dawdles. `shifts.cjs`
+gained a `dawdler` policy that reads the whole board for forty seconds before
+choosing: it loses two jobs a shift, and the forty random bots lose none. A
+mechanic nothing in the harness can pursue is a mechanic nobody can balance
+(TURF's lesson about the cache); this is the same thing from the other side.
+
+Gates: `test/city.mjs` (51, bare node, in CI), including the inert rule as a
+standing check. Six mutations, six caught. `shifts.cjs --gate` is 10.
+Win rate 67.5%, inside the band.
+
 ## v2.39 — 2026-09-18
 
 **Three things that share one currency**, which is why they shipped together.
