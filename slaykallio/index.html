@@ -125,6 +125,18 @@
     .joker.empty { background: transparent; border: 2px dashed rgba(255,255,255,.25); box-shadow: none; min-width: 40px; max-width: 40px; }
     .joker.big { min-width: 150px; max-width: 200px; min-height: 120px; font-size: 14px; padding: 12px; cursor: pointer; }
     .joker.big b { font-size: 15px; margin-bottom: 8px; }
+    /* v41 - an artifact is a RULE of the run, so it reads as a different kind
+       of object from a friend: squared off rather than tilted, cool rather than
+       warm. One that costs something is marked, because a price you cannot see
+       is not a decision. */
+    .joker.artifact { transform: none; border-style: solid; border-color: rgba(150,190,220,.5); background: rgba(40,54,66,.72); }
+    .joker.artifact b { color: #bcd8ea; }
+    .joker.artifact.costed { border-color: rgba(214,150,90,.75); }
+    .joker.artifact.costed b::after { content: ' \00B7'; color: #d6965a; }
+    #artifacts { display: flex; flex-wrap: wrap; gap: 4px; align-items: flex-start; }
+    /* Rarity on the card face: an indicator of potential, not a bigger number. */
+    .card .type.r-uncommon { color: #9fc7e8; }
+    .card .type.r-rare { color: #e8c46a; letter-spacing: .08em; }
     #right { display: flex; gap: 6px; margin-left: auto; }
     #right button { background: var(--panel); border: 1px solid rgba(255,255,255,.2); border-radius: 6px; padding: 8px 12px; min-height: 44px; min-width: 44px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
 
@@ -340,6 +352,7 @@
         <div id="where"></div>
       </div>
       <div id="jokers"></div>
+      <div id="artifacts"></div>
       <div id="right">
         <button id="deckbtn" aria-label="Deck">deck</button>
         <button id="menubtn" aria-label="Menu">≡</button>
@@ -428,7 +441,7 @@
   }
   </script>
   <script type="module" src="../hub/shell.js?v=40"></script>
-  <script type="module" src="js/main.js?v=40"></script>
+  <script type="module" src="js/main.js?v=41"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';

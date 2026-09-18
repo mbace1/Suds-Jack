@@ -6,6 +6,108 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
+
+## v41 — 2026-09-18
+**The synergy pass: every class axis deepened, neutrals that can join a build, rarity as potential, and ARTIFACTS**
+
+Owner: *"Double up on class card synergies, push them. Also with neutral cards.
+Rarity tiers for all and they are more of indicators of potential, more rarer
+cards in later acts. Some rare ones are very specific and require certain cards
+or situations to work insanely well. For example, keep drawing zero cost cards
+at certain conditions. We also need artifacts and those may be same or
+different from jokers."*
+
+**103 cards -> 142. Cards that read live state: 21 -> 42. Neutral cards that
+read anything: 0 -> 6.**
+
+**EVERY CLASS AXIS WAS UNEVEN AND ONE HAD A SINGLE USER.** v40's count: the
+Busker read `played` on seven cards and the Park Drinker read `buzz` on ONE,
+which is a mechanic with one user rather than a mechanic. Every class now reads
+its own resource on at least four, and the Boxer reads the thorns his hits grew
+as well as the hits themselves. Gated per character, so the next thin one fails
+instead of hiding inside a total.
+
+**A NEUTRAL CARD CAN NOW JOIN A BUILD.** All 24 neutrals were flat numbers, so
+a neutral draft could never be part of a deck - the opposite of what a shared
+pool is for. Three new axes every character can reach: `free` (0-cost cards
+played this turn), `exhausted` (cards burned this fight) and `energy` (what is
+left unspent). `div` is what lets a card read a LARGE resource honestly - block
+sits at 20+ on a Cart deck, so "+1 damage per block" is a 20-damage common and
+"+1 per 3 block" is a card - and `describe` prints the divisor, because a face
+that hides it is quoting a number the card does not use.
+
+**RARITY IS A CEILING, NOT A NUMBER, AND THE ODDS FOLLOW THE ACT.**
+`RULES.rarityByAct` rolls rares three times as often in act two as in act one
+(6/3/1 -> 3/4/3), because a rare here asks for a board state or a partner card,
+does very little without it, and is worth what your deck can reach. Five
+build-around powers, each the rule a deck is then built to abuse: `freeDraw`
+(the owner's own example - play a 0-cost card, draw one, capped so the chain
+has an end), `strikeTwice`, `exhaustHit`, `buzzBlock`, `halfRetain`.
+
+**ARTIFACTS ARE NOT FRIENDS, AND THE LINE IS WHERE THEY LIVE.** A friend bends
+the arithmetic of a HIT: it lives inside the damage pipeline, is capped at
+five, and picking one up is a trade. An artifact changes a rule of the RUN: it
+lives at the seams - a fight starting, a card leaving play, a rest, a reward,
+an act ending - and is uncapped, because none of them competes for the same
+number. The test for which list a thing belongs in: **if it would change what a
+number on a card face says, it is a friend; if it changes what happens between
+the cards, it is an artifact.** Gated, so the two lists cannot quietly collapse
+into one. Twelve of them, from elites and act bosses only - which is what makes
+an elite worth the HP it costs.
+
+**FOUR OF THE TWELVE COST SOMETHING**, and that was a measured correction
+rather than a flourish. The first eight were all give, and separated out they
+were worth **+8 points of win rate on their own** - a flat gift to every run.
+The GDD's rule for friends is the rule here: one that only gives is a number,
+not a decision. The price rides on the same object as the gift (`also`), so
+taking the upside can never drop the downside.
+
+**THE MEASUREMENT, AND IT SEPARATES CLEANLY.** 600 act-two arrivals a cell:
+
+| | v40 | v41 cards only | v41 cards, never offered | v41 full |
+|---|---|---|---|---|
+| greedy | 25% | 22% | 32% | 29% |
+| synergist | 30% | 26% | 36% | 34% |
+| defensive | 44% | 39% | 48% | 45% |
+| **native** | **38%** | **31%** | **44%** | **38%** |
+
+Read the third column against the fourth: with artifacts on and the new cards
+**never offered**, `native` is 44%; offering them drops it to 38%. **The new
+cards cost a competent bot six points.** That is not a bug and it is the brief
+working: they are conditional, the draft heuristic grabs them for their tags
+(`char` + `scale` + `power` all score), and a bot cannot build toward a
+condition. A card that is insane with a partner and weak without is, to a
+drafter that reads tags, a trap - which is exactly what "rarity is an indicator
+of potential" means when the reader has no plan.
+
+Net for a competent line: **flat**. The naive lines gain 4-6 points from the
+artifacts. Reach is real - over 720 bot runs, **73% end holding at least one
+v41 card and 78% at least one artifact**, the neutral rares land in ~7% of all
+runs and each class rare in 5-12% of its own character's.
+
+**THE INSTRUMENT WAS TAUGHT THE NEW AXES AND IT BARELY MATTERED**, which is
+worth recording. `played`, `free` and `exhausted` all GROW within the turn, so
+a card that reads one is held until nothing else can go first; `energy` SHRINKS,
+so a card that reads it goes first. Those rules went into `synergist` and every
+`native` policy. Result: synergist 34% -> 35%, native 39% -> 39%. The bots are
+not the reason the new cards read flat.
+
+**OPEN, AND NOT PAPERED OVER: THE CART PUSHER LOST TEN POINTS** (59% -> 49%),
+which clears the 8-point floor. The suspect was `chocks`, a rare that keeps
+half your block sitting in the same pool as `Parked For Good`, a rare that
+keeps all of it - two rares where one is strictly better is a trap rather than
+a choice. Re-tiered to uncommon it reads **46%**, so the re-tier made it
+slightly worse and the hypothesis was wrong. The cause is dilution: with the
+v41 cards never offered he reads 60%, which is v40's number. **His winning line
+was the narrowest in the game, so a deeper pool costs him the most.** The
+re-tier is kept on the design argument alone and the ten points are open.
+
+Gates: `core.mjs` 850 passed / 0 failed (new: per-character axis depth, neutral
+scaling, the act-weighted roll measured rather than asserted from the table,
+all five build-around powers, `div` on the face and in the preview, the
+artifact/friend line, and that a costed artifact cannot drop its price).
+`smoke.cjs` 142 / 0.
+
 ## v40 — 2026-09-17
 **The Bear reads the board, and the Boxer's own bot was built on a rule the engine never had**
 

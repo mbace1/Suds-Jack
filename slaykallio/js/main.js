@@ -7,8 +7,8 @@
 // synced to the real state so nothing can drift. `window.__sk` is the seam
 // the smoke test drives, and it can set the replay delays to zero.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=40';
-import * as engine from './engine.js?v=40';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=41';
+import * as engine from './engine.js?v=41';
 import { Arena } from './scene.js?v=32';
 import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=37';
 import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=37';
@@ -25,7 +25,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 40;
+const VERSION = 41;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -493,6 +493,17 @@ function renderTop() {
     jr.append(b);
   }
   for (let i = state.jokers.length; i < RULES.jokerMax; i++) jr.append(el('div', 'joker empty', ''));
+  // Artifacts sit beside the friends but read as a different KIND of thing -
+  // rules of the run rather than arithmetic on a hit - and there is no empty
+  // slot row, because they are uncapped.
+  const ar = $('#artifacts'); if (ar) {
+    ar.innerHTML = '';
+    for (const a of state.artifacts ?? []) {
+      const d = el('div', `joker artifact${a.cost ? ' costed' : ''}`);
+      d.append(el('b', '', nameOf(ARTIFACTS, a.id)), el('span', '', a[theme].text));
+      ar.append(d);
+    }
+  }
 }
 
 function renderEnergy() {
@@ -538,7 +549,12 @@ function cardFace(c, text) {
   img.className = 'pic';
   art.append(img);
   frag.append(el('span', 'cost', c.cost === null || c.cost === undefined ? '✖' : c.cost),
-    nameSpan(c), art, el('span', 'text', text), el('span', 'type', c.type));
+    nameSpan(c), art, el('span', 'text', text),
+    // v41: rarity goes on the face, because the owner's brief makes it an
+    // INDICATOR OF POTENTIAL - a rare here is a ceiling with a condition on it,
+    // not a bigger number, and the trade cannot be judged unseen.
+    el('span', `type r-${c.rarity || 'common'}`,
+      c.rarity && !['common', 'basic'].includes(c.rarity) ? `${c.type} · ${c.rarity}` : c.type));
   return frag;
 }
 
@@ -775,7 +791,9 @@ function openReward() {
   const r = state.reward; if (!r) return;
   const panel = $('#reward'); panel.hidden = false;
   rewardSel = 0;
-  $('#reward h2').textContent = r.kind === 'card' ? 'Take a card' : `A ${T().jokerWord.replace(/s$/, '')} tags along`;
+  $('#reward h2').textContent = r.kind === 'card' ? 'Take a card'
+    : r.kind === 'artifact' ? 'Something you keep'
+    : `A ${T().jokerWord.replace(/s$/, '')} tags along`;
   const box = $('#options'); box.innerHTML = '';
   r.options.forEach((id, i) => {
     let b;
@@ -784,6 +802,12 @@ function openReward() {
       b = el('button', `card ${c.type}`);
       b.style.setProperty('--accent', CHARACTERS[state.character][theme].look.accent);
       b.append(cardFace({ ...c, id }, engine.describe(c)));
+    } else if (r.kind === 'artifact') {
+      // An artifact that COSTS says so on its face - a price you cannot see is
+      // not a decision.
+      const a = ARTIFACTS[id];
+      b = el('button', `joker big artifact${a.cost ? ' costed' : ''}`);
+      b.append(el('b', '', nameOf(ARTIFACTS, id)), el('span', '', a[theme].text));
     } else {
       b = el('button', 'joker big');
       b.append(el('b', '', nameOf(JOKERS, id)), el('span', '', JOKERS[id][theme].text));

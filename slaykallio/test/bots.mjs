@@ -63,6 +63,21 @@ function incoming(s) {
 }
 const hpFrac = s => s.hero.hp / s.hero.maxHp;
 const scaleOn = (c, kind) => c.effects.some(f => f.scale === kind);
+// v41. The neutral axes (`free`, `exhausted`) and `played` all GROW WITHIN THE
+// TURN, so a card that reads one is worth holding until nothing else can go
+// first. That rule already existed on the Busker's `played`; it is shared now
+// because every character can build on the neutral axes and a policy that does
+// not know them plays the best card in the hand first and wastes it.
+const GROWS_IN_TURN = ['played', 'free', 'exhausted'];
+const growsThisTurn = c => c.effects.some(f => GROWS_IN_TURN.includes(f.scale));
+// `energy` is the mirror image: it SHRINKS as the turn goes on, so a card that
+// reads unspent energy is worth playing FIRST, not last.
+const readsEnergy = c => scaleOn(c, 'energy');
+// Held last, and worth a lot when it lands.
+const holdLast = (st, i, c) => {
+  const more = st.hand.some((x, j) => j !== i && canPlay(st, j) && x.type !== 'power' && !growsThisTurn(x));
+  return more ? -Infinity : 85 + dmgOf(st, i) + blkOf(st, i);
+};
 // does this card put `key` on YOU — the mechanic-granting half of a deck
 const grants = (c, key) => c.effects.some(f => f.type === 'status' && f.who === 'self' && f.key === key);
 const dmgOf = (s, i) => { const p = preview(s, i); return p ? p.damage * Math.max(1, p.hits) : 0; };
@@ -143,6 +158,7 @@ const SCORE = {
   drinker: (st, i, c) => {
     const buzz = st.hero.status.buzz || 0;
     if (c.type === 'power') return 200;
+    if (readsEnergy(c)) return 130 + dmgOf(st, i);
     if (grants(c, 'buzz')) return 150 - (c.cost || 0) * 2;
     if (scaleOn(c, 'buzz')) return 90 + dmgOf(st, i);
     if (c.type === 'attack') return 40 + dmgOf(st, i) + buzz * 4;
@@ -165,6 +181,7 @@ const SCORE = {
   // `hoarder`'s mistake was sitting on cards that were no longer worth
   // anything to hold. Count first, then empty out.
   collector: (st, i, c) => {
+    if (readsEnergy(c)) return 130 + dmgOf(st, i);
     if (c.type === 'power') return 200;
     if (scaleOn(c, 'hand') || scaleOn(c, 'finds')) return 150 + dmgOf(st, i) + blkOf(st, i);
     const waiting = st.hand.some((x, j) => j !== i && canPlay(st, j) && (scaleOn(x, 'hand') || scaleOn(x, 'finds')));
@@ -176,6 +193,7 @@ const SCORE = {
   // BLOCK IS AMMUNITION. Cover up first, then the attack that counts the
   // block — the opposite order to the one a value-sorting bot plays.
   cart: (st, i, c) => {
+    if (readsEnergy(c)) return 130 + dmgOf(st, i);
     if (c.type === 'power') return 200;
     if (scaleOn(c, 'block')) {
       const more = st.hand.some((x, j) => j !== i && canPlay(st, j) && blkOf(st, j) > 0);
@@ -189,6 +207,8 @@ const SCORE = {
   // ends with the dog unfed has thrown the character away.
   walker: (st, i, c) => {
     if (c.type === 'power') return 200;
+    if (readsEnergy(c)) return 130 + dmgOf(st, i);
+    if (growsThisTurn(c)) return holdLast(st, i, c);
     if (grants(c, 'fetch')) return 140 + (c.effects.find(f => f.key === 'fetch')?.n || 0) * 2 - (c.cost || 0) * 2;
     if (scaleOn(c, 'fetch')) return 90 + dmgOf(st, i);
     const need = Math.max(0, incoming(st) - st.hero.block);
@@ -212,6 +232,9 @@ const SCORE = {
   boxer: (st, i, c) => {
     if (c.type === 'power') return 200;
     if (grants(c, 'thorns')) return 150 - (c.cost || 0) * 2;
+    // v41: he reads the thorns they GREW as well as the hits he took.
+    if (scaleOn(c, 'thorns')) return 95 + dmgOf(st, i);
+    if (readsEnergy(c)) return 130 + dmgOf(st, i);
     if (scaleOn(c, 'struck')) {
       const more = st.hand.some((x, j) => j !== i && canPlay(st, j) && !scaleOn(x, 'struck'));
       return more ? -Infinity : 90 + dmgOf(st, i);
@@ -288,11 +311,10 @@ export const BOTS = {
     note: 'powers, then cheap cards, then the scaler last; drafts to the mechanic',
     card: s => playByScore(s, (st, i, c) => {
       if (c.type === 'power') return 200;
-      if (scaleOn(c, 'played')) {
-        // hold it while anything else can still be played before it
-        const more = st.hand.some((x, j) => j !== i && canPlay(st, j) && x.type !== 'power' && !scaleOn(x, 'played'));
-        return more ? -Infinity : 80 + dmgOf(st, i) + blkOf(st, i);
-      }
+      // v41: `played`, `free` and `exhausted` all grow within the turn, so they
+      // are all held to the end; `energy` shrinks, so it goes first.
+      if (readsEnergy(c)) return 120 + dmgOf(st, i);
+      if (growsThisTurn(c)) return holdLast(st, i, c);
       return 20 - (c.cost || 0) * 3 + dmgOf(st, i) * 0.15 + blkOf(st, i) * 0.15;
     }),
     ...buildPolicy,

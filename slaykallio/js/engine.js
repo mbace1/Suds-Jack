@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=40';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=41';
 
 // THE ONE PLACE A RUNG IS READ. Every rule that varies by ascension asks this
 // and nothing else, so the ladder is a table in data.js rather than six
@@ -55,7 +55,14 @@ export function makeRng(seed) {
 const TOKENS = Object.entries(CARDS).filter(([, c]) => c.find).map(([id]) => id);
 const ENC_INDEX = Object.fromEntries(ENCOUNTERS.map((e, i) => [e.id, i]));
 const POWERS = ['buzzPerTurn', 'findPerTurn', 'blockPerTurn', 'retainBlock', 'groove',
-  'thornsPerTurn', 'keepFetch', 'drawPerTurn', 'strengthPerTurn', 'energyPerTurn'];
+  'thornsPerTurn', 'keepFetch', 'drawPerTurn', 'strengthPerTurn', 'energyPerTurn',
+  // v41 — the build-around powers. Each is a RULE the deck is then built to
+  // abuse, which is what "rare" means here: a ceiling, not a number.
+  'freeDraw',       // play a 0-cost card: draw one (the owner's own example)
+  'exhaustHit',     // exhaust a card: deal this to the weakest enemy
+  'buzzBlock',      // end of turn: block = the buzz that is about to fade
+  'strikeTwice',    // the first 0-cost attack each turn hits twice
+  'halfRetain'];    // keep half your block through the start of your turn
 
 let uidCounter = 0;
 const card = id => ({ uid: ++uidCounter, id, ...CARDS[id], effects: CARDS[id].effects.map(f => ({ ...f })) });
@@ -73,7 +80,8 @@ export function upgrade(c) {
       case 'damage': if (f.n > 0 || !f.scale) f.n += f.times > 1 ? 1 : 3; else f.per += 1; break;
       case 'block': if (f.n > 0 || !f.scale) f.n += 3; else f.per += 1; break;
       case 'draw': case 'addCard': f.n += 1; break;
-      case 'status': if (!['doubleNext', 'retainBlock', 'groove', 'keepFetch'].includes(f.key) && f.who === 'self') f.n += f.key === 'fetch' ? 3 : 1; break;
+      case 'exhaustHand': case 'discardHand': break;                      // an upgrade never makes a cost dearer
+      case 'status': if (!['doubleNext', 'retainBlock', 'groove', 'keepFetch', 'buzzBlock', 'strikeTwice', 'halfRetain'].includes(f.key) && f.who === 'self') f.n += f.key === 'fetch' ? 3 : 1; break;
       case 'heal': f.n += 3; break;
       case 'energy': f.n += 1; break;
       case 'loseHp': f.n = Math.max(0, f.n - 1); break;
@@ -109,12 +117,16 @@ export function createRun({ seed = 1, character = 'drinker', theme = 'kallio', a
     pick: null,              // { kind: 'remove'|'upgrade', then: [effects], from }
     turn: 0,
     phase: 'menu',
-    reward: null,            // { kind: 'card'|'joker', options: [...], queue: [...] }
+    reward: null,            // { kind: 'card'|'joker'|'artifact', options: [...], queue: [...] }
+    artifacts: [],           // v41 — rules of the run; uncapped, elites and bosses hand them out
     rewardThen: 'fight',     // where a drained reward queue leads: 'fight' → after the fight, 'map' → straight back to the map
     playedThisTurn: [],
     attacksThisTurn: 0,
     attacksThisFight: 0,
     findsThisTurn: 0,
+    freeThisTurn: 0,         // 0-cost cards played this turn (v41)
+    exhaustedThisFight: 0,   // cards exhausted this fight (v41)
+    freeDraws: 0,            // freeDraw triggers this turn — bounded, so a hand of Bottles is a chain and not a loop
     struck: 0,               // enemy hits taken this fight — the boxer counts them
     log: [],
     stats: { damageDealt: 0, cardsPlayed: 0, biggestHit: 0, fights: 0, events: 0, rests: 0 },
@@ -247,6 +259,12 @@ function startEncounter(state, encId, kind = 'fight') {
   state.turn = 0;
   state.attacksThisFight = 0;
   state.struck = 0;
+  state.exhaustedThisFight = 0;
+  // Strength can be handed out here; BLOCK cannot. `startTurn` zeroes block on
+  // its way in, so an artifact that opened the fight with a guard had it wiped
+  // one line later and read 0 in the gate. It goes on turn one instead, after
+  // the wipe - which is also the only reading that survives `halfRetain`.
+  { const ss = artifactSum(state, 'startStrength'); if (ss) addStatus(state, state.hero, 'strength', ss, 'brass_knuckles'); }
   state.phase = 'fight';
   // AFTER the reset, not before it. This used to run first, so an intent was
   // planned against the PREVIOUS fight's turn counter and the hero's not-yet
@@ -270,7 +288,10 @@ function startTurn(state) {
   state.playedThisTurn = [];
   state.attacksThisTurn = 0;
   state.findsThisTurn = 0;
-  if (!h.powers.retainBlock) h.block = 0;
+  state.freeThisTurn = 0;
+  state.freeDraws = 0;
+  if (h.powers.halfRetain && !h.powers.retainBlock) h.block = Math.floor(h.block / 2);
+  else if (!h.powers.retainBlock) h.block = 0;
   let energy = h.maxEnergy, draw = RULES.draw;
   for (const j of state.jokers) {
     const f = j.effect;
@@ -283,6 +304,14 @@ function startTurn(state) {
   if (h.powers.energyPerTurn) energy += h.powers.energyPerTurn;
   if (h.powers.drawPerTurn) draw += h.powers.drawPerTurn;
   if (h.powers.blockPerTurn) gainBlock(state, h, h.powers.blockPerTurn, 'timetable');
+  if (state.turn === 1) { const sb = artifactSum(state, 'startBlock'); if (sb) gainBlock(state, h, sb, 'tarp'); }
+  // v41 — an artifact that COSTS. The project's own rule for friends ("one that
+  // only gives is a number") is the rule for these too, and the first eight were
+  // all give.
+  for (const a of state.artifacts) {
+    if (a.effect.type === 'energyDraw') { energy += a.effect.energy; draw += a.effect.draw; }
+  }
+  if (state.turn === 1 && hasArtifact(state, 'startFrail')) addStatus(state, h, 'frail', 1, 'iron_lung');
   if (h.powers.buzzPerTurn) addStatus(state, h, 'buzz', h.powers.buzzPerTurn, 'closing_time');
   if (h.powers.thornsPerTurn) addStatus(state, h, 'thorns', h.powers.thornsPerTurn, 'thornsPerTurn');
   if (h.powers.strengthPerTurn) addStatus(state, h, 'strength', h.powers.strengthPerTurn, 'strengthPerTurn');
@@ -350,6 +379,8 @@ export function endTurn(state) {
   // fraction gives buzz a fixed point (Never Sober's +3 a turn settles at
   // 3 / (1 - carry)) rather than unbounded growth, so it compounds without
   // running away. Measured, not felt: see VERSIONS.md v28 and `--act2`.
+  // v41: Dutch Courage turns the drink that is about to wear off into a guard.
+  if (h.powers.buzzBlock && h.status.buzz) gainBlock(state, h, h.status.buzz, 'buzzBlock');
   const carried = Math.floor((h.status.buzz || 0) * (RULES.buzzCarry || 0));
   if (carried > 0) h.status.buzz = carried; else delete h.status.buzz;
   delete h.status.doubleNext;
@@ -409,7 +440,12 @@ export function playCard(state, i, targetIndex = null) {
   state.stats.cardsPlayed++;
 
   const targets = c.target === 'all' ? state.enemies.filter(e => e.alive) : target ? [target] : [];
+  // v41: the first 0-cost ATTACK each turn hits twice under Loose Change's rule.
+  // Doubling the effect list rather than the damage keeps the breakdown honest:
+  // the face says 3 x2, and two 3s land.
+  const twice = c.type === 'attack' && c.cost === 0 && h.powers.strikeTwice && !state.playedThisTurn.some(id => CARDS[id]?.cost === 0 && CARDS[id]?.type === 'attack');
   for (const fx of c.effects) applyEffect(state, c, fx, target, targets);
+  if (twice) { state.log.push({ t: 'again', card: c.id, src: 'strikeTwice' }); for (const fx of c.effects) if (fx.type === 'damage') applyEffect(state, c, fx, target, targets); }
   if (c.type === 'attack') {
     state.attacksThisTurn++; state.attacksThisFight++;
     for (const j of state.jokers) if (j.effect.type === 'blockOnAttack') gainBlock(state, h, j.effect.n, j.id);
@@ -421,9 +457,17 @@ export function playCard(state, i, targetIndex = null) {
   state.playedThisTurn.push(c.id);
   // groove: the 3rd card each turn pays back an energy
   if (h.powers.groove && state.playedThisTurn.length === 3 && !h.groovePaid) { h.energy += 1; h.groovePaid = true; state.log.push({ t: 'energy', n: 1, src: 'groove' }); }
+  // v41: a 0-cost card played is the free axis, and under the build-around
+  // power it also draws. Capped per turn (RULES.freeDrawCap) so a hand of
+  // conjured Bottles is a CHAIN with an end rather than a loop: draw is bounded
+  // by the deck anyway, but a cap is what lets the face promise a number.
+  if (c.cost === 0) {
+    state.freeThisTurn++;
+    if (h.powers.freeDraw && state.freeDraws < RULES.freeDrawCap) { state.freeDraws++; drawCards(state, h.powers.freeDraw); state.log.push({ t: 'draw', n: h.powers.freeDraw, src: 'freeDraw' }); }
+  }
 
   if (c.type === 'power') state.exhaust.push(c);
-  else if (c.exhaust) { state.exhaust.push(c); state.log.push({ t: 'exhaust', uid: c.uid }); }
+  else if (c.exhaust) exhaustCard(state, c);
   else state.discard.push(c);
 
   checkFightOver(state);
@@ -458,11 +502,65 @@ function applyEffect(state, c, fx, target, targets) {
     case 'addCard': for (let k = 0; k < fx.n; k++) addCardToHand(state, fx.id, c.id); break;
     case 'heal': heal(state, fx.n); break;
     case 'loseHp': loseHp(state, fx.n, c.id); break;
+    // v41: an enabler for the exhaust axis - burn the rightmost non-power card
+    // in hand. Deterministic (no choice UI yet), and the face says which.
+    case 'exhaustHand': {
+      for (let k = 0; k < fx.n; k++) {
+        const j = state.hand.map((x, idx) => idx).reverse().find(idx => state.hand[idx].type !== 'curse');
+        if (j === undefined) break;
+        const [x] = state.hand.splice(j, 1); exhaustCard(state, x);
+      }
+      break;
+    }
+    case 'discardHand': {
+      for (let k = 0; k < fx.n && state.hand.length; k++) { const x = state.hand.pop(); state.discard.push(x); state.log.push({ t: 'discardCard', uid: x.uid, src: c.id }); }
+      break;
+    }
     default: throw new Error(`unknown effect ${fx.type}`);
   }
 }
 
+// v41 — ARTIFACTS change the rules of the run; FRIENDS bend the arithmetic of a
+// hit. That is the whole reason they are two lists: a friend lives in the damage
+// pipeline and is capped at five, an artifact lives at the seams (a fight
+// starting, a rest, a reward, a card leaving play) and there is no cap because
+// none of them competes for the same number.
+export function artifactSum(state, key) {
+  let s = 0;
+  for (const a of state.artifacts) if (a.effect.type === key) s += a.effect.n || 0;
+  return s;
+}
+// An artifact that costs something carries its price as `also` - a second rule
+// name on the same effect - so one object is one artifact and the downside can
+// never be dropped by taking the upside.
+export const hasArtifact = (state, key) => state.artifacts.some(a => a.effect.type === key || a.effect.also === key);
+
+// v41: exhausting is an AXIS now, so it goes through one door. A power can
+// read it on the way past; a card that scales on it reads the count.
+function exhaustCard(state, c) {
+  state.exhaust.push(c);
+  state.exhaustedThisFight++;
+  state.log.push({ t: 'exhaust', uid: c.uid });
+  const h = state.hero;
+  if (h.powers.exhaustHit) {
+    const weakest = state.enemies.filter(e => e.alive).sort((a, b) => a.hp - b.hp)[0];
+    if (weakest) dealDamage(state, weakest, h.powers.exhaustHit, { src: 'exhaustHit' });
+  }
+  const ed = artifactSum(state, 'exhaustDraw');
+  if (ed) drawCards(state, ed);
+}
+
+// v41: `div` divides the axis before it is multiplied, which is what lets a
+// card read a LARGE resource honestly. Block sits at 20+ on a Cart deck, so
+// "+1 damage per block" would be a 20-damage common; "+1 per 3 block" is a
+// card. Floored, so the face never promises a fraction.
 function scaleOf(state, fx) {
+  const h = state.hero;
+  const raw = rawScale(state, fx);
+  return fx.div ? Math.floor(raw / fx.div) : raw;
+}
+
+function rawScale(state, fx) {
   const h = state.hero;
   switch (fx.scale) {
     case 'played': return state.playedThisTurn.length * (fx.per || 1);
@@ -475,6 +573,13 @@ function scaleOf(state, fx) {
     case 'struck': return state.struck * (fx.per || 1);
     case 'fetch': return (h.status.fetch || 0) * (fx.per || 1);
     case 'missing': return Math.floor((h.maxHp - h.hp) * (fx.per || 1));
+    // v41 — axes every character can build on, which is what makes a neutral
+    // card a build piece rather than a flat number.
+    case 'free': return state.freeThisTurn * (fx.per || 1);
+    case 'exhausted': return state.exhaustedThisFight * (fx.per || 1);
+    case 'energy': return h.energy * (fx.per || 1);
+    case 'thorns': return (h.status.thorns || 0) * (fx.per || 1);
+    case 'strength': return (h.status.strength || 0) * (fx.per || 1);
     default: return 0;
   }
 }
@@ -717,7 +822,7 @@ function checkFightOver(state) {
     // collects. What gives an act a middle is fights that can kill you, not a
     // smaller bandage between them; see VERSIONS.md v35 and the roster there.
     state.log.push({ t: 'fightWon', index: state.encounter, lvl: nightfall(state.hour ?? 0) });
-    heal(state, RULES.healAfterFight);
+    heal(state, hasArtifact(state, 'noFightHeal') ? 0 : RULES.healAfterFight + artifactSum(state, 'healAfterFight'));
     const enc = ENCOUNTERS[state.encounter];
     const queue = [...enc.reward];
     if (state.jokers.length >= RULES.jokerMax) queue.splice(queue.indexOf('joker'), queue.includes('joker') ? 1 : 0);
@@ -736,6 +841,7 @@ function afterFight(state) {
     // Dusk falls between the acts, and you catch your breath. Measured: without
     // this every character reached act two at ~40% HP and the Bridge King was
     // 48% of all deaths — the middle of the run was a wall, not a curve.
+    if (hasArtifact(state, 'bossFull')) heal(state, state.hero.maxHp);
     heal(state, Math.floor(state.hero.maxHp * (rung(state, 'short_breath') ? RULES.healBetweenActsHard : RULES.healBetweenActs)));
     state.act++;
     buildRoute(state, state.act);
@@ -747,7 +853,8 @@ function afterFight(state) {
 function openReward(state, queue) {
   if (!queue.length) { state.reward = null; if (state.rewardThen === 'map') openMap(state); else afterFight(state); return; }
   const kind = queue.shift();
-  const options = kind === 'card' ? rollCards(state, 3) : rollJokers(state, 3);
+  const options = kind === 'card' ? rollCards(state, 3 + artifactSum(state, 'rewardPlus'))
+    : kind === 'artifact' ? rollArtifacts(state, 3) : rollJokers(state, 3);
   if (!options.length) { openReward(state, queue); return; }
   state.phase = 'reward';
   state.reward = { kind, options, queue };
@@ -756,8 +863,11 @@ function openReward(state, queue) {
 
 function rollCards(state, n) {
   const pool = Object.entries(CARDS)
-    .filter(([, c]) => (c.char === state.character || !c.char) && !['basic', 'token', 'curse'].includes(c.rarity))
-    .map(([id, c]) => ({ id, w: c.rarity === 'rare' ? 1 : c.rarity === 'uncommon' ? 3 : 5 }));
+    .filter(([id, c]) => (c.char === state.character || !c.char) && !['basic', 'token', 'curse'].includes(c.rarity) && !(globalThis.__V41_HIDE || new Set()).has(id))
+    // v41: RARITY IS POTENTIAL, and the odds follow the act. A rare here is a
+    // ceiling with a condition on it, not a bigger number, so it is worth more
+    // the further a deck is along - and act two rolls them three times as often.
+    .map(([id, c]) => ({ id, w: (RULES.rarityByAct[Math.min(state.act, RULES.rarityByAct.length - 1)])[c.rarity] ?? 1 }));
   const out = [];
   while (out.length < n && pool.length) {
     const total = pool.reduce((s, p) => s + p.w, 0);
@@ -776,6 +886,19 @@ function rollJokers(state, n) {
   return state.rng.shuffle(pool).slice(0, n);
 }
 
+function rollArtifacts(state, n) {
+  const held = new Set(state.artifacts.map(a => a.id));
+  const pool = Object.keys(ARTIFACTS).filter(id => !held.has(id));
+  return state.rng.shuffle(pool).slice(0, n);
+}
+
+export function gainArtifact(state, id) {
+  const a = { id, ...ARTIFACTS[id] };
+  state.artifacts.push(a);
+  state.log.push({ t: 'gainArtifact', artifact: id });
+  if (a.effect.type === 'maxHp') { state.hero.maxHp += a.effect.n; state.hero.hp += a.effect.n; state.log.push({ t: 'maxHp', n: a.effect.n, maxHp: state.hero.maxHp, hp: state.hero.hp }); }
+}
+
 function gainJoker(state, id) {
   const j = { id, ...JOKERS[id] };
   state.jokers.push(j);
@@ -789,6 +912,7 @@ export function chooseReward(state, index) {
   const id = options[index];
   if (id !== undefined) {
     if (kind === 'card') { state.hero.deck.push(card(id)); state.log.push({ t: 'gainCard', card: id }); }
+    else if (kind === 'artifact') gainArtifact(state, id);
     else gainJoker(state, id);
   } else state.log.push({ t: 'skipReward', kind });
   openReward(state, queue);
@@ -890,7 +1014,12 @@ export function pickCard(state, deckIndex) {
 export function chooseRest(state, kind) {
   if (state.phase !== 'rest') return false;
   state.stats.rests++;
-  if (kind === 'heal') { heal(state, Math.floor(state.hero.maxHp * (rung(state, 'thin_rest') ? RULES.restHealHard : RULES.restHeal))); state.log.push({ t: 'rested', kind }); openMap(state); return true; }
+  if (kind === 'heal') {
+    heal(state, hasArtifact(state, 'noRestHeal') ? 0 : Math.floor(state.hero.maxHp * (rung(state, 'thin_rest') ? RULES.restHealHard : RULES.restHeal))); state.log.push({ t: 'rested', kind });
+    // v41: the Park Bench makes a rest both things at once - sleep, then sharpen.
+    if (hasArtifact(state, 'restBoth')) { runEffects(state, [{ type: 'upgrade' }], 'rest'); return true; }
+    openMap(state); return true;
+  }
   if (kind === 'upgrade') { state.log.push({ t: 'rested', kind }); runEffects(state, [{ type: 'upgrade' }], 'rest'); return true; }
   return false;
 }
@@ -926,9 +1055,15 @@ const POWER_TEXT = {
   drawPerTurn: n => `Draw ${n} more card${n > 1 ? 's' : ''} each turn.`,
   strengthPerTurn: n => `At the start of your turn, gain ${n} Strength.`,
   energyPerTurn: n => `Gain ${n} more energy each turn.`,
+  freeDraw: n => `Whenever you play a 0-cost card, draw ${n} (up to ${RULES.freeDrawCap} times a turn).`,
+  exhaustHit: n => `Whenever you exhaust a card, deal ${n} to the weakest enemy.`,
+  buzzBlock: () => 'At the end of your turn, gain block equal to your Buzz.',
+  strikeTwice: () => 'The first 0-cost attack you play each turn hits twice.',
+  halfRetain: () => 'Keep half your block at the start of your turn.',
 };
 const SCALE_TEXT = { played: 'card played this turn', block: 'block you have', hand: 'card in your hand', finds: 'Bottle played this turn', jokers: 'friend',
-  buzz: 'Buzz', discard: 'card in your discard', struck: 'hit you took this fight', fetch: 'Fetch', missing: 'missing HP' };
+  buzz: 'Buzz', discard: 'card in your discard', struck: 'hit you took this fight', fetch: 'Fetch', missing: 'missing HP',
+  free: '0-cost card played this turn', exhausted: 'card exhausted this fight', energy: 'unspent energy', thorns: 'Thorns', strength: 'Strength' };
 
 // Card text is written from the effects, with live numbers when a state and
 // hand index are given: a Crema-doubled Strike says 12 on its face.
@@ -941,14 +1076,14 @@ export function describe(c, state = null, i = null, targetIndex = null) {
       case 'damage': {
         const n = live ? live.damage : fx.n;
         let s = `Deal ${n}${fx.times ? ` ×${fx.times}` : ''} damage${c.target === 'all' ? ' to all' : ''}`;
-        if (fx.scale && !live) s += fx.n ? ` +${fx.per} per ${SCALE_TEXT[fx.scale]}` : ` = ${fx.per} per ${SCALE_TEXT[fx.scale]}`;
+        if (fx.scale && !live) s += `${fx.n ? ' +' : ' = '}${fx.per} per ${fx.div && fx.div > 1 ? fx.div + ' ' : ''}${SCALE_TEXT[fx.scale]}`;
         parts.push(s + '.');
         break;
       }
       case 'block': {
         const n = live ? live.block : fx.n;
         let s = `Gain ${n} block`;
-        if (fx.scale && !live) s += fx.n ? ` +${fx.per} per ${SCALE_TEXT[fx.scale]}` : ` = ${fx.per} per ${SCALE_TEXT[fx.scale]}`;
+        if (fx.scale && !live) s += `${fx.n ? ' +' : ' = '}${fx.per} per ${fx.div && fx.div > 1 ? fx.div + ' ' : ''}${SCALE_TEXT[fx.scale]}`;
         parts.push(s + '.');
         break;
       }
@@ -963,6 +1098,8 @@ export function describe(c, state = null, i = null, targetIndex = null) {
       case 'addCard': parts.push(`Conjure ${fx.n} Bottle${fx.n > 1 ? 's' : ''} into your hand.`); break;
       case 'heal': parts.push(`Heal ${fx.n}.`); break;
       case 'loseHp': parts.push(`Lose ${fx.n} HP.`); break;
+      case 'exhaustHand': parts.push(`Exhaust the rightmost ${fx.n > 1 ? fx.n + ' cards' : 'card'} in your hand.`); break;
+      case 'discardHand': parts.push(`Discard ${fx.n} from the right of your hand.`); break;
     }
   }
   if (c.exhaust) parts.push('Exhaust.');

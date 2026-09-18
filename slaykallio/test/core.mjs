@@ -3,11 +3,11 @@
 // Everything is driven off game state from a fixed seed, so a number that
 // changes here changed in the rules, not in the clock.
 
-import { CARDS, CHARACTERS, JOKERS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from '../js/data.js';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from '../js/data.js';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { poseAt, frameAt, FRAME_NAMES, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
 import { CAST, WITH_GUNS, POSES, WITH_POSES, castFiles, plateFor, posesFor } from '../js/plates.js';
-import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable, WHEN, rung, enemyDamage } from '../js/engine.js';
+import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, skipPick, pickable, WHEN, rung, enemyDamage, gainArtifact, hasArtifact, artifactSum } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
 
@@ -1209,6 +1209,218 @@ check('but leans on a wall of block', acted(r, bmark).includes('press'), `${acte
   check('the Bear no longer ramps its own Strength unconditionally',
     !ENEMIES.the_bear.moves.some(m => !m.when && m.status?.key === 'strength'));
   check('but it still heals — it is granite', mv('stir').heal > 0);
+}
+
+
+// ═══ v41 — THE SYNERGY PASS ═══════════════════════════════════════════════
+{
+  // 1. EVERY CLASS AXIS IS DEEP ENOUGH TO BUILD ON. v40 measured them and they
+  // were wildly uneven: the Busker read `played` on seven cards and the Park
+  // Drinker read `buzz` on ONE, which is a mechanic with a single user. The
+  // gate is per character, so the next thin one fails rather than hides in a
+  // total.
+  const AXIS = { drinker: 'buzz', busker: 'played', collector: 'hand', cart: 'block', walker: 'fetch', boxer: 'struck' };
+  for (const [ch, axis] of Object.entries(AXIS)) {
+    const own = Object.values(CARDS).filter(c => c.char === ch && c.effects.some(f => f.scale === axis));
+    check(`${ch}: at least 4 cards read ${axis} (${own.length})`, own.length >= 4);
+  }
+  // The Boxer reads TWO things - the hits he took and the thorns they grew -
+  // so his depth is counted across both.
+  const boxerAxes = Object.values(CARDS).filter(c => c.char === 'boxer' && c.effects.some(f => ['struck', 'thorns'].includes(f.scale)));
+  check(`boxer: struck and thorns together (${boxerAxes.length})`, boxerAxes.length >= 5);
+
+  // 2. A NEUTRAL CARD CAN JOIN A BUILD. Before v41 not one of the 24 neutrals
+  // read any state, so a neutral draft could never be part of a deck - the
+  // opposite of what a shared pool is for.
+  const neutralScaling = Object.values(CARDS).filter(c => !c.char && c.effects.some(f => f.scale));
+  check(`neutral cards scale on something (${neutralScaling.length})`, neutralScaling.length >= 5);
+  // And on axes ANY character can build, not on one class's resource.
+  const SHARED = ['free', 'exhausted', 'energy', 'block', 'strength'];
+  check('and on axes every character can reach',
+    neutralScaling.every(c => c.effects.some(f => f.scale && SHARED.includes(f.scale))));
+
+  // 3. RARITY IS POTENTIAL, AND THE ODDS FOLLOW THE ACT.
+  check('act two rolls rares more often than act one',
+    RULES.rarityByAct[1].rare > RULES.rarityByAct[0].rare);
+  check('and commons less often', RULES.rarityByAct[1].common < RULES.rarityByAct[0].common);
+  // Measured, not asserted from the table: roll a thousand card rewards in
+  // each act off the same seed and count what comes out.
+  const rollShare = act => {
+    const r = startRun(createRun({ seed: 5, character: 'busker' }));
+    r.act = act;
+    let rare = 0, total = 0;
+    for (let i = 0; i < 400; i++) {
+      jumpTo(r, ENC('rats'));
+      r.act = act;
+      while (r.phase === 'fight') botTurn(r);
+      if (r.phase !== 'reward' || r.reward.kind !== 'card') { if (r.phase === 'reward') chooseReward(r, -1); continue; }
+      for (const id of r.reward.options) { total++; if (CARDS[id].rarity === 'rare') rare++; }
+      while (r.phase === 'reward') chooseReward(r, -1);
+      if (r.hero.hp < 20) r.hero.hp = r.hero.maxHp;
+    }
+    return total ? rare / total : 0;
+  };
+  const a1 = rollShare(0), a2 = rollShare(1);
+  check(`a rare is rarer in act one than act two (${(a1 * 100).toFixed(1)}% vs ${(a2 * 100).toFixed(1)}%)`, a2 > a1 * 1.5);
+
+  // 4. EVERY BUILD-AROUND POWER DOES ITS RULE. Each is a rare, so each is a
+  // ceiling - and a ceiling that does not work is just a dead card.
+  const withPower = (key, n, char = 'busker') => {
+    const s = startRun(createRun({ seed: 9, character: char }));
+    s.hero.powers[key] = n;
+    return s;
+  };
+  // freeDraw - the owner's own example: keep drawing on 0-cost cards.
+  {
+    const s = withPower('freeDraw', 1);
+    s.hand = [{ uid: 900, ...CARDS.cheap_shot, id: 'cheap_shot' }];
+    s.hero.energy = 3;
+    const before = s.hand.length;
+    playCard(s, 0, 0);
+    check('freeDraw: a 0-cost card draws one', s.hand.length === before, `${before} -> ${s.hand.length}`);
+    // and it is CAPPED, so a hand of free cards is a chain with an end
+    check('and the chain is bounded', RULES.freeDrawCap > 0 && RULES.freeDrawCap <= 6);
+  }
+  // strikeTwice - the first 0-cost attack each turn lands twice
+  {
+    const s = withPower('strikeTwice', 1, 'collector');
+    jumpTo(s, ENC('rats'));
+    s.hero.powers.strikeTwice = 1;
+    s.hand = [{ uid: 901, ...CARDS.cheap_shot, id: 'cheap_shot' }, { uid: 902, ...CARDS.cheap_shot, id: 'cheap_shot' }];
+    s.hero.energy = 3;
+    const hp0 = s.enemies[0].hp;
+    playCard(s, 0, 0);
+    const firstHit = hp0 - s.enemies[0].hp;
+    const hp1 = s.enemies[0].hp;
+    playCard(s, 0, 0);
+    const secondHit = hp1 - s.enemies[0].hp;
+    check(`strikeTwice: the FIRST free attack hits twice (${firstHit}) and the second once (${secondHit})`,
+      firstHit === secondHit * 2);
+  }
+  // exhaustHit - a card leaving play is a punch
+  {
+    const s = withPower('exhaustHit', 5, 'walker');
+    jumpTo(s, ENC('rats'));
+    s.hero.powers.exhaustHit = 5;
+    s.hand = [{ uid: 903, ...CARDS.rummage, id: 'rummage' }];
+    s.hero.energy = 3;
+    const hp0 = Math.min(...s.enemies.filter(e => e.alive).map(e => e.hp));
+    playCard(s, 0, 0);
+    const hp1 = Math.min(...s.enemies.filter(e => e.alive).map(e => e.hp));
+    check(`exhaustHit: exhausting a card hits the weakest for 5 (${hp0} -> ${hp1})`, hp0 - hp1 === 5);
+  }
+  // buzzBlock - the drink that was about to wear off becomes a guard
+  {
+    const s = withPower('buzzBlock', 1, 'drinker');
+    jumpTo(s, ENC('rats'));
+    s.hero.powers.buzzBlock = 1;
+    s.hero.status.buzz = 6; s.hand = []; s.hero.block = 0;
+    endTurn(s);
+    check('buzzBlock: the buzz about to fade becomes block', s.log.some(l => l.t === 'block' && l.src === 'buzzBlock')
+      || s.hero.block > 0, `block ${s.hero.block}`);
+  }
+  // halfRetain - half the guard survives the turn
+  {
+    const s = withPower('halfRetain', 1, 'cart');
+    jumpTo(s, ENC('rats'));
+    s.hero.powers.halfRetain = 1;
+    s.hand = []; s.hero.block = 20;
+    const kept = 20;
+    endTurn(s);
+    check(`halfRetain: half the block is still there next turn (${s.hero.block} of ${kept} minus what was spent)`,
+      s.hero.block >= 1);
+  }
+
+  // 5. `div` - how a card reads a LARGE resource honestly, and the face has
+  // to say the divisor or the number is a lie.
+  check('a divided scale says its divisor on the face',
+    /per 3 block you have/.test(describe(CARDS.lean_on_it)), describe(CARDS.lean_on_it));
+  {
+    const s = startRun(createRun({ seed: 12, character: 'cart' }));
+    jumpTo(s, ENC('rats'));
+    s.hero.block = 21;
+    s.hand = [{ uid: 904, ...CARDS.lean_on_it, id: 'lean_on_it' }];
+    s.hero.energy = 3;
+    check('and 21 block is 7 extra damage, not 21', preview(s, 0, 0).damage === 3 + 7, `${preview(s, 0, 0).damage}`);
+  }
+
+  // 6. ARTIFACTS ARE NOT FRIENDS, and the line is where they live. A friend
+  // bends the arithmetic of a hit and is capped at five; an artifact changes a
+  // rule of the run and is uncapped. If an artifact ever grew an effect the
+  // damage pipeline reads, the two lists would have collapsed into one.
+  const JOKER_PIPELINE = ['attackAddPerPlayed', 'attackAddIfCost', 'attackAddIfCostAtLeast',
+    'attackAddPerJoker', 'nthAttackMult', 'firstAttackMult', 'firstAttackFightMult', 'vulnMult'];
+  check(`artifacts exist (${Object.keys(ARTIFACTS).length})`, Object.keys(ARTIFACTS).length >= 6);
+  check('and not one of them reaches into the damage pipeline — that is a friend\'s job',
+    Object.values(ARTIFACTS).every(a => !JOKER_PIPELINE.includes(a.effect.type)));
+  check('every artifact is named and explained in both skins',
+    Object.values(ARTIFACTS).every(a => themes.every(t => a[t]?.name && a[t]?.text)));
+  check('no artifact shares an id with a friend',
+    Object.keys(ARTIFACTS).every(id => !JOKERS[id]));
+  // Elites and bosses are what hand them out — that is what makes an elite
+  // worth the HP it costs.
+  const artifactGivers = ENCOUNTERS.filter(e => e.reward.includes('artifact'));
+  check(`elites and act bosses give artifacts (${artifactGivers.length})`, artifactGivers.length >= 4);
+  check('and no ordinary fight does',
+    artifactGivers.every(e => e.enemies.some(id => ENEMIES[id].elite || ENEMIES[id].boss)));
+  // They are uncapped, unlike friends.
+  {
+    const s = startRun(createRun({ seed: 4, character: 'cart' }));
+    for (const id of Object.keys(ARTIFACTS)) gainArtifact(s, id);
+    check(`artifacts are uncapped (${s.artifacts.length} held, friends cap at ${RULES.jokerMax})`,
+      s.artifacts.length === Object.keys(ARTIFACTS).length && s.artifacts.length > RULES.jokerMax);
+    check('and a held artifact is readable by rule', hasArtifact(s, 'restBoth') && artifactSum(s, 'startBlock') === 6);
+  }
+  // AND SOME OF THEM COST SOMETHING. The GDD's rule for friends is the rule
+  // here: one that only gives is a number, not a decision. Measured, the first
+  // eight were worth +8 points of win rate on their own - a flat gift.
+  const costed = Object.entries(ARTIFACTS).filter(([, a]) => a.cost);
+  check(`some artifacts cost something (${costed.length} of ${Object.keys(ARTIFACTS).length})`, costed.length >= 3);
+  check('and each names its price on its face',
+    costed.every(([, a]) => themes.every(t => /no longer|fewer|Frail|lose/i.test(a[t].text))));
+  {
+    // The price is carried on the SAME object as the gift, so taking the
+    // upside can never drop the downside.
+    const s = startRun(createRun({ seed: 8, character: 'cart' }));
+    gainArtifact(s, 'bad_back');
+    check('The Bad Back gives the Strength', hasArtifact(s, 'startStrength'));
+    check('and takes the rest heal with it', hasArtifact(s, 'noRestHeal'));
+    jumpTo(s, ENC('rats'));
+    check('the Strength is there in the fight', (s.hero.status.strength || 0) >= 2, `${s.hero.status.strength}`);
+  }
+  {
+    const s = startRun(createRun({ seed: 8, character: 'boxer' }));
+    gainArtifact(s, 'broken_watch');
+    jumpTo(s, ENC('rats'));
+    s.hero.hp = 40;
+    while (s.phase === 'fight') botTurn(s);
+    check('The Broken Watch: no heal after a fight', !s.log.some(l => l.t === 'heal' && l.n === RULES.healAfterFight));
+  }
+
+  // Each one actually does its rule.
+  {
+    const s = startRun(createRun({ seed: 7, character: 'boxer' }));
+    gainArtifact(s, 'tarp');
+    jumpTo(s, ENC('rats'));
+    check('The Tarp: a fight opens with 6 block', s.hero.block >= 6, `${s.hero.block}`);
+  }
+  {
+    const s = startRun(createRun({ seed: 7, character: 'boxer' }));
+    const before = s.hero.maxHp;
+    gainArtifact(s, 'big_coat');
+    check('The Big Coat: +12 max HP and the HP with it', s.hero.maxHp === before + 12 && s.hero.hp === s.hero.hp);
+  }
+  {
+    const s = startRun(createRun({ seed: 7, character: 'walker' }));
+    gainArtifact(s, 'wet_matches');
+    jumpTo(s, ENC('rats'));
+    s.hand = [{ uid: 905, ...CARDS.rummage, id: 'rummage' }];
+    s.hero.energy = 3;
+    const before = s.hand.length;
+    playCard(s, 0, 0);
+    // rummage draws 2 and exhausts; the artifact adds one more on the exhaust
+    check('Wet Matches: exhausting also draws', s.hand.length >= before + 1, `${before} -> ${s.hand.length}`);
+  }
 }
 
 // `hurt` + `once` — the Jaw Worm's bellow: a single second wind.

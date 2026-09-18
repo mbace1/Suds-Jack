@@ -374,6 +374,210 @@ export const CARDS = {
     kallio: { name: 'Mirror Shard' }, fantasy: { name: 'Twin Glass' } },
 
   // ─ curses — cannot be played, clog the hand
+
+  // ═══ v41 — THE SYNERGY PASS ═════════════════════════════════════════════
+  // Owner: "Double up on class card synergies, push them. Also with neutral
+  // cards. Rarity tiers for all and they are more of indicators of POTENTIAL,
+  // more rarer cards in later acts. Some rare ones are very specific and
+  // require certain cards or situations to work insanely well."
+  //
+  // So three rules hold everything below:
+  //   1. EVERY CLASS AXIS GETS DEEPER. v40 measured the axes and they were
+  //      wildly uneven - the Busker read `played` on seven cards and the Park
+  //      Drinker read `buzz` on ONE, which is a mechanic with a single user.
+  //      Every class now reads its own resource on at least five.
+  //   2. A NEUTRAL CARD CAN JOIN A BUILD. All 24 neutrals were flat numbers,
+  //      so a neutral draft could never be part of a deck - the opposite of
+  //      what a shared pool is for. The new neutral axes (`free`, `exhausted`,
+  //      `energy`) are ones EVERY character can build toward.
+  //   3. RARITY IS A CEILING, NOT A NUMBER. A common is a floor you can always
+  //      play. A rare is conditional: it asks for a board state or a partner
+  //      card, does very little without it, and is absurd with it. That is why
+  //      `RULES.rarityByAct` rolls rares three times as often in act two - a
+  //      ceiling is worth what your deck can reach, and by act two it can.
+
+  // ─ The Park Drinker — buzz, which fades; every point unspent is thrown away
+  chaser: { char: 'drinker', type: 'attack', cost: 0, target: 'enemy', rarity: 'common', pic: 'can',
+    effects: [{ type: 'damage', n: 2, scale: 'buzz', per: 1 }],
+    kallio: { name: 'Chaser' }, fantasy: { name: 'Second Draught' } },
+  liquid_courage: { char: 'drinker', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'bottle',
+    effects: [{ type: 'block', n: 3, scale: 'buzz', per: 1 }],
+    kallio: { name: 'Liquid Courage' }, fantasy: { name: 'Bottled Nerve' } },
+  last_orders: { char: 'drinker', type: 'attack', cost: 2, target: 'all', rarity: 'uncommon', pic: 'bottlebreak',
+    effects: [{ type: 'damage', n: 5, scale: 'buzz', per: 1 }],
+    kallio: { name: 'Last Orders' }, fantasy: { name: 'Final Round' } },
+  double_shot: { char: 'drinker', type: 'skill', cost: 1, target: 'self', rarity: 'uncommon', exhaust: true, pic: 'double',
+    effects: [{ type: 'status', who: 'self', key: 'buzz', n: 4 }, { type: 'draw', n: 1 }],
+    kallio: { name: 'Double Shot' }, fantasy: { name: 'Deep Draught' } },
+  // RARE, and it is the Drinker's whole question turned into a rule: the drink
+  // that was about to wear off becomes a guard instead. Worthless in a deck
+  // with no buzz; enormous in one that ends every turn holding six.
+  dutch_courage: { char: 'drinker', type: 'power', cost: 1, target: 'self', rarity: 'rare', pic: 'coat',
+    effects: [{ type: 'status', who: 'self', key: 'buzzBlock', n: 1 }],
+    kallio: { name: 'Dutch Courage' }, fantasy: { name: 'Fools Armour' } },
+  one_more: { char: 'drinker', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'can',
+    effects: [{ type: 'damage', n: 6 }, { type: 'status', who: 'self', key: 'buzz', n: 2 }],
+    kallio: { name: 'One More' }, fantasy: { name: 'One Last Pull' } },
+
+  // ─ The Busker — cards grow with every card played before them
+  warm_up: { char: 'busker', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'note',
+    effects: [{ type: 'block', n: 2, scale: 'played', per: 1 }],
+    kallio: { name: 'Warm Up' }, fantasy: { name: 'Tuning' } },
+  street_corner: { char: 'busker', type: 'skill', cost: 1, target: 'self', rarity: 'uncommon', pic: 'crowd',
+    effects: [{ type: 'draw', n: 2 }, { type: 'block', n: 3 }],
+    kallio: { name: 'Street Corner' }, fantasy: { name: 'Gathering Crowd' } },
+  busk_harder: { char: 'busker', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'string',
+    effects: [{ type: 'damage', n: 2, scale: 'played', per: 3 }],
+    kallio: { name: 'Play Faster' }, fantasy: { name: 'Quickening' } },
+  // RARE: a 0-cost card that makes every OTHER 0-cost card into a draw engine.
+  // On its own it is nothing. With a hand of Bottles, Chasers and Jabs it is
+  // the deck. This is the owner's own example, and it is capped so that the
+  // face can promise a number.
+  the_set: { char: 'busker', type: 'power', cost: 1, target: 'self', rarity: 'rare', pic: 'guitar',
+    effects: [{ type: 'status', who: 'self', key: 'freeDraw', n: 1 }],
+    kallio: { name: 'The Set' }, fantasy: { name: 'The Long Song' } },
+  spare_pick: { char: 'busker', type: 'attack', cost: 0, target: 'enemy', rarity: 'common', pic: 'string',
+    effects: [{ type: 'damage', n: 3 }],
+    kallio: { name: 'Spare Pick' }, fantasy: { name: 'Quick Cut' } },
+
+  // ─ The Bottle Collector — a counted hand, and free tokens
+  sorting: { char: 'collector', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'bag',
+    effects: [{ type: 'block', n: 1, scale: 'hand', per: 2 }],
+    kallio: { name: 'Sorting' }, fantasy: { name: 'Tallying' } },
+  whole_route: { char: 'collector', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'haul',
+    effects: [{ type: 'damage', n: 2, scale: 'hand', per: 2 }],
+    kallio: { name: 'The Whole Route' }, fantasy: { name: 'Full Ledger' } },
+  deposit_run: { char: 'collector', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'coin',
+    effects: [{ type: 'addCard', id: 'find', n: 2 }],
+    kallio: { name: 'Deposit Run' }, fantasy: { name: 'Pocketful' } },
+  // RARE: every Bottle is an attack that hits twice. A deck without tokens
+  // gets nothing; the Collector's own deck turns each free card into two.
+  quick_hands: { char: 'collector', type: 'power', cost: 1, target: 'self', rarity: 'rare', pic: 'hand',
+    effects: [{ type: 'status', who: 'self', key: 'strikeTwice', n: 1 }],
+    kallio: { name: 'Quick Hands' }, fantasy: { name: 'Sleight' } },
+  crate: { char: 'collector', type: 'skill', cost: 2, target: 'self', rarity: 'uncommon', pic: 'stack',
+    effects: [{ type: 'block', n: 4, scale: 'finds', per: 3 }],
+    kallio: { name: 'The Crate' }, fantasy: { name: 'Hoard' } },
+
+  // ─ The Cart Pusher — block that hits and block that stays
+  lean_on_it: { char: 'cart', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'cart',
+    effects: [{ type: 'damage', n: 3, scale: 'block', per: 1, div: 3 }],
+    kallio: { name: 'Lean On It' }, fantasy: { name: 'Shield Press' } },
+  wheel_brace: { char: 'cart', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'rattle',
+    effects: [{ type: 'block', n: 8 }],
+    kallio: { name: 'Wheel Brace' }, fantasy: { name: 'Brace' } },
+  full_load: { char: 'cart', type: 'attack', cost: 2, target: 'all', rarity: 'uncommon', pic: 'haul',
+    effects: [{ type: 'damage', n: 4, scale: 'block', per: 1, div: 4 }],
+    kallio: { name: 'Full Load' }, fantasy: { name: 'Avalanche' } },
+  // UNCOMMON on a DESIGN argument, not a measured one, and the difference
+  // matters. `Parked For Good` is the rare that keeps ALL your block; this
+  // keeps HALF for less, so as a rare it was strictly worse than another rare
+  // in the same pool - a trap rather than a choice. As an uncommon it is the
+  // EARLY version of that effect, which is a real tier.
+  // WHAT IT DID NOT DO IS FIX THE CART. He lost ten points of act-two win rate
+  // in v41 and this was the suspect; re-tiered, he reads 46% against 49%, so
+  // the change made it slightly worse and the cause is elsewhere. It is
+  // dilution: with artifacts on and the v41 cards NEVER OFFERED he reads 60%,
+  // which is v40's number. His winning line was the narrowest in the game, so
+  // a deeper pool costs him the most. Kept uncommon on the design argument
+  // alone, and the ten points are recorded as open in VERSIONS.md.
+  chocks: { char: 'cart', type: 'power', cost: 1, target: 'self', rarity: 'uncommon', pic: 'stack',
+    effects: [{ type: 'status', who: 'self', key: 'halfRetain', n: 1 }],
+    kallio: { name: 'Chocks' }, fantasy: { name: 'Standing Stone' } },
+  scrap_iron: { char: 'cart', type: 'skill', cost: 1, target: 'self', rarity: 'uncommon', pic: 'rattle',
+    effects: [{ type: 'block', n: 5 }, { type: 'status', who: 'self', key: 'thorns', n: 2 }],
+    kallio: { name: 'Scrap Iron' }, fantasy: { name: 'Barbed Guard' } },
+
+  // ─ The Dog Walker — Fetch, spent at the end of the turn
+  good_boy: { char: 'walker', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'dog',
+    effects: [{ type: 'status', who: 'self', key: 'fetch', n: 3 }],
+    kallio: { name: 'Good Boy' }, fantasy: { name: 'Well Trained' } },
+  long_lead: { char: 'walker', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'stick',
+    effects: [{ type: 'block', n: 3, scale: 'fetch', per: 1, div: 2 }],
+    kallio: { name: 'Long Lead' }, fantasy: { name: 'Leash Slack' } },
+  whistle: { char: 'walker', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'shout',
+    effects: [{ type: 'damage', n: 3, scale: 'fetch', per: 1, div: 2 }, { type: 'status', who: 'self', key: 'fetch', n: 2 }],
+    kallio: { name: 'Whistle' }, fantasy: { name: 'Call' } },
+  // RARE: the dog goes in every time a card burns. With an exhaust deck it is
+  // a second dog; with no exhaust cards at all it never once triggers.
+  off_the_chain: { char: 'walker', type: 'power', cost: 1, target: 'self', rarity: 'rare', pic: 'dog',
+    effects: [{ type: 'status', who: 'self', key: 'exhaustHit', n: 5 }],
+    kallio: { name: 'Off The Chain' }, fantasy: { name: 'Slipped Collar' } },
+  both_hands: { char: 'walker', type: 'skill', cost: 2, target: 'self', rarity: 'uncommon', pic: 'stick',
+    effects: [{ type: 'status', who: 'self', key: 'fetch', n: 9 }],
+    kallio: { name: 'Both Hands' }, fantasy: { name: 'Full Pack' } },
+
+  // ─ The Old Boxer — Thorns, and cards that count the hits he took
+  cover_up: { char: 'boxer', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'glove',
+    effects: [{ type: 'block', n: 4, scale: 'struck', per: 2 }],
+    kallio: { name: 'Cover Up' }, fantasy: { name: 'Turtle Guard' } },
+  worn_down: { char: 'boxer', type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'twofist',
+    effects: [{ type: 'damage', n: 3, scale: 'thorns', per: 1 }],
+    kallio: { name: 'Worn Down' }, fantasy: { name: 'Bramble Fist' } },
+  no_guard: { char: 'boxer', type: 'skill', cost: 0, target: 'self', rarity: 'uncommon', pic: 'hand',
+    effects: [{ type: 'status', who: 'self', key: 'thorns', n: 3 }, { type: 'status', who: 'self', key: 'vulnerable', n: 1 }],
+    kallio: { name: 'Drop The Guard' }, fantasy: { name: 'Open Stance' } },
+  // RARE: every point of Thorns is a point of Strength too. Nothing without
+  // thorns; with Rust Bucket or Mouthguard it turns a defensive stack into an
+  // offensive one and every attack in the deck grows.
+  old_iron: { char: 'boxer', type: 'attack', cost: 2, target: 'enemy', rarity: 'rare', pic: 'bell',
+    effects: [{ type: 'damage', n: 6, scale: 'thorns', per: 2 }],
+    kallio: { name: 'Old Iron' }, fantasy: { name: 'Iron Answer' } },
+  twelve_rounds: { char: 'boxer', type: 'skill', cost: 2, target: 'self', rarity: 'uncommon', pic: 'bell',
+    effects: [{ type: 'status', who: 'self', key: 'thornsPerTurn', n: 2 }],
+    kallio: { name: 'Twelve Rounds' }, fantasy: { name: 'The Long Bout' } },
+
+  // ═══ NEUTRAL, AND THEY SCALE ════════════════════════════════════════════
+  // Every one of these reads a resource ANY character can build, which is the
+  // whole point: before v41 a neutral card was a flat number and a neutral
+  // draft could never be part of a deck.
+  loose_change: { type: 'attack', cost: 0, target: 'enemy', rarity: 'common', pic: 'coin',
+    effects: [{ type: 'damage', n: 2, scale: 'free', per: 2 }],
+    kallio: { name: 'Loose Change' }, fantasy: { name: 'Copper Bits' } },
+  pockets_out: { type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'coat',
+    effects: [{ type: 'block', n: 2, scale: 'free', per: 2 }],
+    kallio: { name: 'Pockets Out' }, fantasy: { name: 'Empty Sleeves' } },
+  burn_it: { type: 'attack', cost: 1, target: 'enemy', rarity: 'common', exhaust: true, pic: 'steam',
+    effects: [{ type: 'damage', n: 4, scale: 'exhausted', per: 2 }],
+    kallio: { name: 'Burn It' }, fantasy: { name: 'Kindling' } },
+  // Cost 1 on purpose: it reads the energy left AFTER paying, so a second copy
+  // is worth less than the first. At cost 0 it read the full bar every time and
+  // two of them were 24 damage for nothing.
+  what_is_left: { type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'fist',
+    effects: [{ type: 'damage', n: 0, scale: 'energy', per: 4 }],
+    kallio: { name: 'What Is Left' }, fantasy: { name: 'Spare Force' } },
+  clear_out: { type: 'skill', cost: 0, target: 'self', rarity: 'uncommon', pic: 'sweep',
+    effects: [{ type: 'exhaustHand', n: 2 }, { type: 'draw', n: 2 }],
+    kallio: { name: 'Clear Out' }, fantasy: { name: 'Purge' } },
+  // RARE: the engine that makes exhausting worth doing. With Clear Out and
+  // Burn It it is a second attack every turn; in a deck that never exhausts
+  // it is a dead card and says so on its face.
+  the_furnace: { type: 'power', cost: 2, target: 'self', rarity: 'rare', pic: 'steam',
+    effects: [{ type: 'status', who: 'self', key: 'exhaustHit', n: 4 }],
+    kallio: { name: 'The Furnace' }, fantasy: { name: 'The Pyre' } },
+  // RARE: the owner's own example. Play a free card, draw a card - and the
+  // card you draw may be free too.
+  second_wind_n: { type: 'power', cost: 1, target: 'self', rarity: 'rare', pic: 'sunburst',
+    effects: [{ type: 'status', who: 'self', key: 'freeDraw', n: 1 }],
+    kallio: { name: 'Downhill' }, fantasy: { name: 'Momentum' } },
+  cheap_shot: { type: 'attack', cost: 0, target: 'enemy', rarity: 'common', pic: 'shove',
+    effects: [{ type: 'damage', n: 4 }],
+    kallio: { name: 'Cheap Shot' }, fantasy: { name: 'Low Blow' } },
+  rummage: { type: 'skill', cost: 0, target: 'self', rarity: 'uncommon', exhaust: true, pic: 'bin',
+    effects: [{ type: 'draw', n: 2 }],
+    kallio: { name: 'Rummage' }, fantasy: { name: 'Scrounge' } },
+  hard_won: { type: 'attack', cost: 2, target: 'enemy', rarity: 'uncommon', pic: 'badge',
+    effects: [{ type: 'damage', n: 8, scale: 'strength', per: 2 }],
+    kallio: { name: 'Hard Won' }, fantasy: { name: 'Earned Blow' } },
+  // RARE: a wall that reads as a weapon. Needs a block deck; does nothing in
+  // one that never guards.
+  the_wall: { type: 'attack', cost: 2, target: 'all', rarity: 'rare', pic: 'cardboard',
+    effects: [{ type: 'damage', n: 0, scale: 'block', per: 1, div: 2 }],
+    kallio: { name: 'The Wall' }, fantasy: { name: 'The Rampart' } },
+  cold_night: { type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'rain',
+    effects: [{ type: 'block', n: 4 }, { type: 'draw', n: 1 }],
+    kallio: { name: 'Cold Night' }, fantasy: { name: 'Long Watch' } },
+
   soaked: { type: 'curse', cost: null, target: 'self', rarity: 'curse', pic: 'rain', effects: [],
     kallio: { name: 'Soaked' }, fantasy: { name: 'Soaked' } },
   hangover: { type: 'curse', cost: null, target: 'self', rarity: 'curse', pic: 'rain', effects: [],
@@ -850,11 +1054,11 @@ export const ENCOUNTERS = [
     kallio: { name: 'A Friend Of A Friend' }, fantasy: { name: 'The Alchemist’s Errand' } },
   { id: 'preacher', enemies: ['preacher', 'rat', 'rat'], reward: ['card'],
     kallio: { name: 'The Man With The Sign' }, fantasy: { name: 'The Zealot’s Flock' } },
-  { id: 'king_rat', enemies: ['boss_rat', 'rat', 'rat'], reward: ['card', 'joker'],
+  { id: 'king_rat', enemies: ['boss_rat', 'rat', 'rat'], reward: ['card', 'joker', 'artifact'],
     kallio: { name: 'The King Rat' }, fantasy: { name: 'The Imp Lord' } },
-  { id: 'bouncer', enemies: ['bouncer'], reward: ['card', 'joker'],
+  { id: 'bouncer', enemies: ['bouncer'], reward: ['card', 'joker', 'artifact'],
     kallio: { name: 'Not On The List' }, fantasy: { name: 'The Gatekeeper' } },
-  { id: 'bridge', enemies: ['bridge_king'], reward: ['card', 'joker'],
+  { id: 'bridge', enemies: ['bridge_king'], reward: ['card', 'joker', 'artifact'],
     kallio: { name: 'Who Owns The Bridge' }, fantasy: { name: 'Who Holds The Span' } },
   // ─ act two: under the bear
   { id: 'gulls', enemies: ['gull', 'gull', 'pigeon'], reward: ['card', 'joker'],
@@ -877,9 +1081,9 @@ export const ENCOUNTERS = [
     kallio: { name: 'Pitch Black' }, fantasy: { name: 'Twin Pitch' } },
   { id: 'flock', enemies: ['gull', 'gull', 'pigeon', 'pigeon'], reward: ['card'],
     kallio: { name: 'The Whole Flock' }, fantasy: { name: 'The Whole Flight' } },
-  { id: 'gull_king', enemies: ['gull_king'], reward: ['card', 'joker'],
+  { id: 'gull_king', enemies: ['gull_king'], reward: ['card', 'joker', 'artifact'],
     kallio: { name: 'The Gull King' }, fantasy: { name: 'The Harpy Queen' } },
-  { id: 'rat_court', enemies: ['boss_rat', 'bin_rat', 'bin_rat'], reward: ['card', 'joker'],
+  { id: 'rat_court', enemies: ['boss_rat', 'bin_rat', 'bin_rat'], reward: ['card', 'joker', 'artifact'],
     kallio: { name: 'The Rat Court' }, fantasy: { name: 'The Imp Court' } },
   // v37, the act-two spike. TWO chancers is the whole idea: each sizes you up
   // once, so a hero who arrives healthy eats both openers plus the vulnerable
@@ -1181,5 +1385,81 @@ export const RULES = {
   // re-bought every time. So being struck now deepens them — take the hit, get
   // harder to hit — which is his fiction and gives the resource a slope.
   thornsOnStruck: 1,
+  // v41 — RARITY IS AN INDICATOR OF POTENTIAL, and potential is worth more the
+  // further along a deck is. A rare here is a ceiling with a condition on it:
+  // it does very little on its own and is absurd with the right partner, so
+  // offering one in act one mostly offers a dead card. The weights are per
+  // act, and act two rolls rares THREE TIMES as often as act one.
+  rarityByAct: [
+    { common: 6, uncommon: 3, rare: 1 },   // act one: floors you can always play
+    { common: 3, uncommon: 4, rare: 3 },   // act two: by now a deck can reach a ceiling
+  ],
+  // The free-draw chain is bounded so the card's face can promise a number,
+  // and so a hand of conjured 0-cost Bottles is a CHAIN with an end rather
+  // than a loop the engine has to be rescued from.
+  freeDrawCap: 4,
+};
+
+// ── ARTIFACTS ────────────────────────────────────────────────────────────
+// Owner, v41: "We also need artifacts and those may be same or different from
+// jokers." They are DIFFERENT, and the line is where they live:
+//
+//   A FRIEND bends the arithmetic of a hit. It lives inside the damage
+//   pipeline (adds, then mults), it is capped at five, and picking one up is
+//   a trade because they compete for the same five slots.
+//
+//   An ARTIFACT changes a rule of the RUN. It lives at the seams - a fight
+//   starting, a card leaving play, a rest, a reward, an act ending - never in
+//   the damage pipeline. There is no cap, because none of them competes for
+//   the same number. They come from elites and bosses, which is what makes an
+//   elite worth the HP it costs.
+//
+// The test for which list a thing belongs in: if it would change what a
+// number on a card FACE says, it is a friend. If it changes what happens
+// between the cards, it is an artifact.
+export const ARTIFACTS = {
+  tarp: { effect: { type: 'startBlock', n: 6 },
+    kallio: { name: 'The Tarp', text: 'Start every fight with 6 block.' },
+    fantasy: { name: 'Oilcloth', text: 'Start every fight with 6 block.' } },
+  brass_knuckles: { effect: { type: 'startStrength', n: 1 },
+    kallio: { name: 'Brass Knuckles', text: 'Start every fight with 1 Strength.' },
+    fantasy: { name: 'Iron Rings', text: 'Start every fight with 1 Strength.' } },
+  thermos: { effect: { type: 'healAfterFight', n: 5 },
+    kallio: { name: 'The Thermos', text: 'Heal 5 more after every fight.' },
+    fantasy: { name: 'Warm Flask', text: 'Heal 5 more after every fight.' } },
+  park_bench: { effect: { type: 'restBoth', n: 1 },
+    kallio: { name: 'The Park Bench', text: 'A rest heals AND upgrades.' },
+    fantasy: { name: 'Wayshrine', text: 'A rest heals AND upgrades.' } },
+  wet_matches: { effect: { type: 'exhaustDraw', n: 1 },
+    kallio: { name: 'Wet Matches', text: 'Whenever you exhaust a card, draw 1.' },
+    fantasy: { name: 'Damp Tinder', text: 'Whenever you exhaust a card, draw 1.' } },
+  shopping_list: { effect: { type: 'rewardPlus', n: 1 },
+    kallio: { name: 'The Shopping List', text: 'Card rewards offer one more card.' },
+    fantasy: { name: 'Merchants Ledger', text: 'Card rewards offer one more card.' } },
+  bandage: { effect: { type: 'bossFull', n: 1 },
+    kallio: { name: 'The Bandage', text: 'Beating an act boss heals you to full.' },
+    fantasy: { name: 'Field Dressing', text: 'Beating an act boss heals you to full.' } },
+  big_coat: { effect: { type: 'maxHp', n: 12 },
+    kallio: { name: 'The Big Coat', text: '+12 max HP.' },
+    fantasy: { name: 'Fur Mantle', text: '+12 max HP.' } },
+
+  // ─ AND FOUR THAT COST SOMETHING ─────────────────────────────────────────
+  // The GDD's rule for friends is the rule here: "a friend that COSTS
+  // something is a build decision. A friend that only gives is a number." The
+  // eight above were all give, and measured, artifacts were worth +8 points of
+  // win rate on their own - a flat gift to every run. These four are the ones
+  // you have to think about.
+  heavy_bag: { cost: true, effect: { type: 'energyDraw', energy: 1, draw: -1 },
+    kallio: { name: 'The Heavy Bag', text: '+1 energy each turn. Draw 1 fewer card.' },
+    fantasy: { name: 'Leaden Pack', text: '+1 mana each turn. Draw 1 fewer card.' } },
+  bad_back: { cost: true, effect: { type: 'startStrength', n: 2, also: 'noRestHeal' },
+    kallio: { name: 'The Bad Back', text: 'Start every fight with 2 Strength. A rest no longer heals.' },
+    fantasy: { name: 'Crooked Spine', text: 'Start every fight with 2 Strength. A rest no longer heals.' } },
+  broken_watch: { cost: true, effect: { type: 'rewardPlus', n: 2, also: 'noFightHeal' },
+    kallio: { name: 'The Broken Watch', text: 'Card rewards offer two more. You no longer heal after a fight.' },
+    fantasy: { name: 'Stopped Hourglass', text: 'Card rewards offer two more. You no longer heal after a fight.' } },
+  iron_lung: { cost: true, effect: { type: 'maxHp', n: 24, also: 'startFrail' },
+    kallio: { name: 'The Iron Lung', text: '+24 max HP. Start every fight with 1 Frail.' },
+    fantasy: { name: 'Bellows Heart', text: '+24 max HP. Start every fight with 1 Frail.' } },
 };
 
