@@ -85,19 +85,19 @@ never rolled, so a shift replays and the bot can play them. Two kinds:
 Budget: at most three encounters and one disruption per shift; total event
 cost capped so a run of bad luck stays winnable (measured).
 
-### 2. Streaks and combos
+### 2. Streaks and combos — SHIPPED v2.39
 On-time chain multiplier on score, a "no missed connection" bonus, a
 "clean shift" bonus, shown live on the HUD (`×2` next to the score) so a
 streak is a thing you protect. Best shift kept in `localStorage` and on the
 end screen. Cheapest item on the list.
 
-### 3. Hand-offs
+### 3. Hand-offs — SHIPPED v2.39
 Deliver to B and the recipient hands you a job to C on the doorstep — no
 dispatch screen, no waiting for an offer. The campaign chain in `JOBS` already
 authors ten of these; a procedural one is the current destination as origin,
 priced by the same estimator. Offered on the arrival card, one tap.
 
-### 4. Regulars
+### 4. Regulars — SHIPPED v2.39 (six people, standing across shifts, goodwill spent here)
 Six named recipients at fixed stops (the florist at Ooppera, the print shop in
 Kallio, the harbour office…). A regular's job pays a tip that grows with how
 often you have been on time for them, remembered across shifts

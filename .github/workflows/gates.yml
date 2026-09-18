@@ -296,6 +296,9 @@ jobs:
       - name: the event deck — a free way past, a seeded draw, holds that shift arrivals exactly
         run: node toko-move/test/events.mjs
 
+      - name: streaks, hand-offs and the people at the other end
+        run: node toko-move/test/regulars.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 

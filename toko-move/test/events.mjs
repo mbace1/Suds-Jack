@@ -18,6 +18,16 @@ ok(new Set(a.filter(e=>e.kind==='encounter').map(e=>e.card.id)).size===a.filter(
 // worst case: every encounter's dearest option
 for(const seed of [1,2,3,4,5,6,7,8,9,10]){const s=drawSchedule(seed,3000,['1']);const worst=s.filter(e=>e.kind==='encounter').reduce((t,e)=>t+Math.max(...e.card.options.map(o=>o.cost||0)),0);ok(worst<=BUDGET.maxCostTicks,`seed ${seed}: worst-case encounter cost ${worst} ≤ ${BUDGET.maxCostTicks}`);}
 ok(a.every((e,i)=>i===0||e.at>=a[i-1].at),'the schedule is in tick order');
+// The signed-shift trap again: the hash is `>>> 0` and every shift off it must
+// be `>>>`, or a negative index reads off the front of the table and the draw
+// picks `undefined`. Nothing but asking for the card itself can see it.
+{const ids=new Set,lines=new Set;
+ for(let seed=1;seed<=60;seed++)for(const e of drawSchedule(seed,3000,['1','6','4T','9'])){
+  ok(e.card&&e.card.id,`seed ${seed}: every drawn card is a real card`);
+  if(e.kind==='disruption'){ok(DISRUPTIONS.includes(e.card),`seed ${seed}: the disruption is one of ours`);ok(typeof e.line==='string'&&e.line,`seed ${seed}: and names a line`);lines.add(e.line);}
+  else{ok(ENCOUNTERS.includes(e.card),`seed ${seed}: the encounter is one of ours`);ids.add(e.card.id);}}
+ ok(ids.size>=4,`the encounter deck is really shuffled across seeds (${ids.size} of ${ENCOUNTERS.length} cards seen)`);
+ ok(lines.size>=2,`and the held line varies (${lines.size} lines)`);}
 // holds shift arrivals by exactly the hold
 const pack=JSON.parse(fs.readFileSync(new URL('../cities/helsinki.json',import.meta.url),'utf8'));
 const t=new TransitLayers(pack),net=new LiveNetwork(t,{headwayMinutes:HEADWAY_MIN});

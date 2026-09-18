@@ -45,9 +45,9 @@ export const BUDGET={encounters:3,disruptions:1,maxCostTicks:280};
 // The shift's schedule, from its seed alone.
 export function drawSchedule(seed,ticksPerDay=3000,lines=[]){const h=hash(`events:${seed}`),out=[];
  const n=Math.min(BUDGET.encounters,ENCOUNTERS.length),used=new Set;
- for(let i=0;i<n;i++){const k=(h>>(i*4))&0xffff;let card=ENCOUNTERS[k%ENCOUNTERS.length];let guard=0;while(used.has(card.id)&&guard++<ENCOUNTERS.length)card=ENCOUNTERS[(k+guard)%ENCOUNTERS.length];used.add(card.id);
+ for(let i=0;i<n;i++){const k=(h>>>(i*4))&0xffff;let card=ENCOUNTERS[k%ENCOUNTERS.length];let guard=0;while(used.has(card.id)&&guard++<ENCOUNTERS.length)card=ENCOUNTERS[(k+guard)%ENCOUNTERS.length];used.add(card.id);
   const at=Math.round(ticksPerDay*(0.12+0.24*i)+(k%400));out.push({kind:'encounter',card,at});}
- if(BUDGET.disruptions&&lines.length){const k=(h>>13)&0xffff,d=DISRUPTIONS[k%DISRUPTIONS.length],line=lines[(k>>3)%lines.length];out.push({kind:'disruption',card:d,line,at:Math.round(ticksPerDay*0.3+(k%(ticksPerDay*0.35)))});}
+ if(BUDGET.disruptions&&lines.length){const k=(h>>>13)&0xffff,d=DISRUPTIONS[k%DISRUPTIONS.length],line=lines[(k>>3)%lines.length];out.push({kind:'disruption',card:d,line,at:Math.round(ticksPerDay*0.3+(k%(ticksPerDay*0.35)))});}
  return out.sort((a,b)=>a.at-b.at);}
 
 export class EventDirector{
