@@ -293,6 +293,9 @@ jobs:
       - name: one token per module, moved when and only when its bytes move
         run: node toko-move/test/tokens.mjs
 
+      - name: the event deck — a free way past, a seeded draw, holds that shift arrivals exactly
+        run: node toko-move/test/events.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
@@ -386,6 +389,12 @@ jobs:
       # scale on a phone, a stack nine deep, a quarter of all badge area buried.
       - name: no two line badges may overlap
         run: NODE_PATH=$(npm root -g) node toko-move/test/badges.cjs
+
+      # Nothing had ever finished a shift. Forty random-but-sane bots through
+      # the real timetable and the real challenge; the fleet or the dispatcher
+      # is broken if fewer than 40% of them get three deliveries home.
+      - name: a shift can be won
+        run: NODE_PATH=$(npm root -g) node toko-move/test/shifts.cjs --gate
 
   hub:
     name: the arcade floor

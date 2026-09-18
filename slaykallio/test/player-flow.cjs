@@ -4,6 +4,12 @@ const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
 const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../..');
+// v37. These four assertions were pinned to a literal release number and went
+// stale the moment the version moved — the same drift a reviewer caught on
+// v34, arriving again because a number was typed in a fourth place. The
+// harness READS the release now; core.mjs already fails when VERSION,
+// VERSIONS.md and hub/versions.json disagree, so one of them is enough.
+const REL=String(JSON.parse(fs.readFileSync(path.join(root,'hub/versions.json'),'utf8')).slaykallio.v);
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml'};
 const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?')[0]);if(fs.existsSync(f)&&fs.statSync(f).isDirectory())f=path.join(f,'index.html');fs.readFile(f,(e,b)=>{res.writeHead(e?404:200,{'Content-Type':mime[path.extname(f)]||'application/octet-stream'});res.end(e?'missing':b);});});
 (async()=>{
@@ -18,17 +24,24 @@ const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?
   const tap=l=>mobile?l.tap():l.click();
   const idle=()=>p.waitForFunction(()=>!!window.__sk&&!__sk.busy(),null,{timeout:30000});
   await p.goto(base+'/');
+  // the release pin arrives with versions.json, after the cabinets are drawn
+  await p.waitForFunction(()=>[...document.querySelectorAll('a[data-game="slaykallio"]')].some(a=>a.href.includes('?release=')),null,{timeout:15000});
   await tap(p.getByRole('link',{name:'Play Slay Kallio',exact:true}));
-  await p.waitForURL('**/slaykallio/?release=33');
-  assert.equal(new URL(p.url()).searchParams.get('release'),'33','hub launches the current release URL');
-  await p.waitForFunction(()=>document.querySelector('#ver')?.textContent==='v33');
+  await p.waitForURL(`**/slaykallio/?release=${REL}`);
+  assert.equal(new URL(p.url()).searchParams.get('release'),REL,'hub launches the current release URL');
+  await p.waitForFunction(v=>document.querySelector('#ver')?.textContent===v,`v${REL}`);
   await p.goto(base+'/slaykallio/?seed=4');
   await p.waitForFunction(()=>!!window.__sk);
-  assert.equal(await p.locator('#ver').innerText(),'v33');
+  assert.equal(await p.locator('#ver').innerText(),`v${REL}`);
   assert.equal(await p.locator('#roster .pick').count(),6);
   await p.waitForFunction(()=>!document.querySelector('#start').disabled);
   assert.equal(await p.evaluate(()=>__sk.debug.art()),'turf');
   assert.ok(figures.size>=23,'TURF figure images actually loaded');
+  // A figure URL is a cache key too. The module tokens do not reach img.src,
+  // so when a plate's bytes are replaced under the same name a browser holding
+  // the old ones goes on showing them — which is what happened to the Cart
+  // Pusher when v34 swapped the generated sledge for the owner's own.
+  assert.ok([...figures].every(u=>/[?&]a=\d+/.test(u)),'every figure request carries an asset revision');
   await p.screenshot({path:path.join(__dirname,mobile?'release-title-phone.png':'release-title-desktop.png')});
   await tap(p.locator('#start'));await idle();
   assert.equal(await p.evaluate(()=>__sk.state().phase),'map');
@@ -78,8 +91,65 @@ const server=http.createServer((req,res)=>{let f=path.join(root,req.url.split('?
   await idle();
   assert.equal(await p.evaluate(()=>__sk.state().phase),'map','win, take reward and return to route');
   assert.ok(await p.evaluate(()=>__sk.state().stats.fights)>0);
+
+  // A WHOLE ACT, tapped. One fight proves the fight screen; it says nothing
+  // about the four panels between fights, and those are where a run actually
+  // spends its choices. This walks act one to its boss through the same
+  // buttons a player presses, preferring a span KIND it has not seen yet so
+  // the route covers the map, an event, a rest and the card picker rather
+  // than whatever the seed put first.
+  const seen=new Set(['fight']);
+  const PREF=['event','rest','elite','fight'];
+  let ended='';
+  for(let turn=0;turn<400;turn++){
+   await idle();
+   const s=await p.evaluate(()=>{const s=__sk.state();return{
+     phase:s.phase,act:s.act,step:s.route?.step,
+     kinds:(s.route?.steps[s.route.step]||[]).map(n=>n.kind),
+     i:s.hand?s.hand.findIndex((c,i)=>__sk.engine.canPlay(s,i)):-1};});
+   // A naive tapper plays the first playable card at the first living body,
+   // so dying to the elite it deliberately walks into is an ORDINARY outcome
+   // and not a failure of the walk. What the walk proves is that every panel
+   // between fights opens and answers a real tap.
+   if(s.phase==='won'||s.phase==='lost'){ended=s.phase;break;}
+   if(s.act>=1){ended='act one cleared';break;}
+   if(s.phase==='map'){
+    assert.equal(await p.locator('#map').isVisible(),true,'the route panel is up on a map phase');
+    const want=PREF.find(k=>!seen.has(k)&&s.kinds.includes(k))??s.kinds[0];
+    seen.add(want);
+    const btn=p.locator(`#nodes button.${want}`).first();
+    assert.ok(await btn.evaluate(e=>e.getBoundingClientRect().height>=44),'a route pin is a real 44px target');
+    await tap(btn);continue;
+   }
+   if(s.phase==='event'){
+    seen.add('event');
+    assert.equal(await p.locator('#event').isVisible(),true);
+    assert.ok(await p.locator('#choices button').count()>=2,'an event offers a choice, not an OK button');
+    await tap(p.locator('#choices button').first());continue;
+   }
+   if(s.phase==='rest'){
+    seen.add('rest');
+    assert.equal(await p.locator('#rest').isVisible(),true);
+    await tap(p.locator('#restUp'));continue;       // the path that opens the picker
+   }
+   if(s.phase==='pick'){
+    seen.add('pick');
+    assert.equal(await p.locator('#pick').isVisible(),true);
+    await tap(p.locator('#pick .list button').first());continue;
+   }
+   if(s.phase==='reward'){await tap(p.locator('#options button').first());continue;}
+   assert.equal(s.phase,'fight');
+   if(s.i<0){await tap(p.locator('#end'));continue;}
+   await tap(p.locator(`#hand .card[data-i="${s.i}"]`));
+   await tap(p.locator('.unit.enemy:not(.dead) .hitbox').first());
+  }
+  await idle();
+  assert.ok(ended,'the walk reaches a resolution rather than running out of turns');
+  for(const k of ['event','rest','pick'])assert.ok(seen.has(k),`the walk opened the ${k} panel`);
+  assert.ok(await p.evaluate(()=>__sk.state().stats.fights)>1,'more than one fight was fought');
+
   assert.deepEqual(errors,[]);assert.deepEqual(missing,[]);
-  console.log(`PASS ${mobile?'touch':'desktop'}: six-character title, TURF images, photo, route, combat, reward and restart`);
+  console.log(`PASS ${mobile?'touch':'desktop'}: title, images, photo, combat, reward, restart — and a whole act walked through ${[...seen].sort().join('/')} → ${ended}`);
   await p.close();
  }}finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});

@@ -336,8 +336,15 @@ const BOSSES = new Set(ACTS.map(a => a.boss));
 const ELITES = new Set(ACTS.flatMap(a => a.elites));
 const kindOf = id => BOSSES.has(id) ? 'boss' : ELITES.has(id) ? 'elite' : 'fight';
 
+// The rung the matrix is measured at. Rung 0 must reproduce every recorded
+// number by construction (`core.mjs` asserts the logs are identical), which is
+// what makes a rung's column mean anything — and the ladder is CUMULATIVE, so
+// a column is "every rule up to N", never one rule in isolation.
+export let ASC = 0;
+export const setAsc = n => { ASC = n; };
+
 export function run(seed, character, bot, ledger) {
-  return drive(startRun(createRun({ seed, character })), bot, ledger);
+  return drive(startRun(createRun({ seed, character, asc: ASC })), bot, ledger);
 }
 
 // Drive a state to the end — or to the first moment `stopAt(s)` holds, which
@@ -347,7 +354,7 @@ export function drive(s, bot, ledger, stopAt = null) {
   while (!['won', 'lost', 'menu'].includes(s.phase) && n++ < 900) {
     if (stopAt && stopAt(s)) return s;
     // opening a fight: remember what kind of thing it is
-    if (s.phase === 'fight' && !cur) { const id = ENCOUNTERS[s.encounter]?.id ?? '?'; cur = { k: kindOf(id), lost: 0 }; }
+    if (s.phase === 'fight' && !cur) { const id = ENCOUNTERS[s.encounter]?.id ?? '?'; cur = { k: kindOf(id), id, lost: 0 }; }
     const before = `${s.phase}${s.route?.step}${s.turn}${s.hand.length}${s.hero.energy}`;
     step(s, bot);
     // a policy that refuses to act would spin; make it end the turn instead
@@ -359,9 +366,13 @@ export function drive(s, bot, ledger, stopAt = null) {
     // no attrition at all. It costs 9.3. A heal is not a fight being cheaper.
     if (cur && s.hero.hp < lastHp) cur.lost += lastHp - s.hero.hp;
     lastHp = s.hero.hp;
-    if (cur && s.phase !== 'fight') { ledger?.(cur.k, cur.lost); cur = null; }
+    // A death flushes here, not below: `lost` is set inside the same iteration
+    // that ends the run, so by the time the loop condition is tested `cur` is
+    // already gone. Read the phase instead of assuming a fight that is still
+    // open was the one that killed you.
+    if (cur && s.phase !== 'fight') { ledger?.(cur.k, cur.lost, cur.id, s.phase === 'lost'); cur = null; }
   }
-  if (cur) ledger?.(cur.k, cur.lost);                  // died in it
+  if (cur) ledger?.(cur.k, cur.lost, cur.id, s.phase === 'lost');
   return s;
 }
 
@@ -497,7 +508,7 @@ export function restore(snap) {
 export function arrivals(character, bot, from, to) {
   const out = [];
   for (let seed = from; seed <= to; seed++) {
-    const s = drive(startRun(createRun({ seed, character })), bot, null, AT_ACT_TWO);
+    const s = drive(startRun(createRun({ seed, character, asc: ASC })), bot, null, AT_ACT_TWO);
     if (AT_ACT_TWO(s)) out.push(snapshot(s));
   }
   return out;
@@ -521,13 +532,16 @@ export function act2Report(POP = Number(process.argv[3]) || 600, popBot = 'nativ
   }
 
   // Phase B — resume each arrival under each bot
-  const wins = {}, deaths = {}, hpBy = {}, seen = {};
+  const wins = {}, deaths = {}, hpBy = {}, seen = {}, span = {};
   for (const b of names) {
     wins[b] = {}; deaths[b] = {}; hpBy[b] = { fight: 0, elite: 0, boss: 0 }; seen[b] = { fight: 0, elite: 0, boss: 0 };
     for (const ch of chars) {
       let w = 0;
       for (const snap of pop[ch]) {
-        const s = drive(restore(snap), BOTS[b], (k, lost) => { hpBy[b][k] += Math.max(0, lost); seen[b][k]++; });
+        const s = drive(restore(snap), BOTS[b], (k, lost, id, died) => {
+          hpBy[b][k] += Math.max(0, lost); seen[b][k]++;
+          if (b === popBot) { const e = (span[id] ??= { k, met: 0, lost: 0, killed: 0 }); e.met++; e.lost += Math.max(0, lost); if (died) e.killed++; }
+        });
         if (s.phase === 'won') w++;
         else if (s.phase === 'lost') { const id = ENCOUNTERS[s.encounter]?.id ?? '?'; deaths[b][id] = (deaths[b][id] || 0) + 1; }
       }
@@ -549,6 +563,18 @@ export function act2Report(POP = Number(process.argv[3]) || 600, popBot = 'nativ
   for (const b of names) {
     const per = k => (seen[b][k] ? (hpBy[b][k] / seen[b][k]).toFixed(1) : '—').padStart(9);
     console.log(`  ${b.padEnd(11)}${['fight', 'elite', 'boss'].map(per).join('')}`);
+  }
+
+  // WHAT EACH SPAN COSTS, under the population bot. The by-kind table above
+  // averages thirteen fights into one number, which is exactly the number that
+  // cannot say whether act two has a middle: a pool where every fight costs
+  // eleven is an HP tax the boss collects, and a pool with two fights that
+  // cost thirty is a route with a decision on it. This is that spread.
+  console.log(`\n── WHAT EACH ACT-TWO SPAN COSTS \`${popBot}\` ──\n`);
+  console.log(`  ${'span'.padEnd(22)}  kind    met   HP   kills`);
+  for (const [id, e] of Object.entries(span).sort((a, x) => x[1].lost / x[1].met - a[1].lost / a[1].met)) {
+    const name = ENCOUNTERS.find(c => c.id === id)?.kallio.name ?? id;
+    console.log(`  ${name.padEnd(22)}  ${e.k.padEnd(6)} ${String(e.met).padStart(5)} ${(e.lost / e.met).toFixed(1).padStart(5)}  ${pct(e.killed / e.met)}`);
   }
 
   console.log(`\n── where act two ends ──\n`);
@@ -573,7 +599,7 @@ export function act2Report(POP = Number(process.argv[3]) || 600, popBot = 'nativ
   console.log(`   in two and resume under the same bot: the worst per-character swing is ${floor}`);
   console.log(`   points at ~${half} arrivals a half. Read the MEAN; nothing under that on one`);
   console.log(`   character is a finding.)\n`);
-  return { pop, wins, hpBy, seen, deaths, floor };
+  return { pop, wins, hpBy, seen, deaths, span, floor };
 }
 
 // ── the noise floor ──────────────────────────────────────────────────────
@@ -607,7 +633,12 @@ export function noiseFloor(SEEDS = 150, BLOCKS = 4) {
 export const NOISE = { perCharacter: 13, mean: 2 };
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  // `--asc N` measures the matrix (or act two) with the ladder at rung N. It
+  // is set BEFORE anything runs, because a population bred at one rung and
+  // resumed at another would be measuring neither.
+  const ai = process.argv.indexOf('--asc');
+  if (ai >= 0) { setAsc(Number(process.argv[ai + 1]) || 0); console.log(`\n  ── ASCENSION ${ASC} ──`); }
   if (process.argv.includes('--noise')) noiseFloor(Number(process.argv[2]) || 150);
   else if (process.argv.includes('--act2')) act2Report();
-  else report();
+  else report(Number(process.argv[2]) || 150);
 }

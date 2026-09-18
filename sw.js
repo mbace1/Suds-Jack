@@ -19,7 +19,7 @@
 // caching their files from out here would be two answers to the same question.
 // A narrower scope wins the page, so those keep controlling themselves.
 
-const VERSION = 'v29';
+const VERSION = 'v99';
 const CACHE = `suds-hub-${VERSION}`;
 
 const SHELL = [
@@ -28,16 +28,17 @@ const SHELL = [
   './hub/arcade.js?v=5',
   './hub/art.js?v=19',
   './hub/feedback.js?v=13',
-  './hub/games.js?v=47',
-  './hub/hub-entry.js?v=6',
+  './hub/games.js?v=102',
+  './hub/games.js?v=97',
+  './hub/hub-entry.js?v=30',
   './hub/hub.css?v=23',
-  './hub/hub.js?v=47',
+  './hub/hub.js?v=107',
   './hub/i18n.js?v=11',
   './hub/pad.js?v=9',
   './hub/playlog-auto.js',
   './hub/playlog.js',
   './hub/toko-cabinet-dom.js?v=1',
-  './hub/topics.js?v=4',
+  './hub/topics.js?v=11',
   './toko/js/chat.js?v=20',
   './toko/js/dialogue.fi.js?v=20',
   './toko/js/dialogue.ja.js?v=20',
@@ -56,7 +57,7 @@ self.addEventListener('install', e => {
   // one missing file must not fail the whole install and leave the arcade with
   // no worker at all — cache what is there and say so
   e.waitUntil(caches.open(CACHE)
-    .then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => null))))
+    .then(c => Promise.all(SHELL.map(u => c.add(new Request(u, { cache: 'reload' })).catch(() => null))))
     .then(() => self.skipWaiting()));
 });
 

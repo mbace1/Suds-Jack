@@ -1,5 +1,181 @@
 # Toko Move — versions
 
+## v2.38 — 2026-09-17
+
+**The event deck** (owner: *"roguelike random events type deal… help the
+granny across the street (10 sec delay)"*). `js/events.js`, two kinds:
+
+- **Disruptions are facts.** A car on the rails, a points failure, a
+  passenger unwell: one line is HELD at its stops for four to six game-minutes.
+  `LiveNetwork.hold()` makes it real rather than announced — positions are a
+  closed form in the tick, so a hold is ticks the layer does not experience
+  (`effectiveTick`), and both the fleet and `nextArrival` read it, so the catch
+  panel's *in 3 min* becomes *in 9 min* and the plan you made visibly goes
+  wrong. An estimate never looks through a FUTURE hold: you learn of a
+  disruption when it happens, which is what makes it one. Shown as a banner
+  with the line's badge and the minutes left on it.
+- **Encounters are a choice** — 80 Days' shape: a face, one line, options as
+  rows priced in seconds. The granny (walk her across, −10 s, +goodwill), the
+  tourist, the inspector (documents cargo: *waved through* — FTL's blue option;
+  otherwise show your ticket, −3 s), the wallet (hand it in, or pocket it for
+  more score and −3 goodwill — the trap), the busker, the stroller, an old
+  friend. Every card has a free way past. **A card never blocks the tram**:
+  catching while one is up takes the free option for you — boarding IS walking
+  on. Only having chosen to help holds you (`busy`), and that is the cost.
+  Goodwill accrues on the challenge and nothing spends it yet; Regulars will.
+
+The deck is DRAWN, never rolled: the schedule is a hash of the shift seed, so
+a shift replays and the bot can play it. Budget: three encounters and one
+disruption a shift, worst-case encounter cost under 280 ticks. Measured:
+random-but-sane bots answer ~3 events a shift at ~85 ticks and 37 of 40 meet
+a hold; the win rate reads 62.5%, inside the noise of v2.36's 63.5%.
+
+Gates: `test/events.mjs` (53, bare node, in CI) — a free option on every card,
+a seeded draw, no card twice, the budget, and a 240-tick hold moving the next
+arrival by exactly 240; `shifts.cjs --gate` gained two checks (events are
+answered, holds happen). misses.cjs stays green because a card never blocks.
+
+## v2.37 — 2026-09-17
+
+**The succinct UI** (owner: *"make the UI feel a bit more fun, approachable,
+and simplistic. The Mini Metro and Motorways are succinct experiences"*). One
+rule: shapes before words, and no ticks on screen.
+
+- **Minutes, not ticks.** `~145t` and `deadline 337t` were the engine's unit
+  leaking into the game. `js/ui.js` reads ticks-per-minute off the clock and
+  everything on screen says *now*, *in 3 min*, *~4 min*, *8 min left*. Ticks
+  stay in the engine and every test.
+- **The HUD is glyphs**: the clock, deliveries as dots (`●○○ +2`), the score,
+  and the current job as its cargo glyph inside a RING that empties with the
+  deadline. The words "deliveries" and "deadline" are gone.
+- **Every option is one row**: the line's own badge (the block that rides on
+  the map, so a plan and its tram look like one thing) → where it is headed ·
+  *now* or *in 3 min* · the price. A transfer is two badges. No DIRECT/VIA, no
+  "YOU ARE AT", no "Lit says…" past the first job.
+- **Dispatch is one row per job**: cargo glyph, destination, the first badge
+  that gets you there and when, what it pays. It was four lines of prose.
+- The feed and the read-only panel are gone on a phone; the map grew to
+  50dvh; the title card is two sentences.
+- Cargo is a glyph (✉ ♨ ⚙ ◇ ▣ ⚡ ❀ ▤), the three-letter code its title.
+
+Gate note: phone.cjs's "dispatch list is gone" check keyed on the old heading
+text and would have passed vacuously; it keys on `DISPATCH ·` now.
+
+## v2.36 — 2026-09-17
+
+**ON YOUR WAY — Paperboy's loop on a tram.** Waiting was still 22% of a shift
+and riding was 600 ticks with nothing to press. The main job says where you
+are going; these say what you could drop at the REAL stops you will pass
+getting there — the HSL stop table (292 stops), not the twenty-node game
+graph, because between two graph nodes a tram calls at three to eight stops
+nobody could deliver to before. A drop is made from aboard while the vehicle
+stands at the stop: no headway, no get-off. One ride serves two or three
+jobs, and choosing a line is choosing what it passes — every offer names the
+line that passes it, which is the point. Two offers per stop, a bag of two.
+
+**Drops pay score and count in their own tally; the shift's ask stays the
+authored A→B jobs.** Measured first the other way with a survey bot playing
+the whole day with no target: a day held ~12 deliveries of which ten were
+drops, and the jobs had become a chauffeur for a drop route. The owner's brief
+says A→B jobs are the objective, so the HUD reads `1/3 +4`, the end screen
+gets a *drops on the way* line, and a shift is won the same way it was.
+Random-but-sane bots (which take a drop on their chosen line half the time)
+win 75% of 40 and hand over ~6 drops each.
+
+**Found on the way: the first drop stranded the courier.** The mobility
+controller keyed its leg on `ch.index`, and a drop bumped index without
+changing the job, so `syncLeg` read a new leg and wiped the ride from under
+the courier — status "riding", aboard nothing, for the rest of the shift. The
+random bots fell 60% → 37% the moment drops existed and every loss was
+"ended riding, 1 delivered". The key is the job's id now.
+
+The target is a per-shift property (`challenge.target`, `DELIVERY_TARGET` the
+default) so a campaign city or the survey bot can carry its own; the HUD and
+the end screen read it from the challenge.
+
+UI: the ON YOUR WAY panel sits under the boarding options (its own sheet slot,
+`alongBoard`) and vanishes once you board; the ride strip marks each drop at
+its true fraction of the leg with its name. `shifts.cjs` gained `--survey`
+and a fourth gate check (drops are offered, taken and handed over — mutation
+that never hands one over: caught).
+
+Reference note: the owner pointed at Trafficity (Steam). Steam, SteamDB,
+Reddit, YouTube, Wikipedia and the games press are all blocked from this
+sandbox and nothing about it is indexed by search yet, so the reference pass
+against it has not happened. The insight built here is from the reference in
+the repo — Paperboy — whose whole loop is deliveries along a route you are
+already travelling.
+
+## v2.35 — 2026-09-13
+
+**The shift could not be won, and now it can — measured, not felt.** Nothing in
+this project had ever finished a shift: the gates certified that a job could be
+taken and a tram caught, and the one person who tried by hand (v2.34, twice)
+got 0/3 both times. `test/shifts.cjs` drives the real game — the real
+timetable, the real challenge, the real mobility controller — through the same
+commands the buttons call, stepping the clock with `flow.runTicks` rather than
+the wall clock, so a shift runs in under a second and two hundred in minutes.
+The fleet and the offers are deterministic (hashes, not rolls), so the sample
+is over PLAYERS, not seeds: four named policies plus random-but-sane bots that
+choose among what the panel would show.
+
+**At v2.34, random-but-sane bots won 19% of shifts. The cause was the fleet.**
+Three vehicles per line, whatever the line's length, makes the headway the
+length divided by three: tram 15 every 61 game-minutes, the metro every 49,
+trams 1/7/9 every 25-29 — against a real morning of 7.5 for a trunk tram and 4
+for the metro. The 500-tick stand at Arabia for the next 6 was not bad luck, it
+was the timetable. `LiveNetwork` now provisions each line to a TARGET headway
+(`HEADWAY_MIN`, vehicles = cycle ÷ headway, never fewer than two): 102 vehicles
+became 310, the median headway went from 692 ticks to 296, and the same bots
+went 19% → 35% at 10/5 → **52% at 7.5/4**, which is HSL's morning peak, which is
+when the shift is.
+
+**The second cause was dispatch.** Loop 47 listed first whichever job had a
+tram within reach, and on job one that was Lasipalatsi → Arabia at ~1500
+ticks — half the day for one delivery. A bot taking the first-listed job
+finished 1/3; a bot taking the cheapest finished 3/3 at tick 2201. Offers are
+now SIZED TO THE SHIFT: priced door to door by the same estimator the deadline
+uses, anything that cannot land before the day ends is dropped, and the three
+kept are a spread — cheapest, middle, dearest that fits. With both fixes the
+random bots win **63.5% of 200 shifts** and the cheapest-job player finishes at
+tick 858; median first delivery moved from tick 1191 to 509. `--gate` runs 40
+and holds 40% and a cheapest-job win; it is in CI.
+
+**Found on the way, and fixed: RUN THE DAY AGAIN was a dead second shift.** It
+booted a fresh flow and challenge in place while main-v212's mobility
+controller, fleet, trails and log all kept the old ones — measured,
+`tm.mobility.ch !== tm.challenge` after the button, so a job taken on the second
+shift was invisible to the controller and no CATCH could ever light. It reloads.
+
+**UI, from the screenshots.** The lit CATCH is FIRST — three 130px cards had
+put it second or third, under two greyed WAITs, half below the fold on a phone;
+options are one row each now (verb, service, where it goes, cost) and all three
+fit beside the map. The HUD lost its 46px dead band beside the HUB button: the
+clock and controls sit to the right of it, the status line under. The feed
+truncated mid-word ("Transit only; no") and now ellipsises one line on a phone.
+The read-only ALSO CALLING HERE panel is folded into a `<details>` (MISSED stays
+outside it, visible). The duplicate "ON TRAM 1H" card above the ride card is
+gone, and the ride card is a STRIP — passed stops filled, where you are ringed,
+the destination flagged, a countdown off the same closed form the catch panel
+uses — instead of "Vehicle hsl:1H:2 · current Kamppi · next Kluuvi".
+
+**Art.** The courier is a FIGURE and is on the board whenever you are: a flat
+fill inside a hard line — head, coat, bag, two legs that swap on a five-tick
+gait — standing at the stop while you wait, walking while you walk. It used to
+be a navy dot marked W, and only while walking, so for most of the shift you
+were nowhere on the map at all. Every badge has a NOSE on its leading edge from
+the path tangent, because a CATCH lights only for a vehicle heading your way
+and a rectangle could not say which way that was. Dots paint UNDER badges now
+(a dot at the same spot as the badge it yielded to was punching a hole in the
+label). The job's destination carries a pennant on a pole with the stop's name
+in the cargo's colour, instead of a second ring in a second colour. And one
+warm wash over the ground, strongest at 07:00 and gone by 08:15, so the five
+minutes have a direction you can feel — soft-light, so the line ink is
+untouched.
+
+Gates: `shifts.cjs --gate` (3, new, in CI), phone.cjs 37, misses.cjs 8,
+badges.cjs 20, cabinet-route 19, tokens.mjs, and every bare-node gate green.
+
 ## v2.34 — 2026-09-11
 
 **The cache tokens were wrong, and nothing was looking at them.** Two faults,

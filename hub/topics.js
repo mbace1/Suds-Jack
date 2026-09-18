@@ -68,6 +68,7 @@ export const KINDS = kinds('en');
 // better one the day someone thinks about it.
 const LEADS = {
   flowsnow: ['look', 'controls'],         // the look is the experiment, the hands are Shredders
+  'optionc-lab': ['perf', 'look', 'controls'],
   optionc: ['controls', 'perf', 'look'],
   concrete: ['controls', 'look'],
   powder: ['balance', 'controls'],        // "the field still needs balancing"

@@ -20,7 +20,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
-  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.md': 'text/plain',
 };
 
@@ -229,10 +229,17 @@ function check(name, cond) {
   check('the sketch shelf is there too', await page.locator('.shelf .sketch-link').count() === sketches.length);
   check('the page names itself', (await page.title()).includes('Suds Jack'));
 
-  // every Play button points at its catalogue path, in the order rendered
+  // every Play button points at its catalogue path, in the order rendered.
+  // A pinned cabinet carries ?release=N, and N is READ from versions.json
+  // rather than typed here — a release number typed into a fourth file is a
+  // fourth file to forget (v34 shipped with three different answers).
+  const relVers = JSON.parse(require('node:fs').readFileSync(require('node:path').join(ROOT, 'hub/versions.json'), 'utf8'));
+  const pinned = new Set(['slaykallio']);
+  await page.waitForFunction(() => [...document.querySelectorAll('a[data-game="slaykallio"]')].some(a => a.href.includes('?release=')));
   const hrefs = await page.locator(`${CAB} .btn.play`).evaluateAll(ns => ns.map(n => n.getAttribute('href')));
-  check('Play opens the game it is under',
-    hrefs.join() === games.filter(g => g.live !== false).map(g => g.id === 'slaykallio' ? `${g.path}?release=33` : g.path).join());
+  check('Play opens the game it is under, pinned to the release the log names',
+    hrefs.join() === games.filter(g => g.live !== false)
+      .map(g => pinned.has(g.id) && relVers[g.id] ? `${g.path}?release=${relVers[g.id].v}` : g.path).join());
 
   // not every button has to work yet — but a button that cannot work must say
   // so rather than pointing at a 404
@@ -526,7 +533,7 @@ function check(name, cond) {
   // project is asking — so it has to survive, not quietly fall back to a fixed
   // list the day someone renames an id.
   const taxo = await page.evaluate(async () => {
-    const t = await import('./hub/topics.js?v=1');
+    const t = await import('./hub/topics.js?v=11');
     const bare = t.KINDS.map(k => k.id).join();
     const led = Object.fromEntries(__hub.games.map(g => [g.id, t.kindsFor(g.id).map(k => k.id)]));
     const gaps = [];
@@ -547,7 +554,7 @@ function check(name, cond) {
   await page.locator(CAB).nth(1).locator('.btn.ghost').click();
   const kindLabels = await page.$$eval('.kind', bs => bs.map(b => b.textContent));
   const wanted = await page.evaluate(async id => {
-    const t = await import('./hub/topics.js?v=1');
+    const t = await import('./hub/topics.js?v=11');
     return t.kindsFor(id).map(k => k.label);
   }, games[1].id);
   check(`the panel offers the kinds in this cabinet's order (${kindLabels[0]})`,
@@ -571,7 +578,7 @@ function check(name, cond) {
     collected[0].text.includes('wall') && collected[0].source === 'hub');
   check(`and what it is about, so it can be sorted (${collected[0].kind})`,
     collected[0].kind === (await page.evaluate(async id => {
-      const t = await import('./hub/topics.js?v=1');
+      const t = await import('./hub/topics.js?v=11');
       return t.kindsFor(id)[0].id;
     }, games[1].id)));
   check('and it is kept locally too', (await page.evaluate(() => __hub.feedback.archive())).length === 1);
@@ -1166,7 +1173,10 @@ function check(name, cond) {
       await page.evaluate(() => window.__arcadeShell?.game) === g.id);
   }
   // and a game that reads a pad itself is left completely alone
-  const native = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  // This fixture tests the shared shell's key bridge. Native-home cabinets
+  // own their controller/HOME code; the all-cabinet HOME check above still
+  // visits them, and their game repository runs their interaction gates.
+  const native = catalogue.find(g => g.pad === 'native' && g.inRepo && g.hubHome !== 'native');
   if (native) {
     await page.goto(`${base}/${native.path}`, { waitUntil: 'domcontentloaded' });
     check(`${native.id} reads its own pad, so nothing is layered on it`,
@@ -1181,7 +1191,7 @@ function check(name, cond) {
   // So drive `attachPad` directly with a stub binding, hosted on a page that
   // bridges nothing itself: whatever keys turn up are the bridge's own work,
   // with no second one to confuse them for.
-  const host = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  const host = native;
   await page.goto(`${base}/${host.path}`, { waitUntil: 'domcontentloaded' });
   await page.evaluate(async () => {
     window.__seen = [];
@@ -1354,6 +1364,26 @@ function check(name, cond) {
     (await page.$eval('#cab-tokodrop .best', n => n.textContent)).includes('4,242'));
   check('a game you have not played shows no score line at all',
     (await page.$$('#cab-skltr .best')).length === 0);
+
+  // Chat may download before the asynchronously imported hub has initialized.
+  // Delay only network delivery to reproduce that ordering on both entries.
+  for (const entry of ['/', '/AnotherHUB/']) {
+    const context = await browser.newContext();
+    const startup = await context.newPage();
+    const startupErrors = [];
+    startup.on('pageerror', e => startupErrors.push(e.message));
+    await startup.addInitScript(() => localStorage.setItem('tokoSting', '1'));
+    await startup.route('**/hub/hub.js?v=*', async route => {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      await route.continue();
+    });
+    await startup.goto(base + entry);
+    await startup.waitForFunction(() => window.__hub?.chat, {}, { timeout: 10000 });
+    await startup.reload();
+    await startup.waitForFunction(() => window.__hub?.chat, {}, { timeout: 10000 });
+    check(`chat waits for hub initialization on ${entry}, including reload`, startupErrors.length === 0);
+    await context.close();
+  }
 
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 

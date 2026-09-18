@@ -7,6 +7,407 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v39 — 2026-09-15
+**The Boxer compounds: thorns grow on the blow they answer**
+
+v38 put four cards in his hands and moved nothing, so this version measured him
+instead of adding to him. Over 150 `native` runs a character, where the damage
+actually comes from:
+
+| character | damage a fight | thorns | thorns share | taken |
+|---|---|---|---|---|
+| drinker | 107.0 | 0.6 | 0.6% | 38.0 |
+| busker | 108.7 | 0.9 | 0.8% | 48.1 |
+| collector | 108.9 | 0.9 | 0.8% | 58.9 |
+| cart | 111.4 | 8.4 | 7.0% | 109.5 |
+| walker | 109.5 | 1.1 | 1.0% | 48.8 |
+| **boxer** | **86.0** | **21.8** | **20.3%** | 56.1 |
+
+**Every other character deals 107-111 a fight. He deals 86, and his thorns add
+21.8 — which lands him at 107.8.** His mechanic returns him to PAR and never
+above it, while arriving late and on whatever hit him rather than on what he
+chose. Two guesses died on the way and are worth recording so nobody re-checks
+them: thorns fire correctly (5 back from each of three attackers), and BLOCK
+DOES NOT SUPPRESS THEM, so his two halves were never fighting each other.
+
+What was missing is a SLOPE. The Cart wins because block-that-stays accumulates
+across a fight; thorns were re-bought every time. `RULES.thornsOnStruck = 1`
+gives them one: being struck deepens them, so the round spent being hit is the
+round they become worth having — his fiction, and the same shape as v28's buzz
+carry. It is gated on already HAVING thorns, so it deepens a mechanic rather
+than handing one out.
+
+**Measured at 400 seeds a cell against the v38 control**, boxer's column:
+
+| bot | v38 | thornsOnStruck 1 | (swept) 2 |
+|---|---|---|---|
+| greedy | 12% | 15% | 17% |
+| defensive | **14%** | **26%** | 33% |
+| synergist | 13% | 16% | 20% |
+| native | 14% | 16% | 18% |
+
+**+12 points on `defensive`, three times the ±4 floor**, and it lands where the
+design says it should: the line that blocks and survives takes the most hits,
+which is what now compounds. His best line is no longer `native` at 14% but
+`defensive` at 26%, which takes him off the bottom of the roster — the Dog
+Walker is last now, at 20%.
+
+**1 and not 2, and that was swept rather than picked.** 2 is strictly better
+for him on every line and takes his best to 33%, near the top against cart 38
+and busker 33 — a different character rather than a fixed one, and a snowball
+(+24 thorns a fight) rather than a slope. Same call as v28's "⅓ not ½".
+
+Left open rather than papered over: **`native`'s boxer policy is now wrong for
+him.** It says "block only what would actually kill, and let the rest land",
+which was right when thorns did not compound and is not right now — which is
+why his hand-written line (16%) trails the generic defensive one (26%). The
+mean across all six characters moves 25% → 26%, inside the floor, so this is a
+fix for one character and is not claimed as more.
+
+**And the act walk found a SOFTLOCK that is older than the rule which exposed
+it.** The row can die during its OWN phase — thorns answer every blow, so the
+last attacker can kill itself coming in — and `endTurn` only asked whether the
+phase had already changed. `enemyPhase` does that itself for a dead HERO, which
+is why the guard was enough for years: there was no equivalent site for a dead
+ROW. The fight then never resolved. A fresh hand was dealt against an empty
+board, turn after turn, with no way on. Thorns could always kill an attacker on
+the way in; v39 only made them big enough to reach it in ordinary play. One
+line — `checkFightOver` after `enemyPhase` — and it is gated.
+
+Worth naming: `core.mjs` and `smoke.cjs` both passed straight over it. The
+whole-act walk is what caught it, which is the argument for running the slow
+gate before committing rather than after.
+
+Gates: `core.mjs` 807 (four new), `smoke.cjs` 142, `player-flow.cjs` both.
+
+## v38 — 2026-09-15
+**Eight cards for the two thinnest pools, and they bought variety rather than power**
+
+The owner's brief asks for "lots of cards (class specific and neutral)". The
+build had 24 neutral and 10-13 a character, with the Dog Walker and the Boxer
+thinnest at **10 each**. Both are at 14 now, and each card extends that
+character's QUESTION rather than padding a stat table.
+
+**The Boxer — take the hit to get paid.** `take_it` is the question in one
+card: it buys nothing this turn and makes the next one worse ON PURPOSE,
+because thorns only pay when something hits you (5 thorns, 1 vulnerable, 0
+cost). `on_the_ropes` is the cash-out — `second_wind` already turned a round of
+absorbing into BLOCK, so this turns it into the punch and a round on the ropes
+has two ways out rather than one. `body_shot` and `sparring` are ordinary, and
+`sparring` fixes a real gap: he was the only character with no cheap cycler,
+which is why his opening hand so often had nothing to do with his mechanic.
+
+**The Dog Walker — feed Fetch, the dog goes in.** `guard_dog` reads the stack
+for block, `park_run` overfeeds it and charges you a Vulnerable for the turn
+that buys it, `slip_lead` attacks while still feeding, `spare_lead` cycles.
+
+**MEASURED AGAINST A CONTROL AT THE PREVIOUS COMMIT, 400 seeds a cell, and the
+result is FLAT.** Walker's best line 24% → 21%, Boxer's 15% → 14%, the mean
+across all six characters 26% → 25%. Every cell is inside the instrument's
+±4 floor. Eight cards, four of them aimed at each of the two weakest
+characters, and nothing moved.
+
+That is reported as what it is. **The Boxer is still the worst character at
+its best line** and these four did not fix him. What the cards bought is
+variety — more distinct draws in a run — which is a legitimate thing for cards
+to be and is not the same as power.
+
+And the instrument is NOT blind to them, which is the thing worth checking
+before believing a flat result: `native`'s per-character policies score by
+MECHANIC (`grants(c, 'fetch')`, `scaleOn(c, 'struck')`) rather than by card id,
+so a new card that grants thorns or scales on fetch is picked up with no
+change to the bot. Unlike v26's act-two additions, these were sampled.
+
+One correction, made in place rather than quietly: the first draft of
+`guard_dog`'s comment said it spent the Fetch stack "on the other side of the
+fight". It does not. `fetch` is READ by a card and then paid out and cleared at
+the end of the turn regardless, so the card grants block AND the dog still goes
+in. That double-dip is the character's existing convention — `off_the_lead`
+has always read the same stack for damage — so the card is consistent and the
+description was the thing that was wrong.
+
+Gates: `core.mjs` 803 (eleven new), `smoke.cjs` 142.
+
+## v37 — 2026-09-15
+**A spike aimed at a healthy hero — and the arithmetic that says the metric was wrong**
+
+`hale` is the condition the list was missing. Every rule in `WHEN` read the row
+(`alone`, `crowded`, `first`) or read a hero who was ALREADY hurt (`bleeding`,
+`hurt`, `walled`), so nothing in this game ever cost you anything for arriving
+healthy — which is exactly what the act-two ledger measured: `native` walks in
+at 87% of max and the middle takes 15 HP a fight off it. `hale` is `bleeding`'s
+mirror and it is one function.
+
+**The Chancer** is its one user, and the design came off the ledger rather than
+out of a number. `debt` already showed the shape — it costs 5.0 HP on average
+and kills 7%, because it RAMPS rather than hitting hard. So the Chancer sizes
+you up ONCE, early: 14 and a Vulnerable, only while you are worth taking off,
+then an ordinary rotation. Arrive hurt and he is a pushover. That is `sable`
+from the other side, and the pair is the point — act two can now threaten both
+states a hero arrives in.
+
+The spike is the ENCOUNTER, not the enemy. **They Look You Over** is two of
+them, so a healthy hero eats both openers plus the Vulnerable they leave;
+**He Brought The Rats** is the mixed version. Act two's pool goes 13 → 15.
+
+`redhood-blue` is now in the game — the first of the three plates of the
+owner's own 26 that had never been shipped into this folder at all. Cast for
+what the picture shows: chin up, chain out, the knife held low and loose. He is
+looking you over, not fighting yet.
+
+**Measured at 600 seeds a cell against a v36 control.** They Look You Over
+costs **30.1 HP**, the most expensive ordinary fight in the act (the previous
+worst was The Last One Standing at 25.9). Every bot's mean win rate moves 1-3
+points, inside this instrument's 3-point floor. And the Bear's share of
+`native`'s act-two deaths reads **83%** — exactly what it read before.
+
+**So the metric was the wrong target, and that is this version's real finding.**
+The Bear is met by 2540 runs; each ordinary fight is met by ~400. The Bear
+killing 63% of 2540 is ~1600 deaths; a fight killing 6% of 400 is ~24, and
+fifteen of those is ~360. 1600/1960 = 82%, which IS the number three separate
+experiments have now failed to move. The share is arithmetic — one mandatory
+boss against fifteen sampled fights — and pushing it under 60% would need every
+ordinary span to kill ~18%, one run in five. That is a different game, not a
+tuning pass.
+
+Withdrawn with it: v35's "moving THAT needs a cheaper Bear or spikes that
+threaten a healthy hero". Both halves were tried. A cheaper Bear (140 → 120 HP)
+moves every bot +10 to +12 points of win rate and moves the share 83% → 79%;
+lowering its spikes reads the same; halving the compounding `stir` moves the
+mean +2, inside the floor. All three are difficulty dials. None is a shape dial,
+because the shape is set by which fights are compulsory.
+
+What act two should be judged on instead is what it COSTS and whether its spans
+present real decisions — not what fraction of deaths land on the one fight
+every run has to have. This version leaves it with a 30 HP span, a 12 HP span
+and a condition that reads the state the strong decks actually arrive in.
+
+Not done: `scale` on an enemy (1.0 to 1.32 on six of them) is read by nothing
+in the engine, the view or the tests. It looks exactly like the difficulty dial
+somebody will reach for first, and turning it does nothing. Wire it or delete
+it; do not leave it looking like a lever.
+
+Gates: `core.mjs` 792 (nine new), `smoke.cjs` 142.
+
+## v36 — 2026-09-13
+**The ascension ladder: six rungs, six levers this engine already had**
+
+A deckbuilder is worth a hundred runs or it is worth two, and what carries the
+difference is a difficulty that keeps asking a new question. This is Slay the
+Spire's ladder in this game's own terms — and the constraint that shaped it is
+that **every rung rides a lever that already existed**:
+
+```
+  1  an elite is offered a span earlier            buildRoute's guaranteed step
+  2  what you meet is mutated a level ahead        the nightfall level
+  3  a rest gives back a fifth, not a third        RULES.restHeal
+  4  you start the run carrying Doubt              the curse the events deal
+  5  every boss stands with a point of Strength    the status every enemy has
+  6  beating an act gives back a third, not a half RULES.healBetweenActs
+```
+
+No new mechanic, and that is the point rather than a saving: a ladder that
+needs new systems is a second game. The rungs are **cumulative** (rung 6 is
+every rung), which is the genre's own shape and the reason only rung 0 can be
+an exact control.
+
+**Two rules a rung may never break**, both written at the lookup in
+`engine.js`: it may not make a run non-deterministic from the seed, because the
+act-two harness's whole value is that an unrelated change reproduces a column
+exactly; and it may not hide information, because this is a full-information
+game — rung 5 makes a boss hit harder and the intent line quotes the bigger
+number the turn it happens (gated).
+
+**The control holds by construction.** `core.mjs` drives a whole bot run at
+rung 0 and at no rung at all and compares the LOGS — not the outcome, every
+entry — across three seeds. They are identical, so every number this project
+recorded before today still describes rung 0. Getting that check right took
+three passes and the fault was the ruler each time: `uid` is a module-level
+counter, so two identical runs number their cards and their enemies
+differently purely by running second, and it rides on `target`, `enemy`, `src`
+and `from` as well as on `uid` itself. It renumbers by order of first
+appearance rather than stripping those keys, because WHICH body was hit is
+exactly what the control is checking.
+
+**Measured, 150 seeds a cell, `node test/bots.mjs 150 --asc N`:**
+
+```
+  rung        0    1    2    3    4    5    6
+  native     25%  22%  19%  16%  11%   9%   6%
+  synergist  18%  17%  14%  12%   9%   7%   5%
+  greedy      9%  11%   7%   4%   3%   3%   3%
+```
+
+Monotone on both competent bots, with no tuning pass — each rung is one
+existing number moved once. **The honest reading of rung 1**: it is the
+weakest rung and is at the edge of what this sample can see (synergist 18→17,
+and greedy goes UP, which at a 13-point per-character floor is noise, not a
+finding). That is a fact about the rule rather than the measurement — an elite
+is OFFERED, not forced, and a competent line declines it. Rungs 2 and 4 are
+the biggest single steps.
+
+**The ladder is a DECISION, not a comparison**, which is why it is deliberately
+kept out of `LOOK_KEYS`: v30 exists because a value picked while comparing four
+looks beat the default for good, and the fix there was to drop a stored look
+older than the house answer. Doing that to a difficulty somebody earned would
+be the same bug with the sign flipped. It is stored per character
+(`asc.<character>`), because a win on the Cart Pusher says nothing about the
+Drinker, and **only a win opens the next rung** — reaching act two at rung 3 is
+not rung 4. It raises by one rather than to the rung played, so a rung handed
+over some other way cannot skip the ones under it, and the result screen names
+what just opened.
+
+`GDD.md` §9 listed ascension under what is NOT in, with the reason "each of
+those is a system, not a table". That is **withdrawn**: it was a claim about
+difficulty ladders in general and should have been about this codebase, where
+every rung the ladder needed was a lever that already existed. §8b is the
+design record.
+
+Gates: `node test/core.mjs` 783, `NODE_PATH=$(npm root -g) node test/smoke.cjs` 140,
+and the flow harness now walks a whole act on desktop and touch.
+
+## v35 — 2026-09-13
+**Act two had no middle, and the instrument that proves it is a per-span ledger**
+
+`node test/bots.mjs --act2` grew a table that prices every act-two span under
+the population bot: how often it is met, what it costs in HP, and how often it
+KILLS. The by-kind table it already had averages thirteen fights into one
+number, which is exactly the number that cannot answer the question — a pool
+where every fight costs eleven is an HP tax the boss collects, and a pool with
+two fights that cost thirty is a route with a decision on it.
+
+What it found on v34, and nobody had looked:
+
+```
+  The Bear Wakes        boss   41.3 HP   67% of everyone who met it
+  The Last One Standing fight  28.1      15%
+  ...eight of the thirteen ordinary fights under 11 HP, killing 0-1%
+  Two For One           fight   2.7       0%
+```
+
+Act two's pool was act ONE's shapes with a mutation multiplier on top. Two
+gulls and a pigeon is a fight you have outgrown by the time you are offered it.
+
+**The retune is rosters, not numbers.** Seven spans got more body, using
+enemies that already exist — a second gull on `gulls` and `flock`, a second
+thief, a second Sable, a third blob spawn, a rival behind the two Dealers, a
+pigeon with the Night Shift. Measured against the v34 control at 600 seeds a
+cell, from the door of act two:
+
+```
+  ordinary fight costs `native`   10.9 → 15.4 HP
+  where act two ends, greedy      Bear 77% → 59%
+                      hoarder     Bear 72% → 53%
+                      aggressive  Bear 50% → 39%
+                      native      Bear 90% → 83%
+  mean win rate, every bot        down about 3 points
+```
+
+**The honest half: this half-worked.** The naive lines now die in the middle,
+which is the shape that was asked for. The strong ones still die at the Bear —
+`native` 83%, `synergist` 82%, `defensive` 90% — because a competent deck walks
+the middle and then meets a 41 HP check against arrivals at 87% of a 72 HP
+hero, and nothing in the pool can compete with that number. Moving THAT means
+either a cheaper Bear or spikes that threaten a healthy hero, and neither was
+tried here. Recorded rather than claimed.
+
+**And a rule was built, measured and CUT.** The night taking the breather —
+the post-fight 6 HP scaled by the hour, half through the evening and nothing at
+night — is the obvious way to make the middle cost something. Against the same
+populations it cost every bot about four points of win rate and moved where act
+two ends by three; laid on TOP of the retune it bought two more points of Bear
+share for two more points of win rate. An ordinary fight that is merely
+expensive is still a tax the boss collects. The reasoning is kept at the site in
+`engine.js` because it is the obvious next idea and it does not work.
+
+**A real bug, of the family this repo keeps paying for.** v34 shipped with
+`VERSION` left at 33 while `VERSIONS.md` and `hub/versions.json` both said 34 —
+the arcade advertised a release the cabinet denied. `core.mjs` now reads both
+files and fails when they disagree.
+
+Also: the ledger was mis-attributing deaths. A run that ends inside a fight
+flushes on the same iteration that sets `lost`, so by the time the loop
+condition is tested the open fight is already closed — every span read 0% kills
+and the boss did too. It reads the phase now.
+
+And the hub's release pin was a THIRD copy of the number. `hub.js` launched
+this cabinet at a hard-coded `?release=33` while `VERSION` said 33 and
+`versions.json` said 34. It is read from `versions.json` now (`RELEASE_PINNED`
++ `relink()`), so the pin cannot be left behind again — but the LIVE hub still
+carries the hard-coded 33 until the arcade shell itself is redeployed, which is
+somebody else's deploy and is not folded into a one-game publish.
+
+Gates: `node test/core.mjs` 767, `NODE_PATH=$(npm root -g) node test/smoke.cjs` 140.
+
+## v34 — 2026-09-13
+**The owner's own 26 are the cast, and they stand as standees**
+
+Owner: *"continue development with the new directions and assets."* The
+assets were the twenty-six characters v27 cut out of his casting sheets, on
+`main` since the join and read by nothing; the direction was his own draft
+#484 — *rounded printed cardboard standees with flat bottoms, front art
+first-class, movement transform-driven*. Both were one step from the bridge.
+
+**Every one of the 23 cast figures is now one of his own people.** Cast for
+what the picture shows, the rule v26 set — and most of it is the original
+taking the place of its copy, because the generated `*-plate` set had been
+drawn *from* these: `grunt-barfly` → `beanie-bottle` (the bottle, the
+cigarette), `grunt-spike` → `mohawk-green`, `grunt-milo` → `hood-can`,
+`grunt-ragged` → `rasta-bandaged` (bandaged fists, no weapon — still the old
+boxer), `cleaver` → `cook-mask` (the same person as `slomo`), `vex` → `blonde`.
+`leopard` and `gunner` were already his and keep their pose sets. **`sledge`
+had been shipping as the generated `sledge-plate` by mistake** — same name,
+different file — and is the sheet's own now. Three slots had no literal
+picture in the 26 (nobody holds a baseball bat or a crowbar) and were cast on
+the move set instead: `bat`'s `hold_him / swing` is a tracksuit heavy
+(`flatcap-blue`), `crowbar`'s `pry` is the one who actually holds a bar
+(`bar-black`), `sable`'s `finish_it` is the dark hood (`hoodie`). Three of the
+26 are spare — `beanie-nine`, `fade-red`, `redhood-blue`. The twenty
+generated plates the cast no longer names are out of `figures/`; the deploy
+carries 35 files as before (21 stills + two 7-pose sets).
+
+**They are CUT OUT, not printed on a board.** The first cut of this version
+put the art on a round-topped standee — #484's phrase taken literally — and
+the owner's answer, mid-build, was *"characters should look more like cut
+outs."* He was right about what it read as: a sticker on a tombstone, the
+board a field behind the figure that took the silhouette away (v20's fault
+against boarding a rat, now on everyone). A cut-out is cut AROUND the figure.
+`cutoutBorder` dilates the drawing's own alpha by 7 px into kraft — so a
+raised arm gets a border and the air under it stays air — cuts the foot flat
+at the baseline, and darkens the outer 2 px as the card's edge seen at a
+slant, which is the one cue that says thickness. It is the house cut now
+(`LOOK_REV` 3, dropping a `cut` saved against the old default the way v30 set
+out), and it cuts **every** figure, plated or drawn: with the silhouette kept,
+the objection to boarding a rat is gone, and a row of cut-outs is one kind of
+object. Gated on the SHAPE of the growth, not its size — a border grows the
+ink by 8–90% and the width by 6–22 px; the tombstone grew both far more.
+
+**`ART_REQUEST.md` is new** (owner: *"make an art request to match these —
+level background, foreground, items, enemies, etc."*): the register measured
+off the 26, TURF §1's cuttable contract with the two Slay Kallio differences
+(front only; 192×288 sized off ink), **the bridge's camera as the one hard
+requirement for backgrounds** — which is the v33 finding turned into a spec:
+six canal plates in perspective, by hour, composed for the portrait middle —
+three foreground flats, the 42 card subjects as props, the ten non-person
+enemies in the register, and five-frame pose sets for the five heroes without
+one. Acceptance is the key, the gates and a contact sheet a person looks at.
+
+**Looked at, not just passed** — the whole cast on a contact sheet, three
+encounters in landscape, one in portrait, twice (once to see the tombstone
+was wrong). One finding that is not this version's to fix and is now
+`ART_REQUEST.md` §2: the v33 TURF scenery is an **orthographic iso render
+standing behind a perspective bridge**, and it reads as a poster hung behind
+the deck rather than as a place (`dockyard` is one-point perspective besides).
+
+- `js/plates.js` — `CAST` recast to the roster; header rewritten
+- `js/puppet.js` — `cutoutBorder` replaces the tombstone board; `CUT` default `card`
+- `js/main.js` — `LOOK_REV` 3, default `cut` `card`; tokens `puppet` / `plates` → 32
+- `figures/` — 21 roster stills in, 20 generated plates out; README
+- `test/core.mjs` — every cast plate is one of the owner's 26 (762)
+- `test/smoke.cjs` — starts on the cut-out; the growth is a border on the boxer AND the rat
+- `ART_REQUEST.md` — new
+- `index.html` — `main.js?v=32`
+
 ## v33 — 2026-09-10
 **TURF scenery joins the shared cast**
 
