@@ -108,7 +108,9 @@ export class BulletPool {
     b._baseScale = fat ? 3.0
       : (isPlayer ? BULLET_CONFIG.playerBulletScale * PLAYER_BULLET_VISUAL_BOOST : 1.6);
     b.mesh.scale.setScalar(b._baseScale);
+    b.revenge = false;   // v254: a corpse's bullet marks itself after spawn; the field cap counts these
     this.active.push(b);
+    return b;
   }
 
   update(dt, halfSize, enemies = null, playerPos = null) {

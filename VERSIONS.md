@@ -7,6 +7,30 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v254 — 2026-09-18
+**Revenge is a species trait now — the ten shooters' corpses bite back, from wave 3, capped on the field** *(owner: "1,2,3" on the playtest's ship list — this is 2)*
+- **Who bites:** `TUNING.revenge.biters` — SPITTOR, FANNER, WEEVA,
+  ORANGE_CUBE, PURP_CUBE, BAMBU, PYRA, BOTFLY, CLOAKER, DRAPER: the species
+  whose *living* fire you already learned. Bosses always bite. Every other
+  corpse is quiet. **When:** `fromWave` 3 — waves 1–2 have no corpse fire
+  at all. **How many:** `fieldCap` 24 live corpse bullets; a bloom that would
+  start over the cap is skipped. (It is a threshold, not a ceiling: a bloom
+  that starts at 23 can land 7, so peaks read 27–29.) Bullets carry a
+  `revenge` flag (`spawnDir` returns the bullet now) so the count is exact
+  and VOLATILE's ring counts too.
+- **Measured, same bot, five CLOSE COMBAT runs each:** peak enemy bullets
+  at **wave 2: 37 → 0**; at wave 4: 38 → 24–27; **survival 42 s → 57 s**
+  (waves reached 7–11, was 4–8). The default mode's opening is a movement
+  game again; the bullet game starts when the corpses that shoot arrive.
+  Classic is untouched (revenge never fired there).
+- `PROGRESSION_DESIGN.md` §7 Q3/Q5 — the lean, shipped. Whether the biter
+  list is right is a feel question; the list is one table.
+- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
+  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
+- Cache-bust `?v=206` → `?v=207`; HUD label → v254
+
+---
+
 ## v253 — 2026-09-18
 **The slug stops multiplying, and three one-liners off the ledger** *(owner: "Go" on the playtest's first ship step)*
 - **A chain shorter than four does not split** (`TUNING.arc.slug.minSplit`);
