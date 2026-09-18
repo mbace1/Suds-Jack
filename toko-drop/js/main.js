@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=205';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=205';
-import { Player, PLAYER_RADIUS } from './player.js?v=205';
+import { InputManager } from './input.js?v=206';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=206';
+import { Player, PLAYER_RADIUS } from './player.js?v=206';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=205';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=205';
-import { audio } from './audio.js?v=205';
-import { haptics } from './haptics.js?v=205';
-import { initDesigner } from './designer.js?v=205';
-import { createSpecimen } from './specimen.js?v=205';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=205';
-import { TUNING } from './tuning.js?v=205';
-import { Arena, rectShape } from './arena.js?v=205';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=205';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=205';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=205';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=206';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=206';
+import { audio } from './audio.js?v=206';
+import { haptics } from './haptics.js?v=206';
+import { initDesigner } from './designer.js?v=206';
+import { createSpecimen } from './specimen.js?v=206';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=206';
+import { TUNING } from './tuning.js?v=206';
+import { Arena, rectShape } from './arena.js?v=206';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=206';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=206';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=206';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -382,7 +382,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '252';
+const GAME_VERSION = '253';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -3814,8 +3814,10 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   if (e._affix === 'volatile') {
     for (let j = 0; j < 8; j++) {
       const a = (j / 8) * Math.PI * 2;
+      // v253: at the same slow revenge speed as every other corpse — it was the
+      // one full-speed bloom on the floor, and the one with the most bullets
       bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
-        false, revengeColor(e.type), false, e.type);
+        false, revengeColor(e.type), false, e.type, false, 6, TUNING.revenge.speedMult);
     }
     addShake(0.12);
   }
@@ -3839,7 +3841,7 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
       const bx = player.mesh.position.x - e.position.x;
       const bz = player.mesh.position.z - e.position.z;
       const bl = Math.hypot(bx, bz);
-      const baseA = bl > 1e-3 ? Math.atan2(bz, bx) : Math.random() * Math.PI * 2;
+      const baseA = bl > 1e-3 ? Math.atan2(bz, bx) : rng() * Math.PI * 2;   // v253: seeded — dailies
       for (let j = 0; j < D.count; j++) {
         const a = baseA + (j - (D.count - 1) / 2) * D.spread;
         bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
@@ -3847,7 +3849,7 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
       }
     } else {
       const nRev = e._isBoss ? R.ring.boss : e.radius > R.ring.bigRadius ? R.ring.big : R.ring.small;
-      const a0 = Math.random() * Math.PI * 2;
+      const a0 = rng() * Math.PI * 2;   // v253: seeded — a daily diverged at its first bloom
       for (let j = 0; j < nRev; j++) {
         const a = a0 + (j / nRev) * Math.PI * 2;
         bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
@@ -9287,6 +9289,12 @@ function loop() {
                       : Math.hypot(e.position.x - player.position.x,
                                    e.position.z - player.position.z) < e.radius + PLAYER_RADIUS + 0.2) {
           e._nxHitT = 0.45;                // one cut per pass, not per frame
+          if (e.type === EnemyType.SLUG) {   // v253: the dash EATS the segments it crosses — never a split
+            const died = e._slugCut(player.position.x, player.position.z, PLAYER_RADIUS + 0.35);
+            if (died) onKill(e); else audio.enemyHit();
+            addShake(0.10);
+            continue;
+          }
           if (e.type === EnemyType.CUSTODIAN && !(e._crackT > 0)) {
             e._crackT = 3.0;               // v186: the shell opens — unload
             milestoneT = 1.1; milestoneText = 'SHELL CRACKED — UNLOAD!';
@@ -9717,6 +9725,7 @@ function loop() {
     const c = new Enemy(scene, EnemyType.SLUG, pts[0].x, pts[0].z, e._speedMult, e._intervalMult);
     c._buildChain(pts);
     c._spawnChild = true;
+    c._noSplit = true;   // v253: a split child never splits again
     enemies.push(c);
   }
 
@@ -10656,7 +10665,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=205').then(async m => {
+  import('./editor.js?v=206').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10687,6 +10696,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=205').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=206').catch(() => {});
   });
 }

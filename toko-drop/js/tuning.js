@@ -132,7 +132,7 @@ export const TUNING = {
       YELA_CUBE: 'DRIFTER', ORANGE_CUBE: 'DRIFTER', SLUDGE_CUBE: 'MASS',
       REDD_CUBE: 'DRIFTER', PURP_CUBE: 'DRIFTER',
       REDD_MINI: 'SCHOOL',  PURP_MINI: 'SCHOOL',
-      TORO: 'COMMIT', BAMBU: 'HOLDER', PYRA: 'HUNTER', OMEGA: 'MASS',
+      TORO: 'COMMIT', BAMBU: 'HOLDER', PYRA: 'FIXED', OMEGA: 'MASS',   // v253: PYRA has speed 0 — HUNTER's dodge was nudging a turret
       BOTFLY: 'HOLDER', WARDEN: 'SUPPORT', BULWARK: 'MASS', SIREN: 'SUPPORT',
       CLOAKER: 'HUNTER', MAGNA: 'SUPPORT',
       GRUNT: 'SCHOOL', BRUTE: 'MASS', ORB: 'SUPPORT', PROG: 'DARTER', MINDER: 'SUPPORT',
@@ -164,7 +164,7 @@ export const TUNING = {
     turnRate: 2.2,      // rad/s — the ceiling on how fast a heading may change
     weaveHz: 1.7,       // the serpentine's rate (matches movement.weaveSpeed)
     weaveAmp: 0.55,     // rad of heading offset at full swing
-    slug:   { segments: 11, spacing: 0.50, headR: 0.46, tailR: 0.18 },
+    slug:   { segments: 11, spacing: 0.50, headR: 0.46, tailR: 0.18, minSplit: 4 },   // v253: shorter than minSplit shortens instead
     ribbon: { samples: 22, step: 0.30, width: 0.34 },   // body = samples x step long
   },
 

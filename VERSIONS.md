@@ -7,6 +7,38 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v253 — 2026-09-18
+**The slug stops multiplying, and three one-liners off the ledger** *(owner: "Go" on the playtest's first ship step)*
+- **A chain shorter than four does not split** (`TUNING.arc.slug.minSplit`);
+  the hit segment just dies. **A body born from a split never splits again**
+  (`_noSplit`). Measured in the real loop: a 3-chain hit in the middle →
+  `[2]`, not `[1, 1]`; an 11-chain → `[5, 5c]`, then the child hit in the
+  middle → `[5, 4c]` — still two animals. From eleven segments one spawn is
+  now bounded at a handful of bodies, not the 22 splits / 43 bodies the bot
+  produced on v251.
+- **VOLATILE's corpse ring fires at the revenge speed** (0.6×) like every
+  other bloom — it was the one full-speed ring on the floor and the one with
+  the most bullets. Measured: all 12 bullets of a volatile GLOBBO's death at
+  4.2 = 7 × 0.6.
+- **Revenge is seeded.** RING phase and the on-top-of-player fallback used
+  `Math.random()`; a daily-seed run diverged at its first bloom. `rng()` now.
+- **PYRA is `FIXED`, not `HUNTER`.** It has speed 0; the HUNTER role's dodge
+  weight was nudging a turret sideways. `crowd-check` still passes.
+- **A correction to v252's report, recorded rather than buried:** it said
+  the default mode's "dash-cut" could only split a slug. There is no dash-cut
+  in the main game — the DASH OFFENSE loop that cuts bodies is inside
+  `nexdeusMode`. The splits were bullets passing through a head into the body
+  behind it. A `_slugCut()` ("the dash eats the segments it crosses") was
+  built on that wrong premise; it stays as NEX DEUS's rule, where the dash
+  does cut, and `PLAYTEST_2026-09-17.md` §2.4/B3 are corrected. *Read the
+  gate before you build on it.*
+- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
+  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke;
+  plus the rules probe above.
+- Cache-bust `?v=205` → `?v=206`; HUD label → v253
+
+---
+
 ## v252 — 2026-09-18
 **The testers cost less; a bot played ten games and the numbers are in `PLAYTEST_2026-09-17.md`** *(owner: "test the game and come up with balance and polish", then "pick up on the previous" — the enemies' looks, TORO first)*
 - **Perf fix on my own v251 bodies.** The RIBBON built a fresh
@@ -33,8 +65,9 @@
   kills the bot in two-thirds the time; **SLUDGE_CUBE is classic's top
   killer** and second most spawned; **the RIBBON dealt 1 hit in 10 runs**;
   **the SLUG multiplied** — 22 splits in one run, 43 bodies at wave 8,
-  one-segment "slugs", and in the default mode the dash-cut can only split
-  it, never kill it cleanly. Balance pitches B1–B7, polish P1–P6, and the
+  one-segment "slugs" *(v253 correction: the splits were bullets through a
+  head into the body — the main game's dash does not cut bodies; only NEX
+  DEUS's does)*. Balance pitches B1–B7, polish P1–P6, and the
   TORO look (rim spikes invisible at game scale; the rev-up spin cannot be
   seen on a featureless torus — its only tell is the arrow) with five
   pitches and three variations. Pitches, not decisions.

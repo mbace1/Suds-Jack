@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=205';
+import { TUNING } from './tuning.js?v=206';
 const _apt = { x: 0, z: 0 };   // v236: scratch for arena queries — no per-frame alloc
-import { nesSnap, NEON } from './retro.js?v=205';
+import { nesSnap, NEON } from './retro.js?v=206';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -1307,7 +1307,12 @@ export class Enemy {
     }
     if (this.hp <= 1 || n <= 1) { this.destroy(); return true; }   // env kills set hp = 1 first
     const pts = ch.map(g => ({ x: g.x, z: g.z }));
-    if (i === 0 || i === n - 1) {
+    // v253 (playtest: 22 splits in one run, 43 bodies on the floor, one-segment
+    // "slugs" with eyes): a chain SHORTER THAN FOUR does not split — the hit
+    // segment just dies — and a body born from a split never splits again.
+    // From eleven segments that bounds one spawn at a handful of animals,
+    // not a colony.
+    if (i === 0 || i === n - 1 || n < TUNING.arc.slug.minSplit || this._noSplit) {
       pts.splice(i, 1);
       this._buildChain(pts);
       this._slugEvent = 'shorten';
@@ -1317,6 +1322,25 @@ export class Enemy {
     this._buildChain(front);
     this._splitPts = back;          // main.js spawns the second animal from these
     this._slugEvent = 'split';
+    return false;
+  }
+
+  // v253 THE DASH EATS. CLOSE COMBAT's kill is the dash-cut, which by nature
+  // goes through the middle — so under the split rule the default mode could
+  // only multiply a slug, never kill it. A dash is a cut, not a shot: every
+  // segment it crosses is eaten and the animal closes the gap, shorter. Never
+  // a split. Returns true when nothing is left.
+  _slugCut(px, pz, r) {
+    const keep = [];
+    let ate = 0;
+    for (const g of this._chain) {
+      if (Math.hypot(g.x - px, g.z - pz) < g.r + r) ate++; else keep.push({ x: g.x, z: g.z });
+    }
+    if (!ate) return false;
+    this._flashT = 0.12; this._sqV -= 0.4;
+    if (!keep.length) { this.destroy(); return true; }
+    this._buildChain(keep);
+    this._slugEvent = 'cut';
     return false;
   }
 
