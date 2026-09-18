@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=204';
+import { TUNING } from './tuning.js?v=205';
 const _apt = { x: 0, z: 0 };   // v236: scratch for arena queries — no per-frame alloc
-import { nesSnap, NEON } from './retro.js?v=204';
+import { nesSnap, NEON } from './retro.js?v=205';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -940,7 +940,7 @@ export class Enemy {
       scene.add(this.group);
       this._arc = { heading: Math.atan2(-z, -x), phase: Math.random() * Math.PI * 2 };
       this._longBody = true;              // main.js: hit-test the BODY, not the head circle
-      this.mat.side = THREE.DoubleSide;   // the strip has no thickness
+      if (type === EnemyType.RIBBON) this.mat.side = THREE.DoubleSide;   // the strip has no thickness; the slug's spheres do
       if (type === EnemyType.SLUG) {
         const S = TUNING.arc.slug, h = this._arc.heading;
         this._buildChain(Array.from({ length: S.segments }, (_, k) =>
@@ -1266,7 +1266,7 @@ export class Enemy {
       geo.scale(1, 0.82, 1);                          // squat, so the chain reads as ONE animal
       let mesh;
       if (i === 0) { mesh = this.mesh; mesh.geometry = geo; }
-      else { mesh = new THREE.Mesh(geo, this.mat); mesh.castShadow = true; this.group.add(mesh); }
+      else { mesh = new THREE.Mesh(geo, this.mat); mesh.castShadow = false; this.group.add(mesh); }   // v252: the head casts, the tail does not
       return { mesh, r, x: p.x, z: p.z };
     });
     if (this.mesh.parent !== this.group) this.group.add(this.mesh);
@@ -1275,6 +1275,7 @@ export class Enemy {
     // the rule is a coin flip if you cannot tell a head from a tail
     this._eye = new THREE.Mesh(new THREE.SphereGeometry(S.headR * 0.3, 8, 6),
                                new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    this._eye.castShadow = false;
     this.group.add(this._eye);
     this.hp = n;
     this._placeChain();
@@ -1339,6 +1340,14 @@ export class Enemy {
     this.mesh.position.set(0, 0, 0);
     this.group.add(this.mesh);
     this._ribPts = this._trail.map(() => new THREE.Vector3());
+    // v252: ONE curve, reused. A fresh CatmullRomCurve3 per frame plus
+    // getSpacedPoints() rebuilt a 200-sample arc-length table every frame —
+    // 8 ms per ribbon on a phone-class CPU. getPoints() is uniform in the
+    // spline parameter, which on samples spaced BY DISTANCE is already even.
+    this._ribCurve = new THREE.CatmullRomCurve3(this._ribPts, false, 'catmullrom', 0.5);
+    // the strip is near-flat: an up normal once beats computeVertexNormals() per frame
+    const nrm = new Float32Array(N * 6); for (let i = 1; i < N * 6; i += 3) nrm[i] = 1;
+    geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3));
     this._updateRibbon();
   }
   _updateRibbon() {
@@ -1346,9 +1355,10 @@ export class Enemy {
     if (Math.hypot(gp.x - tr[0].x, gp.z - tr[0].z) >= T.step) { tr.pop(); tr.unshift({ x: gp.x, z: gp.z }); }
     const p3 = this._ribPts;
     for (let i = 0; i < tr.length; i++) p3[i].set(tr[i].x - gp.x, 0, tr[i].z - gp.z);
-    const curve = new THREE.CatmullRomCurve3(p3, false, 'catmullrom', 0.5);
+    const curve = this._ribCurve;
+    curve.needsUpdate = true;
     const N = (tr.length - 1) * 3 + 1;
-    const pts = curve.getSpacedPoints(N - 1);
+    const pts = curve.getPoints(N - 1);
     const v = this._ribVerts;
     for (let i = 0; i < N; i++) {
       const t = i / (N - 1);                              // 0 head, 1 tail
@@ -1362,7 +1372,6 @@ export class Enemy {
     }
     const g = this.mesh.geometry;
     g.attributes.position.needsUpdate = true;
-    g.computeVertexNormals();
     g.computeBoundingSphere();
   }
 

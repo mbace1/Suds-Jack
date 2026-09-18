@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=204';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=204';
-import { Player, PLAYER_RADIUS } from './player.js?v=204';
+import { InputManager } from './input.js?v=205';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=205';
+import { Player, PLAYER_RADIUS } from './player.js?v=205';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=204';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=204';
-import { audio } from './audio.js?v=204';
-import { haptics } from './haptics.js?v=204';
-import { initDesigner } from './designer.js?v=204';
-import { createSpecimen } from './specimen.js?v=204';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=204';
-import { TUNING } from './tuning.js?v=204';
-import { Arena, rectShape } from './arena.js?v=204';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=204';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=204';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=204';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=205';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=205';
+import { audio } from './audio.js?v=205';
+import { haptics } from './haptics.js?v=205';
+import { initDesigner } from './designer.js?v=205';
+import { createSpecimen } from './specimen.js?v=205';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=205';
+import { TUNING } from './tuning.js?v=205';
+import { Arena, rectShape } from './arena.js?v=205';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=205';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=205';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=205';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -382,7 +382,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '251';
+const GAME_VERSION = '252';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -10656,7 +10656,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=204').then(async m => {
+  import('./editor.js?v=205').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10687,6 +10687,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=204').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=205').catch(() => {});
   });
 }
