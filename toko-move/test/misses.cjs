@@ -39,7 +39,7 @@ server.listen(0, '127.0.0.1', async () => {
   const errs = [];
   page.on('pageerror', e => errs.push(String(e).slice(0, 140)));
 
-  await page.goto(`${base}/toko-move/`, { waitUntil: 'load' });
+  await page.goto(`${base}/toko-move/?shift=1&day=none`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__tm?.camera, null, { timeout: 30000 });
   await page.tap('#play');
   await page.waitForFunction(() => { const x = document.querySelector('#jobBoard .jobOffer:not([disabled])'); if (!x) return false; x.click(); return true; }, null, { timeout: 25000 });

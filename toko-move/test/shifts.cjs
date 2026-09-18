@@ -51,8 +51,8 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
     const near = tm.liveNetwork.nearestTo(layer, idx, flow.clock.tick, 2.2, dir);
     if (near) return { ready: true, eta: 0, vehicle: near.vehicle };
     return { ready: false, eta: tm.liveNetwork.nextArrival(layer, idx, flow.clock.tick, dir), vehicle: null }; };
-  const log = [], timeline = [];
-  let waitTicks = 0, rideTicks = 0, chosen = null, chosenAt = 0, lastKind = null, catches = 0, transfers = 0, drops = 0;
+  const log = [], timeline = [], catchFamilies = {}, marketSeen = new Set();
+  let waitTicks = 0, rideTicks = 0, chosen = null, chosenAt = 0, lastKind = null, catches = 0, transfers = 0, drops = 0, marketDrops = 0, marketOffered = 0, walks = 0;
   const say = (k, x) => log.push(`${flow.clock.tick}: ${k} ${x || ''}`.trim());
   { const realSay = ch.say; ch.say = m => { if (/^DROPPED/.test(String(m))) log.push(`${flow.clock.tick}: DROPPED ${m}`); return realSay?.(m); }; }
 
@@ -95,15 +95,32 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
       // ON YOUR WAY: what the chosen line passes. 'yes' takes every drop on
       // the chosen line, 'random' flips a coin per offer, 'no' ignores them.
       if (chosen && policy.along && policy.along !== 'no' && tm.alongOffers) {
-        for (const o of tm.alongOffers()) { if (o.line !== chosen.legs[0].line.label) continue;
-          if (policy.along === 'yes' || rnd() < 0.5) { const r = ch.acceptAlong(o); if (!r.error) { drops++; say('DROP-TAKEN', `${o.stops[1]} on ${o.line}`); } } } }
-      if (chosen) { const a = arrival(chosen); if (a.ready) { const r = mob.catchChoice(chosen, a.vehicle); if (!r.error) { catches++; say('CATCH', chosen.legs[0].line.label); } else say('CATCH-FAIL', r.error); } }
+        for (const o of tm.alongOffers()) { if (o.market) marketSeen.add(o.id); if (o.line !== chosen.legs[0].line.label) continue;
+          if (policy.along === 'yes' || rnd() < 0.5) { const r = ch.acceptAlong(o); if (!r.error) { drops++; if (o.market) marketDrops++; say('DROP-TAKEN', `${o.stops[1]} on ${o.line}${o.market ? ' MARKET' : ''}`); } } } }
+      // WALKING, and why this had to be built (v2.42). Every number this file
+      // has printed came from a bot that could not walk, so QUIET SUNDAY — the
+      // day that takes trams away and gives the pavement back — measured as a
+      // 25-point loss with the compensation invisible. A mechanic the harness
+      // cannot pursue is a mechanic nobody can balance (TURF's cache, twice).
+      // The rule is the one a player uses: walk when walking there and catching
+      // from THERE beats standing here, by enough to be worth the legs.
+      if (policy.walk === 'smart' && mob.canWalk?.() && tm.planCostFrom) {
+        const dest = ch.currentTo(), stay = tm.planCostFrom(ch.currentFrom(), dest);
+        let best = null;
+        for (const w of mob.walks()) { const after = tm.planCostFrom(w.to, dest);
+          if (after == null) continue; const total = w.cost + after;
+          if (stay == null || total < stay - 30) { if (!best || total < best.total) best = { w, total }; } }
+        if (best) { const r = mob.beginWalk(best.w); if (!r?.error) { walks++; chosen = null; say('WALK', `${best.w.to} ${best.w.cost}t saves ${stay == null ? '?' : stay - best.total}t`); } } }
+      if (chosen) { const a = arrival(chosen); if (a.ready) { const r = mob.catchChoice(chosen, a.vehicle); if (!r.error) { catches++; const f = String(chosen.legs[0].line.label || '').match(/^(M?\d+)/); const k = f ? f[1] : chosen.legs[0].line.label; catchFamilies[k] = (catchFamilies[k] || 0) + 1; say('CATCH', chosen.legs[0].line.label); } else say('CATCH-FAIL', r.error); } }
     }
     else if (st.kind === 'riding') rideTicks++;
     flow.runTicks(1);
   }
   const dropped = log.filter(l => / DROPPED/.test(l)).length;
   return { won: ch.complete, delivered: ch.index, eventsSeen, eventCost, holds: (tm.events?.holds || []).length,
+    day: tm.cityDay?.id || 'none', shift: tm.shiftSeed, marketDrops, marketOffered: marketSeen.size, walks, cityHolds: (tm.cityDirector?.holds || []).length,
+    catchesByFamily: catchFamilies,
+    walkFactor: tm.walkFactor || 1, fleet: tm.liveNetwork?.vehicles.length || 0,
     bestStreak: ch.bestStreak || 0, tips: ch.tips || 0, goodwill: ch.goodwill || 0, handoffs,
     rivalDelivered: tm.rival?.delivered || 0, rivalTook: tm.rival?.taken.length || 0, visited: tm.visited ? tm.visited.size : 0, tick: flow.clock.tick, score: ch.score, late: ch.late, drops, dropped,
     waitTicks, rideTicks, catches, transfers, lastKind, activeJob: ch.active ? `${ch.active.stops[0]}>${ch.active.stops[1]}` : null,
@@ -118,7 +135,15 @@ server.listen(0, '127.0.0.1', async () => {
   // provisioning can be measured against the same jobs and the same policies.
   const FLEET = process.env.FLEET || '';
   const token = (fs.readFileSync(path.join(__dirname, '..', 'js', 'main-v212.js'), 'utf8').match(/live-network\.js\?v=(\d+)/) || [])[1];
-  const boot = async () => { await page.goto(`${base}/toko-move/`, { waitUntil: 'load' });
+  // WHICH DAY, AND WHICH SHIFT. The page picks a shift number at random and
+  // draws a city day from it (v2.42), so a bot that did not pin both would be
+  // unrepeatable. Every bot pins the shift to its own policy seed — so bot 7
+  // always plays shift 7 — and DAY= names the city day. The DEFAULT IS none,
+  // an ordinary day, because every number this file has ever printed was
+  // measured on one and a control that moves is not a control.
+  const DAY = process.env.DAY || 'none';
+  const WALK = process.env.WALK || 'smart';   // 'no' reproduces every number printed before v2.42
+  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.seed || 1}&day=${DAY}`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.mobility && window.__tm?.liveNetwork && globalThis.__tmRouteChoiceCore, null, { timeout: 30000 });
     if (FLEET) await page.evaluate(async ({ FLEET, token }) => {
       const { LiveNetwork } = await import(`./js/live-network.js?v=${token}`);
@@ -130,6 +155,7 @@ server.listen(0, '127.0.0.1', async () => {
     }, { FLEET, token });
     await page.click('#play'); await page.waitForTimeout(100); };
   if (FLEET) console.log(`fleet: ${FLEET}`);
+  console.log(`day: ${DAY}`);
   const named = [
     { name: 'first job · soonest tram', job: 'first', plan: 'soonest', seed: 1 },
     { name: 'first job · best total', job: 'first', plan: 'total', seed: 1 },
@@ -140,7 +166,7 @@ server.listen(0, '127.0.0.1', async () => {
     { name: 'first · soonest · every drop', job: 'first', plan: 'soonest', seed: 1, along: 'yes' },
   ];
   const results = [];
-  const run = async (policy, label) => { await boot(); const r = await playShift(page, policy); results.push({ label, policy, ...r }); return r; };
+  const run = async (policy, label) => { await boot(policy); const r = await playShift(page, policy); results.push({ label, policy, ...r }); return r; };
   console.log('NAMED POLICIES');
   for (const p of named) { const r = await run(p, p.name);
     console.log(`  ${r.won ? 'WIN ' : 'LOSS'} ${p.name.padEnd(30)} ${r.delivered} delivered at tick ${r.tick} · wait ${r.waitTicks} ride ${r.rideTicks} · catches ${r.catches} transfers ${r.transfers} · drops taken ${r.drops} made ${r.dropped} · ended ${r.lastKind}${r.activeJob ? ' on ' + r.activeJob : ''}`); }
@@ -156,12 +182,15 @@ server.listen(0, '127.0.0.1', async () => {
   }
   console.log(`\nRANDOM-BUT-SANE BOTS × ${N}`);
   let wins = 0; const byDelivered = [0, 0, 0, 0, 0, 0, 0], endedIn = {}, t0 = Date.now();
-  for (let i = 1; i <= N; i++) { const r = await run({ job: 'random', plan: 'random', seed: i, along: 'random', events: 'random' }, `random ${i}`);
+  for (let i = 1; i <= N; i++) { const r = await run({ job: 'random', plan: 'random', seed: i, along: 'random', events: 'random', walk: WALK }, `random ${i}`);
     if (r.won) wins++; byDelivered[Math.min(6, r.delivered)]++; endedIn[r.lastKind] = (endedIn[r.lastKind] || 0) + 1;
     if (i % 25 === 0) process.stdout.write(`  ${i}… `); }
   console.log(`\n  win rate ${(wins / N * 100).toFixed(1)}% · deliveries 0/1/2/3/4/5/6+: ${byDelivered.join(' / ')} · ended while ${JSON.stringify(endedIn)} · ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   const rnd = results.filter(r => r.policy.job === 'random');
   const avg = k => (rnd.reduce((a, r) => a + r[k], 0) / rnd.length).toFixed(0);
+  {const days=new Set(rnd.map(r=>r.day));console.log(`  day played: ${[...days].join(',')} · fleet ${rnd[0]?.fleet} vehicles · walk ×${rnd[0]?.walkFactor} · city holds ${avg('cityHolds')} · market drops offered ${avg('marketOffered')} taken ${avg('marketDrops')}`);}
+  console.log(`  mean score ${avg('score')} · walks taken ${avg('walks')} · catches on crowded families ${(() => { const fam = {}; for (const r of rnd) for (const [k, v] of Object.entries(r.catchesByFamily || {})) fam[k] = (fam[k] || 0) + v;
+    const total = Object.values(fam).reduce((a, b) => a + b, 0) || 1; return Object.entries(fam).sort((x, y) => y[1] - x[1]).map(([f, v]) => `${f}:${(v / total * 100).toFixed(1)}%`).join(' '); })()}`);
   console.log(`  mean waiting ${avg('waitTicks')}t · riding ${avg('rideTicks')}t · catches ${avg('catches')} · transfers ${avg('transfers')} · drops taken ${avg('drops')} made ${avg('dropped')} · events answered ${avg('eventsSeen')} (cost ${avg('eventCost')}t) · holds ${avg('holds')}\n  best streak ${avg('bestStreak')} · tips ${avg('tips')} · goodwill ${avg('goodwill')} · hand-offs taken ${avg('handoffs')}\n  rival delivered ${avg('rivalDelivered')} · jobs they took from you ${avg('rivalTook')} · stops visited ${avg('visited')}`);
   // First-job anatomy: how long from shift start to the first delivery.
   const firstDelivery = rnd.map(r => { const l = r.log.find(x => / OFF .* deliver| DROPPED/.test(x)); return l ? Number(l.split(':')[0]) : null; }).filter(x => x != null);

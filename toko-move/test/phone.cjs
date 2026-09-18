@@ -35,7 +35,7 @@ server.listen(0, '127.0.0.1', async () => {
   page.on('pageerror', e => errs.push(String(e).slice(0, 140)));
   page.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text().slice(0, 120)); });
 
-  await page.goto(`${base}/toko-move/`, { waitUntil: 'load' });
+  await page.goto(`${base}/toko-move/?shift=1&day=none`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__tm?.camera, null, { timeout: 30000 });
   const vp = await page.evaluate(() => ({ w: innerWidth, h: innerHeight }));
   ok(`the phone viewport is narrow and short (${vp.w}x${vp.h})`, vp.w < 500 && vp.h < 800);
@@ -257,7 +257,7 @@ server.listen(0, '127.0.0.1', async () => {
   for (const [label, w, h] of [['a real iPhone', 390, 844], ['an iPad in portrait', 820, 1180]]) {
     const c2 = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
     const p2 = await c2.newPage();
-    await p2.goto(`${base}/toko-move/`, { waitUntil: 'load' });
+    await p2.goto(`${base}/toko-move/?shift=1&day=none`, { waitUntil: 'load' });
     await p2.waitForFunction(() => window.__tm?.camera, null, { timeout: 30000 });
     await p2.tap('#play'); await p2.waitForTimeout(1500);
     await p2.waitForFunction(() => { const x = document.querySelector('#jobBoard .jobOffer:not([disabled])'); if (!x) return false; x.click(); return true; }, null, { timeout: 20000 }).catch(() => {});

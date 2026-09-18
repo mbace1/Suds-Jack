@@ -43,15 +43,18 @@ export const DISRUPTIONS=[
 export const BUDGET={encounters:3,disruptions:1,maxCostTicks:280};
 
 // The shift's schedule, from its seed alone.
-export function drawSchedule(seed,ticksPerDay=3000,lines=[]){const h=hash(`events:${seed}`),out=[];
- const n=Math.min(BUDGET.encounters,ENCOUNTERS.length),used=new Set;
+// `encounters` overrides the budget for a day that is about people being out
+// (HELSINKI DAY). Everything else about the draw is unchanged, so the same seed
+// on an ordinary day still deals the same three cards it always did.
+export function drawSchedule(seed,ticksPerDay=3000,lines=[],encounters=null){const h=hash(`events:${seed}`),out=[];
+ const n=Math.min(encounters||BUDGET.encounters,ENCOUNTERS.length),used=new Set;
  for(let i=0;i<n;i++){const k=(h>>>(i*4))&0xffff;let card=ENCOUNTERS[k%ENCOUNTERS.length];let guard=0;while(used.has(card.id)&&guard++<ENCOUNTERS.length)card=ENCOUNTERS[(k+guard)%ENCOUNTERS.length];used.add(card.id);
   const at=Math.round(ticksPerDay*(0.12+0.24*i)+(k%400));out.push({kind:'encounter',card,at});}
  if(BUDGET.disruptions&&lines.length){const k=(h>>>13)&0xffff,d=DISRUPTIONS[k%DISRUPTIONS.length],line=lines[(k>>3)%lines.length];out.push({kind:'disruption',card:d,line,at:Math.round(ticksPerDay*0.3+(k%(ticksPerDay*0.35)))});}
  return out.sort((a,b)=>a.at-b.at);}
 
 export class EventDirector{
- constructor(tm,seed=7){this.tm=tm;this.seed=seed;const lines=(tm.transit?.layers||[]).filter(l=>l.visible).map(l=>l.name);this.queue=drawSchedule(seed,tm.flow.clock.ticksPerDay,lines);this.pending=null;this.seen=[];this.busyUntil=0;this.holds=[];}
+ constructor(tm,seed=7,opts={}){this.tm=tm;this.seed=seed;this.goodwillFactor=opts.goodwill||1;const lines=(tm.transit?.layers||[]).filter(l=>l.visible).map(l=>l.name);this.queue=drawSchedule(seed,tm.flow.clock.ticksPerDay,lines,opts.encounters||null);this.pending=null;this.seen=[];this.busyUntil=0;this.holds=[];}
  // Called every tick after mobility. An encounter fires at the first moment
  // after its scheduled tick that the courier is where the card says.
  step(){const tm=this.tm,ch=tm.challenge,tick=tm.flow.clock.tick;if(this.pending)return false;const st=tm.mobility?.status?.();const here=st?.kind==='waiting'?'stop':st?.kind==='riding'?'aboard':st?.kind==='walking'?'walking':null;
@@ -64,7 +67,7 @@ export class EventDirector{
  activeHolds(){const t=this.tm.flow.clock.tick;return this.holds.filter(h=>t>=h.from&&t<h.until);}
  options(){const p=this.pending;if(!p)return[];const cargo=this.tm.challenge?.active?.cargo;return p.card.options.filter(o=>!o.needs||o.needs===cargo);}
  choose(i){const p=this.pending;if(!p)return{error:'nothing to answer'};const opts=this.options(),o=opts[i];if(!o)return{error:'no such option'};const ch=this.tm.challenge,tick=this.tm.flow.clock.tick;
-  if(o.cost)this.busyUntil=tick+o.cost;ch.goodwill=(ch.goodwill||0)+(o.goodwill||0);if(o.score){ch.score+=o.score;}
+  if(o.cost)this.busyUntil=tick+o.cost;ch.goodwill=(ch.goodwill||0)+(o.goodwill||0)*this.goodwillFactor;if(o.score){ch.score+=o.score;}
   if(o.teaches)this.tm.teachStreet?.(this.seed+tick);
   this.seen.push({id:p.card.id,option:o.label,cost:o.cost||0,tick});this.pending=null;
   ch.say?.(`${o.label}${o.cost?` · ${Math.round(o.cost/10)} s`:''}${o.score?` · +${o.score}`:''}`);return{ok:true,cost:o.cost||0};}
@@ -75,7 +78,7 @@ export class EventDirector{
 // line as a banner that clears when the hold lifts. Same slot discipline as
 // every other panel: it writes only into `eventCard`, first on the sheet.
 const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]||c));
-export function mountEvents(tm,seed=7){const dir=new EventDirector(tm,seed);tm.events=dir;
+export function mountEvents(tm,seed=7,opts={}){const dir=new EventDirector(tm,seed,opts);tm.events=dir;
  const ch=tm.challenge;const prev=ch.step;ch.step=()=>{const a=prev?prev():false;const b=dir.step();return a||b;};
  let last='';const render=()=>{const slot=tm.sheetSlot?.('eventCard');if(!slot)return;const p=dir.pending,holds=dir.activeHolds(),tick=tm.flow.clock.tick,busy=dir.busy();
   const key=`${p?.card.id||''}:${holds.map(h=>h.line+h.until).join(',')}:${busy?Math.floor((dir.busyUntil-tick)/10):''}`;if(key===last)return;last=key;

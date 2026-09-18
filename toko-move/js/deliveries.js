@@ -71,7 +71,8 @@ export class DeliveryChallenge{
   const est=this.estimate?.({stops:[from,to],cargo});
   if(Number.isFinite(est)&&est>0)return Math.round(est*DEADLINE_GRACE+30*scale);
   return Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*scale);}
- refreshOffers(){if(this.index>=this.target){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=90+dist*9+(cargo==='fragile'||cargo==='equipment'?35:0);cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
+ refreshOffers(){if(this.index>=this.target){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];
+  for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=90+dist*9+(cargo==='fragile'||cargo==='equipment'?35:0);cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
   // Loop 47: a procedural job is constrained by a network relationship, never
   // rolled blind. Measured before this: the first offer taken had no compatible
   // vehicle for 1204 ticks — two minutes of wall time on the tutorial job —
@@ -139,13 +140,45 @@ export class DeliveryChallenge{
  // which can see the layers) hands in candidates per boarding option —
  // [{line, from, to, between:[{id,name,lat,lon,pathIndex}]}] — and this picks
  // one per line by hash, from the middle of the leg, never rolled.
- alongOffers(cands){if(!this.active||!this.waitingForCatch||!Array.isArray(cands))return[];const out=[],seen=new Set;
+ alongOffers(cands){if(!this.active||!this.waitingForCatch||!Array.isArray(cands))return[];const out=[],seen=new Set,seenNames=new Set;
   for(const c of cands){const between=(c.between||[]).filter(st=>st?.id&&!seen.has(st.id)&&!this.along.some(j=>j.stops[1]===st.id));if(!between.length)continue;
-   const seed=hash(`${c.line?.label}:${c.from}:${c.to}:${this.index}`),lo=Math.floor(between.length*.2),hi=Math.max(lo+1,Math.ceil(between.length*.8)),pick=between[lo+seed%(hi-lo)];seen.add(pick.id);
+   // MARKET MORNING (city-events.js) is the one thing that gets a say in WHICH
+   // stop a route offers: if the day's market is on this leg it takes the pick
+   // and pays a premium for it, so a cluster of drops really is somewhere you
+   // route through rather than a number on a card. The name de-dupe is scoped
+   // to the market for a reason — two lines passing the same named market both
+   // pick it, and the general case is left exactly as it was so the ordinary
+   // day stays an honest control.
+   const seed=hash(`${c.line?.label}:${c.from}:${c.to}:${this.index}`),lo=Math.floor(between.length*.2),hi=Math.max(lo+1,Math.ceil(between.length*.8));
+   // A MARKET MORNING IS MORE WORK, not just better-paid work. One pick per
+   // line is what an ordinary day offers; on a market morning a line offers
+   // its ordinary stop AND the market quarter if it passes through one, which
+   // is what makes the day do something on every route rather than only on the
+   // routes that happen to run past Hakaniemi. Measured: ten shifts of the
+   // greedy route saw ZERO premium drops with the premium alone.
+   const mk=this.market?between.find(st=>this.atMarket(st)&&!seenNames.has(st.name)):null;
+   const ordinary=between[lo+seed%(hi-lo)];
+   // The NAME de-dupe is scoped to the market and stays scoped to it. Widening
+   // it to every day was measured moving the ordinary day's own numbers, which
+   // is the control drifting under the thing it is the control for.
+   const picks=(this.market?[mk,ordinary]:[ordinary]).filter(Boolean)
+     .filter(st=>!seen.has(st.id)&&(!this.market||!seenNames.has(st.name)))
+     .filter((st,i,a)=>a.findIndex(x=>x.id===st.id)===i);
+   for(const pick of picks){
+   seen.add(pick.id);seenNames.add(pick.name);
+   const isMk=pick===mk;
    const cargo=CARGO_KEYS[(seed>>>3)%CARGO_KEYS.length],passed=Math.max(1,between.indexOf(pick)+1);
-   out.push({id:`along:${this.index}:${c.line?.label}:${pick.id}`,stops:[c.from,pick.id],name:pick.name,lat:pick.lat,lon:pick.lon,label:`${this.name(c.from)} → ${pick.name}`,cargo,limit:this.active.limit,value:45+passed*12,line:c.line?.label,along:true});}
-  return out.slice(0,2);}
- acceptAlong(offer){if(!offer?.along||!this.active||!this.waitingForCatch)return{error:'drops are taken before boarding'};if(this.along.length>=2)return{error:'two drops is a full bag'};if(this.along.some(j=>j.stops[1]===offer.stops[1]))return{error:'already carrying one for that stop'};const c=CARGO[offer.cargo]||CARGO.documents;if(c.modes&&!c.modes.includes(this.cargoRule().modes?.[0]||'TRAM')){/* cargo rule is per main job; drops ride whatever you ride */}
+   const marketPay=isMk?1+(this.market.bonus||0):1;
+   out.push({id:`along:${this.index}:${c.line?.label}:${pick.id}`,stops:[c.from,pick.id],name:pick.name,lat:pick.lat,lon:pick.lon,label:`${this.name(c.from)} → ${pick.name}`,cargo,limit:this.active.limit,value:Math.round((45+passed*12)*marketPay),market:isMk,line:c.line?.label,along:true});}}
+  return out.slice(0,this.market?.offers||2);}
+ // Inside the market quarter: the named stop, or anything within its radius of
+ // the platforms that carry the name. Coordinates come from the pack (resolved
+ // in main), never from a constant in this file.
+ atMarket(st){const m=this.market;if(!m||!st)return false;if(st.name===m.name)return true;
+  if(!Number.isFinite(m.lat)||!Number.isFinite(m.radiusM))return false;
+  const lat=(m.lat+st.lat)*.5*Math.PI/180,dy=(m.lat-st.lat)*111320,dx=(m.lon-st.lon)*111320*Math.cos(lat);
+  return Math.hypot(dx,dy)<=m.radiusM;}
+ acceptAlong(offer){if(!offer?.along||!this.active||!this.waitingForCatch)return{error:'drops are taken before boarding'};if(this.along.length>=(this.market?.offers||2))return{error:'the bag is full'};if(this.along.some(j=>j.stops[1]===offer.stops[1]))return{error:'already carrying one for that stop'};const c=CARGO[offer.cargo]||CARGO.documents;if(c.modes&&!c.modes.includes(this.cargoRule().modes?.[0]||'TRAM')){/* cargo rule is per main job; drops ride whatever you ride */}
   this.along.push({...offer,acceptedAt:this.flow.clock.tick});this.say(`DROP ON THE WAY · ${CARGO[offer.cargo]?.icon||'JOB'} · ${offer.name||this.name(offer.stops[1])} · from aboard ${offer.line}`);return{job:offer};}
  // The vehicle is standing at `stopId`: anything in the bag for that stop is
  // handed over. Drops pay SCORE and count in their own tally; the shift's ask
