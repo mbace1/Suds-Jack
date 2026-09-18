@@ -267,6 +267,17 @@ export const TUNING = {
   // green, cool colors go deep venom — and it comes slow and grazeable.
   revenge: {
     speedMult: 0.6,          // revenge is slow — the graze game, not a wall
+    // v254 (playtest: 37 corpse bullets in flight at wave 2 in the default
+    // mode, classic 0.8; the bot died in two-thirds the time). Revenge is a
+    // SPECIES trait now, not a mode-wide rule: only these corpses bite back —
+    // the ten shooters, whose living fire is the one you already learned —
+    // and none before `fromWave`. Bosses always bite (a boss corpse is an
+    // arena event). `fieldCap` is live corpse bullets on the floor; a bloom
+    // that would exceed it is skipped. PROGRESSION_DESIGN.md §7 Q3/Q5.
+    biters: ['SPITTOR', 'FANNER', 'WEEVA', 'ORANGE_CUBE', 'PURP_CUBE',
+             'BAMBU', 'PYRA', 'BOTFLY', 'CLOAKER', 'DRAPER'],
+    fromWave: 3,
+    fieldCap: 24,
     // Dialect per species: revenge ECHOES the species' living attack family
     // but demands different play — AIMED spits a slow burst at your position
     // (move off the line), FAN throws a slow arc (sidestep wide), RING blooms

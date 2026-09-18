@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=206';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=206';
-import { Player, PLAYER_RADIUS } from './player.js?v=206';
+import { InputManager } from './input.js?v=207';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=207';
+import { Player, PLAYER_RADIUS } from './player.js?v=207';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=206';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=206';
-import { audio } from './audio.js?v=206';
-import { haptics } from './haptics.js?v=206';
-import { initDesigner } from './designer.js?v=206';
-import { createSpecimen } from './specimen.js?v=206';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=206';
-import { TUNING } from './tuning.js?v=206';
-import { Arena, rectShape } from './arena.js?v=206';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=206';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=206';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=206';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=207';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=207';
+import { audio } from './audio.js?v=207';
+import { haptics } from './haptics.js?v=207';
+import { initDesigner } from './designer.js?v=207';
+import { createSpecimen } from './specimen.js?v=207';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=207';
+import { TUNING } from './tuning.js?v=207';
+import { Arena, rectShape } from './arena.js?v=207';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=207';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=207';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=207';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -382,7 +382,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '253';
+const GAME_VERSION = '254';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -3816,8 +3816,9 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
       const a = (j / 8) * Math.PI * 2;
       // v253: at the same slow revenge speed as every other corpse — it was the
       // one full-speed bloom on the floor, and the one with the most bullets
-      bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
+      const vb = bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
         false, revengeColor(e.type), false, e.type, false, 6, TUNING.revenge.speedMult);
+      if (vb) vb.revenge = true;   // v254: counts toward the field cap
     }
     addShake(0.12);
   }
@@ -3832,9 +3833,15 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   // it demands its own strategy instead of imitating living fire.
   // v211: big bodies no longer split as a global rule — splitting is species
   // identity (SPLITTA/REDD_CUBE/PURP_CUBE spawn their own children).
-  if (meleeRun && src !== 'env' && gameState === 'playing' && bullets.active.length < 240) {
-    const R = TUNING.revenge;
+  // v254: a species trait, gated by wave, capped on the field (TUNING.revenge).
+  const R = TUNING.revenge;
+  const bites = e._isBoss || R.biters.includes(TYPE_KEY[e.type]);
+  let liveRevenge = 0;
+  if (meleeRun && bites) for (const b of bullets.active) if (b.revenge) liveRevenge++;
+  if (meleeRun && src !== 'env' && gameState === 'playing' && bites && wave >= R.fromWave
+      && liveRevenge < R.fieldCap && bullets.active.length < 240) {
     const col = revengeColor(e.type);
+    const rev = (...args) => { const b = bullets.spawnDir(...args); if (b) b.revenge = true; };
     const dialect = e._isBoss ? 'RING' : (R.byType[TYPE_KEY[e.type]] || R.fallback);
     if (dialect === 'AIMED' || dialect === 'FAN') {
       const D = dialect === 'AIMED' ? R.aimed : R.fan;
@@ -3844,16 +3851,14 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
       const baseA = bl > 1e-3 ? Math.atan2(bz, bx) : rng() * Math.PI * 2;   // v253: seeded — dailies
       for (let j = 0; j < D.count; j++) {
         const a = baseA + (j - (D.count - 1) / 2) * D.spread;
-        bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
-          false, col, false, e.type, false, 6, R.speedMult);
+        rev(e.position.x, e.position.z, Math.cos(a), Math.sin(a), false, col, false, e.type, false, 6, R.speedMult);
       }
     } else {
       const nRev = e._isBoss ? R.ring.boss : e.radius > R.ring.bigRadius ? R.ring.big : R.ring.small;
       const a0 = rng() * Math.PI * 2;   // v253: seeded — a daily diverged at its first bloom
       for (let j = 0; j < nRev; j++) {
         const a = a0 + (j / nRev) * Math.PI * 2;
-        bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
-          false, col, false, e.type, false, 6, R.speedMult);
+        rev(e.position.x, e.position.z, Math.cos(a), Math.sin(a), false, col, false, e.type, false, 6, R.speedMult);
       }
     }
   }
@@ -10665,7 +10670,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=206').then(async m => {
+  import('./editor.js?v=207').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10696,6 +10701,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=206').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=207').catch(() => {});
   });
 }
