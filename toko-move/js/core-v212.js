@@ -2,19 +2,19 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=14';
-import {TransitLayers} from './transit-layers.js?v=6';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=15';
+import {TransitLayers} from './transit-layers.js?v=7';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
-import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=5';
+import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=6';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
-import {SHIFT} from './live-network.js?v=10';
+import {SHIFT} from './live-network.js?v=11';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {dots,cargoGlyph,minutes} from './ui.js?v=1';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.40';
+const BUILD_VERSION='2.41';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -237,6 +237,9 @@ function clipToBoard(ctx){const r=boardRect();ctx.beginPath();ctx.rect(r.x,r.y,r
 // inspector takes it out of the key too, and a family added later appears
 // without anyone maintaining a list.
 function drawLegend(){if(!transit)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=viewRect();
+  // No key on a phone: seventeen chips over the bottom of a 390px map were the
+  // loudest thing on it, and every badge and every row already wears its line.
+  if($('map').width/d<600)return;
   // Grouped by COLOUR, not by family: M1 and M2 deliberately share one ink
   // because they share track across the whole board, and two identical orange
   // chips side by side would ask a question the map does not mean to raise.
@@ -304,7 +307,10 @@ function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=re
 // low September light the tramstop cover is painted in. Soft-light keeps the
 // line colours honest (test/board.mjs measures them on the paper, not on this);
 // it lifts the ground, never the ink.
-function paintDawn(ctx){if(!flow)return;const a=0.13*(1-Math.min(1,flow.clock.dayProgress));if(a<=0.005)return;const r=boardRect();ctx.save();ctx.globalCompositeOperation='soft-light';ctx.fillStyle=`rgba(255,190,130,${a.toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(90,50,25,${(a*0.2).toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.restore();}
+// Over the WHOLE canvas, not the board: the surround is the land grey now, and a
+// wash that stopped at the board edge lit the board and left the margins dark,
+// which put the black slab back that the grey had just removed.
+function paintDawn(ctx){if(!flow)return;const a=0.13*(1-Math.min(1,flow.clock.dayProgress));if(a<=0.005)return;const c=$('map'),r={x:0,y:0,w:c.width,h:c.height};ctx.save();ctx.globalCompositeOperation='soft-light';ctx.fillStyle=`rgba(255,190,130,${a.toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(90,50,25,${(a*0.2).toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.restore();}
 function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();ctx.save();ctx.strokeStyle=NIGHT.frame;ctx.lineWidth=1*d;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.restore();}
 
 // Stops and transfer spots. A transfer spot is the decision point of the whole
@@ -457,8 +463,8 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
     if(camera&&!transitView){const c=$('map');camera.step(dt,baseProjection(),c.width,c.height,courierLatLon());placeRail();paintRail();}
     if(transitView)drawTransitInspector();
     else{const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=NIGHT.surround;ctx.fillRect(0,0,c.width,c.height);
-      paintGround(ctx);
-      ctx.save();clipToBoard(ctx);paintDawn(ctx);
+      paintGround(ctx);paintDawn(ctx);
+      ctx.save();clipToBoard(ctx);
       drawTransit();drawStops();drawJobEnds();drawLegend();drawCredit();ctx.restore();drawBoardFrame();}
     if(flow.clock.tick%10===0)paintHud();}
   requestAnimationFrame(frame);}

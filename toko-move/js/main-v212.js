@@ -1,11 +1,11 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=43';
-import './route-choice.js?v=16';
-import {LiveNetwork,HEADWAY_MIN} from './live-network.js?v=10';
+import './core-v212.js?v=44';
+import './route-choice.js?v=17';
+import {LiveNetwork,HEADWAY_MIN} from './live-network.js?v=11';
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=3';
 import {MobilityController} from './mobility-v212.js?v=6';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
-import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=12';
+import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=13';
 import {mountEvents} from './events.js?v=3';
 import {mountRival} from './rival.js?v=1';
 import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=2';
@@ -15,7 +15,7 @@ import {Trails} from './trails.js?v=2';
 import {mountHubTactics} from './hub-tactics-v212.js?v=5';
 import {mountSkillMoments} from './moments-v212.js?v=1';
 import {mountRecovery} from './recovery-v212.js?v=3';
-const BUILD_VERSION='2.40';
+const BUILD_VERSION='2.41';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:HEADWAY_MIN,ticksPerDay:tm.flow.clock.ticksPerDay});tm.challenge.reachable=o=>reachableSoon(tm,o);tm.challenge.estimate=o=>planCost(tm,o);tm.planCostFrom=(from,to)=>planCost(tm,{stops:[from,to],cargo:tm.challenge.active?.cargo});tm.planEstimateOf=plan=>planEstimate(tm,plan);tm.shiftLog=new ShiftLog(tm);tm.trails=new Trails();tm.challenge.refreshOffers();tm.transferHubs=TRANSFER_HUBS;tm.walkStreets=WALK_STREETS;tm.walksFrom=walksFrom;tm.mobility=new MobilityController(tm);tm.interceptionOptions=()=>interceptionOptions(tm);tm.bestInterception=()=>bestInterception(tm);// THE CITY YOU KNOW. You know a way on foot when you have been to BOTH ends
 // of it — seeing a stop is what teaches you where it is. Owned here because
 // knowledge.js is pure and the mobility controller only needs to ask.
@@ -32,6 +32,7 @@ const relevantLines=()=>{const s=new Set(),ch=tm.challenge,st=tm.mobility?.statu
   const add=l=>{if(l?.label)s.add(l.label);if(l?.sourceId)s.add(l.sourceId);if(typeof l==='string')s.add(l);};
   add(st?.ride?.line);for(const leg of ch?.selectedPlan?.legs||[])add(leg?.line);
   for(const c of document.getElementById('routeChoices')?._choices||[])for(const leg of c?.legs||[])add(leg?.line);
+  for(const l of document.getElementById('jobBoard')?._lines||[])add(l);   // at dispatch: the lines the offers would put you on
   return s;};
 const drawInterception=()=>{const hit=bestInterception(tm);if(!hit)return;const b=nodePoint(hit.hub);if(!b)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1;ctx.save();ctx.fillStyle='#fffdf7';ctx.strokeStyle=hit.layer?.colour||'#233d4d';ctx.lineWidth=2*d;ctx.font=`bold ${Math.round(9*d)}px ui-monospace,monospace`;const text=`WALK ${hit.walkTicks}t · CATCH ${hit.line.label} +${hit.waitTicks}t · ${hit.timing}`,pad=6*d,w=ctx.measureText(text).width+pad*2,h=19*d,x=b.x-w/2,y=b.y-28*d;ctx.beginPath();ctx.roundRect(x,y,w,h,4*d);ctx.fill();ctx.stroke();ctx.fillStyle='#15262b';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,b.x,y+h/2);ctx.restore();};// THE COURIER IS A FIGURE, AND IS ON THE BOARD WHENEVER YOU ARE. It used to
 // be a navy dot marked W, and only while walking — standing at a stop you were
@@ -81,5 +82,5 @@ const rideStatus=()=>{const ch=tm.challenge,el=tm.sheetSlot?.('rideStatus');if(!
   if(!ch?.active||st?.kind!=='riding'||!ch.queued){if(el.innerHTML)el.innerHTML='';return;}
   const html=`<div style="margin-top:8px;padding:8px;border:2px solid #e2683c;border-radius:8px;background:#fff8ef;font-size:11px"><b>SECOND JOB ONBOARD</b> → ${ch.name(ch.queued.originalStops?.[1]||ch.queued.stops[1])}</div>`;
   if(el.innerHTML!==html)el.innerHTML=html;};
-const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){drawInterception();const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,filter=tm.fleetFilter?.();tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,priority:l=>rel.has(l?.name)||rel.has(l?.id)?2:1})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
+const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){drawInterception();const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,filter=tm.fleetFilter?.();tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,priority:l=>rel.has(l?.name)||rel.has(l?.id)?2:1,budget})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
 mount();

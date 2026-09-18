@@ -31,7 +31,7 @@ export const JOBS=[
  {stops:['kalasatama','olympiaterminaali'],label:'Harbour manifest south',cargo:'documents',limit:320,value:270},
  {stops:['olympiaterminaali','rautatientori'],label:'Final market run to Central',cargo:'market goods',limit:360,value:320}
 ];
-import {regularAt,standingOf,bumpStanding,loadStanding,saveStanding,tipFor} from './regulars.js?v=1';
+import {regularAt,standingOf,bumpStanding,loadStanding,saveStanding,tipFor} from './regulars.js?v=2';
 const sameNodes=(a,b)=>a.length===b.length&&a.every((n,i)=>n===b[i]);
 const CARGO_KEYS=Object.keys(CARGO);
 const DESTINATIONS=['rautatientori','hakaniemi','sornainen','kalasatama','pasila','toolontori','kamppi','kauppatori','katajanokka','lansiterminaali','hietalahti','meilahti','arabia','olympiaterminaali','eira','kapyla','messukeskus','lasipalatsi','ooppera','senaatintori'];

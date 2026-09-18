@@ -137,7 +137,11 @@ export const METRO_INK = '#e2531f';
 // paper, not the old one.
 export const NIGHT = {
   paper:     '#22282d',   // the board itself — land at night
-  surround:  '#171b1f',   // the canvas outside the board
+  surround:  '#22282d',   // the canvas outside the board: the SAME grey as
+                          // the land, and the frame line says where the data
+                          // ends. It was near-black, and a wide canvas at CITY
+                          // scale showed the board as a slab on a black sheet
+                          // with a fifth of the screen dead each side (v2.41)
   water:     '#12293d',   // "dark blue for water", the owner's one contrast
   waterFill: '#173a58',
   waterEdge: '#2a5f88',   // the coastline, one step up so it reads as an edge
