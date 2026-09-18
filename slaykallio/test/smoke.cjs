@@ -355,7 +355,12 @@ const check = (name, ok, extra = '') => {
   // shadow side of a figure facing away from the torch), and the diff proves
   // the picture actually changed by more than a nick's worth
   check(`a mutated rat is not the same drawing as a rat — it has grown eyes (${mut.grew?.eyes ?? 0} eyes, ${mut.grew?.boils ?? 0} boils, ${mut.differ} px differ)`, !mut.plainGrew && (mut.grew?.eyes ?? 0) >= 3 && mut.differ > 400);
-  await page.evaluate(() => { const st = __sk.state(); st.act = 1; __sk.engine.buildRoute(st, 1); st.route.step = 6; __sk.debug.jumpTo(__sk.engine ? [...Array(__sk.debug.encounterCount()).keys()].find(i => __sk.debug.encounterName(i, 'kallio') === 'The Sermon') : 0); __sk.flush(); });
+  // v43 — an ACT-THREE fight, because `jumpTo` resolves the act from the
+  // encounter's own pools: The Sermon is in act two's pool as well, so asking
+  // for it from the last act walked the hour back to the evening and the row
+  // spawned at mutation 1. Night is act three now, so the check has to name a
+  // fight only act three has.
+  await page.evaluate(() => { const st = __sk.state(); st.act = 2; __sk.engine.buildRoute(st, 2); __sk.debug.jumpTo([...Array(__sk.debug.encounterCount()).keys()].find(i => __sk.debug.encounterName(i, 'kallio') === 'Something Moves')); __sk.flush(); });
   await page.waitForTimeout(150);
   check('a night fight names its enemies as mutated on the label', await page.evaluate(() => [...document.querySelectorAll('.unit.enemy .name')].every(n => /✶/.test(n.textContent)) && __sk.state().enemies.every(e => e.mutated === 2)));
   check('and the HUD says it is night', /night/.test(await page.locator('#where').innerText()));

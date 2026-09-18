@@ -33,22 +33,28 @@ const chars = Object.keys(CHARACTERS);
 // ── win rate, and WHERE the run ends ─────────────────────────────────────
 const rates = {};
 const losses = {};
-const act2 = {};
+// v43 — one reach column per act beyond the first, read off ACTS. With three
+// acts a single "reached act two" number hides the half of the run where most
+// of them now end.
+const reach = {};
 for (const ch of chars) {
   let wins = 0;
+  reach[ch] = ACTS.map(() => 0);
   for (let seed = 1; seed <= SEEDS; seed++) {
     const s = botRun(startRun(createRun({ seed, character: ch })));
     if (s.phase === 'won') wins++;
     else losses[s.encounter] = (losses[s.encounter] || 0) + 1;
-    if (s.act >= 1) (act2[ch] = (act2[ch] || 0) + 1);
+    for (let i = 1; i <= s.act; i++) reach[ch][i]++;
   }
   rates[ch] = wins / SEEDS;
 }
 
 console.log(`\n── win rate over ${SEEDS} seeds ──`);
+console.log(`  ${'character'.padEnd(10)}   win${ACTS.slice(1).map((_, i) => `   reach ${i + 2}`).join('')}`);
 for (const ch of chars) {
-  const pct = Math.round(rates[ch] * 100), a2 = Math.round((act2[ch] || 0) / SEEDS * 100);
-  console.log(`  ${ch.padEnd(10)} ${String(pct).padStart(3)}% win  ${String(a2).padStart(3)}% reach act 2  ${'█'.repeat(Math.round(pct / 3))}`);
+  const pct = Math.round(rates[ch] * 100);
+  const cols = ACTS.slice(1).map((_, i) => `${String(Math.round(reach[ch][i + 1] / SEEDS * 100)).padStart(8)}%`).join('');
+  console.log(`  ${ch.padEnd(10)} ${String(pct).padStart(4)}%${cols}  ${'█'.repeat(Math.round(pct / 3))}`);
 }
 const lo = Math.min(...Object.values(rates)), hi = Math.max(...Object.values(rates));
 console.log(`  spread ${Math.round((hi - lo) * 100)} points`);

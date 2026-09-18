@@ -11,7 +11,7 @@
 ## 1. What it is
 
 A single-player deckbuilder fought on a **thick plank bridge** over a Kallio
-canal. You pick one of six bums, walk two acts of six spans each, and either
+canal. You pick one of six bums, walk three acts of six spans each, and either
 take the last one or end up flat on the boards. Every fight is cards: play them from a hand of
 five against three energy, watch what the other side has already told you it is
 about to do, and get your arithmetic bigger than theirs.
@@ -225,15 +225,30 @@ cards, an Eldritch night theme: the run starts in daylight, and as evening
 comes things start mutating.** That supersedes what this section and §9 said
 before (a map "comes later"; no upgrades; one act). What shipped as v11:
 
-**Two acts, and a choice at every span.** The route is rolled from the seed up
+**Three acts, and a choice at every span.** The route is rolled from the seed up
 front (`engine.buildRoute`): at each of an act's six steps you are offered two
 or three spans — a fight, an elite, an event, a rest — and the act ends on its
 boss. The rules the gate holds: the first step is fights only; an elite is
 never offered before the third step and always by the fifth; a rest is always
 among the last step's options; no step offers the same span twice. The
-encounter pool is thirty-two, split by act (`ACTS` in `data.js`); act one is
+encounter pool is forty-seven, split by act (`ACTS` in `data.js`); act one is
 the canal bridge and ends on the Bridge King, act two is under the bear and
-ends on **the Bear** — the Karhupuisto statue from the plate, woken.
+ends on **the Bear** — the Karhupuisto statue from the plate, woken — and act
+three (v43) is **In The Water**, ending on **the Mother**, who has eight moves
+and four conditions on them.
+
+The acts are what the HOUR is measured against, and since v43 that is literal:
+`DUSK` and `NIGHT` are derived from `ACTS` rather than typed, so act one is the
+daylight act, act two the evening and act three the night from its first span.
+A fourth act would move them without anybody editing a number.
+
+**The cost of the third act is recorded rather than tuned away.** Against a v42
+checkout, `native` over 150 seeds a character goes 26% (two acts) → 9% (three),
+of which the new cards are worth +2 — the run is now a product of three boss
+checks and the draft does not make the player arrive at the last one stronger
+(act-three arrivals carry 18 cards, exactly what act-two arrivals carried). The
+ascension ladder in §8b was measured against a two-act run and is compressed
+with it. Both are open.
 
 **The hour.** `hourOf(state)` runs 0 → 1 across the whole route. The world is
 lit for it (three rigs per skin — day, evening, night — lerped by the arena)

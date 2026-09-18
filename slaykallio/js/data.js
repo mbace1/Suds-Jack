@@ -578,6 +578,132 @@ export const CARDS = {
     effects: [{ type: 'block', n: 4 }, { type: 'draw', n: 1 }],
     kallio: { name: 'Cold Night' }, fantasy: { name: 'Long Watch' } },
 
+  // ═══ v43 — THE THIRD ACT'S CARDS ════════════════════════════════════════
+  // Two things the pool did not have, and a third act is what made both of
+  // them show.
+  //
+  //   1. A CARD THAT KNOWS WHAT TIME IT IS. Every scale axis in the game reads
+  //      a fight resource, so every card was worth the same in the first span
+  //      as in the last. `dark` reads the RUN — the same 0/1/2 that decides
+  //      whether what you are fighting is mutated — so one of these drafted in
+  //      the daylight act is a bet on getting to the water, and reads as one on
+  //      its face. That is what a rarity tier is supposed to MEAN, and it is
+  //      the only axis here that cannot be farmed inside a fight.
+  //   2. AN ANSWER TO A ROW. Act three's rosters are wider than act one's and
+  //      every class rare in the game was single-target, so the thing a long
+  //      run most wanted to draft did not exist. Each class gets ONE, and it is
+  //      that class's own axis pointed at the whole row rather than a new verb.
+  //
+  // Everything here is uncommon or rare on purpose: `rarityByAct` offers five
+  // rares of eleven cards by act three, and before this pass the pool held 24
+  // of them, so the third act was showing the same rares to the same deck.
+
+  // ─ drinker
+  round_for_the_house: { char: 'drinker', type: 'attack', cost: 2, target: 'all', rarity: 'rare', pic: 'bottle',
+    effects: [{ type: 'damage', n: 3, scale: 'buzz', per: 1 }],
+    kallio: { name: 'Round For The House' }, fantasy: { name: 'A Cup For Everyone' } },
+  night_cap: { char: 'drinker', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'can',
+    effects: [{ type: 'damage', n: 4, scale: 'dark', per: 4 }, { type: 'status', who: 'self', key: 'buzz', n: 2 }],
+    kallio: { name: 'Nightcap' }, fantasy: { name: 'The Last Draught' } },
+
+  // ─ busker
+  street_choir: { char: 'busker', type: 'attack', cost: 2, target: 'all', rarity: 'rare', pic: 'crowd',
+    effects: [{ type: 'damage', n: 2, scale: 'played', per: 2 }],
+    kallio: { name: 'Street Choir' }, fantasy: { name: 'The Chorus' } },
+  cold_fingers: { char: 'busker', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'guitar',
+    effects: [{ type: 'damage', n: 5, scale: 'dark', per: 3 }],
+    kallio: { name: 'Cold Fingers' }, fantasy: { name: 'Numb Hands' } },
+
+  // ─ collector
+  the_whole_canal: { char: 'collector', type: 'attack', cost: 2, target: 'all', rarity: 'rare', pic: 'haul',
+    effects: [{ type: 'damage', n: 0, scale: 'hand', per: 3 }],
+    kallio: { name: 'The Whole Canal' }, fantasy: { name: 'The Whole Reach' } },
+  after_hours: { char: 'collector', type: 'skill', cost: 0, target: 'self', rarity: 'uncommon', pic: 'bin',
+    effects: [{ type: 'addCard', id: 'find', n: 1 }, { type: 'block', n: 2, scale: 'dark', per: 3 }],
+    kallio: { name: 'After Hours' }, fantasy: { name: 'The Late Round' } },
+
+  // ─ cart. The one card in the game that compounds the thing it reads: half
+  // of what you are already holding, added to it. On a deck with retainBlock
+  // it is a multiplier across turns rather than a number on one.
+  double_stacked: { char: 'cart', type: 'skill', cost: 1, target: 'self', rarity: 'rare', pic: 'stack',
+    effects: [{ type: 'block', n: 0, scale: 'block', per: 1, div: 2 }],
+    kallio: { name: 'Double Stacked' }, fantasy: { name: 'Stacked High' } },
+  // The cart's answer to a row: the wall, swung. The neutral `the_wall` is the
+  // same idea without a floor - this one is worth playing on the turn you put
+  // the block up rather than the turn after.
+  broadside: { char: 'cart', type: 'attack', cost: 2, target: 'all', rarity: 'rare', pic: 'cart',
+    effects: [{ type: 'damage', n: 4, scale: 'block', per: 1, div: 2 }],
+    kallio: { name: 'Broadside' }, fantasy: { name: 'The Swung Wall' } },
+  night_load: { char: 'cart', type: 'skill', cost: 1, target: 'self', rarity: 'uncommon', pic: 'cart',
+    effects: [{ type: 'block', n: 4, scale: 'dark', per: 4 }],
+    kallio: { name: 'Night Load' }, fantasy: { name: 'The Dusk Haul' } },
+
+  // ─ walker
+  both_off_the_lead: { char: 'walker', type: 'attack', cost: 2, target: 'all', rarity: 'rare', pic: 'dog',
+    effects: [{ type: 'damage', n: 0, scale: 'fetch', per: 1, div: 2 }],
+    kallio: { name: 'Both Off The Lead' }, fantasy: { name: 'Loose The Pack' } },
+  night_walk: { char: 'walker', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'stick',
+    effects: [{ type: 'damage', n: 3, scale: 'dark', per: 4 }, { type: 'status', who: 'self', key: 'fetch', n: 4 }],
+    kallio: { name: 'Night Walk' }, fantasy: { name: 'The Dark Round' } },
+
+  // ─ boxer
+  wild_swing: { char: 'boxer', type: 'attack', cost: 2, target: 'all', rarity: 'rare', pic: 'glove',
+    effects: [{ type: 'damage', n: 2, scale: 'thorns', per: 1 }],
+    kallio: { name: 'Wild Swing' }, fantasy: { name: 'The Wide Blow' } },
+  cut_eye: { char: 'boxer', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'bell',
+    effects: [{ type: 'damage', n: 5, scale: 'dark', per: 3 }, { type: 'status', who: 'self', key: 'thorns', n: 2 }],
+    kallio: { name: 'Cut Eye' }, fantasy: { name: 'Opened Brow' } },
+
+  // ═══ NEUTRAL — THE WATER, AND THE HOUR ══════════════════════════════════
+  dusk_work: { type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'lamp',
+    effects: [{ type: 'damage', n: 4, scale: 'dark', per: 3 }],
+    kallio: { name: 'Dusk Work' }, fantasy: { name: 'Evening Labour' } },
+  the_long_dark: { type: 'skill', cost: 1, target: 'self', rarity: 'uncommon', pic: 'rain',
+    effects: [{ type: 'block', n: 5, scale: 'dark', per: 4 }],
+    kallio: { name: 'The Long Dark' }, fantasy: { name: 'The Long Night' } },
+  // RARE: 3 to the row by day and 17 at night. Nearly a dead card in act one
+  // and the best card in the deck in act three, which is the whole argument
+  // for the axis - a draft you make for a place you have not reached yet.
+  nightfall_card: { type: 'attack', cost: 2, target: 'all', rarity: 'rare', pic: 'moon',
+    effects: [{ type: 'damage', n: 3, scale: 'dark', per: 7 }],
+    kallio: { name: 'Nightfall' }, fantasy: { name: 'The Turning Hour' } },
+  cold_water: { type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'water',
+    effects: [{ type: 'block', n: 4 }],
+    kallio: { name: 'Cold Water' }, fantasy: { name: 'Cold Shock' } },
+  undertow: { type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'water',
+    effects: [{ type: 'damage', n: 6 }, { type: 'status', who: 'target', key: 'weak', n: 1 }],
+    kallio: { name: 'Undertow' }, fantasy: { name: 'The Pull Below' } },
+  driftwood: { type: 'attack', cost: 1, target: 'enemy', rarity: 'common', pic: 'stick',
+    effects: [{ type: 'damage', n: 4, scale: 'discard', per: 1, div: 3 }],
+    kallio: { name: 'Driftwood' }, fantasy: { name: 'Flotsam' } },
+  treading_water: { type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'water',
+    effects: [{ type: 'block', n: 5 }, { type: 'heal', n: 2 }],
+    kallio: { name: 'Treading Water' }, fantasy: { name: 'Staying Up' } },
+  hook_and_line: { type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'hook',
+    effects: [{ type: 'damage', n: 4 }, { type: 'draw', n: 1 }],
+    kallio: { name: 'Hook And Line' }, fantasy: { name: 'Line And Barb' } },
+  // Feeds `exhausted` and `free` at once: a card off the end of your hand
+  // becomes the energy to play the next one.
+  the_grate: { type: 'skill', cost: 1, target: 'self', rarity: 'uncommon', pic: 'grate',
+    effects: [{ type: 'exhaustHand', n: 1 }, { type: 'energy', n: 1 }, { type: 'draw', n: 1 }],
+    kallio: { name: 'The Grate' }, fantasy: { name: 'The Sluice' } },
+  drowned_weight: { type: 'attack', cost: 2, target: 'enemy', rarity: 'uncommon', pic: 'water',
+    effects: [{ type: 'damage', n: 6, scale: 'missing', per: 1, div: 4 }],
+    kallio: { name: 'Drowned Weight' }, fantasy: { name: 'Dead Weight' } },
+  salvage: { type: 'skill', cost: 1, target: 'self', rarity: 'uncommon', pic: 'coin',
+    effects: [{ type: 'draw', n: 1 }, { type: 'addCard', id: 'find', n: 1 }],
+    kallio: { name: 'Salvage' }, fantasy: { name: 'Scavenged' } },
+  // RARE: three cards for nothing, and you take the turn Frail for it. A real
+  // price rather than an exhaust - the block you would have made this turn is
+  // what pays for the hand.
+  slack_water: { type: 'skill', cost: 0, target: 'self', rarity: 'rare', exhaust: true, pic: 'water',
+    effects: [{ type: 'draw', n: 3 }, { type: 'status', who: 'self', key: 'frail', n: 1 }],
+    kallio: { name: 'Slack Water' }, fantasy: { name: 'Still Water' } },
+  // RARE: the card that is best when you should not be playing it.
+  the_deep_end: { type: 'attack', cost: 3, target: 'enemy', rarity: 'rare', pic: 'water',
+    effects: [{ type: 'damage', n: 8, scale: 'missing', per: 1, div: 3 }],
+    kallio: { name: 'The Deep End' }, fantasy: { name: 'The Drowning Deep' } },
+
   soaked: { type: 'curse', cost: null, target: 'self', rarity: 'curse', pic: 'rain', effects: [],
     kallio: { name: 'Soaked' }, fantasy: { name: 'Soaked' } },
   hangover: { type: 'curse', cost: null, target: 'self', rarity: 'curse', pic: 'rain', effects: [],
@@ -799,9 +925,19 @@ export const ENEMIES = {
     ],
     kallio: { name: 'Tar Blob', look: { body: '#2a2622', wing: '#1a1816', head: '#4a4440', beak: '#0e0c0a', shape: 'blob', glossy: true } },
     fantasy: { name: 'Pitch Ooze', look: { body: '#24202a', wing: '#16141a', head: '#463c4a', beak: '#0c0a10', shape: 'blob' } } },
-  blob_spawn: { hp: 14, pattern: 'cycle', scale: 0.55,
+  // v43 — the one act-three span the ledger called a dud. Four of these cost
+  // `native` 2.6 HP and killed 2% of the runs that met them: a fight you have
+  // outgrown by the time it is offered, which is exactly what v35 named as act
+  // two's disease and what act three inherited. The fix is the CONDITION, not
+  // the numbers - while there are three or more of them they feed each other
+  // instead of swinging, so killing them slowly is punished and an answer to
+  // the row is rewarded. It is a punish because it DISPLACES a slap: a
+  // conditional move replaces the rotation's next move, so +1 strength to the
+  // whole row has to be worth more than the 5 damage it did not deal.
+  blob_spawn: { hp: 16, pattern: 'cycle', scale: 0.55,
     moves: [
-      { id: 'slap', intent: 'attack', dmg: 4 },
+      { id: 'swell', when: 'crowded', intent: 'buff', who: 'all', status: { key: 'strength', n: 1 } },
+      { id: 'slap', intent: 'attack', dmg: 5 },
       { id: 'mutate', intent: 'buff', status: { key: 'strength', n: 1 } },
     ],
     kallio: { name: 'Blob Spawn', look: { body: '#7a8a3a', wing: '#5a6a28', head: '#9aaa4a', beak: '#2a3410', shape: 'blob' } },
@@ -991,6 +1127,65 @@ export const ENEMIES = {
     ],
     kallio: { name: 'The Crowbar', look: { skin: '#c09878', hair: '#4a3c2c', hairStyle: 'shaggy', top: '#3a4658', bottom: '#33313a', shoes: '#d8d4cc', hat: 'none', prop: 'plank', accent: '#6a9ac8', base: 'card', grime: 0.7, shape: 'person' } },
     fantasy: { name: 'The Prybar', look: { skin: '#c09878', hair: '#4a3c2c', hairStyle: 'shaggy', top: '#34405a', bottom: '#2e2c38', shoes: '#c8c4bc', hat: 'none', prop: 'plank', accent: '#6a8ac8', base: 'card', grime: 0.6, shape: 'person' } } },
+  // ═══ v43 — ACT THREE: THE WATER ═════════════════════════════════════════
+  // The arc was always going down. Act one is the bridge OVER the canal, act
+  // two is under the bear in the park, and act three is IN it - the water, the
+  // drain, and what the canal has been making all along while you walked over
+  // the top of it. `hourOf` spreads across however many acts there are, so a
+  // third one stretches the day-to-night curve rather than needing a new one:
+  // act three is entirely past `nightfall` 2, which means EVERYTHING down here
+  // arrives mutated. That is the owner's brief landing at last - "as evening
+  // comes, things start mutating" has an end it was walking toward.
+  eel: { hp: 34, pattern: 'cycle', scale: 0.7,
+    moves: [
+      { id: 'coil', intent: 'buff', block: 8, status: { key: 'thorns', n: 2 } },
+      { id: 'snap', intent: 'attack', dmg: 11 },
+      { id: 'shock', intent: 'debuff', dmg: 6, status: { key: 'weak', n: 2 } },
+    ],
+    kallio: { name: 'Canal Eel', look: { body: '#3a4a42', wing: '#26322c', head: '#4a5c50', beak: '#8a7a4a', shape: 'blob' } },
+    fantasy: { name: 'Sump Serpent', look: { body: '#2e3a48', wing: '#1e2630', head: '#3c4a5a', beak: '#6a6a8a', shape: 'blob' } } },
+  // ELITE. The drain has been taking things for a century and it is full.
+  the_drain: { hp: 88, elite: true, pattern: 'cycle', scale: 1.1,
+    moves: [
+      { id: 'undertow', when: 'walled', intent: 'attack', dmg: 18, status: { key: 'frail', n: 2 } },
+      { id: 'pull', intent: 'attack', dmg: 14 },
+      { id: 'churn', intent: 'debuff', status: { key: 'vulnerable', n: 2 }, status2: { key: 'frail', n: 1 } },
+      { id: 'swallow', intent: 'attack', dmg: 8, times: 2 },
+    ],
+    kallio: { name: 'The Drain', look: { body: '#2e3634', wing: '#1c2220', head: '#3e4a46', beak: '#141a18', shape: 'blob' } },
+    fantasy: { name: 'The Maw', look: { body: '#28303a', wing: '#181e26', head: '#38424e', beak: '#101418', shape: 'blob' } } },
+  // ═══ THE BOSS ═══════════════════════════════════════════════════════════
+  // THE MOTHER. Every blob you have killed since the first span came off her,
+  // which is why the roster has spawned things from act one and why the act
+  // three boss needed no new painter: she is the blob line's own end.
+  // She is the MOST REACTIVE thing in the game, and deliberately - v40 made
+  // the Bear read the board on one condition and the difference was the whole
+  // version, so a final boss reads it on FOUR. She sizes up a healthy hero
+  // (`hale`), answers a wall (`walled`), finishes one who is bleeding, and has
+  // a single second wind at half. Nothing she does is a new mechanic; every
+  // rung of her is a lever the engine already had, which is v36's rule.
+  the_mother: { hp: 178, boss: true, pattern: 'cycle', scale: 1.5,
+    moves: [
+      { id: 'sizes_you_up', when: 'hale', once: true, intent: 'attack', dmg: 26,
+        status: { key: 'vulnerable', n: 2 } },
+      // ONCE, and that is the whole difference between a reaction and a
+      // spiral. `bleeding` reads the HERO rather than the row, so on a boss
+      // fight it holds for every turn after the first bad one - and a
+      // conditional move REPLACES the rotation's next move, so a recurring
+      // one collapses an eight-move boss into a single 22 every turn from
+      // the moment you are hurt. She gets one lunge when she smells it.
+      // `floods` below stays recurring on purpose: `walled` reads a CHOICE
+      // you keep making, so you can stop making it.
+      { id: 'closes', when: 'bleeding', once: true, intent: 'attack', dmg: 22 },
+      { id: 'floods', when: 'walled', intent: 'attack', dmg: 22, status: { key: 'frail', n: 2 } },
+      { id: 'the_turn', when: 'hurt', once: true, intent: 'buff', status: { key: 'strength', n: 3 }, block: 20 },
+      { id: 'swell', intent: 'attack', dmg: 13, times: 2 },
+      { id: 'brood', intent: 'buff', block: 16, status: { key: 'thorns', n: 4 } },
+      { id: 'the_cold', intent: 'debuff', status: { key: 'weak', n: 2 }, status2: { key: 'frail', n: 2 } },
+      { id: 'takes_it_back', intent: 'attack', dmg: 24 },
+    ],
+    kallio: { name: 'The Mother', look: { body: '#4a5a4a', wing: '#2e3a2e', head: '#6a7c5a', beak: '#141a12', shape: 'blob' } },
+    fantasy: { name: 'The Brood', look: { body: '#3a4a5a', wing: '#242e3a', head: '#5a6c7c', beak: '#101418', shape: 'blob' } } },
   the_bear: { hp: 140, boss: true, pattern: 'cycle', scale: 1.32,
     moves: [
       // v40. The one boss in the game that read NOTHING. Seven ordinary enemies
@@ -1109,6 +1304,38 @@ export const ENCOUNTERS = [
     kallio: { name: 'He Waits For The Limp' }, fantasy: { name: 'The Red Hood Waits' } },
   { id: 'debt', enemies: ['debt', 'crowbar'], reward: ['card', 'joker'],
     kallio: { name: 'Somebody Sent Him' }, fantasy: { name: 'The Tithe Is Due' } },
+  // ─ act three: in the water. Ten fights, two elites and the Mother. Built
+  // mostly out of ROSTERS rather than new enemies, which is v35's finding: what
+  // gave act two a middle was pairings that can kill you, not bigger numbers.
+  // Everything here arrives at nightfall 2 (+30% HP and a Strength) because
+  // act three is entirely past dusk - so a roster that would be ordinary in
+  // act one is a real fight down here without a single new stat.
+  { id: 'eels', enemies: ['eel', 'eel'], reward: ['card'],
+    kallio: { name: 'Something Moves' }, fantasy: { name: 'The Water Stirs' } },
+  { id: 'drowned_one', enemies: ['night_shift', 'eel', 'eel'], reward: ['card'],
+    kallio: { name: 'He Never Clocked Off' }, fantasy: { name: 'The Endless Shift' } },
+  { id: 'dredgers', enemies: ['hardhat', 'crowbar', 'crowbar'], reward: ['card'],
+    kallio: { name: 'They Work In Threes' }, fantasy: { name: 'The Wrecking Crew' } },
+  { id: 'spawnfall', enemies: ['blob_spawn', 'blob_spawn', 'blob_spawn', 'blob_spawn'], reward: ['card'],
+    kallio: { name: 'It Came Apart' }, fantasy: { name: 'The Splitting' } },
+  { id: 'deep_tar', enemies: ['tar_blob', 'tar_blob', 'eel'], reward: ['card', 'joker'],
+    kallio: { name: 'The Pitch Below' }, fantasy: { name: 'The Black Pool' } },
+  { id: 'drowned_crew', enemies: ['hard_case', 'scrapper', 'eel'], reward: ['card'],
+    kallio: { name: 'Two Who Went In' }, fantasy: { name: 'Those Who Sank' } },
+  { id: 'hookers', enemies: ['debt', 'fence', 'eel'], reward: ['card'],
+    kallio: { name: 'Paid To Look' }, fantasy: { name: 'The Hired Hooks' } },
+  { id: 'nest', enemies: ['bin_rat', 'bin_rat', 'boss_rat'], reward: ['card', 'joker'],
+    kallio: { name: 'The Nest Under It' }, fantasy: { name: 'The Warren' } },
+  { id: 'cold_flock', enemies: ['gull', 'gull', 'sable'], reward: ['card'],
+    kallio: { name: 'They Wait For The Cold' }, fantasy: { name: 'The Cold Wake' } },
+  { id: 'last_rivals', enemies: ['rival_b', 'chancer', 'bottle_thief'], reward: ['card'],
+    kallio: { name: 'The Last Of Them' }, fantasy: { name: 'The Last Watch' } },
+  { id: 'drain', enemies: ['the_drain', 'eel'], reward: ['card', 'joker', 'artifact'],
+    kallio: { name: 'What The Drain Kept' }, fantasy: { name: 'The Maw Opens' } },
+  { id: 'bouncer_night', enemies: ['bouncer', 'eel', 'eel'], reward: ['card', 'joker', 'artifact'],
+    kallio: { name: 'He Never Went Home' }, fantasy: { name: 'The Doorman Endures' } },
+  { id: 'mother', enemies: ['the_mother'], reward: [],
+    kallio: { name: 'What The Canal Made' }, fantasy: { name: 'The Brood Wakes' } },
 ];
 
 // Each act draws its spans from these. `steps` is how many spans you choose
@@ -1124,6 +1351,14 @@ export const ACTS = [
       'bat', 'sable', 'debt', 'chancers', 'chance_rat'],
     elites: ['gull_king', 'rat_court'],
     kallio: { name: 'Under The Bear' }, fantasy: { name: 'The Stone Watch' } },
+  // ACT THREE. Six steps like the others - the run is longer by an act, not by
+  // a longer act, because v35 measured that what a middle needs is fights that
+  // can kill you rather than more of them.
+  { id: 'water', steps: 6, boss: 'mother',
+    fights: ['eels', 'drowned_one', 'dredgers', 'spawnfall', 'deep_tar', 'drowned_crew',
+      'hookers', 'nest', 'cold_flock', 'last_rivals'],
+    elites: ['drain', 'bouncer_night'],
+    kallio: { name: 'In The Water' }, fantasy: { name: 'The Drowned Deep' } },
 ];
 
 // ── events ───────────────────────────────────────────────────────────────
@@ -1393,6 +1628,7 @@ export const RULES = {
   rarityByAct: [
     { common: 6, uncommon: 3, rare: 1 },   // act one: floors you can always play
     { common: 3, uncommon: 4, rare: 3 },   // act two: by now a deck can reach a ceiling
+    { common: 2, uncommon: 4, rare: 5 },   // act three: a built deck is shopping for ceilings
   ],
   // The free-draw chain is bounded so the card's face can promise a number,
   // and so a hand of conjured 0-cost Bottles is a CHAIN with an end rather

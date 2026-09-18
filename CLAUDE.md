@@ -900,7 +900,7 @@ him second only to the Cart Pusher and turns "mostly wears off" into "half
 stays", which is a different character. Withdrawn: GDD §6's *"Numbers will not
 fix that"* — the numbers tried were sizes of a thing that reset; the carry is
 what stops the reset.
-Gates: `node slaykallio/test/core.mjs` (761 checks) and
+Gates: `node slaykallio/test/core.mjs` (863 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
@@ -1018,6 +1018,56 @@ rung 5's boss hits harder and the intent line quotes the bigger number.
 it is kept OUT of `LOOK_KEYS`: v30 drops a stored look older than the house
 answer, and doing that to a difficulty somebody earned is the same bug with the
 sign flipped. Stored per character, raised by ONE and only by a WIN.
+**ACT THREE, AND THE RUN IS NOW A PRODUCT OF THREE CHECKS** (v43, owner:
+*"Act 3 and more cards?"*). `ACTS[2]` is In The Water — six chosen spans, ten
+fights, two elites and **the Mother**, who has eight moves and four conditions
+because v40 gave the Bear one and the last boss having four is the shape of the
+escalation rather than a bigger number. One had to be cut back the same day:
+`closes` fired on `bleeding`, which reads the HERO and so holds every turn after
+the first bad one, and **a conditional move REPLACES the rotation's next move**,
+so an eight-move boss collapsed into one 22 a turn. It is `once`; `floods`
+(`walled`) stays recurring because that condition reads a choice you can stop
+making. Only two new bodies, the eel and the drain — all 26 owner plates are
+already cast and nothing can be generated here, so eleven rosters are recasts
+rather than a third act of placeholders.
+**THE HOURS ARE THE ACT BOUNDARIES, and they never were.** `nightfall`'s 0.5 and
+0.8 lined up with two acts by arithmetic and stopped meaning anything the moment
+a third was inserted — act three began at 0.70 and stayed EVENING for half of
+itself, so the act whose identity IS the dark spawned act-two mutations. `DUSK`
+and `NIGHT` derive from `ACTS`, and `HOUR_WORD` reads the same two numbers, so
+the HUD and the rules cannot disagree about what time it is.
+**`dark` is the first scale axis that is not a fight resource** — it reads the
+RUN, the same 0/1/2 that decides mutation. Nightfall is 3 to the row by day and
+17 at night: nearly dead in act one, the best card in the deck in act three,
+which is what a rarity tier is supposed to MEAN. It cannot be farmed inside a
+fight, so nothing caps it. **26 new cards** (142 → 168), weighted to the top
+because `rarityByAct[2]` offers five rares of eleven against a pool of 24 — the
+third act was showing the same rares to the same deck — plus **one row-answering
+rare per class**, since act three's rosters are wider and every class rare was
+single-target.
+**THE SEPARATION IS THE VERSION'S REAL CONTENT, and it is not flattering.**
+Against a v42 checkout as the control, `native` at 150 seeds a character:
+**26% (v42) → 7% (three acts, the new cards not offered) → 9% (as it ships)**.
+The third act costs **19 points**; the cards give back **2**. Act one and two did
+not get harder (beating the Bear went 26% → 32%, act two being EVENING
+throughout now), and act three converts at 28% from its door — almost exactly
+what act two used to. **The run is a product of three checks and nothing here
+rebalances that**: a longer run needs the player to ARRIVE stronger, and act-three
+arrivals carry 18 cards, the same as act-two arrivals did. That pass is not done,
+and the **ascension ladder is compressed with it** — its rungs read
+25/22/19/16/11/9 against a two-act run, so `--asc` needs re-measuring before the
+ladder means anything. `--act3` is v27's door-of-the-act harness parameterised,
+and it says **`defensive` 39% is the best line anywhere in this game for the
+first time**: act three is a survival act, not a damage check. The Mother takes
+66% of everyone who meets her at 47 HP, the Bear's shape one act along — but
+unlike act two at v34 the middle is not empty, with eight of thirteen spans at
+20+ HP.
+**And the naive bot's gate was narrowed to what it can carry.** `botRun` over
+three acts reads 5/7/18/4/**0**/3 per 160 seeds, the Dog Walker at a flat zero —
+v16's finding from the other side, since a naive bot cannot hold fetch and three
+acts is long enough that never holding it never converts. The gate asserts the
+run ends, every character reaches the LAST act, and nobody sweeps; the
+per-character rate belongs to `bots.mjs`, where the policies live.
 **The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
 hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
 **The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`

@@ -1,6 +1,7 @@
 // Slay Kallio — six ways to play it, measured against each other.
 //   node slaykallio/test/bots.mjs [seeds]          the whole run
 //   node slaykallio/test/bots.mjs --act2 [seeds]   act two alone, from the door (v27)
+//   node slaykallio/test/bots.mjs --act3 [seeds]   act three alone, the same way (v43)
 //   node slaykallio/test/bots.mjs --noise          re-derive the whole-run noise floor
 //
 // This is a MEASURING INSTRUMENT, not a gate. It never fails a build.
@@ -415,19 +416,23 @@ export function drive(s, bot, ledger, stopAt = null) {
 // tuning number, say — without printing a matrix nobody asked for.
 export function report(SEEDS = Number(process.argv[2]) || 150) {
   const names = Object.keys(BOTS);
-  const wins = {}, act2 = {}, deaths = {}, stuck = {}, hpBy = {}, seen = {};
-  for (const b of names) { wins[b] = {}; act2[b] = {}; deaths[b] = {}; stuck[b] = 0; hpBy[b] = { fight: 0, elite: 0, boss: 0 }; seen[b] = { fight: 0, elite: 0, boss: 0 }; }
+  // v43 — one arrival row per act beyond the first, read off ACTS rather than
+  // the single act-two counter this had. A third act with no row of its own
+  // would have been measured entirely through the win rate, which is the one
+  // number that cannot say WHERE a run ended.
+  const wins = {}, reach = {}, deaths = {}, stuck = {}, hpBy = {}, seen = {};
+  for (const b of names) { wins[b] = {}; reach[b] = {}; deaths[b] = {}; stuck[b] = 0; hpBy[b] = { fight: 0, elite: 0, boss: 0 }; seen[b] = { fight: 0, elite: 0, boss: 0 }; }
   for (const b of names) {
     for (const ch of chars) {
-      let w = 0, a2 = 0;
+      let w = 0; const got = ACTS.map(() => 0);
       for (let seed = 1; seed <= SEEDS; seed++) {
         const s = run(seed, ch, BOTS[b], (k, lost) => { hpBy[b][k] += Math.max(0, lost); seen[b][k]++; });
         if (s.phase === 'won') w++;
         else if (s.phase === 'lost') { const id = ENCOUNTERS[s.encounter]?.id ?? '?'; deaths[b][id] = (deaths[b][id] || 0) + 1; }
         else stuck[b]++;
-        if (s.act >= 1) a2++;
+        for (let i = 1; i <= s.act; i++) got[i]++;
       }
-      wins[b][ch] = w / SEEDS; act2[b][ch] = a2 / SEEDS;
+      wins[b][ch] = w / SEEDS; reach[b][ch] = got.map(n => n / SEEDS);
     }
   }
 
@@ -438,9 +443,11 @@ export function report(SEEDS = Number(process.argv[2]) || 150) {
     const mean = chars.reduce((a, c) => a + wins[b][c], 0) / chars.length;
     console.log(`  ${b.padEnd(11)}${chars.map(c => pct(wins[b][c]).padStart(10)).join('')}  ${pct(mean)}`);
   }
-  console.log(`\n── REACHED ACT TWO ──\n`);
-  console.log(`  ${'bot'.padEnd(11)}${chars.map(c => c.slice(0, 9).padStart(10)).join('')}`);
-  for (const b of names) console.log(`  ${b.padEnd(11)}${chars.map(c => pct(act2[b][c]).padStart(10)).join('')}`);
+  for (let act = 1; act < ACTS.length; act++) {
+    console.log(`\n── REACHED ACT ${act + 1} — ${ACTS[act].kallio?.name ?? ACTS[act].id} ──\n`);
+    console.log(`  ${'bot'.padEnd(11)}${chars.map(c => c.slice(0, 9).padStart(10)).join('')}`);
+    for (const b of names) console.log(`  ${b.padEnd(11)}${chars.map(c => pct(reach[b][c][act]).padStart(10)).join('')}`);
+  }
 
   console.log(`\n── the best line for each character ──\n`);
   // The floor SCALES with the sample. v24 measured 13 points at 150 seeds and
@@ -526,7 +533,13 @@ export function report(SEEDS = Number(process.argv[2]) || 150) {
 // character who rarely reaches act two is measured on fewer states (printed);
 // and the noise floor here is its own number, re-derived below from two
 // disjoint populations rather than borrowed from the whole-run floor.
-const AT_ACT_TWO = s => s.act === 1 && s.phase === 'map' && s.route?.step === 0;
+// v43 — parameterised by act. The harness was written for the only act that
+// had a door; a third act has one too, and it is the act with the LEAST prior
+// measurement, so hard-coding 1 here would have left the new content measured
+// only through the whole-run win rate — the one number that cannot say where
+// a run ended.
+const atDoorOf = act => s => s.act === act && s.phase === 'map' && s.route?.step === 0;
+const ACT_WORD = act => (ACTS[act]?.kallio?.name ?? `act ${act + 1}`).toUpperCase();
 
 export function snapshot(s) {
   const { rng, ...rest } = s;
@@ -537,26 +550,27 @@ export function restore(snap) {
   return { ...rest, rng: makeRng(rngSeed) };
 }
 
-// every seed in [from, to] that reaches act two under `bot`, as snapshots
-export function arrivals(character, bot, from, to) {
+// every seed in [from, to] that reaches `act` under `bot`, as snapshots
+export function arrivals(character, bot, from, to, act = 1) {
+  const at = atDoorOf(act);
   const out = [];
   for (let seed = from; seed <= to; seed++) {
-    const s = drive(startRun(createRun({ seed, character, asc: ASC })), bot, null, AT_ACT_TWO);
-    if (AT_ACT_TWO(s)) out.push(snapshot(s));
+    const s = drive(startRun(createRun({ seed, character, asc: ASC })), bot, null, at);
+    if (at(s)) out.push(snapshot(s));
   }
   return out;
 }
 
-export function act2Report(POP = Number(process.argv[3]) || 600, popBot = 'native') {
+export function actReport(act = 1, POP = Number(process.argv[3]) || 600, popBot = 'native') {
   const names = Object.keys(BOTS);
   const pct = v => String(Math.round(v * 100)).padStart(3) + '%';
-  console.log(`\n── ACT TWO, from the door: ${POP} seeds bred by \`${popBot}\`, every arrival resumed under every bot ──\n`);
+  console.log(`\n── ${ACT_WORD(act)}, from the door: ${POP} seeds bred by \`${popBot}\`, every arrival resumed under every bot ──\n`);
 
   // Phase A — the population, and what it looks like on arrival
   const pop = {};
   console.log(`  ${'character'.padEnd(10)} arrivals   arrival HP   deck   friends`);
   for (const ch of chars) {
-    pop[ch] = arrivals(ch, BOTS[popBot], 1, POP);
+    pop[ch] = arrivals(ch, BOTS[popBot], 1, POP, act);
     const n = pop[ch].length || 1;
     const hp = pop[ch].reduce((a, p) => a + p.hero.hp / p.hero.maxHp, 0) / n;
     const deck = pop[ch].reduce((a, p) => a + p.hero.deck.length, 0) / n;
@@ -582,7 +596,7 @@ export function act2Report(POP = Number(process.argv[3]) || 600, popBot = 'nativ
     }
   }
 
-  console.log(`\n── WIN RATE FROM THE DOOR OF ACT TWO ──\n`);
+  console.log(`\n── WIN RATE FROM THE DOOR OF ${ACT_WORD(act)} ──\n`);
   console.log(`  ${'bot'.padEnd(11)}${chars.map(c => c.padStart(10)).join('')}  mean`);
   for (const b of names) {
     const row = chars.map(c => wins[b][c]);
@@ -591,7 +605,7 @@ export function act2Report(POP = Number(process.argv[3]) || 600, popBot = 'nativ
     console.log(`  ${b.padEnd(11)}${row.map(v => (isNaN(v) ? '—' : pct(v)).padStart(10)).join('')}  ${pct(mean)}`);
   }
 
-  console.log(`\n── HP LOST PER ENCOUNTER IN ACT TWO, by kind ──\n`);
+  console.log(`\n── HP LOST PER ENCOUNTER IN ${ACT_WORD(act)}, by kind ──\n`);
   console.log(`  ${'bot'.padEnd(11)}    fight     elite      boss`);
   for (const b of names) {
     const per = k => (seen[b][k] ? (hpBy[b][k] / seen[b][k]).toFixed(1) : '—').padStart(9);
@@ -603,14 +617,14 @@ export function act2Report(POP = Number(process.argv[3]) || 600, popBot = 'nativ
   // cannot say whether act two has a middle: a pool where every fight costs
   // eleven is an HP tax the boss collects, and a pool with two fights that
   // cost thirty is a route with a decision on it. This is that spread.
-  console.log(`\n── WHAT EACH ACT-TWO SPAN COSTS \`${popBot}\` ──\n`);
+  console.log(`\n── WHAT EACH SPAN OF ${ACT_WORD(act)} COSTS \`${popBot}\` ──\n`);
   console.log(`  ${'span'.padEnd(22)}  kind    met   HP   kills`);
   for (const [id, e] of Object.entries(span).sort((a, x) => x[1].lost / x[1].met - a[1].lost / a[1].met)) {
     const name = ENCOUNTERS.find(c => c.id === id)?.kallio.name ?? id;
     console.log(`  ${name.padEnd(22)}  ${e.k.padEnd(6)} ${String(e.met).padStart(5)} ${(e.lost / e.met).toFixed(1).padStart(5)}  ${pct(e.killed / e.met)}`);
   }
 
-  console.log(`\n── where act two ends ──\n`);
+  console.log(`\n── where ${ACT_WORD(act)} ends ──\n`);
   for (const b of names) {
     const tot = Object.values(deaths[b]).reduce((a, x) => a + x, 0) || 1;
     const top = Object.entries(deaths[b]).sort((a, x) => x[1] - a[1]).slice(0, 4)
@@ -672,6 +686,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const ai = process.argv.indexOf('--asc');
   if (ai >= 0) { setAsc(Number(process.argv[ai + 1]) || 0); console.log(`\n  ── ASCENSION ${ASC} ──`); }
   if (process.argv.includes('--noise')) noiseFloor(Number(process.argv[2]) || 150);
-  else if (process.argv.includes('--act2')) act2Report();
+  else if (process.argv.includes('--act2')) actReport(1);
+  else if (process.argv.includes('--act3')) actReport(2);
   else report(Number(process.argv[2]) || 150);
 }

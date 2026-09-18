@@ -462,6 +462,59 @@ const PICS = {
     wob(c, [[24, 54], [22, 34], [34, 26], [58, 26], [70, 34], [68, 54]], '#4a4438', r);
     c.globalAlpha = 0.5; c.fillStyle = '#20303a'; c.fillRect(0, 0, W, H); c.globalAlpha = 1;
   },
+
+  // ─ v43, the third act: the canal itself. Four subjects, and the thing they
+  // share is that the water is the SUBJECT rather than the setting — flat dark
+  // bands with one broken highlight, which is the only way a still surface
+  // reads as wet at this size (a ripple drawn as an outline reads as rope).
+  water(c, r, a) {
+    c.fillStyle = '#1a2630'; c.fillRect(0, 0, W, H);
+    for (let i = 0; i < 7; i++) {
+      const y = 8 + i * 8, w = 0.25 + i * 0.06;
+      c.globalAlpha = 0.5 + i * 0.05;
+      c.fillStyle = i % 2 ? '#22333f' : '#16212a'; c.fillRect(0, y, W, 8);
+      c.globalAlpha = 1;
+      // one broken highlight a band, longer and calmer as it goes back
+      for (let k = 0; k < 4; k++) {
+        const x = r() * W;
+        if (r() < w) line(c, x, y + 4, x + 6 + r() * 12, y + 4, shade(a, 1.5), 1.4);
+      }
+    }
+    // something just under it, which is the whole third act
+    c.globalAlpha = 0.35;
+    wob(c, [[30, 40], [44, 34], [62, 38], [58, 48], [36, 48]], '#0d1418', r, { stroke: null, amp: 1.4 });
+    c.globalAlpha = 1;
+  },
+  moon(c, r, a) {
+    c.fillStyle = '#11141f'; c.fillRect(0, 0, W, H);
+    for (let i = 0; i < 26; i++) { const x = r() * W, y = r() * H * 0.7; c.fillStyle = 'rgba(232,224,208,' + (0.2 + r() * 0.5) + ')'; c.fillRect(x | 0, y | 0, 1, 1); }
+    blob(c, 62, 20, 13, 13, '#e6e2d2', r, { width: 0, stroke: null });
+    c.globalCompositeOperation = 'destination-out';
+    blob(c, 70, 15, 11, 11, '#000', r, { width: 0, stroke: null });      // the bite that makes it a crescent
+    c.globalCompositeOperation = 'source-over';
+    c.fillStyle = '#0a0d14'; c.fillRect(0, 44, W, H - 44);                // the far bank
+    for (let i = 0; i < 5; i++) line(c, 30 + i * 8, 46, 30 + i * 8, 44 + r() * 12, shade(a, 1.3), 1.2);
+  },
+  hook(c, r, a) {
+    line(c, 46, 0, 46, 26, '#8a8478', 1.6);                               // the line
+    c.strokeStyle = INK; c.lineWidth = 4.4; c.lineCap = 'round';
+    c.beginPath(); c.arc(42, 38, 12, -0.5, Math.PI * 0.95); c.stroke();
+    c.strokeStyle = shade(a, 1.35); c.lineWidth = 2.2;
+    c.beginPath(); c.arc(42, 38, 12, -0.5, Math.PI * 0.95); c.stroke();
+    line(c, 54, 32, 58, 24, INK, 3.4); line(c, 54, 32, 58, 24, shade(a, 1.35), 1.6);   // the barb
+    c.globalAlpha = 0.4; c.fillStyle = '#1a2630'; c.fillRect(0, 44, W, H - 44); c.globalAlpha = 1;
+  },
+  grate(c, r, a) {
+    c.fillStyle = '#0c1014'; c.fillRect(0, 0, W, H);
+    wob(c, [[16, 14], [80, 14], [84, 50], [12, 50]], '#3c4046', r, { width: 2.6 });
+    for (let i = 0; i < 5; i++) {                                         // the bars, and the dark behind them
+      const y = 18 + i * 8;
+      c.fillStyle = '#05080a'; c.fillRect(16, y, 64, 4);
+      line(c, 16, y + 4, 80, y + 4, '#585c62', 1);
+    }
+    for (let i = 0; i < 9; i++) { const x = 18 + r() * 60, y = 18 + r() * 28; c.fillStyle = 'rgba(120,150,120,0.5)'; c.fillRect(x | 0, y | 0, 2, 2); }
+    line(c, 20, 52, 76, 52, shade(a, 0.8), 2);                            // water running off the lip
+  },
 };
 
 // ── the pass over everything: light, grime, and the edge of the panel ────

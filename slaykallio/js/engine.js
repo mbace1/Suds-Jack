@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=42';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=43';
 
 // THE ONE PLACE A RUNG IS READ. Every rule that varies by ascension asks this
 // and nothing else, so the ladder is a table in data.js rather than six
@@ -194,8 +194,33 @@ export function hourOf(state) {
   const walked = ACTS.slice(0, state.act).reduce((a, x) => a + x.steps + 1, 0) + Math.min(state.route?.step ?? 0, ACTS[state.act].steps + 1);
   return Math.min(1, walked / (steps - 1));
 }
-export const nightfall = hour => hour < 0.5 ? 0 : hour < 0.8 ? 1 : 2;
-export const HOUR_WORD = hour => hour < 0.2 ? 'afternoon' : hour < 0.45 ? 'late afternoon' : hour < 0.6 ? 'dusk' : hour < 0.8 ? 'evening' : 'night';
+// v43 — THE HOURS ARE THE ACT BOUNDARIES, and they are read off `ACTS` rather
+// than typed. They used to be 0.5 and 0.8, which lined up with two acts by
+// arithmetic and quietly stopped lining up with anything the moment a third
+// was inserted: act three began at hour 0.70 and stayed in the EVENING for
+// half of itself. Derived, dusk is the first span of the second act and night
+// is the first span of the last one, whatever the acts are — which is the
+// sentence the design was always making ("start the run during day, as evening
+// comes things start mutating") rather than a pair of numbers that happened to
+// mean it once.
+const ACT_HOUR = ACTS.map((_, i) => {
+  const steps = ACTS.reduce((a, x) => a + x.steps + 1, 0);
+  return Math.min(1, ACTS.slice(0, i).reduce((a, x) => a + x.steps + 1, 0) / (steps - 1));
+});
+export const DUSK = ACT_HOUR[1] ?? 0.5;
+export const NIGHT = ACT_HOUR[ACT_HOUR.length - 1] ?? 0.8;
+export const nightfall = hour => hour < DUSK ? 0 : hour < NIGHT ? 1 : 2;
+// The five words split the same three bands: the daylight act reads afternoon
+// then late afternoon, the evening act reads dusk then evening, and the last
+// act is night throughout. Typed thresholds put act three's opening span at
+// 'evening' while `nightfall` already called it night, so the HUD and the
+// rules disagreed about the same moment.
+export const HOUR_WORD = hour =>
+  hour < DUSK / 2 ? 'afternoon'
+  : hour < DUSK ? 'late afternoon'
+  : hour < (DUSK + NIGHT) / 2 ? 'dusk'
+  : hour < NIGHT ? 'evening'
+  : 'night';
 function markHour(state) {
   const h = hourOf(state);
   if (state.hour !== h) { state.hour = h; state.log.push({ t: 'hour', hour: h, word: HOUR_WORD(h) }); }
@@ -580,6 +605,15 @@ function rawScale(state, fx) {
     case 'energy': return h.energy * (fx.per || 1);
     case 'thorns': return (h.status.thorns || 0) * (fx.per || 1);
     case 'strength': return (h.status.strength || 0) * (fx.per || 1);
+    // v43 — THE ONE AXIS THAT IS NOT A FIGHT RESOURCE. Every scale above reads
+    // something you built this turn or this fight; `dark` reads the RUN, and it
+    // is the same 0/1/2 that decides whether what you are fighting is mutated.
+    // That is what gives the third act cards of its own without a third card
+    // pool: a card that scales on the hour is weak in the daylight act, real
+    // through the evening and at its ceiling in the water - a draft decision
+    // about LATER, made early, which is what a rarity tier is supposed to mean.
+    // It cannot be farmed and it cannot be rushed, so nothing has to cap it.
+    case 'dark': return nightfall(state.hour ?? 0) * (fx.per || 1);
     default: return 0;
   }
 }
@@ -1063,7 +1097,8 @@ const POWER_TEXT = {
 };
 const SCALE_TEXT = { played: 'card played this turn', block: 'block you have', hand: 'card in your hand', finds: 'Bottle played this turn', jokers: 'friend',
   buzz: 'Buzz', discard: 'card in your discard', struck: 'hit you took this fight', fetch: 'Fetch', missing: 'missing HP',
-  free: '0-cost card played this turn', exhausted: 'card exhausted this fight', energy: 'unspent energy', thorns: 'Thorns', strength: 'Strength' };
+  free: '0-cost card played this turn', exhausted: 'card exhausted this fight', energy: 'unspent energy', thorns: 'Thorns', strength: 'Strength',
+  dark: 'step into the dark' };
 
 // Card text is written from the effects, with live numbers when a state and
 // hand index are given: a Crema-doubled Strike says 12 on its face.

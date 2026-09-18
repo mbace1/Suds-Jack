@@ -7,6 +7,98 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v43 — 2026-09-18
+**ACT THREE — IN THE WATER, a card that knows what time it is, and 26 more of them**
+
+Owner: *"Act 3 and more cards?"*
+
+**The third act.** `ACTS[2]` — In The Water, six chosen spans, ten ordinary
+fights, two elites (What The Drain Kept, He Never Went Home) and **What The
+Canal Made** as the boss. Two new bodies, the eel and the drain; the other
+eleven rosters are the existing cast recast, because all 26 of the owner's
+casting-sheet plates are already on the bridge and nothing can be generated in
+this environment — a third act of new humans would have been a third act of
+placeholders.
+
+**The Mother is the most reactive thing in the game** — eight moves, four of
+them conditional — and that is deliberate: v40 gave the Bear one condition, so
+the last boss having four is the shape of the escalation rather than a bigger
+number. One of them had to be cut back the same day it was written: `closes`
+fired on `bleeding`, which reads the HERO and therefore holds for every turn
+after the first bad one, and a conditional move REPLACES the rotation's next
+move — so an eight-move boss collapsed into one 22 a turn from the moment you
+were hurt. It is `once` now. `floods` stays recurring on purpose: `walled`
+reads a choice you keep making, so you can stop making it.
+
+**THE HOURS ARE THE ACT BOUNDARIES NOW, and they never were.** `nightfall`'s
+0.5 and 0.8 lined up with two acts by arithmetic and stopped lining up with
+anything the moment a third was inserted — act three began at hour 0.70 and
+stayed EVENING for half of itself, so the act whose whole identity is the dark
+was spawning act-two mutations. `DUSK` and `NIGHT` are derived from `ACTS`, and
+`HOUR_WORD` reads the same two numbers, so the HUD and the rules can no longer
+disagree about what time it is.
+
+**`dark` — the first scale axis that is not a fight resource.** Every other
+axis reads something you built this turn or this fight, so every card was worth
+the same in the first span as in the last. `dark` reads the RUN: the same 0/1/2
+that decides whether what you are fighting is mutated. Nightfall is 3 damage to
+the row by day and 17 at night — nearly a dead card in act one and the best
+card in the deck in act three, which is what a rarity tier is supposed to MEAN.
+It cannot be farmed inside a fight, so nothing has to cap it. Nine cards read
+it, at least one per class.
+
+**26 new cards, and they are weighted to the top.** `rarityByAct[2]` offers
+five rares of eleven, and the pool held 24 — so the third act was showing the
+same rares to the same deck. Every class also gets **one rare that answers a
+row**: act three's rosters are wider than act one's and every class rare in the
+game was single target, so the card a long run most wanted did not exist. Each
+is that class's own axis pointed at the row rather than a new verb.
+
+**The one dud span the ledger named.** Four blob spawn cost `native` 2.6 HP and
+killed 2% of the runs that met them — v35's act-two disease, inherited. Fixed
+with a CONDITION rather than numbers: while three or more are alive they feed
+each other instead of swinging, so killing them slowly is punished.
+
+**THE MEASUREMENT, SEPARATED, AND IT IS NOT FLATTERING.** Against a v42
+checkout as the control, `native` over 150 seeds a character:
+
+| | mean win |
+|---|---|
+| v42, two acts (control) | **26%** |
+| v43, three acts, the new cards NOT offered | **7%** |
+| v43 as it ships | **9%** |
+
+So the third act costs **19 points** and the cards give back **2**. The cards
+are not the regression; the run being a product of three checks is. Act one and
+two did not get harder (beating the Bear went 26% -> 32%, because act two is
+EVENING throughout now rather than turning night halfway), and act three then
+converts at 28% from its door — almost exactly what act two used to convert at.
+**Nothing here rebalances that.** A longer run needs the player to arrive at the
+last act stronger, and the draft does not currently do that: act-three arrivals
+carry 18 cards, the same as act-two arrivals did. That pass has not been done,
+and the ascension ladder is compressed with it — its six rungs were measured
+against a two-act run and read 25/22/19/16/11/9 there, so `--asc` needs
+re-measuring before the ladder means anything.
+
+**The harnesses are per-act now.** `node test/bots.mjs --act3` is the same
+door-of-the-act instrument v27 built for act two, parameterised; the matrix and
+`balance.mjs` print one arrival row per act. Act three from the door, 120 seeds:
+`defensive` **39%** is the best line anywhere in this game for the first time —
+act three is a survival act, not a damage check — against `native` 28%. The
+Mother takes 66% of everyone who meets her at 47 HP, which is the Bear's shape
+one act along; eight of the thirteen spans now cost 20+ HP, so unlike act two
+at v34 the middle is not empty.
+
+**The dumb bot's gate was narrowed to what it can carry.** `botRun` over three
+acts reads 5/7/18/4/**0**/3 per 160 seeds — the Dog Walker at a flat zero, which
+is v16's finding from the other side (a naive bot cannot hold fetch, and three
+acts is long enough that never holding it never converts). The gate now asserts
+the run ends, every character reaches the LAST act, and nobody sweeps; the
+per-character rate is measured in `bots.mjs`, where the policies live.
+
+Gates: `node slaykallio/test/core.mjs` (863) ·
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs`
+
 ## v42 — 2026-09-18
 **THE BEAR HAD NEVER HAD A HEAD — the non-person cast, rendered at full size for the first time**
 
