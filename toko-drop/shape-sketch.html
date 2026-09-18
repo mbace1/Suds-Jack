@@ -49,12 +49,12 @@
   (function () {
     var gpu = false;
     try { gpu = localStorage.getItem('tokoDropGpu') === '1'; } catch (e) {}
-    var three = gpu ? './vendor/three.webgpu.min.js?v=207'
-                    : './vendor/three.module.min.js?v=207';
+    var three = gpu ? './vendor/three.webgpu.min.js?v=208'
+                    : './vendor/three.module.min.js?v=208';
     document.write('<script type="importmap">' + JSON.stringify({
       imports: {
         'three': three,
-        'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=207',
+        'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=208',
         'three/addons/': './vendor/jsm/'
       }
     }) + '<\/script>');
@@ -62,8 +62,8 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import { applySatinValues } from './js/enemy.js?v=207';
-import { createRibbon, createSlug } from './js/sketch-shapes.js?v=207';
+import { applySatinValues } from './js/enemy.js?v=208';
+import { createRibbon, createSlug } from './js/sketch-shapes.js?v=208';
 
 const isGpu = typeof THREE.WebGPURenderer === 'function';
 const renderer = isGpu ? new THREE.WebGPURenderer({ antialias: true })

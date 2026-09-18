@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=207';
+import { TUNING } from './tuning.js?v=208';
 const _apt = { x: 0, z: 0 };   // v236: scratch for arena queries — no per-frame alloc
-import { nesSnap, NEON } from './retro.js?v=207';
+import { nesSnap, NEON } from './retro.js?v=208';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -102,6 +102,55 @@ const GOO_FRAG = `
     gl_FragColor = vec4(col, uOpacity);
   }
 `;
+// v255 TORO WHEEL — one geometry. Tyre (torus in local XY, axle = Z) plus a
+// sawblade of rim cones, a hub disc and spoke bars, concatenated by hand:
+// the vendored build has no BufferGeometryUtils, and every piece is a
+// non-indexed position/normal/uv triple, so a merge is three appends.
+function concatGeometries(parts) {
+  const nonIdx = parts.map(g => g.index ? g.toNonIndexed() : g);
+  const out = new THREE.BufferGeometry();
+  for (const name of ['position', 'normal', 'uv']) {
+    const items = nonIdx.map(g => g.getAttribute(name)).filter(Boolean);
+    if (items.length !== nonIdx.length) continue;       // a piece lacks it: drop the attribute
+    const size = items[0].itemSize;
+    const total = items.reduce((n, a) => n + a.count, 0);
+    const arr = new Float32Array(total * size);
+    let off = 0;
+    for (const a of items) { arr.set(a.array.subarray(0, a.count * size), off); off += a.count * size; }
+    out.setAttribute(name, new THREE.BufferAttribute(arr, size));
+  }
+  for (const g of nonIdx) g.dispose();
+  out.computeBoundingSphere();
+  return out;
+}
+function toroWheelGeometry(radius) {
+  const T = TUNING.toro;
+  const rimR = radius * 0.68, tubeR = radius * T.tube;
+  const parts = [new THREE.TorusGeometry(rimR, tubeR, 8, 18)];
+  // the sawblade: cone +Y points radially outward; base sunk `sink` into the tyre
+  for (let i = 0; i < T.rimSpikes; i++) {
+    const a = (i / T.rimSpikes) * Math.PI * 2;
+    const c = new THREE.ConeGeometry(T.spike.base, T.spike.length, 4);
+    const d = rimR + tubeR - T.spike.sink + T.spike.length / 2;   // cone centre along the spoke line
+    c.rotateZ(a - Math.PI / 2);
+    c.translate(Math.cos(a) * d, Math.sin(a) * d, 0);
+    parts.push(c);
+  }
+  // the hub: a short cylinder along the axle (cylinder is Y-up -> rotate to Z)
+  const hub = new THREE.CylinderGeometry(T.hub.r, T.hub.r, T.hub.depth, 12);
+  hub.rotateX(Math.PI / 2);
+  parts.push(hub);
+  // the spokes: bars through the centre, in the wheel plane. This is what
+  // makes the rev-up SPIN a picture instead of a number.
+  const spokeLen = (rimR - tubeR * 0.35) * 2;
+  for (let i = 0; i < T.hub.spokes; i++) {
+    const b = new THREE.BoxGeometry(T.hub.spokeW, spokeLen, T.hub.spokeD);
+    b.rotateZ((i / T.hub.spokes) * Math.PI);
+    parts.push(b);
+  }
+  return concatGeometries(parts);
+}
+
 export function makeGooMat(color, opacity, wobble = 0, radius = 0.5) {
   return new THREE.ShaderMaterial({
     vertexShader:   GOO_VERT,
@@ -688,7 +737,7 @@ export class Enemy {
     } else if (CUBE_TYPES.has(type)) {
       geo = new RoundedBoxGeometry(cfg.radius * 1.8, cfg.radius * 1.8, cfg.radius * 1.8, 4, 0.18);
     } else if (type === EnemyType.TORO) {
-      geo = new THREE.TorusGeometry(cfg.radius * 0.68, cfg.radius * 0.32, 8, 18);
+      geo = toroWheelGeometry(cfg.radius);   // v255: tyre + sawblade + hub + spokes, one geometry
     } else if (type === EnemyType.OMEGA) {
       // Faceted crystal core — visually distinct from every blob/cube/TORO
       // silhouette so the boss reads as its own thing, not a scaled-up regular.
@@ -783,17 +832,7 @@ export class Enemy {
       // yaws to face the (45°-snapped) dash direction.
       this.group  = new THREE.Group();
       this._wheel = new THREE.Group();
-      this._wheel.add(this.mesh);
-      const rimR = cfg.radius * 0.68; // torus major radius
-      const spikeGeo = new THREE.ConeGeometry(0.12, 0.3, 4);
-      const spikeMat = this.mat; // spikes share the wheel's satin gel (v96)
-      for (let i = 0; i < TUNING.toro.rimSpikes; i++) {
-        const a = (i / TUNING.toro.rimSpikes) * Math.PI * 2;
-        const spike = new THREE.Mesh(spikeGeo, spikeMat);
-        spike.position.set(Math.cos(a) * rimR, Math.sin(a) * rimR, 0);
-        spike.rotation.z = a - Math.PI / 2; // cone +Y points radially outward
-        this._wheel.add(spike);
-      }
+      this._wheel.add(this.mesh);   // v255: the spikes, hub and spokes are IN the mesh now
       this.group.add(this._wheel);
       this.group.position.set(x, cfg.radius, z);
       scene.add(this.group);
