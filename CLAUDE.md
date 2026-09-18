@@ -1585,7 +1585,45 @@ playthrough rides all of it and found a crash at 163 m on its first run. Its
 pilot is **P plus D**, and the D is not a refinement: undamped it overshoots,
 pins the edge, and the edge scrubs nearly everything, so the run reads 0.06 m/s
 mid-descent and the terrain looks like a bog it is not. **A tireless bot that
-rides badly measures its own riding.** Hub entry: `hub/games.js` id `flowsnow`, marquee `flowsnow`
+rides badly measures its own riding.**
+**THE SPRAY IS INSTANCED QUADS, NOT POINTS** (v6). A `THREE.Points` sprite can only
+be a round disc, and a round disc at the old 90 px cap is a bokeh ball — the rooster
+tail was a string of beads with a rider somewhere inside it. One draw call either
+way, so the quad costs nothing and can be any shape. Three things make it snow and
+none is more particles: a crystal in flight is **STRETCHED**, in **screen** space
+(a flake thrown at the lens is a dot, the same flake thrown across the frame is a
+streak, and that difference IS the motion — stretched along its world velocity the
+one particle that should stay a point smears); snow **scatters forward** hard, so
+the plume between you and the sun lights up rather than going grey, and the old
+material had no view-to-sun term at all; and each kind gets its own edge. Three of
+the numbers were then wrong in the same way — **right about a particle, wrong about
+a mass**: the stretch at 0.085 bought a 44% elongation on a 5 m/s crystal, which is
+invisible; a crystal at alpha 0.85 is an object you can point at, so the plume is a
+string of them; and a cloud at 0.38 is the same fault one scale up. **Density has to
+come from OVERLAP** — twice as many at two thirds the size and half the alpha, and
+the same snow becomes a texture. Two traps worth the space. **A world-space quad has
+no `gl_PointSize` clamp**, and that clamp was doing real work: a cloud born a metre
+from the lens is a six-metre disc, the first cut painted **20% of the frame** and put
+the rider inside his own tail (v3's lesson in new clothes), and every emit count in
+the game had been tuned against the 90 px cap. It clamps in **NDC** now —
+`r * P[1][1] / depth` is the half-size as a fraction of half the frame height, the
+same clamp in units that need no viewport — with the caps converted from the old
+pixel ones, so the amount of snow is unchanged and everything else is what is new.
+And **a mirror is not a rotation**: the quad is laid on the basis `(perp, dir)`, and
+`perp = (-dir.y, dir.x)` has determinant **−1**, so every quad's winding reversed,
+back-face culling ate all of it, and the frame had 680 live flakes and **zero** pixels
+of snow — no error, no warning, all 41 gates green. `vec2(dir.y, -dir.x)` is the
+proper rotation, and the material is `DoubleSide` besides, because a particle quad has
+no meaningful facing and trusting the winding of a procedurally built basis is the
+fragility that cost the two passes. Both halves are now gated, because neither is a
+taste question: **the mesh is toggled and the frame diffed** (it must paint, and it
+must paint under 12% of the picture). A gate still cannot see whether the plume LOOKS
+like snow — that ended in five screenshots across four chapters, as it always does.
+Named rather than implied: the streak is the particle's own velocity, **not its
+velocity relative to the camera**, so a chase camera at 20 m/s does not smear the air
+it flies through; that is a real speed cue this does not have, and it wants its own
+pass because it would streak the ambient snowfall into rain.
+Hub entry: `hub/games.js` id `flowsnow`, marquee `flowsnow`
 in `hub/art.js` (Atari sky bars, dune faces in hard lit/shadow, an arch **lighter than
 the sky** per the marquee-as-cover rule, the traveller cropped by the bottom edge
 mid-carve), accent `#f4a27a`, `pad: 'native'`, and its own lead kinds in `hub/topics.js`.
@@ -1638,13 +1676,15 @@ token now. Also learned: `gh-pages` ships its own `test/`, so copying the repo's
 in nests it and BOTH gate runs die at module load with zero checks — two runs
 agreeing because neither ran is not a baseline, and the count of checks that
 actually executed is part of the comparison now.
-**v5 is authored and NOT deployed** (2026-09-18): the branch carries it. One thing that release taught about the
+**v5 deployed 2026-09-18 (commit `753b3d4c`)**, carrying the five chapters. One thing that release taught about the
 paperwork rather than the game — **a game version lives in two files**, its own
 `VERSIONS.md` and the `hub/versions.json` row, and CI's `versions.json agrees with
 every log` is what catches a release that moved only one. It caught this one. The
 local run could not: `test/hub-smoke.cjs` had been run during the merge verification,
 BEFORE the version bump, and a cabinet gate run ahead of the bump is a gate run
 against the previous release. **It goes after.**
+**v6 is authored and NOT deployed** (2026-09-18): the branch carries it and
+`gh-pages` still serves v5.
 **Never verified live from a session.** The agent proxy refuses `github.io`, so the
 Pages run concluding `success` is the only evidence the deploy has — the cabinet and a
 run from the title into gameplay still want a human's eyes on the real URL.

@@ -2,7 +2,7 @@
 // rebuilds only the tiles that are new, standing stones read off the same tile
 // indices, the track the board leaves, and the shadow under the rider.
 import * as THREE from 'three';
-import { snowMaterial, trailMaterial, shadowMaterial } from './snowmat.js?v=2';
+import { snowMaterial, trailMaterial, shadowMaterial } from './snowmat.js?v=3';
 import { STONE } from './palette.js?v=1';
 
 const SEG = 20;

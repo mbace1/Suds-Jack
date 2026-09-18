@@ -137,6 +137,34 @@ s.listen(0, '127.0.0.1', async () => {
   ok('and throws far less snow than the deep stuff', flat.spray < pow.spray, `${flat.spray} vs ${pow.spray}`);
   await p.screenshot({ path: path.join(SHOTS, 'packed.png') });
 
+  // AND THE SNOW HAS TO REACH THE SCREEN. `spray` above is a number in the
+  // physics; whether any of it is drawn is a different question, and the answer
+  // was NO for two whole passes of v6 — the instanced quad's stretch basis was a
+  // mirror rather than a rotation, so back-face culling ate 680 live flakes with
+  // no error and no warning, and every gate here stayed green. The other half of
+  // the bound is v3's lesson: the first cut with the quads drew 20% of the frame
+  // and the rider was inside his own rooster tail. A gate cannot see whether the
+  // plume LOOKS like snow; it can see that it exists and that it is not the frame.
+  const paint = await p.evaluate(`(${hold})(42, 9, ${DEEP_Z})`).then(() => p.evaluate(() => {
+    const cv = document.querySelector('canvas');
+    const grab = () => { const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height;
+      c.getContext('2d').drawImage(cv, 0, 0); return c.getContext('2d').getImageData(0, 0, c.width, c.height).data; };
+    let mesh = null;
+    __fs.debug.scene.traverse(o => { if (o.isMesh && o.geometry.isInstancedBufferGeometry) mesh = o; });
+    if (!mesh) return { found: false };
+    mesh.visible = true;  __fs.debug.render(); const on = grab();
+    mesh.visible = false; __fs.debug.render(); const off = grab();
+    mesh.visible = true;  __fs.debug.render();
+    let diff = 0;
+    for (let i = 0; i < on.length; i += 4) {
+      if (Math.abs(on[i] - off[i]) + Math.abs(on[i + 1] - off[i + 1]) + Math.abs(on[i + 2] - off[i + 2]) > 6) diff++;
+    }
+    return { found: true, live: __fs.sim.count, share: diff / (on.length / 4) };
+  }));
+  ok('the snow in the air is actually drawn', paint.found && paint.live > 100 && paint.share > 0.004,
+    JSON.stringify(paint));
+  ok('and the plume is not the whole frame', paint.share < 0.12, `${(paint.share * 100).toFixed(1)}% of it`);
+
   // a pop, and a landing
   const before = await p.evaluate(() => __fs.state.airBest);
   ok('Space pops the rider off the snow', await p.evaluate(() => { __fs.debug.step(1 / 120, { lean: 0, jump: true }); return !__fs.state.grounded; }));

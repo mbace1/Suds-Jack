@@ -233,6 +233,136 @@ export function snowPointsMaterial(u) {
   });
 }
 
+// THE SNOW IN THE AIR. Points draw round discs, and a round disc is a bokeh ball
+// — at 90 px of `gl_PointSize` the rooster tail was a bag of marbles rather than
+// a wall of snow. Three things fix that and none of them is more particles:
+//
+//   a crystal in flight is STRETCHED along the way it is going, and the stretch
+//   has to be in SCREEN space (a flake thrown at the lens is a dot, the same
+//   flake thrown across the frame is a streak — that difference is the motion);
+//
+//   snow scatters FORWARD hard, so a plume between you and the sun does not
+//   darken, it LIGHTS UP, which is the single most recognisable thing about
+//   snow in air and the old material had no view-to-sun term at all;
+//
+//   and the three kinds want different EDGES — a flung crystal is nearly hard,
+//   a powder cloud is soft and eaten away, an ambient flake is a soft dot.
+//
+// It is one draw call of instanced quads, the same as the Points it replaces.
+//
+// AND A WORLD-SPACE QUAD HAS NO `gl_PointSize` CLAMP. That clamp is the thing
+// Points gave for free and throwing it away cost the first cut of this: a cloud
+// particle born a metre from the lens is a six-metre disc across the whole
+// frame, the rider vanishes behind his own rooster tail, and the emit counts —
+// every one of them tuned against a 90 px cap — are meaningless. So the quad is
+// clamped in NDC, which is the same clamp in units that do not need the viewport:
+// `r * P[1][1] / depth` is the half-size as a fraction of half the frame height.
+// The caps below are the old pixel caps converted at the reference frame, so the
+// amount of snow on screen is unchanged and everything above is what is new.
+export function snowSprayMaterial(u) {
+  return new THREE.ShaderMaterial({
+    uniforms: u,
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    vertexShader: /* glsl */`
+      attribute vec3 iPos;
+      attribute vec3 iVel;
+      attribute vec3 iData;              // age/life, size, kind
+      uniform vec3 uCam, uSun; uniform float uFogDensity;
+      varying float vA, vKind, vFog, vSeed, vBack;
+      varying vec2 vUv;
+      ${FOG}
+      void main() {
+        float t = iData.x, size = iData.y, kind = iData.z;
+        vKind = kind;
+        vUv = position.xy;
+        vA = smoothstep(0.0, 0.06, t) * (1.0 - smoothstep(0.45, 1.0, t));
+        vSeed = fract(iPos.x * 12.9898 + iPos.z * 78.233);
+        vFog = fogAt(iPos);
+        // a cloud swells as it dies, a crystal barely does
+        float grow = kind > 0.5 ? (1.0 + t * 1.6) : (1.0 + t * 0.6);
+        // 0.47 reads the emitted size as a world radius rather than as the old
+        // material's pixels-at-a-metre, calibrated so an unclamped quad subtends
+        // what the Points disc did at the reference frame (46 vFOV, 720 tall).
+        // NOTE no back-ticks in here: this is inside a template literal.
+        float r = size * grow * 0.47;
+
+        vec4 mv = viewMatrix * vec4(iPos, 1.0);
+        vec3 vv = (viewMatrix * vec4(iVel, 0.0)).xyz;
+        // THE STRETCH IS IN SCREEN SPACE. Using the world velocity would smear a
+        // flake coming straight at the camera, which is exactly the one that
+        // should read as a point.
+        float sp = length(vv.xy);
+        vec2 dir = sp > 1e-3 ? vv.xy / sp : vec2(0.0, 1.0);
+        // (perp, dir) MUST BE A PROPER ROTATION. With perp = (-dir.y, dir.x) the
+        // basis has determinant -1 — a mirror — which reverses the quad's winding
+        // and back-face culling eats every particle. No error, no warning, 680 live
+        // flakes and zero pixels on screen. det(+1) is vec2(dir.y, -dir.x).
+        vec2 perp = vec2(dir.y, -dir.x);
+        // clouds are a mass and hardly stretch; crystals are thrown and do.
+        // 0.085 was far too timid: a crystal leaves the edge at about 5 m/s, which
+        // bought a 44% stretch — invisible, so the plume stayed a field of dots.
+        // A streak has to be several times its own width before it stops reading
+        // as a dot at all, and it is overlapping STREAKS, not overlapping discs,
+        // that make a mass.
+        float k = kind > 1.5 ? 0.35 : kind > 0.5 ? 0.22 : 1.0;
+        float stretch = 1.0 + min(sp * 0.95 * k, 7.0);
+
+        // THE CLAMP. Half-size as a fraction of half the frame height.
+        float depth = max(0.1, -mv.z);
+        float ndc = r * projectionMatrix[1][1] / depth;
+        float hi = kind > 1.5 ? 0.030 : kind > 0.5 ? 0.125 : 0.036;
+        if (ndc > hi) r *= hi / ndc;
+        if (ndc < 0.0018) r *= 0.0018 / ndc;     // and a far flake stays a pixel
+
+        mv.xy += perp * (position.x * r) + dir * (position.y * r * stretch);
+
+        // forward scatter: how much this particle sits between the eye and the sun
+        vec3 V = normalize(iPos - uCam);
+        vBack = pow(max(dot(V, uSun), 0.0), 3.0);
+
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: /* glsl */`
+      uniform vec3 uLit, uShade, uFog, uSunCol;
+      varying float vA, vKind, vFog, vSeed, vBack;
+      varying vec2 vUv;
+      void main() {
+        float d = length(vUv) * 2.0;
+        // each kind gets its own edge: a crystal is nearly hard, a cloud is
+        // soft and bitten into, a flake is a soft dot
+        float soft;
+        if (vKind > 1.5)      soft = smoothstep(1.0, 0.25, d);
+        else if (vKind > 0.5) {
+          // the boundary wobbles with ANGLE. Keyed to floor(vUv.x) instead it is
+          // five vertical bands down a circle, which reads as a striped disc —
+          // still a disc, which is the whole thing this is trying not to be.
+          float ang = atan(vUv.y, vUv.x);
+          float lobe = 0.74 + 0.26 * sin(ang * 3.0 + vSeed * 37.0)
+                                   * sin(ang * 5.0 - vSeed * 19.0);
+          soft = smoothstep(1.0, 0.0, d / lobe);
+        } else                soft = smoothstep(1.0, 0.30, d);   // a streak with a soft body
+        if (soft < 0.01) discard;
+
+        vec3 bright = mix(uLit, vec3(1.0), 0.55);
+        vec3 col = vKind > 1.5 ? mix(uLit, vec3(1.0), 0.8)
+                 : vKind > 0.5 ? mix(uShade, uLit, 0.75 + 0.25 * vSeed)
+                 : mix(bright, uSunCol, vSeed * 0.35);
+        // BACKLIT. Snow in air scatters forward, so the plume between you and the
+        // sun is the brightest thing in the frame rather than a grey smudge. It
+        // MIXES rather than adds: added, a few hundred overlapping quads with the
+        // sun dead ahead clip to a white hole with the rider inside it.
+        col = mix(col, mix(uSunCol, vec3(1.0), 0.35), vBack * (vKind > 0.5 ? 0.55 : 0.40));
+        col = mix(col, uFog, vFog);
+        // A CRYSTAL IS NOT AN OBJECT. At 0.85 each one reads as a bead and the
+        // plume is a string of them; the density has to come from overlap.
+        // the CLOUD is a veil, and a veil is built from many faint layers. At 0.38
+        // each puff is a thing you can point at; the mass has to be the sum.
+        float a = soft * vA * (vKind > 0.5 ? (vKind > 1.5 ? 0.6 : 0.22) : 0.42);
+        gl_FragColor = vec4(col, a);
+      }`,
+  });
+}
+
 // the track the board leaves: a strip with a per-vertex alpha that fades out
 // along its length
 export function trailMaterial(u) {

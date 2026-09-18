@@ -7,6 +7,65 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v6 — 2026-09-18
+**The spray becomes snow: instanced streaks instead of a bag of marbles**
+- **A `THREE.Points` sprite can only ever be a round disc**, and a round disc at
+  the old 90 px cap is a bokeh ball — the rooster tail was a string of beads with
+  a rider somewhere inside it. The snow is one draw call of **instanced quads**
+  now (`snowSprayMaterial`), which costs the same and can be any shape.
+- **A crystal in flight is STRETCHED, and the stretch has to be in SCREEN space.**
+  A flake thrown at the lens is a dot; the same flake thrown across the frame is a
+  streak, and that difference IS the motion. Stretching along the world velocity
+  would smear the one particle that should stay a point. It is overlapping
+  **streaks**, not overlapping discs, that read as a sheet of snow.
+- **Snow scatters forward hard**, so the plume between you and the sun lights up
+  rather than going grey. The old material had no view-to-sun term at all.
+- **Three faults, and each one is a number that was right about a different
+  thing:**
+  - *The stretch at 0.085.* A crystal leaves the edge at about 5 m/s, which bought
+    a **44%** elongation — invisible. At 0.95 it is three to seven times its own
+    width and the packed-line carve finally reads as thrown rather than sprinkled.
+  - *A crystal at alpha 0.85.* Each one is then an object you can point at, and
+    the plume is a string of them. The density has to come from **overlap**: 0.42,
+    twice as many at two thirds the size, and the same snow becomes a texture.
+  - *A cloud at alpha 0.38.* Same fault one scale up — a veil is built from many
+    faint layers, so 0.22 and twice as many.
+- **A WORLD-SPACE QUAD HAS NO `gl_PointSize` CLAMP, and that clamp was doing real
+  work.** Without it a cloud born a metre from the lens is a six-metre disc across
+  the whole frame: the first cut painted **20% of the picture** and put the rider
+  inside his own tail — v3's lesson back in new clothes. The quad is clamped in
+  **NDC** instead, which is the same clamp in units that need no viewport
+  (`r * P[1][1] / depth` is the half-size as a fraction of half the frame height),
+  and the caps are the old pixel caps converted, so the amount of snow is
+  unchanged and everything above it is what is new. 3% of the frame now.
+- **THE BUG THAT COST TWO PASSES: a mirror is not a rotation.** The quad is laid
+  out on the basis `(perp, dir)`, and `perp = (-dir.y, dir.x)` gives that basis a
+  determinant of **−1** — so every quad's winding was reversed, back-face culling
+  ate all of it, and the frame had 680 live flakes and **zero** pixels of snow.
+  No error, no warning, and all 41 gates green. `vec2(dir.y, -dir.x)` is the
+  proper rotation; the material is `DoubleSide` as well, because a particle quad
+  has no meaningful facing and relying on the winding of a procedurally built
+  basis is exactly the fragility that just cost the two passes.
+- **Two gates for the two halves of that**, because neither is a taste question:
+  *the snow in the air is actually drawn* (the mesh is toggled and the frame
+  diffed — it fails with `share: 0` against the mirrored basis) and *the plume is
+  not the whole frame* (under 12%). A gate still cannot see whether the plume
+  LOOKS like snow, so this pass ends where every art pass here ends — in a
+  screenshot, five of them, across four chapters.
+- **A cloud's edge wobbles with ANGLE.** Keyed to `floor(vUv.x * 5.0)` it is five
+  vertical bands down a circle, which reads as a striped disc — still a disc,
+  which is the whole thing this is trying not to be.
+- **The backlight MIXES rather than adds.** Added, a few hundred overlapping
+  quads with the sun dead ahead clip to a white hole with the rider inside it.
+- **Not done, and named rather than left implied:** the streak is the particle's
+  own velocity, not its velocity *relative to the camera*. A chase camera at
+  20 m/s should smear the air it flies through, and that is a real speed cue this
+  does not have — but it would streak the ambient snowfall into rain, so it wants
+  its own pass and its own look.
+- Gates: `core.mjs` 90, `smoke.cjs` **43** (was 41), `playthrough.cjs` 9. The
+  playthrough is byte-identical to v5 (2,400 m, 5,872) — the change is visual and
+  touches no number the rider reads.
+
 ## v5 — 2026-09-18
 **The run gets somewhere to go: five chapters, and a glacier with teeth**
 - **One run was one formula from top to bottom.** A gully, dunes, rollers and
