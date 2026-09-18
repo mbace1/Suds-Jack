@@ -7,6 +7,82 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v5 — 2026-09-18
+**The run gets somewhere to go: five chapters, and a glacier with teeth**
+- **One run was one formula from top to bottom.** A gully, dunes, rollers and
+  kickers for 2,400 m, with nothing changing but the light. `chapter(z)` in
+  `terrain.js` is the same formula with its own numbers, blended along z, and
+  because it lives inside `base()` and `depth()` the renderer, the rider, the
+  snow, the collision and the sun occlusion all read one surface and none of them
+  has to know a chapter exists. **BOWL** (open, shallow, a place to drop in) →
+  **GULLY** (the game as it was) → **COULOIR** (17 m wide, scoured, committing) →
+  **GLACIER** (wide, bare, cut by crevasses) → **RUN-OUT** (the deepest snow of
+  the run, at dusk). Each changes the SHAPE and the SNOW, not just the colour.
+- **Crevasses need no new physics, and that is the point.** The rider is already
+  thrown when the ground drops away faster than gravity, and already tumbles on a
+  hard enough landing. So SPEED is the answer to a crevasse — carry it and you
+  sail the gap, crawl at it and you drop in and meet the far wall. That inverts
+  the powder chapters, where speed is what you give up.
+- **THE RULE THAT STOPS A SLOT BEING A PIT IS ARITHMETIC.** Over its ramp out the
+  mountain descends `GRADE * WALL_DOWN`; a slot deeper than that has a far lip
+  standing above its own floor, and nothing gets out. Measured, the first cut left
+  the far wall 5.6 m up over 15 m against 4.5 m of grade and the rider **sat at
+  the bottom of it at 1,380 m with the clock still running** — worse than dying.
+  `CREV_MAX_DROP` is derived from the grade so a bigger number cannot be chosen.
+- **THE LIP WAS BUILT, MEASURED THREE WAYS AND CUT**, and it is the finding worth
+  keeping. Rendered and looked at, a 4.6 m slot 26 m ahead of a chase camera on a
+  17° slope is **not visible at all** — you find it by falling in, which is a
+  gotcha in a game that telegraphs everything else. Real crevasses carry a
+  windward ridge, so one was built. At a height that reads (2.57 m proud) the run
+  sticks behind it at 1,370 m. At a height that does not read it STILL traps: a
+  ridge across the fall line has a **crest**, a crest is a line of zero gradient,
+  and the pilot stopped dead balanced on one at 1,416 m with every metre ahead of
+  it lower. Both failed, so there is no lip. **Crevasse visibility is OPEN** — see
+  the limits below.
+- **A kicker's spread was a constant from when the channel was one width.** At a
+  flat 50 m it put take-offs 25 m up the couloir's wall, and three of them
+  measured NEGATIVE prominence: not bumps, just less wall. The spread is the
+  chapter's now, and the gate checks every kicker in every chapter stands proud of
+  its own channel rather than checking one kicker at one fixed width.
+- **The run-out is as deep as the float model can lift a board out of.** Swept at
+  the deepest drift: `deep` 1.40 settles at 7.8 m/s and plane 0.63, 1.25 at 9.7,
+  **1.15 at 11.0 and plane 0.82**. Past about 1.2 the payoff chapter stops planing
+  and becomes a slog, so the ceiling is measured rather than chosen.
+- **Six checks silently became tests of the wrong place.** Every powder check
+  started at `z = 0`, which is now the bowl — deliberately shallow. They ride the
+  run-out now, and the sample point is itself a measurement: `-2300` is where all
+  four powder claims hold at once, but a 10 s hold from there **crosses the
+  2,400 m finish** and every later step is inert, which read as the game throwing
+  no snow. `-2150` leaves room. WHERE a test rides is part of what it measures.
+- **"Throws a wall of it" is now a RELATIVE claim**, and the reason is a real
+  tension: spray comes mostly from how buried the board is, and making the deepest
+  chapter shallow enough to plane in un-buries you. An absolute 0.6 was asserting
+  "deep enough to wallow in". Measured 0.36-0.46 against 0.11-0.16 on the line —
+  2.2x to 4x — so the bar is twice the line with a floor, set under the bottom of
+  the measured range rather than at one reading.
+- **The browser pilot rides in bare node now.** Two changes passed every
+  bare-node test and stuck the playthrough's P+D pilot on the mountain, because it
+  takes a different line. That took a browser and three minutes to find; it costs
+  two seconds here, and the check is verified falsifiable — putting the lip back
+  turns it red and names the chapter (`glacier 0.0`).
+- **My own rulers were wrong three times in one sitting**, which is the pattern to
+  watch: a boundary check that divided by a field starting at zero read a 100%
+  step on a change of a millionth; a prominence check measured a couloir's walls
+  and called a take-off a hole; and a "never stops climbing" check counted
+  frame-to-frame jitter at equilibrium. Kindling's lesson, three more times: *the
+  page was right and the ruler was wrong.*
+- Gates: `core.mjs` **90**, `smoke.cjs` 41, `playthrough.cjs` 9 — 2,400 m in
+  168 s, best air **0.93 s** and **2 falls** against v4's 0.03 s and none, which
+  closes the "the pilot only carves" gap v3 recorded without anyone aiming at it.
+  Tokens: `terrain.js?v=3`, `js/main.js?v=5`.
+- **Open, and honest:** crevasses are under-telegraphed — they work, they do not
+  trap, and you cannot reliably see one coming. The two routes left are a visual
+  treatment rather than a geometric one (a darker inner face; the 2.4 m tile mesh
+  cannot resolve the slot's wall today) or accepting them as a glacier's hazard
+  that punishes speed you cannot see past. And the wind-carved skin still reads on
+  deep powder in the run-out, where wind would have carved nothing — `skin()` is
+  in the shader and does not know the snow depth under it.
+
 ## v4 — 2026-09-13
 **The snow gets form: a real terminator, a skin, baked sun, and a horizon**
 - **The snow had no form and the cause was one line.** v3's `wrap = ndl*0.55+0.45`

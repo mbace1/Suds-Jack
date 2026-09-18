@@ -14,7 +14,7 @@
 // short enough that you do not have to wonder whether it is working.
 
 import { watchPad } from './pad.js?v=10';
-import { GAMES } from './games.js?v=104';
+import { GAMES } from './games.js?v=105';
 import { attachPad, holdKey } from './padkeys.js?v=10';
 
 const HOLD_MS = 750;
