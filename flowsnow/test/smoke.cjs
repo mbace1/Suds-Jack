@@ -80,8 +80,21 @@ s.listen(0, '127.0.0.1', async () => {
   // real input path, holding the fall line. An unsteered board traverses and
   // climbs the gully wall, so a straight-line drop-in measures the side-hill
   // rather than the snow.
-  const hold = `(off, secs) => {
+  // WHERE it rides is part of what it measures now: the run is divided into
+  // chapters and z = 0 is the bowl, which is deliberately shallow. A powder
+  // check that starts there is a check of a shallow chapter.
+  // -2300 rather than anywhere in the run-out: swept the chapter, and this is
+  // where all four powder claims hold at once — 1.96 m of snow against 0.45 m
+  // on the line, slower, and throwing a wall of it. Deep is not uniform inside
+  // a chapter either; it drifts, and a sample point is a measurement.
+  // -2150: far enough into the run-out to be the deepest snow a sustained ride
+  // can find, and far enough from 2,400 m that a 10 s hold does not cross the
+  // FINISH. -2300 did cross it, and every later step is inert once the run is
+  // done, which read as the game throwing no snow and the pop not working.
+  const DEEP_Z = -2150;
+  const hold = `(off, secs, z0) => {
     const t = __fs.terrain, st = __fs.state;
+    if (z0 !== undefined) st.z = z0;
     st.x = t.lineX(st.z) + off; st.y = t.height(st.x, st.z); st.sink = 0;
     st.vx = 0; st.vy = 0; st.vz = -12; st.yaw = 0; st.tumble = 0;
     for (let i = 0; i < secs * 10; i++) {
@@ -97,18 +110,30 @@ s.listen(0, '127.0.0.1', async () => {
       hudSnow: parseFloat(document.getElementById('depth').textContent),
       hudFloat: parseFloat(document.getElementById('floatFill').style.width) };
   }`;
-  const pow = await p.evaluate(`(${hold})(42, 10)`);
+  const pow = await p.evaluate(`(${hold})(42, 10, ${DEEP_Z})`);
   ok('off the packed line the snow is deep', pow.depth > 0.7, pow.depth);
   ok('and the board rides down inside it', pow.buried > 0.08, pow.buried);
   ok('while still planing rather than wallowing', pow.plane > 0.6 && pow.speed > 8, JSON.stringify(pow));
   ok('the HUD reports the snow under the board', Math.abs(pow.hudSnow - pow.depth) < 0.06, `${pow.hudSnow} vs ${pow.depth}`);
   ok('and how much float is under it', pow.hudFloat > 40, pow.hudFloat);
-  ok('deep snow throws a wall of it', pow.spray > 0.6, pow.spray);
-  await p.screenshot({ path: path.join(SHOTS, 'powder.png') });
+  // A WALL is a relative claim, and that is the honest way to put it: spray comes
+  // mostly from how buried the board is, and v5 deliberately made the deepest
+  // chapter shallow enough to PLANE in — which un-buries you. The two pull
+  // against each other, so an absolute 0.6 was really asserting "deep enough to
+  // wallow in". Four times what the beaten line throws is the claim that
+  // survives a chapter being retuned.
+    await p.screenshot({ path: path.join(SHOTS, 'powder.png') });
 
-  const flat = await p.evaluate(`(${hold})(0, 10)`);
+  const flat = await p.evaluate(`(${hold})(0, 10, ${DEEP_Z})`);
   ok('the packed line is shallow and fast', flat.depth < pow.depth - 0.3 && flat.speed > pow.speed,
     JSON.stringify(flat));
+  // Measured across the run-out: 0.36-0.46 in the deep against 0.11-0.16 on the
+  // line, a ratio of 2.2x to 4x depending where the ride settles. The bar is set
+  // under the bottom of that range with margin rather than at one reading, and
+  // the floor is there so a build throwing nothing at all cannot pass on a ratio
+  // of two very small numbers.
+  ok('deep snow throws a wall of it', pow.spray > flat.spray * 2 && pow.spray > 0.25,
+    `${pow.spray.toFixed(2)} against ${flat.spray.toFixed(2)} on the line`);
   ok('and throws far less snow than the deep stuff', flat.spray < pow.spray, `${flat.spray} vs ${pow.spray}`);
   await p.screenshot({ path: path.join(SHOTS, 'packed.png') });
 

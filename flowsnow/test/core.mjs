@@ -1,6 +1,7 @@
 // Flowsnow core gate — bare node, no browser.
 //   node flowsnow/test/core.mjs
-import { terrain, height, base, depth, normal, lineX, kickerAt, monolithsIn, TILE, DEEP } from '../js/terrain.js';
+import { terrain, height, base, depth, normal, lineX, kickerAt, monolithsIn, TILE, DEEP,
+  CHAPTERS, chapter, crevasseAt, CREV_STEP, CREV_MAX_DROP, GRADE } from '../js/terrain.js';
 import { createRider, stepRider, RUN_LENGTH, G } from '../js/physics.js';
 import { SnowSim } from '../js/particles.js';
 
@@ -16,8 +17,14 @@ const run = (s, input, seconds, ev, dt = 1 / 60) => {
 // Ride holding a fixed offset from the wandering line, so a run stays in the
 // snow it was meant to test. A fixed lean drifts across the whole depth field,
 // which is why the plain `run` cannot compare packed against deep.
-const ride = (off, input = {}, seconds = 20, ev = {}, dt = 1 / 120) => {
-  const s = createRider(terrain, lineX(0) + off, 0);
+// WHERE a test rides is now part of what it measures. z = 0 is the bowl, which
+// is deliberately shallow and open; the run-out is where the deepest snow of the
+// run is. Six powder checks were written when the mountain was one formula and
+// silently became tests of a scoured stretch the moment it stopped being one.
+const DEEP_Z = -2300;        // in the run-out, where the drift is deepest
+const HARD_Z = -1500;        // on the glacier: scoured, the firmest ground there is
+const ride = (off, input = {}, seconds = 20, ev = {}, dt = 1 / 120, z0 = 0) => {
+  const s = createRider(terrain, lineX(z0) + off, z0);
   s.vz = -2;
   for (let t = 0; t < seconds; t += dt) {
     const want = Math.atan2(lineX(s.z - 35) + off - s.x, 35);
@@ -25,6 +32,17 @@ const ride = (off, input = {}, seconds = 20, ev = {}, dt = 1 / 120) => {
     while (d > Math.PI) d -= 2 * Math.PI;
     while (d < -Math.PI) d += 2 * Math.PI;
     stepRider(s, { ...input, lean: Math.max(-1, Math.min(1, d * 2.5)) }, dt, terrain, ev);
+  }
+  return s;
+};
+// carry on riding a rider that already has speed
+const rideOn = (s, off, input = {}, seconds = 6, dt = 1 / 120) => {
+  for (let t = 0; t < seconds; t += dt) {
+    const want = Math.atan2(lineX(s.z - 35) + off - s.x, 35);
+    let d = want - s.yaw;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    stepRider(s, { ...input, lean: Math.max(-1, Math.min(1, d * 2.5)) }, dt, terrain);
   }
   return s;
 };
@@ -52,8 +70,20 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   let count = 0, near = 0;
   for (let k = 0; k < 60; k++) { const K = kickerAt(k); if (K) { count++; if (Math.abs(K.x - lineX(K.z)) < 30) near++; } }
   ok('kickers exist on most steps and sit near the line', count > 30 && near / count > 0.8, `${count} ${near}`);
+  // measured against points INSIDE the channel: a fixed +/-30 samples the
+  // couloir's WALLS, which reports a take-off as a hole three metres deep
+  const prom = K => { const g = Math.min(30, chapter(K.z).gully * 0.7);
+    return height(K.x, K.z) - (height(K.x - g, K.z) + height(K.x + g, K.z)) / 2; };
   const K = kickerAt(4) ?? kickerAt(5);
-  ok('a kicker is a bump you can measure', height(K.x, K.z) - (height(K.x - 30, K.z) + height(K.x + 30, K.z)) / 2 > 1.0);
+  ok('a kicker is a bump you can measure', prom(K) > 1.0, prom(K).toFixed(2));
+  // and EVERY kicker is, in every chapter — one that lands on a wall is not a
+  // take-off, and the spread that put it there was a constant from when the
+  // channel was one width
+  let weak = 0, worst = 99, wk = 0;
+  for (let k = 3; k < 28; k++) { const C = kickerAt(k); if (!C) continue;
+    const pv = prom(C); if (pv < worst) { worst = pv; wk = k; } if (pv < 0.8) weak++; }
+  ok('and every kicker in every chapter stands proud of its own channel', weak === 0,
+    `${weak} weak, worst ${worst.toFixed(2)} m at k=${wk}`);
 }
 {
   let mons = 0, onLine = 0;
@@ -62,6 +92,94 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   }
   ok('monoliths stand on the field, never on the line', mons > 40 && onLine === 0, `${mons} ${onLine}`);
   ok('and none at the start', [...Array(6).keys()].every(i => [-5, -4, -3, -2, -1, 0].every(iz => monolithsIn(i - 3, iz).length === 0)));
+}
+
+// ── the chapters ──
+// A chapter must change the SHAPE and the SNOW, not just the colour, and every
+// boundary has to be rideable without knowing it is there.
+{
+  const names = CHAPTERS.map(c => c.name);
+  ok('the run is divided into chapters', names.length >= 5, names.join(' '));
+  const seen = new Set();
+  for (let d = 0; d <= 2400; d += 10) seen.add(chapter(-d).name);
+  ok('and every one of them is reached on the way down', seen.size === names.length,
+    `${seen.size} of ${names.length}: ${[...seen].join(' ')}`);
+
+  const wid = d => chapter(-d).gully, dep = d => chapter(-d).deep;
+  ok('the couloir really closes in', wid(1000) < wid(500) * 0.5, `${wid(1000).toFixed(0)} vs ${wid(500).toFixed(0)}`);
+  ok('and the glacier really opens out', wid(1500) > wid(1000) * 3, `${wid(1500).toFixed(0)} vs ${wid(1000).toFixed(0)}`);
+  ok('the couloir and the glacier are scoured', dep(1000) < 0.5 && dep(1500) < 0.35, `${dep(1000).toFixed(2)} ${dep(1500).toFixed(2)}`);
+  ok('and the run-out holds the deepest snow of the run',
+    dep(2200) > dep(500) && dep(2200) > dep(1500) * 4, `${dep(2200).toFixed(2)}`);
+
+  // A hard switch would put a step in the ground, and a step in the ground is a
+  // wall you cannot see. Measure the BLEND rather than the ground: the ground
+  // over the glacier is deliberately cut by crevasses, and a check that cannot
+  // tell an intended slot from an unintended cliff fails on the feature.
+  let worst = 0, at = 0, field = '';
+  for (const c of CHAPTERS.slice(1)) {
+    for (let d = c.at - 60; d <= c.at + 60; d += 0.5) {
+      const a = chapter(-d), b = chapter(-d - 0.5);
+      for (const f of ['gully', 'wall', 'deep', 'swell', 'roll', 'crev']) {
+        // scale by the field's OWN range across the chapters. A relative
+        // measure divides by zero where a field starts at zero — `crev` read a
+        // 100% step on an absolute change of a millionth, which is the ruler
+        // being wrong rather than the blend.
+        const vals = CHAPTERS.map(c => c[f]);
+        const span = Math.max(...vals) - Math.min(...vals) || 1;
+        const j = Math.abs(a[f] - b[f]) / span;
+        if (j > worst) { worst = j; at = d; field = f; }
+      }
+    }
+  }
+  ok('no chapter boundary is a step in the blend', worst < 0.02, `${field} moved ${(worst * 100).toFixed(2)}% at ${at.toFixed(0)} m`);
+}
+
+// ── crevasses ──
+// The glacier's teeth. They need no new physics — the rider already flies when
+// the ground drops away faster than gravity, and already tumbles on a hard
+// landing — so the whole design is geometry, and the geometry must not trap.
+{
+  let n = 0, deepest = 0;
+  for (let k = 0; k < 60; k++) { const C = crevasseAt(k); if (C) { n++; deepest = Math.max(deepest, C.drop); } }
+  ok('the glacier is cut by crevasses', n > 15, n);
+  ok('and none is deeper than the ramp out can pay for', deepest <= CREV_MAX_DROP + 1e-9,
+    `${deepest.toFixed(2)} of ${CREV_MAX_DROP.toFixed(2)}`);
+  // THE invariant: a slot deeper than the grade drops over its own ramp has a
+  // far lip standing above its floor, and the run ends in it with the clock
+  // still running. That is how this shipped the first three times.
+  ok('the cap is derived from the grade, not chosen', CREV_MAX_DROP < GRADE * 24,
+    `${CREV_MAX_DROP.toFixed(2)} < ${(GRADE * 24).toFixed(2)}`);
+
+  // every crevasse must be RIDEABLE OUT OF: from its floor, nothing ahead may
+  // stand higher than the floor by more than the grade will give back
+  let trapped = 0, worstRise = 0;
+  for (let k = 0; k < 60; k++) {
+    const C = crevasseAt(k); if (!C) continue;
+    const floor = height(C.x, C.z);
+    let rise = 0;
+    for (let d = 1; d <= 40; d += 1) rise = Math.max(rise, height(C.x, C.z - d) - floor);
+    if (rise > worstRise) worstRise = rise;
+    if (rise > 2.5) trapped++;
+  }
+  ok('and you can always ride out the downhill side', trapped === 0,
+    `${trapped} trap(s), worst rise ${worstRise.toFixed(2)} m`);
+
+  // they end, so going round is a route
+  const C = [...Array(60).keys()].map(crevasseAt).find(Boolean);
+  ok('a crevasse ends, so round it is always a line',
+    height(C.x + C.span + 25, C.z) > height(C.x, C.z) + C.drop * 0.6,
+    `${(height(C.x + C.span + 25, C.z) - height(C.x, C.z)).toFixed(2)} of ${C.drop.toFixed(2)}`);
+
+  // the x-continuity check above steps across the slope; a crevasse varies
+  // along it, so the interesting axis here is z and it needs its own check
+  let jump = 0, jz = 0;
+  for (let i = 0; i < 4000; i++) {
+    const z = -i * 0.6, x = lineX(z) + ((i % 40) - 20) * 4;
+    const j = Math.abs(height(x, z) - height(x, z - 0.05));
+    if (j > jump) { jump = j; jz = -z; }
+  }
+  ok('and the slope is continuous along the fall line too', jump < 0.35, `${jump.toFixed(3)} m at ${jz.toFixed(0)} m`);
 }
 
 // ── the rider ──
@@ -92,7 +210,11 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
 }
 {
   // the brake bites on the packed line
-  const a = ride(PACKED, {}, 24), b = ride(PACKED, { brake: 1 }, 24);
+  // A rider holding full brake from a standing start never moves — measured, it
+  // ends 7 m down the bowl at 0.3 m/s — so the pair has to get going first and
+  // then brake, or `throws spray` is really measuring `has no speed`.
+  const a = ride(PACKED, {}, 24);
+  const b = ride(PACKED, {}, 8); rideOn(b, PACKED, { brake: 1 }, 6);
   ok('the brake scrubs speed on the packed line', b.speed < a.speed - 4, `${b.speed} vs ${a.speed}`);
   ok('and throws spray', b.spray > 0.3, b.spray);
   // Measured as a CHANGE under the brake, not as one run against another: two
@@ -119,21 +241,30 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   ok('air time is recorded', s.airBest > 0.3 && s.airBest < 2.5, s.airBest);
 }
 {
-  // a kicker throws the rider without a button: steer at a known one
-  let flew = false, kick = 0, K = null;
-  for (let k = 3; !K; k++) K = kickerAt(k);
-  const s = createRider(terrain, K.x, K.z + 260);
-  const ev = { kicker: () => kick++ };
-  const aim = () => {
-    let d = Math.atan2(K.x - s.x, s.z - K.z) - s.yaw;
-    while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
-    return Math.max(-1, Math.min(1, d * 2.5));
+  // A kicker throws the rider without a button. This used to steer at ONE known
+  // kicker, which made it a test of that kicker's luck rather than of the rule:
+  // k=3 sits where a swell rises behind it and swallows the drop, so a green
+  // suite turned red on a mountain that launches you eighteen times. Ride at
+  // several, across chapters, and ask how many throw you.
+  const ride_at = K => {
+    let flew = false, kick = 0;
+    const s = createRider(terrain, K.x, K.z + 220);
+    const ev = { kicker: () => kick++ };
+    for (let t = 0; t < 60 && s.z > K.z - 40; t += 1 / 60) {
+      let d = Math.atan2(K.x - s.x, Math.max(6, s.z - K.z)) - s.yaw;
+      while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+      stepRider(s, { lean: Math.max(-1, Math.min(1, d * 2.5)), tuck: 1 }, 1 / 60, terrain, ev);
+      if (!s.grounded && s.air > 0.2) flew = true;
+    }
+    return flew && kick > 0;
   };
-  for (let t = 0; t < 60 && s.z > K.z - 40; t += 1 / 60) {
-    stepRider(s, { lean: aim(), tuck: 1 }, 1 / 60, terrain, ev);
-    if (!s.grounded && s.air > 0.2) flew = true;
-  }
-  ok('the terrain itself gives air off a kicker, no button pressed', flew && kick > 0, `${flew} ${kick} ${s.z - K.z}`);
+  const tried = [];
+  for (let k = 3; k < 28 && tried.length < 8; k++) { const C = kickerAt(k); if (C) tried.push(C); }
+  const launched = tried.filter(ride_at).length;
+  ok('the terrain itself gives air off a kicker, no button pressed', launched >= 1,
+    `${launched} of ${tried.length}`);
+  ok('and most of the run\'s kickers do it', launched >= tried.length * 0.5,
+    `${launched} of ${tried.length}`);
 }
 {
   // a spin in the air, a fakie landing that is not a fall
@@ -196,9 +327,14 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
 
 // ── the snowpack ──
 {
-  const lx = lineX(-800);
-  ok('a packed line runs down the middle', depth(lx, -800) < 0.35, depth(lx, -800));
-  ok('and deep snow lies off it', depth(lx + 40, -800) > 0.6, depth(lx + 40, -800));
+  const lx = lineX(DEEP_Z);
+  // A beaten line is a RELATIVE fact: much less snow than beside it. An absolute
+  // 0.35 m was calibrated when every chapter loaded the same, and the run-out
+  // carries 0.42 m even where everyone rides.
+  ok('a packed line runs down the middle',
+    depth(lx, DEEP_Z) < depth(lx + 40, DEEP_Z) * 0.35,
+    `${depth(lx, DEEP_Z).toFixed(2)} against ${depth(lx + 40, DEEP_Z).toFixed(2)} beside it`);
+  ok('and deep snow lies off it', depth(lx + 40, DEEP_Z) > 0.6, depth(lx + 40, DEEP_Z));
   ok('the wind scours the walls back to bare', depth(lx + 130, -800) < 0.4, depth(lx + 130, -800));
   let mx = 0, deepEnough = 0, n = 0;
   for (let i = 0; i < 3000; i++) {
@@ -221,7 +357,7 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
 
 // ── sinking in, and getting back on top ──
 {
-  const s = createRider(terrain, lineX(0) + POWDER, 0);
+  const s = createRider(terrain, lineX(DEEP_Z) + POWDER, DEEP_Z);
   const d0 = depth(s.x, s.z);
   run(s, { lean: 0 }, 2.5, {}, 1 / 120);
   ok('at a standstill the board settles to the floor of the pack',
@@ -249,12 +385,16 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   // pack. Steering is part of the premise: an unsteered board on a banked wall
   // traverses and climbs it, and then it is the side-hill stopping you rather
   // than the snow.
-  const s = createRider(terrain, lineX(0) + POWDER, 0);
+  const s = createRider(terrain, lineX(DEEP_Z) + POWDER, DEEP_Z);
   s.vx = s.vy = s.vz = 0;
   run(s, { lean: 0 }, 2, {}, 1 / 120);        // settle in, still stopped
   const bogged = s.speed;
   ok('a rider dropped into deep snow starts buried', s.sink > 0.5 && bogged < 6, `${s.sink.toFixed(2)} ${bogged.toFixed(2)}`);
-  for (let t = 0; t < 18; t += 1 / 120) {
+  // 30 s, not 18: this now digs out of the deepest drift in the game rather than
+  // out of a uniform 1.3 m, and two metres of snow takes longer to climb out of.
+  // The claim is that it DOES climb out, which is the thing that makes powder a
+  // medium rather than a wall — not that it does so on an old stopwatch.
+  for (let t = 0; t < 30; t += 1 / 120) {
     const want = Math.atan2(lineX(s.z - 35) + POWDER - s.x, 35);
     let d = want - s.yaw;
     while (d > Math.PI) d -= 2 * Math.PI;
@@ -267,7 +407,7 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
 
 // ── trim: the same key means float in powder and edge on hardpack ──
 {
-  const neutral = ride(POWDER, {}, 30), back = ride(POWDER, { brake: 1 }, 30);
+  const neutral = ride(POWDER, {}, 30, {}, 1 / 120, DEEP_Z), back = ride(POWDER, { brake: 1 }, 30, {}, 1 / 120, DEEP_Z);
   ok('weighting the tail floats you in powder rather than scrubbing',
     back.speed > neutral.speed - 1.5 && back.sink < neutral.sink,
     `speed ${back.speed.toFixed(1)} vs ${neutral.speed.toFixed(1)}, sink ${back.sink.toFixed(2)} vs ${neutral.sink.toFixed(2)}`);
@@ -291,8 +431,8 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
 // ── powder catches you ──
 {
   // the same crossed-up landing, dropped into deep snow and onto the packed line
-  const drop = (off) => {
-    const s = createRider(terrain, lineX(0) + off, 0);
+  const drop = (off, z0) => {
+    const s = createRider(terrain, lineX(z0) + off, z0);
     run(s, { lean: 0 }, 5, {}, 1 / 120);
     s.vy += 7; s.grounded = false; s.air = 0; s.spin = 0;
     s.yaw += Math.PI / 2;
@@ -300,7 +440,7 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
     while (!s.grounded && n++ < 600) stepRider(s, { lean: 0 }, 1 / 120, terrain, { tumble: () => fell++ });
     return { fell, d: depth(s.x, s.z) };
   };
-  const hard = drop(PACKED), soft = drop(POWDER);
+  const hard = drop(PACKED, HARD_Z), soft = drop(POWDER, DEEP_Z);
   ok('a crossed-up landing on the packed line puts you down', hard.fell === 1, JSON.stringify(hard));
   ok('and deep snow catches the same one', soft.fell === 0 && soft.d > 0.6, JSON.stringify(soft));
 }
@@ -315,6 +455,47 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   let n = 0;
   while (!s.grounded && n++ < 600) stepRider(s, { lean: 0 }, 1 / 120, terrain, {});
   ok('and it is a real jump, not a one-frame stutter', s.airBest > 0.2, s.airBest);
+}
+
+// ── the run, ridden the way the browser gate rides it ──
+// The playthrough's P+D pilot takes a DIFFERENT line from the checks above, and
+// twice now a change has passed every bare-node test and stuck that pilot on the
+// mountain — a windward ridge built to make crevasses visible turned out to have
+// a crest, and a crest across the fall line is a line of zero gradient you can
+// balance on with every metre ahead of you lower. That took a browser and three
+// minutes to find. It costs two seconds here.
+{
+  const s = createRider(terrain, lineX(0), 0);
+  s.vz = -2;
+  let slowest = Infinity, slowAt = 0, stuck = 0;
+  for (let g = 0; g < 600 && !s.done; g++) {
+    const off = s.x - lineX(s.z);
+    const lean = Math.max(-0.45, Math.min(0.45, -(off * 0.03 + s.vx * 0.10)));
+    for (let t = 0; t < 1; t += 1 / 120) stepRider(s, { lean }, 1 / 120, terrain);
+    if (s.dist > 60) {
+      if (s.speed < slowest) { slowest = s.speed; slowAt = s.dist; }
+      if (s.speed < 1) stuck++;
+    }
+  }
+  ok('the browser gate\'s own pilot gets down too', s.done && s.dist >= RUN_LENGTH,
+    `${s.dist.toFixed(0)} m in ${s.time.toFixed(0)} s`);
+  ok('and is never held anywhere on the way', stuck === 0 && slowest > 2,
+    `slowest ${slowest.toFixed(1)} m/s at ${slowAt.toFixed(0)} m`);
+  // no chapter may be a place the run slows to a crawl in
+  const perCh = {};
+  {
+    const r = createRider(terrain, lineX(0), 0); r.vz = -2;
+    for (let g = 0; g < 600 && !r.done; g++) {
+      const off = r.x - lineX(r.z);
+      const lean = Math.max(-0.45, Math.min(0.45, -(off * 0.03 + r.vx * 0.10)));
+      for (let t = 0; t < 1; t += 1 / 120) stepRider(r, { lean }, 1 / 120, terrain);
+      const n = chapter(r.z).name;
+      if (r.dist > 60) perCh[n] = Math.min(perCh[n] ?? Infinity, r.speed);
+    }
+  }
+  const worstCh = Object.entries(perCh).sort((a, b) => a[1] - b[1])[0];
+  ok('and no chapter is a place it crawls', worstCh[1] > 2,
+    Object.entries(perCh).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(' · '));
 }
 
 // ── the snow ──

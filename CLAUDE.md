@@ -1530,10 +1530,51 @@ dependency on `hash21` and on `uShade`, `skyMaterial` declared neither, so the D
 failed to compile while the ground compiled fine and every picture still looked right.
 The house rule has a mirror — **a screenshot cannot see *works* any more than a gate
 can see *looks***.
+**THE RUN HAS FIVE CHAPTERS** (v5, and it is the content leap the look work kept
+pointing at): one run used to be ONE FORMULA from top to bottom, with nothing
+changing in 2,400 m but the light. `chapter(z)` is that same formula with its own
+numbers blended along z, and because it lives inside `base()` and `depth()` the
+renderer, the rider, the snow, the collision and the sun occlusion all read one
+surface and none of them knows a chapter exists — **bowl → gully → couloir →
+glacier → run-out**, each changing the SHAPE and the SNOW rather than the colour.
+**Crevasses need no new physics and that is the point**: the rider already flies
+when the ground drops faster than gravity and already tumbles on a hard landing,
+so SPEED is the answer to a crevasse, which inverts the powder chapters where
+speed is what you give up. Four things it cost, and every one is a **constant that
+was right for one formula and wrong the moment the formula varied**:
+- **A slot deeper than `GRADE × its ramp` is a PIT by arithmetic** — its far lip
+  stands above its own floor. The first cut left the rider sitting at the bottom
+  at 1,380 m with the clock still running, which is worse than dying.
+  `CREV_MAX_DROP` is derived from the grade so no one can choose a bigger number.
+- **A kicker's spread was a flat 50 m**, which put take-offs 25 m up the couloir's
+  17 m-wide wall: three measured NEGATIVE prominence — not bumps, just less wall.
+- **The run-out is as deep as the float model can lift a board out of.** Swept:
+  1.40 settles at 7.8 m/s and plane 0.63, **1.15 at 11.0 and 0.82**. Past ~1.2 the
+  payoff chapter stops planing and becomes a slog.
+- **Six powder checks silently became tests of the wrong place**, all starting at
+  `z = 0`, which is now the deliberately shallow bowl. WHERE a test rides is part
+  of what it measures — and the sample point is itself a measurement, since a 10 s
+  hold from `-2300` crosses the 2,400 m FINISH and every later step is inert.
+**THE LIP WAS BUILT, MEASURED THREE WAYS AND CUT**, which is the transferable
+finding. A 4.6 m slot 26 m ahead of a chase camera on a 17° slope is **invisible**
+— you find it by falling in. Real crevasses carry a windward ridge, so one was
+built: at a height that reads (2.57 m proud) the run sticks behind it, and at a
+height that does not read it STILL traps, because **a ridge across the fall line
+has a crest and a crest is a line of zero gradient you can balance on** — the
+pilot stopped dead on one with every metre ahead of it lower. Crevasse visibility
+is recorded as OPEN rather than papered over. **And the browser pilot rides in
+bare node now**: it takes a different line from every other check, two changes
+passed all of them and stuck it anyway, and that cost a browser and three minutes
+to find where it now costs two seconds — verified falsifiable by putting the lip
+back, which turns it red and names the chapter. One more round of *the page was
+right and the ruler was wrong*, three times in a sitting: a boundary check that
+divided by a field starting at zero read a 100% step on a change of a millionth;
+a prominence check measured the couloir's WALLS and called a take-off a hole; and
+a "never stops climbing" check counted frame-to-frame jitter at equilibrium.
 `window.__fs` is the seam the browser gate drives (`debug.step(seconds, input)` advances
 the game off the wall clock, since a sandbox with no GPU renders this at a handful of
 frames a second — the same discipline `sudsjack/` and `slaykallio/` use).
-Gates: `node flowsnow/test/core.mjs` (72 checks),
+Gates: `node flowsnow/test/core.mjs` (90 checks),
 `NODE_PATH=$(npm root -g) node flowsnow/test/smoke.cjs` (41) and
 `NODE_PATH=$(npm root -g) node flowsnow/test/playthrough.cjs` (9), plus the
 cabinet in `node test/hub-smoke.cjs`. **`smoke.cjs` proves the INTERFACE and
@@ -1588,8 +1629,16 @@ apart from the worktree path**, so the delta is zero. (Nine now rather than v2's
 the site has taken ten other lanes' deploys since, and the gate's own abort at
 `holding Start starts filling the home button` is one of them. The number is not the
 finding; the delta is.)
-**v4 is authored but NOT deployed** (2026-09-13): the branch carries it, CI is green
-on it, and `gh-pages` still serves v3. One thing that release taught about the
+**v4 deployed 2026-09-18 (commit `beec2390`)**, and it found a split that was not
+Flowsnow's: `hub/games.js` was imported under `?v=103` by `hub/hub.js` and `?v=96`
+by `hub/shell.js`, `hub/playlog-auto.js` and `toko/js/project-knowledge.js`, with
+`sw.js` precaching BOTH rather than reconciling them — so bumping one half would
+have left most of the site serving a catalogue a version behind. All four are one
+token now. Also learned: `gh-pages` ships its own `test/`, so copying the repo's
+in nests it and BOTH gate runs die at module load with zero checks — two runs
+agreeing because neither ran is not a baseline, and the count of checks that
+actually executed is part of the comparison now.
+**v5 is authored and NOT deployed** (2026-09-18): the branch carries it. One thing that release taught about the
 paperwork rather than the game — **a game version lives in two files**, its own
 `VERSIONS.md` and the `hub/versions.json` row, and CI's `versions.json agrees with
 every log` is what catches a release that moved only one. It caught this one. The
