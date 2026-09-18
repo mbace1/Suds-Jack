@@ -1,5 +1,108 @@
 # Toko Move — versions
 
+## v2.42 — 2026-09-18
+
+**The shift has a name now.** Roadmap item 7. Four city days, one per shift,
+announced on the title card BEFORE start — a roguelike modifier you meet by
+losing is a different genre, and this game decided at v2.26 that a number it
+will not show is a number it may not use. Every day rides a lever that already
+existed, which is Slay Kallio's ascension-ladder rule: a modifier that needs a
+new system is a second game wearing a hat.
+
+| day | what it does | rides |
+|---|---|---|
+| MATCH DAY | the Töölö trams crawl all morning | `liveNetwork.hold()`, repeated |
+| MARKET MORNING | more drops, and a premium in the Hakaniemi quarter | `alongOffers()` |
+| HELSINKI DAY | five encounters instead of three, double goodwill | `drawSchedule()`'s budget |
+| QUIET SUNDAY | a third of the trams gone, walking quicker | `HEADWAY_MIN` + `walkCost` |
+
+**And a shift NUMBER, because every shift was seed 7.** The event deck and the
+rival were both mounted on a hardcoded seed, so a player replaying the game got
+the same three encounters at the same three minutes for ever. A shift is now a
+number — random per visit, pinned by `?shift=N`, printed on the title card and
+the end screen so a shift can be quoted, replayed and handed to a bot. `?day=`
+pins the day, and `?day=none` is an ORDINARY day: the control the harness needs,
+since a modifier measured against itself is not measured at all. The job offers
+still do NOT vary by shift. That is the next thing to do rather than a thing
+done — varying them in the same version as the days would leave two changes
+arguing over one measurement.
+
+**THE BOT COULD NOT WALK, AND EVERY NUMBER THIS PROJECT HAS PRINTED CAME FROM
+A COURIER WHO REFUSED TO.** QUIET SUNDAY takes trams away and gives the
+pavement back, and it first measured as a flat 25-point loss with the
+compensation invisible, because `shifts.cjs` had no walk in it at all. A
+mechanic the harness cannot pursue is a mechanic nobody can balance — TURF's
+cache, for the third time. The bot now walks when walking there and catching
+from THERE beats standing here. Measured at 60 bots a cell:
+
+| | bot cannot walk | bot can walk |
+|---|---|---|
+| ordinary day | 68.3% | **81.7%** |
+| quiet Sunday | 40.0% | **70.0%** |
+
+Walking is worth +13 points on an ordinary day and +30 on a Sunday. The second
+number is the day working exactly as written; the first is a standing finding
+about every measurement before this one. It is also the first real payoff Local
+Knowledge (v2.40) has ever had — the stops you have been to are the shift.
+
+**Two days were INERT and the measurement said so.** This is v2.40's lesson
+arriving on schedule, and the gates now ask the question directly.
+- MATCH DAY first crowded families 4 and 10, because those are the stadium's
+  lines in the real city. The harness then showed **line 10 carrying 0.0% of
+  all catches in a shift** — half the day was aimed at a service this game
+  never uses. It crowds 2 and 4 now, which carry ~28% of every catch between
+  them and both really do run past the stadium, so the fiction survived contact
+  with the measurement.
+- MARKET MORNING keyed its premium on one stop id, and measured at **six offers
+  across sixty shifts**, which is not a cluster, it is a rumour. The premium is
+  a 600 m QUARTER now, and — the half that fires on every route — a market
+  morning offers a line's ordinary drop AND the quarter, so the day is more
+  work rather than only better-paid work. A first attempt to fix it by dealing
+  the market anchor into dispatch made things worse and was reverted: making
+  the market your DESTINATION takes it out of the drop window, because
+  `between` excludes both ends of the leg.
+
+**The crowd is a measured number, not a judged one.** A three-point ladder at
+80 bots a cell against an ordinary-day control: 45 ticks a hold reads inert
+(−1.3 points, the crowded families lose 1.6 of share), 110 reads brutal (−17.5,
+share −7.0), **80 ships** — felt, routed around, and far above the shift gate's
+40% floor.
+
+**The deck, measured.** 80 bots a cell, the walking bot, each bot pinned to its
+own shift number, against an ordinary-day control:
+
+| day | win rate | mean score |
+|---|---|---|
+| ordinary (control) | 85.0% | 1793 |
+| MATCH DAY | 67.5% | 1664 |
+| MARKET MORNING | 75.0% | **2190** |
+| HELSINKI DAY | 85.0% | 1760 |
+| QUIET SUNDAY | 63.7% | 1172 |
+| **what a player actually meets** | **76.3%** | 1721 |
+
+Read it as two hard days, one rich one and one mild one. MARKET MORNING is the
+shape an upside card should have — not easier, **richer**: +22% score for a
+10-point win rate, because a bag of three drops costs time the bot spends
+greedily. HELSINKI DAY is honestly the mildest of the four: it does what it
+says (five encounters, goodwill ×2, measured) and it costs about 58 ticks of a
+3000-tick morning, which is flavour rather than pressure. Said here rather than
+dressed up. MATCH DAY's cost read −10.0 in one block and −17.5 in another at
+the identical setting, which is the per-cell noise at this sample doing what
+v2.24 said it would; the direction is a finding, the size is not.
+
+Gates: `test/city-day.mjs` (83, bare node) asks whether the four days are well
+formed and whether every name they use is real IN THE SHIPPED PACK — a market
+at a stop that does not exist is the inert bug wearing a nicer hat.
+`test/days.cjs` (32, browser) asks the only question that matters: in the
+running game, does the day do anything? Six mutations, six caught. The other
+browser gates are now pinned to `?shift=1&day=none`, because a gate that lets
+a third of the trams vanish at random is measuring the dice.
+
+**Roadmap item 8, the ferry, is CLOSED rather than deferred.** Its condition was
+"only if the pack carries the Suomenlinna ferry as a layer". It does not — 34
+lines, 30 TRAM and 4 SUBWAY, no FERRY — so the set piece would need a service
+the city does not run, and this project does not author HSL data.
+
 ## v2.41 — 2026-09-18
 
 **The UI pass, from six screenshots.** Phone and desktop, title / dispatch /

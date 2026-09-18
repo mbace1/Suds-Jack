@@ -115,14 +115,22 @@ bot's cheapest-job policy off the same dispatch. A job the rival takes first
 is gone. Visible on the map and in the end screen (*the rival delivered 4*).
 The shift bot already IS this courier.
 
-### 7. City events
-The disruption system with a face on it: match day at the stadium (line 10
-full and slow), Hakaniemi market (a cluster of drops), Helsinki Day. One per
-shift, announced on the title card so the shift has a name.
+### 7. City events — SHIPPED v2.42 (four days, one per shift, named on the title card)
+The disruption system with a face on it. Four days, each riding a lever that
+already existed and none of them a new mechanic: MATCH DAY (the Töölö trams
+crawl), MARKET MORNING (more drops, and a premium in the Hakaniemi quarter),
+HELSINKI DAY (a wider event deck, double goodwill), QUIET SUNDAY (a third of
+the trams gone, walking quicker). The shift also got a NUMBER — random per
+visit, pinned by `?shift=N` — because every shift before this drew the same
+deck from the same hardcoded seed 7.
 
-### 8. Ferry
-Only if the pack carries the Suomenlinna ferry as a layer; if it does, one
-authored job across the water, and it is the shift's set piece.
+### 8. Ferry — CLOSED, the pack has no ferry
+The condition was "only if the pack carries the Suomenlinna ferry as a layer".
+It does not: `cities/helsinki.json` holds 34 lines, 30 TRAM and 4 SUBWAY, and
+no FERRY of any kind. So there is nothing to build a set piece on without
+authoring a service the city does not run, which is the one thing this project
+does not do with HSL data. Reopen only if the pack is rebuilt from a feed that
+includes the ferry.
 
 ## Exit for the roadmap
 A shift where something happened that was not the timetable — measured as

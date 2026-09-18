@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=15';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=16';
 import {TransitLayers} from './transit-layers.js?v=7';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=6';
@@ -12,17 +12,31 @@ import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {dots,cargoGlyph,minutes} from './ui.js?v=1';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
+import {drawCityEvent,family as dayFamily} from './city-events.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.41';
+const BUILD_VERSION='2.42';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=c=>({documents:'#4c7fb0','hot food':'#d65a31',parts:'#6b747b',fragile:'#b16aa5',equipment:'#6d604b',express:'#ca3f37','fresh food':'#5b9d58','market goods':'#b0803c'}[c]||'#e2683c');
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
 let flow,challenge,renderer,transit,city,water,ground,source,transitView=false,done=false,last=0,msgs=[];
 let box,roads,camera;
+// THE SHIFT SEED. Every shift used to be seed 7 — the same three encounters at
+// the same three minutes, the same rival claim, for ever. A deck that cannot
+// vary is a deck nobody plays twice, so a shift now has a NUMBER: random per
+// visit, pinned by `?shift=N` so a shift can be replayed and a bot can be
+// pointed at one, printed on the title card and the end screen so a player can
+// say which shift beat them. It drives the event deck, the rival and the day —
+// NOT the job offers, which still come from the same hash they always did.
+// That is deliberate and it is the next thing to do rather than a thing done:
+// varying the jobs in the same version as the days would leave two changes
+// arguing over one measurement.
+const params=new URLSearchParams(location.search);
+const shiftSeed=Number(params.get('shift'))||(1000+Math.floor(Math.random()*9000));
+const cityDay=drawCityEvent(shiftSeed,params.get('day'));
 const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
+function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,shiftSeed,cityDay,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -421,7 +435,7 @@ function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challen
 //
 // While riding, the two things you can DO are get off early and change plan, so
 // those lead; standing at a stop, boarding leads.
-const SHEET_SLOTS=['eventCard','rideStatus','recoveryControls','routeChoices','alongBoard','jobHead','hubTactics','jobBoard'];
+const SHEET_SLOTS=['cityDay','eventCard','rideStatus','recoveryControls','routeChoices','alongBoard','jobHead','hubTactics','jobBoard'];
 function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=$('sheet');if(!sheet)return null;
   for(const s of SHEET_SLOTS){let el=document.getElementById(s);
     if(!el){el=document.createElement('section');el.id=s;sheet.append(el);}
@@ -432,7 +446,7 @@ function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=
 
 function paintSheet(){if(!challenge)return;const b=sheetSlot('jobHead');if(!b)return;if(!challenge.active){b.innerHTML='';return;}const j=challenge.active,c=challenge.cargoRule(),constrained=c.modes||c.fragile||c.freshness||c.express;b.innerHTML=`<div class="jobTop" style="align-items:center"><span class="cargoBadge" style="border-color:${cargoColour(j.cargo)};font-size:18px">${cargoGlyph(c.icon)}</span><div style="flex:1;min-width:0"><h2 style="font-size:14px">${esc(challenge.name(challenge.currentTo()))}</h2><p class="hint">from ${esc(challenge.name(challenge.currentFrom()))} · ${minutes(challenge.remaining())} left${constrained?` · ${esc(c.rule.toLowerCase().split(';')[0].split(' — ')[0])}`:''}</p></div></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%;background:${cargoColour(j.cargo)}"></i></div>`;}
 function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m of msgs.slice(0,2)){const d=document.createElement('div');d.textContent=m;f.append(d);}}
-function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>best streak <b>×${(1+0.25*Math.max(0,Math.min(4,challenge.bestStreak-1))).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')} (${challenge.bestStreak})</b></p>${challenge.tips?`<p>tips from regulars <b>${challenge.tips}</b></p>`:''}${challenge.goodwill?`<p>goodwill <b>+${challenge.goodwill}</b></p>`:''}${window.__tm?.rival?`<p>${window.__tm.rival.name} delivered <b>${window.__tm.rival.delivered}</b>${window.__tm.rival.taken.length?` · took ${window.__tm.rival.taken.join(', ')}`:''}</p>`:''}${window.__tm?.visited?`<p>stops you have been to <b>${window.__tm.visited.size}</b></p>`:''}<p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}$('end').hidden=false;}
+function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>best streak <b>×${(1+0.25*Math.max(0,Math.min(4,challenge.bestStreak-1))).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')} (${challenge.bestStreak})</b></p>${challenge.tips?`<p>tips from regulars <b>${challenge.tips}</b></p>`:''}${challenge.goodwill?`<p>goodwill <b>+${challenge.goodwill}</b></p>`:''}${window.__tm?.rival?`<p>${window.__tm.rival.name} delivered <b>${window.__tm.rival.delivered}</b>${window.__tm.rival.taken.length?` · took ${window.__tm.rival.taken.join(', ')}`:''}</p>`:''}${window.__tm?.visited?`<p>stops you have been to <b>${window.__tm.visited.size}</b></p>`:''}<p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p><p class="hint">${cityDay?esc(cityDay.name)+' · ':''}shift #${shiftSeed}</p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}$('end').hidden=false;}
 
 // THE GROUND IS CACHED. Water, streets and place names are three of the four
 // most expensive layers on the board and NONE of them moves: they change when
@@ -471,7 +485,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
 
 async function init(){
   $('play').disabled=true;$('play').textContent='LOADING HELSINKI…';
-  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent='START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
+  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();paintDayCard();$('play').disabled=false;$('play').textContent='START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
 }
 
 // Tapping the board. The whole verb set is READ the network and time it, and
@@ -531,6 +545,16 @@ function showStop(node,at=null){const pop=$('pop'),body=$('popBody');if(!pop||!b
 // clock) and the rail is the map, and a control that changes what you are
 // looking at belongs on the thing it changes. It is placed in script against the
 // canvas rect for the same reason #pop is: the canvas is a grid area whose real
+// THE DAY, ON THE TITLE CARD. The shift has a name before it starts, which is
+// the whole of roadmap item 7: a modifier you meet by losing is a different
+// genre, so the card says what today does and which lines it slows.
+function paintDayCard(){const el=$('dayCard');if(!el)return;
+  const n=$('shiftNo');if(n)n.textContent=`shift #${shiftSeed}`;
+  if(!cityDay){el.innerHTML='';return;}
+  const fams=(cityDay.crowds?.families||[]).map(f=>{const l=(transit?.layers||[]).find(x=>dayFamily(x.name)===f);
+    return `<span class="lb" style="background:${esc(l?.colour||'#52676d')}">${esc(f)}</span>`;}).join(' ');
+  el.innerHTML=`<div class="dayCard"><span class="dayGlyph">${cityDay.glyph}</span><div><b>${esc(cityDay.name)}</b><p>${esc(cityDay.blurb)}</p>${fams?`<p class="dayChips">${fams} crowded all morning</p>`:''}</div></div>`;}
+
 // size is decided by aspect-ratio and max-height, so there is no element in the
 // document whose box is the picture.
 let _railAt='';

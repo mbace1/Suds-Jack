@@ -1,5 +1,5 @@
 // Toko Move v2.12.2 — concurrent courier jobs expose live tradeoffs without naming a correct answer.
-import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=15';
+import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=16';
 import {badge,inMinutes,about,cargoGlyph,minutes} from './ui.js?v=1';
 import {regularAt,standingOf,standingWord} from './regulars.js?v=2';
 import {planEstimate,nextDeparture,layerFor} from './timetable.js?v=1';
