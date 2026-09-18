@@ -1377,6 +1377,319 @@ Nordic block, per the marquee-as-cover rule the rest of the arcade follows) — 
 GDD's grim tone rather than the house's usual arcade brightness.
 Build tooling: none — same no-build rule as every other demo here.
 
+### Flowsnow (`flowsnow/`) — the snowboarding game, ACTIVE
+**Owner's brief, 2026-09-09: "a simplistic snowboarding game where Journey gliding
+or Sword of the Sea art style, mix with the realistic snowboarding of Shredders and
+snow particle physics simulations."** Taken as three separate instructions, because
+they pull in different directions and each one owns a different file: the ART is
+Journey, the HANDS are Shredders, and the SNOW is a simulation rather than a texture.
+One run, 2,400 m down a meandering gully, dawn-gold at the top and dusk at the bottom.
+**Three modules are PURE** — no DOM, no three.js, no clock — which is what lets
+`test/core.mjs` assert real numbers in bare node the way slaykallio's engine and
+turf's grid do. `main.js` is the only file that touches the page or the wall clock.
+**The board model is the game** (`js/physics.js`). The board has a HEADING and the
+rider has a VELOCITY, and **the two are allowed to disagree**; the edge is what pulls
+one after the other. Lean sets the edge, the edge turns the board along its sidecut,
+grip drags the velocity round after it as far as it can hold — ask for more and the
+velocity lags, and that lag (the slip angle) is the single quantity that scrubs speed,
+throws spray and drains flow. Nothing else models "sliding". **Air is not a button**:
+the ground falling away faster than gravity can follow IS the take-off, so a kicker
+throws you without asking, and Space only adds a pop on top. Landing across the line
+at speed is a fall; landing backwards is not — that is a board pointing the other way,
+and it rides **switch**.
+**Flow is the score.** A clean carve at speed earns it, air holds it, a landing pays
+out on it, a scrub or a fall spends it. Best under `flowsnow.best`; nothing leaves the
+browser, which is why the cabinet has a `score` entry and no leaderboard.
+**The snow is a simulation** (`js/particles.js`) — a 5,000-flake pool in typed arrays
+with gravity, drag, wind and a collision **against the terrain function**, so a flake
+that reaches the snow fades on its surface and never under it (a gate asserts exactly
+that). Spray comes off the working edge in proportion to speed, edge and skid; a
+landing throws a cloud sized by its impact.
+**The mountain is a function** (`js/terrain.js`) — every height and normal from
+`height(x, z)`, so the renderer, the rider, the snow and the collision cannot disagree
+about where the ground is. A ring of tiles follows the rider and rebuilds only the new
+ones, nearest first, because the ground under you must never be the last to arrive.
+**There are TWO surfaces** (v2, owner: *more powder and sinking-into-snow type
+gameplay*): `base(x, z)` is the firm floor, `depth(x, z)` is the loose snow lying over
+it, and `height()` is the sum — what you see, what the flakes settle on, and what the
+rider sinks INTO. Wind loads the gully, scours the walls back to bare and leaves a
+beaten line down the middle; a kicker is stamped firm, because you cannot build a
+take-off out of powder.
+**`sink` is the powder model, and everything follows from that one number.** At rest
+the board settles to the floor of the pack; speed PLANES it back out; trim says where
+the nose points while it does. Plowing costs sink × speed, so the resistance falls away
+as you slow — **a bog is somewhere you crawl out of, never a trap**. Deep snow runs at
+about 13 m/s against 20 on the packed line and scores several times more, so leaving
+the fast line is the decision the run is made of. **One key means two things and the
+medium decides**: a tail pushed into deep snow cannot bite, so the brake's pivot, scrub
+and grip cost all fade with the depth of the pack and what is left is pure trim — `↓`
+scrubs on hardpack and floats the nose in powder, `↑` tuck is faster on hardpack and
+buries you in powder. Buried, nose-heavy and quick goes **over the front**.
+**The snow is lit by hand, not by a light** (`js/snowmat.js`). A Lambert surface cannot
+do what a snowfield does, so the shader wraps the terminator (the shadow side stays
+luminous), adds a broad sheen toward the sun and a scatter of glints that wink as the
+camera passes them. **Fog resolves to the SKY IN THAT DIRECTION, not to one colour** —
+fogging to a single tone left a visible band where the far snow met the sky, so
+`skyAt()` is shared by the dome and the fog and the horizon simply dissolves.
+**Traps, and they are the part worth reading:**
+- **The velocity was pulled toward the board's NOSE**, which meant riding switch tried
+  to drag the whole board round and the rider stalled to walking pace on open snow.
+  The edge resists *lateral* motion only, so the pull target is **whichever end of the
+  board is nearer** — that one line is what makes switch a stance rather than a bug.
+- **A hard `Math.min` cap on the gully wall** gave it a flat top with a crisp edge, and
+  a crisp edge against the sky draws every mesh triangle as a sawtooth on the horizon.
+  It saturates through `tanh` now. The same pass halved the wind-ripple amplitude,
+  because fine noise on a launch lip is the difference between a kicker and a rattle.
+- **A kicker event keyed on vertical speed never fired.** A terrain launch is not a
+  jump: the test is the speed you were carrying (`> 8`), not the `vy` it produced.
+- **The browser gate read state in a different `page.evaluate` from the step that
+  produced it**, and the live rAF loop kept running in between — so a check saw a
+  rider several seconds past the moment under test. Step and read in ONE call.
+- **A LINEAR lift curve leaves a hump the rider cannot climb.** Plowing costs
+  sink × speed and sink falls roughly linearly with speed, so the product peaks in
+  the middle of the range: the rider stalled at walking pace and could never reach
+  a plane, which made powder a wall rather than a medium. The lift is a SQUARE
+  ROOT, which flattens the plow and lets a drop-in accelerate all the way through.
+- **Keying the brake fade to the current SINK made the float fight itself.** Planing
+  lifts you out, which handed the tail its edge back, which scrubbed, which slowed
+  you, which sank you again; weight-back bogged to walking pace. Whether an edge can
+  bite is a property of the snow you are in, so it is keyed to `depth`, not to sink.
+- **Scoring keyed to sink paid you for sinking**, which is the opposite of the skill.
+  It is keyed to depth × speed × planing: deep snow *ridden well*.
+- **Taking off from a sunk position landed on the same frame.** The jump began below
+  the surface, the landing test fired immediately, and a pop in powder was a stutter
+  — 250 take-offs in one run and no air. Leaving the ground means the board comes OUT
+  of its trench: zero the sink and start from the surface.
+- **Every particle emitter fired from inside the mountain.** The board rides below the
+  surface, so a plume spawned at the rider started underground, and the sim only lifts
+  a flake out once it is already falling. One `surfaceY()` helper, used by all of them.
+- **Two tests were measuring the terrain rather than the model.** An unsteered board
+  traverses and climbs the gully wall, so "a bog is not a trap" was really measuring a
+  side-hill; and a held lean carves across a depth field that varies in space, so two
+  step sizes end in different snow and the medium, not the integrator, explains the
+  gap. Both had to be re-posed — steered, and down the packed line.
+- **An exponential ramp to zero is a RangeError, not a silence.** `impact` is
+  `max(0, -vn)`, so a grazing re-contact — most landings on rolling ground —
+  lands with an impact of exactly 0; `audio.land` scaled its thud by that and
+  `_tone` ramps *exponentially* to the gain it is handed. It threw out of
+  `physicsStep` and cost that frame its render. A tone nobody can hear is not
+  played at all.
+- **Every module was imported BARE, so a fix would not have shipped.**
+  `index.html` busts `main.js`, and `main.js` asked for `./audio.js` with no
+  token — a returning browser keeps every module except the entry. All eleven
+  carry one from v3, and `core.mjs` asserts both halves: every local import is
+  tokened, and ONE module is never asked for under two tokens (`palette.js` has
+  three importers, `snowmat.js` two).
+- **And the gate could not see that the plume filled the frame.** `deep snow throws a
+  wall of it` passed green while the rooster tail hid the rider, the trench and the
+  mountain: the camera sits behind you, so a tail thrown astern is a tail thrown at
+  the lens. Thrown up rather than back, and a third of the count. This is the house
+  rule earned again — **a gate that certifies *works* cannot see *looks***, so an art
+  change ends in a screenshot.
+**What a LOOK at the whole run found, and it is the owner's call** (2026-09-10).
+Nobody had seen the middle or the bottom; a capture every 300 m says the snow
+reads as a **flat gradient** for most of the descent, and the reason is not the
+ground. Measured: relief is even along the whole run (5.51 mean over the first
+700 m against 5.86 over the last), and the surface has proper fractal grain —
+0.21 m over a board length, doubling per scale step to 5.8 m over a swell. The
+hour is not it either: the same ground at p 0.06, 0.40 and 0.80 renders almost
+identically. It is the **shading**. `wrap = ndl * 0.55 + 0.45` compresses the
+Lambert range so a board-length undulation (a 6° facet, with the sun at 20-31°)
+moves the pixel by about **2% luminance** — invisible after tone mapping. The
+wrapped terminator is canon and it is what makes snow read as snow; it is also
+what spends the grain. Journey's dunes read because they have a hard lit/shadow
+face. Reconciling those two is a look decision, not a bug, so it is recorded
+rather than changed: the options are a firmer wrap, or a second unwrapped
+detail term that shades slope independently of the sun. The one frame where the
+game already looks right is ~1900 m, where a low sun rakes a ridge with an arch
+on it — worth looking at before deciding.
+**And the answer taken (v4) was BOTH, as two terms rather than one dial.** The sun
+gets a real terminator — a lit face and a shadow face, softened only by the sun's
+own width — and the sky term stays WRAPPED, because snow really is lit from every
+direction by every other bit of snow; `uForm` mixes them, at 0.72. On top of that,
+`terrain.occlusion` marches the horizon along the sun's azimuth over `height()` and
+`Field` **bakes it per vertex** when a tile is built, re-baking one tile a frame once
+the sun has drifted 0.05 down the run — so the far field carries the shadow of every
+swell and gully wall with no shadow map. Three things it cost, all of them the same
+mistake in different clothes — **a number that is right in the abstract and wrong
+against the range the game actually occupies**:
+- **A terminator has to SPAN the range the ground occupies.** Ramping
+  `smoothstep(-0.05, 0.32, ndl)` put every pixel past it with the sun at 20-31° over
+  a field tilted ~17° — fully lit, and FLATTER than the wrap it replaced. `-0.10 ..
+  0.92` is where a real slope lives.
+- **Amplitude is a SLOPE.** Sastrugi at 0.028 m over a 0.47 m period is a **21°
+  facet**, and a field of those is corrugated iron: the frame read as corduroy to the
+  horizon. 0.005 m is a skin, and the raking light is what makes it read, not its size.
+- **Fade detail on the FOOTPRINT, not on distance.** A 1-2.4 m grain seen at 200 m
+  down a grazing surface covers a fraction of a pixel and beats against the grid.
+  A pixel's footprint is distance over `dot(n, V)`; on that, the skin simply runs out.
+The sky gained two ranges of **ridgeline** read off the azimuth, and because `skyAt()`
+is shared by the dome and the fog, a far slope now fogs into the range that is actually
+behind it. **And a gate caught what four screenshots could not**: `SKY` grew a
+dependency on `hash21` and on `uShade`, `skyMaterial` declared neither, so the DOME
+failed to compile while the ground compiled fine and every picture still looked right.
+The house rule has a mirror — **a screenshot cannot see *works* any more than a gate
+can see *looks***.
+**THE RUN HAS FIVE CHAPTERS** (v5, and it is the content leap the look work kept
+pointing at): one run used to be ONE FORMULA from top to bottom, with nothing
+changing in 2,400 m but the light. `chapter(z)` is that same formula with its own
+numbers blended along z, and because it lives inside `base()` and `depth()` the
+renderer, the rider, the snow, the collision and the sun occlusion all read one
+surface and none of them knows a chapter exists — **bowl → gully → couloir →
+glacier → run-out**, each changing the SHAPE and the SNOW rather than the colour.
+**Crevasses need no new physics and that is the point**: the rider already flies
+when the ground drops faster than gravity and already tumbles on a hard landing,
+so SPEED is the answer to a crevasse, which inverts the powder chapters where
+speed is what you give up. Four things it cost, and every one is a **constant that
+was right for one formula and wrong the moment the formula varied**:
+- **A slot deeper than `GRADE × its ramp` is a PIT by arithmetic** — its far lip
+  stands above its own floor. The first cut left the rider sitting at the bottom
+  at 1,380 m with the clock still running, which is worse than dying.
+  `CREV_MAX_DROP` is derived from the grade so no one can choose a bigger number.
+- **A kicker's spread was a flat 50 m**, which put take-offs 25 m up the couloir's
+  17 m-wide wall: three measured NEGATIVE prominence — not bumps, just less wall.
+- **The run-out is as deep as the float model can lift a board out of.** Swept:
+  1.40 settles at 7.8 m/s and plane 0.63, **1.15 at 11.0 and 0.82**. Past ~1.2 the
+  payoff chapter stops planing and becomes a slog.
+- **Six powder checks silently became tests of the wrong place**, all starting at
+  `z = 0`, which is now the deliberately shallow bowl. WHERE a test rides is part
+  of what it measures — and the sample point is itself a measurement, since a 10 s
+  hold from `-2300` crosses the 2,400 m FINISH and every later step is inert.
+**THE LIP WAS BUILT, MEASURED THREE WAYS AND CUT**, which is the transferable
+finding. A 4.6 m slot 26 m ahead of a chase camera on a 17° slope is **invisible**
+— you find it by falling in. Real crevasses carry a windward ridge, so one was
+built: at a height that reads (2.57 m proud) the run sticks behind it, and at a
+height that does not read it STILL traps, because **a ridge across the fall line
+has a crest and a crest is a line of zero gradient you can balance on** — the
+pilot stopped dead on one with every metre ahead of it lower. Crevasse visibility
+is recorded as OPEN rather than papered over. **And the browser pilot rides in
+bare node now**: it takes a different line from every other check, two changes
+passed all of them and stuck it anyway, and that cost a browser and three minutes
+to find where it now costs two seconds — verified falsifiable by putting the lip
+back, which turns it red and names the chapter. One more round of *the page was
+right and the ruler was wrong*, three times in a sitting: a boundary check that
+divided by a field starting at zero read a 100% step on a change of a millionth;
+a prominence check measured the couloir's WALLS and called a take-off a hole; and
+a "never stops climbing" check counted frame-to-frame jitter at equilibrium.
+`window.__fs` is the seam the browser gate drives (`debug.step(seconds, input)` advances
+the game off the wall clock, since a sandbox with no GPU renders this at a handful of
+frames a second — the same discipline `sudsjack/` and `slaykallio/` use).
+Gates: `node flowsnow/test/core.mjs` (90 checks),
+`NODE_PATH=$(npm root -g) node flowsnow/test/smoke.cjs` (41) and
+`NODE_PATH=$(npm root -g) node flowsnow/test/playthrough.cjs` (9), plus the
+cabinet in `node test/hub-smoke.cjs`. **`smoke.cjs` proves the INTERFACE and
+`playthrough.cjs` proves the MOUNTAIN** — the same split eeri has, and for the
+same reason. smoke.cjs tested the ending by putting the rider at `z = -2395`
+and stepping three seconds, so nothing ever rode the 2,400 m in between; the
+playthrough rides all of it and found a crash at 163 m on its first run. Its
+pilot is **P plus D**, and the D is not a refinement: undamped it overshoots,
+pins the edge, and the edge scrubs nearly everything, so the run reads 0.06 m/s
+mid-descent and the terrain looks like a bog it is not. **A tireless bot that
+rides badly measures its own riding.**
+**THE SPRAY IS INSTANCED QUADS, NOT POINTS** (v6). A `THREE.Points` sprite can only
+be a round disc, and a round disc at the old 90 px cap is a bokeh ball — the rooster
+tail was a string of beads with a rider somewhere inside it. One draw call either
+way, so the quad costs nothing and can be any shape. Three things make it snow and
+none is more particles: a crystal in flight is **STRETCHED**, in **screen** space
+(a flake thrown at the lens is a dot, the same flake thrown across the frame is a
+streak, and that difference IS the motion — stretched along its world velocity the
+one particle that should stay a point smears); snow **scatters forward** hard, so
+the plume between you and the sun lights up rather than going grey, and the old
+material had no view-to-sun term at all; and each kind gets its own edge. Three of
+the numbers were then wrong in the same way — **right about a particle, wrong about
+a mass**: the stretch at 0.085 bought a 44% elongation on a 5 m/s crystal, which is
+invisible; a crystal at alpha 0.85 is an object you can point at, so the plume is a
+string of them; and a cloud at 0.38 is the same fault one scale up. **Density has to
+come from OVERLAP** — twice as many at two thirds the size and half the alpha, and
+the same snow becomes a texture. Two traps worth the space. **A world-space quad has
+no `gl_PointSize` clamp**, and that clamp was doing real work: a cloud born a metre
+from the lens is a six-metre disc, the first cut painted **20% of the frame** and put
+the rider inside his own tail (v3's lesson in new clothes), and every emit count in
+the game had been tuned against the 90 px cap. It clamps in **NDC** now —
+`r * P[1][1] / depth` is the half-size as a fraction of half the frame height, the
+same clamp in units that need no viewport — with the caps converted from the old
+pixel ones, so the amount of snow is unchanged and everything else is what is new.
+And **a mirror is not a rotation**: the quad is laid on the basis `(perp, dir)`, and
+`perp = (-dir.y, dir.x)` has determinant **−1**, so every quad's winding reversed,
+back-face culling ate all of it, and the frame had 680 live flakes and **zero** pixels
+of snow — no error, no warning, all 41 gates green. `vec2(dir.y, -dir.x)` is the
+proper rotation, and the material is `DoubleSide` besides, because a particle quad has
+no meaningful facing and trusting the winding of a procedurally built basis is the
+fragility that cost the two passes. Both halves are now gated, because neither is a
+taste question: **the mesh is toggled and the frame diffed** (it must paint, and it
+must paint under 12% of the picture). A gate still cannot see whether the plume LOOKS
+like snow — that ended in five screenshots across four chapters, as it always does.
+Named rather than implied: the streak is the particle's own velocity, **not its
+velocity relative to the camera**, so a chase camera at 20 m/s does not smear the air
+it flies through; that is a real speed cue this does not have, and it wants its own
+pass because it would streak the ambient snowfall into rain.
+Hub entry: `hub/games.js` id `flowsnow`, marquee `flowsnow`
+in `hub/art.js` (Atari sky bars, dune faces in hard lit/shadow, an arch **lighter than
+the sky** per the marquee-as-cover rule, the traveller cropped by the bottom edge
+mid-carve), accent `#f4a27a`, `pad: 'native'`, and its own lead kinds in `hub/topics.js`.
+fi / en / ja, signed, `../hub/shell.js` for the way home.
+**Deployed to `gh-pages` 2026-09-09 (v1, commit `820be2eb`), by hand — `deploy-hub.mjs`
+is not the tool for a game folder.** The catalogue files are the trap, exactly as
+slaykallio's section says: `games.js`, `art.js` and `topics.js` are **THEIRS**, the live
+copies carry cabinets this branch has never had, so the entry, the marquee and the lead
+kinds are **spliced into** the site's copies rather than overwriting them, and
+`versions.json` gets ONE row by hand. Those three modules' bytes moved, so **a bump has
+to climb**: every importer was renumbered (`games.js` 70→71, `art.js` 21→22,
+`topics.js` 5→6 in `hub/hub.js`, `hub/shell.js`, `hub/toko-cabinet.js` and `sw.js`) and
+the worker rolled v59→v60, or a returning browser holds the old `hub.js` and asks for
+the old catalogue by name. The deployed copy also takes the SITE's shell token (`v35`),
+not this branch's.
+**v2 deployed 2026-09-10 (commit `597a822a`)**, the same shape one rung narrower: only
+`games.js` moved this time (`art.js` and `topics.js` did not change, so their tokens
+stayed put), its token climbed 73→74 across the same four importers and the worker rolled
+v62→v63. Two things that deploy taught. **Splice in BINARY**: the site's `games.js` ends
+`\r\n`, and a python text-mode read-and-write silently normalised it, putting a byte
+outside the entry into the diff — a deploy that is supposed to be one cabinet has to be
+one cabinet all the way down. And **run the gate against the SITE tree and baseline it**:
+`test/hub-smoke.cjs` on the spliced site read six failures, and the identical six come off
+an untouched `gh-pages` checkout, because the gate is written for a tree that holds every
+project's source and the site is a curated tree that does not. Six against six is the
+finding; six on its own would have looked like a broken deploy. `gh-pages` also moved
+twice while that deploy was being built, so **re-fetch immediately before the push** and
+replay the one commit onto the new head — the other lane touched only `concrete/`.
+**v3 deployed 2026-09-11 (commit `e233a67d`)**, and it added one step worth keeping:
+**walk the arcade route on the spliced tree before pushing**, not just the game. The
+gates boot `flowsnow/` directly; a player comes off the floor, so a throwaway probe took
+the cabinet's own Play link, checked the title printed the shipped number, tapped into
+gameplay and measured the way home — which is the release contract's step 5 and the one
+thing a green game gate cannot stand in for. It also caught that `__fs` exposes the
+version as `version`, not `VERSION`. Same shape as v2 otherwise: `games.js` 75→76 across
+the same four importers — `hub/toko-cabinet.js` was **stranded at 74**, which is the
+split-state bug the rule exists to prevent, so the climb brought it level — and the
+worker rolled v68→v69. The baseline discipline paid again: nine hub-gate failures on the
+spliced site, and the run against an untouched `gh-pages` checkout is **byte-identical
+apart from the worktree path**, so the delta is zero. (Nine now rather than v2's six —
+the site has taken ten other lanes' deploys since, and the gate's own abort at
+`holding Start starts filling the home button` is one of them. The number is not the
+finding; the delta is.)
+**v4 deployed 2026-09-18 (commit `beec2390`)**, and it found a split that was not
+Flowsnow's: `hub/games.js` was imported under `?v=103` by `hub/hub.js` and `?v=96`
+by `hub/shell.js`, `hub/playlog-auto.js` and `toko/js/project-knowledge.js`, with
+`sw.js` precaching BOTH rather than reconciling them — so bumping one half would
+have left most of the site serving a catalogue a version behind. All four are one
+token now. Also learned: `gh-pages` ships its own `test/`, so copying the repo's
+in nests it and BOTH gate runs die at module load with zero checks — two runs
+agreeing because neither ran is not a baseline, and the count of checks that
+actually executed is part of the comparison now.
+**v5 deployed 2026-09-18 (commit `753b3d4c`)**, carrying the five chapters. One thing that release taught about the
+paperwork rather than the game — **a game version lives in two files**, its own
+`VERSIONS.md` and the `hub/versions.json` row, and CI's `versions.json agrees with
+every log` is what catches a release that moved only one. It caught this one. The
+local run could not: `test/hub-smoke.cjs` had been run during the merge verification,
+BEFORE the version bump, and a cabinet gate run ahead of the bump is a gate run
+against the previous release. **It goes after.**
+**v6 is authored and NOT deployed** (2026-09-18): the branch carries it and
+`gh-pages` still serves v5.
+**Never verified live from a session.** The agent proxy refuses `github.io`, so the
+Pages run concluding `success` is the only evidence the deploy has — the cabinet and a
+run from the title into gameplay still want a human's eyes on the real URL.
+Build tooling: none — same no-build rule as every other demo here.
+
 ### Paper Route — Dawn Run (`paperboy/`)
 A **Paperboy clone** built on Three.js r167 with an **isometric, flat-shaded homage to
 the original Paperboy art** — orthographic 3/4 camera, bright sunny-day palette (sky-blue
@@ -2524,6 +2837,23 @@ slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
   test/
     core.mjs    # bare node: exact numbers, English-only, and a bot over 160 runs
     smoke.cjs   # a browser: puppets, the topple, the staging rules, the plate, both formats
+flowsnow/       # Flowsnow — snowboarding: Journey's look, Shredders' hands, simulated snow
+  VERSIONS.md
+  vendor/       # three.js r167, local — not the CDN
+  js/
+    terrain.js  # TWO SURFACES: base + depth = height; the gully, kickers, monoliths
+    physics.js  # THE BOARD: heading vs velocity, and the sink it rides at in the pack
+    particles.js# THE SNOW: a 5,000-flake pool that collides with the terrain function
+    snowmat.js  # the look: a sun terminator over a wrapped sky term, a skin, ridgelines
+    figure.js   # the robed traveller, and a scarf on a verlet chain
+    world.js    # the tile ring that follows the rider, the track, the contact shadow
+    palette.js  # the hour: every colour on screen asks hour(p) as the run descends
+    main.js     # boot, the loop, the camera, the HUD — the only file that touches the DOM
+    input.js audio.js lang.js
+  test/
+    core.mjs    # bare node: the terrain, the board model, the snow, the tokens
+    smoke.cjs   # a browser: the INTERFACE — a tap starts a ride, the HUD, the recap
+    playthrough.cjs # a browser: the MOUNTAIN — all 2,400 m of it, ridden and timed
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate

@@ -4,7 +4,7 @@
 // snow. The figure stands across the board (regular stance), leans into the
 // edge, crouches into a tuck, and reaches for the board in a grab.
 import * as THREE from 'three';
-import { RIDER } from './palette.js';
+import { RIDER } from './palette.js?v=1';
 
 const SCARF_N = 14, SCARF_SEG = 0.24, SCARF_W = 0.13;
 

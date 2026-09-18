@@ -7,6 +7,226 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v6 — 2026-09-18
+**The spray becomes snow: instanced streaks instead of a bag of marbles**
+- **A `THREE.Points` sprite can only ever be a round disc**, and a round disc at
+  the old 90 px cap is a bokeh ball — the rooster tail was a string of beads with
+  a rider somewhere inside it. The snow is one draw call of **instanced quads**
+  now (`snowSprayMaterial`), which costs the same and can be any shape.
+- **A crystal in flight is STRETCHED, and the stretch has to be in SCREEN space.**
+  A flake thrown at the lens is a dot; the same flake thrown across the frame is a
+  streak, and that difference IS the motion. Stretching along the world velocity
+  would smear the one particle that should stay a point. It is overlapping
+  **streaks**, not overlapping discs, that read as a sheet of snow.
+- **Snow scatters forward hard**, so the plume between you and the sun lights up
+  rather than going grey. The old material had no view-to-sun term at all.
+- **Three faults, and each one is a number that was right about a different
+  thing:**
+  - *The stretch at 0.085.* A crystal leaves the edge at about 5 m/s, which bought
+    a **44%** elongation — invisible. At 0.95 it is three to seven times its own
+    width and the packed-line carve finally reads as thrown rather than sprinkled.
+  - *A crystal at alpha 0.85.* Each one is then an object you can point at, and
+    the plume is a string of them. The density has to come from **overlap**: 0.42,
+    twice as many at two thirds the size, and the same snow becomes a texture.
+  - *A cloud at alpha 0.38.* Same fault one scale up — a veil is built from many
+    faint layers, so 0.22 and twice as many.
+- **A WORLD-SPACE QUAD HAS NO `gl_PointSize` CLAMP, and that clamp was doing real
+  work.** Without it a cloud born a metre from the lens is a six-metre disc across
+  the whole frame: the first cut painted **20% of the picture** and put the rider
+  inside his own tail — v3's lesson back in new clothes. The quad is clamped in
+  **NDC** instead, which is the same clamp in units that need no viewport
+  (`r * P[1][1] / depth` is the half-size as a fraction of half the frame height),
+  and the caps are the old pixel caps converted, so the amount of snow is
+  unchanged and everything above it is what is new. 3% of the frame now.
+- **THE BUG THAT COST TWO PASSES: a mirror is not a rotation.** The quad is laid
+  out on the basis `(perp, dir)`, and `perp = (-dir.y, dir.x)` gives that basis a
+  determinant of **−1** — so every quad's winding was reversed, back-face culling
+  ate all of it, and the frame had 680 live flakes and **zero** pixels of snow.
+  No error, no warning, and all 41 gates green. `vec2(dir.y, -dir.x)` is the
+  proper rotation; the material is `DoubleSide` as well, because a particle quad
+  has no meaningful facing and relying on the winding of a procedurally built
+  basis is exactly the fragility that just cost the two passes.
+- **Two gates for the two halves of that**, because neither is a taste question:
+  *the snow in the air is actually drawn* (the mesh is toggled and the frame
+  diffed — it fails with `share: 0` against the mirrored basis) and *the plume is
+  not the whole frame* (under 12%). A gate still cannot see whether the plume
+  LOOKS like snow, so this pass ends where every art pass here ends — in a
+  screenshot, five of them, across four chapters.
+- **A cloud's edge wobbles with ANGLE.** Keyed to `floor(vUv.x * 5.0)` it is five
+  vertical bands down a circle, which reads as a striped disc — still a disc,
+  which is the whole thing this is trying not to be.
+- **The backlight MIXES rather than adds.** Added, a few hundred overlapping
+  quads with the sun dead ahead clip to a white hole with the rider inside it.
+- **Not done, and named rather than left implied:** the streak is the particle's
+  own velocity, not its velocity *relative to the camera*. A chase camera at
+  20 m/s should smear the air it flies through, and that is a real speed cue this
+  does not have — but it would streak the ambient snowfall into rain, so it wants
+  its own pass and its own look.
+- Gates: `core.mjs` 90, `smoke.cjs` **43** (was 41), `playthrough.cjs` 9. The
+  playthrough is byte-identical to v5 (2,400 m, 5,872) — the change is visual and
+  touches no number the rider reads.
+
+## v5 — 2026-09-18
+**The run gets somewhere to go: five chapters, and a glacier with teeth**
+- **One run was one formula from top to bottom.** A gully, dunes, rollers and
+  kickers for 2,400 m, with nothing changing but the light. `chapter(z)` in
+  `terrain.js` is the same formula with its own numbers, blended along z, and
+  because it lives inside `base()` and `depth()` the renderer, the rider, the
+  snow, the collision and the sun occlusion all read one surface and none of them
+  has to know a chapter exists. **BOWL** (open, shallow, a place to drop in) →
+  **GULLY** (the game as it was) → **COULOIR** (17 m wide, scoured, committing) →
+  **GLACIER** (wide, bare, cut by crevasses) → **RUN-OUT** (the deepest snow of
+  the run, at dusk). Each changes the SHAPE and the SNOW, not just the colour.
+- **Crevasses need no new physics, and that is the point.** The rider is already
+  thrown when the ground drops away faster than gravity, and already tumbles on a
+  hard enough landing. So SPEED is the answer to a crevasse — carry it and you
+  sail the gap, crawl at it and you drop in and meet the far wall. That inverts
+  the powder chapters, where speed is what you give up.
+- **THE RULE THAT STOPS A SLOT BEING A PIT IS ARITHMETIC.** Over its ramp out the
+  mountain descends `GRADE * WALL_DOWN`; a slot deeper than that has a far lip
+  standing above its own floor, and nothing gets out. Measured, the first cut left
+  the far wall 5.6 m up over 15 m against 4.5 m of grade and the rider **sat at
+  the bottom of it at 1,380 m with the clock still running** — worse than dying.
+  `CREV_MAX_DROP` is derived from the grade so a bigger number cannot be chosen.
+- **THE LIP WAS BUILT, MEASURED THREE WAYS AND CUT**, and it is the finding worth
+  keeping. Rendered and looked at, a 4.6 m slot 26 m ahead of a chase camera on a
+  17° slope is **not visible at all** — you find it by falling in, which is a
+  gotcha in a game that telegraphs everything else. Real crevasses carry a
+  windward ridge, so one was built. At a height that reads (2.57 m proud) the run
+  sticks behind it at 1,370 m. At a height that does not read it STILL traps: a
+  ridge across the fall line has a **crest**, a crest is a line of zero gradient,
+  and the pilot stopped dead balanced on one at 1,416 m with every metre ahead of
+  it lower. Both failed, so there is no lip. **Crevasse visibility is OPEN** — see
+  the limits below.
+- **A kicker's spread was a constant from when the channel was one width.** At a
+  flat 50 m it put take-offs 25 m up the couloir's wall, and three of them
+  measured NEGATIVE prominence: not bumps, just less wall. The spread is the
+  chapter's now, and the gate checks every kicker in every chapter stands proud of
+  its own channel rather than checking one kicker at one fixed width.
+- **The run-out is as deep as the float model can lift a board out of.** Swept at
+  the deepest drift: `deep` 1.40 settles at 7.8 m/s and plane 0.63, 1.25 at 9.7,
+  **1.15 at 11.0 and plane 0.82**. Past about 1.2 the payoff chapter stops planing
+  and becomes a slog, so the ceiling is measured rather than chosen.
+- **Six checks silently became tests of the wrong place.** Every powder check
+  started at `z = 0`, which is now the bowl — deliberately shallow. They ride the
+  run-out now, and the sample point is itself a measurement: `-2300` is where all
+  four powder claims hold at once, but a 10 s hold from there **crosses the
+  2,400 m finish** and every later step is inert, which read as the game throwing
+  no snow. `-2150` leaves room. WHERE a test rides is part of what it measures.
+- **"Throws a wall of it" is now a RELATIVE claim**, and the reason is a real
+  tension: spray comes mostly from how buried the board is, and making the deepest
+  chapter shallow enough to plane in un-buries you. An absolute 0.6 was asserting
+  "deep enough to wallow in". Measured 0.36-0.46 against 0.11-0.16 on the line —
+  2.2x to 4x — so the bar is twice the line with a floor, set under the bottom of
+  the measured range rather than at one reading.
+- **The browser pilot rides in bare node now.** Two changes passed every
+  bare-node test and stuck the playthrough's P+D pilot on the mountain, because it
+  takes a different line. That took a browser and three minutes to find; it costs
+  two seconds here, and the check is verified falsifiable — putting the lip back
+  turns it red and names the chapter (`glacier 0.0`).
+- **My own rulers were wrong three times in one sitting**, which is the pattern to
+  watch: a boundary check that divided by a field starting at zero read a 100%
+  step on a change of a millionth; a prominence check measured a couloir's walls
+  and called a take-off a hole; and a "never stops climbing" check counted
+  frame-to-frame jitter at equilibrium. Kindling's lesson, three more times: *the
+  page was right and the ruler was wrong.*
+- Gates: `core.mjs` **90**, `smoke.cjs` 41, `playthrough.cjs` 9 — 2,400 m in
+  168 s, best air **0.93 s** and **2 falls** against v4's 0.03 s and none, which
+  closes the "the pilot only carves" gap v3 recorded without anyone aiming at it.
+  Tokens: `terrain.js?v=3`, `js/main.js?v=5`.
+- **Open, and honest:** crevasses are under-telegraphed — they work, they do not
+  trap, and you cannot reliably see one coming. The two routes left are a visual
+  treatment rather than a geometric one (a darker inner face; the 2.4 m tile mesh
+  cannot resolve the slot's wall today) or accepting them as a glacier's hazard
+  that punishes speed you cannot see past. And the wind-carved skin still reads on
+  deep powder in the run-out, where wind would have carved nothing — `skin()` is
+  in the shader and does not know the snow depth under it.
+
+## v4 — 2026-09-13
+**The snow gets form: a real terminator, a skin, baked sun, and a horizon**
+- **The snow had no form and the cause was one line.** v3's `wrap = ndl*0.55+0.45`
+  compressed the whole Lambert range, so a board-length facet moved the pixel by
+  about 2% luminance and the mountain read as a flat gradient for most of the
+  descent. There are **two terms** now: the sun keeps a real terminator (a lit face
+  and a shadow face, softened only by the sun's own width) and the sky term stays
+  WRAPPED, because snow really is lit from every direction by every other bit of
+  snow. `uForm` mixes them, at 0.72.
+- **The terminator has to SPAN the range the ground occupies.** The first cut ramped
+  `smoothstep(-0.05, 0.32, ndl)`, and with the sun at 20-31° over a field tilted ~17°
+  every pixel sits past 0.32 — fully lit, flatter than the wrap it replaced, and two
+  captures came back as paper. It ramps `-0.10 .. 0.92` now, which is where a real
+  slope lives.
+- **Sun occlusion is BAKED per vertex** (`terrain.occlusion`, a horizon march along the
+  sun's azimuth over `height()`), so the far field carries the shadow of every swell
+  and gully wall with no shadow map. `Field` re-bakes a tile a frame once the sun has
+  drifted 0.05 down the run.
+- **A skin, and the amplitude is a SLOPE.** Sastrugi lie across the wind, long along it
+  and short across, their crests wandering; under them a coarser dune grain. The first
+  cut used 0.028 m over a 0.47 m period, which is a **21° facet** — a field of those is
+  corrugated iron, and the frame read as corduroy. 0.005 m is a skin, and what makes it
+  read is the light raking across it, not its size.
+- **Fade detail on the FOOTPRINT, not on distance.** A 1-2.4 m grain seen at 200 m down
+  a grazing surface covers a fraction of a pixel and beats against the grid; fading on
+  distance alone drew metre-wide rake lines to the horizon. A pixel's footprint is
+  distance over `dot(n, V)`, and on that the skin simply runs out.
+- **The sky has mountains in it.** Two ranges of ridgeline read off the azimuth, the far
+  one all but dissolved in the haze — so the frame has a scale beyond the gully wall,
+  and `skyAt()` being shared by the dome and the fog means a far slope fogs into the
+  range that is actually behind it.
+- **Snow scatters forward**, so looking into the sun across it lifts the whole field —
+  but as a lift in the SHADOWS (`1 - 0.7*sun`), not a second specular. Stacked on the
+  sheen it blew two frames to white through ACES.
+- **A gate caught what four screenshots could not.** `SKY` grew a dependency on `hash21`
+  and on `uShade`; `skyMaterial` declared neither, so the DOME failed to compile while
+  the ground compiled fine — the pictures still looked right. `smoke.cjs` and
+  `playthrough.cjs` both failed on `VALIDATE_STATUS false`. The house rule has a mirror:
+  a screenshot cannot see *works* any more than a gate can see *looks*.
+- Gates: `core.mjs` 72, `smoke.cjs` 41, `playthrough.cjs` 9. Tokens: `terrain.js?v=2`,
+  `snowmat.js?v=2`, `world.js?v=2`, `js/main.js?v=4`.
+- Honest limits: this is the ground only. The spray is still Points bokeh, the snowpack
+  still does not deform, and the run is still one seed with no chapters in it.
+
+## v3 — 2026-09-10
+**A crash on an ordinary landing, and the gate that rides the mountain**
+- **A landing with no impact threw.** `impact` is `max(0, -vn)`, so a grazing
+  re-contact — which is most landings on rolling ground — lands with an impact
+  of exactly 0. `audio.land` scales its thud by that, and `_tone` RAMPS
+  EXPONENTIALLY to the gain it is given; an exponential ramp to zero is a
+  RangeError, not a silence. It threw out of `physicsStep`, so the frame it
+  happened on never rendered. A tone nobody can hear is now simply not played.
+- **`test/playthrough.cjs` is new, and it is why the bug was found.**
+  `smoke.cjs` proves the interface and proves the ENDING by putting the rider at
+  `z = -2395` and stepping three seconds; nothing rode the 2,400 m in between,
+  which is where the mountain is. The new gate rides all of it and asserts the
+  descent finishes, never bogs down, keeps a downhill pace, and crosses both
+  mediums. It caught the crash at 163 m on its first run. Verified falsifiable:
+  with the guard removed it FAILS and names the metre, rather than dying — a
+  throw inside the ride is caught and reported, not allowed out of the evaluate.
+- **The gate's pilot needed a D term, and that is a finding about gates rather
+  than about snow.** Undamped, the bot overshoots the line, pins the edge, and
+  the edge scrubs nearly everything: the run reads 340-476 s and 0.06 m/s
+  mid-descent, which looks exactly like a bog in the terrain. It is not one —
+  measured in bare node, a rider at REST in deep snow reaches 1 m/s in 0.4 s and
+  18 m/s in a minute, so v2's *"a bog is somewhere you crawl out of, never a
+  trap"* holds. Damped, the same mountain rides in 158 s and never drops below
+  12 m/s. A tireless bot that rides badly measures its own riding.
+- **Every module was imported BARE, so this fix would not have shipped.**
+  `index.html` busts `main.js` and `main.js` asked for `./audio.js` with no
+  token — a returning browser keeps every module but the entry. All eleven now
+  carry one, and `core.mjs` asserts both halves of the rule: every local import
+  is tokened, and ONE module is never asked for under two tokens (`palette.js`
+  has three importers, `snowmat.js` two, and two tokens for one module is two
+  instances of it with the state split). `js/main.js?v=3`.
+- Gates: `core.mjs` 72, `smoke.cjs` 41, `playthrough.cjs` 9. The title screen also
+  printed `v1` through v2 AND v3 while the cabinet advertised the real number;
+  it reads the shipped version now and a check fails if code and log disagree.
+- Honest limits: the playthrough's pilot only carves — best air 0.03 s and zero
+  falls across the descent — so the kickers, the pop and the tumble paths are
+  exercised by `smoke.cjs` and not by the ride. And a LOOK at the whole run
+  found something no gate can see, recorded in CLAUDE.md rather than changed
+  here: the snow reads as a flat gradient because the wrapped terminator spends
+  the surface grain. That is a look decision and it is the owner's.
+
 ## v2 — 2026-09-10
 **The snowpack gets a depth, and the board rides IN it**
 - Owner direction: *more powder and sinking-into-snow type gameplay.* The

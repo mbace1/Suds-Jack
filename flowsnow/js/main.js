@@ -3,18 +3,18 @@
 // snow in particles.js, both pure; this file is the only one that touches the
 // DOM or the clock.
 import * as THREE from 'three';
-import { terrain } from './terrain.js';
-import { createRider, stepRider, RUN_LENGTH } from './physics.js';
-import { SnowSim } from './particles.js';
-import { hour } from './palette.js';
-import { makeUniforms, skyMaterial, snowPointsMaterial } from './snowmat.js';
-import { Figure } from './figure.js';
-import { Field, Trail, Shadow } from './world.js';
-import { Input } from './input.js';
-import { Audio } from './audio.js';
-import { pickLang, t } from './lang.js';
+import { terrain } from './terrain.js?v=3';
+import { createRider, stepRider, RUN_LENGTH } from './physics.js?v=1';
+import { SnowSim } from './particles.js?v=1';
+import { hour } from './palette.js?v=1';
+import { makeUniforms, skyMaterial, snowSprayMaterial } from './snowmat.js?v=3';
+import { Figure } from './figure.js?v=1';
+import { Field, Trail, Shadow } from './world.js?v=3';
+import { Input } from './input.js?v=1';
+import { Audio } from './audio.js?v=1';
+import { pickLang, t } from './lang.js?v=1';
 
-export const VERSION = 1;
+export const VERSION = 6;
 const BEST_KEY = 'flowsnow.best';
 const STEP = 1 / 120;
 const MAX_SNOW = 5000;
@@ -46,21 +46,29 @@ const figure = new Figure(scene);
 
 // ---- the snow ----
 const sim = new SnowSim(MAX_SNOW);
-const pgeo = new THREE.BufferGeometry();
-const posAttr = new THREE.BufferAttribute(sim.pos, 3); posAttr.setUsage(THREE.DynamicDrawUsage);
+// One instanced quad per flake rather than one Point: a Point can only be a
+// round disc, and a round disc at 90 px is a bokeh ball. The quad is stretched
+// along the flake's own screen-space velocity, which is what makes thrown snow
+// read as thrown. Still one draw call.
+const pgeo = new THREE.InstancedBufferGeometry();
+pgeo.setAttribute('position', new THREE.Float32BufferAttribute(
+  [-0.5, -0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 0, -0.5, 0.5, 0], 3));
+pgeo.setIndex([0, 1, 2, 0, 2, 3]);
+const posAttr = new THREE.InstancedBufferAttribute(sim.pos, 3); posAttr.setUsage(THREE.DynamicDrawUsage);
+const velAttr = new THREE.InstancedBufferAttribute(sim.vel, 3); velAttr.setUsage(THREE.DynamicDrawUsage);
 const dataArr = new Float32Array(MAX_SNOW * 3);
-const dataAttr = new THREE.BufferAttribute(dataArr, 3); dataAttr.setUsage(THREE.DynamicDrawUsage);
-pgeo.setAttribute('position', posAttr); pgeo.setAttribute('aData', dataAttr);
-pgeo.setDrawRange(0, 0);
-const points = new THREE.Points(pgeo, snowPointsMaterial(u));
+const dataAttr = new THREE.InstancedBufferAttribute(dataArr, 3); dataAttr.setUsage(THREE.DynamicDrawUsage);
+pgeo.setAttribute('iPos', posAttr); pgeo.setAttribute('iVel', velAttr); pgeo.setAttribute('iData', dataAttr);
+pgeo.instanceCount = 0;
+const points = new THREE.Mesh(pgeo, snowSprayMaterial(u));
 points.frustumCulled = false; scene.add(points);
 function syncSnow() {
   const n = sim.count;
   for (let i = 0; i < n; i++) {
     dataArr[i * 3] = sim.age[i] / sim.life[i]; dataArr[i * 3 + 1] = sim.size[i]; dataArr[i * 3 + 2] = sim.kind[i];
   }
-  posAttr.needsUpdate = true; dataAttr.needsUpdate = true;
-  pgeo.setDrawRange(0, n);
+  posAttr.needsUpdate = true; velAttr.needsUpdate = true; dataAttr.needsUpdate = true;
+  pgeo.instanceCount = n;
 }
 
 // ---- state ----
@@ -116,6 +124,7 @@ const events = {
 function applyHour(p) {
   const h = hour(p);
   u.uSun.value.set(h.sunDir[0], h.sunDir[1], h.sunDir[2]);
+  field.setSun(h.sunDir[0], h.sunDir[1], h.sunDir[2]);
   u.uSunCol.value.setRGB(...h.sun); u.uLit.value.setRGB(...h.lit); u.uShade.value.setRGB(...h.shade);
   u.uZenith.value.setRGB(...h.zenith); u.uHorizon.value.setRGB(...h.horizon); u.uFog.value.setRGB(...h.fog);
   u.uFogDensity.value = h.fogDensity;
@@ -200,16 +209,19 @@ function physicsStep(inp, dt) {
   // spray off the working edge. The board rides BELOW the surface in powder,
   // so the plume has to leave the snow rather than the buried edge — emitted at
   // the board it fired from inside the mountain and was never seen.
-  sprayAcc += s.spray * 1300 * dt;
+  sprayAcc += s.spray * 2600 * dt;
   let n = Math.floor(sprayAcc); sprayAcc -= n;
   if (n > 0) {
     figure.edgePoint(s, P, D);
     P.y = surfaceY(P.x, P.z);
-    sim.burst(n, P.x, P.y, P.z, D.x, D.y, D.z, 1.8 + s.speed * 0.45, 0.6, 1.0, 0.16, 0);
+    // twice as many at two thirds the size: the same snow, a finer texture, and
+    // enough of them that the streaks actually overlap into a sheet rather than
+    // reading as a string of beads
+    sim.burst(n, P.x, P.y, P.z, D.x, D.y, D.z, 1.8 + s.speed * 0.45, 0.6, 1.0, 0.115, 0);
   }
   // the rooster tail: a buried board at speed throws a wall of it up behind
   if (s.grounded && s.sink > 0.12) {
-    tailAcc += s.sink * Math.min(1, s.speed / 14) * 340 * dt;
+    tailAcc += s.sink * Math.min(1, s.speed / 14) * 1100 * dt;
     n = Math.floor(tailAcc); tailAcc -= n;
     if (n > 0) {
       tmp.set(0, 0.1, 0.55).applyQuaternion(figure.root.quaternion).add(figure.root.position);
@@ -218,7 +230,7 @@ function physicsStep(inp, dt) {
       // tail aimed straight astern is a tail aimed at the lens, and at speed it
       // filled the frame and hid the run
       D.set(0, 0.96, 0.28).applyQuaternion(figure.root.quaternion).normalize();
-      sim.burst(n, tmp.x, tmp.y, tmp.z, D.x, D.y, D.z, 1.7 + s.speed * 0.26, 0.7, 1.05, 0.34, 1);
+      sim.burst(n, tmp.x, tmp.y, tmp.z, D.x, D.y, D.z, 1.7 + s.speed * 0.26, 0.7, 1.05, 0.24, 1);
     }
   }
   // a low haze off the tail at speed
