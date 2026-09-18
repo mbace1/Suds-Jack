@@ -67,7 +67,16 @@ export const TUNING = {
     dirSnapDeg: 45,
     indicatorWidth: 0.34, indicatorFlashHz: 25,
     arrow: { radius: 0.5, length: 0.9 },               // tip sits exactly at impact point
-    rimSpikes: 5,
+    // v255 (PLAYTEST_2026-09-17.md §5.1): the wheel must READ. The old five
+    // spikes were 0.12 x 0.30 cones on a 0.68 rim, mostly buried in the tyre —
+    // bumps in the lab, nothing at game scale — and a featureless torus
+    // spinning about its axle does not change its picture, so the rev-up
+    // (the tell before the dash) was invisible. Now: a sawblade, a hub, and
+    // spokes, all merged into ONE geometry (6 draw calls -> 1).
+    rimSpikes: 8,
+    spike: { base: 0.20, length: 0.70, sink: 0.10 },   // sink = how far the cone's base sits inside the tyre
+    tube: 0.30,                                        // tyre thickness, x radius — thin enough to leave a hole the spokes show through
+    hub: { r: 0.13, depth: 0.16, spokes: 3, spokeW: 0.09, spokeD: 0.09 },   // 3 bars through the centre = 6 arms
     recoverTime: 0.8,
   },
 

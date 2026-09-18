@@ -19,8 +19,8 @@
 // back through them. window.__ed is the same API, for the gate and the console.
 
 import * as THREE from 'three';
-import * as L from './level.js?v=207';
-import { TUNING } from './tuning.js?v=207';
+import * as L from './level.js?v=208';
+import { TUNING } from './tuning.js?v=208';
 
 const STORE_KEY = 'tokoDropLevels';
 const ZOOMS = [30, 60, 120, 240];          // px per second on the timeline

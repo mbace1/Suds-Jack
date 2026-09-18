@@ -7,6 +7,35 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v255 — 2026-09-18
+**TORO reads: a spoked sawblade in one draw call** *(owner: "1,2,3" on the playtest's ship list — this is 3)*
+- **The wheel was a donut.** Five 0.12 × 0.30 cones on a 0.68 rim, most of
+  each buried in the tyre — bumps in the lab, nothing at game scale — and a
+  featureless torus spinning about its axle *does not change its picture*,
+  so the rev-up (the 1.6 s tell before the dash) existed only for the code.
+  TORO's whole telegraph was the red arrow.
+- **Now:** eight cones 0.20 × 0.70 seated on the tyre (`TUNING.toro.spike`),
+  a hub and three spoke bars through the centre (`TUNING.toro.hub`), tyre
+  0.30 — thin enough to leave a hole the spokes show through. The rev-up is
+  a picture: a sawblade with spokes, accelerating.
+  `design/toro-before-after-v255.png`. *(A first cut fattened the tyre to
+  0.40 and grew the hub to 0.24 in a 0.28 hole — the spokes vanished inside
+  the wheel. Looked at the picture, thinned it back.)*
+- **One geometry.** Tyre, cones, hub and spokes are concatenated by hand
+  (`concatGeometries()` — the vendored build has no `BufferGeometryUtils`;
+  every piece is a non-indexed position/normal/uv triple, so a merge is three
+  appends) into `toroWheelGeometry()`. **Draw calls per TORO 6 → 1**
+  (8 TOROs: 68 → 28 on a 20-call floor — the same as 8 GLOBBOs).
+  `PLAYTEST_2026-09-17.md` §5.1 T1/T2 and §4 P2, shipped together.
+- Not done, by choice: T3's dark tread band (one material per body — colour
+  = species), T4's bank into the turn (motion, another day), T5's size
+  1.0 → 1.2 (balance — the collision radius would change).
+- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
+  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
+- Cache-bust `?v=207` → `?v=208`; HUD label → v255
+
+---
+
 ## v254 — 2026-09-18
 **Revenge is a species trait now — the ten shooters' corpses bite back, from wave 3, capped on the field** *(owner: "1,2,3" on the playtest's ship list — this is 2)*
 - **Who bites:** `TUNING.revenge.biters` — SPITTOR, FANNER, WEEVA,
