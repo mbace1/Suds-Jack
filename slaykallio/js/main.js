@@ -7,10 +7,10 @@
 // synced to the real state so nothing can drift. `window.__sk` is the seam
 // the smoke test drives, and it can set the replay delays to zero.
 
-import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=41';
-import * as engine from './engine.js?v=41';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=42';
+import * as engine from './engine.js?v=42';
 import { Arena } from './scene.js?v=32';
-import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=37';
+import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=42';
 import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=37';
 import { paintCardPic } from './cardart.js?v=31';
 import { drawMap } from './map.js?v=31';
@@ -25,7 +25,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 41;
+const VERSION = 42;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -1107,6 +1107,10 @@ window.__sk = {
     // a cutout painted at full size, for looking at the art rather than the scene
     look: (id, mutated = 0) => paintCutout({ ...(ENEMIES[id] ?? CHARACTERS[id])[theme].look, id, mutated }, 3, arena.figureMood()),
     encounterCount: () => ENCOUNTERS.length,
+    // the world scale of a figure's plane — the contact sheet needs it, because
+    // a sheet of raw textures hides the whole size hierarchy
+    enemyScale: id => ENEMIES[id]?.scale ?? 1,
+    lookOf: id => (ENEMIES[id] ?? CHARACTERS[id])?.[theme]?.look ?? {},
     events: () => EVENTS.map(e => e.id),
     // force the next fork to offer exactly these spans, for driving one screen
     forkTo: nodes => { state.route.steps[state.route.step] = nodes; openMapPanel(); },

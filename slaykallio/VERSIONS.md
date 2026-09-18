@@ -7,6 +7,79 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v42 — 2026-09-18
+**THE BEAR HAD NEVER HAD A HEAD — the non-person cast, rendered at full size for the first time**
+
+Owner: *"I would like to create more cool turf like graphics."* No image
+generation is possible in this environment (`scripts/assets.mjs doctor`: no
+`GEMINI_API_KEY`, no `MESHY_API_KEY`), so this is the other half of the same
+job — the ten figures `ART_REQUEST.md` §5 calls **"the biggest remaining
+seam"**, drawn in code, which is how every other picture in this repo is made.
+
+A contact sheet was built first (`test/castsheet.cjs`, not a gate — it makes a
+picture for a person), and it found worse than a style gap:
+
+**TWO FIGURES WERE DRAWN OUTSIDE THEIR OWN TEXTURE.** The bear painter reaches
+`cx + 172` on a 256-wide texture centred at 128, so **44 pixels of muzzle and
+one eye fell off the right edge from the day it was written** — which is why
+the act-two boss read as a tombstone rather than an animal. The rat spans 334px
+in the same 256 and lost its tail on one side and its whiskers on the other.
+Every gate was green throughout. Fixed by the rule this codebase already
+applies to TURF's plates: **size off the INK, never the frame** — paint to a
+scratch canvas nothing can clip, measure the alpha that came out, place that.
+A painter can now draw wherever it likes and a new one cannot silently lose a
+limb. Gated.
+
+**THE TEN WERE REALLY THREE DRAWINGS.** Four painters served ten enemies and
+`look` carried nothing but colour, so the three rats were one rat printed three
+times — the King Rat had no crown and no scar — the blob and its spawn were the
+same drawing, and the Gull King was the gull with a 4px zig-zag. TURF's own
+*"eighteen portraits of one enemy"*, in art rather than in behaviour. Each now
+carries what the ART_REQUEST says it is: the **Bin Rat** wears the bin (a crisp
+packet stuck to its flank, a strip of peel), the **King Rat** has a bottle-cap
+crown on bent wire with one cap missing and two closed slashes across the
+shoulder, the **Tar Blob** is a different MATERIAL rather than a darker hex (an
+opaque skin over the suspended junk, a hard specular where the torch hits a wet
+back, and the thorns it answers a blow with), and the **Gull King** wears a
+crown of **bread tags** — five flat notched clips in five colours off five
+different loaves, which is the joke the ART_REQUEST asked for.
+
+**AND A ROUND TRIP WORTH WRITING DOWN, BECAUSE THE TOOL LIED.** A contact sheet
+renders TEXTURES. The size hierarchy between these figures lives on the
+puppet's world PLANE (`ENEMIES[id].scale`, 0.42 for a pigeon to 1.32 for the
+Bear), so the sheet showed ten same-sized drawings and a size fix looked
+obviously needed. Adding one multiplied the two hierarchies together and made
+**the act-two boss shorter than the hero** on the bridge — which the sheet
+could not show either. The texture-level scale is gone, every figure fills its
+own texture the same way, the world plane does what it always did, and the
+contact sheet applies the world scale so it cannot tell that lie again.
+
+**A correction to this session's own record**: `ENEMIES[id].scale` was called
+"dead data read by nothing" in v40's notes. It is not — it sizes the puppet's
+plane, and it is the whole size hierarchy.
+
+**Two real regressions caught on the way, both mine.** The mutation pass looked
+for somewhere to put a grown eye inside a hard-coded box (`x 30..W-30`,
+`y 60..0.62H`) written when every figure filled its texture; once they were
+fitted it no longer overlapped them and **a mutated rat grew zero eyes**, so
+nightfall stopped being visible on it. It searches the figure's own ink now.
+And the tar blob's first gloss pass washed the whole mass at 0.72 alpha and
+buried its eyes and mouth — a material pass that costs a figure its read is
+worse than the recolour it replaced.
+
+**Two older gates were asserting the hierarchy in the wrong place**, and that
+is a recalibration with a reason rather than a threshold nudge: they compared
+ink COVERAGE between figures, which worked only because the painters drew to
+their own assumed extents — the bear's 43% *included the head that had fallen
+off the edge*. Coverage is uniform by design now; the hierarchy is asserted off
+the world plane, and what is left of those two checks is the honest question
+they can still answer: did the painter paint.
+
+Gates: `core.mjs` 850 / 0, `smoke.cjs` **148 / 0** (six new: nothing runs off
+its own texture, the three rats are three sizes AND three drawings, a spawn is
+smaller than what it came off, the Gull King outgrows the gull, the Bear is the
+biggest thing in the game).
+
 ## v41 — 2026-09-18
 **The synergy pass: every class axis deepened, neutrals that can join a build, rarity as potential, and ARTIFACTS**
 

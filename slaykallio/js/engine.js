@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=41';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=42';
 
 // THE ONE PLACE A RUNG IS READ. Every rule that varies by ascension asks this
 // and nothing else, so the ladder is a table in data.js rather than six

@@ -393,8 +393,17 @@ const check = (name, ok, extra = '') => {
     }
     return out;
   });
-  check(`the bird painter paints (pigeon ${(inked.pigeon * 100).toFixed(0)}%, gull ${(inked.gull * 100).toFixed(0)}%)`, inked.pigeon > 0.06 && inked.gull > inked.pigeon);
-  check(`the bear is the biggest thing in the game (${(inked.the_bear * 100).toFixed(0)}% of its sheet)`, inked.the_bear > 0.3 && inked.the_bear > inked.gull_king);
+  // These two used to compare INK COVERAGE between figures and read a size
+  // hierarchy out of it. That worked only because every painter drew to its own
+  // assumed extents — and two of them drew OUTSIDE the texture, so the numbers
+  // they compared were partly a measure of how badly a figure was clipped (the
+  // bear's 43% included the 44px of head that fell off the right edge). Every
+  // figure is fitted to its own ink now, so coverage is uniform by design and
+  // the hierarchy is asserted off the world plane above. What is left here is
+  // the honest question for this check: DID THE PAINTER PAINT.
+  check(`the bird painter paints (pigeon ${(inked.pigeon * 100).toFixed(0)}%, gull ${(inked.gull * 100).toFixed(0)}%)`,
+    inked.pigeon > 0.06 && inked.gull > 0.06);
+  check(`the bear painter paints (${(inked.the_bear * 100).toFixed(0)}% of its sheet)`, inked.the_bear > 0.15);
   check('the dog walker and the boxer paint as people', inked.walker > 0.1 && inked.boxer > 0.1);
 
   // ── the owner's staging, checked on the real scene ─────────────────────
@@ -678,6 +687,61 @@ const check = (name, ok, extra = '') => {
   // grows the ink modestly and the bounding box by about the pad on each side,
   // where the v34-draft tombstone board grew both by far more and filled the
   // air under a raised arm.
+  // v42 — NOTHING IS DRAWN OUTSIDE ITS OWN TEXTURE, and this is the check that
+  // would have caught the worst art bug in the project. THE BEAR HAD NEVER HAD
+  // A HEAD: its painter reaches cx + 172 on a 256-wide texture centred at 128,
+  // so 44px of muzzle and one eye fell off the right edge from the day it was
+  // written, and the act-two boss read as a tombstone. The rat spanned 334px
+  // in the same 256 and lost its tail on one side and its whiskers on the
+  // other. Every gate was green throughout; the fault was only ever visible on
+  // a contact sheet (`test/castsheet.cjs`).
+  // The assertion is on the INK touching the frame, because that is the fault:
+  // a figure fitted to its own drawing leaves a margin, and one drawn past the
+  // edge cannot.
+  const framing = await page.evaluate(() => {
+    const ids = ['rat', 'bin_rat', 'boss_rat', 'blob', 'blob_spawn', 'tar_blob',
+      'pigeon', 'gull', 'gull_king', 'the_bear'];
+    const out = [];
+    for (const id of ids) {
+      const c = __sk.debug.look(id);
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let x0 = c.width, x1 = -1, y0 = c.height, y1 = -1;
+      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 8) {
+        const px = (i >> 2) % c.width, py = (i >> 2) / c.width | 0;
+        if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py;
+      }
+      out.push({ id, w: x1 - x0 + 1, h: y1 - y0 + 1, clipped: x0 <= 0 || x1 >= c.width - 1 || y0 <= 0 });
+    }
+    return out;
+  });
+  const clipped = framing.filter(f => f.clipped);
+  check(`no drawn figure runs off its own texture${clipped.length ? ` — ${clipped.map(f => f.id)}` : ''}`,
+    clipped.length === 0);
+  // THE SIZE HIERARCHY IS ON THE WORLD PLANE, NOT IN THE TEXTURE, and the
+  // first cut of these four checks got that wrong in exactly the way a contact
+  // sheet invites: they measured the ink in the texture, which is uniform by
+  // design, so they read 218 < 218 < 218. `ENEMIES[id].scale` sizes the plane
+  // the texture is mapped onto and is the only thing that decides how big a
+  // figure stands on the bridge.
+  const world = await page.evaluate(ids => Object.fromEntries(ids.map(i => [i, __sk.debug.enemyScale(i)])),
+    framing.map(f => f.id));
+  check(`the three rats are three sizes (${world.rat} < ${world.bin_rat} < ${world.boss_rat})`,
+    world.rat < world.bin_rat && world.bin_rat < world.boss_rat);
+  check(`a blob spawn is smaller than the blob it came off (${world.blob_spawn} < ${world.blob})`,
+    world.blob_spawn < world.blob);
+  check(`the Gull King outgrows the gull (${world.gull_king} > ${world.gull})`, world.gull_king > world.gull);
+  check(`the Bear is the biggest thing in the game (×${world.the_bear})`,
+    Object.entries(world).every(([id, s]) => id === 'the_bear' || s < world.the_bear));
+  // Each of the three rats is also a different DRAWING, which is the fault the
+  // contact sheet did find: they shared one painter and differed only in the
+  // hex of their fur, so the row was one rat printed three times.
+  const ratMarks = await page.evaluate(() => {
+    const L = id => __sk.debug.lookOf(id);
+    return { bin: !!L('bin_rat').litter, king: !!(L('boss_rat').crown && L('boss_rat').scars), plain: !L('rat').crown && !L('rat').litter };
+  });
+  check('and three drawings, not one printed three times — the bin rat wears the bin, the King wears a crown',
+    ratMarks.bin && ratMarks.king && ratMarks.plain);
+
   check('the menu carries a cut toggle, and it starts as a cut-out — the card cut',
     (await page.locator('#cut').innerText()).includes('card'));
   const cut = await page.evaluate(async () => {

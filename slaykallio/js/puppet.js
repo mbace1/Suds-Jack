@@ -353,6 +353,75 @@ function person(ctx, look, rnd) {
   }
 }
 
+
+// ── the non-person cast, SIZED OFF ITS OWN INK ─────────────────────────────
+// v42, and it fixes two faults that had been shipping since these painters
+// were written. Both were invisible in a fight and obvious the moment the row
+// was rendered at full size, which is this project's standing lesson.
+//
+// 1. THEY WERE ALL THE SAME SIZE. Ten figures ran four painters at one scale,
+//    so a canal rat, the King Rat and a blob spawn stood exactly as tall as
+//    each other and as a gull. Three drawings wearing ten names - TURF's own
+//    "eighteen portraits of one enemy", in art rather than in behaviour.
+//
+// 2. TWO OF THEM WERE DRAWN OUTSIDE THEIR OWN CANVAS. The bear reaches
+//    cx + 172 on a 256-wide texture centred at 128, so THE BEAR HAS NEVER HAD
+//    A HEAD - 44px of it, the muzzle and one eye, fell off the right edge, and
+//    that is why the act-two boss read as a tombstone. The rat spans 334px in
+//    the same 256 and lost its tail on one side and its whiskers on the other.
+//
+// The fix is the rule this codebase already applies to TURF's plates: SIZE OFF
+// THE INK, NEVER THE FRAME. Paint to a scratch canvas big enough that nothing
+// can clip, measure the alpha that came out, then place THAT - feet on the
+// foot line, height a share of the texture scaled by `look.scale`, centred on
+// its own ink rather than on the painter's assumed axis. A painter can now
+// draw wherever it likes and a new one cannot silently lose a limb.
+// THE SIZE HIERARCHY IS NOT IN HERE, and getting that wrong cost a round trip
+// worth writing down. A contact sheet renders TEXTURES; the hierarchy between
+// these figures lives on the puppet's world PLANE (`ENEMIES[id].scale`, 0.42
+// for a pigeon to 1.32 for the Bear), so the sheet showed ten same-sized
+// drawings and a size fix looked obviously needed. Adding one multiplied the
+// two together and made the act-two boss SHORTER THAN THE HERO on the bridge,
+// which the sheet could not show either. Every figure fills its own texture
+// the same way now, and the world scale does what it always did.
+const BEAST_FILL = 0.92;              // share of the usable width the drawing takes
+const BEAST_MARGIN = 34;              // room for the kraft border to grow into
+function drawBeast(ctx, look, rnd) {
+  const PAD = 256;                                        // room on every side
+  const s = document.createElement('canvas');
+  s.width = TW + PAD * 2; s.height = TH + PAD * 2;
+  const g = s.getContext('2d');
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  g.translate(PAD, PAD);
+  if (look.shape === 'rat') rat(g, look, rnd);
+  else if (look.shape === 'blob') slime(g, look, rnd);
+  else if (look.shape === 'bird') bird(g, look, rnd);
+  else if (look.shape === 'bear') bear(g, look, rnd);
+  else person(g, look, rnd);
+  // what actually came out
+  const d = g.getImageData(0, 0, s.width, s.height).data;
+  let x0 = s.width, y0 = s.height, x1 = -1, y1 = -1;
+  for (let y = 0; y < s.height; y++) for (let x = 0; x < s.width; x++) {
+    if (d[(y * s.width + x) * 4 + 3] > 8) {
+      if (x < x0) x0 = x; if (x > x1) x1 = x;
+      if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) return;                                     // painted nothing
+  const iw = x1 - x0 + 1, ih = y1 - y0 + 1;
+  // Height decides the scale - these are figures standing in a row, and a row
+  // reads off how tall things are. Width is then clamped so a wide animal (the
+  // bear, nose to tail) still fits rather than being cropped again.
+  const usable = TW - BEAST_MARGIN;
+  // Width sets the fit because every one of these is LANDSCAPE - a rat is
+  // 290x161 of ink, the bear 290x250 - and height is only a cap, so nothing
+  // can grow out of the top of its texture the way the bear grew out of the
+  // side of it.
+  const k = Math.min((usable * BEAST_FILL) / iw, (TH * 0.72) / ih);
+  const dw = iw * k, dh = ih * k;
+  ctx.drawImage(s, x0, y0, iw, ih, (TW - dw) / 2, 470 - dh, dw, dh);
+}
+
 // A rat: low, long and pointed, with the tail doing most of the silhouette.
 // A canal rat, and the roster's weakest drawing until now: it was a body and
 // two ears while every bum had a hat, hair, a prop and a silhouette. There is
@@ -439,6 +508,64 @@ function rat(ctx, look, rnd) {
     wob(ctx, [[x, foot - 24], [x + 26, foot - 28], [x + 32, foot], [x - 4, foot]], dark, rnd, { width: 3 });
     ctx.strokeStyle = INK; ctx.lineWidth = 2;
     for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(x + 4 + i * 9, foot); ctx.lineTo(x + 1 + i * 9, foot + 7); ctx.stroke(); }
+  }
+
+  // v42 — WHAT MAKES THIS RAT THAT RAT. Three rats shared this painter and
+  // differed only in the hex of their fur, which at full size is not a
+  // difference at all: the row read as one drawing printed three times.
+  // Each mark below is on the ART_REQUEST's own description of the animal.
+
+  // `litter` — the Bin Rat has been IN the bin: a crisp packet stuck to its
+  // flank and a strip of peel hanging off it. Stuck ON the fur, over the
+  // outline, because that is what rubbish does.
+  if (look.litter) {
+    wob(ctx, [[cx - 30, 340], [cx + 2, 330], [cx + 14, 356], [cx - 18, 368]], '#c4482e', rnd, { width: 2.6, amp: 3 });
+    ctx.globalAlpha = 0.45;
+    wob(ctx, [[cx - 24, 340], [cx + 2, 334], [cx + 8, 352]], '#e8c84a', rnd, { width: 0, stroke: null, amp: 2 });
+    ctx.globalAlpha = 1;
+    wob(ctx, [[cx - 62, 372], [cx - 78, 404], [cx - 68, 428], [cx - 58, 402]], '#8a9a3a', rnd, { width: 2.2, amp: 3 });
+  }
+
+  // `scars` — the King Rat has WON. Bald patches where the fur never came
+  // back, and two closed slashes across the shoulder.
+  if (look.scars) {
+    ctx.globalAlpha = 0.55;
+    for (let i = 0; i < 3; i++) blob(ctx, cx - 40 + i * 34, 348 + (i % 2) * 22, 13 + rnd() * 7, 9 + rnd() * 5, shade(look.beak, 0.86), rnd, { width: 0, stroke: null });
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = shade(look.beak, 1.1); ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+    for (const [x0, y0, x1, y1] of [[cx - 10, 322, cx + 26, 360], [cx + 4, 316, cx + 34, 344]]) {
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.4;
+      for (let k = 1; k < 4; k++) {                                   // the stitches that closed it
+        const t = k / 4, mx = x0 + (x1 - x0) * t, my = y0 + (y1 - y0) * t;
+        ctx.beginPath(); ctx.moveTo(mx - 6, my - 3); ctx.lineTo(mx + 6, my + 3); ctx.stroke();
+      }
+      ctx.strokeStyle = shade(look.beak, 1.1); ctx.lineWidth = 3.4;
+    }
+  }
+
+  // `crown` — a BOTTLE-CAP crown, which is the ART_REQUEST's own word for it,
+  // and it has to sit on the skull rather than float over it: a bent wire
+  // band with three caps crimped on, one of them missing.
+  if (look.crown) {
+    const cy = 306, kx = cx + 62;
+    ctx.strokeStyle = '#b9a34a'; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(kx - 30, cy + 12); ctx.quadraticCurveTo(kx, cy - 2, kx + 30, cy + 10); ctx.stroke();
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(kx - 30, cy + 12); ctx.quadraticCurveTo(kx, cy - 2, kx + 30, cy + 10); ctx.stroke();
+    const caps = [[kx - 24, cy + 4, '#b8402c'], [kx + 2, cy - 10, '#c8a83a'], [kx + 26, cy + 2, '#3a6a8a']];
+    for (const [x, y, col] of caps) {
+      blob(ctx, x, y, 10, 9, col, rnd, { width: 2.6 });
+      blob(ctx, x, y, 4.5, 4, shade(col, 0.72), rnd, { width: 0, stroke: null });
+      ctx.strokeStyle = shade(col, 0.6); ctx.lineWidth = 1.4;                // the crimped rim
+      for (let i = 0; i < 7; i++) {
+        const a = (i / 7) * Math.PI * 2;
+        ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 7, y + Math.sin(a) * 6.5); ctx.lineTo(x + Math.cos(a) * 10, y + Math.sin(a) * 9); ctx.stroke();
+      }
+    }
+    // the gap where a fourth one came off, wire still bent for it
+    ctx.strokeStyle = '#b9a34a'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(kx + 30, cy + 10); ctx.lineTo(kx + 40, cy + 2); ctx.stroke();
   }
 }
 
@@ -531,6 +658,54 @@ function slime(ctx, look, rnd) {
     wob(ctx, [[x, foot - 12], [x + 11, foot - 12], [x + 7, foot + len], [x + 3, foot + len]], shade(body, 0.88), rnd, { width: 2 });
     blob(ctx, x + 5, foot + len, 5, 6, shade(body, 0.8), rnd, { width: 2 });
   }
+
+  // v42 — TAR IS A DIFFERENT MATERIAL, and that is the whole difference
+  // between this and the green one. The tar blob shipped as the same drawing
+  // in a darker hex, which at full size is not a second enemy. Tar does not
+  // hold the canal's rubbish in suspension (it is opaque), it does not bubble
+  // (it sags), and it takes a HARD SPECULAR the gel never does - one bright
+  // sliver where the torch hits a wet skin, which is the one thing that says
+  // "glossy" on a flat fill.
+  if (look.glossy) {
+    // A skin of tar over the SUSPENDED JUNK ONLY, and nowhere near the face.
+    // The first cut washed the whole mass at 0.72 and the tar blob lost its
+    // eyes and its mouth - a material pass that costs the figure its read is
+    // worse than the recolour it replaced.
+    ctx.save(); ctx.globalAlpha = 0.66; ctx.fillStyle = shade(body, 0.9);
+    ctx.beginPath(); ctx.ellipse(cx - 30, 424, 116, 56, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    // and the face is put BACK on top of it, brighter than the tar so it reads
+    const teye = (x, y, r) => {
+      blob(ctx, x, y, r, r * 1.08, '#e8e4d4', rnd, { width: 3 });
+      blob(ctx, x + r * 0.1, y + r * 0.06, r * 0.44, r * 0.52, INK, rnd, { width: 0, stroke: null });
+      ctx.fillStyle = 'rgba(244,240,230,0.9)';
+      ctx.beginPath(); ctx.arc(x - r * 0.32, y - r * 0.36, Math.max(1.6, r * 0.17), 0, Math.PI * 2); ctx.fill();
+    };
+    teye(cx + 2, 344, 21); teye(cx + 52, 368, 12); teye(cx - 44, 336, 8);
+    wob(ctx, [[cx - 12, 406], [cx + 22, 396], [cx + 68, 402], [cx + 58, 428], [cx + 20, 438], [cx - 2, 424]],
+      shade(body, 1.9), rnd, { width: 4, amp: 4 });
+    wob(ctx, [[cx - 4, 410], [cx + 20, 402], [cx + 58, 408], [cx + 50, 424], [cx + 18, 431], [cx + 2, 421]],
+      '#0a0806', rnd, { width: 0, stroke: null, amp: 3 });
+    // the specular: a long thin crescent high on the mass, and one small one
+    ctx.save(); ctx.globalAlpha = 0.85; ctx.fillStyle = shade(body, 2.6);
+    ctx.beginPath(); ctx.ellipse(cx - 34, 322, 52, 13, -0.34, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath(); ctx.ellipse(cx - 34, 328, 52, 12, -0.34, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = shade(body, 2.2);
+    ctx.beginPath(); ctx.ellipse(cx + 62, 356, 15, 6, 0.4, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    // THORNS. The tar blob is the one that answers a blow, so the thing that
+    // does it is on the outside: black spines set INTO the surface, irregular,
+    // mostly along the shoulder where a hand would land.
+    for (let i = 0; i < 9; i++) {
+      const t = i / 9, ax = cx - 96 + t * 200 + (rnd() - 0.5) * 18;
+      const ay = 330 - Math.sin(t * Math.PI) * 44 + (rnd() - 0.5) * 20;
+      const h = 12 + rnd() * rnd() * 26, lean = (rnd() - 0.5) * 14;
+      wob(ctx, [[ax - 5, ay + 8], [ax + lean, ay - h], [ax + 5, ay + 8]], '#0d0b09', rnd, { width: 1.8, amp: 1.2 });
+      ctx.globalAlpha = 0.5; ctx.strokeStyle = shade(body, 2.2); ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(ax - 1, ay + 4); ctx.lineTo(ax + lean * 0.7, ay - h * 0.7); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
 }
 
 // A pigeon, or with `look.big` a gull, or with `look.crown` the one that
@@ -570,9 +745,26 @@ function bird(ctx, look, rnd) {
   if (look.big) {                                                 // a gull's wingtips are black
     wob(ctx, [[bx - 60 * S, by + 12 * S], [bx - 100 * S, by + 30 * S], [bx - 92 * S, by + 44 * S]], '#1c1a18', rnd, { width: 2 });
   }
-  if (look.crown) {                                               // a bottle-top crown, on a gull
-    const cy = by - 62 * S, cxx = bx + 50 * S;
-    wob(ctx, [[cxx - 16, cy + 10], [cxx - 16, cy - 6], [cxx - 8, cy + 2], [cxx, cy - 10], [cxx + 8, cy + 2], [cxx + 16, cy - 6], [cxx + 16, cy + 10]], '#d8b43a', rnd, { width: 3, amp: 1.5 });
+  // v42 — A CROWN OF BREAD TAGS, which is what the ART_REQUEST asks for and
+  // is a far better joke than a gold zig-zag: the King of the gulls is crowned
+  // in the little notched plastic clips off bread bags. They are FLAT, they are
+  // four different colours because they came off four different loaves, and
+  // they are threaded on a loop of the same wire the bin rats drag about. The
+  // first cut was a 32px gold zig-zag and read as a party hat.
+  if (look.crown) {
+    const cy = by - 58 * S, cxx = bx + 50 * S, R = 26 * S;
+    ctx.strokeStyle = '#9a9184'; ctx.lineWidth = 3 * S;                   // the wire it is threaded on
+    ctx.beginPath(); ctx.ellipse(cxx, cy + 4 * S, R, 8 * S, 0, 0, Math.PI * 2); ctx.stroke();
+    const TAGS = ['#d8452c', '#e8c43a', '#3a7ac8', '#e0e0d8', '#5aa84a'];
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI * 0.86 + (i / 4) * Math.PI * 0.72;
+      const x = cxx + Math.cos(a) * R, y = cy + 4 * S + Math.sin(a) * 8 * S;
+      const h = (13 + (i % 2) * 5) * S, w = 9 * S, lean = (i - 2) * 5 * S;
+      // a bread tag: a flat tab with a NOTCH bitten out of the bottom edge
+      wob(ctx, [[x - w, y], [x - w + lean * 0.4, y - h], [x + w + lean * 0.4, y - h], [x + w, y],
+        [x + 3 * S, y], [x + 1 * S, y - 5 * S], [x - 1 * S, y - 5 * S], [x - 3 * S, y]],
+        TAGS[i], rnd, { width: 2.2 * S, amp: 1.2 });
+    }
   }
 }
 
@@ -598,8 +790,15 @@ function bear(ctx, look, rnd) {
     [cx + 92, foot - 214],                                                                        // the neck dips
     [cx + 96, foot - 150], [cx + 70, foot - 96], [cx + 40, foot - 22]], stone, rnd, { amp: 4 });
   brush(ctx, cx - 80, foot - 250, 150, 150, lit, rnd, 1.3);
-  // the near foreleg: a column with a real paw at the bottom, toes forward
-  wob(ctx, [[cx - 30, foot - 22], [cx - 40, foot - 130], [cx + 6, foot - 136], [cx + 20, foot - 22]], shade(stone, 0.94), rnd, { amp: 3 });
+  // The near foreleg. It was a four-point near-vertical quad - a RECTANGLE,
+  // and a rectangle is the one shape that reads as UI rather than as an animal
+  // (v10 paid for this twice on the blob's pupil and its mouth, and nobody
+  // applied the lesson here). A bear's foreleg is a heavy shoulder that
+  // NARROWS to the wrist and then spreads into the paw, so the outline has to
+  // pinch: eight points, wide at the top, in at the wrist, out at the foot.
+  wob(ctx, [[cx - 34, foot - 22], [cx - 44, foot - 72], [cx - 40, foot - 118],
+    [cx - 26, foot - 140], [cx + 4, foot - 144], [cx + 18, foot - 120],
+    [cx + 14, foot - 74], [cx + 24, foot - 22]], shade(stone, 0.94), rnd, { amp: 3.5 });
   wob(ctx, [[cx - 40, foot - 22], [cx - 42, foot - 44], [cx + 30, foot - 46], [cx + 40, foot - 22]], shade(stone, 0.88), rnd, { amp: 2 });
   for (let i = 0; i < 4; i++) { ctx.strokeStyle = INK; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(cx - 30 + i * 18, foot - 30); ctx.lineTo(cx - 32 + i * 18, foot - 18); ctx.stroke(); }
   // THE HEAD: thrust forward and down off the dip in the neck. A blunt wedge,
@@ -698,9 +897,21 @@ function mutate(c, rnd, level) {
   const W = c.width, H = c.height;
   const d = ctx.getImageData(0, 0, W, H).data;
   const solid = (x, y) => x >= 0 && y >= 0 && x < W && y < H && d[((y | 0) * W + (x | 0)) * 4 + 3] > 200;
+  // v42 — SEARCH THE INK, NOT A BAND. This looked for somewhere to put an eye
+  // inside a hard-coded box (x 30..W-30, y 60..0.62H), which was written when
+  // every figure filled its texture. Once the non-person cast was fitted to its
+  // own drawing they sit low and short, and the box no longer overlapped them:
+  // a mutated rat grew ZERO eyes and nightfall stopped being visible on it.
+  let ix0 = W, iy0 = H, ix1 = -1, iy1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    if (d[(y * W + x) * 4 + 3] > 200) { if (x < ix0) ix0 = x; if (x > ix1) ix1 = x; if (y < iy0) iy0 = y; if (y > iy1) iy1 = y; }
+  if (ix1 < 0) { c.mutations = done; return; }
+  const iw = ix1 - ix0, ih = iy1 - iy0;
   const spot = () => {
-    for (let k = 0; k < 60; k++) {
-      const x = 30 + rnd() * (W - 60), y = 60 + rnd() * (H * 0.62);
+    for (let k = 0; k < 120; k++) {
+      // the upper two-thirds of the figure's OWN box — a growth belongs on the
+      // body and the head, not down among the feet
+      const x = ix0 + rnd() * iw, y = iy0 + rnd() * ih * 0.72;
       // deep inside the figure, not on its edge: a 9px ring must all be solid
       if ([[0, 0], [9, 0], [-9, 0], [0, 9], [0, -9], [6, 6], [-6, -6]].every(([dx, dy]) => solid(x + dx, y + dy))) return [x, y];
     }
@@ -819,10 +1030,7 @@ export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
   const fx = fig === c ? ctx : fig.getContext('2d');
   fx.lineJoin = 'round'; fx.lineCap = 'round';
   if (plate) drawPlate(fx, plate, { tw: TW, th: TH, foot: 470, tall: 356 });
-  else if (look.shape === 'rat') rat(fx, look, rnd);
-  else if (look.shape === 'blob') slime(fx, look, rnd);
-  else if (look.shape === 'bird') bird(fx, look, rnd);
-  else if (look.shape === 'bear') bear(fx, look, rnd);
+  else if (look.shape) drawBeast(fx, look, rnd);
   else person(fx, look, rnd);
   if (fig !== c) {
     cutoutBorder(ctx, fig, rnd);

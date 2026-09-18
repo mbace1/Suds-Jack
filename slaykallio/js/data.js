@@ -733,7 +733,7 @@ export const ENEMIES = {
       { id: 'gnaw', intent: 'debuff', dmg: 5, status: { key: 'weak', n: 1 } },
       { id: 'screech', intent: 'debuff', status: { key: 'vulnerable', n: 1 } },
     ],
-    kallio: { name: 'Bin Rat', look: { body: '#7b6a54', wing: '#564838', head: '#8d785e', beak: '#cf9c82', shape: 'rat' } },
+    kallio: { name: 'Bin Rat', look: { body: '#7b6a54', wing: '#564838', head: '#8d785e', beak: '#cf9c82', shape: 'rat', litter: true } },
     fantasy: { name: 'Dire Imp', look: { body: '#7c5a68', wing: '#553a48', head: '#8c6478', beak: '#d87c7c', shape: 'rat' } } },
   blob: { hp: 40, pattern: 'cycle', scale: 0.95,
     moves: [
@@ -758,7 +758,7 @@ export const ENEMIES = {
       { id: 'maul', intent: 'attack', dmg: 10 },
       { id: 'burrow', intent: 'block', block: 10 },
     ],
-    kallio: { name: 'The King Rat', look: { body: '#7a6248', wing: '#544434', head: '#8a7050', beak: '#d0a080', shape: 'rat' } },
+    kallio: { name: 'The King Rat', look: { body: '#7a6248', wing: '#544434', head: '#8a7050', beak: '#d0a080', shape: 'rat', crown: true, scars: true } },
     fantasy: { name: 'Imp Lord', look: { body: '#7a5060', wing: '#523646', head: '#8a5a6e', beak: '#e07070', shape: 'rat' } } },
   bridge_king: { hp: 104, boss: true, pattern: 'cycle', scale: 1.15,
     moves: [
@@ -797,7 +797,7 @@ export const ENEMIES = {
       { id: 'slap', intent: 'attack', dmg: 6 },
       { id: 'ooze', intent: 'debuff', dmg: 4, status: { key: 'weak', n: 1 } },
     ],
-    kallio: { name: 'Tar Blob', look: { body: '#2a2622', wing: '#1a1816', head: '#4a4440', beak: '#0e0c0a', shape: 'blob' } },
+    kallio: { name: 'Tar Blob', look: { body: '#2a2622', wing: '#1a1816', head: '#4a4440', beak: '#0e0c0a', shape: 'blob', glossy: true } },
     fantasy: { name: 'Pitch Ooze', look: { body: '#24202a', wing: '#16141a', head: '#463c4a', beak: '#0c0a10', shape: 'blob' } } },
   blob_spawn: { hp: 14, pattern: 'cycle', scale: 0.55,
     moves: [
