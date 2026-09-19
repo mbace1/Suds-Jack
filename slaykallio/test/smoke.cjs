@@ -997,6 +997,45 @@ const check = (name, ok, extra = '') => {
   await page.evaluate(() => __sk.flush());
   await page.waitForTimeout(150);
   check('E ends the turn', await page.evaluate(() => __sk.state().turn) > turn || await page.evaluate(() => __sk.state().phase) !== 'fight');
+  // v44 — THE ACT BREAK'S OWN PICK. Last of the landscape checks on purpose: it drives a
+  // boss down and walks into act two, and every check above it reads a run
+  // that is still in act one (the HUD check asserts `Act 1` by name).
+  // Clearing an act leaves a card behind, and that is a different moment from
+  // an event's: the heading has to say so, and it has to be refusable, because
+  // thinning is usually right and is not always right (a Bottle Collector
+  // counts the cards in his hand).
+  {
+    await page.evaluate(() => {
+      const s = __sk.state();
+      const bridge = [...Array(__sk.debug.encounterCount()).keys()].find(i => __sk.debug.encounterName(i, 'kallio') === 'Who Owns The Bridge');
+      __sk.debug.jumpTo(bridge);
+      // `jumpTo` moves the phase but the fork panel that was open is still
+      // painted over the hand, and Playwright will not click through it.
+      for (const id of ['#map', '#event', '#rest', '#pick', '#reward']) document.querySelector(id).hidden = true;
+    });
+    await page.evaluate(() => { const s = __sk.state(); s.enemies.forEach(e => { e.hp = 1; }); });
+    await page.evaluate(() => { const s = __sk.state(); __sk.debug.hand(['strike']); });
+    await page.locator('#hand .card').first().click();
+    await page.locator('.unit.enemy').first().click();
+    await page.waitForTimeout(250); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(150);
+    while (await page.evaluate(() => __sk.state().phase === 'reward')) {
+      await page.locator('#reward .row, #reward button').first().click();
+      await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+    }
+    check('clearing an act asks for a card to leave with it',
+      await page.evaluate(() => __sk.state().phase === 'pick' && __sk.state().pick.from === 'act'
+        && /act is behind you/i.test(document.querySelector('#pick h2').textContent)));
+    // Measured WHEN THE PICK OPENS, not before the fight: a boss pays card
+    // rewards on the way here, so a length taken earlier is a different deck.
+    const deckB = await page.evaluate(() => __sk.state().hero.deck.length);
+    check('and it is an offer, not a toll — the deck can be kept whole',
+      await page.evaluate(() => [...document.querySelectorAll('#pick .row')].some(r => /Keep the deck/i.test(r.textContent))));
+    await page.evaluate(() => [...document.querySelectorAll('#pick .row')].find(r => /Keep the deck/i.test(r.textContent)).click());
+    await page.waitForTimeout(200); await page.evaluate(() => __sk.flush()); await page.waitForTimeout(100);
+    check('refusing keeps every card and opens the next act',
+      await page.evaluate(n => __sk.state().hero.deck.length === n && __sk.state().phase === 'map' && __sk.state().act === 1, deckB));
+  }
+
   await ctx.close();
 
   // ── portrait ───────────────────────────────────────────────────────────

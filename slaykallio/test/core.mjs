@@ -382,7 +382,21 @@ check('one-two lands twice', hb - s.hero.hp === 16);
 s.enemies[0].hp = 1; s.hand = [{ uid: 1, id: 'strike', ...CARDS.strike }]; s.hero.energy = 3;
 playCard(s, 0, 0);
 while (s.phase === 'reward') chooseReward(s, 0);
-check('beating him opens ACT TWO, not the end', s.phase === 'map' && s.act === 1 && s.route.act === 1 && s.route.step === 0 && s.log.some(l => l.t === 'actWon'));
+// v44 — an act break has a BEAT in it now: clearing an act leaves one card
+// behind, so the phase after the rewards drain is the pick, not the map.
+// Asserted rather than walked past, because the removal is the whole answer to
+// a deck that grew and never concentrated.
+check('beating him ends the act on a card to leave behind', s.phase === 'pick' && s.pick.kind === 'remove' && s.log.some(l => l.t === 'actWon'));
+{
+  const before = s.hero.deck.length;
+  const basics = s.hero.deck.filter(c => CARDS[c.id].rarity === 'basic').length;
+  const take = pickable(s).find(({ c }) => CARDS[c.id].rarity === 'basic');
+  check('and the basics you started with are on the table', basics > 0 && !!take);
+  pickCard(s, take.i);
+  check('leaving one takes it out of the deck for good', s.hero.deck.length === before - 1
+    && s.hero.deck.filter(c => CARDS[c.id].rarity === 'basic').length === basics - 1);
+}
+check('and THEN act two opens', s.phase === 'map' && s.act === 1 && s.route.act === 1 && s.route.step === 0);
 check(`and dusk falls: you catch your breath for ${Math.floor(78 * RULES.healBetweenActs)} HP between the acts`, s.log.some(l => l.t === 'heal' && l.n > 0) && s.hero.hp >= Math.min(78, hb - 16 + Math.floor(78 * RULES.healBetweenActs) - 1));
 check('act two draws from its own pool', s.route.steps[0].every(o => ACTS[1].fights.includes(o.id)));
 jumpTo(s, ENC('bear'));
@@ -400,7 +414,12 @@ check('striking a thorned bear costs 3', hpT - s.hero.hp === 3);
 s.enemies[0].hp = 1; s.hand = [{ uid: 1, id: 'strike', ...CARDS.strike }]; s.hero.energy = 3; s.enemies[0].block = 0;
 playCard(s, 0, 0);
 // v43: the Bear ends ACT TWO now, not the run - there is an act under it.
-check('beating the bear opens act three', s.phase === 'map' && s.act === 2 && s.log.some(l => l.t === 'actWon'));
+check('beating the bear ends act two the same way', s.phase === 'pick' && s.pick.kind === 'remove');
+skipPick(s);
+check('and skipping the card still opens act three', s.phase === 'map' && s.act === 2 && s.log.some(l => l.t === 'actWon'));
+// The last act has no act AFTER it, so the run ends rather than paying again.
+check('two acts cleared is two cards left behind, not three',
+  RULES.removeBetweenActs * (ACTS.length - 1) === 2);
 
 // ── the new mechanics, exactly ───────────────────────────────────────────
 // frail

@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=43';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=44';
 
 // THE ONE PLACE A RUNG IS READ. Every rule that varies by ascension asks this
 // and nothing else, so the ladder is a table in data.js rather than six
@@ -879,6 +879,22 @@ function afterFight(state) {
     heal(state, Math.floor(state.hero.maxHp * (rung(state, 'short_breath') ? RULES.healBetweenActsHard : RULES.healBetweenActs)));
     state.act++;
     buildRoute(state, state.act);
+    // v44 — AND YOU LEAVE SOMETHING BEHIND. Measured at the door of act three,
+    // a deck held 18.1 cards of which 8.0 were still the starting basics - the
+    // same eight it held at the door of act two. The deck GREW and never
+    // CONCENTRATED, which is the mechanism under "the run is a product of
+    // three checks and the player does not arrive at the last one stronger":
+    // 44% of what you draw in the water is the filler you started the canal
+    // with. Removal already existed and was reachable only inside four events,
+    // one option each, so even a bot that wants it finds about half of one per
+    // run. This puts it on a beat that cannot be missed and that scales with
+    // how far you get - one act cleared, one card gone - which is the whole
+    // shape of the problem. `runEffects` parks the map behind the pick, so the
+    // chain and the empty-deck case are the ones `skipPick` already handles.
+    if (RULES.removeBetweenActs > 0) {
+      runEffects(state, Array.from({ length: RULES.removeBetweenActs }, () => ({ type: 'remove' })), 'act');
+      return;
+    }
   }
   openMap(state);
 }

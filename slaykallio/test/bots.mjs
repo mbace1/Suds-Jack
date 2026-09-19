@@ -117,7 +117,17 @@ function walk(s, taste) {
 function eventCost(o) {
   return o.effects.reduce((a, f) => a + (f.type === 'hp' ? f.n : f.type === 'roll' ? f.bad.reduce((b, g) => b + (g.type === 'hp' ? g.n : 0), 0) * (1 - f.p) : 0), 0);
 }
-const eventGain = o => o.effects.filter(f => ['joker', 'upgrade', 'card', 'maxEnergy', 'maxHp', 'reward'].includes(f.type)).length;
+// v44 — `remove` WAS MISSING FROM THIS LIST, and it is the reason the deck
+// never concentrates. Removal exists in exactly four events, one option each,
+// and every bot that drafts by gain scored that option at ZERO and took the
+// other one instead. So the measured value of card removal in this game has
+// always been the value of never taking it: at the door of act three a deck
+// holds 18.1 cards of which **8.0 are still the starting basics**, the same
+// eight it held at the door of act two. Kindling's lesson again - the page was
+// right and the ruler was wrong - and it has to be fixed BEFORE any design
+// answer to "the player does not arrive stronger", or the new beat would be
+// measured by a bot that declines it.
+const eventGain = o => o.effects.filter(f => ['joker', 'upgrade', 'card', 'maxEnergy', 'maxHp', 'reward', 'remove'].includes(f.type)).length;
 
 // pick a card out of the deck to remove or upgrade
 function pickBy(s, want) {
@@ -134,7 +144,18 @@ function pickBy(s, want) {
 const buildPolicy = {
   map: s => walk(s, { elite: 3, fight: 3, event: 4, rest: 2 }),
   event: (s, ev) => chooseEvent(s, ev.options.reduce((best, o, i, all) => eventGain(o) > eventGain(all[best]) ? i : best, 0)),
-  rest: s => chooseRest(s, hpFrac(s) < 0.5 ? 'heal' : 'upgrade'),
+  // v44 — THE THRESHOLD IS DERIVED, NOT A TASTE. This was 0.5, which is a
+  // TWO-ACT policy: with one boss left, banking upgrades and arriving at 50%
+  // is a reasonable gamble, and with two left it is not. Measured on the
+  // act-three harness with the population held fixed, the line is entirely
+  // between 50 and 70 (29% -> 36% mean) and completely flat above it: 70, 85
+  // and never-upgrade-at-all all read 36%, because an act-three arrival is
+  // essentially never above 85% at a rest anyway. So the number to write is
+  // the one with a REASON: a rest pays `RULES.restHeal` of max, so healing
+  // above `1 - restHeal` throws most of it away and below it does not. It
+  // reads the rule rather than restating it, so if the heal ever moves the
+  // bots follow it.
+  rest: s => chooseRest(s, hpFrac(s) < 1 - RULES.restHeal ? 'heal' : 'upgrade'),
   pick: s => pickBy(s, (c, st) => st.pick.kind === 'upgrade'
     ? !c.up && (c.char === st.character || c.effects.some(f => f.scale))
     : c.type === 'curse' || c.rarity === 'basic'),

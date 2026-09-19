@@ -242,13 +242,21 @@ The acts are what the HOUR is measured against, and since v43 that is literal:
 daylight act, act two the evening and act three the night from its first span.
 A fourth act would move them without anybody editing a number.
 
-**The cost of the third act is recorded rather than tuned away.** Against a v42
-checkout, `native` over 150 seeds a character goes 26% (two acts) → 9% (three),
-of which the new cards are worth +2 — the run is now a product of three boss
-checks and the draft does not make the player arrive at the last one stronger
-(act-three arrivals carry 18 cards, exactly what act-two arrivals carried). The
-ascension ladder in §8b was measured against a two-act run and is compressed
-with it. Both are open.
+**The cost of the third act was recorded rather than tuned away, and then
+answered.** Against a v42 checkout, `native` over 150 seeds a character went 26%
+(two acts) → 9% (three). The mechanism was the deck: it GREW across a run and
+never CONCENTRATED — 8.0 starting basics at the door of act two and the same 8.0
+at the door of act three, so 44% of what you drew in the water was the filler
+you started the canal with.
+
+**So clearing an act leaves one card behind** (`RULES.removeBetweenActs`, v44),
+on the beat that already heals you half: one act cleared, one card gone, which
+scales with how far you get. It is an offer, not a toll — thinning is usually
+right and is not always right, and a Bottle Collector counts the cards in his
+hand. Filler share now falls across the run (50% at act two's door, 35% at act
+three's) and `native` reads 16% whole-run, with act three converting at 39% from
+its door rather than 28%. The ascension ladder in §8b was re-measured with it
+and reads 16/15/12/11/6/5/4 — monotone, with room.
 
 **The hour.** `hourOf(state)` runs 0 → 1 across the whole route. The world is
 lit for it (three rigs per skin — day, evening, night — lerped by the arena)
@@ -318,6 +326,13 @@ Only rung 0 can be an exact control, because the rungs stack. `core.mjs`
 proves it is one by driving whole bot runs at rung 0 and at no rung at all and
 comparing the logs entry by entry — so every balance number this project
 recorded before the ladder still describes rung 0.
+
+**Measured** at 150 seeds a cell under `native`: **16/15/12/11/6/5/4** (v44).
+Monotone, with rung 0 reproducing the whole-run matrix exactly, which is the
+control by construction. v36's recorded 25/22/19/16/11/9/6 was taken on a
+TWO-ACT run and is superseded — a ladder has to be re-measured whenever the run
+it sits on changes length, because its rungs are a fraction of a base rate and
+not an absolute difficulty.
 
 **It is a decision, not a comparison.** The look switches (`art`, `cut`,
 `figures`) are reset when the house answer moves, because a value picked while

@@ -1602,6 +1602,7 @@ export const RULES = {
   handMax: 10,
   jokerMax: 5,
   healAfterFight: 6,
+  removeBetweenActs: 1,    // …and clearing an act also leaves one card behind (v44)
   restHeal: 0.3,           // a rest site heals this share of max HP
   restHealHard: 0.2,       // …and this much once the ladder has taken the rest (ASCENSION 3)
   healBetweenActs: 0.5,    // beating an act's boss: dusk falls, and you catch your breath

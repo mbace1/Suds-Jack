@@ -7,8 +7,8 @@
 // synced to the real state so nothing can drift. `window.__sk` is the seam
 // the smoke test drives, and it can set the replay delays to zero.
 
-import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=43';
-import * as engine from './engine.js?v=43';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=44';
+import * as engine from './engine.js?v=44';
 import { Arena } from './scene.js?v=32';
 import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=42';
 import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=37';
@@ -25,7 +25,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 43;
+const VERSION = 44;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -959,7 +959,11 @@ function openPickPanel() {
   closePanels();
   const panel = $('#pick'); panel.hidden = false;
   const kind = state.pick.kind;
-  panel.querySelector('h2').textContent = kind === 'remove' ? 'Leave one behind' : 'Which card?';
+  // v44 — a pick opened by clearing an ACT is a different moment from one
+  // inside an event, and the heading has to say so or it reads as a penalty.
+  const fromAct = state.pick.from === 'act';
+  panel.querySelector('h2').textContent = kind !== 'remove' ? 'Which card?'
+    : fromAct ? 'The act is behind you. Leave one card with it.' : 'Leave one behind';
   const list = panel.querySelector('.list'); list.innerHTML = '';
   panelSel = 0;
   // Nothing left to pick is a real state — every card upgraded — and it used to
@@ -970,6 +974,14 @@ function openPickPanel() {
     b.classList.add('selected');
     list.append(b);
     return;
+  }
+  // …and it is an OFFER, not a toll. Thinning is usually right and is not
+  // always right - a Bottle Collector counts the cards in his hand - so the
+  // act break may be walked past with the deck intact.
+  if (fromAct) {
+    const keep = el('button', 'row', 'Keep the deck as it is.');
+    bindActivation(keep, () => { sfx.pick(); cursor = state.log.length; engine.skipPick(state); $('#pick').hidden = true; enqueueLog(); renderTop(); });
+    list.append(keep);
   }
   state.hero.deck.forEach((c, i) => {
     if (kind === 'upgrade' && (c.up || c.type === 'curse')) return;

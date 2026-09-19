@@ -7,6 +7,108 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v44 — 2026-09-19
+**THE DECK NEVER CONCENTRATED — one card left behind per act cleared, and two rulers that were reading it wrong**
+
+v43 shipped act three and said, in as many words, that nothing in it rebalanced
+the run: *"a longer run needs the player to ARRIVE stronger, and act-three
+arrivals carry 18 cards, the same as act-two arrivals did."* This is that pass,
+and the diagnosis turned out to be sharper than the sentence.
+
+**THE MECHANISM, MEASURED.** Snapshot every `native` run at each act's door and
+compare what it is holding:
+
+| at the door of | deck | of which BASIC | friends | rares |
+|---|---|---|---|---|
+| act two | 14.8 | **8.0** | 2.7 | 0.3 |
+| act three | 18.1 | **8.0** | 4.4 | 1.0 |
+
+The deck GREW and never CONCENTRATED. Eight starting Strikes and Defends at the
+door of act two, and the same eight at the door of act three — so 44% of what
+you draw in the water is the filler you started the canal with, and the extra
+cards only make it harder to find the good ones. That is "the player does not
+arrive stronger" as a mechanism rather than a feeling.
+
+**AND TWO RULERS WERE WRONG BEFORE THE PAGE WAS.** Kindling's lesson, twice:
+
+1. **`eventGain` did not count `remove`.** Removal already existed in this game
+   — as one option inside four events — and every bot that drafts by gain scored
+   that option at ZERO and took the other one. So the measured value of card
+   removal here has always been the value of never taking it. Fixed first, on
+   purpose: a design answer measured by a bot that declines it is not measured.
+2. **`buildPolicy` rested to heal only below 50% HP.** That is a TWO-ACT policy
+   — with one boss left, banking upgrades and arriving at half is a reasonable
+   gamble, and with two left it is not. On the act-three harness with the
+   population held fixed, the line is entirely between 50 and 70 (29% → 36%
+   mean) and completely FLAT above it: 70, 85 and never-upgrade-at-all all read
+   36%, because an act-three arrival is essentially never above 85% at a rest.
+   So the number written is the one with a reason — a rest pays
+   `RULES.restHeal` of max, so healing above `1 - restHeal` throws most of it
+   away. It reads the rule rather than restating it.
+
+**Fixing the first ruler bought less than one card per run** (basics 8.0 → 7.5),
+which is the negative result that justifies the design change: even a bot that
+wants removal can only find about half of one, because there is almost nothing
+to take.
+
+**THE RULE: clearing an act leaves one card behind.** `RULES.removeBetweenActs`,
+on the beat that already heals you half — one act cleared, one card gone, so it
+scales with how far you get, which is the shape of the problem. It is an
+**offer, not a toll**: thinning is usually right and is not always right (a
+Bottle Collector counts the cards in his hand), so the panel carries *Keep the
+deck as it is*. No new system, no new phase — `runEffects` parks the map behind
+the pick exactly as the four events already did, and `skipPick` already handled
+the empty case.
+
+**What it does to the curve.** Filler share now FALLS across the run instead of
+holding flat:
+
+| at the door of | deck | basic | share |
+|---|---|---|---|
+| act two | 13.6 | 6.8 | 50% |
+| act three | 15.8 | 5.6 | **35%** |
+
+**THE SEPARATION, and only one of the three is a game change:**
+
+| | synergist | native |
+|---|---|---|
+| v43 | 8% | 9% |
+| + the rest rule (instrument) | 11% | 11% |
+| + `eventGain` counts removal (instrument) | 10% | 12% |
+| + the act break leaves a card (GAME) | **16%** | **16%** |
+
+So the instrument fixes are worth +2/+3 and the rule is worth **+6/+4**, at a
+mean noise of about 2 points. The `eventGain` fix on its own is inside the
+noise — a clean negative that says exactly what it should: counting removal as
+a gain bought nothing while there was nothing to count.
+
+**Act three from the door goes 28% → 39%** under `native` (`defensive` 39% →
+45%), and arrivals rise sharply where they were thinnest — the Boxer 39% → 59%,
+the Busker 40% → 57%, the Dog Walker 16% → 24%.
+
+**AND THE LADDER HAS ROOM AGAIN.** v43's rungs were measured against a two-act
+run and were compressed onto a 9% base. Re-measured at 150 seeds a cell,
+`native` reads **16/15/12/11/6/5/4** — monotone, with rung 0 reproducing the
+matrix exactly, which is the control. v36's recorded 25/22/19/16/11/9/6 is
+superseded.
+
+**A trap I walked into and this repo already documents.** The first separation
+run read IDENTICAL numbers with the rule on and off, which is impossible. The
+scratch script imported `js/data.js` while the engine imports `js/data.js?v=43`
+— **two module instances**, so it was mutating a `RULES` nothing reads. That is
+Eeri's "one `?v=` token per module or the module's state splits", met from the
+measurement side. Nothing shipped on it; the numbers above are from a script
+importing the engine's own specifier.
+
+**Still open, and now the loudest thing in the table: the Dog Walker.** 4%
+whole-run at her best line against a 16% mean, 24% arrivals at act three against
+everyone else's 27-59%, and a flat 0 under the naive bot. Every other character
+moved with this pass; she moved least. That is a character problem, not an
+instrument one.
+
+Gates: `node slaykallio/test/core.mjs` (867) ·
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs`
+
 ## v43 — 2026-09-18
 **ACT THREE — IN THE WATER, a card that knows what time it is, and 26 more of them**
 

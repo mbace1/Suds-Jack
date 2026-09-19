@@ -900,7 +900,7 @@ him second only to the Cart Pusher and turns "mostly wears off" into "half
 stays", which is a different character. Withdrawn: GDD §6's *"Numbers will not
 fix that"* — the numbers tried were sizes of a thing that reset; the carry is
 what stops the reset.
-Gates: `node slaykallio/test/core.mjs` (863 checks) and
+Gates: `node slaykallio/test/core.mjs` (867 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
@@ -1068,6 +1068,53 @@ v16's finding from the other side, since a naive bot cannot hold fetch and three
 acts is long enough that never holding it never converts. The gate asserts the
 run ends, every character reaches the LAST act, and nobody sweeps; the
 per-character rate belongs to `bots.mjs`, where the policies live.
+**THE DECK NEVER CONCENTRATED** (v44). v43 said in as many words that nothing
+in it rebalanced the run; this is that pass, and the diagnosis is sharper than
+the sentence was. Snapshot every `native` run at each act's door: the deck goes
+14.8 → 18.1 cards and the BASICS stay at **8.0 either way**, so 44% of what you
+draw in the water is the filler you started the canal with and the extra cards
+only make the good ones harder to find. The deck grew and never CONCENTRATED —
+which is "the player does not arrive stronger" as a mechanism.
+**Two rulers were wrong before the page was**, Kindling's lesson twice over.
+`eventGain` **did not count `remove`**, so the four events that offer a removal
+scored it at ZERO and every gain-drafting bot took the other option — the
+measured value of card removal in this game has always been the value of never
+taking it. And `buildPolicy` **rested to heal only below 50% HP**, which is a
+TWO-ACT policy: with one boss left, banking upgrades and arriving at half is a
+reasonable gamble, and with two left it is not. On the act-three harness with
+the population held fixed the line is entirely between 50 and 70 (29% → 36%)
+and FLAT above it — 70, 85 and never-upgrade-at-all all read 36% — so the
+number written is the one with a reason: a rest pays `RULES.restHeal`, so
+healing above `1 - restHeal` throws most of it away, and the bot reads the rule
+rather than restating it. **Fixing the first ruler bought less than one card per
+run** (basics 8.0 → 7.5), which is the negative result that justifies the
+design change rather than undermining it: there was almost nothing to take.
+**The rule is that clearing an act leaves one card behind**
+(`RULES.removeBetweenActs`), on the beat that already heals you half — one act
+cleared, one card gone, so it scales with how far you get. No new system: the
+`pick` phase and `runEffects`' park-the-map-behind-it already existed for the
+events. It is an **offer, not a toll** (*Keep the deck as it is*), because
+thinning is usually right and is not always right — a Bottle Collector counts
+the cards in his hand. Filler share now FALLS across the run: 50% at act two's
+door, **35%** at act three's.
+**Separated, and only one of the three is a game change**: v43's 8/9 (synergist
+/ native) → 11/11 with the rest rule → 10/12 with `eventGain` → **16/16** with
+the act break. So the instruments are worth +2/+3 and the RULE is worth +6/+4
+at a mean noise of 2. Act three from the door goes 28% → **39%** on `native`,
+and arrivals rise where they were thinnest (the Boxer 39% → 59%).
+**And the ladder has room again** — re-measured, `native` reads
+**16/15/12/11/6/5/4**, monotone, rung 0 reproducing the matrix exactly;
+v36's 25/22/19/16/11/9/6 is superseded.
+**One trap, from the measurement side**: a separation run read identical numbers
+with the rule on and off, which is impossible — the scratch script imported
+`js/data.js` while the engine imports `js/data.js?v=43`, so it was mutating a
+`RULES` nothing reads. That is Eeri's *one `?v=` token per module or the state
+splits*, met while measuring rather than while shipping.
+**The Dog Walker is now the loudest thing in the table**: 4% at her best line
+against a 16% mean, 24% arrivals at act three against everyone else's 27-59%,
+and a flat 0 under the naive bot. Every other character moved with this pass and
+she moved least, which makes it a character problem rather than an instrument
+one.
 **The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
 hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
 **The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`
