@@ -6,15 +6,15 @@ import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
   skillOffer, learnSkill, incomingArrivals, pendingArrivals, incomingThreats,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=20';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=27';
+} from './combat.js?v=21';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=28';
 import { createCamera, MIN_TILE_W } from './camera.js?v=3';
-import { createInputHandler } from './input.js?v=19';
+import { createInputHandler } from './input.js?v=20';
 import { createAnimator } from './anim.js?v=8';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
-import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
-import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2';
-import { autoTurn } from './autoplay.js?v=6';
+import { magOf, needsReload, roundsLeft } from './ammo.js?v=3';
+import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=3';
+import { autoTurn } from './autoplay.js?v=8';
 import { PLATES } from './plates.js?v=1';
 import { audio } from './audio.js?v=1';
 

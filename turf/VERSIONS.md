@@ -8,7 +8,63 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
-## v35 (branch) — 2026-09-06
+## v36 — 2026-09-19
+**Owner: "rewrite ai.js + combat.js as one system in a single pass. State the
+invariant up front: the player sees every consequence before committing."**
+
+**THE INVARIANT, as a rule the code is held to.** Every change to the board
+is produced by one function, `resolve`, which writes what it did to
+`state.log` as it does it — the log IS the effect list, the same list anim.js
+animates. A **preview** is `resolve` run on a copy of the state with an oracle
+in place of the dice; it returns the copy's log. The **telegraph** is that
+preview, run for every rival's chosen plan, and the warning badge is read off
+the rival's own preview rather than recomputed. The **enemy phase** executes
+the frozen plan through the same `resolve`, and where the board has moved
+under a plan the rival HOLDS and the log names why (`blocked`, `died`,
+`displaced`, `target-gone`, `out-of-position`) — a divergence is never silent.
+`ai.js` is gone; the brain sits beside the resolver in `combat.js` so a plan
+can carry its own preview. `previewCommand(state, cmd)` is the export: two
+branches for a command with a roll (yours all land / all miss), each with the
+effects, the telegraph the board would show AFTER, the incoming warnings on it,
+and the result if it ends the encounter.
+
+**It found two live lies the old gate certified.** (1) `grunt_runt` and
+`grunt_milo` have move 4; `MOVE_CAP` 4 × `DAMAGE_PER` 0.25 floors to **+1**
+after a four-tile step. Execution banked the step then struck; the badge was
+forecast from plan-time momentum and said one less than what landed. The v34
+gate compared the badge to the same mis-timed forecast and passed. (2) The
+mirror image: during the player's turn a rival still holds the pool it banked
+LAST phase, which `endPlayerTurn` wipes before it acts — a naive preview adds
+the coming step to a pool that will not exist. A rival's plan is previewed
+from the top of the phase (momentum and Cripple cleared), which is the state
+it will actually start in. The player's own forecast had the first fault too
+when stepping four tiles into a shot; `firingOptions`/`previewAttack` now run
+the step through the resolver.
+
+**Faithful by measurement.** The rng is asked through one seam (`state.roll`)
+in the old order, the brain's scoring is untouched, and `balance.mjs` reads
+**53/82/65/32/68/18/12 — bit-identical** before and after. `smoke.mjs` 147
+checks: 141 unchanged, one replaced (the certifier), six new — a preview's
+effects equal the committed log and the telegraph after it; a plan's odds and
+damage equal the phase's when the target was not shoved; the four-tile close
+lands the badge's number; your own forecast counts your step; every
+divergence is named; the badge is the previews' sum. One catch on the way:
+the new state literal dropped `result: null` — falsy either way, so nothing
+but a strict-equal gate could see it.
+
+**Two directives recorded, not acted on** (MST_PARITY §4): *take rot.js FOV
+only, skip PathFinding.js* — LOS stays grid.js's Bresenham for now, since
+shadowcasting changes what sees what and so is a balance change to measure,
+not a rewrite side-effect; the BFS in grid.js is the pathfinder and no
+library is coming in. *Render the art-src/ cast to iso facings in Blender
+before the move to the Piritori repo* — no Blender in this environment; the
+camera is 45° yaw / 30° elevation orthographic, `tools/render-frames.mjs`
+already states it.
+
+Modules: `combat` v21 (absorbs ai.js), `grid` v5, `ammo` v3, `abilities` v3,
+`autoplay` v8, `render` v28, `input` v20, `main` v39.
+
+## v35 — 2026-09-06
 **Owner: "can the TURF asset pipeline just make a standing cardboard
 character, that is then just moved to animate?" — then, on the first cut:
 "we are trying to make actual Paper Mario looking puppets, those would give

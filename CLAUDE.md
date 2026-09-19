@@ -434,7 +434,7 @@ open question, and it is a feel question only a playtest answers, not another sy
 a long time, so a cabinet that looks wrong is worth checking against `hub/versions.json`
 before assuming the code is.
 **Everything is data** (`data/{units,weapons,enemies,encounters}.json`, GDD §3's rule) —
-the engine (`js/grid.js`, `js/ai.js`, `js/combat.js`) reads ids out of them and knows
+the engine (`js/grid.js`, `js/combat.js`) reads ids out of them and knows
 nothing about "a knife" or "a shotgun" as concepts, so Phase 2's encounter sequence or a
 fourth enemy archetype is new JSON, never a rebuild. The grid is **orthogonal
 (4-directional)**, not 8 — Into the Breach's own convention, and what keeps range and line
@@ -442,7 +442,7 @@ of sight unambiguous. **Two cover kinds, genuinely different**: full cover (dump
 fences) blocks movement and LOS outright; partial cover (crates, curbs) only softens a
 ranged hit (−30% to-hit) and never blocks anything — melee is hitChance 1, deterministic,
 so cover is a reason to close distance, not a permanent hiding spot. **The telegraph is
-real ITB**, not a one-time snapshot: `ai.js`'s `planIntent` is recomputed after *every*
+real ITB**, not a one-time snapshot: `combat.js`'s `planIntent` is recomputed after *every*
 player action (not once per round), so the "this enemy will move here and hit that unit"
 markers on screen never go stale mid-turn — verified in `test/smoke.mjs` by asserting the
 telegraph map actually changes shape after a player move. **Knockback** (the pipe's whole
@@ -453,13 +453,33 @@ that lets it hit that target this turn" — the AI's telegraph, the UI's click-t
 highlighting, and the actual click-to-attack command (`combat.js`'s `orderAttack`) all call
 it, on purpose: it was written three times in three files before being pulled out, and a
 fourth copy is a bug waiting for someone to fix only one of them.
+**THE INVARIANT: the player sees every consequence before committing** (v36, owner:
+*"rewrite ai.js + combat.js as one system in a single pass. State the invariant up front"*).
+`combat.js` is that one system; `ai.js` is gone. Every change to the board is made by one
+function, `resolve`, which logs what it does as it does it — **the log IS the effect list**,
+the same one anim.js animates. A **preview** is `resolve` on a copy with an oracle for the
+dice (`previewCommand`: your rolls all land / all miss, each branch carrying the effects, the
+telegraph the board would show AFTER, and the result). The **telegraph** is that preview per
+rival, and the badge reads the rival's own preview. The **enemy phase** runs the frozen plan
+through the same `resolve`; where the board moved under a plan the rival HOLDS and the log
+says why (`blocked`/`died`/`displaced`/`target-gone`/`out-of-position`) — never silent, never
+improvised. **It found two live lies**: the badge missed the +1 a four-tile step banks
+(`grunt_runt`/`grunt_milo`, move 4 — execution banked the step then struck, the forecast was
+taken before it, and the v34 gate compared the badge to the same mis-timed forecast), and
+the mirror image — a plan previewed mid-player-turn carries momentum `endPlayerTurn` wipes,
+so rivals are previewed from the top of the phase. The rewrite is **proven faithful by
+`balance.mjs` reading bit-identical** (53/82/65/32/68/18/12): the dice are asked through one
+seam in the old order and the brain's scoring is untouched. Two owner directives are
+recorded in `MST_PARITY.md` §4 and not acted on: rot.js FOV only (a balance change to
+measure, not a rewrite side-effect; BFS stays, no PathFinding.js), and Blender iso facings
+before the Piritori move (no Blender here).
 **Rendering is plain canvas 2D isometric**, not Three.js — the GDD says "Three.js or
 similar," and a tactics grid with move/attack-range overlays and telegraph markers is far
 easier to get right in 2D; drawn low-res and upscaled with `image-rendering: pixelated`,
 the same trick `dropcabal/` uses, with the HUD (turn state, HP, the win/lose screen) as a
 DOM/CSS overlay rather than canvas-painted text, per the production doc's own §2.4
 recommendation. All game logic stays in plain `(x,y)` grid coordinates
-(`grid.js`/`combat.js`/`ai.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 23
+(`grid.js`/`combat.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 147
 checks including a bot-vs-bot full playthrough that must reach a win or a loss, not a
 stalemate, within a round cap); `render.js`'s `toScreen`/`screenToGrid` are a one-way,
 invertible projection onto an isometric diamond grid and never feed anything back into
@@ -483,7 +503,7 @@ instead of drawing a wall, and every one cuts both ways so a player can set one 
 deliberately. Every position change routes through one `enterHazard`, because the third copy
 is the one that forgets. **A lethal hazard catches what is shoved across it** — found by
 test: the pipe's knockback is 2, so a body shoved at a stairwell sailed clean over it, which
-also made the heaviest knockback weapons the *worst* at using a pit. `ai.js` scores hazard
+also made the heaviest knockback weapons the *worst* at using a pit. The rival brain scores hazard
 cost in HP so the telegraph cannot promise a suicide.
 **Enemy behaviours** (v19) — before this, eighteen enemies all ran "close on the nearest and
 swing", so the roster was one enemy with eighteen portraits. `charger` / `skirmisher` (keeps
@@ -502,7 +522,7 @@ damage *or* evasion, never both — and that rule is not a flourish: with moment
 evasion favoured whoever was chasing, which is the AI every single turn, and the measured
 skill gap against a positional bot *narrowed* (+46 points to +19). It is **visible**,
 because this game promises full information: pips over every unit's HP bar, a HUD line
-spelling out both halves, a damage floater reading `5 (+1)`, and `ai.js` folding a target's
+spelling out both halves, a damage floater reading `5 (+1)`, and the rival brain folding a target's
 evasion into its focus scoring so the telegraph never promises a shot it cannot land.
 **A third rule — SYNC, straight out of MST — was built, measured three ways and CUT**, and
 the finding is kept in `momentum.js`'s header because it is the obvious next idea: free, it
@@ -670,7 +690,7 @@ kit the empty turns they were competing with a free attack for. Melee has no mag
 knife does not run out, and that reliability is what melee trades its range for). The round
 is spent inside `resolveAttack` alone, so every firing path pays. Enemies reload on the same
 rule and **telegraph it**, backing off while they do. `ammo.js` is a leaf module because
-ai.js cannot import combat.js (circular), and an **absent** round count means FULL, not
+until v36 the brain lived in `ai.js`, which `combat.js` imported (circular), and an **absent** round count means FULL, not
 empty — any path that assigns a weapon without seeding the count would otherwise hand back a
 silently empty gun. **The balance consequence is the headline and is not a bug**: the rule's
 effect scales with each side's RANGED SHARE, and the encounters were tuned when ammo was
@@ -696,7 +716,7 @@ and cover is a property of where you end up.
 **`extract` and `destroy`**, both with a `deadline` — which gives the game its second and
 third loss conditions (it had exactly one, a crew wipe). A cache is a **third faction**, not
 a new entity type: `attackableTargets` filters on `faction !== mine` while `livingEnemies`
-and `ai.js` filter on the names, so an objective is attackable by both sides and invisible
+and the rival brain filter on the names, so an objective is attackable by both sides and invisible
 to the win check and the enemy brain without either learning anything. **`need` is
 absolute** — clamping it to the living made losing an operator make an extraction EASIER.
 **Both new encounters are cliffs, not dials, and were tuned by measurement**: an open-pad
@@ -1681,12 +1701,11 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
   data/         # units/weapons/enemies/encounters/hazards/trinkets/abilities (six skill lines)
   js/
     grid.js     # the board: coords, BFS move range, LOS, cover, and firing-tile scoring
-    ai.js       # four behaviours + two focuses, and the live ITB-style telegraph
-    combat.js   # move+act economy, attack/knockback, hazards, trinkets, the enemy phase
+    combat.js   # THE ONE SYSTEM: resolve (the log is the effect list), preview, the rival brain, the telegraph, the phase
     render.js   # iso projection + canvas paint, upscaled pixelated (dropcabal's trick)
     input.js    # pointer/keyboard/pad — three methods, one decision path
     momentum.js # the movement economy: bank it by moving, spend it on the swing
-    ammo.js     # magazines; a leaf module because ai.js cannot import combat.js
+    ammo.js     # magazines; a leaf module (grid.js reads it, and it predates the v36 merge of ai.js into combat.js)
     abilities.js# the skill LINES: catalogue, loadouts, weapon gates, flanking — pure
     autoplay.js # the AUTO switch — v24's tactical bot, not a new one
     camera.js   # phone zoom floor, drag-to-pan, follow the acting unit
@@ -1702,7 +1721,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 130 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 147 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter

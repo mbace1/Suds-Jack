@@ -107,7 +107,7 @@ export function inRange(state, weapon, a, b) {
 // The cheapest tile `unit` could stand on to hit `target` this turn — its
 // current tile if already in range, otherwise the nearest reachable tile
 // with range and LOS, or null if no such tile exists. Shared by the AI
-// (ai.js) and by click-to-attack in input.js, so "can I reach this fight"
+// (the rival brain in combat.js) and by click-to-attack in input.js, so "can I reach this fight"
 // is answered exactly once.
 // Every tile this unit could hit `target` from this turn. The raw list, so
 // the UI can offer a CHOICE rather than a fait accompli.
@@ -136,7 +136,7 @@ export function firingTiles(state, unit, target) {
 // worse than no default.
 //
 // Deliberately in grid.js and not in the AI: this is what the PLAYER's tap
-// resolves to, and ai.js keeps its own scoring because a behaviour has to be
+// resolves to, and the rival brain keeps its own scoring because a behaviour has to be
 // free to disagree with "the best tile" (that is what a behaviour IS).
 export function firingTileScore(state, unit, target, tile) {
   let score = 0;

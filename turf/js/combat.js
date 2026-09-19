@@ -1,18 +1,63 @@
-// The engine: state creation, the move+act economy (either order, once each
-// — GDD §4, the XCOM/ITB standard, not MST's move-then-act lock), attack
-// resolution, knockback, and the enemy phase. Pure data in, pure data out —
-// nothing here touches a canvas or the DOM, which is what makes it runnable
-// in bare node (test/smoke.cjs).
+// THE ENGINE, as one system.
+//
+// ═══════════════════════════════════════════════════════════════════════
+// THE INVARIANT: THE PLAYER SEES EVERY CONSEQUENCE BEFORE COMMITTING.
+// ═══════════════════════════════════════════════════════════════════════
+//
+// Stated as a rule the code can be held to, not as a mood:
+//
+//   1. Every change to the board is produced by ONE function, `resolve`,
+//      and `resolve` writes what it did to `state.log` as it does it. There
+//      is no second description of "what happened" anywhere — the log IS
+//      the effect list, and it is the same list anim.js animates and main.js
+//      narrates.
+//
+//   2. A PREVIEW is `resolve` run on a copy of the state with an oracle in
+//      place of the dice. It returns the copy's log. So what the board shows
+//      before a commit is not a forecast that resembles the resolution: it is
+//      the resolution, run early, with the one unknowable value — the roll —
+//      held at a named branch. The only thing a commit can add is which
+//      branch the dice took, and the odds of that were on the effect.
+//
+//   3. The TELEGRAPH is that preview, run for every rival's chosen plan. The
+//      warning badge over an operator's head is read off the rival's own
+//      preview — not recomputed by a second function that might disagree.
+//
+//   4. The ENEMY PHASE executes the frozen plan through the same `resolve`.
+//      When the board has moved under a plan (an earlier rival took the tile,
+//      shoved the target, or the rival died on the way), the rival HOLDS
+//      rather than improvising something the player was never shown — and
+//      the log says so, in a `note`. A divergence is never silent.
+//
+//   5. Nothing in this file depends on which input drove it, which lets the
+//      whole thing run in bare node (test/smoke.mjs) — including the gate
+//      that asserts point 2 literally: preview the command, commit it, and
+//      the committed log equals one of the previewed branches.
+//
+// WHY THIS IS ONE MODULE AND NOT TWO. Through v34 the rival brain (ai.js)
+// and the resolution (combat.js) were separate files, and ai.js could not
+// import combat.js without a cycle. So the brain scored plans with its own
+// arithmetic, the badge quoted damage with a separate call to the forecast,
+// and the phase re-derived legality a third time. Three readings of one
+// rule is how the badge came to under-report by exactly the momentum a
+// four-tile step banks (grunt_runt, grunt_milo): the step happens in the
+// phase, the forecast was taken before it. Put the brain beside the resolver
+// and the plan can carry its own preview; the number on the badge and the
+// number that lands are then the same number by construction.
+//
+// Pure data in, pure data out. Nothing here touches a canvas or the DOM.
 import {
   key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile,
   firingTiles, firingTileScore,
-} from './grid.js?v=4';
-import { planAllIntents } from './ai.js?v=6';
+} from './grid.js?v=5';
 import { makeRng } from './rng.js?v=2';
-import { addMomentum, clearMomentum, evasionOf, momentumDamage } from './momentum.js?v=1';
-import { abilityTargets, canAfford, findAbility, isFlanked, weaponSuits } from './abilities.js?v=2';
-import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
+import { addMomentum, clearMomentum, evasionOf, momentumDamage, EVADE_PER } from './momentum.js?v=1';
+import { abilityTargets, canAfford, findAbility, isFlanked } from './abilities.js?v=3';
+import { magOf, needsReload, roundsLeft } from './ammo.js?v=3';
 
+export { magOf, needsReload, roundsLeft };
+
+// ── §1 state ────────────────────────────────────────────────────────
 export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs, seed = 1, hazardDefs = [], trinketDefs = []) {
   const weaponById = id => weaponDefs.find(w => w.id === id);
   const fullCover = new Set(encounter.cover.full.map(([x, y]) => key(x, y)));
@@ -38,11 +83,9 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
   // Objective units — the thing a `destroy` mission is about. A third
   // faction rather than a new entity type, because "a thing on a tile with
   // hp that can be attacked" is what a unit already IS: attackableTargets
-  // filters on `faction !== mine`, so both sides can hit it for free;
-  // livingEnemies and ai.js's target search both filter on 'enemy' and
-  // 'player' by name, so it is invisible to the win check and to the enemy
-  // brain without either of them learning a thing. It cannot move, has no
-  // weapon, and is never asked to act.
+  // filters on `faction !== mine`, so both sides can hit it for free, while
+  // the win check and the rival brain filter on 'enemy' and 'player' by name
+  // and never see it. It cannot move, has no weapon, and is never asked to act.
   (encounter.objectives || []).forEach((spawn, i) => {
     units.push({
       uid: `o${i}`, defId: spawn.id, name: spawn.name, faction: 'objective',
@@ -58,22 +101,16 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     encounterId: encounter.id,
     grid: encounter.grid,
     fullCover, partialCover, hazards,
-    // Extraction tiles (GDD §4's objective variety, MST's most-used mission
-    // shape). A Set of tile keys — empty for every other mode, so nothing
-    // downstream needs to know which mode is running.
+    // Extraction tiles. A Set of tile keys — empty for every other mode, so
+    // nothing downstream needs to know which mode is running.
     extract: new Set((encounter.extract || []).map(([x, y]) => key(x, y))),
     // Reinforcements: rivals that arrive part-way through, on a schedule the
-    // player can SEE coming (GDD §4's pressure curve, MST_PARITY §2.4). A
-    // copy, because arrivals are consumed as they land and an encounter def
-    // is shared across every boot of it.
+    // player can SEE coming (MST_PARITY §2.4). A copy, because arrivals are
+    // consumed as they land and an encounter def is shared across boots.
     reinforcements: (encounter.reinforcements || []).map((r, i) => ({ ...r, rid: `r${i}` })),
-    // Units holding fire (the Overwatch ability). A Set of uids, emptied at
-    // the top of every player turn — overwatch is a posture you take for one
-    // enemy phase, never a standing order you can forget you gave.
+    // Units holding fire (Overwatch). Emptied at the top of every player
+    // turn — a posture for one enemy phase, never a standing order.
     overwatch: new Set(),
-    // Per-encounter objective (GDD §4 lists survive-N as a real mode, not
-    // only elimination). Defaults to eliminate so an encounter without one
-    // behaves exactly as it did before.
     win: encounter.win || { mode: 'eliminate' },
     units,
     turn: 'player',
@@ -85,11 +122,15 @@ export function createEncounterState(encounter, unitDefs, weaponDefs, enemyDefs,
     log: [],
     result: null,
     rng: makeRng(seed),
-    weaponDefs, // so moveUnit can look up a dropped weapon's def by id
-    enemyDefs,  // so landArrivals can build a rival mid-encounter
-    trinketDefs,
-    drops: [], // { x, y, weaponId } — GDD §9's "simple weapon-swap loot drops"
+    weaponDefs, enemyDefs, trinketDefs,
+    drops: [], // { x, y, weaponId | trinketId }
   };
+  // THE DICE, behind one seam. Everything that rolls asks `state.roll(kind,
+  // actor)`, and on the real state that is the rng. A preview swaps this
+  // for an oracle (see previewOracle) on a COPY, which is the whole
+  // mechanism by which a preview is the resolution rather than a model of
+  // it. Nothing else may read `state.rng` directly.
+  state.roll = () => state.rng();
   planAllIntents(state);
   return state;
 }
@@ -99,15 +140,10 @@ const getTrinket = (state, id) => (state.trinketDefs || []).find(t => t.id === i
 
 // `unit.weapon` is the weapon AS IT ACTUALLY FIRES — base plus every
 // trinket's weapon-field bonus — and `unit.baseWeapon` is what was picked up.
-// Recomputing into unit.weapon rather than exposing an effectiveWeapon(unit)
-// getter is deliberate: grid.js and ai.js both read weapon ranges, and neither
-// can import from combat.js (combat.js imports THEM — it would be circular).
-// This way every existing read stays correct with no new import anywhere, and
-// there is no second code path that can be forgotten.
-//
+// Recomputed into unit.weapon rather than exposed as a getter so grid.js
+// (which cannot import this file) reads the right range with no new import.
 // Recompute on both events that can change the answer: a weapon swap and a
-// trinket pickup. A trinket therefore keeps working after a swap instead of
-// being silently attached to the gun it was found with.
+// trinket pickup.
 function recomputeWeapon(unit) {
   const base = unit.baseWeapon || unit.weapon;
   // A picked-up gun comes loaded, and a trinket that changes the weapon must
@@ -124,14 +160,10 @@ function recomputeWeapon(unit) {
   unit.weapon = w;
 }
 
-// Applied once, on pickup. maxHp also heals by the same amount: a +2 max that
-// leaves you on the same hp is a promise rather than a pickup, and this tier
-// of item is meant to be felt immediately (same reasoning as awardXp's level
-// bump healing on the spot).
 // Re-apply a saved trinket list by id (main.js's crewProgress, across
-// encounters). Goes through applyTrinket rather than assigning the array, so
-// the stat and weapon effects land on this encounter's freshly-built unit
-// instead of being restored as inert data.
+// encounters). Goes through applyTrinket so the stat and weapon effects land
+// on this encounter's freshly-built unit instead of being restored as inert
+// data.
 export function applyTrinkets(unit, ids, defs) {
   for (const id of ids) {
     const def = defs.find(t => t.id === id);
@@ -139,6 +171,8 @@ export function applyTrinkets(unit, ids, defs) {
   }
 }
 
+// maxHp also heals by the same amount: a +2 max that leaves you on the same
+// hp is a promise rather than a pickup.
 function applyTrinket(unit, def) {
   unit.trinkets.push(def);
   const e = def.effect || {};
@@ -150,37 +184,357 @@ function applyTrinket(unit, def) {
 function makeUnit(uid, def, weapon, faction, spawn) {
   return {
     uid, defId: def.id, name: def.name, faction, role: def.role, weapon,
-    baseWeapon: weapon, // what was picked up; `weapon` is that plus trinkets
-    // Starts loaded. Null for melee, and every ammo check goes through
+    baseWeapon: weapon,
+    // Starts loaded. Null for melee; every ammo check goes through
     // magOf/needsReload rather than reading this directly.
     ammo: magOf(weapon),
-    // The skill loadout, drawn from any of abilities.json's lines (GDD §5.1).
-    // Copied off the def rather than looked up later, because a unit's kit is
-    // per-UNIT from here on and levelling will grow this list.
+    // The skill loadout, from any of abilities.json's lines (GDD §5.1).
+    // Copied off the def: a unit's kit is per-UNIT and levelling grows it.
     abilities: def.abilities ? [...def.abilities] : null,
-    // ai.js reads these; absent on player units and on any enemy that has
-    // not been given one, where the behaviour table falls back to `charger`.
+    // The rival brain reads these; absent on player units and on any enemy
+    // not given one, where the behaviour table falls back to `charger`.
     behaviour: def.behaviour, focus: def.focus,
     hp: def.hp, maxHp: def.hp, move: def.move, portrait: def.portrait, sprite: def.sprite,
     x: spawn.x, y: spawn.y,
     actedMove: false, actedAction: false,
     kills: 0, xp: 0, level: 1,
-    trinkets: [], // GDD §5: found gear, no slots, no equip action — they just stack
+    trinkets: [],
   };
 }
 
-export { magOf, needsReload, roundsLeft };
-
+// ── §2 queries ──────────────────────────────────────────────────────
 export const hazardAt = (state, x, y) => (state.hazards ? state.hazards.get(key(x, y)) : null) || null;
+export const getUnit = (state, uid) => state.units.find(u => u.uid === uid);
+export const livingPlayers = state => state.units.filter(u => u.faction === 'player' && u.hp > 0);
+export const livingEnemies = state => state.units.filter(u => u.faction === 'enemy' && u.hp > 0);
+export const canUnitAct = unit => unit.hp > 0 && (!unit.actedMove || !unit.actedAction);
 
-// Every way a unit's position can change routes through here: a player move,
-// a knockback, an enemy's own step. One entry point rather than three copies,
-// because the third copy is always the one that forgets to check.
-//
-// Returns the event (or null) so callers can decide what to narrate; the
-// event is already on the log either way. checkWinLoss runs here, since a
-// hazard killing the last enemy — or the last operator — has to end the
-// encounter exactly like a killing blow does.
+// A tile you can legally move to right now (the move command, and the range
+// highlight in input.js/render.js, read the same map).
+export function movableTiles(state, unit) {
+  return unit.actedMove ? new Map() : moveRange(state, unit);
+}
+
+// Every target this unit could attack from SOME reachable tile this turn.
+// An empty magazine removes the option entirely rather than offering a shot
+// that then fails: the board must never highlight something it will refuse.
+export function attackableTargets(state, unit) {
+  if (unit.actedAction) return [];
+  if (needsReload(unit)) return [];
+  const out = [];
+  for (const target of state.units) {
+    if (target.hp <= 0 || target.faction === unit.faction) continue;
+    if (approachTile(state, unit, target)) out.push(target.uid);
+  }
+  return out;
+}
+
+// How much cover an adjacent planted ally is giving this unit. Zero for
+// melee, like every other evasion term.
+export function guardAt(state, unit) {
+  let best = 0;
+  for (const u of state.units) {
+    if (u.faction !== unit.faction || u.hp <= 0 || !u.guard) continue;
+    if (u.uid === unit.uid) continue;
+    if (manhattan(u, unit) > 1) continue;
+    best = Math.max(best, u.guard);
+  }
+  return best / 100;
+}
+
+export const COVER_PENALTY = 0.3;
+
+// THE ONE PLACE the odds are worked out. resolveStrike calls this, so the
+// number quoted and the number rolled against are one piece of arithmetic.
+// Pure — no rng, no mutation. `from` lets a caller ask about a tile the
+// attacker has not reached yet; in practice every caller now asks through
+// the resolver instead, which has ALREADY stepped there and banked the
+// step's momentum — the difference is exactly the +1 the badge used to miss.
+export function forecastAttack(state, attacker, target, weapon, opts = {}, from = attacker) {
+  let chance = opts.accuracy != null ? opts.accuracy : weapon.hitChance;
+  if (opts.accuracyMod) chance += opts.accuracyMod;
+  const cover = weapon.archetype === 'ranged' && coverSoftens(state, from, target);
+  if (cover) chance -= COVER_PENALTY;
+  // A moving target is harder to shoot (momentum.js).
+  const evade = weapon.archetype === 'ranged' ? evasionOf(target, weapon) : 0;
+  chance -= evade;
+  // Planted (Anchor line), read off the BOARD so it stops the moment the
+  // anchor moves.
+  const guard = guardAt(state, target);
+  chance -= guard;
+  chance = Math.max(0.05, Math.min(1, chance));
+  const bonus = opts.flatDamage != null ? 0 : momentumDamage(attacker) + (opts.damageBonus || 0);
+  const base = opts.flatDamage != null ? opts.flatDamage : weapon.damage;
+  const damage = opts.flatDamage != null ? opts.flatDamage : base + bonus;
+  const shots = opts.shots || 1;
+  return {
+    chance, cover, evade, guard, base, bonus, damage, shots,
+    lethal: damage >= target.hp,
+    knockback: opts.knockback != null ? opts.knockback : weapon.knockback,
+  };
+}
+
+// ── §3 THE RESOLVER ─────────────────────────────────────────────────
+// One entry point for every change to the board. `cmd` is assumed LEGAL —
+// the public functions in §6 validate and refuse; this executes. Anything
+// it does, it logs. Nothing outside this section (and the phase turnover in
+// §8) mutates a unit's position, health, ammo, momentum or flags.
+function resolve(state, cmd) {
+  switch (cmd.type) {
+    case 'move': return resolveMove(state, cmd);
+    case 'attack': return resolveAttackCmd(state, cmd);
+    case 'ability': return resolveAbility(state, cmd);
+    case 'reload': return resolveReload(state, cmd);
+    case 'rival': return resolveRival(state, cmd);
+    default: throw new Error(`resolve: unknown command '${cmd.type}'`);
+  }
+}
+
+function resolveMove(state, { uid, x, y }) {
+  const unit = getUnit(state, uid);
+  // Momentum is banked from the distance actually travelled, before the
+  // position is overwritten.
+  addMomentum(unit, Math.abs(x - unit.x) + Math.abs(y - unit.y));
+  unit.x = x; unit.y = y;
+  unit.actedMove = true;
+  state.log.push({ type: 'move', uid, x, y, momentum: unit.momentum });
+  // Hazard first, then loot: a unit that walks into an open stairwell does
+  // not get to pick up the pistol lying in it on the way down.
+  const hazard = enterHazard(state, unit, 'move');
+  const pickedUp = unit.hp > 0 ? pickUpDropAt(state, unit) : null;
+  return { hazard, pickedUp };
+}
+
+// An attack, optionally with the step that reaches it — ONE command, so a
+// preview shows the hazard on the approach and the shot in one effect list,
+// and so the shot is forecast from the tile you end up on with the momentum
+// the step banked. Through v34 orderAttack was two commits (a move, then an
+// attack) and the seam between them is where the forecast lost the step.
+function resolveAttackCmd(state, { uid, targetUid, from }) {
+  const attacker = getUnit(state, uid);
+  let stepped = null;
+  if (from && (from.x !== attacker.x || from.y !== attacker.y)) {
+    stepped = resolveMove(state, { uid, x: from.x, y: from.y });
+    if (attacker.hp <= 0 || state.result) return { stepped, attack: null, ended: true };
+  }
+  const target = getUnit(state, targetUid);
+  // The step can change the gun (a pickup on the way), and the new gun may
+  // not reach. The board offered the shot with the OLD range; refusing here
+  // rather than firing something else is the honest outcome, and it is
+  // logged so the player is told, not left to notice.
+  if (!target || target.hp <= 0
+      || manhattan(attacker, target) > attacker.weapon.range
+      || !hasLOS(state, attacker, target)) {
+    state.log.push({ type: 'held', uid, targetUid, reason: 'out-of-position' });
+    return { stepped, attack: null, held: 'out-of-position' };
+  }
+  const attack = resolveStrike(state, attacker, target, attacker.weapon);
+  attacker.actedAction = true;
+  return { stepped, attack };
+}
+
+function resolveReload(state, { uid }) {
+  const unit = getUnit(state, uid);
+  unit.ammo = magOf(unit.weapon);
+  unit.actedAction = true;
+  state.log.push({ type: 'reload', uid, name: unit.name, ammo: unit.ammo });
+  return {};
+}
+
+// `cmd.targets` is the resolved list (validated in useAbility); `cmd.tile`
+// for Barricade. Each case reduces to calls this file already makes for an
+// ordinary attack, so an ability can never do something the normal path
+// cannot explain.
+function resolveAbility(state, { uid, ability, targets, tile, shots }) {
+  const unit = getUnit(state, uid);
+  const results = [];
+  if (ability.shape === 'self') {
+    if (ability.id === 'overwatch') state.overwatch.add(unit.uid);
+    else unit.guard = ability.guard;  // Planted, cleared at the top of its own next turn
+    state.log.push({ type: 'ability', uid, ability: ability.id, name: ability.name });
+  } else if (ability.shape === 'empty-tile') {
+    state.partialCover.add(key(tile.x, tile.y));
+    state.log.push({ type: 'ability', uid, ability: ability.id, name: ability.name, x: tile.x, y: tile.y });
+  } else {
+    // adjacent-all resolves each body once; a single target takes `shots`
+    // strikes. Either way a body killed by an earlier strike is not still
+    // standing for the next — a second barrel is not fired into a corpse.
+    const sequence = ability.shape === 'adjacent-all' ? targets : Array(shots || 1).fill(targets[0]);
+    for (const tuid of sequence) {
+      const t = getUnit(state, tuid);
+      if (!t || t.hp <= 0) continue;
+      results.push(resolveStrike(state, unit, t, unit.weapon, abilityOpts(ability, state, unit, t)));
+    }
+  }
+  // Charged once, whatever the shape.
+  unit.momentum = Math.max(0, (unit.momentum || 0) - ability.cost);
+  unit.actedAction = true;
+  return { results };
+}
+
+// Per-TARGET, because the flank bonus depends on who is being hit and who
+// else is standing next to them.
+function abilityOpts(ability, state, unit, target) {
+  const flanked = target && isFlanked(state, unit, target, manhattan);
+  return {
+    ability: ability.id,
+    flanked,
+    accuracy: ability.accuracy,
+    accuracyMod: ability.accuracy != null ? 0 : ability.accuracyMod,
+    damageBonus: (ability.damageMode === 'weapon' ? (ability.damage || 0) : 0)
+      + (flanked ? (ability.flankBonus || 0) : 0),
+    flatDamage: ability.damageMode === 'flat' ? ability.damage : null,
+    knockback: ability.knockback,
+    slow: ability.slow,
+    // The ability's own cost is the price; the swing must not also empty
+    // the pool.
+    keepMomentum: true,
+  };
+}
+
+// One rival's turn, from its frozen plan. This is point 4 of the invariant:
+// the plan is executed as shown, and where the board has moved under it the
+// rival HOLDS and the log names why. It never improvises — a rival that
+// re-targeted mid-phase would be doing something the player was not shown.
+function resolveRival(state, { uid, plan }) {
+  const enemy = getUnit(state, uid);
+  let moved = null, attacked = null, reloaded = false, note = null;
+  if (plan.moveTo && (plan.moveTo.x !== enemy.x || plan.moveTo.y !== enemy.y)) {
+    const { x, y } = plan.moveTo;
+    // Independent plans can collide: an earlier rival this phase may have
+    // taken the tile. That is the one thing a frozen plan cannot see.
+    if (state.fullCover.has(key(x, y)) || unitAt(state, x, y, enemy)) {
+      note = 'blocked';
+    } else {
+      // Rivals bank momentum from their own step exactly as operators do —
+      // evasion has to cut both ways or closing on a skirmisher is free.
+      addMomentum(enemy, Math.abs(x - enemy.x) + Math.abs(y - enemy.y));
+      enemy.x = x; enemy.y = y;
+      moved = { x, y };
+      enterHazard(state, enemy, 'move');
+      // Overwatch fires HERE — after the step, before the rival acts. The
+      // only reaction in the game, and what stops crossing open ground
+      // under a held gun being free.
+      overwatchFire(state, enemy);
+      // A watcher's shove can knock the rival off the tile it was shown
+      // standing on. It still acts if it legally can — that shove was the
+      // PLAYER's own weapon at work — but the arithmetic has moved, and the
+      // log says so rather than letting the numbers quietly differ.
+      if (enemy.hp > 0 && (enemy.x !== x || enemy.y !== y)) note = 'displaced';
+    }
+  }
+  if (enemy.hp <= 0) {
+    note = 'died';
+  } else if (plan.type === 'reload') {
+    const mag = magOf(enemy.weapon);
+    if (mag != null && roundsLeft(enemy) < mag) {
+      enemy.ammo = mag;
+      state.log.push({ type: 'reload', uid, name: enemy.name, ammo: enemy.ammo });
+    }
+    reloaded = true;
+  } else if (plan.type === 'attack') {
+    const target = getUnit(state, plan.targetUid);
+    if (!target || target.hp <= 0) note = 'target-gone';
+    else if (manhattan(enemy, target) > enemy.weapon.range || !hasLOS(state, enemy, target)) note = 'out-of-position';
+    else attacked = resolveStrike(state, enemy, target, enemy.weapon);
+  }
+  state.log.push({ type: 'enemy-turn', uid, name: enemy.name, moved, attacked, reloaded, note });
+  return { moved, attacked, reloaded, note };
+}
+
+// GDD §5's found gear: a dead rival has a flat chance to leave ONE thing —
+// sometimes its gun, sometimes what was in its pockets.
+export const DROP_CHANCE = 0.5;
+export const TRINKET_SHARE = 0.4;
+
+// One strike. `opts` is how an ability bends one attack without a second
+// damage pipeline. The dice are asked through `state.roll`, in a FIXED order
+// (hit; then, on a kill of a rival, drop; then which kind; then which one),
+// because the balance gate replays seeds and a reordered roll is a different
+// game with the same numbers.
+function resolveStrike(state, attacker, target, weapon, opts = {}) {
+  const f = forecastAttack(state, attacker, target, weapon, opts);
+  // The round is spent HERE and nowhere else, so every firing path pays.
+  if (magOf(weapon) != null) attacker.ammo = Math.max(0, roundsLeft(attacker) - 1);
+  const roll = state.roll('hit', attacker);
+  const hit = roll < f.chance;
+  let damage = 0, killed = false, knockback = null, dropped = null;
+  if (hit) {
+    damage = f.damage;
+    target.hp = Math.max(0, target.hp - damage);
+    killed = target.hp <= 0;
+    if (killed) {
+      attacker.kills += 1;
+      if (target.faction === 'enemy' && state.roll('drop', attacker) < DROP_CHANCE) {
+        const pool = state.trinketDefs || [];
+        const asTrinket = pool.length && state.roll('kind', attacker) < TRINKET_SHARE;
+        dropped = asTrinket
+          ? { x: target.x, y: target.y, trinketId: pool[Math.floor(state.roll('which', attacker) * pool.length)].id }
+          : { x: target.x, y: target.y, weaponId: target.baseWeapon ? target.baseWeapon.id : target.weapon.id };
+        state.drops.push(dropped);
+      }
+    }
+    // Cripple: take away the approach rather than the health.
+    if (opts.slow) target.slowed = Math.max(target.slowed || 0, opts.slow);
+    const shove = opts.knockback != null ? opts.knockback : weapon.knockback;
+    if (!killed && shove > 0) knockback = applyKnockback(state, attacker, target, shove);
+  }
+  // Spending it is the whole interlock (momentum.js). Cleared whether the
+  // shot lands or not — you committed to the swing. An ability has already
+  // paid its own cost and opts out.
+  if (!opts.keepMomentum) clearMomentum(attacker);
+  const evt = {
+    type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage,
+    killed, knockback, dropped, chance: f.chance, roll,
+    base: f.base, bonus: f.bonus, evade: f.evade,
+    ammo: attacker.ammo,
+    ability: opts.ability || null,
+    flanked: !!opts.flanked,
+    // The full forecast rides on the event so a preview reads it straight
+    // off the effect and the HUD can say WHY the number is what it is.
+    forecast: f,
+    dropChance: target.faction === 'enemy' ? DROP_CHANCE : 0,
+  };
+  state.log.push(evt);
+  // The payoff the pipe exists for: a shove that lands a body in a fire or
+  // a stairwell. Folded back onto the same event so a caller that only
+  // looks at `killed` still learns the target died.
+  if (knockback && knockback.moved) {
+    const hz = enterHazard(state, target, 'knockback');
+    if (hz) {
+      evt.hazard = hz;
+      if (hz.killed && !evt.killed) {
+        evt.killed = true;
+        attacker.kills += 1;
+      }
+    }
+  }
+  return evt;
+}
+
+// Pushes the target away along the dominant axis of the attack, stopping at
+// the first tile that is out of bounds, full cover, or occupied. A lethal
+// hazard CATCHES what is shoved across it.
+function applyKnockback(state, attacker, target, tiles) {
+  const dx = target.x - attacker.x, dy = target.y - attacker.y;
+  let stepX = 0, stepY = 0;
+  if (Math.abs(dx) >= Math.abs(dy)) stepX = Math.sign(dx) || 1;
+  else stepY = Math.sign(dy) || 1;
+  let moved = 0;
+  for (let i = 0; i < tiles; i++) {
+    const nx = target.x + stepX, ny = target.y + stepY;
+    if (!inBounds(state.grid, nx, ny)) break;
+    if (state.fullCover.has(key(nx, ny))) break;
+    if (unitAt(state, nx, ny, target)) break;
+    target.x = nx; target.y = ny; moved++;
+    if (hazardAt(state, nx, ny)?.lethal) break;
+  }
+  return { moved, dx: stepX, dy: stepY };
+}
+
+// Every way a unit's position can change routes through here. Returns the
+// event (or null); checkWinLoss runs here, since a hazard killing the last
+// rival — or the last operator — ends the encounter like a killing blow.
 function enterHazard(state, unit, cause) {
   if (unit.hp <= 0) return null;
   const h = hazardAt(state, unit.x, unit.y);
@@ -199,10 +553,8 @@ function enterHazard(state, unit, cause) {
   return evt;
 }
 
-// End-of-round burn: a hazard with `lingers` bites anything still standing in
-// it when the round turns over. This is the only hazard effect that is not
-// triggered by movement, and it is what stops a fire tile being a one-off
-// toll you pay once and then camp on.
+// End-of-round burn: a hazard with `lingers` bites anything still standing
+// in it when the round turns over.
 function tickLingeringHazards(state) {
   const out = [];
   for (const unit of state.units) {
@@ -223,10 +575,339 @@ function tickLingeringHazards(state) {
   return out;
 }
 
-export const getUnit = (state, uid) => state.units.find(u => u.uid === uid);
-export const livingPlayers = state => state.units.filter(u => u.faction === 'player' && u.hp > 0);
-export const livingEnemies = state => state.units.filter(u => u.faction === 'enemy' && u.hp > 0);
-export const canUnitAct = unit => unit.hp > 0 && (!unit.actedMove || !unit.actedAction);
+// A dead rival's tile never blocks movement, which is what makes "walk over
+// the body to grab its gun" work with no extra input affordance.
+function pickUpDropAt(state, unit) {
+  if (unit.faction !== 'player') return null;
+  const i = state.drops.findIndex(d => d.x === unit.x && d.y === unit.y);
+  if (i < 0) return null;
+  const [drop] = state.drops.splice(i, 1);
+  if (drop.trinketId) {
+    const trinket = getTrinket(state, drop.trinketId);
+    if (!trinket) return null;
+    applyTrinket(unit, trinket);
+    state.log.push({ type: 'pickup', uid: unit.uid, trinketId: trinket.id, name: trinket.name });
+    return trinket;
+  }
+  const weapon = getWeapon(state, drop.weaponId);
+  if (!weapon) return null;
+  unit.baseWeapon = weapon;
+  recomputeWeapon(unit);
+  state.log.push({ type: 'pickup', uid: unit.uid, weaponId: weapon.id, name: weapon.name });
+  return unit.weapon;
+}
+
+// Every operator holding fire that can now see this rival takes its shot —
+// one each per enemy phase.
+function overwatchFire(state, enemy) {
+  if (!state.overwatch || !state.overwatch.size || enemy.hp <= 0) return;
+  for (const uid of [...state.overwatch]) {
+    const watcher = getUnit(state, uid);
+    if (!watcher || watcher.hp <= 0) { state.overwatch.delete(uid); continue; }
+    if (manhattan(watcher, enemy) > watcher.weapon.range) continue;
+    if (!hasLOS(state, watcher, enemy)) continue;
+    state.overwatch.delete(uid);
+    state.log.push({ type: 'overwatch', uid, targetUid: enemy.uid, name: watcher.name });
+    resolveStrike(state, watcher, enemy, watcher.weapon, { ability: 'overwatch', keepMomentum: true });
+    checkWinLoss(state);
+    if (enemy.hp <= 0) return;
+  }
+}
+
+// ── §4 preview: the resolver, run early ─────────────────────────────
+// A copy of the state deep enough that `resolve` can run on it without the
+// real board noticing. The dice are replaced by `roll`; `rng` is booby-
+// trapped so any code path that still reaches for it directly fails loudly
+// in a preview instead of silently advancing the real sequence.
+function cloneState(state, roll) {
+  return {
+    ...state,
+    units: state.units.map(u => ({ ...u, trinkets: [...(u.trinkets || [])] })),
+    fullCover: new Set(state.fullCover),
+    partialCover: new Set(state.partialCover),
+    overwatch: new Set(state.overwatch || []),
+    drops: state.drops.map(d => ({ ...d })),
+    reinforcements: (state.reinforcements || []).map(r => ({ ...r })),
+    telegraph: new Map(state.telegraph),
+    enemyPlan: new Map(state.enemyPlan || []),
+    enemyQueue: [...(state.enemyQueue || [])],
+    log: [],
+    roll,
+    rng: () => { throw new Error('a preview reached for the real dice'); },
+    preview: true,
+  };
+}
+
+// What the dice say in a preview. The ACTOR's own rolls follow the branch
+// being previewed (all land, or all miss); every other roll is the case the
+// player would least like — a rival's shot lands, an operator's overwatch
+// misses — so a warning is always its worst case and a preview of your own
+// shot never quietly assumes a reaction saves you. Drops never happen in a
+// preview; the chance rides on the effect instead.
+function previewOracle(actorUid, branch) {
+  return (kind, actor) => {
+    if (kind !== 'hit') return kind === 'which' ? 0 : 1;
+    if (actor.uid === actorUid) return branch === 'hit' ? 0 : 1;
+    return actor.faction === 'player' ? 1 : 0;
+  };
+}
+
+// Run a command on a copy and return the copy. The log on it IS the preview.
+// `prepare` puts the copy into the state the command will really start from
+// when that is not the current one (a rival's plan previews from the top of
+// the enemy phase, not from the middle of the player's turn).
+function dryRun(state, cmd, branch = 'hit', prepare = null) {
+  const c = cloneState(state, previewOracle(cmd.uid, branch));
+  if (prepare) prepare(c);
+  const out = resolve(c, cmd);
+  return { state: c, out };
+}
+
+// THE PLAYER'S PREVIEW — point 2 of the invariant, as an export. Two
+// branches for a command with a roll in it (yours all land / yours all
+// miss), one for a command without; each carries the effect list, the
+// telegraph the board would show AFTER, the incoming warnings on that
+// telegraph, and the encounter result if the command ends it. The chance on
+// the branch is the actor's own hit chance, read off the effect — for a
+// multi-shot ability the per-shot odds are on each strike.
+export function previewCommand(state, cmd) {
+  const run = branch => {
+    const { state: c } = dryRun(state, cmd, branch);
+    checkWinLoss(c);
+    planAllIntents(c);
+    return { branch, effects: c.log, telegraph: c.telegraph, threats: incomingThreats(c), result: c.result };
+  };
+  const hit = run('hit');
+  const own = hit.effects.find(e => e.type === 'attack' && e.attackerUid === cmd.uid);
+  if (!own) return { branches: [{ ...hit, branch: 'certain', chance: 1 }] };
+  const miss = run('miss');
+  return { branches: [{ ...hit, chance: own.chance }, { ...miss, chance: 1 - own.chance }] };
+}
+
+// The attack event a shot from `from` would produce — one dry run, no
+// replan. Where the per-tile forecasts for the aiming UI come from.
+function dryStrike(state, uid, targetUid, from) {
+  const { state: c } = dryRun(state, { type: 'attack', uid, targetUid, from }, 'hit');
+  return c.log.find(e => e.type === 'attack' && e.attackerUid === uid) || null;
+}
+
+// Every tile this operator could shoot `target` from, each with the
+// forecast it would give FROM THERE, WITH THE STEP'S MOMENTUM. Sorted best
+// first so the UI can mark the default.
+export function firingOptions(state, attackerUid, targetUid) {
+  const attacker = getUnit(state, attackerUid);
+  const target = getUnit(state, targetUid);
+  if (!attacker || !target || attacker.actedAction || needsReload(attacker)) return [];
+  return firingTiles(state, attacker, target)
+    .map(t => {
+      const evt = dryStrike(state, attackerUid, targetUid, t);
+      return {
+        ...t,
+        score: firingTileScore(state, attacker, target, t),
+        steps: manhattan(t, attacker),
+        forecast: evt ? evt.forecast : forecastAttack(state, attacker, target, attacker.weapon, {}, t),
+      };
+    })
+    .sort((a, b) => b.score - a.score || (key(a.x, a.y) < key(b.x, b.y) ? -1 : 1));
+}
+
+// What the player is about to do to whoever they are pointing at, from the
+// tile orderAttack would actually shoot from. Null when the shot is not on.
+export function previewAttack(state, attackerUid, targetUid, opts = {}) {
+  const attacker = getUnit(state, attackerUid);
+  const target = getUnit(state, targetUid);
+  if (!attacker || !target || attacker.hp <= 0 || target.hp <= 0) return null;
+  if (attacker.actedAction) return null;
+  const tile = approachTile(state, attacker, target);
+  if (!tile) return null;
+  // opts is an ability's modifier set (input.js asks about a skill the same
+  // way); the plain shot goes through the resolver so the step counts.
+  const f = Object.keys(opts).length
+    ? forecastAttack(state, attacker, target, attacker.weapon, opts, tile)
+    : (dryStrike(state, attackerUid, targetUid, tile) || {}).forecast
+      || forecastAttack(state, attacker, target, attacker.weapon, {}, tile);
+  return { ...f, from: tile, steps: manhattan(tile, attacker), targetHp: target.hp };
+}
+
+// WHAT IS ABOUT TO HAPPEN TO YOU, as a number. Read off each rival's OWN
+// preview (planIntent attaches it), so the badge and the phase are one
+// computation. Lethal is measured against the total, not the worst single
+// hit: two rivals each taking half your health is the case that kills you
+// and the one a per-attack marker hides.
+export function incomingThreats(state) {
+  const out = new Map();
+  if (!state.telegraph) return out;
+  for (const [uid, intent] of state.telegraph) {
+    if (!intent || intent.type !== 'attack' || !intent.targetUid) continue;
+    const attacker = getUnit(state, uid);
+    if (!attacker || attacker.hp <= 0) continue;
+    const strikes = (intent.preview || []).filter(e => e.type === 'attack' && e.attackerUid === uid);
+    for (const s of strikes) {
+      const target = getUnit(state, s.targetUid);
+      if (!target || target.hp <= 0 || target.faction === 'enemy') continue;
+      let e = out.get(target.uid);
+      if (!e) { e = { total: 0, worst: 0, sources: [] }; out.set(target.uid, e); }
+      e.total += s.damage;
+      e.worst = Math.max(e.worst, s.damage);
+      e.sources.push({ uid, name: attacker.name, chance: s.chance, damage: s.damage });
+    }
+  }
+  for (const [uid, e] of out) {
+    const target = getUnit(state, uid);
+    e.lethal = !!target && e.total >= target.hp;
+  }
+  return out;
+}
+
+// ── §5 the rival brain, and the telegraph ───────────────────────────
+// Data-driven per GDD §3 — enemies.json names a behaviour and a focus, and
+// nothing here knows which grunt is which. Ties break on uid throughout,
+// because the telegraph must be STABLE: an intent that flickers between two
+// equally good tiles is unreadable even though each frame is correct.
+
+// What standing on a tile costs this rival, in HP. A lethal hazard is its
+// whole health bar rather than Infinity so the comparison stays arithmetic.
+function hazardCost(state, enemy, x, y) {
+  const h = state.hazards && state.hazards.get(key(x, y));
+  if (!h) return 0;
+  if (h.lethal) return enemy.hp;
+  return (h.onEnter || 0) + (h.lingers || 0);
+}
+
+// Evasion folded into focus, scaled to tiles so it trades against distance
+// in the units the rest of this section scores in.
+const evadeTiles = (enemy, u) => evasionOf(u, enemy.weapon) / EVADE_PER;
+const FOCUS = {
+  nearest: (state, enemy, players) => pick(players, u => manhattan(enemy, u) + evadeTiles(enemy, u)),
+  weakest: (state, enemy, players) =>
+    pick(players, u => u.hp * 100 + manhattan(enemy, u) + evadeTiles(enemy, u)),
+};
+
+function pick(list, scoreFn) {
+  let best = null, bestScore = Infinity;
+  for (const u of list) {
+    const s = scoreFn(u);
+    if (s < bestScore || (s === bestScore && best && u.uid < best.uid)) { best = u; bestScore = s; }
+  }
+  return best;
+}
+
+// How a rival wants to stand when it attacks — a penalty on the tile, so a
+// behaviour expresses a preference without ever refusing a shot it can take.
+const BEHAVIOUR = {
+  charger: () => 0,
+  skirmisher: (state, enemy, target, tile) => {
+    const reach = manhattan(tile, target);
+    let pen = (enemy.weapon.range - reach) * 1.2;
+    for (const u of state.units) {
+      if (u.faction !== 'enemy' && u.hp > 0 && manhattan(tile, u) <= 1) pen += 4;
+    }
+    return pen;
+  },
+  holder: (state, enemy, target, tile) => (coverSoftens(state, target, tile) ? 0 : 3),
+  flanker: (state, enemy, target, tile) => (coverSoftens(state, tile, target) ? 3.5 : 0),
+};
+
+function nearestTarget(state, enemy) {
+  const players = livingPlayers(state);
+  if (!players.length) return null;
+  const focus = FOCUS[enemy.focus] || FOCUS.nearest;
+  return focus(state, enemy, players);
+}
+
+// The plan for one rival, WITH ITS OWN PREVIEW attached: `preview` is the
+// effect list resolveRival would write if the turn started now, from the
+// worst-case oracle. The badge reads it; the gate compares the phase to it.
+// Never mutates state.
+export function planIntent(state, enemy) {
+  const intent = chooseIntent(state, enemy);
+  if (intent.type === 'idle') return intent;
+  const target = intent.targetUid ? getUnit(state, intent.targetUid) : null;
+  // Where the target stood when this was promised — the phase compares
+  // against it, because a target shoved elsewhere by an earlier rival is
+  // the one legitimate reason a plan does not land as shown.
+  if (target) intent.targetAt = { x: target.x, y: target.y };
+  // FROM THE TOP OF THE PHASE. During the player's turn a rival still holds
+  // the momentum it banked LAST phase, and endPlayerTurn wipes it before the
+  // rival acts. A preview taken from the middle of the player's turn would
+  // add the coming step to a pool that will not exist — v34's badge did the
+  // mirror image, quoting the stale pool without the step. The copy is put
+  // into the state the phase will actually start it in.
+  const { state: c } = dryRun(state, { type: 'rival', uid: enemy.uid, plan: intent }, 'hit', copy => {
+    const e = getUnit(copy, enemy.uid);
+    clearMomentum(e);
+    e.slowed = 0;
+  });
+  intent.preview = c.log;
+  return intent;
+}
+
+function chooseIntent(state, enemy) {
+  const target = nearestTarget(state, enemy);
+  if (!target) return { type: 'idle' };
+
+  // AN EMPTY GUN IS TELEGRAPHED, and the rival backs off while it reloads.
+  if (needsReload(enemy)) {
+    const reachable = enemy.actedMove ? [] : [...moveRange(state, enemy).values()];
+    let best = { x: enemy.x, y: enemy.y };
+    let bestScore = manhattan(enemy, target) + hazardCost(state, enemy, enemy.x, enemy.y) * 1.5;
+    for (const { x, y } of reachable) {
+      const s2 = -manhattan({ x, y }, target) + hazardCost(state, enemy, x, y) * 1.5;
+      if (s2 < bestScore) { bestScore = s2; best = { x, y }; }
+    }
+    return { type: 'reload', moveTo: best, targetUid: target.uid };
+  }
+
+  // A firing position the way this rival's behaviour wants to stand. An
+  // attack is worth a scratch but never worth dying for.
+  const shape = BEHAVIOUR[enemy.behaviour] || BEHAVIOUR.charger;
+  const options = firingTiles(state, enemy, target)
+    .filter(t => hazardCost(state, enemy, t.x, t.y) < enemy.hp);
+  if (options.length) {
+    const best = pick(
+      options.map(t => ({ ...t, uid: `${t.x},${t.y}` })),
+      t => t.cost + shape(state, enemy, target, t) + hazardCost(state, enemy, t.x, t.y) * 1.5,
+    );
+    return { type: 'attack', moveTo: { x: best.x, y: best.y }, targetUid: target.uid };
+  }
+
+  // Cannot reach range this turn — close the gap. One HP is worth a tile
+  // and a half: enough to route a healthy rival around a fire, not enough
+  // to refuse a shortcut that costs a scratch.
+  const reachable = moveRange(state, enemy);
+  const score = (x, y) => manhattan({ x, y }, target) + hazardCost(state, enemy, x, y) * 1.5;
+  let bestMove = { x: enemy.x, y: enemy.y };
+  let bestScore = score(enemy.x, enemy.y);
+  for (const { x, y } of reachable.values()) {
+    const s = score(x, y);
+    if (s < bestScore) { bestScore = s; bestMove = { x, y }; }
+  }
+  return { type: 'move', moveTo: bestMove, targetUid: target.uid };
+}
+
+// The telegraph: every living rival's plan, each with its preview. Recomputed
+// after every player action, so the intent on screen never lies about the
+// current board.
+export function planAllIntents(state) {
+  const telegraph = new Map();
+  for (const u of state.units) {
+    if (u.faction !== 'enemy' || u.hp <= 0) continue;
+    telegraph.set(u.uid, planIntent(state, u));
+  }
+  state.telegraph = telegraph;
+  return telegraph;
+}
+
+// ── §6 the player's commands ────────────────────────────────────────
+// Each validates, then commits: resolve on the real state, settle the
+// encounter, replan the rivals. The validation is what the board already
+// refused to highlight; the commit is what the preview already showed.
+function commit(state, cmd) {
+  const out = resolve(state, cmd);
+  checkWinLoss(state);
+  planAllIntents(state);
+  return out;
+}
 
 function maybeDeselect(state, unit) {
   if (unit.actedMove && unit.actedAction && state.selected === unit.uid) state.selected = null;
@@ -240,289 +921,19 @@ export function selectUnit(state, uid) {
   return { ok: true };
 }
 
-// A tile you can legally move to right now (used by both the move command
-// and by input.js/render.js to paint the range highlight).
-export function movableTiles(state, unit) {
-  return unit.actedMove ? new Map() : moveRange(state, unit);
-}
-
 export function moveUnit(state, uid, x, y) {
   const unit = getUnit(state, uid);
   if (!unit || unit.hp <= 0) return { ok: false, reason: 'dead' };
   if (state.turn !== 'player' || unit.faction !== 'player') return { ok: false, reason: 'not-your-turn' };
   if (unit.actedMove) return { ok: false, reason: 'already-moved' };
-  const range = moveRange(state, unit);
-  if (!range.has(key(x, y))) return { ok: false, reason: 'out-of-range' };
-  // Momentum is banked from the distance actually travelled, before the
-  // position is overwritten — a unit that moves one tile has not run.
-  addMomentum(unit, Math.abs(x - unit.x) + Math.abs(y - unit.y));
-  unit.x = x; unit.y = y;
-  unit.actedMove = true;
-  state.log.push({ type: 'move', uid, x, y, momentum: unit.momentum });
-  // Hazard first, then loot: a unit that walks into an open stairwell does
-  // not get to pick up the pistol lying in it on the way down.
-  const hazard = enterHazard(state, unit, 'move');
-  const pickedUp = unit.hp > 0 ? pickUpDropAt(state, unit) : null;
+  if (!moveRange(state, unit).has(key(x, y))) return { ok: false, reason: 'out-of-range' };
+  const { hazard, pickedUp } = commit(state, { type: 'move', uid, x, y });
   maybeDeselect(state, unit);
-  planAllIntents(state);
-  // An extraction is won by STANDING somewhere, which makes a move the only
-  // action in the game that can win an encounter on its own. Without this
-  // call the win would sit unnoticed until somebody happened to attack —
-  // the same bug the survive mode had before v22.
-  checkWinLoss(state);
   return { ok: true, pickedUp, hazard };
 }
 
-// A dead enemy's tile never blocks movement (grid.js's unitAt skips hp<=0
-// units), which is what makes "walk over the body to grab its gun" work with
-// no extra input affordance — the drop marker (render.js) is the telegraph.
-function pickUpDropAt(state, unit) {
-  if (unit.faction !== 'player') return null;
-  const i = state.drops.findIndex(d => d.x === unit.x && d.y === unit.y);
-  if (i < 0) return null;
-  const [drop] = state.drops.splice(i, 1);
-  if (drop.trinketId) {
-    const trinket = getTrinket(state, drop.trinketId);
-    if (!trinket) return null; // a bad id in data is a content bug, not a crash
-    applyTrinket(unit, trinket);
-    state.log.push({ type: 'pickup', uid: unit.uid, trinketId: trinket.id, name: trinket.name });
-    return trinket;
-  }
-  const weapon = getWeapon(state, drop.weaponId);
-  if (!weapon) return null;
-  unit.baseWeapon = weapon;
-  recomputeWeapon(unit); // keep whatever trinkets this unit already carries
-  state.log.push({ type: 'pickup', uid: unit.uid, weaponId: weapon.id, name: weapon.name });
-  return unit.weapon;
-}
-
-// Every tile a unit could attack a target from *this turn*, given its
-// remaining move — used by input.js to light up valid targets and by ai.js
-// to pick where to stand. Kept here (not grid.js) since it needs the weapon.
-export function attackableTargets(state, unit) {
-  if (unit.actedAction) return [];
-  // An empty magazine removes the option entirely rather than offering a
-  // shot that then fails: the board must never highlight something it will
-  // refuse, and this is what turns "reload" into a real decision instead of
-  // a chore you discover by tapping.
-  if (needsReload(unit)) return [];
-  const out = [];
-  for (const target of state.units) {
-    if (target.hp <= 0 || target.faction === unit.faction) continue;
-    if (approachTile(state, unit, target)) out.push(target.uid);
-  }
-  return out;
-}
-
-// GDD §9's "simple weapon-swap loot drops": a dead enemy has a flat chance
-// to leave its weapon behind, on its own tile. Rolled here (not in awardXp,
-// which only runs once at encounter end) because the drop has to exist mid-
-// encounter for a unit to walk over and grab it.
-export const DROP_CHANCE = 0.5;
-// Of the drops that happen, how many are a trinket rather than the victim's
-// weapon. Kept below half on purpose: the weapon swap is the decision with
-// real texture (it changes range and knockback, i.e. how the unit plays),
-// while a trinket is a small permanent tilt. Making trinkets the common drop
-// would quietly replace the more interesting item with the duller one.
-export const TRINKET_SHARE = 0.4;
-
-// `opts` is how an ABILITY bends one attack without there being a second
-// damage pipeline in this codebase (abilities.js's header explains why that
-// matters). Everything an ability can change is a modifier on this one
-// resolution: accuracy, a damage bonus or a flat replacement, a knockback
-// override, and whether the swing spends the attacker's momentum — it does
-// not, when the ability has already charged for it.
-// THE ONE PLACE the odds are worked out, so the preview and the resolution
-// are the same arithmetic rather than two copies that drift. This game
-// promises full information: a player who is told 70% and hit 4 times out of
-// ten has been lied to, and the only structural defence against that is for
-// the number on screen and the number rolled against to come from here.
-//
-// Pure — no rng, no mutation. `from` lets a caller ask about a tile the
-// attacker has not reached yet, which matters because orderAttack steps you
-// into range first and cover is a property of WHERE YOU END UP.
-// How much cover an adjacent planted ally is giving this unit. Zero for
-// melee, like every other evasion term — a knife at one tile does not miss
-// because somebody nearby is standing firm.
-export function guardAt(state, unit) {
-  let best = 0;
-  for (const u of state.units) {
-    if (u.faction !== unit.faction || u.hp <= 0 || !u.guard) continue;
-    if (u.uid === unit.uid) continue;
-    if (manhattan(u, unit) > 1) continue;
-    best = Math.max(best, u.guard);
-  }
-  return best / 100;
-}
-
-// WHAT IS ABOUT TO HAPPEN TO YOU, as a number rather than a diagram.
-//
-// Owner, 2026-09-05: "readability and comprehension in general is hard",
-// and asked for "what is about to happen" first. The telegraph has drawn
-// WHERE since v25 — a path, a destination, a ring round the target — but a
-// ring does not say whether the hit coming your way is a scratch or the end
-// of that operator, and working it out meant reading the rival's weapon off
-// a glyph and doing the arithmetic yourself.
-//
-// This runs each telegraphed attack through forecastAttack — THE one place
-// odds are worked out, from the tile the rival will actually shoot from —
-// and totals it per target. Same function resolveAttack rolls against, so
-// the warning cannot promise a hit the enemy phase then does not attempt.
-export function incomingThreats(state) {
-  const out = new Map();
-  if (!state.telegraph) return out;
-  for (const [uid, intent] of state.telegraph) {
-    if (!intent || intent.type !== 'attack' || !intent.targetUid) continue;
-    const attacker = state.units.find(u => u.uid === uid);
-    const target = state.units.find(u => u.uid === intent.targetUid);
-    if (!attacker || !target || attacker.hp <= 0 || target.hp <= 0 || !attacker.weapon) continue;
-    const from = intent.moveTo || attacker;
-    const f = forecastAttack(state, attacker, target, attacker.weapon, {}, from);
-    const damage = f.damage * (f.shots || 1);
-    let e = out.get(target.uid);
-    if (!e) { e = { total: 0, worst: 0, sources: [] }; out.set(target.uid, e); }
-    e.total += damage;
-    e.worst = Math.max(e.worst, damage);
-    e.sources.push({ uid, name: attacker.name, chance: f.chance, damage });
-  }
-  // Lethal is measured against the total, not the worst single hit: two
-  // rivals each taking half your health off is the case a player most needs
-  // warning about, and it is exactly the one a per-attack marker hides.
-  for (const [uid, e] of out) {
-    const target = state.units.find(u => u.uid === uid);
-    e.lethal = !!target && e.total >= target.hp;
-  }
-  return out;
-}
-
-export function forecastAttack(state, attacker, target, weapon, opts = {}, from = attacker) {
-  let chance = opts.accuracy != null ? opts.accuracy : weapon.hitChance;
-  if (opts.accuracyMod) chance += opts.accuracyMod;
-  const cover = weapon.archetype === 'ranged' && coverSoftens(state, from, target);
-  if (cover) chance -= COVER_PENALTY;
-  // A moving target is harder to shoot (momentum.js) — the rule that makes
-  // standing still cost something, and the reason a board spreads out.
-  const evade = weapon.archetype === 'ranged' ? evasionOf(target, weapon) : 0;
-  chance -= evade;
-  // Planted (Anchor line): an operator who ended its turn planted makes its
-  // neighbours harder to shoot. Read off the BOARD rather than stored on
-  // each ally, so it starts and stops working the moment somebody moves.
-  const guard = guardAt(state, target);
-  chance -= guard;
-  chance = Math.max(0.05, Math.min(1, chance));
-  const bonus = opts.flatDamage != null ? 0 : momentumDamage(attacker) + (opts.damageBonus || 0);
-  const base = opts.flatDamage != null ? opts.flatDamage : weapon.damage;
-  const damage = opts.flatDamage != null ? opts.flatDamage : base + bonus;
-  const shots = opts.shots || 1;
-  return {
-    chance, cover, evade, guard, base, bonus, damage, shots,
-    // Whether this would finish them. The single most decision-relevant fact
-    // on the board, and until now the player had to do the subtraction.
-    lethal: damage >= target.hp,
-    knockback: opts.knockback != null ? opts.knockback : weapon.knockback,
-  };
-}
-
-export const COVER_PENALTY = 0.3;
-
-function resolveAttack(state, attacker, target, weapon, opts = {}) {
-  const f = forecastAttack(state, attacker, target, weapon, opts);
-  const chance = f.chance, evade = f.evade, bonus = f.bonus;
-  // The round is spent HERE and nowhere else, so every firing path pays for
-  // it — an ordinary swing, an ability, and an overwatch reaction all funnel
-  // through this function, and three separate call sites deducting ammo is
-  // the third-copy bug this file has already paid for twice.
-  if (magOf(weapon) != null) attacker.ammo = Math.max(0, roundsLeft(attacker) - 1);
-  const roll = state.rng();
-  const hit = roll < chance;
-  let damage = 0, killed = false, knockback = null, dropped = null;
-  if (hit) {
-    damage = f.damage;
-    target.hp = Math.max(0, target.hp - damage);
-    killed = target.hp <= 0;
-    if (killed) {
-      attacker.kills += 1;
-      if (target.faction === 'enemy' && state.rng() < DROP_CHANCE) {
-        // GDD §5 puts trinkets in the same "found gear" tier as weapon swaps,
-        // so they come from the same roll rather than a second economy the
-        // player has to learn — a body leaves ONE thing, sometimes its gun and
-        // sometimes what was in its pockets.
-        const pool = state.trinketDefs || [];
-        const asTrinket = pool.length && state.rng() < TRINKET_SHARE;
-        dropped = asTrinket
-          ? { x: target.x, y: target.y, trinketId: pool[Math.floor(state.rng() * pool.length)].id }
-          : { x: target.x, y: target.y, weaponId: target.baseWeapon ? target.baseWeapon.id : target.weapon.id };
-        state.drops.push(dropped);
-      }
-    }
-    // Cripple: take away the approach rather than the health. Cleared on the
-    // target's own turn, beside momentum, so it is exactly one round long.
-    if (opts.slow) target.slowed = Math.max(target.slowed || 0, opts.slow);
-    const shove = opts.knockback != null ? opts.knockback : weapon.knockback;
-    if (!killed && shove > 0) knockback = applyKnockback(state, attacker, target, shove);
-  }
-  // Spending it is the whole interlock (momentum.js): the run that sharpened
-  // this swing is over, and the attacker is a stationary target until it moves
-  // again. Cleared whether the shot lands or not — you committed to the swing.
-  // An ability has already deducted its own cost, so it opts out rather than
-  // being charged twice.
-  if (!opts.keepMomentum) clearMomentum(attacker);
-  const evt = {
-    type: 'attack', attackerUid: attacker.uid, targetUid: target.uid, hit, damage,
-    killed, knockback, dropped, chance, roll,
-    // The breakdown travels with the event so the HUD and the animation layer
-    // can say WHY a number was what it was, rather than showing a total the
-    // player has to reverse-engineer.
-    base: opts.flatDamage != null ? opts.flatDamage : weapon.damage, bonus, evade,
-    ammo: attacker.ammo,
-    ability: opts.ability || null,
-    flanked: !!opts.flanked,
-  };
-  state.log.push(evt);
-  // The payoff the pipe exists for: a shove that lands a body in a fire or an
-  // open stairwell. Resolved AFTER the attack event is logged so the two read
-  // in causal order, and folded back onto the same event so a caller that
-  // only looks at `killed` still learns the target died.
-  if (knockback && knockback.moved) {
-    const hz = enterHazard(state, target, 'knockback');
-    if (hz) {
-      evt.hazard = hz;
-      if (hz.killed && !evt.killed) {
-        evt.killed = true;
-        attacker.kills += 1;   // the shove earned it as surely as a killing blow
-      }
-    }
-  }
-  return evt;
-}
-
-// Pushes the target away along the dominant axis of the attack (the grid is
-// orthogonal, so a diagonal hit picks whichever axis it leans on more),
-// stopping at the first tile that is out of bounds, full cover, or occupied
-// — a target shoved into a wall or another body just stops there.
-function applyKnockback(state, attacker, target, tiles) {
-  const dx = target.x - attacker.x, dy = target.y - attacker.y;
-  let stepX = 0, stepY = 0;
-  if (Math.abs(dx) >= Math.abs(dy)) stepX = Math.sign(dx) || 1;
-  else stepY = Math.sign(dy) || 1;
-  let moved = 0;
-  for (let i = 0; i < tiles; i++) {
-    const nx = target.x + stepX, ny = target.y + stepY;
-    if (!inBounds(state.grid, nx, ny)) break;
-    if (state.fullCover.has(key(nx, ny))) break;
-    if (unitAt(state, nx, ny, target)) break;
-    target.x = nx; target.y = ny; moved++;
-    // A lethal hazard CATCHES whatever is shoved across it. Without this a
-    // 2-tile knockback sails a body clean over an open stairwell and lands it
-    // on the far side, which is both wrong to look at and quietly makes the
-    // heaviest knockback weapons the WORST at using a pit — the exact
-    // opposite of the intent. Non-lethal hazards do not stop momentum; you
-    // only pay for the tile you come to rest on.
-    if (hazardAt(state, nx, ny)?.lethal) break;
-  }
-  return { moved, dx: stepX, dy: stepY };
-}
-
+// Fire from where you stand. Strict and in place; the "step to make the
+// shot happen" path is orderAttack / attackFrom.
 export function attack(state, attackerUid, targetUid) {
   const attacker = getUnit(state, attackerUid);
   const target = getUnit(state, targetUid);
@@ -533,93 +944,46 @@ export function attack(state, attackerUid, targetUid) {
   if (attacker.faction === target.faction) return { ok: false, reason: 'same-faction' };
   if (manhattan(attacker, target) > attacker.weapon.range) return { ok: false, reason: 'out-of-range' };
   if (!hasLOS(state, attacker, target)) return { ok: false, reason: 'no-los' };
-
-  const result = resolveAttack(state, attacker, target, attacker.weapon);
-  attacker.actedAction = true;
+  const { attack: evt } = commit(state, { type: 'attack', uid: attackerUid, targetUid });
   maybeDeselect(state, attacker);
-  planAllIntents(state);
-  checkWinLoss(state);
-  return { ok: true, ...result };
+  return { ok: true, ...evt };
 }
 
-// The click-to-attack entry point for the UI: if the target isn't in range
-// from the unit's current tile, walks it to the nearest tile that IS in
-// range (spending the move, if it has one left) before resolving the
-// attack. `attack()` itself stays strict/in-place — this is the only place
-// "move to make the shot happen" is allowed to occur automatically.
-// What the player is about to do to whoever they are pointing at, worked out
-// from the tile orderAttack would actually shoot from — not from where the
-// unit is standing. That distinction is the whole point: approachTile steps
-// you into range first, and cover is a property of where you END UP, so a
-// forecast taken from the current tile would confidently quote the wrong
-// number on exactly the shots that need a step.
-//
-// Returns null when the shot is not on, so the caller shows nothing rather
-// than a 5% floor for an attack that cannot happen.
-// Every tile this operator could shoot `target` from, each with the forecast
-// it would give — the data behind letting the player CHOOSE where to fight
-// from instead of being walked to a tile the engine picked. Sorted best
-// first, so the UI can mark the default without recomputing the ranking.
-export function firingOptions(state, attackerUid, targetUid) {
+function stepAndStrike(state, attackerUid, targetUid, tile) {
   const attacker = getUnit(state, attackerUid);
-  const target = getUnit(state, targetUid);
-  if (!attacker || !target || attacker.actedAction || needsReload(attacker)) return [];
-  return firingTiles(state, attacker, target)
-    .map(t => ({
-      ...t,
-      score: firingTileScore(state, attacker, target, t),
-      steps: manhattan(t, attacker),
-      forecast: forecastAttack(state, attacker, target, attacker.weapon, {}, t),
-    }))
-    .sort((a, b) => b.score - a.score || (key(a.x, a.y) < key(b.x, b.y) ? -1 : 1));
+  const from = (tile.x !== attacker.x || tile.y !== attacker.y) && !attacker.actedMove ? tile : null;
+  const r = commit(state, { type: 'attack', uid: attackerUid, targetUid, from });
+  maybeDeselect(state, attacker);
+  if (r.ended) return { ok: true, ended: true };
+  if (!r.attack) return { ok: false, reason: r.held || 'out-of-range', stepped: !!r.stepped };
+  return { ok: true, ...r.attack };
 }
 
-// Attack from a SPECIFIC tile the player chose. Same guards as orderAttack,
-// but the step is the one they asked for rather than the one scored best —
-// overriding the default is the whole point of offering the choice.
-export function attackFrom(state, attackerUid, targetUid, tile) {
-  const attacker = getUnit(state, attackerUid);
-  if (!attacker) return { ok: false, reason: 'invalid' };
-  const legal = firingOptions(state, attackerUid, targetUid);
-  if (!legal.some(t => t.x === tile.x && t.y === tile.y)) return { ok: false, reason: 'bad-tile' };
-  if ((tile.x !== attacker.x || tile.y !== attacker.y) && !attacker.actedMove) {
-    const moved = moveUnit(state, attackerUid, tile.x, tile.y);
-    if (!moved.ok) return moved;
-    if (state.result) return { ok: true, ended: true }; // a hazard on the way can end it
-  }
-  return attack(state, attackerUid, targetUid);
-}
-
-export function previewAttack(state, attackerUid, targetUid, opts = {}) {
-  const attacker = getUnit(state, attackerUid);
-  const target = getUnit(state, targetUid);
-  if (!attacker || !target || attacker.hp <= 0 || target.hp <= 0) return null;
-  if (attacker.actedAction) return null;
-  const tile = approachTile(state, attacker, target);
-  if (!tile) return null;
-  const f = forecastAttack(state, attacker, target, attacker.weapon, opts, tile);
-  return { ...f, from: tile, steps: manhattan(tile, attacker), targetHp: target.hp };
-}
-
+// The one-tap attack: the BEST firing tile (grid.js's firingTileScore), then
+// the shot, as one command.
 export function orderAttack(state, attackerUid, targetUid) {
   const attacker = getUnit(state, attackerUid);
   const target = getUnit(state, targetUid);
   if (!attacker || !target) return { ok: false, reason: 'invalid' };
+  if (state.turn !== 'player' || attacker.faction !== 'player') return { ok: false, reason: 'not-your-turn' };
+  if (attacker.actedAction) return { ok: false, reason: 'already-acted' };
+  if (needsReload(attacker)) return { ok: false, reason: 'empty' };
   const tile = approachTile(state, attacker, target);
   if (!tile) return { ok: false, reason: 'unreachable' };
-  if ((tile.x !== attacker.x || tile.y !== attacker.y) && !attacker.actedMove) {
-    const moved = moveUnit(state, attackerUid, tile.x, tile.y);
-    if (!moved.ok) return moved;
-  }
-  return attack(state, attackerUid, targetUid);
+  return stepAndStrike(state, attackerUid, targetUid, tile);
 }
 
-// RELOADING IS YOUR ACTION, which is the whole mechanic. It is not a free
-// housekeeping step: the turn you spend refilling is a turn you do not spend
-// shooting, and what makes that interesting rather than merely annoying is
-// that it leaves the MOVE untouched — so an empty gun is a turn to
-// reposition, and the movement economy gets the empty turns it was
-// previously competing with a free attack for.
+// Attack from a SPECIFIC tile the player chose from firingOptions.
+export function attackFrom(state, attackerUid, targetUid, tile) {
+  const attacker = getUnit(state, attackerUid);
+  if (!attacker) return { ok: false, reason: 'invalid' };
+  if (state.turn !== 'player' || attacker.faction !== 'player') return { ok: false, reason: 'not-your-turn' };
+  const legal = firingOptions(state, attackerUid, targetUid);
+  if (!legal.some(t => t.x === tile.x && t.y === tile.y)) return { ok: false, reason: 'bad-tile' };
+  return stepAndStrike(state, attackerUid, targetUid, tile);
+}
+
+// RELOADING IS YOUR ACTION and never your move.
 export function reloadUnit(state, uid) {
   const unit = getUnit(state, uid);
   if (!unit || unit.hp <= 0) return { ok: false, reason: 'dead' };
@@ -628,11 +992,8 @@ export function reloadUnit(state, uid) {
   const mag = magOf(unit.weapon);
   if (mag == null) return { ok: false, reason: 'nothing-to-reload' };
   if (roundsLeft(unit) >= mag) return { ok: false, reason: 'already-full' };
-  unit.ammo = mag;
-  unit.actedAction = true;
-  state.log.push({ type: 'reload', uid, name: unit.name, ammo: unit.ammo });
+  commit(state, { type: 'reload', uid });
   maybeDeselect(state, unit);
-  planAllIntents(state);
   return { ok: true };
 }
 
@@ -644,138 +1005,55 @@ export function endUnitTurn(state, uid) {
   return { ok: true };
 }
 
-// Every operator holding fire that can now see this enemy takes its shot.
-// One shot each per enemy phase — the uid is dropped from the set as it
-// fires, so a watcher cannot mow down a whole column, and a watcher whose
-// line never opens simply keeps the posture until the turn ends.
-function overwatchFire(state, enemy) {
-  if (!state.overwatch || !state.overwatch.size || enemy.hp <= 0) return;
-  for (const uid of [...state.overwatch]) {
-    const watcher = getUnit(state, uid);
-    if (!watcher || watcher.hp <= 0) { state.overwatch.delete(uid); continue; }
-    if (manhattan(watcher, enemy) > watcher.weapon.range) continue;
-    if (!hasLOS(state, watcher, enemy)) continue;
-    state.overwatch.delete(uid);
-    state.log.push({ type: 'overwatch', uid, targetUid: enemy.uid, name: watcher.name });
-    resolveAttack(state, watcher, enemy, watcher.weapon, { ability: 'overwatch', keepMomentum: true });
-    checkWinLoss(state);
-    if (enemy.hp <= 0) return;
-  }
-}
-
-// ── abilities ────────────────────────────────────────────────────────
-// One entry point for every shape. The dispatch is small on purpose: each
-// case reduces to calls this file already makes for an ordinary attack, so
-// an ability can never do something the normal path cannot explain.
+// Legality is answered by the same function the UI highlighted with
+// (abilityTargets), so a tile the board offered can never be refused here
+// and a tile it did not can never be taken by a crafted call.
 export function useAbility(state, uid, abilityId, target, abilityDefs) {
   const unit = getUnit(state, uid);
   const ability = findAbility(abilityDefs, abilityId);
   if (!unit || !ability) return { ok: false, reason: 'invalid' };
   if (state.turn !== 'player' || unit.faction !== 'player') return { ok: false, reason: 'not-your-turn' };
   if (!canAfford(unit, ability)) return { ok: false, reason: 'cannot-afford' };
-
-  // Legality is answered by the same function the UI highlighted with, so a
-  // tile the board offered can never be refused here and a tile it did not
-  // can never be taken by a crafted call.
   const legal = abilityTargets(state, unit, ability);
-  const results = [];
-
+  const cmd = { type: 'ability', uid, ability };
   if (ability.shape === 'self') {
-    if (ability.id === 'overwatch') {
-      state.overwatch.add(unit.uid);
-    } else if (ability.guard) {
-      // Planted: a defensive aura on the tiles around this unit, cleared at
-      // the top of its own next turn like every other one-round posture here.
-      unit.guard = ability.guard;
-    } else {
-      return { ok: false, reason: 'unknown-self-ability' };
-    }
-    state.log.push({ type: 'ability', uid, ability: ability.id, name: ability.name });
+    if (ability.id !== 'overwatch' && !ability.guard) return { ok: false, reason: 'unknown-self-ability' };
   } else if (ability.shape === 'adjacent-all') {
     const group = legal[0];
-    if (!group) return { ok: false, reason: 'no-target' };
-    // A copy of the list, resolved one at a time: a body killed by the first
-    // swing must not still be standing for the third.
-    for (const tuid of group.all) {
-      const t = getUnit(state, tuid);
-      if (!t || t.hp <= 0) continue;
-      results.push(resolveAttack(state, unit, t, unit.weapon, abilityOpts(ability, state, unit, t)));
-    }
-    if (!results.length) return { ok: false, reason: 'no-target' };
+    const alive = group ? group.all.filter(t => { const u = getUnit(state, t); return u && u.hp > 0; }) : [];
+    if (!alive.length) return { ok: false, reason: 'no-target' };
+    cmd.targets = alive;
   } else if (ability.shape === 'empty-tile') {
     const tile = target || {};
     if (!legal.some(t => t.x === tile.x && t.y === tile.y)) return { ok: false, reason: 'bad-tile' };
-    state.partialCover.add(key(tile.x, tile.y));
-    state.log.push({ type: 'ability', uid, ability: ability.id, name: ability.name, x: tile.x, y: tile.y });
+    cmd.tile = { x: tile.x, y: tile.y };
   } else {
     const tuid = typeof target === 'string' ? target : target && target.uid;
     if (!legal.some(t => t.uid === tuid)) return { ok: false, reason: 'bad-target' };
-    const shots = ability.shots || 1;
-    for (let i = 0; i < shots; i++) {
-      const t = getUnit(state, tuid);
-      if (!t || t.hp <= 0) break; // a second barrel is not fired into a corpse
-      results.push(resolveAttack(state, unit, t, unit.weapon, abilityOpts(ability, state, unit, t)));
-    }
+    cmd.targets = [tuid];
+    cmd.shots = ability.shots || 1;
   }
-
-  // Charged once, whatever the shape, and only after the ability actually
-  // happened — a refused call must not eat the run that paid for it.
-  unit.momentum = Math.max(0, (unit.momentum || 0) - ability.cost);
-  unit.actedAction = true;
+  const { results } = commit(state, cmd);
   maybeDeselect(state, unit);
-  planAllIntents(state);
-  checkWinLoss(state);
   return { ok: true, results };
 }
 
-// Per-TARGET, because the flank bonus depends on who is being hit and who
-// else is standing next to them — a single opts object computed once would
-// pay Cleave's flank bonus on every body in the swing regardless.
-function abilityOpts(ability, state, unit, target) {
-  const flanked = target && isFlanked(state, unit, target, manhattan);
-  return {
-    ability: ability.id,
-    flanked,
-    accuracy: ability.accuracy,
-    accuracyMod: ability.accuracy != null ? 0 : ability.accuracyMod,
-    damageBonus: (ability.damageMode === 'weapon' ? (ability.damage || 0) : 0)
-      + (flanked ? (ability.flankBonus || 0) : 0),
-    flatDamage: ability.damageMode === 'flat' ? ability.damage : null,
-    knockback: ability.knockback,
-    slow: ability.slow,
-    // The ability's own cost is the price; the swing must not also empty the
-    // pool, or a 2-cost ability would silently charge everything you had.
-    keepMomentum: true,
-  };
-}
-
+// ── §7 the turn ─────────────────────────────────────────────────────
 export function endPlayerTurn(state) {
   if (state.turn !== 'player') return { ok: false };
   state.turn = 'enemy';
   state.selected = null;
-  // Freeze the plan the player just read off the board. The whole point of
-  // an ITB-style telegraph is that it is a promise, not a preview — an enemy
-  // executes exactly this, never a plan re-computed against a board that
-  // earlier enemies this same phase have already moved.
+  // FREEZE the plan the player just read. A telegraph is a promise, not a
+  // preview — each rival executes exactly this, never a plan re-computed
+  // against a board earlier rivals this phase have already moved.
   state.enemyPlan = new Map(state.telegraph);
   state.enemyQueue = livingEnemies(state).map(u => u.uid);
-  // The enemy turn begins: their momentum from LAST round is spent, and each
-  // will bank fresh momentum as it steps. Cleared here so the evasion an
-  // operator sees while planning is the evasion that was actually earned
-  // during the phase they just watched.
+  // Their momentum from LAST round is spent; each banks fresh as it steps.
   for (const u of state.units) if (u.faction === 'enemy') { clearMomentum(u); u.slowed = 0; }
   return { ok: true };
 }
 
-// Resolves exactly one enemy's turn (freshly re-planned, since earlier
-// enemies this same phase — or the player's last action — may have changed
-// the board) and returns a descriptor for the HUD/animation layer to show.
-// Returns { done: true } once the phase is empty, having already flipped
-// back to the player and reset the move/act flags for the new round.
-// Who acts next, without acting. main.js uses this to point the camera at an
-// enemy BEFORE it moves — seeing a unit arrive somewhere is not the same as
-// watching it go, and "I can't see who is going where" is what the board
-// looked like when the two happened in the same frame.
+// Who acts next, without acting — so the camera can look before it moves.
 export function peekEnemyQueue(state) {
   if (state.turn !== 'enemy') return null;
   for (const uid of state.enemyQueue) {
@@ -785,147 +1063,55 @@ export function peekEnemyQueue(state) {
   return null;
 }
 
+// Resolves exactly one rival's frozen plan and returns a descriptor for the
+// HUD/animation layer. Returns { done: true } once the phase is empty,
+// having turned the round over.
 export function stepEnemyPhase(state) {
   if (state.turn !== 'enemy') return null;
   while (state.enemyQueue.length) {
     const uid = state.enemyQueue.shift();
     const enemy = getUnit(state, uid);
     if (!enemy || enemy.hp <= 0) continue;
-    // The unit the board is currently about — render.js spotlights it and
-    // the camera follows it. Cleared when the phase ends, below.
     state.actingUid = uid;
-
-    // Execute the frozen plan (set in endPlayerTurn), not a fresh one — see
-    // the comment there. Only guard against a tile another enemy already
-    // took earlier this same phase (independent plans can collide); the
-    // target's position and the enemy's own tile are otherwise exactly what
-    // was shown.
-    const intent = state.enemyPlan.get(uid) || { type: 'idle' };
-    let moved = null, attacked = null;
-    if (intent.moveTo && (intent.moveTo.x !== enemy.x || intent.moveTo.y !== enemy.y)) {
-      const blocked = state.fullCover.has(key(intent.moveTo.x, intent.moveTo.y)) || unitAt(state, intent.moveTo.x, intent.moveTo.y, enemy);
-      if (!blocked) {
-        // Enemies bank momentum from their own step exactly as operators do —
-        // an asymmetric rule would be a trap the player learns to exploit,
-        // and evasion in particular has to cut both ways or closing on a
-        // skirmisher becomes free.
-        addMomentum(enemy, Math.abs(intent.moveTo.x - enemy.x) + Math.abs(intent.moveTo.y - enemy.y));
-        enemy.x = intent.moveTo.x; enemy.y = intent.moveTo.y;
-        moved = { x: enemy.x, y: enemy.y };
-        enterHazard(state, enemy, 'move');
-        // Overwatch fires HERE — after the step, before the enemy acts. It
-        // is the only reaction in the game, and it is what stops crossing
-        // open ground being free: through v24 an enemy could walk the whole
-        // board under a held gun and nothing happened.
-        overwatchFire(state, enemy);
-      }
-    }
-    // An enemy that just burned to death (or was shoved into a stairwell and
-    // is only now taking its turn) does not get to swing.
-    if (enemy.hp <= 0) {
-      state.log.push({ type: 'enemy-turn', uid, name: enemy.name, moved, attacked: null });
-      checkWinLoss(state);
-      return { done: false, uid, name: enemy.name, moved, attacked: null };
-    }
-    if (intent.type === 'reload') {
-      // Symmetric with the crew's rule: the action refills, the move was
-      // already spent above. An enemy that reloads is a real beat the player
-      // can read and exploit — it is the window the telegraph promised.
-      const mag = magOf(enemy.weapon);
-      if (mag != null && roundsLeft(enemy) < mag) {
-        enemy.ammo = mag;
-        state.log.push({ type: 'reload', uid: enemy.uid, name: enemy.name, ammo: enemy.ammo });
-      }
-      return { done: false, uid, name: enemy.name, moved, attacked: null, reloaded: true };
-    }
-    if (intent.type === 'attack') {
-      const target = getUnit(state, intent.targetUid);
-      if (target && target.hp > 0 && manhattan(enemy, target) <= enemy.weapon.range && hasLOS(state, enemy, target)) {
-        attacked = resolveAttack(state, enemy, target, enemy.weapon);
-      }
-    }
-    state.log.push({ type: 'enemy-turn', uid, name: enemy.name, moved, attacked });
+    const plan = state.enemyPlan.get(uid) || { type: 'idle' };
+    const r = resolve(state, { type: 'rival', uid, plan });
     checkWinLoss(state);
-    return { done: false, uid, name: enemy.name, moved, attacked };
+    return { done: false, uid, name: enemy.name, moved: r.moved, attacked: r.attacked, reloaded: r.reloaded, note: r.note };
   }
 
-  // The round turns over: anything still standing in a lingering hazard pays
-  // for it now. Done before the reset/replan so the new round's telegraph is
-  // computed against who actually survived the fire.
+  // The round turns over. Lingering hazards bite first, then the reset and
+  // the replan, so the new telegraph is computed against who survived.
   const burns = tickLingeringHazards(state);
   state.turn = 'player';
   state.round += 1;
   for (const u of state.units) if (u.faction === 'player') {
     u.actedMove = false; u.actedAction = false;
-    // Momentum never carries between turns — it is this turn's movement, not
-    // a bank. Cleared at the START of the player's turn rather than the end
-    // of it, so a unit that moved and did not attack still shows the evasion
-    // it earned all through the enemy phase it is about to face.
+    // Momentum never carries between turns. Cleared at the START of the
+    // player's turn so a unit that moved and did not attack still shows the
+    // evasion it earned through the phase it just faced.
     clearMomentum(u);
     u.guard = 0;
     u.slowed = 0;
   }
-  // A posture for one enemy phase, never a standing order. Anything still
-  // held here was never triggered, and holding it into a turn the player is
-  // about to spend moving would be a promise the board stopped showing.
   state.overwatch.clear();
-  // Reinforcements land at the TOP of the player's turn — on the board and
-  // in the telegraph before the player is asked to do anything about them.
-  // Landing them mid-enemy-phase would let a rival act on the turn it
-  // appeared, which is a spawn nobody could have played around.
+  // Arrivals land at the TOP of the player's turn — on the board and in the
+  // telegraph before the player is asked to do anything about them.
   landArrivals(state);
-  // A survive objective is decided HERE and nowhere else: outlasting round N
-  // is an event with no attack behind it, so without this call the win would
-  // only be noticed the next time somebody happened to take damage.
   checkWinLoss(state);
   planAllIntents(state);
   state.actingUid = null;
   return { done: true, burns };
 }
 
-// The one place a fight is decided.
-//
-// WHY THERE IS A CHOICE HERE AT ALL. Elimination was the only win condition
-// through v21, and measured over 300 bot runs it was won ZERO times: three
-// operators against six or seven who out-damage them 2-4x. The numbers were
-// not the mistake — the GOAL was. This game shows full enemy intent, which
-// is Into the Breach's model, and ITB never asks you to kill everything: you
-// get three units, perfect information, and a turn count to survive. Full
-// information plus a losing damage race is not tension, it is a legible
-// defeat. Change what winning means and the same numbers become correct,
-// because cover, hazards and knockback are all tools for DENYING damage
-// rather than trading it.
-//
-// `survive` is therefore the interesting objective and `eliminate` is kept
-// for encounters that genuinely are a clear-out. Killing every enemy always
-// wins regardless of mode — outliving the fight early is never punished.
-// Everything that can end an encounter, in one place. Each mode is a branch
-// rather than a subclass because `state.win` is DATA (GDD §3) — a new
-// objective is encounter JSON plus a clause here, never an engine rewrite.
-// ── reinforcements (MST_PARITY §2.4) ─────────────────────────
-// WHY. On a survive map, wiping the roster early meant coasting for three
-// rounds with an empty board — the objective said "hold" and the fight was
-// already over. Rivals arriving on a schedule turn a survive mission into a
-// rising threat instead of a countdown, which is what makes the longer round
-// counts worth having at all.
-//
-// THE CONTRACT IS THE SAME AS EVERY OTHER SYSTEM HERE: a spawn the player
-// could not see coming would break the full-information promise the whole
-// game is built on. So an arrival is announced a round EARLY — the tile is
-// marked, the enemy named — and lands on the round it said it would.
+// ── §8 arrivals, and the end of an encounter ────────────────────────
 export const ARRIVAL_NOTICE = 1;
-
-// What is due to land, and when. `pendingArrivals` is everything not yet
-// on the board; `incomingArrivals` is the subset the board should be
-// marking right now.
 export const pendingArrivals = state => (state.reinforcements || []).filter(r => !r.landed);
 export const incomingArrivals = state =>
   pendingArrivals(state).filter(r => r.round - state.round <= ARRIVAL_NOTICE);
 
-// Where an arrival actually appears. Its declared tile if that is free,
-// otherwise the nearest free tile to it — a rival that simply failed to
-// arrive because somebody was standing on its square would be a promise the
-// board made and did not keep. Deterministic: nearest wins, ties on tile key.
+// Its declared tile if free, otherwise the nearest free tile — a rival that
+// failed to arrive because somebody stood on its square would be a promise
+// the board made and did not keep. Deterministic: nearest, ties on tile key.
 function arrivalTile(state, spot) {
   const free = (x, y) =>
     inBounds(state.grid, x, y) && !state.fullCover.has(key(x, y)) && !unitAt(state, x, y);
@@ -943,18 +1129,14 @@ function arrivalTile(state, spot) {
   return best;
 }
 
-// Land everything due this round. Called at the top of the player's turn, so
-// an arrival is on the board — and in the telegraph — before the player is
-// asked to do anything about it, rather than materialising mid-enemy-phase
-// where it would act on the turn it appeared.
 export function landArrivals(state) {
   const landed = [];
   for (const r of pendingArrivals(state)) {
     if (r.round > state.round) continue;
     const def = state.enemyDefs.find(e => e.id === r.enemy);
-    if (!def) { r.landed = true; continue; } // unknown id is a content bug, not a crash
+    if (!def) { r.landed = true; continue; }
     const tile = arrivalTile(state, r);
-    if (!tile) continue; // board full: try again next round rather than dropping it
+    if (!tile) continue;
     const weapon = getWeapon(state, def.weapon);
     const unit = makeUnit(`x${r.rid}`, def, weapon, 'enemy', tile);
     state.units.push(unit);
@@ -966,85 +1148,47 @@ export function landArrivals(state) {
   return landed;
 }
 
+// Everything that can end an encounter, in one place. Each mode is a branch
+// because `state.win` is DATA (GDD §3).
 function checkWinLoss(state) {
   if (state.result) return;
   const win = state.win || { mode: 'eliminate' };
   if (!state.units.some(u => u.faction === 'player' && u.hp > 0)) { state.result = 'lose'; return; }
-
-  // A DEADLINE is the game's second loss condition, and until now it had
-  // only one (the crew wipe). Without it an extraction mission is just a
-  // walk: nothing punishes taking twenty rounds to cross the board, so the
-  // objective carries no pressure and the fight around it does not matter.
   if (win.deadline && state.round > win.deadline) { state.result = 'lose'; return; }
-
-  // Clearing the block wins any mission. Stated on the title card ("killing
-  // them all also wins") because a player who has just wiped the board and
-  // is then told to keep walking would rightly call it a bug — and on these
-  // rosters it is never the easy route anyway.
-  // Clearing the block wins any mission — but only once the block is
-  // actually clear. With rivals still due to arrive, an empty board is a lull
-  // rather than a victory, and handing the win out there would let a player
-  // skip the half of the encounter the schedule exists to provide.
+  // Clearing the block wins any mission — once the block is actually clear.
+  // With rivals still due, an empty board is a lull, not a victory.
   if (!state.units.some(u => u.faction === 'enemy' && u.hp > 0) && !pendingArrivals(state).length) {
     state.result = 'win'; return;
   }
-
   if (win.mode === 'survive' && state.round > win.rounds) { state.result = 'win'; return; }
-
   if (win.mode === 'destroy') {
-    const left = state.units.filter(u => u.faction === 'objective' && u.hp > 0);
-    if (!left.length) { state.result = 'win'; return; }
+    if (!state.units.some(u => u.faction === 'objective' && u.hp > 0)) { state.result = 'win'; return; }
   }
-
   if (win.mode === 'extract') {
     const alive = state.units.filter(u => u.faction === 'player' && u.hp > 0);
     const need = win.need || alive.length;
-    // `need` IS ABSOLUTE, and clamping it to the living was a real fault:
-    // with `Math.min(need, alive)` a crew that lost somebody needed fewer
-    // bodies on the pads, so losing an operator made the mission EASIER and
-    // the cheapest way to pass a 3-of-3 extraction was to let one die.
-    // Falling below it is instead the game's third loss condition — the
-    // mission is now unpassable and saying so beats letting the player walk
-    // out a run that cannot be completed.
+    // `need` IS ABSOLUTE. Falling below it is the third loss condition.
     if (alive.length < need) { state.result = 'lose'; return; }
     const out = alive.filter(u => state.extract.has(key(u.x, u.y)));
     if (out.length >= need) { state.result = 'win'; return; }
   }
 }
 
-// GDD.md §5's v1 progression list: "XP levels: units gain levels from
-// combat, unlocking small stat bumps." No skill-slot unlock yet — that half
-// of §5's sentence waits on the class/subclass system (GDD §5.1), which
-// isn't wired into the engine. A clear won encounter pays a flat clear bonus
-// plus a per-kill bonus to every unit who survived it (not just the one who
-// landed the kill — a squad wipe risk taken together is rewarded together);
-// a level costs progressively more and buys +2 max HP, healed immediately
-// so the bump is felt right away rather than banked for later.
+// ── §9 progression ──────────────────────────────────────────────────
 export const XP_BASE_CLEAR = 10;
 export const XP_PER_KILL = 8;
 export const HP_PER_LEVEL = 2;
 export const xpToNext = level => 20 + (level - 1) * 15;
-
-// ── the skill pick (v30) ─────────────────────────────────────
-// Where the Mewgenics loop actually lands. A level grants a SLOT; the slot
-// buys one skill from an offer of three, drawn from ANY line — that is what
-// makes a run a build rather than a stat curve. Offers are drawn from the
-// encounter's own rng, so the same seed always shows the same three: a
-// replayable offer is a testable one, and a player who reloads to reroll is
-// a player the design has already lost.
 export const OFFER_SIZE = 3;
-// Beyond four the phone's action row wraps to a second line and the kit
-// stops being readable at a glance. A level past the cap still pays HP.
 export const MAX_SKILLS = 4;
 
-// The three skills on offer to this unit, or fewer if the pool runs short.
-// Weapon-gated skills are offered on purpose: §5.1's payoff is a build that
-// is inert now and goes live when a gun drops, and an offer that only ever
-// showed what works TODAY would never let that build be made.
+// The three skills on offer, drawn from the encounter's own rng so the same
+// seed always shows the same three. Weapon-gated skills are offered on
+// purpose: §5.1's payoff is a build that goes live when a gun drops.
 export function skillOffer(state, unit, defs) {
   if (!unit || !(unit.slots > 0)) return [];
   if ((unit.abilities || []).length >= MAX_SKILLS) return [];
-  if (unit.offer && unit.offer.length) return unit.offer.slice(); // stable across re-renders
+  if (unit.offer && unit.offer.length) return unit.offer.slice();
   const held = new Set(unit.abilities || []);
   const pool = defs.filter(a => !held.has(a.id)).map(a => a.id);
   const out = [];
@@ -1056,9 +1200,6 @@ export function skillOffer(state, unit, defs) {
   return out;
 }
 
-// Spend a slot on one of the offered skills. Refuses anything not on the
-// offer: the offer IS the choice, and a crafted call that reached past it
-// would make the three on screen a suggestion rather than a rule.
 export function learnSkill(state, uid, abilityId, defs) {
   const unit = getUnit(state, uid);
   if (!unit) return { ok: false, reason: 'invalid' };
@@ -1068,15 +1209,13 @@ export function learnSkill(state, uid, abilityId, defs) {
   if (!offer.includes(abilityId)) return { ok: false, reason: 'not-offered' };
   unit.abilities = [...(unit.abilities || []), abilityId];
   unit.slots -= 1;
-  unit.offer = null; // the next slot draws a fresh three
+  unit.offer = null;
   state.log.push({ type: 'learn', uid, ability: abilityId, name: unit.name });
   return { ok: true };
 }
 
-// Call once, right after a win — awards XP to every surviving player unit
-// and rolls any level-ups (a big single haul can roll more than one level).
-// Mutates state.units in place, like every other combat function here;
-// returns a summary per unit for the UI to report.
+// Once, after a win. A level grants a SLOT; learnSkill spends it — separately,
+// because the pick is the player's.
 export function awardXp(state) {
   if (state.result !== 'win') return [];
   const events = [];
@@ -1091,11 +1230,6 @@ export function awardXp(state) {
       u.maxHp += HP_PER_LEVEL;
       u.hp += HP_PER_LEVEL;
       levelsGained.push(u.level);
-      // GDD §5.1: "every level-up spends a skill slot on ANY line". The slot
-      // is granted here and SPENT by learnSkill — separately, because the
-      // pick is a decision the player makes on the result screen, and an
-      // engine that picked for them would be the class box coming back in
-      // through the side door.
       u.slots = (u.slots || 0) + 1;
     }
     events.push({ uid: u.uid, name: u.name, kills: u.kills, gained, levelsGained, slots: u.slots || 0 });

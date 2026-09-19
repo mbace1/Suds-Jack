@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { manhattan, hasLOS, coverSoftens, moveRange, lineTiles, key, firingTiles, firingTileScore, approachTile } from '../js/grid.js';
-import { planIntent, planAllIntents } from '../js/ai.js';
+import { planIntent, planAllIntents, previewCommand } from '../js/combat.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, orderAttack, useAbility,
@@ -1276,41 +1276,232 @@ check('every plate in play declares the floor quad it is seated by', () => {
 // actually shoot FROM — a rival that closes two tiles before firing loses
 // its cover penalty, and quoting the odds from where it stands now would
 // under-report the hit every single time.
-check('the incoming warning matches what the enemy phase will actually roll', () => {
+// ── THE INVARIANT (v35): the player sees every consequence before committing ──
+// combat.js's header states it in five points. These gates hold the code to
+// points 2, 3 and 4 literally. They replaced a v34 gate that compared the
+// badge to forecastAttack called from the rival's PLAN-TIME momentum — which
+// is zero — and so certified a badge that under-reported by exactly the +1 a
+// four-tile step banks. The oracle here is what actually happens, never a
+// second computation of what should.
+
+// Effects compared minus the two fields a commit is allowed to add: the roll
+// itself, and a drop (previews never drop; the chance rides on the effect).
+const strip = e => JSON.stringify(e, (k, v) => (k === 'roll' || k === 'dropped') ? undefined : v);
+const tgSummary = tg => [...tg].map(([uid, i]) =>
+  `${uid}:${i.type}:${i.moveTo ? i.moveTo.x + ',' + i.moveTo.y : '-'}:${i.targetUid || '-'}`).join('|');
+
+check('a preview IS the commit: the committed log equals one previewed branch, telegraph and all', () => {
+  let attacks = 0, moves = 0;
+  for (const enc of ENCOUNTERS) {
+    for (const seed of [1, 7, 23]) {
+      const state = boot(enc, seed);
+      // Close the distance for a round so shots exist to preview.
+      for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) autoTurn(state, u, ABILITIES);
+      if (state.result) continue;
+      endPlayerTurn(state);
+      let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+      if (state.result) continue;
+
+      for (const unit of state.units.filter(x => x.faction === 'player' && x.hp > 0)) {
+        const targets = attackableTargets(state, unit);
+        let cmd, run;
+        if (targets.length) {
+          const target = getUnit(state, targets[0]);
+          const from = approachTile(state, unit, target);
+          cmd = { type: 'attack', uid: unit.uid, targetUid: target.uid, from };
+          run = () => orderAttack(state, unit.uid, target.uid);
+          attacks++;
+        } else if (!unit.actedMove) {
+          const tiles = [...movableTiles(state, unit).values()].filter(t => t.cost > 0);
+          if (!tiles.length) continue;
+          const t = tiles[tiles.length - 1];
+          cmd = { type: 'move', uid: unit.uid, x: t.x, y: t.y };
+          run = () => moveUnit(state, unit.uid, t.x, t.y);
+          moves++;
+        } else continue;
+
+        const preview = previewCommand(state, cmd);
+        const before = state.log.length;
+        const r = run();
+        assert.ok(r.ok, `${enc.id}/${seed}: the previewed command was refused (${r.reason})`);
+        const committed = state.log.slice(before);
+        const own = committed.find(e => e.type === 'attack' && e.attackerUid === unit.uid);
+        const branch = !own ? preview.branches[0]
+          : preview.branches.find(b => b.branch === (own.hit ? 'hit' : 'miss'));
+        assert.ok(branch, `${enc.id}/${seed}: no previewed branch matches the roll`);
+        assert.equal(committed.map(strip).join('\n'), branch.effects.map(strip).join('\n'),
+          `${enc.id}/${seed}: ${unit.name}'s commit wrote effects the preview did not show`);
+        // And the board AFTER: the rivals' replies to this move were shown too.
+        assert.equal(tgSummary(state.telegraph), tgSummary(branch.telegraph),
+          `${enc.id}/${seed}: the telegraph after the commit differs from the previewed one`);
+        assert.equal(state.result, branch.result, `${enc.id}/${seed}: the preview and the commit disagree on whether it ended`);
+        if (own) {
+          const odds = preview.branches.find(b => b.branch === 'hit').chance;
+          assert.equal(odds, own.chance, `${enc.id}/${seed}: the branch odds are not the strike's odds`);
+        }
+        break; // one command per boot — the next unit's board is a different question
+      }
+    }
+  }
+  assert.ok(attacks >= 5 && moves >= 3, `the gate must exercise both shapes (${attacks} attacks, ${moves} moves)`);
+});
+
+check('the telegraph IS the phase: a rival does what its plan showed, or the log says why not', () => {
+  let honoured = 0;
+  for (const enc of ENCOUNTERS) {
+    for (const seed of [3, 11]) {
+      const state = boot(enc, seed);
+      for (let r = 0; r < 3 && !state.result; r++) {
+        for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) autoTurn(state, u, ABILITIES);
+        if (state.result) break;
+        endPlayerTurn(state);
+        const plans = new Map(state.enemyPlan);
+        let step;
+        do {
+          const before = state.log.length;
+          step = stepEnemyPhase(state);
+          if (!step || step.done) break;
+          const plan = plans.get(step.uid);
+          if (!plan || plan.type === 'idle') continue;
+          const turn = state.log.slice(before).find(e => e.type === 'enemy-turn' && e.uid === step.uid);
+          assert.ok(turn, `${enc.id}/${seed}: a rival acted with no enemy-turn on the log`);
+          if (turn.note) {
+            assert.ok(['blocked', 'died', 'displaced', 'target-gone', 'out-of-position'].includes(turn.note),
+              `${enc.id}/${seed}: unknown divergence note ${turn.note}`);
+            continue; // a divergence, and it is NAMED — that is the promise
+          }
+          if (plan.moveTo && (plan.moveTo.x !== turn.moved?.x || plan.moveTo.y !== turn.moved?.y)) {
+            // The only way to not move without a note is to already be there.
+            const e = getUnit(state, step.uid);
+            assert.ok(!turn.moved && e.x === plan.moveTo.x && e.y === plan.moveTo.y,
+              `${enc.id}/${seed}: ${step.uid} went to ${JSON.stringify(turn.moved)} not ${JSON.stringify(plan.moveTo)} with no note`);
+          }
+          if (plan.type === 'attack') {
+            assert.ok(turn.attacked, `${enc.id}/${seed}: ${step.uid} promised an attack, did nothing, said nothing`);
+            assert.equal(turn.attacked.targetUid, plan.targetUid, `${enc.id}/${seed}: ${step.uid} hit someone it did not name`);
+            const target = getUnit(state, plan.targetUid);
+            const shown = plan.preview.find(e => e.type === 'attack' && e.attackerUid === step.uid);
+            assert.ok(shown, `${enc.id}/${seed}: the plan carried no previewed strike`);
+            // Exact odds and damage — unless the target was shoved since the
+            // promise, which is the one legitimate change of arithmetic.
+            const unmoved = target.x === plan.targetAt.x && target.y === plan.targetAt.y;
+            if (unmoved) {
+              assert.equal(turn.attacked.chance, shown.chance, `${enc.id}/${seed}: the phase rolled odds the badge did not show`);
+              assert.equal(turn.attacked.forecast.damage, shown.forecast.damage, `${enc.id}/${seed}: the phase swung for damage the badge did not show`);
+              honoured++;
+            }
+          }
+        } while (true);
+      }
+    }
+  }
+  assert.ok(honoured >= 10, `too few honoured plans to mean anything (${honoured})`);
+});
+
+check('the warning counts the step: a four-tile closer swings for the +1 it banks, and the badge says so', () => {
+  // The bug the one-system rewrite exists to make impossible. grunt_runt and
+  // grunt_milo have move 4; MOVE_CAP is 4 and DAMAGE_PER 0.25, so a rival
+  // that closes four tiles lands +1. v34's badge was forecast from plan-time
+  // momentum (zero) and said one less than what hit.
+  const state = boot(BACKLOT, 5);
+  const crew = state.units.filter(u => u.faction === 'player');
+  const rival = state.units.find(u => u.faction === 'enemy' && u.weapon.archetype === 'melee');
+  // Open ground, straight line, exactly four tiles: rival at (6,7) reaching (6,4) beside the operator at (6,3).
+  for (const u of state.units) if (u !== rival && u !== crew[0]) { u.x = 0; u.y = 0; u.hp = 0; }
+  crew[0].x = 6; crew[0].y = 3; crew[1].hp = 0; crew[2].hp = 0;
+  rival.x = 6; rival.y = 7; rival.move = 4; rival.hp = 10;
+  state.fullCover.clear(); state.partialCover.clear(); state.hazards.clear(); state.drops.length = 0;
+  planAllIntents(state);
+  const plan = state.telegraph.get(rival.uid);
+  assert.equal(plan.type, 'attack');
+  assert.equal(manhattan(rival, plan.moveTo), 3, `it should step three to stand adjacent (${JSON.stringify(plan.moveTo)})`);
+  // Three tiles is 0.75 momentum — floored to 0. Make it four by starting a tile further.
+  rival.y = 8; planAllIntents(state);
+  const plan4 = state.telegraph.get(rival.uid);
+  assert.equal(manhattan(rival, plan4.moveTo), 4, `a four-tile close (${JSON.stringify(plan4.moveTo)})`);
+  const shown = plan4.preview.find(e => e.type === 'attack');
+  assert.equal(shown.forecast.bonus, 1, 'the previewed strike carries the step\'s +1');
+  const badge = incomingThreats(state).get(crew[0].uid);
+  assert.equal(badge.total, rival.weapon.damage + 1, `the badge says ${badge.total}; the swing is ${rival.weapon.damage}+1`);
+  // And the phase lands exactly that. Force the hit so the branch is known.
+  endPlayerTurn(state);
+  state.roll = () => 0;
+  const before = crew[0].hp;
+  let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+  assert.equal(before - crew[0].hp, badge.total, 'the badge promised what the swing took');
+});
+
+check('your own forecast counts your step too', () => {
+  const state = boot(BACKLOT, 5);
+  const me = state.units.find(u => u.faction === 'player' && u.weapon.archetype === 'melee');
+  const foe = state.units.find(u => u.faction === 'enemy');
+  for (const u of state.units) if (u !== me && u !== foe) { u.hp = 0; u.x = 0; u.y = 0; }
+  state.fullCover.clear(); state.partialCover.clear(); state.hazards.clear();
+  me.x = 6; me.y = 8; me.move = 4; foe.x = 6; foe.y = 3; foe.hp = 50;
+  planAllIntents(state);
+  const f = previewAttack(state, me.uid, foe.uid);
+  assert.ok(f, 'the shot is on');
+  assert.equal(f.steps, 4, `a four-tile approach (${f.steps})`);
+  assert.equal(f.bonus, 1, 'the forecast shows the +1 the approach will bank');
+  state.roll = () => 0;
+  const r = orderAttack(state, me.uid, foe.uid);
+  assert.ok(r.ok && r.hit);
+  assert.equal(r.damage, f.damage, 'the swing landed the number the forecast showed');
+});
+
+check('a divergence from the plan is never silent', () => {
+  const state = boot(BACKLOT, 9);
+  endPlayerTurn(state);
+  const uid = state.enemyQueue[0];
+  const plan = state.enemyPlan.get(uid);
+  assert.ok(plan.moveTo, 'the first rival planned a step');
+  // Somebody is standing on its tile by the time its turn comes.
+  const blocker = state.units.find(u => u.faction === 'player');
+  blocker.x = plan.moveTo.x; blocker.y = plan.moveTo.y;
+  const before = state.log.length;
+  stepEnemyPhase(state);
+  const turn = state.log.slice(before).find(e => e.type === 'enemy-turn' && e.uid === uid);
+  assert.equal(turn.note, 'blocked', 'the rival held, and said why');
+  assert.equal(turn.moved, null);
+
+  // And a target that is gone before the swing.
+  const s2 = boot(BACKLOT, 9);
+  endPlayerTurn(s2);
+  const [aid] = [...s2.enemyPlan].filter(([, p]) => p.type === 'attack').map(([k]) => k);
+  if (aid) {
+    const p = s2.enemyPlan.get(aid);
+    getUnit(s2, p.targetUid).hp = 0;
+    while (s2.enemyQueue[0] !== aid) s2.enemyQueue.shift();
+    const b2 = s2.log.length;
+    stepEnemyPhase(s2);
+    const t2 = s2.log.slice(b2).find(e => e.type === 'enemy-turn' && e.uid === aid);
+    assert.ok(t2 && (t2.note === 'target-gone' || t2.note === 'died' || t2.note === 'blocked'), `a voided plan is named (${t2 && t2.note})`);
+    assert.equal(t2.attacked, null, 'it did not swing at somebody else instead');
+  }
+});
+
+check('the badge is read off the rivals\' own previews, never off a second computation', () => {
   for (const enc of ENCOUNTERS) {
     const state = boot(enc, 11);
-    // Walk a couple of rounds so rivals are in range and telegraphing.
-    for (let r = 0; r < 3 && !state.result; r++) {
-      for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) {
-        autoTurn(state, u, ABILITIES);
-        if (state.result) break;
-      }
+    for (let r = 0; r < 2 && !state.result; r++) {
+      for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) autoTurn(state, u, ABILITIES);
       if (state.result) break;
       endPlayerTurn(state);
       let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
     }
     const threats = incomingThreats(state);
     for (const [uid, t] of threats) {
-      const target = state.units.find(u => u.uid === uid);
-      assert.ok(target && target.hp > 0, `${enc.id}: a threat is aimed at something that is not there`);
-      assert.ok(t.total > 0, `${enc.id}: ${uid} carries a warning of zero damage`);
-      assert.equal(t.lethal, t.total >= target.hp,
-        `${enc.id}: ${uid} is marked ${t.lethal ? 'lethal' : 'survivable'} against ${t.total} of ${target.hp}`);
+      const target = getUnit(state, uid);
+      assert.ok(target && target.hp > 0 && target.faction !== 'enemy', `${enc.id}: a warning on ${uid}`);
+      assert.equal(t.lethal, t.total >= target.hp, `${enc.id}: lethal is the total against hp`);
+      let sum = 0;
       for (const src of t.sources) {
-        const from = state.telegraph.get(src.uid).moveTo;
-        const attacker = state.units.find(u => u.uid === src.uid);
-        const f = forecastAttack(state, attacker, target, attacker.weapon, {}, from || attacker);
-        assert.equal(src.damage, f.damage * (f.shots || 1),
-          `${enc.id}: the badge quotes ${src.damage} where forecastAttack says ${f.damage}`);
-        assert.equal(src.chance, f.chance, `${enc.id}: the badge quotes odds forecastAttack does not`);
+        const strike = state.telegraph.get(src.uid).preview.find(e => e.type === 'attack' && e.targetUid === uid);
+        assert.ok(strike, `${enc.id}: ${src.uid} warns of a strike its own preview does not contain`);
+        assert.equal(src.damage, strike.damage); assert.equal(src.chance, strike.chance);
+        sum += strike.damage;
       }
-    }
-    // And it says nothing about rivals — a badge over an enemy would read as
-    // damage you are about to deal, which is the opposite fact.
-    for (const uid of threats.keys()) {
-      const u = state.units.find(x => x.uid === uid);
-      assert.ok(u.faction === 'player' || u.faction === 'objective',
-        `${enc.id}: ${uid} is a rival and should not carry an incoming warning`);
+      assert.equal(t.total, sum);
     }
   }
 });
