@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=209';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=209';
-import { Player, PLAYER_RADIUS } from './player.js?v=209';
+import { InputManager } from './input.js?v=210';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=210';
+import { Player, PLAYER_RADIUS } from './player.js?v=210';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=209';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=209';
-import { audio } from './audio.js?v=209';
-import { haptics } from './haptics.js?v=209';
-import { initDesigner } from './designer.js?v=209';
-import { createSpecimen } from './specimen.js?v=209';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=209';
-import { TUNING } from './tuning.js?v=209';
-import { Arena, rectShape } from './arena.js?v=209';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=209';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=209';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=209';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=210';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=210';
+import { audio } from './audio.js?v=210';
+import { haptics } from './haptics.js?v=210';
+import { initDesigner } from './designer.js?v=210';
+import { createSpecimen } from './specimen.js?v=210';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=210';
+import { TUNING } from './tuning.js?v=210';
+import { Arena, rectShape } from './arena.js?v=210';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=210';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=210';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=210';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -113,6 +113,7 @@ function waveBudgetBase(wave, kindKey) {
   const base  = B.base + rampB * B.ramp + postB * B.post;
   let budget  = Math.floor(base * B.kind[kindKey]);
   if (wave < B.early.until) budget = Math.floor(budget * (B.early.base + B.early.step * (wave - 1)));
+  if (B.min) budget = Math.max(budget, B.min);   // v257 (B6)
   return budget;
 }
 
@@ -121,6 +122,7 @@ function waveKind(w) {
   const R = TUNING.waves.rhythm;
   if (w % R.bossEvery === 0)                    return 'boss';   // big guaranteed enemy
   if (w % R.spikeEvery === 0)                   return 'spike';  // heavy budget
+  if (w >= R.curtainFrom && w % R.curtainEvery === 0) return 'curtain';   // v257: bullet-heavy
   if (w >= R.swarmFrom && w % R.swarmEvery === 0) return 'swarm'; // rush of bodies
   return 'normal';
 }
@@ -157,6 +159,7 @@ function getEnemySchedule(wave) {
   const isBoss     = kind === 'boss';
   const isSpike    = kind === 'spike';
   const isSwarm    = kind === 'swarm';
+  const isCurtain  = kind === 'curtain';   // v257
   const isPrize    = kind === 'prize';
   // A normal wave directly after any intense wave runs lighter — the breather/lull.
   const isBreather = kind === 'normal' && waveKind(wave - 1) !== 'normal';
@@ -196,7 +199,10 @@ function getEnemySchedule(wave) {
   const swarmPool = meleePool.filter(([, , c]) => c <= V.swarmCostMax);
   // v187: the melee draw leans cheap — bodies twice as likely as heavies
   const drawPool  = (isSwarm && swarmPool.length) ? swarmPool
-                  : meleeRun ? [...meleePool.filter(([, , c]) => c <= V.meleeCheapMax), ...meleePool]
+                  : meleeRun ? (isCurtain
+                      ? [...meleePool.filter(([ty]) => TUNING.revenge.biters.includes(TYPE_KEY[ty])),
+                         ...meleePool.filter(([ty]) => TUNING.revenge.biters.includes(TYPE_KEY[ty])), ...meleePool]   // v257: a CLOSE COMBAT curtain is corpse fire
+                      : [...meleePool.filter(([, , c]) => c <= V.meleeCheapMax), ...meleePool])
                   : (meleePool.length ? meleePool : available);
 
   const list = [];
@@ -256,14 +262,15 @@ function getEnemySchedule(wave) {
     let shooterCap = Math.min(SP.capBase + Math.floor(wave / SP.capPerWaves), SP.capMax);
     if (isSwarm) shooterCap = SP.swarmCap;
     if (isBoss)  shooterCap = Math.min(shooterCap, SP.bossCap);
-    const shooterBudget = Math.floor(budget * SP.budgetShare);
+    if (isCurtain) shooterCap += SP.curtainCapBonus;   // v257
+    const shooterBudget = Math.floor(budget * (isCurtain ? SP.curtainShare : SP.budgetShare));
     let sSpent = 0, k = 0, st = SP.first;
     while (shootPool.length && k < shooterCap && sSpent < shooterBudget) {
       const [type, , cost] = shootPool[Math.floor(rng() * shootPool.length)];
       if (sSpent + cost > shooterBudget + SP.slack) break;
       list.push({ type, t: st, shooter: true, slot: k });
       sSpent += cost;
-      st += SP.gap + rng() * SP.gapRand;
+      st += (isCurtain ? SP.curtainGap : SP.gap) + rng() * SP.gapRand;   // v257
       k++;
     }
     spent += sSpent;
@@ -312,15 +319,17 @@ function getEnemySchedule(wave) {
   // the mob is re-paced. No new rng() calls, so seeded draws are unchanged.
   if (!smashMode && !rush.on && !inCabinet() && list.length) {
     const PL = W.pulses, roundLen = W.round[kind] ?? W.round.normal;
+    const PK = { count: PL.count, span: PL.span, from: 0, ...(PL.byKind[kind] || {}) };   // v257: the front's shape per kind
     const mob = list.filter(e => !e.boss && !e.shooter);
     // a wave of two bodies is two fronts, not three — the fronts always span
     // the round, or wave 1 ends in four seconds again
-    const cnt = Math.max(1, Math.min(PL.count, mob.length));
+    const cnt = Math.max(1, Math.min(PK.count, mob.length));
     const per = Math.max(1, Math.ceil(mob.length / cnt));
     const stag = isSwarm ? PL.swarmStagger : PL.stagger;
     mob.forEach((e, i) => {
       const k = Math.floor(i / per), j = i % per;
-      e.t = (cnt > 1 ? k / (cnt - 1) : 0) * PL.span * roundLen + j * stag;
+      e.t = (PK.from + (cnt > 1 ? k / (cnt - 1) : 0) * PK.span) * roundLen + j * stag;
+      e.front = k;   // v257: the pump can pull a whole front in early
     });
   }
   // SMASH TV (v114): re-pace the MOB flood like the show — bursts of ~3 every
@@ -399,7 +408,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '256';
+const GAME_VERSION = '257';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -4735,6 +4744,7 @@ function classicRound() { return !inCabinet() && !smashMode && !customLevel && !
 // from the last death screen to this run's start, so restart rate is a
 // number, not a feeling.
 let _deathAt = 0, restartGap = null;
+let _frontLandedAt = -99;   // v257: waveTimer when the last pulse began landing
 // v138: gates teach themselves — a DASH! tag hangs over every gate until the
 // player has detonated one, ever. Persisted; the mechanic only needs teaching once.
 let gateUsed = localStorage.getItem('tokoDropGateUsed') === '1';
@@ -6577,7 +6587,9 @@ function spawnWave(carry = false) {
   } else {
     for (const e of enemies) e.removeFrom(scene);
     enemies = [];
-    for (const p of powerups) p.remove(scene); powerups = [];
+    // v257 (owner: "things shouldn't disappear immediately, like power ups
+    // and gates"): drops are NOT wiped at a clear any more — each has its own
+    // `_life`, and the breather exists to grab them.
   }
   clearBossAuras();
   wave++;
@@ -6596,6 +6608,7 @@ function spawnWave(carry = false) {
       milestoneText = fluidArch === 'stream' ? 'THE STREAM — RIDE THE CURRENT'
                     : fluidArch === 'ring'   ? 'THE RING — IT CONTRACTS'
                     : 'THE PINCER — THEY CUT YOU OFF';
+      if (waveKind(wave) === 'curtain') milestoneText = 'THE CURTAIN — WALK THE GAPS';   // v257
       audio.archStinger(fluidArch);   // v201: each current has a signature
     }
   }
@@ -6609,6 +6622,7 @@ function spawnWave(carry = false) {
   // v256: a classic round is a clock, by kind (TUNING.waves.round)
   waveDuration = classicRound() ? (TUNING.waves.round[waveKind(wave)] ?? TUNING.waves.round.normal) : ROUND_DUR;
   waveTimer    = 0;
+  _frontLandedAt = -99;   // v257
   const total  = list.length;
   pendingSpawns = [];
   if (customLevel) {
@@ -6654,6 +6668,7 @@ function spawnWave(carry = false) {
         speedMult: speedMult * (isGroup ? 1.2 : 1),     // groups push in with intent
         intervalMult,
         boss: entry.boss || false,
+        front: entry.front,                             // v257: which pulse this body belongs to
         elite: entry.elite || false,
         elitelite: entry.elitelite || false,
         affix: entry.affix || null,
@@ -6662,7 +6677,10 @@ function spawnWave(carry = false) {
   });
   if (player._hasShield) player._shield = true;
   if (!bareArena() && wave >= 3) {
-    if (gates.length >= 2) { gates[0].remove(scene); gates.shift(); }
+    // v257: the oldest gate RETIRES over a few seconds instead of vanishing on
+    // the wave boundary; the gate loop removes it when its fade runs out
+    const live = gates.filter(g => g._retireT == null);
+    if (live.length >= 2) live[0]._retireT = TUNING.waves.gateRetire ?? 4;
     // v175: from wave 5 some gates run the RISK cycle; from 10 they wander
     gates.push(new Gate(scene, wave >= 5 && rng() < 0.35, wave >= 10));
   }
@@ -8518,7 +8536,21 @@ function loop() {
   // Trickle spawn pending enemies
   waveTimer += dt;
   runTimer  += dt;
+  // v257 FLOW: if the floor is down to `pullIn` bodies and a front is still
+  // queued, bring that whole front forward (its own stagger kept) — never
+  // sooner than `pullGap` after the last front landed. Fixed schedules left
+  // ~5 s of empty floor per round; the clock stays the ceiling.
+  if (classicRound() && pendingSpawns.length > 0 && pendingSpawns[0].front != null) {
+    const PL = TUNING.waves.pulses;
+    let alive = 0; for (const e of enemies) if (e.alive) alive++;
+    if (alive <= PL.pullIn && waveTimer >= (_frontLandedAt + PL.pullGap) && waveTimer < pendingSpawns[0].delay) {
+      const f = pendingSpawns[0].front;
+      let start = Infinity; for (const sp of pendingSpawns) if (sp.front === f) start = Math.min(start, sp.delay);
+      for (const sp of pendingSpawns) if (sp.front === f) sp.delay = waveTimer + (sp.delay - start);
+    }
+  }
   while (pendingSpawns.length > 0 && waveTimer >= pendingSpawns[0].delay) {
+    if (pendingSpawns[0].front != null) _frontLandedAt = waveTimer;   // v257
     const s = pendingSpawns.shift();
     // SMASH TV: spawn right at the doorway mouth so enemies visibly step THROUGH
     // the door frame into the room, instead of materialising inside it.
@@ -10047,6 +10079,8 @@ function loop() {
   // Gate + powerup updates
   const _t = performance.now() / 1000;
   for (const g of gates) g.update(dt, _t);
+  // v257: retiring gates fade out and go
+  for (let i = gates.length - 1; i >= 0; i--) { const g = gates[i]; if (g._retireT != null && (g._retireT -= dt) <= 0) { g.remove(scene); gates.splice(i, 1); } }
   for (let i = powerups.length - 1; i >= 0; i--) {
     if (!powerups[i].update(dt, _t)) { powerups[i].remove(scene); powerups.splice(i, 1); }
   }
@@ -10720,7 +10754,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=209').then(async m => {
+  import('./editor.js?v=210').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10751,6 +10785,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=209').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=210').catch(() => {});
   });
 }
