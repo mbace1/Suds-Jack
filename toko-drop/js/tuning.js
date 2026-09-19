@@ -186,7 +186,11 @@ export const TUNING = {
       earlyEase: { until: 6, per: 0.012 },   // waves 1-5 shave a little speed
     },
     // cadence — waveKind: every 8th boss, every 4th spike, every 3rd swarm
-    rhythm: { bossEvery: 8, spikeEvery: 4, swarmEvery: 3, swarmFrom: 3 },
+    // v257 CURTAIN (owner: "hazard wave of bullets was great"): every 6th wave
+    // from 6 is bullet-heavy — the shooters get the bigger share and two extra
+    // seats; in CLOSE COMBAT the draw leans on the biters, whose corpses are the
+    // bullets there. Precedence: boss > spike > curtain > swarm.
+    rhythm: { bossEvery: 8, spikeEvery: 4, swarmEvery: 3, swarmFrom: 3, curtainEvery: 6, curtainFrom: 6 },
     // composition — EnemyType name -> [minWave, budgetCost]
     pool: {
       GLOBBO:      [1, 1], YELA_CUBE: [1, 1], SPITTOR: [1, 2], FANNER: [1, 2],
@@ -230,8 +234,9 @@ export const TUNING = {
     // escalation — the wave's spend on bodies
     budget: {
       base: 5, ramp: 1.8, post: 0.8, knee: 10, slack: 3,
-      kind: { boss: 2.0, spike: 1.4, swarm: 1.25, prize: 0.8, breather: 0.6, normal: 1.0 },
+      kind: { boss: 2.0, spike: 1.4, swarm: 1.25, curtain: 1.2, prize: 0.8, breather: 0.6, normal: 1.0 },
       early: { until: 6, base: 0.85, step: 0.03 },   // −15% at wave 1, gone by 6
+      min: 6,                                       // v257 (B6): wave 1 was one body and a shooter — a floor, so the first round is a round
       smash: 1.4, smashFloorStep: 0.12,   // the show wants bodies; floors stack
       melee: 1.35,                        // CLOSE COMBAT floods the floor
       rich: 1.4,                          // RICH DAY: crowds pay for the loot
@@ -245,7 +250,8 @@ export const TUNING = {
     },
     // deliberate-shooter plan: 1 at wave 1 growing to capMax by ~wave 12
     shooterPlan: { capBase: 1, capPerWaves: 3, capMax: 5, swarmCap: 1, bossCap: 2,
-                   budgetShare: 0.35, slack: 2, first: 0.8, gap: 2.5, gapRand: 1.5 },
+                   budgetShare: 0.35, slack: 2, first: 0.8, gap: 2.5, gapRand: 1.5,
+                   curtainShare: 0.6, curtainCapBonus: 2, curtainGap: 1.2 },   // v257: the curtain wave — shooters arrive close, or the floor sits empty between them
     // variant draw tables (relative odds = repetition) + variant pricing
     variants: {
       melee:  ['group', 'group', 'group', 'twin', 'twin', 'normal', 'normal', 'elite'],
@@ -268,8 +274,21 @@ export const TUNING = {
     // time than it used to (~2 min, was ~1). Shooters keep their own spaced
     // schedule (shooterPlan); bosses keep t = 0. Rush, SMASH TV, cabinets and
     // authored levels keep their own pacing.
-    round:  { normal: 13, swarm: 12, spike: 14, boss: 15, prize: 12, breather: 12 },
-    pulses: { count: 3, span: 0.70, stagger: 0.25, swarmStagger: 0.12 },   // pulse k lands at k/(count-1) x span x round
+    // v257 (owner: "add a bit of length, maybe variety, but always emphasize
+    // flow"): a touch longer, and the fronts take a different SHAPE per kind —
+    // a swarm is four quick fronts, a spike is two heavy ones, a boss is the
+    // boss and then two late fronts, a curtain is three.
+    round:  { normal: 14, swarm: 12, spike: 15, boss: 16, curtain: 15, prize: 12, breather: 12 },
+    gateRetire: 4,   // v257: the oldest gate lingers this long past the wave boundary, then goes
+    pulses: { count: 4, span: 0.75, stagger: 0.25, swarmStagger: 0.12,   // pulse k lands at from + k/(count-1) x span x round
+              byKind: { swarm: { count: 5, span: 0.78 }, spike: { count: 3, span: 0.60 },
+                        boss: { count: 3, span: 0.50, from: 0.28 }, curtain: { count: 3, span: 0.70 } },
+              // v257 FLOW: the bot measured ~5 s of EMPTY FLOOR per round with
+              // fronts on a fixed schedule — clear one, wait for the next. A
+              // front now PULLS IN when live bodies drop to `pullIn` or fewer,
+              // never sooner than `pullGap` after the previous front landed.
+              // The clock stays the ceiling; a strong player shortens the round.
+              pullIn: 2, pullGap: 1.5 },
     // cadence — spawn drip inside a wave
     cadence: {
       swarm:  { min: 0.08, rand: 0.28 },

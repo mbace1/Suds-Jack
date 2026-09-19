@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=209';
+import { TUNING } from './tuning.js?v=210';
 const _apt = { x: 0, z: 0 };   // v236: scratch for arena queries — no per-frame alloc
-import { nesSnap, NEON } from './retro.js?v=209';
+import { nesSnap, NEON } from './retro.js?v=210';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -623,7 +623,7 @@ export const CFG = {
   // the OTHERS, so it must be killable the moment you read the ring.
   [EnemyType.SHEPHERD]:    { color: 0x66ffcc, radius: 0.6, speed: 1.6, hp: 3, bulletColor: null, fireInterval: null },
   [EnemyType.RIBBON]:      { color: 0x66ddee, radius: 0.40, speed: 2.6, hp: 4,  bulletColor: null, fireInterval: null },  // v251 tester
-  [EnemyType.SLUG]:        { color: 0x88ff22, radius: 0.46, speed: 2.2, hp: 11, bulletColor: null, fireInterval: null },  // v251 tester (hp = segments)
+  [EnemyType.SLUG]:        { color: 0x5fcc14, radius: 0.46, speed: 2.2, hp: 11, bulletColor: null, fireInterval: null },  // v251 tester (hp = segments)
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.

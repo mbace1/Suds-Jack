@@ -7,6 +7,50 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v257 — 2026-09-19
+**Wave transitions and flow: drops and gates survive the boundary, fronts pull in when the floor empties, a CURTAIN kind, a darker slug** *(owner: "things shouldn't disappear immediately… test waves in general, add a bit of length maybe variety, but always emphasize flow. Hazard wave of bullets was great. Dark slug was cooler… maybe a bit too dark. Test a lot and tune things")*
+- **Nothing vanishes at the boundary.** Drops were wiped by `spawnWave()` on
+  every clear — the v136 breather existed "to grab leftover drops", and then
+  the wave change deleted them. They keep their own `_life` now. The oldest
+  gate used to be replaced *instantly* when a wave spawned its new one; it
+  **retires** — lingers `waves.gateRetire` (4 s) past the boundary, then goes.
+  Measured: 0.6–1.3 drops and 2–3 gates standing at the end of a round (was 0
+  and 2).
+- **Flow, measured and chased.** The bot harness gained a metric: *seconds
+  of empty floor inside a round*. On v256's fixed schedule it read **~5–5.5 s
+  per normal round** — clear a front, wait for the next. Two turns of tuning:
+  1. **Fronts PULL IN** (`pulses.pullIn` 2, `pullGap` 1.5): when live bodies
+     drop to two or fewer and a front is still queued, the whole front comes
+     forward with its stagger kept, never sooner than 1.5 s after the last
+     one landed. The clock stays the ceiling; a strong player shortens the
+     round. Bodies carry `front` from the director through the pump.
+  2. **More fronts, shaped per kind** (`pulses.byKind`): normal 4, swarm 5
+     quick, spike 3 heavy, boss = boss then 3 late fronts from 28%, curtain 3.
+  Result: **empty floor 5.5 → 2.4 s** (CLOSE COMBAT normal), curtain **8.2 →
+  1.9–3.2 s**. Rounds run 7–8 s on normal kinds for the bot (it clears fast),
+  12–13 on spike / curtain / boss; the 12–16 s `waves.round` clock only binds
+  on a slower player. *Flow beat the number, on purpose.*
+- **A bit of length, and variety.** `waves.round`: normal 14, swarm 12, spike
+  15, boss 16, curtain 15. **B6 closed:** `budget.min` 6 — wave 1 was one
+  body and a shooter; it is a round now (5–6 s, was 3).
+- **THE CURTAIN** — the bullet-heavy wave the owner liked, made a *kind*:
+  every 6th wave from 6 (`rhythm.curtainEvery/From`; precedence boss > spike >
+  curtain > swarm). Shooters take 60% of the budget with two extra seats and
+  arrive 1.2 s apart instead of 2.5 (the first cut left 8 s of empty floor
+  between them). In CLOSE COMBAT, where the living are muzzled, the draw
+  leans on the **biters** — the curtain there is corpse fire. Banner: *THE
+  CURTAIN — WALK THE GAPS*.
+- **The slug is darker** — `0x88ff22` → `0x5fcc14`, between the green that
+  shipped and the dark one the owner preferred ("a bit too dark").
+- Not touched: what the "dark slug" *was* is not certain — most likely a
+  VOLATILE elite's smoulder on green, possibly the phone's ratchet with
+  transmission off. The colour is one number if this guess is wrong.
+- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
+  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
+- Cache-bust `?v=209` → `?v=210`; HUD label → v257
+
+---
+
 ## v256 — 2026-09-19
 **Waves become fronts: a classic round is a 12–15 s clock, its bodies arrive in pulses, survivors carry over** *(owner: "Wave number. Waves can be 12–15 secs" — the B2 sentence, and leap #2)*
 - **The round is a clock, by kind** (`TUNING.waves.round`: normal 13, swarm
