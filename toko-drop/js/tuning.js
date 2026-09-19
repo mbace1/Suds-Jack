@@ -258,6 +258,18 @@ export const TUNING = {
       meleeCheapMax: 3,         // the melee draw doubles up on cheap bodies
       meleeShooterDiscount: 2,  // a drafted shooter without its gun is just legs
     },
+    // v256 (owner: "wave number. Waves can be 12-15 secs"): a classic round is
+    // a CLOCK now, by kind, and its bodies arrive as PULSES across it instead
+    // of a 3-second pour. The playtest measured rounds at 5-8 s because the
+    // wave ended the moment the floor was empty; with fronts spread across
+    // the round the earliest an empty floor can end it is after the last
+    // pulse, and the clock ends it otherwise — survivors carry over.
+    // Escalation stays on the WAVE NUMBER, so wave 10 arrives later in wall
+    // time than it used to (~2 min, was ~1). Shooters keep their own spaced
+    // schedule (shooterPlan); bosses keep t = 0. Rush, SMASH TV, cabinets and
+    // authored levels keep their own pacing.
+    round:  { normal: 13, swarm: 12, spike: 14, boss: 15, prize: 12, breather: 12 },
+    pulses: { count: 3, span: 0.70, stagger: 0.25, swarmStagger: 0.12 },   // pulse k lands at k/(count-1) x span x round
     // cadence — spawn drip inside a wave
     cadence: {
       swarm:  { min: 0.08, rand: 0.28 },

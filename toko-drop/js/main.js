@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=208';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=208';
-import { Player, PLAYER_RADIUS } from './player.js?v=208';
+import { InputManager } from './input.js?v=209';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=209';
+import { Player, PLAYER_RADIUS } from './player.js?v=209';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=208';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=208';
-import { audio } from './audio.js?v=208';
-import { haptics } from './haptics.js?v=208';
-import { initDesigner } from './designer.js?v=208';
-import { createSpecimen } from './specimen.js?v=208';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=208';
-import { TUNING } from './tuning.js?v=208';
-import { Arena, rectShape } from './arena.js?v=208';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=208';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=208';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=208';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=209';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=209';
+import { audio } from './audio.js?v=209';
+import { haptics } from './haptics.js?v=209';
+import { initDesigner } from './designer.js?v=209';
+import { createSpecimen } from './specimen.js?v=209';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=209';
+import { TUNING } from './tuning.js?v=209';
+import { Arena, rectShape } from './arena.js?v=209';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=209';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=209';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=209';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -306,6 +306,23 @@ function getEnemySchedule(wave) {
                  : (W.cadence.normal.min + rng() * W.cadence.normal.rand);
     spent += entryCost;
   }
+  // v256 PULSES: the classic wave arrives as `pulses.count` fronts spread
+  // across `span` of the round, in draw order, each front staggered like the
+  // old drip. Bosses keep t = 0 and shooters keep their own spaced plan — only
+  // the mob is re-paced. No new rng() calls, so seeded draws are unchanged.
+  if (!smashMode && !rush.on && !inCabinet() && list.length) {
+    const PL = W.pulses, roundLen = W.round[kind] ?? W.round.normal;
+    const mob = list.filter(e => !e.boss && !e.shooter);
+    // a wave of two bodies is two fronts, not three — the fronts always span
+    // the round, or wave 1 ends in four seconds again
+    const cnt = Math.max(1, Math.min(PL.count, mob.length));
+    const per = Math.max(1, Math.ceil(mob.length / cnt));
+    const stag = isSwarm ? PL.swarmStagger : PL.stagger;
+    mob.forEach((e, i) => {
+      const k = Math.floor(i / per), j = i % per;
+      e.t = (cnt > 1 ? k / (cnt - 1) : 0) * PL.span * roundLen + j * stag;
+    });
+  }
   // SMASH TV (v114): re-pace the MOB flood like the show — bursts of ~3 every
   // couple of seconds for the whole wave, each burst from ONE door, walking
   // around the room. Shooters keep their own spaced schedule but get spread
@@ -382,7 +399,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '255';
+const GAME_VERSION = '256';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -4623,6 +4640,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
     date: new Date().toISOString(),
     seed: runSeed, mode: nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     wave, time: Math.round(runTimer), score,
+    restartGap,   // v256: seconds from the previous death screen to this run's start (null: first run)
     reasons: selectedLabels, reasonIds: selectedIds,
     liked: likedLabels, likedIds,
     comment: comment || '', isFix,
@@ -4709,6 +4727,14 @@ let gameState    = 'title';
 let _hitFlashT   = 0;
 let waveClearFlashT = 0; // v74: brief white pulse marking the instant a wave clears
 let waveGapT = 0; // v136: classic-mode breather between waves — play continues, next wave waits
+// v256: the rounds that run on the clock — the main game and its roguelike
+// twin. Cabinets, SMASH TV, Rush and authored levels pace themselves.
+function classicRound() { return !inCabinet() && !smashMode && !customLevel && !rush.on && !exitPhase; }
+// v256 (PLAYTEST §3 B7 / PROGRESSION §5 Q15): the "one more go" number. The
+// death screen's summary already carries `time` (run length); this is the gap
+// from the last death screen to this run's start, so restart rate is a
+// number, not a feeling.
+let _deathAt = 0, restartGap = null;
 // v138: gates teach themselves — a DASH! tag hangs over every gate until the
 // player has detonated one, ever. Persisted; the mechanic only needs teaching once.
 let gateUsed = localStorage.getItem('tokoDropGateUsed') === '1';
@@ -6542,11 +6568,18 @@ function clearBossAuras() {
   bossAuras = [];
 }
 
-function spawnWave() {
-  for (const e of enemies) e.removeFrom(scene);
-  enemies = [];
+// v256: `carry` — the clock ended the round with bodies still standing; they
+// stay (and so do the drops), and the next front pours in around them. A
+// clear-end passes nothing and wipes the floor as it always did.
+function spawnWave(carry = false) {
+  if (carry) {
+    enemies = enemies.filter(e => { if (e.alive) return true; e.removeFrom(scene); return false; });
+  } else {
+    for (const e of enemies) e.removeFrom(scene);
+    enemies = [];
+    for (const p of powerups) p.remove(scene); powerups = [];
+  }
   clearBossAuras();
-  for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   // v197 FLUID archetypes: name the wave's current so the lab stays legible.
   // v211: the wave CURRENT is arena choreography, not species identity — so it
@@ -6573,7 +6606,8 @@ function spawnWave() {
                 (smashMode && smashRoomKind === 'bonus') ||     // v178: pure loot, no fight
                 (bindingMode && (smashRoomKind !== 'boss' || bdRevisit)) ||
                 customLevel) ? [] : getEnemySchedule(wave);   // v237: a level brings its own list
-  waveDuration = ROUND_DUR;
+  // v256: a classic round is a clock, by kind (TUNING.waves.round)
+  waveDuration = classicRound() ? (TUNING.waves.round[waveKind(wave)] ?? TUNING.waves.round.normal) : ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
   pendingSpawns = [];
@@ -8037,6 +8071,7 @@ function startGame() {
   // arena even if the device rotates mid-fight (no mid-run bound swaps).
   landscapeMode = innerWidth > innerHeight;
   applyArenaMode(landscapeMode);
+  restartGap = _deathAt ? +((performance.now() - _deathAt) / 1000).toFixed(1) : null;   // v256
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0; waveGapT = 0;
   milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
   gauntlet = null; gauntletTier = 1; cabQuest = null; _lastQuestOffer = null;
@@ -8192,6 +8227,7 @@ function endLevelRun(outcome) {
 let lastLevelResult = null;
 
 function triggerGameOver() {
+  _deathAt = performance.now();   // v256: the restart gap starts here
   if (gauntlet) {                       // died inside a gauntlet: restore state
     smashMode = _gSavedSmash;
     gauntlet = null;
@@ -10443,9 +10479,23 @@ function loop() {
     if (waveGapT <= 0) spawnWave();
   }
 
+  // v256 THE CLOCK ENDS A CLASSIC ROUND. The last front has landed, the round
+  // is over, bodies are still standing: they carry over and the next wave
+  // pours in around them — no bonus, no applause, no breather; the front
+  // never stops. A live boss holds the round open (a boss is the event, and
+  // its aura is cleared on spawnWave). Roguelike keeps its every-3rd-wave
+  // card here too, else clock-ended waves would skip it.
+  if (gameState === 'playing' && classicRound() && waveGapT <= 0 && pendingSpawns.length === 0 &&
+      waveTimer >= waveDuration && enemies.some(e => e.alive) && !enemies.some(e => e.alive && e._isBoss)) {
+    if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
+    else spawnWave(true);
+  }
+
   // All living enemies dead → end wave immediately; flush any queued spawns.
   // SMASH TV: the room isn't cleared while door bursts are still queued — the
   // doors keep pouring (clearing between pulses just buys a breather).
+  // v256: a classic round waits for its last pulse too — an empty floor
+  // between fronts is a breather, not a clear.
   // v146 FIX: never re-evaluate the clear while a room transition is in
   // flight (_roomSwap / roomFadeT) — the old room's dead enemies linger until
   // spawnWave, so the clear could re-fire mid-fade, double-paying the bonus
@@ -10456,7 +10506,7 @@ function loop() {
       enemies.length > 0 &&
       enemies.every(e => (tokotronMode && e.type === EnemyType.BRUTE) ||
                          (!e.alive && !e._dying)) &&
-      (!smashMode || pendingSpawns.length === 0)) {
+      (!(smashMode || classicRound()) || pendingSpawns.length === 0)) {
     pendingSpawns = [];
     score += wave * 500 * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
     waveClearFlashT = 0.4;
@@ -10670,7 +10720,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=208').then(async m => {
+  import('./editor.js?v=209').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10701,6 +10751,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=208').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=209').catch(() => {});
   });
 }

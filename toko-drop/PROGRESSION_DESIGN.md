@@ -302,12 +302,12 @@ option is spelled out and the reading is flagged so it can be corrected.
 | # | question (§5) | answer | status |
 |---|---|---|---|
 | 1 | Run length / does ARCADE end? | **Endless, escalating — as today.** | decided |
-| 2 | Wave shape | **Pulses across the 20 s round** (the SMASH machinery, retargeted). | decided |
+| 2 | Wave shape | **Pulses across the 20 s round** (the SMASH machinery, retargeted). **Shipped v256** — three fronts across a 12–15 s round. | shipped |
 | 3 | Who bites back, from which wave? | *"Hard to say, maybe 1"* — leaning **named species, entering at wave 3–4**, RING first, one speed, seeded. **Shipped v254 on the lean:** the ten shooters' corpses, from wave 3, 24 on the field. | shipped on the lean |
 | 4 | Mixed field (living fire + revenge)? | **Playtest the mixed state first.** Flip the flag for an afternoon; decide from a screenshot and a run count. | decided (test) |
 | 9 | Doors on the title | *"For now 1, but at launch maybe 3.."* — read as: **three doors + a CLASSICS drawer now; Sektori-style unlocks (one door, the rest earned) maybe at launch.** | decided-for-now; reading flagged |
 | 10 | Where do the upgrade cards live? | *"For now 1"* — **own ROGUE door**; *"up in the air depending on where these modes develop to."* | decided-for-now |
-| — | What ends a round, once pulses spread across it? | *"3 likely but I would like to test 1"* — **empty-floor-only is the likely rule; test clock-only first.** Both need the last pulse early enough to clear. | test, then decide |
+| — | What ends a round, once pulses spread across it? | *"3 likely but I would like to test 1"* — **empty-floor-only is the likely rule; test clock-only first.** **v256 ships both:** an empty floor after the last pulse ends it; otherwise the clock does, and survivors carry over. | shipped (both) |
 | 12 | Rush: the campaign, or an ingredient? | First pass: *"2 sounds right but I don't understand 1 and 3"*; after rewording: **"Likely Rush IS the campaign — but that may not have exactly the current Rush rules, as those are copied from Blade Rush and are tested as optional mechanics that may be used somewhere."** | lean; see note |
 | 11 | What to take from Blade Rush's campaign? | **"Like Geometry Wars 3, which we can use as reference. It has different rooms with timed goals and S, A, B, C, F tiers. Along with added mechanics, level shapes, etc."** — so the campaign unit is a *room* with a *timed goal*, graded **S/A/B/C/F** (an F tier we do not have), and the path adds **mechanics and level shapes** as it goes. GW3 is the reference to read. | decided (reference) |
 | 16 | What are the families built on? | **"Domes are one family, same with cubes, others are other family, and more may arise."** — family = **shape class**. Dome, cube, and each one-off silhouette is its own family; new shapes are new families. | decided |
@@ -322,8 +322,11 @@ ingredient*, portable to wherever they fit. So `RUSH_DESIGN.md` describes a
 mechanic set, not the campaign's identity. What the campaign's own rule set
 is, is still open — which is why Q11 (what to take from Blade Rush) is next.
 
-**Still to ask:** what campaign progress buys (Q13); difficulty tiers (Q14);
-what we measure (Q15); and §8.3 — starting with Q16, re-asked after §8.4.
+**B2 (from `PLAYTEST_2026-09-17.md`), owner 2026-09-19:** *"Wave number. Waves can be
+12–15 secs."* — escalation follows the wave number; rounds are 12–15 s. Shipped v256.
+
+**Still to ask:** what campaign progress buys (Q13); difficulty tiers (Q14).
+Q15 (what we measure) shipped in v256 as `restartGap` + `time`.
 **Format update (owner):** one question at a time when they are long.
 
 ---
