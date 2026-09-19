@@ -160,6 +160,36 @@ story; the OUTPUT is what goes on air.
 
 ---
 
+## The technique is the word the broadcast used
+
+The `technique` on a bulletin is the name the sign-off tally reads back, thirteen
+at a time, and a list of thirteen is read as a SET. So they all have to be the
+same shape — and the shape is **the actual word or phrase the broadcast reached
+for**, lifted out of one of that bulletin's own spans: `ORDERLY`, `REPROCESSED`,
+`PREPAREDNESS`, `MODERATE`, `LEARNINGS`, `A NATURAL HOME`.
+
+Both shapes were rendered into the real tally and compared side by side
+(`DECODE-DIFF.md`). A *category* name — `ACCESS AS CELEBRATION`, `PARTIAL AS
+COMPLETE` — reads as a taxonomy and is consistent, but it puts nothing in the
+reader's ear. The word is what they will hear again in the wild, which is the
+whole payload: the tell asks a question, the technique hands over the trigger.
+What the comparison actually exposed was worse than either option — that day was
+carrying three grammars at once (`ORDERLY`, `A NATURAL HOME`, `THE CAPACITY WAS
+ALREADY YOURS`), and three grammars in one list reads as a mistake rather than a
+choice.
+
+A useful side effect: if no word in the copy can carry the technique, the spans
+are not sharp enough yet. `OPEN DAY` and `CROSSOVER` were both the bulletin's
+SUBJECT rather than its move, and both bulletins needed a better span before
+they could be named.
+
+**This is not gated, and the reason is worth knowing.** A mechanical check that
+the technique appears in its own copy works in English and Japanese and is wrong
+in Finnish: consonant gradation changes the stem, not just the ending, so
+`UUDET SUUNNAT` appears in correct copy as `uusien suuntien` and no substring or
+5-character stem match finds it. A ruler that fails one of the three languages
+would fail exactly the copy this station exists to write. Read it instead.
+
 ## Hard nos
 
 - No invented events. The reframe is the joke; fabricating the event is not.

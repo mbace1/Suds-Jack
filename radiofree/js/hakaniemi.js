@@ -3,9 +3,9 @@
 // dense catenary, sparse platforms, modernist blocks and the round Arena-talo
 // tower as the recognisable anchor. Weather and broadcast FX stay external.
 
-import { PAL } from './palette.js?v=62';
-import { mix, shade } from './screen.js?v=62';
-import { drawTram } from './tram.js?v=62';
+import { PAL } from './palette.js?v=63';
+import { mix, shade } from './screen.js?v=63';
+import { drawTram } from './tram.js?v=63';
 
 const W = 128, H = 152;
 const inkLo = d => mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d);

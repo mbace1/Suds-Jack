@@ -87,8 +87,14 @@ async function staticChecks() {
   // that had nothing to do with the shell. A gate that cannot read its own
   // subject is worse than no gate: it produces a failure everyone learns to
   // scroll past.
+  // TOLERANT OF A SUFFIX TOO. `deploy-hub.mjs` stamps its own number onto this
+  // worker when the arcade shell is deployed, so the live file reads
+  // `VERSION='v62-hub66'` — which the previous pattern did not match either,
+  // and would have put this check back to grading against `undefined` the first
+  // time anybody deployed the hub. The cache NAME may carry whatever the site
+  // wants; what has to agree with the module tokens is the number in front.
   const v = (sw.match(/const V\s*=\s*[`'"]\?v=(\d+)[`'"]/) || [])[1];
-  const ver = (sw.match(/const VERSION\s*=\s*['"`]v(\d+)['"`]/) || [])[1];
+  const ver = (sw.match(/const VERSION\s*=\s*['"`]v(\d+)[-\w]*['"`]/) || [])[1];
   ok('sw.js VERSION and V agree', v && ver && v === ver, `VERSION=v${ver} V=?v=${v}`);
 
   // Only radiofree's own tokens; ../hub and ../toko keep their own versions.
@@ -138,6 +144,18 @@ async function staticChecks() {
      !/wire\/\d{4}-\d{2}-\d{2}\.json/.test(sw),
      'a named episode list is a list of yesterdays once the job runs daily');
   ok('install caches whatever the index points at', /precacheNewest/.test(sw));
+
+  // THE ONE DEPENDENCY. mediabunny is vendored (no CDN — the app's rule) and
+  // fetched by <script> the first time somebody exports. It must NOT be in the
+  // precache: 683 KB for a button most listeners never press would double the
+  // offline shell. And kokoro-js must not appear anywhere in the shell at all —
+  // it is a held prototype behind a flag, and the flag is the whole point.
+  ok('the encoder is vendored, not fetched from a CDN',
+     fs.existsSync(path.join(RF, 'vendor', 'mediabunny-1.58.1.min.js'))
+       && !/cdn\.[a-z]+\.[a-z]+\/[^'"]*mediabunny/.test(fs.readFileSync(path.join(RF, 'js', 'export.js'), 'utf8')));
+  ok('the encoder is not in the offline shell', !/vendor\//.test(sw), 'vendor/ named in sw.js');
+  ok('the TTS model is not in the offline shell', !/kokoro|huggingface|onnx/i.test(sw));
+  ok('index.html loads no third-party script', !/<script[^>]+src="https?:/.test(html));
 
   // EVERY EPISODE ON DISK HAS TO BE AIRABLE. The daily job validates what it
   // generates, but nothing validated an episode a person committed by hand —
@@ -473,6 +491,50 @@ async function main() {
      String(dk));
   const plain = await go(() => document.querySelectorAll('.post.live .plain').length);
   ok('the plain readings are showing', plain > 0, String(plain));
+
+  // ── export ──────────────────────────────────────────────────────
+  // The export steps the live package into a canvas and hands it to WebCodecs
+  // through mediabunny. Headless Chromium has no H.264, so this rung of the
+  // ladder is AV1-in-MP4 — the point is that the file exists, is a video, and
+  // carries exactly the frames asked for. A desktop Chrome lands on 'avc'.
+  console.log('\nexport');
+  const exp = await go(() => __rfh.debug.exportMp4(undefined, { seconds: 1, fps: 10, noDownload: true }));
+  ok('a bulletin renders to a video file through the app\'s own button path',
+     exp && !exp.error && exp.bytes > 2000, JSON.stringify(exp));
+  ok('the file is a video container with a real codec in it',
+     exp && /^video\//.test(exp.type || '') && ['avc', 'av1', 'vp9', 'hevc', 'vp8'].includes(exp.codec),
+     JSON.stringify(exp));
+  ok('it carries exactly the frames asked for', exp && exp.frames === 10, String(exp && exp.frames));
+  ok('the live loop resumed after the export',
+     await go(async () => { const a = __rfh.debug.beat(); await new Promise(r => setTimeout(r, 900)); return __rfh.debug.shot() !== null; }));
+  ok('every post has the export button, and clean mode has none',
+     await go(() => document.querySelectorAll('.post:not(.sign-off) .export-btn').length
+                    === document.querySelectorAll('.post:not(.sign-off)').length));
+  ok('the encoder library reached the page by script tag, once',
+     await go(() => document.querySelectorAll('script[src*="mediabunny"]').length === 1
+                    && typeof window.Mediabunny === 'object'));
+
+  // ── the held prototype ──────────────────────────────────────────
+  // Without the flag nothing about TTS is loaded or fetched. With it, the app
+  // still boots and still reads in text if the model never arrives — which,
+  // with no network here, is exactly what happens.
+  console.log('\ntts (held)');
+  const ttsOff = await go(() => __rfh.debug.tts());
+  ok('without the flag the prototype is off and unloaded', ttsOff && !ttsOff.enabled && !ttsOff.loaded, JSON.stringify(ttsOff));
+  ok('and nothing from a model CDN was ever requested',
+     await go(() => !performance.getEntriesByType('resource').some(r => /jsdelivr|huggingface|kokoro/i.test(r.name))));
+  const tp = await browser.newPage();
+  const terr = [];
+  tp.on('pageerror', e => terr.push(e.message));
+  await tp.goto(base + '?tts=kokoro', { waitUntil: 'load' });
+  await wait(600);
+  await tp.evaluate(() => window.__rfh.debug.tuneIn());
+  await wait(2500);
+  const ttsOn = await tp.evaluate(() => ({ s: __rfh.debug.tts(), posts: document.querySelectorAll('.post').length, shot: __rfh.debug.shot() }));
+  ok('with the flag the app still boots and reads', ttsOn.posts > 1 && ttsOn.shot !== null && terr.length === 0,
+     JSON.stringify(ttsOn) + ' ' + terr.join('; '));
+  ok('and reports the prototype as enabled rather than pretending it is off', ttsOn.s && ttsOn.s.enabled, JSON.stringify(ttsOn.s));
+  await tp.close();
 
   console.log('\nstate');
   await go(() => __rfh.debug.go(1));

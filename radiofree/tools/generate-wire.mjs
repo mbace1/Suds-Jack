@@ -284,8 +284,15 @@ ${artTable()}
   language really pulls this move: Finnish reaches for the true agentless
   passiivi and the preesens-as-futuuri; Japanese for 〜される, 「〜している」
   ambiguity, and the polite institutional noun (再編、協議、見直し).
-- 2 to 4 \`{{spun|plain}}\` spans per bulletin, in EVERY language. The braces are
-  the mechanic; a bulletin with none is rejected.
+- TWO \`{{spun|plain}}\` spans per bulletin — three only when the second paragraph
+  genuinely turns on one — in EVERY language, and in the SAME places in each. The
+  braces are the mechanic; a bulletin with none is rejected. Four or more is a
+  highlighter rather than a reveal: when half a paragraph is amber the reader
+  cannot tell which move mattered, which is the one thing DECODE is for.
+- Put one span in each paragraph where the copy allows it. Paragraph one carries
+  the event, paragraph two carries what the event was arranged around, and a
+  bulletin whose spans are all in the first half annotates the setup and leaves
+  the payload plain.
 - No nested or unclosed braces. No \`|\` inside a span other than the separator.
 - The plain reading is what someone who knew would say out loud: flat, specific,
   never a paraphrase of the spin.
@@ -430,8 +437,11 @@ export function editorialProblems(wire, names) {
       const c = wire.copy[lang] && wire.copy[lang][st.id];
       if (!c || !Array.isArray(c.lines)) continue;
       const spans = c.lines.reduce((n, l) => n + parseLine(l).filter(r => r.plain !== null).length, 0);
-      if (spans < 2) errors.push(`copy.${lang}.${st.id}: ${spans} decode span(s) — the bar is 2 to 4`);
-      if (spans > 4) errors.push(`copy.${lang}.${st.id}: ${spans} decode spans — the bar is 2 to 4, it reads as a puzzle`);
+      // TWO, three at a push. The first draft of 2026-09-19 came back at 3-5 a
+      // bulletin and read as a highlighter: with half a paragraph amber there is
+      // no way to tell which move the reveal was about. The floor is unchanged.
+      if (spans < 2) errors.push(`copy.${lang}.${st.id}: ${spans} decode span(s) — the bar is two, three at a push`);
+      if (spans > 3) errors.push(`copy.${lang}.${st.id}: ${spans} decode spans — the bar is two, three at a push; past that it is a highlighter, not a reveal`);
 
       const flat = [c.slug, c.head, ...c.lines, c.decodeNote].join(' ');
       for (const n of names) {

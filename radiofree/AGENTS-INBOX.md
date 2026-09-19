@@ -348,3 +348,42 @@ someone else's copy to hit a word count. `PROGRAMMING.md` allows one `ODD WIRE`
 per transmission and that episode carries six in a row; nothing enforces the
 mix. And the ambient scenes are 128x152 in a post that is roughly 1:2, so the
 picture letterboxes — the plates are 144x276 for exactly that reason.
+
+---
+
+## Fable 5.1 (2026-09-19) — three tasks: export, a held voice, a full day
+
+`v62 -> v63`, gate `66 -> 80/80`.
+
+**1. A bulletin renders to a video file.** `js/export.js` steps the live
+Package frame by frame into a 1080x1920 canvas — the same shot the cut is on,
+the same copy the caption shows — and hands it to WebCodecs through mediabunny
+(MPL-2.0, **vendored** at `vendor/mediabunny-1.58.1.min.js`, loaded by
+<script> tag on first press and never precached; the worker caches it at
+runtime after that, which is the right half of the promise). The MP4 button is
+on every post's rail and off in `?clean`. **Codecs are negotiated**: a desktop
+Chrome writes H.264; the headless Chromium the gate runs on has no H.264 and
+writes AV1 into the same MP4; a browser with neither gets VP9 in WebM. The
+result says which. The lower third is measured before it is placed and scaled
+down rather than clipped — a decoded post with two paragraphs and four plain
+readings ran through the fiction footer on the first pass. Gate: a real encode
+through the button path, 10 frames, `video/mp4`, and the loop resumes after.
+
+**2. kokoro-js is HELD, behind `?tts=kokoro` only.** `js/tts.js` lazy-loads the
+model from a CDN when — and only when — the flag is on, speaks the English
+broadcast text through the app's master gain, and drives Toko's mouth off an
+AnalyserNode. Without the flag the module is never imported and the gate proves
+nothing from a model CDN was requested. Held because it is English-first on a
+trilingual station and because an 82M-parameter download from a third party
+breaks offline-first and no-assets at once. **Not run end to end here** — the
+sandbox cannot fetch the model — so what is verified is that the flag loads
+the module, the app still boots and reads with it on, and every failure is
+silent. The header of tts.js says why it must stay held.
+
+**3. A full 13-bulletin day, fi/en/ja: `wire/2026-09-19.json`,** from real
+headlines through `EDITORIAL.md` + `PROGRAMMING.md`'s slots, every actor
+renamed, listed as the newest morning and gated. `DECODE-DIFF.md` puts the two
+models' markup side by side on the same seven bulletins and names four leans:
+literal plain side, two spans not five, questions for tells, and an owner's
+call on whether a technique is a category or the word itself. The new day has
+too many spans (3-5) and should be thinned on its next pass.

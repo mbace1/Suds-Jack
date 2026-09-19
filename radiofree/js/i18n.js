@@ -33,6 +33,10 @@ const STR = {
     'rail.decode': 'DECODE',
     'rail.refold': 'RE-FOLD',
     'rail.next': 'NEXT',
+    'rail.export': 'MP4',
+    'a11y.export': 'Render this bulletin to a video file',
+    'export.busy': 'RENDER',
+    'export.fail': 'NO CODEC',
 
     'tag.onair': 'ON AIR',
     'standby': 'awaiting transmission',
@@ -72,6 +76,10 @@ const STR = {
     'rail.decode': 'PURA',
     'rail.refold': 'TAITA',
     'rail.next': 'SEURAAVA',
+    'rail.export': 'MP4',
+    'a11y.export': 'Renderöi tämä sähke videotiedostoksi',
+    'export.busy': 'RENDERÖI',
+    'export.fail': 'EI KOODEKKIA',
 
     'tag.onair': 'SUORA',
     'standby': 'odottaa lähetystä',
@@ -111,6 +119,10 @@ const STR = {
     'rail.decode': '解読',
     'rail.refold': '戻す',
     'rail.next': '次へ',
+    'rail.export': 'MP4',
+    'a11y.export': 'この記事を動画ファイルに書き出す',
+    'export.busy': '書き出し',
+    'export.fail': 'コーデックなし',
 
     'tag.onair': 'オンエア',
     'standby': '送信待ち',
