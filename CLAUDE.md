@@ -204,6 +204,51 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 `goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
 held them, and four of the hub's links pointed at them.
 
+### CONCRETE (`concrete/`) — the skate score attack, ACTIVE
+Two minutes in a warehouse, Tony Hawk's shape: ollie, flip, grab, grind, bank
+the combo. Three.js r185 vendored, no build step, `concrete/VERSIONS.md` is the
+log and `node concrete/test/playthrough.cjs` (Playwright) the gate; CI also runs
+`python3 concrete/art-source/validate.py` over the GLBs.
+**The DualSense is the reference controller (owner, 2026-09-19) and every
+menu is built for it**: `pad.js` is a tiny edge reader over the standard
+mapping, `main.js` walks title / pause / options / controls with the d-pad or
+stick, cross confirms, circle backs, Options pauses, Create resets, and the
+glyphs follow the pad in hand (`html[data-glyphs]`). The layout is THPS's:
+cross ollie, square flip, circle grab, **triangle grind**, L1/R1 spin, R2
+push. The bug that prompted it: the pad wrote into the key table and skipped
+`key()`, where the grind buffer is armed, so a controller could never grind.
+Everything the pad does goes through `key()` now, and the game **drains** the
+pad on start and resume so the press that confirmed a menu is not the first
+ollie of the run (sudsjack's lesson, again).
+**Physics reads the slope.** `ground(x, z)` is the one ride-height function
+and `slopeAlong()` its derivative along the heading; gravity along it, the
+rider's pitch, where pushing stops working and where a quarter pipe becomes a
+**vert launch** (past 3.4 m with the slope still climbing) all come from it.
+Off the lip the board goes up, not on along the tangent — vy from the speed
+carried, a small drift back, heading flipped — so the skater lands on the same
+transition and rolls out; too slow and `speed < 0` on a slope flips the heading
+instead (fakie roll-back). A bail recovers **in place**; the deck slides off
+ahead while the skater is down. Spins score on landing and a near landing is
+straightened, THPS-style.
+**The skater is code** (`skater.js`): Lambert boxes, nearest-filtered
+canvas face and shirt print, poses written as edits of `base(crouch)` so the
+legs and hips always agree, snapping at a keyframe rate and held to 15 steps a
+second with vertex snap on the PS1 look. It is the house skater on both tiers;
+the Blender rig is the SKATER option, loaded on demand (`art.setSkater`), and
+its twelve clips and grab IK still gate on desktop. Render the pose sheet
+(`__concrete.debug.pose(name)`) before touching a pose — the first sheet was
+twelve screenshots of the pause menu, because a debug hook that freezes the
+figure does not hide the overlay in front of it.
+**`look.js` is the room's look and may do nothing**: a wet floor via the
+vendored `Reflector` (a real mirrored second render, throttled to 40 ms, masked
+by a wetness canvas — the figure and the sparks ARE in it, which a cube map
+cannot give), window light shafts, and a PS1 pass (240-line HalfFloat target,
+nearest upscale, Bayer dither, shadows off). Tone mapping and colour space are
+applied in the blit, since three skips both when rendering into a target.
+`renderer.info` is reset by hand because the PS1 blit is a second `render()`.
+Options persist under `concrete-opts`; `?skater=blender&look=ps1&reflections=on`
+override them for a link.
+
 ### Suds Jack (`sudz/`) — Horizon Mesh, ACTIVE
 **Owner's call, 2026-08-19: continue the current live Bomb Jack × Tempest
 lane-survival direction and make it a functioning game.** This is the canvas

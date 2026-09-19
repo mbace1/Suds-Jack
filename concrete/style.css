@@ -526,3 +526,194 @@ footer button {
 }
 
 [hidden]{display:none!important}button{min-height:44px;min-width:44px}dialog.controls{color:#fff;margin:0;position:fixed;max-height:90dvh;overflow:auto}dialog::backdrop{background:#0009}.controls div{display:flex;justify-content:space-between}header{left:92px}.stick{flex-shrink:0}.intro{z-index:2}.support{max-width:350px}.build{color:#dafa45}button:focus-visible{outline:3px solid white;outline-offset:3px}
+
+/* v4 — menus built for a controller, glyphs that follow the pad in hand. */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 22px;
+}
+.menu .item {
+  position: relative;
+  background: none;
+  border: 0;
+  color: #b1bfc6;
+  text-align: left;
+  font-size: 22px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 1px;
+  padding: 10px 18px 10px 36px;
+  min-height: 44px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 30px;
+  transition: color 0.12s, background 0.12s;
+}
+.menu .item::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  border: 7px solid transparent;
+  border-left: 12px solid #dafa45;
+  transform: translateY(-50%);
+  opacity: 0;
+}
+.menu .item.selected {
+  color: #fff;
+  background: linear-gradient(90deg, #dafa4526, transparent 80%);
+}
+.menu .item.selected::before {
+  opacity: 1;
+}
+.menu .item:disabled {
+  opacity: 0.45;
+}
+.menu .item[hidden] {
+  display: none;
+}
+.menu .primary-item.selected {
+  color: #dafa45;
+}
+.menu .item b {
+  color: #dafa45;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+.menu .item b::before {
+  content: '◂ ';
+  color: #ffffff60;
+}
+.menu .item b::after {
+  content: ' ▸';
+  color: #ffffff60;
+}
+.overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(460px, 90%);
+  padding: 28px;
+  background: #111c24ed;
+  border: 1px solid #ffffff30;
+  backdrop-filter: blur(20px);
+  z-index: 5;
+}
+.overlay h2 {
+  font-size: 30px;
+  margin: 12px 0 4px;
+}
+.overlay > small {
+  color: #dafa45;
+}
+.hint {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #96a4ad;
+  margin: 18px 0 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+i[data-g] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  border: 1px solid #ffffff55;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: #fff;
+  vertical-align: middle;
+  margin: 0 4px;
+  line-height: 1;
+}
+i[data-g]:empty {
+  display: none;
+}
+html[data-glyphs='ps'] i[data-g='cross'] { color: #8fc4ff; border-color: #8fc4ff; }
+html[data-glyphs='ps'] i[data-g='circle'] { color: #ff8a8a; border-color: #ff8a8a; }
+html[data-glyphs='ps'] i[data-g='square'] { color: #ffa9dd; border-color: #ffa9dd; }
+html[data-glyphs='ps'] i[data-g='triangle'] { color: #8ef0b2; border-color: #8ef0b2; }
+html[data-glyphs='ps'] i[data-g='cross'],
+html[data-glyphs='ps'] i[data-g='circle'],
+html[data-glyphs='ps'] i[data-g='square'],
+html[data-glyphs='ps'] i[data-g='triangle'] {
+  width: 24px;
+  padding: 0;
+  font-size: 14px;
+}
+.controls .primary {
+  align-items: center;
+}
+.touchbuttons button.cr { background: #8fc4ffbb; color: #0f1a22; }
+.touchbuttons button.ci { background: #ff8a8a55; }
+.touchbuttons button.sq { background: #ffa9dd55; }
+.touchbuttons button.tr { background: #8ef0b255; }
+.touchbuttons button:last-child {
+  background: #8fc4ffbb;
+  color: #0f1a22;
+}
+html[data-screen='play'] .intro,
+html[data-screen='play'] .overlay {
+  display: none;
+}
+@media (max-width: 700px) {
+  .menu .item {
+    font-size: 18px;
+  }
+  .overlay {
+    padding: 20px;
+  }
+}
+/* The title carries a menu now, so it has to fit above the footer at 720px. */
+.intro {
+  top: 17%;
+}
+.intro h1 {
+  font-size: clamp(50px, 5.4vw, 86px);
+  margin: 14px 0 10px;
+}
+.intro p {
+  margin: 0 0 4px;
+}
+.intro .menu {
+  margin-top: 8px;
+  gap: 0;
+}
+.intro .menu .item {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.intro .hint {
+  margin-top: 10px;
+}
+.intro .support {
+  margin-top: 10px;
+}
+html:not([data-screen='play']) .score,
+html:not([data-screen='play']) .level,
+html:not([data-screen='play']) .speed {
+  display: none;
+}
+@media (max-height: 640px) {
+  .intro .eyebrow,
+  .intro p {
+    display: none;
+  }
+  .intro {
+    top: 12%;
+  }
+}

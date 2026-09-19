@@ -1,37 +1,24 @@
 {
+  "warehouse.glb": {
+    "bytes": 6046872,
+    "triangles": 127892,
+    "primitives": 9,
+    "clips": [],
+    "sha256": "22ce0ef636f0da7b05cd6a1c4b41e73518ab6fb54a91e2d0300333fb280c6ea7"
+  },
   "board-mobile.glb": {
     "bytes": 180396,
     "triangles": 3256,
     "primitives": 5,
     "clips": [],
-    "sha256": "29d298a493e421decae13ce75e2936d36f23cf807a1bfbd98ba22e6582f3b56a"
+    "sha256": "2fa7c9647512c528b17b1173d80529c18dbc4e072833f352798e1b07b8b70907"
   },
   "board.glb": {
     "bytes": 782300,
     "triangles": 6464,
     "primitives": 5,
     "clips": [],
-    "sha256": "0e2350dd44d78a2692aba1f04d40de2b35b18398becbeee2089bb78ff3031a20"
-  },
-  "skater-mobile.glb": {
-    "bytes": 285752,
-    "triangles": 4058,
-    "primitives": 8,
-    "clips": [
-      "air",
-      "bail",
-      "coast",
-      "crouch",
-      "grab",
-      "grind",
-      "idle",
-      "kickflip",
-      "land",
-      "ollie",
-      "push",
-      "recover"
-    ],
-    "sha256": "24b5fdc3291cad80f9369322361245f3d763bb634fb17bf4b7477dd32c4547dd"
+    "sha256": "d21523310d06bb8a7e45ce8fbf6cb11a94f6842ba2ac69af57a48725a2dc9150"
   },
   "skater.glb": {
     "bytes": 515684,
@@ -51,7 +38,27 @@
       "push",
       "recover"
     ],
-    "sha256": "825de30ee21a3f5b3a030186d505671dca4c80dd34eda14b4d3180eeb9dc6f54"
+    "sha256": "3cafff46db787c47828637f4f2acf918400ebfe155ac796129165a9774f5d2ef"
+  },
+  "skater-mobile.glb": {
+    "bytes": 285856,
+    "triangles": 4058,
+    "primitives": 8,
+    "clips": [
+      "air",
+      "bail",
+      "coast",
+      "crouch",
+      "grab",
+      "grind",
+      "idle",
+      "kickflip",
+      "land",
+      "ollie",
+      "push",
+      "recover"
+    ],
+    "sha256": "22f68b13bad4f44d90052d1ee9af3c63b319484a7a4a5ccaf354dd976af934bd"
   },
   "warehouse-mobile.glb": {
     "bytes": 1993928,
@@ -60,20 +67,13 @@
     "clips": [],
     "sha256": "b47ad406646e804480f73bdf7e421c8600e2908a1a339f16f652b44b8b29db4a"
   },
-  "warehouse.glb": {
-    "bytes": 6046872,
-    "triangles": 127892,
-    "primitives": 9,
-    "clips": [],
-    "sha256": "22ce0ef636f0da7b05cd6a1c4b41e73518ab6fb54a91e2d0300333fb280c6ea7"
-  },
   "desktop": {
     "artBytes": 10104677,
     "uniqueTriangles": 144504,
     "meshPrimitives": 22
   },
   "mobile": {
-    "artBytes": 2968159,
+    "artBytes": 2968263,
     "uniqueTriangles": 55806,
     "meshPrimitives": 22
   }
