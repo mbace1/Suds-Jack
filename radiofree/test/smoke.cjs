@@ -87,8 +87,14 @@ async function staticChecks() {
   // that had nothing to do with the shell. A gate that cannot read its own
   // subject is worse than no gate: it produces a failure everyone learns to
   // scroll past.
+  // TOLERANT OF A SUFFIX TOO. `deploy-hub.mjs` stamps its own number onto this
+  // worker when the arcade shell is deployed, so the live file reads
+  // `VERSION='v62-hub66'` — which the previous pattern did not match either,
+  // and would have put this check back to grading against `undefined` the first
+  // time anybody deployed the hub. The cache NAME may carry whatever the site
+  // wants; what has to agree with the module tokens is the number in front.
   const v = (sw.match(/const V\s*=\s*[`'"]\?v=(\d+)[`'"]/) || [])[1];
-  const ver = (sw.match(/const VERSION\s*=\s*['"`]v(\d+)['"`]/) || [])[1];
+  const ver = (sw.match(/const VERSION\s*=\s*['"`]v(\d+)[-\w]*['"`]/) || [])[1];
   ok('sw.js VERSION and V agree', v && ver && v === ver, `VERSION=v${ver} V=?v=${v}`);
 
   // Only radiofree's own tokens; ../hub and ../toko keep their own versions.
