@@ -107,6 +107,65 @@ const check = (label, ok) => {
   check('you can teleport onto the beach', tp.sand === true);
   check('and not off the edge of the world', tp.far === false);
 
+  // ── collision: the island's geometry, not its height field ──
+  // The reason this exists is one sentence: a height field has one answer per
+  // column, and the jetty deck and the water under it are the same column.
+  const col0 = await page.evaluate(() => window.__tt.debug.collide());
+  check(`collision is built on real geometry (${col0.solids} solids, ${col0.trees} bounds trees)`,
+    col0.solids >= 3 && col0.trees === col0.solids);
+  // You stand ON the deck now, not in it: the planks are ~5.5 cm of real
+  // geometry laid on the pad, and the height field has never known about
+  // them. That gap IS the feature, so assert the gap rather than the pad.
+  const pad = await page.evaluate(() => ({
+    geom: window.__tt.debug.standY(0, 0, 0),
+    field: window.__tt.groundHeight(0, 0) - 0.92,
+  }));
+  check(`you stand on the deck, not in it (geometry ${pad.geom.toFixed(3)} over field ${pad.field.toFixed(3)})`,
+    pad.geom > pad.field + 0.02 && pad.geom < pad.field + 0.15);
+
+  // THE POINT OF THE WHOLE COMMIT: somewhere the geometry carries you and the
+  // height field refuses. Found by sweep rather than by a coordinate, because
+  // the jetty is COMPUTED from the inlet spine — a literal here would be the
+  // one thing in the cove that did not move when the cove was reshaped.
+  const overWater = await page.evaluate(() => {
+    const d = window.__tt.debug, g = window.__tt.groundHeight, out = [];
+    for (let x = -12; x <= 12; x += 0.5) for (let z = -4; z <= 20; z += 0.5) {
+      const s = d.standY(x, z, 0), analytic = g(x, z) - 0.92;
+      if (s !== null && analytic < -0.94 && s > analytic + 0.25) out.push(+s.toFixed(1));
+    }
+    const byH = {};
+    for (const y of out) byH[y] = (byH[y] || 0) + 1;
+    const deck = Object.entries(byH).sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
+    return { total: out.length, deckY: +deck[0], deckN: deck[1] };
+  });
+  check(`the jetty carries you where the height field refuses (${overWater.deckN} cells at y ${overWater.deckY})`,
+    overWater.deckN >= 8);
+  check(`and it is a deck, not scattered rock (${overWater.deckN} of ${overWater.total} at one height)`,
+    overWater.deckN / overWater.total > 0.5);
+  check('you can teleport onto it', await page.evaluate(() => {
+    const d = window.__tt.debug, g = window.__tt.groundHeight;
+    for (let x = -12; x <= 12; x += 0.5) for (let z = -4; z <= 20; z += 0.5) {
+      if (d.standY(x, z, 0) !== null && g(x, z) - 0.92 < -0.94 && d.canTeleport(x, z)) return true;
+    }
+    return false;
+  }));
+
+  // and solid things are solid — with a control, because a wall test that
+  // says yes everywhere is not a wall test
+  const bump = await page.evaluate(() => {
+    const d = window.__tt.debug, c = window.__tt.chair;
+    const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
+    const m = d.tryMove(c.p[0] - fx * 1.2, c.p[2] - fz * 1.2, c.p[0] + fx * 0.3, c.p[2] + fz * 0.3, 0);
+    return {
+      chair: d.wallBetween(c.p[0] - fx * 1.2, c.p[2] - fz * 1.2, c.p[0] + fx * 0.2, c.p[2] + fz * 0.2, 0),
+      sand: d.wallBetween(-fx * 6, -fz * 6, -fx * 7.5, -fz * 7.5, 0),
+      gotThrough: Math.hypot(m.x - c.p[0], m.z - c.p[2]) < 0.5,
+    };
+  });
+  check('the chair is something you bump into', bump.chair === true);
+  check('and open sand is not', bump.sand === false);
+  check('so you cannot walk through the chair', bump.gotThrough === false);
+
   // ── the moods ──
   const moods = await page.evaluate(() => {
     const out = [];

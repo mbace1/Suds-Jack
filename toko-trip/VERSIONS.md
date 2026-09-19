@@ -1,5 +1,60 @@
 # Toko Trip — release log
 
+## v13 — 2026-09-19
+
+The first step. Collision is the island's **geometry** now, not its height
+field — and the one-sentence reason is that a height field has one answer per
+column, and **the jetty deck and the water under it are the same column**.
+The jetty shipped in v5 and has been scenery for eight versions: you could
+look at it and you could not stand on it.
+
+`groundHeight(x, z)` is unchanged and still the source of truth for the SHAPE
+of the island — the mesh, every scatter pass, the sand maps, the surf
+emitters. What moved is the thing you WALK on.
+
+- **three-mesh-bvh, vendored** (MIT, `vendor/three-mesh-bvh.LICENSE`). This is
+  a downward raycast against 40k+ triangles of terrain every frame: affordable
+  with a bounds tree, nothing like affordable without one. `acceleratedRaycast`
+  goes on `Mesh.prototype` and falls through to three's own for any mesh with
+  no tree, so the teleport ray and the slate's UV pick are untouched and get
+  the speed wherever a tree exists.
+- **`standY(x, z, feetY)`** — what you would be standing on, or `null` for
+  "the sea". The ray starts a step ABOVE your feet, so you step up onto the
+  deck lip and not up a wall, and a face only counts if it points up: the side
+  of the totem is geometry too, and standing on it is not walking.
+- **`wallBetween()`**, and it **slides** rather than refusing. Refusing the
+  whole step makes a doorway feel like glue, and this island is all doorways —
+  between a chair, a table and a palm.
+- **One `tryMove()` for every path that moves you**, so walking, the headset
+  sticks and the teleport cannot disagree about where you are allowed to be.
+
+**A bug this exposed rather than caused:** the headset sticks never touched
+`xrPos.y`. Only teleport ever set it — so walking off the pad in VR left your
+feet at pad height while the sand dropped away underneath you. Standing on the
+jetty is the same mechanism, which is why it only works now.
+
+Measured rather than asserted: **93 deck cells** carry you where the height
+field refuses, 20 of them interior, and the scattered rest are rocks in the
+shallows — which are also standable now, correctly.
+
+And the gate's ruler was wrong twice in one sitting, both times in the same
+direction — *the page was right and the ruler was wrong*:
+
+- The cage check asserted `material.wireframe` after the cage had become
+  `LineSegments`.
+- `standY(0, 0)` reads **0.055**, not 0, and the check demanded ~0. It is
+  0.055 because you now stand ON the deck planks laid on the pad rather than
+  in them. That gap **is** the feature, so the check asserts the gap.
+
+Gate: 75 checks.
+
+### What is deliberately NOT here
+
+A capsule sweep, step-up onto arbitrary ledges, and anything resembling
+jumping. The deck lip is 0.4 m and the jetty is entered from its landward
+end, where the step is small — walking at the deep end and hopping up is
+refused, which is correct and not a limitation to fix.
+
 ## v12 — 2026-09-19
 
 The prop door. Near-Blender-quality props are the direction, which means the

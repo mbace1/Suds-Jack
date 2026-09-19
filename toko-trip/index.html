@@ -50,7 +50,8 @@
     "imports": {
       "three": "./vendor/three.webgpu.min.js",
       "three/webgpu": "./vendor/three.webgpu.min.js",
-      "three/addons/": "./vendor/jsm/"
+      "three/addons/": "./vendor/jsm/",
+      "three-mesh-bvh": "./vendor/three-mesh-bvh.module.js"
     }
   }
   </script>
@@ -164,6 +165,11 @@
     import { XRButton } from 'three/addons/webxr/XRButton.js';
     import * as BGU from 'three/addons/utils/BufferGeometryUtils.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    // three-mesh-bvh (MIT, vendored — see vendor/three-mesh-bvh.LICENSE). The
+    // island's collision is a raycast against 40k+ triangles of terrain every
+    // frame, which is affordable with a bounds tree and nothing like
+    // affordable without one. That is the whole reason it is here.
+    import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 
     // ── palette ──
     const P = {
@@ -2094,10 +2100,19 @@
           // a live chair REPLACES the stand-in rather than standing in it
           if (spec.id === 'chair' && chairProp) {
             island.remove(chairProp);
+            const i = solids.indexOf(chairProp);
+            if (i >= 0) solids.splice(i, 1);
+            chairProp.geometry.disposeBoundsTree?.();
             chairProp.geometry.dispose();
             chairProp = null;
           }
           island.add(obj);
+          // a structure prop is something you stand on or bump into, so it
+          // joins the collision set; dressing is only ever looked at
+          if (spec.kind === 'structure') {
+            obj.updateMatrixWorld(true);
+            obj.traverse(o => { if (o.isMesh) makeSolid(o); });
+          }
           imported.push({ spec, obj });
           // CC0 asks for nothing; everything else gets its line on the sign
           const lic = (spec.licence ?? '').trim();
@@ -2154,6 +2169,92 @@
     statics.castShadow = true;
     statics.receiveShadow = true;
     island.add(statics);
+
+    // ═══ COLLISION ═══ the island's real geometry, not its height field ════
+    //
+    // `groundHeight(x, z)` is a pure function and stays the source of truth
+    // for the SHAPE of the island — the mesh, the scatter, the sand maps and
+    // the surf emitters all still ask it. What it cannot do is hold a bridge:
+    // a height field has one answer per column, and the jetty deck and the
+    // water under it are the same column. So the thing you WALK on is the
+    // geometry, queried by ray, and a ray against 40k triangles of terrain
+    // every frame is affordable with a bounds tree and nothing like
+    // affordable without one. That is what three-mesh-bvh is here for.
+    THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+    THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+    // A mesh with no boundsTree falls through to three's own raycast, so this
+    // is safe for every other ray in the file — the teleport ray, the slate's
+    // UV pick — and they get the acceleration free wherever a tree exists.
+    THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+    const solids = [];
+    function makeSolid(mesh) {
+      if (!mesh?.geometry) return;
+      mesh.geometry.computeBoundsTree();
+      solids.push(mesh);
+    }
+
+    // The sea's surface in WORLD space. The island drops by PAD_H so the pad
+    // under the chair sits on the real floor, which puts sea level there.
+    const SEA_Y = -PAD_H - 0.02;
+    const STEP_UP = 0.4;          // the lip of the jetty deck, and no more
+    const BODY_R = 0.28;          // how wide you are, for bumping into things
+    const CHEST = 1.0;            // where a wall is felt, above the deck lip
+
+    const _cray = new THREE.Raycaster();
+    _cray.firstHitOnly = true;    // the bounds tree's whole trick
+    const _cdown = new THREE.Vector3(0, -1, 0);
+    const _corig = new THREE.Vector3(), _cdir = new THREE.Vector3();
+
+    // What you would be standing on at (x, z), in world y — or null if the
+    // answer is "the sea". Starts the ray a step ABOVE your feet, so you can
+    // step up onto the deck but not up a wall.
+    function standY(x, z, feetY = 0) {
+      _corig.set(x, feetY + STEP_UP, z);
+      _cray.set(_corig, _cdown);
+      _cray.far = STEP_UP + 4;
+      const hit = _cray.intersectObjects(solids, false)[0];
+      // a face you can stand on is one facing up; the side of the totem is
+      // geometry too, and standing on it is not walking
+      if (hit && (!hit.face || hit.face.normal.y > 0.5)) {
+        return hit.point.y > SEA_Y ? hit.point.y : null;
+      }
+      const g = gy(x, z);
+      return g > SEA_Y ? g : null;
+    }
+
+    // Is something solid in the way between here and there? Only walls count
+    // — a floor is not an obstacle, which is what lets you walk up the beach.
+    function wallBetween(fx, fz, tx, tz, feetY) {
+      _cdir.set(tx - fx, 0, tz - fz);
+      const d = _cdir.length();
+      if (d < 1e-6) return false;
+      _cdir.divideScalar(d);
+      _corig.set(fx, feetY + CHEST, fz);
+      _cray.set(_corig, _cdir);
+      _cray.far = d + BODY_R;
+      const hit = _cray.intersectObjects(solids, false)[0];
+      return !!hit && (!hit.face || Math.abs(hit.face.normal.y) < 0.6);
+    }
+
+    // One move, for every path that moves you. Returns where you end up,
+    // sliding along a wall rather than sticking to it — refusing the whole
+    // step makes a doorway feel like glue, and this island is all doorways
+    // between a chair, a table and a palm.
+    const _cout = { x: 0, z: 0, y: 0, moved: false };
+    function tryMove(fx, fz, tx, tz, feetY) {
+      const edge = (x, z) => Math.hypot(x, z) < ISLAND_R * 1.05;
+      const ok = (x, z) => edge(x, z) && standY(x, z, feetY) !== null
+        && !wallBetween(fx, fz, x, z, feetY);
+      let nx = fx, nz = fz;
+      if (ok(tx, tz)) { nx = tx; nz = tz; }
+      else if (ok(tx, fz)) { nx = tx; }        // slide along z
+      else if (ok(fx, tz)) { nz = tz; }        // slide along x
+      _cout.x = nx; _cout.z = nz;
+      _cout.y = standY(nx, nz, feetY) ?? gy(nx, nz);
+      _cout.moved = nx !== fx || nz !== fz;
+      return _cout;
+    }
 
     // ═══ INSTANCED — grass on the high dry ground, pebbles in the wet band:
     // two draw calls, so density is ~free ═══
@@ -2720,7 +2821,10 @@
       marker.visible = false;
       scene.add(marker);
     }
-    const rayTargets = [terrain, totem, radio, chairHit, book, sign, slate];
+    // `statics` carries the jetty deck, so it has to be aimable — and
+    // `ownerOf` calls it ground, which is only true where the face points up.
+    // actOn asks that, so the side of a rock is not a destination.
+    const rayTargets = [terrain, statics, totem, radio, chairHit, book, sign, slate];
     const controllers = [];
     for (let i = 0; i < 2; i++) {
       const c = renderer.xr.getController(i);
@@ -2773,9 +2877,13 @@
         const v = moveSpeed() * dt;
         const nx = xrPos.x + (_xrFwd.x * -my + rx * mx) * v;
         const nz = xrPos.z + (_xrFwd.z * -my + rz * mx) * v;
-        if (groundHeight(nx, nz) > -0.05 && Math.hypot(nx, nz) < ISLAND_R * 1.05) {
-          xrPos.x = nx; xrPos.z = nz;
-        }
+        const m = tryMove(xrPos.x, xrPos.z, nx, nz, xrPos.y);
+        xrPos.x = m.x; xrPos.z = m.z;
+        // and the floor comes WITH you. The sticks never touched xrPos.y, so
+        // walking off the pad left your feet at pad height while the sand
+        // dropped away underneath — only teleport ever set it. Standing on
+        // the jetty is the same mechanism, which is why it only works now.
+        xrPos.y = m.y;
       }
       applyXrOffset();
       return !!(mx || my || (turn && step === 0));
@@ -2807,6 +2915,7 @@
         if (o === sign) return 'sign';
         if (o === chairHit) return 'chair';
         if (o === slate) return 'slate';
+        if (o === statics) return 'ground';
         if (o === terrain) return 'ground';
       }
       return null;
@@ -2832,8 +2941,9 @@
       }
       if (kind === 'ground' && baseRef) {
         const p = hit.point;
-        // the teleport clamp asks the same function everything else asks
-        if (groundHeight(p.x, p.z) < -0.05) return;
+        // the teleport clamp asks the same thing walking asks
+        if (hit.face && hit.face.normal.y < 0.5) return;       // not a floor
+        if (standY(p.x, p.z, p.y) === null) return;
         if (Math.hypot(p.x, p.z) > ISLAND_R * 1.05) return;
         // written through the same offset the sticks use, so the two ways of
         // moving cannot disagree about where you are standing
@@ -3020,6 +3130,9 @@
     const neonFlick = { until: 0, dim: 1 };
     const _plaqueV = new THREE.Vector3();
     let perfT = 0, perfN = 0, perfMs = 0, perfWorst = 0, perfCalls = 0, perfTris = 0;
+    // the surface under the flat camera's feet, carried between frames so a
+    // ray that starts at the feet has feet to start at
+    let footY = 0;
     function animate() {
       const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
 
@@ -3043,13 +3156,13 @@
           const v = moveSpeed() * 1.35 * dt;
           const nx = eye.x + (-Math.sin(yaw) * f + Math.cos(yaw) * s2) * v;
           const nz = eye.z + (-Math.cos(yaw) * f - Math.sin(yaw) * s2) * v;
-          // walking asks the same function the teleport does, so the sea
-          // refuses a stick exactly the way it refuses a ray
-          if (groundHeight(nx, nz) > -0.02 && Math.hypot(nx, nz) < ISLAND_R * 1.05) {
-            eye.x = nx; eye.z = nz;
-          }
+          // walking asks the same thing the teleport does, so the sea refuses
+          // a stick exactly the way it refuses a ray — and the jetty carries
+          // one exactly the way it carries the other
+          const m = tryMove(eye.x, eye.z, nx, nz, footY);
+          eye.x = m.x; eye.z = m.z; footY = m.y;
         }
-        eye.y += ((gy(eye.x, eye.z) + 1.5) - eye.y) * Math.min(1, dt * 8);
+        eye.y += ((footY + 1.5) - eye.y) * Math.min(1, dt * 8);
         camera.position.copy(eye);
         camera.rotation.set(0, 0, 0);
         camera.rotateY(yaw);
@@ -3064,7 +3177,8 @@
           const hit = castFrom(c);
           c.userData.hit = hit;
           if (hit && ownerOf(hit.object) === 'ground'
-            && groundHeight(hit.point.x, hit.point.z) >= -0.05) {
+            && (!hit.face || hit.face.normal.y > 0.5)
+            && standY(hit.point.x, hit.point.z, hit.point.y) !== null) {
             marker.position.copy(hit.point);
             marker.position.y += 0.02;
             marker.visible = true;
@@ -3188,6 +3302,9 @@
       }
     }
 
+    makeSolid(terrain);
+    makeSolid(statics);
+    makeSolid(chairProp);
     openPropDoor();
     setMood(0, true);
     (renderer.init ? renderer.init() : Promise.resolve())
@@ -3257,11 +3374,25 @@
         },
         // stand somewhere and face something — the flat camera, for the gate
         stand: (x, z, ry, p = -0.15) => {
-          eye.set(x, gy(x, z) + 1.5, z); yaw = ry; pitch = p;
+          // stand on what a PLAYER would stand on — the deck if there is one
+          // over this column, the sand if there is not. Dropped from well
+          // above, because this is a placement, not a step.
+          footY = standY(x, z, gy(x, z) + 2) ?? gy(x, z);
+          eye.set(x, footY + 1.5, z); yaw = ry; pitch = p;
         },
         book: () => ({ open: bookOpen, page: bookPage, pages: PAGES.length }),
         seated: () => seated,
-        canTeleport: (x, z) => groundHeight(x, z) >= -0.05 && Math.hypot(x, z) <= ISLAND_R * 1.05,
+        canTeleport: (x, z) => standY(x, z, gy(x, z) + 0.2) !== null
+          && Math.hypot(x, z) <= ISLAND_R * 1.05,
+        // collision, which is the island's geometry rather than its height field
+        collide: () => ({ solids: solids.length, seaY: +SEA_Y.toFixed(2), stepUp: STEP_UP,
+          trees: solids.filter(m => !!m.geometry.boundsTree).length }),
+        standY: (x, z, feetY = 0) => standY(x, z, feetY),
+        wallBetween: (fx, fz, tx, tz, feetY = 0) => wallBetween(fx, fz, tx, tz, feetY),
+        tryMove: (fx, fz, tx, tz, feetY = 0) => {
+          const m = tryMove(fx, fz, tx, tz, feetY);
+          return { x: +m.x.toFixed(3), z: +m.z.toFixed(3), y: +m.y.toFixed(3), moved: m.moved };
+        },
         // comfort, the slate that sets it, and the frame cost it reports
         slate, slateFace, slateAct, slateRow, SPEEDS, TURNS, moveSpeed,
         comfort: () => ({ ...comfort, speed: SPEEDS[comfort.speed][0], turn: TURNS[comfort.turn][0] }),
