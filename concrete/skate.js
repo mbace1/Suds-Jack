@@ -1,9 +1,20 @@
-import {createEffects} from './effects.js?v=2';
-import {loadArt} from './art.js?v=4';
+import { createEffects } from './effects.js?v=2';
+import { loadArt } from './art.js?v=5';
+import { createSkater } from './skater.js?v=1';
+import { createLook } from './look.js?v=1';
+import { createPadEdge } from './pad.js?v=1';
 import * as T from './vendor/three.module.min.js?v=185';
-export function createGame(host, update) {
-    const mobileCompat = new URLSearchParams(location.search).get('quality') === 'mobile' ||
-        (new URLSearchParams(location.search).get('quality') !== 'desktop' &&
+
+// The DualSense is the reference controller and the layout is THPS's own:
+// cross ollie, square flip, circle grab, triangle grind, L1/R1 spin in the
+// air, R2 push, Options pause, Create resets. Every other input is mapped
+// onto that — the keyboard letters and the touch buttons are those buttons.
+const PAD_KEYS = [[0, ' '], [2, 'j'], [1, 'k'], [3, 'l']];
+
+export function createGame(host, update, options = {}) {
+    const params = new URLSearchParams(location.search);
+    const mobileCompat = params.get('quality') === 'mobile' ||
+        (params.get('quality') !== 'desktop' &&
             (matchMedia('(pointer:coarse)').matches || innerWidth < 700));
     const scene = new T.Scene();
     scene.background = new T.Color('#26333d');
@@ -19,6 +30,7 @@ export function createGame(host, update) {
     renderer.shadowMap.type = T.PCFShadowMap;
     renderer.toneMapping = T.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.25;
+    renderer.info.autoReset = false;
     if (mobileCompat) {
         renderer.shadowMap.enabled = false;
         renderer.toneMapping = T.NoToneMapping;
@@ -48,7 +60,7 @@ export function createGame(host, update) {
         emissive: '#bded38',
         emissiveIntensity: 1.7,
     });
-    const environment = new T.Group();scene.add(environment);
+    const environment = new T.Group(); scene.add(environment);
     function box(w, h, d, x, y, z, m, parent = environment) {
         const o = new T.Mesh(new T.BoxGeometry(w, h, d), m);
         o.position.set(x, y, z);
@@ -215,7 +227,7 @@ export function createGame(host, update) {
     for (let i = 0; i < 6; i++) box(1.4, 0.28 + i * 0.22, 3.8, -2.5 + i * 1.4, (0.28 + i * 0.22) / 2, 22, concrete);
     box(9, 0.16, 1.1, 1, 1.45, 22, trim);
     box(9, 1.3, 0.12, 1, 0.65, 22.5, mat('#3f4f55'));
-    // Animated articulated skater.
+    // The rider: a group the physics moves, holding the board and the skater.
     const rider = new T.Group();
     scene.add(rider);
     const body = new T.Group();
@@ -233,27 +245,10 @@ export function createGame(host, update) {
             deck.add(wheel);
         }
     }
-    const pants = mat('#26313e'), shirt = mat('#d7e2d9'), skin = mat('#ac8062');
-    const torso = box(0.45, 0.55, 0.27, 0, 1.04, 0, shirt, body);
-    torso.rotation.z = 0.08;
-    const head = new T.Mesh(new T.SphereGeometry(0.16, 16, 12), skin);
-    head.position.set(0.04, 1.49, 0.01);
-    body.add(head);
-    const cap = new T.Mesh(new T.SphereGeometry(0.168, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat('#172a27'));
-    cap.position.copy(head.position);
-    body.add(cap);
-    box(0.24, 0.04, 0.19, 0.04, 1.52, 0.13, black, body);
-    const leg1 = box(0.16, 0.53, 0.18, -0.13, 0.52, 0.22, pants, body);
-    leg1.rotation.x = -0.25;
-    const leg2 = box(0.16, 0.53, 0.18, 0.13, 0.52, -0.22, pants, body);
-    leg2.rotation.x = 0.25;
-    box(0.2, 0.12, 0.29, -0.13, 0.23, 0.28, mat('#d7d7c9'), body);
-    box(0.2, 0.12, 0.29, 0.13, 0.23, -0.28, mat('#d7d7c9'), body);
-    const arm1 = box(0.12, 0.5, 0.14, -0.32, 1.04, 0.03, shirt, body);
-    arm1.rotation.z = -0.5;
-    const arm2 = box(0.12, 0.5, 0.14, 0.32, 1.04, 0, shirt, body);
-    arm2.rotation.z = 0.6;
-    const art=loadArt({scene,rider,deck,body,environment,renderer,host});
+    const skater = createSkater();
+    body.add(skater.group);
+    const art = loadArt({ scene, rider, deck, body, environment, renderer, host, skater: options.skater === 'blender' ? 'blender' : 'thps' });
+    const look = createLook({ renderer, scene, camera, mobile: art.mobile });
     const dustGeo = new T.BufferGeometry(), dustPos = new Float32Array(450);
     for (let i = 0; i < 450; i += 3) {
         dustPos[i] = (Math.random() - 0.5) * 56;
@@ -268,10 +263,10 @@ export function createGame(host, update) {
         opacity: 0.45,
     }));
     scene.add(dust);
-    const effects=createEffects(scene,art.mobile);
-    function burst(n,spark=false){effects.burst(rider.position.clone().add(new T.Vector3(0,.12,0)),n,spark)}
+    const effects = createEffects(scene, art.mobile);
+    function burst(n, spark = false) { effects.burst(rider.position.clone().add(new T.Vector3(0, .12, 0)), n, spark); }
     const keys = {}, pressed = {};
-    let lookX = 0, lookY = 0, analogX = 0, analogY = 0, active = false, paused = false, score = 0, best = 0, time = 120, speed = 0, angle = 0, vy = 0, combo = 0, mult = 1, trick = '', trickTimer = 0, air = false, airAngle = 0, flip = 0, grab = 0, grinding = -1, grindLock = 0, grindBuffer = 0, camOrbit = 0, camPitch = 0, device = 'KEYBOARD', last = performance.now(), raf = 0, hudTick = 0, bail = 0, landingTurn = 0;
+    let lookX = 0, lookY = 0, analogX = 0, analogY = 0, active = false, paused = false, score = 0, best = 0, time = 120, speed = 0, angle = 0, vy = 0, combo = 0, mult = 1, trick = '', trickTimer = 0, air = false, airAngle = 0, flip = 0, grab = 0, grinding = -1, grindLock = 0, grindBuffer = 0, camOrbit = 0, camPitch = 0, device = 'KEYBOARD', padKind = null, last = performance.now(), raf = 0, hudTick = 0, bail = 0, landingTurn = 0, vert = false, spin = 0, slide = false, pitch = 0, deckSlide = 0, steer = 0, throttle = 0;
     try {
         best = Number(localStorage.getItem('concrete-best') || 0);
     }
@@ -280,6 +275,9 @@ export function createGame(host, update) {
     angle = Math.PI;
     camera.position.set(24, 9, 29);
     camera.lookAt(0, 1, -5);
+    // The ride height everywhere. Every ramp in the room is in here, and the
+    // slope of this function is what the physics rides: gravity along it,
+    // the rider's pitch, and where a quarter pipe turns into a vert launch.
     function ground(x, z) {
         if (Math.abs(x) < 16 && z < -29)
             return 3.6 * Math.pow(Math.min(6, -z - 29) / 6, 2);
@@ -291,9 +289,20 @@ export function createGame(host, update) {
             return Math.max(0, Math.min(1.5, ((z + 3) / 4) * 1.5, ((9 - z) / 4) * 1.5));
         return 0;
     }
+    // Rise per metre of travel along a heading: positive climbing, negative descending.
+    function slopeAlong(x, z, a) {
+        const e = 0.12, dx = Math.sin(a) * e, dz = Math.cos(a) * e;
+        return (ground(x + dx, z + dz) - ground(x - dx, z - dz)) / (2 * e);
+    }
     function addTrick(name, points) {
         combo += points;
         mult = Math.min(12, mult + 1);
+        note(name);
+    }
+    // A line item with no multiplier step: ollies, transfers and ramp airs
+    // are how you get to a trick, not the trick.
+    function note(name, points = 0) {
+        combo += points;
         trick = trick ? `${trick} + ${name}` : name;
         if (trick.length > 75)
             trick = name;
@@ -315,6 +324,8 @@ export function createGame(host, update) {
     const blur = () => {
         for (const k in keys)
             keys[k] = false;
+        for (const k in pressed)
+            delete pressed[k];
         analogX = analogY = lookX = lookY = 0;
     };
     window.addEventListener('keydown', down);
@@ -338,18 +349,22 @@ export function createGame(host, update) {
     renderer.domElement.addEventListener('pointerup', pointerUp);
     renderer.domElement.addEventListener('pointermove', pointerMove);
     renderer.domElement.style.touchAction = 'none';
+    function settle() {
+        speed = 0; vy = 0; air = false; vert = false; grinding = -1; combo = 0; mult = 1; flip = 0; grab = 0; bail = 0; spin = 0; slide = false;
+        deckSlide = 0; deck.position.z = 0; deck.rotation.set(0, 0, 0);
+    }
     function reset() {
         rider.position.set(8, 0, 16);
         angle = Math.PI;
-        speed = 0;
-        vy = 0;
-        air = false;
-        grinding = -1;
-        combo = 0;
-        mult = 1;
-        flip = 0;
-        grab = 0;
-        bail = 0;
+        settle();
+    }
+    // Getting up after a bail happens where you fell — the old build put the
+    // skater back at the start of the room, which turned every slam into a
+    // walk across the warehouse.
+    function recover() {
+        const x = rider.position.x, z = rider.position.z;
+        settle();
+        rider.position.y = ground(x, z);
     }
     function bank() {
         if (combo) {
@@ -368,34 +383,76 @@ export function createGame(host, update) {
             }
         }
     }
-    const padPrev = [];
+    function launch(launchSpeed) {
+        // Off the lip of a transition the board goes UP, not on along the
+        // last tangent: the vert is where the ramp would have been, so the
+        // skater turns around at the top and comes back down the same face.
+        air = true; vert = true;
+        vy = launchSpeed * 0.6 + 2;
+        speed = launchSpeed * 0.1 + 0.4;
+        angle += Math.PI;
+        airAngle = angle; spin = 0;
+        if (launchSpeed > 6) { note('Ramp air', 200); burst(8); }
+    }
+    function land(g) {
+        rider.position.y = g;
+        air = false; vert = false; vy = 0;
+        const rel = angle - airAngle, turn = Math.abs(Math.sin(rel));
+        landingTurn = turn;
+        if (turn > 0.85 && speed > 8) {
+            combo = 0;
+            mult = 1;
+            trick = 'BAIL — GET BACK UP';
+            trickTimer = 2;
+            bail = 1.1;
+            deckSlide = 0;
+            burst(20);
+        }
+        else {
+            const halves = Math.round(Math.abs(spin) / Math.PI);
+            if (halves >= 1) addTrick(`${halves * 180}`, halves * 100);
+            if (turn < 0.6) angle = airAngle + Math.round(rel / Math.PI) * Math.PI; // THPS straightens a near landing
+            bank();
+            burst(12);
+        }
+        flip = 0;
+        grab = 0;
+        spin = 0;
+    }
+    const padEdge = createPadEdge();
+    const padWasDown = [];
     function frame(now) {
         const dt = Math.min((now - last) / 1000, 0.033);
         last = now;
         raf = requestAnimationFrame(frame);
-        let steer = analogX, throttle = -analogY;
-        const pad = Array.from(navigator.getGamepads?.() || []).find((p) => p?.connected);
+        steer = analogX; throttle = -analogY;
+        const pe = padEdge.tick(now), pad = pe.pad;
         camOrbit -= lookX * dt * 2;
         camPitch = T.MathUtils.clamp(camPitch + lookY * dt * 3, -1, 4);
+        let padSteer = 0, padThrottle = 0, spinInput = 0;
         if (pad) {
-            device = 'CONTROLLER';
-            if (Math.abs(pad.axes[0]) > 0.12)
-                steer = pad.axes[0];
-            if (Math.abs(pad.axes[1]) > 0.12)
-                throttle = -pad.axes[1];
+            padKind = pe.kind;
+            device = pe.kind === 'ps' ? 'DUALSENSE' : 'CONTROLLER';
+            if (Math.abs(pad.axes[0]) > 0.12) padSteer = pad.axes[0];
+            if (Math.abs(pad.axes[1]) > 0.12) padThrottle = -pad.axes[1];
+            if (pad.buttons[14]?.pressed) padSteer = -1; else if (pad.buttons[15]?.pressed) padSteer = 1;
+            if (pad.buttons[12]?.pressed) padThrottle = 1; else if (pad.buttons[13]?.pressed) padThrottle = -1;
+            const r2 = pad.buttons[7]?.value || (pad.buttons[7]?.pressed ? 1 : 0), l2 = pad.buttons[6]?.value || (pad.buttons[6]?.pressed ? 1 : 0);
+            if (r2 > 0.05) padThrottle = Math.max(padThrottle, r2);
+            if (l2 > 0.05) padThrottle = Math.min(padThrottle, -l2);
+            if (pad.buttons[4]?.pressed) spinInput -= 1;
+            if (pad.buttons[5]?.pressed) spinInput += 1;
             camOrbit -= (pad.axes[2] || 0) * dt * 2;
             camPitch = T.MathUtils.clamp(camPitch + (pad.axes[3] || 0) * dt * 3, -1, 4);
-            [' ', 'k', 'j', 'l'].forEach((k, i) => {
-                const v = pad.buttons[i]?.pressed || false;
-                if (v && !padPrev[i])
-                    pressed[k] = true;
-                if (v || padPrev[i])
-                    keys[k] = v;
-                padPrev[i] = v;
-            });
-            if (pad.buttons[8]?.pressed)
-                reset();
+            for (const [i, k] of PAD_KEYS) {
+                const d = pe.down.has(i);
+                if (pe.pressed.has(i)) key(k, true);
+                else if (padWasDown[i] && !d) key(k, false);
+                padWasDown[i] = d;
+            }
+            if (pe.pressed.has(8)) pressed.r = true;
         }
+        else padKind = null;
         if (active && !paused && time > 0) {
             grindBuffer = Math.max(0, grindBuffer - dt);
             time = Math.max(0, time - dt);
@@ -410,23 +467,31 @@ export function createGame(host, update) {
                     (keys.d || keys.arrowright ? 1 : 0); // Positive rotation turns left with forward -Z.
             if (analogX || pad)
                 steer =
-                    -(analogX || (pad && Math.abs(pad.axes[0]) > 0.12 ? pad.axes[0] : 0)) +
+                    -(analogX || padSteer) +
                         (keys.a ? 1 : 0) -
                         (keys.d ? 1 : 0);
             throttle +=
                 (keys.w || keys.arrowup ? 1 : 0) - (keys.s || keys.arrowdown ? 1 : 0);
+            if (pad && !analogY) throttle += padThrottle;
+            steer = T.MathUtils.clamp(steer, -1, 1);
+            throttle = T.MathUtils.clamp(throttle, -1, 1);
             if (bail > 0) {
                 bail -= dt;
-                speed *= 0.95;
+                speed *= 0.9;
+                deckSlide = Math.min(1.6, deckSlide + 3 * dt);
+                deck.position.z = deckSlide;
+                deck.rotation.y += 5 * dt;
                 if (bail <= 0)
-                    reset();
+                    recover();
             }
             else {
-                speed = T.MathUtils.clamp(speed + throttle * 9 * dt - (throttle === 0 ? 1.4 * dt : 0), 0, 14);
-                angle += steer * dt * (air ? 2.6 : 1.7) * Math.min(1, speed / 2 + 0.3);
-                const ox = rider.position.x, oz = rider.position.z, oldGround = ground(ox, oz);
                 const jump = pressed[' '];
                 grindLock = Math.max(0, grindLock - dt);
+                const airSteer = air && spinInput ? -spinInput : steer;
+                const turn = airSteer * dt * (air ? 2.6 : 1.7) * Math.min(1, speed / 2 + 0.3);
+                angle += turn;
+                if (air) spin += turn;
+                const ox = rider.position.x, oz = rider.position.z, oldGround = ground(ox, oz);
                 if (grinding >= 0) {
                     const rail = rails[grinding];
                     rider.position.x = rail.x;
@@ -439,46 +504,65 @@ export function createGame(host, update) {
                     if (jump ||
                         Math.abs(rider.position.z - rail.z) > rail.len / 2) {
                         grinding = -1;
+                        slide = false;
                         air = true;
-                        vy = jump ? 7 : 2;
+                        vy = jump ? 7 : 2.5;
                         grindLock = 0.4;
                         airAngle = angle;
+                        spin = 0;
                     }
                 }
                 else {
-                    rider.position.x += Math.sin(angle) * speed * dt;
-                    rider.position.z += Math.cos(angle) * speed * dt;
+                    let s = 0;
+                    if (!air) {
+                        s = slopeAlong(rider.position.x, rider.position.z, angle);
+                        const grade = s / Math.sqrt(1 + s * s);
+                        // Pushing only works where there is floor under the push foot.
+                        const push = throttle > 0 ? throttle * 9 * Math.max(0, 1 - Math.abs(s) * 1.5) : throttle * 9;
+                        speed += (push - 9.8 * grade * 1.05) * dt;
+                        if (throttle === 0) speed -= (Math.abs(s) < 0.05 ? 1.4 : 0.4) * dt;
+                        if (speed < 0) {
+                            // Too slow for the transition: roll back down it, fakie.
+                            if (Math.abs(s) > 0.08) { angle += Math.PI; speed = Math.min(2, -speed); }
+                            else speed = 0;
+                        }
+                        speed = Math.min(speed, 18);
+                    }
+                    const horizontal = air ? speed : speed / Math.sqrt(1 + s * s);
+                    rider.position.x += Math.sin(angle) * horizontal * dt;
+                    rider.position.z += Math.cos(angle) * horizontal * dt;
                     const g = ground(rider.position.x, rider.position.z);
-                    if (!air && grindBuffer > 0 && speed > 1.5 && rails.some(r => Math.abs(rider.position.x-r.x)<1.4 && Math.abs(rider.position.z-r.z)<r.len/2+.8)) {
+                    if (!air && grindBuffer > 0 && speed > 1.5 && rails.some(r => Math.abs(rider.position.x - r.x) < 1.4 && Math.abs(rider.position.z - r.z) < r.len / 2 + .8)) {
                         air = true;
                         vy = Math.max(vy, 3.2);
                         rider.position.y += .12;
                         airAngle = angle;
+                        spin = 0;
                     }
                     if (!air) {
                         rider.position.y = g;
+                        const ahead = slopeAlong(rider.position.x, rider.position.z, angle);
                         if (jump) {
                             air = true;
                             vy = 7.5;
                             airAngle = angle;
-                            combo += 100;
-                            trick = 'Ollie';
+                            spin = 0;
+                            note('Ollie', 100);
                             burst(10);
                         }
                         else if (oldGround - g > 0.12 && speed > 5) {
                             air = true;
                             vy = 3 + speed * 0.22;
                             airAngle = angle;
-                            combo += 150;
-                            trick = 'Transfer';
+                            spin = 0;
+                            note('Transfer', 150);
                         }
-                        else if (g > 2.8 && speed > 7) {
-                            air = true;
-                            vy = 8;
-                            airAngle = angle;
-                            combo += 200;
-                            trick = 'Ramp air';
-                            angle += Math.PI;
+                        // The lip: either the slope ahead is still climbing at
+                        // the top, or one fast step carried the rider from the
+                        // steep face onto the flat deck behind it — at 18 m/s a
+                        // frame is 0.6 m, which is wider than the lip.
+                        else if (g >= 3.4 && speed > 3 && (ahead > 0.5 || (oldGround > 2.2 && s > 0.5))) {
+                            launch(speed);
                         }
                     }
                     if (air) {
@@ -491,34 +575,19 @@ export function createGame(host, update) {
                             if (r >= 0) {
                                 grinding = r;
                                 air = false;
+                                vert = false;
+                                // Come in along the rail for a 50-50, across it for a boardslide.
+                                slide = Math.abs(Math.cos(angle)) < 0.7;
                                 angle = Math.cos(angle) < 0 ? Math.PI : 0;
-                                addTrick('50–50 grind', 250);
+                                addTrick(slide ? 'Boardslide' : '50–50 grind', slide ? 300 : 250);
                                 grindBuffer = 0;
                                 flip = 0;
                                 grab = 0;
+                                spin = 0;
                             }
                         }
-                        if (air && rider.position.y <= g && vy < 0) {
-                            rider.position.y = g;
-                            air = false;
-                            vy = 0;
-                            const turn = Math.abs(Math.sin(angle - airAngle));
-                            landingTurn = turn;
-                            if (turn > 0.85 && speed > 8) {
-                                combo = 0;
-                                mult = 1;
-                                trick = 'BAIL — GET BACK UP';
-                                trickTimer = 2;
-                                bail = 1.1;
-                                burst(20);
-                            }
-                            else {
-                                bank();
-                                burst(12);
-                            }
-                            flip = 0;
-                            grab = 0;
-                        }
+                        if (air && rider.position.y <= g && vy < 0)
+                            land(g);
                     }
                 }
                 if ((air || grinding >= 0) && pressed.j && flip <= 0) {
@@ -536,28 +605,28 @@ export function createGame(host, update) {
                     rider.position.x = T.MathUtils.clamp(rider.position.x, -27, 27);
                     rider.position.z = T.MathUtils.clamp(rider.position.z, -36, 36);
                     angle += Math.PI;
+                    if (air) airAngle += Math.PI;
                     speed *= 0.6;
                 }
             }
         }
-        rider.rotation.y = angle;
-        if(!paused)art.update(dt,{air,vy,bail,grab,flip,grinding,speed,steer,throttle});
-        body.rotation.z = bail > 0 ? 1.2 : steer * -0.09;
-        body.position.y = air ? -0.12 : Math.sin(now * 0.009) * 0.015;
-        arm1.rotation.z = air ? -1.2 : -0.5;
-        arm2.rotation.z = grab > 0 ? 0.1 : air ? 1.2 : 0.6;
+        // The rider pitches with the transition it is on; in the air it stays level.
+        const pitchTarget = !air && grinding < 0 && bail <= 0 && active ? -Math.atan(slopeAlong(rider.position.x, rider.position.z, angle)) : 0;
+        pitch += (pitchTarget - pitch) * (1 - Math.exp(-10 * dt));
+        rider.rotation.set(pitch, angle, 0, 'YXZ');
+        const state = { air, vy, bail, grab, flip, grinding, speed, steer, throttle, vert, slide };
+        if (!paused) {
+            if (art.skater === 'blender') art.update(dt, state);
+            else host.dataset.pose = skater.update(dt, state);
+        }
         if (flip > 0) {
             flip = Math.max(0, flip - dt);
             deck.rotation.z = (1 - flip / 0.65) * Math.PI * 2;
         }
         else
             deck.rotation.z = 0;
-        if (grab > 0) {
-            grab -= dt;
-            body.rotation.x = 0.22;
-        }
-        else
-            body.rotation.x = 0;
+        if (bail <= 0) deck.rotation.y = grinding >= 0 && slide ? Math.PI / 2 : 0;
+        if (grab > 0) grab -= dt;
         if (active || time < 120) {
             const a = angle + camOrbit;
             const target = new T.Vector3(rider.position.x - Math.sin(a) * 7.5, rider.position.y + 3.8 + camPitch, rider.position.z - Math.cos(a) * 7.5);
@@ -570,7 +639,7 @@ export function createGame(host, update) {
             camera.position.x = 24 + Math.sin(now * 0.00006) * 2;
             camera.lookAt(0, 1, -6);
         }
-        if(!paused)effects.update(dt,rider.position.clone().add(new T.Vector3(0,.08,0)),speed,air,angle);
+        if (!paused) effects.update(dt, rider.position.clone().add(new T.Vector3(0, .08, 0)), speed, air, angle);
         dust.rotation.y = Math.sin(now * 0.00003) * 0.02;
         if (trickTimer > 0) {
             trickTimer -= dt;
@@ -579,15 +648,22 @@ export function createGame(host, update) {
         }
         for (const k in pressed)
             delete pressed[k];
-        renderer.render(scene, camera);
+        renderer.info.reset();
+        look.render(scene, camera);
         host.dataset.drawCalls = String(renderer.info.render.calls);
         host.dataset.triangles = String(renderer.info.render.triangles);
         host.dataset.riderX = rider.position.x.toFixed(3);
+        host.dataset.riderY = rider.position.y.toFixed(3);
         host.dataset.riderZ = rider.position.z.toFixed(3);
         host.dataset.heading = angle.toFixed(4);
         host.dataset.air = air ? 'true' : 'false';
+        host.dataset.vert = vert ? 'true' : 'false';
+        host.dataset.grinding = String(grinding);
+        host.dataset.speed = speed.toFixed(2);
         host.dataset.bail = bail.toFixed(3);
         host.dataset.landingTurn = landingTurn.toFixed(3);
+        host.dataset.device = device;
+        host.dataset.look = look.mode;
         hudTick += dt;
         if (hudTick > 0.09) {
             hudTick = 0;
@@ -600,6 +676,7 @@ export function createGame(host, update) {
                 trick,
                 best,
                 device,
+                padKind,
                 ended: time <= 0,
             });
         }
@@ -608,11 +685,15 @@ export function createGame(host, update) {
         camera.aspect = host.clientWidth / host.clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(host.clientWidth, host.clientHeight);
+        look.resize();
     };
     window.addEventListener('resize', resize);
     raf = requestAnimationFrame(frame);
     return {
-        ready:art.ready,
+        ready: art.ready,
+        mobile: art.mobile,
+        skater,
+        lookPass: look,
         start() {
             reset();
             score = 0;
@@ -620,11 +701,22 @@ export function createGame(host, update) {
             trick = '';
             active = true;
             paused = false;
+            blur();
+            padEdge.drain();
+            padWasDown.length = 0;
+        },
+        end() {
+            bank();
+            active = false;
+            time = 0;
         },
         pause(p) {
             paused = p;
             blur();
+            if (!p) { padEdge.drain(); padWasDown.length = 0; }
         },
+        get active() { return active && time > 0; },
+        get paused() { return paused; },
         key,
         look(x, y) {
             lookX = x;
@@ -635,8 +727,12 @@ export function createGame(host, update) {
             analogY = T.MathUtils.clamp((y - 60) / 45, -1, 1);
             device = 'TOUCH';
         },
+        setLook(mode) { look.setMode(mode); skater.setPS1(mode === 'ps1'); },
+        setReflections(value) { look.setReflections(value === 'on' || (value === 'auto' && !art.mobile)); },
+        setSkater(kind) { return art.setSkater(kind); },
+        get skaterKind() { return art.skater; },
         dispose() {
-            art.dispose();effects.dispose();
+            art.dispose(); effects.dispose(); look.dispose(); skater.dispose();
             cancelAnimationFrame(raf);
             window.removeEventListener('keydown', down);
             window.removeEventListener('keyup', up);
@@ -655,4 +751,3 @@ export function createGame(host, update) {
         },
     };
 }
-
