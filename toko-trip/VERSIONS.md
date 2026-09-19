@@ -1,5 +1,74 @@
 # Toko Trip — release log
 
+## v12 — 2026-09-19
+
+The prop door. Near-Blender-quality props are the direction, which means the
+island has to be a place authored geometry can arrive at — and the door it had
+logged a warning and skipped the prop, which is the worst of the available
+behaviours. The island looks finished, the prop is simply absent, and **absent
+is indistinguishable from never-placed**. Nobody wearing a headset is reading
+a console.
+
+- **Three named slots** — `chair`, `radio`, `cove` — each shipping a
+  code-built stand-in and each declaring the contract a file must meet to take
+  its place: a triangle budget, an envelope in metres, and how it is seated
+  (`ground` from its own measured base, `shelf` at an exact height, `origin`
+  untouched, which is the only sane rule for thirty metres of cove).
+- **The enabling change is that the chair is now an object.** It was eleven
+  geometries baked into the shared static merge with the deck and the table,
+  so a chair file had nothing to take the place of — the door was unusable
+  before this regardless of what the loader did.
+- **Static, enforced.** Animation clips and skinned meshes are refused, not
+  silently frozen: a frozen clip is a prop standing in a pose nobody chose,
+  and there is no animation system here to run it in.
+- **The envelope check is really a units check.** Over 1.25x or under 0.25x of
+  the declared span is refused, because a glTF exported in centimetres arrives
+  a hundred times too big and one authored at scene scale a hundred times too
+  small — and *both look exactly like a missing prop* from the chair.
+- **Failing visibly.** A broken slot puts a magenta twelve-edge cage exactly
+  where the prop should have stood, at the declared envelope, turning, labelled
+  with the reason and repeated on a banner. The stand-in steps aside rather
+  than papering over it: a live slot means the file IS the prop.
+- **One door.** The old free-form `MODELS` list folded in, because two loaders
+  drift and only one of them gets the fix.
+- **The CC-BY credit is real now.** The prop table carried a `licence` field
+  that was displayed precisely nowhere while the comment beside it claimed
+  props were "credited in world" — a promise in a comment rather than a
+  credit. The sign's screen is repaintable and a credited prop lands on it the
+  moment it loads. CC0 asks for nothing and is not listed.
+
+`models/CONTRACT.md` is the authoring spec; the `PROPS` table is its
+machine-readable half, and the table is what runs.
+
+Two found building it:
+
+- **The door could be crashed by a bad file.** `Box3.setFromObject` walks a
+  `SkinnedMesh` through `applyBoneTransform`, which throws outright on a rig
+  with missing skin attributes — so measuring before refusing meant a
+  malformed file took the whole island down instead of failing visibly, which
+  is the one outcome this door exists to prevent. Disqualify first, measure
+  second, and measure inside a try.
+- **`wireframe: true` draws the triangle diagonals too**, so the first cage
+  read as a crumpled cat's cradle rather than as the shape of the hole.
+  `EdgesGeometry` gives twelve lines that say "this is the envelope".
+
+And the gate's own ruler went stale in the same hour it was written: the cage
+check asserted `material.wireframe` and the cage had become `LineSegments`, so
+it failed a page that was correct. *The page was right and the ruler was
+wrong* — twice now in this repo, and worth expecting a third time.
+
+Gate: 67 checks. The new ones prove each REFUSAL against a synthetic file, so
+the contract is tested without a broken `.glb` being committed to prove it.
+
+### What is NOT in this release
+
+**three-mesh-bvh.** The direction is that it lands *with the first movement
+commit*, and this one does not touch movement — `groundHeight()` is still the
+only thing the clamps ask. Both sources are reachable from here
+(`raw.githubusercontent.com` and the npm registry both answer 200), so
+vendoring is unblocked when that commit comes. `kind: 'structure'` marks the
+slots it will consume.
+
 ## v11 — 2026-09-06
 
 The sand. It is the biggest surface in view from the chair and it had rich

@@ -275,6 +275,79 @@ const check = (label, ok) => {
   check(`and the gloss is at the water, not up the beach (wet ${sand.wet} < dry ${sand.dry})`,
     sand.wet < sand.dry - 0.2);
 
+  // ── the prop door ──
+  // The door's whole point is that it cannot fail quietly, so most of what is
+  // worth gating here is the REFUSAL: each rule is proved against a synthetic
+  // file, which is how the contract gets tested without a broken .glb being
+  // committed to prove it.
+  const props = await page.evaluate(() => window.__tt.debug.props());
+  const named = ['chair', 'radio', 'cove'].map(id => props.slots.find(s => s.id === id));
+  check(`the three named slots are declared (${named.map(s => s && s.id).join(' ')})`,
+    named.every(s => s && s.tris > 0 && Array.isArray(s.span) && s.span.length === 3));
+  check(`and each says how it is seated (${named.map(s => s && s.fit).join(' ')})`,
+    named.every(s => ['ground', 'shelf', 'origin'].includes(s.fit)));
+  // the enabling change: a chair file has nothing to replace unless the
+  // code-built chair is its own object rather than baked into the static merge
+  check('the chair is its own object, so a file can take its place',
+    props.chairStandIn === true);
+  check('a clean boot raises no cage and no banner',
+    props.cages === 0 && props.banner === '');
+
+  const probe = await page.evaluate(() => {
+    const d = window.__tt.debug;
+    return {
+      ok: d.propProbe('chair'),
+      animated: d.propProbe('chair', { clips: 2 }),
+      skinned: d.propProbe('chair', { skinned: true }),
+      fat: d.propProbe('chair', { tris: 99999 }),
+      cm: d.propProbe('chair', { size: [120, 160, 130] }),
+      tiny: d.propProbe('chair', { size: [0.012, 0.016, 0.013] }),
+    };
+  });
+  check(`a conforming file passes (${probe.ok.tris} tris, ${probe.ok.dim.join('x')} m)`,
+    probe.ok.why.length === 0);
+  check(`animation is refused — props are static (${probe.animated.why[0] ?? 'NOT REFUSED'})`,
+    probe.animated.why.some(w => /animation/i.test(w)));
+  check(`a skinned mesh is refused (${probe.skinned.why[0] ?? 'NOT REFUSED'})`,
+    probe.skinned.why.some(w => /skinned/i.test(w)));
+  check(`over budget is refused (${probe.fat.why[0] ?? 'NOT REFUSED'})`,
+    probe.fat.why.some(w => /triangles/i.test(w)));
+  // the units mistake, both directions — the commonest export bug there is,
+  // and the one that looks exactly like a prop nobody placed
+  check(`a centimetre export is refused (${probe.cm.why[0] ?? 'NOT REFUSED'})`,
+    probe.cm.why.some(w => /units/i.test(w)));
+  check(`and so is one a hundred times too small (${probe.tiny.why[0] ?? 'NOT REFUSED'})`,
+    probe.tiny.why.some(w => /units/i.test(w)));
+
+  // and a failure has to be SEEN: a cage in the world and a line on the page
+  const failed = await page.evaluate(() => {
+    window.__tt.debug.propFail('radio', 'forced by the gate');
+    const p = window.__tt.debug.props();
+    // a cage is twelve unfogged magenta EDGES — not a wireframe mesh, which
+    // is what it was before the edges read better. Assert the thing, not the
+    // material flag the thing used to carry.
+    let cage = false;
+    window.__tt.scene.traverse(o => {
+      if (o.isLineSegments && o.material?.fog === false) cage = true;
+    });
+    return { cages: p.cages, banner: p.banner, cage };
+  });
+  check(`a failed prop stands in the world as a cage (${failed.cages})`,
+    failed.cages === 1 && failed.cage === true);
+  check(`and says so on the page ("${failed.banner.slice(0, 40)}…")`,
+    /PROP FAILED\s+radio/.test(failed.banner));
+
+  // provenance: CC0 asks for nothing, everything else is credited in world
+  const credit = await page.evaluate(() => {
+    const d = window.__tt.debug;
+    const zero = d.creditProp('Rowboat', 'Someone', 'CC0');
+    const by = d.creditProp('Lantern', 'Someone Else', 'CC-BY 4.0');
+    return { zero, by, lines: d.credits() };
+  });
+  check('CC0 is not credited, because it asks for nothing', credit.zero === false);
+  check(`CC-BY is credited in world (${credit.lines[0] ?? 'NOTHING'})`,
+    credit.by === true && credit.lines.some(l => /Lantern.*Someone Else.*CC-BY/.test(l)));
+
   // ── the way home ──
   check('there is a sign, and it is a ray target',
     await page.evaluate(() => !!window.__tt.debug.sign
