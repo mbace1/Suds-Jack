@@ -4,35 +4,130 @@
   "date": "2026-09-19",
   "updated": "2026-09-19",
   "sectors": [
-    { "id": "RFH", "freq": "104.40", "call": "HELSINKI" }
+    {
+      "id": "RFH",
+      "freq": "104.40",
+      "call": "HELSINKI"
+    }
   ],
   "stories": [
-    { "id": "budget-in-full", "sector": "RFH", "visual": "chart2", "broll": "kamppi", "filed": "2026-09-19", "label": "LEAD",
-      "visualBeat": "the bar for what comes in and the bar for what goes out; decoded, the gap between them gets its own label and it is the only number that was ever real" },
-    { "id": "capacity-commitment", "sector": "RFH", "visual": "engine", "broll": "harbour", "filed": "2026-09-19", "label": "TECH",
-      "visualBeat": "the turbine spins for the data centre; decoded, half of it is painted the reactor's colour" },
-    { "id": "single-day-adjustment", "sector": "RFH", "visual": "chart", "broll": "katajanokka", "filed": "2026-09-19", "label": "TECH",
-      "visualBeat": "a line that goes down in one clean step; decoded, the axis re-bases and the step is the whole picture" },
-    { "id": "rinse-cycle", "sector": "RFH", "visual": "heat", "broll": "katu", "filed": "2026-09-19", "label": "CITY",
-      "visualBeat": "the heat map of a clean process; decoded, one cell is a dishwasher" },
-    { "id": "merge-complete", "sector": "RFH", "visual": "crowd", "broll": "kamppi", "filed": "2026-09-19", "label": "GAMES",
-      "visualBeat": "a full room; decoded, the room is inside a larger room with a different name on the door" },
-    { "id": "founder-steps-back", "sector": "RFH", "visual": "crowd2", "broll": "station", "filed": "2026-09-19", "label": "GAMES",
-      "visualBeat": "a corridor with one chair at the end; decoded, the chair is empty and the corridor is unchanged" },
-    { "id": "owl-in-the-park", "sector": "RFH", "visual": "mesh", "broll": "esplanadi", "filed": "2026-09-19", "label": "ODD WIRE",
-      "visualBeat": "two networks meshed together; decoded, the edges between them are all the same colour, and it is the colour of a budget" },
-    { "id": "fence-complete", "sector": "RFH", "visual": "border", "broll": "gulf", "filed": "2026-09-19", "label": "SIGNAL",
-      "visualBeat": "a fence across the frame; decoded, the frame widens and the fence is a short bright line on a long dark one" },
-    { "id": "undersea-powers", "sector": "RFH", "visual": "sat", "broll": "suomenlinna", "filed": "2026-09-19", "label": "SIGNAL",
-      "visualBeat": "a cable on the seabed and a drone in the air; decoded, the word that connects them is printed, and it is a verb" },
-    { "id": "one-goal", "sector": "RFH", "visual": "crowd", "broll": "station", "filed": "2026-09-19", "label": "ODD WIRE",
-      "visualBeat": "a stadium crowd; decoded, the scoreboard reads what it read" },
-    { "id": "open-day", "sector": "RFH", "visual": "crowd", "broll": "mannerheim", "filed": "2026-09-19", "label": "CULTURE",
-      "visualBeat": "a queue outside a building; decoded, the doors that opened are lit and the ones that did not are counted" },
-    { "id": "four-days-of-circus", "sector": "RFH", "visual": "crowd2", "broll": "esplanadi", "filed": "2026-09-19", "label": "CULTURE",
-      "visualBeat": "a tent full of people looking up; decoded, the word annual is stamped over a first edition" },
-    { "id": "rent-per-metre", "sector": "RFH", "visual": "chart2", "broll": "katu", "filed": "2026-09-19", "label": "CITY",
-      "visualBeat": "rent per square metre as a bar; decoded, the market bar it is being called moderate against appears, and nobody in the flat chose it" }
+    {
+      "id": "budget-in-full",
+      "sector": "RFH",
+      "visual": "chart2",
+      "broll": "kamppi",
+      "filed": "2026-09-19",
+      "label": "LEAD",
+      "visualBeat": "the bar for what comes in and the bar for what goes out; decoded, the gap between them gets its own label and it is the only number that was ever real"
+    },
+    {
+      "id": "capacity-commitment",
+      "sector": "RFH",
+      "visual": "engine",
+      "broll": "harbour",
+      "filed": "2026-09-19",
+      "label": "TECH",
+      "visualBeat": "the turbine spins for the data centre; decoded, half of it is painted the reactor's colour"
+    },
+    {
+      "id": "single-day-adjustment",
+      "sector": "RFH",
+      "visual": "chart",
+      "broll": "katajanokka",
+      "filed": "2026-09-19",
+      "label": "TECH",
+      "visualBeat": "a line that goes down in one clean step; decoded, the axis re-bases and the step is the whole picture"
+    },
+    {
+      "id": "rinse-cycle",
+      "sector": "RFH",
+      "visual": "heat",
+      "broll": "katu",
+      "filed": "2026-09-19",
+      "label": "CITY",
+      "visualBeat": "the heat map of a clean process; decoded, one cell is a dishwasher"
+    },
+    {
+      "id": "merge-complete",
+      "sector": "RFH",
+      "visual": "crowd",
+      "broll": "kamppi",
+      "filed": "2026-09-19",
+      "label": "GAMES",
+      "visualBeat": "a full room; decoded, the room is inside a larger room with a different name on the door"
+    },
+    {
+      "id": "founder-steps-back",
+      "sector": "RFH",
+      "visual": "crowd2",
+      "broll": "station",
+      "filed": "2026-09-19",
+      "label": "GAMES",
+      "visualBeat": "a corridor with one chair at the end; decoded, the chair is empty and the corridor is unchanged"
+    },
+    {
+      "id": "owl-in-the-park",
+      "sector": "RFH",
+      "visual": "mesh",
+      "broll": "esplanadi",
+      "filed": "2026-09-19",
+      "label": "ODD WIRE",
+      "visualBeat": "two networks meshed together; decoded, the edges between them are all the same colour, and it is the colour of a budget"
+    },
+    {
+      "id": "fence-complete",
+      "sector": "RFH",
+      "visual": "border",
+      "broll": "gulf",
+      "filed": "2026-09-19",
+      "label": "SIGNAL",
+      "visualBeat": "a fence across the frame; decoded, the frame widens and the fence is a short bright line on a long dark one"
+    },
+    {
+      "id": "undersea-powers",
+      "sector": "RFH",
+      "visual": "sat",
+      "broll": "suomenlinna",
+      "filed": "2026-09-19",
+      "label": "SIGNAL",
+      "visualBeat": "a cable on the seabed and a drone in the air; decoded, the word that connects them is printed, and it is a verb"
+    },
+    {
+      "id": "one-goal",
+      "sector": "RFH",
+      "visual": "crowd",
+      "broll": "station",
+      "filed": "2026-09-19",
+      "label": "ODD WIRE",
+      "visualBeat": "a stadium crowd; decoded, the scoreboard reads what it read"
+    },
+    {
+      "id": "open-day",
+      "sector": "RFH",
+      "visual": "crowd",
+      "broll": "mannerheim",
+      "filed": "2026-09-19",
+      "label": "CULTURE",
+      "visualBeat": "a queue outside a building; decoded, the doors that opened are lit and the ones that did not are counted"
+    },
+    {
+      "id": "four-days-of-circus",
+      "sector": "RFH",
+      "visual": "crowd2",
+      "broll": "esplanadi",
+      "filed": "2026-09-19",
+      "label": "CULTURE",
+      "visualBeat": "a tent full of people looking up; decoded, the word annual is stamped over a first edition"
+    },
+    {
+      "id": "rent-per-metre",
+      "sector": "RFH",
+      "visual": "chart2",
+      "broll": "katu",
+      "filed": "2026-09-19",
+      "label": "CITY",
+      "visualBeat": "rent per square metre as a bar; decoded, the market bar it is being called moderate against appears, and nobody in the flat chose it"
+    }
   ],
   "copy": {
     "en": {
@@ -41,9 +136,9 @@
         "head": "Next year's budget agreed at €92.5 billion, with the difference to be found later",
         "lines": [
           "The government has agreed a €92.5 billion budget for next year and describes it as {{targeted measures to boost growth|spending less on some things and borrowing for the rest}}. It goes to parliament on Monday, alongside the autumn forecast.",
-          "The gap between what comes in and what goes out is {{a deficit of €12.4 billion|€12.4 billion nobody has yet}}. Tax cuts are included. About €1 billion in {{additional savings|things that will stop being paid for}} is included as well, and will be named later."
+          "The gap between what comes in and what goes out is a deficit of €12.4 billion. Tax cuts are included. About €1 billion in {{additional savings|things that will stop being paid for}} is included as well, and will be named later."
         ],
-        "technique": "THE DIFFERENCE, DEFERRED",
+        "technique": "TARGETED",
         "decodeNote": "The budget and the numbers are real. What the savings fall on is the part of the sentence that has not been written yet.",
         "tell": "Who is named in the €1 billion, and when?"
       },
@@ -52,9 +147,9 @@
         "head": "€13 billion of computing arrives with half a power station attached",
         "lines": [
           "Big Iron Nordics will spend at least €13 billion over two years on data centres in Hamina, Kajaani, Muhos and Vaala, the largest investment of its kind in the country. It comes with {{a 22-year clean energy partnership|a contract for up to half of the Loviisa plant's output until 2048}}.",
-          "The opposition notes there is {{no national permitting framework for data centres|nobody whose job it is to say no}} and that household electricity prices {{may see upward pressure|will go up}}. The company says the projects are {{community-first|coming anyway}}."
+          "The opposition notes there is no national permitting framework for data centres and that household electricity prices {{may see upward pressure|will go up}}. The company says the projects are community-first."
         ],
-        "technique": "THE CAPACITY WAS ALREADY YOURS",
+        "technique": "PARTNERSHIP",
         "decodeNote": "The investment, the towns and the 22-year deal are real. Half of a reactor is a large fraction to describe as a partnership.",
         "tell": "Who else was going to use that half?"
       },
@@ -62,8 +157,8 @@
         "slug": "FABIANINKATU",
         "head": "Exchange records its largest fall of the year in a single, orderly session",
         "lines": [
-          "The Helsinki exchange closed {{2.99 per cent lower|down three per cent}} on Monday, its biggest one-day decline of 2026, as a technology sell-off {{spread to Finland|arrived}}. Trading was orderly throughout.",
-          "Ringtone Oyj, the index's largest constituent, {{gave back more than ten per cent|lost a tenth of its value in a day}}. Its guidance is {{unchanged|not the thing that moved}}."
+          "The Helsinki exchange closed 2.99 per cent lower on Monday, its biggest one-day decline of 2026, as a technology sell-off {{spread to Finland|arrived}}. Trading was orderly throughout.",
+          "Ringtone Oyj, the index's largest constituent, {{gave back more than ten per cent|lost a tenth of its value in a day}}. Its guidance is unchanged."
         ],
         "technique": "ORDERLY",
         "decodeNote": "The percentages are real. 'Orderly' is the word an exchange uses for a day on which the rules were followed and nothing else went well.",
@@ -73,8 +168,8 @@
         "slug": "KAMPPI",
         "head": "Clinic found rinsing single-use liposuction equipment; regulator describes the process as not recommended",
         "lines": [
-          "An unannounced inspection on 9 September found that Second Draft Clinic in Helsinki had {{reprocessed disposable liposuction equipment|washed single-use tubes by hand and in a dishwasher}}, {{contrary to manufacturer instructions|which the box says not to do}}.",
-          "The regulator has {{brought the findings to the clinic's attention|told them}} and the clinic {{is reviewing its instrument workflow|has been told to stop}}. Patients treated before the inspection {{may contact the clinic|are the ones who should worry}}."
+          "An unannounced inspection on 9 September found that Second Draft Clinic in Helsinki had {{reprocessed disposable liposuction equipment|washed single-use tubes by hand and in a dishwasher}}, contrary to manufacturer instructions.",
+          "The regulator has brought the findings to the clinic's attention and the clinic {{is reviewing its instrument workflow|has been told to stop}}. Patients treated before the inspection may contact the clinic."
         ],
         "technique": "REPROCESSED",
         "decodeNote": "The inspection, the date and the dishwasher are real; the clinic's name is not. 'Reprocessed' is what a dishwasher is called in a regulatory finding.",
@@ -84,8 +179,8 @@
         "slug": "RUOHOLAHTI",
         "head": "Mobile giant absorbs a puzzle studio; the merge is expected to complete by the end of the month",
         "lines": [
-          "Hoard & Hearth Oy has signed the agreement to acquire Tidy Rooms Games and its merge puzzle, with the transaction {{expected to close by the end of September|already decided}}. The studio's employees {{will join the company|come with the game}}.",
-          "Both sides describe the deal as {{a natural home for the team|a purchase}}. The game keeps its name. The studio, {{for now|for a while}}, keeps its floor."
+          "Hoard & Hearth Oy has signed the agreement to acquire Tidy Rooms Games and its merge puzzle, with the transaction expected to close by the end of September. The studio's employees {{will join the company|come with the game}}.",
+          "Both sides describe the deal as {{a natural home for the team|a purchase}}. The game keeps its name. The studio, for now, keeps its floor."
         ],
         "technique": "A NATURAL HOME",
         "decodeNote": "The acquisition and its timing are real. 'Employees will join' is the passive in which a workforce is included in the price.",
@@ -95,8 +190,8 @@
         "slug": "PUNAVUORI",
         "head": "Co-founder leaves the studio he started thirty-one years ago; the studio says the corridor is unchanged",
         "lines": [
-          "A co-founder of Long Corridor Games has {{stepped down after 31 years|left}}, the Helsinki studio confirmed, {{to pursue new directions|without saying where}}. A managing director has been in the chair since 1 July.",
-          "The studio says its {{creative vision remains intact|owner is now somebody else}}. Thirty-one years is longer than most of its staff have been alive, which the statement {{does not dwell on|leaves out}}."
+          "A co-founder of Long Corridor Games has stepped down after 31 years, the Helsinki studio confirmed, {{to pursue new directions|without saying where}}. A managing director has been in the chair since 1 July.",
+          "The studio says its {{creative vision remains intact|owner is now somebody else}}. Thirty-one years is longer than most of its staff have been alive, which the statement does not dwell on."
         ],
         "technique": "NEW DIRECTIONS",
         "decodeNote": "The departure and the dates are real; the studio and the person are not named. 'New directions' is the phrase that means the old direction is now the company's alone.",
@@ -106,10 +201,10 @@
         "slug": "STARR PARK",
         "head": "Language-app owl seizes control of a shooter's theme park; lessons now feature a cactus",
         "lines": [
-          "The mascot of Owlgorithm, a language app with {{a reputation for persistence|a habit of sending notifications}}, has {{taken over|been licensed into}} the theme park at the centre of Scrapyard Stars for a limited season. In return, the shooter's cactus {{appears in lessons|is now grammar}}.",
+          "The mascot of Owlgorithm, a language app with a reputation for persistence, has {{taken over|been licensed into}} the theme park at the centre of Scrapyard Stars for a limited season. In return, the shooter's cactus appears in lessons.",
           "Neither company has said what a cactus teaches. The owl {{has not commented|never does; it only reminds you}}."
         ],
-        "technique": "CROSSOVER",
+        "technique": "TAKEN OVER",
         "decodeNote": "The crossover is real; both companies are renamed. A brand appearing inside another brand is called an event, and it is: two marketing budgets meeting.",
         "tell": "Which of the two apps would you have opened today anyway?"
       },
@@ -117,7 +212,7 @@
         "slug": "EASTERN FRONTIER",
         "head": "Two hundred kilometres of fence declared complete; the remaining thousand described as monitored",
         "lines": [
-          "The frontier service announced on 7 September that {{200 kilometres of fence and sensors are complete|the fence covers a sixth of the border}} along sections of the eastern frontier. EU funding of €17 million bought drones and unmanned boats {{resistant to satellite-signal disruption|that still work when the positioning is jammed}}.",
+          "The frontier service announced on 7 September that {{200 kilometres of fence and sensors are complete|the fence covers a sixth of the border}} along sections of the eastern frontier. EU funding of €17 million bought drones and unmanned boats resistant to satellite-signal disruption.",
           "The remaining roughly 1,100 kilometres are {{covered by surveillance|not fenced}}. A bear got under the finished part in August."
         ],
         "technique": "SECTIONS",
@@ -128,8 +223,8 @@
         "slug": "GULF OF FINLAND",
         "head": "Bill gives the frontier service powers over drones and the seabed; parliament receives it on the tenth",
         "lines": [
-          "A bill submitted on 10 September would let the frontier service {{prevent and stop attempts to damage critical underwater infrastructure|board a ship that is dragging its anchor over a cable}} and {{intercept unmanned vehicles|shoot down drones}}. It follows a summer of {{possible territorial violations|drones}}.",
-          "One was found on the shore at Porvoo on 1 September by a member of the public, {{which is how many of them are found|because nobody else was looking}}. The bill {{strengthens preparedness|says who may act, and how}}."
+          "A bill submitted on 10 September would let the frontier service prevent and stop attempts to damage critical underwater infrastructure and {{intercept unmanned vehicles|shoot down drones}}. It follows a summer of possible territorial violations.",
+          "One was found on the shore at Porvoo on 1 September by a member of the public, which is how many of them are found. The bill {{strengthens preparedness|says who may act, and how}}."
         ],
         "technique": "PREPAREDNESS",
         "decodeNote": "The bill, its date and the Porvoo drone are real. 'Preparedness' is the noun a state uses when the verb would be 'shoot'.",
@@ -139,7 +234,7 @@
         "slug": "OLYMPIC STADIUM",
         "head": "Capital's club loses the cup final at home by one goal; the club describes the result as a learning",
         "lines": [
-          "A club from Turku beat the capital's club 1–0 in the cup final on 5 September, in Helsinki, {{in front of a home crowd|in front of the wrong crowd}}. The capital's club says the season {{contains learnings|is over}}.",
+          "A club from Turku beat the capital's club 1–0 in the cup final on 5 September, in Helsinki, in front of a home crowd. The capital's club says the season {{contains learnings|is over}}.",
           "One goal is the smallest margin a final allows. It is also {{the margin by which it was lost|the whole score}}."
         ],
         "technique": "LEARNINGS",
@@ -151,9 +246,9 @@
         "head": "National broadcaster opens its doors for a day at one hundred; hundreds queue to see where the fee goes",
         "lines": [
           "The national broadcaster opened its Pasila premises to the public on Saturday for its centenary, from ten until four. Hundreds queued {{to celebrate a century of public service|to see the inside of a building they pay for}}.",
-          "Visitors were shown studios, {{the archive|the part that outlives everyone here}}, and the newsroom, where the day's bulletins were being written by {{colleagues|people}} while they watched."
+          "Visitors were shown studios, {{the archive|the part that outlives everyone here}}, and the newsroom, where the day's bulletins were being written by colleagues while they watched."
         ],
-        "technique": "OPEN DAY",
+        "technique": "CELEBRATE",
         "decodeNote": "The open day, the hours and the centenary are real; the broadcaster goes unnamed here, which is a small joke at this station's expense. A queue is the most honest audience figure there is.",
         "tell": "What was behind the doors that stayed closed?"
       },
@@ -161,7 +256,7 @@
         "slug": "SUVILAHTI",
         "head": "City hosts its first circus festival; four days, no animals, one safety net",
         "lines": [
-          "The first Helsinki Circus Festival ran from 10 to 13 September with {{international contemporary productions|people from abroad doing dangerous things on purpose}}. The festival office calls it {{a new annual fixture|a first year that went well enough to say that}}.",
+          "The first Helsinki Circus Festival ran from 10 to 13 September with international contemporary productions. The festival office calls it {{a new annual fixture|a first year that went well enough to say that}}.",
           "Four days is the length. The number of performers who fell is {{not part of the release|zero, or it would be}}."
         ],
         "technique": "FIXTURE",
@@ -172,8 +267,8 @@
         "slug": "MELLUNMÄKI",
         "head": "City housing company raises rent 1.9 per cent; the city expects to pass 700,000 residents this year",
         "lines": [
-          "Metropolitan Roofs Oy, the city's own landlord, has {{adjusted rents by 1.9 per cent for 2026|put the rent up}}, to an average of €14.66 per square metre per month. The company describes the figure as {{moderate relative to the market|less than a private landlord would have}}.",
-          "The city expects its population to pass 700,000 this year on {{record migration|people arriving}}, and plans 7,000 new homes a year. The rent applies to the ones {{already built|that exist}}."
+          "Metropolitan Roofs Oy, the city's own landlord, has adjusted rents by 1.9 per cent for 2026, to an average of €14.66 per square metre per month. The company describes the figure as {{moderate relative to the market|less than a private landlord would have}}.",
+          "The city expects its population to pass 700,000 this year on record migration, and plans 7,000 new homes a year. The rent applies to the ones {{already built|that exist}}."
         ],
         "technique": "MODERATE",
         "decodeNote": "The percentage, the €14.66 and the 700,000 are real; the company is renamed. 'Moderate' is a comparison to a number nobody in the flat chose.",
@@ -186,9 +281,9 @@
         "head": "Ensi vuoden budjetti sovittu: 92,5 miljardia, erotus etsitään myöhemmin",
         "lines": [
           "Hallitus on sopinut ensi vuoden 92,5 miljardin euron budjetista ja kuvaa sitä {{kohdennetuiksi kasvutoimiksi|joistakin asioista säästämiseksi ja lopun lainaamiseksi}}. Se menee eduskuntaan maanantaina syysennusteen kanssa.",
-          "Tulojen ja menojen erotus on {{12,4 miljardin alijäämä|12,4 miljardia, joita kenelläkään ei vielä ole}}. Veronkevennykset ovat mukana. Mukana on myös noin miljardin {{lisäsäästöt|asiat, joista lakataan maksamasta}}, jotka nimetään myöhemmin."
+          "Tulojen ja menojen erotus on 12,4 miljardin alijäämä. Veronkevennykset ovat mukana. Mukana on myös noin miljardin {{lisäsäästöt|asiat, joista lakataan maksamasta}}, jotka nimetään myöhemmin."
         ],
-        "technique": "EROTUS SIIRRETTY",
+        "technique": "KOHDENNETTU",
         "decodeNote": "Budjetti ja luvut ovat todellisia. Se, mihin säästöt osuvat, on lauseen kirjoittamaton osa.",
         "tell": "Kenen nimi on siinä miljardissa, ja milloin?"
       },
@@ -197,9 +292,9 @@
         "head": "13 miljardia laskentaa saapuu, ja mukana tulee puoli voimalaa",
         "lines": [
           "Big Iron Nordics käyttää vähintään 13 miljardia euroa kahdessa vuodessa datakeskuksiin Haminassa, Kajaanissa, Muhoksella ja Vaalassa, maan suurin lajissaan. Mukana on {{22-vuotinen puhtaan energian kumppanuus|sopimus jopa puolesta Loviisan voimalan tuotannosta vuoteen 2048}}.",
-          "Oppositio huomauttaa, ettei datakeskuksille ole {{kansallista lupajärjestelmää|ketään, jonka työ olisi sanoa ei}}, ja että kotitalouksien sähkön hintaan {{voi kohdistua nousupainetta|hinta nousee}}. Yhtiö sanoo hankkeiden olevan {{yhteisö edellä|tulossa joka tapauksessa}}."
+          "Oppositio huomauttaa, ettei datakeskuksille ole kansallista lupajärjestelmää, ja että kotitalouksien sähkön hintaan {{voi kohdistua nousupainetta|hinta nousee}}. Yhtiö sanoo hankkeiden olevan yhteisö edellä."
         ],
-        "technique": "KAPASITEETTI OLI JO SINUN",
+        "technique": "KUMPPANUUS",
         "decodeNote": "Investointi, paikkakunnat ja 22 vuoden sopimus ovat todellisia. Puoli reaktoria on iso osuus kutsuttavaksi kumppanuudeksi.",
         "tell": "Kuka muu olisi käyttänyt sen puolikkaan?"
       },
@@ -207,8 +302,8 @@
         "slug": "FABIANINKATU",
         "head": "Pörssi kirjasi vuoden suurimman laskun yhdessä, hallitussa istunnossa",
         "lines": [
-          "Helsingin pörssi sulkeutui maanantaina {{2,99 prosenttia alempana|kolme prosenttia miinuksella}}, vuoden 2026 suurin yhden päivän lasku, kun teknologiaosakkeiden myyntiaalto {{levisi Suomeen|saapui}}. Kaupankäynti sujui koko ajan hallitusti.",
-          "Indeksin suurin yhtiö Ringtone Oyj {{luovutti yli kymmenen prosenttia|menetti kymmenyksen arvostaan päivässä}}. Sen ohjeistus on {{ennallaan|ei se, mikä liikkui}}."
+          "Helsingin pörssi sulkeutui maanantaina 2,99 prosenttia alempana, vuoden 2026 suurin yhden päivän lasku, kun teknologiaosakkeiden myyntiaalto {{levisi Suomeen|saapui}}. Kaupankäynti sujui koko ajan hallitusti.",
+          "Indeksin suurin yhtiö Ringtone Oyj {{luovutti yli kymmenen prosenttia|menetti kymmenyksen arvostaan päivässä}}. Sen ohjeistus on ennallaan."
         ],
         "technique": "HALLITUSTI",
         "decodeNote": "Prosentit ovat todellisia. 'Hallitusti' on pörssin sana päivälle, jona sääntöjä noudatettiin eikä mikään muu mennyt hyvin.",
@@ -218,8 +313,8 @@
         "slug": "KAMPPI",
         "head": "Klinikka huuhteli kertakäyttöisiä rasvaimuvälineitä; valvoja kuvaa menettelyä ei-suositelluksi",
         "lines": [
-          "Ennalta ilmoittamattomassa tarkastuksessa 9. syyskuuta havaittiin, että helsinkiläinen Second Draft Clinic oli {{uudelleenkäsitellyt kertakäyttöisiä rasvaimuvälineitä|pessyt kertakäyttöletkuja käsin ja astianpesukoneessa}}, {{valmistajan ohjeiden vastaisesti|vaikka pakkauksessa lukee, ettei niin saa tehdä}}.",
-          "Valvoja on {{saattanut havainnot klinikan tietoon|sanonut heille}} ja klinikka {{tarkastelee välinehuoltonsa työnkulkua|on käsketty lopettamaan}}. Ennen tarkastusta hoidetut potilaat {{voivat olla yhteydessä klinikkaan|ovat ne, joiden pitäisi huolestua}}."
+          "Ennalta ilmoittamattomassa tarkastuksessa 9. syyskuuta havaittiin, että helsinkiläinen Second Draft Clinic oli {{uudelleenkäsitellyt kertakäyttöisiä rasvaimuvälineitä|pessyt kertakäyttöletkuja käsin ja astianpesukoneessa}}, valmistajan ohjeiden vastaisesti.",
+          "Valvoja on saattanut havainnot klinikan tietoon ja klinikka {{tarkastelee välinehuoltonsa työnkulkua|on käsketty lopettamaan}}. Ennen tarkastusta hoidetut potilaat voivat olla yhteydessä klinikkaan."
         ],
         "technique": "UUDELLEENKÄSITELTY",
         "decodeNote": "Tarkastus, päivämäärä ja astianpesukone ovat todellisia; klinikan nimi ei. 'Uudelleenkäsitelty' on astianpesukoneen nimi valvontaraportissa.",
@@ -229,8 +324,8 @@
         "slug": "RUOHOLAHTI",
         "head": "Mobiilijätti nielaisee pulmastudion; yhdistymisen odotetaan valmistuvan kuun loppuun mennessä",
         "lines": [
-          "Hoard & Hearth Oy on allekirjoittanut sopimuksen Tidy Rooms Gamesin ja sen yhdistelypulman ostosta, ja kaupan {{odotetaan toteutuvan syyskuun loppuun mennessä|on jo päätetty}}. Studion työntekijät {{siirtyvät yhtiön palvelukseen|tulevat pelin mukana}}.",
-          "Molemmat osapuolet kuvaavat kauppaa {{luontevaksi kodiksi tiimille|ostoksi}}. Peli säilyttää nimensä. Studio säilyttää {{toistaiseksi|jonkin aikaa}} kerroksensa."
+          "Hoard & Hearth Oy on allekirjoittanut sopimuksen Tidy Rooms Gamesin ja sen yhdistelypulman ostosta, ja kaupan odotetaan toteutuvan syyskuun loppuun mennessä. Studion työntekijät {{siirtyvät yhtiön palvelukseen|tulevat pelin mukana}}.",
+          "Molemmat osapuolet kuvaavat kauppaa {{luontevaksi kodiksi tiimille|ostoksi}}. Peli säilyttää nimensä. Studio säilyttää toistaiseksi kerroksensa."
         ],
         "technique": "LUONTEVA KOTI",
         "decodeNote": "Yrityskauppa ja sen aikataulu ovat todellisia. 'Työntekijät siirtyvät' on passiivi, jolla henkilöstö sisällytetään hintaan.",
@@ -240,8 +335,8 @@
         "slug": "PUNAVUORI",
         "head": "Perustaja lähtee 31 vuotta sitten aloittamastaan studiosta; studio sanoo käytävän olevan ennallaan",
         "lines": [
-          "Long Corridor Gamesin toinen perustaja on {{väistynyt 31 vuoden jälkeen|lähtenyt}}, helsinkiläisstudio vahvisti, {{uusien suuntien perässä|kertomatta minne}}. Toimitusjohtaja on istunut paikalla 1. heinäkuuta lähtien.",
-          "Studio sanoo {{luovan näkemyksensä säilyvän|omistajansa olevan nyt joku muu}}. 31 vuotta on pidempi aika kuin useimmat sen työntekijät ovat eläneet, mihin tiedote {{ei jää viipymään|ei puutu}}."
+          "Long Corridor Gamesin toinen perustaja on väistynyt 31 vuoden jälkeen, helsinkiläisstudio vahvisti, {{uusien suuntien perässä|kertomatta minne}}. Toimitusjohtaja on istunut paikalla 1. heinäkuuta lähtien.",
+          "Studio sanoo {{luovan näkemyksensä säilyvän|omistajansa olevan nyt joku muu}}. 31 vuotta on pidempi aika kuin useimmat sen työntekijät ovat eläneet, mihin tiedote ei jää viipymään."
         ],
         "technique": "UUDET SUUNNAT",
         "decodeNote": "Lähtö ja päivämäärät ovat todellisia; studiota ja henkilöä ei nimetä. 'Uudet suunnat' tarkoittaa, että vanha suunta on nyt yksin yhtiön.",
@@ -251,10 +346,10 @@
         "slug": "STARR PARK",
         "head": "Kielisovelluksen pöllö kaappaa räiskintäpelin huvipuiston; oppitunneilla nyt kaktus",
         "lines": [
-          "Owlgorithm-kielisovelluksen maskotti, jolla on {{maine sinnikkyydestä|tapa lähettää ilmoituksia}}, on {{vallannut|lisensoitu}} Scrapyard Stars -pelin huvipuiston rajoitetuksi kaudeksi. Vastineeksi räiskintäpelin kaktus {{esiintyy oppitunneilla|on nyt kielioppia}}.",
+          "Owlgorithm-kielisovelluksen maskotti, jolla on maine sinnikkyydestä, on {{vallannut|lisensoitu}} Scrapyard Stars -pelin huvipuiston rajoitetuksi kaudeksi. Vastineeksi räiskintäpelin kaktus esiintyy oppitunneilla.",
           "Kumpikaan yhtiö ei ole kertonut, mitä kaktus opettaa. Pöllö {{ei ole kommentoinut|ei koskaan kommentoi; se vain muistuttaa}}."
         ],
-        "technique": "CROSSOVER",
+        "technique": "VALLATTU",
         "decodeNote": "Yhteistyö on todellinen; molemmat yhtiöt on nimetty uudelleen. Brändi toisen brändin sisällä on 'tapahtuma', ja sitä se onkin: kaksi markkinointibudjettia kohtaa.",
         "tell": "Kumman sovelluksen olisit avannut tänään muutenkin?"
       },
@@ -262,7 +357,7 @@
         "slug": "ITÄRAJA",
         "head": "Kaksisataa kilometriä aitaa julistettu valmiiksi; loput tuhat kuvataan valvotuiksi",
         "lines": [
-          "Rajapalvelu ilmoitti 7. syyskuuta, että {{200 kilometriä aitaa ja sensoreita on valmiina|aita kattaa kuudesosan rajasta}} itärajan osuuksilla. EU:n 17 miljoonan euron rahoituksella hankittiin droneja ja miehittämättömiä veneitä, jotka {{kestävät satelliittisignaalin häirintää|toimivat, vaikka paikannus häirittäisiin}}.",
+          "Rajapalvelu ilmoitti 7. syyskuuta, että {{200 kilometriä aitaa ja sensoreita on valmiina|aita kattaa kuudesosan rajasta}} itärajan osuuksilla. EU:n 17 miljoonan euron rahoituksella hankittiin droneja ja miehittämättömiä veneitä, jotka kestävät satelliittisignaalin häirintää.",
           "Loput noin 1 100 kilometriä ovat {{valvonnan piirissä|aitaamatta}}. Karhu meni valmiin osuuden ali elokuussa."
         ],
         "technique": "OSUUKSILLA",
@@ -273,8 +368,8 @@
         "slug": "SUOMENLAHTI",
         "head": "Lakiesitys antaa rajapalvelulle valtuudet droneihin ja merenpohjaan; eduskunta saa sen kymmenentenä",
         "lines": [
-          "Syyskuun 10. päivänä annettu lakiesitys antaisi rajapalvelulle oikeuden {{estää ja pysäyttää yrityksiä vahingoittaa kriittistä vedenalaista infrastruktuuria|nousta alukseen, joka raahaa ankkuriaan kaapelin yli}} ja {{puuttua miehittämättömiin aluksiin|ampua droneja alas}}. Se seuraa kesää, jona nähtiin {{mahdollisia alueloukkauksia|droneja}}.",
-          "Yksi löytyi Porvoon rannalta 1. syyskuuta yksityishenkilön havainnosta, {{kuten moni niistä löytyy|koska kukaan muu ei katsonut}}. Esitys {{vahvistaa valmiutta|kertoo, kuka saa toimia ja miten}}."
+          "Syyskuun 10. päivänä annettu lakiesitys antaisi rajapalvelulle oikeuden estää ja pysäyttää yrityksiä vahingoittaa kriittistä vedenalaista infrastruktuuria ja {{puuttua miehittämättömiin aluksiin|ampua droneja alas}}. Se seuraa kesää, jona nähtiin mahdollisia alueloukkauksia.",
+          "Yksi löytyi Porvoon rannalta 1. syyskuuta yksityishenkilön havainnosta, kuten moni niistä löytyy. Esitys {{vahvistaa valmiutta|kertoo, kuka saa toimia ja miten}}."
         ],
         "technique": "VALMIUS",
         "decodeNote": "Esitys, sen päivämäärä ja Porvoon drone ovat todellisia. 'Valmius' on substantiivi, jota valtio käyttää, kun verbi olisi 'ampua'.",
@@ -284,7 +379,7 @@
         "slug": "OLYMPIASTADION",
         "head": "Pääkaupungin seura hävisi cupin finaalin kotona yhdellä maalilla; seura kutsuu tulosta oppimiskokemukseksi",
         "lines": [
-          "Turkulaisseura voitti pääkaupungin seuran 1–0 cupin finaalissa 5. syyskuuta Helsingissä, {{kotiyleisön edessä|väärän yleisön edessä}}. Pääkaupungin seura sanoo kauden {{sisältävän oppeja|olevan ohi}}.",
+          "Turkulaisseura voitti pääkaupungin seuran 1–0 cupin finaalissa 5. syyskuuta Helsingissä, kotiyleisön edessä. Pääkaupungin seura sanoo kauden {{sisältävän oppeja|olevan ohi}}.",
           "Yksi maali on pienin ero, jonka finaali sallii. Se on myös {{ero, jolla hävittiin|koko tulos}}."
         ],
         "technique": "OPPEJA",
@@ -296,9 +391,9 @@
         "head": "Kansallinen yleisradioyhtiö avasi ovensa päiväksi satavuotiaana; sadat jonottivat katsomaan, minne maksut menevät",
         "lines": [
           "Kansallinen yleisradioyhtiö avasi Pasilan tilansa yleisölle lauantaina satavuotisjuhlansa kunniaksi kymmenestä neljään. Sadat jonottivat {{juhlistamaan vuosisataa julkista palvelua|näkemään rakennuksen sisältä, jonka he maksavat}}.",
-          "Vierailijoille näytettiin studiot, {{arkisto|se osa, joka elää kaikkia täällä pidempään}}, ja uutishuone, jossa päivän sähkeitä kirjoittivat {{kollegat|ihmiset}} heidän katsellessaan."
+          "Vierailijoille näytettiin studiot, {{arkisto|se osa, joka elää kaikkia täällä pidempään}}, ja uutishuone, jossa päivän sähkeitä kirjoittivat kollegat heidän katsellessaan."
         ],
-        "technique": "AVOIMET OVET",
+        "technique": "JUHLISTAMAAN",
         "decodeNote": "Avoimet ovet, kellonajat ja satavuotisjuhla ovat todellisia; yhtiö jätetään nimeämättä, mikä on pieni vitsi tämän aseman kustannuksella. Jono on rehellisin yleisömittari, joka on.",
         "tell": "Mitä oli niiden ovien takana, jotka pysyivät kiinni?"
       },
@@ -306,7 +401,7 @@
         "slug": "SUVILAHTI",
         "head": "Kaupunki isännöi ensimmäistä sirkusfestivaaliaan: neljä päivää, ei eläimiä, yksi turvaverkko",
         "lines": [
-          "Ensimmäinen Helsinki Circus Festival järjestettiin 10.–13. syyskuuta {{kansainvälisin nykysirkustuotannoin|ulkomaalaisten tehdessä vaarallisia asioita tahallaan}}. Festivaalitoimisto kutsuu sitä {{uudeksi vuosittaiseksi tapahtumaksi|ensimmäiseksi vuodeksi, joka meni riittävän hyvin noin sanoakseen}}.",
+          "Ensimmäinen Helsinki Circus Festival järjestettiin 10.–13. syyskuuta kansainvälisin nykysirkustuotannoin. Festivaalitoimisto kutsuu sitä {{uudeksi vuosittaiseksi tapahtumaksi|ensimmäiseksi vuodeksi, joka meni riittävän hyvin noin sanoakseen}}.",
           "Neljä päivää on kesto. Pudonneiden esiintyjien määrä {{ei ole osa tiedotetta|on nolla, tai se olisi}}."
         ],
         "technique": "VUOSITTAINEN",
@@ -317,8 +412,8 @@
         "slug": "MELLUNMÄKI",
         "head": "Kaupungin vuokrataloyhtiö nostaa vuokria 1,9 prosenttia; kaupunki odottaa ylittävänsä 700 000 asukasta tänä vuonna",
         "lines": [
-          "Kaupungin oma vuokranantaja Metropolitan Roofs Oy on {{tarkistanut vuokria 1,9 prosentilla vuodelle 2026|nostanut vuokraa}}, keskimäärin 14,66 euroon neliöltä kuukaudessa. Yhtiö kuvaa lukua {{maltilliseksi markkinaan nähden|pienemmäksi kuin yksityinen vuokranantaja olisi ottanut}}.",
-          "Kaupunki odottaa väkilukunsa ylittävän 700 000 tänä vuonna {{ennätysmuuton|saapuvien ihmisten}} vuoksi ja suunnittelee 7 000 uutta asuntoa vuodessa. Vuokra koskee niitä, jotka on {{jo rakennettu|olemassa}}."
+          "Kaupungin oma vuokranantaja Metropolitan Roofs Oy on tarkistanut vuokria 1,9 prosentilla vuodelle 2026, keskimäärin 14,66 euroon neliöltä kuukaudessa. Yhtiö kuvaa lukua {{maltilliseksi markkinaan nähden|pienemmäksi kuin yksityinen vuokranantaja olisi ottanut}}.",
+          "Kaupunki odottaa väkilukunsa ylittävän 700 000 tänä vuonna ennätysmuuton vuoksi ja suunnittelee 7 000 uutta asuntoa vuodessa. Vuokra koskee niitä, jotka on {{jo rakennettu|olemassa}}."
         ],
         "technique": "MALTILLINEN",
         "decodeNote": "Prosentti, 14,66 euroa ja 700 000 ovat todellisia; yhtiö on nimetty uudelleen. 'Maltillinen' on vertailu lukuun, jota kukaan asunnossa ei valinnut.",
@@ -331,9 +426,9 @@
         "head": "来年度予算、925億ユーロで合意。差額は後で探す",
         "lines": [
           "政府は来年度925億ユーロの予算に合意し、これを{{成長を後押しする重点施策|いくつかを削り、残りを借りること}}と説明した。月曜日に秋季見通しとともに国会へ送られる。",
-          "入るものと出るものの差は{{124億ユーロの赤字|まだ誰も持っていない124億ユーロ}}だ。減税は含まれる。約10億ユーロの{{追加的な節約|支払いをやめる項目}}も含まれ、名前は後で付く。"
+          "入るものと出るものの差は124億ユーロの赤字だ。減税は含まれる。約10億ユーロの{{追加的な節約|支払いをやめる項目}}も含まれ、名前は後で付く。"
         ],
-        "technique": "差額の先送り",
+        "technique": "重点的",
         "decodeNote": "予算も数字も実在する。節約がどこに落ちるかは、まだ書かれていない部分だ。",
         "tell": "その10億の中に誰の名前があり、それはいつ明かされるのか。"
       },
@@ -342,9 +437,9 @@
         "head": "130億ユーロの計算能力が、発電所の半分を連れてやって来る",
         "lines": [
           "Big Iron Nordicsは2年間で少なくとも130億ユーロをハミナ、カヤーニ、ムホス、ヴァーラのデータセンターに投じる。同国でこの種の投資として最大だ。付いてくるのは{{22年間のクリーンエネルギー・パートナーシップ|2048年までロヴィーサ原発の出力の最大半分を買う契約}}である。",
-          "野党は、データセンターに{{国としての許認可の枠組みがない|「ノー」と言うのが仕事の人がいない}}こと、家庭の電気料金に{{上昇圧力がかかりうる|値上がりする}}ことを指摘する。同社は計画を{{地域第一|どのみち来るもの}}と呼ぶ。"
+          "野党は、データセンターに国としての許認可の枠組みがないこと、家庭の電気料金に{{上昇圧力がかかりうる|値上がりする}}ことを指摘する。同社は計画を地域第一と呼ぶ。"
         ],
-        "technique": "その容量は元からあなたのもの",
+        "technique": "パートナーシップ",
         "decodeNote": "投資額も町も22年契約も実在する。原子炉の半分は「パートナーシップ」と呼ぶには大きな割合だ。",
         "tell": "その半分を、他に誰が使うはずだったのか。"
       },
@@ -352,8 +447,8 @@
         "slug": "ファビアニンカトゥ",
         "head": "取引所、今年最大の下げを一日の「整然とした」立会いで記録",
         "lines": [
-          "ヘルシンキ取引所は月曜、{{2.99%安|3%の下落}}で引けた。2026年最大の一日の下げで、テクノロジー株の売りが{{フィンランドに波及した|やって来た}}形だ。取引は終始整然と行われた。",
-          "指数最大の構成銘柄Ringtone Oyjは{{10%超を返上した|一日で価値の一割を失った}}。同社の業績見通しは{{変更なし|動いたのはそこではない}}。"
+          "ヘルシンキ取引所は月曜、2.99%安で引けた。2026年最大の一日の下げで、テクノロジー株の売りが{{フィンランドに波及した|やって来た}}形だ。取引は終始整然と行われた。",
+          "指数最大の構成銘柄Ringtone Oyjは{{10%超を返上した|一日で価値の一割を失った}}。同社の業績見通しは変更なし。"
         ],
         "technique": "整然と",
         "decodeNote": "数字は実在する。「整然と」は、規則は守られたがそれ以外は何もうまくいかなかった日に取引所が使う言葉だ。",
@@ -363,8 +458,8 @@
         "slug": "カンピ",
         "head": "クリニック、使い捨て脂肪吸引器具を洗って再使用。当局は「推奨されない」と表現",
         "lines": [
-          "9月9日の抜き打ち検査で、ヘルシンキのSecond Draft Clinicが{{使い捨ての脂肪吸引器具を再処理していた|使い捨てチューブを手洗いと食洗機で洗っていた}}ことが判明した。{{メーカーの指示に反して|箱にやるなと書いてあるのに}}、である。",
-          "当局は{{所見をクリニックに伝えた|やめろと言った}}とし、クリニックは{{器具の処理工程を見直している|止められた}}。検査前に施術を受けた患者は{{クリニックに連絡できる|心配すべき側の人たち}}だ。"
+          "9月9日の抜き打ち検査で、ヘルシンキのSecond Draft Clinicが{{使い捨ての脂肪吸引器具を再処理していた|使い捨てチューブを手洗いと食洗機で洗っていた}}ことが判明した。メーカーの指示に反して、である。",
+          "当局は所見をクリニックに伝えたとし、クリニックは{{器具の処理工程を見直している|止められた}}。検査前に施術を受けた患者はクリニックに連絡できるだ。"
         ],
         "technique": "再処理",
         "decodeNote": "検査も日付も食洗機も実在する。クリニック名は架空だ。「再処理」とは、監督報告書における食洗機の呼び名である。",
@@ -374,8 +469,8 @@
         "slug": "ルオホラハティ",
         "head": "モバイル大手がパズルスタジオを吸収。統合は月末までに完了見込み",
         "lines": [
-          "Hoard & Hearth OyはTidy Rooms Gamesとそのマージパズルを買収する契約に署名し、取引は{{9月末までに完了する見込み|もう決まっている}}。スタジオの従業員は{{同社に加わる|ゲームに付いてくる}}。",
-          "双方はこの取引を{{チームにとって自然な家|購入}}と表現する。ゲームは名前を保つ。スタジオは{{当面|しばらくの間}}フロアを保つ。"
+          "Hoard & Hearth OyはTidy Rooms Gamesとそのマージパズルを買収する契約に署名し、取引は9月末までに完了する見込み。スタジオの従業員は{{同社に加わる|ゲームに付いてくる}}。",
+          "双方はこの取引を{{チームにとって自然な家|購入}}と表現する。ゲームは名前を保つ。スタジオは当面フロアを保つ。"
         ],
         "technique": "自然な家",
         "decodeNote": "買収とその時期は実在する。「従業員は加わる」は、人員を価格に含めるときの受動態だ。",
@@ -385,8 +480,8 @@
         "slug": "プナヴオリ",
         "head": "共同創業者、31年前に立ち上げたスタジオを去る。スタジオは「廊下は変わらない」",
         "lines": [
-          "Long Corridor Gamesの共同創業者が{{31年を経て退いた|去った}}とヘルシンキのスタジオが認めた。{{新たな方向を目指して|行き先は言わずに}}。7月1日から新しいマネージングディレクターが席に座っている。",
-          "スタジオは{{創造的ビジョンは損なわれない|所有者はもう別人だ}}と述べる。31年は社員の多くの年齢より長いが、声明はそこに{{立ち止まらない|触れない}}。"
+          "Long Corridor Gamesの共同創業者が31年を経て退いたとヘルシンキのスタジオが認めた。{{新たな方向を目指して|行き先は言わずに}}。7月1日から新しいマネージングディレクターが席に座っている。",
+          "スタジオは{{創造的ビジョンは損なわれない|所有者はもう別人だ}}と述べる。31年は社員の多くの年齢より長いが、声明はそこに立ち止まらない。"
         ],
         "technique": "新たな方向",
         "decodeNote": "退任と日付は実在する。スタジオ名と人物は架空だ。「新たな方向」とは、古い方向がいまや会社だけのものになったという意味である。",
@@ -396,10 +491,10 @@
         "slug": "スターパーク",
         "head": "語学アプリのフクロウがシューターの遊園地を占拠。レッスンにサボテン登場",
         "lines": [
-          "{{粘り強さで知られる|通知を送り続ける癖のある}}語学アプリOwlgorithmのマスコットが、Scrapyard Starsの中心にある遊園地を期間限定で{{乗っ取った|ライセンス供与された}}。見返りに、シューターのサボテンが{{レッスンに登場する|文法になった}}。",
+          "粘り強さで知られる語学アプリOwlgorithmのマスコットが、Scrapyard Starsの中心にある遊園地を期間限定で{{乗っ取った|ライセンス供与された}}。見返りに、シューターのサボテンがレッスンに登場する。",
           "サボテンが何を教えるのか、どちらの会社も語っていない。フクロウは{{コメントしていない|コメントはしない。思い出させるだけだ}}。"
         ],
-        "technique": "クロスオーバー",
+        "technique": "乗っ取り",
         "decodeNote": "コラボは実在し、両社は改名してある。ブランドが別のブランドの中に現れることを「イベント」と呼ぶ。実際そうだ。二つの広告予算が出会っている。",
         "tell": "二つのアプリのうち、今日どのみち開いていたのはどちらか。"
       },
@@ -407,7 +502,7 @@
         "slug": "東部国境",
         "head": "フェンス200キロが完成と宣言。残る千キロは「監視下」と表現",
         "lines": [
-          "国境当局は9月7日、東部国境の区間で{{フェンスとセンサー200キロが完成した|フェンスは国境の六分の一を覆う}}と発表した。EUの1700万ユーロで、{{衛星信号の妨害に耐える|測位が妨害されても動く}}ドローンと無人艇を調達した。",
+          "国境当局は9月7日、東部国境の区間で{{フェンスとセンサー200キロが完成した|フェンスは国境の六分の一を覆う}}と発表した。EUの1700万ユーロで、衛星信号の妨害に耐えるドローンと無人艇を調達した。",
           "残るおよそ1100キロは{{監視の範囲内|フェンスなし}}だ。8月には完成部分の下をクマがくぐった。"
         ],
         "technique": "区間",
@@ -418,8 +513,8 @@
         "slug": "フィンランド湾",
         "head": "国境当局にドローンと海底への権限を与える法案。国会は10日に受理",
         "lines": [
-          "9月10日に提出された法案は、国境当局が{{重要な海底インフラを損傷する試みを防ぎ止める|ケーブルの上で錨を引きずる船に乗り込む}}こと、{{無人機に介入する|ドローンを撃ち落とす}}ことを認める。{{領空侵犯の可能性|ドローン}}が相次いだ夏を受けたものだ。",
-          "9月1日にはポルヴォーの海岸で一機が一般市民により発見された。{{多くはそうして見つかる|他に誰も見ていなかったから}}。法案は{{即応態勢を強化する|誰がどう動いてよいかを定める}}。"
+          "9月10日に提出された法案は、国境当局が重要な海底インフラを損傷する試みを防ぎ止めること、{{無人機に介入する|ドローンを撃ち落とす}}ことを認める。領空侵犯の可能性が相次いだ夏を受けたものだ。",
+          "9月1日にはポルヴォーの海岸で一機が一般市民により発見された。多くはそうして見つかる。法案は{{即応態勢を強化する|誰がどう動いてよいかを定める}}。"
         ],
         "technique": "即応態勢",
         "decodeNote": "法案も日付もポルヴォーのドローンも実在する。「即応態勢」は、動詞なら「撃つ」になるところで国家が使う名詞だ。",
@@ -429,7 +524,7 @@
         "slug": "オリンピックスタジアム",
         "head": "首都のクラブ、カップ決勝をホームで1点差で落とす。クラブは「学び」と表現",
         "lines": [
-          "トゥルクのクラブが9月5日、ヘルシンキでのカップ決勝で首都のクラブを1–0で下した。{{ホームの観衆の前で|間違った観衆の前で}}。首都のクラブは今季について{{学びを含む|終わった}}と述べた。",
+          "トゥルクのクラブが9月5日、ヘルシンキでのカップ決勝で首都のクラブを1–0で下した。ホームの観衆の前で。首都のクラブは今季について{{学びを含む|終わった}}と述べた。",
           "1点は決勝が許す最小の差だ。それは同時に{{負けた差|スコアのすべて}}でもある。"
         ],
         "technique": "学び",
@@ -441,9 +536,9 @@
         "head": "公共放送、創立100年で一日開放。受信料の行き先を見ようと数百人が列",
         "lines": [
           "公共放送は土曜、創立100周年を記念してパシラの施設を午前10時から午後4時まで一般公開した。数百人が{{公共サービスの一世紀を祝うために|自分たちが払っている建物の中を見るために}}並んだ。",
-          "来場者はスタジオ、{{アーカイブ|ここにいる誰よりも長生きする部分}}、そして報道フロアを案内された。そこではその日の記事が{{同僚たち|人間}}によって、見学者の目の前で書かれていた。"
+          "来場者はスタジオ、{{アーカイブ|ここにいる誰よりも長生きする部分}}、そして報道フロアを案内された。そこではその日の記事が同僚たちによって、見学者の目の前で書かれていた。"
         ],
-        "technique": "オープンデー",
+        "technique": "祝う",
         "decodeNote": "公開日も時間も100周年も実在する。放送局名は伏せた。これはこの局自身への小さな冗談でもある。行列ほど正直な視聴率はない。",
         "tell": "閉まったままだった扉の向こうには何があったか。"
       },
@@ -451,7 +546,7 @@
         "slug": "スヴィラハティ",
         "head": "市が初のサーカス祭を開催。四日間、動物なし、安全網ひとつ",
         "lines": [
-          "第1回ヘルシンキ・サーカス・フェスティバルが9月10日から13日まで開かれ、{{国際的なコンテンポラリー作品|外国から来た人々がわざと危険なことをする}}が並んだ。事務局はこれを{{毎年の恒例行事|そう言えるくらい初年度がうまくいった}}と呼ぶ。",
+          "第1回ヘルシンキ・サーカス・フェスティバルが9月10日から13日まで開かれ、国際的なコンテンポラリー作品が並んだ。事務局はこれを{{毎年の恒例行事|そう言えるくらい初年度がうまくいった}}と呼ぶ。",
           "四日間が長さだ。落ちた出演者の数は{{発表に含まれない|ゼロだ。でなければ含まれる}}。"
         ],
         "technique": "恒例",
@@ -462,8 +557,8 @@
         "slug": "メッルンマキ",
         "head": "市の住宅会社、家賃を1.9%引き上げ。市は今年70万人突破を見込む",
         "lines": [
-          "市が所有する家主Metropolitan Roofs Oyは、2026年の家賃を{{1.9%調整した|上げた}}。平均で月あたり1平方メートル14.66ユーロになる。同社はこの数字を{{市場に比べて穏当|民間の家主ならもっと取った}}と表現する。",
-          "市は{{記録的な移住|人が来ること}}により今年人口が70万人を超えると見込み、年7000戸の新築を計画する。家賃が適用されるのは{{すでに建った|存在する}}方の住宅だ。"
+          "市が所有する家主Metropolitan Roofs Oyは、2026年の家賃を1.9%調整した。平均で月あたり1平方メートル14.66ユーロになる。同社はこの数字を{{市場に比べて穏当|民間の家主ならもっと取った}}と表現する。",
+          "市は記録的な移住により今年人口が70万人を超えると見込み、年7000戸の新築を計画する。家賃が適用されるのは{{すでに建った|存在する}}方の住宅だ。"
         ],
         "technique": "穏当",
         "decodeNote": "パーセント、14.66ユーロ、70万人は実在する。会社名は架空だ。「穏当」とは、その部屋の誰も選んでいない数字との比較である。",

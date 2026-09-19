@@ -54,9 +54,21 @@ half a paragraph is amber, DECODE stops being a reveal and becomes a
 highlighter, and the reader cannot tell which move mattered. `generate-wire.mjs`
 already says "2 to 4"; the upper half of that range should be rare.
 **Lean: two spans a bulletin, three when the second paragraph genuinely turns on
-one.** The 2026-09-19 episode should be thinned on its next pass.
+one.** DONE, 2026-09-19: the episode was thinned from 147 spans to 78 across the
+three languages — two a bulletin, one to a paragraph where the copy allows it —
+and `generate-wire.mjs` now says two-three in the prompt and rejects four in
+code, where it used to accept up to four.
 
-**3. What a technique is called.**
+**3. What a technique is called. — RESOLVED, 2026-09-19.**
+Both shapes were rendered into the real sign-off tally and looked at. The word
+wins, and the comparison found a third thing neither column had: the day was
+carrying three grammars at once. `EDITORIAL.md` now carries the rule — the
+technique is the word the broadcast used, lifted from one of that bulletin's own
+spans — and says why it is not gated (Finnish consonant gradation). `OPEN DAY`
+and `CROSSOVER` were the bulletin's subject rather than its move and are now
+`CELEBRATE` and `TAKEN OVER`. The original argument follows.
+
+
 Opus names the *category of story*: `POLICY UNDER PRESSURE`, `ALLIED PRESENCE`,
 `SLOW CITY CHANGE`, `CULTURAL FORENSICS`. Fable names the *word itself*:
 `ORDERLY`, `REPROCESSED`, `MODERATE`, `LEARNINGS`, `PREPAREDNESS`. The
@@ -104,6 +116,8 @@ two paragraphs and lands a number; every one has fi/en/ja written in its own
 idiom rather than translated. The validator passes it, the gate validates it,
 and it is listed as the newest morning.
 
-What it needs before it should be trusted as the house style: **fewer spans**
-(point 2), and a decision on **technique names** (point 3). Both are one
-editing pass, not a rewrite.
+Both of the things it needed have been done: the spans are thinned to two a
+bulletin, and the technique names are one shape with a rule behind them. What is
+still open on this day is smaller and is not editorial — the ambient scenes are
+128x152 in a post that is roughly 1:2, so every picture letterboxes; the plates
+are 144x276 for exactly that reason.
