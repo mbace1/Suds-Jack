@@ -12,8 +12,8 @@
 //   SLUG   — a long gel chain with a DAMAGE RULE: eat it from an end and it
 //            shortens; hit it in the middle and it SPLITS into two slugs.
 import * as THREE from 'three';
-import { makeSatinMat } from './enemy.js?v=208';
-import { TUNING } from './tuning.js?v=208';
+import { makeSatinMat } from './enemy.js?v=209';
+import { TUNING } from './tuning.js?v=209';
 
 const M = TUNING.movement;          // weaveSpeed 1.7 rad/s, weaveGain 1.6 u/s
 

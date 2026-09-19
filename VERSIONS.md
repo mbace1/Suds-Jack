@@ -7,6 +7,41 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v256 — 2026-09-19
+**Waves become fronts: a classic round is a 12–15 s clock, its bodies arrive in pulses, survivors carry over** *(owner: "Wave number. Waves can be 12–15 secs" — the B2 sentence, and leap #2)*
+- **The round is a clock, by kind** (`TUNING.waves.round`: normal 13, swarm
+  12, spike 14, boss 15, prize/breather 12). **Its mob arrives in three
+  pulses** across 70% of it (`waves.pulses`) in draw order, each front
+  staggered like the old drip; a wave of two bodies is two fronts, so the
+  fronts always span the round. Bosses keep t = 0; shooters keep their own
+  spaced plan (`shooterPlan`). No new `rng()` calls — seeded draws are
+  byte-identical to v255's; only the `t` values moved.
+- **What ends a round now.** An empty floor *after the last pulse has landed*
+  (before that, an empty floor is a breather, not a clear — `pendingSpawns`
+  must be drained, the SMASH TV rule). Otherwise **the clock**: bodies still
+  standing **carry over** — no bonus, no applause, the next wave pours in
+  around them (`spawnWave(true)` keeps the living and the drops). A live boss
+  holds its round open. Roguelike keeps its every-3rd-wave card at a clock
+  end too. Cabinets, SMASH TV, Rush and authored levels pace themselves.
+- **Escalation stays on the wave number**, as decided — so wave 10 arrives
+  later in wall time. Measured, same bot: **CLOSE COMBAT rounds average
+  12.1 s** (were 5–8), classic 9.4 s (early waves are small: one mob body
+  and a shooter is a four-second wave — that is B6, "wave 1 is a non-event",
+  a roster-size call still open); **peak bodies 18** (carry-over is bounded
+  by the pulses); **survival CC 57 → 100 s**, classic 67 → 77 s; **wave 10
+  at 87–114 s** (was 61). `PROGRESSION_DESIGN.md` §7 Q2 shipped, Q4 answered
+  by the rule above, B2 answered by the owner.
+- **The "one more go" number** (leap #1, §5 Q15): the death-screen summary
+  already carries `time` (run length); it now carries **`restartGap`** —
+  seconds from the previous death screen to this run's start (`null` on a
+  session's first run). Restart rate is a number the sheet can hold, not a
+  feeling.
+- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
+  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
+- Cache-bust `?v=208` → `?v=209`; HUD label → v256
+
+---
+
 ## v255 — 2026-09-18
 **TORO reads: a spoked sawblade in one draw call** *(owner: "1,2,3" on the playtest's ship list — this is 3)*
 - **The wheel was a donut.** Five 0.12 × 0.30 cones on a 0.68 rim, most of
