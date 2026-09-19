@@ -1,5 +1,129 @@
 # Toko Trip — release log
 
+## v13 — 2026-09-19
+
+The first step. Collision is the island's **geometry** now, not its height
+field — and the one-sentence reason is that a height field has one answer per
+column, and **the jetty deck and the water under it are the same column**.
+The jetty shipped in v5 and has been scenery for eight versions: you could
+look at it and you could not stand on it.
+
+`groundHeight(x, z)` is unchanged and still the source of truth for the SHAPE
+of the island — the mesh, every scatter pass, the sand maps, the surf
+emitters. What moved is the thing you WALK on.
+
+- **three-mesh-bvh, vendored** (MIT, `vendor/three-mesh-bvh.LICENSE`). This is
+  a downward raycast against 40k+ triangles of terrain every frame: affordable
+  with a bounds tree, nothing like affordable without one. `acceleratedRaycast`
+  goes on `Mesh.prototype` and falls through to three's own for any mesh with
+  no tree, so the teleport ray and the slate's UV pick are untouched and get
+  the speed wherever a tree exists.
+- **`standY(x, z, feetY)`** — what you would be standing on, or `null` for
+  "the sea". The ray starts a step ABOVE your feet, so you step up onto the
+  deck lip and not up a wall, and a face only counts if it points up: the side
+  of the totem is geometry too, and standing on it is not walking.
+- **`wallBetween()`**, and it **slides** rather than refusing. Refusing the
+  whole step makes a doorway feel like glue, and this island is all doorways —
+  between a chair, a table and a palm.
+- **One `tryMove()` for every path that moves you**, so walking, the headset
+  sticks and the teleport cannot disagree about where you are allowed to be.
+
+**A bug this exposed rather than caused:** the headset sticks never touched
+`xrPos.y`. Only teleport ever set it — so walking off the pad in VR left your
+feet at pad height while the sand dropped away underneath you. Standing on the
+jetty is the same mechanism, which is why it only works now.
+
+Measured rather than asserted: **93 deck cells** carry you where the height
+field refuses, 20 of them interior, and the scattered rest are rocks in the
+shallows — which are also standable now, correctly.
+
+And the gate's ruler was wrong twice in one sitting, both times in the same
+direction — *the page was right and the ruler was wrong*:
+
+- The cage check asserted `material.wireframe` after the cage had become
+  `LineSegments`.
+- `standY(0, 0)` reads **0.055**, not 0, and the check demanded ~0. It is
+  0.055 because you now stand ON the deck planks laid on the pad rather than
+  in them. That gap **is** the feature, so the check asserts the gap.
+
+Gate: 75 checks.
+
+### What is deliberately NOT here
+
+A capsule sweep, step-up onto arbitrary ledges, and anything resembling
+jumping. The deck lip is 0.4 m and the jetty is entered from its landward
+end, where the step is small — walking at the deep end and hopping up is
+refused, which is correct and not a limitation to fix.
+
+## v12 — 2026-09-19
+
+The prop door. Near-Blender-quality props are the direction, which means the
+island has to be a place authored geometry can arrive at — and the door it had
+logged a warning and skipped the prop, which is the worst of the available
+behaviours. The island looks finished, the prop is simply absent, and **absent
+is indistinguishable from never-placed**. Nobody wearing a headset is reading
+a console.
+
+- **Three named slots** — `chair`, `radio`, `cove` — each shipping a
+  code-built stand-in and each declaring the contract a file must meet to take
+  its place: a triangle budget, an envelope in metres, and how it is seated
+  (`ground` from its own measured base, `shelf` at an exact height, `origin`
+  untouched, which is the only sane rule for thirty metres of cove).
+- **The enabling change is that the chair is now an object.** It was eleven
+  geometries baked into the shared static merge with the deck and the table,
+  so a chair file had nothing to take the place of — the door was unusable
+  before this regardless of what the loader did.
+- **Static, enforced.** Animation clips and skinned meshes are refused, not
+  silently frozen: a frozen clip is a prop standing in a pose nobody chose,
+  and there is no animation system here to run it in.
+- **The envelope check is really a units check.** Over 1.25x or under 0.25x of
+  the declared span is refused, because a glTF exported in centimetres arrives
+  a hundred times too big and one authored at scene scale a hundred times too
+  small — and *both look exactly like a missing prop* from the chair.
+- **Failing visibly.** A broken slot puts a magenta twelve-edge cage exactly
+  where the prop should have stood, at the declared envelope, turning, labelled
+  with the reason and repeated on a banner. The stand-in steps aside rather
+  than papering over it: a live slot means the file IS the prop.
+- **One door.** The old free-form `MODELS` list folded in, because two loaders
+  drift and only one of them gets the fix.
+- **The CC-BY credit is real now.** The prop table carried a `licence` field
+  that was displayed precisely nowhere while the comment beside it claimed
+  props were "credited in world" — a promise in a comment rather than a
+  credit. The sign's screen is repaintable and a credited prop lands on it the
+  moment it loads. CC0 asks for nothing and is not listed.
+
+`models/CONTRACT.md` is the authoring spec; the `PROPS` table is its
+machine-readable half, and the table is what runs.
+
+Two found building it:
+
+- **The door could be crashed by a bad file.** `Box3.setFromObject` walks a
+  `SkinnedMesh` through `applyBoneTransform`, which throws outright on a rig
+  with missing skin attributes — so measuring before refusing meant a
+  malformed file took the whole island down instead of failing visibly, which
+  is the one outcome this door exists to prevent. Disqualify first, measure
+  second, and measure inside a try.
+- **`wireframe: true` draws the triangle diagonals too**, so the first cage
+  read as a crumpled cat's cradle rather than as the shape of the hole.
+  `EdgesGeometry` gives twelve lines that say "this is the envelope".
+
+And the gate's own ruler went stale in the same hour it was written: the cage
+check asserted `material.wireframe` and the cage had become `LineSegments`, so
+it failed a page that was correct. *The page was right and the ruler was
+wrong* — twice now in this repo, and worth expecting a third time.
+
+Gate: 67 checks. The new ones prove each REFUSAL against a synthetic file, so
+the contract is tested without a broken `.glb` being committed to prove it.
+
+### What is NOT in this release
+
+**three-mesh-bvh.** The direction is that it lands *with the first movement
+commit*, and this one does not touch movement — `groundHeight()` is still the
+only thing the clamps ask. Both sources are reachable from here
+(`raw.githubusercontent.com` and the npm registry both answer 200), so
+vendoring is unblocked when that commit comes. `kind: 'structure'` marks the
+slots it will consume.
+
 ## v11 — 2026-09-06
 
 The sand. It is the biggest surface in view from the chair and it had rich

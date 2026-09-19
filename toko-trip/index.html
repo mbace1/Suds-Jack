@@ -50,7 +50,8 @@
     "imports": {
       "three": "./vendor/three.webgpu.min.js",
       "three/webgpu": "./vendor/three.webgpu.min.js",
-      "three/addons/": "./vendor/jsm/"
+      "three/addons/": "./vendor/jsm/",
+      "three-mesh-bvh": "./vendor/three-mesh-bvh.module.js"
     }
   }
   </script>
@@ -102,27 +103,73 @@
     // treated as one more row.
     const RADIO_TRACK_URL = '';
 
-    // ── imported models ──────────────────────────────────────────────────
-    // Drop a .glb into toko-trip/models/ and add a row. Same discipline as
-    // the records: every row states where it came from and on what licence,
-    // because provenance is the expensive thing to reconstruct later. CC0
-    // needs no credit but still gets a row; anything CC-BY is CREDITED IN
-    // WORLD on the sign post's screen.
+    // ── props: the door an authored asset comes through ──────────────────
+    // `models/CONTRACT.md` is the authoring spec; this is its machine-readable
+    // half, and the loader enforces every field below rather than trusting it.
     //
-    // Placement speaks the island's own language rather than raw coordinates:
-    // `at: [x, z]` is metres from the chair, and the model is dropped onto
-    // groundHeight() so it cannot float or sink. `flat: true` re-materials it
-    // to the satin palette, which is what keeps a downloaded PBR asset from
-    // looking like a photograph glued onto a poster.
-    const MODELS = [
-      // { file: 'models/rowboat.glb', at: [-6.2, 7.4], yaw: 0.7, scale: 1,
-      //   flat: true, title: 'Rowboat', author: '', source: '', licence: 'CC0' },
+    // THREE NAMED SLOTS the island expects to be replaced by real geometry —
+    // the chair you sit in, the radio beside it, and the cove's rock and
+    // driftwood. Each ships today as a code-built stand-in that a file takes
+    // the place of.
+    //
+    // `state`  'placeholder' — the code-built prop stands; no file is fetched.
+    //          'live'        — the file is loaded, and if it fails to parse OR
+    //                          breaks the contract the slot FAILS VISIBLY: a
+    //                          magenta cage stands exactly where the prop
+    //                          should be, labelled with the reason, and a
+    //                          banner names it. It does NOT fall back to the
+    //                          stand-in. A silent fallback is indistinguishable
+    //                          from a prop nobody placed, and nobody in a
+    //                          headset is reading a console warning.
+    // `kind`   'dressing'    — it is looked at.
+    //          'structure'   — it is stood on or bumped into. This is the set
+    //                          three-mesh-bvh will consume when collision
+    //                          lands; today it only marks intent, because
+    //                          groundHeight() is still the only thing the
+    //                          clamps ask.
+    // `tris`   the budget. A headset is fill-bound rather than triangle-bound,
+    //          but a photoreal download is comfortably both.
+    // `span`   [x, y, z] metres — the envelope, checked against the file's own
+    //          measured bounds. This is the check that catches the centimetre/
+    //          metre mistake, which is the commonest export bug there is and
+    //          the one that puts a hundred-metre chair on the beach.
+    // `still`  every prop here is STATIC. A file carrying animation clips or a
+    //          skinned mesh is refused rather than quietly played or quietly
+    //          frozen — this island has no animation system to run it in.
+    //
+    // Provenance is per row for the same reason the records carry it: CC0
+    // needs no credit and still gets a row, and anything CC-BY is CREDITED IN
+    // WORLD on the sign post's screen.
+    const PROPS = [
+      { id: 'chair', state: 'placeholder', file: 'models/chair.glb',
+        kind: 'structure', tris: 6000, span: [1.2, 1.6, 1.3], flat: true,
+        fit: 'ground', title: 'Deck chair', author: '', source: '', licence: '' },
+      { id: 'radio', state: 'placeholder', file: 'models/radio.glb',
+        kind: 'dressing', tris: 2500, span: [0.6, 0.7, 0.5], flat: true,
+        fit: 'shelf', title: 'Radio', author: '', source: '', licence: '' },
+      { id: 'cove', state: 'placeholder', file: 'models/cove.glb',
+        kind: 'structure', tris: 24000, span: [30, 8, 30], flat: true,
+        fit: 'origin', title: 'Cove rock and driftwood', author: '', source: '', licence: '' },
+    ];
+    // Anything else that is only ever looked at. Same door, same checks — one
+    // loader, because two loaders drift and only one of them gets the fix.
+    const DRESSING = [
+      // { id: 'rowboat', state: 'live', file: 'models/rowboat.glb',
+      //   kind: 'dressing', tris: 4000, span: [4, 1.6, 1.6], at: [-6.2, 7.4],
+      //   yaw: 0.7, fit: 'ground', flat: true, title: 'Rowboat', author: '',
+      //   source: '',
+      //   licence: 'CC0' },
     ];
 
     import * as THREE from 'three';
     import { XRButton } from 'three/addons/webxr/XRButton.js';
     import * as BGU from 'three/addons/utils/BufferGeometryUtils.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    // three-mesh-bvh (MIT, vendored — see vendor/three-mesh-bvh.LICENSE). The
+    // island's collision is a raycast against 40k+ triangles of terrain every
+    // frame, which is affordable with a bounds tree and nothing like
+    // affordable without one. That is the whole reason it is here.
+    import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 
     // ── palette ──
     const P = {
@@ -641,6 +688,16 @@
     // transformed clone → the static merge pile (one draw call at the end).
     // Pile geometry is TERRAIN space; the merged mesh joins `island`.
     const pile = [];
+    // mergeGeometries refuses a list whose attribute sets disagree, so every
+    // pile is normalised the same way: unindexed, and given the empty UVs the
+    // textured members already carry. One copy of this, because two piles now
+    // go through it and a second copy is the one that misses a fix.
+    const mergeFor = list => BGU.mergeGeometries(list.map(g => {
+      const c = g.index ? g.toNonIndexed() : g;
+      if (!c.attributes.uv) c.setAttribute('uv',
+        new THREE.BufferAttribute(new Float32Array(c.attributes.position.count * 2), 2));
+      return c;
+    }));
     function drop(geo, x, y, z, ry = 0, sx = 1, sy = 1, sz = 1) {
       const g = geo.clone();
       g.scale(sx, sy, sz); g.rotateY(ry); g.translate(x, y, z);
@@ -1160,12 +1217,17 @@
       chairP[0] + lx * Math.cos(NOOK_YAW) + lz * Math.sin(NOOK_YAW),
       chairP[2] - lx * Math.sin(NOOK_YAW) + lz * Math.cos(NOOK_YAW),
     ];
+    // The chair is merged SEPARATELY from the deck and the table it stands
+    // on. It was one of eleven geometries baked into the shared static pile,
+    // which meant a chair file had nothing to take the place of — the prop
+    // door is unusable until the prop is an object.
+    const chairPile = [];
     {
       // put(): nook-local coords (y up from the pad surface) → terrain space
       const yawM = new THREE.Matrix4().makeRotationY(NOOK_YAW);
-      const put = (geo, x, y, z) => {
+      const put = (geo, x, y, z, into = pile) => {
         geo.translate(x, y, z).applyMatrix4(yawM).translate(chairP[0], PAD_H, chairP[2]);
-        pile.push(geo);
+        into.push(geo);
       };
       // deck: 9 planks + edge beams, per-plank tone jitter, ends baked darker
       for (let i = 0; i < 9; i++) {
@@ -1185,23 +1247,29 @@
       for (const [lx, lz] of [[-0.24, -0.2], [0.24, -0.2], [-0.24, 0.22], [0.24, 0.22]]) {
         const leg = paint(box(0.05, legH, 0.05),
           (x, y) => _c.copy(cWood).multiplyScalar(0.72 + 0.3 * smooth(-legH / 2, legH / 2, y)));
-        put(leg, lx, 0.06 + legH / 2, lz);
+        put(leg, lx, 0.06 + legH / 2, lz, chairPile);
       }
-      put(paint(box(0.56, 0.06, 0.52), cWood), 0, seatY - 0.03, 0);
+      put(paint(box(0.56, 0.06, 0.52), cWood), 0, seatY - 0.03, 0, chairPile);
       const back = paint(box(0.56, 0.62, 0.06),
         (x, y) => _c.copy(cWood).multiplyScalar(0.86 + 0.18 * smooth(-0.31, 0.31, y)));
       back.rotateX(0.22);
-      put(back, 0, seatY + 0.3, 0.33);
-      for (const ax of [-0.31, 0.31]) put(paint(box(0.06, 0.05, 0.5), cWood), ax, seatY + 0.18, 0.02);
-      put(paint(box(0.5, 0.05, 0.46), cCush), 0, seatY + 0.025, -0.01);
+      put(back, 0, seatY + 0.3, 0.33, chairPile);
+      for (const ax of [-0.31, 0.31]) put(paint(box(0.06, 0.05, 0.5), cWood), ax, seatY + 0.18, 0.02, chairPile);
+      put(paint(box(0.5, 0.05, 0.46), cCush), 0, seatY + 0.025, -0.01, chairPile);
       const backCush = paint(box(0.48, 0.5, 0.05), cCush);
       backCush.rotateX(0.22);
-      put(backCush, 0, seatY + 0.28, 0.28);
+      put(backCush, 0, seatY + 0.28, 0.28, chairPile);
       // the side table (the book is its own object — it opens)
       put(paint(box(0.07, 0.5, 0.07),
         (x, y) => _c.copy(cWood).multiplyScalar(0.75 + 0.28 * smooth(-0.25, 0.25, y))), 0.62, 0.31, -0.05);
       put(paint(new THREE.CylinderGeometry(0.26, 0.29, 0.05, 10), cWood), 0.62, 0.585, -0.05);
     }
+    // the stand-in, and the thing a live chair file replaces wholesale
+    let chairProp = new THREE.Mesh(mergeFor(chairPile), satin);
+    chairProp.castShadow = true;
+    chairProp.receiveShadow = true;
+    island.add(chairProp);
+
     // chair proxy for the "return to the nook" ray — invisible, generous
     const chairHit = new THREE.Mesh(box(0.9, 1.2, 0.9), new THREE.MeshBasicMaterial({ visible: false }));
     chairHit.position.set(chairP[0], chairP[1] + 0.2, chairP[2]);
@@ -1747,29 +1815,54 @@
       roughness: 0.45, emissive: 0xffffff, emissiveIntensity: 0.85,
     });
     const sign = new THREE.Group();
-    {
+    // The sign's screen is also where imported art is CREDITED. The house rule
+    // is that CC-BY work is credited where a PLAYER can see it, not only in a
+    // source file — and until now the prop table carried a `licence` field
+    // that was displayed precisely nowhere, which is a promise in a comment
+    // rather than a credit. CC0 needs none and is not listed.
+    const propCredits = [];
+    function paintSign() {
       const cv = document.createElement('canvas');
       cv.width = 256; cv.height = 144;
       const g = cv.getContext('2d');
       g.fillStyle = '#06070a'; g.fillRect(0, 0, 256, 144);
       g.fillStyle = '#0d1420'; g.fillRect(6, 6, 244, 132);
       g.textAlign = 'center';
+      const credited = propCredits.length > 0;
       g.fillStyle = '#3aa8a0';
-      g.font = 'bold 30px ui-monospace, Menlo, Consolas, monospace';
-      g.fillText('THE ARCADE', 128, 46);
+      g.font = `bold ${credited ? 26 : 30}px ui-monospace, Menlo, Consolas, monospace`;
+      g.fillText('THE ARCADE', 128, credited ? 40 : 46);
       g.fillStyle = '#f2e9d8';
       g.font = '17px ui-monospace, Menlo, Consolas, monospace';
-      g.fillText('every game, one page', 128, 76);
+      g.fillText('every game, one page', 128, credited ? 66 : 76);
       g.fillStyle = '#ff4fd8';
-      g.font = 'bold 19px ui-monospace, Menlo, Consolas, monospace';
-      g.fillText('[ THIS WAY ]', 128, 112);
+      g.font = `bold ${credited ? 17 : 19}px ui-monospace, Menlo, Consolas, monospace`;
+      g.fillText('[ THIS WAY ]', 128, credited ? 94 : 112);
+      if (credited) {
+        g.fillStyle = 'rgba(242,233,216,0.62)';
+        // the credit is the point of the line, so shrink it to fit rather
+        // than letting the author's name clip — the same rule the radio's
+        // plaque follows
+        for (let i = 0; i < Math.min(2, propCredits.length); i++) {
+          const line = propCredits[i];
+          let px = 13;
+          do { g.font = `${px}px ui-monospace, Menlo, Consolas, monospace`; px -= 1; }
+          while (px > 7 && g.measureText(line).width > 236);
+          g.fillText(line, 128, 114 + i * 15);
+        }
+      }
       // one scanline per two rows, the same trick the hub's marquees use
       g.fillStyle = 'rgba(0,0,0,0.22)';
       for (let y = 0; y < 144; y += 2) g.fillRect(0, y, 256, 1);
       const tx = new THREE.CanvasTexture(cv);
       tx.colorSpace = THREE.SRGBColorSpace;
+      signScreenMat.map?.dispose();
       signScreenMat.map = tx;
       signScreenMat.emissiveMap = tx;
+      signScreenMat.needsUpdate = true;
+    }
+    {
+      paintSign();
 
       const gh = groundHeight(signSpot.x, signSpot.z);
       const post = new THREE.Mesh(paint(box(0.08, 1.5, 0.08),
@@ -1800,20 +1893,194 @@
     // must never be the reason the island does not open, so each load is
     // independent and the catch does nothing but log.
     const imported = [];
-    function importModels() {
-      if (!MODELS.length) return;
+    // ═══ THE PROP DOOR ═══════════════════════════════════════════════════
+    // Validate, then place — and when a slot fails, fail WHERE IT CAN BE SEEN.
+    //
+    // The old door logged a warning and skipped the prop, which is the worst
+    // of the available behaviours: the island looks finished, the prop is
+    // simply absent, and absent is indistinguishable from never-placed. In a
+    // headset there is no console to check, so a quiet failure is a failure
+    // that ships. A slot that breaks now puts a magenta cage exactly where the
+    // prop should have stood, labelled with the reason.
+    const propReports = [];
+    const propCages = [];
+    const _cageV = new THREE.Vector3(), _cageL = new THREE.Vector3();
+
+    // Where a slot lives, in TERRAIN space — the same coordinates the merge
+    // piles and groundHeight() speak, so a prop and the cage that stands in
+    // for a broken one cannot disagree about where the prop was meant to be.
+    function propAnchor(spec) {
+      if (spec.id === 'chair') {
+        return { x: chairP[0], y: groundHeight(chairP[0], chairP[2]), z: chairP[2], yaw: NOOK_YAW };
+      }
+      if (spec.id === 'radio') {
+        const [rx, rz] = nook(0.62, -0.05);
+        return { x: rx, y: PAD_H + 0.61, z: rz, yaw: NOOK_YAW + 0.5 };   // the table top
+      }
+      if (spec.id === 'cove') return { x: 0, y: 0, z: 0, yaw: 0 };       // island origin
+      const [ax, az] = spec.at ?? [0, 0];
+      return { x: ax, y: groundHeight(ax, az), z: az, yaw: spec.yaw ?? 0 };
+    }
+
+    // Everything the contract promises, asked of the file rather than assumed.
+    function checkProp(spec, gltf) {
+      const why = [];
+      const root = gltf.scene;
+      // STATIC. There is no animation system on this island to run a clip in,
+      // so a file carrying one is refused rather than silently frozen — a
+      // frozen clip is a prop in a pose nobody chose.
+      if (gltf.animations?.length) {
+        why.push(`carries ${gltf.animations.length} animation clip(s); props are static`);
+      }
+      let tris = 0, skinned = 0, textures = 0;
+      root.traverse(o => {
+        if (o.isSkinnedMesh) skinned++;
+        if (!o.isMesh || !o.geometry) return;
+        const g = o.geometry;
+        tris += (g.index ? g.index.count : g.attributes.position?.count ?? 0) / 3;
+        for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
+          if (m?.map) textures++;
+        }
+      });
+      tris = Math.round(tris);
+      if (skinned) why.push(`${skinned} skinned mesh(es); props are static`);
+      if (tris > spec.tris) why.push(`${tris} triangles against a budget of ${spec.tris}`);
+      // MEASURE LAST, and only what is worth measuring. Box3.setFromObject
+      // walks a SkinnedMesh through applyBoneTransform, which throws outright
+      // on a rig whose skin attributes are missing — so measuring before
+      // refusing means a malformed file takes the whole island down instead of
+      // failing visibly, which is the one outcome this door exists to prevent.
+      // The rig is already refused above; there is nothing left to learn from
+      // its size.
+      if (why.length) return { tris, textures, dim: [0, 0, 0], why };
+      const span = spec.span ?? [99, 99, 99];
+      let dim = [0, 0, 0];
+      try {
+        const size = new THREE.Vector3();
+        new THREE.Box3().setFromObject(root).getSize(size);
+        dim = [+size.x.toFixed(2), +size.y.toFixed(2), +size.z.toFixed(2)];
+        // THE ENVELOPE, which is really a units check. A glTF exported in
+        // centimetres arrives a hundred times too big and one authored at
+        // scene scale arrives a hundred times too small; both look like a
+        // missing prop from the chair and neither says so.
+        const ax = ['x', 'y', 'z'];
+        if (ax.some((k, i) => size[k] > span[i] * 1.25)) {
+          why.push(`measures ${dim.join('x')} m against a declared ${span.join('x')} m; check the export's units`);
+        } else if (ax.every((k, i) => size[k] < span[i] * 0.25)) {
+          why.push(`measures only ${dim.join('x')} m against a declared ${span.join('x')} m; check the export's units`);
+        }
+      } catch (e) {
+        why.push(`could not be measured — ${e?.message ?? e}`);
+      }
+      return { tris, textures, dim, why };
+    }
+
+    // The cage: magenta, unfogged, turning. Magenta is the one colour nowhere
+    // in this island's palette, and a thing that turns on a beach where
+    // nothing else does cannot be mistaken for art.
+    function propCage(spec, anchor, why) {
+      const g = new THREE.Group();
+      const [sx, sy, sz] = spec.span ?? [1, 1, 1];
+      // EDGES, not `wireframe: true` — a wireframe box draws every triangle
+      // diagonal too, which reads as a crumpled cat's cradle rather than as
+      // the envelope the prop was supposed to fill. Twelve lines say "this is
+      // the shape of the hole"; eighteen say nothing.
+      const cageGeo = box(sx, sy, sz);
+      const wire = new THREE.LineSegments(new THREE.EdgesGeometry(cageGeo),
+        new THREE.LineBasicMaterial({ color: col(P.neon), fog: false, transparent: true, opacity: 0.95 }));
+      cageGeo.dispose();
+      wire.position.y = sy / 2;
+      g.add(wire);
+      // and it SAYS which slot and why, because a mystery cage is only half a
+      // report and the other half is in a console nobody is wearing
+      const cv = document.createElement('canvas');
+      cv.width = 512; cv.height = 128;
+      const c2 = cv.getContext('2d');
+      c2.fillStyle = 'rgba(10,6,12,0.85)';
+      c2.beginPath(); c2.roundRect(0, 0, 512, 128, 10); c2.fill();
+      c2.textAlign = 'center';
+      c2.fillStyle = '#ff4fd8';
+      c2.font = 'bold 34px ui-monospace, Menlo, Consolas, monospace';
+      c2.fillText(`PROP FAILED: ${spec.id}`.toUpperCase(), 256, 46);
+      // the REASON is the half that saves you the trip to the console, so it
+      // is lit rather than muted — a dim explanation over a bright cage is a
+      // cage that only tells you something is wrong
+      c2.fillStyle = '#f2e9d8';
+      let px = 21;
+      do { c2.font = `${px}px ui-monospace, Menlo, Consolas, monospace`; px -= 1; }
+      while (px > 12 && c2.measureText(why).width > 486);
+      c2.fillText(why.slice(0, 84), 256, 94);
+      const tx = new THREE.CanvasTexture(cv);
+      tx.colorSpace = THREE.SRGBColorSpace;
+      const label = new THREE.Mesh(new THREE.PlaneGeometry(Math.max(1.2, sx * 1.1), Math.max(0.3, sx * 0.275)),
+        new THREE.MeshBasicMaterial({ map: tx, transparent: true, fog: false, depthWrite: false }));
+      // clear of the cage, not across it
+      label.position.y = sy + Math.max(0.42, sy * 0.3);
+      label.userData.billboard = true;
+      g.add(label);
+      g.position.set(anchor.x, anchor.y, anchor.z);
+      island.add(g);
+      propCages.push(g);
+      // and the stand-in steps ASIDE. Leaving it under the cage would read as
+      // "there is a chair, and also an error", which is the comfortable lie
+      // this door exists to refuse: a live slot means the file IS the prop.
+      // Only the mesh goes — the sit detection and the nook's ray target are
+      // separate objects and keep working, so a broken slot costs you the
+      // model and not the island.
+      if (spec.id === 'chair' && chairProp) chairProp.visible = false;
+    }
+
+    // and one line on the page, for the pass that is being done on a laptop
+    function propBanner() {
+      const bad = propReports.filter(r => r.why.length);
+      let el = document.getElementById('propfail');
+      if (!bad.length) { el?.remove(); return; }
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'propfail';
+        el.style.cssText = 'position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:7;'
+          + 'font:12px ui-monospace,Menlo,Consolas,monospace;color:#ff4fd8;'
+          + 'background:rgba(10,6,12,0.85);padding:7px 11px;border-radius:7px;'
+          + 'pointer-events:none;white-space:pre;text-align:center';
+        document.body.appendChild(el);
+      }
+      el.textContent = bad.map(r => `PROP FAILED  ${r.id}  ${r.why[0]}`).join('\n');
+    }
+
+    function openPropDoor() {
+      const live = [...PROPS, ...DRESSING].filter(sp => sp.state === 'live');
+      for (const sp of [...PROPS, ...DRESSING].filter(x => x.state !== 'live')) {
+        propReports.push({ id: sp.id, state: sp.state, why: [] });
+      }
+      if (!live.length) return propBanner();
       const loader = new GLTFLoader();
-      for (const spec of MODELS) {
+      for (const spec of live) {
+        const anchor = propAnchor(spec);
         loader.load(spec.file, (gltf) => {
+          const rep = checkProp(spec, gltf);
+          propReports.push({ id: spec.id, state: 'live', ...rep });
+          if (rep.why.length) {
+            // NO FALLBACK. The stand-in is not quietly put back, because then
+            // the island looks right and the file is silently doing nothing.
+            propCage(spec, anchor, rep.why[0]);
+            propBanner();
+            shadowDirty();
+            return;
+          }
           const obj = gltf.scene;
-          const [mx, mz] = spec.at ?? [0, 0];
-          // sit it on the ground, from its own measured base rather than its
-          // origin — exported models rarely agree about where zero is
-          const box = new THREE.Box3().setFromObject(obj);
-          const s = spec.scale ?? 1;
-          obj.scale.setScalar(s);
-          obj.rotation.y = spec.yaw ?? 0;
-          obj.position.set(mx, gy(mx, mz) - box.min.y * s, mz);
+          const sc = spec.scale ?? 1;
+          obj.scale.setScalar(sc);
+          obj.rotation.y = anchor.yaw;
+          const b = new THREE.Box3().setFromObject(obj);
+          // how the slot is seated: onto the ground from its own measured
+          // base, onto a shelf at an exact height, or left at the island's
+          // own origin — which is the only sane rule for a prop the size of
+          // the cove, since there is no single point to rest 30 m of rock on
+          const fit = spec.fit ?? 'ground';
+          obj.position.set(
+            fit === 'origin' ? 0 : anchor.x,
+            fit === 'origin' ? 0 : anchor.y - b.min.y,
+            fit === 'origin' ? 0 : anchor.z);
           obj.traverse(o => {
             if (!o.isMesh) return;
             o.castShadow = true;
@@ -1830,11 +2097,36 @@
               });
             }
           });
-          scene.add(obj);
+          // a live chair REPLACES the stand-in rather than standing in it
+          if (spec.id === 'chair' && chairProp) {
+            island.remove(chairProp);
+            const i = solids.indexOf(chairProp);
+            if (i >= 0) solids.splice(i, 1);
+            chairProp.geometry.disposeBoundsTree?.();
+            chairProp.geometry.dispose();
+            chairProp = null;
+          }
+          island.add(obj);
+          // a structure prop is something you stand on or bump into, so it
+          // joins the collision set; dressing is only ever looked at
+          if (spec.kind === 'structure') {
+            obj.updateMatrixWorld(true);
+            obj.traverse(o => { if (o.isMesh) makeSolid(o); });
+          }
           imported.push({ spec, obj });
+          // CC0 asks for nothing; everything else gets its line on the sign
+          const lic = (spec.licence ?? '').trim();
+          if (lic && !/^cc0|^public domain/i.test(lic)) {
+            propCredits.push(`${spec.title || spec.id} — ${spec.author || 'unknown'} (${lic})`);
+            paintSign();
+          }
+          propBanner();
           shadowDirty();
         }, undefined, (err) => {
-          console.warn('[toko-trip] model skipped:', spec.file, err?.message ?? err);
+          const why = `did not load — ${err?.message ?? err}`;
+          propReports.push({ id: spec.id, state: 'live', tris: 0, textures: 0, dim: [0, 0, 0], why: [why] });
+          propCage(spec, anchor, why);
+          propBanner();
         });
       }
     }
@@ -1873,15 +2165,96 @@
     }
 
     // the static merge — everything above that neither moves nor answers a ray
-    const statics = new THREE.Mesh(BGU.mergeGeometries(pile.map(g => {
-      const c = g.index ? g.toNonIndexed() : g;
-      if (!c.attributes.uv) c.setAttribute('uv',
-        new THREE.BufferAttribute(new Float32Array(c.attributes.position.count * 2), 2));
-      return c;
-    })), satin);
+    const statics = new THREE.Mesh(mergeFor(pile), satin);
     statics.castShadow = true;
     statics.receiveShadow = true;
     island.add(statics);
+
+    // ═══ COLLISION ═══ the island's real geometry, not its height field ════
+    //
+    // `groundHeight(x, z)` is a pure function and stays the source of truth
+    // for the SHAPE of the island — the mesh, the scatter, the sand maps and
+    // the surf emitters all still ask it. What it cannot do is hold a bridge:
+    // a height field has one answer per column, and the jetty deck and the
+    // water under it are the same column. So the thing you WALK on is the
+    // geometry, queried by ray, and a ray against 40k triangles of terrain
+    // every frame is affordable with a bounds tree and nothing like
+    // affordable without one. That is what three-mesh-bvh is here for.
+    THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+    THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+    // A mesh with no boundsTree falls through to three's own raycast, so this
+    // is safe for every other ray in the file — the teleport ray, the slate's
+    // UV pick — and they get the acceleration free wherever a tree exists.
+    THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+    const solids = [];
+    function makeSolid(mesh) {
+      if (!mesh?.geometry) return;
+      mesh.geometry.computeBoundsTree();
+      solids.push(mesh);
+    }
+
+    // The sea's surface in WORLD space. The island drops by PAD_H so the pad
+    // under the chair sits on the real floor, which puts sea level there.
+    const SEA_Y = -PAD_H - 0.02;
+    const STEP_UP = 0.4;          // the lip of the jetty deck, and no more
+    const BODY_R = 0.28;          // how wide you are, for bumping into things
+    const CHEST = 1.0;            // where a wall is felt, above the deck lip
+
+    const _cray = new THREE.Raycaster();
+    _cray.firstHitOnly = true;    // the bounds tree's whole trick
+    const _cdown = new THREE.Vector3(0, -1, 0);
+    const _corig = new THREE.Vector3(), _cdir = new THREE.Vector3();
+
+    // What you would be standing on at (x, z), in world y — or null if the
+    // answer is "the sea". Starts the ray a step ABOVE your feet, so you can
+    // step up onto the deck but not up a wall.
+    function standY(x, z, feetY = 0) {
+      _corig.set(x, feetY + STEP_UP, z);
+      _cray.set(_corig, _cdown);
+      _cray.far = STEP_UP + 4;
+      const hit = _cray.intersectObjects(solids, false)[0];
+      // a face you can stand on is one facing up; the side of the totem is
+      // geometry too, and standing on it is not walking
+      if (hit && (!hit.face || hit.face.normal.y > 0.5)) {
+        return hit.point.y > SEA_Y ? hit.point.y : null;
+      }
+      const g = gy(x, z);
+      return g > SEA_Y ? g : null;
+    }
+
+    // Is something solid in the way between here and there? Only walls count
+    // — a floor is not an obstacle, which is what lets you walk up the beach.
+    function wallBetween(fx, fz, tx, tz, feetY) {
+      _cdir.set(tx - fx, 0, tz - fz);
+      const d = _cdir.length();
+      if (d < 1e-6) return false;
+      _cdir.divideScalar(d);
+      _corig.set(fx, feetY + CHEST, fz);
+      _cray.set(_corig, _cdir);
+      _cray.far = d + BODY_R;
+      const hit = _cray.intersectObjects(solids, false)[0];
+      return !!hit && (!hit.face || Math.abs(hit.face.normal.y) < 0.6);
+    }
+
+    // One move, for every path that moves you. Returns where you end up,
+    // sliding along a wall rather than sticking to it — refusing the whole
+    // step makes a doorway feel like glue, and this island is all doorways
+    // between a chair, a table and a palm.
+    const _cout = { x: 0, z: 0, y: 0, moved: false };
+    function tryMove(fx, fz, tx, tz, feetY) {
+      const edge = (x, z) => Math.hypot(x, z) < ISLAND_R * 1.05;
+      const ok = (x, z) => edge(x, z) && standY(x, z, feetY) !== null
+        && !wallBetween(fx, fz, x, z, feetY);
+      let nx = fx, nz = fz;
+      if (ok(tx, tz)) { nx = tx; nz = tz; }
+      else if (ok(tx, fz)) { nx = tx; }        // slide along z
+      else if (ok(fx, tz)) { nz = tz; }        // slide along x
+      _cout.x = nx; _cout.z = nz;
+      _cout.y = standY(nx, nz, feetY) ?? gy(nx, nz);
+      _cout.moved = nx !== fx || nz !== fz;
+      return _cout;
+    }
 
     // ═══ INSTANCED — grass on the high dry ground, pebbles in the wet band:
     // two draw calls, so density is ~free ═══
@@ -2448,7 +2821,10 @@
       marker.visible = false;
       scene.add(marker);
     }
-    const rayTargets = [terrain, totem, radio, chairHit, book, sign, slate];
+    // `statics` carries the jetty deck, so it has to be aimable — and
+    // `ownerOf` calls it ground, which is only true where the face points up.
+    // actOn asks that, so the side of a rock is not a destination.
+    const rayTargets = [terrain, statics, totem, radio, chairHit, book, sign, slate];
     const controllers = [];
     for (let i = 0; i < 2; i++) {
       const c = renderer.xr.getController(i);
@@ -2501,9 +2877,13 @@
         const v = moveSpeed() * dt;
         const nx = xrPos.x + (_xrFwd.x * -my + rx * mx) * v;
         const nz = xrPos.z + (_xrFwd.z * -my + rz * mx) * v;
-        if (groundHeight(nx, nz) > -0.05 && Math.hypot(nx, nz) < ISLAND_R * 1.05) {
-          xrPos.x = nx; xrPos.z = nz;
-        }
+        const m = tryMove(xrPos.x, xrPos.z, nx, nz, xrPos.y);
+        xrPos.x = m.x; xrPos.z = m.z;
+        // and the floor comes WITH you. The sticks never touched xrPos.y, so
+        // walking off the pad left your feet at pad height while the sand
+        // dropped away underneath — only teleport ever set it. Standing on
+        // the jetty is the same mechanism, which is why it only works now.
+        xrPos.y = m.y;
       }
       applyXrOffset();
       return !!(mx || my || (turn && step === 0));
@@ -2535,6 +2915,7 @@
         if (o === sign) return 'sign';
         if (o === chairHit) return 'chair';
         if (o === slate) return 'slate';
+        if (o === statics) return 'ground';
         if (o === terrain) return 'ground';
       }
       return null;
@@ -2560,8 +2941,9 @@
       }
       if (kind === 'ground' && baseRef) {
         const p = hit.point;
-        // the teleport clamp asks the same function everything else asks
-        if (groundHeight(p.x, p.z) < -0.05) return;
+        // the teleport clamp asks the same thing walking asks
+        if (hit.face && hit.face.normal.y < 0.5) return;       // not a floor
+        if (standY(p.x, p.z, p.y) === null) return;
         if (Math.hypot(p.x, p.z) > ISLAND_R * 1.05) return;
         // written through the same offset the sticks use, so the two ways of
         // moving cannot disagree about where you are standing
@@ -2748,6 +3130,9 @@
     const neonFlick = { until: 0, dim: 1 };
     const _plaqueV = new THREE.Vector3();
     let perfT = 0, perfN = 0, perfMs = 0, perfWorst = 0, perfCalls = 0, perfTris = 0;
+    // the surface under the flat camera's feet, carried between frames so a
+    // ray that starts at the feet has feet to start at
+    let footY = 0;
     function animate() {
       const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
 
@@ -2771,13 +3156,13 @@
           const v = moveSpeed() * 1.35 * dt;
           const nx = eye.x + (-Math.sin(yaw) * f + Math.cos(yaw) * s2) * v;
           const nz = eye.z + (-Math.cos(yaw) * f - Math.sin(yaw) * s2) * v;
-          // walking asks the same function the teleport does, so the sea
-          // refuses a stick exactly the way it refuses a ray
-          if (groundHeight(nx, nz) > -0.02 && Math.hypot(nx, nz) < ISLAND_R * 1.05) {
-            eye.x = nx; eye.z = nz;
-          }
+          // walking asks the same thing the teleport does, so the sea refuses
+          // a stick exactly the way it refuses a ray — and the jetty carries
+          // one exactly the way it carries the other
+          const m = tryMove(eye.x, eye.z, nx, nz, footY);
+          eye.x = m.x; eye.z = m.z; footY = m.y;
         }
-        eye.y += ((gy(eye.x, eye.z) + 1.5) - eye.y) * Math.min(1, dt * 8);
+        eye.y += ((footY + 1.5) - eye.y) * Math.min(1, dt * 8);
         camera.position.copy(eye);
         camera.rotation.set(0, 0, 0);
         camera.rotateY(yaw);
@@ -2792,7 +3177,8 @@
           const hit = castFrom(c);
           c.userData.hit = hit;
           if (hit && ownerOf(hit.object) === 'ground'
-            && groundHeight(hit.point.x, hit.point.z) >= -0.05) {
+            && (!hit.face || hit.face.normal.y > 0.5)
+            && standY(hit.point.x, hit.point.z, hit.point.y) !== null) {
             marker.position.copy(hit.point);
             marker.position.y += 0.02;
             marker.visible = true;
@@ -2817,6 +3203,21 @@
         c.rotation.x = Math.cos(t * 0.47 + c.userData.phase) * 0.028;
       }
       for (const r of reedClumps) r.rotation.z = Math.sin(t * 0.9 + r.userData.phase) * 0.05;
+      // a failed prop TURNS, and its label follows your head. Nothing else on
+      // this island does either, which is the point: a cage that could be
+      // mistaken for scenery has failed at the only job it has.
+      if (propCages.length) {
+        const pc = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+        _cageV.setFromMatrixPosition(pc.matrixWorld);
+        for (const g of propCages) {
+          for (const ch of g.children) {
+            if (ch.userData.billboard) {
+              ch.getWorldPosition(_cageL);
+              ch.lookAt(_cageV.x, _cageL.y, _cageV.z);
+            } else ch.rotation.y = t * 0.6;
+          }
+        }
+      }
       soundUpdate(dt, t);
       clouds.rotation.y = t * 0.0045;
       for (const b of birds) {
@@ -2901,7 +3302,10 @@
       }
     }
 
-    importModels();
+    makeSolid(terrain);
+    makeSolid(statics);
+    makeSolid(chairProp);
+    openPropDoor();
     setMood(0, true);
     (renderer.init ? renderer.init() : Promise.resolve())
       .then(() => { shadowDirty(); renderer.setAnimationLoop(animate); });
@@ -2915,15 +3319,80 @@
       debug: {
         radioToggle, actOn, rayTargets, sitCheck, bookAct, PLAYLIST,
         radio: () => ({ on: radioOn, track: trackIdx, plaque: plaque.visible }),
-        sign, goHome, MODELS,
+        sign, goHome, PROPS, DRESSING,
         imported: () => imported.map(i => ({ file: i.spec.file, pos: i.obj.position.toArray() })),
+        // the prop door: what each slot declared, and what the file actually
+        // was. A slot that failed is reported, never silently absent.
+        props: () => ({
+          slots: [...PROPS, ...DRESSING].map(sp => ({
+            id: sp.id, state: sp.state, kind: sp.kind, fit: sp.fit ?? 'ground',
+            tris: sp.tris, span: sp.span,
+          })),
+          reports: propReports.map(r => ({ id: r.id, state: r.state, why: r.why })),
+          cages: propCages.length,
+          banner: document.getElementById('propfail')?.textContent ?? '',
+          chairStandIn: !!chairProp,
+        }),
+        // drive the door's failure path without shipping a broken file
+        propFail: (id, why = 'forced by the gate') => {
+          const sp = [...PROPS, ...DRESSING].find(x => x.id === id);
+          if (!sp) return false;
+          propReports.push({ id: sp.id, state: 'live', tris: 0, textures: 0, dim: [0, 0, 0], why: [why] });
+          propCage(sp, propAnchor(sp), why);
+          propBanner();
+          return true;
+        },
+        // run the contract against a SYNTHETIC file, so the gate can prove
+        // each refusal without a broken .glb being committed to prove it
+        propProbe: (id, { tris = 100, size = null, clips = 0, skinned = false } = {}) => {
+          const sp = [...PROPS, ...DRESSING].find(x => x.id === id);
+          if (!sp) return null;
+          const want = size ?? sp.span.map(v => v * 0.8);
+          const g = new THREE.BoxGeometry(want[0], want[1], want[2]);
+          // a box is 12 triangles; pad the index up to the triangle count asked for
+          const idx = [];
+          for (let i = 0; i < tris; i++) idx.push(0, 1, 2);
+          g.setIndex(idx);
+          const mesh = skinned ? new THREE.SkinnedMesh(g) : new THREE.Mesh(g);
+          const root = new THREE.Group();
+          root.add(mesh);
+          root.updateMatrixWorld(true);
+          const fake = { scene: root, animations: Array.from({ length: clips }, () => ({})) };
+          const out = checkProp(sp, fake);
+          g.dispose();
+          return out;
+        },
+        credits: () => propCredits.slice(),
+        creditProp: (title, author, licence) => {
+          const lic = (licence ?? '').trim();
+          if (lic && !/^cc0|^public domain/i.test(lic)) {
+            propCredits.push(`${title} — ${author || 'unknown'} (${lic})`);
+            paintSign();
+            return true;
+          }
+          return false;
+        },
         // stand somewhere and face something — the flat camera, for the gate
         stand: (x, z, ry, p = -0.15) => {
-          eye.set(x, gy(x, z) + 1.5, z); yaw = ry; pitch = p;
+          // stand on what a PLAYER would stand on — the deck if there is one
+          // over this column, the sand if there is not. Dropped from well
+          // above, because this is a placement, not a step.
+          footY = standY(x, z, gy(x, z) + 2) ?? gy(x, z);
+          eye.set(x, footY + 1.5, z); yaw = ry; pitch = p;
         },
         book: () => ({ open: bookOpen, page: bookPage, pages: PAGES.length }),
         seated: () => seated,
-        canTeleport: (x, z) => groundHeight(x, z) >= -0.05 && Math.hypot(x, z) <= ISLAND_R * 1.05,
+        canTeleport: (x, z) => standY(x, z, gy(x, z) + 0.2) !== null
+          && Math.hypot(x, z) <= ISLAND_R * 1.05,
+        // collision, which is the island's geometry rather than its height field
+        collide: () => ({ solids: solids.length, seaY: +SEA_Y.toFixed(2), stepUp: STEP_UP,
+          trees: solids.filter(m => !!m.geometry.boundsTree).length }),
+        standY: (x, z, feetY = 0) => standY(x, z, feetY),
+        wallBetween: (fx, fz, tx, tz, feetY = 0) => wallBetween(fx, fz, tx, tz, feetY),
+        tryMove: (fx, fz, tx, tz, feetY = 0) => {
+          const m = tryMove(fx, fz, tx, tz, feetY);
+          return { x: +m.x.toFixed(3), z: +m.z.toFixed(3), y: +m.y.toFixed(3), moved: m.moved };
+        },
         // comfort, the slate that sets it, and the frame cost it reports
         slate, slateFace, slateAct, slateRow, SPEEDS, TURNS, moveSpeed,
         comfort: () => ({ ...comfort, speed: SPEEDS[comfort.speed][0], turn: TURNS[comfort.turn][0] }),
