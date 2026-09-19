@@ -2,9 +2,9 @@
 // Fixed 128x152 grid. Sparse, local roof geometry; motion comes from beacon,
 // aerial sway and distant aircraft, not from filling the skyline with effects.
 
-import { PAL } from './palette.js?v=62';
-import { mix, shade } from './screen.js?v=62';
-import { drawFarCity } from './retrocity.js?v=62';
+import { PAL } from './palette.js?v=63';
+import { mix, shade } from './screen.js?v=63';
+import { drawFarCity } from './retrocity.js?v=63';
 
 const W = 128, H = 152;
 const inkLo = d => mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d);

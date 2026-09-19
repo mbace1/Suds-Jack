@@ -1388,10 +1388,24 @@ second paragraph of every bulletin, and hid the DECODE button, the tally and the
 separately hard-disabling DECODE behind a setter that threw the value away. If
 the copy does not fit, fix the layout; do not hide the copy.
 **Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs`
-— 66 checks. It reads `sw.js` with whitespace-tolerant regexes, because that file
+— 80 checks. It reads `sw.js` with whitespace-tolerant regexes, because that file
 was reformatted once and five shell checks silently graded against `undefined`
 for as long as nobody looked. A gate that cannot parse its own subject produces a
 failure everyone learns to scroll past.
+**Export is the one dependency, and it is lazy.** `js/export.js` renders a post to
+a 1080×1920 video by stepping the live Package into a canvas and encoding through
+WebCodecs with **mediabunny** — vendored under `vendor/` (no CDN, the app's rule),
+loaded by `<script>` on first press, **never precached** (683 KB for a button
+most listeners never press). Codecs are negotiated: desktop Chrome writes H.264,
+the gate's headless Chromium has no H.264 and writes AV1 into the same MP4, and
+the result says which — "MP4" that is AV1 is a fact the uploader needs. The
+lower third is measured before it is placed and scaled rather than clipped.
+**kokoro-js TTS is HELD** — `js/tts.js` exists behind `?tts=kokoro` only and its
+header says why (English-first on a trilingual station; an 82M download breaks
+offline-first and no-assets). Without the flag nothing is imported or fetched,
+and the gate proves it. Do not un-hold it by making it the default.
+`DECODE-DIFF.md` compares two models' `{{spun|plain}}` markup on the same
+bulletins: literal plain side, two spans not five, tells as questions.
 **The daily job** (`.github/workflows/radiofree-wire.yml`, 05:10 UTC) needs the
 repo secret **`ANTHROPIC_API_KEY`**, which is not set: every scheduled run so far
 has failed at `Require model secret` in under a minute. Until the owner adds it,

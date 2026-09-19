@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=62';
-import { Post, Reader } from './codec.js?v=62';
-import { Package } from './package.js?v=62';
+import { PAL, SECTOR_COLOR } from './palette.js?v=63';
+import { Post, Reader } from './codec.js?v=63';
+import { Package } from './package.js?v=63';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=62';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=62';
-import * as audio from './audio.js?v=62';
-import { PixelScreen } from './screen.js?v=62';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=62';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=63';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=63';
+import * as audio from './audio.js?v=63';
+import { PixelScreen } from './screen.js?v=63';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=63';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -23,6 +23,17 @@ const CLEAN = PARAMS.has('clean');
 // which morning's broadcast to play. An unknown or absent date plays the
 // newest — see loadWire's ladder.
 const WANT_DATE = PARAMS.get('date');
+// TTS — HELD. `?tts=kokoro` loads js/tts.js, which loads an 82M model from a
+// CDN. Without the flag the module is never imported and nothing is fetched;
+// see the header of tts.js for why it is not a feature.
+const TTS = PARAMS.get('tts') === 'kokoro';
+let tts = null;
+const ttsMouth = () => (tts ? tts.mouth() : 0);
+const ttsSpeak = (p) => {
+  if (!tts || !p || p.signoff) return;
+  const lang = getLang();
+  tts.speak(storyBroadcast(p.story.id, lang).join(' '), lang);
+};
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -198,8 +209,60 @@ function paintWireStatus() {
   host.title = (WIRE_INFO.errors || []).join('\n');
 }
 
+// THE EXPORT. A post rendered to a video file by `js/export.js`, which steps
+// the package's own clock frame by frame — so the live loop is paused for the
+// duration, or the cut would run at double speed and the file would not be the
+// broadcast. The encoder library is fetched on first use and never precached;
+// see the header of export.js for why. `opts` (seconds, fps) exists for the
+// gate, which encodes a second of AV1 rather than fifteen of H.264.
+let exporting = false;
+let lastExport = null;
+async function exportActive(i = active, btn = null, opts = {}) {
+  const p = posts[i];
+  if (!p || p.signoff || exporting) return null;
+  exporting = true;
+  const lbl = btn && btn.querySelector('.lbl');
+  const was = lbl ? lbl.textContent : '';
+  if (lbl) lbl.textContent = t('export.busy');
+  cancelAnimationFrame(raf);
+  try {
+    if (i !== active) scrollToPost(i, true);
+    const { exportPost } = await import('./export.js?v=63');
+    const out = await exportPost(p, {
+      t, parseLine, index: i + 1, total: STORIES.length,
+      date: formatDate(new Date()), accent: SECTOR_COLOR[p.story.sector],
+      seconds: opts.seconds, fps: opts.fps,
+      onProgress: k => { if (lbl) lbl.textContent = `${Math.round(k * 100)}%`; },
+    });
+    const name = `rfh-${EPISODE || 'wire'}-${p.story.id}-${getLang()}.${out.ext}`;
+    lastExport = { name, codec: out.codec, ext: out.ext, type: out.blob.type,
+                   bytes: out.blob.size, frames: out.frames, ms: out.ms };
+    if (!opts.noDownload) {
+      const url = URL.createObjectURL(out.blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }
+    return lastExport;
+  } catch (err) {
+    console.error('[rfh] export failed:', err);
+    if (lbl) lbl.textContent = t('export.fail');
+    lastExport = { error: String(err && err.message || err) };
+    return lastExport;
+  } finally {
+    exporting = false;
+    if (lbl) setTimeout(() => { lbl.textContent = was; }, 1600);
+    last = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
+}
+
 function boot() {
   booted = true;
+  if (TTS && !tts) {
+    import('./tts.js?v=63').then(m => { tts = m; ttsSpeak(posts[active]); })
+      .catch(err => console.warn('[rfh] tts prototype did not load:', err));
+  }
   paintSound();
   paintMastLang();
   buildArchive();
@@ -257,6 +320,13 @@ function buildFeed() {
     nextBtn.onclick = () => scrollToPost(i + 1);
     if (decodeBtn) rail.append(decodeBtn);
     rail.append(nextBtn);
+    if (!CLEAN) {
+      const exBtn = el('button', 'rail-btn export-btn');
+      exBtn.innerHTML = `<span class="glyph" aria-hidden="true">⬇</span><span class="lbl">${t('rail.export')}</span>`;
+      exBtn.setAttribute('aria-label', t('a11y.export'));
+      exBtn.onclick = () => exportActive(i, exBtn);
+      rail.append(exBtn);
+    }
     media.appendChild(rail);
     if (i === 0) media.appendChild(el('div', 'swipe-hint', t('hint.swipe')));
 
@@ -397,6 +467,7 @@ function watchScroll() {
 }
 
 function setActive(i, first = false) {
+  if (tts && i !== active) { tts.stop(); ttsSpeak(posts[i]); }
   if (i === active || !posts[i]) return;
   const prev = posts[active];
   if (prev) {
@@ -521,7 +592,7 @@ function loop(now) {
   last = now;
   const p = posts[active];
   if (p) {
-    const mouth = p.signoff ? 0 : reader.update(dt, getLang());
+    const mouth = p.signoff ? 0 : Math.max(reader.update(dt, getLang()), ttsMouth());
     if (!p.signoff && reader.done) audio.carrierDuck(false);
     p.post.update(dt, mouth);
     p.post.draw();
@@ -581,6 +652,11 @@ window.__rfh = {
     go: d => scrollToPost(active + d),
     tuneChannel,
     toggleDecode: () => toggleDecode(active),
+    // render a post to a video file. Resolves the FACTS of the file — codec,
+    // container, bytes, frames — because a gate cannot open a download.
+    exportMp4: (i, opts) => exportActive(i === undefined ? active : i, null, opts || {}),
+    lastExport: () => lastExport,
+    tts: () => (tts ? tts.state() : { enabled: TTS, status: TTS ? 'not loaded' : 'off', loaded: false }),
     finishRead: () => reader.finish(),
     stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),
     // Anything inspecting the wire comes through here. stories.js holds it in
