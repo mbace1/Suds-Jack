@@ -8,6 +8,92 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v37 — 2026-09-19
+**Owner: "Take rot.js FOV only. Skip PathFinding.js." Then: "go ahead with the
+FOV swap, measure the deltas."**
+
+**Line of sight is recursive shadowcasting now** (rot.js's
+`RecursiveShadowcasting`, ported into `grid.js` — the house rule is no
+dependency, and the algorithm is forty lines). `hasLOS` casts the eight
+octants from the shooter and asks whether the target's tile is lit; the
+v1–v36 rule (walk Bresenham's stepped line and stop at full cover) is kept
+as `lineLOS`, the control column. **The shipped rule is MUTUAL**: A sees B
+only if B also sees A. Raw shadowcasting is not symmetric, and neither was
+the old line — see the census — and a pair where one side can shoot and the
+other cannot shoot back is hidden information by geometry, in a game whose
+one invariant is that you see every consequence.
+
+**The census** (every non-adjacent pair of passable tiles on every board,
+81,810 pairs; a scratch script, not a gate):
+
+| rule | pairs that see | vs line: +sight | −sight | asymmetric pairs |
+|---|---|---|---|---|
+| line (v1–v36) | 71.2% | — | — | 2,290 |
+| fov (raw) | 79.5% | +7,458 | −715 | 4,887 |
+| **mutual** | **73.5%** | **+3,058** | **−1,202** | **0** |
+| either | 85.4% | | | 0 |
+
+Shadowcasting is more permissive than a stepped line — a shot past the
+corner of a wall is lit where Bresenham's line walked through the wall —
+and it loses a few pairs the line allowed: a target dead on the wall's own
+diagonal, where the line stepped *around* the tile and the cone does not.
+The 2,290 asymmetric pairs under the OLD rule are worth a sentence: nobody
+knew `lineTiles(a, b)` and `lineTiles(b, a)` disagreed, so for six
+versions there were pairs where a rival could shoot you from a tile you
+could not shoot back at.
+
+**The rates**, 200 seeds, the balance bot, same seeds per column:
+
+| encounter | line | fov | **mutual** | either |
+|---|---|---|---|---|
+| backlot | 65 | 65 | **65** | 65 |
+| loading-dock | 86 | 85 | **86** | 79 |
+| warehouse | 70 | 73 | **70** | 73 |
+| underpass | 26 | 11 | **26** | 11 |
+| the-yard | 68 | 68 | **68** | 68 |
+| the-crossing | 22 | 54 | **54** | 54 |
+| the-depot | 20 | 20 | **20** | 20 |
+
+Mutual leaves six of seven encounters bit-identical to the old rule and
+moves one. Raw and `either` both take `underpass` from 26 to 11 — right at
+the floor — because that board is corners, and an asymmetric peek pays the
+side holding them, which is the rivals. **`the-crossing` 22→54 is a holder
+behaving.** Traced seed by seed: under the line rule Sable at (5,1) had no
+shot at the crew from her own tile and stepped *onto extraction pad (5,0)*
+to get one, and stood there; under shadowcasting she sees past the corner
+of the wall at (6,2), fires from where she is, and the pad stays open. The
+encounter's own note tuned it at 46% — the line rule had been drifting it
+down toward a pad-blocking accident, not a decision. 63 of 200 seeds
+diverge; every one is that shape.
+
+**The trap that ate the first measurement.** The first four columns came
+back *bit-identical*, which read as "no effect" and was in fact no switch:
+`balance.mjs` imports `../js/grid.js` bare while every engine module
+imports `./grid.js?v=6`, and to the module loader those are two modules —
+the flag flipped a copy nobody plays on. Eeri's VERSIONS.md has the same
+lesson ("one token per module or the browser instantiates it twice"); here
+it was Node and a test. The switch is re-exported from `combat.js`, the
+tests reach it there, and a gate asserts a flip through combat.js changes
+what the engine will let a rival shoot.
+
+- `js/grid.js`: `LOS_MODES`, `setLOSMode`/`getLOSMode` (a module-level
+  seam, not a per-state option — a board where two units disagree about the
+  rule of sight is not a board), `lineLOS`, `fovSees`, `fovFrom` (lit sets
+  cached per board on the `fullCover` Set, which game code never mutates
+  within an encounter — Barricade adds *partial* cover), `computeFov`,
+  `castLight`. A state with no grid is treated as open (the unit tests).
+  `coverSoftens` stays on the stepped line: partial cover is about the
+  shot's path, not about what is visible.
+- `test/balance.mjs --los line|fov|mutual|either`.
+- `test/smoke.mjs` 147 → 150: symmetry over every pair of every board, the
+  corner peek pinned against `lineLOS`, the switch reaching the engine.
+- Tokens: grid 5→6, abilities 3→4, autoplay 8→9, combat 21→22, input
+  20→21, render 28→29, main 39→40.
+
+Not touched: BFS movement (`moveRange`) — "skip PathFinding.js" — and the
+UI draws nothing new; the rule changed under the same badges, which is what
+the invariant is for.
+
 ## v36 — 2026-09-19
 **Owner: "rewrite ai.js + combat.js as one system in a single pass. State the
 invariant up front: the player sees every consequence before committing."**

@@ -470,16 +470,30 @@ the mirror image — a plan previewed mid-player-turn carries momentum `endPlaye
 so rivals are previewed from the top of the phase. The rewrite is **proven faithful by
 `balance.mjs` reading bit-identical** (53/82/65/32/68/18/12): the dice are asked through one
 seam in the old order and the brain's scoring is untouched. Two owner directives are
-recorded in `MST_PARITY.md` §4 and not acted on: rot.js FOV only (a balance change to
-measure, not a rewrite side-effect; BFS stays, no PathFinding.js), and Blender iso facings
-before the Piritori move (no Blender here).
+recorded in `MST_PARITY.md` §4: Blender iso facings before the Piritori move (no Blender
+here, not acted on), and rot.js FOV only / skip PathFinding.js — **taken in v37**.
+**Line of sight is recursive shadowcasting** (rot.js's algorithm ported into `grid.js`,
+no dependency; BFS movement untouched), shipped as the **MUTUAL** rule: A sees B iff B sees
+A. Raw shadowcasting is asymmetric (4,887 of 81,810 tile pairs across the boards) and so,
+nobody had noticed, was the old Bresenham line (2,290) — a pair where a rival can shoot
+you from a tile you cannot shoot back at is hidden information by geometry. Mutual is
++2.3 points of visibility over the old rule, leaves six of seven balance rates
+bit-identical at 200 seeds and moves `the-crossing` 22→54: traced, it is a holder that
+used to have to step ONTO an extraction pad to get a shot and now fires past the wall's
+corner from where it stands. Raw `fov` and `either` take `underpass` 26→11 (corners pay
+the side holding them). `lineLOS` stays as the control, `balance.mjs --los <mode>` runs
+any of the four, and a gate asserts symmetry over every pair of every board. **The trap**:
+the first four columns came back bit-identical because `balance.mjs` imported
+`../js/grid.js` bare while the engine imports `./grid.js?v=6` — two module instances, and
+the switch flipped the one nobody plays on. It is re-exported from `combat.js` for that
+reason, and a smoke gate asserts a flip there changes what a rival can shoot.
 **Rendering is plain canvas 2D isometric**, not Three.js — the GDD says "Three.js or
 similar," and a tactics grid with move/attack-range overlays and telegraph markers is far
 easier to get right in 2D; drawn low-res and upscaled with `image-rendering: pixelated`,
 the same trick `dropcabal/` uses, with the HUD (turn state, HP, the win/lose screen) as a
 DOM/CSS overlay rather than canvas-painted text, per the production doc's own §2.4
 recommendation. All game logic stays in plain `(x,y)` grid coordinates
-(`grid.js`/`combat.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 147
+(`grid.js`/`combat.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 150
 checks including a bot-vs-bot full playthrough that must reach a win or a loss, not a
 stalemate, within a round cap); `render.js`'s `toScreen`/`screenToGrid` are a one-way,
 invertible projection onto an isometric diamond grid and never feed anything back into
@@ -1721,7 +1735,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 147 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 150 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter

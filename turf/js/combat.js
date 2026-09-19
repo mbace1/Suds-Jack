@@ -49,10 +49,16 @@
 import {
   key, inBounds, unitAt, moveRange, manhattan, hasLOS, coverSoftens, approachTile,
   firingTiles, firingTileScore,
-} from './grid.js?v=5';
+} from './grid.js?v=6';
+// The rule-of-sight switch is re-exported from HERE, not read off grid.js by
+// a test: a test imports `../js/grid.js` bare while every engine module
+// imports `./grid.js?v=N`, and to the module loader those are two modules —
+// a switch flipped on the bare copy leaves the engine on its default, and
+// four balance columns come back bit-identical while looking like a finding.
+export { setLOSMode, getLOSMode, LOS_MODES } from './grid.js?v=6';
 import { makeRng } from './rng.js?v=2';
 import { addMomentum, clearMomentum, evasionOf, momentumDamage, EVADE_PER } from './momentum.js?v=1';
-import { abilityTargets, canAfford, findAbility, isFlanked } from './abilities.js?v=3';
+import { abilityTargets, canAfford, findAbility, isFlanked } from './abilities.js?v=4';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=3';
 
 export { magOf, needsReload, roundsLeft };

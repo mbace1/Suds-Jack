@@ -6,8 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { manhattan, hasLOS, coverSoftens, moveRange, lineTiles, key, firingTiles, firingTileScore, approachTile } from '../js/grid.js';
-import { planIntent, planAllIntents, previewCommand } from '../js/combat.js';
+import { manhattan, hasLOS, lineLOS, coverSoftens, moveRange, lineTiles, key, firingTiles, firingTileScore, approachTile } from '../js/grid.js';
+import { planIntent, planAllIntents, previewCommand, setLOSMode as engineSetLOS, getLOSMode as engineGetLOS } from '../js/combat.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, orderAttack, useAbility,
@@ -103,6 +103,52 @@ check('full cover blocks LOS through it, but not around it', () => {
   const state = { fullCover: new Set(['2,0']) };
   assert.equal(hasLOS(state, { x: 0, y: 0 }, { x: 4, y: 0 }), false);
   assert.equal(hasLOS(state, { x: 0, y: 0 }, { x: 4, y: 1 }), true);
+});
+check('the rule of sight is SYMMETRIC on every board: A sees B iff B sees A', () => {
+  // The shipped rule is mutual shadowcasting. Raw shadowcasting is not
+  // symmetric (4887 of 81810 pairs across the seven boards, measured in
+  // v37), and neither was the Bresenham rule it replaced (2290) — a pair
+  // where one side can shoot and the other cannot shoot back is hidden
+  // information by geometry, in a game that promises none.
+  for (const e of ENCOUNTERS) {
+    const state = { grid: e.grid, fullCover: new Set(e.cover.full.map(([x, y]) => key(x, y))) };
+    const tiles = [];
+    for (let y = 0; y < e.grid.rows; y++) for (let x = 0; x < e.grid.cols; x++) if (!state.fullCover.has(key(x, y))) tiles.push({ x, y });
+    for (const a of tiles) for (const b of tiles) {
+      if (a === b) continue;
+      assert.equal(hasLOS(state, a, b), hasLOS(state, b, a), `${e.id}: (${a.x},${a.y})→(${b.x},${b.y}) disagrees with the reverse`);
+    }
+  }
+});
+check('shadowcasting sees around a corner the old line rule did not', () => {
+  // A wall at (2,1): from (0,0) the tile (4,1) is lit — the shot passes the
+  // corner of the wall — where Bresenham's stepped line walked through it.
+  // The old rule is kept as lineLOS for the control column and this pins
+  // the difference so nobody 'fixes' either into the other.
+  const state = { grid: { cols: 6, rows: 4 }, fullCover: new Set(['2,1']) };
+  assert.equal(lineLOS(state, { x: 0, y: 0 }, { x: 4, y: 1 }), false);
+  assert.equal(hasLOS(state, { x: 0, y: 0 }, { x: 4, y: 1 }), true);
+  assert.equal(hasLOS(state, { x: 4, y: 1 }, { x: 0, y: 0 }), true);
+  // ...and still not THROUGH it, nor dead along the wall's own line.
+  assert.equal(hasLOS(state, { x: 0, y: 1 }, { x: 4, y: 1 }), false);
+  assert.equal(hasLOS(state, { x: 2, y: 0 }, { x: 2, y: 3 }), false);
+  assert.equal(hasLOS(state, { x: 0, y: 0 }, { x: 4, y: 2 }), false, 'the wall sits dead on that line');
+});
+check('the LOS switch reaches the engine through combat.js (one module instance)', () => {
+  // This file imports ../js/grid.js BARE while the engine imports
+  // ./grid.js?v=N — two module instances. A switch flipped on the bare copy
+  // leaves the engine on its default: balance.mjs did exactly that and four
+  // columns came back bit-identical. So the switch is re-exported from
+  // combat.js, and this asserts a flip there changes what the engine sees.
+  const enc = ENCOUNTERS.find(e => e.id === 'the-crossing');
+  const s = createEncounterState(enc, UNITS, WEAPONS, ENEMIES, 1, HAZARDS, TRINKETS);
+  const sable = s.units.find(u => u.faction === 'enemy' && u.x === 5 && u.y === 1);
+  const niner = s.units.find(u => u.uid === 'p1');
+  niner.x = 10; niner.y = 4; // past the corner of the wall at (8,4), in the pistol's range
+  const under = mode => { engineSetLOS(mode); try { return attackableTargets(s, sable).includes('p1'); } finally { engineSetLOS('mutual'); } };
+  assert.equal(under('line'), false, 'the old rule: the wall at (8,4) is in the way');
+  assert.equal(under('mutual'), true, 'the shipped rule: Sable sees past the corner');
+  assert.equal(engineGetLOS(), 'mutual', 'the shipped default is mutual');
 });
 check('partial cover softens but never blocks', () => {
   const state = { fullCover: new Set(), partialCover: new Set(['2,0']) };

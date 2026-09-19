@@ -20,7 +20,7 @@
 // Cleave", and a board carrying six such promises at once is not full
 // information, it is a wall of text. Same reasoning as the sync cut in v24:
 // symmetric on paper, unreadable in play.
-import { manhattan, hasLOS, inBounds, unitAt, key } from './grid.js?v=5';
+import { manhattan, hasLOS, inBounds, unitAt, key } from './grid.js?v=6';
 
 export function abilitiesFor(unit, defs) {
   if (!unit || !defs) return [];

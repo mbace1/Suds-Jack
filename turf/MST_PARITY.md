@@ -172,11 +172,15 @@ port will look for them:
 
 - **"Take rot.js FOV only. Skip PathFinding.js."** Read as: if a library comes
   in for line of sight, it is rot.js's shadowcasting FOV and nothing else —
-  `grid.js`'s BFS is the pathfinder and stays. NOT adopted in v36: swapping
-  Bresenham LOS for shadowcasting changes which tiles see which, which is a
-  balance change to be measured against the seven rates, not a side-effect of
-  an engine rewrite that was proven faithful by holding them. House rule
-  applies either way: no dependency — port the algorithm into `grid.js`.
+  `grid.js`'s BFS is the pathfinder and stays. Held out of v36 (a balance
+  change to measure, not a side-effect of a rewrite proven faithful by
+  holding the rates) and **taken in v37** as the owner's "go ahead with the
+  FOV swap, measure the deltas": shadowcasting ported into `grid.js` (no
+  dependency), shipped as the MUTUAL rule — A sees B iff B sees A — because
+  raw shadowcasting is asymmetric and so, it turned out, was the old line.
+  Six of seven rates unchanged; `the-crossing` 22→54, a holder no longer
+  stepping onto a pad for a shot. The census and the four columns are in
+  `VERSIONS.md` v37.
 - **"Render the art-src/ cast to iso facings in Blender before the move to the
   Piritori repo."** No Blender in this environment. The camera to render from
   is the board's own — 45° yaw, 30° elevation, orthographic (`ART_REQUEST.md`
