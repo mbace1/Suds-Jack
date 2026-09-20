@@ -7,6 +7,51 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v258 — 2026-09-20
+**A 40-wave soak test, and the three things it found — one of them a freeze** *(owner: "keep testing and improving")*
+- **THE SOAK.** An invincible bot driven through the real loop to **wave 40 in
+  both modes** (~8 minutes of game each), logging per wave: duration, empty-floor
+  seconds, peak bodies, peak bullets, ms/step, and the size of every array and
+  pool. **No leaks** — `scene.children` sits at 25–100 across forty waves,
+  every pool recycles, gates cap at 3. The long game had never been played
+  before; the short runs could not have found any of the below.
+- **A FREEZE, mine, caught before it shipped.** The live-floor hold (below)
+  was first written as an early `return` inside `loop()` — which skipped
+  everything downstream: the player, the enemies, collisions, the round-end
+  check. A full floor froze the game solid: the soak's boss round ran
+  **3359 seconds** and CLOSE COMBAT never passed wave 13. It holds the spawn
+  loop now. *An early return inside the frame is never a local decision.*
+- **The live floor had no ceiling.** `waves.caps` bounds what a wave DRAWS;
+  nothing bounded what STANDS, so v256's carry-over stacked survivors under
+  the next wave's full draw. Measured: CLOSE COMBAT peaked at **29 bodies
+  through wave 12 and 91 past wave 30**, ms/step 0.44 → 2.27. A queued front
+  now **waits** while the floor holds `cap × liveMult` (1.5) — the pull-in
+  gate from the other side. **And the check lives INSIDE the spawn loop:** a
+  first cut tested it once per frame, so a held front dumped its whole backlog
+  the instant one body died — waves 10 and 14 burst to ~60 against a cap of
+  31. *A gate outside the loop is not a gate.* Early waves now peak at 33.
+- **The revenge cap was a difficulty ceiling.** v254's flat `fieldCap: 24`
+  bound from **wave 6 to wave 40** — CLOSE COMBAT's bullet pressure was flat
+  across 34 waves (peak 27 early, 31 late) while classic's living fire climbed
+  to 86. It is a curve now (`base 14 + 1.2/wave`, max 44): measured 8 early,
+  28 by wave 12, 57 late.
+- **Children get a safety valve, not a rule.** A SPLITTA's spawn, the MINIs
+  and a SLUG's split never go through the pump — they are the consequence of
+  your own kills — so they are not held; they stop at `liveMult × childMult`
+  (2). **Classic rounds only:** the first cut applied it everywhere and
+  `level-smoke.sh boost-lane` caught it immediately — a suppressed child in an
+  authored level is a level that no longer plays as written.
+- **Where it stands:** CLOSE COMBAT reaches wave 40 in ~9 min, classic ~8;
+  empty floor averages 1.0 s and 2.3 s per round. The one number still ugly is
+  a CLOSE COMBAT *swarm* wave past 30 with an invincible player: ~90 bodies,
+  ms/step 3.3. A mortal bot dies at wave 8–12 there, so nobody reaches it
+  today — recorded rather than tuned blind.
+- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
+  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
+- Cache-bust `?v=210` → `?v=211`; HUD label → v258
+
+---
+
 ## v257 — 2026-09-19
 **Wave transitions and flow: drops and gates survive the boundary, fronts pull in when the floor empties, a CURTAIN kind, a darker slug** *(owner: "things shouldn't disappear immediately… test waves in general, add a bit of length maybe variety, but always emphasize flow. Hazard wave of bullets was great. Dark slug was cooler… maybe a bit too dark. Test a lot and tune things")*
 - **Nothing vanishes at the boundary.** Drops were wiped by `spawnWave()` on

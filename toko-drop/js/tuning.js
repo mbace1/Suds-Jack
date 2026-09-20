@@ -247,6 +247,23 @@ export const TUNING = {
       swarm:  { base: 5, per: 1.4, max: 22 },
       normal: { base: 4, per: 1,   max: 14 },
       meleeMult: 1.5,
+      // v258 THE LIVE FLOOR. The caps above bound what a wave DRAWS; nothing
+      // bounded what STANDS. v256's carry-over stacks survivors under the next
+      // wave's full draw, and the soak found the result: CLOSE COMBAT peaked
+      // at 29 bodies through wave 12 and **91** past wave 30, with ms/step
+      // 0.44 -> 2.27. A queued front now WAITS while the floor is this full
+      // (the wave's own cap x liveMult) — the same gate as the pull-in, from
+      // the other side. The clock still ends the round, so a stalled front
+      // simply never lands, which is the honest outcome of a floor you are
+      // not clearing.
+      liveMult: 1.5,
+      // Children (SPLITTA's spawn, the MINIs, a SLUG's split) never go through
+      // the pump — they are the consequence of your own kills, not the
+      // director pouring, so they are not held. But they are not free either:
+      // the soak found 95 bodies alive past wave 30 against a live cap of 31.
+      // This is a SAFETY VALVE at liveMult x this, not a design rule: normal
+      // play never reaches it, and a floor that does has stopped being legible.
+      childMult: 2,
     },
     // deliberate-shooter plan: 1 at wave 1 growing to capMax by ~wave 12
     shooterPlan: { capBase: 1, capPerWaves: 3, capMax: 5, swarmCap: 1, bossCap: 2,
@@ -317,7 +334,11 @@ export const TUNING = {
     biters: ['SPITTOR', 'FANNER', 'WEEVA', 'ORANGE_CUBE', 'PURP_CUBE',
              'BAMBU', 'PYRA', 'BOTFLY', 'CLOAKER', 'DRAPER'],
     fromWave: 3,
-    fieldCap: 24,
+    // v258: the cap was a flat 24 and the soak showed it BINDING from wave 6
+    // to wave 40 — CLOSE COMBAT's bullet pressure was flat across 34 waves
+    // (peak revenge 27 early, 31 late) while classic's living fire climbed to
+    // 86. A cap that never lifts is a difficulty ceiling, not a safety net.
+    fieldCap: { base: 14, per: 1.2, max: 44 },
     // Dialect per species: revenge ECHOES the species' living attack family
     // but demands different play — AIMED spits a slow burst at your position
     // (move off the line), FAN throws a slow arc (sidestep wide), RING blooms
