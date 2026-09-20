@@ -8,6 +8,332 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+> **Renumbered, and this is the FOURTH collision in this log.** These three were
+> written as v35-v37 on `claude/nano-banana-meshy-access-1vd01l`, which forked at
+> v34. `main` had meanwhile taken v35 (the briefing), v36 (the control pass) and
+> v37 (the owner's twenty-six cast plates) from another lane, so they are v38-v40
+> here. The two lineages never touched the same FEATURE — that one is UI and art,
+> this one is engine and rendering, and the merge was three conflicts, one of them
+> only because `index.html` had gone CRLF. But both wrote the same headings. Eeri's
+> rule, again: **fetch and read the other lineage's log before writing a heading**,
+> and "the other lineage" includes the deployed tree.
+
+## v40 — 2026-09-19
+**Owner: "Take rot.js FOV only. Skip PathFinding.js." Then: "go ahead with the
+FOV swap, measure the deltas."**
+
+**Line of sight is recursive shadowcasting now** (rot.js's
+`RecursiveShadowcasting`, ported into `grid.js` — the house rule is no
+dependency, and the algorithm is forty lines). `hasLOS` casts the eight
+octants from the shooter and asks whether the target's tile is lit; the
+v1–v39 rule (walk Bresenham's stepped line and stop at full cover) is kept
+as `lineLOS`, the control column. **The shipped rule is MUTUAL**: A sees B
+only if B also sees A. Raw shadowcasting is not symmetric, and neither was
+the old line — see the census — and a pair where one side can shoot and the
+other cannot shoot back is hidden information by geometry, in a game whose
+one invariant is that you see every consequence.
+
+**The census** (every non-adjacent pair of passable tiles on every board,
+81,810 pairs; a scratch script, not a gate):
+
+| rule | pairs that see | vs line: +sight | −sight | asymmetric pairs |
+|---|---|---|---|---|
+| line (v1–v39) | 71.2% | — | — | 2,290 |
+| fov (raw) | 79.5% | +7,458 | −715 | 4,887 |
+| **mutual** | **73.5%** | **+3,058** | **−1,202** | **0** |
+| either | 85.4% | | | 0 |
+
+Shadowcasting is more permissive than a stepped line — a shot past the
+corner of a wall is lit where Bresenham's line walked through the wall —
+and it loses a few pairs the line allowed: a target dead on the wall's own
+diagonal, where the line stepped *around* the tile and the cone does not.
+The 2,290 asymmetric pairs under the OLD rule are worth a sentence: nobody
+knew `lineTiles(a, b)` and `lineTiles(b, a)` disagreed, so for six
+versions there were pairs where a rival could shoot you from a tile you
+could not shoot back at.
+
+**The rates**, 200 seeds, the balance bot, same seeds per column:
+
+| encounter | line | fov | **mutual** | either |
+|---|---|---|---|---|
+| backlot | 65 | 65 | **65** | 65 |
+| loading-dock | 86 | 85 | **86** | 79 |
+| warehouse | 70 | 73 | **70** | 73 |
+| underpass | 26 | 11 | **26** | 11 |
+| the-yard | 68 | 68 | **68** | 68 |
+| the-crossing | 22 | 54 | **54** | 54 |
+| the-depot | 20 | 20 | **20** | 20 |
+
+Mutual leaves six of seven encounters bit-identical to the old rule and
+moves one. Raw and `either` both take `underpass` from 26 to 11 — right at
+the floor — because that board is corners, and an asymmetric peek pays the
+side holding them, which is the rivals. **`the-crossing` 22→54 is a holder
+behaving.** Traced seed by seed: under the line rule Sable at (5,1) had no
+shot at the crew from her own tile and stepped *onto extraction pad (5,0)*
+to get one, and stood there; under shadowcasting she sees past the corner
+of the wall at (6,2), fires from where she is, and the pad stays open. The
+encounter's own note tuned it at 46% — the line rule had been drifting it
+down toward a pad-blocking accident, not a decision. 63 of 200 seeds
+diverge; every one is that shape.
+
+**The trap that ate the first measurement.** The first four columns came
+back *bit-identical*, which read as "no effect" and was in fact no switch:
+`balance.mjs` imports `../js/grid.js` bare while every engine module
+imports `./grid.js?v=6`, and to the module loader those are two modules —
+the flag flipped a copy nobody plays on. Eeri's VERSIONS.md has the same
+lesson ("one token per module or the browser instantiates it twice"); here
+it was Node and a test. The switch is re-exported from `combat.js`, the
+tests reach it there, and a gate asserts a flip through combat.js changes
+what the engine will let a rival shoot.
+
+- `js/grid.js`: `LOS_MODES`, `setLOSMode`/`getLOSMode` (a module-level
+  seam, not a per-state option — a board where two units disagree about the
+  rule of sight is not a board), `lineLOS`, `fovSees`, `fovFrom` (lit sets
+  cached per board on the `fullCover` Set, which game code never mutates
+  within an encounter — Barricade adds *partial* cover), `computeFov`,
+  `castLight`. A state with no grid is treated as open (the unit tests).
+  `coverSoftens` stays on the stepped line: partial cover is about the
+  shot's path, not about what is visible.
+- `test/balance.mjs --los line|fov|mutual|either`.
+- `test/smoke.mjs` 147 → 150: symmetry over every pair of every board, the
+  corner peek pinned against `lineLOS`, the switch reaching the engine.
+- Tokens: grid 5→6, abilities 3→4, autoplay 8→9, combat 21→22, input
+  20→21, render 28→29, main 39→40.
+
+Not touched: BFS movement (`moveRange`) — "skip PathFinding.js" — and the
+UI draws nothing new; the rule changed under the same badges, which is what
+the invariant is for.
+
+## v39 — 2026-09-19
+**Owner: "rewrite ai.js + combat.js as one system in a single pass. State the
+invariant up front: the player sees every consequence before committing."**
+
+**THE INVARIANT, as a rule the code is held to.** Every change to the board
+is produced by one function, `resolve`, which writes what it did to
+`state.log` as it does it — the log IS the effect list, the same list anim.js
+animates. A **preview** is `resolve` run on a copy of the state with an oracle
+in place of the dice; it returns the copy's log. The **telegraph** is that
+preview, run for every rival's chosen plan, and the warning badge is read off
+the rival's own preview rather than recomputed. The **enemy phase** executes
+the frozen plan through the same `resolve`, and where the board has moved
+under a plan the rival HOLDS and the log names why (`blocked`, `died`,
+`displaced`, `target-gone`, `out-of-position`) — a divergence is never silent.
+`ai.js` is gone; the brain sits beside the resolver in `combat.js` so a plan
+can carry its own preview. `previewCommand(state, cmd)` is the export: two
+branches for a command with a roll (yours all land / all miss), each with the
+effects, the telegraph the board would show AFTER, the incoming warnings on it,
+and the result if it ends the encounter.
+
+**It found two live lies the old gate certified.** (1) `grunt_runt` and
+`grunt_milo` have move 4; `MOVE_CAP` 4 × `DAMAGE_PER` 0.25 floors to **+1**
+after a four-tile step. Execution banked the step then struck; the badge was
+forecast from plan-time momentum and said one less than what landed. The v34
+gate compared the badge to the same mis-timed forecast and passed. (2) The
+mirror image: during the player's turn a rival still holds the pool it banked
+LAST phase, which `endPlayerTurn` wipes before it acts — a naive preview adds
+the coming step to a pool that will not exist. A rival's plan is previewed
+from the top of the phase (momentum and Cripple cleared), which is the state
+it will actually start in. The player's own forecast had the first fault too
+when stepping four tiles into a shot; `firingOptions`/`previewAttack` now run
+the step through the resolver.
+
+**Faithful by measurement.** The rng is asked through one seam (`state.roll`)
+in the old order, the brain's scoring is untouched, and `balance.mjs` reads
+**53/82/65/32/68/18/12 — bit-identical** before and after. `smoke.mjs` 147
+checks: 141 unchanged, one replaced (the certifier), six new — a preview's
+effects equal the committed log and the telegraph after it; a plan's odds and
+damage equal the phase's when the target was not shoved; the four-tile close
+lands the badge's number; your own forecast counts your step; every
+divergence is named; the badge is the previews' sum. One catch on the way:
+the new state literal dropped `result: null` — falsy either way, so nothing
+but a strict-equal gate could see it.
+
+**Two directives recorded, not acted on** (MST_PARITY §4): *take rot.js FOV
+only, skip PathFinding.js* — LOS stays grid.js's Bresenham for now, since
+shadowcasting changes what sees what and so is a balance change to measure,
+not a rewrite side-effect; the BFS in grid.js is the pathfinder and no
+library is coming in. *Render the art-src/ cast to iso facings in Blender
+before the move to the Piritori repo* — no Blender in this environment; the
+camera is 45° yaw / 30° elevation orthographic, `tools/render-frames.mjs`
+already states it.
+
+Modules: `combat` v21 (absorbs ai.js), `grid` v5, `ammo` v3, `abilities` v3,
+`autoplay` v8, `render` v28, `input` v20, `main` v39.
+
+## v38 — 2026-09-06
+**Owner: "can the TURF asset pipeline just make a standing cardboard
+character, that is then just moved to animate?" — then, on the first cut:
+"we are trying to make actual Paper Mario looking puppets, those would give
+this a bit more dimension rather than moving sprites."**
+
+The first cut leaned and squashed the plate in the picture plane, which is a
+moving sprite wearing a costume. This is the second: `js/standee.js` draws a
+character as a **card standing in the world** with three properties a sprite
+has not got.
+
+**THICKNESS.** The plate is extruded along the turn, so the card shows its cut
+edge. The edge is drawn from the plate's own silhouette (cached per image,
+filled flat) and — this is the whole tell — it is **pale**, not dark: a dark
+edge reads as the sprite's own shadow and the figure stays a drawing, while a
+pale one reads as the paper core you can only see because the board has been
+cut through. It is exaggerated about tenfold (3.0 board px on a 29px figure),
+for the same reason the art already exaggerates its own outline: a true 3mm
+standee is a twentieth of a pixel here.
+
+**YAW.** The card turns about its own vertical axis, and this is exact rather
+than faked because the board's camera is **orthographic** — a 2:1 iso
+projection has no vanishing point, so a yawed flat card foreshortens to
+`cos(yaw)` horizontally and not at all vertically. One horizontal scale. No
+perspective warp, no column slicing, no pre-rendered turn frames. A standee
+also never rests square to the camera (`REST_YAW` 0.42), because a card seen
+dead-on is indistinguishable from a drawing pinned to the screen.
+
+**PITCH.** It falls over about its feet, to 70° rather than 90° — a card taken
+all the way flat foreshortens to nothing and reads as a smear, and stopping
+short leaves a body that is still legibly a body with its top edge showing.
+
+**And the turn is the signature move.** A card does not mirror-flip; setting
+off sweeps the yaw through 1.3 rad and back, so the standee swings round and
+goes briefly edge-on, which is what Paper Mario does whenever a character
+changes which way it is looking.
+
+The shadow is the card's **footprint** now rather than a fixed blob: a standee
+on its feet throws a sliver the width of the card, one lying down throws its
+whole length. That is most of what sells the thing as an object on a surface.
+
+**What it costs in art: nothing.** Twelve of the fourteen operators have a
+single static plate and no prospect of a second one here (no `GEMINI_API_KEY`,
+no `MESHY_API_KEY`, and the PixelLab MCP server will not connect from this
+environment). All fourteen now turn, hop, lunge, recoil and topple.
+
+Gates: `test/smoke.mjs` 142 checks — five of them new and asserting the motion
+directly, which is the first time anything in this game's animation has been
+testable in bare node at all, because the previous answer to "how does a unit
+move" was a filename.
+
+**NOT YET RECONCILED with `CUTOUT_BRIEF.md`.** That brief (another lane,
+`origin/claude/slay-kallio-project-3lv3l9`) specifies the same idea as a pure
+picture-plane transform — `{dx, dy, rot, sx, sy, skew}` in `js/cutout.js` —
+which is the version this release's second cut replaced, and it has no
+thickness and no yaw. Its bounds table, its three renderer traps (do not
+mirror twice; UI must not inherit the transform; the hit flash must share it)
+and its gate list are all right and are all honoured here. The two need
+merging deliberately, not by whoever pushes last.
+
+Modules: `standee` v2 (new), `anim` v8, `render` v27, `palette` v14,
+`main` v38.
+
+## v37 — 2026-09-10
+**The owner's own 26 characters, cut out of the sheets at last**
+_Numbered v35 on `claude/slay-kallio-project-3lv3l9`; `main` had already taken v35 and v36
+from another lane by the time this merged, so it is v37 here — the third collision in this
+log. Fetch and read the other lineage's log before writing a heading._
+
+
+> **Numbered 35, not 34, and the near-miss is worth recording.** This entry was
+> written as v34 because v33 was the top of the log *on this branch*. It is not
+> the top of the log on `gh-pages`: a **different v34** (2026-09-05, the zoom
+> pass) shipped from another lane and never came back here, and the collision
+> only surfaced while hand-deploying something else and reading the site's own
+> `VERSIONS.md`. Eeri's rule generalises — **never write a version heading
+> without reading the other lineage's log first**, and "the other lineage"
+> includes the deployed tree, because a release can exist there and nowhere
+> else. This branch is still missing that v34; bringing it back is its own job
+> and not this one's.
+
+No game code changed. `art-src/sprites/cast/roster/` is new and holds
+twenty-six 192×288 transparent plates — **every character on both casting
+sheets**, front-facing, cut from the owner's own pixels with no model in the
+loop.
+
+**Why it had never been done.** The thirty `*-plate.png` files are *new*
+characters generated in the sheets' technique — `turfGrim` says in as many
+words to copy the technique and never the reference's specific character — so
+"we have 32 characters" was true and "we have the owner's roster" was not. His
+own twenty-six lived here as two magenta PNGs. Two of them (`gunner`,
+`leopard`) had been cropped by hand and carried through a whole pose table; the
+other twenty-four had never been cut out at all. `cast/README.md` already said
+Idle needs no generation — *"the highest-fidelity Idle this pipeline can
+produce, and a free one"* — so this is that, for all of them, in one pass.
+
+**`tools/sheet-cut.mjs`**, and three things it gets right that a nominal grid
+does not:
+
+- **Cells are found by PROJECTION.** `cast/README.md` records that the sheets'
+  rows and columns "bleed slightly past their nominal boundary", and that a
+  nominal crop put a sliver of a neighbouring character into `gunner-idle`
+  twice. Asking where the ink stops cannot make that mistake.
+- **Each figure's own top is tightened out of its row band.** A band is as tall
+  as its tallest member, so a short character cut to the band stands in the air.
+- **A PROP CAN BRIDGE TWO CELLS.** `sledge` holds his hammer across his body
+  and the handle reaches into his own back view, merging two figures into one
+  300px run and silently shifting every name after it in that row. Any run much
+  wider than the row's own median is split at its thinnest interior column,
+  which is where the two bodies very nearly stop touching.
+
+**The key is two-stage, and that is the whole difference between a cut-out and
+a sticker.** The sheets are antialiased **against magenta**, so the pixel ring
+where a figure meets the background is the figure's colour *blended with the
+key* — nowhere near the key, kept by any distance threshold, and every
+character comes out wearing a magenta rim. Stage two recognises contamination
+rather than proximity (magenta has no green in it, so it reads as R and B both
+well above G) and tests **edge pixels only** — otherwise `mohawk-green`'s
+purple trousers get eaten out of the middle of him. Two passes, ~2px of
+erosion. Residual: single specks on thin shapes fully enclosed by antialiasing
+(a blade held clear of the body, a bandaged hand), two figures of twenty-six.
+Left rather than chased, because the fix is a stronger colour test and a
+stronger colour test starts eating purple.
+
+**Fronts by default, `--all` for both.** The board here is isometric and does
+need both facings; a game that mirrors its row in code does not, and that is
+who asked for this.
+
+**What it unlocks.** A pose set for any of the twenty-six is now **12
+generations against a local reference crop** — the budget `cast/README.md`
+measured — rather than a re-derivation of the recipe. Nothing here needed an
+API key. That step does, and this environment has none.
+
+## (spec only, no code) — 2026-09-07
+**The cutout direction: move the OBJECT, not the frames**
+Owner: *"can the Turf asset pipeline just make a standing cardboard character,
+that is then just moved to animate, while only the art frame changes when it's
+an already approved concept like 'attack with knife'... similar to Paper Mario"*,
+plus a second roster under a swappable "style B".
+
+No game files moved, so this takes no version number and no `?v=` bump. What
+landed is `ART_REQUEST.md` §12 (the request, and what a plate must deliver to
+be MOVEABLE) and `CUTOUT_BRIEF.md` (the implementation contract, written to be
+handed to another agent whole).
+
+The counting that decides it: **30 character plates, 2 characters with a pose
+set**, and `scripts/assets.mjs doctor` reports no `GEMINI_API_KEY` and no
+`MESHY_API_KEY` — so 28 of 30 characters cannot get a second frame here at all,
+and today they slide between tiles and flash red. §6's budget is 12 generations
+per character; covering the roster that way is 336. A transform layer costs
+zero art and lands on all thirty at once. With motion carrying idle, move and
+death, the only pose still worth generating is attack-release — **1–2
+generations per character rather than 12.**
+
+One correction to the direction, recorded because it is the part that does not
+work as asked: a pose plate cannot be shared between characters the way a prop
+can, because the whole body is in the picture. "Attack with knife" is an
+approved PROMPT (§8's `turfCastPose` block, reference image attached), never an
+approved file.
+
+The topple is the strongest single case and is already solved in this repo —
+`slaykallio/js/puppet.js` tips a cutout about its feet on an axis between the
+camera's x and the depth axis, because a flat cutout rotating *in* the picture
+plane reads as a sprite spinning. It retires four of the pilot's 28 frames.
+
+**Two fixes from review, on this same version.** The cell namer divided `col`
+by 1 under `--all`, which gave each half of a front/back pair its own cell
+number (`r1c1f`, `r1c2b`) and broke the `f`/`b` pairing exactly where it is
+needed, since TURF is the caller that asks for both facings. `col` is the index
+of the run on the SHEET and the fronts-only filter drops odd ones without
+renumbering, so the divisor is 2 in both modes. And `index.html` still showed
+`v36` while `VERSIONS.md` and `hub/versions.json` said v37 — the same
+number-in-one-file-disagreeing-with-another class this repo keeps paying for.
+
 ## v36 — 2026-09-11
 Playable-control pass: explicit 44px attack/ability target buttons use the same
 decision path as board taps, including choosing a firing position. Reload,

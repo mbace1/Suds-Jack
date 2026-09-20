@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { buildRenderPacket, oppositePhaseFrame, validateTarget } from './render-packet-lib.mjs';
+import { frameCoverage, latestApproved, projectProgress } from './progress-lib.mjs';
+
+const manifest={directions:['front_iso','rear_iso'],actions:{idle:{targetFrames:4,phases:['rest','inhale','peak','exhale']},move:{targetFrames:12,oppositePhaseOffset:6,requiresMotionLedger:true,phases:['left_contact','left_compression','left_push','left_pass','left_reach','left_precontact','right_contact','right_compression','right_push','right_pass','right_reach','right_precontact']}},validation:{background:'#FF00FF',preferredPlate:[192,288],quantise:false},characters:[{id:'toko_slomo',label:'Toko Slomo',source:'casting-sheet-full'}]};
+const candidates={records:[{character:'toko_slomo',action:'move',direction:'front_iso',frame:1,revision:1,status:'approved',asset:'f01.png'},{character:'toko_slomo',action:'move',direction:'front_iso',frame:7,revision:1,status:'approved',asset:'f07.png'},{character:'toko_slomo',action:'move',direction:'rear_iso',frame:7,revision:1,status:'approved',asset:'rear07.png'}]};
+
+test('move opposite phase maps half a cycle, same facing',()=>{assert.equal(oppositePhaseFrame(manifest.actions.move,'move',1),7);assert.equal(oppositePhaseFrame(manifest.actions.move,'move',7),1)});
+test('render packet uses exact previous and same-facing opposite phase',()=>{const p=buildRenderPacket(manifest,candidates,{character:'toko_slomo',action:'move',direction:'front_iso',frame:7});assert.equal(p.target.phase,'right_contact');assert.equal(p.references.pairedOppositePhaseFrame,'f01.png');assert.notEqual(p.references.pairedOppositePhaseFrame,'rear07.png');assert.equal(p.motion.requiresLedger,true)});
+test('does not silently use a non-adjacent earlier frame as previous',()=>{assert.equal(buildRenderPacket(manifest,candidates,{character:'toko_slomo',action:'move',direction:'front_iso',frame:7}).references.previousApprovedFrame,null)});
+test('idle phase is derived from manifest frame order',()=>{const p=buildRenderPacket(manifest,{records:[]},{character:'toko_slomo',action:'idle',direction:'front_iso',frame:3});assert.equal(p.target.phase,'peak');assert.equal(p.target.pairedOppositeFrame,null)});
+test('invalid frames are rejected',()=>{assert.throws(()=>validateTarget(manifest,{character:'toko_slomo',action:'move',direction:'front_iso',frame:13}),/requires 1\.\.12/);assert.throws(()=>validateTarget(manifest,{character:'toko_slomo',action:'move',direction:'front_iso',frame:1.5}),/Invalid frame/)});
+test('invalid opposite offset does not invent a pair',()=>assert.equal(oppositePhaseFrame({targetFrames:12,oppositePhaseOffset:5},'move',1),null));
+test('latest approved revision wins',()=>{const records=[...candidates.records,{...candidates.records[0],revision:3,asset:'f01-v3.png'}];assert.equal(latestApproved(records,{character:'toko_slomo',action:'move',direction:'front_iso',frame:1}).asset,'f01-v3.png')});
+test('frame coverage exposes missing phases',()=>{const c=frameCoverage(manifest,candidates,{character:'toko_slomo',action:'move',direction:'front_iso'});assert.equal(c.approved,2);assert.equal(c.total,12);assert.equal(c.complete,false);assert.equal(c.frames[1].candidate,null)});
+test('project progress counts required frames, not raw candidates',()=>{const p=projectProgress(manifest,candidates);assert.equal(p.requiredFrames,32);assert.equal(p.approvedFrames,3);assert.equal(p.completeAnimations,0)});

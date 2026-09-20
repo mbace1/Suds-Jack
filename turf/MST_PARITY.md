@@ -164,3 +164,25 @@ against PR #419; the frames themselves need an owner-side push request.
 - **The feel question is still open.** GDD §9's exit criterion is that the
   fight is "fun/tense to play through repeatedly". No system answers that;
   only a playtest does.
+
+## 4. Directives recorded (owner, 2026-09-19)
+
+Two lines given alongside the one-system rewrite (v36), kept here because the
+port will look for them:
+
+- **"Take rot.js FOV only. Skip PathFinding.js."** Read as: if a library comes
+  in for line of sight, it is rot.js's shadowcasting FOV and nothing else —
+  `grid.js`'s BFS is the pathfinder and stays. Held out of v36 (a balance
+  change to measure, not a side-effect of a rewrite proven faithful by
+  holding the rates) and **taken in v37** as the owner's "go ahead with the
+  FOV swap, measure the deltas": shadowcasting ported into `grid.js` (no
+  dependency), shipped as the MUTUAL rule — A sees B iff B sees A — because
+  raw shadowcasting is asymmetric and so, it turned out, was the old line.
+  Six of seven rates unchanged; `the-crossing` 22→54, a holder no longer
+  stepping onto a pad for a shot. The census and the four columns are in
+  `VERSIONS.md` v37.
+- **"Render the art-src/ cast to iso facings in Blender before the move to the
+  Piritori repo."** No Blender in this environment. The camera to render from
+  is the board's own — 45° yaw, 30° elevation, orthographic (`ART_REQUEST.md`
+  §10.1, `tools/render-frames.mjs`). The standee (v35) needs one standing
+  plate per facing; the seven-pose contract is retired.
