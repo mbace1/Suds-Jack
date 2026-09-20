@@ -7,6 +7,44 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v261 — 2026-09-20
+**THE DROP, part two: THE FALL — a boss down, the floor gives, and you fall to the next depth. Two styles, one toggle** *(owner: "we can try both")*
+- **The fall.** A boss clear on a classic round no longer chains into the next
+  wave under a black dip — `beginDrop()` runs a 1.9 s descent (`TUNING.depth.fall`)
+  and the next wave spawns only once the new floor is under you. You are
+  invulnerable for it and a beat after; bullets and queued spawns are cleared;
+  the screen darkens to 65 % at the bottom and comes back up. The depth banner
+  (*DEPTH 2 — THE WELL*) lands with the new floor, with no second dip.
+- **Two styles, both shipped**, one row in OPTIONS — **DROP: CAMERA FOLLOWS**
+  (`localStorage tokoDropFall`, default *floor*):
+  - **floor** (default): the camera holds. The old floor and rail drop 34 units
+    into the dark (ease in), the look switches at the bottom, the new floor
+    rises to meet you (ease out). `design/fall-floor-v261.gif`.
+  - **follow**: the camera and you fall together; the old floor leaves the top
+    of the frame, the look switches halfway, the new floor comes up from below.
+    Still motes spawn beneath the camera so they streak upward past it.
+    `design/fall-follow-v261.gif`.
+- **Nothing disappears at the moment of the fall** (v257's rule): leftover
+  drops and gates ride the old floor down — their meshes carry the floor's y
+  each frame — and go at the switch, in the dark. No collecting or gate-dashing
+  while the floor is out from under them; the DASH THROUGH tag hides too.
+- **Two bugs the probe caught before the soak did.** (1) The clear check
+  re-fired every frame of the fall — the dead bodies stay in the array until
+  `spawnWave` — paying the clear bonus and restarting the drop each frame, so it
+  never landed. Both the clear and the v256 clock now sit out while `drop` is
+  live. (2) In *follow*, the camera offset was applied before the drop update
+  reset it, so the landing frame was drawn from under the new floor; the drop
+  update now re-seats the camera on the frame's own offset.
+- **Measured.** A `#drop` probe (throwaway staged copy, frozen clock, every
+  frame driven by hand): the clear pays once (4000 at wave 8), wave 8 → 9,
+  depth 1 → 2, banner set, camera back at rest on landing, no page errors.
+  `scripts/soak.sh 40` with the fall at every boss: both modes to wave 41, the
+  boss rounds 12–16 s including the fall, no stalls, no leaks. smoke, cabinets,
+  webgpu-smoke, level-smoke ×3, editor-smoke green.
+- Cache-bust `?v=213` → `?v=214`; HUD label → v261
+
+---
+
 ## v260 — 2026-09-20
 **THE DROP, part one: every boss floor is a DEPTH with its own look and roster; the desktop zoom sticks and pulls out for bosses** *(owner: every boss · look and roster, thematic · try both falls · "make the zoom stick, zoom out when needed")*
 - **Depths.** `TUNING.depth`: index = floor((wave − 1) / 8); past the table it
