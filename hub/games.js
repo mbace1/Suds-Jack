@@ -44,9 +44,9 @@ export const GAMES = [
     tagline: 'Two minutes in an empty warehouse. Find a line, hit the rail, and land the combo.',
     lineage: 'Tony Hawk / warehouse score attack', tags: ['skate', 'three.js', 'gamepad'],
     controls: 'DualSense: ✕ ollie · □ flip · ○ grab · △ grind · L1/R1 spin · Options pause — or WASD + Space/J/K/L, touch sticks',
-    note: 'v4 — DualSense menus, triangle grinds, real ramp physics (vert launch, roll-back, bail in place), THPS ’99 skater, wet-floor reflections and a PS1 look',
-    fi: { tagline: 'Kaksi minuuttia tyhjässä varastossa. Löydä linja, grindaile ja laske temppusarja.', controls: 'DualSense: ✕ hyppy · □ flip · ○ grab · △ grind · L1/R1 pyörähdys · Options tauko — tai WASD + Väli/J/K/L, kosketus', note: 'v4 — DualSense-valikot, kolmio grindaa, oikea ramppifysiikka, THPS ’99 -hahmo, märän lattian heijastukset ja PS1-ilme' },
-    ja: { tagline: '空の倉庫で2分間。ラインを見つけ、レールを滑り、コンボを決めよう。', controls: 'DualSense: ✕ オーリー · □ フリップ · ○ グラブ · △ グラインド · L1/R1 スピン · Options ポーズ — または WASD＋Space/J/K/L、タッチ', note: 'v4 — DualSense対応メニュー、△でグラインド、ランプ物理の刷新、THPS ’99風スケーター、濡れた床の反射とPS1ルック' },
+    note: 'v5 — Lip stalls, grindable ledges on the funbox and crates, solid props out of every run-up, decks behind the copings, and a DualSense-driven gate over the whole room',
+    fi: { tagline: 'Kaksi minuuttia tyhjässä varastossa. Löydä linja, grindaile ja laske temppusarja.', controls: 'DualSense: ✕ hyppy · □ flip · ○ grab · △ grind · L1/R1 pyörähdys · Options tauko — tai WASD + Väli/J/K/L, kosketus', note: 'v5 — Stallit huulella, grindattavat reunat laatikoissa, kiinteät esteet pois vauhdinotosta ja tasanteet ramppien takana' },
+    ja: { tagline: '空の倉庫で2分間。ラインを見つけ、レールを滑り、コンボを決めよう。', controls: 'DualSense: ✕ オーリー · □ フリップ · ○ グラブ · △ グラインド · L1/R1 スピン · Options ポーズ — または WASD＋Space/J/K/L、タッチ', note: 'v5 — リップストール、箱やファンボックスのエッジグラインド、実体のある障害物、ランプ背後のデッキ' },
   },
   {
     id: 'sudsjack',

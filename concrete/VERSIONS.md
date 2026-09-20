@@ -1,5 +1,52 @@
 # CONCRETE
 
+## v5 — 2026-09-20
+
+**The room is a level now.** Every prop stands in ONE table (`PROPS` in
+`skate.js`) holding where it is, how big it is, how tall it is and whether its
+top edges take a grind — and the physics, the procedural dressing and the
+grind list all read that one table, so what you can see is what you can hit.
+v4's shelving, lockers and stair set were drawn by the procedural tier only,
+existed on no other tier, and stood in the run-ups to two of the three ramps;
+they are gone. The gate asserts no prop stands inside a quarter pipe, its
+run-up or the funbox.
+**Solid objects.** A crate, a cabinet, a locker, a bin, a bench and the funbox
+are things you ride onto or stop against rather than through. **A wall is
+where the ground stops being SMOOTH** — the rise over this step measured
+against what the local slope predicts — because measuring the rise alone reads
+the steep half of a quarter pipe (1.2 m per metre) as a wall and slams anyone
+who carries speed into it. In the air the test is against the **apex** of the
+ollie you are in, not your height right now: measured against the current
+height, ollieing onto the funbox from the side slammed every time, because the
+board crosses the edge early in the arc.
+**Quarter pipes have decks.** `ground()` promised 3.6 m of height behind each
+coping over nothing at all; `DECKS` gives each one a platform, drawn on both
+tiers.
+**Stalls** (owner's ask). Triangle into a lip hangs the board on the coping —
+Axle, Nose, Tail or Rock to Fakie, named by the direction held — and cross
+ollies out of it while letting it run drops you back in. A roll-in is **not a
+transfer**: the transfer check read the transition's own fall as an edge and
+popped the skater into the air at the bottom of every ramp, which is the same
+smooth-versus-step confusion as the wall, with the sign flipped.
+**Ledges.** A grindable line is an axis, a length and a height, so a rail down
+z and a crate edge along x share every rule (`nearRail`, `crossesRail`). The
+funbox's four top edges, the crates' four each and the benches' two are
+grindable; approach along the line for a 50-50, across it for a boardslide.
+**A rail is only an obstacle when you CUT ACROSS it.** Riding the line itself
+put the across-coordinate at exactly zero, and `Math.sign(0)` is 0, which is
+"opposite" to every sign — so the skater stopped dead on open floor beside its
+own rail and pressing forward re-blocked it every frame, with no way out. It
+takes strict opposite signs, a transversal approach and real speed now.
+**The gate drives a DualSense through all of it**, with `debug.placeAt` as
+setup only: a crate stopping a run, an ollie onto the funbox into a ledge
+grind, a stall on the coping and a clean roll-in with the transfer counter
+proving no pop, and a rail line that banks. `debug.props/rails/ground` expose
+the room's own tables so the gate asserts what the room contains rather than
+what a screenshot suggests.
+**`concrete/THPS_PARITY.md`** is the ordered distance to Tony Hawk's Pro
+Skater, with a recommendation per item and three things deliberately out of
+scope. Tokens: main v6, skate v7, skater v2.
+
 ## v4 — 2026-09-19
 
 DualSense edition. Every menu on the page — title, pause, options, controls —
