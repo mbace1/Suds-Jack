@@ -24,8 +24,8 @@
 //   .hit() / .kill()  — poke the subject through the REAL damage path
 //   .specimen()       — the live Enemy, for info readouts
 import * as THREE from 'three';
-import { CFG, Enemy, GOO_TIME } from './enemy.js?v=212';
-import { Arena, rectShape } from './arena.js?v=212';
+import { CFG, Enemy, GOO_TIME } from './enemy.js?v=213';
+import { Arena, rectShape } from './arena.js?v=213';
 
 // v236: two fixed rooms — a roaming portrait gets the wider one.
 const ROAM_ARENA  = new Arena(rectShape(11, 7));

@@ -678,3 +678,13 @@ Ten scripted runs through the real loop — numbers, balance and polish
 pitches, and the enemies' looks (TORO first) in **`PLAYTEST_2026-09-17.md`**.
 Two findings bear on §7 directly: a round lasts 5–8 s today, not 20 (Q2/Q4),
 and the default mode carries ~37 corpse bullets at wave 2 (Q3/Q5).
+
+### 9. THE DROP (v260 →)
+
+Owner, 2026-09-20: *"level background alternatives and transitions, falling
+from one level to another"* — then: **every boss · look and roster, thematic ·
+try both falls**. v260 ships the depths (look + roster tilt + banner under the
+dip); the fall itself — camera-follows vs floor-drops-and-rises, both to try —
+is v261. Depths are the campaign's worlds when that door opens.
+
+![the four depths](design/depths-v260.png)
