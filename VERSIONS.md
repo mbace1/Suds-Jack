@@ -7,6 +7,36 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v259 — 2026-09-20
+**`scripts/soak.sh` — the long game becomes a gate, and it is falsified before it is trusted** *(owner: "go ahead" on keeping the soak harness)*
+- **What it is.** A scripted player driven through the real loop to **wave 40
+  in both modes** — about eight minutes of game each — on a frozen clock
+  (`performance.now()` replaced by a counter, `loop()` called synchronously,
+  render and HUD stubbed: the `level-smoke.sh` trick, because headless rAF
+  fires once and then never). It stages a throwaway copy of `toko-drop/` and
+  appends the probe to *that* `main.js`; nothing test-only reaches the tree.
+- **It asserts, it does not just print.** Four limits, each one a bug it has
+  already caught: **the run must reach the target wave** (a frozen loop looks
+  exactly like a short run); **no round may exceed 90 s** (the v258 freeze ran
+  3359); **no wave may hold more than 140 live bodies** (carry-over stacked to
+  91 before v258 capped it); **scene objects in the last quarter may not
+  exceed 2.5× the first** (the leak check). Plus zero page errors.
+- **Falsified, and the result changed the instructions.** The v258 freeze was
+  reinstated as a negative control and the gate run at **wave 12 — it PASSED.**
+  The hold it breaks is never reached that early; the floor never fills. The
+  same build at wave 40 failed loudly (*wave 18 ran 9814 s*). **A short soak
+  proves nothing about the long game**, which is the entire point of it — so
+  the header now says: run it to 40 or not at all. *This is the v244 lesson
+  again: a detector that cannot fail is not a detector.*
+- **What it will not tell you.** The bot is invincible on purpose — a mortal
+  one dies at wave 8–12 and never reaches the arithmetic under test. It
+  measures pacing, pressure and cost. It does not measure fun.
+- Run it alongside `smoke.sh` for any change to the wave director, the spawn
+  pump, carry-over or the revenge tables. ~6 minutes for both modes.
+- Cache-bust `?v=211` → `?v=212`; HUD label → v259
+
+---
+
 ## v258 — 2026-09-20
 **A 40-wave soak test, and the three things it found — one of them a freeze** *(owner: "keep testing and improving")*
 - **THE SOAK.** An invincible bot driven through the real loop to **wave 40 in
