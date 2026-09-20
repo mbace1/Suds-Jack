@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=210';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=210';
-import { Player, PLAYER_RADIUS } from './player.js?v=210';
+import { InputManager } from './input.js?v=211';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=211';
+import { Player, PLAYER_RADIUS } from './player.js?v=211';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=210';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=210';
-import { audio } from './audio.js?v=210';
-import { haptics } from './haptics.js?v=210';
-import { initDesigner } from './designer.js?v=210';
-import { createSpecimen } from './specimen.js?v=210';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=210';
-import { TUNING } from './tuning.js?v=210';
-import { Arena, rectShape } from './arena.js?v=210';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=210';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=210';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=210';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=211';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=211';
+import { audio } from './audio.js?v=211';
+import { haptics } from './haptics.js?v=211';
+import { initDesigner } from './designer.js?v=211';
+import { createSpecimen } from './specimen.js?v=211';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=211';
+import { TUNING } from './tuning.js?v=211';
+import { Arena, rectShape } from './arena.js?v=211';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=211';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=211';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=211';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -408,7 +408,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '257';
+const GAME_VERSION = '258';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -3864,8 +3864,11 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   const bites = e._isBoss || R.biters.includes(TYPE_KEY[e.type]);
   let liveRevenge = 0;
   if (meleeRun && bites) for (const b of bullets.active) if (b.revenge) liveRevenge++;
+  // v258: the cap rises with the wave (it was flat, and it bound from wave 6 on)
+  const FC = R.fieldCap;
+  const revCap = typeof FC === 'number' ? FC : Math.min(FC.max, Math.round(FC.base + wave * FC.per));
   if (meleeRun && src !== 'env' && gameState === 'playing' && bites && wave >= R.fromWave
-      && liveRevenge < R.fieldCap && bullets.active.length < 240) {
+      && liveRevenge < revCap && bullets.active.length < 240) {
     const col = revengeColor(e.type);
     const rev = (...args) => { const b = bullets.spawnDir(...args); if (b) b.revenge = true; };
     const dialect = e._isBoss ? 'RING' : (R.byType[TYPE_KEY[e.type]] || R.fallback);
@@ -4745,6 +4748,7 @@ function classicRound() { return !inCabinet() && !smashMode && !customLevel && !
 // number, not a feeling.
 let _deathAt = 0, restartGap = null;
 let _frontLandedAt = -99;   // v257: waveTimer when the last pulse began landing
+let _liveCap = 99, _pumpHold = 0;   // v258: the live-floor ceiling, and how long a front has waited on it
 // v138: gates teach themselves — a DASH! tag hangs over every gate until the
 // player has detonated one, ever. Persisted; the mechanic only needs teaching once.
 let gateUsed = localStorage.getItem('tokoDropGateUsed') === '1';
@@ -6623,6 +6627,17 @@ function spawnWave(carry = false) {
   waveDuration = classicRound() ? (TUNING.waves.round[waveKind(wave)] ?? TUNING.waves.round.normal) : ROUND_DUR;
   waveTimer    = 0;
   _frontLandedAt = -99;   // v257
+  // v258: the live-floor ceiling for this round — the wave's own draw cap,
+  // with headroom for carry-over. Same expression the director caps its draw
+  // with (TUNING.waves.caps), so the two can't drift.
+  {
+    const C = TUNING.waves.caps, sw = waveKind(wave) === 'swarm';
+    let c = sw ? Math.min(C.swarm.max, C.swarm.base + Math.floor(wave * C.swarm.per))
+               : Math.min(C.normal.max, C.normal.base + wave * C.normal.per);
+    if (meleeRun) c = Math.floor(c * C.meleeMult);
+    _liveCap = Math.max(6, Math.round(c * C.liveMult));
+  }
+  _pumpHold = 0;
   const total  = list.length;
   pendingSpawns = [];
   if (customLevel) {
@@ -8549,8 +8564,26 @@ function loop() {
       for (const sp of pendingSpawns) if (sp.front === f) sp.delay = waveTimer + (sp.delay - start);
     }
   }
+  // v258: and the same gate from the other side — a queued front HOLDS while
+  // the floor is already full (TUNING.waves.caps.liveMult). The count is kept
+  // ACROSS the loop and checked per body: a first cut tested it once per
+  // frame, so a held front released its whole backlog the instant one body
+  // died — waves 10 and 14 burst to ~60 bodies against a cap of 31. A gate
+  // outside the loop is not a gate.
+  // It holds the SPAWN LOOP, never the frame: an earlier cut `return`ed here
+  // and skipped everything downstream — player, enemies, collisions, the
+  // round-end check — so a full floor froze the game solid (the soak's boss
+  // round ran 3359 seconds). An early return inside loop() is never a local
+  // decision.
+  let _aliveNow = 0;
+  const _gateLive = classicRound();
+  if (_gateLive) for (const e of enemies) if (e.alive) _aliveNow++;
   while (pendingSpawns.length > 0 && waveTimer >= pendingSpawns[0].delay) {
+    // pickups are not bodies — they never wait on the floor's ceiling
+    if (_gateLive && pendingSpawns[0].front != null && !pendingSpawns[0].pickup
+        && _aliveNow >= _liveCap) { _pumpHold += dt; break; }
     if (pendingSpawns[0].front != null) _frontLandedAt = waveTimer;   // v257
+    if (!pendingSpawns[0].pickup) _aliveNow++;
     const s = pendingSpawns.shift();
     // SMASH TV: spawn right at the doorway mouth so enemies visibly step THROUGH
     // the door frame into the room, instead of materialising inside it.
@@ -9783,10 +9816,20 @@ function loop() {
       });
     }
   }
+  // v258: the safety valve — children are never held back in normal play, but
+  // they do not get to pile past it either (TUNING.waves.caps.childMult).
+  // Classic rounds only: an authored level's bodies are the author's, and a
+  // suppressed child there is a level that no longer plays as written —
+  // `level-smoke.sh boost-lane` caught exactly that.
+  const _childCeil = classicRound() ? _liveCap * (TUNING.waves.caps.childMult ?? 2) : Infinity;
+  let _liveForChildren = 0;
+  if (toSpawn.length && _childCeil < Infinity) for (const e of enemies) if (e.alive) _liveForChildren++;
   for (const s of toSpawn) {
+    if (_liveForChildren >= _childCeil) break;
     const c = new Enemy(scene, s.type, s.x, s.z, s.sm, s.im);
     c._spawnChild = true;   // v211: marks a body born from a parent (MINNOW BOUNTY)
     enemies.push(c);
+    _liveForChildren++;
   }
   // v251: a SLUG hit in the middle SPLITS — the back half, reversed, becomes
   // a second animal with its own head. The chain rebuild is the same path a
@@ -10754,7 +10797,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=210').then(async m => {
+  import('./editor.js?v=211').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10785,6 +10828,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=210').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=211').catch(() => {});
   });
 }
