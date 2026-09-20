@@ -25,6 +25,9 @@
 //     once its frames land, not a change to any of this logic.
 
 import { REST_YAW } from './standee.js?v=2';
+// The feel spec (MST_PARITY §2.7). Pure and bare-node tested; this file is
+// only the clock that drives it.
+import { tierFor, addTrauma, decayTrauma, shakeAt, punchAt, PUNCH_MS } from './impact.js?v=1';
 
 const CAST_DIR = 'art-src/sprites/cast/';
 
@@ -237,7 +240,38 @@ export function facingFor(dgx, dgy) {
 // off this rather than walking state.log itself: two independent cursors over
 // the same list is two chances to double-fire or skip, and they would drift
 // the moment one of them was reset and the other was not.
-export function createAnimator({ onFrame, onEvent = null, now = () => performance.now() }) {
+export function createAnimator({ onFrame, onEvent = null, now: rawNow = () => performance.now(), reduced = false }) {
+  // THE HITSTOP CLOCK. Everything in this file reads `now()`, so freezing it
+  // holds every clip, tween, flash and floater mid-pose for a beat — which is
+  // what a freeze-frame IS. The game is NOT paused: no input is swallowed and
+  // no turn is delayed, because main.js's phase pacing runs on its own timers.
+  // Time spent frozen is subtracted rather than skipped, so a clip resumes
+  // exactly where it stopped instead of jumping to where it would have been.
+  let frozenUntil = 0, frozenDebt = 0, freezeBegan = 0;
+  function now() {
+    const t = rawNow();
+    if (freezeBegan) {
+      if (t < frozenUntil) return freezeBegan - frozenDebt;
+      frozenDebt += t - freezeBegan;
+      freezeBegan = 0;
+    }
+    return t - frozenDebt;
+  }
+  function freeze(ms) {
+    if (reduced || ms <= 0) return;
+    const t = rawNow();
+    // A second kill inside a hitstop EXTENDS it rather than restarting it;
+    // restarting would let a chain of kills hold the board still indefinitely.
+    frozenUntil = Math.max(frozenUntil, t + ms);
+    if (!freezeBegan) freezeBegan = t;
+    start();
+  }
+
+  // The shake runs on the REAL clock, deliberately: a hitstop with the camera
+  // held still as well is a dropped frame, and a hitstop with the camera
+  // shaking under a frozen figure is the effect this is for.
+  let trauma = 0, traumaAt = rawNow();
+  let punch = 0, punchAt_ = 0;
   // uid → { prefix, clip, i, startedAt, mirror, back }
   const live = new Map();
   // Where each unit stood last time we looked. The move log records the
@@ -255,6 +289,7 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
   // interpolating screen positions — and it keeps this file free of layout.
   const tweens = new Map();
   const flashes = new Map();   // uid -> { startedAt, dur }
+  let lastTier = null;         // the tier of the most recent blow
   const floats = [];           // { gx, gy, text, kind, startedAt, dur }
   let cursor = 0;       // how far through state.log we have read
   let raf = null;
@@ -333,6 +368,23 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
         // not — the telegraph/readability contract this game is built on.
         if (t && e.hit) schedule(t, e.killed ? 'death' : 'hit', a ? facingFor(a.x - t.x, a.y - t.y) : null);
         if (t) {
+          // One reading of the tier, here, beside the flash and the floater
+          // that already describe this blow — so the shake, the punch, the
+          // hitstop and the sound can never disagree about how hard it was.
+          const tier = tierFor({ hit: e.hit, killed: e.killed, damage: e.damage, maxHp: t.maxHp });
+          if (!reduced) {
+            // The decay clock STARTS when the trauma does. Without this reset
+            // `traumaAt` is whatever the last frame was, and the loop stops
+            // itself whenever nothing is animating — so after an idle player
+            // turn the very next tick decayed a fresh shake by several seconds
+            // and the board never moved at all. Measured, not reasoned: the
+            // punch worked and the shake read 0.00 px across a real kill.
+            traumaAt = rawNow();
+            trauma = addTrauma(trauma, tier);
+            if (tier.punch) { punch = tier.punch; punchAt_ = rawNow(); }
+            if (tier.freeze) freeze(tier.freeze);
+          }
+          lastTier = tier;
           if (e.hit) {
             flashes.set(t.uid, { startedAt: now(), dur: FLASH_MS });
             // The momentum share is named in the floater rather than folded
@@ -397,9 +449,15 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
 
   function tick() {
     raf = null;
+    const t = rawNow();
+    trauma = decayTrauma(trauma, Math.max(0, t - traumaAt));
+    traumaAt = t;
     const animating = settle();
     onFrame();
-    if (animating) start();
+    // Keep the loop alive while anything physical is still moving: a frozen
+    // clip reports "not animating" (its clock is stopped), and a shake or a
+    // punch outliving the clip that caused it still has frames to draw.
+    if (animating || trauma > 0 || freezeBegan || (punch && t - punchAt_ < PUNCH_MS)) start();
   }
 
   function start() {
@@ -408,6 +466,19 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
 
   return {
     sync,
+    // What the board should be drawn at right now: an offset in BOARD pixels
+    // and a transient scale. camera.js composes it into the one --cam
+    // transform, so this never writes a style and there is still exactly one
+    // writer of that property.
+    impact() {
+      if (reduced) return { x: 0, y: 0, scale: 1, frozen: false };
+      const t = rawNow();
+      const sh = shakeAt(trauma, t);
+      return { x: sh.x, y: sh.y, scale: punchAt(punch, t - punchAt_), frozen: !!freezeBegan };
+    },
+    // The tier of the most recent blow — main.js reads it to pick the sound
+    // layers, so the mix is tiered by the same number the shake is.
+    lastTier: () => lastTier,
     // What the renderer asks per unit. null = "no frame set, draw the static
     // plate you already had" — the path 12 of 14 characters take today.
     spriteFor(unit) {

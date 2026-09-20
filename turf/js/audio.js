@@ -124,6 +124,13 @@ export const audio = {
   // Knockback: the scrape of something shoved across concrete.
   knock() { noise({ dur: 0.17, gain: 0.15, freq: 700, sweepTo: 240, q: 0.5 }); },
   // A unit going down. The heaviest thing in the mix, on purpose.
+  // The body under the blow. A second layer only a heavy hit or a kill
+  // earns (impact.js's layersFor), sitting below `hit` in pitch so the two
+  // stack into one weightier event instead of competing.
+  thud() {
+    noise({ dur: 0.22, gain: 0.17, freq: 260, sweepTo: 90, q: 0.9 });
+    tone({ type: 'sine', f0: 92, f1: 44, dur: 0.20, gain: 0.13 });
+  },
   down() {
     tone({ type: 'sine', f0: 100, f1: 38, dur: 0.34, gain: 0.24 });
     noise({ dur: 0.28, gain: 0.17, freq: 300, sweepTo: 90, q: 0.7, delay: 0.03 });

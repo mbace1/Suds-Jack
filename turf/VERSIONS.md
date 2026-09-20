@@ -18,6 +18,104 @@
 > rule, again: **fetch and read the other lineage's log before writing a heading**,
 > and "the other lineage" includes the deployed tree.
 
+## v42 — 2026-09-20
+**IMPACT (`MST_PARITY` §2.7): a blow says how hard it was.**
+
+Through v41 a hit was a white flash and a number. Both say a hit HAPPENED;
+neither says how hard. `js/impact.js` is the spec for the difference — pure,
+no DOM and no clock, so every tier, curve and sound layer is asserted in bare
+node the way `momentum.js` and `abilities.js` are. `anim.js` (the only rAF
+loop) drives it and `camera.js` applies it; neither decides anything.
+
+**A TIER IS A SHARE, NOT A NUMBER.** Four damage to a four-HP grunt is a body
+hitting the ground; four to a sixteen-HP operator is a scratch. Tiering on raw
+damage ranks those the same and goes stale the moment a weapon changes, so the
+tier is `damage / maxHp` — which is also the number the player reads off the HP
+bar, so what they see and what they feel agree. Four tiers (graze / solid /
+heavy / kill) each carry a trauma, a punch and a hitstop; a kill is not a share
+and outranks everything; a miss is its own row, lighter than a landed graze,
+because the swing still happened.
+
+- **Shake.** Trauma accumulates and is capped at 1 — two rivals landing in one
+  phase should feel worse than one, but this roster is weaker-but-numerous by
+  design and a swarm must not shake the board apart. The offset is **quadratic**
+  in trauma, which is the whole reason trauma is stored rather than an
+  amplitude: linear wobbles the screen on every scratch. Deterministic (three
+  incommensurate sines), never `Math.random()` — a shake you cannot reproduce
+  cannot be tested or read off a bug report.
+- **Punch.** A transient scale that returns to EXACTLY 1. v34 made the zoom the
+  player's and persisted it; a punch leaving a residue would quietly edit a
+  setting that belongs to them.
+- **Hitstop.** The animator's clock is held for 45ms on a heavy blow and 110ms
+  on a kill, so every clip, tween, flash and floater holds mid-pose. The GAME is
+  not paused — no input is swallowed and no turn is delayed, because the phase
+  pacing runs on its own timers. Time spent frozen is subtracted rather than
+  skipped, so a clip resumes where it stopped instead of jumping. A second kill
+  inside a hitstop EXTENDS it rather than restarting it, or a chain of kills
+  could hold the board still indefinitely. The shake keeps running on the real
+  clock underneath, which is the effect.
+- **Layered SFX.** The mix is tiered by the same number the shake is, so what
+  you feel and what you hear cannot disagree. A new `thud` voice sits under
+  `hit`/`down` and only a heavy blow or a kill earns it. Cause then effect: the
+  swing at 0ms, the impact at 70, the body at 95, a knockback at 110.
+- **`prefers-reduced-motion` takes all three to zero** and leaves the flash, the
+  floater and the sound doing the whole job — which is what they did through
+  v41, so nothing is lost, only the movement.
+
+**THREE BUGS, AND ALL THREE CAME OFF MEASURED MOTION RATHER THAN A GREEN
+SUITE** — Toko Drop's rule (judge feel against captured motion, not stills)
+applied to a tactics board:
+
+1. **The shake was dead at 0.00px while the punch worked.** The decay clock is
+   read per frame, and the rAF loop stops itself whenever nothing is animating,
+   so after an idle player turn `traumaAt` was seconds stale and the very first
+   frame after a hit decayed a fresh shake to nothing. The decay clock now
+   starts when the trauma does.
+2. **A kill moved the board 1.6px**, about half of one percent of a body. The
+   spec was written in BOARD pixels (the unit `SPRITE_H` 29 and `TILE_W` 32 are
+   in) and written straight into a CSS transform. `camera.js` scales by the live
+   CSS scale now, where that scale already lives, and a kill reads 4.3px at the
+   default zoom — sizing against the tile being this project's own rule for
+   everything else on the board.
+3. **THE PUNCH SLID THE YARD OUT FROM UNDER THE GRID**, which is the one thing
+   v33 exists to prevent. The board and the plate are different elements whose
+   centres sit ~126px apart even though the plate's floor quad is seated exactly
+   on the board's diamond, so a common `scale()` about each element's own centre
+   displaces them by `(s-1)` times that separation — measured, **3.78px** at the
+   kill tier. The plate is given the BOARD's centre as its transform-origin, in
+   its own local coordinates, and they scale as one object again.
+
+That third one also cost a wrong ruler, twice (Kindling's lesson: *the page was
+right and the ruler was wrong*). The first metric compared the two ELEMENT
+centres — which are supposed to diverge once the origin is fixed — so it
+reported the correct fix as a 3.8px failure. What has to be compared is the
+viewport transform each element applies: for the same viewport point, where does
+the board put it and where does the plate. That reads 0.000px with the fix and
+3.781px without.
+
+- `js/impact.js` (new): `TIERS`, `tierFor`, `addTrauma`, `decayTrauma`,
+  `shakeAt`, `punchAt`, `layersFor`. All pure.
+- `js/anim.js`: the hitstop clock, the trauma and punch state, `impact()`.
+- `js/camera.js`: composes the impact into the ONE `--cam` transform (two
+  writers of that property is the class of bug this repo keeps paying for) and
+  sets the plate's origin under a punch.
+- `js/audio.js`: the `thud` voice. `js/main.js`: reduced-motion detection, the
+  per-frame feed to the camera, tiered layered sound, `__turf.camera`.
+- `test/smoke.mjs` 164 → 177 (the spec, in bare node).
+- `test/impact.cjs` (new, 11 checks, wired into CI): the half a browser is
+  needed for — registration **measured against a control that reads non-zero**,
+  because "0px" means nothing on its own; the impact returning to exactly
+  nothing; the hitstop landing and releasing; reduced motion silent.
+- Tokens: anim 9, camera 4, audio 2, impact 1, main v43. Visible build v42.
+
+Balance is untouched and reads identically (53/82/65/32/68/45/12), which is the
+point: impact changes what a blow FEELS like and nothing about what it does.
+
+One trap the gate itself paid for: the first cut swung a PISTOL at 85% and a
+miss read as a peak shake of 0.03px — the miss tier behaving perfectly and a
+gate failing for a reason that had nothing to do with impact. It swings a knife
+now, where hit chance is 1.
+
 ## v41 — 2026-09-20
 **Reading a human instead of a bot.**
 

@@ -33,6 +33,7 @@ const FOLLOW_MS = 260;
 const DRAG_SLOP = 10;
 
 export function createCamera({ stage, canvas, getLayout, getScale, onZoom, onView }) {
+  let imp = { x: 0, y: 0, scale: 1 };
   let tx = 0, ty = 0;              // current pan, in CSS pixels
   let dragging = false, panned = false;
   let startX = 0, startY = 0, baseX = 0, baseY = 0;
@@ -61,17 +62,59 @@ export function createCamera({ stage, canvas, getLayout, getScale, onZoom, onVie
   // a pan that moved only the canvas would slide the grid off the yard it
   // was carefully placed on — one property keeps them a single object.
   function apply(animate) {
-    const t = animate ? `transform ${FOLLOW_MS}ms ease-out` : 'none';
+    // An impact is COMPOSED here rather than written by whoever caused it.
+    // Two writers of --cam is the class of bug this repo keeps paying for (a
+    // number in one file disagreeing with a number in another), and a shake
+    // that fought the pan would drag the board off the yard the plate is
+    // seated on. A shake must also never be TRANSITIONED — a 140ms ease over
+    // a 16ms offset is a smear, not a hit.
+    const t = animate && !imp.x && !imp.y ? `transform ${FOLLOW_MS}ms ease-out` : 'none';
     canvas.style.transition = t;
-    stage.style.setProperty('--cam', `translate(${Math.round(tx)}px, ${Math.round(ty)}px)`);
+    const sc = imp.scale !== 1 ? ` scale(${imp.scale.toFixed(4)})` : '';
+    // The impact arrives in BOARD pixels and is scaled here, where the CSS
+    // scale already lives — a body is 29 board pixels whatever the zoom, so a
+    // shake measured against it has to be scaled the same way the board is or
+    // it means something different on every screen.
+    // Sub-pixel on purpose: rounding a 0.4px shake to zero is no shake at all,
+    // while the PAN is rounded because a fractional pan resamples the board.
+    const sc0 = getScale() || 1;
+    const ox = (Math.round(tx) + imp.x * sc0).toFixed(2);
+    const oy = (Math.round(ty) + imp.y * sc0).toFixed(2);
+    stage.style.setProperty('--cam', `translate(${ox}px, ${oy}px)${sc}`);
     const plate = stage.querySelector('#plate');
-    if (plate) plate.style.transition = t;
+    if (plate) {
+      plate.style.transition = t;
+      // A PUNCH MUST SCALE BOTH ABOUT THE SAME POINT. The board and the plate
+      // are different elements of different sizes, and their element centres
+      // sit ~126px apart even though the plate's FLOOR QUAD is seated exactly
+      // on the board's diamond (v33's fitPlate). A common `scale()` about each
+      // element's own centre therefore slides the yard out from under the grid
+      // by (s-1) times that separation — measured, ~3.8px at the kill tier's
+      // 3%, which is the one thing v33 exists to prevent. So the plate is given
+      // the BOARD's centre as its transform-origin, in its own local
+      // coordinates, and the two scale as one object again.
+      if (imp.scale !== 1) {
+        const bx = canvas.offsetLeft + canvas.offsetWidth / 2 - plate.offsetLeft;
+        const by = canvas.offsetTop + canvas.offsetHeight / 2 - plate.offsetTop;
+        plate.style.transformOrigin = `${bx.toFixed(1)}px ${by.toFixed(1)}px`;
+      } else if (plate.style.transformOrigin) {
+        plate.style.transformOrigin = '';
+      }
+    }
     // A pan repaints nothing — the canvas is translated by the compositor —
     // so anything pinned to the VIEWPORT rather than to the board has to be
     // told. That is the off-screen markers: they live on the stage, not on
     // the canvas, precisely so they do not slide away with the board they
     // are pointing at.
     if (onView) onView();
+  }
+
+  // The current impact offset, fed each frame by main.js from the animator.
+  // Held rather than pushed so `apply` stays the only writer of --cam.
+  function setImpact(next) {
+    const changed = next.x !== imp.x || next.y !== imp.y || next.scale !== imp.scale;
+    imp = next;
+    if (changed) apply(false);
   }
 
   // Put a board point in the middle of the viewport, as near as the clamp
@@ -192,6 +235,7 @@ export function createCamera({ stage, canvas, getLayout, getScale, onZoom, onVie
   }
 
   return {
+    setImpact,
     centerOn,
     recenter,
     viewRect,
