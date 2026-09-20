@@ -191,6 +191,32 @@
       ? { name: 'quest', fb: 1.0, shadow: 1024, density: 1, foam: 2000, seg: 168 }
       : { name: 'high', fb: 1.2, shadow: 2048, density: 2.2, foam: 3200, seg: 208 };
 
+    // ── the tide: the island's one clock ─────────────────────────────────
+    // Everything else on this island happens because you DID something — you
+    // pressed the totem, you pointed at the radio. The tide is the only thing
+    // that happens because time passed, and it is the whole reason sitting
+    // still is worth anything here: it pays out over minutes, in the water
+    // level, in where the foam breaks, in how far out you are allowed to
+    // walk, and in what the sea sounds like from the chair.
+    //
+    // A full ebb and flood in seven minutes rather than twelve hours. A real
+    // tide is not something you can sit through; this is the slowest thing
+    // that is still a thing you can WATCH, which is the only honest reason to
+    // pick a number here.
+    const TIDE_PERIOD = 420;
+    // 28 cm. The cap is not taste — the water's colour and transparency are
+    // baked per vertex from the depth at MEAN sea level, so the further the
+    // tide moves the more the shallows are painted for a depth they no longer
+    // have. At 28 cm the mismatch sits under the foam line, which is the
+    // brightest thing in that exact band. Going deeper means rebaking 40k
+    // vertex colours as it moves, and that is a 640 KB upload to save an
+    // error nobody has seen.
+    const TIDE_AMP = 0.28;
+    const TIDE_RATES = [['still', 0], ['slow', 1], ['quick', 3]];
+    let tideT = TIDE_PERIOD * 0.25;      // begin on a rising mid-tide
+    let tide = 0;
+    const tideAt = s2 => Math.sin(s2 / TIDE_PERIOD * Math.PI * 2) * TIDE_AMP;
+
     // ── comfort: the three dials a headset session actually needs ─────────
     // These are not graphics options. They are the settings that can only be
     // judged with the thing on your head — how fast the sand slides past, how
@@ -202,10 +228,10 @@
     // Smooth yaw is the most reliable way to make somebody queasy in a chair,
     // so the snaps come first and smooth is the opt-in at the end.
     const TURNS = [['snap 30', Math.PI / 6], ['snap 45', Math.PI / 4], ['smooth', 0]];
-    const comfort = { speed: 1, turn: 0, vig: 1, sound: 1 };
+    const comfort = { speed: 1, turn: 0, vig: 1, sound: 1, time: 1 };
     try {
       const saved = JSON.parse(localStorage.getItem('tokoTrip.comfort') || 'null');
-      if (saved) for (const k of ['speed', 'turn', 'vig', 'sound']) {
+      if (saved) for (const k of ['speed', 'turn', 'vig', 'sound', 'time']) {
         if (Number.isInteger(saved[k])) comfort[k] = saved[k];
       }
     } catch (e) { /* no storage — the defaults, every visit */ }
@@ -214,16 +240,19 @@
       comfort.turn = Math.min(TURNS.length - 1, Math.max(0, comfort.turn));
       comfort.vig = comfort.vig ? 1 : 0;
       comfort.sound = comfort.sound ? 1 : 0;
+      comfort.time = Math.min(TIDE_RATES.length - 1, Math.max(0, comfort.time));
     };
     clampComfort();
     const moveSpeed = () => SPEEDS[comfort.speed][1];
     function setComfort(key, v) {
-      const wrap = key === 'speed' ? SPEEDS.length : key === 'turn' ? TURNS.length : 2;
+      const wrap = key === 'speed' ? SPEEDS.length : key === 'turn' ? TURNS.length
+        : key === 'time' ? TIDE_RATES.length : 2;
       comfort[key] = ((v % wrap) + wrap) % wrap;
       try { localStorage.setItem('tokoTrip.comfort', JSON.stringify(comfort)); } catch (e) {}
       if (key === 'sound') applySound();
       paintSlate();
     }
+
     // ?perf puts the frame cost on the slate and in the corner. OFF by
     // default, because a number in the corner of a zen island is a number you
     // start playing instead of a place you sit in — and it can be turned on
@@ -1168,12 +1197,18 @@
     // updated on the CPU — a few thousand numbers a frame, no shader.
     const surfLevel = t => 0.045 * Math.sin(t * Math.PI * 2 * SURF_HZ) + 0.012 * Math.sin(t * 0.7 + 1.3);
     const foam = (() => {
-      const n = TIER.foam, pts = [], hs = [];
+      // The band has to span everywhere the water's edge will EVER be, not
+      // just where it sits at mean tide — a band drawn around mean sea level
+      // is one the foam line walks straight off the end of at low water, and
+      // the surf simply stops existing. Spanning the tide costs density, so
+      // the count goes up with it.
+      const n = Math.round(TIER.foam * 1.8), pts = [], hs = [];
+      const lo = -TIDE_AMP - 0.09, hi = TIDE_AMP + 0.26;
       let guard = n * 80;
       while (hs.length < n && guard-- > 0) {
         const x = (rng() - 0.5) * ISLAND_R * 2.6, z = (rng() - 0.5) * ISLAND_R * 2.6;
         const h = groundHeight(x, z);
-        if (h > -0.06 && h < 0.24) { pts.push(x, h + 0.02, z); hs.push(h); }
+        if (h > lo && h < hi) { pts.push(x, h + 0.02, z); hs.push(h); }
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
@@ -1191,7 +1226,10 @@
       return o;
     })();
     function foamUpdate(t) {
-      const reach = surfLevel(t) + 0.045;             // where the water's edge is, in terrain height
+      // where the water's edge is, in terrain height: the swell riding ON the
+      // tide, which is what makes the break walk up the beach over minutes
+      // instead of breathing in one place
+      const reach = tide + surfLevel(t) + 0.045;
       const hs = foam.userData.hs, cols = foam.geometry.attributes.color;
       const arr = cols.array;
       for (let i = 0; i < hs.length; i++) {
@@ -1440,7 +1478,7 @@
     // face, because a rectangle hanging in the air is the one thing a room
     // built to be sat in cannot have. Rows are read off the hit's UV, so the
     // whole menu is ONE mesh and adding a row is a line of painting.
-    const SLATE_ROWS = 5;
+    const SLATE_ROWS = 6;
     const slate = new THREE.Group();
     const slateFace = new THREE.Mesh(
       new THREE.PlaneGeometry(0.34, 0.3),
@@ -1470,7 +1508,8 @@
       else if (row === 1) setComfort('speed', comfort.speed + 1);
       else if (row === 2) setComfort('turn', comfort.turn + 1);
       else if (row === 3) setComfort('vig', comfort.vig + 1);
-      else setComfort('sound', comfort.sound + 1);
+      else if (row === 4) setComfort('sound', comfort.sound + 1);
+      else setComfort('time', comfort.time + 1);
       chime(659.25, 784);
     }
     // ── what the slate says ──
@@ -1495,6 +1534,7 @@
         ['TURN', TURNS[comfort.turn][0]],
         ['EDGES', comfort.vig ? 'closing in' : 'open'],
         ['SOUND', comfort.sound ? 'on' : 'off'],
+        ['TIDE', TIDE_RATES[comfort.time][0]],
       ];
       rows.forEach(([label, value], i) => {
         const y = i * rowH;
@@ -2194,9 +2234,12 @@
       solids.push(mesh);
     }
 
-    // The sea's surface in WORLD space. The island drops by PAD_H so the pad
-    // under the chair sits on the real floor, which puts sea level there.
-    const SEA_Y = -PAD_H - 0.02;
+    // The sea's surface in WORLD space, and it MOVES. The island drops by
+    // PAD_H so the pad under the chair sits on the real floor, which puts mean
+    // sea level there; the tide is measured from that. Every clamp reads this
+    // rather than a constant, which is what makes low water somewhere you can
+    // walk out to and high water somewhere you cannot.
+    const seaY = () => -PAD_H + tide - 0.02;
     const STEP_UP = 0.4;          // the lip of the jetty deck, and no more
     const BODY_R = 0.28;          // how wide you are, for bumping into things
     const CHEST = 1.0;            // where a wall is felt, above the deck lip
@@ -2217,10 +2260,10 @@
       // a face you can stand on is one facing up; the side of the totem is
       // geometry too, and standing on it is not walking
       if (hit && (!hit.face || hit.face.normal.y > 0.5)) {
-        return hit.point.y > SEA_Y ? hit.point.y : null;
+        return hit.point.y > seaY() ? hit.point.y : null;
       }
       const g = gy(x, z);
-      return g > SEA_Y ? g : null;
+      return g > seaY() ? g : null;
     }
 
     // Is something solid in the way between here and there? Only walls count
@@ -2470,7 +2513,7 @@
     const SURF_HZ = 0.065;
     const surfVoices = [];        // the wash, breathed by the visible tide
     const windVoices = [];        // one per swaying crown
-    let nextGull = 0, swell = 0;
+    let nextGull = 0, swell = 0, tideEdgeT = 0;
     // the mix the mood asks for, eased rather than switched
     const AIR = [
       { wash: 1.0, wind: 1.0, cut: 430, gull: [26, 70] },   // golden hour
@@ -2482,12 +2525,12 @@
     // Where the water meets the land, along a ray from the island's middle.
     // It asks groundHeight like everything else does, so the emitters follow
     // the cove if the cove is ever reshaped again.
-    function waterEdge(ang) {
+    function waterEdge(ang, level = 0) {
       const sx = Math.sin(ang), sz = Math.cos(ang);
       let lo = 0.5, hi = ISLAND_R * 1.7;
       for (let i = 0; i < 24; i++) {
         const m = (lo + hi) / 2;
-        if (groundHeight(sx * m, sz * m) > 0) lo = m; else hi = m;
+        if (groundHeight(sx * m, sz * m) > level) lo = m; else hi = m;
       }
       const r = (lo + hi) / 2;
       return [sx * r, sz * r];
@@ -2511,9 +2554,9 @@
       // sound and the nook is the quiet end of it. Each starts at a different
       // offset in the same loop: six copies in phase is mono with extra steps.
       for (let i = 0; i < 6; i++) {
-        const [wx, wz] = waterEdge((i / 6) * Math.PI * 2 + 0.3);
+        const [wx, wz] = waterEdge((i / 6) * Math.PI * 2 + 0.3, tide);
         const host = new THREE.Object3D();
-        host.position.set(wx, -PAD_H, wz);
+        host.position.set(wx, -PAD_H + tide, wz);
         scene.add(host);
         const pa = new THREE.PositionalAudio(listener);
         pa.setRefDistance(4.5);
@@ -2622,20 +2665,44 @@
       g.value = comfort.sound ? 1 : 0;
     }
 
+    // Where the six surf emitters sit, re-bisected onto the CURRENT waterline.
+    // A named function rather than a body inside a timer, because the gate has
+    // to be able to ask for it: a sandbox with no GPU renders this at two or
+    // three frames a second, so a two-second timer is twenty seconds of wall
+    // clock and a test that waits for it is a test that measures the harness.
+    function retuneSurf() {
+      for (let i = 0; i < surfVoices.length; i++) {
+        const [wx, wz] = waterEdge((i / surfVoices.length) * Math.PI * 2 + 0.3, tide);
+        surfVoices[i].host.position.set(wx, -PAD_H + tide, wz);
+      }
+    }
+
     function soundUpdate(dt, t) {
       if (!AC) return;
       mixSurf += (wantSurf - mixSurf) * Math.min(1, dt * 0.8);
       mixWind += (wantWind - mixWind) * Math.min(1, dt * 0.8);
       swell = Math.max(0, swell - dt * 0.45);
-      // the wash breathes with the tide you can SEE: the same surfLevel that
-      // lifts the water plane and walks the foam line up the sand
-      const tide = (surfLevel(t) + 0.057) / 0.114;
-      const wash = (0.5 + 0.7 * tide) * mixSurf * (1 + swell * 0.7);
+      // The wash breathes with the SWELL you can see — the same surfLevel that
+      // rides on top of the tide and lifts the water plane. Named `breath`
+      // and not `tide`: it was called `tide` before there was a tide, and
+      // when one arrived this local silently shadowed it, so the surf
+      // emitters were re-bisected against a 0..1 swell figure rather than
+      // against sea level. Nothing threw; the sound just stopped following
+      // the water.
+      const breath = (surfLevel(t) + 0.057) / 0.114;
+      const wash = (0.5 + 0.7 * breath) * mixSurf * (1 + swell * 0.7);
       for (const v of surfVoices) v.gain.gain.value = v.base * wash;
       for (const v of windVoices) {
         const sway = 0.5 + 0.5 * Math.sin(t * 0.6 + v.phase);
         v.gain.gain.value = (0.018 + 0.05 * sway) * mixWind;
       }
+      // The surf is emitted FROM the waterline, so when the waterline walks
+      // up the beach the sound walks with it — from the chair the sea gets
+      // nearer at high water and further at low. Re-bisected every couple of
+      // seconds rather than every frame: six bisections is 144 calls to
+      // groundHeight, and the tide moves about a millimetre a second.
+      tideEdgeT -= dt;
+      if (tideEdgeT <= 0) { tideEdgeT = 2; retuneSurf(); }
       nextGull -= dt;
       if (nextGull <= 0) { gullCry(); nextGull = gullEvery(); }
     }
@@ -3135,6 +3202,8 @@
     let footY = 0;
     function animate() {
       const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
+      tideT += dt * TIDE_RATES[comfort.time][1];
+      tide = tideAt(tideT);
 
       if (blend < 1) {
         blend = Math.min(1, blend + dt / 2.5); applyMood(); shadowDirty();
@@ -3190,7 +3259,7 @@
       // the sea: the plane rides the swell, the two surface maps slide in
       // different directions so the ripple has cross-motion, and the foam
       // line follows the water's reach up the sand
-      water.position.y = -PAD_H + surfLevel(t);
+      water.position.y = -PAD_H + tide + surfLevel(t);
       sea.position.y = water.position.y - 0.02;
       waterNormal.offset.set(t * 0.011, -t * 0.006);
       waterDisp.offset.set(-t * 0.004, t * 0.0055);
@@ -3362,6 +3431,23 @@
           g.dispose();
           return out;
         },
+        // the tide: where it is, and a way to put it somewhere exactly
+        tide: () => ({
+          level: +tide.toFixed(4), phase: +((tideT % TIDE_PERIOD) / TIDE_PERIOD).toFixed(4),
+          amp: TIDE_AMP, period: TIDE_PERIOD, rate: TIDE_RATES[comfort.time][0],
+          waterY: +water.position.y.toFixed(4), seaY: +seaY().toFixed(4),
+          surfAt: surfVoices.map(v => [+v.host.position.x.toFixed(2), +v.host.position.z.toFixed(2)]),
+        }),
+        setTide: (phase01) => { tideT = phase01 * TIDE_PERIOD; tide = tideAt(tideT); return tide; },
+        retuneSurf,
+        foamReach: () => +(tide + surfLevel(clock.elapsedTime) + 0.045).toFixed(4),
+        // the height band the foam points actually occupy — the tide walks
+        // the break through this, and a band that does not span the tide is
+        // a surf line that stops existing at low water
+        foamBand: () => {
+          const hs = foam.userData.hs;
+          return { lo: +Math.min(...hs).toFixed(3), hi: +Math.max(...hs).toFixed(3), n: hs.length };
+        },
         credits: () => propCredits.slice(),
         creditProp: (title, author, licence) => {
           const lic = (licence ?? '').trim();
@@ -3385,7 +3471,7 @@
         canTeleport: (x, z) => standY(x, z, gy(x, z) + 0.2) !== null
           && Math.hypot(x, z) <= ISLAND_R * 1.05,
         // collision, which is the island's geometry rather than its height field
-        collide: () => ({ solids: solids.length, seaY: +SEA_Y.toFixed(2), stepUp: STEP_UP,
+        collide: () => ({ solids: solids.length, seaY: +seaY().toFixed(3), stepUp: STEP_UP,
           trees: solids.filter(m => !!m.geometry.boundsTree).length }),
         standY: (x, z, feetY = 0) => standY(x, z, feetY),
         wallBetween: (fx, fz, tx, tz, feetY = 0) => wallBetween(fx, fz, tx, tz, feetY),
@@ -3395,7 +3481,8 @@
         },
         // comfort, the slate that sets it, and the frame cost it reports
         slate, slateFace, slateAct, slateRow, SPEEDS, TURNS, moveSpeed,
-        comfort: () => ({ ...comfort, speed: SPEEDS[comfort.speed][0], turn: TURNS[comfort.turn][0] }),
+        comfort: () => ({ ...comfort, speed: SPEEDS[comfort.speed][0], turn: TURNS[comfort.turn][0],
+          time: TIDE_RATES[comfort.time][0] }),
         setComfort,
         vignette: () => ({ on: vignette.visible, opacity: +vignette.material.opacity.toFixed(3) }),
         perf: () => ({ ...perfSample, on: perfOn, backend: backendName(), tier: TIER.name }),

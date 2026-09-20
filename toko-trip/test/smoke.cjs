@@ -110,6 +110,9 @@ const check = (label, ok) => {
   // ── collision: the island's geometry, not its height field ──
   // The reason this exists is one sentence: a height field has one answer per
   // column, and the jetty deck and the water under it are the same column.
+  // sea level MOVES now, so every clamp below it does too — pin the tide to
+  // high water (where the clock starts) or these read differently every run
+  await page.evaluate(() => window.__tt.debug.setTide(0.25));
   const col0 = await page.evaluate(() => window.__tt.debug.collide());
   check(`collision is built on real geometry (${col0.solids} solids, ${col0.trees} bounds trees)`,
     col0.solids >= 3 && col0.trees === col0.solids);
@@ -165,6 +168,60 @@ const check = (label, ok) => {
   check('the chair is something you bump into', bump.chair === true);
   check('and open sand is not', bump.sand === false);
   check('so you cannot walk through the chair', bump.gotThrough === false);
+
+  // ── the tide ──
+  // The island's one clock, and the only thing on it that happens because
+  // time passed rather than because you pressed something. What makes it a
+  // mechanic rather than a texture is that the things it moves are the things
+  // the rest of the island already reads: the water, the break, the sound,
+  // and where you are allowed to walk.
+  const band = await page.evaluate(() => window.__tt.debug.foamBand());
+  const amp = await page.evaluate(() => window.__tt.debug.tide().amp);
+  check(`the foam band spans the whole tide (${band.lo}…${band.hi} over ±${amp}, ${band.n} points)`,
+    band.lo < -amp && band.hi > amp);
+
+  const sweep = {};
+  for (const [name, phase] of [['low', 0.75], ['mid', 0.0], ['high', 0.25]]) {
+    sweep[name] = await page.evaluate(async (ph) => {
+      const d = window.__tt.debug;
+      d.setTide(ph); d.retuneSurf();
+      // water.position.y is written by the render loop, not by setTide, so
+      // read it AFTER a frame — waiting on frames rather than on the clock,
+      // because this sandbox draws two or three a second
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const t = d.tide(), c = window.__tt.chair;
+      const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
+      let reach = 0;
+      for (let r = 0; r <= 14; r += 0.1) { if (d.standY(fx * r, fz * r, 0) !== null) reach = r; else break; }
+      return { level: t.level, waterY: t.waterY, seaY: t.seaY, foam: d.foamReach(),
+        reach: +reach.toFixed(1), surf: Math.hypot(t.surfAt[0][0], t.surfAt[0][1]) };
+    }, phase);
+  }
+  check(`the water rides it (${sweep.low.waterY} → ${sweep.high.waterY})`,
+    sweep.high.waterY - sweep.low.waterY > amp);
+  check(`the break walks with it (${sweep.low.foam} → ${sweep.high.foam})`,
+    sweep.high.foam - sweep.low.foam > amp);
+  // THE PAYOFF, and the thing that makes it a mechanic: at low water there is
+  // more beach, and you are allowed to stand on it.
+  check(`low water uncovers beach you can walk on (${sweep.high.reach} m → ${sweep.low.reach} m)`,
+    sweep.low.reach > sweep.high.reach + 1);
+  check(`and the surf comes from the waterline, so it moves too (${sweep.high.surf.toFixed(1)} → ${sweep.low.surf.toFixed(1)} m out)`,
+    sweep.low.surf > sweep.high.surf + 0.5);
+
+  // still means still — a rate of zero has to actually hold, or "hold" is a
+  // label on a thing that drifts
+  const held = await page.evaluate(async () => {
+    const d = window.__tt.debug;
+    d.setComfort('time', 0);
+    d.setTide(0.1);
+    const a = d.tide().level;
+    await new Promise(r => setTimeout(r, 600));
+    const b = d.tide().level;
+    d.setComfort('time', 1);
+    return { a, b, rate: d.comfort().time };
+  });
+  check(`still holds the tide (${held.a} → ${held.b})`, Math.abs(held.a - held.b) < 1e-6);
+  check(`and the slate names the rate (${held.rate})`, typeof held.rate === 'string');
 
   // ── the moods ──
   const moods = await page.evaluate(() => {
@@ -264,7 +321,7 @@ const check = (label, ok) => {
     const d = window.__tt.debug, seen = [];
     d.slateAct(0);
     const perfOn = d.perf().on;
-    for (const row of [1, 1, 1, 2, 3, 4]) { d.slateAct(row); seen.push(d.comfort()); }
+    for (const row of [1, 1, 1, 2, 3, 4, 5]) { d.slateAct(row); seen.push(d.comfort()); }
     return { perfOn, seen };
   });
   check('the top row turns the readout on from inside the headset', rows.perfOn === true);
@@ -273,9 +330,11 @@ const check = (label, ok) => {
   check(`TURN cycles (${rows.seen[3].turn})`, rows.seen[3].turn === 'snap 45');
   check(`EDGES toggles (${rows.seen[4].vig})`, rows.seen[4].vig === 0);
   check(`SOUND toggles (${rows.seen[5].sound})`, rows.seen[5].sound === 0);
+  check(`TIDE cycles (${rows.seen[6].time})`, rows.seen[6].time !== rows.seen[5].time);
   // and one row must not move another: the UV divisor is the whole menu
   check('and one row moves one dial',
-    rows.seen[5].speed === 'easy' && rows.seen[5].turn === 'snap 45' && rows.seen[5].vig === 0);
+    rows.seen[6].speed === 'easy' && rows.seen[6].turn === 'snap 45'
+    && rows.seen[6].vig === 0 && rows.seen[6].sound === 0);
   check('and SOUND really silences everything, not just the surf',
     await page.evaluate(() => window.__tt.debug.air().master) === 0);
   await page.evaluate(() => window.__tt.debug.setComfort('sound', 1));
@@ -289,8 +348,12 @@ const check = (label, ok) => {
   const air = await page.evaluate(() => window.__tt.debug.air());
   check(`the sound started with the island (${air.surf.length} surf emitters, ${air.wind.length} in the crowns)`,
     air.started === true && air.surf.length >= 4 && air.wind.length >= 1);
-  const offshore = air.surf.filter(v => Math.abs(v.ground) > 0.12);
-  check(`and every surf emitter sits on the waterline${offshore.length ? ` — ${offshore.map(v => v.ground)}` : ''}`,
+  // "on the waterline" used to mean groundHeight ~ 0, which was true only
+  // while sea level was a constant. The waterline is at the TIDE now, and
+  // that is the invariant worth asserting.
+  const tideNow = await page.evaluate(() => window.__tt.debug.tide().level);
+  const offshore = air.surf.filter(v => Math.abs(v.ground - tideNow) > 0.12);
+  check(`and every surf emitter sits on the waterline, wherever the tide has put it (tide ${tideNow.toFixed(3)})${offshore.length ? ` — ${offshore.map(v => v.ground)}` : ''}`,
     offshore.length === 0);
   check(`and they are spread round the island, not stacked (${air.surf.map(v => v.at[0]).join(' ')})`,
     new Set(air.surf.map(v => v.at.join(','))).size === air.surf.length);

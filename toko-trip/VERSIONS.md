@@ -1,5 +1,81 @@
 # Toko Trip — release log
 
+## v14 — 2026-09-20
+
+The tide. Thirteen versions in, the honest problem was that **everything on
+this island happened because you did something** — you pressed the totem, you
+pointed at the radio — and when you stopped pointing, nothing happened. A zen
+island asked you to sit still and paid nothing for it. You could see all of it
+in ninety seconds.
+
+This is the island's one clock, and the point is not that the water moves. The
+point is that the things it moves are the things every other system already
+reads, so one change makes all of them content:
+
+- **The water rides it** (−1.25 → −0.67 m), and the swell now rides on TOP of
+  the tide rather than being the only vertical motion there was.
+- **The break walks up the beach** over minutes instead of breathing in one
+  place — `foamUpdate` takes `tide + surfLevel(t)`.
+- **Sea level is no longer a constant**, and every clamp reads it: `seaY()`
+  rather than `SEA_Y`. Low water uncovers **2.4 m of beach you are allowed to
+  stand on** (reach 2.6 m → 5.0 m from the chair). That is what makes it a
+  mechanic rather than a texture — the tide changes where you may go.
+- **The surf comes from the waterline**, so the sound moves with it: the
+  emitters re-bisect onto the current edge and sit 2.6 m out at high water
+  against 4.6 m at low. From the chair the sea is nearer when it is in.
+- **The rocks, the driftwood and the jetty posts surface** at low water, free,
+  because they were always there and the water was over them.
+
+Seven minutes for a full ebb and flood, on the slate as **TIDE: still / slow /
+quick**. A real tide is not something you can sit through; this is the slowest
+thing that is still a thing you can *watch*, which is the only honest reason
+to pick a number.
+
+Two caps recorded rather than hidden:
+
+- **28 cm of amplitude**, and the limit is not taste. The water's colour and
+  transparency are baked per vertex from the depth at MEAN sea level, so the
+  further the tide travels the more the shallows are painted for a depth they
+  no longer have. At 28 cm the mismatch sits under the foam line, which is the
+  brightest thing in that exact band. Deeper means rebaking 40k vertex colours
+  as it moves — a 640 KB upload to fix an error nobody has seen.
+- **The baked wet-sand colour and the salt rime stay put.** They are the
+  waterline's AVERAGE mark, which is physically what they are.
+
+Three found building it, and the first is the one worth remembering:
+
+- **`soundUpdate` already had a local called `tide`.** It was v10's normalised
+  swell breath, 0..1, named before there was a tide — and when one arrived it
+  silently shadowed the real thing, so the surf emitters were re-bisected
+  against a swell figure instead of against sea level. Nothing threw. The
+  sound simply stopped following the water. It is `breath` now, which is what
+  v10's own comment had been calling it all along.
+- **The foam band did not span the tide.** The points are generated once in a
+  narrow height band around mean sea level, so the break walked straight off
+  the end of its own cloud at low water and the surf stopped existing. The
+  band now spans the whole range (−0.37…0.54) at 1.8x the count, and the gate
+  asserts it, because this is invisible until exactly low water.
+- **`clampComfort()` runs at module init and now reads `TIDE_RATES`**, which
+  was declared after it. Temporal dead zone, and the island did not boot.
+
+And the rulers were wrong twice more, both for the same reason — *sea level is
+not a constant any more*: the water check read `water.position.y`, which only
+the render loop writes, so at two frames a second it reported the PREVIOUS
+phase and the tide looked inverted; and v10's "every surf emitter sits on the
+waterline" asserted `groundHeight ~ 0`, which was the definition of the
+waterline only while it could not move.
+
+Gate: 83 checks. The one that matters asserts the payoff rather than the
+motion — that low water uncovers beach you can walk on.
+
+### Next on this axis
+
+The sun does not move yet. The three moods are still a button, so time passes
+in the water and nowhere else. `tideT` is a real clock and the moods are
+already a lerp between keyframes; hanging the sky on the same axis is the
+obvious follow-on, and it is deliberately NOT bundled here — doing it badly
+would wreck three carefully tuned moods to make one release look bigger.
+
 ## v13 — 2026-09-19
 
 The first step. Collision is the island's **geometry** now, not its height
