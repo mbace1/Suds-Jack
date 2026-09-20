@@ -7,448 +7,66 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v259 — 2026-09-20
-**`scripts/soak.sh` — the long game becomes a gate, and it is falsified before it is trusted** *(owner: "go ahead" on keeping the soak harness)*
-- **What it is.** A scripted player driven through the real loop to **wave 40
-  in both modes** — about eight minutes of game each — on a frozen clock
-  (`performance.now()` replaced by a counter, `loop()` called synchronously,
-  render and HUD stubbed: the `level-smoke.sh` trick, because headless rAF
-  fires once and then never). It stages a throwaway copy of `toko-drop/` and
-  appends the probe to *that* `main.js`; nothing test-only reaches the tree.
-- **It asserts, it does not just print.** Four limits, each one a bug it has
-  already caught: **the run must reach the target wave** (a frozen loop looks
-  exactly like a short run); **no round may exceed 90 s** (the v258 freeze ran
-  3359); **no wave may hold more than 140 live bodies** (carry-over stacked to
-  91 before v258 capped it); **scene objects in the last quarter may not
-  exceed 2.5× the first** (the leak check). Plus zero page errors.
-- **Falsified, and the result changed the instructions.** The v258 freeze was
-  reinstated as a negative control and the gate run at **wave 12 — it PASSED.**
-  The hold it breaks is never reached that early; the floor never fills. The
-  same build at wave 40 failed loudly (*wave 18 ran 9814 s*). **A short soak
-  proves nothing about the long game**, which is the entire point of it — so
-  the header now says: run it to 40 or not at all. *This is the v244 lesson
-  again: a detector that cannot fail is not a detector.*
-- **What it will not tell you.** The bot is invincible on purpose — a mortal
-  one dies at wave 8–12 and never reaches the arithmetic under test. It
-  measures pacing, pressure and cost. It does not measure fun.
-- Run it alongside `smoke.sh` for any change to the wave director, the spawn
-  pump, carry-over or the revenge tables. ~6 minutes for both modes.
-- Cache-bust `?v=211` → `?v=212`; HUD label → v259
-
----
-
-## v258 — 2026-09-20
-**A 40-wave soak test, and the three things it found — one of them a freeze** *(owner: "keep testing and improving")*
-- **THE SOAK.** An invincible bot driven through the real loop to **wave 40 in
-  both modes** (~8 minutes of game each), logging per wave: duration, empty-floor
-  seconds, peak bodies, peak bullets, ms/step, and the size of every array and
-  pool. **No leaks** — `scene.children` sits at 25–100 across forty waves,
-  every pool recycles, gates cap at 3. The long game had never been played
-  before; the short runs could not have found any of the below.
-- **A FREEZE, mine, caught before it shipped.** The live-floor hold (below)
-  was first written as an early `return` inside `loop()` — which skipped
-  everything downstream: the player, the enemies, collisions, the round-end
-  check. A full floor froze the game solid: the soak's boss round ran
-  **3359 seconds** and CLOSE COMBAT never passed wave 13. It holds the spawn
-  loop now. *An early return inside the frame is never a local decision.*
-- **The live floor had no ceiling.** `waves.caps` bounds what a wave DRAWS;
-  nothing bounded what STANDS, so v256's carry-over stacked survivors under
-  the next wave's full draw. Measured: CLOSE COMBAT peaked at **29 bodies
-  through wave 12 and 91 past wave 30**, ms/step 0.44 → 2.27. A queued front
-  now **waits** while the floor holds `cap × liveMult` (1.5) — the pull-in
-  gate from the other side. **And the check lives INSIDE the spawn loop:** a
-  first cut tested it once per frame, so a held front dumped its whole backlog
-  the instant one body died — waves 10 and 14 burst to ~60 against a cap of
-  31. *A gate outside the loop is not a gate.* Early waves now peak at 33.
-- **The revenge cap was a difficulty ceiling.** v254's flat `fieldCap: 24`
-  bound from **wave 6 to wave 40** — CLOSE COMBAT's bullet pressure was flat
-  across 34 waves (peak 27 early, 31 late) while classic's living fire climbed
-  to 86. It is a curve now (`base 14 + 1.2/wave`, max 44): measured 8 early,
-  28 by wave 12, 57 late.
-- **Children get a safety valve, not a rule.** A SPLITTA's spawn, the MINIs
-  and a SLUG's split never go through the pump — they are the consequence of
-  your own kills — so they are not held; they stop at `liveMult × childMult`
-  (2). **Classic rounds only:** the first cut applied it everywhere and
-  `level-smoke.sh boost-lane` caught it immediately — a suppressed child in an
-  authored level is a level that no longer plays as written.
-- **Where it stands:** CLOSE COMBAT reaches wave 40 in ~9 min, classic ~8;
-  empty floor averages 1.0 s and 2.3 s per round. The one number still ugly is
-  a CLOSE COMBAT *swarm* wave past 30 with an invincible player: ~90 bodies,
-  ms/step 3.3. A mortal bot dies at wave 8–12 there, so nobody reaches it
-  today — recorded rather than tuned blind.
-- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
-  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
-- Cache-bust `?v=210` → `?v=211`; HUD label → v258
-
----
-
-## v257 — 2026-09-19
-**Wave transitions and flow: drops and gates survive the boundary, fronts pull in when the floor empties, a CURTAIN kind, a darker slug** *(owner: "things shouldn't disappear immediately… test waves in general, add a bit of length maybe variety, but always emphasize flow. Hazard wave of bullets was great. Dark slug was cooler… maybe a bit too dark. Test a lot and tune things")*
-- **Nothing vanishes at the boundary.** Drops were wiped by `spawnWave()` on
-  every clear — the v136 breather existed "to grab leftover drops", and then
-  the wave change deleted them. They keep their own `_life` now. The oldest
-  gate used to be replaced *instantly* when a wave spawned its new one; it
-  **retires** — lingers `waves.gateRetire` (4 s) past the boundary, then goes.
-  Measured: 0.6–1.3 drops and 2–3 gates standing at the end of a round (was 0
-  and 2).
-- **Flow, measured and chased.** The bot harness gained a metric: *seconds
-  of empty floor inside a round*. On v256's fixed schedule it read **~5–5.5 s
-  per normal round** — clear a front, wait for the next. Two turns of tuning:
-  1. **Fronts PULL IN** (`pulses.pullIn` 2, `pullGap` 1.5): when live bodies
-     drop to two or fewer and a front is still queued, the whole front comes
-     forward with its stagger kept, never sooner than 1.5 s after the last
-     one landed. The clock stays the ceiling; a strong player shortens the
-     round. Bodies carry `front` from the director through the pump.
-  2. **More fronts, shaped per kind** (`pulses.byKind`): normal 4, swarm 5
-     quick, spike 3 heavy, boss = boss then 3 late fronts from 28%, curtain 3.
-  Result: **empty floor 5.5 → 2.4 s** (CLOSE COMBAT normal), curtain **8.2 →
-  1.9–3.2 s**. Rounds run 7–8 s on normal kinds for the bot (it clears fast),
-  12–13 on spike / curtain / boss; the 12–16 s `waves.round` clock only binds
-  on a slower player. *Flow beat the number, on purpose.*
-- **A bit of length, and variety.** `waves.round`: normal 14, swarm 12, spike
-  15, boss 16, curtain 15. **B6 closed:** `budget.min` 6 — wave 1 was one
-  body and a shooter; it is a round now (5–6 s, was 3).
-- **THE CURTAIN** — the bullet-heavy wave the owner liked, made a *kind*:
-  every 6th wave from 6 (`rhythm.curtainEvery/From`; precedence boss > spike >
-  curtain > swarm). Shooters take 60% of the budget with two extra seats and
-  arrive 1.2 s apart instead of 2.5 (the first cut left 8 s of empty floor
-  between them). In CLOSE COMBAT, where the living are muzzled, the draw
-  leans on the **biters** — the curtain there is corpse fire. Banner: *THE
-  CURTAIN — WALK THE GAPS*.
-- **The slug is darker** — `0x88ff22` → `0x5fcc14`, between the green that
-  shipped and the dark one the owner preferred ("a bit too dark").
-- Not touched: what the "dark slug" *was* is not certain — most likely a
-  VOLATILE elite's smoulder on green, possibly the phone's ratchet with
-  transmission off. The colour is one number if this guess is wrong.
-- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
-  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
-- Cache-bust `?v=209` → `?v=210`; HUD label → v257
-
----
-
-## v256 — 2026-09-19
-**Waves become fronts: a classic round is a 12–15 s clock, its bodies arrive in pulses, survivors carry over** *(owner: "Wave number. Waves can be 12–15 secs" — the B2 sentence, and leap #2)*
-- **The round is a clock, by kind** (`TUNING.waves.round`: normal 13, swarm
-  12, spike 14, boss 15, prize/breather 12). **Its mob arrives in three
-  pulses** across 70% of it (`waves.pulses`) in draw order, each front
-  staggered like the old drip; a wave of two bodies is two fronts, so the
-  fronts always span the round. Bosses keep t = 0; shooters keep their own
-  spaced plan (`shooterPlan`). No new `rng()` calls — seeded draws are
-  byte-identical to v255's; only the `t` values moved.
-- **What ends a round now.** An empty floor *after the last pulse has landed*
-  (before that, an empty floor is a breather, not a clear — `pendingSpawns`
-  must be drained, the SMASH TV rule). Otherwise **the clock**: bodies still
-  standing **carry over** — no bonus, no applause, the next wave pours in
-  around them (`spawnWave(true)` keeps the living and the drops). A live boss
-  holds its round open. Roguelike keeps its every-3rd-wave card at a clock
-  end too. Cabinets, SMASH TV, Rush and authored levels pace themselves.
-- **Escalation stays on the wave number**, as decided — so wave 10 arrives
-  later in wall time. Measured, same bot: **CLOSE COMBAT rounds average
-  12.1 s** (were 5–8), classic 9.4 s (early waves are small: one mob body
-  and a shooter is a four-second wave — that is B6, "wave 1 is a non-event",
-  a roster-size call still open); **peak bodies 18** (carry-over is bounded
-  by the pulses); **survival CC 57 → 100 s**, classic 67 → 77 s; **wave 10
-  at 87–114 s** (was 61). `PROGRESSION_DESIGN.md` §7 Q2 shipped, Q4 answered
-  by the rule above, B2 answered by the owner.
-- **The "one more go" number** (leap #1, §5 Q15): the death-screen summary
-  already carries `time` (run length); it now carries **`restartGap`** —
-  seconds from the previous death screen to this run's start (`null` on a
-  session's first run). Restart rate is a number the sheet can hold, not a
-  feeling.
-- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
-  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
-- Cache-bust `?v=208` → `?v=209`; HUD label → v256
-
----
-
-## v255 — 2026-09-18
-**TORO reads: a spoked sawblade in one draw call** *(owner: "1,2,3" on the playtest's ship list — this is 3)*
-- **The wheel was a donut.** Five 0.12 × 0.30 cones on a 0.68 rim, most of
-  each buried in the tyre — bumps in the lab, nothing at game scale — and a
-  featureless torus spinning about its axle *does not change its picture*,
-  so the rev-up (the 1.6 s tell before the dash) existed only for the code.
-  TORO's whole telegraph was the red arrow.
-- **Now:** eight cones 0.20 × 0.70 seated on the tyre (`TUNING.toro.spike`),
-  a hub and three spoke bars through the centre (`TUNING.toro.hub`), tyre
-  0.30 — thin enough to leave a hole the spokes show through. The rev-up is
-  a picture: a sawblade with spokes, accelerating.
-  `design/toro-before-after-v255.png`. *(A first cut fattened the tyre to
-  0.40 and grew the hub to 0.24 in a 0.28 hole — the spokes vanished inside
-  the wheel. Looked at the picture, thinned it back.)*
-- **One geometry.** Tyre, cones, hub and spokes are concatenated by hand
-  (`concatGeometries()` — the vendored build has no `BufferGeometryUtils`;
-  every piece is a non-indexed position/normal/uv triple, so a merge is three
-  appends) into `toroWheelGeometry()`. **Draw calls per TORO 6 → 1**
-  (8 TOROs: 68 → 28 on a 20-call floor — the same as 8 GLOBBOs).
-  `PLAYTEST_2026-09-17.md` §5.1 T1/T2 and §4 P2, shipped together.
-- Not done, by choice: T3's dark tread band (one material per body — colour
-  = species), T4's bank into the turn (motion, another day), T5's size
-  1.0 → 1.2 (balance — the collision radius would change).
-- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
-  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
-- Cache-bust `?v=207` → `?v=208`; HUD label → v255
-
----
-
-## v254 — 2026-09-18
-**Revenge is a species trait now — the ten shooters' corpses bite back, from wave 3, capped on the field** *(owner: "1,2,3" on the playtest's ship list — this is 2)*
-- **Who bites:** `TUNING.revenge.biters` — SPITTOR, FANNER, WEEVA,
-  ORANGE_CUBE, PURP_CUBE, BAMBU, PYRA, BOTFLY, CLOAKER, DRAPER: the species
-  whose *living* fire you already learned. Bosses always bite. Every other
-  corpse is quiet. **When:** `fromWave` 3 — waves 1–2 have no corpse fire
-  at all. **How many:** `fieldCap` 24 live corpse bullets; a bloom that would
-  start over the cap is skipped. (It is a threshold, not a ceiling: a bloom
-  that starts at 23 can land 7, so peaks read 27–29.) Bullets carry a
-  `revenge` flag (`spawnDir` returns the bullet now) so the count is exact
-  and VOLATILE's ring counts too.
-- **Measured, same bot, five CLOSE COMBAT runs each:** peak enemy bullets
-  at **wave 2: 37 → 0**; at wave 4: 38 → 24–27; **survival 42 s → 57 s**
-  (waves reached 7–11, was 4–8). The default mode's opening is a movement
-  game again; the bullet game starts when the corpses that shoot arrive.
-  Classic is untouched (revenge never fired there).
-- `PROGRESSION_DESIGN.md` §7 Q3/Q5 — the lean, shipped. Whether the biter
-  list is right is a feel question; the list is one table.
-- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
-  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
-- Cache-bust `?v=206` → `?v=207`; HUD label → v254
-
----
-
-## v253 — 2026-09-18
-**The slug stops multiplying, and three one-liners off the ledger** *(owner: "Go" on the playtest's first ship step)*
-- **A chain shorter than four does not split** (`TUNING.arc.slug.minSplit`);
-  the hit segment just dies. **A body born from a split never splits again**
-  (`_noSplit`). Measured in the real loop: a 3-chain hit in the middle →
-  `[2]`, not `[1, 1]`; an 11-chain → `[5, 5c]`, then the child hit in the
-  middle → `[5, 4c]` — still two animals. From eleven segments one spawn is
-  now bounded at a handful of bodies, not the 22 splits / 43 bodies the bot
-  produced on v251.
-- **VOLATILE's corpse ring fires at the revenge speed** (0.6×) like every
-  other bloom — it was the one full-speed ring on the floor and the one with
-  the most bullets. Measured: all 12 bullets of a volatile GLOBBO's death at
-  4.2 = 7 × 0.6.
-- **Revenge is seeded.** RING phase and the on-top-of-player fallback used
-  `Math.random()`; a daily-seed run diverged at its first bloom. `rng()` now.
-- **PYRA is `FIXED`, not `HUNTER`.** It has speed 0; the HUNTER role's dodge
-  weight was nudging a turret sideways. `crowd-check` still passes.
-- **A correction to v252's report, recorded rather than buried:** it said
-  the default mode's "dash-cut" could only split a slug. There is no dash-cut
-  in the main game — the DASH OFFENSE loop that cuts bodies is inside
-  `nexdeusMode`. The splits were bullets passing through a head into the body
-  behind it. A `_slugCut()` ("the dash eats the segments it crosses") was
-  built on that wrong premise; it stays as NEX DEUS's rule, where the dash
-  does cut, and `PLAYTEST_2026-09-17.md` §2.4/B3 are corrected. *Read the
-  gate before you build on it.*
-- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
-  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke;
-  plus the rules probe above.
-- Cache-bust `?v=205` → `?v=206`; HUD label → v253
-
----
-
-## v252 — 2026-09-18
-**The testers cost less; a bot played ten games and the numbers are in `PLAYTEST_2026-09-17.md`** *(owner: "test the game and come up with balance and polish", then "pick up on the previous" — the enemies' looks, TORO first)*
-- **Perf fix on my own v251 bodies.** The RIBBON built a fresh
-  `CatmullRomCurve3` every frame and called `getSpacedPoints()` — a
-  200-sample arc-length table rebuilt 60 times a second — then
-  `computeVertexNormals()` on a near-flat strip. One curve is reused,
-  `getPoints()` (uniform in the parameter, which on distance-spaced samples
-  is already even), and an up-normal set once. The SLUG's tail segments and
-  eye cast no shadow (the head does), and `DoubleSide` — needed by the strip,
-  which has no thickness — was also being set on 88 spheres. **Draw calls
-  per slug 23 → 13**; ribbon update 8 → 0.03 ms.
-- **Measured honestly:** swiftshader's ms/frame is a software rasteriser
-  stalling and timed "8 GLOBBO" *cheaper than an empty floor*, so it is not
-  a phone number and is not quoted. What is hardware-independent: update
-  CPU (negligible for both), **draw calls** (dome 1 · ribbon 2 · slug 13 ·
-  **TORO 6** — the torus and five separate spike meshes) and triangles.
-- **`toko-drop/PLAYTEST_2026-09-17.md`** — a scripted player on a frozen
-  clock through the real loop, 5 CLOSE COMBAT + 5 classic runs, every hit and
-  kill attributed. The findings that change plans: **a round lasts 5–8 s, not
-  20** (wave ends on an empty floor; wave 1 in classic is 3.5 s and two
-  bodies; wave 10 at 61 s), so pulses across 20 s would make the game 3×
-  easier per minute unless escalation reads the clock; **CLOSE COMBAT has 37
-  enemy bullets in flight at wave 2, all from corpses** (classic: 0.8), and
-  kills the bot in two-thirds the time; **SLUDGE_CUBE is classic's top
-  killer** and second most spawned; **the RIBBON dealt 1 hit in 10 runs**;
-  **the SLUG multiplied** — 22 splits in one run, 43 bodies at wave 8,
-  one-segment "slugs" *(v253 correction: the splits were bullets through a
-  head into the body — the main game's dash does not cut bodies; only NEX
-  DEUS's does)*. Balance pitches B1–B7, polish P1–P6, and the
-  TORO look (rim spikes invisible at game scale; the rev-up spin cannot be
-  seen on a featureless torus — its only tell is the arrow) with five
-  pitches and three variations. Pitches, not decisions.
-- Gates: smoke (42) · cabinets 6/6 · webgpu · level-check · arena-check ·
-  crowd-check · framing-check · shader-lint · level-smoke ×3 · editor-smoke.
-- Cache-bust `?v=204` → `?v=205`; HUD label → v252
-
----
-
-## v251 — 2026-09-17
-**Two arc-mover TESTERS in the real waves from wave 2 — the RIBBON and the GEL SLUG** *(owner: "push the ribbon and slugs into the game around wave 2 as a tester")*
-- **`EnemyType.RIBBON` (40) and `EnemyType.SLUG` (41)**, the sketchbook's two
-  candidates (v250 docs, `PROGRESSION_DESIGN.md` §8.9) promoted to real bodies:
-  in `waves.pool` and `poolMelee` from **wave 2, cost 3 each**, movement role
-  `SCHOOL`, in `MELEE_TYPES` so touch hurts. Measured through the director:
-  across 60 waves (2–6, twelve fresh games) RIBBON was drawn 8 times and SLUG
-  7 — about one wave in eight each. A first cut at cost 2 drew RIBBON 35
-  times, because cost ≤ 2 qualifies a body for swarm-group draws; 3 keeps it
-  out of them.
-- **The SLUG's rule, in the real loop:** hit an **end** and it shortens; hit
-  the **middle** and it **splits**, the back half reversed so its old rear is
-  a head pointed at you. Under a real player bullet: `[11]` → `[6, 4]`. And a
-  thing the sketch page could not show: **aim at the head from the wrong
-  angle and the bullet passes it and slices the body behind — a split.** That
-  is the positional tension working. `main.js` spawns the second animal from
-  `_splitPts` beside the SPLITTA/MINI child-spawn block, through the same
-  `_buildChain()` a fresh slug uses, so a split slug is not a special case
-  anywhere.
-- **Long bodies hit-test THEMSELVES.** A `_longBody` flag routes the three
-  contact sites (player bullets, the dash-cut, melee contact) to
-  `hitTest()`/`touches()` — the chain by segment (recording which one, for
-  the rule), the strip along its length at the width it has there. Everything
-  else keeps the head circle it always had. **The first cut gated on
-  `e.hitTest ?` — but the method exists on every Enemy, so GLOBBO took the
-  ribbon path and read an undefined `_trail`: four cabinets, the WebGPU
-  smoke and a level smoke all went red on "Cannot read properties of
-  undefined (reading 'length')".** A method's existence is not a type test.
-- **Both carry a TURN-RATE LIMIT** (`TUNING.arc.turnRate` 2.2 rad/s), which no
-  other body has — the shipped model re-points a dome at the player every
-  frame and a dome hides that; a long body draws its own recent heading, so
-  an instant turn is a visible corner. The serpentine is a heading offset, not
-  a sideways shove, so the *path* curves. Both are group-bodied like TORO
-  (`GROUP_BODY` set replaces the three-way TORO/BAMBU/PYRA test in
-  `position`/`destroy`/`updateDeath`); chain and strip are group-local
-  children, so the death pop, flash and removal come for free.
-- **Costs stated, not hidden:** the RIBBON rebuilds its strip every frame
-  (`getSpacedPoints` allocates; fine at one or two, not at twenty), has no
-  silhouette when it stops, and its `hitTest` walks the trail per bullet. The
-  SLUG rebuilds its chain meshes on every hit. Testers, not shipping bodies —
-  the point is to ask "is it fun to fight", which no gate can answer.
-- Gates: `smoke` (42 types) · `cabinets` 6/6 · `webgpu-smoke` · `level-check`
-  · `arena-check` · `crowd-check` · `framing-check` · `shader-lint` ·
-  `level-smoke` ×3 · `editor-smoke` 27. The Godot port does not have these
-  types; no bundled level uses them, so cross-build parity is unaffected.
-- Cache-bust `?v=203` → `?v=204`; HUD label → v251
-
----
-
-## v250 — 2026-09-16
-**The zoom was v247 dollying the camera in on phones; v249's memory budget never bound on the phone it was written for** *(and the version is on the title screen now, so a bug report can name its own build)*
-- **"Zooms in weirdly" — found, and it was not the context loss.** Measured on
-  a 412×790 portrait viewport: `camera.position.y` creeps from the rest 27.0
-  down to **19.6 over about twenty seconds of play**, then keeps drifting. That
-  is v247's framing dolly ("the camera frames the fight, not the floor")
-  running in PORTRAIT. It arrives too slowly to read as a camera move — it just
-  leaves the arena looking wrong, which is exactly how it was reported.
-- **Why portrait is the wrong place for it.** Portrait's rest framing is
-  hand-tuned and **already crops the corners**: at rest the near corners sit at
-  **1.65×** the horizontal frustum and 1.23× the vertical. Dollying in from
-  there hides the side walls of a *fixed-screen* arena shooter — you stop being
-  able to see where the next body will arrive. `ARENA_PRESETS` has said
-  *"Portrait keeps its fixed framing"* since v111; v247 quietly broke that
-  invariant. `framingAllowed()` now requires `landscapeMode`. Verified both
-  ways: portrait holds 27.0 flat across a 30 s run, landscape still dollies
-  20.5 → 13.8, so the v247 feature is untouched where it was designed and tuned.
-- **v249's pixel budget did nothing.** It capped the backing store at 2.0 Mpx
-  and called it a fix. The owner's phone is **412×790 CSS px**: at `dpr` 2 that
-  is **1.3 Mpx — already under the budget**, so the cap computed 2.48,
-  `Math.min` picked 2, and the game asked for exactly what it had asked for
-  before. Confirmed by measuring the canvas: v249 backs **824×1580**, v250 backs
-  **618×1185**. *Writing a limit is not the same as writing a limit that binds.*
-- **The memory was never mostly in the colour buffer — it is in MSAA.**
-  `antialias: true` costs 4× the colour buffer **and** 4× depth:
-
-  | | |
-  |---|---|
-  | dpr 2.0, antialias on | **~54 MB** ← what it was asking for |
-  | dpr 2.0, antialias off | ~17 MB |
-  | dpr 1.5, antialias off | **~13 MB** ← what a phone gets now |
-
-  A small screen now starts a rung lower (`_smallScreen` → dpr ladder
-  `1.5 / 1.25 / 1 / 1`; desktop keeps `2 / 1.5 / 1.25 / 1`) and **never turns
-  MSAA on at all** — confirmed at the context, not just the intent
-  (`getContextAttributes().antialias === false`). `_smallScreen` is
-  deliberately generous (`maxTouchPoints`, or a short edge ≤ 820): capping a
-  narrow desktop window costs nothing, missing a phone costs the context.
-- **One resize path.** v249's `webglcontextrestored` handler hand-rolled a
-  *partial* copy of `resize()` — pixel ratio and drawing-buffer size, but not
-  `camera.aspect`, not the retro render target, not the UI canvas. It calls
-  **`resize()`** now. Stated honestly: this was **not** the zoom (a lose/restore
-  cycle leaves aspect, fov and camera distance bit-identical), it is a
-  duplication removed before it becomes one.
-- **The version is on the title screen**, which is what was asked for. One
-  `GAME_VERSION` constant feeds the HUD label, the on-screen diagnostic line
-  and the title, so they cannot drift. The title reads e.g.
-  `v250 · dpr 1.25 · GPU RESETS 1`.
-  **It reports state, not intent, and this took two tries:** the first cut read
-  `renderer.getPixelRatio()` while building the title and printed `dpr 2.00` on
-  a phone whose backing store was already 1.5, because the title is built
-  before the boot `resize()` applies the budget. It now measures the **drawing
-  buffer against the CSS box** and is refreshed from `resize()`, so it tracks
-  rotation and every rung of the ratchet. A diagnostic that reports the intent
-  is worse than none — five of the last six releases were spent unsure which
-  build a screenshot was of.
-- `scripts/bump-version.sh` follows `^const GAME_VERSION` now, instead of the
-  `fillText('vN'` literal it used to rewrite — that literal is gone, and a bump
-  that silently matches nothing is worse than one that fails.
-- Cache-bust `?v=202` → `?v=203`; HUD label → v250
-- **Docs, same day, no game code** (owner: *"please save these as guiding
-  thoughts"*): `toko-drop/PROGRESSION_DESIGN.md` — the owner's direction on
-  waves ("every wave spawns at once"), revenge bullets, distinct modes and a
-  campaign, and the main mode's session/"one more go"; what the code does
-  today for each (the 3-second pour is deliberate, `main.js:303`; revenge is
-  binary — the ONLY bullets in the default mode, and absent in classic;
-  VOLATILE rings are the one full-speed corpse); a reference study (GW3,
-  Sektori, Blade Rush); and 15 open questions. `TOKO_DROP_ROADMAP.md`
-  reconciled with `main`'s copy (v228/v229/v231 ticks, the Godot-sibling
-  note) — the two had forked with no git ancestor for the file.
-- **Docs, later the same day:** `PROGRESSION_DESIGN.md` §7 records the
-  owner's Q&A answers (ARCADE stays endless; waves become pulses; test the
-  mixed field; three doors now, maybe Sektori-style unlocks at launch; ROGUE
-  its own door; Rush is likely the campaign but not necessarily with the
-  Blade-Rush-copied rules) and §8 the enemy-FAMILY direction — colour should
-  follow shape/movement families, not shooting; the five DRIFTERs wear five
-  hues, the three HOLDER blobs three; green already means "leaves something
-  on the floor"; PYRA is `HUNTER` at speed 0. Five family questions queued.
-- **Docs, again:** §8.4 looks at the SHAPES (owner: *"look at the shapes
-  and rethink this question"*) — `design/roster-sheet-2026-09-16.png`, all
-  21 base species from the lab. Ten are the same gel dome across six
-  movement roles, five the same cube, six one-offs that already read. The
-  colour complaint is really ten domes asking colour to do shape's job. Q16
-  re-asked with a/b/c. Q11 answered: the campaign unit is a GW3-style room
-  with a timed goal, S/A/B/C/F tiers, mechanics and level shapes added
-  along the path.
-- **Docs:** Q16 answered — family = shape class (dome, cube, each one-off;
-  more may arise). §8.5. Q17 (within-family differentiation) queued.
-- **Docs:** Q17 answered — within a family colour = species, size ≈ speed;
-  §8.6 notes WEEVA/SPITTOR/SPLITTA break the size-speed rule. Q18 queued.
-- **Docs:** Q18 answered — no pre-fire tell; the first shot teaches it. §8.7.
-  Q19 (the fish / SCHOOL) queued.
-- **Docs:** Q19 answered — the arc-movers get their own shape family, but
-  the silhouette (fish / bugs / squiggly lines) is deliberately left open to
-  explore in the lab. §8.8; the family RULES are now settled.
-- **Sketchbook (owner: "test a ribbon and test a long gel slug"):**
-  `js/sketch-shapes.js` + `shape-sketch.html` — two arc-mover candidates on
-  the real gel material, recorded moving (`design/sketch-*.gif`). The slug's
-  rule works and was exercised: end hit shortens, middle hit SPLITS (1 slug/7
-  segs → 2 slugs/6 segs). Findings in §8.9: **SCHOOL needs a turn-rate limit,
-  which the shipped movement model lacks** — a long body draws its own
-  heading, so an instant turn renders as a corner; and a long body's length
-  must be sampled by distance, not per frame. Not in the game's module graph.
-- **Sketchbook, owner ask:** slug lengthened to 11 segments; a middle hit
-  now leaves two five-segment slugs that still read as slugs. GIFs updated.
-
-**Scope, honestly.** The zoom is *fixed and measured*. The `bump-version.sh`
-break and the lying version line were mine and are both verified here. The
-white screen is **made much less likely, not proven fixed**: no phone GPU
-exists in this sandbox and SwiftShader never loses a context, so the evidence
-is the memory arithmetic above plus the persisted ratchet. If it recurs, the
-title screen now names the build and the rung it is standing on.
+## v260 — 2026-09-20
+**THE DROP, part one: every boss floor is a DEPTH with its own look and roster; the desktop zoom sticks and pulls out for bosses** *(owner: every boss · look and roster, thematic · try both falls · "make the zoom stick, zoom out when needed")*
+- **Depths.** `TUNING.depth`: index = floor((wave − 1) / 8); past the table it
+  cycles from THE WELL. Four looks — **THE SURFACE** (the shipped look,
+  verbatim), **THE WELL** (teal, dense grid — the fish: SPLITTA, WEEVA,
+  RIBBON, SLUG), **THE VEIN** (dark red, sparse glowing grid — the bullets:
+  SPITTOR, FANNER, PYRA, DRAPER, BOTFLY), **THE VOID** (near black, the grid
+  at a third — the dark: CLOAKER, MAGNA, SIREN, TORO, WARDEN).
+  `design/depths-v260.png`. The change lands the wave after a boss, under the
+  black dip, with a banner (*DEPTH 2 — THE WELL*). **The fall itself is v261,
+  both styles.**
+- **The floor's colours are uniforms now.** A first cut changed only the
+  background, fog, rail, grid density and vignette — and the screenshots
+  showed THE VEIN as a red rail on the same navy floor, THE VOID with a bright
+  cyan grid. The floor's base and grid colours were shader *constants*.
+  `uFloorBase`, `uFloorGridHi`, `uGridGlow` on **both** paths (GLSL and TSL),
+  the surface look byte-identical to before. `shader-lint` and `webgpu-smoke`
+  green.
+- **The roster tilt, measured honestly — third attempt.** (1) Doubling the
+  favourites in the draw pool moved the share 0.18 → 0.16: cost, cheap-doubling
+  and the group variants swamp a pool weight. (2) Alternating every other draw
+  from the favoured subset, in both the mob and shooter loops: still nothing —
+  because **groups** (3 of 8 CLOSE COMBAT draws, 3–5 bodies each) pick from a
+  different pool and ignore the draw. (3) A favoured draw makes a group *of*
+  the favourite. **And the probe's own "baseline" had the tilt switched back
+  on before it counted**, so its first two before/after pairs were noise; with
+  a true baseline: favoured share **0.05–0.08 → 0.42–0.52** on THE WELL and
+  THE VOID, **0.27 → 0.60** on THE VEIN. A tilt, not a wall. Still one `rng()`
+  per draw.
+- **The zoom sticks, and pulls out for bosses and curtains.** Coming IN is
+  accepted only when the fit moved by more than `hysteresis` (6% of rest) —
+  a camera that creeps with every body is a camera you notice; coming OUT is
+  immediate. A live boss or a curtain wave sets the *rest* out (×1.18 / ×1.10).
+  **A first cut fit the frame from the longer rest and dollied IN on the boss
+  (measured ×0.84)** — two points fit close. A zoom-out is the rest itself:
+  measured ×1.19. Desktop only (`framingAllowed()` is landscape).
+- **The banner had to be the last word.** Set with the archetype banner, it
+  was overwritten three lines later by *ESCORT THE BOT!* Moved to the end of
+  `spawnWave()`.
+- Gates: smoke (42) · cabinets 6/6 · webgpu · shader-lint · level-check ·
+  arena-check · crowd-check · framing-check · level-smoke ×3 · editor-smoke ·
+  **soak 40/40 both modes** (depth boundaries at 9/17/25/33 crossed clean).
+- Cache-bust `?v=212` → `?v=213`; HUD label → v260
 
 ---
 
 ## Archive
+
+**v250–v259 summary (2026-09-16 – 2026-09-20)**
+- v250: The zoom was v247's camera dolly running in portrait; the memory budget finally binds on the owner's phone; the version on the title screen
+- v251: The RIBBON and the GEL SLUG in the real waves from wave 2 as testers — arc-mover candidates; long bodies hit-test themselves
+- v252: Testers cost less (curve reused, tail shadows off); `PLAYTEST_2026-09-17.md` — a bot played ten games: rounds were 5–8 s, CLOSE COMBAT had 37 corpse bullets at wave 2
+- v253: The slug stops multiplying (min 4 to split, children never split); VOLATILE at revenge speed; revenge seeded; PYRA `FIXED`
+- v254: Revenge is a species trait — the ten shooters' corpses, from wave 3, capped on the field (wave-2 bullets 37 → 0, survival 42 → 57 s)
+- v255: TORO reads — a spoked sawblade in one draw call (6 → 1)
+- v256: Waves become fronts — a 12–15 s clocked round, pulsed bodies, survivors carry over; `restartGap` on the death summary (owner: "wave number")
+- v257: Transitions and flow — drops and gates survive the boundary, fronts pull in when the floor empties (idle 5.5 → 2.4 s), THE CURTAIN kind, a darker slug
+- v258: A 40-wave soak found a freeze (an early `return` in `loop()`), no ceiling on the live floor (91 bodies), and a flat revenge cap binding from wave 6 to 40 — all fixed
+- v259: `scripts/soak.sh` — the long game becomes a gate, falsified before trusted (at wave 12 it passes the very freeze it exists to catch; run it to 40)
+- **The lesson of the decade:** the bot and the soak found what no short run could — the freeze, the pile, the flat ceiling, the tilt that did nothing three times — and twice the *probe itself* was wrong (a baseline with the tilt still on; a negative control too shallow to fail). Measure, then check the instrument.
 
 **v240–v249 summary (2026-09-05 – 2026-09-16)**
 - v240: The floor draws a level's region on both render paths — PR #447's v238 term brought across by hand

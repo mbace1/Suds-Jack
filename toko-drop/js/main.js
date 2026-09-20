@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=212';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=212';
-import { Player, PLAYER_RADIUS } from './player.js?v=212';
+import { InputManager } from './input.js?v=213';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=213';
+import { Player, PLAYER_RADIUS } from './player.js?v=213';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=212';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=212';
-import { audio } from './audio.js?v=212';
-import { haptics } from './haptics.js?v=212';
-import { initDesigner } from './designer.js?v=212';
-import { createSpecimen } from './specimen.js?v=212';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=212';
-import { TUNING } from './tuning.js?v=212';
-import { Arena, rectShape } from './arena.js?v=212';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=212';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=212';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=212';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=213';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=213';
+import { audio } from './audio.js?v=213';
+import { haptics } from './haptics.js?v=213';
+import { initDesigner } from './designer.js?v=213';
+import { createSpecimen } from './specimen.js?v=213';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=213';
+import { TUNING } from './tuning.js?v=213';
+import { Arena, rectShape } from './arena.js?v=213';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=213';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=213';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=213';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -118,6 +118,13 @@ function waveBudgetBase(wave, kindKey) {
 }
 
 // Wave rhythm — creates intensity pulses across waves (swarm beats + breather lulls).
+// v260: which DEPTH a wave is on (0-based index into TUNING.depth.looks;
+// past the table it cycles from cycleFrom). Pure, so the director can ask.
+function depthLookIndex(w) {
+  const D = TUNING.depth, n = D.looks.length;
+  const i = Math.max(0, Math.floor((w - 1) / D.wavesPer));
+  return i < n ? i : D.cycleFrom + ((i - D.cycleFrom) % (n - D.cycleFrom));
+}
 function waveKind(w) {
   const R = TUNING.waves.rhythm;
   if (w % R.bossEvery === 0)                    return 'boss';   // big guaranteed enemy
@@ -198,12 +205,23 @@ function getEnemySchedule(wave) {
   const VARIANTS = meleeRun ? V.melee : isSwarm ? V.swarm : smashMode ? V.smash : V.normal;
   const swarmPool = meleePool.filter(([, , c]) => c <= V.swarmCostMax);
   // v187: the melee draw leans cheap — bodies twice as likely as heavies
-  const drawPool  = (isSwarm && swarmPool.length) ? swarmPool
+  let drawPool  = (isSwarm && swarmPool.length) ? swarmPool
                   : meleeRun ? (isCurtain
                       ? [...meleePool.filter(([ty]) => TUNING.revenge.biters.includes(TYPE_KEY[ty])),
                          ...meleePool.filter(([ty]) => TUNING.revenge.biters.includes(TYPE_KEY[ty])), ...meleePool]   // v257: a CLOSE COMBAT curtain is corpse fire
                       : [...meleePool.filter(([, , c]) => c <= V.meleeCheapMax), ...meleePool])
                   : (meleePool.length ? meleePool : available);
+  // v260 THE DEPTH'S ROSTER: every other draw comes from the depth's favoured
+  // species, when any are unlocked — in BOTH loops, because THE VEIN's
+  // favourites are shooters and classic's mob loop never sees a shooter. A
+  // first cut doubled them in the pool and moved the share 0.18 -> 0.16:
+  // cost, the cheap-doubling and the group variants swamp a pool weight.
+  // Alternation is a share the numbers cannot swamp. Still one rng() a draw.
+  let favMob = [], favShoot = [], favTick = 0;
+  if (!smashMode && !rush.on && !inCabinet()) {
+    const favSet = new Set(TUNING.depth.looks[depthLookIndex(wave)].favour.map(nm => EnemyType[nm]));
+    if (favSet.size) { favMob = drawPool.filter(([ty]) => favSet.has(ty)); favShoot = shootPool.filter(([ty]) => favSet.has(ty)); }
+  }
 
   const list = [];
   let spent = 0, t = 0;
@@ -266,7 +284,8 @@ function getEnemySchedule(wave) {
     const shooterBudget = Math.floor(budget * (isCurtain ? SP.curtainShare : SP.budgetShare));
     let sSpent = 0, k = 0, st = SP.first;
     while (shootPool.length && k < shooterCap && sSpent < shooterBudget) {
-      const [type, , cost] = shootPool[Math.floor(rng() * shootPool.length)];
+      const _sp = (favShoot.length && (favTick++ & 1)) ? favShoot : shootPool;   // v260
+      const [type, , cost] = _sp[Math.floor(rng() * _sp.length)];
       if (sSpent + cost > shooterBudget + SP.slack) break;
       list.push({ type, t: st, shooter: true, slot: k });
       sSpent += cost;
@@ -277,7 +296,9 @@ function getEnemySchedule(wave) {
   }
 
   while (spent < budget && list.length < cap) {
-    const [type, , cost0] = drawPool[Math.floor(rng() * drawPool.length)];
+    const _dp = (favMob.length && (favTick++ & 1)) ? favMob : drawPool;   // v260
+    const fromFav = _dp === favMob;
+    const [type, , cost0] = _dp[Math.floor(rng() * _dp.length)];
     // v187: a drafted shooter without its gun is just legs — priced like it
     const cost = meleeRun && SHOOTERS.has(type) ? Math.max(1, cost0 - V.meleeShooterDiscount) : cost0;
     const variant = VARIANTS[Math.floor(rng() * VARIANTS.length)];
@@ -296,7 +317,10 @@ function getEnemySchedule(wave) {
       entry = { type, t, count: 2 };
     } else if (variant === 'group') {
       const cheaper = swarmPool.length ? swarmPool : meleePool;
-      const pick = cheaper.length ? cheaper[Math.floor(rng() * cheaper.length)] : [type, 0, cost];
+      // v260: a favoured draw makes a group OF the favourite — groups are 3 of 8
+      // CLOSE COMBAT draws and 3-5 bodies each; measured, they swamped the tilt
+      // (share 0.18 -> 0.17) until they honoured it
+      const pick = fromFav ? [type, 0, cost] : cheaper.length ? cheaper[Math.floor(rng() * cheaper.length)] : [type, 0, cost];
       const cnt = (meleeRun ? V.group.meleeBase : V.group.base) + Math.floor(rng() * V.group.rand);
       const pCost = meleeRun && SHOOTERS.has(pick[0]) ? Math.max(1, pick[2] - V.meleeShooterDiscount) : pick[2];
       entryCost = pCost * cnt;
@@ -408,7 +432,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '259';
+const GAME_VERSION = '260';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -651,6 +675,7 @@ const _camLook = new THREE.Vector3();
 // a spawn is pending on the rim, so nothing arrives off screen. Live state is
 // {dist, look}; `_frameRest` is the preset ray it dollies along.
 const _frame = { dist: 0, look: { x: 0, z: 0 } };
+const _frameHeld = { dist: 0, look: { x: 0, z: 0 } };   // v260: the target we are honouring (hysteresis)
 const _framePts = [];
 let _frameOn = false;
 function framingAllowed() {
@@ -676,12 +701,26 @@ function updateFraming(dt) {
   _framePts.push({ x: player.position.x, z: player.position.z });
   for (const e of enemies) if (e.alive) _framePts.push({ x: e.position.x, z: e.position.z });
   for (const b of bullets.active) if (!b.isPlayer) _framePts.push({ x: b.mesh.position.x, z: b.mesh.position.z });
-  const R = { restLook: { x: CAM_LOOK.x, z: CAM_LOOK.z }, B, aspect: innerWidth / Math.max(1, innerHeight), tanHalf: Math.tan(Math.PI / 6) };
   const cfg = { ...FRAMING_DEFAULTS, ...TUNING.camera };
-  const target = frameTarget(_framePts, pendingSpawns.length > 0, R, cfg);
-  easeToward(_frame, target, dt, cfg.ease, cfg.easeOut);
+  // v260 (owner): a boss or a curtain wave pushes the REST out — the whole
+  // floor in frame for the moment that needs it. Same ray, longer.
+  const bossUp = enemies.some(e => e.alive && e._isBoss);
+  const zo = bossUp ? (cfg.zoomOutBoss ?? 1) : waveKind(wave) === 'curtain' ? (cfg.zoomOutCurtain ?? 1) : 1;
+  const Bz = zo !== 1 ? { ...B, restDist: B.restDist * zo } : B;
+  const R = { restLook: { x: CAM_LOOK.x, z: CAM_LOOK.z }, B: Bz, aspect: innerWidth / Math.max(1, innerHeight), tanHalf: Math.tan(Math.PI / 6) };
+  // a zoom-out IS the rest: fitting from a longer rest still dollied in on
+  // the boss (measured x0.84, not x1.18) because two points fit close
+  const target = frameTarget(_framePts, pendingSpawns.length > 0 || zo !== 1, R, cfg);
+  // v260 (owner: "make it stick"): coming IN is accepted only when the fit
+  // moved by more than the hysteresis band — a camera that creeps with every
+  // body is a camera you notice. Coming OUT is always accepted at once.
+  const band = (cfg.hysteresis ?? 0) * Bz.restDist;
+  if (!_frameOn || target.dist >= _frameHeld.dist || _frameHeld.dist - target.dist > band) {
+    _frameHeld.dist = target.dist; _frameHeld.look.x = target.look.x; _frameHeld.look.z = target.look.z;
+  }
+  easeToward(_frame, _frameHeld, dt, cfg.ease, cfg.easeOut);
   _frameOn = true;
-  return B;
+  return Bz;
 }
 function updateShake(dt) {
   if (arenaScale === 1 && framingAllowed()) {
@@ -790,6 +829,9 @@ const FLOOR_FRAG = `
   uniform vec2  uPlayer;    // player position in uv space (0..1)
   uniform vec4  uArena;     // vignetteInner, vignetteDepth, poolRadius, poolLift
   uniform float uGridFall;
+  uniform vec3  uFloorBase;   // v260: the depth's floor colour (linear)
+  uniform vec3  uFloorGridHi; // v260: the depth's bright grid colour
+  uniform float uGridGlow;    // v260: grid strength (1 = the surface)
   uniform vec3  uMass[${MASS_N}];    // xy = uv pos, z = strength (0 = unused)
   uniform vec3  uPops[${POP_N}];     // xy = uv pos, z = progress 0..1 (>=1 = faded/unused)
   uniform vec3  uPrizes[${PRIZE_N}]; // xy = uv pos, z = strength (0 = unused)
@@ -802,7 +844,7 @@ const FLOOR_FRAG = `
   uniform vec3  uShapeLook;        // edge band (world), outside dim, edge glow
   varying vec2 vUv;
   void main() {
-    vec3 base = vec3(0.079, 0.079, 0.169);
+    vec3 base = uFloorBase;   // v260: per depth (was vec3(0.079, 0.079, 0.169))
     // Frequencies (set from arena dims) keep grid cells square on the non-square floor
     float gx = abs(fract(vUv.x * uGridX) - 0.5);
     float gz = abs(fract(vUv.y * uGridZ) - 0.5);
@@ -817,8 +859,8 @@ const FLOOR_FRAG = `
     float gridFade = 1.0 - uGridFall * smoothstep(uArena.x, 1.0, rim);
     // The pool you stand in — soft, subtle, and it moves with you.
     float pool = 1.0 - smoothstep(0.0, uArena.z, length(vUv - uPlayer));
-    vec3 gridColor = mix(vec3(0.13, 0.07, 0.38), vec3(0.0, 0.55, 0.50), grid);
-    vec3 col = mix(base, gridColor, grid * pulse * 0.7 * gridFade);
+    vec3 gridColor = mix(vec3(0.13, 0.07, 0.38), uFloorGridHi, grid);   // v260: per depth (was vec3(0.0, 0.55, 0.50))
+    vec3 col = mix(base, gridColor, grid * pulse * 0.7 * gridFade * uGridGlow);
     col = col * vig + gridColor * pool * uArena.w * 0.25 + base * pool * uArena.w;
 
     // MASS: the swarm presses the ground darker where it's thick.
@@ -904,6 +946,9 @@ const floorUniforms = IS_GPU
       uArena:  TSL.uniform(new THREE.Vector4(
         _AR.vignetteInner, _AR.vignetteDepth, _AR.poolRadius, _AR.poolLift)),
       uGridFall: TSL.uniform(_AR.gridFalloff),
+      uFloorBase:   TSL.uniform(new THREE.Vector3(0.079, 0.079, 0.169)),   // v260
+      uFloorGridHi: TSL.uniform(new THREE.Vector3(0.0, 0.55, 0.50)),
+      uGridGlow:    TSL.uniform(1.0),
       uMass:   _massSlots(() => TSL.uniform(new THREE.Vector3(0, 0, 0))),
       uPops:   _popSlots(() => TSL.uniform(new THREE.Vector3(0, 0, 2))),   // z>=1: unused/faded
       uPrizes: _prizeSlots(() => TSL.uniform(new THREE.Vector3(0, 0, 0))),
@@ -923,6 +968,9 @@ const floorUniforms = IS_GPU
       uArena:  { value: new THREE.Vector4(
         _AR.vignetteInner, _AR.vignetteDepth, _AR.poolRadius, _AR.poolLift) },
       uGridFall: { value: _AR.gridFalloff },
+      uFloorBase:   { value: new THREE.Vector3(0.079, 0.079, 0.169) },   // v260
+      uFloorGridHi: { value: new THREE.Vector3(0.0, 0.55, 0.50) },
+      uGridGlow:    { value: 1.0 },
       uMass:   _massSlots(() => ({ value: new THREE.Vector3(0, 0, 0) })),
       uPops:   _popSlots(() => ({ value: new THREE.Vector3(0, 0, 2) })),
       uPrizes: _prizeSlots(() => ({ value: new THREE.Vector3(0, 0, 0) })),
@@ -971,8 +1019,8 @@ function makeFloorMat() {
   const gz = uv().y.mul(floorUniforms.uGridZ).fract().sub(0.5).abs();
   const grid  = float(1.0).sub(gx.min(gz).mul(50.0)).max(0.0);
   const pulse = floorUniforms.uTime.mul(1.2).sin().mul(0.3).add(0.7);
-  const gridColor = mix(vec3(0.13, 0.07, 0.38), vec3(0.0, 0.55, 0.50), grid);
-  const base = vec3(0.079, 0.079, 0.169);
+  const gridColor = mix(vec3(0.13, 0.07, 0.38), floorUniforms.uFloorGridHi, grid);   // v260: per depth
+  const base = floorUniforms.uFloorBase;                                             // v260: per depth
   // v223 arena terms — the same three the GLSL path runs, node-for-node.
   const A = floorUniforms.uArena;
   const rim = length(uv().sub(0.5)).div(0.7071);
@@ -980,7 +1028,7 @@ function makeFloorMat() {
   const vig = float(1.0).sub(A.y.mul(edge));
   const gridFade = float(1.0).sub(floorUniforms.uGridFall.mul(edge));
   const pool = float(1.0).sub(smoothstep(float(0.0), A.z, length(uv().sub(floorUniforms.uPlayer))));
-  const lit = mix(base, gridColor, grid.mul(pulse).mul(0.7).mul(gridFade));
+  const lit = mix(base, gridColor, grid.mul(pulse).mul(0.7).mul(gridFade).mul(floorUniforms.uGridGlow));
 
   // v228 arena-pass-2 terms — the same three the GLSL path runs, node-for-
   // node. Each is a plain JS for-loop over individual uniform nodes (built
@@ -1195,8 +1243,8 @@ function applyArenaMode(landscape) {
   floor.geometry = new THREE.PlaneGeometry(HALF_X * 2, HALF_Z * 2);
   border.geometry.dispose();
   border.geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF_X * 2, 0.05, HALF_Z * 2));
-  floorUniforms.uGridX.value = (HALF_X * 2) / GRID_CELL;
-  floorUniforms.uGridZ.value = (HALF_Z * 2) / GRID_CELL;
+  floorUniforms.uGridX.value = (HALF_X * 2) / GRID_CELL * _gridScale;   // v260
+  floorUniforms.uGridZ.value = (HALF_Z * 2) / GRID_CELL * _gridScale;   // v260
   // v240: the floor draws a level's region; classic passes its rectangle
   // with the pass OFF, so every existing floor pixel is the expression it was.
   // The rectangular border line only makes sense when the region IS its box.
@@ -2741,6 +2789,27 @@ const SMASH_FLOOR_LOOKS = [
   { bg: 0x1a0d10, border: 0xcc4455 },   // floor 4 — crimson stage
   { bg: 0x140d1a, border: 0x9955cc },   // floor 5+ — violet stage, then cycle
 ];
+// v260 THE DROP — the depth's look. Everything it touches already existed:
+// the scene background and fog, the border rail, and four floor uniforms
+// (grid density, grid falloff, vignette depth, pool lift). Both render paths
+// read the same uniform objects, so one function serves both.
+let _depthIdx = -1, _gridScale = 1;
+function applyDepthLook(i) {
+  if (smashMode || inCabinet() || customLevel) return;   // they own their looks
+  const L = TUNING.depth.looks[i] ?? TUNING.depth.looks[0];
+  _depthIdx = i;
+  scene.background.setHex(L.bg);
+  _FOG.color.setHex(L.bg); _FOG.near = L.fogNear; _FOG.far = L.fogFar;
+  border.material.color.setHex(L.rail);
+  _gridScale = L.gridScale;
+  floorUniforms.uGridX.value = (HALF_X * 2) / GRID_CELL * _gridScale;
+  floorUniforms.uGridZ.value = (HALF_Z * 2) / GRID_CELL * _gridScale;
+  floorUniforms.uGridFall.value = L.gridFall;
+  floorUniforms.uFloorBase.value.set(...L.base);
+  floorUniforms.uFloorGridHi.value.set(...L.gridHi);
+  floorUniforms.uGridGlow.value = L.gridGlow;
+  const a = floorUniforms.uArena.value; a.y = L.vignette; a.w = L.poolLift;
+}
 function applySmashFloorLook() {
   if (bindingMode || gauntlet || inCabinet()) return;   // they own their looks
   const lk = smashMode
@@ -6597,6 +6666,13 @@ function spawnWave(carry = false) {
   }
   clearBossAuras();
   wave++;
+  // v260 THE DROP: a new depth begins the wave after a boss. For now the look
+  // swaps under the black dip with a banner; the fall itself is v261.
+  let _depthChanged = false;
+  if (classicRound()) {
+    const di = depthLookIndex(wave);
+    if (di !== _depthIdx) { _depthChanged = wave > 1; applyDepthLook(di); if (_depthChanged) roomFadeT = 0.55; }
+  }
   // v197 FLUID archetypes: name the wave's current so the lab stays legible.
   // v211: the wave CURRENT is arena choreography, not species identity — so it
   // belongs to classic waves and sits out the cabinets, which each script their
@@ -7706,6 +7782,12 @@ function spawnWave(carry = false) {
   // with the spoken announcer off — you always get the "here comes the boss" beat.
   if (kind === 'boss') audio.bossHorn();
   audio.announce(kind === 'boss' ? 'boss' : 'wave', wave);
+  // v260: the depth's name is the LAST word — a first cut set it with the
+  // archetype banner and the ESCORT objective overwrote it three lines later
+  if (_depthChanged) {
+    milestoneT = 1.8;
+    milestoneText = `DEPTH ${depthLookIndex(wave) + 1} — ${TUNING.depth.looks[depthLookIndex(wave)].name}`;
+  }
   if (customLevel) {   // v237: the level's name is the banner
     waveIntroT = waveIntroDur = 1.4;
     waveIntroText  = customLevel.fromT > 0 ? `${customLevel.level.name} — FROM ${customLevel.fromT.toFixed(1)}s` : customLevel.level.name;
@@ -8178,6 +8260,7 @@ function startGame() {
   if (bindingMode) bdSeen.set('0,0', { kind: smashRoomKind ?? 'normal', exits: null });
   smashFloor = 1;               // v178: every run starts on studio floor 1
   applySmashFloorLook();
+  applyDepthLook(0);            // v260: every run starts on THE SURFACE
   _entryDoor = null; _cameFromDoor = null;
   buildSmashDoors();  // no-op unless SMASH TV mode is on
   _titleIntroPlayed = false;  // v121: arm the recorded intro for the next title visit
@@ -8206,6 +8289,7 @@ function returnToTitle() {
   if (nexdeusMode) exitNexdeus();     // v173: and the god-machine
   smashFloor = 1;                     // v178: the studio re-lights for the title
   applySmashFloorLook();
+  applyDepthLook(0);                  // v260
   clearFX();
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
@@ -10797,7 +10881,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=212').then(async m => {
+  import('./editor.js?v=213').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10828,6 +10912,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=212').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=213').catch(() => {});
   });
 }

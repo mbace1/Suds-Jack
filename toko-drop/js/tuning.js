@@ -111,7 +111,40 @@ export const TUNING = {
   // rate coming in and easeOut the rate coming back out (a spawn is arriving
   // on the rim — that is urgent). A pending spawn holds the full arena. Off under
   // REDUCE MOTION, in cabinets, in authored levels and in scrolling arenas.
-  camera: { framing: true, dollyMax: 0.35, margin: 3.0, ease: 2.0, easeOut: 5.0 },   // out is urgent, in is a mood
+  camera: { framing: true, dollyMax: 0.35, margin: 3.0, ease: 2.0, easeOut: 5.0,   // out is urgent, in is a mood
+            // v260 (owner: "make it stick, zoom out when needed — boss or so, maybe
+            // during hazards"): coming IN only happens when the fit moved by more
+            // than `hysteresis` x rest distance; coming OUT is always immediate.
+            // A boss or a curtain wave pushes the REST itself out, so the whole
+            // floor is in frame for the moment that needs it.
+            hysteresis: 0.06, zoomOutBoss: 1.18, zoomOutCurtain: 1.10 },
+
+  // v260 THE DROP — every boss floor is a DEPTH (owner: every boss; look AND
+  // roster, thematic). depth index = floor((wave - 1) / wavesPer); past the
+  // table it cycles from `cycleFrom`. A depth is a LOOK (background, fog,
+  // rail, grid density and falloff, vignette, pool) and a ROSTER TILT (its
+  // favoured species are drawn twice). The fall between depths is v261; for
+  // now the change lands under the black dip with a banner, so the looks can
+  // be judged on their own. Every knob here already existed in the floor
+  // shader — no new uniform, both render paths untouched.
+  depth: {
+    wavesPer: 8,
+    cycleFrom: 1,
+    looks: [
+      { name: 'THE SURFACE', bg: 0x0d0d1a, rail: 0x5555cc, fogNear: 42, fogFar: 80, gridScale: 1.0, gridFall: 0.45, vignette: 0.55, poolLift: 0.30,
+        base: [0.079, 0.079, 0.169], gridHi: [0.0, 0.55, 0.50], gridGlow: 1.0,   // the floor's own colours (linear) — the shipped look, verbatim
+        favour: [] },
+      { name: 'THE WELL',    bg: 0x081a1c, rail: 0x33ccbb, fogNear: 30, fogFar: 66, gridScale: 1.6, gridFall: 0.30, vignette: 0.65, poolLift: 0.36,
+        base: [0.030, 0.105, 0.115], gridHi: [0.10, 0.70, 0.60], gridGlow: 1.1,
+        favour: ['SPLITTA', 'WEEVA', 'RIBBON', 'SLUG'] },                 // the fish: what schools and arcs
+      { name: 'THE VEIN',    bg: 0x1a0708, rail: 0xdd3344, fogNear: 36, fogFar: 74, gridScale: 0.6, gridFall: 0.20, vignette: 0.45, poolLift: 0.22,
+        base: [0.130, 0.030, 0.040], gridHi: [0.85, 0.16, 0.22], gridGlow: 0.9,
+        favour: ['SPITTOR', 'FANNER', 'PYRA', 'DRAPER', 'BOTFLY'] },     // the bullets: what shoots, and what bites when it dies
+      { name: 'THE VOID',    bg: 0x030308, rail: 0x332244, fogNear: 18, fogFar: 46, gridScale: 1.0, gridFall: 0.95, vignette: 0.85, poolLift: 0.55,
+        base: [0.012, 0.012, 0.022], gridHi: [0.18, 0.10, 0.32], gridGlow: 0.35,
+        favour: ['CLOAKER', 'MAGNA', 'SIREN', 'TORO', 'WARDEN'] },       // the dark: what ambushes, pulls, screams, charges
+    ],
+  },
 
   // v245 CROWD — the swarm's spacing (js/crowd.js). contact = ra + rb + pad;
   // comfort is a multiple of contact; push is the FOLLOWING DISTANCE — u/s
