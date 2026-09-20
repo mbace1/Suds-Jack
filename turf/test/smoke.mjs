@@ -6,8 +6,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { manhattan, hasLOS, coverSoftens, moveRange, lineTiles, key, firingTiles, firingTileScore, approachTile } from '../js/grid.js';
-import { planIntent, planAllIntents } from '../js/ai.js';
+import { manhattan, hasLOS, lineLOS, coverSoftens, moveRange, lineTiles, key, firingTiles, firingTileScore, approachTile } from '../js/grid.js';
+import { planIntent, planAllIntents, previewCommand, setLOSMode as engineSetLOS, getLOSMode as engineGetLOS } from '../js/combat.js';
 import {
   createEncounterState, getUnit, livingPlayers, livingEnemies, canUnitAct,
   movableTiles, moveUnit, attackableTargets, attack, orderAttack, useAbility,
@@ -27,6 +27,7 @@ import { magOf, needsReload, roundsLeft } from '../js/ammo.js';
 import { SPRITE_H, TILE_W, FULL_PROPS, PARTIAL_PROPS, PROP_H, RARE_PROPS } from '../js/render.js';
 import { incomingThreats } from '../js/combat.js';
 import { PLATES } from '../js/plates.js';
+import { postureFor } from '../js/anim.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -102,6 +103,52 @@ check('full cover blocks LOS through it, but not around it', () => {
   const state = { fullCover: new Set(['2,0']) };
   assert.equal(hasLOS(state, { x: 0, y: 0 }, { x: 4, y: 0 }), false);
   assert.equal(hasLOS(state, { x: 0, y: 0 }, { x: 4, y: 1 }), true);
+});
+check('the rule of sight is SYMMETRIC on every board: A sees B iff B sees A', () => {
+  // The shipped rule is mutual shadowcasting. Raw shadowcasting is not
+  // symmetric (4887 of 81810 pairs across the seven boards, measured in
+  // v37), and neither was the Bresenham rule it replaced (2290) — a pair
+  // where one side can shoot and the other cannot shoot back is hidden
+  // information by geometry, in a game that promises none.
+  for (const e of ENCOUNTERS) {
+    const state = { grid: e.grid, fullCover: new Set(e.cover.full.map(([x, y]) => key(x, y))) };
+    const tiles = [];
+    for (let y = 0; y < e.grid.rows; y++) for (let x = 0; x < e.grid.cols; x++) if (!state.fullCover.has(key(x, y))) tiles.push({ x, y });
+    for (const a of tiles) for (const b of tiles) {
+      if (a === b) continue;
+      assert.equal(hasLOS(state, a, b), hasLOS(state, b, a), `${e.id}: (${a.x},${a.y})→(${b.x},${b.y}) disagrees with the reverse`);
+    }
+  }
+});
+check('shadowcasting sees around a corner the old line rule did not', () => {
+  // A wall at (2,1): from (0,0) the tile (4,1) is lit — the shot passes the
+  // corner of the wall — where Bresenham's stepped line walked through it.
+  // The old rule is kept as lineLOS for the control column and this pins
+  // the difference so nobody 'fixes' either into the other.
+  const state = { grid: { cols: 6, rows: 4 }, fullCover: new Set(['2,1']) };
+  assert.equal(lineLOS(state, { x: 0, y: 0 }, { x: 4, y: 1 }), false);
+  assert.equal(hasLOS(state, { x: 0, y: 0 }, { x: 4, y: 1 }), true);
+  assert.equal(hasLOS(state, { x: 4, y: 1 }, { x: 0, y: 0 }), true);
+  // ...and still not THROUGH it, nor dead along the wall's own line.
+  assert.equal(hasLOS(state, { x: 0, y: 1 }, { x: 4, y: 1 }), false);
+  assert.equal(hasLOS(state, { x: 2, y: 0 }, { x: 2, y: 3 }), false);
+  assert.equal(hasLOS(state, { x: 0, y: 0 }, { x: 4, y: 2 }), false, 'the wall sits dead on that line');
+});
+check('the LOS switch reaches the engine through combat.js (one module instance)', () => {
+  // This file imports ../js/grid.js BARE while the engine imports
+  // ./grid.js?v=N — two module instances. A switch flipped on the bare copy
+  // leaves the engine on its default: balance.mjs did exactly that and four
+  // columns came back bit-identical. So the switch is re-exported from
+  // combat.js, and this asserts a flip there changes what the engine sees.
+  const enc = ENCOUNTERS.find(e => e.id === 'the-crossing');
+  const s = createEncounterState(enc, UNITS, WEAPONS, ENEMIES, 1, HAZARDS, TRINKETS);
+  const sable = s.units.find(u => u.faction === 'enemy' && u.x === 5 && u.y === 1);
+  const niner = s.units.find(u => u.uid === 'p1');
+  niner.x = 10; niner.y = 4; // past the corner of the wall at (8,4), in the pistol's range
+  const under = mode => { engineSetLOS(mode); try { return attackableTargets(s, sable).includes('p1'); } finally { engineSetLOS('mutual'); } };
+  assert.equal(under('line'), false, 'the old rule: the wall at (8,4) is in the way');
+  assert.equal(under('mutual'), true, 'the shipped rule: Sable sees past the corner');
+  assert.equal(engineGetLOS(), 'mutual', 'the shipped default is mutual');
 });
 check('partial cover softens but never blocks', () => {
   const state = { fullCover: new Set(), partialCover: new Set(['2,0']) };
@@ -1275,43 +1322,304 @@ check('every plate in play declares the floor quad it is seated by', () => {
 // actually shoot FROM — a rival that closes two tiles before firing loses
 // its cover penalty, and quoting the odds from where it stands now would
 // under-report the hit every single time.
-check('the incoming warning matches what the enemy phase will actually roll', () => {
+// ── THE INVARIANT (v35): the player sees every consequence before committing ──
+// combat.js's header states it in five points. These gates hold the code to
+// points 2, 3 and 4 literally. They replaced a v34 gate that compared the
+// badge to forecastAttack called from the rival's PLAN-TIME momentum — which
+// is zero — and so certified a badge that under-reported by exactly the +1 a
+// four-tile step banks. The oracle here is what actually happens, never a
+// second computation of what should.
+
+// Effects compared minus the two fields a commit is allowed to add: the roll
+// itself, and a drop (previews never drop; the chance rides on the effect).
+const strip = e => JSON.stringify(e, (k, v) => (k === 'roll' || k === 'dropped') ? undefined : v);
+const tgSummary = tg => [...tg].map(([uid, i]) =>
+  `${uid}:${i.type}:${i.moveTo ? i.moveTo.x + ',' + i.moveTo.y : '-'}:${i.targetUid || '-'}`).join('|');
+
+check('a preview IS the commit: the committed log equals one previewed branch, telegraph and all', () => {
+  let attacks = 0, moves = 0;
+  for (const enc of ENCOUNTERS) {
+    for (const seed of [1, 7, 23]) {
+      const state = boot(enc, seed);
+      // Close the distance for a round so shots exist to preview.
+      for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) autoTurn(state, u, ABILITIES);
+      if (state.result) continue;
+      endPlayerTurn(state);
+      let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+      if (state.result) continue;
+
+      for (const unit of state.units.filter(x => x.faction === 'player' && x.hp > 0)) {
+        const targets = attackableTargets(state, unit);
+        let cmd, run;
+        if (targets.length) {
+          const target = getUnit(state, targets[0]);
+          const from = approachTile(state, unit, target);
+          cmd = { type: 'attack', uid: unit.uid, targetUid: target.uid, from };
+          run = () => orderAttack(state, unit.uid, target.uid);
+          attacks++;
+        } else if (!unit.actedMove) {
+          const tiles = [...movableTiles(state, unit).values()].filter(t => t.cost > 0);
+          if (!tiles.length) continue;
+          const t = tiles[tiles.length - 1];
+          cmd = { type: 'move', uid: unit.uid, x: t.x, y: t.y };
+          run = () => moveUnit(state, unit.uid, t.x, t.y);
+          moves++;
+        } else continue;
+
+        const preview = previewCommand(state, cmd);
+        const before = state.log.length;
+        const r = run();
+        assert.ok(r.ok, `${enc.id}/${seed}: the previewed command was refused (${r.reason})`);
+        const committed = state.log.slice(before);
+        const own = committed.find(e => e.type === 'attack' && e.attackerUid === unit.uid);
+        const branch = !own ? preview.branches[0]
+          : preview.branches.find(b => b.branch === (own.hit ? 'hit' : 'miss'));
+        assert.ok(branch, `${enc.id}/${seed}: no previewed branch matches the roll`);
+        assert.equal(committed.map(strip).join('\n'), branch.effects.map(strip).join('\n'),
+          `${enc.id}/${seed}: ${unit.name}'s commit wrote effects the preview did not show`);
+        // And the board AFTER: the rivals' replies to this move were shown too.
+        assert.equal(tgSummary(state.telegraph), tgSummary(branch.telegraph),
+          `${enc.id}/${seed}: the telegraph after the commit differs from the previewed one`);
+        assert.equal(state.result, branch.result, `${enc.id}/${seed}: the preview and the commit disagree on whether it ended`);
+        if (own) {
+          const odds = preview.branches.find(b => b.branch === 'hit').chance;
+          assert.equal(odds, own.chance, `${enc.id}/${seed}: the branch odds are not the strike's odds`);
+        }
+        break; // one command per boot — the next unit's board is a different question
+      }
+    }
+  }
+  assert.ok(attacks >= 5 && moves >= 3, `the gate must exercise both shapes (${attacks} attacks, ${moves} moves)`);
+});
+
+check('the telegraph IS the phase: a rival does what its plan showed, or the log says why not', () => {
+  let honoured = 0;
+  for (const enc of ENCOUNTERS) {
+    for (const seed of [3, 11]) {
+      const state = boot(enc, seed);
+      for (let r = 0; r < 3 && !state.result; r++) {
+        for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) autoTurn(state, u, ABILITIES);
+        if (state.result) break;
+        endPlayerTurn(state);
+        const plans = new Map(state.enemyPlan);
+        let step;
+        do {
+          const before = state.log.length;
+          step = stepEnemyPhase(state);
+          if (!step || step.done) break;
+          const plan = plans.get(step.uid);
+          if (!plan || plan.type === 'idle') continue;
+          const turn = state.log.slice(before).find(e => e.type === 'enemy-turn' && e.uid === step.uid);
+          assert.ok(turn, `${enc.id}/${seed}: a rival acted with no enemy-turn on the log`);
+          if (turn.note) {
+            assert.ok(['blocked', 'died', 'displaced', 'target-gone', 'out-of-position'].includes(turn.note),
+              `${enc.id}/${seed}: unknown divergence note ${turn.note}`);
+            continue; // a divergence, and it is NAMED — that is the promise
+          }
+          if (plan.moveTo && (plan.moveTo.x !== turn.moved?.x || plan.moveTo.y !== turn.moved?.y)) {
+            // The only way to not move without a note is to already be there.
+            const e = getUnit(state, step.uid);
+            assert.ok(!turn.moved && e.x === plan.moveTo.x && e.y === plan.moveTo.y,
+              `${enc.id}/${seed}: ${step.uid} went to ${JSON.stringify(turn.moved)} not ${JSON.stringify(plan.moveTo)} with no note`);
+          }
+          if (plan.type === 'attack') {
+            assert.ok(turn.attacked, `${enc.id}/${seed}: ${step.uid} promised an attack, did nothing, said nothing`);
+            assert.equal(turn.attacked.targetUid, plan.targetUid, `${enc.id}/${seed}: ${step.uid} hit someone it did not name`);
+            const target = getUnit(state, plan.targetUid);
+            const shown = plan.preview.find(e => e.type === 'attack' && e.attackerUid === step.uid);
+            assert.ok(shown, `${enc.id}/${seed}: the plan carried no previewed strike`);
+            // Exact odds and damage — unless the target was shoved since the
+            // promise, which is the one legitimate change of arithmetic.
+            const unmoved = target.x === plan.targetAt.x && target.y === plan.targetAt.y;
+            if (unmoved) {
+              assert.equal(turn.attacked.chance, shown.chance, `${enc.id}/${seed}: the phase rolled odds the badge did not show`);
+              assert.equal(turn.attacked.forecast.damage, shown.forecast.damage, `${enc.id}/${seed}: the phase swung for damage the badge did not show`);
+              honoured++;
+            }
+          }
+        } while (true);
+      }
+    }
+  }
+  assert.ok(honoured >= 10, `too few honoured plans to mean anything (${honoured})`);
+});
+
+check('the warning counts the step: a four-tile closer swings for the +1 it banks, and the badge says so', () => {
+  // The bug the one-system rewrite exists to make impossible. grunt_runt and
+  // grunt_milo have move 4; MOVE_CAP is 4 and DAMAGE_PER 0.25, so a rival
+  // that closes four tiles lands +1. v34's badge was forecast from plan-time
+  // momentum (zero) and said one less than what hit.
+  const state = boot(BACKLOT, 5);
+  const crew = state.units.filter(u => u.faction === 'player');
+  const rival = state.units.find(u => u.faction === 'enemy' && u.weapon.archetype === 'melee');
+  // Open ground, straight line, exactly four tiles: rival at (6,7) reaching (6,4) beside the operator at (6,3).
+  for (const u of state.units) if (u !== rival && u !== crew[0]) { u.x = 0; u.y = 0; u.hp = 0; }
+  crew[0].x = 6; crew[0].y = 3; crew[1].hp = 0; crew[2].hp = 0;
+  rival.x = 6; rival.y = 7; rival.move = 4; rival.hp = 10;
+  state.fullCover.clear(); state.partialCover.clear(); state.hazards.clear(); state.drops.length = 0;
+  planAllIntents(state);
+  const plan = state.telegraph.get(rival.uid);
+  assert.equal(plan.type, 'attack');
+  assert.equal(manhattan(rival, plan.moveTo), 3, `it should step three to stand adjacent (${JSON.stringify(plan.moveTo)})`);
+  // Three tiles is 0.75 momentum — floored to 0. Make it four by starting a tile further.
+  rival.y = 8; planAllIntents(state);
+  const plan4 = state.telegraph.get(rival.uid);
+  assert.equal(manhattan(rival, plan4.moveTo), 4, `a four-tile close (${JSON.stringify(plan4.moveTo)})`);
+  const shown = plan4.preview.find(e => e.type === 'attack');
+  assert.equal(shown.forecast.bonus, 1, 'the previewed strike carries the step\'s +1');
+  const badge = incomingThreats(state).get(crew[0].uid);
+  assert.equal(badge.total, rival.weapon.damage + 1, `the badge says ${badge.total}; the swing is ${rival.weapon.damage}+1`);
+  // And the phase lands exactly that. Force the hit so the branch is known.
+  endPlayerTurn(state);
+  state.roll = () => 0;
+  const before = crew[0].hp;
+  let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
+  assert.equal(before - crew[0].hp, badge.total, 'the badge promised what the swing took');
+});
+
+check('your own forecast counts your step too', () => {
+  const state = boot(BACKLOT, 5);
+  const me = state.units.find(u => u.faction === 'player' && u.weapon.archetype === 'melee');
+  const foe = state.units.find(u => u.faction === 'enemy');
+  for (const u of state.units) if (u !== me && u !== foe) { u.hp = 0; u.x = 0; u.y = 0; }
+  state.fullCover.clear(); state.partialCover.clear(); state.hazards.clear();
+  me.x = 6; me.y = 8; me.move = 4; foe.x = 6; foe.y = 3; foe.hp = 50;
+  planAllIntents(state);
+  const f = previewAttack(state, me.uid, foe.uid);
+  assert.ok(f, 'the shot is on');
+  assert.equal(f.steps, 4, `a four-tile approach (${f.steps})`);
+  assert.equal(f.bonus, 1, 'the forecast shows the +1 the approach will bank');
+  state.roll = () => 0;
+  const r = orderAttack(state, me.uid, foe.uid);
+  assert.ok(r.ok && r.hit);
+  assert.equal(r.damage, f.damage, 'the swing landed the number the forecast showed');
+});
+
+check('a divergence from the plan is never silent', () => {
+  const state = boot(BACKLOT, 9);
+  endPlayerTurn(state);
+  const uid = state.enemyQueue[0];
+  const plan = state.enemyPlan.get(uid);
+  assert.ok(plan.moveTo, 'the first rival planned a step');
+  // Somebody is standing on its tile by the time its turn comes.
+  const blocker = state.units.find(u => u.faction === 'player');
+  blocker.x = plan.moveTo.x; blocker.y = plan.moveTo.y;
+  const before = state.log.length;
+  stepEnemyPhase(state);
+  const turn = state.log.slice(before).find(e => e.type === 'enemy-turn' && e.uid === uid);
+  assert.equal(turn.note, 'blocked', 'the rival held, and said why');
+  assert.equal(turn.moved, null);
+
+  // And a target that is gone before the swing.
+  const s2 = boot(BACKLOT, 9);
+  endPlayerTurn(s2);
+  const [aid] = [...s2.enemyPlan].filter(([, p]) => p.type === 'attack').map(([k]) => k);
+  if (aid) {
+    const p = s2.enemyPlan.get(aid);
+    getUnit(s2, p.targetUid).hp = 0;
+    while (s2.enemyQueue[0] !== aid) s2.enemyQueue.shift();
+    const b2 = s2.log.length;
+    stepEnemyPhase(s2);
+    const t2 = s2.log.slice(b2).find(e => e.type === 'enemy-turn' && e.uid === aid);
+    assert.ok(t2 && (t2.note === 'target-gone' || t2.note === 'died' || t2.note === 'blocked'), `a voided plan is named (${t2 && t2.note})`);
+    assert.equal(t2.attacked, null, 'it did not swing at somebody else instead');
+  }
+});
+
+check('the badge is read off the rivals\' own previews, never off a second computation', () => {
   for (const enc of ENCOUNTERS) {
     const state = boot(enc, 11);
-    // Walk a couple of rounds so rivals are in range and telegraphing.
-    for (let r = 0; r < 3 && !state.result; r++) {
-      for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) {
-        autoTurn(state, u, ABILITIES);
-        if (state.result) break;
-      }
+    for (let r = 0; r < 2 && !state.result; r++) {
+      for (const u of state.units.filter(x => x.faction === 'player' && x.hp > 0)) autoTurn(state, u, ABILITIES);
       if (state.result) break;
       endPlayerTurn(state);
       let step; do { step = stepEnemyPhase(state); } while (step && !step.done);
     }
     const threats = incomingThreats(state);
     for (const [uid, t] of threats) {
-      const target = state.units.find(u => u.uid === uid);
-      assert.ok(target && target.hp > 0, `${enc.id}: a threat is aimed at something that is not there`);
-      assert.ok(t.total > 0, `${enc.id}: ${uid} carries a warning of zero damage`);
-      assert.equal(t.lethal, t.total >= target.hp,
-        `${enc.id}: ${uid} is marked ${t.lethal ? 'lethal' : 'survivable'} against ${t.total} of ${target.hp}`);
+      const target = getUnit(state, uid);
+      assert.ok(target && target.hp > 0 && target.faction !== 'enemy', `${enc.id}: a warning on ${uid}`);
+      assert.equal(t.lethal, t.total >= target.hp, `${enc.id}: lethal is the total against hp`);
+      let sum = 0;
       for (const src of t.sources) {
-        const from = state.telegraph.get(src.uid).moveTo;
-        const attacker = state.units.find(u => u.uid === src.uid);
-        const f = forecastAttack(state, attacker, target, attacker.weapon, {}, from || attacker);
-        assert.equal(src.damage, f.damage * (f.shots || 1),
-          `${enc.id}: the badge quotes ${src.damage} where forecastAttack says ${f.damage}`);
-        assert.equal(src.chance, f.chance, `${enc.id}: the badge quotes odds forecastAttack does not`);
+        const strike = state.telegraph.get(src.uid).preview.find(e => e.type === 'attack' && e.targetUid === uid);
+        assert.ok(strike, `${enc.id}: ${src.uid} warns of a strike its own preview does not contain`);
+        assert.equal(src.damage, strike.damage); assert.equal(src.chance, strike.chance);
+        sum += strike.damage;
       }
-    }
-    // And it says nothing about rivals — a badge over an enemy would read as
-    // damage you are about to deal, which is the opposite fact.
-    for (const uid of threats.keys()) {
-      const u = state.units.find(x => x.uid === uid);
-      assert.ok(u.faction === 'player' || u.faction === 'objective',
-        `${enc.id}: ${uid} is a rival and should not carry an incoming warning`);
+      assert.equal(t.total, sum);
     }
   }
+});
+
+
+// ── posture: motion without frames (v35) ──────────────────────────
+// Owner, 2026-09-06: a standing cutout that is MOVED to animate, with the
+// art frame changing only for an already-approved pose. The motion is a
+// transform now, which means it is arithmetic and can be asserted — the
+// first time anything in this game's animation has been testable in bare
+// node at all, because the previous answer to "how does a unit move" was a
+// filename.
+check('a walk leaves the ground and comes back to it', () => {
+  const tw = { fgx: 0, fgy: -3, startedAt: 0, dur: 300 };
+  assert.equal(postureFor(null, tw, 0).hop, 0, 'a stride starts on the floor');
+  const peak = postureFor(null, tw, 75).hop;
+  assert.ok(peak > 2, `the stride barely leaves the ground (${peak})`);
+  assert.ok(postureFor(null, tw, 150).hop < 0.5, 'the middle of a two-tile walk is a footfall');
+  // The lean settles rather than snapping, and points the way the mirror does.
+  assert.ok(postureFor(null, tw, 40).lean > 0, 'the body leans into travel');
+  assert.ok(postureFor({ clip: 'move', i: 0, startedAt: 0, mirror: true }, tw, 40).lean < 0,
+    'a mirrored unit leans the other way');
+});
+
+check('a swing throws the body out and brings it back', () => {
+  const a = { clip: 'attack', i: 1, startedAt: 0, mirror: false };
+  const out = postureFor(a, null, 91).lunge;
+  assert.ok(out > 2, `the release does not commit (${out})`);
+  assert.ok(postureFor(a, null, 259).lunge < 0.3, 'the release never returns to stance');
+  // A hit goes the OTHER way, or being shot reads as attacking.
+  const hit = postureFor({ clip: 'hit', i: 0, startedAt: 0, mirror: false }, null, 10).lunge;
+  assert.ok(hit < 0, `a hit throws the body forward (${hit})`);
+});
+
+check('death topples onto the floor and stays there', () => {
+  const fall = { clip: 'death', i: 0, startedAt: 0, mirror: false };
+  assert.equal(postureFor(fall, null, 0).pitch, 0, 'a body starts upright');
+  assert.ok(postureFor(fall, null, 240).pitch > 0.6, 'the fall does not get going');
+  const down = postureFor({ clip: 'death', i: 1, startedAt: 0, mirror: false }, null, 99999);
+  // death-down is the resting pose and holds forever — a corpse that stood
+  // back up is the bug this asserts against.
+  assert.ok(down.pitch > 1, 'the corpse gets back up');
+  // NOT flat. A card taken to 90 degrees foreshortens to nothing and reads as
+  // a smear rather than as a body on the ground; the standee stops short and
+  // shows its top edge instead.
+  assert.ok(down.pitch < Math.PI / 2 - 0.15,
+    `a downed card at ${down.pitch.toFixed(2)}rad is edge-on and unreadable`);
+});
+
+check('a standee is never square to the camera', () => {
+  // Yaw zero is a card seen dead-on, which is exactly what a flat drawing
+  // pinned to the screen looks like. Every resting pose carries some turn,
+  // so the cut edge is always doing a little work.
+  const rest = postureFor(null, null, 1234);
+  assert.ok(Math.abs(rest.yaw) > 0.2, `a resting standee is square on (${rest.yaw})`);
+  assert.equal(rest.hop, 0, 'postureFor itself is pure — the breath is added per unit by the animator');
+  assert.equal(rest.pitch, 0);
+  // And a mirrored unit turns the other way, or half the board faces the
+  // same direction regardless of where it is going.
+  const left = postureFor({ clip: 'move', i: 0, startedAt: 0, mirror: true },
+    { fgx: 0, fgy: -1, startedAt: 0, dur: 200 }, 10);
+  assert.ok(left.yaw < 0, 'a unit facing left still turns its card to the right');
+});
+
+check('setting off swings the card through the turn', () => {
+  // The standee's signature move: a card does not mirror-flip, it swings
+  // round its own vertical axis and goes briefly edge-on.
+  const tw = { fgx: 0, fgy: -3, startedAt: 0, dur: 300 };
+  const rest = Math.abs(postureFor(null, null, 0).yaw);
+  const mid = Math.abs(postureFor(null, tw, 68).yaw);
+  assert.ok(mid > rest + 0.5, `the turn barely happens (${rest.toFixed(2)} -> ${mid.toFixed(2)})`);
+  assert.ok(Math.abs(postureFor(null, tw, 299).yaw) - rest < 0.05, 'the card never settles back');
 });
 
 check('no two things spawn on one tile, and nothing spawns on full cover', () => {

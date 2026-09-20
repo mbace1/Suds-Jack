@@ -80,14 +80,149 @@ export function lineTiles(a, b) {
   return pts;
 }
 
+// ── line of sight ───────────────────────────────────────────────────
+// Owner, 2026-09-19: "Take rot.js FOV only. Skip PathFinding.js." — and then
+// "go ahead with the FOV swap, measure the deltas."
+//
+// rot.js ships three FOV classes. `PreciseShadowcasting` (its default) works
+// in exact angular arcs and answers with a visibility FRACTION, which for a
+// yes/no shot means picking a threshold — a balance knob smuggled in with the
+// algorithm. `DiscreteShadowcasting` is a coarser cousin. `Recursive-
+// Shadowcasting` is Björn Bergström's eight-octant algorithm, the one every
+// roguelike agrees on, integer-only in its geometry and binary in its answer.
+// That is what is ported here, faithfully to rot.js's own implementation
+// (which credits the same source), with no dependency taken — the house rule.
+//
+// WHAT CHANGES. Through v36 a shot's line of sight was a Bresenham line of
+// tile centres: blocked if any tile it crossed was full cover. Shadowcasting
+// asks the roguelike question instead — from where I stand, which tiles are
+// lit — and a tile is lit if ANY part of its angular span escapes the
+// shadows the blockers cast. The practical difference is corners: a
+// centre-to-centre line clips a wall's corner and is refused, where a
+// shadowcaster sees the far tile's edge round it and allows the shot. So
+// shadowcasting is the more PERMISSIVE rule, and on a roster that is
+// weaker-but-numerous by design, more shots is a delta with a direction.
+//
+// AND ONE PROPERTY WORTH SAYING OUT LOUD: shadowcasting is not symmetric.
+// There are pairs where A sees B and B does not see A — a known property of
+// the algorithm, not a bug in the port. In a game whose whole contract is
+// that the board shows you every shot, a rival that can hit you when you
+// cannot hit it back is a fairness fault the Bresenham line never had (it
+// is symmetric up to rounding). So the mode seam below carries the raw
+// rot.js answer AND two symmetric closures — `mutual` (both must see) and
+// `either` (one is enough) — and test/balance.mjs takes `--los` so all four
+// can be measured in one sitting. The census script in VERSIONS.md v37
+// records what each does to the board and to the seven rates.
+//
+// `coverSoftens` deliberately stays on the Bresenham line: partial cover is
+// about the TRAJECTORY of a shot (what it passes), not about visibility, and
+// the two questions are allowed different geometry.
+export const LOS_MODES = ['line', 'fov', 'mutual', 'either'];
+let losMode = 'mutual';
+// The measurement seam. Set once per process (balance.mjs's --los); it is a
+// module-level switch so the same engine can be run under each rule, and it
+// is not a per-state option because a board where two units disagree about
+// the rule of sight is not a board.
+export function setLOSMode(mode) {
+  if (!LOS_MODES.includes(mode)) throw new Error(`setLOSMode: unknown mode '${mode}'`);
+  losMode = mode;
+}
+export const getLOSMode = () => losMode;
+
 // Full cover blocks a shot outright (and melee can never reach through it,
 // since it also blocks movement). Adjacent tiles always see each other.
 export function hasLOS(state, a, b) {
   if (manhattan(a, b) <= 1) return true;
+  switch (losMode) {
+    case 'line': return lineLOS(state, a, b);
+    case 'fov': return fovSees(state, a, b);
+    case 'mutual': return fovSees(state, a, b) && fovSees(state, b, a);
+    case 'either': return fovSees(state, a, b) || fovSees(state, b, a);
+    default: return fovSees(state, a, b);
+  }
+}
+
+// The v1-v36 rule, kept as the control column.
+export function lineLOS(state, a, b) {
   for (const t of lineTiles(a, b)) {
     if (state.fullCover.has(key(t.x, t.y))) return false;
   }
   return true;
+}
+
+export const fovSees = (state, a, b) => fovFrom(state, a.x, a.y).has(key(b.x, b.y));
+
+// The lit set from one origin, cached per board. Full cover is never
+// mutated by game code within an encounter (Barricade adds PARTIAL cover),
+// so the cache keys on the fullCover Set itself; the size check catches a
+// test that clears it. A preview clones the Set, so each clone computes its
+// own few origins — cheap, since the heavy callers (firingTiles over every
+// reachable tile, firingTileScore over every gun) run on the real state.
+const fovCache = new WeakMap();
+// A state with no grid (a unit test's bare board) is treated as unbounded:
+// the cast runs to a fixed radius and nothing is out of bounds.
+const OPEN_GRID = { cols: 64, rows: 64, open: true };
+export function fovFrom(state, ox, oy) {
+  const fc = state.fullCover;
+  const grid = state.grid || OPEN_GRID;
+  let entry = fovCache.get(fc);
+  if (!entry || entry.size !== fc.size || entry.cols !== grid.cols || entry.rows !== grid.rows) {
+    entry = { size: fc.size, cols: grid.cols, rows: grid.rows, byOrigin: new Map() };
+    fovCache.set(fc, entry);
+  }
+  const k = key(ox, oy);
+  let vis = entry.byOrigin.get(k);
+  if (!vis) { vis = computeFov(grid, fc, ox, oy); entry.byOrigin.set(k, vis); }
+  return vis;
+}
+
+// The eight octant transforms, in rot.js's order: [xx, xy, yx, yy].
+const OCTANTS = [
+  [1, 0, 0, 1], [0, 1, 1, 0], [0, -1, 1, 0], [-1, 0, 0, 1],
+  [-1, 0, 0, -1], [0, -1, -1, 0], [0, 1, -1, 0], [1, 0, 0, -1],
+];
+
+function computeFov(grid, fullCover, ox, oy) {
+  const vis = new Set([key(ox, oy)]);
+  const radius = grid.cols + grid.rows;     // the whole board is in range
+  const passes = (x, y) => !fullCover.has(key(x, y));
+  for (const [xx, xy, yx, yy] of OCTANTS) {
+    castLight(grid, ox, oy, 1, 1.0, 0.0, radius, xx, xy, yx, yy, passes, vis);
+  }
+  return vis;
+}
+
+// One octant, one recursion per shadow edge. A tile is lit when its slope
+// span [rSlope, lSlope] overlaps the still-lit interval [end, start]; a wall
+// splits that interval and the part above it recurses on. Out-of-bounds
+// tiles are skipped rather than treated as walls — there is nothing past
+// the edge for them to shade.
+function castLight(grid, cx, cy, row, start, end, radius, xx, xy, yx, yy, passes, vis) {
+  if (start < end) return;
+  let newStart = 0;
+  for (let i = row; i <= radius; i++) {
+    let blocked = false;
+    const dy = -i;
+    for (let dx = -i; dx <= 0; dx++) {
+      const X = cx + dx * xx + dy * xy;
+      const Y = cy + dx * yx + dy * yy;
+      const lSlope = (dx - 0.5) / (dy + 0.5);
+      const rSlope = (dx + 0.5) / (dy - 0.5);
+      if ((!grid.open && !inBounds(grid, X, Y)) || start < rSlope) continue;
+      if (end > lSlope) break;
+      vis.add(key(X, Y));
+      if (blocked) {
+        if (!passes(X, Y)) { newStart = rSlope; continue; }
+        blocked = false;
+        start = newStart;
+      } else if (!passes(X, Y) && i < radius) {
+        blocked = true;
+        castLight(grid, cx, cy, i + 1, start, lSlope, radius, xx, xy, yx, yy, passes, vis);
+        newStart = rSlope;
+      }
+    }
+    if (blocked) break;
+  }
 }
 
 // Partial cover softens a ranged hit rather than blocking it: true if the
@@ -107,7 +242,7 @@ export function inRange(state, weapon, a, b) {
 // The cheapest tile `unit` could stand on to hit `target` this turn — its
 // current tile if already in range, otherwise the nearest reachable tile
 // with range and LOS, or null if no such tile exists. Shared by the AI
-// (ai.js) and by click-to-attack in input.js, so "can I reach this fight"
+// (the rival brain in combat.js) and by click-to-attack in input.js, so "can I reach this fight"
 // is answered exactly once.
 // Every tile this unit could hit `target` from this turn. The raw list, so
 // the UI can offer a CHOICE rather than a fait accompli.
@@ -136,7 +271,7 @@ export function firingTiles(state, unit, target) {
 // worse than no default.
 //
 // Deliberately in grid.js and not in the AI: this is what the PLAYER's tap
-// resolves to, and ai.js keeps its own scoring because a behaviour has to be
+// resolves to, and the rival brain keeps its own scoring because a behaviour has to be
 // free to disagree with "the best tile" (that is what a behaviour IS).
 export function firingTileScore(state, unit, target, tile) {
   let score = 0;

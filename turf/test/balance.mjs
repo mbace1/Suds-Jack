@@ -31,6 +31,8 @@ import {
 } from '../js/combat.js';
 import { needsReload } from '../js/ammo.js';
 import { key } from '../js/grid.js';
+// Through combat.js, never grid.js: see the note on the re-export there.
+import { setLOSMode, getLOSMode } from '../js/combat.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -48,6 +50,10 @@ const arg = (name, dflt) => {
   return i > 0 && process.argv[i + 1] ? Number(process.argv[i + 1]) : dflt;
 };
 const SEEDS = arg('--seeds', 60);
+// --los line|fov|mutual|either: the rule of sight to run under (grid.js's
+// measurement seam). Default is whatever grid.js ships.
+const losIdx = process.argv.indexOf('--los');
+if (losIdx > 0 && process.argv[losIdx + 1]) setLOSMode(process.argv[losIdx + 1]);
 const ROUND_CAP = 40;
 
 // A floor, not a target. Below FLOOR_MIN the encounter cannot be won by
@@ -160,7 +166,7 @@ function walkToObjective(s, u) {
 }
 
 let failures = 0;
-console.log(`balance — ${SEEDS} seeds per encounter, with a bot that ignores cover, hazards and knockback\n`);
+console.log(`balance — ${SEEDS} seeds per encounter, line of sight '${getLOSMode()}', with a bot that ignores cover, hazards and knockback\n`);
 console.log(`${'encounter'.padEnd(15)}${'objective'.padEnd(14)}${'win'.padStart(9)}${'rounds'.padStart(8)}${'survivors'.padStart(11)}   verdict`);
 
 for (const enc of ENCOUNTERS) {

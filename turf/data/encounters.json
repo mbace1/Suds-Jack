@@ -735,7 +735,7 @@
         "need": 2,
         "deadline": 5
       },
-      "_note": "Get two of the crew off the far side inside five rounds. TUNED BY MEASUREMENT: with the pads open this was 0% at four rounds and 100% at five \u2014 an uncontested extraction is arithmetic, not a fight. A holder and a control grunt standing ON the approach are what turn it into a decision (46% for the balance bot). `need` is absolute: falling below it is a loss, because clamping it to the living made losing an operator make the mission EASIER.",
+      "_note": "Get two of the crew off the far side inside five rounds. TUNED BY MEASUREMENT: with the pads open this was 0% at four rounds and 100% at five \u2014 an uncontested extraction is arithmetic, not a fight. A holder and a control grunt standing ON the approach are what turn it into a decision (46% for the balance bot; 22% by v36 under the stepped-line LOS, 54% from v37 under shadowcasting — the difference is Sable no longer having to step onto a pad to get a shot). `need` is absolute: falling below it is a loss, because clamping it to the living made losing an operator make the mission EASIER.",
       "playerSpawns": [
         {
           "unit": "blade",
