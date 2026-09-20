@@ -18,3 +18,8 @@ jobs:
           node turf/test/field-guide.cjs
           node turf/test/playable.cjs
           node turf/test/pad-menu.cjs
+          # v42. The spec is pure and lives in smoke.mjs; this is the half that
+          # only exists once a browser composes a transform — whether the grid
+          # stays on the yard under the punch, and whether the impact returns
+          # to exactly nothing rather than quietly editing the player's zoom.
+          node turf/test/impact.cjs

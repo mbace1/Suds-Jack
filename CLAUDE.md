@@ -1175,13 +1175,46 @@ runs (whose command it is comes from the actor in the entry, since `state.turn` 
 flipped). `summarise()` is pure, its `headline` ranks quitting above losing on purpose, and
 `__turf.play.report()` prints it. No upload, no dashboard, no consent prompt — there is
 nothing to consent to.
+**IMPACT — A BLOW SAYS HOW HARD IT WAS** (v42, `MST_PARITY` §2.7 closed). Through v41 a
+hit was a white flash and a number; both say a hit HAPPENED and neither says how hard.
+`js/impact.js` is the spec, and it is **pure** — no DOM, no clock — so every tier, curve
+and sound layer is asserted in bare node; `anim.js` (the only rAF loop) drives it and
+`camera.js` applies it. **A TIER IS A SHARE, NOT A NUMBER**: four damage to a four-HP grunt
+is a body hitting the ground and four to a sixteen-HP operator is a scratch, so the tier is
+`damage / maxHp` — the same number the player reads off the HP bar, so what they see and
+what they feel agree. A kill is not a share and outranks everything; a miss is its own row,
+lighter than a landed graze. **Shake** is quadratic in accumulated, capped trauma (linear
+wobbles the screen on every scratch; the cap is because this roster is weaker-but-numerous
+and a swarm must not shake the board apart) and deterministic rather than random, so it can
+be tested and reproduced. **The punch returns to EXACTLY 1** — v34 made the zoom the
+player's, and a residue would quietly edit their setting. **The hitstop** holds the
+animator's clock 45ms on a heavy blow and 110ms on a kill, so clips hold mid-pose while the
+GAME keeps running (the phase pacing is on its own timers); frozen time is subtracted, not
+skipped, and a second kill extends the stop rather than restarting it. **SFX are layered by
+the same tier the shake uses**, with a new `thud` under `hit`/`down`. `prefers-reduced-motion`
+takes all three to zero and leaves v41's flash, floater and sound doing the whole job.
+**Three bugs, all off MEASURED MOTION rather than a green suite** (Toko Drop's rule applied
+to a tactics board): the shake read **0.00px** while the punch worked, because the rAF loop
+stops itself when nothing animates and the stale decay clock wiped a fresh shake on its
+first frame; a kill then moved the board **1.6px**, because the spec is in BOARD pixels and
+was written straight into a CSS transform (camera.js scales by the live CSS scale now, and
+a kill reads 4.3px); and **the punch slid the yard out from under the grid**, the one thing
+v33 exists to prevent — the board and plate are different elements whose centres sit ~126px
+apart, so a common scale about each element's own centre displaces them by `(s-1)` times
+that separation, **3.78px** at the kill tier. The plate takes the BOARD's centre as its
+transform-origin now. **The ruler was wrong twice on that last one** (Kindling's lesson):
+comparing the two ELEMENT centres reports the correct fix as a failure, because they are
+supposed to diverge once the origin moves. What must be compared is where each element's
+transform puts the same viewport point — 0.000px with the fix, 3.781px without, and
+`test/impact.cjs` asserts **both**, because a reading of zero means nothing without a
+control that reads non-zero. Balance is untouched and identical, which is the point.
 **Rendering is plain canvas 2D isometric**, not Three.js — the GDD says "Three.js or
 similar," and a tactics grid with move/attack-range overlays and telegraph markers is far
 easier to get right in 2D; drawn low-res and upscaled with `image-rendering: pixelated`,
 the same trick `dropcabal/` uses, with the HUD (turn state, HP, the win/lose screen) as a
 DOM/CSS overlay rather than canvas-painted text, per the production doc's own §2.4
 recommendation. All game logic stays in plain `(x,y)` grid coordinates
-(`grid.js`/`combat.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 164
+(`grid.js`/`combat.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 177
 checks including a bot-vs-bot full playthrough that must reach a win or a loss, not a
 stalemate, within a round cap); `render.js`'s `toScreen`/`screenToGrid` are a one-way,
 invertible projection onto an isometric diamond grid and never feed anything back into
@@ -2700,6 +2733,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     anim.js     # the feel layer: log-driven tweens, hit flash, damage numbers, the only rAF
     audio.js    # synthesised kit, every voice through one master gain so mute really mutes
     playlog.js  # what a PERSON did: hesitation, what went unused, lethal misreads, where they STOPPED
+    impact.js   # what a blow FEELS like: tier by SHARE of maxHp, trauma, punch, hitstop, SFX layers — pure
     main.js     # boot, HUD, the enemy-phase pacing loop — the only DOM-touching file
     palette.js  # Nordic rain-and-sodium, deliberately desaturated next to the arcade's neon
   art-src/
@@ -2710,11 +2744,13 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 164 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 177 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter
     balance.mjs # is each encounter WINNABLE — the question smoke.mjs cannot ask
+    impact.cjs  # a browser: the grid stays on the yard under a punch (vs a control), and
+                #   the impact returns to exactly nothing rather than editing the zoom
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/
   games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)

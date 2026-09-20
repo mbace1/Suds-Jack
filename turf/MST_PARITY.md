@@ -89,10 +89,16 @@ Something with a rule that changes the board, so a run *ends* rather than
 stops. It needs 2.2 (an objective is what a boss IS before it is a stat
 block) and now 2.3-2.5 as well.
 
-**2.7 — Impact.** *(medium)*
-Flash and floater today. Wanted: zoom-punch and freeze-frame on a kill,
-damage-tiered shake, layered SFX. `anim.js` already owns the only rAF loop
-and reads `state.log`, so all of it is additive.
+**2.7 — DONE (v42).** `js/impact.js`: a tier per blow, measured as a SHARE of
+the target's own max HP rather than raw damage, carrying a trauma, a zoom-punch
+and a hitstop. Quadratic shake off accumulated capped trauma; a punch that
+returns to exactly 1 so it can never become the player's persisted zoom; a
+45/110ms hitstop on the animator's clock that holds the drawing without pausing
+the game; SFX layered by the same tier the shake uses. Reduced motion takes all
+three to zero. Additive as predicted — balance reads identically. The three
+bugs it cost are in `VERSIONS.md` v42 and all three came off measured motion,
+not a green suite; the worst was the punch sliding the plate out from under the
+grid, which is the fault §2's background work exists to prevent.
 
 **2.8 — Run structure.** *(large)*
 `SEQUENCE` is a flat seven-element array. MST is a branching route with node

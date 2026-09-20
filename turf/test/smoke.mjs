@@ -29,6 +29,12 @@ import { incomingThreats } from '../js/combat.js';
 import { PLATES } from '../js/plates.js';
 import { postureFor } from '../js/anim.js';
 import { createPlaylog, summarise } from '../js/playlog.js';
+import { tierFor, addTrauma, decayTrauma, shakeAt, punchAt, layersFor,
+         TIERS, MISS, TRAUMA_MS, PUNCH_MS, SHAKE_PX } from '../js/impact.js';
+// Safe in bare node: audio.js builds its context lazily on the first play, so
+// importing it touches no browser API. That laziness is what lets this gate
+// assert the kit actually HAS every voice the spec names.
+import { audio } from '../js/audio.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -2252,6 +2258,129 @@ check('a recorder that cannot reach the store still records, and a broken store 
   play.begin('backlot');
   assert.doesNotThrow(() => { play.command('move'); play.finish('win'); });
   assert.equal(play.records().filter(r => r.type === 'encounter').length, 1, 'it kept the record in memory');
+});
+
+
+// ---------------------------------------------------------------------------
+// IMPACT (js/impact.js) — what a blow FEELS like, as data. Pure, so the whole
+// spec is asserted here in bare node; anim.js is only the clock that drives it.
+console.log('impact — how hard a blow reads');
+
+check('a tier is a SHARE of the target, not a raw number', () => {
+  // 4 damage to a 4 HP grunt is a body hitting the ground; 4 to a 12 HP
+  // operator is a scratch. Raw damage ranks those the same and goes stale the
+  // moment a weapon changes.
+  assert.equal(tierFor({ damage: 4, maxHp: 4 }).id, 'heavy');
+  assert.equal(tierFor({ damage: 4, maxHp: 16 }).id, 'solid');
+  assert.equal(tierFor({ damage: 1, maxHp: 16 }).id, 'graze');
+});
+
+check('a kill outranks every share, and a miss is not a graze', () => {
+  assert.equal(tierFor({ killed: true, damage: 1, maxHp: 99 }).id, 'kill');
+  assert.equal(tierFor({ hit: false, damage: 0 }).id, 'miss');
+  assert.ok(MISS.trauma > 0, 'the swing still happened');
+  assert.ok(MISS.trauma < TIERS[0].trauma, 'but it is lighter than a landed graze');
+  assert.equal(tierFor({ hit: true, damage: 0, maxHp: 10 }).id, 'none');
+});
+
+check('trauma accumulates and is CAPPED', () => {
+  // The roster is weaker-but-numerous by design, so a swarm must not be able
+  // to shake the board apart.
+  let tr = 0;
+  for (let i = 0; i < 10; i++) tr = addTrauma(tr, tierFor({ killed: true }));
+  assert.equal(tr, 1);
+  assert.ok(addTrauma(0, tierFor({ damage: 1, maxHp: 16 })) < addTrauma(0, tierFor({ killed: true })));
+});
+
+check('trauma decays to nothing and never past it', () => {
+  assert.equal(decayTrauma(1, TRAUMA_MS), 0);
+  assert.equal(decayTrauma(1, TRAUMA_MS * 5), 0, 'a long frame must not go negative');
+  assert.ok(Math.abs(decayTrauma(1, TRAUMA_MS / 2) - 0.5) < 1e-9);
+});
+
+check('the shake is QUADRATIC, so a graze barely moves and a kill does', () => {
+  // The reason trauma is stored rather than an amplitude: linear would wobble
+  // the screen on every scratch.
+  const big = Math.abs(shakeAt(1, 1000).x), small = Math.abs(shakeAt(0.25, 1000).x);
+  assert.ok(big > 0);
+  assert.ok(small / big < 0.08, `quarter trauma should be a sixteenth of the shake, got ${small / big}`);
+  assert.deepEqual(shakeAt(0, 1234), { x: 0, y: 0 });
+});
+
+check('the shake is DETERMINISTIC — the same trauma at the same time is the same offset', () => {
+  // A shake built out of Math.random() cannot be tested and cannot be
+  // reproduced from a bug report.
+  assert.deepEqual(shakeAt(0.8, 4321), shakeAt(0.8, 4321));
+  assert.notDeepEqual(shakeAt(0.8, 4321), shakeAt(0.8, 4700));
+});
+
+check('the shake stays within a body-width of the board', () => {
+  // SPRITE_H is 29; a shake wider than a few pixels reads as the camera
+  // falling over rather than as a blow landing.
+  let worst = 0;
+  for (let t = 0; t < 4000; t += 3) {
+    worst = Math.max(worst, Math.abs(shakeAt(1, t).x), Math.abs(shakeAt(1, t).y));
+  }
+  assert.ok(worst <= SHAKE_PX, `worst ${worst} must not exceed SHAKE_PX ${SHAKE_PX}`);
+  assert.ok(worst > SHAKE_PX * 0.5, 'and it should actually reach for it');
+});
+
+check('the punch returns to EXACTLY 1, so it can never become the player\'s zoom', () => {
+  // v34 made the zoom theirs and persisted it. A punch that left a residue
+  // would quietly edit a setting that belongs to the player.
+  assert.equal(punchAt(0.03, PUNCH_MS), 1);
+  assert.equal(punchAt(0.03, PUNCH_MS + 1000), 1);
+  assert.equal(punchAt(0.03, -5), 1);
+  assert.equal(punchAt(0, 10), 1, 'a tier with no punch never scales');
+  const peak = punchAt(0.03, PUNCH_MS * 0.18);
+  assert.ok(peak > 1 && peak <= 1.031, `peak ${peak}`);
+});
+
+check('the punch spikes fast and eases back', () => {
+  const early = punchAt(0.03, PUNCH_MS * 0.09);
+  const peak = punchAt(0.03, PUNCH_MS * 0.18);
+  const late = punchAt(0.03, PUNCH_MS * 0.6);
+  assert.ok(early < peak, 'rising into the blow');
+  assert.ok(late < peak && late > 1, 'and recovering after it, slower');
+});
+
+check('only a heavy blow or a kill stops the clock, and a kill stops it longest', () => {
+  // A hitstop you notice as a pause is a bug, so the light tiers have none.
+  assert.equal(tierFor({ damage: 1, maxHp: 16 }).freeze, 0);
+  assert.equal(tierFor({ damage: 4, maxHp: 16 }).freeze, 0);
+  assert.ok(tierFor({ damage: 4, maxHp: 4 }).freeze > 0);
+  assert.ok(tierFor({ killed: true }).freeze > tierFor({ damage: 4, maxHp: 4 }).freeze);
+  assert.ok(tierFor({ killed: true }).freeze < 200, 'a freeze this long would read as a stall');
+});
+
+check('the sound layers are tiered by the SAME number the shake is', () => {
+  const graze = layersFor(tierFor({ damage: 1, maxHp: 16 }), { ranged: true });
+  const kill = layersFor(tierFor({ killed: true }), { ranged: false, knocked: true });
+  assert.deepEqual(graze.map(l => l.voice), ['ranged', 'hit']);
+  assert.deepEqual(kill.map(l => l.voice), ['melee', 'down', 'thud', 'knock']);
+  assert.ok(kill.length > graze.length, 'a kill is a thicker event than a scratch');
+  // Cause, then effect: the swing is heard before what it did.
+  for (const set of [graze, kill]) {
+    assert.equal(set[0].at, 0);
+    for (let i = 1; i < set.length; i++) assert.ok(set[i].at > set[i - 1].at, 'layers are staggered, never stacked');
+  }
+});
+
+check('a miss is heard as a miss, never as a hit', () => {
+  const miss = layersFor(tierFor({ hit: false }), { ranged: true });
+  assert.deepEqual(miss.map(l => l.voice), ['ranged', 'miss']);
+  assert.ok(!miss.some(l => l.voice === 'hit' || l.voice === 'thud'));
+});
+
+check('every voice the spec names actually exists in the kit', () => {
+  // A layer naming a voice audio.js does not have is silence nobody notices.
+  const named = new Set();
+  for (const t of [...TIERS, MISS]) {
+    for (const o of [{}, { ranged: true }, { knocked: true }, { ranged: true, knocked: true }]) {
+      for (const l of layersFor(t, o)) named.add(l.voice);
+    }
+  }
+  for (const v of named) assert.equal(typeof audio[v], 'function', `audio.${v} is missing`);
 });
 
 

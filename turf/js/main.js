@@ -9,18 +9,19 @@ import {
   awardXp, xpToNext, applyTrinkets,
 } from './combat.js?v=22';
 import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=29';
-import { createCamera, MIN_TILE_W } from './camera.js?v=3';
+import { createCamera, MIN_TILE_W } from './camera.js?v=4';
 import { createInputHandler } from './input.js?v=21';
-import { createAnimator } from './anim.js?v=8';
+import { createAnimator } from './anim.js?v=9';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=3';
 import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=4';
 import { autoTurn } from './autoplay.js?v=9';
 import { PLATES } from './plates.js?v=1';
+import { layersFor, tierFor } from './impact.js?v=1';
 // What a PERSON did, as opposed to what a bot did — a reader like anim.js, and
 // local-only. See the header in playlog.js for the four questions it answers.
 import { createPlaylog, hubEmitter, summarise } from './playlog.js?v=1';
-import { audio } from './audio.js?v=1';
+import { audio } from './audio.js?v=2';
 import { watchPad } from '../../hub/pad.js?v=9';
 
 const $ = id => document.getElementById(id);
@@ -48,8 +49,20 @@ let DATA = null, state = null, layout = null, input = null, camera = null, enemy
 const play = createPlaylog();
 hubEmitter().then(emit => { if (emit) play.setEmitter(emit); }).catch(() => {});
 
+// prefers-reduced-motion takes the shake, the punch and the hitstop to zero
+// and leaves the flash, the floater and the sound doing the whole job — which
+// is exactly what they did through v41, so nothing is lost, only quieted.
+const REDUCED = typeof matchMedia === 'function'
+  && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 const anim = createAnimator({
-  onFrame: () => { if (state && layout) render(canvas, state, layout, anim); },
+  reduced: REDUCED,
+  onFrame: () => {
+    if (state && layout) render(canvas, state, layout, anim);
+    // The board's offset is handed to the camera rather than written here:
+    // camera.js composes it with the pan so --cam keeps one writer.
+    if (camera) camera.setImpact(anim.impact());
+  },
   // TWO readers, ONE cursor. anim.js's header says why a second walk over
   // state.log is a bug, so the play log takes this one rather than opening
   // its own; the order is fixed and neither reader can skip what the other saw.
@@ -67,14 +80,16 @@ function soundFor(e, s) {
   if (e.type !== 'attack') return;
   const a = s.units.find(u => u.uid === e.attackerUid);
   const ranged = a && a.weapon && a.weapon.archetype === 'ranged';
-  if (ranged) audio.ranged(); else audio.melee();
-  if (!e.hit) { audio.miss(); return; }
-  // Stagger the impact behind the swing so the two read as cause and effect
-  // rather than one cluttered noise.
-  setTimeout(() => {
-    if (e.killed) audio.down();
-    else { audio.hit(); if (e.knockback && e.knockback.moved) audio.knock(); }
-  }, 70);
+  const t = s.units.find(u => u.uid === e.targetUid);
+  // THE MIX IS TIERED BY THE SAME NUMBER THE SHAKE IS (impact.js), so what you
+  // feel and what you hear cannot disagree about how hard a blow was. The
+  // stagger is still the point: cause, then effect, rather than one noise.
+  const tier = tierFor({ hit: e.hit, killed: e.killed, damage: e.damage, maxHp: t ? t.maxHp : 0 });
+  const knocked = !!(e.knockback && e.knockback.moved);
+  for (const l of layersFor(tier, { ranged, knocked })) {
+    if (l.at === 0) audio[l.voice] && audio[l.voice]();
+    else setTimeout(() => { audio[l.voice] && audio[l.voice](); }, l.at);
+  }
 }
 
 // GDD.md §9: "Expand to 3-5 encounters in sequence." Four now — warehouse and
@@ -1134,6 +1149,9 @@ window.__turf = {
   // exposes its internals: a tween that only exists for 200ms cannot be
   // checked by looking at a screenshot after the fact.
   anim,
+  // The camera, for the console and for a gate that has to hold the board
+  // still at a known impact rather than catching one mid-blow.
+  camera: () => camera,
   audio,
 };
 
