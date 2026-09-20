@@ -155,6 +155,57 @@ class Part:
         return ob
 
 
+def centre_origin(ob):
+    """Move a mesh onto its own origin and the object out to meet it.
+
+    Everything here is built in world coordinates, which leaves every object's
+    origin at the world centre. That is harmless for a part that only sits
+    there — and wrong for one the game ROTATES. vehicle.pose() spins a fan with
+    `fan.rotation.z`, and a rotation turns a mesh about its ORIGIN, so a disc
+    built 1.1 m off-centre orbits the ship on a 1.1 m circle instead of
+    spinning in place: two discs swinging out past the hull every frame.
+
+    The nothing-moves part matters — the verts go back by the same vector the
+    object goes forward, so the mesh stays exactly where it was authored.
+    """
+    me = ob.data
+    n = len(me.vertices)
+    if not n:
+        return ob
+    c = Vector((0.0, 0.0, 0.0))
+    for v in me.vertices:
+        c += v.co
+    c /= n
+    for v in me.vertices:
+        v.co -= c
+    ob.location = c
+    return ob
+
+
+def disc_uvs(me):
+    """A planar 0..1 map across a flat disc — the turbine face is a TEXTURE.
+
+    A ring of verts built in bmesh carries position and normal and no uv at
+    all, and a mapped material with no uv samples (0, 0) for every fragment.
+    That is not a subtle fault: it is a solid black disc in the mouth of each
+    nacelle, which is what the first authored pair shipped with. The disc is
+    flat, so the map is taken across its two widest axes and the third (its
+    thickness, zero) is ignored.
+    """
+    uv = me.uv_layers.new(name='UVMap')
+    lo = [min(v.co[i] for v in me.vertices) for i in range(3)]
+    hi = [max(v.co[i] for v in me.vertices) for i in range(3)]
+    span = [hi[i] - lo[i] for i in range(3)]
+    flat = min(range(3), key=lambda i: span[i])          # the disc's thickness
+    a, b = [i for i in range(3) if i != flat]
+    for pol in me.polygons:
+        for li in pol.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co
+            uv.data[li].uv = ((co[a] - lo[a]) / (span[a] or 1.0),
+                              (co[b] - lo[b]) / (span[b] or 1.0))
+    return me
+
+
 def hull_uvs(me):
     """A box projection normalised to the hull's bounds, so the game's panel
     texture (or a painted one later) lands in 0..1 rather than smearing off

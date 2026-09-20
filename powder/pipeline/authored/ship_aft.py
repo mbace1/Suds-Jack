@@ -29,8 +29,8 @@ from mathutils import Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.dirname(HERE))
-from _lib import (Part, hull_uvs, section_ring, ring_xy, fresh_scene, empty_at,   # noqa: E402
-                  report, hull_texture, paint_hull)
+from _lib import (Part, hull_uvs, disc_uvs, centre_origin, section_ring, ring_xy,  # noqa: E402
+                  fresh_scene, empty_at, report, hull_texture, paint_hull)
 from powder_blender import MATERIALS, STUB_COLOUR, PADS                        # noqa: E402
 
 # ---- the layout, metres, Blender frame (nose +Y, up +Z) --------------------
@@ -134,6 +134,16 @@ def build(tex_path):
 
     objs = [p.realise(col) for p in (hull, accent, chrome, gun, glass, intake, decal, *fans)]
     hull_uvs(bpy.data.objects['hull'].data)
+    # The fans are the two parts the game MOVES, and both of the things that
+    # go wrong with them are invisible in Blender: a disc built in world
+    # coordinates keeps its origin at the ship's centre and so orbits rather
+    # than spins, and a disc built in bmesh has no uv for the turbine texture
+    # to land on and so renders solid black.
+    for name in ('fan_L', 'fan_R'):
+        ob = bpy.data.objects.get(name)
+        if ob:
+            disc_uvs(ob.data)
+            centre_origin(ob)
     return [o for o in objs if o]
 
 

@@ -428,7 +428,45 @@ export function craftFromModel(m, env, accent, number, drive) {
     o.receiveShadow = false;
   });
   g.updateMatrixWorld(true);
+  const geos = [];
   const fans = SHIP.fans.map(n => g.getObjectByName(n)).filter(Boolean);
+  // A fan is SPUN (`fan.rotation.z` in vehicle.pose), and a rotation turns a
+  // mesh about its own origin. Blender bakes each object's geometry wherever
+  // it sits in the scene and leaves the origin at the world centre unless you
+  // move it, so a turbine face exported the obvious way orbits the ship at the
+  // radius of its own offset instead of spinning in place — two black discs
+  // swinging out past the hull, which is exactly what the first authored pair
+  // did. Re-centre it here rather than demanding the exporter get it right:
+  // the geometry moves onto its own origin and the object moves out to meet
+  // it, so the mesh does not move and the spin becomes a spin.
+  for (const f of fans) {
+    const geo = f.geometry.clone();              // never translate a shared one twice
+    geo.computeBoundingBox();
+    const c = geo.boundingBox.getCenter(new THREE.Vector3());
+    if (c.lengthSq() > 1e-6) {
+      geo.translate(-c.x, -c.y, -c.z);
+      f.position.add(c.clone().applyQuaternion(f.quaternion).multiply(f.scale));
+    }
+    // ...and the turbine face is a TEXTURE, so the disc needs somewhere to put
+    // it. A ring of verts built in Blender carries position and normal and no
+    // uv at all, and a mapped material with no uv samples (0,0) for every
+    // fragment — which is not a subtle fault, it is a solid black disc in the
+    // mouth of each nacelle. The disc is flat and faces its own -z, so a
+    // planar map off its bounding box is exactly right.
+    if (!geo.attributes.uv) {
+      const pos = geo.attributes.position, uv = new Float32Array(pos.count * 2);
+      geo.computeBoundingBox();
+      const b = geo.boundingBox, w = b.max.x - b.min.x || 1, h = b.max.y - b.min.y || 1;
+      for (let i = 0; i < pos.count; i++) {
+        uv[i * 2] = (pos.getX(i) - b.min.x) / w;
+        uv[i * 2 + 1] = (pos.getY(i) - b.min.y) / h;
+      }
+      geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    }
+    f.geometry = geo;
+    geos.push(geo);
+  }
+  g.updateMatrixWorld(true);
   const nozzles = SHIP.empties.map(n => g.getObjectByName(n).getWorldPosition(new THREE.Vector3()));
   const flares = nozzles.map(p => {
     const f = makeFlame(M); f.name = 'flame';
@@ -439,7 +477,7 @@ export function craftFromModel(m, env, accent, number, drive) {
   });
   g.traverse(o => { if (o.isMesh || o.isSprite) o.layers.set(1); });
   g.layers.set(1);
-  g.userData = { flares, fans, hull: hull || { material: hullMat }, nozzles, geos: [], mats, model: m.file };
+  g.userData = { flares, fans, hull: hull || { material: hullMat }, nozzles, geos, mats, model: m.file };
   return g;
 }
 

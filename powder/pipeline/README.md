@@ -97,8 +97,29 @@ but it will not get the chrome.
 | Object | Type | Where | Why |
 |---|---|---|---|
 | `nozzle_L`, `nozzle_R` | **Empty** (plain axes) | the exhaust exit of each bell, on the nacelle axis | flames and heat haze anchor here. **Required.** |
-| `fan_L`, `fan_R` | Mesh, material `FAN` | a disc just inside each intake mouth | spun by turbine N1. **Object rotation must be 0,0,0** and the mesh built so its face looks along +Y: the game spins it about its local Y axis. |
+| `fan_L`, `fan_R` | Mesh, material `FAN` | a disc just inside each intake mouth | spun by turbine N1. **Object rotation must be 0,0,0**, the face looking along +Y, **the object origin ON the disc's own centre**, and **a UV map on it**. See below — both of the last two are invisible in Blender and neither is subtle in game. |
 | `canopy` | Mesh, `GLASS` | forward of the origin | lets the validator catch a backwards ship |
+
+**The two fan traps.** The fans are the only parts the game moves, and both
+ways of getting them wrong look perfect in Blender.
+
+*The origin must be on the disc.* A rotation turns a mesh about its origin.
+Model a disc 1.1 m off the centreline, leave the object at the world origin
+the way anything built in world coordinates does, and the game does not spin
+it — it swings it round a 1.1 m circle, so each turbine face orbits out past
+the hull and back every revolution. In Blender set Object ▸ Set Origin ▸
+Origin to Geometry on each fan; in a script, `centre_origin()` in
+`authored/_lib.py` does it.
+
+*The disc needs a UV map.* The turbine face is a texture. A disc with no UV
+layer samples the texture at (0, 0) for every fragment, which paints a solid
+black circle in the mouth of each nacelle. Unwrap it (a plain planar
+projection is right — the disc is flat) or call `disc_uvs()`.
+
+`craft.js` now repairs both when it loads a model, so a ship that gets either
+one wrong still races correctly. Do not rely on that: the repair exists so a
+mistake is survivable, not so the contract is optional, and nothing outside
+the game will fix the file for you.
 
 The kit's positions, for reference (Blender frame, metres):
 
