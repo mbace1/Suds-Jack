@@ -332,6 +332,9 @@ export function createInputHandler({
   };
   function onKeyDown(evt) {
     if (evt.metaKey || evt.ctrlKey || evt.altKey) return;
+    if (evt.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+    // Native button activation belongs to the focused control, not the board.
+    if ((evt.key === 'Enter' || evt.key === ' ') && evt.target?.closest?.('button, a, summary')) return;
     const d = KEY_DIR[evt.key];
     if (d) { evt.preventDefault(); moveCursor(d[0], d[1]); return; }
     if (evt.key === 'Enter' || evt.key === ' ') { evt.preventDefault(); confirmAtCursor(); return; }
@@ -357,6 +360,11 @@ export function createInputHandler({
 
   return {
     selectByUid,
+    targetByUid(uid) {
+      const state = getState(), target = getUnit(state, uid);
+      if (!target || target.hp <= 0) return;
+      handlePoint(target, target.x, target.y);
+    },
     // A tap, in BOARD coordinates, down the same path a finger takes —
     // handlePoint and all. Exposed so a test can exercise the real input
     // decision path instead of synthesising pointer events at guessed pixel

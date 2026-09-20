@@ -67,6 +67,9 @@ export const KINDS = kinds('en');
 // order above, so a new game gets a sensible menu the day it is listed and a
 // better one the day someone thinks about it.
 const LEADS = {
+  'optionc-lab': ['perf', 'look', 'controls'],
+  optionc: ['controls', 'perf', 'look'],
+  concrete: ['controls', 'look'],
   powder: ['balance', 'controls'],        // "the field still needs balancing"
   tinyhawk: ['controls', 'idea'],         // "goals and the node map are not [in]"
   tiny2d: ['controls', 'balance'],        // one button, so the feel is the game
@@ -110,6 +113,17 @@ const LEADS = {
   tokomove: ['look', 'idea'],             // the day read is the product: does it
                                           // read as the same city, kindly            // it is writing and voice: what it
                                           // should say next, and how it reads
+  // The look IS the experiment here and the hands are Shredders', so those are
+  // the two it wants asked — in that order.
+  flowsnow: ['look', 'controls'],
+  // A zen island with nothing to win cannot be asked whether it is balanced.
+  // What it can be asked is whether it FEELS like somewhere to sit, and whether
+  // reaching for a book or a record in VR actually works.
+  tokotrip: ['look', 'controls'],
+  // The port exists to answer one question and says so on its own cabinet:
+  // does a game about routes and formations play with two sticks. So it leads
+  // with the hands, and then with what a real engine let it look like.
+  'piritori-godot': ['controls', 'look'],
   hub: ['idea', 'bug'],
 };
 
@@ -157,8 +171,8 @@ const GENERIC = {
 
 const SPECIFIC = {
   en: {
-    'powder:balance': ['Burn runs out too fast', 'Diving off the line is not worth it'],
-    'powder:controls': ['Carving feels heavy', 'The scrub barely slows me'],
+    'powder:balance': ['The gate is too far from the breach', 'Overdrive overheats too fast'],
+    'powder:controls': ['It slides when I only wanted to turn', 'The right stick does two things at once'],
     'tinyhawk:controls': ['Cannot tell when the stick is loaded', 'The camera loses me mid-trick'],
     'tinyhawk:idea': ['Give me a goal to chase', 'I want a line to follow'],
     'tiny2d:controls': ['Hard to tell where the lip is', 'The trick flick never comes out'],
@@ -183,8 +197,8 @@ const SPECIFIC = {
     'radiofree:look': ['The decode is hard to follow', 'The voice needs…'],
   },
   fi: {
-    'powder:balance': ['Palo loppuu liian nopeasti', 'Ladulta poikkeaminen ei kannata'],
-    'powder:controls': ['Kaarto tuntuu raskaalta', 'Jarrutus ei juuri hidasta'],
+    'powder:balance': ['Portti on liian kaukana aukosta', 'Tehostus ylikuumenee liian nopeasti'],
+    'powder:controls': ['Se liukuu kun halusin vain kääntyä', 'Oikea tatti tekee kahta asiaa yhtä aikaa'],
     'tinyhawk:controls': ['En huomaa milloin tatti on ladattu', 'Kamera hukkaa minut tempun aikana'],
     'tinyhawk:idea': ['Anna jokin tavoite', 'Haluaisin linjan jota seurata'],
     'tiny2d:controls': ['Vaikea hahmottaa missä harja on', 'Temppunapsautus ei lähde koskaan'],
@@ -209,8 +223,8 @@ const SPECIFIC = {
     'radiofree:look': ['Purkua on vaikea seurata', 'Ääni kaipaa…'],
   },
   ja: {
-    'powder:balance': ['バーンが早く切れすぎる', '踏み跡を外す価値がない'],
-    'powder:controls': ['カービングが重い', 'スクラブがほとんど効かない'],
+    'powder:balance': ['ゲートが裂け目から遠すぎる', 'ブーストがすぐ過熱する'],
+    'powder:controls': ['曲がりたいだけなのに滑る', '右スティックが二役で混乱する'],
     'tinyhawk:controls': ['スティックが溜まったのが分からない', 'トリック中にカメラが見失う'],
     'tinyhawk:idea': ['追いかける目標がほしい', 'たどるラインがほしい'],
     'tiny2d:controls': ['頂がどこか分かりにくい', 'トリックの弾きが出ない'],

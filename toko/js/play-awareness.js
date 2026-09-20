@@ -1,5 +1,5 @@
 // TOKO MIDORI GAMES — cross-game awareness.
-import { GAMES } from '../../hub/games.js';
+import { GAMES } from '../../hub/games.js?v=97';
 import { readPlayLog, favourites, setFavourite } from '../../hub/playlog.js';
 const getRaw=k=>{try{return localStorage.getItem(k)}catch{return null}},parse=v=>{if(v==null)return null;try{return JSON.parse(v)}catch{return v}},label=g=>g.title||g.id,mins=s=>s<60?`${s}s`:`${Math.round(s/60)} min`;
 const scoreOf=g=>{if(!g.score?.key)return null;const raw=parse(getRaw(g.score.key)),n=typeof raw==='number'?raw:parseFloat(raw);return Number.isFinite(n)&&n>0?n:null};

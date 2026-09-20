@@ -31,6 +31,21 @@ const mix = (c1, c2, t) => {
 };
 
 export const ART = {
+  tacticsyard(g,a){
+    g.bands(['#09121b','#183542','#24282a']);
+    for(let i=0;i<9;i++){g.line(8+i*7,38-i*2,57+i*7,64-i*2,'#536763');g.line(8+i*6,38+i*3,64+i*6,22+i*3,'#536763');}
+    for(const [x,y] of [[37,36],[76,41]]){g.p(x,y,22,8,'#817f75');g.line(x,y,x+22,y,'#c7aa79');}
+    for(const [x,y,c] of [[37,52,a],[56,57,a],[87,29,'#c87539'],[66,25,'#c87539']]){g.disc(x,y-8,2,'#c7aa79');g.p(x-2,y-6,5,7,c);g.line(x-1,y,x-3,y+5,'#101619');g.line(x+2,y,x+4,y+5,'#101619');}
+    g.p(13,19,2,16,'#817f75');g.disc(14,18,3,'#d09535');
+  },
+  warehouse(g,a){
+    g.bands(['#17242d','#263d49','#50626a','#7a7c72']);
+    for(const x of [8,36,92,120]){g.p(x,0,3,55,'#91a9ad');g.line(x,0,64,30,'#6d858f')}
+    for(const x of [14,42,78,106])g.p(x,7,12,13,'#c1dde0');
+    g.line(0,65,126,45,'#e2d6b1');g.line(0,67,126,47,a);g.line(20,62,20,72,'#26313a');g.line(109,49,109,65,'#26313a');
+    g.disc(67,27,5,'#dab08a');g.p(61,31,11,15,'#e0e8dc');g.line(62,43,53,54,'#202c3b');g.line(69,44,75,50,'#202c3b');g.line(54,54,76,51,a);g.line(62,34,51,38,'#e0e8dc');g.line(71,33,82,29,'#e0e8dc');
+    for(const [x,y] of [[74,56],[80,57],[84,53],[79,61]])g.line(72,53,x,y,'#ffe78c');
+  },
   // Suds Jack: the well, in vectors, seen straight down
   tube(g, a) {
     g.p(0, 0, W, H, '#05060c');
@@ -1131,28 +1146,6 @@ export const ART = {
     g.p(66, 45, 3, 3, '#F0027F');
     g.p(61, 51, 2, 2, '#7a1a4a'); g.p(57, 55, 1, 1, '#4a1230');
   },
-  daymap(g, a) {
-    // warm day paper, the same water in the same corner
-    for (let y = 0; y < H; y++) g.p(0, y, W, 1, mix('#f4f1e8', '#e9e4d6', y / H));
-    for (let y = 56; y < H; y++) g.p(0, y, 40 - (y - 56) * 1.4, 1, '#bcd8e6');
-    // the SAME geometry — that is the whole joke of the pair
-    const fat = (pts, c) => { for (let i = 0; i < pts.length - 1; i++) for (let o = 0; o < 2; o++) g.line(pts[i][0], pts[i][1] + o, pts[i + 1][0], pts[i + 1][1] + o, c); };
-    // a soft stain bleeding behind the busiest line before it is drawn
-    for (let i = 0; i < 40; i++) g.p(50 + (i * 17) % 60, 20 + (i * 11) % 40, 2, 2, '#efe4d2');
-    fat([[18, 4], [18, 30], [52, 64], [88, 64]], '#86a98c');
-    fat([[4, 66], [46, 66], [96, 16], [124, 16]], a);           // the accent line is the busy one
-    fat([[70, 4], [96, 30]], '#e0a53a');
-    for (const [x, y] of [[18, 30], [46, 66], [70, 4], [124, 16]]) { g.disc(x, y, 3, '#20272e'); g.disc(x, y, 1, '#f4f1e8'); }
-    const px = 96, py = 16;
-    g.disc(px, py, 4, '#20272e'); g.disc(px, py, 2, '#f4f1e8');
-    // one thing happening: the morning crowd, dark ticks queuing and riding
-    for (let i = 0; i < 9; i++) g.p(px - 17 - (i % 3) * 4, py + 5 + ((i * 5) % 12), 1, 2, '#20272e');
-    for (const [x, y] of [[60, 51], [72, 39], [84, 27]]) g.p(x, y, 2, 2, '#20272e');
-    // the sun, high and off-centre, cropped by nothing — it is day, that is all
-    g.disc(112, 8, 5, '#e0a53a'); g.disc(112, 8, 3, '#f4f1e8');
-  },
-
-
   // Slay Kallio: a cover, in the house register — a sunlit park seen past a
   // near, cropped shoulder. The frame is the BENCH, lighter than the trees
   // behind it so it reads as a thing and not a hole; the hero cutout is
@@ -1231,6 +1224,138 @@ export const ART = {
     for (let i = 0; i < 5; i++) { g.p(0, i, W, 1, 'rgba(0,0,0,0.10)'); g.p(0, H - 1 - i, W, 1, 'rgba(0,0,0,0.10)'); }
   },
 
+  // Toko Move: the cover. A courier sprinting for a tram that is already
+  // arriving — which is the whole game, since you drive nothing and catch
+  // everything. Atari sky (flat bars, hard seams, one colour per band),
+  // Master System everything else: flat fill inside a hard black line, so
+  // the shape has to live in the silhouette.
+  //
+  // Three planes, each doing a job. The Cathedral is small and off-centre
+  // because it says HELSINKI and then gets out of the way. The tram is drawn
+  // ON the rails, front and flank both sized off the track at their own
+  // depth — a box beside its own track reads as a sticker. The courier is
+  // cropped by the near edge (cropping is what makes a figure foreground)
+  // and rim-lit in two colours from the tram's side, because a black figure
+  // on a dark street is a hole rather than a person.
+  //
+  // He is built as CAPSULES DRAWN IN PASSES — every limb in ink, then in the
+  // rim colours, then in fill — not element by element. Outlining each piece
+  // as you go draws the outlines across the finished figure, which is how the
+  // first cut turned into a scribble of dark lines.
+  tramstop(g, a) {
+    const HZ = 42, INK = '#070a0e';
+    const hot = mix(a, '#ffffff', 0.7);
+    const VX = 124, VY = 45;                        // where the rails go
+    const railX = (x0, y) => x0 + (VX - x0) * (H - y) / (H - VY);
+
+    // ── sky: fourteen flat bars, hard seams, night giving way at the bottom
+    const SKY = ['#0d1420', '#111a2a', '#152135', '#1a2840', '#213149', '#293a51',
+      '#32435a', '#3d4c62', '#4a556a', '#5a5d70', '#6d6472', '#816c70', '#96756a', '#ab7d62'];
+    SKY.forEach((c, i) => g.p(0, i * HZ / SKY.length, W, Math.ceil(HZ / SKY.length) + 1, c));
+    g.p(0, HZ - 5, W, 3, '#bd8a5c'); g.p(0, HZ - 2, W, 2, '#cf9a63');
+    g.disc(14, HZ - 1, 8, '#dcab6f'); g.disc(14, HZ, 5, '#f0c78d');       // the low sun
+
+    for (let i = 0; i < 9; i++) { const x = (i * 41) % W; g.line(x, 3 + (i * 13) % 24, x - 3, 11 + (i * 13) % 24, 'rgba(150,175,195,0.12)'); }
+
+    // ── the block: flats along the horizon, darker than the sky they cut ──
+    g.p(-2, 28, 16, 14, '#141b26'); g.p(12, 33, 10, 9, '#19212e');
+    g.p(74, 32, 12, 10, '#141b26'); g.p(100, 24, 30, 18, '#141b26'); g.p(94, 34, 8, 8, '#19212e');
+    for (const [x, y] of [[1, 32], [7, 37], [16, 37], [77, 35], [106, 28], [113, 34], [121, 29], [124, 36]]) g.p(x, y, 2, 3, '#f0b95a');
+
+    // ── the Cathedral on its hill: body, drum, dome, cross. Nothing else —
+    // the four little corner domes turned it into a fir tree at this size.
+    const cx = 60;
+    g.p(cx - 12, 39, 24, 3, '#333b46');                                    // the stair
+    g.p(cx - 9, 28, 18, 14, INK); g.p(cx - 8, 29, 16, 13, '#cfd4d6');
+    for (let x = cx - 6; x <= cx + 5; x += 3) g.p(x, 33, 1, 9, '#8d9396');  // columns
+    for (let i = 0; i < 3; i++) g.p(cx - 7 + i, 26 + i, 15 - i * 2, 1, '#cfd4d6');
+    g.p(cx - 6, 21, 12, 6, INK); g.p(cx - 5, 22, 10, 5, '#c6cccf');        // the drum
+    g.disc(cx, 17, 6, INK); g.disc(cx, 17, 5, '#3e8a6d');                  // the dome
+    g.p(cx - 2, 10, 5, 4, INK); g.p(cx - 1, 11, 3, 3, '#3e8a6d');          // the lantern
+    g.p(cx, 6, 1, 5, '#dfe3e5'); g.p(cx - 1, 7, 3, 1, '#dfe3e5');          // the cross
+
+    // ── the street ──
+    for (let y = HZ; y < H; y++) g.p(0, y, W, 1, mix('#242b36', '#11151c', (y - HZ) / (H - HZ)));
+    g.p(0, HZ + 4, W, 2, '#2a323e'); g.p(0, HZ + 14, W, 2, '#222933');
+
+    // the rails, in real perspective — everything else is placed off these
+    for (let i = 1; i < 8; i++) {
+      const y = VY + (H - VY) * (i / 8) ** 1.8;
+      g.line(railX(40, y) - 1, y, railX(84, y) + 2, y, '#333c4a');
+    }
+    for (const x0 of [40, 84]) for (const o of [0, 1])
+      for (let y = VY; y < H; y++) g.p(railX(x0, y) + o, y, 1, 1, mix('#404a58', '#767f8c', (y - VY) / (H - VY)));
+
+    // ── the tram, standing on that track and coming toward you ──────────
+    const FY1 = 58, FY0 = FY1 - 30;
+    const L = Math.round(railX(40, FY1)) - 2, R = Math.round(railX(84, FY1)) + 2;
+    // the flank, receding to the same vanishing point the rails do
+    const BX = R + 15, BT = FY0 + 8, BB = FY1 - 7;
+    for (let x = R; x <= BX; x++) {
+      const t = (x - R) / (BX - R), top = FY0 + (BT - FY0) * t, bot = FY1 + (BB - FY1) * t;
+      g.p(x, top - 1, 1, bot - top + 2, INK);
+      g.p(x, top, 1, bot - top, '#14563a');
+      g.p(x, top, 1, 2, '#1c6a44');
+      if (t > 0.08 && t < 0.8) g.p(x, top + 5, 1, (bot - top) * 0.34, '#0f2c33');
+    }
+    // the front face
+    g.p(L - 1, FY0 - 1, R - L + 2, FY1 - FY0 + 3, INK);
+    g.p(L, FY0, R - L, FY1 - FY0, '#1e7a4a');
+    g.p(L, FY0, R - L, 3, '#2c9a5c');
+    g.p(L + 2, FY0 + 4, R - L - 4, 5, '#101a14');                          // the destination blind
+    g.p(L + 4, FY0 + 5, 3, 3, '#e8c15a'); g.p(L + 9, FY0 + 5, R - L - 14, 3, '#e8c15a');
+    g.p(L + 1, FY0 + 11, R - L - 2, 11, INK);
+    g.p(L + 2, FY0 + 12, R - L - 4, 9, '#123640');                         // windscreen
+    g.p(L + 3, FY0 + 13, 8, 3, '#5493a4');
+    g.p(L, FY1 - 10, R - L, 2, '#cfe0cf');                                 // the pale stripe
+    g.disc(L + 4, FY1 - 5, 2, '#fff6d8'); g.disc(R - 5, FY1 - 5, 2, '#fff6d8');
+    g.p(L, FY1 - 2, R - L, 2, '#0b0f14');
+    for (let i = 0; i < 4; i++) g.p(L + i, FY1 + i, R - L - i * 2, 1, mix('#141a22', '#1e242e', i / 4));
+
+    // headlight wash on the wet road, spreading toward you
+    for (let y = FY1; y < H; y++) {
+      const k = (y - FY1) / (H - FY1), w = 16 + k * 62;
+      g.p(L + 8 - w * 0.86, y, w, 1, `rgba(226,196,132,${(0.13 * (1 - k)).toFixed(3)})`);
+    }
+    g.p(L + 4, FY1, 2, 8, 'rgba(255,246,216,0.20)'); g.p(R - 5, FY1, 2, 6, 'rgba(255,246,216,0.20)');
+
+    // somebody already at the stop — small, and between you and it
+    g.p(L - 10, FY1 - 13, 5, 12, INK); g.p(L - 9, FY1 - 12, 3, 11, '#161e2a');
+    g.disc(L - 8, FY1 - 15, 3, INK); g.disc(L - 8, FY1 - 15, 2, '#161e2a'); g.p(L - 7, FY1 - 12, 1, 8, mix(a, INK, 0.45));
+
+    // a puddle, holding the tram upside down — it fills the empty foreground
+    // and it is the only place the green appears twice
+    for (let i = 0; i < 6; i++) g.p(76 + i * 2, 62 + i, 30 - i * 3, 1, mix('#1e6040', '#1b222c', (i / 6) ** 0.7));
+
+    // ── the courier, cropped by the near edge, arm up for the tram ──────
+    // Four attempts at an articulated figure — running, capsules, per-limb
+    // outlines, a 1px rim — all read as a lump or a scribble. What works at
+    // this size is what `backlot` already does two cabinets along: a dark
+    // rectangle, a dark disc, and ONE FAT band of the accent down the lit
+    // side. A 1px rim is invisible at 128 wide; a 4px one is a person. The
+    // light is on his right because that is where the tram's headlights are,
+    // and the only articulation he gets is the arm going up for it.
+    const DK = '#0a0e15';
+    g.p(9, 50, 10, 14, INK); g.p(10, 51, 9, 12, '#121a26'); g.p(10, 51, 9, 2, '#233144');  // the bag
+    // the arm clears the head on its way up. Sharing an x with the head's
+    // lit crescent and the torso's lit band welded all three into one long
+    // teal stripe with no person inside it.
+    for (let o = -1; o < 6; o++) g.line(26 + o, 50, 32 + o, 37, o < 0 || o > 4 ? INK : DK);
+    for (let o = 3; o < 5; o++) g.line(26 + o, 50, 32 + o, 37, a);
+    g.p(32, 32, 7, 6, INK); g.p(33, 33, 5, 4, DK); g.p(36, 33, 2, 4, a);                   // the hand
+    g.p(15, 42, 14, 32, INK); g.p(16, 43, 12, 31, DK);                                     // the torso
+    g.p(25, 47, 3, 25, a); g.p(27, 47, 1, 18, mix(a, hot, 0.5));                           // lit down his right side
+    g.p(20, 64, 3, 10, INK);                                                               // the gap between his legs
+    // the head: the lit side is a WHOLE disc clipped by a dark one, not a
+    // small disc floating inside it — inset, it read as a bowl. And it sits
+    // clear of both the cap and the shoulders, which is what the cut before
+    // this got wrong: a 6px sliver of head between them is not a head.
+    g.disc(22, 36, 6, INK);
+    g.disc(23.2, 34.8, 5, hot); g.disc(22.5, 35.5, 5, a); g.disc(20.6, 36.8, 5, DK);
+    g.p(16, 25, 13, 7, INK); g.p(17, 26, 11, 5, '#18212e'); g.p(25, 26, 3, 5, a);          // the cap
+    g.p(28, 29, 5, 3, INK); g.p(28, 29, 5, 2, DK);                                         // its brim
+  },
+
   // TURF: the backlot at dusk. A standoff, not an icon — an operator cropped
   // by the near edge of the frame (rim-lit in the accent, since a dark
   // silhouette against a dark scene disappears), a rival held at the far
@@ -1271,6 +1396,197 @@ export const ART = {
     g.disc(45, H - 24, 4, a);
   },
 
+  // Hyper Dagger: a swarm coming out of the dark, and the only light in the
+  // world is the one you are making.
+  //
+  // Devil Daggers rather than HYPERDEMON (owner's call, and Bone Dust sits on
+  // the same side). The two look nothing alike and the difference is one
+  // decision: where the light is. HYPERDEMON burns the whole sky behind the
+  // swarm, so a skull reads as a SILHOUETTE punched out of a blaze. Devil
+  // Daggers has no sky at all — pitch black, no horizon, no grid you can see —
+  // and the only thing lighting anything is your own dagger stream coming up
+  // from the bottom of the frame. So the light is UNDER the swarm, jaws are the
+  // brightest thing on the picture, and every crown falls away into the void.
+  // An earlier pass had the burning sky and it was the wrong game on the front.
+  //
+  // Still the Atari idiom: a 2600 changed colour once per scanline, so the
+  // light on a face is a stack of flat steps with hard seams (TONE), never a
+  // ramp — which suits the game's own rule of black and bone with dark red the
+  // only colour allowed in. Depth is the ONLY other tool: further back is
+  // smaller, and dimmer by a fixed number of steps down the same ladder, until
+  // the last of them is barely out of the black.
+  // Toko Trip: the nook at golden hour, looking down its own inlet. The chair
+  // is the subject and it is EMPTY — the invitation is the game. Palm cropped
+  // by the right frame (cropping is what makes a foreground), rimmed in two
+  // colours so it is never a black cutout; the sky is flat bars with hard
+  // seams, 2600-style; the cave's magenta is one distant wink, not a theme.
+  cove(g, a) {
+    const SKY = ['#4a3a6a', '#6a4a72', '#96527a', '#c4647a', '#e0806a', '#e8a05c'];
+    const HOR = 30;
+    SKY.forEach((c, i) => g.p(0, i * 5, W, 5, c));
+
+    // the sun, low over the sea, with one hard halo band — no gradients
+    g.disc(58, 24, 7, '#f8d8a0');
+    g.disc(58, 24, 5, '#ffeecb');
+
+    // the sea: the game's own teal walking toward the horizon light
+    for (let y = HOR; y < 54; y++) {
+      const t = (y - HOR) / 24;
+      g.p(0, y, W, 1, mix(mix(a, '#1d5a56', t * 0.75), '#e8a05c', Math.max(0, 0.3 - t)));
+    }
+    // sun glitter: a broken column, brightest at the horizon
+    for (let y = HOR; y < 50; y += 2) {
+      const w2 = Math.max(1, 7 - (y - HOR) * 0.28);
+      if ((y >> 1) % 3 !== 0) g.p(58 - w2 / 2 + ((y * 7) % 3) - 1, y, w2, 1, mix('#ffe2a8', a, (y - HOR) / 30));
+    }
+    // the cave, far up the coast: one magenta arch, lit, tiny
+    g.p(10, 26, 8, 4, '#241a20');
+    g.line(11, 29, 13, 26, '#ff4fd8'); g.line(13, 26, 15, 26, '#ff4fd8'); g.line(15, 26, 17, 29, '#ff4fd8');
+    g.p(12, 31, 5, 1, mix('#ff4fd8', a, 0.6));
+
+    // the beach, sunset-warmed, and the inlet cutting into it toward the nook
+    for (let y = 54; y < H; y++) {
+      const t = (y - 54) / (H - 54);
+      g.p(0, y, W, 1, mix('#d8b988', '#e9dcb0', t));
+    }
+    for (let y = 42; y < 66; y++) {
+      // the channel: sea colour reaching down-left, widening seaward
+      const t = (y - 42) / 24;
+      const cx = 74 - t * 26, w2 = 30 - t * 21;
+      if (y >= 54) {
+        g.p(cx - w2 / 2 - 2, y, w2 + 4, 1, '#b99c72');          // wet rim
+        g.p(cx - w2 / 2, y, w2, 1, mix(a, '#1d5a56', 0.25 + t * 0.3));
+        if (y % 3 === 0) g.p(cx - w2 / 2, y, 2, 1, '#f2e9d8');   // foam flecks
+      }
+    }
+
+    // the deck and the empty chair, bottom-left, cropped by the frame
+    for (let y = 62; y < H; y += 3) g.p(0, y, 34, 2, y % 2 ? '#8a705a' : '#967a62');
+    g.p(0, 60, 34, 2, '#6a5544');
+    g.p(8, 42, 3, 22, '#4a3a30');                                 // chair back leg
+    g.p(8, 40, 14, 4, '#5a4638');                                 // seat
+    g.p(9, 41, 12, 2, mix(a, '#1d5a56', 0.2));                    // the cushion
+    g.p(6, 24, 4, 18, '#4a3a30');                                 // backrest
+    g.p(10, 24, 1, 18, '#e8a05c');                                // sunset rim
+    g.p(6, 23, 5, 1, '#f0b060');
+    // the lantern beside it, already on
+    g.p(26, 34, 2, 26, '#3a2e26');
+    g.disc(27, 32, 3, '#ffbf7a');
+    g.disc(27, 32, 1, '#ffeecb');
+
+    // the palm, in from the right frame, lit side toward the sun
+    const trunk = [[126, 71], [120, 56], [113, 42], [107, 29], [103, 17], [101, 6]];
+    for (let i = 0; i < trunk.length - 1; i++) {
+      const [x0, y0] = trunk[i], [x1, y1] = trunk[i + 1];
+      for (let d = -2; d <= 2; d++) g.line(x0 + d, y0, x1 + d, y1, d < 1 ? '#4a3a2c' : '#7a5c40');
+      g.line(x0 + 3, y0, x1 + 3, y1, '#c98a52');                  // sun rim
+    }
+    for (const [dx, dy, c] of [[-26, 2, '#1d2a18'], [-18, -8, '#243420'], [-6, -12, '#2c4026'],
+      [8, -10, '#243420'], [18, -2, '#1d2a18'], [-12, 6, '#182414']]) {
+      g.line(101, 6, 101 + dx, 6 + dy, c);
+      g.line(101, 7, 101 + dx, 7 + dy, mix(c, '#e8a05c', 0.35));  // each frond lit above
+    }
+    g.disc(101, 8, 2, '#4a3a2c');
+  },
+  // Flowsnow: a cover, not an icon. A sky in flat Atari bars, snow dunes as
+  // hard lit/shadow faces, an arch (lighter than the sky behind it) framing
+  // the far field, and the traveller cropped by the bottom edge, mid-carve,
+  // the spray in the cabinet's own accent and the scarf the one red thing.
+  flowsnow(g, a) {
+    // the sky: one colour per scanline band, dusk-blue to peach
+    const sky = ['#2c3160', '#3a4478', '#55628f', '#7d7ea0', '#a98fa2', '#d2a094', '#eeb48e', '#f6c59b'];
+    sky.forEach((c, i) => g.p(0, i * 4, W, 4, c));
+    g.disc(98, 27, 6, '#fff0d8');                          // the low sun
+    g.disc(98, 27, 9, mix('#fff0d8', '#f6c59b', 0.75));
+    g.disc(98, 27, 6, '#fff4e2');
+    // far dunes: a ridge line, lit face left, shadow face right
+    const ridge = x => 33 + Math.round(Math.sin(x * 0.045) * 3 + Math.sin(x * 0.11 + 1) * 1.5);
+    for (let x = 0; x < W; x++) {
+      const y = ridge(x);
+      const lit = Math.cos(x * 0.045) > 0;
+      g.p(x, y, 1, H - y, lit ? '#f1dccf' : '#a8a6cf');
+    }
+    // the near swell: a second, lower crest, warmer and sharper
+    const crest = x => 47 + Math.round(Math.sin(x * 0.03 + 2.2) * 5);
+    for (let x = 0; x < W; x++) {
+      const y = crest(x);
+      const lit = Math.cos(x * 0.03 + 2.2) > -0.2;
+      g.p(x, y, 1, H - y, lit ? '#f8e8dc' : '#b3b0d6');
+      g.p(x, y, 1, 1, lit ? '#fff7ee' : '#c9c4e2');       // the crest line
+    }
+    // a standing arch on the left, darker than the snow and lighter than the sky
+    g.p(10, 14, 4, 30, '#6b678a'); g.p(26, 12, 4, 32, '#6b678a'); g.p(8, 10, 24, 4, '#7a7698');
+    g.p(12, 16, 1, 27, '#8c88a8'); g.p(28, 14, 1, 29, '#8c88a8');
+    // the track: a cool line coming up out of the frame to the board
+    for (let y = H - 1; y > 54; y--) g.p(70 + Math.round((H - y) * 0.55), y, 3, 1, '#b9b6dc');
+    // the spray, in the accent: a fan thrown off the edge, biggest nearest
+    for (let i = 0; i < 9; i++) {
+      const t = i / 9;
+      g.disc(84 + i * 4, 58 - i * 3.2 + Math.sin(i) * 1.5, Math.max(1, 4 - i * 0.35), i % 3 === 2 ? '#fff6ee' : mix(a, '#fff6ee', t * 0.6));
+    }
+    // the traveller, cropped by the bottom edge: the board, the robe, the hood, the scarf
+    g.p(60, 63, 22, 2, '#2b2531'); g.p(58, 62, 3, 2, '#2b2531'); g.p(81, 61, 3, 2, '#2b2531');
+    g.p(66, 46, 9, 17, '#8a2c2a'); g.p(64, 55, 13, 8, '#8a2c2a'); g.p(65, 62, 11, 1, '#5c1c1e');
+    g.p(67, 40, 7, 7, '#6c2022'); g.p(69, 43, 3, 2, '#14101a');
+    g.p(75, 47, 4, 3, '#8a2c2a'); g.p(78, 45, 3, 3, '#8a2c2a');  // the arm out, for balance
+    // the scarf, streaming back and up to the left
+    const scarf = [[64, 44], [59, 42], [54, 41], [49, 41], [44, 42], [40, 44]];
+    scarf.forEach(([x, y], i) => g.p(x, y, 5, 2, i % 3 === 2 ? '#b9532f' : '#f2e0c2'));
+  },
+  // ── the flow twins ─────────────────────────────────────────────────────
+  // One city drawn twice — Piritori by night, Toko Move by day — so the two
+  // cabinets say on the shelf what the code says underneath: same geometry,
+  // opposite weather. The diagram is the subject AND the framing device: fat
+  // route lines crop at the frame (foreground), stops sit lighter than the
+  // paper behind them, and the one thing happening differs per cover.
+  padmap(g, a) {
+    // the room, not the map: dark, and lit only by the screen
+    for (let y = 0; y < H; y++) g.p(0, y, W, 1, mix('#0a0c10', '#05070a', y / H));
+    // the glow the tube throws on the wall, FIRST and symmetric — drawn as
+    // rings growing outward from the set so it never steps off one corner.
+    // The first cut walked the rectangle's origin and left a grey wedge in the
+    // top-left that read as a rendering fault rather than light.
+    for (let i = 10; i > 0; i--) {
+      const t = i / 10;
+      g.p(12 - i * 2, 6 - i * 1.6, 104 + i * 4, 50 + i * 3.2, mix('#0a0c10', '#131a24', 1 - t));
+    }
+    // the set, standing on the floor — a fat bezel with the picture inside it,
+    // and it is LIGHTER than the wall so the frame reads as a frame rather
+    // than an outline floating in the void
+    g.p(12, 6, 104, 50, '#2a2f38');
+    g.p(14, 8, 100, 46, '#131820');
+    // the SAME Kallio geometry as the pair above, squeezed into the picture
+    const M = (x, y) => [16 + x * 0.75, 10 + y * 0.58];
+    const fat = (pts, c) => {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [ax, ay] = M(...pts[i]), [bx, by] = M(...pts[i + 1]);
+        for (let o = 0; o < 2; o++) g.line(ax, ay + o, bx, by + o, c);
+      }
+    };
+    fat([[18, 4], [18, 30], [52, 64], [88, 64]], '#146a70');
+    fat([[4, 66], [46, 66], [96, 16], [124, 16]], '#e2dccd');
+    fat([[70, 4], [96, 30]], '#2c5a3a');
+    for (const [x, y] of [[18, 30], [46, 66], [124, 16]]) {
+      const [cx, cy] = M(x, y); g.disc(cx, cy, 2, '#8c8778'); g.disc(cx, cy, 1, '#0b0e13');
+    }
+    const [px, py] = M(96, 16);
+    g.disc(px, py, 3, '#e2dccd'); g.disc(px, py, 1, '#0b0e13');
+    for (let i = 0; i < 14; i++) {
+      const t = i / 14 * Math.PI * 2;
+      g.p(px + Math.cos(t) * 7 * 1.3, py + Math.sin(t) * 7, 1, 1, '#ff7a1a');
+    }
+    // scanlines, so the picture is a PICTURE and not a second map
+    for (let y = 9; y < 54; y += 3) g.p(14, y, 100, 1, '#0d1219');
+    // the pad, cropped by the bottom edge — cropping is what makes it read as
+    // foreground rather than a diagram of a controller
+    g.p(38, 60, 52, 12, '#1e242c');
+    g.p(34, 62, 60, 8, '#1e242c');
+    g.disc(48, 65, 4, '#11161d'); g.disc(48, 65, 2, a);
+    g.disc(80, 65, 4, '#11161d'); g.disc(80, 65, 2, a);
+    // the d-pad, four ticks, and the two face buttons in the accent
+    g.p(38, 64, 6, 2, '#3a424d'); g.p(40, 62, 2, 6, '#3a424d');
+    g.p(88, 62, 2, 2, '#e2dccd'); g.p(92, 65, 2, 2, '#e2dccd');
+  },
 };
 
 // ── the glass ──────────────────────────────────────────────────────

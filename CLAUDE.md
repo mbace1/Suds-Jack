@@ -169,6 +169,20 @@ more than one direction, and a plain byte comparison says *that* two copies diff
 stripped, since a deployed file has been renumbered); if not, that is somebody else's
 work, it is left alone, and the run stops and tells you to bring it back first. It found
 three files that way on its first real run. **Deploys never merge.**
+**`hub/hub.js` and `test/hub-smoke.cjs` are CRLF** while everything around
+them is LF, so a rewrite through any tool that normalises newlines reflows the
+whole file and buries a three-line change in a two-thousand-line diff. Check
+`git diff --stat` before committing either.
+**A release pin is a number, so it lives in ONE file.** Slay Kallio's cabinet
+launches at `?release=N` so a cached copy of its HTML is never reused across a
+release; that number was typed into `hub.js` and promptly became the third
+place a version lives and the third one nobody moved — v34 shipped with the
+pin at 33, the cabinet's own `VERSION` at 33 and `versions.json` at 34, three
+files and three answers. `RELEASE_PINNED` now names which cabinets want the
+parameter and the number is READ from `versions.json` when it lands, with
+`relink()` rewriting the links that were drawn before it. The race is real and
+deliberate: until that fetch returns the link carries no parameter, which is
+the behaviour the hub had anyway.
 `hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
 on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
 its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise
@@ -189,6 +203,86 @@ that used to be the root page. Check which copy is newer before "refreshing" any
 root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` and the
 `goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
 held them, and four of the hub's links pointed at them.
+
+### CONCRETE (`concrete/`) — the skate score attack, ACTIVE
+Two minutes in a warehouse, Tony Hawk's shape: ollie, flip, grab, grind, bank
+the combo. Three.js r185 vendored, no build step, `concrete/VERSIONS.md` is the
+log and `node concrete/test/playthrough.cjs` (Playwright) the gate; CI also runs
+`python3 concrete/art-source/validate.py` over the GLBs.
+**The DualSense is the reference controller (owner, 2026-09-19) and every
+menu is built for it**: `pad.js` is a tiny edge reader over the standard
+mapping, `main.js` walks title / pause / options / controls with the d-pad or
+stick, cross confirms, circle backs, Options pauses, Create resets, and the
+glyphs follow the pad in hand (`html[data-glyphs]`). The layout is THPS's:
+cross ollie, square flip, circle grab, **triangle grind**, L1/R1 spin, R2
+push. The bug that prompted it: the pad wrote into the key table and skipped
+`key()`, where the grind buffer is armed, so a controller could never grind.
+Everything the pad does goes through `key()` now, and the game **drains** the
+pad on start and resume so the press that confirmed a menu is not the first
+ollie of the run (sudsjack's lesson, again).
+**Physics reads the slope.** `ground(x, z)` is the one ride-height function
+and `slopeAlong()` its derivative along the heading; gravity along it, the
+rider's pitch, where pushing stops working and where a quarter pipe becomes a
+**vert launch** (past 3.4 m with the slope still climbing) all come from it.
+Off the lip the board goes up, not on along the tangent — vy from the speed
+carried, a small drift back, heading flipped — so the skater lands on the same
+transition and rolls out; too slow and `speed < 0` on a slope flips the heading
+instead (fakie roll-back). A bail recovers **in place**; the deck slides off
+ahead while the skater is down. Spins score on landing and a near landing is
+straightened, THPS-style.
+**The skater is code** (`skater.js`): Lambert boxes, nearest-filtered
+canvas face and shirt print, poses written as edits of `base(crouch)` so the
+legs and hips always agree, snapping at a keyframe rate and held to 15 steps a
+second with vertex snap on the PS1 look. It is the house skater on both tiers;
+the Blender rig is the SKATER option, loaded on demand (`art.setSkater`), and
+its twelve clips and grab IK still gate on desktop. Render the pose sheet
+(`__concrete.debug.pose(name)`) before touching a pose — the first sheet was
+twelve screenshots of the pause menu, because a debug hook that freezes the
+figure does not hide the overlay in front of it.
+**`look.js` is the room's look and may do nothing**: a wet floor via the
+vendored `Reflector` (a real mirrored second render, throttled to 40 ms, masked
+by a wetness canvas — the figure and the sparks ARE in it, which a cube map
+cannot give), window light shafts, and a PS1 pass (240-line HalfFloat target,
+nearest upscale, Bayer dither, shadows off). Tone mapping and colour space are
+applied in the blit, since three skips both when rendering into a target.
+`renderer.info` is reset by hand because the PS1 blit is a second `render()`.
+Options persist under `concrete-opts`; `?skater=blender&look=ps1&reflections=on`
+override them for a link.
+**The room is a LEVEL, and it is one table** (v5). `PROPS` in `skate.js` holds
+every object's position (the Blender room's own, `art-source/export.py`),
+footprint, height and whether its top edges grind; the physics, the procedural
+dressing and the grind list all read it, so what you can see is what you can
+hit. v4's shelves, lockers and stair set were drawn by the procedural tier
+ALONE and stood in two of the three ramp run-ups — gone, and the gate asserts
+no prop stands in a quarter pipe, its run-up or the funbox. `DECKS` gives each
+coping the platform `ground()` had been promising over open air.
+**A wall is where the ground stops being SMOOTH** — the rise over this step
+against what the local slope predicts. Measuring the rise alone reads the steep
+half of a quarter pipe (1.2 m per metre) as a wall and slams anyone carrying
+speed into it, and the same confusion with the sign flipped made a roll-in read
+as a transfer and popped the skater into the air at the bottom of every ramp.
+In the air the comparison is against the **apex of the ollie you are in**, not
+your height right now: against the current height, ollieing onto the funbox
+from the side slammed every time, because the board crosses the edge early in
+the arc.
+**Stalls** (owner, 2026-09-20): triangle into a lip hangs the board on the
+coping — Axle / Nose / Tail / Rock to Fakie by the direction held — cross
+ollies out, letting it run drops you back in. **Ledges**: a grindable line is
+an axis, a length and a height, so a rail down z and a crate edge along x share
+every rule; the funbox's four top edges, each crate's four and the benches' two
+all grind. **A rail is only an obstacle when you CUT ACROSS it** — riding the
+line itself puts the across-coordinate at exactly zero, and `Math.sign(0)` is 0,
+"opposite" to every sign, so the skater stopped dead on open floor beside its
+own rail and pressing forward re-blocked it every frame with no way out.
+**`debug.placeAt` is SETUP ONLY** and the gate's v5 block uses it that way:
+it stands the skater somewhere and every action under test is a real pad press.
+Counters (`grindsDone`, `stallsDone`, `transfers`, `lastGrind`) exist because a
+0.8 s ledge grind is invisible to a 40 ms poll at SwiftShader frame rates —
+observation, never drive. `debug.props/rails/ground` expose the room's tables
+so the gate asserts what the room CONTAINS. **`concrete/THPS_PARITY.md`** is
+the ordered distance to Tony Hawk's Pro Skater, with three things deliberately
+out of scope and the two pieces of art-side drift the Blender room still
+carries (its bins stand inside the east quarter pipe; it has no decks).
 
 ### Suds Jack (`sudz/`) — Horizon Mesh, ACTIVE
 **Owner's call, 2026-08-19: continue the current live Bomb Jack × Tempest
@@ -288,10 +382,37 @@ clock**, because a sandbox with no GPU renders this at a handful of frames a sec
 Build tooling: none — same no-build rule as every other demo here.
 
 ### Slay Kallio (`slaykallio/`) — the deckbuilder, ACTIVE
+**An agent arriving cold should read `slaykallio/HANDOFF.md` first** — the state
+of the project rather than its history: how to run it, every gate and what each
+is for, the `__sk` seam, which measurements to distrust and why, the prepared
+deploy, and an honest list of what is weak. This section is the record; that is
+the orientation.
 **Owner's brief, 2026-09-04: mostly Slay the Spire 2, with some Balatro jokers
 thrown in.** Read `slaykallio/GDD.md` before touching anything — this is the
 summary, that is the source. A deckbuilder fought on a **thick plank bridge**
-over a Kallio canal: four bums, six spans, a card or a friend after each.
+over a Kallio canal: six bums, **two acts of six chosen spans and a boss each**,
+events, rests, upgrades.
+**Parity direction (owner, 2026-09-05): "multiple characters, lots of cards
+(class specific and neutral), Eldritch night theme — start run during day, as
+evening comes, things start mutating."** So the route is rolled from the seed
+(`buildRoute`) and offers two or three spans a step; `hourOf(state)` runs 0 → 1
+across it; the arena lerps three light rigs (day/evening/night, `MOOD`, `DAY`,
+`NIGHT` in `data.js`); the plates follow the hour (`PLATES` in `main.js`, the
+owner's photographs, one per stage per seed); and past dusk what spawns is
+**mutated** (`nightfall`: +15% HP and grown eyes through the evening, +30% and
+1 Strength at night — never a boss, a boss IS the night). **The fork is a torn-paper
+map** (`js/map.js`, from the owner's Piritori reference): every span of the
+act pinned to a torn sheet, the walked route a strip of tape, real 48px
+buttons laid over the current step's pins; `pos(step, option)` is the one
+place the orientation lives, so portrait runs bottom-to-top with upright
+text; the paper is tinted by the hour. **Upgrades are one
+rule** (`engine.upgrade`), not a second copy of every card. **Beating an act
+boss heals half** — without it everyone reached act two at 40% and the middle
+of the run was a wall (`balance.mjs` reads per act now). Three pre-existing
+bugs this pass found: enemy debuffs on the hero ticked away before they did
+anything (fixed with StS's own just-applied rule, `hero.fresh`); the camera
+never came forward after a boss (`ensureHeadroom` now restores the seat); and
+the English gate's regex flagged the English word "on".
 **It is two experiments at once, and both are the owner's stated point**: a test
 of a unique look that has to work in **horizontal** (mobile sideways / Switch)
 AND **vertical** (a phone in one hand), and a practice run at the **deep logic
@@ -315,11 +436,22 @@ breakdown riding on the log entry so the view pops the base, then each `+3`,
 then each `×2`. And **`preview()` and the real play call the same code**, so a
 card's face text is written from its effects at the current state — quoting a
 number you then do not use is the unforgivable bug in a full-information game.
-**Every character is a question, not a stat block** — Late the park drinker
-(Buzz, a strength that fades with the turn), Ilona the busker (cards scale on
-what you played before them), Roope the bottle collector (free Bottle tokens and
-a counted hand), Vekku the cart pusher (block that hits and block that stays) —
-and each starting deck carries two cards that teach the mechanic on turn one. **A
+**Every character is a question, not a stat block** — the Park Drinker (Buzz, a
+strength that fades with the turn), the Busker (cards scale on what you played
+before them), the Bottle Collector (free Bottle tokens and a counted hand), the
+Cart Pusher (block that hits and block that stays) — and each starting deck
+carries two cards that teach the mechanic on turn one. **A character is named by
+their CLASS** (owner, 2026-09-06: *"maybe just English class names"*), the way
+Slay the Spire names the Ironclad. Six Finnish first names used to stand there,
+the one thing the English rule exempted — a name is not a language — and it was
+the wrong exemption to take: a character select exists to say what the deck DOES
+before a run is committed to it, and "VEKKU" does not do that in any language.
+The class is the name in both skins now (the Park Drinker is the Sot over
+there), which also removes a seam the lookup had: the skin used to swap the
+epithet and hold the Finnish first name still. `title` is gone rather than kept
+as a second line saying it again — the blurb was already carrying the person —
+and the English gate reads `name` on characters now, so no field in the game can
+hold a Finnish word unremarked. **A
 friend bends arithmetic you already do and never adds a verb** — a verb is a
 card's job — and the one to copy is Morning Can, which **costs** a card for its
 energy, because a friend that only gives is a number rather than a decision.
@@ -342,6 +474,168 @@ same and none of them quite flat), and **the camera is close and nearly level**
 (action width 4.6, tilted down about ten degrees — dead level hides the boards
 entirely and makes the understructure the whole lower half of the frame, any
 higher turns the bridge into a floor plan).
+**The hour is EVENING and the look is Darkest Dungeon** (owner, 2026-09-05:
+*"let's go Eldritch Kallio ... evening is darker etc"*, then *"art make over"*).
+DD's look is a **lighting setup before it is an art style**: one warm source
+close to the party, everything past its falloff going to black, one cold edge
+separating a figure from the dark. So the hour is DATA — `MOOD` in `data.js`,
+one rig per skin — and every surface reads it instead of being tinted by hand.
+A **`PointLight` with a real distance and decay**, never a directional: a
+directional cannot fall off and the falloff IS the effect, the thing that makes
+the ends of the deck disappear and the middle of the bridge the only place there
+is. **Fog takes what falloff cannot** (a plank at the frame edge is no further
+from the torch than one just off centre, but it IS further from the camera) —
+and the backdrop and near band are set `fog: false`, because fogging an already
+graded picture flattens it to one colour. The backdrop gets a **film grade in a
+colourist's terms** rather than a CSS filter stack: exposure, a **lifted** black
+rather than a crushed one, saturation out, shadows tinted cold and highlights
+toward the torch, grain, and a vignette doing most of the work of making a frame
+feel enclosed — the lifted black and the split tint are exactly the two things
+that sell evening and exactly the two with no filter primitive.
+**The torch is PAINTED INTO the puppets**, because a cutout is an unlit
+`MeshBasicMaterial` plane and nothing the scene's lights do reaches it: the hour
+changed and the figures stayed in daylight, standing in front of the night
+rather than in it. Three passes — a cold wash gathering to the far edge, a warm
+one on the near, then a **rim on each side**, which is the load-bearing one
+since a dark figure against a dark backdrop has no outline until something draws
+one. **And the UI is the bigger half of any such change**: cards are the
+brightest thing on screen by area, so five lit rectangles over a night scene
+read as holes cut in it — dark leather stock with bone text, dark card-art
+panels, and the same substitution on the roster picks and friend cards, one
+cream gradient that turned out to be the loudest thing in the game.
+The makeover surfaced a real bug: **the act card printed the encounter's raw
+id**. `nameOf(table, id)` wants a lookup keyed by id and was handed the
+encounter object plus its own id, so it fell through to the id every time and
+the `||` fallback could never fire; nobody noticed while the ids read as words,
+until the fantasy skin put **KING_RAT** across the screen.
+**Falloff is the look; an unreadable enemy is a bug.** DD lights the RANK, not
+the room, so there are two warm sources: the torch beside the party (at x −3.6,
+which is the only place consistent with the rim painted into every cutout — at
+−1.4 it stood to the hero's *right* while his warm edge was on his left) and a
+dimmer **rank light that follows the enemy row**. And because a cutout is an
+unlit plane no scene light can touch, `Arena.lightAt(x)` hands each one a light
+LEVEL it multiplies into `mat.color`, **floored** by `figureFloor`: past the
+floor a figure stops getting darker and only stops getting warmer. The hit flash
+rides on that level rather than replacing it, or a flash would reset a figure
+standing in the dark to full brightness and leave it there. The torch **gutters**
+(three incommensurate sines, one slow enough to take the others down with it) and
+holds still under `prefers-reduced-motion` — a steady light is a dimmer.
+**Render the cast at full size, not just the scene.** Four faults were invisible
+in a fight and obvious on a contact sheet: every figure had **glowing
+chickenpox**, because the rim pass finds every edge in the alpha and `nicks()`
+punches HOLES in it — light the clean silhouette, THEN take the bites out; the
+rat's fur read as a **boar**, because evenly spaced triangles are a comb whatever
+their heights are and the *gaps* are what make it fur; the rat's **ear read as
+its eye**, a ringed disc mid-skull pulling every glance while the real eye was a
+5px square; and the blob had **two literal rectangles**, a `fillRect` pupil and a
+bar mouth — a square is the one shape that reads as UI rather than as an animal.
+**The figures are MADE of paper, not painted like it** (`fibre`, `newsprint` in
+`js/puppet.js`, from the owner's collage references): a torn edge is pale
+because the board's core is lighter than its face, so the silhouette — and
+every nick, a nick being where it tore — carries an intermittent light rim,
+**lit from one side** (at a constant alpha it reads as a white sticker
+outline). Newsprint goes in as rows of dashes too small to read, in **two
+inks**, because a dark dash is invisible on the figures that are mostly black.
+A daylight plate then exposed a week-old bug the dark had hidden: unit labels
+were drawn over the HUD plate, because the gutter reserved the anchor and not
+the label's own box. It is measured off the plate's rect now — and note that
+`offsetParent` is **always null on a `position: fixed` element**, which broke
+the first fix silently.
+**The figures are CARD, so the animation moves the card** (v17, owner:
+*"can you test the Paper Mario type figures here now? as a toggle in the
+menu?"*, after the same direction was written up for TURF in
+`turf/ART_REQUEST.md` §12). `js/motion.js` is the vocabulary and it is **pure**
+— no three.js, no DOM, no clock — so `core.mjs` asserts it in bare node.
+Offsets are in the figure's **own height** (one number reads the same on a rat
+and on the Bridge King) and every rotation and squash is anchored at the
+**feet**, because a cutout stands on a base and about the centre a rotation
+reads as a sprite being spun. An attack is 0.20s leaning AWAY, 0.11s
+committing, 0.30s recovering — **the anticipation is what makes a lunge read as
+a lunge** rather than a slide, and the commit is under half a step so it never
+reads as the figure having MOVED. Being hit **bends the card**: the shear is
+the point, and since three.js has no shear field a `flex` group composes its
+own matrix. That group sits **between the base and the body** — putting the
+squash on the whole group made the figure's stand breathe with it, which reads
+as the camera bobbing. The breath is phase-offset per figure (a row of six
+breathing in unison is the tell) and, unlike the TURF brief's recommendation,
+it is **on**: turf's `anim.js` stops its rAF when nothing is animating so a
+breath there never stops, while this scene renders every frame regardless. It
+is a **toggle, not a replacement** (`figures: paper` / `still`, persisted under
+`slayKallio.figures`), and the switch is one module-level setting so it reaches
+the enemies already on the bridge — comparing the same fight twice is the only
+way to know whether motion carries a verb. **A contact sheet needs its own
+clock**: a frame grab is ~1s under SwiftShader and the whole attack is 0.61s, so
+the first strip caught the lunge once and the breath five times —
+`__sk.debug.scrub(clip, t)` holds a clip at an exact moment and `unfreeze()`
+gives the figures back, both gated because a hook that can freeze every figure
+for good is the kind that gets left on.
+**TURF's cast IS the look** (v18, owner: *"I would like the turf art used on
+those figures"*; **the default since v21**, owner on the four-way contact sheet:
+*"the first characters, style and all work. let's make that the default"* — the
+first of the four being the plates, **die-cut**). `js/plates.js` casts 13 of the
+23 figures from the owner's 32 TURF character plates; `art: drawn / turf` is
+still a menu toggle and the drawn cutouts are one tap away, but the game boots
+on the plates, so **the mixed row is the ordinary look now** rather than a
+fallback — thirteen plated people, ten drawn rats, blobs, birds and a bear, and
+it reads because they are different KINDS of thing. That promotion has one real
+engineering consequence: **the preload is on the critical path**, because a
+figure whose plate has not decoded falls back to the drawn cutout and BAKES it
+into a `CanvasTexture` made once at construction, so everything built before the
+preload resolves has to be built again (the roster, and a fight if one is
+already running). And
+the rule that makes it work is that **the plate replaces the PAINT, not the
+process** — `paintCutout` still runs newsprint, torchlight, nicks, fibre and
+grime over it, because those passes are what make a figure belong to this
+bridge rather than to TURF's board (a raw plate stands in TURF's lighting in
+front of a Kallio evening, which is v10's unlit-plane lesson from the other
+direction; the gate counts warm pixels to prove the pass ran). The other ten
+figures are the point of a lookup rather than an omission: **a roster of street
+operators has no rat, blob, pigeon or bear in it**, so those keep the drawn
+cutout and a mixed row is the normal state — the gate asserts nothing
+non-person is cast AND that every person is, since a half-plated row is worse
+than none. Plates are sized **off their INK, never their file** (each is padded
+differently; TURF's `render.js` pays for the same lesson on props) and ship from
+**`figures/`, not `art-src/`** — a Slay Kallio deploy is the folder minus
+`test/` and `art-src/`, so runtime art there would 404. **On weapons: v19 refused eight
+plates for carrying a gun and the owner REVERSED it** (2026-09-09: *"of course
+they can have firearms"*). The reasoning was mine, not theirs — a knife on a bum
+is plausible, a man drinking in a park with a pistol is a different game in a
+different country — and `art-src/concepts/README.md`'s *no weapons* filter
+cannot be applied literally anyway, since every one of the 32 plates carries
+something. The ban is **gone rather than left passing vacuously**; `FIREARMS`
+became `WITH_GUNS`, a **note** (a real fact about the set, established by a pass
+over all thirty-two at full size, and the thing you want while casting), and the
+gate now only checks the note still names plates that exist. **The cast was NOT
+reverted with the rule**, which is the deliberate half: three of v19's five
+recasts are better on their own terms and that reasoning outlives the permission
+— `grunt-ragged`'s **bandaged fists** ARE the Old Boxer, `cleaver`'s apron and
+face mask ARE the Night Shift, `knuckle` is a Bridge King — and the owner had
+just approved that exact cast as the default one version earlier, so reversing
+it here would undo their decision in the name of their permission. What the
+permission buys is the **spare pool, 11 → 19**; all nineteen are people, so they
+do nothing for the ten drawn figures and what they buy is more human enemies.
+**Three passes were putting WHITE DOTS on every figure** (v20, owner: *"white
+dots on both"*), and rendering the cast at full size named all three: `grime`
+drew 55% of 1500 specks near-white and, unlike the dark half, **did not scale
+them by the figure's own grime**, so a black coat got full snow; `nicks`
+punched holes **anywhere on the canvas**, which was survivable only because on
+a die-cut figure most of them missed; and `fibre` at 0.46 is a sticker rim on
+pixel art, whose outline carries far more high-contrast edge than a painted
+one. **A nick is damage at an EDGE** now — placed where the silhouette actually
+ends — and the count had to fall with it (18+22 → 9+9), which is the part to
+remember: making the placement smarter RAISED the effective density, because
+the misses had been doing the thinning.
+**The card can be CUT rather than die-cut** (`cut: silhouette / card`, owner:
+*"circular cut card board instead of fitting to the exact dimensions of the
+art"*). Die-cutting to the figure makes every edge of the drawing an edge of
+the CARD, which is what forced the fibre pass to trace the whole figure; cut it
+as a board — straight sides, round top, flat foot, sized to the drawing's own
+**measured** ink (a board on fixed bounds stands a rat inside a poster) — and
+the torn edge is the board's edge, with the art inside left alone. **It suits
+the plates and hurts the drawn figures**: the painted cutouts were built to be
+read as silhouettes, and a pale field behind one takes that away, while a TURF
+plate carries its own internal detail and never depended on its outline. That
+asymmetry is why cut and art are independent toggles rather than one "style".
 **Figures are tin soldiers AND painted cardboard cutouts** (`js/puppet.js`):
 `look.base` picks a stamped metal oval with a lip or a cardboard wedge with tape
 over the feet, and mixing them is the point — a row of these should look
@@ -360,16 +654,71 @@ same register, cached per picture and accent so re-rendering the hand does not
 repaint ten canvases. A card with only words on it is a spreadsheet row. The
 gate fails on a card with no picture, a picture the module cannot draw, or a set
 that has collapsed to fewer than fifteen distinct drawings.
+**And the cards are in the FIGURES' register now** (v29, owner: *"please make
+the turf assets the primary look"*). The figures had been TURF plates since v21
+and the cards had not moved, so the frame carried two art languages at once —
+and the cards are the brightest thing on it by area, which is v10's lesson
+about the UI being the bigger half of any look change. Rendering one of each at
+full size named the gap in four measurable parts: the cards filled every shape
+with ONE flat tone where a TURF prop carries three or four off a real light;
+they had no MATERIAL (a TURF barrel is rust streaks running DOWN it, chips,
+dents and panel seams, and wear is most of what makes it read as a thing); the
+ink line was a soft wobble against TURF's hard one; and a card shape is a
+flat-on silhouette where a prop is a three-quarter volume. **Three of the four
+are properties of the SHARED HAND**, which is the whole reason it was worth
+doing — `wob` and `blob` draw all forty-two pictures, so banding, wear and
+`amp` 1.2 → 0.75 landed on every one at once and no picture was redrawn; the
+fourth, volume, is per-picture geometry and is not claimed. The five card
+subjects that have a real TURF prop plate (bin, lamp, cart, cardboard, stack)
+were deliberately NOT dropped in: that is the mixed-row problem without the
+thing that makes the mixed row work on the bridge, where a plate and a drawn
+rat are different KINDS of thing — **a plated bin next to a drawn fist is the
+same kind rendered two ways.** The technique travels; the plates would not.
+**The bug under it took two renders to see**: `bands()` calls `beginPath()` to
+lay each half-plane down and `beginPath()` THROWS THE CURRENT PATH AWAY, so
+`wear()` clipped to the last band rather than to the object and `wob`'s closing
+stroke inked that band's half-plane — every card had two black diagonals ruled
+corner to corner. A `Path2D` carried explicitly is the fix. A first cut of the
+banding had the same fault one level up: half-planes measured from the middle
+of the 96×62 card, so a small object fell entirely on one side of the boundary
+and was *darkened* rather than modelled — a band has to be a fraction of the
+THING, which is what makes one piece of code read on a fist and on a tram.
+**Both gates are calibrated against the broken code and the first cut of each
+was wrong** (Kindling's *the page was right and the ruler was wrong*, twice in
+one hour): a darkness threshold on the corners was reading the panel's own
+vignette and flagged 42 of 42 clean or broken, and counting distinct tones in
+the glass was reading the speckle and read 8 either way. What ships is the
+bottle's glass split along the light axis and compared by **mean** — a mean
+cancels speckle — reading 23 with the bands in against 10 with them out, and
+corner patches measured against their own median flagging 1 picture clean
+against 30 leaking. It is gated as a COUNT, not a per-picture bar, because the
+fault lives in the shared hand and takes all forty-two at once.
 **The backdrop is photographic and the sharp band FOLLOWS THE DECK** (`js/bg.js`,
-`js/scene.js`): canopy as scattered dabs rather than lollipops, haze eating
-contrast with distance, the canal with the treeline smeared down into it, film
-grain, and a repaint whenever the deck's row on screen moves — a miniature
+`js/scene.js`): a repaint whenever the deck's row on screen moves — a miniature
 photograph is only convincing while the one sharp stripe lies on what you are
 looking at, and the deck sits nowhere near the same place in portrait as in
-landscape. There is a matching **out-of-focus foreground band** along the bottom.
-`?bg=<url>&stereo=sbs&eye=left` puts a **photograph** (or one eye of a
-side-by-side stereo pair) behind the bridge through the same focus pass — the
-seam for testing real plates is a URL, not a rewrite.
+landscape. The painted fallback is canopy as scattered dabs rather than
+lollipops, haze eating contrast with distance, the canal with the treeline
+smeared into it, film grain; there is a matching **out-of-focus foreground
+band** along the bottom. `?bg=<url>&stereo=sbs&eye=left` puts any photograph
+(or one eye of a side-by-side stereo pair) behind the bridge through the same
+pass — the seam for testing real plates is a URL, not a rewrite.
+**The shipped plate is the Karhupuisto bear** (`bg/plate.jpg`, the owner's own
+photo, 2026-09-05), and dropping it in exposed the seam's real fault: the
+backdrop texture was **stretched** onto a plane scaled to the frame. A painted
+canopy of dabs has no proportions to get wrong and survived that, which is
+exactly why it hid the bug for two versions; a photograph of a bear squashed
+into a phone is a vertical smear. So a plate is now **CUT to the frame** — the
+largest centred rectangle of the frame's own shape — and recut when the frame
+changes shape or the row moves. The consequence decides the crop, and it is the
+rule to remember when swapping the photo: **portrait keeps only the MIDDLE of a
+landscape plate**, and that middle is what the puppets stand in front of in both
+formats, so the subject goes off to one side and the middle stays a quiet mass.
+Two bugs of one family came with it — a `_cutting` guard that **dropped** the
+re-cut instead of folding it in (boot cuts at the camera's placeholder square
+aspect, the first resize asks for the real one a tick later, and only the wrong
+one survived), and `setTheme` **silently dropping the plate** because it builds a
+fresh background material. Both are gated.
 **One camera rule for both formats: fit the ACTION WIDTH, not the bridge** —
 the deck runs off both ends of the frame on purpose. Portrait fits a narrower
 width, is deliberately **flatter** (a phone frame is tall, so every degree of
@@ -392,8 +741,222 @@ exists so nobody has to win five fights to look at the sixth.
 `window.__sk` is the seam the browser gate drives, and `setSpeed(0)` + `flush()`
 drain the replay queue — the view reads the engine's log back at a human pace
 the way turf's `anim.js` does, so nothing in the test is timed off the clock.
-Gates: `node slaykallio/test/core.mjs` (261 checks) and
-`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (62). Hub entry:
+**Six bots that play differently** (`test/bots.mjs`, a measuring instrument and
+never a gate) — every balance number this game had came from ONE bot that plays
+the highest-value card it can afford, which empties its hand, while Roope's whole
+mechanic is holding one; so "the collector wins 2%" could mean the character is
+weak OR that the instrument cannot hold him, and one bot can never say which.
+Each is a policy over **six decisions** — card, map, event, rest, pick, draft —
+and `greedy` is **the control**: the engine's own `botStep` imported rather than
+copied, so its column reproduces v11's recorded rates by construction (TURF's
+discipline; a control that reproduces the known numbers is what makes the other
+columns mean anything). **The finding is that `synergist` beats `greedy` by 17
+points on Ilona and 19 on Vekku** — playing your powers on turn one and the
+card that counts what came before it LAST is worth more than any tuning here,
+and the greedy bot answers that backwards every turn because it sorts by face
+value, so every balance number before this was measuring a bot that did not know
+what order to play in. The **negative** result carries as much: `hoarder` did NOT
+rescue the collector (3% against 2%), so Roope is weak at his own best line
+rather than mis-measured. And **surviving is not winning** — `defensive` reaches
+act two most and wins least, because both bosses are damage checks. The bots
+found a real bug on one seed in nine hundred: a rest offering an upgrade with
+every card already upgraded had **no way out** (`skipPick`/`pickable` are the
+fix, and the panel now offers to walk on).
+**`native` is the seventh bot and one card policy per character** — it shares
+`synergist`'s drafting and walk exactly, so any gap between those two columns is
+the mechanic and nothing else. It moved the Dog Walker 5% → 24% (nobody had ever
+played her) and, with four policies now agreeing, let the two genuinely weak
+characters be named. **The Bottle Collector was ONE NUMBER**: `dig_the_bin` cost
+1, a third of a turn's energy spent on setup by a character whose line is dig
+then cash, so he dug and could not afford to cash; at 0 the bots go 3/6/7% →
+13/29/16% and nothing else moves him (deepening the counters reads as noise).
+**The Park Drinker was diffuse** — no single number moved him at 200 seeds;
+72 HP (he was the frailest AND the weakest, two disadvantages for one price),
+First Sip 3 Buzz and Never Sober 3 a turn together take him 8% → 14%, and he is
+**still last for a structural reason: buzz does not compound**, so he cannot
+build into a boss the way block-that-stays can. Left open rather than papered
+over. The **HP ledger** answers what the deaths list cannot — an ordinary fight
+costs 8.9 HP, an elite 16, a boss 41.5 — and its first cut was wrong in a way
+worth keeping: it subtracted end from start, but the post-fight heal lands in
+the same step that closes the fight, so it reported 5.4 against a 6 HP heal and
+would have had someone cut the heal. **Sum the drops; a heal is not a fight
+being cheaper.** Twelve event checks in `core.mjs` were literals (`hp === 68`)
+and a two-point HP change failed all twelve at once — none of them is about the
+Drinker's HP, so they read `CHARACTERS.drinker.hp` now.
+**Enemies REACT now** (v23). Every one of the seventeen this game shipped with
+was a fixed loop with a random start — the move lists differ, so a dealer curses
+where a preacher buffs, but the SHAPE was identical and nothing on the bridge
+reacted to anything, which is TURF's *"eighteen portraits of one enemy"* in a
+subtler form. **`when` on a move is the whole feature**: the enemy takes the
+first move whose condition holds, else the next in its rotation, and the
+rotation walks only the UNCONDITIONAL moves. Four conditions, one user each
+because a condition with no user is dead code — `first` (the Lookout's opener,
+the one thing a rotation can never do since a rotation starts anywhere), `alone`
+(the Scrapper enrages, so kill ORDER is a decision), `walled` (the Hard Case
+answers a wall with frail — block was strictly safe before this), `hurt`+`once`
+(the Bottle Thief's one second wind, and the Bridge King having had enough at
+half). **Three bugs came out of it**: intents were planned BEFORE the fight
+state was reset, so an opener read the previous fight's turn counter; **`walled`
+could never once have fired**, because an intent is planned at the end of the
+enemy phase for the turn after, by which point the block it reacts to has been
+spent absorbing the attacks that just landed (it reads what the row walked
+INTO); and `enemyPhase` crashed on a null intent, impossible before v23 and now
+a state the engine itself produces. And one brittleness with the same shape as
+v16's `hp === 68` literals: putting a conditional move at the FRONT of a list
+shifts every index behind it, so four unrelated checks failed at once —
+`moves[2]` is `moves.find(m => m.id === …)` now. **The measurement is the honest
+half**: best lines went 14/29/30/35/24/16 → **15/43/25/43/19/16**, the mean
+barely moving (25→27) while everything under it moved in BOTH directions and
+the band got wider, not tighter. Three changes landed in one version (two fights
+per act pool, four enemies, five reacting) against one measurement, so there is
+no causal story to give and none is invented — it needs a tuning pass with the
+changes separated, and VERSIONS.md v23 records that it has not had one.
+**THE NOISE FLOOR IS 13 POINTS PER CHARACTER, AND IT WAS NEVER MEASURED UNTIL
+v24.** Four independent blocks of 150 seeds against IDENTICAL code swing a
+single character's win rate by up to **13 points** while the MEAN across the
+six swings **2**. `bots.mjs` carried "a few points at 150 seeds is noise" as a
+GUESS from v14, and `report()`'s findings bar was 8 points — *inside* the
+floor, so it was admitting noise as a finding by construction. The bar is
+`> NOISE.perCharacter` now, anything between 6 and the floor prints as
+explicitly not a finding, `node test/bots.mjs --noise` re-derives the floor on
+demand, and the footer names the measured number scaled to the sample actually
+run. **Read the mean; a per-character cell at 150 seeds is worth about ±6.**
+What it takes back: **v23's "the band widened" is withdrawn** (separated, the
+new fights are +2 points, the boss enrage +1, everything together +3 — a 2×2
+that reads almost flat), and **v16's Park Drinker buff was overstated** — sold
+on "8% → 14%", it re-measures at 600 seeds as greedy **+0**, synergist **+4**,
+native **+6**; the +6 reproduced on a 4× sample so it is probably real, but the
+evidence supports "a few points on his best line and nothing on the naive one",
+not the headline. v16's Collector (+23 on synergist) and v14's synergist
+finding (17 and 19) both clear the floor and stand.
+**PAPER MARIO'S OTHER HALF, AND THE ART WAS ALREADY IN THE REPO** (v25). v17
+moved the card and left the drawing alone, which is half of what it promised:
+Paper Mario moves the OBJECT *and* swaps a small number of drawn frames under
+it. Asked whether all of TURF's characters were in, the honest answer needed an
+enumeration rather than a memory — and the enumeration found
+`turf/art-src/sprites/cast/`, seven unopened subdirectories holding a **seven-pose
+set per character** (idle, move, attack-windup, attack-release, hit, death-fall,
+death-down, two facings) generated to `ART_REQUEST.md` §6's own frame table and
+read by **nothing**. `leopard` — the Dog Walker since v18 — is one of the two
+carried through the whole table. **`frameAt(name, t)` walks the SAME stage
+durations `poseAt` walks**, so a drawing cannot end up one beat out of step with
+the transform: the attack's stages are 0.20/0.11/0.30 and the swap to the
+release frame is the same instant as the commit because it is the same number
+read twice. The **recovery HOLDS the release** — the arm is extended and the
+body is settling under it, so popping back to idle on frame one reads as a
+second, faster attack. Textures are **baked at construction, never on the beat**
+(`paintCutout` runs newsprint, torchlight, nicks, fibre and grime; that is far
+too much work to do inside an attack), `posesFor` returns `['idle']` for
+everything else so the ordinary figure pays what it always paid, and a frame
+that failed to decode resolves to idle rather than to a blank plane. **Front
+only, and that is geometry rather than economy**: everybody faces across this
+bridge and `body.scale.x = facing` already mirrors the enemy row, so a rear
+frame would never be drawn. Death is the exception that is not on a clip — the
+topple is physics, so `death-fall` goes over and `death-down` lands.
+**SIX PEOPLE OFF THE SPARE PLATES, AND ONE VERY CLEAN NUMBER** (v26). Six of
+the fourteen uncast plates are on the bridge, each cast for what the PICTURE
+shows rather than for a hole in a stat table — `gunner` is the Debt Collector
+and is **the second figure that can act**, since he is the other character with
+a full pose set. Two new conditions, one user each: **`crowded`** is `alone`'s
+mirror, so thinning the row cuts both ways; **`bleeding`** is the first that
+reads YOU rather than the row — `walled` reads the hero, but it reads one
+turn's choice, and this reads the state of the run. **The measurement is the
+version's real content.** 400 seeds a cell against a v25 control: every bot's
+mean win rate is flat, and what moved is **what an ordinary fight COSTS — +1.0
+± 0.2 HP, six bots, one direction** — while the elite and boss costs do not
+move at all. The share of a run's HP lost to ordinary fights goes 46% → 50% on
+greedy, which is the direction v11 asked for and had never got. **And the
+separation is complete**: split by act and run as two more blocks, the act-one
+three reproduce v26 exactly and the act-two three reproduce the CONTROL exactly.
+**The act-two additions are not flat, they are INVISIBLE** — 30-45% of runs
+reach act two and those that do draw six spans from a thirteen-fight pool, so
+three additions there are barely sampled. That is a fact about the instrument
+nobody had written down, and it means `bat`, `sable` and both new conditions
+are **unmeasured**, which is a different claim from harmless: anything aimed at
+act two needs its own harness first. One cost named rather than hidden —
+reaching act two fell 6-12 points while the win rate did not, so the runs that
+used to die at the Bear now die earlier at the same rate, and whether that is
+better pacing is taste, not measurement. **The findings bar now scales with the
+sample**: v24 measured 13 points at 150 seeds and then held every later run to
+that number, so a 400-seed block (real floor ~8) was throwing away findings it
+had paid for. Two more brittle checks of the `hp === 68` family fell out — the
+condition list was typed into `core.mjs` and now reads `WHEN`'s own keys, and a
+check on digging in a bin was really asserting WHICH FRIEND the seed rolled,
+since a friend that grants max HP grants the HP with it. And a third ruler moved
+with the thing it measured: the deck-falloff check samples planks near the torch
+against planks far from it, but **the rank light FOLLOWS the enemy row**, so a
+wider row flattens the very ratio being measured — left on whatever fight the run
+had wandered into it failed on a scene with nothing wrong with it. Pinned to
+encounter 0 now, which is three rats in every version. Kindling's band-brightness
+lesson again: *the page was right and the ruler was wrong.*
+**THE OWNER'S OWN 26 ARE CUT AT LAST** (v27, `turf/tools/sheet-cut.mjs` →
+`turf/art-src/sprites/cast/roster/`). The thirty `*-plate.png` files are **new
+characters generated in the sheets' technique** — `turfGrim` says in as many
+words to copy the technique and never the reference's specific character — so
+the owner's OWN roster existed in this repo as two magenta PNGs and nothing
+else: 20 on `casting-sheet-full.png` and 6 on `casting-sheet-3.png`
+(`-detail-1` is a byte-identical duplicate of the latter and `-detail-2` a zoom
+crop of the former). Nothing is generated; Idle is the one pose that never
+needs a model, and `cast/README.md` already said so. Three things the tool gets
+right that a nominal grid does not: **cells are found by PROJECTION** (the
+sheets "bleed slightly past their nominal boundary" and a nominal crop put a
+sliver of a neighbour into `gunner-idle` twice), each figure's own top is
+tightened out of its row band (a band is as tall as its tallest member, so a
+short character cut to it stands in the air), and **a prop can BRIDGE two
+cells** — the sledgehammer reaches into its own back view and merged two
+figures into one 300px run, silently shifting every name after it, so an
+over-wide run is split at its thinnest interior column. **The key is two-stage
+and that is the whole difference between a cut-out and a sticker**: the sheets
+are antialiased AGAINST magenta, so the pixel ring where a figure meets the
+background is its colour BLENDED with the key — nowhere near the key, kept by
+any distance threshold, and the result is every character wearing a magenta
+rim. Stage two recognises contamination rather than proximity (magenta has no
+green, so it reads as R and B both well above G) and tests **edge pixels only**,
+or a purple pair of trousers gets eaten from the inside. What it unlocks: a
+pose set for any of the 26 is now **12 generations against a local reference
+crop** rather than a re-derivation of the recipe — and that step is the first
+one here that needs an API key, which this environment does not have.
+**THE ACT-TWO HARNESS, AND ACT TWO HAS NO MIDDLE** (v27, `node test/bots.mjs
+--act2`). v26 proved the whole-run matrix cannot see act two; this starts there.
+Phase A snapshots every `native` run **at the door of act two** — deck, friends,
+HP, route, and the rng's exact internal state, which mulberry32 exposes as one
+integer so a resumed run is bit-identical to one that never stopped (`core.mjs`
+asserts it; a snapshot that dropped the rng would still RUN, it would just be
+measuring a different game). Phase B resumes every snapshot under every bot. One
+bot breeds the population on purpose, so a column is about act two and not
+about arrival strength — which makes every rate a **ceiling**. The floor is
+re-derived for this instrument: **8 points per character** at ~236 arrivals a
+half. **What it found: act two is a Bear check and almost nothing else.** For
+every non-random bot "The Bear Wakes" is **78–95% of all act-two deaths**; the
+ordinary fights cost 11–13 HP and kill nearly nobody; the Bear costs **42–65 HP**
+against arrivals at ~87% of max. Every enemy v23 and v26 put into act two is
+*present* in the deaths list at 1–5% and is not what decides a run. **The Cart
+Pusher wins act two at 66% from the door; nobody else clears 40%** —
+block-that-stays is the one mechanic that accumulates across a fight, which is
+v16's "buzz does not compound" confirmed from the other side. The Drinker from
+the door is mid-pack (30%), not last: his weakness is *two* things, arriving
+least often but one (70%) AND converting at the mean. The Boxer is the one
+genuinely worst in act two (22%). **The harness is deterministic from the seed,
+so a change that cannot touch a character's cards must reproduce that column
+EXACTLY** — a control by construction, and v28 leans on it.
+**THE PARK DRINKER COMPOUNDS** (v28). v16's structural diagnosis — *buzz does
+not compound* — was right, and v27 confirmed it from the other side (the
+character whose mechanic accumulates hardest beats the Bear). The fix is one
+rule, not a number: `RULES.buzzCarry = 1/3`, a third of the buzz survives the
+end of turn, which gives it a **fixed point** rather than a reset (Never Sober's
++3 settles at 4; gated) so it compounds without running away and the drink still
+mostly wears off. **Measured against an EXACT control**: buzz is on no card but
+his, so the deterministic harness must reproduce the other five characters'
+columns to the arrival — and does, byte-identical across carry 0/⅓/½. His best
+line goes **21% → 32% whole-run** (last → fourth) and **30% → 39% from the door
+of act two**, both clearing the 8-point floor; the naive lines move +5/+6,
+inside it — the rule rewards knowing how to play him. **⅓ not ½**: half lands
+him second only to the Cart Pusher and turns "mostly wears off" into "half
+stays", which is a different character. Withdrawn: GDD §6's *"Numbers will not
+fix that"* — the numbers tried were sizes of a thing that reset; the carry is
+what stops the reset.
+Gates: `node slaykallio/test/core.mjs` (761 checks) and
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
 `#c8a03a`. Build tooling: none — same no-build rule as everything else here.
@@ -411,6 +974,105 @@ cabinets that day) and widens a deploy that is supposed to be limited to one
 game. Last trap: hand-deploying skips the token renumbering, so check the
 `../hub/shell.js?v=` the rest of the site asks for — this cabinet shipped pinned
 to `v17` while fourteen others were on `v34`.
+**THERE ARE TWO SLAY KALLIO LINEAGES AND `git merge-base` RETURNS NOTHING**
+(found 2026-09-10). This is Eeri's disease in a second project, and it is why
+the owner asked for *"the turf characters back as the main style"*: **the
+deployed game has never had a plate in it.** The live cabinet is `gh-pages`
+v7 (PR #496, "card targeting") and carries no `plates.js`, no `figures/`, no
+`bg/` and no art toggle — nothing on that tree so much as mentions a plate. The
+plate system, the route map and the Paper Mario motion exist ONLY in
+`claude/slay-kallio-project-3lv3l9`; `input.js` and v7's card targeting exist
+only on the site. Version numbers collide exactly as Eeri's did (their v7
+against this branch's v30) so `hub/versions.json` looks fine. **A wholesale
+deploy of either tree DELETES the other's work** — the live one loses the whole
+TURF cast, this one loses card targeting — so this is a reconciliation, not a
+copy, and it needs the owner to say which lineage is the game before anybody
+writes to `gh-pages`. Eeri's recipe applies: merge by KIND against the content
+ancestor each `VERSIONS.md` names, never `--allow-unrelated-histories`.
+**A style toggle is a comparison, not a decision** (v30). The style switches
+exist so the same fight can be watched twice, which means the owner flips them
+WHILE COMPARING — and every flip writes to `localStorage`. So a value picked
+while looking at four options beat the default for good: v21 made the plates
+the house answer and any browser already on `drawn` never saw it. `LOOK_REV` in
+`main.js` is bumped when the house answer moves and a stored `art`/`cut`/
+`figures` older than it is dropped rather than obeyed — gated both ways, since
+a reset that ate every choice would be worse than the bug. The theme, the seed
+and the run are untouched: nobody sets those while comparing.
+**THE OWNER'S OWN 26 ARE THE CAST, AND THEY ARE CUT OUT** (v34, owner:
+*"continue development with the new directions and assets"*, then mid-build
+*"characters should look more like cut outs"*). v27 cut his twenty-six out of
+the casting sheets and, through the join, nothing read them — all 23 cast
+figures were generated `*-plate` files, most of them drawn FROM one of his.
+Every cast slot is one of the 26 now, cast for what the picture shows, which
+mostly means the original replacing its copy (`grunt-barfly` →
+`beanie-bottle`, `grunt-ragged` → `rasta-bandaged`, `cleaver` → `cook-mask`);
+`sledge` turned out to have been shipping as the generated plate under the
+same name. `core.mjs` fails on a cast plate that is not one of the 26. **The
+cut-out is the default cut, and it is cut AROUND the figure**: the first draft
+printed the art on a round-topped standee (#484's phrase taken literally) and
+it read as a sticker on a tombstone — the board was a field behind the figure
+and took the silhouette away, v20's objection to boarding a rat now on
+everyone. `cutoutBorder` dilates the drawing's own alpha into a kraft border
+(a raised arm keeps air under it), cuts the foot flat, and darkens the outer
+2 px as the card's edge — and because the silhouette survives, it cuts every
+figure, plated or drawn, so a row is one kind of object. The gate measures the
+SHAPE of the growth (a border: ink +8–90%, width +6–22 px), not its amount.
+`LOOK_REV` 3 drops a `cut` saved against the old default. **`ART_REQUEST.md`
+is the ask for everything else in the 26's register** — and its §2 is the v33
+finding as a spec: the TURF scenery is an iso render behind a perspective
+bridge and reads as a poster; backgrounds must be made in the bridge's camera
+(36°/46° vFOV, eye 1.6/1.25, ~10° down, action width 4.6, portrait keeps the
+middle).
+**ACT TWO HAD NO MIDDLE, AND THE BY-KIND LEDGER COULD NOT SAY SO** (v35).
+`--act2` now prices every SPAN — met, HP, and how often it kills — because a
+table that averages thirteen fights into one number cannot tell a pool where
+every fight costs eleven (an HP tax the boss collects) from one with two
+fights that cost thirty (a route with a decision on it). On v34 it read: the
+Bear 41.3 HP and **67% of everyone who met it**, and **eight of the thirteen
+ordinary fights under 11 HP killing 0-1%** — act two was act ONE's shapes with
+a mutation multiplier on top, and two gulls and a pigeon is a fight you have
+outgrown by the time it is offered. The retune is **rosters, not numbers**
+(a second gull, a second thief, a second Sable, a third spawn, a rival behind
+the Dealers), and it moved the ordinary fight 10.9 → 15.4 HP and where act two
+ends by **18 points on greedy and 19 on hoarder** for about 3 points of mean
+win rate. **It half-worked and that is the finding**: the naive lines die in
+the middle now, the strong ones still die at the Bear (`native` 83%), because
+a competent deck walks the middle and then meets a 41 HP check — moving THAT
+needs a cheaper Bear or spikes that threaten a HEALTHY hero, and neither was
+tried. **One rule was built, measured and CUT**: the night taking the breather
+(the post-fight 6 HP scaled by the hour) cost every bot four points of win rate
+to move the same needle three, and on top of the retune bought two for two —
+kept at the site in `engine.js` because it is the obvious next idea and it does
+not work. Two bugs: the ledger flushed a fatal fight on the same iteration that
+set its loss, so **every span including the boss read 0% kills**; and v34
+shipped `VERSION` at 33 while `VERSIONS.md` and `hub/versions.json` both said
+34 — the arcade advertised a release the cabinet denied, and `core.mjs` now
+reads both files and fails when they disagree.
+**THE ASCENSION LADDER, AND EVERY RUNG RIDES A LEVER THAT EXISTED** (v36).
+Six rungs — an elite offered a span earlier, what you meet mutated a level
+ahead of the hour, a rest giving back a fifth instead of a third, a carried
+Doubt, a point of Strength on every boss, a third instead of a half between
+the acts — and **no new mechanic**, which is the point rather than a saving: a
+ladder that needs new systems is a second game. Rungs are **cumulative**, so
+only rung 0 can be an exact control, and `core.mjs` proves it IS one by driving
+whole bot runs at rung 0 and at no rung and comparing the LOGS entry by entry.
+Getting that check right took three passes and the ruler was wrong every time:
+**`uid` is a module-level counter**, so two identical runs number their cards
+and enemies differently purely by running second, and it rides on `target`,
+`enemy`, `src` and `from` as well as on `uid` — it renumbers by order of first
+appearance rather than stripping those keys, because WHICH body was hit is what
+the control is checking. Measured at 150 seeds a cell (`--asc N`), `native`
+reads **25/22/19/16/11/9/6%** and `synergist` 18/17/14/12/9/7/5 — monotone on
+both competent bots with no tuning pass. **Rung 1 is the weakest and that is a
+fact about the RULE**: an elite is offered, not forced, and a competent line
+declines it (greedy even goes UP, which at a 13-point floor is noise, not a
+finding). Two rules a rung may never break, written at the lookup: it may not
+make a run non-deterministic from the seed, and it may not hide information —
+rung 5's boss hits harder and the intent line quotes the bigger number.
+**A ladder is a DECISION, not a comparison**, so unlike `art`/`cut`/`figures`
+it is kept OUT of `LOOK_KEYS`: v30 drops a stored look older than the house
+answer, and doing that to a difficulty somebody earned is the same bug with the
+sign flipped. Stored per character, raised by ONE and only by a WIN.
 **The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
 hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
 **The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`
@@ -453,7 +1115,7 @@ that lets it hit that target this turn" — the AI's telegraph, the UI's click-t
 highlighting, and the actual click-to-attack command (`combat.js`'s `orderAttack`) all call
 it, on purpose: it was written three times in three files before being pulled out, and a
 fourth copy is a bug waiting for someone to fix only one of them.
-**THE INVARIANT: the player sees every consequence before committing** (v36, owner:
+**THE INVARIANT: the player sees every consequence before committing** (v39, owner:
 *"rewrite ai.js + combat.js as one system in a single pass. State the invariant up front"*).
 `combat.js` is that one system; `ai.js` is gone. Every change to the board is made by one
 function, `resolve`, which logs what it does as it does it — **the log IS the effect list**,
@@ -471,7 +1133,7 @@ so rivals are previewed from the top of the phase. The rewrite is **proven faith
 `balance.mjs` reading bit-identical** (53/82/65/32/68/18/12): the dice are asked through one
 seam in the old order and the brain's scoring is untouched. Two owner directives are
 recorded in `MST_PARITY.md` §4: Blender iso facings before the Piritori move (no Blender
-here, not acted on), and rot.js FOV only / skip PathFinding.js — **taken in v37**.
+here, not acted on), and rot.js FOV only / skip PathFinding.js — **taken in v40**.
 **Line of sight is recursive shadowcasting** (rot.js's algorithm ported into `grid.js`,
 no dependency; BFS movement untouched), shipped as the **MUTUAL** rule: A sees B iff B sees
 A. Raw shadowcasting is asymmetric (4,887 of 81,810 tile pairs across the boards) and so,
@@ -704,7 +1366,7 @@ kit the empty turns they were competing with a free attack for. Melee has no mag
 knife does not run out, and that reliability is what melee trades its range for). The round
 is spent inside `resolveAttack` alone, so every firing path pays. Enemies reload on the same
 rule and **telegraph it**, backing off while they do. `ammo.js` is a leaf module because
-until v36 the brain lived in `ai.js`, which `combat.js` imported (circular), and an **absent** round count means FULL, not
+until v39 the brain lived in `ai.js`, which `combat.js` imported (circular), and an **absent** round count means FULL, not
 empty — any path that assigns a weapon without seeding the count would otherwise hand back a
 silently empty gun. **The balance consequence is the headline and is not a bug**: the rule's
 effect scales with each side's RANGED SHARE, and the encounters were tuned when ammo was
@@ -788,6 +1450,27 @@ rect, which clips it to the silhouette instead of a glowing box.
 RUNTIME path (`units.json` points `sprite`/`portrait` there), which is why a deploy must
 carry it; CLAUDE.md's "a deploy omits `art-src/`" rule is written for eeri, where art-src is
 source. `art-src/reference/` (20MB) is source material and stays behind.
+**The owner's OWN 26 are cut** (v37, `tools/sheet-cut.mjs` →
+`art-src/sprites/cast/roster/`). The thirty `*-plate.png` files are new
+characters generated in the sheets' TECHNIQUE — `turfGrim` says in as many words
+to copy the technique and never the reference's specific character — so "we have
+32 characters" was true and "we have the owner's roster" was not: his own 26 (20
+on `casting-sheet-full.png`, 6 on `casting-sheet-3.png`; `-detail-1` is a
+byte-identical duplicate of the latter and `-detail-2` a zoom crop of the former)
+lived here as two magenta PNGs. Nothing is generated — Idle is the one pose that
+never needs a model. Cells are found by **projection**, not a nominal grid (the
+sheets bleed past their nominal boundaries, which is how a sliver of a neighbour
+got into `gunner-idle` twice), each figure's top is tightened out of its row band,
+and an over-wide run is **split** because a prop can bridge two cells — the
+sledgehammer reaches into its own back view and merged two figures, shifting every
+name after it. **The key is two-stage**: the sheets are antialiased AGAINST
+magenta, so the edge ring is the figure's colour BLENDED with the key — nowhere
+near it, kept by any distance threshold, and the result is a magenta rim on
+everyone. Stage two recognises contamination rather than proximity (magenta has no
+green, so it reads as R and B both well above G) on **edge pixels only**, or a
+purple pair of trousers gets eaten from the inside. A pose set for any of the 26
+is now 12 generations against a local crop rather than a re-derivation of the
+recipe.
 **`turf/tools/spritecheck.py` is the mechanical source of truth for sprite QA** (PR #419's
 Sprite Factory owns the state/UI). Thresholds are calibrated against the real 28-frame cast
 set, not guessed: anything legitimately different tops out at 0.841 IoU, so `DUP_IOU` is
@@ -866,62 +1549,324 @@ cap 9). Stage quota gauge Cabal-style; clearing pops all stragglers. No build st
 open `dropcabal/index.html` (three.js via jsDelivr importmap). Same `gh-pages` deploy
 caveat as paperboy.
 
-### Flash Prince (`flashprince/`)
-A **cinematic platformer** — *Another World* × *Flashback* × the original *Prince of
-Persia* — in canvas 2D with no build step and no image assets. The owner's direction was
-to follow **Another World's art and animation formula as closely as possible**, and that
-is a technical instruction, not a mood board: AW has no sprites in it at all. Every frame,
-background and character alike, is a list of **filled polygons** rasterised into a 320×192
-buffer. So `js/screen.js` draws polygons and then takes the antialiasing back out —
-a final pass snaps every pixel to the nearest of the room's **sixteen** colours through a
-lazily-filled RGB555 lookup (an entry costs sixteen distance tests once and a typed-array
-read forever after). Edges go hard, the grey halo along a frond disappears, and the
-framebuffer is genuinely 16-colour rather than merely painted with sixteen colours.
-`palette.js` holds the sixteen as fixed **roles** (VOID / SKY / FAR / MID / NEAR / EDGE /
-SOLID / DARK / LUX / LUX2 + four locked hero slots), so nothing that draws knows which
-biome it is in — a frond and a colonnade both fill with MID, they are just different
-colours by the time you reach them. `paletteAt(t)` walks that set continuously along the
-whole run, which is how "the jungle blends into Egypt" is done: **the palette fades, the
-shapes overlap, and no screen ever announces a change**. `scenery.js` gives every element
-type a WIDE window of `t` it exists in — fronds are still hanging in the first tomb, the
-first columns are already standing in the last jungle.
-**Animation is a rotoscope, not a sheet.** `figure.js`: a pose is **thirteen joint angles**
-(`[hipN,kneeN, hipF,kneeF, shN,elN, shF,elF, lean, head, py, px, rot]`, degrees from
-straight down, positive swinging *forward* so the same numbers work facing either way), a
-frame is those angles turned into eleven polygons, a clip is `[[pose, holdFrames], …]`.
-That is what lets a run hold its contact pose for three frames and blur through the pass
-in one — rotoscope timing, which a constant-rate sprite loop cannot do. The far limbs draw
-a shade down; that one cheat is the only depth a flat figure gets and it is why the run
-reads as a run.
-**The design rule is commitment.** `hero.js` — a step is 22 frames and carries 12px, a
-turn is 18, a mantle is 40, and until a move reaches the frame it declares `open` the
-stick is not connected to anything. Nothing accelerates freely. Tap a direction for one
-step, hold and the step runs on into a run (Flashback's rule). Grounded moves are
-scripted displacement; jumps are ballistic off a scripted gather. **Every distance in the
-level is measured off two numbers**: a standing jump rises 27px and his hands reach 26
-above his feet, so he catches a lip 53px up — a storey is 3 tiles = 48 — and a running
-jump carries 3.7 tiles, so a 3-tile gap goes and a 4-tile gap does not. Falls are PoP's
-ladder: one storey free, two hurt, three kill. Walking off an edge **catches** it
-(`ledgeBehind`); holding toward a lip in the air catches it (`ledgeAhead`).
-**The duel** is the same clock on both sides: a sentry is 68 frames from seeing you to
-firing (spot 26 → draw 26 → aim 16), drawing the pistol costs you 21, **crouching puts
-his shot over your head and rolling puts you under it**. Take the wind-up away and it is
-a reflex test; leave it in and it is a reading test.
-**Fourteen screens**, `rooms.js`, 20×12 tiles of ASCII each, laid side by side with a
-**hard cut** — no scrolling, no camera, because a screen you learn and die on is a
-composition you remember. Jungle → dig → tomb → reactor → palace → overgrown. Traps:
-spike cycles, ceiling slabs, tiles that will not hold, a plate-and-gate on a timer,
-pulsing force fields. `scr.cached(key, fn)` paints the static half of a room once and
-blits it after that (same discipline as `gameoflife/`); the palette changing throws the
-cache, which is correct because it happens once a screen.
-Two traps for anyone editing it: **`tryX`/`tryY` must move floor(|d|) whole pixels then
-the remainder** — an off-by-one loop there silently scaled the run from 1.62px/frame to
-2.62 and turned a three-tile gap into a five-tile one; and **the wall tiles are painted
-after the backdrop**, so anything meant to sit on a wall (the glyphs) has to be drawn from
-`level.js`, not `scenery.js`, or it gets buried. `window.__fp` exposes `{game, hero(),
-world(), debug: {room, give, state, pure}}`. **Signed** by Toko Midori (bottom-left, so it
-clears the health marks top-right and the way home top-left) and named in `SIGNED` in
-`toko/test/brand.cjs`. Same `gh-pages` deploy caveat as paperboy.
+### Powder (`powder/`)
+**Rebuilt from scratch on the owner's direction, 2026-07 — "simulator like details,
+surreal 3d graphics, a bit more of flatlands with canyons".** The previous build (a
+PS1-styled arcade descent down a snow/sand ribbon) is gone. What survived it: the
+reference-plate craft design in `powder/ref/`, the dust plume, the multiply-blended
+ground scars, and the camera rig. Read this section before retuning anything — most of
+the numbers in it were reached by measurement and the reasons are recorded here.
+
+A hover racer on an open flatland cut by a canyon. Three.js r167, no build step.
+
+**The simulation** (`js/vehicle.js`). There is no lerp toward a target pose anywhere. The
+craft is a rigid body on **four sprung hover pads**, integrated at a fixed **120 Hz** on
+an accumulator, because a spring this stiff is not stable on a variable frame time. Each
+pad springs against the ground height under it and damps its own vertical velocity, and
+the moments those four forces make about the centre of mass ARE the pitch and roll — so
+cresting a dune pitches the nose and a hard turn rolls onto the outside pads. **Weight
+transfer is not modelled separately; it is just where the load went.** The turbine has
+**spool lag** (throttle commands N1, N1 chases it over about a second, thrust goes as N1
+squared), so you cannot stab the throttle out of a mistake. Lateral force is linear in
+slip speed up to a friction limit set by the surface mu and the load *currently* on the
+pads, so the breakaway is real and comes sooner when the craft is light over a crest.
+**Walls are not special-cased**: any ground steeper than ~34 degrees that you are closing
+on returns an impulse along its normal, so canyon walls, mesa sides and boulder flanks
+all behave without knowing about each other.
+**Front drive (v4).** The sleds are rocket-propelled at the FRONT and handle like a
+front-wheel-drive hot rod, and none of it is scripted: thrust acts along the *steered*
+nose (so under power the nose is pulled through the corner — the yaw moment is
+`+hl * thrust * sin(delta)` in this right-positive yaw convention), grip is per axle from
+the loads the pads are already carrying, the driven front's traction circle loses what
+the thrust is using (`circle`), and lifting off transfers load forward, unloads the rear,
+and the tail comes round. **`circle` was measured, not guessed**: at 0.55 the front had
+*no* lateral force under full power — thrust is ~1.2 g here against a ~6 kN axle — and
+the sled could only push; 0.18 takes ~15% off the front at full throttle, which is a hot
+rod's push rather than a lost nose. The sand **sinks**: each runner settles toward the
+surface's `sink` under load (time constants 0.30 s in, 0.55 s out) and the lateral bite
+is filtered by the surface's `shear` — 0.22 s on deep sand — which is the ground shifting
+under you mid-carve. The pads push along the surface **normal**, not straight up; on the
+flat that changes nothing, on the mountain it is what pulls you down the grade.
+
+**Four sign errors were paid for here and not one of them looked like a sign error.**
+Getting the pad pitch moment backwards does not read as a wrong sign, it reads as the
+craft being fired 150 m into the air, because it is a positive feedback loop that
+saturates the attitude in half a second (more load at the back pitches the nose DOWN:
+`tau_x = -z*F`). The pad-height roll term had the same fault. The self-aligning moment
+was signed so the nose was pushed AWAY from the direction of travel, and the craft
+crabbed sideways down the flats at 60 km/h with the driver doing nothing — `yaw`
+increases to the right while a rotation about +y turns the nose left, so the torque picks
+up a minus on the way into this convention. And `yaw = Math.PI` faces +z, not -z, so the
+whole field spawned backwards. All four are commented at the site.
+
+**The world** (`js/terrain.js`). Open, not a ribbon: `height(x, z)` is a pure function,
+and the tile meshes, the hover pads, the props and the dust all read it, so they cannot
+disagree. Streamed as an 11x11 grid of 100 m tiles around the craft. The whole field is a
+**mellow mountain** (`GRADE` 4.5% down the route) of white sand with mesas standing on it;
+the rift is a meandering 70-130 m canyon with a salt floor — the fastest surface in the
+game. **Roads cross it** every 940 m (`ROAD_CYCLE`, phase −150), each carried over the
+rift on a **bridge deck** you can ride or run under. A heightfield cannot hold a bridge,
+so the deck is NOT in `height()`: `groundUnder(x, z, y)` is the two-layer query the
+runners use — the deck when you are at or above it, the floor otherwise — and the piers
+are registered as boulders so they collide.
+**The breaches are the load-bearing idea.** The walls are ~60 degrees and unclimbable, so
+without shallow sections the canyon is a trap you enter and never leave; the breaches are
+the on-ramps and they set the rhythm of a run. Their width was **measured, not guessed**:
+with the first window only ~90 m either side of centre, every approach met deep wall and
+stopped dead, because every real approach is a diagonal. About 40% of each cycle is
+drivable now, and that is what turns the canyon from scenery into a route.
+`js/route.js` lays gates alternately on the deepest rift floor and beside a breach out on
+the flats, at **half the terrain's breach cycle** — decoupling those two numbers puts a
+gate on a canyon floor with no reachable entrance for 400 m. The HUD points at the
+**breach** rather than the gate whenever you and the gate are on opposite sides of the rim
+— *either* way — because without that the display is telling you to drive at something
+you cannot reach. The first version only covered the way in, and the autopilot wedged
+itself against the far wall trying to climb out to a flats gate.
+
+**The look** (`js/sky.js`, `js/props.js`, and the grade pass in `main.js`). Violet zenith
+through purple into a lilac horizon over white-grey sand (v4: "more whites and greys in
+the sand, more purples in the sky"); a low raking key so everything standing up throws its length
+across the flats; a cold fill from behind that nothing in a desert would have; rock that
+hangs in the air and turns; arches with nothing holding them up; slabs too regular to be
+geology. Post is bloom (strong, threshold 0.72, and the sun disc is drawn **over-white** —
+`MeshBasic` does not clamp — so it is the one thing in the sky that blooms), vignette,
+mild chromatic aberration, a heat shimmer that only bites near the bottom of the frame,
+and (v4, "more PS2-like") a **posterise to 36 levels with a 4x4 Bayer dither**. The PS2 is
+in the renderer too: the framebuffer is **0.62x the window, upscaled soft** by the browser
+(no `image-rendering: pixelated` — that is the other console), materials are Lambert, the
+shadow map is 1024 and hard (`PCFShadowMap`). **The ringed body must sit AHEAD (-z)** — parked
+behind the player it is the best thing in the sky and nobody ever sees it.
+Four rules that keep being relearned, now written into the files: **`horizon` and `fog`
+must be the same value** or the ground stops at a hard seam; **anything large and dark
+near the horizon reads as a wall across the frame**, so the distant range sits within a
+hair of the haze; the hemisphere fill must be **generous** because the key is low, or
+every face turned from the sun crushes to black and the monoliths become holes; and
+particle size needs a **clamp**, because a puff that has grown for two seconds twenty
+metres out resolves to a 900 px sprite and fills the frame with white.
+
+**Quality** is a real persisted setting (`powderQuality`, `?q=low|high`), not a test hook:
+shadows, bloom and antialiasing are exactly what a weak machine cannot afford and exactly
+what this look is made of.
+
+**The keyboard (v9).** A key is a switch, and full lock the instant it closes is a slide at
+any real speed — the sticks and the pad are analog, the keyboard was not, and it was the
+keyboard the "nightmare" report came from. `input.js` **ramps the digital steer** (0.22 s
+to full lock, 0.09 s back) so a tap is a quarter turn and a hold a committed one; the
+vehicle **shrinks the lock with speed** (`speedLock`: all of it below 20 m/s, 55% at 45)
+because the sustainable yaw rate falls as 1/v; the spool is 0.75 s (idle to half thrust
+0.8 s, not 1.4); the camera in a slide looks **half way to the travel heading** so the
+sled slides across the frame instead of the world swinging round it; `brakeDrag` 7.
+`powder/test/keys.mjs` drives real key events: one second of A at 140 km/h is 17° of
+heading with 7.8 m/s of slide, where it was a spin. Under SwiftShader the sim runs ~75%
+real time at `q=low`, so its spool number reads 1.25 s for a 0.8 s constant — read deltas.
+**The harnesses live in `powder/test/`** and share `_browser.mjs`, which serves the repo
+on a free port, launches Chromium on SwiftShader, and routes the importmap's jsDelivr
+URLs to a local three only when one resolves (so a sandbox with no network runs them
+exactly as CI does): `NODE_PATH=$(npm root -g) node powder/test/keys.mjs`. `drive2` and
+`corner` are the lock ladders, `pad` and `touch` the two other input paths (stubbed pad,
+real CDP touch), `hazecheck` the with/without pixel diff, `perf2` the per-pass counts,
+`refexport` regenerates `models/reference/`, `roundtrip` loads it back. None is a gate
+yet: they print numbers for a person to read.
+
+**The Blender pipeline (v9).** `powder/pipeline/README.md` is the contract and
+`js/models.js` **enforces** it at load: envelope (which way the ship faces is read off
+the bounding box — long axis X means built sideways, long axis Y means exported
+standing up), triangle budgets, material names (`HULL ACCENT CHROME GUNMETAL GLASS
+INTAKE DECAL FAN`, `LAND` for landmarks), the `nozzle_L/R` empties, optional `fan_L/R`.
+A file that fails is reported and **not registered**, so that chassis stays on the kit —
+exports can be early and often. `craft.js` swaps materials **by name** and supplies
+chrome/accent/numeral/flames, keeping only the HULL's own textures and the FAN's; the
+result has the same `userData` contract as the kit so `vehicle.pose()` cannot tell them
+apart. Landmarks merge to one vertex-coloured geometry and go through `bakeProps`
+unchanged (the bake now keeps an authored `color` attribute; a kit prop still gets its
+material colour painted on) and are placed by `populate` at 6% of tiles — the random
+draw happens only when landmarks exist, so a world without them lays out exactly as
+before. `models/manifest.json` (ids `nose`/`aft`) is empty in production; **`?models=
+reference`** loads `models/reference/`, which is the kit exported by `refexport.mjs`
+through three's GLTFExporter with the 0.74 scale and the fans' radii baked into the
+geometry (the contract wants object scale 1) — the round trip in `roundtrip.mjs` is the
+test of the door with no Blender in the loop. `pipeline/powder_blender.py` builds the
+template scene (metres, nose along Blender +Y, pad markers, envelope box, empties, fan
+discs, stub materials), validates against the same numbers, and exports with the right
+flags; it compiles but has not been run in Blender here. The README's "PS2 question"
+records the owner's note that the world look may be reframed — the assets are authored
+to the plates, not to the dither, so nothing in the pipeline moves if it is.
+
+**Making it drivable (v8), and what was actually wrong.** The owner reported the
+controls as a nightmare; measured through the real key path, three separate faults.
+**There was no self-aligning moment anywhere in the model** — no directional stability
+at all — so once the rear stepped out nothing brought it back: full lock from a cruise
+ran away to 1.41 rad/s with 18.6 m/s of slide and stayed there, and releasing the stick
+did nothing. `SPEC.weather` is that restoring moment, tanh-saturated on slip and with
+its speed term **capped** (`weatherSpeed`): uncapped at 520 it reached 20.8 kN·m at
+40 m/s against a 22 kN·m rudder, and half lock then produced a wide slide with almost
+no yaw — the sled washing wide without ever changing heading, which is the worst thing
+a vehicle can do. Sign: `slip` is velocity along the RIGHT vector and yaw is
+right-positive, so sliding right needs a POSITIVE moment; backwards, it reads as the
+sled crabbing sideways on its own, which is how the last one was caught.
+**Steering had a 0.73 s time constant** (`Izz/yawDamp`) — 1.8 degrees of heading in the
+first quarter second of full lock. And `steer/yawDamp` is **not** the steady rate:
+the axle forces are themselves a yaw damper worth ~54 kN·m per rad/s, *more* than
+`yawDamp`, so while the runners grip the sled is much lazier than the arithmetic
+predicts and only wakes up once it is sliding and that damping has gone — lazy while
+planted, eager while sliding, exactly backwards. So the rudder is 45000 and **fades
+with slip** (`bite` = `1 - steerFade*tanh(|slip|/steerFadeSlip)`): it is the runners
+biting, not an air vane. Big-while-gripping answers small inputs; fading-while-sliding
+is what stops the driver steering into a spin, and it is what makes a rudder that big
+safe. The ladder at 90 km/h is 0.13/0.40/0.54 rad/s at quarter/half/full lock for
+0.7/4.8/9.5 m/s of slide, and at 140 km/h every lock slides — corner speed is a
+decision again. `rearSteer` had to come from 1.9 to **1.15**: it was calibrated against
+the old 9000 rudder and against 45000 it made the aft sled three times twitchier than
+the nose sled. Airborne, the rockets keep **0.40** of their thrust (they do not need
+the ground) and the rudder **0.55** — at 0.60/0.25 respectively, air time became a
+speed exploit (the autopilot fell into the rift and hit 260 km/h against a 140 cruise)
+or a random loss of control on a dune field where the craft is airborne ~17% of the
+time. Deep sand's `shear` went 0.22 → 0.12: the bite should arrive late, not a third of
+a second late, on top of every other lag. The HUD's **SLIP turns amber then red off
+`bite`**, because otherwise there is no way to tell turning from sliding until the
+scenery tells you. Harness note: `drive2.mjs` / `corner.mjs` teleport onto the rift's
+flat salt floor before every phase — the open-field version kept drifting into a mesa
+and reporting the crash as a handling number.
+
+**Two chassis and the weight axis (v5).** `Vehicle` takes `drive: 'front' | 'rear'` and
+applies thrust at that axle, which is the whole difference. **NOSE** rockets point where
+the front is *steered*, so power adds a yaw moment and pulls you through the corner, and
+the front's traction circle loses what the thrust is using. **AFT** rockets point along
+the body and add no yaw at all — measured, that left the aft sled turning less than half
+as hard as the nose sled (0.22 rad/s against 0.51), so it carries a much bigger rudder
+(`rearSteer`) and a bigger traction circle (`rearCircle`) instead: comparable turn-in,
+but power mid-corner is what steps the tail out. They now measure 0.65 rad/s at 2.7 m/s
+slip (nose) against 0.89 at 6.3 (aft) — the same pace, a different character.
+The right stick's vertical axis is **weight**, not a button. Back boosts *and* lifts the
+nose: the boost line acts below the centre of mass, so the front runners unload and the
+sled planes over the deep stuff. **`liftLever` was measured**: at 1.35 the boost unloaded
+the front axle by 52% (6712 N → 3202 N) and the sled would not turn while lit, so
+anything that boosted drove into the first wall — a hot rod lifts its nose, it does not
+lose the ability to steer, and 0.75 halves the unload and keeps the drama. Forward is a
+**front spoiler**: nose-down force going as the square of airspeed, applied at the front
+axle, so it adds front load and bite and costs *no* speed — but on deep sand the extra
+front load digs the runners in and ploughs, which is why leaning forward through soft
+ground is slow. Carving *into* the roll earns extra grip (`edge`), so committing to a
+turn is rewarded.
+
+**The render stack (v5, made honest in v7).** The world is PS2; the ships are not.
+Layers are `0` opaque world, `1` HD, `2` the world's transparencies (plume, scars), `3`
+sky. **The canvas is full-resolution; only the composer is 0.62x** — until v7 the canvas
+itself was 0.62x (`renderer.setSize` at the PS2 scale), so the "HD" layer was HD in
+name only, and this file said full-res while the code did not. `renderFrame()` is five
+passes: the composer over layers 0/2/3 into its own 0.62x buffer (posterised, dithered;
+`composer.renderToScreen = false`); a **blit** of that buffer up onto the canvas with a
+raw `ShaderMaterial` — the OutputPass has already tone-mapped and encoded it, so the
+blit must not touch the colour again (a `MeshBasic` quad would encode it twice), and the
+bilinear stretch IS the soft upscale; a **full-resolution depth-only prepass of layer
+0**, because the HD layer needs a depth buffer that matches it; layer 1 over the top;
+then the **heat haze** (`js/haze.js`), which `copyFramebufferToTexture`s the finished
+frame and draws refracting sprites at the nozzles plus a mirage band along the horizon,
+each fragment sampling the copy at a noise offset from its own screen position — light
+bending, not a texture. The haze scene must be on **layer 1** (the camera is still
+masked to HD when it runs; on layer 0 it was silently culled and moved zero pixels — the
+with/without pixel diff in `hazecheck.mjs` is how that was caught), must depth-test
+against the frame's depth so haze stays behind a hull, and must not write depth. It is
+the one pass `q=low` skips. The sun's **lens flare** (`js/flare.js`, three's addon with
+canvas textures) sits on layer 1 too. The lights must `layers.enable(1)` or the ships are
+unlit and cast no shadow. **A `SpriteMaterial` with no map draws a solid quad** — the
+first version put a white box round every ship.
+
+**The model shop (v7, `js/craft.js`).** `buildCraft(env, accent, number, drive)` builds a
+ship as a kit and merges everything static per material — hull (Phong, panel/rivet map),
+accent, chrome, gunmetal, decals — so a ship is **14 draw calls** with the fans (live,
+spun by N1) and the six flame parts (scaled by N1) as the only separate meshes; it was 23
+with far less detail. **Chrome is `MeshStandard` at metalness 1 / roughness 0.1 with a
+PMREM env map** from a two-tone scene (violet sky over white sand, a hard horizon line,
+an over-white sun) built once by `makeEnvMap(renderer)` — that two-tone-with-a-bright-bar
+is what the plates' nacelles actually show, and Phong "chrome" never had it. Each can:
+turbine face in the mouth, open nozzle bell with the flame inside, two dark rings, three
+tube-geometry pipes to a pump block. The flame is a cone with a **scrolling shock-diamond
+map** on the core and a **length-fade `alphaMap`** on core and sheath — separate maps
+because the diamonds scroll and the fade must not (`ConeGeometry` puts v=1 at the apex).
+`vehicle.pose(dt)` runs it: RICH (orange, short, fat) while `throttle > n1`, LEAN once
+the spool has caught up, diamonds streaming at the turbine's rate. `vehicle.nozzle(i,
+out)` gives the world exhaust position for `emitHaze` / `emitWash` in `main.js`.
+`disposeCraft()` frees the merged geometries and per-ship materials.
+
+**The concept plates** live in `powder/art/` (960 px JPEG copies of six of the `ref/`
+plates, named for what they show: `sun-one`, `aft-five`, `intake-green`, `nose-green`,
+`roundel`, `delta`). The menu shows the chassis you are about to race (`nose-green` /
+`aft-five`); the results frame `delta` (time out) or `intake-green` (hull failure). The
+`#msg .plate` rule sizes them in vh and hides them under 520 px of height.
+
+**Control priority (owner, 2026-09-07): on-screen twin-stick TOUCH is the main control
+scheme, the gamepad second, the keyboard third.** Every controls pass measures touch
+first — the v8/v9 passes went keyboard-first because that was where the report came
+from, and the touch path had only the hidden auto-throttle fixed until `touch.mjs`
+(real CDP touch events) existed.
+
+**Controls.** Left stick steers and works the throttle; right stick pans the camera
+(x) and is your weight (y). Keyboard (v8): the arrow cluster **mirrors WASD** — W/Up
+throttle, S/Down brake, A/Left and D/Right steer — **Space** boost (lean back),
+**Shift** spoiler (lean forward), **Q/E** pan, F swaps the chassis on the menu, Esc
+pause. It used to split the arrows three ways (up/down were the weight axis, left/right
+panned the camera) and nothing did what an arrow key does in any other game.
+**Gamepad (v6)** is the scheme's natural home,
+because both axes v5 added are analog — the turbine spools so part throttle is a real
+choice, and weight is a lean, not a button; keyboard flattens both to on and off.
+`input.pollGamepad()` runs once per frame from `animate()` and feeds the SAME control
+struct as keys and glass, **merged rather than exclusive**, so a stick in one hand and
+a keyboard under the other still works: left stick steer + throttle/brake, right stick
+pan + weight, RT/LT additionally throttle/brake, A drop in, Start pause, Y swap chassis
+(buttons edge-detected in the poll, as the keyboard path does). Deadzone 0.16 with the
+remainder rescaled, so half-stick really is part power. `drawSticks()` early-returns
+while a pad is driving, so the touch overlay does not sit on top of a controller. The HUD is a telemetry cluster: N1, TGT, lateral g,
+slip, hover gap, **sink** (cm the runners have settled), the weight axis, surface and
+chassis. Touch is twin sticks: left steers and works the
+throttle — there is no auto-throttle, managing spool is the point — right holds overdrive
+and trims the slide.
+
+**The frame budget, measured.** At 1280x720, q=high, in a race: **v7 is 284 draw calls
+and 79k triangles** across the five passes (v6 was 384 / 65k) — 171 calls for the PS2
+world (which includes the shadow map's second pass over it), 1 for the blit, ~44 for the
+depth prepass, ~70 for the five merged ships and their effects, 3 for haze and flare.
+At `?q=low` it is 185 calls / 53k triangles, with no shadow pass and no haze. The v7
+ship merge is what paid for the engine-bay detail and the honest full-res HD pass:
+under SwiftShader the frame interval did not move (254 ms against v6's 258) even though
+the HD and prepass fragments went up 2.6x. `perf2.mjs` attributes by render-call order,
+so since v7 its "depth prepass" row is the blit and the prepass is folded into "HD". Two things
+came out of the first measurement and both are in the code now. The **depth prepass was
+re-rendering all 121 streamed tiles at full resolution** when it exists only to occlude
+the HD ships — a thing can only occlude what is behind it, so `renderFrame()` now hides
+every tile farther away than the farthest ship (118 calls down to 44); the projection
+must stay identical to the HD pass or the depth values are not comparable, which is why
+it culls by visibility rather than by moving the far plane. And the **props were 1420
+separate meshes for 30k triangles** — about 21 triangles a draw call, each drawn twice
+(shadow map, then world). Everything but the floaters is static and shares a flat
+Lambert colour, so `bakeProps()` merges each tile's props into ONE mesh with the colour
+moved to a vertex attribute; the floaters spin and bob so they stay real meshes.
+Culling granularity does not suffer — the merged mesh is exactly one tile, the unit the
+terrain mesh was already culled by — but it does cost ~15% more triangles, which is the
+trade. Two traps paid for here: **`toNonIndexed()` returns `this` when a geometry is
+already unindexed**, and DodecahedronGeometry and OctahedronGeometry both are, so the
+naive version transformed, stripped and then *disposed the kit's shared rock geometry*
+and every rock in the world went black; and giving the merged mesh `receiveShadow` puts
+it on both sides of the same 1024 hard map, and the self-shadow acne turns every prop
+black too (it is off, as the props always effectively were).
+
+**Measuring under SwiftShader, honestly.** Two things will lie to you. `renderer.info`
+**resets on every `render()` call**, so a three-pass frame reports only the last pass
+(54 calls, 2.5k triangles — off by a factor of 17); set `info.autoReset = false` and
+reset by hand. And SwiftShader **submits asynchronously**, so the CPU time inside a
+`render()` call is submission, not rasterisation, and the stall lands in whichever later
+call syncs — per-pass milliseconds are meaningless, and removing the HD pass made the
+PS2 pass appear three times slower. What is honest: the **frame interval**, and the draw
+call and triangle counts, which are exact and hardware-independent. Read deltas between
+variants, never absolutes.
+
+**A testing note that will otherwise cost an afternoon:** under SwiftShader at high
+quality the frame rate is low enough that `dt` clamping runs the simulation at roughly a
+quarter of real time. A craft that looks stuck at 8 km/h in a headless capture is usually
+fine — re-measure at `?q=low` before believing it. `window.__pw` exposes `{THREE, scene,
+camera, renderer, composer, terrain, route, state, dust, scars, audio, sky, input,
+player, field, debug:{start, over, setQuality, tp, gate}}`, and overriding `input.read`
+is how the autopilot harness drives the real control path.
 
 ### The Game of Life (`gameoflife/`)
 **Mini games and interactive stories that always revert to going back to nature.**
@@ -1687,9 +2632,12 @@ slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
     bg.js       # the photographic park, the tilt-shift, and the photo/stereo seam
     main.js     # boot, HUD, and the replay that acts the engine's log out
     audio.js    # synthesised kit, every voice through one master gain
+  bg/
+    plate.jpg   # the backdrop photograph — the Karhupuisto bear; swap the file, no code
+    README.md   # what makes a plate: the middle is what the fight stands in front of
   test/
     core.mjs    # bare node: exact numbers, English-only, and a bot over 160 runs
-    smoke.cjs   # a browser: puppets, the topple, the staging rules, both formats
+    smoke.cjs   # a browser: puppets, the topple, the staging rules, the plate, both formats
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate
@@ -1719,7 +2667,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     render.js   # iso projection + canvas paint, upscaled pixelated (dropcabal's trick)
     input.js    # pointer/keyboard/pad — three methods, one decision path
     momentum.js # the movement economy: bank it by moving, spend it on the swing
-    ammo.js     # magazines; a leaf module (grid.js reads it, and it predates the v36 merge of ai.js into combat.js)
+    ammo.js     # magazines; a leaf module (grid.js reads it, and it predates the v39 merge of ai.js into combat.js)
     abilities.js# the skill LINES: catalogue, loadouts, weapon gates, flanking — pure
     autoplay.js # the AUTO switch — v24's tactical bot, not a new one
     camera.js   # phone zoom floor, drag-to-pan, follow the acting unit
@@ -1787,6 +2735,27 @@ toko-drop/
     player.js   # Player movement, dash mechanic, firing
     enemy.js    # Enemy class — 4 bullet-hell patterns, each with distinct color
     bullet.js   # Object-pooled bullets (300 cap, shared pool for all bullets)
+powder/         # Powder — hover SIM racer, open flatlands cut by a canyon, surreal
+  index.html    # telemetry cluster HUD
+  ref/          # the reference plates the craft design is held against
+  art/          # six of them, downscaled, for the menu and results
+  pipeline/     # README.md = the Blender contract; powder_blender.py = setup/validate/export
+  models/       # manifest.json (empty in prod) + reference/ = the kit exported as .glb
+  js/
+    main.js     # scene, shadow/bloom/grade stack, race loop, camera rig, HUD
+    palette.js  # the whole colour scheme + the two light directions
+    terrain.js  # height(x,z), the rift and its BREACHES, streamed tile grid
+    vehicle.js  # THE SIM: four sprung hover pads, turbine spool, slip-limited grip
+    craft.js    # THE MODEL SHOP: PMREM chrome, engine bay, merged per material — kit OR .glb
+    models.js   # the pipeline's door: loads, VALIDATES and registers .glb ships/landmarks
+    haze.js     # heat-haze refraction: copies the frame, bends it behind the exhaust
+    flare.js    # the sun's lens flare (three's addon, canvas textures)
+    props.js    # monoliths, arches, floating rock — and bakeProps, one mesh a tile
+    route.js    # gates, alternating rift floor and flats, aligned to the breaches
+    dust.js     # one pooled particle class, configured as plume / spindrift / sparks
+    input.js    # twin sticks: steer+throttle, and pan+WEIGHT / keyboard / gamepad
+    audio.js    # WebAudio turbine stack driven by N1, wind, surface roar
+    sky.js      # gradient dome, sun, the ringed body, distant mesa range
 paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new palette)
   index.html
   js/

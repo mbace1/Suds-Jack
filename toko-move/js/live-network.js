@@ -20,23 +20,101 @@ const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=M
 // createFlow for its own day: 3000 ticks at the shared 10 ticks a second, which
 // is 07:00-10:00 of game time. A tram's 50-minute pass is then ~83 seconds of
 // wall time — visible motion, not a blur.
-export const SHIFT = { ticksPerDay: 3000, startHour: 7, hours: 3 };
-export const END_TO_END_MINUTES = { TRAM: 50, SUBWAY: 45 };
-export function speedFor(mode, ticksPerDay = SHIFT.ticksPerDay, shiftHours = SHIFT.hours) {
+// HOW FAST A VEHICLE IS, and why every line used to move at a different pace.
+//
+// Speed was one DURATION for every line: 50 minutes end to end for a tram,
+// whatever that tram's line actually was. Helsinki's tram lines run from about
+// 3 km to about 17 km, so the long ones covered five times the ground in the
+// same time as the short ones. Measured across all 102 vehicles, the apparent
+// speed on screen ran from a crawl to a median of 299 km/h with a 90th
+// percentile of 494 — trams visibly rocketing past other trams on the same
+// map. That variance is what "tram speeds are too fast" was looking at, and no
+// single number could have fixed it, because half the fleet was already slow.
+//
+// So a vehicle now has a SPEED and its end-to-end time follows from how long
+// its own line is, which is the way round reality works. The values are real
+// average service speeds with stops included.
+export const MODE_KMH = { TRAM: 16, SUBWAY: 30 };
+
+// WHAT THE PLAYER SEES is then only the compression: how much game time the
+// five-minute shift covers. Three hours was 36x. 1.25 hours is 15x, which puts
+// every tram at 240 km/h on screen and the metro at 450 — at or below the
+// SLOWEST-looking half of what shipped, with the 494 km/h tail gone entirely.
+// A tram now takes about a minute to cross the 4 km ROUTE viewport: long
+// enough to see it coming, decide, and board.
+//
+// It is paid for in deliveries, because a slower fleet makes every ride longer
+// in ticks by the same factor. Measured over 56 random door-to-door plans, the
+// median job costs 856 ticks against a 3000-tick shift, so DELIVERY_TARGET is
+// three. The same measurement caught the shipped setting being wrong on its
+// own terms: 5 median jobs fitted and the target asked for SIX, so nobody
+// could finish a shift at ordinary difficulty.
+//
+// If it should be slower still, the honest next lever is a LONGER SHIFT rather
+// than a smaller number here — ticksPerDay 4500 buys the same slowdown again
+// and keeps the deliveries, at the cost of the owner's five-minute session.
+export const SHIFT = { ticksPerDay: 3000, startHour: 7, hours: 1.25 };
+// The 07:00 timetable, in minutes between vehicles: HSL's morning peak runs
+// the trunk trams every 7.5 and the metro every 4. The fleet is provisioned
+// to this, not to a count. Measured with test/shifts.cjs, 200 random-but-sane
+// bots each: three per line 19% of shifts won, 10/5 35%, 7.5/4 52% — and the
+// shift is 07:00-08:15, which IS the peak.
+export const HEADWAY_MIN = { TRAM: 7.5, SUBWAY: 4 };
+
+const RAD = Math.PI / 180;
+export function pathKm(path) {
+  let m = 0;
+  for (let i = 1; i < (path?.length || 0); i++) {
+    const [a1, o1] = path[i - 1], [a2, o2] = path[i];
+    m += Math.hypot((a2 - a1) * 111320, (o2 - o1) * 111320 * Math.cos((a1 + a2) * 0.5 * RAD));
+  }
+  return m / 1000;
+}
+export function speedForLayer(layer, ticksPerDay = SHIFT.ticksPerDay, shiftHours = SHIFT.hours) {
+  const km = pathKm(layer?.path), kmh = MODE_KMH[layer?.mode] ?? MODE_KMH.TRAM;
   const minutesPerTick = (shiftHours * 60) / ticksPerDay;
-  const ticks = (END_TO_END_MINUTES[mode] ?? 50) / minutesPerTick;
+  const ticks = Math.max(1, (km / kmh) * 60 / minutesPerTick);
   return 1 / ticks;                           // one full pass per `ticks` ticks
 }
 export class LiveNetwork{
- constructor(transit,{vehiclesPerLine=2,dwellTicks=3,ticksPerDay=SHIFT.ticksPerDay}={}){this.transit=transit;this.vehiclesPerLine=vehiclesPerLine;this.dwellTicks=dwellTicks;this.vehicles=[];this.selectedVehicleId=null;for(const layer of transit?.layers||[]){if(layer.mode!=='TRAM'&&layer.mode!=='SUBWAY')continue;const count=layer.mode==='SUBWAY'?Math.max(2,vehiclesPerLine):vehiclesPerLine;// Phases are spaced EVENLY around the out-and-back cycle, offset per line by
+ // HOW MANY VEHICLES A LINE GETS. With a fixed count per line the headway is
+ // the line's length divided by that count, and nothing else — measured at
+ // three per line: tram 15 every 61 game-minutes, the metro every 49, trams
+ // 1/7/9 every 25-29, against a real morning of 10 for a tram and 4-5 for the
+ // metro. A 500-tick stand at Arabia for the next 6 was not bad luck, it was
+ // the timetable. `headwayMinutes` provisions each line to a TARGET headway
+ // instead — vehicles = cycle ÷ headway, never fewer than two — so the count
+ // is a consequence of the line and the number a player feels is the one that
+ // was chosen. `vehiclesPerLine` stays as the fixed-count path for tests and
+ // for the measurement that decided this.
+ constructor(transit,{vehiclesPerLine=2,headwayMinutes=null,dwellTicks=3,ticksPerDay=SHIFT.ticksPerDay,shiftHours=SHIFT.hours}={}){this.transit=transit;this.vehiclesPerLine=vehiclesPerLine;this.headwayMinutes=headwayMinutes;this.ticksPerDay=ticksPerDay;this.shiftHours=shiftHours;this.dwellTicks=dwellTicks;this.vehicles=[];this.selectedVehicleId=null;for(const layer of transit?.layers||[]){if(layer.mode!=='TRAM'&&layer.mode!=='SUBWAY')continue;const count=this.countFor(layer);// Phases are spaced EVENLY around the out-and-back cycle, offset per line by
   // its hash so lines do not move in lockstep. They used to be hash-scattered,
   // and scattered phases bunch: measured at Lasipalatsi from tick 0, the gap to
   // the next same-direction vehicle reached 1453 ticks on a line whose even
   // headway is 556. Evenly spaced, the worst wait on a line is one headway and
   // the average is half of one — which is what a timetable is.
-  const base=(hash(layer.id)%10000)/10000;for(let i=0;i<count;i++)this.vehicles.push({id:`${layer.id}:${i}`,layer,phase:(base+i*(2/count))%2,speed:speedFor(layer.mode,ticksPerDay)});}}
- position(v,tick){const path=v.layer.path||[];if(path.length<2)return null;const cycle=(v.phase+tick*v.speed)%2,q=cycle<=1?cycle:2-cycle,at=q*(path.length-1),i=Math.min(path.length-2,Math.floor(at)),f=at-i,a=path[i],b=path[i+1];return{lat:a[0]+(b[0]-a[0])*f,lon:a[1]+(b[1]-a[1])*f,pathIndex:at,direction:cycle<=1?1:-1};}
+  const base=(hash(layer.id)%10000)/10000;for(let i=0;i<count;i++)this.vehicles.push({id:`${layer.id}:${i}`,layer,phase:(base+i*(2/count))%2,speed:speedForLayer(layer,ticksPerDay)});}}
+ // A HOLD is a disruption: every vehicle on a layer stands where it is from
+ // `from` to `until`. Positions are a closed form in the tick, so a hold is
+ // just ticks the layer does not experience — `effectiveTick` subtracts the
+ // held time so far, and both the position and the next-arrival read it. An
+ // estimate does not look through a FUTURE hold: you learn of a disruption
+ // when it happens, which is what makes it one.
+ hold(layer,from,until){(this.holds||=[]).push({layerId:layer.id,from,until});}
+ heldNow(layer,tick){return (this.holds||[]).find(h=>h.layerId===layer.id&&tick>=h.from&&tick<h.until)||null;}
+ effectiveTick(layer,tick){let t=tick;for(const h of this.holds||[]){if(h.layerId!==layer.id)continue;const a=Math.min(tick,h.until),b=h.from;if(a>b)t-=(a-b);}return t;}
+ position(v,tick){const path=v.layer.path||[];if(path.length<2)return null;tick=this.effectiveTick(v.layer,tick);const cycle=(v.phase+tick*v.speed)%2,q=cycle<=1?cycle:2-cycle,at=q*(path.length-1),i=Math.min(path.length-2,Math.floor(at)),f=at-i,a=path[i],b=path[i+1];return{lat:a[0]+(b[0]-a[0])*f,lon:a[1]+(b[1]-a[1])*f,pathIndex:at,direction:cycle<=1?1:-1};}
  vehicle(id){return this.vehicles.find(v=>v.id===id)||null;}
+ // Unit screen-space direction of travel at a vehicle, from the path tangent
+ // around its index and the sign of the leg it is on; null on a degenerate path.
+ heading(v,p,project){const path=v.layer.path||[];if(!p||path.length<2)return null;const i=Math.max(0,Math.min(path.length-2,Math.floor(p.pathIndex)));const a=project(path[i][0],path[i][1]),b=project(path[i+1][0],path[i+1][1]);let dx=(b.x-a.x)*(p.direction>=0?1:-1),dy=(b.y-a.y)*(p.direction>=0?1:-1);const L=Math.hypot(dx,dy);if(L<1e-6)return null;return{x:dx/L,y:dy/L};}
+ countFor(layer){const perMin=this.ticksPerDay/(this.shiftHours*60),want=this.headwayMinutes?.[layer.mode];
+  if(!want)return layer.mode==='SUBWAY'?Math.max(2,this.vehiclesPerLine):this.vehiclesPerLine;
+  const cycle=2/speedForLayer(layer,this.ticksPerDay,this.shiftHours);
+  return Math.max(2,Math.round(cycle/(want*perMin)));}
+ // The timetable's own headway on a line, in ticks — what "every N minutes"
+ // means here, for anything that wants to say it out loud.
+ headwayTicks(layer){const vs=this.vehicles.filter(v=>v.layer.id===layer.id);if(!vs.length)return null;return (2/vs[0].speed)/vs.length;}
  select(id){this.selectedVehicleId=this.vehicle(id)?.id||null;return this.vehicle(this.selectedVehicleId);}
  clearSelection(){this.selectedVehicleId=null;}
   // How near counts as AT THE STOP. The window was a raw path-index distance,
@@ -79,6 +157,10 @@ export class LiveNetwork{
   // the catch window with a whole cycle — the single case where it and the old
   // scan disagreed, and it disagreed by 548 ticks.
   if(this.nearestTo(layer,nodePathIndex,tick,2.2,direction))return 0;
+  // Held: nothing arrives until the hold lifts, then the timetable resumes
+  // from where it stood.
+  const held=this.heldNow(layer,tick);if(held)return (held.until-tick)+(this.nextArrival(layer,nodePathIndex,held.until,direction)??0);
+  tick=this.effectiveTick(layer,tick);
   const n=Math.max(1,(layer.path?.length||2)-1),q=Math.max(0,Math.min(1,nodePathIndex/n));
   const targets=direction===1?[q]:direction===-1?[2-q]:[q,2-q];
   let best=null;
@@ -86,5 +168,36 @@ export class LiveNetwork{
    const cur=(v.phase+tick*v.speed)%2;
    for(const t of targets){let d=(t-cur)%2;if(d<0)d+=2;const dt=d/v.speed;if(best===null||dt<best)best=dt;}}
   return best===null?null:Math.round(best);}
- draw(ctx,tick,project,dpr=1,{filter=null}={}){const boxes=[];let shown=0,total=0;ctx.save();ctx.font=`bold ${Math.round(8*dpr)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';for(const v of this.vehicles){if(!v.layer.visible)continue;const p=this.position(v,tick);if(!p)continue;total++;if(filter&&!filter(p.lat,p.lon,v.layer,v))continue;shown++;const q=project(p.lat,p.lon),selected=v.id===this.selectedVehicleId,w=(selected?29:24)*dpr,h=(selected?18:14)*dpr;ctx.fillStyle=v.layer.colour;ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?4:2)*dpr;ctx.beginPath();ctx.roundRect(q.x-w/2,q.y-h/2,w,h,3*dpr);ctx.fill();ctx.stroke();if(selected){ctx.strokeStyle='#fffdf7';ctx.lineWidth=1*dpr;ctx.stroke();}ctx.fillStyle='#fff';ctx.fillText(v.layer.name,q.x,q.y+.5*dpr);boxes.push({x:q.x-w/2,y:q.y-h/2,w,h});}ctx.restore();this.lastShown=shown;this.lastTotal=total;return boxes;}
+ // Badges never MOVE — a badge is the vehicle, and a nudged one lies about where the tram is.
+ // So a crowd is resolved by DEGRADING: the highest-ranked vehicle in a heap keeps its
+ // labelled badge and everything under it falls back to a dot at its true position.
+ // Rank is stable (rank desc, then id) rather than positional, so two trams crossing
+ // cannot swap which of them is readable frame to frame.
+ // BUDGET: at most this many labelled badges, rank order — the rest are dots
+ // even where there is room. A phone at CITY scale had fifty labels and no
+ // crowd rule could make that a map; the lines your job can use fill the
+ // budget first, so what is labelled is what you can catch. No budget by
+ // default: the declutter gate drives draw() directly and asserts the pure rule.
+ draw(ctx,tick,project,dpr=1,{filter=null,priority=null,budget=Infinity}={}){const boxes=[],dots=[];let shown=0,total=0;const items=[];
+  for(const v of this.vehicles){if(!v.layer.visible)continue;const p=this.position(v,tick);if(!p)continue;total++;if(filter&&!filter(p.lat,p.lon,v.layer,v))continue;shown++;const selected=v.id===this.selectedVehicleId;items.push({v,p,q:project(p.lat,p.lon),selected,rank:selected?3:(priority?priority(v.layer,v)||0:0)});}
+  items.sort((a,b)=>b.rank-a.rank||(a.v.id<b.v.id?-1:a.v.id>b.v.id?1:0));
+  const gap=1*dpr,hits=(b)=>boxes.some(o=>b.x<o.x+o.w+gap&&o.x<b.x+b.w+gap&&b.y<o.y+o.h+gap&&o.y<b.y+b.h+gap);
+  ctx.save();ctx.font=`bold ${Math.round(8*dpr)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.textBaseline='middle';
+  // Decide first, paint second, DOTS UNDER BADGES: a dot is a vehicle whose
+  // true position is inside a crowd, and the crowd's winner is a badge at
+  // nearly the same spot — painted in rank order the dot landed on top of the
+  // label it had just yielded to (a 2 at Töölö with a hole in it, live on
+  // v2.34). Two passes keep every dot visible at its edge and every label whole.
+  const badges=[];
+  for(const it of items){const{v,q,selected}=it,w=(selected?29:24)*dpr,h=(selected?18:14)*dpr,box={x:q.x-w/2,y:q.y-h/2,w,h};
+   if(boxes.length>=budget||hits(box)){const r=4*dpr;dots.push({x:q.x-r,y:q.y-r,w:r*2,h:r*2,line:v.layer.name,id:v.id,rank:it.rank,colour:v.layer.colour,cx:q.x,cy:q.y,r});continue;}
+   box.line=v.layer.name;box.id=v.id;box.rank=it.rank;boxes.push(box);badges.push({it,box});}
+  for(const d of dots){ctx.fillStyle=d.colour;ctx.strokeStyle='#fffdf7';ctx.lineWidth=1.5*dpr;ctx.beginPath();ctx.arc(d.cx,d.cy,d.r,0,Math.PI*2);ctx.fill();ctx.stroke();}
+  // A NOSE on every badge, pointing the way the vehicle is going. A CATCH only
+  // lights for a vehicle heading your way, and a rectangle cannot say which way
+  // that is; a player watching the right line go the wrong way could not tell
+  // it from the one they wanted. The nose is the badge's own colour inside the
+  // same hard line, on the leading edge, from the path's tangent at the vehicle.
+  for(const {it,box} of badges){const{v,q,selected}=it;const nose=this.heading(v,it.p,project);ctx.fillStyle=v.layer.colour;ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?4:2)*dpr;ctx.beginPath();ctx.roundRect(box.x,box.y,box.w,box.h,3*dpr);if(nose){const nx=nose.x,ny=nose.y,px=-ny,py=nx,L=5*dpr,cx=q.x+nx*(Math.abs(nx)>Math.abs(ny)?box.w/2:box.h/2),cy=q.y+ny*(Math.abs(nx)>Math.abs(ny)?box.w/2:box.h/2);ctx.moveTo(cx+px*4*dpr,cy+py*4*dpr);ctx.lineTo(cx+nx*L,cy+ny*L);ctx.lineTo(cx-px*4*dpr,cy-py*4*dpr);}ctx.fill();ctx.stroke();if(selected){ctx.strokeStyle='#fffdf7';ctx.lineWidth=1*dpr;ctx.stroke();}ctx.fillStyle='#fff';ctx.fillText(v.layer.name,q.x,q.y+.5*dpr);}
+  ctx.restore();this.lastShown=shown;this.lastTotal=total;this.lastBadges=boxes.slice();this.lastDots=dots.slice();return boxes.concat(dots);}
 }

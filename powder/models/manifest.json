@@ -1,0 +1,6 @@
+{
+  "_": "See pipeline/README.md. Ships: id → file (ids: nose, aft, delta, intake). Landmarks: files. Numerals: the 3x3 sheet. Files are relative to this directory except numerals, which is relative to index.html.",
+  "ships": {},
+  "landmarks": [],
+  "numerals": null
+}

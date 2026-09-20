@@ -24,8 +24,8 @@
 //     that card rather than that the change was safe.
 //   - A difference of a few points across 150 seeds is noise. Do not tune on it.
 
-import { CHARACTERS, ENCOUNTERS, RULES } from '../js/data.js';
-import { createRun, startRun, botRun, botTurn, chooseReward } from '../js/engine.js';
+import { CHARACTERS, ENCOUNTERS, ACTS, RULES } from '../js/data.js';
+import { createRun, startRun, botRun, botStep } from '../js/engine.js';
 
 const SEEDS = Number(process.argv[2]) || 150;
 const chars = Object.keys(CHARACTERS);
@@ -33,20 +33,22 @@ const chars = Object.keys(CHARACTERS);
 // ── win rate, and WHERE the run ends ─────────────────────────────────────
 const rates = {};
 const losses = {};
+const act2 = {};
 for (const ch of chars) {
   let wins = 0;
   for (let seed = 1; seed <= SEEDS; seed++) {
     const s = botRun(startRun(createRun({ seed, character: ch })));
     if (s.phase === 'won') wins++;
     else losses[s.encounter] = (losses[s.encounter] || 0) + 1;
+    if (s.act >= 1) (act2[ch] = (act2[ch] || 0) + 1);
   }
   rates[ch] = wins / SEEDS;
 }
 
 console.log(`\n── win rate over ${SEEDS} seeds ──`);
 for (const ch of chars) {
-  const pct = Math.round(rates[ch] * 100);
-  console.log(`  ${ch.padEnd(10)} ${String(pct).padStart(3)}%  ${'█'.repeat(Math.round(pct / 3))}`);
+  const pct = Math.round(rates[ch] * 100), a2 = Math.round((act2[ch] || 0) / SEEDS * 100);
+  console.log(`  ${ch.padEnd(10)} ${String(pct).padStart(3)}% win  ${String(a2).padStart(3)}% reach act 2  ${'█'.repeat(Math.round(pct / 3))}`);
 }
 const lo = Math.min(...Object.values(rates)), hi = Math.max(...Object.values(rates));
 console.log(`  spread ${Math.round((hi - lo) * 100)} points`);
@@ -57,35 +59,38 @@ for (const ch of chars) {
   for (let seed = 1; seed <= SEEDS; seed++) {
     const s = startRun(createRun({ seed, character: ch }));
     let guard = 0, seen = -1;
-    while ((s.phase === 'fight' || s.phase === 'reward') && guard++ < 400) {
-      if (s.phase === 'reward') { chooseReward(s, 0); continue; }
-      if (s.encounter !== seen) { seen = s.encounter; arrive[seen].push(s.hero.hp / s.hero.maxHp); }
-      botTurn(s);
+    while (!['won', 'lost'].includes(s.phase) && guard++ < 900) {
+      if (s.phase === 'fight' && s.encounter !== seen) { seen = s.encounter; arrive[seen].push(s.hero.hp / s.hero.maxHp); }
+      botStep(s);
     }
   }
 }
-console.log(`\n── HP on ARRIVING at each fight (the curve) ──`);
-ENCOUNTERS.forEach((e, i) => {
-  const a = arrive[i];
-  if (!a.length) return;
-  const pct = Math.round(a.reduce((x, y) => x + y, 0) / a.length * 100);
-  console.log(`  ${String(i + 1)}. ${e.kallio.name.padEnd(26)} ${String(pct).padStart(3)}%  ${'█'.repeat(Math.round(pct / 3))}`);
-});
+console.log(`\n── HP on ARRIVING at each fight (the curve), by act ──`);
+for (const [ai, act] of ACTS.entries()) {
+  console.log(`  act ${ai + 1} · ${act.kallio.name}`);
+  for (const id of [...act.fights, ...act.elites, act.boss]) {
+    const i = ENCOUNTERS.findIndex(e => e.id === id), a = arrive[i];
+    if (!a.length) continue;
+    const pct = Math.round(a.reduce((x, y) => x + y, 0) / a.length * 100);
+    const tag = act.elites.includes(id) ? ' (elite)' : id === act.boss ? ' (boss)' : '';
+    console.log(`    ${(ENCOUNTERS[i].kallio.name + tag).padEnd(34)} ${String(pct).padStart(3)}%  n=${String(a.length).padStart(4)}  ${'█'.repeat(Math.round(pct / 3))}`);
+  }
+}
 
 console.log(`\n── where runs END ──`);
 const total = Object.values(losses).reduce((a, b) => a + b, 0);
-ENCOUNTERS.forEach((e, i) => {
-  const n = losses[i] || 0;
-  if (n) console.log(`  fight ${i + 1}: ${n} losses (${Math.round(n / total * 100)}% of all deaths)`);
+Object.entries(losses).sort((a, b) => b[1] - a[1]).forEach(([i, n]) => {
+  console.log(`  ${ENCOUNTERS[i].kallio.name.padEnd(30)} ${String(n).padStart(4)} losses (${Math.round(n / total * 100)}% of all deaths)`);
 });
 console.log(`  survived to the end: ${chars.length * SEEDS - total} of ${chars.length * SEEDS}`);
 
 // ── the two readings that matter ─────────────────────────────────────────
-const lastShare = (losses[ENCOUNTERS.length - 1] || 0) / Math.max(1, total);
+const bossIdx = ACTS.map(a => ENCOUNTERS.findIndex(e => e.id === a.boss));
+const lastShare = bossIdx.reduce((a, i) => a + (losses[i] || 0), 0) / Math.max(1, total);
 console.log(`\n── reading ──`);
 console.log(lastShare > 0.95
-  ? `  FLAT: ${Math.round(lastShare * 100)}% of all deaths are the last fight. The run is a warm-up plus a coin flip.`
-  : `  SHAPED: the last fight is ${Math.round(lastShare * 100)}% of deaths, so the middle of the run costs something.`);
+  ? `  FLAT: ${Math.round(lastShare * 100)}% of all deaths are the two bosses. The run is a warm-up plus two coin flips.`
+  : `  SHAPED: the bosses are ${Math.round(lastShare * 100)}% of deaths, so the spans between them cost something.`);
 console.log(lo < 0.15
   ? `  STRANDED: ${chars.find(c => rates[c] === lo)} wins ${Math.round(lo * 100)}% — below what a bot should manage.`
   : `  every character finishes runs (worst is ${Math.round(lo * 100)}%).`);

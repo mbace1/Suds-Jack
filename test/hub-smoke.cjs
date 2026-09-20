@@ -20,7 +20,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const MIME = {
-  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
   '.json': 'application/json', '.md': 'text/plain',
 };
 
@@ -101,6 +101,9 @@ function check(name, cond) {
   // from the jsDelivr CDN — which a sandboxed or offline runner cannot reach.
   // Anything served from this test's own origin still counts.
   const errors = [];
+  let navigating = 0;
+  const realGoto = page.goto.bind(page);
+  page.goto = async (...args) => { navigating++; try { return await realGoto(...args); } finally { navigating--; } };
   const mine = url => !url || url.startsWith(base);
   // A cabinet marked `inRepo: false` is carried by the gh-pages site and not by
   // this branch, so a miss on its path is the catalogue being honest, not a
@@ -112,16 +115,31 @@ function check(name, cond) {
   const expected = (text, url) =>
     /collect-broken/.test(text + url) || notCarriedHere(url) ||
     (!mine(url) && /Failed to load resource/i.test(text));
+  // An error is only actionable if you know WHICH PAGE was open when it
+  // arrived. This gate walks two dozen cabinets and reports at the very end,
+  // so an unstamped message ("TypeError: Failed to fetch") named neither the
+  // game nor the moment and cost a session to place.
+  const note = text => {
+    // A page still loading when the gate walks on has its requests ABORTED, and
+    // an abort arrives as "Failed to fetch" from whatever was mid-flight — for
+    // a long time that was toko-move's boot fetch of the HSL pack, reported at
+    // the very end of a run against a page the gate had left minutes earlier.
+    // It is not a fault a player can ever see: nobody navigates away from a
+    // game a tenth of a second after opening it. Only abort-shaped messages
+    // are dropped, and only while a navigation this gate started is in flight.
+    if (navigating && /Failed to fetch|Failed to load resource|ERR_ABORTED/i.test(text)) return;
+    errors.push(`${text}  [on ${page.url().replace(base, '') || '/'}]`);
+  };
   page.on('console', m => {
-    if (m.type() === 'error' && !expected(m.text(), m.location().url)) errors.push(m.text());
+    if (m.type() === 'error' && !expected(m.text(), m.location().url)) note(m.text());
   });
-  page.on('pageerror', e => errors.push(String(e)));
+  page.on('pageerror', e => note(String(e)));
   // A bare "404 (Not Found)" from the console names nothing, and a gate that
   // reports an unactionable failure costs more than it saves. Record the URL
   // alongside it so the next person knows which file is missing.
   page.on('response', r => {
     if (r.status() >= 400 && !expected('Failed to load resource', r.url())) {
-      errors.push(`HTTP ${r.status()} ${r.url()}`);
+      note(`HTTP ${r.status()} ${r.url()}`);
     }
   });
 
@@ -211,10 +229,17 @@ function check(name, cond) {
   check('the sketch shelf is there too', await page.locator('.shelf .sketch-link').count() === sketches.length);
   check('the page names itself', (await page.title()).includes('Suds Jack'));
 
-  // every Play button points at its catalogue path, in the order rendered
+  // every Play button points at its catalogue path, in the order rendered.
+  // A pinned cabinet carries ?release=N, and N is READ from versions.json
+  // rather than typed here — a release number typed into a fourth file is a
+  // fourth file to forget (v34 shipped with three different answers).
+  const relVers = JSON.parse(require('node:fs').readFileSync(require('node:path').join(ROOT, 'hub/versions.json'), 'utf8'));
+  const pinned = new Set(['slaykallio']);
+  await page.waitForFunction(() => [...document.querySelectorAll('a[data-game="slaykallio"]')].some(a => a.href.includes('?release=')));
   const hrefs = await page.locator(`${CAB} .btn.play`).evaluateAll(ns => ns.map(n => n.getAttribute('href')));
-  check('Play opens the game it is under',
-    hrefs.join() === games.filter(g => g.live !== false).map(g => g.path).join());
+  check('Play opens the game it is under, pinned to the release the log names',
+    hrefs.join() === games.filter(g => g.live !== false)
+      .map(g => pinned.has(g.id) && relVers[g.id] ? `${g.path}?release=${relVers[g.id].v}` : g.path).join());
 
   // not every button has to work yet — but a button that cannot work must say
   // so rather than pointing at a 404
@@ -265,6 +290,19 @@ function check(name, cond) {
     return out;
   });
   check(`every marquee is painted${blank.length ? ` — ${blank}` : ''}`, blank.length === 0);
+
+  // ...and it is the marquee that cabinet ASKED for. `drawMarquee` falls back
+  // to `gel` for a key it does not know, which is right at runtime and silent:
+  // a renamed drawing paints a different game's blob and every check above
+  // still passes. Only one direction is asserted — the site's catalogue
+  // carries cabinets this tree does not (Toko Trip's `cove`), so an art
+  // function with no entry here is not evidence of anything.
+  const orphans = await page.evaluate(async () => {
+    const art = await import('/hub/art.js');
+    const keys = new Set(Object.keys(art.ART));
+    return (window.__hub.games || []).filter(g => g.art && !keys.has(g.art)).map(g => `${g.id}:${g.art}`);
+  });
+  check(`every cabinet's marquee key is a real drawing${orphans.length ? ` — ${orphans}` : ''}`, orphans.length === 0);
 
   // ── feedback: the empty note ──
   await page.locator(CAB).first().locator('.btn.ghost').click();
@@ -495,7 +533,7 @@ function check(name, cond) {
   // project is asking — so it has to survive, not quietly fall back to a fixed
   // list the day someone renames an id.
   const taxo = await page.evaluate(async () => {
-    const t = await import('./hub/topics.js?v=1');
+    const t = await import('./hub/topics.js?v=11');
     const bare = t.KINDS.map(k => k.id).join();
     const led = Object.fromEntries(__hub.games.map(g => [g.id, t.kindsFor(g.id).map(k => k.id)]));
     const gaps = [];
@@ -516,7 +554,7 @@ function check(name, cond) {
   await page.locator(CAB).nth(1).locator('.btn.ghost').click();
   const kindLabels = await page.$$eval('.kind', bs => bs.map(b => b.textContent));
   const wanted = await page.evaluate(async id => {
-    const t = await import('./hub/topics.js?v=1');
+    const t = await import('./hub/topics.js?v=11');
     return t.kindsFor(id).map(k => k.label);
   }, games[1].id);
   check(`the panel offers the kinds in this cabinet's order (${kindLabels[0]})`,
@@ -540,7 +578,7 @@ function check(name, cond) {
     collected[0].text.includes('wall') && collected[0].source === 'hub');
   check(`and what it is about, so it can be sorted (${collected[0].kind})`,
     collected[0].kind === (await page.evaluate(async id => {
-      const t = await import('./hub/topics.js?v=1');
+      const t = await import('./hub/topics.js?v=11');
       return t.kindsFor(id)[0].id;
     }, games[1].id)));
   check('and it is kept locally too', (await page.evaluate(() => __hub.feedback.archive())).length === 1);
@@ -736,7 +774,7 @@ function check(name, cond) {
     shortHrefs.every(h => !h.includes('/AnotherHUB/')));
   const deadShort = [];
   for (const g of local) {
-    const r = await page.request.get(shortHrefs.find(h => h.endsWith(g.path)) ?? `${base}/${g.path}`);
+    const r = await page.request.get(shortHrefs.find(h => new URL(h).pathname.endsWith(g.path)) ?? `${base}/${g.path}`);
     if (!r.ok()) deadShort.push(g.id);
   }
   check(`every link resolves from the short URL too${deadShort.length ? ` — ${deadShort}` : ''}`,
@@ -769,6 +807,82 @@ function check(name, cond) {
       const [maj, min] = String(v.v).split('.');
       return v.n === Number(maj) * 1000 + Math.min(999, Number(min ?? 0));
     }));
+
+  // ── THE CABINET CONTRACT ───────────────────────────────────────────────
+  // Everything above proves the floor RENDERS. These three prove it is not
+  // quietly wrong, and each one is here because it was found broken on `main`
+  // by hand rather than by this gate — which had grown very good at catching a
+  // page that fails to load and blind to a page that loads a lie.
+  {
+    // 1. ONE SHELL, one token. `hub/shell.js` is shared by every cabinet and
+    //    scripts/deploy-hub.mjs renumbers it across all of them together, so
+    //    two different numbers means one page is pinned to a stale home button
+    //    and will keep serving it out of cache. `powder/` sat on ?v=17 while
+    //    twenty-three others were on ?v=37.
+    const shells = new Map();
+    for (const g of games.filter(g => g.inRepo && g.live !== false)) {
+      const html = path.join(ROOT, g.path, 'index.html');
+      if (!fs.existsSync(html)) continue;
+      const m = fs.readFileSync(html, 'utf8').match(/hub\/shell\.js\?v=(\d+)/);
+      if (m) shells.set(g.id, m[1]);
+    }
+    const tokens = [...new Set(shells.values())];
+    const odd = tokens.length < 2 ? [] : (() => {
+      const top = tokens.map(t => [t, [...shells.values()].filter(v => v === t).length])
+        .sort((a, b) => b[1] - a[1])[0][0];
+      return [...shells].filter(([, v]) => v !== top).map(([id, v]) => `${id}@v${v}`);
+    })();
+    check(`every cabinet asks for the same hub/shell.js (${tokens.join(', ')})${odd.length ? ` — stale: ${odd}` : ''}`,
+      odd.length === 0);
+
+    // 2. THE NUMBER ON THE CABINET IS THE NUMBER IN THE LOG. versions.json is
+    //    generated, so it goes stale silently the moment a game ships without
+    //    the generator being run — the floor then advertises a release that is
+    //    not the one behind the Play button. Found at flashprince (3 vs 7) and
+    //    turf (32 vs 34). Same parse as scripts/versions.mjs's topOf().
+    const behind = [];
+    for (const g of games.filter(g => g.inRepo)) {
+      const log = path.join(ROOT, g.path, 'VERSIONS.md');
+      if (!fs.existsSync(log)) continue;
+      const m = fs.readFileSync(log, 'utf8').match(/^##\s*v(\d+)(?:\.(\d+))?/m);
+      if (!m) continue;
+      const label = m[2] === undefined ? m[1] : `${m[1]}.${m[2]}`;
+      const shown = versions[g.id]?.v;
+      if (shown !== undefined && String(shown) !== label) behind.push(`${g.id}: json v${shown}, log v${label}`);
+    }
+    check(`versions.json agrees with every log${behind.length ? ` — ${behind.join('; ')}` : ''}`,
+      behind.length === 0);
+
+    // 3. NO ORPHANED HUB MODULE. `hub/toko-cabinet.js` sat unreferenced next to
+    //    the `toko-cabinet-dom.js` that actually ships — two implementations of
+    //    one feature, and the dead one still imported games.js and art.js at
+    //    their own ?v= tokens, which is the module-instance split CLAUDE.md
+    //    warns about waiting for somebody to wire it up.
+    const reach = new Set();
+    const follow = f => {
+      if (reach.has(f) || !fs.existsSync(path.join(ROOT, f))) return;
+      reach.add(f);
+      const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+      for (const re of [/from\s*'([^']+)'/g, /import\(\s*'([^']+)'/g, /^\s*import\s+'([^']+)'/gm,
+        /(?:src|href)="([^"]+)"/g]) {
+        for (const m of src.matchAll(re)) {
+          const bare = m[1].split('?')[0];
+          if (!/\.(js|css)$/.test(bare) || /^(https?:|data:|\/\/)/.test(bare)) continue;
+          follow(path.posix.normalize(path.posix.join(path.posix.dirname(f), bare)));
+        }
+      }
+    };
+    // From the hub page AND from every cabinet's page: `shell.js` and
+    // `padkeys.js` live in hub/ but are reached only from a GAME's index.html,
+    // so a walk that starts at the arcade alone calls the home button orphaned.
+    follow('index.html');
+    for (const g of games.filter(g => g.inRepo)) follow(`${g.path}index.html`);
+    const orphans = fs.readdirSync(path.join(ROOT, 'hub'))
+      .filter(f => /\.(js|css)$/.test(f) && !reach.has(`hub/${f}`));
+    check(`every module in hub/ is reachable from the page${orphans.length ? ` — orphaned: ${orphans}` : ''}`,
+      orphans.length === 0);
+  }
+
   await page.reload({ waitUntil: 'networkidle' });
   // not every cabinet has a number — the first one is a game that lives only
   // on the deployed site — so wait for any of them to fill, not for the first
@@ -895,6 +1009,19 @@ function check(name, cond) {
 
   // ── the way back, on every game page ──
   const shelled = games.filter(g => g.inRepo && g.live !== false);
+  // The two single-page checks below are about hub/shell.js, which is the SAME
+  // file on every cabinet — so the page they use should be the lightest one,
+  // not whichever game happens to sort first in the catalogue. It was
+  // `shelled[0]`, which is Concrete, the heaviest boot on the floor: the hold
+  // test intermittently read the gamepad before the page had settled and the
+  // run also picked up a stray "Failed to fetch", so a game nobody was editing
+  // could turn the arcade's gate red. Smallest entry page, decided by bytes so
+  // it stays true as the floor changes.
+  const light = [...shelled].sort((a, b) => {
+    const size = g => { try { return fs.statSync(path.join(ROOT, g.path, 'index.html')).size; }
+                        catch { return Infinity; } };
+    return size(a) - size(b);
+  })[0] ?? shelled[0];
   const missing = [], badHref = [], small = [];
   for (const g of shelled) {
     await page.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
@@ -928,7 +1055,7 @@ function check(name, cond) {
     viewport: { width: 420, height: 780 }, hasTouch: true, isMobile: true,
   });
   const tp = await touch.newPage();
-  await tp.goto(`${base}/${shelled[0].path}`, { waitUntil: 'domcontentloaded' });
+  await tp.goto(`${base}/${light.path}`, { waitUntil: 'domcontentloaded' });
   await tp.evaluate(() => {
     // Stand in for the game, faithfully: toko-drop swallows every touch that is
     // not in its own UI, in the CAPTURE phase and non-passive. That detail
@@ -1003,7 +1130,13 @@ function check(name, cond) {
   }
 
   // holding Start on a game page walks back to the arcade
-  await page.goto(`${base}/${shelled[0].path}`, { waitUntil: 'networkidle' });
+  await page.goto(`${base}/${light.path}`, { waitUntil: 'networkidle' });
+  // networkidle does not mean the shell module has RUN. Stub the pad before the
+  // button exists and the first poll reads null, getComputedStyle throws, the
+  // wait rejects on its own exception and the run reports both "the fill never
+  // started" and a page error — one late module, two red checks, neither of
+  // them about the thing being tested.
+  await page.locator('.arcade-home .fill').waitFor({ state: 'attached', timeout: 6000 });
   await page.evaluate(() => {
     window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 })), axes: [0, 0, 0, 0], connected: true, id: 'stub' };
     navigator.getGamepads = () => [window.__pad];
@@ -1013,8 +1146,12 @@ function check(name, cond) {
   // gamepad poll on a heavy page (three.js still settling) and reported 0 —
   // the assertion is that holding Start fills the button, not that it fills
   // inside a quarter of a second.
+  // Null-safe on purpose: the hold ENDS in a navigation to the arcade, where
+  // this element does not exist, so a predicate that dereferences it races its
+  // own success and throws into the page.
   const filled = await page.waitForFunction(
-    () => parseFloat(getComputedStyle(document.querySelector('.arcade-home .fill')).width) > 0,
+    () => { const el = document.querySelector('.arcade-home .fill');
+            return !!el && parseFloat(getComputedStyle(el).width) > 0; },
     null, { timeout: 3000 }).then(() => true).catch(() => false);
   check('holding Start starts filling the home button', filled);
   await page.waitForFunction(() => location.pathname === '/' || location.pathname.endsWith('/index.html'), null, { timeout: 4000 });
@@ -1036,7 +1173,10 @@ function check(name, cond) {
       await page.evaluate(() => window.__arcadeShell?.game) === g.id);
   }
   // and a game that reads a pad itself is left completely alone
-  const native = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  // This fixture tests the shared shell's key bridge. Native-home cabinets
+  // own their controller/HOME code; the all-cabinet HOME check above still
+  // visits them, and their game repository runs their interaction gates.
+  const native = catalogue.find(g => g.pad === 'native' && g.inRepo && g.hubHome !== 'native');
   if (native) {
     await page.goto(`${base}/${native.path}`, { waitUntil: 'domcontentloaded' });
     check(`${native.id} reads its own pad, so nothing is layered on it`,
@@ -1051,7 +1191,7 @@ function check(name, cond) {
   // So drive `attachPad` directly with a stub binding, hosted on a page that
   // bridges nothing itself: whatever keys turn up are the bridge's own work,
   // with no second one to confuse them for.
-  const host = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  const host = native;
   await page.goto(`${base}/${host.path}`, { waitUntil: 'domcontentloaded' });
   await page.evaluate(async () => {
     window.__seen = [];
@@ -1175,8 +1315,9 @@ function check(name, cond) {
     // signed game carries a badge with that role, so looking for one found the
     // signature in the corner of the game just navigated to and called it the
     // sting still being on screen.
+    // This assertion checks navigation; destination CDN loading is independent.
     await bp.keyboard.press('Escape');
-    await bp.waitForURL('**/dropcabal/', { timeout: 4000 });
+    await bp.waitForURL('**/dropcabal/', { timeout: 4000, waitUntil: 'commit' });
     check('the mark is skippable and still takes you to the game',
       bp.url().endsWith('/dropcabal/'));
 
@@ -1184,7 +1325,7 @@ function check(name, cond) {
     await bp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
     await bp.waitForFunction(() => window.__hub);
     await bp.click('#cab-tokodrop a.play');
-    await bp.waitForURL('**/toko-drop/', { timeout: 4000 });
+    await bp.waitForURL('**/toko-drop/', { timeout: 4000, waitUntil: 'commit' });
     check('the next game start is a plain link, no mark',
       (await bp.$$('.toko-sting')).length === 0);
     await bp.close();
@@ -1223,6 +1364,26 @@ function check(name, cond) {
     (await page.$eval('#cab-tokodrop .best', n => n.textContent)).includes('4,242'));
   check('a game you have not played shows no score line at all',
     (await page.$$('#cab-skltr .best')).length === 0);
+
+  // Chat may download before the asynchronously imported hub has initialized.
+  // Delay only network delivery to reproduce that ordering on both entries.
+  for (const entry of ['/', '/AnotherHUB/']) {
+    const context = await browser.newContext();
+    const startup = await context.newPage();
+    const startupErrors = [];
+    startup.on('pageerror', e => startupErrors.push(e.message));
+    await startup.addInitScript(() => localStorage.setItem('tokoSting', '1'));
+    await startup.route('**/hub/hub.js?v=*', async route => {
+      await new Promise(resolve => setTimeout(resolve, 800));
+      await route.continue();
+    });
+    await startup.goto(base + entry);
+    await startup.waitForFunction(() => window.__hub?.chat, {}, { timeout: 10000 });
+    await startup.reload();
+    await startup.waitForFunction(() => window.__hub?.chat, {}, { timeout: 10000 });
+    check(`chat waits for hub initialization on ${entry}, including reload`, startupErrors.length === 0);
+    await context.close();
+  }
 
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 

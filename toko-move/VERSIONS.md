@@ -1,5 +1,822 @@
 # Toko Move — versions
 
+## v2.43 — 2026-09-18
+
+**A job is a PARCEL now, not a person.** Owner, 2026-09-18: *"Recipients names
+aren't needed. Maybe package size is relevant, can carry many smaller but only
+few or one larger. They can be also color coded rather than named."* Both halves
+of that are the same change, and it lands on the one row the whole game is
+played from.
+
+**Names are gone.** A dispatch row used to open *Riikka · Ooppera · asks for
+you* — three words of reading before you reach the thing you are choosing
+between. It opens with the parcel now: a coloured box whose SIZE is what it
+costs you to carry, then the place, then the tram and the price. The hand-off
+says *handed to you here* rather than naming a person, and a standing is PIPS
+instead of a phrase (`standingWord` is deleted rather than left unused — a
+phrase with no reader is dead code). The regulars still exist, still remember
+you and still tip; what is gone is their names on screen, which is exactly what
+was asked.
+
+**THE BAG IS SPACE, AND THE SENTENCE IS THE ARITHMETIC.** *Many smaller but only
+few or one larger* is a capacity of 5 with small 1, medium 2, large 5 — five
+smalls, two mediums with a small beside them, or ONE large and nothing else.
+That replaces two separate caps (one queued job, two drops) with one rule, and
+it is the first time this game has asked you to give something up to take
+something. `test/parcels.mjs` asserts the sentence as arithmetic rather than
+trusting three constants that look about right.
+
+| size | units | cargoes | pays |
+|---|---|---|---|
+| small | 1 | documents, express, hot food | ×0.82 |
+| medium | 2 | parts, fresh food, market goods | ×1 |
+| large | 5 | fragile, equipment | ×1.45 |
+
+A large has to pay for the drops it stops you taking or nobody would take one,
+and must not pay so well that the packing stops mattering — gated both ways: a
+bagful of smalls still out-earns one large, and a large still beats a small by
+half again.
+
+**ONE PALETTE, because there were two.** `cargoColour` in core-v212.js and
+`cargoColourOf` in job-board-v212.js disagreed on all eight cargoes, so the
+deadline ring and the offer row drew the same parcel in two different colours.
+Colour that means something may only be defined once, and it lives in
+`js/parcels.js`. The eight are measured against each other in CIE Lab, not
+picked by eye — **the first set failed its own gate at dE 19.6 between hot food
+and market goods**, which is two parcels a player cannot separate and therefore
+no colour coding at all. Market goods is a deep red-brown now and the closest
+pair is 25.2.
+
+**THE GAME WAS OFFERING WHAT IT WOULD REFUSE.** The first build of the capacity
+rule listed every drop and every second job at full strength and then answered
+the tap with *the bag is full* — a rule kept to itself until you break it, which
+is the same fault as quoting a number you then do not use. A parcel that will
+not fit is drawn dim, disabled, and says *no room in the bag*. Gated in the
+browser and driven BOTH WAYS on its own page: with a small parcel in hand the
+drops are tappable, with a large one they are not, and no row the sheet leaves
+enabled is one the engine would turn down.
+
+**The cost, measured.** 80 bots a cell, the walking bot, ordinary day, against
+v2.42's identical cell:
+
+| | v2.42 | v2.43 |
+|---|---|---|
+| win rate | 85.0% | 80.0% |
+| mean score | 1793 | 1565 |
+| drops taken / made | 7 / 6 | 6 / 5 |
+
+Five points of win rate and 13% of score is what the bag costs, and it is the
+mechanic working rather than a regression: a quarter of all jobs are large, and
+a large one means the leg carries nothing else. Well clear of the 40% floor.
+
+Gates: `test/parcels.mjs` (71, bare node) and four new checks in
+`test/phone.cjs` (43). Six mutations, six caught. `regulars.mjs` moved to pips
+and a nameless door.
+
+## v2.42 — 2026-09-18
+
+**The shift has a name now.** Roadmap item 7. Four city days, one per shift,
+announced on the title card BEFORE start — a roguelike modifier you meet by
+losing is a different genre, and this game decided at v2.26 that a number it
+will not show is a number it may not use. Every day rides a lever that already
+existed, which is Slay Kallio's ascension-ladder rule: a modifier that needs a
+new system is a second game wearing a hat.
+
+| day | what it does | rides |
+|---|---|---|
+| MATCH DAY | the Töölö trams crawl all morning | `liveNetwork.hold()`, repeated |
+| MARKET MORNING | more drops, and a premium in the Hakaniemi quarter | `alongOffers()` |
+| HELSINKI DAY | five encounters instead of three, double goodwill | `drawSchedule()`'s budget |
+| QUIET SUNDAY | a third of the trams gone, walking quicker | `HEADWAY_MIN` + `walkCost` |
+
+**And a shift NUMBER, because every shift was seed 7.** The event deck and the
+rival were both mounted on a hardcoded seed, so a player replaying the game got
+the same three encounters at the same three minutes for ever. A shift is now a
+number — random per visit, pinned by `?shift=N`, printed on the title card and
+the end screen so a shift can be quoted, replayed and handed to a bot. `?day=`
+pins the day, and `?day=none` is an ORDINARY day: the control the harness needs,
+since a modifier measured against itself is not measured at all. The job offers
+still do NOT vary by shift. That is the next thing to do rather than a thing
+done — varying them in the same version as the days would leave two changes
+arguing over one measurement.
+
+**THE BOT COULD NOT WALK, AND EVERY NUMBER THIS PROJECT HAS PRINTED CAME FROM
+A COURIER WHO REFUSED TO.** QUIET SUNDAY takes trams away and gives the
+pavement back, and it first measured as a flat 25-point loss with the
+compensation invisible, because `shifts.cjs` had no walk in it at all. A
+mechanic the harness cannot pursue is a mechanic nobody can balance — TURF's
+cache, for the third time. The bot now walks when walking there and catching
+from THERE beats standing here. Measured at 60 bots a cell:
+
+| | bot cannot walk | bot can walk |
+|---|---|---|
+| ordinary day | 68.3% | **81.7%** |
+| quiet Sunday | 40.0% | **70.0%** |
+
+Walking is worth +13 points on an ordinary day and +30 on a Sunday. The second
+number is the day working exactly as written; the first is a standing finding
+about every measurement before this one. It is also the first real payoff Local
+Knowledge (v2.40) has ever had — the stops you have been to are the shift.
+
+**Two days were INERT and the measurement said so.** This is v2.40's lesson
+arriving on schedule, and the gates now ask the question directly.
+- MATCH DAY first crowded families 4 and 10, because those are the stadium's
+  lines in the real city. The harness then showed **line 10 carrying 0.0% of
+  all catches in a shift** — half the day was aimed at a service this game
+  never uses. It crowds 2 and 4 now, which carry ~28% of every catch between
+  them and both really do run past the stadium, so the fiction survived contact
+  with the measurement.
+- MARKET MORNING keyed its premium on one stop id, and measured at **six offers
+  across sixty shifts**, which is not a cluster, it is a rumour. The premium is
+  a 600 m QUARTER now, and — the half that fires on every route — a market
+  morning offers a line's ordinary drop AND the quarter, so the day is more
+  work rather than only better-paid work. A first attempt to fix it by dealing
+  the market anchor into dispatch made things worse and was reverted: making
+  the market your DESTINATION takes it out of the drop window, because
+  `between` excludes both ends of the leg.
+
+**The crowd is a measured number, not a judged one.** A three-point ladder at
+80 bots a cell against an ordinary-day control: 45 ticks a hold reads inert
+(−1.3 points, the crowded families lose 1.6 of share), 110 reads brutal (−17.5,
+share −7.0), **80 ships** — felt, routed around, and far above the shift gate's
+40% floor.
+
+**The deck, measured.** 80 bots a cell, the walking bot, each bot pinned to its
+own shift number, against an ordinary-day control:
+
+| day | win rate | mean score |
+|---|---|---|
+| ordinary (control) | 85.0% | 1793 |
+| MATCH DAY | 67.5% | 1664 |
+| MARKET MORNING | 75.0% | **2190** |
+| HELSINKI DAY | 85.0% | 1760 |
+| QUIET SUNDAY | 63.7% | 1172 |
+| **what a player actually meets** | **76.3%** | 1721 |
+
+Read it as two hard days, one rich one and one mild one. MARKET MORNING is the
+shape an upside card should have — not easier, **richer**: +22% score for a
+10-point win rate, because a bag of three drops costs time the bot spends
+greedily. HELSINKI DAY is honestly the mildest of the four: it does what it
+says (five encounters, goodwill ×2, measured) and it costs about 58 ticks of a
+3000-tick morning, which is flavour rather than pressure. Said here rather than
+dressed up. MATCH DAY's cost read −10.0 in one block and −17.5 in another at
+the identical setting, which is the per-cell noise at this sample doing what
+v2.24 said it would; the direction is a finding, the size is not.
+
+Gates: `test/city-day.mjs` (83, bare node) asks whether the four days are well
+formed and whether every name they use is real IN THE SHIPPED PACK — a market
+at a stop that does not exist is the inert bug wearing a nicer hat.
+`test/days.cjs` (32, browser) asks the only question that matters: in the
+running game, does the day do anything? Six mutations, six caught. The other
+browser gates are now pinned to `?shift=1&day=none`, because a gate that lets
+a third of the trams vanish at random is measuring the dice.
+
+**Roadmap item 8, the ferry, is CLOSED rather than deferred.** Its condition was
+"only if the pack carries the Suomenlinna ferry as a layer". It does not — 34
+lines, 30 TRAM and 4 SUBWAY, no FERRY — so the set piece would need a service
+the city does not run, and this project does not author HSL data.
+
+## v2.41 — 2026-09-18
+
+**The UI pass, from six screenshots.** Phone and desktop, title / dispatch /
+waiting, looked at rather than gated — the owner's direction is Mini Metro and
+Mini Motorways: *fun, approachable, simplistic, succinct*. The night map stays
+(owner, 2026-09-02); what moved is everything around it.
+
+- **A badge budget.** A phone at CITY scale carried fifty labelled trams and
+  the crowd rule could only stop them overlapping; the map was a wall of
+  chips. `LiveNetwork.draw` takes a `budget` — at most N labelled badges,
+  in rank order, the rest dots at their true position even where there is
+  room — and main sizes it to the canvas (one label per ~11k CSS px², 10–32).
+  Rank fills the budget with the lines you can use, and **the dispatch
+  offers' lines now count as relevant** (they did not: with no job taken the
+  rank was flat and the budget went to whichever line sorted first).
+- **No key on a phone.** Seventeen chips over the bottom of a 390px map were
+  the loudest thing on it, and every badge and every row already wears its
+  line. The legend draws only on a canvas 600 CSS px or wider.
+- **Desktop is map-first.** The sheet was two thirds of a 1280px screen and
+  mostly empty; the map is the game. The grid is now `1fr` map + a 380–440px
+  column, the canvas fills its cell (the inline board aspect is overridden),
+  and the feed is one quiet ellipsed line at the foot of the column instead
+  of a two-line log at its head. The vehicle counter (`CITY · 64/310 near`)
+  is gone from the HUD; on a phone the layer inspector button goes too, so
+  the top row is clock · pause · speed.
+- **The surround is the land grey.** With a canvas wider than the board, the
+  near-black outside it read as a slab on a black sheet with a fifth of the
+  screen dead each side. Same grey as the paper now; the frame line says where
+  the data ends.
+- **The zoom rail is one pill**, not three shadowed slabs; the version hero is
+  a line under the title, not the loudest thing on the card.
+- **Copy.** *a stranger* → *new to you*; *Vesa is going for this* → *Vesa
+  wants it*; and the waiting panel's *Lit says CATCH — tap it* no longer
+  shows over three dim rows — it reads *Tap the lit one* when one is lit and
+  *Nothing to catch yet · first in N min* when none is.
+
+Gates: badges (20), phone (37), misses (8), cabinet route (19), the bare-node
+suite, tokens, version sync, shifts --gate — the budget is a draw-time rule
+and the sim is untouched. Nine tokens moved.
+
+## v2.40 — 2026-09-18
+
+**Local knowledge, and the obvious rule is INERT.** The walking network was
+fully known from the first second of the first shift, which is nobody's
+experience of a city. The obvious fix — learn a street by standing on it —
+was built, and it changed nothing: walking is only ever offered FROM where you
+are, and arriving is what teaches you, so by the time the filter could bite
+you already knew the street. Every walk was still offered. Caught in a browser
+probe before it shipped, and the check that would have caught it is now in the
+gate so it cannot come back.
+
+What is learned is the **FAR END**: you know a way on foot when you have been
+to BOTH stops it joins. Not circular (you reach stops by tram), granular (half
+a street can be known), and arriving somewhere new really does open the map —
+one new stop, one new walk, and the feed says so. Three central stops are known
+from the start. Persisted in `localStorage`; the end screen counts them. **The
+tourist card is the payoff**: it shows you a stop you have never been to, and
+never one that joins nothing you know.
+
+**The other courier.** Vesa works the same board: a purple figure on the map
+with a dashed line to where they are heading, and a claim on ONE ordinary
+offer — *Vesa is going for this · 15 s*. Let it run out and the job is theirs,
+with a line in the feed and a count on the end screen. Never the hand-off
+(that was put in your hand), never the last job of the shift, and never inside
+the first six seconds of a board. It is deliberately NOT a second simulation:
+a rival with its own route planner is a second game running beside yours and
+none of it is visible.
+
+**A decisive player never loses a job to them, and that is the design** — so
+the only bot that can measure the claim is one that dawdles. `shifts.cjs`
+gained a `dawdler` policy that reads the whole board for forty seconds before
+choosing: it loses two jobs a shift, and the forty random bots lose none. A
+mechanic nothing in the harness can pursue is a mechanic nobody can balance
+(TURF's lesson about the cache); this is the same thing from the other side.
+
+Gates: `test/city.mjs` (51, bare node, in CI), including the inert rule as a
+standing check. Six mutations, six caught. `shifts.cjs --gate` is 10.
+Win rate 67.5%, inside the band.
+
+## v2.39 — 2026-09-18
+
+**Three things that share one currency**, which is why they shipped together.
+
+**The streak is the LAST multiplier** — Balatro's shape, which this engine
+already uses and had nowhere else to put: every bonus adds, then the chain
+multiplies the lot. Consecutive on-time deliveries pay ×1 ×1.25 ×1.5 ×1.75 ×2,
+capped, and **one late parcel takes all of it**. That asymmetry is the whole
+decision: at four, do you take the fast job or the paying one? A drop on the
+way counts — it is a delivery. Live on the HUD in green beside the score.
+
+**The hand-off**: the person you just delivered to has another one going out,
+in your hand before dispatch hears about it. It is not a new kind of job — an
+ordinary offer from where you stand, listed first, with **+25% that expires in
+fifteen seconds**. Let it lapse and it is still there at the ordinary price.
+**Measured and then made harder**: offered at every door it took the random
+bots from 62% to **87%**, because it removes the walk back to a hub and
+dispatch stops being a decision. So it is EARNED — only after an on-time
+delivery, and then at about half the doors, except a regular, who always has
+one. Back to 62.5%, the same as v2.38.
+
+**Regulars** (`js/regulars.js`): six named people at six stops — Riikka the
+florist at Ooppera, Seppo's print shop at Hakaniemi, Mirja at the harbour
+office, Tuomas the lab courier, Anneli at the market café, Kaarlo's ceramics.
+Standing 0-5 in `localStorage`, raised by an on-time delivery to them and cut
+by a late one; it pays a **tip** on the standing you ARRIVED with — today's
+delivery is what moves it for next time — and the board shows their name and
+how you stand (*seen you once*, *asks for you*). **This is what goodwill was
+for**: the event deck's granny has been accruing a number with nothing to
+spend it on, and goodwill now counts as standing with EVERYBODY for the rest
+of the shift. Word gets around, one number reaches six people, and helping is
+never a charity the score punishes you for.
+
+**A REAL BUG, found because a gate refused to build**: the hash is `>>> 0`
+(unsigned) and three shifts off it used `>>` (signed). Half of all seeds have
+the top bit set, so `CARGO_KEYS[-1234]` is `undefined` — silently — and
+`CARGO[undefined] || CARGO.documents` had been giving **38% of all drops no
+cargo at all** since v2.36, falling back to documents. The hand-off hit the
+same thing and simply was never built. `events.js` masks with `&0xffff` and
+was never affected; its `>>>` is defensive. The gate that sees it is not
+variety (a negative index tallies as its own key and the histogram looks
+healthy) but the direct question: **every drop must carry something real**.
+
+Gates: `test/regulars.mjs` (63, bare node, in CI) — the ladder and its cap, one
+late breaking it, a drop counting, the tip paid on arrival standing, goodwill
+capped, the door window, the hand-off listed first and only where handed over,
+and the signed-shift trap. Nine mutations, nine caught. `events.mjs` grew a
+600-check sweep asserting every drawn card is a real card. `shifts.cjs --gate`
+is 8: an on-time chain is reachable, hand-offs are taken.
+
+## v2.38 — 2026-09-17
+
+**The event deck** (owner: *"roguelike random events type deal… help the
+granny across the street (10 sec delay)"*). `js/events.js`, two kinds:
+
+- **Disruptions are facts.** A car on the rails, a points failure, a
+  passenger unwell: one line is HELD at its stops for four to six game-minutes.
+  `LiveNetwork.hold()` makes it real rather than announced — positions are a
+  closed form in the tick, so a hold is ticks the layer does not experience
+  (`effectiveTick`), and both the fleet and `nextArrival` read it, so the catch
+  panel's *in 3 min* becomes *in 9 min* and the plan you made visibly goes
+  wrong. An estimate never looks through a FUTURE hold: you learn of a
+  disruption when it happens, which is what makes it one. Shown as a banner
+  with the line's badge and the minutes left on it.
+- **Encounters are a choice** — 80 Days' shape: a face, one line, options as
+  rows priced in seconds. The granny (walk her across, −10 s, +goodwill), the
+  tourist, the inspector (documents cargo: *waved through* — FTL's blue option;
+  otherwise show your ticket, −3 s), the wallet (hand it in, or pocket it for
+  more score and −3 goodwill — the trap), the busker, the stroller, an old
+  friend. Every card has a free way past. **A card never blocks the tram**:
+  catching while one is up takes the free option for you — boarding IS walking
+  on. Only having chosen to help holds you (`busy`), and that is the cost.
+  Goodwill accrues on the challenge and nothing spends it yet; Regulars will.
+
+The deck is DRAWN, never rolled: the schedule is a hash of the shift seed, so
+a shift replays and the bot can play it. Budget: three encounters and one
+disruption a shift, worst-case encounter cost under 280 ticks. Measured:
+random-but-sane bots answer ~3 events a shift at ~85 ticks and 37 of 40 meet
+a hold; the win rate reads 62.5%, inside the noise of v2.36's 63.5%.
+
+Gates: `test/events.mjs` (53, bare node, in CI) — a free option on every card,
+a seeded draw, no card twice, the budget, and a 240-tick hold moving the next
+arrival by exactly 240; `shifts.cjs --gate` gained two checks (events are
+answered, holds happen). misses.cjs stays green because a card never blocks.
+
+## v2.37 — 2026-09-17
+
+**The succinct UI** (owner: *"make the UI feel a bit more fun, approachable,
+and simplistic. The Mini Metro and Motorways are succinct experiences"*). One
+rule: shapes before words, and no ticks on screen.
+
+- **Minutes, not ticks.** `~145t` and `deadline 337t` were the engine's unit
+  leaking into the game. `js/ui.js` reads ticks-per-minute off the clock and
+  everything on screen says *now*, *in 3 min*, *~4 min*, *8 min left*. Ticks
+  stay in the engine and every test.
+- **The HUD is glyphs**: the clock, deliveries as dots (`●○○ +2`), the score,
+  and the current job as its cargo glyph inside a RING that empties with the
+  deadline. The words "deliveries" and "deadline" are gone.
+- **Every option is one row**: the line's own badge (the block that rides on
+  the map, so a plan and its tram look like one thing) → where it is headed ·
+  *now* or *in 3 min* · the price. A transfer is two badges. No DIRECT/VIA, no
+  "YOU ARE AT", no "Lit says…" past the first job.
+- **Dispatch is one row per job**: cargo glyph, destination, the first badge
+  that gets you there and when, what it pays. It was four lines of prose.
+- The feed and the read-only panel are gone on a phone; the map grew to
+  50dvh; the title card is two sentences.
+- Cargo is a glyph (✉ ♨ ⚙ ◇ ▣ ⚡ ❀ ▤), the three-letter code its title.
+
+Gate note: phone.cjs's "dispatch list is gone" check keyed on the old heading
+text and would have passed vacuously; it keys on `DISPATCH ·` now.
+
+## v2.36 — 2026-09-17
+
+**ON YOUR WAY — Paperboy's loop on a tram.** Waiting was still 22% of a shift
+and riding was 600 ticks with nothing to press. The main job says where you
+are going; these say what you could drop at the REAL stops you will pass
+getting there — the HSL stop table (292 stops), not the twenty-node game
+graph, because between two graph nodes a tram calls at three to eight stops
+nobody could deliver to before. A drop is made from aboard while the vehicle
+stands at the stop: no headway, no get-off. One ride serves two or three
+jobs, and choosing a line is choosing what it passes — every offer names the
+line that passes it, which is the point. Two offers per stop, a bag of two.
+
+**Drops pay score and count in their own tally; the shift's ask stays the
+authored A→B jobs.** Measured first the other way with a survey bot playing
+the whole day with no target: a day held ~12 deliveries of which ten were
+drops, and the jobs had become a chauffeur for a drop route. The owner's brief
+says A→B jobs are the objective, so the HUD reads `1/3 +4`, the end screen
+gets a *drops on the way* line, and a shift is won the same way it was.
+Random-but-sane bots (which take a drop on their chosen line half the time)
+win 75% of 40 and hand over ~6 drops each.
+
+**Found on the way: the first drop stranded the courier.** The mobility
+controller keyed its leg on `ch.index`, and a drop bumped index without
+changing the job, so `syncLeg` read a new leg and wiped the ride from under
+the courier — status "riding", aboard nothing, for the rest of the shift. The
+random bots fell 60% → 37% the moment drops existed and every loss was
+"ended riding, 1 delivered". The key is the job's id now.
+
+The target is a per-shift property (`challenge.target`, `DELIVERY_TARGET` the
+default) so a campaign city or the survey bot can carry its own; the HUD and
+the end screen read it from the challenge.
+
+UI: the ON YOUR WAY panel sits under the boarding options (its own sheet slot,
+`alongBoard`) and vanishes once you board; the ride strip marks each drop at
+its true fraction of the leg with its name. `shifts.cjs` gained `--survey`
+and a fourth gate check (drops are offered, taken and handed over — mutation
+that never hands one over: caught).
+
+Reference note: the owner pointed at Trafficity (Steam). Steam, SteamDB,
+Reddit, YouTube, Wikipedia and the games press are all blocked from this
+sandbox and nothing about it is indexed by search yet, so the reference pass
+against it has not happened. The insight built here is from the reference in
+the repo — Paperboy — whose whole loop is deliveries along a route you are
+already travelling.
+
+## v2.35 — 2026-09-13
+
+**The shift could not be won, and now it can — measured, not felt.** Nothing in
+this project had ever finished a shift: the gates certified that a job could be
+taken and a tram caught, and the one person who tried by hand (v2.34, twice)
+got 0/3 both times. `test/shifts.cjs` drives the real game — the real
+timetable, the real challenge, the real mobility controller — through the same
+commands the buttons call, stepping the clock with `flow.runTicks` rather than
+the wall clock, so a shift runs in under a second and two hundred in minutes.
+The fleet and the offers are deterministic (hashes, not rolls), so the sample
+is over PLAYERS, not seeds: four named policies plus random-but-sane bots that
+choose among what the panel would show.
+
+**At v2.34, random-but-sane bots won 19% of shifts. The cause was the fleet.**
+Three vehicles per line, whatever the line's length, makes the headway the
+length divided by three: tram 15 every 61 game-minutes, the metro every 49,
+trams 1/7/9 every 25-29 — against a real morning of 7.5 for a trunk tram and 4
+for the metro. The 500-tick stand at Arabia for the next 6 was not bad luck, it
+was the timetable. `LiveNetwork` now provisions each line to a TARGET headway
+(`HEADWAY_MIN`, vehicles = cycle ÷ headway, never fewer than two): 102 vehicles
+became 310, the median headway went from 692 ticks to 296, and the same bots
+went 19% → 35% at 10/5 → **52% at 7.5/4**, which is HSL's morning peak, which is
+when the shift is.
+
+**The second cause was dispatch.** Loop 47 listed first whichever job had a
+tram within reach, and on job one that was Lasipalatsi → Arabia at ~1500
+ticks — half the day for one delivery. A bot taking the first-listed job
+finished 1/3; a bot taking the cheapest finished 3/3 at tick 2201. Offers are
+now SIZED TO THE SHIFT: priced door to door by the same estimator the deadline
+uses, anything that cannot land before the day ends is dropped, and the three
+kept are a spread — cheapest, middle, dearest that fits. With both fixes the
+random bots win **63.5% of 200 shifts** and the cheapest-job player finishes at
+tick 858; median first delivery moved from tick 1191 to 509. `--gate` runs 40
+and holds 40% and a cheapest-job win; it is in CI.
+
+**Found on the way, and fixed: RUN THE DAY AGAIN was a dead second shift.** It
+booted a fresh flow and challenge in place while main-v212's mobility
+controller, fleet, trails and log all kept the old ones — measured,
+`tm.mobility.ch !== tm.challenge` after the button, so a job taken on the second
+shift was invisible to the controller and no CATCH could ever light. It reloads.
+
+**UI, from the screenshots.** The lit CATCH is FIRST — three 130px cards had
+put it second or third, under two greyed WAITs, half below the fold on a phone;
+options are one row each now (verb, service, where it goes, cost) and all three
+fit beside the map. The HUD lost its 46px dead band beside the HUB button: the
+clock and controls sit to the right of it, the status line under. The feed
+truncated mid-word ("Transit only; no") and now ellipsises one line on a phone.
+The read-only ALSO CALLING HERE panel is folded into a `<details>` (MISSED stays
+outside it, visible). The duplicate "ON TRAM 1H" card above the ride card is
+gone, and the ride card is a STRIP — passed stops filled, where you are ringed,
+the destination flagged, a countdown off the same closed form the catch panel
+uses — instead of "Vehicle hsl:1H:2 · current Kamppi · next Kluuvi".
+
+**Art.** The courier is a FIGURE and is on the board whenever you are: a flat
+fill inside a hard line — head, coat, bag, two legs that swap on a five-tick
+gait — standing at the stop while you wait, walking while you walk. It used to
+be a navy dot marked W, and only while walking, so for most of the shift you
+were nowhere on the map at all. Every badge has a NOSE on its leading edge from
+the path tangent, because a CATCH lights only for a vehicle heading your way
+and a rectangle could not say which way that was. Dots paint UNDER badges now
+(a dot at the same spot as the badge it yielded to was punching a hole in the
+label). The job's destination carries a pennant on a pole with the stop's name
+in the cargo's colour, instead of a second ring in a second colour. And one
+warm wash over the ground, strongest at 07:00 and gone by 08:15, so the five
+minutes have a direction you can feel — soft-light, so the line ink is
+untouched.
+
+Gates: `shifts.cjs --gate` (3, new, in CI), phone.cjs 37, misses.cjs 8,
+badges.cjs 20, cabinet-route 19, tokens.mjs, and every bare-node gate green.
+
+## v2.34 — 2026-09-11
+
+**The cache tokens were wrong, and nothing was looking at them.** Two faults,
+one of them shipped an hour earlier in v2.33:
+
+`core-v212.js` was rewritten in v2.33 — its `BUILD_VERSION` moved and, more to
+the point, its import of `live-network.js` moved from `?v=7` to `?v=8` — and it
+kept `?v=36`. A returning player holding a cached `core-v212.js?v=36` would have
+gone on importing `live-network.js?v=7` for as long as that cache held: the
+badge fix sat on the server, the token said nothing had changed, and the board
+kept its pile-up. It is now `?v=37`.
+
+`deliveries.js` was being imported under **two** tokens at once — `?v=11` by
+`core-v212.js` and `?v=10` by `job-board-v212.js` — which is the exact failure
+the one-token-per-module rule is named for: the browser instantiates the module
+twice and its state splits in half. It has been that way since v2.29 moved
+`DELIVERY_TARGET` from 6 to 3 and bumped only core's copy, so a returning player
+had an engine wanting three deliveries and a job board reading six.
+
+**`test/tokens.mjs` is the gate, and it measures against the DEPLOYED tree**,
+because a token means "this is not the file you already have" and the file you
+already have is what it has to be compared against. It walks the import graph
+from `index.html` rather than globbing `js/*.js` — the folder still carries
+`main.js`, `main-v210.js` and `main-v211.js`, superseded entry points nothing
+loads, whose stale tokens are dead files rather than a cache fault. It asserts
+one token per module across the live graph, and that no module's bytes changed
+while its token stood still. CI fetches `gh-pages` for it; with no ref to read
+it **fails** rather than skipping.
+
+The reverse case is reported and **not** enforced, and finding that out is worth
+writing down: "bytes identical, token moved" is what a CORRECTION looks like.
+v2.33 shipped core's new bytes under its old token, so the deployed copy already
+matches this tree and the 36 → 37 that fixes it reads, from bytes alone, exactly
+like a gratuitous bump. Nothing in the two trees can tell them apart. The cost of
+a wrong bump is one refetch; the cost of a missed one is a player stuck on the
+old build until their cache turns over.
+
+Also in this release, in `test/hub-smoke.cjs` rather than the game: the arcade
+gate was failing about one run in four, two different ways, and both were the
+ruler rather than the floor. The hold-Start test dereferenced
+`.arcade-home .fill` in its wait predicate — null before the shell module ran
+and null again after the hold navigated home, so the wait rejected on its own
+exception and reported both "the fill never started" and a page error. And a
+page still loading when the gate walks on has its requests aborted, which
+arrives as "Failed to fetch" from whatever was mid-flight — usually toko-move's
+own boot fetch, reported at the end of a run against a page left minutes
+earlier. Abort-shaped messages are now dropped only while a navigation the gate
+itself started is in flight, and every error is stamped with the page that was
+open when it arrived, because an unstamped message named neither the game nor
+the moment.
+
+## v2.33 — 2026-09-10
+
+**The line badges never dodged each other.** `LiveNetwork.draw()` painted one
+badge per vehicle at its exact projected position, in vehicle order, with no
+collision handling of any kind — while `drawStopLabels()` was carefully avoiding
+those same badges, so stop names dodged trams and trams piled on trams.
+Measured, at deviceScaleFactor 2:
+
+| | badges | overlapping pairs | worst stack | badge area buried | fully hidden |
+|---|---|---|---|---|---|
+| phone, CITY | 27 | 34 | 9 | 25.3% | 1 |
+| phone, ROUTE | 62 | 49 | 6 | 24.1% | 2 |
+| phone, STOP | 18 | 5 | 3 | 16.5% | 1 |
+| tablet, CITY | 27 | 22 | 7 | 19.2% | 1 |
+| tablet, ROUTE | 62 | 31 | 4 | 19.8% | 1 |
+
+The heap around Kamppi is in every screenshot sent to the owner since v2.28.
+
+**The fix is DEGRADATION, not movement.** A badge is not a label beside a
+vehicle, it *is* the vehicle — so nudging one out of a crowd moves the tram, and
+at city scale a fourteen-pixel nudge is several hundred metres of lie about where
+the service is. Instead the highest-ranked vehicle in a crowd keeps its labelled
+badge and everything under it falls back to a dot at its true position. Nothing
+is dropped and nothing moves; what is given up is the label, which was
+unreadable in that heap anyway.
+
+**Rank comes from the caller, because the board cannot know which tram matters.**
+`draw()` takes a `priority` function and `main` supplies one from the lines that
+are any use to you right now — the one you are riding, the one your selected plan
+says to take, and the ones the boarding panel is offering. Without it the
+declutter would be arbitrary about which service it silenced, and the silenced
+one is often yours. A selected vehicle outranks everything.
+
+Ties break on vehicle **id**, never on position. A positional tiebreak is the
+obvious way to write it and it makes two crossing trams swap which of them is
+readable, frame after frame, for as long as they are close.
+
+After: **zero** overlapping badges at every scale on both viewports, with 12 of
+27 vehicles labelled at phone CITY and 32 of 66 at phone ROUTE.
+
+`test/badges.cjs` (20 checks) is the gate: no two labelled badges overlap at
+three scales on two viewports; badges + dots account for every vehicle shown;
+`main` really passes a rank function; the declutter is actually engaging, so the
+no-overlap checks are not vacuous; a line silenced unranked gets a readable badge
+back when ranked; and every vehicle that yielded its label yielded it to one that
+outranks it by rank-then-id. Six mutations, six caught — including the positional
+tiebreak, which the two obvious "is it stable" checks could not see.
+
+## v2.32 — 2026-09-10
+
+**`MISSED` was accusing the player of missing trams the game had never offered
+them.** The owner could not get the recording onto a machine that can push, so
+the claim in PR #473 — that its four `MISSED` lines were evidence the catch
+buttons were unreachable — could not be checked against the video. It could be
+checked against the CODE, and it turns out to be a second fault that survived
+v2.30.
+
+`hub-tactics` worked its own misses out, and it asked a different question from
+the panel with the buttons on it: its `arrival()` scanned **every service
+calling at the stop** and took **no direction**, flagging a miss whenever any
+tram on any line was at the hub and left. A CATCH lights only for a vehicle
+travelling the way your leg goes.
+
+Measured on the live build, reproducing the recorded situation — an iPad in
+portrait, a job taken, standing still at Lasipalatsi for 100 seconds:
+**23 `MISSED` banners across 8 lines** (4T, 10H, 4H, H, 1H, 10B, 10, 1T), while
+the only line the game ever offered for that job was **1**. The overlap was
+**none**. Every accusation was about a tram the player had never been offered,
+and the one they could actually board was never mentioned. Same run after the
+fix: **one** miss, on line 1, which had been lit.
+
+**A miss is now what the word says**: a catch that was lit, is not any more, and
+you did not board it. It is detected in `route-choice.js`, where readiness is
+already computed **with a direction**, and published on `tm.catchMisses`;
+`hub-tactics` reads that instead of counting for itself. Boarding is explicitly
+not a miss — taking a lit catch makes it stop being lit, and calling that a
+failure would blame the player for succeeding.
+
+`test/misses.cjs`, and the first version of it was worthless: it watched
+`tm.catchMisses` rather than the banner on screen, so a mutation putting the old
+computation back in `hub-tactics` changed nothing it could see, and its boarding
+check sampled once at the end when the list self-trims after 8 ticks — at ×4
+that is 200 ms of wall time, long gone. **All three mutations walked straight
+past it.** It reads the BANNER now, watches the whole of a boarding, and waits
+for a catch to light rather than shrugging when none has.
+
+Two measurement faults were found and fixed inside the gate itself, and both
+were the ruler rather than the game: a 200 ms sampler at ×4 sees one frame in
+eight and missed catches lighting and going dark between samples (rAF now); and
+the banner is throttled, so the tick it becomes VISIBLE lags the miss by up to
+two polls — measured, lit until 272, dark at 274, banner seen at 291. It prints
+its own age, so the gate uses that. Before both, the same build passed and
+failed the same check on consecutive runs.
+
+## v2.31 — 2026-09-07
+
+**Where a phone actually spends its pixels, measured rather than guessed.** v2.30
+left one plan of three off the bottom on a phone, and the game's core verb is
+comparing plans. So the budget at 390x664 was measured instead of nudged: the
+HUD was **152px** (23% of the screen, wrapped to two rows), the board 292, the
+feed 39, and the sheet **181** — while three catch buttons were **95px each**,
+285px of options in a panel with 181 to put them in.
+
+Four things came off the fat, none of them information: the HUD drops `next
+X → Y` (the job panel's own first line, one row below it) and the near-count
+(diagnostic) on narrow screens, which unwraps it to **130**; the feed keeps one
+line instead of two; the catch button puts its verb and its arrival on ONE line
+instead of two of its four, and its chips lose 2px of padding, taking it **95 →
+69**; and a transfer's cost reads `+499t changing` rather than repeating the
+interchange name that is already on the chip above it.
+
+**Result: all three plans are on screen at once on a real iPhone (390x844) and
+on an iPad.** At 390x664 — Playwright's iPhone 13, which is Safari with its
+chrome bars showing, the worst case — two are whole and the third is past the
+edge, and the panel now **counts itself**: `BOARD ONE OF 3`, so a viewport that
+cannot show a plan still tells you it is there.
+
+**One attempt at the worst case was reverted by its own gate.** Taking the board
+to 37dvh bought the third button and broke something better: the canvas became
+wider than it is tall, and at ROUTE the board covered **77%** of it instead of
+91% — the empty-map problem v2.28 fixed, re-introduced to buy a button at a
+viewport that cannot hold one anyway. The board keeps its 44dvh.
+
+`test/phone.cjs` is 37 checks: the plan count at three viewports, the panel's
+self-count when it cannot show them all, and that every option still says CATCH
+or WAIT — that last one added because a mutation removing the verb was MISSED
+first time round. Compacting a button to fit three of them is allowed to move
+the verb and not allowed to lose it. Five mutations, all caught.
+
+## v2.30 — 2026-09-07
+
+**Reviewing another lane's PR #473, which diagnosed v2.28's sheet bug from the
+owner's own recording.** It was superseded — v2.29 had already fixed the same
+thing from the other end and shipped — and it could not merge (two conflicts, and
+it claimed a version number main had already used). But its diagnosis was better
+than mine in one way and it found two things I had missed, so what it caught is
+here rather than closed with it.
+
+**It proved the order was a RACE, not merely wrong.** I had reasoned my way to
+the root cause; #473 measured it — same build, three runs at 820x1180, two
+different paint orders, and on the run where the read-only HUB panel won, **zero**
+CATCH buttons were on screen. On an iPhone it lost every time. Re-measured
+against v2.29 across six runs at both viewports, the order is now identical every
+time and the catch count is 3/3 on iPad and 2/3 on iPhone, against its own
+after-figures of 3/3 and 1/3.
+
+**`rideStatus` was a SIXTH writer and I had listed five.** The panel that says
+which tram you are on appends straight to `#sheet` and was on no list. It came out
+first anyway — correct **by accident**, because `sheetSlot` moves the named slots
+to the end around whatever else is there — and the next module to append directly
+would have landed on top of the buttons in exactly the same way. It is a declared
+slot now, and while riding the two things you can DO (get off early, replan) lead.
+
+**#473's CSS `order` is taken as a second layer, with its own flaw fixed.**
+`order` defaults to 0 and its declarations started at 1, so a panel nobody had
+thought of would jump to the TOP, ahead of the buttons — the mirror image of the
+bug it was fixing. Here `#sheet>*` is `order:9` and the six named panels are 1-6,
+so an undeclared panel lands last. Two layers, because either alone is a single
+point of failure: a module that appends directly escapes the DOM ordering, and a
+panel with no rule escapes the CSS.
+
+**And the reason the recording says MISSED four times about trams that were
+standing at the stop.** HUB OPTIONS is read-only by design — spans, not buttons,
+"Availability, not recommendation" — and it said **AT HUB** in the same three
+words the boarding panel uses. #473 named this and deliberately left it. It now
+reads **ALSO CALLING HERE**, says *"Everything at this stop, whether or not it is
+any use to you. Nothing here is tappable — board from the panel above."*
+
+Nothing about the CATCH rule changed: a catch stays disabled unless a vehicle is
+at the stop travelling the way this leg goes, which is the design working.
+
+`test/phone.cjs` grows to 31 checks. Six mutations, each caught — and two of them
+were MISSED on the first attempt, which is the finding worth keeping: a gate that
+only reads the rendered page cannot tell a declared slot from one that came out
+first by accident. `sheetSlot()` with no argument now reports the list, so the
+gate can ask the code rather than the pixels.
+
+## v2.29 — 2026-09-06
+
+Two findings from the owner's first real playtest, and both were worse than
+they sounded.
+
+**"don't know how to move from one spot to another" — and it was literal.**
+Taking a job did not change the screen. **Five** modules wrote into `#sheet` on
+their own timers — `paintSheet`, the dispatch board, the catch panel, the hub
+tactics panel, the recovery controls — and not one of them owned CLEARING it,
+so accepting a job left the dispatch list exactly where it was, three `TAKE JOB`
+cards deep, and appended the buttons that actually board a tram *below* it, off
+the bottom of a phone, under a list that looked untouched. The only
+acknowledgement anywhere was a feed line that `#feed`'s own `max-height` cut off
+mid-sentence. There was nothing wrong with the boarding code; the next action
+was simply behind a stale one.
+
+`#sheet` now has five **slots** in a fixed order and each writer owns exactly
+one. The order is what you can act on first: **what you can board**, then what
+you are carrying, then what else this stop offers, then anything still on the
+dispatch list. Boarding leads because the HUD one row above already names the
+job and its deadline — measured on a phone, putting the job header first left
+the first CATCH button ending at y=577 of 664. The panel says **YOU ARE AT X ·
+BOARD ONE OF THESE** and, on the first job only, one line of what lit and grey
+mean. The job header is three lines instead of five, having repeated the HUD.
+
+**"tram speeds are too fast" — and no single number could have fixed it.**
+Speed was a fixed DURATION per mode: fifty minutes end to end for any tram, on a
+network whose lines run from about 3 km to about 17 km. So the long ones covered
+five times the ground of the short ones in the same time. Measured across all
+102 vehicles, apparent speed ran from a crawl to a median of **299 km/h** with a
+90th percentile of **494** — trams visibly overtaking other trams on the same
+map. Half the fleet was already slow; turning one dial down would have made
+those slower still and left the fast ones fast.
+
+A vehicle now has a **speed** and its pass time follows from its own line's
+length, which is the way round reality works: `MODE_KMH` is 16 for a tram and 30
+for the metro, real average service speeds with stops in them. What the player
+sees is then only the compression, and that is the shift's `hours`: three hours
+in five minutes was 36x. **1.25 hours is 15x** — every tram at **240 km/h** and
+the metro at 450, at or below the slower half of what shipped, with the 494
+tail gone. A tram crosses the 4 km ROUTE viewport in about a minute.
+
+It is paid for in deliveries, because a slower fleet makes every ride longer in
+ticks by the same factor. Measured over 56 random door-to-door plans, the median
+job costs **856 ticks** against a 3000-tick shift, so `DELIVERY_TARGET` is
+**three**. The same measurement caught the shipped build being wrong on its own
+terms: five median jobs fitted and the target asked for **six**, so a shift could
+not be finished at ordinary difficulty by anyone, and no gate had ever asked.
+
+If it should be slower still, the honest next lever is a **longer shift** rather
+than a smaller compression: `ticksPerDay` 4500 buys the same slowdown again and
+keeps the deliveries, at the cost of the owner's five-minute session.
+
+`test/pace.mjs`: 12 checks in bare node — one apparent speed for every tram
+whatever its line is long, at or below what shipped, the metro still faster than
+a tram, a minute to cross the ROUTE viewport, and a target the shift can hold.
+Five mutations each caught. `test/phone.cjs` grows seven: taking a job changes
+the screen, the dispatch list goes, the panel says what it is for in those
+words, its first button is WHOLLY on screen without scrolling, and the slots are
+in order. Three mutations each caught.
+
+## v2.28 — 2026-09-06
+
+**The phone pass, and it found the worst bug this lane has shipped.** Nobody had
+opened the game at 390px. The title card had had a paragraph appended to it on
+every release since v2.19 — nine of them, each describing what had just
+changed — and on an iPhone 13 the card was taller than the screen, on a `.veil`
+with no `overflow`. **START SHIFT was below the fold, on a surface that could not
+be scrolled.** The button was present, visible, enabled and 44px; every gate was
+green; the game could not be started with a thumb.
+
+The fix is in two halves and only the second one lasts. The copy is cut to what
+you DO — you drive nothing, you take a job and catch something already moving —
+because a title screen is not a changelog and the changelog is this file. And
+the card is now a flex column with `max-height: 100dvh - 32px`, its text in a
+`.cardBody` that scrolls while the button does not, so **a card that grows again
+eats its own paragraphs instead of its button**. The veil scrolls too, as a
+floor under both.
+
+**A phone opens at ROUTE, not CITY.** CITY fits the whole board by height, and
+`board.js` then grows the box sideways to fill the canvas — growing rather than
+cropping, deliberately, so no stop is ever hidden. On a desktop the map element
+carries the board's own portrait aspect and that growth is nothing. On a phone
+`width:100%` plus `max-height` force the element landscape, and the grown half
+has no ground, no water and no streets in it, because the data ends where the
+extract does: **48% of the map was black**, and the badges that survived piled
+into a heap in the middle. ROUTE's 4 km viewport is a crop of the board rather
+than a fit to it, so it is full of map at any element shape — measured, the
+board covers 43% of the canvas width at CITY and 91% at ROUTE — and it is the
+scale the game is played at anyway. CITY stays one tap away on the rail.
+
+The map gives 8vh back to the job sheet (`44dvh`), because a board about
+comparing three plans was showing one of them. And `say()` drops a line that
+repeats the one above it — the feed was printing DISPATCH twice, which is a
+double call, not news.
+
+`test/phone.cjs`: 11 checks at 390x664 on a real touch context, six mutations
+each caught, including the shipped bug reproduced exactly (restore the long copy
+and remove the cap and START SHIFT reports `y 1130..1174 of 664`). Its
+reachability check knows the difference between a control **off screen inside a
+scroller** — a scroll away, which is what the third job offer legitimately is —
+and one off screen with nothing to scroll, which is the bug.
+
+Frame rate at 390x664, off the game's own loop: 48 / 31 / 55 fps at
+CITY / ROUTE / STOP. ROUTE is the expensive one — it draws the streets, the
+corridors, every badge and every trail at once — and it is now the opening
+scale, so that number is the one to watch.
+
 ## v2.27 — 2026-09-06
 
 **Every tram drags a wake.** The idea came from a canvas demo the owner sent: two paths, a dot running along each, and a background painted `rgba(5,10,15,0.3)` instead of cleared so the dots smear. Half of it was already here and done properly — `LiveNetwork` interpolates real traced HSL geometry at real speeds, where the demo's four hand-typed points make a long route and a short one take the same time. The **trail** was the part worth taking: direction was only readable from a badge, and a badge does not say whether a tram is coming toward you or leaving.
@@ -16,6 +833,33 @@ One trap the gate found in itself: the stub context was assembled with `Object.a
 
 
 **Deployed, and the deploy found a bug five releases old.** Every hand-deploy this lane has made since v2.22 shipped `../hub/shell.js?v=17` onto a site whose other twenty-two cabinets ask for `?v=35` — the exact trap `CLAUDE.md` records for hand-deploys ("this cabinet shipped pinned to v17 while fourteen others were on v34"), and another lane had already had to repair it once. A cabinet pinned to an old shell serves an old HOME button out of cache forever while the rest of the floor gets the new one. `test/cabinet-route.cjs` now asserts the token agrees with whatever the rest of the floor asks for — agreement, not a number, because this checkout and the deploy tree are legitimately on different ones.
+
+**The cabinet finally shows the game.** Its marquee was still `daymap` — a
+transit diagram drawn for the superseded Mini Metro lane, a game that no longer
+exists — and the marquee is the only thing a player judges before pressing
+Play. `tramstop` replaces it, built to the floor's own rule that a marquee is a
+COVER and not an icon: Helsinki at 07:00, the Cathedral small and off-centre
+because it says where you are and then gets out of the way, a green tram
+arriving, and the courier cropped by the near edge with his arm up for it.
+
+Eleven renders, and the notes are worth keeping because every one of them was
+the same class of mistake — **a thing drawn without asking what is behind it**.
+The tram was a box beside its own track (front and flank are now sized off the
+rails at their own depth). The courier was filled at `#1b2430` on a street that
+is `#171c24` where he stands, so a flat fill inside a hard black line read as a
+hole with a rim round it. His head, torso and raised arm were all lit along the
+same x and welded into one teal stripe with no person inside it. And four goes
+at an articulated running figure all read as an animal lunging: at 128x72 a
+person is a rectangle, a disc and ONE gesture, with the light as a FAT band and
+not a 1px rim — which is what `backlot` two cabinets along had been doing all
+along.
+
+`daymap` is deleted with it. The gate grew the check that would have caught a
+rename: `drawMarquee` falls back to `gel` for a key it does not know, which is
+correct at runtime and completely silent, so "every marquee is painted" passes
+while a cabinet shows another game's drawing. Only the forward direction is
+asserted — the live catalogue carries cabinets this tree has not got, and their
+art functions are not orphans.
 ## v2.26 — 2026-09-02
 
 **The shift shows itself back.** A run ended in four numbers — delivered, score, bonuses, late — which was survivable while nothing could go wrong and became the worst possible ending the moment v2.25 made a shift losable. Four numbers tell you that you failed and nothing about where. `js/shiftlog.js` is the design doc's own experiment #6, the one item on its list of eight that had never been built, and its strongest-directions list calls post-run replay "a core learning tool".
