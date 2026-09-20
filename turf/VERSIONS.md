@@ -18,6 +18,78 @@
 > rule, again: **fetch and read the other lineage's log before writing a heading**,
 > and "the other lineage" includes the deployed tree.
 
+## v41 — 2026-09-20
+**Reading a human instead of a bot.**
+
+Every number this project has ever quoted came from a bot. `balance.mjs` says
+whether an encounter is winnable by a player who ignores every system;
+`smoke.mjs` says the rules are obeyed. Neither can answer GDD §9's exit
+criterion — that the fight is "fun/tense to play through repeatedly" — because
+a bot has no clock, never hesitates, never misreads a telegraph and never
+closes the tab. `js/playlog.js` reads those four things off a real session.
+
+It is a READER, exactly like `anim.js`: the engine is untouched and does not
+know it exists. It hangs off the animator's `onEvent`, the ONE cursor over
+`state.log`, because anim.js's own header says why a second walk is a bug.
+
+**Local only, and that is not a footnote.** It writes through the site's own
+`hub/playlog.js`, whose contract already reads "Local-only by design ...
+nothing is uploaded" and whose header invites exactly this ("Games can report
+richer events"). Using the house store rather than a second one is also what
+lets Toko's counter read a TURF session back later without learning anything
+about TURF. The import is DYNAMIC and swallowed on failure, the same rule the
+Toko sting follows: a reader is a nicety, and a nicety may never be the reason
+a game does not open.
+
+**The four questions, and how each is actually measured:**
+
+- **Where did they hesitate.** A clock opens when the board becomes theirs and
+  the next command closes it. An enemy phase is not a decision of theirs, so
+  the thirty seconds the rivals take is thrown away rather than averaged in.
+- **What did they never use.** An affordance is counted when it is OFFERED and
+  again when it is TAKEN, once per encounter rather than once per repaint.
+  `neverUsed` deliberately lists what was offered and declined and never what
+  was absent: a skill the run never put on screen was not refused, it was
+  missing, and calling those the same thing blames the player for the roster.
+- **Did the telegraph land.** The incoming total on an operator is read before
+  a move and after it. A move that ends HIGHER is a step into danger, which is
+  usually correct play. A move that ends at or above that operator's own HP is
+  the case the telegraph exists to prevent, and is counted separately. Lethal
+  is measured on the TOTAL, the same way the board's own badge measures it.
+- **Where did they stop.** A closed tab mid-encounter is the loudest signal
+  this game gets and has been invisible since Milestone 1. `pagehide` and
+  `visibilitychange` both file a STOP, which is not a loss, and firing both
+  still files one record.
+
+`summarise()` is PURE and takes plain records, which is what lets the gate
+assert exact numbers over a scripted session in bare node. Its `headline`
+ranks quitting above losing on purpose: a loss is the game working, and a quit
+is the game losing them. `__turf.play.report()` folds this session together
+with whatever the shared store has kept and prints that line first.
+
+**A live session found a bug no pure test could have.** Driven through a real
+browser, the reader counted THREE moves for one tap and reported a median
+decision time a fifth of the truth: `onChange` runs several times per action,
+so asking "what is the freshest log entry" counts the same move again on every
+repaint. The cursor now lives in `playlog.js` — where a bare-node gate can
+hold it — rather than in `main.js`. A second one was caught the same way: the
+enemy phase appends its own `attack` entries while `onChange` is running, so
+every rival swing was being filed as a decision of the player's. Whose command
+an entry is comes from the ACTOR in the entry, because `state.turn` has
+already flipped by the time some of them land.
+
+- `js/playlog.js` (new): `createPlaylog`, `observe` (the cursor), `summarise`
+  (pure), `hubEmitter` (the dynamic, failure-swallowed transport).
+- `js/main.js`: the reader hangs off the one `onEvent` and the one `onChange`,
+  never off the five command handlers — a reader wired per handler is a reader
+  that misses the sixth one somebody adds later. Plus `__turf.play`.
+- `test/smoke.mjs` 150 → 164, fourteen of them over a scripted session.
+- Modules: main v42. Visible build v41.
+
+Not built, on purpose: no upload, no consent prompt and no dashboard. The
+report is one console call, because the question this answers is the owner's
+and it is answered by reading it.
+
 ## v40 — 2026-09-19
 **Owner: "Take rot.js FOV only. Skip PathFinding.js." Then: "go ahead with the
 FOV swap, measure the deltas."**

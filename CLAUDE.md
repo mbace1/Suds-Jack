@@ -1149,13 +1149,39 @@ the first four columns came back bit-identical because `balance.mjs` imported
 `../js/grid.js` bare while the engine imports `./grid.js?v=6` — two module instances, and
 the switch flipped the one nobody plays on. It is re-exported from `combat.js` for that
 reason, and a smoke gate asserts a flip there changes what a rival can shoot.
+**READING A HUMAN INSTEAD OF A BOT** (v41). Every number this project had came from a
+bot, and no bot can answer GDD §9's exit criterion — that the fight is "fun/tense to play
+through repeatedly" — because a bot has no clock, never hesitates, never misreads a
+telegraph and never closes the tab. `js/playlog.js` reads those four off a real session:
+**where they hesitated** (a clock opened when the board became theirs, with the enemy
+phase thrown away rather than averaged in), **what was offered and never used** (counted
+once per encounter, and `neverUsed` lists only what was OFFERED and declined — a skill the
+run never put on screen was not refused, it was missing), **whether they walked into a
+forecast marked LETHAL** (the incoming total read before and after a move, lethal measured
+on the TOTAL the way the board's badge measures it), and **where they STOPPED**, which is
+not the same event as losing and had been invisible since Milestone 1. It is a READER like
+`anim.js` — the engine is untouched — and it hangs off the animator's single `onEvent` and
+the single `onChange`, never off the five command handlers, because a reader wired per
+handler misses the sixth one somebody adds. **Local only**: it writes through the site's
+own `hub/playlog.js` ("Local-only by design ... nothing is uploaded"), whose header invites
+exactly this, which is also how Toko's counter can read a session back without learning
+anything about TURF; the import is dynamic and swallowed on failure, the sting's rule. Two
+bugs came out of driving a REAL browser session and neither was visible to a pure test:
+the reader counted **three moves for one tap** because `onChange` runs several times per
+action and "the freshest log entry" is the same each time (the cursor now lives in
+`playlog.js` where a bare-node gate holds it), and **every rival swing was filed as the
+player's command** because the enemy phase appends its own attack entries while onChange
+runs (whose command it is comes from the actor in the entry, since `state.turn` has already
+flipped). `summarise()` is pure, its `headline` ranks quitting above losing on purpose, and
+`__turf.play.report()` prints it. No upload, no dashboard, no consent prompt — there is
+nothing to consent to.
 **Rendering is plain canvas 2D isometric**, not Three.js — the GDD says "Three.js or
 similar," and a tactics grid with move/attack-range overlays and telegraph markers is far
 easier to get right in 2D; drawn low-res and upscaled with `image-rendering: pixelated`,
 the same trick `dropcabal/` uses, with the HUD (turn state, HP, the win/lose screen) as a
 DOM/CSS overlay rather than canvas-painted text, per the production doc's own §2.4
 recommendation. All game logic stays in plain `(x,y)` grid coordinates
-(`grid.js`/`combat.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 150
+(`grid.js`/`combat.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 164
 checks including a bot-vs-bot full playthrough that must reach a win or a loss, not a
 stalemate, within a round cap); `render.js`'s `toScreen`/`screenToGrid` are a one-way,
 invertible projection onto an isometric diamond grid and never feed anything back into
@@ -2673,6 +2699,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     camera.js   # phone zoom floor, drag-to-pan, follow the acting unit
     anim.js     # the feel layer: log-driven tweens, hit flash, damage numbers, the only rAF
     audio.js    # synthesised kit, every voice through one master gain so mute really mutes
+    playlog.js  # what a PERSON did: hesitation, what went unused, lethal misreads, where they STOPPED
     main.js     # boot, HUD, the enemy-phase pacing loop — the only DOM-touching file
     palette.js  # Nordic rain-and-sodium, deliberately desaturated next to the arcade's neon
   art-src/
@@ -2683,7 +2710,7 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 150 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 164 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter

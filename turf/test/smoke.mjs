@@ -28,6 +28,7 @@ import { SPRITE_H, TILE_W, FULL_PROPS, PARTIAL_PROPS, PROP_H, RARE_PROPS } from 
 import { incomingThreats } from '../js/combat.js';
 import { PLATES } from '../js/plates.js';
 import { postureFor } from '../js/anim.js';
+import { createPlaylog, summarise } from '../js/playlog.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -2051,6 +2052,208 @@ check('AUTO plays every encounter without throwing', () => {
     assert.ok(state.result, `${enc.id}: AUTO reaches a result`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// WHAT A PERSON DID (js/playlog.js). The recorder needs a browser; `summarise`
+// does not, and it is where every claim the report makes is actually decided.
+// A scripted session with known numbers is the only way to know the report is
+// reading them rather than inventing them.
+console.log('the play log — reading a human instead of a bot');
+
+check('a recorder with no session says so instead of guessing', () => {
+  const out = summarise([]);
+  assert.equal(out.plays, 0);
+  assert.match(out.note, /nobody has played/);
+});
+
+check('an encounter is recorded with its decisions, its churn and its result', () => {
+  let t = 0;
+  const play = createPlaylog({ now: () => t });
+  play.begin('backlot', 0);
+  play.armed(); t += 4000; play.command('move');       // a slow first decision
+  play.armed(); t += 1000; play.command('attack');
+  play.cancelled(); t += 500; play.command('move');
+  t += 1000; play.finish('win');
+  const [rec] = play.records().filter(r => r.type === 'encounter');
+  assert.equal(rec.encounter, 'backlot');
+  assert.equal(rec.commands, 3);
+  assert.equal(rec.cancels, 1);
+  assert.equal(rec.slowestDecideMs, 4000);
+  assert.equal(rec.medianDecideMs, 1000, 'three decisions of 4000/1000/500 have a median of 1000');
+  assert.equal(rec.result, 'win');
+});
+
+check('the decision clock opens when the board goes quiet, not on every repaint', () => {
+  // updateHud runs on every change, so armed() is called constantly; a clock
+  // that restarted each time would report every decision as instant.
+  let t = 0;
+  const play = createPlaylog({ now: () => t });
+  play.begin('backlot');
+  play.armed(); t += 900; play.armed(); t += 900; play.armed(); t += 900;
+  play.command('move');
+  play.finish('lose');
+  const [rec] = play.records().filter(r => r.type === 'encounter');
+  assert.equal(rec.slowestDecideMs, 2700, 'the decision began when the board went quiet');
+});
+
+check('an enemy turn is not the player hesitating', () => {
+  let t = 0;
+  const play = createPlaylog({ now: () => t });
+  play.begin('backlot');
+  play.armed(); t += 500;
+  play.onEvent({ type: 'enemy-turn', uid: 'e0' });   // the board stops being theirs
+  t += 30000;                                        // a long enemy phase
+  play.armed(); t += 700; play.command('move');
+  play.finish('win');
+  const [rec] = play.records().filter(r => r.type === 'encounter');
+  assert.equal(rec.slowestDecideMs, 700, 'the 30s the rivals took is not a decision of theirs');
+});
+
+check('a move into a LETHAL forecast is counted apart from a move into danger', () => {
+  const play = createPlaylog({ now: () => 0 });
+  play.begin('underpass');
+  const hp = () => 5;
+  // 0 -> 3 incoming: more dangerous, still survivable. That is the game working.
+  play.watch(new Map([['p0', { total: 0 }]]), 'p0');
+  play.command('move', new Map([['p0', { total: 3 }]]), hp);
+  // 1 -> 6 incoming against 5 hp: the case the telegraph exists to prevent.
+  play.watch(new Map([['p0', { total: 1 }]]), 'p0');
+  play.command('move', new Map([['p0', { total: 6 }]]), hp);
+  play.finish('lose');
+  const [rec] = play.records().filter(r => r.type === 'encounter');
+  assert.equal(rec.intoDanger, 2, 'both moves raised the incoming total');
+  assert.equal(rec.intoLethal, 1, 'only one of them crossed the operator\'s own hp');
+});
+
+check('a move that was ALREADY lethal is not counted again for standing still', () => {
+  const play = createPlaylog({ now: () => 0 });
+  play.begin('underpass');
+  play.watch(new Map([['p0', { total: 9 }]]), 'p0');
+  play.command('move', new Map([['p0', { total: 9 }]]), () => 5);
+  play.finish('lose');
+  const [rec] = play.records().filter(r => r.type === 'encounter');
+  assert.equal(rec.intoLethal, 0, 'they were already in it; walking within it is not a new misread');
+});
+
+check('leaving mid-encounter files a STOP, which is not a loss', () => {
+  const play = createPlaylog({ now: () => 0 });
+  play.begin('the-depot', 6);
+  play.command('move');
+  assert.equal(play.live, true);
+  play.abandon('pagehide');
+  assert.equal(play.live, false);
+  const recs = play.records();
+  assert.equal(recs.filter(r => r.type === 'encounter').length, 0, 'a stop is never filed as a finish');
+  const [quit] = recs.filter(r => r.type === 'abandon');
+  assert.equal(quit.encounter, 'the-depot');
+  assert.equal(quit.reason, 'pagehide');
+  play.abandon('again');
+  assert.equal(play.records().filter(r => r.type === 'abandon').length, 1, 'pagehide and visibilitychange both fire; one stop is one record');
+});
+
+check('the reader counts one command per ACTION, not one per repaint', () => {
+  // THE BUG A LIVE SESSION FOUND AND NO PURE TEST HAD. main.js's onChange runs
+  // several times per action, so a reader that asked "what is the freshest log
+  // entry" counted the same move again on every repaint: three moves for one
+  // tap, and a median decision time a fifth of the truth.
+  let t = 0;
+  const play = createPlaylog({ now: () => t });
+  play.begin('backlot');
+  const log = [];
+  const mine = e => e.uid === 'p0';
+  play.armed(); t += 2000;
+  log.push({ type: 'move', uid: 'p0', x: 3, y: 4 });
+  assert.equal(play.observe(log, { isPlayerActor: mine }), 1);
+  assert.equal(play.observe(log, { isPlayerActor: mine }), 0, 'a repaint adds nothing');
+  assert.equal(play.observe(log, { isPlayerActor: mine }), 0);
+  play.finish('win');
+  const [rec] = play.records().filter(r => r.type === 'encounter');
+  assert.equal(rec.commands, 1);
+  assert.equal(rec.medianDecideMs, 2000, 'the whole hesitation belongs to the one move');
+});
+
+check('a rival swinging is not the player acting', () => {
+  // The enemy phase appends its own attack entries and onChange runs during it,
+  // so faction is the test. state.turn has already flipped by the time some of
+  // these land, which is why the entry's own actor is what decides.
+  const play = createPlaylog({ now: () => 0 });
+  play.begin('backlot');
+  const mine = e => (e.uid || e.attackerUid) === 'p0';
+  const log = [
+    { type: 'move', uid: 'p0' },
+    { type: 'attack', attackerUid: 'e0', targetUid: 'p0' },
+    { type: 'enemy-turn', uid: 'e0' },
+    { type: 'attack', attackerUid: 'p0', targetUid: 'e0' },
+  ];
+  assert.equal(play.observe(log, { isPlayerActor: mine }), 2, 'the move and their own attack');
+  play.finish('win');
+  const [rec] = play.records().filter(r => r.type === 'encounter');
+  assert.deepEqual(rec.taken, { move: 1, attack: 1 });
+});
+
+check('a fresh encounter resets the cursor rather than skipping its first moves', () => {
+  const play = createPlaylog({ now: () => 0 });
+  const mine = () => true;
+  play.begin('backlot');
+  play.observe([{ type: 'move', uid: 'p0' }, { type: 'move', uid: 'p0' }], { isPlayerActor: mine });
+  play.finish('win');
+  play.begin('loading-dock');          // a new state, a new (shorter) log
+  assert.equal(play.observe([{ type: 'move', uid: 'p0' }], { isPlayerActor: mine }), 1,
+    'the second encounter must not inherit the first one\'s cursor');
+});
+
+check('neverUsed names what was OFFERED and declined, never what was absent', () => {
+  // The distinction is the whole honesty of the report: a skill the run never
+  // put on screen was not declined, it was missing, and calling those the same
+  // thing would blame the player for the encounter's roster.
+  const play = createPlaylog({ now: () => 0 });
+  play.begin('backlot');
+  play.offered('cleave'); play.offered('overwatch'); play.offered('reload');
+  play.used('reload');
+  play.finish('win');
+  const out = summarise(play.records());
+  assert.deepEqual(out.neverUsed, ['cleave', 'overwatch']);
+  assert.ok(!out.neverUsed.includes('barricade'), 'never offered is not the same as never used');
+});
+
+check('the report ranks quitting above losing, and says one thing first', () => {
+  const quitty = [];
+  for (let i = 0; i < 4; i++) quitty.push({ type: 'abandon', encounter: 'underpass', commands: 2, seconds: 30 });
+  quitty.push({ type: 'encounter', encounter: 'underpass', result: 'win', commands: 9, seconds: 200 });
+  const out = summarise(quitty);
+  assert.equal(out.quits, 4);
+  assert.equal(out.plays, 5);
+  assert.match(out.headline, /stopped mid-encounter/, 'a quit rate over a third outranks everything else');
+  // A losing run that nobody walked out on is the game working, not a fault.
+  const lossy = [];
+  for (let i = 0; i < 5; i++) lossy.push({ type: 'encounter', encounter: 'the-depot', result: 'lose', commands: 12, seconds: 240 });
+  assert.match(summarise(lossy).headline, /without quitting/);
+});
+
+check('the report folds several encounters and counts each one\'s outcomes', () => {
+  const out = summarise([
+    { type: 'encounter', encounter: 'backlot', result: 'win', commands: 10, cancels: 2, seconds: 120, medianDecideMs: 800, offered: { cleave: 1 }, taken: { cleave: 1, move: 6 } },
+    { type: 'encounter', encounter: 'backlot', result: 'lose', commands: 6, cancels: 4, seconds: 90, medianDecideMs: 1200, offered: { cleave: 1 }, taken: { move: 4 } },
+    { type: 'abandon', encounter: 'underpass', commands: 4, cancels: 0, seconds: 40, medianDecideMs: 400 },
+  ]);
+  assert.equal(out.encounters, 2);
+  assert.equal(out.wins, 1); assert.equal(out.losses, 1); assert.equal(out.quits, 1);
+  assert.equal(out.commands, 20); assert.equal(out.cancels, 6);
+  assert.equal(out.cancelsPerCommand, 0.3);
+  assert.equal(out.medianDecideMs, 800, 'the median of 400/800/1200');
+  assert.deepEqual(out.perEncounter.backlot, { played: 2, won: 1, lost: 1, quit: 0 });
+  assert.deepEqual(out.perEncounter.underpass, { played: 1, won: 0, lost: 0, quit: 1 });
+});
+
+check('a recorder that cannot reach the store still records, and a broken store never costs a run', () => {
+  // The reader is a nicety. The Toko sting's rule applies: it may not be the
+  // reason a game stops working.
+  const play = createPlaylog({ now: () => 0, emit: () => { throw new Error('storage is full'); } });
+  play.begin('backlot');
+  assert.doesNotThrow(() => { play.command('move'); play.finish('win'); });
+  assert.equal(play.records().filter(r => r.type === 'encounter').length, 1, 'it kept the record in memory');
+});
+
 
 for (const enc of ENCOUNTERS) playthrough(enc, 42);
 

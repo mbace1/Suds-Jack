@@ -161,9 +161,14 @@ against PR #419; the frames themselves need an owner-side push request.
   human play that the bots cannot find, and that claim is currently untested.
 - **`DAMAGE_PER` is `Math.floor`-quantised over a range of four**, so it is a
   cliff, not a dial: 0.25 and 0.34 are 23 points apart in the win floor.
-- **The feel question is still open.** GDD §9's exit criterion is that the
-  fight is "fun/tense to play through repeatedly". No system answers that;
-  only a playtest does.
+- **The feel question is still open, but it is no longer unmeasured.** GDD §9's
+  exit criterion is that the fight is "fun/tense to play through repeatedly".
+  No system answers that; only a playtest does. v41 built the instrument that
+  reads one: `js/playlog.js` records where a person hesitated, what they were
+  offered and never used, whether they walked into a forecast marked lethal,
+  and where they STOPPED — which is not the same event as losing and had been
+  invisible since Milestone 1. It is local-only and the engine does not know it
+  exists. What it still needs is the thing no code supplies: somebody playing.
 
 ## 4. Directives recorded (owner, 2026-09-19)
 
