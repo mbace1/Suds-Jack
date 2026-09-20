@@ -16,6 +16,13 @@
       "sector": "RFH",
       "visual": "chart2",
       "broll": "kamppi",
+      "figures": [
+        {
+          "claim": 92.5,
+          "plain": 12.4,
+          "unit": "BN"
+        }
+      ],
       "filed": "2026-09-19",
       "label": "LEAD",
       "visualBeat": "the bar for what comes in and the bar for what goes out; decoded, the gap between them gets its own label and it is the only number that was ever real"
@@ -34,6 +41,13 @@
       "sector": "RFH",
       "visual": "chart",
       "broll": "katajanokka",
+      "figures": [
+        {
+          "claim": 2.99,
+          "plain": 10,
+          "unit": "%"
+        }
+      ],
       "filed": "2026-09-19",
       "label": "TECH",
       "visualBeat": "a line that goes down in one clean step; decoded, the axis re-bases and the step is the whole picture"
@@ -43,6 +57,7 @@
       "sector": "RFH",
       "visual": "heat",
       "broll": "katu",
+      "figures": [],
       "filed": "2026-09-19",
       "label": "CITY",
       "visualBeat": "the heat map of a clean process; decoded, one cell is a dishwasher"
@@ -52,6 +67,7 @@
       "sector": "RFH",
       "visual": "crowd",
       "broll": "kamppi",
+      "figures": [],
       "filed": "2026-09-19",
       "label": "GAMES",
       "visualBeat": "a full room; decoded, the room is inside a larger room with a different name on the door"
@@ -61,6 +77,7 @@
       "sector": "RFH",
       "visual": "crowd2",
       "broll": "station",
+      "figures": [],
       "filed": "2026-09-19",
       "label": "GAMES",
       "visualBeat": "a corridor with one chair at the end; decoded, the chair is empty and the corridor is unchanged"
@@ -70,6 +87,7 @@
       "sector": "RFH",
       "visual": "mesh",
       "broll": "esplanadi",
+      "figures": [],
       "filed": "2026-09-19",
       "label": "ODD WIRE",
       "visualBeat": "two networks meshed together; decoded, the edges between them are all the same colour, and it is the colour of a budget"
@@ -79,6 +97,13 @@
       "sector": "RFH",
       "visual": "border",
       "broll": "gulf",
+      "figures": [
+        {
+          "claim": 1100,
+          "plain": 200,
+          "unit": "KM"
+        }
+      ],
       "filed": "2026-09-19",
       "label": "SIGNAL",
       "visualBeat": "a fence across the frame; decoded, the frame widens and the fence is a short bright line on a long dark one"
@@ -97,6 +122,12 @@
       "sector": "RFH",
       "visual": "crowd",
       "broll": "station",
+      "figures": [
+        {
+          "claim": 1,
+          "plain": 0
+        }
+      ],
       "filed": "2026-09-19",
       "label": "ODD WIRE",
       "visualBeat": "a stadium crowd; decoded, the scoreboard reads what it read"
@@ -106,6 +137,7 @@
       "sector": "RFH",
       "visual": "crowd",
       "broll": "mannerheim",
+      "figures": [],
       "filed": "2026-09-19",
       "label": "CULTURE",
       "visualBeat": "a queue outside a building; decoded, the doors that opened are lit and the ones that did not are counted"
@@ -115,6 +147,7 @@
       "sector": "RFH",
       "visual": "crowd2",
       "broll": "esplanadi",
+      "figures": [],
       "filed": "2026-09-19",
       "label": "CULTURE",
       "visualBeat": "a tent full of people looking up; decoded, the word annual is stamped over a first edition"
@@ -124,6 +157,12 @@
       "sector": "RFH",
       "visual": "chart2",
       "broll": "katu",
+      "figures": [
+        {
+          "claim": 700000,
+          "plain": 7000
+        }
+      ],
       "filed": "2026-09-19",
       "label": "CITY",
       "visualBeat": "rent per square metre as a bar; decoded, the market bar it is being called moderate against appears, and nobody in the flat chose it"

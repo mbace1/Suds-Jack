@@ -387,3 +387,67 @@ models' markup side by side on the same seven bulletins and names four leans:
 literal plain side, two spans not five, questions for tells, and an owner's
 call on whether a technique is a category or the word itself. The new day has
 too many spans (3-5) and should be thinned on its next pass.
+
+---
+
+## 2026-09-20 — the graphics stopped quoting other mornings (v64)
+
+**The defect.** Nine panels print a number and every one of those numbers was a
+literal in `js/visuals.js`. `chart2` said `+40% → +4%` under whichever bulletin
+the rotation handed it, so `budget-in-full` — a €92.5bn budget with a €12.4bn
+hole — aired under a chart captioned with somebody else's percentages. `crowd`
+emptied nine hundred seats to four under a cup final that finished 1–0. `mesh`
+printed `41` under an owl. On a station whose whole subject is a picture and a
+copy telling different stories, the station was doing it.
+
+**`figures`.** A bulletin now carries an ordered list of `{claim, plain, unit}`
+— what the broadcast asserts, what it plainly means, what it counts.
+`figures[0]` is the headline pair every numeric panel reads; `figures[1]` is
+the second pair `coin`/`crowd2`/`mesh` want. `EDITORIAL.md` has the rule.
+
+**It reaches the drawing, not the caption.** `kept()` is the share of the claim
+the plain reading leaves standing and `gap()` is how far apart the two are
+whichever way round; between them they drive how many of `chart`'s 260 cells go
+dark, how far `chart2`'s baseline is cut, how many of `crowd`'s seats stay lit,
+how many of `border`'s five markers are real. `fence-complete` says 200km of
+1,100 and the board now shows one marker in five. `single-day-adjustment` says
+the index fell 2.99% while its largest name shed 10%, and seven cells in ten go
+out. A caption that agrees with the bulletin while the bars disagree is the
+same bug one layer down — `kept` alone had exactly that fault, because it
+clamps at 1 and so reported *no change* on every bulletin whose plain reading
+is the BIGGER number.
+
+**ABSENT and EMPTY are different answers**, and this is the load-bearing part.
+Absent means "written before the field existed" and the panel keeps the literal
+it has always drawn — which is what lets this land on a wire nobody has
+re-authored. `[]` means the author looked and this bulletin has no number, and
+the panel then prints **nothing**. Eleven of thirteen bulletins on 2026-09-19
+declare figures; the other two, and fourteen panels across the three older
+episodes, declare `[]` and have gone quiet rather than lying.
+
+**`chart2`'s baseline is SOLVED, not drawn.** Given a claimed rise and an
+honest one there is exactly one axis cut that turns the second into the first,
+and releasing it to zero as DECODE comes up performs the trick in front of you.
+The first cut read the pair as percentages and went degenerate the moment a
+bulletin's numbers were seven hundred thousand residents and seven thousand
+flats; it works off the RATIO now, so euros, people and per cent all land.
+
+**Two gate checks, both with a negative control run.** Strict validation (a
+numeric panel with no declaration is an error in the gate, a warning in the
+browser — the app must keep airing a wire it can only half-illustrate, and
+nobody may commit one), and **a panel never prints a number its bulletin does
+not say**: every declared figure is matched as digits against all three
+languages' copy, with thousands separators and the Finnish decimal comma
+normalised. Reinstating each bug drops the gate to 81/82, naming the offender.
+
+**Found on the way, and it had been wrong since the file was written:** the
+3×5 glyph table was digits and punctuation only, so every letter label in
+`visuals.js` — `PCT`, `REM`, `CAB`, `OBS`, `LATE`, `SL`, `KJ` — had been
+drawing as a row of question marks. It has an alphabet now, which is also what
+lets a figure say `BN` or `KM`.
+
+**Not done, and it is the owner's:** `ANTHROPIC_API_KEY` is still not a repo
+secret, so the daily job has never once produced a morning — every wire on disk
+was written by hand in a session. And the MP4 button's H.264 path has still
+only ever been proven as AV1, because headless Chromium has no H.264 encoder;
+one press in a desktop Chrome would settle it.

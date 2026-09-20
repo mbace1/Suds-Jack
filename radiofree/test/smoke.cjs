@@ -165,15 +165,28 @@ async function staticChecks() {
   // app degrading gracefully is what made it invisible. So every episode in
   // `wire/` is graded here, and the NEWEST is called out on its own, because
   // that is the one a reader actually gets.
-  const { validateWire } = await import('file://' + path.join(RF, 'js', 'wire.js'));
-  const { PANEL_KEYS, BROLL_KEYS } = await import('file://' + path.join(RF, 'js', 'visuals.js'));
+  const { validateWire, LANGS } = await import('file://' + path.join(RF, 'js', 'wire.js'));
+  const { PANEL_KEYS, BROLL_KEYS, NUMERIC_PANELS } =
+    await import('file://' + path.join(RF, 'js', 'visuals.js'));
+
+  // Copy written for a reader, matched against a number written for a panel.
+  // Thin spaces and a Finnish decimal comma are the same number as a dot and
+  // no space, so the haystack is normalised rather than the needle widened.
+  const digitsOf = (str) => String(str)
+    .replace(/(\d)[\s\u00a0\u202f,.](?=\d\d\d(?!\d))/g, '$1')   // 1 200 / 1,200 → 1200
+    .replace(/(\d),(\d)/g, '$1.$2');                              // 12,4 → 12.4
+  const trimZero = (v) => String(Math.round(v * 100) / 100);
+  const hasNumber = (hay, want) => {
+    const esc = want.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:^|[^\\d.])${esc}(?![\\d])`).test(hay);
+  };
   const { SECTOR_COLOR } = await import('file://' + path.join(RF, 'js', 'palette.js'));
   const index = JSON.parse(fs.readFileSync(path.join(RF, 'wire', 'index.json'), 'utf8'));
   const eps = (index.episodes || []).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
   ok('the index lists at least one morning', eps.length > 0, JSON.stringify(eps));
   wireFiles = eps.map(d => ['wire/' + d + '.json', path.join(RF, 'wire', d + '.json')]);
   wireFiles.push(['wire.json', path.join(RF, 'wire.json')]);
-  const unairable = [];
+  const unairable = [], loose = [], offFigures = [];
   for (const [label, file] of wireFiles) {
     if (!fs.existsSync(file)) { unairable.push(`${label}: missing`); continue; }
     let parsed;
@@ -182,11 +195,47 @@ async function staticChecks() {
     const v = validateWire(parsed, { panelKeys: PANEL_KEYS, brollKeys: BROLL_KEYS,
                                      sectorIds: Object.keys(SECTOR_COLOR) });
     if (!v.ok) unairable.push(`${label}: ${v.errors.length} problems — ${v.errors[0]}`);
+    // Strict is the AUTHORING bar, and it is deliberately higher than the
+    // airing one: the browser must keep playing a wire whose graphic it can
+    // only half-illustrate, but nobody may commit one.
+    const strictV = validateWire(parsed, {
+      panelKeys: PANEL_KEYS, brollKeys: BROLL_KEYS,
+      sectorIds: Object.keys(SECTOR_COLOR),
+      numericPanels: NUMERIC_PANELS, strict: true,
+    });
+    if (!strictV.ok) loose.push(`${label}: ${strictV.errors[0]}`);
+    // ── and the numbers on the panel have to be the bulletin's ──────
+    for (const st of (parsed.stories || [])) {
+      if (!Array.isArray(st.figures) || !st.figures.length) continue;
+      const hay = LANGS.map(l => {
+        const c = (parsed.copy && parsed.copy[l] && parsed.copy[l][st.id]) || null;
+        if (!c) return '';
+        return [c.head, c.slug, c.decodeNote, c.tell, ...(c.lines || [])].join(' ');
+      }).map(digitsOf);
+      for (const f of st.figures) {
+        for (const key of ['claim', 'plain']) {
+          const want = trimZero(f[key]);
+          // a fall of 92 is written "92" as often as "-92"
+          const alts = want.startsWith('-') ? [want, want.slice(1)] : [want];
+          if (!hay.some(h => alts.some(a => hasNumber(h, a)))) {
+            offFigures.push(`${label} "${st.id}": the panel will print ${want}`
+              + `${f.unit || ''} and no language's copy says ${want}`);
+          }
+        }
+      }
+    }
   }
   ok('every episode on disk would actually air', unairable.length === 0,
      unairable.join('\n         '));
   ok('the NEWEST episode is the one that airs',
      !unairable.some(u => u.startsWith('wire/' + eps[0])), eps[0]);
+  ok('every numeric panel is given the bulletin\'s own figures', loose.length === 0,
+     loose.join('\n         '));
+  // The defect this whole pass exists for: a chart captioned with some other
+  // morning's arithmetic. A figure the copy never says is one the listener
+  // cannot check, which is the station arguing with itself on air.
+  ok('a panel never prints a number its bulletin does not say', offFigures.length === 0,
+     offFigures.slice(0, 6).join('\n         '));
 
   // The gate runs on BOTH trees — the source repo and a gh-pages checkout before
   // a deploy is believed — so it has to know which one it is standing in, and
@@ -231,7 +280,7 @@ async function generatorChecks() {
   ok('a place is not a name', !names.some(n => /Espoo/.test(n)), names.join(', '));
 
   const story = (id, tech, line, lineFi, lineJa) => ({
-    id, visual: 'chart2', broll: 'harbour',
+    id, visual: 'chart2', broll: 'harbour', figures: [],
     en: { slug: 'S', head: 'h', lines: [line], technique: tech, decodeNote: 'n', tell: 't' },
     fi: { slug: 'S', head: 'h', lines: [lineFi], technique: tech + ' FI', decodeNote: 'n', tell: 't' },
     ja: { slug: 'S', head: 'h', lines: [lineJa], technique: tech + ' JA', decodeNote: 'n', tell: 't' },

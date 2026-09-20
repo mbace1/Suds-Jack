@@ -1,22 +1,22 @@
 // Radio Free Helsinki — atmospheric cutaways assembled from cheap moving layers.
 
-import { PAL } from './palette.js?v=63';
-import { mix, shade, bayer } from './screen.js?v=63';
-import { drawCentralStation } from './centralstation.js?v=63';
-import { drawKatajanokka } from './katajanokka.js?v=63';
-import { drawHakaniemi } from './hakaniemi.js?v=63';
-import { drawMetro } from './metro.js?v=63';
-import { drawRooftops } from './rooftops.js?v=63';
-import { drawKallioNight } from './kallionight.js?v=63';
-import { drawMannerheimRain } from './mannerheimrain.js?v=63';
-import { drawPasila } from './pasila.js?v=63';
-import { drawMerihaka } from './merihaka.js?v=63';
-import { drawToolo } from './toolo.js?v=63';
-import { drawKalasatama } from './kalasatama.js?v=63';
-import { drawKauppatori } from './kauppatori.js?v=63';
-import { drawTransitInterior } from './transitinterior.js?v=63';
-import { stateForStory, drawSceneState } from './sceneweather.js?v=63';
-import { drawPassersby, drawBroadcastFX } from './broadcastfx.js?v=63';
+import { PAL } from './palette.js?v=64';
+import { mix, shade, bayer } from './screen.js?v=64';
+import { drawCentralStation } from './centralstation.js?v=64';
+import { drawKatajanokka } from './katajanokka.js?v=64';
+import { drawHakaniemi } from './hakaniemi.js?v=64';
+import { drawMetro } from './metro.js?v=64';
+import { drawRooftops } from './rooftops.js?v=64';
+import { drawKallioNight } from './kallionight.js?v=64';
+import { drawMannerheimRain } from './mannerheimrain.js?v=64';
+import { drawPasila } from './pasila.js?v=64';
+import { drawMerihaka } from './merihaka.js?v=64';
+import { drawToolo } from './toolo.js?v=64';
+import { drawKalasatama } from './kalasatama.js?v=64';
+import { drawKauppatori } from './kauppatori.js?v=64';
+import { drawTransitInterior } from './transitinterior.js?v=64';
+import { stateForStory, drawSceneState } from './sceneweather.js?v=64';
+import { drawPassersby, drawBroadcastFX } from './broadcastfx.js?v=64';
 
 export const AMBIENT_KEYS=['metro','mannerheimrain','centralstation','hakaniemi','katajanokka','rooftops','kallionight','pasila','merihaka','toolo','kalasatama','kauppatori','transitinterior'];
 const W=128,H=152, inkLo=d=>mix(PAL.GREEN_DIM,PAL.AMBER_DIM,d);

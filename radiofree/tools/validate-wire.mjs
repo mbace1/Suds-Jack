@@ -22,7 +22,7 @@ const { validateWire, rotate, LANGS } = await import(path.join(ROOT, 'js/wire.js
 // These import cleanly under node because neither touches the DOM at module
 // scope — PixelScreen only reaches for `document` when one is constructed.
 const { PANEL_KEYS } = await import(path.join(ROOT, 'js/visuals.js'));
-const { BROLL_KEYS } = await import(path.join(ROOT, 'js/visuals.js'));
+const { BROLL_KEYS, NUMERIC_PANELS } = await import(path.join(ROOT, 'js/visuals.js'));
 const { SECTOR_COLOR } = await import(path.join(ROOT, 'js/palette.js'));
 
 let wire;
@@ -37,6 +37,8 @@ const { ok, errors, warnings } = validateWire(wire, {
   panelKeys: PANEL_KEYS,
   brollKeys: BROLL_KEYS,
   sectorIds: Object.keys(SECTOR_COLOR),
+  numericPanels: NUMERIC_PANELS,
+  strict: true,
 });
 
 const rel = path.relative(process.cwd(), target);

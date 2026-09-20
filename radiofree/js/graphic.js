@@ -19,9 +19,9 @@
 // fractional cells, which is the one thing this whole renderer exists to
 // avoid; the card is what makes up the difference in size.
 
-import { PixelScreen, mix, shade } from './screen.js?v=63';
-import { drawVisual, PANEL_W, PANEL_H } from './visuals.js?v=63';
-import { PAL, SECTOR_COLOR } from './palette.js?v=63';
+import { PixelScreen, mix, shade } from './screen.js?v=64';
+import { drawVisual, readFigures, PANEL_W, PANEL_H } from './visuals.js?v=64';
+import { PAL, SECTOR_COLOR } from './palette.js?v=64';
 
 export const GRAPHIC_H = 640;
 const MIN_ASPECT = 0.40, MAX_ASPECT = 0.75;
@@ -50,6 +50,9 @@ const COMPACT = {
 export class Graphic {
   constructor(host, story, sector, seed = 0) {
     this.story = story || {};
+    // read once: the panels ask it several times a frame, and a bulletin's
+    // numbers do not change while it is on air
+    this.figures = readFigures(this.story.figures);
     this.sector = sector || {};
     this.seed = seed;
     this.live = false;
@@ -140,7 +143,7 @@ export class Graphic {
 
     // ── the panel, at an integer scale ──────────────────────────────
     this.panel.clear(PAL.INK);
-    drawVisual(this.story.visual, this.panel, this.t, d);
+    drawVisual(this.story.visual, this.panel, this.t, d, this.figures);
 
     const scale = Math.max(1, Math.min(
       Math.floor((W * 0.86) / PANEL_W),

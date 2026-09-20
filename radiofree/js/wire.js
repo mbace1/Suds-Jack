@@ -45,6 +45,31 @@ function markupProblems(line) {
   return bad;
 }
 
+// `figures` is an ordered list of `{claim, plain, unit?}` — what the broadcast
+// asserts, what it plainly means, and what it counts. `figures[0]` is the
+// headline pair every numeric panel reads; `figures[1]` is the second pair the
+// two-number panels want. A claim of zero has no share to keep, so it is the
+// one number that cannot be a claim.
+function figureProblems(list) {
+  if (list === undefined) return [];
+  if (!Array.isArray(list)) return ['figures must be an array'];
+  if (list.length > 4) return [`figures: ${list.length} rows — a panel reads at most 4`];
+  const bad = [];
+  list.forEach((f, i) => {
+    const at = `figures[${i}]`;
+    if (!f || typeof f !== 'object' || Array.isArray(f)) return bad.push(`${at} is not an object`);
+    for (const k of ['claim', 'plain']) {
+      if (!Number.isFinite(f[k])) bad.push(`${at}.${k} must be a number, got ${JSON.stringify(f[k])}`);
+    }
+    if (f.claim === 0) bad.push(`${at}.claim is 0 — nothing can be a share of it`);
+    if (f.unit !== undefined && typeof f.unit !== 'string') bad.push(`${at}.unit must be a string`);
+    if (typeof f.unit === 'string' && f.unit.length > 4) {
+      bad.push(`${at}.unit "${f.unit}" is ${f.unit.length} characters — the panel font fits 4`);
+    }
+  });
+  return bad;
+}
+
 /**
  * Check a parsed wire. Never throws — it returns every problem it can find in
  * one pass, because an external author fixing one error at a time through a
@@ -53,7 +78,19 @@ function markupProblems(line) {
  * `panelKeys` / `brollKeys` are passed in rather than imported so this module
  * stays dependency-free; the caller supplies whatever the build actually draws.
  */
-export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorIds = null } = {}) {
+export function validateWire(wire, {
+  panelKeys = null, brollKeys = null, sectorIds = null,
+  // The panels that put a NUMBER on screen. A bulletin pointed at one of these
+  // and carrying no `figures` gets the panel's own literal — which is some
+  // other morning's arithmetic drawn under today's words. That is a warning
+  // here and an error in the gate, on purpose: the browser must keep airing a
+  // wire it can only half-illustrate, and an author must not be able to commit
+  // one.
+  numericPanels = null,
+  // Strict mode turns those warnings into errors. `tools/validate-wire.mjs`
+  // and the gate pass it; `loadWire` never does.
+  strict = false,
+} = {}) {
   const errors = [];
   const warnings = [];
   const E = (where, msg) => errors.push(`${where}: ${msg}`);
@@ -123,6 +160,18 @@ export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorI
       }
       if (s.retired !== undefined && typeof s.retired !== 'boolean') {
         E(where, `retired must be true or false, got ${JSON.stringify(s.retired)}`);
+      }
+      // ── the bulletin's own numbers ────────────────────────────────
+      for (const p of figureProblems(s.figures)) E(where, p);
+      // An EMPTY array is a declaration, not an omission: the author looked and
+      // this bulletin has no number worth printing, so the panel prints none.
+      // Only silence is a problem.
+      if (numericPanels && isStr(s.visual) && numericPanels.includes(s.visual)
+          && !Array.isArray(s.figures)) {
+        const msg = `visual "${s.visual}" puts a number on screen and the `
+          + 'bulletin declares no figures — the panel will draw its own. Give it '
+          + 'the bulletin\'s pair, or [] if the bulletin has no number.';
+        if (strict) E(where, msg); else warnings.push(`${where}: ${msg}`);
       }
     });
   }

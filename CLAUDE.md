@@ -1381,6 +1381,32 @@ midday. Use **`scr.wash(x,y,w,h,colour,alpha)`** for anything that sits OVER a
 scene. The gate now renders every scene at four hours and fails below mean 5 /
 max 60 — a floor set between the blackout and the two dimmest legitimate scenes,
 not a brightness target.
+**The graphic argues the bulletin, or it argues nothing** (v64). Nine panels
+print a number and every one was a LITERAL in `visuals.js`: `chart2` said
+`+40% → +4%` under whichever bulletin the rotation handed it, so a €92.5bn
+budget aired under some other morning's percentages, and `crowd` emptied nine
+hundred seats under a cup final that finished 1–0. A bulletin now carries
+**`figures`** — an ordered list of `{claim, plain, unit}`, what the broadcast
+asserts against what it plainly means — and it reaches the **drawing**, not just
+the caption: `kept()`/`gap()` drive how many of `chart`'s cells go dark, how far
+`chart2`'s baseline is cut, how many of `border`'s five markers are real. `kept`
+alone had the same bug one layer down, because it clamps at 1 and so reports *no
+change* on every bulletin whose plain reading is the BIGGER number.
+**ABSENT and EMPTY are different answers**, and that is the load-bearing part:
+absent means "written before the field existed" and keeps the old literal, which
+is what lets this land on a wire nobody has re-authored; `[]` means the author
+looked and found no number, and the panel prints **nothing**. `chart2`'s
+baseline is **solved** from the ratio of the pair rather than drawn — given a
+claimed rise and an honest one there is exactly one axis cut that turns the
+second into the first — and it went degenerate when read as percentages, the
+moment a bulletin's numbers were 700,000 residents and 7,000 flats.
+**Both numbers must appear as DIGITS in the copy, in at least one language**,
+and the gate checks it; a bulletin that spells "sixty per cent" in all three
+gets an unlabelled chart, which is the right outcome — this page has already
+decided once that a ruler failing one of the three languages is worse than no
+ruler. Found on the way: the 3×5 glyph table was digits only, so every letter
+label in the file (`PCT`, `REM`, `OBS`, `LATE`) had been drawing as question
+marks since it was written.
 **Layout belongs in `index.html`, never in an injected stylesheet.** `package.js`
 used to inject thirty `!important` rules that clamped the headline, deleted the
 second paragraph of every bulletin, and hid the DECODE button, the tally and the
@@ -1388,7 +1414,7 @@ second paragraph of every bulletin, and hid the DECODE button, the tally and the
 separately hard-disabling DECODE behind a setter that threw the value away. If
 the copy does not fit, fix the layout; do not hide the copy.
 **Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs`
-— 80 checks. It reads `sw.js` with whitespace-tolerant regexes, because that file
+— 82 checks. It reads `sw.js` with whitespace-tolerant regexes, because that file
 was reformatted once and five shell checks silently graded against `undefined`
 for as long as nobody looked. A gate that cannot parse its own subject produces a
 failure everyone learns to scroll past.

@@ -3,12 +3,12 @@
 // and Helsinki ambience breathe longer, immediate repeats are blocked, and
 // DECODE gets an uninterrupted analysis hold before normal cutting resumes.
 
-import { PixelScreen, shade, mix } from './screen.js?v=63';
-import { PAL, SECTOR_COLOR } from './palette.js?v=63';
-import { Toko } from './toko.js?v=63';
-import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=63';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=63';
-import { preferredScenes } from './editorialmap.js?v=63';
+import { PixelScreen, shade, mix } from './screen.js?v=64';
+import { PAL, SECTOR_COLOR } from './palette.js?v=64';
+import { Toko } from './toko.js?v=64';
+import { drawVisual, readFigures, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=64';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=64';
+import { preferredScenes } from './editorialmap.js?v=64';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -112,6 +112,7 @@ export class Post {
     this.toko = new Toko();
     this.toko.t = seed * 1.7;
     this.story = story;
+    this.figures = readFigures(story && story.figures);
     this.freq = sector.freq;
     this.accent = SECTOR_COLOR[story.sector] || PAL.GREEN;
     this.t = seed * 0.9;
@@ -204,7 +205,7 @@ export class Post {
     } else {
       this.toko.draw(this.portrait, this.signal, false);
       if (ambientShot) drawAmbient(this.shot.key, this.panel, this.t, this.decode);
-      else drawVisual(visualKey, this.panel, this.t, this.decode);
+      else drawVisual(visualKey, this.panel, this.t, this.decode, this.figures);
       s.ctx.drawImage(this.panel.canvas, VF.x, VF.y);
       s.ctx.drawImage(this.portrait.canvas, PF.x, PF.y);
     }

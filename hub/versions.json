@@ -65,8 +65,8 @@
     "from": "VERSIONS.md"
   },
   "radiofree": {
-    "v": "37",
-    "n": 37000,
+    "v": "64",
+    "n": 64000,
     "from": "cache token"
   },
   "tokomove": {

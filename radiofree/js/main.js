@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=63';
-import { Post, Reader } from './codec.js?v=63';
-import { Package } from './package.js?v=63';
+import { PAL, SECTOR_COLOR } from './palette.js?v=64';
+import { Post, Reader } from './codec.js?v=64';
+import { Package } from './package.js?v=64';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=63';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=63';
-import * as audio from './audio.js?v=63';
-import { PixelScreen } from './screen.js?v=63';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=63';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=64';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=64';
+import * as audio from './audio.js?v=64';
+import { PixelScreen } from './screen.js?v=64';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=64';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -227,7 +227,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
   cancelAnimationFrame(raf);
   try {
     if (i !== active) scrollToPost(i, true);
-    const { exportPost } = await import('./export.js?v=63');
+    const { exportPost } = await import('./export.js?v=64');
     const out = await exportPost(p, {
       t, parseLine, index: i + 1, total: STORIES.length,
       date: formatDate(new Date()), accent: SECTOR_COLOR[p.story.sector],
@@ -260,7 +260,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
 function boot() {
   booted = true;
   if (TTS && !tts) {
-    import('./tts.js?v=63').then(m => { tts = m; ttsSpeak(posts[active]); })
+    import('./tts.js?v=64').then(m => { tts = m; ttsSpeak(posts[active]); })
       .catch(err => console.warn('[rfh] tts prototype did not load:', err));
   }
   paintSound();

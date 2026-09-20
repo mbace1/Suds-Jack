@@ -35,6 +35,7 @@
       "sector": "RFH",
       "visual": "crowd",
       "broll": "katu",
+      "figures": [],
       "filed": "2026-09-01",
       "label": "CITY",
       "visualBeat": "one hundred small shops changing everyday food"
@@ -44,6 +45,13 @@
       "sector": "RFH",
       "visual": "heat",
       "broll": "mannerheim",
+      "figures": [
+        {
+          "claim": 20,
+          "plain": 14,
+          "unit": "C"
+        }
+      ],
       "filed": "2026-09-01",
       "label": "CITY",
       "visualBeat": "showers moving across Finland"
@@ -53,6 +61,12 @@
       "sector": "RFH",
       "visual": "crowd2",
       "broll": "kamppi",
+      "figures": [
+        {
+          "claim": 50,
+          "plain": 5
+        }
+      ],
       "filed": "2026-09-01",
       "label": "CULTURE",
       "visualBeat": "fifty years of Finnish metal dissected"
@@ -62,6 +76,16 @@
       "sector": "RFH",
       "visual": "crowd2",
       "broll": "station",
+      "figures": [
+        {
+          "claim": 9,
+          "plain": 5
+        },
+        {
+          "claim": 100,
+          "plain": 100
+        }
+      ],
       "filed": "2026-09-01",
       "label": "CULTURE",
       "visualBeat": "public broadcaster approaches one hundred"
