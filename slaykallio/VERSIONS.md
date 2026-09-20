@@ -7,6 +7,118 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v45 — 2026-09-20
+**THE RUN, READ BACK — the game could tell ME where a run died and told the PLAYER one sentence**
+
+Forty-four versions, and `bots.mjs` could print every span a run walked, what
+each cost in HP, where it ended and how the deck's filler share moved — while
+the result screen said *"fell in act 2 at The Bear · 14 fights · 312 cards"* and
+stopped. That asymmetry is the thing this closes. **Most runs lose**, and a
+losing run is only worth having had if you can see what it was.
+
+**`js/ledger.js` is PURE and reads `state.log` and nothing else.** That is
+turf's `anim.js` discipline: the log is the engine's own output, so a chronicle
+built from it cannot disagree with what actually happened, where a second tally
+kept beside the rules would drift the first time somebody added a way to lose
+HP and updated one of the two. No DOM, no three.js, no clock, no theme — it
+returns IDS and numbers and the view names them, because a name depends on which
+skin is on. That is what lets `core.mjs` assert exact numbers on it in bare node
+rather than through a screenshot.
+
+**HP over a span is the SUM OF THE DROPS, never end-minus-start** — v16 paid for
+that once, when the post-fight breather landing inside the span that earned it
+priced a fight at 5.4 HP against a 6 HP heal and would have had somebody cut the
+heal. The gate checks the chronicle's total against the log's own damage entries.
+
+**What the screen shows now**: the route, one row a span, grouped by act, with
+what each cost on the right and the span that ended the run ringed — the same
+table `--act3` prints for me, for the run you just had. Then the deck's shape,
+which is v44's finding made visible: *deck 10 → 18 (took 12, left 4 behind,
+sharpened 2) · starting cards 8 → 4 — 22% of what you drew*. A run that only
+GREW its deck and one that also got sharper are different runs, and until now
+only I could tell them apart.
+
+A real won run reads:
+
+```
+Act 1 · The Canal Bridge     Act 2 · Under The Bear      Act 3 · In The Water
+  The Pigeons…      −  3       Chance Rat      −  7        Two Who Went In  −  9
+  The Kiosk         −  7       The Flock       —           An Old Friend    —
+  The Canal         − 12       The Thief       —           The Gulls        —
+  The Night Tram    —          The Swarm       —           The Statue       −  8
+  The King Rat      —          The Night Tram  —           The Preacher     —
+  The Preacher      —          The Gulls       —           The Dumpster     −  7
+  WHO OWNS THE…     − 39       THE BEAR WAKES  −  2        WHAT THE CANAL…  −  1
+```
+
+**And it immediately showed something about the INSTRUMENT**: that run took
+**eleven events and zero rests** across twenty-one spans, because
+`buildPolicy`'s map taste ranks `event: 4` above `rest: 2`. Which is why v44's
+rest-rule fix mattered as much as it did — the bot almost never rests, so when
+it does the rule has to be right. Recorded, not acted on.
+
+**The last ten runs are kept on your disk and sent nowhere** (`slayKallio.runs`),
+and the screen names the five before this one — Hyper Dagger's rule, which is to
+skip index 0, because the run you are being shown the big numbers for is not
+also news. A win rate is a fact about a hundred runs; what a player has is the
+last three.
+
+**One real bug fixed on the way**: the screen has said *"cleared both acts"*
+since v43 shipped a third. It reads `ACTS.length` now.
+
+**AND THEN IT WAS PHOTOGRAPHED, which is where the real faults were.** Both
+gates were green and the screen had three things wrong with it that no
+assertion had asked about:
+
+- **A scrolling box opens at the TOP.** A fourteen-span run showed its first
+  ten rows and cut off the span that ENDED it — the one row a player is looking
+  for. It opens at the bottom now and brings the fatal row into view
+  explicitly. The gate that came out of that measures the RECTANGLE, not the
+  DOM: presence is not visibility, and the old check would have passed forever.
+- **`#labels` is its own layer**, so hiding `#hud` left the dead fight's names
+  and intents painted across the panel — "THE BOTTLE COLLECTOR" and a rat's
+  intent sitting on top of the route.
+- **A half-row at the top edge reads as a rendering fault**, not as "there is
+  more above", so the edge fades — and only while actually scrolled, since a
+  three-row route fading its first row is the same bug inverted.
+
+**And a real bug fell out of trying to take the photograph at all**:
+`afterReplay` recovers every panel whose phase it lands in — reward, map,
+event, rest, pick — and did NOT recover the result screen, because the ending
+is raised from the REPLAY (`later(1600, showResult)`) rather than from the
+state. A run that arrived at its ending with the replay skipped sat on a dead
+board with nothing to press. That is Kindling's lesson in one version: *a gate
+that certifies works cannot see looks*, and going to look found a defect that
+was never about looks.
+
+**AND ONE RULER RETIRED, the third of its kind here.** The browser gate failed
+once on *"the deck is lit from the torch side and falls away (10 → 8)"* against
+a 1.3× bar — and passed on a re-run of the SAME BUILD at 12 → 9. The check is
+about the FALLOFF, and the torch gutters on three incommensurate sines with a
+rare deep dip worth several times the flicker amount, so an arbitrary frame
+measures the flame's PHASE as much as the light's reach. It holds the flame
+still now (`arena.steady`, the same switch `prefers-reduced-motion` throws) and
+restores it after. Not a regression, and not shrugged at either: a gate that
+fails one run in three is a gate that will lie about something real later.
+Kindling's band-brightness gate and v26's rank-light-follows-the-row are the
+other two.
+
+**`__sk.debug.chronicle()`** is the seam, read-only, so anyone can pull their
+own route out of the console — and the browser gate asserts the screen draws one
+row per span, marks the fatal one, puts it LAST rather than in the middle, names
+every span rather than printing its id (v10's `KING_RAT` bug, which is one
+`nameOf` fall-through away at all times), and scrolls inside its own box so
+*Again* stays reachable on a phone — a won run is twenty-one rows and a phone is
+not twenty-one rows tall.
+
+**Tokens**: `ledger.js` imports `data.js?v=44`, NOT 45 — `data.js` did not change
+this version, and a new module importing a fresh token would instantiate it a
+second time and split its state. That is the trap v44 hit from the measurement
+side; it is the same trap from the shipping side.
+
+Gates: `node slaykallio/test/core.mjs` (887) ·
+`NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (161)
+
 ## v44 — 2026-09-19
 **THE DECK NEVER CONCENTRATED — one card left behind per act cleared, and two rulers that were reading it wrong**
 

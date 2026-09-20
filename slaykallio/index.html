@@ -279,6 +279,31 @@
     #deck .row.skill { border-color: var(--skill); } #deck .row.power { border-color: var(--power); } #deck .row.curse { border-color: var(--curse); }
     #deck .row b { display: block; text-transform: uppercase; letter-spacing: .04em; }
     #deck .row span { font-family: system-ui, sans-serif; opacity: .85; }
+    /* v45 — the route reads as a LIST OF SPANS, in the deck panel's register:
+       dark stock, a coloured left edge naming the kind, the cost on the right.
+       It scrolls, because a won run is 21 rows and a phone is not 21 rows tall. */
+    #result .route {
+      max-height: 42vh; overflow: auto; width: min(560px, 92vw); text-align: left;
+      display: flex; flex-direction: column; gap: 2px; font-family: system-ui, sans-serif;
+    }
+    #result .act { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); opacity: .85; margin-top: 8px; padding-left: 2px; }
+    #result .act:first-child { margin-top: 0; }
+    /* A half-row at the top edge reads as a rendering fault, not as "there is
+       more above" — so the edge fades, and only while it is actually scrolled
+       (a three-row route fading its first row would be the same bug inverted). */
+    #result .route.scrolled { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px); mask-image: linear-gradient(to bottom, transparent 0, #000 18px); }
+    #result .span { display: flex; gap: 8px; align-items: baseline; background: var(--panel); padding: 5px 9px; border-left: 4px solid var(--skill); border-radius: 4px; font-size: 13px; }
+    #result .span.fight { border-color: var(--attack); }
+    #result .span.elite { border-color: var(--power); }
+    #result .span.boss  { border-color: var(--curse); }
+    #result .span.rest  { border-color: #4e6839; }
+    #result .span .what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #result .span .cost { font-variant-numeric: tabular-nums; opacity: .85; }
+    #result .span .cost.free { opacity: .35; }
+    #result .span.fatal { box-shadow: 0 0 0 2px var(--attack); }
+    #result .span.fatal .cost { color: #ff8a70; opacity: 1; }
+    #result .shape { font-size: 13px; opacity: .8; max-width: min(560px, 92vw); font-family: system-ui, sans-serif; line-height: 1.5; }
+    #result .recent { font-size: 12px; opacity: .55; letter-spacing: .06em; font-family: system-ui, sans-serif; }
     .stats { font-size: 15px; opacity: .9; }
     #foot { font-size: 12px; opacity: .6; letter-spacing: .1em; }
     #best { font-size: 12px; color: var(--accent); min-height: 1em; }
@@ -421,6 +446,9 @@
   <div id="result" class="panel" hidden>
     <h2></h2>
     <p class="stats"></p>
+    <div class="route"></div>
+    <p class="shape"></p>
+    <p class="recent"></p>
     <button class="btn" id="again">Again</button>
   </div>
 
@@ -441,7 +469,7 @@
   }
   </script>
   <script type="module" src="../hub/shell.js?v=40"></script>
-  <script type="module" src="js/main.js?v=44"></script>
+  <script type="module" src="js/main.js?v=45"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';

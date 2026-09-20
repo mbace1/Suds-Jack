@@ -17,6 +17,7 @@ import { drawMap } from './map.js?v=31';
 import { sfx, unlock, setMuted, isMuted } from './audio.js?v=31';
 import { watchPad } from '../../hub/pad.js';
 import { bindActivation } from './input.js?v=31';
+import { chronicle } from './ledger.js?v=45';
 
 const $ = s => document.querySelector(s);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
@@ -25,7 +26,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 44;
+const VERSION = 45;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -260,6 +261,14 @@ function afterReplay() {
   if (state.phase === 'event' && $('#event').hidden) openEventPanel();
   if (state.phase === 'rest' && $('#rest').hidden) openRestPanel();
   if (state.phase === 'pick' && $('#pick').hidden) openPickPanel();
+  // v45 — and the END of a run is a panel like any other. Every other phase
+  // recovered here and this one did not, because the result screen is raised
+  // from the REPLAY (`later(1600, showResult)`) rather than from the state —
+  // so a run that arrived at its ending with the replay skipped sat on a dead
+  // board with nothing to press. Found while trying to photograph the screen,
+  // which is the whole argument for looking at a thing a green suite has
+  // already passed.
+  if ((state.phase === 'won' || state.phase === 'lost') && $('#result').hidden) showResult(state.phase === 'won');
 }
 function closePanels() { for (const p of ['#map', '#event', '#rest', '#pick', '#reward']) $(p).hidden = true; }
 
@@ -764,7 +773,7 @@ function startRun(character) {
   plateStage = null;
   engine.startRun(state);
   for (const p of PANELS) $(p).hidden = true;
-  $('#hud').hidden = false;
+  $('#hud').hidden = false; $('#labels').hidden = false;
   spawnHeroAlone();
   cursor = 0;
   enqueueLog();
@@ -1024,13 +1033,97 @@ function panelKeys(ev, id) {
 }
 
 // ── result ───────────────────────────────────────────────────────────────
+// v45 — the last ten runs, kept on YOUR disk and sent nowhere, so a run can
+// be compared with the one before it. Hyper Dagger's precedent, and the reason
+// it is worth the twelve lines: a win rate is a number about a hundred runs,
+// and what a player actually has is the last three. Stored compact — a whole
+// chronicle is thousands of log-derived rows and localStorage is not a
+// database.
+const RUN_HISTORY = 10;
+function rememberRun(c) {
+  try {
+    const row = {
+      at: Date.now(), character: c.character, asc: c.asc, won: c.won,
+      act: c.ended ? c.ended.act : c.acts - 1, at_: c.ended?.id ?? null,
+      spans: c.totals.spans, hpLost: c.totals.hpLost, worst: c.totals.worst,
+      deck: c.deck.end, basics: c.deck.basicsEnd, friends: c.jokers.length,
+    };
+    const all = [row, ...(store.get('runs', []) || [])].slice(0, RUN_HISTORY);
+    store.set('runs', all);
+  } catch { /* a full or blocked disk must never be the reason a run cannot end */ }
+}
+
+// v45 — THE RUN, READ BACK. This screen was one sentence for forty-four
+// versions while `bots.mjs` could print where a run died, what every span
+// cost and how the deck's filler share moved. A losing run is only worth
+// having had if you can see what it WAS, and most runs lose.
 function showResult(won) {
   $('#hud').hidden = true;
+  // `#labels` is its own layer, so hiding the HUD left the dead fight's names
+  // and intents painted over the panel — photographed, "THE BOTTLE COLLECTOR"
+  // and a rat's intent were sitting on top of the route.
+  $('#labels').hidden = true;
   const p = $('#result'); p.hidden = false;
   p.querySelector('h2').textContent = won ? 'THE BRIDGE IS YOURS' : 'FLAT ON THE PLANKS';
   const s = state.stats;
-  const fellAt = state.phase === 'lost' ? (ENCOUNTERS[state.encounter]?.[theme].name ?? 'the road') : '';
-  p.querySelector('.stats').textContent = `${won ? 'cleared both acts' : `fell in act ${state.act + 1} at ${fellAt}`} · ${s.fights} fights · ${s.events} events · ${s.cardsPlayed} cards · ${s.damageDealt} damage · biggest hit ${s.biggestHit} · ${state.jokers.length} ${T().jokerWord}`;
+  const c = chronicle(state);
+  const byId = arr => Object.fromEntries(arr.map(e => [e.id, e]));
+  const EVENT_BY_ID = byId(EVENTS), ENC_BY_ID = byId(ENCOUNTERS);
+  const spanName = sp => sp.kind === 'event' ? nameOf(EVENT_BY_ID, sp.id)
+    : sp.kind === 'rest' ? (sp.id === 'heal' ? 'Slept' : 'Sharpened a card')
+    : nameOf(ENC_BY_ID, sp.id);
+  const fellAt = c.ended ? spanName({ kind: c.ended.kind, id: c.ended.id }) : '';
+  // "cleared both acts" was written when there were two. It reads the count now.
+  p.querySelector('.stats').textContent = `${won ? `cleared all ${c.acts} acts` : `fell in act ${c.ended ? c.ended.act + 1 : state.act + 1} at ${fellAt}`} · ${s.cardsPlayed} cards · ${s.damageDealt} damage · biggest hit ${s.biggestHit}`;
+
+  // THE ROUTE. One row a span, grouped by act, the cost on the right and the
+  // span that ended it ringed. This is the same table `--act3` prints for me,
+  // for the run the player just had.
+  const route = p.querySelector('.route'); route.innerHTML = '';
+  let act = -1;
+  for (const sp of c.spans) {
+    if (sp.act !== act) {
+      act = sp.act;
+      route.append(el('div', 'act', `Act ${act + 1} · ${ACTS[act]?.[theme]?.name ?? ''}`));
+    }
+    const row = el('div', `span ${sp.kind}${sp.fatal ? ' fatal' : ''}`);
+    row.append(el('span', 'what', `${sp.mutated ? '✶ ' : ''}${spanName(sp)}`));
+    row.append(el('span', `cost${sp.hpLost ? '' : ' free'}`, sp.kind === 'rest' && sp.healed ? `+${sp.healed}` : sp.hpLost ? `−${sp.hpLost}` : '—'));
+    route.append(row);
+  }
+
+  // THE DECK'S SHAPE, which is v44's whole finding made visible: a deck that
+  // only GREW is a different run from one that also got sharper.
+  const d = c.deck;
+  const share = n => d.end ? Math.round(n / d.end * 100) : 0;
+  p.querySelector('.shape').textContent = [
+    `deck ${d.start} → ${d.end} (took ${d.gained}, left ${d.removed} behind, sharpened ${d.upgraded})`,
+    `starting cards ${d.basicsStart} → ${d.basicsEnd} — ${share(d.basicsEnd)}% of what you drew`,
+    d.curses ? `${d.curses} picked up on the way` : '',
+    `${c.totals.hpLost} HP paid over ${c.totals.spans} spans · worst ${c.totals.worst}`,
+    `${c.jokers.length} ${T().jokerWord}${c.artifacts.length ? ` · ${c.artifacts.length} kept` : ''}`,
+  ].filter(Boolean).join(' · ');
+
+  // THE END OF THE ROUTE IS THE POINT OF THE ROUTE, and a box that scrolls
+  // opens at the TOP. Photographed, both formats cut off the span that ended
+  // the run — the one row a player is actually looking for — and showed the
+  // first ten instead. It opens at the bottom, and the fatal row is brought
+  // into view explicitly rather than trusting scrollHeight, because a row with
+  // a box-shadow ring is taller than the arithmetic thinks.
+  const fatalRow = route.querySelector('.span.fatal');
+  route.scrollTop = route.scrollHeight;
+  if (fatalRow) fatalRow.scrollIntoView({ block: 'end' });
+  const edge = () => route.classList.toggle('scrolled', route.scrollTop > 2);
+  route.onscroll = edge; edge();
+
+  rememberRun(c);
+
+  // The runs BEFORE this one — Hyper Dagger's rule, which is to skip index 0,
+  // because the run you are being shown the big numbers for is not also news.
+  const past = (store.get('runs', []) || []).slice(1, 6);
+  p.querySelector('.recent').textContent = past.length
+    ? `before this: ${past.map(r => r.won ? `won (${r.spans})` : `act ${r.act + 1}`).join(' · ')}`
+    : '';
   const best = store.get('best', null);
   const score = { won, fights: s.fights, character: state.character, at: Date.now(), asc: state.asc ?? 0 };
   if (!best || (won && !best.won) || (won === !!best.won && s.fights > best.fights)) store.set('best', score);
@@ -1119,6 +1212,10 @@ window.__sk = {
     // a cutout painted at full size, for looking at the art rather than the scene
     look: (id, mutated = 0) => paintCutout({ ...(ENEMIES[id] ?? CHARACTERS[id])[theme].look, id, mutated }, 3, arena.figureMood()),
     encounterCount: () => ENCOUNTERS.length,
+    // v45 — the run read back, for the gate and for anyone who wants their own
+    // route out of the console. Read-only: it derives from the log.
+    chronicle: () => chronicle(state),
+    runs: () => store.get('runs', []),
     // the world scale of a figure's plane — the contact sheet needs it, because
     // a sheet of raw textures hides the whole size hierarchy
     enemyScale: id => ENEMIES[id]?.scale ?? 1,

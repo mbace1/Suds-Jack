@@ -254,6 +254,20 @@ const check = (name, ok, extra = '') => {
     // A WebGL drawing buffer is cleared once it has been composited, so it must
     // be rendered and read in the SAME task or every pixel comes back black —
     // which is a very convincing way to pass a "the scene is dark" check.
+    //
+    // v45 — AND THE FLAME HAS TO BE HELD STILL FIRST. This check is about the
+    // FALLOFF — near side bright, far side dark — and the torch gutters on
+    // three incommensurate sines with a rare deep dip worth several times the
+    // flicker amount. Sampling an arbitrary frame measures the flame's PHASE as
+    // much as the falloff, and a sample that landed in the dip read 10 → 8
+    // against a 1.3× bar on a scene with nothing wrong with it. `steady` is the
+    // same switch `prefers-reduced-motion` throws. Third time this project has
+    // written down a ruler that moved with something other than the thing it
+    // measures: the band-brightness gate, the rank light following the row, and
+    // now the flicker.
+    const wasSteady = __sk.arena.steady;
+    __sk.arena.steady = true;
+    __sk.arena.update(0.5);      // let the held light settle to its base value
     __sk.arena.update(0);
     g.getContext('2d').drawImage(cv, 0, 0);
     // Sample the deck as a BAND, not a row. One row is a lottery: the first
@@ -271,6 +285,7 @@ const check = (name, ok, extra = '') => {
       }
       return t / n;
     };
+    __sk.arena.steady = wasSteady;
     return { near: mean(0.08, 0.34), far: mean(0.68, 0.94) };
   });
   check(`the deck is lit from the torch side and falls away (${lit.near.toFixed(0)} → ${lit.far.toFixed(0)})`,
@@ -961,6 +976,54 @@ const check = (name, ok, extra = '') => {
   await page.waitForSelector('#result:not([hidden])', { timeout: 6000 });
   check('and the result screen says how it went',
     (await page.locator('#result .stats').innerText()).length > 10);
+
+  // v45 — THE RUN, READ BACK. The screen was one sentence for forty-four
+  // versions. What it owes the player is the same table `--act3` prints for
+  // me: every span walked, what each cost, and which one ended it.
+  {
+    const spans = await page.evaluate(() => __sk.debug.chronicle().spans.length);
+    check(`the result screen draws the route — one row a span (${spans})`,
+      await page.locator('#result .route .span').count() === spans && spans > 0);
+    check('grouped under a heading per act walked',
+      await page.locator('#result .route .act').count() >= 1);
+    check('the span that ended the run is marked',
+      await page.locator('#result .route .span.fatal').count() === 1);
+    check('and the one that ended it is the LAST row, not one in the middle',
+      await page.evaluate(() => {
+        const rows = [...document.querySelectorAll('#result .route .span')];
+        return rows.length > 0 && rows[rows.length - 1].classList.contains('fatal');
+      }));
+    // A span names itself rather than printing its id — the bug v10 paid for
+    // on the act card, where `nameOf` fell through and put KING_RAT on screen.
+    check('every row names the span rather than printing its id',
+      await page.evaluate(() => [...document.querySelectorAll('#result .route .span .what')]
+        .every(w => w.textContent.trim().length > 2 && !/^[a-z_]+$/.test(w.textContent.trim()))));
+    check('the deck\'s shape is on screen, filler share and all',
+      /starting cards \d+ → \d+/.test(await page.locator('#result .shape').innerText()));
+    check('and it no longer claims there are two acts',
+      !/both acts/.test(await page.locator('#result .stats').innerText()));
+    // The route can be 21 rows; a phone is not 21 rows tall, so it scrolls
+    // inside its own box rather than pushing Again off the screen.
+    const fits = await page.evaluate(() => {
+      const r = document.querySelector('#result .route').getBoundingClientRect();
+      const b = document.querySelector('#again').getBoundingClientRect();
+      return { routeInside: r.bottom <= innerHeight + 1, againInside: b.bottom <= innerHeight + 1 && b.height >= 44 };
+    });
+    check('the route scrolls in its own box and Again stays reachable', fits.routeInside && fits.againInside);
+    // PHOTOGRAPHED, AND NEITHER FORMAT PASSED THIS: a scrolling box opens at
+    // the top, so a fourteen-span run showed its first ten rows and cut off
+    // the span that ENDED it — the one row a player is looking for. Presence
+    // is not visibility, so the check is on the rectangle, not the DOM.
+    check('and the span that ended the run is actually IN VIEW, not scrolled off',
+      await page.evaluate(() => {
+        const box = document.querySelector('#result .route').getBoundingClientRect();
+        const row = document.querySelector('#result .route .span.fatal')?.getBoundingClientRect();
+        return !!row && row.top >= box.top - 1 && row.bottom <= box.bottom + 1;
+      }));
+    check('and the dead fight\'s unit labels are not painted over the panel',
+      await page.evaluate(() => document.querySelector('#labels').hidden));
+  }
+
   await page.locator('#again').click();
   await page.waitForTimeout(300);
   check('and the way back to the menu works', await page.locator('#menu').isVisible());

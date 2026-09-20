@@ -900,7 +900,7 @@ him second only to the Cart Pusher and turns "mostly wears off" into "half
 stays", which is a different character. Withdrawn: GDD §6's *"Numbers will not
 fix that"* — the numbers tried were sizes of a thing that reset; the carry is
 what stops the reset.
-Gates: `node slaykallio/test/core.mjs` (867 checks) and
+Gates: `node slaykallio/test/core.mjs` (887 checks) and
 `NODE_PATH=$(npm root -g) node slaykallio/test/smoke.cjs` (130). Hub entry:
 `hub/games.js` id `slaykallio`, marquee `bench` in `hub/art.js` (the key kept
 its name through the bench-to-bridge change; the drawing is a bridge), accent
@@ -1115,6 +1115,53 @@ against a 16% mean, 24% arrivals at act three against everyone else's 27-59%,
 and a flat 0 under the naive bot. Every other character moved with this pass and
 she moved least, which makes it a character problem rather than an instrument
 one.
+**THE RUN, READ BACK** (v45). Forty-four versions in, `bots.mjs` could print
+every span a run walked, what each cost and where it ended, and the result
+screen said one sentence. **Most runs lose**, and a losing run is only worth
+having had if you can see what it was. `js/ledger.js` closes that: it reads
+`state.log` and NOTHING else — turf's `anim.js` discipline, so a chronicle
+built from the engine's own output cannot disagree with what happened, where a
+second tally kept beside the rules would drift the first time somebody added a
+way to lose HP and updated one of the two. **Pure** (no DOM, three.js, clock or
+theme; it returns IDS and the view names them), so `core.mjs` asserts exact
+numbers on it in bare node. **HP over a span is the SUM OF THE DROPS**, never
+end-minus-start — v16 paid for that once. The screen now draws the route, one
+row a span, grouped by act, with the cost on the right and the fatal span
+ringed, then the deck's shape (*deck 10 → 24, starting cards 8 → 6 — 25% of
+what you drew*), which is v44's finding made visible. The last ten runs are
+kept on your disk and sent nowhere, and five are named on the screen — skipping
+index 0, Hyper Dagger's rule, because the run you are being shown the big
+numbers for is not also news. One bug fixed in passing: the screen had said
+*"cleared both acts"* since v43 shipped a third.
+**AND THEN IT WAS PHOTOGRAPHED, WHICH IS WHERE THE REAL FAULTS WERE.** Both
+gates were green and three things were wrong that no assertion had asked about:
+**a scrolling box opens at the TOP**, so a fourteen-span run cut off the span
+that ENDED it — the one row anybody is looking for (the gate that came out of
+it measures the RECTANGLE, not the DOM: presence is not visibility); **`#labels`
+is its own layer**, so hiding `#hud` left a dead fight's names and intents
+painted across the panel; and **a half-row at the top edge reads as a rendering
+fault** rather than as "more above", so the edge fades — and only while actually
+scrolled, since a three-row route fading its first row is the same bug inverted.
+**And a real defect fell out of trying to take the photograph at all**:
+`afterReplay` recovers every panel whose phase it lands in and did NOT recover
+the result screen, because the ending is raised from the REPLAY
+(`later(1600, showResult)`) rather than from the state — so a run that arrived
+at its ending with the replay skipped sat on a dead board with nothing to press.
+Kindling's lesson in one version, and then some: *a gate that certifies works
+cannot see looks*, and going to look found a defect that was never about looks.
+**And a third ruler retired.** The browser gate failed once on *the deck is lit
+from the torch side* (10 → 8 against a 1.3× bar) and passed on a re-run of the
+SAME BUILD (12 → 9): the check is about the FALLOFF, and the torch gutters on
+three incommensurate sines with a rare deep dip, so an arbitrary frame measures
+the flame's PHASE as much as the light's reach. It holds the flame still now
+(`arena.steady`, the switch `prefers-reduced-motion` throws) and restores it.
+Kindling's band-brightness gate and v26's rank-light-follows-the-row are the
+other two — **a ruler that moves with something other than the thing it
+measures is this project's commonest bug.**
+**One token rule, met from the shipping side**: `ledger.js` imports
+`data.js?v=44`, not 45, because `data.js` did not change — a new module taking a
+fresh token would instantiate it a second time and split its state, which is
+exactly the trap v44 hit while measuring.
 **The spelling is one word, `slaykallio/`** (owner, 2026-09-05). PR #448 seeded a
 hyphenated `slay-kallio/` from TURF concept salvage; that is the losing spelling.
 **The concept pack is FILTERED, not adopted** — `art-src/concepts/README.md`

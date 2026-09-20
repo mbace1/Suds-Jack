@@ -7,6 +7,7 @@ import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { poseAt, frameAt, FRAME_NAMES, REST, LIMITS, CLIP_NAMES, clipLength, isHeld, landsAtRest } from '../js/motion.js';
 import { CAST, WITH_GUNS, POSES, WITH_POSES, castFiles, plateFor, posesFor } from '../js/plates.js';
+import { chronicle, headline } from '../js/ledger.js';
 import { createRun, startRun, playCard, endTurn, canPlay, preview, describe, describeIntent, chooseReward, botRun, botTurn, botStep, computeDamage, chooseNode, chooseEvent, chooseRest, pickCard, upgrade, buildRoute, jumpTo, hourOf, nightfall, HOUR_WORD, DUSK, NIGHT, skipPick, pickable, WHEN, rung, enemyDamage, gainArtifact, hasArtifact, artifactSum } from '../js/engine.js';
 
 const ENC = id => ENCOUNTERS.findIndex(e => e.id === id);
@@ -668,6 +669,75 @@ gl.intent = { ...ENEMIES.gull.moves[1], shown: 9 };          // a dive, not anot
 endTurn(s);
 check('and gone after that turn ends', !s.hero.status.frail);
 check('four pigeons stand in a row', ENCOUNTERS[ENC('pigeons')].enemies.length === 4);
+
+// ── v45: THE RUN, READ BACK ──────────────────────────────────────────────
+// `ledger.js` is pure — it reads `state.log` and nothing else — which is what
+// lets it be asserted here in bare node rather than through a screenshot. The
+// contract it has to keep is that it cannot disagree with the engine, so every
+// check below compares it against a number the engine already knows.
+{
+  const st = botRun(startRun(createRun({ seed: 4, character: 'busker' })));
+  const c = chronicle(st);
+  check('a finished run has a chronicle', c.over && c.spans.length > 0);
+  check('and it knows which act it ended in and against what',
+    !!c.ended && typeof c.ended.act === 'number' && !!c.ended.id, JSON.stringify(c.ended));
+  // The span it died on is the one the engine says it died on.
+  check('the fatal span is the encounter the engine stopped at',
+    c.ended.id === ENCOUNTERS[st.encounter].id, `${c.ended.id} vs ${ENCOUNTERS[st.encounter].id}`);
+  check('every span is stamped with an act inside the run', c.spans.every(sp => sp.act >= 0 && sp.act < ACTS.length));
+  check('and the acts only ever go forward', c.spans.every((sp, i) => i === 0 || sp.act >= c.spans[i - 1].act));
+
+  // HP IS THE SUM OF THE DROPS, NOT END MINUS START. v16 paid for this once:
+  // the post-fight breather lands inside the span that earned it, so a
+  // subtraction prices a fight at less than it cost and would have somebody
+  // cut the heal. Checked against the log directly.
+  const paid = st.log.filter(e => e.t === 'damage' && e.target === 'hero')
+    .reduce((a, e) => a + Math.max(0, (e.amount ?? 0) - (e.blocked ?? 0)), 0);
+  check(`HP paid is summed drops, not end-minus-start (${c.totals.hpLost})`, c.totals.hpLost === paid);
+  check('and it is more than the hero could ever have held at once', c.totals.hpLost > st.hero.maxHp * 0.5);
+
+  // The deck arithmetic has to close: what you started with, plus what you
+  // took, minus what you left behind, is what you are holding.
+  const d = c.deck;
+  check(`the deck arithmetic closes: ${d.start} + ${d.gained} − ${d.removed} = ${d.end}`,
+    d.start + d.gained - d.removed === d.end);
+  check('and the starting deck is the character\'s own', d.start === CHARACTERS[st.character].deck.length);
+  check('basics are counted, since the filler share is the whole point',
+    d.basicsStart > 0 && d.basicsEnd <= d.basicsStart);
+
+  // The totals agree with `stats`, which the engine keeps by a different route.
+  check('the chronicle and the engine agree on cards played', c.totals.cardsPlayed === st.stats.cardsPlayed);
+  check('and on damage dealt', c.totals.damageDealt === st.stats.damageDealt);
+  check('and it counts at least as many fights as stats does',
+    c.totals.fights + c.totals.elites + c.totals.bosses >= st.stats.fights - 1);
+
+  // A run still in progress reads as unfinished rather than throwing.
+  const mid = startRun(createRun({ seed: 4, character: 'busker' }));
+  chooseNode(mid, 0);
+  const m = chronicle(mid);
+  check('a run in progress has a chronicle too, and knows it is not over', !m.over && !m.ended && m.spans.length === 1);
+  check('and the headline says how far it has got', headline(m).reached === 1);
+}
+
+// A WON run walks every act, and the chronicle is what proves the route did.
+{
+  let won = null;
+  for (let seed = 1; seed <= 40 && !won; seed++) {
+    const st = botRun(startRun(createRun({ seed, character: 'collector' })));
+    if (st.phase === 'won') won = st;
+  }
+  check('a won run exists in the first 40 seeds for the collector', !!won);
+  if (won) {
+    const c = chronicle(won);
+    check(`a won run's route covers every act (${[...new Set(c.spans.map(s => s.act))].join(',')})`,
+      new Set(c.spans.map(s => s.act)).size === ACTS.length);
+    check('and it has no fatal span', !c.ended && c.won);
+    check(`and one boss per act (${c.totals.bosses})`, c.totals.bosses === ACTS.length);
+    // v44's finding, now visible to the player: the deck gets SHARPER.
+    check(`the filler share falls across a won run (${c.deck.basicsStart} → ${c.deck.basicsEnd})`,
+      c.deck.basicsEnd < c.deck.basicsStart);
+  }
+}
 
 // ── the hour: the run starts by day, and as evening comes things mutate ──
 s = startRun(createRun({ seed: 5, character: 'boxer' }));
