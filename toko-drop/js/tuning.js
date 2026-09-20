@@ -130,6 +130,15 @@ export const TUNING = {
   depth: {
     wavesPer: 8,
     cycleFrom: 1,
+    // v261 THE FALL — between depths. Two styles, both shipped (owner: "we can
+    // try both"), one toggle in OPTIONS:
+    //   floor  — the camera holds; the old floor and rail drop away into the
+    //            dark, the look switches, the new floor rises to meet you.
+    //   follow — the camera and you fall together; the old floor leaves the
+    //            top of the frame, the new one comes up from below.
+    // `depth` is how far (world units), `dur` how long. You are invulnerable
+    // for it, and nothing spawns until the new floor is under you.
+    fall: { style: 'floor', dur: 1.9, depth: 34, dark: 0.65, streaks: 5 },
     looks: [
       { name: 'THE SURFACE', bg: 0x0d0d1a, rail: 0x5555cc, fogNear: 42, fogFar: 80, gridScale: 1.0, gridFall: 0.45, vignette: 0.55, poolLift: 0.30,
         base: [0.079, 0.079, 0.169], gridHi: [0.0, 0.55, 0.50], gridGlow: 1.0,   // the floor's own colours (linear) — the shipped look, verbatim

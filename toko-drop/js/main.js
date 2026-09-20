@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=213';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=213';
-import { Player, PLAYER_RADIUS } from './player.js?v=213';
+import { InputManager } from './input.js?v=214';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=214';
+import { Player, PLAYER_RADIUS } from './player.js?v=214';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=213';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=213';
-import { audio } from './audio.js?v=213';
-import { haptics } from './haptics.js?v=213';
-import { initDesigner } from './designer.js?v=213';
-import { createSpecimen } from './specimen.js?v=213';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=213';
-import { TUNING } from './tuning.js?v=213';
-import { Arena, rectShape } from './arena.js?v=213';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=213';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=213';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=213';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=214';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=214';
+import { audio } from './audio.js?v=214';
+import { haptics } from './haptics.js?v=214';
+import { initDesigner } from './designer.js?v=214';
+import { createSpecimen } from './specimen.js?v=214';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=214';
+import { TUNING } from './tuning.js?v=214';
+import { Arena, rectShape } from './arena.js?v=214';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=214';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=214';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=214';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -432,7 +432,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '260';
+const GAME_VERSION = '261';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -2794,6 +2794,62 @@ const SMASH_FLOOR_LOOKS = [
 // (grid density, grid falloff, vignette depth, pool lift). Both render paths
 // read the same uniform objects, so one function serves both.
 let _depthIdx = -1, _gridScale = 1;
+// v261 THE FALL. `drop` is the live descent, or null. See TUNING.depth.fall.
+let drop = null, _dropCamY = 0, _justDropped = false;
+function fallStyle() { let v = null; try { v = localStorage.getItem('tokoDropFall'); } catch (_) {} return v === 'follow' || v === 'floor' ? v : TUNING.depth.fall.style; }
+function beginDrop(nextIdx) {
+  const F = TUNING.depth.fall;
+  drop = { t: 0, dur: F.dur, style: fallStyle(), next: nextIdx, switched: false };
+  // the old floor is LEAVING — its drops and gates ride it down and go at the
+  // switch, in the dark (owner: "things shouldn't disappear immediately")
+  bullets.clear(); pendingSpawns = [];
+  player.grantInvincibility(F.dur + 0.3);
+  audio.phaseShift?.();
+}
+const _ease = { in: x => x * x, out: x => 1 - (1 - x) * (1 - x), inout: x => x < 0.5 ? 2 * x * x : 1 - (2 - 2 * x) * (2 - 2 * x) / 2 };
+function dropSwitch() {
+  drop.switched = true; applyDepthLook(drop.next);
+  for (const pu of powerups) pu.remove(scene); powerups = [];
+  for (const g of gates) g.remove(scene); gates = [];
+}
+function updateDrop(dt) {
+  if (!drop) return;
+  const F = TUNING.depth.fall, D = F.depth;
+  const prevCamY = _dropCamY;   // the camera already carries this frame's offset (updateShake ran first)
+  drop.t += dt;
+  const u = Math.min(1, drop.t / drop.dur);
+  if (drop.style === 'floor') {
+    // the floor drops away (ease in), the look switches at the bottom, the new floor rises (ease out)
+    if (u < 0.45) {
+      const y = -D * _ease.in(u / 0.45);
+      floor.position.y = y; border.position.y = 0.02 + y;
+    } else {
+      if (!drop.switched) dropSwitch();
+      const y = -D * (1 - _ease.out((u - 0.45) / 0.55));
+      floor.position.y = y; border.position.y = 0.02 + y;
+    }
+  } else {
+    // the camera and you fall together; the old floor stays, the new one waits at the bottom
+    _dropCamY = -D * _ease.inout(u);
+    player.mesh.position.y = PLAYER_RADIUS + _dropCamY;
+    if (!drop.switched && u >= 0.5) { dropSwitch(); floor.position.y = -D; border.position.y = 0.02 - D; }
+    // streaks: still motes in the world, so they rush UP past a falling camera
+    for (let k = 0; k < F.streaks; k++) {
+      trailPool.spawn(player.position.x + (Math.random() - 0.5) * 16, _dropCamY - 6 - Math.random() * 14,
+                      player.position.z + (Math.random() - 0.5) * 16, 0x8899ff, 0.12);
+    }
+  }
+  if (u >= 1) {
+    // landed: everything back to the world's own frame, invisibly
+    floor.position.y = 0; border.position.y = 0.02; _dropCamY = 0;
+    player.mesh.position.y = PLAYER_RADIUS;
+    drop = null; _justDropped = true;
+    _depthIdx = -1;               // so spawnWave sees the change and says the name
+    if (roguelikeMode && wave % 3 === 0) showUpgradeCards(); else spawnWave();
+  }
+  // re-seat the camera on THIS frame's offset, so the landing frame is not drawn from under the floor
+  if (_dropCamY !== prevCamY) { camera.position.y += _dropCamY - prevCamY; camera.lookAt(_camLook.x, _camLook.y + _dropCamY, _camLook.z); }
+}
 function applyDepthLook(i) {
   if (smashMode || inCabinet() || customLevel) return;   // they own their looks
   const L = TUNING.depth.looks[i] ?? TUNING.depth.looks[0];
@@ -4879,6 +4935,8 @@ const designer = initDesigner({
     setCabinet: v => setCabinetSel(v),
     getNexInfo: () => ({ progress: nexProgress(), unlocked: nexProgress() >= 5,
                          bests: cabBestsGet(), req: NEX_REQ }),
+    getFallFollow: () => fallStyle() === 'follow',   // v261
+    setFallFollow: on => { try { localStorage.setItem('tokoDropFall', on ? 'follow' : 'floor'); } catch (_) {} },
     getMelee: () => meleeOnlyMode,
     setMelee: on => {
       meleeOnlyMode = on;
@@ -5080,6 +5138,12 @@ function drawHUD() {
     ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
   }
 
+  // v261: the fall darkens at the bottom and comes back up
+  if (drop) {
+    const a = Math.pow(Math.sin(Math.PI * Math.min(1, drop.t / drop.dur)), 2) * TUNING.depth.fall.dark;
+    ctx.fillStyle = `rgba(2,2,8,${a.toFixed(2)})`;
+    ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
+  }
   // Room-traversal black dip (v120): peak at roomFadeT = 0.3, where the swap fires.
   if (roomFadeT > 0) {
     const a = roomFadeT > 0.3 ? (0.55 - roomFadeT) / 0.25 : roomFadeT / 0.3;
@@ -5357,7 +5421,7 @@ function drawHUD() {
 
   // Gate teaching tag (v138): until the player has ever dashed a gate, every
   // live gate advertises the move — pulsing, dash-colored, impossible to miss.
-  if (!gateUsed && gameState === 'playing') {
+  if (!gateUsed && gameState === 'playing' && !drop) {   // v261: no tag on a gate that is falling away
     for (const g of gates) {
       if (!g.alive) continue;
       const p = toScreen({ x: g._x, y: 2.1, z: g._z });
@@ -6671,7 +6735,8 @@ function spawnWave(carry = false) {
   let _depthChanged = false;
   if (classicRound()) {
     const di = depthLookIndex(wave);
-    if (di !== _depthIdx) { _depthChanged = wave > 1; applyDepthLook(di); if (_depthChanged) roomFadeT = 0.55; }
+    if (di !== _depthIdx) { _depthChanged = wave > 1; applyDepthLook(di); if (_depthChanged && !_justDropped) roomFadeT = 0.55; }
+    _justDropped = false;
   }
   // v197 FLUID archetypes: name the wave's current so the lab stays legible.
   // v211: the wave CURRENT is arena choreography, not species identity — so it
@@ -8261,6 +8326,7 @@ function startGame() {
   smashFloor = 1;               // v178: every run starts on studio floor 1
   applySmashFloorLook();
   applyDepthLook(0);            // v260: every run starts on THE SURFACE
+  drop = null; _dropCamY = 0; floor.position.y = 0; border.position.y = 0.02;   // v261
   _entryDoor = null; _cameFromDoor = null;
   buildSmashDoors();  // no-op unless SMASH TV mode is on
   _titleIntroPlayed = false;  // v121: arm the recorded intro for the next title visit
@@ -8604,6 +8670,7 @@ function loop() {
   input.pollGamepad();
   updateMenuNav(dt);   // gamepad menu focus (v134) — self-gates on menu states
   updateShake(dt);
+  if (_dropCamY) { camera.position.y += _dropCamY; camera.lookAt(_camLook.x, _camLook.y + _dropCamY, _camLook.z); }   // v261
 
   // Title / paused / options / run-history — just render the scene, no game logic
   if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade' ||
@@ -8632,6 +8699,7 @@ function loop() {
   let aimDir    = input.getAimDir();
   if (aimDir.useMouse) aimDir = mouseAimDir();
 
+  updateDrop(dt);   // v261: between depths; nothing spawns until the new floor is under you
   // Trickle spawn pending enemies
   waveTimer += dt;
   runTimer  += dt;
@@ -10206,10 +10274,15 @@ function loop() {
   // Gate + powerup updates
   const _t = performance.now() / 1000;
   for (const g of gates) g.update(dt, _t);
+  if (drop && floor.position.y) {   // v261: the floor is falling — everything on it goes with it
+    const fy = floor.position.y;
+    for (const g of gates) for (const m of [g._p1, g._p2, g._laser, g._glow]) if (m) m.position.y = 0.9 + fy;
+  }
   // v257: retiring gates fade out and go
   for (let i = gates.length - 1; i >= 0; i--) { const g = gates[i]; if (g._retireT != null && (g._retireT -= dt) <= 0) { g.remove(scene); gates.splice(i, 1); } }
   for (let i = powerups.length - 1; i >= 0; i--) {
     if (!powerups[i].update(dt, _t)) { powerups[i].remove(scene); powerups.splice(i, 1); }
+    else if (drop && floor.position.y) { const pu = powerups[i]; pu.mesh.position.y += floor.position.y; if (pu._sprite) pu._sprite.position.y += floor.position.y; }
   }
 
   // Cargo convoy: spawn silently + update
@@ -10444,8 +10517,8 @@ function loop() {
     }
   }
 
-  // Gate interactions
-  if (gates.length > 0) {
+  // Gate interactions (v261: not while the floor is falling)
+  if (gates.length > 0 && !drop) {
     const px = player.position.x, pz = player.position.z;
     for (const g of gates) {
       if (!g.alive) continue;
@@ -10522,9 +10595,9 @@ function loop() {
     }
   }
 
-  // Powerup collection
+  // Powerup collection (v261: not while the floor is falling)
   for (const pu of powerups) {
-    if (pu.collected) continue;
+    if (pu.collected || drop) continue;
     const dx = player.position.x - pu.x, dz = player.position.z - pu.z;
     if (Math.hypot(dx, dz) < 0.8 + PLAYER_RADIUS) {
       pu.collected = true;
@@ -10646,7 +10719,7 @@ function loop() {
   // never stops. A live boss holds the round open (a boss is the event, and
   // its aura is cleared on spawnWave). Roguelike keeps its every-3rd-wave
   // card here too, else clock-ended waves would skip it.
-  if (gameState === 'playing' && classicRound() && waveGapT <= 0 && pendingSpawns.length === 0 &&
+  if (gameState === 'playing' && classicRound() && !drop && waveGapT <= 0 && pendingSpawns.length === 0 &&
       waveTimer >= waveDuration && enemies.some(e => e.alive) && !enemies.some(e => e.alive && e._isBoss)) {
     if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
     else spawnWave(true);
@@ -10663,7 +10736,7 @@ function loop() {
   // and (in gauntlets) cascading through the whole room script instantly.
   if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode && !loadoutMode && !kaikkiMode && !customLevel &&
       (!nexdeusMode || nxSurges.length === 0) &&
-      !_roomSwap && roomFadeT <= 0 &&
+      !_roomSwap && roomFadeT <= 0 && !drop &&   // v261: the clear already fired; the floor is falling
       enemies.length > 0 &&
       enemies.every(e => (tokotronMode && e.type === EnemyType.BRUTE) ||
                          (!e.alive && !e._dying)) &&
@@ -10708,6 +10781,7 @@ function loop() {
         if (cabQuest) cabQuestAdvance();     // v154: quest beat — pay or ramp
         else waveGapT = tokotronMode ? 0.6 : 1.0;   // v148: the reference slams onward
       }
+      else if (classicRound() && depthLookIndex(wave + 1) !== depthLookIndex(wave)) beginDrop(depthLookIndex(wave + 1));   // v261: the floor gives
       else if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
       else {
         // v136: breather — a beat to exhale and grab leftover drops instead of
@@ -10881,7 +10955,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=213').then(async m => {
+  import('./editor.js?v=214').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10912,6 +10986,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=213').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=214').catch(() => {});
   });
 }

@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=213';
-import { t } from './lang.js?v=213';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=213';
-import { Arena, rectShape } from './arena.js?v=213';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=214';
+import { t } from './lang.js?v=214';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=214';
+import { Arena, rectShape } from './arena.js?v=214';
 
 // v236: the tester's own little room. Enemy.update() takes an arena now.
 const TESTER_ARENA = new Arena(rectShape(11, 7));
@@ -511,6 +511,10 @@ export function initDesigner({ onResume, settings }) {
     // v187 (user direction): CLOSE COMBAT — no enemy fire, only revenge rings
     toggleRow(t('meleeMode'), settings.getMelee, settings.setMelee,
       t('meleeOnH'), t('meleeOffH'), '#ff8866', '#ff885566');
+    // v261 THE FALL (owner: "we can try both"): ON = the camera falls with you,
+    // OFF = the floor falls away under a still camera.
+    if (settings.getFallFollow) toggleRow('DROP: CAMERA FOLLOWS', settings.getFallFollow, settings.setFallFollow,
+      'the camera falls with you between depths', 'the floor falls away, the next rises under you', '#66ddff', '#66ddff66');
     // ARCADE CABINET (v153): single-select cycle — the tribute cabinets are
     // mods like SMASH TV, but only one can be armed at a time.
     {
