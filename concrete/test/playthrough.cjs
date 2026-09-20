@@ -55,7 +55,7 @@ const dataset = (page) => page.locator("#world").evaluate((e) => ({ ...e.dataset
     await page.locator('a.play[href="concrete/"]').click();
     await page.waitForURL("**/concrete/");
     await page.locator("#start:not([disabled])").waitFor();
-    assert.match(await page.locator(".build").first().innerText(), /v4/);
+    assert.match(await page.locator(".build").first().innerText(), /v5/);
     assert.equal(await page.locator("#world").getAttribute("data-art"), "ready");
     assert.equal(await page.locator("#world").getAttribute("data-quality"), "mobile");
     assert.equal(await page.locator("#world").getAttribute("data-skater"), "thps");
@@ -170,7 +170,7 @@ const dataset = (page) => page.locator("#world").evaluate((e) => ({ ...e.dataset
     await page.keyboard.press("Escape");
     assert.equal(await page.evaluate(() => window.__concrete.screen), "play");
     console.log(
-      "PASS Hub -> v4 title -> drop in -> ollie + kickflip -> bank " +
+      "PASS Hub -> v5 title -> drop in -> ollie + kickflip -> bank " +
         score +
         " -> reset -> pause/controls/resume by keyboard",
     );
@@ -335,6 +335,117 @@ const dataset = (page) => page.locator("#world").evaluate((e) => ({ ...e.dataset
     console.log("PASS desktop THPS default, Blender rig on demand with twelve clips and grab contact within 6cm");
     assert.deepEqual(errors, []);
     await desktop.close();
+    {
+    // --- v5: the room's objects, its ledges and its lips -------------------
+    // Setup (placing the skater, reading the room's tables) goes through the
+    // debug hook; every action under test is a real pad press.
+    const room = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+    room.on("pageerror", (e) => errors.push(e.message));
+    await room.addInitScript(FAKE_PAD);
+    await room.goto(base + "/concrete/?quality=mobile");
+    await room.locator("#start:not([disabled])").waitFor();
+    await room.locator("#start").click();
+    const rstick = (x, y) => room.evaluate(([x, y]) => { window.__pad.axes[0] = x; window.__pad.axes[1] = y; }, [x, y]);
+    const rhold = (i, v) => room.evaluate(([i, v]) => { window.__pad.buttons[i].pressed = v; window.__pad.buttons[i].value = v ? 1 : 0; }, [i, v]);
+    const rpress = async (i, ms = 200) => { await rhold(i, true); await room.waitForTimeout(ms); await rhold(i, false); await room.waitForTimeout(ms); };
+    const place = (x, z, h, v) => room.evaluate(([x, z, h, v]) => window.__concrete.debug.placeAt(x, z, h, v), [x, z, h, v]);
+    const rds = () => dataset(room);
+    const settle = () => room.waitForFunction(() => { const d = document.querySelector("#world").dataset; return d.air === "false" && Number(d.bail) === 0 && Number(d.grinding) < 0; }, null, { timeout: 15000 });
+    const hunt = async (fn, ticks = 200) => { for (let i = 0; i < ticks; i++) { const d = await rds(); if (fn(d)) return d; await room.waitForTimeout(40); } return await rds(); };
+
+    // Nothing stands in a run-up. The props are one table both tiers read, so
+    // asserting it here is asserting what the room actually contains.
+    const props = await room.evaluate(() => window.__concrete.debug.props());
+    const rails = await room.evaluate(() => window.__concrete.debug.rails());
+    assert(props.length >= 12, "the room is dressed from the prop table");
+    const RIDING = [
+      { name: "north quarter", x0: -16, x1: 16, z0: -35, z1: -29 },
+      { name: "south quarter", x0: -26, x1: -6, z0: 28, z1: 34 },
+      { name: "east quarter", x0: 17, x1: 27, z0: 22, z1: 28 },
+      { name: "funbox", x0: -4.5, x1: 4.5, z0: -3, z1: 9 },
+      { name: "north run-up", x0: -16, x1: 16, z0: -29, z1: -20 },
+    ];
+    for (const p of props)
+      for (const r of RIDING)
+        assert(
+          p.x + p.w / 2 < r.x0 || p.x - p.w / 2 > r.x1 || p.z + p.d / 2 < r.z0 || p.z - p.d / 2 > r.z1,
+          `${p.kind} at ${p.x},${p.z} stands in the ${r.name}`,
+        );
+    // Each coping has a deck behind it rather than 3.6 m of promised air.
+    for (const [x, z] of [[0, -36.5], [-16, 36], [22, 33]])
+      assert.equal(await room.evaluate(([x, z]) => window.__concrete.debug.ground(x, z), [x, z]), 3.6, `deck behind the coping at ${x},${z}`);
+    assert(rails.some(r => r.kind === "ledge" && r.axis === "x"), "the funbox has ledges across it");
+    assert(rails.some(r => r.kind === "ledge" && r.axis === "z"), "and along it");
+    console.log("PASS the room's props are out of every run-up, the copings have decks, ledges run both axes");
+
+    // A crate is solid: ride into one and you stop outside it, not through it.
+    const crate = props.find((p) => p.kind === "crate");
+    await place(crate.x, crate.z + 6, Math.PI, 11);
+    await rstick(0, -1);
+    const hitCrate = await hunt((d) => Number(d.bail) > 0 || Number(d.speed) < 1 || Number(d.riderZ) < crate.z + crate.d / 2, 150);
+    await rstick(0, 0);
+    assert(
+      Number(hitCrate.riderZ) > crate.z + crate.d / 2 - 0.15,
+      `a crate stops the skater outside it (z ${hitCrate.riderZ} vs face ${crate.z + crate.d / 2})`,
+    );
+    await settle();
+    console.log("PASS a crate is solid at speed:", await room.locator("#trick-name").innerText());
+
+    // The funbox is a box, and its top edge takes a grind.
+    await place(6.2, 3, Math.PI * 1.5, 5);
+    await rhold(3, true);
+    await rstick(0, -1);
+    await rpress(0, 200);
+    const ledge = await hunt((d) => Number(d.grindsDone) > 0 || Number(d.bail) > 0, 60);
+    await rhold(3, false);
+    await rstick(0, 0);
+    assert.equal(ledge.lastGrind, "ledge", "ollieing onto the funbox with grind held grinds its ledge");
+    assert.match(await room.locator("#trick-name").innerText(), /Boardslide|50–50/);
+    console.log("PASS funbox ledge grind:", await room.locator("#trick-name").innerText());
+    await room.waitForTimeout(600);
+    await settle();
+
+    // Triangle at the coping stalls on the lip; letting it go rolls back in,
+    // and a roll-in is NOT a transfer — reading the transition's own fall as
+    // an edge popped the skater into the air at the bottom of every ramp.
+    await place(0, -26, Math.PI, 12);
+    await rhold(3, true);
+    await rstick(0, -1);
+    const stalled = await hunt((d) => Number(d.stallsDone) > 0 || d.vert === "true", 200);
+    assert(Number(stalled.stallsDone) > 0, "triangle into the lip stalls rather than launching");
+    assert.match(stalled.lastStall, /stall|Fakie/);
+    assert(Math.abs(Number(stalled.riderY) - 3.66) < 0.05, "the stall sits on the coping");
+    await rhold(3, false);
+    await rstick(0, 0);
+    const transfersBefore = Number(stalled.transfers);
+    const rolled = await hunt((d) => Number(d.riderZ) > -29, 200);
+    assert(Number(rolled.riderZ) > -29, "the stall drops back in");
+    assert.equal(Number(rolled.transfers), transfersBefore, "rolling in off a stall never pops into the air");
+    console.log("PASS", stalled.lastStall, "on the coping, then a clean roll-in");
+    await rstick(0, 0);
+    await settle();
+
+    // A line: 50-50 the long rail, ollie out, kickflip, land it.
+    const scoreBefore = Number((await room.locator("#score").innerText()).replaceAll(",", ""));
+    await place(10, 10, Math.PI, 12);
+    await rstick(0, -1);
+    await hunt((d) => Number(d.riderZ) < 7, 200);
+    await rhold(3, true);
+    const onRail = await hunt((d) => Number(d.grindsDone) > 0, 150);
+    assert.equal(onRail.lastGrind, "rail");
+    await rhold(3, false);
+    await rpress(0, 200);
+    await rpress(2, 250);
+    const landed = await hunt((d) => d.air === "false" && Number(d.grinding) < 0, 200);
+    await rstick(0, 0);
+    assert.equal(Number(landed.bail), 0, "the line lands clean");
+    const scoreAfter = Number((await room.locator("#score").innerText()).replaceAll(",", ""));
+    assert(scoreAfter > scoreBefore + 500, `the line banks (${scoreBefore} -> ${scoreAfter})`);
+    console.log("PASS rail line: 50-50, ollie out, kickflip, landed —", scoreAfter - scoreBefore, "points");
+    assert.deepEqual(errors, []);
+    await room.close();
+    }
+
     const fallback = await browser.newPage({ viewport: { width: 1280, height: 800 } });
     await fallback.route("**/*.glb?*", (route) => route.abort());
     await fallback.goto(base + "/concrete/");

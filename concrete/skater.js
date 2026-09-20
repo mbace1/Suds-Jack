@@ -128,6 +128,13 @@ const POSES = {
     p.shoulderL = [-0.9, 0, -1.0]; p.elbowL = [0, 0, 0.3];
     return p;
   },
+  stall(s, t) {
+    // Hanging on the coping: weight back over the tail, arms out for it.
+    const p = base(0.45);
+    p.shoulderL = [-0.9, 0, 0.35]; p.shoulderR = [0.9, 0, 0.35]; p.elbowL = [0, 0, 0.3]; p.elbowR = [0, 0, 0.3];
+    p.torso = [0.15 + Math.sin(t * 6) * 0.04, 0, -0.15]; p.head = [0, -0.4, -0.25];
+    return p;
+  },
   grind(s, t) {
     const p = base(0.45);
     p.shoulderL = [-1.0, 0, -0.15]; p.shoulderR = [1.0, 0, -0.15]; p.elbowL = [0, 0, 0.2]; p.elbowR = [0, 0, 0.2];
@@ -247,6 +254,7 @@ export function createSkater() {
     if (s.bail > 0) return 'recover';
     if (s.grab > 0) return 'grab';
     if (s.flip > 0) return 'kickflip';
+    if (s.stall > 0) return 'stall';
     if (s.grinding >= 0) return 'grind';
     if (s.air) return s.vy > 4 && !s.vert ? 'ollie' : 'air';
     if (landing > 0) return 'land';
@@ -287,7 +295,7 @@ export function createSkater() {
     get state() { return state; },
     setPS1(on) { ps1 = !!on; snap.value = on ? 1 : 0; },
     hold(name, t = 0.5) { // debug: freeze a named pose for a contact sheet
-      const target = POSES[name]({ speed: 5, steer: 0, flip: 0.65 * (1 - t), bail: name === 'bail' ? 1.1 - 0.75 * t : name === 'recover' ? 0.35 * (1 - t) : 0, vy: 5, air: true, grinding: -1, grab: 0, slide: false }, t * 4);
+      const target = POSES[name]({ speed: 5, steer: 0, stall: name === 'stall' ? 0.5 : 0, flip: 0.65 * (1 - t), bail: name === 'bail' ? 1.1 - 0.75 * t : name === 'recover' ? 0.35 * (1 - t) : 0, vy: 5, air: true, grinding: -1, grab: 0, slide: false }, t * 4);
       for (const j of JOINTS) cur[j] = [...target[j]];
       cur.hipsY = target.hipsY; cur.rootZ = target.rootZ;
       apply();

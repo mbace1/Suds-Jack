@@ -1,4 +1,4 @@
-import { createGame } from './skate.js?v=6';
+import { createGame } from './skate.js?v=7';
 import { createPadEdge } from './pad.js?v=1';
 const $ = id => document.getElementById(id);
 
@@ -213,5 +213,5 @@ show('title');
 
 window.__concrete = {
   game, options, get screen() { return screen; },
-  debug: { pose: (name, t) => game?.skater.hold(name, t), poses: () => game?.skater.poses, look: () => game?.lookPass.metrics() },
+  debug: { pose: (name, t) => game?.skater.hold(name, t), poses: () => game?.skater.poses, look: () => game?.lookPass.metrics(), placeAt: (x, z, h, v) => game?.placeAt(x, z, h, v), props: () => game?.props(), rails: () => game?.rails(), ground: (x, z) => game?.ground(x, z) },
 };

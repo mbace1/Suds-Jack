@@ -248,6 +248,41 @@ applied in the blit, since three skips both when rendering into a target.
 `renderer.info` is reset by hand because the PS1 blit is a second `render()`.
 Options persist under `concrete-opts`; `?skater=blender&look=ps1&reflections=on`
 override them for a link.
+**The room is a LEVEL, and it is one table** (v5). `PROPS` in `skate.js` holds
+every object's position (the Blender room's own, `art-source/export.py`),
+footprint, height and whether its top edges grind; the physics, the procedural
+dressing and the grind list all read it, so what you can see is what you can
+hit. v4's shelves, lockers and stair set were drawn by the procedural tier
+ALONE and stood in two of the three ramp run-ups — gone, and the gate asserts
+no prop stands in a quarter pipe, its run-up or the funbox. `DECKS` gives each
+coping the platform `ground()` had been promising over open air.
+**A wall is where the ground stops being SMOOTH** — the rise over this step
+against what the local slope predicts. Measuring the rise alone reads the steep
+half of a quarter pipe (1.2 m per metre) as a wall and slams anyone carrying
+speed into it, and the same confusion with the sign flipped made a roll-in read
+as a transfer and popped the skater into the air at the bottom of every ramp.
+In the air the comparison is against the **apex of the ollie you are in**, not
+your height right now: against the current height, ollieing onto the funbox
+from the side slammed every time, because the board crosses the edge early in
+the arc.
+**Stalls** (owner, 2026-09-20): triangle into a lip hangs the board on the
+coping — Axle / Nose / Tail / Rock to Fakie by the direction held — cross
+ollies out, letting it run drops you back in. **Ledges**: a grindable line is
+an axis, a length and a height, so a rail down z and a crate edge along x share
+every rule; the funbox's four top edges, each crate's four and the benches' two
+all grind. **A rail is only an obstacle when you CUT ACROSS it** — riding the
+line itself puts the across-coordinate at exactly zero, and `Math.sign(0)` is 0,
+"opposite" to every sign, so the skater stopped dead on open floor beside its
+own rail and pressing forward re-blocked it every frame with no way out.
+**`debug.placeAt` is SETUP ONLY** and the gate's v5 block uses it that way:
+it stands the skater somewhere and every action under test is a real pad press.
+Counters (`grindsDone`, `stallsDone`, `transfers`, `lastGrind`) exist because a
+0.8 s ledge grind is invisible to a 40 ms poll at SwiftShader frame rates —
+observation, never drive. `debug.props/rails/ground` expose the room's tables
+so the gate asserts what the room CONTAINS. **`concrete/THPS_PARITY.md`** is
+the ordered distance to Tony Hawk's Pro Skater, with three things deliberately
+out of scope and the two pieces of art-side drift the Blender room still
+carries (its bins stand inside the east quarter pipe; it has no decks).
 
 ### Suds Jack (`sudz/`) — Horizon Mesh, ACTIVE
 **Owner's call, 2026-08-19: continue the current live Bomb Jack × Tempest
