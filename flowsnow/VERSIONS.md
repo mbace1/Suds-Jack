@@ -7,6 +7,78 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v7 — 2026-09-20
+**The snow remembers you: a conserving snowpack the board writes into**
+- **The displacement is a term in `depth`, not in `height`, and that is the whole
+  design.** `terrain.depth(x, z)` was already what the board sinks into, what
+  decides whether an edge can bite, what cushions a landing and what the score is
+  keyed to. Put the board's displacement THERE and every one of them follows with
+  nothing told: your own groove is shallower snow, so it is faster and it grips;
+  the berm you threw is deeper, so it slows you and floats you. It also makes
+  cutting into the firm floor impossible by construction.
+- **What you take, you put somewhere.** `cut` totals the volume it removed and
+  distributes exactly that over the berm ring by weight, so the field's sum is
+  unchanged by any carve — gated at 1e-9 m³ for one cut and 1e-5 for a 400-step
+  stroke. A pack that quietly loses mass flattens the mountain over 2,400 m and
+  nothing else in the game would ever report it.
+- **`js/snowpack.js` is pure** — no DOM, no three.js, no clock — so all of the
+  above is asserted in bare node. The field is a 192 × 192 rolling window at
+  0.40 m, addressed toroidally, zeroing whatever scrolls in.
+- **THE TRENCH IS BEHIND THE BOARD.** A lane reaching even half a metre ahead
+  means the board always arrives on ground it has already stripped: `sink` goes
+  to zero and takes the float, the spray, the landing cushion and the entire
+  surfing score with it, because the powder model and the displacement model are
+  then eating the same snow. Cut strictly behind the contact patch and *nothing
+  in physics.js changes at all*, while the groove — which is a record of where
+  you have been — appears where you can see it.
+- **Four shapes of the same mistake, and the order matters because each one hid
+  the next:**
+  - *A progressive cut is a ramp.* Removing a little more each step deepens the
+    ground behind the board faster than the ground ahead, so the rider climbs the
+    leading face of its own trench for the whole run. It is not a rate to tune —
+    the ramp IS the rate. `depth` is a target now and converges in one pass.
+  - *A disc-shaped cut is also a ramp.* A bowl centred on the board follows the
+    board downhill: the ground 0.35 m ahead (where `terrain.normal` samples)
+    stands about 7° above the ground 0.35 m behind, permanently. On a 17° grade
+    that is a forty per cent tax on the driving force and it reads as the snow
+    being glue — every chapter between 0.6 and 3.5 m/s. A trench is a
+    cross-section swept along a path, and its floor is level along travel.
+  - *A berm laid in a ring is a bow wave.* At 20 m/s the board moves 0.17 m a
+    step and drives straight into snow it piled the step before.
+  - *A board that is not sweeping displaces nothing.* Without that, a standing
+    start excavates a pit to its full sink depth, lays the berm in a complete
+    ring around itself, and the run never leaves the bowl.
+- **THE LANDING CRATER WAS A FEEDBACK LOOP, and only the count showed it.** A
+  crater centred on the rider lowers the ground the rider is standing on, the
+  rider drops into it, and that registers as another landing. Measured: **2,320
+  landings in one descent against 32 real ones**, 168 s → 270 s, slowest 0.5 m/s.
+  Every other number it produced looked plausible. It goes behind the board too.
+- **And the bare-node pilot fires the game's events now.** It passed none, so it
+  never dug a crater, and the whole loop above was invisible to 111 green checks
+  and found by a browser. A gate that passes events the game does not pass is
+  measuring a different game.
+- **The ribbon is the trench, because the terrain mesh cannot be.** A tile is
+  48 m over SEG 20, so its vertices are **2.4 m** apart and a board is 0.30 m
+  wide: there is nowhere in that mesh to put a groove, at any refresh rate. The
+  trail strip already follows the exact path the board took, so it is widened
+  from two vertices to five — crest, wall, floor, wall, crest — with every height
+  read from `terrain.height` and the width read from the numbers physics actually
+  cuts with. It used to carry its own `drop` from sink, which was a second model
+  of the same displacement, free to drift from the one the rider was feeling.
+  `Field.refresh` also re-heights the nearest tiles (no shadow re-bake — a trench
+  moves nobody's horizon), which is enough for a berm and never enough for a groove.
+- **Open, and the owner's call.** The groove reads as a groove and not much more
+  than that, for a reason that is about the CAMERA rather than the geometry: the
+  chase seat looks forward, so your own trench is mostly out of frame, and where
+  it is in frame the plume is usually on top of it. Measured, the ribbon paints
+  12% of the picture and I cannot tell from a SwiftShader still whether that is
+  right. This is the v5 crevasse finding again — a thing that is correct and
+  hard to see — and it wants a person's eyes before any more is spent on it.
+- Gates: `core.mjs` **112** (was 90), `smoke.cjs` 43, `playthrough.cjs` 9. The
+  descent is 168.9 s against 167.6, and scores **6187 against 5872** — the trench
+  is faster ground, which is the feel change arriving in the one number that
+  measures it.
+
 ## v6 — 2026-09-18
 **The spray becomes snow: instanced streaks instead of a bag of marbles**
 - **A `THREE.Points` sprite can only ever be a round disc**, and a round disc at

@@ -4,6 +4,7 @@ import { terrain, height, base, depth, normal, lineX, kickerAt, monolithsIn, TIL
   CHAPTERS, chapter, crevasseAt, CREV_STEP, CREV_MAX_DROP, GRADE } from '../js/terrain.js';
 import { createRider, stepRider, RUN_LENGTH, G } from '../js/physics.js';
 import { SnowSim } from '../js/particles.js';
+import { Snowpack, CELL } from '../js/snowpack.js';
 
 let pass = 0, fail = 0;
 const ok = (name, cond, detail) => {
@@ -467,11 +468,23 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
 {
   const s = createRider(terrain, lineX(0), 0);
   s.vz = -2;
+  // AND IT FIRES THE EVENTS THE GAME FIRES. Passing none is measuring a
+  // different game: the landing crater lives in main.js's `land` handler, so a
+  // pilot with no events never dug one, and a crater centred on the rider — it
+  // lowers the ground you are standing on, you drop into it, that counts as a
+  // landing — ran 2,320 times in one descent while every bare-node check stayed
+  // green. The browser found it. This is what stops the next one getting that far.
+  let lands = 0;
+  const ev = { land(impact, air, spins, grab) {
+    lands++;
+    terrain.pack.cut(s.x, s.z, 0.9 + impact * 0.07, 0.25 + impact * 0.045,
+      terrain.natural, 0, 0, Math.sin(s.yaw), -Math.cos(s.yaw));
+  } };
   let slowest = Infinity, slowAt = 0, stuck = 0;
   for (let g = 0; g < 600 && !s.done; g++) {
     const off = s.x - lineX(s.z);
     const lean = Math.max(-0.45, Math.min(0.45, -(off * 0.03 + s.vx * 0.10)));
-    for (let t = 0; t < 1; t += 1 / 120) stepRider(s, { lean }, 1 / 120, terrain);
+    for (let t = 0; t < 1; t += 1 / 120) stepRider(s, { lean }, 1 / 120, terrain, ev);
     if (s.dist > 60) {
       if (s.speed < slowest) { slowest = s.speed; slowAt = s.dist; }
       if (s.speed < 1) stuck++;
@@ -481,6 +494,9 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
     `${s.dist.toFixed(0)} m in ${s.time.toFixed(0)} s`);
   ok('and is never held anywhere on the way', stuck === 0 && slowest > 2,
     `slowest ${slowest.toFixed(1)} m/s at ${slowAt.toFixed(0)} m`);
+  // a landing that digs a hole you then land in is a loop, and it reads as a
+  // plausible number everywhere else — the count is the only place it shows
+  ok('and does not land on itself over and over', lands < 200, `${lands} landings`);
   // no chapter may be a place the run slows to a crawl in
   const perCh = {};
   {
@@ -518,6 +534,102 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   ok('wind carries the flakes', sim.pos[0] > x0 + 0.5, sim.pos[0] - x0);
 }
 
+
+// ---- the snowpack: what you take, you put somewhere -------------------------
+{
+  const avail = () => 1.0;
+  const p = new Snowpack(); p.recentre(0, 0);
+  const moved = p.cut(0, 0, 0.6, 0.4, avail, 1, 0);
+  ok('a carve displaces snow', moved > 0.05, `${moved.toFixed(3)} m³`);
+  // THE invariant. A pack that quietly loses mass flattens the mountain over
+  // 2,400 m and nothing else in the game would ever report it.
+  ok('and every cubic metre of it ends up somewhere else',
+    Math.abs(p.volume()) < 1e-6, `${p.volume().toExponential(2)} m³ adrift`);
+  const [lo, hi] = p.range();
+  ok('the trough is cut and the berm is piled', lo < -0.1 && hi > 0.02, `${lo.toFixed(3)} / ${hi.toFixed(3)}`);
+  // a berm is a ring, so the same volume spread over more cells stands lower
+  // than the trough is deep — a berm taller than its own trench is a bug
+  ok('and the berm stands lower than the trough is deep', hi < -lo, `${hi.toFixed(3)} vs ${(-lo).toFixed(3)}`);
+
+  // a whole stroke, the way the board actually lays one down
+  const q = new Snowpack(); q.recentre(0, 0);
+  for (let i = 0; i < 400; i++) q.cut(i * 0.05, -i * 0.05, 0.6, 0.03, avail, 1, 0);
+  ok('a whole stroke conserves too', Math.abs(q.volume()) < 1e-5, `${q.volume().toExponential(2)} m³`);
+
+  // A CARVE MAY NOT CUT INTO THE FIRM FLOOR. `cut` takes an availability
+  // function rather than guessing, so it can only move snow that is lying there.
+  const r = new Snowpack(); r.recentre(0, 0);
+  r.cut(0, 0, 0.6, 5.0, () => 0.1);
+  ok('a carve cannot take snow that is not there', r.range()[0] >= -0.1001, r.range()[0].toFixed(4));
+
+  // THE DEPTH IS A TARGET, NOT AN INCREMENT, and this is the check that says so.
+  // Removing a little more on each pass looks equivalent and is not: the ground
+  // behind the board ends up cut more often than the ground ahead of it, the
+  // surface rises in the direction of travel, and the rider climbs the leading
+  // face of its own trench for 2,400 m. Cutting to a target converges in ONE
+  // pass, so there is no rate to tune and re-riding your own groove is free.
+  const w = new Snowpack(); w.recentre(0, 0);
+  const seen = [];
+  for (let k = 0; k < 8; k++) { w.cut(0, 0, 0.6, 0.3, () => 0.8); seen.push(w.at(0, 0)); }
+  ok('a groove reaches its depth in one pass', seen[0] < -0.1, seen[0].toFixed(3));
+  ok('and every pass after it moves nothing at all',
+    seen.every(v => v === seen[0]), seen.map(v => v.toFixed(3)).join(' '));
+  // and the profile is the target, not whatever the rate happened to reach
+  ok('the groove is as deep as it was asked to be',
+    Math.abs(w.at(0, 0) + 0.3 * Math.cos((0.283 / 0.6) * Math.PI * 0.5) ** 2) < 0.02,
+    w.at(0, 0).toFixed(4));
+
+  // the window is a ring: ground that scrolls in is ground this run has not
+  // touched, and a toroidal buffer hands back the old index unless it is zeroed
+  const v = new Snowpack(); v.recentre(0, 0);
+  v.cut(0, 0, 0.6, 0.4, avail);
+  ok('the pack remembers where you just were', Math.abs(v.at(0, 0)) > 0.05, v.at(0, 0).toFixed(3));
+  v.recentre(0, -400);
+  ok('and forgets ground that scrolled out of the window', Math.abs(v.at(0, 0)) < 1e-9, v.at(0, 0).toFixed(9));
+  ok('leaving the field empty rather than wrapped', Math.abs(v.volume()) < 1e-9, v.volume().toExponential(2));
+
+  // THE TRENCH IS BEHIND THE BOARD, and that is the load-bearing one. A lane
+  // reaching even half a metre ahead means the board always arrives on ground it
+  // has already stripped: `sink` goes to zero and takes the float, the spray,
+  // the landing cushion and the entire surfing score with it, because the powder
+  // model and the displacement model are then eating the same snow.
+  {
+    const g = new Snowpack(); g.recentre(0, 0);
+    g.cut(0, 0, 0.6, 0.5, () => 1, 0, 0, 0, -1);        // heading -z
+    ok('the ground the board is standing on is untouched', Math.abs(g.at(0, 0)) < 1e-9, g.at(0, 0).toFixed(9));
+    ok('and so is the ground it is about to reach', Math.abs(g.at(0, -1.5)) < 1e-9, g.at(0, -1.5).toFixed(9));
+    ok('the groove is the ground it has left', g.at(0, 1.8) < -0.1, g.at(0, 1.8).toFixed(3));
+  }
+
+  // the cell has to resolve a SHOULDER, not an edge: terrain.normal takes its
+  // finite difference over EPS 0.35, so a trough narrower than a couple of
+  // cells reads as a cliff to the rider and jitters rather than grooves
+  ok('a cell is fine enough to shoulder a trough', CELL > 0.2 && CELL < 0.6, `${CELL} m`);
+}
+
+// ---- the snow under the board is the snow you left there --------------------
+{
+  // The displacement is a term in `depth`, which is the whole design: it means
+  // the rider, the flakes, the collision and the renderer all learn about the
+  // trench without one of them being told. Assert the seam rather than trusting
+  // the prose.
+  const x = lineX(DEEP_Z) + 30, z = DEEP_Z;
+  terrain.pack.clear(); terrain.pack.recentre(x, z);
+  const nat = terrain.natural(x, z), d0 = depth(x, z), h0 = height(x, z);
+  ok('an unridden mountain is its natural depth', Math.abs(d0 - nat) < 1e-9, `${d0} vs ${nat}`);
+  terrain.pack.cut(x, z, 0.6, 0.35, terrain.natural);
+  const d1 = depth(x, z), h1 = height(x, z);
+  ok('a carve leaves less snow under the board', d1 < d0 - 0.05, `${d0.toFixed(3)} → ${d1.toFixed(3)}`);
+  ok('and the surface drops with it', h1 < h0 - 0.05, `${h0.toFixed(3)} → ${h1.toFixed(3)}`);
+  ok('by exactly the snow that was taken', Math.abs((h0 - h1) - (d0 - d1)) < 1e-9);
+  // the firm floor is not carveable
+  const deepCut = new Array(40).fill(0);
+  for (let i = 0; i < 40; i++) terrain.pack.cut(x, z, 0.6, 0.5, terrain.natural);
+  ok('and a hundred passes still cannot cut into the firm floor',
+    depth(x, z) >= 0 && height(x, z) >= base(x, z) - 1e-9,
+    `${depth(x, z).toFixed(4)} m of snow left`);
+  terrain.pack.clear();
+}
 
 // ---- the cache tokens, because a fix nobody re-downloads is not shipped ----
 // The sub-modules were imported BARE until v3: index.html busts main.js and

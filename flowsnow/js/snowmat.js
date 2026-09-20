@@ -371,22 +371,30 @@ export function trailMaterial(u) {
     polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
     vertexShader: /* glsl */`
       attribute float aAlpha;
+      attribute float aCross;
       uniform vec3 uCam; uniform float uFogDensity;
-      varying float vA; varying float vFog;
+      varying float vA; varying float vFog; varying float vX;
       ${FOG}
       void main() {
-        vA = aAlpha;
+        vA = aAlpha; vX = aCross;
         vec4 w = modelMatrix * vec4(position, 1.0);
         vFog = fogAt(w.xyz);
         gl_Position = projectionMatrix * viewMatrix * w;
       }`,
     fragmentShader: /* glsl */`
       uniform vec3 uShade, uLit, uFog;
-      varying float vA; varying float vFog;
+      varying float vA; varying float vFog; varying float vX;
       void main() {
-        vec3 col = mix(uShade, uLit, 0.25) * 0.92;
+        // A TRENCH IS NOT A STRIPE. The floor is in its own shadow and the walls
+        // catch the sky, so the strip is shaded ACROSS as well as drawn: flat
+        // tone at this width reads as paint on the snow rather than as a groove
+        // cut into it.
+        float wall = abs(vX);
+        vec3 floorCol = mix(uShade, uLit, 0.04) * 0.66;
+        vec3 wallCol  = mix(uShade, uLit, 0.70) * 1.10;
+        vec3 col = mix(floorCol, wallCol, smoothstep(0.1, 0.95, wall));
         col = mix(col, uFog, vFog);
-        gl_FragColor = vec4(col, vA * 0.55 * (1.0 - vFog));
+        gl_FragColor = vec4(col, vA * 0.7 * (1.0 - vFog));
       }`,
   });
 }

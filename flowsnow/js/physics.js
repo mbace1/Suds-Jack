@@ -47,6 +47,11 @@ export const SOFT_DEPTH = 0.8;         // metres of pack past which no edge can 
 export const DIVE_TIME = 0.9;          // seconds nose-heavy and buried before you go over
 
 export function createRider(t, x = 0, z = 0) {
+  // A NEW RIDER IS A NEW RUN, so it rides an unridden mountain. The pack is one
+  // object the whole game shares, and leaving this to the caller meant every
+  // bare-node test inherited whatever the previous one had churned up at the
+  // origin — two unrelated checks failed on a mountain neither of them made.
+  if (t.pack) { t.pack.clear(); t.pack.recentre(x, z); }
   const y = t.height(x, z);
   return {
     x, y, z, vx: 0, vy: 0, vz: -1,
@@ -89,6 +94,10 @@ const F = [0, 0, -1], R = [1, 0, 0];
 // input: { lean: -1..1, tuck: 0..1, brake: 0..1, jump: bool (an edge), grab: bool }
 // events: { land(impact, air, spin), tumble(), pop(), kicker() } — all optional
 export function stepRider(s, input, dt, t, ev = {}) {
+  // the pack's window follows the rider from HERE rather than from the frame
+  // loop, so the carve works the same in bare node as it does on screen — left
+  // to main.js it did nothing at all more than 38 m from the origin
+  if (t.pack) t.pack.recentre(s.x, s.z);
   if (s.done) return s;
   dt = Math.min(dt, 1 / 30);
   s.time += dt;
@@ -223,6 +232,32 @@ export function stepRider(s, input, dt, t, ev = {}) {
       s.spray = clamp(speed / 20, 0, 1.4)
         * (Math.abs(sinE) * 1.25 + skid * 1.8 + bite * 1.3)
         + sub * clamp(speed / 12, 0, 1.6) * 0.85;
+
+      // THE BOARD DISPLACES THE SNOW IT RIDES THROUGH. It goes through the
+      // terrain's own snowpack rather than through an import, so physics.js
+      // keeps no state of its own and a test can hand it a mountain with no
+      // pack at all. `cut` clamps to what is actually lying there, so a second
+      // pass over your own trench finds nothing left to move and the groove
+      // stops deepening on its own — no rate limiter, no decay, no cap.
+      // A BOARD DISPLACES THE SNOW IT SWEEPS THROUGH, so a board that is not
+      // sweeping displaces nothing. Without this a standing start excavates a
+      // pit to its full sink depth and lays the berm in a complete ring around
+      // itself — the run never left the bowl, because the rider had walled
+      // itself in before it reached walking pace. The ramp is over the speed at
+      // which the board actually clears its own trough radius in a fraction of
+      // a second rather than re-cutting one spot fifty times.
+      const sweep = clamp((speed - 2) / 4, 0, 1);
+      if (t.pack && s.sink > 0.02 && sweep > 0) {
+        // a board on edge cuts a narrower, deeper trough than one running flat
+        const rTrough = 0.62 - 0.18 * Math.abs(s.edge);
+        // and throws its berm to the OUTSIDE of the turn, which is away from
+        // the direction it is leaning
+        const rx = Math.cos(s.yaw), rz = Math.sin(s.yaw);
+        const sgn = -Math.sign(s.edge || 0);
+        // the trough is as deep as the board is buried — a target, not a rate
+        t.pack.cut(s.x, s.z, rTrough, s.sink * sweep,
+          t.natural, sgn * rx, sgn * rz, Math.sin(s.yaw), -Math.cos(s.yaw));
+      }
 
       // flow: a clean carve at speed earns it, a scrub spends it — and a fast
       // line through deep snow earns the most, because that is the whole point

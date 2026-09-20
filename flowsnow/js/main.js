@@ -3,18 +3,18 @@
 // snow in particles.js, both pure; this file is the only one that touches the
 // DOM or the clock.
 import * as THREE from 'three';
-import { terrain } from './terrain.js?v=3';
-import { createRider, stepRider, RUN_LENGTH } from './physics.js?v=1';
+import { terrain } from './terrain.js?v=4';
+import { createRider, stepRider, RUN_LENGTH } from './physics.js?v=2';
 import { SnowSim } from './particles.js?v=1';
 import { hour } from './palette.js?v=1';
-import { makeUniforms, skyMaterial, snowSprayMaterial } from './snowmat.js?v=3';
+import { makeUniforms, skyMaterial, snowSprayMaterial } from './snowmat.js?v=4';
 import { Figure } from './figure.js?v=1';
-import { Field, Trail, Shadow } from './world.js?v=3';
+import { Field, Trail, Shadow } from './world.js?v=4';
 import { Input } from './input.js?v=1';
 import { Audio } from './audio.js?v=1';
 import { pickLang, t } from './lang.js?v=1';
 
-export const VERSION = 6;
+export const VERSION = 7;
 const BEST_KEY = 'flowsnow.best';
 const STEP = 1 / 120;
 const MAX_SNOW = 5000;
@@ -95,6 +95,14 @@ const events = {
   kicker() { sim.burst(24, s.x, surfaceY(s.x, s.z, 0.1), s.z, 0, 0.7, 0.4, 2.5, 0.8, 1.1, 0.8, 1); },
   land(impact, air, spins, grab) {
     audio.land(impact, air, spins);
+    // A landing PUNCHES rather than sweeps, so the crater is wide and shallow
+    // where the trench is narrow and deep. It still goes BEHIND the board, and
+    // for a sharper reason than the trench does: a crater centred on the rider
+    // lowers the ground the rider is standing on, the rider drops into it, and
+    // that registers as another landing. Measured, the loop fires 2,320 times
+    // in one descent against 32 real ones and takes the run from 168 s to 270 s.
+    terrain.pack.cut(s.x, s.z, 0.9 + impact * 0.07, 0.25 + impact * 0.045,
+      terrain.natural, 0, 0, Math.sin(s.yaw), -Math.cos(s.yaw));
     const n = Math.round(30 + impact * 7);
     const ly = surfaceY(s.x, s.z);
     sim.burst(n, s.x, ly, s.z, 0, 1, 0, 2.5 + impact * 0.45, 1.0, 1.5, 1.1, 1);
@@ -329,6 +337,7 @@ function advanceWorld(dt, now) {
   if (mode === 'play') trail.add(s, figure.root.quaternion, terrain);
   shadow.update(s, terrain);
   field.update(s.x, s.z);
+  if (mode === 'play') field.refresh(s.x, s.z);
   placeCamera(dt);
   sky.position.copy(camera.position);
   u.uCam.value.copy(camera.position); u.uTime.value = time;

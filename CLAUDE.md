@@ -1623,6 +1623,47 @@ Named rather than implied: the streak is the particle's own velocity, **not its
 velocity relative to the camera**, so a chase camera at 20 m/s does not smear the air
 it flies through; that is a real speed cue this does not have, and it wants its own
 pass because it would streak the ambient snowfall into rain.
+**THE SNOW REMEMBERS YOU** (v7, `js/snowpack.js` — pure, so bare node asserts all
+of it). The displacement is a term in **`depth`, not in `height`**, and that is the
+whole design: `depth` was already what the board sinks into, what decides whether an
+edge can bite, what cushions a landing and what the score is keyed to, so putting the
+board's displacement there means your own groove is shallower snow — faster, grippier
+— and your berm is deeper, with nothing told and cutting into the firm floor
+impossible by construction. **What you take, you put somewhere**: `cut` totals the
+volume removed and distributes exactly that over the berm ring, gated at 1e-9 m³,
+because a pack that quietly loses mass flattens the mountain over 2,400 m and nothing
+else would report it. **THE TRENCH IS BEHIND THE BOARD**, and that is the
+load-bearing rule: a lane reaching even half a metre ahead means the board always
+arrives on ground it has already stripped, `sink` goes to zero, and the float, the
+spray, the cushion and the whole surfing score go with it — the powder model and the
+displacement model eating the same snow. Cut behind the contact patch and *nothing in
+physics.js changes at all*. Four shapes of one mistake were paid for on the way, each
+hiding the next: **a progressive cut is a ramp** (the ground behind deepens faster
+than the ground ahead, so the rider climbs the leading face of its own trench — not a
+rate to tune, the ramp IS the rate; `depth` is a target and converges in one pass);
+**a disc-shaped cut is also a ramp** (a bowl centred on the board follows it downhill,
+putting the ground 0.35 m ahead — where `normal` samples — about 7° above the ground
+0.35 m behind, a forty per cent tax on a 17° grade, reading as glue at 0.6-3.5 m/s;
+a trench is a cross-section swept along a path); **a berm laid in a ring is a bow
+wave**; and **a board that is not sweeping displaces nothing** (a standing start
+otherwise excavates a pit and walls itself in before it reaches walking pace).
+**The landing crater was a FEEDBACK LOOP and only the count showed it** — a crater
+centred on the rider lowers the ground the rider is standing on, the rider drops in,
+that registers as another landing: **2,320 landings against 32 real ones**, 168 s →
+270 s, every other number it produced plausible. **And the bare-node pilot fires the
+game's events now**: it passed none, so it never dug a crater, and the loop was
+invisible to 111 green checks — *a gate that passes events the game does not pass is
+measuring a different game*. **The ribbon is the trench because the terrain mesh
+cannot be**: a tile is 48 m over SEG 20, so its vertices are **2.4 m** apart against a
+0.30 m board and there is nowhere to put a groove at any refresh rate, so the trail
+strip (which already follows the exact path) went from two vertices to five — crest,
+wall, floor, wall, crest — with every height from `terrain.height` and its width from
+the numbers physics cuts with, replacing a second `drop` model that was free to drift.
+**Open and the owner's call**: the groove reads as a groove and little more, for a
+reason about the CAMERA rather than the geometry — the chase seat looks forward, so
+your own trench is mostly out of frame and the plume is usually on top of what is
+left. That is the v5 crevasse finding again, a thing correct and hard to see, and it
+wants a person's eyes before more is spent on it.
 Hub entry: `hub/games.js` id `flowsnow`, marquee `flowsnow`
 in `hub/art.js` (Atari sky bars, dune faces in hard lit/shadow, an arch **lighter than
 the sky** per the marquee-as-cover rule, the traveller cropped by the bottom edge
@@ -1683,8 +1724,8 @@ every log` is what catches a release that moved only one. It caught this one. Th
 local run could not: `test/hub-smoke.cjs` had been run during the merge verification,
 BEFORE the version bump, and a cabinet gate run ahead of the bump is a gate run
 against the previous release. **It goes after.**
-**v6 is authored and NOT deployed** (2026-09-18): the branch carries it and
-`gh-pages` still serves v5.
+**v6 and v7 are authored and NOT deployed** (2026-09-18 / 2026-09-20): the branch
+carries both and `gh-pages` still serves v5.
 **Never verified live from a session.** The agent proxy refuses `github.io`, so the
 Pages run concluding `success` is the only evidence the deploy has — the cabinet and a
 run from the title into gameplay still want a human's eyes on the real URL.
@@ -2842,6 +2883,7 @@ flowsnow/       # Flowsnow — snowboarding: Journey's look, Shredders' hands, s
   vendor/       # three.js r167, local — not the CDN
   js/
     terrain.js  # TWO SURFACES: base + depth = height; the gully, kickers, monoliths
+    snowpack.js # THE DELTA the board writes into depth — conserving, behind the board
     physics.js  # THE BOARD: heading vs velocity, and the sink it rides at in the pack
     particles.js# THE SNOW: a 5,000-flake pool that collides with the terrain function
     snowmat.js  # the look: a sun terminator over a wrapped sky term, a skin, ridgelines

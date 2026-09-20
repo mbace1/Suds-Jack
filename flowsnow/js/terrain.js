@@ -7,6 +7,8 @@
 // rollers across the fall line, and a kicker every so often near the line.
 // All of it is seeded and pure, so a bare-node test can ask it questions.
 
+import { pack } from './snowpack.js?v=1';
+
 export const GRADE = 0.30;        // mean pitch of the fall line (~17°)
 export const GULLY_HALF = 42;     // half width of the gully floor before the walls climb
 
@@ -224,7 +226,11 @@ export function base(x, z) {
 export const DEEP = 2.7;              // metres in the deepest loaded pockets
 export const PACKED_HALF = 9;         // half width of the beaten line
 
-export function depth(x, z) {
+// The snow the mountain laid down, before anyone rode it. `depth` is this plus
+// whatever the board has since pushed around; keep them separate because the
+// snowpack may only displace snow that is ACTUALLY there, so it has to be able
+// to ask what was there without asking itself.
+export function natural(x, z) {
   const C = chapter(z);
   const off = Math.abs(x - lineX(z));
   const bowl = Math.exp(-(off * off) / (2 * 58 * 58));      // the gully collects
@@ -241,6 +247,17 @@ export function depth(x, z) {
     const cut = crevasses(x, z, 1);
     if (cut > 0.05) d *= Math.max(0, 1 - cut * 0.5);
   }
+  return d < 0 ? 0 : d;
+}
+
+// THE LOOSE SNOW AS IT IS NOW. The rider's displacement is a term in HERE rather
+// than in `height`, and that is the whole reason the rest of the game needed no
+// telling: `depth` is already what the board sinks into, what decides whether an
+// edge can bite, what cushions a landing and what the score is keyed to. So your
+// own trench is shallower snow — faster, and it grips — and the berm you threw
+// is deeper. Clamped at zero, so a carve can never cut into the firm floor.
+export function depth(x, z) {
+  const d = natural(x, z) + pack.at(x, z);
   return d < 0 ? 0 : d;
 }
 
@@ -304,5 +321,5 @@ export function monolithsIn(ix, iz) {
   return out;
 }
 
-export const terrain = { height, base, depth, normal, occlusion, lineX, kickerAt, crevasseAt, chapter, monolithsIn, TILE, GRADE, DEEP };
+export const terrain = { height, base, depth, natural, pack, normal, occlusion, lineX, kickerAt, crevasseAt, chapter, monolithsIn, TILE, GRADE, DEEP };
 export default terrain;
