@@ -118,6 +118,14 @@ const SCENARIOS = {
     tick: 'window._LOOP.waveTick()',
     every: 1,
   },
+  wavehigh: {
+    title: 'SEASON 2 — the wave from above: face, lip, shadow and foam in one frame',
+    mode: 'move',
+    season: 'inca',
+    setup: 'window._LOOP.wavehigh()',
+    tick: 'window._LOOP.wavehighTick()',
+    every: 1,
+  },
   gel: {
     title: 'SEASON 2 — gel physics: a mound flinches at nails and gives way; the water splashes',
     mode: 'move',
@@ -236,6 +244,17 @@ window._LOOP = {
     return null;
   },
   waveTick() { player.velocity.set(0, 0, 0); return null; },
+  // six units up, looking down the travel at the crest coming in — the one
+  // seat where the face, the lip band, the shadow and the foam share a frame
+  wavehigh() {
+    this.reset();
+    for (const p of platforms.list) { p.phase = 'sink'; p.k = 0; p.t = 99; }
+    const g = goo; player.feet.set(0, 6, 0); player.yaw = -Math.atan2(-g.dirX, g.dirZ); player.pitch = -0.55; player._sync();
+    g.t = (ARENA_R + g.cfg.width - 16) / g.cfg.speed;
+    this.slow(0.3);
+    return null;
+  },
+  wavehighTick() { player.velocity.set(0, 0, 0); player.feet.y = 6; player._sync(); return null; },
   // beside the wave's line, looking across its travel and down at the floor,
   // so the crest passes through the frame side-on with the floor under it
   wavefloor() {
