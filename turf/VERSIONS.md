@@ -8,6 +8,391 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+> **Renumbered, and this is the FOURTH collision in this log.** These three were
+> written as v35-v37 on `claude/nano-banana-meshy-access-1vd01l`, which forked at
+> v34. `main` had meanwhile taken v35 (the briefing), v36 (the control pass) and
+> v37 (the owner's twenty-six cast plates) from another lane, so they are v38-v40
+> here. The two lineages never touched the same FEATURE — that one is UI and art,
+> this one is engine and rendering, and the merge was three conflicts, one of them
+> only because `index.html` had gone CRLF. But both wrote the same headings. Eeri's
+> rule, again: **fetch and read the other lineage's log before writing a heading**,
+> and "the other lineage" includes the deployed tree.
+
+## v42 — 2026-09-20
+**IMPACT (`MST_PARITY` §2.7): a blow says how hard it was.**
+
+Through v41 a hit was a white flash and a number. Both say a hit HAPPENED;
+neither says how hard. `js/impact.js` is the spec for the difference — pure,
+no DOM and no clock, so every tier, curve and sound layer is asserted in bare
+node the way `momentum.js` and `abilities.js` are. `anim.js` (the only rAF
+loop) drives it and `camera.js` applies it; neither decides anything.
+
+**A TIER IS A SHARE, NOT A NUMBER.** Four damage to a four-HP grunt is a body
+hitting the ground; four to a sixteen-HP operator is a scratch. Tiering on raw
+damage ranks those the same and goes stale the moment a weapon changes, so the
+tier is `damage / maxHp` — which is also the number the player reads off the HP
+bar, so what they see and what they feel agree. Four tiers (graze / solid /
+heavy / kill) each carry a trauma, a punch and a hitstop; a kill is not a share
+and outranks everything; a miss is its own row, lighter than a landed graze,
+because the swing still happened.
+
+- **Shake.** Trauma accumulates and is capped at 1 — two rivals landing in one
+  phase should feel worse than one, but this roster is weaker-but-numerous by
+  design and a swarm must not shake the board apart. The offset is **quadratic**
+  in trauma, which is the whole reason trauma is stored rather than an
+  amplitude: linear wobbles the screen on every scratch. Deterministic (three
+  incommensurate sines), never `Math.random()` — a shake you cannot reproduce
+  cannot be tested or read off a bug report.
+- **Punch.** A transient scale that returns to EXACTLY 1. v34 made the zoom the
+  player's and persisted it; a punch leaving a residue would quietly edit a
+  setting that belongs to them.
+- **Hitstop.** The animator's clock is held for 45ms on a heavy blow and 110ms
+  on a kill, so every clip, tween, flash and floater holds mid-pose. The GAME is
+  not paused — no input is swallowed and no turn is delayed, because the phase
+  pacing runs on its own timers. Time spent frozen is subtracted rather than
+  skipped, so a clip resumes where it stopped instead of jumping. A second kill
+  inside a hitstop EXTENDS it rather than restarting it, or a chain of kills
+  could hold the board still indefinitely. The shake keeps running on the real
+  clock underneath, which is the effect.
+- **Layered SFX.** The mix is tiered by the same number the shake is, so what
+  you feel and what you hear cannot disagree. A new `thud` voice sits under
+  `hit`/`down` and only a heavy blow or a kill earns it. Cause then effect: the
+  swing at 0ms, the impact at 70, the body at 95, a knockback at 110.
+- **`prefers-reduced-motion` takes all three to zero** and leaves the flash, the
+  floater and the sound doing the whole job — which is what they did through
+  v41, so nothing is lost, only the movement.
+
+**THREE BUGS, AND ALL THREE CAME OFF MEASURED MOTION RATHER THAN A GREEN
+SUITE** — Toko Drop's rule (judge feel against captured motion, not stills)
+applied to a tactics board:
+
+1. **The shake was dead at 0.00px while the punch worked.** The decay clock is
+   read per frame, and the rAF loop stops itself whenever nothing is animating,
+   so after an idle player turn `traumaAt` was seconds stale and the very first
+   frame after a hit decayed a fresh shake to nothing. The decay clock now
+   starts when the trauma does.
+2. **A kill moved the board 1.6px**, about half of one percent of a body. The
+   spec was written in BOARD pixels (the unit `SPRITE_H` 29 and `TILE_W` 32 are
+   in) and written straight into a CSS transform. `camera.js` scales by the live
+   CSS scale now, where that scale already lives, and a kill reads 4.3px at the
+   default zoom — sizing against the tile being this project's own rule for
+   everything else on the board.
+3. **THE PUNCH SLID THE YARD OUT FROM UNDER THE GRID**, which is the one thing
+   v33 exists to prevent. The board and the plate are different elements whose
+   centres sit ~126px apart even though the plate's floor quad is seated exactly
+   on the board's diamond, so a common `scale()` about each element's own centre
+   displaces them by `(s-1)` times that separation — measured, **3.78px** at the
+   kill tier. The plate is given the BOARD's centre as its transform-origin, in
+   its own local coordinates, and they scale as one object again.
+
+That third one also cost a wrong ruler, twice (Kindling's lesson: *the page was
+right and the ruler was wrong*). The first metric compared the two ELEMENT
+centres — which are supposed to diverge once the origin is fixed — so it
+reported the correct fix as a 3.8px failure. What has to be compared is the
+viewport transform each element applies: for the same viewport point, where does
+the board put it and where does the plate. That reads 0.000px with the fix and
+3.781px without.
+
+- `js/impact.js` (new): `TIERS`, `tierFor`, `addTrauma`, `decayTrauma`,
+  `shakeAt`, `punchAt`, `layersFor`. All pure.
+- `js/anim.js`: the hitstop clock, the trauma and punch state, `impact()`.
+- `js/camera.js`: composes the impact into the ONE `--cam` transform (two
+  writers of that property is the class of bug this repo keeps paying for) and
+  sets the plate's origin under a punch.
+- `js/audio.js`: the `thud` voice. `js/main.js`: reduced-motion detection, the
+  per-frame feed to the camera, tiered layered sound, `__turf.camera`.
+- `test/smoke.mjs` 164 → 177 (the spec, in bare node).
+- `test/impact.cjs` (new, 11 checks, wired into CI): the half a browser is
+  needed for — registration **measured against a control that reads non-zero**,
+  because "0px" means nothing on its own; the impact returning to exactly
+  nothing; the hitstop landing and releasing; reduced motion silent.
+- Tokens: anim 9, camera 4, audio 2, impact 1, main v43. Visible build v42.
+
+Balance is untouched and reads identically (53/82/65/32/68/45/12), which is the
+point: impact changes what a blow FEELS like and nothing about what it does.
+
+One trap the gate itself paid for: the first cut swung a PISTOL at 85% and a
+miss read as a peak shake of 0.03px — the miss tier behaving perfectly and a
+gate failing for a reason that had nothing to do with impact. It swings a knife
+now, where hit chance is 1.
+
+## v41 — 2026-09-20
+**Reading a human instead of a bot.**
+
+Every number this project has ever quoted came from a bot. `balance.mjs` says
+whether an encounter is winnable by a player who ignores every system;
+`smoke.mjs` says the rules are obeyed. Neither can answer GDD §9's exit
+criterion — that the fight is "fun/tense to play through repeatedly" — because
+a bot has no clock, never hesitates, never misreads a telegraph and never
+closes the tab. `js/playlog.js` reads those four things off a real session.
+
+It is a READER, exactly like `anim.js`: the engine is untouched and does not
+know it exists. It hangs off the animator's `onEvent`, the ONE cursor over
+`state.log`, because anim.js's own header says why a second walk is a bug.
+
+**Local only, and that is not a footnote.** It writes through the site's own
+`hub/playlog.js`, whose contract already reads "Local-only by design ...
+nothing is uploaded" and whose header invites exactly this ("Games can report
+richer events"). Using the house store rather than a second one is also what
+lets Toko's counter read a TURF session back later without learning anything
+about TURF. The import is DYNAMIC and swallowed on failure, the same rule the
+Toko sting follows: a reader is a nicety, and a nicety may never be the reason
+a game does not open.
+
+**The four questions, and how each is actually measured:**
+
+- **Where did they hesitate.** A clock opens when the board becomes theirs and
+  the next command closes it. An enemy phase is not a decision of theirs, so
+  the thirty seconds the rivals take is thrown away rather than averaged in.
+- **What did they never use.** An affordance is counted when it is OFFERED and
+  again when it is TAKEN, once per encounter rather than once per repaint.
+  `neverUsed` deliberately lists what was offered and declined and never what
+  was absent: a skill the run never put on screen was not refused, it was
+  missing, and calling those the same thing blames the player for the roster.
+- **Did the telegraph land.** The incoming total on an operator is read before
+  a move and after it. A move that ends HIGHER is a step into danger, which is
+  usually correct play. A move that ends at or above that operator's own HP is
+  the case the telegraph exists to prevent, and is counted separately. Lethal
+  is measured on the TOTAL, the same way the board's own badge measures it.
+- **Where did they stop.** A closed tab mid-encounter is the loudest signal
+  this game gets and has been invisible since Milestone 1. `pagehide` and
+  `visibilitychange` both file a STOP, which is not a loss, and firing both
+  still files one record.
+
+`summarise()` is PURE and takes plain records, which is what lets the gate
+assert exact numbers over a scripted session in bare node. Its `headline`
+ranks quitting above losing on purpose: a loss is the game working, and a quit
+is the game losing them. `__turf.play.report()` folds this session together
+with whatever the shared store has kept and prints that line first.
+
+**A live session found a bug no pure test could have.** Driven through a real
+browser, the reader counted THREE moves for one tap and reported a median
+decision time a fifth of the truth: `onChange` runs several times per action,
+so asking "what is the freshest log entry" counts the same move again on every
+repaint. The cursor now lives in `playlog.js` — where a bare-node gate can
+hold it — rather than in `main.js`. A second one was caught the same way: the
+enemy phase appends its own `attack` entries while `onChange` is running, so
+every rival swing was being filed as a decision of the player's. Whose command
+an entry is comes from the ACTOR in the entry, because `state.turn` has
+already flipped by the time some of them land.
+
+- `js/playlog.js` (new): `createPlaylog`, `observe` (the cursor), `summarise`
+  (pure), `hubEmitter` (the dynamic, failure-swallowed transport).
+- `js/main.js`: the reader hangs off the one `onEvent` and the one `onChange`,
+  never off the five command handlers — a reader wired per handler is a reader
+  that misses the sixth one somebody adds later. Plus `__turf.play`.
+- `test/smoke.mjs` 150 → 164, fourteen of them over a scripted session.
+- Modules: main v42. Visible build v41.
+
+Not built, on purpose: no upload, no consent prompt and no dashboard. The
+report is one console call, because the question this answers is the owner's
+and it is answered by reading it.
+
+## v40 — 2026-09-19
+**Owner: "Take rot.js FOV only. Skip PathFinding.js." Then: "go ahead with the
+FOV swap, measure the deltas."**
+
+**Line of sight is recursive shadowcasting now** (rot.js's
+`RecursiveShadowcasting`, ported into `grid.js` — the house rule is no
+dependency, and the algorithm is forty lines). `hasLOS` casts the eight
+octants from the shooter and asks whether the target's tile is lit; the
+v1–v39 rule (walk Bresenham's stepped line and stop at full cover) is kept
+as `lineLOS`, the control column. **The shipped rule is MUTUAL**: A sees B
+only if B also sees A. Raw shadowcasting is not symmetric, and neither was
+the old line — see the census — and a pair where one side can shoot and the
+other cannot shoot back is hidden information by geometry, in a game whose
+one invariant is that you see every consequence.
+
+**The census** (every non-adjacent pair of passable tiles on every board,
+81,810 pairs; a scratch script, not a gate):
+
+| rule | pairs that see | vs line: +sight | −sight | asymmetric pairs |
+|---|---|---|---|---|
+| line (v1–v39) | 71.2% | — | — | 2,290 |
+| fov (raw) | 79.5% | +7,458 | −715 | 4,887 |
+| **mutual** | **73.5%** | **+3,058** | **−1,202** | **0** |
+| either | 85.4% | | | 0 |
+
+Shadowcasting is more permissive than a stepped line — a shot past the
+corner of a wall is lit where Bresenham's line walked through the wall —
+and it loses a few pairs the line allowed: a target dead on the wall's own
+diagonal, where the line stepped *around* the tile and the cone does not.
+The 2,290 asymmetric pairs under the OLD rule are worth a sentence: nobody
+knew `lineTiles(a, b)` and `lineTiles(b, a)` disagreed, so for six
+versions there were pairs where a rival could shoot you from a tile you
+could not shoot back at.
+
+**The rates**, 200 seeds, the balance bot, same seeds per column:
+
+| encounter | line | fov | **mutual** | either |
+|---|---|---|---|---|
+| backlot | 65 | 65 | **65** | 65 |
+| loading-dock | 86 | 85 | **86** | 79 |
+| warehouse | 70 | 73 | **70** | 73 |
+| underpass | 26 | 11 | **26** | 11 |
+| the-yard | 68 | 68 | **68** | 68 |
+| the-crossing | 22 | 54 | **54** | 54 |
+| the-depot | 20 | 20 | **20** | 20 |
+
+Mutual leaves six of seven encounters bit-identical to the old rule and
+moves one. Raw and `either` both take `underpass` from 26 to 11 — right at
+the floor — because that board is corners, and an asymmetric peek pays the
+side holding them, which is the rivals. **`the-crossing` 22→54 is a holder
+behaving.** Traced seed by seed: under the line rule Sable at (5,1) had no
+shot at the crew from her own tile and stepped *onto extraction pad (5,0)*
+to get one, and stood there; under shadowcasting she sees past the corner
+of the wall at (6,2), fires from where she is, and the pad stays open. The
+encounter's own note tuned it at 46% — the line rule had been drifting it
+down toward a pad-blocking accident, not a decision. 63 of 200 seeds
+diverge; every one is that shape.
+
+**The trap that ate the first measurement.** The first four columns came
+back *bit-identical*, which read as "no effect" and was in fact no switch:
+`balance.mjs` imports `../js/grid.js` bare while every engine module
+imports `./grid.js?v=6`, and to the module loader those are two modules —
+the flag flipped a copy nobody plays on. Eeri's VERSIONS.md has the same
+lesson ("one token per module or the browser instantiates it twice"); here
+it was Node and a test. The switch is re-exported from `combat.js`, the
+tests reach it there, and a gate asserts a flip through combat.js changes
+what the engine will let a rival shoot.
+
+- `js/grid.js`: `LOS_MODES`, `setLOSMode`/`getLOSMode` (a module-level
+  seam, not a per-state option — a board where two units disagree about the
+  rule of sight is not a board), `lineLOS`, `fovSees`, `fovFrom` (lit sets
+  cached per board on the `fullCover` Set, which game code never mutates
+  within an encounter — Barricade adds *partial* cover), `computeFov`,
+  `castLight`. A state with no grid is treated as open (the unit tests).
+  `coverSoftens` stays on the stepped line: partial cover is about the
+  shot's path, not about what is visible.
+- `test/balance.mjs --los line|fov|mutual|either`.
+- `test/smoke.mjs` 147 → 150: symmetry over every pair of every board, the
+  corner peek pinned against `lineLOS`, the switch reaching the engine.
+- Tokens: grid 5→6, abilities 3→4, autoplay 8→9, combat 21→22, input
+  20→21, render 28→29, main 39→40.
+
+Not touched: BFS movement (`moveRange`) — "skip PathFinding.js" — and the
+UI draws nothing new; the rule changed under the same badges, which is what
+the invariant is for.
+
+## v39 — 2026-09-19
+**Owner: "rewrite ai.js + combat.js as one system in a single pass. State the
+invariant up front: the player sees every consequence before committing."**
+
+**THE INVARIANT, as a rule the code is held to.** Every change to the board
+is produced by one function, `resolve`, which writes what it did to
+`state.log` as it does it — the log IS the effect list, the same list anim.js
+animates. A **preview** is `resolve` run on a copy of the state with an oracle
+in place of the dice; it returns the copy's log. The **telegraph** is that
+preview, run for every rival's chosen plan, and the warning badge is read off
+the rival's own preview rather than recomputed. The **enemy phase** executes
+the frozen plan through the same `resolve`, and where the board has moved
+under a plan the rival HOLDS and the log names why (`blocked`, `died`,
+`displaced`, `target-gone`, `out-of-position`) — a divergence is never silent.
+`ai.js` is gone; the brain sits beside the resolver in `combat.js` so a plan
+can carry its own preview. `previewCommand(state, cmd)` is the export: two
+branches for a command with a roll (yours all land / all miss), each with the
+effects, the telegraph the board would show AFTER, the incoming warnings on it,
+and the result if it ends the encounter.
+
+**It found two live lies the old gate certified.** (1) `grunt_runt` and
+`grunt_milo` have move 4; `MOVE_CAP` 4 × `DAMAGE_PER` 0.25 floors to **+1**
+after a four-tile step. Execution banked the step then struck; the badge was
+forecast from plan-time momentum and said one less than what landed. The v34
+gate compared the badge to the same mis-timed forecast and passed. (2) The
+mirror image: during the player's turn a rival still holds the pool it banked
+LAST phase, which `endPlayerTurn` wipes before it acts — a naive preview adds
+the coming step to a pool that will not exist. A rival's plan is previewed
+from the top of the phase (momentum and Cripple cleared), which is the state
+it will actually start in. The player's own forecast had the first fault too
+when stepping four tiles into a shot; `firingOptions`/`previewAttack` now run
+the step through the resolver.
+
+**Faithful by measurement.** The rng is asked through one seam (`state.roll`)
+in the old order, the brain's scoring is untouched, and `balance.mjs` reads
+**53/82/65/32/68/18/12 — bit-identical** before and after. `smoke.mjs` 147
+checks: 141 unchanged, one replaced (the certifier), six new — a preview's
+effects equal the committed log and the telegraph after it; a plan's odds and
+damage equal the phase's when the target was not shoved; the four-tile close
+lands the badge's number; your own forecast counts your step; every
+divergence is named; the badge is the previews' sum. One catch on the way:
+the new state literal dropped `result: null` — falsy either way, so nothing
+but a strict-equal gate could see it.
+
+**Two directives recorded, not acted on** (MST_PARITY §4): *take rot.js FOV
+only, skip PathFinding.js* — LOS stays grid.js's Bresenham for now, since
+shadowcasting changes what sees what and so is a balance change to measure,
+not a rewrite side-effect; the BFS in grid.js is the pathfinder and no
+library is coming in. *Render the art-src/ cast to iso facings in Blender
+before the move to the Piritori repo* — no Blender in this environment; the
+camera is 45° yaw / 30° elevation orthographic, `tools/render-frames.mjs`
+already states it.
+
+Modules: `combat` v21 (absorbs ai.js), `grid` v5, `ammo` v3, `abilities` v3,
+`autoplay` v8, `render` v28, `input` v20, `main` v39.
+
+## v38 — 2026-09-06
+**Owner: "can the TURF asset pipeline just make a standing cardboard
+character, that is then just moved to animate?" — then, on the first cut:
+"we are trying to make actual Paper Mario looking puppets, those would give
+this a bit more dimension rather than moving sprites."**
+
+The first cut leaned and squashed the plate in the picture plane, which is a
+moving sprite wearing a costume. This is the second: `js/standee.js` draws a
+character as a **card standing in the world** with three properties a sprite
+has not got.
+
+**THICKNESS.** The plate is extruded along the turn, so the card shows its cut
+edge. The edge is drawn from the plate's own silhouette (cached per image,
+filled flat) and — this is the whole tell — it is **pale**, not dark: a dark
+edge reads as the sprite's own shadow and the figure stays a drawing, while a
+pale one reads as the paper core you can only see because the board has been
+cut through. It is exaggerated about tenfold (3.0 board px on a 29px figure),
+for the same reason the art already exaggerates its own outline: a true 3mm
+standee is a twentieth of a pixel here.
+
+**YAW.** The card turns about its own vertical axis, and this is exact rather
+than faked because the board's camera is **orthographic** — a 2:1 iso
+projection has no vanishing point, so a yawed flat card foreshortens to
+`cos(yaw)` horizontally and not at all vertically. One horizontal scale. No
+perspective warp, no column slicing, no pre-rendered turn frames. A standee
+also never rests square to the camera (`REST_YAW` 0.42), because a card seen
+dead-on is indistinguishable from a drawing pinned to the screen.
+
+**PITCH.** It falls over about its feet, to 70° rather than 90° — a card taken
+all the way flat foreshortens to nothing and reads as a smear, and stopping
+short leaves a body that is still legibly a body with its top edge showing.
+
+**And the turn is the signature move.** A card does not mirror-flip; setting
+off sweeps the yaw through 1.3 rad and back, so the standee swings round and
+goes briefly edge-on, which is what Paper Mario does whenever a character
+changes which way it is looking.
+
+The shadow is the card's **footprint** now rather than a fixed blob: a standee
+on its feet throws a sliver the width of the card, one lying down throws its
+whole length. That is most of what sells the thing as an object on a surface.
+
+**What it costs in art: nothing.** Twelve of the fourteen operators have a
+single static plate and no prospect of a second one here (no `GEMINI_API_KEY`,
+no `MESHY_API_KEY`, and the PixelLab MCP server will not connect from this
+environment). All fourteen now turn, hop, lunge, recoil and topple.
+
+Gates: `test/smoke.mjs` 142 checks — five of them new and asserting the motion
+directly, which is the first time anything in this game's animation has been
+testable in bare node at all, because the previous answer to "how does a unit
+move" was a filename.
+
+**NOT YET RECONCILED with `CUTOUT_BRIEF.md`.** That brief (another lane,
+`origin/claude/slay-kallio-project-3lv3l9`) specifies the same idea as a pure
+picture-plane transform — `{dx, dy, rot, sx, sy, skew}` in `js/cutout.js` —
+which is the version this release's second cut replaced, and it has no
+thickness and no yaw. Its bounds table, its three renderer traps (do not
+mirror twice; UI must not inherit the transform; the hit flash must share it)
+and its gate list are all right and are all honoured here. The two need
+merging deliberately, not by whoever pushes last.
+
+Modules: `standee` v2 (new), `anim` v8, `render` v27, `palette` v14,
+`main` v38.
+
 ## v37 — 2026-09-10
 **The owner's own 26 characters, cut out of the sheets at last**
 _Numbered v35 on `claude/slay-kallio-project-3lv3l9`; `main` had already taken v35 and v36

@@ -16,9 +16,9 @@
 // competing with a free attack for, and it is why this went in before the
 // boss the roadmap used to have here.
 //
-// WHY THIS IS ITS OWN MODULE. combat.js, ai.js, autoplay.js and render.js all
-// need to ask "is this thing empty", and ai.js CANNOT import combat.js —
-// combat.js imports ai.js, so the pair would be circular (the same
+// WHY THIS IS ITS OWN MODULE. combat.js (which absorbed ai.js in v36), autoplay.js
+// and render.js all need to ask "is this thing empty", and until v36 the rival
+// brain lived in ai.js, which combat.js imported — so the pair would have been circular (the same
 // constraint that put recomputeWeapon's result on `unit.weapon` rather than
 // behind a getter). A predicate copied into four files is the third-copy bug
 // this codebase has already paid for twice; a leaf module with no imports of

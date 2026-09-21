@@ -173,7 +173,12 @@ export class LiveNetwork{
  // labelled badge and everything under it falls back to a dot at its true position.
  // Rank is stable (rank desc, then id) rather than positional, so two trams crossing
  // cannot swap which of them is readable frame to frame.
- draw(ctx,tick,project,dpr=1,{filter=null,priority=null}={}){const boxes=[],dots=[];let shown=0,total=0;const items=[];
+ // BUDGET: at most this many labelled badges, rank order — the rest are dots
+ // even where there is room. A phone at CITY scale had fifty labels and no
+ // crowd rule could make that a map; the lines your job can use fill the
+ // budget first, so what is labelled is what you can catch. No budget by
+ // default: the declutter gate drives draw() directly and asserts the pure rule.
+ draw(ctx,tick,project,dpr=1,{filter=null,priority=null,budget=Infinity}={}){const boxes=[],dots=[];let shown=0,total=0;const items=[];
   for(const v of this.vehicles){if(!v.layer.visible)continue;const p=this.position(v,tick);if(!p)continue;total++;if(filter&&!filter(p.lat,p.lon,v.layer,v))continue;shown++;const selected=v.id===this.selectedVehicleId;items.push({v,p,q:project(p.lat,p.lon),selected,rank:selected?3:(priority?priority(v.layer,v)||0:0)});}
   items.sort((a,b)=>b.rank-a.rank||(a.v.id<b.v.id?-1:a.v.id>b.v.id?1:0));
   const gap=1*dpr,hits=(b)=>boxes.some(o=>b.x<o.x+o.w+gap&&o.x<b.x+b.w+gap&&b.y<o.y+o.h+gap&&o.y<b.y+b.h+gap);
@@ -185,7 +190,7 @@ export class LiveNetwork{
   // v2.34). Two passes keep every dot visible at its edge and every label whole.
   const badges=[];
   for(const it of items){const{v,q,selected}=it,w=(selected?29:24)*dpr,h=(selected?18:14)*dpr,box={x:q.x-w/2,y:q.y-h/2,w,h};
-   if(hits(box)){const r=4*dpr;dots.push({x:q.x-r,y:q.y-r,w:r*2,h:r*2,line:v.layer.name,id:v.id,rank:it.rank,colour:v.layer.colour,cx:q.x,cy:q.y,r});continue;}
+   if(boxes.length>=budget||hits(box)){const r=4*dpr;dots.push({x:q.x-r,y:q.y-r,w:r*2,h:r*2,line:v.layer.name,id:v.id,rank:it.rank,colour:v.layer.colour,cx:q.x,cy:q.y,r});continue;}
    box.line=v.layer.name;box.id=v.id;box.rank=it.rank;boxes.push(box);badges.push({it,box});}
   for(const d of dots){ctx.fillStyle=d.colour;ctx.strokeStyle='#fffdf7';ctx.lineWidth=1.5*dpr;ctx.beginPath();ctx.arc(d.cx,d.cy,d.r,0,Math.PI*2);ctx.fill();ctx.stroke();}
   // A NOSE on every badge, pointing the way the vehicle is going. A CATCH only

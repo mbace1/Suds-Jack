@@ -14,13 +14,13 @@
 // still can still swing, and that is the point — the ordinary attack is
 // always available, the interesting ones are not.
 //
-// WHY ONLY THE PLAYER HAS THEM. Enemy variety is `behaviour` (ai.js), and it
+// WHY ONLY THE PLAYER HAS THEM. Enemy variety is `behaviour` (the rival brain in combat.js), and it
 // is expressed entirely through where an enemy chooses to stand, which the
 // telegraph can draw. An enemy kit would have to telegraph "and then it will
 // Cleave", and a board carrying six such promises at once is not full
 // information, it is a wall of text. Same reasoning as the sync cut in v24:
 // symmetric on paper, unreadable in play.
-import { manhattan, hasLOS, inBounds, unitAt, key } from './grid.js?v=4';
+import { manhattan, hasLOS, inBounds, unitAt, key } from './grid.js?v=6';
 
 export function abilitiesFor(unit, defs) {
   if (!unit || !defs) return [];

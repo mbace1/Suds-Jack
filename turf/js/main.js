@@ -2,22 +2,26 @@ import { fieldGuide, bindActivation } from './field-guide.js?v=2';
 // Boot, HUD, and the enemy-phase pacing loop. Everything spatial lives in
 // combat.js/grid.js/ai.js (pure, tested in bare node — test/smoke.mjs);
 // this file is the only place that touches the DOM.
-import { PAL } from './palette.js?v=12';
+import { PAL } from './palette.js?v=14';
 import {
   createEncounterState, getUnit, canUnitAct, stepEnemyPhase, peekEnemyQueue, moveUnit, orderAttack, useAbility,
   skillOffer, learnSkill, incomingArrivals, pendingArrivals, incomingThreats,
   awardXp, xpToNext, applyTrinkets,
-} from './combat.js?v=20';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=24';
-import { createCamera, MIN_TILE_W } from './camera.js?v=3';
-import { createInputHandler } from './input.js?v=20';
-import { createAnimator } from './anim.js?v=5';
+} from './combat.js?v=22';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=29';
+import { createCamera, MIN_TILE_W } from './camera.js?v=4';
+import { createInputHandler } from './input.js?v=21';
+import { createAnimator } from './anim.js?v=9';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
-import { magOf, needsReload, roundsLeft } from './ammo.js?v=2';
-import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=2';
-import { autoTurn } from './autoplay.js?v=6';
+import { magOf, needsReload, roundsLeft } from './ammo.js?v=3';
+import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=4';
+import { autoTurn } from './autoplay.js?v=9';
 import { PLATES } from './plates.js?v=1';
-import { audio } from './audio.js?v=1';
+import { layersFor, tierFor } from './impact.js?v=1';
+// What a PERSON did, as opposed to what a bot did — a reader like anim.js, and
+// local-only. See the header in playlog.js for the four questions it answers.
+import { createPlaylog, hubEmitter, summarise } from './playlog.js?v=1';
+import { audio } from './audio.js?v=2';
 import { watchPad } from '../../hub/pad.js?v=9';
 
 const $ = id => document.getElementById(id);
@@ -39,9 +43,30 @@ let DATA = null, state = null, layout = null, input = null, camera = null, enemy
 // loop in this game — one that stops itself whenever nothing is mid-clip, so
 // an idle player turn costs nothing. onFrame re-renders WITHOUT re-syncing:
 // advancing a clip changes which frame is drawn, never the game state.
+// Records in memory immediately and gains the site's shared local store as soon
+// as the dynamic import lands. It may never fail loudly: the same rule the Toko
+// sting follows, since a reader is a nicety and a nicety may not cost a run.
+const play = createPlaylog();
+hubEmitter().then(emit => { if (emit) play.setEmitter(emit); }).catch(() => {});
+
+// prefers-reduced-motion takes the shake, the punch and the hitstop to zero
+// and leaves the flash, the floater and the sound doing the whole job — which
+// is exactly what they did through v41, so nothing is lost, only quieted.
+const REDUCED = typeof matchMedia === 'function'
+  && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 const anim = createAnimator({
-  onFrame: () => { if (state && layout) render(canvas, state, layout, anim); },
-  onEvent: soundFor,
+  reduced: REDUCED,
+  onFrame: () => {
+    if (state && layout) render(canvas, state, layout, anim);
+    // The board's offset is handed to the camera rather than written here:
+    // camera.js composes it with the pan so --cam keeps one writer.
+    if (camera) camera.setImpact(anim.impact());
+  },
+  // TWO readers, ONE cursor. anim.js's header says why a second walk over
+  // state.log is a bug, so the play log takes this one rather than opening
+  // its own; the order is fixed and neither reader can skip what the other saw.
+  onEvent: e => { soundFor(e); play.onEvent(e); },
 });
 
 // One log entry -> one sound. A weapon's own archetype picks the attack
@@ -55,14 +80,16 @@ function soundFor(e, s) {
   if (e.type !== 'attack') return;
   const a = s.units.find(u => u.uid === e.attackerUid);
   const ranged = a && a.weapon && a.weapon.archetype === 'ranged';
-  if (ranged) audio.ranged(); else audio.melee();
-  if (!e.hit) { audio.miss(); return; }
-  // Stagger the impact behind the swing so the two read as cause and effect
-  // rather than one cluttered noise.
-  setTimeout(() => {
-    if (e.killed) audio.down();
-    else { audio.hit(); if (e.knockback && e.knockback.moved) audio.knock(); }
-  }, 70);
+  const t = s.units.find(u => u.uid === e.targetUid);
+  // THE MIX IS TIERED BY THE SAME NUMBER THE SHAKE IS (impact.js), so what you
+  // feel and what you hear cannot disagree about how hard a blow was. The
+  // stagger is still the point: cause, then effect, rather than one noise.
+  const tier = tierFor({ hit: e.hit, killed: e.killed, damage: e.damage, maxHp: t ? t.maxHp : 0 });
+  const knocked = !!(e.knockback && e.knockback.moved);
+  for (const l of layersFor(tier, { ranged, knocked })) {
+    if (l.at === 0) audio[l.voice] && audio[l.voice]();
+    else setTimeout(() => { audio[l.voice] && audio[l.voice](); }, l.at);
+  }
 }
 
 // GDD.md §9: "Expand to 3-5 encounters in sequence." Four now — warehouse and
@@ -359,6 +386,8 @@ function boot(seed) {
     if (plate) plate.style.backgroundImage = 'none';
   }
   state = createEncounterState(encounter, DATA.units, DATA.weapons, DATA.enemies, seed, DATA.hazards, DATA.trinkets);
+  play.begin(encounter.id, seqIndex);
+  offeredOnce.clear();
   applyProgress(state);
   state.moveTiles = new Map();
   state.attackTiles = [];
@@ -480,7 +509,7 @@ bindActivation(controls.mute, () => {
   applyMute();
 });
 applyMute();
-bindActivation(controls.auto, () => setAuto(!autoOn));
+bindActivation(controls.auto, () => { play.used('auto'); setAuto(!autoOn); });
 
 function attackText(state, attackerName, evt) {
   const target = getUnit(state, evt.targetUid);
@@ -500,7 +529,40 @@ function attackText(state, attackerName, evt) {
   return s;
 }
 
+// The freshest log entry names what just happened; `watchedUid` is whoever was
+// selected when the board was last handed back, so a move can be compared
+// against the incoming total that operator was looking at before it.
+let watchedUid = null;
+function notePlay() {
+  if (!state) return;
+  // ONE CURSOR, kept by the reader. onChange runs several times per action, so
+  // asking "what is the freshest log entry" counts the same move once per
+  // repaint — measured, it reported three moves for one tap. playlog.js walks
+  // from where it stopped instead, and a bare-node gate holds that.
+  play.observe(state.log, {
+    isPlayerActor: e => {
+      const u = getUnit(state, e.uid || e.attackerUid);
+      return !!u && u.faction === 'player';
+    },
+    threats: state.turn === 'player' ? incomingThreats(state) : null,
+    hpOf: uid => { const u = getUnit(state, uid); return u ? u.hp : null; },
+  });
+  play.round(state.round);
+  if (state.turn === 'player' && !state.result) {
+    play.armed();
+    watchedUid = state.selected || watchedUid;
+    if (watchedUid) play.watch(incomingThreats(state), watchedUid);
+  } else {
+    play.disarmed();
+  }
+}
+
 function onChange() {
+  // THE CHOKE POINT, which is why the play log reads here and not in the five
+  // command handlers: a reader wired per handler is a reader that misses the
+  // sixth one somebody adds later. The kind of command is taken from the log's
+  // own freshest entry, so this cannot disagree with what actually happened.
+  notePlay();
   // sync BEFORE the render: it reads whatever combat.js appended to state.log
   // during the action that triggered this call, so the frame we are about to
   // paint is already the first frame of any clip that action started.
@@ -528,6 +590,7 @@ function onChange() {
 // idempotent per encounter rather than tied to "the first time we noticed" —
 // state.rewarded (set false in boot()) is the guard.
 function finishEncounter(result) {
+  play.finish(result);
   if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
   let xpEvents = [];
   if (result === 'win' && !state.rewarded) {
@@ -604,6 +667,9 @@ function runEnemyPhase() {
 // toggled, because affordability moves under the player's feet — a unit that
 // has just run can pay for something it could not a moment ago, and a stale
 // button is worse than no button.
+const offeredOnce = new Set();
+function offerOnce(key) { if (!offeredOnce.has(key)) { offeredOnce.add(key); play.offered(key); } }
+
 function renderAbilities() {
   abilitiesEl.innerHTML = '';
   const sel = state.selected ? getUnit(state, state.selected) : null;
@@ -621,6 +687,7 @@ function renderAbilities() {
     btn.title = full ? 'Already loaded' : 'Reload — costs your action, never your move';
     btn.innerHTML = `<span>Reload</span><span class="cost">${roundsLeft(sel)}/${mag}</span>`;
     btn.dataset.control = 'reload';
+    offerOnce('reload');
     bindActivation(btn, () => input.reloadSelected());
     abilitiesEl.appendChild(btn);
   }
@@ -643,6 +710,7 @@ function renderAbilities() {
     if (!weaponSuits(sel, ab)) btn.classList.add('inert');
     btn.innerHTML = `<span class="nm">${ab.name}<em>${line}</em></span><span class="cost">${ab.cost}</span>`;
     btn.dataset.control = `ability-${ab.id}`;
+    offerOnce(ab.id);
     bindActivation(btn, () => {
       input.armAbility(ab.id);
     });
@@ -909,9 +977,11 @@ function renderLevelUps() {
       const line = (DATA.lines.find(l => l.id === ab.line) || {}).name || '';
       const btn = document.createElement('button');
       btn.className = 'offerBtn' + (weaponSuits(u, ab) ? '' : ' inert');
+      play.offered(`skill:${ab.id}`);
       btn.innerHTML = `<b>${ab.name}</b><em>${line} · costs ${ab.cost}</em><span>${ab.blurb}</span>`;
       bindActivation(btn, e => {
         if (learnSkill(state, u.uid, id, DATA.abilities).ok) {
+          play.used(`skill:${id}`);
           saveProgress(state); renderLevelUps();
           if (e.type === 'click') (levelUpsEl.querySelector('button') || resultAgain).focus();
         }
@@ -988,7 +1058,7 @@ bindActivation(resultAgain, e => {
 bindActivation(controls.endTurn, e => { e.preventDefault(); input && input.endTurn(); });
 // false: a mouse/touch player tapping Cancel never asked for the keyboard/
 // pad reticle to appear — see the comment on cancelSelection in input.js.
-bindActivation(controls.cancel, e => { e.preventDefault(); input && input.cancelSelection(false); });
+bindActivation(controls.cancel, e => { e.preventDefault(); play.cancelled(); input && input.cancelSelection(false); });
 
 // The board reader starts after boot. Menus need their own path so a pad-only
 // player can start, choose a skill, continue and retry without reaching for a mouse.
@@ -1016,7 +1086,40 @@ watchPad({
 // to start a fresh encounter without going through the title screen.
 window.__turf = {
   state: () => state,
+  // WHAT A PERSON DID. `__turf.play.report()` folds this session together with
+  // everything the site's shared local log has kept for this cabinet, and
+  // prints the one line worth reading first. Local only; nothing is uploaded.
+  play: {
+    records: () => play.records(),
+    summarise,
+    report: async () => {
+      let stored = [];
+      try {
+        const mod = await import('../../hub/playlog.js');
+        stored = mod.readPlayLog({ game: 'turf', limit: 400 });
+      } catch { /* in-memory only */ }
+      // The store keeps every game's rows; only this cabinet's own encounter
+      // records carry the fields summarise() reads, and de-duplicating on the
+      // timestamp keeps a session that is BOTH in memory and on disk from
+      // being counted twice.
+      const seen = new Set();
+      const rows = [...stored, ...play.records()].filter(r => {
+        const k = `${r.at}|${r.type}|${r.encounter}`;
+        if (seen.has(k)) return false; seen.add(k); return true;
+      });
+      const out = summarise(rows);
+      console.log(out.headline);
+      console.table(out.perEncounter);
+      return out;
+    },
+  },
   layout: () => layout,
+  // A way to make the animator DRAW. `anim` itself is already exposed below;
+  // what was missing is a repaint, and v35 is why it is worth having: the
+  // motion is a TRANSFORM now (anim.js's postureFor), so a pose can be held
+  // and photographed instead of caught mid-clip by a screenshot that happened
+  // to land on the right millisecond.
+  repaint: () => { if (state && layout) render(canvas, state, layout, anim); },
   boot,
   select: uid => input && input.selectByUid(uid),
   move: (uid, x, y) => { const r = moveUnit(state, uid, x, y); onChange(); return r; },
@@ -1046,6 +1149,9 @@ window.__turf = {
   // exposes its internals: a tween that only exists for 200ms cannot be
   // checked by looking at a screenshot after the fact.
   anim,
+  // The camera, for the console and for a gate that has to hold the board
+  // still at a known impact rather than catching one mid-blow.
+  camera: () => camera,
   audio,
 };
 
@@ -1062,7 +1168,15 @@ loadData().then(data => {
 // does not exist on a phone — and they carry the current percentage so the
 // setting is legible rather than a pair of unlabelled arrows.
 if (zoomIn) bindActivation(zoomIn, () => setZoom(userZoom * 1.2, true));
-if (zoomFit) bindActivation(zoomFit, () => setZoom(fitZoom(), true));
+if (zoomFit) bindActivation(zoomFit, () => { play.used('fit'); setZoom(fitZoom(), true); });
+
+// Leaving with an encounter still open is not a loss, it is a STOP, and the
+// difference is the whole point of recording it. pagehide rather than
+// beforeunload because a phone backgrounds a tab instead of closing it.
+addEventListener('pagehide', () => { if (play.live) play.abandon('pagehide'); });
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && play.live) play.abandon('hidden');
+});
 if (zoomOut) bindActivation(zoomOut, () => setZoom(userZoom / 1.2, true));
 window.addEventListener('keydown', e => {
   if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;

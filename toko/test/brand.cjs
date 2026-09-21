@@ -1110,8 +1110,9 @@ function serve() {
   // is the shortest path from "that boss is unfair" to saying so.
   console.log('\nthe badge, from inside a game');
   {
+    // A game that passes nothing: the badge leaves for the arcade's counter.
     const p = await newPage();
-    await p.goto(`${base}/hyperdagger/index.html`, { waitUntil: 'domcontentloaded' });
+    await p.goto(`${base}/paperboy/index.html`, { waitUntil: 'domcontentloaded' });
     await p.waitForTimeout(1200);
     await Promise.all([
       p.waitForNavigation({ waitUntil: 'domcontentloaded' }).catch(() => {}),
@@ -1119,6 +1120,57 @@ function serve() {
     ]);
     ok('clicking it leaves the game for the counter', /\/#toko$/.test(p.url()), p.url());
     await p.close();
+
+    // A game that passes `open`: the badge opens him AT THE TABLE, in place,
+    // over the paused run — the href stays for middle-click.
+    //
+    // In THIS game a cursor can never actually reach the badge: the menu
+    // overlay (#msg, z 10) covers it (z 4), a run takes pointer lock so there
+    // is no cursor, and the pause screen is #msg again. So the wiring is
+    // proved by handing the badge the event it listens for, and the human
+    // path — ASK TOKO on the pause screen — is proved with a real click.
+    const q = await newPage();
+    await q.goto(`${base}/hyperdagger/index.html`, { waitUntil: 'domcontentloaded' });
+    await q.waitForFunction(() => window.__hd && window.__hd.toko, null, { timeout: 20000 });
+    await q.waitForTimeout(1200);
+    await q.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+    await q.mouse.click(550, 360);
+    await q.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 });
+    await q.waitForTimeout(600);
+    const before = q.url();
+    await q.evaluate(() => document.querySelector('.toko-signature')
+      .dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, button: 0 })));
+    const seated = await q.waitForFunction(
+      () => document.querySelector('.toko-table .toko-chat.is-open'), null, { timeout: 20000 })
+      .then(() => true, () => false);
+    ok('with `open` the badge seats him at the table instead', seated);
+    ok('and the game is still the page', q.url() === before, q.url());
+    ok('the href still points at the arcade counter',
+      /\/#toko$/.test(await q.evaluate(() => document.querySelector('.toko-signature').href)));
+    ok('he knows which game he is standing in', seated
+      && await q.evaluate(() => window.__hd.toko.table().chat().from()) === 'hyperdagger');
+    ok('and the run paused under him', await q.evaluate(() =>
+      getComputedStyle(document.getElementById('msg')).display !== 'none'));
+    // his own rule: one Esc steps out of the field, the next one leaves him —
+    // and the table goes with him on the same press
+    for (let i = 0; i < 3 && await q.evaluate(() => !!document.querySelector('.toko-table')); i++) {
+      await q.keyboard.press('Escape'); await q.waitForTimeout(250);
+    }
+    ok('Esc leaves the table', await q.evaluate(() => !document.querySelector('.toko-table')));
+    // the human path: ASK TOKO on the pause screen, by a real click. First
+    // give the page back its cursor the way a real Esc does: the click that
+    // started the run took POINTER LOCK, and a locked page delivers every
+    // real mouse event to the canvas at (0,0) — which is a tap on the floor,
+    // which resumes the run. (That is also why Playwright reported
+    // "#msg intercepts pointer events" for a button elementFromPoint could see.)
+    await q.evaluate(() => document.pointerLockElement && document.exitPointerLock());
+    await q.waitForTimeout(150);
+    await q.click('#tokoBtn');
+    const seatedAgain = await q.waitForFunction(
+      () => document.querySelector('.toko-table .toko-chat.is-open'), null, { timeout: 20000 })
+      .then(() => true, () => false);
+    ok('ASK TOKO on the pause screen seats him by a real click', seatedAgain);
+    await q.close();
 
     // and under a thumb it is a picture again, because bottom-left is where
     // that game puts the left stick

@@ -204,6 +204,86 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 `goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
 held them, and four of the hub's links pointed at them.
 
+### CONCRETE (`concrete/`) — the skate score attack, ACTIVE
+Two minutes in a warehouse, Tony Hawk's shape: ollie, flip, grab, grind, bank
+the combo. Three.js r185 vendored, no build step, `concrete/VERSIONS.md` is the
+log and `node concrete/test/playthrough.cjs` (Playwright) the gate; CI also runs
+`python3 concrete/art-source/validate.py` over the GLBs.
+**The DualSense is the reference controller (owner, 2026-09-19) and every
+menu is built for it**: `pad.js` is a tiny edge reader over the standard
+mapping, `main.js` walks title / pause / options / controls with the d-pad or
+stick, cross confirms, circle backs, Options pauses, Create resets, and the
+glyphs follow the pad in hand (`html[data-glyphs]`). The layout is THPS's:
+cross ollie, square flip, circle grab, **triangle grind**, L1/R1 spin, R2
+push. The bug that prompted it: the pad wrote into the key table and skipped
+`key()`, where the grind buffer is armed, so a controller could never grind.
+Everything the pad does goes through `key()` now, and the game **drains** the
+pad on start and resume so the press that confirmed a menu is not the first
+ollie of the run (sudsjack's lesson, again).
+**Physics reads the slope.** `ground(x, z)` is the one ride-height function
+and `slopeAlong()` its derivative along the heading; gravity along it, the
+rider's pitch, where pushing stops working and where a quarter pipe becomes a
+**vert launch** (past 3.4 m with the slope still climbing) all come from it.
+Off the lip the board goes up, not on along the tangent — vy from the speed
+carried, a small drift back, heading flipped — so the skater lands on the same
+transition and rolls out; too slow and `speed < 0` on a slope flips the heading
+instead (fakie roll-back). A bail recovers **in place**; the deck slides off
+ahead while the skater is down. Spins score on landing and a near landing is
+straightened, THPS-style.
+**The skater is code** (`skater.js`): Lambert boxes, nearest-filtered
+canvas face and shirt print, poses written as edits of `base(crouch)` so the
+legs and hips always agree, snapping at a keyframe rate and held to 15 steps a
+second with vertex snap on the PS1 look. It is the house skater on both tiers;
+the Blender rig is the SKATER option, loaded on demand (`art.setSkater`), and
+its twelve clips and grab IK still gate on desktop. Render the pose sheet
+(`__concrete.debug.pose(name)`) before touching a pose — the first sheet was
+twelve screenshots of the pause menu, because a debug hook that freezes the
+figure does not hide the overlay in front of it.
+**`look.js` is the room's look and may do nothing**: a wet floor via the
+vendored `Reflector` (a real mirrored second render, throttled to 40 ms, masked
+by a wetness canvas — the figure and the sparks ARE in it, which a cube map
+cannot give), window light shafts, and a PS1 pass (240-line HalfFloat target,
+nearest upscale, Bayer dither, shadows off). Tone mapping and colour space are
+applied in the blit, since three skips both when rendering into a target.
+`renderer.info` is reset by hand because the PS1 blit is a second `render()`.
+Options persist under `concrete-opts`; `?skater=blender&look=ps1&reflections=on`
+override them for a link.
+**The room is a LEVEL, and it is one table** (v5). `PROPS` in `skate.js` holds
+every object's position (the Blender room's own, `art-source/export.py`),
+footprint, height and whether its top edges grind; the physics, the procedural
+dressing and the grind list all read it, so what you can see is what you can
+hit. v4's shelves, lockers and stair set were drawn by the procedural tier
+ALONE and stood in two of the three ramp run-ups — gone, and the gate asserts
+no prop stands in a quarter pipe, its run-up or the funbox. `DECKS` gives each
+coping the platform `ground()` had been promising over open air.
+**A wall is where the ground stops being SMOOTH** — the rise over this step
+against what the local slope predicts. Measuring the rise alone reads the steep
+half of a quarter pipe (1.2 m per metre) as a wall and slams anyone carrying
+speed into it, and the same confusion with the sign flipped made a roll-in read
+as a transfer and popped the skater into the air at the bottom of every ramp.
+In the air the comparison is against the **apex of the ollie you are in**, not
+your height right now: against the current height, ollieing onto the funbox
+from the side slammed every time, because the board crosses the edge early in
+the arc.
+**Stalls** (owner, 2026-09-20): triangle into a lip hangs the board on the
+coping — Axle / Nose / Tail / Rock to Fakie by the direction held — cross
+ollies out, letting it run drops you back in. **Ledges**: a grindable line is
+an axis, a length and a height, so a rail down z and a crate edge along x share
+every rule; the funbox's four top edges, each crate's four and the benches' two
+all grind. **A rail is only an obstacle when you CUT ACROSS it** — riding the
+line itself puts the across-coordinate at exactly zero, and `Math.sign(0)` is 0,
+"opposite" to every sign, so the skater stopped dead on open floor beside its
+own rail and pressing forward re-blocked it every frame with no way out.
+**`debug.placeAt` is SETUP ONLY** and the gate's v5 block uses it that way:
+it stands the skater somewhere and every action under test is a real pad press.
+Counters (`grindsDone`, `stallsDone`, `transfers`, `lastGrind`) exist because a
+0.8 s ledge grind is invisible to a 40 ms poll at SwiftShader frame rates —
+observation, never drive. `debug.props/rails/ground` expose the room's tables
+so the gate asserts what the room CONTAINS. **`concrete/THPS_PARITY.md`** is
+the ordered distance to Tony Hawk's Pro Skater, with three things deliberately
+out of scope and the two pieces of art-side drift the Blender room still
+carries (its bins stand inside the east quarter pipe; it has no decks).
+
 ### Suds Jack (`sudz/`) — Horizon Mesh, ACTIVE
 **Owner's call, 2026-08-19: continue the current live Bomb Jack × Tempest
 lane-survival direction and make it a functioning game.** This is the canvas
@@ -1016,7 +1096,7 @@ open question, and it is a feel question only a playtest answers, not another sy
 a long time, so a cabinet that looks wrong is worth checking against `hub/versions.json`
 before assuming the code is.
 **Everything is data** (`data/{units,weapons,enemies,encounters}.json`, GDD §3's rule) —
-the engine (`js/grid.js`, `js/ai.js`, `js/combat.js`) reads ids out of them and knows
+the engine (`js/grid.js`, `js/combat.js`) reads ids out of them and knows
 nothing about "a knife" or "a shotgun" as concepts, so Phase 2's encounter sequence or a
 fourth enemy archetype is new JSON, never a rebuild. The grid is **orthogonal
 (4-directional)**, not 8 — Into the Breach's own convention, and what keeps range and line
@@ -1024,7 +1104,7 @@ of sight unambiguous. **Two cover kinds, genuinely different**: full cover (dump
 fences) blocks movement and LOS outright; partial cover (crates, curbs) only softens a
 ranged hit (−30% to-hit) and never blocks anything — melee is hitChance 1, deterministic,
 so cover is a reason to close distance, not a permanent hiding spot. **The telegraph is
-real ITB**, not a one-time snapshot: `ai.js`'s `planIntent` is recomputed after *every*
+real ITB**, not a one-time snapshot: `combat.js`'s `planIntent` is recomputed after *every*
 player action (not once per round), so the "this enemy will move here and hit that unit"
 markers on screen never go stale mid-turn — verified in `test/smoke.mjs` by asserting the
 telegraph map actually changes shape after a player move. **Knockback** (the pipe's whole
@@ -1035,13 +1115,106 @@ that lets it hit that target this turn" — the AI's telegraph, the UI's click-t
 highlighting, and the actual click-to-attack command (`combat.js`'s `orderAttack`) all call
 it, on purpose: it was written three times in three files before being pulled out, and a
 fourth copy is a bug waiting for someone to fix only one of them.
+**THE INVARIANT: the player sees every consequence before committing** (v39, owner:
+*"rewrite ai.js + combat.js as one system in a single pass. State the invariant up front"*).
+`combat.js` is that one system; `ai.js` is gone. Every change to the board is made by one
+function, `resolve`, which logs what it does as it does it — **the log IS the effect list**,
+the same one anim.js animates. A **preview** is `resolve` on a copy with an oracle for the
+dice (`previewCommand`: your rolls all land / all miss, each branch carrying the effects, the
+telegraph the board would show AFTER, and the result). The **telegraph** is that preview per
+rival, and the badge reads the rival's own preview. The **enemy phase** runs the frozen plan
+through the same `resolve`; where the board moved under a plan the rival HOLDS and the log
+says why (`blocked`/`died`/`displaced`/`target-gone`/`out-of-position`) — never silent, never
+improvised. **It found two live lies**: the badge missed the +1 a four-tile step banks
+(`grunt_runt`/`grunt_milo`, move 4 — execution banked the step then struck, the forecast was
+taken before it, and the v34 gate compared the badge to the same mis-timed forecast), and
+the mirror image — a plan previewed mid-player-turn carries momentum `endPlayerTurn` wipes,
+so rivals are previewed from the top of the phase. The rewrite is **proven faithful by
+`balance.mjs` reading bit-identical** (53/82/65/32/68/18/12): the dice are asked through one
+seam in the old order and the brain's scoring is untouched. Two owner directives are
+recorded in `MST_PARITY.md` §4: Blender iso facings before the Piritori move (no Blender
+here, not acted on), and rot.js FOV only / skip PathFinding.js — **taken in v40**.
+**Line of sight is recursive shadowcasting** (rot.js's algorithm ported into `grid.js`,
+no dependency; BFS movement untouched), shipped as the **MUTUAL** rule: A sees B iff B sees
+A. Raw shadowcasting is asymmetric (4,887 of 81,810 tile pairs across the boards) and so,
+nobody had noticed, was the old Bresenham line (2,290) — a pair where a rival can shoot
+you from a tile you cannot shoot back at is hidden information by geometry. Mutual is
++2.3 points of visibility over the old rule, leaves six of seven balance rates
+bit-identical at 200 seeds and moves `the-crossing` 22→54: traced, it is a holder that
+used to have to step ONTO an extraction pad to get a shot and now fires past the wall's
+corner from where it stands. Raw `fov` and `either` take `underpass` 26→11 (corners pay
+the side holding them). `lineLOS` stays as the control, `balance.mjs --los <mode>` runs
+any of the four, and a gate asserts symmetry over every pair of every board. **The trap**:
+the first four columns came back bit-identical because `balance.mjs` imported
+`../js/grid.js` bare while the engine imports `./grid.js?v=6` — two module instances, and
+the switch flipped the one nobody plays on. It is re-exported from `combat.js` for that
+reason, and a smoke gate asserts a flip there changes what a rival can shoot.
+**READING A HUMAN INSTEAD OF A BOT** (v41). Every number this project had came from a
+bot, and no bot can answer GDD §9's exit criterion — that the fight is "fun/tense to play
+through repeatedly" — because a bot has no clock, never hesitates, never misreads a
+telegraph and never closes the tab. `js/playlog.js` reads those four off a real session:
+**where they hesitated** (a clock opened when the board became theirs, with the enemy
+phase thrown away rather than averaged in), **what was offered and never used** (counted
+once per encounter, and `neverUsed` lists only what was OFFERED and declined — a skill the
+run never put on screen was not refused, it was missing), **whether they walked into a
+forecast marked LETHAL** (the incoming total read before and after a move, lethal measured
+on the TOTAL the way the board's badge measures it), and **where they STOPPED**, which is
+not the same event as losing and had been invisible since Milestone 1. It is a READER like
+`anim.js` — the engine is untouched — and it hangs off the animator's single `onEvent` and
+the single `onChange`, never off the five command handlers, because a reader wired per
+handler misses the sixth one somebody adds. **Local only**: it writes through the site's
+own `hub/playlog.js` ("Local-only by design ... nothing is uploaded"), whose header invites
+exactly this, which is also how Toko's counter can read a session back without learning
+anything about TURF; the import is dynamic and swallowed on failure, the sting's rule. Two
+bugs came out of driving a REAL browser session and neither was visible to a pure test:
+the reader counted **three moves for one tap** because `onChange` runs several times per
+action and "the freshest log entry" is the same each time (the cursor now lives in
+`playlog.js` where a bare-node gate holds it), and **every rival swing was filed as the
+player's command** because the enemy phase appends its own attack entries while onChange
+runs (whose command it is comes from the actor in the entry, since `state.turn` has already
+flipped). `summarise()` is pure, its `headline` ranks quitting above losing on purpose, and
+`__turf.play.report()` prints it. No upload, no dashboard, no consent prompt — there is
+nothing to consent to.
+**IMPACT — A BLOW SAYS HOW HARD IT WAS** (v42, `MST_PARITY` §2.7 closed). Through v41 a
+hit was a white flash and a number; both say a hit HAPPENED and neither says how hard.
+`js/impact.js` is the spec, and it is **pure** — no DOM, no clock — so every tier, curve
+and sound layer is asserted in bare node; `anim.js` (the only rAF loop) drives it and
+`camera.js` applies it. **A TIER IS A SHARE, NOT A NUMBER**: four damage to a four-HP grunt
+is a body hitting the ground and four to a sixteen-HP operator is a scratch, so the tier is
+`damage / maxHp` — the same number the player reads off the HP bar, so what they see and
+what they feel agree. A kill is not a share and outranks everything; a miss is its own row,
+lighter than a landed graze. **Shake** is quadratic in accumulated, capped trauma (linear
+wobbles the screen on every scratch; the cap is because this roster is weaker-but-numerous
+and a swarm must not shake the board apart) and deterministic rather than random, so it can
+be tested and reproduced. **The punch returns to EXACTLY 1** — v34 made the zoom the
+player's, and a residue would quietly edit their setting. **The hitstop** holds the
+animator's clock 45ms on a heavy blow and 110ms on a kill, so clips hold mid-pose while the
+GAME keeps running (the phase pacing is on its own timers); frozen time is subtracted, not
+skipped, and a second kill extends the stop rather than restarting it. **SFX are layered by
+the same tier the shake uses**, with a new `thud` under `hit`/`down`. `prefers-reduced-motion`
+takes all three to zero and leaves v41's flash, floater and sound doing the whole job.
+**Three bugs, all off MEASURED MOTION rather than a green suite** (Toko Drop's rule applied
+to a tactics board): the shake read **0.00px** while the punch worked, because the rAF loop
+stops itself when nothing animates and the stale decay clock wiped a fresh shake on its
+first frame; a kill then moved the board **1.6px**, because the spec is in BOARD pixels and
+was written straight into a CSS transform (camera.js scales by the live CSS scale now, and
+a kill reads 4.3px); and **the punch slid the yard out from under the grid**, the one thing
+v33 exists to prevent — the board and plate are different elements whose centres sit ~126px
+apart, so a common scale about each element's own centre displaces them by `(s-1)` times
+that separation, **3.78px** at the kill tier. The plate takes the BOARD's centre as its
+transform-origin now. **The ruler was wrong twice on that last one** (Kindling's lesson):
+comparing the two ELEMENT centres reports the correct fix as a failure, because they are
+supposed to diverge once the origin moves. What must be compared is where each element's
+transform puts the same viewport point — 0.000px with the fix, 3.781px without, and
+`test/impact.cjs` asserts **both**, because a reading of zero means nothing without a
+control that reads non-zero. Balance is untouched and identical, which is the point.
 **Rendering is plain canvas 2D isometric**, not Three.js — the GDD says "Three.js or
 similar," and a tactics grid with move/attack-range overlays and telegraph markers is far
 easier to get right in 2D; drawn low-res and upscaled with `image-rendering: pixelated`,
 the same trick `dropcabal/` uses, with the HUD (turn state, HP, the win/lose screen) as a
 DOM/CSS overlay rather than canvas-painted text, per the production doc's own §2.4
 recommendation. All game logic stays in plain `(x,y)` grid coordinates
-(`grid.js`/`combat.js`/`ai.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 23
+(`grid.js`/`combat.js`, zero DOM, tested in bare node — `test/smoke.mjs`, 177
 checks including a bot-vs-bot full playthrough that must reach a win or a loss, not a
 stalemate, within a round cap); `render.js`'s `toScreen`/`screenToGrid` are a one-way,
 invertible projection onto an isometric diamond grid and never feed anything back into
@@ -1065,7 +1238,7 @@ instead of drawing a wall, and every one cuts both ways so a player can set one 
 deliberately. Every position change routes through one `enterHazard`, because the third copy
 is the one that forgets. **A lethal hazard catches what is shoved across it** — found by
 test: the pipe's knockback is 2, so a body shoved at a stairwell sailed clean over it, which
-also made the heaviest knockback weapons the *worst* at using a pit. `ai.js` scores hazard
+also made the heaviest knockback weapons the *worst* at using a pit. The rival brain scores hazard
 cost in HP so the telegraph cannot promise a suicide.
 **Enemy behaviours** (v19) — before this, eighteen enemies all ran "close on the nearest and
 swing", so the roster was one enemy with eighteen portraits. `charger` / `skirmisher` (keeps
@@ -1084,7 +1257,7 @@ damage *or* evasion, never both — and that rule is not a flourish: with moment
 evasion favoured whoever was chasing, which is the AI every single turn, and the measured
 skill gap against a positional bot *narrowed* (+46 points to +19). It is **visible**,
 because this game promises full information: pips over every unit's HP bar, a HUD line
-spelling out both halves, a damage floater reading `5 (+1)`, and `ai.js` folding a target's
+spelling out both halves, a damage floater reading `5 (+1)`, and the rival brain folding a target's
 evasion into its focus scoring so the telegraph never promises a shot it cannot land.
 **A third rule — SYNC, straight out of MST — was built, measured three ways and CUT**, and
 the finding is kept in `momentum.js`'s header because it is the obvious next idea: free, it
@@ -1252,7 +1425,7 @@ kit the empty turns they were competing with a free attack for. Melee has no mag
 knife does not run out, and that reliability is what melee trades its range for). The round
 is spent inside `resolveAttack` alone, so every firing path pays. Enemies reload on the same
 rule and **telegraph it**, backing off while they do. `ammo.js` is a leaf module because
-ai.js cannot import combat.js (circular), and an **absent** round count means FULL, not
+until v39 the brain lived in `ai.js`, which `combat.js` imported (circular), and an **absent** round count means FULL, not
 empty — any path that assigns a weapon without seeding the count would otherwise hand back a
 silently empty gun. **The balance consequence is the headline and is not a bug**: the rule's
 effect scales with each side's RANGED SHARE, and the encounters were tuned when ammo was
@@ -1278,7 +1451,7 @@ and cover is a property of where you end up.
 **`extract` and `destroy`**, both with a `deadline` — which gives the game its second and
 third loss conditions (it had exactly one, a crew wipe). A cache is a **third faction**, not
 a new entity type: `attackableTargets` filters on `faction !== mine` while `livingEnemies`
-and `ai.js` filter on the names, so an objective is attackable by both sides and invisible
+and the rival brain filter on the names, so an objective is attackable by both sides and invisible
 to the win check and the enemy brain without either learning anything. **`need` is
 absolute** — clamping it to the living made losing an operator make an extraction EASIER.
 **Both new encounters are cliffs, not dials, and were tuned by measurement**: an open-pad
@@ -1336,7 +1509,7 @@ rect, which clips it to the silhouette instead of a glowing box.
 RUNTIME path (`units.json` points `sprite`/`portrait` there), which is why a deploy must
 carry it; CLAUDE.md's "a deploy omits `art-src/`" rule is written for eeri, where art-src is
 source. `art-src/reference/` (20MB) is source material and stays behind.
-**The owner's OWN 26 are cut** (v35, `tools/sheet-cut.mjs` →
+**The owner's OWN 26 are cut** (v37, `tools/sheet-cut.mjs` →
 `art-src/sprites/cast/roster/`). The thirty `*-plate.png` files are new
 characters generated in the sheets' TECHNIQUE — `turfGrim` says in as many words
 to copy the technique and never the reference's specific character — so "we have
@@ -2998,17 +3171,18 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
   data/         # units/weapons/enemies/encounters/hazards/trinkets/abilities (six skill lines)
   js/
     grid.js     # the board: coords, BFS move range, LOS, cover, and firing-tile scoring
-    ai.js       # four behaviours + two focuses, and the live ITB-style telegraph
-    combat.js   # move+act economy, attack/knockback, hazards, trinkets, the enemy phase
+    combat.js   # THE ONE SYSTEM: resolve (the log is the effect list), preview, the rival brain, the telegraph, the phase
     render.js   # iso projection + canvas paint, upscaled pixelated (dropcabal's trick)
     input.js    # pointer/keyboard/pad — three methods, one decision path
     momentum.js # the movement economy: bank it by moving, spend it on the swing
-    ammo.js     # magazines; a leaf module because ai.js cannot import combat.js
+    ammo.js     # magazines; a leaf module (grid.js reads it, and it predates the v39 merge of ai.js into combat.js)
     abilities.js# the skill LINES: catalogue, loadouts, weapon gates, flanking — pure
     autoplay.js # the AUTO switch — v24's tactical bot, not a new one
     camera.js   # phone zoom floor, drag-to-pan, follow the acting unit
     anim.js     # the feel layer: log-driven tweens, hit flash, damage numbers, the only rAF
     audio.js    # synthesised kit, every voice through one master gain so mute really mutes
+    playlog.js  # what a PERSON did: hesitation, what went unused, lethal misreads, where they STOPPED
+    impact.js   # what a blow FEELS like: tier by SHARE of maxHp, trauma, punch, hitstop, SFX layers — pure
     main.js     # boot, HUD, the enemy-phase pacing loop — the only DOM-touching file
     palette.js  # Nordic rain-and-sodium, deliberately desaturated next to the arcade's neon
   art-src/
@@ -3019,11 +3193,13 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     spritecheck.py   # sprite QA, thresholds calibrated against the real cast set
     render-frames.mjs# frames from a rigged GLB at the board's own iso projection (Meshy path)
   test/
-    smoke.mjs   # bare-node, 130 checks: data, grid, turn economy, combat, hazards,
+    smoke.mjs   # bare-node, 177 checks: data, grid, turn economy, combat, hazards,
                 #   trinkets, AI behaviours, momentum, abilities, overwatch,
                 #   the forecast, ammo/reload, both new loss conditions, and a
                 #   bot playthrough of every encounter
     balance.mjs # is each encounter WINNABLE — the question smoke.mjs cannot ask
+    impact.cjs  # a browser: the grid stays on the yard under a punch (vs a control), and
+                #   the impact returns to exactly nothing rather than editing the zoom
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/
   games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)

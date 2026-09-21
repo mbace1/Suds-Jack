@@ -37,7 +37,7 @@ server.listen(0, '127.0.0.1', async () => {
     for (const [view, [width, height]] of Object.entries(VIEWS)) {
       const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
       const page = await ctx.newPage();
-      await page.goto(`${base}/toko-move/`, { waitUntil: 'load' });
+      await page.goto(`${base}/toko-move/?shift=1&day=none`, { waitUntil: 'load' });
       await page.waitForFunction(() => window.__tm?.camera && window.__tm?.liveNetwork, null, { timeout: 30000 });
       // Spy on the call the game itself makes, before anything else touches it:
       // the declutter is only worth having if main actually ranks the vehicles.
@@ -77,7 +77,7 @@ server.listen(0, '127.0.0.1', async () => {
     // draw() onto the live canvas so the test drives the shipping code path.
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
     const page = await ctx.newPage();
-    await page.goto(`${base}/toko-move/`, { waitUntil: 'load' });
+    await page.goto(`${base}/toko-move/?shift=1&day=none`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.camera && window.__tm?.liveNetwork, null, { timeout: 30000 });
     await page.tap('#play');
     await page.waitForTimeout(1500);

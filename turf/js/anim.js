@@ -24,6 +24,11 @@
 //     `unit.sprite` path for them. Adding a character is one line in CAST
 //     once its frames land, not a change to any of this logic.
 
+import { REST_YAW } from './standee.js?v=2';
+// The feel spec (MST_PARITY §2.7). Pure and bare-node tested; this file is
+// only the clock that drives it.
+import { tierFor, addTrauma, decayTrauma, shakeAt, punchAt, PUNCH_MS } from './impact.js?v=1';
+
 const CAST_DIR = 'art-src/sprites/cast/';
 
 // Which unit ids have a real 7-pose x 2-facing frame set on disk. The value
@@ -46,6 +51,157 @@ const CLIPS = {
   death: [['death-fall', 300], ['death-down', Infinity]],
 };
 
+
+// ── POSTURE: the motion that does not need a frame ─────────────────
+//
+// Owner, 2026-09-06: "can the TURF asset pipeline just make a standing
+// cardboard character, that is then just moved to animate, while only the
+// art frame changes when it's an already approved concept like 'attack with
+// knife'... similar to Paper Mario, with movement more on the physical
+// object and much less frames of animation."
+//
+// It can, and the repo had already proved both halves of it:
+//
+//   * ART_REQUEST §2.2 MEASURED which rows a generator can actually deliver.
+//     IDLE and MOVE come back usable; ATTACK/HIT/DIE fail on every sheet
+//     tested, for two independent reasons (motion FX keyed against a flat
+//     background is an unsolvable conflict, and the frame pitch on those
+//     rows is not uniform so a fixed-cell slice cannot extract them).
+//   * spritecheck.py's standing lesson is that no similarity metric
+//     separates a pose change from a camera change — a regenerated attack
+//     pair passed every IoU check and was still wrong.
+//   * So the seven-pose contract asked art for exactly the frames that
+//     cannot be produced, and the result is on disk: TWO of fourteen
+//     operators have a frame set. The other twelve are single plates that
+//     slide across the board like stickers.
+//   * slaykallio/js/puppet.js already ships the alternative — a flat cutout,
+//     mirrored by negative scale, that TOPPLES about its feet on an axis
+//     tilted into the scene when it dies, precisely because a cutout tipping
+//     in the picture plane reads as a sprite rotating while one tipping into
+//     the scene reads as a thing that was standing there.
+//
+// So the motion lives here now, as a transform, and the art contract drops
+// to a standing plate. A frame swap is still honoured wherever frames exist
+// (spriteFor is untouched) — it is an upgrade for an approved pose, not the
+// price of admission for having a character move at all.
+//
+// Every value is in the units the renderer wants: `hop` and `lean` in board
+// pixels and radians about the FEET, `squash` as a signed stretch, `tip`
+// 0..1 for the topple. A unit doing nothing returns `IDLE_POSTURE`, which is
+// not quite zero — a board of perfectly still cutouts reads as a paused game.
+// yaw/pitch are the CARD's own angles (standee.js), not screen rotations:
+// yaw turns it about its vertical axis and shows its cut edge, pitch takes
+// it over onto the floor. `lean` survives as a small picture-plane tilt for
+// the swing, because a body leaning into a blow really does tilt.
+const IDLE_POSTURE = { hop: 0, yaw: REST_YAW, pitch: 0, lean: 0, squash: 0, dir: 1 };
+
+// Deliberately small. This is a tactics board, not a platformer: the motion
+// has to say "that one moved" and then get out of the way of the numbers
+// the player is actually reading.
+const HOP_H = 3.2;        // board px at the top of a stride
+const LEAN_MAX = 0.10;    // radians, leaning into travel
+const LUNGE = 2.6;        // board px thrown toward the target on a swing
+const RECOIL = 2.2;       // board px thrown away from a hit
+const BREATH_H = 0.5;     // idle bob, barely there and never zero
+const TURN_YAW = 1.30;    // radians the card sweeps through mid-turn
+// 70 degrees, not 90. A card taken all the way flat foreshortens to nothing
+// and reads as a smear; stopping short leaves a body on the floor that is
+// still legibly a body, and the extrusion showing as its top face does the
+// rest of the work.
+const FALL_PITCH = 1.22;
+
+// Progress through the CURRENT step of a clip, 0..1. Takes the clock rather
+// than reading one, so it stays as testable in bare node as the rest of this
+// file — every timing in the suite is driven off an injected `now`.
+function clipProgress(a, t) {
+  const steps = CLIPS[a.clip];
+  const dur = steps[a.i][1];
+  if (!Number.isFinite(dur)) return 1;
+  return Math.min(1, Math.max(0, (t - a.startedAt) / dur));
+}
+
+// The whole motion vocabulary, in one function, keyed off the clip the unit
+// is already playing. Nothing new is tracked: `sync` has always known when a
+// unit walked, swung, was hit or died — that knowledge simply had nowhere to
+// go except a filename.
+export function postureFor(a, tw, t) {
+  const p = { ...IDLE_POSTURE };
+  // Which way this motion reads on screen. render.js's projection puts +x to
+  // the lower right and +y to the lower left, so the sign of (dgx - dgy) is
+  // the same left/right the mirror is chosen from — one rule, two uses.
+  const dir = a && a.mirror ? -1 : 1;
+  p.dir = dir;
+
+  // TRAVEL. The tween is the authority on whether a unit is between tiles,
+  // because a knockback moves a unit with no clip at all. Two strides per
+  // tile crossed, an arc that never quite leaves the ground.
+  if (tw) {
+    const k = Math.min(1, Math.max(0, (t - tw.startedAt) / tw.dur));
+    const strides = Math.max(1, Math.round(Math.hypot(tw.fgx, tw.fgy) * 2));
+    p.hop = Math.abs(Math.sin(k * Math.PI * strides)) * HOP_H;
+    // Squash at each footfall — the arc's own low points, so the two cannot
+    // drift out of phase the way two independent clocks would.
+    const land = Math.max(0, -Math.cos(k * Math.PI * 2 * strides));
+    p.squash = land * 0.07;
+    // THE TURN, and this is the standee's signature move. A card does not
+    // mirror-flip; it swings round its own vertical axis and goes briefly
+    // edge-on. So a unit setting off sweeps its yaw through TURN_YAW and
+    // settles back to its resting angle — the same motion Paper Mario uses
+    // whenever a character changes which way it is looking.
+    p.yaw = dir * (REST_YAW + Math.sin(Math.min(1, k * 2.2) * Math.PI) * (TURN_YAW - REST_YAW));
+    p.lean = dir * LEAN_MAX * 0.5 * Math.sin(Math.min(1, k * 3) * Math.PI / 2);
+  } else {
+    p.yaw = dir * REST_YAW;
+  }
+
+  if (!a) return p;
+  const k = clipProgress(a, t);
+  const pose = CLIPS[a.clip][a.i][0];
+
+  // THE SWING. A lunge out and back, with the body leaning past its feet at
+  // full extension — which is the whole reason a windup and a release read
+  // as one motion rather than two pictures.
+  if (pose === 'attack-windup') {
+    p.lean = -dir * LEAN_MAX * 0.9 * k;
+    p.hop += 0.6 * k;
+    // Turning square-on to wind up, so the swing reads as being thrown at
+    // something rather than performed side-on to the camera.
+    p.yaw = dir * (REST_YAW + 0.34 * k);
+  } else if (pose === 'attack-release') {
+    const punch = k < 0.35 ? k / 0.35 : 1 - (k - 0.35) / 0.65;
+    p.lean = dir * LEAN_MAX * 1.6 * punch;
+    p.lunge = dir * LUNGE * punch;
+    p.squash = 0.05 * punch;
+    p.yaw = dir * (REST_YAW + 0.34 * (1 - punch));
+  }
+  // TAKING ONE. Thrown back and tipped away from the blow, snapping upright.
+  else if (pose === 'hit') {
+    const g = 1 - k;
+    p.lean = -dir * LEAN_MAX * 1.3 * g;
+    p.lunge = -dir * RECOIL * g;
+    p.squash = -0.06 * g;
+  }
+  // THE TOPPLE, straight out of slaykallio/js/puppet.js and for its reason:
+  // a cutout that tips in the PICTURE plane reads as a sprite being rotated,
+  // and one that tips INTO the scene reads as a thing that was standing
+  // there. render.js does the second by pairing the rotation with a vertical
+  // squash, so the figure shortens as it goes over.
+  else if (pose === 'death-fall') {
+    // Over it goes, accelerating the way something toppling actually does —
+    // slow off the balance point, fast into the floor.
+    p.pitch = FALL_PITCH * (k * k);
+    p.hop = Math.sin(k * Math.PI) * 1.4;
+    // Squaring up as it falls: a card going over shows its face to the
+    // camera, which is both what reads best and what a falling standee does.
+    p.yaw = dir * REST_YAW * (1 - k);
+  } else if (pose === 'death-down') { p.pitch = FALL_PITCH; p.yaw = dir * 0.12; }
+  // Nothing is ever perfectly still. A board of frozen cutouts reads as a
+  // paused game, and this is the cheapest possible answer to that: half a
+  // pixel, on a slow clock offset per unit so the squad does not breathe in
+  // unison like a chorus line.
+  return p;
+}
+
 export function framePath(prefix, pose, back) {
   return `${CAST_DIR}${prefix}-${pose}${back ? '-back' : ''}.png`;
 }
@@ -58,6 +214,13 @@ const MOVE_MS_PER_TILE = 85, MOVE_MS_MIN = 130;
 const KNOCK_MS = 190, FLASH_MS = 220, FLOAT_MS = 780;
 
 const easeOut = t => 1 - (1 - t) * (1 - t);
+// Stable per-unit phase for the idle breath. A uid, not an index: a unit's
+// rhythm must not change because somebody died earlier in the array.
+function hashUid(uid) {
+  let h = 0;
+  for (let i = 0; i < uid.length; i++) h = (h * 31 + uid.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
 
 // Facing, straight out of render.js's own isometric projection
 // (x = (gx-gy)*W/2, y = (gx+gy)*H/2) rather than a hand-kept lookup table:
@@ -77,7 +240,38 @@ export function facingFor(dgx, dgy) {
 // off this rather than walking state.log itself: two independent cursors over
 // the same list is two chances to double-fire or skip, and they would drift
 // the moment one of them was reset and the other was not.
-export function createAnimator({ onFrame, onEvent = null, now = () => performance.now() }) {
+export function createAnimator({ onFrame, onEvent = null, now: rawNow = () => performance.now(), reduced = false }) {
+  // THE HITSTOP CLOCK. Everything in this file reads `now()`, so freezing it
+  // holds every clip, tween, flash and floater mid-pose for a beat — which is
+  // what a freeze-frame IS. The game is NOT paused: no input is swallowed and
+  // no turn is delayed, because main.js's phase pacing runs on its own timers.
+  // Time spent frozen is subtracted rather than skipped, so a clip resumes
+  // exactly where it stopped instead of jumping to where it would have been.
+  let frozenUntil = 0, frozenDebt = 0, freezeBegan = 0;
+  function now() {
+    const t = rawNow();
+    if (freezeBegan) {
+      if (t < frozenUntil) return freezeBegan - frozenDebt;
+      frozenDebt += t - freezeBegan;
+      freezeBegan = 0;
+    }
+    return t - frozenDebt;
+  }
+  function freeze(ms) {
+    if (reduced || ms <= 0) return;
+    const t = rawNow();
+    // A second kill inside a hitstop EXTENDS it rather than restarting it;
+    // restarting would let a chain of kills hold the board still indefinitely.
+    frozenUntil = Math.max(frozenUntil, t + ms);
+    if (!freezeBegan) freezeBegan = t;
+    start();
+  }
+
+  // The shake runs on the REAL clock, deliberately: a hitstop with the camera
+  // held still as well is a dropped frame, and a hitstop with the camera
+  // shaking under a frozen figure is the effect this is for.
+  let trauma = 0, traumaAt = rawNow();
+  let punch = 0, punchAt_ = 0;
   // uid → { prefix, clip, i, startedAt, mirror, back }
   const live = new Map();
   // Where each unit stood last time we looked. The move log records the
@@ -95,6 +289,7 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
   // interpolating screen positions — and it keeps this file free of layout.
   const tweens = new Map();
   const flashes = new Map();   // uid -> { startedAt, dur }
+  let lastTier = null;         // the tier of the most recent blow
   const floats = [];           // { gx, gy, text, kind, startedAt, dur }
   let cursor = 0;       // how far through state.log we have read
   let raf = null;
@@ -173,6 +368,23 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
         // not — the telegraph/readability contract this game is built on.
         if (t && e.hit) schedule(t, e.killed ? 'death' : 'hit', a ? facingFor(a.x - t.x, a.y - t.y) : null);
         if (t) {
+          // One reading of the tier, here, beside the flash and the floater
+          // that already describe this blow — so the shake, the punch, the
+          // hitstop and the sound can never disagree about how hard it was.
+          const tier = tierFor({ hit: e.hit, killed: e.killed, damage: e.damage, maxHp: t.maxHp });
+          if (!reduced) {
+            // The decay clock STARTS when the trauma does. Without this reset
+            // `traumaAt` is whatever the last frame was, and the loop stops
+            // itself whenever nothing is animating — so after an idle player
+            // turn the very next tick decayed a fresh shake by several seconds
+            // and the board never moved at all. Measured, not reasoned: the
+            // punch worked and the shake read 0.00 px across a real kill.
+            traumaAt = rawNow();
+            trauma = addTrauma(trauma, tier);
+            if (tier.punch) { punch = tier.punch; punchAt_ = rawNow(); }
+            if (tier.freeze) freeze(tier.freeze);
+          }
+          lastTier = tier;
           if (e.hit) {
             flashes.set(t.uid, { startedAt: now(), dur: FLASH_MS });
             // The momentum share is named in the floater rather than folded
@@ -237,9 +449,15 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
 
   function tick() {
     raf = null;
+    const t = rawNow();
+    trauma = decayTrauma(trauma, Math.max(0, t - traumaAt));
+    traumaAt = t;
     const animating = settle();
     onFrame();
-    if (animating) start();
+    // Keep the loop alive while anything physical is still moving: a frozen
+    // clip reports "not animating" (its clock is stopped), and a shake or a
+    // punch outliving the clip that caused it still has frames to draw.
+    if (animating || trauma > 0 || freezeBegan || (punch && t - punchAt_ < PUNCH_MS)) start();
   }
 
   function start() {
@@ -248,6 +466,19 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
 
   return {
     sync,
+    // What the board should be drawn at right now: an offset in BOARD pixels
+    // and a transient scale. camera.js composes it into the one --cam
+    // transform, so this never writes a style and there is still exactly one
+    // writer of that property.
+    impact() {
+      if (reduced) return { x: 0, y: 0, scale: 1, frozen: false };
+      const t = rawNow();
+      const sh = shakeAt(trauma, t);
+      return { x: sh.x, y: sh.y, scale: punchAt(punch, t - punchAt_), frozen: !!freezeBegan };
+    },
+    // The tier of the most recent blow — main.js reads it to pick the sound
+    // layers, so the mix is tiered by the same number the shake is.
+    lastTier: () => lastTier,
     // What the renderer asks per unit. null = "no frame set, draw the static
     // plate you already had" — the path 12 of 14 characters take today.
     spriteFor(unit) {
@@ -287,6 +518,17 @@ export function createAnimator({ onFrame, onEvent = null, now = () => performanc
       if (!tw) return null;
       const k = 1 - easeOut(Math.min(1, (now() - tw.startedAt) / tw.dur));
       return { gx: tw.fgx * k, gy: tw.fgy * k };
+    },
+    // The transform to draw this unit under — see postureFor's header. Idle
+    // gets a breath here rather than inside postureFor because the phase is
+    // per-unit and postureFor is deliberately pure.
+    postureFor(unit) {
+      const p = postureFor(live.get(unit.uid), tweens.get(unit.uid), now());
+      if (!live.has(unit.uid) && !tweens.has(unit.uid)) {
+        const phase = (hashUid(unit.uid) % 1000) / 1000 * Math.PI * 2;
+        p.hop = (Math.sin(now() / 1400 + phase) * 0.5 + 0.5) * BREATH_H;
+      }
+      return p;
     },
     // 0..1, how hard this unit is flashing right now.
     flashFor(unit) {

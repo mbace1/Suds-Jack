@@ -1,5 +1,310 @@
 # Toko Move — versions
 
+## v2.43 — 2026-09-18
+
+**A job is a PARCEL now, not a person.** Owner, 2026-09-18: *"Recipients names
+aren't needed. Maybe package size is relevant, can carry many smaller but only
+few or one larger. They can be also color coded rather than named."* Both halves
+of that are the same change, and it lands on the one row the whole game is
+played from.
+
+**Names are gone.** A dispatch row used to open *Riikka · Ooppera · asks for
+you* — three words of reading before you reach the thing you are choosing
+between. It opens with the parcel now: a coloured box whose SIZE is what it
+costs you to carry, then the place, then the tram and the price. The hand-off
+says *handed to you here* rather than naming a person, and a standing is PIPS
+instead of a phrase (`standingWord` is deleted rather than left unused — a
+phrase with no reader is dead code). The regulars still exist, still remember
+you and still tip; what is gone is their names on screen, which is exactly what
+was asked.
+
+**THE BAG IS SPACE, AND THE SENTENCE IS THE ARITHMETIC.** *Many smaller but only
+few or one larger* is a capacity of 5 with small 1, medium 2, large 5 — five
+smalls, two mediums with a small beside them, or ONE large and nothing else.
+That replaces two separate caps (one queued job, two drops) with one rule, and
+it is the first time this game has asked you to give something up to take
+something. `test/parcels.mjs` asserts the sentence as arithmetic rather than
+trusting three constants that look about right.
+
+| size | units | cargoes | pays |
+|---|---|---|---|
+| small | 1 | documents, express, hot food | ×0.82 |
+| medium | 2 | parts, fresh food, market goods | ×1 |
+| large | 5 | fragile, equipment | ×1.45 |
+
+A large has to pay for the drops it stops you taking or nobody would take one,
+and must not pay so well that the packing stops mattering — gated both ways: a
+bagful of smalls still out-earns one large, and a large still beats a small by
+half again.
+
+**ONE PALETTE, because there were two.** `cargoColour` in core-v212.js and
+`cargoColourOf` in job-board-v212.js disagreed on all eight cargoes, so the
+deadline ring and the offer row drew the same parcel in two different colours.
+Colour that means something may only be defined once, and it lives in
+`js/parcels.js`. The eight are measured against each other in CIE Lab, not
+picked by eye — **the first set failed its own gate at dE 19.6 between hot food
+and market goods**, which is two parcels a player cannot separate and therefore
+no colour coding at all. Market goods is a deep red-brown now and the closest
+pair is 25.2.
+
+**THE GAME WAS OFFERING WHAT IT WOULD REFUSE.** The first build of the capacity
+rule listed every drop and every second job at full strength and then answered
+the tap with *the bag is full* — a rule kept to itself until you break it, which
+is the same fault as quoting a number you then do not use. A parcel that will
+not fit is drawn dim, disabled, and says *no room in the bag*. Gated in the
+browser and driven BOTH WAYS on its own page: with a small parcel in hand the
+drops are tappable, with a large one they are not, and no row the sheet leaves
+enabled is one the engine would turn down.
+
+**The cost, measured.** 80 bots a cell, the walking bot, ordinary day, against
+v2.42's identical cell:
+
+| | v2.42 | v2.43 |
+|---|---|---|
+| win rate | 85.0% | 80.0% |
+| mean score | 1793 | 1565 |
+| drops taken / made | 7 / 6 | 6 / 5 |
+
+Five points of win rate and 13% of score is what the bag costs, and it is the
+mechanic working rather than a regression: a quarter of all jobs are large, and
+a large one means the leg carries nothing else. Well clear of the 40% floor.
+
+Gates: `test/parcels.mjs` (71, bare node) and four new checks in
+`test/phone.cjs` (43). Six mutations, six caught. `regulars.mjs` moved to pips
+and a nameless door.
+
+## v2.42 — 2026-09-18
+
+**The shift has a name now.** Roadmap item 7. Four city days, one per shift,
+announced on the title card BEFORE start — a roguelike modifier you meet by
+losing is a different genre, and this game decided at v2.26 that a number it
+will not show is a number it may not use. Every day rides a lever that already
+existed, which is Slay Kallio's ascension-ladder rule: a modifier that needs a
+new system is a second game wearing a hat.
+
+| day | what it does | rides |
+|---|---|---|
+| MATCH DAY | the Töölö trams crawl all morning | `liveNetwork.hold()`, repeated |
+| MARKET MORNING | more drops, and a premium in the Hakaniemi quarter | `alongOffers()` |
+| HELSINKI DAY | five encounters instead of three, double goodwill | `drawSchedule()`'s budget |
+| QUIET SUNDAY | a third of the trams gone, walking quicker | `HEADWAY_MIN` + `walkCost` |
+
+**And a shift NUMBER, because every shift was seed 7.** The event deck and the
+rival were both mounted on a hardcoded seed, so a player replaying the game got
+the same three encounters at the same three minutes for ever. A shift is now a
+number — random per visit, pinned by `?shift=N`, printed on the title card and
+the end screen so a shift can be quoted, replayed and handed to a bot. `?day=`
+pins the day, and `?day=none` is an ORDINARY day: the control the harness needs,
+since a modifier measured against itself is not measured at all. The job offers
+still do NOT vary by shift. That is the next thing to do rather than a thing
+done — varying them in the same version as the days would leave two changes
+arguing over one measurement.
+
+**THE BOT COULD NOT WALK, AND EVERY NUMBER THIS PROJECT HAS PRINTED CAME FROM
+A COURIER WHO REFUSED TO.** QUIET SUNDAY takes trams away and gives the
+pavement back, and it first measured as a flat 25-point loss with the
+compensation invisible, because `shifts.cjs` had no walk in it at all. A
+mechanic the harness cannot pursue is a mechanic nobody can balance — TURF's
+cache, for the third time. The bot now walks when walking there and catching
+from THERE beats standing here. Measured at 60 bots a cell:
+
+| | bot cannot walk | bot can walk |
+|---|---|---|
+| ordinary day | 68.3% | **81.7%** |
+| quiet Sunday | 40.0% | **70.0%** |
+
+Walking is worth +13 points on an ordinary day and +30 on a Sunday. The second
+number is the day working exactly as written; the first is a standing finding
+about every measurement before this one. It is also the first real payoff Local
+Knowledge (v2.40) has ever had — the stops you have been to are the shift.
+
+**Two days were INERT and the measurement said so.** This is v2.40's lesson
+arriving on schedule, and the gates now ask the question directly.
+- MATCH DAY first crowded families 4 and 10, because those are the stadium's
+  lines in the real city. The harness then showed **line 10 carrying 0.0% of
+  all catches in a shift** — half the day was aimed at a service this game
+  never uses. It crowds 2 and 4 now, which carry ~28% of every catch between
+  them and both really do run past the stadium, so the fiction survived contact
+  with the measurement.
+- MARKET MORNING keyed its premium on one stop id, and measured at **six offers
+  across sixty shifts**, which is not a cluster, it is a rumour. The premium is
+  a 600 m QUARTER now, and — the half that fires on every route — a market
+  morning offers a line's ordinary drop AND the quarter, so the day is more
+  work rather than only better-paid work. A first attempt to fix it by dealing
+  the market anchor into dispatch made things worse and was reverted: making
+  the market your DESTINATION takes it out of the drop window, because
+  `between` excludes both ends of the leg.
+
+**The crowd is a measured number, not a judged one.** A three-point ladder at
+80 bots a cell against an ordinary-day control: 45 ticks a hold reads inert
+(−1.3 points, the crowded families lose 1.6 of share), 110 reads brutal (−17.5,
+share −7.0), **80 ships** — felt, routed around, and far above the shift gate's
+40% floor.
+
+**The deck, measured.** 80 bots a cell, the walking bot, each bot pinned to its
+own shift number, against an ordinary-day control:
+
+| day | win rate | mean score |
+|---|---|---|
+| ordinary (control) | 85.0% | 1793 |
+| MATCH DAY | 67.5% | 1664 |
+| MARKET MORNING | 75.0% | **2190** |
+| HELSINKI DAY | 85.0% | 1760 |
+| QUIET SUNDAY | 63.7% | 1172 |
+| **what a player actually meets** | **76.3%** | 1721 |
+
+Read it as two hard days, one rich one and one mild one. MARKET MORNING is the
+shape an upside card should have — not easier, **richer**: +22% score for a
+10-point win rate, because a bag of three drops costs time the bot spends
+greedily. HELSINKI DAY is honestly the mildest of the four: it does what it
+says (five encounters, goodwill ×2, measured) and it costs about 58 ticks of a
+3000-tick morning, which is flavour rather than pressure. Said here rather than
+dressed up. MATCH DAY's cost read −10.0 in one block and −17.5 in another at
+the identical setting, which is the per-cell noise at this sample doing what
+v2.24 said it would; the direction is a finding, the size is not.
+
+Gates: `test/city-day.mjs` (83, bare node) asks whether the four days are well
+formed and whether every name they use is real IN THE SHIPPED PACK — a market
+at a stop that does not exist is the inert bug wearing a nicer hat.
+`test/days.cjs` (32, browser) asks the only question that matters: in the
+running game, does the day do anything? Six mutations, six caught. The other
+browser gates are now pinned to `?shift=1&day=none`, because a gate that lets
+a third of the trams vanish at random is measuring the dice.
+
+**Roadmap item 8, the ferry, is CLOSED rather than deferred.** Its condition was
+"only if the pack carries the Suomenlinna ferry as a layer". It does not — 34
+lines, 30 TRAM and 4 SUBWAY, no FERRY — so the set piece would need a service
+the city does not run, and this project does not author HSL data.
+
+## v2.41 — 2026-09-18
+
+**The UI pass, from six screenshots.** Phone and desktop, title / dispatch /
+waiting, looked at rather than gated — the owner's direction is Mini Metro and
+Mini Motorways: *fun, approachable, simplistic, succinct*. The night map stays
+(owner, 2026-09-02); what moved is everything around it.
+
+- **A badge budget.** A phone at CITY scale carried fifty labelled trams and
+  the crowd rule could only stop them overlapping; the map was a wall of
+  chips. `LiveNetwork.draw` takes a `budget` — at most N labelled badges,
+  in rank order, the rest dots at their true position even where there is
+  room — and main sizes it to the canvas (one label per ~11k CSS px², 10–32).
+  Rank fills the budget with the lines you can use, and **the dispatch
+  offers' lines now count as relevant** (they did not: with no job taken the
+  rank was flat and the budget went to whichever line sorted first).
+- **No key on a phone.** Seventeen chips over the bottom of a 390px map were
+  the loudest thing on it, and every badge and every row already wears its
+  line. The legend draws only on a canvas 600 CSS px or wider.
+- **Desktop is map-first.** The sheet was two thirds of a 1280px screen and
+  mostly empty; the map is the game. The grid is now `1fr` map + a 380–440px
+  column, the canvas fills its cell (the inline board aspect is overridden),
+  and the feed is one quiet ellipsed line at the foot of the column instead
+  of a two-line log at its head. The vehicle counter (`CITY · 64/310 near`)
+  is gone from the HUD; on a phone the layer inspector button goes too, so
+  the top row is clock · pause · speed.
+- **The surround is the land grey.** With a canvas wider than the board, the
+  near-black outside it read as a slab on a black sheet with a fifth of the
+  screen dead each side. Same grey as the paper now; the frame line says where
+  the data ends.
+- **The zoom rail is one pill**, not three shadowed slabs; the version hero is
+  a line under the title, not the loudest thing on the card.
+- **Copy.** *a stranger* → *new to you*; *Vesa is going for this* → *Vesa
+  wants it*; and the waiting panel's *Lit says CATCH — tap it* no longer
+  shows over three dim rows — it reads *Tap the lit one* when one is lit and
+  *Nothing to catch yet · first in N min* when none is.
+
+Gates: badges (20), phone (37), misses (8), cabinet route (19), the bare-node
+suite, tokens, version sync, shifts --gate — the budget is a draw-time rule
+and the sim is untouched. Nine tokens moved.
+
+## v2.40 — 2026-09-18
+
+**Local knowledge, and the obvious rule is INERT.** The walking network was
+fully known from the first second of the first shift, which is nobody's
+experience of a city. The obvious fix — learn a street by standing on it —
+was built, and it changed nothing: walking is only ever offered FROM where you
+are, and arriving is what teaches you, so by the time the filter could bite
+you already knew the street. Every walk was still offered. Caught in a browser
+probe before it shipped, and the check that would have caught it is now in the
+gate so it cannot come back.
+
+What is learned is the **FAR END**: you know a way on foot when you have been
+to BOTH stops it joins. Not circular (you reach stops by tram), granular (half
+a street can be known), and arriving somewhere new really does open the map —
+one new stop, one new walk, and the feed says so. Three central stops are known
+from the start. Persisted in `localStorage`; the end screen counts them. **The
+tourist card is the payoff**: it shows you a stop you have never been to, and
+never one that joins nothing you know.
+
+**The other courier.** Vesa works the same board: a purple figure on the map
+with a dashed line to where they are heading, and a claim on ONE ordinary
+offer — *Vesa is going for this · 15 s*. Let it run out and the job is theirs,
+with a line in the feed and a count on the end screen. Never the hand-off
+(that was put in your hand), never the last job of the shift, and never inside
+the first six seconds of a board. It is deliberately NOT a second simulation:
+a rival with its own route planner is a second game running beside yours and
+none of it is visible.
+
+**A decisive player never loses a job to them, and that is the design** — so
+the only bot that can measure the claim is one that dawdles. `shifts.cjs`
+gained a `dawdler` policy that reads the whole board for forty seconds before
+choosing: it loses two jobs a shift, and the forty random bots lose none. A
+mechanic nothing in the harness can pursue is a mechanic nobody can balance
+(TURF's lesson about the cache); this is the same thing from the other side.
+
+Gates: `test/city.mjs` (51, bare node, in CI), including the inert rule as a
+standing check. Six mutations, six caught. `shifts.cjs --gate` is 10.
+Win rate 67.5%, inside the band.
+
+## v2.39 — 2026-09-18
+
+**Three things that share one currency**, which is why they shipped together.
+
+**The streak is the LAST multiplier** — Balatro's shape, which this engine
+already uses and had nowhere else to put: every bonus adds, then the chain
+multiplies the lot. Consecutive on-time deliveries pay ×1 ×1.25 ×1.5 ×1.75 ×2,
+capped, and **one late parcel takes all of it**. That asymmetry is the whole
+decision: at four, do you take the fast job or the paying one? A drop on the
+way counts — it is a delivery. Live on the HUD in green beside the score.
+
+**The hand-off**: the person you just delivered to has another one going out,
+in your hand before dispatch hears about it. It is not a new kind of job — an
+ordinary offer from where you stand, listed first, with **+25% that expires in
+fifteen seconds**. Let it lapse and it is still there at the ordinary price.
+**Measured and then made harder**: offered at every door it took the random
+bots from 62% to **87%**, because it removes the walk back to a hub and
+dispatch stops being a decision. So it is EARNED — only after an on-time
+delivery, and then at about half the doors, except a regular, who always has
+one. Back to 62.5%, the same as v2.38.
+
+**Regulars** (`js/regulars.js`): six named people at six stops — Riikka the
+florist at Ooppera, Seppo's print shop at Hakaniemi, Mirja at the harbour
+office, Tuomas the lab courier, Anneli at the market café, Kaarlo's ceramics.
+Standing 0-5 in `localStorage`, raised by an on-time delivery to them and cut
+by a late one; it pays a **tip** on the standing you ARRIVED with — today's
+delivery is what moves it for next time — and the board shows their name and
+how you stand (*seen you once*, *asks for you*). **This is what goodwill was
+for**: the event deck's granny has been accruing a number with nothing to
+spend it on, and goodwill now counts as standing with EVERYBODY for the rest
+of the shift. Word gets around, one number reaches six people, and helping is
+never a charity the score punishes you for.
+
+**A REAL BUG, found because a gate refused to build**: the hash is `>>> 0`
+(unsigned) and three shifts off it used `>>` (signed). Half of all seeds have
+the top bit set, so `CARGO_KEYS[-1234]` is `undefined` — silently — and
+`CARGO[undefined] || CARGO.documents` had been giving **38% of all drops no
+cargo at all** since v2.36, falling back to documents. The hand-off hit the
+same thing and simply was never built. `events.js` masks with `&0xffff` and
+was never affected; its `>>>` is defensive. The gate that sees it is not
+variety (a negative index tallies as its own key and the histogram looks
+healthy) but the direct question: **every drop must carry something real**.
+
+Gates: `test/regulars.mjs` (63, bare node, in CI) — the ladder and its cap, one
+late breaking it, a drop counting, the tip paid on arrival standing, goodwill
+capped, the door window, the hand-off listed first and only where handed over,
+and the signed-shift trap. Nine mutations, nine caught. `events.mjs` grew a
+600-check sweep asserting every drawn card is a real card. `shifts.cjs --gate`
+is 8: an on-time chain is reachable, hand-offs are taken.
+
 ## v2.38 — 2026-09-17
 
 **The event deck** (owner: *"roguelike random events type deal… help the

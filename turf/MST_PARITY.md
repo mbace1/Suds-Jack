@@ -89,10 +89,16 @@ Something with a rule that changes the board, so a run *ends* rather than
 stops. It needs 2.2 (an objective is what a boss IS before it is a stat
 block) and now 2.3-2.5 as well.
 
-**2.7 — Impact.** *(medium)*
-Flash and floater today. Wanted: zoom-punch and freeze-frame on a kill,
-damage-tiered shake, layered SFX. `anim.js` already owns the only rAF loop
-and reads `state.log`, so all of it is additive.
+**2.7 — DONE (v42).** `js/impact.js`: a tier per blow, measured as a SHARE of
+the target's own max HP rather than raw damage, carrying a trauma, a zoom-punch
+and a hitstop. Quadratic shake off accumulated capped trauma; a punch that
+returns to exactly 1 so it can never become the player's persisted zoom; a
+45/110ms hitstop on the animator's clock that holds the drawing without pausing
+the game; SFX layered by the same tier the shake uses. Reduced motion takes all
+three to zero. Additive as predicted — balance reads identically. The three
+bugs it cost are in `VERSIONS.md` v42 and all three came off measured motion,
+not a green suite; the worst was the punch sliding the plate out from under the
+grid, which is the fault §2's background work exists to prevent.
 
 **2.8 — Run structure.** *(large)*
 `SEQUENCE` is a flat seven-element array. MST is a branching route with node
@@ -161,6 +167,33 @@ against PR #419; the frames themselves need an owner-side push request.
   human play that the bots cannot find, and that claim is currently untested.
 - **`DAMAGE_PER` is `Math.floor`-quantised over a range of four**, so it is a
   cliff, not a dial: 0.25 and 0.34 are 23 points apart in the win floor.
-- **The feel question is still open.** GDD §9's exit criterion is that the
-  fight is "fun/tense to play through repeatedly". No system answers that;
-  only a playtest does.
+- **The feel question is still open, but it is no longer unmeasured.** GDD §9's
+  exit criterion is that the fight is "fun/tense to play through repeatedly".
+  No system answers that; only a playtest does. v41 built the instrument that
+  reads one: `js/playlog.js` records where a person hesitated, what they were
+  offered and never used, whether they walked into a forecast marked lethal,
+  and where they STOPPED — which is not the same event as losing and had been
+  invisible since Milestone 1. It is local-only and the engine does not know it
+  exists. What it still needs is the thing no code supplies: somebody playing.
+
+## 4. Directives recorded (owner, 2026-09-19)
+
+Two lines given alongside the one-system rewrite (v36), kept here because the
+port will look for them:
+
+- **"Take rot.js FOV only. Skip PathFinding.js."** Read as: if a library comes
+  in for line of sight, it is rot.js's shadowcasting FOV and nothing else —
+  `grid.js`'s BFS is the pathfinder and stays. Held out of v36 (a balance
+  change to measure, not a side-effect of a rewrite proven faithful by
+  holding the rates) and **taken in v37** as the owner's "go ahead with the
+  FOV swap, measure the deltas": shadowcasting ported into `grid.js` (no
+  dependency), shipped as the MUTUAL rule — A sees B iff B sees A — because
+  raw shadowcasting is asymmetric and so, it turned out, was the old line.
+  Six of seven rates unchanged; `the-crossing` 22→54, a holder no longer
+  stepping onto a pad for a shot. The census and the four columns are in
+  `VERSIONS.md` v37.
+- **"Render the art-src/ cast to iso facings in Blender before the move to the
+  Piritori repo."** No Blender in this environment. The camera to render from
+  is the board's own — 45° yaw, 30° elevation, orthographic (`ART_REQUEST.md`
+  §10.1, `tools/render-frames.mjs`). The standee (v35) needs one standing
+  plate per facing; the seven-pose contract is retired.

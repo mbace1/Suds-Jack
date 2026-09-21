@@ -85,44 +85,52 @@ never rolled, so a shift replays and the bot can play them. Two kinds:
 Budget: at most three encounters and one disruption per shift; total event
 cost capped so a run of bad luck stays winnable (measured).
 
-### 2. Streaks and combos
+### 2. Streaks and combos — SHIPPED v2.39
 On-time chain multiplier on score, a "no missed connection" bonus, a
 "clean shift" bonus, shown live on the HUD (`×2` next to the score) so a
 streak is a thing you protect. Best shift kept in `localStorage` and on the
 end screen. Cheapest item on the list.
 
-### 3. Hand-offs
+### 3. Hand-offs — SHIPPED v2.39
 Deliver to B and the recipient hands you a job to C on the doorstep — no
 dispatch screen, no waiting for an offer. The campaign chain in `JOBS` already
 authors ten of these; a procedural one is the current destination as origin,
 priced by the same estimator. Offered on the arrival card, one tap.
 
-### 4. Regulars
+### 4. Regulars — SHIPPED v2.39 (six people, standing across shifts, goodwill spent here)
 Six named recipients at fixed stops (the florist at Ooppera, the print shop in
 Kallio, the harbour office…). A regular's job pays a tip that grows with how
 often you have been on time for them, remembered across shifts
 (`localStorage`). They appear in dispatch with their name and your standing.
 Goodwill from encounters feeds the same number.
 
-### 5. Local knowledge
+### 5. Local knowledge — SHIPPED v2.40 (visited STOPS, not streets — see VERSIONS.md for why the obvious rule is inert)
 A walking street appears on the board only after you have walked it, or a
 tourist showed you. The known map is persisted; a new player sees hubs and
 lines, a tenth-shift player sees the shortcuts. Events 1 and 4 both write to it.
 
-### 6. Rival
+### 6. Rival — SHIPPED v2.40
 One AI courier on the board, drawn like you in another colour, running the
 bot's cheapest-job policy off the same dispatch. A job the rival takes first
 is gone. Visible on the map and in the end screen (*the rival delivered 4*).
 The shift bot already IS this courier.
 
-### 7. City events
-The disruption system with a face on it: match day at the stadium (line 10
-full and slow), Hakaniemi market (a cluster of drops), Helsinki Day. One per
-shift, announced on the title card so the shift has a name.
+### 7. City events — SHIPPED v2.42 (four days, one per shift, named on the title card)
+The disruption system with a face on it. Four days, each riding a lever that
+already existed and none of them a new mechanic: MATCH DAY (the Töölö trams
+crawl), MARKET MORNING (more drops, and a premium in the Hakaniemi quarter),
+HELSINKI DAY (a wider event deck, double goodwill), QUIET SUNDAY (a third of
+the trams gone, walking quicker). The shift also got a NUMBER — random per
+visit, pinned by `?shift=N` — because every shift before this drew the same
+deck from the same hardcoded seed 7.
 
-### 8. Ferry
-Only if the pack carries the Suomenlinna ferry as a layer; if it does, one
-authored job across the water, and it is the shift's set piece.
+### 8. Ferry — CLOSED, the pack has no ferry
+The condition was "only if the pack carries the Suomenlinna ferry as a layer".
+It does not: `cities/helsinki.json` holds 34 lines, 30 TRAM and 4 SUBWAY, and
+no FERRY of any kind. So there is nothing to build a set piece on without
+authoring a service the city does not run, which is the one thing this project
+does not do with HSL data. Reopen only if the pack is rebuilt from a feed that
+includes the ferry.
 
 ## Exit for the roadmap
 A shift where something happened that was not the timetable — measured as

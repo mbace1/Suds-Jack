@@ -296,6 +296,25 @@ jobs:
       - name: the event deck — a free way past, a seeded draw, holds that shift arrivals exactly
         run: node toko-move/test/events.mjs
 
+      - name: streaks, hand-offs and the people at the other end
+        run: node toko-move/test/regulars.mjs
+
+      - name: the city you know, and the courier who shares it
+        run: node toko-move/test/city.mjs
+
+      # A parcel is a size and a colour since v2.43. The sentence the owner gave
+      # — many smaller, few or one larger — is arithmetic about the capacity, and
+      # colour coding is only coding if the eight fills can be told apart, so
+      # both are measured rather than eyeballed.
+      - name: parcels are a size and a colour
+        run: node toko-move/test/parcels.mjs
+
+      # Four city days, one per shift. The bare half asks whether each day is
+      # well formed and whether every name it uses is real in the shipped pack:
+      # a market at a stop that does not exist is v2.40's inert rule in a hat.
+      - name: the four city days are well formed
+        run: node toko-move/test/city-day.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
@@ -389,6 +408,12 @@ jobs:
       # scale on a phone, a stack nine deep, a quarter of all badge area buried.
       - name: no two line badges may overlap
         run: NODE_PATH=$(npm root -g) node toko-move/test/badges.cjs
+
+      # And the half that matters: in the RUNNING game, does the day do
+      # anything? A premium drop never offered, a crowd that never holds a tram
+      # and a Sunday whose walk is not shorter are the same bug.
+      - name: a city day actually does something
+        run: NODE_PATH=$(npm root -g) node toko-move/test/days.cjs
 
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
