@@ -970,7 +970,27 @@ s.listen(0, '127.0.0.1', async () => {
       // v45: one body, built under this season, for the roster palette check
       d.spawnSplitter(); await frames(2);
       const roster = d.rosterSample();
-      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms(), goo: d.getGoo(), inca: d.getInca(), roster };
+      // v48: the menus — the intro's buttons are still in the message box
+      // (startGame hides it, it does not empty it), and the pause menu is a
+      // press of the pause button away
+      const menu = { seasons: d.menuSeasons(), modeOnIntro: d.menuHas('#modeBtn'), oldSeasonBtn: d.menuHas('#seasonBtn') };
+      document.getElementById('pauseBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      await frames(2);
+      const pause = { seasons: d.menuSeasons(), modeBtn: d.menuHas('#modeBtn'), endBtn: d.menuHas('#endBtn'),
+        rows: [...document.querySelectorAll('#msg .optrow span:first-child')].map(e => e.textContent.trim()).filter(Boolean) };
+      document.getElementById('msg').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));   // resume
+      await frames(2);
+      // v48: the director — in a skulls-only season, seconds of it spawn skulls and nothing else
+      let director = null;
+      if (sn.spawns && sn.spawns.only === 'skulls') {
+        for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+        d.setTime(50); d.freezeDirector(false);
+        for (let i = 0; i < 70; i++) await frames(1);
+        d.freezeDirector(true);
+        const types = {}; for (const e of hd.enemies) if (e.alive) types[e.type] = (types[e.type] || 0) + 1;
+        director = { types, total: hd.enemies.filter(e => e.alive).length };
+      }
+      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms(), goo: d.getGoo(), inca: d.getInca(), roster, menu, pause, director };
     });
   };
 
@@ -1165,9 +1185,24 @@ s.listen(0, '127.0.0.1', async () => {
   ok('void: the same body is bone',
     ctrl.roster && ctrl.roster.palette === null && ctrl.roster.mean[0] >= ctrl.roster.mean[1] && ctrl.roster.mean[0] > 0.2,
     JSON.stringify(ctrl.roster));
-  ok('inca: its slabs are the LARGE ones the brief asks for, and no rock',
-    inca.plats.count === 4 && inca.plats.slabs.every(s => s.w >= 5) && inca.walls.count === 0,
-    JSON.stringify(inca.plats.slabs.map(s => s.w)));
+  // v48 (owner): season 2 is JUST the wave. Nothing else stands in the sea.
+  ok('inca: nothing stands in the sea — no slabs, no rock; the wave is the arena',
+    inca.plats.count === 0 && inca.walls.count === 0 && inca.goo.on === true,
+    JSON.stringify({ plats: inca.plats.count, walls: inca.walls.count, goo: inca.goo.on }));
+  ok('inca: the wave HURTS, and it is sized to a jump — the crest at the ripple\'s peak sits under the apex',
+    inca.sn.gooHurts === true && inca.sn.gooAmp * (1 + inca.sn.gooRipple) < inca.sn.jumpApex - 0.12,
+    JSON.stringify({ hurts: inca.sn.gooHurts, crestMax: +(inca.sn.gooAmp * (1 + inca.sn.gooRipple)).toFixed(2), apex: inca.sn.jumpApex }));
+  ok('inca: season 2 spawns only skulls, by declaration — and in practice: seconds of its director, and every body is a skull',
+    inca.sn.spawns && inca.sn.spawns.only === 'skulls' && inca.director && inca.director.total >= 1
+    && Object.keys(inca.director.types).every(k => k === 'skull'),
+    JSON.stringify({ spawns: inca.sn.spawns, director: inca.director }));
+  ok('the menus: the intro offers SEASON 1 and SEASON 2 and nothing about VOID or MODE',
+    inca.sn.visible.length === 2 && inca.sn.visible.map(v => v.menu).join('|') === 'SEASON 1|SEASON 2' && !inca.sn.visible.some(v => v.id === 'void')
+    && inca.menu.seasons.map(m => m.label).join('|') === 'SEASON 1|SEASON 2' && inca.menu.modeOnIntro === false && inca.menu.oldSeasonBtn === false,
+    JSON.stringify({ visible: inca.sn.visible, menu: inca.menu }));
+  ok('the menus: the pause menu carries the seasons, MODE and the regular options',
+    inca.pause.seasons.length === 2 && inca.pause.modeBtn && inca.pause.rows.slice(0, 3).join('|') === 'SEASON|MODE|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
+    JSON.stringify(inca.pause));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
   // waiting frames: heightAt is a pure function of (x, z, t), so the tests
@@ -1205,17 +1240,23 @@ s.listen(0, '127.0.0.1', async () => {
     const moved = p1.where - p0.where;
     const travels = p0.best > 0.3 && Math.abs(moved - cfg.speed * dt) < 0.6;
     const shift = { moved: +moved.toFixed(2), want: cfg.speed * dt };
-    // IT IS A FLOOR, AND IT CARRIES: stand on the crest we just placed
+    // v48 IT IS A HAZARD: a body on the floor under the crest we just placed
+    // is STRUCK (HYPER: it costs time); a body at jump height above it is not
     for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
     g.t = at;
-    pl.feet.set(0, peak, 0); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
-    await frames(2);
-    const floorY = pl.floorY;
-    const x0 = pl.feet.x, z0 = pl.feet.z;
-    await frames(8);
-    const carried = Math.hypot(pl.feet.x - x0, pl.feet.z - z0);
-    return { state, startT: +startT.toFixed(2), travels, shift, peak: +peak.toFixed(2),
-      floorY: +floorY.toFixed(2), carried: +carried.toFixed(2), amp: cfg.amp };
+    pl.feet.set(0, 0, 0); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+    const onFloor = g.strikes(pl);
+    pl.feet.set(0, 1.4, 0); pl._sync();
+    const inAir = g.strikes(pl);
+    d.setInvulnerable(false);
+    pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync();
+    const before = d.waveStrikes();
+    await frames(3);
+    const after = d.waveStrikes();
+    d.setInvulnerable(true);
+    pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync();
+    return { state, startT: +startT.toFixed(2), travels, shift, peak: +peak.toFixed(2), amp: cfg.amp,
+      onFloor, inAir, landed: after.strikes - before.strikes, cost: +(before.lifeT - after.lifeT).toFixed(2) };
   });
   ok('inca: a wave of voxels crosses the arena, and a run opens mid-sea',
     wave.state.on && wave.state.cells > 500 && wave.state.drawn > 40 && wave.startT > 0,
@@ -1240,7 +1281,10 @@ s.listen(0, '127.0.0.1', async () => {
     for (let i = 0; i < 40; i++) { g.ripples.forEach(q => q.age += 0.05); spread = Math.max(spread, g.heightAt(2.0, 0)); }
     g.ripples.forEach(q => q.age += 2); g.update(0);
     const after = { ripples: g.ripples.length, h: g.heightAt(0.3, 0) };
-    // the spring: stand every mound up, drop the body onto the nearest
+    // the spring: stand every mound up, drop the body onto the nearest.
+    // v48: no season carries mounds any more (season 2 is the wave alone), so
+    // the gate stands the SAMPLE mound up — the block INCA carried through v47
+    P.build(d.gelMoundSample(), Math.random, null, pl);
     for (const sl of P.list) { sl.phase = 'live'; sl.k = 1; sl.t = 0; sl.spring?.reset(); sl.sq = 1; sl.wasOn = false; P._pose(sl); }
     const sl = P.list.slice().sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0];
     const rest = sl.top;
@@ -1259,7 +1303,7 @@ s.listen(0, '127.0.0.1', async () => {
   // stiffer and no longer gives a quarter of its height away. It must still
   // visibly squash and still come back to exactly rest; how far it goes is
   // the thickening check's business, not this one's.
-  ok('inca: a body landing on a gel mound squashes it, and it springs back to rest',
+  ok('gel: a body landing on a mound squashes it, and it springs back to rest (the sample mound)',
     phys.gel && phys.first < 0.9 && phys.low < 0.85 && Math.abs(phys.settled - 1) < 0.02 && phys.feetOnTop,
     JSON.stringify({ first: phys.first, low: phys.low, settled: phys.settled, feetOnTop: phys.feetOnTop }));
   // v47 ROUNDED + NON-NEWTONIAN. The owner asked for "more rounded corners
@@ -1269,6 +1313,7 @@ s.listen(0, '127.0.0.1', async () => {
   const nn = await p.evaluate(async () => {
     const hd = window.__hd, d = hd.debug, g = d.gooObj(), P = d.platformsObj(), pl = hd.player;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    if (!P.list.length) P.build(d.gelMoundSample(), Math.random, null, pl);   // v48: the sample mound
     for (const sl of P.list) { sl.phase = 'live'; sl.k = 1; sl.t = 0; sl.life = 999; sl.spring?.reset(); sl.sq = 1; sl.give = 0; sl.wasOn = false; P._pose(sl); }
     // the sea, seizing: some of it is worked hard, most of it is not
     let seize = { peakStress: 0, hotFrac: 1, meanStress: 1, drawn: 0, waveVerts: 0, rounded: false };
@@ -1286,7 +1331,7 @@ s.listen(0, '127.0.0.1', async () => {
     for (let i = 0; i < 200; i++) { pl.velocity.set(9, 0, 0); pl.vy = 0; pl.feet.y = sl.top; P.preUpdate(1 / 60, pl, 0); }
     const held = { give: sl.give, top: sl.top };
     // the fluid itself: the SAME blow into a thickening gel and a Newtonian one
-    const { GelSpring } = await import('./js/gel.js?v=78');
+    const { GelSpring } = await import('./js/gel.js?v=79');
     const run = o => { const s = new GelSpring(o); s.kick(-0.5); let lo = 1; for (let i = 0; i < 240; i++) { s.step(1 / 60); lo = Math.min(lo, s.sq); } return +lo.toFixed(3); };
     return { seize, rest: +rest.toFixed(2), sunk, held, thick: run({ thicken: 3.2, rate: 0.09 }), newton: run({ thicken: 0 }) };
   });
@@ -1296,17 +1341,20 @@ s.listen(0, '127.0.0.1', async () => {
   ok('inca: the sea SEIZES where it breaks and stays liquid where it does not',
     nn.seize.peakStress > 0.35 && nn.seize.hotFrac > 0 && nn.seize.hotFrac < 0.6 && nn.seize.meanStress < 0.5,
     JSON.stringify(nn.seize));
-  ok('inca: stand still on the goo and you SINK; run and it holds you up',
+  ok('gel: stand still on a mound and you SINK; run and it holds you up (the sample mound — no season stands one now)',
     nn.sunk.give > 0.8 && nn.sunk.top < nn.rest * 0.6 && nn.held.give < 0.05 && Math.abs(nn.held.top - nn.rest) < 0.02,
     JSON.stringify({ rest: nn.rest, sunk: nn.sunk, held: nn.held }));
+  await p.evaluate(() => window.__hd.debug.platformsObj().clear());   // v48: the sample mound goes back down
   ok('inca: the same blow squashes a THICKENING gel less than a Newtonian one',
     nn.thick > nn.newton + 0.05 && nn.newton > 0.4,
     JSON.stringify({ thickened: nn.thick, newtonian: nn.newton }));
   ok('ember: a shale slab is rock — it has no spring',
     em.plats.slabs.length > 0 && em.plats.slabs.every(s => s.gel === false && s.sq === 1),
     JSON.stringify(em.plats.slabs.map(s => [s.gel, s.sq])));
-  ok('inca: standing on the crest, the wave IS the floor and it carries you',
-    wave.floorY > 1 && wave.carried > 0.1, JSON.stringify(wave));
+  ok('inca: the wave STRIKES a body standing in its path, and it costs time',
+    wave.onFloor === true && wave.landed >= 1 && wave.cost >= 9, JSON.stringify(wave));
+  ok('inca: a body that JUMPS clears it — feet above the crest are not struck',
+    wave.inAir === false, JSON.stringify(wave));
 
   // v44 TECH ART: every term is the season's, and zero outside it
   const tech = await p.evaluate(async () => {

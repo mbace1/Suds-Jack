@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { shadedBox } from './voxel.js?v=78';
+import { shadedBox } from './voxel.js?v=79';
 
 /**
  * WALLS — the first geometry this arena has ever had that is not a floor.

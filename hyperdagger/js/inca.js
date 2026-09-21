@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=78';
-import { terraceGeometry } from './gel.js?v=78';
+import { VoxelSprite, MODELS } from './voxel.js?v=79';
+import { terraceGeometry } from './gel.js?v=79';
 
 /**
  * THE SKULLSCAPE — season 2's horizon, built from what the game already owns.

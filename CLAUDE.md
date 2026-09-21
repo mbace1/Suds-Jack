@@ -455,8 +455,23 @@ solid phase carried per cube as an instanced attribute; **that measure was
 rewritten once** because reading it as a frame difference measures the
 RENDERER (a crest's leading edge is one cube wide at 60fps and thirty at 5,
 so the sea went white on a slow machine) — it is the profile's own slope
-times its travel speed, `6k(1−k)`, and frame rate cannot touch it. Still
-`todo`: the new sculpts, and whether the wave's trough should hurt. Four things renders settled, not reasoning: the star field was a
+times its travel speed, `6k(1−k)`, and frame rate cannot touch it. **v48 is the owner's
+reshaping** (2026-09-21: "the intro menu should just read season 1 and season 2
+… make season 2 just the wave that you need to jump over … only random skulls
+as enemies"): the intro is `SEASON 1` / `SEASON 2` buttons that START the run
+(a season declares `menu`; VOID is `hidden`, the gate's control only), MODE
+and the seasons sit in the pause menu with the regular options (a season
+picked mid-run rebuilds the arena on the spot), INCA has `platforms: null`
+and the gel mound survives only as `GEL_MOUND_SAMPLE` for the gate, the wave
+is a **hazard** (`goo.strikes` → `playerStruck('wave')`; crest 1.1 sized under
+the 1.54 jump apex — the first cut's 1.25 was 1.51 at the ripple's peak, a
+jump you could only make perfectly), and `spawns: { only: 'skulls' }` routes
+the director to `skullDirector` (the skull family at random, nothing else).
+The wave's art was reworked from a look at it: half cells (a jump-height
+crest at cell 1.0 was ONE row — a fence), the lip a top-third BAND not a ramp
+(a ramp painted the face pale and a crest at eye height was a white wall),
+the seize a frosting, and the floor shader reads the crest (`uWave`) with a
+shadow under the body and a foam line at its foot. Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
 near black, so floor glow is per season; and the owner's monuments "looked

@@ -103,10 +103,18 @@ const SCENARIOS = {
     every: 1,
   },
   wave: {
-    title: 'SEASON 2 — the wave: a crest comes at you, leans, breaks, carries',
+    title: 'SEASON 2 — the wave: it comes at you, and you jump it',
     mode: 'move',
     season: 'inca',
     setup: 'window._LOOP.wave()',
+    tick: 'window._LOOP.waveTick()',
+    every: 1,
+  },
+  wavefloor: {
+    title: 'SEASON 2 — the floor reads the wave: its shadow, and the foam at its foot',
+    mode: 'move',
+    season: 'inca',
+    setup: 'window._LOOP.wavefloor()',
     tick: 'window._LOOP.waveTick()',
     every: 1,
   },
@@ -228,6 +236,18 @@ window._LOOP = {
     return null;
   },
   waveTick() { player.velocity.set(0, 0, 0); return null; },
+  // beside the wave's line, looking across its travel and down at the floor,
+  // so the crest passes through the frame side-on with the floor under it
+  wavefloor() {
+    this.reset();
+    const g = goo;
+    // stand 7 off the line, look along the perpendicular back at the line, pitch down
+    const px = -g.dirZ, pz = g.dirX;   // a perpendicular to the travel
+    player.feet.set(px * 7, 0, pz * 7); player.yaw = -Math.atan2(-px, -pz) ; player.pitch = -0.38; player._sync();
+    g.t = (ARENA_R + g.cfg.width - 12) / g.cfg.speed;
+    this.slow(0.3);
+    return null;
+  },
   // gel: seven units from a mound, streaming nails into it (it flinches) with
   // a landing-sized kick every ten frames (it gives way); nails into the water
   // between, so the rings show

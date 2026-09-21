@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { gelMaterial, gelBox } from './gel.js?v=78';
+import { gelMaterial, gelBox } from './gel.js?v=79';
 
 /**
  * THE GOO WAVE — season 2's swell, made of the same cubes everything else in
@@ -109,6 +109,7 @@ export class GooWave {
     // the crest starts off one edge and walks to the other, then re-forms
     const span = this.arenaR * 2 + c.width * 2;
     const head = -this.arenaR - c.width + ((this.t * c.speed) % (span + c.gap));
+    this.head = head;   // v48: the floor shader reads where the crest is
     return along - head;
   }
 
@@ -247,8 +248,13 @@ export class GooWave {
       _s.set(1, 1, 1);
       _m.compose(_p, _q, _s);
       this.mesh.setMatrixAt(n, _m);
-      // colour: deep in the body, bright at the lip — the break is the light
-      const lip = Math.min(1, h / (c.amp * 0.92));
+      // colour: deep in the body, bright at the lip — the break is the light.
+      // v48: the lip is a BAND at the top (`lipFrom`), not a ramp from the
+      // floor — a ramp painted the whole face pale and a crest at eye height
+      // was a white wall. The body stays dark; the foam is the top rows.
+      const hk = Math.min(1, h / c.amp), lf = c.lipFrom ?? 0;
+      const lt = lf > 0 ? Math.max(0, Math.min(1, (hk - lf) / (1 - lf))) : Math.min(1, hk / 0.92);
+      const lip = lt * lt * (3 - 2 * lt);
       _c.setRGB(
         c.deep[0] + (c.lip[0] - c.deep[0]) * lip,
         c.deep[1] + (c.lip[1] - c.deep[1]) * lip,
@@ -295,6 +301,21 @@ export class GooWave {
       f.z += this.dirZ * c.push * grip * dt;
     }
     return h;
+  }
+
+  /**
+   * v48 THE WAVE IS A HAZARD. Is the body inside it? True when the water
+   * under the feet is wave rather than wading (above `hurtFrom`) and the
+   * feet are below its surface. A body in the air above the crest is clear;
+   * that is the whole verb — you jump it.
+   */
+  strikes(player) {
+    const c = this.cfg;
+    if (!c || !c.hurts) return false;
+    const f = player.feet;
+    const h = this.heightAt(f.x, f.z);
+    if (h < (c.hurtFrom ?? 0.35)) return false;
+    return f.y < h - 0.12;
   }
 
   clear() {

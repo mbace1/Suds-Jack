@@ -45,6 +45,19 @@ And on seeing season 2 built (2026-09-08):
 > **Enemies will be new** — aquamarine, green, yellows — but also slightly
 > **Aztec** themed.
 
+And on 2026-09-21, the shape of the thing:
+
+> The intro menu should just read **"season 1"** and **"season 2"**, later 3
+> and so on. The pause menu should have these and the regular options. Make
+> **season 2 just the wave that you need to jump over.** Polish the art of
+> that. **Only random skulls as enemies** otherwise.
+
+So a season declares a `menu` label and the intro is those labels and
+nothing else; VOID is `hidden` (the gate's control, never a choice); and
+season 2 is one wave, one verb, one enemy family. Everything below about
+mounds, carrying and sinking is history the code still remembers
+(`GEL_MOUND_SAMPLE`) and no season uses.
+
 ## SEASON 0 — VOID (the control)
 
 The arena exactly as it was before seasons: the bare disc, the red horizon,
@@ -118,92 +131,38 @@ standing on a slab, which makes the slab a way to dodge them — reads as
 intended for now, worth watching. Nothing casts a shadow onto a slab, so a
 body standing on one has no contact cue but its own height.
 
-## SEASON 2 — INCA (built, v43–v44)
+## SEASON 2 — INCA (v48: the wave you jump)
 
-The brief: *an aquamarine Inca skullscape with goo and soft edges on large
-voxel platforms, waves of goo voxels breaking across the arena, a whiter
-background with some blue horizon* — and then *go really crazy on the art
-style, think tech art*.
+**What it is.** The sea under a white sky, the skullscape on the horizon,
+and ONE thing in the arena: a wave of voxels that sweeps the disc every few
+seconds, and you jump it. Nothing stands in the sea — no slabs, no rock —
+and the only enemies are skulls, the family at random, thickening as the
+run goes on. The needler is the hand.
 
-- **The sky.** Whiter, kept under the bloom threshold, with a saturated blue
-  band at the horizon, a **haze** and a pale **sun** in the shader (`uHaze`,
-  `uSun`, `uSunDir`), no stars. The fog is pale and long (20→90) so the
-  horizon melts into the white.
-- **The floor.** An aquamarine grid on dark water (the texture is near-black
-  with bright lines, so the tint only shows where the glow lifts it — a
-  bright floor would cost the enemies their silhouettes under a white sky),
-  with a **caustic** crawling on it: three sine fields in world space,
-  thresholded, the same term the gel carries.
-- **Gel** (`js/gel.js`). The one material in the game that pretends to be
-  lit, the cheap way: fresnel rim, caustic, one-sun specular, vertex wobble,
-  all on a `MeshBasicMaterial` through `onBeforeCompile`, world space, no
-  lights. The bodies start DARK (deep 0.012/0.09/0.11) and the shader makes
-  them bright — a body that starts pale ends white, which the first two cuts
-  proved. The rim is what blooms, and only at edges.
-- **The goo wave** (`js/goo.js`). A travelling height field over the disc,
-  cut into voxels: a crest sweeps across, rises along a long back, leans into
-  its own travel as it steepens, and drops down a short steep face — a
-  breaking wave is asymmetric, and a sine is not one. A ripple runs along the
-  crest so it reads as a sea rather than an extruded curve; the cubes SNAP to
-  the cell grid in y as well as x and z, because goo made of voxels only reads
-  as voxels if it steps; and **the lip sheds loose cubes ahead of itself**
-  through the debris pool — that is the break. A random phase at build, so a
-  run opens on a sea already moving.
-- **What it is to play:** a moving floor. `heightAt` answers the crest height
-  anywhere, the loop hands it to the player the way the slabs do, and a body
-  standing on it is **carried along the wave's direction** — you ride it. The
-  higher of slab-or-crest wins, so a wave rolling past a slab cannot drop you
-  through it. **It does no damage,** deliberately: whether the trough should
-  hurt is a design call nobody has made.
-- **Soft edges on large voxel platforms.** Four LARGE slabs (5–8 a side) that
-  grow slower and stand longer, built as **mounds** of goo cubes — columns on
-  a grid, the height a rounded dome (1 − r⁴)^0.6 — in the gel material. Every
-  piece is still a cube; the silhouette is soft.
-- **Rounded, and non-Newtonian** (v47). Every gel piece is a **rounded box**
-  (`gelBox`), overlapping its cell so a mound is one body with soft creases
-  rather than a tray of eggs — and rounding cost the fresnel rim half its
-  strength, because a rounded cube curves away from you everywhere a flat one
-  did not. The goo is **shear-thickening**: struck fast it is nearly a solid
-  (`GelSpring` raises its own stiffness with the strain rate), and a body
-  **standing still on it sinks through** while a body **running across it is
-  held**. That is the season's verb — the wave was a ride, and riding it is
-  now something you do. Worked hard, the goo goes pale and matte; left alone
-  it is dark and wet, and the sea carries that per cube so the breaking face
-  is solid while the swell behind it is liquid.
-- **Gel and goo physics** (v46, from Toko Drop's `enemy.js`). A mound
-  **gives way**: a squash spring (spring 0.24, damp 0.86, `landSquish`
-  0.32) on its height — land on it and it squashes, volume kept, leave it
-  and it springs back, a nail makes it flinch; your feet stay on it while
-  it moves so the body rides the recoil. The sea **splashes**: a nail
-  crossing the surface or a body landing on the water spreads a ring that
-  widens and fades — the splash itself on flat water. And the gel **bleeds
-  light**: the satin subsurface term, the sun behind a body lighting it
-  from within.
-- **The skullscape** (`js/inca.js`). No Meshy art exists for it, so it is the
-  game's own string-art skull at ×22, half-buried just past the rim, turned to
-  face the arena, tinted dark aquamarine so it is a silhouette against the
-  white sky with its ember eyes burning; and stepped **terraces** further out,
-  a ziggurat skyline through the fog. Nothing there collides.
-- **The roster** (`js/roster.js`, v45). The owner's new sculpts will come
-  through the manifest when they are made; the colour is the season's now,
-  for whatever body is in the slot. A **turquoise mosaic**: the bake's value
-  kept, the hue handed out by band of lattice rows — turquoise / jade /
-  turquoise / gold — with the seams stepped on alternate columns, a
-  per-tessera jitter, gold eyes, no red anywhere. The Meshy skin wears the
-  same banding in its own shader, so the skin and the cubes under it agree.
-  A dark jade body with gold in it is also the answer to bone against a
-  white sky.
-- **Seeded** like the rest of the arena: a DAILY sea breaks the same way for
-  everyone, under the same skulls.
+- **The wave is a hazard** (`js/goo.js`, `strikes`). Inside the crest with
+  your feet under its surface, you are hit: HYPER costs ten seconds and
+  throws you along the wave's travel, PURE is death. It is **sized to one
+  jump** — crest 1.1, at the ripple's peak 1.34, under the 1.54 apex with
+  air to spare; the double jump is the safety. It no longer carries, and
+  standing still no longer sinks you: a hazard has no floor.
+- **The art of it.** Half cells, so the crest is three rows and not a fence;
+  a dark body with the foam as a BAND on the top third (`lipFrom`), not a
+  pale ramp; the seize a frosting on the break, not the paint; the lip
+  sheds smaller cubes; and the floor reads the wave — a shadow under its
+  body, a bright foam line at the foot of its face — so it is seen coming.
+- **Only skulls** (`spawns: { only: 'skulls' }` → `skullDirector`): skulls
+  on a tightening cadence, the crowned after thirty seconds, the splitter
+  after forty-five, the dread after sixty. No totems, pulses, thorns,
+  flyby, leviathan or revenant.
+- **The roster palette** (v45) still applies: whatever body is in the skull
+  slot wears the turquoise mosaic with gold eyes.
+- **Seeded** like the rest: a DAILY sea breaks the same way for everyone.
 
 Still open:
 
-1. **The new season 2 sculpts** — aquamarine / green / yellow, Aztec — the
-   recolour holds the slot until they arrive through the manifest.
-2. **Decide what the wave costs you.** It carries; it does not kill.
-3. **The Inca backdrop from real art**, if any arrives — through the manifest
-   `env` seam (`backdrop.js`) with its own `backdrop.emissive` for the white
-   sky. The skullscape is the game's own skull until then.
+1. **The new season 2 sculpts** — the recolour holds the slot until they
+   arrive through the manifest.
+2. **The Inca backdrop from real art**, if any arrives.
 
 The bench for all of it is MOVE in INCA: nothing is trying to kill you, so
 the only thing under test is the look.
