@@ -1372,6 +1372,9 @@ s.listen(0, '127.0.0.1', async () => {
     for (let i = 0; i < 24; i++) { await frames(1); spray += d.getGoo().sprayed; }
     return { t0, t1, spray, inca: d.getInca(), plats: d.getPlatforms().slabs.map(x => x.h) };
   });
+  ok('inca: the floor reads the wave — a shadow under its body and a foam line at its foot',
+    tech.t1.floorWave[0] > 0 && tech.t1.floorWave[1] > 0 && Math.abs(tech.t1.waveHead) < 200,
+    JSON.stringify({ floorWave: tech.t1.floorWave, head: tech.t1.waveHead }));
   ok('inca: the floor has caustics, the sky has haze and a sun, and the gel clock runs',
     tech.t0.caustic > 0 && tech.t0.haze > 0 && tech.t0.sun > 0 && tech.t1.gelTime > tech.t0.gelTime,
     JSON.stringify({ t0: tech.t0, t1: tech.t1 }));
@@ -1383,7 +1386,8 @@ s.listen(0, '127.0.0.1', async () => {
     JSON.stringify(tech.inca));
   ok('void: none of the tech-art terms leak into the control',
     ctrl.sn.tech && ctrl.sn.tech.caustic === 0 && ctrl.sn.tech.haze === 0 && ctrl.sn.tech.sun === 0 && ctrl.inca.on === false
-    && ctrl.sn.tech.seize === 0,
+    && ctrl.sn.tech.seize === 0
+    && ctrl.sn.tech.floorWave[0] === 0 && ctrl.sn.tech.floorWave[1] === 0 && ctrl.sn.gooHurts === false,   // v48: nor the floor's wave read, nor the hurt
     JSON.stringify({ tech: ctrl.sn.tech, inca: ctrl.inca }));
 
   ok('ember and void have no wave — the sea is season 2\'s',
