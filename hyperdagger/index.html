@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Hyper Dagger</title>
-  <link rel="manifest" href="manifest.webmanifest?v=79">
+  <link rel="manifest" href="manifest.webmanifest?v=80">
   <link rel="icon" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
@@ -12,7 +12,7 @@
     html, body { width: 100%; height: 100%; overflow: hidden; background: #020202; color: #e8dcc8; font-family: system-ui, sans-serif; }
     #canvas-game, #canvas-ui { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
     #canvas-ui { pointer-events: none; }
-    #msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: rgba(0,0,0,0.72); z-index: 10; padding: 1.5rem; }
+    #msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: safe center; overflow-y: auto; text-align: center; background: rgba(0,0,0,0.72); z-index: 10; padding: 1.5rem; }
     #msg h1 { font-size: 2.2rem; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
     #msg .sub, #msg .keys, #msg .go, #msg .history, #msg .breakdown, #msg .cause { opacity: 0.85; margin: 0.35rem 0; max-width: 36rem; }
     #msg .big { font-size: 1.25rem; margin: 0.6rem 0; }
@@ -73,16 +73,18 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=79"></script>
+  <script type="module" src="js/main.js?v=80"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=79').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=80').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=17"></script>
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';
-    sign({ corner: 'bottom-left', counter: true });
+    // `open`: with a cursor the badge opens him at the table, over a paused
+    // run, instead of leaving for the arcade. The href stays for middle-click.
+    sign({ corner: 'bottom-left', counter: true, open: () => window.__hd && window.__hd.toko.open() });
   </script>
 </body>
 </html>

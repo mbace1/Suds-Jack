@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=79';
+import { TUNING as T } from './tuning.js?v=80';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const STICK_R = T.touch.stickR;
@@ -99,15 +99,20 @@ export class InputManager {
       e.preventDefault();
       this._touchStart(e);
     }, opt);
-    window.addEventListener('touchmove', e => { e.preventDefault(); this._touchMove(e); }, opt);
-    window.addEventListener('touchend', e => { e.preventDefault(); this._touchEnd(e); }, opt);
-    window.addEventListener('touchcancel', e => { e.preventDefault(); this._touchEnd(e); }, opt);
+    // A touch keeps the target it STARTED on, so one that began on a control
+    // stays a control through move and end — and one that began on the stick
+    // still releases the stick even if the finger ends over a button.
+    window.addEventListener('touchmove', e => { if (this._uiTouch(e)) return; e.preventDefault(); this._touchMove(e); }, opt);
+    window.addEventListener('touchend', e => { if (this._uiTouch(e)) return; e.preventDefault(); this._touchEnd(e); }, opt);
+    window.addEventListener('touchcancel', e => { if (this._uiTouch(e)) return; e.preventDefault(); this._touchEnd(e); }, opt);
   }
 
   /** True when the touch began on an interactive DOM control. */
   _uiTouch(e) {
     const t = e.target;
-    return !!(t && t.closest && t.closest('button, #pauseBtn, .arcade-home'));
+    // `.toko-table` is the counter at the table: every tap inside it, and
+    // the field you type at him in, is UI and never the stick
+    return !!(t && t.closest && t.closest('button, input, textarea, #pauseBtn, .arcade-home, .toko-table'));
   }
 
   _touchStart(e) {

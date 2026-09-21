@@ -1559,6 +1559,44 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the game never requests a file that is not in the tree',
     misses.length === 0, misses.slice(0, 4).join(' | '));
 
+  // ---- Toko at the table (v48) ----------------------------------------------
+  // Open him mid-run: the run pauses under him, he opens knowing the clock,
+  // the game is still the page, and Esc puts you back on the pause screen.
+  await p.evaluate(() => window.__hd.toko.open());
+  const seated = await p.waitForFunction(
+    () => document.querySelector('.toko-table .toko-chat.is-open'), null, { timeout: 15000 })
+    .then(() => true, () => false);
+  ok('ASK TOKO seats him at the table', seated);
+  const table35 = await p.evaluate(() => ({
+    paused: getComputedStyle(document.getElementById('msg')).display !== 'none'
+      && !document.body.classList.contains('in-run'),
+    from: window.__hd.toko.table() && window.__hd.toko.table().chat()
+      && window.__hd.toko.table().chat().from(),
+    cue: window.__hd.toko.cue(),
+    hubShim: !!(window.__hub && window.__hub.feedback && window.__hub.feedback.send),
+  }));
+  ok('the run is paused underneath him', table35.paused);
+  ok('he is standing in this game', table35.from === 'hyperdagger', String(table35.from));
+  ok('and opens knowing the clock', /^\d+\.\dS IN\. SAY WHAT YOU THINK$/.test(table35.cue), table35.cue);
+  ok('a note here has the same transport as one on the floor', table35.hubShim);
+  // his rule: one Esc steps out of the field, the next leaves him and the table
+  for (let i = 0; i < 3 && await p.evaluate(() => !!document.querySelector('.toko-table')); i++) {
+    await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+  }
+  ok('Esc leaves the table and keeps the pause',
+    await p.evaluate(() => !document.querySelector('.toko-table')
+      && getComputedStyle(document.getElementById('msg')).display !== 'none'));
+  await p.mouse.click(410, 520); // clear of the buttons: resume (820x540)
+  await p.waitForFunction(() => document.body.classList.contains('in-run'), null, { timeout: 4000 })
+    .catch(() => {});
+  await p.evaluate(() => window.__hd.debug.die());
+  await p.waitForTimeout(300);
+  const dead35 = await p.evaluate(() => ({
+    btn: !!document.getElementById('tokoBtn'), cue: window.__hd.toko.cue(),
+  }));
+  ok('the death screen carries ASK TOKO', dead35.btn);
+  ok('and he would open on the death line', /(GOT YOU|CLOCK RAN OUT) AT \d+\.\dS$/.test(dead35.cue), dead35.cue);
+
   // ---- zero errors across the whole run ----------------------------------
   ok('still zero page errors at the end', errs.length === 0, errs.slice(0, 4).join(' | '));
 

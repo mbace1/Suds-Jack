@@ -5,30 +5,31 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=79';
-import { Player } from './player.js?v=79';
-import { DaggerPool } from './daggers.js?v=79';
-import { GemPool } from './gems.js?v=79';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=79';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=79';
-import { OrbPool } from './bullets.js?v=79';
-import { AudioKit } from './audio.js?v=79';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=79';
-import { TUNING as T } from './tuning.js?v=79';
-import { HyperEnvironment } from './environment.js?v=79';
-import { Backdrop } from './backdrop.js?v=79';
-import { Walls } from './walls.js?v=79';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=79';
-import { TruckTrack } from './truck.js?v=79';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=79';
-import { Platforms } from './platforms.js?v=79';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=79';
-import { GooWave } from './goo.js?v=79';
-import { gelMaterial } from './gel.js?v=79';
-import { mosaicPalette, mosaicSkin } from './roster.js?v=79';
-import { Skullscape } from './inca.js?v=79';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=79';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=79';
+import { InputManager } from './input.js?v=80';
+import { Player } from './player.js?v=80';
+import { DaggerPool } from './daggers.js?v=80';
+import { GemPool } from './gems.js?v=80';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=80';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=80';
+import { OrbPool } from './bullets.js?v=80';
+import { AudioKit } from './audio.js?v=80';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=80';
+import { TUNING as T } from './tuning.js?v=80';
+import { HyperEnvironment } from './environment.js?v=80';
+import { Backdrop } from './backdrop.js?v=80';
+import { Walls } from './walls.js?v=80';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=80';
+import { TruckTrack } from './truck.js?v=80';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=80';
+import { Platforms } from './platforms.js?v=80';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=80';
+import { GooWave } from './goo.js?v=80';
+import { gelMaterial } from './gel.js?v=80';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=80';
+import { Skullscape } from './inca.js?v=80';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=80';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=80';
+import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -1429,7 +1430,10 @@ function showDeath(timedOut) {
     : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'pure' ? '' : ` &middot; ${M().id}`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
+     <button id="tokoBtn" class="opt">ASK TOKO</button>
      <p class="go">click / tap / &#10005; to retry</p>`;
+  wireToko();
+  lastTimedOut = !!timedOut;
   document.getElementById('shareBtn').addEventListener('pointerdown', async e => {
     e.stopPropagation(); // don't let the copy tap restart the run
     const btn = e.currentTarget;
@@ -1625,6 +1629,8 @@ function die(timedOut = false) {
 }
 
 window.addEventListener('pointerdown', e => {
+  // a tap at the table is a tap at the table — never a resume or a restart
+  if (e.target && e.target.closest && e.target.closest('.toko-table')) return;
   audio.ensure();
   const isMouse = e.pointerType === 'mouse';
   if (state === 'menu') {
@@ -1659,6 +1665,46 @@ document.addEventListener('pointerlockchange', () => {
 
 // ------------------------------------------------------------- pause menu
 const elPause = document.getElementById('pauseBtn');
+
+// ---------------------------------------------------------------- Toko at the table
+// The signature used to leave the game for the counter; now it opens him HERE,
+// over a paused run, so "that serpent is unfair" can be said while the serpent
+// is still on the field. On touch the badge stays inert (that corner is the
+// left stick) and the pause and death screens carry an ASK TOKO line instead.
+// He opens knowing what just happened: the cue is the death line or the clock.
+const GAME = { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' };
+let table = null;
+let lastTimedOut = false;
+function tokoCue() {
+  const t = gameTime.toFixed(1);
+  if (state === 'dead') {
+    return `${lastTimedOut ? 'THE CLOCK RAN OUT' : `${(ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase()} GOT YOU`} AT ${t}S`;
+  }
+  if (state === 'playing') return `${t}S IN. SAY WHAT YOU THINK`;
+  return null;                       // the menu: his own line
+}
+function openToko() {
+  if (table) return table;
+  if (state === 'playing' && !paused) showPause();
+  // He needs a cursor. A run holds pointer lock, and a locked page sends every
+  // mouse event to the canvas at (0,0) no matter where the pointer is — a
+  // click on his menu would land on the floor and resume the game.
+  if (document.pointerLockElement) document.exitPointerLock();
+  table = openTable({
+    game: GAME, cue: tokoCue(),
+    onClose() {
+      table = null;
+      // whatever was typed at him is not a jump, a dash or a reap
+      input.consumeJump(); input.consumeDash(); input.consumeDashFlick(); input.consumeReap();
+    },
+  });
+  return table;
+}
+function wireToko() {
+  const b = document.getElementById('tokoBtn');
+  if (!b) return;
+  b.addEventListener('pointerdown', e => { e.stopPropagation(); openToko(); });
+}
 elPause.addEventListener('pointerdown', e => {
   e.stopPropagation();
   if (state === 'playing' && !paused) {
@@ -1759,6 +1805,7 @@ function showPause() {
   elMsg.innerHTML =
     `<h1>PAUSED</h1>
      <p class="sub">~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps &middot; ${voxCount.toLocaleString()} voxels on field &middot; new spawns use the VOXEL setting</p>
+     <button id="tokoBtn">ASK TOKO</button>
      <div class="optrow"><span>SEASON</span>${SEASONS.filter(sn => !sn.hidden).map(sn =>
        `<button class="opt season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}</div>
      <div class="optrow"><span>MODE</span><button id="modeBtn" class="opt on">${M().name}</button><span class="note">&mdash; next run</span></div>
@@ -1781,6 +1828,7 @@ function showPause() {
      ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}
      <button id="endBtn" class="opt">END RUN &mdash; back to the mode menu</button>
      <p class="go">click / tap anywhere else to resume</p>`;
+  wireToko();
   document.getElementById('endBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     endRun();
@@ -3365,6 +3413,7 @@ animate();
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
   enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
+  toko: { open: () => openToko(), table: () => table, cue: () => tokoCue() },
   debug: {
     // ported with the balance work: freeze spawns without freezing the game,
     // and hold a run open — since the curve tightened, a player who never
