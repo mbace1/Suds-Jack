@@ -181,7 +181,7 @@ export const SEASONS = [
       // v48 THE FLOOR READS THE WAVE: a shadow under its body and a bright
       // foam line at the foot of its face, so you see it coming across the
       // floor before it is on you (main.js floor shader, uWave)
-      floorWave: { shadow: 0.42, foam: 0.7 },
+      floorWave: { shadow: 0.42, foam: 0.4 },   // foam 0.7 was a light bar you could read the arena by
       // (v47's sink-when-still was the sea as a floor; a hazard has no floor to sink into)
       // v46 impact rings: a nail or a body striking the sea spreads a ring
       rippleHit: { amp: 1.4, speed: 6.5, width: 1.3, fade: 1.6, reach: 7, life: 1.6, max: 12 },

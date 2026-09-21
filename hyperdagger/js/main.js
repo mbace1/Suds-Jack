@@ -531,8 +531,12 @@ const floorMat = new THREE.ShaderMaterial({
         // the body: from the back of the swell to the foot of the face
         float body = smoothstep(-w, -w * 0.55, s) * (1.0 - smoothstep(w * 0.45, w * 0.58, s));
         col *= 1.0 - uWaveK.x * body;
-        // the foam line: a thin bright wash just ahead of the face's foot
-        float foam = 1.0 - smoothstep(0.0, 0.9, abs(s - w * 0.62));
+        // the foam line: a wash just ahead of the face's foot — BROKEN along
+        // the crest by two slow sines, because an even line at floor glow is
+        // a laser bar across the arena (the first render), and foam is ragged
+        float across = dot(vWorld, vec2(-uWave.y, uWave.x));
+        float ragged = 0.45 + 0.55 * abs(sin(across * 1.9 + uTime * 2.6) * sin(across * 0.7 - uTime * 1.7));
+        float foam = (1.0 - smoothstep(0.0, 1.4, abs(s - w * 0.62))) * ragged;
         col += uTint * foam * foam * uWaveK.y * (uGlow * 0.35 + 0.4);
       }
       if (uCaustic > 0.0) {
