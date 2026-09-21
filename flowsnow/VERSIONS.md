@@ -7,6 +7,90 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v9 — 2026-09-21
+**The hands: an air stops being a timer and becomes a trick with a name**
+- **The grab button paid nothing.** Until this version an air was a stopwatch —
+  seconds aloft, yaw rounded to the nearest 180, and a `grab` flag that set a
+  boolean, passed it to the landing toast as the word *grab*, and touched no
+  number anywhere in the game. `js/tricks.js` is the vocabulary that replaces
+  it, and it is **pure** (no DOM, no three.js, no clock), so every trick in the
+  game is asserted in bare node the way the board and the snowpack are.
+- **A grab has an IDENTITY, and it is made of controls the board already had.**
+  Six of them, on two axes: which edge the hand reaches over comes from `lean`
+  (the edge you are already on) and how far along the board it reaches comes
+  from the trim keys (weighting the nose is how you reach the nose). Indy,
+  Melon, Mute, Nose, Stalefish, Tail. It is chosen **once**, at the instant the
+  hand goes down — a grab you can change by moving the stick afterwards is a
+  menu. Reaching past the bindings pays more because it costs more to come back
+  from, which is the argument this game already makes about a dive and about
+  deep snow.
+- **And the attitude is something you have to bring back.** The trim keys pitch
+  the board in the air, and letting that run is a flip. The board levels toward
+  the **nearest whole rotation** rather than toward zero, so going all the way
+  round is a way of getting back and stopping in the middle is the thing that
+  hurts. Swept on an ordinary 0.75 s pop, by how long the pitch is held: **up to
+  0.35 s you bail and land; 0.40–0.55 s is the band and every one of them is a
+  fall; 0.60 s and up the levelling carries you round and it is a Flip.** Half a
+  second of pitch is the decision, and it is a real one in both directions.
+- **THE RATES ARE CALIBRATED AGAINST A NUMBER NOBODY HAD MEASURED.** What air
+  the mountain actually gives, logged over a whole descent: **312 airs, median
+  0.72 s, p90 0.82, best 1.37.** Every rate is a division into that, and the
+  first cut had guessed all of them — a 360 wanted 1.21 s and a flip 1.43, both
+  past the longest air on the hill, so every spin anybody tried failed the
+  landing test and the pitch key was a crash button with nothing on the far side
+  of it. At 7.6 and 8.2 the ladder is a **180 on any air, a 360 in the top
+  tenth, a flip on a median air if you commit, and a 540 once a run if ever.**
+- **RAISING THE SPIN RATE BROKE THE STEERING, and that is one control meaning
+  two things for the third time in this file** (`tuck` picks a grab *and*
+  pitches the board, which is why a Nose grab used to flip you). Lean steers on
+  the ground and spins in the air; at 5.2 a small corrective lean produced a few
+  degrees nobody noticed, and at 7.6 the **same held stick is a quarter turn** —
+  the bare-node pilot, which steers with a ±0.45 lean and has no idea it is
+  airborne, started landing sideways off the glacier's crevasses and that
+  chapter read **1.8 m/s**. A spin is a committed stick now: nothing under
+  `SPIN_DEAD` rotates at all and the range above it is rescaled, so full lean is
+  still the full rate and the pilot is untouched.
+- **What it pays, and the ORDER is the claim rather than the numbers** — read
+  off the air distribution, not off how hard each one sounds. A 180 fits every
+  air and risks nothing; a flip fits a median air but carries the band; a 360
+  needs the top tenth of airs. So 180 (202) < Flip (343) < 360 (372). At the
+  first cut's `PAY.flip` of 220 a flip paid 263 against the free 180's 202,
+  which had the hardest thing in the game costing a fraction over the easiest.
+- **A neutral stick was a Melon.** `lean > 0` makes a stick at rest a heel lean
+  by arithmetic, so a straight air came back with a name for a choice nobody
+  made. The edge has a deadband and the neutral answer is **Indy**.
+- **The figure reaches, and the arm had to GROW to do it.** A trick whose name
+  you cannot read off the rider is a line of text over a figure doing the same
+  thing every time, so the edge decides which hand goes down and the reach
+  decides whether that arm swings toward the nose or the tail — both out of the
+  same `GRABS` table the name and the score come from, so a grab cannot look
+  like one thing and pay another. What a close render found: the arms are 0.62 m
+  sticks on a pivot at chest height, and **straight down they stop a third of a
+  metre above the deck**, so no rotation could ever have read as a grab. The
+  robe is a cone with no elbow in it, so the reach is the only joint there is,
+  and the reaching arm extends to 0.98 m — to the board's edge and not through
+  it, which was the first cut's other fault.
+- **And the honest half, measured rather than claimed: at play distance you read
+  the grab off the TOAST, not off the rider.** From the seat the game gives you
+  the figure is about 90 px tall with a scarf across half of it — the reach is
+  visible as *a grab* and not as *which grab*. Four angles at 3.4 m tell them
+  apart cleanly, and a chase camera is not one of them. That is v5's crevasse
+  finding and v7's trench finding for the third time, so it is written down
+  rather than tuned: the rider is small because the mountain is the subject, and
+  anything that has to be read off the figure needs a different seat.
+- The landing toast prints the **name and what it was worth** instead of
+  `360 · grab · 0.9s`, a receipt for three facts rather than a name for one
+  thing; the recap's *biggest spin* becomes **best trick**, because the name
+  contains the spin and says what else was going on.
+- **Honest limits.** Touch has one button, and holding the right half is both
+  the tuck and the grab — so a touch player always gets a nose grab and cannot
+  flip. Nobody has played any of this; the window above is measured off the
+  bare-node pilot, which is not a pair of hands.
+- Gates: `node flowsnow/test/core.mjs` is 142 checks (up from 121) — the grab
+  table, the commitment window in all three of its states, and the pay order.
+- Tokens: `physics.js` 2→3, `figure.js` 1→2, `lang.js` 1→2, new `tricks.js` at
+  v1, entry `main.js` 8→9.
+
 ## v8 — 2026-09-21
 **The camera is the thing under test: a glance over the shoulder, and a crevasse
 answer that is a cut**

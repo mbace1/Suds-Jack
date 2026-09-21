@@ -1763,8 +1763,45 @@ every log` is what catches a release that moved only one. It caught this one. Th
 local run could not: `test/hub-smoke.cjs` had been run during the merge verification,
 BEFORE the version bump, and a cabinet gate run ahead of the bump is a gate run
 against the previous release. **It goes after.**
-**v6, v7 and v8 are authored and NOT deployed** (2026-09-18 / 09-20 / 09-21):
-the branch carries all three and `gh-pages` still serves v5.
+**THE HANDS, AND THE RATES WERE CALIBRATED AGAINST A NUMBER NOBODY HAD MEASURED**
+(v9). An air was a TIMER — seconds aloft, yaw rounded to the nearest 180, and a
+`grab` flag that set a boolean, went into the landing toast as the word *grab*
+and touched no number anywhere. `js/tricks.js` is the vocabulary, **pure** like
+the board and the snowpack, so bare node asserts every trick in the game. A grab
+has an IDENTITY off controls the board already had — the edge from `lean`, the
+reach along the board from the trim keys — and it is chosen **once**, at the
+instant the hand goes down, because a grab you can change with the stick is a
+menu. The trim keys also PITCH the board, and the board levels toward the
+**nearest whole rotation** rather than toward zero, so going all the way round is
+a way of getting back and stopping in the middle is what hurts: on an ordinary
+0.75 s pop, **hold the pitch up to 0.35 s and you bail and land, 0.40–0.55 s is a
+fall every time, 0.60 s and up the levelling carries you round and it is a
+Flip.** Half a second is the decision. **The rates are divisions into the air the
+mountain actually gives, logged for the first time: 312 airs a descent, median
+0.72 s, p90 0.82, best 1.37** — the first cut had guessed them and put a 360 at
+1.21 s and a flip at 1.43, both past the longest air on the hill, so every spin
+anybody tried failed the landing test and the pitch key was a crash button with
+nothing on the far side. **Raising the spin rate then broke the STEERING**, one
+control meaning two things for the third time in that file (`tuck` picks a grab
+*and* pitches the board, which is why a Nose grab used to flip you): lean steers
+on the ground and spins in the air, at 5.2 a corrective lean was a few invisible
+degrees and at 7.6 the same held stick is a quarter turn — the bare-node pilot,
+which steers with a ±0.45 lean and does not know it is airborne, started landing
+sideways off the crevasses and that chapter read **1.8 m/s**. A spin is a
+committed stick now (`SPIN_DEAD`, rescaled above it). Pay ORDER is the claim and
+is read off the same distribution: 180 (202) < Flip (343) < 360 (372), where
+`PAY.flip` 220 had the hardest thing in the game costing a fraction over the
+easiest. Two smaller ones worth the line: **a neutral stick was a Melon**, since
+`lean > 0` makes a resting stick a heel lean by arithmetic, and **the figure's
+arm could never have reached the board** — a 0.62 m stick on a chest-height pivot
+stops a third of a metre above the deck, so the reaching arm extends to 0.98 m,
+to the edge and not through it. And the honest half: **at play distance you read
+the grab off the toast, not off the rider.** The figure is ~90 px tall with a
+scarf across half of it; four angles at 3.4 m tell the grabs apart cleanly and a
+chase camera is not one of them — v5's crevasse and v7's trench for the third
+time, so it is recorded rather than tuned.
+**v6 through v9 are authored and NOT deployed** (2026-09-18 / 09-20 / 09-21):
+the branch carries all four and `gh-pages` still serves v5.
 **Never verified live from a session.** The agent proxy refuses `github.io`, so the
 Pages run concluding `success` is the only evidence the deploy has — the cabinet and a
 run from the title into gameplay still want a human's eyes on the real URL.

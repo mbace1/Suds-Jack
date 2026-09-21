@@ -4,18 +4,18 @@
 // DOM or the clock.
 import * as THREE from 'three';
 import { terrain } from './terrain.js?v=4';
-import { createRider, stepRider, RUN_LENGTH } from './physics.js?v=2';
+import { createRider, stepRider, RUN_LENGTH } from './physics.js?v=3';
 import { SnowSim } from './particles.js?v=1';
 import { hour } from './palette.js?v=1';
 import { makeUniforms, skyMaterial, snowSprayMaterial } from './snowmat.js?v=4';
-import { Figure } from './figure.js?v=1';
+import { Figure } from './figure.js?v=2';
 import { Field, Trail, Shadow } from './world.js?v=4';
 import { Input } from './input.js?v=2';
 import { Rig, SEAT } from './camera.js?v=1';
 import { Audio } from './audio.js?v=1';
-import { pickLang, t } from './lang.js?v=1';
+import { pickLang, t } from './lang.js?v=2';
 
-export const VERSION = 8;
+export const VERSION = 9;
 const BEST_KEY = 'flowsnow.best';
 const STEP = 1 / 120;
 const MAX_SNOW = 5000;
@@ -99,7 +99,7 @@ const surfaceY = (x, z, lift = 0.05) => terrain.height(x, z) + lift;
 const events = {
   pop() { audio.pop(); },
   kicker() { sim.burst(24, s.x, surfaceY(s.x, s.z, 0.1), s.z, 0, 0.7, 0.4, 2.5, 0.8, 1.1, 0.8, 1); },
-  land(impact, air, spins, grab) {
+  land(impact, air, spins, grab, trick, bonus) {
     audio.land(impact, air, spins);
     // A landing PUNCHES rather than sweeps, so the crater is wide and shallow
     // where the trench is narrow and deep. It still goes BEHIND the board, and
@@ -113,12 +113,16 @@ const events = {
     const ly = surfaceY(s.x, s.z);
     sim.burst(n, s.x, ly, s.z, 0, 1, 0, 2.5 + impact * 0.45, 1.0, 1.5, 1.1, 1);
     sim.burst(Math.round(n * 0.6), s.x, ly + 0.05, s.z, 0, 0.8, 0, 3 + impact * 0.5, 0.9, 0.9, 0.5, 0);
+    // THE TOAST IS THE WHOLE POINT OF NAMING IT. Until v9 this read
+    // `360 · grab · 0.9s` — a receipt for three facts rather than a name for
+    // one thing, and `grab` was the same word whichever hand you used, because
+    // nothing downstream knew there was more than one. physics.js works the
+    // name out now (it is the same string the score is paid on), so this prints
+    // what you did and what it was worth, and falls back to the airtime when
+    // you did nothing worth calling anything.
     if (air > 0.25) {
-      const parts = [];
-      if (spins >= 180) parts.push(`${spins}`);
-      if (grab) parts.push('grab');
-      parts.push(`${air.toFixed(1)}s`);
-      toast(parts.join(' · '), 1100);
+      const label = trick || `${air.toFixed(1)}s`;
+      toast(bonus > 0 ? `${label} · ${Math.round(bonus)}` : label, 1200);
     }
   },
   dive(sink) {
@@ -206,7 +210,10 @@ function finish() {
   $('doneScoreLabel').textContent = isBest ? `${L('score')} · ${L('newBest')}` : L('score');
   $('doneStats').innerHTML = [
     [L('time'), `${s.time.toFixed(1)} s`], [L('top'), `${Math.round(s.speedMax * 3.6)} km/h`],
-    [L('air'), `${s.airBest.toFixed(1)} s`], [L('spin'), `${s.spinBest}°`],
+    [L('air'), `${s.airBest.toFixed(1)} s`],
+    // the best TRICK rather than the biggest spin: the name contains the spin
+    // and says what else was going on, which the number on its own cannot
+    [L('trick'), s.bestName ? `${s.bestName} · ${Math.round(s.bestTrick)}` : `${s.spinBest}°`],
     [L('deepest'), `${s.deepBest.toFixed(1)} m`], [L('falls'), `${s.tumbles}`],
   ].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
   hud.best.textContent = `${L('best')} ${Math.round(best).toLocaleString()}`;

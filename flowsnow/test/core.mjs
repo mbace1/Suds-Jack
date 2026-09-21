@@ -6,6 +6,7 @@ import { createRider, stepRider, RUN_LENGTH, G } from '../js/physics.js';
 import { SnowSim } from '../js/particles.js';
 import { Snowpack, CELL } from '../js/snowpack.js';
 import { Rig, SEAT } from '../js/camera.js';
+import { GRABS, grabFor, offAxis, flipsIn, nameTrick, scoreTrick } from '../js/tricks.js';
 
 let pass = 0, fail = 0;
 const ok = (name, cond, detail) => {
@@ -693,6 +694,97 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
   // inside 16 m, and needing a seat 8-12 m up to see a third of the interior.
   // v5 cut a ridge for the same question. Nothing detects a hole now, because a
   // detector with no user is dead code.
+}
+
+// ---- the hands ---------------------------------------------------------------
+// Until v9 an air was a TIMER: seconds aloft, yaw rounded to the nearest 180,
+// and a grab button that set a flag, passed it to the landing toast and paid
+// NOTHING. These check the three things that make an air a trick instead — that
+// it has a name, that the name comes from what you were actually holding, and
+// that the attitude you left the ground with is one you have to bring back.
+{
+  const DT = 1 / 240;
+  // drive one air and report what the landing said about it
+  const air = (drive, z0 = -600) => {
+    const s = createRider(terrain, lineX(z0), z0);
+    let out = null, peak = 0;
+    const ev = {
+      land: (impact, a, spins, grab, trick, bonus) => {
+        if (!out) out = { fell: false, grab, trick, bonus, air: a };
+      },
+      tumble: () => { if (!out) out = { fell: true }; },
+    };
+    for (let i = 0; i < 9000 && !out; i++) {
+      const inp = { lean: 0, tuck: 0, brake: 0, jump: i > 400 && i < 460, grab: false };
+      if (!s.grounded) { drive(inp, s); peak = Math.max(peak, Math.abs(s.cork)); }
+      stepRider(s, inp, DT, terrain, ev);
+    }
+    return { ...(out || { fell: null }), peak };
+  };
+
+  // the table is made of inputs the board already had, so nothing new is bound
+  ok('a neutral grab is an Indy', grabFor(0, 0, 0) === 'indy', grabFor(0, 0, 0));
+  ok('a heel lean makes it a Melon', grabFor(-1, 0, 0) === 'melon');
+  ok('reaching for the nose renames it', grabFor(1, 1, 0) === 'mute' && grabFor(-1, 1, 0) === 'nose');
+  ok('and reaching for the tail renames it again',
+    grabFor(1, 0, 1) === 'tail' && grabFor(-1, 0, 1) === 'stalefish');
+  ok('every grab in the table has a name and pays',
+    Object.values(GRABS).every(g => g.pay >= 1 && g.name), '');
+  ok('a grab past the bindings pays more than one between them',
+    GRABS.nose.pay > GRABS.indy.pay && GRABS.tail.pay > GRABS.indy.pay);
+
+  const plain = air(() => {});
+  ok('a straight air is landed and gets no name', plain.fell === false && !plain.trick, plain.trick);
+
+  const held = air(i => { i.grab = 1; });
+  ok('a hand on the board names the air', held.fell === false && held.trick === 'Indy', held.trick);
+  ok('and it pays several times what the same air pays empty-handed',
+    held.bonus > plain.bonus * 2, `${Math.round(held.bonus)} vs ${Math.round(plain.bonus)}`);
+
+  const heel = air(i => { i.grab = 1; i.lean = -1; });
+  ok('which hand it is comes from what you were already holding', heel.grab === 'melon', heel.grab);
+
+  // THE COMMITMENT WINDOW, which is the whole mechanic. The board levels to the
+  // NEAREST whole rotation rather than to zero, so past halfway the levelling
+  // stops being a rescue and becomes the rest of the flip — and the middle is a
+  // place you cannot land from. Nothing read the attitude at all before v9: a
+  // spin was free and the only way to blow a landing was to come down sideways.
+  const bail = air((i, s) => { if (s.air < 0.25) i.tuck = 1; });
+  const band = air((i, s) => { if (s.air < 0.45) i.tuck = 1; });
+  const flip = air((i, s) => { if (s.air < 0.70) i.tuck = 1; });
+  ok('a pitch you let go of early comes back to level', bail.fell === false, bail.peak.toFixed(2));
+  ok('one you commit to halfway is a fall', band.fell === true, band.peak.toFixed(2));
+  ok('and one you carry all the way round is a Flip',
+    flip.fell === false && flip.trick === 'Flip', `${flip.trick}, peak ${flip.peak.toFixed(2)}`);
+  ok('a flip goes PAST a whole turn rather than stopping short of one',
+    flip.peak > Math.PI * 1.8, flip.peak.toFixed(2));
+
+  ok('a half turn is off axis and a whole one is not',
+    offAxis(Math.PI) > 3 && offAxis(Math.PI * 2) < 1e-9);
+  ok('and a whole turn counts as one flip',
+    flipsIn(Math.PI * 2) === 1 && flipsIn(Math.PI * 4) === 2 && flipsIn(Math.PI * 0.9) === 0);
+
+  // WHAT IT IS WORTH, and the ORDER is the claim rather than the numbers. It is
+  // read off the air distribution — 312 airs in a descent, median 0.72 s, p90
+  // 0.82 — not off how hard each one sounds: a 180 fits every air and risks
+  // nothing, a flip fits a median air but carries the band, and a 360 needs the
+  // top tenth of airs on the mountain.
+  const A = 0.75;
+  const p180 = scoreTrick({ air: A, spin: Math.PI });
+  const p360 = scoreTrick({ air: A, spin: Math.PI * 2 });
+  const pFlip = scoreTrick({ air: A, cork: Math.PI * 2 });
+  ok('a 180 pays less than a flip, and a flip less than a 360',
+    p180 < pFlip && pFlip < p360, `${p180.toFixed(0)} / ${pFlip.toFixed(0)} / ${p360.toFixed(0)}`);
+  ok('and every one of them beats hanging in the air doing nothing',
+    p180 > scoreTrick({ air: A }) * 3, '');
+  // held for how long, not pressed: the decision is when to let go
+  ok('a grab pays for how long it was held', scoreTrick({ air: A, grab: 'indy', held: 0.6 })
+    > scoreTrick({ air: A, grab: 'indy', held: 0.2 }));
+  ok('a 0.4 s pop is not a trick and does not pretend to be',
+    nameTrick({ air: 0.4 }) === '' && nameTrick({ air: 1.2 }) === 'Floater');
+  ok('the name is spoken in the order a rider says it',
+    nameTrick({ air: A, spin: Math.PI * 3, cork: 2, grab: 'mute', held: 0.5 }) === 'Corked 540 Mute',
+    nameTrick({ air: A, spin: Math.PI * 3, cork: 2, grab: 'mute', held: 0.5 }));
 }
 
 // ---- the cache tokens, because a fix nobody re-downloads is not shipped ----
