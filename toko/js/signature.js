@@ -43,6 +43,13 @@ export function sign(opts = {}) {
     size = 44,
     counter = false,           // link the badge to the counter on the hub
     href = counter ? new URL('../#toko', location.href).href : null,
+    // `open`: a function, and the badge opens the counter IN PLACE instead
+    // of leaving — the game keeps its run. The href stays on the anchor, so
+    // middle-click and open-in-new-tab still go to the arcade's counter. The
+    // thumb rule below is unchanged: under touch the badge is still a
+    // picture, and a game that wants him on a phone puts a line on its own
+    // pause screen, where a tap cannot collide with the stick.
+    open = null,
     ground = TOKO.MAGENTA,
     ink = TOKO.PAPER,
     opacity = 0.9,
@@ -75,8 +82,9 @@ export function sign(opts = {}) {
     let leaving = false;
     const go = (e) => {
       if (leaving || (e.type === 'pointerup' && e.button > 0)) return;
-      leaving = true;
       e.preventDefault();
+      if (typeof open === 'function') { open(e); return; }   // stays; can open again
+      leaving = true;
       location.href = href;
     };
     host.addEventListener('pointerup', go);

@@ -5,7 +5,7 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=61';
+import { InputManager } from './input.js?v=62';
 import { Player } from './player.js?v=61';
 import { DaggerPool } from './daggers.js?v=61';
 import { GemPool } from './gems.js?v=61';
@@ -16,6 +16,7 @@ import { AudioKit } from './audio.js?v=61';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=61';
 import { TUNING as T } from './tuning.js?v=63';
 import { HyperEnvironment } from './environment.js?v=61';
+import { openTable } from '../../toko/js/table.js?v=1';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -1126,7 +1127,10 @@ function showDeath(timedOut) {
     : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'hyper' ? ' &middot; hyper' : ''}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
+     <button id="tokoBtn" class="opt">ASK TOKO</button>
      <p class="go">click / tap / &#10005; to retry</p>`;
+  wireToko();
+  lastTimedOut = !!timedOut;
   document.getElementById('shareBtn').addEventListener('pointerdown', async e => {
     e.stopPropagation(); // don't let the copy tap restart the run
     const btn = e.currentTarget;
@@ -1289,6 +1293,8 @@ function die(timedOut = false) {
 }
 
 window.addEventListener('pointerdown', e => {
+  // a tap at the table is a tap at the table — never a resume or a restart
+  if (e.target && e.target.closest && e.target.closest('.toko-table')) return;
   audio.ensure();
   const isMouse = e.pointerType === 'mouse';
   if (state === 'menu') {
@@ -1323,6 +1329,46 @@ document.addEventListener('pointerlockchange', () => {
 
 // ------------------------------------------------------------- pause menu
 const elPause = document.getElementById('pauseBtn');
+
+// ---------------------------------------------------------------- Toko at the table
+// The signature used to leave the game for the counter; now it opens him HERE,
+// over a paused run, so "that serpent is unfair" can be said while the serpent
+// is still on the field. On touch the badge stays inert (that corner is the
+// left stick) and the pause and death screens carry an ASK TOKO line instead.
+// He opens knowing what just happened: the cue is the death line or the clock.
+const GAME = { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' };
+let table = null;
+let lastTimedOut = false;
+function tokoCue() {
+  const t = gameTime.toFixed(1);
+  if (state === 'dead') {
+    return `${lastTimedOut ? 'THE CLOCK RAN OUT' : `${(ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase()} GOT YOU`} AT ${t}S`;
+  }
+  if (state === 'playing') return `${t}S IN. SAY WHAT YOU THINK`;
+  return null;                       // the menu: his own line
+}
+function openToko() {
+  if (table) return table;
+  if (state === 'playing' && !paused) showPause();
+  // He needs a cursor. A run holds pointer lock, and a locked page sends every
+  // mouse event to the canvas at (0,0) no matter where the pointer is — a
+  // click on his menu would land on the floor and resume the game.
+  if (document.pointerLockElement) document.exitPointerLock();
+  table = openTable({
+    game: GAME, cue: tokoCue(),
+    onClose() {
+      table = null;
+      // whatever was typed at him is not a jump, a dash or a reap
+      input.consumeJump(); input.consumeDash(); input.consumeDashFlick(); input.consumeReap();
+    },
+  });
+  return table;
+}
+function wireToko() {
+  const b = document.getElementById('tokoBtn');
+  if (!b) return;
+  b.addEventListener('pointerdown', e => { e.stopPropagation(); openToko(); });
+}
 elPause.addEventListener('pointerdown', e => {
   e.stopPropagation();
   if (state === 'playing' && !paused) {
@@ -1420,6 +1466,7 @@ function showPause() {
   elMsg.innerHTML =
     `<h1>PAUSED</h1>
      <p class="sub">~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps &middot; ${voxCount.toLocaleString()} voxels on field &middot; new spawns use the VOXEL setting</p>
+     <button id="tokoBtn">ASK TOKO</button>
      ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
      ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
      ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
@@ -1438,6 +1485,7 @@ function showPause() {
      ${optRow('LOOK', 'look', ['smooth', 'cubes'], v => v.toUpperCase())}
      ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}
      <p class="go">click / tap anywhere else to resume</p>`;
+  wireToko();
   for (const b of elMsg.querySelectorAll('button.opt')) {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
@@ -2849,6 +2897,7 @@ animate();
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
   enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
+  toko: { open: () => openToko(), table: () => table, cue: () => tokoCue() },
   debug: {
     addGems(n) { onGemsCollected(n); },
     addStyle(n) { addStyle(n); },
