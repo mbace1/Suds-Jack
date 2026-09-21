@@ -10,11 +10,12 @@ import { hour } from './palette.js?v=1';
 import { makeUniforms, skyMaterial, snowSprayMaterial } from './snowmat.js?v=4';
 import { Figure } from './figure.js?v=1';
 import { Field, Trail, Shadow } from './world.js?v=4';
-import { Input } from './input.js?v=1';
+import { Input } from './input.js?v=2';
+import { Rig, SEAT } from './camera.js?v=1';
 import { Audio } from './audio.js?v=1';
 import { pickLang, t } from './lang.js?v=1';
 
-export const VERSION = 7;
+export const VERSION = 8;
 const BEST_KEY = 'flowsnow.best';
 const STEP = 1 / 120;
 const MAX_SNOW = 5000;
@@ -43,6 +44,7 @@ const field = new Field(scene, u, terrain);
 const trail = new Trail(scene, u);
 const shadow = new Shadow(scene, u);
 const figure = new Figure(scene);
+const rig = new Rig();
 
 // ---- the snow ----
 const sim = new SnowSim(MAX_SNOW);
@@ -79,6 +81,10 @@ let s = createRider(terrain, terrain.lineX(0), 0);
 let time = 0, acc = 0, last = performance.now();
 let sprayAcc = 0, hazeAcc = 0, tailAcc = 0, flakeAcc = 0, hudAt = 0, flowMark = 0;
 let debugInput = null, noPopUntil = 0;
+// the last input the frame read, so the camera can see the glance without
+// reading the device a second time (two reads a frame drain the edge-triggered
+// jump between them)
+let lastInput = { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, back: false };
 let best = (() => { try { return Number(localStorage.getItem(BEST_KEY)) || 0; } catch { return 0; } })();
 
 const P = new THREE.Vector3(), D = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
@@ -267,22 +273,17 @@ function placeCamera(dt) {
     camera.fov = 52; camera.updateProjectionMatrix();
     return;
   }
-  const sp = s.speed;
-  if (sp > 1.5) tmp.set(s.vx, s.vy * 0.4, s.vz).normalize();
-  else tmp.set(Math.sin(s.yaw), 0, -Math.cos(s.yaw));
-  head.lerp(tmp, 1 - Math.exp(-dt * 2.6)).normalize();
-  const dist = 6.2 + sp * 0.11, height = 2.3 + sp * 0.035;
-  tmp.copy(head).multiplyScalar(-dist);
-  tmp.x += s.x; tmp.z += s.z; tmp.y = s.y + height + head.y * -dist * 0.4;
-  tmp.y = Math.max(tmp.y, terrain.height(tmp.x, tmp.z) + 1.4);
-  camPos.lerp(tmp, 1 - Math.exp(-dt * 5.5));
-  camera.position.copy(camPos);
-  look.set(s.x, s.y + 1.0, s.z).addScaledVector(head, 5 + sp * 0.12);
-  camera.lookAt(look);
-  camera.rotateZ(-s.edge * 0.05);
-  const targetFov = 60 + Math.min(1, sp / 28) * 16;
-  camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 4);
+  // Everything below this line is the rig's answer, copied on. The decision is
+  // in js/camera.js and it is pure, so `core.mjs` can ask where the seat WOULD
+  // be — which is the only way to test a camera that is not a screenshot.
+  rig.update(s, terrain, lastInput, dt);
+  camera.position.set(rig.px, rig.py, rig.pz);
+  camera.lookAt(rig.lx, rig.ly, rig.lz);
+  camera.rotateZ(rig.roll);
+  camera.fov = rig.fov;
   camera.updateProjectionMatrix();
+  // the heading the ambient snow is spread along
+  head.set(rig.hx, rig.hy, rig.hz);
 }
 
 // ---- ambient snow around the camera ----
@@ -313,6 +314,7 @@ function frame(now) {
   let dt = Math.min(0.1, (now - last) / 1000); last = now;
   time += dt;
   const inp = debugInput ?? input.read();
+  lastInput = inp;
   liveTuck = inp.tuck;
   if (time < noPopUntil) inp.jump = false;
   if (mode === 'title' && (inp.start || inp.any)) startRun();
@@ -355,15 +357,16 @@ requestAnimationFrame(frame);
 
 // ---- the seam the smoke test drives ----
 window.__fs = {
-  get state() { return s; }, sim, terrain, field, version: VERSION,
+  get state() { return s; }, sim, terrain, field, rig, SEAT, version: VERSION,
   mode: () => mode,
   debug: {
     start: startRun,
     end: finish,
-    setInput(o) { debugInput = o ? { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, any: false, start: false, ...o } : null; },
+    setInput(o) { debugInput = o ? { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, back: false, any: false, start: false, ...o } : null; },
     // advance the game by `seconds` of physics with `inp`, off the wall clock
     step(seconds, inp = {}) {
-      const full = { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, ...inp };
+      const full = { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, back: false, ...inp };
+      lastInput = full;
       let first = true;
       for (let t = 0; t < seconds; t += STEP) {
         if (mode !== 'play') break;

@@ -2,7 +2,7 @@
 // the left half of the screen is a lean (drag sideways; drag down to brake),
 // the right half is the board (tap to pop, hold to tuck / grab).
 //
-// read() returns { lean, tuck, brake, jump, grab, any } — `jump` is an edge,
+// read() returns { lean, tuck, brake, jump, grab, back, any } — `jump` is an edge,
 // true once per press, and `any` is any fresh press (a way to start).
 
 const LEAN_PX = 90;
@@ -17,7 +17,7 @@ export class Input {
     this.left = null; this.right = null;
     this.padPrev = { a: false, b: false, x: false, start: false };
     this.padSeen = false; this.touchSeen = false;
-    this.pad = { lean: 0, tuck: 0, brake: 0, grab: 0 };
+    this.pad = { lean: 0, tuck: 0, brake: 0, grab: 0, back: false };
 
     addEventListener('keydown', e => {
       if (e.repeat) return;
@@ -66,7 +66,7 @@ export class Input {
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
     let gp = null;
     for (const p of pads) if (p && p.connected) { gp = p; break; }
-    if (!gp) { this.pad.lean = 0; this.pad.tuck = 0; this.pad.brake = 0; this.pad.grab = 0; return; }
+    if (!gp) { this.pad.lean = 0; this.pad.tuck = 0; this.pad.brake = 0; this.pad.grab = 0; this.pad.back = false; return; }
     this.padSeen = true;
     const ax = gp.axes[0] ?? 0;
     const dz = Math.abs(ax) < 0.12 ? 0 : (Math.abs(ax) - 0.12) / 0.88 * Math.sign(ax);
@@ -78,6 +78,9 @@ export class Input {
     this.pad.tuck = Math.max(v(7), v(6), b(12) ? 1 : 0);
     this.pad.brake = (b(1) || b(13)) ? 1 : 0;
     this.pad.grab = b(2) || b(3) ? 1 : 0;
+    // LB: the glance over the shoulder. HELD, never toggled — it costs you the
+    // view ahead for exactly as long as you want your own line instead.
+    this.pad.back = b(4);
     const a = b(0);
     if (a && !this.padPrev.a) { this.jumpQueued = true; this.startQueued = true; this.anyQueued = true; }
     this.padPrev.a = a;
@@ -93,7 +96,11 @@ export class Input {
     const tuck = Math.max((k.has('ArrowUp') || k.has('KeyW') || k.has('ShiftLeft') || k.has('ShiftRight')) ? 1 : 0, this.touchTuck, this.pad.tuck);
     const brake = Math.max((k.has('ArrowDown') || k.has('KeyS')) ? 1 : 0, this.touchBrake, this.pad.brake);
     const grab = (k.has('KeyZ') || k.has('KeyJ') || k.has('ControlLeft')) ? 1 : Math.max(this.touchTuck, this.pad.grab);
-    const out = { lean: Math.max(-1, Math.min(1, lean)), tuck, brake, jump: this.jumpQueued, grab: !!grab, any: this.anyQueued, start: this.startQueued };
+    // Unbound on touch, and said rather than hidden: both halves of the screen
+    // already carry a verb, and overloading one of them to look backwards is
+    // how you get a glance every time somebody means to turn.
+    const back = k.has('KeyC') || k.has('KeyQ') || this.pad.back;
+    const out = { lean: Math.max(-1, Math.min(1, lean)), tuck, brake, jump: this.jumpQueued, grab: !!grab, back: !!back, any: this.anyQueued, start: this.startQueued };
     this.jumpQueued = false; this.anyQueued = false; this.startQueued = false;
     return out;
   }

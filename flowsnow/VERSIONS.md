@@ -7,6 +7,71 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v8 — 2026-09-21
+**The camera is the thing under test: a glance over the shoulder, and a crevasse
+answer that is a cut**
+- **Two leaps in a row were built, gated green and turned out to be invisible
+  for a reason that was the CAMERA rather than the thing itself** — v5's
+  crevasses, and v7's trench. So the seat moved out of `main.js` into
+  `js/camera.js` and is **pure**: no DOM, no three.js, no clock. A camera you can
+  ask in bare node is the only way to say anything about one that is not a
+  screenshot, and `main.js` now copies the answer onto a `PerspectiveCamera` and
+  does nothing else.
+- **v7's numbers are kept exactly and everything new is a term on top that is
+  zero at rest**, so a rider on the packed line with nothing ahead and no glance
+  sits precisely where v7 put them. Gated, because a camera pass that quietly
+  re-frames the ordinary case is a camera pass nobody can review.
+- **THE GLANCE OVER THE SHOULDER** (`C` / `Q`, pad LB — held, never toggled). The
+  snowpack is a record of where you have BEEN and the seat looks where you are
+  GOING, so the one thing v7 draws is the one thing the camera never framed. The
+  glance crosses the seat to the downhill side of the rider and aims back up the
+  hill, and it costs you the view ahead for exactly as long as you want your own
+  line instead — which is the honest price and the reason it is a verb.
+- **The height is the whole thing, and 3.4 m was not nearly enough.** Looking
+  back means looking at ground that is UPHILL of you, and on a 17° slope that
+  ground climbs away as fast as you back off from it. The first cut put the seat
+  about a metre over the snow and the frame was a wall of it — no horizon, no
+  line, no trench. Holding a groove 15 m behind at a 20° depression wants
+  ~12 m over the rider: **a glance on a slope is a drone shot and there is no
+  version of it that is not.**
+- **THE CREVASSE IS ANSWERED, AND THE ANSWER IS A CUT.** v5 tried geometry (a
+  windward ridge) and cut it because a ridge across the fall line has a crest
+  you can balance on. v8 tried the camera. The numbers are the deliverable:
+  - *Detecting a hole is solved.* Sag below a chord from 6 m to 42 m ahead
+    separates cleanly — ordinary ground never exceeds **1.73 m** anywhere on the
+    mountain, the slot reads **3.21 m at 24 m out** and 4.19 at 12. The obvious
+    metric does NOT separate: extrapolating the local grade from a 6 m baseline
+    out to 34 m amplifies curvature, and ordinary couloir reads 7.19 m "below
+    grade" against a crevasse's 8 to 10. A hole has a far side; a roll-over does
+    not, and only the chord asks that question.
+  - *Beyond ~20 m the interior is OCCLUDED* — 3.3 m of ground stands in the
+    sightline. No aim helps; there is a hill in the way.
+  - *Inside ~16 m it is unoccluded but OUT OF FRAME.* At 16 m back and 5 m up,
+    **38 of 78** points of the interior are clear of the ground and none is in
+    the picture. Aiming the camera at the sag's own position recovered **2 of 78**.
+  - *Swept against seat height*, it takes 8 m above the surface to see 21 of 78
+    from 24 m back and 12 m to see 44. That is not a chase camera.
+  So a 4 m slot on a 17° slope cannot be shown from behind the rider — not by
+  shaping the ground and not by moving the seat. What is left is a genuinely
+  different camera (a drone seat 8-12 m up while a hole is near, which the sag
+  measure is exactly the trigger for) or a tell that is not visual. Both are the
+  owner's call, so **neither is here and the detector is gone with the response**
+  — a detector with no user is dead code.
+- **The seat backs off in deep snow**, measured rather than chosen. Same S-turn
+  in the run-out at sink 0.58, the plume's share of the frame: 0/0 reads 2.58%,
+  1.1/0.45 reads 1.84%, **2.2/0.9 reads 1.41%**, 3.5/1.6 reads 1.00%. Monotone,
+  and 2.2/0.9 is the knee. The honest reading is only that the plume is pulled
+  back rather than removed — backing a camera off shrinks everything in frame,
+  and whether the run is more READABLE for it is not something a pixel count can
+  say. One thing it did buy that was not asked for: from the higher seat the
+  v7 trench reads **while riding forward**, not only on the glance.
+- Not bound on touch, and said rather than hidden: both halves of the screen
+  already carry a verb, and overloading one to look backwards is how you get a
+  glance every time somebody means to turn.
+- Gates: `core.mjs` **121** (nine of them the seat), `smoke.cjs` 43,
+  `playthrough.cjs` 9 — the descent is byte-identical to v7 (2,400 m, 168.9 s,
+  6187), which is what a camera-only change should be.
+
 ## v7 — 2026-09-20
 **The snow remembers you: a conserving snowpack the board writes into**
 - **The displacement is a term in `depth`, not in `height`, and that is the whole

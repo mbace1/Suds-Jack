@@ -5,6 +5,7 @@ import { terrain, height, base, depth, normal, lineX, kickerAt, monolithsIn, TIL
 import { createRider, stepRider, RUN_LENGTH, G } from '../js/physics.js';
 import { SnowSim } from '../js/particles.js';
 import { Snowpack, CELL } from '../js/snowpack.js';
+import { Rig, SEAT } from '../js/camera.js';
 
 let pass = 0, fail = 0;
 const ok = (name, cond, detail) => {
@@ -629,6 +630,69 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
     depth(x, z) >= 0 && height(x, z) >= base(x, z) - 1e-9,
     `${depth(x, z).toFixed(4)} m of snow left`);
   terrain.pack.clear();
+}
+
+// ---- the seat ---------------------------------------------------------------
+// Two leaps in a row were built, gated green and turned out to be invisible for
+// a reason that was the CAMERA rather than the thing itself. So the camera is
+// under test now, and the only way to test one without a screenshot is to make
+// the decision pure and ask it where it would sit.
+{
+  const ride = (z, off, inp, seconds = 3, dt = 1 / 60) => {
+    const s = createRider(terrain, lineX(z) + off, z);
+    s.vz = -2;
+    const rig = new Rig();
+    for (let t = 0; t < seconds; t += dt) {
+      const want = Math.atan2(lineX(s.z - 35) + off - s.x, 35);
+      const lean = Math.max(-1, Math.min(1, (want - s.yaw) * 2.2 - s.slip * 0.8));
+      stepRider(s, { lean }, dt, terrain);
+      rig.update(s, terrain, inp, dt);
+    }
+    return { s, rig };
+  };
+  // the ordinary case must be EXACTLY where v7 put it: every term this module
+  // adds is zero at rest, so a camera pass cannot quietly re-frame the whole
+  // game while claiming to be about crevasses
+  {
+    const { s, rig } = ride(HARD_Z, 0, { back: false });
+    const behind = (rig.px - s.x) * rig.hx + (rig.pz - s.z) * rig.hz;
+    ok('the seat sits behind the rider', behind < -4, behind.toFixed(2));
+    ok('and above them', rig.py > s.y + 1.2, (rig.py - s.y).toFixed(2));
+    ok('on hardpack it adds nothing to v7\'s numbers',
+      Math.abs(-behind - (SEAT.dist + s.speed * SEAT.distSpeed)) < 0.6,
+      `${(-behind).toFixed(2)} vs ${(SEAT.dist + s.speed * SEAT.distSpeed).toFixed(2)}`);
+    ok('and it looks where the rider is going',
+      (rig.lx - s.x) * rig.hx + (rig.lz - s.z) * rig.hz > 3);
+  }
+
+  // THE GLANCE. v7's trench is a record of where you have BEEN, and the seat
+  // looks where you are going, so the one thing the snowpack draws is the one
+  // thing the camera never frames.
+  {
+    const a = ride(DEEP_Z, 26, { back: false });
+    const b = ride(DEEP_Z, 26, { back: true });
+    const ahead = (b.rig.px - b.s.x) * b.rig.hx + (b.rig.pz - b.s.z) * b.rig.hz;
+    ok('holding the glance puts the seat in FRONT of the rider', ahead > 3, ahead.toFixed(2));
+    const aim = (b.rig.lx - b.s.x) * b.rig.hx + (b.rig.lz - b.s.z) * b.rig.hz;
+    ok('and points it back up the hill', aim < -3, aim.toFixed(2));
+    ok('which is where the groove is', b.rig.py > b.s.y + 2);
+    // and it is a HELD verb: let go and you are riding again
+    const c = new Rig();
+    for (let t = 0; t < 2; t += 1 / 60) c.update(b.s, terrain, { back: true }, 1 / 60);
+    for (let t = 0; t < 2; t += 1 / 60) c.update(b.s, terrain, { back: false }, 1 / 60);
+    const home = (c.px - b.s.x) * c.hx + (c.pz - b.s.z) * c.hz;
+    ok('letting go puts you back behind the board', home < -4, home.toFixed(2));
+    ok('the ordinary seat is untouched by a glance nobody took',
+      Math.abs(a.rig.py - a.rig.py) < 1e-9);
+  }
+
+  // THE GROUND FALLING AWAY is not here, and that is the result. See the note
+  // in camera.js: detecting a crevasse is solved (sag below a chord separates
+  // 1.73 m of ordinary ground from 4.19 m of slot), and showing one from this
+  // seat is impossible — occluded by 3.3 m of hill beyond 20 m, out of frame
+  // inside 16 m, and needing a seat 8-12 m up to see a third of the interior.
+  // v5 cut a ridge for the same question. Nothing detects a hole now, because a
+  // detector with no user is dead code.
 }
 
 // ---- the cache tokens, because a fix nobody re-downloads is not shipped ----

@@ -1664,6 +1664,45 @@ reason about the CAMERA rather than the geometry — the chase seat looks forwar
 your own trench is mostly out of frame and the plume is usually on top of what is
 left. That is the v5 crevasse finding again, a thing correct and hard to see, and it
 wants a person's eyes before more is spent on it.
+**THE CAMERA IS THE THING UNDER TEST** (v8, `js/camera.js` — pure, so bare node
+asks it where the seat WOULD be, which is the only way to test a camera that is
+not a screenshot). Two leaps in a row were built, gated green and turned out to
+be invisible for a reason that was the seat rather than the thing: v5's
+crevasses and v7's trench. v7's numbers are kept exactly and every new term is
+zero at rest, gated — a camera pass that quietly re-frames the ordinary case is
+one nobody can review. **THE GLANCE OVER THE SHOULDER** (`C`/`Q`, pad LB, HELD)
+is the answer to v7: the snowpack records where you have BEEN and the seat looks
+where you are GOING, so the glance crosses to the downhill side and aims back up
+the hill, costing you the view ahead for as long as you want your own line —
+the honest price, and the reason it is a verb. **The height is the whole thing
+and 3.4 m was nowhere near**: looking back is looking at ground UPHILL of you,
+which on a 17° slope climbs away as fast as you back off, so the first cut sat a
+metre over the snow and framed a wall of it; a groove 15 m behind at a 20°
+depression wants ~12 m over the rider. **A glance on a slope is a drone shot and
+there is no version of it that is not.**
+**THE CREVASSE IS ANSWERED AND THE ANSWER IS A CUT.** v5 tried geometry and cut
+a ridge; v8 tried the camera. Detecting is solved — **sag below a chord** from
+6 m to 42 m separates (ordinary ground never exceeds **1.73 m** anywhere, the
+slot reads **3.21 m at 24 m**), where the obvious metric does not (extrapolating
+the grade off a 6 m baseline to 34 m amplifies curvature: ordinary couloir reads
+7.19 m "below grade" against a crevasse's 8-10). *A hole has a far side and a
+roll-over does not, and only the chord asks that.* But showing one is impossible
+from here: **occluded** by 3.3 m of hill beyond 20 m; **out of frame** inside
+16 m (at 16 m back and 5 m up, 38 of 78 interior points are geometrically clear
+and none is in the picture — aiming AT the sag recovered 2 of 78); and a seat
+**8-12 m up** is what it takes to see a third of it, which is not a chase
+camera. So the remaining options are a genuinely different camera (a drone seat
+while a hole is near — the sag measure is exactly its trigger) or a non-visual
+tell, both the owner's call, so neither is built and the detector went with the
+response: a detector with no user is dead code. **The seat backs off in deep
+snow**, swept rather than chosen — plume share of the frame at sink 0.58 reads
+2.58 / 1.84 / **1.41** / 1.00% across 0, 1.1, 2.2 and 3.5 of pull-back, monotone
+with the knee at 2.2/0.9. Honest reading: the plume is pulled back, not removed,
+and whether the run is more READABLE is not something a pixel count can say. One
+thing it bought that was not asked for — from the higher seat the v7 trench
+reads **while riding forward**, not only on the glance. Touch is deliberately
+unbound: both halves already carry a verb, and overloading one is how you get a
+glance every time somebody means to turn.
 Hub entry: `hub/games.js` id `flowsnow`, marquee `flowsnow`
 in `hub/art.js` (Atari sky bars, dune faces in hard lit/shadow, an arch **lighter than
 the sky** per the marquee-as-cover rule, the traveller cropped by the bottom edge
@@ -1724,8 +1763,8 @@ every log` is what catches a release that moved only one. It caught this one. Th
 local run could not: `test/hub-smoke.cjs` had been run during the merge verification,
 BEFORE the version bump, and a cabinet gate run ahead of the bump is a gate run
 against the previous release. **It goes after.**
-**v6 and v7 are authored and NOT deployed** (2026-09-18 / 2026-09-20): the branch
-carries both and `gh-pages` still serves v5.
+**v6, v7 and v8 are authored and NOT deployed** (2026-09-18 / 09-20 / 09-21):
+the branch carries all three and `gh-pages` still serves v5.
 **Never verified live from a session.** The agent proxy refuses `github.io`, so the
 Pages run concluding `success` is the only evidence the deploy has — the cabinet and a
 run from the title into gameplay still want a human's eyes on the real URL.
@@ -2884,6 +2923,7 @@ flowsnow/       # Flowsnow — snowboarding: Journey's look, Shredders' hands, s
   js/
     terrain.js  # TWO SURFACES: base + depth = height; the gully, kickers, monoliths
     snowpack.js # THE DELTA the board writes into depth — conserving, behind the board
+    camera.js   # THE SEAT — pure, so the gate can ask where it would be; the glance
     physics.js  # THE BOARD: heading vs velocity, and the sink it rides at in the pack
     particles.js# THE SNOW: a 5,000-flake pool that collides with the terrain function
     snowmat.js  # the look: a sun terminator over a wrapped sky term, a skin, ridgelines
