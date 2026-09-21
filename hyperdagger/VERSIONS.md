@@ -47,7 +47,11 @@ dark water, instead of a ramp from the floor. And **the floor reads the
 wave**: the floor shader takes the crest's position (`uWave`) and darkens
 under the wave's body with a bright foam line at the foot of its face
 (`floorWave`), so you see it coming across the floor before it is on you —
-which is the read a hurdle needs.
+which is the read a hurdle needs. Then a second look, from six units up,
+caught the foam: an even line at floor glow is a laser bar across the arena,
+and two sines at one pitch only turned it into runway lights. Three sines at
+pitches that never line up, at `foam` 0.4 rather than 0.7, make clumps of no
+particular size.
 
 **Gate** — the INCA section is rewritten to what season 2 is now: nothing
 stands in the sea; the wave hurts and is sized under the jump apex; the
