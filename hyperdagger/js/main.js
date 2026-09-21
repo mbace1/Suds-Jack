@@ -534,8 +534,13 @@ const floorMat = new THREE.ShaderMaterial({
         // the foam line: a wash just ahead of the face's foot — BROKEN along
         // the crest by two slow sines, because an even line at floor glow is
         // a laser bar across the arena (the first render), and foam is ragged
+        // (two sines at one pitch were a row of runway lights — three at
+        // pitches that never line up, plus the floor's own caustic field, are
+        // clumps of no particular size)
         float across = dot(vWorld, vec2(-uWave.y, uWave.x));
-        float ragged = 0.45 + 0.55 * abs(sin(across * 1.9 + uTime * 2.6) * sin(across * 0.7 - uTime * 1.7));
+        float r1 = sin(across * 1.9 + uTime * 2.6) * sin(across * 0.73 - uTime * 1.7);
+        float r2 = sin(across * 3.7 - uTime * 1.1 + s * 2.3) * sin(across * 0.41 + uTime * 0.8);
+        float ragged = clamp(0.25 + 0.75 * abs(r1 * 0.6 + r2 * 0.7), 0.0, 1.0);
         float foam = (1.0 - smoothstep(0.0, 1.4, abs(s - w * 0.62))) * ragged;
         col += uTint * foam * foam * uWaveK.y * (uGlow * 0.35 + 0.4);
       }
