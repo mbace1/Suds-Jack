@@ -311,6 +311,10 @@ export function mountChat(anchor, opts = {}) {
     // he has to come back from wherever he was before he answers you.
     speed = 34,                // ms per character
     openOnLoad = false,
+    // The cabinet this counter stands in, when the HOST knows — a game that
+    // opens him at its own table passes itself. The referrer stays the
+    // fallback for the arcade, where he has to guess where you walked in from.
+    from: fromHost = null,
   } = opts;
 
   injectStyle();
@@ -358,7 +362,7 @@ export function mountChat(anchor, opts = {}) {
   const hint = el('span');
   const sound = el('button', 'tc-snd');
   sound.type = 'button';
-  const leave = el('button');
+  const leave = el('button', 'tc-leave');
   leave.type = 'button';
   // The counter has a version like every other project on the floor. It is
   // read from dialogue.js rather than fetched, so it is still right with the
@@ -650,7 +654,7 @@ export function mountChat(anchor, opts = {}) {
     }
     return null;
   }
-  const from = cameFrom();
+  const from = fromHost || cameFrom();
   const gameName = g => String(g.title || g.id).toUpperCase();
 
   // A cabinet by name, for the parser: "tell me about hyper dagger". Matched

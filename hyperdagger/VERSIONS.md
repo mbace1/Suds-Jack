@@ -2,6 +2,55 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v48 — 2026-09-21
+**Toko at the table — the signature opens him HERE, over the paused run**
+- The badge in the corner has always claimed to be "the way to say something
+  about the game you are standing in, from inside it", and then navigated to
+  the arcade — so the run you wanted to complain about was gone first. With a
+  cursor it now opens the counter IN PLACE (`sign({ open })`, new in
+  `toko/js/signature.js?v=4`): the run pauses underneath, Toko opens over it,
+  Esc or BACK returns you to the run you left. Middle-click still goes to the
+  arcade; the href never moved.
+- Under a thumb the badge is still a picture — that corner is the left stick —
+  so the pause screen and the death screen each carry an **ASK TOKO** line.
+  **And in this game that line is the way in with a cursor too**: the menu
+  overlay (`#msg`, z 10) covers the badge (z 4), a run takes pointer lock so
+  there is no cursor, and the pause screen is `#msg` again — a person can
+  never actually click the badge here. The `open` wiring is real and gated,
+  and pays off in games whose badge is reachable. ASK TOKO sits at the TOP
+  of the pause screen, because on a phone the options run past the bottom
+  of the screen and do not scroll — at the bottom, a tap for it landed on
+  the backdrop and resumed the run. Then the same thing at the other end on
+  a 720px desktop window: the menu is ~900px tall and `#msg` centred it
+  with no scroll, so the TOP was cut and the button unreachable. `#msg` is
+  `justify-content: safe center; overflow-y: auto` now — an overflowing
+  menu aligns to its top and scrolls, on every screen, for every button.
+- **He needs a cursor.** A run holds POINTER LOCK, and a locked page delivers
+  every real mouse event to the canvas at (0,0) no matter where the pointer
+  is — so a click on his menu was a tap on the floor, which resumed the run,
+  while a synthetic event on the same button worked. `openToko()` releases
+  the lock the way a real Esc does. Found by recording a real click's target
+  with a capture listener after `elementFromPoint` swore the button was there.
+- He opens knowing what happened: paused, the cue is the clock (`41.2S IN. SAY
+  WHAT YOU THINK`); dead, it is the death line (`THE SERPENT GOT YOU AT 41.2S`
+  / `THE CLOCK RAN OUT AT …`). `__hd.toko.cue()` reads it for the gate.
+- `toko/js/table.js` (new, shared — any signed game can use it) is the overlay.
+  It is LAZY: chat.js and the dialogue packs are imported on the first open,
+  never on boot, so this game's precache grows by one small module. Offline on
+  a first open he is out, and the table says so rather than hanging. It shims
+  the three arcade seams the counter reads (`__hub.games`, `__hub.feedback`,
+  `__hub.lang`) with the REAL feedback transport, so a note taken at the table
+  lands in the same local archive and outbox as one taken on the floor, filed
+  under `hyperdagger` — `mountChat` learned a `from` option for exactly that
+  (`chat.js?v=21`).
+- Two input traps paid: the window `pointerdown` that resumes or restarts on any
+  tap now ignores taps inside the table; and `input.js` treated only
+  `touchstart` as UI-or-stick, so every `touchend` was `preventDefault`ed and no
+  button inside the table could ever receive a synthesised click. A touch keeps
+  the target it started on, so the guard is on all four phases now — a finger
+  that began on the stick still releases it when it lifts over a button.
+- Tokens: `main.js?v=79`, `input.js?v=79`, worker cache `hyperdagger-v49`.
+
 ## v47 — 2026-09-10
 **Rounded corners, and goo that is non-Newtonian**
 
