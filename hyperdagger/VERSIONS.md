@@ -2,6 +2,74 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v49 — 2026-09-21
+**Season 2 is the wave you jump; the menus are "SEASON 1" and "SEASON 2"**
+
+**Numbered v49, not v48.** While this was being built, another agent shipped
+a different v48 to the site — *Toko at the table* — and a version number is
+not a thing two releases may share. That release is below, brought back into
+this tree with its ASK TOKO line at the top of the pause menu, above the
+season and mode rows this one adds. Tokens went to `?v=80` for the same
+reason: two different `main.js?v=79` files exist now, one of them live.
+
+Owner, 2026-09-21: *the intro menu should just read "season 1" and "season
+2", later 3 and so on. The pause menu should have these and the regular
+options. Make season 2 just the wave that you need to jump over. Polish the
+art of that. Only random skulls as enemies otherwise.*
+
+**The menus.** The intro is a title and two buttons, `SEASON 1` and
+`SEASON 2` — a season declares its `menu` label, VOID declares `hidden` and
+is the gate's control only — and pressing one starts the run in it. MODE
+moved into the pause menu (it takes effect at the next run), and the pause
+menu carries the seasons too: pick one mid-run and the arena is re-lit and
+REBUILT on the spot, seeded like a fresh start.
+
+**Season 2 is the wave, and nothing else.** No slabs, no rock: `platforms:
+null`. The gel mound — the material, the spring, the non-Newtonian goo of
+v46/v47 — is no longer in any season; it stays in the code and the gate
+stands one up from `GEL_MOUND_SAMPLE` to measure it. The wave stopped being
+a floor that carries you and became a HAZARD: `goo.strikes(player)` is true
+when the water under the feet is wave (above `hurtFrom`) and the feet are
+below its surface, and a strike is `playerStruck` — HYPER costs ten seconds
+and shoves you along the wave's own travel, PURE is death, the recap says
+`THE WAVE`. **It is sized to one jump.** `jumpV` 8.6 against gravity 24 is
+an apex of 1.54; the crest is `amp` 1.1, which at the ripple's peak is 1.34,
+a hand of air under the apex, and the double jump is the safety. The first
+number was 1.25 — at the ripple's peak that was 1.51 against 1.54, a jump
+you could only make perfectly, and the probe said so before a player did.
+
+**Only skulls.** A season may declare `spawns: { only: 'skulls' }` and get
+`skullDirector` and none of the other: no totems, no pulses, no thorns, no
+flyby, no leviathan, no revenant. The skull family at random on a cadence
+that tightens from 2.6 s to 0.9 s under a cap of 28 — the crowned join after
+thirty seconds, the splitter after forty-five, the dread after sixty.
+
+**The art of the wave, from a look at it.** The loops showed a crest at eye
+height as a flat pale wall: the seize phase painted the whole steep face,
+and at `cell` 1.0 a crest of jump height was ONE row of cubes, a fence. So:
+half cells (three rows at the crest, more and smaller cubes off the lip),
+the seize is a frosting (`seizeK` 0.8 → 0.3) not the paint, and the lip is a
+BAND — the top third of the crest (`lipFrom` 0.62) — over a body that stays
+dark water, instead of a ramp from the floor. And **the floor reads the
+wave**: the floor shader takes the crest's position (`uWave`) and darkens
+under the wave's body with a bright foam line at the foot of its face
+(`floorWave`), so you see it coming across the floor before it is on you —
+which is the read a hurdle needs. Then a second look, from six units up,
+caught the foam: an even line at floor glow is a laser bar across the arena,
+and two sines at one pitch only turned it into runway lights. Three sines at
+pitches that never line up, at `foam` 0.4 rather than 0.7, make clumps of no
+particular size.
+
+**Gate** — the INCA section is rewritten to what season 2 is now: nothing
+stands in the sea; the wave hurts and is sized under the jump apex; the
+skulls-only director, run for real seconds with every body checked; the
+intro reads `SEASON 1 | SEASON 2` with no MODE and no VOID; the pause menu
+carries `SEASON | MODE | SPEED …` and END RUN; a body on the floor under the
+crest is struck and it costs time; a body at jump height is not. The mound
+checks build the sample mound first and take it down after.
+
+Tokens `?v=79` → `?v=80`, worker cache v50, precache regenerated (59 entries).
+
 ## v48 — 2026-09-21
 **Toko at the table — the signature opens him HERE, over the paused run**
 - The badge in the corner has always claimed to be "the way to say something

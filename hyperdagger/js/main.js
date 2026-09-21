@@ -5,31 +5,31 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=79';
-import { Player } from './player.js?v=78';
-import { DaggerPool } from './daggers.js?v=78';
-import { GemPool } from './gems.js?v=78';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=78';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=78';
-import { OrbPool } from './bullets.js?v=78';
-import { AudioKit } from './audio.js?v=78';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=78';
-import { TUNING as T } from './tuning.js?v=78';
-import { HyperEnvironment } from './environment.js?v=78';
-import { openTable } from '../../toko/js/table.js?v=1';
-import { Backdrop } from './backdrop.js?v=78';
-import { Walls } from './walls.js?v=78';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=78';
-import { TruckTrack } from './truck.js?v=78';
-import { SEASONS, seasonById, nextSeasonId } from './seasons.js?v=78';
-import { Platforms } from './platforms.js?v=78';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=78';
-import { GooWave } from './goo.js?v=78';
-import { gelMaterial } from './gel.js?v=78';
-import { mosaicPalette, mosaicSkin } from './roster.js?v=78';
-import { Skullscape } from './inca.js?v=78';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=78';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=78';
+import { InputManager } from './input.js?v=80';
+import { Player } from './player.js?v=80';
+import { DaggerPool } from './daggers.js?v=80';
+import { GemPool } from './gems.js?v=80';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=80';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=80';
+import { OrbPool } from './bullets.js?v=80';
+import { AudioKit } from './audio.js?v=80';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=80';
+import { TUNING as T } from './tuning.js?v=80';
+import { HyperEnvironment } from './environment.js?v=80';
+import { Backdrop } from './backdrop.js?v=80';
+import { Walls } from './walls.js?v=80';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=80';
+import { TruckTrack } from './truck.js?v=80';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=80';
+import { Platforms } from './platforms.js?v=80';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=80';
+import { GooWave } from './goo.js?v=80';
+import { gelMaterial } from './gel.js?v=80';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=80';
+import { Skullscape } from './inca.js?v=80';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=80';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=80';
+import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -48,6 +48,7 @@ const ENEMY_NAMES = {
   watcher: 'a watcher', blinker: 'a blinker', leviathan: 'THE LEVIATHAN',
   thorn: 'a thorn spike', orb: 'an orb', totem: 'a totem', dread: 'the DREAD SKULL',
   husk: 'a husk', revenant: 'a revenant',
+  wave: 'THE WAVE',   // v48: season 2's sea — you were meant to jump it
 };
 
 // player-tunable options (pause menu), persisted across sessions
@@ -497,10 +498,16 @@ const floorMat = new THREE.ShaderMaterial({
     uTint: { value: new THREE.Color(1, 1, 1) }, // v41: the season's floor colour
     uTime: { value: 0 },
     uCaustic: { value: 0 }, // v44: light moving on water — INCA only
+    // v48 THE FLOOR READS THE WAVE: (dirX, dirZ, head, width) of the crest and
+    // (shadow, foam) strengths — a darkening under the wave's body and a bright
+    // line at the foot of its face. Zero outside a season with a sea.
+    uWave: { value: new THREE.Vector4(0, 1, -999, 1) },
+    uWaveK: { value: new THREE.Vector2(0, 0) },
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
-    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    varying vec2 vWorld;
+    void main() { vUv = uv; vWorld = (modelMatrix * vec4(position, 1.0)).xz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */`
     uniform sampler2D map;
     uniform float uPulse;
@@ -511,10 +518,33 @@ const floorMat = new THREE.ShaderMaterial({
     uniform vec3 uTint;
     uniform float uTime;
     uniform float uCaustic;
+    uniform vec4 uWave;
+    uniform vec2 uWaveK;
     varying vec2 vUv;
+    varying vec2 vWorld;
     void main() {
       vec3 col = texture2D(map, vUv * uRepeat).rgb * uTint;
       col *= uGlow + uPulse * 0.28;
+      if (uWaveK.x > 0.0 || uWaveK.y > 0.0) {
+        // where this point is along the wave's travel, crest at 0 (goo.js _s)
+        float s = dot(vWorld, uWave.xy) - uWave.z;
+        float w = uWave.w;
+        // the body: from the back of the swell to the foot of the face
+        float body = smoothstep(-w, -w * 0.55, s) * (1.0 - smoothstep(w * 0.45, w * 0.58, s));
+        col *= 1.0 - uWaveK.x * body;
+        // the foam line: a wash just ahead of the face's foot — BROKEN along
+        // the crest by two slow sines, because an even line at floor glow is
+        // a laser bar across the arena (the first render), and foam is ragged
+        // (two sines at one pitch were a row of runway lights — three at
+        // pitches that never line up, plus the floor's own caustic field, are
+        // clumps of no particular size)
+        float across = dot(vWorld, vec2(-uWave.y, uWave.x));
+        float r1 = sin(across * 1.9 + uTime * 2.6) * sin(across * 0.73 - uTime * 1.7);
+        float r2 = sin(across * 3.7 - uTime * 1.1 + s * 2.3) * sin(across * 0.41 + uTime * 0.8);
+        float ragged = clamp(0.25 + 0.75 * abs(r1 * 0.6 + r2 * 0.7), 0.0, 1.0);
+        float foam = (1.0 - smoothstep(0.0, 1.4, abs(s - w * 0.62))) * ragged;
+        col += uTint * foam * foam * uWaveK.y * (uGlow * 0.35 + 0.4);
+      }
       if (uCaustic > 0.0) {
         // two sine fields sliding over each other, cubed: the bright threads
         // light draws on the bottom of a pool
@@ -980,6 +1010,7 @@ let weaponActive = false;
 let styleVal = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
 let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let nextTotemAt = 0;
+let waveStrikes = 0;   // v48: how many times the sea has hit the body this run
 let nextLevAt = 0;
 let nextThornAt = 0;
 let nextRevenantAt = 110; // the dead only rise once there are dead
@@ -1042,6 +1073,7 @@ function applySeason() {
   if (sn.dust) { dust.material.color.setRGB(...sn.dust.color); dust.material.size = sn.dust.size; dust.material.opacity = sn.dust.opacity; }
   // v44 tech-art terms — every one of them zero outside INCA
   floorMat.uniforms.uCaustic.value = sn.floor.caustic ?? 0;
+  floorMat.uniforms.uWaveK.value.set(sn.goo?.floorWave?.shadow ?? 0, sn.goo?.floorWave?.foam ?? 0);   // v48
   skyMat.uniforms.uHaze.value = sn.sky.haze ?? 0;
   skyMat.uniforms.uSun.value = sn.sky.sun ?? 0;
   if (sn.sky.sunDir) skyMat.uniforms.uSunDir.value.set(...sn.sky.sunDir).normalize();
@@ -1225,27 +1257,25 @@ function showMenu() {
      <p>survive the swarm &mdash; time is your only score</p>
      <p class="keys">${controls} &middot; <b>ESC</b> options<br>
      gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; triggers fire &nbsp;|&nbsp; touch &mdash; <b>left tap = jump</b> &middot; <b>right tap = burst</b></p>
-     <button id="modeBtn">MODE: ${modeLine}</button>
-     <button id="seasonBtn" class="opt">SEASON: ${S().name} &mdash; ${S().blurb}</button>
+     ${SEASONS.filter(sn => !sn.hidden).map(sn =>
+       `<button class="season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
     : 'FREE &mdash; pure random'}</button>
      <p class="go"><span id="menuBoard"></span>${bestLine()}click / tap / press &#10005; or START to descend</p>`;
   menuBoardLine();
-  document.getElementById('modeBtn').addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    mode = nextModeId(mode); // walks the registry: a listed mode is reachable
-    localStorage.setItem(MODE_KEY, mode);
-    hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
-    showMenu();
-  });
-  document.getElementById('seasonBtn').addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    season = nextSeasonId(season); // walks the registry, like the mode button
-    localStorage.setItem(SEASON_KEY, season);
-    applySeason(); // the menu sky changes under you, so you see what you picked
-    showMenu();
-  });
+  // v48 (owner): the intro reads "SEASON 1", "SEASON 2" — later 3 and so on
+  // — and nothing else. Press one and you are in it. MODE and the rest live
+  // in the pause menu with the regular options.
+  for (const b of elMsg.querySelectorAll('button.season')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      season = seasonById(b.dataset.season).id;
+      localStorage.setItem(SEASON_KEY, season);
+      applySeason();
+      startGame();
+    });
+  }
   document.getElementById('runKindBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     runKind = runKind === 'daily' ? 'free' : 'daily';
@@ -1481,6 +1511,8 @@ function resetRun() {
   // still land one at a time. Totems/thorns/Leviathan stay on their own clocks.
   nextTotemAt = T.director.totem.first;
   nextThornAt = T.director.thorn.first;
+  nextSkullAt = S().spawns?.first ?? 0;   // v48: season 2's own clock
+  waveStrikes = 0;
   nextLevAt = T.director.leviathan.first;
   nextRevenantAt = T.director.revenant.first;
   reapCool = 0;
@@ -1774,6 +1806,9 @@ function showPause() {
     `<h1>PAUSED</h1>
      <p class="sub">~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps &middot; ${voxCount.toLocaleString()} voxels on field &middot; new spawns use the VOXEL setting</p>
      <button id="tokoBtn">ASK TOKO</button>
+     <div class="optrow"><span>SEASON</span>${SEASONS.filter(sn => !sn.hidden).map(sn =>
+       `<button class="opt season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}</div>
+     <div class="optrow"><span>MODE</span><button id="modeBtn" class="opt on">${M().name}</button><span class="note">&mdash; next run</span></div>
      ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
      ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
      ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
@@ -1797,6 +1832,26 @@ function showPause() {
   document.getElementById('endBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     endRun();
+  });
+  // v48: the seasons are in here too. Picking one mid-run re-lights and
+  // REBUILDS the arena on the spot (seeded by the run's rng, as at start);
+  // the bodies already standing keep theirs until the next run.
+  for (const b of elMsg.querySelectorAll('button.season')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      season = seasonById(b.dataset.season).id;
+      localStorage.setItem(SEASON_KEY, season);
+      applySeason();
+      buildSeasonArena();
+      showPause();
+    });
+  }
+  document.getElementById('modeBtn').addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    mode = nextModeId(mode); // walks the registry: a listed mode is reachable; takes effect at the next run
+    localStorage.setItem(MODE_KEY, mode);
+    hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
+    showPause();
   });
   // [data-k] and not just .opt — END RUN wears the same chrome but is not an
   // option row, and the generic handler would write opts[undefined].
@@ -2351,12 +2406,33 @@ function emitSpawnerWaves(ddRules = false) {
   }
 }
 
+let nextSkullAt = 0;   // v48: season 2's own clock
+// v48 (owner): "only random skulls as enemies otherwise." A season that says
+// `spawns.only: 'skulls'` gets THIS director and none of the other: no totems,
+// no pulses, no thorns, no flyby, no leviathan. The skull FAMILY, drawn at
+// random — the crowned, the splitter and the dread join as the run goes on —
+// on a cadence that tightens from `base` to `floor`, under `cap`.
+function skullDirector() {
+  const sp = S().spawns;
+  if (gameTime < nextSkullAt || enemyCount('skull') >= (sp.cap ?? 28)) return;
+  const at = ringSpot(10).clone(); at.y = 1.2;
+  const r = rng.next(), t = gameTime;
+  let mk;
+  if (t > 60 && r < 0.08)      mk = () => new DreadSkull(scene, at);
+  else if (t > 45 && r < 0.18) mk = () => new Splitter(scene, at);
+  else if (t > 30 && r < 0.30) mk = () => new Wraith(scene, at, Math.min(1.5, (t - 30) * 0.01));
+  else                         mk = () => new Skull(scene, at, Math.min(2.0, t * 0.012));
+  audio.spawn();
+  telegraph(at, [1.6, 1.4, 0.3], 0.55, () => enemies.push(mk()));
+  nextSkullAt = gameTime + Math.max(sp.floor, sp.base - gameTime * sp.slope);
+}
 function director(dt) {
   if (directorFrozen) { updatePending(dt); return; } // telegraphs still resolve
   const dir = M().director;
   if (dir === 'none') { updatePending(dt); return; } // the track/bench is the pressure
   if (dir === 'ddSpawnset') { ddDirector(); return; }
   updatePending(dt);
+  if (S().spawns?.only === 'skulls') { skullDirector(); return; }
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
     const at = ringSpot(12).clone();
@@ -2961,10 +3037,18 @@ function step(dt) {
   // stand on — a crest rolling past a slab must not drop you through it
   if (goo.cfg && M().arena !== 'track') {
     goo.update(dt);
-    player.floorY = goo.carry(dt, player, player.floorY ?? 0);
+    // v48: a sea that HURTS is not a floor; one that does not still carries
+    if (!goo.cfg.hurts) player.floorY = goo.carry(dt, player, player.floorY ?? 0);
   }
   const _vyBefore = player.vy;
   player.update(dt);
+  // v48 THE WAVE STRIKES: a body inside the crest is hit, and shoved along
+  // the wave's own travel — out of it, the way a wave throws you. A body
+  // that jumped is above it and is not.
+  if (goo.cfg?.hurts && state === 'playing' && goo.strikes(player)) {
+    // playerStruck says whether it LANDED (mercy frames swallow the rest)
+    if (playerStruck(player.feet.x - goo.dirX * 2, player.feet.z - goo.dirZ * 2, 'wave') || mercyT >= 1.19) waveStrikes++;
+  }
   // v46: the body landing on the sea (or the flat water) splashes it — a
   // ring spreading from the feet, harder from higher
   if (goo.cfg && _vyBefore < -5 && player.vy >= -0.01 && player.feet.y <= player.floorY + 0.02
@@ -3291,6 +3375,7 @@ function animate() {
   skyMat.uniforms.uTime.value += dt * (1 + musicI * 1.8);
   floorMat.uniforms.uTime.value += dt;
   gelMat.userData.gel.uTime.value += dt;
+  if (goo.cfg) floorMat.uniforms.uWave.value.set(goo.dirX, goo.dirZ, goo.head ?? -999, goo.cfg.width);   // v48: the floor reads the crest
   dust.rotation.y += dt * 0.012;
   if (state === 'playing' && !paused) {
     // heavy-kill hit-stop: a beat at 12% speed so the impact registers
@@ -3399,6 +3484,10 @@ window.__hd = {
       return {
         ids: SEASONS.map(x => x.id), current: season, name: sn.name, built: sn.built, todo: sn.todo ?? [],
         weapon: sn.weapon, pillars: !!sn.pillars, platforms: sn.platforms?.count ?? 0,
+        // v48: what the player can pick, and what season 2 is
+        visible: SEASONS.filter(x => !x.hidden).map(x => ({ id: x.id, menu: x.menu ?? x.name })),
+        spawns: sn.spawns ?? null, gooHurts: !!sn.goo?.hurts, gooAmp: sn.goo?.amp ?? 0, gooRipple: sn.goo?.ripple ?? 0,
+        jumpApex: +((T.player.jumpV * T.player.jumpV) / (2 * -T.player.gravity)).toFixed(3),
         sky: { void: skyMat.uniforms.uVoid.value.toArray(), band: skyMat.uniforms.uBand.value, stars: skyMat.uniforms.uStars.value, horizon: skyMat.uniforms.uEmberCol.value.toArray() },
         floorTint: floorMat.uniforms.uTint.value.toArray(),
         backdrop: backdrop.getState().look,
@@ -3410,6 +3499,10 @@ window.__hd = {
     getPlatforms() { return platforms.getState(); },
     getGoo() { return goo.getState(); },
     gooHit(x, z, p) { goo.hit(x, z, p); },
+    waveStrikes() { return { strikes: waveStrikes, hurts: !!goo.cfg?.hurts, inside: goo.strikes(player), lifeT: +lifeT.toFixed(2) }; },
+    gelMoundSample() { return GEL_MOUND_SAMPLE; },
+    menuSeasons() { return [...elMsg.querySelectorAll('button.season')].map(b => ({ id: b.dataset.season, label: b.textContent.trim(), on: b.classList.contains('on') })); },
+    menuHas(sel) { return !!elMsg.querySelector(sel); },
     getInca() { return skullscape.getState(); },
     // the mean colour of the first standing enemy's lattice — is the roster wearing the season?
     rosterSample() {
@@ -3420,7 +3513,7 @@ window.__hd = {
       let skin = null; e.meshRoot?.traverse(o => { if (o.isMesh && skin === null) skin = !!o.material.userData.mosaic; });
       return { type: e.type, skin, n, hdr, mean: [+(r / n).toFixed(3), +(g / n).toFixed(3), +(b / n).toFixed(3)], palette: S().roster?.palette ?? null };
     },
-    getTechArt() { return { caustic: floorMat.uniforms.uCaustic.value, haze: skyMat.uniforms.uHaze.value, sun: skyMat.uniforms.uSun.value, gelTime: gelMat.userData.gel.uTime.value, gelLip: gelMat.userData.gel.uLip.value.toArray(), seize: gelMat.userData.gel.uSeizeK.value }; },
+    getTechArt() { return { floorWave: floorMat.uniforms.uWaveK.value.toArray(), waveHead: floorMat.uniforms.uWave.value.z, caustic: floorMat.uniforms.uCaustic.value, haze: skyMat.uniforms.uHaze.value, sun: skyMat.uniforms.uSun.value, gelTime: gelMat.userData.gel.uTime.value, gelLip: gelMat.userData.gel.uLip.value.toArray(), seize: gelMat.userData.gel.uSeizeK.value }; },
     // v47: is the gel actually rounded, and is any of the sea seized right now?
     getGel() {
       const wv = goo.mesh ? goo.mesh.geometry.getAttribute('position').count : 0;

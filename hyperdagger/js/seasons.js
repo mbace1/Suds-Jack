@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=78';
+import { TUNING as T } from './tuning.js?v=80';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -57,6 +57,7 @@ export const SEASONS = [
     // gate's legacy sections run here, and it is the A in every A/B.
     id: 'void',
     name: 'SEASON 0 — VOID',
+    hidden: true,   // v48: the gate's control, never a player-facing choice
     blurb: 'the bare disc, the Devil Daggers reference — daggers, nothing standing',
     sky: { void: [0.0015, 0.0015, 0.0015], horizon: [0.30, 0.02, 0.02], band: 4.8, stars: 0 },
     floor: { tint: [1, 1, 1], glow: 0.9 },
@@ -75,6 +76,7 @@ export const SEASONS = [
   {
     id: 'ember',
     name: 'SEASON 1 — EMBER',
+    menu: 'SEASON 1',
     blurb: 'black shale you can barely see, slabs that rise and drift, a needler',
     sky: { void: [0.0015, 0.0015, 0.0015], horizon: [0.30, 0.02, 0.02], band: 4.8, stars: 0.22 },
     floor: { tint: [1, 1, 1], glow: 0.9 },
@@ -122,7 +124,13 @@ export const SEASONS = [
   {
     id: 'inca',
     name: 'SEASON 2 — INCA',
-    blurb: 'aquamarine skullscape under a white sky — goo, gel and a wave that carries you',
+    menu: 'SEASON 2',
+    blurb: 'the sea — one wave, and you jump it',
+    // v48 (owner, 2026-09-21): "make season 2 just the wave that you need to
+    // jump over. Only random skulls as enemies otherwise." So: no slabs, no
+    // rock, no roster but the skull family, and the wave is a HAZARD sized
+    // to a single jump, not a floor that carries you.
+    spawns: { only: 'skulls', base: 2.6, floor: 0.9, slope: 0.012, cap: 28, first: 1.2 },
     // v44 TECH ART: a hazed white sky with a pale sun; caustics crawling the
     // floor; gel on the wave and the slabs; a skullscape on the horizon.
     sky: { void: [0.44, 0.49, 0.54], horizon: [0.02, 0.28, 0.95], band: 2.2, stars: 0,
@@ -136,42 +144,25 @@ export const SEASONS = [
     dust: { color: [0.60, 0.92, 0.85], size: 0.06, opacity: 0.2 },
     ground: [0.05, 0.14, 0.13],
     pillars: null,
-    platforms: {
-      count: 4,
-      rMin: 5, rMax: 18,
-      wMin: 5.0, wMax: 8.0,     // LARGE — the brief says large voxel platforms
-      hMin: 0.9, hMax: 2.2,
-      look: 'gel',              // a MOUND of goo cubes with soft edges, in the gel material
-      // DARK bodies: the gel shader adds its rim and its inner light on top,
-      // and a body that starts pale ends white (the first two cuts did)
-      gel: { cell: 1.0, deep: [0.012, 0.09, 0.11], lip: [0.07, 0.36, 0.38], round: 0.2, fill: 1.05 },
-      grow: 2.0, sink: 1.6,
-      lifeMin: 18, lifeMax: 30,
-      drift: 0.6, driftW: 0.12,
-      avoidPlayer: 5.5,
-      // v46 the mound GIVES WAY (gel.js GelSpring, Toko Drop's squash):
-      // land on it and it squashes, leave it and it springs back
-      // v47 NON-NEWTONIAN: `thicken` is how much stiffer the goo gets at
-      // `rate` of strain per frame — hit it fast and it is nearly a solid
-      spring: { spring: 0.24, damp: 0.86, min: 0.55, max: 1.35, thicken: 3.2, rate: 0.09 },
-      landSquish: 0.32,
-      // ...and the body standing on it goes under: how slow counts as still,
-      // how long sinking takes, how long climbing out takes, how deep
-      nonNewtonian: { flowBelow: 3.2, fall: 1.3, rise: 0.5, depth: 0.75 },
-    },
+    platforms: null,           // v48: nothing stands in the sea — the wave is the arena
     // THE WAVE (v43). A crest sweeps the disc, rises, leans into its travel
     // and breaks; stand on it and it carries you. See js/goo.js.
     goo: {
-      cell: 1.0,                // voxel size — the wave is made of THIS game's cubes
+      cell: 0.5,                // v48: half cells — a crest of jump height is three rows, not one (a one-row crest was a fence)
       round: 0.2,               // v47: and every one of them is a ROUNDED cube
       fill: 1.05,               // ...overlapping, so the sea is one skin and not pebbles
-      amp: 3.2,                 // crest height above the floor: three rows, a ridge and not a slab
-      width: 9,                 // how long the back of the swell is
-      gap: 14,                  // clear water between one wave and the next
-      speed: 7.5,               // u/s along its own direction
+      // v48 JUMPABLE. jumpV 8.6 against gravity 24 is an apex of 1.54 — the
+      // crest sits under it with air to spare, and a double jump is a safety.
+      // A wave you cannot clear is a wall that moves; this is a hurdle.
+      hurts: true,              // contact is a HIT (HYPER: time + a shove; PURE: death); it no longer carries
+      hurtFrom: 0.35,           // the height at which water is wave — under it you are wading, not struck
+      amp: 1.1,                 // crest height above the floor — ×1.22 at the ripple's peak is 1.34, under the 1.54 apex with a hand of air
+      width: 8,                 // how long the back of the swell is
+      gap: 16,                  // clear water between one wave and the next
+      speed: 8,                 // u/s along its own direction — a jump lasts 0.72 s, the crest is past in a third of that
       lean: 0.5,                // how far the crest leans forward as it steepens
       ripple: 0.22, rippleK: 0.19, // a swell along the crest: a sea, not an extrusion
-      push: 5.0,                // u/s a body standing on it is carried
+      push: 0,                  // v48: it does not carry (kept for a sea that wants to — `hurts: false`)
       deep: [0.012, 0.09, 0.11], // in the body — dark water
       lip: [0.09, 0.46, 0.46],   // at the break — well under the bloom threshold: the gel's RIM is what blooms, and only at edges
       rim: [0.35, 0.95, 0.85],  // what the gel shader adds at edges and inside: NOT HDR
@@ -185,13 +176,21 @@ export const SEASONS = [
       // matte, speckled. `shearRef` is how fast the surface has to be moving
       // (units per second) to count as fully seized — measured off the wave's
       // own slope, so it does not change with the frame rate.
-      seize: [0.80, 0.94, 0.92], seizeK: 0.8, shearRef: 12,
-      // and what the sea does to a body standing still on it
-      nonNewtonian: { flowBelow: 3.2, fall: 1.1, rise: 0.45, depth: 0.85 },
+      seize: [0.80, 0.94, 0.92], seizeK: 0.3, shearRef: 5,   // v48: 0.8 painted the whole face pale — the seize is a frosting now, not the paint
+      // ...and `shearRef` is recalibrated with it: the break of THIS crest
+      // peaks at ~3.7 u/s of surface motion (amp 1.1 down a face 4.4 long at
+      // speed 8), so a 12 u/s "fully seized" meant the wave never seized at
+      // all and the solid phase only ever showed on an impact ring.
+      lipFrom: 0.62,            // v48: the foam is the top third of the crest; below it the body stays dark water
+      // v48 THE FLOOR READS THE WAVE: a shadow under its body and a bright
+      // foam line at the foot of its face, so you see it coming across the
+      // floor before it is on you (main.js floor shader, uWave)
+      floorWave: { shadow: 0.42, foam: 0.4 },   // foam 0.7 was a light bar you could read the arena by
+      // (v47's sink-when-still was the sea as a floor; a hazard has no floor to sink into)
       // v46 impact rings: a nail or a body striking the sea spreads a ring
       rippleHit: { amp: 1.4, speed: 6.5, width: 1.3, fade: 1.6, reach: 7, life: 1.6, max: 12 },
       // the break: cubes shed off the lip ahead of the crest
-      sprayFrom: 0.8, sprayChance: 0.06, sprayMax: 6,
+      sprayFrom: 0.8, sprayChance: 0.05, sprayMax: 10,   // v48: half cells — more, smaller cubes off the lip
     },
     // the horizon: the game's own skull at monument size, half-buried, and a
     // stepped city behind it — through the fog, pale
@@ -220,7 +219,6 @@ export const SEASONS = [
     built: true,
     todo: [
       'the new season 2 sculpts (aquamarine / green / yellow, Aztec) — the recolour holds the slot until they arrive',
-      'decide whether the trough should hurt — the wave carries, it does not kill',
       'the Inca backdrop from real art, if any arrives — the skullscape is the game\'s own skull for now',
     ],
   },
@@ -239,3 +237,26 @@ export function nextSeasonId(id) {
 
 /** The season's weapon profile, laid over T.weapon. */
 export function weaponOf(season) { return T.weapons?.[seasonById(season).weapon] ?? {}; }
+
+/**
+ * v48: the gel MOUND is no longer in any season (season 2 is the wave alone),
+ * but the material, the spring and the non-Newtonian goo are still the
+ * game's, and the gate and the lab still stand a mound up to measure them.
+ * This is the platforms block INCA carried through v47, verbatim.
+ */
+export const GEL_MOUND_SAMPLE = {
+      count: 4,
+      rMin: 5, rMax: 18,
+      wMin: 5.0, wMax: 8.0,     // LARGE — the brief says large voxel platforms
+      hMin: 0.9, hMax: 2.2,
+      look: 'gel',              // a MOUND of goo cubes with soft edges, in the gel material
+      gel: { cell: 1.0, deep: [0.012, 0.09, 0.11], lip: [0.07, 0.36, 0.38], round: 0.2, fill: 1.05 },
+      grow: 2.0, sink: 1.6,
+      lifeMin: 18, lifeMax: 30,
+      drift: 0.6, driftW: 0.12,
+      avoidPlayer: 5.5,
+      spring: { spring: 0.24, damp: 0.86, min: 0.55, max: 1.35, thicken: 3.2, rate: 0.09 },
+      landSquish: 0.32,
+      nonNewtonian: { flowBelow: 3.2, fall: 1.3, rise: 0.5, depth: 0.75 },
+
+};
