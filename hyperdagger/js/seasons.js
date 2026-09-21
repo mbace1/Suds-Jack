@@ -176,7 +176,11 @@ export const SEASONS = [
       // matte, speckled. `shearRef` is how fast the surface has to be moving
       // (units per second) to count as fully seized — measured off the wave's
       // own slope, so it does not change with the frame rate.
-      seize: [0.80, 0.94, 0.92], seizeK: 0.3, shearRef: 12,   // v48: 0.8 painted the whole face pale — the seize is a frosting now, not the paint
+      seize: [0.80, 0.94, 0.92], seizeK: 0.3, shearRef: 5,   // v48: 0.8 painted the whole face pale — the seize is a frosting now, not the paint
+      // ...and `shearRef` is recalibrated with it: the break of THIS crest
+      // peaks at ~3.7 u/s of surface motion (amp 1.1 down a face 4.4 long at
+      // speed 8), so a 12 u/s "fully seized" meant the wave never seized at
+      // all and the solid phase only ever showed on an impact ring.
       lipFrom: 0.62,            // v48: the foam is the top third of the crest; below it the body stays dark water
       // v48 THE FLOOR READS THE WAVE: a shadow under its body and a bright
       // foam line at the foot of its face, so you see it coming across the

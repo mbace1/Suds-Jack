@@ -942,10 +942,10 @@ s.listen(0, '127.0.0.1', async () => {
   await p.click('#endBtn');
   const backAtMenu = await p.evaluate(() => ({
     state: window.__hd.debug.getState().state,
-    canSwitch: !!document.getElementById('modeBtn'),
+    canSwitch: document.querySelectorAll('[data-season]').length,   // v48: MODE moved to the pause menu; the intro is the seasons
   }));
-  ok('END RUN leaves a run for the mode menu', backAtMenu.state === 'menu', backAtMenu.state);
-  ok('and the mode toggle is there when you land', backAtMenu.canSwitch);
+  ok('END RUN leaves a run for the season menu', backAtMenu.state === 'menu', backAtMenu.state);
+  ok('and the seasons are there to pick from when you land', backAtMenu.canSwitch >= 2, backAtMenu.canSwitch);
 
   // ---- v41 SEASONS: the arena's art is declared, like a mode --------------
   // Each season boots its own page (?season=), because a season is read at
