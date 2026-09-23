@@ -1,5 +1,26 @@
 # Toko Move — versions
 
+## v2.44 — 2026-09-23
+
+**The dispatch list stopped rewriting itself five times a second.** CI caught
+it first: the phone gate's tap on the first job resolved to a row that was gone
+by the time it was pressed ("Element is not visible", v2.43's run). The list
+re-rendered every two ticks so a *now* could become *in 1 min* promptly, and
+the first cut replaced the whole slot's innerHTML each time whether or not a
+character had moved. A thumb landing between two replacements lands on
+nothing. The DOM is written only when the words change now; the gate taps in
+one evaluate, the way a thumb does, so it no longer depends on that.
+
+**The nightly HSL refresh had failed every run since the 12th, and said
+nothing useful.** Each run stopped at *cannot resolve anchor toolontori* and
+not one printed what the feed calls that stop now, so the failure was
+unactionable from the log and nobody acted for twelve days. `scripts/hsl-diff.mjs`
+prints the stop and line names gone and new between the shipped pack and the
+feed, the workflow runs it whether or not validation passes and writes it to
+the job summary, and the generated pack is uploaded on every run rather than
+thrown away with the runner. The HSL feed is blocked from the build sandbox
+(403), so the alias itself is added off that log, not guessed.
+
 ## v2.43 — 2026-09-18
 
 **A job is a PARCEL now, not a person.** Owner, 2026-09-18: *"Recipients names

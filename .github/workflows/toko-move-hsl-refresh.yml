@@ -28,12 +28,24 @@ jobs:
           node-version: '22'
       - name: Build full exact HSL pack
         run: node scripts/hsl-full-pack.mjs toko-move/cities/helsinki.json
+      # SAY WHAT CHANGED, IN NAMES, BEFORE VALIDATING. Twelve consecutive nightly
+      # runs failed on "cannot resolve anchor toolontori" and not one of them
+      # printed what the feed calls that stop now — so the failure was
+      # unactionable from the log and nobody acted. This step runs whether or
+      # not the pack validates, and its summary is the whole diagnosis.
+      - name: What the feed changed since the shipped pack
+        if: always()
+        run: |
+          git show HEAD:toko-move/cities/helsinki.json > /tmp/shipped-helsinki.json
+          node scripts/hsl-diff.mjs /tmp/shipped-helsinki.json toko-move/cities/helsinki.json
       - name: Validate full network
         run: node toko-move/test/full-hsl-pack.mjs
       - name: Validate gameplay graph on HSL data
         run: node toko-move/test/real-helsinki.mjs
-      - name: Upload generated pack for PR review
-        if: github.event_name == 'pull_request'
+      # Always, not only on a PR: a pack that FAILED validation is the one you
+      # most need to look at, and it used to be thrown away with the runner.
+      - name: Upload generated pack for review
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: toko-move-helsinki-full
