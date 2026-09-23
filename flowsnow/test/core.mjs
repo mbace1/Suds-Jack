@@ -821,6 +821,16 @@ ok('the gully walls climb away from the line', height(lineX(-300) + 90, -300) > 
     `main.js says v${declared}, VERSIONS.md says v${logged}`);
   const html = (await import('node:fs')).readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   ok('the page asks for a tokened entry module', /src="js\/main\.js\?v=\d+"/.test(html));
+  // The cabinet's note is the release note a player reads on the floor, and v6
+  // to v9 went four releases with it still describing v5 — the deploy would
+  // have shipped the new game under the old card. It is checked HERE, on every
+  // edit, rather than only when the deploy script refuses at release time.
+  const { GAMES } = await import('../../hub/games.js');
+  const card = GAMES.find(g => g.id === 'flowsnow');
+  const notes = [card.note, card.fi?.note, card.ja?.note].filter(Boolean);
+  const named = notes.map(n => n.match(/^v([\d.]+) /)?.[1]);
+  ok('the arcade card describes the version that ships, in every language',
+    notes.length === 3 && named.every(v => Number(v) === logged), named.join(' / '));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

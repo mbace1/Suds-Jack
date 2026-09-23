@@ -1,0 +1,211 @@
+# Put Flowsnow on the arcade, from a button.
+#
+# Actions → "Deploy Flowsnow to the arcade" → Run workflow, on the branch you
+# want to ship. It deploys the commit it runs on. `push` is OFF by default, so
+# the first run of any release is a rehearsal: every gate, the whole deploy on a
+# real gh-pages checkout, and the diff it would push — and nothing pushed.
+#
+# Why this exists: five releases went out by hand and each paid for a
+# different trap (a CRLF normalised by a text-mode splice, an importer left a
+# token behind, a catalogue imported under two tokens, a test/ nested inside
+# the site's own so both gate runs checked nothing, a cabinet gate run before
+# the version bump). scripts/deploy-game.mjs carries every one of those rules;
+# this carries the ORDER — gates on the source, the deploy, the gates on the
+# site AFTER it, and a push only onto the gh-pages it was checked against.
+#
+# It runs only on workflow_dispatch, and GitHub only offers that button for a
+# workflow file that is on the default branch.
+name: Deploy Flowsnow to the arcade
+
+on:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: Push to gh-pages (leave off for a rehearsal)
+        type: boolean
+        default: false
+
+permissions:
+  contents: write     # the push to gh-pages
+  actions: read       # watching the Pages build that push starts
+
+# one deploy at a time: two runs racing for gh-pages would each be checked
+# against a tree the other one is about to change
+concurrency:
+  group: flowsnow-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NODE_PATH: ${{ github.workspace }}/node_modules
+      SITE: ${{ github.workspace }}/site
+    steps:
+      # Every commit, no file contents until asked for: the deploy script asks
+      # "has this branch ever held the site's copy of this file?", which needs
+      # the file's history, and the full pack is over a gigabyte.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: install chromium
+        run: |
+          npm install --no-save playwright@1.62.1
+          npx playwright install --with-deps chromium
+
+      # ── the source ─────────────────────────────────────────────────
+      - name: the mountain, the board and the snow
+        run: node flowsnow/test/core.mjs
+      - name: the interface
+        run: node flowsnow/test/smoke.cjs
+      - name: the whole mountain, ridden
+        run: node flowsnow/test/playthrough.cjs
+
+      # ── the site, before ───────────────────────────────────────────
+      - name: check out gh-pages
+        run: |
+          git fetch --no-tags origin gh-pages
+          git worktree add --detach "$SITE" origin/gh-pages
+          git -C "$SITE" rev-parse HEAD > site-base.txt
+          echo "gh-pages at $(cat site-base.txt)"
+
+      # The cabinet gate is written for a tree holding every project's source,
+      # and the site is curated, so it fails there in ways that have nothing to
+      # do with this deploy. A number of failures is not a finding; the ones
+      # the deploy ADDS are. So it runs on the untouched site first. The gate
+      # FILE is copied in, never the test/ folder: gh-pages has a test/ of its
+      # own, and copying the folder nests it and both runs die at load (v4).
+      - name: the cabinet gate on the untouched site (baseline)
+        run: |
+          cp test/hub-smoke.cjs "$SITE/test/hub-smoke.cjs"
+          (cd "$SITE" && node test/hub-smoke.cjs) > gate-before.txt 2>&1 || true
+          rm "$SITE/test/hub-smoke.cjs"
+          ran=$(grep -cE '^(PASS|FAIL)  ' gate-before.txt || true)
+          echo "baseline: $ran checks ran, $(grep -c '^FAIL  ' gate-before.txt || true) failed"
+          # two runs agreeing because neither ran is not a baseline
+          test "$ran" -gt 0
+
+      # ── the deploy ─────────────────────────────────────────────────
+      - name: deploy Flowsnow onto the checkout
+        run: node scripts/deploy-game.mjs flowsnow "$SITE"
+
+      # ── the site, after ────────────────────────────────────────────
+      # AFTER the bump, never before: a cabinet gate run ahead of the version
+      # bump is a gate run against the previous release (v5).
+      - name: the cabinet gate on the deployed site
+        run: |
+          cp test/hub-smoke.cjs "$SITE/test/hub-smoke.cjs"
+          (cd "$SITE" && node test/hub-smoke.cjs) > gate-after.txt 2>&1 || true
+          rm "$SITE/test/hub-smoke.cjs"
+          ran=$(grep -cE '^(PASS|FAIL)  ' gate-after.txt || true)
+          echo "after: $ran checks ran, $(grep -c '^FAIL  ' gate-after.txt || true) failed"
+          test "$ran" -gt 0
+          grep '^FAIL  ' gate-before.txt | sort -u > fail-before.txt || true
+          grep '^FAIL  ' gate-after.txt | sort -u > fail-after.txt || true
+          comm -13 fail-before.txt fail-after.txt > fail-new.txt
+          if [ -s fail-new.txt ]; then
+            echo "::error::the deploy adds cabinet-gate failures the untouched site does not have:"
+            cat fail-new.txt
+            exit 1
+          fi
+          echo "no new failures (the delta is the finding, not the count)"
+
+      - name: every file the cabinet asks for is on the site
+        run: node test/deploy-check.cjs --root "$SITE" flowsnow/
+
+      - name: the route a player takes — floor, Play, a ride, HOME
+        run: node flowsnow/test/arcade-route.cjs --root "$SITE"
+
+      # A game deploy is one cabinet all the way down. The script touches
+      # flowsnow/, the catalogue and its readers, the worker and one row of
+      # versions.json; anything else in the diff is something it must not do.
+      - name: the diff is one cabinet
+        run: |
+          git -C "$SITE" add -A
+          git -C "$SITE" diff --cached --stat
+          stray=$(git -C "$SITE" diff --cached --name-only \
+            | grep -vE '^(flowsnow/|hub/[A-Za-z0-9_.-]+\.js$|hub/versions\.json$|sw\.js$|toko/js/[A-Za-z0-9_.-]+\.js$)' || true)
+          if [ -n "$stray" ]; then
+            echo "::error::outside what a game deploy may touch:"; echo "$stray"; exit 1
+          fi
+          if git -C "$SITE" diff --cached --quiet; then echo "the site already has this build"; fi
+
+      # ── the push ───────────────────────────────────────────────────
+      # Only onto the gh-pages everything above was checked against. If it
+      # moved while this ran, the deploy is REPLAYED on the new head — the
+      # script is deterministic, so that means running it again and repeating
+      # the cheap checks — rather than rebasing a commit whose token numbers
+      # were computed against a tree that no longer exists. Never a force-push.
+      - name: push
+        if: inputs.push
+        run: |
+          VER=$(grep -m1 -oE '^## v[0-9.]+' flowsnow/VERSIONS.md | cut -c4-)
+          git config --global user.name "Flowsnow deploy"
+          git config --global user.email "actions@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git fetch --no-tags origin gh-pages
+            if [ "$(git rev-parse origin/gh-pages)" != "$(git -C "$SITE" rev-parse HEAD)" ]; then
+              echo "gh-pages moved during the deploy; replaying on $(git rev-parse --short origin/gh-pages)"
+              git -C "$SITE" reset --hard origin/gh-pages
+              git -C "$SITE" clean -fdq
+              node scripts/deploy-game.mjs flowsnow "$SITE"
+              node test/deploy-check.cjs --root "$SITE" flowsnow/
+              node flowsnow/test/arcade-route.cjs --root "$SITE"
+              git -C "$SITE" add -A
+              stray=$(git -C "$SITE" diff --cached --name-only \
+                | grep -vE '^(flowsnow/|hub/[A-Za-z0-9_.-]+\.js$|hub/versions\.json$|sw\.js$|toko/js/[A-Za-z0-9_.-]+\.js$)' || true)
+              if [ -n "$stray" ]; then echo "::error::outside what a game deploy may touch:"; echo "$stray"; exit 1; fi
+            fi
+            if git -C "$SITE" diff --cached --quiet; then echo "nothing to push"; exit 0; fi
+            git -C "$SITE" commit -q -m "Flowsnow ${VER} on the arcade (deploy-game.mjs from ${GITHUB_SHA::8})"
+            if git -C "$SITE" push origin HEAD:gh-pages; then
+              git -C "$SITE" rev-parse HEAD > pushed.txt
+              echo "pushed $(cat pushed.txt)"
+              exit 0
+            fi
+            git -C "$SITE" reset -q --soft HEAD~1
+          done
+          echo "::error::gh-pages kept moving; run the deploy again"
+          exit 1
+
+      # A push is not a release: the Pages build that publishes it has to
+      # conclude success, and a failed or superseded one looks exactly like a
+      # broken site from the outside.
+      - name: the Pages build publishes it
+        if: inputs.push
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test -f pushed.txt || { echo "nothing was pushed"; exit 0; }
+          sha=$(cat pushed.txt)
+          for i in $(seq 1 40); do
+            run=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${sha}&per_page=20" \
+              --jq '[.workflow_runs[] | select(.name == "pages-build-deployment")][0] | "\(.status) \(.conclusion)"' || true)
+            echo "pages-build-deployment: ${run:-not started}"
+            case "$run" in
+              "completed success") exit 0 ;;
+              completed*) echo "::error::the Pages build did not succeed: $run"; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::the Pages build did not finish in 10 minutes"
+          exit 1
+
+      - name: keep the evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowsnow-deploy
+          path: |
+            gate-before.txt
+            gate-after.txt
+            fail-new.txt
+            site-base.txt
+          if-no-files-found: ignore

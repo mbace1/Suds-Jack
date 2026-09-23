@@ -169,6 +169,34 @@ more than one direction, and a plain byte comparison says *that* two copies diff
 stripped, since a deployed file has been renumbered); if not, that is somebody else's
 work, it is left alone, and the run stops and tells you to bring it back first. It found
 three files that way on its first real run. **Deploys never merge.**
+**A GAME is `node scripts/deploy-game.mjs <id> <siteRoot> [--dry]`** —
+deploy-hub.mjs ships the shell and no game folder, so every game release had
+been a hand copy. It moves the folder (minus `test/`/`art-src/`, in the SITE's
+line endings by majority, references out of the folder taking the token MOST
+of the site uses), splices only that cabinet's entry into the site's
+`games.js`, climbs the catalogue's token to ONE number everywhere (healing a
+split), rolls the worker, writes one `versions.json` row, refuses a cabinet
+note that names another version, refuses to move the site backwards or over
+work the branch never held, and checks all of it before writing. It was
+proven by REPLAY: run from Flowsnow's v5 and v4 source commits against the
+site as it stood before each hand deploy, it reproduces both byte for byte
+except where the hand deploy was wrong (v5 flipped a fully-CRLF page to LF;
+v4's note was edited on the site and never existed on the branch). The first
+draft failed the replay twice, both worth knowing: the site's `games.js` is LF
+with eight stray CRLF lines, so "contains a CRLF" is the wrong test for its
+line endings; and the site asks for `toko/js/signature.js` under three tokens
+at once (v3 ×10, v62 ×2, v1 ×1), so "the highest" moves a cabinet onto one
+other game's number. `.github/workflows/flowsnow-deploy.yml` is the button
+around it: gates on the source, the cabinet gate on the untouched site and
+again AFTER the deploy with the FAIL lines compared (the delta is the finding),
+`test/deploy-check.cjs`, `flowsnow/test/arcade-route.cjs` (floor → Play → a
+ride → HOME, off the site tree), a check that the diff is one cabinet, and
+only then a push — replayed onto gh-pages if it moved, never forced — and a
+wait on the Pages build. `push` defaults OFF, so a run is a rehearsal unless
+someone says otherwise. It climbs the catalogue ONE level, as the hand
+deploys did, not to a fixpoint: the worker precaches with `cache: 'reload'`
+so a roll refetches every shell module, and a full climb would move
+`shell.js` and rewrite every cabinet's page for one game's release.
 **`hub/hub.js` and `test/hub-smoke.cjs` are CRLF** while everything around
 them is LF, so a rewrite through any tool that normalises newlines reflows the
 whole file and buries a three-line change in a two-thousand-line diff. Check
@@ -1975,6 +2003,15 @@ chase camera is not one of them — v5's crevasse and v7's trench for the third
 time, so it is recorded rather than tuned.
 **v6 through v9 are authored and NOT deployed** (2026-09-18 / 09-20 / 09-21):
 the branch carries all four and `gh-pages` still serves v5.
+**And the card had not moved for any of them**: the cabinet's note still read
+v5 and its controls had neither the glance nor the air, so the first deploy
+of v9 would have put the new game under the old card. Found by building the
+deploy script, which now refuses exactly that, and `core.mjs` asserts it on
+every edit. **The next deploy is a button** (see the arcade section:
+`scripts/deploy-game.mjs`, `flowsnow-deploy.yml`), rehearsed locally against
+the live site: v5 → v9, games.js 106 → 107, worker 106 → 107, twenty files of
+which seven are outside `flowsnow/` — the same seven every hand deploy
+touched — and the page's diff is one line instead of v5's 129.
 **Never verified live from a session.** The agent proxy refuses `github.io`, so the
 Pages run concluding `success` is the only evidence the deploy has — the cabinet and a
 run from the title into gameplay still want a human's eyes on the real URL.
