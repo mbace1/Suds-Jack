@@ -519,6 +519,12 @@ jobs:
       - name: the grid-tactics engine's core loop
         run: node turf/test/smoke.mjs
 
+      # Rule profiles (js/rules.js): Piritori's C.11 rules on this engine, for
+      # piritori-eden's Option A. TURF's own boards must carry no trace of a
+      # profile; balance.mjs reading bit-identical is the other half of that.
+      - name: rule profiles (Piritori C.11 on the TURF engine)
+        run: node turf/test/rules.mjs
+
       # Pure data + a pure function, no engine dependency — the crew-name
       # generator (js/names.js) checked on its own.
       - name: the crew-name generator

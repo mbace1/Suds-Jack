@@ -10,7 +10,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node turf/test/smoke.mjs && node turf/test/balance.mjs
+      - run: node turf/test/smoke.mjs && node turf/test/rules.mjs && node turf/test/balance.mjs
       - run: npm install --no-save --package-lock=false playwright
       - run: npx playwright install chromium
       - run: |
