@@ -191,6 +191,32 @@
       ? { name: 'quest', fb: 1.0, shadow: 1024, density: 1, foam: 2000, seg: 168 }
       : { name: 'high', fb: 1.2, shadow: 2048, density: 2.2, foam: 3200, seg: 208 };
 
+    // ── the tide: the island's one clock ─────────────────────────────────
+    // Everything else on this island happens because you DID something — you
+    // pressed the totem, you pointed at the radio. The tide is the only thing
+    // that happens because time passed, and it is the whole reason sitting
+    // still is worth anything here: it pays out over minutes, in the water
+    // level, in where the foam breaks, in how far out you are allowed to
+    // walk, and in what the sea sounds like from the chair.
+    //
+    // A full ebb and flood in seven minutes rather than twelve hours. A real
+    // tide is not something you can sit through; this is the slowest thing
+    // that is still a thing you can WATCH, which is the only honest reason to
+    // pick a number here.
+    const TIDE_PERIOD = 420;
+    // 28 cm. The cap is not taste — the water's colour and transparency are
+    // baked per vertex from the depth at MEAN sea level, so the further the
+    // tide moves the more the shallows are painted for a depth they no longer
+    // have. At 28 cm the mismatch sits under the foam line, which is the
+    // brightest thing in that exact band. Going deeper means rebaking 40k
+    // vertex colours as it moves, and that is a 640 KB upload to save an
+    // error nobody has seen.
+    const TIDE_AMP = 0.28;
+    const TIDE_RATES = [['still', 0], ['slow', 1], ['quick', 3]];
+    let tideT = TIDE_PERIOD * 0.25;      // begin on a rising mid-tide
+    let tide = 0;
+    const tideAt = s2 => Math.sin(s2 / TIDE_PERIOD * Math.PI * 2) * TIDE_AMP;
+
     // ── comfort: the three dials a headset session actually needs ─────────
     // These are not graphics options. They are the settings that can only be
     // judged with the thing on your head — how fast the sand slides past, how
@@ -202,10 +228,10 @@
     // Smooth yaw is the most reliable way to make somebody queasy in a chair,
     // so the snaps come first and smooth is the opt-in at the end.
     const TURNS = [['snap 30', Math.PI / 6], ['snap 45', Math.PI / 4], ['smooth', 0]];
-    const comfort = { speed: 1, turn: 0, vig: 1, sound: 1 };
+    const comfort = { speed: 1, turn: 0, vig: 1, sound: 1, time: 1 };
     try {
       const saved = JSON.parse(localStorage.getItem('tokoTrip.comfort') || 'null');
-      if (saved) for (const k of ['speed', 'turn', 'vig', 'sound']) {
+      if (saved) for (const k of ['speed', 'turn', 'vig', 'sound', 'time']) {
         if (Number.isInteger(saved[k])) comfort[k] = saved[k];
       }
     } catch (e) { /* no storage — the defaults, every visit */ }
@@ -214,16 +240,19 @@
       comfort.turn = Math.min(TURNS.length - 1, Math.max(0, comfort.turn));
       comfort.vig = comfort.vig ? 1 : 0;
       comfort.sound = comfort.sound ? 1 : 0;
+      comfort.time = Math.min(TIDE_RATES.length - 1, Math.max(0, comfort.time));
     };
     clampComfort();
     const moveSpeed = () => SPEEDS[comfort.speed][1];
     function setComfort(key, v) {
-      const wrap = key === 'speed' ? SPEEDS.length : key === 'turn' ? TURNS.length : 2;
+      const wrap = key === 'speed' ? SPEEDS.length : key === 'turn' ? TURNS.length
+        : key === 'time' ? TIDE_RATES.length : 2;
       comfort[key] = ((v % wrap) + wrap) % wrap;
       try { localStorage.setItem('tokoTrip.comfort', JSON.stringify(comfort)); } catch (e) {}
       if (key === 'sound') applySound();
       paintSlate();
     }
+
     // ?perf puts the frame cost on the slate and in the corner. OFF by
     // default, because a number in the corner of a zen island is a number you
     // start playing instead of a place you sit in — and it can be turned on
@@ -1052,6 +1081,155 @@
     terrain.material.roughnessMap = sandRough;
     terrain.material.roughness = 1;        // the map carries it; this scales it
     terrain.material.needsUpdate = true;
+
+    // ═══ CAUSTICS ═══ the light the water throws on the sand ═══════════════
+    //
+    // Technique from Clearwater (Aurélien / Lumaris, MIT — see CREDITS.md),
+    // which takes it in turn from Evan Wallace's WebGL Water. Clearwater
+    // itself cannot live in this island: it is a standalone WebGL2 program
+    // with its own context, its own seabed and no depth buffer, its shaders
+    // are GLSL where this renderer may be WebGPU, and its look leans on a
+    // bloom-and-glare post stack that a fill-bound headset cannot afford. The
+    // IDEA ports perfectly, though, and it is the thing in those pictures
+    // that most says shallow water.
+    //
+    // The idea: launch a grid of rays down through the water surface,
+    // REFRACT each one by the surface slope, and see where it lands on the
+    // bottom. Caustics are not a pattern — they are where the rays BUNCH UP.
+    // So the texture is an accumulation buffer, and brightness is how many
+    // rays arrived in a cell.
+    //
+    // Clearwater draws that on the GPU every frame from its live FFT ocean.
+    // Here it is baked once on the CPU from the SAME height field the water's
+    // own normal map is built from, so the light on the sand is thrown by the
+    // water you are actually looking at rather than by a stock texture.
+    const CAUS_N = 128;
+    function causticsPair() {
+      // The surface the light comes through. It is a SMOOTHER read of the same
+      // kind of tiling field the water's own normal map is built from — P 4/9
+      // where the water uses 5/13 — and that is a deliberate difference, not a
+      // shortcut: refracted, the water's fine detail turns into sparkle rather
+      // than into a legible web. Rendered both ways side by side, the coarse
+      // field is the one that reads as caustics.
+      const L = CAUS_N * 3;
+      const S = L + 1;
+      const Hg = new Float32Array(S * S);
+      for (let y = 0; y <= L; y++) for (let x = 0; x <= L; x++) {
+        const u = x / L, v = y / L;
+        Hg[y * S + x] = tfbm(u, v, 4) * 0.74 + tfbm(u + 0.31, v + 0.17, 9) * 0.26;
+      }
+      const at = (x, y) => Hg[((y % L + L) % L) * S + ((x % L + L) % L)];
+      // Per-channel index of refraction, which is where the colour fringe on a
+      // caustic filament comes from. The real red-to-blue spread is about 1%
+      // and lands sub-texel here, so it is widened to stay visible: the shape
+      // is refraction, the amount is a choice.
+      const IOR = [1.3315, 1.3335, 1.3365], DISP = 26;
+      const make = (b, floor, gain, bias) => {
+        const acc = [new Float32Array(CAUS_N * CAUS_N), new Float32Array(CAUS_N * CAUS_N),
+          new Float32Array(CAUS_N * CAUS_N)];
+        const splat = (a, lu, lv, w) => {
+          const fu = lu * CAUS_N, fv = lv * CAUS_N;
+          const i0 = Math.floor(fu), j0 = Math.floor(fv);
+          const tu = fu - i0, tv2 = fv - j0;
+          for (let dj = 0; dj < 2; dj++) for (let di = 0; di < 2; di++) {
+            const i = ((i0 + di) % CAUS_N + CAUS_N) % CAUS_N;
+            const j = ((j0 + dj) % CAUS_N + CAUS_N) % CAUS_N;
+            a[j * CAUS_N + i] += w * (di ? tu : 1 - tu) * (dj ? tv2 : 1 - tv2);
+          }
+        };
+        for (let y = 0; y < L; y++) for (let x = 0; x < L; x++) {
+          const h = at(x, y);
+          const hx = (at(x + 1, y) - at(x - 1, y)) * 0.5 * L;
+          const hy = (at(x, y + 1) - at(x, y - 1)) * 0.5 * L;
+          const hxx = (at(x + 1, y) - 2 * h + at(x - 1, y)) * L * L;
+          const hyy = (at(x, y + 1) - 2 * h + at(x, y - 1)) * L * L;
+          const hxy = (at(x + 1, y + 1) - at(x + 1, y - 1) - at(x - 1, y + 1) + at(x - 1, y - 1)) * 0.25 * L * L;
+          for (let c = 0; c < 3; c++) {
+            const bb = b * (1 + (IOR[c] - IOR[1]) * DISP);
+            // Brightness is AREA COMPRESSION and it has a closed form: the
+            // landing map is p − b·∇H, so its Jacobian is I − b·∇²H and the
+            // brightness is 1/|det|. The first cut splatted rays into a
+            // histogram instead, at nine samples a texel — and Poisson noise
+            // at nine samples IS speckle, which is exactly what it looked
+            // like. A caustic is a fold, not a scatter.
+            const det = (1 - bb * hxx) * (1 - bb * hyy) - (bb * hxy) * (bb * hxy);
+            splat(acc[c], (x / L) - hx * bb, (y / L) - hy * bb, 1 / Math.max(0.06, Math.abs(det)));
+          }
+        }
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = CAUS_N;
+        const g = cv.getContext('2d'), im = g.createImageData(CAUS_N, CAUS_N);
+        const dens = (L * L) / (CAUS_N * CAUS_N);
+        for (let i = 0; i < CAUS_N * CAUS_N; i++) {
+          for (let c = 0; c < 3; c++) {
+            // The floor is what leaves the cells black. Raise it far and the
+            // filaments go too and only their peaks survive, which is the
+            // sparkle this spent two passes climbing out of.
+            const v = Math.min(1, Math.max(0, acc[c][i] / dens - floor) * gain);
+            im.data[i * 4 + c] = Math.round((bias + (1 - bias) * Math.pow(v, 0.9)) * 255);
+          }
+          im.data[i * 4 + 3] = 255;
+        }
+        g.putImageData(im, 0, 0);
+        const t = new THREE.CanvasTexture(cv);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        return t;
+      };
+      // The web itself, and a slower, softer one that only modulates it. Two
+      // sparse webs multiplied would cancel to almost nothing; a web times a
+      // gentle swell is light moving on the bottom.
+      return [make(0.0045, 1.05, 0.13, 0), make(0.0060, 1.15, 0.11, 0.45)];
+    }
+    const [causA, causB] = causticsPair();
+    causA.repeat.set(9, 9);
+    causB.repeat.set(5.5, 5.5);
+
+    // The sheet the light lands on: the seabed itself, followed vertex by
+    // vertex off groundHeight so it cannot float or sink into the sand.
+    // `map` x `alphaMap` is the whole trick — three gives each map its own
+    // transform, so two caustic layers scroll in different directions and
+    // MULTIPLY on a stock material, which is the interference that stops a
+    // scrolling texture reading as a scrolling texture. No shader, no post,
+    // one draw call, and it runs the same on both backends.
+    const CAUS_SEG = 96;
+    const causGeo = new THREE.PlaneGeometry(56, 56, CAUS_SEG, CAUS_SEG);
+    causGeo.rotateX(-Math.PI / 2);
+    {
+      const pos = causGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        pos.setY(i, groundHeight(pos.getX(i), pos.getZ(i)) + 0.02);
+      }
+      causGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(pos.count * 3), 3));
+    }
+    const caustics = new THREE.Mesh(causGeo, new THREE.MeshBasicMaterial({
+      map: causA, alphaMap: causB, vertexColors: true, transparent: true,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: true,
+    }));
+    caustics.renderOrder = 1;
+    island.add(caustics);
+
+    // Where the light reaches, which MOVES, because the tide moves. Rebaked
+    // rather than shaded: 9.4k vertices is a 113 KB upload and the tide needs
+    // it a few times a minute, where a shader to do the same would have to be
+    // written twice — once in GLSL and once in TSL — to survive both backends.
+    let causBakedAt = 1e9;
+    function causRebake() {
+      const pos = causGeo.attributes.position, colA = causGeo.attributes.color;
+      for (let i = 0; i < pos.count; i++) {
+        const depth = tide - groundHeight(pos.getX(i), pos.getZ(i));
+        // brightest in the shallows and gone on dry sand: caustics are a
+        // focused image of the surface, and they defocus as the bottom drops
+        // Caustics are a focused image of the surface: they are brightest in
+        // the shallows and gone by the time the bottom is a couple of metres
+        // down, which is also what keeps this decal off the open sea.
+        const v = smooth(0.0, 0.22, depth) * lerp(1, 0.08, smooth(0.3, 2.2, depth));
+        colA.setXYZ(i, v, v, v);
+      }
+      colA.needsUpdate = true;
+      causBakedAt = tide;
+    }
+    causRebake();
     const waterNormal = waterNormalTex(), waterDisp = waterDispTex();
     waterNormal.repeat.set(44, 44);
     waterDisp.repeat.set(5, 5);
@@ -1102,6 +1280,7 @@
       envCube.colorSpace = THREE.SRGBColorSpace;
       envCube.needsUpdate = true;
       waterMat.envMap = envCube; waterMat.needsUpdate = true;
+      if (envNodeRef) envNodeRef.value = envCube;
       sea.material.envMap = envCube; sea.material.needsUpdate = true;
       if (old) old.dispose();
     }
@@ -1139,7 +1318,110 @@
         col4[i * 4 + 3] = lerp(0.44, 1.0, smooth(0.0, 0.6, depth));
       }
       waterGeo.setAttribute('color', new THREE.BufferAttribute(col4, 4));
+      // And the seabed height under every vertex, as an attribute. This is
+      // what lets the TSL material below know how deep the water is at a
+      // pixel WITHOUT a bathymetry texture and without baking anything that
+      // the tide would then invalidate: the height is static, sea level is a
+      // uniform, and the rasteriser interpolates between 28 cm samples.
+      // WORLD y, not terrain height. The water mesh lives in scene space and
+      // its uniform is `water.position.y`, so storing groundHeight() raw here
+      // put the seabed a whole PAD_H above sea level, made every depth
+      // negative, clamped it to zero — and left a shader that was all Fresnel
+      // and no absorption, which reads exactly like water that is working.
+      const bathy = new Float32Array(pos.count);
+      for (let i = 0; i < pos.count; i++) bathy[i] = gy(pos.getX(i), pos.getZ(i));
+      waterGeo.setAttribute('bathy', new THREE.BufferAttribute(bathy, 1));
     }
+    // ═══ THE TSL WATER ═══════════════════════════════════════════════════
+    //
+    // The baked material below is good and has one thing it can never do:
+    // FRESNEL. How much of the bottom you see through water depends on the
+    // angle you are looking at it from — steeply, it is clear; at a graze, it
+    // is a mirror — and that is a per-PIXEL, per-view quantity. Vertex colours
+    // are baked once and cannot know where your head is, so v2's water is
+    // equally see-through from every angle, which is the single loudest "this
+    // is not water" tell left in the frame.
+    //
+    // This is the same shading model Clearwater uses, written as a three node
+    // material so it compiles to WGSL on the WebGPU backend AND to GLSL on
+    // WebGL2 — which is the only reason it is allowed to exist here, since a
+    // hand-written shader would have to be maintained twice.
+    //
+    // It also lifts a cap. v14 held the tide to 28 cm because the baked
+    // colours are painted for the depth at MEAN sea level and drift out of
+    // true as the water moves. Here depth is `seaLevel − bathy` evaluated per
+    // pixel, so the shallows repaint themselves as the tide goes out and the
+    // amplitude is free.
+    const TSL = THREE.TSL;
+    const uSea = TSL.uniform(0);
+    const uNormOff = TSL.uniform(new THREE.Vector2());
+    const uShallow = TSL.uniform(new THREE.Color());
+    const uDeep = TSL.uniform(new THREE.Color());
+    const uSunDir = TSL.uniform(new THREE.Vector3());
+    const uSunCol = TSL.uniform(new THREE.Color());
+    const uOpacity = TSL.uniform(1);
+    // Built LAZILY, because `envCube` does not exist until the first mood
+    // settles and a cubeTexture node needs a texture to hold. `envNodeRef`
+    // is kept so rebuildEnv can hand it each new cube: the node captures a
+    // texture object, and rebuildEnv deliberately makes a fresh one per mood
+    // rather than updating in place, so without this the reflection would
+    // freeze on whatever sky the island booted under.
+    let waterTslMat = null, envNodeRef = null;
+    function buildWaterTsl() {
+      if (waterTslMat) return waterTslMat;
+      const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
+      const { vec2, vec3, float, texture, cubeTexture, positionWorld, cameraPosition,
+        normalize, reflect, dot, max, pow, exp, mix, saturate, oneMinus, attribute, uv } = TSL;
+
+      // the surface, from the same scrolling normal map the baked water uses
+      const nt = texture(waterNormal, uv().mul(44).add(uNormOff)).xyz.mul(2).sub(1);
+      const N = normalize(vec3(nt.x.mul(0.34), float(1), nt.y.mul(0.34)));
+
+      const V = normalize(positionWorld.sub(cameraPosition));
+      const NdotV = max(dot(N, V.negate()), float(0.02));
+
+      // Schlick, with water's own F0. This is the whole point of the exercise.
+      const fres = float(0.02).add(float(0.98).mul(pow(oneMinus(NdotV), 5)));
+
+      // how much water the light actually came through: deeper, and longer at
+      // a graze, which is why a shallow bay still goes opaque toward the horizon
+      const depth = max(uSea.sub(attribute('bathy', 'float')), float(0));
+      const path = depth.div(max(NdotV, float(0.22)));
+
+      // Beer–Lambert rather than a lerp: absorption is exponential, and doing
+      // it properly is what makes the shallows pale and the channel deepen
+      // without either being painted in by hand.
+      // 1.3 per metre, found by looking at three values through the same
+      // view. At 0.85 the bay read as MUD — the seabed's wet band was painted
+      // dark back when the baked water was hiding it, and too little
+      // absorption just shows you that paint. At 2.4 the colour was right and
+      // the bottom was GONE, which costs this cove the one thing its own code
+      // comment claims for it: a bowl you can see the bottom of.
+      const trans = exp(path.mul(-1.3));
+      const tint = mix(uShallow, uDeep, oneMinus(trans));
+
+      envNodeRef = cubeTexture(envCube, reflect(V, N));
+      const refl = envNodeRef.xyz;
+      // one sun glint, which is the other half of reading as a liquid
+      const glint = pow(max(dot(reflect(V, N), uSunDir), float(0)), 220).mul(1.6);
+
+      m.colorNode = mix(tint, refl, fres).add(uSunCol.mul(glint));
+      // plus a little presence at zero depth, or the waterline is a place
+      // where the water simply is not
+      m.opacityNode = saturate(fres.add(oneMinus(fres).mul(oneMinus(trans))).add(0.1)).mul(uOpacity);
+      waterTslMat = m;
+      return m;
+    }
+
+    // Which water is on. A COMPARISON, not a decision — the two are built to
+    // be swapped under the same sky, on the same frame, from the same chair.
+    let waterMode = new URLSearchParams(location.search).get('water') === 'tsl' ? 'tsl' : 'baked';
+    function setWater(mode) {
+      waterMode = mode === 'tsl' ? 'tsl' : 'baked';
+      water.material = waterMode === 'tsl' ? buildWaterTsl() : waterMat;
+      return waterMode;
+    }
+
     const water = new THREE.Mesh(waterGeo, waterMat);
     water.position.y = -PAD_H;
     water.renderOrder = 1;
@@ -1168,12 +1450,18 @@
     // updated on the CPU — a few thousand numbers a frame, no shader.
     const surfLevel = t => 0.045 * Math.sin(t * Math.PI * 2 * SURF_HZ) + 0.012 * Math.sin(t * 0.7 + 1.3);
     const foam = (() => {
-      const n = TIER.foam, pts = [], hs = [];
+      // The band has to span everywhere the water's edge will EVER be, not
+      // just where it sits at mean tide — a band drawn around mean sea level
+      // is one the foam line walks straight off the end of at low water, and
+      // the surf simply stops existing. Spanning the tide costs density, so
+      // the count goes up with it.
+      const n = Math.round(TIER.foam * 1.8), pts = [], hs = [];
+      const lo = -TIDE_AMP - 0.09, hi = TIDE_AMP + 0.26;
       let guard = n * 80;
       while (hs.length < n && guard-- > 0) {
         const x = (rng() - 0.5) * ISLAND_R * 2.6, z = (rng() - 0.5) * ISLAND_R * 2.6;
         const h = groundHeight(x, z);
-        if (h > -0.06 && h < 0.24) { pts.push(x, h + 0.02, z); hs.push(h); }
+        if (h > lo && h < hi) { pts.push(x, h + 0.02, z); hs.push(h); }
       }
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
@@ -1191,7 +1479,10 @@
       return o;
     })();
     function foamUpdate(t) {
-      const reach = surfLevel(t) + 0.045;             // where the water's edge is, in terrain height
+      // where the water's edge is, in terrain height: the swell riding ON the
+      // tide, which is what makes the break walk up the beach over minutes
+      // instead of breathing in one place
+      const reach = tide + surfLevel(t) + 0.045;
       const hs = foam.userData.hs, cols = foam.geometry.attributes.color;
       const arr = cols.array;
       for (let i = 0; i < hs.length; i++) {
@@ -1440,7 +1731,7 @@
     // face, because a rectangle hanging in the air is the one thing a room
     // built to be sat in cannot have. Rows are read off the hit's UV, so the
     // whole menu is ONE mesh and adding a row is a line of painting.
-    const SLATE_ROWS = 5;
+    const SLATE_ROWS = 6;
     const slate = new THREE.Group();
     const slateFace = new THREE.Mesh(
       new THREE.PlaneGeometry(0.34, 0.3),
@@ -1470,7 +1761,8 @@
       else if (row === 1) setComfort('speed', comfort.speed + 1);
       else if (row === 2) setComfort('turn', comfort.turn + 1);
       else if (row === 3) setComfort('vig', comfort.vig + 1);
-      else setComfort('sound', comfort.sound + 1);
+      else if (row === 4) setComfort('sound', comfort.sound + 1);
+      else setComfort('time', comfort.time + 1);
       chime(659.25, 784);
     }
     // ── what the slate says ──
@@ -1495,6 +1787,7 @@
         ['TURN', TURNS[comfort.turn][0]],
         ['EDGES', comfort.vig ? 'closing in' : 'open'],
         ['SOUND', comfort.sound ? 'on' : 'off'],
+        ['TIDE', TIDE_RATES[comfort.time][0]],
       ];
       rows.forEach(([label, value], i) => {
         const y = i * rowH;
@@ -2194,9 +2487,12 @@
       solids.push(mesh);
     }
 
-    // The sea's surface in WORLD space. The island drops by PAD_H so the pad
-    // under the chair sits on the real floor, which puts sea level there.
-    const SEA_Y = -PAD_H - 0.02;
+    // The sea's surface in WORLD space, and it MOVES. The island drops by
+    // PAD_H so the pad under the chair sits on the real floor, which puts mean
+    // sea level there; the tide is measured from that. Every clamp reads this
+    // rather than a constant, which is what makes low water somewhere you can
+    // walk out to and high water somewhere you cannot.
+    const seaY = () => -PAD_H + tide - 0.02;
     const STEP_UP = 0.4;          // the lip of the jetty deck, and no more
     const BODY_R = 0.28;          // how wide you are, for bumping into things
     const CHEST = 1.0;            // where a wall is felt, above the deck lip
@@ -2217,10 +2513,10 @@
       // a face you can stand on is one facing up; the side of the totem is
       // geometry too, and standing on it is not walking
       if (hit && (!hit.face || hit.face.normal.y > 0.5)) {
-        return hit.point.y > SEA_Y ? hit.point.y : null;
+        return hit.point.y > seaY() ? hit.point.y : null;
       }
       const g = gy(x, z);
-      return g > SEA_Y ? g : null;
+      return g > seaY() ? g : null;
     }
 
     // Is something solid in the way between here and there? Only walls count
@@ -2470,7 +2766,7 @@
     const SURF_HZ = 0.065;
     const surfVoices = [];        // the wash, breathed by the visible tide
     const windVoices = [];        // one per swaying crown
-    let nextGull = 0, swell = 0;
+    let nextGull = 0, swell = 0, tideEdgeT = 0;
     // the mix the mood asks for, eased rather than switched
     const AIR = [
       { wash: 1.0, wind: 1.0, cut: 430, gull: [26, 70] },   // golden hour
@@ -2482,12 +2778,12 @@
     // Where the water meets the land, along a ray from the island's middle.
     // It asks groundHeight like everything else does, so the emitters follow
     // the cove if the cove is ever reshaped again.
-    function waterEdge(ang) {
+    function waterEdge(ang, level = 0) {
       const sx = Math.sin(ang), sz = Math.cos(ang);
       let lo = 0.5, hi = ISLAND_R * 1.7;
       for (let i = 0; i < 24; i++) {
         const m = (lo + hi) / 2;
-        if (groundHeight(sx * m, sz * m) > 0) lo = m; else hi = m;
+        if (groundHeight(sx * m, sz * m) > level) lo = m; else hi = m;
       }
       const r = (lo + hi) / 2;
       return [sx * r, sz * r];
@@ -2511,9 +2807,9 @@
       // sound and the nook is the quiet end of it. Each starts at a different
       // offset in the same loop: six copies in phase is mono with extra steps.
       for (let i = 0; i < 6; i++) {
-        const [wx, wz] = waterEdge((i / 6) * Math.PI * 2 + 0.3);
+        const [wx, wz] = waterEdge((i / 6) * Math.PI * 2 + 0.3, tide);
         const host = new THREE.Object3D();
-        host.position.set(wx, -PAD_H, wz);
+        host.position.set(wx, -PAD_H + tide, wz);
         scene.add(host);
         const pa = new THREE.PositionalAudio(listener);
         pa.setRefDistance(4.5);
@@ -2622,20 +2918,44 @@
       g.value = comfort.sound ? 1 : 0;
     }
 
+    // Where the six surf emitters sit, re-bisected onto the CURRENT waterline.
+    // A named function rather than a body inside a timer, because the gate has
+    // to be able to ask for it: a sandbox with no GPU renders this at two or
+    // three frames a second, so a two-second timer is twenty seconds of wall
+    // clock and a test that waits for it is a test that measures the harness.
+    function retuneSurf() {
+      for (let i = 0; i < surfVoices.length; i++) {
+        const [wx, wz] = waterEdge((i / surfVoices.length) * Math.PI * 2 + 0.3, tide);
+        surfVoices[i].host.position.set(wx, -PAD_H + tide, wz);
+      }
+    }
+
     function soundUpdate(dt, t) {
       if (!AC) return;
       mixSurf += (wantSurf - mixSurf) * Math.min(1, dt * 0.8);
       mixWind += (wantWind - mixWind) * Math.min(1, dt * 0.8);
       swell = Math.max(0, swell - dt * 0.45);
-      // the wash breathes with the tide you can SEE: the same surfLevel that
-      // lifts the water plane and walks the foam line up the sand
-      const tide = (surfLevel(t) + 0.057) / 0.114;
-      const wash = (0.5 + 0.7 * tide) * mixSurf * (1 + swell * 0.7);
+      // The wash breathes with the SWELL you can see — the same surfLevel that
+      // rides on top of the tide and lifts the water plane. Named `breath`
+      // and not `tide`: it was called `tide` before there was a tide, and
+      // when one arrived this local silently shadowed it, so the surf
+      // emitters were re-bisected against a 0..1 swell figure rather than
+      // against sea level. Nothing threw; the sound just stopped following
+      // the water.
+      const breath = (surfLevel(t) + 0.057) / 0.114;
+      const wash = (0.5 + 0.7 * breath) * mixSurf * (1 + swell * 0.7);
       for (const v of surfVoices) v.gain.gain.value = v.base * wash;
       for (const v of windVoices) {
         const sway = 0.5 + 0.5 * Math.sin(t * 0.6 + v.phase);
         v.gain.gain.value = (0.018 + 0.05 * sway) * mixWind;
       }
+      // The surf is emitted FROM the waterline, so when the waterline walks
+      // up the beach the sound walks with it — from the chair the sea gets
+      // nearer at high water and further at low. Re-bisected every couple of
+      // seconds rather than every frame: six bisections is 144 calls to
+      // groundHeight, and the tide moves about a millimetre a second.
+      tideEdgeT -= dt;
+      if (tideEdgeT <= 0) { tideEdgeT = 2; retuneSurf(); }
       nextGull -= dt;
       if (nextGull <= 0) { gullCry(); nextGull = gullEvery(); }
     }
@@ -3135,6 +3455,8 @@
     let footY = 0;
     function animate() {
       const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
+      tideT += dt * TIDE_RATES[comfort.time][1];
+      tide = tideAt(tideT);
 
       if (blend < 1) {
         blend = Math.min(1, blend + dt / 2.5); applyMood(); shadowDirty();
@@ -3190,10 +3512,38 @@
       // the sea: the plane rides the swell, the two surface maps slide in
       // different directions so the ripple has cross-motion, and the foam
       // line follows the water's reach up the sand
-      water.position.y = -PAD_H + surfLevel(t);
+      water.position.y = -PAD_H + tide + surfLevel(t);
       sea.position.y = water.position.y - 0.02;
       waterNormal.offset.set(t * 0.011, -t * 0.006);
       waterDisp.offset.set(-t * 0.004, t * 0.0055);
+      // the two caustic layers drift against each other; their product is
+      // what moves, and it moves far less obviously than either layer does
+      if (waterMode === 'tsl') {
+        // everything the node material needs that changes: where the surface
+        // is, where the sun is, and what colour the water is being this mood
+        uSea.value = water.position.y;
+        uNormOff.value.set(t * 0.011, -t * 0.006);
+        uShallow.value.copy(cur.water).lerp(_envC.setRGB(1, 1, 1), 0.55);
+        uDeep.value.copy(cur.water).multiplyScalar(0.42);
+        uSunDir.value.copy(cur.sunDir);
+        uSunCol.value.copy(cur.sunCol).multiplyScalar(smooth(0.6, 3.1, cur.sunInt));
+      }
+      causA.offset.set(t * 0.0085, t * 0.0062);
+      causB.offset.set(-t * 0.0051, t * 0.0037);
+      // Caustics are sunlight that got through the surface, so they follow
+      // the sun rather than the exposure: a low sun puts little light INTO
+      // the water however warm the sky looks, which is why golden hour keeps
+      // only a trace of them and midday has them properly.
+      const causSun = (0.3 + 0.7 * smooth(0.0, 0.7, Math.max(0, cur.sunDir.y)))
+        * smooth(0.6, 3.1, cur.sunInt);
+      // Sunlight that has been through water, so it is the sun's colour bent
+      // toward the sea's — not white. Added at half strength: caustics are a
+      // MODULATION of the sand, and at full additive white they stop being
+      // light on a beach and become lace laid over one.
+      caustics.material.color.copy(cur.sunCol).lerp(cur.water, 0.4)
+        .multiplyScalar(causSun * 0.85);
+      caustics.visible = causSun > 0.02;
+      if (Math.abs(tide - causBakedAt) > 0.02) causRebake();
       foamUpdate(t);
       // the reflection is rebuilt a few times across a mood blend, not every
       // frame: each rebuild is a fresh filtered cube on the GPU
@@ -3302,6 +3652,7 @@
       }
     }
 
+    setWater(waterMode);
     makeSolid(terrain);
     makeSolid(statics);
     makeSolid(chairProp);
@@ -3362,6 +3713,46 @@
           g.dispose();
           return out;
         },
+        // the tide: where it is, and a way to put it somewhere exactly
+        tide: () => ({
+          level: +tide.toFixed(4), phase: +((tideT % TIDE_PERIOD) / TIDE_PERIOD).toFixed(4),
+          amp: TIDE_AMP, period: TIDE_PERIOD, rate: TIDE_RATES[comfort.time][0],
+          waterY: +water.position.y.toFixed(4), seaY: +seaY().toFixed(4),
+          surfAt: surfVoices.map(v => [+v.host.position.x.toFixed(2), +v.host.position.z.toFixed(2)]),
+        }),
+        setTide: (phase01) => { tideT = phase01 * TIDE_PERIOD; tide = tideAt(tideT); return tide; },
+        retuneSurf,
+        foamReach: () => +(tide + surfLevel(clock.elapsedTime) + 0.045).toFixed(4),
+        // the caustics: the light the water throws on the sand
+        caustics: () => {
+          const c = causGeo.attributes.color, pos = causGeo.attributes.position;
+          let lit = 0, dry = 0;
+          for (let i = 0; i < c.count; i++) {
+            const submerged = tide - groundHeight(pos.getX(i), pos.getZ(i)) > 0.05;
+            if (c.getX(i) > 0.05) { lit++; if (!submerged) dry++; }
+          }
+          return { lit, dry, verts: c.count, bakedAt: +causBakedAt.toFixed(3),
+            sun: +caustics.material.color.r.toFixed(3), visible: caustics.visible,
+            tiles: [causA.repeat.x, causB.repeat.x], additive: caustics.material.blending === THREE.AdditiveBlending };
+        },
+        causRebake, caustMesh: caustics, waterMesh: water, seaMesh: sea,
+        // the two waters, swappable on the frame, for comparing them
+        setWater, water: () => ({ mode: waterMode,
+          // the range the depth term is computed against — sea level has to
+          // land INSIDE it, or every depth clamps to zero and the material is
+          // all Fresnel and no absorption, which is what the first cut did
+          bathyMin: +Math.min(...waterGeo.attributes.bathy.array).toFixed(3),
+          bathyMax: +Math.max(...waterGeo.attributes.bathy.array).toFixed(3),
+          tsl: water.material === waterTslMat && waterTslMat !== null,
+          nodes: !!waterTslMat, envLive: !!envNodeRef && envNodeRef.value === envCube,
+          sea: +water.position.y.toFixed(3) }),
+        // the height band the foam points actually occupy — the tide walks
+        // the break through this, and a band that does not span the tide is
+        // a surf line that stops existing at low water
+        foamBand: () => {
+          const hs = foam.userData.hs;
+          return { lo: +Math.min(...hs).toFixed(3), hi: +Math.max(...hs).toFixed(3), n: hs.length };
+        },
         credits: () => propCredits.slice(),
         creditProp: (title, author, licence) => {
           const lic = (licence ?? '').trim();
@@ -3385,7 +3776,7 @@
         canTeleport: (x, z) => standY(x, z, gy(x, z) + 0.2) !== null
           && Math.hypot(x, z) <= ISLAND_R * 1.05,
         // collision, which is the island's geometry rather than its height field
-        collide: () => ({ solids: solids.length, seaY: +SEA_Y.toFixed(2), stepUp: STEP_UP,
+        collide: () => ({ solids: solids.length, seaY: +seaY().toFixed(3), stepUp: STEP_UP,
           trees: solids.filter(m => !!m.geometry.boundsTree).length }),
         standY: (x, z, feetY = 0) => standY(x, z, feetY),
         wallBetween: (fx, fz, tx, tz, feetY = 0) => wallBetween(fx, fz, tx, tz, feetY),
@@ -3395,7 +3786,8 @@
         },
         // comfort, the slate that sets it, and the frame cost it reports
         slate, slateFace, slateAct, slateRow, SPEEDS, TURNS, moveSpeed,
-        comfort: () => ({ ...comfort, speed: SPEEDS[comfort.speed][0], turn: TURNS[comfort.turn][0] }),
+        comfort: () => ({ ...comfort, speed: SPEEDS[comfort.speed][0], turn: TURNS[comfort.turn][0],
+          time: TIDE_RATES[comfort.time][0] }),
         setComfort,
         vignette: () => ({ on: vignette.visible, opacity: +vignette.material.opacity.toFixed(3) }),
         perf: () => ({ ...perfSample, on: perfOn, backend: backendName(), tier: TIER.name }),

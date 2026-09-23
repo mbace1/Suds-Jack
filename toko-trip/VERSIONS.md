@@ -1,5 +1,226 @@
 # Toko Trip — release log
 
+## v16 — 2026-09-23
+
+A second water, in TSL, and a comparison — **and the comparison does not
+favour the new one.** That is the release.
+
+`?water=tsl`, or `__tt.debug.setWater('tsl')`. The island still boots on the
+baked material. A style switch is a comparison, not a decision.
+
+### What it is
+
+Clearwater's shading model as a three node material, so it compiles to WGSL on
+the WebGPU backend AND to GLSL on WebGL2 — the only reason it is allowed here,
+since a hand-written shader would have to be maintained twice and one of the
+two would rot. Schlick Fresnel on water's own F0, Beer–Lambert absorption over
+a real path length, a depth-graded tint, the mood's sky as a reflection, one
+sun glint.
+
+**Depth comes from a vertex attribute, not a texture.** The water plane
+already has 200x200 vertices, so the seabed height under each one is an
+attribute and sea level is a uniform — the rasteriser interpolates between
+28 cm samples. No bathymetry bake, nothing for the tide to invalidate, and it
+lifts v14's recorded cap: the tide was held to 28 cm because the BAKED colours
+are painted for the depth at mean sea level and drift out of true as the water
+moves. This material has no such cap.
+
+**Fresnel is the whole argument.** How much of the bottom you see through
+water depends on the angle you look at it from, and that is a per-pixel,
+per-view quantity. Vertex colours are baked once and cannot know where your
+head is, so v2's water is equally see-through from every angle.
+
+### What the comparison actually showed
+
+**Midday, from the chair: the TSL water wins.** A real depth gradient —
+pale at the waterline, deepening through the channel — that no lerp was
+painting in by hand, and the bay brightens correctly toward the horizon.
+
+**Golden hour, at a grazing angle: the TSL water loses, badly.** Correct
+Fresnel at a graze is ~98% reflection, and what it reflects is a **32x32
+painted gradient** with no clouds in it. So the richest view this island has —
+dark teal, green sparkle, the sun's path laid across the cove — flattens to a
+uniform pale wash. The baked water's wrongness (fixed transparency) was
+HIDING a much bigger wrongness: there is no real environment to reflect.
+
+That is a useful result and it is the reason to build a comparison rather than
+a replacement. Making the node material the default would trade a small lie
+for a large one.
+
+**What the TSL path needs before it could be the default** is not more shader:
+it is something worth reflecting — a real env cube with cloud and horizon
+detail, or planar reflection, which is a second render pass per eye and
+exactly what the fill-rate ladder says not to do in a headset.
+
+### Found building it
+
+- **The coordinate-space bug, and it looked like success.** The `bathy`
+  attribute held terrain height while the sea uniform held world y, which sit
+  a whole `PAD_H` apart — so every depth went negative, clamped to zero, and
+  left a material that was all Fresnel and no absorption. It rendered. It had
+  a horizon that went reflective. It looked like water working, and the tell
+  was that tripling the extinction changed nothing. The gate now asserts sea
+  level lands inside the seabed's range.
+- **`rebuildEnv()` makes a FRESH cube each mood** — deliberately, since the
+  renderer caches its filtered copy per texture object. A node captures the
+  texture it was built with, so the reflection froze on whatever sky the
+  island booted under until the node's `.value` was handed each new cube.
+  Gated.
+- **Extinction, by looking, three times.** 0.85/m and the bay read as MUD —
+  the seabed's wet band was painted dark back when the baked water hid it, and
+  too little absorption just shows you that paint. 2.4/m and the colour was
+  right but the bottom was GONE, costing the cove the one thing its own code
+  comment claims for it: a bowl you can see the bottom of. It sits at 1.3.
+- The TSL namespace is already in the vendored bundle as `THREE.TSL` — 615
+  exports, including three's own `F_Schlick`. Nothing needed vendoring.
+
+Gate: 93 checks.
+
+## v15 — 2026-09-23
+
+Caustics — the light the water throws on the sand. The owner asked for
+[Clearwater](https://github.com/Aureliengmz/clearwater) (Aurélien / Lumaris,
+MIT) to be added AS the water, and it cannot be, for four reasons worth
+recording rather than hand-waving: it holds its own WebGL2 context; it renders
+with `depth: false` and carries its own seabed (333 KB of the 401 KB file is an
+embedded pebble texture), so there is nowhere to put the chair, the jetty or
+the sand; its shaders are GLSL where this renderer may be WebGPU; and its look
+rests substantially on a bloom-and-glare post stack, against the one rule the
+whole fidelity ladder here stands on. It is not hard to integrate — it is a
+different program.
+
+The IDEA ports perfectly, and it is the thing in those pictures that most says
+shallow water. Taken with credit in `CREDITS.md`, re-implemented from scratch:
+
+- **A caustic is where refracted rays BUNCH UP.** Launch a grid down through
+  the surface, refract each ray by the local slope, and measure how much the
+  area compresses where it lands.
+- **Run it once per colour channel at slightly different indices of
+  refraction** — that is where the fringe on a caustic filament comes from.
+  The real red-to-blue spread is about 1% and lands sub-texel here, so it is
+  widened to stay visible: the shape is refraction, the amount is a choice,
+  and that is the one liberty taken.
+- Clearwater does this on the GPU every frame from a live FFT ocean. This
+  bakes it once on the CPU into a tiling texture and lays it on the seabed as
+  **one additive decal**, followed vertex by vertex off `groundHeight` so it
+  cannot float or sink, masked by depth, and **rebaked as the tide moves**.
+- **`map` × `alphaMap` is the whole trick.** three gives each map its own
+  transform, so two caustic layers scroll in different directions and multiply
+  on a stock material — the interference that stops a scrolling texture
+  reading as a scrolling texture. No shader, no post, one draw call, identical
+  on both backends.
+
+**The bug worth keeping, because it cost two passes:** the first cut splatted
+refracted rays into a histogram at nine samples a texel. Poisson noise at nine
+samples IS speckle, and that is exactly what it looked like — a rainbow fizz,
+not caustics. A caustic is a **fold, not a scatter**, and the fold has a closed
+form: the landing map is `p − b·∇H`, so its Jacobian is `I − b·∇²H` and
+brightness is `1/|det|`. Analytic, noise-free, and the web appeared on the
+first render after the change.
+
+Three more, all found by looking rather than by the gate:
+
+- **Over-bending destroys a caustic.** At the first bend strength the rays
+  scattered rather than focused, and no amount of curve-tuning recovered it.
+- **Raising the floor kills the filaments and keeps the peaks**, which is a
+  second, different road back to sparkle. The web needs a LOW floor and a low
+  gain.
+- **The water's own height field is too fine for this.** The caustics bake
+  uses P 4/9 where the water's normal map uses 5/13 — rendered side by side,
+  the water's fine detail refracts into glitter and the coarse field is the
+  one that reads as caustics. A deliberate difference, not a shortcut.
+
+Tuned through the water, because that is the only condition that matters: at
+full additive white it stopped being light on a beach and became lace laid
+over one. It is the sun's colour bent toward the sea's, at 85%, and it goes
+out with the sun rather than with the sky — midday 0.51, golden hour 0.18,
+dusk 0.01, which is why golden hour keeps only a trace.
+
+**Honest limit:** it is subtle in a still frame. Caustics are sold by motion
+and this island has never been seen in motion by anything but a 2 fps
+sandbox. Whether the web reads at eye level in stereo is a headset question.
+
+Cost: ~1.2 s of load for the bake, one extra draw call, and a 113 KB vertex
+upload each time the tide moves 2 cm.
+
+Gate: 88 checks.
+
+## v14 — 2026-09-20
+
+The tide. Thirteen versions in, the honest problem was that **everything on
+this island happened because you did something** — you pressed the totem, you
+pointed at the radio — and when you stopped pointing, nothing happened. A zen
+island asked you to sit still and paid nothing for it. You could see all of it
+in ninety seconds.
+
+This is the island's one clock, and the point is not that the water moves. The
+point is that the things it moves are the things every other system already
+reads, so one change makes all of them content:
+
+- **The water rides it** (−1.25 → −0.67 m), and the swell now rides on TOP of
+  the tide rather than being the only vertical motion there was.
+- **The break walks up the beach** over minutes instead of breathing in one
+  place — `foamUpdate` takes `tide + surfLevel(t)`.
+- **Sea level is no longer a constant**, and every clamp reads it: `seaY()`
+  rather than `SEA_Y`. Low water uncovers **2.4 m of beach you are allowed to
+  stand on** (reach 2.6 m → 5.0 m from the chair). That is what makes it a
+  mechanic rather than a texture — the tide changes where you may go.
+- **The surf comes from the waterline**, so the sound moves with it: the
+  emitters re-bisect onto the current edge and sit 2.6 m out at high water
+  against 4.6 m at low. From the chair the sea is nearer when it is in.
+- **The rocks, the driftwood and the jetty posts surface** at low water, free,
+  because they were always there and the water was over them.
+
+Seven minutes for a full ebb and flood, on the slate as **TIDE: still / slow /
+quick**. A real tide is not something you can sit through; this is the slowest
+thing that is still a thing you can *watch*, which is the only honest reason
+to pick a number.
+
+Two caps recorded rather than hidden:
+
+- **28 cm of amplitude**, and the limit is not taste. The water's colour and
+  transparency are baked per vertex from the depth at MEAN sea level, so the
+  further the tide travels the more the shallows are painted for a depth they
+  no longer have. At 28 cm the mismatch sits under the foam line, which is the
+  brightest thing in that exact band. Deeper means rebaking 40k vertex colours
+  as it moves — a 640 KB upload to fix an error nobody has seen.
+- **The baked wet-sand colour and the salt rime stay put.** They are the
+  waterline's AVERAGE mark, which is physically what they are.
+
+Three found building it, and the first is the one worth remembering:
+
+- **`soundUpdate` already had a local called `tide`.** It was v10's normalised
+  swell breath, 0..1, named before there was a tide — and when one arrived it
+  silently shadowed the real thing, so the surf emitters were re-bisected
+  against a swell figure instead of against sea level. Nothing threw. The
+  sound simply stopped following the water. It is `breath` now, which is what
+  v10's own comment had been calling it all along.
+- **The foam band did not span the tide.** The points are generated once in a
+  narrow height band around mean sea level, so the break walked straight off
+  the end of its own cloud at low water and the surf stopped existing. The
+  band now spans the whole range (−0.37…0.54) at 1.8x the count, and the gate
+  asserts it, because this is invisible until exactly low water.
+- **`clampComfort()` runs at module init and now reads `TIDE_RATES`**, which
+  was declared after it. Temporal dead zone, and the island did not boot.
+
+And the rulers were wrong twice more, both for the same reason — *sea level is
+not a constant any more*: the water check read `water.position.y`, which only
+the render loop writes, so at two frames a second it reported the PREVIOUS
+phase and the tide looked inverted; and v10's "every surf emitter sits on the
+waterline" asserted `groundHeight ~ 0`, which was the definition of the
+waterline only while it could not move.
+
+Gate: 83 checks. The one that matters asserts the payoff rather than the
+motion — that low water uncovers beach you can walk on.
+
+### Next on this axis
+
+The sun does not move yet. The three moods are still a button, so time passes
+in the water and nowhere else. `tideT` is a real clock and the moods are
+already a lerp between keyframes; hanging the sky on the same axis is the
+obvious follow-on, and it is deliberately NOT bundled here — doing it badly
+would wreck three carefully tuned moods to make one release look bigger.
+
 ## v13 — 2026-09-19
 
 The first step. Collision is the island's **geometry** now, not its height
