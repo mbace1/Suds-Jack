@@ -1,5 +1,44 @@
 # Toko Trip — release log
 
+## v17 — 2026-09-23
+
+The sun moves. v14 hung the water on a clock and left the sky as three
+buttons, so time passed in the sea and nowhere else. The sky is on the same
+clock now.
+
+- **A day is two tides**, which is what a real semidiurnal sea does. Fourteen
+  minutes at `slow`.
+- **The three tuned moods are HOLDS on the day, and it blends between them.**
+  At every hold the look is exactly the mood that was tuned by eye — the gate
+  compares them — so the day is new and the three pictures are not.
+- **It plays one composition if you just sit.** The island opens at golden
+  hour on high water; the sun goes down while the water goes out; dusk — the
+  lanterns, the fireflies, the magenta arch lit — arrives at LOW water. That
+  is on purpose: it is where the cave will be.
+- **Dawn rises where the sun set.** A stylised day, and deliberately: the
+  island is built facing one horizon, and a sunrise behind the chair would
+  spend the second golden hour of every day on the back of your head.
+- **The totem skips time forward, never back.** It jumps to the next time its
+  mood holds; a day that ran backwards would be a slider, not a day.
+- **The slate row is TIME now** — still / slow / quick — and `still` holds the
+  sun as well as the sea.
+
+**Static shadows survive.** A moving sun has two costs, a shadow re-render and
+a fresh reflection cube, and both are throttled to the transitions — once a
+second and once every two, while the sun moves about half a degree — and zero
+through every hold, which is most of the day. The holds recompute nothing at
+all after arriving.
+
+`applyMood` was split so the day could reuse it: `pushMood` is the one place
+that knows what a mood touches, however the mood arrived.
+
+Found building it: `advance()` jumps the tide, and the surf emitters re-seat
+on a two-second timer, so the next thing to look found them at the old
+waterline. A jump re-seats them at once now.
+
+Gate: 99 checks. The one that matters asserts the composition rather than the
+motion: from boot, sitting through the sunset brings dusk at low water.
+
 ## v16 — 2026-09-23
 
 A second water, in TSL, and a comparison — **and the comparison does not

@@ -300,6 +300,72 @@ const check = (label, ok) => {
   });
   check('and its reflection follows the mood rather than freezing on one sky', envLive === true);
 
+  // ── the day ──
+  // The sky on the same clock as the sea. What matters is that the three
+  // moods tuned by eye are still EXACTLY what you see at their holds — the day
+  // is new, the three pictures are not — and that sitting still from boot
+  // plays the composition it was set up to: sunset while the water goes out,
+  // dusk at low water.
+  const exact = await page.evaluate(() => {
+    const d = window.__tt.debug, out = [];
+    for (const [i, ph] of [[0, 0.30], [1, 0.55], [2, 0.06]]) {
+      d.setDay(ph);
+      out.push({ i, fog: d.day().fog, tuned: d.moodFog(i), hold: d.day().hold });
+    }
+    return out;
+  });
+  check(`every hold is exactly its tuned mood (${exact.map(e => e.fog === e.tuned ? 'ok' : e.fog + '≠' + e.tuned).join(' ')})`,
+    exact.every(e => e.fog === e.tuned && e.hold === e.i));
+
+  const between = await page.evaluate(() => {
+    const d = window.__tt.debug;
+    d.setDay(0.42);                                  // golden → dusk, mid-way
+    return { day: d.day(), gold: d.moodFog(0), dusk: d.moodFog(1) };
+  });
+  check(`and between them it is a blend, not a cut (${between.gold} → ${between.day.fog} → ${between.dusk})`,
+    between.day.hold === -1 && between.day.fog !== between.gold && between.day.fog !== between.dusk);
+
+  // THE COMPOSITION. From boot, sitting still: golden hour on high water,
+  // then dusk on LOW water — where the cave will open.
+  const comp = await page.evaluate(() => {
+    const d = window.__tt.debug;
+    d.setDay(0.30); d.setTide(0.25);                  // exactly how the island boots
+    const boot = { mood: d.day().hold, tide: d.tide().level };
+    const later = d.advance(0.25 * d.day().period);   // sit through the sunset
+    return { boot, later, mood: d.day().hold, tide: d.tide().level, amp: d.tide().amp };
+  });
+  check(`the island opens at golden hour on high water (tide ${comp.boot.tide})`,
+    comp.boot.mood === 0 && comp.boot.tide > comp.amp * 0.9);
+  check(`and sitting through the sunset brings dusk at LOW water (tide ${comp.tide})`,
+    comp.mood === 1 && comp.tide < -comp.amp * 0.9);
+
+  // the totem skips time forward, never back — a day that ran backwards
+  // would be a slider, not a day
+  const skip = await page.evaluate(() => {
+    const d = window.__tt.debug;
+    d.setDay(0.30);
+    const before = d.day().phase;
+    window.__tt.setMood(1, true);                    // what the totem does next
+    const after = d.day();
+    return { before, after: after.phase, hold: after.hold };
+  });
+  check(`the totem skips ahead to the next dusk (${skip.before} → ${skip.after})`,
+    skip.hold === 1 && skip.after > skip.before);
+
+  const stillDay = await page.evaluate(async () => {
+    const d = window.__tt.debug;
+    d.setComfort('time', 0);
+    d.setDay(0.42);
+    const a = d.day().phase;
+    await new Promise(r => setTimeout(r, 600));
+    const b = d.day().phase;
+    d.setComfort('time', 1);
+    window.__tt.setMood(0, true);
+    return { a, b };
+  });
+  check(`and still holds the sun as well as the sea (${stillDay.a} → ${stillDay.b})`,
+    stillDay.a === stillDay.b);
+
   // ── the moods ──
   const moods = await page.evaluate(() => {
     const out = [];
@@ -407,7 +473,7 @@ const check = (label, ok) => {
   check(`TURN cycles (${rows.seen[3].turn})`, rows.seen[3].turn === 'snap 45');
   check(`EDGES toggles (${rows.seen[4].vig})`, rows.seen[4].vig === 0);
   check(`SOUND toggles (${rows.seen[5].sound})`, rows.seen[5].sound === 0);
-  check(`TIDE cycles (${rows.seen[6].time})`, rows.seen[6].time !== rows.seen[5].time);
+  check(`TIME cycles (${rows.seen[6].time})`, rows.seen[6].time !== rows.seen[5].time);
   // and one row must not move another: the UV divisor is the whole menu
   check('and one row moves one dial',
     rows.seen[6].speed === 'easy' && rows.seen[6].turn === 'snap 45'

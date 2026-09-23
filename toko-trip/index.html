@@ -1787,7 +1787,7 @@
         ['TURN', TURNS[comfort.turn][0]],
         ['EDGES', comfort.vig ? 'closing in' : 'open'],
         ['SOUND', comfort.sound ? 'on' : 'off'],
-        ['TIDE', TIDE_RATES[comfort.time][0]],
+        ['TIME', TIDE_RATES[comfort.time][0]],
       ];
       rows.forEach(([label, value], i) => {
         const y = i * rowH;
@@ -2703,8 +2703,101 @@
       Array.isArray(m.sunDir) ? into.sunDir.fromArray(m.sunDir).normalize() : into.sunDir.copy(m.sunDir);
     };
     let moodIdx = 0, blend = 1;
+
+    // ═══ THE DAY ═══════════════════════════════════════════════════════════
+    // v14 gave the island one clock and hung only the water on it; the sky
+    // was still three buttons, so time passed in the sea and nowhere else.
+    // This hangs the sky on it too.
+    //
+    // A day is TWO tides, which is what a real semidiurnal sea does, and the
+    // phase is set so that sitting still from boot plays one composition: the
+    // island opens at golden hour on high water, the sun goes down while the
+    // water goes out, and dusk — fireflies, lanterns, the magenta arch lit —
+    // arrives at LOW water. That is on purpose. It is where the cave will be.
+    const DAY = TIDE_PERIOD * 2;
+    // The three tuned moods are HOLDS on this timeline and the day blends
+    // between them, so at every hold the look is exactly the mood that was
+    // tuned by eye — the day is new, the three pictures are not. MOODS is
+    // [golden hour, dusk, midday].
+    const DAY_KEYS = [
+      [0.00, 2], [0.12, 2],       // midday
+      [0.23, 0], [0.37, 0],       // golden hour — the hero, so the longest light
+      [0.47, 1], [0.63, 1],       // dusk: this island's night
+      [0.72, 0], [0.80, 0],       // dawn
+      [0.91, 2], [1.00, 2],
+    ];
+    // Dawn is golden hour again, on the SAME side: the sun rises where it
+    // set. A stylised day, and deliberately so — the island is built facing
+    // one horizon, and a sunrise behind the chair would spend the second
+    // golden hour of every day on the back of your head.
+    const HOLDS = { 0: [0.30, 0.76], 1: [0.55], 2: [0.06] };
+    const MOOD_STATES = MOODS.map(m => { const o = mkMoodState(); snapshot(m, o); return o; });
+    let dayT = HOLDS[0][0] * DAY;
+    let dayHold = -1, dayEnvT = 0, dayShadowT = 0;
+    const dayPhase = () => ((dayT / DAY) % 1 + 1) % 1;
+    function daySegment(ph) {
+      for (let i = 0; i < DAY_KEYS.length - 1; i++) {
+        const [p0, m0] = DAY_KEYS[i], [p1, m1] = DAY_KEYS[i + 1];
+        if (ph >= p0 && ph <= p1) return { m0, m1, u: p1 > p0 ? (ph - p0) / (p1 - p0) : 0 };
+      }
+      return { m0: 2, m1: 2, u: 0 };
+    }
+    function announceMood(i) {
+      const tag = document.getElementById('mood-name');
+      tag.textContent = MOODS[i].name;
+      tag.style.opacity = 0.8;
+      clearTimeout(setMood._t);
+      setMood._t = setTimeout(() => { tag.style.opacity = 0; }, 2200);
+    }
+    // Skip FORWARD to the next time mood `i` holds — never back. Pressing the
+    // totem is time passing faster, not a menu, and a day that could run
+    // backwards would be a slider. Already inside that hold: stay.
+    function jumpDayTo(i) {
+      const seg = daySegment(dayPhase());
+      if (seg.m0 === i && seg.m1 === i) return;
+      const ph = dayPhase();
+      let best = 1e9;
+      for (const h of HOLDS[i]) best = Math.min(best, ((h - ph) % 1 + 1) % 1);
+      dayT += best * DAY;
+    }
+    function daySky(dt) {
+      const { m0, m1, u } = daySegment(dayPhase());
+      if (m0 === m1) {
+        // a hold: nothing moves, so nothing is recomputed — once on arrival,
+        // with the reflection rebuilt and the shadows settled, then never
+        if (dayHold === m0) return;
+        dayHold = m0;
+        const S = MOOD_STATES[m0];
+        for (const key of MOOD_NUM) cur[key] = S[key];
+        for (const key of MOOD_COL) cur[key].copy(S[key]);
+        cur.sunDir.copy(S.sunDir);
+        if (moodIdx !== m0) { moodIdx = m0; applyAir(); }
+        announceMood(m0);
+        pushMood(true);
+        shadowDirty();
+        return;
+      }
+      dayHold = -1;
+      const k = u * u * (3 - 2 * u);
+      const A = MOOD_STATES[m0], B = MOOD_STATES[m1];
+      for (const key of MOOD_NUM) cur[key] = lerp(A[key], B[key], k);
+      for (const key of MOOD_COL) cur[key].copy(A[key]).lerp(B[key], k);
+      cur.sunDir.copy(A.sunDir).lerp(B.sunDir, k).normalize();
+      const near = k < 0.5 ? m0 : m1;
+      if (moodIdx !== near) { moodIdx = near; applyAir(); }
+      pushMood(false);
+      // The two costs a moving sun has, throttled rather than per frame: a
+      // shadow map re-render once a second (the sun moves about half a
+      // degree in that time) and a fresh reflection cube every two. Static
+      // shadows stay static through every hold, which is most of the day.
+      dayShadowT += dt; dayEnvT += dt;
+      if (dayShadowT > 1) { dayShadowT = 0; shadowDirty(); }
+      if (dayEnvT > 2) { dayEnvT = 0; rebuildEnv(); }
+    }
     function setMood(i, instant = false) {
       moodIdx = ((i % MOODS.length) + MOODS.length) % MOODS.length;
+      jumpDayTo(moodIdx);
+      dayHold = -1;
       snapshot(MOODS[moodIdx], target);
       if (instant) { snapshot(MOODS[moodIdx], cur); blend = 1; }
       else { snapshot(cur, from); blend = 0; }
@@ -2726,8 +2819,14 @@
         for (const key of MOOD_COL) cur[key].copy(from[key]).lerp(target[key], k);
         cur.sunDir.copy(from.sunDir).lerp(target.sunDir, k).normalize();
       }
+      pushMood(force);
+    }
+    // Everything that paints the world from `cur`. Split out of applyMood so
+    // the day can write `cur` itself and reuse all of it — one place that
+    // knows what a mood touches, however the mood arrived.
+    function pushMood(rebuild) {
       paintSky(cur.skyTop, cur.skyHoriz, cur.water);
-      if (force) rebuildEnv();
+      if (rebuild) rebuildEnv();
       sun.color.copy(cur.sunCol); sun.intensity = cur.sunInt;
       sun.position.copy(cur.sunDir).multiplyScalar(60);
       hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGround); hemi.intensity = cur.hemiInt;
@@ -3457,10 +3556,13 @@
       const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
       tideT += dt * TIDE_RATES[comfort.time][1];
       tide = tideAt(tideT);
+      dayT += dt * TIDE_RATES[comfort.time][1];
 
       if (blend < 1) {
         blend = Math.min(1, blend + dt / 2.5); applyMood(); shadowDirty();
         if (blend >= 1) rebuildEnv();                 // the settled sky, reflected exactly
+      } else {
+        daySky(dt);                                   // otherwise the day has the sky
       }
 
       if (!renderer.xr.isPresenting) {
@@ -3721,6 +3823,24 @@
           surfAt: surfVoices.map(v => [+v.host.position.x.toFixed(2), +v.host.position.z.toFixed(2)]),
         }),
         setTide: (phase01) => { tideT = phase01 * TIDE_PERIOD; tide = tideAt(tideT); return tide; },
+        // the day: where it is, and a way to put it somewhere exactly
+        day: () => {
+          const seg = daySegment(dayPhase());
+          return { phase: +dayPhase().toFixed(4), mood: moodIdx, hold: seg.m0 === seg.m1 ? seg.m0 : -1,
+            from: seg.m0, to: seg.m1, fog: cur.fog.getHexString(), sunY: +cur.sunDir.y.toFixed(3),
+            period: DAY, rate: TIDE_RATES[comfort.time][0] };
+        },
+        setDay: (phase01) => { dayT = phase01 * DAY; dayHold = -1; blend = 1; daySky(0); return dayPhase(); },
+        moodFog: (i) => MOOD_STATES[i].fog.getHexString(),
+        // let time pass, on both clocks at once, exactly as sitting would
+        advance: (sec) => {
+          // a JUMP, so the surf is re-seated now rather than on its two-second
+          // timer — otherwise the next thing to look finds it at the old line
+          tideT += sec; tide = tideAt(tideT); dayT += sec; dayHold = -1; blend = 1; daySky(0);
+          retuneSurf();
+          return { day: +dayPhase().toFixed(4), tide: +((tideT % TIDE_PERIOD) / TIDE_PERIOD).toFixed(4) };
+        },
+        tidePhase: () => +((tideT % TIDE_PERIOD) / TIDE_PERIOD).toFixed(4),
         retuneSurf,
         foamReach: () => +(tide + surfLevel(clock.elapsedTime) + 0.045).toFixed(4),
         // the caustics: the light the water throws on the sand
