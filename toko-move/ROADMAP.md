@@ -136,3 +136,117 @@ includes the ferry.
 A shift where something happened that was not the timetable — measured as
 "events seen per shift" > 0 in the bot and, the real exit, the owner playing
 one on a phone and naming what they would keep.
+
+---
+
+# NEXT LEVEL — proposed 2026-09-23, not yet picked
+
+Owner, 2026-09-23: *"For visual and systems updates.. let's take leaps as a
+game and think next level."* Everything above shipped; this is what a leap
+looks like from here. Ordered by how much of the game each one turns on, not
+by size. Nothing below is started.
+
+**Where the game is.** One five-minute shift on the real network, with jobs,
+drops, an event deck, four city days, a rival, parcels with a size, regulars
+with a standing, a map you learn. It is a good loop and it is ONE loop: press
+again and you get the same jobs on a different day. Every system below is
+built and measured; what none of them has is somewhere to GO.
+
+## L1 · The week (the run)
+
+Five shifts, Monday to Friday, one run. A day drawn for each. Money instead of
+score, and **rent due on Friday**: the run is won or lost at the end of the
+week, not the end of the shift. Between shifts you keep your standing, your
+known stops and your money, and lose your streak.
+
+This is the leap because it makes every existing system COMPOUND instead of
+reset: a regular is worth cultivating on Monday for Thursday's tip; the map
+you learn on Tuesday is the map you walk on Sunday; a bad Wednesday is a
+Friday problem. Slay the Spire is a run, not a fight. Nothing here is a new
+mechanic — it is a save between shifts and a number to beat.
+
+Prerequisite: **jobs vary by shift** (v2.42 deliberately left them fixed). A
+week of identical dispatch is not a week.
+
+## L2 · Kit (the choice between shifts)
+
+Monday night, pick one of three. Each is a knob on a lever that already
+exists, so each is a day's work and a bot can measure it:
+
+| kit | rides |
+|---|---|
+| a bigger bag (capacity 5 → 7) | `parcels.CAPACITY` |
+| a bike (walking ×0.6) | `walkCost` |
+| a thermos (hot food cools slower) | `CARGO.freshness` |
+| a radio (disruptions announced a minute early) | `EventDirector` |
+| a friend at HSL (see tomorrow's day tonight) | `drawCityEvent` |
+| a season ticket (transfers cost nothing) | `planEstimate` |
+
+FTL's blue options, StS's relics. The rule from the ascension ladder holds:
+no kit may add a verb, only bend a number the player already reads.
+
+## L3 · The daily shift (cheap, social)
+
+`?shift=N` already pins a shift. Make **today's date the seed**: one shift
+number for everyone, one attempt, a share line — *Shift #0923 · 3/3 · 1,842 ·
+MARKET MORNING*. Wordle's shape on a game that already has the seed. Two
+lines of code and a share button; the biggest reason to come back tomorrow
+that this game could have for the least work. Sits under L1 or beside it.
+
+## L4 · Weather, and the map as the hero (visual + systems in one)
+
+The dawn wash exists; a week has five mornings. Rain, fog, first snow, a clear
+frost — each is a look AND a lever: rain slows walking, snow slows everything,
+and **fog hides badges past 400 m so a known route is the only route**, which
+is the first time Local Knowledge would matter on an ordinary day. Drawn in
+the night-map register the owner set (grey ground, one blue, the lines carry
+the colour): fog is the ground losing contrast with distance, snow is the
+streets going pale, rain is the lines gaining a wet highlight. No new assets;
+`paintDawn` is already the seam.
+
+Also under this heading, three things the map still does not do that a Mini
+Metro map does: the courier should be seen WALKING along the street rather
+than standing at either end of it; a tram badge should carry its shape (a
+two-cell car, nose first) so the board reads as vehicles before it reads as
+labels; and the end-of-shift replay, which already exists in `shiftlog.js`,
+should render as one poster you can save — the run's trace on the map, the
+day's name, the number.
+
+## L5 · Live HSL (the thing nobody else has)
+
+The pack is real geometry from HSL's own feed; the vehicles on it are a
+timetable simulation. HSL publishes real-time positions (Digitransit, needs a
+free API key). A **LIVE** mode would put the actual 07:12 tram on the board
+and let you courier against the real morning. Two honest caveats: it cannot
+be replayed, so it is a mode beside SHIFT and never the gate's subject; and
+the sandbox cannot reach HSL (the feed 403s from here), so it is built blind
+and verified on a phone. The most next-level idea on this list and the one
+with the most unknowns; I would do L1 first and this fifth.
+
+## Recommendation
+
+**L3 this week, L1 next.** The daily shift is an afternoon and it answers
+"why would I open this tomorrow" with the systems already built. The week is
+the real leap and it is a fortnight: jobs by shift, a save between shifts,
+rent, and every bot policy taught to play five days. L2 and L4 then have a
+run to live in. L5 waits for a key.
+
+## GitHub, while we are here
+
+Three of these are process leaps and one already happened today.
+
+- **PR previews on Pages.** Every PR that touches a game deploys to
+  `/Suds-Jack/preview/<branch>/` for as long as it is open, so a branch can be
+  played on a phone before merge. The standing gap in every version log is
+  *the owner has not played this on a phone*, and the reason is that playing
+  a branch means a deploy. This removes the reason.
+- **Screenshots as artifacts.** The six-shot audit (phone and desktop, title,
+  dispatch, waiting) attached to every toko-move run and posted on the PR. An
+  art change ends in a screenshot, never in a green suite — the rule is
+  already in CLAUDE.md, the automation is not.
+- **The balance report as a PR comment.** `shifts.cjs` win rate and mean
+  score against main, posted automatically, so every gameplay change carries
+  its measurement whether or not the author remembered to run it.
+- **A refresh that says what changed** — done today (v2.44): the nightly HSL
+  refresh had failed for twelve days with an unactionable line, and now prints
+  the stop and line names gone and new, and keeps the pack it built.
