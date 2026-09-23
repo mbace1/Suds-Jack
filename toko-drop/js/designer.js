@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=215';
-import { t } from './lang.js?v=215';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=215';
-import { Arena, rectShape } from './arena.js?v=215';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=216';
+import { t } from './lang.js?v=216';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=216';
+import { Arena, rectShape } from './arena.js?v=216';
 
 // v236: the tester's own little room. Enemy.update() takes an arena now.
 const TESTER_ARENA = new Arena(rectShape(11, 7));
@@ -528,10 +528,12 @@ export function initDesigner({ onResume, settings }) {
       hint.className = 'dnote';
       // v173: NEX DEUS joins the cycle only once the profile has earned it —
       // locked means the button simply never lands on it.
+      // v263: RUSH joins the cycle — it is a cabinet, not a door, and the
+      // cabinets are where a new mode gets a test bed before it earns a door.
       const ORDER = () => settings.getNexInfo().unlocked
-        ? [null, 'tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki', 'nexdeus']
-        : [null, 'tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki'];
-      const COL = { tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb', loadout: '#bbff77', kaikki: '#ff6655', nexdeus: '#ff44ff' };
+        ? [null, 'tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki', 'rush', 'nexdeus']
+        : [null, 'tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki', 'rush'];
+      const COL = { tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb', loadout: '#bbff77', kaikki: '#ff6655', rush: '#ff7733', nexdeus: '#ff44ff' };
       const nex = document.createElement('div');
       nex.className = 'dnote';
       const paint = () => {
@@ -541,7 +543,8 @@ export function initDesigner({ onResume, settings }) {
         btn.style.borderColor = sel ? COL[sel] + '66' : '#1e1e38';
         // v172: each cabinet shows its record vs the NEX DEUS requirement
         const nfo = settings.getNexInfo();
-        hint.textContent = sel
+        hint.textContent = sel === 'rush' ? t('rushOnH')
+          : sel
           ? `${t(sel + 'H')}  ${t('cabBest')} ${nfo.bests[sel] || 0}${nfo.req[sel] ? '/' + nfo.req[sel] : ''}`
           : t('cabRowH');
         nex.textContent = nfo.unlocked

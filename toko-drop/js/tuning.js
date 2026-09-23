@@ -159,6 +159,20 @@ export const TUNING = {
     // how strongly a drop favours a family you are NOT holding (0 = pure random)
     favourUnheld: 0.7,
   },
+  // ── THE CAMPAIGN (v263) ────────────────────────────────────────────────────
+  // The second door. Geometry Wars 3's shape, which is what the owner named as
+  // the reference: a list of ROOMS, each its own arena with its own clock and
+  // its own goal, graded S/A/B/C and F for a room you did not survive. A room
+  // opens when the one before it is cleared, so the list is a route rather
+  // than a menu. The rooms are the authored levels the editor already makes,
+  // so a new room is a JSON file and a line here — never new code.
+  campaign: {
+    rooms: ['first-light', 'three-rings', 'boost-lane'],
+    // kills per second the room's own duration is graded against. Deliberately
+    // gentler than RUSH's ladder (0.5/0.9/1.4/2.0): a room is a first meeting
+    // with an arena, not a score attack you have already learned.
+    tiers: { C: 0.35, B: 0.65, A: 1.0, S: 1.5 },
+  },
   depth: {
     wavesPer: 8,
     cycleFrom: 1,
