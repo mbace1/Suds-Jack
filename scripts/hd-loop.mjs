@@ -110,6 +110,14 @@ const SCENARIOS = {
     tick: 'window._LOOP.waveTick()',
     every: 1,
   },
+  haul: {
+    title: 'SEASON 3 — the convoy: the trucks drive, the look locks, the missiles leave',
+    mode: null,
+    season: 'haul',
+    setup: 'window._LOOP.haul()',
+    tick: 'window._LOOP.haulTick()',
+    every: 1,
+  },
   wavefloor: {
     title: 'SEASON 2 — the floor reads the wave: its shadow, and the foam at its foot',
     mode: 'move',
@@ -244,6 +252,36 @@ window._LOOP = {
     return null;
   },
   waveTick() { player.velocity.set(0, 0, 0); return null; },
+  // SEASON 3: in the cab of the convoy. A skull ahead; the look turns onto it
+  // and holds, so the lock ring tightens and the missiles leave faster
+  haul() {
+    this._f = 0; this.slow(0.5);
+    for (const e of enemies) e.alive = false;
+    enemies.length = 0;
+    window.__hd.debug.setInvulnerable?.(true);
+    this._aim = new THREE.Vector3();
+    this._spawn = () => {
+      const s = new Skull(scene, new THREE.Vector3(player.feet.x + (Math.random() - 0.5) * 4, 2.4, player.feet.z - 15));
+      s.hp = 5; enemies.push(s);
+    };
+    this._spawn();
+    return null;
+  },
+  haulTick() {
+    if (player.feet.y < -1.5) {
+      const p = truck.platforms.find(q => !q.falling && q.mesh.position.z < player.feet.z + 2);
+      if (p) { player.feet.set(p.mesh.position.x, 0.4, p.mesh.position.z); player.vy = 0; }
+    }
+    const t = enemies.find(e => e.alive);
+    if (!t) { this._spawn(); return null; }
+    t.center(this._aim);
+    const dx = this._aim.x - camera.position.x, dy = this._aim.y - camera.position.y, dz = this._aim.z - camera.position.z;
+    const yaw = Math.atan2(-dx, -dz), pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    player.yaw += (((yaw - player.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI) * 0.5;
+    player.pitch += (pitch - player.pitch) * 0.5;
+    player._sync();
+    return null;
+  },
   // six units up, looking down the travel at the crest coming in — the one
   // seat where the face, the lip band, the shadow and the foam share a frame
   wavehigh() {
@@ -358,7 +396,9 @@ for (const name of names) {
   const scn = SCENARIOS[name];
   const page = await browser.newPage({ viewport: { width: WIDTH, height: HEIGHT } });
   const errs = []; page.on('pageerror', e => errs.push(e.message));
-  await page.goto(`http://127.0.0.1:${PORT}/hyperdagger/?mode=${scn.mode || 'hyper'}&season=${scn.season || 'void'}`, { waitUntil: 'load' });
+  // `mode: null` leaves the link unpinned, so a season's own scheme applies (v51)
+  const modeQ = scn.mode === null ? '' : `mode=${scn.mode || 'hyper'}&`;
+  await page.goto(`http://127.0.0.1:${PORT}/hyperdagger/?${modeQ}season=${scn.season || 'void'}`, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 60000 });
   await page.evaluate(() => { localStorage.setItem('hyperDaggerSeenTips', '1'); const o = JSON.parse(localStorage.getItem('hyperDaggerOpts') || '{}'); o.perf = 'high'; localStorage.setItem('hyperDaggerOpts', JSON.stringify(o)); });
   await page.reload({ waitUntil: 'load' });

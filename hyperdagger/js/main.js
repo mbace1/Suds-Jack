@@ -5,30 +5,31 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=81';
-import { Player } from './player.js?v=81';
-import { DaggerPool } from './daggers.js?v=81';
-import { GemPool } from './gems.js?v=81';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=81';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=81';
-import { OrbPool } from './bullets.js?v=81';
-import { AudioKit } from './audio.js?v=81';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=81';
-import { TUNING as T } from './tuning.js?v=81';
-import { HyperEnvironment } from './environment.js?v=81';
-import { Backdrop } from './backdrop.js?v=81';
-import { Walls } from './walls.js?v=81';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=81';
-import { TruckTrack } from './truck.js?v=81';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=81';
-import { Platforms } from './platforms.js?v=81';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=81';
-import { GooWave } from './goo.js?v=81';
-import { gelMaterial } from './gel.js?v=81';
-import { mosaicPalette, mosaicSkin } from './roster.js?v=81';
-import { Skullscape } from './inca.js?v=81';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=81';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=81';
+import { InputManager } from './input.js?v=82';
+import { Player } from './player.js?v=82';
+import { DaggerPool } from './daggers.js?v=82';
+import { GemPool } from './gems.js?v=82';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=82';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=82';
+import { OrbPool } from './bullets.js?v=82';
+import { AudioKit } from './audio.js?v=82';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=82';
+import { TUNING as T } from './tuning.js?v=82';
+import { HyperEnvironment } from './environment.js?v=82';
+import { Backdrop } from './backdrop.js?v=82';
+import { Walls } from './walls.js?v=82';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=82';
+import { TruckTrack } from './truck.js?v=82';
+import { GazeLock } from './gaze.js?v=82';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=82';
+import { Platforms } from './platforms.js?v=82';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=82';
+import { GooWave } from './goo.js?v=82';
+import { gelMaterial } from './gel.js?v=82';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=82';
+import { Skullscape } from './inca.js?v=82';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=82';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=82';
 import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
@@ -182,6 +183,8 @@ let floorPanels = null;
 // truck.js, so it was dead code and the mode was unreachable. The registry
 // declares arena:'track' and this is what serves it.
 const truck = new TruckTrack(scene);
+// v51: season 3's hand — look at an enemy long enough and missiles leave
+const gaze = new GazeLock();
 buildFloorPanels(ARENA_R).then(m => { if (m) { floorPanels = m; scene.add(m); } });
 // The Meshy enemy skins. Fire-and-forget at boot so the templates are ready
 // before the first spawn — and it was NEVER CALLED, which is why 5 MB of
@@ -1100,6 +1103,7 @@ function applySeason() {
   ground.userData.on = !!sn.ground;
   if (sn.ground) ground.material.color.setRGB(...sn.ground);
   ground.visible = !!ground.userData.on && M().arena !== 'track';
+  gaze.setConfig(sn.gaze ?? null);   // v51
   WP = T.weapons?.[sn.weapon] ?? {};
   daggers.setShape(WP.shape ?? null, WP.color ?? null);
   audio.fireTone = WP.fireTone ?? 1;
@@ -1242,7 +1246,7 @@ async function boardReport(date, m, t) {
 async function menuBoardLine() {
   if (!BOARD_ENDPOINT || runKind !== 'daily') return;
   try {
-    const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${mode}`);
+    const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${M().id}`);
     const data = await res.json();
     const top = data?.top?.[0];
     const el = document.getElementById('menuBoard');
@@ -1296,7 +1300,7 @@ function showMenu() {
 
 function bestLine() {
   if (runKind === 'daily') {
-    const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), mode)) || '0');
+    const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), M().id)) || '0');
     return dayBest > 0 ? `today's best ${dayBest.toFixed(1)}s &mdash; ` : '';
   }
   return hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : '';
@@ -1345,7 +1349,7 @@ function pushRunLog(timedOut) {
   try { log = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch { log = []; }
   log.unshift({
     t: Math.round(gameTime * 10) / 10,
-    mode,
+    mode: M().id,
     cause: timedOut ? 'timeout' : (lastKiller || 'unknown'),
     kills,
     killsByType: { ...killsByType },
@@ -1395,7 +1399,7 @@ function showDeath(timedOut) {
     const dayBest = parseFloat(localStorage.getItem(key) || '0');
     best = gameTime > dayBest;
     if (best) localStorage.setItem(key, String(gameTime));
-    const rank = pushDailyTable(runDate, mode, gameTime);
+    const rank = pushDailyTable(runDate, M().id, gameTime);
     dailyLines =
       `<p>${best ? 'NEW DAILY BEST' : `today's best ${dayBest.toFixed(1)}s`} &middot; ${runDate}${
         rank <= 30 ? ` &middot; daily #${rank} all-time` : ''}</p>${
@@ -1417,7 +1421,7 @@ function showDeath(timedOut) {
     .map(([type, n]) => `${n}&times; ${ENEMY_NAMES[type] || type}`)
     .join(' &middot; ');
 
-  const hist = pushRunHistory({ t: gameTime, mode, daily: runKind === 'daily' || undefined });
+  const hist = pushRunHistory({ t: gameTime, mode: M().id, daily: runKind === 'daily' || undefined });
   pushRunLog(timedOut);
   const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
   const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
@@ -1426,7 +1430,7 @@ function showDeath(timedOut) {
   const pulseLine = pulseN > 0
     ? `<p class="breakdown">survived ${pulseN} pulse${pulseN === 1 ? '' : 's'}${heavies ? ` (${heavies} heavy)` : ''}</p>` : '';
   const share = `HYPER DAGGER · ${runKind === 'daily' ? `daily ${runDate}` : 'free run'} · ${
-    mode.toUpperCase()} · ${t}s · ${kills} kills · LV${weaponLv}${
+    M().id.toUpperCase()} · ${t}s · ${kills} kills · LV${weaponLv}${
     stylePeakIdx > 0 ? ` · rank ${STYLE_TIERS[stylePeakIdx].label}` : ''}`;
 
   elMsg.style.display = 'block';
@@ -1437,7 +1441,7 @@ function showDeath(timedOut) {
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      ${pulseLine}
      ${runKind === 'daily' ? dailyLines
-    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'pure' ? '' : ` &middot; ${M().id}`}</p>`}
+    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${M().id === 'pure' ? '' : ` &middot; ${M().id}`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
      <button id="tokoBtn" class="opt">ASK TOKO</button>
@@ -1463,7 +1467,7 @@ function showDeath(timedOut) {
       localStorage.setItem(INITIALS_KEY, v);
     });
   }
-  if (runKind === 'daily') boardReport(runDate, mode, gameTime);
+  if (runKind === 'daily') boardReport(runDate, M().id, gameTime);
 }
 
 function clearEnemies() {
@@ -1475,7 +1479,7 @@ function clearEnemies() {
 function resetRun() {
   runDate = todayStr();
   if (runKind === 'daily') {
-    runSeed = fnv1a(runDate + ':' + mode);
+    runSeed = fnv1a(runDate + ':' + M().id);
     rng.next = mulberry32(runSeed);
   } else {
     runSeed = 0;
@@ -1546,6 +1550,10 @@ function resetRun() {
   const onTrack = M().arena === 'track';
   floor.visible = !onTrack;
   shadows.visible = !onTrack;
+  // v51: a season lays its own road (moving trucks) — unless a ?mode= link
+  // pinned an experiment, which gets the tuning's road like it always did
+  truck.setConfig(_urlMode ? null : S().truck);
+  gaze.reset();
   if (onTrack) truck.reset(player); else truck.clear();
   if (M().arena === 'court') walls.court(16, 12, 5); else walls.clear();
   buildSeasonArena(); // the season's rock and slabs, after the court's walls
@@ -1849,8 +1857,12 @@ function showPause() {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
       season = seasonById(b.dataset.season).id;
+      const before = M().id;
       localStorage.setItem(SEASON_KEY, season);
       applySeason();
+      // v51: a season with different RULES (season 3 is the track) is a
+      // different game — start it fresh rather than rebuild under a live run
+      if (M().id !== before && state === 'playing') { hiScore = parseFloat(localStorage.getItem(hiKey()) || '0'); startGame(); return; }
       buildSeasonArena();
       applyRunAbilities();   // v50: a season carries its control scheme
       hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
@@ -2725,14 +2737,10 @@ function fireHomingShot() {
   return true;
 }
 
-function updateCombat(dt) {
-  const w = WEAPON[weaponLv];
-  weaponActive = false;
-
-  // DD gunfeel: TAP = shotgun burst, HOLD = stream — every dagger manually
-  // aimed on desktop and pad. Touch alone keeps the old auto-fire (a thumb
-  // can't work two sticks and a trigger; owner's call, 2026-07-31).
-  shotCd = Math.max(0, shotCd - dt);
+/** The hand: DD's tap/hold gunfeel, touch auto-fire and the LV3 homing
+ *  weapon. Moved out of updateCombat whole in v51 so a season whose hand is
+ *  the GAZE can skip it in one branch. */
+function fireByHand(dt, w) {
   let streaming;
   if (input.touchMode && !input.gamepad) {
     if (input.consumeFireTap() && shotCd <= 0) fireShotgun(w);
@@ -2791,6 +2799,70 @@ function updateCombat(dt) {
   } else {
     homingFireTimer = 0;
   }
+
+}
+
+/** v51: the gaze lock (gaze.js) — look at a body inside range long enough
+ *  and missiles leave the gauntlet on their own, faster and tighter-turning
+ *  the longer the look has been held. */
+function updateGaze(dt) {
+  fireTimer = 0; homingFireTimer = 0; fireWasHeld = false; homingWasHeld = false;
+  camera.getWorldDirection(_fwd2);
+  for (const shot of gaze.update(dt, camera.position, _fwd2, enemies)) launchMissile(shot);
+}
+function launchMissile(shot) {
+  weaponActive = true;
+  camera.getWorldDirection(_hitDir);
+  // it leaves the gauntlet corner climbing, then turns onto the target: a
+  // missile that flies out of the crosshair is a bullet
+  _p0.copy(camera.position).addScaledVector(_hitDir, 0.85);
+  _seg.setFromMatrixColumn(camera.matrixWorld, 0);
+  _p0.addScaledVector(_seg, 0.24);
+  _c.setFromMatrixColumn(camera.matrixWorld, 1);
+  _p0.addScaledVector(_c, -0.26);
+  _hitDir.addScaledVector(_c, 0.45).normalize();
+  const g = S().gaze;
+  daggers.fire(_p0, _hitDir, shot.speed, false, g.damage ?? 1, { target: shot.target, turn: shot.turn, life: g.life ?? 2.6 });
+  hand.flash(0.3 + 0.5 * shot.k);
+  audio.fire();
+}
+
+/** v51: the lock, drawn where the body is — a ring that tightens as the look
+ *  is held (red while it builds, white at full), and a centre mark, because
+ *  a look that fires needs to show where it is looking. */
+const _gz = new THREE.Vector3();
+function drawGaze(ctx) {
+  const W = ui.width, H = ui.height;
+  ctx.save();
+  ctx.fillStyle = 'rgba(232,220,200,0.55)';
+  ctx.beginPath(); ctx.arc(W / 2, H / 2, Math.max(2, H * 0.004), 0, Math.PI * 2); ctx.fill();
+  const t = gaze.target;
+  if (t && t.alive) {
+    t.center(_gz).project(camera);
+    if (_gz.z < 1) {
+      const x = (_gz.x * 0.5 + 0.5) * W, y = (-_gz.y * 0.5 + 0.5) * H, k = gaze.k;
+      const r = H * (0.07 - 0.045 * k);
+      const g = Math.round(40 + 180 * k);
+      ctx.strokeStyle = `rgba(230,${g},${g},${0.55 + 0.4 * k})`;
+      ctx.lineWidth = Math.max(1.5, H * 0.004);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, r * 1.35, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function updateCombat(dt) {
+  const w = WEAPON[weaponLv];
+  weaponActive = false;
+
+  // DD gunfeel: TAP = shotgun burst, HOLD = stream — every dagger manually
+  // aimed on desktop and pad. Touch alone keeps the old auto-fire (a thumb
+  // can't work two sticks and a trigger; owner's call, 2026-07-31).
+  shotCd = Math.max(0, shotCd - dt);
+  // v51 SEASON 3: the look IS the trigger — no fire input is read at all
+  if (S().gaze) updateGaze(dt);
+  else fireByHand(dt, w);
 
   daggers.update(dt, enemies);
 
@@ -3408,6 +3480,7 @@ function animate() {
   composer.render();
   uiCtx.clearRect(0, 0, ui.width, ui.height);
   if (state === 'playing' && !paused) input.drawTouchUI(uiCtx);
+  if (state === 'playing' && !paused && S().gaze) drawGaze(uiCtx);   // v51
 }
 
 applyOpts();
@@ -3432,7 +3505,7 @@ window.__hd = {
     getModes() {
       return {
         ids: MODES.map(m => m.id),
-        current: mode,
+        current: M().id,   // v50: the mode in FORCE (link → season → saved), not the saved one
         modes: MODES.map(m => ({ ...m, resolved: abilitiesOf(m) })),
         player: {
           abilities: player.abilities,
@@ -3483,7 +3556,9 @@ window.__hd = {
     setTimeScale(k) { timeScale = Math.max(0.02, Math.min(1, +k || 1)); },
     /** The live feel numbers — the gate edits them in place (and puts them back). */
     tuning() { return T; },
-    inputObj() { return input; },   // v50: the gate taps the touch sticks the way a thumb does
+    inputObj() { return input; },
+    gazeObj() { return gaze; },     // v51: the gaze lock, for the gate
+    truckObj() { return truck; },   // v51: the convoy, for the gate   // v50: the gate taps the touch sticks the way a thumb does
     getSeasons() {
       const sn = S();
       return {
@@ -3672,7 +3747,7 @@ window.__hd = {
     setDate(s) { dateOverride = s; },
     setBoardEndpoint(u) { BOARD_ENDPOINT = u || ''; },
     getBoardEndpoint() { return BOARD_ENDPOINT; },
-    getRunInfo() { return { runKind, runSeed, runDate, mode, pulseN }; },
+    getRunInfo() { return { runKind, runSeed, runDate, mode: M().id, pulseN }; },
     lastPulsePicks,
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
@@ -3745,7 +3820,7 @@ window.__hd = {
     setPerfTier(t) { setPerfTier(t); },
     perfTuning,
     pulseInfo(n) { const k = pulseKind(n ?? pulseN); return { kind: k, budget: pulseBudget(n ?? pulseN, k) }; },
-    getState() { return { mode, lifeT, gameTime, mercyT, state, weaponLv, gemCount, homingAmmo }; },
+    getState() { return { mode: M().id, lifeT, gameTime, mercyT, state, weaponLv, gemCount, homingAmmo }; },
     getSchedule() {
       return {
         nextTotemAt, nextThornAt, nextLevAt, nextPulseAt, pulseN,

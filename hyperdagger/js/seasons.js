@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=81';
+import { TUNING as T } from './tuning.js?v=82';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -233,6 +233,48 @@ export const SEASONS = [
     todo: [
       'the new season 2 sculpts (aquamarine / green / yellow, Aztec) — the recolour holds the slot until they arrive',
       'the Inca backdrop from real art, if any arrives — the skullscape is the game\'s own skull for now',
+    ],
+  },
+  {
+    // v51 (owner, 2026-09-23): *Season 3 should be the truck mode, with moving
+    // platforms and forward momentum. Also double jump and dash. No need for
+    // shoot, but if you look at enemies close enough it deploys homing
+    // missiles, with slightly longer look meaning faster, more targeted
+    // missiles.*
+    id: 'haul',
+    name: 'SEASON 3 — HAUL',
+    menu: 'SEASON 3',
+    mode: 'truck',                       // the Clustertruck rules: the road is the arena, falling is death
+    abilities: { jumps: 2, dash: true },
+    blurb: 'the convoy — trucks that drive, momentum you keep, and a look that fires',
+    sky: { void: [0.0015, 0.0015, 0.0022], horizon: [0.36, 0.13, 0.03], band: 4.2, stars: 0.3 },
+    floor: { tint: [1, 1, 1], glow: 0.9 },   // the disc is hidden on the track
+    backdrop: { visible: false, emissive: 0 },
+    fog: { color: [0.022, 0.011, 0.006], near: 18, far: 72 },
+    dust: { color: [0.85, 0.55, 0.30], size: 0.05, opacity: 0.16 },
+    ground: null,
+    pillars: null,
+    platforms: null,
+    goo: null,
+    inca: null,
+    roster: null,
+    weapon: 'dagger',                    // the missiles fly as daggers — every hit and kill path is theirs
+    // THE CONVOY (truck.js): the trucks drive at their own speeds and sway in
+    // lane; standing on one carries you, and in the air you keep its speed.
+    // The gap between trucks is a real gap now (edge to edge ~1.5–6 u): one
+    // jump with a run-up clears the short ones, the double jump the long.
+    truck: { moving: true, driveSpeed: 13, driveVar: 0.8, sway: 1.2, platformGap: 9.5, courseChance: 0 },
+    // THE GAZE (gaze.js): hold the look on an enemy inside `range` and within
+    // `cone` of the view's centre; after `dwell` a missile leaves every
+    // `every` seconds, its speed and turn rate lerped by how long the look
+    // has been held (up to `full`). A glance sends a lazy missile that can
+    // miss; a held look sends a fast one that will not.
+    gaze: { range: 24, cone: 0.16, grace: 0.2, dwell: 0.25, full: 1.2,
+      speed: [16, 40], turn: [1.2, 10], every: [0.5, 0.26], life: 2.6, damage: 1 },
+    built: true,
+    todo: [
+      'trucks that read as trucks — a cab, a trailer, wheels (they are slabs)',
+      'the missile look: they fly as daggers today',
     ],
   },
 ];

@@ -1196,12 +1196,12 @@ s.listen(0, '127.0.0.1', async () => {
     inca.sn.spawns && inca.sn.spawns.only === 'skulls' && inca.director && inca.director.total >= 1
     && Object.keys(inca.director.types).every(k => k === 'skull'),
     JSON.stringify({ spawns: inca.sn.spawns, director: inca.director }));
-  ok('the menus: the intro offers SEASON 1 and SEASON 2 and nothing about VOID or MODE',
-    inca.sn.visible.length === 2 && inca.sn.visible.map(v => v.menu).join('|') === 'SEASON 1|SEASON 2' && !inca.sn.visible.some(v => v.id === 'void')
-    && inca.menu.seasons.map(m => m.label).join('|') === 'SEASON 1|SEASON 2' && inca.menu.modeOnIntro === false && inca.menu.oldSeasonBtn === false,
+  ok('the menus: the intro offers SEASON 1, 2 and 3 and nothing about VOID or MODE',
+    inca.sn.visible.length === 3 && inca.sn.visible.map(v => v.menu).join('|') === 'SEASON 1|SEASON 2|SEASON 3' && !inca.sn.visible.some(v => v.id === 'void')
+    && inca.menu.seasons.map(m => m.label).join('|') === 'SEASON 1|SEASON 2|SEASON 3' && inca.menu.modeOnIntro === false && inca.menu.oldSeasonBtn === false,
     JSON.stringify({ visible: inca.sn.visible, menu: inca.menu }));
   ok('the menus: the pause menu carries the seasons and the regular options — the MODE is the season\'s now (v50)',
-    inca.pause.seasons.length === 2 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 2).join('|') === 'SEASON|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
+    inca.pause.seasons.length === 3 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 2).join('|') === 'SEASON|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
     JSON.stringify(inca.pause));
 
   // v50 THE WAVE IS A HURDLE — proven by jumping a body over it in the real
@@ -1269,6 +1269,105 @@ s.listen(0, '127.0.0.1', async () => {
     scheme.void.mode === 'pure' && scheme.void.jumps === 1 && !scheme.void.dash, JSON.stringify(scheme.void));
   ok('touch: a tap on the RIGHT stick jumps (v29–v49 it fired a shotgun burst)',
     scheme.inca.tapJump === true && scheme.inca.tapBurst === false, JSON.stringify(scheme.inca));
+
+  // v51 SEASON 3 — HAUL (owner, 2026-09-23): the truck mode with moving
+  // platforms and forward momentum, a double jump and dash, no gun — a look
+  // held on a close enemy launches homing missiles, faster and tighter the
+  // longer it is held. Loaded the way a player arrives (no ?mode=). The
+  // convoy is stepped directly where the question is physics, so a slow
+  // renderer cannot change the answer.
+  let haul = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    haul = await q.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug, pl = hd.player;
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
+      await frames(3);
+      const tr = d.truckObj(), gz = d.gazeObj(), inp = d.inputObj();
+      const out = { mode: d.getState().mode, jumps: pl.maxJumps, dash: !!pl.dashEnabled, moving: !!tr.cfg.moving, gazeOn: !!gz.cfg };
+      // THE TRUCKS DRIVE: half a second of the convoy, one truck watched
+      const t0 = tr.platforms[3], z0 = t0.mesh.position.z;
+      tr.update(0.5, pl, 1, [], null);
+      out.truckMoved = +(z0 - t0.mesh.position.z).toFixed(2);
+      // CARRIED: stand on a truck and it takes you with it
+      const p0 = tr.platforms[1];
+      pl.feet.set(p0.mesh.position.x, p0.mesh.position.y + 0.25, p0.mesh.position.z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+      tr.preUpdate(1 / 60, pl);
+      let z1 = pl.feet.z;
+      for (let i = 0; i < 30; i++) { pl.feet.y = p0.mesh.position.y + 0.25; tr.preUpdate(1 / 60, pl); }
+      out.carried = +((z1 - pl.feet.z) / 0.5).toFixed(2);
+      out.truckSpeed = +(-p0.vz).toFixed(2);
+      // MOMENTUM: in the air, over nothing, you keep that truck's speed
+      pl.feet.y = 40; z1 = pl.feet.z;
+      for (let i = 0; i < 30; i++) tr.preUpdate(1 / 60, pl);
+      out.airSpeed = +((z1 - pl.feet.z) / 0.5).toFixed(2);
+      // back onto a truck for the rest
+      const home = tr.platforms.find(q => !q.falling) || p0;
+      pl.feet.set(home.mesh.position.x, 0.4, home.mesh.position.z); pl.vy = 0; pl._sync();
+      const lift = () => { if (pl.feet.y < -1.5) { pl.feet.y = 0.5; pl.vy = 0; } };
+      // the convoy spawns its own skulls; each window below keeps the enemy
+      // list to the one body under test, so a stray cannot take the lock
+      const only = (...es) => { for (const e of hd.enemies) if (!es.includes(e)) e.alive = false; hd.enemies.length = 0; hd.enemies.push(...es); };
+      only();
+      // NO GUN: the trigger held for a second of frames launches nothing
+      inp.mouseDown = true;
+      for (let i = 0; i < 20; i++) { only(); lift(); await frames(1); }
+      inp.mouseDown = false;
+      out.firedByTrigger = hd.daggers.active.length;
+      // pin a skull on the view axis, `dist` out, every frame
+      const cam = pl.camera, fwd = new cam.position.constructor();
+      const pin = (e, dist) => {
+        const u = e.update.bind(e);
+        e.update = (...a) => { u(...a); if (!e.alive) return; cam.getWorldDirection(fwd); e.group.position.copy(cam.position).addScaledVector(fwd, dist); };
+        cam.getWorldDirection(fwd); e.group.position.copy(cam.position).addScaledVector(fwd, dist);
+      };
+      // TOO FAR: a body past the range is not locked
+      const far = d.spawnSkull(); far.hp = 99999; pin(far, 40);
+      for (let i = 0; i < 20; i++) { only(far); lift(); await frames(1); }
+      out.farLocked = gz.target === far; out.farLaunched = gz.launched;
+      far.alive = false; only();
+      // CLOSE: look at it and the missiles leave; record each launch
+      const s = d.spawnSkull(); s.hp = 99999; pin(s, 10);
+      const shots = [];
+      for (let i = 0; i < 400 && shots.length < 6; i++) {
+        const n0 = gz.launched;
+        only(s); lift(); await frames(1);
+        if (gz.launched > n0) {
+          const m = hd.daggers.active[hd.daggers.active.length - 1];
+          if (m && m.target === s) shots.push({ k: +gz.k.toFixed(2), speed: +m.vel.length().toFixed(1), turn: +m.turn.toFixed(2) });
+        }
+      }
+      out.shots = shots;
+      // and they KILL it
+      s.hp = 1;
+      for (let i = 0; i < 300 && s.alive; i++) { if (s.alive) only(s); lift(); await frames(1); }
+      out.killed = !s.alive;
+      out.profile = [gz.profile(0), gz.profile(1)].map(p => ({ speed: p.speed, turn: p.turn }));
+      return out;
+    });
+    await q.close();
+  }
+  ok('haul: season 3 is the TRUCK scheme with a double jump and dash',
+    haul.mode === 'truck' && haul.jumps === 2 && haul.dash && haul.moving && haul.gazeOn, JSON.stringify(haul));
+  ok('haul: the trucks DRIVE on their own', haul.truckMoved > 3, JSON.stringify({ moved: haul.truckMoved }));
+  ok('haul: a truck carries the body standing on it',
+    Math.abs(haul.carried - haul.truckSpeed) < 0.5, JSON.stringify({ carried: haul.carried, truck: haul.truckSpeed }));
+  ok('haul: in the air you keep the speed of the truck you left — momentum, not a conveyor',
+    Math.abs(haul.airSpeed - haul.truckSpeed) < 0.5, JSON.stringify({ air: haul.airSpeed, truck: haul.truckSpeed }));
+  ok('haul: there is no gun — holding the trigger launches nothing', haul.firedByTrigger === 0, String(haul.firedByTrigger));
+  ok('haul: a body out of range is not locked', !haul.farLocked && haul.farLaunched === 0,
+    JSON.stringify({ locked: haul.farLocked, launched: haul.farLaunched }));
+  ok('haul: a look held on a close skull launches homing missiles, and they kill it',
+    haul.shots.length >= 2 && haul.killed, JSON.stringify({ shots: haul.shots.length, killed: haul.killed }));
+  ok('haul: a longer look sends faster, tighter-turning missiles',
+    haul.shots.length >= 2 && haul.shots[haul.shots.length - 1].speed > haul.shots[0].speed
+    && haul.shots[haul.shots.length - 1].turn > haul.shots[0].turn
+    && haul.profile[1].speed > haul.profile[0].speed && haul.profile[1].turn > haul.profile[0].turn,
+    JSON.stringify({ shots: haul.shots, profile: haul.profile }));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
   // waiting frames: heightAt is a pure function of (x, z, t), so the tests

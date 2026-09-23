@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=81';
+import { TUNING as T } from './tuning.js?v=82';
 
 const _v = new THREE.Vector3();
 const _t = new THREE.Vector3();
@@ -56,7 +56,10 @@ export class DaggerPool {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
-  fire(origin, dir, speed = T.weapon.streamSpeed, homing = false, damage = 1) {
+  /** `opts` (v51): { target, turn, life } — a MISSILE. It steers at one
+   *  enemy with its own turn rate (season 3's gaze sets both from how long
+   *  the look was held), and falls back to cone homing if the target dies. */
+  fire(origin, dir, speed = T.weapon.streamSpeed, homing = false, damage = 1, opts = null) {
     const m = this.pool.pop();
     if (!m) return;
     m.position.copy(origin);
@@ -66,9 +69,11 @@ export class DaggerPool {
       m,
       vel: dir.clone().multiplyScalar(speed),
       prev: origin.clone(),
-      life: 1.5,
+      life: opts?.life ?? 1.5,
       homing,
       damage,
+      target: opts?.target ?? null,
+      turn: opts?.turn ?? 0,
     });
     this._commit();
   }
@@ -79,7 +84,19 @@ export class DaggerPool {
     const steerK = 1 - Math.exp(-T.weapon.homingSteer * dt);
     for (let i = this.active.length - 1; i >= 0; i--) {
       const d = this.active[i];
-      if (d.homing && targets.length) {
+      if (d.target) {
+        if (d.target.alive) {
+          // a missile: one target, its own turn rate — a held look turns hard
+          d.target.center(_c);
+          _t.copy(_c).sub(d.m.position).normalize();
+          const sp = d.vel.length();
+          _n.copy(d.vel).normalize().lerp(_t, 1 - Math.exp(-d.turn * dt)).normalize();
+          d.vel.copy(_n).multiplyScalar(sp);
+          d.m.lookAt(_t.copy(d.m.position).add(d.vel));
+        } else {
+          d.target = null; d.homing = true;   // its body is gone: find another
+        }
+      } else if (d.homing && targets.length) {
         _n.copy(d.vel).normalize();
         let bestDot = T.weapon.homingDot, found = false;
         for (const e of targets) {
