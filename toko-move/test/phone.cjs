@@ -113,7 +113,12 @@ server.listen(0, '127.0.0.1', async () => {
   // a tram BELOW it — off the bottom of a phone, under a list that looked
   // untouched. Nothing on screen said anything had happened.
   const before = await page.evaluate(() => document.getElementById('sheet').innerText.slice(0, 200));
-  await page.locator('#sheet .jobOffer, #sheet button').first().click({ force: true });
+  // Found and pressed in ONE evaluate. A locator resolves the row, then
+  // presses it a moment later, and on a slow runner the dispatch list had been
+  // re-rendered in between — the press landed on a detached node ("Element is
+  // not visible", CI, v2.43). The game now writes the list only when its words
+  // change, but a gate should not depend on that: it taps the way a thumb does.
+  await page.waitForFunction(() => { const x = document.querySelector('#sheet .jobOffer:not([disabled]), #sheet button'); if (!x) return false; x.click(); return true; }, null, { timeout: 15000 });
   await page.waitForTimeout(1400);
   const took = await page.evaluate(() => {
     const sheet = document.getElementById('sheet'), ids = [...sheet.children].map(c => c.id);
