@@ -183,7 +183,13 @@ export function plateReady(id, pose) {
 export function drawPlate(ctx, entry, { tw, th, foot, tall }) {
   const { img, ink } = entry;
   const iw = ink.right - ink.left + 1, ih = ink.bottom - ink.top + 1;
-  const k = Math.min(tall / ih, (tw * 0.94) / iw);          // height first; width only clamps a wide pose
+  // 0.94 -> 0.92 (v46). The width clamp left no room for the CARD: `drawBeast`
+  // reserves `BEAST_MARGIN` for the kraft border to grow into and a plate
+  // reserved nothing, so the Cart Pusher — the one pose wide enough for this
+  // branch to fire, because the sledgehammer never leaves both hands — sat at
+  // 254 of 256 and the board round him touched the edge of his own texture the
+  // moment the pad moved by a pixel.
+  const k = Math.min(tall / ih, (tw * 0.92) / iw);          // height first; width only clamps a wide pose
   const w = img.naturalWidth * k, h = img.naturalHeight * k;
   ctx.imageSmoothingEnabled = false;                        // it is pixel art; keep the pixels
   ctx.drawImage(img, tw / 2 - (ink.left + iw / 2) * k, foot - (ink.bottom + 1) * k, w, h);

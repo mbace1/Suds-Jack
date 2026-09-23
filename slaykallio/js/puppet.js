@@ -19,7 +19,7 @@
 
 import * as THREE from 'three';
 import { poseAt, frameAt, clipLength, REST } from './motion.js?v=31';
-import { plateReady, drawPlate, posesFor } from './plates.js?v=37';
+import { plateReady, drawPlate, posesFor } from './plates.js?v=38';
 
 const TW = 256, TH = 512;        // texture size; the figure fills ~70% of the height
 export const PUPPET_H = 1.5;     // world height of a scale-1 figure
@@ -32,16 +32,102 @@ function rngFrom(seed) {
 
 const INK = '#1b1410';
 
+// HEX OUT, NOT `rgb()` (v46). Canvas takes either, so this was invisible for
+// forty-five versions — until `bands` and `wear` arrived, which have to read a
+// fill back to darken it and bail on anything that is not `#rrggbb`. Every
+// derived tone in every painter (`dark`, `lit`, an ear, a nose) comes through
+// here, so returning `rgb()` would have left the new passes working on the
+// base colours alone and silently flat everywhere else.
 function shade(hex, k) {
   const c = parseInt(hex.slice(1), 16);
   const ch = i => Math.max(0, Math.min(255, Math.round(((c >> (16 - i * 8)) & 255) * k)));
-  return `rgb(${ch(0)},${ch(1)},${ch(2)})`;
+  return '#' + [ch(0), ch(1), ch(2)].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
-// a polygon with a hand's wobble along every edge
-function wob(ctx, pts, fill, rnd, { stroke = INK, width = 4, amp = 2.2 } = {}) {
+// ── the shared hand's modelling, from cardart.js v29 ─────────────────────
+// v29 gave the CARDS banding, wear and a harder ink line and every one of the
+// forty-two pictures moved, because `wob` and `blob` draw all of them. The
+// figures never got that pass, so the frame carried two art languages at once:
+// thirteen photographed people in TURF's register standing beside ten animals
+// filled with one flat tone each. This is the same code one level along, and
+// it lands on all ten at once for the same reason — nothing below is redrawn.
+const LIGHT = { x: -0.55, y: -0.83 };   // the torch, up and to the left
+
+// A BAND IS A FRACTION OF THE THING, never of the sheet — v29 paid for that
+// once, when half-planes measured from the middle of the card fell entirely on
+// one side of a small object and darkened it instead of modelling it.
+function bands(ctx, path, fill, rnd, k = 1, box) {
+  if (!fill || fill[0] !== '#') return;
+  const cx = (box.x0 + box.x1) / 2, cy = (box.y0 + box.y1) / 2;
+  const R = Math.max(10, Math.hypot(box.x1 - box.x0, box.y1 - box.y0));
+  const plane = (ox, oy) => {
+    ctx.beginPath();
+    ctx.moveTo(cx + ox + LIGHT.y * R, cy + oy - LIGHT.x * R);
+    ctx.lineTo(cx + ox - LIGHT.y * R, cy + oy + LIGHT.x * R);
+    ctx.lineTo(cx + ox - LIGHT.y * R - LIGHT.x * R * 2, cy + oy + LIGHT.x * R - LIGHT.y * R * 2);
+    ctx.lineTo(cx + ox + LIGHT.y * R - LIGHT.x * R * 2, cy + oy - LIGHT.x * R - LIGHT.y * R * 2);
+    ctx.closePath(); ctx.fill();
+  };
+  ctx.save();
+  ctx.clip(path);
+  for (const [step, dark] of [[0.24, 0.76], [0.54, 0.58]]) {
+    ctx.fillStyle = shade(fill, dark + (1 - k) * (1 - dark));
+    plane(-LIGHT.x * R * step, -LIGHT.y * R * step);
+  }
+  ctx.globalAlpha = 0.42 * k;                       // the catch is a THIN band, never a gradient
+  ctx.fillStyle = shade(fill, 1.22);
   ctx.beginPath();
+  ctx.moveTo(cx + LIGHT.x * R * 0.46 + LIGHT.y * R, cy + LIGHT.y * R * 0.46 - LIGHT.x * R);
+  ctx.lineTo(cx + LIGHT.x * R * 0.46 - LIGHT.y * R, cy + LIGHT.y * R * 0.46 + LIGHT.x * R);
+  ctx.lineTo(cx + LIGHT.x * R * 0.46 - LIGHT.y * R + LIGHT.x * R * 2, cy + LIGHT.y * R * 0.46 + LIGHT.x * R + LIGHT.y * R * 2);
+  ctx.lineTo(cx + LIGHT.x * R * 0.46 + LIGHT.y * R + LIGHT.x * R * 2, cy + LIGHT.y * R * 0.46 - LIGHT.x * R + LIGHT.y * R * 2);
+  ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// WEAR. Rain and grease run DOWN — a streak going any other way reads as a
+// scratch — and a thing that has lived in a canal is mostly streaks. Chips are
+// taken where a shape gets knocked. Both are measured against the SHAPE.
+function wear(ctx, path, fill, rnd, k = 1, box) {
+  if (!fill || fill[0] !== '#' || k <= 0) return;
+  const bw = Math.max(4, box.x1 - box.x0), bh = Math.max(4, box.y1 - box.y0);
+  ctx.save();
+  ctx.clip(path);
+  for (let i = 0; i < Math.round(6 * k); i++) {
+    const x = box.x0 + rnd() * bw, y = box.y0 + rnd() * bh * 0.7;
+    const len = bh * (0.12 + rnd() * 0.4) * k, w = bw * 0.012 + rnd() * bw * 0.02;
+    ctx.globalAlpha = 0.10 + rnd() * 0.16;
+    ctx.fillStyle = rnd() > 0.45 ? shade(fill, 0.6) : shade(fill, 1.18);
+    ctx.fillRect(x, y, Math.max(0.8, w), len);
+  }
+  for (let i = 0; i < Math.round(8 * k); i++) {
+    const x = box.x0 + rnd() * bw, y = box.y0 + rnd() * bh;
+    ctx.globalAlpha = 0.10 + rnd() * 0.2;
+    ctx.fillStyle = rnd() > 0.5 ? shade(fill, 0.5) : shade(fill, 1.3);
+    ctx.fillRect(x, y, 1 + rnd() * bw * 0.02, 1 + rnd() * bh * 0.016);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+
+// Under this span a polygon is a MARK, not a mass: an ear, a claw, a bottle
+// cap. Banding one is not modelling, it is a dark patch on something too small
+// to have a lit side, and v29's own lesson says a band has to be a fraction of
+// the thing it is on.
+const BAND_MIN = 50;
+
+// a polygon with a hand's wobble along every edge, banded and worn
+//
+// THE PATH IS CARRIED, not left on the context. `beginPath()` THROWS THE
+// CURRENT PATH AWAY, so a pass that lays a half-plane down to model the shape
+// destroys the shape it was supposed to be clipped to — v29 shipped exactly
+// that on the cards and every picture came back with two black diagonals ruled
+// corner to corner. A Path2D is the fix and is why `bands` can take one.
+function wob(ctx, pts, fill, rnd, { stroke = INK, width = 4, amp = 2.2, band = 1, worn = 0.8 } = {}) {
+  const path = new Path2D();
   const n = pts.length;
+  let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
   for (let i = 0; i < n; i++) {
     const [x0, y0] = pts[i], [x1, y1] = pts[(i + 1) % n];
     const segs = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 14));
@@ -49,16 +135,25 @@ function wob(ctx, pts, fill, rnd, { stroke = INK, width = 4, amp = 2.2 } = {}) {
       const t = k / segs;
       const x = x0 + (x1 - x0) * t + (rnd() - 0.5) * amp;
       const y = y0 + (y1 - y0) * t + (rnd() - 0.5) * amp;
-      if (i === 0 && k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      if (x < bx0) bx0 = x; if (x > bx1) bx1 = x;
+      if (y < by0) by0 = y; if (y > by1) by1 = y;
+      if (i === 0 && k === 0) path.moveTo(x, y); else path.lineTo(x, y);
     }
   }
-  ctx.closePath();
-  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  path.closePath();
+  if (fill) {
+    ctx.fillStyle = fill; ctx.fill(path);
+    const box = { x0: bx0, y0: by0, x1: bx1, y1: by1 };
+    if (Math.hypot(bx1 - bx0, by1 - by0) >= BAND_MIN) {
+      if (band > 0) bands(ctx, path, fill, rnd, band, box);
+      if (worn > 0) wear(ctx, path, fill, rnd, worn, box);
+    }
+  }
   if (stroke) {
     // the line is drawn twice at different weights: a brush loaded unevenly
     ctx.strokeStyle = stroke; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    ctx.lineWidth = width; ctx.stroke();
-    ctx.globalAlpha = 0.5; ctx.lineWidth = width * (1.5 + rnd() * 0.5); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.lineWidth = width; ctx.stroke(path);
+    ctx.globalAlpha = 0.5; ctx.lineWidth = width * (1.5 + rnd() * 0.5); ctx.stroke(path); ctx.globalAlpha = 1;
   }
 }
 
@@ -70,8 +165,16 @@ function blob(ctx, cx, cy, rx, ry, fill, rnd, opts) {
 
 // Scumbled paint: short broken strokes of a lighter and a darker tone over a
 // fill, which is what stops a flat colour reading as vector art.
+//
+// AND IT IS CLIPPED TO WHAT IS ALREADY PAINTED (v46). It never was, and for
+// forty-five versions that did not matter, because every caller handed it a
+// box sitting well inside a convex body. The moment the bear's back got a dip
+// in it, a scumble box drawn over a sloping line put four horizontal dashes in
+// mid-air above the animal's shoulder. `source-atop` is what every other pass
+// in this file already uses for the same reason.
 function brush(ctx, x, y, w, h, color, rnd, k = 1) {
   ctx.save();
+  ctx.globalCompositeOperation = 'source-atop';
   for (let i = 0; i < 26 * k; i++) {
     ctx.globalAlpha = 0.04 + rnd() * 0.07;
     ctx.fillStyle = rnd() > 0.45 ? color : 'rgba(0,0,0,1)';
@@ -83,7 +186,7 @@ function brush(ctx, x, y, w, h, color, rnd, k = 1) {
 
 // Everything below is clipped to what has already been painted, so grime
 // never leaks outside the cutout's own silhouette.
-function grime(ctx, rnd, k = 0.8) {
+function grime(ctx, rnd, k = 0.8, f = 1) {
   ctx.save();
   ctx.globalCompositeOperation = 'source-atop';
   // Specks and paper tooth. The pale half used to be `255,250,235` at up to
@@ -97,11 +200,13 @@ function grime(ctx, rnd, k = 0.8) {
     ctx.fillRect(rnd() * TW, rnd() * TH, 1 + rnd() * 2, 1 + rnd() * 2);
   }
   // streaks running DOWN the figure: rain, spills, whatever it has been through
+  // ...and they are as long as the FIGURE, not as long as the sheet (v46): a
+  // 110px run down a person is rain, and down a 135px rat it is a stripe.
   ctx.globalAlpha = 0.12 * k;
   for (let i = 0; i < 22; i++) {
     const x = rnd() * TW, y = 120 + rnd() * 300;
     ctx.fillStyle = rnd() > 0.5 ? '#231a10' : '#0d0a08';
-    ctx.fillRect(x, y, 1 + rnd() * 3, 20 + rnd() * 90);
+    ctx.fillRect(x, y, 1 + rnd() * 3, (20 + rnd() * 90) * f);
   }
   // a couple of stains
   // Three, not five, and half the alpha: these were tuned against a
@@ -110,7 +215,7 @@ function grime(ctx, rnd, k = 0.8) {
   ctx.globalAlpha = 0.08 * k;
   for (let i = 0; i < 3; i++) {
     ctx.fillStyle = '#2a1e10';
-    ctx.beginPath(); ctx.ellipse(40 + rnd() * (TW - 80), 160 + rnd() * 300, 12 + rnd() * 26, 8 + rnd() * 18, rnd() * 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(40 + rnd() * (TW - 80), 160 + rnd() * 300, (12 + rnd() * 26) * f, (8 + rnd() * 18) * f, rnd() * 3, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
   // one warm light from the left, and a genuinely dark shadow side
@@ -132,7 +237,7 @@ function grime(ctx, rnd, k = 0.8) {
 // So a nick is placed where the silhouette actually ENDS: opaque here,
 // transparent a few pixels away. It quietly improves the die-cut figures too,
 // where a nick in the centre of a torso read as a bullet hole.
-function nicks(ctx, rnd, n = 26) {
+function nicks(ctx, rnd, n = 26, f = 1) {
   const d = ctx.getImageData(0, 0, TW, TH).data;
   const at = (x, y) => (x < 0 || y < 0 || x >= TW || y >= TH) ? 0 : d[((y | 0) * TW + (x | 0)) * 4 + 3];
   const onEdge = (x, y, r) => at(x, y) > 40 &&
@@ -142,12 +247,15 @@ function nicks(ctx, rnd, n = 26) {
   for (let i = 0; i < n; i++) {
     let x = 0, y = 0, r = 0, found = false;
     for (let t = 0; t < 60 && !found; t++) {
-      x = rnd() * TW; y = 90 + rnd() * (TH - 120); r = 2 + rnd() * 6;
-      found = onEdge(x, y, r + 3);
+      // v46 — AND A BITE IS A FRACTION OF THE FIGURE. At a fixed 2-8px this
+      // is 2% of a person and 6% of a rat, so the same "damage at an edge"
+      // took a chunk out of the animal the size of its own ear.
+      x = rnd() * TW; y = 90 + rnd() * (TH - 120); r = (2 + rnd() * 6) * f;
+      found = onEdge(x, y, r + 3 * f);
     }
     if (!found) continue;                       // nothing to bite here
     ctx.beginPath();
-    ctx.ellipse(x, y, r, 2 + rnd() * 5, rnd() * 3, 0, Math.PI * 2);
+    ctx.ellipse(x, y, r, (2 + rnd() * 5) * f, rnd() * 3, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
@@ -430,29 +538,45 @@ function drawBeast(ctx, look, rnd) {
 // clumps along it, a bald tail, ribs showing, a milky eye, a chewed ear.
 function rat(ctx, look, rnd) {
   const cx = 128, foot = 470;
-  const body = look.body, dark = shade(look.body, 0.66), lit = shade(look.body, 1.3);
-  // the tail: bald, kinked, and thicker at the root. Drawn first, behind.
+  const h = n => foot - n;                      // heights above the deck, as the bear does
+  const body = look.body, dark = shade(look.body, 0.66), mid = shade(look.body, 0.84), lit = shade(look.body, 1.3);
+  // the tail: bald, kinked, thicker at the root. Drawn first, behind.
   ctx.strokeStyle = look.beak; ctx.lineWidth = 11; ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(cx - 66, 402);
-  ctx.bezierCurveTo(cx - 132, 410, cx - 168, 372, cx - 128, 314);
-  ctx.stroke();
+  const tail = c => { c.beginPath(); c.moveTo(cx - 92, h(62)); c.bezierCurveTo(cx - 150, h(52), cx - 178, h(92), cx - 140, h(152)); c.stroke(); };
+  tail(ctx);
   ctx.lineWidth = 5; ctx.strokeStyle = shade(look.beak, 0.72);
-  ctx.beginPath(); ctx.moveTo(cx - 128, 314); ctx.lineTo(cx - 118, 292); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - 140, h(152)); ctx.lineTo(cx - 128, h(174)); ctx.stroke();
   ctx.strokeStyle = INK; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(cx - 66, 402); ctx.bezierCurveTo(cx - 132, 410, cx - 168, 372, cx - 128, 314); ctx.lineTo(cx - 118, 292); ctx.stroke();
-  // the body: a HUNCH. The arch of the back is where the shape has to happen,
-  // because a flat fill has nowhere else to put it.
-  blob(ctx, cx - 34, 400, 60, 50, dark, rnd, { amp: 3.5 });
-  wob(ctx, [[cx - 82, foot - 6], [cx - 76, 372], [cx - 44, 322], [cx + 4, 310], [cx + 52, 340],
-    [cx + 72, 382], [cx + 74, 416], [cx + 34, foot - 6]], body, rnd, { amp: 4.5 });
-  brush(ctx, cx - 56, 330, 110, 84, lit, rnd, 1.3);
-  // ribs, read through a thin flank
-  ctx.globalAlpha = 0.4; ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-  for (let i = 0; i < 4; i++) {
+  tail(ctx); ctx.beginPath(); ctx.moveTo(cx - 140, h(152)); ctx.lineTo(cx - 128, h(174)); ctx.stroke();
+  // the far pair of legs, behind the body
+  wob(ctx, [[cx - 62, h(66)], [cx - 34, h(62)], [cx - 28, h(10)], [cx - 60, h(10)]], dark, rnd, { amp: 2.5 });
+  wob(ctx, [[cx + 18, h(62)], [cx + 44, h(58)], [cx + 46, h(10)], [cx + 16, h(10)]], dark, rnd, { amp: 2.5 });
+  // THE BODY IS NOT A BOX. The outline this animal shipped with ran straight
+  // down to the deck at both ends and straight across the top, so the "hunch"
+  // the comment claimed lived entirely in a 12px rise that the matted fur then
+  // filled in — at the size a fight shows it, a brown rectangle with a triangle
+  // stuck to one end. A rat is LONG, its back arches to a peak over the
+  // shoulder, the rump falls away behind it, and the belly is off the ground:
+  // that last one is what turns four trapezoids sitting on a slab into legs.
+  wob(ctx, [
+    [cx - 96, h(94)], [cx - 56, h(126)], [cx - 10, h(144)],     // rump, up the arch
+    [cx + 30, h(138)], [cx + 56, h(114)],                        // over the shoulder
+    [cx + 62, h(84)], [cx + 40, h(52)],                          // down the chest
+    [cx - 4, h(44)], [cx - 52, h(46)], [cx - 86, h(56)],         // the belly, clear of the deck
+    [cx - 102, h(74)],
+  ], body, rnd, { amp: 4 });
+  brush(ctx, cx - 70, h(138), 120, 80, lit, rnd, 1.3);
+  // ribs, read through a thin flank. IRREGULAR: four evenly spaced parallel
+  // curves are a comb, which is the same fault the fur had and the gull's
+  // primaries still have — the spacing is what makes it anatomy.
+  ctx.globalAlpha = 0.34; ctx.strokeStyle = INK; ctx.lineCap = 'round';
+  let rx = cx - 18;
+  for (let i = 0; i < 5; i++) {
+    rx += 9 + rnd() * 11;
+    ctx.lineWidth = 1.8 + rnd() * 1.4;
     ctx.beginPath();
-    ctx.moveTo(cx - 30 + i * 15, 356 + i * 3);
-    ctx.quadraticCurveTo(cx - 24 + i * 15, 384, cx - 34 + i * 15, 404);
+    ctx.moveTo(rx, h(112) - rnd() * 8);
+    ctx.quadraticCurveTo(rx + 7, h(84), rx - 5 - rnd() * 6, h(58));
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
@@ -460,55 +584,60 @@ function rat(ctx, look, rnd) {
   // the first cut looked like a hedgehog. Fur clumps are irregular in height,
   // spacing and lean, they mostly lie back along the animal, and they are the
   // body's own colour: a tuft is hair stuck together, not a spine.
-  // Walk the back and put a tuft down only SOMETIMES. Evenly spaced marks read
-  // as a comb whatever their heights are; the gaps are what make it fur.
   let t = 0.04;
-  while (t < 0.96) {
-    t += 0.03 + rnd() * 0.12;                             // irregular spacing, and gaps
-    if (rnd() < 0.28) continue;
-    const ax = cx - 76 + t * 146, ay = 370 - Math.sin(t * Math.PI) * 56;
-    const h = 3 + rnd() * rnd() * 16;                     // mostly short, rarely long
+  while (t < 0.94) {
+    t += 0.04 + rnd() * 0.13;                             // irregular spacing, and gaps
+    if (rnd() < 0.3) continue;
+    const ax = cx - 96 + t * 152, ay = h(96 + Math.sin(t * Math.PI) * 50);
+    const hh = 4 + rnd() * rnd() * 18;                    // mostly short, rarely long
     const lean = -5 - rnd() * 10;                         // swept back toward the tail
     const w = 3 + rnd() * 4;
-    wob(ctx, [[ax - w, ay + 9], [ax + lean * 0.5 + (rnd() - 0.5) * 5, ay - h], [ax + w, ay + 9]],
+    wob(ctx, [[ax - w, ay + 9], [ax + lean * 0.5 + (rnd() - 0.5) * 5, ay - hh], [ax + w, ay + 9]],
       rnd() > 0.7 ? dark : body, rnd, { width: 1.6, amp: 1.8 });
   }
-  // head: a wedge, dropped low, with the snout leading
-  wob(ctx, [[cx + 30, 344], [cx + 78, 338], [cx + 116, 382], [cx + 120, 404], [cx + 76, 416], [cx + 40, 398]], look.head, rnd, { amp: 3 });
-  wob(ctx, [[cx + 104, 384], [cx + 132, 394], [cx + 104, 406]], look.beak, rnd, { width: 3 });
-  blob(ctx, cx + 128, 396, 5, 4, shade(look.beak, 0.5), rnd, { width: 1.6 });   // wet nose
-  // A jaw line, so the head is a head and not the front of the body
-  ctx.strokeStyle = INK; ctx.globalAlpha = 0.5; ctx.lineWidth = 2.6;
-  ctx.beginPath(); ctx.moveTo(cx + 40, 352); ctx.quadraticCurveTo(cx + 52, 388, cx + 46, 410); ctx.stroke();
-  ctx.globalAlpha = 1;
-  // Ears: FLAPS, not donuts, and set back on the skull. The first cut was a big
-  // ringed disc in the middle of the head and every eye went to it — it read as
-  // the eye, and the actual eye read as a speck. One whole, one chewed; nothing
-  // on this animal is a matched pair.
-  const earC = shade(look.beak, 0.78);
-  wob(ctx, [[cx + 36, 342], [cx + 40, 318], [cx + 58, 316], [cx + 60, 340]], earC, rnd, { width: 3, amp: 2 });
-  ctx.globalAlpha = 0.5;
-  wob(ctx, [[cx + 42, 338], [cx + 45, 324], [cx + 55, 323], [cx + 56, 337]], shade(look.beak, 0.5), rnd, { width: 0, stroke: null });
-  ctx.globalAlpha = 1;
-  wob(ctx, [[cx + 64, 336], [cx + 70, 318], [cx + 82, 322], [cx + 78, 330], [cx + 84, 336]], earC, rnd, { width: 3, amp: 2 });
-  // The eye, and it has to read at 40px on a deck: a dark bead, a milky cast
-  // over it, one hard glint. A 5px square was invisible.
-  blob(ctx, cx + 74, 370, 11, 11, '#d6cfba', rnd, { width: 2.8 });
-  blob(ctx, cx + 76, 371, 6, 6, INK, rnd, { width: 0, stroke: null });
-  ctx.globalAlpha = 0.4; ctx.fillStyle = '#eae6da';
-  ctx.beginPath(); ctx.arc(cx + 74, 370, 10, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
-  ctx.fillStyle = '#f0ece0'; ctx.fillRect(cx + 71, 366, 3, 3);
-  // whiskers, and one broken tooth
-  ctx.strokeStyle = 'rgba(230,222,208,0.8)'; ctx.lineWidth = 2;
-  for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(cx + 110, 394); ctx.lineTo(cx + 156 + rnd() * 10, 362 + i * 18); ctx.stroke(); }
-  ctx.fillStyle = '#ded6c4'; ctx.fillRect(cx + 106, 406, 7, 12);
-  ctx.fillStyle = shade('#ded6c4', 0.7); ctx.fillRect(cx + 106, 412, 7, 6);
-  // feet: splayed, with claws
-  for (const x of [cx - 54, cx + 4, cx + 50]) {
-    wob(ctx, [[x, foot - 24], [x + 26, foot - 28], [x + 32, foot], [x - 4, foot]], dark, rnd, { width: 3 });
+  // the near pair of legs: short, and they END at the deck rather than being
+  // three identical trapezoids parked under a slab
+  for (const [lx, lw] of [[cx - 48, 26], [cx + 26, 22]]) {
+    wob(ctx, [[lx, h(62)], [lx + lw, h(58)], [lx + lw + 4, h(22)], [lx + lw + 9, h(2)], [lx - 5, h(2)], [lx - 2, h(24)]], mid, rnd, { amp: 2.5 });
     ctx.strokeStyle = INK; ctx.lineWidth = 2;
-    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(x + 4 + i * 9, foot); ctx.lineTo(x + 1 + i * 9, foot + 7); ctx.stroke(); }
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(lx + 1 + i * 7, h(4)); ctx.lineTo(lx - 2 + i * 7, h(-5)); ctx.stroke(); }
   }
+  // the ear goes down first so the skull crosses it: one whole, one chewed,
+  // and nothing on this animal is a matched pair
+  const earC = shade(look.beak, 0.78);
+  wob(ctx, [[cx + 40, h(134)], [cx + 38, h(150)], [cx + 46, h(162)], [cx + 60, h(164)], [cx + 70, h(154)], [cx + 70, h(138)]], earC, rnd, { width: 3, amp: 2 });
+  ctx.globalAlpha = 0.45;
+  wob(ctx, [[cx + 45, h(138)], [cx + 44, h(150)], [cx + 54, h(157)], [cx + 64, h(150)], [cx + 64, h(140)]], shade(look.beak, 0.52), rnd, { width: 0, stroke: null, band: 0, worn: 0 });
+  ctx.globalAlpha = 1;
+  wob(ctx, [[cx + 74, h(132)], [cx + 74, h(148)], [cx + 84, h(156)], [cx + 88, h(146)], [cx + 96, h(148)], [cx + 92, h(134)]], earC, rnd, { width: 3, amp: 2 });
+  // THE HEAD: a wedge off the shoulder, carried low, narrowing the whole way
+  // to the nose. It used to butt onto the body at a hard vertical seam — two
+  // shapes, not one animal.
+  wob(ctx, [[cx + 44, h(128)], [cx + 74, h(138)], [cx + 100, h(126)], [cx + 122, h(102)],
+    [cx + 132, h(90)], [cx + 118, h(78)], [cx + 90, h(72)], [cx + 58, h(84)]], look.head, rnd, { amp: 3 });
+  blob(ctx, cx + 132, h(90), 6, 5, shade(look.beak, 0.5), rnd, { width: 1.8, band: 0, worn: 0 });  // wet nose
+  // THE EYE IS A BEAD, and it sits up by the snout where a rat's eye is. An
+  // 11px ringed disc in the middle of the skull is the loudest mark on the
+  // animal and every glance went to it — v10 recorded that fault about the
+  // EAR and the fix put the same ring back in the same place under a new name.
+  blob(ctx, cx + 100, h(112), 6, 5.5, '#141013', rnd, { width: 1.8, band: 0, worn: 0 });
+  ctx.globalAlpha = 0.28; ctx.fillStyle = '#b9b0a0';        // one milky crescent, off to the shadow side
+  ctx.beginPath(); ctx.arc(cx + 102, h(110), 4.6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.fillStyle = '#efe9db'; ctx.fillRect(cx + 97, h(114), 2.2, 2.2);
+  // a jaw line, so the head is a head and not the front of the body
+  ctx.strokeStyle = INK; ctx.globalAlpha = 0.45; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(cx + 56, h(120)); ctx.quadraticCurveTo(cx + 72, h(92), cx + 92, h(76)); ctx.stroke();
+  ctx.globalAlpha = 1;
+  // whiskers, and one broken tooth
+  ctx.strokeStyle = 'rgba(228,220,206,0.75)';
+  for (let i = 0; i < 4; i++) {
+    ctx.lineWidth = 1.4 + rnd() * 0.8;
+    ctx.beginPath(); ctx.moveTo(cx + 124, h(92));
+    ctx.quadraticCurveTo(cx + 150, h(96 + i * 10), cx + 172 + rnd() * 10, h(88 + i * 16));
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#ded6c4'; ctx.fillRect(cx + 114, h(76), 6, 11);
+  ctx.fillStyle = shade('#ded6c4', 0.7); ctx.fillRect(cx + 114, h(70), 6, 5);
 
   // v42 — WHAT MAKES THIS RAT THAT RAT. Three rats shared this painter and
   // differed only in the hex of their fur, which at full size is not a
@@ -519,25 +648,25 @@ function rat(ctx, look, rnd) {
   // flank and a strip of peel hanging off it. Stuck ON the fur, over the
   // outline, because that is what rubbish does.
   if (look.litter) {
-    wob(ctx, [[cx - 30, 340], [cx + 2, 330], [cx + 14, 356], [cx - 18, 368]], '#c4482e', rnd, { width: 2.6, amp: 3 });
+    wob(ctx, [[cx - 26, h(124)], [cx + 6, h(132)], [cx + 16, h(104)], [cx - 16, h(94)]], '#c4482e', rnd, { width: 2.6, amp: 3, band: 0.5 });
     ctx.globalAlpha = 0.45;
-    wob(ctx, [[cx - 24, 340], [cx + 2, 334], [cx + 8, 352]], '#e8c84a', rnd, { width: 0, stroke: null, amp: 2 });
+    wob(ctx, [[cx - 20, h(124)], [cx + 6, h(128)], [cx + 10, h(110)]], '#e8c84a', rnd, { width: 0, stroke: null, amp: 2, band: 0, worn: 0 });
     ctx.globalAlpha = 1;
-    wob(ctx, [[cx - 62, 372], [cx - 78, 404], [cx - 68, 428], [cx - 58, 402]], '#8a9a3a', rnd, { width: 2.2, amp: 3 });
+    wob(ctx, [[cx - 62, h(96)], [cx - 80, h(62)], [cx - 70, h(38)], [cx - 58, h(64)]], '#8a9a3a', rnd, { width: 2.2, amp: 3, band: 0 });
   }
 
   // `scars` — the King Rat has WON. Bald patches where the fur never came
   // back, and two closed slashes across the shoulder.
   if (look.scars) {
     ctx.globalAlpha = 0.55;
-    for (let i = 0; i < 3; i++) blob(ctx, cx - 40 + i * 34, 348 + (i % 2) * 22, 13 + rnd() * 7, 9 + rnd() * 5, shade(look.beak, 0.86), rnd, { width: 0, stroke: null });
+    for (let i = 0; i < 3; i++) blob(ctx, cx - 36 + i * 34, h(118 - (i % 2) * 22), 13 + rnd() * 7, 8 + rnd() * 5, shade(look.beak, 0.86), rnd, { width: 0, stroke: null, band: 0, worn: 0 });
     ctx.globalAlpha = 1;
     ctx.strokeStyle = shade(look.beak, 1.1); ctx.lineWidth = 3.4; ctx.lineCap = 'round';
-    for (const [x0, y0, x1, y1] of [[cx - 10, 322, cx + 26, 360], [cx + 4, 316, cx + 34, 344]]) {
+    for (const [x0, y0, x1, y1] of [[cx - 4, h(146), cx + 30, h(110)], [cx + 12, h(150), cx + 40, h(124)]]) {
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
       ctx.strokeStyle = INK; ctx.lineWidth = 1.4;
       for (let k = 1; k < 4; k++) {                                   // the stitches that closed it
-        const t = k / 4, mx = x0 + (x1 - x0) * t, my = y0 + (y1 - y0) * t;
+        const tt = k / 4, mx = x0 + (x1 - x0) * tt, my = y0 + (y1 - y0) * tt;
         ctx.beginPath(); ctx.moveTo(mx - 6, my - 3); ctx.lineTo(mx + 6, my + 3); ctx.stroke();
       }
       ctx.strokeStyle = shade(look.beak, 1.1); ctx.lineWidth = 3.4;
@@ -548,15 +677,15 @@ function rat(ctx, look, rnd) {
   // and it has to sit on the skull rather than float over it: a bent wire
   // band with three caps crimped on, one of them missing.
   if (look.crown) {
-    const cy = 306, kx = cx + 62;
+    const cy = h(166), kx = cx + 66;
     ctx.strokeStyle = '#b9a34a'; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(kx - 30, cy + 12); ctx.quadraticCurveTo(kx, cy - 2, kx + 30, cy + 10); ctx.stroke();
-    ctx.strokeStyle = INK; ctx.lineWidth = 1.6;
-    ctx.beginPath(); ctx.moveTo(kx - 30, cy + 12); ctx.quadraticCurveTo(kx, cy - 2, kx + 30, cy + 10); ctx.stroke();
+    const band = c => { c.beginPath(); c.moveTo(kx - 30, cy + 12); c.quadraticCurveTo(kx, cy - 2, kx + 30, cy + 10); c.stroke(); };
+    band(ctx);
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.6; band(ctx);
     const caps = [[kx - 24, cy + 4, '#b8402c'], [kx + 2, cy - 10, '#c8a83a'], [kx + 26, cy + 2, '#3a6a8a']];
     for (const [x, y, col] of caps) {
-      blob(ctx, x, y, 10, 9, col, rnd, { width: 2.6 });
-      blob(ctx, x, y, 4.5, 4, shade(col, 0.72), rnd, { width: 0, stroke: null });
+      blob(ctx, x, y, 10, 9, col, rnd, { width: 2.6, band: 0, worn: 0 });
+      blob(ctx, x, y, 4.5, 4, shade(col, 0.72), rnd, { width: 0, stroke: null, band: 0, worn: 0 });
       ctx.strokeStyle = shade(col, 0.6); ctx.lineWidth = 1.4;                // the crimped rim
       for (let i = 0; i < 7; i++) {
         const a = (i / 7) * Math.PI * 2;
@@ -717,6 +846,7 @@ function bird(ctx, look, rnd) {
   const S = look.big ? 1.35 : 1;
   const body = look.body, dark = shade(look.body, 0.7), lit = shade(look.body, 1.25);
   const bx = cx - 10 * S, by = foot - 62 * S;
+  const P = (dx, dy) => [bx + dx * S, by + dy * S];        // the bird is drawn in its own units
   // legs first, behind the body: thin, bent back, three toes
   ctx.strokeStyle = look.beak; ctx.lineWidth = 5 * S; ctx.lineCap = 'round';
   for (const lx of [bx - 14 * S, bx + 18 * S]) {
@@ -726,25 +856,40 @@ function bird(ctx, look, rnd) {
   ctx.strokeStyle = INK; ctx.lineWidth = 2;
   for (const lx of [bx - 14 * S, bx + 18 * S]) { ctx.beginPath(); ctx.moveTo(lx, by + 30 * S); ctx.lineTo(lx + 4 * S, foot - 10 * S); ctx.lineTo(lx, foot); ctx.stroke(); }
   // tail, a fan of stiff feathers pointing back and down
-  wob(ctx, [[bx - 60 * S, by + 10 * S], [bx - 104 * S, by + 34 * S], [bx - 96 * S, by + 48 * S], [bx - 56 * S, by + 34 * S]], dark, rnd, { amp: 3 });
-  for (let i = 0; i < 3; i++) wob(ctx, [[bx - 62 * S, by + 16 * S + i * 8 * S], [bx - 98 * S, by + 34 * S + i * 5 * S]], null, rnd, { width: 1.6, stroke: shade(look.body, 0.5) });
-  // the body: a plump hunched egg
-  wob(ctx, [[bx - 66 * S, by + 20 * S], [bx - 50 * S, by - 24 * S], [bx - 10 * S, by - 44 * S], [bx + 40 * S, by - 34 * S],
-    [bx + 66 * S, by + 4 * S], [bx + 50 * S, by + 40 * S], [bx, by + 52 * S], [bx - 46 * S, by + 42 * S]], body, rnd, { amp: 4 });
+  wob(ctx, [P(-60, 10), P(-104, 34), P(-96, 48), P(-56, 34)], dark, rnd, { amp: 3 });
+  for (let i = 0; i < 3; i++) wob(ctx, [P(-62, 16 + i * 8), P(-98, 34 + i * 5)], null, rnd, { width: 1.6, stroke: shade(look.body, 0.5) });
+  // THE BODY, and it is not a hexagon. Eight long straight runs read as a cut
+  // polygon at the size a fight shows this at, which is half of why the bird
+  // was a circle sitting on a shape — a body has no corners and the wobble
+  // cannot put a curve where the points do not go.
+  wob(ctx, [P(-70, 16), P(-58, -16), P(-36, -38), P(-4, -48), P(28, -44),
+    P(52, -26), P(60, 0), P(54, 26), P(30, 46), P(-6, 52), P(-40, 44), P(-66, 30)],
+    body, rnd, { amp: 4 });
   brush(ctx, bx - 40 * S, by - 30 * S, 90 * S, 60 * S, lit, rnd, 1.2);
-  // the folded wing, laid along the flank, with three long primaries
-  wob(ctx, [[bx - 54 * S, by], [bx - 20 * S, by - 30 * S], [bx + 34 * S, by - 22 * S], [bx + 20 * S, by + 18 * S], [bx - 40 * S, by + 30 * S]], look.wing, rnd, { amp: 3 });
-  for (let i = 0; i < 3; i++) wob(ctx, [[bx - 30 * S + i * 10 * S, by + 24 * S - i * 6 * S], [bx - 70 * S + i * 6 * S, by + 40 * S - i * 4 * S]], null, rnd, { width: 2, stroke: shade(look.wing, 0.6) });
+  // THE NECK. There was none: a circle was drawn overlapping an egg and the
+  // seam between them was the most visible line on the animal — a snowman.
+  // A bird's head sits on a column of feathers that widens into the shoulder,
+  // and drawing that column in the BODY's own colour is what welds the two.
+  wob(ctx, [P(28, -40), P(40, -64), P(70, -68), P(66, -22)], body, rnd, { amp: 3, stroke: null });
   // the neck sheen — the one iridescent patch a pigeon has, and what says pigeon
-  ctx.globalAlpha = 0.85; blob(ctx, bx + 30 * S, by - 22 * S, 16 * S, 20 * S, look.neck, rnd, { width: 0, stroke: null }); ctx.globalAlpha = 1;
-  // head: small, forward, a hard bead of an eye, a short beak
-  blob(ctx, bx + 52 * S, by - 44 * S, 20 * S, 18 * S, look.head, rnd, { amp: 2.4 });
-  wob(ctx, [[bx + 68 * S, by - 48 * S], [bx + 92 * S, by - 42 * S], [bx + 68 * S, by - 36 * S]], look.beak, rnd, { width: 2.6 });
-  blob(ctx, bx + 56 * S, by - 48 * S, 5 * S, 5 * S, '#e8e0c8', rnd, { width: 2 });
-  blob(ctx, bx + 57 * S, by - 48 * S, 2.6 * S, 2.6 * S, INK, rnd, { width: 0, stroke: null });
+  ctx.globalAlpha = 0.85;
+  wob(ctx, [P(34, -40), P(42, -60), P(64, -62), P(62, -30)], look.neck, rnd, { amp: 2.4, stroke: null, band: 0.6, worn: 0 });
+  ctx.globalAlpha = 1;
+  // THE FOLDED WING TAPERS TO A POINT. It was a hexagon inside a hexagon — a
+  // flat panel laid on the flank with the same width at the shoulder and at
+  // the tip, which is a plate and not a wing. The primaries used to run OUT of
+  // it and down across the body, so every bird had a grey stick through it.
+  wob(ctx, [P(38, -28), P(8, -36), P(-26, -28), P(-62, -2), P(-50, 10), P(-16, 8), P(18, 4), P(36, -8)],
+    look.wing, rnd, { amp: 3 });
+  for (let i = 0; i < 3; i++) wob(ctx, [P(-8, -8 + i * 5), P(-52, 0 + i * 3)], null, rnd, { width: 1.8, stroke: shade(look.wing, 0.6) });
   if (look.big) {                                                 // a gull's wingtips are black
-    wob(ctx, [[bx - 60 * S, by + 12 * S], [bx - 100 * S, by + 30 * S], [bx - 92 * S, by + 44 * S]], '#1c1a18', rnd, { width: 2 });
+    wob(ctx, [P(-34, -18), P(-62, -2), P(-50, 10), P(-30, 2)], '#1c1a18', rnd, { width: 2, amp: 2 });
   }
+  // head: small, carried forward off the neck, with a bead of an eye
+  wob(ctx, [P(44, -68), P(58, -84), P(76, -82), P(84, -70), P(80, -56), P(62, -50), P(48, -56)], look.head, rnd, { amp: 2.4 });
+  wob(ctx, [P(82, -74), P(106, -68), P(82, -60)], look.beak, rnd, { width: 2.6, band: 0 });
+  blob(ctx, bx + 66 * S, by - 72 * S, 4.6 * S, 4.4 * S, '#141013', rnd, { width: 1.6, band: 0, worn: 0 });
+  ctx.fillStyle = '#efe9db'; ctx.fillRect(bx + 64 * S, by - 74 * S, 1.8 * S, 1.8 * S);
   // v42 — A CROWN OF BREAD TAGS, which is what the ART_REQUEST asks for and
   // is a far better joke than a gold zig-zag: the King of the gulls is crowned
   // in the little notched plastic clips off bread bags. They are FLAT, they are
@@ -778,58 +923,96 @@ function bird(ctx, look, rnd) {
 // moss, two lit eyes) goes on top of a shape that already reads.
 function bear(ctx, look, rnd) {
   const cx = 128, foot = 470;
-  const stone = look.body, dark = shade(stone, 0.66), lit = shade(stone, 1.22);
+  // Heights ABOVE the foot, because every line in this animal is a height and
+  // reading them off `foot - n` is how the back ended up a single arc: you
+  // cannot see a silhouette in a column of subtractions.
+  const h = n => foot - n;
+  const stone = look.body, dark = shade(stone, 0.62), mid = shade(stone, 0.82), lit = shade(stone, 1.22);
   // the plinth it has not quite left
-  wob(ctx, [[cx - 118, foot], [cx - 110, foot - 22], [cx + 118, foot - 22], [cx + 124, foot]], dark, rnd, { amp: 1.5 });
-  // the far foreleg, behind the body
-  wob(ctx, [[cx + 34, foot - 22], [cx + 30, foot - 110], [cx + 66, foot - 116], [cx + 76, foot - 22]], dark, rnd, { amp: 3 });
-  // THE BODY: haunch low at the back, one high hump over the shoulder, then the
-  // neck DIPS before the head — that dip is what makes it an animal and not a rock
-  wob(ctx, [[cx - 100, foot - 22], [cx - 116, foot - 90], [cx - 104, foot - 170], [cx - 70, foot - 236],
-    [cx - 20, foot - 276], [cx + 30, foot - 282], [cx + 66, foot - 262], [cx + 84, foot - 236],   // the hump
-    [cx + 92, foot - 214],                                                                        // the neck dips
-    [cx + 96, foot - 150], [cx + 70, foot - 96], [cx + 40, foot - 22]], stone, rnd, { amp: 4 });
-  brush(ctx, cx - 80, foot - 250, 150, 150, lit, rnd, 1.3);
-  // The near foreleg. It was a four-point near-vertical quad - a RECTANGLE,
-  // and a rectangle is the one shape that reads as UI rather than as an animal
-  // (v10 paid for this twice on the blob's pupil and its mouth, and nobody
-  // applied the lesson here). A bear's foreleg is a heavy shoulder that
-  // NARROWS to the wrist and then spreads into the paw, so the outline has to
-  // pinch: eight points, wide at the top, in at the wrist, out at the foot.
-  wob(ctx, [[cx - 34, foot - 22], [cx - 44, foot - 72], [cx - 40, foot - 118],
-    [cx - 26, foot - 140], [cx + 4, foot - 144], [cx + 18, foot - 120],
-    [cx + 14, foot - 74], [cx + 24, foot - 22]], shade(stone, 0.94), rnd, { amp: 3.5 });
-  wob(ctx, [[cx - 40, foot - 22], [cx - 42, foot - 44], [cx + 30, foot - 46], [cx + 40, foot - 22]], shade(stone, 0.88), rnd, { amp: 2 });
-  for (let i = 0; i < 4; i++) { ctx.strokeStyle = INK; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(cx - 30 + i * 18, foot - 30); ctx.lineTo(cx - 32 + i * 18, foot - 18); ctx.stroke(); }
-  // THE HEAD: thrust forward and down off the dip in the neck. A blunt wedge,
-  // wider at the skull, narrowing to a heavy muzzle that points at the deck.
-  wob(ctx, [[cx + 76, foot - 240], [cx + 104, foot - 256], [cx + 138, foot - 244], [cx + 160, foot - 206],
-    [cx + 168, foot - 172], [cx + 150, foot - 150], [cx + 116, foot - 154], [cx + 90, foot - 180]], look.head, rnd, { amp: 3 });
-  // the muzzle, a second lump below the eyes, and the nose worn dark by a century of hands
-  wob(ctx, [[cx + 128, foot - 192], [cx + 168, foot - 184], [cx + 172, foot - 158], [cx + 140, foot - 150]], shade(look.head, 0.86), rnd, { width: 3, amp: 2 });
-  blob(ctx, cx + 168, foot - 170, 9, 7, look.beak, rnd, { width: 2.4 });
-  ctx.strokeStyle = INK; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(cx + 150, foot - 160); ctx.quadraticCurveTo(cx + 158, foot - 152, cx + 166, foot - 160); ctx.stroke();  // the mouth
-  // one round ear, set back on top of the skull
-  blob(ctx, cx + 100, foot - 258, 14, 13, look.head, rnd, { width: 3 });
-  blob(ctx, cx + 100, foot - 258, 6, 6, shade(look.head, 0.7), rnd, { width: 0, stroke: null });
-  // the eyes: two points of light in a stone face — the only colour on it
-  ctx.fillStyle = look.eye;
-  ctx.beginPath(); ctx.ellipse(cx + 122, foot - 218, 7, 4.5, -0.15, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(cx + 148, foot - 212, 5, 3.5, -0.15, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.ellipse(cx + 130, foot - 216, 22, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
-  // granite: a few long cracks, following the form rather than crossing it
-  ctx.strokeStyle = 'rgba(14,12,10,0.55)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-  for (let i = 0; i < 6; i++) {
-    const x0 = cx - 90 + rnd() * 160, y0 = foot - 80 - rnd() * 170;
-    ctx.beginPath(); ctx.moveTo(x0, y0);
-    for (let k = 0; k < 3; k++) ctx.lineTo(x0 + (rnd() - 0.5) * 24 + k * 5, y0 + 12 + k * 16 + rnd() * 8);
-    ctx.stroke();
+  wob(ctx, [[cx - 118, foot], [cx - 110, h(22)], [cx + 118, h(22)], [cx + 124, foot]], dark, rnd, { amp: 1.5 });
+  // the far pair, behind everything: a hind haunch and a foreleg, both darker
+  wob(ctx, [[cx - 96, h(22)], [cx - 100, h(116)], [cx - 60, h(150)], [cx - 34, h(96)], [cx - 44, h(22)]], dark, rnd, { amp: 3 });
+  wob(ctx, [[cx + 40, h(22)], [cx + 34, h(104)], [cx + 70, h(128)], [cx + 84, h(96)], [cx + 80, h(22)]], dark, rnd, { amp: 3 });
+  // THE BACK IS NOT ONE ARC. The first two cuts of this animal put the rump,
+  // the shoulder and the skull on one unbroken dome from the plinth to the ear
+  // and it read as a TOMBSTONE — which is the exact word the v10 note used,
+  // and it was still true three versions later, because a comment saying the
+  // neck dips is not a dip. A bear in profile is four events along its top
+  // line: a rump, a LOW loin, a shoulder hump that is the highest point of the
+  // animal, and then a neck that drops hard before the head. And the belly has
+  // to be off the ground — the legs were drawn inside a shape that ran to the
+  // plinth, so they were ink ON a slab and could never be masses.
+  wob(ctx, [
+    [cx - 86, h(176)], [cx - 44, h(168)],                      // rump, then the loin DIPS
+    [cx - 6, h(226)], [cx + 34, h(248)], [cx + 62, h(238)],    // up over the shoulder hump
+    [cx + 82, h(202)],                                          // and the neck drops away
+    [cx + 92, h(152)], [cx + 86, h(110)],                       // the chest
+    [cx + 54, h(94)], [cx - 6, h(86)], [cx - 46, h(96)],        // the belly, clear of the deck
+    [cx - 84, h(118)], [cx - 98, h(150)],                       // the haunch, and up the rump
+  ], stone, rnd, { amp: 4 });
+  brush(ctx, cx - 60, h(226), 140, 124, lit, rnd, 1.3);
+  // the near hind leg: a haunch that starts inside the body and ends in a paw
+  wob(ctx, [[cx - 86, h(126)], [cx - 64, h(146)], [cx - 40, h(140)], [cx - 28, h(112)],
+    [cx - 34, h(74)], [cx - 30, h(44)], [cx - 20, h(22)], [cx - 70, h(22)],
+    [cx - 76, h(46)], [cx - 88, h(84)]], mid, rnd, { amp: 3.5 });
+  // the near foreleg. A bear's foreleg is a heavy shoulder that NARROWS to the
+  // wrist and spreads again into the paw, so the outline has to pinch — a
+  // four-point near-vertical quad is a RECTANGLE, and a rectangle is the one
+  // shape that reads as UI rather than as an animal (v10, on the blob).
+  wob(ctx, [[cx + 34, h(126)], [cx + 74, h(118)], [cx + 82, h(74)],
+    [cx + 76, h(40)], [cx + 84, h(22)], [cx + 36, h(22)], [cx + 30, h(56)], [cx + 26, h(98)]], mid, rnd, { amp: 3.5 });
+  for (const px of [cx - 66, cx + 40]) {
+    ctx.strokeStyle = INK; ctx.lineWidth = 2.6;
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(px + i * 14, h(34)); ctx.lineTo(px - 2 + i * 14, h(20)); ctx.stroke(); }
   }
-  // moss in the seams on the shaded side, and a little on top of the hump
-  for (let i = 0; i < 6; i++) blob(ctx, cx - 104 + rnd() * 70, foot - 90 - rnd() * 130, 6 + rnd() * 11, 4 + rnd() * 6, look.moss, rnd, { width: 0, stroke: null });
-  ctx.globalAlpha = 0.5;
-  for (let i = 0; i < 4; i++) blob(ctx, cx - 20 + rnd() * 80, foot - 270 - rnd() * 12, 6 + rnd() * 8, 3 + rnd() * 3, look.moss, rnd, { width: 0, stroke: null });
-  ctx.globalAlpha = 1;
+  // the ear goes down FIRST, so the skull line crosses it and it is set INTO
+  // the head instead of perched on top like a second, smaller head
+  blob(ctx, cx + 96, h(226), 13, 12, mid, rnd, { width: 3 });
+  // THE HEAD, hung off the end of the neck's drop and OUTSIDE the body's
+  // outline — while it sat inside it, the muzzle was the only part of the bear
+  // that was not the dome, which is why the dome was all anybody saw.
+  wob(ctx, [[cx + 74, h(206)], [cx + 100, h(224)], [cx + 132, h(218)], [cx + 158, h(194)],
+    [cx + 174, h(168)], [cx + 178, h(146)], [cx + 148, h(134)], [cx + 114, h(144)], [cx + 86, h(170)]],
+    look.head, rnd, { amp: 3 });
+  // the muzzle: a second lump under the brow, and a nose worn dark by a
+  // century of hands on it
+  wob(ctx, [[cx + 134, h(180)], [cx + 154, h(180)], [cx + 172, h(170)], [cx + 181, h(156)],
+    [cx + 176, h(142)], [cx + 156, h(135)], [cx + 140, h(146)]], shade(look.head, 0.86), rnd, { width: 3, amp: 2 });
+  blob(ctx, cx + 176, h(160), 9, 7, look.beak, rnd, { width: 2.4 });
+  ctx.strokeStyle = INK; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.moveTo(cx + 152, h(146)); ctx.quadraticCurveTo(cx + 164, h(140), cx + 174, h(150)); ctx.stroke();
+  // ONE EYE. This is a profile, and the second one was on the far side of the
+  // skull — two amber lamps side by side on a cheek, which is what you draw
+  // when you are thinking about a face and not about a head.
+  ctx.fillStyle = look.eye;
+  ctx.beginPath(); ctx.ellipse(cx + 138, h(196), 6.5, 4.5, -0.18, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = INK;
+  ctx.beginPath(); ctx.ellipse(cx + 139, h(196), 2.6, 3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 0.28; ctx.fillStyle = look.eye;
+  ctx.beginPath(); ctx.ellipse(cx + 138, h(196), 17, 11, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+  // granite: long cracks that follow the form rather than crossing it
+  ctx.strokeStyle = 'rgba(14,12,10,0.55)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  const seams = [];
+  for (let i = 0; i < 6; i++) {
+    const x0 = cx - 86 + rnd() * 150, y0 = h(120 + rnd() * 110);
+    ctx.beginPath(); ctx.moveTo(x0, y0);
+    let x = x0, y = y0;
+    for (let k = 0; k < 3; k++) { x += (rnd() - 0.5) * 24 + 5; y += 12 + k * 16 + rnd() * 8; ctx.lineTo(x, y); }
+    ctx.stroke();
+    seams.push([x0 + (x - x0) * 0.5, y0 + (y - y0) * 0.5]);
+  }
+  // MOSS GROWS IN A SEAM AND ON A LEDGE, nowhere else. Scattered at random it
+  // is four green lollipops floating on the stone — Kindling's canopy fault,
+  // which that project recorded and this one then drew anyway. So each patch
+  // is laid ON one of the cracks just drawn, or along the top of the hump
+  // where rain sits, and it is a cluster of small dabs rather than one disc.
+  const patch = (px, py, n, a) => {
+    ctx.globalAlpha = a;
+    for (let i = 0; i < n; i++) blob(ctx, px + (rnd() - 0.5) * 22, py + (rnd() - 0.5) * 9, 3 + rnd() * 5, 2 + rnd() * 3, look.moss, rnd, { width: 0, stroke: null, band: 0, worn: 0 });
+    ctx.globalAlpha = 1;
+  };
+  for (const [sx, sy] of seams) if (rnd() < 0.8) patch(sx, sy, 5 + Math.round(rnd() * 4), 0.75);
+  for (let i = 0; i < 3; i++) patch(cx - 10 + rnd() * 70, h(238 + rnd() * 10), 4, 0.45);
 }
 
 // ── the torch, painted in ──────────────────────────────────────────────────
@@ -859,7 +1042,7 @@ function edgeBand(src, dx, colour, width = 3) {
   return c;
 }
 
-function torchlight(c, mood) {
+function torchlight(c, mood, f = 1) {
   const ctx = c.getContext('2d');
   const W = c.width, H = c.height;
   // 1 + 2: the wash across the figure. `source-atop` keeps the silhouette, so
@@ -880,8 +1063,8 @@ function torchlight(c, mood) {
   // 3: the rims, added rather than painted, so they read as light and not paint
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  ctx.globalAlpha = 0.85; ctx.drawImage(edgeBand(c, 1, mood.warm, 3), 0, 0);
-  ctx.globalAlpha = 0.5; ctx.drawImage(edgeBand(c, -1, mood.rim, 2), 0, 0);
+  ctx.globalAlpha = 0.85; ctx.drawImage(edgeBand(c, 1, mood.warm, Math.max(1.2, 3 * f)), 0, 0);
+  ctx.globalAlpha = 0.5; ctx.drawImage(edgeBand(c, -1, mood.rim, Math.max(1, 2 * f)), 0, 0);
   ctx.restore();
   return c;
 }
@@ -952,7 +1135,7 @@ function mutate(c, rnd, level) {
 // a painted one has. At the old strength it read as a white sticker rim rather
 // than as the board's core showing through a cut. On a 'card' cut it traces
 // the board instead, where it is doing its real job.
-function fibre(c, rnd, tone = '#c8bca4', alpha = 0.32) {
+function fibre(c, rnd, tone = '#c8bca4', alpha = 0.32, f = 1) {
   const ctx = c.getContext('2d');
   const band = document.createElement('canvas'); band.width = TW; band.height = TH;
   const b = band.getContext('2d');
@@ -960,7 +1143,10 @@ function fibre(c, rnd, tone = '#c8bca4', alpha = 0.32) {
   // erode: eight shifted copies subtracted leaves only the outermost ring —
   // of the silhouette AND of every hole punched in it
   b.globalCompositeOperation = 'destination-out';
-  for (const [dx, dy] of [[2, 0], [-2, 0], [0, 2], [0, -2], [1.5, 1.5], [-1.5, 1.5], [1.5, -1.5], [-1.5, -1.5]]) b.drawImage(c, dx, dy);
+  // The ring's thickness follows the figure (v46) — floored at a pixel and a
+  // bit, because a rim thinner than that is not a torn edge, it is nothing.
+  const e = Math.max(1.15, 2 * f);
+  for (const [dx, dy] of [[e, 0], [-e, 0], [0, e], [0, -e], [e * 0.75, e * 0.75], [-e * 0.75, e * 0.75], [e * 0.75, -e * 0.75], [-e * 0.75, -e * 0.75]]) b.drawImage(c, dx, dy);
   b.globalCompositeOperation = 'source-in';
   // A torn edge CATCHES LIGHT — it is not a constant ring. At one alpha all
   // the way round it read as a white sticker outline, which is the opposite of
@@ -971,13 +1157,17 @@ function fibre(c, rnd, tone = '#c8bca4', alpha = 0.32) {
   b.fillStyle = g; b.fillRect(0, 0, TW, TH);
   // ragged, not an outline: a torn edge shows its core in patches
   b.globalCompositeOperation = 'destination-out';
-  for (let i = 0; i < 340; i++) { b.beginPath(); b.arc(rnd() * TW, rnd() * TH, 1 + rnd() * 3.5, 0, Math.PI * 2); b.fill(); }
+  for (let i = 0; i < 340; i++) { b.beginPath(); b.arc(rnd() * TW, rnd() * TH, (1 + rnd() * 3.5) * Math.max(0.55, f), 0, Math.PI * 2); b.fill(); }
   ctx.save(); ctx.globalAlpha = alpha; ctx.drawImage(band, 0, 0); ctx.restore();
 }
 
 // NEWSPRINT. Rows of dashes too small to read, which is what print is at this
 // size — the collage's other signal, and what stops a flat fill being flat.
-function newsprint(ctx, rnd, k = 1) {
+// `k` is how STRONG the print is; `f` is how BIG it is. At rows 7-12px apart
+// newsprint is fine print across a person and a ruled grid across a rat — the
+// rectangular lattice visible over every beast in the v45 contact sheet was
+// this, not a texture anybody drew.
+function newsprint(ctx, rnd, k = 1, f = 1) {
   ctx.save();
   ctx.globalCompositeOperation = 'source-atop';
   // Dark ink on a light fill, light ink on a dark one — a single dark dash was
@@ -986,13 +1176,53 @@ function newsprint(ctx, rnd, k = 1) {
   for (const [ink, a, off] of [['#14100c', 0.13, 0], ['#e8dfc8', 0.07, 3]]) {
     ctx.globalAlpha = a * k;
     ctx.fillStyle = ink;
-    for (let y = 56 + off; y < TH; y += 7 + Math.floor(rnd() * 5)) {
+    for (let y = 56 + off * f; y < TH; y += Math.max(2.2, (7 + Math.floor(rnd() * 5)) * f)) {
       if (rnd() < 0.34) continue;                  // a column ends, or a picture sits there
-      let x = rnd() * 34;
-      while (x < TW) { const w = 3 + rnd() * 10; ctx.fillRect(x, y, w, 1.4); x += w + 2 + rnd() * 5; }
+      let x = rnd() * 34 * f;
+      while (x < TW) {
+        const w = Math.max(1.4, (3 + rnd() * 10) * f);
+        ctx.fillRect(x, y, w, Math.max(0.9, 1.4 * f));
+        x += w + Math.max(1, (2 + rnd() * 5) * f);
+      }
     }
   }
   ctx.restore();
+}
+
+// ── HOW BIG THE DRAWING ACTUALLY CAME OUT ────────────────────────────────
+// THE PASSES ARE ALL MEASURED IN TEXTURE PIXELS, AND NOT EVERY FIGURE IS A
+// PERSON (v46). Newsprint, nicks, the torn rim, the grime streaks, the rim
+// light and the card's own blade were every one of them calibrated against a
+// bum, who fills about 356px of this 512px sheet. A rat fills 135. So the same
+// absolute numbers gave the rat a bite the size of its ear, a torn rim three
+// times as thick as a person's, newsprint whose rows are a twelfth of its body
+// — which is the ruled grid visible across every animal in the v45 sheet — and
+// a cut line that welded its whiskers together. Nobody drew the animals badly.
+// The passes that make a figure belong to this bridge were person-sized, and
+// they were applied to a rat at full size.
+//
+// This is the one number that fixes all of it, and it is deliberately a RATIO
+// rather than a per-figure table: a table is a hand-kept list that the next
+// animal is left out of.
+const REF_INK = 356;
+
+function inkHeight(cv) {
+  const d = cv.getContext('2d').getImageData(0, 0, TW, TH).data;
+  let top = -1, bottom = -1;
+  for (let y = 0; y < TH; y++) {
+    let any = false;
+    for (let x = 0; x < TW && !any; x += 2) if (d[(y * TW + x) * 4 + 3] > 8) any = true;
+    if (any) { if (top < 0) top = y; bottom = y; }
+  }
+  return bottom < 0 ? 0 : bottom - top + 1;
+}
+
+// Capped at 1 because nothing here is bigger than a person and a pass that
+// grew would be a second bug; floored because below about a third of a person
+// every mark goes sub-pixel and the figure loses its grain altogether.
+function figureScale(cv) {
+  const h = inkHeight(cv);
+  return h ? Math.max(0.34, Math.min(1, h / REF_INK)) : 1;
 }
 
 // The default hour. `main.js` hands the active skin's in when it builds a
@@ -1032,8 +1262,11 @@ export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
   if (plate) drawPlate(fx, plate, { tw: TW, th: TH, foot: 470, tall: 356 });
   else if (look.shape) drawBeast(fx, look, rnd);
   else person(fx, look, rnd);
+  // Measured off the FIGURE and before the board is cut, which is the only
+  // moment the drawing's own size is on the canvas by itself.
+  const f = figureScale(fig);
   if (fig !== c) {
-    cutoutBorder(ctx, fig, rnd);
+    cutoutBorder(ctx, fig, rnd, f);
     // The card is cut flat at CUT_FOOT, so the PRINTING stops there too. The
     // border pass erases its mask below that line; drawing the figure over it
     // unclipped left anything that hangs lower — `slime()` runs the blob's
@@ -1049,18 +1282,20 @@ export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
   // clean silhouette, then take the bites out — which is also the true order,
   // since a cutout is painted first and carried around afterwards.
   if (look.mutated) mutate(c, rnd, look.mutated);
-  newsprint(ctx, rnd);
-  if (mood) torchlight(c, mood);
+  newsprint(ctx, rnd, 1, f);
+  if (mood) torchlight(c, mood, f);
   // Fewer than it looks like it should be, and that is a consequence of the
   // placement getting smarter rather than a taste change: nicks used to be
   // thrown anywhere and MOST OF THEM MISSED, landing on transparent space. Now
   // that every one of them finds an edge, the same count reads as perforation
   // — a dotted border round a standee. The number had to come down with it.
-  nicks(ctx, rnd, 9 + Math.round((look.grime ?? 0.6) * 9));
+  // The count comes down with the size as well as the radius: the same number
+  // of bites on a shorter perimeter is perforation however small each one is.
+  nicks(ctx, rnd, Math.round((9 + (look.grime ?? 0.6) * 9) * (0.5 + 0.5 * f)), f);
   // the fibre comes AFTER the nicks, so a torn hole shows its core too — that
   // is the whole reason a nick reads as torn rather than as a dot of nothing
-  fibre(c, rnd);
-  grime(ctx, rnd, look.grime ?? 0.7);
+  fibre(c, rnd, '#c8bca4', 0.32, f);
+  grime(ctx, rnd, look.grime ?? 0.7, f);
   return c;
 }
 
@@ -1176,19 +1411,59 @@ export function figureCut() { return CUT; }
 // seen at a slight angle, which is the one cue that says thickness.
 const CUT_PAD = 7;                       // card beyond the ink, in texture px
 const CUT_FOOT = 470 + 6;                // the flat cut, just under the baseline drawPlate uses
-function cutoutBorder(ctx, fig, rnd) {
+
+// Erode a silhouette: keep only the pixels whose whole r-neighbourhood is ink.
+// `destination-in` multiplies alpha, so a ring of shifted copies leaves the
+// core and takes the boundary — which is the definition, done in one pass each.
+function erode(src, r) {
+  const c = document.createElement('canvas'); c.width = TW; c.height = TH;
+  const x = c.getContext('2d');
+  x.drawImage(src, 0, 0);
+  x.globalCompositeOperation = 'destination-in';
+  for (let a = 0; a < 12; a++) x.drawImage(src, Math.cos(a / 12 * Math.PI * 2) * r, Math.sin(a / 12 * Math.PI * 2) * r);
+  return c;
+}
+
+function hasInk(cv) {
+  const d = cv.getContext('2d').getImageData(0, 0, TW, TH).data;
+  for (let i = 3; i < d.length; i += 40) if (d[i] > 24) return true;
+  return false;
+}
+
+// THE BLADE WAS WIDER THAN SOME OF THE MARKS (v46). Growing the silhouette by
+// CUT_PAD closes every gap narrower than twice it, and the rat's four whiskers
+// are 1.4px lines about 12px apart: the board grew around each of them, the
+// four borders met, and the animal came back with a solid black paddle off the
+// side of its face. The gull's wing tip and the bear's scratched moss went the
+// same way, and none of it was visible at the size a fight shows them at.
+//
+// The answer is what scissors actually do: you cut round the BODY and you
+// print the whisker. So the mask is OPENED first — eroded by `blade` and grown
+// back with the pad — which drops every feature thinner than the blade and
+// leaves the body's own cut line exactly where it was. The figure is drawn
+// over the top afterwards either way, so nothing disappears; it just stops
+// dragging a piece of card around with it.
+function cutoutBorder(ctx, fig, rnd, f = 1) {
+  const pad = Math.max(3, CUT_PAD * f);
+  const blade = Math.max(1.5, 3 * f);
+  const core = erode(fig, blade);
+  // A figure thinner than the blade all over would open to nothing. That is a
+  // drawing this game does not have, and a cut-out with no card is worse than
+  // a welded whisker, so it falls back rather than trusting the arithmetic.
+  const src = hasInk(core) ? core : fig;
+  const grow = src === core ? pad + blade : pad;
   const m = document.createElement('canvas'); m.width = TW; m.height = TH;
   const mx = m.getContext('2d');
-  // the mask: the silhouette grown by CUT_PAD in every direction
+  // the mask: the opened silhouette grown by the pad in every direction
   for (let a = 0; a < 16; a++) {
-    const dx = Math.cos(a / 16 * Math.PI * 2) * CUT_PAD, dy = Math.sin(a / 16 * Math.PI * 2) * CUT_PAD;
-    mx.drawImage(fig, dx, dy);
+    const dx = Math.cos(a / 16 * Math.PI * 2) * grow, dy = Math.sin(a / 16 * Math.PI * 2) * grow;
+    mx.drawImage(src, dx, dy);
   }
   for (let a = 0; a < 8; a++) {          // fill the ring so the border is solid, not a halo of copies
-    const dx = Math.cos(a / 8 * Math.PI * 2) * CUT_PAD * 0.5, dy = Math.sin(a / 8 * Math.PI * 2) * CUT_PAD * 0.5;
-    mx.drawImage(fig, dx, dy);
+    const dx = Math.cos(a / 8 * Math.PI * 2) * grow * 0.5, dy = Math.sin(a / 8 * Math.PI * 2) * grow * 0.5;
+    mx.drawImage(src, dx, dy);
   }
-  mx.drawImage(fig, 0, 0);
+  mx.drawImage(src, 0, 0);
   // flat foot: nothing below the cut line
   mx.globalCompositeOperation = 'destination-out';
   mx.fillRect(0, CUT_FOOT, TW, TH - CUT_FOOT);
@@ -1198,19 +1473,19 @@ function cutoutBorder(ctx, fig, rnd) {
   g.addColorStop(0, '#8d8066'); g.addColorStop(0.5, '#7d715b'); g.addColorStop(1, '#685e4c');
   mx.fillStyle = g; mx.fillRect(0, 0, TW, TH);
   mx.globalCompositeOperation = 'source-atop';
-  for (let i = 0; i < 70; i++) {          // stock, not a swatch
+  for (let i = 0; i < 70; i++) {          // stock, not a swatch — at the card's own scale
     mx.fillStyle = rnd() > 0.5 ? 'rgba(0,0,0,0.04)' : 'rgba(255,248,232,0.05)';
-    mx.fillRect(rnd() * TW, rnd() * TH, 6 + rnd() * 40, 3 + rnd() * 18);
+    mx.fillRect(rnd() * TW, rnd() * TH, (6 + rnd() * 40) * f, (3 + rnd() * 18) * f);
   }
   // the card's edge: darken the outer ~2px of the mask. Draw the mask, then
   // knock the inner region (figure grown by PAD-2) back to the plain kraft.
   const inner = document.createElement('canvas'); inner.width = TW; inner.height = TH;
   const ix = inner.getContext('2d');
   for (let a = 0; a < 16; a++) {
-    const r = CUT_PAD - 2.2, dx = Math.cos(a / 16 * Math.PI * 2) * r, dy = Math.sin(a / 16 * Math.PI * 2) * r;
-    ix.drawImage(fig, dx, dy);
+    const r = grow - Math.max(1.1, 2.2 * f), dx = Math.cos(a / 16 * Math.PI * 2) * r, dy = Math.sin(a / 16 * Math.PI * 2) * r;
+    ix.drawImage(src, dx, dy);
   }
-  ix.drawImage(fig, 0, 0);
+  ix.drawImage(src, 0, 0);
   ix.globalCompositeOperation = 'destination-out';
   ix.fillRect(0, CUT_FOOT - 2, TW, TH - CUT_FOOT + 2);
   // edge = mask − inner, painted dark; the flat foot keeps its own edge line

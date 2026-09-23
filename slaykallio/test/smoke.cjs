@@ -364,12 +364,32 @@ const check = (name, ok, extra = '') => {
     const plain = __sk.debug.look('rat', 0), m2 = __sk.debug.look('rat', 2);
     const a = plain.getContext('2d').getImageData(0, 0, plain.width, plain.height).data, b2 = m2.getContext('2d').getImageData(0, 0, m2.width, m2.height).data;
     let differ = 0; for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b2[i]) > 60 || Math.abs(a[i + 3] - b2[i + 3]) > 60) differ++;
-    return { ink: [ink(plain), ink(m2)], light: [light(plain), light(m2)], differ, grew: m2.mutations, plainGrew: plain.mutations };
+    // v46 — AND THE RULER THAT ACTUALLY WATCHES THE EYES. `differ` counts any
+    // channel moving by 60 either way, which on this figure was mostly the
+    // NICKS: mutate consumes the rng, so every pass after it lands somewhere
+    // else, and 1489 of v45's 1732 "differing" pixels were alpha — holes in
+    // one image that were not holes in the other. Shrink the nicks to the
+    // figure's own size (which is the whole of this version) and the margin
+    // over a 400px bar vanishes while the eyes are as plain as they ever were.
+    // A growth is LIGHTER than what it covers and it is opaque in both, so
+    // that is what this counts, as a share of the figure rather than in px.
+    const lum = (d, i) => 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2];
+    let grew = 0;
+    for (let i = 0; i < a.length; i += 4) {
+      if (a[i + 3] < 200 || b2[i + 3] < 200) continue;
+      if (lum(b2, i) - lum(a, i) > 30) grew++;
+    }
+    return { ink: [ink(plain), ink(m2)], light: [light(plain), light(m2)], differ, grew,
+      grewShare: grew / Math.max(1, ink(m2)), marks: m2.mutations, plainGrew: plain.mutations };
   });
   // the painter reports what it grew (a pixel count cannot see an eye on the
   // shadow side of a figure facing away from the torch), and the diff proves
   // the picture actually changed by more than a nick's worth
-  check(`a mutated rat is not the same drawing as a rat — it has grown eyes (${mut.grew?.eyes ?? 0} eyes, ${mut.grew?.boils ?? 0} boils, ${mut.differ} px differ)`, !mut.plainGrew && (mut.grew?.eyes ?? 0) >= 3 && mut.differ > 400);
+  // Calibrated against the v45 checkout and against a plain rat: two plain
+  // rats are bit-identical (the rng is seeded), so anything above zero here is
+  // growth. v45 read 2.7% of the figure, v46 reads 1.8%, and the bar is 0.8%.
+  check(`a mutated rat is not the same drawing as a rat — it has grown eyes (${mut.marks?.eyes ?? 0} eyes, ${mut.marks?.boils ?? 0} boils, ${(mut.grewShare * 100).toFixed(1)}% of it lit up)`,
+    !mut.plainGrew && (mut.marks?.eyes ?? 0) >= 3 && mut.grewShare > 0.008);
   // v43 — an ACT-THREE fight, because `jumpTo` resolves the act from the
   // encounter's own pools: The Sermon is in act two's pool as well, so asking
   // for it from the last act walked the hour back to the evening and the row
@@ -719,8 +739,17 @@ const check = (name, ok, extra = '') => {
   // a figure fitted to its own drawing leaves a margin, and one drawn past the
   // edge cannot.
   const framing = await page.evaluate(() => {
+    // v46 — AND THE PEOPLE ARE IN IT NOW. This list was the ten animals,
+    // because they were the ones drawn past their own texture; a plate is
+    // fitted to the sheet so it cannot be. Except that the fit left no room
+    // for the CARD — `drawBeast` reserves BEAST_MARGIN for the border to grow
+    // into and `drawPlate` reserved nothing — so the Cart Pusher, the one pose
+    // wide enough to be clamped by width at all, sat at 254 of 256 and started
+    // touching the edge the moment the pad moved by a pixel.
     const ids = ['rat', 'bin_rat', 'boss_rat', 'blob', 'blob_spawn', 'tar_blob',
-      'pigeon', 'gull', 'gull_king', 'the_bear'];
+      'pigeon', 'gull', 'gull_king', 'the_bear',
+      'drinker', 'busker', 'collector', 'cart', 'walker', 'boxer',
+      'bridge_king', 'debt', 'the_mother'];
     const out = [];
     for (const id of ids) {
       const c = __sk.debug.look(id);
@@ -737,14 +766,83 @@ const check = (name, ok, extra = '') => {
   const clipped = framing.filter(f => f.clipped);
   check(`no drawn figure runs off its own texture${clipped.length ? ` — ${clipped.map(f => f.id)}` : ''}`,
     clipped.length === 0);
+  // That check is also what guards v29's `beginPath()` trap now that the
+  // figures share the cards' hand: a band is a half-plane the size of the
+  // sheet, so a pass that escaped its own Path2D would paint corner to corner
+  // and the ink would touch every edge at once.
+
+  // ── v46: THE CUT-OUT'S BLADE IS NOT WIDER THAN THE MARKS ──────────────
+  // A cut-out is cut round the BODY. Growing the silhouette by the pad closes
+  // every gap narrower than twice it, and a rat's four whiskers are 1.4px
+  // lines about 12px apart — so the board grew round each one, the four met,
+  // and the animal wore a solid black paddle off the side of its face. Nobody
+  // could see it in a fight and it was unmissable on a contact sheet. The mask
+  // is opened before it is grown now: a whisker prints, it is not cut round.
+  // The ruler is how full the 34px band in front of the nose is — the v45
+  // checkout reads 0.257 there, this reads 0.089, and four lines on their own
+  // cannot fill more than about a tenth of it.
+  const whiskers = await page.evaluate(() => {
+    const c = __sk.debug.look('rat');
+    const W = c.width, H = c.height;
+    const d = c.getContext('2d').getImageData(0, 0, W, H).data;
+    let x1 = -1;
+    for (let i = 0; i < W * H; i++) if (d[i * 4 + 3] > 24) { const px = i % W; if (px > x1) x1 = px; }
+    let ink = 0, area = 0;
+    for (let y = 300; y < 430; y++) for (let x = Math.max(0, x1 - 34); x <= x1; x++) { area++; if (d[(y * W + x) * 4 + 3] > 24) ink++; }
+    return ink / area;
+  });
+  check(`the rat's whiskers print, they are not cut round and welded into a paddle (${whiskers.toFixed(3)} of the band in front of its nose, was 0.257)`,
+    whiskers < 0.15);
+
+  // ── v46: EVERY FIGURE IS ONE PIECE ────────────────────────────────────
+  // `brush()` scumbles a RECTANGLE of broken strokes and had never been
+  // clipped to anything. For forty-five versions that did not matter, because
+  // every caller handed it a box sitting well inside a convex body — and the
+  // moment the bear's back got a dip in it, four horizontal dashes appeared in
+  // mid-air above its shoulder, each with its own little kraft card round it.
+  // A cutout is a thing cut out of a sheet: it is one piece.
+  const loose = await page.evaluate(ids => {
+    const out = [];
+    for (const id of ids) {
+      const c = __sk.debug.look(id);
+      const W = c.width, H = c.height;
+      const d = c.getContext('2d').getImageData(0, 0, W, H).data;
+      const on = new Uint8Array(W * H), seen = new Uint8Array(W * H);
+      for (let i = 0; i < W * H; i++) if (d[i * 4 + 3] > 24) on[i] = 1;
+      const parts = [];
+      for (let i = 0; i < W * H; i++) {
+        if (!on[i] || seen[i]) continue;
+        let n = 0; const st = [i]; seen[i] = 1;
+        while (st.length) {
+          const j = st.pop(); n++;
+          const jx = j % W, jy = (j / W) | 0;
+          for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+            const nx = jx + dx, ny = jy + dy;
+            if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+            const k = ny * W + nx;
+            if (on[k] && !seen[k]) { seen[k] = 1; st.push(k); }
+          }
+        }
+        parts.push(n);
+      }
+      parts.sort((a, b) => b - a);
+      out.push({ id, islands: parts.filter(n => n >= 24).length - 1 });
+    }
+    return out;
+  }, ['rat', 'bin_rat', 'boss_rat', 'blob', 'tar_blob', 'pigeon', 'gull', 'gull_king', 'the_bear', 'boxer']);
+  const adrift = loose.filter(f => f.islands > 0);
+  check(`nothing is painted adrift of its own silhouette${adrift.length ? ` — ${adrift.map(f => `${f.id}:${f.islands}`)}` : ''}`,
+    adrift.length === 0);
   // THE SIZE HIERARCHY IS ON THE WORLD PLANE, NOT IN THE TEXTURE, and the
   // first cut of these four checks got that wrong in exactly the way a contact
   // sheet invites: they measured the ink in the texture, which is uniform by
   // design, so they read 218 < 218 < 218. `ENEMIES[id].scale` sizes the plane
   // the texture is mapped onto and is the only thing that decides how big a
   // figure stands on the bridge.
-  const world = await page.evaluate(ids => Object.fromEntries(ids.map(i => [i, __sk.debug.enemyScale(i)])),
-    framing.map(f => f.id));
+  // The hierarchy is the ten ANIMALS' — the framing list now carries people
+  // and the act-three boss too, and the Mother outgrows the Bear on purpose.
+  const BEASTS = ['rat', 'bin_rat', 'boss_rat', 'blob', 'blob_spawn', 'tar_blob', 'pigeon', 'gull', 'gull_king', 'the_bear'];
+  const world = await page.evaluate(ids => Object.fromEntries(ids.map(i => [i, __sk.debug.enemyScale(i)])), BEASTS);
   check(`the three rats are three sizes (${world.rat} < ${world.bin_rat} < ${world.boss_rat})`,
     world.rat < world.bin_rat && world.bin_rat < world.boss_rat);
   check(`a blob spawn is smaller than the blob it came off (${world.blob_spawn} < ${world.blob})`,
@@ -776,16 +874,28 @@ const check = (name, ok, extra = '') => {
       }
       return { ink, pale, w: x1 - x0 + 1, h: y1 - y0 + 1 };
     };
-    const card = area('boxer'), ratCard = area('rat');
+    const card = area('boxer'), ratCard = area('rat'), bearCard = area('the_bear');
     __sk.debug.setCut('silhouette');
     await new Promise(r => setTimeout(r, 200));
-    const die = area('boxer'), ratDie = area('rat');
-    return { die, card, ratCard, ratDie };
+    const die = area('boxer'), ratDie = area('rat'), bearDie = area('the_bear');
+    // THE PAD, measured on the WIDTH: the foot is cut flat so height grows
+    // only at the top and a tall tuft can eat the whole of it, where the board
+    // grows on both sides of the figure and the arithmetic is clean.
+    const pad = (a, b) => ({ px: (a.w - b.w) / 2, frac: ((a.w - b.w) / 2) / b.h });
+    return { die, card, ratCard, ratDie,
+      pad: { boxer: pad(card, die), rat: pad(ratCard, ratDie), bear: pad(bearCard, bearDie) } };
   });
   // HEIGHT, not width: the rat already spans the texture nose to tail, so its
   // width cannot grow; the foot is cut flat, so height grows only at the top —
   // by the pad for a border, by pad + round top (~26) for the old tombstone.
-  const border = (a, b) => a.ink > b.ink * 1.08 && a.ink < b.ink * 1.9 && a.h - b.h >= 4 && a.h - b.h <= 22;
+  // v46 — AND THE HEIGHT WINDOW CANNOT BE ABSOLUTE ANY MORE. 4-22px was
+  // written when the pad was a flat 7 texture px for everybody; the pad is a
+  // fraction of the figure now, so on a 108px rat it is three and the window's
+  // own floor failed a card that is exactly right. Expressed as a share, the
+  // v34 tombstone draft is still excluded: it added the pad PLUS a round top
+  // of about 26px, which is 24% of a rat and 9% of a person.
+  const border = (a, b) => a.ink > b.ink * 1.08 && a.ink < b.ink * 1.9 &&
+    a.h - b.h >= 0 && a.h - b.h <= Math.max(6, b.h * 0.06);
   check(`the cut-out is a BORDER round the plated figure, not a board behind it (${cut.die.ink} → ${cut.card.ink} ink px, ${cut.die.h} → ${cut.card.h} tall)`,
     border(cut.card, cut.die));
   check(`and a drawn rat is cut out the same way (${cut.ratDie.ink} → ${cut.ratCard.ink} ink px, ${cut.ratDie.h} → ${cut.ratCard.h} tall)`,
@@ -795,6 +905,22 @@ const check = (name, ok, extra = '') => {
   // the silhouette. Both are gone; this is the ruler that says so.
   check(`and almost none of the figure is near-white speckle (${(cut.die.pale / cut.die.ink * 100).toFixed(1)}%)`,
     cut.die.pale / cut.die.ink < 0.08, `${cut.die.pale}/${cut.die.ink}`);
+  // ── v46: THE CARD IS THE SAME CARD ON A RAT AS ON A PERSON ────────────
+  // Every pass in `paintCutout` is measured in TEXTURE pixels and was
+  // calibrated against a bum, who fills ~356px of a 512px sheet; a rat fills
+  // about a third of that. So the rat wore the same 7px of kraft a person
+  // wore — nearly three times the share of its own body — along with a nick
+  // the size of its ear and newsprint ruled across it like graph paper.
+  // Measured against the v45 checkout, the border's share of the figure's own
+  // height reads: person 0.0197 → 0.0197 (the control, and it must not move),
+  // bear 0.0357 → 0.0178, rat 0.0574 → 0.0185.
+  const pf = cut.pad;
+  check(`a person's card is unchanged — the control (${pf.boxer.px}px, ${pf.boxer.frac.toFixed(4)} of him)`,
+    pf.boxer.px >= 6 && pf.boxer.px <= 8);
+  check(`and a rat now wears the same card at its own size (${pf.rat.px}px, ${pf.rat.frac.toFixed(4)} — it was 0.0574)`,
+    pf.rat.frac < pf.boxer.frac * 1.35 && pf.rat.frac > pf.boxer.frac * 0.6);
+  check(`so does the bear (${pf.bear.px}px, ${pf.bear.frac.toFixed(4)} — it was 0.0357)`,
+    pf.bear.frac < pf.boxer.frac * 1.35 && pf.bear.frac > pf.boxer.frac * 0.6);
   check('the choice of cut is remembered', await page.evaluate(() => localStorage.getItem('slayKallio.cut') === '"silhouette"'));
   await page.evaluate(() => __sk.debug.setCut('card'));
   // NOTHING PRINTS BELOW THE FLAT FOOT. The border pass erases its card mask

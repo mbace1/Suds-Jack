@@ -7,6 +7,114 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v46 — 2026-09-21
+**THE PASSES WERE PERSON-SIZED AND NOT EVERY FIGURE IS A PERSON — the ten
+drawn animals, read at full size**
+
+v45 ended by being photographed, and the lesson it wrote down (*a gate that
+certifies works cannot see looks*) is what this version is: the ten figures
+that are not people — three rats, three blobs, three birds and the Bear — were
+rendered on a contact sheet at 1:1 and looked at. Every one of them was worse
+than anything written down about them, and the reason turned out to be one
+thing said four ways.
+
+**EVERY TEXTURE PASS IS MEASURED IN TEXTURE PIXELS, AND THEY WERE ALL
+CALIBRATED ON A BUM.** A person fills about 356px of the 512px sheet; a rat
+fills 135. Newsprint, the nicks, the torn fibre rim, the grime streaks, the rim
+light and the cut-out's own blade are every one of them absolute numbers, so
+the rat was getting a bite the size of its ear, a torn rim three times a
+person's share, grime streaks as long as its whole body, and newsprint whose
+rows are a twelfth of it — which is the ruled grid visible across every animal
+in the v45 sheet, and which nobody drew. `figureScale()` measures the drawing's
+own ink once, before the board is cut, and that ratio rides on every pass. It
+is a RATIO and not a per-figure table on purpose: a table is a hand-kept list
+that the next animal gets left out of. **A person reads 1.0, so the whole
+plated cast is an exact control** — the gate asserts its card does not move.
+
+**THE BLADE WAS WIDER THAN SOME OF THE MARKS, and that is the funniest one.**
+`cutoutBorder` grows the silhouette by 7px, which closes every gap under 14;
+the rat's four whiskers are 1.4px lines about 12px apart. So the board grew
+round each whisker, the four borders met, and the animal wore a **solid black
+paddle off the side of its face** — with its own kraft edge and torn fibre, so
+it read as anatomy. The gull's wingtip and the bear's cracks went the same way.
+A cut-out is cut round the BODY; nobody cuts round a whisker, they print it. So
+the mask is **opened** — eroded by a blade and grown back — which drops every
+feature thinner than the blade and leaves the body's cut line exactly where it
+was. The figure is drawn over the board afterwards either way, so nothing
+disappears; it just stops dragging a piece of card around with it.
+
+**AND THEN THE DRAWINGS.** Three silhouettes were wrong in the same way, and it
+is the way this project keeps being wrong: a shape that was described correctly
+in a comment and drawn as one mass.
+- **The Bear was a tombstone**, which is the word v10 used about it and was
+  still true three versions later — the rump, the shoulder and the skull were
+  on one unbroken dome, the head was drawn INSIDE the body outline so the
+  muzzle was the only part of it that was not the dome, and the belly ran to
+  the plinth so the legs could only be ink ON a slab. A bear in profile is four
+  events along its top line: a rump, a low loin, a shoulder hump that is the
+  highest point of the animal, and a neck that drops hard before the head. It
+  has that now, with air under the belly, one eye instead of two amber lamps
+  side by side on a cheek, an ear set INTO the skull, and moss that grows in
+  the cracks it just drew rather than four green lollipops floating on stone.
+- **The rat was a box** — the outline ran straight down to the deck at both
+  ends and straight across the top, so the hunch its comment claimed lived in a
+  12px rise that the matted fur then filled in. It is long now, the back arches
+  over the shoulder, the head is a wedge that tapers all the way to the nose
+  instead of butting on at a hard vertical seam, and **the eye is a bead by the
+  snout**: v10 recorded that a ringed disc mid-skull reads as the eye and the
+  real eye reads as a speck, and the fix for that put an 11px ringed disc back
+  in the same place under a new name.
+- **The gull was a snowman** — a circle drawn overlapping an egg, with the seam
+  between them the most visible line on the bird, and a wing that was a hexagon
+  inside a hexagon with the same width at the shoulder as at the tip. There is
+  a neck now, drawn in the body's own colour, and the wing tapers to a point;
+  the primaries used to run out of it and down across the body, so every bird
+  in the game had a grey stick through it.
+
+**`wob` and `blob` now band and wear what they fill** — v29's pass on the cards,
+one level along. Three of that version's four gains were properties of the
+shared hand, which is why it was worth doing there and is why it lands on all
+ten animals here without a painter being redrawn. Two things came with it:
+`shade()` returned `rgb()` and now returns hex, because canvas takes either and
+`bands` does not, so every derived tone in every painter would have been
+silently left flat; and a polygon under 50px of span is a MARK and is left
+alone, since banding an ear or a bottle cap is not modelling, it is a dark
+patch on something too small to have a lit side.
+
+**One real bug fell out of drawing a concave animal**: `brush()` scumbles a
+RECTANGLE of broken strokes and had never been clipped to anything. For
+forty-five versions that did not matter, because every caller handed it a box
+well inside a convex body — and the moment the bear's back had a dip in it,
+four horizontal dashes appeared in mid-air above its shoulder, each with its
+own little kraft card round it. It is `source-atop` now like every other pass
+in the file, and a gate asserts every figure is ONE PIECE.
+
+**TWO GATES FAILED AND BOTH WERE RULERS MOVING WITH SOMETHING OTHER THAN THE
+THING THEY MEASURE** — this project's commonest bug, now on its fifth and sixth
+recorded instance.
+- *a mutated rat is not the same drawing as a rat* counted any channel moving
+  by 60 either way, and **1489 of v45's 1732 differing pixels were ALPHA** —
+  holes punched by nicks that landed differently because `mutate` consumes the
+  rng. Shrink the nicks to the figure's own size and the margin over a 400px
+  bar vanishes while the eyes are as plain as they ever were. It counts what it
+  is about now: pixels that got LIGHTER, as a share of the figure.
+- *a drawn rat is cut out the same way* required the card to grow the figure's
+  height by 4–22px, which is right for a person and was written when the pad
+  was a flat 7 for everybody. It is a share now, and the v34 tombstone draft is
+  still excluded because it added the pad plus a round top: 24% of a rat.
+
+**The card ruler is the version's headline number**, measured against a v45
+checkout, as the border's width over the figure's own height: person
+**0.0197 → 0.0197** (unchanged, by construction — the control), bear 0.0357 →
+0.0178, rat **0.0574 → 0.0185**. A rat wore nearly three times the card a
+person wore. They wear the same card now, at their own size.
+
+Not done, and named rather than hidden: the blobs got the shared hand and no
+new silhouette, the pigeon's head is still a paler tone than its body so it
+pops as a separate object, and `ART_REQUEST.md` §5 still asks for these ten in
+the owner's own register — this is the code-painted cast made honest, not a
+replacement for the plates.
+
 ## v45 — 2026-09-20
 **THE RUN, READ BACK — the game could tell ME where a run died and told the PLAYER one sentence**
 
