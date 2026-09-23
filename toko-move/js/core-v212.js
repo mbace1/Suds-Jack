@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=17';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=18';
 import {TransitLayers} from './transit-layers.js?v=7';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=6';
@@ -13,10 +13,11 @@ import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {dots,minutes} from './ui.js?v=1';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 import {drawCityEvent,family as dayFamily} from './city-events.js?v=1';
+import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as dailyGrid} from './daily.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.44';
+const BUILD_VERSION='2.45';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -33,11 +34,16 @@ let box,roads,camera;
 // varying the jobs in the same version as the days would leave two changes
 // arguing over one measurement.
 const params=new URLSearchParams(location.search);
-const shiftSeed=Number(params.get('shift'))||(1000+Math.floor(Math.random()*9000));
+// v2.45: no parameter is TODAY'S shift — the date is the seed, the same for
+// everyone who opens the game today (daily.js). `?shift=N` still pins one and
+// `?shift=random` still deals a fresh one.
+const SHIFT_INFO=resolveShift(params);
+const shiftSeed=SHIFT_INFO.seed;
+const shiftLabel=()=>SHIFT_INFO.kind==='daily'?`${dailyName(SHIFT_INFO.number).toUpperCase()} · ${SHIFT_INFO.label}`:`shift #${shiftSeed}`;
 const cityDay=drawCityEvent(shiftSeed,params.get('day'));
 const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,shiftSeed,cityDay,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
+function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -63,7 +69,7 @@ function coverageLabel(s){return s?.clippedTo?`exact inside ${s.clippedTo.s}–$
 function boot(seed=7){
   if(!city)return;
   flow=createFlow({city,seed,days:1,demand:null,ticksPerDay:SHIFT.ticksPerDay,hooks:{onTick:()=>{const changed=challenge?.step?.();if(changed){paintHud();paintSheet();if(challenge.complete)finish();}},onDay:()=>{if(!challenge?.complete)finish();}}});
-  challenge=new DeliveryChallenge(flow,say);done=false;msgs=[];
+  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;done=false;msgs=[];
   renderer=new FlowRenderer($('map'),MAP_THEME);
   challenge.start();publish();paintHud();paintSheet();
 }
@@ -447,7 +453,27 @@ function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=
 
 function paintSheet(){if(!challenge)return;const b=sheetSlot('jobHead');if(!b)return;if(!challenge.active){b.innerHTML='';return;}const j=challenge.active,c=challenge.cargoRule(),constrained=c.modes||c.fragile||c.freshness||c.express;b.innerHTML=`<div class="jobTop" style="align-items:center"><span class="cargoBadge">${parcelHtml(j.cargo,{title:c.rule})}</span><div style="flex:1;min-width:0"><h2 style="font-size:14px">${esc(challenge.name(challenge.currentTo()))}</h2><p class="hint">from ${esc(challenge.name(challenge.currentFrom()))} · ${minutes(challenge.remaining())} left${constrained?` · ${esc(c.rule.toLowerCase().split(';')[0].split(' — ')[0])}`:''}</p></div></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%;background:${cargoColour(j.cargo)}"></i></div>`;}
 function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m of msgs.slice(0,2)){const d=document.createElement('div');d.textContent=m;f.append(d);}}
-function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>best streak <b>×${(1+0.25*Math.max(0,Math.min(4,challenge.bestStreak-1))).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')} (${challenge.bestStreak})</b></p>${challenge.tips?`<p>tips from regulars <b>${challenge.tips}</b></p>`:''}${challenge.goodwill?`<p>goodwill <b>+${challenge.goodwill}</b></p>`:''}${window.__tm?.rival?`<p>${window.__tm.rival.name} delivered <b>${window.__tm.rival.delivered}</b>${window.__tm.rival.taken.length?` · took ${window.__tm.rival.taken.join(', ')}`:''}</p>`:''}${window.__tm?.visited?`<p>stops you have been to <b>${window.__tm.visited.size}</b></p>`:''}<p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p><p class="hint">${cityDay?esc(cityDay.name)+' · ':''}shift #${shiftSeed}</p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}$('end').hidden=false;}
+// THE RESULT, and the line you send. The first finish of today's shift is
+// the day's result and is recorded; any later one is practice and says so.
+// The share line is plain text — navigator.share where a phone has it, the
+// clipboard where it does not, and the text itself on screen if neither
+// works, so there is always a way to get it out.
+function paintDaily(){const box=$('endStats');if(!box)return;
+  const again=$('again');
+  if(SHIFT_INFO.kind!=='daily'){if(again)again.textContent='RUN THIS SHIFT AGAIN';return;}
+  const res={results:[...(challenge.results||[])],target:challenge.target,drops:challenge.drops||0,score:challenge.score,delivered:challenge.index,day:cityDay?.id||null};
+  const r=recordDaily(SHIFT_INFO.key,res),rec=r.record,run=streak(SHIFT_INFO.key);
+  const text=shareText({number:SHIFT_INFO.number,label:SHIFT_INFO.label,dayName:cityDay?.name||'',results:rec.results,target:rec.target,drops:rec.drops,score:rec.score,url:location.origin+location.pathname});
+  box.insertAdjacentHTML('afterbegin',`<div class="dailyBox"><p class="dailyHead">${esc(shiftLabel())}${cityDay?` · ${esc(cityDay.name)}`:''}</p><p class="dailyGrid">${dailyGrid(rec.results,rec.target)}${rec.drops?` <small>+${rec.drops} drops</small>`:''}</p>${r.first?`<p class="hint">today's result${run>1?` · ${run} days running`:''}</p>`:`<p class="hint">practice — today's result stands at ${Number(rec.score).toLocaleString('en-US')}${run>1?` · ${run} days running`:''}</p>`}<button class="btn prime wide" id="share">SHARE TODAY'S</button><pre class="shareText" id="shareText" hidden></pre><a class="btn wide ghost" href="?shift=random">A RANDOM SHIFT</a></div>`);
+  // One loud button on this card, and it is SHARE. Replaying today is allowed
+  // and is practice, so it steps down to the quiet style beside it.
+  if(again){again.textContent="PLAY TODAY'S AGAIN · PRACTICE";again.classList.remove('prime');again.classList.add('ghost');}
+  const btn=$('share');if(btn)btn.onclick=async()=>{
+    try{if(navigator.share){await navigator.share({text});btn.textContent='SHARED';return;}}catch(e){if(e?.name==='AbortError')return;}
+    try{await navigator.clipboard.writeText(text);btn.textContent='COPIED';return;}catch{}
+    const pre=$('shareText');if(pre){pre.textContent=text;pre.hidden=false;}btn.textContent='COPY THIS';};}
+
+function finish(){if(done)return;done=true;flow.clock.setPaused(true);$('endTitle').textContent=challenge.complete?'ALL DELIVERED':'DAY OVER';$('endStats').innerHTML=`<p>deliveries <b>${challenge.index}/${challenge.target}</b></p>${challenge.drops?`<p>drops on the way <b>${challenge.drops}</b></p>`:''}<p>score <b>${challenge.score}</b></p><p>best streak <b>×${(1+0.25*Math.max(0,Math.min(4,challenge.bestStreak-1))).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')} (${challenge.bestStreak})</b></p>${challenge.tips?`<p>tips from regulars <b>${challenge.tips}</b></p>`:''}${challenge.goodwill?`<p>goodwill <b>${challenge.goodwill>0?'+':''}${challenge.goodwill}</b></p>`:''}${window.__tm?.rival?`<p>${window.__tm.rival.name} delivered <b>${window.__tm.rival.delivered}</b>${window.__tm.rival.taken.length?` · took ${window.__tm.rival.taken.join(', ')}`:''}</p>`:''}${window.__tm?.visited?`<p>stops you have been to <b>${window.__tm.visited.size}</b></p>`:''}<p>cargo bonuses <b>${challenge.bonuses}</b></p><p>late jobs <b>${challenge.late}</b></p><p class="hint">${cityDay?esc(cityDay.name)+' · ':''}${esc(shiftLabel())}</p>`;$('endNote').textContent=challenge.complete?'Every job delivered.':'The shift ended.';{const log=window.__tm?.shiftLog;log?.finish?.();const r=$('replay');if(r)r.remove();const html=log?.html?.()||'';if(html)$('endStats').insertAdjacentHTML('afterend',html);}paintDaily();$('end').hidden=false;}
 
 // THE GROUND IS CACHED. Water, streets and place names are three of the four
 // most expensive layers on the board and NONE of them moves: they change when
@@ -550,7 +576,11 @@ function showStop(node,at=null){const pop=$('pop'),body=$('popBody');if(!pop||!b
 // the whole of roadmap item 7: a modifier you meet by losing is a different
 // genre, so the card says what today does and which lines it slows.
 function paintDayCard(){const el=$('dayCard');if(!el)return;
-  const n=$('shiftNo');if(n)n.textContent=`shift #${shiftSeed}`;
+  const n=$('shiftNo');if(n){const rec=SHIFT_INFO.kind==='daily'?todayRecord(SHIFT_INFO.key):null;
+    // Already played today: say so BEFORE the run, not after it — finding out
+    // at the end that the run you just cared about was practice is a small
+    // betrayal, and the whole point of one result a day is that it is one.
+    n.innerHTML=`${esc(shiftLabel())}${rec?`<br><span class="dailyDone">played · ${dailyGrid(rec.results,rec.target)} · ${Number(rec.score).toLocaleString('en-US')} — this run is practice</span>`:''}`;}
   if(!cityDay){el.innerHTML='';return;}
   const fams=(cityDay.crowds?.families||[]).map(f=>{const l=(transit?.layers||[]).find(x=>dayFamily(x.name)===f);
     return `<span class="lb" style="background:${esc(l?.colour||'#52676d')}">${esc(f)}</span>`;}).join(' ');

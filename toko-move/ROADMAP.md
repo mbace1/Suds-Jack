@@ -185,7 +185,7 @@ exists, so each is a day's work and a bot can measure it:
 FTL's blue options, StS's relics. The rule from the ascension ladder holds:
 no kit may add a verb, only bend a number the player already reads.
 
-## L3 · The daily shift (cheap, social)
+## L3 · The daily shift (cheap, social) — SHIPPED v2.45
 
 `?shift=N` already pins a shift. Make **today's date the seed**: one shift
 number for everyone, one attempt, a share line — *Shift #0923 · 3/3 · 1,842 ·

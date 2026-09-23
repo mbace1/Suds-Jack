@@ -1,5 +1,5 @@
 // Toko Move v2.12.2 — concurrent courier jobs expose live tradeoffs without naming a correct answer.
-import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=17';
+import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=18';
 import {badge,inMinutes,about,cargoGlyph,minutes} from './ui.js?v=1';
 import {regularAt,standingOf,standingPips} from './regulars.js?v=3';
 import {parcelHtml,bagHtml,colourOf,unitsOf} from './parcels.js?v=1';
@@ -10,7 +10,7 @@ const nodeName=(tm,id)=>tm.city?.nodes?.find(n=>n.id===id)?.name||id;
 // nearestPathIndex did not scale longitude by cos(lat), so it measured a stop
 // as about twice as far north-south as east-west — a third copy of a function
 // that already existed twice, and the only one of the three that was wrong.
-function choices(tm,from,to){return globalThis.__tmRouteChoiceCore?.routeChoices?.(tm.city,from,to,6)||[];}
+function choices(tm,from,to,cargo){const core=globalThis.__tmRouteChoiceCore;return core?.routeChoices?.(tm.city,from,to,6,cargo?core.allowFor?.(CARGO[cargo]||null):null)||[];}
 // WHEN THE FIRST VEHICLE OF A PLAN GETS HERE. Two bugs came out of this line
 // together, and both told the dispatcher something false:
 //
@@ -40,13 +40,13 @@ function firstArrival(tm,leg,horizon=Infinity){const layer=layerFor(tm,leg.line)
 // from, so a deadline is a fact about this city rather than a distance times a
 // constant.
 export function planCost(tm,offer){const c=CARGO[offer.cargo]||CARGO.documents;
- const compatible=choices(tm,offer.stops[0],offer.stops[1]).filter(ch=>!c.modes||ch.legs.every(l=>c.modes.includes(l.line.mode)));
+ const compatible=choices(tm,offer.stops[0],offer.stops[1],offer.cargo).filter(ch=>!c.modes||ch.legs.every(l=>c.modes.includes(l.line.mode)));
  let best=null;
  for(const choice of compatible){const est=planEstimate(tm,choice);
   if(est?.total!=null&&(best==null||est.total<best))best=est.total;}
  return best;}
-export function reachableSoon(tm,offer,horizon=300){const c=CARGO[offer.cargo]||CARGO.documents;const compatible=choices(tm,offer.stops[0],offer.stops[1]).filter(choice=>!c.modes||choice.legs.every(l=>c.modes.includes(l.line.mode)));return compatible.some(choice=>!!firstArrival(tm,choice.legs[0],horizon));}
-export function rankOffer(tm,offer){const c=CARGO[offer.cargo]||CARGO.documents,compatible=choices(tm,offer.stops[0],offer.stops[1]).filter(choice=>!c.modes||choice.legs.every(l=>c.modes.includes(l.line.mode)));if(!compatible.length)return{unreachable:true};const options=[];for(const choice of compatible){const hit=firstArrival(tm,choice.legs[0]);if(!hit){options.push({choice,waiting:true});continue;}const transfers=choice.transfers||0,est=planEstimate(tm,choice,hit.dt),eta=est?.total??null;options.push({choice,hit,eta,transfers,est});}return{options};}
+export function reachableSoon(tm,offer,horizon=300){const c=CARGO[offer.cargo]||CARGO.documents;const compatible=choices(tm,offer.stops[0],offer.stops[1],offer.cargo).filter(choice=>!c.modes||choice.legs.every(l=>c.modes.includes(l.line.mode)));return compatible.some(choice=>!!firstArrival(tm,choice.legs[0],horizon));}
+export function rankOffer(tm,offer){const c=CARGO[offer.cargo]||CARGO.documents,compatible=choices(tm,offer.stops[0],offer.stops[1],offer.cargo).filter(choice=>!c.modes||choice.legs.every(l=>c.modes.includes(l.line.mode)));if(!compatible.length)return{unreachable:true};const options=[];for(const choice of compatible){const hit=firstArrival(tm,choice.legs[0]);if(!hit){options.push({choice,waiting:true});continue;}const transfers=choice.transfers||0,est=planEstimate(tm,choice,hit.dt),eta=est?.total??null;options.push({choice,hit,eta,transfers,est});}return{options};}
 function offerButton(tm,offer,info,label='TAKE JOB'){const seen=new Set(),live=(info.options||[]).filter(x=>x.hit).sort((a,b)=>(a.eta??1e9)-(b.eta??1e9)||a.hit.dt-b.hit.dt).filter(x=>{const k=`${x.choice.legs[0].line.label}>${x.choice.transfer||''}`;if(seen.has(k))return false;seen.add(k);return true;}),first=live[0];
  // ONE ROW: what you carry, where it goes, the first line that gets you there
  // and when, what it pays. The old card was four lines of prose per job.
@@ -80,7 +80,7 @@ const cargoColourOf=colourOf;   // one palette, in parcels.js
 // The candidates: for each boarding option's first leg, the REAL stops the
 // layer calls at strictly between the two graph nodes, in travel order.
 export function alongCandidates(tm){const ch=tm.challenge;if(!ch?.active||!ch.waitingForCatch)return[];const from=ch.currentFrom(),to=ch.currentTo(),table=new Map((tm.transit?.pack?.stops||[]).map(st=>[st.id,st]));const out=[];
- for(const c of choices(tm,from,to)){const leg=c.legs[0];if(!leg)continue;const layer=tm.transit?.layers?.find(x=>x.id===leg.line.sourceId);if(!layer?.path?.length)continue;
+ for(const c of choices(tm,from,to,ch.active?.cargo)){const leg=c.legs[0];if(!leg)continue;const layer=tm.transit?.layers?.find(x=>x.id===leg.line.sourceId);if(!layer?.path?.length)continue;
   const pi=(lat,lon)=>{let bi=0,bd=Infinity;for(let i=0;i<layer.path.length;i++){const q=layer.path[i],d=(q[0]-lat)**2+(q[1]-lon)**2;if(d<bd){bd=d;bi=i;}}return bi;};
   const A=tm.city?.resolved?.[from],B=tm.city?.resolved?.[to];if(!A||!B)continue;const a=pi(A.lat,A.lon),b=pi(B.lat,B.lon);if(a===b)continue;const lo=Math.min(a,b)+2,hi=Math.max(a,b)-2;
   const between=(layer.stops||[]).map(id=>table.get(id)).filter(Boolean).map(st=>({id:st.id,name:st.name,lat:st.lat,lon:st.lon,pathIndex:pi(st.lat,st.lon)})).filter(st=>st.pathIndex>lo&&st.pathIndex<hi);

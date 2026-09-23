@@ -102,10 +102,18 @@ server.listen(0, '127.0.0.1', async () => {
   // point in the whole run" is not that test — a direction-blind tracker fires
   // for trams going the wrong way, which are never lit at all.
   const LOOKBACK = 15;
-  const unlit = seen.banners.filter(m =>
+  // A banner can only be judged if the gate was WATCHING when its catch would
+  // have been lit. v2.45 made the jobs follow the shift, and shift 1's first
+  // tram now leaves the moment the job is taken — a real miss at tick 14, with
+  // the observer's first sample at tick 16. The page was right and the ruler
+  // was blind; a miss from before the first sample is set aside and COUNTED,
+  // and enough others must still be judged that this check cannot go vacuous.
+  const firstSample = seen.lit.length ? seen.lit[0].tick : Infinity;
+  const judged = seen.banners.filter(m => m.tick >= firstSample);
+  const unlit = judged.filter(m =>
     !seen.lit.some(s => s.tick <= m.tick && m.tick - s.tick <= LOOKBACK && s.lines.includes(m.line)));
-  ok(`every MISSED follows a catch that was lit within ${LOOKBACK} ticks (${seen.banners.length - unlit.length}/${seen.banners.length})`,
-    unlit.length === 0, unlit.map(m => `${m.line}@${m.tick}`).join(', '));
+  ok(`every MISSED follows a catch that was lit within ${LOOKBACK} ticks (${judged.length - unlit.length}/${judged.length}${seen.banners.length > judged.length ? `, ${seen.banners.length - judged.length} from before the gate was watching set aside` : ''})`,
+    unlit.length === 0 && judged.length >= 3, unlit.map(m => `${m.line}@${m.tick}`).join(', ') || `only ${judged.length} judged`);
   if (process.env.DUMP && unlit.length) for (const m of unlit) {
     const win = seen.lit.filter(s2 => Math.abs(s2.tick - m.tick) <= 40);
     console.log(`    around ${m.line}@${m.tick}: ticks ${win[0]?.tick}..${win[win.length-1]?.tick}, ${win.length} samples`);

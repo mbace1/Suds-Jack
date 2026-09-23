@@ -99,3 +99,33 @@ console.log(`route choices: centre ${centre.length}, harbour ${harbour.length}; 
   }
   console.log(`deadlines: ${DEADLINE_GRACE}x the real trip plus a grace; a bad estimate falls back`);
 }
+
+// ---- the plans a parcel may ride, chosen BEFORE the top three (v2.45) -----
+//
+// The panel took the network's three best plans and let the cargo rule refuse
+// the tap. Playing the upcoming dailies found a fragile job at Kamppi whose
+// three best plans were all metro: every lit CATCH was refused and no tram was
+// ever offered, so a sensible player stood still for 2,800 ticks. The CONTROL
+// is what keeps this honest — the unfiltered plans there must still contain
+// the metro, or the check below would pass on a network that had simply
+// stopped offering it.
+{const {allowFor}=globalThis.__tmRouteChoiceCore;const {CARGO}=await import('../js/deliveries.js');
+ const raw=routeChoices(city,'kamppi','sornainen',3);
+ assert.ok(raw.some(c=>c.legs.some(l=>l.line.mode==='metro')),'control: Kamppi → Sörnäinen offers the metro to a parcel that may take it');
+ const fragile=routeChoices(city,'kamppi','sornainen',3,allowFor(CARGO.fragile));
+ assert.ok(fragile.length>=1,`a fragile parcel at Kamppi is offered a way to Sörnäinen (${fragile.length})`);
+ assert.ok(fragile.every(c=>c.legs.every(l=>l.line.mode==='tram')),'and every plan it is offered is one it may ride');
+ assert.equal(allowFor(CARGO.documents),null,'a parcel with no rule is not filtered at all');
+ // Every pair of anchors, every restricted cargo: the panel may never list a
+ // plan the catch would refuse, and filtering must happen before the cut so a
+ // restricted parcel still gets up to three plans when three exist.
+ let pairs=0,refusable=0,starved=0;const ids=city.nodes.map(n=>n.id);
+ for(const [kind,rule] of Object.entries(CARGO)){if(!rule.modes)continue;const allow=allowFor(rule);
+  for(const a of ids)for(const b of ids){if(a===b)continue;pairs++;
+   const got=routeChoices(city,a,b,3,allow);
+   if(got.some(c=>c.legs.some(l=>!rule.modes.includes(l.line.mode))))refusable++;
+   const possible=routeChoices(city,a,b,999).filter(allow).length;
+   if(got.length<Math.min(3,possible))starved++;}}
+ assert.equal(refusable,0,`no plan the cargo rule would refuse is ever offered (${pairs} pairs × restricted cargoes)`);
+ assert.equal(starved,0,'and a restricted parcel is never starved of plans the network has for it');
+ console.log(`cargo plans: ${pairs} restricted pairs checked, none refusable, none starved`);}

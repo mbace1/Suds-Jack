@@ -315,6 +315,12 @@ jobs:
       - name: the four city days are well formed
         run: node toko-move/test/city-day.mjs
 
+      # One shift for everyone today. The date is the seed, the first finish is
+      # the result, and the jobs follow the shift — without that last one a
+      # daily deals the same work every morning.
+      - name: the daily shift — same board for everyone, first finish stands
+        run: node toko-move/test/daily.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
@@ -414,6 +420,9 @@ jobs:
       # and a Sunday whose walk is not shorter are the same bug.
       - name: a city day actually does something
         run: NODE_PATH=$(npm root -g) node toko-move/test/days.cjs
+
+      - name: the daily, played in the page — shared, recorded, never overwritten
+        run: NODE_PATH=$(npm root -g) node toko-move/test/daily.cjs
 
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
