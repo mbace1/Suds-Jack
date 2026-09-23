@@ -1,5 +1,81 @@
 # Toko Trip — release log
 
+## v16 — 2026-09-23
+
+A second water, in TSL, and a comparison — **and the comparison does not
+favour the new one.** That is the release.
+
+`?water=tsl`, or `__tt.debug.setWater('tsl')`. The island still boots on the
+baked material. A style switch is a comparison, not a decision.
+
+### What it is
+
+Clearwater's shading model as a three node material, so it compiles to WGSL on
+the WebGPU backend AND to GLSL on WebGL2 — the only reason it is allowed here,
+since a hand-written shader would have to be maintained twice and one of the
+two would rot. Schlick Fresnel on water's own F0, Beer–Lambert absorption over
+a real path length, a depth-graded tint, the mood's sky as a reflection, one
+sun glint.
+
+**Depth comes from a vertex attribute, not a texture.** The water plane
+already has 200x200 vertices, so the seabed height under each one is an
+attribute and sea level is a uniform — the rasteriser interpolates between
+28 cm samples. No bathymetry bake, nothing for the tide to invalidate, and it
+lifts v14's recorded cap: the tide was held to 28 cm because the BAKED colours
+are painted for the depth at mean sea level and drift out of true as the water
+moves. This material has no such cap.
+
+**Fresnel is the whole argument.** How much of the bottom you see through
+water depends on the angle you look at it from, and that is a per-pixel,
+per-view quantity. Vertex colours are baked once and cannot know where your
+head is, so v2's water is equally see-through from every angle.
+
+### What the comparison actually showed
+
+**Midday, from the chair: the TSL water wins.** A real depth gradient —
+pale at the waterline, deepening through the channel — that no lerp was
+painting in by hand, and the bay brightens correctly toward the horizon.
+
+**Golden hour, at a grazing angle: the TSL water loses, badly.** Correct
+Fresnel at a graze is ~98% reflection, and what it reflects is a **32x32
+painted gradient** with no clouds in it. So the richest view this island has —
+dark teal, green sparkle, the sun's path laid across the cove — flattens to a
+uniform pale wash. The baked water's wrongness (fixed transparency) was
+HIDING a much bigger wrongness: there is no real environment to reflect.
+
+That is a useful result and it is the reason to build a comparison rather than
+a replacement. Making the node material the default would trade a small lie
+for a large one.
+
+**What the TSL path needs before it could be the default** is not more shader:
+it is something worth reflecting — a real env cube with cloud and horizon
+detail, or planar reflection, which is a second render pass per eye and
+exactly what the fill-rate ladder says not to do in a headset.
+
+### Found building it
+
+- **The coordinate-space bug, and it looked like success.** The `bathy`
+  attribute held terrain height while the sea uniform held world y, which sit
+  a whole `PAD_H` apart — so every depth went negative, clamped to zero, and
+  left a material that was all Fresnel and no absorption. It rendered. It had
+  a horizon that went reflective. It looked like water working, and the tell
+  was that tripling the extinction changed nothing. The gate now asserts sea
+  level lands inside the seabed's range.
+- **`rebuildEnv()` makes a FRESH cube each mood** — deliberately, since the
+  renderer caches its filtered copy per texture object. A node captures the
+  texture it was built with, so the reflection froze on whatever sky the
+  island booted under until the node's `.value` was handed each new cube.
+  Gated.
+- **Extinction, by looking, three times.** 0.85/m and the bay read as MUD —
+  the seabed's wet band was painted dark back when the baked water hid it, and
+  too little absorption just shows you that paint. 2.4/m and the colour was
+  right but the bottom was GONE, costing the cove the one thing its own code
+  comment claims for it: a bowl you can see the bottom of. It sits at 1.3.
+- The TSL namespace is already in the vendored bundle as `THREE.TSL` — 615
+  exports, including three's own `F_Schlick`. Nothing needed vendoring.
+
+Gate: 93 checks.
+
 ## v15 — 2026-09-23
 
 Caustics — the light the water throws on the sand. The owner asked for

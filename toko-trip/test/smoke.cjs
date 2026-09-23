@@ -264,6 +264,42 @@ const check = (label, ok) => {
   check(`and they follow the sun, not the sky (midday ${causSun.midday} · golden ${causSun.golden} · dusk ${causSun.dusk})`,
     causSun.midday > causSun.golden && causSun.golden > causSun.dusk);
 
+  // ── the two waters ──
+  // A comparison, not a decision: the baked material and the TSL one are
+  // built to be swapped under the same sky so they can be judged against each
+  // other. What is gated is that both exist, that they really swap, and the
+  // one thing that silently broke the node version once.
+  const w0 = await page.evaluate(() => window.__tt.debug.water());
+  check(`the island boots on the baked water (${w0.mode})`, w0.mode === 'baked' && w0.tsl === false);
+  const wSwap = await page.evaluate(() => {
+    const d = window.__tt.debug;
+    const tsl = (d.setWater('tsl'), d.water());
+    const back = (d.setWater('baked'), d.water());
+    d.setWater('tsl');
+    return { tsl, back, live: d.water() };
+  });
+  check('and swaps to the TSL one and back', wSwap.tsl.tsl === true && wSwap.back.tsl === false);
+  check('the TSL material is really a node material', wSwap.tsl.nodes === true);
+  // THE BUG THIS GATE EXISTS FOR: the bathy attribute is world y and the sea
+  // uniform is world y, and when they were not, every depth clamped to zero —
+  // leaving a shader that was all Fresnel and no absorption, which reads
+  // exactly like water that is working.
+  check(`sea level lands inside the seabed's range (${wSwap.live.bathyMin} < ${wSwap.live.sea} < ${wSwap.live.bathyMax})`,
+    wSwap.live.sea > wSwap.live.bathyMin && wSwap.live.sea < wSwap.live.bathyMax);
+  // and the reflection has to follow the mood, since rebuildEnv makes a FRESH
+  // cube each time rather than updating one in place
+  const envLive = await page.evaluate(async () => {
+    window.__tt.setMood(1, true);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const a = window.__tt.debug.water().envLive;
+    window.__tt.setMood(0, true);
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const b = window.__tt.debug.water().envLive;
+    window.__tt.debug.setWater('baked');
+    return a && b;
+  });
+  check('and its reflection follows the mood rather than freezing on one sky', envLive === true);
+
   // ── the moods ──
   const moods = await page.evaluate(() => {
     const out = [];

@@ -1280,6 +1280,7 @@
       envCube.colorSpace = THREE.SRGBColorSpace;
       envCube.needsUpdate = true;
       waterMat.envMap = envCube; waterMat.needsUpdate = true;
+      if (envNodeRef) envNodeRef.value = envCube;
       sea.material.envMap = envCube; sea.material.needsUpdate = true;
       if (old) old.dispose();
     }
@@ -1317,7 +1318,110 @@
         col4[i * 4 + 3] = lerp(0.44, 1.0, smooth(0.0, 0.6, depth));
       }
       waterGeo.setAttribute('color', new THREE.BufferAttribute(col4, 4));
+      // And the seabed height under every vertex, as an attribute. This is
+      // what lets the TSL material below know how deep the water is at a
+      // pixel WITHOUT a bathymetry texture and without baking anything that
+      // the tide would then invalidate: the height is static, sea level is a
+      // uniform, and the rasteriser interpolates between 28 cm samples.
+      // WORLD y, not terrain height. The water mesh lives in scene space and
+      // its uniform is `water.position.y`, so storing groundHeight() raw here
+      // put the seabed a whole PAD_H above sea level, made every depth
+      // negative, clamped it to zero — and left a shader that was all Fresnel
+      // and no absorption, which reads exactly like water that is working.
+      const bathy = new Float32Array(pos.count);
+      for (let i = 0; i < pos.count; i++) bathy[i] = gy(pos.getX(i), pos.getZ(i));
+      waterGeo.setAttribute('bathy', new THREE.BufferAttribute(bathy, 1));
     }
+    // ═══ THE TSL WATER ═══════════════════════════════════════════════════
+    //
+    // The baked material below is good and has one thing it can never do:
+    // FRESNEL. How much of the bottom you see through water depends on the
+    // angle you are looking at it from — steeply, it is clear; at a graze, it
+    // is a mirror — and that is a per-PIXEL, per-view quantity. Vertex colours
+    // are baked once and cannot know where your head is, so v2's water is
+    // equally see-through from every angle, which is the single loudest "this
+    // is not water" tell left in the frame.
+    //
+    // This is the same shading model Clearwater uses, written as a three node
+    // material so it compiles to WGSL on the WebGPU backend AND to GLSL on
+    // WebGL2 — which is the only reason it is allowed to exist here, since a
+    // hand-written shader would have to be maintained twice.
+    //
+    // It also lifts a cap. v14 held the tide to 28 cm because the baked
+    // colours are painted for the depth at MEAN sea level and drift out of
+    // true as the water moves. Here depth is `seaLevel − bathy` evaluated per
+    // pixel, so the shallows repaint themselves as the tide goes out and the
+    // amplitude is free.
+    const TSL = THREE.TSL;
+    const uSea = TSL.uniform(0);
+    const uNormOff = TSL.uniform(new THREE.Vector2());
+    const uShallow = TSL.uniform(new THREE.Color());
+    const uDeep = TSL.uniform(new THREE.Color());
+    const uSunDir = TSL.uniform(new THREE.Vector3());
+    const uSunCol = TSL.uniform(new THREE.Color());
+    const uOpacity = TSL.uniform(1);
+    // Built LAZILY, because `envCube` does not exist until the first mood
+    // settles and a cubeTexture node needs a texture to hold. `envNodeRef`
+    // is kept so rebuildEnv can hand it each new cube: the node captures a
+    // texture object, and rebuildEnv deliberately makes a fresh one per mood
+    // rather than updating in place, so without this the reflection would
+    // freeze on whatever sky the island booted under.
+    let waterTslMat = null, envNodeRef = null;
+    function buildWaterTsl() {
+      if (waterTslMat) return waterTslMat;
+      const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
+      const { vec2, vec3, float, texture, cubeTexture, positionWorld, cameraPosition,
+        normalize, reflect, dot, max, pow, exp, mix, saturate, oneMinus, attribute, uv } = TSL;
+
+      // the surface, from the same scrolling normal map the baked water uses
+      const nt = texture(waterNormal, uv().mul(44).add(uNormOff)).xyz.mul(2).sub(1);
+      const N = normalize(vec3(nt.x.mul(0.34), float(1), nt.y.mul(0.34)));
+
+      const V = normalize(positionWorld.sub(cameraPosition));
+      const NdotV = max(dot(N, V.negate()), float(0.02));
+
+      // Schlick, with water's own F0. This is the whole point of the exercise.
+      const fres = float(0.02).add(float(0.98).mul(pow(oneMinus(NdotV), 5)));
+
+      // how much water the light actually came through: deeper, and longer at
+      // a graze, which is why a shallow bay still goes opaque toward the horizon
+      const depth = max(uSea.sub(attribute('bathy', 'float')), float(0));
+      const path = depth.div(max(NdotV, float(0.22)));
+
+      // Beer–Lambert rather than a lerp: absorption is exponential, and doing
+      // it properly is what makes the shallows pale and the channel deepen
+      // without either being painted in by hand.
+      // 1.3 per metre, found by looking at three values through the same
+      // view. At 0.85 the bay read as MUD — the seabed's wet band was painted
+      // dark back when the baked water was hiding it, and too little
+      // absorption just shows you that paint. At 2.4 the colour was right and
+      // the bottom was GONE, which costs this cove the one thing its own code
+      // comment claims for it: a bowl you can see the bottom of.
+      const trans = exp(path.mul(-1.3));
+      const tint = mix(uShallow, uDeep, oneMinus(trans));
+
+      envNodeRef = cubeTexture(envCube, reflect(V, N));
+      const refl = envNodeRef.xyz;
+      // one sun glint, which is the other half of reading as a liquid
+      const glint = pow(max(dot(reflect(V, N), uSunDir), float(0)), 220).mul(1.6);
+
+      m.colorNode = mix(tint, refl, fres).add(uSunCol.mul(glint));
+      // plus a little presence at zero depth, or the waterline is a place
+      // where the water simply is not
+      m.opacityNode = saturate(fres.add(oneMinus(fres).mul(oneMinus(trans))).add(0.1)).mul(uOpacity);
+      waterTslMat = m;
+      return m;
+    }
+
+    // Which water is on. A COMPARISON, not a decision — the two are built to
+    // be swapped under the same sky, on the same frame, from the same chair.
+    let waterMode = new URLSearchParams(location.search).get('water') === 'tsl' ? 'tsl' : 'baked';
+    function setWater(mode) {
+      waterMode = mode === 'tsl' ? 'tsl' : 'baked';
+      water.material = waterMode === 'tsl' ? buildWaterTsl() : waterMat;
+      return waterMode;
+    }
+
     const water = new THREE.Mesh(waterGeo, waterMat);
     water.position.y = -PAD_H;
     water.renderOrder = 1;
@@ -3414,6 +3518,16 @@
       waterDisp.offset.set(-t * 0.004, t * 0.0055);
       // the two caustic layers drift against each other; their product is
       // what moves, and it moves far less obviously than either layer does
+      if (waterMode === 'tsl') {
+        // everything the node material needs that changes: where the surface
+        // is, where the sun is, and what colour the water is being this mood
+        uSea.value = water.position.y;
+        uNormOff.value.set(t * 0.011, -t * 0.006);
+        uShallow.value.copy(cur.water).lerp(_envC.setRGB(1, 1, 1), 0.55);
+        uDeep.value.copy(cur.water).multiplyScalar(0.42);
+        uSunDir.value.copy(cur.sunDir);
+        uSunCol.value.copy(cur.sunCol).multiplyScalar(smooth(0.6, 3.1, cur.sunInt));
+      }
       causA.offset.set(t * 0.0085, t * 0.0062);
       causB.offset.set(-t * 0.0051, t * 0.0037);
       // Caustics are sunlight that got through the surface, so they follow
@@ -3538,6 +3652,7 @@
       }
     }
 
+    setWater(waterMode);
     makeSolid(terrain);
     makeSolid(statics);
     makeSolid(chairProp);
@@ -3621,6 +3736,16 @@
             tiles: [causA.repeat.x, causB.repeat.x], additive: caustics.material.blending === THREE.AdditiveBlending };
         },
         causRebake, caustMesh: caustics, waterMesh: water, seaMesh: sea,
+        // the two waters, swappable on the frame, for comparing them
+        setWater, water: () => ({ mode: waterMode,
+          // the range the depth term is computed against — sea level has to
+          // land INSIDE it, or every depth clamps to zero and the material is
+          // all Fresnel and no absorption, which is what the first cut did
+          bathyMin: +Math.min(...waterGeo.attributes.bathy.array).toFixed(3),
+          bathyMax: +Math.max(...waterGeo.attributes.bathy.array).toFixed(3),
+          tsl: water.material === waterTslMat && waterTslMat !== null,
+          nodes: !!waterTslMat, envLive: !!envNodeRef && envNodeRef.value === envCube,
+          sea: +water.position.y.toFixed(3) }),
         // the height band the foam points actually occupy — the tide walks
         // the break through this, and a band that does not span the tide is
         // a surf line that stops existing at low water
