@@ -634,7 +634,12 @@ const skyMat = new THREE.ShaderMaterial({
       gl_FragColor = vec4(col, 1.0);
     }`,
 });
-scene.add(new THREE.Mesh(new THREE.SphereGeometry(220, 32, 16), skyMat));
+// v51: the sky FOLLOWS the camera (see the render loop). It sat on the arena's
+// centre, which is fine inside a 26-unit disc — but the truck road carries you
+// out of a 220-unit sphere in under twenty seconds, and past its wall the view
+// looked out at the clear colour: a black block standing across the horizon.
+const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(220, 32, 16), skyMat);
+scene.add(skyMesh);
 
 // drifting dust motes for depth + speed perception
 const dust = (() => {
@@ -3477,6 +3482,7 @@ function animate() {
   }
   updateFeel(dt);
   updateSphereProjection();
+  skyMesh.position.copy(camera.position);   // v51: a sky you can drive out of is not a sky
   composer.render();
   uiCtx.clearRect(0, 0, ui.width, ui.height);
   if (state === 'playing' && !paused) input.drawTouchUI(uiCtx);
@@ -3558,6 +3564,16 @@ window.__hd = {
     tuning() { return T; },
     inputObj() { return input; },
     gazeObj() { return gaze; },     // v51: the gaze lock, for the gate
+    /** v51: what is under a point of the view (ndc x, y in −1…1) — every mesh
+     *  the ray crosses, nearest first. For "what is that black block". */
+    viewProbe(x = 0, y = 0) {
+      const rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(x, y), camera);
+      return rc.intersectObjects(scene.children, true).slice(0, 5).map(h => ({
+        name: h.object.name || h.object.parent?.name || '', type: h.object.type,
+        chain: (() => { const c = []; for (let o = h.object; o && o !== scene; o = o.parent) c.push(`${o.name || o.type}${o.visible ? '' : '(hidden)'}`); return c.join(' < '); })(),
+        geo: h.object.geometry?.type, dist: +h.distance.toFixed(1), visible: h.object.visible,
+        at: [+h.point.x.toFixed(1), +h.point.y.toFixed(1), +h.point.z.toFixed(1)] }));
+    },
     truckObj() { return truck; },   // v51: the convoy, for the gate   // v50: the gate taps the touch sticks the way a thumb does
     getSeasons() {
       const sn = S();
