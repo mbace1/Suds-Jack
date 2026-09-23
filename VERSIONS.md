@@ -7,6 +7,51 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v263 — 2026-09-23
+**TWO DOORS: ARCADE and CAMPAIGN — and RUSH moves out of the title and into the pause-menu cabinets** *(owner: "just make campaign the option" · "when you take away rush, just add that to the pause menu cabinets. They can always act as test beds for new modes")*
+- **The title has two doors.** ARCADE is the endless run and is still what a
+  tap, Space or the pad's A does, so nothing about starting a game got slower.
+  CAMPAIGN opens the room list.
+- **RUSH is a CABINET, not a door.** It joins the ARCADE CABINET cycle in
+  OPTIONS between KAIKKI and NEX DEUS, which is where a mode gets a test bed
+  before it earns a door of its own. `rushMode` is a read of that slot now
+  rather than a second stored truth, the old `tokoDropRush` key migrates once
+  (a player who had the chip on lands on the slot) and is then removed, and
+  **RUSH keeps its own tuning everywhere** — v262 gave the shotgun to the
+  classic pool and RUSH still fires the RUSH one. It is deliberately NOT in
+  `CABINETS`, which is the NEX DEUS requirement list: adding it there would
+  quietly move the unlock.
+- **THE CAMPAIGN** (`TUNING.campaign`) is Geometry Wars 3's shape, which is the
+  reference the owner named: a list of **rooms**, each its own arena on its own
+  clock, graded **S/A/B/C** and **F** for a room you did not survive. A room
+  opens when the one before it is cleared, so the list is a route rather than a
+  menu. The three rooms are the authored levels the editor already makes
+  (FIRST LIGHT, THREE RINGS, BOOST LANE) — **a new room is a JSON file and a
+  line in the tuning table, never new code.** Grades are per room, best kept,
+  and the tiers are gentler than RUSH's ladder (0.35/0.65/1.0/1.5 kills a
+  second against 0.5/0.9/1.4/2.0) because a room is a first meeting with an
+  arena, not a score attack you have already learned.
+- **Driven end to end in a browser, not asserted**: the two doors render, room
+  1 is open and 2 and 3 are locked, playing room 1 enters the authored level,
+  clearing it with 60 kills on a 45 s room grades **A** (1.33 a second) and
+  unlocks room 2, dying in room 2 grades **F** and leaves room 3 locked.
+- **The bug that was worth finding.** The campaign screen lives inside the
+  title's own `gameState`, which is what makes pause, resize, the arena
+  framing and the way home keep working without any of them learning it
+  exists — and it is also why **every "start the run" path would have fired
+  behind the room list**: a tap on the background, Space, the pad's A, and a
+  resize would have swapped the list back to the title. One flag (`onCampaign`)
+  is what those four paths ask now. Start backs out of the list instead.
+- **Not a bug, recorded so the next capture does not chase it**: a screenshot
+  taken right after a room ends shows the old HUD over the new screen. That is
+  SwiftShader catching up — the headless renderer manages three frames a second,
+  and the same capture at four seconds (66 frames) is clean. At 60 fps it is one
+  frame, and it is the same on the pre-existing title return.
+- Cache-bust `?v=215` → `?v=216`; HUD label → v263. The campaign's strings are
+  in all three languages.
+
+---
+
 ## v262 — 2026-09-23
 **THE WEAPON PODS, REFRESHED AND REBALANCED: five families with one idea each, a level you EARN and a hit takes away, the shotgun out of RUSH — and the pierce bug that had been eating laser damage since v70** *(owner: "shotgun can become one of the weapon pick ups.. which need refreshing and rebalance")*
 - **THE PIERCE BUG, and it is the biggest number here.** A pooled bullet built a

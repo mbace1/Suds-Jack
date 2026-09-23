@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=215';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=215';
-import { Player, PLAYER_RADIUS } from './player.js?v=215';
+import { InputManager } from './input.js?v=216';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=216';
+import { Player, PLAYER_RADIUS } from './player.js?v=216';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=215';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=215';
-import { audio } from './audio.js?v=215';
-import { haptics } from './haptics.js?v=215';
-import { initDesigner } from './designer.js?v=215';
-import { createSpecimen } from './specimen.js?v=215';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=215';
-import { TUNING } from './tuning.js?v=215';
-import { Arena, rectShape } from './arena.js?v=215';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=215';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=215';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=215';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=216';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=216';
+import { audio } from './audio.js?v=216';
+import { haptics } from './haptics.js?v=216';
+import { initDesigner } from './designer.js?v=216';
+import { createSpecimen } from './specimen.js?v=216';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=216';
+import { TUNING } from './tuning.js?v=216';
+import { Arena, rectShape } from './arena.js?v=216';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=216';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=216';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=216';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -432,7 +432,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '262';
+const GAME_VERSION = '263';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -2747,7 +2747,10 @@ let hiScore = pb.bestScore;
 // v224 RUSH MODE — its own ruleset, not a modifier stacked on classic (owner
 // direction; design in the Godot port's RUSH_MODE.md). ROGUELIKE and DAILY do
 // not apply inside it.
-let rushMode = localStorage.getItem('tokoDropRush') === '1';
+// v263: RUSH is a pause-menu CABINET now. `rushMode` survives as a read of
+// that slot so the two places that ask "is Rush armed" (the tutorial hints and
+// the RUSH LADDER panel) do not each grow their own answer.
+let rushMode = false;   // reassigned from the cabinet slot below (see syncRush)
 // v232 ABILITIES (PR #311): picked in OPTIONS, persists like the ruleset
 // toggles above — it's a loadout choice, not per-run state (rush.reset()
 // deliberately leaves rush.ability alone; startGame() applies this here).
@@ -3847,7 +3850,14 @@ function nexProgress() {
 }
 // v173: the sixth slot only exists once the machine is powered — a stale or
 // hand-edited save can never arm a cabinet the profile hasn't earned.
-const cabSelOk = v => CABINETS.includes(v) || (v === 'nexdeus' && nexProgress() >= 5);
+// v263 (owner: "when you take away rush, just add that to the pause menu
+// cabinets. They can always act as test beds for new modes"): RUSH is a
+// CABINET now, not a door. It keeps its own ruleset — it is not in CABINETS,
+// which is the NEX DEUS requirement list and must not move — it is simply a
+// slot the selector can land on.
+const CAB_EXTRA = ['rush'];
+const cabSelOk = v => CABINETS.includes(v) || CAB_EXTRA.includes(v)
+                   || (v === 'nexdeus' && nexProgress() >= 5);
 let cabinetSel = (() => {
   const v = localStorage.getItem('tokoDropCabinet');
   return cabSelOk(v) ? v : null;
@@ -3855,6 +3865,7 @@ let cabinetSel = (() => {
 function setCabinetSel(v) {
   cabinetSel = cabSelOk(v) ? v : null;
   localStorage.setItem('tokoDropCabinet', cabinetSel ?? '');
+  rushMode = cabinetSel === 'rush';   // v263
 }
 function startRun() {
   if (pendingLevel) { const lv = pendingLevel; pendingLevel = null; playLevel(lv, 0); return; }   // v239: ?level=
@@ -3864,8 +3875,60 @@ function startRun() {
   else if (cabinetSel === 'loadout')  startLoadout();
   else if (cabinetSel === 'kaikki')   startKaikki();
   else if (cabinetSel === 'nexdeus')  startNexdeus();
-  else startGame();
+  else startGame();   // 'rush' lands here: startGame() reads rushSelected()
 }
+// ── THE CAMPAIGN (v263) ──────────────────────────────────────────────────────
+// The second door. See TUNING.campaign. A room is an authored level; the grade
+// is kills against the room's own clock; a room opens when the one before it
+// is cleared. Progress is one small object in localStorage, so a cleared room
+// stays cleared and nothing else in the game has to know this exists.
+let campaignRoom = null;        // the room id a level run came from, or null
+// The campaign screen lives in the title's own gameState, which is what makes
+// pause, resize and the way home keep working — but it means every "start the
+// run" path that keys off gameState === 'title' would fire behind the room
+// list. This flag is what those paths ask instead.
+let onCampaign = false;
+const CAMPAIGN_KEY = 'tokoDropCampaign';
+function campaignProgress() {
+  try { return JSON.parse(localStorage.getItem(CAMPAIGN_KEY)) || {}; } catch (_) { return {}; }
+}
+function campaignSave(p) { try { localStorage.setItem(CAMPAIGN_KEY, JSON.stringify(p)); } catch (_) {} }
+const GRADE_ORDER = ['F', 'C', 'B', 'A', 'S'];
+// the room is graded on ITS OWN duration, so a short room is not a harder room
+function campaignGrade(room, kills, cleared) {
+  if (!cleared) return 'F';
+  const T = TUNING.campaign.tiers, secs = Math.max(1, room.duration);
+  if (kills >= T.S * secs) return 'S';
+  if (kills >= T.A * secs) return 'A';
+  if (kills >= T.B * secs) return 'B';
+  if (kills >= T.C * secs) return 'C';
+  return 'F';   // survived, but the room was not cleared OF anything
+}
+// a room is open when it is the first, or the one before it has a grade above F
+function campaignOpen(i) {
+  if (i === 0) return true;
+  const prev = TUNING.campaign.rooms[i - 1];
+  const g = campaignProgress()[prev]?.grade;
+  return !!g && g !== 'F';
+}
+function campaignRecord(id, grade, score, kills) {
+  const p = campaignProgress();
+  const was = p[id]?.grade;
+  if (!was || GRADE_ORDER.indexOf(grade) > GRADE_ORDER.indexOf(was)) {
+    p[id] = { grade, score, kills };
+    campaignSave(p);
+  }
+}
+
+// v263: RUSH is armed by the cabinet slot rather than by a title chip.
+const rushSelected = () => cabinetSel === 'rush';
+function syncRush() { rushMode = rushSelected(); }
+// one-time migration: a player who had the old RUSH chip on lands on the slot
+if (localStorage.getItem('tokoDropRush') === '1' && !localStorage.getItem('tokoDropCabinet')) {
+  setCabinetSel('rush');
+}
+localStorage.removeItem('tokoDropRush');
+syncRush();
 
 // TEST MODE (v142): a playtest workbench run — all enemy types unlock from
 // wave 1 and the run leaves NO records (no PB, no daily best, no leaderboard;
@@ -3960,7 +4023,7 @@ function syncAutoOrientation() {
   if (want !== landscapeMode) {
     landscapeMode = want;
     applyArenaMode(want);
-    if (gameState === 'title') showTitle();  // re-render the title over the re-framed arena
+    if (gameState === 'title') { if (onCampaign) showCampaign(); else showTitle(); }   // v263: keep whichever screen is up
   } else if (arenaOverride || smashMode || landscapeMode) {
     // Same orientation but the aspect may have changed (window resize, URL
     // bar) — refit the zoom. Camera-only, no geometry churn.
@@ -5702,6 +5765,7 @@ function playTitleIntro() {
 }
 
 function showTitle() {
+  onCampaign = false;   // v263
   // v121/v122: recorded intro voice, once per title visit (reset in startGame),
   // gated by its own INTRO VOICE toggle. If autoplay blocks it on a cold load
   // (no gesture yet), un-set the flag so a later title re-render — after any
@@ -5747,6 +5811,11 @@ function showTitle() {
         `${t('best')} &nbsp;${pb.bestScore} ${t('pts')} &nbsp;·&nbsp; ${t('wave')} ${pb.bestWave} &nbsp;·&nbsp; ${fmtTime(pb.bestTime)}</div>`
       : ``) +
     `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">${t('tapStart')}</div>` +
+    // v263 THE TWO DOORS (owner: "just make campaign the option"): ARCADE is
+    // the endless run and is still what a tap anywhere does, so nothing about
+    // starting a game got slower; CAMPAIGN is the room list.
+    `<div id="doors-slot" style="margin-top:16px;display:flex;gap:10px;justify-content:center;` +
+    `animation:tokoFadeUp 0.5s 0.25s ease both"></div>` +
     `<div id="rogue-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
     `<div id="settings-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.32s ease both"></div>` +
     `<div class="t-help" style="font-size:9.5px;opacity:0.32;margin:14px auto 0;line-height:1.6;text-align:center;` +
@@ -5788,6 +5857,26 @@ function showTitle() {
   // (The old ORIENTATION toggle is gone — v110: the arena always follows the
   // screen, so there's nothing to choose and no way to save a mismatch.)
 
+  // v263: the two doors.
+  {
+    const dslot = document.getElementById('doors-slot');
+    const door = (label, color, onPick) => {
+      const d = document.createElement('div');
+      d.dataset.ui = '1';
+      d.textContent = label;
+      d.style.cssText =
+        'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+        'font-size:15px;font-weight:bold;letter-spacing:2px;padding:10px 22px;border-radius:9px;' +
+        'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
+        `border:2px solid ${color};color:${color};text-shadow:0 0 12px ${color}88;`;
+      d.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); onPick(); });
+      d.addEventListener('touchend', e => e.stopPropagation());
+      dslot.appendChild(d);
+    };
+    door(t('arcade'), '#00ffcc', () => startRun());
+    door(t('campaign'), '#ffaa66', () => showCampaign());
+  }
+
   // Roguelike toggle — a clickable chip inside the (pointer-events:none) overlay.
   const slot = document.getElementById('rogue-toggle-slot');
   const btn  = document.createElement('div');
@@ -5824,44 +5913,10 @@ function showTitle() {
   slot.appendChild(btn);
   slot.appendChild(hint);
 
-  // v224 RUSH chip — directly under ROGUELIKE (owner placement). Its own
-  // ruleset, so turning it on turns ROGUELIKE and DAILY off: boost replaces
-  // the dash, the gun becomes a shotgun, and the hp dots become lives.
-  const rbtn  = document.createElement('div');
-  rbtn.dataset.ui = '1';
-  const rhint = document.createElement('div');
-  rhint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
-  const rrender = () => {
-    const on = rushMode;
-    rbtn.textContent = `${t('rush')}: ${on ? t('on') : t('off')}`;
-    rbtn.style.cssText =
-      'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
-      'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
-      'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
-      `border:2px solid ${on ? '#ff7733' : '#445'};` +
-      `color:${on ? '#ffaa66' : '#7777aa'};` +
-      `text-shadow:${on ? '0 0 12px #ff6600' : 'none'};`;
-    rhint.textContent = on ? t('rushOnH') : t('rushOffH');
-  };
-  rrender();
-  const rtoggle = e => {
-    e.stopPropagation();
-    e.preventDefault();
-    rushMode = !rushMode;
-    localStorage.setItem('tokoDropRush', rushMode ? '1' : '0');
-    // its own ruleset — the two run modifiers step aside rather than stack
-    if (rushMode) {
-      roguelikeMode = false; rogueB = false; dailyMode = false;
-      localStorage.setItem('tokoDropRogue2', '0');
-      localStorage.setItem('tokoDropRogueB', '0');
-      localStorage.setItem('tokoDropDaily', '0');
-    }
-    showTitle();
-  };
-  rbtn.addEventListener('pointerdown', rtoggle);
-  rbtn.addEventListener('touchend', e => e.stopPropagation());
-  slot.appendChild(rbtn);
-  slot.appendChild(rhint);
+  // v263: the RUSH chip is gone from the title — RUSH is a pause-menu
+  // CABINET now (owner: "just add that to the pause menu cabinets. They can
+  // always act as test beds for new modes"), which is also what stops the
+  // title growing a chip per mode forever.
 
   // DAILY RUN chip (v130) — same styling family as the roguelike chip, gold.
   const dbtn  = document.createElement('div');
@@ -8327,7 +8382,7 @@ function startGame() {
   rush.on = false;
   player._boostSpeed = 0;
   player.setBoost(false);
-  if (customLevel ? customLevel.level.rules.mode === 'rush' : (rushMode && !inCabinet())) {   // v237: a level picks its ruleset
+  if (customLevel ? customLevel.level.rules.mode === 'rush' : (rushSelected() && !inCabinet())) {   // v237: a level picks its ruleset; v263: the cabinet slot arms it
     rush.reset();
     rush.ability = rushAbilitySel;   // v232: a loadout choice, applied fresh each run
     const R = TUNING.rush;
@@ -8448,6 +8503,17 @@ function endLevelRun(outcome) {
   overlay.style.pointerEvents = '';
   lastLevelResult = result;
   if (editor) { gameState = 'editor'; editor.onRunEnd(result); return; }
+  // v263: a room run goes back to the CAMPAIGN with a grade, not to the title
+  if (campaignRoom) {
+    const room = campaignRoom; campaignRoom = null;
+    const grade = campaignGrade(room.level, result.kills, outcome !== 'dead');
+    campaignRecord(room.level.id, grade, result.score, result.kills);
+    arenaOverride = null;
+    applyArenaMode(landscapeMode);
+    gameState = 'title';
+    showCampaign({ id: room.level.id, name: room.level.name, grade, kills: result.kills, score: result.score });
+    return;
+  }
   // v239: a ?level= run with no editor over it goes back to the title.
   arenaOverride = null;
   applyArenaMode(landscapeMode);
@@ -8455,6 +8521,71 @@ function endLevelRun(outcome) {
   gameState = 'title';
 }
 let lastLevelResult = null;
+
+// The CAMPAIGN screen (v263): the room list. It is the title overlay with
+// different contents rather than a new game state, so pause, resize, the
+// arena framing and the way home all keep working without learning about it.
+function showCampaign(justPlayed = null) {
+  onCampaign = true;
+  // the HUD canvas holds whatever was last painted, and nothing repaints it at
+  // the title — so a room that just ended leaves its banner, hearts and sticks
+  // lying under this screen. Clear it, and drop the banners that fed it.
+  ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+  milestoneT = 0; waveIntroT = 0; roomFadeT = 0;
+  const C = TUNING.campaign, prog = campaignProgress();
+  const GCOL = { S: '#ffdd44', A: '#66ffcc', B: '#88ccff', C: '#bbbbdd', F: '#ff6655' };
+  overlay.style.display = 'block';
+  overlay.style.pointerEvents = 'auto';
+  overlay.innerHTML =
+    `<div style="font-size:26px;font-weight:bold;letter-spacing:3px;color:#ffaa66;` +
+    `text-shadow:0 0 14px rgba(255,120,40,0.7);margin-top:6vh;animation:tokoFadeUp 0.4s ease both">${t('campaign')}</div>` +
+    `<div style="font-size:12px;opacity:0.45;margin:8px 0 18px">${t('campaignH')}</div>` +
+    (justPlayed
+      ? `<div style="font-size:14px;margin-bottom:16px;color:${GCOL[justPlayed.grade]}">` +
+        `${justPlayed.name} — ${t('grade')} ${justPlayed.grade} &nbsp;·&nbsp; ${justPlayed.kills} ${t('kills')}</div>`
+      : ``) +
+    `<div id="campaign-rooms" style="display:flex;flex-direction:column;gap:10px;align-items:center"></div>` +
+    `<div id="campaign-back" data-ui="1" style="margin-top:22px;font-size:12px;letter-spacing:1px;` +
+    `opacity:0.55;cursor:pointer;pointer-events:auto;text-decoration:underline">${t('backTitle')}</div>`;
+  const list = document.getElementById('campaign-rooms');
+  C.rooms.forEach((id, i) => {
+    const open = campaignOpen(i), rec = prog[id];
+    const row = document.createElement('div');
+    row.dataset.ui = '1';
+    row.style.cssText =
+      'display:flex;align-items:center;gap:12px;min-width:min(78vw,300px);justify-content:space-between;' +
+      'pointer-events:auto;user-select:none;padding:10px 16px;border-radius:8px;' +
+      'background:rgba(0,0,0,0.35);font-size:14px;font-weight:bold;letter-spacing:1px;' +
+      `border:2px solid ${open ? '#ff7733' : '#333'};color:${open ? '#ffcc99' : '#555'};` +
+      `cursor:${open ? 'pointer' : 'default'};`;
+    const label = document.createElement('span');
+    label.textContent = open ? `${i + 1}. ${id.toUpperCase().replace(/-/g, ' ')}` : `${i + 1}. ${t('roomLocked')}`;
+    const grade = document.createElement('span');
+    grade.textContent = rec ? rec.grade : '—';
+    grade.style.cssText = `font-size:18px;color:${rec ? GCOL[rec.grade] : '#444'}`;
+    row.appendChild(label); row.appendChild(grade);
+    if (open) {
+      const go = async e => {
+        e.stopPropagation(); e.preventDefault();
+        row.style.opacity = '0.5';
+        try {
+          const level = await loadBundledLevel(id);
+          campaignRoom = { level };
+          playLevel(level, 0);
+        } catch (err) {
+          row.style.opacity = '1';
+          label.textContent = `${i + 1}. ${t('roomFailed')}`;
+        }
+      };
+      row.addEventListener('pointerdown', go);
+      row.addEventListener('touchend', e => e.stopPropagation());
+    }
+    list.appendChild(row);
+  });
+  const back = document.getElementById('campaign-back');
+  back.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); showTitle(); });
+  back.addEventListener('touchend', e => e.stopPropagation());
+}
 
 function triggerGameOver() {
   _deathAt = performance.now();   // v256: the restart gap starts here
@@ -8602,6 +8733,7 @@ input.onDash  = () => {
     const dir = { x: move.x, z: move.z, valid: move.x !== 0 || move.z !== 0 };
     player.dash(dir);
   } else if (gameState === 'title' && !navEl) {
+    if (onCampaign) return;   // v263: the room list takes the pad, not the run
     startRun();  // A / bumper / trigger starts from the title — unless the
                   // pad is focused on a menu chip (then A activates the chip)
   }
@@ -8618,7 +8750,7 @@ input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused';  designer.show(); }
   else if (gameState === 'paused')  { gameState = 'playing'; designer.hide(); }
   else if (gameState === 'options') { gameState = 'title';   designer.hide(); }
-  else if (gameState === 'title')   startRun();
+  else if (gameState === 'title')   { if (onCampaign) showTitle(); else startRun(); }   // v263: Start backs out of the room list
   else if (gameState === 'gameover') returnToTitle();  // Start skips feedback
 };
 
@@ -8627,7 +8759,7 @@ window.addEventListener('keyup', e => {
   // Don't hijack keys while the player is typing feedback.
   const tag = e.target?.tagName;
   if (tag === 'TEXTAREA' || tag === 'INPUT') return;
-  if (e.code === 'Space' && gameState === 'title') startRun();
+  if (e.code === 'Space' && gameState === 'title' && !onCampaign) startRun();   // v263
   if (e.code === 'Space' && gameState === 'gameover') returnToTitle();  // skip feedback
   if (e.code === 'KeyE') player.toggleEyes();
 });
@@ -8641,7 +8773,7 @@ window.addEventListener('touchstart', (e) => {
   _tapY = e.touches[0]?.clientY ?? 0;
 });
 window.addEventListener('touchend', (e) => {
-  if (gameState !== 'title') return;
+  if (gameState !== 'title' || onCampaign) return;   // v263: not behind the room list
   // Ignore taps that landed on interactive elements (toggles, chips, links)
   if (e.target?.closest?.('[data-ui]')) return;
   const tp = e.changedTouches?.[0];
@@ -11002,7 +11134,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=215').then(async m => {
+  import('./editor.js?v=216').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -11033,6 +11165,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=215').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=216').catch(() => {});
   });
 }
