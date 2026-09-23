@@ -10,7 +10,7 @@
 import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=44';
 import * as engine from './engine.js?v=44';
 import { Arena } from './scene.js?v=32';
-import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=43';
+import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=44';
 import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=38';
 import { paintCardPic } from './cardart.js?v=43';
 import { drawMap } from './map.js?v=31';
@@ -26,7 +26,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 46;
+const VERSION = 47;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -1210,7 +1210,7 @@ window.__sk = {
     // what the act card OUGHT to say, read from the data rather than the screen
     encounterName: (i, t = theme) => ENCOUNTERS[i]?.[t]?.name,
     // a cutout painted at full size, for looking at the art rather than the scene
-    look: (id, mutated = 0) => paintCutout({ ...(ENEMIES[id] ?? CHARACTERS[id])[theme].look, id, mutated }, 3, arena.figureMood()),
+    look: (id, mutated = 0) => paintCutout({ ...(ENEMIES[id] ?? CHARACTERS[id])[theme].look, id, mutated }, 3, arena.figureMood(), 'idle', ENEMIES[id]?.scale ?? 1),
     encounterCount: () => ENCOUNTERS.length,
     // v45 — the run read back, for the gate and for anyone who wants their own
     // route out of the console. Read-only: it derives from the log.

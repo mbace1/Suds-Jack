@@ -1229,7 +1229,125 @@ function figureScale(cv) {
 // puppet, so the fantasy evening lights its cast its own way.
 export const DUSK = { warm: '#ffab52', cold: '#101a24', rim: '#6f93ad', depth: '99' };
 
-export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
+// ── THE METAL SLUG PASS (v47) ────────────────────────────────────────────
+// Owner, 2026-09-23: *"Metal slug is one main option. The original was more
+// photo realistic with cardboard puppets. It can also be any combination."*
+// The people are already that: the owner's 26 are pixel art in Metal Slug
+// Tactics' own register, and v46 made the ten animals clean without making
+// them the same KIND of picture — a smooth painted rat standing in a row of
+// sprites. So under `art: turf` a drawn animal is resampled onto a pixel grid
+// and quantised, and then goes through the paper passes exactly as a plate
+// does: the plate replaces the paint, and now so does the grid.
+//
+// THE GRID IS MATCHED ON SCREEN, NOT IN THE TEXTURE. A plate fills the sheet
+// at 1.24 texture px to one of its own pixels (measured over the 24 cast
+// plates: 1.23-1.32), and a person stands at world scale ~1. A rat's plane is
+// scaled to 0.5, so each texel of it is drawn half the size — a rat pixelated
+// at the plates' texture pitch would come out with pixels half a person's.
+// The pitch is divided by the figure's world scale, and one sprite pixel is
+// then the same size on screen whatever it belongs to.
+const PLATE_PITCH = 1.24;
+const PIXEL_COLOURS = 24;
+// The plates' own tone, measured over the 24 cast plates as they ship: the
+// 5th-95th percentile of luminance spans 172 levels (4 → 176) and the median
+// saturation is 0.44. A painted rat spans about half of that and is greyer —
+// on screen it read as a sprite printed on newsprint next to a sprite. So each
+// animal's CONTRAST is stretched toward the plates' spread about its OWN
+// median, never toward the plates' median: a gull is white and a tar blob is
+// black by design, and matching their keys to a set of people in winter coats
+// would grey both. Both factors are capped, so this can sharpen a drawing and
+// can never repaint one.
+const PLATE_SPREAD = 172, PLATE_SAT = 0.44;
+
+// Box cut: split the box of colours along its longest channel until there
+// are `n` boxes, and every pixel takes its box's mean. Deterministic, no
+// search. The split is at the MIDDLE OF THE RANGE, not the median of the
+// population — the textbook median lost the King Rat's crown on the first
+// render: three bottle caps are forty pixels against four thousand of brown
+// fur, a population split always lands inside the fur, and the caps were
+// averaged into it. A sprite's accents are exactly the colours that are rare.
+function medianCut(d, idx, n) {
+  let boxes = [idx];
+  while (boxes.length < n) {
+    let best = -1, bi = -1, bc = 0;
+    boxes.forEach((b, k) => {
+      if (b.length < 2) return;
+      for (let c = 0; c < 3; c++) {
+        let lo = 255, hi = 0;
+        for (const i of b) { const v = d[i + c]; if (v < lo) lo = v; if (v > hi) hi = v; }
+        if (hi - lo > best) { best = hi - lo; bi = k; bc = c; }
+      }
+    });
+    if (bi < 0 || best <= 0) break;
+    const b = boxes[bi];
+    let lo = 255, hi = 0;
+    for (const i of b) { const v = d[i + bc]; if (v < lo) lo = v; if (v > hi) hi = v; }
+    const mid = (lo + hi) / 2, a = [], z = [];
+    for (const i of b) (d[i + bc] <= mid ? a : z).push(i);
+    boxes.splice(bi, 1, a, z);
+  }
+  for (const b of boxes) {
+    let r = 0, g = 0, bl = 0;
+    for (const i of b) { r += d[i]; g += d[i + 1]; bl += d[i + 2]; }
+    r = Math.round(r / b.length); g = Math.round(g / b.length); bl = Math.round(bl / b.length);
+    for (const i of b) { d[i] = r; d[i + 1] = g; d[i + 2] = bl; }
+  }
+  return boxes.length;
+}
+
+function pixelate(fig, pitch) {
+  const w = Math.max(8, Math.round(TW / pitch)), h = Math.max(8, Math.round(TH / pitch));
+  const s = document.createElement('canvas'); s.width = w; s.height = h;
+  const sx = s.getContext('2d', { willReadFrequently: true });
+  sx.imageSmoothingEnabled = true; sx.imageSmoothingQuality = 'high';
+  sx.drawImage(fig, 0, 0, w, h);
+  const img = sx.getImageData(0, 0, w, h), d = img.data;
+  // A sprite has no half-pixels at its edge: alpha is on or off. The threshold
+  // sits under a half so a 1px line that lands across two cells keeps one.
+  const opaque = [];
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 100) { d[i + 3] = 0; continue; }
+    d[i + 3] = 255; opaque.push(i);
+  }
+  if (opaque.length) {
+    const lum = i => 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2];
+    const sat = i => { const mx = Math.max(d[i], d[i + 1], d[i + 2]); return mx ? (mx - Math.min(d[i], d[i + 1], d[i + 2])) / mx : 0; };
+    const L = opaque.map(lum).sort((a, b) => a - b), S = opaque.map(sat).sort((a, b) => a - b);
+    const q = (v, f) => v[Math.min(v.length - 1, (v.length * f) | 0)];
+    const mid = q(L, 0.5), spread = Math.max(1, q(L, 0.95) - q(L, 0.05));
+    const kL = Math.min(1.8, Math.max(1, PLATE_SPREAD / spread));
+    const kS = Math.min(1.5, Math.max(1, PLATE_SAT / Math.max(0.01, q(S, 0.5))));
+    for (const i of opaque) {
+      const l = lum(i), t = mid + (l - mid) * kL;
+      for (let c = 0; c < 3; c++) d[i + c] = Math.max(0, Math.min(255, Math.round(t + (d[i + c] - l) * kS)));
+    }
+    fig.tone = { spread: Math.round(spread), kL: +kL.toFixed(2), kS: +kS.toFixed(2) };
+  }
+  const colours = opaque.length ? medianCut(d, opaque, PIXEL_COLOURS) : 0;
+  // THE SPRITE'S OUTLINE. A 4px ink line resampled at 2.5px a cell averages
+  // with the fill on both sides of it and comes out a mid-brown — the first
+  // render had every animal washed out beside people whose edges are near-
+  // black, which is most of what makes a Metal Slug sprite read. So the
+  // outermost ring of cells is put back in the ink, carrying a little of the
+  // fill's hue the way a pixel artist's outline does rather than going flat.
+  const on = i => i >= 0 && i < d.length && d[i + 3] === 255;
+  const edge = [];
+  for (const i of opaque) {
+    const p = i >> 2, x = p % w;
+    if ((x > 0 && !on(i - 4)) || (x < w - 1 && !on(i + 4)) || !on(i - w * 4) || !on(i + w * 4)) edge.push(i);
+  }
+  for (const i of edge) { d[i] = Math.round(d[i] * 0.3 + 8); d[i + 1] = Math.round(d[i + 1] * 0.3 + 6); d[i + 2] = Math.round(d[i + 2] * 0.3 + 5); }
+  sx.putImageData(img, 0, 0);
+  const fx = fig.getContext('2d');
+  fx.clearRect(0, 0, TW, TH);
+  fx.imageSmoothingEnabled = false;
+  fx.drawImage(s, 0, 0, TW, TH);
+  fx.imageSmoothingEnabled = true;
+  fig.pixel = { pitch, w, h, colours, ...(fig.tone ?? {}) };
+  return fig;
+}
+
+export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle', scale = 1) {
   const c = document.createElement('canvas');
   c.width = TW; c.height = TH;
   const ctx = c.getContext('2d');
@@ -1260,7 +1378,10 @@ export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
   const fx = fig === c ? ctx : fig.getContext('2d');
   fx.lineJoin = 'round'; fx.lineCap = 'round';
   if (plate) drawPlate(fx, plate, { tw: TW, th: TH, foot: 470, tall: 356 });
-  else if (look.shape) drawBeast(fx, look, rnd);
+  else if (look.shape) {
+    drawBeast(fx, look, rnd);
+    if (ART === 'turf') pixelate(fig, Math.max(1, PLATE_PITCH / (scale || 1)));
+  }
   else person(fx, look, rnd);
   // Measured off the FIGURE and before the board is cut, which is the only
   // moment the drawing's own size is on the canvas by itself.
@@ -1296,6 +1417,7 @@ export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle') {
   // is the whole reason a nick reads as torn rather than as a dot of nothing
   fibre(c, rnd, '#c8bca4', 0.32, f);
   grime(ctx, rnd, look.grime ?? 0.7, f);
+  if (fig.pixel) c.pixel = fig.pixel;      // what the Metal Slug pass did, for the gate to read
   return c;
 }
 
@@ -1523,7 +1645,7 @@ export class Puppet {
     const names = ART === 'turf' ? posesFor(look.id) : ['idle'];
     this.frames = {};
     for (const n of names) {
-      const cv = paintCutout(look, seed, mood, n);
+      const cv = paintCutout(look, seed, mood, n, scale);
       const t = new THREE.CanvasTexture(cv);
       t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
       const b = new THREE.CanvasTexture(paintBack(cv));

@@ -7,6 +7,49 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v47 — 2026-09-23
+**METAL SLUG — the animals are sprites now, on the people's own pixel grid**
+
+Owner: *"Metal slug is one main option. The original was more photo realistic
+with cardboard puppets. It can also be any combination of these."* The people
+already were Metal Slug: the owner's 26 are pixel art in Metal Slug Tactics'
+own register. v46 made the ten animals clean without making them the same KIND
+of picture, so the row was sprites standing beside a painted rat. Under
+`art: turf` (the default) a drawn animal is now resampled onto a pixel grid,
+quantised, outlined, and then goes through the same paper passes a plate does:
+the plate replaces the paint, and now so does the grid. `art: drawn` keeps the
+painted cardboard cutouts, which is the owner's other register, one tap away.
+
+**The grid is matched ON SCREEN, not in the texture.** A plate fills the sheet
+at 1.24 texture px to one of its pixels (measured across the 24 cast plates,
+1.23–1.32) and a person stands at world scale ~1. A rat's plane is scaled to
+0.5, so a rat pixelated at the plates' texture pitch would have had pixels
+half a person's. The pitch is divided by the figure's world scale: the rat is
+2.48 texture px a pixel, and 2.48 × 0.5 is the people's 1.24.
+
+**Three things the first render got wrong, all from looking at it:**
+- **The King Rat lost his crown.** Median cut splits a colour box at the
+  median of its POPULATION, and three bottle caps are forty pixels against four
+  thousand of fur, so every split landed inside the fur and the caps were
+  averaged into it. The split is at the middle of the RANGE now. A sprite's
+  accents are exactly the colours that are rare. Gated as hue families: red,
+  gold and blue are three.
+- **Every animal was washed out.** A 4px ink line resampled at 2.5px a cell
+  averages with the fill on both sides and comes out mid-brown, beside people
+  whose edges are near-black. The outermost ring of cells goes back into the
+  ink, carrying a little of the fill's hue the way a pixel artist's outline does.
+- **And greyer than the people.** The plates span 172 levels of luminance from
+  the 5th to the 95th percentile (4 → 176) at median saturation 0.44; a painted
+  rat spans about half of that. Each animal's contrast is stretched toward the
+  plates' spread about its OWN median, never toward the plates' median: a gull
+  is white and a tar blob is black on purpose, and matching their keys to people
+  in winter coats would grey both. Both factors are capped (×1.8, ×1.5), so the
+  pass can sharpen a drawing and never repaint one.
+
+Gates: every animal is on the people's on-screen grid (pitch × scale = 1.24),
+at most 24 colours, the crown keeps three hue families, and `art: drawn` still
+gives the painted animals back. smoke.cjs 170.
+
 ## v46 — 2026-09-21
 **THE PASSES WERE PERSON-SIZED AND NOT EVERY FIGURE IS A PERSON — the ten
 drawn animals, read at full size**

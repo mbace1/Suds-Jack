@@ -794,6 +794,48 @@ const check = (name, ok, extra = '') => {
   check(`the rat's whiskers print, they are not cut round and welded into a paddle (${whiskers.toFixed(3)} of the band in front of its nose, was 0.257)`,
     whiskers < 0.15);
 
+  // ── v47: THE ANIMALS ARE SPRITES, ON THE PEOPLE'S GRID ────────────────
+  // Owner: *"Metal slug is one main option."* The people are pixel art at
+  // 1.24 texture px to a pixel and stand at world scale ~1; under `art: turf`
+  // every drawn animal is resampled so ONE SPRITE PIXEL IS THE SAME SIZE ON
+  // SCREEN — pitch × world scale — whatever it belongs to. A rat at the
+  // plates' texture pitch would have had pixels half a person's.
+  const sprite = await page.evaluate(ids => ids.map(id => {
+    const c = __sk.debug.look(id);
+    return { id, px: c.pixel ?? null, scale: __sk.debug.enemyScale(id) };
+  }), ['rat', 'bin_rat', 'boss_rat', 'blob', 'blob_spawn', 'tar_blob', 'pigeon', 'gull', 'gull_king', 'the_bear']);
+  const offGrid = sprite.filter(s => !s.px || (s.px.pitch > 1 && Math.abs(s.px.pitch * s.scale - 1.24) > 0.06));
+  check(`under the TURF look every animal is a sprite on the people's on-screen grid${offGrid.length ? ` — ${offGrid.map(s => s.id)}` : ` (rat ${sprite[0].px.pitch.toFixed(2)}px × ${sprite[0].scale} = ${(sprite[0].px.pitch * sprite[0].scale).toFixed(2)})`}`,
+    offGrid.length === 0);
+  check(`and a sprite's palette is a sprite's (${Math.max(...sprite.map(s => s.px?.colours ?? 99))} colours at most)`,
+    sprite.every(s => s.px && s.px.colours <= 24));
+  // THE CROWN SURVIVES THE PALETTE. The first cut split colour boxes at the
+  // population median, and three bottle caps — forty pixels against four
+  // thousand of fur — were averaged into the brown. Counted as saturated hue
+  // families on the King Rat: red, gold and blue are three.
+  const hues = await page.evaluate(() => {
+    const c = __sk.debug.look('boss_rat');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, fam = new Set();
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 200) continue;
+      const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      if (mx < 70 || (mx - mn) / mx < 0.45) continue;
+      let h = mx === r ? ((g - b) / (mx - mn)) % 6 : mx === g ? (b - r) / (mx - mn) + 2 : (r - g) / (mx - mn) + 4;
+      fam.add(Math.round(((h * 60 + 360) % 360) / 60) % 6);
+    }
+    return fam.size;
+  });
+  check(`the King Rat's bottle caps keep their colours through the palette (${hues} hue families)`, hues >= 3);
+  // And the switch still gives the painted cutouts back — the owner's other
+  // register ("more photo realistic with cardboard puppets") is one tap away.
+  const drawnPx = await page.evaluate(async () => {
+    __sk.debug.setArt?.('drawn'); await new Promise(r => setTimeout(r, 150));
+    const p = __sk.debug.look('rat').pixel ?? null;
+    __sk.debug.setArt?.('turf'); await new Promise(r => setTimeout(r, 150));
+    return p;
+  });
+  check('under the DRAWN look the animals stay painted, not pixelated', drawnPx === null);
+
   // ── v46: EVERY FIGURE IS ONE PIECE ────────────────────────────────────
   // `brush()` scumbles a RECTANGLE of broken strokes and had never been
   // clipped to anything. For forty-five versions that did not matter, because
