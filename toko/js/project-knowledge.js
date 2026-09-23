@@ -1,6 +1,6 @@
 // TOKO MIDORI GAMES — project design + roadmap knowledge.
 // Authored short-form summaries of repository design authority. Source docs win.
-import { GAMES } from '../../hub/games.js?v=97';
+import { GAMES } from '../../hub/games.js?v=103';
 
 export const PROJECTS = [
   {id:'tokodrop',aliases:['toko drop','tokodrop'],title:'Toko Drop',sources:['GDD.md','TOKO_DROP_ROADMAP.md'],design:['Twin-stick swarm-survival arena shooter. Movement is the spine; the swarm reads the player’s gun and corpses bite back with revenge patterns.','Portrait/mobile is first-class. Roguelike upgrades are default; classic arcade flows without between-wave interruption.','Gel/satin is the visual identity. SFX, stingers and announcer form the deliberately music-free audio identity.'],roadmap:['Finish corpse/swarm materials and arena/environment readability, then reactive surface response.','Promote WebGPU from beta only when the gelation art visibly justifies it and survives phone performance checks.','Add main-game unlocks and comfort/haptics, then Early Access on Pages + itch.io.','During EA: animation, game-feel, audio layering, silhouettes, content and seeded-run balancing.','1.0: tuning, teach-by-play onboarding, score-card sharing, real-play trailer and offline release.'],constraints:['No Geometry Wars drift.','No CDN/runtime dependencies.','Mobile touch gets an answer for every feature.','Cabinet work is on hold until the main arc lands.']},

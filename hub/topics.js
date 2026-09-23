@@ -67,6 +67,7 @@ export const KINDS = kinds('en');
 // order above, so a new game gets a sensible menu the day it is listed and a
 // better one the day someone thinks about it.
 const LEADS = {
+  flowsnow: ['look', 'controls'],         // the look is the experiment, the hands are Shredders
   'optionc-lab': ['perf', 'look', 'controls'],
   optionc: ['controls', 'perf', 'look'],
   concrete: ['controls', 'look'],

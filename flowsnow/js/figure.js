@@ -3,8 +3,9 @@
 // the one moving thing on a still white mountain. Journey's traveller, on
 // snow. The figure stands across the board (regular stance), leans into the
 // edge, crouches into a tuck, and reaches for the board in a grab.
+import { GRABS } from './tricks.js?v=1';
 import * as THREE from 'three';
-import { RIDER } from './palette.js';
+import { RIDER } from './palette.js?v=1';
 
 const SCARF_N = 14, SCARF_SEG = 0.24, SCARF_W = 0.13;
 
@@ -83,6 +84,7 @@ export class Figure {
     this.tumbleSpin = 0;
     this.crouch = 0;
     this.lean = 0;
+    this.reach = [0, 0];   // how far each hand is toward the deck
   }
 
   // s: rider state from physics.js; vel used for the scarf's wind
@@ -105,10 +107,34 @@ export class Figure {
     this.body.position.y = -this.crouch * 0.22;
     this.body.scale.set(1 + this.crouch * 0.12, 1 - this.crouch * 0.28, 1 + this.crouch * 0.12);
     this.body.position.x = this.lean * 0.12;
-    // arms: out for balance, down for a grab, up in a tumble
-    const grab = s.grab ? 1 : 0;
-    this.arms[0].rotation.z = -0.7 - grab * 1.2 + Math.sin(time * 1.7) * 0.05 + (s.grounded ? 0 : 0.35);
-    this.arms[1].rotation.z = 0.7 + grab * 0.4 - Math.sin(time * 1.9) * 0.05 - (s.grounded ? 0 : 0.35);
+    // ARMS, and from v9 they say WHICH grab it is. A trick that has a name you
+    // cannot see is a line of text over a figure doing the same thing it does
+    // for every other one — so the edge decides which hand goes down (the toe
+    // side reaches across the toes, the heel side across the heels) and how far
+    // along the board it reaches decides whether that arm swings toward the
+    // nose or the tail. Both come out of the same GRABS table the name and the
+    // score are read from, so a grab cannot look like one thing and pay another.
+    const g = s.grab && s.grabKind ? GRABS[s.grabKind] : null;
+    const grab = g ? 1 : 0;
+    const toe = g ? g.edge === 'toe' : false;
+    const along = g ? (g.along === 'nose' ? -0.75 : g.along === 'tail' ? 0.75 : 0) : 0;
+    // AND THE ARM HAS TO REACH THE BOARD, which a 0.62 m stick on a pivot at
+    // chest height does not: straight down it stops a third of a metre short of
+    // the deck, so every rotation in the world still reads as a figure waving.
+    // The reaching arm EXTENDS — the robe is a cone with no elbow in it, so the
+    // reach is the only joint there is — and the other one throws out as the
+    // counterweight it would really be.
+    const takes = g ? (toe ? 1 : 0) : -1;         // the arm that actually goes down
+    for (let i = 0; i < 2; i++) {
+      const sgn = i === 0 ? -1 : 1;
+      const down = i === takes ? 1 : 0;
+      this.reach[i] += (down - this.reach[i]) * k;
+      const d = this.reach[i];
+      this.arms[i].rotation.z = sgn * 0.7 - sgn * d * 0.78 + grab * (1 - d) * sgn * 0.45
+        + Math.sin(time * (1.7 + i * 0.2)) * 0.05 * sgn + (s.grounded ? 0 : 0.35) * sgn;
+      this.arms[i].rotation.x = d * along;
+      this.arms[i].scale.y = 1 + d * 0.58;   // 0.62 m -> 0.98: the hand meets the deck, it does not pass through it
+    }
     if (s.tumble > 0) {
       this.tumbleSpin += dt * 9;
       this.rig.rotation.x = this.tumbleSpin;

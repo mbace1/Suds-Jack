@@ -3,18 +3,19 @@
 // snow in particles.js, both pure; this file is the only one that touches the
 // DOM or the clock.
 import * as THREE from 'three';
-import { terrain } from './terrain.js';
-import { createRider, stepRider, RUN_LENGTH } from './physics.js';
-import { SnowSim } from './particles.js';
-import { hour } from './palette.js';
-import { makeUniforms, skyMaterial, snowPointsMaterial } from './snowmat.js';
-import { Figure } from './figure.js';
-import { Field, Trail, Shadow } from './world.js';
-import { Input } from './input.js';
-import { Audio } from './audio.js';
-import { pickLang, t } from './lang.js';
+import { terrain } from './terrain.js?v=4';
+import { createRider, stepRider, RUN_LENGTH } from './physics.js?v=3';
+import { SnowSim } from './particles.js?v=1';
+import { hour } from './palette.js?v=1';
+import { makeUniforms, skyMaterial, snowSprayMaterial } from './snowmat.js?v=4';
+import { Figure } from './figure.js?v=2';
+import { Field, Trail, Shadow } from './world.js?v=4';
+import { Input } from './input.js?v=2';
+import { Rig, SEAT } from './camera.js?v=1';
+import { Audio } from './audio.js?v=1';
+import { pickLang, t } from './lang.js?v=2';
 
-export const VERSION = 1;
+export const VERSION = 9;
 const BEST_KEY = 'flowsnow.best';
 const STEP = 1 / 120;
 const MAX_SNOW = 5000;
@@ -43,24 +44,33 @@ const field = new Field(scene, u, terrain);
 const trail = new Trail(scene, u);
 const shadow = new Shadow(scene, u);
 const figure = new Figure(scene);
+const rig = new Rig();
 
 // ---- the snow ----
 const sim = new SnowSim(MAX_SNOW);
-const pgeo = new THREE.BufferGeometry();
-const posAttr = new THREE.BufferAttribute(sim.pos, 3); posAttr.setUsage(THREE.DynamicDrawUsage);
+// One instanced quad per flake rather than one Point: a Point can only be a
+// round disc, and a round disc at 90 px is a bokeh ball. The quad is stretched
+// along the flake's own screen-space velocity, which is what makes thrown snow
+// read as thrown. Still one draw call.
+const pgeo = new THREE.InstancedBufferGeometry();
+pgeo.setAttribute('position', new THREE.Float32BufferAttribute(
+  [-0.5, -0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 0, -0.5, 0.5, 0], 3));
+pgeo.setIndex([0, 1, 2, 0, 2, 3]);
+const posAttr = new THREE.InstancedBufferAttribute(sim.pos, 3); posAttr.setUsage(THREE.DynamicDrawUsage);
+const velAttr = new THREE.InstancedBufferAttribute(sim.vel, 3); velAttr.setUsage(THREE.DynamicDrawUsage);
 const dataArr = new Float32Array(MAX_SNOW * 3);
-const dataAttr = new THREE.BufferAttribute(dataArr, 3); dataAttr.setUsage(THREE.DynamicDrawUsage);
-pgeo.setAttribute('position', posAttr); pgeo.setAttribute('aData', dataAttr);
-pgeo.setDrawRange(0, 0);
-const points = new THREE.Points(pgeo, snowPointsMaterial(u));
+const dataAttr = new THREE.InstancedBufferAttribute(dataArr, 3); dataAttr.setUsage(THREE.DynamicDrawUsage);
+pgeo.setAttribute('iPos', posAttr); pgeo.setAttribute('iVel', velAttr); pgeo.setAttribute('iData', dataAttr);
+pgeo.instanceCount = 0;
+const points = new THREE.Mesh(pgeo, snowSprayMaterial(u));
 points.frustumCulled = false; scene.add(points);
 function syncSnow() {
   const n = sim.count;
   for (let i = 0; i < n; i++) {
     dataArr[i * 3] = sim.age[i] / sim.life[i]; dataArr[i * 3 + 1] = sim.size[i]; dataArr[i * 3 + 2] = sim.kind[i];
   }
-  posAttr.needsUpdate = true; dataAttr.needsUpdate = true;
-  pgeo.setDrawRange(0, n);
+  posAttr.needsUpdate = true; velAttr.needsUpdate = true; dataAttr.needsUpdate = true;
+  pgeo.instanceCount = n;
 }
 
 // ---- state ----
@@ -71,6 +81,10 @@ let s = createRider(terrain, terrain.lineX(0), 0);
 let time = 0, acc = 0, last = performance.now();
 let sprayAcc = 0, hazeAcc = 0, tailAcc = 0, flakeAcc = 0, hudAt = 0, flowMark = 0;
 let debugInput = null, noPopUntil = 0;
+// the last input the frame read, so the camera can see the glance without
+// reading the device a second time (two reads a frame drain the edge-triggered
+// jump between them)
+let lastInput = { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, back: false };
 let best = (() => { try { return Number(localStorage.getItem(BEST_KEY)) || 0; } catch { return 0; } })();
 
 const P = new THREE.Vector3(), D = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
@@ -85,18 +99,30 @@ const surfaceY = (x, z, lift = 0.05) => terrain.height(x, z) + lift;
 const events = {
   pop() { audio.pop(); },
   kicker() { sim.burst(24, s.x, surfaceY(s.x, s.z, 0.1), s.z, 0, 0.7, 0.4, 2.5, 0.8, 1.1, 0.8, 1); },
-  land(impact, air, spins, grab) {
+  land(impact, air, spins, grab, trick, bonus) {
     audio.land(impact, air, spins);
+    // A landing PUNCHES rather than sweeps, so the crater is wide and shallow
+    // where the trench is narrow and deep. It still goes BEHIND the board, and
+    // for a sharper reason than the trench does: a crater centred on the rider
+    // lowers the ground the rider is standing on, the rider drops into it, and
+    // that registers as another landing. Measured, the loop fires 2,320 times
+    // in one descent against 32 real ones and takes the run from 168 s to 270 s.
+    terrain.pack.cut(s.x, s.z, 0.9 + impact * 0.07, 0.25 + impact * 0.045,
+      terrain.natural, 0, 0, Math.sin(s.yaw), -Math.cos(s.yaw));
     const n = Math.round(30 + impact * 7);
     const ly = surfaceY(s.x, s.z);
     sim.burst(n, s.x, ly, s.z, 0, 1, 0, 2.5 + impact * 0.45, 1.0, 1.5, 1.1, 1);
     sim.burst(Math.round(n * 0.6), s.x, ly + 0.05, s.z, 0, 0.8, 0, 3 + impact * 0.5, 0.9, 0.9, 0.5, 0);
+    // THE TOAST IS THE WHOLE POINT OF NAMING IT. Until v9 this read
+    // `360 · grab · 0.9s` — a receipt for three facts rather than a name for
+    // one thing, and `grab` was the same word whichever hand you used, because
+    // nothing downstream knew there was more than one. physics.js works the
+    // name out now (it is the same string the score is paid on), so this prints
+    // what you did and what it was worth, and falls back to the airtime when
+    // you did nothing worth calling anything.
     if (air > 0.25) {
-      const parts = [];
-      if (spins >= 180) parts.push(`${spins}`);
-      if (grab) parts.push('grab');
-      parts.push(`${air.toFixed(1)}s`);
-      toast(parts.join(' · '), 1100);
+      const label = trick || `${air.toFixed(1)}s`;
+      toast(bonus > 0 ? `${label} · ${Math.round(bonus)}` : label, 1200);
     }
   },
   dive(sink) {
@@ -116,6 +142,7 @@ const events = {
 function applyHour(p) {
   const h = hour(p);
   u.uSun.value.set(h.sunDir[0], h.sunDir[1], h.sunDir[2]);
+  field.setSun(h.sunDir[0], h.sunDir[1], h.sunDir[2]);
   u.uSunCol.value.setRGB(...h.sun); u.uLit.value.setRGB(...h.lit); u.uShade.value.setRGB(...h.shade);
   u.uZenith.value.setRGB(...h.zenith); u.uHorizon.value.setRGB(...h.horizon); u.uFog.value.setRGB(...h.fog);
   u.uFogDensity.value = h.fogDensity;
@@ -183,7 +210,10 @@ function finish() {
   $('doneScoreLabel').textContent = isBest ? `${L('score')} · ${L('newBest')}` : L('score');
   $('doneStats').innerHTML = [
     [L('time'), `${s.time.toFixed(1)} s`], [L('top'), `${Math.round(s.speedMax * 3.6)} km/h`],
-    [L('air'), `${s.airBest.toFixed(1)} s`], [L('spin'), `${s.spinBest}°`],
+    [L('air'), `${s.airBest.toFixed(1)} s`],
+    // the best TRICK rather than the biggest spin: the name contains the spin
+    // and says what else was going on, which the number on its own cannot
+    [L('trick'), s.bestName ? `${s.bestName} · ${Math.round(s.bestTrick)}` : `${s.spinBest}°`],
     [L('deepest'), `${s.deepBest.toFixed(1)} m`], [L('falls'), `${s.tumbles}`],
   ].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
   hud.best.textContent = `${L('best')} ${Math.round(best).toLocaleString()}`;
@@ -200,16 +230,19 @@ function physicsStep(inp, dt) {
   // spray off the working edge. The board rides BELOW the surface in powder,
   // so the plume has to leave the snow rather than the buried edge — emitted at
   // the board it fired from inside the mountain and was never seen.
-  sprayAcc += s.spray * 1300 * dt;
+  sprayAcc += s.spray * 2600 * dt;
   let n = Math.floor(sprayAcc); sprayAcc -= n;
   if (n > 0) {
     figure.edgePoint(s, P, D);
     P.y = surfaceY(P.x, P.z);
-    sim.burst(n, P.x, P.y, P.z, D.x, D.y, D.z, 1.8 + s.speed * 0.45, 0.6, 1.0, 0.16, 0);
+    // twice as many at two thirds the size: the same snow, a finer texture, and
+    // enough of them that the streaks actually overlap into a sheet rather than
+    // reading as a string of beads
+    sim.burst(n, P.x, P.y, P.z, D.x, D.y, D.z, 1.8 + s.speed * 0.45, 0.6, 1.0, 0.115, 0);
   }
   // the rooster tail: a buried board at speed throws a wall of it up behind
   if (s.grounded && s.sink > 0.12) {
-    tailAcc += s.sink * Math.min(1, s.speed / 14) * 340 * dt;
+    tailAcc += s.sink * Math.min(1, s.speed / 14) * 1100 * dt;
     n = Math.floor(tailAcc); tailAcc -= n;
     if (n > 0) {
       tmp.set(0, 0.1, 0.55).applyQuaternion(figure.root.quaternion).add(figure.root.position);
@@ -218,7 +251,7 @@ function physicsStep(inp, dt) {
       // tail aimed straight astern is a tail aimed at the lens, and at speed it
       // filled the frame and hid the run
       D.set(0, 0.96, 0.28).applyQuaternion(figure.root.quaternion).normalize();
-      sim.burst(n, tmp.x, tmp.y, tmp.z, D.x, D.y, D.z, 1.7 + s.speed * 0.26, 0.7, 1.05, 0.34, 1);
+      sim.burst(n, tmp.x, tmp.y, tmp.z, D.x, D.y, D.z, 1.7 + s.speed * 0.26, 0.7, 1.05, 0.24, 1);
     }
   }
   // a low haze off the tail at speed
@@ -247,22 +280,17 @@ function placeCamera(dt) {
     camera.fov = 52; camera.updateProjectionMatrix();
     return;
   }
-  const sp = s.speed;
-  if (sp > 1.5) tmp.set(s.vx, s.vy * 0.4, s.vz).normalize();
-  else tmp.set(Math.sin(s.yaw), 0, -Math.cos(s.yaw));
-  head.lerp(tmp, 1 - Math.exp(-dt * 2.6)).normalize();
-  const dist = 6.2 + sp * 0.11, height = 2.3 + sp * 0.035;
-  tmp.copy(head).multiplyScalar(-dist);
-  tmp.x += s.x; tmp.z += s.z; tmp.y = s.y + height + head.y * -dist * 0.4;
-  tmp.y = Math.max(tmp.y, terrain.height(tmp.x, tmp.z) + 1.4);
-  camPos.lerp(tmp, 1 - Math.exp(-dt * 5.5));
-  camera.position.copy(camPos);
-  look.set(s.x, s.y + 1.0, s.z).addScaledVector(head, 5 + sp * 0.12);
-  camera.lookAt(look);
-  camera.rotateZ(-s.edge * 0.05);
-  const targetFov = 60 + Math.min(1, sp / 28) * 16;
-  camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 4);
+  // Everything below this line is the rig's answer, copied on. The decision is
+  // in js/camera.js and it is pure, so `core.mjs` can ask where the seat WOULD
+  // be — which is the only way to test a camera that is not a screenshot.
+  rig.update(s, terrain, lastInput, dt);
+  camera.position.set(rig.px, rig.py, rig.pz);
+  camera.lookAt(rig.lx, rig.ly, rig.lz);
+  camera.rotateZ(rig.roll);
+  camera.fov = rig.fov;
   camera.updateProjectionMatrix();
+  // the heading the ambient snow is spread along
+  head.set(rig.hx, rig.hy, rig.hz);
 }
 
 // ---- ambient snow around the camera ----
@@ -293,6 +321,7 @@ function frame(now) {
   let dt = Math.min(0.1, (now - last) / 1000); last = now;
   time += dt;
   const inp = debugInput ?? input.read();
+  lastInput = inp;
   liveTuck = inp.tuck;
   if (time < noPopUntil) inp.jump = false;
   if (mode === 'title' && (inp.start || inp.any)) startRun();
@@ -317,6 +346,7 @@ function advanceWorld(dt, now) {
   if (mode === 'play') trail.add(s, figure.root.quaternion, terrain);
   shadow.update(s, terrain);
   field.update(s.x, s.z);
+  if (mode === 'play') field.refresh(s.x, s.z);
   placeCamera(dt);
   sky.position.copy(camera.position);
   u.uCam.value.copy(camera.position); u.uTime.value = time;
@@ -334,15 +364,16 @@ requestAnimationFrame(frame);
 
 // ---- the seam the smoke test drives ----
 window.__fs = {
-  get state() { return s; }, sim, terrain, field, version: VERSION,
+  get state() { return s; }, sim, terrain, field, rig, SEAT, version: VERSION,
   mode: () => mode,
   debug: {
     start: startRun,
     end: finish,
-    setInput(o) { debugInput = o ? { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, any: false, start: false, ...o } : null; },
+    setInput(o) { debugInput = o ? { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, back: false, any: false, start: false, ...o } : null; },
     // advance the game by `seconds` of physics with `inp`, off the wall clock
     step(seconds, inp = {}) {
-      const full = { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, ...inp };
+      const full = { lean: 0, tuck: 0, brake: 0, jump: false, grab: false, back: false, ...inp };
+      lastInput = full;
       let first = true;
       for (let t = 0; t < seconds; t += STEP) {
         if (mode !== 'play') break;

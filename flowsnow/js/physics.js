@@ -21,6 +21,8 @@
 // Ride it fast and you skim, throw a wall of snow and score for it. Ride it
 // slow, or nose-heavy, and you go over the front.
 
+import { grabFor, offAxis, nameTrick, scoreTrick } from './tricks.js?v=1';
+
 export const G = 9.81;
 export const RUN_LENGTH = 2400;        // metres of descent in one run
 export const MAX_EDGE = 0.86;          // radians of board tilt at full lean (~49°)
@@ -32,7 +34,61 @@ export const DRAG_TUCK = 0.0028;
 export const MU = 0.028;               // snow friction
 export const SCRUB = 3.2;              // speed lost per second, fully sideways
 export const POP = 4.6;                // m/s of jump along the surface normal
-export const SPIN_RATE = 5.2;          // rad/s of rotation in the air at full lean
+// Rad/s of yaw in the air at full lean. 5.2 predates anything being landable:
+// a pop gives about 0.87 s, so a 360 wanted 1.21 s and could not be completed,
+// and the landing test — which has always failed you for coming down sideways —
+// failed every spin anybody tried.
+//
+// AND THE RATES ARE CALIBRATED AGAINST A NUMBER NOBODY HAD MEASURED. What the
+// mountain actually gives, logged over a whole descent with the pop on every
+// three-quarters of a second: 312 airs, MEDIAN 0.72 s, p90 0.82, best 1.37.
+// Every rate below is a division into that. At 7.6 the ladder is a 180 in
+// 0.41 s (free, on any air), a 360 in 0.83 (the top tenth) and a 540 in 1.24
+// (once a run, if ever) - which is the shape a ladder should have. Guessing a
+// rate without that distribution is how the first cut put every trick in the
+// game past the longest air on the hill.
+export const SPIN_RATE = 7.6;
+// ...AND THE STICK HAS TO MEAN SOMETHING DIFFERENT IN THE AIR, which is the
+// third time this file has paid for one control meaning two things (see `tuck`
+// picking a grab AND pitching the board, a few lines down). Lean steers on the
+// ground and spins in the air, and at 5.2 that was invisible because a small
+// corrective lean produced a few degrees nobody noticed. At 7.6 the SAME held
+// stick is a quarter turn: the bare-node pilot, which steers with a +/-0.45
+// lean and has no idea it is airborne, started landing sideways off the
+// glacier's crevasses and the chapter read 1.8 m/s. So a spin is a COMMITTED
+// stick - nothing under the deadband rotates at all, and the range above it is
+// rescaled so full lean is still the full rate.
+export const SPIN_DEAD = 0.45;
+// Pitch in the air, from the same trim keys that mean weight-forward and
+// weight-back on the ground — nose down and nose up, which is exactly what they
+// already mean, and letting it run is a flip.
+//
+// THE COMMITMENT WINDOW IS THE MECHANIC, and it only exists because the board
+// levels to the NEAREST whole rotation rather than to zero - past halfway, the
+// levelling stops being a rescue and becomes the rest of the flip. Swept on an
+// ordinary 0.75 s pop, by how long the pitch is held:
+//
+//   up to 0.35 s   you bail, it comes back, you land (peak 164 degrees)
+//   0.40 - 0.55 s  THE BAND: past bailing, short of round. Every one a fall.
+//   0.60 s and up  the level carries you the rest of the way. Flip.
+//
+// So half a second of pitch is the decision, and it is a real one in both
+// directions - which is what the first cut did not have. At 7.0 the band never
+// closed on an ordinary air at all: 2PI took 0.90 s where p90 of every air on
+// the mountain is 0.82, so the whole of the pitch key was a crash button and a
+// flip was a thing you could read about. 8.2 closes it at 0.60 on a median air
+// and around 0.5 off a kicker.
+export const CORK_RATE = 8.2;
+// How fast the board comes back to level when you stop asking — and it comes
+// back to the NEAREST WHOLE ROTATION, so going all the way round is a way of
+// getting level and stopping half way is the thing that hurts.
+export const LEVEL_RATE = 3.2;
+// ...and not at all while a hand is on the board. That is the grab's cost: you
+// are holding the board instead of correcting it.
+export const LEVEL_GRABBED = 0.25;
+// Radians of attitude error a landing will take before it is a fall. A quarter
+// turn off is on your side.
+export const LAND_TILT = 0.78;
 export const TUMBLE_TIME = 1.5;
 // --- powder ---
 export const PLANE_MIN = 3;            // m/s below which the board simply wades
@@ -47,6 +103,11 @@ export const SOFT_DEPTH = 0.8;         // metres of pack past which no edge can 
 export const DIVE_TIME = 0.9;          // seconds nose-heavy and buried before you go over
 
 export function createRider(t, x = 0, z = 0) {
+  // A NEW RIDER IS A NEW RUN, so it rides an unridden mountain. The pack is one
+  // object the whole game shares, and leaving this to the caller meant every
+  // bare-node test inherited whatever the previous one had churned up at the
+  // origin — two unrelated checks failed on a mountain neither of them made.
+  if (t.pack) { t.pack.clear(); t.pack.recentre(x, z); }
   const y = t.height(x, z);
   return {
     x, y, z, vx: 0, vy: 0, vz: -1,
@@ -54,7 +115,11 @@ export function createRider(t, x = 0, z = 0) {
     edge: 0,             // smoothed lean, -1..1
     slip: 0,             // signed angle between velocity heading and yaw
     grounded: true, air: 0, spin: 0, spinTotal: 0,
-    grab: 0,
+    grab: 0,             // 0 or 1 — is a hand on the board right now
+    grabKind: null,      // WHICH grab, chosen once when the hand goes down
+    grabHeld: 0,         // seconds it has been held this air
+    cork: 0,             // radians of pitch off level; a whole turn is a flip
+    trick: '', tricks: 0, bestTrick: 0, bestName: '',
     tumble: 0, tumbles: 0,
     flow: 0,             // 0..1
     score: 0, dist: 0, speed: 0, speedMax: 0, airBest: 0, spinBest: 0,
@@ -89,6 +154,10 @@ const F = [0, 0, -1], R = [1, 0, 0];
 // input: { lean: -1..1, tuck: 0..1, brake: 0..1, jump: bool (an edge), grab: bool }
 // events: { land(impact, air, spin), tumble(), pop(), kicker() } — all optional
 export function stepRider(s, input, dt, t, ev = {}) {
+  // the pack's window follows the rider from HERE rather than from the frame
+  // loop, so the carve works the same in bare node as it does on screen — left
+  // to main.js it did nothing at all more than 38 m from the origin
+  if (t.pack) t.pack.recentre(s.x, s.z);
   if (s.done) return s;
   dt = Math.min(dt, 1 / 30);
   s.time += dt;
@@ -96,7 +165,13 @@ export function stepRider(s, input, dt, t, ev = {}) {
   const lean = clamp(input.lean ?? 0, -1, 1);
   const tuck = clamp(input.tuck ?? 0, 0, 1);
   const brake = clamp(input.brake ?? 0, 0, 1);
-  s.grab = s.grounded ? 0 : (input.grab ? 1 : 0);
+  // A HAND ON THE BOARD, and which one. The grab is chosen ONCE, from what the
+  // rider is already holding at the instant it goes down — change it by moving
+  // the stick afterwards and it is a menu rather than a grab.
+  const wantGrab = !s.grounded && !!input.grab;
+  if (wantGrab && !s.grab) s.grabKind = grabFor(input.lean, input.tuck, input.brake);
+  s.grab = wantGrab ? 1 : 0;
+  if (!s.grab && s.grounded) s.grabKind = null;
 
   if (s.tumble > 0) {
     s.tumble = Math.max(0, s.tumble - dt);
@@ -224,6 +299,32 @@ export function stepRider(s, input, dt, t, ev = {}) {
         * (Math.abs(sinE) * 1.25 + skid * 1.8 + bite * 1.3)
         + sub * clamp(speed / 12, 0, 1.6) * 0.85;
 
+      // THE BOARD DISPLACES THE SNOW IT RIDES THROUGH. It goes through the
+      // terrain's own snowpack rather than through an import, so physics.js
+      // keeps no state of its own and a test can hand it a mountain with no
+      // pack at all. `cut` clamps to what is actually lying there, so a second
+      // pass over your own trench finds nothing left to move and the groove
+      // stops deepening on its own — no rate limiter, no decay, no cap.
+      // A BOARD DISPLACES THE SNOW IT SWEEPS THROUGH, so a board that is not
+      // sweeping displaces nothing. Without this a standing start excavates a
+      // pit to its full sink depth and lays the berm in a complete ring around
+      // itself — the run never left the bowl, because the rider had walled
+      // itself in before it reached walking pace. The ramp is over the speed at
+      // which the board actually clears its own trough radius in a fraction of
+      // a second rather than re-cutting one spot fifty times.
+      const sweep = clamp((speed - 2) / 4, 0, 1);
+      if (t.pack && s.sink > 0.02 && sweep > 0) {
+        // a board on edge cuts a narrower, deeper trough than one running flat
+        const rTrough = 0.62 - 0.18 * Math.abs(s.edge);
+        // and throws its berm to the OUTSIDE of the turn, which is away from
+        // the direction it is leaning
+        const rx = Math.cos(s.yaw), rz = Math.sin(s.yaw);
+        const sgn = -Math.sign(s.edge || 0);
+        // the trough is as deep as the board is buried — a target, not a rate
+        t.pack.cut(s.x, s.z, rTrough, s.sink * sweep,
+          t.natural, sgn * rx, sgn * rz, Math.sin(s.yaw), -Math.cos(s.yaw));
+      }
+
       // flow: a clean carve at speed earns it, a scrub spends it — and a fast
       // line through deep snow earns the most, because that is the whole point
       const carving = Math.abs(s.edge) > 0.3 && side < 0.35 && speed > 7 && control;
@@ -301,12 +402,44 @@ export function stepRider(s, input, dt, t, ev = {}) {
     s.air += dt;
     s.sink += (0 - s.sink) * Math.min(1, dt * 8);   // the snow lets go behind you
     s.plane = 1; s.diveT = 0;
-    const rot = lean * control * SPIN_RATE * dt;
+    const mag = Math.abs(lean);
+    const spinIn = mag <= SPIN_DEAD ? 0 : Math.sign(lean) * (mag - SPIN_DEAD) / (1 - SPIN_DEAD);
+    const rot = spinIn * control * SPIN_RATE * dt;
     s.yaw = wrap(s.yaw + rot); s.spin += rot;
     s.spray = 0;
-    // the board levels toward the horizon while it is up
-    const k = Math.min(1, dt * 2);
-    s.up[0] = lerp(s.up[0], 0, k); s.up[1] = lerp(s.up[1], 1, k); s.up[2] = lerp(s.up[2], 0, k);
+    if (s.grab) s.grabHeld += dt;
+
+    // PITCH, from the trim keys that already mean weight forward and weight
+    // back — which is exactly what they mean here: nose down and nose up. Let
+    // it run and it is a flip.
+    // ...and NOT while a hand is on the board. The trim keys pick which grab the
+    // hand finds, so without this a Nose grab pitches you into a flip you never
+    // asked for — the same key meaning two things in the same instant. It also
+    // gives the grab its second cost: holding one, you cannot change your
+    // attitude at all, only wait.
+    const pitch = s.grab ? 0 : (tuck - brake) * control;
+    s.cork += pitch * CORK_RATE * dt;
+    // and it comes back to the NEAREST WHOLE ROTATION rather than to zero, so
+    // going all the way round is a way of getting level and stopping half way
+    // is the thing that hurts. Not at all while a hand is on the board: that is
+    // the grab's cost, and the reason letting go is a decision rather than a
+    // formality.
+    if (Math.abs(pitch) < 0.01) {
+      const home = Math.round(s.cork / (Math.PI * 2)) * Math.PI * 2;
+      const rate = LEVEL_RATE * (s.grab ? LEVEL_GRABBED : 1);
+      s.cork += (home - s.cork) * Math.min(1, dt * rate);
+    }
+    // the board's own up, pitched off level by the cork about its lateral axis.
+    // BLENDED rather than assigned: `up` leaves the ground holding the surface
+    // normal, so writing the target straight in snaps it level on the first air
+    // frame and the figure pops. Fast enough to follow a flip, slow enough that
+    // the take-off is a take-off.
+    const cs = Math.cos(s.cork), sn = Math.sin(s.cork);
+    const fx = Math.sin(s.yaw), fz = -Math.cos(s.yaw);
+    const uk = Math.min(1, dt * 8);
+    s.up[0] = lerp(s.up[0], -fx * sn, uk);
+    s.up[1] = lerp(s.up[1], cs, uk);
+    s.up[2] = lerp(s.up[2], -fz * sn, uk);
     if (s.air > 0.12) s.flow = clamp(s.flow + dt * 0.08, 0, 1);
 
     const h = t.height(s.x, s.z);
@@ -325,7 +458,15 @@ export function stepRider(s, input, dt, t, ev = {}) {
       // deep snow is a pillow: it forgives an impact and a crossed-up landing
       // that would put you down on the packed line
       const cush = t.depth ? t.depth(s.x, s.z) : 0;
-      const bad = (sideways > 0.8 + cush * 0.12 && sp > 6 + cush * 5) || impact > 15 + cush * 9;
+      // AND THE BOARD HAS TO BE LEVEL. Until v9 the attitude was decorative —
+      // `up` lerped to the horizon on its own and nothing read it — so a spin
+      // was free and the only way to blow a landing was to come down sideways.
+      // Now a cork you did not bring back is a cork you land on, which is what
+      // makes going all the way round the skill rather than the flourish.
+      const tilt = offAxis(s.cork);
+      const bad = (sideways > 0.8 + cush * 0.12 && sp > 6 + cush * 5)
+        || impact > 15 + cush * 9
+        || (tilt > LAND_TILT + cush * 0.25 && sp > 5);
       const spins = Math.round(Math.abs(s.spin) / Math.PI) * 180;
       s.grounded = true;
       s.airBest = Math.max(s.airBest, s.air);
@@ -333,19 +474,29 @@ export function stepRider(s, input, dt, t, ev = {}) {
       s.sink = Math.min(cush, cush * 0.45 + impact * 0.05);
       s.y = h - s.sink;
       if (bad) {
-        s.tumble = TUMBLE_TIME; s.tumbles++;
+        s.tumble = TUMBLE_TIME; s.tumbles++; s.trick = '';
         s.flow = Math.max(0, s.flow - 0.5);
         s.vx *= 0.35; s.vy *= 0.35; s.vz *= 0.35;
         ev.tumble?.(impact);
       } else {
         // pointing backwards is allowed: the board simply rides switch
         if (along < 0) s.yaw = wrap(s.yaw + Math.PI);
-        const bonus = (s.air * 40 + spins * 0.9) * (1 + s.flow);
-        if (s.air > 0.25) { s.score += bonus; s.flow = clamp(s.flow + 0.08 + s.air * 0.1, 0, 1); }
+        // what the hands were worth, rather than how long you were up there
+        const trick = { air: s.air, spin: s.spin, cork: s.cork, grab: s.grabKind, held: s.grabHeld };
+        const bonus = scoreTrick(trick) * (1 + s.flow);
+        if (s.air > 0.25) {
+          s.score += bonus;
+          s.flow = clamp(s.flow + 0.08 + s.air * 0.1, 0, 1);
+          s.trick = nameTrick(trick);
+          if (s.trick) s.tricks++;
+          // the NAME of the best one, not just its number — a recap saying
+          // `1,204` tells you nothing about what you did to earn it
+          if (bonus > s.bestTrick) { s.bestTrick = bonus; s.bestName = s.trick; }
+        }
         s.spinBest = Math.max(s.spinBest, spins);
-        ev.land?.(impact, s.air, spins, s.grab);
+        ev.land?.(impact, s.air, spins, s.grabKind, s.trick, bonus);
       }
-      s.spin = 0; s.grab = 0;
+      s.spin = 0; s.grab = 0; s.grabKind = null; s.grabHeld = 0; s.cork = 0;
       s.up[0] = n[0]; s.up[1] = n[1]; s.up[2] = n[2];
     }
   }
