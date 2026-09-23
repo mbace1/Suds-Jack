@@ -1081,6 +1081,155 @@
     terrain.material.roughnessMap = sandRough;
     terrain.material.roughness = 1;        // the map carries it; this scales it
     terrain.material.needsUpdate = true;
+
+    // ═══ CAUSTICS ═══ the light the water throws on the sand ═══════════════
+    //
+    // Technique from Clearwater (Aurélien / Lumaris, MIT — see CREDITS.md),
+    // which takes it in turn from Evan Wallace's WebGL Water. Clearwater
+    // itself cannot live in this island: it is a standalone WebGL2 program
+    // with its own context, its own seabed and no depth buffer, its shaders
+    // are GLSL where this renderer may be WebGPU, and its look leans on a
+    // bloom-and-glare post stack that a fill-bound headset cannot afford. The
+    // IDEA ports perfectly, though, and it is the thing in those pictures
+    // that most says shallow water.
+    //
+    // The idea: launch a grid of rays down through the water surface,
+    // REFRACT each one by the surface slope, and see where it lands on the
+    // bottom. Caustics are not a pattern — they are where the rays BUNCH UP.
+    // So the texture is an accumulation buffer, and brightness is how many
+    // rays arrived in a cell.
+    //
+    // Clearwater draws that on the GPU every frame from its live FFT ocean.
+    // Here it is baked once on the CPU from the SAME height field the water's
+    // own normal map is built from, so the light on the sand is thrown by the
+    // water you are actually looking at rather than by a stock texture.
+    const CAUS_N = 128;
+    function causticsPair() {
+      // The surface the light comes through. It is a SMOOTHER read of the same
+      // kind of tiling field the water's own normal map is built from — P 4/9
+      // where the water uses 5/13 — and that is a deliberate difference, not a
+      // shortcut: refracted, the water's fine detail turns into sparkle rather
+      // than into a legible web. Rendered both ways side by side, the coarse
+      // field is the one that reads as caustics.
+      const L = CAUS_N * 3;
+      const S = L + 1;
+      const Hg = new Float32Array(S * S);
+      for (let y = 0; y <= L; y++) for (let x = 0; x <= L; x++) {
+        const u = x / L, v = y / L;
+        Hg[y * S + x] = tfbm(u, v, 4) * 0.74 + tfbm(u + 0.31, v + 0.17, 9) * 0.26;
+      }
+      const at = (x, y) => Hg[((y % L + L) % L) * S + ((x % L + L) % L)];
+      // Per-channel index of refraction, which is where the colour fringe on a
+      // caustic filament comes from. The real red-to-blue spread is about 1%
+      // and lands sub-texel here, so it is widened to stay visible: the shape
+      // is refraction, the amount is a choice.
+      const IOR = [1.3315, 1.3335, 1.3365], DISP = 26;
+      const make = (b, floor, gain, bias) => {
+        const acc = [new Float32Array(CAUS_N * CAUS_N), new Float32Array(CAUS_N * CAUS_N),
+          new Float32Array(CAUS_N * CAUS_N)];
+        const splat = (a, lu, lv, w) => {
+          const fu = lu * CAUS_N, fv = lv * CAUS_N;
+          const i0 = Math.floor(fu), j0 = Math.floor(fv);
+          const tu = fu - i0, tv2 = fv - j0;
+          for (let dj = 0; dj < 2; dj++) for (let di = 0; di < 2; di++) {
+            const i = ((i0 + di) % CAUS_N + CAUS_N) % CAUS_N;
+            const j = ((j0 + dj) % CAUS_N + CAUS_N) % CAUS_N;
+            a[j * CAUS_N + i] += w * (di ? tu : 1 - tu) * (dj ? tv2 : 1 - tv2);
+          }
+        };
+        for (let y = 0; y < L; y++) for (let x = 0; x < L; x++) {
+          const h = at(x, y);
+          const hx = (at(x + 1, y) - at(x - 1, y)) * 0.5 * L;
+          const hy = (at(x, y + 1) - at(x, y - 1)) * 0.5 * L;
+          const hxx = (at(x + 1, y) - 2 * h + at(x - 1, y)) * L * L;
+          const hyy = (at(x, y + 1) - 2 * h + at(x, y - 1)) * L * L;
+          const hxy = (at(x + 1, y + 1) - at(x + 1, y - 1) - at(x - 1, y + 1) + at(x - 1, y - 1)) * 0.25 * L * L;
+          for (let c = 0; c < 3; c++) {
+            const bb = b * (1 + (IOR[c] - IOR[1]) * DISP);
+            // Brightness is AREA COMPRESSION and it has a closed form: the
+            // landing map is p − b·∇H, so its Jacobian is I − b·∇²H and the
+            // brightness is 1/|det|. The first cut splatted rays into a
+            // histogram instead, at nine samples a texel — and Poisson noise
+            // at nine samples IS speckle, which is exactly what it looked
+            // like. A caustic is a fold, not a scatter.
+            const det = (1 - bb * hxx) * (1 - bb * hyy) - (bb * hxy) * (bb * hxy);
+            splat(acc[c], (x / L) - hx * bb, (y / L) - hy * bb, 1 / Math.max(0.06, Math.abs(det)));
+          }
+        }
+        const cv = document.createElement('canvas');
+        cv.width = cv.height = CAUS_N;
+        const g = cv.getContext('2d'), im = g.createImageData(CAUS_N, CAUS_N);
+        const dens = (L * L) / (CAUS_N * CAUS_N);
+        for (let i = 0; i < CAUS_N * CAUS_N; i++) {
+          for (let c = 0; c < 3; c++) {
+            // The floor is what leaves the cells black. Raise it far and the
+            // filaments go too and only their peaks survive, which is the
+            // sparkle this spent two passes climbing out of.
+            const v = Math.min(1, Math.max(0, acc[c][i] / dens - floor) * gain);
+            im.data[i * 4 + c] = Math.round((bias + (1 - bias) * Math.pow(v, 0.9)) * 255);
+          }
+          im.data[i * 4 + 3] = 255;
+        }
+        g.putImageData(im, 0, 0);
+        const t = new THREE.CanvasTexture(cv);
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        return t;
+      };
+      // The web itself, and a slower, softer one that only modulates it. Two
+      // sparse webs multiplied would cancel to almost nothing; a web times a
+      // gentle swell is light moving on the bottom.
+      return [make(0.0045, 1.05, 0.13, 0), make(0.0060, 1.15, 0.11, 0.45)];
+    }
+    const [causA, causB] = causticsPair();
+    causA.repeat.set(9, 9);
+    causB.repeat.set(5.5, 5.5);
+
+    // The sheet the light lands on: the seabed itself, followed vertex by
+    // vertex off groundHeight so it cannot float or sink into the sand.
+    // `map` x `alphaMap` is the whole trick — three gives each map its own
+    // transform, so two caustic layers scroll in different directions and
+    // MULTIPLY on a stock material, which is the interference that stops a
+    // scrolling texture reading as a scrolling texture. No shader, no post,
+    // one draw call, and it runs the same on both backends.
+    const CAUS_SEG = 96;
+    const causGeo = new THREE.PlaneGeometry(56, 56, CAUS_SEG, CAUS_SEG);
+    causGeo.rotateX(-Math.PI / 2);
+    {
+      const pos = causGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        pos.setY(i, groundHeight(pos.getX(i), pos.getZ(i)) + 0.02);
+      }
+      causGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(pos.count * 3), 3));
+    }
+    const caustics = new THREE.Mesh(causGeo, new THREE.MeshBasicMaterial({
+      map: causA, alphaMap: causB, vertexColors: true, transparent: true,
+      blending: THREE.AdditiveBlending, depthWrite: false, fog: true,
+    }));
+    caustics.renderOrder = 1;
+    island.add(caustics);
+
+    // Where the light reaches, which MOVES, because the tide moves. Rebaked
+    // rather than shaded: 9.4k vertices is a 113 KB upload and the tide needs
+    // it a few times a minute, where a shader to do the same would have to be
+    // written twice — once in GLSL and once in TSL — to survive both backends.
+    let causBakedAt = 1e9;
+    function causRebake() {
+      const pos = causGeo.attributes.position, colA = causGeo.attributes.color;
+      for (let i = 0; i < pos.count; i++) {
+        const depth = tide - groundHeight(pos.getX(i), pos.getZ(i));
+        // brightest in the shallows and gone on dry sand: caustics are a
+        // focused image of the surface, and they defocus as the bottom drops
+        // Caustics are a focused image of the surface: they are brightest in
+        // the shallows and gone by the time the bottom is a couple of metres
+        // down, which is also what keeps this decal off the open sea.
+        const v = smooth(0.0, 0.22, depth) * lerp(1, 0.08, smooth(0.3, 2.2, depth));
+        colA.setXYZ(i, v, v, v);
+      }
+      colA.needsUpdate = true;
+      causBakedAt = tide;
+    }
+    causRebake();
     const waterNormal = waterNormalTex(), waterDisp = waterDispTex();
     waterNormal.repeat.set(44, 44);
     waterDisp.repeat.set(5, 5);
@@ -3263,6 +3412,24 @@
       sea.position.y = water.position.y - 0.02;
       waterNormal.offset.set(t * 0.011, -t * 0.006);
       waterDisp.offset.set(-t * 0.004, t * 0.0055);
+      // the two caustic layers drift against each other; their product is
+      // what moves, and it moves far less obviously than either layer does
+      causA.offset.set(t * 0.0085, t * 0.0062);
+      causB.offset.set(-t * 0.0051, t * 0.0037);
+      // Caustics are sunlight that got through the surface, so they follow
+      // the sun rather than the exposure: a low sun puts little light INTO
+      // the water however warm the sky looks, which is why golden hour keeps
+      // only a trace of them and midday has them properly.
+      const causSun = (0.3 + 0.7 * smooth(0.0, 0.7, Math.max(0, cur.sunDir.y)))
+        * smooth(0.6, 3.1, cur.sunInt);
+      // Sunlight that has been through water, so it is the sun's colour bent
+      // toward the sea's — not white. Added at half strength: caustics are a
+      // MODULATION of the sand, and at full additive white they stop being
+      // light on a beach and become lace laid over one.
+      caustics.material.color.copy(cur.sunCol).lerp(cur.water, 0.4)
+        .multiplyScalar(causSun * 0.85);
+      caustics.visible = causSun > 0.02;
+      if (Math.abs(tide - causBakedAt) > 0.02) causRebake();
       foamUpdate(t);
       // the reflection is rebuilt a few times across a mood blend, not every
       // frame: each rebuild is a fresh filtered cube on the GPU
@@ -3441,6 +3608,19 @@
         setTide: (phase01) => { tideT = phase01 * TIDE_PERIOD; tide = tideAt(tideT); return tide; },
         retuneSurf,
         foamReach: () => +(tide + surfLevel(clock.elapsedTime) + 0.045).toFixed(4),
+        // the caustics: the light the water throws on the sand
+        caustics: () => {
+          const c = causGeo.attributes.color, pos = causGeo.attributes.position;
+          let lit = 0, dry = 0;
+          for (let i = 0; i < c.count; i++) {
+            const submerged = tide - groundHeight(pos.getX(i), pos.getZ(i)) > 0.05;
+            if (c.getX(i) > 0.05) { lit++; if (!submerged) dry++; }
+          }
+          return { lit, dry, verts: c.count, bakedAt: +causBakedAt.toFixed(3),
+            sun: +caustics.material.color.r.toFixed(3), visible: caustics.visible,
+            tiles: [causA.repeat.x, causB.repeat.x], additive: caustics.material.blending === THREE.AdditiveBlending };
+        },
+        causRebake, caustMesh: caustics, waterMesh: water, seaMesh: sea,
         // the height band the foam points actually occupy — the tide walks
         // the break through this, and a band that does not span the tide is
         // a surf line that stops existing at low water

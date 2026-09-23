@@ -223,6 +223,47 @@ const check = (label, ok) => {
   check(`still holds the tide (${held.a} → ${held.b})`, Math.abs(held.a - held.b) < 1e-6);
   check(`and the slate names the rate (${held.rate})`, typeof held.rate === 'string');
 
+  // ── the caustics ──
+  // The one thing taken from Clearwater, and the test of it is not that a
+  // texture is present: it is that the light lands only where there is water
+  // over the sand, moves when the tide does, and goes out with the sun.
+  const caus0 = await page.evaluate(() => {
+    window.__tt.debug.setTide(0.25); window.__tt.debug.causRebake();
+    return window.__tt.debug.caustics();
+  });
+  check(`the caustics are additive light on the seabed (${caus0.verts} verts)`,
+    caus0.additive === true && caus0.verts > 4000);
+  check(`and two layers tile at different rates, so their product moves (${caus0.tiles.join(' / ')})`,
+    caus0.tiles[0] !== caus0.tiles[1]);
+  // they must not land on dry sand — that is the whole reason the mask exists
+  check(`they fall on water, not on dry sand (${caus0.dry} of ${caus0.lit} lit verts are dry)`,
+    caus0.dry / caus0.lit < 0.02);
+
+  // and the lit area has to FOLLOW the tide, or it is a decal rather than light
+  const causTide = await page.evaluate(() => {
+    const d = window.__tt.debug;
+    d.setTide(0.75); d.causRebake(); const low = d.caustics().lit;
+    d.setTide(0.25); d.causRebake(); const high = d.caustics().lit;
+    return { low, high };
+  });
+  check(`the lit area follows the tide (low ${causTide.low} → high ${causTide.high} verts)`,
+    causTide.high > causTide.low);
+
+  // caustics are sunlight that got through the surface, so a low sun means
+  // almost none however warm the sky looks
+  const causSun = await page.evaluate(async () => {
+    const out = {};
+    for (const [n, i] of [['midday', 2], ['golden', 0], ['dusk', 1]]) {
+      window.__tt.setMood(i, true);
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      out[n] = window.__tt.debug.caustics().sun;
+    }
+    window.__tt.setMood(0, true);
+    return out;
+  });
+  check(`and they follow the sun, not the sky (midday ${causSun.midday} · golden ${causSun.golden} · dusk ${causSun.dusk})`,
+    causSun.midday > causSun.golden && causSun.golden > causSun.dusk);
+
   // ── the moods ──
   const moods = await page.evaluate(() => {
     const out = [];

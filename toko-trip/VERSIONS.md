@@ -1,5 +1,74 @@
 # Toko Trip — release log
 
+## v15 — 2026-09-23
+
+Caustics — the light the water throws on the sand. The owner asked for
+[Clearwater](https://github.com/Aureliengmz/clearwater) (Aurélien / Lumaris,
+MIT) to be added AS the water, and it cannot be, for four reasons worth
+recording rather than hand-waving: it holds its own WebGL2 context; it renders
+with `depth: false` and carries its own seabed (333 KB of the 401 KB file is an
+embedded pebble texture), so there is nowhere to put the chair, the jetty or
+the sand; its shaders are GLSL where this renderer may be WebGPU; and its look
+rests substantially on a bloom-and-glare post stack, against the one rule the
+whole fidelity ladder here stands on. It is not hard to integrate — it is a
+different program.
+
+The IDEA ports perfectly, and it is the thing in those pictures that most says
+shallow water. Taken with credit in `CREDITS.md`, re-implemented from scratch:
+
+- **A caustic is where refracted rays BUNCH UP.** Launch a grid down through
+  the surface, refract each ray by the local slope, and measure how much the
+  area compresses where it lands.
+- **Run it once per colour channel at slightly different indices of
+  refraction** — that is where the fringe on a caustic filament comes from.
+  The real red-to-blue spread is about 1% and lands sub-texel here, so it is
+  widened to stay visible: the shape is refraction, the amount is a choice,
+  and that is the one liberty taken.
+- Clearwater does this on the GPU every frame from a live FFT ocean. This
+  bakes it once on the CPU into a tiling texture and lays it on the seabed as
+  **one additive decal**, followed vertex by vertex off `groundHeight` so it
+  cannot float or sink, masked by depth, and **rebaked as the tide moves**.
+- **`map` × `alphaMap` is the whole trick.** three gives each map its own
+  transform, so two caustic layers scroll in different directions and multiply
+  on a stock material — the interference that stops a scrolling texture
+  reading as a scrolling texture. No shader, no post, one draw call, identical
+  on both backends.
+
+**The bug worth keeping, because it cost two passes:** the first cut splatted
+refracted rays into a histogram at nine samples a texel. Poisson noise at nine
+samples IS speckle, and that is exactly what it looked like — a rainbow fizz,
+not caustics. A caustic is a **fold, not a scatter**, and the fold has a closed
+form: the landing map is `p − b·∇H`, so its Jacobian is `I − b·∇²H` and
+brightness is `1/|det|`. Analytic, noise-free, and the web appeared on the
+first render after the change.
+
+Three more, all found by looking rather than by the gate:
+
+- **Over-bending destroys a caustic.** At the first bend strength the rays
+  scattered rather than focused, and no amount of curve-tuning recovered it.
+- **Raising the floor kills the filaments and keeps the peaks**, which is a
+  second, different road back to sparkle. The web needs a LOW floor and a low
+  gain.
+- **The water's own height field is too fine for this.** The caustics bake
+  uses P 4/9 where the water's normal map uses 5/13 — rendered side by side,
+  the water's fine detail refracts into glitter and the coarse field is the
+  one that reads as caustics. A deliberate difference, not a shortcut.
+
+Tuned through the water, because that is the only condition that matters: at
+full additive white it stopped being light on a beach and became lace laid
+over one. It is the sun's colour bent toward the sea's, at 85%, and it goes
+out with the sun rather than with the sky — midday 0.51, golden hour 0.18,
+dusk 0.01, which is why golden hour keeps only a trace.
+
+**Honest limit:** it is subtle in a still frame. Caustics are sold by motion
+and this island has never been seen in motion by anything but a 2 fps
+sandbox. Whether the web reads at eye level in stereo is a headset question.
+
+Cost: ~1.2 s of load for the bake, one extra draw call, and a 113 KB vertex
+upload each time the tide moves 2 cm.
+
+Gate: 88 checks.
+
 ## v14 — 2026-09-20
 
 The tide. Thirteen versions in, the honest problem was that **everything on
