@@ -2,6 +2,46 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v50 — 2026-09-23
+**The wave can be jumped; seasons pick their control scheme; the right thumb jumps**
+
+Owner, 2026-09-23, after playing v49 on a phone: *there is no jump in season
+2* — and then: *keep the modes as optional control schemes we can use later
+in specific seasons. This and S1 should still have double jump and dash on
+right stick. Shoot when holding right stick.*
+
+**There was a jump; it could not clear anything.** v49 sized the crest's
+HEIGHT against the jump's apex and never its LENGTH against the jump's
+airtime. The water was above the hurt line for 1.01 s at any point on the
+disc; a jump is in the air for 0.72 s. Every takeoff across a whole wave was
+tried at a clean 60 Hz and not one cleared it: you landed on the back of the
+swell. And v49's log said *the double jump is the safety* — PURE and HYPER
+grant one jump, so that sentence was false in both modes anyone plays. Now:
+only the CREST hurts (`hurtFrom` 0.35 → 0.8), the swell is shorter (`width`
+8 → 5) and a little faster (`speed` 8 → 9). Jumped in the real code, one
+good jump clears it in a 0.26 s window and the double jump in 0.79 s.
+`shearRef` 5 → 9 with it, for the steeper face.
+
+**The gate jumps it now.** The v48 check compared two numbers and passed an
+unjumpable wave. The new one runs a body over the wave at every takeoff
+moment and fails unless one jump has a window and two jumps have a wide one.
+
+**Modes are control schemes a season picks.** A season may declare `mode`
+and extra `abilities`; seasons 1 and 2 declare HYPER (the clock, dash, reap)
+plus `jumps: 2`. The MODE row left the pause menu. A `?mode=` link still
+wins, which is how the gate and the loop harness pin an experiment, and VOID
+declares nothing, so the control is untouched. `M()` asks link → season →
+saved; `applyRunAbilities()` lays the season's extras over the mode's.
+
+**Touch: the right stick is the whole action hand.** Hold it to fire (it
+already did), tap it to jump and tap again in the air for the double jump,
+flick it to dash. A right tap fired a shotgun burst from v29 until now, which
+is why the jump "did not work" under the right thumb. A left tap still jumps,
+and moving still auto-fires (the owner's call of 2026-07-31, left as it was).
+The menu's touch line says so.
+
+Tokens `?v=80` → `?v=81`, worker cache v51, precache regenerated.
+
 ## v49 — 2026-09-21
 **Season 2 is the wave you jump; the menus are "SEASON 1" and "SEASON 2"**
 

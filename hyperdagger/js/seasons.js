@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=80';
+import { TUNING as T } from './tuning.js?v=81';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -77,6 +77,11 @@ export const SEASONS = [
     id: 'ember',
     name: 'SEASON 1 — EMBER',
     menu: 'SEASON 1',
+    // v50 (owner, 2026-09-23): the modes are CONTROL SCHEMES a season picks,
+    // not a player toggle. Seasons 1 and 2 play HYPER's rules and body —
+    // dash on — plus a double jump. VOID declares none and stays the control.
+    mode: 'hyper',
+    abilities: { jumps: 2 },
     blurb: 'black shale you can barely see, slabs that rise and drift, a needler',
     sky: { void: [0.0015, 0.0015, 0.0015], horizon: [0.30, 0.02, 0.02], band: 4.8, stars: 0.22 },
     floor: { tint: [1, 1, 1], glow: 0.9 },
@@ -125,6 +130,11 @@ export const SEASONS = [
     id: 'inca',
     name: 'SEASON 2 — INCA',
     menu: 'SEASON 2',
+    // v50 (owner, 2026-09-23): the modes are CONTROL SCHEMES a season picks,
+    // not a player toggle. Seasons 1 and 2 play HYPER's rules and body —
+    // dash on — plus a double jump. VOID declares none and stays the control.
+    mode: 'hyper',
+    abilities: { jumps: 2 },
     blurb: 'the sea — one wave, and you jump it',
     // v48 (owner, 2026-09-21): "make season 2 just the wave that you need to
     // jump over. Only random skulls as enemies otherwise." So: no slabs, no
@@ -155,11 +165,13 @@ export const SEASONS = [
       // crest sits under it with air to spare, and a double jump is a safety.
       // A wave you cannot clear is a wall that moves; this is a hurdle.
       hurts: true,              // contact is a HIT (HYPER: time + a shove; PURE: death); it no longer carries
-      hurtFrom: 0.35,           // the height at which water is wave — under it you are wading, not struck
+      hurtFrom: 0.8,            // v50: only the CREST hurts. At 0.35 the whole swell did, for a full
+                                // second at any point — longer than a jump stays in the air (0.72 s)
       amp: 1.1,                 // crest height above the floor — ×1.22 at the ripple's peak is 1.34, under the 1.54 apex with a hand of air
-      width: 8,                 // how long the back of the swell is
+      width: 5,                 // v50: 8 was a hill you landed back on; 5 passes under one jump
       gap: 16,                  // clear water between one wave and the next
-      speed: 8,                 // u/s along its own direction — a jump lasts 0.72 s, the crest is past in a third of that
+      speed: 9,                 // u/s. Fitted by jumping a body over it in the real code (gate):
+                                // one jump clears in a 0.26 s window, the double jump in 0.79 s
       lean: 0.5,                // how far the crest leans forward as it steepens
       ripple: 0.22, rippleK: 0.19, // a swell along the crest: a sea, not an extrusion
       push: 0,                  // v48: it does not carry (kept for a sea that wants to — `hurts: false`)
@@ -176,7 +188,8 @@ export const SEASONS = [
       // matte, speckled. `shearRef` is how fast the surface has to be moving
       // (units per second) to count as fully seized — measured off the wave's
       // own slope, so it does not change with the frame rate.
-      seize: [0.80, 0.94, 0.92], seizeK: 0.3, shearRef: 5,   // v48: 0.8 painted the whole face pale — the seize is a frosting now, not the paint
+      seize: [0.80, 0.94, 0.92], seizeK: 0.3, shearRef: 9,   // v50: ×9/5 for the steeper, faster face (peak ~6.6 u/s)
+      // v48: 0.8 painted the whole face pale — the seize is a frosting now, not the paint
       // ...and `shearRef` is recalibrated with it: the break of THIS crest
       // peaks at ~3.7 u/s of surface motion (amp 1.1 down a face 4.4 long at
       // speed 8), so a 12 u/s "fully seized" meant the wave never seized at

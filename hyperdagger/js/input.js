@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=80';
+import { TUNING as T } from './tuning.js?v=81';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const STICK_R = T.touch.stickR;
@@ -38,8 +38,9 @@ function shapeStick(x, y, dz, sat = 1, exp = 1) {
  * RMB spends homing ammo at LV3+, Shift = dash in the HYPER remix. Gamepad:
  * left stick moves, right stick looks, RT/RB fire, LT homing, A jumps, B dashes
  * in HYPER. Touch: left stick moves,
- * right stick looks/fires; a left tap jumps, a right tap fires the burst, and
- * a second finger can tap either occupied half without releasing its stick.
+ * right stick looks and HOLDING it fires; a tap on either stick jumps (tap
+ * again in the air for the double jump), and a second finger can tap either
+ * occupied half without releasing its stick.
  * A fast flick on either stick dashes in the flick direction. Flicks are
  * judged by the LAST 150 ms of movement before release. No buttons.
  */
@@ -129,10 +130,10 @@ export class InputManager {
         stick.t0 = now;
         stick.hist = [{ x: t.clientX, y: t.clientY, t: now }];
       } else {
-        // A second finger can trigger the action without releasing the stick:
-        // left = jump while moving, right = burst while holding an aim angle.
-        if (side === 'right') this._fireTap = true;
-        else this._jump = true;
+        // A second finger on an occupied half is a jump, either side (v50:
+        // the right-hand tap used to be a shotgun burst; the owner plays the
+        // jump under the right thumb, and holding it is already the fire).
+        this._jump = true;
         this._touchMap.set(t.identifier, 'tap');
       }
     }
@@ -163,8 +164,7 @@ export class InputManager {
       const dur = now - stick.t0;
       const dist = Math.hypot(stick.dx, stick.dy);
       if (dur < TAP_MS && dist < TAP_PX) {
-        if (side === 'right') this._fireTap = true;
-        else this._jump = true;
+        this._jump = true;   // v50: a tap on EITHER stick jumps (again in the air = the double jump)
       } else {
         // flick = fast travel within the last FLICK_WINDOW ms before release,
         // so a flick at the end of a long look-drag still dashes

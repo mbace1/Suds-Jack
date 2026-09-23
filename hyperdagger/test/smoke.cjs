@@ -1200,9 +1200,75 @@ s.listen(0, '127.0.0.1', async () => {
     inca.sn.visible.length === 2 && inca.sn.visible.map(v => v.menu).join('|') === 'SEASON 1|SEASON 2' && !inca.sn.visible.some(v => v.id === 'void')
     && inca.menu.seasons.map(m => m.label).join('|') === 'SEASON 1|SEASON 2' && inca.menu.modeOnIntro === false && inca.menu.oldSeasonBtn === false,
     JSON.stringify({ visible: inca.sn.visible, menu: inca.menu }));
-  ok('the menus: the pause menu carries the seasons, MODE and the regular options',
-    inca.pause.seasons.length === 2 && inca.pause.modeBtn && inca.pause.rows.slice(0, 3).join('|') === 'SEASON|MODE|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
+  ok('the menus: the pause menu carries the seasons and the regular options — the MODE is the season\'s now (v50)',
+    inca.pause.seasons.length === 2 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 2).join('|') === 'SEASON|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
     JSON.stringify(inca.pause));
+
+  // v50 THE WAVE IS A HURDLE — proven by jumping a body over it in the real
+  // code at a clean 60 Hz, at every takeoff moment across one wave. v48's
+  // check compared crest height with jump apex and passed a wave that hurt
+  // for a full second at any point, longer than a jump stays in the air: no
+  // timing cleared it, and on a phone that reads as "there is no jump".
+  const hurdle = await p.evaluate(() => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player, g = d.gooObj(), H = 1 / 60;
+    const t0 = g.t, mj = pl.maxJumps, out = {};
+    for (const jumps of [1, 2]) {
+      pl.maxJumps = jumps;
+      let ok = 0;
+      for (let lead = 0; lead < 1.4; lead += 0.01) {
+        g.t = (g.arenaR + g.cfg.width - g.cfg.speed * lead) / g.cfg.speed;
+        pl.feet.set(0, 0, 0); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+        pl.jumpBuffer = 1; pl.coyoteT = 0.08; pl.jumpsLeft = pl.maxJumps;
+        let struck = false, second = false;
+        for (let i = 0; i < 110; i++) {
+          g.t += H;
+          if (jumps === 2 && !second && i > 3 && pl.vy <= 0) { pl.jumpBuffer = 1; second = true; }   // the second press at the top
+          pl.update(H, { x: 0, y: 0 }, 0);
+          pl.jumpBuffer = 0;
+          if (g.strikes(pl)) struck = true;
+        }
+        if (!struck) ok++;
+      }
+      out[jumps === 1 ? 'singleMs' : 'doubleMs'] = ok * 10;
+    }
+    pl.maxJumps = mj; g.t = t0; pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync();
+    return out;
+  });
+  ok('inca: the wave can be JUMPED — one good jump clears it, and the double jump clears it easily',
+    hurdle.singleMs >= 150 && hurdle.doubleMs >= 500, JSON.stringify(hurdle));
+
+  // v50 THE SEASON PICKS THE SCHEME (owner: the modes are control schemes a
+  // season uses). Loaded the way a player arrives — no ?mode= in the link —
+  // on a fresh page, so no saved mode can stand in for the declaration.
+  const scheme = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    for (const id of ['ember', 'inca', 'void']) {
+      await q.goto(base + `/hyperdagger/?assets=0&season=${id}`, { waitUntil: 'load' });
+      await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+      scheme[id] = await q.evaluate(async () => {
+        const hd = window.__hd, d = hd.debug;
+        d.startGame(); d.setInvulnerable?.(true);
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const pl = hd.player, inp = d.inputObj();
+        // a quick tap on the RIGHT stick, the way a thumb makes one
+        const t = { identifier: 7, clientX: innerWidth * 0.75, clientY: innerHeight * 0.6 };
+        inp.consumeJump(); inp.consumeFireTap();
+        inp._touchStart({ changedTouches: [t] }); inp._touchEnd({ changedTouches: [t] });
+        return { mode: d.getState().mode, jumps: pl.maxJumps, dash: !!pl.dashEnabled,
+          tapJump: inp.consumeJump(), tapBurst: inp.consumeFireTap() };
+      });
+    }
+    await q.close();
+  }
+  ok('seasons 1 and 2 pick their scheme: HYPER rules, dash on, and a double jump',
+    ['ember', 'inca'].every(k => scheme[k].mode === 'hyper' && scheme[k].jumps === 2 && scheme[k].dash),
+    JSON.stringify(scheme));
+  ok('void declares none: the control keeps the saved mode (PURE — one jump, no dash)',
+    scheme.void.mode === 'pure' && scheme.void.jumps === 1 && !scheme.void.dash, JSON.stringify(scheme.void));
+  ok('touch: a tap on the RIGHT stick jumps (v29–v49 it fired a shotgun burst)',
+    scheme.inca.tapJump === true && scheme.inca.tapBurst === false, JSON.stringify(scheme.inca));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
   // waiting frames: heightAt is a pure function of (x, z, t), so the tests

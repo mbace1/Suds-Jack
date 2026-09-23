@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { gelMaterial, gelBox } from './gel.js?v=80';
+import { gelMaterial, gelBox } from './gel.js?v=81';
 
 /**
  * THE GOO WAVE — season 2's swell, made of the same cubes everything else in

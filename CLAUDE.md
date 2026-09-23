@@ -459,9 +459,9 @@ times its travel speed, `6k(1−k)`, and frame rate cannot touch it. **v48 is th
 reshaping** (2026-09-21: "the intro menu should just read season 1 and season 2
 … make season 2 just the wave that you need to jump over … only random skulls
 as enemies"): the intro is `SEASON 1` / `SEASON 2` buttons that START the run
-(a season declares `menu`; VOID is `hidden`, the gate's control only), MODE
-and the seasons sit in the pause menu with the regular options (a season
-picked mid-run rebuilds the arena on the spot), INCA has `platforms: null`
+(a season declares `menu`; VOID is `hidden`, the gate's control only), the
+seasons sit in the pause menu with the regular options (a season picked
+mid-run rebuilds the arena on the spot), INCA has `platforms: null`
 and the gel mound survives only as `GEL_MOUND_SAMPLE` for the gate, the wave
 is a **hazard** (`goo.strikes` → `playerStruck('wave')`; crest 1.1 sized under
 the 1.54 jump apex — the first cut's 1.25 was 1.51 at the ripple's peak, a
@@ -471,7 +471,18 @@ The wave's art was reworked from a look at it: half cells (a jump-height
 crest at cell 1.0 was ONE row — a fence), the lip a top-third BAND not a ramp
 (a ramp painted the face pale and a crest at eye height was a white wall),
 the seize a frosting, and the floor shader reads the crest (`uWave`) with a
-shadow under the body and a foam line at its foot. Four things renders settled, not reasoning: the star field was a
+shadow under the body and a foam line at its foot. **v50: the wave could not be
+jumped, and the gate said it could.** v48 sized the crest's HEIGHT against the
+apex and never its LENGTH against the airtime: the water hurt for 1.01 s at any
+point and a jump lasts 0.72 s, so every takeoff landed on the back of the
+swell — on a phone it read as "there is no jump". Only the crest hurts now
+(`hurtFrom` 0.8), the swell is 5 long at 9 u/s, and the gate **jumps a body
+over it** at every takeoff moment (one jump must have a window, two a wide
+one) instead of comparing two numbers. **Modes are control schemes a season
+picks** (owner, 2026-09-23): a season may declare `mode` and extra `abilities`
+— seasons 1 and 2 are HYPER plus `jumps: 2` — and the MODE row left the pause
+menu. `M()` asks `?mode=` link → season → saved, so the gate and the loop
+harness still pin experiments by URL and VOID stays the control. Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
 near black, so floor glow is per season; and the owner's monuments "looked
@@ -508,9 +519,11 @@ atmosphere, never a gameplay color) — and the neon grid glows and just stops a
 arena edge (no barrier visual). Desktop: pointer-lock mouse look,
 **DD gunfeel — LMB tap = shotgun burst, hold = stream** (v4.29; every dagger manually
 aimed), Space jump ×2, Shift dash,
-Esc = pause/options. Touch: dual on-screen sticks — left moves, right looks; **firing is
-automatic while moving** (or while the look stick is held); **tap either stick = jump ×2,
-flick either stick = dash**; ⏸ button top-right. The pause menu carries persisted
+Esc = pause/options. Touch: dual on-screen sticks — left moves, right looks; **holding the
+right stick fires** (and moving auto-fires too); **tap either stick = jump, again in the air
+for the double jump; flick either stick = dash**; ⏸ button top-right. (v29–v49 a RIGHT tap
+fired a shotgun burst instead — v50 made it a jump, since that is where the thumb looks for
+it.) The pause menu carries persisted
 options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, look sensitivity, and smear/
 shake/chroma toggles. Touch play requests fullscreen + landscape lock on start. Onboarding
 is paced across the first ~150s (one new enemy roughly every 15-20s) and recurring spawns
