@@ -87,7 +87,7 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
     else if (st.kind === 'getoff') { const r = mob.getOff(); say('OFF', `${st.at} ${st.transfer ? 'transfer' : 'deliver'} ${r.error || ''}`); if (st.transfer) transfers++; chosen = null; }
     else if (st.kind === 'waiting') { waitTicks++;
       const from = ch.currentFrom(), to = ch.currentTo();
-      const choices = routeChoices(city, from, to, 3);
+      const choices = routeChoices(city, from, to, 3, globalThis.__tmRouteChoiceCore.allowFor?.(ch.cargoRule?.()));   // what the panel shows, not what the network has
       // Commit to a plan once, the way a player standing at a stop does, and
       // re-choose only if it has been more than 60 ticks with nothing lit.
       if (!chosen || flow.clock.tick - chosenAt > 60) { chosen = choosePlan(choices); chosenAt = flow.clock.tick;
@@ -143,7 +143,9 @@ server.listen(0, '127.0.0.1', async () => {
   // measured on one and a control that moves is not a control.
   const DAY = process.env.DAY || 'none';
   const WALK = process.env.WALK || 'smart';   // 'no' reproduces every number printed before v2.42
-  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.seed || 1}&day=${DAY}`, { waitUntil: 'load' });
+  // `shift` and `day` on a policy override both (v2.45): the dailies play the
+  // real date seeds with their DRAWN day, which is what a player meets.
+  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.shift ?? policy.seed ?? 1}&day=${policy.day ?? DAY}`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.mobility && window.__tm?.liveNetwork && globalThis.__tmRouteChoiceCore, null, { timeout: 30000 });
     if (FLEET) await page.evaluate(async ({ FLEET, token }) => {
       const { LiveNetwork } = await import(`./js/live-network.js?v=${token}`);
@@ -166,7 +168,30 @@ server.listen(0, '127.0.0.1', async () => {
     { name: 'first · soonest · every drop', job: 'first', plan: 'soonest', seed: 1, along: 'yes' },
   ];
   const results = [];
-  const run = async (policy, label) => { await boot(policy); const r = await playShift(page, policy); results.push({ label, policy, ...r }); return r; };
+  // ON_SHIFT=N (with its DRAWN day) puts every bot on one board — the way to
+  // ask whether a daily a sensible player lost is unwinnable, or just a board
+  // where the cheapest job is the wrong one to take.
+  const ON_SHIFT = process.env.ON_SHIFT ? Number(process.env.ON_SHIFT) : null;
+  const run = async (policy, label) => { if (ON_SHIFT && policy.shift == null) policy = { ...policy, shift: ON_SHIFT, day: 'draw' }; await boot(policy); const r = await playShift(page, policy); results.push({ label, policy, ...r }); return r; };
+  // THE DAILIES (v2.45). A daily is one board for everybody, so a daily a
+  // sensible player cannot win is broken for everybody at once. This plays the
+  // NEXT N calendar days on their real seeds and drawn city days with the
+  // cheapest-job policy, and the gate holds every one of them winnable.
+  const DAILIES = Number((process.argv.find(a => a.startsWith('--dailies=')) || '').split('=')[1] || (GATE ? 14 : 0));
+  const dailyRows = [];
+  if (DAILIES) {
+    const { dateKey, dailySeed, dailyNumber } = await import(path.join(__dirname, '..', 'js', 'daily.js'));
+    console.log(`THE NEXT ${DAILIES} DAILIES — cheapest job, best total, on their own seeds and drawn days`);
+    for (let i = 0; i < DAILIES; i++) {
+      const d = new Date(); d.setDate(d.getDate() + i); const key = dateKey(d);
+      const r = await run({ job: 'cheapest', plan: 'total', seed: 1, shift: dailySeed(key), day: 'draw', along: 'yes', walk: 'smart' }, `daily ${key}`);
+      const dayName = await page.evaluate(() => window.__tm.cityDay?.id || 'none');
+      dailyRows.push({ key, n: dailyNumber(key), won: r.won, delivered: r.delivered, score: r.score, tick: r.tick, day: dayName });
+      console.log(`  ${r.won ? 'WIN ' : 'LOSS'} daily ${String(dailyNumber(key)).padStart(3)} ${key} ${dayName.padEnd(9)} ${r.delivered}/3 at tick ${r.tick} · score ${r.score}`);
+    }
+    const w = dailyRows.filter(r => r.won).length;
+    console.log(`  ${w} of ${DAILIES} dailies won by a sensible player · scores ${Math.min(...dailyRows.map(r => r.score))}–${Math.max(...dailyRows.map(r => r.score))}\n`);
+  }
   console.log('NAMED POLICIES');
   for (const p of named) { const r = await run(p, p.name);
     console.log(`  ${r.won ? 'WIN ' : 'LOSS'} ${p.name.padEnd(30)} ${r.delivered} delivered at tick ${r.tick} · wait ${r.waitTicks} ride ${r.rideTicks} · catches ${r.catches} transfers ${r.transfers} · drops taken ${r.drops} made ${r.dropped} · ended ${r.lastKind}${r.activeJob ? ' on ' + r.activeJob : ''}`); }
@@ -229,7 +254,9 @@ server.listen(0, '127.0.0.1', async () => {
     const dawdler = results.find(r => r.policy.dither), decisive = rnd.reduce((a, r) => a + r.rivalTook, 0);
     ok(dawdler && dawdler.rivalTook > 0, `a courier who reads the whole board loses one (${dawdler?.rivalTook ?? 0} taken)`);
     ok(decisive === 0, `and a decisive one loses none (${decisive} across ${rnd.length} bots)`);
-    console.log(`\nshifts: ${10 - fail} passed, ${fail} failed`);
+    if (dailyRows.length) { const lost = dailyRows.filter(r => !r.won);
+      ok(lost.length === 0, `every one of the next ${dailyRows.length} dailies is winnable by a player who takes the cheapest job${lost.length ? ' — lost: ' + lost.map(r => `${r.key} (${r.day}, ${r.delivered}/3)`).join(', ') : ''}`); }
+    console.log(`\nshifts: ${(dailyRows.length ? 11 : 10) - fail} passed, ${fail} failed`);
     process.exit(fail ? 1 : 0);
   }
 });

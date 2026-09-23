@@ -1,5 +1,80 @@
 # Toko Move — versions
 
+## v2.45 — 2026-09-23
+
+**The daily shift.** Roadmap NEXT LEVEL, L3. With no parameter the game is
+TODAY's shift: the local date is the seed, so everyone who opens it today gets
+the same city day, the same jobs, the same event deck and the same rival. The
+title card names it — *DAILY 1 · 23 Sep* — and the end card leads with the
+result as a grid, a square per job on the ask: 🟩 on time, 🟨 late, ⬛ not
+delivered, drops after it as a count. SHARE uses the phone's share sheet, the
+clipboard where there is none, and puts the text on screen if neither works.
+`?shift=N` still pins a shift and `?shift=random` still deals a fresh one;
+neither records anything or offers to share.
+
+Three rules, each against a way the shape goes wrong. **The first finish is the
+result**: replaying today is practice, the title says so BEFORE the run starts,
+and a better practice score never overwrites the day. **The date is the
+player's own**, as Wordle does it, counted on UTC midnights so a daylight-saving
+weekend is still two days. **Nothing leaves the browser**: the record is
+localStorage, sixty days of it, and the share line is text you send yourself.
+A streak counts back from today (the arcade's own rule). A clock set before the
+epoch gets a daily with no number rather than a *Daily 0*, which is what the
+first build showed on the day it was made.
+
+**THE JOBS FOLLOW THE SHIFT, which the daily could not do without.** v2.42 made
+the city day, the deck and the rival follow the shift number and left dispatch
+alone: offers were hashed from where you stand and how far into the shift you
+are, and nothing else. Every shift ever played dealt the same work, and a
+daily would have dealt the same work every morning. The shift number joins the
+hash now (and the hand-off's). Unset — every bare-node gate that builds a
+challenge by hand — the offers are byte-identical to before, so no fixed test
+moved.
+
+**A DAILY THAT CANNOT BE WON IS BROKEN FOR EVERYONE AT ONCE, so the dailies are
+played before anyone meets them.** `shifts.cjs --dailies=N` plays the next N
+calendar days on their real seeds and drawn city days with a sensible policy,
+and `--gate` holds the next fourteen winnable. Its first run lost three of
+thirty, and all three were the same **real bug, older than this version**: the
+catch panel took the network's three best plans and let the cargo rule refuse
+the tap. With a fragile parcel (tram only) at Kamppi the three best plans to
+Sörnäinen were all metro, so every lit CATCH was refused, no tram was ever
+offered, and a sensible player stood at the stop for 2,800 of the shift's
+3,000 ticks. Put thirty varied bots on each of those boards and they won 67–77%,
+so the days were never unwinnable — the panel was hiding the way out. Plans
+are filtered by what the parcel may ride BEFORE the top three are taken, by one
+predicate (`allowFor`) the panel, the dispatcher's pricing, the drops and the
+bot all share, and when the rule rather than the network leaves nothing the
+panel says so. `route-choice.mjs` checks every anchor pair for every restricted
+cargo — none refusable, none starved — against a control that the unfiltered
+plans at Kamppi really do contain the metro; both shapes of the bug (no filter,
+filter after the cut) are caught.
+
+| | |
+|---|---|
+| next 30 dailies, before the fix | 27 won |
+| next 30 dailies, after | 30 won |
+| next 90 dailies, after | 90 won · scores 248–1811 · 23 Helsinki Day, 28 market, 19 match, 20 quiet |
+| random bots, ordinary day, 80 | 86.3% (v2.44: 80.0%) |
+| mean score, same cell | 1189 (v2.44: 1565) |
+
+The mean score fell by a quarter and that is the instrument, not the game:
+before this, every bot played one board, and that board happened to be rich.
+The win rate moved inside the noise.
+
+**One ruler fixed on the way.** The misses gate failed on a MISSED banner at
+tick 14 with the observer's first sample at tick 16 — a real miss from before
+the gate was watching, surfaced because shift 1 now deals a job whose first
+tram leaves the moment it is taken. A banner from before the first sample is
+set aside and counted, and at least three must still be judged.
+
+**Also:** the end card read *goodwill +-4* after pocketing the wallet.
+
+Gates: `test/daily.mjs` (50, bare node), `test/daily.cjs` (16, browser: two
+strangers get the same board, the first finish is the result, SHARE copies a
+line that links to today, a pinned or random shift records nothing), the cargo
+section of `route-choice.mjs`, and `shifts.cjs --gate` at 11 with the dailies.
+
 ## v2.44 — 2026-09-23
 
 **The dispatch list stopped rewriting itself five times a second.** CI caught

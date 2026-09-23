@@ -43,7 +43,14 @@ const DESTINATIONS=['rautatientori','hakaniemi','sornainen','kalasatama','pasila
 // falling back to `documents` since v2.36.
 const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
 export class DeliveryChallenge{
- constructor(flow,say){this.flow=flow;this.say=say;this.index=0;this.leg=0;this.active=null;this.queued=null;this.activeTrip=null;this.selectedPlan=null;this.waitingForCatch=false;this.seen=new Set;this.startedAt=0;this.score=0;this.late=0;this.bonuses=0;this.location='lasipalatsi';this.offers=[];this.along=[];this.drops=0;this.streak=0;this.bestStreak=0;this.goodwill=0;this.tips=0;this.standing=loadStanding();this.pendingHandoff=null;this.offerCycle=0;this.physicalSeq=0;}
+ // THE JOBS FOLLOW THE SHIFT (v2.45). The offers were hashed from where you
+ // stand and how far into the shift you are — nothing else — so every shift
+ // ever played dealt the same work, and a DAILY shift would have dealt the
+ // same work every day. The shift number now joins the hash. Unset (every
+ // bare-node gate that builds a challenge by hand), the tag is empty and the
+ // offers are byte-identical to what they always were, so no fixed test moved.
+ shiftTag(){return this.shiftSeed!=null?`${this.shiftSeed}:`:'';}
+ constructor(flow,say){this.flow=flow;this.say=say;this.results=[];this.index=0;this.leg=0;this.active=null;this.queued=null;this.activeTrip=null;this.selectedPlan=null;this.waitingForCatch=false;this.seen=new Set;this.startedAt=0;this.score=0;this.late=0;this.bonuses=0;this.location='lasipalatsi';this.offers=[];this.along=[];this.drops=0;this.streak=0;this.bestStreak=0;this.goodwill=0;this.tips=0;this.standing=loadStanding();this.pendingHandoff=null;this.offerCycle=0;this.physicalSeq=0;}
  // The shift's ask. this.target is the default; a shift may carry its own
  // (a campaign city, or the survey bot asking how many a day really holds).
  get target(){return this.targetOverride??DELIVERY_TARGET;}
@@ -72,7 +79,7 @@ export class DeliveryChallenge{
   const est=this.estimate?.({stops:[from,to],cargo});
   if(Number.isFinite(est)&&est>0)return Math.round(est*DEADLINE_GRACE+30*scale);
   return Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*scale);}
- refreshOffers(){if(this.index>=this.target){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];
+ refreshOffers(){if(this.index>=this.target){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${this.shiftTag()}${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];
   for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=Math.round((90+dist*9)*payFor(cargo));cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
   // Loop 47: a procedural job is constrained by a network relationship, never
   // rolled blind. Measured before this: the first offer taken had no compatible
@@ -197,7 +204,7 @@ export class DeliveryChallenge{
  deliverAlong(stopId){if(!stopId||!this.along.length)return false;const drops=this.along.filter(j=>j.stops[1]===stopId);if(!drops.length)return false;this.along=this.along.filter(j=>j.stops[1]!==stopId);let any=false;
   for(const job of drops){const r=this.earn(job,this.flow.clock.tick-job.acceptedAt,1);this.drops++;any=true;this.say(`DROPPED · ${r.note} · +${r.earned} · ${job.name||this.name(stopId)}`);}
   return any;}
- completePhysical(meta={}){if(!this.active)return false;const elapsed=this.elapsed(),r=this.earn(this.active,elapsed,meta.legs?.length||1),earned=r.earned,note=r.note;this.location=this.currentTo();this.deliverAlong(this.location);this.say(`${note} · +${earned}${r.tip?` (+${r.tip} tip)`:''} · ${this.active.label}`);this.index++;this.buildHandoff(this.location,r.regular,r.late);this.leg=0;this.activeTrip=null;this.selectedPlan=null;this.waitingForCatch=false;if(this.queued&&this.index<this.target){const next=this.queued;this.queued=null;this.active={...next,stops:[this.location,next.originalStops?.[1]||next.stops[1]],label:`${this.name(this.location)} → ${this.name(next.originalStops?.[1]||next.stops[1])}`};this.startedAt=this.active.acceptedAt;this.launchLeg();this.say(`SECOND JOB · still carrying ${this.active.cargo}. Deliver to ${this.name(this.currentTo())}.`);return true;}this.active=null;if(this.index<this.target)this.refreshOffers();return true;}
+ completePhysical(meta={}){if(!this.active)return false;const elapsed=this.elapsed(),r=this.earn(this.active,elapsed,meta.legs?.length||1),earned=r.earned,note=r.note;this.results.push(r.late?'late':'ok');this.location=this.currentTo();this.deliverAlong(this.location);this.say(`${note} · +${earned}${r.tip?` (+${r.tip} tip)`:''} · ${this.active.label}`);this.index++;this.buildHandoff(this.location,r.regular,r.late);this.leg=0;this.activeTrip=null;this.selectedPlan=null;this.waitingForCatch=false;if(this.queued&&this.index<this.target){const next=this.queued;this.queued=null;this.active={...next,stops:[this.location,next.originalStops?.[1]||next.stops[1]],label:`${this.name(this.location)} → ${this.name(next.originalStops?.[1]||next.stops[1])}`};this.startedAt=this.active.acceptedAt;this.launchLeg();this.say(`SECOND JOB · still carrying ${this.active.cargo}. Deliver to ${this.name(this.currentTo())}.`);return true;}this.active=null;if(this.index<this.target)this.refreshOffers();return true;}
  // THE HAND-OFF. The person you just delivered to has another one going out,
  // and it is in your hand before the dispatcher has heard about it. It is not
  // a new kind of job — it is an ordinary offer from where you already stand,
@@ -211,8 +218,8 @@ export class DeliveryChallenge{
  // only after an ON-TIME delivery, and then at about half the doors — except
  // a REGULAR, who always has one for you, because that is what standing buys.
  buildHandoff(at,regular,late){if(this.index>=this.target||late){this.pendingHandoff=null;return;}
-  if(!regular&&(hash(`door:${at}:${this.index}`)&1)===0){this.pendingHandoff=null;return;}
-  const pool=DESTINATIONS.filter(x=>x!==at&&this.flow.graph.node(x)),seed=hash(`handoff:${at}:${this.index}`);
+  if(!regular&&(hash(`${this.shiftTag()}door:${at}:${this.index}`)&1)===0){this.pendingHandoff=null;return;}
+  const pool=DESTINATIONS.filter(x=>x!==at&&this.flow.graph.node(x)),seed=hash(`${this.shiftTag()}handoff:${at}:${this.index}`);
   const cands=[];for(let i=0;i<4&&pool.length;i++){const to=pool.splice((seed+i*11)%pool.length,1)[0];const est=this.estimate?.({stops:[at,to]});if(Number.isFinite(est)&&est>0)cands.push({to,est});}
   const remaining=this.flow.clock.ticksPerDay-this.flow.clock.tick,fits=cands.filter(c=>c.est<=remaining*0.9);
   // NOT the cheapest — whatever that person actually needs sent. Picking the
