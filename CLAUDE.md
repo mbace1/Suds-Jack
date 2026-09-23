@@ -482,7 +482,16 @@ one) instead of comparing two numbers. **Modes are control schemes a season
 picks** (owner, 2026-09-23): a season may declare `mode` and extra `abilities`
 — seasons 1 and 2 are HYPER plus `jumps: 2` — and the MODE row left the pause
 menu. `M()` asks `?mode=` link → season → saved, so the gate and the loop
-harness still pin experiments by URL and VOID stays the control. Four things renders settled, not reasoning: the star field was a
+harness still pin experiments by URL and VOID stays the control. **v51 is season 3,
+HAUL**: the TRUCK scheme with a convoy that DRIVES (`truck: { moving: true }` —
+each truck its own speed and lane-sway, the one under you carries you, and in the
+air you keep its velocity; a `?mode=truck` link keeps the old static road) and
+**no gun** — `js/gaze.js` launches homing missiles at the enemy you hold your look
+on inside 24 u, faster (16 → 40) and tighter-turning (1.2 → 10) the longer the
+look is held. Missiles are daggers with `{ target, turn }`, so every hit and kill
+path is shared. Trap found on the way: twelve places read the SAVED `mode`
+variable where the mode in force (`M().id`) was meant, so season runs were filed
+and seeded under the wrong mode — never read `mode` directly. Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
 near black, so floor glow is per season; and the owner's monuments "looked

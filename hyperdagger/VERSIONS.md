@@ -2,6 +2,60 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v51 — 2026-09-23
+**Season 3 — HAUL: a convoy that drives, momentum you keep, and a look that fires**
+
+Owner, 2026-09-23: *Season 3 should be the truck mode, with moving platforms
+and forward momentum. Also double jump and dash. No need for shoot, but if
+you look at enemies close enough it deploys homing missiles, with slightly
+longer look meaning faster, more targeted missiles.*
+
+**The trucks drive.** Season 3 declares `mode: 'truck'` plus `jumps: 2` and
+dash, and lays its own road through a new `truck` block that `TruckTrack`
+reads over `T.truck`. With `moving: true` every truck gets its own speed
+down the road (13 ± 0.8 u/s, a hair faster the further out it was laid) and
+a slow lane-sway. Nothing pushes you any more: the truck under you CARRIES
+you, and in the air you keep the velocity of the one you left, which is the
+Clustertruck feeling rather than a conveyor. New trucks are laid off the
+front truck's current position, since a fixed spawn cursor drifts away from
+a convoy that moves. Trucks you skip are culled behind you (they never fall).
+The gap is real now: 9.5 centre to centre, about 1.5 to 6 edge to edge, so a
+run-up jump clears the short ones and the double jump the long. A `?mode=`
+link still gets the tuning's static road, which the old course checks use.
+
+**No gun: the look is the trigger** (`js/gaze.js`). Every frame the lock asks
+which living enemy inside 24 u sits nearest the view's centre within a small
+cone. Holding the look on one body builds the lock; after a quarter second a
+missile leaves every 0.5 s, down to 0.26 s at a full lock (1.2 s). Each
+missile reads the lock at launch: speed 16 → 40 and turn rate 1.2 → 10. A
+glance sends a lazy missile that can miss, a held look a fast one that will
+not. Changing target restarts the lock. A missile is a dagger with a target
+and a turn rate (`DaggerPool.fire` takes `{ target, turn, life }`), so every
+hit, chip, gib and kill path is the daggers'. It leaves the gauntlet
+climbing and turns onto the body. The lock is drawn where the body is: a
+ring that tightens and whitens as the look is held, plus a centre mark.
+
+**Caught on the way: the saved mode was read where the mode in force was
+meant.** v50 made the season pick the mode, and twelve places still read
+the saved one: the daily board report, the daily seed, run history, the
+death line, the share text and the debug state. A season-1 run under HYPER
+rules was filed as PURE and seeded as PURE. All read `M().id` now.
+
+A season picked mid-run whose rules differ starts a fresh run instead of
+rebuilding under a live one: season 3 is a different game, not a new arena.
+
+**Gate** (8 new checks): season 3 is the truck scheme with double jump and
+dash; a truck moves on its own; it carries the body on it; in the air the
+body keeps that speed; the held trigger launches nothing; a body past range
+is not locked; a held look on a close skull launches missiles and kills it;
+a longer look sends faster and tighter-turning missiles. `hd-loop` gains a
+`haul` scenario and `mode: null` for an unpinned link.
+
+Still to do: trucks that read as trucks (they are slabs), and a missile
+that looks like one (they fly as daggers).
+
+Tokens `?v=81` → `?v=82`, worker cache v52, precache regenerated (60).
+
 ## v50 — 2026-09-23
 **The wave can be jumped; seasons pick their control scheme; the right thumb jumps**
 
