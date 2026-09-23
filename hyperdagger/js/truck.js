@@ -6,6 +6,19 @@ import { Skull } from './enemy.js?v=82';
 const matOk = new THREE.MeshBasicMaterial({ color: 0x3a342c });
 const matWarn = new THREE.MeshBasicMaterial({ color: 0x6a4030 });
 const matHot = new THREE.MeshBasicMaterial({ color: 0x8a3020 });
+// v51: a moving truck wears a lit OUTLINE. The first loop of the convoy showed
+// near-black slabs on a black road: the next truck — the one thing you must
+// read to jump — melted into the fog or stood as a black block against the
+// horizon. HDR so the bloom takes it, and fog-free so the truck you are
+// aiming for reads at distance; it turns red when the truck is about to go.
+const EDGE = new THREE.Color(1.5, 0.62, 0.2);
+const EDGE_WARN = new THREE.Color(1.9, 0.18, 0.1);
+const edgeMat = new THREE.LineBasicMaterial({ color: EDGE, fog: false });
+function disposeTruck(p) {
+  p.mesh.geometry.dispose();
+  p.mesh.material?.dispose?.();
+  if (p.edge) { p.edge.geometry.dispose(); p.edge.material.dispose(); }
+}
 
 export class TruckTrack {
   constructor(scene) {
@@ -25,8 +38,7 @@ export class TruckTrack {
   clear() {
     for (const p of this.platforms) {
       this.scene.remove(p.mesh);
-      p.mesh.geometry.dispose();
-      p.mesh.material?.dispose?.();
+      disposeTruck(p);
     }
     this.platforms.length = 0;
     this.nextZ = 0;
@@ -71,6 +83,8 @@ export class TruckTrack {
       p.vz = -(c.driveSpeed + (Math.random() * 2 - 1) * c.driveVar) * scale;
       p.baseX = x; p.swayA = Math.random() * c.sway; p.swayW = 0.35 + Math.random() * 0.45;
       p.phase = Math.random() * Math.PI * 2; p.t = 0;
+      p.edge = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry), edgeMat.clone());
+      mesh.add(p.edge);
     }
     this.platforms.push(p);
     this.last = p;
@@ -175,7 +189,7 @@ export class TruckTrack {
         p.mesh.position.z += p.vz * dt;
         // a truck you skipped never falls — cull it once it is well behind
         if (p.mesh.position.z > player.feet.z + 30) {
-          this.scene.remove(p.mesh); p.mesh.geometry.dispose();
+          this.scene.remove(p.mesh); disposeTruck(p);
           this.platforms.splice(i, 1);
           continue;
         }
@@ -185,8 +199,10 @@ export class TruckTrack {
         if (p.life <= 0) {
           p.falling = true;
           p.mesh.material.color.copy(matHot.color);
+          if (p.edge) p.edge.material.color.copy(EDGE_WARN);
         } else if (p.life < 0.85) {
           p.mesh.material.color.copy(matWarn.color);
+          if (p.edge) p.edge.material.color.copy(EDGE_WARN);
         }
       }
       if (p.falling) {
@@ -195,7 +211,7 @@ export class TruckTrack {
         p.mesh.rotation.z += dt * 1.3;
         if (p.mesh.position.y < -22) {
           this.scene.remove(p.mesh);
-          p.mesh.geometry.dispose();
+          disposeTruck(p);
           this.platforms.splice(i, 1);
         }
       }
