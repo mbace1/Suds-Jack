@@ -38,3 +38,14 @@ this file once per session before finishing, and append anything new.
   the signal could show up (network log AND console log), and verify by
   running the test rather than reasoning about whether the filter should
   work.
+
+- **`git merge-base` on a shallow clone returned nothing, which reads
+  exactly like "two unrelated lineages"** (Eeri's disease) — and nearly got
+  reported to the owner as one for piritori-eden's C.19 branch. The
+  `add_repo` clone is `--depth 1`, so the history that held the common
+  ancestor simply wasn't there. Caught by suspecting the ruler before the
+  finding: deepened the fetch until `.git/shallow` was gone, re-ran it, and
+  got a real merge base (`312540d`, a 162-vs-7 split, perfectly mergeable).
+  Fix: before concluding "no common ancestor", check `.git/shallow` and
+  fetch enough history (`git fetch --depth=2000 origin <both branches>`);
+  an empty merge-base on a shallow clone is not a finding.
