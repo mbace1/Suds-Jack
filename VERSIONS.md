@@ -7,6 +7,68 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v262 — 2026-09-23
+**THE WEAPON PODS, REFRESHED AND REBALANCED: five families with one idea each, a level you EARN and a hit takes away, the shotgun out of RUSH — and the pierce bug that had been eating laser damage since v70** *(owner: "shotgun can become one of the weapon pick ups.. which need refreshing and rebalance")*
+- **THE PIERCE BUG, and it is the biggest number here.** A pooled bullet built a
+  `Set` of everything it had pierced and **nothing ever cleared it**, so a
+  recycled bullet passed straight through any enemy that had survived it. It
+  cost most of the damage of the one thing that is supposed to be good against
+  a rank, and it cost it *worst against whatever lives longest* — which is every
+  boss. Measured against a line of four immortal dummies: **LASER 12 → 40 damage
+  a second, LASER LV2 12 → 53.** The set is cleared in `spawnDir` now. The
+  PIERCE upgrade card was losing the same damage and now does what it says.
+- **Five families, one idea each, and each one owns a column.** Measured (a
+  `#wep` probe: frozen clock, immortal dummies, three seconds of held trigger,
+  damage per second):
+
+  | pod | one far | one near | line of 4 | arc of 5 far | arc of 5 near |
+  |---|---|---|---|---|---|
+  | (no pod) | 10 | 10 | 10 | 10 | 10 |
+  | **S** spread | 10 | 32 | 10 | **49** | 53 |
+  | **S2** | 10 | 52 | 10 | **48** | **72** |
+  | **B** burst | 20 | 21 | 20 | 20 | 21 |
+  | **B2** | 27 | 29 | 28 | 27 | 29 |
+  | **L** laser | 10 | 10 | **40** | 10 | 10 |
+  | **L2** | 13 | 14 | **53** | 13 | 21 |
+  | **R** rapid | 19 | 21 | 23 | 20 | 21 |
+  | **R2** | 30 | 31 | 32 | 30 | 31 |
+  | **G** shotgun | 7 | **35** | 20 | 20 | 35 |
+  | **G2** | 7 | **49** | 20 | 19 | 49 |
+
+- **What was wrong before, measured the same way.** BURST fired three rounds on
+  the SINGLE cycle, so it was 3x damage for free — **29 against a single body,
+  BURST2 49**, against RAPID2's 30 and SPREAD's 10. **SPREAD2 was not better
+  than SPREAD** (10.3 against 10.3). **LASER2 was byte-for-byte LASER** — same
+  rate, same bullet, same pierce, a level-2 pod that did nothing. Every family
+  reads `TUNING.weapons` now, where `rate` is a multiplier on `FIRE_RATE`
+  rather than a magic number in the firing block: burst pays for its volley,
+  LASER2 is a **second rail** instead of the same rail twice, and the shotgun
+  owns point blank on its cadence.
+- **The level is EARNED, not rolled.** The pool drops level 1 only. Picking up
+  the family you are already holding is what makes it level 2, so a pod is a
+  decision — commit to what you have, or change shape — instead of a lucky
+  roll (it was a flat 28% from wave 4). The draw also leans away from the
+  family in your hands, because three SPREADs in a row is the same wave three
+  times.
+- **And a hit takes it back.** Level 2 drops to level 1 when you are hit; it
+  never takes the gun away, because being weaponless is a different game rather
+  than a punishment. Level 2 is what clean play looks like.
+- **The shotgun is a pod** (owner's call), five pellets wide and 7 damage a
+  second past arm's length — the one pod that asks you to stand where you are
+  trying not to stand. **RUSH keeps its own cadence**: the classic pod is tuned
+  for a game played at arm's length, and dropping it into RUSH unchanged is a
+  2.2x buff to that mode's only gun. The shop's SHOTGUN sells the shotgun now
+  instead of SPREAD2.
+- **Named rather than claimed: BURST and RAPID measure the same** (20/21/20
+  against 19/21/23). They differ in rhythm and in one real rule — a burst keeps
+  the direction it was fired in, so it punishes tracking a moving target the way
+  rapid does not — but no column separates them, and that is an open question,
+  not a distinction.
+- Cache-bust `?v=214` → `?v=215`; HUD label → v262. The HUD shows the family and
+  the level (`[R LV2]`), since the level is the thing you are trying to keep.
+
+---
+
 ## v261 — 2026-09-20
 **THE DROP, part two: THE FALL — a boss down, the floor gives, and you fall to the next depth. Two styles, one toggle** *(owner: "we can try both")*
 - **The fall.** A boss clear on a classic round no longer chains into the next

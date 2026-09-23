@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=214';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=214';
-import { Player, PLAYER_RADIUS } from './player.js?v=214';
+import { InputManager } from './input.js?v=215';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=215';
+import { Player, PLAYER_RADIUS } from './player.js?v=215';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=214';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=214';
-import { audio } from './audio.js?v=214';
-import { haptics } from './haptics.js?v=214';
-import { initDesigner } from './designer.js?v=214';
-import { createSpecimen } from './specimen.js?v=214';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=214';
-import { TUNING } from './tuning.js?v=214';
-import { Arena, rectShape } from './arena.js?v=214';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=214';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=214';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=214';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=215';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=215';
+import { audio } from './audio.js?v=215';
+import { haptics } from './haptics.js?v=215';
+import { initDesigner } from './designer.js?v=215';
+import { createSpecimen } from './specimen.js?v=215';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=215';
+import { TUNING } from './tuning.js?v=215';
+import { Arena, rectShape } from './arena.js?v=215';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=215';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=215';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=215';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -432,7 +432,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '261';
+const GAME_VERSION = '262';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -1979,22 +1979,26 @@ function makeBossAura(enemy) {
 // ── Weapon pod system ─────────────────────────────────────────────────────────
 // Each entry: the player._weaponMode to set, display glyph, orb color, rarity level.
 const WEAPON_PODS = {
-  S:  { mode: 'SPREAD',  color: 0xffcc44, level: 1 },
-  S2: { mode: 'SPREAD2', color: 0xffee11, level: 2 },
-  B:  { mode: 'BURST',   color: 0x44ffcc, level: 1 },
-  B2: { mode: 'BURST2',  color: 0x11ffee, level: 2 },
-  L:  { mode: 'LASER',   color: 0xff3355, level: 1 },
-  L2: { mode: 'LASER2',  color: 0xff1133, level: 2 },
-  R:  { mode: 'RAPID',   color: 0xaa55ff, level: 1 },
-  R2: { mode: 'RAPID2',  color: 0xcc22ff, level: 2 },
-  H:  { mode: 'HOMING',  color: 0x44ddff, level: 1 },
-  H2: { mode: 'HOMING2', color: 0x22aaff, level: 2 },
+  S:  { mode: 'SPREAD',   color: 0xffcc44, level: 1, fam: 'S' },
+  S2: { mode: 'SPREAD2',  color: 0xffee11, level: 2, fam: 'S' },
+  B:  { mode: 'BURST',    color: 0x44ffcc, level: 1, fam: 'B' },
+  B2: { mode: 'BURST2',   color: 0x11ffee, level: 2, fam: 'B' },
+  L:  { mode: 'LASER',    color: 0xff3355, level: 1, fam: 'L' },
+  L2: { mode: 'LASER2',   color: 0xff1133, level: 2, fam: 'L' },
+  R:  { mode: 'RAPID',    color: 0xaa55ff, level: 1, fam: 'R' },
+  R2: { mode: 'RAPID2',   color: 0xcc22ff, level: 2, fam: 'R' },
+  G:  { mode: 'SHOTGUN',  color: 0xff8833, level: 1, fam: 'G' },   // v262: out of RUSH
+  G2: { mode: 'SHOTGUN2', color: 0xffaa22, level: 2, fam: 'G' },
+  H:  { mode: 'HOMING',   color: 0x44ddff, level: 1, fam: 'H' },
+  H2: { mode: 'HOMING2',  color: 0x22aaff, level: 2, fam: 'H' },
 };
 // v88: H/H2 removed from the drop pools — homing is enemy-exclusive now
 // (BOTFLY fires homing shots). The HOMING firing modes stay implemented in
 // case a pod is ever re-added.
-const LV1_WEAPONS = ['S', 'B', 'L', 'R'];
-const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2'];
+// v262: the pool drops LEVEL 1 ONLY. Level 2 is earned by picking the same
+// family up a second time, so LV2_WEAPONS is an upgrade map, not a draw.
+const LV1_WEAPONS = ['S', 'B', 'L', 'R', 'G'];
+const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2', 'G2'];
 const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22, score: 0x88ff88, item: 0xff88bb, key: 0xffd700, potion: 0x66d9ff };
 // v237/v239: the pickups an authored level may lay down — what the editor's
 // PICKUPS menu offers and what the level validator accepts. The cabinet-only
@@ -2015,9 +2019,20 @@ async function loadBundledLevel(id) {
   return parseLevel(await res.text(), levelCtx());
 }
 
-function randomWeaponPodId(lv2Allowed = false) {
-  if (lv2Allowed && Math.random() < 0.28) return LV2_WEAPONS[Math.floor(Math.random() * LV2_WEAPONS.length)];
-  return LV1_WEAPONS[Math.floor(Math.random() * LV1_WEAPONS.length)];
+// v262: a pod is always LEVEL 1 (the argument is kept so the eight call sites
+// read the same, and so a level-2 pod can never be handed out by luck), and
+// the draw leans away from the family already in your hands — three SPREADs
+// in a row is not variety, it is the same wave three times.
+function randomWeaponPodId(_lv2Unused = false) {
+  const held = WEAPON_PODS[weaponPodId()]?.fam;
+  const others = LV1_WEAPONS.filter(id => id !== held);
+  const pool = (held && others.length && Math.random() < TUNING.weapons.favourUnheld)
+    ? others : LV1_WEAPONS;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+// the pod id the player is currently carrying, or null on the bare gun
+function weaponPodId() {
+  return Object.keys(WEAPON_PODS).find(k => WEAPON_PODS[k].mode === player._weaponMode) ?? null;
 }
 
 function makeGlyphTexture(text, colorHex) {
@@ -2036,13 +2051,39 @@ function makeGlyphTexture(text, colorHex) {
   return new THREE.CanvasTexture(c);
 }
 
-function equipWeapon(podId) {
-  const def = WEAPON_PODS[podId];
+function equipWeapon(podId, allowUpgrade = true) {
+  let def = WEAPON_PODS[podId];
   if (!def) return;
+  // v262 THE UPGRADE IS EARNED: the same family again takes it to level 2.
+  // A different family swaps in at level 1 — so a pod is a decision (commit
+  // to what you hold, or change shape) rather than a number going up.
+  const held = WEAPON_PODS[weaponPodId()];
+  if (allowUpgrade && held && held.fam === def.fam && held.level === 1 && def.level === 1) {
+    const up = LV2_WEAPONS.find(id => WEAPON_PODS[id].fam === def.fam);
+    if (up) {
+      podId = up; def = WEAPON_PODS[up];
+      milestoneT = 1.2; milestoneText = `${def.fam} POD LV2!`;
+      audio.milestone?.();
+    }
+  }
   player._weaponMode = def.mode;
   // Laser modes pierce; all others remove pierce (unless pierce card was taken)
   if (def.mode !== 'LASER' && def.mode !== 'LASER2') BULLET_CONFIG.playerWeaponPierce = false;
   else BULLET_CONFIG.playerWeaponPierce = true;
+  return podId;
+}
+
+// v262 A HIT COSTS A LEVEL. Level 2 is what clean play looks like; it never
+// takes the gun away, because being weaponless is a different game, not a
+// punishment.
+function weaponTakeHit() {
+  if (!TUNING.weapons.hitCostsLevel) return;
+  const held = WEAPON_PODS[weaponPodId()];
+  if (!held || held.level !== 2) return;
+  const down = LV1_WEAPONS.find(id => WEAPON_PODS[id].fam === held.fam);
+  if (!down) return;
+  equipWeapon(down, false);
+  milestoneT = 1.0; milestoneText = `${held.fam} POD KNOCKED DOWN TO LV1`;
 }
 
 // Floor valuables (v118): shared geometries so swapping a Powerup's look
@@ -3627,7 +3668,7 @@ function exitKaikki() {
 // supplies restock. Prices are flat — the carnage pays more as you go.
 const KK_SHOP = [
   { id: 'uzi',     cost: 500,  once: true,  buy: () => { equipWeapon('R');  applyUpgrade('firerate'); } },
-  { id: 'shotgun', cost: 900,  once: true,  buy: () => { equipWeapon('S2'); applyUpgrade('bigbullets'); } },
+  { id: 'shotgun', cost: 900,  once: true,  buy: () => { equipWeapon('G2'); applyUpgrade('bigbullets'); } },   // v262: sells the actual shotgun now
   { id: 'laser',   cost: 1200, once: true,  buy: () => { equipWeapon('L');  applyUpgrade('pierce'); } },
   { id: 'sinko',   cost: 1800, once: true,  buy: () => { equipWeapon('B2'); applyUpgrade('pierce'); applyUpgrade('bigbullets'); } },
   { id: 'medkit',  cost: 400,  once: false, buy: () => { player.hp = Math.min(player.maxHp, player.hp + 2); } },
@@ -4395,6 +4436,7 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
   const hpBefore = player.hp;
   _hitFlashT = 0.32;
   player.hit();
+  weaponTakeHit();   // v262: level 2 is clean play, and a hit is not clean
   if (player.alive) { audio.announce('ouch'); haptics.hit(); }  // death gets its own line + buzz instead
   else haptics.death();
   onPlayerHit();
@@ -5359,12 +5401,15 @@ function drawHUD() {
 
   // Weapon mode indicator — show the pod letter and colour
   if (player._weaponMode !== 'SINGLE') {
-    const podId = Object.keys(WEAPON_PODS).find(k => WEAPON_PODS[k].mode === player._weaponMode);
-    const podColor = podId ? '#' + WEAPON_PODS[podId].color.toString(16).padStart(6, '0') : '#00ccaa';
+    const podId = weaponPodId();
+    const def = podId ? WEAPON_PODS[podId] : null;
+    const podColor = def ? '#' + def.color.toString(16).padStart(6, '0') : '#00ccaa';
     const dotAreaW = player.maxHp * dotGap;
     ctx.font = 'bold 13px monospace';
     ctx.fillStyle = podColor;
-    ctx.fillText(`[${podId ?? player._weaponMode}]`, 16 + dotAreaW + 8, dotY + 5);
+    // v262: the level is the thing you are trying to keep, so it is on screen
+    const label = def ? `[${def.fam}${def.level === 2 ? ' LV2' : ''}]` : `[${player._weaponMode}]`;
+    ctx.fillText(label, 16 + dotAreaW + 8, dotY + 5);
     ctx.font = HUD_FONT;
   }
 
@@ -8263,6 +8308,7 @@ function startGame() {
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
   BULLET_CONFIG.playerWeaponPierce = false;
+  player._rushWeapon = false;   // v262
   if (dailyMode && !testMode && !inCabinet() && !customLevel) {   // test/cabinet/level runs are never dailies
     // Same seed for everyone today: hash the UTC date through the PRNG once
     // so consecutive days land far apart in seed space.
@@ -8287,6 +8333,7 @@ function startGame() {
     const R = TUNING.rush;
     player._boostSpeed = R.boostSpeed;
     player._weaponMode = 'SHOTGUN';
+    player._rushWeapon = true;         // v262: RUSH keeps its own shotgun cadence
     player.maxHp = R.lives.start;
     player.hp    = R.lives.start;
     input.rushOn = true;
@@ -10085,7 +10132,7 @@ function loop() {
         const died = e.hit(b.mesh.position.x, b.mesh.position.z);
         if (_piercing) {
           if (!b._hitIds) b._hitIds = new Set();
-          b._hitIds.add(e);
+          b._hitIds.add(e);   // cleared on spawn (bullet.js) — see v262
         } else {
           bullets.recycleAt(i);
           hit = true;
@@ -10955,7 +11002,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=214').then(async m => {
+  import('./editor.js?v=215').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -10986,6 +11033,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=214').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=215').catch(() => {});
   });
 }

@@ -94,6 +94,11 @@ export class BulletPool {
     const speed = (isPlayer ? PLAYER_BULLET_SPEED : (fat ? 3.5 : BULLET_CONFIG.enemySpeed)) * speedMult;
     b.speed = speed;
     b.fat = fat;
+    // v262: a pooled bullet used to keep the Set of every enemy it had ever
+    // pierced, so a reused one passed straight through anything that had
+    // survived it — lasers and the pierce card quietly lost most of their
+    // damage against whatever lived longest, which is every boss.
+    if (b._hitIds) b._hitIds.clear();
     b.mesh.position.set(x, 0.3, z);
     // Saturated halo colour: player bright cyan-green, enemy hot orange-red. The
     // white core stays white so every bullet keeps a readable bright centre.

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=214';
-import { TUNING } from './tuning.js?v=214';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=215';
+import { TUNING } from './tuning.js?v=215';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -383,38 +383,54 @@ export class Player {
       this._lastAim = { x: aimDir.x, z: aimDir.z };
       const ox = this.mesh.position.x + aimDir.x * (PLAYER_RADIUS + 0.3);
       const oz = this.mesh.position.z + aimDir.z * (PLAYER_RADIUS + 0.3);
-      const baseRate = FIRE_RATE * this._fireRateMult * (this._fireRateBoost > 0 ? 0.4 : 1)
-        * (this._weaponMode === 'SHOTGUN' ? TUNING.rush.shotgun.rateMult : 1);
       const mode = this._weaponMode;
-      if (mode === 'SHOTGUN') {
-        // v224 RUSH: 5 pellets across a wide arc, firing much slower than the
-        // classic gun — deliberately a close-range answer, so boosting stays
-        // the better option at any distance.
-        const R = TUNING.rush.shotgun;
-        for (let i = 0; i < R.pellets; i++) {
-          const a = (i - (R.pellets - 1) / 2) * (R.spread / Math.max(1, R.pellets - 1)) * 2;
+      // v262: every family reads TUNING.weapons — one table, two levels, and a
+      // `rate` that is a multiplier on FIRE_RATE rather than a magic number
+      // buried in the firing block. BURST used to fire three rounds on the
+      // SINGLE cycle, which is where its 3x free damage came from.
+      const W = TUNING.weapons;
+      const lvl = mode.endsWith('2') ? 'l2' : 'l1';
+      const fam = mode.startsWith('SPREAD') ? W.spread[lvl]
+                : mode.startsWith('BURST')  ? W.burst[lvl]
+                : mode.startsWith('LASER')  ? W.laser[lvl]
+                : mode.startsWith('RAPID')  ? W.rapid[lvl]
+                : mode.startsWith('SHOTGUN')? (this._rushWeapon ? TUNING.rush.shotgun : W.shotgun[lvl]) : null;
+      const baseRate = FIRE_RATE * this._fireRateMult * (this._fireRateBoost > 0 ? 0.4 : 1);
+      if (mode === 'SHOTGUN' || mode === 'SHOTGUN2') {
+        // v224 RUSH, v262 a classic pod: pellets across a wide arc, firing much
+        // slower than the classic gun — deliberately a close-range answer, so
+        // at any distance something else is the better tool.
+        for (let i = 0; i < fam.pellets; i++) {
+          const a = (i - (fam.pellets - 1) / 2) * (fam.spread / Math.max(1, fam.pellets - 1)) * 2;
           const c = Math.cos(a), sn = Math.sin(a);
           bullets.spawnDir(ox, oz, aimDir.x * c - aimDir.z * sn, aimDir.x * sn + aimDir.z * c, true);
         }
         this.onShoot?.();
       } else if (mode === 'SPREAD' || mode === 'SPREAD2') {
-        const offsets = mode === 'SPREAD2' ? [-3, -2, -1, 0, 1, 2, 3] : [-2, -1, 0, 1, 2];
-        const step    = mode === 'SPREAD2' ? Math.PI / 10 : Math.PI / 9;
-        for (const offset of offsets) {
-          const a = offset * step;
+        const half = (fam.shots - 1) / 2, step = Math.PI / fam.step;
+        for (let i = 0; i < fam.shots; i++) {
+          const a = (i - half) * step;
           const c = Math.cos(a), s = Math.sin(a);
           bullets.spawnDir(ox, oz, aimDir.x * c - aimDir.z * s, aimDir.x * s + aimDir.z * c, true);
         }
         this.onShoot?.();
       } else if (mode === 'BURST' || mode === 'BURST2') {
+        // the whole burst lands inside one cycle, so the rate is the rate
         bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true);
-        if (mode === 'BURST2') {
-          this._burstQueue.push(
-            { t: 0.10, dx: aimDir.x, dz: aimDir.z }, { t: 0.20, dx: aimDir.x, dz: aimDir.z },
-            { t: 0.30, dx: aimDir.x, dz: aimDir.z }, { t: 0.40, dx: aimDir.x, dz: aimDir.z },
-          );
+        const cycle = baseRate * fam.rate, gap = cycle / fam.rounds;
+        for (let i = 1; i < fam.rounds; i++) {
+          this._burstQueue.push({ t: gap * i, dx: aimDir.x, dz: aimDir.z });
+        }
+        this.onShoot?.();
+      } else if (mode === 'LASER' || mode === 'LASER2') {
+        // pierce. Level 2 is a SECOND RAIL rather than a bigger number — the
+        // old LASER2 was byte-for-byte the same weapon as LASER.
+        if ((fam.rails ?? 1) > 1) {
+          const px = -aimDir.z, pz = aimDir.x, g = fam.railGap ?? 0.55;
+          bullets.spawnDir(ox + px * g, oz + pz * g, aimDir.x, aimDir.z, true);
+          bullets.spawnDir(ox - px * g, oz - pz * g, aimDir.x, aimDir.z, true);
         } else {
-          this._burstQueue.push({ t: 0.12, dx: aimDir.x, dz: aimDir.z }, { t: 0.24, dx: aimDir.x, dz: aimDir.z });
+          bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true);
         }
         this.onShoot?.();
       } else if (mode === 'HOMING' || mode === 'HOMING2') {
@@ -424,13 +440,11 @@ export class Player {
           mode === 'HOMING2' ? 10 : 6);
         this.onShoot?.();
       } else {
-        // SINGLE, LASER, LASER2, RAPID, RAPID2
+        // SINGLE, RAPID, RAPID2
         bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true);
         this.onShoot?.();
       }
-      this._fireT = (mode === 'RAPID') ? baseRate * 0.45 :
-                    (mode === 'RAPID2') ? baseRate * 0.28 :
-                    (mode === 'HOMING2') ? baseRate * 0.75 : baseRate;
+      this._fireT = baseRate * (fam?.rate ?? (mode === 'HOMING2' ? 0.75 : 1));
       // Muzzle flash at the barrel — shown immediately (fade handled next frames)
       this._muzzleT = 0.05;
       this._muzzle.position.set(
