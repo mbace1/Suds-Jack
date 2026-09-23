@@ -18,6 +18,49 @@
 > rule, again: **fetch and read the other lineage's log before writing a heading**,
 > and "the other lineage" includes the deployed tree.
 
+## v43 — 2026-09-23
+**RULE PROFILES: Piritori's C.11 rules, played on this engine.**
+
+TURF is Option A in piritori-eden: "Turf as the first implementation base for
+the shared battle mechanic" (its DESIGN_AUTHORITY.md, 2026-09-10). A.1 there
+ran this engine, pinned, from Piritori's battle request and measured the
+distance to Piritori's own resolver on the same 200 boards: reach 91.9%,
+odds 80.6%, hp lost 0%, sight 65.9% (design/A1_TURF_BASE.md). The owner said
+yes to closing it on this side. So `js/rules.js` holds **profiles**, and an
+encounter opts in with a `rules` field; TURF's own game is the default
+profile and is **unchanged**.
+
+`'piritori-c11'` switches, each read at the one place its rule forks:
+**armour** that absorbs a blow before hp (a weapon's `pierce` ignores that
+much); a **brace** verb (+2 armour, cap 4) and an **item** verb (a +2
+bandage), both spending the action and never the move, both through
+`resolve` like everything else; **edge cover** — a low wall on ONE face of
+its tile, `[x, y, 'north']`, walked around rather than through, protecting
+only a gun firing in through that face (-25 rather than -30); **supercover
+sight** in which bodies block a shot and no line threads between two walls
+touching at a corner; **no momentum, no drops**; Piritori's **LCG dice**,
+compared in whole percentage points exactly as it does, so a seed rolls the
+same hit in both engines; and **frozen plans** — shown once at the top of the
+round, and a plan the board has broken is cancelled WHOLE, no step and no
+swing, rather than walking somewhere to find nothing to hit.
+
+What it does NOT switch is the rival brain. Which plan a rival picks is the
+candidate's own; the rules it is held to are shared.
+
+**The promise, and how it is kept.** With no `rules` on an encounter, no
+profile field exists anywhere in the state and every code path is the old
+one: `balance.mjs` reads **bit-identical** (53/82/65/32/68/45/12) under all
+four `--los` modes, smoke 177/177, and the four browser gates pass. The new
+`test/rules.mjs` (40 checks) asserts both halves: that a TURF board carries
+no trace of a profile and refuses the new verbs, and that each switch does
+what Piritori's resolver does, with Piritori's numbers. It was checked
+against its own failure: breaking the cover penalty, body-blocking, frozen
+plans or armour in the profile is each caught.
+
+Tokens: `rules.js?v=1` new; `grid.js` 6→7 and `combat.js` 22→23 for their
+bytes, and the importers that moved with them — `abilities` 4→5, `autoplay`
+9→10, `input` 21→22, `render` 29→30, `main` 43→44. One token per module.
+
 ## v42 — 2026-09-20
 **IMPACT (`MST_PARITY` §2.7): a blow says how hard it was.**
 

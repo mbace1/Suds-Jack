@@ -1134,6 +1134,17 @@ so rivals are previewed from the top of the phase. The rewrite is **proven faith
 seam in the old order and the brain's scoring is untouched. Two owner directives are
 recorded in `MST_PARITY.md` §4: Blender iso facings before the Piritori move (no Blender
 here, not acted on), and rot.js FOV only / skip PathFinding.js — **taken in v40**.
+**RULE PROFILES — TURF is also Piritori's Option A** (v43). `js/rules.js`
+holds profiles an encounter opts into with `rules: 'piritori-c11'`: armour,
+brace and bandage verbs, edge cover (`[x, y, 'north']`), supercover sight with
+bodies blocking, no momentum or drops, Piritori's LCG dice, and frozen plans
+(a broken plan holds whole). piritori-eden vendors this engine pinned
+(`web/vendor/turf`, `web/tools/vendor-turf.mjs`) and holds it to the same
+battle request as its C line. **The promise is that TURF's own game cannot
+see any of it**: no `rules` means no profile field in the state and every old
+path — `balance.mjs` must read bit-identical and `test/rules.mjs` asserts the
+rest. A rule a profile needs is a switch read where that rule forks, never a
+second engine; the rival brain is deliberately NOT a switch.
 **Line of sight is recursive shadowcasting** (rot.js's algorithm ported into `grid.js`,
 no dependency; BFS movement untouched), shipped as the **MUTUAL** rule: A sees B iff B sees
 A. Raw shadowcasting is asymmetric (4,887 of 81,810 tile pairs across the boards) and so,

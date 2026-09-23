@@ -4,9 +4,9 @@
 // everything here is a one-way projection of that state onto an isometric
 // diamond grid, never fed back into it.
 import { PAL } from './palette.js?v=14';
-import { key } from './grid.js?v=6';
+import { key } from './grid.js?v=7';
 import { magOf, roundsLeft } from './ammo.js?v=3';
-import { incomingArrivals, incomingThreats } from './combat.js?v=22';
+import { incomingArrivals, incomingThreats } from './combat.js?v=23';
 import { drawStandee, footprint, THICKNESS } from './standee.js?v=2';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
