@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=214';
-import { t } from './lang.js?v=214';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=214';
-import { Arena, rectShape } from './arena.js?v=214';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=215';
+import { t } from './lang.js?v=215';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=215';
+import { Arena, rectShape } from './arena.js?v=215';
 
 // v236: the tester's own little room. Enemy.update() takes an arena now.
 const TESTER_ARENA = new Arena(rectShape(11, 7));

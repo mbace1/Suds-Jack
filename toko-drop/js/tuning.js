@@ -127,6 +127,38 @@ export const TUNING = {
   // now the change lands under the black dip with a banner, so the looks can
   // be judged on their own. Every knob here already existed in the floor
   // shader — no new uniform, both render paths untouched.
+  // ── WEAPONS (v262) ─────────────────────────────────────────────────────────
+  // Five families, ONE IDEA EACH, and the idea is a SHAPE rather than a size:
+  //   spread  — covers an arc, poor against one body
+  //   burst   — a short burst down one line
+  //   laser   — pierces everything on the line
+  //   rapid   — pure single-target speed
+  //   shotgun — a close-range punch that falls apart at range (was RUSH-only)
+  // A pod always DROPS at level 1. Level 2 is EARNED by picking the same
+  // family up again, never rolled — and a hit costs you a level, so level 2
+  // is what clean play looks like rather than what a lucky drop looks like.
+  // `rate` multiplies FIRE_RATE (0.09 s): 1.5 means one cycle every 0.135 s.
+  weapons: {
+    // spread is the CROWD weapon: measured, a wider arc does NOT stop a body in
+    // your face eating three of the five (a dome is a metre across), it only
+    // costs coverage at range — so the arc stays and the shotgun earns point
+    // blank on its cadence instead
+    spread:  { l1: { shots: 5, step: 9,  rate: 1 },   l2: { shots: 7, step: 11, rate: 1 } },
+    // burst is CHUNKY where rapid is steady: a bigger volley on a slower
+    // cadence for the same damage, and the volley keeps the direction it was
+    // fired in, so it punishes tracking a moving target the way rapid does not
+    burst:   { l1: { rounds: 4, rate: 2.0 },          l2: { rounds: 6, rate: 2.2 } },
+    laser:   { l1: { rails: 1, rate: 1 },             l2: { rails: 2, railGap: 0.55, rate: 1.5 } },
+    rapid:   { l1: { rate: 0.45 },                    l2: { rate: 0.30 } },
+    // the shotgun OWNS point blank and is nearly useless past it — the one pod
+    // that asks you to stand where you are trying not to stand
+    shotgun: { l1: { pellets: 5, spread: 0.45, rate: 1.55 }, l2: { pellets: 7, spread: 0.5, rate: 1.5 } },
+    // a hit knocks a level off (never past level 1 — being gunless is not a
+    // punishment, it is a different game)
+    hitCostsLevel: true,
+    // how strongly a drop favours a family you are NOT holding (0 = pure random)
+    favourUnheld: 0.7,
+  },
   depth: {
     wavesPer: 8,
     cycleFrom: 1,
@@ -467,7 +499,11 @@ export const TUNING = {
     // The COOLER earns its name: boost-killing one sheds heat, so the roster
     // feeds the mode's economy instead of just standing in front of it.
     cooler: 'YELA_CUBE', coolerVent: 0.22,
-    shotgun: { pellets: 5, spread: 0.5, rateMult: 3.4 },  // close-range answer
+    // RUSH keeps its OWN shotgun cadence. The same mode is a classic pod now
+    // (TUNING.weapons.shotgun), and that pod is tuned to own point blank in a
+    // game you play at arm's length — dropped into RUSH it is a 2.2x buff to
+    // the mode's only gun, which is a rebalance of RUSH nobody asked for.
+    shotgun: { pellets: 5, spread: 0.5, rate: 3.4 },
     chain: { perKill: 1, cap: 100, window: 2.5 },         // boost kills only
     lives: { start: 3, extraEvery: 25000 },
     levels: { first: 60, second: 90, step: 30 },          // then +30s each
