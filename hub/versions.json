@@ -25,8 +25,8 @@
     "from": "VERSIONS.md"
   },
   "dropcabal": {
-    "v": "3",
-    "n": 3000,
+    "v": "4",
+    "n": 4000,
     "from": "VERSIONS.md"
   },
   "powder": {
@@ -35,8 +35,8 @@
     "from": "VERSIONS.md"
   },
   "paperboy": {
-    "v": "4",
-    "n": 4000,
+    "v": "5",
+    "n": 5000,
     "from": "cache token"
   },
   "skltr": {
@@ -50,18 +50,18 @@
     "from": "VERSIONS.md"
   },
   "flashprince": {
-    "v": "7",
-    "n": 7000,
+    "v": "8",
+    "n": 8000,
     "from": "VERSIONS.md"
   },
   "eeri": {
-    "v": "15.49",
-    "n": 15049,
+    "v": "15.50",
+    "n": 15050,
     "from": "VERSIONS.md"
   },
   "slaykallio": {
-    "v": "39",
-    "n": 39000,
+    "v": "40",
+    "n": 40000,
     "from": "VERSIONS.md"
   },
   "turf": {
@@ -80,8 +80,8 @@
     "from": "VERSIONS.md"
   },
   "radiofree": {
-    "v": "37",
-    "n": 37000,
+    "v": "38",
+    "n": 38000,
     "from": "cache token"
   },
   "tinyhawk": {
@@ -110,8 +110,8 @@
     "from": "VERSIONS.md"
   },
   "flowsnow": {
-    "v": "2",
-    "n": 2000,
+    "v": "3",
+    "n": 3000,
     "from": "VERSIONS.md"
   },
   "toko": {
@@ -120,16 +120,6 @@
     "from": "VERSIONS.md"
   },
   "tokolive": {
-    "v": "18",
-    "n": 18000,
-    "from": "VERSIONS.md"
-  },
-  "piritori": {
-    "v": "4.47",
-    "n": 4047,
-    "from": "VERSIONS.md"
-  },
-  "optionc-lab": {
     "v": "19",
     "n": 19000,
     "from": "VERSIONS.md"

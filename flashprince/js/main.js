@@ -464,9 +464,21 @@ class Game {
 const game = new Game();
 const STEP = 1000 / 60;
 let acc = 0, last = performance.now();
+// ── Toko at the table ──────────────────────────────────────────────────
+// The signature in the corner opens the counter over this game rather than
+// navigating away to the arcade (toko/js/table.js). Stopping the clock is the
+// one thing it cannot work out for itself. `last` is reset on the way back or the
+// accumulator swallows the whole conversation and runs five steps at once.
+let tokoHeld = false;
+window.__tokoTable = {
+  pause() { tokoHeld = true; },
+  resume() { tokoHeld = false; last = performance.now(); },
+};
+
 
 function frame(now) {
   requestAnimationFrame(frame);
+  if (tokoHeld) { last = now; return; }
   acc += Math.min(200, now - last);
   last = now;
   let n = 0;

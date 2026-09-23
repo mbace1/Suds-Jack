@@ -311,6 +311,12 @@ export function mountChat(anchor, opts = {}) {
     // he has to come back from wherever he was before he answers you.
     speed = 34,                // ms per character
     openOnLoad = false,
+    // WHERE HIS KEYS LIVE. On the arcade the window is right: the page is his.
+    // Inside a GAME it is not — the game is listening on the window too, and
+    // "3" would pick his third topic and also do whatever 3 does in that game.
+    // Passing the table's own element binds him inside it, so his keys stop at
+    // the table on the way out and the game never sees them. See table.js.
+    keysOn = null,
     // The cabinet this counter stands in, when the HOST knows — a game that
     // opens him at its own table passes itself. The referrer stays the
     // fallback for the arcade, where he has to guess where you walked in from.
@@ -323,6 +329,7 @@ export function mountChat(anchor, opts = {}) {
     && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const root = el('div', 'toko-chat');
+  const keyHost = keysOn || globalThis;
   root.setAttribute('aria-label', u('TALK_TO', { x: VOICE.artistRomaji }));
 
   // ── the closed bar ─────────────────────────────────────────────────────
@@ -1083,7 +1090,7 @@ export function mountChat(anchor, opts = {}) {
       }
     }
     else renderMenu();
-    addEventListener('keydown', onKey);
+    keyHost.addEventListener('keydown', onKey);
     // move focus into the room, but only for keyboard users — a tap should
     // not raise a focus ring on a button the thumb is already over
     const first = list.querySelector('button') || leave;
@@ -1099,7 +1106,7 @@ export function mountChat(anchor, opts = {}) {
     clearTimeout(idle);
     head.stop();
     startBadge();
-    removeEventListener('keydown', onKey);
+    keyHost.removeEventListener('keydown', onKey);
     if (lastInputWasKey) bar.focus();
   }
 
@@ -1205,7 +1212,7 @@ export function mountChat(anchor, opts = {}) {
     destroy() {
       if (typing) { typing.after = null; finishTyping(); }
       clearTimeout(idle);
-      removeEventListener('keydown', onKey);
+      keyHost.removeEventListener('keydown', onKey);
       removeEventListener('hashchange', fromHash);
       removeEventListener('keydown', sawKey, true);
       removeEventListener('pointerdown', sawTap, true);

@@ -288,8 +288,21 @@ function resize() {
 addEventListener('resize', resize); resize();
 
 let liveTuck = 0;
+
+// ── Toko at the table ──────────────────────────────────────────────────
+// The signature in the corner opens the counter over this game rather than
+// navigating away to the arcade (toko/js/table.js). Stopping the clock is the
+// one thing it cannot work out for itself. `last` is reset on the way back, or the
+// first frame after a conversation carries every second of it.
+let tokoHeld = false;
+window.__tokoTable = {
+  pause() { tokoHeld = true; },
+  resume() { tokoHeld = false; last = performance.now(); },
+};
+
 function frame(now) {
   requestAnimationFrame(frame);
+  if (tokoHeld) { last = now; return; }
   let dt = Math.min(0.1, (now - last) / 1000); last = now;
   time += dt;
   const inp = debugInput ?? input.read();

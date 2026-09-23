@@ -822,6 +822,19 @@ const clock = new THREE.Clock();
 const camBase = new THREE.Vector3();
 const camLook = new THREE.Vector3();
 
+
+// ── Toko at the table ──────────────────────────────────────────────────
+// The signature in the corner opens the counter over this game instead of
+// navigating away to the arcade (toko/js/table.js). These are the only two
+// things it cannot work out for itself: how to stop the stage, and what he
+// should already know when he opens.
+window.__tokoTable = {
+  pause() { if (state === 'play' && !paused) { setPaused(true); tokoHeld = true; } },
+  resume() { if (tokoHeld) { setPaused(false); tokoHeld = false; } },
+  cue() { return state === 'play' ? `STAGE ${stage}, ${score} POINTS. SAY WHAT YOU THINK` : null },
+};
+let tokoHeld = false;
+
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(0.05, clock.getDelta());

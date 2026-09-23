@@ -50,6 +50,14 @@ export function sign(opts = {}) {
     // picture, and a game that wants him on a phone puts a line on its own
     // pause screen, where a tap cannot collide with the stick.
     open = null,
+    // `table: true` is `open` without the game writing any of it: the badge
+    // seats Toko at the table over this game, and toko/js/table.js works out
+    // which game that is from the path. Pass an object to hand it the game's
+    // own seams — `{ pause, resume, cue }` — where it has them. The module is
+    // imported on the FIRST PRESS, never on boot, so a game that is never
+    // asked pays nothing; a failure to load leaves the badge as a picture
+    // rather than as a button that does nothing.
+    table = null,
     ground = TOKO.MAGENTA,
     ink = TOKO.PAPER,
     opacity = 0.9,
@@ -67,12 +75,24 @@ export function sign(opts = {}) {
   // A cursor, not a thumb. See the note at the top: on a touchscreen the
   // badge stays a picture, because the corner it sits in belongs to the game.
   const cursor = typeof matchMedia !== 'function' || matchMedia('(pointer: fine)').matches;
-  const live = !!href && cursor;
+
+  // The table is opened rather than navigated to, so it does not need the href
+  // — but it DOES still need a cursor. Bottom-left is where half these games
+  // put the left stick, and a 44px control sitting on it would eat the touch
+  // that starts a run; touch reaches him through the game's own screens.
+  let seat = open;
+  if (!seat && table) {
+    const cfg = table === true ? {} : table;
+    seat = () => import('./table.js?v=2')
+      .then(m => m.openTable(cfg))
+      .catch(err => console.warn('[toko] the table is unavailable:', err && err.message));
+  }
+  const live = (!!href || !!seat) && cursor;
 
   const host = document.createElement(live ? 'a' : 'div');
   host.className = 'toko-signature';
   if (live) {
-    host.href = href;
+    if (href) host.href = href;
     host.title = label;
     host.setAttribute('aria-label', label);
     // Navigate on pointerup, not click — the same trap hub/shell.js hit.
@@ -83,7 +103,7 @@ export function sign(opts = {}) {
     const go = (e) => {
       if (leaving || (e.type === 'pointerup' && e.button > 0)) return;
       e.preventDefault();
-      if (typeof open === 'function') { open(e); return; }   // stays; can open again
+      if (typeof seat === 'function') { seat(e); return; }   // stays; can open again
       leaving = true;
       location.href = href;
     };

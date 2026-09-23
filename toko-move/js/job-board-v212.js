@@ -3,7 +3,7 @@ import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=17';
 import {badge,inMinutes,about,cargoGlyph,minutes} from './ui.js?v=1';
 import {regularAt,standingOf,standingPips} from './regulars.js?v=3';
 import {parcelHtml,bagHtml,colourOf,unitsOf} from './parcels.js?v=1';
-import {planEstimate,nextDeparture,layerFor} from './timetable.js?v=1';
+import {planEstimate,nextDeparture,layerFor} from './timetable.js?v=2';
 const esc=s=>String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c));
 const nodeName=(tm,id)=>tm.city?.nodes?.find(n=>n.id===id)?.name||id;
 // layerFor and nearestPathIndex used to be declared here as well. The local

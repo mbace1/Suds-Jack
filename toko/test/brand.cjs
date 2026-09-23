@@ -33,6 +33,16 @@ const MIME = {
 };
 
 const SIGNED = ['toko-drop', 'paperboy', 'dropcabal', 'hyperdagger', 'flashprince'];
+// Every game that says `sign({ table: true })`, and the catalogue id its PATH
+// should resolve to. They are written down rather than discovered because the
+// point of the check is that the pair agrees — Suds Jack's cabinet plays
+// `sudz/`, not `sudsjack/`, and a table in the wrong folder files its notes
+// under a cabinet nobody is standing in.
+const TABLED = [
+  ['hyperdagger', 'hyperdagger'], ['paperboy', 'paperboy'], ['dropcabal', 'dropcabal'],
+  ['flashprince', 'flashprince'], ['flowsnow', 'flowsnow'], ['slaykallio', 'slaykallio'],
+  ['eeri', 'eeri'], ['radiofree', 'radiofree'],
+];
 
 let pass = 0, fail = 0;
 const ok = (name, cond, detail) => {
@@ -1265,6 +1275,49 @@ function serve() {
     await page.screenshot({ path: path.join(ROOT, 'toko/test/shots/board.png'), fullPage: true });
   }
   await page.close();
+
+  // ── every game that seats him at the table ─────────────────────────────
+  // `sign({ table: true })` and nothing else: the badge opens the counter over
+  // the game rather than leaving for the arcade, and toko/js/table.js works out
+  // which cabinet it is standing in from the PATH — so this also catches a game
+  // whose folder and catalogue entry have drifted apart.
+  console.log('\nthe table, in every game that lays one');
+  for (const [game, id] of TABLED) {
+    const p = await newPage();
+    const errs = [];
+    p.on('pageerror', e => errs.push(String(e).slice(0, 120)));
+    await p.goto(`${base}/${game}/index.html`, { waitUntil: 'domcontentloaded' });
+    await p.waitForTimeout(1500);
+    // the event the badge listens for. A real click is not always possible —
+    // some of these cover their own corner with a title screen — and what is
+    // under test is the wiring, not that game's z-index.
+    await p.evaluate(() => document.querySelector('.toko-signature')
+      .dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, button: 0 })));
+    const seated = await p.waitForFunction(
+      () => document.querySelector('.toko-table .toko-chat.is-open'), null, { timeout: 25000 })
+      .then(() => true, () => false);
+    ok(`${game}: the badge seats him at the table`, seated);
+    if (seated) {
+      const at = await p.evaluate(() => ({
+        from: window.__tokoLastTable && window.__tokoLastTable.from,
+        cat: (window.__hub && window.__hub.games || []).length,
+        send: !!(window.__hub && window.__hub.feedback && window.__hub.feedback.send),
+        focus: document.querySelector('.toko-table').contains(document.activeElement),
+      }));
+      ok(`${game}: he knows he is standing in ${id}`, at.from === id, String(at.from));
+      ok(`${game}: the real catalogue and transport are there`, at.cat > 1 && at.send,
+        `${at.cat} cabinets, send ${at.send}`);
+      // a key typed at him must not also be a key in the game
+      ok(`${game}: the table holds the focus`, at.focus);
+      for (let i = 0; i < 3 && await p.evaluate(() => !!document.querySelector('.toko-table')); i++) {
+        await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+      }
+      ok(`${game}: Esc puts you back`, await p.evaluate(() => !document.querySelector('.toko-table')));
+    }
+    ok(`${game}: nothing of ours errored`,
+      !errs.some(e => /toko|table|chat|signature/i.test(e)), errs.slice(0, 2).join(' | '));
+    await p.close();
+  }
 
   // ── every signed game ──────────────────────────────────────────────────
   for (const game of SIGNED) {

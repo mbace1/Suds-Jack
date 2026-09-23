@@ -290,6 +290,20 @@ function updateCamera(dt) {
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
+
+// ── Toko at the table ──────────────────────────────────────────────────
+// The signature in the corner opens the counter over this game instead of
+// navigating away to the arcade (toko/js/table.js). These are the only two
+// things it cannot work out for itself: how to stop the route, and what he
+// should already know when he opens.
+window.__tokoTable = {
+  pause() { if (gameState === 'playing') { gameState = 'paused'; tokoHeld = true; } },
+  resume() { if (tokoHeld) { gameState = 'playing'; tokoHeld = false; prev = performance.now(); } },
+  cue() { return gameState === 'playing' || gameState === 'paused'
+    ? `DAY ${day}, ${score} POINTS. SAY WHAT YOU THINK`
+    : null },
+};
+let tokoHeld = false;
 let prev = performance.now();
 showTitle();
 updateCamera(0);

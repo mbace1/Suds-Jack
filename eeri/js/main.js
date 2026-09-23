@@ -37,6 +37,15 @@ import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v
 import { slugOf, labelOf, parseSlug } from './levelid.js?v=54';
 import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=54';
 
+// ── Toko at the table ──────────────────────────────────────────────────────
+// The signature opens the counter over the game instead of leaving for the
+// arcade (toko/js/table.js). Declared HERE, at module scope, and not beside
+// the loop it guards: that loop is built after the title screen, and the badge
+// is on screen before it — published late, the first thing a player can press
+// is a table that does not know how to stop the game.
+let tokoHeld = false;
+window.__tokoTable = { pause() { tokoHeld = true; }, resume() { tokoHeld = false; } };
+
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -900,7 +909,13 @@ async function boot() {
   cam.cut(player.x, player.y + 3);
   const clock = new THREE.Clock();
 
+  // Held while Toko is at the table (see __tokoTable at the top of this file).
+  // getDelta() is still CALLED: it is what consumes the elapsed time, and
+  // skipping it hands the first frame back the whole conversation. The guard
+  // is one line INSIDE the loop, because the smoke gate reads the loop's
+  // first 400 characters for the pad poll.
   renderer.setAnimationLoop(() => {
+    if (tokoHeld) { clock.getDelta(); return; }
     const dt = Math.min(clock.getDelta(), 0.033);
     // controller first: polled in EVERY mode, not inside the play branch —
     // a pad that cannot reach the menu is a pad that cannot start the game

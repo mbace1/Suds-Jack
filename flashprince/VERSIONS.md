@@ -4,6 +4,20 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v8 — 2026-09-21
+
+**Toko at the table.** The signature in the corner opens the counter over this
+game instead of navigating away to the arcade, so the run you want to say
+something about is still there when you get back. Esc or BACK returns you to
+it, and a note filed here lands under this cabinet through the arcade's own
+transport. The fixed-step accumulator is reset on the way back, or five steps run at once.
+
+Everything but the two lines below lives in `toko/js/table.js`, which works out
+which game it is standing in from the path and keeps its own input off the
+window — the game never sees a tap, a touch or a key that happened at the
+table. `window.__tokoTable` is this game's half: how to stop the clock, and
+what he should already know when he opens.
+
 ## v7 — 2026-09-05
 
 Traversal validation close-out. The public Hub route remains the real campaign; the dedicated movement lab now covers the two remaining unverified locomotion cases in a real Chromium input pass.

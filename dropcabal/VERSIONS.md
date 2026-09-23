@@ -8,6 +8,20 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v4 — 2026-09-21
+
+**Toko at the table.** The signature in the corner opens the counter over this
+game instead of navigating away to the arcade, so the run you want to say
+something about is still there when you get back. Esc or BACK returns you to
+it, and a note filed here lands under this cabinet through the arcade's own
+transport. It borrows the stage pause the game already had.
+
+Everything but the two lines below lives in `toko/js/table.js`, which works out
+which game it is standing in from the path and keeps its own input off the
+window — the game never sees a tap, a touch or a key that happened at the
+table. `window.__tokoTable` is this game's half: how to stop the clock, and
+what he should already know when he opens.
+
 ## v3 — 2026-07-27
 **A controller plays it properly, and Start opens a menu**
 - Reads a gamepad **natively** instead of through the hub's key bridge: left stick

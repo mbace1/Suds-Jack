@@ -1,5 +1,22 @@
 # EERI — versions
 
+## v15.50 — 2026-09-21
+
+**Toko at the table.** The signature in the corner opens the counter over this
+game instead of navigating away to the arcade, so the run you want to say
+something about is still there when you get back. Esc or BACK returns you to
+it, and a note filed here lands under this cabinet through the arcade's own
+transport. `clock.getDelta()` is still CALLED while held — it is what consumes the elapsed
+time — so coming back does not hand the first frame the whole conversation.
+Nothing in `spec/eeri.json` moves: this is the cabinet's chrome, not the game's
+rules, so the Godot port has nothing to mirror.
+
+Everything but the two lines below lives in `toko/js/table.js`, which works out
+which game it is standing in from the path and keeps its own input off the
+window — the game never sees a tap, a touch or a key that happened at the
+table. `window.__tokoTable` is this game's half: how to stop the clock, and
+what he should already know when he opens.
+
 ## v15.49 — 2026-08-28 — one authored camera moment per world (Phase C)
 
 **PHASING §3 Phase C asks for "one authored camera moment per world — a
