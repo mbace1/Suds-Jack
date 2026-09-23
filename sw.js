@@ -19,7 +19,7 @@
 // caching their files from out here would be two answers to the same question.
 // A narrower scope wins the page, so those keep controlling themselves.
 
-const VERSION = 'v106';
+const VERSION = 'v107';
 const CACHE = `suds-hub-${VERSION}`;
 
 const SHELL = [
@@ -38,10 +38,10 @@ const SHELL = [
   './hub/playlog.js',
   './hub/toko-cabinet-dom.js?v=6',
   './hub/topics.js?v=10',
-  './toko/js/chat.js?v=21',
-  './toko/js/dialogue.fi.js?v=21',
-  './toko/js/dialogue.ja.js?v=21',
-  './toko/js/dialogue.js?v=21',
+  './toko/js/chat.js?v=22',
+  './toko/js/dialogue.fi.js?v=22',
+  './toko/js/dialogue.ja.js?v=22',
+  './toko/js/dialogue.js?v=22',
   './toko/js/face.js',
   './toko/js/glitch.js',
   './toko/js/lockup.js',

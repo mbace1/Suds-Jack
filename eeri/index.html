@@ -577,14 +577,14 @@
 <div id="veil" aria-hidden="true"></div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=66"></script>
-<script type="module" src="./js/main.js?v=61"></script>
+<script type="module" src="./js/main.js?v=62"></script>
 <script type="module">
   // bottom-right: the HOME button owns top-left and the HUD owns top-right.
   // Under a thumb that corner also holds the jump button (#tJ, 62px at
   // inset 16), and the badge at inset 12 sat on top of it — inert, per the
   // house rule, but covering the one control the game is played with. So on
   // a coarse pointer it climbs clear of the whole button row.
-  import { sign } from '../toko/js/signature.js?v=4';
+  import { sign } from '../toko/js/signature.js?v=5';
   const coarse = matchMedia('(pointer: coarse)').matches;
   // The plate owns the entire bottom strip now, so the old inset of 92 —
   // which was measured to clear a row of 62px circles — lands squarely on
@@ -593,7 +593,7 @@
   // screen and about 23% up a portrait one, so 210 clears both. The badge
   // is inert under a thumb anyway (toko's own rule), but a mark sitting on
   // the one control the game is played with is still wrong.
-  sign({ corner: 'bottom-right', counter: true, inset: coarse ? 210 : 12 });
+  sign({ corner: 'bottom-right', counter: true, inset: coarse ? 210 : 12, table: true });
 
   // …and on a plated pad it moves ONTO the plate. `#touch` is already a box
   // that matches the plate image exactly, so re-parenting into it means the

@@ -7,6 +7,20 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v40 — 2026-09-23
+
+**Toko at the table.** The signature in the corner opens the counter over this
+game instead of navigating away to the arcade, so the run you want to say
+something about is still there when you get back. Esc or BACK returns you to
+it, and a note filed here lands under this cabinet through the arcade's own
+transport. The replay queue holds with it, so a fight does not act itself out while you are talking.
+
+Everything but the two lines below lives in `toko/js/table.js`, which works out
+which game it is standing in from the path and keeps its own input off the
+window — the game never sees a tap, a touch or a key that happened at the
+table. `window.__tokoTable` is this game's half: how to stop the clock, and
+what he should already know when he opens.
+
 ## v39 — 2026-09-15
 **The Boxer compounds: thorns grow on the blow they answer**
 

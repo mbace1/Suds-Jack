@@ -1,4 +1,4 @@
-import {layerFor,nearestPathIndex,pathDirection,planEstimate} from './timetable.js?v=1';
+import {layerFor,nearestPathIndex,pathDirection,planEstimate} from './timetable.js?v=2';
 import {inMinutes,about,minutes} from './ui.js?v=1';
 // Toko Move v2.12.2 — catch exact existing HSL gameplay vehicles at transfer hubs.
 const uniq=a=>[...new Set(a)];

@@ -7,6 +7,20 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v6 — 2026-09-23
+
+**Toko at the table.** The signature in the corner opens the counter over this
+game instead of navigating away to the arcade, so the run you want to say
+something about is still there when you get back. Esc or BACK returns you to
+it, and a note filed here lands under this cabinet through the arcade's own
+transport. The clock is reset on the way back, or the first frame carries the whole conversation. Measured on main: the rider froze at exactly the same z for three seconds with him open.
+
+Everything but the two lines below lives in `toko/js/table.js`, which works out
+which game it is standing in from the path and keeps its own input off the
+window — the game never sees a tap, a touch or a key that happened at the
+table. `window.__tokoTable` is this game's half: how to stop the clock, and
+what he should already know when he opens.
+
 ## v5 — 2026-09-18
 **The run gets somewhere to go: five chapters, and a glacier with teeth**
 - **One run was one formula from top to bottom.** A gully, dunes, rollers and

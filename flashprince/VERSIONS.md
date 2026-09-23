@@ -1,5 +1,19 @@
 # Flash Prince — versions
 
+## v69 — 2026-09-23
+
+**Toko at the table.** The signature in the corner opens the counter over this
+game instead of navigating away to the arcade, so the run you want to say
+something about is still there when you get back. Esc or BACK returns you to
+it, and a note filed here lands under this cabinet through the arcade's own
+transport. The fixed-step accumulator is reset on the way back, or the whole conversation runs as steps at once.
+
+Everything but the two lines below lives in `toko/js/table.js`, which works out
+which game it is standing in from the path and keeps its own input off the
+window — the game never sees a tap, a touch or a key that happened at the
+table. `window.__tokoTable` is this game's half: how to stop the clock, and
+what he should already know when he opens.
+
 ## v68 — 2026-09-08
 
 **The post-crown rooms are now a complete traversal route.** The wildlife

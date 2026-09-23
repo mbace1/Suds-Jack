@@ -754,6 +754,19 @@ const clock = new THREE.Clock();
 const camBase = new THREE.Vector3();
 const camLook = new THREE.Vector3();
 
+
+// ── Toko at the table ──────────────────────────────────────────────────
+// The signature in the corner opens the counter over this game rather than
+// navigating away to the arcade (toko/js/table.js). Stopping the clock is the
+// one thing the table cannot work out for itself. setPaused() is already the seam; it is what
+// the game's own pause key calls.
+let tokoHeld = false;
+window.__tokoTable = {
+  pause() { if (state === 'play' && !paused) { setPaused(true); tokoHeld = true; } },
+  resume() { if (tokoHeld) { setPaused(false); tokoHeld = false; } },
+  cue() { return state === 'play' ? `STAGE ${stage}, ${score} POINTS. SAY WHAT YOU THINK` : null },
+};
+
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(0.05, clock.getDelta());

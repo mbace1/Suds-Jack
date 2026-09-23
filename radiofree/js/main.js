@@ -587,7 +587,20 @@ function bindControls() {
   });
 }
 
+
+// ── Toko at the table ──────────────────────────────────────────────────
+// The signature in the corner opens the counter over this game rather than
+// navigating away to the arcade (toko/js/table.js). Stopping the clock is the
+// one thing the table cannot work out for itself. The broadcast keeps its own time, so a reader
+// left mid-sentence is still mid-sentence when you come back.
+let tokoHeld = false;
+window.__tokoTable = {
+  pause() { tokoHeld = true; },
+  resume() { tokoHeld = false; last = performance.now(); },
+};
+
 function loop(now) {
+  if (tokoHeld) { last = now; raf = requestAnimationFrame(loop); return; }
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   const p = posts[active];

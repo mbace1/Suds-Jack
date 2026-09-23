@@ -1,4 +1,4 @@
-import { mountChat } from '../toko/js/chat.js?v=21';
+import { mountChat } from '../toko/js/chat.js?v=22';
 import { drawFace } from '../toko/js/face.js';
 import { TOKO } from '../toko/js/palette.js';
 const slot=document.querySelector('#chat-slot'),chat=mountChat(slot,{where:'in',openOnLoad:true});window.__tokoLiveChat=chat;

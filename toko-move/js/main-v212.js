@@ -10,7 +10,7 @@ import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v
 import {mountEvents} from './events.js?v=4';
 import {mountRival} from './rival.js?v=1';
 import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=2';
-import {planEstimate} from './timetable.js?v=1';
+import {planEstimate} from './timetable.js?v=2';
 import {ShiftLog} from './shiftlog.js?v=2';
 import {Trails} from './trails.js?v=2';
 import {mountHubTactics} from './hub-tactics-v212.js?v=5';

@@ -290,6 +290,20 @@ function updateCamera(dt) {
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
+
+// ── Toko at the table ──────────────────────────────────────────────────
+// The signature in the corner opens the counter over this game rather than
+// navigating away to the arcade (toko/js/table.js). Stopping the clock is the
+// one thing the table cannot work out for itself. It already HAS a paused state; this borrows
+// it without its overlay, which belongs to the game's own Esc.
+let tokoHeld = false;
+window.__tokoTable = {
+  pause() { if (gameState === 'playing') { gameState = 'paused'; tokoHeld = true; } },
+  resume() { if (tokoHeld) { gameState = 'playing'; tokoHeld = false; prev = performance.now(); } },
+  cue() { return gameState === 'playing' || gameState === 'paused'
+    ? `DAY ${day}, ${score} POINTS. SAY WHAT YOU THINK`
+    : null },
+};
 let prev = performance.now();
 showTitle();
 updateCamera(0);
