@@ -23,7 +23,7 @@
 // landed on, because "MP4" that turns out to be AV1 is a fact the person
 // uploading it needs.
 
-import { planFilm, paintFilm, shotAt, actAt, W, H } from './film.js?v=66';
+import { planFilm, paintFilm, shotAt, actAt, W, H } from './film.js?v=67';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';
 export { W, H };

@@ -74,7 +74,7 @@ rule. And the reveal earns him a **reverse shot** — the p5 guide's *"a reveal,
 then the reaction"* — a 0.7 s TAKE: lids shut for four frames, then a
 `backOut` pop to eyes wide (squash 1.12), a bigger grin (1.28 settling to
 1.14), a lean back, the head up and tilted 0.13 rad with a small wobble that
-dies in 0.4 s. His set goes amber with the tear he already had. The feed's
+dies in 0.4 s. His set goes amber with the tear he already had. Since v67 he has arms (the current Toko, Toko Live's figure): one hand makes the point of each sentence, alternating sides, and both go up on the take. The feed's
 mouth gain of 0.09 stays the feed's; the film asks for 0.26.
 
 **A palette arc, not a state.** `LOOKS` gives every shot a key colour and the
@@ -114,7 +114,7 @@ length a clip actually is.
 | **Reveal** | cut flash 0.10 s → the graphic, **amber**, at full width | | The panel is blitted at an **integer** scale (×7 for 128 px: 896 × 1064) — not the phone card it sits in on the feed, which made it a stamp in the first export |
 | Hold | the graphic | Σ pairs + the tell | The **technique** pops in as the payoff word (96 px, growing 30% across the hold, `AMBER_HOT`); each `{{spun|plain}}` pair is its own caption — the wording with a **strike wiping across** (0.25 s), then the plain reading **typing on** (28 ms a character) with a cursor; 1 s + 1 s / 17 chars each, gap 0.3 s; then the **tell** as a question; the **figure counter** rolls from `claim` to `plain` over 0.9 s (`easeOut`) with the claim struck small above it |
 | Reveal shot | the graphic, amber | 1.0 s | DECODE stamped over it; the payoff word pops |
-| Take | Toko, amber | 0.7 s | The reaction: lids shut, pop wide, lean back, the tear |
+| Take | Toko, amber | 0.7 s | The reaction: lids shut, pop wide, lean back, both hands up beside his face, the tear |
 | Sign-off | card | 1.6 s | Wordmark, frequency, the waveform flatlining, the fiction line; opens from the dot the tube collapsed to |
 
 Every shot start gets the cut flash (white at 0.34, three frames) and the
