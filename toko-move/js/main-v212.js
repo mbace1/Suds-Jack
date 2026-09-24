@@ -21,7 +21,7 @@ const BUILD_VERSION='2.48';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
-tm.walkFactor=walkFactor(tm.cityDay)*(tm.kitFx?.walk||1);   // kit.js: the bike
+tm.walkFactor=walkFactor(tm.cityDay);
 {const mk=marketOf(tm.cityDay);
  if(mk){const at=(tm.transit?.pack?.stops||[]).filter(s=>s.name===mk.name);
   tm.market=at.length?{...mk,lat:at.reduce((a,s)=>a+s.lat,0)/at.length,lon:at.reduce((a,s)=>a+s.lon,0)/at.length}:mk;}

@@ -38,7 +38,7 @@ server.listen(0, '127.0.0.1', async () => {
   try {
     // ── ?kit= is for pinned shifts, never the daily ──────────────────────
     await boot('?kit=bag,app');
-    const dk = await page.evaluate(() => ({ kit: window.__tm.kit, cap: window.__tm.challenge.capacity(), walk: window.__tm.walkFactor, kind: window.__tm.shiftInfo.kind }));
+    const dk = await page.evaluate(() => ({ kit: window.__tm.kit, cap: window.__tm.challenge.capacity(), kind: window.__tm.shiftInfo.kind }));
     ok("the daily ignores ?kit= — its result is one everybody compares", dk.kind === 'daily' && dk.kit.length === 0 && dk.cap === 5, JSON.stringify(dk));
     await boot('?shift=5&day=none&kit=bag,app');
     const pk = await page.evaluate(() => ({ cap: window.__tm.challenge.capacity(), drop: window.__tm.challenge.dropPay(100) }));
@@ -85,7 +85,7 @@ server.listen(0, '127.0.0.1', async () => {
     ok('the next page is Tuesday', (await page.locator('#play').textContent()) === 'START TUESDAY');
     ok("Tuesday's regulars remember Monday", (await page.evaluate(() => window.__tm.challenge.standing.kiosk)) === 1);
     const kitOn = await page.evaluate(() => ({ kit: window.__tm.kit, fx: window.__tm.challenge.kit }));
-    ok(`the kit taken on Monday night is on Tuesday's shift (${picked})`, kitOn.kit.includes(picked) && kitOn.fx && JSON.stringify(kitOn.fx) !== JSON.stringify({ capacity: null, walk: 1, fresh: 1, limit: 1, known: 0, streak: null, drops: 1 }), JSON.stringify(kitOn));
+    ok(`the kit taken on Monday night is on Tuesday's shift (${picked})`, kitOn.kit.includes(picked) && kitOn.fx && JSON.stringify(kitOn.fx) !== JSON.stringify({ capacity: null, pay: 1, limit: 1, known: 0, streak: null, drops: 1 }), JSON.stringify(kitOn));
     const tueSeed = await page.evaluate(() => window.__tm.shiftSeed);
     await page.tap('#play'); await page.evaluate(() => window.__tm.flow.runTicks(300));
     await page.evaluate(() => { const ch = window.__tm.challenge; ch.score += 730; ch.results.push('ok'); window.__tm.flow.runTicks(1); });   // as if a delivery landed

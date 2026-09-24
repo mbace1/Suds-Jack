@@ -81,7 +81,7 @@ export class DeliveryChallenge{
   if(Number.isFinite(est)&&est>0)return Math.round((est*DEADLINE_GRACE+30*scale)*k);
   return Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*scale*k);}
  refreshOffers(){if(this.index>=this.target){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${this.shiftTag()}${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];
-  for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=Math.round((90+dist*9)*payFor(cargo));cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
+  for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=this.jobPay((90+dist*9)*payFor(cargo));cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
   // Loop 47: a procedural job is constrained by a network relationship, never
   // rolled blind. Measured before this: the first offer taken had no compatible
   // vehicle for 1204 ticks — two minutes of wall time on the tutorial job —
@@ -141,9 +141,10 @@ export class DeliveryChallenge{
  streakStep(){return this.kit?.streak||0.25;}   // kit.js: a good name
  streakMult(){return 1+this.streakStep()*Math.max(0,Math.min(4,this.streak-1));}
  // kit.js: business cards — a regular you have never met knows you anyway.
+ jobPay(v){return Math.round(v*(this.kit?.pay||1));}   // kit.js: a better contract
  dropPay(v){return Math.round(v*(this.kit?.drops||1));}   // kit.js: a courier app
  standingFor(id){return Math.max(standingOf(this.standing,id),this.kit?.known||0);}
- earn(job,elapsed,legs=1){const c=CARGO[job.cargo]||CARGO.documents,late=elapsed>job.limit;let earned=late?Math.round(job.value*.5):job.value,note=late?'LATE':'ON TIME';if(c.freshness){const freshLimit=Math.round(job.limit*Math.min(1,c.freshness*(this.kit?.fresh||1)));if(elapsed<=freshLimit){const bonus=Math.round(job.value*.25);earned+=bonus;this.bonuses+=bonus;note='FRESH BONUS';}else if(!late){earned=Math.round(earned*.8);note='COOLED';}}if(c.fragile&&legs===1&&!late){earned+=35;this.bonuses+=35;note='FRAGILE SAFE';}if(c.express&&elapsed<=Math.round(job.limit*.7)){earned+=40;this.bonuses+=40;note='EXPRESS BONUS';}
+ earn(job,elapsed,legs=1){const c=CARGO[job.cargo]||CARGO.documents,late=elapsed>job.limit;let earned=late?Math.round(job.value*.5):job.value,note=late?'LATE':'ON TIME';if(c.freshness){const freshLimit=Math.round(job.limit*c.freshness);if(elapsed<=freshLimit){const bonus=Math.round(job.value*.25);earned+=bonus;this.bonuses+=bonus;note='FRESH BONUS';}else if(!late){earned=Math.round(earned*.8);note='COOLED';}}if(c.fragile&&legs===1&&!late){earned+=35;this.bonuses+=35;note='FRAGILE SAFE';}if(c.express&&elapsed<=Math.round(job.limit*.7)){earned+=40;this.bonuses+=40;note='EXPRESS BONUS';}
   if(late)this.streak=0;else{this.streak++;this.bestStreak=Math.max(this.bestStreak,this.streak);}
   {const m=this.streakMult();if(m>1){const before=earned;earned=Math.round(earned*m);this.bonuses+=earned-before;note=`${note} ×${m}`;}}
   // The person at the far end. The tip is paid on the standing you ARRIVED
@@ -237,7 +238,7 @@ export class DeliveryChallenge{
   const pick=fits.length?fits[(seed>>>7)%fits.length]:cands.sort((a,b)=>a.est-b.est)[0];if(!pick){this.pendingHandoff=null;return;}
   const cargo=CARGO_KEYS[(seed>>>5)%CARGO_KEYS.length],dist=Math.max(1,Math.round(pick.est/40));
   this.pendingHandoff={id:`handoff:${this.index}:${pick.to}`,stops:[at,pick.to],label:`${this.name(at)} → ${this.name(pick.to)}`,cargo,
-   limit:this.deadlineFor({from:at,to:pick.to,cargo,dist}),value:Math.round((90+dist*9)*payFor(cargo)),handoff:true,
+   limit:this.deadlineFor({from:at,to:pick.to,cargo,dist}),value:this.jobPay((90+dist*9)*payFor(cargo)),handoff:true,
    // No name on the door (v2.43, owner: "recipients names aren't needed"). A
    // hand-off is a parcel put in your hand where you stand, and who put it
    // there was never a decision — the window and the bonus are.
