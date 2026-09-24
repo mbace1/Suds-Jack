@@ -4,8 +4,8 @@
 //   B-ROLL   — low-poly Helsinki news footage
 // Face shots are handled in codec.js (large masked Toko), not here.
 
-import { PAL } from './palette.js?v=63';
-import { mix, shade, bayer } from './screen.js?v=63';
+import { PAL } from './palette.js?v=66';
+import { mix, shade, bayer } from './screen.js?v=66';
 
 export const PANEL_W = 128, PANEL_H = 152;
 const W = PANEL_W, H = PANEL_H;
@@ -38,11 +38,29 @@ const GLYPH = {
   '+': ['000', '010', '111', '010', '000'], '-': ['000', '000', '111', '000', '000'],
   '.': ['000', '000', '000', '000', '100'], ' ': ['000', '000', '000', '000', '000'],
   '=': ['000', '111', '000', '111', '000'], 'x': ['000', '101', '010', '101', '000'],
+  '\u20ac': ['011', '110', '111', '110', '011'], '/': ['001', '001', '010', '100', '100'],
+  // The table was digits and punctuation only, so every letter label in this
+  // file — 'PCT', 'REM', 'CAB', 'OBS', 'LATE' — has been drawing as a row of
+  // question marks since it was written. A unit is a word more often than not,
+  // so the alphabet is the price of a figure that says what it counts.
+  A: ['111', '101', '111', '101', '101'], B: ['110', '101', '110', '101', '110'],
+  C: ['111', '100', '100', '100', '111'], D: ['110', '101', '101', '101', '110'],
+  E: ['111', '100', '111', '100', '111'], F: ['111', '100', '111', '100', '100'],
+  G: ['111', '100', '101', '101', '111'], H: ['101', '101', '111', '101', '101'],
+  I: ['111', '010', '010', '010', '111'], J: ['001', '001', '001', '101', '111'],
+  K: ['101', '101', '110', '101', '101'], L: ['100', '100', '100', '100', '111'],
+  M: ['101', '111', '111', '101', '101'], N: ['101', '111', '111', '111', '101'],
+  O: ['111', '101', '101', '101', '111'], P: ['111', '101', '111', '100', '100'],
+  Q: ['111', '101', '101', '111', '011'], R: ['111', '101', '111', '110', '101'],
+  S: ['111', '100', '111', '001', '111'], T: ['111', '010', '010', '010', '010'],
+  U: ['101', '101', '101', '101', '111'], V: ['101', '101', '101', '101', '010'],
+  W: ['101', '101', '111', '111', '101'], X: ['101', '101', '010', '101', '101'],
+  Y: ['101', '101', '010', '010', '010'], Z: ['111', '001', '010', '100', '111'],
 };
 
 export function num(scr, x, y, text, color) {
   let cx = x;
-  for (const ch of String(text)) {
+  for (const ch of String(text).toUpperCase()) {
     const g = GLYPH[ch] ?? GLYPH['?'];
     for (let r = 0; r < 5; r++) for (let c = 0; c < 3; c++) {
       if (g[r][c] === '1') scr.px(cx + c, y + r, 1, 1, color);
@@ -51,9 +69,123 @@ export function num(scr, x, y, text, color) {
   }
 }
 
-function chart(scr, t, d) {
+// ── the bulletin's own numbers ──────────────────────────────────────
+//
+// Every panel below used to carry its numbers as literals — `chart2` said
+// "+40% becomes +4%" under whichever bulletin the rotation happened to put it
+// under, and `crowd` emptied nine hundred seats down to four whether the story
+// was about nine hundred of anything or not. The picture and the copy told
+// different stories, in a feed whose whole subject is a picture and a copy
+// telling different stories.
+//
+// So a bulletin may now carry `figures`: an ordered list of
+// `{claim, plain, unit}` — what the broadcast asserts, what it plainly means,
+// and what it counts. `figures[0]` is the headline pair every numeric panel
+// reads; `figures[1]` is the second pair the two-number panels want. A story
+// with no figures renders EXACTLY as it did, because the old literal is passed
+// in as the fallback at every call site — that is what makes this safe to land
+// on a wire nobody has re-authored.
+//
+// And the numbers do not only reach the LABELS. `kept()` is the share of the
+// claim the plain reading leaves standing, and it drives how many cells go
+// dark, how far the baseline is cut, how many seats stay lit. A caption that
+// agrees with the bulletin while the bars disagree is the same bug one layer
+// down.
+
+function fmt(v, unit = '', sign = false) {
+  if (!Number.isFinite(v)) return '?';
+  const a = Math.abs(v);
+  const r = a >= 100 ? Math.round(v)
+    : a >= 10 ? Math.round(v * 10) / 10
+    : Math.round(v * 100) / 100;
+  return (sign && r > 0 ? '+' : '') + String(r) + unit;
+}
+
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+
+export function readFigures(list) {
+  // ABSENT and EMPTY are different answers. A bulletin written before this
+  // field existed has no opinion, and its panel keeps the literal it has
+  // always drawn. A bulletin that says `figures: []` has looked and found no
+  // number — so the panel prints NOTHING rather than somebody else's
+  // arithmetic, which is the whole defect this field was added to close.
+  const declared = Array.isArray(list);
+  const rows = (Array.isArray(list) ? list : [])
+    .filter(f => f && Number.isFinite(f.claim) && Number.isFinite(f.plain))
+    .slice(0, 4)
+    .map(f => ({
+      claim: f.claim,
+      plain: f.plain,
+      unit: typeof f.unit === 'string' ? f.unit.slice(0, 4) : '',
+      // A leading + belongs to a CHANGE and to nothing else. It is the
+      // bulletin's to ask for: `+92.5BN` under a budget total and `+700000`
+      // under a population were both the panel deciding what kind of number
+      // it had been handed.
+      sign: f.sign === true,
+    }));
+  const at = (i) => rows[i] || null;
+  // once a bulletin has declared its figures, a row it did not declare is a
+  // number it does not have — so the label is blank, never the fallback
+  const miss = (dflt) => (declared ? '' : dflt);
+  return {
+    rows,
+    declared,
+    has: (i) => !!at(i),
+    // the label at this decode level, or the panel's own literal when the
+    // bulletin brought no number of its own
+    say(i, d, dflt, th = 0.4, sign = false) {
+      const f = at(i);
+      if (!f) return miss(dflt);
+      return fmt(d > th ? f.plain : f.claim, f.unit, sign && f.sign);
+    },
+    claim(i, dflt, sign = false) { const f = at(i); return f ? fmt(f.claim, f.unit, sign && f.sign) : miss(dflt); },
+    plain(i, dflt, sign = false) { const f = at(i); return f ? fmt(f.plain, f.unit, sign && f.sign) : miss(dflt); },
+    raw(i, key, dflt) { const f = at(i); return f ? f[key] : dflt; },
+    // how much of the claim the plain reading leaves standing, 0..1. A plain
+    // reading of the opposite sign leaves nothing: "growth of 260" that is
+    // really a fall of 92 did not keep a third of itself, it kept none.
+    kept(i, dflt) {
+      const f = at(i);
+      if (!f || !Math.abs(f.claim)) return dflt;
+      if (f.plain < 0 !== f.claim < 0) return 0;
+      return clamp01(Math.abs(f.plain) / Math.abs(f.claim));
+    },
+    // how far apart the two numbers are, whichever way round. `kept` answers
+    // "what survived", which is the wrong question when the plain reading is
+    // the BIGGER number: it clamps to 1 and the picture reports no change on
+    // exactly the bulletins that found one.
+    gap(i, dflt) {
+      const f = at(i);
+      if (!f || !Math.abs(f.claim)) return dflt;
+      if (f.plain < 0 !== f.claim < 0) return 1;
+      const lo = Math.min(Math.abs(f.claim), Math.abs(f.plain));
+      const hi = Math.max(Math.abs(f.claim), Math.abs(f.plain));
+      return hi ? 1 - lo / hi : dflt;
+    },
+    // unclamped — for the panels where the plain reading is the BIGGER number
+    ratio(i, dflt) {
+      const f = at(i);
+      if (!f || !Math.abs(f.claim)) return dflt;
+      return f.plain / f.claim;
+    },
+  };
+}
+
+// The panels that put a number on screen, and so the ones a bulletin owes
+// `figures`. Exported because the validator and the gate both ask, and a
+// hand-kept second copy of this list is a copy that goes stale.
+export const NUMERIC_PANELS = [
+  'chart', 'chart2', 'mesh', 'crowd', 'heat', 'coin', 'crowd2', 'moon', 'border',
+];
+
+const NO_FIGURES = readFigures(null);
+
+function chart(scr, t, d, f) {
   field(scr, d);
-  const cols = 13, rows = 20, cut = 92;
+  const cols = 13, rows = 20;
+  // 260 cells, and 92 of them going out, was one bulletin's arithmetic drawn
+  // into the grid. It is the default now, and the bulletin's own is the rule.
+  const cut = Math.round(cols * rows * f.gap(0, 92 / 260));
   const lit = ink(d * 0.2), gone = mix(PAL.GREEN_LO, PAL.AMBER, d);
   for (let i = 0; i < cols * rows; i++) {
     const x = 9 + (i % cols) * 9, y = 6 + Math.floor(i / cols) * 7;
@@ -66,14 +198,35 @@ function chart(scr, t, d) {
       scr.px(x, y, 4, 4, wave > 0.8 ? PAL.GREEN_HOT : lit);
     }
   }
-  num(scr, 9, H - 9, d > 0.4 ? '-92' : '260', ink(d));
+  num(scr, 9, H - 9, f.say(0, d, d > 0.4 ? '-92' : '260'), ink(d));
 }
 
-function chart2(scr, t, d) {
+// The truncated baseline, and it is now SOLVED rather than drawn. Given a
+// claimed rise and the honest one, there is exactly one baseline that turns
+// the second into the first — cut the axis at `b` and a 4% climb reads as 40%.
+// Releasing `b` to zero as DECODE comes up is the whole trick performed in
+// front of you, at the bulletin's own two numbers.
+function chart2(scr, t, d, f) {
   field(scr, d);
-  const vals = [72, 70, 69, 71, 74, 78, 82, 88, 94, 99];
-  const base = 68 - d * 68;
-  const top = 104;
+  // R is how many times bigger the claim LOOKS than the plain reading. The
+  // bars always climb by an honest, modest amount; the baseline is then solved
+  // so that climb reads as R times itself. Percentages, euros and people all
+  // work, because only the ratio is used — an earlier cut treated the pair as
+  // percentages and went degenerate the moment a bulletin's numbers were
+  // seven hundred thousand people and seven thousand flats.
+  const R = Math.max(1.2, Math.min(40, 1 / Math.max(0.025, f.kept(0, 4 / 40))));
+  const v0 = 72, TRUE_RISE = 0.05, vN = v0 * (1 + TRUE_RISE);
+  const g = R * TRUE_RISE;
+  const trunc = Math.max(0, Math.min(v0 - 1, ((1 + g) * v0 - vN) / g));
+  const base = trunc * (1 - d);
+  // …plus headroom that opens as the axis rebases: ten bars all reaching 85%
+  // of the frame read as a chart that is FULL, when the point of the reveal is
+  // that they are the same.
+  const top = vN + Math.max(2, (vN - base) * 0.18) + d * vN * 0.24;
+  const vals = Array.from({ length: 10 }, (_, i) => {
+    const k = i / 9;
+    return v0 + (vN - v0) * (k ** 1.6) + Math.sin(i * 1.9) * (vN - v0) * 0.07;
+  });
   const bw = 10, x0 = 18, floor = H - 18, ceil = 22;
   scr.px(x0 - 5, ceil - 6, 1, floor - ceil + 6, inkLo(d));
   scr.px(x0 - 5, floor, W - x0, 1, inkLo(d));
@@ -86,16 +239,25 @@ function chart2(scr, t, d) {
     scr.px(x0 + i * bw, floor - hh, bw - 3, hh, c);
     scr.px(x0 + i * bw, floor - hh, bw - 3, 1, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
   });
-  num(scr, 3, floor - 4, d > 0.5 ? '0' : '68', inkLo(d));
-  num(scr, 3, ceil - 2, '99', inkLo(d));
-  num(scr, W - 30, 8, d > 0.5 ? '+4%' : '+40%', ink(d));
+  // The axis numbers are the DRAWING's, not the bulletin's, so once a bulletin
+  // has brought its own pair they come off — a numeral on a chart reads as
+  // data whatever it was meant as.
+  if (!f.declared) {
+    num(scr, 3, floor - 4, d > 0.5 ? '0' : String(Math.round(trunc)), inkLo(d));
+    num(scr, 3, ceil - 2, String(Math.round(top)), inkLo(d));
+  }
+  num(scr, W - 30, 8, f.say(0, d, d > 0.5 ? '+4%' : '+40%', 0.5, true), ink(d));
 }
 
-function mesh(scr, t, d) {
+function mesh(scr, t, d, f) {
   field(scr, d);
   const a = { x: 64, y: 42, r: 14 }, b = { x: 64, y: 110, r: 22 };
   const pulse = Math.sin(t * 3) * 0.5 + 0.5;
-  scr.disc(b.x, b.y, b.r - Math.round(d * 2), mix(PAL.GREEN_LO, PAL.AMBER_DIM, d), ink(d));
+  // the plain reading here is the BIGGER number — one node turning out to
+  // carry all of it — so this one rides `ratio`, not `kept`
+  const grow = Math.max(0.5, Math.min(2.2, f.ratio(0, 2)));
+  const br = Math.round(b.r * (1 + (grow - 1) * d * 0.35));
+  scr.disc(b.x, b.y, br, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d), ink(d));
   scr.disc(a.x, a.y, Math.max(3, a.r - Math.round(d * 8)), mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.4), ink(d * 0.4));
   for (let y = a.y + a.r; y < b.y - b.r; y += 3) {
     const on = ((y + Math.floor(t * 22)) % 9) < 5;
@@ -106,11 +268,11 @@ function mesh(scr, t, d) {
     scr.line(a.x, tipy, a.x - 4, tipy + 6, PAL.AMBER_HOT);
     scr.line(a.x, tipy, a.x + 4, tipy + 6, PAL.AMBER_HOT);
   }
-  num(scr, a.x + a.r + 6, a.y - 2, '41', ink(d));
-  num(scr, b.x + b.r + 4, b.y - 2, d > 0.4 ? '100%' : '50%', ink(d));
+  num(scr, a.x + a.r + 6, a.y - 2, f.claim(1, '41'), ink(d));
+  num(scr, b.x + br + 4, b.y - 2, f.say(0, d, d > 0.4 ? '100%' : '50%'), ink(d));
 }
 
-function crowd(scr, t, d) {
+function crowd(scr, t, d, f) {
   field(scr, d);
   scr.px(22, 12, 84, 3, inkLo(d));
   for (let i = 0; i < 4; i++) {
@@ -119,10 +281,11 @@ function crowd(scr, t, d) {
     scr.px(x - 3, 32 + bob, 7, 8, ink(d));
   }
   scr.px(8, 46, W - 16, 1, inkLo(d));
+  const every = Math.max(2, Math.min(99, Math.round(1 / Math.max(1 / 99, f.kept(0, 4 / 900)))));
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 11; c++) {
       const x = 12 + c * 10, y = 56 + r * 10;
-      const seatOn = d < 0.3 || ((r * 11 + c) % 19 === 0);
+      const seatOn = d < 0.3 || ((r * 11 + c) % every === 0);
       if (seatOn) {
         scr.disc(x, y, 2, ink(d * 0.5));
         scr.px(x - 2, y + 3, 5, 4, inkLo(d));
@@ -131,10 +294,10 @@ function crowd(scr, t, d) {
       }
     }
   }
-  num(scr, 6, H - 9, d > 0.4 ? '4' : '900', ink(d));
+  num(scr, 6, H - 9, f.say(0, d, d > 0.4 ? '4' : '900'), ink(d));
 }
 
-function heat(scr, t, d) {
+function heat(scr, t, d, f) {
   field(scr, d);
   scr.rect(14, 16, 56, 52, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.6), ink(d));
   for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) {
@@ -151,8 +314,8 @@ function heat(scr, t, d) {
   if (d > 0.2) {
     const drawH = Math.round(d * 60);
     scr.px(94, 68 - drawH, 5, drawH, PAL.AMBER_HOT);
-    num(scr, 90, 74, '96%', PAL.AMBER_HOT);
-    num(scr, 40, H - 9, '4%', PAL.AMBER);
+    num(scr, 90, 74, f.plain(0, '96%'), PAL.AMBER_HOT);
+    num(scr, 40, H - 9, f.claim(0, '4%'), PAL.AMBER);
   }
 }
 
@@ -216,15 +379,17 @@ function tower(scr, t, d) {
   }
 }
 
-function coin(scr, t, d) {
+function coin(scr, t, d, f) {
   field(scr, d);
   const cx = 64, rows = 18;
+  // how many of the stacked rows were actually paid for
+  const paidRows = Math.max(1, Math.round(rows * f.kept(1, 1 / rows)));
   for (let i = 0; i < rows; i++) {
     const y = H - 14 - i * 7;
     const grow = Math.min(1, Math.max(0, t * 2 - i * 0.1));
     if (grow <= 0) continue;
     const w = Math.round(52 * grow);
-    const paid = i === 0;
+    const paid = i < paidRows;
     const c = paid ? mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d)
                    : (d > 0.3 ? shade(PAL.AMBER_DIM, 0.7) : PAL.GREEN_DIM);
     if (d > 0.3 && !paid) {
@@ -233,8 +398,8 @@ function coin(scr, t, d) {
       scr.rect(cx - w / 2, y, w, 6, c, shade(c, 0.6));
     }
   }
-  num(scr, 10, 12, d > 0.4 ? '24' : '400', ink(d));
-  num(scr, 10, 20, d > 0.4 ? '6%' : '100%', inkLo(d));
+  num(scr, 10, 12, f.say(0, d, d > 0.4 ? '24' : '400'), ink(d));
+  num(scr, 10, 20, f.say(1, d, d > 0.4 ? '6%' : '100%'), inkLo(d));
 }
 
 function sea(scr, t, d) {
@@ -314,12 +479,15 @@ function engine(scr, t, d) {
   }
 }
 
-function crowd2(scr, t, d) {
+function crowd2(scr, t, d, f) {
   field(scr, d);
   const N = 44, TX = 70, TY = 48, NX = 40, NY = 116;
+  // the share of the crowd that turns out to be spoked to the one node
+  const spoke = f.has(1) && f.raw(0, 'claim', 0)
+    ? Math.max(0, Math.min(1, f.raw(1, 'claim', 0) / f.raw(0, 'claim', 1))) : 0.75;
   for (let i = 0; i < N; i++) {
     const a = i * 2.399 + t * 0.16;
-    const bot = i % 4 !== 0;
+    const bot = rnd(i * 7 + 0.5) < spoke;
     const rad = 20 + (i % 5) * 6;
     const ox = TX + Math.cos(a) * rad * 0.95;
     const oy = TY + Math.sin(a) * rad * 0.95;
@@ -339,9 +507,9 @@ function crowd2(scr, t, d) {
   if (d > 0.4) {
     scr.disc(NX, NY, 6, PAL.AMBER_DIM);
     scr.disc(NX, NY, 4, PAL.AMBER_HOT);
-    num(scr, NX - 7, NY + 16, '400', PAL.AMBER_HOT);
+    num(scr, NX - 7, NY + 16, f.claim(1, '400'), PAL.AMBER_HOT);
   }
-  num(scr, W - 22, 8, d > 0.4 ? '500' : '900', ink(d));
+  num(scr, W - 22, 8, f.say(0, d, d > 0.4 ? '500' : '900'), ink(d));
 }
 
 function signoff(scr, t, d) {
@@ -366,7 +534,7 @@ function signoff(scr, t, d) {
   scr.ctx.globalAlpha = 1;
 }
 
-function border(scr, t, d) {
+function border(scr, t, d, f) {
   field(scr, d, false);
   const spec = 1 - Math.min(1, d * 1.6);
   scr.px(0, 0, 74, H, mix('#0b1a1c', '#1d1508', d));
@@ -389,15 +557,22 @@ function border(scr, t, d) {
       scr.px(20, y0 + 12 + sway, 3, 3, shade(PAL.GREEN, spec));
     }
   }
-  const marks = [[52, 30, 1], [96, 58, 0], [38, 78, 0], [104, 104, 1], [64, 132, 0]];
-  for (const [x, y, real] of marks) {
+  const marks = [[52, 30], [104, 104], [96, 58], [38, 78], [64, 132]];
+  // listed real-first, so "two of five" is a count rather than a hand-placed
+  // pattern the bulletin cannot move
+  const realN = f.has(0)
+    ? Math.max(f.raw(0, 'plain', 0) > 0 ? 1 : 0,
+        Math.min(marks.length, Math.round(marks.length * f.kept(0, 0.4))))
+    : 2;
+  for (let mi = 0; mi < marks.length; mi++) {
+    const [x, y] = marks[mi], real = mi < realN ? 1 : 0;
     if (!real && spec < 0.35) continue;
     const c = real ? mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d) : shade(PAL.GREEN_DIM, spec);
     scr.px(x - 3, y, 7, 1, c);
     scr.px(x, y - 3, 1, 7, c);
     if (real && d > 0.3) scr.disc(x, y, 2, PAL.AMBER_HOT);
   }
-  num(scr, 6, H - 10, d > 0.4 ? '2' : '5', ink(d));
+  num(scr, 6, H - 10, f.say(0, d, d > 0.4 ? '2' : '5'), ink(d));
 }
 
 // ── Helsinki B-roll ────────────────────────────────────────────────
@@ -755,15 +930,15 @@ function beach(scr, t, d) {
       scr.px(dx - 22, 106, 44, 2, PAL.AMBER);
     }
   }
-  if (d > 0.4) { num(scr, 6, 130, '18', PAL.AMBER_HOT); num(scr, 20, 130, 'PCT', PAL.AMBER); }
-  else { num(scr, 6, 130, '94', PAL.GREEN_HOT); num(scr, 20, 130, '7', PAL.GREEN); }
+  if (d > 0.4) { num(scr, 6, 130, f.plain(0, '18'), PAL.AMBER_HOT); num(scr, 34, 130, f.raw(0, 'unit', 'PCT') || 'PCT', PAL.AMBER); }
+  else { num(scr, 6, 130, f.claim(0, '94'), PAL.GREEN_HOT); num(scr, 34, 130, f.claim(1, '7'), PAL.GREEN); }
 }
 
 // Blue hour, a low orange moon beside a heating-plant chimney, a coaster arc
 // on the ridge, car roofs at the bottom. Decoded, a SECOND moon is drawn high
 // in the empty sky at exactly the same radius: the chimney was the whole
 // argument, and there is nothing up there to measure against.
-function moon(scr, t, d) {
+function moon(scr, t, d, f) {
   field(scr, d, false);
   scr.bands(0, 0, W, 108, [mix('#0f4f8c', '#2a1e08', d), mix('#2a86c4', '#4a3410', d)]);
   const mx = 84, my = 82 + Math.sin(t * 0.3) * 1;
@@ -826,8 +1001,9 @@ export const BROLL_KEYS = [
   'beach', 'moon', 'winterhall', 'packice', 'chase', 'approach',
 ];
 
-export function drawVisual(key, scr, t, decode) {
+export function drawVisual(key, scr, t, decode, figures = null) {
   const fn = PANELS[key] || chart;
-  fn(scr, t, decode);
+  fn(scr, t, decode, !figures ? NO_FIGURES
+    : (figures.rows ? figures : readFigures(figures)));
   scr.scanlines(PAL.INK, 3);
 }

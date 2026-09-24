@@ -24,12 +24,12 @@
 //
 // Layout belongs in index.html. Register behaviour belongs here.
 
-import { Anchor } from './anchor.js?v=63';
-import { Graphic } from './graphic.js?v=63';
-import { PixelScreen } from './screen.js?v=63';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=63';
-import { preferredScenes } from './editorialmap.js?v=63';
-import { enterScene, scenePulse, endScene } from './ambient-audio.js?v=63';
+import { Anchor } from './anchor.js?v=66';
+import { Graphic } from './graphic.js?v=66';
+import { PixelScreen } from './screen.js?v=66';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=66';
+import { preferredScenes } from './editorialmap.js?v=66';
+import { enterScene, scenePulse, endScene } from './ambient-audio.js?v=66';
 
 // THE EDIT. All three registers inside one cycle, and the cycle is shorter than
 // a reader spends on a post — a package whose third shot arrives after twenty

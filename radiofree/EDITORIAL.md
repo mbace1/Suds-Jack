@@ -190,6 +190,51 @@ in Finnish: consonant gradation changes the stem, not just the ending, so
 5-character stem match finds it. A ruler that fails one of the three languages
 would fail exactly the copy this station exists to write. Read it instead.
 
+## The graphic argues the bulletin, or it argues nothing
+
+A bulletin names a `visual`, and nine of those panels print a NUMBER: `chart`,
+`chart2`, `mesh`, `crowd`, `heat`, `coin`, `crowd2`, `moon`, `border`. Until
+2026-09-20 those numbers were literals in `js/visuals.js` — `chart2` said
+"+40% becomes +4%" whatever it sat under, `crowd` emptied nine hundred seats
+down to four, and `budget-in-full` therefore aired a €92.5bn budget under a
+chart captioned with some other morning's arithmetic. In a feed whose entire
+subject is a picture and a copy telling different stories, that was the station
+doing it.
+
+So a bulletin carries `figures`: an ordered list of pairs.
+
+```json
+"figures": [ { "claim": 92.5, "plain": 12.4, "unit": "BN" } ]
+```
+
+- **`claim`** is the number the broadcast puts forward. **`plain`** is the
+  number the plain reading puts forward. `unit` is at most four characters and
+  may be empty; `"sign": true` adds a leading `+`, and only a *change* should
+  ask for one.
+- **`figures[0]` is the headline pair** every numeric panel reads.
+  `figures[1]` is the second pair the two-number panels want (`coin`,
+  `crowd2`, `mesh`).
+- It reaches the **drawing**, not only the caption: how many cells go dark, how
+  far the baseline is cut, how many seats stay lit. A caption that agrees with
+  the bulletin while the bars disagree is the same bug one layer down.
+- **Both numbers must appear as DIGITS somewhere in that bulletin's copy, in at
+  least one of the three languages.** "92.5", not "ninety-two and a half". A
+  listener has to be able to check the chart against the words, and the gate
+  checks it for them — the thousands separator and the Finnish decimal comma
+  are normalised, so `92,5` and `700 000` both count.
+- **If the bulletin has no number worth printing, write `"figures": []` and the
+  panel prints none.** An empty list is an answer; leaving the field out is
+  not. That distinction is the whole design: absent means "written before this
+  existed, keep the old literal", and the authoring gate rejects it.
+
+The digits rule is the one place this bites. `2026-07-31`'s `complaints-down`
+has a perfect pair in it — sixty per cent of complaints against nine per cent
+more flights — and spells both in words, in all three languages, so its chart
+goes out unlabelled. That is the right outcome: the alternative is a gate that
+guesses at «kuusikymmentä» and 「六〇％」, and this page has already decided once
+that a ruler which fails one of the three languages is worse than no ruler.
+Write the figure in digits where you want it on the chart.
+
 ## Hard nos
 
 - No invented events. The reframe is the joke; fabricating the event is not.
@@ -213,6 +258,7 @@ would fail exactly the copy this station exists to write. Read it instead.
 - [ ] A technique no other live bulletin uses
 - [ ] A tell that works on tomorrow's real article
 - [ ] All three languages, each written in its own idiom — not translated
+- [ ] `figures` declared — the bulletin's own pair, or `[]` if it has none
 - [ ] `node radiofree/tools/validate-wire.mjs` exits 0
 
 ---

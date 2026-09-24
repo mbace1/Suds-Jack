@@ -165,15 +165,28 @@ async function staticChecks() {
   // app degrading gracefully is what made it invisible. So every episode in
   // `wire/` is graded here, and the NEWEST is called out on its own, because
   // that is the one a reader actually gets.
-  const { validateWire } = await import('file://' + path.join(RF, 'js', 'wire.js'));
-  const { PANEL_KEYS, BROLL_KEYS } = await import('file://' + path.join(RF, 'js', 'visuals.js'));
+  const { validateWire, LANGS } = await import('file://' + path.join(RF, 'js', 'wire.js'));
+  const { PANEL_KEYS, BROLL_KEYS, NUMERIC_PANELS } =
+    await import('file://' + path.join(RF, 'js', 'visuals.js'));
+
+  // Copy written for a reader, matched against a number written for a panel.
+  // Thin spaces and a Finnish decimal comma are the same number as a dot and
+  // no space, so the haystack is normalised rather than the needle widened.
+  const digitsOf = (str) => String(str)
+    .replace(/(\d)[\s\u00a0\u202f,.](?=\d\d\d(?!\d))/g, '$1')   // 1 200 / 1,200 → 1200
+    .replace(/(\d),(\d)/g, '$1.$2');                              // 12,4 → 12.4
+  const trimZero = (v) => String(Math.round(v * 100) / 100);
+  const hasNumber = (hay, want) => {
+    const esc = want.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:^|[^\\d.])${esc}(?![\\d])`).test(hay);
+  };
   const { SECTOR_COLOR } = await import('file://' + path.join(RF, 'js', 'palette.js'));
   const index = JSON.parse(fs.readFileSync(path.join(RF, 'wire', 'index.json'), 'utf8'));
   const eps = (index.episodes || []).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
   ok('the index lists at least one morning', eps.length > 0, JSON.stringify(eps));
   wireFiles = eps.map(d => ['wire/' + d + '.json', path.join(RF, 'wire', d + '.json')]);
   wireFiles.push(['wire.json', path.join(RF, 'wire.json')]);
-  const unairable = [];
+  const unairable = [], loose = [], offFigures = [];
   for (const [label, file] of wireFiles) {
     if (!fs.existsSync(file)) { unairable.push(`${label}: missing`); continue; }
     let parsed;
@@ -182,11 +195,47 @@ async function staticChecks() {
     const v = validateWire(parsed, { panelKeys: PANEL_KEYS, brollKeys: BROLL_KEYS,
                                      sectorIds: Object.keys(SECTOR_COLOR) });
     if (!v.ok) unairable.push(`${label}: ${v.errors.length} problems — ${v.errors[0]}`);
+    // Strict is the AUTHORING bar, and it is deliberately higher than the
+    // airing one: the browser must keep playing a wire whose graphic it can
+    // only half-illustrate, but nobody may commit one.
+    const strictV = validateWire(parsed, {
+      panelKeys: PANEL_KEYS, brollKeys: BROLL_KEYS,
+      sectorIds: Object.keys(SECTOR_COLOR),
+      numericPanels: NUMERIC_PANELS, strict: true,
+    });
+    if (!strictV.ok) loose.push(`${label}: ${strictV.errors[0]}`);
+    // ── and the numbers on the panel have to be the bulletin's ──────
+    for (const st of (parsed.stories || [])) {
+      if (!Array.isArray(st.figures) || !st.figures.length) continue;
+      const hay = LANGS.map(l => {
+        const c = (parsed.copy && parsed.copy[l] && parsed.copy[l][st.id]) || null;
+        if (!c) return '';
+        return [c.head, c.slug, c.decodeNote, c.tell, ...(c.lines || [])].join(' ');
+      }).map(digitsOf);
+      for (const f of st.figures) {
+        for (const key of ['claim', 'plain']) {
+          const want = trimZero(f[key]);
+          // a fall of 92 is written "92" as often as "-92"
+          const alts = want.startsWith('-') ? [want, want.slice(1)] : [want];
+          if (!hay.some(h => alts.some(a => hasNumber(h, a)))) {
+            offFigures.push(`${label} "${st.id}": the panel will print ${want}`
+              + `${f.unit || ''} and no language's copy says ${want}`);
+          }
+        }
+      }
+    }
   }
   ok('every episode on disk would actually air', unairable.length === 0,
      unairable.join('\n         '));
   ok('the NEWEST episode is the one that airs',
      !unairable.some(u => u.startsWith('wire/' + eps[0])), eps[0]);
+  ok('every numeric panel is given the bulletin\'s own figures', loose.length === 0,
+     loose.join('\n         '));
+  // The defect this whole pass exists for: a chart captioned with some other
+  // morning's arithmetic. A figure the copy never says is one the listener
+  // cannot check, which is the station arguing with itself on air.
+  ok('a panel never prints a number its bulletin does not say', offFigures.length === 0,
+     offFigures.slice(0, 6).join('\n         '));
 
   // The gate runs on BOTH trees — the source repo and a gh-pages checkout before
   // a deploy is believed — so it has to know which one it is standing in, and
@@ -231,7 +280,7 @@ async function generatorChecks() {
   ok('a place is not a name', !names.some(n => /Espoo/.test(n)), names.join(', '));
 
   const story = (id, tech, line, lineFi, lineJa) => ({
-    id, visual: 'chart2', broll: 'harbour',
+    id, visual: 'chart2', broll: 'harbour', figures: [],
     en: { slug: 'S', head: 'h', lines: [line], technique: tech, decodeNote: 'n', tell: 't' },
     fi: { slug: 'S', head: 'h', lines: [lineFi], technique: tech + ' FI', decodeNote: 'n', tell: 't' },
     ja: { slug: 'S', head: 'h', lines: [lineJa], technique: tech + ' JA', decodeNote: 'n', tell: 't' },
@@ -331,7 +380,9 @@ async function main() {
 
   const errs = [];
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  page.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
+  // the first stack frame too: "f is not defined" with no file behind it cost
+  // a search of every module for a bare f
+  page.on('pageerror', e => errs.push('PAGEERROR ' + e.message + ' @ ' + String(e.stack || '').split('\n').slice(1, 3).join(' ').trim()));
 
   const go = (fn, ...a) => page.evaluate(fn, ...a);
   const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -496,7 +547,9 @@ async function main() {
   // The export steps the live package into a canvas and hands it to WebCodecs
   // through mediabunny. Headless Chromium has no H.264, so this rung of the
   // ladder is AV1-in-MP4 — the point is that the file exists, is a video, and
-  // carries exactly the frames asked for. A desktop Chrome lands on 'avc'.
+  // carries exactly the frames its plan says. A desktop Chrome lands on 'avc'.
+  // `seconds` is a TARGET the film's reading budgets compress toward (never
+  // below 55%), so a one-second target is the shortest film the copy allows.
   console.log('\nexport');
   const exp = await go(() => __rfh.debug.exportMp4(undefined, { seconds: 1, fps: 10, noDownload: true }));
   ok('a bulletin renders to a video file through the app\'s own button path',
@@ -504,7 +557,11 @@ async function main() {
   ok('the file is a video container with a real codec in it',
      exp && /^video\//.test(exp.type || '') && ['avc', 'av1', 'vp9', 'hevc', 'vp8'].includes(exp.codec),
      JSON.stringify(exp));
-  ok('it carries exactly the frames asked for', exp && exp.frames === 10, String(exp && exp.frames));
+  ok('it carries exactly the frames its plan says', exp && exp.frames === Math.round(exp.seconds * 10),
+     JSON.stringify({ frames: exp && exp.frames, seconds: exp && exp.seconds }));
+  ok('a one-second target is the copy\'s shortest film, not a one-second file',
+     exp && exp.seconds >= 10 && exp.scale <= 0.5501, JSON.stringify({ seconds: exp && exp.seconds, scale: exp && exp.scale }));
+  ok('DECODE fired inside the clip, as a cut', exp && exp.revealed > 0, String(exp && exp.revealed));
   ok('the live loop resumed after the export',
      await go(async () => { const a = __rfh.debug.beat(); await new Promise(r => setTimeout(r, 900)); return __rfh.debug.shot() !== null; }));
   ok('every post has the export button, and clean mode has none',

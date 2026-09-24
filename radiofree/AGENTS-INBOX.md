@@ -387,3 +387,207 @@ models' markup side by side on the same seven bulletins and names four leans:
 literal plain side, two spans not five, questions for tells, and an owner's
 call on whether a technique is a category or the word itself. The new day has
 too many spans (3-5) and should be thinned on its next pass.
+
+---
+
+## 2026-09-20 — the graphics stopped quoting other mornings (v64)
+
+**The defect.** Nine panels print a number and every one of those numbers was a
+literal in `js/visuals.js`. `chart2` said `+40% → +4%` under whichever bulletin
+the rotation handed it, so `budget-in-full` — a €92.5bn budget with a €12.4bn
+hole — aired under a chart captioned with somebody else's percentages. `crowd`
+emptied nine hundred seats to four under a cup final that finished 1–0. `mesh`
+printed `41` under an owl. On a station whose whole subject is a picture and a
+copy telling different stories, the station was doing it.
+
+**`figures`.** A bulletin now carries an ordered list of `{claim, plain, unit}`
+— what the broadcast asserts, what it plainly means, what it counts.
+`figures[0]` is the headline pair every numeric panel reads; `figures[1]` is
+the second pair `coin`/`crowd2`/`mesh` want. `EDITORIAL.md` has the rule.
+
+**It reaches the drawing, not the caption.** `kept()` is the share of the claim
+the plain reading leaves standing and `gap()` is how far apart the two are
+whichever way round; between them they drive how many of `chart`'s 260 cells go
+dark, how far `chart2`'s baseline is cut, how many of `crowd`'s seats stay lit,
+how many of `border`'s five markers are real. `fence-complete` says 200km of
+1,100 and the board now shows one marker in five. `single-day-adjustment` says
+the index fell 2.99% while its largest name shed 10%, and seven cells in ten go
+out. A caption that agrees with the bulletin while the bars disagree is the
+same bug one layer down — `kept` alone had exactly that fault, because it
+clamps at 1 and so reported *no change* on every bulletin whose plain reading
+is the BIGGER number.
+
+**ABSENT and EMPTY are different answers**, and this is the load-bearing part.
+Absent means "written before the field existed" and the panel keeps the literal
+it has always drawn — which is what lets this land on a wire nobody has
+re-authored. `[]` means the author looked and this bulletin has no number, and
+the panel then prints **nothing**. Eleven of thirteen bulletins on 2026-09-19
+declare figures; the other two, and fourteen panels across the three older
+episodes, declare `[]` and have gone quiet rather than lying.
+
+**`chart2`'s baseline is SOLVED, not drawn.** Given a claimed rise and an
+honest one there is exactly one axis cut that turns the second into the first,
+and releasing it to zero as DECODE comes up performs the trick in front of you.
+The first cut read the pair as percentages and went degenerate the moment a
+bulletin's numbers were seven hundred thousand residents and seven thousand
+flats; it works off the RATIO now, so euros, people and per cent all land.
+
+**Two gate checks, both with a negative control run.** Strict validation (a
+numeric panel with no declaration is an error in the gate, a warning in the
+browser — the app must keep airing a wire it can only half-illustrate, and
+nobody may commit one), and **a panel never prints a number its bulletin does
+not say**: every declared figure is matched as digits against all three
+languages' copy, with thousands separators and the Finnish decimal comma
+normalised. Reinstating each bug drops the gate to 81/82, naming the offender.
+
+**Found on the way, and it had been wrong since the file was written:** the
+3×5 glyph table was digits and punctuation only, so every letter label in
+`visuals.js` — `PCT`, `REM`, `CAB`, `OBS`, `LATE`, `SL`, `KJ` — had been
+drawing as a row of question marks. It has an alphabet now, which is also what
+lets a figure say `BN` or `KM`.
+
+**Not done, and it is the owner's:** `ANTHROPIC_API_KEY` is still not a repo
+secret, so the daily job has never once produced a morning — every wire on disk
+was written by hand in a session. And the MP4 button's H.264 path has still
+only ever been proven as AV1, because headless Chromium has no H.264 encoder;
+one press in a desktop Chrome would settle it.
+
+---
+
+## 2026-09-24 — the clip became a film (v65)
+
+**Asked:** look at the Opus 5.5-era animations and expand our style. Four of
+that week's code-drawn films were read as CODE, not as videos — the
+`horizon-reel` reconstruction of the twenty-second launch film, the p5.brush
+`PDoomVideo` and its `ClaudeAnimationBase` starter, and
+`javascript-animation-skills` — and `MOTION.md` records what was measured off
+each and what was refused. The short version: the **timing, the typography
+motion, the transitions and the surface** are borrowed; the **drawing medium
+is not**. No watercolour, no serif, no dome, no push-in on pixel art, no planet
+limb. This station is a 128×152 panel behind curved glass and stays one.
+
+**Where it lands is the export.** The first MP4 was a still of the feed's
+lower third with a clock on it — every word on screen from frame one, the
+reveal a state flip at the halfway mark, the graphic a stamp in the frame
+(it blitted the phone card, not the panel). Against the references that is
+every fault they name at once. `js/film.js` is the edit:
+
+- `planFilm()` is PURE — a bulletin's copy in, a timeline out — so
+  `test/film.mjs` asserts it in bare node over every bulletin on disk in all
+  three languages (126 plans). `paintFilm()` is the compositor, every frame a
+  pure function of t.
+- **Length comes from the copy.** Every caption has a reading budget (1 s +
+  1 s per 22 characters for a broadcast sentence, per 17 for a plain reading,
+  from the lab-explainer's caption rule), the reveal a hold, the card 1.6 s.
+  `--seconds` is a TARGET the budgets compress toward, down to 55%, and the
+  manifest records the length each clip actually is (28 s for the lead).
+- **Cold open → Toko → the graphic, green → a breath → flash → the graphic,
+  amber, at ×6.** The headline arrives as WORD RUNS that each pop in larger
+  (`backOut`, s=1.9), the launch film's device on our type. One caption at a
+  time: the sentence carrying each struck span, then each `{{spun|plain}}`
+  pair with the strike WIPING across (0.25 s) and the plain reading TYPING ON
+  with a cursor, then the tell as a question. The **technique is the payoff
+  word** — biggest thing on screen, growing 30% across the hold — and the
+  **figure counter** rolls from `claim` to `plain` beside it (92.5BN → 12.4BN
+  over 0.9 s), which is leap 1 paying off on screen.
+- Surface from the reel's numbers: grain 0.16 boiling at 12 Hz, flicker
+  0.035, vignette 0.32, a cut flash on every cut and hardest on the reveal, a
+  scanline roll across the glass in place of the push-in.
+- The sign-off is the station's own card: the wordmark, the frequency, and
+  the codec's waveform going flat.
+
+**Two things learned the hard way.** A `<video>` `currentTime` seek on an
+AV1 clip returned the FIRST frame and reported a reveal that had happened as
+one that had not; frames are decoded through mediabunny's `CanvasSink` now,
+which lands on the frame it was asked for. And restoring `export.js` after a
+slice took `loadMediabunny` and `pickCodec` with it — the render tool now
+echoes page console errors, because "nothing came back" was all it could say.
+
+**Leap 3 with it.** `tools/render-day.mjs` drives the app's own export button
+per bulletin and writes `clips.json` beside the files (codec per file, length,
+the frame DECODE fired on); `.github/workflows/radiofree-render.yml` runs it
+after the wire job and keeps the clips as an artifact for a week. Thirteen
+bulletins render in about three minutes here. Headless Chromium has no H.264,
+so CI output is AV1-in-MP4; the manifest says so.
+
+**Not done:** a soundtrack — the obvious next borrow, and MOTION.md says why
+it waits (the cuts sit on reading budgets, not on a beat grid). Japanese runs
+break after a particle rather than at a word boundary a native reader would
+choose. `ANTHROPIC_API_KEY` is still not a secret, so the wire job — and now
+the render job behind it — has never run on a morning nobody wrote by hand.
+
+---
+
+## 2026-09-24 — Toko anchors, and the film gets a palette (v66)
+
+**Asked:** *much more animated, more colour variations, Toko animated as a
+newscaster.* `MOTION.md`'s second-pass section has the numbers; the shape:
+
+- **Toko performs.** `actAt()` in `js/film.js` decides his mouth (a syllable
+  envelope over the caption on screen, shut in the gaps), a syllable bob and a
+  nod on the sentence, a **blink before every cut** away from him, and the
+  **take** on the reveal — his own reverse shot, 0.7 s, lids shut then a pop
+  wide, lean back, tilt, on an amber set with the tear. The anchor shot grew
+  an `act` hook for it (null on the feed). The feed's mouth gain did not read
+  as speech at frame size; the film asks for three times it.
+- **A palette arc.** `LOOKS`: green → cyan → lime → violet → amber → ember →
+  green, one per shot, never two neighbours the same, carried by the ground,
+  housing, ticks, caption ink and scrim. Footage and the broadcast graphic are
+  re-hued through posterised gradient maps (the reel's `treat`); Toko's
+  magenta and the decoded panel are refused the map, for the same reason
+  amber keeps its one job.
+- **Every cut does something.** A V-hold roll between broadcast shots, a
+  four-frame shake on the reveal, corner ticks sliding in, words staggering
+  into their run, a comic `DECODE` stamp, a pulsing ON AIR dot, a counter that
+  bumps on landing, and the tube switching off into the card.
+
+Verified from mediabunny-decoded frames of the film and from Toko's own
+canvas stepped at 30 fps through `actAt` (a harness in scratch, not the
+repo): the blink is shut at the frame before the cut, the take's four shut
+frames then the wide pop are there, and the five looks are five colours.
+
+---
+
+## 2026-09-24 — a morning written for the film
+
+**Asked:** *make new parody news with the new style.* `wire/2026-09-24.json`
+is eight bulletins from this week's real Finnish news — a €13bn data-centre
+commitment with 37,000 construction jobs and 7,000 permanent ones; a quarter
+of adults under €770 in the bank against a tenth over €60,000; a studio's
+first self-published title out today with 1,500,000 wishlists and, at 09:00,
+sales of 0; the city ranked 1st of the 100-plus cities that entered a
+sustainability index; 674,000 foreign-language speakers projected for 2045;
+a Copenhagen studio closed "following" a cancellation the closer made; boys'
+life expectancy at 80 with 0 used; and two navies agreeing to *explore*
+robot sailboats — fi/en/ja, each in its own idiom, every actor invented,
+`PROGRAMMING.md`'s slots filled without filler (eight, not thirteen: a
+shorter day beats padding).
+
+**"For the film" meant four things about the copy**, and they are now the
+way to write a bulletin here:
+
+- The **headline breaks into runs** at its own clauses, three or four of
+  them, each one a thing to pop in — `Cloud company commits €13 billion /
+  to Finland over two years / 37,000 jobs described / 7,000 of them permanent`.
+- **One sentence carries each move**, because the film shows the sentence
+  around the span, not the paragraph.
+- **Figures are in digits and paired**, so the counter has something to
+  roll: `37000 → 7000`, `770 → 60000€`, `1500000 → 0`, `1 → 100`,
+  `2045 → 2026`, `80 → 0`. A pair is the bulletin's own argument in two
+  numbers, and the tell asks the question between them.
+- The **technique is one word from the copy** — `COMMITMENT`,
+  `PARTICIPATION`, `WISHLISTS`, `RANKED`, `PROJECTED`, `FOLLOWING`,
+  `EXPECTANCY`, `EXPLORE` — because it is the payoff word on screen, at a
+  third of the frame.
+
+**Found by planning it:** the run splitter treated a thousands separator as
+a clause break, so the wishlists headline opened on a run reading `1`, then
+`500`, then `000 wishlists`, and the Finnish `674 000:een` was cut at its
+case ending. A clause break is punctuation followed by a space now, a halved
+run never cuts between two numeric words, and `test/film.mjs` asserts every
+number in every headline on disk survives whole in one run (11 checks).
+
+**Sources were read through the search index only** — the proxy blocks
+yle.fi, helsinkitimes.fi and neogames.fi — so every figure here is one that
+appeared in a search summary of a primary report, and nothing is more
+precise than that summary was.

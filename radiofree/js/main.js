@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=63';
-import { Post, Reader } from './codec.js?v=63';
-import { Package } from './package.js?v=63';
+import { PAL, SECTOR_COLOR } from './palette.js?v=66';
+import { Post, Reader } from './codec.js?v=66';
+import { Package } from './package.js?v=66';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=63';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=63';
-import * as audio from './audio.js?v=63';
-import { PixelScreen } from './screen.js?v=63';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=63';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=66';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=66';
+import * as audio from './audio.js?v=66';
+import { PixelScreen } from './screen.js?v=66';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=66';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -217,6 +217,12 @@ function paintWireStatus() {
 // gate, which encodes a second of AV1 rather than fifteen of H.264.
 let exporting = false;
 let lastExport = null;
+// The bytes, held only when nobody is downloading them. `tools/render-day.mjs`
+// drives the button path rather than re-implementing it, so it needs the file
+// back out of the page — and one bulletin is a few megabytes, so it is HANDED
+// OVER rather than kept: takeExport() clears it, and a run of thirteen never
+// holds more than one.
+let lastBlob = null;
 async function exportActive(i = active, btn = null, opts = {}) {
   const p = posts[i];
   if (!p || p.signoff || exporting) return null;
@@ -227,16 +233,19 @@ async function exportActive(i = active, btn = null, opts = {}) {
   cancelAnimationFrame(raf);
   try {
     if (i !== active) scrollToPost(i, true);
-    const { exportPost } = await import('./export.js?v=63');
+    const { exportPost } = await import('./export.js?v=66');
     const out = await exportPost(p, {
       t, parseLine, index: i + 1, total: STORIES.length,
       date: formatDate(new Date()), accent: SECTOR_COLOR[p.story.sector],
       seconds: opts.seconds, fps: opts.fps,
+      freq: (SECTORS.find(x => x.id === p.story.sector) || {}).freq || '',
       onProgress: k => { if (lbl) lbl.textContent = `${Math.round(k * 100)}%`; },
     });
     const name = `rfh-${EPISODE || 'wire'}-${p.story.id}-${getLang()}.${out.ext}`;
     lastExport = { name, codec: out.codec, ext: out.ext, type: out.blob.type,
-                   bytes: out.blob.size, frames: out.frames, ms: out.ms };
+                   bytes: out.blob.size, frames: out.frames, seconds: out.seconds,
+                   scale: out.scale, revealed: out.revealed, ms: out.ms };
+    lastBlob = opts.noDownload ? out.blob : null;
     if (!opts.noDownload) {
       const url = URL.createObjectURL(out.blob);
       const a = document.createElement('a');
@@ -248,6 +257,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
     console.error('[rfh] export failed:', err);
     if (lbl) lbl.textContent = t('export.fail');
     lastExport = { error: String(err && err.message || err) };
+    lastBlob = null;
     return lastExport;
   } finally {
     exporting = false;
@@ -260,7 +270,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
 function boot() {
   booted = true;
   if (TTS && !tts) {
-    import('./tts.js?v=63').then(m => { tts = m; ttsSpeak(posts[active]); })
+    import('./tts.js?v=66').then(m => { tts = m; ttsSpeak(posts[active]); })
       .catch(err => console.warn('[rfh] tts prototype did not load:', err));
   }
   paintSound();
@@ -587,20 +597,7 @@ function bindControls() {
   });
 }
 
-
-// ── Toko at the table ──────────────────────────────────────────────────
-// The signature in the corner opens the counter over this game rather than
-// navigating away to the arcade (toko/js/table.js). Stopping the clock is the
-// one thing the table cannot work out for itself. The broadcast keeps its own time, so a reader
-// left mid-sentence is still mid-sentence when you come back.
-let tokoHeld = false;
-window.__tokoTable = {
-  pause() { tokoHeld = true; },
-  resume() { tokoHeld = false; last = performance.now(); },
-};
-
 function loop(now) {
-  if (tokoHeld) { last = now; raf = requestAnimationFrame(loop); return; }
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   const p = posts[active];
@@ -669,6 +666,18 @@ window.__rfh = {
     // container, bytes, frames — because a gate cannot open a download.
     exportMp4: (i, opts) => exportActive(i === undefined ? active : i, null, opts || {}),
     lastExport: () => lastExport,
+    // base64 rather than a transferable: a CDP round trip is the only way out
+    // of the page, and a JSON string is the one thing both drivers agree on
+    takeExport: async () => {
+      if (!lastBlob) return null;
+      const buf = new Uint8Array(await lastBlob.arrayBuffer());
+      lastBlob = null;
+      let bin = '';
+      for (let i = 0; i < buf.length; i += 0x8000) {
+        bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+      }
+      return { ...lastExport, base64: btoa(bin) };
+    },
     tts: () => (tts ? tts.state() : { enabled: TTS, status: TTS ? 'not loaded' : 'off', loaded: false }),
     finishRead: () => reader.finish(),
     stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),

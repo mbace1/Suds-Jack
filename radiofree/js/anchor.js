@@ -18,8 +18,8 @@
 import { drawHead, HEAD } from '../../toko/js/face.js';
 import { TOKO } from '../../toko/js/palette.js';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=63';
-import { shade, mix } from './screen.js?v=63';
+import { PAL, SECTOR_COLOR } from './palette.js?v=66';
+import { shade, mix } from './screen.js?v=66';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —
@@ -65,6 +65,11 @@ export class Anchor {
     this.mouthSmooth = 0;
     this.extAt = -99;   // last time a real reader amplitude arrived
     this.accent = SECTOR_COLOR[story && story.sector] || PAL.GREEN;
+    // What the FILM tells him to do this frame — mouth, eyes, a lean, the
+    // take, and the shot's own colour. Null on the feed, where he reads on his
+    // own clock; js/film.js sets it per frame through the export. Every field
+    // is optional and overrides the feed behaviour only when present.
+    this.act = null;
 
     host.innerHTML = '';
     const wrap = document.createElement('div');
@@ -155,11 +160,13 @@ export class Anchor {
   paint() {
     this.fit();
     const c = this.ctx, t = this.t, W = this.W, H = this.H;
-    const hot = this.decoded;
+    const act = this.act;
+    const hot = act && act.hot !== undefined ? act.hot : this.decoded;
     // Amber has exactly one job on this dial, and DECODE is it — so the whole
-    // studio's furniture swaps to it rather than a badge lighting up.
-    const key = hot ? PAL.AMBER : this.accent;
-    const dim = hot ? PAL.AMBER_DIM : shade(this.accent, 0.55);
+    // studio's furniture swaps to it rather than a badge lighting up. A film
+    // may hand the set another cold phosphor per shot; amber stays DECODE's.
+    const key = hot ? PAL.AMBER : (act && act.key) || this.accent;
+    const dim = hot ? PAL.AMBER_DIM : (act && act.dim) || shade(this.accent, 0.55);
     const s = W / 360;                 // stroke/type scale, off the design width
 
     this.backWall(c, W, H, dim, hot);
@@ -175,8 +182,9 @@ export class Anchor {
   backWall(c, W, H, dim, hot) {
     const deskY = H * L.desk;
     const g = c.createLinearGradient(0, 0, 0, deskY);
-    g.addColorStop(0, hot ? '#120c04' : '#05100c');
-    g.addColorStop(1, hot ? '#1c1206' : '#0a1a14');
+    // the wall takes the shot's key at a whisper, so a cyan shot IS cyan
+    g.addColorStop(0, hot ? '#120c04' : mix('#05100c', dim, 0.22));
+    g.addColorStop(1, hot ? '#1c1206' : mix('#0a1a14', dim, 0.36));
     c.fillStyle = g;
     c.fillRect(0, 0, W, deskY);
 
@@ -258,10 +266,12 @@ export class Anchor {
 
   // ── the person ─────────────────────────────────────────────────────────
   subject(c, t, W, H) {
+    const act = this.act || {};
     // A very slow breath under everything. Nothing in a Toko mark is ever
-    // perfectly still, and nothing in one is ever quick either.
-    const sway = drift(t, { period: 11 }) * W * 0.008;
-    const bob = drift(t, { period: 7, phase: 0.3 }) * H * 0.003;
+    // perfectly still, and nothing in one is ever quick either — but a film
+    // can lean him back, nod him on a sentence, and tilt him for a take.
+    const sway = drift(t, { period: 11 }) * W * 0.008 + (act.lean || 0) * W;
+    const bob = drift(t, { period: 7, phase: 0.3 }) * H * 0.003 + (act.nod || 0) * H * 0.028;
 
     // the head is capped against BOTH axes, so a narrow post does not put the
     // face through the ceiling and a wide one does not shrink it to a pea
@@ -273,7 +283,12 @@ export class Anchor {
     // somebody; between bulletins he goes back to `glance`.
     const speaking = this.mouthSmooth > 0.03;
     const lid = blink(t, { every: 8.5, offset: this.seed * 0.9 });
-    const open = speaking ? 1 : glance(t, { every: 11, offset: 0.7 });
+    const open = act.open != null ? act.open : (speaking ? 1 : glance(t, { every: 11, offset: 0.7 }));
+    const squash = act.squash != null ? act.squash : 1 - lid * 0.94;
+    const grinK = act.grin != null ? act.grin : 1;
+    // the tilt turns the whole figure about the head, shadow included
+    c.save();
+    if (act.tilt) { c.translate(W / 2, H * L.headY + H * 0.12); c.rotate(act.tilt); c.translate(-W / 2, -(H * L.headY + H * 0.12)); }
 
     // the shadow the subject throws on the wall — the only thing keeping the
     // silhouette off the graticule
@@ -292,12 +307,15 @@ export class Anchor {
       ink: TOKO.PAPER,
       faceOpts: {
         open,
-        squash: 1 - lid * 0.94,
-        // the mouth radius breathing. 0.09 at full amplitude reads as speech
-        // at this size; the resting drift keeps it alive between characters.
-        grin: 1 + this.mouthSmooth * 0.09 + drift(t, { period: 6 }) * 0.012,
+        squash,
+        // the mouth radius breathing. 0.09 was the feed's number and it did
+        // not read as speech on a film frame; a film drives it through `act`
+        // and gets a mouth that visibly opens. The resting drift keeps it
+        // alive between characters either way.
+        grin: grinK * (1 + this.mouthSmooth * (act.mouth != null ? 0.26 : 0.09) + drift(t, { period: 6 }) * 0.012),
       },
     });
+    c.restore();
   }
 
   // Shoulders. Not part of the brand mark — `face.js` stops at a collar — so

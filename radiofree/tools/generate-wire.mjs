@@ -46,7 +46,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
 
 const { validateWire, parseLine } = await import(path.join(ROOT, 'js/wire.js'));
-const { PANEL_KEYS, BROLL_KEYS } = await import(path.join(ROOT, 'js/visuals.js'));
+const { PANEL_KEYS, BROLL_KEYS, NUMERIC_PANELS } = await import(path.join(ROOT, 'js/visuals.js'));
 const { SECTOR_COLOR } = await import(path.join(ROOT, 'js/palette.js'));
 
 // ── the desk ──────────────────────────────────────────────────────────────
@@ -248,6 +248,9 @@ const SCHEMA = `Return ONE JSON object and nothing else. No prose, no code fence
       "id": "kebab-case-slug",              // unique, never "sign-off"
       "visual": "<one VISUAL key>",
       "broll": "<one BROLL key>",
+      "figures": [                           // REQUIRED whenever the visual prints a number
+        { "claim": 92.5, "plain": 12.4, "unit": "BN" }
+      ],
       "en": {
         "slug": "SHORT DATELINE IN CAPS",   // e.g. "RING ROAD III", "VUOSAARI"
         "head": "one headline, sentence case, no full stop",
@@ -306,6 +309,18 @@ ${artTable()}
 - The event stays real and unembellished. The reframe is the joke; inventing
   the event is not.
 - Funny first. If a line is only clever, cut it.
+- \`figures\` is the bulletin's own arithmetic, handed to the graphic. These
+  visuals print a number — ${NUMERIC_PANELS.join(', ')} — and without figures
+  they print one of their own, which is some other morning's number under
+  today's words. Give \`figures[0]\` the headline pair: \`claim\` is the number
+  the broadcast puts forward, \`plain\` is the number the plain reading puts
+  forward, \`unit\` is at most four characters and may be empty. Add a second
+  pair only if the bulletin genuinely has one.
+- Both numbers in a figure MUST appear as DIGITS somewhere in that bulletin's
+  copy, in at least one of the three languages — "92.5", not "ninety-two and a
+  half". A listener has to be able to check the chart against the words. If the
+  bulletin has no number worth printing, write \`"figures": []\` and the panel
+  prints none. An empty list is an answer; leaving the field out is not.
 
 ${SCHEMA}`;
 }
@@ -373,7 +388,12 @@ export function assemble(draft, date) {
   const copy = { en: {}, fi: {}, ja: {} };
   for (const s of (draft.stories || [])) {
     if (!s || !s.id) continue;
-    stories.push({ id: s.id, sector: SECTOR.id, visual: s.visual, broll: s.broll, filed: date });
+    const story = { id: s.id, sector: SECTOR.id, visual: s.visual, broll: s.broll, filed: date };
+    // `figures` is what stops the graphic quoting some other morning's
+    // arithmetic. An ABSENT one is a bug; an empty one is an answer.
+    if (Array.isArray(s.figures)) story.figures = s.figures;
+    else if (NUMERIC_PANELS.includes(s.visual)) story.figures = [];
+    stories.push(story);
     for (const lang of LANGS) if (s[lang]) copy[lang][s.id] = s[lang];
   }
   return {
@@ -466,6 +486,8 @@ export function check(wire, names) {
     panelKeys: PANEL_KEYS,
     brollKeys: BROLL_KEYS,
     sectorIds: Object.keys(SECTOR_COLOR),
+    numericPanels: NUMERIC_PANELS,
+    strict: true,
   });
   const errors = [...v.errors, ...editorialProblems(wire, names)];
   return { ok: errors.length === 0, errors, warnings: v.warnings };
