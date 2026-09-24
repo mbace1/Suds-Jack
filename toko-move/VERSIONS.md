@@ -44,7 +44,20 @@ carries it. `?kit=a,b` applies kit to a pinned or random shift — that is how
 the bot prices an item — and is ignored on the daily, whose result is one
 everybody compares.
 
-RENT WITH KIT: being measured with `shifts.cjs --kitweeks=20`.
+**Rent is €400 now, and it was measured again** (`shifts.cjs --kitweeks=20`:
+an offer of three each night, the best-valued item taken). Kit is income, so
+v2.47's €350 would have been paid by nearly everyone:
+
+| player | median week | €350 | **€400** | €450 |
+|---|---|---|---|---|
+| reads the fee | €483 | 95% | **80%** | 60% |
+| takes the shortest job | €447 | 80% | **55%** | 45% |
+| takes the first job, never walks | €342 | 45% | **10%** | 5% |
+
+€400 holds the two players who choose their jobs where v2.47 left them (78%
+and 58% at €350 without kit). The first-job player falls from 28% to 10%:
+kit pays whoever uses the lever it bends, and a player who takes whatever is
+first does not use any of them. That is the ladder's shape, not a bug.
 
 `test/kit.mjs` (33) holds the offers, the nights and each lever in the
 engine's own arithmetic — a job of 200 is offered at 220 with the contract, a
