@@ -175,7 +175,9 @@ export const TUNING = {
   },
   depth: {
     wavesPer: 8,
-    cycleFrom: 1,
+    // v264: the loop comes back round to THE SURFACE. It used to restart at
+    // index 1, so a run past wave 32 never saw the first world again.
+    cycleFrom: 0,
     // v261 THE FALL — between depths. Two styles, both shipped (owner: "we can
     // try both"), one toggle in OPTIONS:
     //   floor  — the camera holds; the old floor and rail drop away into the
@@ -185,19 +187,50 @@ export const TUNING = {
     // `depth` is how far (world units), `dur` how long. You are invulnerable
     // for it, and nothing spawns until the new floor is under you.
     fall: { style: 'floor', dur: 1.9, depth: 34, dark: 0.65, streaks: 5 },
+    // ── ONE RULE PER WORLD (v264) ───────────────────────────────────────────
+    // A world used to be a palette and a roster lean, and nothing about it
+    // changed how the game played. Each one now owns exactly one mechanic —
+    // one, so a world can be named by how it plays — and THE SURFACE keeps
+    // none on purpose, because the first eight waves are where the game is
+    // taught. Classic rounds only: cabinets, SMASH, RUSH and authored levels
+    // keep their own rules.
+    rules: {
+      // THE WELL — a current the whole floor drifts on, turning slowly. The
+      // fish school with it; you feel it as a lean you have to correct.
+      current: { speed: 2.6, playerMult: 0.42, turn: 0.22 },
+      // THE VEIN — the rail flashes, then fires a line across the arena with
+      // a gap in it. The hazard is the floor, not an enemy.
+      sweep: { every: 7.5, warn: 1.1, spacing: 2.6, gapSlots: 2, speed: 9 },
+      // THE VOID — the dark closes in and opens again, so the far side of the
+      // arena disappears on a slow breath.
+      dark: { period: 9, nearMin: 6, farMin: 20 },
+      // THE FOAM — the floor is slick. You carry momentum instead of stopping
+      // dead, which is the one rule that changes YOUR verbs rather than theirs.
+      slip: { accel: 3.2, drag: 0.9 },
+      // THE KILN — every few seconds the floor shoves everything out from the
+      // middle, so the centre is somewhere you pass through, not somewhere you live.
+      updraft: { every: 6.5, warn: 0.8, push: 13, dur: 0.45 },
+    },
     looks: [
       { name: 'THE SURFACE', bg: 0x0d0d1a, rail: 0x5555cc, fogNear: 42, fogFar: 80, gridScale: 1.0, gridFall: 0.45, vignette: 0.55, poolLift: 0.30,
         base: [0.079, 0.079, 0.169], gridHi: [0.0, 0.55, 0.50], gridGlow: 1.0,   // the floor's own colours (linear) — the shipped look, verbatim
-        favour: [] },
+        favour: [], rule: null },        // the teaching floor keeps no rule
       { name: 'THE WELL',    bg: 0x081a1c, rail: 0x33ccbb, fogNear: 30, fogFar: 66, gridScale: 1.6, gridFall: 0.30, vignette: 0.65, poolLift: 0.36,
         base: [0.030, 0.105, 0.115], gridHi: [0.10, 0.70, 0.60], gridGlow: 1.1,
-        favour: ['SPLITTA', 'WEEVA', 'RIBBON', 'SLUG'] },                 // the fish: what schools and arcs
+        favour: ['SPLITTA', 'WEEVA', 'RIBBON', 'SLUG'], rule: 'current' },   // the fish: what schools and arcs
       { name: 'THE VEIN',    bg: 0x1a0708, rail: 0xdd3344, fogNear: 36, fogFar: 74, gridScale: 0.6, gridFall: 0.20, vignette: 0.45, poolLift: 0.22,
         base: [0.130, 0.030, 0.040], gridHi: [0.85, 0.16, 0.22], gridGlow: 0.9,
-        favour: ['SPITTOR', 'FANNER', 'PYRA', 'DRAPER', 'BOTFLY'] },     // the bullets: what shoots, and what bites when it dies
+        favour: ['SPITTOR', 'FANNER', 'PYRA', 'DRAPER', 'BOTFLY'], rule: 'sweep' },   // the bullets: what shoots, and what bites when it dies
       { name: 'THE VOID',    bg: 0x030308, rail: 0x332244, fogNear: 18, fogFar: 46, gridScale: 1.0, gridFall: 0.95, vignette: 0.85, poolLift: 0.55,
         base: [0.012, 0.012, 0.022], gridHi: [0.18, 0.10, 0.32], gridGlow: 0.35,
-        favour: ['CLOAKER', 'MAGNA', 'SIREN', 'TORO', 'WARDEN'] },       // the dark: what ambushes, pulls, screams, charges
+        favour: ['CLOAKER', 'MAGNA', 'SIREN', 'TORO', 'WARDEN'], rule: 'dark' },      // the dark: what ambushes, pulls, screams, charges
+      // v264 — two more worlds, so the loop starts at wave 49 instead of 33.
+      { name: 'THE FOAM',   bg: 0x0e1c22, rail: 0x99ffee, fogNear: 34, fogFar: 72, gridScale: 1.2, gridFall: 0.40, vignette: 0.40, poolLift: 0.42,
+        base: [0.055, 0.105, 0.125], gridHi: [0.60, 1.00, 0.92], gridGlow: 1.45,
+        favour: ['GLOBBO', 'YELA_CUBE', 'SPLITTA', 'HOPPER', 'FLIT'], rule: 'slip' },   // the bouncers: what a slick floor makes worse
+      { name: 'THE KILN',   bg: 0x1a1004, rail: 0xffaa33, fogNear: 26, fogFar: 60, gridScale: 0.8, gridFall: 0.35, vignette: 0.60, poolLift: 0.26,
+        base: [0.130, 0.060, 0.018], gridHi: [1.00, 0.62, 0.14], gridGlow: 1.25,
+        favour: ['CHARGER', 'BULWARK', 'TORO', 'REDD_CUBE', 'THUG'], rule: 'updraft' },  // the heavies: what you cannot simply outrun
     ],
   },
 

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=216';
-import { TUNING } from './tuning.js?v=216';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=217';
+import { TUNING } from './tuning.js?v=217';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -49,6 +49,7 @@ export class Player {
     this._firingNow    = false;
     this._burstQueue   = [];
     this._speedMult    = 1.0;
+    this._slip = null; this._slipX = 0; this._slipZ = 0;   // v264 THE FOAM
     this._fireRateMult = 1.0;
     this._dashCDMult   = 1.0;
     this._dashDurMult  = 1.0;   // v180: LONG DASH card stretches the slide
@@ -214,6 +215,7 @@ export class Player {
     this._firingNow    = false;
     this._burstQueue   = [];
     this._speedMult    = 1.0;
+    this._slip = null; this._slipX = 0; this._slipZ = 0;   // v264 THE FOAM
     this._fireRateMult = 1.0;
     this._dashCDMult   = 1.0;
     this._dashDurMult  = 1.0;   // v180: LONG DASH card stretches the slide
@@ -300,8 +302,24 @@ export class Player {
       // v224 RUSH: a held boost travels ~3x walking speed. Same direction
       // input — it is the same stick, moving faster and lethally.
       const spd = (this.boosting ? this._boostSpeed : SPEED) * this._speedMult;
-      this.mesh.position.x += moveDir.x * spd * dt;
-      this.mesh.position.z += moveDir.z * spd * dt;
+      if (this._slip) {
+        // v264 THE FOAM: a slick floor. The stick sets where you are ACCELERATING,
+        // not where you are — so you overshoot, and stopping is a thing you do
+        // rather than a thing that happens. Reset to null by every other world.
+        const S = this._slip;
+        this._slipX = (this._slipX ?? 0) + (moveDir.x * spd - (this._slipX ?? 0)) * Math.min(1, S.accel * dt);
+        this._slipZ = (this._slipZ ?? 0) + (moveDir.z * spd - (this._slipZ ?? 0)) * Math.min(1, S.accel * dt);
+        if (!moveDir.x && !moveDir.z) {
+          const d = Math.max(0, 1 - S.drag * dt);
+          this._slipX *= d; this._slipZ *= d;
+        }
+        this.mesh.position.x += this._slipX * dt;
+        this.mesh.position.z += this._slipZ * dt;
+      } else {
+        this._slipX = 0; this._slipZ = 0;
+        this.mesh.position.x += moveDir.x * spd * dt;
+        this.mesh.position.z += moveDir.z * spd * dt;
+      }
     }
 
     // Mercy i-frame flicker — independent of movement

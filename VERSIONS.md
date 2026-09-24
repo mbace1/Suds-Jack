@@ -7,6 +7,69 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v264 — 2026-09-24
+**A WORLD IS A RULE NOW, not a paint job: one mechanic each, two new worlds, and the loop comes back to THE SURFACE** *(owner: "give each world one mechanic, add a fifth and sixth so the loop starts later, and let the loop include the surface")*
+- **Six worlds, one rule each** (`TUNING.depth.rules`). Through v263 a world
+  changed the sky, the rail, the fog, the grid and which enemies it favoured —
+  and **nothing about it changed how the game played**. One mechanic each, and
+  only one, so a world can be named by how it plays:
+  - **THE SURFACE** — none, on purpose. The first eight waves are where the
+    game is taught.
+  - **THE WELL** — a **current**. The whole floor drifts on it and the drift
+    turns slowly; the fish school with it and you feel it as a lean to correct.
+  - **THE VEIN** — a **sweep**. The rail flashes, then fires a line across the
+    arena with a gap in it. The hazard is the floor, not an enemy.
+  - **THE VOID** — the **dark breathes**. Fog closes to near-6 and opens again
+    on a nine-second cycle, so the far side of the arena disappears and returns.
+  - **THE FOAM** *(new)* — the floor is **slick**. You carry momentum instead of
+    stopping dead: the one rule that changes YOUR verbs rather than theirs.
+  - **THE KILN** *(new)* — an **updraft**. Every few seconds the floor shoves
+    everything out from the middle, so the centre is somewhere you pass through.
+- **The loop comes back round.** `cycleFrom` 1 → 0 and six worlds instead of
+  four: the repeat starts at wave 49 instead of 33, and it returns to THE
+  SURFACE, which a run had not seen since wave 8.
+- **Measured against the same world with its rule switched off** — the only
+  control that holds, since each world has its own roster and its own crowd:
+
+  | world | rule | enemy drift off → on | player moved off → on | enemy bullets | fog near |
+  |---|---|---|---|---|---|
+  | THE SURFACE | none | 13.9 → 13.9 | 0 → 0 | 0 → 0 | 42 → 42 |
+  | THE WELL | current | 13.9 → **32.3** | 0 → **9.9** | 0 → 0 | 30 → 30 |
+  | THE VEIN | sweep | 13.8 → 13.8 | 0 → 0 | 0 → **12** | 36 → 36 |
+  | THE VOID | dark | 13.9 → 13.9 | 0 → 0 | 0 → 0 | 18 → **6–18** |
+  | THE FOAM | slip | 13.8 → 13.8 | 0 → 0 | 0 → 0 | 34 → 34 |
+  | THE KILN | updraft | 14.0 → **17.4** | 0 → **2.5** | 0 → 0 | 26 → 26 |
+
+  Every rule shows up in exactly one column and nowhere else, and THE SURFACE —
+  identical code on both sides — moves 0.1%, which is what makes the rest
+  readable. THE FOAM has its own instrument, because a slick floor moves
+  nothing on its own: hold a direction for two seconds and let go, and you
+  **slide 1.38 units** where every other world slides 0, at the same top speed
+  (5.99 against a SPEED of 6) — it costs you the crispness, not the pace.
+- **Three faults in the instrument before any of that meant anything**, all the
+  same shape — *the ruler was measuring the game, not the rule*. (1) The dummies
+  were being shoved by real spawns, so THE SURFACE with no rule at all "drifted"
+  as far as a world with one. (2) With the spawns evicted, the wave counter
+  still advanced, and a wave that changes depth calls `applyDepthLook`, which
+  **resets the rule's own clock** — so the two rules with timers (sweep,
+  updraft) never fired once in a fourteen-second window, and the trace showed
+  the accumulator sitting at 6.5 seconds away forever. (3) The rail-flash
+  counter compared `getHex()` against the authored hex, which do not match
+  through colour management, so it read hundreds of flashes on a world that has
+  none. The wave is frozen for a measurement now and the flash is not counted.
+- **A body standing on the exact middle has no outward direction**, and the
+  middle is precisely what THE KILN's updraft exists to move you off — `x/0` is
+  not a direction. Anything inside 1.5 units of the centre takes the event's own
+  angle, rolled when the push starts. Before the fix the updraft moved a
+  centred player **0.0 units**; after it, 2.5.
+- Every rule is **classic rounds only** — cabinets, SMASH, RUSH and authored
+  levels keep their own — and every rule **resets on a world change and on a
+  run start**, so a fall never carries the last world's weather into the next.
+  `reduceMotion` halves THE VOID's breath.
+- Cache-bust `?v=216` → `?v=217`; HUD label → v264
+
+---
+
 ## v263 — 2026-09-23
 **TWO DOORS: ARCADE and CAMPAIGN — and RUSH moves out of the title and into the pause-menu cabinets** *(owner: "just make campaign the option" · "when you take away rush, just add that to the pause menu cabinets. They can always act as test beds for new modes")*
 - **The title has two doors.** ARCADE is the endless run and is still what a
