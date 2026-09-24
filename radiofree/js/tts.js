@@ -30,7 +30,7 @@
 // 403s, a model that will not load: `speak()` resolves false and the feed
 // carries on reading in text, which is what it was doing anyway.
 
-import * as audio from './audio.js?v=67';
+import * as audio from './audio.js?v=68';
 
 const CDN = 'https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm';
 const MODEL = 'onnx-community/Kokoro-82M-v1.0-ONNX';

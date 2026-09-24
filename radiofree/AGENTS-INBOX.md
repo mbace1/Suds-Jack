@@ -609,3 +609,17 @@ desk so the forearms rest on it. `actAt` grew two fields — `gesture` (one hand
 makes the point of each sentence, alternating sides) and `hands` (both up
 beside the face on the take). The feed gestures on its own phrase clock.
 Every radiofree token is v67.
+
+## 2026-09-24 — full frame and sound (v68)
+
+Owner: *"we need to beat everyone"*, looking at the week's Opus 5.5 films. The
+two gaps against the best of them were sound and resolution. The anchor is now
+drawn by the film at 1080×1920 (`anchor.render(ctx, W, H, { zoom })`) with a
+parallax blurred set, studio beams with dust, a glossy desk, push-ins and a
+crash zoom on the take; every panel lights its own surround; the frame gets a
+bloom pass. `js/score.js` synthesises the soundtrack from the plan — score,
+Toko's formant babble on `actAt`'s syllable clock, a sound for every event —
+normalised to −16 LUFS and muxed by mediabunny (Opus in headless Chromium).
+`exportPost` reports `audio` and `lufs`; `render-day` writes them to
+`clips.json`; the gate asserts both. A clip now takes ~60 s to render here
+(was ~22 s) — the blurs are done at quarter size or smaller for that reason.
