@@ -1,3 +1,4 @@
+import { buildBed } from './bed.js?v=222';   // v267 THE WORLD BED
 // Arcade game-show announcer (v109): original soap-themed lines in the spirit
 // of the classic arena shooters, spoken via the browser's speech synthesis.
 // Deliberately NOT an imitation of any real person's voice — it uses whatever
@@ -61,8 +62,53 @@ class AudioSystem {
     this._shootHeat  = 0;
   }
 
+  // ── v267 THE WORLD BED ────────────────────────────────────────────────────
+  // One continuous bed per world (js/bed.js), on its own bus so the master
+  // volume, the pause duck and the on/off switch reach it LIVE — every other
+  // sound here is a one-shot that reads the volume once, at birth.
+  _bedBusNode() {
+    const ctx = this._ensure();
+    if (!this._bedBus) {
+      this._bedBus = ctx.createGain();
+      this._bedBus.gain.value = 0;
+      this._bedBus.connect(ctx.destination);
+    }
+    return this._bedBus;
+  }
+  _bedLevel() { return (this._bedOn === false ? 0 : 1) * this._volume * (this._bedDuck ?? 1); }
+  _bedApply() {
+    if (!this._bedBus) return;
+    const ctx = this._ctx;
+    this._bedBus.gain.setTargetAtTime(this._bedLevel(), ctx.currentTime, 0.12);
+  }
+  setBed(on) { this._bedOn = !!on; this._bedApply(); if (!on) this.bedWorld(null); }
+  bedDuck(k) { if (this._bedDuck === k) return; this._bedDuck = k; this._bedApply(); }
+  // crossfade to world `w` (null = silence). The fall between depths is 1.9 s,
+  // and the crossfade is 1.2 — it lands inside the dark.
+  bedWorld(w) {
+    if (w === (this._bed?.world ?? null)) return;
+    if (w != null && (this._bedOn === false || this._volume <= 0)) return;
+    try {
+      const ctx = this._ensure(), bus = this._bedBusNode(), at = ctx.currentTime, X = 1.2;
+      if (this._bed) { this._bed.stop(at, X); this._bed = null; }
+      if (w != null) {
+        this._bed = buildBed(ctx, bus, w);
+        this._bed.fadeIn(at, X);
+        this._bed.tick(at + 0.25);
+      }
+      this._bedApply();
+    } catch (_) {}
+  }
+  // a quarter second ahead: long enough for a frame hitch, short enough that a
+  // cue (the vein's quickening) is heard within a quarter second of being sent
+  bedTick() { if (this._bed && this._ctx) this._bed.tick(this._ctx.currentTime + 0.25); }
+  bedPulse(kind, v) { if (this._bed) this._bed.pulse(kind, v); }
+  bedTension(on) { if (this._bed) this._bed.tension(!!on); }
+  bedNow() { return this._bed ? this._bed.world : null; }
+
   setVolume(v) {
     this._volume = Math.max(0, Math.min(1, v));
+    this._bedApply();   // v267: the bed hears the volume change live
 
   }
 
@@ -88,7 +134,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=221', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=222', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;

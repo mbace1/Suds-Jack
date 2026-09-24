@@ -7,6 +7,68 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v267 — 2026-09-24
+**SOUND PER WORLD: a continuous synthesised bed for every world, that answers to the world's rule, rises for the boss, and crossfades in the fall** *(owner: "all in order" — leap 3 of 5)*
+- **Toko Drop had no music at all.** Every sound through v266 was a one-shot
+  tone or noise burst. `js/bed.js` is a continuous ambience per world, fully
+  synthesised — no files, no network:
+  - **THE SURFACE** — a low drone and fifth under a slow tremolo, and a soft
+    tick every two seconds: calm, and alive.
+  - **THE WELL** — band-passed water swelling on a slow LFO over a sub drone,
+    with a beating pair a few hertz apart.
+  - **THE VEIN** — a two-thump heart under a minor drone.
+  - **THE VOID** — a sub-bass hum and a breath of filtered noise.
+  - **THE FOAM** — three high partials drifting against each other, a fizz,
+    and bubbles.
+  - **THE KILN** — a low saw through a closed filter and a rumble.
+- **A bed is information, not decoration** — each answers to its world's rule:
+  THE VOID's noise breathes with the fog, THE VEIN's heart doubles when a sweep
+  (or the boss's line) is coming, THE KILN's filter opens before the updraft and
+  a thump lands with it. A tension layer — a buzzing saw two octaves up — rises
+  while any boss lives. The crossfade between worlds is 1.2 s and lands inside
+  the 1.9 s fall.
+- **Measured without a speaker**: every bed builds on any audio context and
+  schedules in context time, never on a timer, so the same code renders in an
+  OfflineAudioContext. Eight seconds per world, each cue fired at 3 s, the boss
+  layer from 5.5 s:
+
+  | world | RMS | where its energy sits | its cue | boss layer |
+  |---|---|---|---|---|
+  | THE SURFACE | 0.033 | ~87 Hz | — | ~87 → **200** Hz |
+  | THE WELL | 0.031 | ~459 Hz (the water band) | — | ~459 → 248 Hz |
+  | THE VEIN | 0.029 | ~125 Hz | heartbeats in 1.5 s: **2 → 3** | ~125 → **273** Hz |
+  | THE VOID | 0.024 | ~37 Hz (sub) | high-frequency energy **×4.8** in the dark | ~37 → **149** Hz |
+  | THE FOAM | 0.025 | ~1,800 Hz | — | RMS +55% |
+  | THE KILN | 0.033 | ~69 Hz | high-frequency energy **+43%** as the furnace opens | ~69 → **171** Hz |
+
+  Loudness is even across worlds (within 3 dB), under every sound effect.
+- **Four things the measurements changed.** (1) THE VEIN's heart did not
+  quicken in time: the beat after a warning was already committed at the slow
+  spacing, so the first quick beat landed a second later — about when the
+  sweep itself did. A warning now pulls the next uncommitted beat to 0.15 s,
+  and the scheduler looks 0.25 s ahead instead of 0.6, so a cue is heard within
+  a quarter second. (2) THE VOID's breath changed the brightness and barely the
+  loudness — the sub drowned it — so the sub is under the breath now (RMS +42%
+  in the dark). (3) The boss layer was too quiet to notice; it now moves every
+  bed's brightness by half again or more. (4) Every bed sat about 20 dB under
+  the effects; they were raised to an even −30 dB RMS. Two instruments were
+  wrong on the way and were replaced rather than trusted: an onset counter that
+  counted each two-thump beat twice (the beats are now logged where they are
+  scheduled), and zero-crossings, which barely move when a filter opens on a
+  saw whose fundamental dominates (high-frequency energy is measured instead).
+- **Driven through the live game**: the bed follows every depth through the
+  whole cycle and back, the boss layer rises and falls with the boss, pause
+  ducks it to 30% and keeps the world, the title is silent, a campaign room
+  plays its world, and a cabinet or RUSH plays nothing. **No leak**: eight world
+  changes made 48 audio sources and all 48 ended. The void's breath is throttled
+  so the game's every-frame call does not write an automation event per frame.
+- A **WORLD SOUND** switch in OPTIONS (on by default, `tokoDropBed`); the bed is
+  on its own bus, so the master volume and the switch reach it live. `bed.js`
+  is in the offline worker's precache and `bump-version.sh`'s file loop.
+- Cache-bust `?v=221` → `?v=222`; HUD label → v267
+
+---
+
 ## v266 — 2026-09-24
 **A BOSS PER WORLD: every boss fights inside a world, and while it lives that world's rule comes from the boss** *(owner: "all in order" — leap 2 of 5)*
 - **Every boss already closes a world** — boss every 8 waves, a world every 8

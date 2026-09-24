@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=221';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=221';
-import { Player, PLAYER_RADIUS } from './player.js?v=221';
+import { InputManager } from './input.js?v=222';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=222';
+import { Player, PLAYER_RADIUS } from './player.js?v=222';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=221';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=221';
-import { audio } from './audio.js?v=221';
-import { haptics } from './haptics.js?v=221';
-import { initDesigner } from './designer.js?v=221';
-import { createSpecimen } from './specimen.js?v=221';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=221';
-import { TUNING } from './tuning.js?v=221';
-import { Arena, rectShape } from './arena.js?v=221';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=221';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=221';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=221';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=222';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=222';
+import { audio } from './audio.js?v=222';
+import { haptics } from './haptics.js?v=222';
+import { initDesigner } from './designer.js?v=222';
+import { createSpecimen } from './specimen.js?v=222';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=222';
+import { TUNING } from './tuning.js?v=222';
+import { Arena, rectShape } from './arena.js?v=222';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=222';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=222';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=222';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -432,7 +432,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '266';
+const GAME_VERSION = '267';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -2993,6 +2993,7 @@ function updateWorldRule(dt) {
     } else if (_wr.t >= _wr.bossNext) {
       _wr.bossNext = _wr.t + L.every;
       _wr.warnT = L.warn;
+      audio.bedPulse('warn', L.warn + 0.4);   // v267
     }
     return;
   }
@@ -3004,6 +3005,7 @@ function updateWorldRule(dt) {
     if (Lk && scene.fog) {
       _FOG.near = Lk.fogNear + (K.nearMin - Lk.fogNear) * k;
       _FOG.far  = Lk.fogFar  + (K.farMin  - Lk.fogFar)  * k;
+      audio.bedPulse('breath', k);   // v267
     }
     const prev = _wr.blinkF ?? f;
     _wr.blinkF = f;
@@ -3048,10 +3050,12 @@ function updateWorldRule(dt) {
         _railFlash(0); _wr.pushT = U.dur; addShake(0.45); audio.milestone?.();
         _wr.ang0 = Math.random() * Math.PI * 2;
         _puff(boss.position.x, boss.position.z, 0xffaa33);
+        audio.bedPulse('push');                   // v267
       }
     } else if (_wr.t >= _wr.bossNext) {
       _wr.bossNext = _wr.t + U.every;
       _wr.warnT = U.warn;
+      audio.bedPulse('swell', U.warn);            // v267
     }
     return;
   }
@@ -3079,6 +3083,7 @@ function updateWorldRule(dt) {
       _wr.nextAt = _wr.t + S.every;
       _wr.warnT = S.warn;
       _wr.lane = Math.floor(Math.random() * 4);           // which rail it comes off
+      audio.bedPulse('warn', S.warn + 0.4);               // v267: the heart quickens
       }
   } else if (rule === 'dark') {
     // the dark breathes: fog closes to nearMin/farMin and opens again
@@ -3087,6 +3092,7 @@ function updateWorldRule(dt) {
       const k = (0.5 - 0.5 * Math.cos((_wr.t / D.period) * Math.PI * 2)) * (reduceMotion ? 0.45 : 1);
       _FOG.near = L.fogNear + (D.nearMin - L.fogNear) * k;
       _FOG.far  = L.fogFar  + (D.farMin  - L.fogFar)  * k;
+      audio.bedPulse('breath', k);   // v267: the bed breathes with the dark
     }
   } else if (rule === 'slip') {
     player._slip = R.slip;      // player.js reads it; null everywhere else
@@ -3117,10 +3123,12 @@ function updateWorldRule(dt) {
       if (_wr.warnT <= 0) {
         _railFlash(0); _wr.pushT = U.dur; addShake(0.35); audio.milestone?.();
         _wr.ang0 = Math.random() * Math.PI * 2;   // which way the dead centre goes
+        audio.bedPulse('push');                   // v267
       }
     } else if (_wr.t >= _wr.nextAt) {
       _wr.nextAt = _wr.t + U.every;
       _wr.warnT = U.warn;
+      audio.bedPulse('swell', U.warn);            // v267: the furnace opens before it blows
     }
   }
 }
@@ -5330,6 +5338,8 @@ const designer = initDesigner({
     getNexInfo: () => ({ progress: nexProgress(), unlocked: nexProgress() >= 5,
                          bests: cabBestsGet(), req: NEX_REQ }),
     getFallFollow: () => fallStyle() === 'follow',   // v261
+    getBed: () => bedOn(),                           // v267
+    setBed: on => { try { localStorage.setItem('tokoDropBed', on ? '1' : '0'); } catch (_) {} audio.setBed(on); },
     setFallFollow: on => { try { localStorage.setItem('tokoDropFall', on ? 'follow' : 'floor'); } catch (_) {} },
     getMelee: () => meleeOnlyMode,
     setMelee: on => {
@@ -9180,6 +9190,19 @@ showTitle();
 let _autoPerfLowT = 0;
 let _autoPerfDone = localStorage.getItem('tokoDropPerf') !== null;
 
+function bedOn() { let v = null; try { v = localStorage.getItem('tokoDropBed'); } catch (_) {} return v !== '0'; }
+audio.setBed(bedOn());
+// v267 THE WORLD BED: which world is heard. A classic round or a campaign room
+// plays its depth; a cabinet, RUSH, SMASH, the title and the death screen play
+// nothing. Pause ducks it rather than cutting it, so coming back is not a start.
+function updateBed() {
+  const live = gameState === 'playing' || gameState === 'paused' || gameState === 'upgrade';
+  const inWorld = live && _depthIdx >= 0 && (customLevel ? !!customLevel.room : classicRound() || !!drop);
+  audio.bedWorld(inWorld ? _depthIdx : null);
+  audio.bedDuck(gameState === 'playing' ? 1 : 0.3);
+  audio.bedTension(inWorld && enemies.some(e => e.alive && e._isBoss));
+  audio.bedTick();
+}
 function loop() {
   requestAnimationFrame(loop);
   const now = performance.now();
@@ -9204,6 +9227,7 @@ function loop() {
 
   input.pollGamepad();
   updateMenuNav(dt);   // gamepad menu focus (v134) — self-gates on menu states
+  updateBed();         // v267
   updateShake(dt);
   if (_dropCamY) { camera.position.y += _dropCamY; camera.lookAt(_camLook.x, _camLook.y + _dropCamY, _camLook.z); }   // v261
 
@@ -11513,7 +11537,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=221').then(async m => {
+  import('./editor.js?v=222').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -11544,6 +11568,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=221').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=222').catch(() => {});
   });
 }
