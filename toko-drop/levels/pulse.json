@@ -1,0 +1,39 @@
+{
+  "format": 1,
+  "id": "pulse",
+  "name": "PULSE",
+  "arena": {
+    "shapes": [
+      {
+        "kind": "rect",
+        "hx": 15,
+        "hz": 11
+      }
+    ]
+  },
+  "duration": 45,
+  "rules": {
+    "mode": "arcade",
+    "outside": "push"
+  },
+  "spawns": [
+    {"t":0,"type":"GLOBBO","px":-12,"pz":-8},
+    {"t":0,"type":"GLOBBO","px":12,"pz":-8},
+    {"t":3,"type":"SPITTOR","px":0,"pz":-9,"intervalMult":0.8},
+    {"t":7,"type":"FANNER","px":-13,"pz":6,"intervalMult":0.8},
+    {"t":11,"type":"GLOBBO","px":-12,"pz":8},
+    {"t":11,"type":"GLOBBO","px":0,"pz":9},
+    {"t":11,"type":"GLOBBO","px":12,"pz":8},
+    {"t":12.5,"type":"GLOBBO","px":-12,"pz":-8},
+    {"t":15,"type":"SPITTOR","px":13,"pz":0,"intervalMult":0.8},
+    {"t":20,"type":"FANNER","px":-13,"pz":-6,"speedMult":1.2,"intervalMult":0.8},
+    {"t":20,"type":"YELA_CUBE","px":13,"pz":6,"speedMult":1.2},
+    {"t":25,"type":"SPITTOR","px":-12,"pz":-8,"speedMult":1.2,"intervalMult":0.8},
+    {"t":25,"type":"SPITTOR","px":12,"pz":8,"speedMult":1.2,"intervalMult":0.8},
+    {"t":31,"type":"GLOBBO","px":-12,"pz":0,"speedMult":1.2},
+    {"t":31,"type":"GLOBBO","px":0,"pz":-9,"speedMult":1.2},
+    {"t":31,"type":"GLOBBO","px":12,"pz":0,"speedMult":1.2},
+    {"t":32.5,"type":"GLOBBO","px":0,"pz":9,"speedMult":1.4},
+    {"t":36,"type":"FANNER","px":0,"pz":9,"speedMult":1.4,"intervalMult":0.8}
+  ]
+}

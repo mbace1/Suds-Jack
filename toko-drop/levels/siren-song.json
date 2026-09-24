@@ -1,0 +1,64 @@
+{
+  "format": 1,
+  "id": "siren-song",
+  "name": "SIREN SONG",
+  "arena": {
+    "combine": "intersect",
+    "shapes": [
+      {
+        "kind": "circle",
+        "c": [
+          -4,
+          0
+        ],
+        "r": 10
+      },
+      {
+        "kind": "circle",
+        "c": [
+          4,
+          0
+        ],
+        "r": 10
+      }
+    ]
+  },
+  "duration": 45,
+  "rules": {
+    "mode": "arcade",
+    "outside": "push"
+  },
+  "spawns": [
+    {"t":0,"type":"GLOBBO","px":0,"pz":-8,"speedMult":1.1},
+    {"t":0,"type":"GLOBBO","px":0,"pz":8,"speedMult":1.1},
+    {"t":1.5,"type":"GLOBBO","px":0,"pz":-8,"speedMult":1.1},
+    {"t":4,"type":"SIREN","px":0,"pz":-8,"speedMult":1.1},
+    {"t":5.5,"type":"SIREN","px":0,"pz":8,"speedMult":1.1},
+    {"t":8,"type":"GLOBBO","px":-5,"pz":0,"speedMult":1.1},
+    {"t":8,"type":"GLOBBO","px":5,"pz":0,"speedMult":1.1},
+    {"t":9.5,"type":"GLOBBO","px":5,"pz":0,"speedMult":1.1},
+    {"t":9.5,"type":"GLOBBO","px":-5,"pz":0,"speedMult":1.1},
+    {"t":11,"type":"GLOBBO","px":5,"pz":0,"speedMult":1.1},
+    {"t":13,"type":"TORO","px":0,"pz":8,"speedMult":1.1},
+    {"t":18,"type":"GLOBBO","px":-3,"pz":-5,"speedMult":1.3},
+    {"t":18,"type":"GLOBBO","px":3,"pz":-5,"speedMult":1.3},
+    {"t":18,"type":"GLOBBO","px":-3,"pz":5,"speedMult":1.3},
+    {"t":18,"type":"GLOBBO","px":3,"pz":5,"speedMult":1.3},
+    {"t":19.5,"type":"GLOBBO","px":3,"pz":5,"speedMult":1.3},
+    {"t":19.5,"type":"GLOBBO","px":-3,"pz":5,"speedMult":1.3},
+    {"t":19.5,"type":"GLOBBO","px":3,"pz":-5,"speedMult":1.3},
+    {"t":19.5,"type":"GLOBBO","px":-3,"pz":-5,"speedMult":1.3},
+    {"t":21,"type":"GLOBBO","px":3,"pz":-5,"speedMult":1.3},
+    {"t":24,"type":"WARDEN","px":0,"pz":-8,"speedMult":1.3},
+    {"t":29,"type":"SIREN","px":0,"pz":8,"speedMult":1.3},
+    {"t":30.5,"type":"SIREN","px":0,"pz":-8,"speedMult":1.3},
+    {"t":34,"type":"GLOBBO","px":-5,"pz":0,"speedMult":1.5},
+    {"t":34,"type":"GLOBBO","px":5,"pz":0,"speedMult":1.5},
+    {"t":34,"type":"GLOBBO","px":0,"pz":-8,"speedMult":1.5},
+    {"t":35.5,"type":"GLOBBO","px":5,"pz":0,"speedMult":1.5},
+    {"t":35.5,"type":"GLOBBO","px":-5,"pz":0,"speedMult":1.5},
+    {"t":35.5,"type":"GLOBBO","px":0,"pz":8,"speedMult":1.5},
+    {"t":37,"type":"GLOBBO","px":0,"pz":8,"speedMult":1.5},
+    {"t":38,"type":"TORO","px":0,"pz":-8,"speedMult":1.5}
+  ]
+}

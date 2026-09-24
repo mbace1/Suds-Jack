@@ -167,11 +167,31 @@ export const TUNING = {
   // than a menu. The rooms are the authored levels the editor already makes,
   // so a new room is a JSON file and a line here — never new code.
   campaign: {
-    rooms: ['first-light', 'three-rings', 'boost-lane'],
-    // kills per second the room's own duration is graded against. Deliberately
-    // gentler than RUSH's ladder (0.5/0.9/1.4/2.0): a room is a first meeting
-    // with an arena, not a score attack you have already learned.
-    tiers: { C: 0.35, B: 0.65, A: 1.0, S: 1.5 },
+    // v265: WORLDS of rooms. A world is one of the arcade depths — its look
+    // AND its rule — so the campaign plays the same places the arcade falls
+    // through. Rooms play in this order and each opens the next. `goal`:
+    //   survive  — last the room's clock (the default)
+    //   quota    — put down `kills` bodies; the room ends the moment you do
+    //   flawless — one hit ends the room
+    // World 1 is all survive on purpose: the surface is where things are taught.
+    worlds: [
+      { look: 0, rooms: [{ id: 'first-light' }, { id: 'three-rings' }, { id: 'boost-lane' }] },
+      { look: 1, rooms: [{ id: 'undertow' }, { id: 'eddy', goal: 'quota', kills: 19 }, { id: 'slug-run', goal: 'flawless' }] },
+      { look: 2, rooms: [{ id: 'pulse' }, { id: 'crossfire', goal: 'quota', kills: 22 }, { id: 'clot', goal: 'flawless' }] },
+      { look: 3, rooms: [{ id: 'lights-out' }, { id: 'the-pull', goal: 'quota', kills: 27 }, { id: 'siren-song' }] },
+      { look: 4, rooms: [{ id: 'rink' }, { id: 'skate', goal: 'quota', kills: 30 }, { id: 'bubble-bath', goal: 'flawless' }] },
+      { look: 5, rooms: [{ id: 'bellows' }, { id: 'anvil', goal: 'quota', kills: 34 }, { id: 'forge' }] },
+    ],
+    // survive / flawless: the SHARE of the room's bodies you put down. Living
+    // through the room is a C by itself; S is every body in it.
+    share: { B: 0.6, A: 0.85, S: 1.0 },
+    hitCost: 1,   // survive rooms: each hit taken costs this many grade steps (never below C)
+    // quota: SECONDS BEHIND — from the arrival of the last body the count
+    // needs to the moment you have them all. Every quota is the number of
+    // bodies that have arrived by 30% of the clock (the generator sets it), so
+    // this measures one thing only: how fast you clear what arrives. Splitter
+    // children count, so a fast player can beat the arrivals (a negative lag).
+    quotaLag: { S: 1.5, A: 3, B: 6 },
   },
   depth: {
     wavesPer: 8,
@@ -227,10 +247,10 @@ export const TUNING = {
       // v264 — two more worlds, so the loop starts at wave 49 instead of 33.
       { name: 'THE FOAM',   bg: 0x0e1c22, rail: 0x99ffee, fogNear: 34, fogFar: 72, gridScale: 1.2, gridFall: 0.40, vignette: 0.40, poolLift: 0.42,
         base: [0.055, 0.105, 0.125], gridHi: [0.60, 1.00, 0.92], gridGlow: 1.45,
-        favour: ['GLOBBO', 'YELA_CUBE', 'SPLITTA', 'HOPPER', 'FLIT'], rule: 'slip' },   // the bouncers: what a slick floor makes worse
+        favour: ['YELA_CUBE', 'SLUDGE_CUBE', 'SPLITTA', 'ORANGE_CUBE', 'SHEPHERD'], rule: 'slip' },   // the sliders and the herders: what a slick floor makes worse (v265: HOPPER/FLIT are cabinet types the pools never draw)
       { name: 'THE KILN',   bg: 0x1a1004, rail: 0xffaa33, fogNear: 26, fogFar: 60, gridScale: 0.8, gridFall: 0.35, vignette: 0.60, poolLift: 0.26,
         base: [0.130, 0.060, 0.018], gridHi: [1.00, 0.62, 0.14], gridGlow: 1.25,
-        favour: ['CHARGER', 'BULWARK', 'TORO', 'REDD_CUBE', 'THUG'], rule: 'updraft' },  // the heavies: what you cannot simply outrun
+        favour: ['BULWARK', 'TORO', 'REDD_CUBE', 'PURP_CUBE', 'WARDEN'], rule: 'updraft' },  // the heavies: what you cannot simply outrun (v265: CHARGER/THUG are cabinet types the pools never draw)
     ],
   },
 

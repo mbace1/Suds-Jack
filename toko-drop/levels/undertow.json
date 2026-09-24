@@ -1,0 +1,39 @@
+{
+  "format": 1,
+  "id": "undertow",
+  "name": "UNDERTOW",
+  "arena": {
+    "shapes": [
+      {
+        "kind": "rect",
+        "hx": 19,
+        "hz": 11
+      }
+    ]
+  },
+  "duration": 45,
+  "rules": {
+    "mode": "arcade",
+    "outside": "push"
+  },
+  "spawns": [
+    {"t":0,"type":"GLOBBO","px":-15,"pz":-7},
+    {"t":0,"type":"GLOBBO","px":15,"pz":-7},
+    {"t":3,"type":"SPLITTA","px":0,"pz":-9},
+    {"t":6,"type":"WEEVA","px":-16,"pz":5,"intervalMult":0.9},
+    {"t":7,"type":"WEEVA","px":16,"pz":5,"intervalMult":0.9},
+    {"t":11,"type":"SLUG","px":-15,"pz":0},
+    {"t":15,"type":"GLOBBO","px":-12,"pz":8},
+    {"t":15,"type":"GLOBBO","px":0,"pz":9},
+    {"t":15,"type":"GLOBBO","px":12,"pz":8},
+    {"t":19,"type":"SPLITTA","px":15,"pz":-6,"speedMult":1.2},
+    {"t":20.5,"type":"SPLITTA","px":-15,"pz":6,"speedMult":1.2},
+    {"t":23,"type":"RIBBON","px":-16,"pz":-6,"speedMult":1.2},
+    {"t":27,"type":"WEEVA","px":-10,"pz":-9,"speedMult":1.2,"intervalMult":0.9},
+    {"t":27,"type":"WEEVA","px":10,"pz":-9,"speedMult":1.2,"intervalMult":0.9},
+    {"t":31,"type":"SLUG","px":15,"pz":0,"speedMult":1.2},
+    {"t":35,"type":"SPLITTA","px":0,"pz":9,"speedMult":1.4},
+    {"t":35,"type":"GLOBBO","px":-16,"pz":0,"speedMult":1.4},
+    {"t":35,"type":"GLOBBO","px":16,"pz":0,"speedMult":1.4}
+  ]
+}
