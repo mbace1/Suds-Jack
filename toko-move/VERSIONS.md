@@ -42,6 +42,17 @@ vocabulary (`ui.js`) promises never reach the screen. It reads
 **Zoom rail** labels 9 → 11px; the title's shift line 10.5 → 12px. A tall end
 card no longer slides under the HUB button (the veil keeps 64px clear on a phone).
 
+**CI caught a ruler, not the page.** `misses.cjs` failed once on main (4T@22)
+and passed on the same commit on the branch. The gate dated each MISSED banner
+as its own clock minus the banner's age, but the banner redraws every 250ms,
+so a stale banner dated a pre-watch miss LATE, into the judged window — and the
+panel's own record, which has the true tick, expires after 8 ticks, so reading
+it at the end of the run found nothing to correct against. The gate now
+collects that record every frame, re-dates each banner to it, and counts one
+miss once (the old count of 9-10 was the same few misses seen on several
+frames; it reads 5/5 now, run after run). Reproduced locally before the fix
+(4T@18); a tracker mutated to report unlit catches still fails it (5/69).
+
 What the playtest found and left: a ticket-inspection card can push the lit
 CATCH below the fold for a moment (it is the thing asking for a decision, so it
 goes first); the zoom rail covers the map's top-right labels; the shift log's
