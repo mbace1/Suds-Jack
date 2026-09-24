@@ -459,7 +459,57 @@ const weakest = [...s.enemies].sort((a, b) => a.hp - b.hp)[0];
 const wf = weakest.hp;
 endTurn(s);
 check('the dog hits the weakest enemy for 8 at the end of the turn', wf - weakest.hp === 8 && s.log.some(l => l.t === 'damage' && l.src === 'fetch' && l.amount === 8));
-check('and the Fetch is spent', !s.hero.status.fetch);
+// v48 — the dog REMEMBERS a third: 8 → 2 (floored), not to nothing.
+check(`and a third of the Fetch stays for next turn — 8 → ${s.hero.status.fetch}`, s.hero.status.fetch === Math.floor(8 * RULES.fetchCarry));
+{
+  // THE BITE IS AN ATTACK: a Vulnerable target takes ×1.5, Strength adds first.
+  let v = rig('walker', ['throw_stick']);
+  playCard(v, 0);
+  v.enemies.forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 0 }; });
+  const w = [...v.enemies].sort((a, b) => a.hp - b.hp)[0];
+  w.status.vulnerable = 2; v.hero.status.strength = 2;
+  // read the BITE off the log, not the HP drop — the first cut of this check
+  // read 12 for a bite of 15 because the target only had 12 HP to lose
+  const m1 = v.log.length;
+  endTurn(v);
+  const bite = v.log.slice(m1).find(l => l.t === 'damage' && l.src === 'fetch')?.amount;
+  check(`the dog's bite is an attack — 8 Fetch + 2 Strength on a Vulnerable enemy is ${Math.floor(10 * RULES.vulnerable)} (${bite})`,
+    bite === Math.floor(10 * RULES.vulnerable));
+  // A pending Double is the next CARD's — the dog neither uses nor spends it.
+  v = rig('walker', ['throw_stick']);
+  playCard(v, 0);
+  v.enemies.forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 0 }; });
+  const w2 = [...v.enemies].sort((a, b) => a.hp - b.hp)[0];
+  v.hero.status.doubleNext = 1;
+  const b2 = w2.hp;
+  endTurn(v);
+  // (Double expires at the end of the turn anyway — "your next attack THIS
+  // turn" — so what matters is that the dog did not take it.)
+  check(`and a pending Double is not the dog's to use (${b2 - w2.hp} damage, not 16)`, b2 - w2.hp === 8);
+  // THE FIXED POINT: 6 Fetch a turn, a third kept, settles at 9 — never runs away.
+  v = rig('walker', []);
+  v.enemies.forEach(e => { e.hp = e.maxHp = 9999; });
+  const bites = [];
+  for (let t = 0; t < 12; t++) {
+    v.hero.status.fetch = (v.hero.status.fetch || 0) + 6;
+    v.enemies.forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 0 }; e.block = 0; });
+    const mark = v.log.length;
+    endTurn(v);
+    bites.push(v.log.slice(mark).find(l => l.t === 'damage' && l.src === 'fetch')?.amount ?? 0);
+    v.hero.hp = v.hero.maxHp;
+  }
+  // 1.5F is 9 in the continuous case; floors land it at 8 (2 kept + 6) —
+  // a plateau either way, which is the whole claim.
+  check(`a steady 6 Fetch a turn settles at a plateau, not a runaway (${bites.slice(-4).join(', ')})`,
+    bites.slice(-4).every(b => b === 8));
+}
+// v48 — the four cards v41 silently REPLACED by reusing their ids are back,
+// and v41's own four are still in the pool under their own names.
+check('the four shadowed originals are back — Long Lead is 12 Fetch for 2, Good Boy draws, One More draws, Deposit Run is free',
+  CARDS.long_lead.cost === 2 && CARDS.long_lead.effects[0].n === 12 &&
+  CARDS.good_boy.effects.some(f => f.type === 'draw') && CARDS.one_more.effects.some(f => f.type === 'draw') && CARDS.deposit_run.cost === 0);
+check("and v41's four kept their place under their own ids",
+  ['one_for_the_road', 'pocketful', 'well_trained', 'slack_lead'].every(id => CARDS[id]));
 s = rig('walker', ['two_dogs', 'throw_stick']);
 playCard(s, 0); playCard(s, 0);
 s.enemies.forEach(e => { e.intent = { id: 'flap', intent: 'block', block: 0 }; });
@@ -1618,6 +1668,31 @@ mark = r.log.length;
 king.hp = 40; king.intent = null; endTurn(r);
 check('at half he has had enough', acted(r, mark).includes('enough'), `${acted(r, mark)}`);
 check('and it is worth three strength', king.status.strength >= 3, `${king.status.strength}`);
+
+// ── NO KEY IS DEFINED TWICE IN A TABLE ──────────────────────────────────
+// Found while diagnosing the Dog Walker: `good_boy`, `long_lead`, `one_more`
+// and `deposit_run` were each written twice into CARDS, and an object literal
+// keeps the LAST value at the FIRST key's position without a word. So the
+// Walker's Good Boy had lost its draw and her Long Lead its 12 Fetch, the
+// Drinker's One More was an attack and not the draw it was written as, and
+// every balance number for four versions was taken on whichever copy happened
+// to be lower in the file. The live copies were kept (moved into the first
+// slot so key order, and every seeded roll, is unchanged); this is the gate.
+{
+  const src = readFileSync(new URL('../js/data.js', import.meta.url), 'utf8').split('\n');
+  let table = null, seen = new Map();
+  const dups = [];
+  src.forEach((l, i) => {
+    const t = l.match(/^export const ([A-Z_]+) = \{/);
+    if (t) { table = t[1]; seen = new Map(); return; }
+    if (/^\};/.test(l)) { table = null; return; }
+    const k = table && l.match(/^  ([a-z_0-9]+): /);
+    if (!k) return;
+    if (seen.has(k[1])) dups.push(`${table}.${k[1]} (lines ${seen.get(k[1])} and ${i + 1})`);
+    else seen.set(k[1], i + 1);
+  });
+  check(`no card, enemy or rule is written twice in data.js${dups.length ? ` — ${dups.join(', ')}` : ''}`, dups.length === 0);
+}
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -17,7 +17,7 @@
 // and this file should not have an opinion about that. That is what lets
 // `core.mjs` assert exact numbers on it in bare node.
 
-import { CARDS, ACTS } from './data.js?v=44';
+import { CARDS, ACTS } from './data.js?v=45';
 
 // v16's lesson, and it is the one thing here that is easy to get wrong: HP
 // lost over a span is the SUM OF THE DROPS, never end-minus-start. The

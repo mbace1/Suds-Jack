@@ -7,6 +7,63 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v48 — 2026-09-24
+**THE DOG WALKER, AND FOUR CARDS v41 DELETED WITHOUT ANYONE NOTICING**
+
+She was the loudest thing in the table: 4-5% at her best line against a 16-18%
+mean. Diagnosed, not tuned — and the first thing the diagnosis found was not
+about her.
+
+**v41 SHADOWED FOUR CARDS.** The synergy pass added `good_boy`, `long_lead`,
+`one_more` and `deposit_run` under ids that already existed, and an object
+literal keeps the LAST value at the FIRST key's position without a word. So the
+Walker's Long Lead (2 energy, 12 Fetch — her big payoff) had been a 1-cost block
+card, her Good Boy had lost its draw, the Drinker's One More (draw 2, Buzz) was
+a plain attack and the Collector's free Deposit Run cost 1 — and every number
+since v41 was measured on whichever copy was lower in the file. v41 meant to
+ADD, so the originals are back and v41's four keep their place under their own
+ids (One For The Road, Full Pockets, Well Trained, Slack Lead): 172 cards.
+`core.mjs` now fails on any key written twice in a table. Restoring them moved
+her 5 → 7%, inside the noise: a real bug, and not the reason.
+
+**THE DOG'S BITE NEVER MET THE DAMAGE PIPELINE.** It went straight to
+`dealDamage`: no Strength, no Vulnerable on the target, no Weak, no joker. Every
+other character's damage grows with what the run hands them; hers stayed the
+number on the card. It is an attack now — from a pseudo-card no cost-keyed joker
+matches, never spending a pending Double (that belongs to the next card), never
+counting toward the attack counters.
+
+**AND FETCH NEVER ACCUMULATED.** Spent to nothing every turn, where every other
+class has something that builds across a fight — v16's diagnosis of the Drinker,
+one character along. `RULES.fetchCarry = 1/3`, the Walker's `buzzCarry`: a
+steady 6 a turn plateaus at 8 (gated), so it compounds without running away.
+
+**Measured at 600 seeds, the other five columns byte-identical throughout:**
+
+| native, Walker | win |
+|---|---|
+| v47 | 5% |
+| restored cards | 7% |
+| + carry ⅓ | 10% |
+| + bite is an attack | 10% |
+| **both (ships)** | **19%** — mean 18% |
+| both, carry ½ | 24% |
+
+The two compound — the carry grows the stack and the pipeline multiplies it —
+which is why neither alone clears the floor. Act-three arrivals 24% → 53%.
+⅓ rather than ½ for v28's reason: at a half she is second-strongest, and "the
+dog remembers some of it" becomes "the dog never forgets".
+
+**One rule built, measured and CUT**: the dog carrying its overkill on to the
+next-weakest enemy. 13% of all Fetch was overkill; carrying it moved her by
+exactly nothing, because the overkill is the killing blow of the fight, with
+nobody left to carry to. Kept at the site in `engine.js` as the obvious next
+idea that does not work.
+
+Cost named: restoring the four cards moved the Drinker (native 15 → 12%) and the
+Collector (native 23 → 20%, greedy 14 → 18%) — each inside the ±3 floor at 600
+seeds, so not findings, and not hidden either.
+
 ## v47 — 2026-09-23
 **METAL SLUG — the animals are sprites now, on the people's own pixel grid**
 

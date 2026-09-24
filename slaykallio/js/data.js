@@ -48,6 +48,9 @@ export const CARDS = {
   one_more: { char: 'drinker', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'can',
     effects: [{ type: 'draw', n: 2 }, { type: 'status', who: 'self', key: 'buzz', n: 1 }],
     kallio: { name: 'One More' }, fantasy: { name: 'Second Dose' } },
+  one_for_the_road: { char: 'drinker', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'can',
+    effects: [{ type: 'damage', n: 6 }, { type: 'status', who: 'self', key: 'buzz', n: 2 }],
+    kallio: { name: 'One For The Road' }, fantasy: { name: 'One Last Pull' } },
   spit_take: { char: 'drinker', type: 'attack', cost: 1, target: 'all', rarity: 'uncommon', pic: 'spray',
     effects: [{ type: 'damage', n: 5 }],
     kallio: { name: 'Spit Take' }, fantasy: { name: 'Caustic Spray' } },
@@ -210,6 +213,9 @@ export const CARDS = {
   deposit_run: { char: 'collector', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'coin',
     effects: [{ type: 'addCard', id: 'find', n: 1 }],
     kallio: { name: 'Deposit Run' }, fantasy: { name: 'Pocket Something' } },
+  pocketful: { char: 'collector', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'coin',
+    effects: [{ type: 'addCard', id: 'find', n: 2 }],
+    kallio: { name: 'Full Pockets' }, fantasy: { name: 'Pocketful' } },
   hoard: { char: 'collector', type: 'skill', cost: 2, target: 'self', rarity: 'uncommon', pic: 'haul',
     effects: [{ type: 'block', n: 4, scale: 'hand', per: 2 }],
     kallio: { name: 'Hoard' }, fantasy: { name: 'Barricade Of Junk' } },
@@ -244,9 +250,15 @@ export const CARDS = {
   good_boy: { char: 'walker', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'dog',
     effects: [{ type: 'status', who: 'self', key: 'fetch', n: 3 }, { type: 'draw', n: 1 }],
     kallio: { name: 'Good Boy' }, fantasy: { name: 'Good Beast' } },
+  well_trained: { char: 'walker', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'dog',
+    effects: [{ type: 'status', who: 'self', key: 'fetch', n: 3 }],
+    kallio: { name: 'Well Trained' }, fantasy: { name: 'Well Schooled' } },
   long_lead: { char: 'walker', type: 'skill', cost: 2, target: 'self', rarity: 'uncommon', pic: 'stick',
     effects: [{ type: 'status', who: 'self', key: 'fetch', n: 12 }],
     kallio: { name: 'Long Lead' }, fantasy: { name: 'Long Chain' } },
+  slack_lead: { char: 'walker', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'stick',
+    effects: [{ type: 'block', n: 3, scale: 'fetch', per: 1, div: 2 }],
+    kallio: { name: 'Slack Lead' }, fantasy: { name: 'Leash Slack' } },
   bark: { char: 'walker', type: 'skill', cost: 1, target: 'all', rarity: 'uncommon', pic: 'shout',
     effects: [{ type: 'status', who: 'all', key: 'weak', n: 1 }, { type: 'status', who: 'self', key: 'fetch', n: 2 }],
     kallio: { name: 'Bark' }, fantasy: { name: 'Howl' } },
@@ -415,9 +427,6 @@ export const CARDS = {
   dutch_courage: { char: 'drinker', type: 'power', cost: 1, target: 'self', rarity: 'rare', pic: 'coat',
     effects: [{ type: 'status', who: 'self', key: 'buzzBlock', n: 1 }],
     kallio: { name: 'Dutch Courage' }, fantasy: { name: 'Fools Armour' } },
-  one_more: { char: 'drinker', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'can',
-    effects: [{ type: 'damage', n: 6 }, { type: 'status', who: 'self', key: 'buzz', n: 2 }],
-    kallio: { name: 'One More' }, fantasy: { name: 'One Last Pull' } },
 
   // ─ The Busker — cards grow with every card played before them
   warm_up: { char: 'busker', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'note',
@@ -447,9 +456,6 @@ export const CARDS = {
   whole_route: { char: 'collector', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'haul',
     effects: [{ type: 'damage', n: 2, scale: 'hand', per: 2 }],
     kallio: { name: 'The Whole Route' }, fantasy: { name: 'Full Ledger' } },
-  deposit_run: { char: 'collector', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'coin',
-    effects: [{ type: 'addCard', id: 'find', n: 2 }],
-    kallio: { name: 'Deposit Run' }, fantasy: { name: 'Pocketful' } },
   // RARE: every Bottle is an attack that hits twice. A deck without tokens
   // gets nothing; the Collector's own deck turns each free card into two.
   quick_hands: { char: 'collector', type: 'power', cost: 1, target: 'self', rarity: 'rare', pic: 'hand',
@@ -489,12 +495,6 @@ export const CARDS = {
     kallio: { name: 'Scrap Iron' }, fantasy: { name: 'Barbed Guard' } },
 
   // ─ The Dog Walker — Fetch, spent at the end of the turn
-  good_boy: { char: 'walker', type: 'skill', cost: 0, target: 'self', rarity: 'common', pic: 'dog',
-    effects: [{ type: 'status', who: 'self', key: 'fetch', n: 3 }],
-    kallio: { name: 'Good Boy' }, fantasy: { name: 'Well Trained' } },
-  long_lead: { char: 'walker', type: 'skill', cost: 1, target: 'self', rarity: 'common', pic: 'stick',
-    effects: [{ type: 'block', n: 3, scale: 'fetch', per: 1, div: 2 }],
-    kallio: { name: 'Long Lead' }, fantasy: { name: 'Leash Slack' } },
   whistle: { char: 'walker', type: 'attack', cost: 1, target: 'enemy', rarity: 'uncommon', pic: 'shout',
     effects: [{ type: 'damage', n: 3, scale: 'fetch', per: 1, div: 2 }, { type: 'status', who: 'self', key: 'fetch', n: 2 }],
     kallio: { name: 'Whistle' }, fantasy: { name: 'Call' } },
@@ -1612,6 +1612,7 @@ export const RULES = {
   weak: 0.75,
   frail: 0.75,             // block gained ×0.75
   buzzCarry: 1 / 3,        // share of Buzz that survives the end of turn (v28 — measured; see engine.js endTurn)
+  fetchCarry: 1 / 3,       // share of Fetch the dog remembers (v48 — measured; the Walker's buzzCarry)
   // v39, and it is the Boxer's `buzzCarry`. Measured over 150 native runs a
   // character, every other character deals 107-111 damage a fight; he deals 86
   // and his thorns add 21.8, which lands him at 107.8 — his mechanic returns

@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=44';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=45';
 
 // THE ONE PLACE A RUNG IS READ. Every rule that varies by ascension asks this
 // and nothing else, so the ladder is a table in data.js rather than six
@@ -380,12 +380,30 @@ export function endTurn(state) {
     if (j.effect.type === 'emptyHandBlock' && state.hand.filter(c => c.type !== 'curse').length === 0) gainBlock(state, h, j.effect.n, j.id);
   }
   // THE DOG GOES IN. Everything the walker did this turn was a promise; the
-  // end of the turn is when it is kept — at the weakest enemy, and then the
-  // Fetch is spent unless a power keeps the dog out.
+  // end of the turn is when it is kept — at the weakest enemy.
+  //
+  // v48 — AND THE DOG REMEMBERS. Fetch used to be spent to nothing every turn
+  // unless a rare power kept it, which is v16's diagnosis of the Drinker one
+  // character along: every other class has something that ACCUMULATES across
+  // a fight (the Busker's count, the Cart Pusher's block, the Drinker's
+  // carried buzz since v28, the Boxer's thorns since v39) and she had a stack
+  // that reset. A third of it now survives, which gives it a fixed point
+  // rather than a runaway — a steady F a turn settles at 1.5F (gated) — the
+  // same fraction and the same reasoning as `buzzCarry`: at a half she goes
+  // from last to second, which is a different character. A power that keeps
+  // the whole stack (`two_dogs`) still keeps the whole stack.
+  //
+  // One rule was built, measured and CUT here: the dog carrying its overkill on
+  // to the next-weakest enemy. 13% of all Fetch was being spent on overkill,
+  // and carrying it moved her win rate by exactly nothing at 600 seeds —
+  // because the overkill is the killing blow of the FIGHT, with nobody left.
   if (h.status.fetch) {
     const weakest = state.enemies.filter(e => e.alive).sort((a, b) => a.hp - b.hp)[0];
-    if (weakest) dealDamage(state, weakest, h.status.fetch, { src: 'fetch' });
-    if (!h.powers.keepFetch) delete h.status.fetch;
+    if (weakest) { const d = dogBite(state, h.status.fetch, weakest); dealDamage(state, weakest, d.final, { src: 'fetch', dog: d }); }
+    if (!h.powers.keepFetch) {
+      const kept = Math.floor(h.status.fetch * (RULES.fetchCarry ?? 0));
+      if (kept > 0) h.status.fetch = kept; else delete h.status.fetch;
+    }
   }
   for (const j of state.jokers) {
     if (j.effect.type === 'endTurnDamage') {
@@ -622,6 +640,26 @@ function blockAmount(state, c, fx) {
   let v = Math.max(0, fx.n + scaleOf(state, fx));
   if (state.hero.status.frail) v = Math.floor(v * RULES.frail);
   return v;
+}
+
+// THE DOG'S BITE IS AN ATTACK (v48). It went straight to `dealDamage`, past
+// the one place damage is worked out, so it never met Strength, the target's
+// Vulnerable, the hero's Weak or a single joker — every other character's
+// damage grows with what the run hands them and hers stayed the number on the
+// card. Now it is a hit like any other, from a pseudo-card that no joker keyed
+// on a card's cost will ever match. Two things it deliberately does NOT do:
+// it does not SPEND a pending Double, which belongs to the next card played
+// (reading it without consuming it would double-dip), and it does not count as
+// an attack for the counters, so a first-attack joker fires on the dog only
+// when she threw no punch herself that turn.
+const DOG = { id: 'dog', type: 'dog', cost: -1 };
+export function dogBite(state, n, target) {
+  const d = computeDamage(state, DOG, { type: 'damage', n }, target);
+  d.mults = d.mults.filter(m => m.src !== 'doubleNext');
+  let v = d.base + d.adds.reduce((a, x) => a + x.n, 0);
+  for (const m of d.mults) v *= m.x;
+  d.final = Math.max(0, Math.floor(v));
+  return d;
 }
 
 // The one place damage is worked out. `preview` calls it without side effects.
@@ -1159,7 +1197,7 @@ export function describe(c, state = null, i = null, targetIndex = null) {
 
 export const STATUS_HELP = {
   vulnerable: 'takes ×1.5 damage', weak: 'deals ×0.75 damage', frail: 'gains ×0.75 block', strength: 'permanent +damage',
-  buzz: '+damage; two-thirds of it fades at the end of the turn', thorns: 'deals this back to whatever strikes it', fetch: 'the dog deals this at the end of your turn',
+  buzz: '+damage; two-thirds of it fades at the end of the turn', thorns: 'deals this back to whatever strikes it', fetch: 'at the end of your turn the dog bites the weakest enemy for this, as an attack (Strength, Vulnerable and jokers count); a third of it stays',
 };
 
 export function describeIntent(e) {
