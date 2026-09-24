@@ -88,6 +88,46 @@ server.listen(0, '127.0.0.1', async () => {
       ok(`${q} is ${kind}, offers no share and records nothing`, kind !== 'daily' && !e.box && !e.stored, JSON.stringify(e));
       await C.ctx.close();
     }
+    // ── a WON shift ends on the delivery that wins it ──────────────────
+    // Every check above runs the clock out, and so did every other gate: from
+    // v2.29 to v2.45 the end card was tied to challenge.step(), which reports
+    // only events and crowds, so a won shift kept running until one happened to
+    // fire — and on a quiet day none did. Play one to the third delivery (jobs
+    // taken, the lit tram caught, got off: the same calls a tap makes) and ask
+    // for the card on the very next tick. (A quiet day is out of reach for a bot
+    // that never walks; an ordinary one still has events, and the old wiring
+    // still failed it — see the mutation note in VERSIONS.md v2.46.)
+    {
+      const D = await fresh(); await boot(D.page, process.env.WIN_Q || '?shift=1&day=none');
+      await D.page.evaluate(() => document.getElementById('play').click());
+      const won = await D.page.evaluate(() => {
+        const tm = window.__tm, ch = tm.challenge, mob = tm.mobility, { routeChoices, allowFor } = globalThis.__tmRouteChoiceCore;
+        const endShown = () => !document.getElementById('end').hidden;
+        for (let t = 0; t < 3200 && !endShown(); t++) {
+          tm.shiftLog?.poll?.(); // what the draw loop does each frame
+          const st = mob.status?.();
+          if (!ch.active) { const o = (ch.offers || []).find(o => ch.fits ? ch.fits(o.cargo) : true); if (o) ch.acceptOffer(o.id); }
+          else if (st?.kind === 'getoff') mob.getOff();
+          else if (st?.kind === 'waiting') {
+            for (const c of routeChoices(tm.city, ch.currentFrom(), ch.currentTo(), 3, allowFor(ch.cargoRule?.()))) {
+              const layer = tm.transit.layers.find(x => x.id === c.legs[0].line.sourceId); if (!layer) continue;
+              const n = tm.city.resolved[c.legs[0].from]; let bi = 0, bd = 1e9;
+              for (let i = 0; i < layer.path.length; i++) { const q = layer.path[i], d = (q[0] - n.lat) ** 2 + (q[1] - n.lon) ** 2; if (d < bd) { bd = d; bi = i; } }
+              const near = tm.liveNetwork.nearestTo(layer, bi, tm.flow.clock.tick, 2.2, null);
+              if (near && !mob.catchChoice(c, near.vehicle)?.error) break;
+            }
+          }
+          if (ch.complete) { const at = tm.flow.clock.tick; tm.flow.runTicks(1); const back = document.getElementById('end').innerText; return { complete: true, at, endShown: endShown(), title: document.getElementById('endTitle').textContent, notDelivered: (back.match(/NOT DELIVERED/g) || []).length, ticks: (back.match(/\b\d+t\b/g) || []).join(',') }; }
+          tm.flow.runTicks(1);
+        }
+        return { complete: ch.complete, index: ch.index, endShown: endShown() };
+      });
+      ok('the bot wins an ordinary shift (3/3), or this section proves nothing', won.complete === true, JSON.stringify(won));
+      ok('and the end card is up on the next tick, ALL DELIVERED', won.endShown && /ALL DELIVERED/.test(won.title || ''), JSON.stringify(won));
+      ok('the shift back agrees: no job of a 3/3 win reads NOT DELIVERED', won.notDelivered === 0, JSON.stringify(won));
+      ok('and it speaks minutes, never engine ticks', won.ticks === '', won.ticks);
+      await D.ctx.close();
+    }
     ok(`no page errors (${errs.length})`, errs.length === 0, errs.slice(0, 2).join(' | '));
   } catch (e) { fail++; console.log(`  FAIL threw: ${e.message}`); }
   await browser.close(); server.close();

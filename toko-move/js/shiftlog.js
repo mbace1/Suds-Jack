@@ -18,6 +18,8 @@
 // what you actually took. That comparison is the whole point — "you waited 517
 // ticks at Ooppera; the 4 was standing here and would have arrived 296 sooner"
 // is a sentence a player can learn from, and no tally of totals is.
+import { minutes, about } from './ui.js?v=1';
+
 export class ShiftLog {
   constructor(tm) {
     this.tm = tm;
@@ -108,13 +110,13 @@ export class ShiftLog {
         const w = Math.max(0, (s.end - s.start)) / span * 100;
         if (w < 0.5) return '';
         const label = s.kind === 'riding' ? (s.line || 'ride') : s.kind;
-        return `<i title="${label} ${Math.round(s.end - s.start)}t" style="width:${w}%;background:${C[s.kind] || C.idle}"></i>`;
+        return `<i title="${label} ${minutes(s.end - s.start, this.tm)}" style="width:${w}%;background:${C[s.kind] || C.idle}"></i>`;
       }).join('');
       const verdict = !j.delivered ? '<b style="color:#b34a36">NOT DELIVERED</b>'
-        : j.late ? `<b style="color:#b34a36">LATE by ${j.elapsed - j.limit}t</b>`
-        : `<b style="color:#4a7a4f">${j.spare}t to spare</b>`;
+        : j.late ? `<b style="color:#b34a36">LATE by ${minutes(j.elapsed - j.limit, this.tm) === 'now' ? 'a moment' : minutes(j.elapsed - j.limit, this.tm)}</b>`
+        : `<b style="color:#4a7a4f">${minutes(j.spare, this.tm) === 'now' ? 'just in time' : minutes(j.spare, this.tm) + ' to spare'}</b>`;
       const miss = j.missed.map(m =>
-        `<div class="miss">at ${esc(this.name(m.at))} you boarded a ~${m.chosen}t plan · a ~${m.best}t one was on the board · <b>${m.saves}t</b></div>`).join('');
+        `<div class="miss">at ${esc(this.name(m.at))} you boarded a ${about(m.chosen, this.tm)} plan · a ${about(m.best, this.tm)} one was on the board · <b>${about(m.saves, this.tm)}</b></div>`).join('');
       return `<div class="jobRow"><div class="jobHead">${j.n}. ${esc(this.name(j.from))} → ${esc(this.name(j.to))} · ${esc(j.cargo)} · ${verdict}</div>` +
              `<div class="bar">${bars}</div>${miss}</div>`;
     }).join('');
