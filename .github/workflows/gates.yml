@@ -321,6 +321,9 @@ jobs:
       - name: the daily shift — same board for everyone, first finish stands
         run: node toko-move/test/daily.mjs
 
+      - name: the week — a seed, a weekday deck, money, clocking out, the rent
+        run: node toko-move/test/week.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
@@ -423,6 +426,9 @@ jobs:
 
       - name: the daily, played in the page — shared, recorded, never overwritten
         run: NODE_PATH=$(npm root -g) node toko-move/test/daily.cjs
+
+      - name: the week, played in the page — five shifts once each, and Friday
+        run: NODE_PATH=$(npm root -g) node toko-move/test/week.cjs
 
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher

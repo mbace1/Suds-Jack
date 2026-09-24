@@ -144,7 +144,7 @@ export class DeliveryChallenge{
   // with — today's delivery is what moves it for next time — and goodwill
   // from the event deck counts as standing with everyone.
   let regular=null,tip=0;
-  {const reg=regularAt(job.stops[1]);if(reg){const st=standingOf(this.standing,reg.id);tip=late?0:tipFor(job.value,st,this.goodwill);if(tip){earned+=tip;this.tips+=tip;}bumpStanding(this.standing,reg.id,late);saveStanding(this.standing);regular=reg;}}
+  {const reg=regularAt(job.stops[1]);if(reg){const st=standingOf(this.standing,reg.id);tip=late?0:tipFor(job.value,st,this.goodwill);if(tip){earned+=tip;this.tips+=tip;}bumpStanding(this.standing,reg.id,late);saveStanding(this.standing,this.standingStore);regular=reg;}}
   this.score+=earned;if(late)this.late++;return{earned,note,late,tip,regular};}
  // ON YOUR WAY — Paperboy's loop on a tram. The main job says where you are
  // going; these say what you could drop at the REAL stops you will pass
@@ -238,6 +238,9 @@ export class DeliveryChallenge{
    from:regular?'a regular':'the door',
    bonus:HANDOFF_BONUS,bonusUntil:this.flow.clock.tick+HANDOFF_WINDOW};}
  handoffLive(){const h=this.pendingHandoff;return h&&this.flow.clock.tick<=h.bonusUntil?h:null;}
+ // The week (v2.47) keeps regulars' standing in its own save; unset, it is
+ // the browser's, as it has been since v2.36.
+ useStanding(store){this.standingStore=store;this.standing=loadStanding(store);}
  step(){return false;}
  elapsed(){return this.active?this.flow.clock.tick-this.startedAt:0;}
  remaining(){return this.active?Math.max(0,this.active.limit-this.elapsed()):0;}

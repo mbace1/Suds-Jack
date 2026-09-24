@@ -1,5 +1,36 @@
 # Toko Move — versions
 
+## v2.47 — 2026-09-24
+
+**THE WEEK.** Roadmap NEXT LEVEL, L1. `?week` — or the new link under START
+SHIFT on the daily's title card — is five shifts, Monday to Friday, one run.
+A shift pays its score in euros (one per ten points), the week keeps the
+money, and **rent is due on Friday**: the run is won or lost at the end of
+the week, not the end of a shift. The title card shows the week as five
+cells, what is banked and what each shift still has to find; the end card
+adds the day's money to the strip and leads on to tomorrow; Friday settles
+the rent and shares the week, a row a day.
+
+Four rules (`js/week.js`, all held in bare node by `test/week.mjs`):
+**a week is a seed** (five shift numbers and five city days from it);
+**a weekday is a weekday** (the week draws its own deck — two ordinary days,
+MATCH, MARKET, HELSINKI, shuffled — because the daily's deck is four special
+days with QUIET SUNDAY in it); **leaving is clocking out** (every delivery is
+written into the save as it lands, and a page reopened on a started shift
+closes it with what it had banked — a run you can reload out of a bad
+morning is not a run); **standing belongs to the week** (regulars start every
+Monday at nothing and remember you until Friday, through a store the
+challenge saves with; visited stops stay yours for good). A shift of the week
+is played once: the replay button is hidden.
+
+RENT: provisional — being measured with `shifts.cjs --weeks=N`.
+
+`test/week.cjs` plays the run in the page: in from the daily's card, Monday's
+standing empty whatever the browser's is, Monday recorded, Tuesday remembering
+Monday's regular, Tuesday left mid-shift and closed with its money, Wednesday
+next, Friday's verdict, the share line, a new week. Three mutations — no week
+standing, no progress writes, no clock-out — each fail it.
+
 ## v2.46 — 2026-09-24
 
 **A phone playtest, touch only, and a won shift that never ended.** Entered the
