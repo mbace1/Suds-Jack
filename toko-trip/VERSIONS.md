@@ -1,5 +1,56 @@
 # Toko Trip — release log
 
+## v18 — 2026-09-24
+
+The cave, and the tide opens it. Deferred since v1 on the grounds that it
+needed to MEAN something first; the tide is what it means.
+
+- **It moved.** The old cave sat inland behind the chair, where no tide could
+  reach it. It is on an islet now, off the right-hand shore where the chair can
+  see it, with the magenta arch over its mouth facing back toward you.
+- **The only way there is a sandbar**, and there is no rule anywhere that says
+  "the cave opens at low tide". The bar's crest sits at −10 cm, between low
+  and high water, and `standY()` already refuses anything below sea level — so
+  the ocean is the gate. The crest dips 5 cm mid-way, so the two ends surface
+  first and the gap closes from both sides while you watch.
+- **It plays the composition v17 set up.** Sit still from boot: golden hour on
+  high water with the bar under, the sun goes down while the water goes out,
+  and at dusk — lanterns, fireflies, the arch lit — the bar is dry end to end.
+- **Inside**: a ring of rock with a roof, a pool that glows and lights the
+  walls, and a drip you only hear when you are in there.
+- **A way home that is not the sea.** The tide comes back over the bar, and
+  being kept on the rock for a few minutes is fine; being kept there with no
+  way off is not. The shell by the pool takes you back to the chair.
+
+**Found, not placed**, like the jetty: the islet is put ten metres beyond
+where the base terrain drops past low water along a fixed bearing, far enough
+that the channel either side of the bar never dries. The bearing is fixed off
+the inlet rather than the calibrated chair, because recalibrating your seat
+does not turn the terrain and must not move the islet either. `groundHeight`
+is now `baseHeight` plus the islet and the bar, and everything downstream —
+mesh, lightmap, scatter, caustics, the water's depth, collision — re-placed
+itself off the same function without being told.
+
+**Two rules the island needed:**
+
+- The walkable edge was the island's own radius, which would have left the
+  islet unreachable by a rule nobody could see. It is the edge of the terrain
+  mesh now, and the sea decides the rest.
+- **Teleport may not jump the channel.** Otherwise you point at the islet from
+  the beach at high water and are there, and the tide is scenery again. A jump
+  between the island and the islet is allowed only while the bar is dry end to
+  end — exactly when you could have walked it.
+
+Tuned by looking, once: the arch was set side-on and read as a single magenta
+line from every angle that mattered; the ring of rock overhung its sand and
+the islet read as a mushroom; ±20% vertex displacement shattered the rock into
+black glass; and the pool was a solid cyan plate whose light — at 1.6 in
+physical units — reached nothing past its own rim.
+
+Gate: 110 checks. The ones that matter assert the sea doing its job: closed at
+high water, surfacing from both ends at mid-tide, open at low, the channel
+beside it never dry, and nothing jumping it.
+
 ## v17 — 2026-09-23
 
 The sun moves. v14 hung the water on a clock and left the sky as three

@@ -366,6 +366,74 @@ const check = (label, ok) => {
   check(`and still holds the sun as well as the sea (${stillDay.a} → ${stillDay.b})`,
     stillDay.a === stillDay.b);
 
+  // ── the cave ──
+  // There is no rule in the code that says "the cave opens at low tide".
+  // The bar's crest sits between low and high water and the tide decides.
+  // So what is gated is the SEA doing its job — closed at high water, open
+  // at low, the channel beside it never — and that nothing jumps it.
+  const caveAt = async (ph) => page.evaluate((p) => {
+    const d = window.__tt.debug; d.setTide(p); return d.cave();
+  }, ph);
+  const cHigh = await caveAt(0.25), cMid = await caveAt(0.0), cLow = await caveAt(0.75);
+  check(`the islet is dry land even at high water (floor ${cHigh.floor?.toFixed(2)})`, cHigh.floor !== null);
+  check(`at high water the bar is under (${cHigh.bar.map(b => b ? '#' : '.').join('')})`, cHigh.open === false);
+  check(`at mid-tide it surfaces from both ends and the gap is still open (${cMid.bar.map(b => b ? '#' : '.').join('')})`,
+    cMid.open === false && cMid.bar[0] && cMid.bar[cMid.bar.length - 1]);
+  check(`at low water it is dry end to end (${cLow.bar.map(b => b ? '#' : '.').join('')})`, cLow.open === true);
+  check('and the channel beside the bar never dries — the bar is the only way',
+    cHigh.channelDry === false && cLow.channelDry === false);
+
+  // the composition v17 set up: sitting through the sunset from boot brings
+  // dusk at low water, which is when the way to the cave is open
+  const dusk = await page.evaluate(() => {
+    const d = window.__tt.debug;
+    d.setDay(0.30); d.setTide(0.25);
+    const before = d.cave().open;
+    d.advance(0.25 * d.day().period);
+    return { before, after: d.cave().open, hold: d.day().hold };
+  });
+  check(`the bar is closed at golden hour and open by dusk (${dusk.before} → ${dusk.after})`,
+    dusk.before === false && dusk.after === true && dusk.hold === 1);
+
+  const inside = await page.evaluate(() => {
+    const d = window.__tt.debug, c = d.cave(), S = d.caveSpot;
+    d.setTide(0.75);
+    let x = c.mouth[0], z = c.mouth[1], y = d.standY(x, z, 1) ?? 0;
+    for (let i = 0; i < 60; i++) {
+      const dx = S.x - x, dz = S.z - z, L = Math.hypot(dx, dz); if (L < 0.3) break;
+      const m = d.tryMove(x, z, x + dx / L * 0.25, z + dz / L * 0.25, y); if (!m.moved) break;
+      x = m.x; z = m.z; y = m.y;
+    }
+    return { reached: Math.hypot(S.x - x, S.z - z),
+      wall: d.wallBetween(S.x, S.z, S.x - (c.mouth[0] - S.x), S.z - (c.mouth[1] - S.z), y) };
+  });
+  check(`you can walk in through the mouth to the pool (${inside.reached.toFixed(2)} m from it)`, inside.reached < 0.5);
+  check('and the back of the cave is rock', inside.wall === true);
+
+  // teleport would make the tide scenery again, so it may not jump the channel
+  const jump = await page.evaluate(() => {
+    const d = window.__tt.debug, S = d.caveSpot;
+    d.setTide(0.25); const high = d.canCross(0, 0, S.x, S.z);
+    d.setTide(0.75); const low = d.canCross(0, 0, S.x, S.z);
+    return { high, low };
+  });
+  check(`teleport cannot jump the channel at high water, can when the bar is dry (${jump.high} / ${jump.low})`,
+    jump.high === false && jump.low === true);
+
+  // and a way home that is not the sea
+  const shellHome = await page.evaluate(async () => {
+    const d = window.__tt.debug, S = d.caveSpot, c = window.__tt.chair;
+    d.stand(S.x, S.z, 0, 0);
+    d.goChair();
+    // the camera follows the eye in the render loop, so read it after a frame
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const p = window.__tt.camera.position;
+    return { rayTarget: d.rayTargets.includes(d.shell), dist: Math.hypot(p.x - c.p[0], p.z - c.p[2]) };
+  });
+  check(`the shell is something you can point at (${shellHome.rayTarget})`, shellHome.rayTarget === true);
+  check(`and it takes you back to the chair (${shellHome.dist.toFixed(2)} m away)`, shellHome.dist < 0.3);
+  await page.evaluate(() => window.__tt.debug.setTide(0.25));
+
   // ── the moods ──
   const moods = await page.evaluate(() => {
     const out = [];
