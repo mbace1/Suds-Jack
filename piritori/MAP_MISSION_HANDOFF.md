@@ -1,4 +1,46 @@
-# Piritori — M0 map and mission handoff
+# Piritori — Claude map and mission handoff
+
+## Current pickup — 2026-09-24
+
+The owner requested documentation so Claude can take over. **Start in the
+separate source repository's current main**, not this hub's older city snapshot
+and not the failed M1 overlay branch.
+
+- [Claude takeover / verified status](https://github.com/mbace1/piritori-eden/blob/main/CLAUDE_TAKEOVER.md).
+- [Clean M1 and bounded M2 execution brief](https://github.com/mbace1/piritori-eden/blob/main/design/CLAUDE_MAP_MISSION_NEXT_STEPS.md).
+- Source `CLAUDE.md` and `AGENTS.md` now point to those documents.
+
+The source was verified at `0432dff2bc1c26f887eb927f27efcde478a8b3e4` before the
+handoff commits. C.19 reached main on September 23; the authored city header is
+**v4.51**. Preserve the September 21 [existing-fighter repair #92](https://github.com/mbace1/piritori-eden/pull/92).
+The old integration branch still contains M0's audit/tooling; it is not a reason
+to overwrite later main work. [M1 #91](https://github.com/mbace1/piritori-eden/pull/91)
+remains open/unmerged at `d6aa85a684bf9bc217683f61bde2647daf7a08e5`, with failed
+or cancelled acceptance, not a finished navigation release.
+
+**Order:** clean inspection/presence split in existing `app.js` -> tested M1 ->
+Paper Bag preview/Cancel/Travel/arrival -> visible consequences and revisits ->
+one authored contact/mission -> further small iterations. Do not add another
+loader/observer overlay or start a large map expansion. Keep the existing story
+clock until its time boundary is explicitly resolved. Apply campaign rewards
+once; the 23-euro Paper Bag margin must not be added a second time.
+
+Pages was read at `40b197df7778d7bfa2f6a3d19d65047dc7798be9`; its Night Shift
+receipt still identifies C.19 / source `69b23168`, neutral stand-ins and
+`physical_devices_verified: false`. This is a repository read, not a fresh
+public playthrough. Preserve that separate cabinet, all other games and rollback.
+Re-read current hub main/Pages files before any future city package; do not assume
+the September 17 campaign-version discrepancy below is unchanged or repaired.
+
+This update changes documentation only. No new city/Night Shift release, runtime
+merge, asset work, device acceptance or Claude-session dispatch is implied.
+The source documents contain the precise file map, test matrix, baseline commands,
+Godot port boundary and ready-to-use Claude instruction. Use them for current
+status. The M0 record below is retained as dated evidence, not current pickup advice.
+
+---
+
+# Historical M0 map and mission handoff — 2026-09-17
 
 Date: 2026-09-17. **Audit and planning only; no runtime change or new playable release.**
 
