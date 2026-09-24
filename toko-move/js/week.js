@@ -27,6 +27,7 @@
 //
 // Pure: no DOM, no clock, storage injected — test/week.mjs holds all of it in
 // bare node.
+import {offers as kitOffers,BY_ID as KIT_BY_ID} from './kit.js?v=1';
 const hash=s=>{let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
 
 export const KEY='tokoMoveWeek';
@@ -37,10 +38,12 @@ export const DAY_NAMES=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
 // the whole point of calling it rent.
 export const PER_EURO=10;
 export const euros=score=>Math.max(0,Math.round((Number(score)||0)/PER_EURO));
-// RENT is measured, not picked (VERSIONS.md v2.47, `shifts.cjs --weeks=40`):
-// at 350 a player who reads the fee pays 78% of weeks, one who takes the
-// shortest job 58%, one who takes the first job and never walks 28%.
-export const RENT=350;
+// RENT is measured, not picked. v2.47 (no kit, `--weeks=40`): €350 was paid by
+// a player who reads the fee 78% of weeks, one who takes the shortest job 58%,
+// one who takes the first job and never walks 28%. v2.48 (kit taken nightly,
+// `--kitweeks=20`): €400 holds the first two where they were — 80% and 55% —
+// and the first-job player falls to 10%, because kit pays whoever uses it.
+export const RENT=400;
 export const DECK=['none','none','match','market','helsinki'];
 
 // Seeded Fisher-Yates over the weekday deck.
@@ -50,7 +53,7 @@ export function weekDays(seed){const d=DECK.slice();let h=hash(`weekdays:${seed}
 export function shiftSeedFor(seed,i){return 1000000+(hash(`week:${seed}:${i}`)%9000000);}
 
 export function newWeek(rnd=Math.random){const seed=1000+Math.floor(rnd()*9000);
- return{seed,day:0,days:weekDays(seed),shifts:[],standing:{},started:null,live:null};}
+ return{seed,day:0,days:weekDays(seed),shifts:[],standing:{},started:null,live:null,kit:[],nights:{}};}
 
 // ── the save ─────────────────────────────────────────────────────────────
 const store=()=>{try{return globalThis.localStorage;}catch{return null;}};
@@ -89,12 +92,23 @@ export function verdict(w){const t=total(w);return{total:t,rent:RENT,paid:t>=REN
 // Wednesday's shift feel like Wednesday's.
 export function pace(w){const done=w.shifts.length,t=total(w);return{done,total:t,need:Math.max(0,RENT-t),perDay:done<LENGTH?Math.ceil(Math.max(0,RENT-t)/(LENGTH-done)):0};}
 
+// ── the kit, one night at a time (kit.js) ──────────────────────────────
+// The night before shift `day` offers three things. The offer is SAVED the
+// first time it is shown, so a reload cannot reroll it, and it is taken once.
+// A week saved before v2.48 has no kit and gets it the first time it is asked.
+export const owned=w=>w?.kit||[];
+export function night(w){if(!w||isOver(w)||w.day<1)return null;w.nights=w.nights||{};w.kit=w.kit||[];
+ const n=w.nights[w.day]||(w.nights[w.day]={offers:kitOffers(w.seed,w.day,w.kit),pick:null});return n;}
+export const pending=w=>{const n=night(w);return !!(n&&!n.pick&&n.offers.length);};
+export function choose(w,id){const n=night(w);if(!n||n.pick||!n.offers.includes(id))return false;n.pick=id;w.kit.push(id);return true;}
+
 // ── the line you send ────────────────────────────────────────────────────
 const GLYPH={ok:'🟩',late:'🟨',none:'⬛'};
 export function dayGrid(results=[],target=3){let s='';for(let i=0;i<target;i++)s+=GLYPH[results[i]]||GLYPH.none;return s;}
 export function shareText(w,url=''){const v=verdict(w);
  const rows=w.shifts.map(x=>`${x.name.slice(0,3)} ${dayGrid(x.results)} €${x.euros}${x.left?' (left)':''}`);
- return [`Toko Move · week ${w.seed}`,...rows,v.paid?`rent paid · €${v.over} over`:`short €${-v.over} on the rent`,url||null].filter(Boolean).join('\n');}
+ const kit=owned(w).map(id=>KIT_BY_ID[id]?.glyph||'').join('');
+ return [`Toko Move · week ${w.seed}`,...rows,kit?`kit ${kit}`:null,v.paid?`rent paid · €${v.over} over`:`short €${-v.over} on the rent`,url||null].filter(Boolean).join('\n');}
 
 // A regulars store scoped to the week: the game's standing code reads and
 // writes through it unchanged.

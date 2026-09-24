@@ -177,7 +177,14 @@ mechanic — it is a save between shifts and a number to beat.
 Prerequisite: **jobs vary by shift** (v2.42 deliberately left them fixed). A
 week of identical dispatch is not a week.
 
-## L2 · Kit (the choice between shifts)
+## L2 · Kit (the choice between shifts) — SHIPPED v2.48
+
+Six items, each priced by measurement at €16–52 a week, rent re-measured to
+€400. Three of the proposal's items were built and CUT — the bike, the wrap
+(and the thermos) bend levers the game almost never pulls, so each measured
+under €7; VERSIONS.md v2.48 has the table and `kit.js` the reason.
+
+*The proposal, as written:*
 
 Monday night, pick one of three. Each is a knob on a lever that already
 exists, so each is a day's work and a bot can measure it:

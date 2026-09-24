@@ -1,5 +1,5 @@
 // Toko Move v2.12.2 — concurrent courier jobs expose live tradeoffs without naming a correct answer.
-import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=19';
+import {CARGO,DELIVERY_TARGET} from './deliveries.js?v=20';
 import {badge,inMinutes,about,cargoGlyph,minutes} from './ui.js?v=1';
 import {regularAt,standingOf,standingPips} from './regulars.js?v=3';
 import {parcelHtml,bagHtml,colourOf,unitsOf} from './parcels.js?v=1';
@@ -60,7 +60,7 @@ function offerButton(tm,offer,info,label='TAKE JOB'){const seen=new Set(),live=(
  // reach the thing you are choosing between. The parcel says what it is and how
  // much of your bag it takes; the pips say you have been here before, without
  // saying who lives there.
- const reg=regularAt(offer.stops[1]),st=reg?standingOf(tm.challenge.standing,reg.id):0;
+ const reg=regularAt(offer.stops[1]),st=reg?(tm.challenge.standingFor?.(reg.id)??standingOf(tm.challenge.standing,reg.id)):0;
  const pips=reg?(()=>{const p=standingPips(st);return `<span class="pips" title="you have delivered here before">${'<i class="on"></i>'.repeat(p.filled)}${'<i></i>'.repeat(p.total-p.filled)}</span>`;})():'';
  const hand=offer.handoff&&tm.flow.clock.tick<=offer.bonusUntil,left=hand?Math.max(1,Math.ceil((offer.bonusUntil-tm.flow.clock.tick)/10)):0;
  const claimed=tm.rival?.pressure?.(offer.id),rivalLeft=claimed!=null?Math.max(0,Math.ceil(claimed/10)):null;
@@ -95,7 +95,7 @@ function alongHtml(tm){const ch=tm.challenge;if(!ch?.active||!ch.waitingForCatch
  // THE BAG, drawn as the space it is: what you carry at its own width and the
  // room left over. "One more small would fit and a large would not" is then
  // something you see rather than something you work out.
- const carried=`<div class="bagRow">${bagHtml(ch.carrying?.()||[])}<span class="bagWhat">${bag.map(j=>`${parcelHtml(j.cargo)}<b>${esc(j.name||nodeName(tm,j.stops[1]))}</b>`).join('')}</span></div>`;
+ const carried=`<div class="bagRow">${bagHtml(ch.carrying?.()||[],ch.capacity?.())}<span class="bagWhat">${bag.map(j=>`${parcelHtml(j.cargo)}<b>${esc(j.name||nodeName(tm,j.stops[1]))}</b>`).join('')}</span></div>`;
  return `<section class="alongList" style="margin-top:9px;padding-top:9px;border-top:2px solid #e2683c"><b style="font-size:11px">ON YOUR WAY</b>${carried}${offers.map(o=>{const layer=tm.transit?.layers?.find(x=>x.name===o.line);const room=ch.fits?.(o.cargo)!==false;return `<button class="alongOffer row${room?'':' dim'}" data-id="${esc(o.id)}" ${room?'':'disabled'}><span class="cg">${parcelHtml(o.cargo,{title:o.cargo})}</span><span class="to">${esc(o.name)}<small>${badge(o.line,layer?.colour)} ${room?'drop on the way':'<b>no room in the bag</b>'}</small></span><span class="rt"><b>+${o.value}</b></span></button>`;}).join('')}</section>`;}
 function carryHtml(tm){const ch=tm.challenge;if(!ch?.active)return'';const q=ch.queued,canSecond=ch.canTakeSecond?.();if(!canSecond&&!q)return'';const activeDest=nodeName(tm,ch.active.stops[1]);if(q)return `<section id="carryBoard" style="margin-top:9px;padding:9px;border:2px solid #233d4d;border-radius:9px;background:#f7f5ee"><b>CARRYING 2</b><p style="font-size:11px;color:#69777a;margin:4px 0">${esc(activeDest)} first, then ${esc(nodeName(tm,q.originalStops?.[1]||q.stops[1]))}.</p><button id="swapJobs" style="width:100%;min-height:44px;border:1px solid #233d4d;border-radius:7px;background:#fffdf7;font:inherit;font-weight:900">SWAP DELIVERY ORDER</button></section>`;const rows=(ch.offers||[]).map(o=>({offer:o,info:rankOffer(tm,o)}));if(!rows.length)return'';return `<section id="carryBoard" style="margin-top:9px;padding-top:9px;border-top:2px solid #233d4d"><b style="font-size:11px">TAKE ONE MORE?</b><p class="hint">Both clocks run at once.</p>${rows.map(({offer,info})=>offerButton(tm,offer,info,'CARRY AS SECOND JOB')).join('')}</section>`;}
 export function mountJobBoard(tm){let last='',lastHtml='';const render=()=>{const ch=tm.challenge,sheet=document.getElementById('sheet');if(!ch||!sheet||ch.complete)return;if(!ch.active||!ch.waitingForCatch){const al=tm.sheetSlot?.('alongBoard');if(al&&al.innerHTML)al.innerHTML='';}const bucket=Math.floor((tm.flow?.clock?.tick||0)/2);if(ch.active){const key=`active:${ch.index}:${ch.queued?.id||''}:${ch.offers?.map(x=>x.id).join(',')}:${(ch.along||[]).map(j=>j.id).join(',')}:${ch.waitingForCatch?'w':'r'}:${ch.currentFrom()}:${bucket}`;if(key===last)return;last=key;

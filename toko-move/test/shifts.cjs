@@ -147,7 +147,7 @@ server.listen(0, '127.0.0.1', async () => {
   const WALK = process.env.WALK || 'smart';   // 'no' reproduces every number printed before v2.42
   // `shift` and `day` on a policy override both (v2.45): the dailies play the
   // real date seeds with their DRAWN day, which is what a player meets.
-  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.shift ?? policy.seed ?? 1}&day=${policy.day ?? DAY}`, { waitUntil: 'load' });
+  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.shift ?? policy.seed ?? 1}&day=${policy.day ?? DAY}${policy.kit?.length ? `&kit=${policy.kit.join(',')}` : ''}`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.mobility && window.__tm?.liveNetwork && globalThis.__tmRouteChoiceCore, null, { timeout: 30000 });
     if (FLEET) await page.evaluate(async ({ FLEET, token }) => {
       const { LiveNetwork } = await import(`./js/live-network.js?v=${token}`);
@@ -225,6 +225,43 @@ server.listen(0, '127.0.0.1', async () => {
       console.log(`  ${name}: weeks €${s2[0]}–€${s2[s2.length - 1]} · median €${q(0.5)} · 25% €${q(0.25)} · 75% €${q(0.75)} · pays €${W.RENT}: ${t.filter(x => x >= W.RENT).length}/${t.length}`); }
     for (const rent of [300, 350, 400, 450, 500, 550, 600, 650, 700])
       console.log(`  rent €${rent}: ${Object.entries(totals).map(([n, t]) => `${n} ${Math.round(100 * t.filter(x => x >= rent).length / t.length)}%`).join(' · ')}`);
+    if (!GATE) { await browser.close(); server.close(); return; }
+  }
+  // THE KIT (v2.48). --kits=N plays N weeks with one item held all week, for
+  // every item and for none, all on the same weeks with the same player: the
+  // column minus the none column is what that item is worth. --kitweeks=N plays
+  // N weeks the way the game is played — an offer of three each night, the
+  // best-valued one taken (KIT_ORDER, from --kits) — which is what the rent
+  // has to be set against once kit exists.
+  const KITS = Number((process.argv.find(a => a.startsWith('--kits=')) || '').split('=')[1] || 0);
+  const KITWEEKS = Number((process.argv.find(a => a.startsWith('--kitweeks=')) || '').split('=')[1] || 0);
+  if (KITS || KITWEEKS) {
+    const W = await import(path.join(__dirname, '..', 'js', 'week.js'));
+    const K = await import(path.join(__dirname, '..', 'js', 'kit.js'));
+    const player = { job: 'rate', plan: 'total', along: 'yes', walk: 'smart' };
+    const week = async (w, kitFor, pl = player) => { await page.goto(`${base}/toko-move/js/week.js`); await page.evaluate(() => localStorage.removeItem('tokoMoveRegulars'));
+      const days = W.weekDays(w); let sum = 0;
+      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i) }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; }
+      return sum; };
+    let walked = 0;
+    if (KITS) {
+      const only = process.env.KIT_COLS ? process.env.KIT_COLS.split(',') : null;
+      const cols = [null, ...K.KIT.map(k => k.id).filter(id => !only || only.includes(id))], out = {};
+      for (const id of cols) { out[id || 'none'] = []; walked = 0;
+        for (let w = 1; w <= KITS; w++) out[id || 'none'].push(await week(w, () => (id ? [id] : [])));
+        const t = out[id || 'none'], mean = t.reduce((a, b) => a + b, 0) / t.length;
+        const d = id ? t.map((x, i) => x - out.none[i]) : null, dm = d ? d.reduce((a, b) => a + b, 0) / d.length : 0, sd = d ? Math.sqrt(d.reduce((a, b) => a + (b - dm) ** 2, 0) / d.length) : 0;
+        console.log(`  ${(id || 'none').padEnd(9)} mean week €${mean.toFixed(0)}${id ? ` · worth €${dm.toFixed(0)} ± ${(sd / Math.sqrt(d.length)).toFixed(0)} a week (paired)` : ''} · ${walked} walks`); }
+    }
+    if (KITWEEKS) {
+      const ORDER = (process.env.KIT_ORDER || K.KIT.map(k => k.id).join(',')).split(',');
+      const players = [{ name: 'earner', ...player }, { name: 'sensible', job: 'cheapest', plan: 'total', along: 'yes', walk: 'smart' }, { name: 'naive', job: 'first', plan: 'soonest', walk: 'no' }];
+      for (const pl of players) { const t = [];
+        for (let w = 1; w <= KITWEEKS; w++) { const owned = [];
+          t.push(await week(w, i => { if (i > 0) { const o = K.offers(w, i, owned); owned.push(o.slice().sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b))[0]); } return owned.slice(); }, pl)); }
+        const s2 = t.slice().sort((a, b) => a - b);
+        console.log(`  ${pl.name.padEnd(8)} with kit: median €${s2[Math.floor(s2.length / 2)]} · ${[300, 350, 400, 450, 500].map(r => `€${r} ${Math.round(100 * t.filter(x => x >= r).length / t.length)}%`).join(' · ')}`); }
+    }
     if (!GATE) { await browser.close(); server.close(); return; }
   }
   console.log('NAMED POLICIES');
