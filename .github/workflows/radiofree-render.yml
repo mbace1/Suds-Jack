@@ -4,6 +4,8 @@ name: Radio Free Helsinki morning clips
 # app's own export button in headless Chromium, and keeps them as a build
 # artifact for a week. It runs after the wire job, and by hand.
 #
+# Every clip carries its soundtrack (js/score.js, Opus, -16 LUFS).
+#
 # Two facts about what it produces, both recorded in clips.json beside the
 # files: the codec is AV1 in an .mp4 container (headless Chromium has no H.264
 # encoder), which plays in modern browsers, VLC and mpv and not in every phone
@@ -41,7 +43,7 @@ jobs:
     # after the wire job, only if it actually produced a morning
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 75
     steps:
       - name: Checkout main
         uses: actions/checkout@v4

@@ -50,11 +50,13 @@ in the Master System register, two colours per state, no image assets. So:
 - **No planet limb sign-off.** The card is the station's own: the wordmark,
   the frequency, and the codec's waveform — the one every post has carried
   since v1 — going flat.
-- **No music, yet.** The soundtrack skill is the obvious next borrow (a beat
-  grid the cuts already sit on, synthesised in Web Audio, every voice through
-  one gain). It is not in v65 because every cut here lands on a *reading*
-  budget, not a bar, and a beat grid that the cuts do not honour is worse than
-  silence.
+- **No music, yet** — v65's position, overturned in v68 (below). The worry was
+  that cuts land on reading budgets rather than bars; the answer was to make
+  the bed follow the film's SECTIONS (and duck under Toko) rather than make
+  the cuts follow the bar, and to put every event sound on its own frame.
+- **The push-in refusal is for pixel art only.** Since v68 Toko is drawn at the
+  film's own resolution, and a camera may move on him; the panels still move
+  by roll and flicker, never by a non-integer scale.
 
 ## The second pass — *"much more animated, more colour, Toko as the newscaster"*
 
@@ -98,6 +100,42 @@ before the take. The ON AIR dot pulses at the anchor's REC rate. The counter
 **bumps** when it lands. And the hold ends with the **tube switching off**: the
 whole frame collapses to a bright line, then a dot, and the card blooms out of
 the dot.
+
+## The third pass — *"we need to beat everyone"* (v68)
+
+Measured against the best of the week (a three.js clay explainer with
+narration, a procedural score and a −16 LUFS master; the p5 music video), this
+station's clips were silent and its anchor was a 360 px canvas scaled into a
+band. Both fixed:
+
+**Toko at the frame's resolution.** The anchor shot is no longer a panel: the
+film calls `anchor.render(ctx, 1080, 1920, { zoom })` and he is drawn full
+bleed, the desk seated at 52% so the lower third sits on its front. The set is
+its own plane — quartered, blurred, scaled back up and moved more slowly under
+the camera than he is (parallax); two studio lights cut down through dust
+(screen-blended, keyed to the shot); the desk is glossy and holds his ring;
+the camera pushes in 7% across every shot of him and **crash-zooms** on the
+take. Panels are never on void any more: each is blown up behind itself,
+blurred to light, as the room it lights. And the whole frame gets **bloom** —
+a quarter-size copy, crushed to its highlights, blurred and screened back —
+which glows the face, the ring, the type and the amber without softening one
+pixel of the art under it.
+
+**Sound** (`js/score.js`, synthesised offline from the plan, muxed as Opus or
+AAC). A 96 BPM A-minor bed that follows the sections: filtered on the cold
+open, the groove under the reads and ducked to 45% while Toko speaks, **out**
+for the breath with a riser into the reveal, the reveal an impact, the hold
+half-time and brighter, a tape-stop into the card and a three-note ident. Toko
+**babbles** — a syllable per `actAt` syllable, same clock, same amplitudes,
+each a buzz through two vowel formants, the voice band-limited like a radio —
+because a TTS voice that speaks one of the station's three languages well is
+worse than a voice that speaks none. Every event has a sound on its frame:
+cut whooshes, the V-hold wobble, word pops, the DECODE hit and stamp, the
+strike scratch, a key click per typed character, counter ticks and a landing
+bell, the take's boing. Mastered to **−16 LUFS** integrated (BS.1770,
+K-weighted and gated, computed here — the gate asserts ±1) under a soft
+ceiling. Judge it by ear and by `spec.cjs`-style spectrogram against the plan;
+the gate can only prove it is there and at level.
 
 ## The film, shot by shot
 

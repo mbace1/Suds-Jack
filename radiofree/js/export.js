@@ -23,7 +23,8 @@
 // landed on, because "MP4" that turns out to be AV1 is a fact the person
 // uploading it needs.
 
-import { planFilm, paintFilm, shotAt, actAt, W, H } from './film.js?v=67';
+import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=68';
+import { renderSoundtrack } from './score.js?v=68';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';
 export { W, H };
@@ -70,6 +71,8 @@ function shotCanvases(pkg) {
     broll: ph,
     anchor: pkg.drawn && pkg.drawn.anchor ? pkg.drawn.anchor.cv : ph,
     graphic: pkg.drawn && pkg.drawn.graphic ? pkg.drawn.graphic.panel.canvas : ph,
+    // the anchor itself, so the film can draw him at its own resolution
+    anchorObj: pkg.drawn && pkg.drawn.anchor && pkg.drawn.anchor.render ? pkg.drawn.anchor : null,
   };
 }
 
@@ -82,7 +85,7 @@ function shotCanvases(pkg) {
  *   opts.seconds — a TARGET length the reading budgets compress toward
  *   opts.freq — the channel frequency, for the sign-off card
  *   opts.onProgress(k) — 0..1
- * Resolves { blob, codec, ext, frames, seconds, revealed, ms }.
+ * Resolves { blob, codec, ext, frames, seconds, revealed, audio, lufs, ms }.
  */
 export async function exportPost(entry, opts = {}) {
   const { t } = opts;
@@ -106,7 +109,24 @@ export async function exportPost(entry, opts = {}) {
   const output = new M.Output({ format: pick.format, target: new M.BufferTarget() });
   const src = new M.CanvasSource(canvas, { codec: pick.codec, bitrate: M.QUALITY_HIGH });
   output.addVideoTrack(src, { frameRate: fps });
+
+  // The soundtrack is rendered from the same plan before a frame is drawn —
+  // `js/score.js`, synthesised offline, normalised to −16 LUFS — and goes in
+  // as its own track. A browser that can encode no audio still gets a video;
+  // the result says which.
+  let sound = null, audioCodec = null, asrc = null;
+  if (opts.audio !== false && typeof OfflineAudioContext !== 'undefined') {
+    const SR = 48000;
+    audioCodec = await M.getFirstEncodableAudioCodec(pick.format.getSupportedAudioCodecs()
+      .filter(c => c === 'aac' || c === 'opus'), { numberOfChannels: 2, sampleRate: SR });
+    if (audioCodec) {
+      sound = await renderSoundtrack(plan, { sampleRate: SR, seconds: n / fps, timing: TIMING });
+      asrc = new M.AudioBufferSource({ codec: audioCodec, bitrate: 160000 });
+      output.addAudioTrack(asrc);
+    }
+  }
   await output.start();
+  if (asrc) { await asrc.add(sound.buffer); asrc.close(); }
 
   // The live feed is a shared object and the caller is standing on it, so the
   // package's DECODE state is put back afterwards whatever the film did to it.
@@ -147,6 +167,7 @@ export async function exportPost(entry, opts = {}) {
     // the frame DECODE fired on, or -1: a fact about the file the manifest
     // wants, and the one that told us a reveal had not happened at all
     revealed,
+    audio: audioCodec, lufs: sound ? Math.round(sound.after * 10) / 10 : null,
     ms: Math.round(performance.now() - t0),
   };
 }

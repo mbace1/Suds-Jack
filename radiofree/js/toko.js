@@ -4,9 +4,9 @@
 // not flapping on a timer. In DECODE the picture goes amber and starts
 // tearing: the anchor has stopped reading the official copy.
 
-import { PAL } from './palette.js?v=67';
-import { bayer, mix } from './screen.js?v=67';
-import { FIG, drawBody, drawHead as drawFigHead, drawArm, shoulders } from './figure.js?v=67';
+import { PAL } from './palette.js?v=68';
+import { bayer, mix } from './screen.js?v=68';
+import { FIG, drawBody, drawHead as drawFigHead, drawArm, shoulders } from './figure.js?v=68';
 
 
 export class Toko {

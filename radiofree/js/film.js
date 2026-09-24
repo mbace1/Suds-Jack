@@ -29,10 +29,10 @@
 // the transitions and the surface are borrowed, and the drawing medium is not.
 // This station is a 128×152 pixel panel behind curved glass, and stays one.
 
-import { parseLine } from './wire.js?v=67';
-import { readFigures } from './visuals.js?v=67';
-import { PAL } from './palette.js?v=67';
-import { mix } from './screen.js?v=67';
+import { parseLine } from './wire.js?v=68';
+import { readFigures } from './visuals.js?v=68';
+import { PAL } from './palette.js?v=68';
+import { mix } from './screen.js?v=68';
 
 export const W = 1080, H = 1920;
 export const MONO = '"IBM Plex Mono", "SF Mono", Menlo, Consolas, "IPAGothic", monospace';
@@ -68,7 +68,7 @@ export const TIMING = {
   syl: 5.6,            // syllables a second, when Toko reads
 };
 
-export const SURFACE = { grain: 0.16, flicker: 0.035, vignette: 0.32, cutFlash: 0.34 };
+export const SURFACE = { grain: 0.16, flicker: 0.035, vignette: 0.32, cutFlash: 0.34, bloom: 0.55 };
 
 export const TYPE = {
   tag: 34, run0: 52, runStep: 1.12, runMax: 4, runLine: 1.16,
@@ -461,13 +461,41 @@ export function paintFilm(ctx, plan, t, shots) {
   // brand's magenta is not a look) and never the decoded panel (amber is a fact)
   const mappable = cur.shot !== 'anchor' && !cur.decoded;
   const cv = look.treat && mappable && cvRaw ? treated(cvRaw, look.treat) : cvRaw;
-  const box = placement(cv, band);
+  // Toko is not a panel: he is drawn AT the frame's resolution, full bleed,
+  // and the film's lower third sits on his desk front. The camera pushes in
+  // slowly on every shot of him and crashes in on the take.
+  const fullAnchor = cur.shot === 'anchor' && shots.anchorObj;
+  if (fullAnchor) {
+    const u = seg(t, cur.t0, cur.t1);
+    let zoom = 1 + 0.07 * ease(u);
+    if (cur.take) zoom = 1.05 + 0.15 * backOut(seg(t - cur.t0, 0.08, 0.34));
+    shots.anchorObj.render(ctx, W, H, { zoom });
+    // the lower third's ground, so type never sits on a lit desk
+    const sg = ctx.createLinearGradient(0, band - 40, 0, band + 260);
+    sg.addColorStop(0, 'rgba(1,4,3,0)'); sg.addColorStop(1, 'rgba(1,4,3,0.78)');
+    ctx.fillStyle = sg; ctx.fillRect(0, band - 40, W, H - band + 40);
+  }
+  const box = fullAnchor ? null : placement(cv, band);
   if (box) {
-    ctx.save(); ctx.beginPath(); ctx.rect(box.x, box.y, box.w, box.h); ctx.clip();
     // the V-hold roll: between broadcast shots the old picture rolls up and
     // the new one rolls in under it, the way a tube loses vertical hold
     const prev = shotBefore(plan, cur);
-    const rolling = prev && !cur.decoded && cur.t0 > 0 && t < cur.t0 + T.roll && shots[prev.shot];
+    // the frame is never void around a panel: the shot itself, blown up past
+    // the edges, blurred to light and darkened, fills it — so a panel reads as
+    // the brightest thing in a room lit by it rather than a stamp on black
+    // (blurred SMALL and scaled up: a 42 px blur at 1080×1920 every frame is
+    // most of a render's time, and the upscale's own smoothing does the rest)
+    if (!ambC) { ambC = document.createElement('canvas'); ambC.width = W / 12; ambC.height = H / 12; }
+    const ab = ambC.getContext('2d');
+    ab.clearRect(0, 0, ambC.width, ambC.height);
+    ab.filter = 'blur(6px) saturate(1.5) brightness(0.45)';
+    const cs = Math.max(W / cv.width, H / cv.height) * 1.15 / 12;
+    ab.imageSmoothingEnabled = true;
+    ab.drawImage(cv, (ambC.width - cv.width * cs) / 2, (band / 12 - cv.height * cs) / 2 + (H - band) * 0.2 / 12, cv.width * cs, cv.height * cs);
+    ab.filter = 'none';
+    ctx.save(); ctx.imageSmoothingEnabled = true; ctx.drawImage(ambC, 0, 0, W, H); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(box.x, box.y, box.w, box.h); ctx.clip();
+    const rolling = prev && prev.shot !== 'anchor' && !cur.decoded && cur.t0 > 0 && t < cur.t0 + T.roll && shots[prev.shot];
     if (rolling) {
       const k = ease(seg(t, cur.t0, cur.t0 + T.roll));
       const pcv = shots[prev.shot], pbox = placement(pcv, band);
@@ -513,6 +541,13 @@ export function paintFilm(ctx, plan, t, shots) {
     }
   }
   ctx.restore();
+
+  // the lower third's ground, so type never sits on a lit desk or a glow
+  if (!fullAnchor) {
+    const sg = ctx.createLinearGradient(0, band, 0, band + 200);
+    sg.addColorStop(0, 'rgba(1,4,3,0)'); sg.addColorStop(1, 'rgba(1,4,3,0.7)');
+    ctx.fillStyle = sg; ctx.fillRect(0, band, W, H - band);
+  }
 
   // ── the lower third ──
   const x = 54, maxW = W - 108;
@@ -612,11 +647,34 @@ export function paintFilm(ctx, plan, t, shots) {
   ctx.fillStyle = '#5f8a74';
   ctx.fillText(plan.fiction, x, footerY);
 
+  bloom(ctx);
   surface(ctx, plan, t);
 
   // the tube switching off: the whole picture collapses to a line, then a dot
   const ct = t - (plan.holdEnd - T.collapse);
   if (ct >= 0) collapse(ctx, seg(ct, 0, T.collapse));
+}
+
+// Bloom: what is bright spills light. The frame is taken down to a quarter,
+// crushed so only its highlights survive, blurred, and screened back over
+// itself — the face, the ring, the phosphor type and the amber all glow, and
+// the dark stays dark. The base is never blurred, so the pixel art under it
+// keeps every hard edge.
+let bloomC = null, ambC = null;
+function bloom(ctx) {
+  const q = 4, bw = W / q, bh = H / q;
+  if (!bloomC) { bloomC = document.createElement('canvas'); bloomC.width = bw; bloomC.height = bh; }
+  const b = bloomC.getContext('2d');
+  b.clearRect(0, 0, bw, bh);
+  b.filter = 'brightness(0.72) contrast(2.6) blur(5px)';
+  b.drawImage(ctx.canvas, 0, 0, bw, bh);
+  b.filter = 'none';
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  ctx.globalAlpha = SURFACE.bloom;
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(bloomC, 0, 0, W, H);
+  ctx.restore();
 }
 
 function collapse(ctx, k) {

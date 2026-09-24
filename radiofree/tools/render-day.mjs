@@ -175,12 +175,14 @@ async function main() {
           file: path.relative(OUT, file), episode: day, lang, id: ids[i],
           codec: got.codec, container: got.ext, type: got.type,
           bytes: got.bytes, frames: got.frames, seconds: got.seconds, fps: FPS,
-          target: SECONDS || null, scale: got.scale, revealed: got.revealed, encodeMs: got.ms,
+          target: SECONDS || null, scale: got.scale, revealed: got.revealed,
+          audio: got.audio || null, lufs: got.lufs, encodeMs: got.ms,
         };
         written.push(rec);
         console.log(`  ${pad(i + 1)} ${ids[i].padEnd(24)} ${got.codec}/${got.ext}`
           + ` ${String(got.seconds.toFixed(1)).padStart(5)}s of clip`
           + ` ${(got.bytes / 1024).toFixed(0).padStart(5)}kB  ${((Date.now() - t0) / 1000).toFixed(1)}s to render`
+          + (got.audio ? `  ${got.audio} ${got.lufs} LUFS` : '  (silent)')
           + (got.revealed < 0 ? '  ! NO REVEAL' : ''));
       }
     }

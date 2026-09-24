@@ -562,6 +562,10 @@ async function main() {
   ok('a one-second target is the copy\'s shortest film, not a one-second file',
      exp && exp.seconds >= 10 && exp.scale <= 0.5501, JSON.stringify({ seconds: exp && exp.seconds, scale: exp && exp.scale }));
   ok('DECODE fired inside the clip, as a cut', exp && exp.revealed > 0, String(exp && exp.revealed));
+  // the soundtrack (js/score.js): a clip without sound is a gif
+  ok('it carries a soundtrack, encoded, normalised to -16 LUFS (±1)',
+     exp && ['aac', 'opus'].includes(exp.audio) && Math.abs(exp.lufs + 16) <= 1,
+     JSON.stringify({ audio: exp && exp.audio, lufs: exp && exp.lufs }));
   ok('the live loop resumed after the export',
      await go(async () => { const a = __rfh.debug.beat(); await new Promise(r => setTimeout(r, 900)); return __rfh.debug.shot() !== null; }));
   ok('every post has the export button, and clean mode has none',

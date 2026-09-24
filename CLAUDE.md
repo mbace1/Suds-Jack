@@ -1442,6 +1442,17 @@ broadcast graphic through posterised gradient maps; Toko's magenta and the
 decoded panel are refused the map. Between broadcast shots the picture ROLLS
 (vertical hold), the reveal shakes and stamps `DECODE`, the hold ends with the
 tube collapsing to a line and the card blooming from the dot.
+**v68 — full frame, and sound** (owner: *we need to beat everyone*). The film
+draws Toko itself at 1080×1920 (`anchor.render(ctx, W, H, { zoom })`: a
+parallax set blurred at quarter size, studio beams with dust, a glossy desk,
+a push-in on every shot of him and a crash zoom on the take), every panel
+lights its own surround, and the frame gets a bloom pass. **`js/score.js`**
+synthesises the soundtrack from the same plan — a sectioned 96 BPM bed ducked
+under Toko, his formant **babble** on `actAt`'s syllable clock (deliberately
+not TTS: one good language of three is worse than none), a sound for every
+event — mastered to **−16 LUFS** (BS.1770, computed in-page) and muxed as
+Opus/AAC; the gate asserts the track and the level. A clip takes ~60 s to
+render here, so every blur runs at quarter size or smaller.
 **Layout belongs in `index.html`, never in an injected stylesheet.** `package.js`
 used to inject thirty `!important` rules that clamped the headline, deleted the
 second paragraph of every bulletin, and hid the DECODE button, the tally and the
@@ -1449,7 +1460,7 @@ second paragraph of every bulletin, and hid the DECODE button, the tally and the
 separately hard-disabling DECODE behind a setter that threw the value away. If
 the copy does not fit, fix the layout; do not hide the copy.
 **Gates:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs`
-— 84 checks — and `node radiofree/test/film.mjs` (bare node, 11: the plan, the take, the look arc, Toko's acting, and that no headline number is split across runs). It reads `sw.js` with whitespace-tolerant regexes, because that file
+— 85 checks — and `node radiofree/test/film.mjs` (bare node, 11: the plan, the take, the look arc, Toko's acting, and that no headline number is split across runs). It reads `sw.js` with whitespace-tolerant regexes, because that file
 was reformatted once and five shell checks silently graded against `undefined`
 for as long as nobody looked. A gate that cannot parse its own subject produces a
 failure everyone learns to scroll past.
@@ -1679,7 +1690,7 @@ is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
 `toko/index.html` is the **brand board**, built out of the shipping modules.
-`toko/test/brand.cjs` is the gate (Playwright, 184 checks): geometry invariants
+`toko/test/brand.cjs` is the gate (Playwright, 185 checks): geometry invariants
 (slot width, stem/crown merge, mouth-clears-eyes, symmetry), **every rendered
 pixel checked against the two-colour system**, SVG well-formedness + that it
 emits exactly the canvas's arcs at the shipping stroke weight, the sting

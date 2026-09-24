@@ -15,10 +15,10 @@
 // Mirrors Photo's interface — goLive/goIdle/update/draw/renderStatic/decoded/
 // destroy — so main.js drives it without knowing which kind of shot it holds.
 
-import { FIG, drawBody, drawHead as drawFigHead, drawArm, shoulders } from './figure.js?v=67';
+import { FIG, drawBody, drawHead as drawFigHead, drawArm, shoulders } from './figure.js?v=68';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=67';
-import { shade, mix } from './screen.js?v=67';
+import { PAL, SECTOR_COLOR } from './palette.js?v=68';
+import { shade, mix } from './screen.js?v=68';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —
@@ -35,9 +35,18 @@ const L = {
   plate: 0.760,         // the nameplate strip on the desk front
   ringW: 0.235,         // the head ring's radius, of W…
   ringH: 0.132,         // …but never more than this of H
+  filmDesk: 0.52,
+  filmHead: 0.78,       // …and a smaller head, so the camera has room to push in       // a film seats the desk higher: its lower third sits on the desk front
   seat: 238,            // head centre above the desk edge, in figure units
   wall: { x: 0.045, y: 0.052, w: 0.910, h: 0.455 },
 };
+
+const lerpN = (a, b, k) => a + (b - a) * k;
+function withAlpha(hex, a) {
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.replace(/./g, '$&$&') : h.slice(0, 6), 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+}
 
 const rnd = (n) => {
   const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
@@ -61,6 +70,7 @@ export class Anchor {
     // own clock; js/film.js sets it per frame through the export. Every field
     // is optional and overrides the feed behaviour only when present.
     this.act = null;
+    this.deskFrac = L.desk;
 
     host.innerHTML = '';
     const wrap = document.createElement('div');
@@ -150,7 +160,17 @@ export class Anchor {
 
   paint() {
     this.fit();
-    const c = this.ctx, t = this.t, W = this.W, H = this.H;
+    this.render(this.ctx, this.W, this.H, null);
+  }
+
+  // Paint the shot into any context at any size. The feed passes nothing and
+  // gets the phone post; a FILM passes `{ zoom }` and gets the studio at full
+  // resolution — the set a plane behind him, out of focus and slower under the
+  // camera than he is, two studio lights cutting down through dust, and a desk
+  // glossy enough to hold his colour. None of that exists on the feed, where
+  // the post is 360 px wide and a depth of field is a smear.
+  render(c, W, H, film) {
+    const t = this.t;
     const act = this.act;
     const hot = act && act.hot !== undefined ? act.hot : this.decoded;
     // Amber has exactly one job on this dial, and DECODE is it — so the whole
@@ -159,21 +179,133 @@ export class Anchor {
     const key = hot ? PAL.AMBER : (act && act.key) || this.accent;
     const dim = hot ? PAL.AMBER_DIM : (act && act.dim) || shade(this.accent, 0.55);
     const s = W / 360;                 // stroke/type scale, off the design width
-
-    this.backWall(c, W, H, dim, hot);
-    this.videoWall(c, t, W, H, key, dim, s);
+    this.deskFrac = film ? L.filmDesk : L.desk;
     this.rim = key;
+
+    if (!film) {
+      this.backWall(c, W, H, dim, hot);
+      this.videoWall(c, t, W, H, key, dim, s);
+      this.subject(c, t, W, H);
+      this.desk(c, W, H, key, dim, s);
+      this.arms(c, t, W, H);
+      this.furniture(c, t, W, H, key, hot, s);
+      this.grain(c, W, H);
+      if (hot) this.tear(c, t, W, H);
+      return;
+    }
+
+    const { cx, cy } = this.pose(W, H);
+    const zoom = film.zoom || 1;
+    // the set, on its own plane: drawn once into a layer, then laid in soft
+    if (!this.bgLayer) this.bgLayer = document.createElement('canvas');
+    const bl = this.bgLayer;
+    if (bl.width !== W || bl.height !== H) { bl.width = W; bl.height = H; }
+    const b = bl.getContext('2d');
+    b.clearRect(0, 0, W, H);
+    this.backWall(b, W, H, dim, hot);
+    this.videoWall(b, t, W, H, key, dim, s);
+    c.fillStyle = '#020605';
+    c.fillRect(0, 0, W, H);
+    c.save();
+    const zb = 1.04 + (zoom - 1) * 0.35;           // parallax: the wall is further away
+    c.translate(cx, cy); c.scale(zb, zb); c.translate(-cx, -cy);
+    // out of focus: taken down to a quarter, blurred there, and brought back
+    // up smooth — the same look as a full-size blur for a sixteenth of the work
+    if (!this.bgSmall) this.bgSmall = document.createElement('canvas');
+    const bs = this.bgSmall, qw = Math.round(W / 4), qh = Math.round(H / 4);
+    if (bs.width !== qw || bs.height !== qh) { bs.width = qw; bs.height = qh; }
+    const bx = bs.getContext('2d');
+    bx.clearRect(0, 0, qw, qh);
+    bx.filter = `blur(${Math.max(1, 0.6 * s).toFixed(1)}px)`;
+    bx.drawImage(bl, 0, 0, qw, qh);
+    bx.filter = 'none';
+    c.imageSmoothingEnabled = true;
+    c.drawImage(bs, 0, 0, W, H);
+    c.restore();
+
+    this.beams(c, t, W, H, key, s);
+
+    c.save();
+    c.translate(cx, cy); c.scale(zoom, zoom); c.translate(-cx, -cy);
     this.subject(c, t, W, H);
-    this.desk(c, W, H, key, dim, s);
+    this.desk(c, W, H, key, dim, s, true);
+    this.reflect(c, t, W, H, key);
     this.arms(c, t, W, H);
+    c.restore();
+
     this.furniture(c, t, W, H, key, hot, s);
-    this.grain(c, W, H);
     if (hot) this.tear(c, t, W, H);
+  }
+
+  // Two studio lights from above the frame, down onto him, with dust turning
+  // in them. Screen-blended, so they lift what is under them rather than
+  // painting over it, and keyed to the shot so a cyan shot has cyan light.
+  beams(c, t, W, H, key, s) {
+    const { cx, cy, R } = this.pose(W, H);
+    const deskY = H * this.deskFrac;
+    c.save();
+    c.globalCompositeOperation = 'screen';
+    for (const side of [-1, 1]) {
+      const sx = cx + side * W * 0.42, tx = cx + side * R * 0.35;
+      const path = () => {
+        c.beginPath();
+        c.moveTo(sx - 16 * s, -10); c.lineTo(sx + 16 * s, -10);
+        c.lineTo(tx + R * 1.25, deskY); c.lineTo(tx - R * 1.25, deskY);
+        c.closePath();
+      };
+      const g = c.createLinearGradient(sx, 0, tx, deskY);
+      g.addColorStop(0, withAlpha(key, 0.20));
+      g.addColorStop(0.55, withAlpha(key, 0.07));
+      g.addColorStop(1, withAlpha(key, 0));
+      c.fillStyle = g;
+      path(); c.fill();
+      // the dust: a fixed population drifting on its own clock, inside the beam
+      c.save(); path(); c.clip();
+      c.fillStyle = withAlpha('#ffffff', 0.5);
+      for (let i = 0; i < 70; i++) {
+        const u = rnd(i * 3.3 + side), v = (rnd(i * 7.1 + side) + t * (0.012 + u * 0.02)) % 1;
+        const x = lerpN(sx, tx, v) + (u - 0.5) * R * 2.2 * v + Math.sin(t * 0.7 + i) * 6 * s;
+        const y = v * deskY;
+        const r = (0.6 + rnd(i * 1.9) * 1.1) * s;
+        c.globalAlpha = 0.25 + 0.5 * Math.abs(Math.sin(t * 1.3 + i * 0.7));
+        c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+      }
+      c.restore();
+    }
+    c.restore();
+  }
+
+  // The desk top is glossy: it holds his ring and the light as a soft smear
+  // below the edge, the way a lacquered news desk does.
+  reflect(c, t, W, H, key) {
+    const a = this.at;
+    if (!a) return;
+    const { R } = this.pose(W, H);
+    const deskY = H * this.deskFrac;
+    c.save();
+    c.beginPath(); c.rect(0, deskY + 3, W, H * 0.16); c.clip();
+    c.globalCompositeOperation = 'screen';
+    c.translate(a.hx, deskY + R * 0.22);
+    c.scale(1, 0.28);
+    const g = c.createRadialGradient(0, 0, R * 0.2, 0, 0, R * 1.3);
+    g.addColorStop(0, 'rgba(240,2,127,0.30)');
+    g.addColorStop(1, 'rgba(240,2,127,0)');
+    c.fillStyle = g;
+    c.fillRect(-R * 1.4, -R * 1.4, R * 2.8, R * 2.8);
+    c.restore();
+    c.save();
+    c.globalCompositeOperation = 'screen';
+    const sg = c.createLinearGradient(0, deskY, 0, deskY + H * 0.05);
+    sg.addColorStop(0, withAlpha(key, 0.22));
+    sg.addColorStop(1, withAlpha(key, 0));
+    c.fillStyle = sg;
+    c.fillRect(0, deskY, W, H * 0.05);
+    c.restore();
   }
 
   // ── the set ────────────────────────────────────────────────────────────
   backWall(c, W, H, dim, hot) {
-    const deskY = H * L.desk;
+    const deskY = H * this.deskFrac;
     const g = c.createLinearGradient(0, 0, 0, deskY);
     // the wall takes the shot's key at a whisper, so a cyan shot IS cyan
     g.addColorStop(0, hot ? '#120c04' : mix('#05100c', dim, 0.22));
@@ -262,8 +394,8 @@ export class Anchor {
   // elbows land on the desk edge — the desk decides his height, not the head,
   // which is what makes the hands rest on it on every aspect.
   pose(W, H) {
-    const deskY = H * L.desk;
-    const R = Math.min(W * L.ringW, H * L.ringH);
+    const deskY = H * (this.deskFrac || L.desk);
+    const R = Math.min(W * L.ringW, H * L.ringH) * (this.deskFrac === L.filmDesk ? L.filmHead : 1);
     const k = R / FIG.ring;
     return { k, R, cx: W / 2, cy: deskY - L.seat * k, deskY };
   }
@@ -296,7 +428,7 @@ export class Anchor {
     glow.addColorStop(0, 'rgba(240,2,127,0.30)');
     glow.addColorStop(1, 'rgba(240,2,127,0)');
     c.fillStyle = glow;
-    c.fillRect(0, 0, W, H * L.desk);
+    c.fillRect(0, 0, W, H * this.deskFrac);
 
     // the tilt turns the whole figure about the neck, shadow included
     c.save();
@@ -366,8 +498,8 @@ export class Anchor {
   }
 
   // ── the desk ───────────────────────────────────────────────────────────
-  desk(c, W, H, key, dim, s) {
-    const deskY = H * L.desk;
+  desk(c, W, H, key, dim, s, film = false) {
+    const deskY = H * this.deskFrac;
     const g = c.createLinearGradient(0, deskY, 0, H);
     g.addColorStop(0, mix('#0a1c16', dim, 0.14));
     g.addColorStop(1, '#04100c');
@@ -383,6 +515,8 @@ export class Anchor {
     // The desk front carries the station, the way a real one carries the
     // programme name — otherwise the band between the desk edge and the lower
     // third is dead frame, and dead frame is what makes a shot look unfinished.
+    // A film's own lower third sits on the desk front instead.
+    if (film) return;
     const py = H * L.plate, ph = 34 * s;
     const px = W * 0.10, pw = W * 0.80;
     c.fillStyle = 'rgba(3,14,11,.72)';
@@ -467,7 +601,7 @@ export class Anchor {
       const bh = 6 + ((i * 5) % 9);
       const dx = (rnd(Math.floor(t * 6) + i) - 0.5) * 18;
       if (by < 0 || by + bh > H) continue;
-      c.drawImage(this.cv, 0, by, W, bh, dx, by, W, bh);
+      c.drawImage(c.canvas, 0, by, W, bh, dx, by, W, bh);
     }
   }
 
