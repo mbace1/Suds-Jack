@@ -58,7 +58,7 @@ server.listen(0, '127.0.0.1', async () => {
   // is the exact regression this file exists for — the first cut of this gate
   // did that and all three mutations walked past it.
   const seen = await page.evaluate(async () => {
-    const out = { banners: [], lit: [], offered: new Set(), ticks: 0 };
+    const out = { banners: [], lit: [], offered: new Set(), ticks: 0, raw: new Map() };
     const start = window.__tm.flow.clock.tick;
     await new Promise(done => {
       // At x4 the clock runs ~40 ticks a second, so a 200ms sampler sees one
@@ -73,6 +73,8 @@ server.listen(0, '127.0.0.1', async () => {
           .match(/MISSED\s+(\S+)\s*·\s*about\s+(\d+)t/);
         if (m) { const at = tick - Number(m[2]), last = out.banners.filter(x => x.line === m[1]).pop();
           if (!last || at - last.tick > 8) out.banners.push({ line: m[1], tick: at, seenAt: tick }); }
+        // the panel keeps a miss for 8 ticks only, so it is collected as it goes
+        for (const r of tm.catchMisses || []) out.raw.set(`${r.line}@${r.tick}`, { line: r.line, tick: r.tick });
         const now = [];
         for (const btn of document.querySelectorAll('#routeChoices .catchChoice')) {
           const lab = (btn.querySelector('.lineLabel')?.textContent || '').trim();
@@ -86,8 +88,7 @@ server.listen(0, '127.0.0.1', async () => {
       };
       requestAnimationFrame(step);
     });
-    out.rawMisses = (window.__tm.catchMisses || []).map(m => `${m.line}@${m.tick}`);
-    return { ...out, offered: [...out.offered] };
+    return { ...out, offered: [...out.offered], rawMisses: [...out.raw.values()].sort((a, b) => a.tick - b.tick), raw: undefined };
   });
 
   const offered = new Set(seen.offered);
@@ -108,6 +109,22 @@ server.listen(0, '127.0.0.1', async () => {
   // the observer's first sample at tick 16. The page was right and the ruler
   // was blind; a miss from before the first sample is set aside and COUNTED,
   // and enough others must still be judged that this check cannot go vacuous.
+  // And the banner's age is read against the GATE's clock, while the banner
+  // itself redraws every 250ms — ten ticks at x4, more on a slow runner — so
+  // `tick - age` dates a miss LATE by however stale the banner was. On CI that
+  // moved a pre-watch miss past the first sample (4T@22, really earlier) and
+  // failed a correct page. A banner is re-dated to the panel's own record of
+  // the same line just before it; a banner with no such record (hub-tactics
+  // inventing its own) keeps the late date and is judged on it.
+  // One stale banner sampled on three frames also dates three "misses" nine
+  // ticks apart, so banners that land on the same record are one miss.
+  const STALE = 60;
+  const anchored = new Map();
+  for (const m of seen.banners) {
+    const rec = seen.rawMisses.filter(r => r.line === m.line && r.tick <= m.tick && m.tick - r.tick <= STALE).pop();
+    if (rec) { m.tick = rec.tick; anchored.set(`${rec.line}@${rec.tick}`, m); } else anchored.set(`?${m.line}@${m.tick}`, m);
+  }
+  seen.banners = [...anchored.values()];
   const firstSample = seen.lit.length ? seen.lit[0].tick : Infinity;
   const judged = seen.banners.filter(m => m.tick >= firstSample);
   const unlit = judged.filter(m =>
