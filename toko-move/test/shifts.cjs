@@ -147,7 +147,7 @@ server.listen(0, '127.0.0.1', async () => {
   const WALK = process.env.WALK || 'smart';   // 'no' reproduces every number printed before v2.42
   // `shift` and `day` on a policy override both (v2.45): the dailies play the
   // real date seeds with their DRAWN day, which is what a player meets.
-  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.shift ?? policy.seed ?? 1}&day=${policy.day ?? DAY}${policy.kit?.length ? `&kit=${policy.kit.join(',')}` : ''}`, { waitUntil: 'load' });
+  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.shift ?? policy.seed ?? 1}&day=${policy.day ?? DAY}${policy.kit?.length ? `&kit=${policy.kit.join(',')}` : ''}${policy.weather ? `&weather=${policy.weather}` : ''}`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.mobility && window.__tm?.liveNetwork && globalThis.__tmRouteChoiceCore, null, { timeout: 30000 });
     if (FLEET) await page.evaluate(async ({ FLEET, token }) => {
       const { LiveNetwork } = await import(`./js/live-network.js?v=${token}`);
@@ -235,13 +235,18 @@ server.listen(0, '127.0.0.1', async () => {
   // has to be set against once kit exists.
   const KITS = Number((process.argv.find(a => a.startsWith('--kits=')) || '').split('=')[1] || 0);
   const KITWEEKS = Number((process.argv.find(a => a.startsWith('--kitweeks=')) || '').split('=')[1] || 0);
-  if (KITS || KITWEEKS) {
+  if (KITS || KITWEEKS || process.argv.some(a => a.startsWith('--wx='))) {
     const W = await import(path.join(__dirname, '..', 'js', 'week.js'));
     const K = await import(path.join(__dirname, '..', 'js', 'kit.js'));
+    const X = await import(path.join(__dirname, '..', 'js', 'weather.js'));
+    // The game's week has no ?day= in its URL, so every morning draws its own
+    // weather — including the ordinary ones the bot pins with day=none, which
+    // on its own would force clear. WX=clear reproduces the pre-v2.49 columns.
+    const wxFor = (w, i) => process.env.WX || X.drawWeather(W.shiftSeedFor(w, i)).id;
     const player = { job: 'rate', plan: 'total', along: 'yes', walk: 'smart' };
     const week = async (w, kitFor, pl = player) => { await page.goto(`${base}/toko-move/js/week.js`); await page.evaluate(() => localStorage.removeItem('tokoMoveRegulars'));
       const days = W.weekDays(w); let sum = 0;
-      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i) }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; }
+      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i), weather: wxFor(w, i) }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; }
       return sum; };
     let walked = 0;
     if (KITS) {
@@ -253,6 +258,16 @@ server.listen(0, '127.0.0.1', async () => {
         const d = id ? t.map((x, i) => x - out.none[i]) : null, dm = d ? d.reduce((a, b) => a + b, 0) / d.length : 0, sd = d ? Math.sqrt(d.reduce((a, b) => a + (b - dm) ** 2, 0) / d.length) : 0;
         console.log(`  ${(id || 'none').padEnd(9)} mean week €${mean.toFixed(0)}${id ? ` · worth €${dm.toFixed(0)} ± ${(sd / Math.sqrt(d.length)).toFixed(0)} a week (paired)` : ''} · ${walked} walks`); }
     }
+    // --wx=N: N no-kit weeks with one weather held all week, for each weather,
+    // on the same weeks: what a morning of each costs the fee-reading player.
+    const WXN = Number((process.argv.find(a => a.startsWith('--wx=')) || '').split('=')[1] || 0);
+    if (WXN) { const out = {};
+      for (const x of X.WEATHER) { out[x.id] = []; const keep = process.env.WX; process.env.WX = x.id;
+        for (let w = 1; w <= WXN; w++) out[x.id].push(await week(w, () => []));
+        if (keep === undefined) delete process.env.WX; else process.env.WX = keep;
+        const t = out[x.id], mean = t.reduce((a, b) => a + b, 0) / t.length, d = x.id === 'clear' ? null : t.map((v, i) => v - out.clear[i]);
+        const dm = d ? d.reduce((a, b) => a + b, 0) / d.length : 0, sd = d ? Math.sqrt(d.reduce((a, b) => a + (b - dm) ** 2, 0) / d.length) : 0;
+        console.log(`  ${x.id.padEnd(6)} mean week €${mean.toFixed(0)}${d ? ` · ${dm >= 0 ? '+' : ''}€${dm.toFixed(0)} ± ${(sd / Math.sqrt(d.length)).toFixed(0)} a week against clear (paired)` : ''}`); } }
     if (KITWEEKS) {
       const ORDER = (process.env.KIT_ORDER || K.KIT.map(k => k.id).join(',')).split(',');
       const players = [{ name: 'earner', ...player }, { name: 'sensible', job: 'cheapest', plan: 'total', along: 'yes', walk: 'smart' }, { name: 'naive', job: 'first', plan: 'soonest', walk: 'no' }];

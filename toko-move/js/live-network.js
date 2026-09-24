@@ -87,13 +87,13 @@ export class LiveNetwork{
  // is a consequence of the line and the number a player feels is the one that
  // was chosen. `vehiclesPerLine` stays as the fixed-count path for tests and
  // for the measurement that decided this.
- constructor(transit,{vehiclesPerLine=2,headwayMinutes=null,dwellTicks=3,ticksPerDay=SHIFT.ticksPerDay,shiftHours=SHIFT.hours}={}){this.transit=transit;this.vehiclesPerLine=vehiclesPerLine;this.headwayMinutes=headwayMinutes;this.ticksPerDay=ticksPerDay;this.shiftHours=shiftHours;this.dwellTicks=dwellTicks;this.vehicles=[];this.selectedVehicleId=null;for(const layer of transit?.layers||[]){if(layer.mode!=='TRAM'&&layer.mode!=='SUBWAY')continue;const count=this.countFor(layer);// Phases are spaced EVENLY around the out-and-back cycle, offset per line by
+ constructor(transit,{vehiclesPerLine=2,headwayMinutes=null,dwellTicks=3,ticksPerDay=SHIFT.ticksPerDay,shiftHours=SHIFT.hours,speedFactor=1}={}){this.transit=transit;this.speedFactor=speedFactor;this.vehiclesPerLine=vehiclesPerLine;this.headwayMinutes=headwayMinutes;this.ticksPerDay=ticksPerDay;this.shiftHours=shiftHours;this.dwellTicks=dwellTicks;this.vehicles=[];this.selectedVehicleId=null;for(const layer of transit?.layers||[]){if(layer.mode!=='TRAM'&&layer.mode!=='SUBWAY')continue;const count=this.countFor(layer);// Phases are spaced EVENLY around the out-and-back cycle, offset per line by
   // its hash so lines do not move in lockstep. They used to be hash-scattered,
   // and scattered phases bunch: measured at Lasipalatsi from tick 0, the gap to
   // the next same-direction vehicle reached 1453 ticks on a line whose even
   // headway is 556. Evenly spaced, the worst wait on a line is one headway and
   // the average is half of one — which is what a timetable is.
-  const base=(hash(layer.id)%10000)/10000;for(let i=0;i<count;i++)this.vehicles.push({id:`${layer.id}:${i}`,layer,phase:(base+i*(2/count))%2,speed:speedForLayer(layer,ticksPerDay)});}}
+  const base=(hash(layer.id)%10000)/10000;for(let i=0;i<count;i++)this.vehicles.push({id:`${layer.id}:${i}`,layer,phase:(base+i*(2/count))%2,speed:speedForLayer(layer,ticksPerDay)*this.speedFactor});}}
  // A HOLD is a disruption: every vehicle on a layer stands where it is from
  // `from` to `until`. Positions are a closed form in the tick, so a hold is
  // just ticks the layer does not experience — `effectiveTick` subtracts the
@@ -110,7 +110,9 @@ export class LiveNetwork{
  heading(v,p,project){const path=v.layer.path||[];if(!p||path.length<2)return null;const i=Math.max(0,Math.min(path.length-2,Math.floor(p.pathIndex)));const a=project(path[i][0],path[i][1]),b=project(path[i+1][0],path[i+1][1]);let dx=(b.x-a.x)*(p.direction>=0?1:-1),dy=(b.y-a.y)*(p.direction>=0?1:-1);const L=Math.hypot(dx,dy);if(L<1e-6)return null;return{x:dx/L,y:dy/L};}
  countFor(layer){const perMin=this.ticksPerDay/(this.shiftHours*60),want=this.headwayMinutes?.[layer.mode];
   if(!want)return layer.mode==='SUBWAY'?Math.max(2,this.vehiclesPerLine):this.vehiclesPerLine;
-  const cycle=2/speedForLayer(layer,this.ticksPerDay,this.shiftHours);
+  // weather.js: a slower service keeps its timetable, so the longer cycle
+  // carries more vehicles and weather costs ride time, not waiting time.
+  const cycle=2/(speedForLayer(layer,this.ticksPerDay,this.shiftHours)*this.speedFactor);
   return Math.max(2,Math.round(cycle/(want*perMin)));}
  // The timetable's own headway on a line, in ticks — what "every N minutes"
  // means here, for anything that wants to say it out loud.

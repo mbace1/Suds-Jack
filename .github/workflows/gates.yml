@@ -327,6 +327,9 @@ jobs:
       - name: the kit — three offers a night, one lever an item, in the engine's arithmetic
         run: node toko-move/test/kit.mjs
 
+      - name: the weather — a drawn mix, fog's reach, slower on the same timetable
+        run: node toko-move/test/weather.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
@@ -432,6 +435,9 @@ jobs:
 
       - name: the week, played in the page — five shifts once each, and Friday
         run: NODE_PATH=$(npm root -g) node toko-move/test/week.cjs
+
+      - name: the weather, in the page — fog hides what is far, rain slows the fleet
+        run: NODE_PATH=$(npm root -g) node toko-move/test/weather.cjs
 
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher

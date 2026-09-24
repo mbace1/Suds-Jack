@@ -1,7 +1,8 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=51';
-import './route-choice.js?v=19';
-import {LiveNetwork,HEADWAY_MIN} from './live-network.js?v=11';
+import './core-v212.js?v=52';
+import './route-choice.js?v=20';
+import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=12';
+import {hidden as fogHides} from './weather.js?v=1';
 import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} from './city-events.js?v=1';
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=3';
 import {MobilityController} from './mobility-v212.js?v=7';
@@ -17,17 +18,20 @@ import {mountHubTactics} from './hub-tactics-v212.js?v=5';
 import {mountSkillMoments} from './moments-v212.js?v=1';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=1';
-const BUILD_VERSION='2.48';
+const BUILD_VERSION='2.49';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
-tm.walkFactor=walkFactor(tm.cityDay);
+tm.walkFactor=walkFactor(tm.cityDay)*(tm.weather?.walk||1);
+// FOG (weather.js): how far off an arrival `eta` ticks away is, in metres at
+// the line's own speed — the panel says "in the fog" past the fog's reach.
+tm.inFog=(layer,eta)=>{const w=tm.weather;if(!w?.fogM||eta==null)return false;const tpm=tm.flow.clock.ticksPerDay/(tm.shift?.hours*60||75),kmh=(MODE_KMH[layer?.mode]||MODE_KMH.TRAM)*(w.speed||1);return eta/tpm*kmh*1000/60>w.fogM;};
 {const mk=marketOf(tm.cityDay);
  if(mk){const at=(tm.transit?.pack?.stops||[]).filter(s=>s.name===mk.name);
   tm.market=at.length?{...mk,lat:at.reduce((a,s)=>a+s.lat,0)/at.length,lon:at.reduce((a,s)=>a+s.lon,0)/at.length}:mk;}
  else tm.market=null;}
 tm.challenge.market=tm.market;
-tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayFor(tm.cityDay,HEADWAY_MIN),ticksPerDay:tm.flow.clock.ticksPerDay});tm.challenge.reachable=o=>reachableSoon(tm,o);tm.challenge.estimate=o=>planCost(tm,o);tm.planCostFrom=(from,to)=>planCost(tm,{stops:[from,to],cargo:tm.challenge.active?.cargo});tm.planEstimateOf=plan=>planEstimate(tm,plan);tm.shiftLog=new ShiftLog(tm);tm.trails=new Trails();tm.challenge.refreshOffers();tm.transferHubs=TRANSFER_HUBS;tm.walkStreets=WALK_STREETS;tm.walksFrom=walksFrom;tm.mobility=new MobilityController(tm);tm.interceptionOptions=()=>interceptionOptions(tm);tm.bestInterception=()=>bestInterception(tm);// THE CITY YOU KNOW. You know a way on foot when you have been to BOTH ends
+tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayFor(tm.cityDay,HEADWAY_MIN),ticksPerDay:tm.flow.clock.ticksPerDay,speedFactor:tm.weather?.speed||1});tm.challenge.reachable=o=>reachableSoon(tm,o);tm.challenge.estimate=o=>planCost(tm,o);tm.planCostFrom=(from,to)=>planCost(tm,{stops:[from,to],cargo:tm.challenge.active?.cargo});tm.planEstimateOf=plan=>planEstimate(tm,plan);tm.shiftLog=new ShiftLog(tm);tm.trails=new Trails();tm.challenge.refreshOffers();tm.transferHubs=TRANSFER_HUBS;tm.walkStreets=WALK_STREETS;tm.walksFrom=walksFrom;tm.mobility=new MobilityController(tm);tm.interceptionOptions=()=>interceptionOptions(tm);tm.bestInterception=()=>bestInterception(tm);// THE CITY YOU KNOW. You know a way on foot when you have been to BOTH ends
 // of it — seeing a stop is what teaches you where it is. Owned here because
 // knowledge.js is pure and the mobility controller only needs to ask.
 tm.visited=loadVisited();
@@ -93,5 +97,5 @@ const rideStatus=()=>{const ch=tm.challenge,el=tm.sheetSlot?.('rideStatus');if(!
   if(!ch?.active||st?.kind!=='riding'||!ch.queued){if(el.innerHTML)el.innerHTML='';return;}
   const html=`<div style="margin-top:8px;padding:8px;border:2px solid #e2683c;border-radius:8px;background:#fff8ef;font-size:11px"><b>SECOND JOB ONBOARD</b> → ${ch.name(ch.queued.originalStops?.[1]||ch.queued.stops[1])}</div>`;
   if(el.innerHTML!==html)el.innerHTML=html;};
-const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,filter=tm.fleetFilter?.();tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,priority:l=>rel.has(l?.name)||rel.has(l?.id)?2:1,budget})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
+const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,priority:l=>rel.has(l?.name)||rel.has(l?.id)?2:1,budget})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
 mount();
