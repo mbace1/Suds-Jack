@@ -141,7 +141,7 @@ the gate can only prove it is there and at level.
 
 He is the traced master and nothing else (`toko/BRAND.md` §2c): an enamel
 badge — the brand's own face-on-a-disc carrier — with the four traced shapes
-extruded onto it, rendered by three.js into a square the anchor lays on the
+extruded onto it (`toko/js/toko3d.js`, shared with Toko Live), rendered by three.js into a square the anchor lays on the
 desk. The camera moves are the anchor's (push-in, crash zoom); he turns toward
 the sentence's hand-side (`gesture` → yaw), nods (`nod` → pitch), tilts on the
 take and pops toward the lens (`hands` → scale). The enamel is magenta while he

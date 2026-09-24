@@ -1,4 +1,7 @@
-// Radio Free Helsinki — Toko in three dimensions.
+// TOKO MIDORI GAMES — Toko in three dimensions.
+//
+// Shared: Radio Free Helsinki's film (radiofree/js/export.js) and Toko Live's
+// stage (toko-live/main.js) both draw him from here.
 //
 // WHAT HE IS MADE OF, and why nothing else. The only original art of Toko is
 // his FACE, and since 2026-09-24 the repository holds the owner's master of it
@@ -16,11 +19,12 @@
 // master has no pupils, so nothing is added for "open") — and the whole badge
 // turns, nods, tilts and pops.
 //
-// three.js (r167, vendored, MIT) is loaded LAZILY, only by the film export,
-// exactly like mediabunny: never on the feed, never precached.
+// three.js (r167, vendored at toko/vendor/, MIT) is loaded LAZILY, on first
+// use: Radio Free's feed never loads it (only its film export does), and a page
+// that cannot get it falls back to the flat badge (`drawMasterBadge`).
 
-import { MASTER, SHAPES, masterBounds, pivots, fillMaster, BADGE_INK } from '../../toko/js/master.js';
-import { TOKO, WAYS } from '../../toko/js/palette.js';
+import { MASTER, SHAPES, masterBounds, pivots, fillMaster, BADGE_INK } from './master.js';
+import { WAYS } from './palette.js';
 
 const VENDOR = '../vendor/three.module.min.js';
 const FOV = 24, CAM_Z = 5.8;

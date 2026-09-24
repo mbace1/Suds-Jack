@@ -1,5 +1,27 @@
 # Toko Live versions
 
+## v47 — 2026-09-24
+
+**Toko is his face.** The owner supplied the master artwork of Toko's face and
+the canon that goes with it (`toko/BRAND.md` §2c, `CANON.md` here): the face is
+the only original art of him, magenta is his original colour, any of the
+carrier colours is still the original Toko, and a colour may carry a mood.
+The figure this stage drew — a dark hood, arms with magenta hands, a ring head
+— was an assistant's drawing, so it is gone.
+
+He is now the master face, traced to exact outlines (`toko/js/master.js`), as
+the brand's badge: a lacquered enamel pin in three.js (`toko/js/toko3d.js`,
+shared with Radio Free Helsinki; three.js r167 vendored in `toko/vendor/`),
+drawn flat with the same outlines until WebGL arrives or if it never does. He
+turns toward the card you point at or have in focus, blinks, breathes the smile
+while talking, tilts while thinking, and pops when pleased — and his colour
+follows the mood: magenta at rest, **sky** thinking, **yellow** pleased (the
+master file's own carrier), **red** on a glitch. The room glow follows him.
+
+The brain, the cards and the conversation are unchanged. Verified in a browser
+against the deployed tree: the badge renders in 3D, the cards spawn around him
+exactly as before (they ran off the right of the stage before this change too).
+
 ## v46 — 2026-09-10
 
 **The menu had two owners, and the fight took the page.** With v45's brain

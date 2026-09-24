@@ -1,8 +1,8 @@
 // Radio Free Helsinki — reusable broadcast-direction overlays.
 // Tiny fixed-grid interventions: human foreground life and transmission cuts.
 
-import { PAL } from './palette.js?v=69';
-import { mix, shade } from './screen.js?v=69';
+import { PAL } from './palette.js?v=70';
+import { mix, shade } from './screen.js?v=70';
 
 const W = 128, H = 152;
 

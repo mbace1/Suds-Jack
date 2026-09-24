@@ -65,8 +65,8 @@
     "from": "World beyond Old Gate \u2014 Pale Reach + Hollow Spire"
   },
   "radiofree": {
-    "v": "69",
-    "n": 69000,
+    "v": "70",
+    "n": 70000,
     "from": "cache token"
   },
   "tokomove": {
@@ -140,8 +140,8 @@
     "from": "VERSIONS.md"
   },
   "tokolive": {
-    "v": "46",
-    "n": 46000,
+    "v": "47",
+    "n": 47000,
     "from": "VERSIONS.md"
   },
   "optionc-lab": {

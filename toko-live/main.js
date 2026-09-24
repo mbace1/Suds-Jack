@@ -1,6 +1,19 @@
 import { mountChat } from '../toko/js/chat.js?v=23';
-import { drawFace } from '../toko/js/face.js';
-import { TOKO } from '../toko/js/palette.js';
+import { drawMasterBadge } from '../toko/js/master.js';
+import { WAYS, STICKER } from '../toko/js/palette.js';
+import { makeToko3D } from '../toko/js/toko3d.js?v=1';
+// TOKO IS HIS FACE (toko/BRAND.md §2c, toko-live/CANON.md). The figure this
+// stage used to draw — a dark hood, arms with magenta hands, a ring head — was
+// an assistant's drawing, not his. He is the owner's master face, traced
+// (toko/js/master.js), as the brand's badge: in 3D when WebGL is there, flat
+// until it arrives or if it never does. Magenta is his original colour; the
+// carrier colours are still him and may carry a mood — so he thinks in SKY,
+// is pleased in YELLOW (the master file's own colour) and glitches in RED.
+let t3d = null;
+makeToko3D(600).then(x => { t3d = x; }).catch(e => console.warn('[toko-live] 3D Toko unavailable, drawing him flat:', e && e.message));
+const MOOD = { thinking: STICKER.SKY, pleased: STICKER.YELLOW, glitch: STICKER.RED };
+const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
+let yawS = 0, pitchS = 0;
 const slot=document.querySelector('#chat-slot'),chat=mountChat(slot,{where:'in',openOnLoad:true});window.__tokoLiveChat=chat;
 // The brain, loaded one layer at a time and ALLOWED TO BE ABSENT.
 // This was a chain of bare `await import`s, and that is how the whole page
@@ -46,7 +59,27 @@ function layoutCard(i,cx,cy){if(crossPair)return i===0?{x:58,y:130,w:272,h:245,a
 function drawTabs(r,c,i){if(!crossPair)return;const names=['PROJECT','WHY','NEXT'],tw=(r.w-16)/3;names.forEach((n,k)=>{ctx.fillStyle=k===c.slot?'#f0027f':'rgba(255,255,255,.12)';ctx.fillRect(r.x+8+k*tw,r.y+r.h-52,tw-2,17);ctx.textAlign='center';ctx.font='8px Courier New';ctx.fillStyle=k===c.slot?'#fff':'#aaa';ctx.fillText(n,r.x+8+k*tw+(tw-2)/2,r.y+r.h-40)});ctx.textAlign='right';ctx.font='8px Courier New';ctx.fillStyle='#fff';ctx.fillText(i===focusIndex?'ACTIVE · TAP TO CYCLE':'TAP TO CYCLE',r.x+r.w-9,r.y+15)}
 function drawCards(cx,cy){rects=[];cards.forEach((c,i)=>{const r=layoutCard(i,cx,cy);rects.push(r);ctx.save();ctx.globalAlpha=r.alpha;rr(r.x,r.y,r.w,r.h,6,hover===i?'rgba(43,12,33,.98)':'rgba(7,7,11,.94)');ctx.strokeStyle=i===focusIndex||i===compareIndex?'#fff':i?'#4a2940':'#f0027f';ctx.lineWidth=i===focusIndex||i===compareIndex?2:1;ctx.strokeRect(r.x,r.y,r.w,r.h);icon(c.visual,r.x+8,r.y+8,r.w-16,r.h-(crossPair?88:58));ctx.textAlign='left';ctx.font='8px Courier New';ctx.fillStyle='#f0027f';ctx.fillText(c.tag,r.x+10,r.y+r.h-(crossPair?67:38));ctx.textAlign='center';ctx.font='bold 12px Courier New';ctx.fillStyle='#fff';ctx.fillText(c.project||c.t,r.x+r.w/2,r.y+r.h-(crossPair?55:23));if(!crossPair){ctx.font='9px Courier New';ctx.fillStyle='#aaa';ctx.fillText(c.s,r.x+r.w/2,r.y+r.h-10)}drawTabs(r,c,i);ctx.restore()});if(crossPair){ctx.textAlign='center';ctx.font='bold 18px Courier New';ctx.fillStyle='#f0027f';ctx.fillText('↔',360,252)}}
 function limb(x,y,l,a){ctx.save();ctx.translate(x,y);ctx.rotate(a);rr(-15,0,30,l,13,'#0c0c10');ctx.fillStyle='#f0027f';ctx.beginPath();ctx.arc(0,l,13,0,7);ctx.fill();ctx.restore()}
-function draw(t){ctx.clearRect(0,0,720,720);gaze+=(mx-gaze)*.05;const cx=360+gaze*12,cy=265+my*5+Math.sin(t*.0017)*5;drawCards(cx,cy);ctx.save();ctx.translate(cx,382+Math.sin(t*.0012)*4);ctx.fillStyle='#101015';ctx.beginPath();ctx.moveTo(-138,58);ctx.quadraticCurveTo(-120,-40,-72,-58);ctx.lineTo(72,-58);ctx.quadraticCurveTo(120,-40,138,58);ctx.lineTo(106,188);ctx.lineTo(-106,188);ctx.closePath();ctx.fill();let[la,ra]=pose(t);if(crossPair){if(focusIndex===0){la=-1.03;ra=.35}else{la=-.35;ra=1.03}}else{const target=hover>=0?rects[hover]:(focusIndex>=0?rects[focusIndex]:null);if(target){const tx=target.x+target.w/2;la=tx<cx?-1.02:-.12;ra=tx>=cx?1.02:.12}}limb(-108,28,128,la);limb(108,28,128,ra);ctx.restore();ctx.save();ctx.translate(cx-118,cy-118);ctx.fillStyle=TOKO.MAGENTA||'#f0027f';ctx.beginPath();ctx.arc(118,118,112,0,7);ctx.fill();ctx.fillStyle='#050507';ctx.beginPath();ctx.arc(118,118,94,0,7);ctx.fill();let o=.08;if(performanceState==='talking'||performanceState==='pleased')o=.12+Math.max(0,Math.sin((t-answerStart)*.019))*.45;if(performanceState==='thinking')o=.02;if(performanceState==='glitch')o=.72;drawFace(ctx,18,18,200,{color:'#fff',open:o});ctx.restore();ctx.font='12px Courier New';ctx.fillStyle='rgba(240,2,127,.72)';ctx.fillText(`${semanticMode.toUpperCase()} / ${performanceState.toUpperCase()} / ${crossPair?`${SLOT_NAMES[crossSlots[0]]} ↔ ${SLOT_NAMES[crossSlots[1]]}`:focusIndex>=0?(compareIndex>=0?'COMPARE':'FOCUS'):'ROOM'}`,24,694)}
+function draw(t){ctx.clearRect(0,0,720,720);gaze+=(mx-gaze)*.05;const cx=360+gaze*12,cy=265+my*5+Math.sin(t*.0017)*5;drawCards(cx,cy);
+  const st=performanceState,R=128,ground=MOOD[st]||WAYS.SIGN.ground;
+  // where he looks: the card under the pointer or in focus, else the pointer
+  const target=hover>=0?rects[hover]:(focusIndex>=0?rects[focusIndex]:null);
+  const wantYaw=target?Math.max(-.55,Math.min(.55,((target.x+target.w/2)-cx)/360)):gaze*.22;
+  const wantPitch=(target?((target.y+target.h/2)-cy)/900:my*.1)+(st==='thinking'?-.12:0);
+  yawS+=(wantYaw-yawS)*.08;pitchS+=(wantPitch-pitchS)*.08;
+  // the mark's own acting: a blink every few seconds, the smile breathing while he talks
+  const bt=t%4700,squash=bt<150?1-Math.sin(bt/150*Math.PI)*.94:1;
+  const talk=(st==='talking'||st==='pleased')?Math.max(0,Math.sin((t-answerStart)*.019)):0;
+  const grin=1+talk*.07+(st==='pleased'?.04:0);
+  const roll=st==='thinking'?-.12+Math.sin(t*.0011)*.03:st==='glitch'?Math.sin(t*.09)*.08:Math.sin(t*.0009)*.02;
+  const pop=(st==='pleased'?1.06:1)+talk*.015;
+  const jx=st==='glitch'?(Math.random()-.5)*10:0;
+  // his light on the room
+  const g=ctx.createRadialGradient(cx,cy,R*.5,cx,cy,R*2.6);g.addColorStop(0,hexA(ground,.34));g.addColorStop(1,hexA(ground,0));ctx.fillStyle=g;ctx.fillRect(0,0,720,720);
+  // his shadow
+  ctx.save();ctx.globalAlpha=.4;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(cx+18,cy+16,R*pop*Math.cos(yawS),R*pop,roll,0,7);ctx.fill();ctx.restore();
+  if(t3d){const img=t3d.render({squash,grin,yaw:yawS,pitch:pitchS,roll,pop,key:ground===WAYS.SIGN.ground?'#9fd8ff':ground,ground});const size=R*2*t3d.half;ctx.drawImage(img,cx-size/2+jx,cy-size/2,size,size);}
+  else{ctx.save();ctx.translate(cx+jx,cy);ctx.rotate(roll);ctx.scale(pop*Math.cos(yawS),pop);drawMasterBadge(ctx,0,0,R,{ground,ink:WAYS.SIGN.ink,squash,grin});ctx.restore();}
+  ctx.font='12px Courier New';ctx.fillStyle='rgba(240,2,127,.72)';ctx.fillText(`${semanticMode.toUpperCase()} / ${st.toUpperCase()} / ${crossPair?`${SLOT_NAMES[crossSlots[0]]} ↔ ${SLOT_NAMES[crossSlots[1]]}`:focusIndex>=0?(compareIndex>=0?'COMPARE':'FOCUS'):'ROOM'}`,24,694)}
 function loop(t){if(until&&t>until){performanceState='listening';label.textContent=`${semanticMode.toUpperCase()} / LISTENING`;until=0}draw(t);requestAnimationFrame(loop)}requestAnimationFrame(loop);
 const log=document.querySelector('.toko-chat .tc-log');if(log)new MutationObserver(ms=>{for(const n of ms.flatMap(m=>[...m.addedNodes]).filter(n=>n.nodeType===1)){const text=(n.textContent||'').trim(),who=n.classList.contains('tc-you')?'you':n.classList.contains('tc-me')?'me':null;if(!text||!who)continue;const matches=pfs(text);if(matches.length>=2&&/compare|versus|\bvs\b|difference|relationship|between/i.test(text))spawnCross(matches[0],matches[1]);else if(matches.length===1&&(!focus||matches[0][0]!==focus[0]))spawn(matches[0]);if(who==='you'&&/^(no|actually|correction|you are wrong|that is wrong|not quite)/i.test(text))setPerformance('glitch',1700,'CORRECTION RECEIVED.');else if(who==='you')setPerformance('thinking',1100,crossPair?`COMPARING ${crossPair[0][0]} AND ${crossPair[1][0]}.`:'SEARCHING MEMORY AND PROJECT EVIDENCE.');else setPerformance(/good|yes|right|favourite|beaut|fun|thank/i.test(text)?'pleased':'talking',Math.min(4300,1300+text.length*11),text,text)}}).observe(log,{childList:true,subtree:true});
 document.querySelectorAll('[data-say]').forEach(b=>b.addEventListener('click',()=>say(b.dataset.say)));
