@@ -1,4 +1,4 @@
-import { buildBed } from './bed.js?v=222';   // v267 THE WORLD BED
+import { buildBed } from './bed.js?v=223';   // v267 THE WORLD BED
 // Arcade game-show announcer (v109): original soap-themed lines in the spirit
 // of the classic arena shooters, spoken via the browser's speech synthesis.
 // Deliberately NOT an imitation of any real person's voice — it uses whatever
@@ -134,7 +134,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=222', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=223', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;

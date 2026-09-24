@@ -7,6 +7,67 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v268 — 2026-09-24
+**THE PLAY READER: what a person did — where they stop, whether they go again, what they leave on the floor** *(owner: "all in order" — leap 4 of 5)*
+- **Every number this game had through v267 came from a bot**: the soak, the
+  campaign curve, the weapon table, the world rules. A bot never hesitates,
+  takes every pod it drives over and never closes the tab, so no bot can answer
+  the questions the design turns on. `js/playlog.js` reads a real session:
+  - **where people STOP** — which is not the same event as dying. A run the
+    page leaves mid-fight is filed with the world, wave and mode it was in;
+  - **whether they go again** — seconds from the death screen to the next run,
+    and how many deaths were followed by one;
+  - **what is offered and never taken** — weapon pods by family (taken, left
+    to time out), gates offered and dashed;
+  - **where they hesitate** — the title before the first run, the campaign list
+    before a pick;
+  - **where they die** — by world, and what killed them.
+- **A quit is counted only when it is one.** A tab hidden mid-run files what
+  the run looked like but leaves it open: a pocketed phone comes back, and a
+  page restored from the back/forward cache does too. It becomes a quit only if
+  that run never reports again — once, however many times it was hidden first.
+  "Went again" counts restarts after a DEATH: the next campaign room after a
+  clear is the campaign working, not a retry. A pod family never offered is
+  absent, not refused, and is never listed as "never taken".
+- **Local only**, like TURF's reader and the site's `hub/playlog.js` it writes
+  through ("nothing is uploaded"). A run writes one compact line to the shared
+  log (mode, world, wave, seconds, outcome) — one per run and one per quit — and
+  keeps its detail in its own store (`tokoDropPlay.v1`, last 400 records).
+  Test runs and the editor's own playtests are authoring, not play: not read.
+  The clock is the REAL one (`Date.now`): hesitation is the player's time, and
+  the harnesses fake the game's.
+- **Where to read it**: RUN HISTORY now has a **HOW YOU PLAY** panel — the
+  headline (in en/ja/fi) and the counts. `_play()` in the console prints the
+  full report, beside `_feedback()`. The headline takes the first rule that
+  fires, in this order: stopped mid-run in a third or more of plays (and where);
+  went again after under half the deaths; took under 40% of five or more pods;
+  dashed under 20% of five or more gates; else "goes again, takes the kit, and
+  never walks away mid-run".
+- **Two new gates.** `scripts/playlog-check.mjs` (bare node, **35 checks**):
+  a scripted afternoon — two page loads, six plays — through the reader on a
+  fake clock, every number of the report pinned, and a negative control per
+  rule (the records altered so it must fire). Six mutants of the reader (quits
+  not deduped, an abandon that closes the run, restarts after clears counted,
+  every hide shared, absent families called refused, the store unbounded) each
+  turn it red. `scripts/playlog-smoke.sh` (**17 checks**): a real session in
+  Chromium — the title read, the ARCADE door, a pod taken and one left to
+  expire, a wave, a kill, a death to a TORO, the death screen read, ARCADE
+  again, a tab hidden and brought back, a tab closed mid-run, a RELOAD, the
+  CAMPAIGN door, the list read, a room cleared, the run history. Negative
+  control: with the pod-taken and death hooks deleted from `main.js` it fails
+  **11 of 17** — and the panel read "Stopped mid-run 3 of 4 times", which is
+  exactly the confident wrong report the gate exists to prevent: a reader that
+  stops hearing the game does not go quiet, it lies.
+- Trap, for the next browser harness: `page.goto(sameUrl)` on a URL with a
+  `#hash` is a same-document navigation — no new page, no new module state. The
+  first run of the smoke "reloaded" that way and tested nothing; it uses
+  `page.reload()`.
+- **What it cannot say yet: anything.** It ships empty. The numbers arrive when
+  people play, on the devices they play on.
+- Cache-bust `?v=222` → `?v=223`; HUD label → v268
+
+---
+
 ## v267 — 2026-09-24
 **SOUND PER WORLD: a continuous synthesised bed for every world, that answers to the world's rule, rises for the boss, and crossfades in the fall** *(owner: "all in order" — leap 3 of 5)*
 - **Toko Drop had no music at all.** Every sound through v266 was a one-shot

@@ -1,20 +1,21 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=222';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=222';
-import { Player, PLAYER_RADIUS } from './player.js?v=222';
+import { InputManager } from './input.js?v=223';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=223';
+import { Player, PLAYER_RADIUS } from './player.js?v=223';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=222';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=222';
-import { audio } from './audio.js?v=222';
-import { haptics } from './haptics.js?v=222';
-import { initDesigner } from './designer.js?v=222';
-import { createSpecimen } from './specimen.js?v=222';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=222';
-import { TUNING } from './tuning.js?v=222';
-import { Arena, rectShape } from './arena.js?v=222';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=222';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=222';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=222';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=223';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=223';
+import { audio } from './audio.js?v=223';
+import { haptics } from './haptics.js?v=223';
+import { initDesigner } from './designer.js?v=223';
+import { createSpecimen } from './specimen.js?v=223';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=223';
+import { TUNING } from './tuning.js?v=223';
+import { Arena, rectShape } from './arena.js?v=223';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=223';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=223';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=223';   // v237/v239: authored levels
+import { createReader, summarise as summarisePlay, hubEmitter, localStore } from './playlog.js?v=223';   // v268: what a PERSON did
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -432,7 +433,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '267';
+const GAME_VERSION = '268';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -2249,6 +2250,7 @@ class Powerup {
     this._type = type;
 
     const wpDef = WEAPON_PODS[type];
+    if (wpDef) playReader.podOffered(wpDef.fam);   // v268: what was on the floor, by family
     const orbColor = wpDef ? wpDef.color : (NON_WEAPON_COLORS[type] ?? 0xffffff);
     this.mat = new THREE.MeshBasicMaterial({ color: orbColor, transparent: true, opacity: 0.9 });
     const orbR = wpDef ? (wpDef.level === 2 ? 0.45 : 0.38) : 0.38;
@@ -4356,6 +4358,7 @@ const TYPE_KEY = Object.fromEntries(Object.entries(EnemyType).map(([k, v]) => [v
 
 function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are marked
   if (customLevel) customLevel.kills++;   // v237: the editor's result line
+  playReader.kill(!!e._isBoss);           // v268
   rush.kill();   // v227: every Rush kill counts toward the level's PAR (no-op outside Rush)
   recordPop(e.position.x, e.position.z);   // v228: the floor rings out where it happened
   // VOLATILE affix (v145): the fuse pays off — a slow 8-bullet ring from the
@@ -4794,6 +4797,7 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
   const hpBefore = player.hp;
   _hitFlashT = 0.32;
   player.hit();
+  playReader.hit();  // v268
   weaponTakeHit();   // v262: level 2 is clean play, and a hit is not clean
   if (customLevel) customLevel.hits = (customLevel.hits || 0) + 1;         // v265: a room's grade reads it
   if (customLevel?.room?.goal === 'flawless') customLevel.failed = true;   // v265
@@ -5274,6 +5278,31 @@ function classicRound() { return !inCabinet() && !smashMode && !customLevel && !
 // from the last death screen to this run's start, so restart rate is a
 // number, not a feeling.
 let _deathAt = 0, restartGap = null;
+// v268 THE PLAY READER: every number before this came from a bot. This one
+// reads a person — where they stop, whether they go again, what they leave on
+// the floor. The REAL clock (Date.now), never performance.now: hesitation is
+// the player's time, and the harnesses fake the game's. Local only.
+let _hubSend = null;
+hubEmitter().then(f => { _hubSend = f; });
+const playReader = createReader({ now: () => Date.now(), store: localStore(),
+                                  send: (...a) => { if (_hubSend) _hubSend(...a); } });
+// what this run IS, in one word, and the world it is in (null: no depth world)
+function playMode() {
+  if (customLevel) return customLevel.room ? 'campaign' : 'level';
+  return nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding'
+       : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : rush.on ? 'rush'
+       : roguelikeMode ? 'roguelike' : smashMode ? 'smash' : 'arcade';
+}
+// a page that goes away mid-run — pocketed, switched away from, closed. The run
+// stays open (see abandon() in playlog.js): it is a quit only if it never comes back.
+addEventListener('pagehide', () => playReader.abandon('leave'));
+document.addEventListener('visibilitychange', () => { if (document.hidden) playReader.abandon('hidden'); });
+// the console's way in, beside window._feedback: _play() prints the report
+window._play = () => { const r = summarisePlay(playReader.records()); console.log(r.text ?? r.headline?.text, r); return r; };
+function playWorld() {
+  if (customLevel) return TUNING.depth.looks[customLevel.room?.look ?? 0]?.name ?? null;   // playLevel sets the look after startGame
+  return classicRound() ? (TUNING.depth.looks[_depthIdx]?.name ?? null) : null;
+}
 let _frontLandedAt = -99;   // v257: waveTimer when the last pulse began landing
 let _liveCap = 99, _pumpHold = 0;   // v258: the live-floor ceiling, and how long a front has waited on it
 // v138: gates teach themselves — a DASH! tag hangs over every gate until the
@@ -6453,6 +6482,23 @@ function showRunHistory() {
     panel.appendChild(list);
   }
 
+  // v268 HOW YOU PLAY: the play reader's summary. Not scores — what a person
+  // DID: stopped mid-run, went again, left the kit on the floor.
+  const rep = summarisePlay(playReader.records());
+  if (rep.plays) {
+    const box = document.createElement('div');
+    box.id = 'rh-play';
+    box.style.cssText = 'width:min(440px,86vw);margin-bottom:18px;padding:10px 12px;border-radius:8px;box-sizing:border-box;' +
+      'border:1px solid rgba(136,170,255,0.35);background:rgba(20,30,60,0.35);font-size:11px;line-height:1.55;';
+    const h = rep.headline;
+    box.innerHTML =
+      `<div style="font-size:12px;font-weight:bold;letter-spacing:2px;color:#aaccff;margin-bottom:4px">${t('plTitle')}</div>` +
+      `<div style="margin-bottom:6px">${t('pl_' + h.id, ...h.args)}</div>` +
+      `<div style="opacity:0.6">${t('plStats', rep.plays, rep.quits, rep.wentAgain, rep.deaths,
+                                    rep.pods.podsTaken, rep.pods.podsOffered, rep.gates.dashed, rep.gates.offered)}</div>`;
+    panel.appendChild(box);
+  }
+
   const closeBtn = document.createElement('div');
   closeBtn.id = 'rh-close';
   closeBtn.dataset.ui = '1';
@@ -7171,6 +7217,7 @@ function spawnWave(carry = false) {
     if (di !== _depthIdx) { _depthChanged = wave > 1; applyDepthLook(di); if (_depthChanged && !_justDropped) roomFadeT = 0.55; }
     _justDropped = false;
   }
+  playReader.wave(wave, playWorld());   // v268: where they are when they stop
   // v197 FLUID archetypes: name the wave's current so the lab stays legible.
   // v211: the wave CURRENT is arena choreography, not species identity — so it
   // belongs to classic waves and sits out the cabinets, which each script their
@@ -7272,6 +7319,7 @@ function spawnWave(carry = false) {
     if (live.length >= 2) live[0]._retireT = TUNING.waves.gateRetire ?? 4;
     // v175: from wave 5 some gates run the RISK cycle; from 10 they wander
     gates.push(new Gate(scene, wave >= 5 && rng() < 0.35, wave >= 10));
+    playReader.gateOffered();   // v268
   }
 
   // GAUNDROP remake (v156): a REAL tile dungeon per level — drunkard-walk
@@ -8775,6 +8823,11 @@ function startGame() {
     _loHeavyArmed = false;
     BULLET_CONFIG.playerBulletScale *= 1.2;
   }
+  // v268: the reader opens the run (test runs and the editor's playtests are authoring, not play)
+  if (!testMode && !editor) {
+    const R = customLevel?.room;
+    playReader.start({ mode: playMode(), melee: meleeRun, room: R?.id ?? null, goal: R?.goal ?? null, world: playWorld(), wave: 1 });
+  }
   // LOADOUT holds mission 1 until the door pick — the pick itself calls
   // spawnWave() (loMission is 0 only between startLoadout and that pick).
   if (!(loadoutMode && loMission === 0)) spawnWave();
@@ -8852,6 +8905,7 @@ function endLevelRun(outcome) {
   if (campaignRoom) {
     const room = campaignRoom; campaignRoom = null;
     const grade = campaignGrade(room.room, room.level, result);
+    playReader.end({ outcome, grade });   // v268: no-op if the death screen already filed it
     campaignRecord(room.level.id, grade, result.score, result.kills);
     arenaOverride = null;
     applyArenaMode(landscapeMode);
@@ -8859,6 +8913,7 @@ function endLevelRun(outcome) {
     showCampaign({ id: room.level.id, name: room.level.name, grade, kills: result.kills, score: result.score });
     return;
   }
+  playReader.end({ outcome });   // v268 (a ?level= run; the editor's are never opened)
   // v239: a ?level= run with no editor over it goes back to the title.
   arenaOverride = null;
   applyArenaMode(landscapeMode);
@@ -8871,6 +8926,7 @@ let lastLevelResult = null;
 // different contents rather than a new game state, so pause, resize, the
 // arena framing and the way home all keep working without learning about it.
 function showCampaign(justPlayed = null) {
+  if (!onCampaign || justPlayed) playReader.pickOpened();   // v268: how long the list is read (a resize re-draws it; that is not a new look)
   onCampaign = true;
   // the HUD canvas holds whatever was last painted, and nothing repaints it at
   // the title — so a room that just ended leaves its banner, hearts and sticks
@@ -8933,6 +8989,7 @@ function showCampaign(justPlayed = null) {
         const go = async e => {
           e.stopPropagation(); e.preventDefault();
           row.style.opacity = '0.5';
+          playReader.picked(r.id);   // v268
           try {
             const level = await loadBundledLevel(r.id);
             campaignRoom = { level, room: r };
@@ -8955,6 +9012,7 @@ function showCampaign(justPlayed = null) {
 
 function triggerGameOver() {
   _deathAt = performance.now();   // v256: the restart gap starts here
+  playReader.end({ outcome: 'died', killer: _killedBy?.type != null ? _ET_NAMES[_killedBy.type] : (_killedBy?.source ?? null) });   // v268
   if (gauntlet) {                       // died inside a gauntlet: restore state
     smashMode = _gSavedSmash;
     gauntlet = null;
@@ -9329,6 +9387,7 @@ function loop() {
       }
       en.mesh.scale.multiplyScalar(mega ? 1.7 : 1.5); en._radiusMult = mega ? 1.7 : 1.5;
       en.setBoss(en.hp);
+      playReader.bossMet();   // v268
       bossAuras.push(makeBossAura(en));
       // TWIN PRISMS (v174): the pair finds each other on arrival — opposite
       // orbit directions, offset volley clocks, and the survivor-rage link.
@@ -10002,6 +10061,7 @@ function loop() {
         b.hp = Math.ceil(b.hp * 3); b._hpMult = 3;
         b.mesh.scale.multiplyScalar(1.5); b._radiusMult = 1.5;
         b.setBoss(b.hp);
+        playReader.bossMet();   // v268
         bossAuras.push(makeBossAura(b));
         enemies.push(b);
         const sw = new THREE.Mesh(
@@ -10857,7 +10917,10 @@ function loop() {
   // v257: retiring gates fade out and go
   for (let i = gates.length - 1; i >= 0; i--) { const g = gates[i]; if (g._retireT != null && (g._retireT -= dt) <= 0) { g.remove(scene); gates.splice(i, 1); } }
   for (let i = powerups.length - 1; i >= 0; i--) {
-    if (!powerups[i].update(dt, _t)) { powerups[i].remove(scene); powerups.splice(i, 1); }
+    if (!powerups[i].update(dt, _t)) {
+      if (!powerups[i].collected && WEAPON_PODS[powerups[i]._type]) playReader.podExpired();   // v268: left on the floor
+      powerups[i].remove(scene); powerups.splice(i, 1);
+    }
     else if (drop && floor.position.y) { const pu = powerups[i]; pu.mesh.position.y += floor.position.y; if (pu._sprite) pu._sprite.position.y += floor.position.y; }
   }
 
@@ -11101,6 +11164,7 @@ function loop() {
       if (g.hitsPoint(px, pz, PLAYER_RADIUS)) {
         if (player.dashing) {
           if (!gateUsed) { gateUsed = true; localStorage.setItem('tokoDropGateUsed', '1'); }
+          playReader.gateDashed();   // v268
           g.deactivate(scene);
           if (g._risk && !g._green) {
             // v175 RISK gate on red: a harmless dud — the cost is the waste
@@ -11178,6 +11242,7 @@ function loop() {
     if (Math.hypot(dx, dz) < 0.8 + PLAYER_RADIUS) {
       pu.collected = true;
       if (WEAPON_PODS[pu._type]) {
+        playReader.podTaken(WEAPON_PODS[pu._type].fam);   // v268
         equipWeapon(pu._type);
         audio.announce('prize');
       } else if (pu._type === 'invincible') {
@@ -11537,7 +11602,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=222').then(async m => {
+  import('./editor.js?v=223').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -11568,6 +11633,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=222').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=223').catch(() => {});
   });
 }
