@@ -129,6 +129,17 @@ async function main() {
       await page.evaluate(() => window.__rfh.debug.tuneIn());
       await page.waitForFunction(
         () => window.__rfh.debug.stories().length > 0, null, { timeout: 60000 });
+      // The app takes its language from storage or the browser, never the URL,
+      // so `?lang=` above was decoration: the first three-language run wrote
+      // twenty-four clips and every one of them was English. Switch through the
+      // app's own path (the one its buttons call) and refuse to render if the
+      // switch did not take.
+      const got = await page.evaluate(async (want) => {
+        window.__rfh.debug.setLang(want);
+        await new Promise(r => setTimeout(r, 400));
+        return window.__rfh.state.lang;
+      }, lang);
+      if (got !== lang) throw new Error(`asked for ${lang}, the app is in ${got}`);
 
       const info = await page.evaluate(() => ({
         episode: window.__rfh.debug.episode ? window.__rfh.debug.episode() : null,
