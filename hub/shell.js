@@ -1,6 +1,6 @@
 // The arcade shell — one line in a game's index.html and it gets a way home.
 //
-//   <script type="module" src="../hub/shell.js?v=66"></script>
+//   <script type="module" src="../hub/shell.js?v=69"></script>
 //
 // It adds a HOME button in the top-left corner and a controller binding for
 // the same thing, and does nothing else: it installs no key handlers and no
@@ -63,6 +63,39 @@ style.textContent = `
 }
 .arcade-home.holding { opacity: 1; border-color: #35e8d8; }
 @media print { .arcade-home { display: none; } }
+/* TOKO, beside HOME. Only on a touchscreen, and only on a game that lays a
+   table (toko/js/table.js): with a cursor the sticker in the corner is the way
+   to him, and under a thumb that sticker is a picture on purpose — it sits on
+   the stick. The top-left is HUD in every game here, so a second control beside
+   the one that already lives there costs no thumb anything. */
+.arcade-toko {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: calc(max(10px, env(safe-area-inset-left)) + var(--arcade-home-w, 92px) + 8px);
+  z-index: 2147483000;
+  display: none;
+  align-items: center;
+  gap: 7px;
+  box-sizing: border-box;
+  min-height: 44px; min-width: 44px;
+  padding: 10px 13px; margin: 0;
+  font: 12px/1 'Courier New', ui-monospace, Menlo, monospace;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #fff;
+  background: rgba(6, 7, 10, .62);
+  border: 1px solid rgba(240, 2, 127, .55);
+  border-radius: 9px;
+  backdrop-filter: blur(3px);
+  opacity: .55;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
+}
+.arcade-toko .dot { width: 10px; height: 10px; border-radius: 50%; background: #f0027f; }
+@media (hover: none) and (pointer: coarse) {
+  .arcade-toko.on { display: inline-flex; }
+}
 
 /* The on-screen action button. Only on a touchscreen: a game that says "hold
    anywhere" is discoverable with a mouse the moment you click, but under a
@@ -195,7 +228,43 @@ if (entry?.touch?.key) {
   else document.addEventListener('DOMContentLoaded', putBtn, { once: true });
 }
 
+// ── TOKO, for thumbs ────────────────────────────────────────────────────
+// The sticker in the corner seats Toko at the table with a cursor
+// (toko/js/signature.js `table: true`); under a thumb it is inert by design.
+// So where a seat is published, the shell offers it here, beside HOME — the
+// same chrome, the same pointerup-AND-touchend trap, and it never opens twice.
+let tokoBtn = null;
+function offerToko() {
+  const seat = globalThis.__tokoSeat;
+  if (tokoBtn || typeof seat !== 'function') return;
+  tokoBtn = document.createElement('button');
+  tokoBtn.className = 'arcade-toko on';
+  tokoBtn.type = 'button';
+  tokoBtn.setAttribute('aria-label', 'Talk to Toko');
+  tokoBtn.innerHTML = '<span class="dot" aria-hidden="true"></span><span>Toko</span>';
+  let seating = false;
+  const sit = e => {
+    e.preventDefault(); e.stopPropagation();           // the button is not the canvas
+    if (seating || document.querySelector('.toko-table')) return;
+    seating = true; setTimeout(() => { seating = false; }, 400);
+    seat(e);
+  };
+  tokoBtn.addEventListener('pointerup', sit);
+  tokoBtn.addEventListener('touchend', sit);
+  tokoBtn.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
+  const place = () => {
+    document.body.appendChild(tokoBtn);
+    // sit to the right of HOME whatever HOME's width turned out to be
+    const w = home.getBoundingClientRect().width;
+    if (w) tokoBtn.style.setProperty('--arcade-home-w', `${Math.round(w)}px`);
+  };
+  if (document.body) place();
+  else document.addEventListener('DOMContentLoaded', place, { once: true });
+}
+offerToko();                                   // signed before the shell loaded
+addEventListener('toko:seat', offerToko);     // or after
+
 // let a game know the shell is there, in case it wants to hide it during a
 // cutscene or move it out of the way of its own HUD
-window.__arcadeShell = { home, HOME, game: entry?.id ?? null, pad: padCfg ?? null, bridged, touchBtn };
+window.__arcadeShell = { home, HOME, game: entry?.id ?? null, pad: padCfg ?? null, bridged, touchBtn, toko: () => tokoBtn };
 

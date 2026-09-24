@@ -87,6 +87,15 @@ export function sign(opts = {}) {
       .then(m => m.openTable(cfg))
       .catch(err => console.warn('[toko] the table is unavailable:', err && err.message));
   }
+  // Published, because the badge is inert under a thumb by design and a
+  // touchscreen still deserves a way to him: hub/shell.js reads this and puts a
+  // TOKO button beside HOME on coarse pointers. A global rather than an export
+  // for the same reason __tokoTable is one — the page that signs and the shell
+  // that offers are different files loaded in no particular order.
+  if (seat) {
+    globalThis.__tokoSeat = seat;
+    try { dispatchEvent(new CustomEvent('toko:seat')); } catch { /* old browser */ }
+  }
   const live = (!!href || !!seat) && cursor;
 
   const host = document.createElement(live ? 'a' : 'div');
