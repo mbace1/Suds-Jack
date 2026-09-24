@@ -1,7 +1,7 @@
 // Radio Free Helsinki — Pasila rail canyon.
 // Fixed-grid cue scene: station deck, office masses, converging rails and commuter trains.
-import { PAL } from './palette.js?v=68';
-import { mix, shade } from './screen.js?v=68';
+import { PAL } from './palette.js?v=69';
+import { mix, shade } from './screen.js?v=69';
 const W=128,H=152;
 const ink=d=>mix(PAL.GREEN_DIM,PAL.AMBER_DIM,d), hot=d=>mix(PAL.GREEN_HOT,PAL.AMBER_HOT,d);
 export function drawPasila(scr,t,d=0){

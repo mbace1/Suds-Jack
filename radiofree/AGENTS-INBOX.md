@@ -623,3 +623,17 @@ normalised to −16 LUFS and muxed by mediabunny (Opus in headless Chromium).
 `exportPost` reports `audio` and `lufs`; `render-day` writes them to
 `clips.json`; the gate asserts both. A clip now takes ~60 s to render here
 (was ~22 s) — the blurs are done at quarter size or smaller for that reason.
+
+## 2026-09-24 — Toko in 3D, from the original (v69)
+
+Owner: *"make Toko 3D in three.js and check all references for him as 2D art,
+not AI made but original"*, then the master artwork itself (*"this is the exact
+original face shape"*) and the canon (*"magenta is actually the original"*,
+*"original Toko can be any of the colors"*, *"use other colors in different
+contexts or moods"*, *"Toko Slomo's the Kallio Noir version of Toko, valid but
+not original"*). The search found no original art of Toko in the repo but the
+face; every body was assistant-drawn. The master is now in `toko/master/`,
+traced into `toko/js/master.js`; `js/toko3d.js` extrudes that trace onto an
+enamel badge; `js/figure.js` (v67's borrowed Toko Live body) is deleted; the
+feed and sign-off draw the traced face flat. Magenta reading, yellow carrier
+decoded. Canon: `toko/BRAND.md` §2c.

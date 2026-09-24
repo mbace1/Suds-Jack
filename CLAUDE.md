@@ -1453,6 +1453,16 @@ not TTS: one good language of three is worse than none), a sound for every
 event — mastered to **−16 LUFS** (BS.1770, computed in-page) and muxed as
 Opus/AAC; the gate asserts the track and the level. A clip takes ~60 s to
 render here, so every blur runs at quarter size or smaller.
+**v69 — Toko in 3D, from the original.** `js/toko3d.js` (three.js r167,
+vendored, lazy — the film export only, never precached) builds him from the
+traced master and nothing else: the brand's face-on-a-disc badge as a lacquered
+enamel pin, the four traced outlines extruded and bevelled onto it, a key light
+throwing their shadows, rims in the shot's colour. He blinks (eyes squash about
+their foot) and breathes the smile; the master has no pupils, so nothing is
+added for "open". Magenta reading, the **yellow carrier** once decoded — a
+colour carrying a mood, per the canon. The feed and the sign-off draw the same
+traced face flat. ~2.4 min a clip here under SwiftShader; the gate asserts
+`toko3d` on the export.
 **Layout belongs in `index.html`, never in an injected stylesheet.** `package.js`
 used to inject thirty `!important` rules that clamped the headline, deleted the
 second paragraph of every bulletin, and hid the DECODE button, the tally and the
@@ -1460,7 +1470,7 @@ second paragraph of every bulletin, and hid the DECODE button, the tally and the
 separately hard-disabling DECODE behind a setter that threw the value away. If
 the copy does not fit, fix the layout; do not hide the copy.
 **Gates:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs`
-— 85 checks — and `node radiofree/test/film.mjs` (bare node, 11: the plan, the take, the look arc, Toko's acting, and that no headline number is split across runs). It reads `sw.js` with whitespace-tolerant regexes, because that file
+— 86 checks — and `node radiofree/test/film.mjs` (bare node, 11: the plan, the take, the look arc, Toko's acting, and that no headline number is split across runs). It reads `sw.js` with whitespace-tolerant regexes, because that file
 was reformatted once and five shell checks silently graded against `undefined`
 for as long as nobody looked. A gate that cannot parse its own subject produces a
 failure everyone learns to scroll past.
@@ -1548,6 +1558,19 @@ the ruler was wrong. That is the general shape: **a gate that certifies *works* 
 *looks***, so an art change ends in a screenshot, never in a green suite.
 
 ### Toko Midori Games — the brand (`toko/`)
+**THE CANON — read `toko/BRAND.md` §2c before drawing Toko anywhere** (owner,
+2026-09-24). **The original is the face**: the owner's master artwork is in
+`toko/master/`, traced to exact outlines in `toko/js/master.js` by
+`toko/tools/trace-master.cjs` (99.7% pixel overlap) — tall thick arches for
+eyes, slanted stroke ends, two deep U curves; `GEO` in `face.js` is an older
+by-eye measurement that differs on all three. **Magenta is the original
+colour**, **the original Toko can be any of the nine carrier colours**
+(`STICKER`), and **other colours may carry a context or a mood**. **Toko Slomo
+is the Kallio Noir version — valid, not original.** Every body he has been
+given (the magenta bust, Toko Live's hood with magenta hands, the teal gel) was
+assistant-drawn and is not original; `piritori/art/rooms/toko.webp` is
+generated. Toko Live carries the same notes in `toko-live/CANON.md`, and the
+counter answers *WHAT COLOUR ARE YOU?* / *WHO IS TOKO SLOMO?* in fi/en/ja.
 The identity of the workshop, created by **美鳥十湖** (*Toko Midori*, "The Game
 Creator") — the masked artist behind the look of every cabinet here: anarchist,
 retro, pure-gameplay, art-first, using AI out loud while shouting **GO MAKE YOUR
@@ -1690,7 +1713,7 @@ is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
 `toko/index.html` is the **brand board**, built out of the shipping modules.
-`toko/test/brand.cjs` is the gate (Playwright, 185 checks): geometry invariants
+`toko/test/brand.cjs` is the gate (Playwright, 186 checks): geometry invariants
 (slot width, stem/crown merge, mouth-clears-eyes, symmetry), **every rendered
 pixel checked against the two-colour system**, SVG well-formedness + that it
 emits exactly the canvas's arcs at the shipping stroke weight, the sting

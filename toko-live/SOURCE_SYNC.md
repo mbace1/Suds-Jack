@@ -22,3 +22,10 @@ Synced on `main`:
 Rule going forward: make core Toko Live changes on `main`, then carry the exact changed source to `gh-pages`; do not independently fork `main.js` again.
 
 Browser-render validation is still a separate release check; source parity alone does not count as visual/play validation.
+
+## Canon (2026-09-24)
+
+`CANON.md` records the owner's notes on who Toko is — the traced master face,
+magenta as the original colour with every carrier colour still original, other
+colours for contexts and moods, and Toko Slomo as the Kallio Noir version
+(valid, not original). Any change to how this page draws Toko follows it.

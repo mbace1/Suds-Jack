@@ -1,5 +1,23 @@
 # Toko Assistant — patch notes
 
+## 2026-09-24 — the canon, and the master artwork
+
+- **The owner's master artwork is in the repo** (`master/`, white on yellow and
+  yellow on white) and traced to exact outlines in `js/master.js` by
+  `tools/trace-master.cjs` — 99.7% pixel overlap with the traced file, 98.6%
+  with the other. `GEO` is an earlier measurement by eye; surfaces move onto
+  the trace one at a time.
+- **BRAND.md §2c — the canon.** Magenta is the original colour; Toko on any of
+  the nine carriers is still the original Toko; other colours may carry a
+  context or a mood. **Toko Slomo is the Kallio Noir version — valid, not
+  original.** Every assistant-drawn body is listed as not original, and the
+  Piritori room art is flagged as generated.
+- **The counter knows.** Two new topics in all three languages — *What colour
+  are you?* (opened by the mask) and *Who is Toko Slomo?* (opened by the
+  clusters) — and his *"the brand is black and magenta"* line now says magenta
+  is his first colour, not his only. Keys: `COLOUR`/`YELLOW`, `SLOMO`/`NOIR`.
+- Not a brand release: the counter stays `V5`, like the other post-v5 content.
+
 ## 2026-08-28 — project knowledge pass 1
 
 - Added `project-knowledge.js`, a dedicated internal-project knowledge layer separate from general game-history knowledge.

@@ -23,8 +23,9 @@
 // landed on, because "MP4" that turns out to be AV1 is a fact the person
 // uploading it needs.
 
-import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=68';
-import { renderSoundtrack } from './score.js?v=68';
+import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=69';
+import { renderSoundtrack } from './score.js?v=69';
+import { makeToko3D } from './toko3d.js?v=69';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';
 export { W, H };
@@ -62,6 +63,15 @@ export async function pickCodec(M) {
   return c2 ? { codec: c2, format: webm, ext: 'webm' } : null;
 }
 
+// Toko in 3D, made once per page and kept: a WebGL context is a scarce thing
+// and a morning renders a dozen films. If WebGL is missing the film falls back
+// to the flat badge rather than failing.
+let toko3dP = null;
+function toko3d() {
+  if (!toko3dP) toko3dP = makeToko3D(720).catch((e) => { console.warn('toko3d unavailable:', e && e.message); return null; });
+  return toko3dP;
+}
+
 // The canvases a shot can show. The graphic's PANEL, not its card: the card is
 // composed for a phone box and the film composes its own, at an integer scale
 // that makes the 128 px panel the size of the frame rather than a stamp in it.
@@ -97,6 +107,7 @@ export async function exportPost(entry, opts = {}) {
     accent: opts.accent, freq: opts.freq, onAir: t('tag.onair'), fiction: t('fiction'),
   });
   const n = Math.max(1, Math.round(plan.S * fps));
+  const t3d = opts.threeD === false ? null : await toko3d();
 
   const M = await loadMediabunny();
   const pick = await pickCodec(M);
@@ -150,7 +161,7 @@ export async function exportPost(entry, opts = {}) {
       if (pkg.drawn && pkg.drawn.anchor) pkg.drawn.anchor.act = act;
       pkg.update(1 / fps, act.mouth);
       pkg.draw();
-      paintFilm(ctx, plan, tt, shotCanvases(pkg));
+      paintFilm(ctx, plan, tt, { ...shotCanvases(pkg), toko3d: t3d });
       await src.add(tt, 1 / fps);
       if (opts.onProgress && (i % 15 === 0)) opts.onProgress(i / n);
     }
@@ -168,6 +179,7 @@ export async function exportPost(entry, opts = {}) {
     // wants, and the one that told us a reveal had not happened at all
     revealed,
     audio: audioCodec, lufs: sound ? Math.round(sound.after * 10) / 10 : null,
+    toko3d: !!t3d,
     ms: Math.round(performance.now() - t0),
   };
 }

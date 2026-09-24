@@ -137,6 +137,17 @@ K-weighted and gated, computed here — the gate asserts ±1) under a soft
 ceiling. Judge it by ear and by `spec.cjs`-style spectrogram against the plan;
 the gate can only prove it is there and at level.
 
+## Toko in three dimensions (v69)
+
+He is the traced master and nothing else (`toko/BRAND.md` §2c): an enamel
+badge — the brand's own face-on-a-disc carrier — with the four traced shapes
+extruded onto it, rendered by three.js into a square the anchor lays on the
+desk. The camera moves are the anchor's (push-in, crash zoom); he turns toward
+the sentence's hand-side (`gesture` → yaw), nods (`nod` → pitch), tilts on the
+take and pops toward the lens (`hands` → scale). The enamel is magenta while he
+reads and the yellow carrier once decoded. Tone mapping is Neutral, not ACES:
+ACES rolled the magenta toward maroon.
+
 ## The film, shot by shot
 
 Length is **derived from the copy**, never set: `--seconds` is a target the

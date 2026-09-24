@@ -1,24 +1,24 @@
 // Radio Free Helsinki — Toko at the desk.
 //
 // This is the anchor shot for the multi-scene bulletins: B-roll, then a cut to
-// the studio, then back out. Toko is drawn as he is NOW — Toko Live's figure
-// (`figure.js`): the face in white on a black disc inside a magenta ring, a
-// dark hooded body, dark arms and magenta hands. Before 2026-09-24 this shot
-// sat the older all-magenta bust (`drawHead`) at the desk; before that, the
-// teal gel in `toko.js`. Both were retired for the same reason: Toko is one
-// character across the site, and the station does not get its own.
+// the studio, then back out. Toko is his FACE — the owner's master, traced
+// (`toko/js/master.js`), white on magenta, as a badge at the desk; in a film, the same badge in 3D
+// (`js/toko3d.js`). The bodies this shot gave him before (the magenta bust,
+// Toko Live's dark hood with magenta hands, the teal gel in `toko.js`) were
+// assistants' drawings, not his, and are retired: see `subject()`.
 //
-// The face geometry is imported, never copied. `toko/js/face.js` holds the one
-// measured table (`GEO`), and `BRAND.md` records four wrong answers already
-// paid for on the eye alone.
+// The face is imported, never copied: `toko/js/master.js` is the owner's
+// master artwork traced to outlines (toko/tools/trace-master.cjs), 99.7% pixel
+// overlap with the original file in toko/master/.
 //
 // Mirrors Photo's interface — goLive/goIdle/update/draw/renderStatic/decoded/
 // destroy — so main.js drives it without knowing which kind of shot it holds.
 
-import { FIG, drawBody, drawHead as drawFigHead, drawArm, shoulders } from './figure.js?v=68';
+import { drawMasterBadge } from '../../toko/js/master.js';
+import { WAYS, STICKER } from '../../toko/js/palette.js';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=68';
-import { shade, mix } from './screen.js?v=68';
+import { PAL, SECTOR_COLOR } from './palette.js?v=69';
+import { shade, mix } from './screen.js?v=69';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —
@@ -28,16 +28,15 @@ import { shade, mix } from './screen.js?v=68';
 export const ANCHOR_H = 640;              // internal height; width follows the box
 const MIN_ASPECT = 0.40, MAX_ASPECT = 0.75;
 
-// The composition, as fractions. A MEDIUM shot: the head carries the frame,
-// the body falls behind the desk, the forearms rest on it.
+// The composition, as fractions. A MEDIUM shot: the badge carries the frame
+// and the desk hides its chin.
 const L = {
   desk: 0.668,          // the desk edge, as a fraction of H
   plate: 0.760,         // the nameplate strip on the desk front
-  ringW: 0.235,         // the head ring's radius, of W…
-  ringH: 0.132,         // …but never more than this of H
-  filmDesk: 0.52,
-  filmHead: 0.78,       // …and a smaller head, so the camera has room to push in       // a film seats the desk higher: its lower third sits on the desk front
-  seat: 238,            // head centre above the desk edge, in figure units
+  filmDesk: 0.52,       // a film seats the desk higher: its lower third sits on the desk front
+  maskW: 0.27,          // the badge's radius, of W…
+  maskH: 0.155,         // …but never more than this of H
+  maskSit: 0.9,         // centre above the desk edge, in radii: the desk hides his chin
   wall: { x: 0.045, y: 0.052, w: 0.910, h: 0.455 },
 };
 
@@ -187,7 +186,6 @@ export class Anchor {
       this.videoWall(c, t, W, H, key, dim, s);
       this.subject(c, t, W, H);
       this.desk(c, W, H, key, dim, s);
-      this.arms(c, t, W, H);
       this.furniture(c, t, W, H, key, hot, s);
       this.grain(c, W, H);
       if (hot) this.tear(c, t, W, H);
@@ -227,10 +225,9 @@ export class Anchor {
 
     c.save();
     c.translate(cx, cy); c.scale(zoom, zoom); c.translate(-cx, -cy);
-    this.subject(c, t, W, H);
+    this.subject(c, t, W, H, film.toko3d || null);
     this.desk(c, W, H, key, dim, s, true);
     this.reflect(c, t, W, H, key);
-    this.arms(c, t, W, H);
     c.restore();
 
     this.furniture(c, t, W, H, key, hot, s);
@@ -288,8 +285,8 @@ export class Anchor {
     c.translate(a.hx, deskY + R * 0.22);
     c.scale(1, 0.28);
     const g = c.createRadialGradient(0, 0, R * 0.2, 0, 0, R * 1.3);
-    g.addColorStop(0, 'rgba(240,2,127,0.30)');
-    g.addColorStop(1, 'rgba(240,2,127,0)');
+    g.addColorStop(0, withAlpha(a.ground || '#f0027f', 0.30));
+    g.addColorStop(1, withAlpha(a.ground || '#f0027f', 0));
     c.fillStyle = g;
     c.fillRect(-R * 1.4, -R * 1.4, R * 2.8, R * 2.8);
     c.restore();
@@ -390,28 +387,25 @@ export class Anchor {
   }
 
   // ── the person ─────────────────────────────────────────────────────────
-  // Where he sits. The head is sized off the frame and then seated so the
-  // elbows land on the desk edge — the desk decides his height, not the head,
-  // which is what makes the hands rest on it on every aspect.
+  // Toko is his FACE, and nothing else is his. The only original art of him
+  // is the face — the owner's master, traced into `toko/js/master.js`. His
+  // original colour is magenta (white on magenta, SIGN), any carrier colour is
+  // still the original Toko, and a colour may carry a mood (owner,
+  // 2026-09-24; toko/BRAND.md §2c) — so he turns YELLOW, the master file's own
+  // carrier, when he decodes. The bodies he has worn at this
+  // desk (a magenta bust, a dark hood with magenta hands) were assistants'
+  // drawings, and they are gone. So he is the BADGE: on the feed the flat mark,
+  // in a film the same mark as a lacquered 3D pin (`js/toko3d.js`), sitting
+  // at the desk the way a presenter's head rises over one.
   pose(W, H) {
     const deskY = H * (this.deskFrac || L.desk);
-    const R = Math.min(W * L.ringW, H * L.ringH) * (this.deskFrac === L.filmDesk ? L.filmHead : 1);
-    const k = R / FIG.ring;
-    return { k, R, cx: W / 2, cy: deskY - L.seat * k, deskY };
+    const R = Math.min(W * L.maskW, H * L.maskH);
+    return { R, cx: W / 2, cy: deskY - R * L.maskSit, deskY };
   }
 
-  subject(c, t, W, H) {
+  // his face this frame: what the film says, or his own clock on the feed
+  face(t) {
     const act = this.act || {};
-    // A very slow breath under everything. Nothing in a Toko mark is ever
-    // perfectly still, and nothing in one is ever quick either — but a film
-    // can lean him back, nod him on a sentence, and tilt him for a take.
-    const { k, R, cx, cy } = this.pose(W, H);
-    const sway = drift(t, { period: 11 }) * W * 0.008 + (act.lean || 0) * W;
-    const bob = drift(t, { period: 7, phase: 0.3 }) * H * 0.003 + (act.nod || 0) * H * 0.028;
-    const hx = cx + sway, hy = cy + bob;
-    // the body moves less than the head — it is the head that nods
-    const bx = cx + sway * 0.6, by = cy + bob * 0.35;
-
     // Eyes shut and smiling at rest — that closed arch IS the logo. They open
     // while he is reading, because that is the one moment he is looking at
     // somebody; between bulletins he goes back to `glance`.
@@ -420,80 +414,65 @@ export class Anchor {
     const open = act.open != null ? act.open : (speaking ? 1 : glance(t, { every: 11, offset: 0.7 }));
     const squash = act.squash != null ? act.squash : 1 - lid * 0.94;
     const grinK = act.grin != null ? act.grin : 1;
-    this.at = { k, hx, hy, bx, by, tilt: act.tilt || 0 };
+    // the mouth radius breathing: 0.09 is the feed's number, a film drives it
+    // through `act` and asks for 0.26 so the smile visibly works
+    const grin = grinK * (1 + this.mouthSmooth * (act.mouth != null ? 0.26 : 0.09) + drift(t, { period: 6 }) * 0.012);
+    // the master's mouth fills the badge, so its breath is kept to a third of
+    // what the thin measured arcs could take before it reads as a gulp
+    return { open, squash, grin: 1 + (grin - 1) * 0.35 };
+  }
 
-    // his own light on the wall — Toko Live's magenta room glow, kept to a
-    // pool behind the head so the set keeps its colour
+  subject(c, t, W, H, toko3d = null) {
+    const act = this.act || {};
+    const { R, cx, cy } = this.pose(W, H);
+    // a slow breath under everything; the film leans him, nods him, tilts him
+    const sway = drift(t, { period: 11 }) * W * 0.008 + (act.lean || 0) * W;
+    const bob = drift(t, { period: 7, phase: 0.3 }) * H * 0.004 + (act.nod || 0) * H * 0.02;
+    const hx = cx + sway, hy = cy + bob;
+    const f = this.face(t);
+    // the take pops him toward the camera; a sentence turns him toward the
+    // hand-side the film would have gestured on
+    const pop = 1 + 0.14 * (act.hands || 0);
+    const yaw = (act.gesture || 0) * 0.32;
+    this.at = { hx, hy, R };
+    // the mood: magenta reading the broadcast, the yellow carrier once decoded
+    const hot = act.hot !== undefined ? !!act.hot : this.decoded;
+    const ground = hot ? STICKER.YELLOW : WAYS.SIGN.ground;
+    this.at.ground = ground;
+
+    // his own light on the wall behind him
     const glow = c.createRadialGradient(hx, hy, R * 0.6, hx, hy, R * 2.6);
-    glow.addColorStop(0, 'rgba(240,2,127,0.30)');
-    glow.addColorStop(1, 'rgba(240,2,127,0)');
+    glow.addColorStop(0, withAlpha(ground, 0.30));
+    glow.addColorStop(1, withAlpha(ground, 0));
     c.fillStyle = glow;
     c.fillRect(0, 0, W, H * this.deskFrac);
 
-    // the tilt turns the whole figure about the neck, shadow included
+    // the shadow he throws on the wall — the only thing keeping him off it
     c.save();
-    if (act.tilt) { c.translate(hx, hy + R); c.rotate(act.tilt); c.translate(-hx, -(hy + R)); }
-
-    // the shadow the subject throws on the wall — the only thing keeping the
-    // silhouette off the graticule
-    const ox = W * 0.033, oy = H * 0.016;
-    c.save();
-    c.globalAlpha = 0.35;
-    drawBody(c, bx + ox, by + oy, k, { hem: H, shadow: '#020a07' });
-    drawFigHead(c, hx + ox, hy + oy, k, { shadow: '#020a07' });
+    c.globalAlpha = 0.38;
+    c.fillStyle = '#020a07';
+    c.beginPath();
+    c.ellipse(hx + W * 0.03, hy + H * 0.016, R * pop * Math.cos(yaw), R * pop, act.tilt || 0, 0, Math.PI * 2);
+    c.fill();
     c.restore();
 
-    const rim = this.rim || this.accent;
-    drawBody(c, bx, by, k, { hem: H, rim });
-    drawFigHead(c, hx, hy, k, {
-      face: {
-        open,
-        squash,
-        // the mouth radius breathing. 0.09 was the feed's number and it did
-        // not read as speech on a film frame; a film drives it through `act`
-        // and gets a mouth that visibly opens. The resting drift keeps it
-        // alive between characters either way.
-        grin: grinK * (1 + this.mouthSmooth * (act.mouth != null ? 0.26 : 0.09) + drift(t, { period: 6 }) * 0.012),
-      },
-    });
-    c.restore();
-  }
-
-  // The arms go on AFTER the desk: the forearms rest on it. At rest the hands
-  // sit on the desk a little apart; on a sentence one hand lifts and turns
-  // over (the film says which, through `act.gesture`); on the take both go up
-  // beside his face. Toko Live points at cards with the same arms.
-  arms(c, t, W, H) {
-    const act = this.act || {};
-    const a = this.at;
-    if (!a) return;
-    const { k, bx, by, hx, hy } = a;
-    const { deskY } = this.pose(W, H);
-    const [sl, sr] = shoulders(bx, by, k);
-    // the feed has no film to direct him, so he gestures on his own phrase clock
-    const g = act.gesture != null ? act.gesture
-      : (this.mouthSmooth > 0.03 ? Math.sin(t * 0.9) * 0.55 : 0);
-    const up = act.hands || 0;
-    const rim = this.rim || this.accent;
-    c.save();
-    if (a.tilt) { c.translate(hx, hy + FIG.ring * k); c.rotate(a.tilt * 0.5); c.translate(-hx, -(hy + FIG.ring * k)); }
-    for (const [side, s] of [[-1, sl], [1, sr]]) {
-      // rest: on the desk, in front of him
-      let tx = bx + side * 50 * k, ty = deskY + 9 * k;
-      // a gesture: this side's hand comes up and out, with a small beat
-      const gs = Math.max(0, g * side);
-      if (gs > 0) {
-        const beat = Math.sin(t * 7.4) * 6 * k * gs;
-        tx += side * 62 * k * gs;
-        ty += (-112 * k + beat) * gs;
-      }
-      // the take: hands up beside the face, palms out
-      if (up > 0) {
-        tx += (bx + side * 170 * k - tx) * up;
-        ty += (hy + 18 * k - ty) * up;
-      }
-      drawArm(c, s[0], s[1], tx, ty, k, side, { rim, handScale: 1 + up * 0.25 });
+    if (toko3d) {
+      const img = toko3d.render({
+        open: f.open, squash: f.squash, grin: f.grin,
+        yaw, pitch: (act.nod || 0) * 0.35, roll: act.tilt || 0, pop,
+        key: this.rim, hot, ground,
+      });
+      const size = R * 2 * toko3d.half;      // the canvas spans ±half units; the disc is ±1
+      c.save();
+      c.imageSmoothingEnabled = true;
+      c.drawImage(img, hx - size / 2, hy - size / 2, size, size);
+      c.restore();
+      return;
     }
+    c.save();
+    if (act.tilt) { c.translate(hx, hy); c.rotate(act.tilt); c.translate(-hx, -hy); }
+    c.translate(hx, hy); c.scale(pop * Math.cos(yaw), pop); c.translate(-hx, -hy);
+    drawMasterBadge(c, hx, hy, R, { ground, ink: WAYS.SIGN.ink, squash: f.squash, grin: f.grin });
     c.restore();
   }
 
