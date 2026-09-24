@@ -1453,8 +1453,9 @@ not TTS: one good language of three is worse than none), a sound for every
 event — mastered to **−16 LUFS** (BS.1770, computed in-page) and muxed as
 Opus/AAC; the gate asserts the track and the level. A clip takes ~60 s to
 render here, so every blur runs at quarter size or smaller.
-**v69 — Toko in 3D, from the original.** `js/toko3d.js` (three.js r167,
-vendored, lazy — the film export only, never precached) builds him from the
+**v69 — Toko in 3D, from the original.** `toko/js/toko3d.js` (shared with
+Toko Live since v70; three.js r167 vendored in `toko/vendor/`, lazy — the film
+export only, never precached) builds him from the
 traced master and nothing else: the brand's face-on-a-disc badge as a lacquered
 enamel pin, the four traced outlines extruded and bevelled onto it, a key light
 throwing their shadows, rims in the shot's colour. He blinks (eyes squash about
@@ -1569,7 +1570,9 @@ colour**, **the original Toko can be any of the nine carrier colours**
 is the Kallio Noir version — valid, not original.** Every body he has been
 given (the magenta bust, Toko Live's hood with magenta hands, the teal gel) was
 assistant-drawn and is not original; `piritori/art/rooms/toko.webp` is
-generated. Toko Live carries the same notes in `toko-live/CANON.md`, and the
+generated. 3D Toko is `toko/js/toko3d.js` (the traced master as an enamel
+badge); Toko Live's stage draws him with it since its v47, with mood colours.
+Toko Live carries the same notes in `toko-live/CANON.md`, and the
 counter answers *WHAT COLOUR ARE YOU?* / *WHO IS TOKO SLOMO?* in fi/en/ja.
 The identity of the workshop, created by **美鳥十湖** (*Toko Midori*, "The Game
 Creator") — the masked artist behind the look of every cabinet here: anarchist,

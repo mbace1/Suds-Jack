@@ -29,10 +29,10 @@
 // the transitions and the surface are borrowed, and the drawing medium is not.
 // This station is a 128×152 pixel panel behind curved glass, and stays one.
 
-import { parseLine } from './wire.js?v=69';
-import { readFigures } from './visuals.js?v=69';
-import { PAL } from './palette.js?v=69';
-import { mix } from './screen.js?v=69';
+import { parseLine } from './wire.js?v=70';
+import { readFigures } from './visuals.js?v=70';
+import { PAL } from './palette.js?v=70';
+import { mix } from './screen.js?v=70';
 
 export const W = 1080, H = 1920;
 export const MONO = '"IBM Plex Mono", "SF Mono", Menlo, Consolas, "IPAGothic", monospace';

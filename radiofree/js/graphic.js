@@ -19,9 +19,9 @@
 // fractional cells, which is the one thing this whole renderer exists to
 // avoid; the card is what makes up the difference in size.
 
-import { PixelScreen, mix, shade } from './screen.js?v=69';
-import { drawVisual, readFigures, PANEL_W, PANEL_H } from './visuals.js?v=69';
-import { PAL, SECTOR_COLOR } from './palette.js?v=69';
+import { PixelScreen, mix, shade } from './screen.js?v=70';
+import { drawVisual, readFigures, PANEL_W, PANEL_H } from './visuals.js?v=70';
+import { PAL, SECTOR_COLOR } from './palette.js?v=70';
 
 export const GRAPHIC_H = 640;
 const MIN_ASPECT = 0.40, MAX_ASPECT = 0.75;

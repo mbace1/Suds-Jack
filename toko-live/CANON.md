@@ -31,11 +31,11 @@ Toko Live has to act on.
   knife behind his back (`turf/art-src/reference/toko-slomo-run.png`, the
   owner's hand-made sheet; Piritori's `toko-slomo-noodles-*` scenes). Valid. Not
   the original — do not present him as the face of Toko Live.
-- **This page's own figure is not original.** The dark hooded body, the arms
-  with magenta hands and the ring head in `main.js`'s `draw()` were drawn by an
-  assistant. `face-guard.js` (the owner's, 2026-08-29) already falls back to
-  the approved face alone; a redraw should put the traced face on a coloured
-  ground and add nothing the master does not have.
+- **This page's old figure was not original.** The dark hooded body, the arms
+  with magenta hands and the ring head that `main.js`'s `draw()` used to paint
+  were an assistant's drawing. Since v47 the stage draws the traced master as
+  the badge (3D via `toko/js/toko3d.js`, flat as the fallback), with the mood
+  colours: magenta at rest, sky thinking, yellow pleased, red on a glitch.
 - Generated art is not a reference: `piritori/art/rooms/toko.webp` (a noodle
   keeper in a yellow smiley mask; the sign reads "HENSLONKI") is flagged.
 

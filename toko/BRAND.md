@@ -176,7 +176,8 @@ contexts or moods"*):
 | The teal gel (`radiofree/js/toko.js`, before v67) | An assistant's invention. Retired. |
 | The noodle-shop keeper with a yellow smiley mask (`piritori/art/rooms/toko.webp`) | Generated art — misspelled sign ("HENSLONKI"), garbled kana. Not a reference. |
 
-The 3D Toko (`radiofree/js/toko3d.js`) is built from the trace and nothing
+The 3D Toko (`js/toko3d.js`, three.js r167 in `vendor/`, used by Radio Free
+Helsinki's film and Toko Live's stage) is built from the trace and nothing
 else: the badge — the brand's own face-on-a-disc carrier — as a lacquered
 pin, the four traced outlines extruded onto it.
 
