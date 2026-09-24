@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=220';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=220';
-import { Player, PLAYER_RADIUS } from './player.js?v=220';
+import { InputManager } from './input.js?v=221';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=221';
+import { Player, PLAYER_RADIUS } from './player.js?v=221';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=220';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=220';
-import { audio } from './audio.js?v=220';
-import { haptics } from './haptics.js?v=220';
-import { initDesigner } from './designer.js?v=220';
-import { createSpecimen } from './specimen.js?v=220';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=220';
-import { TUNING } from './tuning.js?v=220';
-import { Arena, rectShape } from './arena.js?v=220';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=220';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=220';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=220';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=221';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=221';
+import { audio } from './audio.js?v=221';
+import { haptics } from './haptics.js?v=221';
+import { initDesigner } from './designer.js?v=221';
+import { createSpecimen } from './specimen.js?v=221';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=221';
+import { TUNING } from './tuning.js?v=221';
+import { Arena, rectShape } from './arena.js?v=221';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=221';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=221';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=221';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -432,7 +432,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '265';
+const GAME_VERSION = '266';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -2943,11 +2943,119 @@ function _railFlash(k) {
   const base = new THREE.Color(L?.rail ?? 0x5555cc);
   border.material.color.copy(base).lerp(_WR_WHITE, Math.max(0, Math.min(1, k)));
 }
+// v266 A BOSS PER WORLD: while a boss lives, the world's rule binds to it.
+// Arcade only — a campaign room has no boss, and a cabinet no world.
+function worldBoss() {
+  if (customLevel || !worldRule()) return null;
+  return enemies.find(e => e.alive && e._isBoss) ?? null;
+}
+function bossVariant() {
+  const rule = TUNING.depth.looks[_depthIdx]?.rule;
+  return rule && !customLevel && classicRound() ? TUNING.depth.boss[rule] : null;
+}
+function _puff(x, z, color) {
+  for (let k = 0; k < 10; k++) {
+    const a = (k / 10) * Math.PI * 2;
+    gooChunkPool.spawn(x, 0.8, z, Math.cos(a) * 5, 1.5 + Math.random() * 2, Math.sin(a) * 5, color, 0.12);
+  }
+}
 function updateWorldRule(dt) {
   const rule = worldRule();
   const R = TUNING.depth.rules;
   if (!rule) { player._slip = null; return; }
   _wr.t += dt;
+  const boss = worldBoss(), B = TUNING.depth.boss;
+  if (boss && rule === 'current') {
+    // THE WHIRLPOOL — the current swirls around the boss and draws you in
+    const W = B.current, bx = boss.position.x, bz = boss.position.z;
+    const swirl = (x, z, mult) => {
+      const dx = x - bx, dz = z - bz, d = Math.hypot(dx, dz) || 1;
+      const inward = d > W.holdOut ? W.pull : 0;
+      return [(-dz / d * W.swirl - dx / d * inward) * mult * dt, (dx / d * W.swirl - dz / d * inward) * mult * dt];
+    };
+    for (const e of enemies) {
+      if (!e.alive || e._isBoss) continue;
+      const [mx, mz] = swirl(e.position.x, e.position.z, 1);
+      e.position.x += mx; e.position.z += mz;
+    }
+    const [px, pz] = swirl(player.position.x, player.position.z, W.playerMult);
+    player.mesh.position.x += px; player.mesh.position.z += pz;
+    return;
+  }
+  if (boss && rule === 'sweep') {
+    // THE LINE — the boss fires the sweep, square to you, your way
+    const L = B.sweep;
+    if (_wr.bossNext == null) _wr.bossNext = _wr.t + 1.5;
+    if (_wr.warnT > 0) {
+      _wr.warnT -= dt;
+      _railFlash(0.3 + 0.4 * Math.abs(Math.sin(_wr.warnT * 16)));
+      if (_wr.warnT <= 0) { _railFlash(0); _fireBossLine(boss); }
+    } else if (_wr.t >= _wr.bossNext) {
+      _wr.bossNext = _wr.t + L.every;
+      _wr.warnT = L.warn;
+    }
+    return;
+  }
+  if (boss && rule === 'dark') {
+    // THE BLINK — the dark breathes faster, and at its darkest the boss moves
+    const K = B.dark, Lk = TUNING.depth.looks[_depthIdx];
+    const f = (_wr.t / K.period) % 1;
+    const k = (0.5 - 0.5 * Math.cos(f * Math.PI * 2)) * (reduceMotion ? 0.45 : 1);
+    if (Lk && scene.fog) {
+      _FOG.near = Lk.fogNear + (K.nearMin - Lk.fogNear) * k;
+      _FOG.far  = Lk.fogFar  + (K.farMin  - Lk.fogFar)  * k;
+    }
+    const prev = _wr.blinkF ?? f;
+    _wr.blinkF = f;
+    if (prev < 0.5 && f >= 0.5) {       // the darkest instant
+      for (const e of enemies) {
+        if (!e.alive || !e._isBoss) continue;
+        let x = 0, z = 0;
+        for (let tries = 0; tries < 12; tries++) {
+          x = (Math.random() * 2 - 1) * (HALF_X - 3);
+          z = (Math.random() * 2 - 1) * (HALF_Z - 3);
+          if (Math.hypot(x - player.position.x, z - player.position.z) >= K.minFromPlayer) break;
+        }
+        _puff(e.position.x, e.position.z, 0x332244);
+        e.position.x = x; e.position.z = z;
+        _puff(x, z, 0x8866ff);
+      }
+      _wr.blinks = (_wr.blinks || 0) + 1;
+    }
+    return;
+  }
+  if (boss && rule === 'updraft') {
+    // THE FURNACE — the blast comes from the boss, and hits you as hard
+    const U = B.updraft;
+    if (_wr.bossNext == null) _wr.bossNext = _wr.t + 1.5;
+    if (_wr.pushT > 0) {
+      _wr.pushT -= dt;
+      const k = Math.max(0, _wr.pushT / U.dur), bx = boss.position.x, bz = boss.position.z;
+      const away = (x, z) => { const dx = x - bx, dz = z - bz, d = Math.hypot(dx, dz);
+        return d < 1.5 ? [Math.cos(_wr.ang0 ?? 0), Math.sin(_wr.ang0 ?? 0)] : [dx / d, dz / d]; };
+      for (const e of enemies) {
+        if (!e.alive || e._isBoss) continue;
+        const [ax, az] = away(e.position.x, e.position.z);
+        e.position.x += ax * U.push * k * dt; e.position.z += az * U.push * k * dt;
+      }
+      const [ax, az] = away(player.position.x, player.position.z);
+      player.mesh.position.x += ax * U.push * U.playerMult * k * dt;
+      player.mesh.position.z += az * U.push * U.playerMult * k * dt;
+    } else if (_wr.warnT > 0) {
+      _wr.warnT -= dt;
+      _railFlash(0.5 * Math.abs(Math.sin(_wr.warnT * 12)));
+      if (_wr.warnT <= 0) {
+        _railFlash(0); _wr.pushT = U.dur; addShake(0.45); audio.milestone?.();
+        _wr.ang0 = Math.random() * Math.PI * 2;
+        _puff(boss.position.x, boss.position.z, 0xffaa33);
+      }
+    } else if (_wr.t >= _wr.bossNext) {
+      _wr.bossNext = _wr.t + U.every;
+      _wr.warnT = U.warn;
+    }
+    return;
+  }
+  if (!boss) _wr.bossNext = null;       // the next boss starts its own clock
   if (rule === 'current') {
     // the whole floor leans, and the lean turns
     const C = R.current;
@@ -3015,6 +3123,24 @@ function updateWorldRule(dt) {
       _wr.warnT = U.warn;
     }
   }
+}
+// v266 THE LINE: a row through the boss, square to the boss->you line,
+// travelling toward you, with a gap you run to
+function _fireBossLine(boss) {
+  const L = TUNING.depth.boss.sweep;
+  const bx = boss.position.x, bz = boss.position.z;
+  let dx = player.position.x - bx, dz = player.position.z - bz;
+  const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
+  const px = -dz, pz = dx;                                   // along the line
+  const n = Math.max(3, Math.floor((L.span * 2) / L.spacing));
+  const gapAt = Math.floor(Math.random() * Math.max(1, n - L.gapSlots));
+  for (let i = 0; i < n; i++) {
+    if (i >= gapAt && i < gapAt + L.gapSlots) continue;
+    const off = -L.span + (i + 0.5) * (L.span * 2 / n);
+    bullets.spawnDir(bx + px * off, bz + pz * off, dx, dz, false, 0xff3355, false, null, false, 0, L.speed / BULLET_CONFIG.enemySpeed);
+  }
+  _wr.lines = (_wr.lines || 0) + 1;
+  audio.enemyShoot?.();
 }
 // THE VEIN's line: a row of bullets off one rail, with a gap you run to
 function _fireSweep() {
@@ -5441,11 +5567,28 @@ function drawHUD() {
     ctx.save();
     ctx.globalAlpha = Math.max(0, a);
     ctx.textAlign = 'center';
-    ctx.font = 'bold 44px monospace, sans-serif';
     ctx.shadowColor = waveIntroColor;
     ctx.shadowBlur = 26;
     ctx.fillStyle = waveIntroColor;
-    ctx.fillText(waveIntroText, uiCanvas.width / 2, uiCanvas.height * 0.30);
+    // v266: a banner FITS the screen. The boss fight's name ("WAVE 16 — BOSS ·
+    // THE WHIRLPOOL") ran off both edges at 760 px, and a phone is narrower —
+    // so the main line shrinks until it fits, and anything after " · " drops
+    // to a smaller second line (the fight, a campaign room's goal).
+    const [head, ...rest] = waveIntroText.split(' · ');
+    const maxW = uiCanvas.width * 0.92;
+    const fit = (text, size, min) => {
+      ctx.font = `bold ${size}px monospace, sans-serif`;
+      while (size > min && ctx.measureText(text).width > maxW) { size -= 2; ctx.font = `bold ${size}px monospace, sans-serif`; }
+      return size;
+    };
+    const y = uiCanvas.height * 0.30;
+    const size = fit(head, 44, 16);
+    ctx.fillText(head, uiCanvas.width / 2, y);
+    if (rest.length) {
+      const sub = rest.join(' · ');
+      const s2 = fit(sub, Math.round(size * 0.6), 12);
+      ctx.fillText(sub, uiCanvas.width / 2, y + size * 0.55 + s2);
+    }
     ctx.restore();
   }
 
@@ -8121,6 +8264,8 @@ function spawnWave(carry = false) {
     const b = WAVE_BANNER[kind] ?? WAVE_BANNER.normal;
     waveIntroT     = waveIntroDur = kind === 'boss' ? 2.0 : 1.4;  // boss lingers a beat longer
     waveIntroText  = `WAVE ${wave}${b.suffix}`;
+    // v266: a boss fights INSIDE its world, and the fight has that world's name
+    if (kind === 'boss') { const bv = bossVariant(); if (bv) waveIntroText += ` · ${bv.name}`; }
     waveIntroColor = b.color;
   }
   // Boss klaxon (v123): a real audio cue for the boss wave in BOTH modes, even
@@ -9142,6 +9287,7 @@ function loop() {
     const ox = s.clusterOffset ? s.clusterOffset.x : 0;
     const oz = s.clusterOffset ? s.clusterOffset.z : 0;
     const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
+    en._spawnAt = [bx + ox, bz + oz, waveTimer];   // v266: where and when the pump PLACED it (level-smoke reads this)
     // v120: shooters are the tactical objects (v116) — announce their entrance
     // with a brief "!" ping + alert blip so the player can start prioritising.
     // v124: WARDENs get the same treatment; the shield-bearer IS a priority call.
@@ -10130,6 +10276,10 @@ function loop() {
     }
   }
   updateWorldRule(dt);   // v264: the world's own rule, before the bodies are clamped
+  // v266 THE SKID: record where each FOAM boss stood before it moved itself
+  // (every boss — the twin PRISMS are two)
+  const _skids = worldRule() === 'slip' && worldBoss()
+    ? enemies.filter(e => e.alive && e._isBoss).map(e => ({ e, x: e.position.x, z: e.position.z })) : null;
   for (const e of enemies) {
     // v187 CLOSE COMBAT: enemies get a dead phone instead of the trigger
     e.update(dt, player.position, meleeRun ? MUZZLED_BULLETS : bullets, arena);
@@ -10173,6 +10323,17 @@ function loop() {
     }
     e.updateDeath(dt);
     if (e._pingT > 0) e._pingT -= dt;
+  }
+  // v266 THE SKID: the boss's own step becomes what it ACCELERATES toward, so
+  // it overshoots you and has to come back round — the foam, for the boss
+  if (_skids && dt > 0) for (const { e: b, x: x0, z: z0 } of _skids) {
+    if (!b.alive) continue;
+    const S = TUNING.depth.boss.slip, k = Math.min(1, S.accel * dt);
+    const vx = (b.position.x - x0) / dt, vz = (b.position.z - z0) / dt;
+    b._skidVX = (b._skidVX ?? 0) + (vx - (b._skidVX ?? 0)) * k;
+    b._skidVZ = (b._skidVZ ?? 0) + (vz - (b._skidVZ ?? 0)) * k;
+    b.position.x = x0 + b._skidVX * dt;
+    b.position.z = z0 + b._skidVZ * dt;
   }
 
   // Crowd (v245, js/crowd.js): the old overlap RESOLVE unchanged, plus a
@@ -11352,7 +11513,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=220').then(async m => {
+  import('./editor.js?v=221').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -11383,6 +11544,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=220').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=221').catch(() => {});
   });
 }

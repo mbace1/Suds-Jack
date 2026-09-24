@@ -73,7 +73,7 @@ if (location.hash === '#lvprobe') {
         for (const e of enemies) {
           if (e._probed) continue;
           e._probed = true;
-          seen.push({ t: waveTimer, type: e.type, x: e.position.x, z: e.position.z });
+          seen.push({ t: waveTimer, type: e.type, x: e.position.x, z: e.position.z, at: e._spawnAt });
         }
         for (const p of powerups) {
           if (p._probed) continue;
@@ -88,11 +88,19 @@ if (location.hash === '#lvprobe') {
       wantE.forEach((w, i) => {
         const s = seen[i];
         if (!s) { bad.push(`MISSING ${i} ${w.name} @${w.t}s`); return; }
-        // The pump spawns and update() runs in the same loop() call, so a body
-        // is first seen one step (0.05 s) into its life; two frames of motion
-        // at pounce speed is under 1.0 unit and 0.15 s.
-        if (!(Math.abs(s.t - w.t) <= 0.15 && Math.abs(s.x - w.px) <= 1.0 && Math.abs(s.z - w.pz) <= 1.0 && s.type === w.type))
-          bad.push(`MISMATCH ${i} ${w.name}: t ${w.t}->${s.t.toFixed(3)} pos (${w.px},${w.pz})->(${s.x.toFixed(2)},${s.z.toFixed(2)}) type ${w.type}->${s.type}`);
+        // v266: compare where the pump PLACED the body (Enemy._spawnAt), exactly.
+        // First sighting is one step into a body's life, after its own motion AND
+        // the crowd pass — and in a dense room (the v265 campaign) a body that
+        // WALKED onto a spawn point shoves the newcomer on arrival, which failed
+        // this check about one room-run in fifty for reasons the file cannot
+        // control. The placement is the file's promise; the trace below still
+        // writes first sightings, unchanged, for the port's parity diff.
+        const at = s.at;
+        const ok = at
+          ? Math.abs(at[2] - w.t) <= 0.1 && Math.abs(at[0] - w.px) <= 0.01 && Math.abs(at[1] - w.pz) <= 0.01 && s.type === w.type
+          : Math.abs(s.t - w.t) <= 0.15 && Math.abs(s.x - w.px) <= 1.0 && Math.abs(s.z - w.pz) <= 1.0 && s.type === w.type;
+        if (!ok)
+          bad.push(`MISMATCH ${i} ${w.name}: t ${w.t}->${(at ? at[2] : s.t).toFixed(3)} pos (${w.px},${w.pz})->(${(at ? at[0] : s.x).toFixed(2)},${(at ? at[1] : s.z).toFixed(2)}) type ${w.type}->${s.type}`);
       });
       wantP.forEach((w, i) => {
         const s = seenPk[i];
