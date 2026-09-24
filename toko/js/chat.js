@@ -321,6 +321,12 @@ export function mountChat(anchor, opts = {}) {
     // opens him at its own table passes itself. The referrer stays the
     // fallback for the arcade, where he has to guess where you walked in from.
     from: fromHost = null,
+    // WHAT HE SAYS FIRST, when the host knows more than the referrer does. A
+    // game at the table can tell him what just happened — the death line,
+    // how many times that enemy has had you, what to do about it — and those
+    // lines replace the generic "straight off X, then". The TELL button still
+    // follows, because the point of knowing is to make it easier to answer.
+    opening = null,
   } = opts;
 
   injectStyle();
@@ -1083,7 +1089,8 @@ export function mountChat(anchor, opts = {}) {
       // somebody who has just played something already has a subject. The one
       // thing that outranks it is an unacknowledged note: he owes you that.
       if (from && !st.noted) {
-        type(L('BACK_FROM').map(l => l.replaceAll('{x}', gameName(from))),
+        const first = Array.isArray(opening) && opening.length ? opening.filter(Boolean).map(String) : null;
+        type(first || L('BACK_FROM').map(l => l.replaceAll('{x}', gameName(from))),
           () => offerTell(from));
       } else {
         type(greeting({ visits, hour: hour(), last: st.last, noted: !!st.noted }));
