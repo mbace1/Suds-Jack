@@ -54,7 +54,8 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
   const log = [], timeline = [], catchFamilies = {}, marketSeen = new Set();
   let waitTicks = 0, rideTicks = 0, chosen = null, chosenAt = 0, lastKind = null, catches = 0, transfers = 0, drops = 0, marketDrops = 0, marketOffered = 0, walks = 0;
   const say = (k, x) => log.push(`${flow.clock.tick}: ${k} ${x || ''}`.trim());
-  { const realSay = ch.say; ch.say = m => { if (/^DROPPED/.test(String(m))) log.push(`${flow.clock.tick}: DROPPED ${m}`); return realSay?.(m); }; }
+  const paid = [];
+  { const realSay = ch.say; ch.say = m => { if (/^DROPPED/.test(String(m))) log.push(`${flow.clock.tick}: DROPPED ${m}`); if (/ \+\d+/.test(String(m))) paid.push(String(m).slice(0, 60)); return realSay?.(m); }; }
 
   // Which job. 'first' = the one the dispatcher lists first (Loop 47 puts the
   // reachable one there on job 1); 'cheapest' = lowest door-to-door estimate;
@@ -123,7 +124,7 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
     day: tm.cityDay?.id || 'none', shift: tm.shiftSeed, marketDrops, marketOffered: marketSeen.size, walks, cityHolds: (tm.cityDirector?.holds || []).length,
     catchesByFamily: catchFamilies,
     walkFactor: tm.walkFactor || 1, fleet: tm.liveNetwork?.vehicles.length || 0,
-    bestStreak: ch.bestStreak || 0, tips: ch.tips || 0, goodwill: ch.goodwill || 0, handoffs,
+    bestStreak: ch.bestStreak || 0, tips: ch.tips || 0, paid, bonuses: ch.bonuses || 0, goodwill: ch.goodwill || 0, handoffs,
     rivalDelivered: tm.rival?.delivered || 0, rivalTook: tm.rival?.taken.length || 0, visited: tm.visited ? tm.visited.size : 0, tick: flow.clock.tick, score: ch.score, late: ch.late, drops, dropped,
     waitTicks, rideTicks, catches, transfers, lastKind, activeJob: ch.active ? `${ch.active.stops[0]}>${ch.active.stops[1]}` : null,
     leg: ch.leg, log, timeline };
@@ -246,7 +247,7 @@ server.listen(0, '127.0.0.1', async () => {
     const player = { job: 'rate', plan: 'total', along: 'yes', walk: 'smart' };
     const week = async (w, kitFor, pl = player) => { await page.goto(`${base}/toko-move/js/week.js`); await page.evaluate(() => localStorage.removeItem('tokoMoveRegulars'));
       const days = W.weekDays(w); let sum = 0;
-      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i), weather: wxFor(w, i) }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; if (process.env.DIAG) console.log(`    ${process.env.WX || '-'} w${w}d${i} fleet ${r.fleet} tick ${r.tick} drops ${r.drops}/${r.dropped} late ${r.late} streak ${r.bestStreak} tips ${r.tips} score ${r.score}`); }
+      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i), weather: wxFor(w, i) }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; if (process.env.DIAG) console.log(`    ${process.env.WX || '-'} w${w}d${i} fleet ${r.fleet} tick ${r.tick} drops ${r.drops}/${r.dropped} late ${r.late} streak ${r.bestStreak} tips ${r.tips} bonuses ${r.bonuses} score ${r.score}`); if (process.env.DIAG === '2') for (const p of r.paid || []) console.log(`       ${p}`); }
       return sum; };
     let walked = 0;
     if (KITS) {

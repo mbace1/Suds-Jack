@@ -24,7 +24,38 @@ over three rows that said "in the fog". The title card names the morning next
 to the city day. `?weather=` pins one; the harness's `?day=none` control means
 clear too, because a control that draws its own weather is not a control.
 
-WEATHER MEASURED: pending (`shifts.cjs --wx=10`, `--kitweeks=20`).
+**The first measurement said rain PAID, and it was right.** `shifts.cjs --wx`
+holds one weather all week against the same weeks clear: rain came out
+**+€52 a week**. Deadlines are built from the trip's estimate, the estimate
+rides the live fleet, and so a slower fleet quoted longer deadlines — the
+weather paid itself back as slack and then some. **The dispatcher now quotes a
+dry day's deadline** (`deadlineFor` scales the estimate by the weather's
+speed), and `weather.mjs` holds that a trip the snow makes slower gets the
+same deadline as on a dry day. Re-measured:
+
+| weather held all week | against clear |
+|---|---|
+| rain | −€1 ± 30 |
+| fog | +€2 ± 1 |
+| frost | +€2 ± 1 |
+| snow | **+€57** (30 weeks: €474 against €417) |
+
+**Fog is free for the bot, and that is the honest result**: the bot never
+reads the map or the panel's minutes, it only catches what is lit, so fog's
+whole cost — not knowing what is coming — is one only a person pays. **Snow
+still measures as a good week and it is NOT the snow**: fares are unchanged
+and the deadline is a dry day's. Printed per payout, the snow weeks took more
+of the long hand-off jobs worth ~1000 points (five in a week where clear took
+one); a hand-off is offered by hash, not by weather, so the two runs had simply
+diverged onto different boards — a slower fleet puts the courier somewhere
+else by the second job. It is a real number and an open finding, not a fixed
+one, and it sits on one morning in ten.
+
+**Rent stays €400**, measured with the week as it is played — kit taken
+nightly, every morning drawing its own weather (`--kitweeks=20`): the three
+players pay **80% / 55% / 10%**, exactly v2.48's. The weather mix moves no
+week's rent; it moves which mornings are hard. The shift gate's 14 dailies,
+now with their drawn weather, are all winnable by the cheapest-job player.
 
 `test/weather.mjs` (13) holds the mix, the pins, fog's reach and a slower
 fleet on the same headway; `test/weather.cjs` (8) holds fog in the page — 0 of
