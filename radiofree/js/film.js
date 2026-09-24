@@ -29,10 +29,10 @@
 // the transitions and the surface are borrowed, and the drawing medium is not.
 // This station is a 128×152 pixel panel behind curved glass, and stays one.
 
-import { parseLine } from './wire.js?v=68';
-import { readFigures } from './visuals.js?v=68';
-import { PAL } from './palette.js?v=68';
-import { mix } from './screen.js?v=68';
+import { parseLine } from './wire.js?v=69';
+import { readFigures } from './visuals.js?v=69';
+import { PAL } from './palette.js?v=69';
+import { mix } from './screen.js?v=69';
 
 export const W = 1080, H = 1920;
 export const MONO = '"IBM Plex Mono", "SF Mono", Menlo, Consolas, "IPAGothic", monospace';
@@ -469,7 +469,7 @@ export function paintFilm(ctx, plan, t, shots) {
     const u = seg(t, cur.t0, cur.t1);
     let zoom = 1 + 0.07 * ease(u);
     if (cur.take) zoom = 1.05 + 0.15 * backOut(seg(t - cur.t0, 0.08, 0.34));
-    shots.anchorObj.render(ctx, W, H, { zoom });
+    shots.anchorObj.render(ctx, W, H, { zoom, toko3d: shots.toko3d || null });
     // the lower third's ground, so type never sits on a lit desk
     const sg = ctx.createLinearGradient(0, band - 40, 0, band + 260);
     sg.addColorStop(0, 'rgba(1,4,3,0)'); sg.addColorStop(1, 'rgba(1,4,3,0.78)');

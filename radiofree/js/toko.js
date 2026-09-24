@@ -1,12 +1,12 @@
-// Toko, the codec portrait — the current figure at portrait size.
-//
-// The mouth is driven by the same value that types the bulletin — lip-synced,
-// not flapping on a timer. In DECODE the picture goes amber and starts
-// tearing: the anchor has stopped reading the official copy.
+// Toko, the codec portrait: the owner's approved mark — the face in white on
+// magenta, as a badge — and nothing else, because the face is the only
+// original art of him (see anchor.js). The mouth is driven by the same value
+// that types the bulletin; in DECODE the picture goes amber and tears.
 
-import { PAL } from './palette.js?v=68';
-import { bayer, mix } from './screen.js?v=68';
-import { FIG, drawBody, drawHead as drawFigHead, drawArm, shoulders } from './figure.js?v=68';
+import { PAL } from './palette.js?v=69';
+import { bayer, mix } from './screen.js?v=69';
+import { drawMasterBadge } from '../../toko/js/master.js';
+import { WAYS, STICKER } from '../../toko/js/palette.js';
 
 
 export class Toko {
@@ -31,31 +31,23 @@ export class Toko {
   // the codec's video half. `signal` (0..1) fades the picture up on connect.
   // `full` true = face shot fills the upper panel (larger, no booth clutter).
   //
-  // Toko as he is now — the same figure the anchor shot draws (`figure.js`):
-  // ring head, white face, dark hood, magenta hands. The teal gel that used
-  // to sit here was a local invention and is retired.
+  // The approved badge — the same mark the anchor shot draws. The teal gel
+  // and the hooded figure that sat here before were not his.
   draw(scr, signal = 1, full = false) {
     const g = this.glitch;
     const c = scr.ctx;
     scr.px(0, 0, scr.w, scr.h, mix('#050507', '#1a1208', g * 0.7));
-    const k = (full ? 0.30 : 0.2) * (scr.w / 96);
+    const r = scr.w * (full ? 0.36 : 0.34);
     const cx = scr.w / 2;
-    const cy = scr.h * (full ? 0.40 : 0.42) + Math.sin(this.t * 1.4) * 1.2;
-    const glow = c.createRadialGradient(cx, cy, FIG.ring * k * 0.5, cx, cy, FIG.ring * k * 2.4);
+    const cy = scr.h * 0.5 + Math.sin(this.t * 1.4) * 1.2;
+    const glow = c.createRadialGradient(cx, cy, r * 0.6, cx, cy, r * 2.2);
     glow.addColorStop(0, 'rgba(240,2,127,0.34)');
     glow.addColorStop(1, 'rgba(240,2,127,0)');
     c.fillStyle = glow;
     c.fillRect(0, 0, scr.w, scr.h);
-    drawBody(c, cx, cy, k, { hem: scr.h, rim: mix(PAL.GREEN, PAL.AMBER, g) });
-    const [sl, sr] = shoulders(cx, cy, k);
-    const talk = Math.min(1, this.mouth * 3);
-    for (const [side, s] of [[-1, sl], [1, sr]]) {
-      const lift = side > 0 ? talk * 0.8 : 0;
-      drawArm(c, s[0], s[1], cx + side * (58 + 50 * lift) * k, cy + (250 - 120 * lift) * k, k, side);
-    }
-    drawFigHead(c, cx, cy, k, {
-      glow: 0.6,
-      face: { open: this.blink > 0 ? 0 : 0.5 + talk * 0.5, squash: this.blink > 0 ? 0.08 : 1, grin: 1 + this.mouth * 0.2 },
+    drawMasterBadge(c, cx, cy, r, {
+      ground: g > 0.5 ? STICKER.YELLOW : WAYS.SIGN.ground, ink: WAYS.SIGN.ink,
+      squash: this.blink > 0 ? 0.08 : 1, grin: 1 + this.mouth * 0.07,
     });
     this.grain(scr, signal, g);
     this.sweep(scr);
