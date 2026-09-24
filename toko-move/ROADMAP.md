@@ -152,7 +152,16 @@ with a standing, a map you learn. It is a good loop and it is ONE loop: press
 again and you get the same jobs on a different day. Every system below is
 built and measured; what none of them has is somewhere to GO.
 
-## L1 · The week (the run)
+## L1 · The week (the run) — SHIPPED v2.47
+
+`?week`, and a link on the daily's title card. As proposed, with two rules
+the proposal did not have: **leaving is clocking out** (a shift is saved as it
+goes and a reload closes it with what it had banked), and **a weekday is a
+weekday** (the week draws its own deck — two ordinary days, a match, a market,
+the city's day — so no Tuesday is a quiet Sunday). Standing belongs to the
+week; visited stops stay the player's. Rent is measured in VERSIONS.md v2.47.
+
+*The proposal, as written:*
 
 Five shifts, Monday to Friday, one run. A day drawn for each. Money instead of
 score, and **rent due on Friday**: the run is won or lost at the end of the

@@ -61,6 +61,8 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
   // 'random' = any of the three.
   const chooseJob = () => { const offers = ch.offers; if (!offers.length) return null;
     if (policy.job === 'first') return offers[0];
+    // v2.47: a week is paid in money, so the player the rent is set against reads the fee too — pay per minute of plan.
+    if (policy.job === 'rate') return offers.map(o => ({ o, r: (o.value || 0) / Math.max(1, tm.planCostFrom?.(o.stops[0], o.stops[1]) ?? 1e9) })).sort((a, b) => b.r - a.r)[0].o;
     if (policy.job === 'cheapest') return offers.map(o => ({ o, c: tm.planCostFrom?.(o.stops[0], o.stops[1]) ?? 1e9 })).sort((a, b) => a.c - b.c)[0].o;
     return pick(offers); };
   // Which plan, from the three the panel would show. 'soonest' = catch the
@@ -191,6 +193,39 @@ server.listen(0, '127.0.0.1', async () => {
     }
     const w = dailyRows.filter(r => r.won).length;
     console.log(`  ${w} of ${DAILIES} dailies won by a sensible player · scores ${Math.min(...dailyRows.map(r => r.score))}–${Math.max(...dailyRows.map(r => r.score))}\n`);
+  }
+  // THE WEEK (v2.47). Five shifts on a week's own seeds and weekday deck, with
+  // the regulars wiped at each Monday — the week keeps its own standing, and a
+  // bot that carried one week's regulars into the next would be measuring a
+  // tip nobody can earn. Prints what a week pays two kinds of player, which is
+  // what RENT is set from.
+  const WEEKS = Number((process.argv.find(a => a.startsWith('--weeks=')) || '').split('=')[1] || 0);
+  if (WEEKS) {
+    const W = await import(path.join(__dirname, '..', 'js', 'week.js'));
+    const players = [
+      { name: 'earner', job: 'rate', plan: 'total', along: 'yes', walk: 'smart' },
+      { name: 'sensible', job: 'cheapest', plan: 'total', along: 'yes', walk: 'smart' },
+      { name: 'naive', job: 'first', plan: 'soonest', walk: 'no' },
+    ];
+    const totals = {};
+    for (const pl of players) {
+      totals[pl.name] = [];
+      for (let w = 1; w <= WEEKS; w++) {
+        await page.goto(`${base}/toko-move/js/week.js`); await page.evaluate(() => localStorage.removeItem('tokoMoveRegulars'));
+        const days = W.weekDays(w); let sum = 0; const row = [];
+        for (let i = 0; i < W.LENGTH; i++) {
+          const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i] }, `week ${w} ${W.DAY_NAMES[i]}`);
+          const e = W.euros(r.score); sum += e; row.push(`${days[i].slice(0, 4)} ${r.delivered}/3 €${e}`);
+        }
+        totals[pl.name].push(sum);
+        console.log(`  ${pl.name.padEnd(8)} week ${String(w).padStart(3)} €${String(sum).padStart(4)} · ${row.join(' · ')}`);
+      }
+    }
+    for (const [name, t] of Object.entries(totals)) { const s2 = t.slice().sort((a, b) => a - b), q = f => s2[Math.min(s2.length - 1, Math.floor(f * s2.length))];
+      console.log(`  ${name}: weeks €${s2[0]}–€${s2[s2.length - 1]} · median €${q(0.5)} · 25% €${q(0.25)} · 75% €${q(0.75)} · pays €${W.RENT}: ${t.filter(x => x >= W.RENT).length}/${t.length}`); }
+    for (const rent of [300, 350, 400, 450, 500, 550, 600, 650, 700])
+      console.log(`  rent €${rent}: ${Object.entries(totals).map(([n, t]) => `${n} ${Math.round(100 * t.filter(x => x >= rent).length / t.length)}%`).join(' · ')}`);
+    if (!GATE) { await browser.close(); server.close(); return; }
   }
   console.log('NAMED POLICIES');
   for (const p of named) { const r = await run(p, p.name);

@@ -1,12 +1,12 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=49';
+import './core-v212.js?v=50';
 import './route-choice.js?v=19';
 import {LiveNetwork,HEADWAY_MIN} from './live-network.js?v=11';
 import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} from './city-events.js?v=1';
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=3';
 import {MobilityController} from './mobility-v212.js?v=7';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
-import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=17';
+import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=18';
 import {mountEvents} from './events.js?v=4';
 import {mountRival} from './rival.js?v=1';
 import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=2';
@@ -17,7 +17,7 @@ import {mountHubTactics} from './hub-tactics-v212.js?v=5';
 import {mountSkillMoments} from './moments-v212.js?v=1';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=1';
-const BUILD_VERSION='2.46';
+const BUILD_VERSION='2.47';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
