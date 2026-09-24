@@ -16,7 +16,7 @@ import { AudioKit } from './audio.js?v=61';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=61';
 import { TUNING as T } from './tuning.js?v=63';
 import { HyperEnvironment } from './environment.js?v=61';
-import { openTable } from '../../toko/js/table.js?v=2';
+import { openTable } from '../../toko/js/table.js?v=3';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -1033,6 +1033,7 @@ function pushRunLog(timedOut) {
   log.unshift({
     t: Math.round(gameTime * 10) / 10,
     mode,
+    at: Date.now(),                 // so the table can say "this week"
     cause: timedOut ? 'timeout' : (lastKiller || 'unknown'),
     kills,
     killsByType: { ...killsByType },
@@ -1337,6 +1338,51 @@ const elPause = document.getElementById('pauseBtn');
 // left stick) and the pause and death screens carry an ASK TOKO line instead.
 // He opens knowing what just happened: the cue is the death line or the clock.
 const GAME = { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' };
+// One thing worth knowing about each thing that kills you. The GAME's words —
+// it knows its enemies; the counter only knows how to say them. Enemies with
+// no honest tip get none rather than a platitude.
+const ENEMY_TIPS = {
+  skull: 'THE SWARM CLOSES ON YOU IF YOU STAND STILL. KEEP MOVING — YOU FIRE WHILE MOVING.',
+  brute: 'A BRUTE SHRUGS OFF KNOCKBACK. KEEP YOUR DISTANCE AND LET THE STREAM DO THE WORK.',
+  serpent: 'GIB THE RINGS ONE BY ONE. THE PALE ONE IS ARMOURED FROM THE FRONT — SHOOT ITS RINGS FROM BEHIND.',
+  spider: 'IT EATS YOUR LOOSE GEMS. KILL IT AND YOU GET EVERY ONE BACK, PLUS ONE.',
+  watcher: 'ITS VOLLEYS ARE AIMED BUT SLOW. THE DASH PHASES THROUGH ORBS — NEVER THROUGH BODIES.',
+  blinker: 'IT TELEPORTS TO WHERE YOU WERE. KEEP MOVING AND IT KEEPS MISSING.',
+  thorn: 'THE SIGIL ON THE FLOOR IS 0.9 SECONDS OF WARNING. JUMP — IT ONLY KILLS AT GROUND HEIGHT.',
+  orb: 'AN ORB IS SLOW AND READABLE. DASH THROUGH IT.',
+  totem: 'TOTEMS DO NOT KILL. THEY PULSE ORB RINGS, AND THE RINGS ARE JUMPABLE.',
+  leviathan: 'IT DRAGS YOU IN EVERY NINE SECONDS. WALK OR DASH OUT — IT CANNOT HOLD YOU.',
+  timeout: 'IN HYPER THE CLOCK IS YOUR LIFE. KILLS ADD SECONDS; A HIT COSTS TEN.',
+};
+const ORDINAL = ['', 'FIRST', 'SECOND', 'THIRD', 'FOURTH', 'FIFTH', 'SIXTH', 'SEVENTH', 'EIGHTH', 'NINTH', 'TENTH'];
+const ordinal = n => ORDINAL[n] || `${n}TH`;
+// WHAT HE SAYS FIRST at the table: the run you were just in, then what this
+// game remembers about you (its own 40-run log — nothing leaves the browser),
+// then what to do about it. Dead: the death line, how many times that enemy
+// has had you this week, the best, the tip. Paused: the clock and the best.
+function tokoRecap() {
+  const t = gameTime.toFixed(1);
+  const lines = [];
+  if (state === 'dead') {
+    const cause = lastTimedOut ? 'timeout' : (lastKiller || 'unknown');
+    const who = lastTimedOut ? 'THE CLOCK' : (ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase();
+    lines.push(lastTimedOut ? `THE CLOCK RAN OUT AT ${t}S.` : `${who} GOT YOU AT ${t}S.`);
+    let log = [];
+    try { log = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch { log = []; }
+    const week = Date.now() - 7 * 864e5;
+    const same = log.filter(r => r && r.at > week && r.cause === cause).length;   // includes this run
+    if (same >= 2 && cause !== 'unknown') lines.push(`THAT IS THE ${ordinal(same)} TIME ${who} HAS HAD YOU THIS WEEK.`);
+    lines.push(gameTime >= hiScore && gameTime > 0 ? 'A NEW BEST.' : `YOUR BEST IS ${hiScore.toFixed(1)}S.`);
+    if (ENEMY_TIPS[cause]) lines.push(ENEMY_TIPS[cause]);
+    return lines;
+  }
+  if (state === 'playing') {
+    lines.push(`${t}S IN. ${kills} KILLS, DAGGERS LV${weaponLv}.`);
+    lines.push(gameTime > hiScore ? 'YOU ARE PAST YOUR BEST. KEEP IT.' : `YOUR BEST IS ${hiScore.toFixed(1)}S.`);
+    return lines;
+  }
+  return null;                       // the menu: his own line
+}
 let table = null;
 let lastTimedOut = false;
 function tokoCue() {
@@ -1355,7 +1401,7 @@ function openToko() {
   // click on his menu would land on the floor and resume the game.
   if (document.pointerLockElement) document.exitPointerLock();
   table = openTable({
-    game: GAME, cue: tokoCue(),
+    game: GAME, cue: tokoCue(), recap: tokoRecap,
     onClose() {
       table = null;
       // whatever was typed at him is not a jump, a dash or a reap
@@ -2897,7 +2943,7 @@ animate();
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
   enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
-  toko: { open: () => openToko(), table: () => table, cue: () => tokoCue() },
+  toko: { open: () => openToko(), table: () => table, cue: () => tokoCue(), recap: () => tokoRecap() },
   debug: {
     addGems(n) { onGemsCollected(n); },
     addStyle(n) { addStyle(n); },

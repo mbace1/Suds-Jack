@@ -731,6 +731,24 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the death screen carries ASK TOKO', dead35.btn);
   ok('and he would open on the death line', /(GOT YOU|CLOCK RAN OUT) AT \d+\.\dS$/.test(dead35.cue), dead35.cue);
 
+  // ---- v50 he knows what happened -----------------------------------------
+  // Opened on the recap, his FIRST lines are the run you were just in, in the
+  // game's words, and the game's memory of you — not the generic hello.
+  await p.evaluate(() => window.__hd.toko.open());
+  const seated50 = await p.waitForFunction(
+    () => document.querySelector('.toko-table .toko-chat.is-open'), null, { timeout: 15000 })
+    .then(() => true, () => false);
+  ok('v50 he opens on the recap', seated50);
+  const recap50 = await p.evaluate(() => (window.__tokoLastTable || {}).opening || []);
+  ok('the first line is the death line', /(GOT YOU|CLOCK RAN OUT) AT \d+\.\dS\.$/.test(recap50[0] || ''), recap50[0]);
+  ok('and he knows your best', recap50.some(l => /BEST/.test(l)), recap50.join(' | '));
+  await p.waitForFunction(() => { const t = window.__hd.toko.table(); return t && t.chat() && !t.chat().busy(); }, null, { timeout: 20000 }).catch(() => {});
+  const typed50 = await p.evaluate(() => [...document.querySelectorAll('.toko-table .tc-log .tc-me')].map(x => x.textContent.trim()));
+  ok('and those are the lines he actually typed', typed50.length && !!recap50[0] && typed50[0].startsWith(recap50[0]), typed50.slice(0, 2).join(' | '));
+  for (let i = 0; i < 3 && await p.evaluate(() => !!document.querySelector('.toko-table')); i++) {
+    await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+  }
+
   // ---- zero errors across the whole run ----------------------------------
   ok('still zero page errors at the end', errs.length === 0, errs.slice(0, 4).join(' | '));
 

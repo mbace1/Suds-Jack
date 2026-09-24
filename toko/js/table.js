@@ -152,6 +152,10 @@ export async function whichGame() {
 export function openTable(opts = {}) {
   const seams = globalThis.__tokoTable || {};
   const { game = null, cue = opts.cue ?? seams.cue ?? null,
+    // `recap(lang)` → a line or lines about the run you were just in, in the
+    // GAME's own words: it knows its enemies and its clock; the table only
+    // knows how to hand them to him. Optional, and allowed to throw.
+    recap = opts.recap ?? seams.recap ?? null,
     pause = opts.pause ?? seams.pause ?? null,
     resume = opts.resume ?? seams.resume ?? null,
     onClose = null, parent = document.body } = opts;
@@ -219,19 +223,24 @@ export function openTable(opts = {}) {
     const hub = await ensureHub(game);
     const here = game || whereAmI(hub.games || []);
     try {
-      const { mountChat } = await import('./chat.js?v=22');
+      const { mountChat } = await import('./chat.js?v=23');
       if (closed) return null;
       // A cue is a nicety and a game's own code: if it throws, he still opens
       // and falls back to his own line about the cabinet you are standing in.
       let said = null;
       try { said = typeof cue === 'function' ? cue() : cue; }
       catch (err) { console.warn('[toko-table] the cue threw:', err && err.message); }
+      let opening = null;
+      try {
+        const r = typeof recap === 'function' ? recap(document.documentElement.lang || 'en') : recap;
+        if (r) opening = (Array.isArray(r) ? r : [r]).map(String).filter(Boolean);
+      } catch (err) { console.warn('[toko-table] the recap threw:', err && err.message); }
       chat = mountChat(panel, {
-        where: 'in', openOnLoad: true, keysOn: root, cue: said, from: here,
+        where: 'in', openOnLoad: true, keysOn: root, cue: said, from: here, opening,
       });
       // what the table decided, for a gate and for a console — the id it
       // resolved from the path is the one a note will file under
-      globalThis.__tokoLastTable = { from: here ? here.id : null, cue: said };
+      globalThis.__tokoLastTable = { from: here ? here.id : null, cue: said, opening };
       // when he closes himself (Esc, LEAVE), the table goes with him
       const leave = panel.querySelector('.toko-chat .tc-leave');
       if (leave) leave.addEventListener('click', () => setTimeout(close, 0));

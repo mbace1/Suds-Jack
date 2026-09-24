@@ -83,7 +83,7 @@ export function sign(opts = {}) {
   let seat = open;
   if (!seat && table) {
     const cfg = table === true ? {} : table;
-    seat = () => import('./table.js?v=2')
+    seat = () => import('./table.js?v=3')
       .then(m => m.openTable(cfg))
       .catch(err => console.warn('[toko] the table is unavailable:', err && err.message));
   }

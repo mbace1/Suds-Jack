@@ -2,6 +2,31 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v50 — 2026-09-23
+<!-- continuing the SITE's count (v49 shipped there); see the v48 note -->
+**He knows what happened.** Opened at the table on the recap, Toko's first
+lines are the run you were just in, in this game's own words, instead of the
+generic "straight off Hyper Dagger, then":
+
+    THE SERPENT GOT YOU AT 41.2S.
+    THAT IS THE THIRD TIME THE SERPENT HAS HAD YOU THIS WEEK.
+    YOUR BEST IS 63.0S.
+    GIB THE RINGS ONE BY ONE. THE PALE ONE IS ARMOURED FROM THE FRONT — SHOOT ITS RINGS FROM BEHIND.
+
+- `tokoRecap()` is the game's half: the death line (or the clock, paused), what
+  this game remembers about you — its own 40-run log, which now records WHEN
+  (`at`), so "this week" is a count and not a guess; nothing leaves the browser —
+  the best, and one honest tip per thing that kills you (`ENEMY_TIPS`). Enemies
+  with no honest tip get none rather than a platitude.
+- `toko/js/table.js` learned `recap(lang)` and `chat.js` learned `opening`: the
+  host's lines replace the greeting and the TELL button still follows, because
+  the point of knowing what happened is to make it easier to say something
+  about it. Both are allowed to throw; he opens either way.
+- In this game's English, like the rest of its UI — the counter's chrome stays
+  trilingual, the recap is the game's voice about itself.
+- Tokens: `main.js?v=65`, worker cache `hyperdagger-v37`, `chat.js?v=23`,
+  `table.js?v=3`.
+
 ## v48 — 2026-09-21
 <!-- v35–v47 were authored and shipped on gh-pages and are not in this tree
      (its main.js is ~700 lines ahead). The number continues the SITE's count
