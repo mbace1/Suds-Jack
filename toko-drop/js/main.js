@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=216';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=216';
-import { Player, PLAYER_RADIUS } from './player.js?v=216';
+import { InputManager } from './input.js?v=217';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=217';
+import { Player, PLAYER_RADIUS } from './player.js?v=217';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=216';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=216';
-import { audio } from './audio.js?v=216';
-import { haptics } from './haptics.js?v=216';
-import { initDesigner } from './designer.js?v=216';
-import { createSpecimen } from './specimen.js?v=216';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=216';
-import { TUNING } from './tuning.js?v=216';
-import { Arena, rectShape } from './arena.js?v=216';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=216';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=216';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=216';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=217';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=217';
+import { audio } from './audio.js?v=217';
+import { haptics } from './haptics.js?v=217';
+import { initDesigner } from './designer.js?v=217';
+import { createSpecimen } from './specimen.js?v=217';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=217';
+import { TUNING } from './tuning.js?v=217';
+import { Arena, rectShape } from './arena.js?v=217';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=217';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=217';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=217';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -432,7 +432,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '263';
+const GAME_VERSION = '264';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -2897,6 +2897,7 @@ function updateDrop(dt) {
 function applyDepthLook(i) {
   if (smashMode || inCabinet() || customLevel) return;   // they own their looks
   const L = TUNING.depth.looks[i] ?? TUNING.depth.looks[0];
+  const changed = _depthIdx !== i;
   _depthIdx = i;
   scene.background.setHex(L.bg);
   _FOG.color.setHex(L.bg); _FOG.near = L.fogNear; _FOG.far = L.fogFar;
@@ -2909,7 +2910,123 @@ function applyDepthLook(i) {
   floorUniforms.uFloorGridHi.value.set(...L.gridHi);
   floorUniforms.uGridGlow.value = L.gridGlow;
   const a = floorUniforms.uArena.value; a.y = L.vignette; a.w = L.poolLift;
+  if (changed) resetWorldRule();   // v264: a world never inherits the last one's weather
 }
+// ── WORLD RULES (v264) ───────────────────────────────────────────────────────
+// One mechanic per world (TUNING.depth.rules). Everything here is confined to
+// a classic round — cabinets, SMASH, RUSH and authored levels keep their own
+// rules — and every rule resets when a run starts or a world changes, so a
+// fall never carries the last world's weather into the next one.
+let _wr = { t: 0, angle: 0, nextAt: 0, warnT: 0, fireT: 0, pushT: 0, lane: 0, gapAt: 0 };
+const _WR_WHITE = new THREE.Color(0xffffff);
+function worldRule() {
+  if (!classicRound()) return null;
+  return TUNING.depth.looks[_depthIdx]?.rule ?? null;
+}
+function resetWorldRule() {
+  _wr = { t: 0, angle: Math.random() * Math.PI * 2, nextAt: 0, warnT: 0, fireT: 0, pushT: 0, lane: 0, gapAt: 0 };
+  player._slip = null;
+  border.material.color.setHex(TUNING.depth.looks[Math.max(0, _depthIdx)]?.rail ?? 0x5555cc);
+  if (scene.fog) { const L = TUNING.depth.looks[Math.max(0, _depthIdx)]; if (L) { _FOG.near = L.fogNear; _FOG.far = L.fogFar; } }
+}
+// the rail flashes hot while a sweep is coming, and goes back to its own colour
+function _railFlash(k) {
+  const L = TUNING.depth.looks[Math.max(0, _depthIdx)];
+  const base = new THREE.Color(L?.rail ?? 0x5555cc);
+  border.material.color.copy(base).lerp(_WR_WHITE, Math.max(0, Math.min(1, k)));
+}
+function updateWorldRule(dt) {
+  const rule = worldRule();
+  const R = TUNING.depth.rules;
+  if (!rule) { player._slip = null; return; }
+  _wr.t += dt;
+  if (rule === 'current') {
+    // the whole floor leans, and the lean turns
+    const C = R.current;
+    _wr.angle += C.turn * dt;
+    const dx = Math.cos(_wr.angle), dz = Math.sin(_wr.angle);
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      e.position.x += dx * C.speed * dt;
+      e.position.z += dz * C.speed * dt;
+    }
+    player.mesh.position.x += dx * C.speed * C.playerMult * dt;
+    player.mesh.position.z += dz * C.speed * C.playerMult * dt;
+  } else if (rule === 'sweep') {
+    const S = R.sweep;
+    if (_wr.nextAt === 0) { _wr.nextAt = S.every; }
+    if (_wr.warnT > 0) {
+      _wr.warnT -= dt;
+      _railFlash(0.35 + 0.45 * Math.abs(Math.sin(_wr.warnT * 14)));
+      if (_wr.warnT <= 0) { _railFlash(0); _fireSweep(); }
+    } else if (_wr.t >= _wr.nextAt) {
+      _wr.nextAt = _wr.t + S.every;
+      _wr.warnT = S.warn;
+      _wr.lane = Math.floor(Math.random() * 4);           // which rail it comes off
+      }
+  } else if (rule === 'dark') {
+    // the dark breathes: fog closes to nearMin/farMin and opens again
+    const D = R.dark, L = TUNING.depth.looks[_depthIdx];
+    if (L && scene.fog) {
+      const k = (0.5 - 0.5 * Math.cos((_wr.t / D.period) * Math.PI * 2)) * (reduceMotion ? 0.45 : 1);
+      _FOG.near = L.fogNear + (D.nearMin - L.fogNear) * k;
+      _FOG.far  = L.fogFar  + (D.farMin  - L.fogFar)  * k;
+    }
+  } else if (rule === 'slip') {
+    player._slip = R.slip;      // player.js reads it; null everywhere else
+  } else if (rule === 'updraft') {
+    const U = R.updraft;
+    if (_wr.nextAt === 0) _wr.nextAt = U.every;
+    if (_wr.pushT > 0) {
+      _wr.pushT -= dt;
+      const k = Math.max(0, _wr.pushT / U.dur);
+      // out from the middle — and the MIDDLE itself is the place the rule exists
+      // to move you off, so a body standing on it gets the event's own angle
+      // rather than nothing (x/0 is no direction at all).
+      const MIN = 1.5, a0 = _wr.ang0 ?? 0;
+      const outX = (x, z) => { const d = Math.hypot(x, z); return d < MIN ? Math.cos(a0) : x / d; };
+      const outZ = (x, z) => { const d = Math.hypot(x, z); return d < MIN ? Math.sin(a0) : z / d; };
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        const ex = e.position.x, ez = e.position.z;
+        e.position.x += outX(ex, ez) * U.push * k * dt;
+        e.position.z += outZ(ex, ez) * U.push * k * dt;
+      }
+      const px = player.position.x, pz = player.position.z;
+      player.mesh.position.x += outX(px, pz) * U.push * 0.55 * k * dt;
+      player.mesh.position.z += outZ(px, pz) * U.push * 0.55 * k * dt;
+    } else if (_wr.warnT > 0) {
+      _wr.warnT -= dt;
+      _railFlash(0.5 * Math.abs(Math.sin(_wr.warnT * 12)));
+      if (_wr.warnT <= 0) {
+        _railFlash(0); _wr.pushT = U.dur; addShake(0.35); audio.milestone?.();
+        _wr.ang0 = Math.random() * Math.PI * 2;   // which way the dead centre goes
+      }
+    } else if (_wr.t >= _wr.nextAt) {
+      _wr.nextAt = _wr.t + U.every;
+      _wr.warnT = U.warn;
+    }
+  }
+}
+// THE VEIN's line: a row of bullets off one rail, with a gap you run to
+function _fireSweep() {
+  const S = TUNING.depth.rules.sweep;
+  const horiz = _wr.lane < 2;
+  const span = horiz ? HALF_X : HALF_Z;
+  const n = Math.max(3, Math.floor((span * 2) / S.spacing));
+  const gapAt = Math.floor(Math.random() * Math.max(1, n - S.gapSlots));
+  for (let i = 0; i < n; i++) {
+    if (i >= gapAt && i < gapAt + S.gapSlots) continue;    // the hole
+    const off = -span + (i + 0.5) * (span * 2 / n);
+    const sign = (_wr.lane % 2) ? 1 : -1;
+    const x = horiz ? off : sign * HALF_X;
+    const z = horiz ? sign * HALF_Z : off;
+    const dx = horiz ? 0 : -sign, dz = horiz ? -sign : 0;
+    bullets.spawnDir(x, z, dx, dz, false, 0xff4466, false, null, false, 0, S.speed / BULLET_CONFIG.enemySpeed);
+  }
+  audio.enemyShoot?.();
+}
+
 function applySmashFloorLook() {
   if (bindingMode || gauntlet || inCabinet()) return;   // they own their looks
   const lk = smashMode
@@ -8429,6 +8546,7 @@ function startGame() {
   applySmashFloorLook();
   applyDepthLook(0);            // v260: every run starts on THE SURFACE
   drop = null; _dropCamY = 0; floor.position.y = 0; border.position.y = 0.02;   // v261
+  resetWorldRule();   // v264
   _entryDoor = null; _cameFromDoor = null;
   buildSmashDoors();  // no-op unless SMASH TV mode is on
   _titleIntroPlayed = false;  // v121: arm the recorded intro for the next title visit
@@ -9918,6 +10036,7 @@ function loop() {
       }
     }
   }
+  updateWorldRule(dt);   // v264: the world's own rule, before the bodies are clamped
   for (const e of enemies) {
     // v187 CLOSE COMBAT: enemies get a dead phone instead of the trigger
     e.update(dt, player.position, meleeRun ? MUZZLED_BULLETS : bullets, arena);
@@ -11134,7 +11253,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=216').then(async m => {
+  import('./editor.js?v=217').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -11165,6 +11284,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=216').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=217').catch(() => {});
   });
 }
