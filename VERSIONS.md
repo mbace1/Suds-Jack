@@ -7,6 +7,86 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v266 — 2026-09-24
+**A BOSS PER WORLD: every boss fights inside a world, and while it lives that world's rule comes from the boss** *(owner: "all in order" — leap 2 of 5)*
+- **Every boss already closes a world** — boss every 8 waves, a world every 8
+  waves, so the wave-16 boss fights in THE WELL and the wave-48 one in THE KILN.
+  The headliners stay the purpose-built ones (OMEGA, the twin PRISMS, TORO with
+  WARDENs in CLOSE COMBAT); what changes is the fight around them. While a boss
+  lives, the world's rule binds to it (`TUNING.depth.boss`), and the boss wave's
+  banner names the fight:
+  - **THE WELL — THE WHIRLPOOL.** The current becomes a swirl round the boss
+    that draws everything in past four units.
+  - **THE VEIN — THE LINE.** The rail sweep stops; the boss fires the line
+    instead — through itself, square to you, travelling your way, a gap in it.
+  - **THE VOID — THE BLINK.** The dark breathes faster and deeper, and at its
+    darkest the boss is somewhere else, at least seven units from you.
+  - **THE FOAM — THE SKID.** The boss's own step becomes what it accelerates
+    toward, so it overshoots you and has to come back round (both twin PRISMS).
+  - **THE KILN — THE FURNACE.** The updraft blasts out from the boss, more
+    often, and hits you as hard as it hits them. You fight toward the heat.
+  - THE SURFACE keeps no rule and so its boss is the fight it always was.
+- **Measured against the same fight with the binding off** (a boss held in
+  place, eight dummies, the player at a fixed spot):
+
+  | world | variant | off → on |
+  |---|---|---|
+  | THE WELL | the whirlpool | player moved **2.9 away** from the boss → **6.4 toward** it; bodies around it drift out 10.5 → hold at −0.4 |
+  | THE VEIN | the line | boss volleys 0 → **3** in 12 s, replacing the rail's one |
+  | THE VOID | the blink | 0 → **2** blinks in 13 s, landing 13.4 and 8.0 from you; fog 6 → **4** |
+  | THE FOAM | the skid | time for a chasing boss to turn back toward you **0.02 s → 0.46 s**; mean Δv 0.25 → 0.09 |
+  | THE KILN | the furnace | bodies pushed from the boss 5.2 → **7.7**; you, 1.6 → **6.5** |
+
+- **The first cut of the probe measured nothing**, and it is worth writing down
+  how: it passed `withBoss` in the wrong argument slot, so every "off" run took
+  zero steps and every "on" run took one second — a table of confident numbers
+  about two fights that never happened. And the first skid instrument used TORO,
+  whose charge-and-pause cycle decides when it turns, so the skid read as making
+  it turn *faster*. A steady chaser with the world's rule switched off is the
+  control that holds.
+- `scripts/soak.sh 40` now plays through four bound boss fights in each mode:
+  boss rounds 12.6–17.4 s, no stalls, both modes to wave 41.
+  `design/boss-whirlpool-v266.gif`, `design/boss-line-v266.gif`.
+- **The recordings found a banner bug**: "WAVE 16 — BOSS · THE WHIRLPOOL" ran
+  off both edges of a 760 px screen, and a phone is narrower. The wave banner
+  now fits — the main line shrinks until it does, and anything after " · "
+  drops to a smaller second line — which also covers a campaign room's goal
+  and every depth name. `design/boss-banner-phone-v266.png` is it at 390 px.
+- Arcade only: a campaign room has no boss, and a cabinet has no world.
+- **A v265 DEFECT IN THE ROOMS, found by this release's gates.** level-smoke
+  failed one campaign room in roughly four runs: a spawn "did not land as
+  authored". Traced: v265's heat mirrored each echo through the centre, and a
+  symmetric ring MIRRORS ONTO ITSELF — every echo spawned exactly where the
+  originals had arrived 1.5 s before, and the crowd pass shoved the newcomer
+  apart on its first frame. `scripts/campaign-rooms.mjs` now places EVERY
+  spawn, hand-written ones included, in time order around whatever is still
+  standing there — a spot stays taken for as long as the body that took it
+  lingers (a turret the whole room, a WARDEN or TORO about 12 s, a
+  range-holding shooter 6, a chaser 2.5) — turning a clash about the centre
+  until it is clear and inside, and it refuses a room with two bodies stacked.
+  That check found a stacked pair in THE PULL's hand-written skeleton (a MAGNA
+  and a ring GLOBBO) and two in SIREN SONG's, moved by hand.
+- **And level-smoke now checks the promise the file actually makes.** Even
+  with clean placement, a body that WALKED onto a spawn point on its way to
+  you still shoved a newcomer about one room-run in fifty — a dense room is the
+  point, and fifteen rooms made that a failed gate run one time in four. The
+  check compared the first SIGHTING, a step into a body's life, after its own
+  motion and the crowd pass, within a full unit. It now compares where the pump
+  PLACED the body (`Enemy._spawnAt`, one line in the game) to 0.01 of a unit.
+  That is stricter, not looser: a negative control that makes the game misplace
+  one body by 0.3 — which the old one-unit tolerance would have passed — fails.
+  The trace file written for the Godot port's parity diff still records first
+  sightings, byte-for-byte as before. 90 runs across all 18 rooms: no failures.
+- **THE FORGE, re-tuned.** Spreading its echoes to clear spots surrounded the
+  player from more directions at the same body count, and the human-like bot
+  went from surviving it 8 times in 10 to once. It sits on a cliff: 35 bodies
+  at base speed survive 18/20, 39 bodies with 5% more speed 5/20; 39 bodies at
+  base speed — kept — survive **10/20**, the finale's target. Speed carries
+  more of that cliff than the bodies do.
+- Cache-bust `?v=220` → `?v=221`; HUD label → v266
+
+---
+
 ## v265 — 2026-09-24
 **CAMPAIGN WORLDS: six worlds of rooms that play the arcade's own places, three kinds of goal, grades a room can actually pay, and a bot that measures the curve** *(owner: "all in order" — leap 1 of 5)*
 - **A world is an arcade depth, look AND rule.** The campaign is now six worlds

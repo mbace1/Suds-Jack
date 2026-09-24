@@ -177,7 +177,7 @@ export const TUNING = {
     worlds: [
       { look: 0, rooms: [{ id: 'first-light' }, { id: 'three-rings' }, { id: 'boost-lane' }] },
       { look: 1, rooms: [{ id: 'undertow' }, { id: 'eddy', goal: 'quota', kills: 19 }, { id: 'slug-run', goal: 'flawless' }] },
-      { look: 2, rooms: [{ id: 'pulse' }, { id: 'crossfire', goal: 'quota', kills: 22 }, { id: 'clot', goal: 'flawless' }] },
+      { look: 2, rooms: [{ id: 'pulse' }, { id: 'crossfire', goal: 'quota', kills: 18 }, { id: 'clot', goal: 'flawless' }] },
       { look: 3, rooms: [{ id: 'lights-out' }, { id: 'the-pull', goal: 'quota', kills: 27 }, { id: 'siren-song' }] },
       { look: 4, rooms: [{ id: 'rink' }, { id: 'skate', goal: 'quota', kills: 30 }, { id: 'bubble-bath', goal: 'flawless' }] },
       { look: 5, rooms: [{ id: 'bellows' }, { id: 'anvil', goal: 'quota', kills: 34 }, { id: 'forge' }] },
@@ -230,6 +230,27 @@ export const TUNING = {
       // THE KILN — every few seconds the floor shoves everything out from the
       // middle, so the centre is somewhere you pass through, not somewhere you live.
       updraft: { every: 6.5, warn: 0.8, push: 13, dur: 0.45 },
+    },
+    // ── A BOSS PER WORLD (v266) ──────────────────────────────────────────────
+    // Every boss closes a world, so it fights INSIDE one. While a boss lives,
+    // that world's rule binds to it — the boss is the thing the rule comes
+    // from. The headliners stay the purpose-built ones (OMEGA, the twin PRISMS,
+    // TORO in CLOSE COMBAT); what changes is the fight around them.
+    boss: {
+      // THE WELL — THE WHIRLPOOL: the current becomes a swirl around the boss,
+      // with a pull toward it past `holdOut`
+      current: { name: 'THE WHIRLPOOL', swirl: 4.2, pull: 1.6, holdOut: 4, playerMult: 0.45 },
+      // THE VEIN — THE LINE: the boss fires the sweep — a line through itself,
+      // square to you, travelling your way, with a gap in it
+      sweep:   { name: 'THE LINE', every: 4.5, warn: 0.9, spacing: 2.2, gapSlots: 2, speed: 8, span: 14 },
+      // THE VOID — THE BLINK: the dark breathes faster and deeper, and at its
+      // darkest the boss is somewhere else
+      dark:    { name: 'THE BLINK', period: 6, nearMin: 4, farMin: 14, minFromPlayer: 7 },
+      // THE FOAM — THE SKID: the boss carries momentum, so it overshoots you
+      slip:    { name: 'THE SKID', accel: 1.6 },
+      // THE KILN — THE FURNACE: the updraft blasts out from the BOSS, more
+      // often, and hits you as hard as it hits them — you fight toward the heat
+      updraft: { name: 'THE FURNACE', every: 4.5, warn: 0.7, push: 15, dur: 0.45, playerMult: 1.0 },
     },
     looks: [
       { name: 'THE SURFACE', bg: 0x0d0d1a, rail: 0x5555cc, fogNear: 42, fogFar: 80, gridScale: 1.0, gridFall: 0.45, vignette: 0.55, poolLift: 0.30,

@@ -119,7 +119,7 @@ const ROOMS = {
     ...beat(4, 'GLOBBO', ring(4, 8.5, 1.1)),
     ...beat(7, 'SPLITTA', [[0, 8.5]]),
     ...beat(9, 'MAGNA', [[8.5, 0]]),
-    ...beat(11, 'GLOBBO', ring(3, 8.5, 2.0)),
+    ...beat(11, 'GLOBBO', ring(3, 8.5, 2.4)),   // v266: phase 2.0 put one on the MAGNA
     ...beat(18, 'YELA_CUBE', ring(2, 8.5, 0.2)),
     ...beat(25, 'GLOBBO', ring(3, 8.5, 1.4)),
     ...beat(32, 'SPLITTA', [[-8.5, 0]]),
@@ -128,11 +128,11 @@ const ROOMS = {
     ...beat(0, 'GLOBBO', [[0, -8], [0, 8]]),
     ...beat(4, 'SIREN', [[0, -8]]),
     ...beat(8, 'GLOBBO', [[-5, 0], [5, 0]]),
-    ...beat(13, 'TORO', [[0, 8]]),
+    ...beat(13, 'TORO', [[-5, 0]]),   // v266: (0,8) was the SIREN's spot, still taken
     ...beat(18, 'GLOBBO', [[-3, -5], [3, -5], [-3, 5], [3, 5]]),
     ...beat(24, 'WARDEN', [[0, -8]]),
     ...beat(29, 'SIREN', [[0, 8]]),
-    ...beat(34, 'GLOBBO', [[-5, 0], [5, 0], [0, -8]]),
+    ...beat(34, 'GLOBBO', [[-5, 0], [5, 0], [3, -5]]),   // v266: (0,-8) was the WARDEN's, still taken
     ...beat(38, 'TORO', [[0, -8]]),
   ] },
   // ── 5. THE FOAM — the slick floor ──────────────────────────────────────
@@ -237,24 +237,58 @@ const DIAL = {
   'bubble-bath': { echo: 0.2,  echo2: 0,    pace: 1.0 },
   'bellows':     { echo: 0.3,  echo2: 0.1,  pace: 1.05 },
   'anvil':       { echo: 1.0,  echo2: 0.8,  pace: 1.25 },
-  'forge':       { echo: 0.5,  echo2: 0,    pace: 1.1 },
+  'forge':       { echo: 0.4,  echo2: 0,    pace: 1.0 },
 };
 // an even spread of `share` across the skeleton — every k-th body, not the first k
 const pick = (i, n, share) => share > 0 && Math.floor((i + 1) * share) > Math.floor(i * share);
+// v266: a body must not ARRIVE ON a body that is still standing there. The
+// first cut mirrored every echo through the centre, which maps a symmetric
+// ring onto ITSELF — each echo spawned where the originals had arrived 1.5 s
+// before, and the crowd pass shoved the newcomer apart on its first frame.
+// level-smoke's cross-build trace caught it as a spawn that "did not land as
+// authored" (1 run in 4). A flat window was wrong both ways (2.5 s missed a
+// WARDEN still on its spot 10 s later; 12 s refused chasers that leave in a
+// second), so how long a spot stays taken depends on WHAT took it:
+const LINGER = {
+  PYRA: 99, BAMBU: 99, TURRET: 99,                                         // stationary: the whole room
+  WARDEN: 12, TORO: 12, BULWARK: 12, SIREN: 12, MAGNA: 12, DRAPER: 12, SLUDGE_CUBE: 8,   // slow heavies
+  SPITTOR: 6, FANNER: 6, WEEVA: 6, ORANGE_CUBE: 6, PURP_CUBE: 6, CLOAKER: 6, BOTFLY: 6, // they hold range
+};
+const CLEAR = 2.5, CHASER = 2.5;
+const taken = (o, t, x, z) => t - o.t <= (LINGER[o.type] ?? CHASER) && t >= o.t && Math.hypot(o.px - x, o.pz - z) < CLEAR;
+// every spawn, hand-written or echoed, is placed IN TIME ORDER: if its spot is
+// still taken it turns about the centre until it is clear and inside
+function placeAll(spawns, region) {
+  const placed = [];
+  for (const s of [...spawns].sort((a, b) => a.t - b.t)) {
+    let at = null;
+    for (const deg of [0, 30, -30, 55, -55, 80, -80, 110, -110, 145, -145, 180]) {
+      const a = deg * Math.PI / 180, c = Math.cos(a), sn = Math.sin(a);
+      const x = r1(s.px * c - s.pz * sn), z = r1(s.px * sn + s.pz * c);
+      if (region.sdf(x, z) < -0.6 && !placed.some(o => taken(o, s.t, x, z))) { at = [x, z]; break; }
+    }
+    if (at) placed.push({ ...s, px: at[0], pz: at[1] });
+    else if (!s._echo) placed.push(s);          // a hand-written body is never dropped — the check below names it
+  }
+  return placed.map(({ _echo, ...rest }) => rest);
+}
 function heat(id, r) {
   const w = WORLD[id], dur = r.duration, D = DIAL[id];
+  const region = L.arenaShape({ arena: r.arena });
   const base = r.spawns.map(s => ({ ...s }));
   const out = [...base];
   base.forEach((s, i) => {
     if (!pick(i, base.length, D.echo)) return;
     const t = r1(s.t + 1.5); if (t > dur - 4) return;
-    out.push({ ...s, t, px: r1(-s.px), pz: r1(-s.pz) });
+    out.push({ ...s, t, px: r1(-s.px), pz: r1(-s.pz), _echo: true });
   });
   base.forEach((s, i) => {
     if (!pick(i, base.length, D.echo2)) return;
     const t = r1(s.t + 3); if (t > dur - 4) return;
-    out.push({ ...s, t, px: s.px, pz: r1(-s.pz) });
+    out.push({ ...s, t, px: s.px, pz: r1(-s.pz), _echo: true });
   });
+  const placedAll = placeAll(out, region);
+  out.length = 0; out.push(...placedAll);
   for (const s of out) {
     const k = s.t / dur;
     const ramp = k >= 0.7 ? 1.35 : k >= 0.4 ? 1.2 : 1;
@@ -281,6 +315,11 @@ for (const [id, r] of Object.entries(ROOMS)) {
   const lv = { format: 1, id, name: r.name, arena: r.arena, duration: r.duration,
                rules: { mode: 'arcade', outside: 'push' }, spawns };
   const errs = [...L.validate(lv, ctx), ...L.checkGeometry(lv)];
+  // no body may arrive on a spot another is still standing on (v266 — see LINGER)
+  const sp = [...lv.spawns].sort((a, b) => a.t - b.t);
+  for (let i = 0; i < sp.length; i++) for (let j = i + 1; j < sp.length; j++)
+    if (taken(sp[i], sp[j].t, sp[j].px, sp[j].pz))
+      errs.push(`stacked: ${sp[i].type}@${sp[i].t} (${sp[i].px},${sp[i].pz}) and ${sp[j].type}@${sp[j].t} (${sp[j].px},${sp[j].pz})`);
   const bodies = lv.spawns.length;
   let tQuota = null;
   if (r.quota) {
