@@ -60,7 +60,7 @@ function offerButton(tm,offer,info,label='TAKE JOB'){const seen=new Set(),live=(
  // reach the thing you are choosing between. The parcel says what it is and how
  // much of your bag it takes; the pips say you have been here before, without
  // saying who lives there.
- const reg=regularAt(offer.stops[1]),st=reg?standingOf(tm.challenge.standing,reg.id):0;
+ const reg=regularAt(offer.stops[1]),st=reg?(tm.challenge.standingFor?.(reg.id)??standingOf(tm.challenge.standing,reg.id)):0;
  const pips=reg?(()=>{const p=standingPips(st);return `<span class="pips" title="you have delivered here before">${'<i class="on"></i>'.repeat(p.filled)}${'<i></i>'.repeat(p.total-p.filled)}</span>`;})():'';
  const hand=offer.handoff&&tm.flow.clock.tick<=offer.bonusUntil,left=hand?Math.max(1,Math.ceil((offer.bonusUntil-tm.flow.clock.tick)/10)):0;
  const claimed=tm.rival?.pressure?.(offer.id),rivalLeft=claimed!=null?Math.max(0,Math.ceil(claimed/10)):null;

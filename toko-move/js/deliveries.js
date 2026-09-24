@@ -138,15 +138,19 @@ export class DeliveryChallenge{
  // all. That asymmetry is the point: a streak is a thing you protect, and the
  // decision it creates is whether to take the fast job or the paying one when
  // the chain is at four.
- streakMult(){return 1+0.25*Math.max(0,Math.min(4,this.streak-1));}
- earn(job,elapsed,legs=1){const c=CARGO[job.cargo]||CARGO.documents,late=elapsed>job.limit;let earned=late?Math.round(job.value*.5):job.value,note=late?'LATE':'ON TIME';if(c.freshness){const freshLimit=Math.round(job.limit*Math.min(1,c.freshness*(this.kit?.fresh||1)));if(elapsed<=freshLimit){const bonus=Math.round(job.value*.25);earned+=bonus;this.bonuses+=bonus;note='FRESH BONUS';}else if(!late){earned=Math.round(earned*.8);note='COOLED';}}if(c.fragile&&(legs===1||this.kit?.padding)&&!late){earned+=35;this.bonuses+=35;note='FRAGILE SAFE';}if(c.express&&elapsed<=Math.round(job.limit*.7)){earned+=40;this.bonuses+=40;note='EXPRESS BONUS';}
+ streakStep(){return this.kit?.streak||0.25;}   // kit.js: a good name
+ streakMult(){return 1+this.streakStep()*Math.max(0,Math.min(4,this.streak-1));}
+ // kit.js: business cards — a regular you have never met knows you anyway.
+ dropPay(v){return Math.round(v*(this.kit?.drops||1));}   // kit.js: a courier app
+ standingFor(id){return Math.max(standingOf(this.standing,id),this.kit?.known||0);}
+ earn(job,elapsed,legs=1){const c=CARGO[job.cargo]||CARGO.documents,late=elapsed>job.limit;let earned=late?Math.round(job.value*.5):job.value,note=late?'LATE':'ON TIME';if(c.freshness){const freshLimit=Math.round(job.limit*Math.min(1,c.freshness*(this.kit?.fresh||1)));if(elapsed<=freshLimit){const bonus=Math.round(job.value*.25);earned+=bonus;this.bonuses+=bonus;note='FRESH BONUS';}else if(!late){earned=Math.round(earned*.8);note='COOLED';}}if(c.fragile&&legs===1&&!late){earned+=35;this.bonuses+=35;note='FRAGILE SAFE';}if(c.express&&elapsed<=Math.round(job.limit*.7)){earned+=40;this.bonuses+=40;note='EXPRESS BONUS';}
   if(late)this.streak=0;else{this.streak++;this.bestStreak=Math.max(this.bestStreak,this.streak);}
   {const m=this.streakMult();if(m>1){const before=earned;earned=Math.round(earned*m);this.bonuses+=earned-before;note=`${note} ×${m}`;}}
   // The person at the far end. The tip is paid on the standing you ARRIVED
   // with — today's delivery is what moves it for next time — and goodwill
   // from the event deck counts as standing with everyone.
   let regular=null,tip=0;
-  {const reg=regularAt(job.stops[1]);if(reg){const st=standingOf(this.standing,reg.id);tip=late?0:Math.round(tipFor(job.value,st,this.goodwill)*(this.kit?.tips||1));if(tip){earned+=tip;this.tips+=tip;}bumpStanding(this.standing,reg.id,late);saveStanding(this.standing,this.standingStore);regular=reg;}}
+  {const reg=regularAt(job.stops[1]);if(reg){const st=this.standingFor(reg.id);tip=late?0:tipFor(job.value,st,this.goodwill);if(tip){earned+=tip;this.tips+=tip;}bumpStanding(this.standing,reg.id,late);saveStanding(this.standing,this.standingStore);regular=reg;}}
   this.score+=earned;if(late)this.late++;return{earned,note,late,tip,regular};}
  // ON YOUR WAY — Paperboy's loop on a tram. The main job says where you are
  // going; these say what you could drop at the REAL stops you will pass
@@ -187,7 +191,7 @@ export class DeliveryChallenge{
    const isMk=pick===mk;
    const cargo=CARGO_KEYS[(seed>>>3)%CARGO_KEYS.length],passed=Math.max(1,between.indexOf(pick)+1);
    const marketPay=isMk?1+(this.market.bonus||0):1;
-   out.push({id:`along:${this.index}:${c.line?.label}:${pick.id}`,stops:[c.from,pick.id],name:pick.name,lat:pick.lat,lon:pick.lon,label:`${this.name(c.from)} → ${pick.name}`,cargo,limit:this.active.limit,value:Math.round((45+passed*12)*marketPay*payFor(cargo)),market:isMk,line:c.line?.label,along:true});}}
+   out.push({id:`along:${this.index}:${c.line?.label}:${pick.id}`,stops:[c.from,pick.id],name:pick.name,lat:pick.lat,lon:pick.lon,label:`${this.name(c.from)} → ${pick.name}`,cargo,limit:this.active.limit,value:this.dropPay((45+passed*12)*marketPay*payFor(cargo)),market:isMk,line:c.line?.label,along:true});}}
   return out.slice(0,this.market?.offers||2);}
  // Inside the market quarter: the named stop, or anything within its radius of
  // the platforms that carry the name. Coordinates come from the pack (resolved

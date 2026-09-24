@@ -17,19 +17,19 @@ const levers = new Set(K.KIT.map(k => Object.keys(k.fx)[0])); ok(levers.size ===
 // ── offers ──────────────────────────────────────────────────────────────
 ok(JSON.stringify(K.offers(5, 1)) === JSON.stringify(K.offers(5, 1)), 'the same night of the same week offers the same three');
 ok(K.offers(5, 1).length === 3 && new Set(K.offers(5, 1)).size === 3, 'three different things');
-ok(K.offers(5, 2, ['bag', 'bike']).every(id => !['bag', 'bike'].includes(id)), 'never something already owned');
-ok(K.offers(5, 4, ['bag', 'bike', 'thermos', 'dispatch']).length === 2, 'and fewer than three only when fewer are left');
+ok(K.offers(5, 2, ['bag', 'app']).every(id => !['bag', 'app'].includes(id)), 'never something already owned');
+ok(K.offers(5, 4, ['bag', 'thermos', 'dispatch', 'cards']).length === 2, 'and fewer than three only when fewer are left');
 const firsts = {}; for (let s = 1; s <= 600; s++) for (const id of K.offers(s, 1)) firsts[id] = (firsts[id] || 0) + 1;
 ok(Object.keys(firsts).length === K.KIT.length && Math.min(...Object.values(firsts)) > 200, `every item turns up (${JSON.stringify(firsts)})`);
 
 // ── effects ─────────────────────────────────────────────────────────────
 const none = K.effects([]);
-ok(none.capacity === null && none.walk === 1 && none.fresh === 1 && none.limit === 1 && none.tips === 1 && none.padding === false, 'no kit bends nothing');
+ok(none.capacity === null && none.walk === 1 && none.fresh === 1 && none.limit === 1 && none.known === 0 && none.streak === null && none.drops === 1, 'no kit bends nothing');
 for (const k of K.KIT) { const fx = K.effects([k.id]), lever = Object.keys(k.fx)[0];
   const moved = Object.keys(none).filter(key => JSON.stringify(fx[key]) !== JSON.stringify(none[key]));
   ok(moved.length === 1 && moved[0] === lever, `${k.id} moves ${lever} and nothing else`, moved.join()); }
-ok(K.effects(['bag', 'nonsense']).capacity === 7, 'an unknown id is ignored, not trusted');
-ok(JSON.stringify(K.parse('bike, bag,x')) === '["bike","bag"]', '?kit= parses to known ids only');
+ok(K.effects(['bag', 'nonsense']).capacity === 6, 'an unknown id is ignored, not trusted');
+ok(JSON.stringify(K.parse('app, bag,x')) === '["app","bag"]', '?kit= parses to known ids only');
 
 // ── nights in the week ──────────────────────────────────────────────────
 { const w = W.newWeek(() => 0.5);
@@ -54,19 +54,21 @@ ok(JSON.stringify(K.parse('bike, bag,x')) === '["bike","bag"]', '?kit= parses to
   const mk = ids => { const flow = { clock: { tick: 0, ticksPerDay: 3000 }, graph: { node: id => NODES.includes(id) ? { id, name: id, x: NODES.indexOf(id) * 10, y: 0 } : null }, routes: { list: [] } };
     const ch = new DeliveryChallenge(flow, () => {}); ch.estimate = () => 200; ch.standing = {}; ch.kit = K.effects(ids); return ch; };
   const job = (cargo, extra = {}) => ({ stops: ['kamppi', 'pasila'], cargo, limit: 200, value: 200, ...extra });
-  ok(mk([]).capacity() === 5 && mk(['bag']).capacity() === 7, 'the bag: room for 5 becomes room for 7');
+  ok(mk([]).capacity() === 5 && mk(['bag']).capacity() === 6, 'the bag: room for 5 becomes room for 6');
   const d0 = mk([]).deadlineFor({ from: 'kamppi', to: 'pasila', cargo: 'parts', dist: 3 }), d1 = mk(['dispatch']).deadlineFor({ from: 'kamppi', to: 'pasila', cargo: 'parts', dist: 3 });
   ok(Math.abs(d1 / d0 - 1.15) < 0.01, `the dispatcher: a deadline of ${d0} becomes ${d1}`);
-  // hot food at 70% of its limit: past the fresh window (60%), inside it with a thermos (84%)
-  const h0 = mk([]).earn(job('hot food'), 140), h1 = mk(['thermos']).earn(job('hot food'), 140);
-  ok(/COOLED/.test(h0.note) && /FRESH/.test(h1.note) && h1.earned > h0.earned, `the thermos: hot food at 70% of its time is ${h0.note} (${h0.earned}) without, ${h1.note} (${h1.earned}) with`);
-  const f0 = mk([]).earn(job('fragile'), 50, 2), f1 = mk(['wrap']).earn(job('fragile'), 50, 2);
-  ok(!/FRAGILE SAFE/.test(f0.note) && /FRAGILE SAFE/.test(f1.note), 'bubble wrap: a fragile parcel with a change is safe only with it');
+  // hot food at 90% of its limit: past the fresh window (60%) without a thermos, inside it with one
+  const h0 = mk([]).earn(job('hot food'), 180), h1 = mk(['thermos']).earn(job('hot food'), 180);
+  ok(/COOLED/.test(h0.note) && /FRESH/.test(h1.note) && h1.earned > h0.earned, `the thermos: hot food at 90% of its time is ${h0.note} (${h0.earned}) without, ${h1.note} (${h1.earned}) with`);
+  const h2 = mk(['thermos']).earn(job('hot food'), 201); ok(/LATE/.test(h2.note), 'and late is still late');
   const reg = REGULARS[0].at, tipJob = job('parts', { stops: ['kamppi', reg] });
-  const t0 = mk([]); t0.standing[REGULARS[0].id] = 3; const t1 = mk(['cards']); t1.standing[REGULARS[0].id] = 3;
-  const a = t0.earn(tipJob, 50).tip, b = t1.earn(tipJob, 50).tip;
-  ok(a > 0 && b === Math.round(a * 1.5), `business cards: a tip of ${a} becomes ${b}`);
-  ok(mk(['bike']).earn(job('parts'), 50).earned === mk([]).earn(job('parts'), 50).earned, 'the bike touches no fee — walking is mobility-v212.js, gated in the page'); }
+  const a = mk([]).earn(tipJob, 50).tip, b = mk(['cards']).earn(tipJob, 50).tip;
+  ok(a === 0 && b > 0, `business cards: a regular you have never met tips ${a} without, ${b} with`);
+  { const t = mk(['cards']); t.standing[REGULARS[0].id] = 4; ok(t.standingFor(REGULARS[0].id) === 4, 'and cards never LOWER a standing you earned'); }
+  const n0 = mk([]), n1 = mk(['name']); n0.streak = n1.streak = 3;
+  ok(n0.streakMult() === 1.5 && Math.abs(n1.streakMult() - 1.8) < 1e-9, `a good name: the third on-time job is ×${n0.streakMult()} without, ×${n1.streakMult()} with`);
+  ok(mk([]).dropPay(100) === 100 && mk(['app']).dropPay(100) === 150, 'a courier app: a drop worth 100 pays 150');
+  ok(mk(['bag']).earn(job('parts'), 50).earned === mk([]).earn(job('parts'), 50).earned, "the bag touches no fee — it is room, and room is the drops you can say yes to"); }
 
 console.log(`kit: ${pass} checks passed${fail ? `, ${fail} FAILED` : ''}`);
 process.exit(fail ? 1 : 0);

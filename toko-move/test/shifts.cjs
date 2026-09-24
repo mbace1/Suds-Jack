@@ -241,15 +241,17 @@ server.listen(0, '127.0.0.1', async () => {
     const player = { job: 'rate', plan: 'total', along: 'yes', walk: 'smart' };
     const week = async (w, kitFor, pl = player) => { await page.goto(`${base}/toko-move/js/week.js`); await page.evaluate(() => localStorage.removeItem('tokoMoveRegulars'));
       const days = W.weekDays(w); let sum = 0;
-      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i) }, `kit week ${w}`); sum += W.euros(r.score); }
+      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i) }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; }
       return sum; };
+    let walked = 0;
     if (KITS) {
-      const cols = [null, ...K.KIT.map(k => k.id)], out = {};
-      for (const id of cols) { out[id || 'none'] = [];
+      const only = process.env.KIT_COLS ? process.env.KIT_COLS.split(',') : null;
+      const cols = [null, ...K.KIT.map(k => k.id).filter(id => !only || only.includes(id))], out = {};
+      for (const id of cols) { out[id || 'none'] = []; walked = 0;
         for (let w = 1; w <= KITS; w++) out[id || 'none'].push(await week(w, () => (id ? [id] : [])));
         const t = out[id || 'none'], mean = t.reduce((a, b) => a + b, 0) / t.length;
         const d = id ? t.map((x, i) => x - out.none[i]) : null, dm = d ? d.reduce((a, b) => a + b, 0) / d.length : 0, sd = d ? Math.sqrt(d.reduce((a, b) => a + (b - dm) ** 2, 0) / d.length) : 0;
-        console.log(`  ${(id || 'none').padEnd(9)} mean week €${mean.toFixed(0)}${id ? ` · worth €${dm.toFixed(0)} ± ${(sd / Math.sqrt(d.length)).toFixed(0)} a week (paired)` : ''}`); }
+        console.log(`  ${(id || 'none').padEnd(9)} mean week €${mean.toFixed(0)}${id ? ` · worth €${dm.toFixed(0)} ± ${(sd / Math.sqrt(d.length)).toFixed(0)} a week (paired)` : ''} · ${walked} walks`); }
     }
     if (KITWEEKS) {
       const ORDER = (process.env.KIT_ORDER || K.KIT.map(k => k.id).join(',')).split(',');
