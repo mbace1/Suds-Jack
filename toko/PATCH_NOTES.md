@@ -1,5 +1,20 @@
 # Toko Assistant — patch notes
 
+## 2026-09-24 — Toko at the table, for thumbs
+
+- The sticker in a game's corner seats Toko at the table with a cursor; under a
+  thumb it is a picture on purpose, because it sits on the stick. So on a
+  touchscreen `hub/shell.js` now offers him beside HOME — a TOKO button in the
+  same chrome, top-left where every game keeps HUD rather than controls — on
+  every game that lays a table (`sign({ table: true })`), and on no other.
+- `signature.js` publishes the seat it built (`__tokoSeat`, plus a `toko:seat`
+  event, because the page that signs and the shell that offers load in no
+  particular order). No game changed a line.
+- Same traps as HOME: `pointerup` AND `touchend`, never `click`; the button
+  stops its own events so the game never sees the tap; it cannot open twice.
+- Not a brand release (the counter's V5 stays). Tokens: `hub/shell.js?v=41` on
+  every page — one shell, one token — and `toko/js/signature.js?v=7`.
+
 ## 2026-09-10 — two modules that took a page down with them
 
 - **`conversation-plus.js` no longer fights for `.tc-menu`.** It watched that

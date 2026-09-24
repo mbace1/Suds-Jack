@@ -1129,6 +1129,48 @@ function check(name, cond) {
       await page.locator('.arcade-touch').isVisible() === false);
   }
 
+  // TOKO beside HOME, under a thumb, on a game that lays a table — the sticker
+  // in the corner is inert on a touchscreen by design (it sits on the stick),
+  // so this is the only way a phone reaches him without leaving the run. Never
+  // on a mouse, and never on a game with no table to seat him at.
+  {
+    const tctx = await browser.newContext({
+      viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true,
+    });
+    const tp = await tctx.newPage();
+    await tp.goto(`${base}/slaykallio/`, { waitUntil: 'domcontentloaded' });
+    const shown = await tp.waitForFunction(() => {
+      const e = document.querySelector('.arcade-toko');
+      return e && getComputedStyle(e).display !== 'none';
+    }, null, { timeout: 15000 }).then(() => true, () => false);
+    check('a thumb gets TOKO beside HOME on a game with a table', shown);
+    if (shown) {
+      const geo = await tp.evaluate(() => {
+        const t = document.querySelector('.arcade-toko').getBoundingClientRect();
+        const h = document.querySelector('.arcade-home').getBoundingClientRect();
+        return { w: t.width, h: t.height, clear: t.left >= h.right };
+      });
+      check(`and it is a 44px target clear of HOME (${Math.round(geo.w)}x${Math.round(geo.h)})`,
+        geo.w >= 44 && geo.h >= 44 && geo.clear);
+      const bb = await tp.locator('.arcade-toko').boundingBox();
+      await tp.touchscreen.tap(bb.x + bb.width / 2, bb.y + bb.height / 2);
+      check('a tap seats him at the table, in the game',
+        await tp.waitForFunction(() => document.querySelector('.toko-table .toko-chat.is-open'),
+          null, { timeout: 30000 }).then(() => true, () => false)
+        && /\/slaykallio\/$/.test(tp.url()));
+    }
+    await tp.goto(`${base}/sudz/`, { waitUntil: 'domcontentloaded' });
+    await tp.waitForTimeout(1500);
+    check('no TOKO on a game with no table', await tp.locator('.arcade-toko').count() === 0);
+    await tctx.close();
+    const mp = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    await mp.goto(`${base}/slaykallio/`, { waitUntil: 'domcontentloaded' });
+    await mp.waitForTimeout(2000);
+    check('and a mouse never sees it — the sticker is the way there',
+      await mp.locator('.arcade-toko').isVisible() === false);
+    await mp.close();
+  }
+
   // holding Start on a game page walks back to the arcade
   await page.goto(`${base}/${light.path}`, { waitUntil: 'networkidle' });
   // networkidle does not mean the shell module has RUN. Stub the pad before the
