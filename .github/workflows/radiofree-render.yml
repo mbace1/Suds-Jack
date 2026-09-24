@@ -1,0 +1,90 @@
+name: Radio Free Helsinki morning clips
+
+# Renders the newest morning to one vertical MP4 per bulletin, through the
+# app's own export button in headless Chromium, and keeps them as a build
+# artifact for a week. It runs after the wire job, and by hand.
+#
+# Two facts about what it produces, both recorded in clips.json beside the
+# files: the codec is AV1 in an .mp4 container (headless Chromium has no H.264
+# encoder), which plays in modern browsers, VLC and mpv and not in every phone
+# gallery; and each clip is as long as its copy needs — js/film.js gives every
+# caption a reading budget — unless `seconds` names a target to compress toward.
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: Episode to render (YYYY-MM-DD); blank = the newest
+        required: false
+        default: ''
+      lang:
+        description: Languages, comma separated
+        required: false
+        default: 'en,fi,ja'
+      seconds:
+        description: Target clip length in seconds; blank = as long as the copy needs
+        required: false
+        default: ''
+  workflow_run:
+    workflows: ['Radio Free Helsinki morning wire']
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radiofree-morning-clips
+  cancel-in-progress: true
+
+jobs:
+  clips:
+    # after the wire job, only if it actually produced a morning
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install a browser
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: The film plan holds for every bulletin on disk
+        run: node radiofree/test/film.mjs
+
+      - name: Render the morning
+        shell: bash
+        run: |
+          ARGS=()
+          [ -n '${{ github.event.inputs.date }}' ] && ARGS+=(--date '${{ github.event.inputs.date }}')
+          [ -n '${{ github.event.inputs.seconds }}' ] && ARGS+=(--seconds '${{ github.event.inputs.seconds }}')
+          LANGS='${{ github.event.inputs.lang }}'
+          node radiofree/tools/render-day.mjs --lang "${LANGS:-en,fi,ja}" --out dist/clips "${ARGS[@]}"
+
+      - name: Say what was made
+        shell: bash
+        run: |
+          node -e '
+            const m = require("./dist/clips/clips.json");
+            const by = {};
+            for (const c of m.clips) (by[c.codec] = by[c.codec] || []).push(c);
+            for (const [codec, cs] of Object.entries(by)) console.log(`${cs.length} clips as ${codec}, ${cs.reduce((a, c) => a + c.bytes, 0) / 1e6 | 0} MB, ${(cs.reduce((a, c) => a + c.seconds, 0) / cs.length).toFixed(1)}s average`);
+            for (const p of m.problems) console.log("! " + p);
+          ' | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the clips
+        uses: actions/upload-artifact@v4
+        with:
+          name: radiofree-clips-${{ github.run_id }}
+          path: dist/clips
+          retention-days: 7
+          if-no-files-found: error

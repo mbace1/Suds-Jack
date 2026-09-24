@@ -2,8 +2,8 @@
 // Sparse fixed-grid geometry inspired by the real harbour: terminal masses,
 // ferry traffic, cranes, water and foreground quay elements move independently.
 
-import { PAL } from './palette.js?v=64';
-import { mix, shade, bayer } from './screen.js?v=64';
+import { PAL } from './palette.js?v=65';
+import { mix, shade, bayer } from './screen.js?v=65';
 
 const W = 128, H = 152;
 const ink = d => mix(PAL.GREEN, PAL.AMBER, d);

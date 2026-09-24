@@ -451,3 +451,67 @@ secret, so the daily job has never once produced a morning — every wire on dis
 was written by hand in a session. And the MP4 button's H.264 path has still
 only ever been proven as AV1, because headless Chromium has no H.264 encoder;
 one press in a desktop Chrome would settle it.
+
+---
+
+## 2026-09-24 — the clip became a film (v65)
+
+**Asked:** look at the Opus 5.5-era animations and expand our style. Four of
+that week's code-drawn films were read as CODE, not as videos — the
+`horizon-reel` reconstruction of the twenty-second launch film, the p5.brush
+`PDoomVideo` and its `ClaudeAnimationBase` starter, and
+`javascript-animation-skills` — and `MOTION.md` records what was measured off
+each and what was refused. The short version: the **timing, the typography
+motion, the transitions and the surface** are borrowed; the **drawing medium
+is not**. No watercolour, no serif, no dome, no push-in on pixel art, no planet
+limb. This station is a 128×152 panel behind curved glass and stays one.
+
+**Where it lands is the export.** The first MP4 was a still of the feed's
+lower third with a clock on it — every word on screen from frame one, the
+reveal a state flip at the halfway mark, the graphic a stamp in the frame
+(it blitted the phone card, not the panel). Against the references that is
+every fault they name at once. `js/film.js` is the edit:
+
+- `planFilm()` is PURE — a bulletin's copy in, a timeline out — so
+  `test/film.mjs` asserts it in bare node over every bulletin on disk in all
+  three languages (126 plans). `paintFilm()` is the compositor, every frame a
+  pure function of t.
+- **Length comes from the copy.** Every caption has a reading budget (1 s +
+  1 s per 22 characters for a broadcast sentence, per 17 for a plain reading,
+  from the lab-explainer's caption rule), the reveal a hold, the card 1.6 s.
+  `--seconds` is a TARGET the budgets compress toward, down to 55%, and the
+  manifest records the length each clip actually is (28 s for the lead).
+- **Cold open → Toko → the graphic, green → a breath → flash → the graphic,
+  amber, at ×6.** The headline arrives as WORD RUNS that each pop in larger
+  (`backOut`, s=1.9), the launch film's device on our type. One caption at a
+  time: the sentence carrying each struck span, then each `{{spun|plain}}`
+  pair with the strike WIPING across (0.25 s) and the plain reading TYPING ON
+  with a cursor, then the tell as a question. The **technique is the payoff
+  word** — biggest thing on screen, growing 30% across the hold — and the
+  **figure counter** rolls from `claim` to `plain` beside it (92.5BN → 12.4BN
+  over 0.9 s), which is leap 1 paying off on screen.
+- Surface from the reel's numbers: grain 0.16 boiling at 12 Hz, flicker
+  0.035, vignette 0.32, a cut flash on every cut and hardest on the reveal, a
+  scanline roll across the glass in place of the push-in.
+- The sign-off is the station's own card: the wordmark, the frequency, and
+  the codec's waveform going flat.
+
+**Two things learned the hard way.** A `<video>` `currentTime` seek on an
+AV1 clip returned the FIRST frame and reported a reveal that had happened as
+one that had not; frames are decoded through mediabunny's `CanvasSink` now,
+which lands on the frame it was asked for. And restoring `export.js` after a
+slice took `loadMediabunny` and `pickCodec` with it — the render tool now
+echoes page console errors, because "nothing came back" was all it could say.
+
+**Leap 3 with it.** `tools/render-day.mjs` drives the app's own export button
+per bulletin and writes `clips.json` beside the files (codec per file, length,
+the frame DECODE fired on); `.github/workflows/radiofree-render.yml` runs it
+after the wire job and keeps the clips as an artifact for a week. Thirteen
+bulletins render in about three minutes here. Headless Chromium has no H.264,
+so CI output is AV1-in-MP4; the manifest says so.
+
+**Not done:** a soundtrack — the obvious next borrow, and MOTION.md says why
+it waits (the cuts sit on reading budgets, not on a beat grid). Japanese runs
+break after a particle rather than at a word boundary a native reader would
+choose. `ANTHROPIC_API_KEY` is still not a secret, so the wire job — and now
+the render job behind it — has never run on a morning nobody wrote by hand.

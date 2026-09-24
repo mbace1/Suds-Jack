@@ -545,7 +545,9 @@ async function main() {
   // The export steps the live package into a canvas and hands it to WebCodecs
   // through mediabunny. Headless Chromium has no H.264, so this rung of the
   // ladder is AV1-in-MP4 — the point is that the file exists, is a video, and
-  // carries exactly the frames asked for. A desktop Chrome lands on 'avc'.
+  // carries exactly the frames its plan says. A desktop Chrome lands on 'avc'.
+  // `seconds` is a TARGET the film's reading budgets compress toward (never
+  // below 55%), so a one-second target is the shortest film the copy allows.
   console.log('\nexport');
   const exp = await go(() => __rfh.debug.exportMp4(undefined, { seconds: 1, fps: 10, noDownload: true }));
   ok('a bulletin renders to a video file through the app\'s own button path',
@@ -553,7 +555,11 @@ async function main() {
   ok('the file is a video container with a real codec in it',
      exp && /^video\//.test(exp.type || '') && ['avc', 'av1', 'vp9', 'hevc', 'vp8'].includes(exp.codec),
      JSON.stringify(exp));
-  ok('it carries exactly the frames asked for', exp && exp.frames === 10, String(exp && exp.frames));
+  ok('it carries exactly the frames its plan says', exp && exp.frames === Math.round(exp.seconds * 10),
+     JSON.stringify({ frames: exp && exp.frames, seconds: exp && exp.seconds }));
+  ok('a one-second target is the copy\'s shortest film, not a one-second file',
+     exp && exp.seconds >= 10 && exp.scale <= 0.5501, JSON.stringify({ seconds: exp && exp.seconds, scale: exp && exp.scale }));
+  ok('DECODE fired inside the clip, as a cut', exp && exp.revealed > 0, String(exp && exp.revealed));
   ok('the live loop resumed after the export',
      await go(async () => { const a = __rfh.debug.beat(); await new Promise(r => setTimeout(r, 900)); return __rfh.debug.shot() !== null; }));
   ok('every post has the export button, and clean mode has none',

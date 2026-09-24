@@ -1407,14 +1407,37 @@ decided once that a ruler failing one of the three languages is worse than no
 ruler. Found on the way: the 3×5 glyph table was digits only, so every letter
 label in the file (`PCT`, `REM`, `OBS`, `LATE`) had been drawing as question
 marks since it was written.
+**A clip is a FILM, and `MOTION.md` is its rulebook** (v65, off the Opus
+5.5-era code-drawn films — the `horizon-reel` launch-film reconstruction, the
+p5.brush `PDoomVideo`/`ClaudeAnimationBase`, `javascript-animation-skills` —
+read as code, with what was measured off each and what was refused). The
+timing, the typography motion, the transitions and the surface are borrowed;
+the drawing medium is not: no watercolour, no serif, no dome, no push-in on
+pixel art. `js/film.js` splits in two on purpose — `planFilm()` is **pure**
+(copy in, timeline out; `test/film.mjs` asserts it over every bulletin in all
+three languages in bare node) and `paintFilm()` composites, every frame a pure
+function of t. **Length comes from the copy**: every caption carries a reading
+budget (1 s + 1 s per 22 chars broadcast, per 17 plain), the reveal a hold; a
+`seconds` target compresses the budgets down to 55% and the manifest records
+the true length. The order is cold open → Toko → the graphic green → a breath
+→ flash → the graphic **amber at ×6** (the panel, not the phone card, which
+made it a stamp), headline as **word runs** each popping larger, one caption
+at a time, the strike **wiping** and the plain reading **typing on**, the
+**technique as the payoff word** growing across the hold, the **figure
+counter** rolling `claim → plain`, the tell, and the station's own card. Judge
+it from **decoded frames through mediabunny's `CanvasSink`** — a `<video>`
+seek on an AV1 clip returned the first frame and reported a reveal that had
+happened as one that had not. `tools/render-day.mjs` renders a morning through
+the app's own button (13 clips in ~3 min, `clips.json` beside them);
+`.github/workflows/radiofree-render.yml` runs it after the wire job.
 **Layout belongs in `index.html`, never in an injected stylesheet.** `package.js`
 used to inject thirty `!important` rules that clamped the headline, deleted the
 second paragraph of every bulletin, and hid the DECODE button, the tally and the
 **fiction footer** — the line that makes this feed safe to broadcast — while
 separately hard-disabling DECODE behind a setter that threw the value away. If
 the copy does not fit, fix the layout; do not hide the copy.
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs`
-— 82 checks. It reads `sw.js` with whitespace-tolerant regexes, because that file
+**Gates:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs`
+— 84 checks — and `node radiofree/test/film.mjs` (bare node, 9). It reads `sw.js` with whitespace-tolerant regexes, because that file
 was reformatted once and five shell checks silently graded against `undefined`
 for as long as nobody looked. A gate that cannot parse its own subject produces a
 failure everyone learns to scroll past.
