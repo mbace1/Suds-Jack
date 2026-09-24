@@ -5,34 +5,54 @@
 **KIT, the choice between shifts.** Roadmap NEXT LEVEL, L2. Every night of the
 week (Monday to Thursday) offers three things and you take one; what you take
 you keep until Friday. Six items, and the ascension ladder's rule — **no item
-adds a verb, each bends ONE number the player already reads**:
+adds a verb, each bends ONE number the player already reads** — and every one
+of them is priced by measurement (`shifts.cjs --kits=20`: 20 weeks with the
+item held all week against the same 20 without it, paired, the player who
+reads the fee):
 
-| item | bends | where the lever lives |
+| item | bends | worth a week |
 |---|---|---|
-| 🎒 a bigger bag | room 5 → 7 | `deliveries.capacity()` |
-| 🚲 a bike | walking ×0.6 | `tm.walkFactor` (mobility) |
-| 🫖 a thermos | fresh window ×1.4 | `earn()` freshness |
-| 📟 an easy dispatcher | deadlines ×1.15 | `deadlineFor()` |
-| 📇 business cards | tips ×1.5 | `earn()` tip |
-| 🫧 bubble wrap | fragile bonus with a change too | `earn()` fragile |
+| 🎒 a bigger bag | room 5 → 6 | €52 ± 10 |
+| 📱 a courier app | drops pay ×1.5 | €32 ± 3 |
+| 📝 a better contract | jobs pay ×1.1 | €29 ± 5 |
+| ⭐ a good name | on-time chain ×0.3 a step, not ×0.25 | €25 ± 2 |
+| 📟 an easy dispatcher | deadlines ×1.15 | €20 ± 6 |
+| 📇 business cards | every regular starts at three pips | €16 ± 2 |
+
+**It took three passes, and the first was not a choice.** Pass one: a bag of
+7 was worth €86, the dispatcher €20, a thermos €6, cards (tips ×1.5) €3, bubble
+wrap €1 and a bike exactly €0 — the bag in every offer was the answer, and
+three of six were decoys. **The bike, the wrap and the thermos were CUT**, not
+tuned: the bot walked 2–3 times in twenty shifts (a walking link opens only
+between stops you have been to, and has to save half a minute), and hot or
+fragile-with-a-change work is a small share of the board, so each lever sat
+idle whatever its size. An item whose lever is almost never pulled is a trap
+in an offer of three. Their levers went with them; `kit.js` says why. Pass
+two replaced them with levers every shift pulls — the chain, a drop's fee —
+and found the chain at ×0.4 worth €73, so it is ×0.3; cards became a
+standing, not a multiplier on one (tips on a Monday are zero, and ×1.5 of zero
+is zero), and needed three pips to be worth €16. The band is €16–52: the bag is
+still the strong pick and the cards the weak one, but nothing is dead and
+nothing is always right.
 
 The offer is seeded by the week and the night and SAVED the first time it is
 shown, so a reload cannot reroll it; one tap takes the item and goes to the
 next shift, because a kit is applied when the page boots. A night closed
 without a pick is offered again on the title card and holds START until it is
-taken. The title card and end card show the kit held; Friday's share line
+taken. The title and end cards show the kit held; Friday's share line
 carries it. `?kit=a,b` applies kit to a pinned or random shift — that is how
-the bot measures an item — and is ignored on the daily, whose result is one
+the bot prices an item — and is ignored on the daily, whose result is one
 everybody compares.
 
-KIT VALUES: being measured with `shifts.cjs --kits=20`.
+RENT WITH KIT: being measured with `shifts.cjs --kitweeks=20`.
 
-`test/kit.mjs` (31) holds the offers, the nights and each lever in the
-engine's own arithmetic — hot food at 70% of its time is COOLED without a
-thermos and FRESH with one; a tip of N becomes 1.5N — and removing any one
-lever fails it. `test/week.cjs` (29) now walks the week through the picker,
-closes a card without picking, checks the kit reaches Tuesday's shift, and
-that the daily ignores `?kit=`; both wirings fail it when removed.
+`test/kit.mjs` (33) holds the offers, the nights and each lever in the
+engine's own arithmetic — a job of 200 is offered at 220 with the contract, a
+regular you have never met tips with the cards, the third on-time job is ×1.6
+with a good name — and removing any lever fails it. `test/week.cjs` (29) walks
+the week through the picker, closes a card without picking, checks the kit
+reaches Tuesday's shift, and that the daily ignores `?kit=`; both wirings fail
+it when removed.
 
 ## v2.47 — 2026-09-24
 
