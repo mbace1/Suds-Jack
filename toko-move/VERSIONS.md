@@ -1,5 +1,52 @@
 # Toko Move — versions
 
+## v2.46 — 2026-09-24
+
+**A phone playtest, touch only, and a won shift that never ended.** Entered the
+way a player does — the arcade floor, the Toko Move cabinet's PLAY, the title,
+START — on a 390×844 touch screen, and played Daily 2 by tapping: job, the lit
+CATCH, GET OFF, three times over, then SHARE.
+
+**THE BLOCKER: from v2.29 a won shift did not end.** The end card was wired to
+`challenge.step()` returning true, and since v2.29 that only happens when an
+event or a crowd fires; the delivery itself is made by GET OFF, outside step.
+So the third delivery landed and the shift ran on, a dead GET OFF on the sheet,
+until some event happened to fire — and at the day's end `onDay` declined to
+finish a shift that was already complete. On QUIET SUNDAY the playtest ran nine
+minutes at ×4 past its last delivery with no card. Every gate missed it because
+every gate runs the clock out; none had ever won a shift in a browser. The
+shift ends now on the tick the target is met, and the day's end always ends
+it. `test/daily.cjs` gains a section that wins an ordinary shift through the
+same calls a tap makes and asks for ALL DELIVERED on the next tick — it fails
+on the v2.45 wiring (card still down at tick 2167 of the win). The route panel
+also clears itself when no job is active, so a GET OFF cannot outlive its job;
+that half is not separately gated (the in-page loop never renders, and a check
+that cannot fail was dropped rather than kept).
+
+**The fix broke the shift back, and the card caught it.** Ending on the
+delivering tick ran the end card before the shift log's next poll (it polls
+from the draw loop), so a 3/3 win listed its third job as NOT DELIVERED.
+`finish()` polls the log before closing it; the daily gate's bot polls the way
+the draw loop does and fails when a 3/3 win reads otherwise. The same card said
+`126t to spare` — the log speaks minutes now (`just in time`, `LATE by 2 min`,
+a missed plan `~6 min` against `~4 min`), and the gate fails on any `Nt` in it.
+Both new checks were run against their mutants and fail on them.
+
+Readability, all off the screenshots: **the phone HUD** reserved 92px on its
+SECOND row for a HUB button that sits on the first, so the stats wrapped onto a
+third row whenever the job timer read two digits and the map jumped ~25px —
+the second row runs full width now. **The on-map walk callout** said
+`WALK 7t · CATCH 2H +0t · GO` in 9px: raw engine ticks, which the house
+vocabulary (`ui.js`) promises never reach the screen. It reads
+`WALK ~1 min → 2H now` at 11px and is drawn over the courier rather than under.
+**Zoom rail** labels 9 → 11px; the title's shift line 10.5 → 12px. A tall end
+card no longer slides under the HUB button (the veil keeps 64px clear on a phone).
+
+What the playtest found and left: a ticket-inspection card can push the lit
+CATCH below the fold for a moment (it is the thing asking for a decision, so it
+goes first); the zoom rail covers the map's top-right labels; the shift log's
+legend percentages are 10px.
+
 ## v2.45 — 2026-09-23
 
 **The daily shift.** Roadmap NEXT LEVEL, L3. With no parameter the game is
