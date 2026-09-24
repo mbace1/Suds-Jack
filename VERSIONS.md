@@ -7,6 +7,101 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v265 — 2026-09-24
+**CAMPAIGN WORLDS: six worlds of rooms that play the arcade's own places, three kinds of goal, grades a room can actually pay, and a bot that measures the curve** *(owner: "all in order" — leap 1 of 5)*
+- **A world is an arcade depth, look AND rule.** The campaign is now six worlds
+  of three rooms (`TUNING.campaign.worlds`): a room in THE WELL plays on the
+  current, a room in THE VEIN under the sweep, and so on. Fifteen new rooms,
+  written by `scripts/campaign-rooms.mjs` through the game's own serializer and
+  validator. The screen groups them by world, in each world's rail colour with
+  its rule named; a world you have not reached is one locked line.
+  `design/campaign-worlds-v265.png`, `design/room-crossfire-v265.png`.
+- **The world lives in the campaign table, not the level file** — deliberately.
+  The level format is SHARED with the Godot port's loader and both refuse an
+  unknown key, so a `look` in the file would have made the port refuse every
+  campaign room. A level stays an arena, a clock and a spawn list; the campaign
+  wraps it in a world and a goal.
+- **Three goals.** `survive` (the clock), `quota` (put down N bodies — the room
+  ends the moment you do) and `flawless` (one hit ends the room). The goal is on
+  the banner and on screen for the whole room: the count, or the promise, and
+  the seconds left. World 1 stays all-survive: the surface is where things are
+  taught.
+- **THE v263 GRADES COULD NOT BE EARNED.** They graded kills per second of the
+  room's clock at 0.35/0.65/1.0/1.5 — and a room is fifteen bodies over forty-
+  five seconds, a third of a kill a second if you kill every one. B, A and S were
+  unreachable in every room that shipped; the v263 check that "passed" had
+  injected sixty kills into a room holding fifteen. Now:
+  - **survive / flawless** — the share of the room's bodies you put down, and
+    **each hit costs a grade step** (never below C for living through it).
+    The share alone did not work either: every body in a room eventually walks
+    into your gun, so a survivor took S nine times in ten. With hits counted
+    the grade IS clean play, and a flawless room is the same idea taken to its
+    end.
+  - **quota** — **seconds behind**: from the arrival of the last body the count
+    needs to the moment you have them all (S 1.5 s, A 3, B 6). A share of the
+    clock could not separate players: the count only becomes reachable once the
+    bodies arrive, so every survivor finished at the same share. Each quota is
+    the number of bodies that have arrived by 30% of the clock, set by the
+    generator rather than chosen.
+- **The rooms were tuned against two bots, 10 runs a room** —
+  `scripts/campaign-bot.sh`, a measuring instrument and not a gate. The
+  perfect-aim bot answers "is S reachable" (it is, in every room); the
+  human-like one (sees threats later, re-reads the field every 0.25 s, ±12° of
+  aim) answers "is this the right difficulty for where it sits". Bare, the
+  rooms gave the perfect bot S in 52 of 54 runs and the human-like one S in
+  nearly all of theirs with 0–2 hits — no pressure at all. So each room is a
+  hand-written **skeleton** plus **heat** (mirrored echo waves, a speed ramp,
+  shooters firing more often), and the heat is a dial **per room**, because a
+  blanket heat by world made UNDERTOW (world 2, splitters) kill the human-like
+  bot three times in three while RINK (world 5, sliders) handed it S. The cast
+  decides how hard a body count is. Final, human-like bot:
+
+  | world | survive rooms lived | quota rooms lived | flawless passed |
+  |---|---|---|---|
+  | 1 THE SURFACE | 30/30 | — | — |
+  | 2 THE WELL | 9/10 | 9/10 | 8/10 |
+  | 3 THE VEIN | 5–9/10 | 9/10 | 2/10 |
+  | 4 THE VOID | 15/20 | 10/10 | — |
+  | 5 THE FOAM | 7/10 | 7/10 | 3/10 |
+  | 6 THE KILN | 18/20 | 4/10 | — |
+
+  **Read it with its noise**: at 10 runs a lived rate is worth about ±3 — PULSE
+  read 9/10 and then 5/10 on identical content. The human-like bot also runs
+  away from the nearest bullet rather than looking for the gap in THE VEIN's
+  sweep, so it under-rates CLOT; the perfect bot passes it 7 in 10, so it stays.
+  Real people are v268's job.
+- **Three harness faults before any of that meant anything**, all worth
+  knowing: a death shows the ordinary death screen and a room only reports its
+  F once that screen is dismissed (the v237 design — the harness never dismissed
+  it); restarting the fake clock per run sent the game's timestamp backwards,
+  so every run after the third in a page timed out doing nothing; and patching
+  a dial by regex matched the room's skeleton as well, so a "tuned" run was the
+  old dials.
+- **THE LOOK LEAK is fixed.** A level ran on whatever depth the last run left —
+  the depth code skipped levels "because they own their looks", and a level has
+  none — so a room after a run to THE VOID wore THE VOID's floor under THE
+  SURFACE's sky. A campaign room applies its world; anything else (the editor's
+  test run, `?level=`) plays on THE SURFACE.
+- **A shaped arena's edge glow was a shader constant** — THE SURFACE's violet,
+  on every world — the same fault v260 fixed for the floor colours.
+  `uShapeEdgeCol`, both paths (GLSL and TSL), written from the world's rail;
+  THE SURFACE's 0x5555cc is exactly the `vec3(0.333, 0.333, 0.8)` it replaces.
+- **v264 correction: two worlds favoured enemies that never spawn.** THE FOAM
+  named HOPPER and FLIT and THE KILN named CHARGER and THUG — cabinet types
+  neither arcade pool can draw — so half of each world's tilt did nothing. They
+  now favour pool types (FOAM: YELA_CUBE, SLUDGE_CUBE, SPLITTA, ORANGE_CUBE,
+  SHEPHERD; KILN: BULWARK, TORO, REDD_CUBE, PURP_CUBE, WARDEN).
+- The offline worker precaches all eighteen rooms. Cache-bust `?v=217` →
+  `?v=220`; HUD label → v265. **Not 218**: while this was being built another
+  lane's site-wide signature deploys bumped this game's WORKER cache name to
+  218 and then 219 (and its signature and shell tokens to 7 and 70) without
+  moving the module tokens. A release that reused 218 would have shared a cache
+  name with a worker already installed in the wild, and kept its stale entries.
+  The rebase kept their signature and shell tokens and moved this release, module
+  graph and worker together, to a number nobody had used.
+
+---
+
 ## v264 — 2026-09-24
 **A WORLD IS A RULE NOW, not a paint job: one mechanic each, two new worlds, and the loop comes back to THE SURFACE** *(owner: "give each world one mechanic, add a fifth and sixth so the loop starts later, and let the loop include the surface")*
 - **Six worlds, one rule each** (`TUNING.depth.rules`). Through v263 a world

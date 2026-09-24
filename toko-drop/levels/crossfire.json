@@ -1,0 +1,59 @@
+{
+  "format": 1,
+  "id": "crossfire",
+  "name": "CROSSFIRE",
+  "arena": {
+    "combine": "union",
+    "shapes": [
+      {
+        "kind": "rect",
+        "hx": 19,
+        "hz": 5
+      },
+      {
+        "kind": "rect",
+        "hx": 6,
+        "hz": 11
+      }
+    ]
+  },
+  "duration": 40,
+  "rules": {
+    "mode": "arcade",
+    "outside": "push"
+  },
+  "spawns": [
+    {"t":0,"type":"GLOBBO","px":-16,"pz":0,"speedMult":1.1},
+    {"t":0,"type":"GLOBBO","px":16,"pz":0,"speedMult":1.1},
+    {"t":0,"type":"GLOBBO","px":0,"pz":-9,"speedMult":1.1},
+    {"t":0,"type":"GLOBBO","px":0,"pz":9,"speedMult":1.1},
+    {"t":1.5,"type":"GLOBBO","px":-16,"pz":0,"speedMult":1.1},
+    {"t":1.5,"type":"GLOBBO","px":0,"pz":-9,"speedMult":1.1},
+    {"t":2,"type":"YELA_CUBE","px":-12,"pz":3,"speedMult":1.1},
+    {"t":2,"type":"YELA_CUBE","px":12,"pz":-3,"speedMult":1.1},
+    {"t":3.5,"type":"YELA_CUBE","px":12,"pz":-3,"speedMult":1.1},
+    {"t":4,"type":"SPITTOR","px":-16,"pz":2,"speedMult":1.1,"intervalMult":0.8},
+    {"t":4,"type":"SPITTOR","px":16,"pz":-2,"speedMult":1.1,"intervalMult":0.8},
+    {"t":5.5,"type":"SPITTOR","px":16,"pz":-2,"speedMult":1.1,"intervalMult":0.8},
+    {"t":7,"type":"GLOBBO","px":-14,"pz":-3,"speedMult":1.1},
+    {"t":7,"type":"GLOBBO","px":14,"pz":3,"speedMult":1.1},
+    {"t":7,"type":"GLOBBO","px":-3,"pz":-8,"speedMult":1.1},
+    {"t":7,"type":"GLOBBO","px":3,"pz":8,"speedMult":1.1},
+    {"t":8.5,"type":"GLOBBO","px":14,"pz":3,"speedMult":1.1},
+    {"t":8.5,"type":"GLOBBO","px":-14,"pz":-3,"speedMult":1.1},
+    {"t":8.5,"type":"GLOBBO","px":-3,"pz":-8,"speedMult":1.1},
+    {"t":10,"type":"PYRA","px":0,"pz":-9,"speedMult":1.1,"intervalMult":0.8},
+    {"t":12,"type":"YELA_CUBE","px":-15,"pz":0,"speedMult":1.1},
+    {"t":12,"type":"YELA_CUBE","px":15,"pz":0,"speedMult":1.1},
+    {"t":13.5,"type":"YELA_CUBE","px":15,"pz":0,"speedMult":1.1},
+    {"t":13.5,"type":"YELA_CUBE","px":-15,"pz":0,"speedMult":1.1},
+    {"t":18,"type":"DRAPER","px":0,"pz":9,"speedMult":1.3,"intervalMult":0.8},
+    {"t":24,"type":"GLOBBO","px":-16,"pz":0,"speedMult":1.3},
+    {"t":24,"type":"GLOBBO","px":16,"pz":0,"speedMult":1.3},
+    {"t":25.5,"type":"GLOBBO","px":16,"pz":0,"speedMult":1.3},
+    {"t":30,"type":"SPITTOR","px":0,"pz":-9,"speedMult":1.4,"intervalMult":0.8},
+    {"t":30,"type":"SPITTOR","px":0,"pz":9,"speedMult":1.4,"intervalMult":0.8},
+    {"t":31.5,"type":"SPITTOR","px":0,"pz":9,"speedMult":1.4,"intervalMult":0.8},
+    {"t":31.5,"type":"SPITTOR","px":0,"pz":-9,"speedMult":1.4,"intervalMult":0.8}
+  ]
+}

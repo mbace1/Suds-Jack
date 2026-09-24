@@ -1,20 +1,20 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=217';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=217';
-import { Player, PLAYER_RADIUS } from './player.js?v=217';
+import { InputManager } from './input.js?v=220';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=220';
+import { Player, PLAYER_RADIUS } from './player.js?v=220';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=217';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=217';
-import { audio } from './audio.js?v=217';
-import { haptics } from './haptics.js?v=217';
-import { initDesigner } from './designer.js?v=217';
-import { createSpecimen } from './specimen.js?v=217';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=217';
-import { TUNING } from './tuning.js?v=217';
-import { Arena, rectShape } from './arena.js?v=217';   // v236: the boundary has one home
-import { resolveCrowd } from './crowd.js?v=217';    // v245: the swarm's spacing — resolve, comfort, slide
-import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=217';   // v247: the camera frames the fight
-import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=217';   // v237/v239: authored levels
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=220';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=220';
+import { audio } from './audio.js?v=220';
+import { haptics } from './haptics.js?v=220';
+import { initDesigner } from './designer.js?v=220';
+import { createSpecimen } from './specimen.js?v=220';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=220';
+import { TUNING } from './tuning.js?v=220';
+import { Arena, rectShape } from './arena.js?v=220';   // v236: the boundary has one home
+import { resolveCrowd } from './crowd.js?v=220';    // v245: the swarm's spacing — resolve, comfort, slide
+import { basis as camBasis, frameTarget, easeToward, FRAMING_DEFAULTS } from './framing.js?v=220';   // v247: the camera frames the fight
+import { compile as compileLevel, arenaShape as levelArenaShape, parse as parseLevel } from './level.js?v=220';   // v237/v239: authored levels
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -432,7 +432,7 @@ const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // v250: ONE name for the version. The HUD label and the title screen both
 // read it, so they cannot drift apart — and bump-version.sh rewrites the
 // literal here (its regex looks for this exact line).
-const GAME_VERSION = '264';
+const GAME_VERSION = '265';
 const PIXEL_BUDGET = 2.0e6;          // backing-store pixels we are willing to hold
 // A phone or a small tablet. Deliberately generous: capping a narrow DESKTOP
 // window at 1.5 costs nothing (desktop dpr is usually 1 anyway), while
@@ -831,6 +831,7 @@ const FLOOR_FRAG = `
   uniform float uGridFall;
   uniform vec3  uFloorBase;   // v260: the depth's floor colour (linear)
   uniform vec3  uFloorGridHi; // v260: the depth's bright grid colour
+  uniform vec3  uShapeEdgeCol; // v265: a shaped arena's edge, in its world's rail colour
   uniform float uGridGlow;    // v260: grid strength (1 = the surface)
   uniform vec3  uMass[${MASS_N}];    // xy = uv pos, z = strength (0 = unused)
   uniform vec3  uPops[${POP_N}];     // xy = uv pos, z = progress 0..1 (>=1 = faded/unused)
@@ -915,7 +916,7 @@ const FLOOR_FRAG = `
     }
     float inside = 1.0 - smoothstep(0.0, uShapeLook.x, sd);
     float edgeGlow = 1.0 - smoothstep(0.0, uShapeLook.x, abs(sd));
-    vec3 shaped = col * mix(uShapeLook.y, 1.0, inside) + vec3(0.333, 0.333, 0.8) * edgeGlow * uShapeLook.z;
+    vec3 shaped = col * mix(uShapeLook.y, 1.0, inside) + uShapeEdgeCol * edgeGlow * uShapeLook.z;   // v265: was the surface's violet, fixed
     col = mix(col, shaped, uShapeMode.x);
     gl_FragColor = vec4(col, 1.0);
   }
@@ -948,6 +949,7 @@ const floorUniforms = IS_GPU
       uGridFall: TSL.uniform(_AR.gridFalloff),
       uFloorBase:   TSL.uniform(new THREE.Vector3(0.079, 0.079, 0.169)),   // v260
       uFloorGridHi: TSL.uniform(new THREE.Vector3(0.0, 0.55, 0.50)),
+      uShapeEdgeCol: TSL.uniform(new THREE.Vector3(0.333, 0.333, 0.8)),   // v265
       uGridGlow:    TSL.uniform(1.0),
       uMass:   _massSlots(() => TSL.uniform(new THREE.Vector3(0, 0, 0))),
       uPops:   _popSlots(() => TSL.uniform(new THREE.Vector3(0, 0, 2))),   // z>=1: unused/faded
@@ -970,6 +972,7 @@ const floorUniforms = IS_GPU
       uGridFall: { value: _AR.gridFalloff },
       uFloorBase:   { value: new THREE.Vector3(0.079, 0.079, 0.169) },   // v260
       uFloorGridHi: { value: new THREE.Vector3(0.0, 0.55, 0.50) },
+      uShapeEdgeCol: { value: new THREE.Vector3(0.333, 0.333, 0.8) },   // v265
       uGridGlow:    { value: 1.0 },
       uMass:   _massSlots(() => ({ value: new THREE.Vector3(0, 0, 0) })),
       uPops:   _popSlots(() => ({ value: new THREE.Vector3(0, 0, 2) })),
@@ -1087,7 +1090,7 @@ function makeFloorMat() {
     .add(vec3(0.9, 0.95, 1.0).mul(popGlow).mul(A2.w))
     .add(vec3(0.55, 0.4, 0.08).mul(prizeGlow).mul(A3.y));
   const shaped = unshaped.mul(mix(LK.y, float(1.0), inside))
-    .add(vec3(0.333, 0.333, 0.8).mul(edgeGlow).mul(LK.z));
+    .add(floorUniforms.uShapeEdgeCol.mul(edgeGlow).mul(LK.z));   // v265: per world
   // .pow(2.2): the GLSL original writes raw values straight to the sRGB
   // framebuffer; the node pipeline output-encodes (linear→sRGB), so pre-decode
   // to round-trip — without this the floor renders visibly washed out.
@@ -2894,10 +2897,10 @@ function updateDrop(dt) {
   // re-seat the camera on THIS frame's offset, so the landing frame is not drawn from under the floor
   if (_dropCamY !== prevCamY) { camera.position.y += _dropCamY - prevCamY; camera.lookAt(_camLook.x, _camLook.y + _dropCamY, _camLook.z); }
 }
-function applyDepthLook(i) {
-  if (smashMode || inCabinet() || customLevel) return;   // they own their looks
+function applyDepthLook(i, force = false) {
+  if (!force && (smashMode || inCabinet() || customLevel)) return;   // they own their looks
   const L = TUNING.depth.looks[i] ?? TUNING.depth.looks[0];
-  const changed = _depthIdx !== i;
+  const changed = force || _depthIdx !== i;
   _depthIdx = i;
   scene.background.setHex(L.bg);
   _FOG.color.setHex(L.bg); _FOG.near = L.fogNear; _FOG.far = L.fogFar;
@@ -2908,6 +2911,9 @@ function applyDepthLook(i) {
   floorUniforms.uGridFall.value = L.gridFall;
   floorUniforms.uFloorBase.value.set(...L.base);
   floorUniforms.uFloorGridHi.value.set(...L.gridHi);
+  // v265: straight from the hex, in the same space the old constant was written
+  // in — THE SURFACE's rail 0x5555cc is exactly the vec3(0.333, 0.333, 0.8) it replaces
+  floorUniforms.uShapeEdgeCol.value.set(((L.rail >> 16) & 255) / 255, ((L.rail >> 8) & 255) / 255, (L.rail & 255) / 255);
   floorUniforms.uGridGlow.value = L.gridGlow;
   const a = floorUniforms.uArena.value; a.y = L.vignette; a.w = L.poolLift;
   if (changed) resetWorldRule();   // v264: a world never inherits the last one's weather
@@ -2920,6 +2926,8 @@ function applyDepthLook(i) {
 let _wr = { t: 0, angle: 0, nextAt: 0, warnT: 0, fireT: 0, pushT: 0, lane: 0, gapAt: 0 };
 const _WR_WHITE = new THREE.Color(0xffffff);
 function worldRule() {
+  // v265: a campaign room plays under its world's rule; an editor run does not
+  if (customLevel) return customLevel.room ? (TUNING.depth.looks[_depthIdx]?.rule ?? null) : null;
   if (!classicRound()) return null;
   return TUNING.depth.looks[_depthIdx]?.rule ?? null;
 }
@@ -4011,21 +4019,52 @@ function campaignProgress() {
 }
 function campaignSave(p) { try { localStorage.setItem(CAMPAIGN_KEY, JSON.stringify(p)); } catch (_) {} }
 const GRADE_ORDER = ['F', 'C', 'B', 'A', 'S'];
-// the room is graded on ITS OWN duration, so a short room is not a harder room
-function campaignGrade(room, kills, cleared) {
-  if (!cleared) return 'F';
-  const T = TUNING.campaign.tiers, secs = Math.max(1, room.duration);
-  if (kills >= T.S * secs) return 'S';
-  if (kills >= T.A * secs) return 'A';
-  if (kills >= T.B * secs) return 'B';
-  if (kills >= T.C * secs) return 'C';
-  return 'F';   // survived, but the room was not cleared OF anything
+// v265: the campaign is WORLDS of rooms. A world is one of the arcade depths —
+// its look AND its rule — so a room in THE WELL plays on the current and a room
+// in THE VEIN under the sweep. Flattened here into play order, which is also
+// unlock order: a room opens when the one before it has a grade above F.
+function campaignRooms() {
+  const out = [];
+  TUNING.campaign.worlds.forEach((w, wi) => w.rooms.forEach((r, ri) =>
+    out.push({ ...r, goal: r.goal ?? 'survive', world: wi, look: w.look, index: out.length, first: ri === 0 })));
+  return out;
 }
-// a room is open when it is the first, or the one before it has a grade above F
+// the bodies a room can offer: every authored enemy (pickups are not bodies)
+const roomBodies = level => level.spawns.filter(sp => sp.kind !== 'pickup').length;
+// v265 GRADES THAT A ROOM CAN ACTUALLY PAY. v263 graded kills per second of
+// the room's clock against 0.35/0.65/1.0/1.5 — and a room is fifteen bodies
+// over forty-five seconds, which is a third of a kill a second if you kill
+// every one. B, A and S were unreachable in every room that shipped; the check
+// that "passed" had injected sixty kills into a room holding fifteen.
+//   survive / flawless — the SHARE of the room's bodies you put down. Living
+//     through it is worth a C on its own; S is every body.
+//   quota — how much of the clock it took to reach the count.
+function campaignGrade(room, level, result) {
+  if (result.outcome === 'dead') return 'F';
+  if (room.goal === 'quota') {
+    if (result.kills < room.kills) return 'F';           // the clock ran out first
+    // graded on how far BEHIND the bodies you were: seconds from the moment the
+    // last body you needed arrived to the moment you had them all. A share of
+    // the clock could not tell players apart — the count is reachable only
+    // once the bodies have arrived, so every survivor finished at about the
+    // same share and every one of them got S.
+    const ts = level.spawns.filter(sp => sp.kind !== 'pickup').map(sp => sp.t).sort((a, b) => a - b);
+    const arrived = ts[Math.min(ts.length, room.kills) - 1] ?? 0;
+    const lag = result.time - arrived, Q = TUNING.campaign.quotaLag;
+    return lag <= Q.S ? 'S' : lag <= Q.A ? 'A' : lag <= Q.B ? 'B' : 'C';
+  }
+  const share = Math.min(1, result.kills / Math.max(1, roomBodies(level))), H = TUNING.campaign.share;
+  const base = share >= H.S ? 4 : share >= H.A ? 3 : share >= H.B ? 2 : 1;   // index into GRADE_ORDER
+  // measured: a survivor got S nine times in ten, because every body in a room
+  // eventually walks into your gun — the share alone could not tell a clean
+  // run from a scramble. Each hit now costs a step, so the grade IS clean play
+  // (and a flawless room is the same idea taken to its end: one hit, no room).
+  return GRADE_ORDER[Math.max(1, base - (result.hits || 0) * TUNING.campaign.hitCost)];
+}
 function campaignOpen(i) {
   if (i === 0) return true;
-  const prev = TUNING.campaign.rooms[i - 1];
-  const g = campaignProgress()[prev]?.grade;
+  const prev = campaignRooms()[i - 1];
+  const g = prev && campaignProgress()[prev.id]?.grade;
   return !!g && g !== 'F';
 }
 function campaignRecord(id, grade, score, kills) {
@@ -4035,6 +4074,11 @@ function campaignRecord(id, grade, score, kills) {
     p[id] = { grade, score, kills };
     campaignSave(p);
   }
+}
+// what a room asks, in the words the banner and the list use
+function goalLabel(room) {
+  return room.goal === 'quota' ? `${t('goalQuota')} ${room.kills}`
+       : room.goal === 'flawless' ? t('goalFlawless') : t('goalSurvive');
 }
 
 // v263: RUSH is armed by the cabinet slot rather than by a title chip.
@@ -4617,6 +4661,8 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
   _hitFlashT = 0.32;
   player.hit();
   weaponTakeHit();   // v262: level 2 is clean play, and a hit is not clean
+  if (customLevel) customLevel.hits = (customLevel.hits || 0) + 1;         // v265: a room's grade reads it
+  if (customLevel?.room?.goal === 'flawless') customLevel.failed = true;   // v265
   if (player.alive) { audio.announce('ouch'); haptics.hit(); }  // death gets its own line + buzz instead
   else haptics.death();
   onPlayerHit();
@@ -5467,6 +5513,23 @@ function drawHUD() {
   }
 
   if (gameState !== 'playing' && gameState !== 'paused' && gameState !== 'upgrade') return;
+
+  // v265: a campaign room keeps its goal on screen — the count for a quota,
+  // the promise for a flawless run, the clock for a survive
+  if (customLevel?.room) {
+    const R = customLevel.room;
+    const left = Math.max(0, Math.ceil(waveDuration - waveTimer));
+    const line = R.goal === 'quota' ? `${t('goalQuota')} ${Math.min(customLevel.kills, R.kills)} / ${R.kills}   ${left}s`
+               : R.goal === 'flawless' ? `${t('goalFlawless')}   ${left}s`
+               : `${t('goalSurvive')}   ${left}s`;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px monospace, sans-serif';
+    ctx.fillStyle = R.goal === 'flawless' ? '#ffdd66' : R.goal === 'quota' ? '#66ffcc' : '#aabbff';
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(line, uiCanvas.width / 2, 58);
+    ctx.restore();
+  }
 
   // Sticks
   if (!input.usingGamepad) {
@@ -8072,7 +8135,9 @@ function spawnWave(carry = false) {
   }
   if (customLevel) {   // v237: the level's name is the banner
     waveIntroT = waveIntroDur = 1.4;
-    waveIntroText  = customLevel.fromT > 0 ? `${customLevel.level.name} — FROM ${customLevel.fromT.toFixed(1)}s` : customLevel.level.name;
+    waveIntroText  = customLevel.fromT > 0 ? `${customLevel.level.name} — FROM ${customLevel.fromT.toFixed(1)}s`
+                   : customLevel.room ? `${customLevel.level.name} · ${goalLabel(customLevel.room)}`   // v265
+                   : customLevel.level.name;
     waveIntroColor = '#ffdd44';
   }
 }
@@ -8592,11 +8657,18 @@ function returnToTitle() {
 // run ends on the level's clock (cleared) or on death; either way the bodies
 // are swept and the editor gets the result. SMASH TV is held off for the
 // duration — its room lattice and door spawns would fight an authored list.
-function playLevel(level, fromT = 0) {
-  customLevel = { level, fromT, kills: 0, savedSmash: smashMode };
+function playLevel(level, fromT = 0, room = null) {
+  customLevel = { level, fromT, kills: 0, savedSmash: smashMode, room, failed: false };
   smashMode = false;
   arenaOverride = levelArena(level);
   startGame();   // straight in — startRun() would route through a selected cabinet
+  // v265: a campaign room is IN a world, so it wears that world's look and
+  // plays under its rule. Anything else — the editor's test run, ?level= —
+  // plays on THE SURFACE. It used to play on whatever the last run left: the
+  // depth code skipped levels on the grounds that "they own their looks", and
+  // a level has no look, so a room after a run to THE VOID wore THE VOID's
+  // floor under THE SURFACE's sky.
+  applyDepthLook(room ? room.look : 0, true);
 }
 function levelArena(level) {
   const shape = level ? levelArenaShape(level) : null;
@@ -8606,7 +8678,7 @@ function levelArena(level) {
 }
 function endLevelRun(outcome) {
   if (!customLevel) return;
-  const result = { outcome, score, kills: customLevel.kills, time: Math.round(waveTimer * 10) / 10 };
+  const result = { outcome, score, kills: customLevel.kills, hits: customLevel.hits || 0, time: Math.round(waveTimer * 10) / 10 };
   smashMode = customLevel.savedSmash;
   customLevel = null;
   pendingSpawns = [];
@@ -8624,7 +8696,7 @@ function endLevelRun(outcome) {
   // v263: a room run goes back to the CAMPAIGN with a grade, not to the title
   if (campaignRoom) {
     const room = campaignRoom; campaignRoom = null;
-    const grade = campaignGrade(room.level, result.kills, outcome !== 'dead');
+    const grade = campaignGrade(room.room, room.level, result);
     campaignRecord(room.level.id, grade, result.score, result.kills);
     arenaOverride = null;
     applyArenaMode(landscapeMode);
@@ -8662,43 +8734,64 @@ function showCampaign(justPlayed = null) {
       ? `<div style="font-size:14px;margin-bottom:16px;color:${GCOL[justPlayed.grade]}">` +
         `${justPlayed.name} — ${t('grade')} ${justPlayed.grade} &nbsp;·&nbsp; ${justPlayed.kills} ${t('kills')}</div>`
       : ``) +
-    `<div id="campaign-rooms" style="display:flex;flex-direction:column;gap:10px;align-items:center"></div>` +
+    `<div id="campaign-rooms" style="display:flex;flex-direction:column;gap:7px;align-items:center"></div>` +
     `<div id="campaign-back" data-ui="1" style="margin-top:22px;font-size:12px;letter-spacing:1px;` +
     `opacity:0.55;cursor:pointer;pointer-events:auto;text-decoration:underline">${t('backTitle')}</div>`;
   const list = document.getElementById('campaign-rooms');
-  C.rooms.forEach((id, i) => {
-    const open = campaignOpen(i), rec = prog[id];
-    const row = document.createElement('div');
-    row.dataset.ui = '1';
-    row.style.cssText =
-      'display:flex;align-items:center;gap:12px;min-width:min(78vw,300px);justify-content:space-between;' +
-      'pointer-events:auto;user-select:none;padding:10px 16px;border-radius:8px;' +
-      'background:rgba(0,0,0,0.35);font-size:14px;font-weight:bold;letter-spacing:1px;' +
-      `border:2px solid ${open ? '#ff7733' : '#333'};color:${open ? '#ffcc99' : '#555'};` +
-      `cursor:${open ? 'pointer' : 'default'};`;
-    const label = document.createElement('span');
-    label.textContent = open ? `${i + 1}. ${id.toUpperCase().replace(/-/g, ' ')}` : `${i + 1}. ${t('roomLocked')}`;
-    const grade = document.createElement('span');
-    grade.textContent = rec ? rec.grade : '—';
-    grade.style.cssText = `font-size:18px;color:${rec ? GCOL[rec.grade] : '#444'}`;
-    row.appendChild(label); row.appendChild(grade);
-    if (open) {
-      const go = async e => {
-        e.stopPropagation(); e.preventDefault();
-        row.style.opacity = '0.5';
-        try {
-          const level = await loadBundledLevel(id);
-          campaignRoom = { level };
-          playLevel(level, 0);
-        } catch (err) {
-          row.style.opacity = '1';
-          label.textContent = `${i + 1}. ${t('roomFailed')}`;
-        }
-      };
-      row.addEventListener('pointerdown', go);
-      row.addEventListener('touchend', e => e.stopPropagation());
+  // v265: grouped by WORLD. An open world shows its name, its rule and its
+  // rooms; a world you have not reached is one locked line, so eighteen rooms
+  // never become a scroll you have to read to find where you are.
+  const rooms = campaignRooms();
+  TUNING.campaign.worlds.forEach((w, wi) => {
+    const L = TUNING.depth.looks[w.look];
+    const rail = '#' + (L?.rail ?? 0x5555cc).toString(16).padStart(6, '0');
+    const mine = rooms.filter(r => r.world === wi);
+    const reached = campaignOpen(mine[0].index);
+    const head = document.createElement('div');
+    head.style.cssText = 'margin-top:8px;font-size:12px;letter-spacing:2px;font-weight:bold;' +
+      `color:${reached ? rail : '#444'};text-shadow:${reached ? '0 0 10px ' + rail + '88' : 'none'}`;
+    head.textContent = reached
+      ? `${wi + 1}. ${L?.name ?? ''} — ${t('rule_' + (L?.rule ?? 'none'))}`
+      : `${wi + 1}. ${t('roomLocked')}`;
+    list.appendChild(head);
+    if (!reached) return;
+    for (const r of mine) {
+      const open = campaignOpen(r.index), rec = prog[r.id];
+      const row = document.createElement('div');
+      row.dataset.ui = '1';
+      row.style.cssText =
+        'display:flex;align-items:center;gap:12px;min-width:min(80vw,320px);justify-content:space-between;' +
+        'pointer-events:auto;user-select:none;padding:8px 14px;border-radius:8px;' +
+        'background:rgba(0,0,0,0.35);font-size:13px;font-weight:bold;letter-spacing:1px;' +
+        `border:2px solid ${open ? rail : '#333'};color:${open ? '#eeeeff' : '#555'};` +
+        `cursor:${open ? 'pointer' : 'default'};`;
+      const label = document.createElement('span');
+      label.textContent = open ? r.id.toUpperCase().replace(/-/g, ' ') : t('roomLocked');
+      const goal = document.createElement('span');
+      goal.textContent = open ? goalLabel(r) : '';
+      goal.style.cssText = 'font-size:10px;opacity:0.6;margin-left:auto;margin-right:8px';
+      const grade = document.createElement('span');
+      grade.textContent = rec ? rec.grade : '—';
+      grade.style.cssText = `font-size:17px;min-width:1ch;text-align:right;color:${rec ? GCOL[rec.grade] : '#444'}`;
+      row.appendChild(label); row.appendChild(goal); row.appendChild(grade);
+      if (open) {
+        const go = async e => {
+          e.stopPropagation(); e.preventDefault();
+          row.style.opacity = '0.5';
+          try {
+            const level = await loadBundledLevel(r.id);
+            campaignRoom = { level, room: r };
+            playLevel(level, 0, r);
+          } catch (err) {
+            row.style.opacity = '1';
+            label.textContent = t('roomFailed');
+          }
+        };
+        row.addEventListener('pointerdown', go);
+        row.addEventListener('touchend', e => e.stopPropagation());
+      }
+      list.appendChild(row);
     }
-    list.appendChild(row);
   });
   const back = document.getElementById('campaign-back');
   back.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); showTitle(); });
@@ -10998,6 +11091,12 @@ function loop() {
     }
   }
 
+  // v265: a room's GOAL can end it before the clock does
+  if (customLevel && gameState === 'playing' && customLevel.room) {
+    const R = customLevel.room;
+    if (customLevel.failed) { renderer.render(scene, camera); endLevelRun('dead'); return; }   // flawless, and you were hit
+    if (R.goal === 'quota' && customLevel.kills >= R.kills) { renderer.render(scene, camera); endLevelRun('clear'); return; }
+  }
   // v237: an authored level ends on its own clock, cleared or not.
   if (customLevel && gameState === 'playing' && waveTimer >= waveDuration) {
     renderer.render(scene, camera);
@@ -11253,7 +11352,7 @@ const _bootLevel = _bootQuery.get('level')
   : Promise.resolve(null);
 if (!_bootQuery.has('editor')) _bootLevel.then(lv => { pendingLevel = lv; });
 if (_bootQuery.has('editor')) {
-  import('./editor.js?v=217').then(async m => {
+  import('./editor.js?v=220').then(async m => {
     editor = m.initEditor({
       scene, camera, renderer, arena, EnemyType, CFG,
       pickups: LEVEL_PICKUPS,
@@ -11284,6 +11383,6 @@ if (_bootQuery.has('editor')) {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=217').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=220').catch(() => {});
   });
 }
