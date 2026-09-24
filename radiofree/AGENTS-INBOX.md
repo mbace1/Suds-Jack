@@ -515,3 +515,79 @@ it waits (the cuts sit on reading budgets, not on a beat grid). Japanese runs
 break after a particle rather than at a word boundary a native reader would
 choose. `ANTHROPIC_API_KEY` is still not a secret, so the wire job — and now
 the render job behind it — has never run on a morning nobody wrote by hand.
+
+---
+
+## 2026-09-24 — Toko anchors, and the film gets a palette (v66)
+
+**Asked:** *much more animated, more colour variations, Toko animated as a
+newscaster.* `MOTION.md`'s second-pass section has the numbers; the shape:
+
+- **Toko performs.** `actAt()` in `js/film.js` decides his mouth (a syllable
+  envelope over the caption on screen, shut in the gaps), a syllable bob and a
+  nod on the sentence, a **blink before every cut** away from him, and the
+  **take** on the reveal — his own reverse shot, 0.7 s, lids shut then a pop
+  wide, lean back, tilt, on an amber set with the tear. The anchor shot grew
+  an `act` hook for it (null on the feed). The feed's mouth gain did not read
+  as speech at frame size; the film asks for three times it.
+- **A palette arc.** `LOOKS`: green → cyan → lime → violet → amber → ember →
+  green, one per shot, never two neighbours the same, carried by the ground,
+  housing, ticks, caption ink and scrim. Footage and the broadcast graphic are
+  re-hued through posterised gradient maps (the reel's `treat`); Toko's
+  magenta and the decoded panel are refused the map, for the same reason
+  amber keeps its one job.
+- **Every cut does something.** A V-hold roll between broadcast shots, a
+  four-frame shake on the reveal, corner ticks sliding in, words staggering
+  into their run, a comic `DECODE` stamp, a pulsing ON AIR dot, a counter that
+  bumps on landing, and the tube switching off into the card.
+
+Verified from mediabunny-decoded frames of the film and from Toko's own
+canvas stepped at 30 fps through `actAt` (a harness in scratch, not the
+repo): the blink is shut at the frame before the cut, the take's four shut
+frames then the wide pop are there, and the five looks are five colours.
+
+---
+
+## 2026-09-24 — a morning written for the film
+
+**Asked:** *make new parody news with the new style.* `wire/2026-09-24.json`
+is eight bulletins from this week's real Finnish news — a €13bn data-centre
+commitment with 37,000 construction jobs and 7,000 permanent ones; a quarter
+of adults under €770 in the bank against a tenth over €60,000; a studio's
+first self-published title out today with 1,500,000 wishlists and, at 09:00,
+sales of 0; the city ranked 1st of the 100-plus cities that entered a
+sustainability index; 674,000 foreign-language speakers projected for 2045;
+a Copenhagen studio closed "following" a cancellation the closer made; boys'
+life expectancy at 80 with 0 used; and two navies agreeing to *explore*
+robot sailboats — fi/en/ja, each in its own idiom, every actor invented,
+`PROGRAMMING.md`'s slots filled without filler (eight, not thirteen: a
+shorter day beats padding).
+
+**"For the film" meant four things about the copy**, and they are now the
+way to write a bulletin here:
+
+- The **headline breaks into runs** at its own clauses, three or four of
+  them, each one a thing to pop in — `Cloud company commits €13 billion /
+  to Finland over two years / 37,000 jobs described / 7,000 of them permanent`.
+- **One sentence carries each move**, because the film shows the sentence
+  around the span, not the paragraph.
+- **Figures are in digits and paired**, so the counter has something to
+  roll: `37000 → 7000`, `770 → 60000€`, `1500000 → 0`, `1 → 100`,
+  `2045 → 2026`, `80 → 0`. A pair is the bulletin's own argument in two
+  numbers, and the tell asks the question between them.
+- The **technique is one word from the copy** — `COMMITMENT`,
+  `PARTICIPATION`, `WISHLISTS`, `RANKED`, `PROJECTED`, `FOLLOWING`,
+  `EXPECTANCY`, `EXPLORE` — because it is the payoff word on screen, at a
+  third of the frame.
+
+**Found by planning it:** the run splitter treated a thousands separator as
+a clause break, so the wishlists headline opened on a run reading `1`, then
+`500`, then `000 wishlists`, and the Finnish `674 000:een` was cut at its
+case ending. A clause break is punctuation followed by a space now, a halved
+run never cuts between two numeric words, and `test/film.mjs` asserts every
+number in every headline on disk survives whole in one run (11 checks).
+
+**Sources were read through the search index only** — the proxy blocks
+yle.fi, helsinkitimes.fi and neogames.fi — so every figure here is one that
+appeared in a search summary of a primary report, and nothing is more
+precise than that summary was.

@@ -380,7 +380,9 @@ async function main() {
 
   const errs = [];
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  page.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
+  // the first stack frame too: "f is not defined" with no file behind it cost
+  // a search of every module for a bare f
+  page.on('pageerror', e => errs.push('PAGEERROR ' + e.message + ' @ ' + String(e.stack || '').split('\n').slice(1, 3).join(' ').trim()));
 
   const go = (fn, ...a) => page.evaluate(fn, ...a);
   const wait = ms => new Promise(r => setTimeout(r, ms));

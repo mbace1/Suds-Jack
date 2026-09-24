@@ -56,6 +56,49 @@ in the Master System register, two colours per state, no image assets. So:
   budget, not a bar, and a beat grid that the cuts do not honour is worse than
   silence.
 
+## The second pass — *"much more animated, more colour, Toko as the newscaster"*
+
+The first film moved where the references said a film must; the owner's note
+on it was that it was still not moving enough, still two colours, and that
+Toko was furniture. Three things changed, each again from something measured.
+
+**Toko performs.** `actAt(plan, t)` is what he is doing on every frame, handed
+to the anchor shot through its new `act` hook (null on the feed, where he reads
+on his own clock). His mouth is a syllable envelope over the caption that is
+actually on screen — 5.6 a second, uneven, shut in the gaps, because an anchor
+who chews between sentences is a puppet — and the mouth alone never read as
+speech on a face this simple, so the head rides the syllables (a nod of 0.28 ×
+amplitude) and nods as the sentence lands. He **blinks before every cut away
+from him**: the thing that carries over the cut, straight from the storyboard
+rule. And the reveal earns him a **reverse shot** — the p5 guide's *"a reveal,
+then the reaction"* — a 0.7 s TAKE: lids shut for four frames, then a
+`backOut` pop to eyes wide (squash 1.12), a bigger grin (1.28 settling to
+1.14), a lean back, the head up and tilted 0.13 rad with a small wobble that
+dies in 0.4 s. His set goes amber with the tear he already had. The feed's
+mouth gain of 0.09 stays the feed's; the film asks for 0.26.
+
+**A palette arc, not a state.** `LOOKS` gives every shot a key colour and the
+ground, the housing, the corner ticks, the caption ink and the scrim all take
+it: green → cyan (Toko's set tinted to it) → lime (the broadcast graphic
+**re-hued through a posterised gradient map**, the reel's `treat`, six steps)
+→ violet (the breath's footage in false colour, five steps into magenta) →
+amber → ember for the tell → green for the card. Neighbours never share a
+look. Two colours are refused the map: Toko's magenta, which is the brand and
+not a look, and the decoded panel, where amber is a fact.
+
+**More happens on every cut.** Between broadcast shots the picture **rolls**
+— the old shot up and out, the new one in from below with a bright line at the
+seam, 0.22 s, the way a tube loses vertical hold — in place of the flash,
+which the reveal keeps and gets hardest, with a four-frame **shake** at 24 Hz.
+The corner ticks **slide in** from outside the frame on every cut (`backOut`,
+0.3 s). The headline's words arrive **one after another** inside their run
+(0.12 s stagger, HyperFrames' number). **DECODE** slams onto the picture as a
+comic sfx letter — tilted, outlined, popping on `backOut` and wobbling, gone
+before the take. The ON AIR dot pulses at the anchor's REC rate. The counter
+**bumps** when it lands. And the hold ends with the **tube switching off**: the
+whole frame collapses to a bright line, then a dot, and the card blooms out of
+the dot.
+
 ## The film, shot by shot
 
 Length is **derived from the copy**, never set: `--seconds` is a target the
@@ -70,7 +113,9 @@ length a clip actually is.
 | Breath | footage | 0.8 s | Nothing new — the silence before the payoff |
 | **Reveal** | cut flash 0.10 s → the graphic, **amber**, at full width | | The panel is blitted at an **integer** scale (×7 for 128 px: 896 × 1064) — not the phone card it sits in on the feed, which made it a stamp in the first export |
 | Hold | the graphic | Σ pairs + the tell | The **technique** pops in as the payoff word (96 px, growing 30% across the hold, `AMBER_HOT`); each `{{spun|plain}}` pair is its own caption — the wording with a **strike wiping across** (0.25 s), then the plain reading **typing on** (28 ms a character) with a cursor; 1 s + 1 s / 17 chars each, gap 0.3 s; then the **tell** as a question; the **figure counter** rolls from `claim` to `plain` over 0.9 s (`easeOut`) with the claim struck small above it |
-| Sign-off | card | 1.6 s | Wordmark, frequency, the waveform flatlining, the fiction line |
+| Reveal shot | the graphic, amber | 1.0 s | DECODE stamped over it; the payoff word pops |
+| Take | Toko, amber | 0.7 s | The reaction: lids shut, pop wide, lean back, the tear |
+| Sign-off | card | 1.6 s | Wordmark, frequency, the waveform flatlining, the fiction line; opens from the dot the tube collapsed to |
 
 Every shot start gets the cut flash (white at 0.34, three frames) and the
 reveal gets it hardest. The headline runs dim to 55% once the payoff is up: one

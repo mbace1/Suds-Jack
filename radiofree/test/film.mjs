@@ -13,7 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RF = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { planFilm, shotAt, splitRuns, TIMING } = await import(path.join(RF, 'js', 'film.js'));
+const { planFilm, shotAt, actAt, splitRuns, TIMING } = await import(path.join(RF, 'js', 'film.js'));
 const { LANGS } = await import(path.join(RF, 'js', 'wire.js'));
 
 let checks = 0, fails = 0;
@@ -79,11 +79,50 @@ for (const day of days) {
       if (joined.replace(/[,;:—–。、！？-]/g, '') !== head.replace(/[。、！？]/g, '')) problems.push(`${tag}: the runs do not add back up to the headline`);
       if (p.runs.some(r => r.t > p.reveal)) problems.push(`${tag}: a headline run pops after the reveal`);
       if (p.runs.length > 4) problems.push(`${tag}: ${p.runs.length} runs`);
+      // a number is never cut in half by a run break
+      for (const num of String(copy.head).match(/\d[\d,\u00a0 ]*\d(?::\w+)?|\d/g) || []) {
+        if (!p.runs.some(r => r.text.includes(num))) problems.push(`${tag}: the number "${num}" is split across runs`);
+      }
       // ── the payoff is the technique, and the card ends the film ──
       if (p.payoff.text !== copy.technique) problems.push(`${tag}: the payoff word is not the technique`);
       if (!(p.payoff.t0 > p.reveal && p.payoff.t0 < p.holdEnd)) problems.push(`${tag}: the payoff is outside the hold`);
       const last = p.shots[p.shots.length - 1];
       if (last.shot !== 'card' || !near(last.t1 - last.t0, TIMING.card)) problems.push(`${tag}: the film does not end on the card`);
+      // ── the take is Toko's own shot, between the reveal and the hold ──
+      const ri = p.shots.findIndex(s => s.t0 === p.reveal);
+      const r0 = p.shots[ri], tk = p.shots[ri + 1], hold = p.shots[ri + 2];
+      if (!(r0 && r0.shot === 'graphic' && r0.decoded && tk && tk.shot === 'anchor' && tk.take && tk.decoded
+            && hold && hold.shot === 'graphic' && hold.decoded && near(hold.t0, p.holdStart))) {
+        problems.push(`${tag}: the reveal is not graphic → take → hold`);
+      }
+      // ── the palette arc: neighbours differ, amber only once decoded ──
+      for (let i = 1; i < p.shots.length; i++) {
+        if (p.shots[i].look === p.shots[i - 1].look && !(p.shots[i].decoded && p.shots[i - 1].decoded)) {
+          problems.push(`${tag}: shots ${i - 1} and ${i} share the ${p.shots[i].look} look`);
+        }
+      }
+      if (p.shots.some(s => !s.decoded && s.shot !== 'card' && s.look === 'amber')) problems.push(`${tag}: amber before DECODE`);
+      if (p.shots.filter(s => !s.decoded).map(s => s.look).filter((v, i, a) => a.indexOf(v) === i).length < 3) {
+        problems.push(`${tag}: fewer than three looks before the reveal`);
+      }
+      // ── Toko acts: he reads with the caption, blinks before the cut, takes on the reveal ──
+      const rd = caps.find(c => c.kind === 'read');
+      if (rd) {
+        const mid = (rd.t0 + rd.t1) / 2;
+        let moving = 0;
+        for (let q = 0; q < 12; q++) if (actAt(p, mid + q / 30).mouth > 0.05) moving++;
+        if (moving < 3) problems.push(`${tag}: his mouth does not move while he reads`);
+        if (actAt(p, rd.t1 + 0.05).mouth > 0.001) problems.push(`${tag}: he talks into the gap`);
+      }
+      const anchorCut = p.shots.find(s => s.shot === 'anchor' && !s.decoded);
+      if (anchorCut) {
+        const a = actAt(p, anchorCut.t1 - 0.09);
+        if (!(a.squash != null && a.squash < 0.2)) problems.push(`${tag}: no blink before the cut away from him (squash ${a.squash})`);
+      }
+      const tA = actAt(p, tk.t0 + 0.05), tB = actAt(p, tk.t0 + 0.45);
+      if (!(tA.open === 0 && tB.open === 1 && tB.squash > 1 && tB.grin > 1.1 && tB.tilt < -0.05)) {
+        problems.push(`${tag}: the take does not shut then pop wide (${JSON.stringify({ tA, tB })})`);
+      }
       // ── figures reach the counter ──
       const hasFig = Array.isArray(story.figures) && story.figures.length > 0;
       if (hasFig !== !!p.counter) problems.push(`${tag}: figures ${hasFig ? 'present' : 'absent'} but the counter is ${p.counter ? 'on' : 'off'}`);
@@ -113,6 +152,11 @@ ok('no clip is under ten seconds or over a minute', shortest.S >= 10 && longest.
 ok('a headline breaks into runs at its own clauses',
    JSON.stringify(splitRuns("Next year's budget agreed at €92.5 billion, with the difference to be found later"))
    === JSON.stringify(["Next year's budget agreed at €92.5 billion", "with the difference to be found later"]));
+ok('a thousands separator is not a clause break',
+   JSON.stringify(splitRuns('Studio releases its first title today; 1,500,000 wishlists reported, sales to date 0'))
+   === JSON.stringify(['Studio releases its first title today', '1,500,000 wishlists reported', 'sales to date 0']));
+ok('nor is a Finnish case ending on a number',
+   splitRuns('määrän ennustetaan nousevan 674 000:een vuoteen 2045 mennessä').some(r => r.includes('674 000:een')));
 ok('a long clause is halved rather than left as one run',
    splitRuns('one two three four five six seven eight nine ten').length === 2);
 ok('a Japanese headline breaks at its punctuation and after a particle, never inside a word',

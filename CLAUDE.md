@@ -1430,6 +1430,18 @@ seek on an AV1 clip returned the first frame and reported a reveal that had
 happened as one that had not. `tools/render-day.mjs` renders a morning through
 the app's own button (13 clips in ~3 min, `clips.json` beside them);
 `.github/workflows/radiofree-render.yml` runs it after the wire job.
+**v66 — Toko anchors, and the film has a palette arc** (owner: *much more
+animated, more colour, Toko as the newscaster*). `actAt(plan, t)` is what he
+does every frame — mouth as a syllable envelope over the caption on screen, a
+syllable bob, a nod on the sentence, a **blink before every cut** away from
+him, and a 0.7 s **take** on the reveal (his own reverse shot: shut, pop wide,
+lean, tilt) — through an `act` hook on the anchor that is null on the feed.
+`LOOKS` gives each shot a key colour (green → cyan → lime → violet → amber →
+ember → green, neighbours never the same) and re-hues footage and the
+broadcast graphic through posterised gradient maps; Toko's magenta and the
+decoded panel are refused the map. Between broadcast shots the picture ROLLS
+(vertical hold), the reveal shakes and stamps `DECODE`, the hold ends with the
+tube collapsing to a line and the card blooming from the dot.
 **Layout belongs in `index.html`, never in an injected stylesheet.** `package.js`
 used to inject thirty `!important` rules that clamped the headline, deleted the
 second paragraph of every bulletin, and hid the DECODE button, the tally and the
@@ -1437,7 +1449,7 @@ second paragraph of every bulletin, and hid the DECODE button, the tally and the
 separately hard-disabling DECODE behind a setter that threw the value away. If
 the copy does not fit, fix the layout; do not hide the copy.
 **Gates:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs`
-— 84 checks — and `node radiofree/test/film.mjs` (bare node, 9). It reads `sw.js` with whitespace-tolerant regexes, because that file
+— 84 checks — and `node radiofree/test/film.mjs` (bare node, 11: the plan, the take, the look arc, Toko's acting, and that no headline number is split across runs). It reads `sw.js` with whitespace-tolerant regexes, because that file
 was reformatted once and five shell checks silently graded against `undefined`
 for as long as nobody looked. A gate that cannot parse its own subject produces a
 failure everyone learns to scroll past.

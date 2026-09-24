@@ -11,24 +11,28 @@
 // So this module is the edit. It has two halves, deliberately split:
 //
 //   planFilm(entry, opts)  — PURE. Turns a bulletin's copy into a timeline: the
-//                            shots and when they cut, the headline broken into
-//                            word runs, one caption at a time with a reading
-//                            budget, the reveal, the payoff word, the figure
+//                            shots and when they cut, each shot's LOOK, the
+//                            headline broken into word runs, one caption at a
+//                            time with a reading budget, the reveal, Toko's
+//                            reaction shot, the payoff word, the figure
 //                            counter, the sign-off. No DOM, no canvas, so
 //                            test/film.mjs can assert it in bare node.
 //   paintFilm(ctx, plan, t, shots) — the compositor. Every frame is a pure
 //                            function of t: no state survives between frames,
 //                            which is what lets a frame be re-rendered alone
 //                            and a contact sheet be pulled at any set of times.
+//   actAt(plan, t)         — what Toko is DOING this frame (mouth, eyes, lean,
+//                            the take), handed to the anchor shot by the export.
 //
 // What was TAKEN from the references, and what was refused, is the whole point
 // of MOTION.md; the short version is that the timing, the typography motion,
 // the transitions and the surface are borrowed, and the drawing medium is not.
 // This station is a 128×152 pixel panel behind curved glass, and stays one.
 
-import { parseLine } from './wire.js?v=65';
-import { readFigures } from './visuals.js?v=65';
-import { PAL } from './palette.js?v=65';
+import { parseLine } from './wire.js?v=66';
+import { readFigures } from './visuals.js?v=66';
+import { PAL } from './palette.js?v=66';
+import { mix } from './screen.js?v=66';
 
 export const W = 1080, H = 1920;
 export const MONO = '"IBM Plex Mono", "SF Mono", Menlo, Consolas, "IPAGothic", monospace';
@@ -39,6 +43,8 @@ export const TIMING = {
   open: 2.0,           // cold open on footage, the slug and the first run arrive
   breath: 0.8,         // the silence before the payoff
   flash: 0.10,         // the cut flash, three frames at 30
+  strike0: 1.0,        // the reveal shot: amber, the stamp, the payoff word
+  take: 0.7,           // Toko's reaction — the reverse shot the punchline earns
   card: 1.6,           // the sign-off
   readFloor: 2.4,      // no broadcast caption shorter than this
   readPerChar: 1 / 22, // a broadcast sentence: 1 s + 1 s per 22 characters
@@ -51,19 +57,42 @@ export const TIMING = {
   typeChar: 0.028,     // the plain reading types on at this per character
   counter: 0.9,        // the figure rolls from claim to plain over this
   counterDelay: 0.4,
-  payoffLead: 0.35,    // the reveal's order: flash, amber, the payoff word, then the first strike
   payoffGrow: 0.30,    // the technique word grows this much across the hold
   runPop: 0.32,        // a word run pops in over this (backOut)
+  wordStagger: 0.12,   // ...and its words arrive one after another at this
+  roll: 0.22,          // the V-hold roll between broadcast shots
+  shake: 0.16,         // the reveal's camera shake
+  collapse: 0.30,      // the tube switching off into the card
   boilHz: 12,          // grain re-seeds on twos
-  roll: 5.2,           // seconds per scanline roll across the picture
+  sweep: 5.2,          // seconds per scanline roll across the picture
+  syl: 5.6,            // syllables a second, when Toko reads
 };
 
 export const SURFACE = { grain: 0.16, flicker: 0.035, vignette: 0.32, cutFlash: 0.34 };
 
 export const TYPE = {
   tag: 34, run0: 52, runStep: 1.12, runMax: 4, runLine: 1.16,
-  payoff0: 96, caption: 36, plain: 34, counter: 64, footer: 26,
+  payoff0: 96, caption: 36, plain: 34, counter: 64, footer: 26, stamp: 150,
 };
+
+// The LOOKS — a palette ARC across the film rather than green-then-amber. Every
+// broadcast shot is a different cold phosphor (neighbours never share one),
+// the breath is pushed into false colour (the reel's gradient map, on a third
+// of its shots), and amber keeps its one job: the spin showing. The tell goes
+// one step warmer than amber; the card comes home to green.
+export const LOOKS = {
+  green:  { key: PAL.GREEN,    dim: PAL.GREEN_DIM, name: 'green' },
+  cyan:   { key: PAL.GAMING,   dim: '#2a7f9c',     name: 'cyan' },
+  lime:   { key: PAL.INDUSTRY, dim: '#4f8a3a',     name: 'lime',
+            treat: { map: ['#06110a', '#2f6a1e', '#8fe36a', '#eaffc0'], steps: 6 } },
+  violet: { key: '#c86dff',    dim: '#6d3a99',     name: 'violet',
+            treat: { map: ['#12062a', '#7b2d9e', '#f0027f', '#ffd6e8'], steps: 5 } },
+  amber:  { key: PAL.AMBER,    dim: PAL.AMBER_DIM, name: 'amber' },
+  ember:  { key: PAL.DEFENCE,  dim: '#8a3a3a',     name: 'ember' },
+};
+// Toko's shot takes a set colour, the graphic shot is re-hued through its
+// look's gradient map, the third read (when there is one) is footage in green
+const READ_LOOKS = [LOOKS.cyan, LOOKS.lime, LOOKS.green];
 
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const lerp = (a, b, k) => a + (b - a) * k;
@@ -79,23 +108,35 @@ const hash = (i) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return
 // the last. A headline has to stay readable whole, so runs accumulate as lines
 // rather than replacing each other, and the sizes are capped at four steps.
 export function splitRuns(head, max = TYPE.runMax) {
-  const parts = String(head || '').split(/\s*(?:[,;:]|—|–|\s-\s)\s*/).map(s => s.trim()).filter(Boolean);
+  // A clause break is punctuation FOLLOWED BY A SPACE: "37,000 jobs" and
+  // Finnish "674 000:een" are one number each, and the first cut of this
+  // split them into "37" and "000 jobs" — a headline that opened on a run
+  // reading "1", then "500", then "000 wishlists".
+  const parts = String(head || '').split(/\s*(?:[,;:](?=\s)|—|–|\s-\s)\s*/).map(s => s.trim()).filter(Boolean);
   const runs = [];
   for (const p of parts) {
     const words = p.split(/\s+/);
     if (words.length > 7) {
-      const cut = Math.ceil(words.length / 2);
+      // halve near the middle — but "700 000" and "674 000:een" are one number
+      // written as two words, and a cut between them reads as two numbers
+      const isNum = (w) => /^\d[\d,.]*(?::\w+)?$/.test(w);
+      const mid = Math.ceil(words.length / 2);
+      let cut = mid;
+      for (let d = 0; d < words.length; d++) {
+        for (const c of [mid + d, mid - d]) {
+          if (c > 0 && c < words.length && !(isNum(words[c - 1]) && isNum(words[c]))) { cut = c; d = words.length; break; }
+        }
+      }
       runs.push(words.slice(0, cut).join(' '), words.slice(cut).join(' '));
     } else runs.push(p);
   }
   // CJK headlines have no spaces to split on: break at the punctuation Japanese
-  // copy actually uses, then in halves when a run is still long
+  // copy actually uses, then after a particle when a run is still long
   if (runs.length === 1 && runs[0].length > 18 && !/\s/.test(runs[0])) {
     const ja = runs[0].split(/(?<=[。、！？])/).filter(Boolean);
     runs.length = 0;
     for (const p of ja) {
       if (p.length <= 22) { runs.push(p); continue; }
-      // break after the particle nearest the middle, never inside a word
       const mid = Math.ceil(p.length / 2);
       let cut = -1;
       for (let i = mid + 4; i >= 4; i--) if (/[でをにはがのとへも]/.test(p[i - 1])) { cut = i; break; }
@@ -110,7 +151,7 @@ export function splitRuns(head, max = TYPE.runMax) {
 // The sentence a struck span sits in — a clip is a reel of the bulletin, not
 // the bulletin, so the broadcast phase shows the sentence that carries the
 // move and leaves the paragraph to the feed.
-function sentenceAround(text, at, len) {
+function sentenceAround(text, at) {
   const ends = /[.!?。！？](\s|$)/g;
   let start = 0, m;
   while ((m = ends.exec(text))) {
@@ -143,18 +184,8 @@ export function planFilm(entry, opts = {}) {
     const text = broadcastOf(runs);
     let at = 0, firstSpan = -1;
     for (const r of runs) { if (r.plain !== null && firstSpan < 0) firstSpan = at; at += r.text.length; }
-    const s = sentenceAround(text, Math.max(0, firstSpan), text.length);
-    // where the struck spans fall inside the sentence, for the strike later
-    const spans = [];
-    let pos = 0;
-    for (const r of runs) {
-      if (r.plain !== null) {
-        const a = pos - s.start, b = a + r.text.length;
-        if (a >= 0 && b <= s.text.length) spans.push({ a, b, plain: r.plain, spun: r.text });
-      }
-      pos += r.text.length;
-    }
-    reads.push({ para: li, text: s.text, spans });
+    const s = sentenceAround(text, Math.max(0, firstSpan));
+    reads.push({ para: li, text: s.text });
   });
 
   // ── the plain readings: every pair, in order ──
@@ -171,7 +202,8 @@ export function planFilm(entry, opts = {}) {
   const readB = reads.map(r => readingBudget(r.text, T.readFloor, T.readPerChar));
   const pairB = pairs.map(p => readingBudget(p.plain, T.plainFloor, T.plainPerChar));
   const tellB = copy.tell ? readingBudget(copy.tell, T.tellFloor, T.plainPerChar) : 0;
-  const fixed = T.open + T.breath + T.flash + T.card + (reads.length + pairs.length + (tellB ? 1 : 0)) * T.gap;
+  const fixed = T.open + T.breath + T.flash + T.strike0 + T.take + T.card
+    + (reads.length + pairs.length + (tellB ? 1 : 0)) * T.gap;
   const soft = readB.reduce((a, b) => a + b, 0) + pairB.reduce((a, b) => a + b, 0) + tellB;
   let scale = 1;
   if (opts.seconds && opts.seconds > 0) {
@@ -181,45 +213,46 @@ export function planFilm(entry, opts = {}) {
   // ── lay the timeline ──
   const shots = [], captions = [];
   let t = 0;
-  const push = (shot, len, extra = {}) => { shots.push({ t0: t, t1: t + len, shot, ...extra }); t += len; };
+  const push = (shot, len, look, extra = {}) => { shots.push({ t0: t, t1: t + len, shot, look: look.name, ...extra }); t += len; };
 
-  push('broll', T.open);
+  push('broll', T.open, LOOKS.green);
   const runAt = [T.open * 0.45];                       // when each headline run pops
   const kinds = ['anchor', 'graphic', 'broll'];
   reads.forEach((r, i) => {
     const len = readB[i] * scale + T.gap;
     if (i < runs.length - 1) runAt.push(t);
-    captions.push({ kind: 'read', t0: t + 0.12, t1: t + len - T.gap, text: r.text, spans: r.spans, para: r.para });
-    push(kinds[i % kinds.length], len);
+    captions.push({ kind: 'read', t0: t + 0.12, t1: t + len - T.gap, text: r.text, para: r.para });
+    push(kinds[i % kinds.length], len, READ_LOOKS[i % READ_LOOKS.length]);
   });
   // any headline run not yet placed pops on the breath
   while (runAt.length < runs.length) runAt.push(t + 0.1);
-  push('broll', T.breath);
+  push('broll', T.breath, LOOKS.violet);
 
   const reveal = t;
-  const holdStart = t + T.flash;
-  // the payoff word lands first; the first strike follows it
-  t = holdStart + T.payoffLead;
+  push('graphic', T.flash + T.strike0, LOOKS.amber, { decoded: true });
+  push('anchor', T.take, LOOKS.amber, { decoded: true, take: true });
+  const holdStart = t;
   pairs.forEach((p, i) => {
     const len = pairB[i] * scale;
     captions.push({ kind: 'pair', t0: t, t1: t + len, spun: p.spun, plain: p.plain, para: p.para });
     t += len + T.gap;
   });
+  const tellAt = t;
   if (tellB) {
     const len = tellB * scale;
     captions.push({ kind: 'tell', t0: t, t1: t + len, text: copy.tell });
     t += len + T.gap;
   }
   const holdEnd = t;
-  shots.push({ t0: reveal, t1: holdEnd, shot: 'graphic', decoded: true });
+  shots.push({ t0: holdStart, t1: holdEnd, shot: 'graphic', look: 'amber', decoded: true });
   t = holdEnd;
-  push('card', T.card);
+  push('card', T.card, LOOKS.green);
   const S = t;
 
   return {
-    S, fps, scale, shots, captions, reveal, holdStart, holdEnd,
+    S, fps, scale, shots, captions, reveal, holdStart, holdEnd, tellAt: tellB ? tellAt : -1,
     runs: runs.map((text, i) => ({ text, t: runAt[i] })),
-    payoff: { text: copy.technique || '', t0: holdStart + 0.15 },
+    payoff: { text: copy.technique || '', t0: reveal + T.flash + 0.15 },
     counter: fig ? { claim: fig.claim, plain: fig.plain, unit: fig.unit || '', t0: holdStart + T.counterDelay } : null,
     card: { t0: holdEnd, t1: S },
     tag: { index: String(opts.index || 1).padStart(2, '0'), total: opts.total || 1, slug: copy.slug || '', date: opts.date || '' },
@@ -227,8 +260,7 @@ export function planFilm(entry, opts = {}) {
     fiction: opts.fiction || '',
     freq: opts.freq || '',
     accent: opts.accent || PAL.GREEN,
-    cuts: [...shots.map(s => s.t0).filter(x => x > 0)],
-    // every shot beginning, for the flash; plus the reveal itself
+    cuts: shots.map(s => s.t0).filter(x => x > 0),
   };
 }
 
@@ -236,6 +268,59 @@ export function shotAt(plan, t) {
   let cur = plan.shots[0];
   for (const s of plan.shots) if (t >= s.t0) cur = s;
   return cur;
+}
+function shotBefore(plan, cur) {
+  const i = plan.shots.indexOf(cur);
+  return i > 0 ? plan.shots[i - 1] : null;
+}
+export function lookAt(plan, t) {
+  const sh = shotAt(plan, t);
+  let look = LOOKS[sh.look] || LOOKS.green;
+  // the tell is one step warmer than amber
+  if (plan.tellAt >= 0 && t >= plan.tellAt && sh.shot === 'graphic') look = LOOKS.ember;
+  return look;
+}
+
+// ── Toko, acting ─────────────────────────────────────────────────────────
+//
+// A read-aloud envelope over the caption that is actually on screen: syllables
+// at TIMING.syl, uneven, with the breath at the end of each sentence. Between
+// captions the mouth is shut — an anchor who chews between sentences is a
+// puppet. The eyes open while he reads, blink before every cut away from him
+// (the thing that carries over the cut), and on the reveal he does a TAKE:
+// lids shut, then a pop wide with a lean back and a tilt, the expression
+// morphing rather than snapping.
+export function actAt(plan, t) {
+  const T = TIMING, sh = shotAt(plan, t);
+  const cap = plan.captions.find(c => t >= c.t0 && t < c.t1 && c.kind === 'read');
+  let mouth = 0, open = null, squash = null, grin = null, lean = 0, nod = 0, tilt = 0;
+  if (cap) {
+    const u = (t - cap.t0) / (cap.t1 - cap.t0);
+    if (u < 0.88) {
+      const n = Math.floor(t * T.syl), f = t * T.syl - n;
+      const o = Math.sin(f * Math.PI);
+      mouth = o * o * (0.45 + hash(n) * 0.55);
+    }
+    open = 1;
+    // the head rides the syllables a little — a mouth alone never reads as
+    // talking on a face this simple — and nods as the sentence lands
+    nod = mouth * 0.28 + ease(seg(u, 0.86, 0.93)) * (1 - ease(seg(u, 0.95, 1)));
+  }
+  // the blink that carries over the cut
+  const cut = plan.cuts.find(c => c > t && c - t < 0.22 && sh.shot === 'anchor');
+  if (cut !== undefined) squash = 1 - ease(seg(t, cut - 0.22, cut - 0.08)) * (1 - ease(seg(t, cut - 0.08, cut)));
+  if (sh.take) {
+    const u = t - sh.t0;
+    const pop = backOut(seg(u, 0.12, 0.42));
+    squash = u < 0.12 ? 1 - ease(seg(u, 0, 0.1)) : lerp(0, 1.12, pop);
+    open = u < 0.12 ? 0 : 1;
+    grin = lerp(1, 1.28, pop) - 0.14 * ease(seg(u, 0.45, T.take));
+    lean = -0.06 * pop;
+    nod = -0.35 * pop;                                              // back and up
+    tilt = -0.13 * pop + 0.03 * Math.sin(u * 24) * (1 - ease(seg(u, 0.2, 0.6)));
+  }
+  const look = lookAt(plan, t);
+  return { mouth, open, squash, grin, lean, nod, tilt, key: look.key, dim: look.dim, hot: !!sh.decoded };
 }
 
 // ── the compositor ───────────────────────────────────────────────────────
@@ -246,7 +331,8 @@ function fmtNum(v, unit) {
   return String(r) + unit;
 }
 
-let grainC = null, vigC = null;
+let grainC = null, vigC = null, scratch = null;
+const LUTS = new Map();
 function surfaces() {
   if (grainC) return;
   // Full-resolution noise, built once. Grain has to be per pixel to read as
@@ -262,6 +348,38 @@ function surfaces() {
   const gr = v.createRadialGradient(W / 2, H / 2, H * 0.34, W / 2, H / 2, H * 0.78);
   gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, `rgba(0,0,0,${SURFACE.vignette})`);
   v.fillStyle = gr; v.fillRect(0, 0, W, H);
+  scratch = document.createElement('canvas');
+}
+
+// A posterised gradient map — the false colour of a risograph, from the reel's
+// `treat`. Luminance picks a colour along `map`; `steps` posterises. Built
+// once per look as a 256-entry table and applied to a copy of the plate.
+function lutFor(treat) {
+  const k = JSON.stringify(treat);
+  if (LUTS.has(k)) return LUTS.get(k);
+  const stops = treat.map.map(h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+  const lut = new Uint8ClampedArray(256 * 3);
+  for (let i = 0; i < 256; i++) {
+    let l = i / 255;
+    if (treat.steps > 1) l = Math.round(l * (treat.steps - 1)) / (treat.steps - 1);
+    const f = l * (stops.length - 1), j = Math.min(stops.length - 2, Math.floor(f)), u = f - j;
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = stops[j][c] + (stops[j + 1][c] - stops[j][c]) * u;
+  }
+  LUTS.set(k, lut);
+  return lut;
+}
+function treated(cv, treat) {
+  const lut = lutFor(treat);
+  if (scratch.width !== cv.width || scratch.height !== cv.height) { scratch.width = cv.width; scratch.height = cv.height; }
+  const x = scratch.getContext('2d', { willReadFrequently: true });
+  x.drawImage(cv, 0, 0);
+  const im = x.getImageData(0, 0, cv.width, cv.height), d = im.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const l = (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) | 0;
+    d[i] = lut[l * 3]; d[i + 1] = lut[l * 3 + 1]; d[i + 2] = lut[l * 3 + 2];
+  }
+  x.putImageData(im, 0, 0);
+  return scratch;
 }
 
 // Word wrap that also works for Japanese: a "word" wider than the column is
@@ -289,21 +407,22 @@ export function wrap(ctx, text, maxWidth) {
   return out;
 }
 
-// The picture: whichever canvas the shot is on, at an INTEGER scale when it is
-// pixel art (anything drawn at 160 px or under), centred in the top band. A
-// non-integer scale on a 128 px panel is uneven pixels, which is the one thing
-// this renderer exists to avoid; the reference's slow push-in is refused for
-// the same reason and the picture moves by roll and flicker instead.
-function drawPicture(ctx, cv, band, k = 1) {
+// Where a canvas lands in the top band: an INTEGER scale when it is pixel art
+// (anything drawn at 160 px or under), centred. A non-integer scale on a 128
+// px panel is uneven pixels, which is the one thing this renderer exists to
+// avoid; the reference's slow push-in is refused for the same reason and the
+// picture moves by roll and flicker instead.
+function placement(cv, band) {
   if (!cv || !cv.width || !cv.height) return null;
   const pixel = cv.width <= 160;
   let s = Math.min((W * 0.86) / cv.width, (band * 0.92) / cv.height);
   if (pixel) s = Math.max(1, Math.floor(s));
-  const dw = Math.round(cv.width * s * k), dh = Math.round(cv.height * s * k);
-  const x = Math.round((W - dw) / 2), y = Math.round((band - dh) / 2);
-  ctx.imageSmoothingEnabled = !pixel;
-  ctx.drawImage(cv, x, y, dw, dh);
-  return { x, y, w: dw, h: dh };
+  const dw = Math.round(cv.width * s), dh = Math.round(cv.height * s);
+  return { x: Math.round((W - dw) / 2), y: Math.round((band - dh) / 2), w: dw, h: dh, pixel };
+}
+function blit(ctx, cv, box, dy = 0) {
+  ctx.imageSmoothingEnabled = !box.pixel;
+  ctx.drawImage(cv, box.x, box.y + dy, box.w, box.h);
 }
 
 function setFont(ctx, size, weight = 400) { ctx.font = `${weight} ${Math.round(size)}px ${MONO}`; }
@@ -314,37 +433,81 @@ function setFont(ctx, size, weight = 400) { ctx.font = `${weight} ${Math.round(s
  */
 export function paintFilm(ctx, plan, t, shots) {
   surfaces();
-  const T = TIMING, cur = shotAt(plan, t);
+  const T = TIMING, cur = shotAt(plan, t), look = lookAt(plan, t);
   const decoded = !!cur.decoded;
-  const d = decoded ? ease(seg(t, plan.reveal, plan.reveal + 0.5)) : 0;
-  const key = decoded ? PAL.AMBER : plan.accent;
-  const dim = decoded ? PAL.AMBER_DIM : PAL.GREEN_DIM;
+  const key = look.key, dim = look.dim;
 
-  ctx.fillStyle = PAL.VOID; ctx.fillRect(0, 0, W, H);
+  // the ground carries the look too: never pure void under a coloured shot
+  ctx.fillStyle = mix(PAL.VOID, key, 0.11); ctx.fillRect(0, 0, W, H);
 
   if (cur.shot === 'card') { paintCard(ctx, plan, t); return; }
 
+  // the reveal's shake: four frames at 24 Hz
+  ctx.save();
+  if (t >= plan.reveal && t < plan.reveal + T.shake) {
+    const f = Math.floor(t * 24), a = 12 * (1 - seg(t, plan.reveal, plan.reveal + T.shake));
+    ctx.translate((hash(f * 1.7) - 0.5) * 2 * a, (hash(f * 2.3 + 9) - 0.5) * 2 * a);
+  }
+
   // ── the picture ──
   const band = H * 0.56;      // ×6 for a 128 px panel: the picture IS the frame
-  const cv = shots[cur.shot] || shots.broll;
-  const box = drawPicture(ctx, cv, band);
+  const cvRaw = shots[cur.shot] || shots.broll;
+  // a gradient map re-hues footage and the broadcast graphic; never Toko (the
+  // brand's magenta is not a look) and never the decoded panel (amber is a fact)
+  const mappable = cur.shot !== 'anchor' && !cur.decoded;
+  const cv = look.treat && mappable && cvRaw ? treated(cvRaw, look.treat) : cvRaw;
+  const box = placement(cv, band);
   if (box) {
-    // the housing: the picture arrives inside the set, not printed on the page
-    ctx.fillStyle = dim; ctx.fillRect(box.x - 8, box.y - 8, box.w + 16, 6); ctx.fillRect(box.x - 8, box.y + box.h + 2, box.w + 16, 6);
-    ctx.fillRect(box.x - 8, box.y - 8, 6, box.h + 16); ctx.fillRect(box.x + box.w + 2, box.y - 8, 6, box.h + 16);
-    ctx.fillStyle = key;
-    const tk = 26;
-    for (const [cx, cy, sx, sy] of [[box.x - 8, box.y - 8, 1, 1], [box.x + box.w + 8, box.y - 8, -1, 1], [box.x - 8, box.y + box.h + 8, 1, -1], [box.x + box.w + 8, box.y + box.h + 8, -1, -1]]) {
-      ctx.fillRect(cx - (sx < 0 ? 0 : 0), cy - (sy < 0 ? 6 : 0), tk * sx, 6);
-      ctx.fillRect(cx - (sx < 0 ? 6 : 0), cy, 6, tk * sy);
-    }
-    // a scanline roll across the glass — the set's own motion
-    const rollY = box.y + ((t / T.roll) % 1) * (box.h + 120) - 60;
+    ctx.save(); ctx.beginPath(); ctx.rect(box.x, box.y, box.w, box.h); ctx.clip();
+    // the V-hold roll: between broadcast shots the old picture rolls up and
+    // the new one rolls in under it, the way a tube loses vertical hold
+    const prev = shotBefore(plan, cur);
+    const rolling = prev && !cur.decoded && cur.t0 > 0 && t < cur.t0 + T.roll && shots[prev.shot];
+    if (rolling) {
+      const k = ease(seg(t, cur.t0, cur.t0 + T.roll));
+      const pcv = shots[prev.shot], pbox = placement(pcv, band);
+      if (pbox) { blit(ctx, pcv, { ...pbox, x: box.x, y: box.y, w: box.w, h: box.h }, -k * box.h); }
+      blit(ctx, cv, box, (1 - k) * box.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(box.x, box.y + (1 - k) * box.h - 3, box.w, 6);
+    } else blit(ctx, cv, box);
+    // a scanline sweep across the glass — the set's own motion
+    const rollY = box.y + ((t / T.sweep) % 1) * (box.h + 120) - 60;
     const rg = ctx.createLinearGradient(0, rollY - 40, 0, rollY + 40);
     rg.addColorStop(0, 'rgba(255,255,255,0)'); rg.addColorStop(0.5, 'rgba(255,255,255,0.07)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.save(); ctx.beginPath(); ctx.rect(box.x, box.y, box.w, box.h); ctx.clip();
-    ctx.fillStyle = rg; ctx.fillRect(box.x, rollY - 40, box.w, 80); ctx.restore();
+    ctx.fillStyle = rg; ctx.fillRect(box.x, rollY - 40, box.w, 80);
+    ctx.restore();
+
+    // the housing, and corner ticks that slide in on every cut
+    ctx.fillStyle = dim;
+    ctx.fillRect(box.x - 8, box.y - 8, box.w + 16, 6); ctx.fillRect(box.x - 8, box.y + box.h + 2, box.w + 16, 6);
+    ctx.fillRect(box.x - 8, box.y - 8, 6, box.h + 16); ctx.fillRect(box.x + box.w + 2, box.y - 8, 6, box.h + 16);
+    const slide = (1 - backOut(seg(t, cur.t0, cur.t0 + 0.3))) * 46;
+    ctx.fillStyle = key;
+    const tk = 30;
+    for (const [cx, cy, sx, sy] of [[box.x - 8, box.y - 8, 1, 1], [box.x + box.w + 8, box.y - 8, -1, 1], [box.x - 8, box.y + box.h + 8, 1, -1], [box.x + box.w + 8, box.y + box.h + 8, -1, -1]]) {
+      const ox = -sx * slide, oy = -sy * slide;
+      ctx.fillRect(cx + ox, cy + oy - (sy < 0 ? 6 : 0), tk * sx, 6);
+      ctx.fillRect(cx + ox - (sx < 0 ? 6 : 0), cy + oy, 6, tk * sy);
+    }
+
+    // the DECODE stamp: a comic sfx letter slammed over the picture on the
+    // reveal, pops on backOut, wobbles, and is gone before the take
+    const st = t - (plan.reveal + T.flash + 0.05);
+    if (st >= 0 && st < 1.05) {
+      const pop = backOut(seg(st, 0, 0.25)), out = 1 - ease(seg(st, 0.8, 1.05));
+      ctx.save();
+      ctx.translate(box.x + box.w * 0.5, box.y + box.h * 0.78);
+      ctx.rotate(-0.10 + Math.sin(st * 22) * 0.03 * (1 - ease(seg(st, 0, 0.6))));
+      ctx.scale(pop, pop); ctx.globalAlpha = out;
+      setFont(ctx, TYPE.stamp, 700); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round'; ctx.lineWidth = TYPE.stamp * 0.16; ctx.strokeStyle = PAL.INK;
+      ctx.strokeText('DECODE', 0, 0);
+      ctx.fillStyle = PAL.AMBER_HOT; ctx.fillText('DECODE', 0, 0);
+      ctx.restore();
+      ctx.textAlign = 'left';
+    }
   }
+  ctx.restore();
 
   // ── the lower third ──
   const x = 54, maxW = W - 108;
@@ -352,28 +515,43 @@ export function paintFilm(ctx, plan, t, shots) {
   let y = band + 40;
   ctx.textBaseline = 'top';
 
-  // the tag line
+  // the tag line; the dot pulses like the anchor's REC
   setFont(ctx, TYPE.tag);
   ctx.fillStyle = '#ff6b6b';
-  ctx.fillText('● ' + plan.onAir, x, y);
-  const onW = ctx.measureText('● ' + plan.onAir + '  ').width;
+  ctx.globalAlpha = (t % 1.6) < 1.0 ? 1 : 0.35;
+  ctx.fillText('●', x, y);
+  ctx.globalAlpha = 1;
+  ctx.fillText('  ' + plan.onAir, x, y);
+  const onW = ctx.measureText('  ' + plan.onAir + '  ').width;
   ctx.fillStyle = key;
   ctx.fillText(`${plan.tag.index}/${plan.tag.total} · ${plan.tag.slug} · ${plan.tag.date}`, x + onW, y);
   y += TYPE.tag * 1.9;
 
-  // the headline as word runs, each popping in larger than the last
+  // the headline as word runs, each popping in larger than the last, and
+  // inside a run the words arrive one after another
   const runsDim = decoded ? 0.5 : 1;
   plan.runs.forEach((r, i) => {
     if (t < r.t) return;
-    const k = backOut(seg(t, r.t, r.t + T.runPop));
     const size = TYPE.run0 * Math.pow(TYPE.runStep, i);
     setFont(ctx, size, 700);
     const lines = wrap(ctx, r.text, maxW);
-    ctx.save(); ctx.globalAlpha = runsDim * Math.min(1, k * 1.4);
-    ctx.fillStyle = decoded ? PAL.GREEN_DIM : PAL.GREEN;
-    ctx.translate(x, y); ctx.scale(lerp(0.92, 1, k), lerp(0.92, 1, k));
-    lines.forEach((l, li) => ctx.fillText(l, 0, li * size * TYPE.runLine));
-    ctx.restore();
+    const sp = ctx.measureText(' ').width;
+    let wi = 0;
+    ctx.fillStyle = decoded ? PAL.GREEN_DIM : mix(PAL.GREEN, key, 0.35);
+    lines.forEach((l, li) => {
+      let wx = x;
+      for (const word of l.split(' ')) {
+        const k = backOut(seg(t, r.t + wi * T.wordStagger, r.t + wi * T.wordStagger + T.runPop));
+        const ww = ctx.measureText(word).width;
+        if (k > 0.01) {
+          ctx.save(); ctx.globalAlpha = runsDim * Math.min(1, k * 1.4);
+          ctx.translate(wx + ww / 2, y + li * size * TYPE.runLine + size / 2); ctx.scale(lerp(0.7, 1, k), lerp(0.7, 1, k));
+          ctx.fillText(word, -ww / 2, -size / 2);
+          ctx.restore();
+        }
+        wx += ww + sp; wi++;
+      }
+    });
     y += lines.length * size * TYPE.runLine + size * 0.18;
   });
 
@@ -381,25 +559,32 @@ export function paintFilm(ctx, plan, t, shots) {
   if (decoded && plan.payoff.text && t >= plan.payoff.t0) {
     const k = backOut(seg(t, plan.payoff.t0, plan.payoff.t0 + 0.4));
     const grow = 1 + T.payoffGrow * ease(seg(t, plan.holdStart, plan.holdEnd));
-    const size = TYPE.payoff0 * grow;
+    let size = TYPE.payoff0 * grow;
     setFont(ctx, size, 700);
-    let txt = plan.payoff.text;
-    while (ctx.measureText(txt).width > maxW && size > 40) { setFont(ctx, size * (maxW / ctx.measureText(txt).width), 700); break; }
+    const txt = plan.payoff.text;
+    const tw = ctx.measureText(txt).width;
+    if (tw > maxW * 0.62) { size *= (maxW * 0.62) / tw; setFont(ctx, size, 700); }
     y += 10;
     ctx.save(); ctx.globalAlpha = Math.min(1, k * 1.2);
     ctx.translate(x, y); ctx.scale(k, k);
-    ctx.fillStyle = PAL.AMBER_HOT; ctx.fillText(txt, 0, 0);
+    ctx.fillStyle = mix(PAL.AMBER_HOT, key, 0.25); ctx.fillText(txt, 0, 0);
     ctx.restore();
     const ph = Math.round(size * 1.05);
     if (plan.counter && t >= plan.counter.t0) {
       const c = plan.counter, kk = easeOut(seg(t, c.t0, c.t0 + T.counter));
       const v = lerp(c.claim, c.plain, kk);
+      const land = c.t0 + T.counter;
+      const bump = t >= land ? 1 + 0.16 * (1 - ease(seg(t, land, land + 0.22))) : 1;
+      ctx.save();
       setFont(ctx, TYPE.counter, 700);
       ctx.textAlign = 'right';
+      ctx.translate(W - x, y + (ph - TYPE.counter) / 2 + TYPE.counter / 2); ctx.scale(bump, bump);
       ctx.fillStyle = kk < 1 ? PAL.AMBER : PAL.AMBER_HOT;
-      ctx.fillText(fmtNum(v, c.unit), W - x, y + (ph - TYPE.counter) / 2);
+      ctx.fillText(fmtNum(v, c.unit), 0, -TYPE.counter / 2);
+      ctx.restore();
       // the claim, struck, small, above it
       setFont(ctx, TYPE.counter * 0.5, 400);
+      ctx.textAlign = 'right';
       ctx.fillStyle = PAL.GREEN_DIM;
       const cl = fmtNum(c.claim, c.unit);
       ctx.fillText(cl, W - x, y - TYPE.counter * 0.58);
@@ -414,7 +599,7 @@ export function paintFilm(ctx, plan, t, shots) {
   const cap = plan.captions.find(c => t >= c.t0 && t < c.t1);
   if (cap) {
     const room = footerY - 28 - y;
-    paintCaption(ctx, cap, t, x, y, maxW, room, d);
+    paintCaption(ctx, cap, t, x, y, maxW, room, key);
   }
 
   // footer
@@ -423,15 +608,37 @@ export function paintFilm(ctx, plan, t, shots) {
   ctx.fillText(plan.fiction, x, footerY);
 
   surface(ctx, plan, t);
+
+  // the tube switching off: the whole picture collapses to a line, then a dot
+  const ct = t - (plan.holdEnd - T.collapse);
+  if (ct >= 0) collapse(ctx, seg(ct, 0, T.collapse));
 }
 
-function paintCaption(ctx, cap, t, x, y, maxW, room, d) {
+function collapse(ctx, k) {
+  if (scratch.width !== W || scratch.height !== H) { scratch.width = W; scratch.height = H; }
+  const x = scratch.getContext('2d', { willReadFrequently: true });
+  x.drawImage(ctx.canvas, 0, 0);
+  ctx.fillStyle = PAL.INK; ctx.fillRect(0, 0, W, H);
+  const sy = Math.max(0.002, 1 - ease(seg(k, 0, 0.7)));
+  const sx = 1 - ease(seg(k, 0.65, 1));
+  const h = Math.max(3, H * sy), w = Math.max(6, W * sx);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(scratch, (W - w) / 2, (H - h) / 2, w, h);
+  // the bright line as the raster dies
+  ctx.globalAlpha = ease(seg(k, 0.4, 0.75)) * (1 - ease(seg(k, 0.9, 1)));
+  ctx.fillStyle = PAL.GREEN_HOT; ctx.fillRect((W - w) / 2, H / 2 - 2, w, 4);
+  ctx.restore();
+}
+
+function paintCaption(ctx, cap, t, x, y, maxW, room, key) {
   const T = TIMING;
   const inK = easeOut(seg(t, cap.t0, cap.t0 + 0.22)), outK = 1 - ease(seg(t, cap.t1 - 0.18, cap.t1));
   ctx.save(); ctx.globalAlpha = Math.min(inK, outK);
   const scrimTop = y - 24;
   const g = ctx.createLinearGradient(0, scrimTop - 80, 0, H);
-  g.addColorStop(0, 'rgba(3,10,8,0)'); g.addColorStop(0.3, 'rgba(3,10,8,.86)'); g.addColorStop(1, 'rgba(3,10,8,.97)');
+  const sc = mix('#030a08', key, 0.12), [sr, sg, sb] = [1, 3, 5].map(i => parseInt(sc.slice(i, i + 2), 16));
+  g.addColorStop(0, `rgba(${sr},${sg},${sb},0)`); g.addColorStop(0.3, `rgba(${sr},${sg},${sb},.86)`); g.addColorStop(1, `rgba(${sr},${sg},${sb},.97)`);
   ctx.fillStyle = g; ctx.fillRect(0, scrimTop - 80, W, H - scrimTop + 80);
 
   if (cap.kind === 'read') {
@@ -439,8 +646,8 @@ function paintCaption(ctx, cap, t, x, y, maxW, room, d) {
     let lines = wrap(ctx, cap.text, maxW - 48);
     let size = TYPE.caption;
     while (lines.length * size * 1.32 > room && size > 22) { size -= 2; setFont(ctx, size); lines = wrap(ctx, cap.text, maxW - 48); }
-    ctx.fillStyle = PAL.GREEN_LO; ctx.fillText('>', x, y);
-    ctx.fillStyle = '#b7e8cd';
+    ctx.fillStyle = key; ctx.fillText('>', x, y);
+    ctx.fillStyle = mix('#b7e8cd', key, 0.2);
     lines.forEach((l, i) => ctx.fillText(l, x + 48, y + i * size * 1.32));
   } else if (cap.kind === 'pair') {
     // the struck wording, then the plain reading TYPING ON under it
@@ -463,7 +670,6 @@ function paintCaption(ctx, cap, t, x, y, maxW, room, d) {
     ctx.fillText('→', x, yy);
     const pLines = wrap(ctx, shown, maxW - 48);
     pLines.forEach((l, i) => ctx.fillText(l, x + 48, yy + i * TYPE.plain * 1.32));
-    // the cursor, while typing
     if (typed < cap.plain.length && Math.floor(t * 4) % 2 === 0) {
       const last = pLines[pLines.length - 1] || '';
       ctx.fillRect(x + 48 + ctx.measureText(last).width + 4, yy + (pLines.length - 1) * TYPE.plain * 1.32 + 4, 14, TYPE.plain * 0.9);
@@ -471,21 +677,24 @@ function paintCaption(ctx, cap, t, x, y, maxW, room, d) {
   } else if (cap.kind === 'tell') {
     setFont(ctx, TYPE.caption, 400);
     const lines = wrap(ctx, cap.text, maxW - 48);
-    ctx.fillStyle = PAL.AMBER_DIM; ctx.fillText('?', x, y);
-    ctx.fillStyle = PAL.AMBER;
+    ctx.fillStyle = key; ctx.fillText('?', x, y);
+    ctx.fillStyle = mix(PAL.AMBER, key, 0.5);
     lines.forEach((l, i) => ctx.fillText(l, x + 48, y + i * TYPE.caption * 1.32));
   }
   ctx.restore();
 }
 
 // The sign-off: the station's own card. Not a planet limb — the waveform this
-// codec has carried on every post since v1, going flat.
+// codec has carried on every post since v1, going flat. It opens from the dot
+// the tube collapsed to.
 function paintCard(ctx, plan, t) {
   const k = seg(t, plan.card.t0, plan.card.t1);
   ctx.fillStyle = PAL.VOID; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const a = Math.min(1, easeOut(seg(t, plan.card.t0, plan.card.t0 + 0.25)) * 1.2);
+  const a = Math.min(1, easeOut(seg(t, plan.card.t0, plan.card.t0 + 0.3)) * 1.2);
+  const bloom = 1 - ease(seg(t, plan.card.t0, plan.card.t0 + 0.35));
   ctx.save(); ctx.globalAlpha = a;
+  ctx.translate(W / 2, H / 2); ctx.scale(lerp(0.2, 1, 1 - bloom), lerp(0.02, 1, 1 - bloom)); ctx.translate(-W / 2, -H / 2);
   setFont(ctx, 40, 500); ctx.fillStyle = PAL.GREEN; ctx.letterSpacing = '6px';
   ctx.fillText('RADIO FREE HELSINKI', W / 2, H * 0.42);
   ctx.letterSpacing = '0px';
@@ -520,7 +729,7 @@ function surface(ctx, plan, t) {
   // the cut flash: every cut, and the reveal hardest
   let flash = 0;
   for (const c of plan.cuts) if (t >= c && t < c + T.flash) flash = Math.max(flash, 1 - (t - c) / T.flash);
-  if (t >= plan.reveal && t < plan.reveal + T.flash) flash = 1 - (t - plan.reveal) / T.flash;
+  if (t >= plan.reveal && t < plan.reveal + T.flash) flash = 1;
   if (flash > 0) { ctx.fillStyle = `rgba(255,255,255,${SURFACE.cutFlash * flash})`; ctx.fillRect(0, 0, W, H); }
   ctx.restore();
 }

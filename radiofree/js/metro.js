@@ -2,8 +2,8 @@
 // Refinement of the existing formula: sparse architecture, orange train identity,
 // animated approach, platform life and signal light. No baked weather or DECODE.
 
-import { PAL } from './palette.js?v=65';
-import { mix, shade } from './screen.js?v=65';
+import { PAL } from './palette.js?v=66';
+import { mix, shade } from './screen.js?v=66';
 
 const W = 128, H = 152;
 const wall = d => mix('#10191c', '#24190d', d);

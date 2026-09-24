@@ -23,7 +23,7 @@
 // landed on, because "MP4" that turns out to be AV1 is a fact the person
 // uploading it needs.
 
-import { planFilm, paintFilm, shotAt, W, H } from './film.js?v=65';
+import { planFilm, paintFilm, shotAt, actAt, W, H } from './film.js?v=66';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';
 export { W, H };
@@ -123,8 +123,12 @@ export async function exportPost(entry, opts = {}) {
       // the film owns the cut: hold the package's own beat clock at zero so it
       // never cuts on its own, then put it on the shot the plan names
       pkg.clock = 0;
-      pkg.update(1 / fps, 0);
+      // Toko's performance comes from the film, not from his own clock: the
+      // mouth off the caption on screen, the blink before a cut, the take
+      const act = actAt(plan, tt);
       if (sh.shot !== 'card' && sh.shot !== pkg.shot) pkg.cutTo(sh.shot);
+      if (pkg.drawn && pkg.drawn.anchor) pkg.drawn.anchor.act = act;
+      pkg.update(1 / fps, act.mouth);
       pkg.draw();
       paintFilm(ctx, plan, tt, shotCanvases(pkg));
       await src.add(tt, 1 / fps);
@@ -132,6 +136,7 @@ export async function exportPost(entry, opts = {}) {
     }
   } finally {
     if (pkg.decoded !== wasDecoded) pkg.decoded = wasDecoded;
+    if (pkg.drawn && pkg.drawn.anchor) pkg.drawn.anchor.act = null;
   }
   await output.finalize();
   if (opts.onProgress) opts.onProgress(1);
