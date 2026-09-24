@@ -1,5 +1,95 @@
 # Toko Trip — release log
 
+## v18 — 2026-09-24
+
+The cave, and the tide opens it. Deferred since v1 on the grounds that it
+needed to MEAN something first; the tide is what it means.
+
+- **It moved.** The old cave sat inland behind the chair, where no tide could
+  reach it. It is on an islet now, off the right-hand shore where the chair can
+  see it, with the magenta arch over its mouth facing back toward you.
+- **The only way there is a sandbar**, and there is no rule anywhere that says
+  "the cave opens at low tide". The bar's crest sits at −10 cm, between low
+  and high water, and `standY()` already refuses anything below sea level — so
+  the ocean is the gate. The crest dips 5 cm mid-way, so the two ends surface
+  first and the gap closes from both sides while you watch.
+- **It plays the composition v17 set up.** Sit still from boot: golden hour on
+  high water with the bar under, the sun goes down while the water goes out,
+  and at dusk — lanterns, fireflies, the arch lit — the bar is dry end to end.
+- **Inside**: a ring of rock with a roof, a pool that glows and lights the
+  walls, and a drip you only hear when you are in there.
+- **A way home that is not the sea.** The tide comes back over the bar, and
+  being kept on the rock for a few minutes is fine; being kept there with no
+  way off is not. The shell by the pool takes you back to the chair.
+
+**Found, not placed**, like the jetty: the islet is put ten metres beyond
+where the base terrain drops past low water along a fixed bearing, far enough
+that the channel either side of the bar never dries. The bearing is fixed off
+the inlet rather than the calibrated chair, because recalibrating your seat
+does not turn the terrain and must not move the islet either. `groundHeight`
+is now `baseHeight` plus the islet and the bar, and everything downstream —
+mesh, lightmap, scatter, caustics, the water's depth, collision — re-placed
+itself off the same function without being told.
+
+**Two rules the island needed:**
+
+- The walkable edge was the island's own radius, which would have left the
+  islet unreachable by a rule nobody could see. It is the edge of the terrain
+  mesh now, and the sea decides the rest.
+- **Teleport may not jump the channel.** Otherwise you point at the islet from
+  the beach at high water and are there, and the tide is scenery again. A jump
+  between the island and the islet is allowed only while the bar is dry end to
+  end — exactly when you could have walked it.
+
+Tuned by looking, once: the arch was set side-on and read as a single magenta
+line from every angle that mattered; the ring of rock overhung its sand and
+the islet read as a mushroom; ±20% vertex displacement shattered the rock into
+black glass; and the pool was a solid cyan plate whose light — at 1.6 in
+physical units — reached nothing past its own rim.
+
+Gate: 110 checks. The ones that matter assert the sea doing its job: closed at
+high water, surfacing from both ends at mid-tide, open at low, the channel
+beside it never dry, and nothing jumping it.
+
+## v17 — 2026-09-23
+
+The sun moves. v14 hung the water on a clock and left the sky as three
+buttons, so time passed in the sea and nowhere else. The sky is on the same
+clock now.
+
+- **A day is two tides**, which is what a real semidiurnal sea does. Fourteen
+  minutes at `slow`.
+- **The three tuned moods are HOLDS on the day, and it blends between them.**
+  At every hold the look is exactly the mood that was tuned by eye — the gate
+  compares them — so the day is new and the three pictures are not.
+- **It plays one composition if you just sit.** The island opens at golden
+  hour on high water; the sun goes down while the water goes out; dusk — the
+  lanterns, the fireflies, the magenta arch lit — arrives at LOW water. That
+  is on purpose: it is where the cave will be.
+- **Dawn rises where the sun set.** A stylised day, and deliberately: the
+  island is built facing one horizon, and a sunrise behind the chair would
+  spend the second golden hour of every day on the back of your head.
+- **The totem skips time forward, never back.** It jumps to the next time its
+  mood holds; a day that ran backwards would be a slider, not a day.
+- **The slate row is TIME now** — still / slow / quick — and `still` holds the
+  sun as well as the sea.
+
+**Static shadows survive.** A moving sun has two costs, a shadow re-render and
+a fresh reflection cube, and both are throttled to the transitions — once a
+second and once every two, while the sun moves about half a degree — and zero
+through every hold, which is most of the day. The holds recompute nothing at
+all after arriving.
+
+`applyMood` was split so the day could reuse it: `pushMood` is the one place
+that knows what a mood touches, however the mood arrived.
+
+Found building it: `advance()` jumps the tide, and the surf emitters re-seat
+on a two-second timer, so the next thing to look found them at the old
+waterline. A jump re-seats them at once now.
+
+Gate: 99 checks. The one that matters asserts the composition rather than the
+motion: from boot, sitting through the sunset brings dusk at low water.
+
 ## v16 — 2026-09-23
 
 A second water, in TSL, and a comparison — **and the comparison does not
