@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=221';
-import { t } from './lang.js?v=221';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=221';
-import { Arena, rectShape } from './arena.js?v=221';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=222';
+import { t } from './lang.js?v=222';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=222';
+import { Arena, rectShape } from './arena.js?v=222';
 
 // v236: the tester's own little room. Enemy.update() takes an arena now.
 const TESTER_ARENA = new Arena(rectShape(11, 7));
@@ -513,6 +513,9 @@ export function initDesigner({ onResume, settings }) {
       t('meleeOnH'), t('meleeOffH'), '#ff8866', '#ff885566');
     // v261 THE FALL (owner: "we can try both"): ON = the camera falls with you,
     // OFF = the floor falls away under a still camera.
+    // v267: each world has its own ambience; OFF keeps the sound effects only
+    if (settings.getBed) toggleRow('WORLD SOUND', settings.getBed, settings.setBed,
+      'each world has its own ambience', 'sound effects only', '#ffaa66', '#ffaa6666');
     if (settings.getFallFollow) toggleRow('DROP: CAMERA FOLLOWS', settings.getFallFollow, settings.setFallFollow,
       'the camera falls with you between depths', 'the floor falls away, the next rises under you', '#66ddff', '#66ddff66');
     // ARCADE CABINET (v153): single-select cycle — the tribute cabinets are
