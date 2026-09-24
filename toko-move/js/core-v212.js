@@ -2,12 +2,12 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=20';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=21';
 import {TransitLayers} from './transit-layers.js?v=7';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=6';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
-import {SHIFT} from './live-network.js?v=11';
+import {SHIFT} from './live-network.js?v=12';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {dots,minutes} from './ui.js?v=1';
@@ -16,10 +16,11 @@ import {drawCityEvent,family as dayFamily} from './city-events.js?v=1';
 import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as dailyGrid} from './daily.js?v=1';
 import * as Week from './week.js?v=2';
 import * as Kit from './kit.js?v=1';
+import {drawWeather} from './weather.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.48';
+const BUILD_VERSION='2.49';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -54,9 +55,12 @@ const cityDay=drawCityEvent(shiftSeed,WEEK?WEEK_DAY.day:params.get('day'));
 // — and never to the daily, whose result is one everybody can compare.
 const KIT_IDS=WEEK?Week.owned(WEEK):SHIFT_INFO.kind==='daily'?[]:Kit.parse(params.get('kit'));
 const KIT_FX=Kit.effects(KIT_IDS);
+// v2.49: WEATHER (weather.js) — a look and a lever per morning, drawn from the
+// shift. `?weather=` pins it; the harness's `?day=none` control means clear.
+const WEATHER=drawWeather(shiftSeed,params.get('weather'),params.get('day'));
 const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
+function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -86,7 +90,7 @@ function boot(seed=7){
   // end card to it left a won shift running (v2.29-v2.45) until an event
   // happened to fire, and on a quiet day none did. The day's end always ends it.
   flow=createFlow({city,seed,days:1,demand:null,ticksPerDay:SHIFT.ticksPerDay,hooks:{onTick:()=>{const changed=challenge?.step?.();if(changed){paintHud();paintSheet();}weekProgress();if(challenge?.complete)finish();},onDay:()=>finish()}});
-  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;challenge.kit=KIT_FX;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
+  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;challenge.kit=KIT_FX;challenge.weatherSpeed=WEATHER.speed||1;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
   renderer=new FlowRenderer($('map'),MAP_THEME);
   challenge.start();publish();paintHud();paintSheet();
 }
@@ -348,6 +352,21 @@ function drawCredit(){if(!ground)return;const ctx=$('map').getContext('2d'),d=re
 // Over the WHOLE canvas, not the board: the surround is the land grey now, and a
 // wash that stopped at the board edge lit the board and left the margins dark,
 // which put the black slab back that the grey had just removed.
+// WEATHER, drawn in the night map's own register (weather.js has the rules):
+// rain is streaks and a darker wet sheen, snow is the streets going pale under
+// falling flakes, frost a cold edge, and fog is the map losing contrast past
+// the courier's reach — drawn as exactly the 400 m the rule uses, so what you
+// see and what the panel says are one fact. Under the badges, over the lines.
+function paintWeather(ctx){const w=WEATHER;if(!w||w.id==='clear'||!flow)return;const c=$('map'),W=c.width,H=c.height,t=flow.clock.tick,d=renderer?.dpr||window.devicePixelRatio||1;ctx.save();
+  if(w.id==='rain'){ctx.fillStyle='rgba(10,24,40,0.16)';ctx.fillRect(0,0,W,H);ctx.strokeStyle='rgba(170,205,230,0.38)';ctx.lineWidth=1*d;ctx.beginPath();
+    for(let i=0;i<150;i++){const x=(((i*97.31+t*2.2*d)%(W+40))+W+40)%(W+40)-20,y=(((i*53.77+t*8*d)%(H+40))+H+40)%(H+40)-20;ctx.moveTo(x,y);ctx.lineTo(x-3*d,y+12*d);}ctx.stroke();}
+  else if(w.id==='snow'){ctx.globalCompositeOperation='screen';ctx.fillStyle='rgba(190,200,212,0.20)';ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';ctx.fillStyle='rgba(246,249,252,0.85)';
+    for(let i=0;i<120;i++){const x=((i*131.7+Math.sin((t+i*13)/40)*18*d)%W+W)%W,y=(((i*71.3+t*1.5*d)%(H+20))+H+20)%(H+20)-10;ctx.beginPath();ctx.arc(x,y,(1+(i%3)*0.6)*d,0,Math.PI*2);ctx.fill();}}
+  else if(w.id==='frost'){const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.75);g.addColorStop(0,'rgba(200,225,245,0)');g.addColorStop(1,'rgba(200,225,245,0.24)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);}
+  else if(w.id==='fog'){const ll=courierLatLon();if(ll){const p=fitLatLon(ll.lat,ll.lon),q=fitLatLon(ll.lat+w.fogM/111320,ll.lon),r=Math.max(18*d,Math.hypot(q.x-p.x,q.y-p.y));
+    const g=ctx.createRadialGradient(p.x,p.y,r*0.8,p.x,p.y,r*1.5);g.addColorStop(0,'rgba(140,150,158,0)');g.addColorStop(1,'rgba(140,150,158,0.62)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(215,225,230,0.4)';ctx.setLineDash([4*d,5*d]);ctx.lineWidth=1*d;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.stroke();}}
+  ctx.restore();}
 function paintDawn(ctx){if(!flow)return;const a=0.13*(1-Math.min(1,flow.clock.dayProgress));if(a<=0.005)return;const c=$('map'),r={x:0,y:0,w:c.width,h:c.height};ctx.save();ctx.globalCompositeOperation='soft-light';ctx.fillStyle=`rgba(255,190,130,${a.toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(90,50,25,${(a*0.2).toFixed(3)})`;ctx.fillRect(r.x,r.y,r.w,r.h);ctx.restore();}
 function drawBoardFrame(){const ctx=$('map').getContext('2d'),d=renderer?.dpr||1,r=boardRect();ctx.save();ctx.strokeStyle=NIGHT.frame;ctx.lineWidth=1*d;ctx.strokeRect(r.x+.5,r.y+.5,r.w-1,r.h-1);ctx.restore();}
 
@@ -559,7 +578,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
     else{const c=$('map'),ctx=c.getContext('2d');ctx.fillStyle=NIGHT.surround;ctx.fillRect(0,0,c.width,c.height);
       paintGround(ctx);paintDawn(ctx);
       ctx.save();clipToBoard(ctx);
-      drawTransit();drawStops();drawJobEnds();drawLegend();drawCredit();ctx.restore();drawBoardFrame();}
+      drawTransit();drawStops();drawJobEnds();paintWeather(ctx);drawLegend();drawCredit();ctx.restore();drawBoardFrame();}
     if(flow.clock.tick%10===0)paintHud();}
   requestAnimationFrame(frame);}
 
@@ -639,10 +658,11 @@ function paintDayCard(){const el=$('dayCard');if(!el)return;
     if(SHIFT_INFO.kind==='week'&&Week.pending(WEEK)){n.insertAdjacentHTML('beforeend',kitPicker());wireKitPicker(n);const pl=$('play');pl.disabled=true;pl.textContent='TAKE ONE FIRST';}
     const wl=$('weekLink');if(wl){const w=SHIFT_INFO.kind==='week'?null:Week.loadWeek();wl.hidden=SHIFT_INFO.kind==='week';
       wl.innerHTML=w&&!Week.isOver(w)&&w.shifts.length?`CONTINUE THE WEEK · ${Week.DAY_NAMES[w.day]} · €${Week.total(w)}/€${Week.RENT}`:`OR THE WEEK · five shifts, rent due Friday`;}}
-  if(!cityDay){el.innerHTML='';return;}
+  const wx=WEATHER&&WEATHER.id!=='clear'?`<div class="dayCard wxCard"><span class="dayGlyph">${WEATHER.glyph}</span><div><b>${esc(WEATHER.name)}</b><p>${esc(WEATHER.blurb)}</p></div></div>`:'';
+  if(!cityDay){el.innerHTML=wx;return;}
   const fams=(cityDay.crowds?.families||[]).map(f=>{const l=(transit?.layers||[]).find(x=>dayFamily(x.name)===f);
     return `<span class="lb" style="background:${esc(l?.colour||'#52676d')}">${esc(f)}</span>`;}).join(' ');
-  el.innerHTML=`<div class="dayCard"><span class="dayGlyph">${cityDay.glyph}</span><div><b>${esc(cityDay.name)}</b><p>${esc(cityDay.blurb)}</p>${fams?`<p class="dayChips">${fams} crowded all morning</p>`:''}</div></div>`;}
+  el.innerHTML=`<div class="dayCard"><span class="dayGlyph">${cityDay.glyph}</span><div><b>${esc(cityDay.name)}</b><p>${esc(cityDay.blurb)}</p>${fams?`<p class="dayChips">${fams} crowded all morning</p>`:''}</div></div>${wx}`;}
 
 // size is decided by aspect-ratio and max-height, so there is no element in the
 // document whose box is the picture.
