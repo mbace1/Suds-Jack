@@ -7,7 +7,7 @@ import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} 
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=3';
 import {MobilityController} from './mobility-v212.js?v=7';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
-import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=19';
+import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=20';
 import {mountEvents} from './events.js?v=4';
 import {mountRival} from './rival.js?v=1';
 import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=2';

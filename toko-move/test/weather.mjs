@@ -35,5 +35,12 @@ ok(snow.vehicles.length > clear.vehicles.length, `and the longer cycle carries m
 const h0 = clear.headwayTicks(L), h1 = snow.headwayTicks(L);
 ok(Math.abs(h1 / h0 - 1) < 0.2, `so the headway holds (${h0.toFixed(0)} → ${h1.toFixed(0)} ticks): weather costs ride time, not waiting`);
 
+// ── the dispatcher quotes a dry day's deadline ──────────────────────────
+{ const { DeliveryChallenge } = await import('../js/deliveries.js');
+  const flow = { clock: { tick: 0, ticksPerDay: 3000 }, graph: { node: id => ({ id, name: id, x: 0, y: 0 }) }, routes: { list: [] } };
+  const mk = speed => { const ch = new DeliveryChallenge(flow, () => {}); ch.estimate = () => 200 / speed; ch.weatherSpeed = speed; return ch; };
+  const dry = mk(1).deadlineFor({ from: 'a', to: 'b', cargo: 'parts', dist: 3 }), wet = mk(0.8).deadlineFor({ from: 'a', to: 'b', cargo: 'parts', dist: 3 });
+  ok(dry === wet, `a trip the snow makes slower gets the same deadline as on a dry day (${dry} / ${wet}) — weather costs time, it does not buy slack`); }
+
 console.log(`weather: ${pass} checks passed${fail ? `, ${fail} FAILED` : ''}`);
 process.exit(fail ? 1 : 0);

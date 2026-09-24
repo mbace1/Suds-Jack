@@ -76,7 +76,11 @@ export class DeliveryChallenge{
  // written against.
  deadlineFor({from,to,cargo,dist}){
   const scale=this.flow.clock.ticksPerDay/600;
-  const est=this.estimate?.({stops:[from,to],cargo});
+  // WEATHER (weather.js): the dispatcher quotes a CLEAR day's deadline. The
+  // estimate already rides the slower fleet, and a deadline built on it paid
+  // weather back as slack — measured, rain was worth +€52 a week. Scaling by the
+  // speed takes the ride back to a dry day's; the waits stay as they are.
+  const est=this.estimate?.({stops:[from,to],cargo})*(this.weatherSpeed||1);
   const k=this.kit?.limit||1;   // kit.js: the easy dispatcher
   if(Number.isFinite(est)&&est>0)return Math.round((est*DEADLINE_GRACE+30*scale)*k);
   return Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*scale*k);}

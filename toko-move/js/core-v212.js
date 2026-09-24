@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=20';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=21';
 import {TransitLayers} from './transit-layers.js?v=7';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=6';
@@ -90,7 +90,7 @@ function boot(seed=7){
   // end card to it left a won shift running (v2.29-v2.45) until an event
   // happened to fire, and on a quiet day none did. The day's end always ends it.
   flow=createFlow({city,seed,days:1,demand:null,ticksPerDay:SHIFT.ticksPerDay,hooks:{onTick:()=>{const changed=challenge?.step?.();if(changed){paintHud();paintSheet();}weekProgress();if(challenge?.complete)finish();},onDay:()=>finish()}});
-  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;challenge.kit=KIT_FX;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
+  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;challenge.kit=KIT_FX;challenge.weatherSpeed=WEATHER.speed||1;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
   renderer=new FlowRenderer($('map'),MAP_THEME);
   challenge.start();publish();paintHud();paintSheet();
 }
