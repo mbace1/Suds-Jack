@@ -17,7 +17,7 @@
 //  - Only OK responses are ever cached, and precache failures are non-fatal —
 //    a CDN edge 404 (the v118/v119 propagation lesson) must not get pinned
 //    into the offline cache or brick the install.
-const CACHE = 'toko-drop-?v=222';
+const CACHE = 'toko-drop-?v=223';
 const TOKEN = new URL(self.location.href).searchParams.get('v') ?? '0';
 
 // New game files must be added here as well as to bump-version.sh's file loop.
@@ -28,7 +28,7 @@ const PRECACHE = [
   '../toko/js/signature.js?v=7',
   ...['surface', 'palette', 'face', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
   './', './index.html',
-  ...['main', 'input', 'bullet', 'player', 'enemy', 'crowd', 'framing', 'arena', 'level', 'editor', 'audio', 'bed', 'haptics', 'designer', 'lang', 'tuning', 'retro', 'specimen']
+  ...['main', 'input', 'bullet', 'player', 'enemy', 'crowd', 'framing', 'arena', 'level', 'editor', 'audio', 'bed', 'playlog', 'haptics', 'designer', 'lang', 'tuning', 'retro', 'specimen']
     .map(m => `./js/${m}.js?v=${TOKEN}`),
   ...['first-light', 'three-rings', 'boost-lane', 'undertow', 'eddy', 'slug-run', 'pulse', 'crossfire', 'clot', 'lights-out', 'the-pull', 'siren-song', 'rink', 'skate', 'bubble-bath', 'bellows', 'anvil', 'forge'].map(id => `./levels/${id}.json?v=${TOKEN}`),   // v239/v265: the bundled levels (level.js BUNDLED)
   `./vendor/three.module.min.js?v=${TOKEN}`,
