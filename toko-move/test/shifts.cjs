@@ -246,7 +246,7 @@ server.listen(0, '127.0.0.1', async () => {
     const player = { job: 'rate', plan: 'total', along: 'yes', walk: 'smart' };
     const week = async (w, kitFor, pl = player) => { await page.goto(`${base}/toko-move/js/week.js`); await page.evaluate(() => localStorage.removeItem('tokoMoveRegulars'));
       const days = W.weekDays(w); let sum = 0;
-      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i), weather: wxFor(w, i) }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; }
+      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i), weather: wxFor(w, i) }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; if (process.env.DIAG) console.log(`    ${process.env.WX || '-'} w${w}d${i} fleet ${r.fleet} tick ${r.tick} drops ${r.drops}/${r.dropped} late ${r.late} streak ${r.bestStreak} tips ${r.tips} score ${r.score}`); }
       return sum; };
     let walked = 0;
     if (KITS) {
