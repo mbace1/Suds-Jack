@@ -1,25 +1,24 @@
 // Radio Free Helsinki — Toko at the desk.
 //
 // This is the anchor shot for the multi-scene bulletins: B-roll, then a cut to
-// the studio, then back out. It is NOT the teal gel in `toko.js` — that was a
-// local invention. Toko is the brand mark: a rounded head with the face
-// reversed out of it, magenta ground, paper ink, two colours and nothing else.
-// The mask IS the face, and the pink is `TOKO.MAGENTA`.
+// the studio, then back out. Toko is drawn as he is NOW — Toko Live's figure
+// (`figure.js`): the face in white on a black disc inside a magenta ring, a
+// dark hooded body, dark arms and magenta hands. Before 2026-09-24 this shot
+// sat the older all-magenta bust (`drawHead`) at the desk; before that, the
+// teal gel in `toko.js`. Both were retired for the same reason: Toko is one
+// character across the site, and the station does not get its own.
 //
-// The geometry is imported, never copied. `toko/js/face.js` holds the one
+// The face geometry is imported, never copied. `toko/js/face.js` holds the one
 // measured table (`GEO`), and `BRAND.md` records four wrong answers already
-// paid for on the eye alone — a second copy in this folder would drift on the
-// fifth. Both that file and `util.js` are already in the service worker's
-// precache (the signature badge pulls them), so this costs nothing offline.
+// paid for on the eye alone.
 //
 // Mirrors Photo's interface — goLive/goIdle/update/draw/renderStatic/decoded/
 // destroy — so main.js drives it without knowing which kind of shot it holds.
 
-import { drawHead, HEAD } from '../../toko/js/face.js';
-import { TOKO } from '../../toko/js/palette.js';
+import { FIG, drawBody, drawHead as drawFigHead, drawArm, shoulders } from './figure.js?v=67';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=66';
-import { shade, mix } from './screen.js?v=66';
+import { PAL, SECTOR_COLOR } from './palette.js?v=67';
+import { shade, mix } from './screen.js?v=67';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —
@@ -29,23 +28,15 @@ import { shade, mix } from './screen.js?v=66';
 export const ANCHOR_H = 640;              // internal height; width follows the box
 const MIN_ASPECT = 0.40, MAX_ASPECT = 0.75;
 
-// The composition, as fractions. A MEDIUM shot: the face carries the frame,
-// the shoulders reach the desk, and the desk eats everything below them.
-//
-// The head silhouette in `face.js` is a head on a SHORT neck — it ends at a
-// collar, not at a body. Drawn alone over a desk it reads as a lollipop on a
-// stick, so the torso below is drawn here, in the same magenta, before the
-// head goes on top of it. The brand owns the head; the shot owns the body.
+// The composition, as fractions. A MEDIUM shot: the head carries the frame,
+// the body falls behind the desk, the forearms rest on it.
 const L = {
   desk: 0.668,          // the desk edge, as a fraction of H
   plate: 0.760,         // the nameplate strip on the desk front
-  headW: 0.430,         // of W
-  headWCap: 0.250,      // ...but never taller than this fraction of H allows
-  headY: 0.205,         // of H
+  ringW: 0.235,         // the head ring's radius, of W…
+  ringH: 0.132,         // …but never more than this of H
+  seat: 238,            // head centre above the desk edge, in figure units
   wall: { x: 0.045, y: 0.052, w: 0.910, h: 0.455 },
-  torsoTop: 0.485,      // of H — behind the collar
-  collar: 0.136, trap: 0.295, delt: 0.406, shoulder: 0.428,   // of W
-  trapY: 0.026, deltY: 0.108, shY: 0.150,                     // of H
 };
 
 const rnd = (n) => {
@@ -171,8 +162,10 @@ export class Anchor {
 
     this.backWall(c, W, H, dim, hot);
     this.videoWall(c, t, W, H, key, dim, s);
+    this.rim = key;
     this.subject(c, t, W, H);
     this.desk(c, W, H, key, dim, s);
+    this.arms(c, t, W, H);
     this.furniture(c, t, W, H, key, hot, s);
     this.grain(c, W, H);
     if (hot) this.tear(c, t, W, H);
@@ -265,18 +258,27 @@ export class Anchor {
   }
 
   // ── the person ─────────────────────────────────────────────────────────
+  // Where he sits. The head is sized off the frame and then seated so the
+  // elbows land on the desk edge — the desk decides his height, not the head,
+  // which is what makes the hands rest on it on every aspect.
+  pose(W, H) {
+    const deskY = H * L.desk;
+    const R = Math.min(W * L.ringW, H * L.ringH);
+    const k = R / FIG.ring;
+    return { k, R, cx: W / 2, cy: deskY - L.seat * k, deskY };
+  }
+
   subject(c, t, W, H) {
     const act = this.act || {};
     // A very slow breath under everything. Nothing in a Toko mark is ever
     // perfectly still, and nothing in one is ever quick either — but a film
     // can lean him back, nod him on a sentence, and tilt him for a take.
+    const { k, R, cx, cy } = this.pose(W, H);
     const sway = drift(t, { period: 11 }) * W * 0.008 + (act.lean || 0) * W;
     const bob = drift(t, { period: 7, phase: 0.3 }) * H * 0.003 + (act.nod || 0) * H * 0.028;
-
-    // the head is capped against BOTH axes, so a narrow post does not put the
-    // face through the ceiling and a wide one does not shrink it to a pea
-    const hw = Math.min(W * L.headW, H * L.headWCap * (HEAD.w / HEAD.h) * 1.32);
-    const hx = (W - hw) / 2, hy = H * L.headY;
+    const hx = cx + sway, hy = cy + bob;
+    // the body moves less than the head — it is the head that nods
+    const bx = cx + sway * 0.6, by = cy + bob * 0.35;
 
     // Eyes shut and smiling at rest — that closed arch IS the logo. They open
     // while he is reading, because that is the one moment he is looking at
@@ -286,26 +288,33 @@ export class Anchor {
     const open = act.open != null ? act.open : (speaking ? 1 : glance(t, { every: 11, offset: 0.7 }));
     const squash = act.squash != null ? act.squash : 1 - lid * 0.94;
     const grinK = act.grin != null ? act.grin : 1;
-    // the tilt turns the whole figure about the head, shadow included
+    this.at = { k, hx, hy, bx, by, tilt: act.tilt || 0 };
+
+    // his own light on the wall — Toko Live's magenta room glow, kept to a
+    // pool behind the head so the set keeps its colour
+    const glow = c.createRadialGradient(hx, hy, R * 0.6, hx, hy, R * 2.6);
+    glow.addColorStop(0, 'rgba(240,2,127,0.30)');
+    glow.addColorStop(1, 'rgba(240,2,127,0)');
+    c.fillStyle = glow;
+    c.fillRect(0, 0, W, H * L.desk);
+
+    // the tilt turns the whole figure about the neck, shadow included
     c.save();
-    if (act.tilt) { c.translate(W / 2, H * L.headY + H * 0.12); c.rotate(act.tilt); c.translate(-W / 2, -(H * L.headY + H * 0.12)); }
+    if (act.tilt) { c.translate(hx, hy + R); c.rotate(act.tilt); c.translate(-hx, -(hy + R)); }
 
     // the shadow the subject throws on the wall — the only thing keeping the
     // silhouette off the graticule
     const ox = W * 0.033, oy = H * 0.016;
     c.save();
     c.globalAlpha = 0.35;
-    this.torso(c, W, H, sway + ox, bob + oy, '#020a07');
-    drawHead(c, hx + sway + ox, hy + bob + oy, hw, {
-      ground: '#020a07', ink: '#020a07', face: false,
-    });
+    drawBody(c, bx + ox, by + oy, k, { hem: H, shadow: '#020a07' });
+    drawFigHead(c, hx + ox, hy + oy, k, { shadow: '#020a07' });
     c.restore();
 
-    this.torso(c, W, H, sway, bob, TOKO.MAGENTA);
-    drawHead(c, hx + sway, hy + bob, hw, {
-      ground: TOKO.MAGENTA,
-      ink: TOKO.PAPER,
-      faceOpts: {
+    const rim = this.rim || this.accent;
+    drawBody(c, bx, by, k, { hem: H, rim });
+    drawFigHead(c, hx, hy, k, {
+      face: {
         open,
         squash,
         // the mouth radius breathing. 0.09 was the feed's number and it did
@@ -318,29 +327,42 @@ export class Anchor {
     c.restore();
   }
 
-  // Shoulders. Not part of the brand mark — `face.js` stops at a collar — so
-  // they are drawn here in the same magenta and slid under the head, and they
-  // are WIDE: a narrow torso puts the silhouette back on a stem.
-  //
-  // A shoulder is a short slope and then a corner, not an arc. Swept as one
-  // curve from collar to hem it comes out a bell and the figure reads as a
-  // skittle — so: trapezius out, deltoid corner, then straight down.
-  torso(c, W, H, dx, dy, color) {
-    const cx = W / 2 + dx, top = H * L.torsoTop + dy;
-    const a = W * L.collar, b = W * L.trap, d = W * L.delt, e = W * L.shoulder;
-    const y1 = top + H * L.trapY, y2 = top + H * L.deltY, y3 = top + H * L.shY;
-    c.fillStyle = color;
-    c.beginPath();
-    c.moveTo(cx - a, top);
-    c.quadraticCurveTo(cx - b * 0.7, y1, cx - b, y2);
-    c.quadraticCurveTo(cx - d, y3 - H * 0.02, cx - e, y3);
-    c.lineTo(cx - e, H);
-    c.lineTo(cx + e, H);
-    c.lineTo(cx + e, y3);
-    c.quadraticCurveTo(cx + d, y3 - H * 0.02, cx + b, y2);
-    c.quadraticCurveTo(cx + b * 0.7, y1, cx + a, top);
-    c.closePath();
-    c.fill();
+  // The arms go on AFTER the desk: the forearms rest on it. At rest the hands
+  // sit on the desk a little apart; on a sentence one hand lifts and turns
+  // over (the film says which, through `act.gesture`); on the take both go up
+  // beside his face. Toko Live points at cards with the same arms.
+  arms(c, t, W, H) {
+    const act = this.act || {};
+    const a = this.at;
+    if (!a) return;
+    const { k, bx, by, hx, hy } = a;
+    const { deskY } = this.pose(W, H);
+    const [sl, sr] = shoulders(bx, by, k);
+    // the feed has no film to direct him, so he gestures on his own phrase clock
+    const g = act.gesture != null ? act.gesture
+      : (this.mouthSmooth > 0.03 ? Math.sin(t * 0.9) * 0.55 : 0);
+    const up = act.hands || 0;
+    const rim = this.rim || this.accent;
+    c.save();
+    if (a.tilt) { c.translate(hx, hy + FIG.ring * k); c.rotate(a.tilt * 0.5); c.translate(-hx, -(hy + FIG.ring * k)); }
+    for (const [side, s] of [[-1, sl], [1, sr]]) {
+      // rest: on the desk, in front of him
+      let tx = bx + side * 50 * k, ty = deskY + 9 * k;
+      // a gesture: this side's hand comes up and out, with a small beat
+      const gs = Math.max(0, g * side);
+      if (gs > 0) {
+        const beat = Math.sin(t * 7.4) * 6 * k * gs;
+        tx += side * 62 * k * gs;
+        ty += (-112 * k + beat) * gs;
+      }
+      // the take: hands up beside the face, palms out
+      if (up > 0) {
+        tx += (bx + side * 170 * k - tx) * up;
+        ty += (hy + 18 * k - ty) * up;
+      }
+      drawArm(c, s[0], s[1], tx, ty, k, side, { rim, handScale: 1 + up * 0.25 });
+    }
+    c.restore();
   }
 
   // ── the desk ───────────────────────────────────────────────────────────

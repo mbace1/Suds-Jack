@@ -1432,7 +1432,7 @@ the app's own button (13 clips in ~3 min, `clips.json` beside them);
 `.github/workflows/radiofree-render.yml` runs it after the wire job.
 **v66 — Toko anchors, and the film has a palette arc** (owner: *much more
 animated, more colour, Toko as the newscaster*). `actAt(plan, t)` is what he
-does every frame — mouth as a syllable envelope over the caption on screen, a
+does every frame — **drawn as the current Toko, Toko Live's figure (`js/figure.js`: ring head, white face, dark hood, magenta hands) since v67; the magenta bust and the teal gel are retired** — mouth as a syllable envelope over the caption on screen, a
 syllable bob, a nod on the sentence, a **blink before every cut** away from
 him, and a 0.7 s **take** on the reveal (his own reverse shot: shut, pop wide,
 lean, tilt) — through an `act` hook on the anchor that is null on the feed.

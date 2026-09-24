@@ -591,3 +591,21 @@ number in every headline on disk survives whole in one run (11 checks).
 yle.fi, helsinkitimes.fi and neogames.fi — so every figure here is one that
 appeared in a search summary of a primary report, and nothing is more
 precise than that summary was.
+
+## 2026-09-24 — the current Toko (v67)
+
+Owner: *"The toko is wrong. The old style is old."* The anchor shot sat the
+older all-magenta bust (`drawHead` from `toko/js/face.js`) at the desk, and the
+sign-off portrait still drew the teal gel. Both now draw **Toko Live's figure**
+(`toko-live/main.js`, `draw()`): a black head disc in a magenta ring with the
+face in white, a dark hooded body, dark arms ending in magenta hands, and his
+magenta glow on the wall behind him. `js/figure.js` is that figure in Toko
+Live's own units (ring 112), so the two differ by a rescale and nothing else;
+the face geometry is still imported from the brand, never copied.
+
+He is seated by the DESK, not by the head: the head is sized off the frame and
+placed so the elbows land on the desk edge, and the arms are drawn after the
+desk so the forearms rest on it. `actAt` grew two fields — `gesture` (one hand
+makes the point of each sentence, alternating sides) and `hands` (both up
+beside the face on the take). The feed gestures on its own phrase clock.
+Every radiofree token is v67.

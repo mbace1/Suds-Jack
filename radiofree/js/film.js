@@ -29,10 +29,10 @@
 // the transitions and the surface are borrowed, and the drawing medium is not.
 // This station is a 128×152 pixel panel behind curved glass, and stays one.
 
-import { parseLine } from './wire.js?v=66';
-import { readFigures } from './visuals.js?v=66';
-import { PAL } from './palette.js?v=66';
-import { mix } from './screen.js?v=66';
+import { parseLine } from './wire.js?v=67';
+import { readFigures } from './visuals.js?v=67';
+import { PAL } from './palette.js?v=67';
+import { mix } from './screen.js?v=67';
 
 export const W = 1080, H = 1920;
 export const MONO = '"IBM Plex Mono", "SF Mono", Menlo, Consolas, "IPAGothic", monospace';
@@ -293,9 +293,13 @@ export function lookAt(plan, t) {
 export function actAt(plan, t) {
   const T = TIMING, sh = shotAt(plan, t);
   const cap = plan.captions.find(c => t >= c.t0 && t < c.t1 && c.kind === 'read');
-  let mouth = 0, open = null, squash = null, grin = null, lean = 0, nod = 0, tilt = 0;
+  let mouth = 0, open = null, squash = null, grin = null, lean = 0, nod = 0, tilt = 0, gesture = 0, hands = 0;
   if (cap) {
     const u = (t - cap.t0) / (cap.t1 - cap.t0);
+    // one hand makes the point of each sentence — alternate sentences, alternate
+    // hands — up on the first words, down before the nod lands it
+    const side = plan.captions.indexOf(cap) % 2 ? -1 : 1;
+    gesture = side * 0.85 * ease(seg(u, 0.08, 0.26)) * (1 - ease(seg(u, 0.62, 0.84)));
     if (u < 0.88) {
       const n = Math.floor(t * T.syl), f = t * T.syl - n;
       const o = Math.sin(f * Math.PI);
@@ -318,9 +322,10 @@ export function actAt(plan, t) {
     lean = -0.06 * pop;
     nod = -0.35 * pop;                                              // back and up
     tilt = -0.13 * pop + 0.03 * Math.sin(u * 24) * (1 - ease(seg(u, 0.2, 0.6)));
+    hands = pop;                                                    // both up, beside the face
   }
   const look = lookAt(plan, t);
-  return { mouth, open, squash, grin, lean, nod, tilt, key: look.key, dim: look.dim, hot: !!sh.decoded };
+  return { mouth, open, squash, grin, lean, nod, tilt, gesture, hands, key: look.key, dim: look.dim, hot: !!sh.decoded };
 }
 
 // ── the compositor ───────────────────────────────────────────────────────
