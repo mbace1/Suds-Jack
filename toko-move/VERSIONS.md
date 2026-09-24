@@ -1,5 +1,39 @@
 # Toko Move — versions
 
+## v2.48 — 2026-09-24
+
+**KIT, the choice between shifts.** Roadmap NEXT LEVEL, L2. Every night of the
+week (Monday to Thursday) offers three things and you take one; what you take
+you keep until Friday. Six items, and the ascension ladder's rule — **no item
+adds a verb, each bends ONE number the player already reads**:
+
+| item | bends | where the lever lives |
+|---|---|---|
+| 🎒 a bigger bag | room 5 → 7 | `deliveries.capacity()` |
+| 🚲 a bike | walking ×0.6 | `tm.walkFactor` (mobility) |
+| 🫖 a thermos | fresh window ×1.4 | `earn()` freshness |
+| 📟 an easy dispatcher | deadlines ×1.15 | `deadlineFor()` |
+| 📇 business cards | tips ×1.5 | `earn()` tip |
+| 🫧 bubble wrap | fragile bonus with a change too | `earn()` fragile |
+
+The offer is seeded by the week and the night and SAVED the first time it is
+shown, so a reload cannot reroll it; one tap takes the item and goes to the
+next shift, because a kit is applied when the page boots. A night closed
+without a pick is offered again on the title card and holds START until it is
+taken. The title card and end card show the kit held; Friday's share line
+carries it. `?kit=a,b` applies kit to a pinned or random shift — that is how
+the bot measures an item — and is ignored on the daily, whose result is one
+everybody compares.
+
+KIT VALUES: being measured with `shifts.cjs --kits=20`.
+
+`test/kit.mjs` (31) holds the offers, the nights and each lever in the
+engine's own arithmetic — hot food at 70% of its time is COOLED without a
+thermos and FRESH with one; a tip of N becomes 1.5N — and removing any one
+lever fails it. `test/week.cjs` (29) now walks the week through the picker,
+closes a card without picking, checks the kit reaches Tuesday's shift, and
+that the daily ignores `?kit=`; both wirings fail it when removed.
+
 ## v2.47 — 2026-09-24
 
 **THE WEEK.** Roadmap NEXT LEVEL, L1. `?week` — or the new link under START

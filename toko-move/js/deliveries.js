@@ -77,8 +77,9 @@ export class DeliveryChallenge{
  deadlineFor({from,to,cargo,dist}){
   const scale=this.flow.clock.ticksPerDay/600;
   const est=this.estimate?.({stops:[from,to],cargo});
-  if(Number.isFinite(est)&&est>0)return Math.round(est*DEADLINE_GRACE+30*scale);
-  return Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*scale);}
+  const k=this.kit?.limit||1;   // kit.js: the easy dispatcher
+  if(Number.isFinite(est)&&est>0)return Math.round((est*DEADLINE_GRACE+30*scale)*k);
+  return Math.round((110+dist*16+(cargo==='hot food'||cargo==='express'?0:25))*scale*k);}
  refreshOffers(){if(this.index>=this.target){this.offers=[];return;}const from=this.location||'lasipalatsi',seed=hash(`${this.shiftTag()}${from}:${this.index}:${this.offerCycle++}`),pool=DESTINATIONS.filter(x=>x!==from&&this.flow.graph.node(x));const cands=[];
   for(let i=0;i<6&&pool.length;i++){const pick=(seed+i*7)%pool.length,to=pool.splice(pick,1)[0],cargo=CARGO_KEYS[(seed+i*3+this.index)%CARGO_KEYS.length],dist=Math.max(1,Math.round(Math.hypot((this.flow.graph.node(to)?.x||0)-(this.flow.graph.node(from)?.x||0),(this.flow.graph.node(to)?.y||0)-(this.flow.graph.node(from)?.y||0))/5)),limit=this.deadlineFor({from,to,cargo,dist}),value=Math.round((90+dist*9)*payFor(cargo));cands.push({id:`offer:${this.index}:${i}:${to}`,stops:[from,to],label:`${this.name(from)} → ${this.name(to)}`,cargo,limit,value});}
   // Loop 47: a procedural job is constrained by a network relationship, never
@@ -119,7 +120,8 @@ export class DeliveryChallenge{
  // separate caps (one queued job, two drops) with one rule a player can see.
  carrying(){const out=[];if(this.active)out.push(this.active.cargo);if(this.queued)out.push(this.queued.cargo);for(const j of this.along)out.push(j.cargo);return out;}
  spaceUsed(){return this.carrying().reduce((a,c)=>a+unitsOf(c),0);}
- spaceLeft(){return Math.max(0,CAPACITY-this.spaceUsed());}
+ capacity(){return this.kit?.capacity||CAPACITY;}
+ spaceLeft(){return Math.max(0,this.capacity()-this.spaceUsed());}
  fits(cargo){return unitsOf(cargo)<=this.spaceLeft();}
  canTakeSecond(cargo){return Boolean(this.active&&!this.queued&&this.waitingForCatch&&!this.activeTrip&&this.leg===0&&this.currentFrom()===this.location&&(cargo==null||this.fits(cargo)));}
  canReorder(){return Boolean(this.active&&this.queued&&this.waitingForCatch&&!this.activeTrip&&this.leg===0&&this.currentFrom()===this.location);}
@@ -137,14 +139,14 @@ export class DeliveryChallenge{
  // decision it creates is whether to take the fast job or the paying one when
  // the chain is at four.
  streakMult(){return 1+0.25*Math.max(0,Math.min(4,this.streak-1));}
- earn(job,elapsed,legs=1){const c=CARGO[job.cargo]||CARGO.documents,late=elapsed>job.limit;let earned=late?Math.round(job.value*.5):job.value,note=late?'LATE':'ON TIME';if(c.freshness){const freshLimit=Math.round(job.limit*c.freshness);if(elapsed<=freshLimit){const bonus=Math.round(job.value*.25);earned+=bonus;this.bonuses+=bonus;note='FRESH BONUS';}else if(!late){earned=Math.round(earned*.8);note='COOLED';}}if(c.fragile&&legs===1&&!late){earned+=35;this.bonuses+=35;note='FRAGILE SAFE';}if(c.express&&elapsed<=Math.round(job.limit*.7)){earned+=40;this.bonuses+=40;note='EXPRESS BONUS';}
+ earn(job,elapsed,legs=1){const c=CARGO[job.cargo]||CARGO.documents,late=elapsed>job.limit;let earned=late?Math.round(job.value*.5):job.value,note=late?'LATE':'ON TIME';if(c.freshness){const freshLimit=Math.round(job.limit*Math.min(1,c.freshness*(this.kit?.fresh||1)));if(elapsed<=freshLimit){const bonus=Math.round(job.value*.25);earned+=bonus;this.bonuses+=bonus;note='FRESH BONUS';}else if(!late){earned=Math.round(earned*.8);note='COOLED';}}if(c.fragile&&(legs===1||this.kit?.padding)&&!late){earned+=35;this.bonuses+=35;note='FRAGILE SAFE';}if(c.express&&elapsed<=Math.round(job.limit*.7)){earned+=40;this.bonuses+=40;note='EXPRESS BONUS';}
   if(late)this.streak=0;else{this.streak++;this.bestStreak=Math.max(this.bestStreak,this.streak);}
   {const m=this.streakMult();if(m>1){const before=earned;earned=Math.round(earned*m);this.bonuses+=earned-before;note=`${note} ×${m}`;}}
   // The person at the far end. The tip is paid on the standing you ARRIVED
   // with — today's delivery is what moves it for next time — and goodwill
   // from the event deck counts as standing with everyone.
   let regular=null,tip=0;
-  {const reg=regularAt(job.stops[1]);if(reg){const st=standingOf(this.standing,reg.id);tip=late?0:tipFor(job.value,st,this.goodwill);if(tip){earned+=tip;this.tips+=tip;}bumpStanding(this.standing,reg.id,late);saveStanding(this.standing,this.standingStore);regular=reg;}}
+  {const reg=regularAt(job.stops[1]);if(reg){const st=standingOf(this.standing,reg.id);tip=late?0:Math.round(tipFor(job.value,st,this.goodwill)*(this.kit?.tips||1));if(tip){earned+=tip;this.tips+=tip;}bumpStanding(this.standing,reg.id,late);saveStanding(this.standing,this.standingStore);regular=reg;}}
   this.score+=earned;if(late)this.late++;return{earned,note,late,tip,regular};}
  // ON YOUR WAY — Paperboy's loop on a tram. The main job says where you are
  // going; these say what you could drop at the REAL stops you will pass

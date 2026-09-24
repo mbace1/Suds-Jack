@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=19';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=20';
 import {TransitLayers} from './transit-layers.js?v=7';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=6';
@@ -14,11 +14,12 @@ import {dots,minutes} from './ui.js?v=1';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 import {drawCityEvent,family as dayFamily} from './city-events.js?v=1';
 import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as dailyGrid} from './daily.js?v=1';
-import * as Week from './week.js?v=1';
+import * as Week from './week.js?v=2';
+import * as Kit from './kit.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.47';
+const BUILD_VERSION='2.48';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -48,9 +49,14 @@ const SHIFT_INFO=WEEK?{kind:'week',seed:WEEK_DAY.seed,index:WEEK_DAY.index,name:
 const shiftSeed=SHIFT_INFO.seed;
 const shiftLabel=()=>SHIFT_INFO.kind==='daily'?`${dailyName(SHIFT_INFO.number).toUpperCase()} · ${SHIFT_INFO.label}`:SHIFT_INFO.kind==='week'?`WEEK ${WEEK.seed} · ${SHIFT_INFO.name}`:`shift #${shiftSeed}`;
 const cityDay=drawCityEvent(shiftSeed,WEEK?WEEK_DAY.day:params.get('day'));
+// v2.48: KIT (kit.js). A week carries what was picked on its nights. `?kit=`
+// applies it to a pinned or random shift — the bot measures each item that way
+// — and never to the daily, whose result is one everybody can compare.
+const KIT_IDS=WEEK?Week.owned(WEEK):SHIFT_INFO.kind==='daily'?[]:Kit.parse(params.get('kit'));
+const KIT_FX=Kit.effects(KIT_IDS);
 const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
+function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -80,7 +86,7 @@ function boot(seed=7){
   // end card to it left a won shift running (v2.29-v2.45) until an event
   // happened to fire, and on a quiet day none did. The day's end always ends it.
   flow=createFlow({city,seed,days:1,demand:null,ticksPerDay:SHIFT.ticksPerDay,hooks:{onTick:()=>{const changed=challenge?.step?.();if(changed){paintHud();paintSheet();}weekProgress();if(challenge?.complete)finish();},onDay:()=>finish()}});
-  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
+  challenge=new DeliveryChallenge(flow,say);challenge.shiftSeed=shiftSeed;challenge.kit=KIT_FX;if(WEEK)challenge.useStanding(Week.standingStore(WEEK));done=false;msgs=[];
   renderer=new FlowRenderer($('map'),MAP_THEME);
   challenge.start();publish();paintHud();paintSheet();
 }
@@ -423,7 +429,7 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
 // THE HUD IS GLYPHS. Clock, deliveries as dots, a score, and the current job
 // as its cargo glyph inside a ring that empties with the deadline — no
 // "deliveries" / "deadline" labels and no ticks (owner: Mini Metro succinct).
-function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);{const b=$('bagHud');if(b)b.innerHTML=challenge.active?bagHtml(challenge.carrying?.()||[]):'';}$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const m=challenge.streakMult?.()||1,el=$('mult');if(el){el.textContent=m>1?`×${m}`:'';el.style.opacity=m>=2?'1':'.8';}}{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.innerHTML=challenge.active?parcelHtml(challenge.active.cargo,{max:16}):'<span class="pcl pcl-none"></span>';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
+function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);{const b=$('bagHud');if(b)b.innerHTML=challenge.active?bagHtml(challenge.carrying?.()||[],challenge.capacity?.()):'';}$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const m=challenge.streakMult?.()||1,el=$('mult');if(el){el.textContent=m>1?`×${m}`:'';el.style.opacity=m>=2?'1':'.8';}}{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.innerHTML=challenge.active?parcelHtml(challenge.active.cargo,{max:16}):'<span class="pcl pcl-none"></span>';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
 // THE JOB SHEET HAS THREE WRITERS AND HAD NO OWNER.
 // paintSheet (this file), the dispatch board (job-board-v212.js) and the catch
 // panel (route-choice.js) all wrote into #sheet on their own timers, and each
@@ -495,15 +501,22 @@ function weekProgress(){if(!WEEK||!challenge||done)return;const sc=challenge.sco
   Week.progress(WEEK,{score:sc,results:challenge.results});Week.saveWeek(WEEK);}
 function weekStrip(w,current=-1){return `<div class="weekStrip">${Week.DAY_NAMES.map((d,i)=>{const x=w.shifts[i];
   return `<span class="wd${i===current?' now':''}${x?' done':''}"><b>${d.slice(0,3)}</b>${x?`<i>€${x.euros}</i>`:`<i>${i===current?'today':'—'}</i>`}</span>`;}).join('')}</div>`;}
+function kitChips(ids){return ids.length?`<span class="kitChips"><small>KIT</small> ${ids.map(id=>{const k=Kit.BY_ID[id];return k?`<span title="${esc(k.name)}: ${esc(k.line)}">${k.glyph}</span>`:'';}).join('')}</span>`:'';}
+// One tap takes the item AND goes to the next shift: a kit is applied when the
+// page boots, and a picker that asked for a second tap would be a menu.
+function kitPicker(){const n=Week.night(WEEK);if(!n||n.pick)return'';Week.saveWeek(WEEK);
+  return `<div class="kitPick"><p class="kitHead">TONIGHT, TAKE ONE FOR ${esc(Week.DAY_NAMES[WEEK.day])}</p>${n.offers.map(id=>{const k=Kit.BY_ID[id];
+    return `<button class="kitOffer" data-kit="${esc(id)}"><span class="kg">${k.glyph}</span><span class="kt"><b>${esc(k.name)}</b><small>${esc(k.line)}</small></span></button>`;}).join('')}</div>`;}
+function wireKitPicker(root){root.querySelectorAll('.kitOffer').forEach(b=>b.onclick=()=>{if(Week.choose(WEEK,b.dataset.kit)){Week.saveWeek(WEEK);location.href='?week';}});}
 function weekTitle(){const w=WEEK,p=Week.pace(w),prev=w.shifts[w.shifts.length-1];
-  return `${esc(shiftLabel())} · ${SHIFT_INFO.index+1} of ${Week.LENGTH}${weekStrip(w,SHIFT_INFO.index)}<span class="weekPace">€${p.total} banked · rent €${Week.RENT} on Friday${p.need?` · about €${p.perDay} a shift to go`:' · covered'}</span>${prev?.left?`<br><span class="dailyDone">${esc(prev.name.toLowerCase())} was left mid-shift — it paid €${prev.euros}</span>`:''}`;}
+  return `${esc(shiftLabel())} · ${SHIFT_INFO.index+1} of ${Week.LENGTH}${weekStrip(w,SHIFT_INFO.index)}${kitChips(Week.owned(w))}<span class="weekPace">€${p.total} banked · rent €${Week.RENT} on Friday${p.need?` · about €${p.perDay} a shift to go`:' · covered'}</span>${prev?.left?`<br><span class="dailyDone">${esc(prev.name.toLowerCase())} was left mid-shift — it paid €${prev.euros}</span>`:''}`;}
 function paintWeek(box,again){const w=WEEK;
   Week.close(w,{score:challenge.score,results:challenge.results,drops:challenge.drops||0,tips:challenge.tips||0});Week.saveWeek(w);
   const x=w.shifts[SHIFT_INFO.index],over=Week.isOver(w),v=Week.verdict(w),p=Week.pace(w);
   const head=`<p class="dailyHead">${esc(SHIFT_INFO.name)}${cityDay?` · ${esc(cityDay.name)}`:''}</p><p class="dailyGrid">${Week.dayGrid(x.results)} <small>€${x.euros}</small></p>`;
   const tail=over?`<p class="weekVerdict ${v.paid?'paid':'short'}">${v.paid?`RENT PAID · €${v.over} over`:`SHORT €${-v.over} ON THE RENT`}</p><button class="btn prime wide" id="share">SHARE THE WEEK</button><pre class="shareText" id="shareText" hidden></pre><a class="btn ghost wide" href="?week" id="newWeek">A NEW WEEK</a>`
-    :`<p class="weekPace">€${p.total} of €${Week.RENT} · about €${p.perDay} a shift to go</p><a class="btn prime wide" href="?week" id="nextShift">${Week.DAY_NAMES[w.day]} →</a>`;
-  box.insertAdjacentHTML('afterbegin',`<div class="dailyBox weekBox">${head}${weekStrip(w)}${tail}</div>`);
+    :`<p class="weekPace">€${p.total} of €${Week.RENT} · about €${p.perDay} a shift to go</p>${kitPicker()||`<a class="btn prime wide" href="?week" id="nextShift">${Week.DAY_NAMES[w.day]} →</a>`}`;
+  box.insertAdjacentHTML('afterbegin',`<div class="dailyBox weekBox">${head}${weekStrip(w)}${kitChips(Week.owned(w))}${tail}</div>`);wireKitPicker(box);
   // A shift of the week is played once: the card's replay button would be a
   // way round the one rule a run has.
   if(again)again.hidden=true;
@@ -552,7 +565,7 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
 
 async function init(){
   $('play').disabled=true;$('play').textContent='LOADING HELSINKI…';
-  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();paintDayCard();$('play').disabled=false;$('play').textContent=WEEK?`START ${SHIFT_INFO.name}`:'START SHIFT';requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
+  try{const [r,g]=await Promise.all([fetch('./cities/helsinki.json',{cache:'no-store'}),loadGround()]);ground=g;water=g?.water||null;if(!r.ok)throw new Error(`HSL pack ${r.status}`);source=await r.json();transit=new TransitLayers(source);transit.showAll();city=buildRealHelsinki(source);box=boardBox(city.resolved);roads=roadPaths(city.resolved);camera=new Camera(box);openingScale();{const kx=Math.cos(((box.n+box.s)*.5)*Math.PI/180);$('map').style.aspectRatio=`${(box.e-box.w)*kx} / ${box.n-box.s}`;renderer?.resize?.();}paintTransitPanel();boot();$('play').disabled=false;$('play').textContent=WEEK?`START ${SHIFT_INFO.name}`:'START SHIFT';paintDayCard();requestAnimationFrame(frame);}catch(err){$('play').textContent='MAP LOAD FAILED';$('transitMeta').textContent=err.message;console.error(err);}
 }
 
 // Tapping the board. The whole verb set is READ the network and time it, and
@@ -621,6 +634,9 @@ function paintDayCard(){const el=$('dayCard');if(!el)return;
     // at the end that the run you just cared about was practice is a small
     // betrayal, and the whole point of one result a day is that it is one.
     n.innerHTML=SHIFT_INFO.kind==='week'?weekTitle():`${esc(shiftLabel())}${rec?`<br><span class="dailyDone">played · ${dailyGrid(rec.results,rec.target)} · ${Number(rec.score).toLocaleString('en-US')} — this run is practice</span>`:''}`;
+    // A night left without a pick (the page was closed on the end card) is
+    // offered again here, and the shift waits for it: the kit is applied at boot.
+    if(SHIFT_INFO.kind==='week'&&Week.pending(WEEK)){n.insertAdjacentHTML('beforeend',kitPicker());wireKitPicker(n);const pl=$('play');pl.disabled=true;pl.textContent='TAKE ONE FIRST';}
     const wl=$('weekLink');if(wl){const w=SHIFT_INFO.kind==='week'?null:Week.loadWeek();wl.hidden=SHIFT_INFO.kind==='week';
       wl.innerHTML=w&&!Week.isOver(w)&&w.shifts.length?`CONTINUE THE WEEK · ${Week.DAY_NAMES[w.day]} · €${Week.total(w)}/€${Week.RENT}`:`OR THE WEEK · five shifts, rent due Friday`;}}
   if(!cityDay){el.innerHTML='';return;}

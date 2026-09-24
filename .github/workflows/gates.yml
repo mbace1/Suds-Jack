@@ -324,6 +324,9 @@ jobs:
       - name: the week — a seed, a weekday deck, money, clocking out, the rent
         run: node toko-move/test/week.mjs
 
+      - name: the kit — three offers a night, one lever an item, in the engine's arithmetic
+        run: node toko-move/test/kit.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
