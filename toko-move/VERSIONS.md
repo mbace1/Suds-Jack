@@ -23,7 +23,25 @@ Monday at nothing and remember you until Friday, through a store the
 challenge saves with; visited stops stay yours for good). A shift of the week
 is played once: the replay button is hidden.
 
-RENT: provisional — being measured with `shifts.cjs --weeks=N`.
+**Rent is €350, and it was measured** (`shifts.cjs --weeks=40`, 40 weeks
+each, standing wiped every Monday). Three players on the same 40 weeks:
+
+| player | median week | pays €300 | €350 | €400 | €450 |
+|---|---|---|---|---|---|
+| reads the fee (pay per minute of plan, drops, walks) | €395 | 95% | **78%** | 45% | 18% |
+| takes the shortest job (drops, walks) | €360 | 88% | **58%** | 23% | 8% |
+| takes the first job, never walks | €319 | 58% | **28%** | 5% | 3% |
+
+€350 is the price where the gap between those players is widest and the best
+of them still loses about one week in five. The first cut had €480, a guess,
+and not one of 120 bot weeks paid it.
+
+**What the week found that a shift could not: the cheapest job is not the
+best one.** The dailies bot takes the job with the shortest plan, because a
+shift is won on deliveries. A week is won on money, and the shortest job pays
+least — so the "sensible" player earns less than one who divides the fee by
+the plan (`job: 'rate'`, new in the bot). Win the shift and lose the rent is a
+real way to play this now, and a decision the daily never asked for.
 
 `test/week.cjs` plays the run in the page: in from the daily's card, Monday's
 standing empty whatever the browser's is, Monday recorded, Tuesday remembering

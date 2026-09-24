@@ -37,8 +37,10 @@ export const DAY_NAMES=['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY'];
 // the whole point of calling it rent.
 export const PER_EURO=10;
 export const euros=score=>Math.max(0,Math.round((Number(score)||0)/PER_EURO));
-// RENT is measured, not picked: see VERSIONS.md v2.47 and `shifts.cjs --weeks`.
-export const RENT=480;
+// RENT is measured, not picked (VERSIONS.md v2.47, `shifts.cjs --weeks=40`):
+// at 350 a player who reads the fee pays 78% of weeks, one who takes the
+// shortest job 58%, one who takes the first job and never walks 28%.
+export const RENT=350;
 export const DECK=['none','none','match','market','helsinki'];
 
 // Seeded Fisher-Yates over the weekday deck.
