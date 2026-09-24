@@ -1,6 +1,6 @@
 // The arcade shell — one line in a game's index.html and it gets a way home.
 //
-//   <script type="module" src="../hub/shell.js?v=69"></script>
+//   <script type="module" src="../hub/shell.js?v=70"></script>
 //
 // It adds a HOME button in the top-left corner and a controller binding for
 // the same thing, and does nothing else: it installs no key handlers and no
@@ -14,7 +14,7 @@
 // short enough that you do not have to wonder whether it is working.
 
 import { watchPad } from './pad.js?v=10';
-import { GAMES } from './games.js?v=106';
+import { GAMES } from './games.js?v=107';
 import { attachPad, holdKey } from './padkeys.js?v=10';
 
 const HOLD_MS = 750;
@@ -93,6 +93,13 @@ style.textContent = `
   user-select: none;
 }
 .arcade-toko .dot { width: 10px; height: 10px; border-radius: 50%; background: #f0027f; }
+/* on a phone held upright the word is the difference between sitting beside
+   HOME and sitting on a game's lives or wave counter; the dot says Toko */
+@media (max-width: 480px) {
+  .arcade-toko { padding: 0; justify-content: center; width: 44px; }
+  .arcade-toko .word { display: none; }
+  .arcade-toko .dot { width: 14px; height: 14px; }
+}
 @media (hover: none) and (pointer: coarse) {
   .arcade-toko.on { display: inline-flex; }
 }
@@ -241,7 +248,7 @@ function offerToko() {
   tokoBtn.className = 'arcade-toko on';
   tokoBtn.type = 'button';
   tokoBtn.setAttribute('aria-label', 'Talk to Toko');
-  tokoBtn.innerHTML = '<span class="dot" aria-hidden="true"></span><span>Toko</span>';
+  tokoBtn.innerHTML = '<span class="dot" aria-hidden="true"></span><span class="word">Toko</span>';
   let seating = false;
   const sit = e => {
     e.preventDefault(); e.stopPropagation();           // the button is not the canvas

@@ -24,11 +24,11 @@
     </div>
   </div>
 
-  <div id="build" aria-label="Current build">BUILD v5</div>
+  <div id="build" aria-label="Current build">BUILD v6</div>
 
   <div id="overlay" class="show">
     <div class="panel">
-      <p class="tag">HORIZON MESH · v5</p>
+      <p class="tag">HORIZON MESH · v6</p>
       <h1>SUDS JACK</h1>
       <p class="sub">Bomb Jack · Tempest · Tiny Wings · Suda51</p>
       <ul class="howto">
@@ -43,7 +43,21 @@
   </div>
 
   <div id="glitch" aria-hidden="true"></div>
-  <script src="game.js?v=53"></script>
-  <script type="module" src="../hub/shell.js?v=69"></script>
+  <script src="game.js?v=54"></script>
+  <script type="module" src="../hub/shell.js?v=70"></script>
+  <!-- signed by Toko Midori Games. `table: true` seats him OVER the run
+       rather than leaving for the arcade. On a touchscreen the move/JUMP pad
+       spans the bottom edge and the lanes run right up to it, so there is no
+       bottom corner that is not either a control or the near end of the
+       board; the badge goes to the empty sky under BEST instead. Under a
+       thumb it is a picture anyway, and TOKO beside HOME is the way to him.
+       See ../toko/BRAND.md and ../toko/js/table.js -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=7';
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    sign(coarse
+      ? { corner: 'top-right', counter: true, inset: 56, table: true }
+      : { corner: 'bottom-left', counter: true, table: true });
+  </script>
 </body>
 </html>

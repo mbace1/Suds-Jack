@@ -8,6 +8,27 @@
   release number shown by the arcade.
 -->
 
+## v6 — 2026-09-24
+
+**Signed, and Toko at the table.** The live Suds Jack was the one cabinet on
+the floor with no Toko sticker, so there was nothing to press. It carries the
+signature now, and it seats him OVER the run rather than leaving for the
+arcade: with a cursor the sticker, on a touchscreen TOKO beside HOME. The run
+holds while he is open and resumes where it stopped.
+
+- He opens on this game's own account of the run: wave, score and lives
+  mid-run; on the game-over screen where you went down, your best, and the one
+  thing that most changes a run here (peaks and boost triangles extend the
+  jump — float over what you cannot stomp).
+- On a touchscreen the move/JUMP pad spans the bottom edge and the lanes run
+  right up to it, so no bottom corner is free: the badge goes to the empty sky
+  under BEST. (A first cut raised it with `inset`, which moves it in from BOTH
+  edges, and put it on the near lanes beside the player.)
+- `window.__tokoTable` is the whole integration: `pause`, `resume` (which
+  resets `last`, or the first frame back carries the conversation), `recap`.
+- Tokens: `game.js?v=54`, `BUILD v6`, `const VERSION = "v6"` — moved together,
+  as the gate asserts.
+
 ## v5 — 2026-08-19
 **Make the update impossible to miss**
 - A bright, persistent `BUILD v5` badge now sits below the HUD on the title,

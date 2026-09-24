@@ -1,4 +1,4 @@
-// Suds Jack — Horizon Mesh v5
+// Suds Jack — Horizon Mesh v6
 // Nine-lane score attack: collect, jump, stomp, survive.
 // Bomb Jack × Tempest × Tiny Wings × Suda51
 
@@ -19,7 +19,7 @@
   const overlayHowto = overlay.querySelector(".howto");
   const overlayHint = overlay.querySelector(".hint");
 
-  const VERSION = "v5";
+  const VERSION = "v6";
   const LANES = 9;
   const SLICE_COUNT = 31;
   const SLICE_SPACING = 0.036;
@@ -779,7 +779,33 @@
     ctx.restore();
   }
 
+  // ── Toko at the table ────────────────────────────────────────────────
+  // The sticker in the corner (and TOKO beside HOME on a touchscreen) opens
+  // the counter over the run instead of leaving for the arcade
+  // (toko/js/table.js). These are this game's two seams: how to stop the
+  // clock, and what he should already know when he opens — the run in this
+  // game's own words. `last` is reset on the way back, or the first frame
+  // carries the whole conversation.
+  let tokoHeld = false;
+  window.__tokoTable = {
+    pause() { tokoHeld = true; },
+    resume() { tokoHeld = false; last = 0; },
+    recap() {
+      if (mode === "play") return [
+        `WAVE ${wave}, ${score | 0} POINTS, ${lives} ${lives === 1 ? "LIFE" : "LIVES"} LEFT.`,
+        score > best ? "YOU ARE PAST YOUR BEST. KEEP IT." : `YOUR BEST IS ${best | 0}.`,
+      ];
+      if (mode === "over") return [
+        `DOWN ON WAVE ${wave} WITH ${score | 0} POINTS.`,
+        score >= best && score > 0 ? "A NEW BEST." : `YOUR BEST IS ${best | 0}.`,
+        "BRIGHT PEAKS AND BOOST TRIANGLES EXTEND YOUR JUMP — FLOAT OVER WHAT YOU CANNOT STOMP.",
+      ];
+      return null;
+    },
+  };
+
   function frame(ts) {
+    if (tokoHeld) { last = ts; requestAnimationFrame(frame); return; }
     if (!last) last = ts;
     const dt = Math.min(0.05, (ts - last) / 1000);
     last = ts;
