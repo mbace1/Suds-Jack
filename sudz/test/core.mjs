@@ -141,13 +141,13 @@ assert.equal(state.mode, 'play', 'Enter restarts after game over');
 assert.equal(state.lives, 3);
 assert.equal(state.wave, 1);
 
-assert.match(source, /const VERSION = "v5"/);
+assert.match(source, /const VERSION = "v6"/);
 assert.match(source, /const VANISH_Y = 0\.48/);
 assert.match(source, /const DEPTH_CURVE = 1\.8/);
 assert.match(source, /const MESH_WIDTH = 1\.16/);
-assert.match(index, /game\.js\?v=53/);
+assert.match(index, /game\.js\?v=54/);
 assert.match(index, /style\.css\?v=1/);
-assert.match(index, /id="build"[^>]*>BUILD v5<\/div>/);
+assert.match(index, /id="build"[^>]*>BUILD v6<\/div>/);
 assert.match(styles, /#build\s*\{/);
 // The shell is here, but its ?v= is NOT this gate's to assert. That token is
 // a cache-buster owned by scripts/deploy-hub.mjs, which renumbers it across

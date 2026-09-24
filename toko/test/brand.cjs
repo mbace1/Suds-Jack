@@ -42,6 +42,9 @@ const TABLED = [
   ['hyperdagger', 'hyperdagger'], ['paperboy', 'paperboy'], ['dropcabal', 'dropcabal'],
   ['flashprince', 'flashprince'], ['flowsnow', 'flowsnow'], ['slaykallio', 'slaykallio'],
   ['eeri', 'eeri'], ['radiofree', 'radiofree'],
+  // the folder and the id DISAGREE here, on purpose — this is the pair the
+  // check exists for
+  ['sudz', 'sudsjack'],
 ];
 
 let pass = 0, fail = 0;

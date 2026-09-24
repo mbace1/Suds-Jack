@@ -1159,7 +1159,9 @@ function check(name, cond) {
           null, { timeout: 30000 }).then(() => true, () => false)
         && /\/slaykallio\/$/.test(tp.url()));
     }
-    await tp.goto(`${base}/sudz/`, { waitUntil: 'domcontentloaded' });
+    // Toko Drop is signed but lays no table (owner's call), which is exactly
+    // the case: a sticker, and still no TOKO button
+    await tp.goto(`${base}/toko-drop/`, { waitUntil: 'domcontentloaded' });
     await tp.waitForTimeout(1500);
     check('no TOKO on a game with no table', await tp.locator('.arcade-toko').count() === 0);
     await tctx.close();
