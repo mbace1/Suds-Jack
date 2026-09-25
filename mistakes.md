@@ -49,3 +49,24 @@ this file once per session before finishing, and append anything new.
   Fix: before concluding "no common ancestor", check `.git/shallow` and
   fetch enough history (`git fetch --depth=2000 origin <both branches>`);
   an empty merge-base on a shallow clone is not a finding.
+
+- **`pkill -f "http.server …"` killed the shell running it — twice in one
+  session.** The pattern also matches the calling shell's own command line
+  (it contains the same text), so the Bash call died with exit 144 and took
+  the commands after it (a commit and a push) down with it. Fix: stop servers
+  by port — `for pid in $(lsof -t -i :PORT); do kill $pid; done` — never
+  `pkill -f` with a string the current command also contains.
+
+- **`rm -rf test` in a gh-pages worktree deleted three TRACKED files**
+  (`test/piritori-c18-*`), because a temporary copy of `hub-smoke.cjs` had
+  been put in a directory the site already owns. Caught only because the
+  staged file list was read before committing. Fix: put temporary harness
+  files in the scratchpad, or delete them by exact name; read
+  `git diff --cached --name-only` before every deploy commit.
+
+- **A token cascade over the site missed `AnotherHUB/index.html`.** That page
+  carries `<base href="../">`, so its relative references resolve against the
+  site root, not its own folder, and a script resolving paths per file never
+  matched them. The smoke test's "byte-identical apart from the base tag" rule
+  is what exposed it. Fix: after any cascade, diff AnotherHUB against the
+  root page with the base line stripped.
