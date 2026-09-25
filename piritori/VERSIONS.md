@@ -1,3 +1,44 @@
+# C.19 — Night Shift battlefield clarity
+
+Focused fighter labels, full statistics in VIEW, selected/target rings, labelled south exit, and honest rescue guidance. Enemy plans, action costs, rules, campaign settlement and procedural characters remain unchanged. Physical Pixel/iPad and owner visual acceptance remain pending. Source and tested head `69b23168`; live on the hub as `piritori-c17/web/crew-run/?campaign=1&release=19` (its `release.json` holds the file hashes). This entry was written into the source log at the C.19 → main merge (2026-09-23): until then only the generated copy inside the deployed package said C.19, and this file stopped at C.18. See design/C19_READABILITY.md and design/C19_ACCEPTANCE.md.
+
+### Port
+
+Godot: reproduce focused/full label inspection without state changes; selected/target rings, rescue state and south-edge extraction cue. Invalidate projected labels after text, camera or viewport changes. Preserve all existing mission/result vectors. This release does not implement the Godot presentation port.
+
+# C.18 — Unified interface / direct rendering
+
+One crew stylesheet and command ribbon; restored procedural portrait; combined mission/turn strip; Menu-based withdrawal. Costs, enemy intent, crew history and equipment remain. Crew rendering bypasses framebuffer-copy FXAA, restores the canvas target and exposes a safe reflection-bypass option. Physical phone retest remains required. See design/C18_UNIFIED_UI.md.
+
+### Port
+
+Reproduce the simplified hierarchy while retaining C.17 rules and vectors. The browser renderer mitigation is not a claim about Godot rendering.
+
+# C.14 — After the Rain / gun aiming
+
+Concept 02 selected as the light/material target. Wet paving and fixed practical
+glints; lighter paper identity; Attack → target → Aim view → confirm → overview.
+Foliage clears the shot corridor. Actual forecasts, crew saves and rules stay
+intact. Read design/C14_AFTER_THE_RAIN.md for reproduction and verification.
+Publication and physical-device acceptance require separate release evidence.
+
+### Port
+
+Godot reproduces shoulder-side framing, presentation-only pose, foliage corridor,
+wet surfaces and camera interruption. Existing C.12 vectors are unchanged.
+
+# C.13 — Night Shift art and UI
+
+Owner-requested pass against the Art Bible, UX specification and actual visual targets.
+Crew ledger and equipment cards; selected-person command console; real stand-in
+portraits; visible costs and contextual actions; practical night light and dashed
+intent paths. C.12 rules/save retained. See design/C13_ART_AND_UI.md.
+
+### Port
+
+Godot: reproduce C.13 presentation and framing; retain C.12 action vectors.
+Physical device and final character-art acceptance remain open.
+
 # Piritori → Eden — versions
 
 > **Numbers are `vMAJOR.MINOR` from v4.** The integer is a milestone, the
@@ -9,6 +50,123 @@
 > **Every entry carries a `### Port` block.** A version is a port unit now
 > (`PORTING.md` §2): the block names what the Godot side must re-port, so it
 > never has to read a diff to find out.
+
+## C.12 connected crew pilot — 2026-09-13
+
+Night Shift links crew/loadout preparation to rescue and individual extraction,
+announced rival arrivals, persistent wounds/missing colleagues, and repeat outings.
+See `design/C12_NIGHT_SHIFT.md`. Existing authored campaign and Bear Path remain
+separate; no character acceptance or full campaign parity is claimed.
+
+### Port
+
+Port `web/crew-run/run.js`, `web/test/crew-run.mjs` and its legal rescue route.
+Rules c12-v1 / separate crew save v1. Apply settlement once; retain Move + Act,
+entry warning, equipment permissions, wound availability and reload replay checks.
+
+## C.11 laboratory — 2026-09-13
+
+Directional low-wall cover and flanking, route detours, grounded crouch/rise/fire/return,
+barrel-aligned shots and distinct HP/guard/wall/miss feedback. Separate lab release;
+the authored campaign version and production character gates do not advance.
+See `design/C11_COMBAT_PASS.md` for scope, evidence and remaining device gates.
+
+### Port
+
+Port `cover-edges.js`, `directional-cover.mjs` and `design/C11_PORT_VECTORS.json`.
+New lab checkpoint version 4 / rules c11-v1; preserve campaign and Bear Path rules.
+Use resolved impact classifications for presentation; never reapply damage on recovery.
+
+## v4.54 — 2026-09-25
+
+**Saving during a fight no longer crashes.**
+
+- `createBattleState` gave the battle an enumerable `growth: {state, data}` link to the live campaign while the battle itself lives in the campaign (`state.battle`), so every save during a fight threw *Converting circular structure to JSON*. The link is now non-enumerable (`attachGrowth` in `battle.js` and its `fight-module/resolver.js` twin): it is never saved, and the app re-attaches it to the restored campaign on load and on `debug.setState`, so perk, skill and aptitude hooks survive a reload mid-fight.
+- `v3-battle.mjs` holds the round trip: the save no longer throws, `growth` is neither saved nor enumerable, a restore re-attaches to the restored campaign, and the round trip is byte-identical. `v3-playthrough.cjs` now reaches its AUTO-battle, news and portrait checks (28 pass). The only failures left are the two Toko-viewport checks from `QUEUE.md`.
+- Cache: `battle.js?v=11`, `resolver.js?v=5`, `app.js?v=17`, and their importers.
+
+### Port
+
+Godot: nothing to port. Its battle state holds no reference back to the campaign.
+
+## v4.53 — 2026-09-24
+
+**M2: Paper Bag travel — the story moves the lead, not Aatami.**
+
+- `advanceSchedule` no longer puts Aatami at the next lead. After the first purchase the lead is Siltasaari while he stays at Piritori, and the panel says both.
+- Moving is a **journey** (`web/js/v3/journey.js`): inspect an active area, **TRAVEL HERE** draws the connected public path (a thin dashed line, distinct from a pinned delivery route) and states the cost; **TRAVEL** commits, **CANCEL** throws it away. A preview is local data: making it, cancelling it or reloading before commit changes nothing in the campaign or the save.
+- Commit revalidates the origin, the block, the destination and the path, then applies arrival once: presence, one observation of the destination, one log line. A replayed or stale plan (a double tap, the clock moving, the cursor moving) is refused and moves nobody.
+- **Time:** D002 is unresolved, so a journey costs no extra block, fare or complication, and the preview says so in words. The story clock still advances only when a story beat ends. Money has one owner: the opening still reads €160 → €115 → €183, one €23 profit.
+- **USE AREA is gone**; TRAVEL replaces it. Sealed, teaser and landmark areas can be looked at, never travelled to. Personal travel never touches `state.route`; pinning or sending a delivery route never moves Aatami.
+- Boot no longer re-stamps every past schedule anchor as freshly seen (that also rewrote the age of old observations). It records presence only if it has never been seen; old saves keep their `seen` exactly.
+- Cache: `state.js?v=7`, `app.js?v=16`, `v3.css?v=7`, `journey.js?v=1`, and the importers of `state.js` in `battle`, `visits`, `fight-module` and `crew-run`, one token per module. Gates: new `web/test/m2-journey.cjs` (47 checks) in CI's Act I job; `m1-inspection.cjs` now travels (70); `v3-state.mjs` walks the full played route with an explicit journey to every lead and holds the journey contract; `v3-playthrough.cjs` travels to Siltasaari.
+
+### Port
+
+Godot: stop `advance_schedule` relocating `selected_anchor`. Add a journey preview (pure: origin, destination, block, shortest path; refusal reasons unknown/sealed/already-here/campaign-over/in-battle/in-visit/disconnected) and a commit that revalidates origin, block and path, then sets presence and marks the destination seen once. No extra block or fare (D002). Replace Use area with Travel here → Travel / Cancel. No save-format change.
+
+## v4.52 — 2026-09-24
+
+**M1: looking is not being there.**
+
+- Tapping, clicking or keyboard-activating a map area now only INSPECTS it. The cursor is local, never saved, and resets on a new campaign, Resume, a reload, a schedule change or a debug jump. Inspecting an active, locked or landmark area leaves the whole campaign and the persisted save byte-identical (it used to move Aatami there and record its prices, even for a sealed area).
+- **USE AREA** is the one deliberate move: it validates an active area, changes presence, records that one observation, spends no time and says so. **SHOW LEAD** points the cursor at the story lead without changing anything.
+- The side panel and every map node say which is which in words (`AATAMI · …`, `STORY LEAD · …`, `inspecting`); presence is a dashed diamond, the lead the orange pulse, inspection the cyan ring.
+- The story encounter, visits, ledger trades, fencing and the chapter operation answer only where Aatami stands. The ENCOUNTER tab from elsewhere shows where the lead is and offers no choice, LOOK or quote — it used to let the Piritori purchase be bought from Hakaniemi. Ledger rows elsewhere read `AT <place>` (MARKET.md §5/§8: you trade where you stand).
+- Unchanged on purpose: the schedule still moves Aatami to the next lead after a story beat (M2 separates that), boot still seeds past schedule observations (M2's audit), route preview/pin/send, the isolated Hermanni training fixture, PR #92's fighter repair.
+- Cache: `app.js?v=15`, `v3.css?v=6`. New gate `web/test/m1-inspection.cjs` (63 checks), run in CI's Act I job.
+
+### Port
+
+Godot: keep a non-persisted inspection cursor separate from `selected_anchor`; map input moves only the cursor; add Use area / Show lead; gate the encounter entry, choices, visits, trades and fencing on presence at the lead. No save-format change. Schedule relocation stays until M2.
+
+## v4.51 — 2026-09-21
+
+**Fight cast: restore the existing six role bodies at runtime.**
+
+- Keep stripping the unused embedded Meshy clip, but stop calling
+  `Skeleton.pose()` after import. Those GLBs carry a 100× armature/unit
+  conversion; resetting the skeleton collapsed each roughly 1.7 m fighter to
+  about 1 cm while still reporting the 3D stage ready.
+- Verified Driver, Fixer, Local, Muscle, Runner and Watcher together in a real
+  3v3 browser battle, including the 390 px phone layout.
+- Cache: `render3d.js?v=10`, `app.js?v=12`.
+
+Numbered v4.48 on `main` when it shipped; renumbered at the C.19 → main merge (2026-09-23) because the C line had already used v4.48 (F01/F02 fighter test, 2026-09-11, the build live in the hub's `piritori/` cabinet), v4.49 (C.07 Bear Path) and v4.50; v4.51 is the first number no branch holds. Cache: `render3d.js?v=11`, `app.js?v=14` after the merge, since both lines had moved `render3d.js` to v10 with different bytes.
+
+### Port
+
+Web presentation only. The Godot runtime does not call Three.js
+`Skeleton.pose()` and needs no matching change.
+
+## v4.50 — 2026-09-13
+
+**C.08: two approved Bear Path art directions in one playable scene.**
+
+- D009 records the owner's choice of v04 columns 2 **Ink & Stone** and 3 **Cold Street** as two alternatives. The art button switches materials, foliage palette, surface treatment and lighting while preserving camera, turn and story. `?look=ink` / `?look=cold` share a specific look; the last choice is remembered separately from the encounter save.
+- Replaces the primitive bear with an 8,610-triangle locally sculpted Blender derivative, adds a generated gravel surface with controlled contrast, and improves municipal benches, planting edges, lamp bases, package, drain, worn materials and street context. Both environments are prototypes, not final concept parity.
+- Loads environment assets by ID, byte length and SHA-256; uploads the ground at no more than 1024². Environment downloads add 3,785,540 bytes. Missing or corrupt assets show a clear loading error. Switching reuses existing scene assets.
+- Checks cover four viewport shapes, both looks, stable camera/turn/reload, input locking, repeated switches, real context recovery and existing encounter/legacy training regressions. Physical Pixel 10 Pro/iPad M2 acceptance remains pending.
+- F01/F02 remain the registered v05 prototypes with rejected rig/motion acceptance. Private v06 characters and Blender masters are not shipped. No Meshy work, campaign rule changes or asset-lifecycle promotion.
+
+### Port
+
+Browser milestone only. Port the shared-layout art profiles, explicit look selection and independent preference persistence, environment integrity checks and bounded surface upload. Preserve the existing encounter and recovery contracts. The static GLB is Y-up, long axis X, scaled by its bounds to 1.72 m length in this park. Read `design/BEAR_PATH_C08_VERIFICATION.md` and D009 before treating either style as final.
+
+## v4.49 — 2026-09-13
+
+**C.07: Bear Path, a connected 3D encounter.**
+
+- Stages the authored Karhupuisto handover from approach and free inspection through face-cut-in dialogue, peaceful resolution, same-scene 2v2 or withdrawal, then a remembered return.
+- Uses the approved wide-scene panel 03 for warm practical light, cold street depth, bear/plinth and bench cover, open escape space and foliage framing. Geometry remains a prototype, not claimed concept parity.
+- Applies canonical Bear Path opponents, condition, cover and choice/mission effects to an isolated local preview ledger. Reload replays actions and settles the outcome once. The full campaign save is untouched.
+- Adds a reduced-motion-aware battle pullback, explicit police-posture responses for extended fights, and recovery during movement, negotiation and camera transitions. Mobile FXAA stays within the existing 650,000-pixel budget.
+- Keeps the earlier courtyard training route. Registered v05 fighters remain provisional; private v06 GLBs are not included. No Meshy generation or new character approval.
+- Automated Chromium/WebGL tests cover four viewport shapes and both police choices. Physical Pixel 10 Pro/iPad M2 playtesting, final rigs, bespoke package-taking AI and campaign casualty integration remain pending.
+
+### Port
+
+Browser milestone only. Port the authored encounter state/history contract, single time/settlement boundary, canonical battle request/result mapping, dialogue-over-scene composition, phase pullback and recovery behavior. Do not copy the standalone preview ledger into campaign saves or interpret the prototype cast as final named-character models. See `design/BEAR_PATH_DIRECTOR_PACKET.md` and `web/bear-path/README.md`.
 
 ## v4.48 — 2026-09-11
 
@@ -2385,3 +2543,4 @@ The first slice on the hub. The night map over real WGS84 Kallio, drawn lines
 carrying consignments at the city's own capacity, six named goods on three
 tiers, the bargain (and the cut bag), rank fights with guns, nerve, terrain
 cover and three exits, seven nights, and an Eden that is never a node.
+

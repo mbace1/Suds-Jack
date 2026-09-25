@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {GLTFLoader} from '../../vendor/jsm/loaders/GLTFLoader.js';
+import {GLTFLoader} from '../../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 let disposeCurrent = () => {};
 export function disposeSceneSpeaker() { disposeCurrent(); disposeCurrent = () => {}; }
@@ -71,3 +71,4 @@ export function mountSceneSpeaker(host, url, person) {
     }animate(performance.now());
   },undefined,()=>{if(!dead)host.dataset.status='unavailable';});
 }
+

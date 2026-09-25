@@ -1,7 +1,7 @@
-import { availableVisits, openVisit, activeVisit, chooseVisit, leaveVisit } from './visits.js?v=1';
-import { mountSceneSpeaker, disposeSceneSpeaker } from './scene-speaker.js?v=1';
+import { availableVisits, openVisit, activeVisit, chooseVisit, leaveVisit } from './visits.js?v=3';
+import { mountSceneSpeaker, disposeSceneSpeaker } from './scene-speaker.js?v=2';
 import { renderChapterPeople } from './chapter-narrative.js?v=1';
-import { loadGameData, shortestPath, assetUrl } from './content.js?v=1';
+import { loadGameData, shortestPath, assetUrl } from './content.js?v=2';
 import { mountMapRelief } from './map-relief.js?v=1';
 import {
   SAVE_KEY, createState, loadState, saveState, currentSchedule, currentEncounter,
@@ -14,21 +14,22 @@ import {
   droppedKit, takeLoot, loseKitOf, canFenceHere, sellLoot, resaleAt, conditionWord, isPurchasable,
   canShopHere, buyOf, buyEquipment,
   arrestCrew, chapterProgress, chapterGoalMet, chapterEndingAvailable, attemptChapterEnding,
-} from './state.js?v=5';
+} from './state.js?v=7';
 import { createPauseMenu } from './pause.js?v=1';
-import { board, exposureHere, markSeen, addFootprint, INFO } from './board.js?v=1';
+import { board, exposureHere, markSeen, addFootprint, INFO } from './board.js?v=2';
+import { previewJourney, commitJourney } from './journey.js?v=1';
 import {
-  createBattleState, selectedUnit, selectUnit, selectAction, playerAttack, brace, useItem,
+  createBattleState, attachGrowth, selectedUnit, selectUnit, selectAction, playerAttack, brace, useItem,
   validMoveCells, moveUnit, endPlayerPhase, autoCommand, withdrawBattle,
   negotiateBattle, resultEffects, injuredPlayers, selectStance,
   policeAwaitingPosture, choosePolicePosture, takenByPolice, savedFromPolice, POLICE_POSTURE,
   attackTargets, syncAlliesFor, coverStandingLine, coverAttackLine,
-} from './battle.js?v=8';
-import { LANES, ROWS, totalRows, depthOf, parseSlotKey, slotKey, describeSlot } from './grid.js?v=1';
+} from './battle.js?v=11';
+import { LANES, ROWS, totalRows, depthOf, parseSlotKey, slotKey, describeSlot } from './grid.js?v=2';
 import { boot as bootChrome } from './chrome.js?v=2';
-import { STANCE, STANCES } from './stance.js?v=1';
-import { mountBattleStage3D, disposeBattleStage3D, setBattleLights } from './render3d.js?v=9';
-import { positionBattleDOM } from './stage-camera.js?v=4';
+import { STANCE, STANCES } from './stance.js?v=2';
+import { mountBattleStage3D, disposeBattleStage3D, setBattleLights } from './render3d.js?v=11';
+import { positionBattleDOM } from './stage-camera.js?v=5';
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
@@ -123,6 +124,60 @@ function tr(key, ...args) {
   return s;
 }
 function persist() { saveState(state); }
+
+// ── M1: where the player is LOOKING is not where Aatami IS ─────────────
+// (design/CLAUDE_MAP_MISSION_NEXT_STEPS.md §1.) `state.selectedAnchor` stays
+// presence: the one place visits, trades, fencing, the chapter operation and
+// the story encounter are available. Tapping the map moves only this cursor,
+// which is never saved and never touches the campaign — looking at a place is
+// not an economic event. It is forgotten whenever the ground moves under it:
+// a new or reloaded campaign (a different state object) or a schedule change.
+let inspectionFocus = null;
+let inspectionOwner = null;
+let inspectionStamp = null;
+function inspectedAnchorId() {
+  if (inspectionOwner !== state || inspectionStamp !== state.scheduleIndex) {
+    inspectionFocus = null;
+    inspectionOwner = state;
+    inspectionStamp = state.scheduleIndex;
+  }
+  return inspectionFocus ?? state.selectedAnchor;
+}
+function inspectAnchor(anchorId) {
+  inspectedAnchorId();
+  if (inspectionFocus !== anchorId) journeyDraft = null;
+  inspectionFocus = anchorId;
+}
+function resetInspection() { inspectionFocus = null; inspectionOwner = null; journeyDraft = null; }
+// M2: a journey PREVIEW is local like the cursor — Cancel, a reload or any
+// change of ground throws it away, and a thrown-away preview was never saved.
+let journeyDraft = null;
+function currentJourney() {
+  if (!journeyDraft) return null;
+  if (journeyDraft.owner !== state || journeyDraft.preview.scheduleIndex !== state.scheduleIndex
+    || journeyDraft.preview.origin !== state.selectedAnchor || journeyDraft.preview.destination !== inspectedAnchorId()) {
+    journeyDraft = null;
+  }
+  return journeyDraft?.preview ?? null;
+}
+const JOURNEY_REFUSAL = {
+  sealed: 'Sealed in this slice — you can look, not go.',
+  unknown: 'There is no such place on this map.',
+  'already-here': 'Aatami is already here.',
+  'campaign-over': 'The seven days are over.',
+  'in-battle': 'Not while a fight is on.',
+  'in-visit': 'Finish the visit first.',
+  disconnected: 'No public path reaches there from here.',
+  stale: 'That plan no longer matches where Aatami is — plan the journey again.',
+  'no-preview': 'Plan the journey first.',
+};
+/** The authored story lead: where the schedule's next encounter is. It is
+ *  neither the inspection cursor nor necessarily where Aatami stands. */
+function storyLeadId() { return currentSchedule(state, data.content)?.anchor_id ?? null; }
+function presentAtLead() { const lead = storyLeadId(); return Boolean(lead) && state.selectedAnchor === lead; }
+/** Areas Aatami can travel to. Sealed, landmark and the isolated training
+ *  fixture are for looking at (training keeps its own button). */
+function canTravelTo(anchor) { return anchor?.sliceState === 'active'; }
 function logToast(message) {
   const toast = $('toast');
   clearTimeout(toastTimer);
@@ -288,10 +343,11 @@ function ordinaryFlowSvg() {
   }).join('');
 }
 
-function anchorSvg(anchor, current, selected) {
+function anchorSvg(anchor, current, selected, present) {
   const point = anchor.board;
   const locked = ['locked', 'teaser'].includes(anchor.sliceState);
-  const stateClass = [current ? 'current' : '', selected ? 'selected' : '', locked ? 'locked' : '', anchor.sliceState === 'landmark' ? 'landmark' : ''].join(' ');
+  const stateClass = [current ? 'current' : '', selected ? 'selected' : '', present ? 'present' : '', locked ? 'locked' : '', anchor.sliceState === 'landmark' ? 'landmark' : ''].join(' ');
+  const roles = [present ? 'you are here' : '', current ? 'story lead' : '', selected && !present ? 'inspecting' : ''].filter(Boolean);
   const offset = anchor.labelOffset ?? [14, -20];
   const small = anchor.label.length > 15 ? 'small' : '';
   const schedule = currentSchedule(state, data.content);
@@ -299,10 +355,11 @@ function anchorSvg(anchor, current, selected) {
   return `
     <g class="map-node ${stateClass}" data-anchor-group="${esc(anchor.id)}">
       ${mission}
+      ${present ? `<rect class="presence-mark" x="${point.x - 26}" y="${point.y - 26}" width="52" height="52" transform="rotate(45 ${point.x} ${point.y})"/>` : ''}
       <circle class="map-node-dot" cx="${point.x}" cy="${point.y}" r="${locked ? 14 : 18}"/>
       <circle class="map-anchor-hit" data-action="select-anchor" data-anchor="${esc(anchor.id)}"
         cx="${point.x}" cy="${point.y}" r="55" fill="transparent" role="button" tabindex="0"
-        aria-label="${esc(anchor.label)}${locked ? ', locked' : ''}"/>
+        aria-label="${esc(anchor.label)}${locked ? ', locked' : ''}${roles.length ? `, ${roles.join(', ')}` : ''}"/>
       <text class="map-node-label ${small}" x="${point.x + offset[0]}" y="${point.y + offset[1]}">${esc(anchor.label)}</text>
     </g>`;
 }
@@ -356,7 +413,10 @@ function progressionCard(slot) {
 function renderRoute() {
   const slot = currentSchedule(state, data.content);
   if (!slot) return renderCampaignEnd();
-  const selected = data.anchors.get(state.selectedAnchor) ?? data.anchors.get(slot.anchor_id);
+  const present = data.anchors.get(state.selectedAnchor) ?? data.anchors.get(slot.anchor_id);
+  const selected = data.anchors.get(inspectedAnchorId()) ?? present;
+  const lead = data.anchors.get(slot.anchor_id);
+  const here = selected.id === present.id;
   const draftPath = routeDraft.length === 2 ? shortestPath(data.map, routeDraft[0], routeDraft[1]) : routeDraft;
   const routePath = routePlanning ? draftPath : state.route?.path ?? [];
   // No straight bee-line edges drawn between every anchor pair any more
@@ -369,6 +429,8 @@ function renderRoute() {
   // plans over — only the always-on visual web of every connection is
   // gone, not the underlying route graph.
   const routeSvg = routePath.length > 1 ? `<path class="map-route" d="${mapPath(routePath)}"/>` : '';
+  const journey = currentJourney();
+  const journeySvg = journey?.ok ? `<path class="map-journey" d="${mapPath(journey.path)}"/>` : '';
   const hiddenPips = (state.route?.hidden ?? 0) && !routePlanning
     ? `<circle class="map-hidden-flow" r="9"><animateMotion path="${mapPath(state.route.path)}" dur="3s" repeatCount="indefinite"/></circle>` : '';
   const routeInfo = state.route ? `
@@ -394,25 +456,29 @@ function renderRoute() {
           <desc id="mapDesc">Twelve accurate public anchors compressed into one relief map. The next encounter is at ${esc(data.anchors.get(slot.anchor_id)?.label)}.</desc>
           ${mapBackground()}
           ${transitLayerSvg()}
-          <g aria-hidden="true">${routeSvg}${ordinaryFlowSvg()}${hiddenPips}</g>
-          ${data.map.anchors.map(anchor => anchorSvg(anchor, anchor.id === slot.anchor_id, anchor.id === selected.id)).join('')}
+          <g aria-hidden="true">${routeSvg}${journeySvg}${ordinaryFlowSvg()}${hiddenPips}</g>
+          ${data.map.anchors.map(anchor => anchorSvg(anchor, anchor.id === slot.anchor_id, anchor.id === selected.id, anchor.id === present.id)).join('')}
         </svg>
         </div>
       </section>
       <aside class="map-side">
         ${progressionCard(slot)}
-        <section class="paper-panel">
-          <p class="section-label">${esc(selected.sliceState)} · PUBLIC ANCHOR</p>
+        <section class="paper-panel inspect-panel" data-inspected="${esc(selected.id)}" data-present="${esc(present.id)}" data-lead="${esc(lead?.id ?? '')}">
+          <p class="section-label">${here ? 'YOU ARE HERE' : 'INSPECTING'} · ${esc(selected.sliceState)} · PUBLIC ANCHOR</p>
           <h2>${esc(selected.label)}</h2>
+          <p class="presence-line"><span>AATAMI · <b>${esc(present.label)}</b></span><span>STORY LEAD · <b>${esc(lead?.label ?? '—')}</b></span></p>
           <p>${esc(anchorDescription(selected))}</p>
           <div class="route-steps">${(selected.roles ?? []).map(role => `<span class="tag">${esc(cap(role))}</span>`).join('')}</div>
           <div class="node-actions">
-            ${availableVisits(state, data).map(v => `<button class="paper-button" data-action="open-visit" data-visit="${esc(v.id)}">VISIT · ${esc(v.participants.includes('jaska') ? 'Jaska' : 'Slomo')}</button>`).join('')}
-            ${selected.id === slot.anchor_id ? `<button class="paper-button primary" data-action="open-encounter">${tr('enter')} · ${esc(nextEncounter?.id.replace('enc-', '').replaceAll('-', ' '))}</button>` : ''}
+            ${here ? availableVisits(state, data).map(v => `<button class="paper-button" data-action="open-visit" data-visit="${esc(v.id)}">VISIT · ${esc(v.participants.includes('jaska') ? 'Jaska' : 'Slomo')}</button>`).join('') : ''}
+            ${here && selected.id === slot.anchor_id ? `<button class="paper-button primary" data-action="open-encounter">${tr('enter')} · ${esc(nextEncounter?.id.replace('enc-', '').replaceAll('-', ' '))}</button>` : ''}
+            ${!here && canTravelTo(selected) && !journey ? `<button class="paper-button primary" data-action="plan-journey" data-anchor="${esc(selected.id)}">TRAVEL HERE · ${esc(selected.label)}</button>` : ''}
+            ${selected.id !== slot.anchor_id ? `<button class="paper-button" data-action="show-lead">SHOW LEAD · ${esc(lead?.label ?? '')}</button>` : ''}
             ${selected.sliceState === 'training'
               ? `<button class="paper-button primary" data-action="start-training">${tr('start_training')}</button>`
               : `<button class="paper-button" data-action="plan-route">${routePlanning ? tr('clear') : tr('planning')}</button>`}
           </div>
+          ${journey ? renderJourneyPreview(journey) : here ? '' : `<p class="consequence-strip">${esc(inspectionNote(selected, slot))}</p>`}
           ${routePlanning ? renderRoutePlanner(draftPath) : ''}
         </section>
         <section class="paper-panel">${routeInfo}</section>
@@ -422,6 +488,32 @@ function renderRoute() {
         </section>
       </aside>
     </div>`;
+}
+
+/** The journey you are about to make, and what it will and will not cost —
+ *  the prototype's REAL cost, not a promise about the finished game (D002). */
+function renderJourneyPreview(journey) {
+  if (!journey.ok) return `<p class="consequence-strip">${esc(JOURNEY_REFUSAL[journey.reason] ?? journey.reason)}</p>`;
+  const names = journey.path.map(id => data.anchors.get(id)?.label ?? id);
+  return `<div class="journey-preview" data-journey="${esc(journey.origin)}>${esc(journey.destination)}">
+    <p class="section-label">JOURNEY · ${journey.path.length - 1} LEG${journey.path.length === 2 ? '' : 'S'}</p>
+    <div class="route-steps">${names.map(name => `<span class="tag">${esc(name)}</span>`).join('')}</div>
+    <p class="consequence-strip">Aatami walks there himself. In this build a journey costs no extra time or money: the story clock moves only when a story beat ends, as before. Travel time and risk are not balanced yet.</p>
+    <div class="route-actions">
+      <button class="paper-button primary" data-action="commit-journey">TRAVEL</button>
+      <button class="paper-button" data-action="cancel-journey">CANCEL</button>
+    </div>
+  </div>`;
+}
+
+/** What looking at a place from elsewhere does and does not let you do —
+ *  said in words, so the panel never implies an action it will refuse. */
+function inspectionNote(anchor, slot) {
+  if (['locked', 'teaser'].includes(anchor.sliceState)) return 'Sealed in this slice — you can look, not go.';
+  if (anchor.sliceState === 'landmark') return 'A landmark to look at, not a place to work.';
+  if (anchor.sliceState === 'training') return 'An isolated test area — its fight costs and pays nothing.';
+  const leadNote = anchor.id === slot.anchor_id ? ' The story lead is here.' : '';
+  return `You are only looking.${leadNote} TRAVEL HERE plans a journey you can still cancel.`;
 }
 
 function anchorDescription(anchor) {
@@ -487,6 +579,7 @@ function renderEncounter() {
   const resolved = state.choices[encounter.id];
   const choice = encounter.choices.find(item => item.id === resolved);
   const pendingBattle = state.battle?.status === 'active';
+  if (state.mode === 'encounter' && !pendingBattle && !presentAtLead()) return renderAwayFromLead(slot);
   return `
     <div class="encounter-layout">
       <section class="paper-panel scene-card">
@@ -546,6 +639,19 @@ function renderChoices(encounter) {
       ${status.ok ? '' : `<em>${esc(status.reasons.join(' · '))}</em>`}
     </button>`;
   }).join('')}</div>`;
+}
+
+function renderAwayFromLead(slot) {
+  const lead = data.anchors.get(slot.anchor_id), here = data.anchors.get(state.selectedAnchor);
+  return `<section class="paper-panel inspect-panel away-panel" data-present="${esc(here?.id ?? '')}" data-lead="${esc(lead?.id ?? '')}" data-inspected="${esc(inspectedAnchorId())}">
+    <p class="section-label">${esc(formatBlock(state, data.content))} · STORY LEAD</p>
+    <h2>${esc(lead?.label)}</h2>
+    <p class="presence-line"><span>AATAMI · <b>${esc(here?.label)}</b></span><span>STORY LEAD · <b>${esc(lead?.label)}</b></span></p>
+    <p>The next encounter happens at ${esc(lead?.label)}. From ${esc(here?.label)} there is nothing to choose and nothing to price.</p>
+    <div class="node-actions">
+      <button class="paper-button primary" data-action="go-lead">MAP · SHOW LEAD</button>
+    </div>
+  </section>`;
 }
 
 function renderEncounterOutcome(choice, pendingBattle) {
@@ -668,7 +774,9 @@ function renderLedger() {
                 <td><b>${esc(anchor?.label)}</b></td>
                 <td>${esc(offer.side.toUpperCase())}<br><span class="dim">${esc(offer.dominant_cause)}</span></td>
                 <td class="quote">${exact}<br><small>${esc(offer.confidence.toUpperCase())}</small></td>
-                <td><button class="paper-button" data-action="trade" data-offer="${esc(offer.id)}">${offer.side === 'buy' ? 'BUY 1' : 'SELL 1'}</button></td>
+                <td>${offer.anchor_id === state.selectedAnchor
+                  ? `<button class="paper-button" data-action="trade" data-offer="${esc(offer.id)}">${offer.side === 'buy' ? 'BUY 1' : 'SELL 1'}</button>`
+                  : `<span class="dim">AT ${esc(anchor?.label)}</span>`}</td>
               </tr>`;
             }).join('')}</tbody>
           </table>
@@ -1163,6 +1271,12 @@ function renderCampaignEnd() {
 
 function openEncounter() {
   const slot = currentSchedule(state, data.content);
+  // The story encounter happens where it happens: from anywhere else, no
+  // choice and no quote (M1). Guarded here, not only by hiding a button.
+  if (slot && !presentAtLead()) {
+    logToast(`${data.anchors.get(slot.anchor_id)?.label ?? 'The lead'} is the lead — travel there first.`);
+    render(); return;
+  }
   markSeen(state, slot?.anchor_id);
   if (slot?.news_before && !state.newsSeen.includes(slot.news_before)) {
     state.newsReturnMode = 'encounter';
@@ -1260,10 +1374,10 @@ function handleRootClick(event) {
     leaveVisit(state); persist(); render();
   } else if (action === 'select-anchor') {
     const id = target.dataset.anchor;
-    state.selectedAnchor = id;
-    // Standing somewhere is how you learn its price (board.js). Without this
-    // line the board is permanently blank and looks broken rather than unearned.
-    markSeen(state, id);
+    if (!data.anchors.has(id)) return;
+    // Looking only: no presence, no price, no save (M1). A journey (M2) is the
+    // one deliberate move.
+    inspectAnchor(id);
     if (routePlanning) {
       const anchor = data.anchors.get(id);
       if (['locked', 'teaser'].includes(anchor?.sliceState)) {
@@ -1271,7 +1385,33 @@ function handleRootClick(event) {
       } else if (routeDraft.length >= 2) routeDraft = [id];
       else if (!routeDraft.includes(id)) routeDraft.push(id);
     }
+    render();
+  } else if (action === 'plan-journey') {
+    const id = target.dataset.anchor;
+    inspectAnchor(id);
+    journeyDraft = { owner: state, preview: previewJourney(state, data, id) };
+    render();
+  } else if (action === 'cancel-journey') {
+    journeyDraft = null;
+    render();
+  } else if (action === 'commit-journey') {
+    // Taken, then cleared BEFORE the commit: a second tap finds no plan.
+    const preview = currentJourney();
+    journeyDraft = null;
+    const result = commitJourney(state, data, preview);
+    if (!result.ok) { logToast(JOURNEY_REFUSAL[result.reason] ?? result.reason); render(); return; }
+    inspectAnchor(result.destination);
+    logToast(`Aatami arrives at ${data.anchors.get(result.destination)?.label}.`);
     persist(); render();
+  } else if (action === 'go-lead') {
+    const lead = storyLeadId();
+    state.mode = 'route';
+    if (lead) inspectAnchor(lead);
+    persist(); render();
+  } else if (action === 'show-lead') {
+    const lead = storyLeadId();
+    if (lead) inspectAnchor(lead);
+    render();
   } else if (action === 'open-encounter') openEncounter();
   else if (action === 'start-training') {
     if (!startBattle('battle-hermanni-training')) { render(); return; }
@@ -1290,11 +1430,15 @@ function handleRootClick(event) {
   } else if (action === 'send-route') {
     const result = sendOnRoute(state, data); logToast(result.message); persist(); render();
   } else if (action === 'inspect') {
+    if (state.mode === 'encounter' && !presentAtLead()) { render(); return; }
     const encounter = (state.mode === 'visit' ? activeVisit(state, data) : currentEncounter(state, data));
     const item = encounter.inspectables[Number(target.dataset.index)];
     observation = inspectionCopy(item);
     render();
   } else if (action === 'choose') {
+    if (state.mode === 'encounter' && !presentAtLead() && state.battle?.status !== 'active') {
+      logToast('Not from here — the choice is at the story lead.'); render(); return;
+    }
     const encounter = (state.mode === 'visit' ? activeVisit(state, data) : currentEncounter(state, data));
     const choice = encounter.choices.find(item => item.id === target.dataset.choice);
     const result = state.mode === 'visit' ? chooseVisit(state, data, target.dataset.choice) : chooseEncounter(state, encounter, choice, data);
@@ -1307,6 +1451,10 @@ function handleRootClick(event) {
     state.mode = 'battle'; persist(); render();
   } else if (action === 'trade') {
     const offer = data.offers.get(target.dataset.offer);
+    // MARKET.md §5/§8: you trade where you stand; the ledger records.
+    if (!offer || offer.anchor_id !== state.selectedAnchor) {
+      logToast(`Trade at ${data.anchors.get(offer?.anchor_id)?.label ?? 'that place'} happens there.`); render(); return;
+    }
     const result = transactOffer(state, offer);
     // Your own footprint at that place, which is the ONE side of the book
     // saturation moves (MARKET.md §7). Selling into a small market lowers what
@@ -1412,6 +1560,7 @@ function resetCampaign() {
   routePlanning = false;
   routeDraft = [];
   observation = '';
+  resetInspection();
   persist();
   render();
 }
@@ -1422,15 +1571,18 @@ async function boot() {
     data = await loadGameData();
     const hasSave = Boolean(localStorage.getItem(SAVE_KEY));
     state = loadState(data.content);
+    attachGrowth(state.battle, state, data); // a saved fight comes back without its live campaign link
     $('resumeButton').hidden = !hasSave;
     $('beginButton').addEventListener('click', () => {
       if (hasSave) state = createState(data.content);
+      resetInspection();
       persist();
       $('splash').hidden = true;
       render();
       $('modeRoot').focus();
     });
     $('resumeButton').addEventListener('click', () => {
+      resetInspection();
       $('splash').hidden = true;
       render();
       $('modeRoot').focus();
@@ -1463,12 +1615,16 @@ async function boot() {
     // breaks when the game does.
     function jumpTo(target) {
       if (!target) return;
+      resetInspection();
       if (target.kind === 'encounter') {
         // Walk the schedule to the block this encounter belongs to, so the
         // screen arrives with the state around it rather than out of context —
         // a conversation with the wrong day on the clock is not the screen.
         const index = data.content.schedule.findIndex(slot => slot.encounter_id === target.id);
         if (index >= 0) state.scheduleIndex = index;
+        // A jump is a fixture: it arrives AT the encounter, as a player would
+        // have by travelling (M2 no longer moves Aatami with the schedule).
+        if (index >= 0) state.selectedAnchor = data.content.schedule[index].anchor_id;
         state.mode = 'encounter';
         observation = '';
       } else if (target.kind === 'battle') {
@@ -1495,6 +1651,7 @@ async function boot() {
       } else if (target.kind === 'day') {
         const index = data.content.schedule.findIndex(slot => slot.day === target.day);
         if (index >= 0) state.scheduleIndex = index;
+        if (index >= 0) state.selectedAnchor = data.content.schedule[index].anchor_id;
         state.mode = 'route';
       }
       persist();
@@ -1505,15 +1662,17 @@ async function boot() {
     // You are STANDING at the opening anchor, and at whatever each scheduled
     // block puts you in front of. Without seeding those the board opens
     // completely blank, which reads as broken rather than as unearned.
-    markSeen(state, state.selectedAnchor);
-    for (let i = 0; i <= state.scheduleIndex; i++) {
-      const slot = data.content.schedule[i];
-      if (slot?.anchor_id) { const keep = state.scheduleIndex; state.scheduleIndex = i; markSeen(state, slot.anchor_id); state.scheduleIndex = keep; }
-    }
+    // M2: knowledge is an OBSERVATION. A fresh campaign starts standing at
+    // Piritori, so that one place is known; everything else is learned by
+    // being there (an encounter, a journey, a trade). This used to stamp every
+    // past lead on every boot — back to the block it was scheduled in, which
+    // aged a place you had revisited and quoted leads Aatami never reached.
+    // Old saves keep every observation they stored (restoreState spreads raw).
+    if (state.seen?.[state.selectedAnchor] == null) markSeen(state, state.selectedAnchor);
 
     const pause = createPauseMenu({
       root: $('pause'),
-      version: 'v4.48',
+      version: 'v4.54',
       jump: jumpTo,
     });
     $('pauseButton').addEventListener('click', () => pause.toggle());
@@ -1565,7 +1724,7 @@ async function boot() {
       get data() { return data; },
       get state() { return state; },
       debug: {
-        setState(next) { state = next; persist(); render(); },
+        setState(next) { state = next; attachGrowth(state.battle, state, data); persist(); render(); },
         startBattle(id) { startBattle(id); persist(); render(); },
         setBattleLights,
         openEncounter,
@@ -1582,3 +1741,5 @@ async function boot() {
 }
 
 boot();
+
+

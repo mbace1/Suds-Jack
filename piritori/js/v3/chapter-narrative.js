@@ -33,3 +33,4 @@ export function renderChapterPeople(state, content) {
     </details>`).join('')}
   </section>`;
 }
+

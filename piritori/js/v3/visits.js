@@ -1,4 +1,4 @@
-import {chooseEncounter} from './state.js?v=5';
+import {chooseEncounter} from './state.js?v=7';
 
 export function availableVisits(state,data) {
  if(state.chapterCleared||state.endingId||state.battle?.status==='active')return [];
@@ -22,3 +22,4 @@ export function chooseVisit(state,data,choiceId) {
  return chooseEncounter(state,visit,choice,data);
 }
 export function leaveVisit(state) {state.activeVisit=null;state.mode='route';state.lastOutcome=null;}
+

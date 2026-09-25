@@ -370,6 +370,10 @@ button { -webkit-tap-highlight-color: transparent; }
   stroke-linecap: round;
   filter: drop-shadow(0 2px 1px #000);
 }
+/* M2: a JOURNEY is Aatami walking himself, not a pinned delivery route, so it
+   is drawn apart from .map-route: thin, cream, dashed (a shape, not a colour). */
+.map-journey { fill: none; stroke: #f3ead8; stroke-width: 7; stroke-dasharray: 4 14; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 2px 1px #000); }
+.journey-preview { margin-top: 12px; padding-top: 10px; border-top: 2px dashed #6b604f; }
 .map-flow { fill: #d7c89e; stroke: #252824; stroke-width: 2; }
 .map-hidden-flow { fill: var(--magenta); stroke: #2c101e; stroke-width: 2; }
 .map-node-card { fill: #22282d; stroke: #ad9572; stroke-width: 2; }
@@ -389,6 +393,12 @@ button { -webkit-tap-highlight-color: transparent; }
 .map-node.landmark .map-node-dot { fill: var(--mustard); stroke: #f5dda4; }
 .map-anchor-hit { cursor: pointer; }
 .mission-pulse { fill: var(--orange); stroke: #ffe1b0; stroke-width: 3; }
+/* M1: presence is a SHAPE as well as a word — a hollow diamond around the
+   node Aatami stands at, so it reads apart from the orange lead and the cyan
+   inspection ring even without colour. */
+.presence-mark { fill: none; stroke: #f3ead8; stroke-width: 4; stroke-dasharray: 10 6; pointer-events: none; }
+.presence-line { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 8px; font-size: .82rem; letter-spacing: .06em; color: var(--ink-dim); }
+.presence-line b { color: var(--ink); font-weight: 700; }
 .map-side {
   min-height: 0;
   display: flex;
