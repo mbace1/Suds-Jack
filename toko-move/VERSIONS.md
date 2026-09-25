@@ -1,5 +1,62 @@
 # Toko Move — versions
 
+## v2.56 — 2026-09-25
+
+**LIVE — THE REAL MORNING** (roadmap L5, `js/hfp.js`, `js/mqtt-ws.js`). The
+title card offers *OR LIVE · the real trams, right now* (`?live`): every tram
+and metro train on the board is where HSL says it is, from HSL's open
+high-frequency positioning feed. It needs **no API key** — the roadmap
+assumed Digitransit and a key, but HFP is published on an open MQTT broker
+(`wss://mqtt.hsl.fi`), and MQTT 3.1.1 over a WebSocket is four packets, so the
+client is written out (`mqtt-ws.js`, ~80 lines) rather than vendored.
+
+**LIVE is not a second fleet.** The timetable fleet already answers everything
+the game asks — where is it, which way, when does it reach my stop, can I catch
+it, where does my ride go — from one closed form: a vehicle is a phase on its
+line's out-and-back cycle and a speed. So a real report is projected onto its
+line's exact HSL path (matched by GTFS route id, which HFP carries), and the
+phase is re-solved so that the closed form puts it exactly there now; between
+reports it runs on at the line's speed. The catch panel, the ride, the arrival
+minutes and the badges are unchanged and cannot tell. Which way it is going is
+read off two reports' motion along the path, and before there is motion, off
+the reported heading against the path's own bearing.
+
+**Real time.** Ten ticks a real second is fifteen game-minutes a real minute,
+so LIVE runs the clock at a fifteenth: a 75-minute shift is 75 real minutes,
+the clock shows Helsinki's real time, and ×2/×4 are off. It is an ordinary,
+clear morning with no rush curve and no scripted disruptions, because the real
+city brings its own; and it records nothing — not the daily, not the week —
+because a live morning cannot be replayed or compared.
+
+**The honest limits, handled rather than hidden**: a report more than 120 m
+from its line (a depot run, a diversion) is ignored, never snapped onto a line
+it is not on; a line with no real vehicle has none, which is the real city; a
+vehicle not heard from for three minutes leaves the board — except the one you
+are riding, which runs on until you get off; and when the feed dies, errors or
+goes quiet for 30 s, **the timetable comes back** and the HUD says *LIVE · FEED
+LOST · TIMETABLE*. While it is live the HUD says *LIVE · N*, N being real
+vehicles on the board.
+
+**NOT VERIFIED AGAINST THE REAL BROKER.** The build sandbox cannot reach
+`mqtt.hsl.fi` (403 at the proxy), so every message in both gates is synthetic —
+shaped as HSL documents HFP v2 and placed on the real paths of the committed
+pack. `test/live.mjs` (21, bare node): the framing round-trips (two packets in
+one frame, one packet across two), a report lands where it was reported
+(0.00 m), both directions read, the metro matches by route, and the four
+limits hold. `test/live.cjs` (11): the broker is mocked at the WebSocket with
+Playwright's `routeWebSocket`, answering CONNECT and SUBSCRIBE as a broker
+does; the way in, the real-rate clock, three trams landing at 0.0 m, the HUD,
+the catch panel reading the live fleet, and the timetable returning when the
+socket closes. Reversing the direction solve fails the first; removing the
+fallback fails the second. **The first real test is a phone on a Helsinki
+morning.**
+
+**Rent re-measured after v2.55's snow fix** (`--kitweeks=20`, kit taken
+nightly, every morning drawing its own weather): the three players pay €400 in
+**85% / 55% / 25%** of weeks, against 80 / 65 / 10 before — every column inside
+20-week noise. Rent stays €400.
+
+
 ## v2.55 — 2026-09-25
 
 **THE SNOW WEEK WAS A PRICING BUG, AND IT IS MOSTLY GONE.** v2.49 left snow

@@ -339,6 +339,9 @@ jobs:
       - name: the walk follows the street — real OSM streets where the extract has them
         run: node toko-move/test/walkpath.mjs
 
+      - name: LIVE, framing and fleet — synthetic HFP on the real HSL paths
+        run: node toko-move/test/live.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
@@ -462,6 +465,9 @@ jobs:
 
       - name: the walk in the page — the courier is on the street path, not the chord
         run: NODE_PATH=$(npm root -g) node toko-move/test/walk.cjs
+
+      - name: LIVE in the page — a mocked HSL broker, real-time clock, timetable fallback
+        run: NODE_PATH=$(npm root -g) node toko-move/test/live.cjs
 
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher

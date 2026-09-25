@@ -8,7 +8,7 @@ import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=3';
 import {MobilityController} from './mobility-v212.js?v=9';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
 import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=23';
-import {mountEvents} from './events.js?v=4';
+import {mountEvents} from './events.js?v=5';
 import {mountRival} from './rival.js?v=3';
 import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=2';
 import {planEstimate} from './timetable.js?v=2';
@@ -19,7 +19,7 @@ import {mountSkillMoments} from './moments-v212.js?v=2';
 import {mountJuice} from './juice.js?v=1';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=2';
-const BUILD_VERSION='2.55';
+const BUILD_VERSION='2.56';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
@@ -32,7 +32,26 @@ tm.inFog=(layer,eta)=>{const w=tm.weather;if(!w?.fogM||eta==null)return false;co
   tm.market=at.length?{...mk,lat:at.reduce((a,s)=>a+s.lat,0)/at.length,lon:at.reduce((a,s)=>a+s.lon,0)/at.length}:mk;}
  else tm.market=null;}
 tm.challenge.market=tm.market;
-tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayFor(tm.cityDay,HEADWAY_MIN),ticksPerDay:tm.flow.clock.ticksPerDay,speedFactor:tm.weather?.speed||1});tm.challenge.reachable=o=>reachableSoon(tm,o);tm.challenge.estimate=o=>planCost(tm,o);tm.planCostFrom=(from,to)=>planCost(tm,{stops:[from,to],cargo:tm.challenge.active?.cargo});tm.planEstimateOf=plan=>planEstimate(tm,plan);tm.shiftLog=new ShiftLog(tm);tm.trails=new Trails();tm.challenge.refreshOffers();tm.transferHubs=TRANSFER_HUBS;tm.walkStreets=WALK_STREETS;tm.walksFrom=walksFrom;tm.mobility=new MobilityController(tm);tm.interceptionOptions=()=>interceptionOptions(tm);tm.bestInterception=()=>bestInterception(tm);// THE CITY YOU KNOW. You know a way on foot when you have been to BOTH ends
+tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayFor(tm.cityDay,HEADWAY_MIN),ticksPerDay:tm.flow.clock.ticksPerDay,speedFactor:tm.weather?.speed||1});
+// LIVE (v2.56, hfp.js): the fleet above is the timetable; the real vehicles
+// re-time it as their reports arrive. Loaded only for a live shift, and
+// swallowed on failure — a feed that cannot connect leaves the timetable
+// running and the HUD saying so, never a blank board.
+if(tm.live){tm.liveFeed={state:'connecting',label:'LIVE · CONNECTING',count:0};
+ Promise.all([import('./hfp.js?v=1'),import('./mqtt-ws.js?v=1')]).then(([H,M])=>{
+  const fleet=new H.LiveFleet(tm.liveNetwork),feed=tm.liveFeed;tm.liveFleet=fleet;let heardAt=0;
+  const riding=()=>tm.mobility?.status?.()?.ride?.vehicleId||tm.liveNetwork.selectedVehicleId||null;
+  const set=(state,label)=>{feed.state=state;feed.label=label;};
+  const conn=M.connectMqtt(tm.liveBroker||H.BROKER,H.TOPICS,{WS:tm.liveWS||globalThis.WebSocket,
+   onMessage:(topic,payload)=>{if(fleet.ingest(H.parseVP(topic,payload),tm.flow.clock.tick)){heardAt=performance.now();feed.count=fleet.count;set('live',`LIVE · ${fleet.count}`);}},
+   onState:st=>{if(st==='error'||st==='closed'){fleet.fallback(riding());set('timetable','LIVE · FEED LOST · TIMETABLE');}}});
+  tm.liveFeedClose=()=>conn.close();
+  // quiet for 30 real seconds: back to the timetable; heard again: live again.
+  setInterval(()=>{fleet.prune(tm.flow.clock.tick,riding());feed.count=fleet.count;
+   if(feed.state==='live'&&performance.now()-heardAt>30000){fleet.fallback(riding());set('timetable','LIVE · QUIET · TIMETABLE');}
+   else if(feed.state==='connecting'&&performance.now()-tm.liveFeedSince>12000&&!fleet.count)set('wait','LIVE · NO FEED · TIMETABLE');},2000);
+  tm.liveFeedSince=performance.now();
+ }).catch(()=>{tm.liveFeed.state='timetable';tm.liveFeed.label='LIVE · UNAVAILABLE · TIMETABLE';});}tm.challenge.reachable=o=>reachableSoon(tm,o);tm.challenge.estimate=o=>planCost(tm,o);tm.planCostFrom=(from,to)=>planCost(tm,{stops:[from,to],cargo:tm.challenge.active?.cargo});tm.planEstimateOf=plan=>planEstimate(tm,plan);tm.shiftLog=new ShiftLog(tm);tm.trails=new Trails();tm.challenge.refreshOffers();tm.transferHubs=TRANSFER_HUBS;tm.walkStreets=WALK_STREETS;tm.walksFrom=walksFrom;tm.mobility=new MobilityController(tm);tm.interceptionOptions=()=>interceptionOptions(tm);tm.bestInterception=()=>bestInterception(tm);// THE CITY YOU KNOW. You know a way on foot when you have been to BOTH ends
 // of it — seeing a stop is what teaches you where it is. Owned here because
 // knowledge.js is pure and the mobility controller only needs to ask.
 tm.visited=loadVisited();

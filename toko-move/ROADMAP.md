@@ -235,6 +235,11 @@ day's name, the number.
 
 ## L5 · Live HSL (the thing nobody else has)
 
+**SHIPPED v2.56 — built blind, verified only against a mocked broker.** No key
+was needed after all: HSL's high-frequency positioning is on an open MQTT
+broker. LIVE re-times the timetable fleet from real reports rather than
+building a second one; see VERSIONS.md v2.56 for the limits.
+
 The pack is real geometry from HSL's own feed; the vehicles on it are a
 timetable simulation. HSL publishes real-time positions (Digitransit, needs a
 free API key). A **LIVE** mode would put the actual 07:12 tram on the board

@@ -23,7 +23,7 @@ import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.55';
+const BUILD_VERSION='2.56';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -47,12 +47,22 @@ const params=new URLSearchParams(location.search);
 // page is one shift of it; the save says which, and a shift left half-played
 // was closed as the page opened (leaving is clocking out).
 let WEEK=params.has('week')?Week.resume():null;
+// v2.56: LIVE (hfp.js) — the real morning's trams and metro on the board, from
+// HSL's open position feed. Real time: a 75-minute shift is 75 real minutes.
+// It is an ordinary day, clear, with no rush and no scripted disruptions,
+// because the real city brings its own; and it records nothing — not the
+// daily, not the week — since a live morning can never be replayed or compared.
+const LIVE=params.has('live')&&!params.has('week');
 if(WEEK&&Week.isOver(WEEK)){Week.clearWeek();WEEK=Week.resume();}
 const WEEK_DAY=WEEK?Week.today(WEEK):null;
-const SHIFT_INFO=WEEK?{kind:'week',seed:WEEK_DAY.seed,index:WEEK_DAY.index,name:WEEK_DAY.name}:resolveShift(params);
+const SHIFT_INFO=WEEK?{kind:'week',seed:WEEK_DAY.seed,index:WEEK_DAY.index,name:WEEK_DAY.name}:LIVE?{...resolveShift(params),kind:'live'}:resolveShift(params);
 const shiftSeed=SHIFT_INFO.seed;
-const shiftLabel=()=>SHIFT_INFO.kind==='daily'?`${dailyName(SHIFT_INFO.number).toUpperCase()} · ${SHIFT_INFO.label}`:SHIFT_INFO.kind==='week'?`WEEK ${WEEK.seed} · ${SHIFT_INFO.name}`:`shift #${shiftSeed}`;
-const cityDay=drawCityEvent(shiftSeed,WEEK?WEEK_DAY.day:params.get('day'));
+// The real clock in Helsinki, in minutes of the day.
+const helsinkiMinutes=(d=new Date())=>{try{const [h,m]=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Helsinki',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d).split(':').map(Number);return h*60+m;}catch{return d.getHours()*60+d.getMinutes();}};
+const LIVE_START=LIVE?helsinkiMinutes():null;
+const hhmm=m=>`${String(Math.floor(m/60)%24).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+const shiftLabel=()=>SHIFT_INFO.kind==='live'?`LIVE · HELSINKI ${hhmm(LIVE_START)}`:SHIFT_INFO.kind==='daily'?`${dailyName(SHIFT_INFO.number).toUpperCase()} · ${SHIFT_INFO.label}`:SHIFT_INFO.kind==='week'?`WEEK ${WEEK.seed} · ${SHIFT_INFO.name}`:`shift #${shiftSeed}`;
+const cityDay=drawCityEvent(shiftSeed,WEEK?WEEK_DAY.day:LIVE?'none':params.get('day'));
 // v2.48: KIT (kit.js). A week carries what was picked on its nights. `?kit=`
 // applies it to a pinned or random shift — the bot measures each item that way
 // — and never to the daily, whose result is one everybody can compare.
@@ -60,14 +70,14 @@ const KIT_IDS=WEEK?Week.owned(WEEK):SHIFT_INFO.kind==='daily'?[]:Kit.parse(param
 const KIT_FX=Kit.effects(KIT_IDS);
 // v2.49: WEATHER (weather.js) — a look and a lever per morning, drawn from the
 // shift. `?weather=` pins it; the harness's `?day=none` control means clear.
-const WEATHER=drawWeather(shiftSeed,params.get('weather'),params.get('day'));
+const WEATHER=drawWeather(shiftSeed,LIVE?'clear':params.get('weather'),params.get('day'));
 // v2.52: THE RUSH (rush.js). `?rush=off`, and the harness's `?day=none`
 // control, turn it off; `?rush=on` keeps it on under that control.
-const RUSH_ON=params.get('rush')==='on'||(params.get('rush')!=='off'&&params.get('day')!=='none');
+const RUSH_ON=!LIVE&&(params.get('rush')==='on'||(params.get('rush')!=='off'&&params.get('day')!=='none'));
 const rushLoad=()=>RUSH_ON&&flow?Rush.load(flow.clock.dayProgress):0;
 const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),walkLine,walkProgress,version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
+function publish(){window.__tm={...(window.__tm||{}),walkLine,walkProgress,live:LIVE,version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -469,7 +479,7 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
 // THE HUD IS GLYPHS. Clock, deliveries as dots, a score, and the current job
 // as its cargo glyph inside a ring that empties with the deadline — no
 // "deliveries" / "deadline" labels and no ticks (owner: Mini Metro succinct).
-function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);{const b=$('bagHud');if(b)b.innerHTML=challenge.active?bagHtml(challenge.carrying?.()||[],challenge.capacity?.()):'';}$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const m=challenge.streakMult?.()||1,el=$('mult');if(el){el.textContent=m>1?`×${m}`:'';el.style.opacity=m>=2?'1':'.8';}}{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.innerHTML=challenge.active?parcelHtml(challenge.active.cargo,{max:16}):'<span class="pcl pcl-none"></span>';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=SHIFT.startHour*60+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;{const l=rushLoad(),w=Rush.label(l),el=$('rush');if(el){el.textContent=w?`${w} ×${Rush.surge(l).toFixed(1)}`:'';el.className=w?`rush lvl-${w.toLowerCase()}`:"rush";}}}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
+function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);{const b=$('bagHud');if(b)b.innerHTML=challenge.active?bagHtml(challenge.carrying?.()||[],challenge.capacity?.()):'';}$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const m=challenge.streakMult?.()||1,el=$('mult');if(el){el.textContent=m>1?`×${m}`:'';el.style.opacity=m>=2?'1':'.8';}}{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.innerHTML=challenge.active?parcelHtml(challenge.active.cargo,{max:16}):'<span class="pcl pcl-none"></span>';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=(LIVE?LIVE_START:SHIFT.startHour*60)+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=hhmm(m);{const l=rushLoad(),w=Rush.label(l),el=$('rush');if(el&&LIVE){const f=window.__tm?.liveFeed;el.textContent=f?.label||'LIVE';el.className=`rush lvl-live${f?.state==='live'?'':' lvl-wait'}`;}else if(el){el.textContent=w?`${w} ×${Rush.surge(l).toFixed(1)}`:'';el.className=w?`rush lvl-${w.toLowerCase()}`:"rush";}}}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
 // THE JOB SHEET HAS THREE WRITERS AND HAD NO OWNER.
 // paintSheet (this file), the dispatch board (job-board-v212.js) and the catch
 // panel (route-choice.js) all wrote into #sheet on their own timers, and each
@@ -518,7 +528,7 @@ function paintFeed(){const f=$('feed');if(!f)return;f.innerHTML='';for(const m o
 function paintDaily(){const box=$('endStats');if(!box)return;
   const again=$('again');
   if(SHIFT_INFO.kind==='week'){paintWeek(box,again);return;}
-  if(SHIFT_INFO.kind!=='daily'){if(again)again.textContent='RUN THIS SHIFT AGAIN';return;}
+  if(SHIFT_INFO.kind!=='daily'){if(again)again.textContent=LIVE?'ANOTHER LIVE SHIFT':'RUN THIS SHIFT AGAIN';return;}
   const res={results:[...(challenge.results||[])],target:challenge.target,drops:challenge.drops||0,score:challenge.score,delivered:challenge.index,day:cityDay?.id||null};
   const r=recordDaily(SHIFT_INFO.key,res),rec=r.record,run=streak(SHIFT_INFO.key);
   const text=shareText({number:SHIFT_INFO.number,label:SHIFT_INFO.label,dayName:cityDay?.name||'',results:rec.results,target:rec.target,drops:rec.drops,score:rec.score,url:location.origin+location.pathname});
@@ -688,9 +698,11 @@ function paintDayCard(){const el=$('dayCard');if(!el)return;
     // offered again here, and the shift waits for it: the kit is applied at boot.
     if(SHIFT_INFO.kind==='week'&&Week.pending(WEEK)){n.insertAdjacentHTML('beforeend',kitPicker());wireKitPicker(n);const pl=$('play');pl.disabled=true;pl.textContent='TAKE ONE FIRST';}
     const wl=$('weekLink');if(wl){const w=SHIFT_INFO.kind==='week'?null:Week.loadWeek();wl.hidden=SHIFT_INFO.kind==='week';
-      wl.innerHTML=w&&!Week.isOver(w)&&w.shifts.length?`CONTINUE THE WEEK · ${Week.DAY_NAMES[w.day]} · €${Week.total(w)}/€${Week.RENT}`:`OR THE WEEK · five shifts, rent due Friday`;}}
+      wl.innerHTML=w&&!Week.isOver(w)&&w.shifts.length?`CONTINUE THE WEEK · ${Week.DAY_NAMES[w.day]} · €${Week.total(w)}/€${Week.RENT}`:`OR THE WEEK · five shifts, rent due Friday`;}
+    const ll=$('liveLink');if(ll)ll.hidden=SHIFT_INFO.kind==='week'||LIVE;}
   const wx=WEATHER&&WEATHER.id!=='clear'?`<div class="dayCard wxCard"><span class="dayGlyph">${WEATHER.glyph}</span><div><b>${esc(WEATHER.name)}</b><p>${esc(WEATHER.blurb)}</p></div></div>`:'';
-  if(!cityDay){el.innerHTML=wx;return;}
+  const live=LIVE?`<div class="dayCard"><span class="dayGlyph">●</span><div><b>LIVE · THE REAL MORNING</b><p>Every tram and metro train on the board is where HSL says it is right now. Real time: seventy-five minutes is seventy-five minutes. Nothing is recorded.</p></div></div>`:'';
+  if(!cityDay){el.innerHTML=live+wx;return;}
   const fams=(cityDay.crowds?.families||[]).map(f=>{const l=(transit?.layers||[]).find(x=>dayFamily(x.name)===f);
     return `<span class="lb" style="background:${esc(l?.colour||'#52676d')}">${esc(f)}</span>`;}).join(' ');
   el.innerHTML=`<div class="dayCard"><span class="dayGlyph">${cityDay.glyph}</span><div><b>${esc(cityDay.name)}</b><p>${esc(cityDay.blurb)}</p>${fams?`<p class="dayChips">${fams} crowded all morning</p>`:''}</div></div>${wx}`;}
@@ -783,9 +795,12 @@ for(const ev of ['pointerup','touchend'])$('map').addEventListener(ev,e=>{
   if(transitView||dragged)return;const t=e.changedTouches?.[0]||e;if(mapAction(t.clientX,t.clientY)){$('pop').hidden=true;e.preventDefault();return;}const node=nodeAtPoint(t.clientX,t.clientY);
   if(node){showStop(node,{x:t.clientX,y:t.clientY});e.preventDefault();}else $('pop').hidden=true;},{passive:false});
 addEventListener('resize',()=>{renderer?.resize();_railAt='';placeRail();});
-$('play').onclick=()=>{if(!flow)return;if(WEEK){Week.begin(WEEK);Week.saveWeek(WEEK);}$('title').hidden=true;flow.clock.setPaused(false);};
+// LIVE runs the clock at the real rate: ten ticks a real second is fifteen
+// game-minutes a real minute, so a fifteenth of it is one for one.
+const LIVE_SPEED=1/15;
+$('play').onclick=()=>{if(!flow)return;if(WEEK){Week.begin(WEEK);Week.saveWeek(WEEK);}$('title').hidden=true;if(LIVE){flow.clock.setSpeed(LIVE_SPEED);const sp=$('speed');if(sp){sp.disabled=true;sp.textContent='LIVE';}}flow.clock.setPaused(false);};
 $('pause').onclick=()=>{if(!flow)return;flow.clock.setPaused(!flow.clock.paused);$('pause').textContent=flow.clock.paused?'▶':'❚❚';};
-$('speed').onclick=()=>{if(!flow)return;const s=flow.clock.speed>=4?1:flow.clock.speed*2;flow.clock.setSpeed(s);$('speed').textContent=`×${s}`;};
+$('speed').onclick=()=>{if(!flow||LIVE)return;const s=flow.clock.speed>=4?1:flow.clock.speed*2;flow.clock.setSpeed(s);$('speed').textContent=`×${s}`;};
 $('again').onclick=()=>{
   // RUN THE DAY AGAIN used to boot a fresh flow and challenge in place — and
   // main-v212's mobility controller, live fleet, trails and shift log all kept
