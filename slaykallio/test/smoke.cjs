@@ -1303,6 +1303,51 @@ const check = (name, ok, extra = '') => {
       await page.evaluate(n => __sk.state().hero.deck.length === n && __sk.state().phase === 'map' && __sk.state().act === 1, deckB));
   }
 
+  // ── v50: THE TORCH LIGHTS THE FIGURES, LIVE ────────────────────────────
+  // Until now the light on a figure was painted into its texture once, from a
+  // torch assumed to stand on the left. Each cutout now carries a normal map
+  // baked from its own silhouette and the face reads the real torch and rank
+  // light every frame. The claim to test is the one that makes it LIVE: move
+  // the torch to the other side of the hero and the lit side has to follow.
+  // Measured as the left half of the hero's box over the right half, off the
+  // canvas in the same task as the render; the flame held still (v45's rule).
+  // This also caught the shader not compiling at all on its first cut: a GLSL
+  // local called `flat` — an ES 3 keyword — and every face vanished, leaving
+  // each figure showing the BACK of its card.
+  {
+    await page.evaluate(() => { __sk.setSpeed(0); __sk.start('cart', 4); __sk.debug.jumpTo(35); __sk.flush(); });
+    await page.waitForTimeout(400);
+    const lit = await page.evaluate(() => {
+      const a = __sk.arena, hero = a.puppets.find(p => p.facing === 1);
+      a.steady = true;
+      const V = hero.group.position.constructor, c = a.renderer.domElement;
+      const scr = (x, y) => { const v = new V(x, y, hero.home.z ?? 0).project(a.camera); return [(v.x + 1) / 2 * c.width, (1 - v.y) / 2 * c.height]; };
+      const w = 1.5 * hero.scale * 0.5 * 0.7, h = 1.5 * hero.scale;
+      const [x0, y0] = scr(hero.home.x - w / 2, h * 0.85), [x1, y1] = scr(hero.home.x + w / 2, h * 0.15);
+      const read = () => {
+        a.update(0);
+        const k = document.createElement('canvas'); k.width = c.width; k.height = c.height;
+        const g = k.getContext('2d'); g.drawImage(c, 0, 0);
+        const d = g.getImageData(0, 0, k.width, k.height).data;
+        let L = 0, nL = 0, R = 0, nR = 0;
+        const mid = (x0 + x1) / 2;
+        for (let y = Math.round(y0); y < y1; y += 2) for (let x = Math.round(x0); x < x1; x += 2) {
+          const i = (y * k.width + x) * 4, l = 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2];
+          if (x < mid) { L += l; nL++; } else { R += l; nR++; }
+        }
+        return (L / nL) / (R / nR);
+      };
+      const tx = a.torch.position.x;
+      __sk.debug.relief(false); const off = read();
+      __sk.debug.relief(true); const left = read();
+      a.torch.position.x = hero.home.x + 6; const right = read();
+      a.torch.position.x = tx; a.steady = false;
+      return { off, left, right };
+    });
+    check(`the relief follows the torch — the hero's left:right ratio ${lit.off.toFixed(3)} painted, ${lit.left.toFixed(3)} with the torch on his left, ${lit.right.toFixed(3)} with it moved to his right`,
+      lit.left > lit.off && lit.right < lit.off && lit.left - lit.right > 0.04);
+  }
+
   await ctx.close();
 
   // ── portrait ───────────────────────────────────────────────────────────

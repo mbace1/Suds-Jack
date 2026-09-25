@@ -7,6 +7,45 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v50 — 2026-09-25
+**THE TORCH LIGHTS THE FIGURES — live, from where it actually stands**
+
+The torch has guttered on three sines since v10 and not one figure has moved
+with it. A cutout is an unlit plane, so its light was PAINTED IN once, at
+construction, from a torch assumed to stand on the left: the right answer to
+"the figures stand in daylight in front of the night", with a ceiling — the
+fire flickers and the people do not, a rat right of the rank light is lit from
+the wrong side, and a figure that topples keeps its highlights where they were.
+
+Each cutout now carries a **normal map baked from its own silhouette** — the
+card rolls away from the eye like a pillow, which is what 2D sprite-lighting
+tools do, plus a little of the drawing's own tone for relief inside it — and the
+face shader reads the real torch and the rank light off the scene every frame.
+
+**The rule that keeps every legibility gate from v10 to v26 true: a FLAT card
+facing the camera is exactly as bright as it was.** The shader adds
+`live − flat`, never `live`, so the painted torchlight, the light floor and the
+rank's legibility all stand, and what is new is only the part that moves. It
+fades with the light itself (by day the torch is a glow, and relief from a
+source that is not there is a lie).
+
+**Tuned by looking, twice.** At a 5px bevel it was invisible — a thin rim moved
+and the figure stayed a card. At 14px (scaled by the figure, v46's rule) the
+Cart Pusher turns toward the fire: the near cheek and shoulder catch it, the far
+sleeve and leg roll into shadow, and the kraft edge still carries the silhouette
+on the dark side.
+
+**Two bugs on the way, both invisible to every existing gate:** a GLSL local
+called `flat` is an ES 3 keyword, the face shader failed to compile, and every
+figure showed the BACK of its card; and a comment explaining that, written with
+backticks, closed the JS template literal the shader lives in and the game did
+not boot.
+
+Gate: the hero's left:right luminance goes 1.324 (painted) → 1.388 with the
+torch on his left → 1.204 with the torch moved to his right. The light follows.
+`__sk.debug.relief(false)` gives the painted-only figure back for comparison.
+smoke.cjs 174.
+
 ## v49 — 2026-09-25
 **THE PIXEL FRAME — the whole bridge in Metal Slug's register, one tap away**
 

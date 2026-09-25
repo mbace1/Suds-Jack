@@ -1418,8 +1418,67 @@ export function paintCutout(look, seed = 1, mood = DUSK, pose = 'idle', scale = 
   fibre(c, rnd, '#c8bca4', 0.32, f);
   grime(ctx, rnd, look.grime ?? 0.7, f);
   if (fig.pixel) c.pixel = fig.pixel;      // what the Metal Slug pass did, for the gate to read
+  c.figScale = f;                          // the relief is blurred at the figure's own scale
   return c;
 }
+
+// ── LIVE TORCHLIGHT (v50) ────────────────────────────────────────────────
+// The torch has guttered on three sines since v10 and not one figure has ever
+// moved with it: a cutout is an unlit plane, so the light was PAINTED IN once,
+// at construction, from a torch assumed to stand on the left. That was the
+// right answer to "the figures stood in daylight in front of the night", and
+// it has a ceiling — the fire flickers and the people do not, a rat standing
+// right of the rank light is lit from the wrong side, and a figure that
+// topples keeps its highlights where they were.
+//
+// So each cutout carries a NORMAL MAP baked from its own silhouette — the
+// card's edge rolls away from the eye like a pillow, which is what a 2D
+// sprite lighting tool does, plus a little of the drawing's own luminance for
+// relief inside it — and the face material reads the real torch and the rank
+// light off the scene every frame. The rule that keeps every legibility gate
+// from v10 to v26 true: a FLAT card facing the camera is exactly as bright as
+// it was. Only the relief is added — `live − flat`, never `live` — so the
+// painted torchlight, the light floor and the rank's legibility all stand,
+// and what is new is the part that moves.
+const RELIEF = 0.8;                       // how much the relief is allowed to swing a pixel
+const RELIEF_BLUR = 14;                   // bevel width, in texture px at a person's scale
+const RELIEF_LUM = 0.18;                  // share of the height that is the drawing's own tone
+const RELIEF_K = 9;                       // slope → normal steepness
+
+function normalFrom(cv) {
+  const W = cv.width, H = cv.height;
+  const b = document.createElement('canvas'); b.width = W; b.height = H;
+  const bx = b.getContext('2d', { willReadFrequently: true });
+  bx.filter = `blur(${Math.max(2, RELIEF_BLUR * (cv.figScale ?? 1))}px)`;
+  bx.drawImage(cv, 0, 0);
+  bx.filter = 'none';
+  const A = bx.getImageData(0, 0, W, H).data;
+  const S = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+  const hgt = new Float32Array(W * H);
+  for (let i = 0; i < W * H; i++) {
+    const l = (0.3 * S[i * 4] + 0.59 * S[i * 4 + 1] + 0.11 * S[i * 4 + 2]) / 255 * (S[i * 4 + 3] / 255);
+    hgt[i] = (A[i * 4 + 3] / 255) * (1 - RELIEF_LUM) + l * RELIEF_LUM;
+  }
+  const out = document.createElement('canvas'); out.width = W; out.height = H;
+  const ox = out.getContext('2d');
+  const img = ox.createImageData(W, H), o = img.data;
+  const at = (x, y) => hgt[Math.min(H - 1, Math.max(0, y)) * W + Math.min(W - 1, Math.max(0, x))];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    // image rows run DOWN and the texture's v runs UP, so a height rising
+    // down the image is a surface tilting its normal up
+    let nx = -(at(x + 1, y) - at(x - 1, y)) * RELIEF_K, ny = (at(x, y + 1) - at(x, y - 1)) * RELIEF_K, nz = 1;
+    const len = Math.hypot(nx, ny, nz); nx /= len; ny /= len; nz /= len;
+    const i = (y * W + x) * 4;
+    o[i] = (nx * 0.5 + 0.5) * 255; o[i + 1] = (ny * 0.5 + 0.5) * 255; o[i + 2] = (nz * 0.5 + 0.5) * 255; o[i + 3] = 255;
+  }
+  ox.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(out);
+  t.colorSpace = THREE.NoColorSpace;
+  return t;
+}
+
+let RELIEF_ON = true;
+export function setFigureRelief(v) { RELIEF_ON = !!v; }
 
 // the kraft-cardboard back of the same cutout: the shape, in brown, with flutes
 function paintBack(front) {
@@ -1623,6 +1682,16 @@ function cutoutBorder(ctx, fig, rnd, f = 1) {
 }
 
 export class Puppet {
+  // the arena hands every cutout the real lights once a frame (v50)
+  light(torch, rank) {
+    const U = this.lightU;
+    if (!U) return;
+    U.uTorch.value.copy(torch.position); U.uRank.value.copy(rank.position);
+    U.uTorchI.value = torch.intensity; U.uRankI.value = rank.intensity;
+    U.uTorchCol.value.copy(torch.color);
+    U.uRelief.value = RELIEF_ON ? RELIEF : 0;
+  }
+
   constructor({ look, seed = 1, scale = 1, facing = 1, mood = DUSK }) {
     this.group = new THREE.Group();
     this.scale = scale;
@@ -1650,7 +1719,7 @@ export class Puppet {
       t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
       const b = new THREE.CanvasTexture(paintBack(cv));
       b.colorSpace = THREE.SRGBColorSpace;
-      this.frames[n] = { front: t, back: b };
+      this.frames[n] = { front: t, back: b, relief: normalFrom(cv) };
     }
     this.posed = names.length > 1;
     this.frame = 'idle';
@@ -1663,6 +1732,42 @@ export class Puppet {
     geo.translate(0, h / 2, 0);
     this.mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.35, side: THREE.FrontSide });
     this.mat.color = new THREE.Color(1, 1, 1);
+    const U = this.lightU = {
+      tRelief: { value: this.frames.idle.relief },
+      uTorch: { value: new THREE.Vector3(-3.6, 1.6, 1.5) }, uRank: { value: new THREE.Vector3(2.4, 1.1, 2.2) },
+      uTorchI: { value: 0 }, uRankI: { value: 0 }, uRelief: { value: 0 },
+      uTorchCol: { value: new THREE.Color('#ffab52') },
+    };
+    this.mat.onBeforeCompile = sh => {
+      Object.assign(sh.uniforms, U);
+      sh.vertexShader = sh.vertexShader
+        .replace('void main() {', 'varying vec3 vWP; varying vec3 vT; varying vec3 vB; varying vec3 vNf;\nvoid main() {')
+        .replace('#include <project_vertex>', `#include <project_vertex>
+          vWP = (modelMatrix * vec4(transformed, 1.0)).xyz;
+          vT = normalize(mat3(modelMatrix) * vec3(1.0, 0.0, 0.0));
+          vB = normalize(mat3(modelMatrix) * vec3(0.0, 1.0, 0.0));
+          vNf = normalize(mat3(modelMatrix) * vec3(0.0, 0.0, 1.0));`);
+      sh.fragmentShader = sh.fragmentShader
+        .replace('void main() {', `uniform sampler2D tRelief; uniform vec3 uTorch; uniform vec3 uRank; uniform float uTorchI;
+          uniform float uRankI; uniform float uRelief; uniform vec3 uTorchCol;
+          varying vec3 vWP; varying vec3 vT; varying vec3 vB; varying vec3 vNf;
+          void main() {`)
+        .replace('#include <map_fragment>', `#include <map_fragment>
+          if (uRelief > 0.0) {
+            vec3 nm = texture2D(tRelief, vMapUv).xyz * 2.0 - 1.0;
+            vec3 n = normalize(vT * nm.x + vB * nm.y + vNf * nm.z);
+            vec3 lt = uTorch - vWP; float d1 = dot(lt, lt); lt = normalize(lt);
+            vec3 lr = uRank - vWP; float d2 = dot(lr, lr); lr = normalize(lr);
+            float wt = uTorchI / (1.0 + d1 * 0.12), wr = uRankI / (1.0 + d2 * 0.12), ws = max(wt + wr, 1e-3);
+            float live = (wt * max(dot(n, lt), 0.0) + wr * max(dot(n, lr), 0.0)) / ws;
+            float flatL = (wt * max(dot(vNf, lt), 0.0) + wr * max(dot(vNf, lr), 0.0)) / ws;   // not "flat": a GLSL ES 3 keyword, and the face stopped compiling
+            // and it fades with the light itself: by day the torch is a
+            // glow, and relief from a source that is not there is a lie
+            float r = (live - flatL) * uRelief * clamp(ws, 0.0, 1.0);
+            diffuseColor.rgb *= 1.0 + r * 2.0;
+            diffuseColor.rgb += max(r, 0.0) * uTorchCol * 0.25 * diffuseColor.a;
+          }`);
+    };
     const face = new THREE.Mesh(geo, this.mat);
     const back = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: backTex, transparent: true, alphaTest: 0.35, side: THREE.BackSide }));
     // a hair of thickness: the back drawn a shade behind reads as card
@@ -1740,6 +1845,7 @@ export class Puppet {
     if (this.frame === (this.frames[name] ? name : 'idle')) return;
     this.frame = this.frames[name] ? name : 'idle';
     this.mat.map = f.front;
+    this.lightU.tRelief.value = f.relief;
     for (const m of this.backMats) m.map = f.back;
   }
 

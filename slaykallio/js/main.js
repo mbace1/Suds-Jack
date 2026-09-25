@@ -9,8 +9,8 @@
 
 import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=45';
 import * as engine from './engine.js?v=45';
-import { Arena } from './scene.js?v=33';
-import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=44';
+import { Arena } from './scene.js?v=34';
+import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut, setFigureRelief } from './puppet.js?v=45';
 import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=38';
 import { paintCardPic } from './cardart.js?v=43';
 import { drawMap } from './map.js?v=31';
@@ -26,7 +26,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 49;
+const VERSION = 50;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -1224,6 +1224,7 @@ window.__sk = {
     // the world scale of a figure's plane — the contact sheet needs it, because
     // a sheet of raw textures hides the whole size hierarchy
     enemyScale: id => ENEMIES[id]?.scale ?? 1,
+    relief: v => setFigureRelief(v),
     lookOf: id => (ENEMIES[id] ?? CHARACTERS[id])?.[theme]?.look ?? {},
     events: () => EVENTS.map(e => e.id),
     // force the next fork to offer exactly these spans, for driving one screen

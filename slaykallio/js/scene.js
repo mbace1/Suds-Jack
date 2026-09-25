@@ -615,7 +615,7 @@ export class Arena {
 
     // hand every cutout its light level, so the rank is legible and the ends
     // of the deck still fall away
-    for (const p of this.puppets) p.lightK = this.lightAt(p.home.x) * (0.94 + 0.06 * (this.flick ?? 1));
+    for (const p of this.puppets) { p.lightK = this.lightAt(p.home.x) * (0.94 + 0.06 * (this.flick ?? 1)); p.light?.(this.torch, this.rank); }
     // and put the rank light on the row that is actually there
     const foes = this.puppets.filter(p => p.facing === -1 && p.alive);
     if (foes.length) {
