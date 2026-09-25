@@ -213,6 +213,8 @@ export class LiveNetwork{
     // the leading car has the round nose; the rest are boxes on the same rail
     if(front)ctx.roundRect(x0,-W/2,cl,W,[2*dpr,W/2,W/2,2*dpr]);else ctx.roundRect(x0,-W/2,cl,W,2*dpr);ctx.fill();ctx.stroke();}
    if(selected){ctx.fillStyle='#ffe28a';for(let k=0;k<cars;k++){const x0=-L/2+k*(cl+gap);ctx.fillRect(x0+cl*0.2,-W*0.18,cl*0.6,W*0.36);}}
+   // rush.js: a FULL vehicle carries its crowd — heads pressed to every window
+   else if(opts?.full?.(v)){ctx.fillStyle='rgba(15,20,24,0.8)';for(let k=0;k<cars;k++){const x0=-L/2+k*(cl+gap);for(let j=0;j<3;j++){ctx.beginPath();ctx.arc(x0+cl*(0.22+0.28*j),((j%2)?-1:1)*W*0.14,1.6*dpr,0,Math.PI*2);ctx.fill();}}}
    ctx.restore();
    ctx.lineJoin='round';ctx.lineWidth=3*dpr;ctx.strokeStyle='rgba(15,20,24,0.85)';ctx.strokeText(v.layer.name,q.x,q.y+0.5*dpr);ctx.fillStyle='#fffdf7';ctx.fillText(v.layer.name,q.x,q.y+0.5*dpr);}
   ctx.restore();this.lastShown=shown;this.lastTotal=total;this.lastBadges=boxes.slice();this.lastDots=dots.slice();return boxes.concat(dots);}

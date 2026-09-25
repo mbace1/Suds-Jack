@@ -330,6 +330,9 @@ jobs:
       - name: the weather — a drawn mix, fog's reach, slower on the same timetable
         run: node toko-move/test/weather.mjs
 
+      - name: the rush — the curve, full trams, rush pay
+        run: node toko-move/test/rush.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
@@ -444,6 +447,9 @@ jobs:
 
       - name: juice — a delivery is a moment, drawn from the numbers
         run: NODE_PATH=$(npm root -g) node toko-move/test/juice.cjs
+
+      - name: the rush, in the page — full trams refused at every door
+        run: NODE_PATH=$(npm root -g) node toko-move/test/rush.cjs
 
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher

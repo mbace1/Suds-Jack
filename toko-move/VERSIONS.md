@@ -1,5 +1,46 @@
 # Toko Move — versions
 
+## v2.52 — 2026-09-25
+
+**THE RUSH: the shift has a shape.** Leap 3 of five (`js/rush.js`). Seventy-
+five minutes of morning were seventy-five identical minutes. Now the city
+fills and empties — quiet at 07:00, peaking about 07:40, thinning by 08:15 —
+and the load pulls two levers in opposite directions, which is what makes it a
+decision rather than a tax:
+
+- **Full trams.** At the peak up to half the arriving vehicles are too full to
+  board. A full tram is drawn with heads pressed to every window and is never
+  ringed; its row says "full · wait for the next" and cannot be tapped; and the
+  catch call itself refuses it, so the panel, the map tap and the bot all meet
+  one rule. Fullness is a hash of the vehicle and the quarter of its cycle, so
+  the same tram stays full for its whole time at your stop and a shift replays.
+- **Rush pay.** A job offered in the rush pays up to ×1.3, and the fee on the
+  board already says so — take the rich job into the crowd, or the plain one
+  around it. The HUD names the hour beside the clock: BUSY, then RUSH ×1.3.
+- **The light moves.** The dawn wash was a flat tint that faded; it is a low
+  sun off the east edge at seven, climbing and swinging south as the shift
+  runs, its warm pool going with it.
+
+`?rush=off` turns it off; the harness's `?day=none` control is calm, and
+`?rush=on` keeps the rush under it (the bot's weeks do, because their ordinary
+days pin `day=none`).
+
+**Found on the way, and older than the rush: an empty board.** The rival
+claims ordinary offers one at a time and nothing ever refilled the board, so a
+player who read slowly enough lost every job and had nothing to do until
+08:15 — the rush gate found it by idling to the peak and finding zero offers.
+When he takes the last ordinary job, dispatch now deals a fresh board: losing
+one to him is still the cost of dawdling, being stranded is not.
+
+RENT WITH THE RUSH: being measured (`--kitweeks=20`).
+
+`test/rush.mjs` (9) holds the curve, the two levers and fullness that holds
+still; `test/rush.cjs` (9) holds it in the page: calm control, a quiet seven,
+RUSH ×1.3 and ×1.3 pay at the peak, ~47% of the fleet full, the catch call
+refusing a full tram, and — with a job taken in the rush — a full tram pulling
+in, its row disabled and never offered to the map. Removing the panel's
+check, the catch's check or the board refill each fails it.
+
 ## v2.51 — 2026-09-25
 
 **DELIVERIES YOU CAN FEEL.** Leap 2 of five (`js/juice.js`). A delivery was a

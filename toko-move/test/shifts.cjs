@@ -148,7 +148,7 @@ server.listen(0, '127.0.0.1', async () => {
   const WALK = process.env.WALK || 'smart';   // 'no' reproduces every number printed before v2.42
   // `shift` and `day` on a policy override both (v2.45): the dailies play the
   // real date seeds with their DRAWN day, which is what a player meets.
-  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.shift ?? policy.seed ?? 1}&day=${policy.day ?? DAY}${policy.kit?.length ? `&kit=${policy.kit.join(',')}` : ''}${policy.weather ? `&weather=${policy.weather}` : ''}`, { waitUntil: 'load' });
+  const boot = async (policy = {}) => { await page.goto(`${base}/toko-move/?shift=${policy.shift ?? policy.seed ?? 1}&day=${policy.day ?? DAY}${policy.kit?.length ? `&kit=${policy.kit.join(',')}` : ''}${policy.weather ? `&weather=${policy.weather}` : ''}${policy.rush ? `&rush=${policy.rush}` : ''}`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.mobility && window.__tm?.liveNetwork && globalThis.__tmRouteChoiceCore, null, { timeout: 30000 });
     if (FLEET) await page.evaluate(async ({ FLEET, token }) => {
       const { LiveNetwork } = await import(`./js/live-network.js?v=${token}`);
@@ -247,7 +247,7 @@ server.listen(0, '127.0.0.1', async () => {
     const player = { job: 'rate', plan: 'total', along: 'yes', walk: 'smart' };
     const week = async (w, kitFor, pl = player) => { await page.goto(`${base}/toko-move/js/week.js`); await page.evaluate(() => localStorage.removeItem('tokoMoveRegulars'));
       const days = W.weekDays(w); let sum = 0;
-      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i), weather: wxFor(w, i) }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; if (process.env.DIAG) console.log(`    ${process.env.WX || '-'} w${w}d${i} fleet ${r.fleet} tick ${r.tick} drops ${r.drops}/${r.dropped} late ${r.late} streak ${r.bestStreak} tips ${r.tips} bonuses ${r.bonuses} score ${r.score}`); if (process.env.DIAG === '2') for (const p of r.paid || []) console.log(`       ${p}`); }
+      for (let i = 0; i < W.LENGTH; i++) { const r = await run({ ...pl, seed: w * 10 + i, shift: W.shiftSeedFor(w, i), day: days[i], kit: kitFor(i), weather: wxFor(w, i), rush: process.env.RUSH || 'on' }, `kit week ${w}`); sum += W.euros(r.score); walked += r.walks || 0; if (process.env.DIAG) console.log(`    ${process.env.WX || '-'} w${w}d${i} fleet ${r.fleet} tick ${r.tick} drops ${r.drops}/${r.dropped} late ${r.late} streak ${r.bestStreak} tips ${r.tips} bonuses ${r.bonuses} score ${r.score}`); if (process.env.DIAG === '2') for (const p of r.paid || []) console.log(`       ${p}`); }
       return sum; };
     let walked = 0;
     if (KITS) {
