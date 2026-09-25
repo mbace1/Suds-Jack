@@ -336,6 +336,9 @@ jobs:
       - name: the poster — the trail is kept, the frame fits the week
         run: node toko-move/test/poster.mjs
 
+      - name: the walk follows the street — real OSM streets where the extract has them
+        run: node toko-move/test/walkpath.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 
@@ -456,6 +459,9 @@ jobs:
 
       - name: the rival races you — a claim is a journey, and beating him pays
         run: NODE_PATH=$(npm root -g) node toko-move/test/rival.cjs
+
+      - name: the walk in the page — the courier is on the street path, not the chord
+        run: NODE_PATH=$(npm root -g) node toko-move/test/walk.cjs
 
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher

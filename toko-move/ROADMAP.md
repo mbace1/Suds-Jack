@@ -211,10 +211,10 @@ that this game could have for the least work. Sits under L1 or beside it.
 
 ## L4 · Weather, and the map as the hero (visual + systems in one)
 
-**Weather SHIPPED v2.49** (clear, rain, fog, first snow, frost — each a look
-and a lever; VERSIONS.md v2.49 has the measurements). Still open under this
-heading: the courier seen walking along the street, tram badges with a shape,
-and the shift replay as a poster.
+**SHIPPED in full.** Weather v2.49 (clear, rain, fog, first snow, frost — each
+a look and a lever), tram badges with a shape v2.50, the week as a poster v2.54,
+and the courier walking along the real street v2.55 (8 of 17 walks; the rest
+leave the OSM street extract and stay straight — see VERSIONS.md v2.55).
 
 The dawn wash exists; a week has five mornings. Rain, fog, first snow, a clear
 frost — each is a look AND a lever: rain slows walking, snow slows everything,

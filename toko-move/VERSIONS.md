@@ -1,5 +1,69 @@
 # Toko Move — versions
 
+## v2.55 — 2026-09-25
+
+**THE SNOW WEEK WAS A PRICING BUG, AND IT IS MOSTLY GONE.** v2.49 left snow
+open: a week held in snow paid **+€57** over the same week clear, and it was
+put down to diverged boards. It was not only that. A hand-off's fee is built
+from `90 + dist × 9`, and for a hand-off `dist` came from the trip's time
+estimate — which rides the live fleet, a fifth slower in snow. So the snow
+turned a longer ride into a longer "distance" and paid more for the same two
+stops (111 against 118 on the gate's pair). The fee is priced off a dry day's
+trip now, the same way v2.49 fixed the deadline. Re-measured (`shifts.cjs
+--wx=30`, 30 no-kit weeks each, paired against the same weeks clear):
+
+| weather held all week | v2.49 | v2.55 |
+|---|---|---|
+| rain | −€1 ± 30 | −€25 ± 21 |
+| fog | +€2 ± 1 | +€1 ± 0 |
+| snow | **+€57** | **+€20 ± 17** |
+
+What is left of snow is inside about one standard error, and it is the
+diverged-boards effect v2.49 described: a slower fleet puts the courier
+somewhere else by the second job. Rain now reads as the cost it is meant to
+be. `weather.mjs` holds that a hand-off is offered to the same door on both
+days and pays the same; putting the old line back fails it.
+
+**NO TICKS ON SCREEN.** A tick is the engine's unit (forty to a minute), and
+four places still printed it: the stop's *ALSO CALLING HERE* panel ("MISSED 4 ·
+about 12t ago", "+8t", walk exits "30t"), the nearby list ("12t away"), the
+walk line in the feed, and the two skill moments ("8t margin", "3t transfer").
+Waits and walks read in minutes now; a margin reads in seconds, because a
+connection made with twelve seconds to spare is the story and "now" would throw
+it away (`seconds()` in `ui.js`). `shiftlog.mjs` scans every module for a tick
+suffix on a printed value, so the next one fails the gate rather than a
+playtest.
+
+**THE WALK FOLLOWS THE STREET** (roadmap L4, `js/walkpath.js`). A walk between
+two stops was drawn as a straight line — the courier slid through blocks. The
+repo already carries real OpenStreetMap streets for the centre, so the figure
+walks those: the shortest way along real streets between the street points
+nearest each stop, with the street the walk is named for preferred. The line
+still to walk is drawn ahead of the figure as an ink dash on a white casing,
+because the walk runs down the same streets the trams do and an orange dash
+vanished into the orange line under it. The camera follows the same point.
+
+Built from shared points alone, the extract came out as **455 separate
+pieces**: it is simplified, and a T-junction's shared node is exactly what
+thinning drops. A way's loose end within 25 m of another street is joined to it
+(only loose ends — joining every near pair would walk the figure through the
+gap between two parallel streets), which makes the centre one network of 4,249
+points. Both ends are snapped to the same piece. Three honest limits: the
+extract covers only the centre (60.17–60.20 / 24.93–24.98), so a walk with an
+end outside it stays straight; a stop more than 140 m from a street stays
+straight; and a path longer than 1.9 × the straight line is refused. **8 of the
+17 walks follow streets** (Mannerheimintie, Helsinginkatu, Hämeentie,
+Kaivokatu / Simonkatu, Kaivokatu / Kaisaniemi, the Pasila corridor); the rest
+have an end outside the extract. The walk's COST is unchanged — it is still the
+gameplay abstraction `hubs-walking.js` says it is; only where the figure is
+drawn moved.
+
+`test/walkpath.mjs` (31, bare node, the committed extract) and `test/walk.cjs`
+(6, a real tap on a walk row): every sampled position is on the street path
+(worst 0.0 m) and the courier leaves the straight chord by up to 266 m to
+follow it. Turning off the junction pass fails the first; drawing straight fails
+the second.
+
 ## v2.54 — 2026-09-25
 
 **THE WEEK AS A POSTER.** Leap 5 of five (`js/poster.js`). Friday's end card

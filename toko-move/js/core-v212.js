@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=22';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=23';
 import {TransitLayers} from './transit-layers.js?v=7';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=6';
@@ -10,7 +10,7 @@ import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
 import {SHIFT} from './live-network.js?v=14';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
-import {dots,minutes} from './ui.js?v=1';
+import {dots,minutes} from './ui.js?v=2';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 import {drawCityEvent,family as dayFamily} from './city-events.js?v=1';
 import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as dailyGrid} from './daily.js?v=1';
@@ -18,11 +18,12 @@ import * as Week from './week.js?v=3';
 import * as Kit from './kit.js?v=1';
 import {drawWeather} from './weather.js?v=1';
 import {drawPoster} from './poster.js?v=1';
+import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.54';
+const BUILD_VERSION='2.55';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -66,7 +67,7 @@ const RUSH_ON=params.get('rush')==='on'||(params.get('rush')!=='off'&&params.get
 const rushLoad=()=>RUSH_ON&&flow?Rush.load(flow.clock.dayProgress):0;
 const say=s=>{if(msgs[0]===s)return;msgs.unshift(s);msgs.length=Math.min(8,msgs.length);paintFeed();};  // a line repeated back to back is a double call, not news
 
-function publish(){window.__tm={...(window.__tm||{}),version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
+function publish(){window.__tm={...(window.__tm||{}),walkLine,walkProgress,version:BUILD_VERSION,shiftSeed,shiftInfo:SHIFT_INFO,cityDay,kit:KIT_IDS,kitFx:KIT_FX,weather:WEATHER,rushOn:RUSH_ON,rushLoad,isFull:v=>RUSH_ON&&!!flow&&Rush.isFull(v,flow.clock.tick,rushLoad()),flow,challenge,renderer,transit,city,water,board:box,project:fitLatLon,projection,camera,ground,landmarkPoints:()=>_lmPoints,fleetFilter,courierLatLon,drawStopLabels,shift:SHIFT,say,paintHud,paintSheet,sheetSlot};}
 
 // THE one projection. It used to go lat/lon -> graph space -> flow.graph.fit(),
 // and fit() letterboxes with Math.min: the board is portrait (about 4km across
@@ -212,6 +213,18 @@ function viewRect(){const c=$('map'),r=boardRect();
 // mobility already owns the answer in all four of its states and a second copy
 // would be a second truth: waiting at a stop, walking between two, riding a
 // vehicle whose live position the fleet knows, or standing on the step of one.
+// THE WALK FOLLOWS THE STREET (v2.55, walkpath.js): a walk is drawn along the
+// real OSM streets between its two stops where the extract has them, and
+// straight where it does not. One answer for the camera, the figure and the
+// line ahead of it, cached per walk — the path does not change mid-stride.
+let _walkGraph=null;const _walkLines=new Map();
+function walkLine(st){if(!st?.from||!st?.to)return null;const k=`${st.from}>${st.to}>${st.street||''}`;if(_walkLines.has(k))return _walkLines.get(k);
+  const at=id=>city?.resolved?.[id],a=at(st.from),b=at(st.to);if(!a||!b)return null;
+  if(!_walkGraph&&ground?.streets?.roads)_walkGraph=WalkPath.buildGraph(ground.streets.roads);
+  const line=(_walkGraph&&WalkPath.walkPath(_walkGraph,a,b,st.street))||[[a.lat,a.lon],[b.lat,b.lon]];
+  _walkLines.set(k,line);return line;}
+function walkProgress(st){const span=Math.max(1,st.arriveTick-st.startTick),t=Math.max(0,Math.min(1,(flow.clock.tick-st.startTick)/span));return t*t*(3-2*t);}
+function walkPoint(st){const line=walkLine(st);return line?WalkPath.pointAlong(line,walkProgress(st)):null;}
 function courierLatLon(){
   const tm=window.__tm,mob=tm?.mobility,at=id=>{const n=city?.resolved?.[id];return n?{lat:n.lat,lon:n.lon}:null;};
   // Before the first job there is no courier, and the camera used to sit on the
@@ -220,9 +233,7 @@ function courierLatLon(){
   // leave from, so that is where the camera looks and where the circle is drawn.
   if(!challenge?.active)return at(challenge?.offers?.[0]?.stops?.[0]||challenge?.currentFrom?.());
   const st=mob?.status?.();
-  if(st?.kind==='walking'){const a=at(st.from),b=at(st.to);if(a&&b){const span=Math.max(1,st.arriveTick-st.startTick),
-      t=Math.max(0,Math.min(1,(flow.clock.tick-st.startTick)/span)),e=t*t*(3-2*t);
-    return{lat:a.lat+(b.lat-a.lat)*e,lon:a.lon+(b.lon-a.lon)*e};}}
+  if(st?.kind==='walking'){const p=walkPoint(st);if(p)return p;}
   if(st?.kind==='riding'&&st.ride?.position)return{lat:st.ride.position.lat,lon:st.ride.position.lon};
   return at(st?.at||challenge.currentFrom());}
 
@@ -645,7 +656,7 @@ function approachingAt(node){const out=[];const net=window.__tm?.liveNetwork;if(
 
 function showStop(node,at=null){const pop=$('pop'),body=$('popBody');if(!pop||!body)return;
   const hub=TRANSFER_HUBS.includes(node.id),near=approachingAt(node);
-  const rows=near.length?near.map(x=>`<div style="display:flex;gap:7px;align-items:center;padding:3px 0;border-top:1px dashed var(--rule)"><span style="display:inline-block;min-width:30px;text-align:center;background:${x.colour};color:#fff;font-weight:900;border-radius:3px;padding:1px 4px">${esc(x.name)}</span><span style="font-size:11px;color:var(--dim)">${x.mode} · ${x.here?'AT THE STOP':`${x.ticks}t away`}</span></div>`).join('')
+  const rows=near.length?near.map(x=>`<div style="display:flex;gap:7px;align-items:center;padding:3px 0;border-top:1px dashed var(--rule)"><span style="display:inline-block;min-width:30px;text-align:center;background:${x.colour};color:#fff;font-weight:900;border-radius:3px;padding:1px 4px">${esc(x.name)}</span><span style="font-size:11px;color:var(--dim)">${x.mode} · ${x.here?'AT THE STOP':`${minutes(x.ticks,tm)} away`}</span></div>`).join('')
     :'<p class="hint" style="margin-top:6px">Nothing within reach of this stop right now.</p>';
   body.innerHTML=`<b>${esc(node.name)}</b>${hub?' <span style="font-size:10px;color:var(--coral);font-weight:900">TRANSFER</span>':''}`
     +`<div class="tpMeta">${esc(node.hslStopName||'')} · ${esc(node.hslStopId||'')}</div>`+rows;

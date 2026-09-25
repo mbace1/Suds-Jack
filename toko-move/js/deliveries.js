@@ -240,7 +240,11 @@ export class DeliveryChallenge{
   // that convenience is the offer, and it should still sometimes be the wrong
   // job to take.
   const pick=fits.length?fits[(seed>>>7)%fits.length]:cands.sort((a,b)=>a.est-b.est)[0];if(!pick){this.pendingHandoff=null;return;}
-  const cargo=CARGO_KEYS[(seed>>>5)%CARGO_KEYS.length],dist=Math.max(1,Math.round(pick.est/40));
+  // v2.55: the fee is priced off a DRY day's trip. `pick.est` rides the live
+  // fleet, so in snow every estimate is a fifth longer — and this line turned
+  // that into distance, so a snowy hand-off paid more for the same two stops.
+  // It was the whole of the "+€57 snow week" (v2.49's open finding).
+  const cargo=CARGO_KEYS[(seed>>>5)%CARGO_KEYS.length],dist=Math.max(1,Math.round(pick.est*(this.weatherSpeed||1)/40));
   this.pendingHandoff={id:`handoff:${this.index}:${pick.to}`,stops:[at,pick.to],label:`${this.name(at)} → ${this.name(pick.to)}`,cargo,
    limit:this.deadlineFor({from:at,to:pick.to,cargo,dist}),value:this.jobPay((90+dist*9)*payFor(cargo)),handoff:true,
    // No name on the door (v2.43, owner: "recipients names aren't needed"). A

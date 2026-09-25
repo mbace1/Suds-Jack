@@ -69,9 +69,13 @@ server.listen(0, '127.0.0.1', async () => {
       const step = () => {
         const tm = window.__tm, tick = tm.flow.clock.tick;
         out.ticks = tick - start;
+        // v2.55: the banner reads in MINUTES now ("about 1 min ago"), so the
+        // tick a banner accuses is the game's own record of that miss — the
+        // latest one on the named line — rather than a number read off the text.
         const m = (document.getElementById('hubTactics')?.innerText || '')
-          .match(/MISSED\s+(\S+)\s*·\s*about\s+(\d+)t/);
-        if (m) { const at = tick - Number(m[2]), last = out.banners.filter(x => x.line === m[1]).pop();
+          .match(/MISSED\s+(\S+)\s*·\s*(?:~|about\s)?\s*\d+\s*min ago/);
+        const rec = m && [...(tm.catchMisses || [])].filter(r => r.line === m[1]).pop();
+        if (m && rec) { const at = rec.tick, last = out.banners.filter(x => x.line === m[1]).pop();
           if (!last || at - last.tick > 8) out.banners.push({ line: m[1], tick: at, seenAt: tick }); }
         // the panel keeps a miss for 8 ticks only, so it is collected as it goes
         for (const r of tm.catchMisses || []) out.raw.set(`${r.line}@${r.tick}`, { line: r.line, tick: r.tick });
