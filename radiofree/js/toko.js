@@ -3,8 +3,8 @@
 // original art of him (see anchor.js). The mouth is driven by the same value
 // that types the bulletin; in DECODE the picture goes amber and tears.
 
-import { PAL } from './palette.js?v=70';
-import { bayer, mix } from './screen.js?v=70';
+import { PAL } from './palette.js?v=71';
+import { bayer, mix } from './screen.js?v=71';
 import { drawMasterBadge } from '../../toko/js/master.js';
 import { WAYS, STICKER } from '../../toko/js/palette.js';
 

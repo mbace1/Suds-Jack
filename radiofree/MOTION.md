@@ -148,6 +148,34 @@ take and pops toward the lens (`hands` → scale). The enamel is magenta while h
 reads and the yellow carrier once decoded. Tone mapping is Neutral, not ACES:
 ACES rolled the magenta toward maroon.
 
+## Four borrowings from PDoomVideo (v71)
+
+Read as code (`JohnHeibel/PDoomVideo`: a p5.brush music video, 88 BPM, nine
+hand-built chapters). What made it alive was method, not medium, and four of
+its rules transfer to a daily, templated film:
+
+1. **Every cut lands on a beat.** `planFilm` only ever LENGTHENS a shot to the
+   next beat of the score's 96 BPM grid (never cuts a reading budget short);
+   the card is the one shot left free. `score.js` reads the same tempo, so the
+   cut whoosh, the reveal hit and the bar lines coincide. The gate checks every
+   cut of every bulletin sits on the grid.
+2. **Toko never snaps between moods** (its `mood()`). On every cut to him the
+   lids open from shut over 0.16 s, the badge squashes and springs, and the
+   story's mark pops by his head and fades by 1.7 s: a sparkle for a `boast`,
+   `!?` when `uneasy`, `?` when `absurd`, a sweat drop when `grim` — the new
+   optional wire field `tone`, checked by `js/wire.js`. DECODE's take is
+   always `!`. The face itself is never changed (toko/BRAND.md §2c).
+3. **The graphic carries its own cut.** It falls into its frame and lands
+   with a squash, a thud and a small shake; leaving, it drops away under
+   gravity, turning, over the next shot. The V-hold roll is kept for the
+   footage-to-footage cuts only.
+4. **One set, escalating across the morning** (its four choruses on one
+   stage). Heat rises from 0 at the first bulletin to 1 at the last: the
+   studio lights brighten, and from the middle of the morning a red siren
+   sweep turns across the set. The **SPIN-O-METER** on the desk counts every
+   spin DECODE has shown this morning — it holds through the reads and climbs
+   by this bulletin's spins on the reveal.
+
 ## The film, shot by shot
 
 Length is **derived from the copy**, never set: `--seconds` is a target the

@@ -637,3 +637,12 @@ traced into `toko/js/master.js`; `js/toko3d.js` extrudes that trace onto an
 enamel badge; `js/figure.js` (v67's borrowed Toko Live body) is deleted; the
 feed and sign-off draw the traced face flat. Magenta reading, yellow carrier
 decoded. Canon: `toko/BRAND.md` §2c.
+
+## 2026-09-25 — four borrowings from PDoomVideo (v71)
+
+Owner asked for an analysis of `JohnHeibel/PDoomVideo`, then for its four
+lessons "all in order". Cuts on the beat, Toko's mood transitions by story
+`tone` (a new optional wire field, the 2026-09-24 morning tagged), the graphic
+carrying its own cut, and one escalating set with a SPIN-O-METER counting the
+morning's spins (`main.js` sums the `{{…}}` spans of the bulletins before this
+one). Details and reasons in `MOTION.md`.
