@@ -1,5 +1,29 @@
 # Toko Move — versions
 
+## v2.54 — 2026-09-25
+
+**THE WEEK AS A POSTER.** Leap 5 of five (`js/poster.js`). Friday's end card
+was text you could copy. It is a picture now as well: the city's lines faint in
+the dark, the five routes you actually rode drawn over them in five colours,
+start and end marked, and under them each day's grid and money, the rent
+verdict and the kit you carried — one 1080 × 1350 image, a phone's 4:5. SAVE
+THE POSTER hands it to the phone's share sheet as a file where it can take
+one and downloads it where it cannot; the text line stays, one button down.
+
+The routes are **recorded as you play**, because each day of the week is a
+separate page and a poster drawn at the end would have nothing to draw: every
+fifteen ticks the courier's position joins the day's trail, the trail rides in
+the week's save with the shift (so a shift left half-way keeps the line it had
+drawn), and it is thinned to 180 points, ends kept — five days stay a few
+kilobytes. The frame fits every point of the week and keeps the city's shape
+(a kilometre east is a kilometre north); a week with no movement still draws
+the lines.
+
+`test/poster.mjs` (11) holds the trail and the frame in bare node;
+`test/week.cjs` (31) now asks Friday for a 1080×1350 poster with real colour
+in it and for SAVE to hand over a PNG. Not drawing it, or not wiring the
+button, each fails it.
+
 ## v2.53 — 2026-09-25
 
 **THE RIVAL RACES YOU.** Leap 4 of five (`js/rival.js`). A claim used to be a

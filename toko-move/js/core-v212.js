@@ -14,14 +14,15 @@ import {dots,minutes} from './ui.js?v=1';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 import {drawCityEvent,family as dayFamily} from './city-events.js?v=1';
 import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as dailyGrid} from './daily.js?v=1';
-import * as Week from './week.js?v=2';
+import * as Week from './week.js?v=3';
 import * as Kit from './kit.js?v=1';
 import {drawWeather} from './weather.js?v=1';
+import {drawPoster} from './poster.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.53';
+const BUILD_VERSION='2.54';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -524,9 +525,12 @@ function paintDaily(){const box=$('endStats');if(!box)return;
 // moment leaves the shift it was on honestly recorded (week.js: leaving is
 // clocking out).
 let _weekScore=-1,_weekDone=-1;
-function weekProgress(){if(!WEEK||!challenge||done)return;const sc=challenge.score,n=(challenge.results||[]).length;
-  if(sc===_weekScore&&n===_weekDone)return;_weekScore=sc;_weekDone=n;
-  Week.progress(WEEK,{score:sc,results:challenge.results});Week.saveWeek(WEEK);}
+const WEEK_TRAIL=[];let _trailAt=-1e9;
+function weekProgress(){if(!WEEK||!challenge||done)return;const sc=challenge.score,n=(challenge.results||[]).length,t=flow.clock.tick;
+  // the poster's line: where the courier was, every fifteen ticks, once moving
+  let moved=false;if(t-_trailAt>=15){const ll=courierLatLon();if(ll){const last=WEEK_TRAIL[WEEK_TRAIL.length-1],pt=[+ll.lat.toFixed(5),+ll.lon.toFixed(5)];if(!last||last[0]!==pt[0]||last[1]!==pt[1]){WEEK_TRAIL.push(pt);moved=true;}}_trailAt=t;}
+  if(sc===_weekScore&&n===_weekDone&&!(moved&&WEEK_TRAIL.length%10===0))return;_weekScore=sc;_weekDone=n;
+  Week.progress(WEEK,{score:sc,results:challenge.results,trail:WEEK_TRAIL});Week.saveWeek(WEEK);}
 function weekStrip(w,current=-1){return `<div class="weekStrip">${Week.DAY_NAMES.map((d,i)=>{const x=w.shifts[i];
   return `<span class="wd${i===current?' now':''}${x?' done':''}"><b>${d.slice(0,3)}</b>${x?`<i>€${x.euros}</i>`:`<i>${i===current?'today':'—'}</i>`}</span>`;}).join('')}</div>`;}
 function kitChips(ids){return ids.length?`<span class="kitChips"><small>KIT</small> ${ids.map(id=>{const k=Kit.BY_ID[id];return k?`<span title="${esc(k.name)}: ${esc(k.line)}">${k.glyph}</span>`:'';}).join('')}</span>`:'';}
@@ -539,16 +543,23 @@ function wireKitPicker(root){root.querySelectorAll('.kitOffer').forEach(b=>b.onc
 function weekTitle(){const w=WEEK,p=Week.pace(w),prev=w.shifts[w.shifts.length-1];
   return `${esc(shiftLabel())} · ${SHIFT_INFO.index+1} of ${Week.LENGTH}${weekStrip(w,SHIFT_INFO.index)}${kitChips(Week.owned(w))}<span class="weekPace">€${p.total} banked · rent €${Week.RENT} on Friday${p.need?` · about €${p.perDay} a shift to go`:' · covered'}</span>${prev?.left?`<br><span class="dailyDone">${esc(prev.name.toLowerCase())} was left mid-shift — it paid €${prev.euros}</span>`:''}`;}
 function paintWeek(box,again){const w=WEEK;
-  Week.close(w,{score:challenge.score,results:challenge.results,drops:challenge.drops||0,tips:challenge.tips||0});Week.saveWeek(w);
+  Week.close(w,{score:challenge.score,results:challenge.results,drops:challenge.drops||0,tips:challenge.tips||0,trail:WEEK_TRAIL});Week.saveWeek(w);
   const x=w.shifts[SHIFT_INFO.index],over=Week.isOver(w),v=Week.verdict(w),p=Week.pace(w);
   const head=`<p class="dailyHead">${esc(SHIFT_INFO.name)}${cityDay?` · ${esc(cityDay.name)}`:''}</p><p class="dailyGrid">${Week.dayGrid(x.results)} <small>€${x.euros}</small></p>`;
-  const tail=over?`<p class="weekVerdict ${v.paid?'paid':'short'}">${v.paid?`RENT PAID · €${v.over} over`:`SHORT €${-v.over} ON THE RENT`}</p><button class="btn prime wide" id="share">SHARE THE WEEK</button><pre class="shareText" id="shareText" hidden></pre><a class="btn ghost wide" href="?week" id="newWeek">A NEW WEEK</a>`
+  const tail=over?`<p class="weekVerdict ${v.paid?'paid':'short'}">${v.paid?`RENT PAID · €${v.over} over`:`SHORT €${-v.over} ON THE RENT`}</p><canvas id="poster" class="poster" width="1080" height="1350" aria-label="the week as a poster: five routes on the map, each day's result, the rent"></canvas><button class="btn prime wide" id="savePoster">SAVE THE POSTER</button><button class="btn ghost wide" id="share">SHARE THE WEEK AS TEXT</button><pre class="shareText" id="shareText" hidden></pre><a class="btn ghost wide" href="?week" id="newWeek">A NEW WEEK</a>`
     :`<p class="weekPace">€${p.total} of €${Week.RENT} · about €${p.perDay} a shift to go</p>${kitPicker()||`<a class="btn prime wide" href="?week" id="nextShift">${Week.DAY_NAMES[w.day]} →</a>`}`;
   box.insertAdjacentHTML('afterbegin',`<div class="dailyBox weekBox">${head}${weekStrip(w)}${kitChips(Week.owned(w))}${tail}</div>`);wireKitPicker(box);
   // A shift of the week is played once: the card's replay button would be a
   // way round the one rule a run has.
   if(again)again.hidden=true;
   $('endNote').textContent=over?(v.paid?'The week is done, and so is the rent.':'The week is done. The rent is not.'):'The week goes on. Your regulars remember today.';
+  // v2.54: the week as a picture — drawn from the save, five routes in five
+  // colours — and a way to keep it: the phone's share sheet with the file where
+  // it can take one, a download where it cannot.
+  if(over){const pc=$('poster');if(pc){try{drawPoster(pc,{week:w,layers:(transit?.layers||[]).map(l=>({path:l.path,colour:l.colour})),rent:Week.RENT,verdict:Week.verdict(w),kit:Week.owned(w).map(id=>Kit.BY_ID[id]?.glyph||'')});}catch(e){pc.remove();}}
+    const sp=$('savePoster');if(sp)sp.onclick=()=>{const pc2=$('poster');if(!pc2)return;pc2.toBlob(async blob=>{if(!blob)return;const name=`toko-move-week-${w.seed}.png`;
+      try{const file=new File([blob],name,{type:'image/png'});if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'Toko Move · the week'});sp.textContent='SHARED';return;}}catch(e){if(e?.name==='AbortError')return;}
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);sp.textContent='SAVED';},'image/png');};}
   if(over){const text=Week.shareText(w,location.origin+location.pathname+'?week');const btn=$('share');if(btn)btn.onclick=async()=>{
     try{if(navigator.share){await navigator.share({text});btn.textContent='SHARED';return;}}catch(e){if(e?.name==='AbortError')return;}
     try{await navigator.clipboard.writeText(text);btn.textContent='COPIED';return;}catch{}

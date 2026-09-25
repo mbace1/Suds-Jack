@@ -333,6 +333,9 @@ jobs:
       - name: the rush — the curve, full trams, rush pay
         run: node toko-move/test/rush.mjs
 
+      - name: the poster — the trail is kept, the frame fits the week
+        run: node toko-move/test/poster.mjs
+
       - name: the committed full HSL pack
         run: node toko-move/test/full-hsl-pack.mjs
 

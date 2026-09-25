@@ -69,7 +69,7 @@ export const total=w=>(w?.shifts||[]).reduce((a,x)=>a+(x.euros||0),0);
 // clock-out. Returns the week to play (a fresh one when there is none, or when
 // the last one is over and `fresh` is asked for).
 export function resume(s=store(),rnd=Math.random){let w=loadWeek(s);
- if(w&&w.started!=null&&w.started===w.day){w=close(w,w.live||{score:0,results:[]},true);saveWeek(w,s);}
+ if(w&&w.started!=null&&w.started===w.day){w=close(w,w.live||{score:0,results:[],trail:[]},true);saveWeek(w,s);}
  if(!w){w=newWeek(rnd);saveWeek(w,s);}
  return w;}
 
@@ -80,10 +80,15 @@ export function today(w){const i=Math.min(w.day,LENGTH-1);
 // START SHIFT marks the day begun; every delivery after that updates `live`,
 // so leaving at any moment leaves an honest record behind.
 export function begin(w){if(isOver(w))return w;w.started=w.day;w.live={score:0,results:[]};return w;}
-export function progress(w,{score,results}){if(w.started!==w.day)return w;w.live={score:score||0,results:[...(results||[])]};return w;}
+// v2.54: the courier's TRAIL rides with the shift — sampled positions, capped
+// — so a shift left half-way still leaves its line behind, and Friday's poster
+// can draw five days that were five separate pages.
+export const TRAIL_MAX=180;
+export function thin(trail=[]){const t=trail.filter(p=>p&&Number.isFinite(p[0])&&Number.isFinite(p[1]));if(t.length<=TRAIL_MAX)return t;const out=[];for(let i=0;i<TRAIL_MAX;i++)out.push(t[Math.round(i*(t.length-1)/(TRAIL_MAX-1))]);return out;}
+export function progress(w,{score,results,trail}){if(w.started!==w.day)return w;w.live={score:score||0,results:[...(results||[])],trail:thin(trail)};return w;}
 // The shift ends — finished, or left. Only the day it belongs to can close it.
-export function close(w,{score,results,drops=0,tips=0},left=false){if(isOver(w))return w;
- const i=w.day;w.shifts[i]={name:DAY_NAMES[i],day:w.days[i],score:score||0,euros:euros(score),results:[...(results||[])],drops,tips,left};
+export function close(w,{score,results,drops=0,tips=0,trail=[]},left=false){if(isOver(w))return w;
+ const i=w.day;w.shifts[i]={name:DAY_NAMES[i],day:w.days[i],score:score||0,euros:euros(score),results:[...(results||[])],drops,tips,left,trail:thin(trail)};
  w.day=i+1;w.started=null;w.live=null;return w;}
 
 // Friday night.
