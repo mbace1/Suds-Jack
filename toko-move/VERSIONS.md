@@ -46,9 +46,12 @@ coming for it · 12 s · beat him +20%*.
   lost or abandoned never makes him jump (the gate holds his largest step
   under 40 m a tick; it is 17.9).
 
-RENT WITH THE RACE: being measured (`--kitweeks=20`) — the contested job is on
-the board from the moment it is dealt, so a quick player can take the +20%
-nearly every time; that is the choice, and it is income.
+**Rent holds at €400.** The contested job is on the board from the moment it is
+dealt, so a quick player can take the +20% nearly every time — that is the
+choice, and it is income. Measured (`--kitweeks=20`, kit, weather and the rush
+all on): **80% / 65% / 10%**. The shortest-job player's 55 → 65 is inside a
+20-week sample's noise (about ±11 points), so it is not a reason to move the
+rent, and the shift gate — 14 dailies — still reads 11/11.
 
 `test/rival.cjs` (11) walks the clock a tick at a time on shift 4, where he
 starts 2.9 km away (on shift 3 he starts ON your stop and "he gets closer"
