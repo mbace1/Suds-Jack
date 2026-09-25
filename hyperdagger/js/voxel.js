@@ -384,7 +384,7 @@ export const MODELS = {
   // but returns to its own ash/bone identity instead of tracing DD's hand.
   hand: {
     voxelSize: 0.05,
-    wobble: 0.18,
+    wobble: 0,   // v51b: the lattice "life" on a viewmodel is a hand that never stops crumpling
     noHull: true,
     palette: { G: 0xbeb4a6, D: 0x4b4540, H: 0xe2d8c8, B: [3.2, 0.30, 0.06] },
     layers: [
@@ -394,6 +394,61 @@ export const MODELS = {
       ['.........', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', '.GDGDGDG.', 'GGGGGGGGG', '..GGGGG..', '...DGD...'],
       ['.........', '.........', '.........', '.........', '.........', '...G.....', '..GG.....', '.GGG.....', '.GDGG....', '..GGG....', '...G.....', '.........'],
     ],
+  },
+  // v51b SEASON HANDS (owner: *why is the weapon/hand so deformed? Use
+  // different types and models in different seasons*). The claw above was
+  // pitched away from the eye, so it showed its knuckles end-on, and the
+  // lattice wobble jittered every cube — nothing held a silhouette. These are
+  // held SIDE-ON, bottom right, with no wobble, each a shape you can name:
+  // row 0 (z = 0) is the MUZZLE, which the hand pose turns into the screen.
+  // `B` is each one's glow; the weapon level brightens it (main.js).
+  needlerHand: {   // SEASON 1 — a shale nail-gun with ember vents and a brass magazine
+    voxelSize: 0.05, wobble: 0, noHull: true,
+    palette: { S: 0x6a6058, D: 0x3a3430, H: 0x9a8e82, N: 0xc49440, B: [2.4, 0.5, 0.1] },
+    layers: sculptLayers(7, 23, 10, (x, y, z) => {
+      const cx = x - 3, ax = Math.abs(cx);
+      if (z <= 9 && y >= 6 && y <= 7 && ax <= 1) return z === 0 ? 'B' : (y === 7 && ax === 0 ? 'H' : 'S');   // barrel
+      if (z >= 2 && z <= 8 && z % 3 === 2 && y === 8 && ax <= 1) return 'D';                                   // shroud ribs
+      if (z >= 8 && z <= 18 && y >= 4 && y <= 8 && ax <= 2) {                                                   // receiver
+        if (y === 8) return ax <= 1 ? 'H' : 'D';
+        if (ax === 2 && y === 6 && (z === 10 || z === 12 || z === 14)) return 'B';                             // vents
+        return 'S';
+      }
+      if (z >= 10 && z <= 13 && y >= 1 && y <= 3 && ax <= 1) return y === 1 ? 'D' : 'N';                       // magazine
+      if (z >= 16 && z <= 19 && y <= 3 && ax <= 1) return 'D';                                                   // grip
+      if (z >= 19 && z <= 22 && y >= 5 && y <= 7 && ax <= 1) return 'S';                                         // stock
+      return '.';
+    }),
+  },
+  jadeHand: {      // SEASON 2 — a jade macuahuitl: obsidian teeth, gold bands, a glowing inlay
+    voxelSize: 0.05, wobble: 0, noHull: true,
+    palette: { J: 0x2a9a86, O: 0xd8aa3c, K: 0x14161a, W: 0x5a3a22, B: [0.35, 2.4, 2.0] },
+    layers: sculptLayers(3, 23, 11, (x, y, z) => {
+      const ax = Math.abs(x - 1);
+      if (z <= 14 && y >= 2 && y <= 8) {                                        // the paddle
+        if (z % 5 === 3) return 'O';
+        if (y === 5 && ax === 1 && z >= 1) return 'B';
+        return 'J';
+      }
+      if (z <= 13 && z % 2 === 0 && (y === 9 || y === 1) && ax === 0) return 'K'; // obsidian teeth
+      if (z === 0 && y >= 3 && y <= 7 && ax === 0) return 'K';
+      if (z >= 15 && z <= 22 && y >= 4 && y <= 6 && ax <= 1) return (z === 17 || z === 20) ? 'O' : 'W'; // the haft
+      return '.';
+    }),
+  },
+  launcherHand: {  // SEASON 3 — a wrist pod of missile tubes on a steel bracer; there is no trigger
+    voxelSize: 0.05, wobble: 0, noHull: true,
+    palette: { A: 0x5a5a60, K: 0x1a1a1c, Y: 0xd8a420, H: 0xf0c850, B: [2.6, 1.3, 0.25] },
+    layers: sculptLayers(9, 18, 9, (x, y, z) => {
+      const cx = x - 4, ax = Math.abs(cx);
+      if (z <= 8 && y >= 3 && y <= 8 && ax <= 4) {                               // the pod
+        if (z === 0) return ((cx === -3 || cx === 0 || cx === 3) && (y === 4 || y === 7)) ? 'B' : 'K';
+        if (y === 8) return (x + z) % 4 === 0 ? 'K' : 'H';
+        return (x + y + z) % 5 === 0 ? 'K' : 'Y';                                // hazard stripes
+      }
+      if (z >= 6 && z <= 17 && y <= 4 && ax <= 2) return (z === 10 || z === 14) ? 'K' : 'A'; // the bracer
+      return '.';
+    }),
   },
   totem: {
     voxelSize: 0.22,

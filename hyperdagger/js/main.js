@@ -3167,8 +3167,8 @@ function step(dt) {
   if (M().arena === 'track') {
     truck.update(dt, player, gameTime, enemies, walls); // the course lays walls beside its wide gaps
     // the floor leaving is the whole game — falling off it is the death
-    if (player.feet.y < T.truck.fallY && state === 'playing' && !invulnerable) {
-      lastKiller = 'the fall';
+    if (player.feet.y < truck.fallY() && state === 'playing' && !invulnerable) {
+      lastKiller = truck.active ? 'the road' : 'the fall';   // v51b: the convoy's asphalt kills on touch
       die();
       return;
     }
@@ -3574,7 +3574,7 @@ window.__hd = {
         geo: h.object.geometry?.type, dist: +h.distance.toFixed(1), visible: h.object.visible,
         at: [+h.point.x.toFixed(1), +h.point.y.toFixed(1), +h.point.z.toFixed(1)] }));
     },
-    truckObj() { return truck; },   // v51: the convoy, for the gate   // v50: the gate taps the touch sticks the way a thumb does
+    truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate   // v50: the gate taps the touch sticks the way a thumb does
     getSeasons() {
       const sn = S();
       return {

@@ -37,8 +37,27 @@ export class DaggerPool {
   /** v41: a season's weapon profile re-shapes the projectile. `shape` is
    *  {r, len} for the cone, `color` an HDR triple; null puts the dagger back. */
   setShape(shape = null, color = null) {
-    const geo = new THREE.ConeGeometry(shape?.r ?? 0.045, shape?.len ?? 0.22, 4);
-    geo.rotateX(Math.PI / 2);
+    // v51b: a season's projectile is a SHAPE of its own, not just a size —
+    // 'cone' (the dagger and the nail), 'shard' (season 2's obsidian: a long
+    // four-sided crystal), 'missile' (season 3: a turned body with a nose
+    // and a flared tail). Every one points its tip down +z, as lookAt wants.
+    const r = shape?.r ?? 0.045, len = shape?.len ?? 0.22;
+    let geo;
+    if (shape?.kind === 'shard') {
+      geo = new THREE.OctahedronGeometry(r, 0);
+      geo.scale(1, 1, len / (2 * r));
+    } else if (shape?.kind === 'missile') {
+      const h = len / 2;
+      geo = new THREE.LatheGeometry([
+        new THREE.Vector2(0.001, -h), new THREE.Vector2(r * 1.25, -h), new THREE.Vector2(r * 0.8, -h * 0.6),
+        new THREE.Vector2(r, -h * 0.4), new THREE.Vector2(r, h * 0.3), new THREE.Vector2(r * 0.55, h * 0.65),
+        new THREE.Vector2(0.001, h),
+      ], 6);
+      geo.rotateX(Math.PI / 2);
+    } else {
+      geo = new THREE.ConeGeometry(r, len, 4);
+      geo.rotateX(Math.PI / 2);
+    }
     this.mesh.geometry.dispose();
     this.mesh.geometry = geo;
     if (color) this.mesh.material.color.setRGB(color[0], color[1], color[2]);

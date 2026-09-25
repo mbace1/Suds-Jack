@@ -148,6 +148,24 @@ export const TUNING = {
       color: [3.0, 1.15, 0.38],         // hot brass, still a bloom-tripping HDR value
       fireTone: 1.5,                    // audio: the stream tick sits higher
     },
+    // v51b SEASON 2: obsidian — the needler's rhythm, a long turquoise
+    // crystal instead of a nail, so season 2 is not season 1 with a new sky
+    obsidian: {
+      rate: 1.2,
+      streamSpeed: 64,
+      shotgunSpeed: 96,
+      spread: 0.03,
+      shotgunSpread: 0.26,
+      shape: { kind: 'shard', r: 0.05, len: 0.36 },
+      color: [0.35, 2.6, 2.1],
+      fireTone: 1.2,
+    },
+    // v51b SEASON 3: the gaze's missiles (they are never streamed or burst)
+    missile: {
+      shape: { kind: 'missile', r: 0.055, len: 0.44 },
+      color: [2.8, 1.35, 0.3],
+      fireTone: 0.8,
+    },
   },
 
   gems: {
