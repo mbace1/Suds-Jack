@@ -29,6 +29,19 @@ new network. The Crown Bridges trams (11, 11H, 12) then appear on the board as
 lines; Laajasalo as a DESTINATION is the step after that, because it needs the
 new pack in the tree and this sandbox cannot fetch it.
 
+**Four browser gates leaned on the old boards**, because removing a
+destination changes what every pinned shift deals: shift 3's first job now
+changes trams (mapcontrol accepts a get-off at a transfer and checks you are
+left waiting there; juice rides leg by leg), shift 1 no longer suits a
+never-walking bot (daily's end-card scenario is shift 2), and in shift 4 the
+rival now starts on your stop (shift 2 puts him 2.9 km out). A pinned shift in
+a gate is a SCENARIO, not the thing measured — `shifts.cjs` is, and it stays
+11/11 with every one of the next 14 dailies winnable.
+
+**Rent re-measured** (`--kitweeks=20`): **75% / 85% / 25%** pay €400 (v2.56:
+85 / 55 / 25). The first two swapped places, which is what 20-week noise looks
+like; rent stays €400.
+
 ## v2.56 — 2026-09-25
 
 **LIVE — THE REAL MORNING** (roadmap L5, `js/hfp.js`, `js/mqtt-ws.js`). The
