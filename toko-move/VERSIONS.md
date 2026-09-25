@@ -1,5 +1,15 @@
 # Toko Move — versions
 
+## v2.59 — 2026-09-25
+
+**LIVE'S BADGE LAGGED THE FEED BY UP TO FIFTEEN SECONDS.** v2.58 repaints the
+HUD on every tenth tick crossed — and LIVE runs the clock at a fifteenth, so
+ten ticks is fifteen real seconds: *LIVE · 3* could still read *LIVE* long
+after the trams were on the board, and *FEED LOST* could arrive late. CI caught
+it (`live.cjs`, *the HUD says LIVE and how many (LIVE)*). In LIVE the HUD also
+repaints the moment the feed's own label changes. The gate now reads the badge
+400 ms after the reports land; the old line fails it every time.
+
 ## v2.58 — 2026-09-25
 
 **THE HUD FROZE WHEN A FRAME SKIPPED A TENTH TICK.** CI failed v2.56 and v2.57
