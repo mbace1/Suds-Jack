@@ -1,5 +1,29 @@
 # Toko Move — versions
 
+## v2.51 — 2026-09-25
+
+**DELIVERIES YOU CAN FEEL.** Leap 2 of five (`js/juice.js`). A delivery was a
+line in the feed and a number that changed; it is a moment now, and every
+beat of it is something the game already knew. **Delivered**: the door flashes
+(a ring off the stop), the parcel pops up and away, seven coins arc off the
+top of the map toward the score, the fee rises, and the score bumps. **Late**:
+the parcel comes out grey and cracked and shakes, the fee reads LATE +N in
+red, and the chain's ×N stutters as it breaks. **A drop**: a smaller ring and
+its fee in green — extra, and it looks extra. **The chain**: each step up the
+on-time multiplier punches in over the courier as the HUD's ×N bumps.
+
+It RECORDS BY WATCHING, like the shift log: nothing in `deliveries.js` knows
+it exists. Each frame compares the score, the results and the multiplier with
+the last and turns the difference into effects, so it is drawn FROM the
+numbers and cannot disagree with them. Under `prefers-reduced-motion` the
+coins, the shake and the punch go and the words stay.
+
+`test/juice.cjs` (7): two on-time deliveries and a late one through the game's
+own get-off — deliver, then the chain stepping up, then late; the score bumps;
+the chain stutters on the break; every effect clears inside two seconds.
+Filing a late job as a delivery, dropping the stutter, or never clearing each
+fail it.
+
 ## v2.50 — 2026-09-25
 
 **THE MAP IS THE CONTROLLER.** Leap 1 of five (owner: *"can we make graphics
