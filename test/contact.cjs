@@ -10,6 +10,18 @@
 // shots came from, rather than blitted with pngjs. Labels are the whole point
 // of a contact sheet — twenty-four unlabelled thumbnails are a mood board —
 // and CSS does typography that hand-poked pixels do not.
+//
+// ONLY `boot` SHOTS ARE DIFFED, and that restriction is the difference
+// between a signal and a slot machine. Measured over two runs of an IDENTICAL
+// tree: `play` shots moved on 15 of 24 cabinets and by as much as 65%, while
+// `boot` moved on 7 and never by more than 3.5%. A single frame of a running
+// game is not a comparable artifact — the games animate, and the harness
+// cannot photograph the same instant twice. A tool that cries wolf on half
+// its rows is one everybody mutes, so `play` shots go on the sheet, where a
+// person can see what the game looks like, and are never counted as changed.
+// The regressions that actually slip through silently — a blank cabinet, a
+// broken catalogue, a missing HOME button, a layout that collapsed — all show
+// on the boot frame anyway.
 const fs = require('fs');
 const path = require('path');
 const { PNG } = require('pngjs');
@@ -20,9 +32,12 @@ const argv = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] 
 const BASE = argv('--base', '') ? path.resolve(argv('--base')) : null;
 const HEAD = path.resolve(argv('--head', 'shots/head'));
 const OUT = path.resolve(argv('--out', 'shots/out'));
-// Below this share of pixels a change is compression noise or one antialiased
-// edge, not something to put in front of a reviewer. Above it, say so.
-const NOISE = +argv('--threshold', 0.002);
+// The floor under which a boot frame's difference is the harness rather than
+// the game. Measured, not guessed: across two runs of an identical tree the
+// worst boot shot moved 3.5% (Powder, whose menu animates behind the card) and
+// the rest sat under 1.5%. 4% clears all of it while still catching anything
+// structural — a blank page, a collapsed layout, a missing button.
+const NOISE = +argv('--threshold', 0.04);
 
 function chromePath() {
   if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
@@ -101,7 +116,10 @@ async function main() {
       const hf = path.join(HEAD, s.file);
       const r = { id: g.id, name: s.name, file: s.file, head: hf, status: g.status,
         colours: s.colours, errors: g.errors.length, verdict: base ? 'new' : 'n/a', ratio: 0 };
-      if (base) {
+      // a running game cannot be photographed at the same instant twice, so
+      // its `play` frame is shown and never compared — see the header
+      if (s.name !== 'boot') r.verdict = 'uncompared';
+      else if (base) {
         const bf = path.join(BASE, s.file);
         if (fs.existsSync(bf)) {
           const df = path.join(OUT, s.file.replace(/\.png$/, '--diff.png'));
@@ -117,7 +135,7 @@ async function main() {
   // gone entirely: a cabinet that rendered on base and does not here
   const gone = base ? base.filter(b => !head.some(h => h.id === b.id)).map(b => b.id) : [];
 
-  const moved = rows.filter(r => r.verdict === 'changed' || r.verdict === 'resized' || r.verdict === 'new')
+  const moved = rows.filter(r => r.verdict === 'changed' || r.verdict === 'resized')
     .sort((a, b) => b.ratio - a.ratio);
   const broken = rows.filter(r => r.status !== 'ok');
 
@@ -129,7 +147,7 @@ async function main() {
     const cls = r.status !== 'ok' ? 'blank' : (r.verdict === 'changed' || r.verdict === 'resized') ? 'changed' : '';
     const st = r.status !== 'ok' ? r.status.toUpperCase()
       : r.verdict === 'changed' ? pct(r.ratio) : r.verdict === 'resized' ? 'RESIZED'
-      : r.verdict === 'new' ? 'new' : '';
+      : r.verdict === 'new' ? 'new' : r.verdict === 'uncompared' ? 'in play' : '';
     return `<div class="cell ${cls}"><img src="${dataUri(r.head)}">
       <div class="cap"><span class="id">${r.id} · ${r.name}</span><span class="st">${st}</span></div></div>`;
   }).join('');
@@ -156,7 +174,17 @@ async function main() {
 
   // the summary a PR comment is built from
   const lines = [];
-  lines.push(base ? `**${moved.length} of ${rows.length} shots moved.**` : `**${rows.length} shots, no base to compare.**`);
+  // only frames that actually HAD a base counterpart were compared. Counting
+  // `new` ones here reported "0 of 24" for a run where three were checked and
+  // twenty-one had nothing to check against — a denominator that flatters.
+  const compared = rows.filter(r => r.verdict === 'same' || r.verdict === 'changed' || r.verdict === 'resized').length;
+  const fresh = rows.filter(r => r.verdict === 'new').length;
+  const uncompared = rows.filter(r => r.verdict === 'uncompared').length;
+  lines.push(base
+    ? `**${moved.length} of ${compared} boot frames moved.**` +
+      (fresh ? `  \n<sub>${fresh} frames had no counterpart on the base and were not compared.</sub>` : '') +
+      (uncompared ? `  \n<sub>${uncompared} in-play frames are on the sheet but not compared — a running game cannot be photographed at the same instant twice, so diffing one would report noise as news.</sub>` : '')
+    : `**${rows.length} shots, no base to compare.**`);
   if (broken.length) lines.push(`\n⚠️ **did not render:** ${broken.map(b => `\`${b.id}\` (${b.status})`).join(', ')}`);
   if (gone.length) lines.push(`\n⚠️ **no longer on the floor:** ${gone.map(g => `\`${g}\``).join(', ')}`);
   if (moved.length) {

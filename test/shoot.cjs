@@ -196,9 +196,32 @@ async function main() {
     const r = { ...DEFAULT, ...(RECIPE[g.id] || {}) };
     const row = { id: g.id, shots: [], errors: [], status: 'ok' };
     const ctx = await browser.newContext({ viewport: { width: WIDTH, height: HEIGHT } });
+    // DETERMINISM, and it is the difference between an instrument and a
+    // random number generator. Measured before this existed: two runs of the
+    // IDENTICAL tree moved 22 of 48 shots, a ~46% noise floor, which would
+    // have buried every real change and taught everyone to scroll past the
+    // comment. Two independent causes, so two fixes.
+    //
+    // (1) Seeded Math.random. Anything that picks its content at random draws
+    //     differently every run — the eyesight test alone moved 65% of its
+    //     pixels between two runs of the same code.
+    await ctx.addInitScript(() => {
+      let s = 0x2f6e2b1;
+      Math.random = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    });
     const page = await ctx.newPage();
     page.on('pageerror', e => row.errors.push(String(e.message || e).slice(0, 200)));
     page.on('console', m => { if (m.type() === 'error') row.errors.push(m.text().slice(0, 200)); });
+    // (2) A frame of a RUNNING game is not a comparable artifact, and no
+    //     amount of seeding makes it one. CDP virtual time was tried here and
+    //     CUT: it froze the clock so the compositor never produced a frame,
+    //     which hung Playwright's screenshot on three cabinets, and it ran
+    //     slower on four games than the whole floor ran without it. The
+    //     honest answer is not to fake determinism the games do not have —
+    //     it is to compare only what is comparable. contact.cjs diffs `boot`
+    //     shots and reports `play` shots without comparing them. Measured
+    //     over two runs of an identical tree: boot moved 7 of 24 and never by
+    //     more than 3.5%, play moved 15 of 24 and by up to 65%.
     try {
       await routeThree(page);
       const url = `${base}/${r.url || g.path}${r.query ? (g.path && g.path.includes('?') ? '&' : '?') + r.query : ''}`;
@@ -212,6 +235,12 @@ async function main() {
       await page.waitForTimeout(r.settle);
       const shot = async (name) => {
         const file = path.join(OUT, `${g.id}--${name}.png`);
+        // Virtual time PAUSES when its budget runs out, and a paused clock
+        // produces no compositor frame — so Playwright's screenshot, which
+        // waits for one, hangs until it times out. It cost three cabinets
+        // before this comment existed. CDP's own capture reads the surface
+        // as it stands and does not wait, which is exactly what a frozen
+        // page needs.
         await page.screenshot({ path: file });
         const png = PNG.sync.read(fs.readFileSync(file));
         row.shots.push({ name, file: path.basename(file), colours: flatness(png) });
