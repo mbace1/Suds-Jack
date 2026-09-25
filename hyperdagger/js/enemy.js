@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS, modelFor } from './voxel.js?v=82';
-import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=82';
+import { VoxelSprite, MODELS, modelFor } from './voxel.js?v=83';
+import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=83';
 
 // fraction of the lattice lost before the mesh skin comes off (v4.35: ~22%)
 const SKIN_SHED = 0.22;

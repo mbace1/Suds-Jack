@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=82';
+import { TUNING as T } from './tuning.js?v=83';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -120,6 +120,9 @@ export const SEASONS = [
       driftW: 0.18,             // rad/s
       avoidPlayer: 4.5,         // u — never grows under your feet
     },
+    // v52: the shale nail-gun (voxel.js needlerHand)
+    hand: { model: 'needlerHand', pose: { x: 0.46, y: -0.44, z: -1.05, rx: 0.02, ry: Math.PI + 0.16, rz: 0.03 },
+      muzzle: [0.36, -0.18], glow: [2.4, 0.5, 0.1] },
     goo: null,                  // season 2's, not season 1's
     inca: null,
     roster: null,
@@ -141,18 +144,30 @@ export const SEASONS = [
     // rock, no roster but the skull family, and the wave is a HAZARD sized
     // to a single jump, not a floor that carries you.
     spawns: { only: 'skulls', base: 2.6, floor: 0.9, slope: 0.012, cap: 28, first: 1.2 },
-    // v44 TECH ART: a hazed white sky with a pale sun; caustics crawling the
-    // floor; gel on the wave and the slabs; a skullscape on the horizon.
-    sky: { void: [0.44, 0.49, 0.54], horizon: [0.02, 0.28, 0.95], band: 2.2, stars: 0,
-      haze: 0.16, sun: 0.9, sunDir: [0.35, 0.5, -0.78] },
-    // the floor's texture is near-black with bright grid lines, so a tint
-    // only shows where the glow lifts it: an aquamarine GRID on dark water —
-    // and the caustic is light moving on that water
-    floor: { tint: [0.30, 0.95, 0.82], glow: 3.4, caustic: 0.55 },
+    // v52 THE VISUAL LEAP (owner: "visual leap to season 2"). Looked at first:
+    // a flat overcast grey sky nothing could stand against, a floor whose
+    // grain read as gravel, everything one teal, and the giant skulls cropped
+    // into green slabs across half of every frame. Now: A DROWNED TEMPLE AT
+    // GOLDEN HOUR. A deep teal zenith falling to a horizon that burns gold
+    // toward a huge low sun ringed in stepped bands — a sun stone — so the
+    // skulls and the pyramids are whole dark SHAPES against light; the floor
+    // is dark water with its grid and the sun's broken path across it; the
+    // wave is backlit; the air carries gold.
+    sky: { void: [0.01, 0.06, 0.07], horizon: [0.30, 0.16, 0.04], band: 3.0, stars: 0,
+      haze: 0, sun: 1.0, sunDir: [0.0, 0.1, -1],
+      zenith: [0.006, 0.055, 0.068], glow: [0.95, 0.52, 0.13],
+      sunCol: [1.7, 1.0, 0.38], sunSize: 0.085, rings: 0.8 },
+    // the grid on dark water: the texture's grain pressed down to a quarter,
+    // the lines kept; caustics under it; and the sun's path on top
+    floor: { tint: [0.22, 0.85, 0.72], glow: 3.0, caustic: 0.4, grain: 0.45, glint: 1.0 },
     backdrop: { visible: false, emissive: 0 }, // season 1's monuments are season 1's; the Inca skullscape is on the list
-    fog: { color: [0.40, 0.46, 0.52], near: 20, far: 90 },
-    dust: { color: [0.60, 0.92, 0.85], size: 0.06, opacity: 0.2 },
-    ground: [0.05, 0.14, 0.13],
+    // gold air: the distance melts into the horizon's colour, not into grey
+    fog: { color: [0.30, 0.19, 0.08], near: 24, far: 115 },
+    dust: { color: [1.2, 0.85, 0.35], size: 0.07, opacity: 0.32 },   // pollen in the low sun
+    ground: [0.012, 0.04, 0.045],                                     // the sea past the disc
+    // the jade macuahuitl, throwing obsidian (voxel.js jadeHand; tuning obsidian)
+    hand: { model: 'jadeHand', pose: { x: 0.52, y: -0.5, z: -1.05, rx: 0.42, ry: Math.PI + 0.3, rz: -0.22 },
+      muzzle: [0.36, -0.2], glow: [0.35, 2.4, 2.0] },
     pillars: null,
     platforms: null,           // v48: nothing stands in the sea — the wave is the arena
     // THE WAVE (v43). A crest sweeps the disc, rises, leans into its travel
@@ -211,8 +226,14 @@ export const SEASONS = [
       // the skull is the game's own string-art skull at ×22 — forty units of
       // bone, half-buried just past the rim, a DARK aquamarine silhouette
       // against the white sky (a pale skull in a pale fog was a cloud)
-      skulls: { count: 4, rMin: 3, rMax: 9, scale: 22, sinkMin: 0.3, sinkMax: 0.5, tint: [0.62, 0.72, 0.70] }, // the mosaic colours it (roster); the tint only holds it back from the sky
-      terraces: { count: 7, rMin: 24, rMax: 46, wMin: 14, wMax: 26, hMin: 9, hMax: 20, steps: 6, color: [0.20, 0.36, 0.37] },
+      // v52: OUT at the horizon, in a fan round the sun, unfogged and dark, so
+      // each is a whole silhouette with its gold eyes lit — just past the rim
+      // they cropped into green slabs that filled half of every frame
+      // (first try, ×34 at 40–64 out: seventy-five units wide, still looming overhead as slabs)
+      skulls: { count: 3, rMin: 72, rMax: 96, scale: 15, sinkMin: 0.04, sinkMax: 0.14, tint: [0.08, 0.12, 0.12],
+        arc: [-Math.PI / 2, 2.3], fog: false },
+      // the pyramids stay in the gold air, darker, so they layer into it
+      terraces: { count: 9, rMin: 28, rMax: 62, wMin: 14, wMax: 28, hMin: 9, hMax: 24, steps: 6, color: [0.035, 0.07, 0.07] },
     },
     // THE ROSTER (v45). Owner: *enemies will be new — aquamarine, green,
     // yellows, but also slightly Aztec themed*. The new sculpts arrive through
@@ -228,7 +249,7 @@ export const SEASONS = [
       mark: [0.95, 0.80, 0.18], // a red in the source goes yellow — the season has no red
       jitter: 0.12,
     },
-    weapon: 'needler',
+    weapon: 'obsidian',   // v52: turquoise crystal, not season 1's nail
     built: true,
     todo: [
       'the new season 2 sculpts (aquamarine / green / yellow, Aztec) — the recolour holds the slot until they arrive',
@@ -259,7 +280,9 @@ export const SEASONS = [
     goo: null,
     inca: null,
     roster: null,
-    weapon: 'dagger',                    // the missiles fly as daggers — every hit and kill path is theirs
+    weapon: 'missile',                   // v52: missiles that look like missiles
+    hand: { model: 'launcherHand', pose: { x: 0.5, y: -0.46, z: -1.05, rx: 0.02, ry: Math.PI + 0.22, rz: 0.06 },
+      muzzle: [0.4, -0.2], glow: [2.6, 1.3, 0.25] },                    // the missiles fly as daggers — every hit and kill path is theirs
     // THE CONVOY (truck.js): the trucks drive at their own speeds and sway in
     // lane; standing on one carries you, and in the air you keep its speed.
     // The gap between trucks is a real gap now (edge to edge ~1.5–6 u): one

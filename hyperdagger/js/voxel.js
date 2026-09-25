@@ -403,7 +403,7 @@ export const MODELS = {
   // row 0 (z = 0) is the MUZZLE, which the hand pose turns into the screen.
   // `B` is each one's glow; the weapon level brightens it (main.js).
   needlerHand: {   // SEASON 1 — a shale nail-gun with ember vents and a brass magazine
-    voxelSize: 0.05, wobble: 0, noHull: true,
+    voxelSize: 0.034, wobble: 0, noHull: true,
     palette: { S: 0x6a6058, D: 0x3a3430, H: 0x9a8e82, N: 0xc49440, B: [2.4, 0.5, 0.1] },
     layers: sculptLayers(7, 23, 10, (x, y, z) => {
       const cx = x - 3, ax = Math.abs(cx);
@@ -421,7 +421,7 @@ export const MODELS = {
     }),
   },
   jadeHand: {      // SEASON 2 — a jade macuahuitl: obsidian teeth, gold bands, a glowing inlay
-    voxelSize: 0.05, wobble: 0, noHull: true,
+    voxelSize: 0.034, wobble: 0, noHull: true,
     palette: { J: 0x2a9a86, O: 0xd8aa3c, K: 0x14161a, W: 0x5a3a22, B: [0.35, 2.4, 2.0] },
     layers: sculptLayers(3, 23, 11, (x, y, z) => {
       const ax = Math.abs(x - 1);
@@ -437,7 +437,7 @@ export const MODELS = {
     }),
   },
   launcherHand: {  // SEASON 3 — a wrist pod of missile tubes on a steel bracer; there is no trigger
-    voxelSize: 0.05, wobble: 0, noHull: true,
+    voxelSize: 0.034, wobble: 0, noHull: true,
     palette: { A: 0x5a5a60, K: 0x1a1a1c, Y: 0xd8a420, H: 0xf0c850, B: [2.6, 1.3, 0.25] },
     layers: sculptLayers(9, 18, 9, (x, y, z) => {
       const cx = x - 4, ax = Math.abs(cx);

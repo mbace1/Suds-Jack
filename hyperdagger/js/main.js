@@ -5,31 +5,31 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=82';
-import { Player } from './player.js?v=82';
-import { DaggerPool } from './daggers.js?v=82';
-import { GemPool } from './gems.js?v=82';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=82';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=82';
-import { OrbPool } from './bullets.js?v=82';
-import { AudioKit } from './audio.js?v=82';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=82';
-import { TUNING as T } from './tuning.js?v=82';
-import { HyperEnvironment } from './environment.js?v=82';
-import { Backdrop } from './backdrop.js?v=82';
-import { Walls } from './walls.js?v=82';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=82';
-import { TruckTrack } from './truck.js?v=82';
-import { GazeLock } from './gaze.js?v=82';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=82';
-import { Platforms } from './platforms.js?v=82';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=82';
-import { GooWave } from './goo.js?v=82';
-import { gelMaterial } from './gel.js?v=82';
-import { mosaicPalette, mosaicSkin } from './roster.js?v=82';
-import { Skullscape } from './inca.js?v=82';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=82';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=82';
+import { InputManager } from './input.js?v=83';
+import { Player } from './player.js?v=83';
+import { DaggerPool } from './daggers.js?v=83';
+import { GemPool } from './gems.js?v=83';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=83';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=83';
+import { OrbPool } from './bullets.js?v=83';
+import { AudioKit } from './audio.js?v=83';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=83';
+import { TUNING as T } from './tuning.js?v=83';
+import { HyperEnvironment } from './environment.js?v=83';
+import { Backdrop } from './backdrop.js?v=83';
+import { Walls } from './walls.js?v=83';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=83';
+import { TruckTrack } from './truck.js?v=83';
+import { GazeLock } from './gaze.js?v=83';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=83';
+import { Platforms } from './platforms.js?v=83';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=83';
+import { GooWave } from './goo.js?v=83';
+import { gelMaterial } from './gel.js?v=83';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=83';
+import { Skullscape } from './inca.js?v=83';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=83';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=83';
 import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
@@ -506,6 +506,12 @@ const floorMat = new THREE.ShaderMaterial({
     // line at the foot of its face. Zero outside a season with a sea.
     uWave: { value: new THREE.Vector4(0, 1, -999, 1) },
     uWaveK: { value: new THREE.Vector2(0, 0) },
+    // v52: the SUN'S PATH — the low sun reflected in dark water, broken by
+    // ripples. Zero outside season 2.
+    uGlint: { value: 0 },
+    uGlintCol: { value: new THREE.Color(1, 0.8, 0.4) },
+    uSunDirF: { value: new THREE.Vector3(0, 0.12, -1).normalize() },
+    uDark: { value: 1 },   // v52: how much of the floor texture's own grain survives
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -523,10 +529,19 @@ const floorMat = new THREE.ShaderMaterial({
     uniform float uCaustic;
     uniform vec4 uWave;
     uniform vec2 uWaveK;
+    uniform float uGlint;
+    uniform vec3 uGlintCol;
+    uniform vec3 uSunDirF;
+    uniform float uDark;
     varying vec2 vUv;
     varying vec2 vWorld;
     void main() {
-      vec3 col = texture2D(map, vUv * uRepeat).rgb * uTint;
+      vec3 tex = texture2D(map, vUv * uRepeat).rgb;
+      // v52: the grain between the lines is what read as gravel — a season
+      // can press it down (uDark < 1) and keep the lines, which are brighter
+      float lum = max(tex.r, max(tex.g, tex.b));
+      tex *= mix(uDark, 1.0, smoothstep(0.35, 0.7, lum));
+      vec3 col = tex * uTint;
       col *= uGlow + uPulse * 0.28;
       if (uWaveK.x > 0.0 || uWaveK.y > 0.0) {
         // where this point is along the wave's travel, crest at 0 (goo.js _s)
@@ -557,6 +572,14 @@ const floorMat = new THREE.ShaderMaterial({
         float ca = pow(max(0.0, a * 0.55 + b * 0.45), 3.0);
         col += uTint * ca * uCaustic;
       }
+      if (uGlint > 0.0) {
+        vec3 P = vec3(vWorld.x, 0.0, vWorld.y);
+        vec3 V = normalize(P - cameraPosition);
+        vec3 R = reflect(V, vec3(0.0, 1.0, 0.0));
+        float g = max(dot(R, uSunDirF), 0.0);
+        float rip = 0.55 + 0.45 * sin(vWorld.x * 2.7 + uTime * 1.3) * sin(vWorld.y * 3.3 - uTime * 1.7);
+        col += uGlintCol * (pow(g, 90.0) * 2.4 + pow(g, 9.0) * 0.35) * rip * uGlint;
+      }
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -586,6 +609,16 @@ const skyMat = new THREE.ShaderMaterial({
     uHaze: { value: 0 },
     uSun: { value: 0 },
     uSunDir: { value: new THREE.Vector3(0.35, 0.5, -0.78).normalize() },
+    // v52 (season 2's visual leap): a sky that is a GRADIENT — zenith down to
+    // a horizon that burns brighter toward the sun — and a sun that is a disc
+    // ringed in stepped bands (a sun stone; a 2600 changing colour once per
+    // scanline). uGrad 0 leaves every other season's sky exactly as it was.
+    uGrad: { value: 0 },
+    uZenith: { value: new THREE.Color(0, 0, 0) },
+    uHorizon: { value: new THREE.Color(0, 0, 0) },
+    uSunCol: { value: new THREE.Color(1.0, 0.98, 0.9) },
+    uSunSize: { value: 0 },
+    uSunRings: { value: 0 },
   },
   vertexShader: /* glsl */`
     varying vec3 vPos;
@@ -604,11 +637,26 @@ const skyMat = new THREE.ShaderMaterial({
     uniform float uHaze;
     uniform float uSun;
     uniform vec3 uSunDir;
+    uniform float uGrad;
+    uniform vec3 uZenith;
+    uniform vec3 uHorizon;
+    uniform vec3 uSunCol;
+    uniform float uSunSize;
+    uniform float uSunRings;
     float hash3(vec3 p) { p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
     void main() {
       vec3 d = normalize(vPos);
       float h = d.y;
       vec3 col = uVoid;
+      if (uGrad > 0.0) {
+        // toward the sun the horizon burns; away from it, it cools
+        vec2 az = normalize(d.xz + 1e-5), sz = normalize(uSunDir.xz + 1e-5);
+        float toward = max(dot(az, sz), 0.0);
+        vec3 hor = mix(uHorizon * 0.5, uHorizon, pow(toward, 2.0));
+        float up = clamp(h, 0.0, 1.0);
+        col = mix(hor, uZenith, pow(up, 0.42));
+        if (h < 0.0) col = mix(hor, uZenith * 0.35, clamp(-h * 5.0, 0.0, 1.0));
+      }
       float horiz = pow(max(0.0, 1.0 - abs(h) * uBand), 4.0);
       col += uEmberCol * horiz * (0.52 + uEmber * 0.32);
       if (uHaze > 0.0) {
@@ -617,7 +665,19 @@ const skyMat = new THREE.ShaderMaterial({
         float n = sin(d.x * 3.0 + uTime * 0.05) * sin(d.z * 2.0 - uTime * 0.04) * 0.5 + 0.5;
         col += vec3(uHaze) * hz * (0.35 + 0.65 * n);
       }
-      if (uSun > 0.0) {
+      if (uSun > 0.0 && uSunSize > 0.0) {
+        // a DISC with a hard edge, and around it stepped rings that fall off
+        // in whole bands — no gradient between a ring and the gap after it
+        float sd = max(dot(d, uSunDir), 0.0);
+        float ang = acos(clamp(dot(d, uSunDir), -1.0, 1.0)) / uSunSize;   // in sun radii
+        float disc = 1.0 - smoothstep(0.96, 1.0, ang);
+        float ring = 0.0;
+        if (ang > 1.25 && ang < 6.0) {
+          float band = floor((ang - 1.25) * 1.6);
+          ring = step(0.35, fract((ang - 1.25) * 1.6)) * max(0.0, 0.55 - band * 0.075);
+        }
+        col += uSunCol * (disc * 3.2 + ring * uSunRings + pow(sd, 10.0) * 0.45) * uSun;
+      } else if (uSun > 0.0) {
         float sd = max(dot(d, uSunDir), 0.0);
         col += vec3(1.0, 0.98, 0.9) * (pow(sd, 400.0) * 1.2 + pow(sd, 12.0) * 0.25) * uSun;
       }
@@ -859,24 +919,43 @@ function updateSparks(dt) {
 }
 
 // first-person voxel gauntlet, child of the camera; recoils on fire
-const hand = new VoxelSprite(MODELS.hand);
+// v52 (owner: *why is the weapon/hand so deformed? Use different types and
+// models in different seasons*): the hand is the SEASON'S. A season declares
+// `hand: { model, pose, muzzle, glow }`; no hand is the old claw (VOID). The
+// claw showed its knuckles end-on and the lattice wobble crumpled it; the
+// season hands are held side-on, bottom right, still.
+const HAND_CLAW = { x: 0, y: -0.92, z: -1.5, rx: -0.75, ry: Math.PI + 0.12, rz: 0 };
+const HAND_BASE = { ...HAND_CLAW };
+let HAND_MUZZLE = [0.24, -0.26];   // where a shot leaves, in camera right/up units
+let hand = null, handDef;
 const handGroup = new THREE.Group();
-handGroup.add(hand.mesh);
-// A true first-person overlay: the old four-finger claw is pitched into the
-// screen so its silhouette reads, and world geometry can never hide it.
-hand.material.depthTest = false;
-hand.material.depthWrite = false;
-hand.material.transparent = true;
-hand.mesh.renderOrder = 20;
-const HAND_BASE = { x: 0, y: -0.92, z: -1.5, rx: -0.75, ry: Math.PI + 0.12, rz: 0 };
-handGroup.rotation.set(HAND_BASE.rx, HAND_BASE.ry, HAND_BASE.rz);
-handGroup.position.set(HAND_BASE.x, HAND_BASE.y, HAND_BASE.z);
-handGroup.traverse(o => o.layers.set(1));
+function setHand(def) {
+  def = def ?? null;
+  if (hand && handDef === def) return;
+  if (hand) handGroup.remove(hand.mesh);
+  handDef = def;
+  hand = new VoxelSprite(MODELS[def?.model ?? 'hand']);
+  // A true first-person overlay: world geometry can never hide it.
+  hand.material.depthTest = false;
+  hand.material.depthWrite = false;
+  hand.material.transparent = true;
+  hand.mesh.renderOrder = 20;
+  handGroup.add(hand.mesh);
+  Object.assign(HAND_BASE, def?.pose ?? HAND_CLAW);
+  HAND_MUZZLE = def?.muzzle ?? [0.24, -0.26];
+  handGroup.rotation.set(HAND_BASE.rx, HAND_BASE.ry, HAND_BASE.rz);
+  handGroup.position.set(HAND_BASE.x, HAND_BASE.y, HAND_BASE.z);
+  handGroup.traverse(o => o.layers.set(1));
+  if (def?.glow) hand.retint({ B: def.glow });
+}
+setHand(null);
 camera.add(handGroup);
 let recoil = 0;
 
 /** Re-skin the gauntlet to match the current dagger level (DD's evolving hand). */
 function applyGauntlet(lv) {
+  // a season hand keeps its own colours; the level brightens its glow only
+  if (handDef?.glow) { const k = 0.75 + 0.2 * lv; hand.retint({ B: handDef.glow.map(c => c * k) }); return; }
   hand.retint(GAUNTLET_TIERS[Math.min(lv, GAUNTLET_TIERS.length - 1)]);
 }
 
@@ -1094,6 +1173,17 @@ function applySeason() {
   skyMat.uniforms.uHaze.value = sn.sky.haze ?? 0;
   skyMat.uniforms.uSun.value = sn.sky.sun ?? 0;
   if (sn.sky.sunDir) skyMat.uniforms.uSunDir.value.set(...sn.sky.sunDir).normalize();
+  // v52: gradient sky, stepped sun, the sun's path on the floor
+  const sk = sn.sky;
+  skyMat.uniforms.uGrad.value = sk.zenith ? 1 : 0;
+  if (sk.zenith) { skyMat.uniforms.uZenith.value.setRGB(...sk.zenith); skyMat.uniforms.uHorizon.value.setRGB(...sk.glow); }
+  skyMat.uniforms.uSunCol.value.setRGB(...(sk.sunCol ?? [1.0, 0.98, 0.9]));
+  skyMat.uniforms.uSunSize.value = sk.sunSize ?? 0;
+  skyMat.uniforms.uSunRings.value = sk.rings ?? 0;
+  floorMat.uniforms.uGlint.value = sn.floor.glint ?? 0;
+  floorMat.uniforms.uGlintCol.value.setRGB(...(sk.sunCol ?? [1, 0.8, 0.4]));
+  if (sk.sunDir) floorMat.uniforms.uSunDirF.value.set(...sk.sunDir).normalize();
+  floorMat.uniforms.uDark.value = sn.floor.grain ?? 1;
   // v45: the season's colour for every body built from here on (roster.js);
   // the bodies already standing keep theirs — a season is applied on the
   // menu, and the skullscape is rebuilt with the arena
@@ -1105,6 +1195,8 @@ function applySeason() {
   g.uFresnel.value = gc?.fresnel ?? 0.9; g.uSpec.value = gc?.spec ?? 0.7; g.uSSS.value = gc?.sss ?? 0.5;
   g.uSeize.value.setRGB(...(gc?.seize ?? [0.80, 0.94, 0.92])); g.uSeizeK.value = gc?.seizeK ?? 0;
   if (sn.sky.sunDir) g.uSun.value.set(...sn.sky.sunDir).normalize();
+  if (g.uSunCol) g.uSunCol.value.setRGB(...(sn.sky.sunCol ?? [1, 1, 0.94]));   // v52: the gloss is the sun's colour
+  setHand(sn.hand ?? null);   // v52: a season holds its own weapon
   ground.userData.on = !!sn.ground;
   if (sn.ground) ground.material.color.setRGB(...sn.ground);
   ground.visible = !!ground.userData.on && M().arena !== 'track';
@@ -2659,9 +2751,9 @@ function fireDagger(spread, speed, homing, damage = 1) {
   // nearly all the time, streaks through screen centre are too distracting
   _p0.copy(camera.position).addScaledVector(_hitDir, 0.85);
   _seg.setFromMatrixColumn(camera.matrixWorld, 0); // camera right
-  _p0.addScaledVector(_seg, 0.24 + (Math.random() - 0.5) * T.weapon.originJitter);
+  _p0.addScaledVector(_seg, HAND_MUZZLE[0] + (Math.random() - 0.5) * T.weapon.originJitter);
   _c.setFromMatrixColumn(camera.matrixWorld, 1); // camera up
-  _p0.addScaledVector(_c, -0.26 + (Math.random() - 0.5) * T.weapon.originJitter);
+  _p0.addScaledVector(_c, HAND_MUZZLE[1] + (Math.random() - 0.5) * T.weapon.originJitter);
   daggers.fire(_p0, _hitDir, speed, homing, damage);
 }
 
@@ -2822,9 +2914,9 @@ function launchMissile(shot) {
   // missile that flies out of the crosshair is a bullet
   _p0.copy(camera.position).addScaledVector(_hitDir, 0.85);
   _seg.setFromMatrixColumn(camera.matrixWorld, 0);
-  _p0.addScaledVector(_seg, 0.24);
+  _p0.addScaledVector(_seg, HAND_MUZZLE[0]);
   _c.setFromMatrixColumn(camera.matrixWorld, 1);
-  _p0.addScaledVector(_c, -0.26);
+  _p0.addScaledVector(_c, HAND_MUZZLE[1]);
   _hitDir.addScaledVector(_c, 0.45).normalize();
   const g = S().gaze;
   daggers.fire(_p0, _hitDir, shot.speed, false, g.damage ?? 1, { target: shot.target, turn: shot.turn, life: g.life ?? 2.6 });
@@ -3609,7 +3701,8 @@ window.__hd = {
       let skin = null; e.meshRoot?.traverse(o => { if (o.isMesh && skin === null) skin = !!o.material.userData.mosaic; });
       return { type: e.type, skin, n, hdr, mean: [+(r / n).toFixed(3), +(g / n).toFixed(3), +(b / n).toFixed(3)], palette: S().roster?.palette ?? null };
     },
-    getTechArt() { return { floorWave: floorMat.uniforms.uWaveK.value.toArray(), waveHead: floorMat.uniforms.uWave.value.z, caustic: floorMat.uniforms.uCaustic.value, haze: skyMat.uniforms.uHaze.value, sun: skyMat.uniforms.uSun.value, gelTime: gelMat.userData.gel.uTime.value, gelLip: gelMat.userData.gel.uLip.value.toArray(), seize: gelMat.userData.gel.uSeizeK.value }; },
+    getHand() { return { model: handDef?.model ?? 'hand', wobble: hand.baseWobble ?? 0, muzzle: HAND_MUZZLE.slice(), pose: { ...HAND_BASE } }; },   // v52
+    getTechArt() { return { grad: skyMat.uniforms.uGrad.value, sunSize: skyMat.uniforms.uSunSize.value, rings: skyMat.uniforms.uSunRings.value, glint: floorMat.uniforms.uGlint.value, floorWave: floorMat.uniforms.uWaveK.value.toArray(), waveHead: floorMat.uniforms.uWave.value.z, caustic: floorMat.uniforms.uCaustic.value, haze: skyMat.uniforms.uHaze.value, sun: skyMat.uniforms.uSun.value, gelTime: gelMat.userData.gel.uTime.value, gelLip: gelMat.userData.gel.uLip.value.toArray(), seize: gelMat.userData.gel.uSeizeK.value }; },
     // v47: is the gel actually rounded, and is any of the sea seized right now?
     getGel() {
       const wv = goo.mesh ? goo.mesh.geometry.getAttribute('position').count : 0;

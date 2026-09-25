@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Skull } from './enemy.js?v=82';
+import { Skull } from './enemy.js?v=83';
 
 /**
  * THE CONVOY — season 3 (HAUL) as Clustertruck (owner, 2026-09-23): *the

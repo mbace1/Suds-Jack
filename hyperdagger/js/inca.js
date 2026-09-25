@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=82';
-import { terraceGeometry } from './gel.js?v=82';
+import { VoxelSprite, MODELS } from './voxel.js?v=83';
+import { terraceGeometry } from './gel.js?v=83';
 
 /**
  * THE SKULLSCAPE — season 2's horizon, built from what the game already owns.
@@ -40,13 +40,17 @@ export class Skullscape {
     if (sk) {
       const tint = new THREE.Color().setRGB(...(sk.tint ?? [0.72, 0.98, 0.94]));
       for (let i = 0; i < sk.count; i++) {
-        const a = (i / sk.count) * Math.PI * 2 + draw() * 0.6;
+        // v52: `arc` [centre, spread] stands them in a fan (season 2 puts it
+        // round the sun, so each one is a whole silhouette against the gold)
+        const a = sk.arc
+          ? sk.arc[0] + (sk.count > 1 ? i / (sk.count - 1) - 0.5 : 0) * sk.arc[1] + (draw() - 0.5) * 0.25
+          : (i / sk.count) * Math.PI * 2 + draw() * 0.6;
         const dist = r + sk.rMin + draw() * (sk.rMax - sk.rMin);
         const sp = new VoxelSprite(MODELS.skull, 1);
         const m = sp.mesh;
         m.material = m.material.clone();
         m.material.color.copy(tint);
-        m.material.fog = true;
+        m.material.fog = sk.fog ?? true;   // v52: a silhouette on the horizon is not fogged away
         m.material.needsUpdate = true;
         // the sprite's voxels are in model units around the origin: find its
         // base and height so it can be planted, then sunk
@@ -68,7 +72,7 @@ export class Skullscape {
     // terraces
     const tc = cfg.terraces;
     if (tc) {
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true });
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, fog: tc.fog ?? true });
       for (let i = 0; i < tc.count; i++) {
         const a = (i / tc.count) * Math.PI * 2 + draw() * 0.9;
         const dist = r + tc.rMin + draw() * (tc.rMax - tc.rMin);

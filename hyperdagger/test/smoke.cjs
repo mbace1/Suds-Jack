@@ -967,6 +967,7 @@ s.listen(0, '127.0.0.1', async () => {
       await frames(6);
       const sn = d.getSeasons();
       sn.tech = d.getTechArt();
+      sn.hand = d.getHand();   // v52: the season's own weapon
       // v45: one body, built under this season, for the roster palette check
       d.spawnSplitter(); await frames(2);
       const roster = d.rosterSample();
@@ -1288,17 +1289,20 @@ s.listen(0, '127.0.0.1', async () => {
       d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
       await frames(3);
       const tr = d.truckObj(), gz = d.gazeObj(), inp = d.inputObj();
-      const out = { mode: d.getState().mode, jumps: pl.maxJumps, dash: !!pl.dashEnabled, moving: !!tr.cfg.moving, gazeOn: !!gz.cfg };
+      const out = { mode: d.getState().mode, jumps: pl.maxJumps, dash: !!pl.dashEnabled, moving: !!tr.cfg.moving, gazeOn: !!gz.cfg,
+        hand: d.getHand().model, shape: d.getGun().shape };
       // THE TRUCKS DRIVE: half a second of the convoy, one truck watched
       const t0 = tr.platforms[3], z0 = t0.mesh.position.z;
       tr.update(0.5, pl, 1, [], null);
       out.truckMoved = +(z0 - t0.mesh.position.z).toFixed(2);
       // CARRIED: stand on a truck and it takes you with it
+      // (v52: a trailer's top is its own height and TILTED — ask the convoy)
       const p0 = tr.platforms[1];
-      pl.feet.set(p0.mesh.position.x, p0.mesh.position.y + 0.25, p0.mesh.position.z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+      const topHere = () => tr.topAt(p0, pl.feet.x, pl.feet.z) ?? p0.mesh.position.y;
+      pl.feet.set(p0.mesh.position.x, p0.mesh.position.y, p0.mesh.position.z); pl.feet.y = topHere(); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
       tr.preUpdate(1 / 60, pl);
       let z1 = pl.feet.z;
-      for (let i = 0; i < 30; i++) { pl.feet.y = p0.mesh.position.y + 0.25; tr.preUpdate(1 / 60, pl); }
+      for (let i = 0; i < 30; i++) { pl.feet.y = topHere(); tr.preUpdate(1 / 60, pl); }
       out.carried = +((z1 - pl.feet.z) / 0.5).toFixed(2);
       out.truckSpeed = +(-p0.vz).toFixed(2);
       // MOMENTUM: in the air, over nothing, you keep that truck's speed
@@ -1306,9 +1310,8 @@ s.listen(0, '127.0.0.1', async () => {
       for (let i = 0; i < 30; i++) tr.preUpdate(1 / 60, pl);
       out.airSpeed = +((z1 - pl.feet.z) / 0.5).toFixed(2);
       // back onto a truck for the rest
-      const home = tr.platforms.find(q => !q.falling) || p0;
-      pl.feet.set(home.mesh.position.x, 0.4, home.mesh.position.z); pl.vy = 0; pl._sync();
-      const lift = () => { if (pl.feet.y < -1.5) { pl.feet.y = 0.5; pl.vy = 0; } };
+      tr.respawnOn(pl); pl._sync();
+      const lift = () => { if (pl.feet.y < -2) tr.respawnOn(pl); };
       // the convoy spawns its own skulls; each window below keeps the enemy
       // list to the one body under test, so a stray cannot take the lock
       const only = (...es) => { for (const e of hd.enemies) if (!es.includes(e)) e.alive = false; hd.enemies.length = 0; hd.enemies.push(...es); };
@@ -1354,6 +1357,8 @@ s.listen(0, '127.0.0.1', async () => {
   ok('haul: season 3 is the TRUCK scheme with a double jump and dash',
     haul.mode === 'truck' && haul.jumps === 2 && haul.dash && haul.moving && haul.gazeOn, JSON.stringify(haul));
   ok('haul: the trucks DRIVE on their own', haul.truckMoved > 3, JSON.stringify({ moved: haul.truckMoved }));
+  ok('haul: the hand is the missile pod, and the missiles are missile-shaped (v52)',
+    haul.hand === 'launcherHand' && haul.shape && haul.shape.kind === 'missile', JSON.stringify({ hand: haul.hand, shape: haul.shape }));
   ok('haul: a truck carries the body standing on it',
     Math.abs(haul.carried - haul.truckSpeed) < 0.5, JSON.stringify({ carried: haul.carried, truck: haul.truckSpeed }));
   ok('haul: in the air you keep the speed of the truck you left — momentum, not a conveyor',
@@ -1546,15 +1551,34 @@ s.listen(0, '127.0.0.1', async () => {
   ok('inca: the lip SHEDS — cubes spray off the break',
     tech.spray > 0, JSON.stringify({ spray: tech.spray }));
   ok('inca: a skullscape stands on the horizon — giant skulls sunk in the ground, terraces behind',
-    tech.inca.on && tech.inca.skulls.length >= 4 && tech.inca.terraces.length >= 5
+    tech.inca.on && tech.inca.skulls.length >= 3 && tech.inca.terraces.length >= 5
     && tech.inca.skulls.every(k => Math.hypot(...k.at) > 26) && tech.inca.terraces.every(t => Math.hypot(...t.at) > 26),
     JSON.stringify(tech.inca));
+  // v52 THE VISUAL LEAP: a skull just past the rim cropped into green slabs
+  // across half of every frame. They stand out at the true horizon now, in a
+  // fan round the sun (−z), so each one is a whole silhouette against gold.
+  ok('inca: the horizon skulls stand FAR out, in a fan round the sun — not looming at the rim',
+    tech.inca.skulls.every(k => Math.hypot(...k.at) > 26 + 60) && tech.inca.skulls.every(k => k.at[1] < 0),
+    JSON.stringify(tech.inca.skulls));
+  ok('inca: a golden-hour sky — a gradient, a sun DISC ringed in stepped bands, and its path on the water',
+    tech.t1.grad === 1 && tech.t1.sunSize > 0 && tech.t1.rings > 0 && tech.t1.glint > 0,
+    JSON.stringify({ grad: tech.t1.grad, sunSize: tech.t1.sunSize, rings: tech.t1.rings, glint: tech.t1.glint }));
   ok('void: none of the tech-art terms leak into the control',
     ctrl.sn.tech && ctrl.sn.tech.caustic === 0 && ctrl.sn.tech.haze === 0 && ctrl.sn.tech.sun === 0 && ctrl.inca.on === false
     && ctrl.sn.tech.seize === 0
-    && ctrl.sn.tech.floorWave[0] === 0 && ctrl.sn.tech.floorWave[1] === 0 && ctrl.sn.gooHurts === false,   // v48: nor the floor's wave read, nor the hurt
+    && ctrl.sn.tech.floorWave[0] === 0 && ctrl.sn.tech.floorWave[1] === 0 && ctrl.sn.gooHurts === false
+    && ctrl.sn.tech.grad === 0 && ctrl.sn.tech.sunSize === 0 && ctrl.sn.tech.glint === 0,   // v52: nor the golden hour   // v48: nor the floor's wave read, nor the hurt
     JSON.stringify({ tech: ctrl.sn.tech, inca: ctrl.inca }));
 
+  // v52 (owner: *why is the weapon/hand so deformed? Use different types and
+  // models in different seasons*): each season holds its own, and none of
+  // them wobble — the lattice life crumpled the old claw every frame
+  ok('the hands: VOID keeps the claw, season 1 the needler, season 2 the jade club — none of them wobbling',
+    ctrl.sn.hand.model === 'hand' && em.sn.hand.model === 'needlerHand' && inca.sn.hand.model === 'jadeHand'
+    && [ctrl, em, inca].every(r => r.sn.hand.wobble === 0),
+    JSON.stringify({ void: ctrl.sn.hand, ember: em.sn.hand.model, inca: inca.sn.hand.model }));
+  ok('the projectiles: season 2 throws obsidian shards, not season 1\'s nails',
+    inca.gun.weapon === 'obsidian' && inca.gun.shape && inca.gun.shape.kind === 'shard', JSON.stringify(inca.gun));
   ok('ember and void have no wave — the sea is season 2\'s',
     ctrl.goo.on === false && em.goo.on === false,
     JSON.stringify({ void: ctrl.goo.on, ember: em.goo.on, inca: inca.goo.on }));

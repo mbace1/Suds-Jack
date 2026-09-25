@@ -268,10 +268,7 @@ window._LOOP = {
     return null;
   },
   haulTick() {
-    if (player.feet.y < -1.5) {
-      const p = truck.platforms.find(q => !q.falling && q.mesh.position.z < player.feet.z + 2);
-      if (p) { player.feet.set(p.mesh.position.x, 0.4, p.mesh.position.z); player.vy = 0; }
-    }
+    if (player.feet.y < -2) truck.active?.respawnOn(player);   // v52: the convoy puts a bot back on a truck
     const t = enemies.find(e => e.alive);
     if (!t) { this._spawn(); return null; }
     t.center(this._aim);
