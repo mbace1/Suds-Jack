@@ -38,7 +38,12 @@ export class Rival{
    this.claim={id:pick.id,to:pick.stops[1],from:tick+GRACE,at:tick+GRACE+CLAIM_WINDOW};return false;}
   if(tick>=this.claim.at){const gone=ch.offers.find(o=>o.id===this.claim.id);
    if(gone){ch.offers=ch.offers.filter(o=>o.id!==this.claim.id);this.taken.push(ch.name(this.claim.to));
-    ch.say?.(`${this.name} took the ${ch.name(this.claim.to)} job.`);}
+    ch.say?.(`${this.name} took the ${ch.name(this.claim.to)} job.`);
+    // v2.52: the LAST ordinary job going must not strand you. Losing one to
+    // him is the cost of reading the board slowly; an empty board until 08:15
+    // was a shift with nothing left in it (found by the rush gate, idling to
+    // the peak). Dispatch deals a fresh board instead.
+    if(!ch.offers.some(o=>!o.handoff))ch.refreshOffers?.();}
    this.claim=null;return true;}
   return false;}
  // How long the claimed offer has left, in ticks, or null.

@@ -145,7 +145,7 @@ export class DeliveryChallenge{
  streakStep(){return this.kit?.streak||0.25;}   // kit.js: a good name
  streakMult(){return 1+this.streakStep()*Math.max(0,Math.min(4,this.streak-1));}
  // kit.js: business cards — a regular you have never met knows you anyway.
- jobPay(v){return Math.round(v*(this.kit?.pay||1));}   // kit.js: a better contract
+ jobPay(v){return Math.round(v*(this.kit?.pay||1)*(this.surge?.()||1));}   // kit.js: a better contract; rush.js: rush pay
  dropPay(v){return Math.round(v*(this.kit?.drops||1));}   // kit.js: a courier app
  standingFor(id){return Math.max(standingOf(this.standing,id),this.kit?.known||0);}
  earn(job,elapsed,legs=1){const c=CARGO[job.cargo]||CARGO.documents,late=elapsed>job.limit;let earned=late?Math.round(job.value*.5):job.value,note=late?'LATE':'ON TIME';if(c.freshness){const freshLimit=Math.round(job.limit*c.freshness);if(elapsed<=freshLimit){const bonus=Math.round(job.value*.25);earned+=bonus;this.bonuses+=bonus;note='FRESH BONUS';}else if(!late){earned=Math.round(earned*.8);note='COOLED';}}if(c.fragile&&legs===1&&!late){earned+=35;this.bonuses+=35;note='FRAGILE SAFE';}if(c.express&&elapsed<=Math.round(job.limit*.7)){earned+=40;this.bonuses+=40;note='EXPRESS BONUS';}
