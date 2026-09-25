@@ -31,8 +31,18 @@
 
 import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
-import { drawBadge } from './face.js';
+// THE FACE IS THE OWNER'S MASTER (toko/master/, traced in master.js), not the
+// GEO measurement face.js still carries for the brand board. BRAND.md §2c: the
+// master has no pupils — it is the face at rest, eyes shut, smiling — so the
+// badge acts only the way the mark does: a BLINK (the eyes squash to their
+// foot) every few seconds. The old "glance up" has nothing to open.
+import { drawMasterBadge } from './master.js';
 import { glance, pulse } from './util.js';
+// a blink: glance()'s smooth in-hold-out, at the speed of an eyelid (0.08s
+// down, 0.05s shut, 0.12s up); 0.15 of the arch is left, so the eye is a
+// line and not gone
+const blink = (t, every, offset) =>
+  1 - 0.85 * glance(t, { every, open: 0.08, hold: 0.05, shut: 0.12, offset });
 import { hit } from './glitch.js';
 
 let _current = null;
@@ -83,7 +93,7 @@ export function sign(opts = {}) {
   let seat = open;
   if (!seat && table) {
     const cfg = table === true ? {} : table;
-    seat = () => import('./table.js?v=3')
+    seat = () => import('./table.js?v=4')
       .then(m => m.openTable(cfg))
       .catch(err => console.warn('[toko] the table is unavailable:', err && err.message));
   }
@@ -144,9 +154,9 @@ export function sign(opts = {}) {
     // He rests with his eyes shut — that IS the logo — and every so often
     // looks up. It is the whole animation, because a mark in the corner of
     // somebody else's game should be alive without asking for anything.
-    drawBadge(scr.ctx, px / 2, px / 2, px / 2, {
+    drawMasterBadge(scr.ctx, px / 2, px / 2, px / 2, {
       ground, ink,
-      face: { open: glance(t, { every: blinkEvery + 3.5, offset: 2.1 }) },
+      squash: blink(t, blinkEvery, 2.1),
     });
     if (glitch) {
       const k = pulse(t, { every: blinkEvery * 2, len: 0.28, offset: 5 });
@@ -167,7 +177,7 @@ export function unsign() { if (_current) _current.destroy(); }
 // that draw their own UI layer and would rather not carry a second element.
 export function paintSignature(ctx, cx, cy, r, opts = {}) {
   const { t = 0, blinkEvery = 7.5, ground = TOKO.MAGENTA, ink = TOKO.PAPER } = opts;
-  drawBadge(ctx, cx, cy, r, {
-    ground, ink, face: { open: glance(t, { every: blinkEvery + 3.5, offset: 2.1 }) },
+  drawMasterBadge(ctx, cx, cy, r, {
+    ground, ink, squash: blink(t, blinkEvery, 2.1),
   });
 }

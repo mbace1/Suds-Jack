@@ -12,10 +12,12 @@ drift apart. No build step, no dependencies, no CDN. Open
 
 > **Two things in here are reconstructions, not originals, and you should know
 > which:**
-> 1. **The face geometry** in `js/face.js` was measured off the master artwork.
->    It is accurate to about a pixel at logo size, but if the original vector
->    file exists, its numbers belong in `GEO` — replace them and everything
->    downstream updates.
+> 1. **The face geometry** in `js/face.js` was measured off the master artwork
+>    by eye. The master itself arrived on 2026-09-24 (`master/`) and is traced
+>    to exact outlines in `js/master.js` — see §2c, which is the canon. `GEO`
+>    still drives the brand board, the masthead, the sting and the favicon;
+>    the signature in every game, the counter and the table draw the trace
+>    (2026-09-25).
 > 2. **The logotype typeface** is the owner's licence and is *not* redistributed
 >    here. See §4.
 
@@ -136,6 +138,53 @@ Two rules come out of that, and they are the reason the cluster exists at all:
 
 ---
 
+## 2c. The canon — what is original, and what is a version
+
+Written 2026-09-24 from the owner's own words, after a search of every image
+of Toko in the repository. **Read this before drawing Toko anywhere.**
+
+**The original is the face.** The owner's master artwork is in
+[`master/`](master/) — the face in white on yellow, and yellow on white, 700 ×
+700 — and `tools/trace-master.cjs` traces it to exact outlines in
+[`js/master.js`](js/master.js) (99.7% pixel overlap with the file it was traced
+from, 98.6% with the other). The trace is what the face IS: tall thick arches
+for eyes with a narrow slot, every stroke ending in a slanted cut, two deep U
+curves for the mouth. `GEO` in `face.js` is an earlier measurement by eye and
+differs from it on all three counts. The master has no pupils — it is the face
+at rest, smiling with its eyes shut — so a surface drawn from it acts only by
+squashing the eyes (a blink) and breathing the smile.
+
+**Colour** (owner: *"magenta is actually the original bit"* · *"original
+Toko can be any of the colors"* · *"you can use other colors in different
+contexts or moods"*):
+
+- **Magenta is the original colour** — the identity, `#F0027F`, with black.
+  When there is no reason to choose, Toko is white on magenta.
+- **Any of the carrier colours is still the original Toko.** The nine flats in
+  `STICKER` (green, red, sky, orange, blue, yellow, purple, lime, pink) are not
+  lesser Tokos; the master file itself is the yellow one.
+- **Other colours may carry a context or a mood** — a scene, a time of day, a
+  game's own palette. The face is the same face in every one of them.
+- What does not change: **one face, one ground** — the face in one colour on
+  another, never two colours inside the mark, never a gradient across it.
+
+**Versions — valid, not original:**
+
+| | Status |
+|---|---|
+| **Toko Slomo** — grey hair, a mask, a knife behind his back; the owner's hand-made sheet in `turf/art-src/reference/toko-slomo-run.png` | **The Kallio Noir version of Toko.** Valid, owner-made — not the original. |
+| The magenta bust (`drawHead`), the clusters (`drawCluster`) | Assistant-drawn carriers built on `GEO`. Not the original. |
+| Toko Live's figure — dark hood, magenta hands, ring head | Assistant-drawn. Not the original. |
+| The teal gel (`radiofree/js/toko.js`, before v67) | An assistant's invention. Retired. |
+| The noodle-shop keeper with a yellow smiley mask (`piritori/art/rooms/toko.webp`) | Generated art — misspelled sign ("HENSLONKI"), garbled kana. Not a reference. |
+
+The 3D Toko (`js/toko3d.js`, three.js r167 in `vendor/`, used by Radio Free
+Helsinki's film and Toko Live's stage) is built from the trace and nothing
+else: the badge — the brand's own face-on-a-disc carrier — as a lacquered
+pin, the four traced outlines extruded onto it.
+
+---
+
 ## 3. Two colours
 
 ```
@@ -157,9 +206,11 @@ The face also runs in a rotating set of nine flats — the mark in a colour on
 white, and reversed out of a full-bleed colour tile. That is how the icons and
 the stickers work: **one face, many carriers.**
 
-This does not make them brand colours. Black and magenta are the identity;
-these are what the mark is *carried on*, **one flat at a time**, never mixed and
-never two inside a single mark. A carrier is a whole surface or it is nothing.
+Black and magenta are the identity and magenta is the original colour — but
+**Toko on any of these is still the original Toko** (owner, 2026-09-24; §2c),
+and other colours may carry a context or a mood. What holds is the carrier
+rule: **one flat at a time**, never mixed and never two inside a single mark. A
+carrier is a whole surface or it is nothing.
 
 Several of those pairings — white on yellow especially — are nowhere near a text
 contrast ratio. They carry the **mark** and never type. `STICKER` and `SHEET` in

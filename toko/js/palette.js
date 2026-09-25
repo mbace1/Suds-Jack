@@ -32,9 +32,11 @@ export const TOKO = {
 // white, and reversed out of a full-bleed colour tile. That is how the icons
 // and the stickers work — one face, many carriers.
 //
-// This does NOT make them brand colours. Black and magenta are the identity;
-// these are what the mark is CARRIED on, one flat at a time, never mixed and
-// never inside a single mark. A carrier is a whole surface or it is nothing.
+// Black and magenta are the identity, and magenta is the original colour — but
+// Toko on any of these is still the original Toko (owner, 2026-09-24), and
+// other colours may carry a context or a mood. What holds is the carrier rule:
+// one flat at a time, never mixed and never inside a single mark. A carrier is
+// a whole surface or it is nothing. BRAND.md §2c is the canon.
 export const STICKER = {
   GREEN: '#12783a', RED: '#e0141b', SKY: '#4cb7e2', ORANGE: '#f07d12',
   BLUE: '#1149a6', YELLOW: '#f5c400', PURPLE: '#7c1d96', LIME: '#8dc21f',

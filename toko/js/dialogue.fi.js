@@ -179,6 +179,8 @@ export const FI = {
     mask: ['NAAMIO', 'MASKI', 'KASVOT', 'PIILOSSA', 'ANONYYMI'],
     name: ['MIDORI', 'VIHREÄ', 'NIMI', 'JAPANI', 'TARKOITTAA'],
     clusters: ['MUUT', 'KAIKKI', 'TIIMI', 'PORUKKA', 'PÄÄT'],
+    colours: ['VÄRI', 'VÄRINEN', 'VÄRIT', 'KELTAINEN', 'MAGENTA'],
+    slomo: ['SLOMO', 'NOIR'],
     ai: ['TEKOÄLY', 'KONE', 'MALLI', 'ROBOTTI', 'GENEROITU'],
     scroll: ['SELAA', 'SELAAMINEN', 'YLEISÖ', 'SYÖTE', 'SISÄLTÖ'],
     hypocrite: ['TEKOPYHÄ', 'HUIJAUS', 'HUIJAAT', 'LAISKA', 'FEIKKI'],
@@ -306,7 +308,7 @@ export const FI = {
     name: {
       q: 'MIKSI "MIDORI"?',
       a: ['SE ON NIMI, EI VÄRITEORIA.',
-        'BRÄNDI ON MUSTA JA MAGENTA.',
+        'MAGENTA ON ENSIMMÄINEN VÄRINI, EI AINOA.',
         'IHMISET KYSYVÄT. NAUTIN SIITÄ.'],
     },
     clusters: {
@@ -316,6 +318,20 @@ export const FI = {
         'TÄÄLTÄ JOTAIN — JA JOKAINEN PELAAJA',
         'JOKA EI OLE VIELÄ SAAPUNUT.',
         'PÄÄ ON TÄYNNÄ PIENEMPIÄ PÄITÄ.'],
+    },
+    colours: {
+      q: 'MINKÄ VÄRINEN OLET?',
+      a: ['ENSIN MAGENTA. SIITÄ ALOITIN.',
+        'MUTTA KASVOT OVAT KASVOT MISSÄ VÄRISSÄ TAHANSA —',
+        'KELTAINEN, TAIVAANSININEN, LIME, KAIKKI YHDEKSÄN.',
+        'VAIHDAN VÄRIÄ HUONEEN JA TUNNELMAN MUKAAN.'],
+    },
+    slomo: {
+      q: 'KUKA ON TOKO SLOMO?',
+      a: ['MINÄ, KALLIO NOIRINA.',
+        'HARMAAT HIUKSET, NAAMIO, VEITSI SELÄN TAKANA.',
+        'HÄN ON AITO. HÄN EI OLE ALKUPERÄINEN.',
+        'ALKUPERÄINEN OVAT KASVOT.'],
     },
     ai: {
       q: 'KÄYTÄTKÖ TEKOÄLYÄ?',

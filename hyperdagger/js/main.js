@@ -16,7 +16,7 @@ import { AudioKit } from './audio.js?v=61';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=61';
 import { TUNING as T } from './tuning.js?v=63';
 import { HyperEnvironment } from './environment.js?v=61';
-import { openTable } from '../../toko/js/table.js?v=3';
+import { openTable } from '../../toko/js/table.js?v=4';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;

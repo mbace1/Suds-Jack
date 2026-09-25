@@ -22,8 +22,19 @@
 
 import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
-import { drawHead, drawBadge, svgBadge } from './face.js';
-import { glance, drift } from './util.js';
+import { svgBadge } from './face.js';
+// THE FACE IS THE OWNER'S MASTER — BRAND.md §2c. The magenta bust that used to
+// sit in the portrait (drawHead) was an assistant's carrier built on the GEO
+// measurement, and the canon retires it: Toko is his face, on a disc. The
+// master has no pupils, so he acts the way the mark does — a blink, and the
+// smile breathing while he talks.
+import { drawMasterBadge } from './master.js';
+import { drift, glance } from './util.js';
+// a blink: glance()'s smooth in-hold-out, at the speed of an eyelid (0.08s
+// down, 0.05s shut, 0.12s up); 0.15 of the arch is left, so the eye is a
+// line and not gone
+const blink = (t, every, offset) =>
+  1 - 0.85 * glance(t, { every, open: 0.08, hold: 0.05, shut: 0.12, offset });
 import { hit } from './glitch.js';
 // Dynamic, so the ?v= this module was loaded with reaches the dialogue tree
 // and the language packs. A static import cannot carry it, which meant the
@@ -431,25 +442,21 @@ export function mountChat(anchor, opts = {}) {
 
   const startBadge = () => badge.loop((t) => {
     badge.clear();
-    const k = glance(t, { every: 11, offset: 1.3 });
-    drawBadge(badge.ctx, 20, 20, 20, {
-      ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { open: k },
+    drawMasterBadge(badge.ctx, 20, 20, 20, {
+      ground: TOKO.MAGENTA, ink: TOKO.PAPER, squash: blink(t, 11, 1.3),
     });
   });
   startBadge();
 
   const startHead = () => head.loop((t) => {
     head.clear();
-    // Eyes shut and smiling at rest; OPEN while he is answering you, because
-    // that is the one moment he is actually looking at somebody. The mouth is
-    // a stroked arc, so "talking" is just its radius breathing — slowly. At
-    // 22 rad/s it chattered like a puppet.
-    drawHead(head.ctx, 6, 4, 108, {
+    // The face on its disc, in the portrait's upper square. Talking is the
+    // smile breathing — slowly; at 22 rad/s it chattered like a puppet — and
+    // he does not blink mid-sentence.
+    drawMasterBadge(head.ctx, 60, 64, 54, {
       ground: TOKO.MAGENTA, ink: TOKO.PAPER,
-      faceOpts: {
-        open: speaking ? 1 : glance(t, { every: 11, offset: 0.7 }),
-        grin: 1 + (speaking ? Math.sin(t * 11) * 0.05 : drift(t) * 0.012),
-      },
+      squash: speaking ? 1 : blink(t, 11, 0.7),
+      grin: 1 + (speaking ? Math.sin(t * 11) * 0.05 : drift(t) * 0.012),
     });
     // A glitch is an EVENT, not a state: it runs while he answers the topics
     // that are ABOUT the seam, and it fades out over its own window rather
