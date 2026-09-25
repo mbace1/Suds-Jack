@@ -32,7 +32,12 @@ player who read slowly enough lost every job and had nothing to do until
 When he takes the last ordinary job, dispatch now deals a fresh board: losing
 one to him is still the cost of dawdling, being stranded is not.
 
-RENT WITH THE RUSH: being measured (`--kitweeks=20`).
+**Rent holds at €400 with the rush on**, measured with the week as it is played
+(kit nightly, drawn weather, the rush on every day): **80% / 55% / 10%**,
+exactly v2.49's. The two levers cancel for a bot — the waits the full trams
+cost are about what rush pay gives back — which is the point of pulling them
+against each other; what changes is WHEN a shift is hard, not whether the week
+is. The shift gate's 14 dailies, with the rush, are all winnable.
 
 `test/rush.mjs` (9) holds the curve, the two levers and fullness that holds
 still; `test/rush.cjs` (9) holds it in the page: calm control, a quiet seven,
