@@ -91,14 +91,25 @@ export const TOPICS = [
       'A FACE IS A BRAND. I ALREADY HAVE ONE —',
       'IT IS ON THE DOOR, AND IT IS SMILING.',
     ],
-    opens: ['clusters'],
+    opens: ['clusters', 'colours'],
   },
   {
     id: 'name', q: 'WHY "MIDORI"?', once: true, locked: true,
     a: [
       'IT IS A NAME, NOT A COLOUR THEORY.',
-      'THE BRAND IS BLACK AND MAGENTA.',
+      'MAGENTA IS MY FIRST COLOUR, NOT MY ONLY.',
       'PEOPLE ASK. I ENJOY IT.',
+    ],
+  },
+  // Owner, 2026-09-24: magenta is the original; the original Toko can be any
+  // of the colours, and other colours can carry a context or a mood.
+  {
+    id: 'colours', q: 'WHAT COLOUR ARE YOU?', once: true, locked: true,
+    a: [
+      'MAGENTA, FIRST. THAT IS WHERE I STARTED.',
+      'BUT THE FACE IS THE FACE IN ANY COLOUR —',
+      'YELLOW, SKY, LIME, ORANGE, ALL NINE.',
+      'I CHANGE WITH THE ROOM AND THE MOOD.',
     ],
   },
   {
@@ -109,6 +120,17 @@ export const TOPICS = [
       'SOMETHING FROM HERE — AND EVERY PLAYER',
       'WHO HAS NOT ARRIVED YET.',
       'THE HEAD IS FULL OF SMALLER HEADS.',
+    ],
+    opens: ['slomo'],
+  },
+  // Owner, 2026-09-24: Toko Slomo is the Kallio Noir version — valid, not original.
+  {
+    id: 'slomo', q: 'WHO IS TOKO SLOMO?', once: true, locked: true,
+    a: [
+      'ME, IN KALLIO NOIR.',
+      'GREY HAIR, A MASK, A KNIFE BEHIND HIS BACK.',
+      'HE IS REAL. HE IS NOT THE ORIGINAL.',
+      'THE ORIGINAL IS THE FACE.',
     ],
   },
 
@@ -806,6 +828,8 @@ const KEYS = {
   mask: ['MASK', 'FACE', 'HIDE', 'HIDDEN', 'ANONYMOUS', 'IDENTITY'],
   name: ['MIDORI', 'GREEN', 'JAPANESE', 'MEAN', 'MEANING'],
   clusters: ['ELSE', 'EVERYONE', 'OTHERS', 'TEAM', 'CLUSTER', 'HEADS'],
+  colours: ['COLOUR', 'COLOR', 'COLOURS', 'COLORS', 'YELLOW', 'MAGENTA'],
+  slomo: ['SLOMO', 'NOIR'],
   ai: ['AI', 'MACHINE', 'MODEL', 'ROBOT', 'GENERATED', 'LLM', 'CLAUDE'],
   scroll: ['SCROLL', 'SLOP', 'AUDIENCE', 'FEED', 'CONTENT'],
   hypocrite: ['HYPOCRITE', 'HYPOCRISY', 'CHEAT', 'CHEATING', 'FAKE', 'LAZY'],
