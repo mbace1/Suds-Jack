@@ -82,7 +82,11 @@ if (location.hash === '#lvprobe') {
         }
       }
       const names = Object.fromEntries(Object.entries(EnemyType).map(([k, v]) => [v, k]));
-      const lines = seen.map((s, i) => `SPAWN ${i} ${names[s.type]} t=${s.t.toFixed(3)} x=${s.x.toFixed(3)} z=${s.z.toFixed(3)}`);
+      // ax/az (Godot Q-043): where the pump PLACED the body — the Godot port's parity
+      // gate compares this, exactly, now that both builds run the crowd pass
+      // (first sighting then depends on who is standing near the spawn point)
+      const lines = seen.map((s, i) => `SPAWN ${i} ${names[s.type]} t=${s.t.toFixed(3)} x=${s.x.toFixed(3)} z=${s.z.toFixed(3)}` +
+        (s.at ? ` ax=${s.at[0].toFixed(3)} az=${s.at[1].toFixed(3)}` : ''));
       const wantE = want.filter(w => !w.pickup), wantP = want.filter(w => w.pickup);
       const bad = [];
       wantE.forEach((w, i) => {
