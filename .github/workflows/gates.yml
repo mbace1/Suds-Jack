@@ -442,6 +442,9 @@ jobs:
       - name: the map is the controller — tap the tram to board, tap the stop to get off
         run: NODE_PATH=$(npm root -g) node toko-move/test/mapcontrol.cjs
 
+      - name: juice — a delivery is a moment, drawn from the numbers
+        run: NODE_PATH=$(npm root -g) node toko-move/test/juice.cjs
+
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
       # is broken if fewer than 40% of them get three deliveries home.
