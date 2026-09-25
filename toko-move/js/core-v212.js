@@ -2,11 +2,11 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=23';
-import {TransitLayers} from './transit-layers.js?v=7';
-import {buildRealHelsinki} from './real-helsinki.js?v=2';
-import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=6';
-import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=24';
+import {TransitLayers} from './transit-layers.js?v=8';
+import {buildRealHelsinki} from './real-helsinki.js?v=3';
+import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=7';
+import {TRANSFER_HUBS} from './hubs-walking.js?v=4';
 import {SHIFT} from './live-network.js?v=14';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
@@ -23,7 +23,7 @@ import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.56';
+const BUILD_VERSION='2.57';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -454,7 +454,7 @@ function drawDistricts(ctx=$('map').getContext('2d')){if(!city)return;const d=re
   // into this file by hand and hung off whichever delivery anchor was nearest.
   if(ground?.districts){for(const dis of ground.districtsFor(scale)){const p=fitLatLon(dis.at[0],dis.at[1]);
     ctx.fillText(dis.name.toUpperCase(),p.x,p.y);}ctx.restore();return;}
-  for(const[id,label]of[['kapyla','KÄPYLÄ'],['pasila','PASILA'],['toolontori','TÖÖLÖ'],['kallionkirkko','KALLIO'],['rautatientori','KESKUSTA'],['kalasatama','KALASATAMA'],['lansiterminaali','LÄNSISATAMA'],['eira','EIRA'],['katajanokka','KATAJANOKKA']]){const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.fillText(label,p.x,p.y+26*d);}
+  for(const[id,label]of[['kapyla','KÄPYLÄ'],['pasila','PASILA'],['ooppera','TÖÖLÖ'],['kallionkirkko','KALLIO'],['rautatientori','KESKUSTA'],['kalasatama','KALASATAMA'],['lansiterminaali','LÄNSISATAMA'],['eira','EIRA'],['katajanokka','KATAJANOKKA']]){const n=city.resolved?.[id];if(!n)continue;const p=fitLatLon(n.lat,n.lon);ctx.fillText(label,p.x,p.y+26*d);}
   ctx.restore();}
 
 // The active job's two ends, over everything: where you are and where the box

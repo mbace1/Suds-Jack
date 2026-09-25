@@ -1,7 +1,7 @@
 // Real-world anchors for authored delivery locations. Resolution always comes
 // from the committed/generated HSL GTFS stop pack; no hand-drawn transit geometry.
 export const HELSINKI_ANCHORS = {
-  pasila:['Pasila','Pasilan asema'], toolontori:['Töölöntori'], kallionkirkko:['Karhupuisto','Kallion virastotalo'],
+  pasila:['Pasila','Pasilan asema'], kallionkirkko:['Karhupuisto','Kallion virastotalo'],
   sornainen:['Sörnäinen','Sörnäinen (M)','Sörnäisten metroasema'], kalasatama:['Kalasatama','Kalasatama (M)','Kalasataman metroasema'],
   hakaniemi:['Hakaniemi','Hakaniemen metroasema'], kamppi:['Kamppi','Kamppi (M)','Kampin metroasema'],
   rautatientori:['Rautatientori','Päärautatieasema','Rautatientorin metroasema'], senaatintori:['Senaatintori'],

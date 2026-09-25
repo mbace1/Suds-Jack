@@ -24,7 +24,10 @@ const pack = JSON.parse(readFileSync(join(here, '../cities/helsinki.json'), 'utf
 
 // ---- 1. Helsinki is unchanged by the generalisation --------------------
 const city = buildRealHelsinki(pack);
-assert.equal(city.nodes.length, 22, 'Helsinki still has 22 delivery anchors');
+// v2.57: 21 — Töölöntori left when HSL stopped serving it (the Töölö loop was
+// cut for the Crown Bridges network); the board follows the city.
+assert.equal(city.nodes.length, Object.keys(HELSINKI.anchors).length, `Helsinki has one node per delivery anchor (${city.nodes.length})`);
+assert.ok(!city.nodes.some(n => n.id === 'toolontori'), 'Töölöntori is not a destination: HSL no longer serves it');
 assert.equal(city.city.id, 'helsinki');
 assert.equal(city.city.chapter, 1);
 
@@ -96,9 +99,9 @@ assert.throws(() => buildCity(pack, { ...OTHER, modes: { FUNICULAR: 'funicular' 
 
 // ---- the shared helpers behave -----------------------------------------
 const r = resolveAnchors(pack, HELSINKI.anchors);
-assert.equal(Object.values(r).filter(Boolean).length, 22, 'every Helsinki anchor resolves');
+assert.equal(Object.values(r).filter(Boolean).length, Object.keys(HELSINKI.anchors).length, 'every Helsinki anchor resolves');
 const d = metresBetween({ lat: 60.1699, lon: 24.9384 }, { lat: 60.1841, lon: 24.9299 });
-assert.ok(d > 1400 && d < 1800, `Rautatientori->Töölöntori should be about 1.6km, got ${Math.round(d)}m`);
+assert.ok(d > 1400 && d < 1800, `Rautatientori->Töölö should be about 1.6km, got ${Math.round(d)}m`);
 
 console.log(`city build: Helsinki ${city.nodes.length} anchors / ${city.edges.length} edges / ${city.lines.length} services, ` +
             `fingerprint holds; a second definition builds ${other.nodes.length} anchors with its own rules`);

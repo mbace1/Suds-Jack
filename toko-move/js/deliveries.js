@@ -23,8 +23,8 @@ export const JOBS=[
  {stops:['lasipalatsi','rautatientori'],label:'Press proofs to Central',cargo:'documents',limit:125,value:100},
  {stops:['rautatientori','hietalahti'],label:'Hot lunch to Hietalahti',cargo:'hot food',limit:155,value:140},
  {stops:['hietalahti','lansiterminaali'],label:'Dock parts to West Harbour',cargo:'parts',limit:155,value:130},
- {stops:['lansiterminaali','toolontori'],label:'Fragile parcel to Töölö',cargo:'fragile',limit:250,value:190},
- {stops:['toolontori','meilahti'],label:'Medical equipment to Meilahti',cargo:'equipment',limit:220,value:210},
+ {stops:['lansiterminaali','ooppera'],label:'Fragile parcel to Töölö',cargo:'fragile',limit:250,value:190},
+ {stops:['ooppera','meilahti'],label:'Medical equipment to Meilahti',cargo:'equipment',limit:220,value:210},
  {stops:['meilahti','messukeskus'],label:'Expo courier to Messukeskus',cargo:'express',limit:225,value:230},
  {stops:['messukeskus','arabia'],label:'Fresh food to Arabia',cargo:'fresh food',limit:260,value:220},
  {stops:['arabia','kalasatama'],label:'Express run to Kalasatama',cargo:'express',limit:205,value:200},
@@ -35,7 +35,7 @@ import {regularAt,standingOf,bumpStanding,loadStanding,saveStanding,tipFor} from
 import {CAPACITY,unitsOf,payFor} from './parcels.js?v=1';
 const sameNodes=(a,b)=>a.length===b.length&&a.every((n,i)=>n===b[i]);
 const CARGO_KEYS=Object.keys(CARGO);
-const DESTINATIONS=['rautatientori','hakaniemi','sornainen','kalasatama','pasila','toolontori','kamppi','kauppatori','katajanokka','lansiterminaali','hietalahti','meilahti','arabia','olympiaterminaali','eira','kapyla','messukeskus','lasipalatsi','ooppera','senaatintori'];
+const DESTINATIONS=['rautatientori','hakaniemi','sornainen','kalasatama','pasila','kamppi','kauppatori','katajanokka','lansiterminaali','hietalahti','meilahti','arabia','olympiaterminaali','eira','kapyla','messukeskus','lasipalatsi','ooppera','senaatintori'];
 // The hash is UNSIGNED (`>>> 0`), so every shift off it must be `>>>` too:
 // `>>` is signed, half of all seeds have the top bit set, and `array[-1234]`
 // is undefined — which is silent. It cost a hand-off that was never built and,

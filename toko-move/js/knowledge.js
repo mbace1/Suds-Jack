@@ -16,7 +16,7 @@
 //
 // Three central stops are known from the start, because a courier who cannot
 // walk anywhere has lost a verb rather than gained a discovery.
-import {WALK_STREETS,walkLinks} from './hubs-walking.js?v=3';
+import {WALK_STREETS,walkLinks} from './hubs-walking.js?v=4';
 const KEY='tokoMoveVisited';
 export const SEEDED=['rautatientori','lasipalatsi','kamppi'];
 

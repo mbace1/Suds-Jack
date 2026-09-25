@@ -5,7 +5,7 @@ import { RouteDrawer } from '../../flow-core/input.js?v=1';
 import { THEME } from './palette.js?v=1';
 import { DeliveryChallenge, DELIVERY_TARGET, CARGO } from './deliveries.js?v=9';
 import { TransitLayers } from './transit-layers.js?v=5';
-import { buildRealHelsinki } from './real-helsinki.js?v=2';
+import { buildRealHelsinki } from './real-helsinki.js?v=3';
 const BUILD_VERSION='2.9', $=id=>document.getElementById(id);
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 let flow,challenge,renderer,drawer,draft=null,sel=null,done=false,msgs=[],transitLayers=null,transitView=false,realCity=null,sourcePack=null,waterPack=null;
