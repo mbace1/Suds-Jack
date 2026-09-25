@@ -101,6 +101,20 @@ function plankMaterials(base) {
   });
 }
 
+// THE PIXEL IS SIZED OFF THE FIGURE, NOT THE SCREEN (v49). The first cut used
+// a flat 3 CSS px, which on a landscape window gave a person ~85 pixels of
+// height and on a phone held upright gave a rat ten: portrait draws the whole
+// scene smaller, so a fixed pixel is a coarser grid on exactly the format
+// where the figures are already smallest. So the grid is set so a standing
+// person is `PIXEL_PERSON` pixels tall — Metal Slug Tactics' kind of sprite —
+// and clamped so a pixel is always visible and never a brick.
+const PIXEL_PERSON = 90;
+const PIXEL_MIN_CSS = 1.5, PIXEL_MAX_CSS = 4;
+// Tone steps per channel after the encode. A sprite's ramp is a handful of
+// hard steps; 14 is where a night sky stops being a gradient and becomes bands
+// without the torchlit faces going to posterised mud.
+const PIXEL_LEVELS = 14;
+
 export class Arena {
   constructor(canvas, theme) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -380,6 +394,75 @@ export class Arena {
     this.scene.add(g);
   }
 
+  // ── THE PIXEL FRAME (v49) ───────────────────────────────────────────────
+  // Owner: *"Metal slug is one main option."* v47 put every figure on one
+  // sprite grid, and measuring that grid on screen showed it cannot be SEEN:
+  // one sprite pixel is 0.7-1.1 device pixels on a desktop and on a phone, so
+  // the owner's plates are shown at native size or below and read as painted
+  // illustrations. Metal Slug's pixels are visible — 224 lines on whatever
+  // screen, several device pixels each. So this renders the whole scene
+  // (bridge, backdrop, figures) into a target sized in CSS pixels, not device
+  // pixels, at `PIXEL_CSS` a pixel, quantises the tone to a sprite's steps and
+  // draws it back up NEAREST. It is a toggle because it has a real cost the
+  // owner should weigh: the plates are downsampled with everything else, and a
+  // face that is 60 source pixels wide becomes one that is twenty.
+  //
+  // Tone mapping and the sRGB encode are done in the blit, not the scene: a
+  // render target gets neither from three, and posterising BEFORE the encode
+  // would put the steps in linear light, where they bunch into the shadows —
+  // which on a night bridge is the whole picture.
+  setPixel(on) {
+    this.pixel = !!on;
+    if (this.pixel && !this.px) {
+      const rt = new THREE.WebGLRenderTarget(4, 4, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, type: THREE.HalfFloatType, depthBuffer: true });
+      const mat = new THREE.ShaderMaterial({
+        uniforms: { tDiffuse: { value: rt.texture }, levels: { value: PIXEL_LEVELS }, size: { value: new THREE.Vector2(4, 4) } },
+        vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+        // ORDERED DITHER ON THE STEP, keyed to the LOW-RES grid. The first
+        // render posterised the out-of-focus near band into camouflage: a dark
+        // blur gets two or three steps and each one became a blob. A 4×4 Bayer
+        // offset on the rounding turns a slow gradient into the checker
+        // ramps of a 16-bit background instead — and because it is indexed by
+        // the TARGET's pixel, not the screen's, it moves with the grid.
+        fragmentShader: `uniform sampler2D tDiffuse; uniform float levels; uniform vec2 size; varying vec2 vUv;
+          float bayer(vec2 p) {
+            int x = int(mod(p.x, 4.0)), y = int(mod(p.y, 4.0));
+            int i = x + y * 4;
+            int m[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
+            return (float(m[i]) + 0.5) / 16.0;
+          }
+          void main() {
+            gl_FragColor = texture2D(tDiffuse, vUv);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+            float d = bayer(floor(vUv * size)) - 0.5;
+            gl_FragColor.rgb = floor(gl_FragColor.rgb * levels + 0.5 + d * 0.9) / levels;
+          }`,
+        depthTest: false, depthWrite: false,
+      });
+      const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+      quad.frustumCulled = false;
+      const scene = new THREE.Scene(); scene.add(quad);
+      this.px = { rt, mat, scene, cam: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1) };
+    }
+    this._sizePixel();
+  }
+
+  _sizePixel() {
+    if (!this.px) return;
+    const el = this.renderer.domElement;
+    const cw = el.clientWidth || el.width, ch = el.clientHeight || el.height;
+    // CSS px per world unit at the deck, and a person is ~0.7 of a 1.5 plane
+    const cam = this.camera;
+    const dist = cam.position.distanceTo(this._v.set(0, this.lookY ?? 0.3, 0));
+    const perWorld = ch / (2 * dist * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
+    const css = Math.min(PIXEL_MAX_CSS, Math.max(PIXEL_MIN_CSS, (1.5 * 0.7 * perWorld) / PIXEL_PERSON));
+    const w = Math.max(64, Math.round(cw / css)), h = Math.max(64, Math.round(ch / css));
+    if (this.px.rt.width !== w || this.px.rt.height !== h) this.px.rt.setSize(w, h);
+    this.px.mat.uniforms.size.value.set(w, h);
+    this.px.size = { w, h, css };
+  }
+
   add(puppet) { this.puppets.push(puppet); this.scene.add(puppet.group, puppet.shadow); }
   clearPuppets() { for (const p of this.puppets) this.scene.remove(p.group, p.shadow); this.puppets = []; }
 
@@ -387,6 +470,7 @@ export class Arena {
   // frame on purpose. Close in: a puppet has to be a real part of the picture.
   resize(w, h, actionWidth = 4.6) {
     this.renderer.setSize(w, h, false);
+    this._sizePixel();
     const aspect = w / h;
     this.portrait = aspect < 1;
     const cam = this.camera;
@@ -544,7 +628,13 @@ export class Arena {
       this.camera.position.set(this.baseCam.x + (Math.random() - 0.5) * s, this.baseCam.y + (Math.random() - 0.5) * s, this.baseCam.z);
       this.camera.lookAt(0, this.lookY, 0);
     }
-    this.renderer.render(this.scene, this.camera);
+    if (this.pixel && this.px) {
+      this._sizePixel();                       // the camera pulls back for a boss; follow it
+      this.renderer.setRenderTarget(this.px.rt);
+      this.renderer.render(this.scene, this.camera);
+      this.renderer.setRenderTarget(null);
+      this.renderer.render(this.px.scene, this.px.cam);
+    } else this.renderer.render(this.scene, this.camera);
   }
 }
 

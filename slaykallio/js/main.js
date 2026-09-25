@@ -9,7 +9,7 @@
 
 import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=45';
 import * as engine from './engine.js?v=45';
-import { Arena } from './scene.js?v=32';
+import { Arena } from './scene.js?v=33';
 import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut } from './puppet.js?v=44';
 import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=38';
 import { paintCardPic } from './cardart.js?v=43';
@@ -26,7 +26,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 48;
+const VERSION = 49;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -51,6 +51,7 @@ const PANELS = ['#menu', '#reward', '#result', '#deck', '#map', '#event', '#rest
 const gl = $('#gl');
 arena = new Arena(gl, T());
 const params = new URLSearchParams(location.search);
+arena.setPixel(store.get('frame', 'smooth') === 'pixel' || params.get('frame') === 'pixel');
 
 // The backdrop, in order of preference:
 //   1. ?bg=<url>            an explicit plate, for testing one without editing
@@ -117,7 +118,7 @@ setMuted(store.get('mute', false));
 // dropped rather than obeyed. Everything else the game remembers — the theme,
 // the seed, the run — is untouched: this is only for the look.
 const LOOK_REV = 3;                       // 3 = plates, the CUT-OUT card, paper motion
-const LOOK_KEYS = ['art', 'cut', 'figures'];
+const LOOK_KEYS = ['art', 'cut', 'figures', 'frame'];
 if (store.get('lookRev', 0) < LOOK_REV) {
   for (const k of LOOK_KEYS) { try { localStorage.removeItem('slayKallio.' + k); } catch { /* private mode */ } }
   store.set('lookRev', LOOK_REV);
@@ -704,6 +705,7 @@ function renderMenu() {
   $('#figs').textContent = `figures: ${figureMotion()}`;
   $('#art').textContent = `art: ${figureArt()}`;
   $('#cut').textContent = `cut: ${figureCut()}`;
+  $('#frame').textContent = `frame: ${arena.pixel ? 'pixel' : 'smooth'}`;
   // The rung is per character, so the control has to follow the roster
   // selection — and it names the rule you are about to take on rather than a
   // number, because "ascension 4" tells a first-time player nothing.
@@ -736,6 +738,9 @@ bindActivation($('#mute'), () => { setMuted(!isMuted()); store.set('mute', isMut
 bindActivation($('#art'), () => { setArt(figureArt() === 'turf' ? 'drawn' : 'turf'); });
 // The cut is baked into the texture like the art is, so it respawns too.
 bindActivation($('#cut'), () => { setCut(figureCut() === 'card' ? 'silhouette' : 'card'); });
+// The frame is a render path, not a texture, so nothing respawns: it flips on
+// the next frame, which is what makes it comparable mid-fight.
+bindActivation($('#frame'), () => { arena.setPixel(!arena.pixel); store.set('frame', arena.pixel ? 'pixel' : 'smooth'); renderMenu(); });
 bindActivation($('#asc'), () => {
   const high = ascHighOf(chars[menuSel.char]);
   ascSel = high === 0 ? 0 : (ascSel + 1) % (high + 1);

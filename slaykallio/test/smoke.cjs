@@ -836,6 +836,42 @@ const check = (name, ok, extra = '') => {
   });
   check('under the DRAWN look the animals stay painted, not pixelated', drawnPx === null);
 
+  // ── v49: THE PIXEL FRAME ──────────────────────────────────────────────
+  // v47 measured the sprite grid on screen and found it invisible — one sprite
+  // pixel is 0.7-1.1 device pixels — so the pixel frame renders the whole
+  // scene on a grid sized off the FIGURE (a person ~90 pixels tall) and
+  // quantises it. Measured on the canvas itself, read back in the same task
+  // as the render so the drawing buffer is still there: in smooth mode a red
+  // channel carries a hundred-odd distinct values and neighbouring pixels
+  // rarely match; in pixel mode it carries the 15 steps and whole grid cells.
+  const frameProbe = await page.evaluate(async () => {
+    const a = __sk.arena;
+    const read = () => {
+      a.update(0);
+      const src = a.renderer.domElement, c = document.createElement('canvas');
+      c.width = src.width; c.height = src.height;
+      const g = c.getContext('2d'); g.drawImage(src, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height).data, reds = new Set();
+      let same = 0, pairs = 0;
+      for (let y = 0; y < c.height; y += 7) for (let x = 0; x < c.width - 1; x++) {
+        const i = (y * c.width + x) * 4; reds.add(d[i]);
+        pairs++; if (d[i] === d[i + 4] && d[i + 1] === d[i + 5] && d[i + 2] === d[i + 6]) same++;
+      }
+      return { reds: reds.size, same: same / pairs };
+    };
+    const was = a.pixel;
+    a.setPixel(false); const smooth = read();
+    a.setPixel(true); const pixel = read(); const size = { ...a.px.size };
+    a.setPixel(was);
+    return { smooth, pixel, size };
+  });
+  check(`the pixel frame quantises the tone to a sprite's steps (${frameProbe.smooth.reds} red values smooth → ${frameProbe.pixel.reds} pixel)`,
+    frameProbe.pixel.reds <= 15 && frameProbe.smooth.reds > 40);
+  check(`and draws whole grid cells (${(frameProbe.smooth.same * 100).toFixed(0)}% → ${(frameProbe.pixel.same * 100).toFixed(0)}% of neighbours identical)`,
+    frameProbe.pixel.same > frameProbe.smooth.same + 0.25);
+  check(`the grid is sized off the figure and clamped (${frameProbe.size.css.toFixed(2)} CSS px a pixel, ${frameProbe.size.w}×${frameProbe.size.h})`,
+    frameProbe.size.css >= 1.5 && frameProbe.size.css <= 4);
+
   // ── v46: EVERY FIGURE IS ONE PIECE ────────────────────────────────────
   // `brush()` scumbles a RECTANGLE of broken strokes and had never been
   // clipped to anything. For forty-five versions that did not matter, because

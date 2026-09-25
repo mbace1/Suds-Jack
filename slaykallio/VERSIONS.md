@@ -7,6 +7,47 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v49 — 2026-09-25
+**THE PIXEL FRAME — the whole bridge in Metal Slug's register, one tap away**
+
+v47 put every figure on one sprite grid, and measuring that grid ON SCREEN is
+what this version is about: **one sprite pixel is 0.7–1.1 device pixels** —
+1600×900 reads 1.05, 1280×720 0.84, a phone held upright 0.69. The owner's
+plates are shown at native size or below, so nobody sees them as pixel art;
+they read as painted illustrations. Metal Slug's pixels are VISIBLE — 224 lines
+on whatever screen, several device pixels each — and matching the sprite grid
+more exactly would have changed nothing anybody could see.
+
+`frame: pixel` renders the whole scene — backdrop, bridge, figures — into a
+target on a grid you can see, quantises the tone after the encode, and draws it
+back up nearest. `frame: smooth` is the frame as it was. It is a LOOK toggle
+(in `LOOK_KEYS`, so a house-default bump resets it) and it flips on the next
+frame without respawning anything, so it compares mid-fight. `?frame=pixel`
+forces it for a link.
+
+**Three things the first renders got wrong:**
+- **A flat 3 CSS px a pixel gave a rat ten pixels on a phone.** Portrait draws
+  the whole scene smaller, so a fixed pixel is a coarser grid on exactly the
+  format where the figures are already smallest. The grid is sized off the
+  FIGURE — a standing person is ~90 pixels tall, Metal Slug Tactics' kind of
+  sprite — and clamped to 1.5–4 CSS px so a pixel is always visible and never a
+  brick. 1280×720 lands at 2.7.
+- **The blurred near band posterised into camouflage.** A dark blur gets two or
+  three tone steps and each became a blob. A 4×4 Bayer offset on the rounding,
+  keyed to the TARGET's pixel rather than the screen's, turns a slow gradient
+  into a 16-bit background's checker ramps and moves with the grid.
+- **Posterising in linear light bunches the steps into the shadows**, which on
+  a night bridge is the whole picture. Tone mapping and the sRGB encode are done
+  in the blit (a render target gets neither from three), and the steps after.
+
+**The cost, named:** the plates are downsampled with everything else, and a face
+that was sixty source pixels wide is about twenty. That is the trade the owner
+should weigh by looking, which is why it is a toggle and not the default.
+
+Gates, read off the canvas in the same task as the render: the red channel goes
+228 distinct values → 13; identical neighbours 42% → 78%; the grid is inside its
+clamp. smoke.cjs 173.
+
 ## v48 — 2026-09-24
 **THE DOG WALKER, AND FOUR CARDS v41 DELETED WITHOUT ANYONE NOTICING**
 
