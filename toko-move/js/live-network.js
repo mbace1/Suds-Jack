@@ -180,7 +180,7 @@ export class LiveNetwork{
  // crowd rule could make that a map; the lines your job can use fill the
  // budget first, so what is labelled is what you can catch. No budget by
  // default: the declutter gate drives draw() directly and asserts the pure rule.
- draw(ctx,tick,project,dpr=1,{filter=null,priority=null,budget=Infinity}={}){const boxes=[],dots=[];let shown=0,total=0;const items=[];
+ draw(ctx,tick,project,dpr=1,opts={}){const{filter=null,priority=null,budget=Infinity}=opts;const boxes=[],dots=[];let shown=0,total=0;const items=[];
   for(const v of this.vehicles){if(!v.layer.visible)continue;const p=this.position(v,tick);if(!p)continue;total++;if(filter&&!filter(p.lat,p.lon,v.layer,v))continue;shown++;const selected=v.id===this.selectedVehicleId;items.push({v,p,q:project(p.lat,p.lon),selected,rank:selected?3:(priority?priority(v.layer,v)||0:0)});}
   items.sort((a,b)=>b.rank-a.rank||(a.v.id<b.v.id?-1:a.v.id>b.v.id?1:0));
   const gap=1*dpr,hits=(b)=>boxes.some(o=>b.x<o.x+o.w+gap&&o.x<b.x+b.w+gap&&b.y<o.y+o.h+gap&&o.y<b.y+b.h+gap);
@@ -190,16 +190,30 @@ export class LiveNetwork{
   // nearly the same spot — painted in rank order the dot landed on top of the
   // label it had just yielded to (a 2 at Töölö with a hole in it, live on
   // v2.34). Two passes keep every dot visible at its edge and every label whole.
+  // VEHICLES, NOT LABELS (v2.50). A badge was a label with a nose; the board
+  // read as text before it read as trams. Each is now a body along its own
+  // heading — two cars for a tram, three for the metro — with the line number
+  // upright on it, and the box the declutter pass keeps apart is the TURNED
+  // body's bounds, so a tram going north takes the room a tram going north
+  // takes. `lit` rings the ones you could board this second (route-choice.js
+  // says which), because a tap on one of them is how you catch it now.
+  const lit=opts?.lit||null,now=opts?.now??0;
   const badges=[];
-  for(const it of items){const{v,q,selected}=it,w=(selected?29:24)*dpr,h=(selected?18:14)*dpr,box={x:q.x-w/2,y:q.y-h/2,w,h};
-   if(boxes.length>=budget||hits(box)){const r=4*dpr;dots.push({x:q.x-r,y:q.y-r,w:r*2,h:r*2,line:v.layer.name,id:v.id,rank:it.rank,colour:v.layer.colour,cx:q.x,cy:q.y,r});continue;}
-   box.line=v.layer.name;box.id=v.id;box.rank=it.rank;boxes.push(box);badges.push({it,box});}
+  for(const it of items){const{v,q,selected}=it,metro=String(v.layer.mode||'').toUpperCase()==='SUBWAY',nose=this.heading(v,it.p,project)||{x:1,y:0};
+   const L=(metro?30:24)*(selected?1.3:1)*dpr,W=(selected?14:11)*dpr,ang=Math.atan2(nose.y,nose.x),c=Math.abs(Math.cos(ang)),sn=Math.abs(Math.sin(ang));
+   const w=c*L+sn*W,h=sn*L+c*W,box={x:q.x-w/2,y:q.y-h/2,w,h};
+   if(boxes.length>=budget||hits(box)){const r=4*dpr;dots.push({x:q.x-r,y:q.y-r,w:r*2,h:r*2,line:v.layer.name,id:v.id,rank:it.rank,colour:v.layer.colour,cx:q.x,cy:q.y,r,wanted:box});continue;}
+   box.line=v.layer.name;box.id=v.id;box.rank=it.rank;box.cx=q.x;box.cy=q.y;boxes.push(box);badges.push({it,box,metro,L,W,ang});}
   for(const d of dots){ctx.fillStyle=d.colour;ctx.strokeStyle='#fffdf7';ctx.lineWidth=1.5*dpr;ctx.beginPath();ctx.arc(d.cx,d.cy,d.r,0,Math.PI*2);ctx.fill();ctx.stroke();}
-  // A NOSE on every badge, pointing the way the vehicle is going. A CATCH only
-  // lights for a vehicle heading your way, and a rectangle cannot say which way
-  // that is; a player watching the right line go the wrong way could not tell
-  // it from the one they wanted. The nose is the badge's own colour inside the
-  // same hard line, on the leading edge, from the path's tangent at the vehicle.
-  for(const {it,box} of badges){const{v,q,selected}=it;const nose=this.heading(v,it.p,project);ctx.fillStyle=v.layer.colour;ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?4:2)*dpr;ctx.beginPath();ctx.roundRect(box.x,box.y,box.w,box.h,3*dpr);if(nose){const nx=nose.x,ny=nose.y,px=-ny,py=nx,L=5*dpr,cx=q.x+nx*(Math.abs(nx)>Math.abs(ny)?box.w/2:box.h/2),cy=q.y+ny*(Math.abs(nx)>Math.abs(ny)?box.w/2:box.h/2);ctx.moveTo(cx+px*4*dpr,cy+py*4*dpr);ctx.lineTo(cx+nx*L,cy+ny*L);ctx.lineTo(cx-px*4*dpr,cy-py*4*dpr);}ctx.fill();ctx.stroke();if(selected){ctx.strokeStyle='#fffdf7';ctx.lineWidth=1*dpr;ctx.stroke();}ctx.fillStyle='#fff';ctx.fillText(v.layer.name,q.x,q.y+.5*dpr);}
+  for(const {it,box,metro,L,W,ang} of badges){const{v,q,selected}=it,on=lit?.has(v.id);
+   if(on){const pulse=0.5+0.5*Math.sin(now/180);ctx.strokeStyle=`rgba(226,104,60,${(0.55+0.45*pulse).toFixed(2)})`;ctx.lineWidth=(2+2*pulse)*dpr;ctx.beginPath();ctx.arc(q.x,q.y,(L/2+6*dpr)+pulse*3*dpr,0,Math.PI*2);ctx.stroke();}
+   ctx.save();ctx.translate(q.x,q.y);ctx.rotate(ang);
+   const cars=metro?3:2,gap=1.4*dpr,cl=(L-gap*(cars-1))/cars;ctx.fillStyle=v.layer.colour;ctx.strokeStyle=selected?'#17242b':'#fffdf7';ctx.lineWidth=(selected?3:1.6)*dpr;
+   for(let k=0;k<cars;k++){const x0=-L/2+k*(cl+gap),front=k===cars-1;ctx.beginPath();
+    // the leading car has the round nose; the rest are boxes on the same rail
+    if(front)ctx.roundRect(x0,-W/2,cl,W,[2*dpr,W/2,W/2,2*dpr]);else ctx.roundRect(x0,-W/2,cl,W,2*dpr);ctx.fill();ctx.stroke();}
+   if(selected){ctx.fillStyle='#ffe28a';for(let k=0;k<cars;k++){const x0=-L/2+k*(cl+gap);ctx.fillRect(x0+cl*0.2,-W*0.18,cl*0.6,W*0.36);}}
+   ctx.restore();
+   ctx.lineJoin='round';ctx.lineWidth=3*dpr;ctx.strokeStyle='rgba(15,20,24,0.85)';ctx.strokeText(v.layer.name,q.x,q.y+0.5*dpr);ctx.fillStyle='#fffdf7';ctx.fillText(v.layer.name,q.x,q.y+0.5*dpr);}
   ctx.restore();this.lastShown=shown;this.lastTotal=total;this.lastBadges=boxes.slice();this.lastDots=dots.slice();return boxes.concat(dots);}
 }

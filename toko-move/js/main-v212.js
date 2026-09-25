@@ -1,7 +1,7 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=52';
-import './route-choice.js?v=20';
-import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=12';
+import './core-v212.js?v=53';
+import './route-choice.js?v=21';
+import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=13';
 import {hidden as fogHides} from './weather.js?v=1';
 import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} from './city-events.js?v=1';
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=3';
@@ -18,7 +18,7 @@ import {mountHubTactics} from './hub-tactics-v212.js?v=5';
 import {mountSkillMoments} from './moments-v212.js?v=1';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=1';
-const BUILD_VERSION='2.49';
+const BUILD_VERSION='2.50';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
@@ -71,6 +71,11 @@ const drawRival=()=>{const r=tm.rival,p=r?.position?.();if(!p)return;const d=tm.
   body();ctx.fillStyle=coat;ctx.fill();ctx.stroke();
   head();ctx.fillStyle=skin;ctx.fill();ctx.stroke();
   ctx.restore();};
+// YOUR STOP, TAPPABLE (v2.50): when the ride reaches it, the stop pulses and a
+// tap on it gets you off — the map's half of the GET OFF button.
+const drawGetOff=()=>{const st=tm.mobility?.status?.();if(st?.kind!=='getoff')return;const p=nodePoint(st.at);if(!p)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1,pulse=0.5+0.5*Math.sin(performance.now()/160);
+  ctx.save();ctx.strokeStyle=`rgba(35,61,77,${(0.6+0.4*pulse).toFixed(2)})`;ctx.lineWidth=(3+2*pulse)*d;ctx.beginPath();ctx.arc(p.x,p.y,(14+5*pulse)*d,0,Math.PI*2);ctx.stroke();
+  ctx.font=`bold ${Math.round(10*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=3*d;ctx.strokeStyle='#fffdf7';ctx.strokeText('TAP · GET OFF',p.x,p.y-(24*d));ctx.fillStyle='#233d4d';ctx.fillText('TAP · GET OFF',p.x,p.y-(24*d));ctx.restore();};
 const drawCourier=()=>{const st=tm.mobility?.status?.();if(!st||st.kind==='riding'||st.kind==='getoff')return;
   let x,y,walking=false;const d=tm.renderer?.dpr||window.devicePixelRatio||1;
   if(st.kind==='walking'){const a=nodePoint(st.from),b=nodePoint(st.to);if(!a||!b)return;const span=Math.max(1,st.arriveTick-st.startTick),t=Math.max(0,Math.min(1,(tm.flow.clock.tick-st.startTick)/span)),ease=t*t*(3-2*t);x=a.x+(b.x-a.x)*ease;y=a.y+(b.y-a.y)*ease;walking=true;}
@@ -97,5 +102,5 @@ const rideStatus=()=>{const ch=tm.challenge,el=tm.sheetSlot?.('rideStatus');if(!
   if(!ch?.active||st?.kind!=='riding'||!ch.queued){if(el.innerHTML)el.innerHTML='';return;}
   const html=`<div style="margin-top:8px;padding:8px;border:2px solid #e2683c;border-radius:8px;background:#fff8ef;font-size:11px"><b>SECOND JOB ONBOARD</b> → ${ch.name(ch.queued.originalStops?.[1]||ch.queued.stops[1])}</div>`;
   if(el.innerHTML!==html)el.innerHTML=html;};
-const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,priority:l=>rel.has(l?.name)||rel.has(l?.id)?2:1,budget})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
+const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),lit=new Set((tm.catchables?.()||[]).map(x=>x.vehicle.id)),boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,priority:(l,v)=>lit.has(v?.id)?2.5:rel.has(l?.name)||rel.has(l?.id)?2:1,budget,lit,now:performance.now()})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();drawGetOff();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
 mount();

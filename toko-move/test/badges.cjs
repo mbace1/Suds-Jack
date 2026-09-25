@@ -104,7 +104,9 @@ server.listen(0, '127.0.0.1', async () => {
       const gap = tm.renderer?.dpr || 1;
       const overlaps = (a, b) => a.x < b.x + b.w + gap && a.x + a.w + gap > b.x && a.y < b.y + b.h + gap && a.y + a.h + gap > b.y;
       const usurped = again.dotBoxes.filter(d => {
-        const box = { x: d.x + d.w / 2 - 12 * (tm.renderer?.dpr || 1), y: d.y + d.h / 2 - 7 * (tm.renderer?.dpr || 1), w: 24 * (tm.renderer?.dpr || 1), h: 14 * (tm.renderer?.dpr || 1) };
+        // v2.50: a vehicle claims its TURNED body's bounds, so the box it would
+        // have had is the one the draw pass recorded, not a fixed 24x14 guess.
+        const box = d.wanted || { x: d.x + d.w / 2 - 12 * (tm.renderer?.dpr || 1), y: d.y + d.h / 2 - 7 * (tm.renderer?.dpr || 1), w: 24 * (tm.renderer?.dpr || 1), h: 14 * (tm.renderer?.dpr || 1) };
         const over = again.badgeBoxes.filter(b => overlaps(box, b));
         return !over.some(b => before(b, d));
       }).map(d => `${d.line}#${d.id}`);
