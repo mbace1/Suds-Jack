@@ -2,6 +2,71 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v52 — 2026-09-25
+**Season 2's visual leap; every season holds its own weapon; season 3 is Clustertruck**
+
+Owner, 2026-09-23/25: *why is the weapon/hand so deformed? Use different
+types and models in different seasons. Also bullets. S3 is based on Cluster
+Truck, so the platforms need to feel lopsided, fast moving, etc. The
+environment can be abstract but needs more.* Then: *visual leap to season 2.*
+
+**Season 2: a drowned temple at golden hour.** Rendered and looked at first:
+a flat overcast grey sky nothing could stand against, a floor whose grain
+read as gravel, everything one teal, and giant skulls just past the rim
+cropped into green slabs across half of every frame (the Minecraft look).
+Now a deep teal zenith falls to a horizon that burns gold toward a huge low
+sun ringed in stepped bands, a sun stone that changes colour in whole bands
+the way a 2600 did (`uGrad`/`uZenith`/`uHorizon`/`uSunSize`/`uSunRings`,
+all zero outside season 2). The skulls stand at the true horizon (72–96
+past the rim) in a fan round the sun, unfogged and dark, so each is a whole
+silhouette with its gold eyes lit; the first try at ×34 was seventy-five
+units wide and still loomed. The pyramids are dark in gold air, layering
+into it. The floor is dark water: the texture's grain pressed down
+(`grain`), the grid kept, and the sun's broken path across it (`glint`).
+The gel's gloss takes the sun's colour, so the wave is backlit gold. Pollen
+in the air.
+
+**The hand is the season's.** The old claw was pitched away from the eye,
+so it showed its knuckles end-on, and the lattice wobble crumpled every
+cube every frame — nothing held a silhouette. `setHand(def)` swaps it per
+season, held side-on, bottom right, with no wobble: the claw for VOID, a
+shale nail-gun with ember vents for season 1, a jade macuahuitl with
+obsidian teeth for season 2, a hazard-striped missile pod for season 3.
+Shots leave from each hand's own `muzzle`; the weapon level brightens a
+season hand's glow instead of repainting it. **The projectiles are the
+season's too**: `setShape` takes a `kind` — nails for season 1, a long
+turquoise `shard` of obsidian for season 2 (`T.weapons.obsidian`), a turned
+`missile` with a nose and a flared tail for season 3.
+
+**Season 3 is Clustertruck** (`js/convoy.js`; `truck.js` is the classic road
+again and hands every call to the convoy when a season asks for one).
+Trucks, not slabs: a trailer you stand on and a cab in front, at trailer
+heights of their own so the next truck is up or down from this one, loaded
+crooked, jostling, bouncing, leaning into lane changes and diving under
+braking, at 20 ± 3 u/s with lane changes and hard brakes (brake lights say
+so). The body is held to the tilted top it stands on and carried by it, and
+keeps that momentum in the air; touching the road kills. The roadside is
+abstract and laid by index so a piece is always the same piece: a lit road
+with lane marks, barrier posts with reflectors, pylons with red lamps,
+monoliths off in the dusk, gantries over the road.
+
+**Found on the way.** The sky was a sphere on the arena's centre, and the
+road carries you out of it in under twenty seconds — past its wall the view
+looked out at the clear colour, a black block across the horizon. It
+follows the camera now. And the first convoy laid its road off the very
+front truck, so a runaway truck stopped the laying and left the road ahead
+empty; it lays off the frontmost truck within reach.
+
+**Gate** (189): the horizon skulls stand far out round the sun; a gradient
+sky with a sun disc, rings and a glint in season 2 and none of it in VOID;
+each season's hand and none wobbling; season 2 throws shards; season 3's
+pod and missile shape; the convoy checks read the tilted tops. Two old
+checks asserted the pale hazy sky and were rewritten. Two restart checks
+failed once while a loop recording ran beside the gate and passed alone —
+timing, not the game.
+
+Tokens `?v=82` → `?v=83`, worker cache v53, precache regenerated (61).
+
 ## v51 — 2026-09-23
 **Season 3 — HAUL: a convoy that drives, momentum you keep, and a look that fires**
 
