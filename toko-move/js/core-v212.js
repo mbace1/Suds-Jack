@@ -23,7 +23,7 @@ import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.57';
+const BUILD_VERSION='2.58';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -479,6 +479,7 @@ function drawJobEnds(){if(!challenge?.active||!city)return;const ctx=$('map').ge
 // THE HUD IS GLYPHS. Clock, deliveries as dots, a score, and the current job
 // as its cargo glyph inside a ring that empties with the deadline — no
 // "deliveries" / "deadline" labels and no ticks (owner: Mini Metro succinct).
+let _hudBucket=-1;
 function paintHud(){if(!challenge||!flow)return;const c=challenge.active?challenge.cargoRule():null;$('done').innerHTML=dots(challenge.index,challenge.target,challenge.drops);{const b=$('bagHud');if(b)b.innerHTML=challenge.active?bagHtml(challenge.carrying?.()||[],challenge.capacity?.()):'';}$('reach').textContent=challenge.active?`${challenge.name(challenge.currentFrom())} → ${challenge.name(challenge.currentTo())}`:'dispatch';$('emit').textContent=challenge.active?(challenge.remaining()<20?'due':minutes(challenge.remaining())):'';$('score').textContent=challenge.score?String(challenge.score):'';{const m=challenge.streakMult?.()||1,el=$('mult');if(el){el.textContent=m>1?`×${m}`:'';el.style.opacity=m>=2?'1':'.8';}}{const ring=$('cargoHud'),g=$('cargoGlyph');if(g)g.innerHTML=challenge.active?parcelHtml(challenge.active.cargo,{max:16}):'<span class="pcl pcl-none"></span>';ring.title=c?`${challenge.active.cargo} · ${c.rule}`:'no job';const p=challenge.active?Math.max(0,Math.min(100,100*challenge.remaining()/challenge.active.limit)):0;ring.style.setProperty('--p',p.toFixed(1));ring.style.setProperty('--ring',challenge.active?cargoColour(challenge.active.cargo):'#e2e6e1');}{const m=(LIVE?LIVE_START:SHIFT.startHour*60)+Math.floor(flow.clock.dayProgress*SHIFT.hours*60);$('clock').textContent=hhmm(m);{const l=rushLoad(),w=Rush.label(l),el=$('rush');if(el&&LIVE){const f=window.__tm?.liveFeed;el.textContent=f?.label||'LIVE';el.className=`rush lvl-live${f?.state==='live'?'':' lvl-wait'}`;}else if(el){el.textContent=w?`${w} ×${Rush.surge(l).toFixed(1)}`:'';el.className=w?`rush lvl-${w.toLowerCase()}`:"rush";}}}{const net=window.__tm?.liveNetwork,sc=SCALES.find(x=>x.id===camera?.nearestScale())?.label||'CITY';$('lines').textContent=net&&Number.isFinite(net.lastShown)?`${sc} \u00b7 ${net.lastShown}/${net.vehicles.length} near`:'HSL network';}}
 // THE JOB SHEET HAS THREE WRITERS AND HAD NO OWNER.
 // paintSheet (this file), the dispatch board (job-board-v212.js) and the catch
@@ -620,7 +621,11 @@ function frame(now){const dt=last?Math.min(120,now-last):0;last=now;
       paintGround(ctx);paintDawn(ctx);
       ctx.save();clipToBoard(ctx);
       drawTransit();drawStops();drawJobEnds();paintWeather(ctx);drawLegend();drawCredit();ctx.restore();drawBoardFrame();}
-    if(flow.clock.tick%10===0)paintHud();}
+    // v2.58: every tenth tick CROSSED, not every frame that lands on one: a
+    // frame can advance several ticks (a slow phone, a busy runner, a jump), and
+    // `tick%10===0` then skipped the repaint — the clock and the rush badge
+    // froze on an old moment while the fee had already moved on.
+    {const b=Math.floor(flow.clock.tick/10);if(b!==_hudBucket){_hudBucket=b;paintHud();}}}
   requestAnimationFrame(frame);}
 
 async function init(){

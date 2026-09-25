@@ -32,7 +32,10 @@ server.listen(0, '127.0.0.1', async () => {
     const early = await page.evaluate(() => ({ hud: document.getElementById('rush').textContent, pay: window.__tm.challenge.jobPay(100) }));
     ok(`seven o'clock is quiet and pays the plain fee (${JSON.stringify(early)})`, early.hud === '' && early.pay === 100);
     // walk the clock to the peak (setup), then look
-    await page.evaluate(() => { const tm = window.__tm; tm.flow.runTicks(Math.round(tm.flow.clock.ticksPerDay * 0.55) - tm.flow.clock.tick); });
+    // +3: land just PAST a tenth tick. The HUD used to repaint only on a frame
+    // that landed exactly on one, so a jump (or a slow frame) left it stale —
+    // CI caught "BUSY ×1.2" on the HUD while the fee already paid ×1.3.
+    await page.evaluate(() => { const tm = window.__tm; tm.flow.runTicks(Math.round(tm.flow.clock.ticksPerDay * 0.55) + 3 - tm.flow.clock.tick); });
     await page.waitForTimeout(300);
     const peak = await page.evaluate(() => { const tm = window.__tm, t = tm.flow.clock.tick, vs = tm.liveNetwork.vehicles; const full = vs.filter(v => tm.isFull(v)).length;
       return { hud: document.getElementById('rush').textContent, pay: tm.challenge.jobPay(100), full, of: vs.length }; });
