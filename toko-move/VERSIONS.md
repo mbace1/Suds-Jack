@@ -1,5 +1,41 @@
 # Toko Move — versions
 
+## v2.50 — 2026-09-25
+
+**THE MAP IS THE CONTROLLER.** Leap 1 of five (owner: *"can we make graphics
+and gameplay leaps?"*, then *"all in order"*). Every decision in a shift used
+to be a tap on a list under the map, and the map was something you watched —
+the one thing standing between this and Mini Metro. Now:
+
+- **Vehicles, not labels.** A tram is two cars along its own heading, the
+  metro three, the line number upright on it; your own ride is bigger, outlined
+  and has its windows lit. The declutter pass keeps the TURNED body's bounds
+  apart, so a tram going north takes the room a tram going north takes.
+- **Tap the tram to board it.** A tram you could board this second is RINGED,
+  pulsing, and ranked first so it is always a vehicle and never folded into a
+  dot. Tapping it boards it through the very call the CATCH button makes
+  (`tm.catchVehicle` → `challenge.catchChoice`), so nothing about a catch
+  depends on where the finger was. The finger gets 34 px, more than the eye,
+  because a moving tram is a small target under a thumb.
+- **Tap your stop to get off.** When the ride arrives the stop pulses with TAP ·
+  GET OFF over it, and a tap on it does what the GET OFF button does.
+- The panel stays, every button in it, and says so: *"Tap the ringed tram on
+  the map, or here."* A tap fires pointerup AND touchend, so one action per
+  450 ms, and a tap that did something does not also open the stop popup.
+
+`test/mapcontrol.cjs` (8) plays it with real touch at the projected screen
+point and never touches the panel: a tap on empty map boards nothing, a tap
+on the lit tram boards it, a tap on the stop delivers, the popup stays shut.
+Removing the map action fails three checks; not ranking the lit tram first
+fails the one that asks it to be a vehicle.
+
+One ruler moved with the thing it measures: `badges.cjs` rebuilt each dot's
+would-be label box as a fixed 24×14, and a vehicle now claims its turned
+body's bounds, so the check accused four trams of yielding to lower ranks
+they had never overlapped. The draw pass records the box it wanted on each
+dot and the check reads that; sorting by screen position instead of rank still
+fails it three ways.
+
 ## v2.49 — 2026-09-24
 
 **WEATHER.** Roadmap NEXT LEVEL, L4. Every morning draws a weather from its

@@ -439,6 +439,9 @@ jobs:
       - name: the weather, in the page — fog hides what is far, rain slows the fleet
         run: NODE_PATH=$(npm root -g) node toko-move/test/weather.cjs
 
+      - name: the map is the controller — tap the tram to board, tap the stop to get off
+        run: NODE_PATH=$(npm root -g) node toko-move/test/mapcontrol.cjs
+
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
       # is broken if fewer than 40% of them get three deliveries home.

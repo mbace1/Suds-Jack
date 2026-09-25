@@ -7,7 +7,7 @@ import {TransitLayers} from './transit-layers.js?v=7';
 import {buildRealHelsinki} from './real-helsinki.js?v=2';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=6';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=3';
-import {SHIFT} from './live-network.js?v=12';
+import {SHIFT} from './live-network.js?v=13';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {dots,minutes} from './ui.js?v=1';
@@ -20,7 +20,7 @@ import {drawWeather} from './weather.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.49';
+const BUILD_VERSION='2.50';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -735,8 +735,21 @@ $('recentre')?.addEventListener('click',()=>{if(!camera)return;camera.recentre()
 addEventListener('keydown',e=>{if(!camera||transitView)return;
   if(e.key==='+'||e.key==='=')camera.cycle(1);else if(e.key==='-'||e.key==='_')camera.cycle(-1);else return;paintRail();});
 
+// THE MAP IS THE CONTROLLER (v2.50): a tap on a lit tram boards it, a tap on
+// your stop when it pulses gets you off. The finger gets more room than the
+// eye (34 px) because a moving tram is a small target under a thumb. A tap
+// fires pointerup AND touchend (see shell.js), so one action per 450 ms.
+let _mapActAt=0;
+function mapAction(px,py){const tm=window.__tm;if(!tm?.liveNetwork||!flow||flow.clock.paused)return false;if(performance.now()-_mapActAt<450)return true;
+  const c=$('map'),r=c.getBoundingClientRect(),x=(px-r.left)*(c.width/r.width),y=(py-r.top)*(c.height/r.height),d=renderer?.dpr||1,reach=34*d,st=tm.mobility?.status?.();
+  if(st?.kind==='getoff'){const n=city?.nodes?.find(o=>o.id===st.at);const q=n&&fitLatLon(n.lat,n.lon);
+    if(q&&Math.hypot(q.x-x,q.y-y)<=reach){const res=tm.getOffNow?.();if(res&&!res.error){_mapActAt=performance.now();return true;}}}
+  let best=null,bd=Infinity;const tick=flow.clock.tick;
+  for(const k of tm.catchables?.()||[]){const p=tm.liveNetwork.position(k.vehicle,tick);if(!p)continue;const q=fitLatLon(p.lat,p.lon),dd=Math.hypot(q.x-x,q.y-y);if(dd<bd){bd=dd;best=k;}}
+  if(best&&bd<=reach){const res=tm.catchVehicle?.(best.vehicle.id);if(res&&!res.error){_mapActAt=performance.now();return true;}}
+  return false;}
 for(const ev of ['pointerup','touchend'])$('map').addEventListener(ev,e=>{
-  if(transitView||dragged)return;const t=e.changedTouches?.[0]||e;const node=nodeAtPoint(t.clientX,t.clientY);
+  if(transitView||dragged)return;const t=e.changedTouches?.[0]||e;if(mapAction(t.clientX,t.clientY)){$('pop').hidden=true;e.preventDefault();return;}const node=nodeAtPoint(t.clientX,t.clientY);
   if(node){showStop(node,{x:t.clientX,y:t.clientY});e.preventDefault();}else $('pop').hidden=true;},{passive:false});
 addEventListener('resize',()=>{renderer?.resize();_railAt='';placeRail();});
 $('play').onclick=()=>{if(!flow)return;if(WEEK){Week.begin(WEEK);Week.saveWeek(WEEK);}$('title').hidden=true;flow.clock.setPaused(false);};
