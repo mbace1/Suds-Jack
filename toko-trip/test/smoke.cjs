@@ -269,6 +269,33 @@ const check = (label, ok) => {
   // built to be swapped under the same sky so they can be judged against each
   // other. What is gated is that both exist, that they really swap, and the
   // one thing that silently broke the node version once.
+  // THE WATER MOVES (v19). One map sliding at 1.7 cm/s was the owner's
+  // "still". Two layers of different size, travelling in different
+  // directions at tens of centimetres a second, on BOTH the near water and
+  // the ring to the horizon so there is no seam where one still sea meets a
+  // moving one.
+  const rip = await page.evaluate(async () => {
+    const d = window.__tt.debug;
+    const r0 = d.ripple(), t0 = performance.now();
+    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => requestAnimationFrame(r));
+    return { r0, r1: d.ripple(), dt: (performance.now() - t0) / 1000 };
+  });
+  {
+    const { r0, r1 } = rip;
+    const spd = v => Math.hypot(v[0], v[1]);
+    const cms = [spd(r0.va) * r0.a, spd(r0.vb) * r0.b].map(v => Math.round(v * 100));
+    const cosAB = (r0.va[0] * r0.vb[0] + r0.va[1] * r0.vb[1]) / (spd(r0.va) * spd(r0.vb));
+    check(`the water is two ripple layers, on the cove and the open sea alike (${r0.a} m / ${r0.b} m)`,
+      r0.node === true && r0.a / r0.b > 1.8);
+    check(`travelling at water speed, not glass speed (${cms.join(' / ')} cm/s)`,
+      cms.every(v => v >= 8 && v <= 40));
+    check(`and crossing rather than parallel, so the pattern changes shape (cos ${cosAB.toFixed(2)})`,
+      Math.abs(cosAB) < 0.6);
+    check(`and the render loop actually moves them (${r1.offA.map((v, i) => (v - r0.offA[i]).toFixed(3)).join(', ')} tiles)`,
+      r1.offA.some((v, i) => Math.abs(v - r0.offA[i]) > 0.01));
+  }
+
   const w0 = await page.evaluate(() => window.__tt.debug.water());
   check(`the island boots on the baked water (${w0.mode})`, w0.mode === 'baked' && w0.tsl === false);
   const wSwap = await page.evaluate(() => {
@@ -594,6 +621,25 @@ const check = (label, ok) => {
   check('a gull can cry without throwing', await page.evaluate(() => {
     try { window.__tt.debug.gullCry(); return true; } catch (e) { return false; }
   }));
+  // THE WIND IS GUSTS (v19). A steady hiss from three crowns at head height
+  // was the owner's "annoying": between gusts the air must be SILENT, and a
+  // gust must come and go on its own. Driven through gustUpdate with a big
+  // step rather than waited for — the sandbox runs at two frames a second.
+  const wind = await page.evaluate(async () => {
+    const d = window.__tt.debug, frame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    d.gustNow(); d.gustUpdate(2.6);
+    const peak = d.air().gust;
+    await frame();
+    const loud = d.air().wind;
+    d.gustUpdate(30);
+    await frame();
+    const after = d.air();
+    return { peak, loud, quiet: after.wind, gust: after.gust, next: after.nextGust };
+  });
+  check(`a gust rises and the crowns rustle with it (gust ${wind.peak}, ${wind.loud.join(' ')})`,
+    wind.peak > 0.9 && wind.loud.some(g => g > 0.02) && wind.loud.every(g => g < 0.06));
+  check(`and between gusts the air is silent, not a fan in the next room (${wind.quiet.join(' ')}, next in ${wind.next} s)`,
+    wind.gust === 0 && wind.quiet.every(g => g === 0) && wind.next >= 5);
 
   // ── the sand ──
   // The beach is the biggest surface in view from the chair, and the two
