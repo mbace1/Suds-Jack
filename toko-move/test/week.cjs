@@ -112,6 +112,13 @@ server.listen(0, '127.0.0.1', async () => {
     ok(`Friday settles the rent (${fri.verdict})`, /RENT PAID|SHORT €\d+/.test(fri.verdict) && w.day === 5);
     ok('the week is shared, not the shift — and Friday offers no kit', fri.share && !fri.next && fri.again && !(await page.locator('.kitOffer').count()));
     ok('four nights, four items', w.kit.length === 4 && new Set(w.kit).size === 4, w.kit.join());
+    // the week as a poster: drawn, not blank, and SAVE hands you the file
+    const px = await page.evaluate(() => { const c = document.getElementById('poster'); if (!c) return null; const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, seen = new Set();
+      for (let i = 0; i < d.length; i += 4 * 97) seen.add(`${d[i] >> 4}${d[i + 1] >> 4}${d[i + 2] >> 4}`); return { w: c.width, h: c.height, colours: seen.size }; });
+    ok(`Friday draws the week as a poster (${px?.w}×${px?.h}, ${px?.colours} colours)`, px && px.w === 1080 && px.h === 1350 && px.colours > 12, JSON.stringify(px));
+    await page.evaluate(() => Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }));
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 8000 }).catch(() => null), page.tap('#savePoster')]);
+    ok(`SAVE THE POSTER hands over a PNG (${dl?.suggestedFilename()})`, !!dl && /^toko-move-week-\d+\.png$/.test(dl.suggestedFilename()));
     await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
       Object.defineProperty(navigator, 'clipboard', { value: { writeText: t => { window.__copied = t; return Promise.resolve(); } }, configurable: true }); });
     await page.tap('#share'); await page.waitForTimeout(200);

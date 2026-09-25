@@ -1,5 +1,5 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=55';
+import './core-v212.js?v=56';
 import './route-choice.js?v=22';
 import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=14';
 import {hidden as fogHides} from './weather.js?v=1';
@@ -7,9 +7,9 @@ import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} 
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=3';
 import {MobilityController} from './mobility-v212.js?v=8';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
-import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=21';
+import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=22';
 import {mountEvents} from './events.js?v=4';
-import {mountRival} from './rival.js?v=2';
+import {mountRival} from './rival.js?v=3';
 import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=2';
 import {planEstimate} from './timetable.js?v=2';
 import {ShiftLog} from './shiftlog.js?v=3';
@@ -19,7 +19,7 @@ import {mountSkillMoments} from './moments-v212.js?v=1';
 import {mountJuice} from './juice.js?v=1';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=1';
-const BUILD_VERSION='2.52';
+const BUILD_VERSION='2.54';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
@@ -61,8 +61,16 @@ const drawInterception=()=>{const hit=bestInterception(tm);if(!hit)return;const 
 // is yours. A dashed line to where they are heading, because a rival you
 // cannot read is just a sprite.
 const drawRival=()=>{const r=tm.rival,p=r?.position?.();if(!p)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1,q=project(p.lat,p.lon),x=q.x,y=q.y-9*d;
-  {const b=tm.city?.resolved?.[r.to];if(b){const t=project(b.lat,b.lon);ctx.save();ctx.strokeStyle='rgba(155,89,182,.5)';ctx.lineWidth=2*d;ctx.setLineDash([4*d,4*d]);ctx.beginPath();ctx.moveTo(x,y+6*d);ctx.lineTo(t.x,t.y);ctx.stroke();ctx.restore();}}
+  {const b=p.target;if(b){const t=project(b.lat,b.lon),race=p.kind==='race';ctx.save();ctx.strokeStyle=race?'rgba(155,89,182,.9)':'rgba(155,89,182,.5)';ctx.lineWidth=(race?3:2)*d;ctx.setLineDash(race?[6*d,4*d]:[4*d,4*d]);ctx.lineDashOffset=race?-performance.now()/40:0;ctx.beginPath();ctx.moveTo(x,y+6*d);ctx.lineTo(t.x,t.y);ctx.stroke();
+    // HE IS COMING FOR YOUR JOB (rival.js, v2.53): the stop he is racing to
+    // pulses in his colour with the seconds he has left — the same seconds
+    // the board's row counts (ten ticks a second at x1).
+    if(race){const left=r.claim?Math.max(0,r.claim.at-tm.flow.clock.tick):0,pulse=0.5+0.5*Math.sin(performance.now()/150);
+     ctx.setLineDash([]);ctx.strokeStyle=`rgba(155,89,182,${(0.5+0.5*pulse).toFixed(2)})`;ctx.lineWidth=(3+2*pulse)*d;ctx.beginPath();ctx.arc(t.x,t.y,(16+4*pulse)*d,0,Math.PI*2);ctx.stroke();
+     const lab=`${r.name.toUpperCase()} · ${Math.ceil(left/10)} s`;ctx.font=`900 ${Math.round(10*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=3*d;ctx.strokeStyle='#fffdf7';ctx.strokeText(lab,t.x,t.y+30*d);ctx.fillStyle='#7d3c98';ctx.fillText(lab,t.x,t.y+30*d);}
+    ctx.restore();}}
   const step=Math.floor(tm.flow.clock.tick/5)%2,ink='#0f1418',coat='#9b59b6',skin='#e8d3c0';
+  if(p.carrying){ctx.save();ctx.fillStyle='#c58b3c';ctx.strokeStyle=ink;ctx.lineWidth=1.5*d;ctx.beginPath();ctx.roundRect(x+2*d,y-4*d,7*d,7*d,1.5*d);ctx.fill();ctx.stroke();ctx.restore();}   // the job he took, on his back
   ctx.save();ctx.lineJoin='round';ctx.lineCap='round';
   const body=()=>{ctx.beginPath();ctx.moveTo(x-4*d,y-2*d);ctx.lineTo(x+4*d,y-2*d);ctx.lineTo(x+3.5*d,y+6*d);ctx.lineTo(x-3.5*d,y+6*d);ctx.closePath();};
   const legs=()=>{ctx.beginPath();ctx.moveTo(x-2*d,y+6*d);ctx.lineTo(x-(step?5:1)*d,y+12*d);ctx.moveTo(x+2*d,y+6*d);ctx.lineTo(x+(step?1:5)*d,y+12*d);};

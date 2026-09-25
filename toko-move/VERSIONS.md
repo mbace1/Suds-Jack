@@ -1,5 +1,65 @@
 # Toko Move — versions
 
+## v2.54 — 2026-09-25
+
+**THE WEEK AS A POSTER.** Leap 5 of five (`js/poster.js`). Friday's end card
+was text you could copy. It is a picture now as well: the city's lines faint in
+the dark, the five routes you actually rode drawn over them in five colours,
+start and end marked, and under them each day's grid and money, the rent
+verdict and the kit you carried — one 1080 × 1350 image, a phone's 4:5. SAVE
+THE POSTER hands it to the phone's share sheet as a file where it can take
+one and downloads it where it cannot; the text line stays, one button down.
+
+The routes are **recorded as you play**, because each day of the week is a
+separate page and a poster drawn at the end would have nothing to draw: every
+fifteen ticks the courier's position joins the day's trail, the trail rides in
+the week's save with the shift (so a shift left half-way keeps the line it had
+drawn), and it is thinned to 180 points, ends kept — five days stay a few
+kilobytes. The frame fits every point of the week and keeps the city's shape
+(a kilometre east is a kilometre north); a week with no movement still draws
+the lines.
+
+`test/poster.mjs` (11) holds the trail and the frame in bare node;
+`test/week.cjs` (31) now asks Friday for a 1080×1350 poster with real colour
+in it and for SAVE to hand over a PNG. Not drawing it, or not wiring the
+button, each fails it.
+
+## v2.53 — 2026-09-25
+
+**THE RIVAL RACES YOU.** Leap 4 of five (`js/rival.js`). A claim used to be a
+countdown on a row while Vesa walked somewhere else entirely. It is a journey
+now: the moment he wants one of your jobs he turns and heads for the stop you
+are standing at, a dashed purple line runs from him to it, the stop pulses in
+his colour with VESA · N s, and he arrives exactly when the claim runs out — the
+countdown is a figure you can watch getting closer. The row says so: *Vesa is
+coming for it · 12 s · beat him +20%*.
+
+- **Beat him** — take the job he is racing for and it pays a fifth more, on the
+  job itself, so the fee delivered and the fee logged are one number, and the
+  feed says BEAT VESA · +20%.
+- **Lose to him** — he takes it, walks off with the parcel on his back to its
+  destination, and wants nothing else until that delivery is made. (The first
+  cut had him racing for your next job the instant he won, which read as him
+  dropping the parcel.)
+- He moves on SEGMENTS — from where he stands, to somewhere, between two ticks —
+  and every change of plan starts the next one where he is, so a claim won,
+  lost or abandoned never makes him jump (the gate holds his largest step
+  under 40 m a tick; it is 17.9).
+
+**Rent holds at €400.** The contested job is on the board from the moment it is
+dealt, so a quick player can take the +20% nearly every time — that is the
+choice, and it is income. Measured (`--kitweeks=20`, kit, weather and the rush
+all on): **80% / 65% / 10%**. The shortest-job player's 55 → 65 is inside a
+20-week sample's noise (about ±11 points), so it is not a reason to move the
+rent, and the shift gate — 14 dailies — still reads 11/11.
+
+`test/rival.cjs` (11) walks the clock a tick at a time on shift 4, where he
+starts 2.9 km away (on shift 3 he starts ON your stop and "he gets closer"
+reads 0 m → 0 m): the claim turns him, he closes 2863 m → 1095 m, the row names
+the prize, taking it pays 108 → 130 and ends the race without a jump, and on
+the other ending he takes it, carries it and claims nothing more. Removing the
+bonus, the carrying guard or the race path each fails it.
+
 ## v2.52 — 2026-09-25
 
 **THE RUSH: the shift has a shape.** Leap 3 of five (`js/rush.js`). Seventy-
