@@ -9,7 +9,7 @@
 
 import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, THEMES, RULES, ASCENSION, ASC_MAX } from './data.js?v=45';
 import * as engine from './engine.js?v=45';
-import { Arena } from './scene.js?v=34';
+import { Arena } from './scene.js?v=35';
 import { Puppet, paintCutout, setFigureMotion, figureMotion, freezeFigures, setFigureArt, figureArt, setFigureCut, figureCut, setFigureRelief } from './puppet.js?v=45';
 import { preloadPlates, plateFor as figurePlateFor, posesFor as figurePoses, CAST } from './plates.js?v=38';
 import { paintCardPic } from './cardart.js?v=43';
@@ -26,7 +26,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 50;
+const VERSION = 51;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -189,6 +189,15 @@ function enqueueLog() {
 }
 
 function unitOf(uid) { return uid === 'hero' ? hero : foes.get(uid); }
+// v51 — where an effect lands on a figure: at the chest, on the side it was
+// struck from (the hero faces +x and is hit from the right; the row faces −x)
+// — and a hand's breadth toward the CAMERA, whichever side of the bridge it is
+// on: the first cut nudged +z, this camera sits on −z, and every spark that
+// crossed a figure was drawn behind its card.
+function fxAt(p, yk = 0.55) {
+  const v = p.group.position;
+  return { x: v.x + p.facing * 0.12 * p.scale, y: 1.5 * p.scale * yk, z: v.z + Math.sign(arena.camera.position.z - v.z) * 0.12 };
+}
 
 function act(ev) {
   switch (ev.t) {
@@ -201,7 +210,9 @@ function act(ev) {
     case 'damage': {
       const isHero = ev.target === 'hero' || ev.target === undefined || !foes.has(ev.target);
       if (isHero) {
-        later(0, () => { hero.hit(); arena.kick(ev.amount > 8 ? 1.4 : 0.8); sfx.hurt(); pop('hero', ev.blocked && !ev.amount - ev.blocked ? `${ev.amount}` : `-${ev.amount - ev.blocked}`, 'dmg'); setShown('hero', { hp: ev.hp }); if (ev.blocked) setShown('hero', { block: Math.max(0, shownOf('hero').block - ev.blocked) }); });
+        later(0, () => { hero.hit(); arena.kick(ev.amount > 8 ? 1.4 : 0.8); sfx.hurt();
+          if (ev.blocked) arena.fx.block(fxAt(hero), 1);
+          if (ev.amount - ev.blocked > 0) arena.fx.hit(fxAt(hero), -1, ev.amount - ev.blocked > 8); pop('hero', ev.blocked && !ev.amount - ev.blocked ? `${ev.amount}` : `-${ev.amount - ev.blocked}`, 'dmg'); setShown('hero', { hp: ev.hp }); if (ev.blocked) setShown('hero', { block: Math.max(0, shownOf('hero').block - ev.blocked) }); });
         later(420, () => {});
       } else {
         // Balatro's pop: the base, each add, each mult, then the number that lands
@@ -212,12 +223,16 @@ function act(ev) {
           b.mults.forEach((m, i) => later(200, () => { sfx.mult(3 + i); pop(ev.target, `×${m.x}`, 'mult', m.src); }));
           later(220, () => {});
         }
-        later(0, () => { const p = foes.get(ev.target); p?.hit(); sfx.hit(ev.amount >= 12); pop(ev.target, `${ev.amount}`, ev.amount >= 12 ? 'big' : 'dmg'); setShown(ev.target, { hp: ev.hp, block: Math.max(0, shownOf(ev.target).block - ev.blocked) }); });
+        later(0, () => { const p = foes.get(ev.target); p?.hit(); sfx.hit(ev.amount >= 12);
+          if (p) {
+            if (ev.blocked) arena.fx.block(fxAt(p), -1);
+            if (ev.amount - ev.blocked > 0) (ev.src === 'fetch' ? arena.fx.bite(fxAt(p), 1) : arena.fx.hit(fxAt(p), 1, ev.amount >= 12));
+          } pop(ev.target, `${ev.amount}`, ev.amount >= 12 ? 'big' : 'dmg'); setShown(ev.target, { hp: ev.hp, block: Math.max(0, shownOf(ev.target).block - ev.blocked) }); });
         later(240, () => {});
       }
       break;
     }
-    case 'die': later(120, () => { const p = foes.get(ev.target); p?.die(); sfx.topple(); labelOf(ev.target)?.classList.add('dead'); }); later(300, () => {}); break;
+    case 'die': later(120, () => { const p = foes.get(ev.target); p?.die(); sfx.topple(); if (p) arena.fx.dust(fxAt(p, 0.3), 0.6 * p.scale); labelOf(ev.target)?.classList.add('dead'); }); later(300, () => {}); break;
     case 'block': later(0, () => { sfx.block(); pop(ev.target, `+${ev.n}`, 'block'); setShown(ev.target, { block: ev.total }); }); later(160, () => {}); break;
     case 'status': later(0, () => { sfx.status(); pop(ev.target, `${STATUS_LABEL[ev.key] ?? ev.key} ${ev.n}`, 'status'); refreshStatus(ev.target); }); later(200, () => {}); break;
     case 'power': later(0, () => { pop('hero', 'POWER', 'status'); refreshStatus('hero'); }); break;

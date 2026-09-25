@@ -1348,6 +1348,41 @@ const check = (name, ok, extra = '') => {
       lit.left > lit.off && lit.right < lit.off && lit.left - lit.right > 0.04);
   }
 
+  // ── v51: PIXEL EFFECTS ────────────────────────────────────────────────
+  // Driven off the replay, so a card that lands has to throw sparks; and they
+  // have to be drawn IN FRONT of the figure they land on. The first cut drew
+  // them in the opaque pass — before the alpha-tested cutouts, which then
+  // painted over every square inside a silhouette — and only the half of each
+  // burst hanging off a figure showed. Read as the pixel at the burst's own
+  // screen point, which is inside the figure's body.
+  {
+    const fx = await page.evaluate(async () => {
+      const a = __sk.arena;
+      __sk.debug.setHp?.(0, 999);
+      __sk.debug.hand(['strike']); __sk.select(0); __sk.tapEnemy(0); __sk.flush();
+      // count the pool itself: `live` is only recounted inside update(), and
+      // no frame has run between the flush and this line
+      const fromReplay = a.fx.p.filter(q => q.life > 0).length;
+      const foe = a.puppets.find(p => p.facing === -1 && p.alive);
+      const at = { x: foe.group.position.x, y: 1.5 * foe.scale * 0.55, z: foe.group.position.z + Math.sign(a.camera.position.z - foe.group.position.z) * 0.12 };
+      const upd = a.fx.update;
+      for (let i = 0; i < 3; i++) a.fx.block(at, -1);
+      a.fx.update(0.01); a.fx.update = () => {};
+      const V = foe.group.position.constructor, c = a.renderer.domElement;
+      const v = new V(at.x, at.y, at.z).project(a.camera);
+      const sx = Math.round((v.x + 1) / 2 * c.width), sy = Math.round((1 - v.y) / 2 * c.height);
+      a.update(0);
+      const k = document.createElement('canvas'); k.width = c.width; k.height = c.height;
+      const g = k.getContext('2d'); g.drawImage(c, 0, 0);
+      const d = g.getImageData(sx - 2, sy - 2, 5, 5).data;
+      let best = 0; for (let i = 0; i < d.length; i += 4) best = Math.max(best, 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2]);
+      a.fx.update = upd;
+      return { fromReplay, best };
+    });
+    check(`a card that lands throws sparks off the replay (${fx.fromReplay} squares in the air)`, fx.fromReplay > 0);
+    check(`and they are drawn in front of the figure they land on (brightest pixel at the burst: ${fx.best.toFixed(0)})`, fx.best > 200);
+  }
+
   await ctx.close();
 
   // ── portrait ───────────────────────────────────────────────────────────

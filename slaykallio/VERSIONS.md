@@ -7,6 +7,45 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v51 — 2026-09-25
+**PIXEL EFFECTS — hits, clanks, dust and the dog, drawn the way sprites are**
+
+Metal Slug's feel lives in its effects, and this game had none: a hit was a
+number popping and a figure jolting. `js/fx.js` is one pooled cloud of SQUARE
+pixels whose colour STEPS down a ramp rather than blending — a sprite effect is
+a handful of frames in a few flat colours, and a smooth fade is exactly what
+makes a particle read as a particle system. Four effects, each driven off the
+replay (so none can show a hit the engine did not deal):
+
+- **a hit**: hot squares thrown away from whoever struck, and an impact star —
+  four arms that stand still and burn out, the one-frame flash every Metal Slug
+  hit carries. Bigger at 12+ damage.
+- **a clank**: a flash where the blow stopped and a fan of cold chips thrown
+  back — on any hit that block absorbed.
+- **a body going down**: dust rolling out along the deck and bits of card.
+- **the dog going in**: a fur-coloured scuffle low on the target (`src: fetch`).
+
+Squares are sized in world units, so a spark is the same size by a rat as by
+the Bear and joins the pixel frame's grid when that is on. Off entirely under
+`prefers-reduced-motion`: it is decoration, and nothing it shows is information
+the numbers do not already carry.
+
+**Three things the first renders got wrong, all found by freezing a burst and
+looking at it:**
+- **The block read as a dotted line** — twelve even squares on an arc. Evenly
+  spaced marks are a pattern, and an impact is not one.
+- **Every spark crossing a figure was hidden.** The particles were an OPAQUE
+  material, so three drew them before the alpha-tested cutouts, which then
+  painted over them; only the part of a burst hanging off a silhouette showed.
+  They are in the transparent pass now, after the figures.
+- **And they were nudged the wrong way.** This bridge's camera sits on −z (the
+  owner's "camera from the other direction" pass), so +z put an effect behind
+  its card. The nudge points at the camera, wherever it is.
+
+Gates: a strike that lands puts 27 squares in the air off the replay, and the
+brightest pixel at a burst's own screen point inside the figure is 234 — drawn
+in front. smoke.cjs 176.
+
 ## v50 — 2026-09-25
 **THE TORCH LIGHTS THE FIGURES — live, from where it actually stands**
 

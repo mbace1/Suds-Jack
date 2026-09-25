@@ -21,6 +21,7 @@
 // rusted, and nothing in the set is bright except what the game paints on top.
 
 import * as THREE from 'three';
+import { PixelFX } from './fx.js?v=1';
 import { paintedPark, paintForeground, fromImage } from './bg.js?v=32';
 
 // how far behind the deck the painting hangs, and how far in front of it the
@@ -155,6 +156,7 @@ export class Arena {
     this.sun = new THREE.DirectionalLight('#ffe8c0', 0);
     this.sun.position.set(-5, 6, 6);
     this.scene.add(this.torch, this.fill, this.rim, this.rank, this.sun);
+    this.fx = new PixelFX(this.scene);           // v51 — hits, clanks, dust, on the sprite grid
     this.flickT = Math.random() * 40;
     this.steady = matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
@@ -628,13 +630,15 @@ export class Arena {
       this.camera.position.set(this.baseCam.x + (Math.random() - 0.5) * s, this.baseCam.y + (Math.random() - 0.5) * s, this.baseCam.z);
       this.camera.lookAt(0, this.lookY, 0);
     }
+    this.fx.update(dt);
     if (this.pixel && this.px) {
       this._sizePixel();                       // the camera pulls back for a boss; follow it
+      this.fx.setScale(this.px.size.h, this.camera.fov);
       this.renderer.setRenderTarget(this.px.rt);
       this.renderer.render(this.scene, this.camera);
       this.renderer.setRenderTarget(null);
       this.renderer.render(this.px.scene, this.px.cam);
-    } else this.renderer.render(this.scene, this.camera);
+    } else { this.fx.setScale(this.renderer.domElement.height, this.camera.fov); this.renderer.render(this.scene, this.camera); }
   }
 }
 
