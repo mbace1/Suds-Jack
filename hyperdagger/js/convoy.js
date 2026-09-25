@@ -304,21 +304,34 @@ export class Convoy {
   }
 
   _layAhead(playerZ) {
-    let f = this.front();
-    while (f && f.group.position.z > playerZ - this.cfg.ahead) {
+    // Lay the road off the frontmost truck WITHIN REACH, not the frontmost
+    // truck. The first cut laid off the convoy's very front, so a fast truck
+    // that pulled a hundred units clear stopped the laying and left the road
+    // in front of you empty — the loop showed a lone truck on a dark road.
+    const c = this.cfg, lim = playerZ - c.ahead;
+    let f = null;
+    for (const t of this.trucks) {
+      if (t.z < lim - 20 || t.z > playerZ + 10) continue;
+      if (!f || t.z < f.z) f = t;
+    }
+    if (!f) {
+      // nothing ahead at all: put one where a jump can reach it
+      f = this._truck(this.standing?.lane ?? 1, playerZ - 14, this.standing?.spd ?? c.speed);
+    }
+    while (f.z > lim) {
       const d = 7 + Math.random() * 4.5;
       const gap = 1.5 + Math.random() * 3.5;
-      const z = f.group.position.z - f.depth / 2 - gap - d / 2;
+      const z = f.z - f.depth / 2 - gap - d / 2;
       const lane = Math.max(0, Math.min(LANES.length - 1, f.lane + Math.floor(Math.random() * 3) - 1));
-      const spd = Math.max(this.cfg.speed - this.cfg.speedVar, Math.min(this.cfg.speed + this.cfg.speedVar, f.ts + (Math.random() - 0.5) * 2));
-      this._truck(lane, z, spd, d);
+      const spd = Math.max(c.speed - c.speedVar, Math.min(c.speed + c.speedVar, f.ts + (Math.random() - 0.5) * 2));
+      const t = this._truck(lane, z, spd, d);
       // the cluster: sometimes a truck alongside, in another lane
-      if (Math.random() < this.cfg.sideChance) {
+      if (Math.random() < c.sideChance) {
         const others = [0, 1, 2, 3].filter(l => Math.abs(l - lane) >= 1 && Math.abs(l - lane) <= 2);
         const l2 = others[Math.floor(Math.random() * others.length)];
         if (l2 !== undefined) this._truck(l2, z + (Math.random() - 0.5) * 6, spd + (Math.random() - 0.5) * 3);
       }
-      f = this.front();
+      f = t;
     }
   }
 
@@ -436,7 +449,8 @@ export class Convoy {
     this._layAhead(player.feet.z);
     for (let i = this.trucks.length - 1; i >= 0; i--) {
       const t = this.trucks[i];
-      if (t.z > player.feet.z + 40) { this._remove(t); this.trucks.splice(i, 1); }
+      // behind you, or run away far ahead: gone (a runaway is replaced by the laying)
+      if (t.z > player.feet.z + 40 || t.z < player.feet.z - this.cfg.ahead - 60) { this._remove(t); this.trucks.splice(i, 1); }
     }
     // skulls come down the road at you — they are what the look is for
     const rate = 0.25 + Math.min(0.9, gameTime * 0.016);

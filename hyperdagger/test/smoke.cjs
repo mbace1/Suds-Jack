@@ -1175,7 +1175,9 @@ s.listen(0, '127.0.0.1', async () => {
   const inca = await seasonRead('inca');
   ok('inca: season 2 is BUILT (v44) and still names what is open',
     inca.sn.current === 'inca' && inca.sn.built === true && inca.sn.todo.length >= 2
-    && inca.sn.sky.void[2] > 0.3 && inca.sn.floorTint[1] > inca.sn.floorTint[0],
+    // v52: the pale overcast sky is gone — a DARK teal zenith now, and the
+    // light lives at the horizon and in the sun (checked with the tech art)
+    && inca.sn.sky.void[2] < 0.2 && inca.sn.sky.void[2] > inca.sn.sky.void[0] && inca.sn.floorTint[1] > inca.sn.floorTint[0],
     JSON.stringify({ built: inca.sn.built, todo: inca.sn.todo.length, sky: inca.sn.sky.void }));
   // v45 THE ROSTER. Owner: enemies will be aquamarine, green, yellows, Aztec.
   // A body built under INCA wears the mosaic — green leads red by a wide
@@ -1545,8 +1547,8 @@ s.listen(0, '127.0.0.1', async () => {
   ok('inca: the floor reads the wave — a shadow under its body and a foam line at its foot',
     tech.t1.floorWave[0] > 0 && tech.t1.floorWave[1] > 0 && Math.abs(tech.t1.waveHead) < 200,
     JSON.stringify({ floorWave: tech.t1.floorWave, head: tech.t1.waveHead }));
-  ok('inca: the floor has caustics, the sky has haze and a sun, and the gel clock runs',
-    tech.t0.caustic > 0 && tech.t0.haze > 0 && tech.t0.sun > 0 && tech.t1.gelTime > tech.t0.gelTime,
+  ok('inca: the floor has caustics, the sky a gradient and a sun, and the gel clock runs (v52: the haze went with the grey)',
+    tech.t0.caustic > 0 && tech.t0.grad === 1 && tech.t0.sun > 0 && tech.t1.gelTime > tech.t0.gelTime,
     JSON.stringify({ t0: tech.t0, t1: tech.t1 }));
   ok('inca: the lip SHEDS — cubes spray off the break',
     tech.spray > 0, JSON.stringify({ spray: tech.spray }));
