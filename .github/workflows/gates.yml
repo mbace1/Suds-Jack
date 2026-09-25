@@ -451,6 +451,9 @@ jobs:
       - name: the rush, in the page — full trams refused at every door
         run: NODE_PATH=$(npm root -g) node toko-move/test/rush.cjs
 
+      - name: the rival races you — a claim is a journey, and beating him pays
+        run: NODE_PATH=$(npm root -g) node toko-move/test/rival.cjs
+
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
       # is broken if fewer than 40% of them get three deliveries home.

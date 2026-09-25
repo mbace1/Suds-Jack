@@ -1,5 +1,38 @@
 # Toko Move — versions
 
+## v2.53 — 2026-09-25
+
+**THE RIVAL RACES YOU.** Leap 4 of five (`js/rival.js`). A claim used to be a
+countdown on a row while Vesa walked somewhere else entirely. It is a journey
+now: the moment he wants one of your jobs he turns and heads for the stop you
+are standing at, a dashed purple line runs from him to it, the stop pulses in
+his colour with VESA · N s, and he arrives exactly when the claim runs out — the
+countdown is a figure you can watch getting closer. The row says so: *Vesa is
+coming for it · 12 s · beat him +20%*.
+
+- **Beat him** — take the job he is racing for and it pays a fifth more, on the
+  job itself, so the fee delivered and the fee logged are one number, and the
+  feed says BEAT VESA · +20%.
+- **Lose to him** — he takes it, walks off with the parcel on his back to its
+  destination, and wants nothing else until that delivery is made. (The first
+  cut had him racing for your next job the instant he won, which read as him
+  dropping the parcel.)
+- He moves on SEGMENTS — from where he stands, to somewhere, between two ticks —
+  and every change of plan starts the next one where he is, so a claim won,
+  lost or abandoned never makes him jump (the gate holds his largest step
+  under 40 m a tick; it is 17.9).
+
+RENT WITH THE RACE: being measured (`--kitweeks=20`) — the contested job is on
+the board from the moment it is dealt, so a quick player can take the +20%
+nearly every time; that is the choice, and it is income.
+
+`test/rival.cjs` (11) walks the clock a tick at a time on shift 4, where he
+starts 2.9 km away (on shift 3 he starts ON your stop and "he gets closer"
+reads 0 m → 0 m): the claim turns him, he closes 2863 m → 1095 m, the row names
+the prize, taking it pays 108 → 130 and ends the race without a jump, and on
+the other ending he takes it, carries it and claims nothing more. Removing the
+bonus, the carrying guard or the race path each fails it.
+
 ## v2.52 — 2026-09-25
 
 **THE RUSH: the shift has a shape.** Leap 3 of five (`js/rush.js`). Seventy-
