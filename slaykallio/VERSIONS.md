@@ -7,6 +7,43 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v52 — 2026-09-25
+**OLD GRUDGE — the first card that grows with the RUN, and the design that lost**
+
+Everything in the pool compounds inside a FIGHT (a turn's plays, a fight's
+hits, block that stays) or reads the run's hour (`dark`); nothing a player owns
+grew with the run itself. **Old Grudge** (neutral rare, 1 energy): deal 5, and
+every kill it lands adds 3 for the rest of the run. The growth is written on the
+copy in your DECK, so the next fight draws it bigger, and the face quotes the
+real number with how much it has grown so far — full information, the rule this
+game will not break.
+
+**The first design was a trap, and the measurement is the version's content.**
+Built as Ritual Dagger — exhaust, one swing a fight, save it for the killing
+blow — every character starting a run with it grew it in 97% of runs, to 18.7
+damage, and LOST: **17.5% → 14.1%**. A card held for a kill is a dead card all
+fight, and the fights that decide runs are BOSSES (78–95% of deaths since v27),
+which only offer a kill at the very end — so a killing-blow card helps in fights
+you were already winning and never in the one that ends you. As an ordinary
+attack that remembers its kills, from turn one, 300 seeds × 6 characters:
+
+| variant | win (17.5% without) | ends at |
+|---|---|---|
+| 0 cost, 5, +3, exhaust | 22.7% | 10.5 |
+| 1 cost, 7, +4, exhaust | 23.1% | 16.2 |
+| **1 cost, 5, +3, keeps (ships)** | **25.8%** | **20.1** |
+| 1 cost, 8, +3, keeps | 32.1% — the best card in the game | 26.3 |
+
+**And the bots had to learn it to measure it.** Every policy but the control
+now aims a grow-on-kill card at the enemy it would kill when there is one, and
+otherwise plays it as an ordinary attack; holding it back is the measured loss
+above. The whole-run matrix barely moves (mean 18%) because a rare ends only
+1.6% of runs in the deck — the per-card numbers carry the finding, not the table.
+
+core.mjs 898: it grows on a kill (5 → 8, on the deck copy, and says so), not on
+a swing that leaves the target standing, and a grown copy is what the next
+fight shuffles in.
+
 ## v51 — 2026-09-25
 **PIXEL EFFECTS — hits, clanks, dust and the dog, drawn the way sprites are**
 

@@ -23,7 +23,7 @@
 // specific card (remove it, upgrade it) parks what is left to do in
 // `state.pick.then` and waits for `pickCard`.
 
-import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=45';
+import { CARDS, CHARACTERS, JOKERS, ARTIFACTS, ENEMIES, ENCOUNTERS, ACTS, EVENTS, RULES, ASCENSION, ASC_MAX } from './data.js?v=46';
 
 // THE ONE PLACE A RUNG IS READ. Every rule that varies by ascension asks this
 // and nothing else, so the ladder is a table in data.js rather than six
@@ -509,6 +509,20 @@ export function playCard(state, i, targetIndex = null) {
     if (h.powers.freeDraw && state.freeDraws < RULES.freeDrawCap) { state.freeDraws++; drawCards(state, h.powers.freeDraw); state.log.push({ t: 'draw', n: h.powers.freeDraw, src: 'freeDraw' }); }
   }
 
+  // v52 — a card that REMEMBERS THE RUN grows on the copy in your deck, so the
+  // next fight draws it bigger; the copy in hand grows too, so the face is
+  // right for the rest of this one. A conjured card has no deck copy and so
+  // grows only for as long as it lives, which is the honest reading.
+  if (c.grows?.on === 'kill' && target && !target.alive) {
+    const owned = state.hero.deck.find(d => d.uid === c.uid);
+    let now = 0;
+    for (const x of new Set([c, owned].filter(Boolean))) {
+      const d = x.effects.find(f => f.type === 'damage');
+      if (d) { d.n += c.grows.n; now = d.n; }
+      x.grown = (x.grown || 0) + c.grows.n;
+    }
+    state.log.push({ t: 'grow', card: c.id, uid: c.uid, n: c.grows.n, now });
+  }
   if (c.type === 'power') state.exhaust.push(c);
   else if (c.exhaust) exhaustCard(state, c);
   else state.discard.push(c);
@@ -1191,6 +1205,7 @@ export function describe(c, state = null, i = null, targetIndex = null) {
       case 'discardHand': parts.push(`Discard ${fx.n} from the right of your hand.`); break;
     }
   }
+  if (c.grows?.on === 'kill') parts.push(`If this kills, it deals ${c.grows.n} more for the rest of the run${c.grown ? ` (+${c.grown} so far)` : ''}.`);
   if (c.exhaust) parts.push('Exhaust.');
   return parts.join(' ');
 }

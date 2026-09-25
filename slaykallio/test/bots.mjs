@@ -91,14 +91,25 @@ function playByScore(s, score, { stop = () => false } = {}) {
   let guard = 40;
   while (s.phase === 'fight' && guard-- > 0) {
     if (stop(s)) break;
-    let best = -1, bestScore = -Infinity;
+    let best = -1, bestScore = -Infinity, aim = null;
     for (let i = 0; i < s.hand.length; i++) {
       if (!canPlay(s, i)) continue;
+      // v52 — a card that grows on a KILL is only worth playing as a killing
+      // blow, and only at the thing it kills. Every policy but the control
+      // knows that much; without it Old Grudge was spent at face value, grew
+      // in 8 of the 29 runs that ended owning it, and measured nothing.
+      // Played as an ordinary attack otherwise: HOLDING it for a kill was
+      // measured and loses — a card kept in hand all fight is a dead card, and
+      // a boss (where 78-95% of runs end) only offers the kill at the very end.
+      if (s.hand[i].grows?.on === 'kill') {
+        const k = s.enemies.findIndex((e, j) => e.alive && preview(s, i, j).damage >= e.hp + e.block);
+        if (k >= 0) { best = i; bestScore = Infinity; aim = k; break; }
+      }
       const v = score(s, i, s.hand[i]);
       if (v > bestScore) { bestScore = v; best = i; }
     }
     if (best < 0 || bestScore <= -Infinity) break;
-    playCard(s, best, weakest(s));
+    playCard(s, best, aim ?? weakest(s));
   }
   if (s.phase === 'fight') endTurn(s);
 }

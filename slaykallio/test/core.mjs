@@ -1669,6 +1669,30 @@ king.hp = 40; king.intent = null; endTurn(r);
 check('at half he has had enough', acted(r, mark).includes('enough'), `${acted(r, mark)}`);
 check('and it is worth three strength', king.status.strength >= 3, `${king.status.strength}`);
 
+// ── v52: OLD GRUDGE — the card that remembers the run ───────────────────
+{
+  const own = st => { const c = st.hand[0]; st.hero.deck.push({ ...c, effects: c.effects.map(f => ({ ...f })) }); return c.uid; };
+  let g = rig('boxer', ['old_grudge']);
+  const uid = own(g);
+  const t = g.enemies.find(e => e.alive); t.hp = 5; t.block = 0; t.status = {};
+  const miss = g.enemies.find(e => e.alive && e !== t);
+  playCard(g, 0, g.enemies.indexOf(t));
+  const owned = g.hero.deck.find(d => d.uid === uid);
+  check(`Old Grudge kills a 5 HP rat and the copy you OWN now deals ${owned.effects[0].n}`, !t.alive && owned.effects[0].n === 8);
+  check('and says so on its face', /3 more for the rest of the run \(\+3 so far\)/.test(describe(owned)));
+  check('and the replay is told it grew', g.log.some(l => l.t === 'grow' && l.uid === uid && l.now === 8));
+  // it grows only on a KILL: a swing that leaves the target standing is a swing
+  g = rig('boxer', ['old_grudge']);
+  const uid2 = own(g);
+  const big = g.enemies.find(e => e.alive); big.hp = 50; big.block = 0; big.status = {};
+  playCard(g, 0, g.enemies.indexOf(big));
+  check('a swing that does not kill leaves it as it was (5)', g.hero.deck.find(d => d.uid === uid2).effects[0].n === 5);
+  // and the next fight DRAWS it bigger — the deck copy is what a fight shuffles
+  g = rig('boxer', []);
+  g.hero.deck = [{ ...CARDS.old_grudge, uid: 77, id: 'old_grudge', effects: [{ type: 'damage', n: 11 }], grown: 6 }];
+  check('a grown copy is what the next fight shuffles in (11)', g.hero.deck[0].effects[0].n === 11 && describe(g.hero.deck[0]).startsWith('Deal 11'));
+}
+
 // ── NO KEY IS DEFINED TWICE IN A TABLE ──────────────────────────────────
 // Found while diagnosing the Dog Walker: `good_boy`, `long_lead`, `one_more`
 // and `deposit_run` were each written twice into CARDS, and an object literal

@@ -165,6 +165,23 @@ export const CARDS = {
   streetlight: { type: 'attack', cost: 2, target: 'all', rarity: 'uncommon', pic: 'lamp',
     effects: [{ type: 'damage', n: 9 }],
     kallio: { name: 'Streetlight' }, fantasy: { name: 'Starfall' } },
+  // v52 — THE RUN-SCALE CARD. Everything else in the pool compounds inside a
+  // FIGHT (a turn's plays, a fight's hits, block that stays) or reads the
+  // run's hour (`dark`); nothing a player owns grows with the run itself. This
+  // does: every kill it lands is written on the card you OWN, so the next
+  // fight draws it bigger and the face always quotes the real number.
+  //
+  // THE FIRST DESIGN WAS A TRAP, and measuring it said so. As Ritual Dagger
+  // (exhaust, one swing a fight, save it for the killing blow) it grew in 97%
+  // of runs to 18.7 damage and LOST win rate — 17.5% → 14.1% when every run
+  // started with it — because a card held back for a kill is a dead card all
+  // fight, and the fights that decide runs are BOSSES, which only offer a kill
+  // at the very end. As an ordinary attack that remembers its kills it is
+  // +8 points from turn one (25.8%) and ends near 20. At 8 base it was +15,
+  // the best card in the game; at 0 cost or with exhaust it was +5.
+  old_grudge: { type: 'attack', cost: 1, target: 'enemy', rarity: 'rare', pic: 'fist',
+    effects: [{ type: 'damage', n: 5 }], grows: { on: 'kill', n: 3 },
+    kallio: { name: 'Old Grudge' }, fantasy: { name: 'Blood Feud' } },
   old_days: { type: 'skill', cost: 1, target: 'self', rarity: 'rare', exhaust: true, pic: 'sunburst',
     effects: [{ type: 'status', who: 'self', key: 'strength', n: 2 }],
     kallio: { name: 'The Old Days' }, fantasy: { name: 'Battle Hymn' } },
