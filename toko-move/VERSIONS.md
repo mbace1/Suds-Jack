@@ -1,5 +1,18 @@
 # Toko Move — versions
 
+## v2.58 — 2026-09-25
+
+**THE HUD FROZE WHEN A FRAME SKIPPED A TENTH TICK.** CI failed v2.56 and v2.57
+on *the peak says so on the HUD (BUSY ×1.2)* while the fee on the same page was
+already paying ×1.3. The frame loop repainted the HUD only on a frame that
+landed EXACTLY on a multiple of ten ticks; a frame that advances several ticks
+— a slow phone, a busy runner, the harness's jump to the peak — can step over
+one, and then the clock and the rush badge stayed on whatever moment last
+painted them (here, an event mid-jump). It was never flaky; it was a race the
+local machine happened to win. The HUD now repaints on every tenth tick
+CROSSED. `rush.cjs` jumps to three ticks past a tenth, so it fails on the old
+line every time (reproduced: *BUSY ×1.2*) and passes on the new one.
+
 ## v2.57 — 2026-09-25
 
 **TÖÖLÖNTORI LEAVES THE BOARD, BECAUSE HSL LEFT IT** (owner, 2026-09-25: move
