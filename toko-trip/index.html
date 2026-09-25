@@ -1299,7 +1299,6 @@
     }
     causRebake();
     const waterNormal = waterNormalTex(), waterDisp = waterDispTex();
-    waterNormal.repeat.set(44, 44);
     waterDisp.repeat.set(5, 5);
 
     // The sky, as something the water can reflect. Six small faces painted
@@ -1353,13 +1352,43 @@
       if (old) old.dispose();
     }
 
-    const waterMat = new THREE.MeshStandardMaterial({
+    // ── the ripple: TWO layers, crossing ──
+    // v2–v18 slid ONE normal map at 1.7 cm/s, and the owner's first word on
+    // it from a headset was "still". Both halves of that were the fault. The
+    // speed: real wind ripple travels at tens of centimetres a second, and at
+    // a hundredth of that a surface reads as glass with a pattern printed on
+    // it. And the single layer: one map sliding faster does not read as
+    // water either, it reads as a conveyor — the pattern keeps its shape and
+    // just moves. Two scales travelling in different directions, summed, make
+    // a surface whose SHAPE changes every frame, which is the thing the eye
+    // actually takes for moving water.
+    //
+    // Sampled in WORLD xz rather than per-mesh uv, so the near water and the
+    // ring out to the horizon are one surface with no seam where they meet.
+    // (x, −z) because both meshes are laid down by the same −90° turn about x,
+    // which puts uv v along −z; sampled the other way round, the tangent frame
+    // three builds from the uv would light every ripple from the wrong side.
+    const uRipA = THREE.TSL.uniform(new THREE.Vector2());
+    const uRipB = THREE.TSL.uniform(new THREE.Vector2());
+    const RIPPLE = { a: 1.6, b: 0.62, va: [0.10, -0.055], vb: [-0.075, -0.12], scale: 0.42 };
+    function rippleTS() {           // tangent-space normal, −1..1
+      const { texture, positionWorld, vec2, vec3, normalize } = THREE.TSL;
+      const w = vec2(positionWorld.x, positionWorld.z.negate());
+      const a = texture(waterNormal, w.div(RIPPLE.a).add(uRipA)).xyz.mul(2).sub(1);
+      const b = texture(waterNormal, w.div(RIPPLE.b).add(uRipB).add(0.37)).xyz.mul(2).sub(1);
+      // whiteout blend: slopes add, so neither layer flattens the other
+      return normalize(vec3(a.xy.add(b.xy.mul(0.6)), a.z.mul(b.z)));
+    }
+    const rippleNormal = () => THREE.TSL.normalMap(rippleTS().mul(0.5).add(0.5),
+      THREE.TSL.vec2(RIPPLE.scale, RIPPLE.scale));
+
+    const waterMat = new THREE.MeshStandardNodeMaterial({
       color: col(P.teal), transparent: true, opacity: 0.82,
       roughness: 0.12, metalness: 0,
-      normalMap: waterNormal, normalScale: new THREE.Vector2(0.34, 0.34),
-      displacementMap: waterDisp, displacementScale: 0.11, displacementBias: -0.055,
+      displacementMap: waterDisp, displacementScale: 0.13, displacementBias: -0.065,
       envMapIntensity: 1.15,
     });
+    waterMat.normalNode = rippleNormal();
     // The shore fade is EXACT rather than screen-space. The usual way to fade
     // water at a beach is to read the depth buffer and compare — but this
     // island already has the seabed as a function, so every vertex can simply
@@ -1422,7 +1451,6 @@
     // amplitude is free.
     const TSL = THREE.TSL;
     const uSea = TSL.uniform(0);
-    const uNormOff = TSL.uniform(new THREE.Vector2());
     const uShallow = TSL.uniform(new THREE.Color());
     const uDeep = TSL.uniform(new THREE.Color());
     const uSunDir = TSL.uniform(new THREE.Vector3());
@@ -1439,11 +1467,13 @@
       if (waterTslMat) return waterTslMat;
       const m = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
       const { vec2, vec3, float, texture, cubeTexture, positionWorld, cameraPosition,
-        normalize, reflect, dot, max, pow, exp, mix, saturate, oneMinus, attribute, uv } = TSL;
+        normalize, reflect, dot, max, pow, exp, mix, saturate, oneMinus, attribute } = TSL;
 
       // the surface, from the same scrolling normal map the baked water uses
-      const nt = texture(waterNormal, uv().mul(44).add(uNormOff)).xyz.mul(2).sub(1);
-      const N = normalize(vec3(nt.x.mul(0.34), float(1), nt.y.mul(0.34)));
+      // the same two crossing layers the baked water wears, so a comparison
+      // between the two is a comparison of SHADING and not of ripple
+      const nt = rippleTS();
+      const N = normalize(vec3(nt.x.mul(RIPPLE.scale), float(1), nt.y.mul(RIPPLE.scale)));
 
       const V = normalize(positionWorld.sub(cameraPosition));
       const NdotV = max(dot(N, V.negate()), float(0.02));
@@ -1500,11 +1530,11 @@
     // starts where the detailed mesh ends. No displacement out here: a ring
     // with one radial segment has nothing to displace.
     const sea = new THREE.Mesh(new THREE.RingGeometry(34, 220, 72, 1),
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshStandardNodeMaterial({
         color: waterMat.color, roughness: 0.12, metalness: 0,
-        normalMap: waterNormal, normalScale: new THREE.Vector2(0.34, 0.34),
         envMapIntensity: 1.15,
       }));
+    sea.material.normalNode = rippleNormal();
     sea.rotation.x = -Math.PI / 2;
     sea.position.y = -PAD_H - 0.02;
     scene.add(sea);
@@ -2998,6 +3028,35 @@
     const SURF_HZ = 0.065;
     const surfVoices = [];        // the wash, breathed by the visible tide
     const windVoices = [];        // one per swaying crown
+    // The wind is GUSTS, not weather. Until v19 every crown near the chair
+    // breathed a 1.5 kHz hiss on a ten-second sine, forever — three sources
+    // of steady noise at head height, which in a headset is not air, it is a
+    // fan left on in the next room, and the owner's word for it was
+    // "annoying". Air on a calm cove is silence with a gust in it now and
+    // then: it rises over a couple of seconds, the crowns lean into it, and
+    // it goes. The quiet between is most of the sound.
+    const GUST = { every: [22, 55], rise: 2.2, hold: 1.6, fall: 4.5 };
+    let gust = 0, gustAge = -1, nextGustIn = 9;
+    // the next one is counted from the START of this one, so the gap after a
+    // gust ends is never less than every[0] minus its own length (~14 s)
+    function gustStart() {
+      gustAge = 0;
+      nextGustIn = GUST.every[0] + Math.random() * (GUST.every[1] - GUST.every[0]);
+    }
+    function gustUpdate(dt) {
+      if (gustAge < 0) {
+        nextGustIn -= dt;
+        if (nextGustIn <= 0) gustStart();
+        gust = 0; return;
+      }
+      gustAge += dt;
+      const { rise, hold, fall } = GUST;
+      const e = gustAge < rise ? gustAge / rise
+        : gustAge < rise + hold ? 1
+        : 1 - (gustAge - rise - hold) / fall;
+      if (e <= 0) { gustAge = -1; gust = 0; return; }
+      gust = e * e * (3 - 2 * e);
+    }
     let nextGull = 0, swell = 0, tideEdgeT = 0, dripBus = null, nextDrip = 0;
     // the mix the mood asks for, eased rather than switched
     const AIR = [
@@ -3067,10 +3126,13 @@
         pa.setRolloffFactor(1.4);
         c.add(pa);
         const src = AC.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+        // leaves, not hiss: a soft band low in the mids, and the top rolled
+        // off so it never reaches the frequencies a fan lives at
         const bp = AC.createBiquadFilter(); bp.type = 'bandpass';
-        bp.frequency.value = 1500; bp.Q.value = 0.7;
+        bp.frequency.value = 620; bp.Q.value = 0.5;
+        const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100;
         const g = AC.createGain(); g.gain.value = 0;
-        src.connect(bp); bp.connect(g);
+        src.connect(bp); bp.connect(lp); lp.connect(g);
         pa.setNodeSource(g);
         src.start(0, Math.random() * 6);
         windVoices.push({ gain: g, phase: c.userData.phase });
@@ -3185,9 +3247,11 @@
       const breath = (surfLevel(t) + 0.057) / 0.114;
       const wash = (0.5 + 0.7 * breath) * mixSurf * (1 + swell * 0.7);
       for (const v of surfVoices) v.gain.gain.value = v.base * wash;
+      // silent between gusts; inside one, each crown's rustle still follows
+      // the sway you can see it doing
       for (const v of windVoices) {
         const sway = 0.5 + 0.5 * Math.sin(t * 0.6 + v.phase);
-        v.gain.gain.value = (0.018 + 0.05 * sway) * mixWind;
+        v.gain.gain.value = 0.05 * gust * (0.55 + 0.45 * sway) * mixWind;
       }
       // The surf is emitted FROM the waterline, so when the waterline walks
       // up the beach the sound walks with it — from the chair the sea gets
@@ -3788,15 +3852,18 @@
       // line follows the water's reach up the sand
       water.position.y = -PAD_H + tide + surfLevel(t);
       sea.position.y = water.position.y - 0.02;
-      waterNormal.offset.set(t * 0.011, -t * 0.006);
-      waterDisp.offset.set(-t * 0.004, t * 0.0055);
+      // offsets in TILES per second: a 1.6 m layer at 0.114/s is 18 cm/s,
+      // the 0.62 m one crosses it at 9 cm/s, and the 14 m swell field rolls
+      // through at 30 cm/s — slow enough to be calm, fast enough to be alive
+      uRipA.value.set(t * RIPPLE.va[0], t * RIPPLE.va[1]);
+      uRipB.value.set(t * RIPPLE.vb[0], t * RIPPLE.vb[1]);
+      waterDisp.offset.set(-t * 0.013, t * 0.017);
       // the two caustic layers drift against each other; their product is
       // what moves, and it moves far less obviously than either layer does
       if (waterMode === 'tsl') {
         // everything the node material needs that changes: where the surface
         // is, where the sun is, and what colour the water is being this mood
         uSea.value = water.position.y;
-        uNormOff.value.set(t * 0.011, -t * 0.006);
         uShallow.value.copy(cur.water).lerp(_envC.setRGB(1, 1, 1), 0.55);
         uDeep.value.copy(cur.water).multiplyScalar(0.42);
         uSunDir.value.copy(cur.sunDir);
@@ -3822,9 +3889,12 @@
       // the reflection is rebuilt a few times across a mood blend, not every
       // frame: each rebuild is a fresh filtered cube on the GPU
       if (blend < 1 && t - envStamp > 0.3) { envStamp = t; rebuildEnv(); }
+      gustUpdate(dt);
+      // a gust is SEEN as well as heard: the crowns lean into it
+      const lean = 1 + 1.8 * gust;
       for (const c of crowns) {
-        c.rotation.z = Math.sin(t * 0.6 + c.userData.phase) * 0.035;
-        c.rotation.x = Math.cos(t * 0.47 + c.userData.phase) * 0.028;
+        c.rotation.z = Math.sin(t * 0.6 + c.userData.phase) * 0.035 * lean + 0.03 * gust;
+        c.rotation.x = Math.cos(t * 0.47 + c.userData.phase) * 0.028 * lean;
       }
       for (const r of reedClumps) r.rotation.z = Math.sin(t * 0.9 + r.userData.phase) * 0.05;
       // a failed prop TURNS, and its label follows your head. Nothing else on
@@ -4129,6 +4199,8 @@
         },
         // the soundscape: where it comes from, and whether it is really off
         audioStart, gullCry, waterEdge,
+        gustNow: gustStart, gustUpdate,
+        ripple: () => ({ offA: [uRipA.value.x, uRipA.value.y].map(v => +v.toFixed(4)), offB: [uRipB.value.x, uRipB.value.y].map(v => +v.toFixed(4)), ...RIPPLE, node: !!waterMat.normalNode && !!sea.material.normalNode }),
         air: () => ({
           started: !!AC,
           surf: surfVoices.map(v => ({
@@ -4137,6 +4209,7 @@
             gain: +v.gain.gain.value.toFixed(4),
           })),
           wind: windVoices.map(v => +v.gain.gain.value.toFixed(4)),
+          gust: +gust.toFixed(3), nextGust: +nextGustIn.toFixed(1),
           master: listener.getInput().gain.value,
           mixSurf: +mixSurf.toFixed(3), mixWind: +mixWind.toFixed(3), cut: wantCut,
           nextGull: +nextGull.toFixed(1),

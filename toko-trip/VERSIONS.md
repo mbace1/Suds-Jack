@@ -1,5 +1,47 @@
 # Toko Trip — release log
 
+## v19 — 2026-09-25
+
+The owner's first report from the island: *"wind sound is annoying, water
+looks still."* Both were right, and both were one number and one shape.
+
+- **The water moves.** It was one normal map sliding at **1.7 cm/s**, a
+  hundredth of what real wind ripple does, so it read as glass with a
+  pattern printed on it. Making it faster would not have been enough on its
+  own: a single layer at speed reads as a conveyor, because the pattern
+  keeps its shape and just travels. So there are now **two layers**, 1.6 m
+  and 0.62 m, moving at 18 and 9 cm/s in near-perpendicular directions and
+  summed with a whiteout blend. Their sum changes SHAPE every frame, and
+  that is what the eye takes for water. The swell field under them now
+  rolls at 30 cm/s instead of 7, and 2 cm taller.
+- **One surface, no seam.** The layers are sampled in world xz, not per-mesh
+  uv, so the near cove and the ring out to the horizon are the same moving
+  sea. Before, the two meshes tiled at unrelated scales. The TSL water reads
+  the same two layers, so the toggle still compares shading and not ripple.
+- **The wind is gusts.** Three crowns at head height used to breathe a
+  1.5 kHz hiss on a ten-second sine, forever. In a headset that is a fan in
+  the next room, not air. Now the air is silent, and every 22–55 s a gust
+  rises over two seconds, holds, and dies away over four. It is filtered
+  down to a leaf rustle (a 620 Hz band, rolled off above 1.1 kHz) and peaks
+  lower than the old steady level did. The gust is **seen** as well as
+  heard: the crowns lean into it and swing wider while it lasts.
+
+Mechanics: the baked water is a `MeshStandardNodeMaterial` now, identical in
+every property except `normalNode`. WebGPURenderer was already converting
+the old `MeshStandardMaterial` into one behind the scenes, so the only thing
+that changed is the normal. `normalMap()` takes the blended layers, and its
+tangent frame comes from the plane's own uv. That is why the world lookup
+uses **(x, −z)**: the −90° turn about x runs uv v along −z, and sampling the
+other way lights every ripple from the wrong side.
+
+The gate gains six checks (116): two layers on both meshes, at water speed
+rather than glass speed, crossing rather than parallel, actually advanced by
+the render loop; a gust rises and the crowns rustle; and between gusts every
+wind voice is at exactly zero.
+
+The cabinet note stopped saying the cave is deferred. It has been open
+since v18.
+
 ## v18 — 2026-09-24
 
 The cave, and the tide opens it. Deferred since v1 on the grounds that it
