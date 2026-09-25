@@ -70,7 +70,9 @@ server.listen(0, '127.0.0.1', async () => {
         off: rs.map(r => { const v = net.vehicles.find(x => x.live && x.key.endsWith(`/${r.veh}`)); return v ? m(net.position(v, t), r) : null; }) }; }, reps.map((r, i) => ({ lat: r.lat, lon: r.lon, veh: 500 + i })));
     ok(`the reports become the fleet (${got.live} live of ${got.vehicles}; ${got.feed.label})`, got.live === reps.length && got.vehicles === reps.length && got.feed.state === 'live');
     ok(`each is where it was reported (${got.off.map(d => d == null ? '—' : d.toFixed(1) + ' m').join(', ')})`, got.off.every(d => d != null && d < 15));
-    await page.waitForTimeout(600);
+    // the clock is at a fifteenth here — ten ticks is fifteen real seconds —
+    // so the badge must follow the FEED, not wait for the next tenth tick
+    await page.waitForTimeout(400);
     const hud = await page.evaluate(() => document.getElementById('rush').textContent);
     ok(`the HUD says LIVE and how many (${hud})`, /LIVE · 3/.test(hud));
     // the panel still works on real vehicles: take a job and look at the catch rows

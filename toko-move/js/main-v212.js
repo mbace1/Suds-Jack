@@ -1,5 +1,5 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=59';
+import './core-v212.js?v=60';
 import './route-choice.js?v=23';
 import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=14';
 import {hidden as fogHides} from './weather.js?v=1';
@@ -19,7 +19,7 @@ import {mountSkillMoments} from './moments-v212.js?v=2';
 import {mountJuice} from './juice.js?v=1';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=2';
-const BUILD_VERSION='2.58';
+const BUILD_VERSION='2.59';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
