@@ -1,5 +1,47 @@
 # Toko Move — versions
 
+## v2.57 — 2026-09-25
+
+**TÖÖLÖNTORI LEAVES THE BOARD, BECAUSE HSL LEFT IT** (owner, 2026-09-25: move
+with the city). The nightly HSL refresh has failed every night since the 12th
+on *cannot resolve anchor toolontori*, and v2.44's diff said why: the feed
+dropped Töölöntori, Apollonkatu, Arkadiankatu, Hanken, Maria, Sammonkatu and
+the 4T/8T loop, and added the Crown Bridges stops (Kruunuvuori, Korkeasaari,
+Yliskylä, Merihaka …) with lines 11, 11H and 12. Töölöntori is not renamed,
+it is **unserved** — and it was one of the game's delivery anchors, so the
+shipped board was sending couriers to a stop no tram calls at any more.
+
+It is gone as a destination, a transfer hub and a walk end. What stood on it
+moved to where the city still is: the campaign's fragile parcel to Töölö goes
+to **Ooppera** (Töölö, on the Mannerheimintie trams) and its next job leaves
+from there, so the campaign is still one chain; Mannerheimintie is walked
+Lasipalatsi → Ooppera; Helsinginkatu is walked from Ooppera, where it meets
+Mannerheimintie; Runeberginkatu is drawn Kamppi → Meilahti; the TÖÖLÖ label
+sits on Ooppera. The graph fingerprint moved by exactly Töölöntori: its node,
+its eight links and its place in lines 2, 2H, 8H and 8T, which now run Kamppi
+→ Ooppera and Ruoholahti → Ooppera — no other node moved by a centimetre. The
+anchor gates count the anchors the definition declares (21) rather than a
+typed 22.
+
+**What this unblocks.** With every remaining anchor served by the new feed,
+the nightly refresh can validate again and open its own refresh PR with the
+new network. The Crown Bridges trams (11, 11H, 12) then appear on the board as
+lines; Laajasalo as a DESTINATION is the step after that, because it needs the
+new pack in the tree and this sandbox cannot fetch it.
+
+**Four browser gates leaned on the old boards**, because removing a
+destination changes what every pinned shift deals: shift 3's first job now
+changes trams (mapcontrol accepts a get-off at a transfer and checks you are
+left waiting there; juice rides leg by leg), shift 1 no longer suits a
+never-walking bot (daily's end-card scenario is shift 2), and in shift 4 the
+rival now starts on your stop (shift 2 puts him 2.9 km out). A pinned shift in
+a gate is a SCENARIO, not the thing measured — `shifts.cjs` is, and it stays
+11/11 with every one of the next 14 dailies winnable.
+
+**Rent re-measured** (`--kitweeks=20`): **75% / 85% / 25%** pay €400 (v2.56:
+85 / 55 / 25). The first two swapped places, which is what 20-week noise looks
+like; rent stays €400.
+
 ## v2.56 — 2026-09-25
 
 **LIVE — THE REAL MORNING** (roadmap L5, `js/hfp.js`, `js/mqtt-ws.js`). The

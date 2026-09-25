@@ -98,7 +98,10 @@ server.listen(0, '127.0.0.1', async () => {
     // that never walks; an ordinary one still has events, and the old wiring
     // still failed it — see the mutation note in VERSIONS.md v2.46.)
     {
-      const D = await fresh(); await boot(D.page, process.env.WIN_Q || '?shift=1&day=none');
+      // v2.57: shift 1's board changed with Töölöntori and its three jobs no
+      // longer fit a never-walking bot's morning; shift 2's do. The shift is a
+      // SCENARIO for the end card, not the thing measured (shifts.cjs is).
+      const D = await fresh(); await boot(D.page, process.env.WIN_Q || '?shift=2&day=none');
       await D.page.evaluate(() => document.getElementById('play').click());
       const won = await D.page.evaluate(() => {
         const tm = window.__tm, ch = tm.challenge, mob = tm.mobility, { routeChoices, allowFor } = globalThis.__tmRouteChoiceCore;

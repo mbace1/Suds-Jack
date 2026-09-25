@@ -5,7 +5,8 @@ import { JOBS } from '../js/deliveries.js';
 import { createFlow } from '../../flow-core/sim.js';
 const pack=JSON.parse(fs.readFileSync(new URL('../cities/helsinki.json',import.meta.url),'utf8'));
 const city=buildRealHelsinki(pack);
-assert.equal(city.nodes.length,22,'delivery board exposes twenty-two real HSL anchors');
+import {HELSINKI_ANCHORS} from '../js/helsinki-anchors.js';
+assert.equal(city.nodes.length,Object.keys(HELSINKI_ANCHORS).length,`delivery board exposes every real HSL anchor (${city.nodes.length})`);
 assert.equal(city.source.exactGeometry,true,'gameplay board is sourced from exact HSL pack');
 for(const n of city.nodes){assert.ok(Number.isFinite(n.lat)&&Number.isFinite(n.lon),`${n.id} keeps real coordinates`);assert.ok(n.hslStopId,`${n.id} keeps HSL stop identity`);}
 for(const id of ['lasipalatsi','ooppera','messukeskus','lansiterminaali','eira','kapyla','hietalahti','meilahti','arabia','olympiaterminaali'])assert.ok(city.nodes.some(n=>n.id===id),`${id} expanded anchor exists`);

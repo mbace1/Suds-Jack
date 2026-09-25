@@ -15,7 +15,7 @@ const box = boardBox(resolved);
 
 // ---- the box holds every place the game can send you --------------------
 const anchors = Object.entries(resolved).filter(([, s]) => s);
-assert.ok(anchors.length >= 22, `expected at least 22 resolved anchors, got ${anchors.length}`);
+assert.ok(anchors.length >= 21, `expected at least 21 resolved anchors, got ${anchors.length}`);
 for (const [id, stop] of anchors) {
   assert.ok(stop.lat > box.s && stop.lat < box.n && stop.lon > box.w && stop.lon < box.e,
     `anchor ${id} falls outside the board box`);

@@ -48,10 +48,13 @@ server.listen(0, '127.0.0.1', async () => {
     for (let i = 0; i < 500; i++) { if ((await page.evaluate(() => window.__tm.mobility.status().kind)) === 'getoff') break; await page.evaluate(() => window.__tm.flow.runTicks(4)); }
     const stop = await screenOf(() => { const tm = window.__tm, st = tm.mobility.status(); if (st.kind !== 'getoff') return null; const n = tm.city.nodes.find(o => o.id === st.at), q = tm.project(n.lat, n.lon), c = document.getElementById('map'), r = c.getBoundingClientRect(); return { x: r.left + q.x * r.width / c.width, y: r.top + q.y * r.height / c.height }; });
     ok('the ride reaches the stop', !!stop);
-    const before = await page.evaluate(() => window.__tm.challenge.index);
+    const before = await page.evaluate(() => { const st = window.__tm.mobility.status(); return { index: window.__tm.challenge.index, at: st.at, transfer: !!st.transfer }; });
     await page.touchscreen.tap(stop.x, stop.y); await page.waitForTimeout(500);
-    const after = await page.evaluate(() => ({ index: window.__tm.challenge.index, kind: window.__tm.mobility.status().kind }));
-    ok('a tap ON THE STOP gets off and delivers', after.index === before + 1 && after.kind !== 'getoff', JSON.stringify(after));
+    const after = await page.evaluate(() => ({ index: window.__tm.challenge.index, kind: window.__tm.mobility.status().kind, from: window.__tm.challenge.currentFrom?.() }));
+    // v2.57: shift 3's first job now changes trams, so the first stop can be a
+    // TRANSFER — the tap still gets you off, and you are left waiting there.
+    ok(`a tap ON THE STOP gets off and ${before.transfer ? `changes at ${before.at}` : 'delivers'}`,
+      after.kind !== 'getoff' && (before.transfer ? after.kind === 'waiting' && after.index === before.index && after.from === before.at : after.index === before.index + 1), JSON.stringify({ before, after }));
     ok('one tap, one action: the stop popup did not also open', await page.locator('#pop').isHidden());
     ok(`no page errors (${errs.length})`, errs.length === 0, errs.slice(0, 2).join(' | '));
   } catch (e) { fail++; console.log(`  FAIL threw: ${e.message}`); }
