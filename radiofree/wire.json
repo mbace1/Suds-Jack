@@ -14,6 +14,7 @@
     {
       "id": "two-year-commitment",
       "sector": "RFH",
+      "tone": "boast",
       "visual": "chart",
       "broll": "harbour",
       "figures": [
@@ -26,6 +27,7 @@
     {
       "id": "under-770",
       "sector": "RFH",
+      "tone": "uneasy",
       "visual": "coin",
       "broll": "kamppi",
       "figures": [
@@ -39,6 +41,7 @@
     {
       "id": "wishlists",
       "sector": "RFH",
+      "tone": "absurd",
       "visual": "crowd",
       "broll": "katu",
       "figures": [
@@ -51,6 +54,7 @@
     {
       "id": "ranked-first",
       "sector": "RFH",
+      "tone": "boast",
       "visual": "mesh",
       "broll": "esplanadi",
       "figures": [
@@ -64,6 +68,7 @@
     {
       "id": "projected-2045",
       "sector": "RFH",
+      "tone": "uneasy",
       "visual": "chart2",
       "broll": "station",
       "figures": [
@@ -76,6 +81,7 @@
     {
       "id": "following-the-cancellation",
       "sector": "RFH",
+      "tone": "grim",
       "visual": "crowd2",
       "broll": "harbour",
       "figures": [],
@@ -86,6 +92,7 @@
     {
       "id": "eighty-years",
       "sector": "RFH",
+      "tone": "absurd",
       "visual": "moon",
       "broll": "katu",
       "figures": [
@@ -98,6 +105,7 @@
     {
       "id": "robot-sailboats",
       "sector": "RFH",
+      "tone": "uneasy",
       "visual": "sea",
       "broll": "gulf",
       "filed": "2026-09-24",

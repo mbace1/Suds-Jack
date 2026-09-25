@@ -78,7 +78,7 @@ export async function renderSoundtrack(plan, opts = {}) {
   vHP.connect(vLP).connect(vDrive).connect(voice).connect(master);
 
   const reveal = plan.reveal, holdEnd = plan.holdEnd, breath0 = reveal - T.breath;
-  const beat = 60 / SCORE.bpm, bar = beat * 4;
+  const beat = 60 / (T.bpm || SCORE.bpm), bar = beat * 4;       // the film's tempo: its cuts sit on these beats
 
   // ── MUSIC: the sections, as gain automation on the bus ──
   const g = music.gain;
@@ -156,8 +156,13 @@ export async function renderSoundtrack(plan, opts = {}) {
   for (let i = 1; i < shots.length; i++) {
     const s = shots[i], prev = shots[i - 1], t = s.t0;
     if (t === reveal || s.shot === 'card') continue;
-    if (!s.decoded && s.shot !== 'anchor' && prev.shot !== 'anchor') roll(ctx, sfx, t);
+    // the graphic carries its own cut: it lands with a thud and leaves with a fall
+    if (s.shot === 'graphic' && !s.decoded) { whoosh(ctx, sfx, noise, t, 0.16); stampLite(ctx, sfx, noise, t + T.slam * 0.62); }
+    else if (prev.shot === 'graphic' && !prev.decoded) fallAway(ctx, sfx, t);
+    else if (!s.decoded && s.shot !== 'anchor' && prev.shot !== 'anchor') roll(ctx, sfx, t);
     else whoosh(ctx, sfx, noise, t, 0.22);
+    // a mood change on every cut to Toko: a little pop under the mark
+    if (s.shot === 'anchor' && !s.take) blip(ctx, sfx, t + 0.1, 1180, 0.07);
     if (s.take) boing(ctx, sfx, t + 0.12);
   }
   // word-run pops
@@ -342,6 +347,19 @@ function stamp(ctx, out, noise, t) {
   const d = ctx.createWaveShaper(); d.curve = driveCurve(6);
   const g = env(ctx, t, 0.001, 0.03, 0.14, 0.5);
   n.connect(f).connect(d).connect(g).connect(out);
+}
+function stampLite(ctx, out, noise, t) {
+  kick(ctx, out, t, 0.6);
+  const n = noiseSrc(ctx, noise, t, 0.12);
+  const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
+  const g = env(ctx, t, 0.001, 0.02, 0.09, 0.25);
+  n.connect(f).connect(g).connect(out);
+}
+function fallAway(ctx, out, t) {
+  const o = ctx.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(700, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.42);
+  const g = env(ctx, t, 0.01, 0.2, 0.2, 0.16);
+  o.connect(g).connect(out); o.start(t); o.stop(t + 0.5);
 }
 function scratch(ctx, out, noise, t, d) {
   const n = noiseSrc(ctx, noise, t, d);

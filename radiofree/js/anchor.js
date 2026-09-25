@@ -17,8 +17,8 @@
 import { drawMasterBadge } from '../../toko/js/master.js';
 import { WAYS, STICKER } from '../../toko/js/palette.js';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=70';
-import { shade, mix } from './screen.js?v=70';
+import { PAL, SECTOR_COLOR } from './palette.js?v=71';
+import { shade, mix } from './screen.js?v=71';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —
@@ -41,6 +41,7 @@ const L = {
 };
 
 const lerpN = (a, b, k) => a + (b - a) * k;
+const clamp01 = (x) => Math.max(0, Math.min(1, x));
 function withAlpha(hex, a) {
   const h = hex.replace('#', '');
   const n = parseInt(h.length === 3 ? h.replace(/./g, '$&$&') : h.slice(0, 6), 16);
@@ -221,13 +222,15 @@ export class Anchor {
     c.drawImage(bs, 0, 0, W, H);
     c.restore();
 
-    this.beams(c, t, W, H, key, s);
+    this.beams(c, t, W, H, key, s, film.heat || 0);
+    this.siren(c, t, W, H, film.heat || 0);
 
     c.save();
     c.translate(cx, cy); c.scale(zoom, zoom); c.translate(-cx, -cy);
     this.subject(c, t, W, H, film.toko3d || null);
     this.desk(c, W, H, key, dim, s, true);
     this.reflect(c, t, W, H, key);
+    if (film.meter) this.spinMeter(c, t, W, H, key, s, film.meter, hot);
     c.restore();
 
     this.furniture(c, t, W, H, key, hot, s);
@@ -237,7 +240,7 @@ export class Anchor {
   // Two studio lights from above the frame, down onto him, with dust turning
   // in them. Screen-blended, so they lift what is under them rather than
   // painting over it, and keyed to the shot so a cyan shot has cyan light.
-  beams(c, t, W, H, key, s) {
+  beams(c, t, W, H, key, s, heat = 0) {
     const { cx, cy, R } = this.pose(W, H);
     const deskY = H * this.deskFrac;
     c.save();
@@ -251,8 +254,8 @@ export class Anchor {
         c.closePath();
       };
       const g = c.createLinearGradient(sx, 0, tx, deskY);
-      g.addColorStop(0, withAlpha(key, 0.20));
-      g.addColorStop(0.55, withAlpha(key, 0.07));
+      g.addColorStop(0, withAlpha(key, 0.20 + 0.14 * heat));
+      g.addColorStop(0.55, withAlpha(key, 0.07 + 0.06 * heat));
       g.addColorStop(1, withAlpha(key, 0));
       c.fillStyle = g;
       path(); c.fill();
@@ -269,6 +272,60 @@ export class Anchor {
       }
       c.restore();
     }
+    c.restore();
+  }
+
+  // The morning's last third is a red alert: a siren sweep turns across the
+  // set, faster and redder the later the bulletin. One studio, escalating.
+  siren(c, t, W, H, heat) {
+    const k = clamp01((heat - 0.45) / 0.55);
+    if (k <= 0) return;
+    const deskY = H * this.deskFrac, cx = W / 2, a = t * (1.6 + 1.4 * k);
+    c.save();
+    c.globalCompositeOperation = 'screen';
+    for (const off of [0, Math.PI]) {
+      const aa = a + off;
+      const g = c.createLinearGradient(cx, 0, cx + Math.cos(aa) * W, Math.sin(aa) * deskY);
+      g.addColorStop(0, `rgba(224,20,27,${0.45 * k})`);
+      g.addColorStop(1, 'rgba(224,20,27,0)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.moveTo(cx, 12);
+      c.lineTo(cx + Math.cos(aa - 0.22) * W * 1.4, 12 + Math.sin(aa - 0.22) * W * 1.4);
+      c.lineTo(cx + Math.cos(aa + 0.22) * W * 1.4, 12 + Math.sin(aa + 0.22) * W * 1.4);
+      c.closePath();
+      c.fill();
+    }
+    c.restore();
+  }
+
+  // The SPIN-O-METER: a thermometer on the desk counting every spin DECODE
+  // has shown this morning. It holds through the reads and climbs on the
+  // reveal, so the morning's eighth bulletin opens on a nearly full glass.
+  spinMeter(c, t, W, H, key, s, m, hot) {
+    const { R, cx } = this.pose(W, H);
+    const deskY = H * this.deskFrac;
+    const x = cx + R * 1.38, h = R * 1.3, w = R * 0.2, top = deskY - h;
+    const f = clamp01(m.value / m.total);
+    const bump = m.bump ? 1 + 0.06 * Math.sin(t * 22) * Math.exp(-((t * 3) % 3)) : 1;
+    c.save();
+    c.translate(x, deskY); c.scale(bump, bump); c.translate(-x, -deskY);
+    c.fillStyle = 'rgba(8,12,12,0.85)';
+    c.strokeStyle = withAlpha(key, 0.8); c.lineWidth = 2 * s;
+    c.beginPath(); c.roundRect(x - w / 2, top, w, h - w * 0.6, w / 2); c.fill(); c.stroke();
+    const fillC = hot ? PAL.AMBER : '#e0141b';
+    const fh = (h - w * 1.3) * f;
+    c.fillStyle = fillC;
+    c.beginPath(); c.roundRect(x - w * 0.28, top + (h - w * 0.6) - w * 0.35 - fh, w * 0.56, fh + w * 0.2, w * 0.28); c.fill();
+    c.beginPath(); c.arc(x, deskY - w * 0.35, w * 0.62, 0, Math.PI * 2); c.fill(); c.stroke();
+    c.fillStyle = withAlpha(key, 0.85);
+    for (let i = 1; i < 5; i++) c.fillRect(x - w / 2, top + (h - w * 1.3) * i / 5, w * 0.35, 1.5 * s);
+    c.font = `bold ${Math.round(9 * s)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    c.textAlign = 'center'; c.textBaseline = 'bottom';
+    c.fillText('SPINS', x, top - 4 * s);
+    c.fillStyle = '#ffffff'; c.textBaseline = 'middle';
+    c.font = `900 ${Math.round(11 * s)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+    c.fillText(String(Math.round(m.value)), x, deskY - w * 0.35);
     c.restore();
   }
 
@@ -432,7 +489,7 @@ export class Anchor {
     const f = this.face(t);
     // the take pops him toward the camera; a sentence turns him toward the
     // hand-side the film would have gestured on
-    const pop = 1 + 0.14 * (act.hands || 0);
+    const pop = (1 + 0.14 * (act.hands || 0)) * (act.pop || 1);
     const yaw = (act.gesture || 0) * 0.32;
     this.at = { hx, hy, R };
     // the mood: magenta reading the broadcast, the yellow carrier once decoded
@@ -467,12 +524,54 @@ export class Anchor {
       c.imageSmoothingEnabled = true;
       c.drawImage(img, hx - size / 2, hy - size / 2, size, size);
       c.restore();
+      this.emoteMark(c, act.emote, act.emoteK || 0, hx + R * 0.95 * pop, hy - R * 0.9 * pop, R * 0.42);
       return;
     }
     c.save();
     if (act.tilt) { c.translate(hx, hy); c.rotate(act.tilt); c.translate(-hx, -hy); }
     c.translate(hx, hy); c.scale(pop * Math.cos(yaw), pop); c.translate(-hx, -hy);
     drawMasterBadge(c, hx, hy, R, { ground, ink: WAYS.SIGN.ink, squash: f.squash, grin: f.grin });
+    c.restore();
+    this.emoteMark(c, act.emote, act.emoteK || 0, hx + R * 0.95 * pop, hy - R * 0.9 * pop, R * 0.42);
+  }
+
+  // The reaction mark by his head — PDoomVideo's emote, in this station's ink:
+  // a sparkle, a sweat drop, or the punctuation of a take. It pops on backOut,
+  // wobbles, and is gone; the face itself never changes (toko/BRAND.md §2c).
+  emoteMark(c, kind, k, x, y, size) {
+    if (!kind || k <= 0.01) return;
+    const b = 1 + 2.9 * Math.pow(k - 1, 3) + 1.9 * Math.pow(k - 1, 2);   // backOut
+    c.save();
+    c.translate(x, y);
+    c.rotate(0.12 + Math.sin(this.t * 17) * 0.05 * (1 - k));
+    c.scale(b, b);
+    c.globalAlpha = Math.min(1, k * 1.3);
+    c.lineJoin = 'round';
+    c.lineWidth = size * 0.1;
+    c.strokeStyle = '#0a0a0e';
+    if (kind === 'spark') {
+      c.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 4, r = i % 2 ? size * 0.22 : size * 0.62;
+        c.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      c.closePath(); c.stroke(); c.fillStyle = '#f5c400'; c.fill();
+    } else if (kind === 'sweat') {
+      c.beginPath();
+      c.moveTo(0, -size * 0.6);
+      c.quadraticCurveTo(size * 0.48, size * 0.05, 0, size * 0.42);
+      c.quadraticCurveTo(-size * 0.48, size * 0.05, 0, -size * 0.6);
+      c.closePath(); c.stroke(); c.fillStyle = '#4cb7e2'; c.fill();
+      c.fillStyle = 'rgba(255,255,255,0.8)';
+      c.beginPath(); c.ellipse(-size * 0.1, size * 0.02, size * 0.07, size * 0.14, 0.3, 0, Math.PI * 2); c.fill();
+    } else {
+      c.font = `900 ${Math.round(size * 1.3)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.lineWidth = size * 0.16;
+      c.strokeText(kind, 0, 0);
+      c.fillStyle = kind === '!' ? '#f5c400' : '#ffffff';
+      c.fillText(kind, 0, 0);
+    }
     c.restore();
   }
 

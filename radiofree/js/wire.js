@@ -78,6 +78,8 @@ function figureProblems(list) {
  * `panelKeys` / `brollKeys` are passed in rather than imported so this module
  * stays dependency-free; the caller supplies whatever the build actually draws.
  */
+export const TONES = ['boast', 'uneasy', 'absurd', 'grim'];
+
 export function validateWire(wire, {
   panelKeys = null, brollKeys = null, sectorIds = null,
   // The panels that put a NUMBER on screen. A bulletin pointed at one of these
@@ -162,6 +164,9 @@ export function validateWire(wire, {
         E(where, `retired must be true or false, got ${JSON.stringify(s.retired)}`);
       }
       // ── the bulletin's own numbers ────────────────────────────────
+      // the story's TONE — how Toko takes it (film.js mood). Optional: absent
+      // means the station's default, a knowing sparkle
+      if (s.tone !== undefined && !TONES.includes(s.tone)) E(where, `tone must be one of ${TONES.join(', ')}, got ${JSON.stringify(s.tone)}`);
       for (const p of figureProblems(s.figures)) E(where, p);
       // An EMPTY array is a declaration, not an omission: the author looked and
       // this bulletin has no number worth printing, so the panel prints none.

@@ -13,7 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const RF = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { planFilm, shotAt, actAt, splitRuns, TIMING } = await import(path.join(RF, 'js', 'film.js'));
+const { planFilm, shotAt, actAt, splitRuns, TIMING, EMOTES } = await import(path.join(RF, 'js', 'film.js'));
 const { LANGS } = await import(path.join(RF, 'js', 'wire.js'));
 
 let checks = 0, fails = 0;
@@ -123,6 +123,21 @@ for (const day of days) {
       if (!(tA.open === 0 && tB.open === 1 && tB.squash > 1 && tB.grin > 1.1 && tB.tilt < -0.05)) {
         problems.push(`${tag}: the take does not shut then pop wide (${JSON.stringify({ tA, tB })})`);
       }
+      // ── every cut lands on a beat of the score (the card starts on one too) ──
+      const beat = 60 / TIMING.bpm;
+      for (const c of p.cuts) {
+        const off = Math.abs(c / beat - Math.round(c / beat)) * beat;
+        if (off > 1e-6) { problems.push(`${tag}: a cut at ${c.toFixed(3)}s is ${off.toFixed(3)}s off the beat`); break; }
+      }
+      // ── Toko's mood: every cut to him opens from a squint and pops the tone's mark ──
+      if (anchorCut) {
+        const a0 = actAt(p, anchorCut.t0 + 0.02), a1 = actAt(p, anchorCut.t0 + 0.4);
+        const want = EMOTES[story.tone] || EMOTES.default;
+        if (!(a0.squash < 0.3 && a1.emote === want && a1.emoteK > 0.9)) problems.push(`${tag}: no mood change on the cut to him (${JSON.stringify({ sq: a0.squash, emote: a1.emote, k: a1.emoteK })})`);
+      }
+      if (actAt(p, tk.t0 + 0.5).emote !== '!') problems.push(`${tag}: the take has no "!"`);
+      // ── the morning's meter climbs by exactly this bulletin's spins ──
+      if (p.meter.after - p.meter.before !== pairs) problems.push(`${tag}: the meter climbs ${p.meter.after - p.meter.before} for ${pairs} spins`);
       // ── figures reach the counter ──
       const hasFig = Array.isArray(story.figures) && story.figures.length > 0;
       if (hasFig !== !!p.counter) problems.push(`${tag}: figures ${hasFig ? 'present' : 'absent'} but the counter is ${p.counter ? 'on' : 'off'}`);
@@ -133,6 +148,14 @@ ok(`every bulletin on disk plans as a film (${plans} plans, ${days.length} morni
    problems.slice(0, 8).join('\n         '));
 ok('no clip is under ten seconds or over a minute', shortest.S >= 10 && longest.S <= 60,
    `shortest ${shortest.S.toFixed(1)}s ${shortest.tag} · longest ${longest.S.toFixed(1)}s ${longest.tag}`);
+
+// ── the morning escalates: heat rises with the bulletin's place ──
+{
+  const wire = JSON.parse(fs.readFileSync(path.join(RF, 'wire', days[0] + '.json'), 'utf8'));
+  const story = wire.stories[0], copy = wire.copy.en[story.id];
+  const hs = [1, 4, 8].map(i => planFilm({ story, copy }, { index: i, total: 8 }).heat);
+  ok('the set heats up across the morning: first bulletin cold, last one full', hs[0] === 0 && hs[2] === 1 && hs[1] > 0 && hs[1] < 1, hs.join(' → '));
+}
 
 // ── a target compresses the budgets and reports the truth ──
 {

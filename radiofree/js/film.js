@@ -29,10 +29,10 @@
 // the transitions and the surface are borrowed, and the drawing medium is not.
 // This station is a 128×152 pixel panel behind curved glass, and stays one.
 
-import { parseLine } from './wire.js?v=70';
-import { readFigures } from './visuals.js?v=70';
-import { PAL } from './palette.js?v=70';
-import { mix } from './screen.js?v=70';
+import { parseLine } from './wire.js?v=71';
+import { readFigures } from './visuals.js?v=71';
+import { PAL } from './palette.js?v=71';
+import { mix } from './screen.js?v=71';
 
 export const W = 1080, H = 1920;
 export const MONO = '"IBM Plex Mono", "SF Mono", Menlo, Consolas, "IPAGothic", monospace';
@@ -61,11 +61,14 @@ export const TIMING = {
   runPop: 0.32,        // a word run pops in over this (backOut)
   wordStagger: 0.12,   // ...and its words arrive one after another at this
   roll: 0.22,          // the V-hold roll between broadcast shots
+  slam: 0.30,          // the graphic falls into its frame and lands (its own cut in)
+  drop: 0.45,          // …and falls out of it under gravity (its own cut out)
   shake: 0.16,         // the reveal's camera shake
   collapse: 0.30,      // the tube switching off into the card
   boilHz: 12,          // grain re-seeds on twos
   sweep: 5.2,          // seconds per scanline roll across the picture
   syl: 5.6,            // syllables a second, when Toko reads
+  bpm: 96,             // the score's tempo (js/score.js) — every cut lands on one of its beats
 };
 
 export const SURFACE = { grain: 0.16, flicker: 0.035, vignette: 0.32, cutFlash: 0.34, bloom: 0.55 };
@@ -92,12 +95,17 @@ export const LOOKS = {
 };
 // Toko's shot takes a set colour, the graphic shot is re-hued through its
 // look's gradient map, the third read (when there is one) is footage in green
+// How Toko takes a story, by its wire `tone` (js/wire.js TONES): the mark that
+// pops by his head on every cut to him. DECODE is always '!'.
+export const EMOTES = { boast: 'spark', uneasy: '!?', absurd: '?', grim: 'sweat', default: 'spark' };
+
 const READ_LOOKS = [LOOKS.cyan, LOOKS.lime, LOOKS.green];
 
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
 const lerp = (a, b, k) => a + (b - a) * k;
 const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
 const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const easeIn = (x) => Math.pow(clamp(x), 3);
 const backOut = (x) => { x = clamp(x); const s = 1.9; return 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); };
 const seg = (t, a, b) => clamp((t - a) / (b - a));
 const hash = (i) => { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
@@ -213,7 +221,17 @@ export function planFilm(entry, opts = {}) {
   // ── lay the timeline ──
   const shots = [], captions = [];
   let t = 0;
-  const push = (shot, len, look, extra = {}) => { shots.push({ t0: t, t1: t + len, shot, look: look.name, ...extra }); t += len; };
+  // Every cut lands ON A BEAT of the score. A shot is only ever LENGTHENED to
+  // reach the next beat — never cut short — so no reading budget shrinks; the
+  // picture and the music lock together the way PDoomVideo's did (its hits all
+  // sit on its 88 BPM grid). The card is the one shot left at its own length.
+  const BEAT = 60 / T.bpm;
+  const onBeat = (x) => Math.ceil(x / BEAT - 1e-6) * BEAT;
+  const push = (shot, len, look, extra = {}) => {
+    const t1 = extra.free ? t + len : onBeat(t + len);
+    delete extra.free;
+    shots.push({ t0: t, t1, shot, look: look.name, ...extra }); t = t1;
+  };
 
   push('broll', T.open, LOOKS.green);
   const runAt = [T.open * 0.45];                       // when each headline run pops
@@ -243,10 +261,10 @@ export function planFilm(entry, opts = {}) {
     captions.push({ kind: 'tell', t0: t, t1: t + len, text: copy.tell });
     t += len + T.gap;
   }
-  const holdEnd = t;
+  const holdEnd = onBeat(t);
   shots.push({ t0: holdStart, t1: holdEnd, shot: 'graphic', look: 'amber', decoded: true });
   t = holdEnd;
-  push('card', T.card, LOOKS.green);
+  push('card', T.card, LOOKS.green, { free: true });
   const S = t;
 
   return {
@@ -261,6 +279,16 @@ export function planFilm(entry, opts = {}) {
     freq: opts.freq || '',
     accent: opts.accent || PAL.GREEN,
     cuts: shots.map(s => s.t0).filter(x => x > 0),
+    tone: story.tone || null,
+    // the morning as ONE escalating set (PDoomVideo's four choruses on one
+    // stage): heat rises with the bulletin's place in the morning, and the
+    // SPIN-O-METER climbs by this bulletin's spins on the reveal
+    heat: (opts.total || 1) > 1 ? clamp(((opts.index || 1) - 1) / ((opts.total || 1) - 1)) : 0,
+    meter: {
+      before: opts.spinsBefore || 0,
+      after: (opts.spinsBefore || 0) + pairs.length,
+      total: Math.max(1, opts.spinsTotal || ((opts.spinsBefore || 0) + pairs.length)),
+    },
   };
 }
 
@@ -313,7 +341,21 @@ export function actAt(plan, t) {
   // the blink that carries over the cut
   const cut = plan.cuts.find(c => c > t && c - t < 0.22 && sh.shot === 'anchor');
   if (cut !== undefined) squash = 1 - ease(seg(t, cut - 0.22, cut - 0.08)) * (1 - ease(seg(t, cut - 0.08, cut)));
+  // A MOOD CHANGE on every cut to him (PDoomVideo's mood(): never snap a
+  // face). The lids start shut and open over 0.16 s, the badge squashes then
+  // springs, and the mark for the story's tone pops by his head and fades.
+  let pop = 1, emote = null, emoteK = 0;
+  if (sh.shot === 'anchor' && !sh.take) {
+    const age = t - sh.t0;
+    if (age < 0.16) squash = Math.min(squash == null ? 1 : squash, 0.06 + 0.94 * (age / 0.16));
+    pop = age < 0.16 ? 1 - 0.1 * Math.sin((age / 0.16) * Math.PI)
+      : age < 0.4 ? 1 + 0.07 * Math.sin(((age - 0.16) / 0.24) * Math.PI) * (1 - (age - 0.16) / 0.24) : 1;
+    emote = EMOTES[plan.tone] || EMOTES.default;
+    emoteK = seg(age, 0.05, 0.3) * (1 - seg(age, 1.4, 1.7));
+  }
   if (sh.take) {
+    emote = '!';
+    emoteK = seg(t - sh.t0, 0.12, 0.3) * (1 - seg(t - sh.t0, 0.95, 1.25));
     const u = t - sh.t0;
     const pop = backOut(seg(u, 0.12, 0.42));
     squash = u < 0.12 ? 1 - ease(seg(u, 0, 0.1)) : lerp(0, 1.12, pop);
@@ -325,7 +367,7 @@ export function actAt(plan, t) {
     hands = pop;                                                    // both up, beside the face
   }
   const look = lookAt(plan, t);
-  return { mouth, open, squash, grin, lean, nod, tilt, gesture, hands, key: look.key, dim: look.dim, hot: !!sh.decoded };
+  return { mouth, open, squash, grin, lean, nod, tilt, gesture, hands, pop, emote, emoteK, key: look.key, dim: look.dim, hot: !!sh.decoded };
 }
 
 // ── the compositor ───────────────────────────────────────────────────────
@@ -449,6 +491,11 @@ export function paintFilm(ctx, plan, t, shots) {
 
   // the reveal's shake: four frames at 24 Hz
   ctx.save();
+  // the graphic landing in its frame shakes the set, briefly
+  if (cur.shot === 'graphic' && !cur.decoded && cur.t0 > 0) {
+    const land = cur.t0 + T.slam * 0.62, a = 9 * (1 - seg(t, land, land + 0.12));
+    if (t >= land && a > 0.5) { const f = Math.floor(t * 30); ctx.translate((hash(f * 1.3) - 0.5) * 2 * a, (hash(f * 2.9 + 4) - 0.5) * 2 * a); }
+  }
   if (t >= plan.reveal && t < plan.reveal + T.shake) {
     const f = Math.floor(t * 24), a = 12 * (1 - seg(t, plan.reveal, plan.reveal + T.shake));
     ctx.translate((hash(f * 1.7) - 0.5) * 2 * a, (hash(f * 2.3 + 9) - 0.5) * 2 * a);
@@ -469,7 +516,8 @@ export function paintFilm(ctx, plan, t, shots) {
     const u = seg(t, cur.t0, cur.t1);
     let zoom = 1 + 0.07 * ease(u);
     if (cur.take) zoom = 1.05 + 0.15 * backOut(seg(t - cur.t0, 0.08, 0.34));
-    shots.anchorObj.render(ctx, W, H, { zoom, toko3d: shots.toko3d || null });
+    const m = plan.meter, mv = t < plan.reveal ? m.before : lerp(m.before, m.after, easeOut(seg(t, plan.reveal + T.flash, plan.reveal + T.flash + 0.9)));
+    shots.anchorObj.render(ctx, W, H, { zoom, toko3d: shots.toko3d || null, heat: plan.heat, meter: { value: mv, total: m.total, bump: t >= plan.reveal } });
     // the lower third's ground, so type never sits on a lit desk
     const sg = ctx.createLinearGradient(0, band - 40, 0, band + 260);
     sg.addColorStop(0, 'rgba(1,4,3,0)'); sg.addColorStop(1, 'rgba(1,4,3,0.78)');
@@ -494,15 +542,31 @@ export function paintFilm(ctx, plan, t, shots) {
     ab.drawImage(cv, (ambC.width - cv.width * cs) / 2, (band / 12 - cv.height * cs) / 2 + (H - band) * 0.2 / 12, cv.width * cs, cv.height * cs);
     ab.filter = 'none';
     ctx.save(); ctx.imageSmoothingEnabled = true; ctx.drawImage(ambC, 0, 0, W, H); ctx.restore();
+    // THE GRAPHIC CARRIES ITS OWN CUT (PDoomVideo: the action carries you
+    // across). Coming in, the panel falls into its frame from above and
+    // lands with a squash; going out, it drops away under gravity over the
+    // next shot. Everything else between broadcast shots still rolls.
+    const slamming = cur.shot === 'graphic' && !cur.decoded && cur.t0 > 0 && t < cur.t0 + T.slam;
+    if (slamming) {
+      const k = seg(t, cur.t0, cur.t0 + T.slam), fall = seg(k, 0, 0.62), land = seg(k, 0.62, 1);
+      const dy = (1 - easeIn(fall)) * -(box.y + box.h + 60);
+      const sy = fall < 1 ? 1.06 : 1 - 0.1 * Math.sin(land * Math.PI) * (1 - land);
+      ctx.save();
+      ctx.translate(box.x + box.w / 2, box.y + box.h + dy);
+      ctx.scale(2 - sy, sy);
+      ctx.translate(-(box.x + box.w / 2), -(box.y + box.h));
+      blit(ctx, cv, box);
+      ctx.restore();
+    }
     ctx.save(); ctx.beginPath(); ctx.rect(box.x, box.y, box.w, box.h); ctx.clip();
-    const rolling = prev && prev.shot !== 'anchor' && !cur.decoded && cur.t0 > 0 && t < cur.t0 + T.roll && shots[prev.shot];
+    const rolling = !slamming && prev && prev.shot !== 'anchor' && prev.shot !== 'graphic' && !cur.decoded && cur.t0 > 0 && t < cur.t0 + T.roll && shots[prev.shot];
     if (rolling) {
       const k = ease(seg(t, cur.t0, cur.t0 + T.roll));
       const pcv = shots[prev.shot], pbox = placement(pcv, band);
       if (pbox) { blit(ctx, pcv, { ...pbox, x: box.x, y: box.y, w: box.w, h: box.h }, -k * box.h); }
       blit(ctx, cv, box, (1 - k) * box.h);
       ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(box.x, box.y + (1 - k) * box.h - 3, box.w, 6);
-    } else blit(ctx, cv, box);
+    } else if (!slamming) blit(ctx, cv, box);
     // a scanline sweep across the glass — the set's own motion
     const rollY = box.y + ((t / T.sweep) % 1) * (box.h + 120) - 60;
     const rg = ctx.createLinearGradient(0, rollY - 40, 0, rollY + 40);
@@ -540,6 +604,7 @@ export function paintFilm(ctx, plan, t, shots) {
       ctx.textAlign = 'left';
     }
   }
+  dropOut(ctx, plan, t, cur, shots, band);
   ctx.restore();
 
   // the lower third's ground, so type never sits on a lit desk or a glow
@@ -653,6 +718,22 @@ export function paintFilm(ctx, plan, t, shots) {
   // the tube switching off: the whole picture collapses to a line, then a dot
   const ct = t - (plan.holdEnd - T.collapse);
   if (ct >= 0) collapse(ctx, seg(ct, 0, T.collapse));
+}
+
+// The graphic leaving: the panel of the shot before falls out of its frame,
+// turning as it goes, over whatever the new shot is.
+function dropOut(ctx, plan, t, cur, shots, band) {
+  const prev = shotBefore(plan, cur);
+  if (!prev || prev.shot !== 'graphic' || prev.decoded || t >= cur.t0 + TIMING.drop) return;
+  const pcv = shots.graphic, box = placement(pcv, band);
+  if (!box) return;
+  const age = t - cur.t0, g = H * 5.2, side = hash(Math.floor(cur.t0 * 10)) < 0.5 ? -1 : 1;
+  ctx.save();
+  ctx.translate(box.x + box.w / 2 + side * age * 220, box.y + box.h / 2 + 0.5 * g * age * age - 30 * age);
+  ctx.rotate(side * age * 1.4);
+  ctx.translate(-(box.x + box.w / 2), -(box.y + box.h / 2));
+  blit(ctx, pcv, box);
+  ctx.restore();
 }
 
 // Bloom: what is bright spills light. The frame is taken down to a quarter,

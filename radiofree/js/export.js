@@ -23,8 +23,8 @@
 // landed on, because "MP4" that turns out to be AV1 is a fact the person
 // uploading it needs.
 
-import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=70';
-import { renderSoundtrack } from './score.js?v=70';
+import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=71';
+import { renderSoundtrack } from './score.js?v=71';
 import { makeToko3D } from '../../toko/js/toko3d.js?v=1';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';
@@ -104,6 +104,7 @@ export async function exportPost(entry, opts = {}) {
   // opts.seconds is a TARGET the budgets compress toward, never a cut-off.
   const plan = planFilm(entry, {
     fps, seconds: opts.seconds, index: opts.index, total: opts.total, date: opts.date,
+    spinsBefore: opts.spinsBefore, spinsTotal: opts.spinsTotal,
     accent: opts.accent, freq: opts.freq, onAir: t('tag.onair'), fiction: t('fiction'),
   });
   const n = Math.max(1, Math.round(plan.S * fps));

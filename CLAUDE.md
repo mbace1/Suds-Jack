@@ -1464,6 +1464,14 @@ added for "open". Magenta reading, the **yellow carrier** once decoded — a
 colour carrying a mood, per the canon. The feed and the sign-off draw the same
 traced face flat. ~2.4 min a clip here under SwiftShader; the gate asserts
 `toko3d` on the export.
+**v71 — four borrowings from PDoomVideo** (`MOTION.md`): every cut lands on
+a beat of the 96 BPM score (shots are only ever lengthened to reach it); Toko
+never snaps between moods — the lids open from shut, the badge squashes and the
+story's mark pops (optional wire field **`tone`**: boast/uneasy/absurd/grim,
+validated in `wire.js`); the graphic carries its own cut (falls in and lands,
+drops out under gravity); and the morning is one escalating set — heat rises
+with the bulletin's place, a red siren from mid-morning, and a SPIN-O-METER on
+the desk counting every spin DECODE has shown so far.
 **Layout belongs in `index.html`, never in an injected stylesheet.** `package.js`
 used to inject thirty `!important` rules that clamped the headline, deleted the
 second paragraph of every bulletin, and hid the DECODE button, the tally and the
@@ -1471,7 +1479,7 @@ second paragraph of every bulletin, and hid the DECODE button, the tally and the
 separately hard-disabling DECODE behind a setter that threw the value away. If
 the copy does not fit, fix the layout; do not hide the copy.
 **Gates:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs`
-— 86 checks — and `node radiofree/test/film.mjs` (bare node, 11: the plan, the take, the look arc, Toko's acting, and that no headline number is split across runs). It reads `sw.js` with whitespace-tolerant regexes, because that file
+— 86 checks — and `node radiofree/test/film.mjs` (bare node, 12: the plan, the take, the look arc, Toko's acting, and that no headline number is split across runs). It reads `sw.js` with whitespace-tolerant regexes, because that file
 was reformatted once and five shell checks silently graded against `undefined`
 for as long as nobody looked. A gate that cannot parse its own subject produces a
 failure everyone learns to scroll past.
