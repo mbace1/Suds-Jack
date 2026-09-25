@@ -26,7 +26,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 52;
+const VERSION = 53;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -163,7 +163,25 @@ addEventListener('resize', resize);
 resize();
 
 let last = performance.now();
+
+// ── Toko at the table ──────────────────────────────────────────────────
+// The signature in the corner opens the counter over this game rather than
+// navigating away to the arcade (toko/js/table.js). Stopping the clock is the
+// one thing the table cannot work out for itself. The replay queue holds with it, so a fight
+// does not act itself out while you are talking.
+// (v53: this arrived on the SITE as its own "v40" on 2026-09-23, straight to
+// gh-pages across seven games; carried here so a deploy of this lineage keeps it.)
+let tokoHeld = false;
+window.__tokoTable = {
+  pause() { tokoHeld = true; },
+  resume() { tokoHeld = false; last = performance.now(); },
+  cue() { return state && state.phase !== 'menu'
+    ? `${String(state.character || 'this run').toUpperCase()}, SPAN ${(state.act || 0) + 1}. SAY WHAT YOU THINK`
+    : null },
+};
+
 function frame(now) {
+  if (tokoHeld) { last = now; requestAnimationFrame(frame); return; }
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   qt += dt * 1000;
   // drain everything whose time has come, in order

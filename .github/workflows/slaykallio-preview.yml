@@ -1,0 +1,56 @@
+# Slay Kallio — pictures with every pull request.
+#
+# Why: the suites certify that the game WORKS and cannot see how it LOOKS, and
+# this project's look changes have found their real faults in screenshots every
+# time (see slaykallio/VERSIONS.md, v10 through v51). The player-flow workflow
+# ran the suites; nothing ran the camera. This renders the drawn cast and one
+# fight in both formats, smooth and pixel, and attaches them to the run, so a
+# reviewer opens the run and sees the picture rather than trusting a count.
+#
+# It is not a gate: it fails only if the pictures could not be made.
+name: Slay Kallio preview
+
+on:
+  pull_request:
+    paths:
+      - 'slaykallio/**'
+      - '.github/workflows/slaykallio-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: slaykallio-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser
+        run: |
+          npm install --no-save playwright@1.62.1
+          npx playwright install chromium
+      - name: Render the preview
+        run: node slaykallio/test/preview.cjs preview
+      - name: Attach it to the run
+        uses: actions/upload-artifact@v4
+        with:
+          name: slaykallio-preview-${{ github.sha }}
+          path: preview/
+          retention-days: 14
+      - name: Say where it is
+        run: |
+          {
+            echo "## Slay Kallio preview"
+            echo
+            echo "The pictures are attached to this run as **slaykallio-preview-${{ github.sha }}** (Artifacts, below)."
+            echo
+            sed -n '3,$p' preview/README.md
+          } >> "$GITHUB_STEP_SUMMARY"

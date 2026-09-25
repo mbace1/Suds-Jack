@@ -7,6 +7,46 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v53 — 2026-09-25
+**THE SITE'S OWN v40, CARRIED — and the alarm that found it**
+
+While this branch went from v40 to v52, the site shipped a release of its own
+called **v40** (2026-09-23, "Toko at the table", straight to gh-pages across
+seven games): the corner signature opens the counter over the game instead of
+navigating away, and a pause hook stops the clock while you talk. Two lines in
+`index.html` and fifteen in `main.js`. This branch's own v40 is a different
+release (2026-09-17). **Version numbers did not detect it** — Eeri's lesson,
+the second time in this repo — and a deploy of this lineage would have deleted
+it without a word.
+
+It is carried here as the site wrote it: the `__tokoTable` hook and the
+`table: true` signature, and its log entry below, verbatim, so the history
+contains the release the site is actually running.
+
+`scripts/lineage-check.mjs` is what found it, and it is now a workflow
+(`.github/workflows/lineage.yml`): a game's branch log must contain the site's
+TOP heading verbatim, or the branch has SPLIT from what players are running.
+Headings carry a date as well as a number, which is what tells two different
+v40s apart. A branch that is merely BEHIND the site passes; a split fails, for
+the games that branch changed. On its first run it also flagged `eye-test`
+(site v1 of 08-08 against a branch v1 of 09-10), which is left for its owner.
+
+The site's entry, carried:
+
+## v40 — 2026-09-23
+
+**Toko at the table.** The signature in the corner opens the counter over this
+game instead of navigating away to the arcade, so the run you want to say
+something about is still there when you get back. Esc or BACK returns you to
+it, and a note filed here lands under this cabinet through the arcade's own
+transport. The replay queue holds with it, so a fight does not act itself out while you are talking.
+
+Everything but the two lines below lives in `toko/js/table.js`, which works out
+which game it is standing in from the path and keeps its own input off the
+window — the game never sees a tap, a touch or a key that happened at the
+table. `window.__tokoTable` is this game's half: how to stop the clock, and
+what he should already know when he opens.
+
 ## v52 — 2026-09-25
 **OLD GRUDGE — the first card that grows with the RUN, and the design that lost**
 

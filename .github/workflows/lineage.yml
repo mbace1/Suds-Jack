@@ -1,0 +1,54 @@
+# The lineage alarm — does this branch still contain what the site is running?
+#
+# Why: twice a game here grew two histories and nobody noticed, because version
+# numbers do not detect it — Eeri's two lineages both reached "v11", and Slay
+# Kallio's site shipped its own "v40" while a branch already had a different v40
+# and was at v52. A wholesale deploy from either side deletes the other's work.
+# scripts/lineage-check.mjs has the long version; the short one is that a game's
+# log on the branch must contain the site's TOP `## v…` heading verbatim.
+#
+# Scope: only the games THIS push or pull request changed can fail it — a split
+# in a game you did not touch is printed as a warning and left for its owner.
+# Fails open like gates.yml: if the diff cannot be worked out, it checks every
+# game but still only warns on the ones it cannot attribute.
+name: lineage
+
+on:
+  push:
+    branches: ['**']
+    paths: ['**/VERSIONS.md', 'scripts/lineage-check.mjs', '.github/workflows/lineage.yml']
+  pull_request:
+    paths: ['**/VERSIONS.md', 'scripts/lineage-check.mjs', '.github/workflows/lineage.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  lineage:
+    # gh-pages IS the site; it cannot split from itself
+    if: github.ref != 'refs/heads/gh-pages'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch the site
+        run: git fetch --no-tags origin gh-pages:refs/remotes/origin/gh-pages
+      - name: Which games did this change?
+        id: games
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then BASE='${{ github.event.pull_request.base.sha }}'; else BASE='${{ github.event.before }}'; fi
+          if [ -n "$BASE" ] && git cat-file -e "${BASE}^{commit}" 2>/dev/null && MB=$(git merge-base "$BASE" HEAD 2>/dev/null); then
+            ONLY=$(git diff --name-only "$MB" HEAD | awk -F/ 'NF>1{print $1}' | sort -u | while read d; do [ -f "$d/VERSIONS.md" ] && echo "$d"; done | paste -sd, -)
+          else
+            ONLY=""
+          fi
+          echo "only=$ONLY" >> "$GITHUB_OUTPUT"
+          echo "games changed: ${ONLY:-none}"
+      - name: Check
+        run: |
+          if [ -n "${{ steps.games.outputs.only }}" ]; then
+            node scripts/lineage-check.mjs --only "${{ steps.games.outputs.only }}"
+          else
+            node scripts/lineage-check.mjs --only __none__
+          fi
