@@ -18,7 +18,7 @@
 // what you actually took. That comparison is the whole point — "you waited 517
 // ticks at Ooppera; the 4 was standing here and would have arrived 296 sooner"
 // is a sentence a player can learn from, and no tally of totals is.
-import { minutes, about } from './ui.js?v=1';
+import { minutes, about } from './ui.js?v=2';
 
 export class ShiftLog {
   constructor(tm) {

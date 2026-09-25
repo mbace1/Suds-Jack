@@ -40,7 +40,14 @@ ok(Math.abs(h1 / h0 - 1) < 0.2, `so the headway holds (${h0.toFixed(0)} → ${h1
   const flow = { clock: { tick: 0, ticksPerDay: 3000 }, graph: { node: id => ({ id, name: id, x: 0, y: 0 }) }, routes: { list: [] } };
   const mk = speed => { const ch = new DeliveryChallenge(flow, () => {}); ch.estimate = () => 200 / speed; ch.weatherSpeed = speed; return ch; };
   const dry = mk(1).deadlineFor({ from: 'a', to: 'b', cargo: 'parts', dist: 3 }), wet = mk(0.8).deadlineFor({ from: 'a', to: 'b', cargo: 'parts', dist: 3 });
-  ok(dry === wet, `a trip the snow makes slower gets the same deadline as on a dry day (${dry} / ${wet}) — weather costs time, it does not buy slack`); }
+  ok(dry === wet, `a trip the snow makes slower gets the same deadline as on a dry day (${dry} / ${wet}) — weather costs time, it does not buy slack`);
+  // v2.55: and the same FEE. A hand-off is priced from its trip estimate, which
+  // rides the slower fleet — snow turned the longer ride into a longer
+  // "distance" and paid more for the same two stops (+€57 a snow week).
+  const ho = speed => { const ch = mk(speed); ch.buildHandoff('lasipalatsi', { id: 'r' }, false); return ch.pendingHandoff; };
+  const hd = ho(1), hs = ho(0.8);
+  ok(hd && hs && hd.stops[1] === hs.stops[1], `a hand-off is offered on both days, to the same door (${hd?.stops[1]} / ${hs?.stops[1]})`);
+  ok(hd && hs && hd.value === hs.value, `and pays the same in snow as on a dry day (${hd?.value} / ${hs?.value})`); }
 
 console.log(`weather: ${pass} checks passed${fail ? `, ${fail} FAILED` : ''}`);
 process.exit(fail ? 1 : 0);
