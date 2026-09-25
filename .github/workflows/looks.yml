@@ -1,0 +1,148 @@
+# Photograph every cabinet on this PR and say what MOVED.
+#
+# CLAUDE.md states the gap this fills, in two different lanes and in almost
+# the same words: "a gate that certifies *works* cannot see *looks*, so an art
+# change ends in a screenshot, never in a green suite." The receipts are all
+# through the repo — four Kindling art bugs that passed every gate and were
+# visible only in a render; a band-brightness gate that measured the wrong
+# thing twice, where both times the page was right and the ruler was wrong;
+# Powder shipping two turbine discs orbiting the hull with every gate green.
+#
+# So this workflow asserts nothing about how a game should look. It renders
+# every cabinet at the BASE commit and at the HEAD commit with the same
+# harness, diffs the pictures, and posts what changed. The reviewer does the
+# judging; CI just makes sure nobody has to remember to look.
+#
+# THREE THINGS IT DELIBERATELY DOES NOT DO:
+#
+#  * It never fails. `continue-on-error` and a shooter that exits 0 on a
+#    cabinet that will not boot. A visual diff is evidence, not a verdict, and
+#    a screenshot job that goes red on somebody else's broken game is a job
+#    people learn to ignore — which is how the repo got here.
+#  * It does not embed the sheet in the comment. Inline images would mean
+#    committing PNGs to a branch on every PR, and this repo has already paid
+#    for extra branch traffic three times over in unrelated-history splits.
+#    The comment carries the table, which is the decision-useful half, and
+#    links to the artifact for the pictures.
+#  * It does not run on every push. Path-filtered to things that can change a
+#    pixel, because twenty-four headless cabinets is four minutes of runner.
+name: looks
+
+on:
+  pull_request:
+    paths:
+      - '*/js/**'
+      - '*/index.html'
+      - 'hub/**'
+      - 'index.html'
+      - '*/art/**'
+      - '*/assets/**'
+      - '*/vendor/**'
+      - 'test/shoot.cjs'
+      - 'test/contact.cjs'
+      - '.github/workflows/looks.yml'
+
+concurrency:
+  group: looks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  looks:
+    runs-on: ubuntu-latest
+    # toko-live's browser job had no timeout and hung to the six-hour workflow
+    # ceiling on every PR in the repo, reporting `cancelled` rather than
+    # failing. Twenty-four cabinets is about four minutes; twenty-five is a
+    # hang, and a hang should cost twenty-five minutes and not a working day.
+    timeout-minutes: 25
+    continue-on-error: true
+    steps:
+      - name: check out the head
+        uses: actions/checkout@v4
+        with:
+          path: head
+
+      - name: check out the base
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Pinned to the versions this was actually run against. pixelmatch 7 is
+      # ESM-only and is reached through require(esm), which needs Node 22 —
+      # contact.cjs takes .default when it is there so a 5.x tree still works.
+      - name: browser and image tools
+        run: |
+          npm install --no-save playwright@1.56.1 pngjs@7.0.0 pixelmatch@7.2.0
+          npx playwright install chromium
+
+      # Both renders use the HEAD copy of the harness against the two trees, so
+      # a difference in the pictures is a difference in the GAMES and never a
+      # difference in how they were photographed. Shooting the base with the
+      # base's own harness would compare two cameras as well as two subjects.
+      - name: photograph the base
+        run: node head/test/shoot.cjs --root base --out shots/base
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
+      - name: photograph the head
+        run: node head/test/shoot.cjs --root head --out shots/head
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
+      - name: diff them
+        id: contact
+        run: node head/test/contact.cjs --base shots/base --head shots/head --out shots/out
+        env:
+          NODE_PATH: ${{ github.workspace }}/node_modules
+
+      - name: keep the pictures
+        id: art
+        uses: actions/upload-artifact@v4
+        with:
+          name: looks-${{ github.event.pull_request.number }}
+          path: shots/
+          retention-days: 14
+
+      - name: say what moved
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body;
+            try {
+              body = fs.readFileSync('shots/out/summary.md', 'utf8');
+            } catch (e) {
+              body = '_The cabinets could not be photographed this run._\n\n```\n' + e.message + '\n```';
+            }
+            const url = '${{ steps.art.outputs.artifact-url }}';
+            // One comment, edited in place. A per-run comment on a PR that
+            // takes twenty pushes buries the review under its own robot.
+            const TAG = '<!-- looks-report -->';
+            const full = [
+              TAG,
+              '### 👁 What the cabinets look like on this branch',
+              '',
+              body,
+              '',
+              url ? `[**The contact sheet**](${url}) — \`sheet.png\` is the whole floor, \`changed.png\` is base · head · diff for everything that moved.`
+                  : '_(no artifact this run)_',
+              '',
+              '<sub>This never fails a build. It renders every cabinet on the base and on this branch and reports the difference — judging is yours.</sub>',
+              '',
+              '---',
+              '_Generated by [Claude Code](https://claude.ai/code)_',
+            ].join('\n');
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            const mine = (await github.rest.issues.listComments({ owner, repo, issue_number, per_page: 100 }))
+              .data.find(c => c.body && c.body.includes(TAG));
+            if (mine) await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body: full });
+            else await github.rest.issues.createComment({ owner, repo, issue_number, body: full });
