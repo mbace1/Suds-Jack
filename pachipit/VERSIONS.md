@@ -73,6 +73,17 @@ facing the camera reflects the room BEHIND the viewer, which the environment
 cube had painted black — so coins in flight get their own brighter material on
 a dark disc, the Master System's flat fill inside a hard line.
 
+**What the site caught that the branch could not.** Walking the deployed tree on
+a phone found three faults before anyone played it, all green on the branch:
+the site's HOME shell is newer and seats a Toko button beside HOME under a
+thumb, and the HUD's fixed 104px corner put it on top of the deadline (the top
+bar now MEASURES where the arcade's corner ends, and upright the debt runs full
+width under it rather than shrinking its bar to a dot); the SHIFT 1 message was a
+centred nowrap line, so a phone's first instruction ran off both edges; and
+`hub/pad.js` was imported bare while the shell asks for it by token — two
+URLs, two instances, two pollers. Each has a check now (the smoke gate stands a
+Toko button next to HOME itself, since the branch's shell has none).
+
 **Balance, as first measured** (`node pachipit/test/measure.mjs runs 10`): the
 naked machine (the `saver` bot, buying nothing) dies at deadline 3-4; the best
 charm runs reach deadline 8. The bots still spend themselves to death before

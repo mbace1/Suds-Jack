@@ -2,7 +2,7 @@
 // machine — how hard, and now — so keys, the wheel, a held mouse button, a
 // thumb on FIRE and a pad trigger all end in the same two calls.
 
-import { watchPad } from '../../hub/pad.js';
+import { watchPad } from '../../hub/pad.js?v=9';   // the SAME token shell.js asks for: one reader on the page
 
 const ORDER = ['atm', 'machine', 'vendor', 'door'];
 

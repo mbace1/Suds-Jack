@@ -224,6 +224,27 @@ function finish(kind) {
 }
 let fallingT = 0;
 
+// ── the arcade's corner ─────────────────────────────────────────────────
+// The shell puts HOME in the top-left corner and, under a thumb, a Toko button
+// beside it; the deadline starts where the last of them ends, and upright the
+// debt row runs full width underneath. MEASURED, not reserved: a fixed 104px
+// fitted the branch's shell and sat the live site's newer one, which has the
+// Toko button, on top of the deadline.
+function corner() {
+  let right = 0, bottom = 0;
+  for (const b of document.querySelectorAll('.arcade-home, .arcade-toko')) {
+    const r = b.getBoundingClientRect();
+    if (r.width && r.top < 90) { right = Math.max(right, r.right); bottom = Math.max(bottom, r.bottom); }
+  }
+  const css = document.documentElement.style;
+  if (right) { css.setProperty('--corner', `${Math.ceil(right) + 10}px`); css.setProperty('--corner-b', `${Math.ceil(bottom) + 4}px`); }
+  else { css.removeProperty('--corner'); css.removeProperty('--corner-b'); }
+}
+new MutationObserver(corner).observe(document.body, { childList: true });
+addEventListener('toko:seat', () => requestAnimationFrame(corner));
+addEventListener('resize', corner);
+corner();
+
 // ── the layout: which way the screen is, and what the HUD leaves free ───
 // The insets are RESERVED per layout, not measured off whichever panel is up,
 // or the machine would lurch every time the lever turned into the handle.

@@ -192,6 +192,32 @@ const framing = page => page.evaluate(() => {
     .map(b => ({ id: b.id || b.className || b.textContent, r: b.getBoundingClientRect() }))
     .filter(({ r }) => r.width > 0 && (r.height < 44 || r.width < 44)).map(x => `${x.id}:${Math.round(x.r.width)}x${Math.round(x.r.height)}`));
   check(`every control is a 44px target${small.length ? ` — ${small}` : ''}`, small.length === 0);
+  // the first instruction a phone gets is the SHIFT 1 message; centred and
+  // unwrapped, it ran off both edges of the screen
+  const msg = await tp.evaluate(() => {
+    const t = document.getElementById('toast');
+    const off = [t, ...t.children].map(e => e.getBoundingClientRect()).filter(r => r.left < -1 || r.right > innerWidth + 1).length;
+    return { text: t.textContent.slice(0, 40), off, over: [t, ...t.children].some(e => e.scrollWidth > e.clientWidth + 1) };
+  });
+  check(`the first shift's message fits the phone (${msg.text})`, /SHIFT 1/.test(msg.text) && !msg.off && !msg.over, JSON.stringify(msg));
+  // the live site's shell seats Toko beside HOME under a thumb: the deadline
+  // has to start where the arcade's corner ENDS, whatever turns out to be in it
+  await tp.evaluate(() => {
+    const b = document.createElement('button');
+    b.className = 'arcade-toko';
+    b.style.cssText = 'position:fixed;top:10px;left:88px;width:44px;height:44px;display:block;z-index:99';
+    document.body.appendChild(b);
+  });
+  await tp.waitForTimeout(150);
+  const hud = await tp.evaluate(() => {
+    const boxes = ['deadline', 'debt', 'wallet'].map(id => document.getElementById(id).getBoundingClientRect());
+    const clash = [...document.querySelectorAll('.arcade-home, .arcade-toko')].map(b => b.getBoundingClientRect())
+      .filter(r => r.width && boxes.some(d => r.right > d.left && r.left < d.right && r.bottom > d.top && r.top < d.bottom)).length;
+    return { clash, bar: Math.round(document.getElementById('debtbar').getBoundingClientRect().width) };
+  });
+  check('the debt clears the arcade\'s corner, a Toko button beside HOME included', hud.clash === 0, JSON.stringify(hud));
+  // ...and does not pay for it with the bar: upright, the debt row runs under the corner
+  check(`the debt bar is still a bar on a phone (${hud.bar}px)`, hud.bar >= 90);
   check('nothing runs off the side of the phone', await tp.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   const fb2 = await tp.locator('#fire').boundingBox();
   await tp.dispatchEvent('#fire', 'pointerdown', { pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: fb2.x + 40, clientY: fb2.y + 40 });

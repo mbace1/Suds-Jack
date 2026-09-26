@@ -345,11 +345,23 @@ FIRE takes the press BEFORE `setPointerCapture` (a capture can throw), and the
 lever sits in a `pointer-events: none` bar so it needs its own `auto` — with a
 mouse a click on the canvas pulled the lever anyway, which is how a lever dead
 under a thumb looked fine on a desktop. **One `?v=` token on every internal
-import** (core.mjs enforces it); the hub's `pad.js` is imported bare like every
-other game does. Gates: `node pachipit/test/core.mjs` (77, bare node, a bot plays
-a whole run) and `NODE_PATH=$(npm root -g) node pachipit/test/smoke.cjs` (41,
-landscape and a phone). Hub: id `pachipit`, marquee `pit`, accent `#ffd23f`,
-best score `pachiPit.best` (coins pushed in a run). Not yet on `gh-pages`.
+import** (core.mjs enforces it), and the hub's `pad.js` at the SAME token
+`hub/shell.js` asks for (core.mjs checks that too): the shell reads the pad on the
+same page, and a second URL for one file is a second instance with its own poller.
+**The site's shell is newer than the branch's** — under a thumb it seats a Toko
+button beside HOME — so the top bar MEASURES the arcade's corner (`corner()` in
+`main.js` writes `--corner`) instead of reserving HOME's width; the fixed 104px
+put Toko on the deadline, and only the deployed tree showed it. Gates: `node
+pachipit/test/core.mjs` (78, bare node, a bot plays a whole run) and
+`NODE_PATH=$(npm root -g) node pachipit/test/smoke.cjs` (44, landscape and a
+phone, a stand-in Toko button included). Hub: id `pachipit`, marquee `pit`, accent
+`#ffd23f`, best score `pachiPit.best` (coins pushed in a run). **Deployed to
+`gh-pages` 2026-09-26 (v1)** by hand, the Slay Kallio way: the game minus
+`test/`, its rows SPLICED into the site's `games.js`/`art.js`/`topics.js`, one
+`versions.json` row, then the token ripple (those three bumped, climbing to
+`hub.js`, `hub-entry.js`, `shell.js` and every game's shell tag, and `sw.js`'s
+VERSION) — without it a returning visitor's worker answers with the old
+catalogue and the cabinet never appears.
 
 ### Suds Jack (`sudz/`) — Horizon Mesh, ACTIVE
 **Owner's call, 2026-08-19: continue the current live Bomb Jack × Tempest

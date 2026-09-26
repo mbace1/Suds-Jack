@@ -355,6 +355,11 @@ section('files');
     }
   }
   check(`one module token everywhere (?v=${token})${odd.length ? ` — ${odd.slice(0, 4).join('; ')}` : ''}`, !!token && odd.length === 0);
+  // the shell on the same page reads the pad too; a different URL for the same
+  // file is a second instance of it, with its own poller and its own edges
+  const shell = readFileSync(path.join(GAME, '..', 'hub', 'shell.js'), 'utf8').match(/'\.\/pad\.js(\?v=\d+)?'/)?.[1] ?? '';
+  const ours = readFileSync(path.join(GAME, 'js', 'input.js'), 'utf8').match(/'\.\.\/\.\.\/hub\/pad\.js(\?v=\d+)?'/)?.[1] ?? '';
+  check(`hub/pad.js is asked for by the same URL the shell uses (${ours || 'bare'} / ${shell || 'bare'})`, ours === shell);
   const log = readFileSync(path.join(GAME, 'VERSIONS.md'), 'utf8').match(/^##\s*v(\d+)/m)?.[1];
   check(`the engine's VERSION is the log's top entry (${VERSION} / v${log})`, String(VERSION) === log);
   check('no image or audio file ships in the game', !readdirSync(GAME, { recursive: true }).some(f => /\.(png|jpe?g|gif|webp|mp3|ogg|wav)$/i.test(String(f))));

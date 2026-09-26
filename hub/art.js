@@ -1146,19 +1146,6 @@ export const ART = {
     g.p(66, 45, 3, 3, '#F0027F');
     g.p(61, 51, 2, 2, '#7a1a4a'); g.p(57, 55, 1, 1, '#4a1230');
   },
-  // Slay Kallio: a cover, in the house register — a sunlit park seen past a
-  // near, cropped shoulder. The frame is the BENCH, lighter than the trees
-  // behind it so it reads as a thing and not a hole; the hero cutout is
-  // cropped by the bottom edge (which is what makes it foreground) and lit
-  // along its front in the cabinet's own accent, since a dark silhouette
-  // against a dark scene disappears. A card is being held out, and a pigeon
-  // stands on the far end of the seat waiting for it.
-  // Slay Kallio: a cover, not an icon. A plank bridge at the wrong end of the
-  // night, seen along the deck. The framing device is the BRIDGE — lighter
-  // than the water and the trees behind it, so it reads as a thing rather
-  // than a hole — a bum cropped by the bottom edge in the foreground (cropping
-  // is what makes a figure read as near), a rat facing him down the boards,
-  // and everything else falling away out of focus.
   // Pachi Pit: the machine, seen from the stool at the bottom of the pit. It is
   // the hero AND the room's only lamp, so the walls are flat bars from black at
   // the ceiling to its warm glow at the floor (2600 seams), and the one thing
@@ -1223,6 +1210,19 @@ export const ART = {
     g.p(16, 69, 98, 1, '#3c3a36');
   },
 
+  // Slay Kallio: a cover, in the house register — a sunlit park seen past a
+  // near, cropped shoulder. The frame is the BENCH, lighter than the trees
+  // behind it so it reads as a thing and not a hole; the hero cutout is
+  // cropped by the bottom edge (which is what makes it foreground) and lit
+  // along its front in the cabinet's own accent, since a dark silhouette
+  // against a dark scene disappears. A card is being held out, and a pigeon
+  // stands on the far end of the seat waiting for it.
+  // Slay Kallio: a cover, not an icon. A plank bridge at the wrong end of the
+  // night, seen along the deck. The framing device is the BRIDGE — lighter
+  // than the water and the trees behind it, so it reads as a thing rather
+  // than a hole — a bum cropped by the bottom edge in the foreground (cropping
+  // is what makes a figure read as near), a rat facing him down the boards,
+  // and everything else falling away out of focus.
   bench(g, a) {
     const HZ = 30;
     // an overcast sky, warming down toward the treeline, in flat bars
