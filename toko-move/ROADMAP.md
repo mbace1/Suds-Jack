@@ -260,8 +260,7 @@ serving it, and v2.62 took the refresh's pack with the Crown Bridge trams
 (11, 11H, 12) and Kruunuvuori as a destination. The refresh cannot open its
 own PR here (Actions may not create pull requests in this repo), so a
 network change still lands by hand from its `automation/toko-move-hsl-*`
-branch. Laajasalo proper is further east again and is the next stop if the
-board should reach it.
+branch. v2.63 took the board on to Laajasalo (Yliskylä), where 12 ends.
 
 The pack is real geometry from HSL's own feed; the vehicles on it are a
 timetable simulation. HSL publishes real-time positions (Digitransit, needs a

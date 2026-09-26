@@ -64,7 +64,7 @@ s.listen(0,'127.0.0.1',async()=>{const base='http://127.0.0.1:'+s.address().port
  ok('no horizontal phone overflow',await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1));
  const small=await p.$$eval('button',bs=>bs.filter(x=>{const r=x.getBoundingClientRect();return r.width>0&&(r.width<44||r.height<44);}).map(x=>x.id||x.textContent.trim().slice(0,16)));ok('controls clear 44px',small.length===0,small.join(', '));
  ok('no encounter layer in daylight product',await p.evaluate(()=>!document.getElementById('fight')));
- ok('the board crops to the played city, not the whole pack',await p.evaluate(()=>{const b=window.__tm.board;if(!b)return false;return (b.n-b.s)<0.09&&(b.e-b.w)<0.15;})); // Toko Move v2.62: Kruunuvuori took the played city east to 0.134° wide; the pack is 0.506°
+ ok('the board crops to the played city, not the whole pack',await p.evaluate(()=>{const b=window.__tm.board;if(!b)return false;return (b.n-b.s)<0.09&&(b.e-b.w)<0.2;})); // Toko Move v2.62-63: Kruunuvuori and Laajasalo took the played city east to 0.177° wide; the pack is 0.506°
  ok('every delivery anchor sits inside the board',await p.evaluate(()=>{const b=window.__tm.board,r=window.__tm.city.resolved;return Object.values(r).every(st=>!st||(st.lat>b.s&&st.lat<b.n&&st.lon>b.w&&st.lon<b.e));}));
  ok('tram services no longer share one colour',await p.evaluate(()=>{const t=window.__tm.transit.layers.filter(l=>l.mode==='TRAM');return new Set(t.map(l=>l.colour)).size>=10;}));
  ok('still no errors after catch',errs.length===0,errs.slice(0,2).join(' | '));

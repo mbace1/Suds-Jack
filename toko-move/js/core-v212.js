@@ -2,14 +2,14 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=25';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=26';
 import {TransitLayers} from './transit-layers.js?v=10';
-import {buildRealHelsinki} from './real-helsinki.js?v=4';
+import {buildRealHelsinki} from './real-helsinki.js?v=5';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=8';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=4';
 import {SHIFT} from './live-network.js?v=15';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
-import {loadGround,STREET_TIERS} from './ground.js?v=11';
+import {loadGround,STREET_TIERS} from './ground.js?v=12';
 import {dots,minutes} from './ui.js?v=2';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 import {drawCityEvent,family as dayFamily} from './city-events.js?v=1';
@@ -23,7 +23,7 @@ import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.62';
+const BUILD_VERSION='2.63';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -425,8 +425,20 @@ function drawStops(){if(!flow||!city)return;const ctx=$('map').getContext('2d'),
 // fighting it. Same reason they are a separate call at all: core and the live
 // layer are two rAF loops, and the labels have to come after both.
 function drawStopLabels(avoid=[]){if(!flow||!city)return;const ctx=$('map').getContext('2d'),d=renderer?.dpr||1;ctx.save();clipToBoard(ctx);ctx.textAlign='center';ctx.textBaseline='middle';
-  const taken=[...avoid],r=viewRect();
-  const free=b=>b.x>=r.x&&b.x+b.w<=r.x+r.w&&b.y>=r.y&&b.y+b.h<=r.y+r.h&&!taken.some(t=>b.x<t.x+t.w&&b.x+b.w>t.x&&b.y<t.y+t.h&&b.y+b.h>t.y);
+  // WHO GIVES WAY (v2.63). Every name used to give way to every vehicle, and
+  // the centre is where the trams bunch: measured over forty frames on a phone,
+  // RAUTATIENTORI — the main hub — was labelled in none of them, Senaatintori in
+  // three. A transfer hub's name is a decision; a passing tram on a line you
+  // are not using is scenery. So a hub's name may sit over a rank-1 badge or a
+  // vehicle dot (its halo keeps it legible), and still gives way to any tram
+  // you could catch or that is on your lines (rank 2+), and to other names.
+  // Other stops give way to everything, as before — with a job in hand the
+  // quiet map fades the other lines' trams and the job's own stop is named
+  // (test/labels.cjs holds both).
+  const r=viewRect(),placed=[],vital=avoid.filter(b=>!b.r&&(b.rank||0)>=2);
+  const hit=(b,list)=>list.some(t=>b.x<t.x+t.w&&b.x+b.w>t.x&&b.y<t.y+t.h&&b.y+b.h>t.y);
+  let hubNow=false;
+  const free=b=>b.x>=r.x&&b.x+b.w<=r.x+r.w&&b.y>=r.y&&b.y+b.h<=r.y+r.h&&!hit(b,placed)&&!hit(b,hubNow?vital:avoid);
   // Density is the camera's business too. Twenty-two names over the whole city
   // is a wall of type at CITY scale and a sparse, readable map at STOP scale —
   // the same list, and only one of those is worth printing. Zoomed out, the
@@ -441,7 +453,7 @@ function drawStopLabels(avoid=[]){if(!flow||!city)return;const ctx=$('map').getC
     const w=ctx.measureText(node.name).width,h=size*d*1.25;
     // above, below, right, left — first one that is clear wins
     const spots=[[p.x-w/2,p.y-gap-h],[p.x-w/2,p.y+gap],[p.x+gap,p.y-h/2],[p.x-gap-w,p.y-h/2]].map(([x,y])=>({x,y,w,h}));
-    const at=spots.find(free);if(!at)continue;taken.push(at);
+    hubNow=hub;const at=spots.find(free);if(!at)continue;placed.push(at);
     const tx=at.x+w/2,ty=at.y+h/2;
     ctx.lineWidth=3.2*d;ctx.strokeStyle=NIGHT.halo;ctx.strokeText(node.name,tx,ty);
     ctx.fillStyle=hub?NIGHT.label:NIGHT.labelDim;ctx.fillText(node.name,tx,ty);}

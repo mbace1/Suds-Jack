@@ -478,6 +478,9 @@ jobs:
       - name: the test card in the page — each mission ticks when it is done, not tapped
         run: NODE_PATH=$(npm root -g) node toko-move/test/testcard.cjs
 
+      - name: the map names its hubs — a passing tram no longer hides the main station
+        run: NODE_PATH=$(npm root -g) node toko-move/test/labels.cjs
+
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
       # is broken if fewer than 40% of them get three deliveries home.
