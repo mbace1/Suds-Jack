@@ -1,5 +1,24 @@
 # Toko Move — versions
 
+## v2.61 — 2026-09-26
+
+**THE TEST CARD** (`js/testcard.js`; owner: *"try to hook me into testing with
+enticing updates"*). The title card now carries this build's missions — five
+things it just changed, each with a TRY link straight into it: **the quiet
+map** (take a job), **tap the tram** (board by tapping it on the map), **walk
+a street**, **LIVE**, and **tell Toko** — which opens this cabinet's note panel
+on the arcade, so nothing new is sent anywhere. A mission ticks itself off when
+you actually DO it in the game, never when you tap a row: taking a job ticks
+the quiet map, only a tap on the MAP (not the panel) ticks the tram, a walk
+starting ticks the street, a live feed running ticks LIVE. The feed says
+*✓ TESTED · THE QUIET MAP · 1/5* the moment one lands, the card remembers across
+reloads, and a new build brings a new list rather than carrying old ticks. The
+arcade's note for the cabinet says so too.
+
+`test/testcard.mjs` (7) holds the rules; `test/testcard.cjs` (10) plays them —
+a job tapped, a tram tapped on the map (and the panel NOT counting), a reload,
+and *Tell Toko* landing on `#tokomove/feedback`.
+
 ## v2.60 — 2026-09-26
 
 **THE QUIET MAP.** Thirty-four lines and a hundred and fifty vehicles all drawn
