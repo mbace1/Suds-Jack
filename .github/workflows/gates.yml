@@ -469,6 +469,9 @@ jobs:
       - name: LIVE in the page — a mocked HSL broker, real-time clock, timetable fallback
         run: NODE_PATH=$(npm root -g) node toko-move/test/live.cjs
 
+      - name: the quiet map — your lines at full strength, the rest step back
+        run: NODE_PATH=$(npm root -g) node toko-move/test/quiet.cjs
+
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
       # is broken if fewer than 40% of them get three deliveries home.

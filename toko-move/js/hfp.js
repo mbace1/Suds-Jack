@@ -24,7 +24,7 @@
 //
 // Pure: no DOM, no socket, no clock of its own — test/live.mjs drives it with
 // synthetic HFP messages placed on the real HSL paths.
-import { speedForLayer } from './live-network.js?v=14';
+import { speedForLayer } from './live-network.js?v=15';
 
 export const BROKER = 'wss://mqtt.hsl.fi:443/';
 export const TOPICS = ['/hfp/v2/journey/ongoing/vp/tram/#', '/hfp/v2/journey/ongoing/vp/metro/#'];

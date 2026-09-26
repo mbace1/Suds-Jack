@@ -1,5 +1,30 @@
 # Toko Move — versions
 
+## v2.60 — 2026-09-26
+
+**THE QUIET MAP.** Thirty-four lines and a hundred and fifty vehicles all drawn
+at full strength meant the board never said which of them were YOURS: every
+tram got a badge in turn and your own line was one colour among thirty. Now,
+with a parcel in hand, the lines that matter to what you are doing stay at full
+strength and are drawn last and a little heavier; the other lines step back to
+about a quarter; and every vehicle on them is a small faint dot rather than a
+badge. The lit tram and the one you are riding are never dimmed.
+
+*Which* lines is one rule by state (`tm.focusLines`, main-v212): on a ride, the
+line you are on and the rest of your plan; waiting with a parcel, the legs of
+the options on offer; with no parcel, the lines the board's jobs would put you
+on. It is deliberately tighter than the badge ranking's `relevantLines`,
+because a line drawn at full strength is a claim that it is yours. With nothing
+in focus — dispatch before anything is arriving — nothing is dimmed and the
+board is exactly the old one.
+
+Owner's direction was the brief: *make the map read as yours first*, then a
+phone playtest. Measured on shift 3 waiting at Rautatientori: 5 of 34 lines in
+focus, 15 badges all on them, 133 of 154 vehicles faint. `test/quiet.cjs` (6)
+holds that every badge is yours, lit or your ride, that the rest are faint, that
+the lines are drawn with the same focus, and that nothing dims when nothing is
+in focus; drawing every vehicle full again fails it.
+
 ## v2.59 — 2026-09-25
 
 **LIVE'S BADGE LAGGED THE FEED BY UP TO FIFTEEN SECONDS.** v2.58 repaints the
