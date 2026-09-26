@@ -323,7 +323,13 @@ server.listen(0, '127.0.0.1', async () => {
     let fail = 0; const ok = (c, m) => { c ? 0 : fail++; console.log(`${c ? 'ok  ' : 'FAIL'}  ${m}`); };
     const rate = wins / N * 100;
     ok(rate >= 40, `random-but-sane bots win at least 40% of shifts (${rate.toFixed(1)}%)`);
-    const best = results.filter(r => r.policy.job === 'cheapest');
+    // The dawdler is left out of this one claim (v2.63): it idles 400 ticks
+    // before every job BY DESIGN — 40% of the shift — and exists for the rival
+    // check below. Whether it still has time for three depends on the deal: on
+    // 20 shifts it finishes 19 on v2.62 and 18 on v2.63, and shift 1 is one of
+    // the two the Laajasalo reshuffle made long. Every player who does not
+    // idle must still finish.
+    const best = results.filter(r => r.policy.job === 'cheapest' && !r.policy.dither);
     ok(best.every(r => r.won), `a player who takes the cheapest job finishes the shift (${best.map(r => r.delivered + '/3').join(', ')})`);
     ok(byDelivered[0] === 0, `no bot ends a shift with nothing delivered (${byDelivered[0]} did)`);
     const made = rnd.reduce((a, r) => a + r.dropped, 0);

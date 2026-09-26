@@ -104,8 +104,9 @@ server.listen(0, '127.0.0.1', async () => {
       // v2.62: the Crown Bridge network moved it again — 4T gone, line 2
       // rerouted — and shift 1 fits once more (2, 3 and 4 do not; 5 does).
       // This bot now reads the panel's plans the way the panel shows them,
-      // passed stops and all.
-      const D = await fresh(); await boot(D.page, process.env.WIN_Q || '?shift=1&day=none');
+      // passed stops and all. v2.63: Laajasalo reshuffled every deal; shifts
+      // 2, 3 and 4 fit (1 and 5–8 do not).
+      const D = await fresh(); await boot(D.page, process.env.WIN_Q || '?shift=2&day=none');
       await D.page.evaluate(() => document.getElementById('play').click());
       const won = await D.page.evaluate(() => {
         const tm = window.__tm, ch = tm.challenge, mob = tm.mobility, { routeChoices, allowFor } = globalThis.__tmRouteChoiceCore;

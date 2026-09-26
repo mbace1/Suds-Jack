@@ -1,5 +1,38 @@
 # Toko Move — versions
 
+## v2.63 — 2026-09-26
+
+**LAAJASALO, AND THE MAP NAMES ITS HUBS.**
+
+**Laajasalo** is a delivery stop: Yliskylän keskusta, the district's centre,
+where tram 12 ends past Kruunuvuori. Like Kruunuvuori it is tram-only — 12 is
+the one way there. The graph moved by exactly its node, one tram link and 12's
+extension; the board box grew east again (25.028 → 25.066) and no stop that
+was on it moved. Adding a destination reshuffles every shift's deal (dispatch
+draws from the list by seeded hash), which moved two pinned scenarios:
+- the daily gate's end-card shift goes to 2 (2–4 fit; 1 and 5–8 do not);
+- the shift gate's "a cheapest-job player finishes" no longer includes the
+  **dawdler**, which idles 400 ticks before every job by design (40% of the
+  shift) and exists for the rival check. Measured over 20 shifts it finishes
+  19 on v2.62 and 18 on v2.63 — the same rate — and shift 1 is one of the two
+  the reshuffle made long. Every player who does not idle still finishes.
+
+**Stop names no longer lose to passing trams.** A name gave way to every
+vehicle badge, and the centre is where trams bunch: measured over forty frames
+on a phone, **Rautatientori — the main hub — was labelled in none, on v2.61 as
+on v2.62**, Senaatintori in three. A transfer hub's name now outranks a badge
+for a line you are not using (its halo keeps it legible) and still gives way
+to any tram you could catch or that is on your lines, and to other names.
+Rautatientori 0 → 40 of 40, Kauppatori 19 → 40. `test/labels.cjs` holds it and
+fails on the old rule. A second rule — the job's own two stops placed first —
+was built, measured and removed: with a job in hand the job's stop was already
+named every frame, because the quiet map fades the other lines' trams.
+
+**Rent re-measured** (`--kitweeks=20`): **90% / 70% / 60%** pay €400 (v2.62:
+90 / 80 / 45) — inside 20-week noise. Rent stays €400.
+
+The test card keeps v2.62's list, so ticks already earned are not wiped.
+
 ## v2.62 — 2026-09-26
 
 **THE CROWN BRIDGES ARE ON THE BOARD** (owner, 2026-09-25: move with the

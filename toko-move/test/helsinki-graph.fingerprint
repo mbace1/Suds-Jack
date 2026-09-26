@@ -9,6 +9,7 @@ N kapyla Käpylä [home|service] c20 @21.05,0.00
 N katajanokka Katajanokka [home|service] c20 @35.25,52.28
 N kauppatori Kauppatori [shop|service] c22 @25.88,50.58
 N kruunuvuori Kruunuvuori [home] c18 @60.90,48.91
+N laajasalo Laajasalo [home|shop] c20 @80.17,37.78
 N lansiterminaali Länsiterminaali [transfer|service] c26 @5.98,68.92
 N lasipalatsi Lasipalatsi [transfer|shop] c24 @17.86,47.41
 N meilahti Meilahti [service|work] c24 @0.00,24.29
@@ -71,6 +72,7 @@ E kauppatori-olympiaterminaali walk t13 c2
 E kauppatori-rautatientori walk t10 c2
 E kauppatori-senaatintori tram t3 c5
 E kauppatori-senaatintori walk t6 c2
+E kruunuvuori-laajasalo tram t15 c5
 E lansiterminaali-ruoholahti tram t9 c5
 E lansiterminaali-ruoholahti walk t24 c2
 E lasipalatsi-ooppera tram t9 c5
@@ -95,7 +97,7 @@ L 10B tram ooppera>lasipalatsi
 L 10H tram lasipalatsi>ooppera
 L 11 tram pasila>kalasatama>kruunuvuori
 L 11H tram kruunuvuori>kalasatama>pasila
-L 12 tram rautatientori>hakaniemi>kruunuvuori
+L 12 tram rautatientori>hakaniemi>kruunuvuori>laajasalo
 L 13 tram kalasatama>pasila
 L 13H tram kalasatama>pasila
 L 1H tram lansiterminaali>hietalahti>lasipalatsi>ooppera>sornainen

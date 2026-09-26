@@ -311,6 +311,17 @@ export const HELSINKI = /* generated from the v2.11 builder, then owned here */
     "home"
    ],
    "capacity": 18
+  },
+  "laajasalo": {
+   "aliases": [
+    "Yliskylän keskusta"
+   ],
+   "name": "Laajasalo",
+   "tags": [
+    "home",
+    "shop"
+   ],
+   "capacity": 20
   }
  },
  "walk": [
