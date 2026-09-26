@@ -1,10 +1,10 @@
 {
   "source": "mbace1/piritori-eden",
-  "commit": "cfefd81145f14cf8f799e95ec41f6ec92438bd8f",
-  "version": "4.54",
+  "commit": "0f2f570aa8265914c95d3232b4aef9e9363a33a1",
+  "version": "4.55",
   "files": {
-    "VERSIONS.md": "22c0284099daee191a921df7d8c7de8245fb860390dd22f291d83a850a615ac2",
-    "act1.html": "edf9b19cdab343aaab19e715876cf311899c502d35fd765652d6f2f4398e6712",
+    "VERSIONS.md": "bf8f2122375e3a0d0155678deee635be0548693b96137c23c531049e58b2d9f8",
+    "act1.html": "d1ce02e3d5062fa827c4a334a4850268ef951a2dfe98536ebb44b519c188d33b",
     "art/v3/QA.md": "57d3b33e4bb0a62e3f0e8a086945413b7e70a670e9f789507f42bdf738d730c6",
     "art/v3/README.md": "edd09d94e23a57a59c181037fa3e56bca8dfb541e322ff2ff2bc890ca9ee649e",
     "art/v3/animation/grass/calm-frame00.webp": "3cb7bd32135752dd35928cdfd6b9cbaa1f507b5d789611707264bc35faa27590",
@@ -168,9 +168,9 @@
     "content/era1-slice-v1.json": "a1d94ef8c6561be062ec96b53559a6fa633b3e4e1a2f159d944f59206a3fbdee",
     "data/map-geometry-web-v1.json": "7d4a8c76075c257d4c4a1765710f667c435f8b6a90f34ae49c3c9328b9254374",
     "fighter-test.css": "0b5728616ed2b42c95719b8eca5f63dc5c5c69cfaa9519b79e9d15bcfdf558ce",
-    "fighter-test.html": "8b65b733e044cb5424dc50e720051f0dd35d25c193ee4bcc195a327abdca88a3",
-    "index.html": "ea71fabd9037570fb91c455dd10efdd81983bbf71c1847b7a76f22f5bbbdce2e",
-    "js/v3/app.js": "e50c3d93b5855b5c8d420a7ba193dbb03921181cbbd2a0ac0f60b85cb452156f",
+    "fighter-test.html": "4acef347d8d31e21fbe5931a8124381a201cd86d150f4e19b796bdf911b1e492",
+    "index.html": "555307054d05e2524d4710850e594c7d1e5361ef6b130d61509d280842f8c0e5",
+    "js/v3/app.js": "ccca82b39bcd79e726c614ee0de6590faf1cb2c762b6a5645687e43700ccd51f",
     "js/v3/battle.js": "4f9789d7702091cc183091da8d0a06301e25c3077b8b302e991ec6ed35be6035",
     "js/v3/board.js": "05de1af9da1b3e95c68f27c397f9748a668f685e9fd14e60eea34cfe314b495c",
     "js/v3/chapter-narrative.js": "a740db2a2584dc3f4747e7e82fdc154165434e6258d56f10ad143516142420fc",
@@ -197,7 +197,7 @@
     "people/hiring.mjs": "45f7388605cb0efcea379033896bd4a8fca06fcdefeca0444c95350f2763f997",
     "people/roster.mjs": "62a0394348455a38c99806c11480e701cf3d5e0428706e0e87aa3d0d8f57aa2b",
     "scene-speaker.css": "9e5b3a440353f057098cb4ecfa4d3e0c0b5004823302a6e9e179d1c03dca09a7",
-    "v3.css": "d69fdae9bd08094a97b0dc74da513664e533d360e9f3d2128963f318090f9b11",
+    "v3.css": "3564949460cfad491384e0143d0ed2efff6db0e67ab256cf63acc028461b3839",
     "vendor/jsm/loaders/GLTFLoader.js": "1050864a94eeac64651c3b11b6e41e3a610bdef172f360a9d5a73c4494798756",
     "vendor/jsm/utils/BufferGeometryUtils.js": "c25b7930e570e9ec56173cd3b866ec8d2e10016630db3937efb439daf1cedbf6",
     "vendor/three.module.min.js": "54a7a52ddce0ad06fbd1d021fd03b1e1812d946114a2111e1260bcd490c6b840"
@@ -207,6 +207,6 @@
       "fighter-test.html",
       "index.html"
     ],
-    "why": "the site owns ../hub/shell.js?v= (moved 70 -> 71 with games.js) and fighter-test.html?v= moved with it; no other byte differs from the source commit"
+    "why": "the site owns ../hub/shell.js?v= (71 -> 72 with games.js) and fighter-test.html?v= (kept on the site's own number, then moved 450 -> 451 with the shell); no other byte differs from the source commit"
   }
 }

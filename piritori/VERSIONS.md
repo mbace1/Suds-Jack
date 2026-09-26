@@ -77,6 +77,20 @@ Port `cover-edges.js`, `directional-cover.mjs` and `design/C11_PORT_VECTORS.json
 New lab checkpoint version 4 / rules c11-v1; preserve campaign and Bear Path rules.
 Use resolved impact classifications for presentation; never reapply damage on recovery.
 
+## v4.55 — 2026-09-26
+
+**The header fits, from a 320px phone to a desktop.** Three faults found by filming v4.54, none of which any gate could see:
+
+- The arcade shell's floating HUB button sat on "2003 · AATAMI · ERA I" at every width. The header already has its own ⌂ link to the hub (46×44), so the floating one is hidden on this page only (`html body .arcade-home`, which outranks the shell's single-class rule that is injected after this sheet). Other games keep theirs.
+- On phones the resource cards could not shrink below their text: INTEL read "INTE" at 390px, and at 360px every value was cut ("16" for 160). The cards get `min-width: 0` and no tracking. At ≤430px the strip takes its own full-width row, with the wordmark spanning the two rows beside the day card and the buttons.
+- At 320px the wordmark ran under the day card; the four buttons fold 2×2 there, each still 44px.
+- New gate `web/test/header-fit.cjs` (42 checks, in CI's Act I job) at 320/360/390/430/760/1280px, with a stand-in for the shell's button injected the way the real one arrives. It fails 18 checks on v4.54's stylesheet.
+- Cache: `v3.css?v=8`, `app.js?v=18`.
+
+### Port
+
+Godot: nothing to port. Its header is its own `PiritoriChrome` bar, and the hub shell does not run there.
+
 ## v4.54 — 2026-09-25
 
 **Saving during a fight no longer crashes.**
@@ -105,6 +119,8 @@ Godot: nothing to port. Its battle state holds no reference back to the campaign
 
 Godot: stop `advance_schedule` relocating `selected_anchor`. Add a journey preview (pure: origin, destination, block, shortest path; refusal reasons unknown/sealed/already-here/campaign-over/in-battle/in-visit/disconnected) and a commit that revalidates origin, block and path, then sets presence and marks the destination seen once. No extra block or fare (D002). Replace Use area with Travel here → Travel / Cancel. No save-format change.
 
+**Status: landed in Godot 2026-09-25.** Godot's `advance_block` never relocated Aatami, but its map tap did, so M1 was the half it lacked. `GameState.preview_journey`/`commit_journey`/`story_lead_id`/`shortest_path` hold the same contract; the rail offers TRAVEL HERE, then TRAVEL / CANCEL with the cost line; the map draws the path dashed. Gates: `test_spine` holds the journey contract (264), `test_shell` presses plan → cancel → plan → a double TRAVEL (117; restoring the old `select()` fails 4 checks), and `test_playthrough` walks all 14 blocks with 13 explicit journeys (72). The Japanese strings were written within the shipped font subset, because its source font cannot be downloaded from this environment.
+
 ## v4.52 — 2026-09-24
 
 **M1: looking is not being there.**
@@ -119,6 +135,8 @@ Godot: stop `advance_schedule` relocating `selected_anchor`. Add a journey previ
 ### Port
 
 Godot: keep a non-persisted inspection cursor separate from `selected_anchor`; map input moves only the cursor; add Use area / Show lead; gate the encounter entry, choices, visits, trades and fencing on presence at the lead. No save-format change. Schedule relocation stays until M2.
+
+**Status: landed in Godot 2026-09-25.** Map input only inspects: `city_map.select()` no longer writes `GameState.current_anchor_id`. The rail says YOU ARE HERE / INSPECTING with `AATAMI · … STORY LEAD · …`; presence is a dashed diamond. Encounters and the market are offered only where Aatami stands, and ledger trades are refused elsewhere (`at_offer`). SHOW LEAD was not ported: the lead already pulses on the map. Godot has no `seen` observations, so there is nothing to gate there.
 
 ## v4.51 — 2026-09-21
 
