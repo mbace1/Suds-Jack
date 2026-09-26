@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RFH Style Lab</title>
+<style>
+  @font-face { font-family: 'Anton'; src: url(fonts/Anton.ttf); }
+  @font-face { font-family: 'Archivo Black'; src: url(fonts/ArchivoBlack.ttf); }
+  @font-face { font-family: 'Space Grotesk'; font-weight: 700; src: url(fonts/SpaceGrotesk-Bold.ttf); }
+  :root { --bg: #111; --fg: #eee; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font: 14px system-ui, sans-serif; }
+  nav { display: flex; gap: 8px; padding: 12px 16px; flex-wrap: wrap; }
+  nav button { min-height: 44px; padding: 0 16px; background: #222; color: #eee; border: 1px solid #444; border-radius: 6px; font: inherit; }
+  nav button[aria-pressed="true"] { background: #f0027f; border-color: #f0027f; }
+  canvas { display: block; margin: 0 auto 16px; width: min(100vw - 32px, 54vh); height: auto; }
+</style>
+</head>
+<body>
+<nav id="nav"></nav>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="module">
+  import { STYLES, renderAt, ready } from './styles.js';
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  const q = new URLSearchParams(location.search);
+  let style = q.get('style') || 'riso';
+  const nav = document.getElementById('nav');
+  for (const s of Object.keys(STYLES)) {
+    const b = document.createElement('button');
+    b.textContent = STYLES[s].name; b.dataset.s = s;
+    b.onclick = () => { style = s; sync(); };
+    nav.append(b);
+  }
+  const sync = () => nav.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.s === style));
+  sync();
+  await ready();
+  // the capture harness drives frames itself; a person gets it live
+  window.__lab = { renderAt: (s, t) => renderAt(ctx, s, t), canvas: cv };
+  if (!q.has('still')) {
+    const t0 = performance.now();
+    const loop = (now) => { renderAt(ctx, style, (now - t0) / 1000); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+</script>
+</body>
+</html>
