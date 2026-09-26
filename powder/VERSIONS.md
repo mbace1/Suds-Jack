@@ -4,6 +4,39 @@ The `## vN` heading at the top is what the arcade floor shows as the build
 number (`scripts/versions.mjs` reads it at deploy time). The `?v=N` token on
 the module graph is a cache-bust, kept separately.
 
+## v10 — 2026-09-26
+Your thumbs, measured at last; and the Blender fans spin.
+
+TOUCH. The owner's main control scheme is on-screen twin-stick touch, and
+every controls number before this came from drive2 / corner, which override
+`input.read` with exact values — so they measured the physics and bypassed
+every scheme equally. `test/thumbs.mjs` drives the real touch path through
+CDP touch events and found a fault only a thumb could have: the stick's gate
+was a CIRCLE, and on the left stick x is steer and y is throttle, so full lock
+was only reachable at y = 0, which is zero throttle. Full lock and full power
+together were impossible; the most of both at once was 0.71 steer.
+The first guess was that the forced lift-off stepped the tail out. It did
+not — slip was 5.4 m/s against the keyboard's 5.8. The cost was the turbine:
+the natural hard-turn gesture took N1 from 0.62 to 0.27 in 1.5 s where the
+keyboard came out of the same turn at 0.90, and thrust goes as N1 squared.
+The gate is SQUARE now: each axis clamps on its own, the way W and D are
+independent keys. Thumb up then slid right sends 1.00 steer and 1.00 throttle,
+turns 17° (keyboard 17°) and holds N1 at 0.85 (keyboard 0.90). Nothing changes
+inside the circle, where the two gates agree; only a thumb past the rim reads
+differently. A pure sideways sweep still cuts power, because a thumb that is
+not pushing up is not asking for it — no throttle is added that was not
+asked for. The on-screen stick draws the same square and its knob clamps the
+same way, so it never shows a thumb stopping short of where the game hears it.
+
+BLENDER FANS. The authored ships' turbine discs orbited the hull and rendered
+black: built in world coordinates, each disc's origin sat at the ship's centre
+so `rotation.z` swung it round a 1.1 m circle, and a bmesh ring has no uv so
+the turbine texture sampled (0, 0) everywhere. `craft.js` re-centres a loaded
+fan on its own origin and gives a mapless disc a planar uv; the authored
+scripts do both at source.
+
+Tokens: every module `?v=9` → `?v=10`, moved together.
+
 ## v9 — 2026-09-07
 The keyboard, and the door for Blender.
 

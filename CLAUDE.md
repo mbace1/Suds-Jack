@@ -1869,7 +1869,14 @@ plates, named for what they show: `sun-one`, `aft-five`, `intake-green`, `nose-g
 scheme, the gamepad second, the keyboard third.** Every controls pass measures touch
 first — the v8/v9 passes went keyboard-first because that was where the report came
 from, and the touch path had only the hidden auto-throttle fixed until `touch.mjs`
-(real CDP touch events) existed.
+(real CDP touch events) existed. **`drive2`/`corner` override `input.read`, so they
+measure the physics and cannot see ANY scheme's mapping** — `thumbs.mjs` is the
+touch pass, and it found (v10) that the stick's gate was a **circle**: x is steer and
+y is throttle on the left stick, so full lock was only reachable at y = 0, zero
+throttle. It did not cause extra oversteer (the first guess, refuted by slip 5.4 vs
+the keyboard's 5.8); it cost the **turbine**, N1 0.62 → 0.27 through a hard turn
+against the keyboard's 0.90. The gate is **square** now — axes clamp independently,
+as W and D always were — and the drawn stick follows it.
 
 **Controls.** Left stick steers and works the throttle; right stick pans the camera
 (x) and is your weight (y). Keyboard (v8): the arrow cluster **mirrors WASD** — W/Up

@@ -145,10 +145,23 @@ export class InputManager {
 
   _def(s, out) {
     if (s.id === -1) { out.x = 0; out.y = 0; out.on = false; return out; }
-    let dx = s.x - s.x0, dy = s.y - s.y0;
-    const len = Math.hypot(dx, dy);
-    if (len > STICK_R) { dx *= STICK_R / len; dy *= STICK_R / len; }
-    out.x = dx / STICK_R; out.y = dy / STICK_R; out.on = true;
+    const dx = s.x - s.x0, dy = s.y - s.y0;
+    // A SQUARE gate: each axis clamps on its own. It used to be a circle (the
+    // thumb's distance clamped to STICK_R and both axes scaled down together),
+    // and on the left stick that tied steer to throttle: x is steer and y is
+    // throttle, so the further round the rim a thumb went to turn, the less
+    // power it could hold. Full lock was only reachable at y = 0, which is
+    // zero throttle. Measured through real touch (test/thumbs.mjs): the natural
+    // hard-turn gesture took the turbine from N1 0.62 to 0.27 in 1.5 s, where
+    // the keyboard (W and D are independent keys) came out of the same turn at
+    // 0.90 — thrust goes as N1 squared, so a tenth of the power on every exit.
+    // It did NOT cause extra oversteer (slip was 5.4 m/s against the keyboard's
+    // 5.8), which was the first guess; the cost was the turbine. A square
+    // makes the axes independent the way the keys already were, and adds no
+    // throttle a thumb did not ask for.
+    out.x = Math.max(-1, Math.min(1, dx / STICK_R));
+    out.y = Math.max(-1, Math.min(1, dy / STICK_R));
+    out.on = true;
     return out;
   }
 

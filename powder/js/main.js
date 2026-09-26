@@ -33,18 +33,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=9';
-import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=9';
-import { Vehicle } from './vehicle.js?v=9';
-import { DustPool, ScarField } from './dust.js?v=9';
-import { Route, RADIUS } from './route.js?v=9';
-import { InputManager, STICK_R } from './input.js?v=9';
-import { AudioKit } from './audio.js?v=9';
-import { makeSky } from './sky.js?v=9';
-import { makeEnvMap } from './craft.js?v=9';
-import { HeatHaze } from './haze.js?v=9';
-import { makeFlare } from './flare.js?v=9';
-import { preloadModels, models } from './models.js?v=9';
+import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=10';
+import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=10';
+import { Vehicle } from './vehicle.js?v=10';
+import { DustPool, ScarField } from './dust.js?v=10';
+import { Route, RADIUS } from './route.js?v=10';
+import { InputManager, STICK_R } from './input.js?v=10';
+import { AudioKit } from './audio.js?v=10';
+import { makeSky } from './sky.js?v=10';
+import { makeEnvMap } from './craft.js?v=10';
+import { HeatHaze } from './haze.js?v=10';
+import { makeFlare } from './flare.js?v=10';
+import { preloadModels, models } from './models.js?v=10';
 
 // Fog has to reach nearly the edge of the streamed world, not half way
 // into it, or the flats read as a 300 m milk bowl instead of a plain.
@@ -666,13 +666,15 @@ function updateHud(dt) {
 function drawStick(s, label, hx, hy) {
   const c = uiCtx;
   if (s.id !== -1) {
-    let dx = s.x - s.x0, dy = s.y - s.y0;
-    const len = Math.hypot(dx, dy);
-    if (len > STICK_R) { dx *= STICK_R / len; dy *= STICK_R / len; }
+    // the knob follows the SAME square gate input.js reads (see _def there),
+    // so it never shows a thumb stopping short of where the game hears it —
+    // and a square base says the corners, full lock at full power, are there
+    const dx = Math.max(-STICK_R, Math.min(STICK_R, s.x - s.x0));
+    const dy = Math.max(-STICK_R, Math.min(STICK_R, s.y - s.y0));
     c.strokeStyle = 'rgba(240,230,210,0.5)';
     c.fillStyle = 'rgba(240,230,210,0.06)';
     c.lineWidth = 2;
-    c.beginPath(); c.arc(s.x0, s.y0, STICK_R, 0, 7); c.fill(); c.stroke();
+    c.beginPath(); c.roundRect(s.x0 - STICK_R, s.y0 - STICK_R, STICK_R * 2, STICK_R * 2, 18); c.fill(); c.stroke();
     c.fillStyle = 'rgba(143,232,216,0.45)';
     c.beginPath(); c.arc(s.x0 + dx, s.y0 + dy, 24, 0, 7); c.fill();
   } else {
