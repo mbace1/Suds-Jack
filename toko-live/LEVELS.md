@@ -12,7 +12,7 @@ Nothing on this ladder gives Toko a body without the owner drawing it.
 | | Level | A person can… | Exit test |
 |---|---|---|---|
 | 0 | **One tree** | — (housekeeping) | `main.js` byte-identical on `main` and `gh-pages`; one log, one number |
-| 1 | **He saw you play** | open Toko Live and hear about their last runs, in every game | the recap of a real run in each tabled game reaches Toko Live through `hub/playlog.js` |
+| 1 | **He saw you play** ✓ 2026-09-26 | open Toko Live and hear about their last runs, in every game | the recap of a real run in each tabled game reaches Toko Live through `hub/playlog.js` |
 | 2 | **He answers you** | leave a note in a game and, next visit, hear what changed about it | a note filed under a game + a later `CHANGED` entry for that game → he brings it up once |
 | 3 | **Clay Toko** | see him as clay: matte, thumbprinted, on twos, with boil | recorded loop judged against the owner's clay reference, not a still |
 | 4 | **He shows the games** | ask to see a game and watch a real clip of it on the stage | the stage plays a recorded, deterministic loop of that game |
@@ -53,6 +53,11 @@ Two facts to design around, both measured here:
 - `toko/js/toko3d.js` and `radiofree/` are the Radio Free lane's. The clay
   variant lands as an OPTION on `makeToko3D`, never a change to the default,
   so their film does not move under them.
+  **It has landed, on the site first**: Radio Free v72 (2026-09-26, owner:
+  *"Clay Toko is ok, Aardman"*) added `style: 'clay'` — plasticine, thumbprints,
+  rolled strokes, re-lumped per held drawing, on twos. `main` does not have it
+  yet; bring that file back from `gh-pages` before level 3 builds on it, and
+  build ON it rather than beside it.
 - `toko/js/{table,signature,chat}.js` and the game seams (`__tokoTable`) are the
   table's (see `toko/PATCH_NOTES.md`).
 - `SOURCE_SYNC.md` holds: core changes on `main`, the exact bytes carried to
