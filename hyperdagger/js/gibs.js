@@ -38,10 +38,10 @@ const _c = new THREE.Color();
 
 export const GIB_DEFAULTS = {
   cell: 0.28,        // chunk size (u): a skull is ~a dozen of these
-  perKill: 22,       // chunks a death may send to the solver
+  perKill: 18,       // chunks a death may send to the solver
   minVoxels: 2,      // a cell with fewer voxels than this is spray, not a chunk
   cap: 300,          // gibs in all; the oldest are retired
-  awakeCap: 44,      // gibs moving at once
+  awakeCap: 72,      // gibs moving at once (kills come quicker than gibs settle)
   iterations: 4,
   friction: 0.7,
   budgetMs: 4,       // the solver's running average past this → classic debris
@@ -116,10 +116,12 @@ export class PhysGibs {
       const s = c.cell * (0.62 + 0.38 * Math.min(1, Math.cbrt(k.n * voxelSize ** 3 / c.cell ** 3)));
       _s.set(x - cen.x, y - cen.y, z - cen.z);
       const len = Math.max(_s.length(), 0.05);
-      _s.divideScalar(len).multiplyScalar(2 + Math.random() * 3);
-      _s.x += impulse.x * 0.6 + (Math.random() - 0.5) * 1.5;
-      _s.y += impulse.y * 0.6 + 1.5 + Math.random() * 3;
-      _s.z += impulse.z * 0.6 + (Math.random() - 0.5) * 1.5;
+      // a HEAP, not confetti: the chunks slump out of the body and fall where
+      // it died (the first cut threw them at 2–5 u/s and they scattered)
+      _s.divideScalar(len).multiplyScalar(0.6 + Math.random() * 1.2);
+      _s.x += impulse.x * 0.25 + (Math.random() - 0.5) * 0.6;
+      _s.y += impulse.y * 0.25 + 0.4 + Math.random() * 1.2;
+      _s.z += impulse.z * 0.25 + (Math.random() - 0.5) * 0.6;
       // world → solver: (x, y, z) → (x, −z, y)
       const b = new Rigid(this.sv, [s, s, s], 1, c.friction, [x, -z, Math.max(y, s * 0.6)], [_s.x, -_s.z, _s.y]);
       b.velocityAng.set([(Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8]);
