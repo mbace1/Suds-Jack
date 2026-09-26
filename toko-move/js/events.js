@@ -62,7 +62,7 @@ export class EventDirector{
   if(next.kind==='disruption'){this.queue.shift();this.startHold(next);return true;}
   if(!ch?.active||here!==next.card.where)return false;
   this.queue.shift();this.pending={...next,since:tick};ch.say?.(`${next.card.glyph} ${next.card.text}`);return true;}
- startHold(ev){const net=this.tm.liveNetwork,layer=net?.transit?.layers?.find(l=>l.name===ev.line);if(!net||!layer)return;const perMin=this.tm.flow.clock.ticksPerDay/((this.tm.shift?.hours||1.25)*60),from=this.tm.flow.clock.tick,until=from+Math.round(ev.card.minutes*perMin);net.hold?.(layer,from,until);this.holds.push({...ev,from,until});this.tm.challenge?.say?.(`${ev.card.glyph} ${ev.card.text(ev.line)}`);}
+ startHold(ev){if(this.tm.live)return;/* LIVE: the real city brings its own disruptions */const net=this.tm.liveNetwork,layer=net?.transit?.layers?.find(l=>l.name===ev.line);if(!net||!layer)return;const perMin=this.tm.flow.clock.ticksPerDay/((this.tm.shift?.hours||1.25)*60),from=this.tm.flow.clock.tick,until=from+Math.round(ev.card.minutes*perMin);net.hold?.(layer,from,until);this.holds.push({...ev,from,until});this.tm.challenge?.say?.(`${ev.card.glyph} ${ev.card.text(ev.line)}`);}
  // What is held right now, for the banner.
  activeHolds(){const t=this.tm.flow.clock.tick;return this.holds.filter(h=>t>=h.from&&t<h.until);}
  options(){const p=this.pending;if(!p)return[];const cargo=this.tm.challenge?.active?.cargo;return p.card.options.filter(o=>!o.needs||o.needs===cargo);}

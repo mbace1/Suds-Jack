@@ -47,17 +47,6 @@ export const HELSINKI = /* generated from the v2.11 builder, then owned here */
    ],
    "capacity": 30
   },
-  "toolontori": {
-   "aliases": [
-    "Töölöntori"
-   ],
-   "name": "Töölöntori",
-   "tags": [
-    "home",
-    "shop"
-   ],
-   "capacity": 20
-  },
   "kallionkirkko": {
    "aliases": [
     "Karhupuisto",
@@ -317,10 +306,6 @@ export const HELSINKI = /* generated from the v2.11 builder, then owned here */
  "walk": [
   [
    "pasila",
-   "toolontori"
-  ],
-  [
-   "pasila",
    "sornainen"
   ],
   [
@@ -330,22 +315,6 @@ export const HELSINKI = /* generated from the v2.11 builder, then owned here */
   [
    "pasila",
    "kapyla"
-  ],
-  [
-   "toolontori",
-   "kamppi"
-  ],
-  [
-   "toolontori",
-   "rautatientori"
-  ],
-  [
-   "toolontori",
-   "ooppera"
-  ],
-  [
-   "toolontori",
-   "meilahti"
   ],
   [
    "ooppera",

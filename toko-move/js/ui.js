@@ -9,6 +9,9 @@ export function minutes(ticks,tm){if(ticks==null||!Number.isFinite(ticks))return
 // "now" · "in 3 min" — for something arriving
 export function inMinutes(ticks,tm){const s=minutes(ticks,tm);return s==='now'?'now':s?`in ${s}`:'';}
 // "~4 min" — for a cost
+// v2.55: a margin is seconds, not minutes — a connection made with twelve
+// seconds to spare is the story, and "now" would throw it away.
+export function seconds(ticks,tm){if(ticks==null||!Number.isFinite(ticks))return'';return `${Math.max(1,Math.round(ticks*60/ticksPerMinute(tm)))} s`;}
 export function about(ticks,tm){const s=minutes(ticks,tm);return s==='now'?'~1 min':s?`~${s}`:'';}
 // The line's own badge — the same block that rides on the map, so a plan and
 // the tram it names look like one thing.

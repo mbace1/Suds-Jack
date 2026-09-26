@@ -23,7 +23,7 @@ server.listen(0, '127.0.0.1', async () => {
   const browser = await chromium.launch();
   const page = await (await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })).newPage();
   const errs = []; page.on('pageerror', e => errs.push(String(e).slice(0, 140)));
-  const boot = async () => { await page.goto(`${base}/toko-move/?shift=4&day=none`, { waitUntil: 'load' });
+  const boot = async () => { await page.goto(`${base}/toko-move/${process.env.RIVAL_Q || "?shift=2&day=none"}`, { waitUntil: "load" });
     await page.waitForFunction(() => window.__tm?.rival && !document.getElementById('play').disabled, null, { timeout: 30000 }); await page.tap('#play'); };
   // walk the clock a tick at a time and record where he is — the no-jump check
   const walk = (n) => page.evaluate(n => { const tm = window.__tm, r = tm.rival, out = []; let maxStep = 0, prev = r.position();
@@ -36,8 +36,9 @@ server.listen(0, '127.0.0.1', async () => {
     const a = await walk(140);
     const racing = a.out.filter(o => o.kind === 'race' && o.d != null);
     ok(`a claim turns him toward your stop (${racing.length} ticks racing)`, racing.length > 20);
-    // shift 4 is picked because he starts 2.9 km away; on a board where he
-    // starts ON your stop, "he gets closer" is 0 m → 0 m and proves nothing.
+    // shift 2 is picked because he starts 2.9 km away (shift 4 was, until
+    // v2.57's board change put him on your stop); on a board where he starts
+    // ON your stop, "he gets closer" is 0 m → 0 m and proves nothing.
     ok(`and he gets closer (${racing[0]?.d.toFixed(0)} m → ${racing[racing.length - 1]?.d.toFixed(0)} m)`, racing.length > 20 && racing[0].d > 500 && racing[racing.length - 1].d < racing[0].d * 0.8);
     ok(`he never jumps (largest step ${a.maxStep.toFixed(1)} m a tick)`, a.maxStep < 40);
     await page.waitForTimeout(700);   // the board re-renders on its own interval

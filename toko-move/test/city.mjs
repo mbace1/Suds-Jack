@@ -59,7 +59,7 @@ ok(SEEDED.every(id=>ALL.some(l=>l.from===id||l.to===id)),'every seeded stop is o
  eq(streetsAt('nowhere').length,0,'and somewhere that is not a stop is on none');}
 
 // ── the rival ────────────────────────────────────────────────────────────
-const HUBS=['rautatientori','lasipalatsi','kamppi','hakaniemi','sornainen','toolontori'];
+const HUBS=['rautatientori','lasipalatsi','kamppi','hakaniemi','sornainen','ooppera'];
 const makeTm=()=>{const clock={tick:0,ticksPerDay:3000};
  const resolved={};HUBS.forEach((h,i)=>resolved[h]={lat:60+i*0.01,lon:24+i*0.01});
  return {flow:{clock},transferHubs:HUBS,city:{resolved},

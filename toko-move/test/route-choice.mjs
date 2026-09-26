@@ -9,7 +9,7 @@ import {LiveNetwork} from '../js/live-network.js';
 import {TransitLayers} from '../js/transit-layers.js';
 const pack=JSON.parse(fs.readFileSync(new URL('../cities/helsinki.json',import.meta.url),'utf8')),city=buildRealHelsinki(pack);
 const centre=routeChoices(city,'rautatientori','hakaniemi',3);assert.ok(centre.length>=1,'centre leg exposes a fixed HSL choice');assert.ok(centre.some(x=>x.kind==='direct'),'Rautatientori → Hakaniemi has a direct service choice');
-const harbour=routeChoices(city,'lansiterminaali','toolontori',3);assert.ok(harbour.length>=1,'harbour leg exposes route guidance');
+const harbour=routeChoices(city,'lansiterminaali','ooppera',3);assert.ok(harbour.length>=1,'harbour leg exposes route guidance');
 for(const c of [...centre,...harbour]){assert.ok(c.legs.length>=1&&c.legs.length<=2,'choice is direct or one transfer');for(const l of c.legs)assert.ok(['tram','metro'].includes(l.line.mode),'choice uses real fixed transit');}
 assert.ok(servicesAt(city,'rautatientori').length>=3,'central station exposes multiple services');
 const flow=createFlow({city,seed:7,days:1,demand:null}),challenge=new DeliveryChallenge(flow,()=>{});challenge.start();

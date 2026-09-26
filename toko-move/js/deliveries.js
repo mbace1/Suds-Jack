@@ -23,8 +23,8 @@ export const JOBS=[
  {stops:['lasipalatsi','rautatientori'],label:'Press proofs to Central',cargo:'documents',limit:125,value:100},
  {stops:['rautatientori','hietalahti'],label:'Hot lunch to Hietalahti',cargo:'hot food',limit:155,value:140},
  {stops:['hietalahti','lansiterminaali'],label:'Dock parts to West Harbour',cargo:'parts',limit:155,value:130},
- {stops:['lansiterminaali','toolontori'],label:'Fragile parcel to Töölö',cargo:'fragile',limit:250,value:190},
- {stops:['toolontori','meilahti'],label:'Medical equipment to Meilahti',cargo:'equipment',limit:220,value:210},
+ {stops:['lansiterminaali','ooppera'],label:'Fragile parcel to Töölö',cargo:'fragile',limit:250,value:190},
+ {stops:['ooppera','meilahti'],label:'Medical equipment to Meilahti',cargo:'equipment',limit:220,value:210},
  {stops:['meilahti','messukeskus'],label:'Expo courier to Messukeskus',cargo:'express',limit:225,value:230},
  {stops:['messukeskus','arabia'],label:'Fresh food to Arabia',cargo:'fresh food',limit:260,value:220},
  {stops:['arabia','kalasatama'],label:'Express run to Kalasatama',cargo:'express',limit:205,value:200},
@@ -35,7 +35,7 @@ import {regularAt,standingOf,bumpStanding,loadStanding,saveStanding,tipFor} from
 import {CAPACITY,unitsOf,payFor} from './parcels.js?v=1';
 const sameNodes=(a,b)=>a.length===b.length&&a.every((n,i)=>n===b[i]);
 const CARGO_KEYS=Object.keys(CARGO);
-const DESTINATIONS=['rautatientori','hakaniemi','sornainen','kalasatama','pasila','toolontori','kamppi','kauppatori','katajanokka','lansiterminaali','hietalahti','meilahti','arabia','olympiaterminaali','eira','kapyla','messukeskus','lasipalatsi','ooppera','senaatintori'];
+const DESTINATIONS=['rautatientori','hakaniemi','sornainen','kalasatama','pasila','kamppi','kauppatori','katajanokka','lansiterminaali','hietalahti','meilahti','arabia','olympiaterminaali','eira','kapyla','messukeskus','lasipalatsi','ooppera','senaatintori'];
 // The hash is UNSIGNED (`>>> 0`), so every shift off it must be `>>>` too:
 // `>>` is signed, half of all seeds have the top bit set, and `array[-1234]`
 // is undefined — which is silent. It cost a hand-off that was never built and,
@@ -240,7 +240,11 @@ export class DeliveryChallenge{
   // that convenience is the offer, and it should still sometimes be the wrong
   // job to take.
   const pick=fits.length?fits[(seed>>>7)%fits.length]:cands.sort((a,b)=>a.est-b.est)[0];if(!pick){this.pendingHandoff=null;return;}
-  const cargo=CARGO_KEYS[(seed>>>5)%CARGO_KEYS.length],dist=Math.max(1,Math.round(pick.est/40));
+  // v2.55: the fee is priced off a DRY day's trip. `pick.est` rides the live
+  // fleet, so in snow every estimate is a fifth longer — and this line turned
+  // that into distance, so a snowy hand-off paid more for the same two stops.
+  // It was the whole of the "+€57 snow week" (v2.49's open finding).
+  const cargo=CARGO_KEYS[(seed>>>5)%CARGO_KEYS.length],dist=Math.max(1,Math.round(pick.est*(this.weatherSpeed||1)/40));
   this.pendingHandoff={id:`handoff:${this.index}:${pick.to}`,stops:[at,pick.to],label:`${this.name(at)} → ${this.name(pick.to)}`,cargo,
    limit:this.deadlineFor({from:at,to:pick.to,cargo,dist}),value:this.jobPay((90+dist*9)*payFor(cargo)),handoff:true,
    // No name on the door (v2.43, owner: "recipients names aren't needed"). A

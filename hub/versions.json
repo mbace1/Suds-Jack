@@ -10,8 +10,8 @@
     "from": "VERSIONS.md"
   },
   "tokomove": {
-    "v": "2.54",
-    "n": 2054,
+    "v": "2.61",
+    "n": 2061,
     "from": "VERSIONS.md"
   },
   "tokodrop": {
@@ -120,8 +120,8 @@
     "from": "VERSIONS.md"
   },
   "tokolive": {
-    "v": "19",
-    "n": 19000,
+    "v": "47",
+    "n": 47000,
     "from": "VERSIONS.md"
   }
 }

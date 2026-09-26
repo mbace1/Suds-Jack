@@ -30,9 +30,19 @@ server.listen(0, '127.0.0.1', async () => {
     await page.tap('#play'); await page.waitForTimeout(300);
     const deliver = async (late) => {
       await page.tap('#jobBoard .jobOffer:not([disabled])'); await page.waitForTimeout(300);
-      for (let i = 0; i < 200; i++) { const on = await page.evaluate(() => { const k = (window.__tm.catchables?.() || [])[0]; return !!k && !window.__tm.catchVehicle(k.vehicle.id)?.error; }); if (on) break; await page.evaluate(() => window.__tm.flow.runTicks(3)); }
-      for (let i = 0; i < 700; i++) { if ((await page.evaluate(() => window.__tm.mobility.status().kind)) === 'getoff') break; await page.evaluate(() => window.__tm.flow.runTicks(4)); }
-      if (late) await page.evaluate(() => { window.__tm.challenge.active.limit = 1; });   // setup: this one has run out of time
+      // v2.57: a job can need a change of tram, so ride leg by leg — catch what
+      // is lit, ride to the stop, get off — until the parcel is delivered.
+      const start = await page.evaluate(() => window.__tm.challenge.index);
+      for (let leg = 0; leg < 4; leg++) {
+        for (let i = 0; i < 200; i++) { const on = await page.evaluate(() => { const k = (window.__tm.catchables?.() || [])[0]; return !!k && !window.__tm.catchVehicle(k.vehicle.id)?.error; }); if (on) break; await page.evaluate(() => window.__tm.flow.runTicks(3)); }
+        for (let i = 0; i < 700; i++) { if ((await page.evaluate(() => window.__tm.mobility.status().kind)) === 'getoff') break; await page.evaluate(() => window.__tm.flow.runTicks(4)); }
+        const last = await page.evaluate(() => !window.__tm.mobility.status().transfer);
+        if (last) break;
+        await page.evaluate(() => window.__tm.getOffNow());
+      }
+      // setup, both ways: the late one has run out of time, and the on-time one
+      // is given room — a job that changes trams can overrun a tight deadline.
+      await page.evaluate(l => { window.__tm.challenge.active.limit = l ? 1 : 1e6; }, late);
       const r = await page.evaluate(() => { const before = document.getElementById('mult').className; const x = window.__tm.getOffNow(); return { ok: !x?.error, before }; });
       await page.waitForTimeout(120);
       return page.evaluate(() => ({ seen: window.__tm.juice.seen(), live: window.__tm.juice.live(), score: document.getElementById('score').className, mult: document.getElementById('mult').className, results: window.__tm.challenge.results.slice() }));

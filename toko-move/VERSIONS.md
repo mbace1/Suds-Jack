@@ -1,5 +1,235 @@
 # Toko Move — versions
 
+## v2.61 — 2026-09-26
+
+**THE TEST CARD** (`js/testcard.js`; owner: *"try to hook me into testing with
+enticing updates"*). The title card now carries this build's missions — five
+things it just changed, each with a TRY link straight into it: **the quiet
+map** (take a job), **tap the tram** (board by tapping it on the map), **walk
+a street**, **LIVE**, and **tell Toko** — which opens this cabinet's note panel
+on the arcade, so nothing new is sent anywhere. A mission ticks itself off when
+you actually DO it in the game, never when you tap a row: taking a job ticks
+the quiet map, only a tap on the MAP (not the panel) ticks the tram, a walk
+starting ticks the street, a live feed running ticks LIVE. The feed says
+*✓ TESTED · THE QUIET MAP · 1/5* the moment one lands, the card remembers across
+reloads, and a new build brings a new list rather than carrying old ticks. The
+arcade's note for the cabinet says so too.
+
+`test/testcard.mjs` (7) holds the rules; `test/testcard.cjs` (10) plays them —
+a job tapped, a tram tapped on the map (and the panel NOT counting), a reload,
+and *Tell Toko* landing on `#tokomove/feedback`.
+
+## v2.60 — 2026-09-26
+
+**THE QUIET MAP.** Thirty-four lines and a hundred and fifty vehicles all drawn
+at full strength meant the board never said which of them were YOURS: every
+tram got a badge in turn and your own line was one colour among thirty. Now,
+with a parcel in hand, the lines that matter to what you are doing stay at full
+strength and are drawn last and a little heavier; the other lines step back to
+about a quarter; and every vehicle on them is a small faint dot rather than a
+badge. The lit tram and the one you are riding are never dimmed.
+
+*Which* lines is one rule by state (`tm.focusLines`, main-v212): on a ride, the
+line you are on and the rest of your plan; waiting with a parcel, the legs of
+the options on offer; with no parcel, the lines the board's jobs would put you
+on. It is deliberately tighter than the badge ranking's `relevantLines`,
+because a line drawn at full strength is a claim that it is yours. With nothing
+in focus — dispatch before anything is arriving — nothing is dimmed and the
+board is exactly the old one.
+
+Owner's direction was the brief: *make the map read as yours first*, then a
+phone playtest. Measured on shift 3 waiting at Rautatientori: 5 of 34 lines in
+focus, 15 badges all on them, 133 of 154 vehicles faint. `test/quiet.cjs` (6)
+holds that every badge is yours, lit or your ride, that the rest are faint, that
+the lines are drawn with the same focus, and that nothing dims when nothing is
+in focus; drawing every vehicle full again fails it.
+
+## v2.59 — 2026-09-25
+
+**LIVE'S BADGE LAGGED THE FEED BY UP TO FIFTEEN SECONDS.** v2.58 repaints the
+HUD on every tenth tick crossed — and LIVE runs the clock at a fifteenth, so
+ten ticks is fifteen real seconds: *LIVE · 3* could still read *LIVE* long
+after the trams were on the board, and *FEED LOST* could arrive late. CI caught
+it (`live.cjs`, *the HUD says LIVE and how many (LIVE)*). In LIVE the HUD also
+repaints the moment the feed's own label changes. The gate now reads the badge
+400 ms after the reports land; the old line fails it every time.
+
+## v2.58 — 2026-09-25
+
+**THE HUD FROZE WHEN A FRAME SKIPPED A TENTH TICK.** CI failed v2.56 and v2.57
+on *the peak says so on the HUD (BUSY ×1.2)* while the fee on the same page was
+already paying ×1.3. The frame loop repainted the HUD only on a frame that
+landed EXACTLY on a multiple of ten ticks; a frame that advances several ticks
+— a slow phone, a busy runner, the harness's jump to the peak — can step over
+one, and then the clock and the rush badge stayed on whatever moment last
+painted them (here, an event mid-jump). It was never flaky; it was a race the
+local machine happened to win. The HUD now repaints on every tenth tick
+CROSSED. `rush.cjs` jumps to three ticks past a tenth, so it fails on the old
+line every time (reproduced: *BUSY ×1.2*) and passes on the new one.
+
+## v2.57 — 2026-09-25
+
+**TÖÖLÖNTORI LEAVES THE BOARD, BECAUSE HSL LEFT IT** (owner, 2026-09-25: move
+with the city). The nightly HSL refresh has failed every night since the 12th
+on *cannot resolve anchor toolontori*, and v2.44's diff said why: the feed
+dropped Töölöntori, Apollonkatu, Arkadiankatu, Hanken, Maria, Sammonkatu and
+the 4T/8T loop, and added the Crown Bridges stops (Kruunuvuori, Korkeasaari,
+Yliskylä, Merihaka …) with lines 11, 11H and 12. Töölöntori is not renamed,
+it is **unserved** — and it was one of the game's delivery anchors, so the
+shipped board was sending couriers to a stop no tram calls at any more.
+
+It is gone as a destination, a transfer hub and a walk end. What stood on it
+moved to where the city still is: the campaign's fragile parcel to Töölö goes
+to **Ooppera** (Töölö, on the Mannerheimintie trams) and its next job leaves
+from there, so the campaign is still one chain; Mannerheimintie is walked
+Lasipalatsi → Ooppera; Helsinginkatu is walked from Ooppera, where it meets
+Mannerheimintie; Runeberginkatu is drawn Kamppi → Meilahti; the TÖÖLÖ label
+sits on Ooppera. The graph fingerprint moved by exactly Töölöntori: its node,
+its eight links and its place in lines 2, 2H, 8H and 8T, which now run Kamppi
+→ Ooppera and Ruoholahti → Ooppera — no other node moved by a centimetre. The
+anchor gates count the anchors the definition declares (21) rather than a
+typed 22.
+
+**What this unblocks.** With every remaining anchor served by the new feed,
+the nightly refresh can validate again and open its own refresh PR with the
+new network. The Crown Bridges trams (11, 11H, 12) then appear on the board as
+lines; Laajasalo as a DESTINATION is the step after that, because it needs the
+new pack in the tree and this sandbox cannot fetch it.
+
+**Four browser gates leaned on the old boards**, because removing a
+destination changes what every pinned shift deals: shift 3's first job now
+changes trams (mapcontrol accepts a get-off at a transfer and checks you are
+left waiting there; juice rides leg by leg), shift 1 no longer suits a
+never-walking bot (daily's end-card scenario is shift 2), and in shift 4 the
+rival now starts on your stop (shift 2 puts him 2.9 km out). A pinned shift in
+a gate is a SCENARIO, not the thing measured — `shifts.cjs` is, and it stays
+11/11 with every one of the next 14 dailies winnable.
+
+**Rent re-measured** (`--kitweeks=20`): **75% / 85% / 25%** pay €400 (v2.56:
+85 / 55 / 25). The first two swapped places, which is what 20-week noise looks
+like; rent stays €400.
+
+## v2.56 — 2026-09-25
+
+**LIVE — THE REAL MORNING** (roadmap L5, `js/hfp.js`, `js/mqtt-ws.js`). The
+title card offers *OR LIVE · the real trams, right now* (`?live`): every tram
+and metro train on the board is where HSL says it is, from HSL's open
+high-frequency positioning feed. It needs **no API key** — the roadmap
+assumed Digitransit and a key, but HFP is published on an open MQTT broker
+(`wss://mqtt.hsl.fi`), and MQTT 3.1.1 over a WebSocket is four packets, so the
+client is written out (`mqtt-ws.js`, ~80 lines) rather than vendored.
+
+**LIVE is not a second fleet.** The timetable fleet already answers everything
+the game asks — where is it, which way, when does it reach my stop, can I catch
+it, where does my ride go — from one closed form: a vehicle is a phase on its
+line's out-and-back cycle and a speed. So a real report is projected onto its
+line's exact HSL path (matched by GTFS route id, which HFP carries), and the
+phase is re-solved so that the closed form puts it exactly there now; between
+reports it runs on at the line's speed. The catch panel, the ride, the arrival
+minutes and the badges are unchanged and cannot tell. Which way it is going is
+read off two reports' motion along the path, and before there is motion, off
+the reported heading against the path's own bearing.
+
+**Real time.** Ten ticks a real second is fifteen game-minutes a real minute,
+so LIVE runs the clock at a fifteenth: a 75-minute shift is 75 real minutes,
+the clock shows Helsinki's real time, and ×2/×4 are off. It is an ordinary,
+clear morning with no rush curve and no scripted disruptions, because the real
+city brings its own; and it records nothing — not the daily, not the week —
+because a live morning cannot be replayed or compared.
+
+**The honest limits, handled rather than hidden**: a report more than 120 m
+from its line (a depot run, a diversion) is ignored, never snapped onto a line
+it is not on; a line with no real vehicle has none, which is the real city; a
+vehicle not heard from for three minutes leaves the board — except the one you
+are riding, which runs on until you get off; and when the feed dies, errors or
+goes quiet for 30 s, **the timetable comes back** and the HUD says *LIVE · FEED
+LOST · TIMETABLE*. While it is live the HUD says *LIVE · N*, N being real
+vehicles on the board.
+
+**NOT VERIFIED AGAINST THE REAL BROKER.** The build sandbox cannot reach
+`mqtt.hsl.fi` (403 at the proxy), so every message in both gates is synthetic —
+shaped as HSL documents HFP v2 and placed on the real paths of the committed
+pack. `test/live.mjs` (21, bare node): the framing round-trips (two packets in
+one frame, one packet across two), a report lands where it was reported
+(0.00 m), both directions read, the metro matches by route, and the four
+limits hold. `test/live.cjs` (11): the broker is mocked at the WebSocket with
+Playwright's `routeWebSocket`, answering CONNECT and SUBSCRIBE as a broker
+does; the way in, the real-rate clock, three trams landing at 0.0 m, the HUD,
+the catch panel reading the live fleet, and the timetable returning when the
+socket closes. Reversing the direction solve fails the first; removing the
+fallback fails the second. **The first real test is a phone on a Helsinki
+morning.**
+
+**Rent re-measured after v2.55's snow fix** (`--kitweeks=20`, kit taken
+nightly, every morning drawing its own weather): the three players pay €400 in
+**85% / 55% / 25%** of weeks, against 80 / 65 / 10 before — every column inside
+20-week noise. Rent stays €400.
+
+
+## v2.55 — 2026-09-25
+
+**THE SNOW WEEK WAS A PRICING BUG, AND IT IS MOSTLY GONE.** v2.49 left snow
+open: a week held in snow paid **+€57** over the same week clear, and it was
+put down to diverged boards. It was not only that. A hand-off's fee is built
+from `90 + dist × 9`, and for a hand-off `dist` came from the trip's time
+estimate — which rides the live fleet, a fifth slower in snow. So the snow
+turned a longer ride into a longer "distance" and paid more for the same two
+stops (111 against 118 on the gate's pair). The fee is priced off a dry day's
+trip now, the same way v2.49 fixed the deadline. Re-measured (`shifts.cjs
+--wx=30`, 30 no-kit weeks each, paired against the same weeks clear):
+
+| weather held all week | v2.49 | v2.55 |
+|---|---|---|
+| rain | −€1 ± 30 | −€25 ± 21 |
+| fog | +€2 ± 1 | +€1 ± 0 |
+| snow | **+€57** | **+€20 ± 17** |
+
+What is left of snow is inside about one standard error, and it is the
+diverged-boards effect v2.49 described: a slower fleet puts the courier
+somewhere else by the second job. Rain now reads as the cost it is meant to
+be. `weather.mjs` holds that a hand-off is offered to the same door on both
+days and pays the same; putting the old line back fails it.
+
+**NO TICKS ON SCREEN.** A tick is the engine's unit (forty to a minute), and
+four places still printed it: the stop's *ALSO CALLING HERE* panel ("MISSED 4 ·
+about 12t ago", "+8t", walk exits "30t"), the nearby list ("12t away"), the
+walk line in the feed, and the two skill moments ("8t margin", "3t transfer").
+Waits and walks read in minutes now; a margin reads in seconds, because a
+connection made with twelve seconds to spare is the story and "now" would throw
+it away (`seconds()` in `ui.js`). `shiftlog.mjs` scans every module for a tick
+suffix on a printed value, so the next one fails the gate rather than a
+playtest.
+
+**THE WALK FOLLOWS THE STREET** (roadmap L4, `js/walkpath.js`). A walk between
+two stops was drawn as a straight line — the courier slid through blocks. The
+repo already carries real OpenStreetMap streets for the centre, so the figure
+walks those: the shortest way along real streets between the street points
+nearest each stop, with the street the walk is named for preferred. The line
+still to walk is drawn ahead of the figure as an ink dash on a white casing,
+because the walk runs down the same streets the trams do and an orange dash
+vanished into the orange line under it. The camera follows the same point.
+
+Built from shared points alone, the extract came out as **455 separate
+pieces**: it is simplified, and a T-junction's shared node is exactly what
+thinning drops. A way's loose end within 25 m of another street is joined to it
+(only loose ends — joining every near pair would walk the figure through the
+gap between two parallel streets), which makes the centre one network of 4,249
+points. Both ends are snapped to the same piece. Three honest limits: the
+extract covers only the centre (60.17–60.20 / 24.93–24.98), so a walk with an
+end outside it stays straight; a stop more than 140 m from a street stays
+straight; and a path longer than 1.9 × the straight line is refused. **8 of the
+17 walks follow streets** (Mannerheimintie, Helsinginkatu, Hämeentie,
+Kaivokatu / Simonkatu, Kaivokatu / Kaisaniemi, the Pasila corridor); the rest
+have an end outside the extract. The walk's COST is unchanged — it is still the
+gameplay abstraction `hubs-walking.js` says it is; only where the figure is
+drawn moved.
+
+`test/walkpath.mjs` (31, bare node, the committed extract) and `test/walk.cjs`
+(6, a real tap on a walk row): every sampled position is on the street path
+(worst 0.0 m) and the courier leaves the straight chord by up to 266 m to
+follow it. Turning off the junction pass fails the first; drawing straight fails
+the second.
+
 ## v2.54 — 2026-09-25
 
 **THE WEEK AS A POSTER.** Leap 5 of five (`js/poster.js`). Friday's end card

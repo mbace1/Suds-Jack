@@ -195,8 +195,8 @@ export function tramInk() { return { ...TRAM_INK }; }
 // be styled to look like transit: flat grey, thin, under everything, no caps.
 export const MAIN_ROADS = [
   { name: 'Mannerheimintie',   nodes: ['rautatientori', 'lasipalatsi', 'ooppera', 'pasila'] },
-  { name: 'Runeberginkatu',    nodes: ['kamppi', 'toolontori', 'meilahti'] },
-  { name: 'Helsinginkatu',     nodes: ['toolontori', 'kallionkirkko', 'sornainen'] },
+  { name: 'Runeberginkatu',    nodes: ['kamppi', 'meilahti'] },
+  { name: 'Helsinginkatu',     nodes: ['ooppera', 'kallionkirkko', 'sornainen'] },
   { name: 'Hämeentie',         nodes: ['hakaniemi', 'sornainen', 'arabia'] },
   { name: 'Kaivokatu',         nodes: ['kamppi', 'lasipalatsi', 'rautatientori', 'hakaniemi'] },
   { name: 'Bulevardi',         nodes: ['kamppi', 'hietalahti', 'eira'] },

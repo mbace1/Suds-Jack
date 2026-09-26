@@ -126,4 +126,15 @@ const run = (tm, log, ticks, mutate) => { for (let i = 0; i < ticks; i++) { tm.f
   ok(bare.html() === '', 'a log with no game behind it is silent rather than broken');
 }
 
+// v2.55: NO TICKS ON SCREEN. A tick is the engine's unit (40 to a minute),
+// and "about 12t ago" was the last number the player could read that meant
+// nothing. Scan every module that writes words for a tick suffix on a value.
+{ const { readFileSync, readdirSync } = await import('node:fs');
+  const { seconds, minutes } = await import('../js/ui.js');
+  const tickText = /\}t(?:[ `<·,)']|$)/;
+  const hits = readdirSync(new URL('../js/', import.meta.url)).filter(f => f.endsWith('.js') && f !== 'main.js')
+    .flatMap(f => readFileSync(new URL(`../js/${f}`, import.meta.url), 'utf8').split('\n').filter(l => tickText.test(l)).map(() => f));
+  ok(hits.length === 0, `no module prints a raw tick count (${[...new Set(hits)].join(', ') || 'none'})`);
+  ok(seconds(8, {}) === '12 s' && minutes(480, {}) === '12 min', 'a margin reads in seconds, a wait in minutes'); }
+
 console.log(`toko-move shift log gate: ${checks} checks passed`);

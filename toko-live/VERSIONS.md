@@ -1,40 +1,152 @@
-# Toko Live — versions
+# Toko Live versions
 
-The public release number, read by `scripts/versions.mjs` into the arcade's
-`hub/versions.json`. Toko Live is the room's HOST rather than a cabinet in the
-catalogue, so it reaches the generator through the `EXTRA` list beside the
-brand — the same route `toko/` takes.
+## v47 — 2026-09-24
 
-This log starts where the number already was: the host cabinet had `v18`
-hand-typed into `hub/toko-cabinet-dom.js` as a DOM string, which is a release
-number living in exactly one place that nothing can check. v18 here is that
-same claim, moved somewhere the tooling can read it and the gate can hold it to.
+**Toko is his face.** The owner supplied the master artwork of Toko's face and
+the canon that goes with it (`toko/BRAND.md` §2c, `CANON.md` here): the face is
+the only original art of him, magenta is his original colour, any of the
+carrier colours is still the original Toko, and a colour may carry a mood.
+The figure this stage drew — a dark hood, arms with magenta hands, a ring head
+— was an assistant's drawing, so it is gone.
 
-## v19 — 2026-09-10
+He is now the master face, traced to exact outlines (`toko/js/master.js`), as
+the brand's badge: a lacquered enamel pin in three.js (`toko/js/toko3d.js`,
+shared with Radio Free Helsinki; three.js r167 vendored in `toko/vendor/`),
+drawn flat with the same outlines until WebGL arrives or if it never does. He
+turns toward the card you point at or have in focus, blinks, breathes the smile
+while talking, tilts while thinking, and pops when pleased — and his colour
+follows the mood: magenta at rest, **sky** thinking, **yellow** pleased (the
+master file's own carrier), **red** on a glitch. The room glow follows him.
 
-**The menu had two owners, and the fight took the page.** With the brain
-modules finally deployed, `/toko-live/` locked up about two seconds after
-load: no 404, no page error, nothing in the console — the character simply
-never appeared, and even a screenshot timed out, because the renderer's main
-thread was saturated. `conversation-plus.js` watched `.tc-menu` with a
+The brain, the cards and the conversation are unchanged. Verified in a browser
+against the deployed tree: the badge renders in 3D, the cards spawn around him
+exactly as before (they ran off the right of the stage before this change too).
+
+## v46 — 2026-09-10
+
+**The menu had two owners, and the fight took the page.** With v45's brain
+modules finally on the site, `/toko-live/` locked up about two seconds after
+load: no 404, no page error, nothing in the console — the character never
+appeared, and even a screenshot timed out, because the renderer's main thread
+was saturated. `conversation-plus.js` watched `.tc-menu` with a
 `MutationObserver` and re-rendered its starter list whenever anything else
-wrote into it; `chat.js` renders that same element. Two owners writing into
-one node is a ping-pong at microtask speed. Instrumented, it ran forever:
+wrote into it; `chat.js` renders that same element. Two owners writing one
+node is a ping-pong at microtask speed. Instrumented, it never stopped:
 render five suggestion buttons, watch four of somebody else's replace them,
 render five again.
 
-The repair is two rules, and they generalise to any layer that decorates
-somebody else's element: **coalesce to a frame and never react to your own
-writes** (`requestAnimationFrame` + `takeRecords()`), and **give up** — after
-six rounds inside a second and a half the observer disconnects and says so in
-the console. A decoration may lose the menu. It may not take the page.
+The repair is two rules, and they hold for any layer that decorates somebody
+else's element — **coalesce to a frame and never react to your own writes**
+(`requestAnimationFrame` + `takeRecords()`), and **give up**: after six rounds
+inside a second and a half the observer disconnects and says so in the
+console. A decoration may lose the menu. It may not take the page.
 
-Verified in a browser against the deployed tree: `toko-stage` 91,912 lit
-pixels, the approved face 98,816, the portrait 11,528 — where before the fix
+Verified in a browser against this tree: `toko-stage` 91,912 lit pixels, the
+approved face 98,816, the portrait 11,528 — where before the fix
 `page.evaluate(() => 1 + 1)` timed out.
 
-## v18 — 2026-09-10
+The page's own label moves with the bytes, so `V45` on screen becomes `V46`
+and the log is level with it again. (`feedback-loop-v45.js` keeps its name —
+that is a filename, not a version.)
 
-The build that was already on the floor: talk to Toko face to face, with the
-same local learning brain as the counter — project knowledge, critique,
-decisions, status and factual news.
+## v44 — 2026-09-05
+
+- Added a single-answer authority layer for high-confidence project status, decision, next-step and opinion questions.
+- The authority layer is registered before the older specialist handlers so those queries no longer fan out across competing Enter listeners.
+- Added typo-tolerant explicit project aliases for the main projects while leaving arbitrary/freeform discussion untouched.
+- Polished mobile conversation layout again: the conversation gets 72% of the viewport, the Toko stage is smaller, the input is a larger touch target and remains visible at the bottom of the chat.
+- Added touch-action/overscroll cleanup so canvas interaction and chat scrolling fight each other less.
+- Hub cabinet reports v44. Toko Move was not changed.
+
+## v43 — 2026-09-05
+
+- Added passive runtime regression diagnostics for project resolution and authoritative status/decision/next/opinion questions.
+- Added detection for multiple Toko replies following one user turn without generating any extra conversation itself.
+- Kept diagnostics available through `window.TokoRegression` for browser inspection.
+
+## v42 — 2026-09-03
+
+- Cleaned up touch interaction for cross-project cards: first tap focuses a side/tab, second tap asks. Touch no longer implicitly cycles the card before a double tap resolves.
+- Expanded the conversation area: more horizontal room on desktop and a larger share of the viewport on mobile.
+- Reduced prompt-menu height so Toko's actual conversation log gets priority.
+- Cache-busted the Toko Live stylesheet and deployed the v39-v42 brain modules together.
+- Toko Move was not changed.
+
+## v41 — 2026-09-03
+
+- Added deterministic conversation stress checks for status, decisions, next steps, opinions, comparisons, corrections, typos and follow-ups.
+- Hardened project resolution against common misspellings and compact project names.
+- Added a narrow duplicate-reply guard for identical Toko replies emitted within the same response burst.
+
+## v40 — 2026-09-03
+
+- Added evidence-aware Toko opinions grounded in project goal/current problems/next milestone plus explicit accepted, rejected and superseded decisions.
+- Toko now tracks an evidence signature per project and can say when her position actually moved because project evidence or an explicit decision changed.
+- Rejected directions are not casually reopened without new evidence.
+
+## v39 — 2026-09-03
+
+- Replaced the active decision layer with Decision Memory 2.0.
+- Decisions now have lifecycle states: accepted, rejected, superseded or undecided.
+- Stored items include user provenance, project scope, topic, timestamp and an explicit reason when the user gives one with because/since/so that.
+- Superseding a direction marks the previous accepted item as superseded instead of leaving two apparently active decisions.
+- Toko can answer filtered memory questions such as what was rejected, what changed, what is undecided and why a decision was made.
+
+## v38 — 2026-09-02
+
+- Added a compact project-state model for every core project: goal, current state, problems, established decisions and next milestone.
+- Toko can now answer explicit project status, decision and next-priority questions from this structured state instead of assembling a generic response.
+- Decision-memory approvals are folded into project-state answers while authored baseline decisions remain separate.
+- Added a high-confidence routing guard for these authoritative questions so competing Enter handlers do not all answer the same request.
+- Kept freeform/creative conversation outside the guard so the new router does not swallow arbitrary discussion.
+- Hub cabinet reports v38. Toko Move was not changed.
+
+## v37 — 2026-09-02
+
+- Began conversation-routing cleanup with a narrow capture-phase authority layer.
+- Project status/decision/next-step requests now have a single deterministic route when an explicit project is resolved.
+- This reduces duplicate-module replies without rewriting the large deployed runtime.
+
+## v36 — 2026-09-02
+
+- Connected character reactions to detected user intent instead of relying only on loose reaction keywords.
+- Added semantic states for correction, probing, comparison, next-step requests, inspection/testing, agreement and curiosity.
+- Preserves the user's current intent/project briefly while Toko replies, so performance does not reset or get reclassified from Toko's own prose.
+- Hardened opinion memory so only user-authored `.tc-you` turns can update stored stance; Toko replies are excluded and new entries record `source: user` provenance.
+- Kept these changes additive and left the large deployed `main.js` untouched.
+- Hub cabinet now reports v36.
+- Toko Move was not changed in this pass.
+
+## v35 — 2026-09-02
+
+- Added character reaction language for agreement, disagreement, uncertainty, curiosity, correction and consideration.
+- Reactions now carry briefly across the exchange instead of snapping immediately back to neutral.
+- Added restrained pointer/focus orientation and rare listening mannerisms to make Toko feel present without constant motion.
+- Expanded the v34 performance layer while keeping the approved Toko artwork unchanged.
+- Added the reaction layer as a separate additive module so the large deployed runtime remains untouched.
+- Hub cabinet now reports v35.
+- Toko Move was not changed in this pass.
+
+## v34 — 2026-09-02
+
+- Continued Toko character development without introducing alternate Toko artwork.
+- Added a state-driven performance layer to the existing character: distinct listening, thinking, talking, pleased and correction/glitch body motion.
+- Added quiet breathing, restrained head/body tilt, talk cadence, pleased lift, correction jitter and a small touch acknowledgement.
+- Respects `prefers-reduced-motion`.
+- Hub cabinet now reports v34 and uses the approved Toko face only.
+- Cache-busted both the Toko Live character-performance module and the hub cabinet entry.
+- `gh-pages` remains the deployed Toko Live authority.
+
+## v17 — 2026-08-29
+
+- Restored factual news conversation and live public-source refresh on the deployed branch.
+- Preserved the Helsinki Free Radio rule: only `sourced: true` RFH stories may enter Toko's factual news wire; parody stories remain excluded.
+- Added visible V17 labeling to the live shell.
+- Kept evidence-aware project cards, cross-project comparison, visual critique, decision memory, project-status reasoning and hidden DOS/personality commands from v12–v16.
+- Toko brand-board copy now suppresses the stale `GO MAKE YOUR OWN` phrasing in the live DOM.
+- `gh-pages` is the current deployment authority for Toko Live.
+
+### Known follow-up
+
+- Core `main/toko-live/main.js`, the v42 shell/layout, and the v39-v42 source modules have been reconciled with the deployed architecture. v43-v44 should be mirrored back to `main` after this deployed regression cycle settles.
+- Browser-render validation has not been performed in this pass.

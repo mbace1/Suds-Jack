@@ -202,9 +202,13 @@ export class LiveNetwork{
   for(const it of items){const{v,q,selected}=it,metro=String(v.layer.mode||'').toUpperCase()==='SUBWAY',nose=this.heading(v,it.p,project)||{x:1,y:0};
    const L=(metro?30:24)*(selected?1.3:1)*dpr,W=(selected?14:11)*dpr,ang=Math.atan2(nose.y,nose.x),c=Math.abs(Math.cos(ang)),sn=Math.abs(Math.sin(ang));
    const w=c*L+sn*W,h=sn*L+c*W,box={x:q.x-w/2,y:q.y-h/2,w,h};
-   if(boxes.length>=budget||hits(box)){const r=4*dpr;dots.push({x:q.x-r,y:q.y-r,w:r*2,h:r*2,line:v.layer.name,id:v.id,rank:it.rank,colour:v.layer.colour,cx:q.x,cy:q.y,r,wanted:box});continue;}
+   // v2.60, THE QUIET MAP: a vehicle on a line that is not yours right now
+   // (`dim`) never takes a badge — it is a small faint dot, so the board reads
+   // as YOUR lines first. The lit one and the one you are on are never dimmed.
+   const faint=!!(opts?.dim?.(v.layer)&&!selected&&!lit?.has(v.id));
+   if(faint||boxes.length>=budget||hits(box)){const r=(faint?2.6:4)*dpr;dots.push({x:q.x-r,y:q.y-r,w:r*2,h:r*2,line:v.layer.name,id:v.id,rank:it.rank,colour:v.layer.colour,cx:q.x,cy:q.y,r,wanted:box,faint});continue;}
    box.line=v.layer.name;box.id=v.id;box.rank=it.rank;box.cx=q.x;box.cy=q.y;boxes.push(box);badges.push({it,box,metro,L,W,ang});}
-  for(const d of dots){ctx.fillStyle=d.colour;ctx.strokeStyle='#fffdf7';ctx.lineWidth=1.5*dpr;ctx.beginPath();ctx.arc(d.cx,d.cy,d.r,0,Math.PI*2);ctx.fill();ctx.stroke();}
+  for(const d of dots){ctx.globalAlpha=d.faint?0.45:1;ctx.fillStyle=d.colour;ctx.strokeStyle='#fffdf7';ctx.lineWidth=(d.faint?1:1.5)*dpr;ctx.beginPath();ctx.arc(d.cx,d.cy,d.r,0,Math.PI*2);ctx.fill();ctx.stroke();}ctx.globalAlpha=1;
   for(const {it,box,metro,L,W,ang} of badges){const{v,q,selected}=it,on=lit?.has(v.id);
    if(on){const pulse=0.5+0.5*Math.sin(now/180);ctx.strokeStyle=`rgba(226,104,60,${(0.55+0.45*pulse).toFixed(2)})`;ctx.lineWidth=(2+2*pulse)*dpr;ctx.beginPath();ctx.arc(q.x,q.y,(L/2+6*dpr)+pulse*3*dpr,0,Math.PI*2);ctx.stroke();}
    ctx.save();ctx.translate(q.x,q.y);ctx.rotate(ang);

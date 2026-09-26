@@ -1,9 +1,9 @@
 // Toko Move v2.12 — transfer hubs + deliberately simplified major-street walking network.
 // Walking links are gameplay abstractions between real HSL-resolved anchors, not exact pedestrian routing.
-export const TRANSFER_HUBS=['rautatientori','lasipalatsi','kamppi','hakaniemi','sornainen','toolontori','pasila','kauppatori','kalasatama','ooppera','lansiterminaali'];
+export const TRANSFER_HUBS=['rautatientori','lasipalatsi','kamppi','hakaniemi','sornainen','pasila','kauppatori','kalasatama','ooppera','lansiterminaali'];
 export const WALK_STREETS=[
- {name:'Mannerheimintie',nodes:['rautatientori','lasipalatsi','toolontori','ooppera']},
- {name:'Helsinginkatu',nodes:['toolontori','kallionkirkko','sornainen']},
+ {name:'Mannerheimintie',nodes:['rautatientori','lasipalatsi','ooppera']},
+ {name:'Helsinginkatu',nodes:['ooppera','kallionkirkko','sornainen']},
  {name:'Hämeentie',nodes:['hakaniemi','sornainen','arabia']},
  {name:'Kaivokatu / Simonkatu',nodes:['rautatientori','lasipalatsi','kamppi']},
  {name:'Bulevardi / Hietalahdenkatu',nodes:['kamppi','hietalahti','eira']},

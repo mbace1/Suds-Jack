@@ -1,5 +1,15 @@
 # TOKO DROP — Feature Roadmap v2 *(reconciled 2026-07-27)*
 
+> **Owner direction, 2026-09-26 — a curated history of gaming, through the twin
+> sticks.** *"Toko Drop explores all of gaming through the twin sticks and is more
+> like a curated history lesson that takes us through multiple games."* (Part of
+> *"We are the game that feels evolving"* — see CLAUDE.md.) A direction, not yet a
+> design: the curriculum (which games, which eras, in what order) is the owner's
+> to set, and it has to be designed here first and proposed to the Godot port —
+> the leadership split in CLAUDE.md. Nothing here is built yet; the cabinet hold
+> below predates it and is the owner's to lift.
+
+
 *Twin-stick swarm survival. The swarm reads your gun, corpses bite back.*
 
 **Goal arc:** WebGPU/TSL showpiece → Early Access playground → polished 1.0.

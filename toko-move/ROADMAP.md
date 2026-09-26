@@ -1,5 +1,19 @@
 # Toko Move — roadmap after v2.36
 
+## Owner direction, 2026-09-26 — one city, two faces, chosen by who plays
+
+*"Toko Move turns into Piritori stories or a kids game depending on the user."*
+(Part of a wider line: *"We are the game that feels evolving"* — see CLAUDE.md.)
+
+Toko Move and Piritori already stand on the same Helsinki city core (flow-core,
+the recovered map packs). The direction is that the same board becomes either
+Piritori's Kallio stories or a kids' game, depending on who is playing — not a
+menu of modes, an adaptation. Open questions for the owner before any build:
+what "depending on the user" reads (an explicit choice, the player's history in
+`hub/playlog.js`, Toko asking), and what the kids' version keeps of the delivery
+loop. Nothing here is built yet.
+
+
 Owner direction, 2026-09-17, in their words: *"Disruptions is good, feels like
 roguelike random events type deal. Maybe we need more random events, help the
 granny across the street (10 sec delay), etc. Hand offs is good. Regulars is
@@ -211,10 +225,10 @@ that this game could have for the least work. Sits under L1 or beside it.
 
 ## L4 · Weather, and the map as the hero (visual + systems in one)
 
-**Weather SHIPPED v2.49** (clear, rain, fog, first snow, frost — each a look
-and a lever; VERSIONS.md v2.49 has the measurements). Still open under this
-heading: the courier seen walking along the street, tram badges with a shape,
-and the shift replay as a poster.
+**SHIPPED in full.** Weather v2.49 (clear, rain, fog, first snow, frost — each
+a look and a lever), tram badges with a shape v2.50, the week as a poster v2.54,
+and the courier walking along the real street v2.55 (8 of 17 walks; the rest
+leave the OSM street extract and stay straight — see VERSIONS.md v2.55).
 
 The dawn wash exists; a week has five mornings. Rain, fog, first snow, a clear
 frost — each is a look AND a lever: rain slows walking, snow slows everything,
@@ -234,6 +248,11 @@ should render as one poster you can save — the run's trace on the map, the
 day's name, the number.
 
 ## L5 · Live HSL (the thing nobody else has)
+
+**SHIPPED v2.56 — built blind, verified only against a mocked broker.** No key
+was needed after all: HSL's high-frequency positioning is on an open MQTT
+broker. LIVE re-times the timetable fleet from real reports rather than
+building a second one; see VERSIONS.md v2.56 for the limits.
 
 The pack is real geometry from HSL's own feed; the vehicles on it are a
 timetable simulation. HSL publishes real-time positions (Digitransit, needs a
