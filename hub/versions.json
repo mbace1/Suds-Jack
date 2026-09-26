@@ -4,6 +4,11 @@
     "n": 5000,
     "from": "VERSIONS.md"
   },
+  "pachipit": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
   "sudsjack": {
     "v": "6",
     "n": 6000,

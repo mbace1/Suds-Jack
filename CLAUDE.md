@@ -301,6 +301,56 @@ the ordered distance to Tony Hawk's Pro Skater, with three things deliberately
 out of scope and the two pieces of art-side drift the Blender room still
 carries (its bins stand inside the east quarter pipe; it has no decks).
 
+### PACHI PIT (`pachipit/`) — CloverPit × Raccoin × Pachinko, ACTIVE
+**Owner's brief, 2026-09-26:** *"a game that's mixed Clover Pit, Raccoin and
+Pachinko.. roguelike elements and 3D room like the Pit."* Read
+`pachipit/GDD.md` first; `pachipit/VERSIONS.md` is the log and its v1 entry
+records every trap the physics paid for. The three sources each do ONE job:
+CloverPit is the **run** (a first-person cell, a debt due at the ATM every
+three shifts, a charm vendor, a phone, a trapdoor, eight padlocks on the door),
+Raccoin is the **payout** (a coin pusher: nothing reaches the wallet except over
+its lip), pachinko is the **shot** (a pin board with a launch handle, start
+chucker, tulips, windmills, a warp and stage, and an attacker that opens in
+FEVER). A coin's life is all three in a row, and the board never pays you
+directly — it decides where a coin lands, what it is WORTH (charms stamp coins
+copper → silver → gold as they pass a pocket) and whether the reels spin.
+**`rng`, `board`, `pusher`, `reels`, `engine`, `data` are pure** — no DOM, no
+three.js, no clock, seeded, three rng streams so a shop never depends on a
+bounce — and `window.__pp` is the seam (`debug.advance(s)` moves time, because
+SwiftShader renders a few frames a second). **Tune by measuring**:
+`node pachipit/test/measure.mjs board|svg|pusher|runs` is the instrument, never a
+gate. The board's rules, all found the hard way: every clearance is a PASS
+(`BOARD.CLEAR`) or a FENCE, never between (a wedge); a nail fence traps a slow
+coin unless its slope beats `atan((s/2)/h)` (27° at 1.25 bu, so every way is
+30°); a coin balanced on a nail head or a pocket rim is tipped; the launch lane
+has a one-way **backflow valve**; a foul is removed when it TURNS. The pusher is
+**quasi-static and conserves coins** (the gate holds it to the coin), so its float
+must be PACKED — a touching lattice from the slab's reach to a front row already
+over the lip, and a packed shelf — or the first forty drops pay nothing. The
+**reels are a lottery**, not strips: draw the outcome, then BUILD a 3×3 picture
+that shows exactly it; the engine pays what the picture shows. **The view**
+(`js/view/`): three r167 vendored, a low-res target blitted with ACES + 40-level
+Bayer dither + vignette + grain (tone mapping lives in the blit), the machine as
+the room's second light, and **every station SOLVES its lens** — the narrowest
+FOV that fits its silhouette points into the band the HUD leaves free, lens-
+shifted with `setViewOffset` (landscape puts the station panels in a right-hand
+column, a phone upright stacks them under). Traps: fit to SILHOUETTE points, not
+a bounding box (its top-front corner is empty air); a board coin is stood up
+THEN spun (`'ZYX'`), or three's XYZ draws every coin edge-on; a metal coin facing
+you reflects the room BEHIND you, so the env cube's +z face must be lit, and
+coins in flight get their own brighter mesh on a dark rim disc. **Controls**:
+touch first (power bar, hold FIRE, swipe to turn, tap the machine for the lever,
+haptics), then keys/wheel/mouse-hold, then a pad (`hub/pad.js`, `pad: 'native'`).
+FIRE takes the press BEFORE `setPointerCapture` (a capture can throw), and the
+lever sits in a `pointer-events: none` bar so it needs its own `auto` — with a
+mouse a click on the canvas pulled the lever anyway, which is how a lever dead
+under a thumb looked fine on a desktop. **One `?v=` token on every internal
+import** (core.mjs enforces it); the hub's `pad.js` is imported bare like every
+other game does. Gates: `node pachipit/test/core.mjs` (77, bare node, a bot plays
+a whole run) and `NODE_PATH=$(npm root -g) node pachipit/test/smoke.cjs` (41,
+landscape and a phone). Hub: id `pachipit`, marquee `pit`, accent `#ffd23f`,
+best score `pachiPit.best` (coins pushed in a run). Not yet on `gh-pages`.
+
 ### Suds Jack (`sudz/`) — Horizon Mesh, ACTIVE
 **Owner's call, 2026-08-19: continue the current live Bomb Jack × Tempest
 lane-survival direction and make it a functioning game.** This is the canvas
@@ -2725,6 +2775,24 @@ slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
   test/
     core.mjs    # bare node: exact numbers, English-only, and a bot over 160 runs
     smoke.cjs   # a browser: puppets, the topple, the staging rules, the plate, both formats
+pachipit/       # PACHI PIT — CloverPit × Raccoin × Pachinko. Read GDD.md first
+  GDD.md        # the design: three sources, three jobs; one currency; the run
+  VERSIONS.md   # what shipped and every trap the physics paid for
+  vendor/       # three.js r167, local — not the CDN
+  js/
+    rng.js      # mulberry32, the whole state one integer
+    board.js    # THE SHOT: pachinko physics — nails, rails, valve, pockets, windmills (pure)
+    pusher.js   # THE PAYOUT: quasi-static coin pusher — shelf, bed, stacking, lip, gutters (pure)
+    reels.js    # the lottery and the picture that shows it (pure)
+    engine.js   # THE RUN: shifts, deadlines, ATM, vendor, phone, fever, bandit, stamps (pure)
+    data.js     # debts, coins, outcomes, charms, deals, the rules they fold into
+    hud.js input.js audio.js main.js
+    view/       # render.js (the lens each station solves), room.js, machine.js, textures.js
+  test/
+    core.mjs    # bare node: exact physics, conservation, reels, economy, a whole bot run
+    smoke.cjs   # a browser: stations, the fitted lens, a shift, the deadline, a phone
+    measure.mjs # the instrument (board / svg / pusher / runs) — never a gate
+    bot.mjs     # saver / greedy / planner policies through the public verbs
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render
   test/core.mjs #   bare-Node core-loop gate

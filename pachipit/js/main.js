@@ -92,10 +92,18 @@ $('quality').addEventListener('click', () => {
   store.set('pachiPit.px', eye.quality); qLabel();
 });
 
+// keep a phone's screen awake through a shift; a refusal changes nothing
+let wake = null;
+async function stayAwake() {
+  try { if (!wake && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener?.('release', () => { wake = null; }); } } catch { wake = null; }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && started) stayAwake(); });
+
 function begin() {
   started = true;
   $('title').hidden = true;
   initAudio();
+  stayAwake();
   eye.turnTo('machine');
 }
 $('start').addEventListener('click', begin);
@@ -171,7 +179,11 @@ function onEvent(ev) {
       hud.toast(ev.trapped ? 'CAUGHT!' : `BANDIT −${ev.took}¢`, ev.trapped ? 'the mousetrap got his paw' : 'three masks: a paw comes down for your wallet', 'red', 2400, true);
       if (eye.station === 'machine') { lookUpT = 1.5; eye.turnTo('up'); }
       break;
-    case 'shiftStart': hud.toast(`SHIFT ${ev.shift}`, `${ev.drops} coins on the house`, '', 1200); break;
+    case 'shiftStart':
+      // the very first shift of a run says how to hold the handle
+      if (ev.deadline === 1 && ev.shift === 1) hud.toast('SHIFT 1', hud.touch ? 'drag the power into the green WAY · hold FIRE' : 'power into the green WAY (← →) · hold SPACE', '', 3600, true);
+      else hud.toast(`SHIFT ${ev.shift}`, `${ev.drops} coins on the house`, '', 1200);
+      break;
     case 'shiftEnd': {
       sfx.powerDown();
       const it = ev.interest ? ` · interest +${ev.interest}` : '';

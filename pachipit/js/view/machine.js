@@ -77,6 +77,11 @@ export class Machine {
     tb(0.006, th, td, -tw / 2, th / 2, 0); tb(0.006, th, td, tw / 2, th / 2, 0);
     tray.position.set(0, M.TRAY_Y - 0.004, edgeZ() + 0.055);
     root.add(tray);
+    // the tray has its own little lamp: what lands in it is the payout, and the
+    // payout should be the brightest small thing in the room
+    const trayLamp = new THREE.PointLight(0xffd9a0, 0.9, 0.32, 1.5);
+    trayLamp.position.set(0, M.TRAY_Y + 0.07, edgeZ() + 0.03);
+    root.add(trayLamp);
     this.trayBox = { x: tw / 2 - 0.02, z0: edgeZ() + 0.004, z1: edgeZ() + td - 0.01, y: M.TRAY_Y };
     // a drip rail under the lip that the coins fall past
     box(0.5, 0.012, 0.02, m.chrome, 0, M.BED_Y - 0.006, edgeZ() + 0.01);
