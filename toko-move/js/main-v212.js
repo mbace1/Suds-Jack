@@ -1,7 +1,7 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=60';
+import './core-v212.js?v=61';
 import './route-choice.js?v=23';
-import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=14';
+import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=15';
 import {hidden as fogHides} from './weather.js?v=1';
 import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} from './city-events.js?v=1';
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=4';
@@ -19,7 +19,7 @@ import {mountSkillMoments} from './moments-v212.js?v=2';
 import {mountJuice} from './juice.js?v=1';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=2';
-const BUILD_VERSION='2.59';
+const BUILD_VERSION='2.60';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
@@ -38,7 +38,7 @@ tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayFor(tm.cityDay,
 // swallowed on failure — a feed that cannot connect leaves the timetable
 // running and the HUD saying so, never a blank board.
 if(tm.live){tm.liveFeed={state:'connecting',label:'LIVE · CONNECTING',count:0};
- Promise.all([import('./hfp.js?v=1'),import('./mqtt-ws.js?v=1')]).then(([H,M])=>{
+ Promise.all([import('./hfp.js?v=2'),import('./mqtt-ws.js?v=1')]).then(([H,M])=>{
   const fleet=new H.LiveFleet(tm.liveNetwork),feed=tm.liveFeed;tm.liveFleet=fleet;let heardAt=0;
   const riding=()=>tm.mobility?.status?.()?.ride?.vehicleId||tm.liveNetwork.selectedVehicleId||null;
   const set=(state,label)=>{feed.state=state;feed.label=label;};
@@ -69,6 +69,17 @@ const relevantLines=()=>{const s=new Set(),ch=tm.challenge,st=tm.mobility?.statu
   for(const c of document.getElementById('routeChoices')?._choices||[])for(const leg of c?.legs||[])add(leg?.line);
   for(const l of document.getElementById('jobBoard')?._lines||[])add(l);   // at dispatch: the lines the offers would put you on
   return s;};
+// THE QUIET MAP's set (v2.60, core-v212 drawTransit) — tighter than the
+// badges' one, because a line drawn at full strength is a claim that it is
+// yours: on a ride, the line you are on and the rest of your plan; waiting with
+// a parcel, the legs of the options on offer; with no parcel, the lines the
+// board's jobs would put you on. Never all three at once.
+tm.relevantLines=relevantLines;
+tm.focusLines=()=>{const s=new Set(),ch=tm.challenge,st=tm.mobility?.status?.();
+  const add=l=>{if(!l)return;if(typeof l==='string'){s.add(l);return;}if(l.label)s.add(l.label);if(l.sourceId)s.add(l.sourceId);};
+  if(st?.kind==='riding'||st?.kind==='getoff'){add(st.ride?.line);for(const leg of ch?.selectedPlan?.legs||[])add(leg?.line);return s;}
+  if(ch?.active){for(const c of document.getElementById('routeChoices')?._choices||[])for(const leg of c?.legs||[])add(leg?.line);return s;}
+  for(const l of document.getElementById('jobBoard')?._lines||[])add(l);return s;};
 const drawInterception=()=>{const hit=bestInterception(tm);if(!hit)return;const b=nodePoint(hit.hub);if(!b)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1;ctx.save();ctx.fillStyle='#fffdf7';ctx.strokeStyle=hit.layer?.colour||'#233d4d';ctx.lineWidth=2*d;ctx.font=`bold ${Math.round(11*d)}px ui-monospace,monospace`;const text=`WALK ${about(hit.walkTicks,tm)} → ${hit.line.label} ${inMinutes(hit.waitTicks,tm)}`,pad=6*d,w=ctx.measureText(text).width+pad*2,h=22*d,x=b.x-w/2,y=b.y-34*d;ctx.beginPath();ctx.roundRect(x,y,w,h,4*d);ctx.fill();ctx.stroke();ctx.fillStyle='#15262b';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,b.x,y+h/2);ctx.restore();};// THE COURIER IS A FIGURE, AND IS ON THE BOARD WHENEVER YOU ARE. It used to
 // be a navy dot marked W, and only while walking — standing at a stop you were
 // nowhere on the map at all, which is most of the shift and most of "I don't
@@ -144,5 +155,5 @@ const rideStatus=()=>{const ch=tm.challenge,el=tm.sheetSlot?.('rideStatus');if(!
   if(!ch?.active||st?.kind!=='riding'||!ch.queued){if(el.innerHTML)el.innerHTML='';return;}
   const html=`<div style="margin-top:8px;padding:8px;border:2px solid #e2683c;border-radius:8px;background:#fff8ef;font-size:11px"><b>SECOND JOB ONBOARD</b> → ${ch.name(ch.queued.originalStops?.[1]||ch.queued.stops[1])}</div>`;
   if(el.innerHTML!==html)el.innerHTML=html;};
-const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),lit=new Set((tm.catchables?.()||[]).map(x=>x.vehicle.id)),boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,priority:(l,v)=>lit.has(v?.id)?2.5:rel.has(l?.name)||rel.has(l?.id)?2:1,budget,lit,now:performance.now(),full:tm.rushOn?tm.isFull:null})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();drawGetOff();tm.juice?.draw(ctx,project,dpr);rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
+const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),lit=new Set((tm.catchables?.()||[]).map(x=>x.vehicle.id)),foc=tm.focusLines?.(),dim=foc&&foc.size?(l=>!foc.has(l?.name)&&!foc.has(l?.id)):null,boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,dim,priority:(l,v)=>lit.has(v?.id)?2.5:rel.has(l?.name)||rel.has(l?.id)?2:1,budget,lit,now:performance.now(),full:tm.rushOn?tm.isFull:null})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();drawGetOff();tm.juice?.draw(ctx,project,dpr);rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
 mount();

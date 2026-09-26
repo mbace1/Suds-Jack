@@ -3,11 +3,11 @@ import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
 import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=24';
-import {TransitLayers} from './transit-layers.js?v=8';
+import {TransitLayers} from './transit-layers.js?v=9';
 import {buildRealHelsinki} from './real-helsinki.js?v=3';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=7';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=4';
-import {SHIFT} from './live-network.js?v=14';
+import {SHIFT} from './live-network.js?v=15';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=10';
 import {dots,minutes} from './ui.js?v=2';
@@ -23,7 +23,7 @@ import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.59';
+const BUILD_VERSION='2.60';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -163,7 +163,13 @@ function drawWater(ctx=$('map').getContext('2d'),alpha=.92){const src=ground?.wa
   for(const edge of src.edges||[]){if(!edge.shape?.length)continue;ctx.beginPath();edge.shape.forEach(([lat,lon],i)=>{const p=fitLatLon(lat,lon);i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);});ctx.stroke();}
   ctx.restore();}
 
-function drawTransit(){transit?.draw($('map').getContext('2d'),$('map').width,$('map').height,{fit:fitLatLon,alpha:.92,lineWidth:2.4*(renderer?.dpr||1)});}
+// v2.60: THE QUIET MAP. The lines that matter to what you are doing — the one
+// you are on, your plan, the options on offer, the lines the board would put
+// you on — stay at full strength; the other twenty-odd step back. The same set
+// the badges already rank by (main-v212's relevantLines), so the line and its
+// vehicles agree about what matters.
+function drawTransit(){const rel=window.__tm?.focusLines?.();const focus=rel&&rel.size?(l=>rel.has(l.id)||rel.has(l.name)):null;
+  transit?.draw($('map').getContext('2d'),$('map').width,$('map').height,{fit:fitLatLon,alpha:.92,lineWidth:2.4*(renderer?.dpr||1),focus});}
 
 // Main roads: GROUND, and they have to stay ground. They are drawn first, in
 // one flat grey with no rounded caps, so they read as the surface the network
