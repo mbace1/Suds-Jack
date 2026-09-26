@@ -9,7 +9,8 @@ export const HELSINKI_ANCHORS = {
   lasipalatsi:['Lasipalatsi'], ooppera:['Ooppera'], messukeskus:['Messukeskus'],
   lansiterminaali:['Länsiterminaali 2','Länsiterminaali 1','Länsiterminaali'], eira:['Eiran sairaala','Eira'], kapyla:['Käpylänaukio','Pohjolanaukio'],
   olympiaterminaali:['Olympiaterminaali'], hietalahti:['Hietalahti','Hietalahdentori'],
-  meilahti:['Meilahden sairaala','Meilahti'], arabia:['Arabianranta','Arabiankatu']
+  meilahti:['Meilahden sairaala','Meilahti'], arabia:['Arabianranta','Arabiankatu'],
+  kruunuvuori:['Kruunuvuori']
 };
 const norm=s=>String(s??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 export function resolveHslAnchors(pack,anchors=HELSINKI_ANCHORS){const stops=pack?.stops??[],byName=new Map();for(const stop of stops){const key=norm(stop.name);if(!byName.has(key))byName.set(key,[]);byName.get(key).push(stop);}const out={};for(const[id,aliases]of Object.entries(anchors)){let match=null;for(const alias of aliases){const exact=byName.get(norm(alias));if(exact?.length){match=exact[0];break;}}if(!match)for(const alias of aliases){const q=norm(alias);match=stops.find(stop=>norm(stop.name).includes(q)||q.includes(norm(stop.name)));if(match)break;}out[id]=match??null;}return out;}

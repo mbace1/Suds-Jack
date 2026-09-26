@@ -11,7 +11,7 @@
 // test/city-build.mjs asserts this path builds a graph identical to the one the
 // hand-written v2.11 builder produced, node for node and edge for edge.
 import { buildCity } from './city-build.js?v=1';
-import { HELSINKI } from '../cities/helsinki.city.js?v=2';
+import { HELSINKI } from '../cities/helsinki.city.js?v=3';
 
 export { HELSINKI };
 export function buildRealHelsinki(pack) { return buildCity(pack, HELSINKI); }

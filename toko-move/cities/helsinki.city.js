@@ -301,6 +301,16 @@ export const HELSINKI = /* generated from the v2.11 builder, then owned here */
     "shop"
    ],
    "capacity": 22
+  },
+  "kruunuvuori": {
+   "aliases": [
+    "Kruunuvuori"
+   ],
+   "name": "Kruunuvuori",
+   "tags": [
+    "home"
+   ],
+   "capacity": 18
   }
  },
  "walk": [

@@ -101,7 +101,11 @@ server.listen(0, '127.0.0.1', async () => {
       // v2.57: shift 1's board changed with Töölöntori and its three jobs no
       // longer fit a never-walking bot's morning; shift 2's do. The shift is a
       // SCENARIO for the end card, not the thing measured (shifts.cjs is).
-      const D = await fresh(); await boot(D.page, process.env.WIN_Q || '?shift=2&day=none');
+      // v2.62: the Crown Bridge network moved it again — 4T gone, line 2
+      // rerouted — and shift 1 fits once more (2, 3 and 4 do not; 5 does).
+      // This bot now reads the panel's plans the way the panel shows them,
+      // passed stops and all.
+      const D = await fresh(); await boot(D.page, process.env.WIN_Q || '?shift=1&day=none');
       await D.page.evaluate(() => document.getElementById('play').click());
       const won = await D.page.evaluate(() => {
         const tm = window.__tm, ch = tm.challenge, mob = tm.mobility, { routeChoices, allowFor } = globalThis.__tmRouteChoiceCore;
@@ -112,7 +116,7 @@ server.listen(0, '127.0.0.1', async () => {
           if (!ch.active) { const o = (ch.offers || []).find(o => ch.fits ? ch.fits(o.cargo) : true); if (o) ch.acceptOffer(o.id); }
           else if (st?.kind === 'getoff') mob.getOff();
           else if (st?.kind === 'waiting') {
-            for (const c of routeChoices(tm.city, ch.currentFrom(), ch.currentTo(), 3, allowFor(ch.cargoRule?.()))) {
+            for (const c of routeChoices(tm.city, ch.currentFrom(), ch.currentTo(), 3, allowFor(ch.cargoRule?.()), mob.passed?.())) {
               const layer = tm.transit.layers.find(x => x.id === c.legs[0].line.sourceId); if (!layer) continue;
               const n = tm.city.resolved[c.legs[0].from]; let bi = 0, bd = 1e9;
               for (let i = 0; i < layer.path.length; i++) { const q = layer.path[i], d = (q[0] - n.lat) ** 2 + (q[1] - n.lon) ** 2; if (d < bd) { bd = d; bi = i; } }

@@ -29,11 +29,11 @@
 // Which streets a scale is allowed to show. A street map is not one layer; it
 // is a hierarchy, and drawing all 5652 ways at city scale is the same mistake
 // as drawing all 102 trams — every road at once is no road at all.
-// The board, as boardBox() derives it from the twenty-two delivery anchors.
+// The board, as boardBox() derives it from the twenty-two delivery anchors (twenty-two again at v2.62: Töölöntori out, Kruunuvuori in).
 // Repeated here rather than imported because ground.js must be answerable in
 // bare node with no city pack loaded — and held against the real thing by
 // test/ground.mjs, which does have one.
-export const BOARD_BOX = { s: 60.1443, w: 24.8975, n: 60.2199, e: 24.9860 };
+export const BOARD_BOX = { s: 60.1443, w: 24.8934, n: 60.2199, e: 25.0276 };
 export const STREET_TIERS = { city: ['major'], route: ['major', 'mid'], stop: ['major', 'mid', 'minor'] };
 
 export async function loadGround(base = './cities/ground/') {

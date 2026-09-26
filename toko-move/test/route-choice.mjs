@@ -129,3 +129,30 @@ console.log(`route choices: centre ${centre.length}, harbour ${harbour.length}; 
  assert.equal(refusable,0,`no plan the cargo rule would refuse is ever offered (${pairs} pairs × restricted cargoes)`);
  assert.equal(starved,0,'and a restricted parcel is never starved of plans the network has for it');
  console.log(`cargo plans: ${pairs} restricted pairs checked, none refusable, none starved`);}
+// v2.62: no plan passes back through where you stand or rides past where you
+// are going. The Crown Bridges put 11 and 11H on one track in opposite orders
+// and the panel offered Kalasatama → Kruunuvuori via Pasila.
+{const ids=city.nodes.map(n=>n.id),span=(leg,node)=>{const n=leg.line.nodes,a=n.indexOf(leg.from),b=n.indexOf(leg.to),i=n.indexOf(node);return i>=0&&i>Math.min(a,b)&&i<Math.max(a,b);};
+ let loops=0,pairs=0,example='';
+ for(const a of ids)for(const b of ids){if(a===b)continue;pairs++;
+  for(const c of routeChoices(city,a,b,999)){const on=l=>{const n=l.line.nodes,i=n.indexOf(l.from),j=n.indexOf(l.to);return n.slice(Math.min(i,j),Math.max(i,j)+1);};
+   const bad=c.legs.some(l=>span(l,a)||span(l,b))||(c.legs.length===2&&on(c.legs[0]).some(n=>n!==c.transfer&&on(c.legs[1]).includes(n)));if(bad){loops++;example||=(`${a}→${b}: ${c.legs.map(l=>`${l.line.label} ${l.from}→${l.to}`).join(', ')}`);}}}
+ assert.equal(loops,0,`a plan covers ground twice (${loops}; e.g. ${example})`);
+ let pointless=0;for(const a of ids)for(const b of ids){if(a===b)continue;for(const c of routeChoices(city,a,b,999))if(c.kind==='transfer'){const n=c.legs[0].line.nodes,i=n.indexOf(a),j=n.indexOf(b);if(i>=0&&j>=0)pointless++;}}
+ assert.equal(pointless,0,`a transfer starts on a line that already goes there (${pointless})`);
+ const k=routeChoices(city,'kalasatama','kruunuvuori',3);
+ assert.ok(k.length&&k[0].kind==='direct','Kalasatama → Kruunuvuori leads with the direct Crown Bridge tram');
+ console.log(`loops: ${pairs} anchor pairs, no plan passes its own ends`);}
+// v2.62: mid-delivery, the panel does not offer a plan back through a stop this
+// delivery has already stood at — and never goes empty because of it.
+{const through=(c,n)=>c.legs.some(l=>{const s=l.line.nodes,i=s.indexOf(l.from),j=s.indexOf(l.to),k=s.indexOf(n);return k>=0&&k>=Math.min(i,j)&&k<=Math.max(i,j);});
+ const free=routeChoices(city,'sornainen','meilahti',3);
+ assert.ok(free.some(c=>through(c,'ooppera')),'control: with no history, Sörnäinen → Meilahti offers a plan through Ooppera');
+ const back=routeChoices(city,'sornainen','meilahti',3,null,new Set(['lasipalatsi','ooppera']));
+ assert.ok(back.length&&!back.some(c=>through(c,'ooppera')),'having come from Ooppera, no plan goes back through it');
+ const k=routeChoices(city,'hakaniemi','kruunuvuori',3,null,new Set(['kalasatama']));
+ assert.ok(k.length&&!k.some(c=>through(c,'kalasatama')),'having come from Kalasatama, Hakaniemi → Kruunuvuori takes 12, not the metro back');
+ let emptied=0;for(const a of city.nodes)for(const b of city.nodes){if(a===b)continue;const all=routeChoices(city,a.id,b.id,3);if(!all.length)continue;
+  for(const x of city.nodes)if(x!==a&&x!==b&&!routeChoices(city,a.id,b.id,3,null,new Set([x.id])).length)emptied++;}
+ assert.equal(emptied,0,'avoiding a stop never leaves a leg with no plan at all');
+ console.log('avoid: a delivery does not go back through where it has been');}
