@@ -482,6 +482,9 @@ export class Anchor {
   subject(c, t, W, H, toko3d = null) {
     const act = this.act || {};
     const { R, cx, cy } = this.pose(W, H);
+    // on twos, his own clock is held too, or the breath would slide smoothly
+    // under a stepped face
+    if (act.boil != null) t = act.boil / 12;
     // a slow breath under everything; the film leans him, nods him, tilts him
     const sway = drift(t, { period: 11 }) * W * 0.008 + (act.lean || 0) * W;
     const bob = drift(t, { period: 7, phase: 0.3 }) * H * 0.004 + (act.nod || 0) * H * 0.02;
@@ -517,7 +520,7 @@ export class Anchor {
       const img = toko3d.render({
         open: f.open, squash: f.squash, grin: f.grin,
         yaw, pitch: (act.nod || 0) * 0.35, roll: act.tilt || 0, pop,
-        key: this.rim, hot, ground,
+        key: this.rim, hot, ground, boil: act.boil,
       });
       const size = R * 2 * toko3d.half;      // the canvas spans ±half units; the disc is ±1
       c.save();

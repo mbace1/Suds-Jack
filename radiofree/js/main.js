@@ -244,7 +244,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
     const out = await exportPost(p, {
       t, parseLine, index: i + 1, total: STORIES.length, spinsBefore, spinsTotal,
       date: formatDate(new Date()), accent: SECTOR_COLOR[p.story.sector],
-      seconds: opts.seconds, fps: opts.fps,
+      seconds: opts.seconds, fps: opts.fps, clay: !!opts.clay,
       freq: (SECTORS.find(x => x.id === p.story.sector) || {}).freq || '',
       onProgress: k => { if (lbl) lbl.textContent = `${Math.round(k * 100)}%`; },
     });

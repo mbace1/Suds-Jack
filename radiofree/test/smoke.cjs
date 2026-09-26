@@ -565,7 +565,7 @@ async function main() {
   // the soundtrack (js/score.js): a clip without sound is a gif
   // Toko in 3D (js/toko3d.js): the traced master as an enamel badge; a page
   // with no WebGL falls back to the flat badge, and this says which happened
-  ok('Toko was drawn in 3D from the traced master', exp && exp.toko3d === true, JSON.stringify({ toko3d: exp && exp.toko3d }));
+  ok('Toko was drawn in 3D from the traced master', exp && exp.toko3d === 'enamel', JSON.stringify({ toko3d: exp && exp.toko3d }));
   ok('it carries a soundtrack, encoded, normalised to -16 LUFS (±1)',
      exp && ['aac', 'opus'].includes(exp.audio) && Math.abs(exp.lufs + 16) <= 1,
      JSON.stringify({ audio: exp && exp.audio, lufs: exp && exp.lufs }));

@@ -51,6 +51,11 @@ export async function makeToko3D(size = 640, opts = {}) {
   // the nine carriers the mark rides on one at a time (STICKER.YELLOW). The
   // badge wears SIGN — paper on magenta. A caller may hand it one carrier.
   const GROUND = opts.ground || WAYS.SIGN.ground, INK = opts.ink || WAYS.SIGN.ink;
+  // CLAY (owner, 2026-09-26: "Clay Toko is ok, Aardman"): the same traced face,
+  // modelled in plasticine rather than enamelled — matte, thumbprinted, lumpy,
+  // the strokes rolled rather than cut, and re-lumped a little on every held
+  // frame the way a stop-motion puppet is re-sculpted between exposures.
+  const CLAY = opts.style === 'clay';
   const THREE = await loadThree();
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size;
@@ -63,7 +68,7 @@ export async function makeToko3D(size = 640, opts = {}) {
   // #F0027F is a brand colour, not a suggestion. The gate-less check is the
   // flat of the enamel measuring back within reach of it in a render.
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.45;
+  renderer.toneMappingExposure = CLAY ? 1.3 : 1.45;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -76,6 +81,7 @@ export async function makeToko3D(size = 640, opts = {}) {
   // behind the edge that take the shot's colour ──
   const pm = new THREE.PMREMGenerator(renderer);
   scene.environment = pm.fromScene(studio(THREE), 0.02).texture;
+  if (CLAY) scene.environmentIntensity = 0.55;          // plasticine holds no reflections
   const key = new THREE.DirectionalLight(0xfff4ea, 3.2);
   key.position.set(-2.2, 2.8, 4.2);
   key.castShadow = true;
@@ -93,24 +99,37 @@ export async function makeToko3D(size = 640, opts = {}) {
   // ── the disc ──
   const badge = new THREE.Group();
   scene.add(badge);
-  const discGeo = lathe(THREE);
+  const discGeo = lathe(THREE, CLAY);
   // a colour may carry a mood, so the enamel can change per frame: one baked
   // texture per colour, made on first use and kept
   const grounds = new Map();
   const groundTex = (c) => { if (!grounds.has(c)) grounds.set(c, bakedGround(THREE, c)); return grounds.get(c); };
-  const discMat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, map: groundTex(GROUND), roughness: 0.34, metalness: 0,
-    clearcoat: 1, clearcoatRoughness: 0.1,
-  });
+  const prints = CLAY ? thumbprints(THREE) : null;
+  const discMat = CLAY
+    ? new THREE.MeshPhysicalMaterial({
+      color: 0xffffff, map: groundTex(GROUND), roughness: 0.74, metalness: 0,
+      sheen: 0.45, sheenRoughness: 0.55, sheenColor: new THREE.Color(0xffffff),
+      normalMap: prints, normalScale: new THREE.Vector2(0.75, 0.75),
+    })
+    : new THREE.MeshPhysicalMaterial({
+      color: 0xffffff, map: groundTex(GROUND), roughness: 0.34, metalness: 0,
+      clearcoat: 1, clearcoatRoughness: 0.1,
+    });
   const disc = new THREE.Mesh(discGeo, discMat);
   disc.receiveShadow = true; disc.castShadow = true;
   badge.add(disc);
 
   // ── the face, as tubes ──
-  const inkMat = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color(INK), roughness: 0.26, clearcoat: 0.7, clearcoatRoughness: 0.15,
-    emissive: new THREE.Color(INK), emissiveIntensity: 0.06,
-  });
+  const inkMat = CLAY
+    ? new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(INK), roughness: 0.7, sheen: 0.4, sheenRoughness: 0.6,
+      sheenColor: new THREE.Color(0xffffff), normalMap: prints, normalScale: new THREE.Vector2(0.35, 0.35),
+      emissive: new THREE.Color(INK), emissiveIntensity: 0.04,
+    })
+    : new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color(INK), roughness: 0.26, clearcoat: 0.7, clearcoatRoughness: 0.15,
+      emissive: new THREE.Color(INK), emissiveIntensity: 0.06,
+    });
   const face = new THREE.Group();
   badge.add(face);
 
@@ -122,13 +141,15 @@ export async function makeToko3D(size = 640, opts = {}) {
     const p = MASTER[k];
     for (let i = 0; i < p.length; i += 2) pts.push(new THREE.Vector2(...toB(p[i], p[i + 1])));
     const shape = new THREE.Shape(pts);
-    const g = new THREE.ExtrudeGeometry(shape, {
-      depth: 0.035, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.016, bevelSegments: 5, curveSegments: 4,
-    });
+    // clay strokes are ROLLED: fat round bevels, almost no flat top
+    const g = new THREE.ExtrudeGeometry(shape, CLAY
+      ? { depth: 0.012, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.024, bevelSegments: 7, curveSegments: 4 }
+      : { depth: 0.035, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.016, bevelSegments: 5, curveSegments: 4 });
     g.translate(0, 0, T0 - 0.012);           // seated on the enamel
     // the pivot the face acts about, so a blink or a grin is a scale on the mesh
     const [px, py] = toB(...pv[k]);
     g.translate(-px, -py, 0);
+    g.userData.at = [px, py];                // where its local origin sits, for the lumps
     const m = new THREE.Mesh(g, inkMat);
     m.position.set(px, py, 0);
     m.castShadow = true;
@@ -140,11 +161,47 @@ export async function makeToko3D(size = 640, opts = {}) {
     meshes.mouthOuter.scale.set(grin, grin, 1); meshes.mouthInner.scale.set(grin, grin, 1);
   }
 
+  // ── the re-sculpt: every geometry lumped by a noise field of POSITION, so
+  // the duplicated vertices along a hard edge move together and nothing
+  // cracks open; a new `boil` seed is a new day's handling of the clay ──
+  const lumpy = CLAY ? [
+    { g: discGeo, at: [0, 0], amp: 0.045, freq: 1.5 },
+    ...Object.values(meshes).map(m => ({ g: m.geometry, at: m.geometry.userData.at, amp: 0.02, freq: 4.4 })),
+  ] : [];
+  for (const L of lumpy) L.base = Float32Array.from(L.g.attributes.position.array);
+  let boiled = null;
+  function boil(seed) {
+    if (!CLAY || seed === boiled) return;
+    boiled = seed;
+    const o = seed * 1.713;
+    for (const L of lumpy) {
+      const pos = L.g.attributes.position, b = L.base;
+      for (let i = 0; i < pos.count; i++) {
+        const x = b[i * 3] + L.at[0], y = b[i * 3 + 1] + L.at[1], z = b[i * 3 + 2];
+        const f = L.freq;
+        // a slow shape lump that stays (it is the same puppet) plus a small
+        // handling that changes with each held frame
+        const stay = (n3(x * f, y * f, z * f + 11.1) - 0.5) * 2;
+        const hand = (n3(x * f * 1.7 + o, y * f * 1.7 - o, z * f * 1.7) - 0.5) * 2;
+        const dx = (n3(x * f + 3.3, y * f, z * f) - 0.5) * 2;
+        const dy = (n3(x * f, y * f + 7.7, z * f) - 0.5) * 2;
+        pos.setXYZ(i,
+          b[i * 3] + L.amp * (0.8 * dx + 0.25 * hand),
+          b[i * 3 + 1] + L.amp * (0.8 * dy + 0.25 * hand),
+          b[i * 3 + 2] + L.amp * (0.9 * stay + 0.35 * hand));
+      }
+      pos.needsUpdate = true;
+      L.g.computeVertexNormals();
+    }
+  }
+  boil(0);
+
   const rim = new THREE.Color();
   const posed = pose;
   function render(pose = {}) {
     const squash = Math.max(0.06, pose.squash ?? 1), grin = pose.grin ?? 1;
     posed(squash, grin);
+    boil(pose.boil ?? 0);
     badge.rotation.set(pose.pitch || 0, pose.yaw || 0, pose.roll || 0, 'YXZ');
     const s = pose.pop || 1;
     badge.scale.set(s, s, s);
@@ -152,17 +209,17 @@ export async function makeToko3D(size = 640, opts = {}) {
     if (discMat.map !== tex) { discMat.map = tex; discMat.needsUpdate = true; }
     rim.set(pose.key || '#33ffcc');
     rimL.color.copy(rim); rimR.color.copy(rim);
-    rimL.intensity = rimR.intensity = pose.hot ? 12 : 9;
+    rimL.intensity = rimR.intensity = (pose.hot ? 12 : 9) * (CLAY ? 0.35 : 1);
     renderer.render(scene, camera);
     return canvas;
   }
 
   function dispose() {
     for (const m of face.children) m.geometry.dispose();
-    discGeo.dispose(); for (const t of grounds.values()) t.dispose(); discMat.dispose(); inkMat.dispose();
+    discGeo.dispose(); for (const t of grounds.values()) t.dispose(); discMat.dispose(); inkMat.dispose(); if (prints) prints.dispose();
     scene.environment.dispose(); pm.dispose(); renderer.dispose();
   }
-  return { canvas, render, dispose, half: HALF, THREE };
+  return { canvas, render, dispose, half: HALF, style: CLAY ? 'clay' : 'enamel', THREE };
 }
 
 // master units → the badge's plane: the master's FRAME centred on the disc,
@@ -174,16 +231,18 @@ function badgeMap() {
 
 // the disc: a domed face, a rounded rim, a flat back — lathed, turned to face
 // the camera, with planar UVs so the baked ground lines up with the face
-function lathe(THREE) {
+function lathe(THREE, dense = false) {
   const pts = [];
-  for (let i = 0; i <= 24; i++) { const r = 0.93 * i / 24; pts.push(new THREE.Vector2(r, surfaceZ(r))); }
+  const rings = dense ? 48 : 24;
+  for (let i = 0; i <= rings; i++) { const r = 0.93 * i / rings; pts.push(new THREE.Vector2(r, surfaceZ(r))); }
   const zr = surfaceZ(0.93), back = -0.09;
   for (let i = 1; i <= 12; i++) {                        // the rim rolls over the edge
     const a = (i / 12) * Math.PI;
     pts.push(new THREE.Vector2(0.93 + 0.07 * Math.sin(a), (zr + back) / 2 + ((zr - back) / 2) * Math.cos(a)));
   }
   pts.push(new THREE.Vector2(0.0001, back));
-  const g = new THREE.LatheGeometry(pts.map(p => new THREE.Vector2(p.x, p.y)), 128);
+  // clay is lumped per vertex, so it wants more of them across the face
+  const g = new THREE.LatheGeometry(pts.map(p => new THREE.Vector2(p.x, p.y)), dense ? 160 : 128);
   g.rotateX(Math.PI / 2);                                // (x, y, z) → (x, −z, y): height → +z, toward the camera
   const pos = g.attributes.position, uv = g.attributes.uv;
   for (let i = 0; i < pos.count; i++) uv.setXY(i, pos.getX(i) / 2 + 0.5, pos.getY(i) / 2 + 0.5);
@@ -228,3 +287,55 @@ function studio(THREE) {
 }
 
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+
+// smooth 3D value noise, 0..1 — deterministic, so a frame renders the same twice
+function h3(x, y, z) { const v = Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453; return v - Math.floor(v); }
+function n3(x, y, z) {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const xf = x - xi, yf = y - yi, zf = z - zi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), w = zf * zf * (3 - 2 * zf);
+  const L = (a, b, t) => a + (b - a) * t;
+  const c = (dx, dy, dz) => h3(xi + dx, yi + dy, zi + dz);
+  return L(L(L(c(0, 0, 0), c(1, 0, 0), u), L(c(0, 1, 0), c(1, 1, 0), u), v),
+           L(L(c(0, 0, 1), c(1, 0, 1), u), L(c(0, 1, 1), c(1, 1, 1), u), v), w);
+}
+
+// Plasticine's surface, as a normal map: thumbprint whorls where it was
+// pressed, a few long smears where it was dragged, and a fine tooth under
+// everything. A height field first, then turned into normals.
+function thumbprints(THREE) {
+  const S = 512, hgt = new Float32Array(S * S);
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  // the tooth: value noise at a few pixels' scale, not per-pixel static, which
+  // aliases into a grid once the texture is minified onto the disc
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) hgt[y * S + x] = (n3(x / 6, y / 6, 0.5) - 0.5) * 0.5 + (n3(x / 23, y / 23, 3.1) - 0.5) * 0.9;
+  const stamp = (cx, cy, r, ang, drag) => {
+    const ca = Math.cos(ang), sa = Math.sin(ang);
+    const x0 = Math.floor(cx - r * 1.6), x1 = Math.ceil(cx + r * 1.6), y0 = Math.floor(cy - r * 1.6), y1 = Math.ceil(cy + r * 1.6);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const px = x - cx, py = y - cy;
+      const u = (px * ca + py * sa) / (drag ? 1.6 : 1), v = (-px * sa + py * ca) * (drag ? 1.8 : 1.25);
+      const d = Math.hypot(u, v);
+      if (d > r) continue;
+      const fade = Math.pow(1 - d / r, 0.6);
+      const ridge = drag ? Math.sin(v * 0.55) : Math.sin(d * 0.72 + Math.sin(Math.atan2(v, u) * 2) * 1.4);
+      const X = ((x % S) + S) % S, Y = ((y % S) + S) % S;
+      hgt[Y * S + X] += ridge * 0.45 * fade - (drag ? 0.5 : 0.9) * fade;      // pressed IN, lightly ridged
+    }
+  };
+  for (let i = 0; i < 6; i++) stamp(rnd() * S, rnd() * S, 34 + rnd() * 30, rnd() * Math.PI, false);
+  for (let i = 0; i < 3; i++) stamp(rnd() * S, rnd() * S, 44 + rnd() * 44, rnd() * Math.PI, true);
+  const c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d'), id = g.createImageData(S, S), d = id.data;
+  const H = (x, y) => hgt[(((y % S) + S) % S) * S + (((x % S) + S) % S)];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const nx = (H(x - 1, y) - H(x + 1, y)) * 0.9, ny = (H(x, y - 1) - H(x, y + 1)) * 0.9, l = Math.hypot(nx, ny, 1);
+    const k = (y * S + x) * 4;
+    d[k] = (nx / l * 0.5 + 0.5) * 255; d[k + 1] = (ny / l * 0.5 + 0.5) * 255; d[k + 2] = (1 / l * 0.5 + 0.5) * 255; d[k + 3] = 255;
+  }
+  g.putImageData(id, 0, 0);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
