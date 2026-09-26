@@ -2,6 +2,14 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v51 — 2026-09-26
+**He remembers the run after you leave.** The recap v50 gave the table is
+now also published on `window.__tokoTable`, which is where the arcade's
+leave-logger (`hub/playlog-auto.js`) looks for it. Before this Hyper Dagger
+was the one tabled game whose runs never reached Toko's *last time* line:
+it handed the recap straight to `openTable` and nothing else could read it.
+The seam carries no pause or resume; `openToko` still holds the run.
+
 ## v50 — 2026-09-23
 **He knows what happened.** Opened at the table on the recap, Toko's first
 lines are the run you were just in, in this game's own words, instead of the

@@ -29,7 +29,7 @@ import { mosaicPalette, mosaicSkin } from './roster.js?v=80';
 import { Skullscape } from './inca.js?v=80';
 import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=80';
 import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=80';
-import { openTable } from '../../toko/js/table.js?v=4';   // v48 (theirs): Toko opens over the paused run
+import { openTable } from '../../toko/js/table.js?v=5';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
@@ -1746,6 +1746,10 @@ function openToko() {
   });
   return table;
 }
+// The leave-logger (hub/playlog-auto.js) reads the recap off this seam as
+// you go, so the next time Toko sees you he opens on this run. No pause or
+// resume here: openToko holds the run itself.
+window.__tokoTable = { cue: () => tokoCue(), recap: () => tokoRecap() };
 function wireToko() {
   const b = document.getElementById('tokoBtn');
   if (!b) return;

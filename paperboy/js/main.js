@@ -300,6 +300,20 @@ let tokoHeld = false;
 window.__tokoTable = {
   pause() { if (gameState === 'playing') { gameState = 'paused'; tokoHeld = true; } },
   resume() { if (tokoHeld) { gameState = 'playing'; tokoHeld = false; prev = performance.now(); } },
+  // the route in this game's words, for Toko at the table and for the play
+  // log he reads later (hub/playlog-auto.js writes it when you leave)
+  recap() {
+    if (gameState === 'playing' || gameState === 'paused') return [
+      `DAY ${day}, ${score} POINTS, ${lives} ${lives === 1 ? 'LIFE' : 'LIVES'} LEFT.`,
+      score > hiScore ? 'YOU ARE PAST YOUR BEST. KEEP IT.' : `YOUR BEST IS ${hiScore}.`,
+    ];
+    if (gameState === 'gameover') return [
+      `THE ROUTE ENDED ON DAY ${day} WITH ${score} POINTS.`,
+      score >= hiScore && score > 0 ? 'A NEW BEST.' : `YOUR BEST IS ${hiScore}.`,
+      'THROW FROM THE LANE BESIDE THE HOUSE — THE PAPER LANDS WHERE THE LANE PUTS IT.',
+    ];
+    return null;
+  },
   cue() { return gameState === 'playing' || gameState === 'paused'
     ? `DAY ${day}, ${score} POINTS. SAY WHAT YOU THINK`
     : null },

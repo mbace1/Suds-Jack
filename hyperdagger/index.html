@@ -73,15 +73,15 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=82"></script>
+  <script type="module" src="js/main.js?v=83"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=82').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=83').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=71"></script>
   <script type="module">
-    import { sign } from '../toko/js/signature.js?v=8';
+    import { sign } from '../toko/js/signature.js?v=9';
     // `open`: with a cursor the badge opens him at the table, over a paused
     // run, instead of leaving for the arcade. The href stays for middle-click.
     sign({ corner: 'bottom-left', counter: true, open: () => window.__hd && window.__hd.toko.open() });

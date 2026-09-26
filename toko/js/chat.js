@@ -30,6 +30,11 @@ import { svgBadge } from './face.js';
 // smile breathing while he talks.
 import { drawMasterBadge } from './master.js';
 import { drift, glance } from './util.js';
+// The shared play log (hub/playlog.js): where a game's own recap lands when you
+// leave it. Imported here rather than read off the global it also sets, because
+// the counter can open before the page's shell has run. Allowed to be absent.
+let playlog = null;
+try { playlog = await import('../../hub/playlog.js'); } catch { playlog = null; }
 // a blink: glance()'s smooth in-hold-out, at the speed of an eyelid (0.08s
 // down, 0.05s shut, 0.12s up); 0.15 of the arch is left, so the eye is a
 // line and not gone
@@ -1076,6 +1081,17 @@ export function mountChat(anchor, opts = {}) {
     type(say(t).a, after);
   }
 
+  // The last recap a game wrote as you left it (hub/playlog-auto.js), if it is
+  // from the last twelve hours and he has not already opened on it.
+  function lastRecap(st) {
+    let r = null;
+    try { r = playlog && playlog.readPlayLog({ type: 'recap', limit: 1 })[0]; } catch { r = null; }
+    if (!r || !Array.isArray(r.lines) || !r.lines.length) return null;
+    const at = Date.parse(r.at);
+    if (!(at > Date.now() - 12 * 3600e3) || st.recapSeen === r.at) return null;
+    return r;
+  }
+
   // ── open / close ───────────────────────────────────────────────────────
   function openChat() {
     if (open) return;
@@ -1095,7 +1111,15 @@ export function mountChat(anchor, opts = {}) {
       // it — two lines is the ceiling here (see LATE in dialogue.js), and
       // somebody who has just played something already has a subject. The one
       // thing that outranks it is an unacknowledged note: he owes you that.
-      if (from && !st.noted) {
+      const recap = !from && !st.noted ? lastRecap(st) : null;
+      if (recap) {
+        // HE SAW YOU PLAY. The last run you left, in that game's own words,
+        // once — then the TELL button, filed under that game.
+        store.write({ ...store.read(), recapSeen: recap.at });
+        const g = cabinets().find(c => c.id === recap.game) || { id: recap.game, title: recap.title || recap.game };
+        type([`LAST TIME, ${String(g.title || recap.game).toUpperCase()}:`, ...recap.lines.slice(0, 3)],
+          () => offerTell(g));
+      } else if (from && !st.noted) {
         const first = Array.isArray(opening) && opening.length ? opening.filter(Boolean).map(String) : null;
         type(first || L('BACK_FROM').map(l => l.replaceAll('{x}', gameName(from))),
           () => offerTell(from));

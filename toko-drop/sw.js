@@ -17,7 +17,7 @@
 //  - Only OK responses are ever cached, and precache failures are non-fatal —
 //    a CDN edge 404 (the v118/v119 propagation lesson) must not get pinned
 //    into the offline cache or brick the install.
-const CACHE = 'toko-drop-?v=224';
+const CACHE = 'toko-drop-?v=225';
 const TOKEN = new URL(self.location.href).searchParams.get('v') ?? '0';
 
 // New game files must be added here as well as to bump-version.sh's file loop.
@@ -25,7 +25,7 @@ const PRECACHE = [
   // The Toko signature. It is a cross-directory import, so it has to be named
   // here or the badge becomes a network request on an offline boot — only the
   // entry URL carries the token, the rest are plain relative imports.
-  '../toko/js/signature.js?v=8',
+  '../toko/js/signature.js?v=9',
   ...['surface', 'palette', 'face', 'master', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
   './', './index.html',
   ...['main', 'input', 'bullet', 'player', 'enemy', 'crowd', 'framing', 'arena', 'level', 'editor', 'audio', 'bed', 'playlog', 'haptics', 'designer', 'lang', 'tuning', 'retro', 'specimen']

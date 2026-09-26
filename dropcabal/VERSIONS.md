@@ -8,6 +8,14 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v5 — 2026-09-26
+
+**Toko saw you play.** The recap this game gives Toko at the table — the stage, the score, the kills and the lives, and on the game-over screen where you went down, your best and the one thing that most changes a stage here (the roll's i-frames, the grenade) —
+is now also written to the shared play log (`hub/playlog.js`) as you leave,
+by `hub/playlog-auto.js`, in the game's own words. The next time you open Toko
+Live or the arcade's counter, he opens on it once: *"LAST TIME, DROP CABAL: …"*,
+then the TELL button filed under this game. `toko-live/LEVELS.md` level 1.
+
 ## v4 — 2026-09-23
 
 **Toko at the table.** The signature in the corner opens the counter over this

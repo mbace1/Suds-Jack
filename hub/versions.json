@@ -10,13 +10,13 @@
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
-    "v": "50",
-    "n": 50000,
+    "v": "51",
+    "n": 51000,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
-    "v": "4",
-    "n": 4000,
+    "v": "5",
+    "n": 5000,
     "from": "VERSIONS.md"
   },
   "powder": {
@@ -25,8 +25,8 @@
     "from": "VERSIONS.md"
   },
   "paperboy": {
-    "v": "5",
-    "n": 5000,
+    "v": "6",
+    "n": 6000,
     "from": "cache token"
   },
   "skltr": {
@@ -40,13 +40,13 @@
     "from": "VERSIONS.md"
   },
   "eeri": {
-    "v": "15.67",
-    "n": 15067,
+    "v": "15.68",
+    "n": 15068,
     "from": "VERSIONS.md"
   },
   "slaykallio": {
-    "v": "40",
-    "n": 40000,
+    "v": "41",
+    "n": 41000,
     "from": "VERSIONS.md"
   },
   "turf": {
@@ -115,8 +115,8 @@
     "from": "VERSIONS.md"
   },
   "flowsnow": {
-    "v": "6",
-    "n": 6000,
+    "v": "7",
+    "n": 7000,
     "from": "VERSIONS.md"
   },
   "concrete": {
@@ -140,8 +140,8 @@
     "from": "VERSIONS.md"
   },
   "tokolive": {
-    "v": "47",
-    "n": 47000,
+    "v": "48",
+    "n": 48000,
     "from": "VERSIONS.md"
   },
   "optionc-lab": {

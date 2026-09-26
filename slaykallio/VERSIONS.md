@@ -7,6 +7,14 @@
   The ?v= tokens on the module tags are independent integers: they are cache
   busters tracking module churn, not releases. -->
 
+## v41 — 2026-09-26
+
+**Toko saw you play.** The recap this game gives Toko at the table — the character, the act and the hit points, or that the bridge won — and the cue now says ACT, which is what `state.act` counts; it said SPAN —
+is now also written to the shared play log (`hub/playlog.js`) as you leave,
+by `hub/playlog-auto.js`, in the game's own words. The next time you open Toko
+Live or the arcade's counter, he opens on it once: *"LAST TIME, SLAY KALLIO: …"*,
+then the TELL button filed under this game. `toko-live/LEVELS.md` level 1.
+
 ## v40 — 2026-09-23
 
 **Toko at the table.** The signature in the corner opens the counter over this
