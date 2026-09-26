@@ -1410,6 +1410,10 @@ function openToko() {
   });
   return table;
 }
+// The leave-logger (hub/playlog-auto.js) reads the recap off this seam as
+// you go, so the next time Toko sees you he opens on this run. No pause or
+// resume here: openToko holds the run itself.
+window.__tokoTable = { cue: () => tokoCue(), recap: () => tokoRecap() };
 function wireToko() {
   const b = document.getElementById('tokoBtn');
   if (!b) return;
