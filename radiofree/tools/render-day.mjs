@@ -62,7 +62,7 @@ const SECONDS = Number(arg('seconds', 0));
 const FPS = Number(arg('fps', 30));
 
 const LIMIT = Number(arg('limit', 0));
-const CLAY = flag('clay');           // Toko in plasticine, on twos (toko/js/toko3d.js)
+const CLAY = !flag('enamel');        // Toko in plasticine on twos by default; --enamel for the pin
 const OUT = path.resolve(process.cwd(), arg('out', path.join(RF, 'dist', 'clips')));
 
 if (!Number.isFinite(SECONDS) || SECONDS < 0) { console.error('--seconds must be a number'); process.exit(2); }

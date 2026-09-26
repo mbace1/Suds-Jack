@@ -23,8 +23,8 @@
 // landed on, because "MP4" that turns out to be AV1 is a fact the person
 // uploading it needs.
 
-import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=71';
-import { renderSoundtrack } from './score.js?v=71';
+import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=72';
+import { renderSoundtrack } from './score.js?v=72';
 import { makeToko3D } from '../../toko/js/toko3d.js?v=1';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';
@@ -108,11 +108,13 @@ export async function exportPost(entry, opts = {}) {
     accent: opts.accent, freq: opts.freq, onAir: t('tag.onair'), fiction: t('fiction'),
   });
   const n = Math.max(1, Math.round(plan.S * fps));
-  // CLAY (opt-in until the owner signs it off): Toko is animated ON TWOS —
+  // CLAY — the default for every film since 2026-09-26 (owner: "if the clay
+  // look works, expand it to all the satire videos"); `clay: false` is the
+  // enamel pin. Toko is animated ON TWOS —
   // his performance sampled at 12 fps and held, and re-lumped on each new
   // hold (`boil`), the way a stop-motion puppet is moved between exposures.
   // The camera, the type and the graphic stay smooth.
-  const clay = !!opts.clay;
+  const clay = opts.clay !== false;
   const t3d = opts.threeD === false ? null : await toko3d(clay ? 'clay' : 'enamel');
 
   const M = await loadMediabunny();

@@ -1472,6 +1472,17 @@ validated in `wire.js`); the graphic carries its own cut (falls in and lands,
 drops out under gravity); and the morning is one escalating set — heat rises
 with the bulletin's place, a red siren from mid-morning, and a SPIN-O-METER on
 the desk counting every spin DECODE has shown so far.
+**v72 — Toko is clay in every film** (owner, 2026-09-26: *"Clay Toko is ok,
+Aardman"*, then *"if the clay look works, expand it to all the satire
+videos"*). `toko3d.js`'s `clay` style — the same traced master in matte
+plasticine: thumbprint and drag-smear normal map, a lumpy disc and rolled
+strokes displaced by a POSITION-keyed noise field (so hard edges never crack),
+re-lumped on every held frame — is the film default; Toko acts **on twos**
+(12 fps holds) while camera, type and graphics stay smooth, and his shots take
+a third of the bloom, which otherwise glows matte back into gloss.
+`render-day --enamel` / `exportMp4({ clay: false })` is the pin. The feed's
+flat badge is unchanged. What would sell Aardman further is the SET (cardboard
+skyline, felt desk, tilt-shift) — Toko alone is half the frame.
 **Layout belongs in `index.html`, never in an injected stylesheet.** `package.js`
 used to inject thirty `!important` rules that clamped the headline, deleted the
 second paragraph of every bulletin, and hid the DECODE button, the tally and the

@@ -17,8 +17,8 @@
 import { drawMasterBadge } from '../../toko/js/master.js';
 import { WAYS, STICKER } from '../../toko/js/palette.js';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=71';
-import { shade, mix } from './screen.js?v=71';
+import { PAL, SECTOR_COLOR } from './palette.js?v=72';
+import { shade, mix } from './screen.js?v=72';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —

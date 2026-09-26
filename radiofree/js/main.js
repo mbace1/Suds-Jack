@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=71';
-import { Post, Reader } from './codec.js?v=71';
-import { Package } from './package.js?v=71';
+import { PAL, SECTOR_COLOR } from './palette.js?v=72';
+import { Post, Reader } from './codec.js?v=72';
+import { Package } from './package.js?v=72';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=71';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=71';
-import * as audio from './audio.js?v=71';
-import { PixelScreen } from './screen.js?v=71';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=71';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=72';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=72';
+import * as audio from './audio.js?v=72';
+import { PixelScreen } from './screen.js?v=72';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=72';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -233,7 +233,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
   cancelAnimationFrame(raf);
   try {
     if (i !== active) scrollToPost(i, true);
-    const { exportPost } = await import('./export.js?v=71');
+    const { exportPost } = await import('./export.js?v=72');
     // the morning is ONE episode: the SPIN-O-METER on Toko's desk counts every
     // spin DECODE has shown so far, across the bulletins before this one
     const spins = (q) => ((q.copy && q.copy.lines) || []).join(' ').split('{{').length - 1;
@@ -244,7 +244,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
     const out = await exportPost(p, {
       t, parseLine, index: i + 1, total: STORIES.length, spinsBefore, spinsTotal,
       date: formatDate(new Date()), accent: SECTOR_COLOR[p.story.sector],
-      seconds: opts.seconds, fps: opts.fps, clay: !!opts.clay,
+      seconds: opts.seconds, fps: opts.fps, clay: opts.clay,
       freq: (SECTORS.find(x => x.id === p.story.sector) || {}).freq || '',
       onProgress: k => { if (lbl) lbl.textContent = `${Math.round(k * 100)}%`; },
     });
@@ -277,7 +277,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
 function boot() {
   booted = true;
   if (TTS && !tts) {
-    import('./tts.js?v=71').then(m => { tts = m; ttsSpeak(posts[active]); })
+    import('./tts.js?v=72').then(m => { tts = m; ttsSpeak(posts[active]); })
       .catch(err => console.warn('[rfh] tts prototype did not load:', err));
   }
   paintSound();

@@ -1,12 +1,12 @@
 // Radio Free Helsinki — fetch, validate and install the day's wire.
 
-import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=71';
-import { SECTOR_COLOR } from './palette.js?v=71';
-import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=71';
-import { EXTRA_STORIES, EXTRA_COPY } from './extras.js?v=71';
-import { ODD56_STORIES, ODD56_COPY } from './oddwire56.js?v=71';
+import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=72';
+import { SECTOR_COLOR } from './palette.js?v=72';
+import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=72';
+import { EXTRA_STORIES, EXTRA_COPY } from './extras.js?v=72';
+import { ODD56_STORIES, ODD56_COPY } from './oddwire56.js?v=72';
 
-export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=71';
+export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=72';
 
 export const INDEX_URL = 'wire/index.json';
 export const WIRE_URL = 'wire.json';

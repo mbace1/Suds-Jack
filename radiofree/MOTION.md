@@ -176,6 +176,15 @@ its rules transfer to a daily, templated film:
    spin DECODE has shown this morning — it holds through the reads and climbs
    by this bulletin's spins on the reveal.
 
+## Clay (v72)
+
+Every film's Toko is plasticine now (Aardman was the owner's reference): the
+traced master, thumbprinted and lumpy, animated on twos and re-lumped per
+hold. Judged against the enamel pin on the same frames: matte and hand-made at
+close-up, subtler at film size — the studio around him is still a smooth
+digital set, and that is the next thing to model if the look is to go all the
+way. Bloom is cut to a third on his shots.
+
 ## The film, shot by shot
 
 Length is **derived from the copy**, never set: `--seconds` is a target the
