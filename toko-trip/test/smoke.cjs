@@ -641,6 +641,93 @@ const check = (label, ok) => {
   check(`and between gusts the air is silent, not a fan in the next room (${wind.quiet.join(' ')}, next in ${wind.next} s)`,
     wind.gust === 0 && wind.quiet.every(g => g === 0) && wind.next >= 5);
 
+  // ── the postcard (v20) ──
+  // The testing hook: the side table says what is new, one tap takes you
+  // there at the right hour, and one more sends a verdict home. Everything
+  // below is the card's contract with the person holding the headset.
+  await page.waitForFunction(() => window.__tt.debug.news().sendable, null, { timeout: 30000 }).catch(() => {});
+  const news0 = await page.evaluate(() => { window.__tt.debug.resetNews(); return window.__tt.debug.news(); });
+  check(`the postcard leads with the newest thing (${news0.card}; ${news0.fresh.join(', ')})`,
+    news0.card === 'seafire' && news0.fresh.length === 3);
+  check('and it can reach the arcade\'s feedback transport', news0.sendable === true);
+  check('the postcard is something you can point at',
+    await page.evaluate(() => window.__tt.debug.rayTargets.includes(window.__tt.debug.postcard)));
+  const frames = n => page.evaluate(n => new Promise(r => {
+    const go = k => k ? requestAnimationFrame(() => go(k - 1)) : r();
+    go(n);
+  }), n);
+  await page.evaluate(() => window.__tt.debug.postcardAct());
+  await frames(5);
+  const visit = await page.evaluate(() => {
+    const tt = window.__tt, d = tt.debug, cam = tt.camera;
+    const dir = cam.getWorldDirection(cam.position.clone());
+    const vp = d.verdict.position;
+    return {
+      mood: tt.mood, news: d.news(), fire: d.fire(),
+      at: [cam.position.x, cam.position.z], ground: tt.groundHeight(cam.position.x, cam.position.z),
+      tide: d.tide().level, toBoard: dir.x * (vp.x - cam.position.x) + dir.z * (vp.z - cam.position.z),
+    };
+  });
+  check(`tapping it takes you to dusk (${visit.mood})`, visit.mood === 1);
+  check(`onto the beach, dry, just above the water (ground ${visit.ground.toFixed(2)} over tide ${visit.tide.toFixed(2)})`,
+    visit.ground > visit.tide && visit.ground < visit.tide + 0.6);
+  check(`facing the question, which stands in the sand (${visit.toBoard.toFixed(2)})`,
+    visit.news.verdictUp === true && visit.news.verdictFor === 'seafire' && visit.toBoard > 0.5);
+  check(`and the surf is glowing blue (fire ${visit.fire.seaFire}, tint ${visit.fire.tint.join(' ')})`,
+    visit.fire.seaFire > 0.6 && visit.fire.tint[2] > visit.fire.tint[0] * 1.5);
+  const aim = await page.evaluate(() => {
+    const tt = window.__tt, d = tt.debug, c = tt.camera.position, v = d.verdict.position;
+    const dx = v.x - c.x, dz = v.z - c.z;
+    return {
+      sea: d.sparkAt(c.x, c.y, c.z, dx, -0.9, dz),            // down and out, into the water
+      sand: d.sparkAt(c.x, c.y, c.z, -dx * 0.2, -1, -dz * 0.2), // at your own feet
+      sky: d.sparkAt(c.x, c.y, c.z, dx, 0.3, dz),
+    };
+  });
+  check(`pointing at the sea lights it (${aim.sea} flecks), the sand and the sky do not (${aim.sand}, ${aim.sky})`,
+    aim.sea > 0 && aim.sand === 0 && aim.sky === 0);
+  const said = await page.evaluate(async () => {
+    const d = window.__tt.debug;
+    d.feedbackOff();                                   // kept locally, sent nowhere
+    const before = d.feedbackKept().length;
+    const r = await d.verdictAct({ uv: { x: 0.2, y: 0.5 } });
+    return { r, kept: d.feedbackKept().length - before, last: d.feedbackKept()[0], news: d.news() };
+  });
+  check(`one tap is a verdict (${said.r && said.r.text})`,
+    said.r && said.r.rating === 5 && /seafire/.test(said.r.text) && /more of this/.test(said.r.text));
+  check(`and it goes through the arcade's feedback, filed under this cabinet (${said.r && said.r.how})`,
+    said.kept === 1 && said.last.game === 'tokotrip' && said.last.kind === 'try');
+  check(`then the board goes and the card moves on (${said.news.card}; tried ${said.news.tried.join(',')})`,
+    said.news.verdictUp === false && said.news.card === 'sea' && said.news.tried.includes('seafire'));
+  const noon = await page.evaluate(async () => {
+    const d = window.__tt.debug;
+    d.postcardAct();
+    await new Promise(r => { const go = k => k ? requestAnimationFrame(() => go(k - 1)) : r(); go(5); });
+    const tt = window.__tt, c = tt.camera.position, v = d.verdict.position;
+    const r = await d.verdictAct({ uv: { x: 0.8, y: 0.5 } });
+    return { mood: tt.mood, fire: d.fire().seaFire, spark: d.sparkAt(c.x, c.y, c.z, v.x - c.x, -0.9, v.z - c.z), r };
+  });
+  check(`the ripple visit is at golden hour, where the surf does not glow (fire ${noon.fire}, ${noon.spark} flecks)`,
+    noon.mood === 0 && noon.fire < 0.25 && noon.spark === 0);
+  check('and the right half says no', noon.r && noon.r.rating === 1 && /not this/.test(noon.r.text));
+  const cave = await page.evaluate(async () => {
+    const d = window.__tt.debug;
+    d.postcardAct();
+    await new Promise(r => { const go = k => k ? requestAnimationFrame(() => go(k - 1)) : r(); go(5); });
+    const c = window.__tt.camera.position, S = d.caveSpot;
+    return { mood: window.__tt.mood, open: d.cave().open, card: d.news().card,
+      toward: Math.hypot(c.x - S.x, c.z - S.z) < Math.hypot(S.x, S.z) };
+  });
+  check(`the cave visit waits for the bar to surface (dusk ${cave.mood === 1}, bar open ${cave.open})`,
+    cave.mood === 1 && cave.open === true && cave.toward);
+  await page.evaluate(async () => {
+    const d = window.__tt.debug; await d.verdictAct({ uv: { x: 0.2 } });
+  });
+  const done = await page.evaluate(() => window.__tt.debug.news());
+  check(`and when everything is tried the card says so rather than nagging (${done.card}, glow ${done.glow})`,
+    done.card === null && done.fresh.length === 0);
+  await page.evaluate(() => { window.__tt.debug.resetNews(); window.__tt.debug.goChair(); window.__tt.setMood(0, true); });
+
   // ── the sand ──
   // The beach is the biggest surface in view from the chair, and the two
   // things it was missing are the two things you only see at a grazing

@@ -1,5 +1,49 @@
 # Toko Trip — release log
 
+## v20 — 2026-09-26
+
+The owner asked to be hooked into testing. Two answers, and they work
+together: something worth going to see, and a way to get there and say what
+you thought about it without leaving the headset.
+
+- **The surf glows after sunset.** Bioluminescence: at dusk the break
+  recolours from cream to plankton blue, and each fleck flickers on its own
+  clock so the line sparkles rather than glowing like a tube. **Point a
+  controller at the water** (or, flat, move the mouse over it) and the sea
+  answers with flecks that flare and fade. The break near you throws a few
+  of its own. It is the same foam as the daytime surf, not a second system.
+  The flecks are additive, so they show on dark water and vanish on bright
+  water, which is also when real plankton are visible.
+- **The postcard.** It sits on the side table next to the radio, and says
+  the newest thing you have not tried yet: *NEW SINCE YOU SAT HERE*, one
+  title, three lines. It breathes while it has something for you. Tap it
+  and it **takes you there**, to the right spot at the right hour. Both
+  clocks move together, so dusk stays at low water, and the cave visit waits
+  until the bar is dry. A board then stands in the sand, off to one side:
+  **MORE OF THIS / NOT THIS**. One tap sends a verdict through the arcade's
+  own feedback transport (`hub/feedback.js`), filed under `tokotrip` with the
+  version, the thing, the mood, and whether you were in a headset or flat.
+  The card then moves on to the next thing. When everything has been tried
+  it says so and stops glowing: it never nags.
+- The flat page carries the same news in pink under the controls hint.
+
+Found by looking: the first cut stood the question board dead centre of the
+view, so it hid the very surf it was asking about. It now stands low and to
+the left. The first blue was too pale and read as white foam. It is 0.08 /
+0.6 / 1.5 now, and the flecks grow a little at night because a glow is read
+by its size.
+
+The island opens without the hub. The feedback module is imported
+dynamically, and if this tree has no `hub/`, the card still takes you there
+and keeps the verdict. It just has nowhere to send it.
+
+Gate: 131 checks. The card leads with the newest thing and can reach the
+transport. A tap goes to dusk, dry, just above the water, facing the board.
+The surf is blue. Pointing at the sea lights it; pointing at sand or sky
+does not. The left half is a 5 filed under the cabinet, and the right half
+is a 1. Golden hour does not glow. The cave visit waits for an open bar.
+When everything is tried, the card goes quiet.
+
 ## v19 — 2026-09-25
 
 The owner's first report from the island: *"wind sound is annoying, water
