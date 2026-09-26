@@ -13,6 +13,53 @@ what "depending on the user" reads (an explicit choice, the player's history in
 `hub/playlog.js`, Toko asking), and what the kids' version keeps of the delivery
 loop. Nothing here is built yet.
 
+### Proposal for sign-off (2026-09-26) — nothing below is built
+
+**The one fact that decides the rest: Piritori is adult.** Its own GDD is a
+narrative strategy game about running an illegal stimulant network through
+Kallio (2003) and Pasila (2024), with debt, heat, injury and death, and its
+shared-engine note says the drugs are not to be stripped out to make something
+else. A kids' face and a Piritori face therefore cannot be chosen the way a
+difficulty is. So:
+
+1. **"Depending on the user" is an explicit, one-time question, not an
+   inference.** First open: *who's playing — a grown-up or a kid?* Stored on
+   the device. The kids' face is the default until answered; switching to the
+   grown-up face takes a deliberate hold (the HUB button's 750 ms idiom), and
+   switching down is one tap. `hub/playlog.js` and Toko's counter may
+   *suggest* ("you have finished three weeks — Kallio has stories"), never
+   switch. Reason: a child on a parent's phone must never be routed into
+   Piritori by someone else's play history.
+2. **The courier game as it is stays the spine** — same board, same real
+   trams, same deliveries, same week. Both faces are that game with things
+   added or taken away, not a third product.
+3. **Kids' face** (build first — it is mostly subtraction):
+   *keeps* tapping the tram on the map, the quiet map, real HSL trams (LIVE
+   included — real trams are the delight), walking the real street, the test
+   card's tick-it-off shape as **stickers**; *changes* deliveries into
+   errands with a person at each end (cake to Granny at Arabia, a football to
+   Kallio) and the rival into a friend you race; *drops* money, rent, lateness
+   penalties, events that cost time, and fail states — a shift ends when the
+   errands are done. Target age to confirm (Eeri's six-year-old is the house
+   reference).
+4. **Grown-up face — "Kallio stories"**: the six regulars become the door.
+   Each already has a place, a line and standing across shifts; with standing,
+   one of them opens a short authored scene in Piritori's encounter grammar
+   (point-and-click, choice-heavy), set on the stops the courier already knows.
+   **Tone and place cross over from Piritori; its drug-market systems do not**
+   — no dealing, no debt ledger in Toko Move. The courier sees Kallio's
+   night; the network is Piritori's game, one cabinet over, and a story can
+   end by pointing there.
+5. **Order:** the question + the kids' face first (one version, reuses every
+   system), then one regular's story end to end as the pilot for the grown-up
+   face, then the rest if the pilot reads right.
+
+**Three answers needed from the owner before building:**
+(a) explicit question, kids by default — yes/no;
+(b) how much of Piritori crosses — *tone and place only* (proposed), or its
+characters and events too;
+(c) the kids' target age.
+
 
 Owner direction, 2026-09-17, in their words: *"Disruptions is good, feels like
 roguelike random events type deal. Maybe we need more random events, help the
