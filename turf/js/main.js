@@ -22,7 +22,7 @@ import { layersFor, tierFor } from './impact.js?v=1';
 // local-only. See the header in playlog.js for the four questions it answers.
 import { createPlaylog, hubEmitter, summarise } from './playlog.js?v=1';
 import { audio } from './audio.js?v=2';
-import { watchPad } from '../../hub/pad.js?v=9';
+import { watchPad } from '../../hub/pad.js?v=10';
 
 const $ = id => document.getElementById(id);
 const canvas = $('board'), stage = $('stage'), plate = $('plate');
