@@ -1186,6 +1186,50 @@ runs (whose command it is comes from the actor in the entry, since `state.turn` 
 flipped). `summarise()` is pure, its `headline` ranks quitting above losing on purpose, and
 `__turf.play.report()` prints it. No upload, no dashboard, no consent prompt — there is
 nothing to consent to.
+**THE READING IS ON THE SCREEN, AND A RELEASE PIN LIVES IN ONE FILE** (v44).
+v41 built the instrument that answers GDD §9's exit criterion and then put the
+answer behind `__turf.play.report()` in a **console** — and this game is played
+on a phone. A reading nobody can reach is a reading that does not exist, and it
+went unnoticed for two versions because a console works perfectly on the machine
+the code is written on. `reportLines`/`reportText` are PURE, so `smoke.mjs`
+asserts the **wording** in bare node the way it already asserted the numbers:
+two lines are written so they cannot be read as a score (closing under fire is
+usually correct; a declined skill may be a weak skill), and a report that blames
+the player for the board is a worse instrument than none. The card is **closed
+by default and one line tall** — the result screen already gates Continue behind
+the skill pick, and a report about legibility that pushes that button below the
+fold would be its own joke — and it is on the **title screen too**, which is the
+only place a QUIT can ever be read, since a closed tab files its record on
+`pagehide` and by the next visit there is no result screen left. One folding
+(`sessionSummary`) serves the card and the console, so they cannot give two
+answers about one session. **`summarise()` was left alone**: its "too few plays"
+headline is right for an instrument with a sample and reads as a shrug at the
+block you just finished, so the card substitutes *"one block in — the numbers
+below are real, the pattern is not yet"* and the gate asserts the instrument's
+own wording is unchanged. **Copy, then paste** is the whole point — one session
+on a sofa becoming readable by somebody who was not holding the phone — with a
+selected `<textarea>` fallback where the clipboard is gated.
+**Four faults, and only one of them a gate could have found.** The pad's default
+A press is `buttons[0]`, so a toggle above Continue silently made A *open the
+report* instead of starting the next block, and the Copy button — enabled, in a
+**collapsed** body — was in the list too: `menuButtons()` now drops anything with
+no client rects (`offsetParent` is always null on a `position: fixed` overlay,
+kindling's trap) and sorts `data-secondary` last. The other three came off
+**screenshots**: the headline read `1 time(s)`; the card counted ITSELF as an
+affordance, so `report` appeared in its own *offered and never used* list — the
+card telling you, in the card, that you had not opened the card, which is
+anim.js's stay-outside-what-you-watch rule applied to the instrument; and the
+two-column grid on a 390px phone wrapped every reading to three lines beside a
+one-word label, so under 430px the label sits above its value. A fifth was the
+fold itself: de-duplicating on `at|type|encounter` **drops a real play** when two
+blocks file in the same millisecond, and the key carries the record's own numbers
+now. **And the title screen said `v42` while VERSIONS.md said `v43`** — a release
+pin is a number, so it lives in ONE file (slaykallio paid for this twice).
+`VERSION` is one constant in `main.js`, written into the title at boot, with a
+gate failing when it disagrees with the log's top entry and a second failing if a
+literal version reappears in the markup. Nothing caught the drift before, because
+nothing was looking. Balance reads bit-identical, which is the only claim worth
+making about a change that adds a panel.
 **IMPACT — A BLOW SAYS HOW HARD IT WAS** (v42, `MST_PARITY` §2.7 closed). Through v41 a
 hit was a white flash and a number; both say a hit HAPPENED and neither says how hard.
 `js/impact.js` is the spec, and it is **pure** — no DOM, no clock — so every tier, curve

@@ -18,6 +18,65 @@
 > rule, again: **fetch and read the other lineage's log before writing a heading**,
 > and "the other lineage" includes the deployed tree.
 
+## v44 — 2026-09-26
+
+**THE READING IS ON THE SCREEN NOW, AND THE VERSION LIVES IN ONE FILE.**
+
+v41 built the instrument that answers GDD §9's exit criterion — the one question
+no bot can be asked, because a bot has no clock, never hesitates, never misreads
+a telegraph and never closes the tab. Then it put the answer behind
+`__turf.play.report()` in a **console**, and this game is played on a phone. A
+reading nobody can reach is a reading that does not exist: "open the devtools" is
+the step that ended the loop v41 exists to close, and it went unnoticed for two
+versions because the console works perfectly on the machine the code was written
+on.
+
+- **`reportLines` / `reportText` (playlog.js) are PURE**, like everything else
+  this project trusts: no DOM, no clock, so `smoke.mjs` asserts the WORDING in
+  bare node exactly as it already asserted the numbers. That is not ceremony —
+  two of the lines are written so they cannot be read as a score, and a report
+  that blames the player for the board is a worse instrument than none. *Moves
+  into fire* says closing distance under fire is usually correct; *offered and
+  never used* says a declined skill may be a weak skill rather than a bad
+  decision. Both notes are gated, because both are the point.
+- **The card is CLOSED by default and one line tall.** The result screen already
+  gates Continue behind the skill pick, and pushing that button below the fold to
+  make room for a report about legibility would be its own joke. The toggle is a
+  real `<button>`, so it joins `menuButtons()` and a pad-only player reaches it
+  like everything else here.
+- **It is on the TITLE screen too, and that is where the loudest signal lives.**
+  A quit files its record on `pagehide`; by the next visit there is no result
+  screen left to put it on, so the only place a stopped block can ever be read is
+  the screen you come back to.
+- **One folding of the records** (`sessionSummary`), shared by the card and the
+  console hook, so the panel and `__turf.play.report()` cannot give two answers
+  about one session. `__turf.play.text()` and `.card()` are the seams a harness
+  uses.
+- **`summarise()` was left alone.** Its headline says "too few plays" under three
+  and that is right for an instrument with a sample — but on the card it is the
+  first thing a player sees after their FIRST block, and it reads as a shrug at
+  what they just did. The card substitutes *"one block in — the numbers below are
+  real, the pattern is not yet"*, which is the same claim without the shrug, and
+  the gate asserts the instrument's own wording is unchanged.
+- **Copy, then paste.** The card's whole reason to exist is the loop *play →
+  copy → paste*: one session on a sofa becoming something readable by someone who
+  was not holding the phone. Clipboard access is gated in plenty of contexts, so
+  a refusal falls back to a selected `<textarea>` and says so — a dead button
+  would be worse than no button.
+
+**And a bug the work walked into: the title screen said `v42` while this log said
+`v43`.** A release pin is a number, so it lives in ONE file — slaykallio paid for
+this exact lesson twice (v34 shipped with three files giving three answers) and
+TURF had quietly started down the same road. `VERSION` is one constant in
+`main.js`, written into the title at boot, and two gates now hold it: one fails
+when it disagrees with this log's top entry, one fails if a literal version
+appears in the title markup again. Nothing caught the drift before, because
+nothing was looking.
+
+Nothing is uploaded, there is no leaderboard, and the card says so in its own
+footer. The engine is untouched — `balance.mjs` reads bit-identical, which is the
+only claim worth making about a change that adds a panel.
+
 ## v43 — 2026-09-23
 **RULE PROFILES: Piritori's C.11 rules, played on this engine.**
 
