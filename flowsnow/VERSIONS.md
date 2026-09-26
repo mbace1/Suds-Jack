@@ -7,6 +7,14 @@
   js/main.js carries an independent integer ?v= cache token in index.html.
 -->
 
+## v4 — 2026-09-26
+
+**Toko saw you play.** The recap this game gives Toko at the table — the run so far, or on the finish its score, top speed, air time, falls and your best —
+is now also written to the shared play log (`hub/playlog.js`) as you leave,
+by `hub/playlog-auto.js`, in the game's own words. The next time you open Toko
+Live or the arcade's counter, he opens on it once: *"LAST TIME, FLOWSNOW: …"*,
+then the TELL button filed under this game. `toko-live/LEVELS.md` level 1.
+
 ## v3 — 2026-09-21
 
 **Toko at the table.** The signature in the corner opens the counter over this

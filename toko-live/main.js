@@ -1,4 +1,4 @@
-import { mountChat } from '../toko/js/chat.js?v=24';
+import { mountChat } from '../toko/js/chat.js?v=25';
 import { drawMasterBadge } from '../toko/js/master.js';
 import { WAYS, STICKER } from '../toko/js/palette.js';
 import { makeToko3D } from '../toko/js/toko3d.js?v=1';

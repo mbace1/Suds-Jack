@@ -25,7 +25,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem('slayKallio.' + k, JSON.stringify(v)); } catch { /* private mode */ } },
 };
 
-const VERSION = 40;
+const VERSION = 41;
 let theme = THEMES[store.get('theme', 'kallio')] ? store.get('theme', 'kallio') : 'kallio';
 let state = null;
 let arena = null;
@@ -172,8 +172,16 @@ window.__tokoTable = {
   pause() { tokoHeld = true; },
   resume() { tokoHeld = false; last = performance.now(); },
   cue() { return state && state.phase !== 'menu'
-    ? `${String(state.character || 'this run').toUpperCase()}, SPAN ${(state.act || 0) + 1}. SAY WHAT YOU THINK`
+    ? `${String(state.character || 'this run').toUpperCase()}, ACT ${(state.act || 0) + 1}. SAY WHAT YOU THINK`
     : null },
+  // the run in this game's words (hub/playlog-auto.js logs it when you leave)
+  recap() {
+    if (!state || state.phase === 'menu') return null;
+    const who = String(state.character || 'this run').toUpperCase(), act = (state.act || 0) + 1;
+    if (state.phase === 'lost') return [`THE BRIDGE WON. ${who}, ACT ${act}.`];
+    const h = state.hero || {};
+    return [`${who}, ACT ${act}, ${Math.max(0, h.hp | 0)}/${h.maxHp | 0} HP.`];
+  },
 };
 
 let last = performance.now();

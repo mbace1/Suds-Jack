@@ -4,6 +4,14 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v9 — 2026-09-26
+
+**Toko saw you play.** The recap this game gives Toko at the table — the room, the health and the deaths this run, and your best time —
+is now also written to the shared play log (`hub/playlog.js`) as you leave,
+by `hub/playlog-auto.js`, in the game's own words. The next time you open Toko
+Live or the arcade's counter, he opens on it once: *"LAST TIME, FLASH PRINCE: …"*,
+then the TELL button filed under this game. `toko-live/LEVELS.md` level 1.
+
 ## v8 — 2026-09-21
 
 **Toko at the table.** The signature in the corner opens the counter over this

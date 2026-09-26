@@ -832,6 +832,19 @@ window.__tokoTable = {
   pause() { if (state === 'play' && !paused) { setPaused(true); tokoHeld = true; } },
   resume() { if (tokoHeld) { setPaused(false); tokoHeld = false; } },
   cue() { return state === 'play' ? `STAGE ${stage}, ${score} POINTS. SAY WHAT YOU THINK` : null },
+  // the stage in this game's words (hub/playlog-auto.js logs it when you leave)
+  recap() {
+    if (state === 'play' || state === 'clear') return [
+      `STAGE ${stage}, ${score} POINTS, ${kills} DOWN, ${lives} ${lives === 1 ? 'LIFE' : 'LIVES'} LEFT.`,
+      score > hi ? 'YOU ARE PAST YOUR BEST. KEEP IT.' : `YOUR BEST IS ${hi}.`,
+    ];
+    if (state === 'over') return [
+      `DOWN ON STAGE ${stage} WITH ${score} POINTS.`,
+      score >= hi && score > 0 ? 'A NEW BEST.' : `YOUR BEST IS ${hi}.`,
+      'THE ROLL HAS I-FRAMES — ROLL THROUGH ORBS. A GRENADE CLEARS EVERYTHING IN ITS BLAST.',
+    ];
+    return null;
+  },
 };
 let tokoHeld = false;
 

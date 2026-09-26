@@ -298,6 +298,22 @@ let tokoHeld = false;
 window.__tokoTable = {
   pause() { tokoHeld = true; },
   resume() { tokoHeld = false; last = performance.now(); },
+  // the run in this game's words (hub/playlog-auto.js logs it when you leave)
+  recap() {
+    if (mode === 'play') return [
+      `${Math.round(s.time)}S DOWN THE MOUNTAIN, ${Math.round(s.score)} POINTS SO FAR.`,
+      `YOUR BEST IS ${Math.round(best)}.`,
+    ];
+    if (mode === 'done') {
+      const score = Math.round(s.score);
+      return [
+        `THAT RUN SCORED ${score}.`,
+        `TOP ${Math.round(s.speedMax * 3.6)} KM/H, ${s.airBest.toFixed(1)}S IN THE AIR, ${s.tumbles} ${s.tumbles === 1 ? 'FALL' : 'FALLS'}.`,
+        score >= best && score > 0 ? 'A NEW BEST.' : `YOUR BEST IS ${Math.round(best)}.`,
+      ];
+    }
+    return null;
+  },
 };
 
 function frame(now) {

@@ -223,7 +223,7 @@ export function openTable(opts = {}) {
     const hub = await ensureHub(game);
     const here = game || whereAmI(hub.games || []);
     try {
-      const { mountChat } = await import('./chat.js?v=24');
+      const { mountChat } = await import('./chat.js?v=25');
       if (closed) return null;
       // A cue is a nicety and a game's own code: if it throws, he still opens
       // and falls back to his own line about the cabinet you are standing in.

@@ -327,11 +327,11 @@ function serve() {
 
   // The recommendation. The board is NOT the arcade, so there is no catalogue
   // here — which is the case worth testing: it has to say so rather than throw.
-  await page.evaluate(() => {
-    const b = [...document.querySelectorAll('.toko-chat .tc-menu button')]
-      .find(x => /SHOULD I PLAY/.test(x.textContent));
-    if (b) b.click();
-  });
+  // Asked by id, not by finding its button: the menu is nine slots and some
+  // topics are gated by the HOUR — at midnight "YOU ARE UP LATE." joins it and
+  // pushes this one off, so hunting for the button made the gate pass or fail
+  // on the wall clock (the same family as the greeting skip above).
+  await page.evaluate(() => globalThis.__tokoChat.say('play'));
   await page.waitForTimeout(120);
   await page.keyboard.press('Enter');
   await page.waitForSelector('.toko-chat .tc-menu button', { timeout: 4000 });

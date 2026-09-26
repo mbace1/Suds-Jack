@@ -1,5 +1,17 @@
 # Toko Live versions
 
+## v48 — 2026-09-26
+
+**He saw you play** — `LEVELS.md` level 1. Every game that sits at Toko's table
+now leaves its own recap in the shared play log when you leave it, and Toko Live
+opens on the last one, once: *"LAST TIME, SUDS JACK: WAVE 4, 1,240 POINTS…"*,
+with TELL filed under that game. The words are the GAME's (its
+`__tokoTable.recap()`), never inferred by the shell — `hub/playlog-auto.js`
+only carries them. Twelve hours old at most; a second visit gets his ordinary
+greeting. The arcade's counter does the same, from the same `chat.js`.
+Measured end to end in a browser: a Suds Jack run left for Toko Live, and a
+Slay Kallio run left for the arcade, each opened on its own run.
+
 ## v47 — 2026-09-24
 
 **Toko is his face.** The owner supplied the master artwork of Toko's face and

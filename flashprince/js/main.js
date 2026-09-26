@@ -473,6 +473,16 @@ let tokoHeld = false;
 window.__tokoTable = {
   pause() { tokoHeld = true; },
   resume() { tokoHeld = false; last = performance.now(); },
+  // the run in this game's words (hub/playlog-auto.js logs it when you leave)
+  recap() {
+    const g = game, best = g.best ? (g.fmt ? g.fmt(g.best) : `${g.best.toFixed(1)}S`) : null;
+    if (g.state === 'play' || g.state === 'dying') return [
+      `ROOM ${g.world.index + 1}, ${g.hero.health} HEALTH, ${g.deaths} ${g.deaths === 1 ? 'DEATH' : 'DEATHS'} THIS RUN.`,
+      best ? `YOUR BEST TIME IS ${best}.` : 'NO FINISHED RUN YET.',
+    ];
+    if (g.state === 'won') return ['YOU GOT THROUGH.', best ? `YOUR BEST TIME IS ${best}.` : ''].filter(Boolean);
+    return null;
+  },
 };
 
 

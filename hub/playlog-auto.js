@@ -28,6 +28,17 @@ export function beginPlaySession(game) {
     ended = true;
     const seconds = Math.max(0, Math.round((performance.now() - started) / 1000));
     if (seconds >= 8) logPlay(game, 'session', { seconds, reason: reason || 'leave' });
+    // THE RUN, IN THE GAME'S OWN WORDS. The header of this file says the shell
+    // cannot infer a run honestly — so it does not: a game that sits at Toko's
+    // table publishes `__tokoTable.recap()` (toko/js/table.js), and what that
+    // returns as you leave is what Toko Live and the arcade counter open on
+    // next time. A title screen returns nothing and nothing is written.
+    try {
+      const t = globalThis.__tokoTable;
+      const r = t && typeof t.recap === 'function' ? t.recap() : null;
+      const lines = (Array.isArray(r) ? r : r ? [r] : []).map(String).filter(Boolean);
+      if (lines.length) logPlay(game, 'recap', { lines, title: entry?.title || game });
+    } catch { /* a recap is a nicety; leaving is not */ }
   };
 
   addEventListener('pagehide', () => end('pagehide'), { once: true });

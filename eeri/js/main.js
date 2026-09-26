@@ -44,7 +44,15 @@ import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=54';
 // is on screen before it — published late, the first thing a player can press
 // is a table that does not know how to stop the game.
 let tokoHeld = false;
-window.__tokoTable = { pause() { tokoHeld = true; }, resume() { tokoHeld = false; } };
+window.__tokoTable = {
+  pause() { tokoHeld = true; }, resume() { tokoHeld = false; },
+  // where you are, from the title the game already writes (`EERI 1-2 — name`);
+  // no score and no deaths — this is a game for a six-year-old
+  recap() {
+    const m = /^EERI (\S+) — (.+)$/.exec(document.title);
+    return m ? [`YOU ARE ON ${m[1]}, ${m[2].split(" — ").pop().toUpperCase()}.`] : null;
+  },
+};
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
