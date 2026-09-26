@@ -32,7 +32,16 @@ on:
   pull_request:
     paths:
       - '*/js/**'
-      - '*/index.html'
+      # cabinets that keep their code, styles or runtime art at the top of
+      # their folder (concrete/main.js, sudz/game.js) or somewhere other than
+      # js/ and art/ (powder/models, slaykallio/figures, slaykallio/bg)
+      - '*/*.js'
+      - '*/*.css'
+      - '*/*.html'
+      - '*/models/**'
+      - '*/figures/**'
+      - '*/bg/**'
+      - '*/data/**'
       - 'hub/**'
       - 'index.html'
       - '*/art/**'
@@ -97,21 +106,29 @@ jobs:
         env:
           NODE_PATH: ${{ github.workspace }}/node_modules
 
+      # `continue-on-error` on the JOB only stops a failure turning the
+      # workflow red; it does not make later steps run. Without these
+      # `always()`s a failed install or shooter skipped the artifact AND the
+      # fallback comment, so the worst failures left no evidence at all.
       - name: diff them
+        if: always()
         id: contact
         run: node head/test/contact.cjs --base shots/base --head shots/head --out shots/out
         env:
           NODE_PATH: ${{ github.workspace }}/node_modules
 
       - name: keep the pictures
+        if: always()
         id: art
         uses: actions/upload-artifact@v4
         with:
           name: looks-${{ github.event.pull_request.number }}
           path: shots/
           retention-days: 14
+          if-no-files-found: warn
 
       - name: say what moved
+        if: always()
         uses: actions/github-script@v7
         with:
           script: |

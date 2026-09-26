@@ -137,7 +137,12 @@ async function main() {
 
   const moved = rows.filter(r => r.verdict === 'changed' || r.verdict === 'resized')
     .sort((a, b) => b.ratio - a.ratio);
-  const broken = rows.filter(r => r.status !== 'ok');
+  // Broken is read off the REPORT, not off `rows`: a cabinet whose navigation
+  // or first screenshot threw is recorded with `shots: []`, contributes no row,
+  // and still has its id on the head list — so reading rows alone let a
+  // cabinet that rendered nothing slip past both this and `gone`.
+  const broken = head.filter(g => g.status !== 'ok' || !g.shots.length)
+    .map(g => ({ id: g.id, status: g.status && g.status !== 'ok' ? g.status : 'no frames' }));
 
   const browser = await chromium.launch({ executablePath: chromePath(), args: ['--no-sandbox'] });
   const page = await browser.newPage();
@@ -156,19 +161,25 @@ async function main() {
   await shoot(page, html('The floor', `<p class="sub">${sub}</p><div class="grid">${cells}</div>`),
     path.join(OUT, 'sheet.png'), 1500);
 
-  // and a triptych for each thing that actually moved
-  let changedFile = null;
-  if (moved.length) {
-    const trips = moved.slice(0, 14).map(r => `<div class="row">
+  // and a triptych for each thing that actually moved — every one of them.
+  // A shared change (hub/shell.js, say) can move the whole floor, and a sheet
+  // capped at fourteen dropped the rest while the comment promised
+  // everything; so the triptychs page across changed.png, changed-2.png, …
+  const PER_SHEET = 14;
+  const changedFiles = [];
+  for (let i = 0; i < moved.length; i += PER_SHEET) {
+    const page_n = i / PER_SHEET + 1, pages = Math.ceil(moved.length / PER_SHEET);
+    const trips = moved.slice(i, i + PER_SHEET).map(r => `<div class="row">
       <div class="rowhead">${r.id} · ${r.name} — ${r.verdict === 'changed' ? pct(r.ratio) + ' of pixels' : r.verdict}</div>
       <div class="trip">
         <figure style="margin:0"><img src="${r.base ? dataUri(r.base) : ''}"><figcaption>base</figcaption></figure>
         <figure style="margin:0"><img src="${dataUri(r.head)}"><figcaption>head</figcaption></figure>
         <figure style="margin:0"><img src="${r.diff ? dataUri(r.diff) : ''}"><figcaption>diff</figcaption></figure>
       </div></div>`).join('');
-    changedFile = path.join(OUT, 'changed.png');
-    await shoot(page, html('What moved', `<p class="sub">base · head · diff, biggest first</p>${trips}`),
-      changedFile, 1180);
+    const f = path.join(OUT, page_n === 1 ? 'changed.png' : `changed-${page_n}.png`);
+    const title = pages > 1 ? `What moved (${page_n} of ${pages})` : 'What moved';
+    await shoot(page, html(title, `<p class="sub">base · head · diff, biggest first</p>${trips}`), f, 1180);
+    changedFiles.push(f);
   }
   await browser.close();
 
@@ -192,9 +203,11 @@ async function main() {
     for (const r of moved.slice(0, 20)) {
       lines.push(`| \`${r.id}\` | ${r.name} | ${r.verdict === 'changed' ? pct(r.ratio) : r.verdict} |`);
     }
-    if (moved.length > 20) lines.push(`\n…and ${moved.length - 20} more.`);
+    if (moved.length > 20) lines.push(`\n…and ${moved.length - 20} more — every one is on the changed sheets.`);
   } else if (base) {
-    lines.push('\nNothing moved. Every cabinet renders exactly as it does on the base branch.');
+    lines.push(broken.length
+      ? '\nNothing that rendered moved — but see the cabinets above that did not render at all.'
+      : '\nNothing moved. Every cabinet renders exactly as it does on the base branch.');
   }
   const summary = lines.join('\n');
   fs.writeFileSync(path.join(OUT, 'summary.md'), summary + '\n');
@@ -203,7 +216,7 @@ async function main() {
       rows: rows.map(({ base: _b, head: _h, diff: _d, ...r }) => r) }, null, 1));
 
   console.log(summary);
-  console.log(`\nsheet: ${path.join(OUT, 'sheet.png')}${changedFile ? `\nchanged: ${changedFile}` : ''}`);
+  console.log(`\nsheet: ${path.join(OUT, 'sheet.png')}${changedFiles.map(f => `\nchanged: ${f}`).join('')}`);
 }
 
 main().catch(e => { console.error('contact.cjs failed:', e); process.exit(1); });

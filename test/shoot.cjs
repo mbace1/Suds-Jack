@@ -59,6 +59,9 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
 // gets DEFAULT, which is the honest general case — load it, look at it, press
 // the two keys that start almost every game here, look again.
 const DEFAULT = { settle: 3200, keys: ['Enter', 'Space'], play: 3800 };
+// the most one cabinet may take, settle and play included (about 8 s on a
+// healthy run); past it the visit is abandoned and reported as `timeout`
+const CABINET_MS = +argv('--budget', 90) * 1000;
 const RECIPE = {
   // the arcade itself: no game to start, and the floor is the point
   '_hub':      { settle: 3000, keys: [], play: 0, url: 'index.html' },
@@ -222,7 +225,14 @@ async function main() {
     //     shots and reports `play` shots without comparing them. Measured
     //     over two runs of an identical tree: boot moved 7 of 24 and never by
     //     more than 3.5%, play moved 15 of 24 and by up to 65%.
-    try {
+    // ONE cabinet may not eat the job. Every wait below has its own timeout,
+    // but evaluate() and keyboard.press() do not, and a game that wedges its
+    // main thread would sit here until the workflow's 25-minute ceiling —
+    // taking every cabinet after it down too. So the whole visit races a
+    // budget, and losing it closes the context, which rejects whatever was
+    // still pending.
+    let budget;
+    const visit = (async () => {
       await routeThree(page);
       const url = `${base}/${r.url || g.path}${r.query ? (g.path && g.path.includes('?') ? '&' : '?') + r.query : ''}`;
       await page.goto(url, { waitUntil: 'load', timeout: 30000 });
@@ -235,13 +245,10 @@ async function main() {
       await page.waitForTimeout(r.settle);
       const shot = async (name) => {
         const file = path.join(OUT, `${g.id}--${name}.png`);
-        // Virtual time PAUSES when its budget runs out, and a paused clock
-        // produces no compositor frame — so Playwright's screenshot, which
-        // waits for one, hangs until it times out. It cost three cabinets
-        // before this comment existed. CDP's own capture reads the surface
-        // as it stands and does not wait, which is exactly what a frozen
-        // page needs.
-        await page.screenshot({ path: file });
+        // A screenshot waits for a compositor frame, and a page that never
+        // produces one (a wedged rAF, a paused clock) hangs it — so it gets
+        // its own short timeout rather than Playwright's default.
+        await page.screenshot({ path: file, timeout: 20000 });
         const png = PNG.sync.read(fs.readFileSync(file));
         row.shots.push({ name, file: path.basename(file), colours: flatness(png) });
       };
@@ -279,13 +286,21 @@ async function main() {
       }
       const worst = Math.min(...row.shots.map(s => s.colours));
       if (worst <= 2) row.status = 'blank';
+    })();
+    try {
+      await Promise.race([visit, new Promise((_, rej) => {
+        budget = setTimeout(() => rej(new Error(`cabinet budget: over ${CABINET_MS / 1000}s`)), CABINET_MS);
+      })]);
     } catch (e) {
-      row.status = 'error';
+      row.status = /cabinet budget/.test(String(e.message)) ? 'timeout' : 'error';
       row.errors.push(String(e.message || e).slice(0, 300));
+    } finally {
+      clearTimeout(budget);
     }
-    await ctx.close();
+    await ctx.close().catch(() => {});
+    await visit.catch(() => {});
     report.push(row);
-    const mark = row.status === 'ok' ? '·' : row.status === 'blank' ? 'BLANK' : 'ERROR';
+    const mark = row.status === 'ok' ? '·' : row.status.toUpperCase();
     console.log(`  ${mark} ${g.id} (${row.shots.length} shots${row.errors.length ? `, ${row.errors.length} console/page errors` : ''})`);
   }
 
