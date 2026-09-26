@@ -4115,9 +4115,14 @@
     let perfT = 0, perfN = 0, perfMs = 0, perfWorst = 0, perfCalls = 0, perfTris = 0;
     // the surface under the flat camera's feet, carried between frames so a
     // ray that starts at the feet has feet to start at
-    let footY = 0;
+    let footY = 0, eyeH = 1.5;
+    // CAPTURE: the loop can be paused and stepped by a fixed amount of game
+    // time, so a recording is smooth at 24 fps even on a machine that renders
+    // two frames a second. A browser's own fake clock was tried first and
+    // hangs its screenshots; stepping the game is the honest seam.
+    let stepDt = 0, stepT = 0;
     function animate() {
-      const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
+      const dt = stepDt || Math.min(0.05, clock.getDelta()), t = stepDt ? (stepT += stepDt) : clock.elapsedTime;
       tideT += dt * TIDE_RATES[comfort.time][1];
       tide = tideAt(tideT);
       dayT += dt * TIDE_RATES[comfort.time][1];
@@ -4150,7 +4155,7 @@
           const m = tryMove(eye.x, eye.z, nx, nz, footY);
           eye.x = m.x; eye.z = m.z; footY = m.y;
         }
-        eye.y += ((footY + 1.5) - eye.y) * Math.min(1, dt * 8);
+        eye.y += ((footY + eyeH) - eye.y) * Math.min(1, dt * 8);
         camera.position.copy(eye);
         camera.rotation.set(0, 0, 0);
         camera.rotateY(yaw);
@@ -4485,12 +4490,15 @@
           return false;
         },
         // stand somewhere and face something — the flat camera, for the gate
-        stand: (x, z, ry, p = -0.15) => {
+        // `h` is the eye height, for the capture rig's close-ups; players
+        // stand at 1.5 m and nothing else in the game moves it
+        stand: (x, z, ry, p = -0.15, h = 1.5) => {
+          eyeH = h;
           // stand on what a PLAYER would stand on — the deck if there is one
           // over this column, the sand if there is not. Dropped from well
           // above, because this is a placement, not a step.
           footY = standY(x, z, gy(x, z) + 2) ?? gy(x, z);
-          eye.set(x, footY + 1.5, z); yaw = ry; pitch = p;
+          eye.set(x, footY + eyeH, z); yaw = ry; pitch = p;
         },
         book: () => ({ open: bookOpen, page: bookPage, pages: PAGES.length }),
         seated: () => seated,
@@ -4532,6 +4540,12 @@
         // the soundscape: where it comes from, and whether it is really off
         audioStart, gullCry, waterEdge,
         gustNow: gustStart, gustUpdate,
+        capture: (on) => {
+          if (on) { stepT = clock.elapsedTime; renderer.setAnimationLoop(null); }
+          else { stepDt = 0; clock.getDelta(); renderer.setAnimationLoop(animate); }
+          return on;
+        },
+        step: (dt = 1 / 24) => { stepDt = dt; animate(); return +stepT.toFixed(3); },
         postcard, verdict, postcardAct, verdictAct, NEWS, TRIP_V,
         news: () => ({ card: postcard.userData.item, fresh: fresh().map(n => n.key), tried: [...tried],
           verdictUp: verdict.visible, verdictFor: verdict.userData.item ?? null, said: verdictSaid,
