@@ -946,6 +946,41 @@ function check(name, cond) {
     marks.every(([id, label]) => (id in older) ? label !== 'new' : label === 'new'));
   const head = await rp.locator('#floor-head').textContent();
   check(`the heading says how many (${head.split('·')[1]?.trim()})`, head.includes(String(ids.length)));
+  check('and exactly one tag per cabinet, never two',
+    marks.length === new Set(ids).size, `${marks.length} tags over ${new Set(ids).size} cabinets`);
+
+  // ── and it stays one tag when the floor is REBUILT mid-fetch ──
+  // Every `updated` tag used to be on screen twice, and neither the check above
+  // nor a local server could see it. showVersions() ran on every render() and
+  // started its own fetch; three ordinary things rebuild the floor (the WebXR
+  // probe resolving, the konami unlock, a language switch), so two fetches were
+  // in flight across a rack that had been thrown away and rebuilt, and BOTH
+  // landed on the new cabinets. 46 tags over 26 cabinets, while the heading —
+  // which counts one run — said 23.
+  //
+  // Reproducing it needs the fetch to be SLOW, which a loopback server is not,
+  // so the route holds versions.json for 400ms: that is the window a real
+  // network gives and the local one does not. It then switches language inside
+  // that window, which is the most ordinary way a person opens it.
+  await rp.route('**/versions.json*', async r => {
+    await new Promise(x => setTimeout(x, 400));
+    await r.continue();
+  });
+  await rp.goto(`${base}/index.html`, { waitUntil: 'commit' });
+  await rp.waitForSelector('.lang-btn[data-lang="fi"]', { timeout: 5000 });
+  await rp.locator('.lang-btn[data-lang="fi"]').click();
+  await rp.waitForFunction(() => document.querySelectorAll('.fresh').length > 0,
+    null, { timeout: 5000 });
+  await rp.waitForTimeout(700);
+  const twice = await rp.$$eval('.cab', ns => ns
+    .map(c => [c.id, c.querySelectorAll('.fresh').length])
+    .filter(([, n]) => n > 1));
+  check(`a rebuild during the fetch does not double the tag${twice.length ? ` — ${twice.slice(0, 4).map(t => t.join(':'))}` : ''}`,
+    twice.length === 0);
+  const reHead = await rp.locator('#floor-head').textContent();
+  const reTags = await rp.locator('.fresh').count();
+  check(`and the heading's count still matches the tags (${reTags})`,
+    reHead.includes(String(reTags)));
   await back.close();
 
   // ── a controller ──
