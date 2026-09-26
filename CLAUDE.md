@@ -4,6 +4,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projects
 
+**Owner direction, 2026-09-26 — the workshop as one evolving game.** In their words:
+
+> *"We are the game that feels evolving.*
+> *Toko Move turns into Piritori stories or a kids game depending on the user.*
+> *Toko Drop explores all of gaming through the twin sticks and is more like a
+> curated history lesson that takes us through multiple games.*
+> *The proportions of Toko are right but we should explore many colors and
+> alternative ways of video behavior."*
+
+Read with the goal set the same day — *"export cool MP4s that work as marketing
+for Toko and the games"*. Where each part lives: Toko Move → `toko-move/ROADMAP.md`;
+Toko Drop → `TOKO_DROP_ROADMAP.md`; Toko's colours and video behaviour →
+`toko-live/LEVELS.md` (and `toko/BRAND.md` §2c, which already allows every
+carrier colour and "other colours for a context or a mood"). Each is a direction,
+not a spec: the lanes turn it into a design their owner signs off before building.
+
+
 ### The arcade — `index.html` + `hub/`
 The landing page: **every playable thing in the repo on one page**, each cabinet with a
 **Play** link and a **Feedback** button. Vanilla ES modules, no build step, no image

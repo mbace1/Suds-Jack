@@ -19,6 +19,16 @@ Nothing on this ladder gives Toko a body without the owner drawing it.
 | 5 | **He cuts your clip** | ask for a clip of their own run and download a vertical MP4 | a 15–20 s 1080×1920 file of *their* run, clay bumper, end card, −16 LUFS |
 | 6 | **Toko's channel** | watch the workshop's own bulletins — what shipped, what is next | a scheduled render of `versions.json` + `CHANGED` into an MP4, the same kit |
 
+## Owner direction, 2026-09-26: colours and behaviour, not proportions
+
+*"The proportions of Toko are right but we should explore many colors and
+alternative ways of video behavior."* So level 3 is wider than clay: it is a
+**variation sheet** — the same traced face, the same proportions, across the
+colours the canon already allows (the nine `STICKER` flats and moods, one face
+on one ground) and across ways of moving on video (the blink and the breathing
+smile he has; turn, nod, pop; glitch as an event; on-twos boil; clay). Rendered
+side by side as loops for the owner to pick from, never judged from stills.
+
 ## What every level after 2 stands on: the film kit
 
 Radio Free Helsinki (v63–v70) already built the pipeline: a deterministic film

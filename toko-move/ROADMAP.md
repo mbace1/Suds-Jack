@@ -1,5 +1,19 @@
 # Toko Move — roadmap after v2.36
 
+## Owner direction, 2026-09-26 — one city, two faces, chosen by who plays
+
+*"Toko Move turns into Piritori stories or a kids game depending on the user."*
+(Part of a wider line: *"We are the game that feels evolving"* — see CLAUDE.md.)
+
+Toko Move and Piritori already stand on the same Helsinki city core (flow-core,
+the recovered map packs). The direction is that the same board becomes either
+Piritori's Kallio stories or a kids' game, depending on who is playing — not a
+menu of modes, an adaptation. Open questions for the owner before any build:
+what "depending on the user" reads (an explicit choice, the player's history in
+`hub/playlog.js`, Toko asking), and what the kids' version keeps of the delivery
+loop. Nothing here is built yet.
+
+
 Owner direction, 2026-09-17, in their words: *"Disruptions is good, feels like
 roguelike random events type deal. Maybe we need more random events, help the
 granny across the street (10 sec delay), etc. Hand offs is good. Regulars is
