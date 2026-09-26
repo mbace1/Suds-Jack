@@ -21,6 +21,7 @@ import { Walls } from './walls.js?v=83';
 import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=83';
 import { TruckTrack } from './truck.js?v=83';
 import { GazeLock } from './gaze.js?v=83';
+import { PhysGibs } from './gibs.js?v=83';
 import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=83';
 import { Platforms } from './platforms.js?v=83';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=83';
@@ -60,7 +61,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 90, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'cubes' }, // v38: the cube look is the house look
+  { speed: 1, fov: 90, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, gibs: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'cubes' }, // v38: the cube look is the house look
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -782,6 +783,11 @@ const input = new InputManager();
 const player = new Player(camera, input, ARENA_R);
 const daggers = new DaggerPool(scene);
 const debris = new DebrisPool(scene);
+// PROTOTYPE (branch claude/hd-physical-gibs): a kill's biggest chunks go to a
+// real rigid-body solver and stack where they land (js/gibs.js, js/avbd/)
+const physGibs = new PhysGibs(scene, ARENA_R);
+/** physical gibs where there is a floor to heap on: the disc, not the road */
+const gibsOn = () => opts.gibs !== false && M().arena !== 'track';
 // settled gibs retire into the bone-yard: a static instanced mesh with no
 // per-frame physics, so a run's carnage accumulates for one draw call
 const litter = new LitterField(scene, 2500);
@@ -1586,6 +1592,7 @@ function resetRun() {
   clearPending();
   daggers.reset();
   debris.reset();
+  physGibs.reset();
   litter.reset();
   gems.reset();
   orbs.reset();
@@ -1932,6 +1939,7 @@ function showPause() {
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
      ${optRow('', 'edge', [true, false], v => v ? 'EDGE ON' : 'EDGE OFF')}
+     ${optRow('', 'gibs', [true, false], v => v ? 'GIBS STACK' : 'GIBS CLASSIC')}
      ${optRow('', 'music', [true, false], v => v ? 'MUSIC ON' : 'MUSIC OFF')}
      ${optRow('A11Y', 'motion', [true, false], v => v ? 'MOTION FULL' : 'MOTION REDUCED')}
      ${optRow('', 'contrast', [false, true], v => v ? 'CONTRAST HIGH' : 'CONTRAST NORMAL')}
@@ -2764,7 +2772,10 @@ function killEnemy(e, dir) {
   addStyle(STYLE_GAIN[e.type] ?? 3);
   if (M().lethality === 'clock') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
   e.center(_c);
-  debris.burst(e.deathVoxels?.() ?? e.sprite.worldVoxels(), e.sprite.size,
+  let deathVox = e.deathVoxels?.() ?? e.sprite.worldVoxels();
+  physGibs.on = gibsOn();
+  if (physGibs.on) deathVox = physGibs.burst(deathVox, e.sprite.size, _hitDir.copy(dir).multiplyScalar(5));   // the chunks stack; the rest is spray
+  debris.burst(deathVox, e.sprite.size,
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
   audio.gib(e.type !== 'skull');
   // heavy kills stamp a shockwave ring into the floor, warp the frame, and
@@ -3360,6 +3371,7 @@ function step(dt) {
   }
   updateCombat(dt);
   debris.update(dt);
+  physGibs.update(dt);
   // style meter bleeds when you stop scoring — faster at higher ranks so the
   // top tiers stay fleeting and demand a continuous chain
   // provisional v4.1 soften (was 6 + 0.05v): S-rank was bleeding out between
@@ -3560,6 +3572,7 @@ function animate() {
     slowmo = Math.max(0, slowmo - dt * 0.8);
     const eff = dt * (1 - 0.75 * slowmo);
     debris.update(eff);
+    physGibs.update(eff);
     daggers.update(eff);
     updateSparks(eff); // in-flight sparks/shockwaves finish out in slow-mo
     // killer-focus swing (shortest-path yaw so it never spins the long way)
@@ -3655,6 +3668,9 @@ window.__hd = {
     /** The live feel numbers — the gate edits them in place (and puts them back). */
     tuning() { return T; },
     inputObj() { return input; },
+    getGibs() { return physGibs.getState(); },   // prototype: the physical gibs
+    gibsObj() { return physGibs; },
+    killEnemy(e, dx = 0, dz = -1) { if (e?.alive) killEnemy(e, new THREE.Vector3(dx, 0, dz).normalize()); },   // a kill without a dagger, for the gate
     gazeObj() { return gaze; },     // v51: the gaze lock, for the gate
     /** v51: what is under a point of the view (ndc x, y in −1…1) — every mesh
      *  the ray crosses, nearest first. For "what is that black block". */
