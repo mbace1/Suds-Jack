@@ -28,6 +28,7 @@ const SHELL = [
   './hub/arcade.js?v=5',
   './hub/art.js?v=18',
   './hub/feedback.js?v=13',
+  './hub/games.js?v=110',
   './hub/games.js?v=46',
   './hub/hub-entry.js?v=5',
   './hub/hub.css?v=23',
