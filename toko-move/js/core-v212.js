@@ -23,7 +23,7 @@ import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.60';
+const BUILD_VERSION='2.61';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -802,7 +802,7 @@ function mapAction(px,py){const tm=window.__tm;if(!tm?.liveNetwork||!flow||flow.
     if(q&&Math.hypot(q.x-x,q.y-y)<=reach){const res=tm.getOffNow?.();if(res&&!res.error){_mapActAt=performance.now();return true;}}}
   let best=null,bd=Infinity;const tick=flow.clock.tick;
   for(const k of tm.catchables?.()||[]){const p=tm.liveNetwork.position(k.vehicle,tick);if(!p)continue;const q=fitLatLon(p.lat,p.lon),dd=Math.hypot(q.x-x,q.y-y);if(dd<bd){bd=dd;best=k;}}
-  if(best&&bd<=reach){const res=tm.catchVehicle?.(best.vehicle.id);if(res&&!res.error){_mapActAt=performance.now();return true;}}
+  if(best&&bd<=reach){const res=tm.catchVehicle?.(best.vehicle.id);if(res&&!res.error){tm.testcard?.done?.('mapboard');_mapActAt=performance.now();return true;}}
   return false;}
 for(const ev of ['pointerup','touchend'])$('map').addEventListener(ev,e=>{
   if(transitView||dragged)return;const t=e.changedTouches?.[0]||e;if(mapAction(t.clientX,t.clientY)){$('pop').hidden=true;e.preventDefault();return;}const node=nodeAtPoint(t.clientX,t.clientY);
