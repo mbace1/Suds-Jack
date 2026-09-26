@@ -4,7 +4,7 @@
 // every time you come back to it.
 
 import * as THREE from 'three';
-import { makeRng } from '../rng.js?v=1';
+import { makeRng } from '../rng.js?v=2';
 
 export function canvas(w, h) {
   const c = document.createElement('canvas');

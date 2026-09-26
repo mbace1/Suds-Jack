@@ -1,5 +1,6 @@
-// PACHI PIT — the browser gate.
-//   NODE_PATH=$(npm root -g) node pachipit/test/smoke.cjs
+// KUOPPA — the browser gate for the pit run (pit.html). The Pajatso machine
+// itself has its own: test/classic.cjs.
+//   NODE_PATH=$(npm root -g) node pajatso/test/smoke.cjs
 //
 // Driven off `window.__pp` and off ENGINE STATE, never off the wall clock: a
 // sandbox with no GPU renders this at a few frames a second, so time is moved
@@ -47,7 +48,7 @@ const framing = page => page.evaluate(() => {
 
 (async () => {
   await new Promise(r => server.listen(0, r));
-  const base = `http://localhost:${server.address().port}/pachipit/`;
+  const base = `http://localhost:${server.address().port}/pajatso/pit.html`;
   const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 
   // ── the title and the first look ────────────────────────────────────────

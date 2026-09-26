@@ -1,6 +1,9 @@
-// PACHI PIT — the core gate. Bare node: no browser, no GPU, no audio.
+// PAJATSO — the core gate. Bare node: no browser, no GPU, no audio.
 //
-//   node pachipit/test/core.mjs
+//   node pajatso/test/core.mjs
+//
+// Two modes share one physics: the classic Pajatso (js/classic/) and the pit
+// run, KUOPPA (js/engine.js and the pachinko board).
 //
 // Everything that is rules or physics is checked here against exact numbers
 // and seeded runs; what the machine LOOKS like is test/smoke.cjs's job, and
@@ -9,13 +12,15 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makeRng, seedOf } from '../js/rng.js?v=1';
-import { Board, buildLayout, BOARD } from '../js/board.js?v=1';
-import { Pusher, PUSHER } from '../js/pusher.js?v=1';
-import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=1';
-import { Engine, computeRules, VERSION } from '../js/engine.js?v=1';
-import * as D from '../js/data.js?v=1';
-import { playRun, playShift } from './bot.mjs?v=1';
+import { makeRng, seedOf } from '../js/rng.js?v=2';
+import { Board, buildLayout, BOARD } from '../js/board.js?v=2';
+import { Pusher, PUSHER } from '../js/pusher.js?v=2';
+import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=2';
+import { Engine, computeRules, VERSION } from '../js/engine.js?v=2';
+import * as D from '../js/data.js?v=2';
+import { playRun, playShift } from './bot.mjs?v=2';
+import { buildPajatso, FACE, PAYS, JACKPOT, slotAt } from '../js/classic/layout.js?v=2';
+import { Pajatso, START_COINS } from '../js/classic/game.js?v=2';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const GAME = path.resolve(HERE, '..');
@@ -337,11 +342,105 @@ section('a whole run');
   check('and pushed coins, spun reels and bought charms along the way', e.stats.value > 20 && e.stats.spins > 2 && e.stats.charmsBought > 0);
 }
 
+// ── the Pajatso face ─────────────────────────────────────────────────────
+section('pajatso: the face');
+{
+  const L = buildPajatso();
+  const d = 2 * FACE.COIN_R;
+  // THE WEDGE RULE: every pair of nails is either a pass for the coin or not
+  // a gap at all. A pair closer than a pass is a well a coin sits in.
+  let tight = [];
+  for (let i = 0; i < L.pins.length; i++) for (let j = i + 1; j < L.pins.length; j++) {
+    const a = L.pins[i], b = L.pins[j], gap = Math.hypot(a.x - b.x, a.y - b.y) - a.r - b.r;
+    if (gap < FACE.CLEAR - 0.05) tight.push(`${a.tag}@${a.x.toFixed(1)},${a.y.toFixed(1)}–${b.tag}@${b.x.toFixed(1)},${b.y.toFixed(1)} (${gap.toFixed(2)})`);
+  }
+  check(`no two nails closer than a pass (${FACE.CLEAR} bu of air)${tight.length ? ` — ${tight.slice(0, 3).join('; ')}` : ''}`, tight.length === 0);
+  check('every cup is wider than the coin and narrower than a coin and a half', L.pockets.every(p => p.w > d && p.w < d * 1.5));
+  check('every cup pays a painted number', L.pockets.every(p => Number.isInteger(PAYS[p.pay]) && PAYS[p.pay] >= 2));
+  check('the jackpot is the biggest number on the face', L.pockets.every(p => PAYS[p.pay] <= PAYS[JACKPOT]));
+  check('the face is symmetric: every cup has a mirror twin or stands in the middle',
+    L.pockets.every(p => Math.abs(p.x) < 0.01 || L.pockets.some(q => q.pay === p.pay && Math.abs(q.x + p.x) < 0.01 && Math.abs(q.y - p.y) < 0.01)));
+  check('the bottom is covered edge to edge, and exactly one slot gives the coin back',
+    L.slots[0].x0 <= -BOARD.R && L.slots[L.slots.length - 1].x1 >= BOARD.R && L.slots.filter(s => s.pay === 'back').length === 1
+    && slotAt(L, 0).pay === 'back' && !slotAt(L, -20).pay);
+}
+
+section('pajatso: the machine');
+{
+  // the lever across its whole travel, a coin at a time
+  const g = new Pajatso({ seed: 2024, coins: 1e9 });
+  const out = { win: 0, lost: 0, back: 0, foul: 0, returned: 0 };
+  const byPower = [];
+  let slowest = 0;
+  for (let i = 0; i <= 10; i++) {
+    const p = i / 10, seen = { L: 0, C: 0, R: 0 };
+    for (let n = 0; n < 60; n++) {
+      g.pull(p);
+      let t = 0;
+      while (g.phase === 'flight' && t < 60) { g.update(1 / 30); t += 1 / 30; }
+      slowest = Math.max(slowest, t);
+      for (const ev of g.drain()) {
+        if (ev.t in out) out[ev.t]++;
+        if (ev.t === 'win' || ev.t === 'lost' || ev.t === 'back') seen[(ev.x ?? 0) < -9 ? 'L' : (ev.x ?? 0) > 9 ? 'R' : 'C']++;
+      }
+    }
+    byPower.push(seen);
+  }
+  const N = 11 * 60;
+  check(`every coin comes to rest: none on the face after the slowest shot (${slowest.toFixed(1)}s)`, slowest < 20 && g.phase === 'idle');
+  check(`no coin has to be fished out (${out.returned} of ${N})`, out.returned <= N * 0.005);
+  check(`fouls are rare across the lever (${out.foul} of ${N})`, out.foul <= N * 0.03);
+  check(`most coins are lost, as on a real one (${Math.round(100 * out.lost / N)}%)`, out.lost / N > 0.45 && out.lost / N < 0.8);
+  check(`every cup group is hit somewhere on the lever (${Object.keys(g.stats.hits).length} cups)`,
+    Object.keys(PAYS).filter(k => k !== 'back').every(k => Object.keys(g.stats.hits).some(id => buildPajatso().byId[id]?.pay === k)));
+  // the lever means something: a short pull and a long one end on different sides
+  const sideOf = s => (s.R - s.L) / Math.max(1, s.L + s.R + s.C);
+  check(`the lever steers: a long pull lands further right than a short one (${sideOf(byPower[1]).toFixed(2)} → ${sideOf(byPower[10]).toFixed(2)})`,
+    sideOf(byPower[10]) - sideOf(byPower[1]) > 0.3);
+  // what it pays back per coin, over the whole lever: a machine that keeps a
+  // little, never one that prints money
+  const rtp = (g.stats.won + g.stats.backs) / (g.stats.shots - out.foul - out.returned);
+  check(`it pays back a bit less than it takes (${rtp.toFixed(2)} a coin)`, rtp > 0.75 && rtp < 1.05);
+}
+
+section('pajatso: the rules');
+{
+  const g = new Pajatso({ seed: 5, coins: 3 });
+  check(`a session starts with the handful (${START_COINS})`, new Pajatso().coins === START_COINS);
+  check('a pull puts a coin in and costs one', g.pull(0.4) && g.coins === 2 && g.inFlight);
+  check('one coin at a time: no second pull while it is on the face', !g.pull(0.4) && g.coins === 2);
+  g.finish();
+  check('the coin comes to rest and the lever is free again', g.phase === 'idle' || g.phase === 'broke');
+  // a coin paid into a cup is paid exactly what is painted
+  const h = new Pajatso({ seed: 9, coins: 5 });
+  h.pull(0.5); h.drain();
+  h.onBoard({ t: 'pocket', pocket: 'clown' });
+  const ev = h.drain().find(e => e.t === 'win');
+  check(`a cup pays its painted number (${ev?.pay} for the clown)`, ev?.pay === PAYS.clown && h.coins === 4 + PAYS.clown);
+  // a foul costs nothing
+  const f = new Pajatso({ seed: 9, coins: 5 });
+  f.pull(0.5); f.onBoard({ t: 'foul' });
+  check('a coin that does not get round the top comes back', f.coins === 5);
+  // broke, and a refill
+  const b = new Pajatso({ seed: 11, coins: 1 });
+  b.pull(0.95);
+  b.finish();
+  check('the last coin spent and lost leaves you broke, or paid you something', b.coins === 0 ? b.phase === 'broke' : b.phase === 'idle');
+  b.coins = 0; b.phase = 'broke';
+  check('broke means the lever does nothing', !b.pull(0.5));
+  check('twenty more from the counter starts a fresh session', b.refill() && b.coins === START_COINS && b.phase === 'idle' && b.stats.shots === 0);
+  // the same seed plays the same machine
+  const run = seed => { const x = new Pajatso({ seed, coins: 30 }); for (let i = 0; i < 12; i++) { x.pull(i / 11); x.finish(); } return x.coins; };
+  check('one seed, one session', run(77) === run(77));
+}
+
 // ── the files ────────────────────────────────────────────────────────────
 section('files');
 {
   const html = readFileSync(path.join(GAME, 'index.html'), 'utf8');
-  const token = html.match(/js\/main\.js\?v=(\d+)/)?.[1];
+  const token = html.match(/js\/classic\/main\.js\?v=(\d+)/)?.[1];
+  const pit = readFileSync(path.join(GAME, 'pit.html'), 'utf8').match(/js\/main\.js\?v=(\d+)/)?.[1];
+  check(`both pages ask for the same token (Pajatso ?v=${token}, Kuoppa ?v=${pit})`, !!token && token === pit);
   const files = [];
   const walk = d => { for (const f of readdirSync(d)) { const p = path.join(d, f); if (statSync(p).isDirectory()) walk(p); else if (/\.m?js$/.test(f)) files.push(p); } };
   walk(path.join(GAME, 'js')); walk(path.join(GAME, 'test'));
@@ -359,7 +458,8 @@ section('files');
   // file is a second instance of it, with its own poller and its own edges
   const shell = readFileSync(path.join(GAME, '..', 'hub', 'shell.js'), 'utf8').match(/'\.\/pad\.js(\?v=\d+)?'/)?.[1] ?? '';
   const ours = readFileSync(path.join(GAME, 'js', 'input.js'), 'utf8').match(/'\.\.\/\.\.\/hub\/pad\.js(\?v=\d+)?'/)?.[1] ?? '';
-  check(`hub/pad.js is asked for by the same URL the shell uses (${ours || 'bare'} / ${shell || 'bare'})`, ours === shell);
+  const classic = readFileSync(path.join(GAME, 'js', 'classic', 'main.js'), 'utf8').match(/'\.\.\/\.\.\/\.\.\/hub\/pad\.js(\?v=\d+)?'/)?.[1] ?? '';
+  check(`hub/pad.js is asked for by the same URL the shell uses (${ours || 'bare'} · ${classic || 'bare'} / ${shell || 'bare'})`, ours === shell && classic === shell);
   const log = readFileSync(path.join(GAME, 'VERSIONS.md'), 'utf8').match(/^##\s*v(\d+)/m)?.[1];
   check(`the engine's VERSION is the log's top entry (${VERSION} / v${log})`, String(VERSION) === log);
   check('no image or audio file ships in the game', !readdirSync(GAME, { recursive: true }).some(f => /\.(png|jpe?g|gif|webp|mp3|ogg|wav)$/i.test(String(f))));

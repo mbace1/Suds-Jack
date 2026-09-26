@@ -301,10 +301,43 @@ the ordered distance to Tony Hawk's Pro Skater, with three things deliberately
 out of scope and the two pieces of art-side drift the Blender room still
 carries (its bins stand inside the east quarter pipe; it has no decks).
 
-### PACHI PIT (`pachipit/`) — CloverPit × Raccoin × Pachinko, ACTIVE
+### PAJATSO (`pajatso/`) — the Finnish coin wall game, ACTIVE (was PACHI PIT)
+**Owner, 2026-09-26, after playing v1:** *"make it Pajatso, change name. Start
+with regular Pajatso, then add a roguelike mode and tons of Pachinko like
+features."* `pajatso/ROADMAP.md` keeps that order. **v2 is the regular one**:
+`index.html` + `js/classic/` — a kiosk machine on a pine wall, twenty coins, one
+coin at a time, a lever pulled DOWN and let go, brass nails, cups that pay the
+number painted under them, two ★ POTTI chimneys, and the clown (the Bajazzo the
+machine is named after) whose mouth is a cup. **The face runs on the pachinko
+board's physics unchanged** (`js/board.js`'s `Board` steps any layout with that
+shape) with a bigger coin and its own layout, `js/classic/layout.js`; `game.js`
+is the pure rules, `view.js` the machine and the camera, `art.js` the painted
+face drawn from the same layout (move a cup and its paint moves). Tuned by
+measurement: `node pajatso/test/face.mjs` sweeps the lever and prints where the
+coins go and what comes back per coin (0.95 over the whole lever). Lessons in
+`VERSIONS.md` v2: **kickers on both walls** (the nails stop a pass short of a
+wall, which leaves a free lane down it), **the wedge rule as ONE pass** (no field
+nail nearer than a pass to any nail or wall end — the gate checks every pair),
+**the spring range is what makes the lever mean anything** (left / over the top
+/ round the right side), **paint what the physics says** (the clown was meant as
+the jackpot and was hit more often than the side chimneys, so the chimneys are
+the POTTI), and a **shared-board bug**: a cup's sensor reached 1.4 bu below its
+floor, paying coins that slid UNDER it. **Closer**, the owner's first note: the
+camera is fitted to the phone's WIDTH and leans in on the coin in flight
+(`test/classic.cjs` gates ≥24 px of coin on a 390 px phone). **Told**: five
+first-time lines, once per browser. Controls: drag the knob and let go, a TAP
+pulls the last pull again, SPACE held, pad A or RT. Gates: `node
+pajatso/test/core.mjs` (102, both modes), `NODE_PATH=$(npm root -g) node
+pajatso/test/classic.cjs` (28, the machine, desk and phone) and `.../smoke.cjs`
+(44, KUOPPA). Hub: id `pajatso`, marquee `pajatso` (the chrome rail round the red
+arch, a coin riding it, the knob cropped by the edge), accent `#ffd23f`, best
+score `pajatso.best` (most coins held at once). **The roguelike is KUOPPA**
+(`pit.html`), v1's pit run, one link from the title until it is rebuilt on the
+Pajatso face; what follows is its record, still true of that mode.
+
 **Owner's brief, 2026-09-26:** *"a game that's mixed Clover Pit, Raccoin and
 Pachinko.. roguelike elements and 3D room like the Pit."* Read
-`pachipit/GDD.md` first; `pachipit/VERSIONS.md` is the log and its v1 entry
+`pajatso/GDD.md` first; `pajatso/VERSIONS.md` is the log and its v1 entry
 records every trap the physics paid for. The three sources each do ONE job:
 CloverPit is the **run** (a first-person cell, a debt due at the ATM every
 three shifts, a charm vendor, a phone, a trapdoor, eight padlocks on the door),
@@ -318,7 +351,7 @@ copper → silver → gold as they pass a pocket) and whether the reels spin.
 three.js, no clock, seeded, three rng streams so a shop never depends on a
 bounce — and `window.__pp` is the seam (`debug.advance(s)` moves time, because
 SwiftShader renders a few frames a second). **Tune by measuring**:
-`node pachipit/test/measure.mjs board|svg|pusher|runs` is the instrument, never a
+`node pajatso/test/measure.mjs board|svg|pusher|runs` is the instrument, never a
 gate. The board's rules, all found the hard way: every clearance is a PASS
 (`BOARD.CLEAR`) or a FENCE, never between (a wedge); a nail fence traps a slow
 coin unless its slope beats `atan((s/2)/h)` (27° at 1.25 bu, so every way is
@@ -351,12 +384,8 @@ same page, and a second URL for one file is a second instance with its own polle
 **The site's shell is newer than the branch's** — under a thumb it seats a Toko
 button beside HOME — so the top bar MEASURES the arcade's corner (`corner()` in
 `main.js` writes `--corner`) instead of reserving HOME's width; the fixed 104px
-put Toko on the deadline, and only the deployed tree showed it. Gates: `node
-pachipit/test/core.mjs` (78, bare node, a bot plays a whole run) and
-`NODE_PATH=$(npm root -g) node pachipit/test/smoke.cjs` (44, landscape and a
-phone, a stand-in Toko button included). Hub: id `pachipit`, marquee `pit`, accent
-`#ffd23f`, best score `pachiPit.best` (coins pushed in a run). **Deployed to
-`gh-pages` 2026-09-26 (v1)** by hand, the Slay Kallio way: the game minus
+put Toko on the deadline, and only the deployed tree showed it. **v1 was deployed to
+`gh-pages` 2026-09-26 as `pachipit/`** by hand, the Slay Kallio way: the game minus
 `test/`, its rows SPLICED into the site's `games.js`/`art.js`/`topics.js`, one
 `versions.json` row, then the token ripple (those three bumped, climbing to
 `hub.js`, `hub-entry.js`, `shell.js` and every game's shell tag, and `sw.js`'s
@@ -2787,11 +2816,14 @@ slaykallio/     # Slay Kallio — the deckbuilder. Read GDD.md first
   test/
     core.mjs    # bare node: exact numbers, English-only, and a bot over 160 runs
     smoke.cjs   # a browser: puppets, the topple, the staging rules, the plate, both formats
-pachipit/       # PACHI PIT — CloverPit × Raccoin × Pachinko. Read GDD.md first
-  GDD.md        # the design: three sources, three jobs; one currency; the run
+pajatso/        # PAJATSO — the coin wall game (index.html) + KUOPPA, the pit run (pit.html)
+  ROADMAP.md    # the owner's order: regular Pajatso → roguelike on its face → pachinko parts
+  GDD.md        # KUOPPA's design: three sources, three jobs; one currency; the run
   VERSIONS.md   # what shipped and every trap the physics paid for
   vendor/       # three.js r167, local — not the CDN
   js/
+    classic/    # THE MACHINE: layout.js (the face), game.js (rules, pure), view.js (the
+                #   machine + the close camera), art.js (the paint, from the layout), main.js
     rng.js      # mulberry32, the whole state one integer
     board.js    # THE SHOT: pachinko physics — nails, rails, valve, pockets, windmills (pure)
     pusher.js   # THE PAYOUT: quasi-static coin pusher — shelf, bed, stacking, lip, gutters (pure)
@@ -2802,8 +2834,10 @@ pachipit/       # PACHI PIT — CloverPit × Raccoin × Pachinko. Read GDD.md fi
     view/       # render.js (the lens each station solves), room.js, machine.js, textures.js
   test/
     core.mjs    # bare node: exact physics, conservation, reels, economy, a whole bot run
-    smoke.cjs   # a browser: stations, the fitted lens, a shift, the deadline, a phone
-    measure.mjs # the instrument (board / svg / pusher / runs) — never a gate
+    classic.cjs # a browser: the machine — the lever by key and by finger, the close camera
+    smoke.cjs   # a browser: KUOPPA — stations, the fitted lens, a shift, the deadline, a phone
+    face.mjs    # the Pajatso instrument: the lever swept, where coins go, what comes back
+    measure.mjs # KUOPPA's instrument (board / svg / pusher / runs) — never a gate
     bot.mjs     # saver / greedy / planner policies through the public verbs
 sudz/           # Suds Jack — active Horizon Mesh canvas score attack
   game.js       #   lanes, terrain, director, collisions, score and render

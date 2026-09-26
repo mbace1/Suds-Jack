@@ -29,11 +29,11 @@ export const BOARD = {
 const EPS = 1e-9;
 const deg = d => d * Math.PI / 180;
 
-function seg(ax, ay, bx, by, o = {}) {
+export function seg(ax, ay, bx, by, o = {}) {
   return { ax, ay, bx, by, e: o.e ?? 0.35, mu: o.mu ?? 0.08, kind: o.kind ?? 'wall',
     pocket: o.pocket ?? null, when: o.when ?? null };
 }
-function arc(cx, cy, r, a0, a1, n, o) {
+export function arc(cx, cy, r, a0, a1, n, o) {
   const out = [];
   for (let i = 0; i < n; i++) {
     const t0 = a0 + (a1 - a0) * i / n, t1 = a0 + (a1 - a0) * (i + 1) / n;
@@ -230,7 +230,7 @@ const CELL = 4;
 // largest coin radius, touches — so a coin only ever asks the ONE cell its
 // centre is in.
 const PAD = 1.8;
-function buildGrid(L) {
+export function buildGrid(L) {
   const cols = Math.ceil((BOARD.W + 8) / CELL), rows = Math.ceil((BOARD.H + 8) / CELL);
   const cells = Array.from({ length: cols * rows }, () => ({ pins: [], segs: [] }));
   const cx = x => Math.floor((x + 34) / CELL), cy = y => Math.floor((y + 4) / CELL);
@@ -284,10 +284,11 @@ export class Board {
   launch(power, props = {}) {
     const { V_MIN, V_MAX, R, LANE } = BOARD;
     const p = Math.max(0, Math.min(1, power));
-    const v = V_MIN + (V_MAX - V_MIN) * p + this.rng.wobble(1.5);
+    // a machine with a different spring passes its own range (the Pajatso's)
+    const v = (props.vMin ?? V_MIN) + ((props.vMax ?? V_MAX) - (props.vMin ?? V_MIN)) * p + this.rng.wobble(props.wobble ?? 1.5);
     const scale = props.scale ?? 1;
     const coin = {
-      id: _uid++, x: -R + LANE / 2, y: 9.6, vx: 0, vy: v,
+      id: _uid++, x: -R + (props.lane ?? LANE) / 2, y: props.y ?? 9.6, vx: 0, vy: v,
       r: BOARD.COIN_R * scale, m: scale * scale,
       spin: this.rng.next() * Math.PI * 2, spinV: 0,
       value: props.value ?? 1, kind: props.kind ?? 'copper', fever: !!props.fever,
@@ -437,7 +438,10 @@ export class Board {
       if (p.kind === 'tulip') hw = p.narrow / 2 + (p.open ? 0.15 : 0);
       else if (!p.open) continue;
       else hw = p.w / 2;
-      if (Math.abs(c.x - p.x) < hw && c.y < p.y - 0.25 && c.y > p.y - p.depth - 1.4) {
+      // inside means ABOVE the floor: the old bound reached 1.4 below it, and a
+      // coin sliding UNDER a cup was paid as a coin in it (the Pajatso's POTTI
+      // traces caught one ending under the cup it was credited to)
+      if (Math.abs(c.x - p.x) < hw && c.y < p.y - 0.25 && c.y > p.y - p.depth + 0.2) {
         this.coins.splice(i, 1);
         p.hits++; p.flash = 0.7;
         c.touched.push(p.id);

@@ -10,8 +10,8 @@
 // count is the one to watch when moving a nail — a coin that needs it is a
 // coin that was wedged, and a wedge is a layout bug, not a feature.
 
-import { Board, buildLayout, BOARD } from '../js/board.js?v=1';
-import { makeRng } from '../js/rng.js?v=1';
+import { Board, buildLayout, BOARD } from '../js/board.js?v=2';
+import { makeRng } from '../js/rng.js?v=2';
 import { writeFileSync } from 'node:fs';
 
 const [mode = 'board', ...rest] = process.argv.slice(2);
@@ -118,7 +118,7 @@ if (mode === 'svg') {
 // edge. The ratio out-front / in is the machine's base return: under 1 is the
 // house edge, and the charms exist to push it past 1.
 if (mode === 'pusher') {
-  const { Pusher, PUSHER } = await import('../js/pusher.js?v=1');
+  const { Pusher, PUSHER } = await import('../js/pusher.js?v=2');
   const pre = Number(args[0] ?? 260), drops = Number(args[1] ?? 400), gap = Number(flags.gap ?? 0.6);
   const rng = makeRng(42);
   const p = new Pusher(rng, { guards: Number(flags.guards ?? 0), stroke: Number(flags.stroke ?? 0), tilt: Number(flags.tilt ?? 0) });
@@ -148,7 +148,7 @@ if (mode === 'pusher') {
 // saver buys nothing and is the control — the naked machine; a policy only
 // means something against it.
 if (mode === 'runs') {
-  const { playRun } = await import('./bot.mjs?v=1');
+  const { playRun } = await import('./bot.mjs?v=2');
   const n = Number(args[0] ?? 12);
   for (const policy of (flags.policy ?? 'saver,greedy,planner').split(',')) {
     const reached = [], t0 = Date.now();

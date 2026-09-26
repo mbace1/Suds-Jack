@@ -3,14 +3,14 @@
 // the HUD (which knows what to press) and the speakers.
 
 import * as THREE from 'three';
-import { Engine } from './engine.js?v=1';
-import { Eye, QUALITY } from './view/render.js?v=1';
-import { Room } from './view/room.js?v=1';
-import { Machine, edgeZ, M, bx, by } from './view/machine.js?v=1';
-import { Hud } from './hud.js?v=1';
-import { bindInput } from './input.js?v=1';
-import { sfx, initAudio, setMuted, isMuted } from './audio.js?v=1';
-import { CHARMS, DEALS } from './data.js?v=1';
+import { Engine } from './engine.js?v=2';
+import { Eye, QUALITY } from './view/render.js?v=2';
+import { Room } from './view/room.js?v=2';
+import { Machine, edgeZ, M, bx, by } from './view/machine.js?v=2';
+import { Hud } from './hud.js?v=2';
+import { bindInput } from './input.js?v=2';
+import { sfx, initAudio, setMuted, isMuted } from './audio.js?v=2';
+import { CHARMS, DEALS } from './data.js?v=2';
 
 const params = new URLSearchParams(location.search);
 const store = {
