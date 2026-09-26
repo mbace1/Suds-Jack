@@ -10,7 +10,7 @@ s.listen(0,'127.0.0.1',async()=>{const base='http://127.0.0.1:'+s.address().port
  await p.goto(base+'/toko-move/'); await p.waitForTimeout(1000);
  ok('boots with no errors',errs.length===0,errs.slice(0,2).join(' | '));
  ok('delivery handle is exposed',await p.evaluate(()=>!!window.__tm?.challenge));
- ok('real Helsinki graph is active',await p.evaluate(()=>{const ids=new Set([...window.__tm.flow.graph.nodes.keys()]),city=window.__tm.city;return ['pasila','toolontori','hakaniemi','kamppi','rautatientori','sornainen','kalasatama','kauppatori'].every(x=>ids.has(x))&&city?.source?.exactGeometry===true&&city.nodes.every(n=>Number.isFinite(n.lat)&&Number.isFinite(n.lon)&&n.hslStopId);}));
+ ok('real Helsinki graph is active',await p.evaluate(()=>{const ids=new Set([...window.__tm.flow.graph.nodes.keys()]),city=window.__tm.city;return ['pasila','ooppera','hakaniemi','kamppi','rautatientori','sornainen','kalasatama','kauppatori'].every(x=>ids.has(x))&&city?.source?.exactGeometry===true&&city.nodes.every(n=>Number.isFinite(n.lat)&&Number.isFinite(n.lon)&&n.hslStopId);}));
  ok('the shift opens on the dispatch board with no job forced on the player',await p.evaluate(()=>{const ch=window.__tm.challenge;return !ch.active&&ch.activeTrip===null&&(ch.offers?.length||0)>=2;}));
  ok('all source transit layers remain visible',await p.evaluate(()=>window.__tm.transit.layers.length>20&&window.__tm.transit.layers.every(l=>l.visible)));
  await p.click('#play'); await p.waitForTimeout(450);
