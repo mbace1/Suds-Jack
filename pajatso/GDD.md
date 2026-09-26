@@ -1,4 +1,11 @@
-# PACHI PIT — design
+# KUOPPA (was PACHI PIT) — design
+
+> **Since v2 the game is PAJATSO.** This document is the design of the pit run,
+> which lives on as KUOPPA (`pit.html`), the roguelike mode, until it is rebuilt
+> on the Pajatso face — `ROADMAP.md` has the order. The classic machine
+> (`index.html`, `js/classic/`) is described in `VERSIONS.md` v2 and in its
+> own files.
+
 
 **The brief (owner, 2026-09-26):** *"Let's make a game that's mixed Clover Pit,
 Raccoin and Pachinko.. roguelike elements and 3D room like the Pit."*

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pajatso</title>
+  <meta name="theme-color" content="#120b07">
+  <style>
+    :root {
+      --ink: #120b07;
+      --panel: rgba(24, 14, 8, 0.88);
+      --line: rgba(255, 214, 110, 0.3);
+      --cream: #f6ecd2;
+      --dim: #cdb88f;
+      --gold: #ffd23f;
+      --red: #e0202e;
+      --green: #6fe08a;
+      --ui: 'Arial Narrow', 'Roboto Condensed', 'Avenir Next Condensed', system-ui, sans-serif;
+      --black: 'Arial Black', Impact, var(--ui);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { background: var(--ink); overflow: hidden; touch-action: none; color: var(--cream); font-family: var(--ui);
+      -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+    button:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+    #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+    /* the top: coins, always, starting where the arcade's corner buttons end */
+    #top { position: fixed; top: 0; left: 0; right: 0; z-index: 5; display: flex; align-items: flex-start; gap: 14px;
+      padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 0 var(--corner, calc(max(10px, env(safe-area-inset-left)) + 104px));
+      pointer-events: none; text-shadow: 0 2px 0 #000, 0 0 8px #000; }
+    .stat { font-weight: 800; letter-spacing: .06em; text-transform: uppercase; font-size: 12px; color: var(--dim); }
+    .stat b { display: block; font: 900 28px/1 var(--black); color: var(--cream); letter-spacing: .02em; }
+    #coins b { color: var(--gold); font-size: 34px; }
+    #best { margin-left: auto; text-align: right; margin-right: 104px; }
+    #sys { position: fixed; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); z-index: 6; display: flex; gap: 6px; }
+    .sys { width: 44px; height: 44px; border-radius: 8px; background: rgba(0,0,0,.45); border: 1px solid var(--line); font-size: 18px; }
+
+    /* the lever: pull the knob DOWN and let go; a tap pulls the same again */
+    #panel { position: fixed; z-index: 6; display: flex; gap: 12px; align-items: stretch;
+      right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); }
+    #info { display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; text-align: right; font-weight: 800;
+      text-transform: uppercase; letter-spacing: .06em; font-size: 12px; color: var(--dim); text-shadow: 0 2px 0 #000; }
+    #info b { font: 900 22px/1 var(--black); color: var(--cream); }
+    #lever { position: relative; width: 92px; border-radius: 46px; background: linear-gradient(#2a180d, #140a05);
+      border: 2px solid rgba(255, 210, 110, .45); box-shadow: inset 0 6px 18px rgba(0,0,0,.7), 0 6px 18px rgba(0,0,0,.5); touch-action: none; cursor: grab; }
+    #lever .slot { position: absolute; left: 50%; top: 40px; bottom: 40px; width: 10px; margin-left: -5px; border-radius: 5px; background: #050302; box-shadow: inset 0 0 4px #000; }
+    #lever .fill { position: absolute; left: 50%; top: 40px; width: 10px; margin-left: -5px; border-radius: 5px; background: linear-gradient(var(--gold), var(--red)); height: 0; }
+    #lever .ghost { position: absolute; left: 14px; right: 14px; height: 3px; background: rgba(111, 224, 138, .8); border-radius: 2px; top: 40px; }
+    #lever .knob { position: absolute; left: 50%; top: 40px; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%;
+      background: radial-gradient(circle at 36% 32%, #ff8a8a, #d4182c 45%, #7a0610 100%); box-shadow: 0 6px 12px rgba(0,0,0,.6); pointer-events: none; }
+    #lever .lbl { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font: 900 12px var(--black); letter-spacing: .08em; color: var(--dim); }
+    #lever.busy { opacity: .55; }
+    /* upright: the lever and its numbers along the bottom, clear of the Toko
+       badge in the bottom-left corner */
+    body.tall #panel { left: calc(max(10px, env(safe-area-inset-left)) + 58px); height: 158px; }
+    body.tall #tip { top: auto; bottom: calc(max(10px, env(safe-area-inset-bottom)) + 170px); }
+    body.tall #info { flex: 1; text-align: left; }
+    body.tall #lever { height: 100%; }
+    body.wide #panel { top: 130px; flex-direction: column-reverse; width: 112px; }
+    body.wide #lever { flex: 1; width: 100%; }
+    body.wide #info { text-align: center; }
+
+    #tip { position: fixed; z-index: 7; left: 16px; right: 16px; margin: 0 auto; max-width: 460px;
+      background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--gold); border-radius: 8px; padding: 10px 14px;
+      font-size: 14px; line-height: 1.35; color: var(--cream); box-shadow: 0 8px 24px rgba(0,0,0,.5); top: 96px; }
+    body.wide #tip { left: auto; right: 140px; top: auto; bottom: 20px; max-width: 380px; }
+    #tip b { color: var(--gold); }
+    #tip .x { display: block; margin-top: 6px; font-size: 12px; color: var(--dim); letter-spacing: .06em; text-transform: uppercase; }
+    #toast { position: fixed; left: 0; right: 0; top: 30%; z-index: 7; pointer-events: none; text-align: center; padding: 0 16px;
+      font: 900 52px/1 var(--black); color: var(--gold); text-shadow: 0 4px 0 #000, 0 0 20px rgba(0,0,0,.8); opacity: 0; transition: opacity .2s; text-wrap: balance; }
+    #toast small { display: block; font: 700 17px/1.3 var(--ui); color: var(--cream); letter-spacing: .08em; margin: 6px auto 0; max-width: 30em; }
+    #toast.show { opacity: 1; }
+    #toast.star { color: #ffe06a; font-size: 64px; }
+    #pops { position: fixed; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
+    .pop { position: absolute; transform: translate(-50%, -50%); font: 900 30px var(--black); color: var(--gold); text-shadow: 0 3px 0 #000;
+      animation: rise 1.2s ease-out forwards; }
+    @keyframes rise { to { transform: translate(-50%, -160%); opacity: 0; } }
+
+    .overlay { position: fixed; inset: 0; z-index: 12; display: grid; place-items: center; padding: 20px; overflow-y: auto;
+      background: radial-gradient(ellipse at 50% 35%, rgba(60, 20, 10, .78), rgba(0,0,0,.94)); }
+    .sheet { width: min(520px, 100%); text-align: center; }
+    .sheet h1 { font: 900 clamp(52px, 15vw, 96px)/0.9 var(--black); color: #ffe06a; letter-spacing: .02em;
+      text-shadow: 0 6px 0 #7d0c1c, 0 0 30px rgba(255, 180, 60, .3); }
+    .sheet .sub { font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 12px 0 18px; font-size: 13px; }
+    .sheet p { line-height: 1.45; font-size: 16px; margin: 0 0 12px; }
+    .sheet .keys { font-size: 13px; color: var(--dim); line-height: 1.6; margin-top: 16px; }
+    .btns { display: flex; flex-direction: column; gap: 10px; max-width: 320px; margin: 18px auto 0; }
+    .big { min-height: 52px; padding: 0 20px; border-radius: 10px; font: 900 20px var(--black); letter-spacing: .05em;
+      background: linear-gradient(#e0202e, #8f0f1c); color: #fff4e0; box-shadow: 0 4px 0 #4a0610; text-decoration: none; display: grid; place-items: center; }
+    .big.alt { background: linear-gradient(#3a2a1a, #1c120a); color: var(--gold); box-shadow: 0 4px 0 #000; border: 1px solid var(--line); font-size: 16px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; text-align: left; margin: 14px auto; max-width: 360px; font-size: 15px; color: var(--dim); }
+    .stats b { color: var(--cream); float: right; }
+  </style>
+</head>
+<body>
+  <canvas id="gl" aria-hidden="true"></canvas>
+
+  <div id="top">
+    <div class="stat" id="coins">Coins<b>20</b></div>
+    <div class="stat" id="best">Best<b>20</b></div>
+  </div>
+  <div id="sys">
+    <button class="sys" id="mute" aria-label="Sound on or off">♪</button>
+    <button class="sys" id="pause" aria-label="Pause">❚❚</button>
+  </div>
+  <div id="panel">
+    <div id="info">
+      <span>Last pull <b id="last">—</b></span>
+      <span>Pull <b id="pow">0%</b></span>
+    </div>
+    <div id="lever" role="slider" tabindex="0" aria-label="The lever: pull down and let go. A tap pulls the same as last time."
+      aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="slot"></div><div class="fill"></div><div class="ghost" hidden></div><div class="knob"></div>
+      <div class="lbl">PULL ▼</div>
+    </div>
+  </div>
+  <div id="tip" role="status" aria-live="polite" hidden></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="pops"></div>
+
+  <div class="overlay" id="title">
+    <div class="sheet">
+      <h1>PAJATSO</h1>
+      <div class="sub">The Finnish coin wall game · kolikkopeli</div>
+      <p>You have <b>20 coins</b>. Pull the lever down and let go: <b>how far you pull</b> decides where the coin leaves the rail.</p>
+      <p>A coin in a cup pays the number painted under it. The two <b>★ POTTI</b> chimneys pay 10. The bottom keeps your coin — except the green <b>1</b>, which gives it back.</p>
+      <div class="btns">
+        <button class="big" id="start">PLAY</button>
+        <a class="big alt" id="pitLink" href="pit.html">KUOPPA — roguelike mode (early) ›</a>
+      </div>
+      <div class="keys">Drag the lever down and let go · tap it to pull the same again · SPACE hold and release · ENTER same again · pad: hold A / RT</div>
+    </div>
+  </div>
+  <div class="overlay" id="paused" hidden>
+    <div class="sheet">
+      <h1 style="font-size:56px">PAUSED</h1>
+      <div class="btns">
+        <button class="big" id="resume">BACK TO THE MACHINE</button>
+        <button class="big alt" id="restart">START OVER WITH 20</button>
+        <a class="big alt" href="pit.html">KUOPPA — roguelike mode ›</a>
+      </div>
+    </div>
+  </div>
+  <div class="overlay" id="broke" hidden><div class="sheet" id="brokeSheet"></div></div>
+
+  <script type="importmap">
+  { "imports": { "three": "./vendor/three.module.min.js" } }
+  </script>
+  <script type="module" src="../hub/shell.js?v=74"></script>
+  <script type="module" src="js/classic/main.js?v=2"></script>
+  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=9';
+    sign({ corner: 'bottom-left', counter: true, table: { pause: () => window.__pj?.pause(), resume: () => window.__pj?.resume() } });
+  </script>
+</body>
+</html>

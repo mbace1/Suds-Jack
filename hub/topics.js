@@ -129,9 +129,9 @@ const LEADS = {
   // does a game about routes and formations play with two sticks. So it leads
   // with the hands, and then with what a real engine let it look like.
   'piritori-godot': ['controls', 'look'],
-  // v1 asks two things: does the handle work — power and a held FIRE, on a
-  // phone first — and does the debt climb at the pace the charms can match
-  pachipit: ['controls', 'balance'],
+  // v2 asks two things: does the lever feel like a lever under a thumb, and
+  // does the face pay often enough to keep a handful of coins alive
+  pajatso: ['controls', 'balance'],
   hub: ['idea', 'bug'],
 };
 
@@ -205,8 +205,8 @@ const SPECIFIC = {
     'flashprince:balance': ['One screen keeps killing me', 'The sentry draws before I do'],
     'radiofree:idea': ['Report on…', 'Let me keep a bulletin', 'A voice I could switch to'],
     'radiofree:look': ['The decode is hard to follow', 'The voice needs…'],
-    'pachipit:controls': ['Hard to set the power where I want it', 'Holding FIRE on a phone gets tiring'],
-    'pachipit:balance': ['The first debt comes too fast', 'The charms do not change enough'],
+    'pajatso:controls': ['Hard to pull the same twice', 'The lever is in the way of my thumb'],
+    'pajatso:balance': ['My coins run out too fast', 'The POTTI never comes'],
   },
   fi: {
     'powder:balance': ['Portti on liian kaukana aukosta', 'Tehostus ylikuumenee liian nopeasti'],
@@ -235,8 +235,8 @@ const SPECIFIC = {
     'flashprince:balance': ['Yksi ruutu tappaa aina', 'Vartija ehtii ennen minua'],
     'radiofree:idea': ['Kertoisi aiheesta…', 'Antaisi tallentaa uutisen', 'Toinen ääni valittavaksi'],
     'radiofree:look': ['Purkua on vaikea seurata', 'Ääni kaipaa…'],
-    'pachipit:controls': ['Voimaa on vaikea asettaa haluamaansa kohtaan', 'FIREn pitäminen puhelimella väsyttää'],
-    'pachipit:balance': ['Ensimmäinen velka tulee liian nopeasti', 'Amuletit eivät muuta tarpeeksi'],
+    'pajatso:controls': ['Samaa vetoa on vaikea toistaa', 'Vipu on peukalon tiellä'],
+    'pajatso:balance': ['Kolikot loppuvat liian nopeasti', 'POTTI ei tule koskaan'],
   },
   ja: {
     'powder:balance': ['ゲートが裂け目から遠すぎる', 'ブーストがすぐ過熱する'],
@@ -265,8 +265,8 @@ const SPECIFIC = {
     'flashprince:balance': ['同じ画面で必ず死ぬ', '見張りのほうが先に抜く'],
     'radiofree:idea': ['これを報じてほしい…', 'ニュースを残させてほしい', '声を選べるように'],
     'radiofree:look': ['デコードが追いにくい', '声に足りないのは…'],
-    'pachipit:controls': ['パワーを狙った所に合わせにくい', 'スマホでFIRE長押しは疲れる'],
-    'pachipit:balance': ['最初の借金が早すぎる', 'お守りの効果が足りない'],
+    'pajatso:controls': ['同じ強さで二度引けない', 'レバーが親指の邪魔になる'],
+    'pajatso:balance': ['コインがすぐ尽きる', 'POTTIが全然来ない'],
   },
 };
 

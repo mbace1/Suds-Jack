@@ -1,4 +1,62 @@
-# PACHI PIT — versions
+# PAJATSO — versions
+
+The game was PACHI PIT for its first release; v2 renamed it and made the
+Finnish coin wall game the front door. The pit run is still here as KUOPPA
+(`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
+
+## v2 — 2026-09-26 — Pajatso
+
+The owner, after v1: *"Boring, the mobile view should be much closer. Not told
+many features in the game."* Then: *"make it Pajatso, change name. Start with
+regular Pajatso, then add a roguelike mode and tons of Pachinko like
+features."* This is the first half: the regular one.
+
+**What a Pajatso is, here.** A kiosk machine on a pine wall: one coin at a
+time, a lever you pull DOWN and let go, a rail over the top, brass nails,
+and cups with a number painted under each — the Bajazzo (the clown) the
+machine is named after is painted on the arch, and his mouth is a cup. Twenty
+coins, and the session ends when they do. Your best is the most you ever held
+at once. `index.html` is the machine; `js/classic/` is all of it.
+
+**The face runs on the pachinko board's physics**, unchanged — the rail, the
+backflow valve, the knife-edge tip, the stuck-coin rattle — with a bigger coin
+(2.5 bu on a 60 bu face) and its own layout (`js/classic/layout.js`). Tuned by
+measurement with `node pajatso/test/face.mjs`, which sweeps the lever and
+prints where coins end up and what comes back per coin. What it took:
+
+- *Both walls need kickers.* The nails stop a pass short of each wall, which
+  leaves a free lane down it; the strongest shots rode the rail round and fell
+  straight down the right wall, the weakest down the guide, and neither touched
+  a nail. Red ramps on both walls send them back in.
+- *The wedge rule as ONE pass, not a box per feature.* Every coin the first cut
+  had to fish out was sitting on a cup's guard nail with a lattice nail beside
+  it. A field nail may now not stand closer than a pass to any other nail or to
+  the end of any wall, and the gate checks every pair.
+- *The spring decides whether the lever means anything.* At the first range,
+  everything above half power rode the whole arc and did the same thing. The
+  range now sweeps the release point from the left, over the top, and only the
+  last quarter goes round to the right side — three games on one lever.
+- *Paint what the physics says.* The clown's mouth was meant as the jackpot and
+  was hit more often than the two side chimneys together, so the chimneys are
+  the ★ POTTI (10) and the clown pays 5. The numbers were set from measured
+  rates: over the whole lever the machine pays back 0.95 a coin; the best pull
+  (about 20%) sits a little over 1 and the dead zone near 85% well under.
+- *A bug in the shared board:* a cup's sensor reached 1.4 bu BELOW its floor,
+  so a coin sliding underneath a cup was paid as a coin in it. Traced off the
+  POTTI; the pit's pachinko board had the same bound and is fixed with it.
+
+**Closer.** The camera solves for the face: upright it is fitted to the
+phone's WIDTH (the coin count floats over the sign), and while a coin is on
+the face the camera leans in and follows it (about 30 px of coin on a 390 px
+phone, against 13 at rest). **Told.** Five first-time lines, each once per
+browser, never over the lever: pulling, the cups and the bottom, a tap to pull
+the same again, the POTTI chimneys, and the right side.
+
+**Controls.** Drag the red knob down and let go — where your finger is IS the
+pull; a TAP pulls exactly what you pulled last (the green line on the lever).
+SPACE or ↓ held pulls at a steady rate and fires on release; ENTER repeats.
+A pad: hold A, or squeeze RT like the lever itself; Y repeats.
+
 
 ## v1 — 2026-09-26 — the pit, the machine, the debt
 

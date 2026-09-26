@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Pajatso — Kuoppa</title>
+  <meta name="theme-color" content="#050506">
+  <style>
+    :root {
+      --ink: #050506;
+      --panel: rgba(12, 10, 14, 0.9);
+      --line: rgba(255, 214, 110, 0.28);
+      --cream: #f3e6c4;
+      --dim: #b9ab8c;
+      --gold: #ffd23f;
+      --red: #ff4d6d;
+      --green: #5ff08a;
+      --blue: #7ad7ff;
+      --ui: 'Arial Narrow', 'Roboto Condensed', 'Avenir Next Condensed', system-ui, sans-serif;
+      --mono: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { background: var(--ink); overflow: hidden; touch-action: none; color: var(--cream); font-family: var(--ui);
+      -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+    button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+    #gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+    [hidden] { display: none !important; }
+
+    /* ── the top bar: the debt, always ── */
+    #top { position: fixed; left: 0; right: 0; top: 0; z-index: 5; display: flex; gap: 10px; align-items: flex-start;
+      justify-content: space-between; padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 0 var(--corner, calc(max(10px, env(safe-area-inset-left)) + 104px));
+      pointer-events: none; text-shadow: 0 2px 0 #000, 0 0 6px #000; }
+    .stat { font-weight: 800; letter-spacing: .04em; text-transform: uppercase; font-size: 13px; color: var(--dim); }
+    .stat b { display: block; font-size: 24px; color: var(--cream); line-height: 1; letter-spacing: .02em; }
+    #locks { display: flex; gap: 3px; margin-top: 4px; }
+    #locks i { width: 10px; height: 12px; border-radius: 2px 2px 3px 3px; background: #6b5320; box-shadow: inset 0 -3px 0 #3a2c10; }
+    #locks i.open { background: #2a2a2a; box-shadow: none; opacity: .5; }
+    #debt { flex: 1; max-width: 360px; text-align: center; }
+    #debtbar { height: 8px; border: 1px solid var(--gold); margin-top: 4px; background: rgba(0,0,0,.5); }
+    #debtbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #3fe07a, var(--gold)); transition: width .3s; }
+    #debt.due b { color: var(--gold); animation: blink .8s steps(2) infinite; }
+    #wallet { text-align: right; }
+    #wallet b { color: var(--gold); }
+    @keyframes blink { 50% { opacity: .35; } }
+    #sysbtns { position: fixed; right: max(8px, env(safe-area-inset-right)); top: calc(max(8px, env(safe-area-inset-top)) + 54px); z-index: 6; display: flex; gap: 6px; }
+    .sys { width: 44px; height: 44px; border-radius: 8px; background: rgba(0,0,0,.45); border: 1px solid var(--line); font-size: 18px; }
+
+    /* ── the charm rack ── */
+    #rack { position: fixed; left: max(10px, env(safe-area-inset-left)); top: calc(max(8px, env(safe-area-inset-top)) + 58px); z-index: 5;
+      display: flex; flex-direction: column; gap: 4px; pointer-events: auto; max-width: 46vw; }
+    .chip { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,.55); border: 1px solid var(--line); border-left: 4px solid var(--c, #fff);
+      padding: 2px 8px 2px 6px; font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; min-height: 26px; text-align: left; }
+    .chip .g { color: var(--c); font-size: 15px; width: 14px; text-align: center; }
+    .chip.empty { opacity: .35; border-left-color: #555; }
+
+    /* ── messages ── */
+    /* the width of the screen, and it wraps: a centred nowrap line cut a phone's
+       first instruction off at both edges */
+    #toast { position: fixed; left: 0; right: 0; top: 22%; transform: translateY(-50%); z-index: 7; pointer-events: none; text-align: center;
+      padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); text-wrap: balance;
+      font: 900 44px/1 'Arial Black', Impact, var(--ui); letter-spacing: .03em; color: var(--gold); text-shadow: 0 4px 0 #000, 0 0 18px rgba(0,0,0,.8);
+      opacity: 0; transition: opacity .2s; }
+    #toast small { display: block; max-width: 34em; margin: 6px auto 0; font: 700 16px/1.3 var(--ui); color: var(--cream); letter-spacing: .08em; text-wrap: balance; }
+    #toast.show { opacity: 1; }
+    #toast.red { color: var(--red); } #toast.green { color: var(--green); }
+    #pops { position: fixed; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
+    .pop { position: absolute; transform: translate(-50%, -50%); font: 900 22px 'Arial Black', Impact, var(--ui); color: var(--gold);
+      text-shadow: 0 2px 0 #000; animation: rise 1.2s ease-out forwards; white-space: nowrap; }
+    .pop.silver { color: #e9eef6; } .pop.lose { color: var(--red); }
+    @keyframes rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.7); } 15% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); } 100% { opacity: 0; transform: translate(-50%, -160%); } }
+
+    /* ── the bottom: the handle, the lever, the way to each station ── */
+    #bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; padding: 0 max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+      display: flex; flex-direction: column; align-items: stretch; gap: 8px; pointer-events: none; }
+    #controls { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; pointer-events: none; }
+    #controls > * { pointer-events: auto; }
+    #handle { flex: 1; max-width: 420px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px 10px; }
+    #handle .row { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; font-size: 12px; letter-spacing: .06em; color: var(--dim); text-transform: uppercase; }
+    #handle .row b { font-size: 20px; color: var(--cream); }
+    #power { position: relative; height: 44px; margin-top: 4px; touch-action: none; cursor: ew-resize; }
+    #power .track { position: absolute; left: 0; right: 0; top: 18px; height: 8px; border-radius: 4px;
+      background: linear-gradient(90deg, #333 0 8%, #2f7f56 8% 45%, #7a5ab8 45% 64%, #b8862a 64% 100%); }
+    #power .zones { position: absolute; left: 0; right: 0; top: 30px; font-size: 10px; font-weight: 700; color: var(--dim); letter-spacing: .05em; }
+    #power .zones span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+    #power .knob { position: absolute; top: 4px; width: 36px; height: 36px; margin-left: -18px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff, #b8bec8 40%, #5a606a); border: 2px solid #111; box-shadow: 0 2px 6px #000; }
+    #drops { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; min-height: 12px; }
+    #drops i { width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe0b0, #c87533); }
+    #drops i.fever { background: radial-gradient(circle at 35% 30%, #fff6b0, #ffb000); }
+    #fire { width: 108px; height: 108px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ff6b85, #b0102a 65%, #600010);
+      border: 4px solid #1a0508; box-shadow: 0 4px 0 #300008, 0 0 24px rgba(255, 60, 90, .35); font: 900 20px 'Arial Black', Impact, var(--ui);
+      letter-spacing: .04em; color: #fff; text-shadow: 0 2px 0 #000; touch-action: none; }
+    #fire.held { transform: translateY(3px); box-shadow: 0 1px 0 #300008, 0 0 34px rgba(255, 60, 90, .6); }
+    #fire.fever { background: radial-gradient(circle at 40% 35%, #fff2a0, #ffa400 65%, #804000); color: #2a1200; text-shadow: none; }
+    #fire:disabled { filter: grayscale(1) brightness(.5); }
+    .big { min-height: 56px; padding: 0 22px; border-radius: 10px; font: 900 20px 'Arial Black', Impact, var(--ui); letter-spacing: .04em;
+      background: linear-gradient(#ffdf5a, #e0a318); color: #2a1a00; border: 2px solid #3a2600; box-shadow: 0 3px 0 #3a2600; }
+    .big.red { background: linear-gradient(#ff6b85, #c0203e); color: #fff; border-color: #400010; box-shadow: 0 3px 0 #400010; }
+    .big.green { background: linear-gradient(#7af0a0, #2fae5a); color: #042010; border-color: #04301a; box-shadow: 0 3px 0 #04301a; }
+    .big:disabled { filter: grayscale(1) brightness(.6); cursor: default; }
+    /* the bottom bar lets taps through to the canvas; the lever must take them
+       itself — with a mouse a click on the canvas pulls it anyway, which is how
+       a lever that was dead under a thumb looked fine on a desktop */
+    #lever { margin: 0 auto; pointer-events: auto; }
+    #hint { text-align: center; font-size: 12px; font-weight: 700; color: var(--dim); letter-spacing: .04em; text-shadow: 0 1px 0 #000; pointer-events: none; }
+    #tabs { display: flex; justify-content: center; gap: 6px; pointer-events: auto; }
+    .tab { min-width: 76px; min-height: 44px; padding: 0 10px; border-radius: 8px; background: rgba(0,0,0,.6); border: 1px solid var(--line);
+      font-weight: 800; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); position: relative; }
+    .tab.on { color: #1a1200; background: var(--gold); border-color: var(--gold); }
+    .tab .dot { position: absolute; right: 6px; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--red); animation: blink .6s steps(2) infinite; }
+
+    /* ── station panels ── */
+    .panel { position: fixed; z-index: 6; left: 50%; transform: translateX(-50%); bottom: calc(max(10px, env(safe-area-inset-bottom)) + 58px);
+      width: min(560px, calc(100vw - 20px)); max-height: calc(100vh - 170px); overflow: auto; background: var(--panel); border: 1px solid var(--line);
+      border-radius: 12px; padding: 14px 14px 16px; }
+    .panel h2 { font: 900 22px 'Arial Black', Impact, var(--ui); letter-spacing: .05em; color: var(--gold); margin-bottom: 4px; }
+    .panel p { color: var(--dim); font-size: 14px; line-height: 1.35; margin-bottom: 10px; }
+    .panel .num { display: flex; justify-content: space-between; font-weight: 800; font-size: 15px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.08); letter-spacing: .03em; }
+    .panel .num b { color: var(--cream); font-size: 20px; }
+    .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .btns .big { flex: 1; min-width: 120px; }
+    .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+    .card { display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-top: 4px solid var(--c, var(--gold));
+      border-radius: 8px; padding: 8px; min-height: 176px; text-align: left; }
+    .card h3 { font: 900 15px 'Arial Black', Impact, var(--ui); letter-spacing: .03em; color: var(--cream); }
+    .card .fam { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--c); }
+    .card .txt { font-size: 13px; line-height: 1.3; color: var(--dim); flex: 1; }
+    .card .buy { min-height: 44px; border-radius: 8px; background: var(--gold); color: #2a1a00; font-weight: 900; font-size: 16px; }
+    .card .buy:disabled { background: #3a3a3a; color: #999; cursor: default; }
+    .card.sold { opacity: .35; }
+    .card.sel, .chip.sel, .big.sel { outline: 3px solid var(--blue); outline-offset: 2px; }
+    .mine { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .mine .chip { pointer-events: auto; }
+    .mine .sell { margin-left: 6px; color: var(--red); font-weight: 900; }
+    .line { font-family: var(--mono); color: var(--cream); font-size: 15px; line-height: 1.4; min-height: 42px; margin: 6px 0 4px; }
+    /* WIDE: the machine stands in the middle and the walls either side of it
+       are free — so the handle goes on the left wall and FIRE on the right,
+       and the bottom keeps only the tabs */
+    body.wide #controls { position: fixed; left: 0; right: 0; bottom: calc(max(10px, env(safe-area-inset-bottom)) + 58px); padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); align-items: flex-end; }
+    body.wide #handle { width: min(330px, 27vw); flex: none; }
+    body.wide #lever { position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: calc(max(10px, env(safe-area-inset-bottom)) + 62px); max-width: 30vw; font-size: 17px; }
+    body.wide #hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(max(10px, env(safe-area-inset-bottom)) + 52px); width: 40vw; }
+    body.wide .panel { left: auto; right: max(12px, env(safe-area-inset-right)); transform: none; top: calc(max(8px, env(safe-area-inset-top)) + 110px);
+      bottom: auto; width: min(430px, 38vw); max-height: calc(100vh - 190px); }
+    body.wide .panel .cards { grid-template-columns: 1fr; }
+    body.wide .panel .card { min-height: 0; }
+    body.wide #sysbtns { z-index: 7; }
+    /* TALL: a phone upright; everything stacks under the machine, and the rack
+       becomes a row of glyphs under the debt */
+    body.tall #rack { flex-direction: row; flex-wrap: wrap; max-width: calc(100vw - 20px); top: calc(max(8px, env(safe-area-inset-top)) + 54px); }
+    body.tall #rack .chip { font-size: 0; padding: 2px 6px; min-height: 24px; gap: 0; }
+    body.tall #rack .chip .g { font-size: 14px; }
+    body.tall #rack .chip.empty .g { font-size: 12px; }
+    /* upright, the arcade's corner buttons take the left end of the FIRST row
+       only: the first column is a spacer as wide as the corner, the first row is
+       at least as tall as it, and the debt gets the whole width underneath */
+    body.tall #top { display: grid; padding-left: 0; gap: 2px 10px;
+      grid-template-columns: calc(var(--corner, calc(max(10px, env(safe-area-inset-left)) + 104px)) - 10px) 1fr auto;
+      grid-template-rows: minmax(max(0px, calc(var(--corner-b, 0px) - max(8px, env(safe-area-inset-top)))), auto) auto;
+      grid-template-areas: ". dl wl" "db db db"; }
+    body.tall #deadline { grid-area: dl; } body.tall #wallet { grid-area: wl; }
+    body.tall #debt { grid-area: db; max-width: none; display: flex; align-items: center; gap: 8px; text-align: left; font-size: 11px;
+      margin-left: max(10px, env(safe-area-inset-left)); }
+    body.tall #debt b { display: inline; font-size: 18px; }
+    body.tall #debtbar { flex: 1; margin-top: 0; }
+    body.tall #sysbtns { top: calc(max(8px, env(safe-area-inset-top)) + 84px); }
+    body.tall #rack { top: calc(max(8px, env(safe-area-inset-top)) + 86px); max-width: calc(100vw - 130px); }
+    body.tall #tabs { padding-left: 50px; }
+    body.tall #hint { display: none; }
+    body.tall #tabs { gap: 4px; }
+    body.tall .tab { min-width: 0; flex: 1; font-size: 12px; padding: 0 4px; letter-spacing: .02em; white-space: nowrap; }
+    @media (max-width: 520px) {
+      .cards { grid-template-columns: 1fr; }
+      .card { min-height: 0; }
+      #fire { width: 92px; height: 92px; font-size: 17px; }
+      .stat b { font-size: 20px; }
+      #rack { max-width: 60vw; }
+      .chip { font-size: 11px; }
+      #toast { font-size: 34px; }
+    }
+
+    /* ── title, pause, the fall, the door ── */
+    .overlay { position: fixed; inset: 0; z-index: 12; display: grid; place-items: center; padding: 20px;
+      background: radial-gradient(ellipse at 50% 40%, rgba(20,14,24,.72), rgba(0,0,0,.94)); }
+    .sheet { width: min(520px, 100%); text-align: center; }
+    .sheet h1 { font: 900 clamp(46px, 13vw, 84px)/0.9 'Arial Black', Impact, var(--ui); letter-spacing: .02em; color: var(--gold);
+      text-shadow: 0 6px 0 #5a0f22, 0 0 30px rgba(255, 180, 60, .3); }
+    .sheet .sub { font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 12px 0 18px; font-size: 13px; }
+    .sheet p { color: var(--cream); line-height: 1.45; font-size: 15px; margin: 0 0 12px; }
+    .sheet .keys { font-size: 13px; color: var(--dim); line-height: 1.6; margin-top: 16px; }
+    .sheet .btns { justify-content: center; }
+    .sheet .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; text-align: left; margin: 14px auto; max-width: 360px; font-size: 14px; color: var(--dim); }
+    .sheet .stats b { color: var(--cream); float: right; }
+    #fade { position: fixed; inset: 0; z-index: 11; background: #000; opacity: 0; pointer-events: none; transition: opacity .6s; }
+  </style>
+</head>
+<body>
+  <canvas id="gl" aria-hidden="true"></canvas>
+
+  <div id="top">
+    <div class="stat" id="deadline">Deadline<b>1/8</b><div id="locks"></div></div>
+    <div class="stat" id="debt">In the ATM<b>0 / 25</b><div id="debtbar"><i></i></div></div>
+    <div class="stat" id="wallet">Wallet<b>5¢</b></div>
+  </div>
+  <div id="sysbtns">
+    <button class="sys" id="mute" aria-label="Sound on or off">♪</button>
+    <button class="sys" id="pause" aria-label="Pause">❚❚</button>
+  </div>
+  <div id="rack" aria-label="Your charms"></div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="pops"></div>
+
+  <div id="bottom">
+    <div id="hint"></div>
+    <div id="controls">
+      <div id="handle">
+        <div class="row"><span>Power <b id="powerPct">22%</b></span><span id="dropsLabel">Drops <b>12</b></span></div>
+        <div id="power" role="slider" aria-label="Launch power" aria-valuemin="0" aria-valuemax="100" tabindex="0">
+          <div class="track"></div>
+          <div class="zones"><span style="left:26%">◂ WAY</span><span style="left:54%">TULIPS</span><span style="left:84%">RIGHT ▸</span></div>
+          <div class="knob"></div>
+        </div>
+        <div id="drops"></div>
+      </div>
+      <button id="fire" aria-label="Fire — hold to stream coins">FIRE</button>
+    </div>
+    <button id="lever" class="big" hidden>PULL THE LEVER</button>
+    <div id="tabs" role="tablist">
+      <button class="tab" data-st="atm" role="tab">◂ ATM</button>
+      <button class="tab" data-st="machine" role="tab">Machine</button>
+      <button class="tab" data-st="vendor" role="tab">Vendor ▸</button>
+      <button class="tab" data-st="door" role="tab">Door ▾</button>
+    </div>
+  </div>
+
+  <section class="panel" id="p-atm" hidden aria-label="The ATM"></section>
+  <section class="panel" id="p-vendor" hidden aria-label="The charm vendor"></section>
+  <section class="panel" id="p-door" hidden aria-label="The door and the phone"></section>
+
+  <div class="overlay" id="title">
+    <div class="sheet">
+      <h1>PACHI<br>PIT</h1>
+      <div class="sub">CloverPit × Raccoin × Pachinko</div>
+      <p>You are at the bottom of a pit, sitting on a trapdoor. The raccoon who owns the pit wants paying every three shifts.</p>
+      <p>Shoot coins through the nails. They land on the pusher. Whatever it shoves over the edge is yours. Pay the ATM, buy charms that bend the machine, and knock all eight padlocks off the door.</p>
+      <div class="btns"><button class="big" id="start">SIT DOWN</button></div>
+      <div class="keys" id="keys">← → power · hold SPACE to fire · Q E turn · 1 2 3 buy / pick · D deposit · ENTER lever / settle</div>
+    </div>
+  </div>
+  <div class="overlay" id="paused" hidden>
+    <div class="sheet">
+      <h1 style="font-size:52px">PAUSED</h1>
+      <div class="btns" style="flex-direction:column; max-width: 300px; margin: 18px auto 0;">
+        <button class="big" id="resume">BACK TO THE PIT</button>
+        <button class="big green" id="quality">PIXELS: CRISP</button>
+        <button class="big red" id="restart">NEW RUN</button>
+      </div>
+    </div>
+  </div>
+  <div class="overlay" id="end" hidden><div class="sheet" id="endSheet"></div></div>
+  <div id="fade"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js"
+    }
+  }
+  </script>
+  <script type="module" src="../hub/shell.js?v=74"></script>
+  <script type="module" src="js/main.js?v=2"></script>
+  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=9';
+    sign({ corner: 'bottom-left', counter: true, table: { pause: () => window.__pp?.pause(), resume: () => window.__pp?.resume() } });
+  </script>
+</body>
+</html>
