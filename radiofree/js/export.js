@@ -25,7 +25,7 @@
 
 import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=72';
 import { renderSoundtrack } from './score.js?v=72';
-import { makeToko3D } from '../../toko/js/toko3d.js?v=1';
+import { makeToko3D } from '../../toko/js/toko3d.js?v=2';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';
 export { W, H };
