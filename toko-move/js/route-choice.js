@@ -13,7 +13,26 @@ function orderedLeg(line,from,to){const a=line.nodes.indexOf(from),b=line.nodes.
 // predicate, shared by the panel, the dispatcher's pricing, the drops and the
 // shift bot, so none of them can offer what another refuses.
 function allowFor(rule){const m=rule?.modes;return m?(c=>c.legs.every(l=>m.includes(l.line.mode))):null;}
-function routeChoices(city,from,to,max=3,allow=null){if(!city||!from||!to)return[];const direct=[];for(const line of city.lines||[]){const leg=orderedLeg(line,from,to);if(leg)direct.push({kind:'direct',legs:[leg],transfers:0,cost:leg.stops+(line.mode==='metro'?-0.25:0)});}const transfers=[];for(const a of city.lines||[]){if(!a.nodes.includes(from))continue;for(const b of city.lines||[]){if(serviceKey(a)===serviceKey(b)||!b.nodes.includes(to))continue;const shared=uniq(a.nodes.filter(n=>b.nodes.includes(n)&&n!==from&&n!==to));for(const at of shared){const l1=orderedLeg(a,from,at),l2=orderedLeg(b,at,to);if(!l1||!l2)continue;transfers.push({kind:'transfer',legs:[l1,l2],transfer:at,transfers:1,cost:l1.stops+l2.stops+2});}}}const seen=new Set(),all=[...direct,...transfers].sort((x,y)=>x.cost-y.cost||x.transfers-y.transfers).filter(c=>{const k=c.legs.map(x=>serviceKey(x.line)).join('>')+':'+(c.transfer||'');if(seen.has(k))return false;seen.add(k);return true;});return (allow?all.filter(allow):all).slice(0,max);}
+// A transfer's two legs may share ONE stop: the one you change at (v2.62).
+// Anything else they share is ground covered twice — a loop, not a plan. The
+// Crown Bridges put 11 and 11H on one track in opposite orders and the panel
+// offered Kalasatama → Kruunuvuori as "11 back to Pasila, then 11H out through
+// Kalasatama again"; a bot took it and shuttled for the rest of the shift.
+// Looking for why, the same fault was already all over the old board in a
+// quieter form — Pasila → Kallio on 9 past Kallio to Hakaniemi and 3 back;
+// Pasila → Meilahti on 2 through Ooppera to Lasipalatsi and 4 back through
+// Ooppera. And a line that already goes from here to there is never the FIRST
+// leg of a transfer: "11 to Kalasatama, change to 11H" when 11 itself runs on
+// to Kruunuvuori is a change of tram for nothing.
+function span(leg){const n=leg.line.nodes,a=n.indexOf(leg.from),b=n.indexOf(leg.to);return new Set(n.slice(Math.min(a,b),Math.max(a,b)+1));}
+function retraces(l1,l2,at){const s=span(l1);for(const n of span(l2))if(n!==at&&s.has(n))return true;return false;}
+// AVOID (v2.62): stops this delivery has already stood at. A plan back through
+// one of them is the same loop one scale up — ridden Ooppera → Sörnäinen, then
+// offered Sörnäinen → Ooppera → Meilahti — and it is how a courier ends a shift
+// shuttling between two stops. Filtered before the top three are taken; if it
+// would leave nothing, the full list stands, because going back is sometimes
+// the only way on.
+function routeChoices(city,from,to,max=3,allow=null,avoid=null){if(!city||!from||!to)return[];const direct=[];for(const line of city.lines||[]){const leg=orderedLeg(line,from,to);if(leg)direct.push({kind:'direct',legs:[leg],transfers:0,cost:leg.stops+(line.mode==='metro'?-0.25:0)});}const transfers=[];for(const a of city.lines||[]){if(!a.nodes.includes(from)||orderedLeg(a,from,to))continue;for(const b of city.lines||[]){if(serviceKey(a)===serviceKey(b)||!b.nodes.includes(to))continue;const shared=uniq(a.nodes.filter(n=>b.nodes.includes(n)&&n!==from&&n!==to));for(const at of shared){const l1=orderedLeg(a,from,at),l2=orderedLeg(b,at,to);if(!l1||!l2||retraces(l1,l2,at))continue;transfers.push({kind:'transfer',legs:[l1,l2],transfer:at,transfers:1,cost:l1.stops+l2.stops+2});}}}const seen=new Set(),all=[...direct,...transfers].sort((x,y)=>x.cost-y.cost||x.transfers-y.transfers).filter(c=>{const k=c.legs.map(x=>serviceKey(x.line)).join('>')+':'+(c.transfer||'');if(seen.has(k))return false;seen.add(k);return true;});const ok=allow?all.filter(allow):all,fresh=avoid?.size?ok.filter(c=>!c.legs.some(l=>[...span(l)].some(n=>n!==from&&avoid.has(n)))):ok;return (fresh.length?fresh:ok).slice(0,max);}
 function servicesAt(city,node){return(city?.lines||[]).filter(l=>l.nodes.includes(node));}
 globalThis.__tmRouteChoiceCore={routeChoices,servicesAt,allowFor};
 function esc(s){return String(s??'').replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]||c));}
@@ -107,7 +126,7 @@ function refreshArrivals(tm){const box=document.getElementById('routeChoices');
     btn.disabled=!a.ready;
     btn.classList.toggle('lit',a.ready);btn.classList.toggle('dim',!a.ready);if(verb)verb.style.color=a.ready?'#233d4d':'#69777a';}}
 
-function render(tm,force=false){const sheet=document.getElementById('sheet'),ch=tm.challenge;if(sheet&&ch&&!ch.active){const old=document.getElementById('routeChoices');if(old&&old.innerHTML){old.innerHTML='';old.dataset.key='';old.style.cssText='';}}if(!sheet||!ch?.active||!tm.city)return;const st=tm.mobility?.status?.(),key=structuralKey(tm);let box=tm.sheetSlot?.('routeChoices')||document.getElementById('routeChoices');if(!force&&box?.dataset.key===key)return;if(!box){box=document.createElement('section');box.id='routeChoices';sheet.append(box);}box.style.cssText='margin-top:10px;padding-top:9px;border-top:1px dashed #c5cec8';box.dataset.key=key;const mobile=mobilityHtml(tm);if(st?.kind==='getoff'||st?.kind==='walking'||st?.kind==='riding'){box.innerHTML=mobile;wireMobility(tm,box);return;}const raw=routeChoices(tm.city,ch.currentFrom(),ch.currentTo(),3,allowFor(ch.cargoRule?.())),from=nodeName(tm.city,ch.currentFrom()),to=nodeName(tm.city,ch.currentTo());
+function render(tm,force=false){const sheet=document.getElementById('sheet'),ch=tm.challenge;if(sheet&&ch&&!ch.active){const old=document.getElementById('routeChoices');if(old&&old.innerHTML){old.innerHTML='';old.dataset.key='';old.style.cssText='';}}if(!sheet||!ch?.active||!tm.city)return;const st=tm.mobility?.status?.(),key=structuralKey(tm);let box=tm.sheetSlot?.('routeChoices')||document.getElementById('routeChoices');if(!force&&box?.dataset.key===key)return;if(!box){box=document.createElement('section');box.id='routeChoices';sheet.append(box);}box.style.cssText='margin-top:10px;padding-top:9px;border-top:1px dashed #c5cec8';box.dataset.key=key;const mobile=mobilityHtml(tm);if(st?.kind==='getoff'||st?.kind==='walking'||st?.kind==='riding'){box.innerHTML=mobile;wireMobility(tm,box);return;}const raw=routeChoices(tm.city,ch.currentFrom(),ch.currentTo(),3,allowFor(ch.cargoRule?.()),tm.mobility?.passed?.()),from=nodeName(tm.city,ch.currentFrom()),to=nodeName(tm.city,ch.currentTo());
   // THE ONE YOU CAN PRESS COMES FIRST. Three cards at 130px each put the lit
   // CATCH second or third, below the fold on a phone, under two greyed WAITs —
   // the screenshot had the player reading two things they could not do before

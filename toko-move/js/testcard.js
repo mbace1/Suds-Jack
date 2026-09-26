@@ -1,4 +1,4 @@
-// Toko Move — THE TEST CARD (v2.61). Owner: "try to hook me into testing with
+// Toko Move — THE TEST CARD (v2.61; v2.62's list is the Crown Bridges). Owner: "try to hook me into testing with
 // enticing updates."
 //
 // Every new build now arrives with a short list of things to TRY, each one a
@@ -17,15 +17,17 @@ export const KEY = 'tokoMoveTests';
 // The current build's missions. `href` is the way in — a query on this page,
 // or the arcade's note panel for the last one.
 export const MISSIONS = {
-  build: '2.61',
+  build: '2.62',
   items: [
-    { id: 'quiet', glyph: '◐', title: 'The quiet map', text: 'Take a job — your lines light up, the rest step back.', href: '?shift=3&day=none' },
+    { id: 'bridge', glyph: '⌒', title: 'Cross the Crown Bridge', text: 'Ride tram 11 or 12 — the new lines over the water, on the board since this morning’s HSL feed.', href: '?shift=3&day=none' },
+    { id: 'kruunuvuori', glyph: '⌂', title: 'Deliver to Kruunuvuori', text: 'A new stop across the bridge. No walk reaches it — only the tram.', href: '?shift=3&day=none' },
     { id: 'mapboard', glyph: '◎', title: 'Tap the tram', text: 'Board the ringed tram by tapping it on the MAP.', href: '?shift=3&day=none' },
-    { id: 'walk', glyph: '🚶', title: 'Walk a street', text: 'Once you know two stops, walk between them — the courier follows the real street.', href: '?shift=2&day=none' },
-    { id: 'live', glyph: '●', title: 'LIVE', text: 'Play the real trams, right now, from HSL’s own feed.', href: '?live' },
+    { id: 'live', glyph: '●', title: 'LIVE', text: 'The real trams, right now — the Crown Bridge ones included.', href: '?live' },
     { id: 'tell', glyph: '✎', title: 'Tell Toko', text: 'One thing that felt wrong, or right. That is the whole test.', href: '../#tokomove/feedback' },
   ],
 };
+// A Crown Bridge line: 11, 11H or 12 (and any variant HSL hangs off them).
+export const BRIDGE_LINE = /^1[12](?!\d)/;
 
 const store = () => { try { return globalThis.localStorage; } catch { return null; } };
 export function load(s = store(), m = MISSIONS) {
@@ -63,8 +65,11 @@ export function mountTestCard(tm, { el = null, poll = 500 } = {}) {
   document.addEventListener('click', e => { const a = e.target?.closest?.('[data-mission="tell"]'); if (a) done('tell'); }, true);
   const timer = setInterval(() => {
     const st = tm.mobility?.status?.();
-    if (tm.challenge?.active && (tm.focusLines?.() || new Set()).size) done('quiet');
-    if (st?.kind === 'walking') done('walk');
+    if (st?.kind === 'riding' && st.ride?.vehicleId != null) {
+      const name = tm.liveNetwork?.vehicle?.(st.ride.vehicleId)?.layer?.name;
+      if (BRIDGE_LINE.test(String(name || ''))) done('bridge');
+    }
+    if (tm.challenge?.location === 'kruunuvuori') done('kruunuvuori');
     if (tm.live && tm.liveFeed?.state === 'live' && !tm.flow?.clock?.paused) done('live');
   }, poll);
   paint();

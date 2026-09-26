@@ -1,7 +1,7 @@
 // Toko Move v2.12.2 — selected visible HSL vehicle is the sole ride simulation.
 import {minutes} from './ui.js?v=2';
 export class MobilityController{
- constructor(tm){this.tm=tm;this.ch=tm.challenge;this.location=null;this.walking=null;this.pendingGetOff=null;this.ride=null;this.lastLegKey=this.legKey();this.baseCurrentFrom=this.ch.currentFrom.bind(this.ch);this.baseCatch=this.ch.catchChoice.bind(this.ch);this.ch.currentFrom=()=>this.location||this.baseCurrentFrom();this.ch.catchChoice=(choice,vehicle)=>this.catchChoice(choice,vehicle);this.ch.step=()=>this.step();}
+ constructor(tm){this.tm=tm;this.ch=tm.challenge;this.location=null;this.trail=[];this.walking=null;this.pendingGetOff=null;this.ride=null;this.lastLegKey=this.legKey();this.baseCurrentFrom=this.ch.currentFrom.bind(this.ch);this.baseCatch=this.ch.catchChoice.bind(this.ch);this.ch.currentFrom=()=>this.location||this.baseCurrentFrom();this.ch.catchChoice=(choice,vehicle)=>this.catchChoice(choice,vehicle);this.ch.step=()=>this.step();}
  // The key is the JOB, not the count. It used to carry ch.index — and a drop
  // made on the way bumps index without changing the job, so the first drop
  // read as a new leg and syncLeg wiped the ride under the courier: stranded
@@ -9,7 +9,7 @@ export class MobilityController{
  // random bots fell 60% → 37% the moment drops existed, and every loss was
  // "ended riding, 1 delivered".
  legKey(){const a=this.ch.active;return `${a?.id||a?.label||''}:${this.ch.leg}`;}
- syncLeg(){const k=this.legKey();if(k!==this.lastLegKey){this.lastLegKey=k;this.location=null;this.walking=null;this.pendingGetOff=null;this.ride=null;this.tm.liveNetwork?.clearSelection?.();}}
+ syncLeg(){const k=this.legKey();if(k!==this.lastLegKey){this.lastLegKey=k;this.location=null;this.trail=[];this.walking=null;this.pendingGetOff=null;this.ride=null;this.tm.liveNetwork?.clearSelection?.();}}
  canWalk(){const c=this.ch.cargoRule?.();return Boolean(this.ch.active&&!c?.modes);}
  walks(){if(!this.ch.active||!this.ch.waitingForCatch||this.walking||this.pendingGetOff)return[];const v=this.tm.visited;return (this.tm.walksFrom?.(this.ch.currentFrom())||[]).filter(l=>!v||(v.has(l.from)&&v.has(l.to))).map(link=>({...link,cost:this.walkCost(link)}));}
  walkCost(link){const a=this.tm.city?.resolved?.[link.from],b=this.tm.city?.resolved?.[link.to];if(!a||!b)return 18;const lat=(a.lat+b.lat)*.5*Math.PI/180,dy=(a.lat-b.lat)*111320,dx=(a.lon-b.lon)*111320*Math.cos(lat),metres=Math.hypot(dx,dy);const k=(this.tm.flow?.clock?.ticksPerDay||600)/600;
@@ -65,11 +65,15 @@ export class MobilityController{
  getOffEarly(at){
   const exits=this.rideExits();
   if(!exits.some(x=>x.at===at))return{error:'not at that stop'};
-  this.tm.visitHere?.(at);this.location=at;this.ride=null;this.tm.liveNetwork?.clearSelection?.();
+  this.tm.visitHere?.(at);this.location=at;this.trail.push(at);this.ride=null;this.tm.liveNetwork?.clearSelection?.();
   this.ch.activeTrip=null;this.ch.selectedPlan=null;this.ch.waitingForCatch=true;
   this.ch.say?.(`OFF EARLY · ${this.ch.name(at)} · choose again from here.`);
   return{ok:true,at};}
- getOff(){if(!this.pendingGetOff)return{error:'not waiting to get off'};this.tm.visitHere?.(this.pendingGetOff.at);const pending=this.pendingGetOff,at=pending.at,wasTransfer=pending.transfer,trip=pending.trip;this.pendingGetOff=null;this.location=at;this.ride=null;this.tm.liveNetwork?.clearSelection?.();if(wasTransfer){this.ch.deliverAlong?.(at);this.ch.activeTrip=null;this.ch.selectedPlan=null;this.ch.waitingForCatch=true;this.ch.say?.(`GET OFF · ${this.ch.name(at)} · transfer hub. Wait for the next service.`);return{ok:true,transfer:true};}const changed=this.ch.completePhysical?.({legs:trip?.legs||[]});this.ch.say?.(`GET OFF · ${this.ch.name(at)}`);this.syncLeg();return{ok:true,changed};}
- step(){this.syncLeg();if(this.walking){if(this.tm.flow.clock.tick>=this.walking.arriveTick){const w=this.walking;this.location=w.to;this.walking=null;this.ch.waitingForCatch=true;this.ch.deliverAlong?.(w.to);this.tm.visitHere?.(w.to);this.ch.say?.(`ARRIVED ON FOOT · ${this.ch.name(this.location)} · choose transit or keep walking.`);return true;}return false;}if(this.pendingGetOff)return false;if(this.ride){{const v=this.tm.liveNetwork?.vehicle?.(this.ride.vehicleId),p=v&&this.tm.liveNetwork.position(v,this.tm.flow.clock.tick),here=this.dropHere(v,p);if(here&&this.ch.deliverAlong?.(here))return true;}if(this.rideAtTarget()){this.ride.reachedTarget=true;const at=this.ride.to;this.pendingGetOff={trip:this.ride.trip,at,transfer:Boolean(this.ride.plannedTransfer)};this.location=at;this.ch.waitingForCatch=false;this.ch.say?.(`ARRIVED · ${this.ch.name(at)} · GET OFF.`);return true;}return false;}return false;}
+ getOff(){if(!this.pendingGetOff)return{error:'not waiting to get off'};this.tm.visitHere?.(this.pendingGetOff.at);const pending=this.pendingGetOff,at=pending.at,wasTransfer=pending.transfer,trip=pending.trip;this.pendingGetOff=null;this.location=at;this.trail.push(at);this.ride=null;this.tm.liveNetwork?.clearSelection?.();if(wasTransfer){this.ch.deliverAlong?.(at);this.ch.activeTrip=null;this.ch.selectedPlan=null;this.ch.waitingForCatch=true;this.ch.say?.(`GET OFF · ${this.ch.name(at)} · transfer hub. Wait for the next service.`);return{ok:true,transfer:true};}const changed=this.ch.completePhysical?.({legs:trip?.legs||[]});this.ch.say?.(`GET OFF · ${this.ch.name(at)}`);this.syncLeg();return{ok:true,changed};}
+ step(){this.syncLeg();if(this.walking){if(this.tm.flow.clock.tick>=this.walking.arriveTick){const w=this.walking;this.location=w.to;this.trail.push(w.to);this.walking=null;this.ch.waitingForCatch=true;this.ch.deliverAlong?.(w.to);this.tm.visitHere?.(w.to);this.ch.say?.(`ARRIVED ON FOOT · ${this.ch.name(this.location)} · choose transit or keep walking.`);return true;}return false;}if(this.pendingGetOff)return false;if(this.ride){{const v=this.tm.liveNetwork?.vehicle?.(this.ride.vehicleId),p=v&&this.tm.liveNetwork.position(v,this.tm.flow.clock.tick),here=this.dropHere(v,p);if(here&&this.ch.deliverAlong?.(here))return true;}if(this.rideAtTarget()){this.ride.reachedTarget=true;const at=this.ride.to;this.pendingGetOff={trip:this.ride.trip,at,transfer:Boolean(this.ride.plannedTransfer)};this.location=at;this.trail.push(at);this.ch.waitingForCatch=false;this.ch.say?.(`ARRIVED · ${this.ch.name(at)} · GET OFF.`);return true;}return false;}return false;}
+ // Where this delivery has already stood — its pickup, every transfer, every
+ // walk's end — except where you stand now (v2.62). The panel will not offer
+ // a plan back through any of them while it has one that does not.
+ passed(){const here=this.ch.currentFrom(),out=new Set([this.baseCurrentFrom(),...this.trail].filter(Boolean));out.delete(here);return out;}
  status(){if(this.pendingGetOff)return{kind:'getoff',at:this.pendingGetOff.at,transfer:this.pendingGetOff.transfer,ride:this.rideProgress()};if(this.walking)return{kind:'walking',...this.walking,remaining:Math.max(0,this.walking.arriveTick-this.tm.flow.clock.tick)};if(this.ch.waitingForCatch)return{kind:'waiting',at:this.ch.currentFrom()};return{kind:'riding',ride:this.rideProgress()};}
 }

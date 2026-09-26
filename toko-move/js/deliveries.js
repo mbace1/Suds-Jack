@@ -35,7 +35,7 @@ import {regularAt,standingOf,bumpStanding,loadStanding,saveStanding,tipFor} from
 import {CAPACITY,unitsOf,payFor} from './parcels.js?v=1';
 const sameNodes=(a,b)=>a.length===b.length&&a.every((n,i)=>n===b[i]);
 const CARGO_KEYS=Object.keys(CARGO);
-const DESTINATIONS=['rautatientori','hakaniemi','sornainen','kalasatama','pasila','kamppi','kauppatori','katajanokka','lansiterminaali','hietalahti','meilahti','arabia','olympiaterminaali','eira','kapyla','messukeskus','lasipalatsi','ooppera','senaatintori'];
+const DESTINATIONS=['rautatientori','hakaniemi','sornainen','kalasatama','pasila','kamppi','kauppatori','katajanokka','lansiterminaali','hietalahti','meilahti','arabia','kruunuvuori','olympiaterminaali','eira','kapyla','messukeskus','lasipalatsi','ooppera','senaatintori'];
 // The hash is UNSIGNED (`>>> 0`), so every shift off it must be `>>>` too:
 // `>>` is signed, half of all seeds have the top bit set, and `array[-1234]`
 // is undefined — which is silent. It cost a hand-off that was never built and,

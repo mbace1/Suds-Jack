@@ -90,7 +90,7 @@ const playShift = async (page, policy) => page.evaluate(async (policy) => {
     else if (st.kind === 'getoff') { const r = mob.getOff(); say('OFF', `${st.at} ${st.transfer ? 'transfer' : 'deliver'} ${r.error || ''}`); if (st.transfer) transfers++; chosen = null; }
     else if (st.kind === 'waiting') { waitTicks++;
       const from = ch.currentFrom(), to = ch.currentTo();
-      const choices = routeChoices(city, from, to, 3, globalThis.__tmRouteChoiceCore.allowFor?.(ch.cargoRule?.()));   // what the panel shows, not what the network has
+      const choices = routeChoices(city, from, to, 3, globalThis.__tmRouteChoiceCore.allowFor?.(ch.cargoRule?.()), mob.passed?.());   // what the panel shows, not what the network has
       // Commit to a plan once, the way a player standing at a stop does, and
       // re-choose only if it has been more than 60 ticks with nothing lit.
       if (!chosen || flow.clock.tick - chosenAt > 60) { chosen = choosePlan(choices); chosenAt = flow.clock.tick;

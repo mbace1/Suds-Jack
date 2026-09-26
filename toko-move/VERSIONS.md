@@ -1,5 +1,62 @@
 # Toko Move — versions
 
+## v2.62 — 2026-09-26
+
+**THE CROWN BRIDGES ARE ON THE BOARD** (owner, 2026-09-25: move with the
+city). This morning's HSL refresh validated for the first time since the 12th
+— v2.57 took Töölöntori off, so every anchor resolved again — and the new
+network is in: **trams 11, 11H and 12** over the Crown Bridges, and
+**Kruunuvuori**, the stop at the far end, as a delivery destination. No walk
+reaches it; only the tram does, which is the bridge's whole point. The refresh
+PR could not be opened (GitHub Actions is not permitted to create pull
+requests in this repo), so the pack was taken from the refresh's own branch,
+`automation/toko-move-hsl-36232650378`, byte for byte.
+
+What else the feed moved, all of it real and all of it followed: **line 2**
+now runs Senaatintori → Lasipalatsi → Ooppera instead of Rautatientori →
+Kamppi; **4T and 8T are gone**; **Kamppi has no tram stop** any more (the
+feed dropped "Kamppi (M)"), so it is metro and walking; **Rautatientori** now
+sits on a tram stop of its own name; Kalasatama and Ooppera moved a few tens
+of metres onto the stops the feed still has. The fingerprint moved by exactly
+those, plus Kruunuvuori's node, its two tram links and the three new lines.
+
+**The board is 52% wider** (east edge 24.986 → 25.028) because the box is
+derived from the anchors; no stop that was on it moved, since coordinates run
+from the north-west corner. On a phone the play view keeps its zoom. The two
+new families were **inked by solving, not picking**: the thirteen existing
+colours HELD (a line learned by colour keeps it) and 11/12 solved in the same
+band at 3:1 for the widest gap to everything — green and teal, min dE76 27.8
+(was 32.5), floor 27.5. Re-solving all sixteen would buy the gap back by
+recolouring every line at once.
+
+**A planner fault the new lines made fatal, fixed at the source.** A bot on
+the new board was offered Kalasatama → Kruunuvuori as "11 back to Pasila,
+then 11H out through Kalasatama again", took it, and shuttled for the rest of
+the shift. Three rules, one idea — *no plan covers ground twice*:
+- a transfer's two legs may share only the stop you change at (the gate found
+  **6,164** looping plans across the old board's options — Pasila → Kallio on
+  9 past Kallio to Hakaniemi and 3 back; Pasila → Meilahti on 2 through
+  Ooppera and 4 back through it);
+- a line that already goes there is never the first leg of a transfer;
+- **mid-delivery, the panel does not offer a plan back through a stop this
+  delivery has already stood at** (its pickup, every transfer, every walk's
+  end), unless that would leave nothing. This one is the trip-scale version,
+  and it is what the zero-delivery shifts had in common on BOTH builds.
+
+Measured, 200 random-but-sane bots each: shifts ending with nothing delivered
+**2 → 0** (the old build also had 2 — the 40-bot gate had held by seed luck),
+win rate 75% old → 76% new. Shift gate 11/11 with 14 dailies.
+
+**Rent re-measured** (`--kitweeks=20`): **90% / 80% / 45%** pay €400 (v2.61:
+75 / 85 / 25). The first two are inside 20-week noise; the naive player's +20
+is plausibly the loop fix — the first plan the panel offers is no longer a
+trap. Rent stays €400.
+
+**The test card's new list** is the bridge: ride 11 or 12, deliver to
+Kruunuvuori, tap the tram, LIVE (the real Crown Bridge trams included), tell
+Toko. The daily gate's end-card scenario moved back to shift 1, which fits
+the new network (2, 3 and 4 do not).
+
 ## v2.61 — 2026-09-26
 
 **THE TEST CARD** (`js/testcard.js`; owner: *"try to hook me into testing with

@@ -92,7 +92,7 @@ const all = [...Object.values(ink), METRO_INK];
 // The solved floor. 32.5 was reached by a constrained search on the NIGHT
 // ground (the paper solve reached 37.0 and had more room), so a hand-added
 // colour that scrapes past a lower bar is exactly what this is here to catch.
-const FLOOR = 32.0;
+const FLOOR = 27.5; // v2.62: two Crown Bridges inks solved against thirteen held ones
 let worst = Infinity, pair = '';
 for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
   const d = dE(all[i], all[j]);

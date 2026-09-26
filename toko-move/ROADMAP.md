@@ -1,5 +1,19 @@
 # Toko Move — roadmap after v2.36
 
+## Owner direction, 2026-09-26 — one city, two faces, chosen by who plays
+
+*"Toko Move turns into Piritori stories or a kids game depending on the user."*
+(Part of a wider line: *"We are the game that feels evolving"* — see CLAUDE.md.)
+
+Toko Move and Piritori already stand on the same Helsinki city core (flow-core,
+the recovered map packs). The direction is that the same board becomes either
+Piritori's Kallio stories or a kids' game, depending on who is playing — not a
+menu of modes, an adaptation. Open questions for the owner before any build:
+what "depending on the user" reads (an explicit choice, the player's history in
+`hub/playlog.js`, Toko asking), and what the kids' version keeps of the delivery
+loop. Nothing here is built yet.
+
+
 Owner direction, 2026-09-17, in their words: *"Disruptions is good, feels like
 roguelike random events type deal. Maybe we need more random events, help the
 granny across the street (10 sec delay), etc. Hand offs is good. Regulars is
@@ -239,6 +253,15 @@ day's name, the number.
 was needed after all: HSL's high-frequency positioning is on an open MQTT
 broker. LIVE re-times the timetable fleet from real reports rather than
 building a second one; see VERSIONS.md v2.56 for the limits.
+
+**The network moves with the city (v2.57 → v2.62).** The nightly HSL refresh
+is how the board stays true: v2.57 took Töölöntori off when HSL stopped
+serving it, and v2.62 took the refresh's pack with the Crown Bridge trams
+(11, 11H, 12) and Kruunuvuori as a destination. The refresh cannot open its
+own PR here (Actions may not create pull requests in this repo), so a
+network change still lands by hand from its `automation/toko-move-hsl-*`
+branch. Laajasalo proper is further east again and is the next stop if the
+board should reach it.
 
 The pack is real geometry from HSL's own feed; the vehicles on it are a
 timetable simulation. HSL publishes real-time positions (Digitransit, needs a

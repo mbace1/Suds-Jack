@@ -101,6 +101,13 @@ export function boardFit(box, width, height) {
 // highlighter set the first solve was written to avoid. The floor in
 // test/board.mjs moved to 32.0 to match; if a family is added, re-run the
 // solver rather than eyeballing a gap.
+//
+// v2.62: the Crown Bridges opened 11 and 12 (4T and 8T went). The thirteen
+// inks above were HELD — a line a player has learned by colour keeps it — and
+// only the two new ones were solved, in the same band and at 3:1, for the
+// largest gap to everything already on the board. Best achievable: min dE76
+// 27.8 (12's teal against 2's cyan), so the floor is 27.5. Re-solving all
+// sixteen would buy the gap back by recolouring every line at once.
 const TRAM_INK = {
   '1':  '#9a79aa',  // violet
   '2':  '#00d7ef',  // cyan
@@ -112,6 +119,8 @@ const TRAM_INK = {
   '8':  '#8495fd',  // indigo
   '9':  '#abcf66',  // lime
   '10': '#f19ef9',  // orchid
+  '11': '#2a9950',  // green  — Crown Bridges (v2.62)
+  '12': '#1c9595',  // teal   — Crown Bridges (v2.62)
   '13': '#db5389',  // magenta
   '15': '#f4b58f',  // peach
   'H':  '#7ad3b0',  // mint

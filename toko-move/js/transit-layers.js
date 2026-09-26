@@ -4,7 +4,7 @@
 // see the recorded owner override at the top of that file for why the old
 // tram-green fallback had to go (route_color is null on all 34 lines, so it
 // painted thirty distinct services one identical green).
-import {lineColour} from './board.js?v=7';
+import {lineColour} from './board.js?v=8';
 export const FADE=0.28;
 export class TransitLayers{
  constructor(pack){this.pack=pack;this.layers=pack.lines.map(line=>({id:line.id,name:line.name,mode:line.mode,colour:normaliseColour(line.hex,line.mode,line.name),path:line.path,stops:line.stops||[],visible:true}));this.bounds=pack.clippedTo||boundsFromLines(this.layers);}
