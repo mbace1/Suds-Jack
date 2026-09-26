@@ -1326,6 +1326,70 @@ export const ART = {
     }
   },
 
+  // Pachi Pit: the machine, seen from the stool at the bottom of the pit. It is
+  // the hero AND the room's only lamp, so the walls are flat bars from black at
+  // the ceiling to its warm glow at the floor (2600 seams), and the one thing
+  // happening is coins going over the lip into the tray. The landlord is the
+  // framing device: the hole in the ceiling, rimmed LIGHTER than the dark it
+  // opens onto, with a mask and two lit eyes in it. The grate you are sitting
+  // on is cropped by the bottom edge, which is what makes it the foreground.
+  pit(g, a) {
+    for (let i = 0; i < 18; i++) g.p(0, i * 4, W, 4, mix('#050407', '#3e2c16', (i / 17) ** 1.7));
+    // cinder-block courses either side, just darker than the wall
+    for (let y = 14, k = 0; y < 64; y += 7, k++) {
+      g.p(0, y, 42, 1, '#0c0a08'); g.p(86, y, 42, 1, '#0c0a08');
+      for (let x = (k % 2) * 7; x < W; x += 14) if (x < 42 || x > 86) g.p(x, y, 1, 7, '#0c0a08');
+    }
+    // the hole in the ceiling and the landlord in it
+    // (low enough that the curved glass does not crop him off the top)
+    g.p(45, 2, 38, 10, '#67635a'); g.p(47, 2, 34, 8, '#020203');
+    g.p(57, 2, 3, 2, '#4b4a52'); g.p(68, 2, 3, 2, '#4b4a52');        // ears
+    g.disc(64, 6, 4, '#77757f');                                       // head
+    g.p(57, 5, 15, 3, '#121116');                                      // the mask
+    g.p(59, 6, 2, 1, '#fff2b0'); g.p(67, 6, 2, 1, '#fff2b0');          // eyes
+    g.p(62, 9, 4, 1, '#e8e2d6');                                       // muzzle
+    const X0 = 45, X1 = 83, w = X1 - X0;
+    // the marquee, its bulbs and a bar of gold lettering
+    g.p(X0 - 1, 12, w + 2, 6, '#6d0f1f');
+    for (let x = X0; x <= X1; x += 3) g.p(x, 12, 1, 1, '#ffe28a');
+    g.p(X0 + 9, 14, w - 18, 2, a);
+    // the cheeks, with a lamp every few pixels
+    g.p(X0, 18, 3, 44, '#7a1424'); g.p(X1 - 3, 18, 3, 44, '#7a1424');
+    for (let y = 20; y < 58; y += 5) { g.p(X0 + 1, y, 1, 1, '#ffd060'); g.p(X1 - 2, y, 1, 1, '#ffd060'); }
+    // the board: violet, lit from inside, a lattice of brass nails
+    for (let i = 0; i < 26; i++) g.p(X0 + 3, 18 + i, w - 6, 1, mix('#24124e', '#5c2c8c', Math.sin(i / 25 * Math.PI)));
+    for (let y = 20, r = 0; y < 43; y += 3, r++) for (let x = X0 + 5 + (r % 2) * 2; x < X1 - 4; x += 4) g.p(x, y, 1, 1, '#d8b25a');
+    // the reel window, three sevens in it
+    g.p(55, 24, 18, 10, '#f0c040'); g.p(56, 25, 16, 8, '#0b0620');
+    for (const x of [57, 62, 67]) { g.p(x, 26, 4, 1, '#ff2448'); g.p(x + 3, 27, 1, 1, '#ff2448'); g.p(x + 2, 28, 1, 1, '#ff2448'); g.p(x + 1, 29, 1, 3, '#ff2448'); }
+    // coins in flight: gold on a dark ring, so they read against the board
+    for (const [x, y] of [[51, 21], [76, 37], [60, 39]]) {
+      g.p(x - 2, y - 1, 4, 2, '#1c0c2c'); g.p(x - 1, y - 2, 2, 4, '#1c0c2c');
+      g.p(x - 1, y - 1, 2, 2, a); g.p(x - 1, y - 1, 1, 1, '#fff6c0');
+    }
+    // the pusher: the slab's chrome edge, and a lit bed heaped with coins
+    g.p(X0 + 3, 44, w - 6, 2, '#c8ccd4');
+    for (let y = 46; y < 53; y++) g.p(X0 + 3, y, w - 6, 1, mix('#5a3c14', '#d8a040', (y - 46) / 7));
+    for (let i = 0; i < 90; i++) {
+      const x = X0 + 4 + ((i * 37) % (w - 8)), y = 46 + ((i * 13) % 7);
+      g.p(x, y, 1, 1, i % 11 === 0 ? '#eef2f8' : i % 3 ? '#ffd23f' : '#c87533');
+    }
+    g.p(X0 + 2, 53, w - 4, 1, '#f4f0e0');                               // the lip
+    // over the lip: the one thing happening
+    for (const [x, y] of [[54, 54], [61, 56], [68, 55], [57, 57], [71, 57], [64, 58]]) { g.p(x, y, 2, 1, a); g.p(x, y + 1, 2, 1, '#9a6a18'); }
+    // the tray, with a few already in it
+    g.p(X0 + 4, 59, w - 8, 3, '#9aa0a8'); g.p(X0 + 5, 59, w - 10, 1, '#dfe4ea');
+    for (let x = X0 + 6; x < X1 - 6; x += 3) g.p(x, 58, 2, 1, a);
+    g.p(X0, 62, w, 6, '#5a0c1a');                                       // the lower cabinet
+    // the lever, a red ball on a chrome stick
+    g.line(X1 + 3, 45, X1 + 3, 31, '#c8ccd4'); g.disc(X1 + 3, 29, 2, '#e01830'); g.p(X1 + 2, 28, 1, 1, '#ff9aa6');
+    // the machine's light on the floor, and the grate you sit on, cropped
+    g.p(0, 66, W, 6, '#16120e');
+    g.p(30, 66, 68, 2, '#4a3418');
+    for (let x = 16; x < 114; x += 7) g.p(x, 67, 1, 5, '#3c3a36');
+    g.p(16, 69, 98, 1, '#3c3a36');
+  },
+
   // Slay Kallio: a cover, not an icon. A plank bridge at the wrong end of the
   // night, seen along the deck. The framing device is the BRIDGE — lighter
   // than the water and the trees behind it, so it reads as a thing rather

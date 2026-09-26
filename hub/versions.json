@@ -124,6 +124,11 @@
     "n": 5000,
     "from": "VERSIONS.md"
   },
+  "pachipit": {
+    "v": "1",
+    "n": 1000,
+    "from": "VERSIONS.md"
+  },
   "neonronin": {
     "v": "2",
     "n": 2000,
