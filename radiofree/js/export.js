@@ -23,9 +23,9 @@
 // landed on, because "MP4" that turns out to be AV1 is a fact the person
 // uploading it needs.
 
-import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=71';
-import { renderSoundtrack } from './score.js?v=71';
-import { makeToko3D } from '../../toko/js/toko3d.js?v=1';
+import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=72';
+import { renderSoundtrack } from './score.js?v=72';
+import { makeToko3D } from '../../toko/js/toko3d.js?v=2';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';
 export { W, H };
@@ -66,10 +66,10 @@ export async function pickCodec(M) {
 // Toko in 3D, made once per page and kept: a WebGL context is a scarce thing
 // and a morning renders a dozen films. If WebGL is missing the film falls back
 // to the flat badge rather than failing.
-let toko3dP = null;
-function toko3d() {
-  if (!toko3dP) toko3dP = makeToko3D(720).catch((e) => { console.warn('toko3d unavailable:', e && e.message); return null; });
-  return toko3dP;
+const toko3dP = {};
+function toko3d(style = 'enamel') {
+  if (!toko3dP[style]) toko3dP[style] = makeToko3D(720, { style }).catch((e) => { console.warn('toko3d unavailable:', e && e.message); return null; });
+  return toko3dP[style];
 }
 
 // The canvases a shot can show. The graphic's PANEL, not its card: the card is
@@ -108,7 +108,14 @@ export async function exportPost(entry, opts = {}) {
     accent: opts.accent, freq: opts.freq, onAir: t('tag.onair'), fiction: t('fiction'),
   });
   const n = Math.max(1, Math.round(plan.S * fps));
-  const t3d = opts.threeD === false ? null : await toko3d();
+  // CLAY — the default for every film since 2026-09-26 (owner: "if the clay
+  // look works, expand it to all the satire videos"); `clay: false` is the
+  // enamel pin. Toko is animated ON TWOS —
+  // his performance sampled at 12 fps and held, and re-lumped on each new
+  // hold (`boil`), the way a stop-motion puppet is moved between exposures.
+  // The camera, the type and the graphic stay smooth.
+  const clay = opts.clay !== false;
+  const t3d = opts.threeD === false ? null : await toko3d(clay ? 'clay' : 'enamel');
 
   const M = await loadMediabunny();
   const pick = await pickCodec(M);
@@ -157,7 +164,9 @@ export async function exportPost(entry, opts = {}) {
       pkg.clock = 0;
       // Toko's performance comes from the film, not from his own clock: the
       // mouth off the caption on screen, the blink before a cut, the take
-      const act = actAt(plan, tt);
+      const held = clay ? Math.floor(tt * 12) / 12 : tt;
+      const act = actAt(plan, held);
+      if (clay) act.boil = Math.floor(tt * 12);
       if (sh.shot !== 'card' && sh.shot !== pkg.shot) pkg.cutTo(sh.shot);
       if (pkg.drawn && pkg.drawn.anchor) pkg.drawn.anchor.act = act;
       pkg.update(1 / fps, act.mouth);
@@ -180,7 +189,7 @@ export async function exportPost(entry, opts = {}) {
     // wants, and the one that told us a reveal had not happened at all
     revealed,
     audio: audioCodec, lufs: sound ? Math.round(sound.after * 10) / 10 : null,
-    toko3d: !!t3d,
+    toko3d: t3d ? t3d.style : false,
     ms: Math.round(performance.now() - t0),
   };
 }

@@ -29,10 +29,10 @@
 // the transitions and the surface are borrowed, and the drawing medium is not.
 // This station is a 128×152 pixel panel behind curved glass, and stays one.
 
-import { parseLine } from './wire.js?v=71';
-import { readFigures } from './visuals.js?v=71';
-import { PAL } from './palette.js?v=71';
-import { mix } from './screen.js?v=71';
+import { parseLine } from './wire.js?v=72';
+import { readFigures } from './visuals.js?v=72';
+import { PAL } from './palette.js?v=72';
+import { mix } from './screen.js?v=72';
 
 export const W = 1080, H = 1920;
 export const MONO = '"IBM Plex Mono", "SF Mono", Menlo, Consolas, "IPAGothic", monospace';
@@ -712,7 +712,9 @@ export function paintFilm(ctx, plan, t, shots) {
   ctx.fillStyle = '#5f8a74';
   ctx.fillText(plan.fiction, x, footerY);
 
-  bloom(ctx);
+  // clay is matte: bloom would glow it back into gloss, so a clay Toko's
+  // shots take a third of it
+  bloom(ctx, fullAnchor && shots.toko3d && shots.toko3d.style === 'clay' ? 0.35 : 1);
   surface(ctx, plan, t);
 
   // the tube switching off: the whole picture collapses to a line, then a dot
@@ -742,7 +744,7 @@ function dropOut(ctx, plan, t, cur, shots, band) {
 // the dark stays dark. The base is never blurred, so the pixel art under it
 // keeps every hard edge.
 let bloomC = null, ambC = null;
-function bloom(ctx) {
+function bloom(ctx, amount = 1) {
   const q = 4, bw = W / q, bh = H / q;
   if (!bloomC) { bloomC = document.createElement('canvas'); bloomC.width = bw; bloomC.height = bh; }
   const b = bloomC.getContext('2d');
@@ -752,7 +754,7 @@ function bloom(ctx) {
   b.filter = 'none';
   ctx.save();
   ctx.globalCompositeOperation = 'screen';
-  ctx.globalAlpha = SURFACE.bloom;
+  ctx.globalAlpha = SURFACE.bloom * amount;
   ctx.imageSmoothingEnabled = true;
   ctx.drawImage(bloomC, 0, 0, W, H);
   ctx.restore();

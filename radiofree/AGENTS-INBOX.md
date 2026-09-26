@@ -646,3 +646,9 @@ lessons "all in order". Cuts on the beat, Toko's mood transitions by story
 carrying its own cut, and one escalating set with a SPIN-O-METER counting the
 morning's spins (`main.js` sums the `{{…}}` spans of the bulletins before this
 one). Details and reasons in `MOTION.md`.
+
+## 2026-09-26 — Toko is clay in every film (v72)
+
+Owner approved a clay Toko (Aardman), saw the test shot, and asked for it on
+all the satire videos. `clay` is now the film default (`--enamel` to opt out);
+the gate asserts `toko3d === 'clay'`. Next for the look: the miniature set.
