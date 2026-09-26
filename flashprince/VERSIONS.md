@@ -1,5 +1,16 @@
 # Flash Prince — versions
 
+## v70 — 2026-09-26
+
+**It starts again.** Since v68's merge (2026-08-28) a tape-drawing branch
+from the pickup painter had been sitting inside the rock painter's
+*organic* branch, where there is no `p`. Every room that is not built
+stone threw a ReferenceError on its first paint, and because the loop
+asks for its next frame last, one throw stopped the game: pressing Enter
+froze the screen. The eight stray lines are gone; the tape is still drawn
+where it always was, by the pickup painter. `level.js` 68 -> 69, `main.js`
+69 -> 70.
+
 ## v69 — 2026-09-23
 
 **Toko at the table.** The signature in the corner opens the counter over this

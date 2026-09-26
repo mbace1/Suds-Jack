@@ -501,14 +501,6 @@ export class World {
         if ((ty & 1) === 0) scr.rect(x, y, TILE, 1, C.DARK);
         const j = ((ty & 1) ? 0 : 8);
         if (!empty(tx, ty)) scr.rect(x + j, y, 1, TILE, C.DARK);
-      } else if (p.kind === 'tape') {
-        // A VHS cassette at this scale is its two reels and one bright label.
-        // It stays dark and square against the organic facility behind it.
-        scr.rect(p.x - 7, p.y + bob - 5, 14, 10, C.DARK);
-        scr.rect(p.x - 6, p.y + bob - 4, 12, 2, C.LUX);
-        scr.disc(p.x - 3, p.y + bob + 1, 2, C.EDGE);
-        scr.disc(p.x + 3, p.y + bob + 1, 2, C.EDGE);
-        scr.rect(p.x - 1, p.y + bob, 2, 2, C.VOID);
       } else {
         // bedding planes: long, wavering, and nothing like a straight joint
         if ((ty * 7 + tx * 3) % 5 === 0) {
