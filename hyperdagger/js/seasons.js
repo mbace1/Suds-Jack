@@ -110,7 +110,7 @@ export const SEASONS = [
       // second, a brute at `brute`. Past half it leans; at zero it collapses
       // into a heap of shale chunks (physical) and a spray of chips. Standing
       // behind one has a clock now, and the swarm is what runs it.
-      hp: 70, grind: 3, brute: 10, rubble: [0.07, 0.06, 0.065],   // the chunks, a step lighter than the rock so a heap reads as a heap
+      hp: 70, grind: 3, brute: 10, rubble: [0.22, 0.19, 0.19],   // the chunks: lighter than the rock, or a heap on the void floor is invisible
       shale: { tile: 0, layer: 0.34, jitter: 0.16, turn: 0.09 },
     },
     platforms: {
@@ -134,8 +134,11 @@ export const SEASONS = [
     // seconds onto a random point of the disc from `height` up — a rock that
     // lands on you is a hit — and the fallen rock stays as heaps: the new floor.
     // Survive it and the run goes on, with the director `after.pressure` tighter.
+    // (the rock is PALE — the first loop dropped shale-dark chunks against a
+    // black sky and nothing could be seen falling — and each drop stands a
+    // beam on its landing spot for the fall, the way a heavy spawn is marked)
     finale: { at: 180, kind: 'rockfall', name: 'THE ROCKFALL', duration: 10, every: 0.2, height: 16, size: 0.95,
-      color: [0.07, 0.06, 0.065], after: { pressure: 1.3 } },
+      color: [0.46, 0.38, 0.34], beam: [1.6, 0.32, 0.1], after: { pressure: 1.3 } },
     goo: null,                  // season 2's, not season 1's
     inca: null,
     roster: null,

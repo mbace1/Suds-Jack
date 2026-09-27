@@ -71,6 +71,12 @@ with the director tighter (`after.pressure` divides the season's own cadence).
   from sixteen units up onto a random point of the disc; a rock that lands
   on you is a hit (`gibs.fallingOn`, one strike per rock); the fallen rock
   stays as heaps — the new floor. 41 rocks in the probe; pressure ×1.3 after.
+  Looked at: the first loop dropped shale-dark chunks against a black sky and
+  nothing could be seen falling, so the rock is PALE and each drop stands an
+  ember beam on its landing spot for the fall (the heavy-spawn telegraph), and
+  the gibs solver's gravity is 20 rather than the reference's 10, which
+  floated a rock down from the sky. Season 1's rubble is lighter for the same
+  reason: a shale-dark heap on the void floor was invisible.
 - Season 2, THE SEA DRAINS: over four seconds the water goes to nothing
   (`goo.drain` scales the crest; the caustics and the sun's path fade with
   it), the temple floor shows for fourteen, and seven stone steps rise out of

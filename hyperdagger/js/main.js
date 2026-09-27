@@ -2816,7 +2816,11 @@ function updateFinale(dt) {
       finale.next = f.every;
       const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * (ARENA_R - 2);
       physGibs.on = gibsOn();
-      if (physGibs.rock(Math.cos(a) * r, Math.sin(a) * r, f.height, f.size, f.color)) finale.rocks++;
+      const rx = Math.cos(a) * r, rz = Math.sin(a) * r;
+      if (physGibs.rock(rx, rz, f.height, f.size, f.color)) {
+        finale.rocks++;
+        telegraph(_seg.set(rx, 0, rz), f.beam ?? [1.6, 0.32, 0.1], Math.sqrt(2 * f.height / 20), () => {});   // a beam on the spot for the fall
+      }
     }
     if (state === 'playing') {
       const g = physGibs.fallingOn(player.feet.x, player.feet.y, player.feet.z);

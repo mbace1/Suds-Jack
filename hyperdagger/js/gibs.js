@@ -55,6 +55,7 @@ export class PhysGibs {
     this.arenaR = arenaR;
     this.sv = new Solver();
     this.sv.iterations = this.cfg.iterations;
+    this.sv.gravity = -20;   // the game's bodies fall at 24; the reference's 10 floated a rock down from the sky
     this.group = new THREE.Group();
     this.group.rotation.x = -Math.PI / 2;
     this.group.name = 'physgibs';
