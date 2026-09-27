@@ -5,32 +5,32 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=84';
-import { Player } from './player.js?v=84';
-import { DaggerPool } from './daggers.js?v=84';
-import { GemPool } from './gems.js?v=84';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=84';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=84';
-import { OrbPool } from './bullets.js?v=84';
-import { AudioKit } from './audio.js?v=84';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=84';
-import { TUNING as T } from './tuning.js?v=84';
-import { HyperEnvironment } from './environment.js?v=84';
-import { Backdrop } from './backdrop.js?v=84';
-import { Walls } from './walls.js?v=84';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=84';
-import { TruckTrack } from './truck.js?v=84';
-import { GazeLock } from './gaze.js?v=84';
-import { PhysGibs } from './gibs.js?v=84';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=84';
-import { Platforms } from './platforms.js?v=84';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=84';
-import { GooWave } from './goo.js?v=84';
-import { gelMaterial } from './gel.js?v=84';
-import { mosaicPalette, mosaicSkin } from './roster.js?v=84';
-import { Skullscape } from './inca.js?v=84';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=84';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=84';
+import { InputManager } from './input.js?v=85';
+import { Player } from './player.js?v=85';
+import { DaggerPool } from './daggers.js?v=85';
+import { GemPool } from './gems.js?v=85';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=85';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=85';
+import { OrbPool } from './bullets.js?v=85';
+import { AudioKit } from './audio.js?v=85';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=85';
+import { TUNING as T } from './tuning.js?v=85';
+import { HyperEnvironment } from './environment.js?v=85';
+import { Backdrop } from './backdrop.js?v=85';
+import { Walls } from './walls.js?v=85';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=85';
+import { TruckTrack } from './truck.js?v=85';
+import { GazeLock } from './gaze.js?v=85';
+import { PhysGibs } from './gibs.js?v=85';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=85';
+import { Platforms } from './platforms.js?v=85';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
+import { GooWave } from './goo.js?v=85';
+import { gelMaterial } from './gel.js?v=85';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=85';
+import { Skullscape } from './inca.js?v=85';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=85';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=85';
 import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
@@ -1494,17 +1494,18 @@ function runReport() {
   };
 }
 
-function showDeath(timedOut) {
-  const t = gameTime.toFixed(1);
+function showDeath(timedOut, complete = false) {
+  const runT = gameTime + runBonus;   // v54: season 3's time carries the load
+  const t = runT.toFixed(1);
   // daily times never touch the FREE all-time board — separate economies
   let best = false;
   let dailyLines = '';
   if (runKind === 'daily') {
     const key = dailyKey(runDate, mode); // runDate, not today — midnight straddle
     const dayBest = parseFloat(localStorage.getItem(key) || '0');
-    best = gameTime > dayBest;
-    if (best) localStorage.setItem(key, String(gameTime));
-    const rank = pushDailyTable(runDate, M().id, gameTime);
+    best = runT > dayBest;
+    if (best) localStorage.setItem(key, String(runT));
+    const rank = pushDailyTable(runDate, M().id, runT);
     dailyLines =
       `<p>${best ? 'NEW DAILY BEST' : `today's best ${dayBest.toFixed(1)}s`} &middot; ${runDate}${
         rank <= 30 ? ` &middot; daily #${rank} all-time` : ''}</p>${
@@ -1512,13 +1513,14 @@ function showDeath(timedOut) {
           ? `<div id="board"><p class="history">fetching global top&hellip;</p></div>
              <p class="history">initials <input id="initials" maxlength="3" value="${getInitials()}"> (next run's board name)</p>`
           : ''}`;
-  } else if (gameTime > hiScore) {
+  } else if (runT > hiScore) {
     best = true;
-    hiScore = gameTime;
+    hiScore = runT;
     localStorage.setItem(hiKey(), String(hiScore));
   }
 
-  const causeLine = timedOut
+  const causeLine = complete ? `the season is over — ${S().menu ?? S().name} survived`
+    : timedOut
     ? 'the clock ran out'
     : `felled by ${ENEMY_NAMES[lastKiller] || 'something'}`;
   const breakdown = Object.entries(killsByType)
@@ -1526,7 +1528,7 @@ function showDeath(timedOut) {
     .map(([type, n]) => `${n}&times; ${ENEMY_NAMES[type] || type}`)
     .join(' &middot; ');
 
-  const hist = pushRunHistory({ t: gameTime, mode: M().id, daily: runKind === 'daily' || undefined });
+  const hist = pushRunHistory({ t: runT, mode: M().id, daily: runKind === 'daily' || undefined });
   pushRunLog(timedOut);
   const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
   const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
@@ -1540,11 +1542,12 @@ function showDeath(timedOut) {
 
   elMsg.style.display = 'block';
   elMsg.innerHTML =
-    `<h1 class="dead">${timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
+    `<h1 class="dead">${complete ? 'RUN COMPLETE' : timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
      <p class="big">${t}s &middot; ${kills} kills &middot; ${gemCount} gems</p>
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      ${pulseLine}
+     ${recapParts().length ? `<p class="breakdown">${recapParts().join(' &middot; ')}</p>` : ''}
      ${runKind === 'daily' ? dailyLines
     : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${M().id === 'pure' ? '' : ` &middot; ${M().id}`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
@@ -1572,7 +1575,7 @@ function showDeath(timedOut) {
       localStorage.setItem(INITIALS_KEY, v);
     });
   }
-  if (runKind === 'daily') boardReport(runDate, M().id, gameTime);
+  if (runKind === 'daily') boardReport(runDate, M().id, runT);
 }
 
 function clearEnemies() {
@@ -1596,6 +1599,7 @@ function resetRun() {
   debris.reset();
   physGibs.reset();
   wallsFelled = 0;
+  runBonus = 0; spilledSeen = -1; cratesSaved = 0; cratesSpilled = 0; ebbN = 0; ebbSteps = false; rubbleStands = 0; runComplete = false;
   finale = null; finaleDone = false; finalePressure = 1;
   litter.reset();
   gems.reset();
@@ -1720,7 +1724,10 @@ function endRun() {
   showMenu();
 }
 
-function die(timedOut = false) {
+/** v54: the season's end reached — the run is over and it was not a death */
+function completeRun() { runComplete = true; die(false, true); }
+
+function die(timedOut = false, complete = false) {
   state = 'dead';
   setRunFrame(false);
   deathAt = performance.now();
@@ -1730,7 +1737,7 @@ function die(timedOut = false) {
   buzz(1, 1, 320);
   // killer-focus death cam: swing the view toward what got you during the
   // slow-mo. TIME OUT has no killer — the clock did it — so no swing there.
-  if (!timedOut && lastKiller && lastKiller !== 'timeout') {
+  if (!complete && !timedOut && lastKiller && lastKiller !== 'timeout') {
     const dx = lastKillerPos.x - camera.position.x;
     const dz = lastKillerPos.z - camera.position.z;
     const hd = Math.hypot(dx, dz);
@@ -1745,14 +1752,14 @@ function die(timedOut = false) {
   }
   audio.droneStop();
   audio.musicStop();
-  audio.death();
-  elVignette.style.opacity = 1;
+  if (complete) audio.stinger(); else audio.death();
+  elVignette.style.opacity = complete ? 0.35 : 1;
   setTimeout(() => { elVignette.style.opacity = 0; }, 450);
   elCross.style.display = 'none';
   elPause.style.display = 'none';
   elStyle.style.opacity = '0';
   if (document.pointerLockElement) document.exitPointerLock();
-  showDeath(timedOut);
+  showDeath(timedOut, complete);
 }
 
 window.addEventListener('pointerdown', e => {
@@ -2764,9 +2771,9 @@ function fireDagger(spread, speed, homing, damage = 1) {
   // nearly all the time, streaks through screen centre are too distracting
   _p0.copy(camera.position).addScaledVector(_hitDir, 0.85);
   _seg.setFromMatrixColumn(camera.matrixWorld, 0); // camera right
-  _p0.addScaledVector(_seg, HAND_MUZZLE[0] + (Math.random() - 0.5) * T.weapon.originJitter);
+  _p0.addScaledVector(_seg, HAND_MUZZLE[0] + (Math.random() - 0.5) * wpn('originJitter'));
   _c.setFromMatrixColumn(camera.matrixWorld, 1); // camera up
-  _p0.addScaledVector(_c, HAND_MUZZLE[1] + (Math.random() - 0.5) * T.weapon.originJitter);
+  _p0.addScaledVector(_c, HAND_MUZZLE[1] + (Math.random() - 0.5) * wpn('originJitter'));
   daggers.fire(_p0, _hitDir, speed, homing, damage);
 }
 
@@ -2774,6 +2781,9 @@ function fireDagger(spread, speed, homing, damage = 1) {
  *  chunks that heap where it stood — with a spray of chips, and it is gone as
  *  cover. Chips fly off every blow so a pile that is being worked on says so. */
 let wallsFelled = 0;
+let runBonus = 0, spilledSeen = -1, cratesSaved = 0, cratesSpilled = 0;   // v54: season 3's load, in seconds
+let ebbN = 0, ebbSteps = false, rubbleStands = 0;                           // v54: the ebb, and how often the rubble held you
+let runComplete = false;                                                     // v54: the season's end reached
 const _col = new THREE.Color();
 
 // ---------------------------------------------------------------- the finale (v53)
@@ -2844,6 +2854,46 @@ function updateFinale(dt) {
     if (finale.t >= f.duration) endFinale();
   }
 }
+// ---------------------------------------------------------------- the ebb (v54)
+// Season 2: the finale's drain, early and partial. Off the season's clock, not
+// a state machine, so a pause or a setTime lands in the right place.
+function updateEbb() {
+  const e = S().ebb;
+  if (!e || !goo.cfg || finale || state !== 'playing' || gameTime < e.from) return;
+  const c = (gameTime - e.from) % e.every, n = Math.floor((gameTime - e.from) / e.every) + 1;
+  let d = 0;
+  if (c < e.out) d = (c / e.out) * e.depth;
+  else if (c < e.out + e.dry) d = e.depth;
+  else if (c < e.out + e.dry + e.back) d = e.depth * (1 - (c - e.out - e.dry) / e.back);
+  if (d > 0 && n > ebbN) { ebbN = n; if (n === 1) announce('ebb', 'THE EBB'); }
+  if (d >= e.depth * 0.6 && !ebbSteps && !platforms.count) {
+    ebbSteps = true;
+    platforms.build(e.steps, rng.next,
+      (x, z, half) => walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < half + Math.max(w.len, w.thick) * 0.5 + 0.6), player);
+  }
+  goo.drain = d;
+  applySeasonFloorTerms(1 - d);
+}
+
+/** v54: what the run DID, for the end screen — only the lines that happened */
+function recapParts() {
+  const out = [];
+  if (wallsFelled) out.push(`${wallsFelled} pile${wallsFelled === 1 ? '' : 's'} brought down`);
+  if (S().rubbleFloor && physGibs.gibs.length) out.push(`${physGibs.gibs.length} chunks on the floor`);
+  if (rubbleStands >= 1) out.push(`${rubbleStands.toFixed(0)}s stood on rubble`);
+  if (finaleDone) out.push(`survived ${S().finale?.name ?? 'the finale'}`);
+  if (ebbN) out.push(`${ebbN} ebb${ebbN === 1 ? '' : 's'}`);
+  if (goo.cfg && waveStrikes) out.push(`the sea hit you ${waveStrikes}×`);
+  const cv = truck.active;
+  if (cv && S().cargoScore) {
+    out.push(`${cv.cargo.crates.filter(c => c.welded).length} crates still loaded`);
+    if (cratesSaved) out.push(`${cratesSaved} saved`);
+    if (cratesSpilled) out.push(`${cratesSpilled} spilled`);
+    if (cv.jackknifed) out.push(`${cv.jackknifed} jackknifed`);
+  }
+  return out;
+}
+
 function wearWall(w, amount, at) {
   if (amount >= 1 || Math.random() < amount * 3) {
     debris.spawn(_seg.set(at.x + (Math.random() - 0.5) * 0.4, Math.min(at.y, w.h), at.z + (Math.random() - 0.5) * 0.4),
@@ -3101,6 +3151,11 @@ function updateCombat(dt) {
         continue;
       }
     }
+    if (S().rubbleFloor && physGibs.gibs.length && physGibs.blocks(d.prev, d.m.position)) {   // v54: the heap is cover
+      spawnSpark(d.m.position, false);
+      daggers.recycle(i);
+      continue;
+    }
     if (platforms.count) {
       const slab = platforms.blocks(d.prev, d.m.position);
       if (slab) {
@@ -3344,6 +3399,15 @@ function step(dt) {
     // v48: a sea that HURTS is not a floor; one that does not still carries
     if (!goo.cfg.hurts) player.floorY = goo.carry(dt, player, player.floorY ?? 0);
   }
+  // v54 THE RUBBLE IS THE LEVEL: a heap at rest is ground, the higher of it or
+  // the slab under you (the base is re-said here every frame — without slabs
+  // nothing else resets it, and a heap you stepped off would stay under you)
+  if (S().rubbleFloor && M().arena !== 'track') {
+    const base = platforms.count ? player.floorY : 0;
+    const r = physGibs.gibs.length ? physGibs.topAt(player.feet.x, player.feet.z, player.feet.y + 0.45) : null;
+    player.floorY = r !== null && r > base ? r : base;
+    if (r !== null && r > base + 0.2 && player.feet.y <= r + 0.02) rubbleStands += dt;
+  }
   const _vyBefore = player.vy;
   player.update(dt);
   // v48 THE WAVE STRIKES: a body inside the crest is hit, and shoved along
@@ -3395,9 +3459,19 @@ function step(dt) {
       die();
       return;
     }
+    // v54 CARGO IS THE SCORE: set a loose crate back by landing on it, pay for every one the road takes
+    const cs = S().cargoScore, cv = truck.active;
+    if (cs && cv && !_urlMode && state === 'playing') {
+      const saved = player.vy <= 0.5 ? cv.cargo.stomp(player.feet) : 0;
+      if (saved) { cratesSaved += saved; runBonus += saved * cs.save; toast(`+${saved * cs.save}s · LOAD SAVED`, 900); audio.gem?.(); }
+      const sp = cv.cargo.stats.spilled;
+      if (spilledSeen < 0 || sp < spilledSeen) spilledSeen = sp;
+      if (sp > spilledSeen) { cratesSpilled += sp - spilledSeen; runBonus -= (sp - spilledSeen) * cs.spill; spilledSeen = sp; }
+    }
   }
   director(dt);
-  const solidArena = walls.walls.length || platforms.count;
+  const rubbleSolid = S().rubbleFloor && physGibs.gibs.length;   // v54: the swarm goes round a heap
+  const solidArena = walls.walls.length || platforms.count || rubbleSolid;
   for (const e of enemies) {
     e.update(dt, camera.position, gems);
     // v42: a body cannot stand inside rock. `e.pos` IS the group position, so
@@ -3412,6 +3486,7 @@ function step(dt) {
         if (w && w.maxHp) wearWall(w, dt * (e.type === 'brute' ? (S().pillars?.brute ?? 10) : (S().pillars?.grind ?? 3)), e.pos);
       }
       if (platforms.count) platforms.pushOut(e.pos, r, e.footOffset ?? 0.6);
+      if (rubbleSolid) physGibs.pushOut(e.pos, r, e.footOffset ?? 0.6);
     }
     if (e.type === 'watcher') {
       if (e.warnReq) { e.warnReq = false; audio.warn(); }
@@ -3484,11 +3559,13 @@ function step(dt) {
   // there — the season's whole claim on the fight is that there is now
   // somewhere to put between you and a volley. Segment tests (an orb keeps
   // its previous position) so a fast one cannot pass through a thin pile.
-  if (walls.walls.length || platforms.count) {
+  const rubbleCover = S().rubbleFloor && physGibs.gibs.length;   // v54
+  if (walls.walls.length || platforms.count || rubbleCover) {
     for (let i = orbs.active.length - 1; i >= 0; i--) {
       const o = orbs.active[i];
       if ((walls.walls.length && walls.blocks(o.prev, o.m.position))
-        || (platforms.count && platforms.blocks(o.prev, o.m.position))) {
+        || (platforms.count && platforms.blocks(o.prev, o.m.position))
+        || (rubbleCover && physGibs.blocks(o.prev, o.m.position))) {
         spawnSpark(o.m.position, false);
         orbs.recycle(i);
       }
@@ -3499,6 +3576,9 @@ function step(dt) {
   physGibs.update(dt);
   if (S().finale && !finale && !finaleDone && gameTime >= S().finale.at) startFinale();
   updateFinale(dt);
+  updateEbb();
+  // v54 A RUN THAT ENDS: the season is over at `end` seconds
+  if (S().end && state === 'playing' && gameTime >= S().end) { completeRun(); return; }
   // style meter bleeds when you stop scoring — faster at higher ranks so the
   // top tiers stay fleeting and demand a continuous chain
   // provisional v4.1 soften (was 6 + 0.05v): S-rank was bleeding out between
@@ -3526,9 +3606,11 @@ function step(dt) {
     elTimer.style.color = lifeT < 10 ? '#c81e1e' : '';
     elKills.textContent = `${kills} kills · run ${gameTime.toFixed(1)}s`;
   } else {
-    elTimer.textContent = gameTime.toFixed(1);
+    elTimer.textContent = (gameTime + runBonus).toFixed(1);   // v54: season 3's time carries the load
     elTimer.style.color = '';
-    elKills.textContent = `${kills} kills`;
+    elKills.textContent = S().cargoScore && truck.active && !_urlMode
+      ? `${kills} kills · load ${truck.active.cargo.crates.filter(c => c.welded).length} · ${runBonus >= 0 ? '+' : ''}${runBonus}s`
+      : `${kills} kills`;
   }
   elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ` · HOMING ${homingAmmo}` : ''}`;
 }
@@ -3812,6 +3894,8 @@ window.__hd = {
     },
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
+    getRun() { return { runBonus, cratesSaved, cratesSpilled, ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
+    completeRun() { completeRun(); return runComplete; },
     getFinale() { return { active: !!finale, kind: finale?.kind ?? null, t: +(finale?.t ?? 0).toFixed(2), phase: finale?.phase ?? 0, rocks: finale?.rocks ?? 0, wrecked: finale?.wrecked ?? 0, done: finaleDone, pressure: finalePressure, drain: +goo.drain.toFixed(2), declared: S().finale ?? null }; },
     getConvoy() { const cv = truck.active; return cv ? { trucks: cv.trucks.length, jackknifed: cv.jackknifed, hp: cv.trucks.map(t => t.hp), cargo: cv.cargo.getState() } : null; },   // v53   // v50: the gate taps the touch sticks the way a thumb does
     getSeasons() {

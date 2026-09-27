@@ -420,6 +420,43 @@ export const MODELS = {
       return '.';
     }),
   },
+  // v54 SEASON 1 (owner: *closer to the Devil Daggers example*): a BARE HAND,
+  // the way DD holds it — back of the hand to the eye, bottom right, fingers
+  // up and tilted a little forward, the daggers leaving the fingertips. Bone
+  // and ash like the old claw, five fingers this time, knuckles and joints
+  // drawn as a darker row on the back so the segments read; `B` at the tips
+  // is the glow the weapon level brightens (DD's hand lights up as it grows).
+  // Rows: x across (16), z depth (5: z 0 = the palm side, toward the enemy;
+  // z 4 = the back, toward the eye), y up (22).
+  daggerHand: {
+    voxelSize: 0.033, wobble: 0, noHull: true,
+    palette: { G: 0xbeb4a6, D: 0x5c554d, H: 0xe2d8c8, B: [2.2, 0.22, 0.08] },
+    layers: sculptLayers(18, 5, 22, (x, y, z) => {
+      const back = z === 4;
+      if (y <= 3) return (x >= 6 && x <= 11 && z >= 1 && z <= 3) ? (back ? 'G' : 'D') : '.';   // the wrist
+      if (y >= 4 && y <= 11 && x >= 2 && x <= 15 && z >= 1 && z <= 3) {                           // the palm
+        if (z === 3 && (x === 4 || x === 8 || x === 12) && y >= 7) return 'H';                     // metacarpal ridges on the back
+        if (z === 1 && y >= 6 && y <= 9 && x >= 6 && x <= 11) return 'H';                          // the hollow of the palm, lit
+        return 'G';
+      }
+      // the thumb: out from the palm's left edge and up
+      const th = [[0, 6], [0, 7], [0, 8], [-1, 9], [-1, 10], [-1, 11]];
+      for (const [tx, ty] of th) if ((x === tx + 1 || x === tx + 2) && y === ty && z >= 1 && z <= 2) return y === 11 ? 'B' : (y === 8 ? 'D' : 'G');
+      // four fingers, two wide with TWO cells of air between (a spread hand,
+      // or they read as one paddle), different lengths, the last three cells
+      // CURLED toward the palm side — DD's hand is a claw, not a salute
+      const F = [[2, 19], [6, 21], [10, 20], [14, 17]];
+      for (const [fx, top] of F) {
+        if (x < fx || x > fx + 1 || y < 12 || y > top) continue;
+        const curl = y > top - 3, lo = curl ? 0 : 1, hi = curl ? 2 : 3;
+        if (z < lo || z > hi) continue;
+        if (y === top) return 'B';                                                                  // the tip glows
+        if (z === hi && (y === 12 || y === top - 3)) return 'D';                                    // the knuckle and the bend
+        return 'G';
+      }
+      return '.';
+    }),
+  },
   jadeHand: {      // SEASON 2 — a jade macuahuitl: obsidian teeth, gold bands, a glowing inlay
     voxelSize: 0.034, wobble: 0, noHull: true,
     palette: { J: 0x2a9a86, O: 0xd8aa3c, K: 0x14161a, W: 0x5a3a22, B: [0.35, 2.4, 2.0] },

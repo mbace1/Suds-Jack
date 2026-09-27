@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Solver } from './avbd/solver.js?v=1';
 import { Rigid } from './avbd/body.js?v=1';
-import { shadedBox, applyFaceShade } from './voxel.js?v=84';
+import { shadedBox, applyFaceShade } from './voxel.js?v=85';
 
 /**
  * PHYSICAL GIBS (prototype, owner: *prototype the physical gibs on a branch*).
@@ -269,10 +269,70 @@ export class PhysGibs {
     this.mesh.instanceColor.needsUpdate = true;
   }
 
+  /**
+   * v54 THE RUBBLE IS THE LEVEL (season 1). A SLEEPING gib is terrain: its top
+   * is a floor (`topAt`), it stops a projectile (`blocks`) and a body is pushed
+   * out of it (`pushOut`). Only the sleeping ones — a chunk still tumbling is
+   * debris, not ground. Each is treated as its axis-aligned cube, which is a
+   * little generous on a chunk that came to rest turned; at 0.3–0.95 u that is
+   * inside a foot's width. World (x, y, z) = solver (x, z, −y).
+   */
+  topAt(x, z, maxY = Infinity) {
+    let top = null;
+    for (const g of this.gibs) {
+      if (g.b.mass > 0) continue;
+      const p = g.b.positionLin, h = g.s * 0.5;
+      if (Math.abs(x - p[0]) > h + 0.2 || Math.abs(z + p[1]) > h + 0.2) continue;
+      const t = p[2] + h;
+      if (t > maxY) continue;
+      if (top === null || t > top) top = t;
+    }
+    return top;
+  }
+
+  blocks(p0, p1) {
+    for (const g of this.gibs) {
+      if (g.b.mass > 0 || g.s < 0.4) continue;       // a knuckle of bone is not cover
+      const p = g.b.positionLin, h = g.s * 0.5;
+      if (segBox(p0, p1, p[0] - h, p[0] + h, p[2] - h, p[2] + h, -p[1] - h, -p[1] + h)) return g;
+    }
+    return null;
+  }
+
+  pushOut(pos, radius = 0.6, foot = 0) {
+    let hit = null;
+    for (const g of this.gibs) {
+      if (g.b.mass > 0 || g.s < 0.4) continue;
+      const p = g.b.positionLin, h = g.s * 0.5;
+      if (pos.y - foot >= p[2] + h - 0.05) continue;  // standing on it, not in it
+      const dx = pos.x - p[0], dz = pos.z + p[1], hx = h + radius;
+      if (Math.abs(dx) >= hx || Math.abs(dz) >= hx) continue;
+      const ox = hx - Math.abs(dx), oz = hx - Math.abs(dz);
+      if (ox <= oz) pos.x += (Math.sign(dx) || 1) * ox; else pos.z += (Math.sign(dz) || 1) * oz;
+      hit = g;
+    }
+    return hit;
+  }
+
   getState() {
     let top = 0, minZ = Infinity;
     for (const g of this.gibs) { top = Math.max(top, g.b.positionLin[2]); minZ = Math.min(minZ, g.b.positionLin[2] - g.s / 2); }
     return { on: this.on, n: this.gibs.length, awake: this.awake, ms: +this.ms.toFixed(3), cap: this.cfg.cap,
       top: +top.toFixed(3), floorGap: this.gibs.length ? +minZ.toFixed(3) : null, ...this.stats };
   }
+}
+
+/** slab test of segment p0→p1 against an axis-aligned box (v54) */
+function segBox(p0, p1, x0, x1, y0, y1, z0, z1) {
+  let t0 = 0, t1 = 1;
+  const o = [p0.x, p0.y, p0.z], d = [p1.x - p0.x, p1.y - p0.y, p1.z - p0.z];
+  const lo = [x0, y0, z0], hi = [x1, y1, z1];
+  for (let i = 0; i < 3; i++) {
+    if (Math.abs(d[i]) < 1e-9) { if (o[i] < lo[i] || o[i] > hi[i]) return false; continue; }
+    let a = (lo[i] - o[i]) / d[i], b = (hi[i] - o[i]) / d[i];
+    if (a > b) [a, b] = [b, a];
+    t0 = Math.max(t0, a); t1 = Math.min(t1, b);
+    if (t0 > t1) return false;
+  }
+  return true;
 }

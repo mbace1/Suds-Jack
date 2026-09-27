@@ -1027,6 +1027,27 @@ s.listen(0, '127.0.0.1', async () => {
     coverDies.piles >= 5 && coverDies.maxHp.every(h => h === 70) && coverDies.hp.every(h => h === 70)
     && coverDies.midHp === 30 && coverDies.midLean > 0.04 && coverDies.felled === 1 && coverDies.left === coverDies.piles - 1 && coverDies.gibs >= 8 && coverDies.gibsTop > 0.2,
     JSON.stringify(coverDies));
+  // v54 THE RUBBLE IS THE LEVEL: the heap that pile left, once it has come to
+  // rest, is ground you stand on and cover a shot stops on
+  const rubble = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player, G = d.gibsObj();
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    for (let i = 0; i < 400 && G.awake; i++) await frames(1);
+    const g = G.gibs.filter(x => x.b.mass <= 0 && x.s >= 0.4).sort((a, b) => (b.b.positionLin[2] + b.s / 2) - (a.b.positionLin[2] + a.s / 2))[0];
+    if (!g) return { none: true, n: G.gibs.length, awake: G.awake };
+    const top = g.b.positionLin[2] + g.s / 2, x = g.b.positionLin[0], z = -g.b.positionLin[1], y = g.b.positionLin[2];
+    pl.feet.set(x, top + 0.3, z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+    await frames(20);
+    const stood = pl.feet.y;
+    const V = pl.feet.constructor;
+    const blocked = !!G.blocks(new V(x - 3, y, z), new V(x + 3, y, z));
+    const clear = !G.blocks(new V(x - 3, y + 3, z), new V(x + 3, y + 3, z));
+    pl.feet.set(0, 0, 0); pl._sync();
+    return { top: +top.toFixed(2), stood: +stood.toFixed(2), blocked, clear, n: G.gibs.length };
+  });
+  ok('ember: THE RUBBLE IS THE LEVEL — a heap at rest is ground you stand on, and cover a shot stops on',
+    !rubble.none && rubble.top > 0.3 && Math.abs(rubble.stood - rubble.top) < 0.1 && rubble.blocked && rubble.clear,
+    JSON.stringify(rubble));
   const pillars = em.walls.walls.filter(w => w.tag === 'pillar');
   ok('ember: it boots into its own season and says so',
     em.sn.current === 'ember' && em.sn.built === true, JSON.stringify(em.sn.current));
@@ -1052,10 +1073,11 @@ s.listen(0, '127.0.0.1', async () => {
     && heights.min >= 0.4 && heights.max <= 1.6
     && heights.median < 0.4 + (1.6 - 0.4) * 0.45,
     JSON.stringify({ live: em.plats.slabs.map(s => s.h), sampled: heights }));
-  ok('ember: the hand holds the needler — faster nails, a wider blast',
-    em.gun.weapon === 'needler' && em.gun.rate > 1 && em.gun.streamSpeed > 48
-    && em.gun.shotgunSpread > 0.18 && em.gun.shape && em.gun.shape.len > 0.3,
-    JSON.stringify(em.gun));
+  // v54 (owner: *change season 1's weapon closer to the Devil Daggers example*)
+  ok('ember: the Devil Daggers dagger — small fast blades in a wide fan, from a bare hand',
+    em.gun.weapon === 'dd' && em.gun.streamSpeed > 48 && em.gun.spread > 0.045
+    && em.gun.shape && em.gun.shape.len < 0.3 && em.sn.hand.model === 'daggerHand',
+    JSON.stringify({ gun: em.gun, hand: em.sn.hand.model }));
   ok('ember: the fog leans to the ember and a ground stands under the monuments',
     em.sn.fog.color[0] > em.sn.fog.color[2] * 3 && em.sn.fog.far < 72
     && em.sn.ground === true && em.sn.backdrop.visible === true && em.sn.backdrop.emissive > 0,
@@ -1325,7 +1347,7 @@ s.listen(0, '127.0.0.1', async () => {
   // longer it is held. Loaded the way a player arrives (no ?mode=). The
   // convoy is stepped directly where the question is physics, so a slow
   // renderer cannot change the answer.
-  let haul = {}, haul2 = {};
+  let haul = {}, haul2 = {}, haul3 = {};
   {
     const q = await b.newPage({ viewport: VIEW });
     q.on('pageerror', e => errs.push('pageerror: ' + e.message));
@@ -1446,6 +1468,30 @@ s.listen(0, '127.0.0.1', async () => {
       out.after = { done: d.getFinale().done, speed0, speed: cv.cfg.speed, skullMul: cv.cfg.skullMul };
       return out;
     });
+    // v54 CARGO IS THE SCORE: land on a loose crate still on its trailer and it
+    // sets back (+1 s); a crate the road takes costs one
+    haul3 = await q.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug, pl = hd.player, cv = d.truckObj();
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      const out = { before: d.getRun().runBonus };
+      const cr = cv.cargo.crates.find(c => c.welded && c.truck && c.truck !== cv.standing);
+      if (cr) {
+        cv.cargo.jolt(cr.truck, 0);
+        const p = cr.b.positionLin;
+        pl.feet.set(p[0], p[2] + cr.s / 2 - 0.1, -p[1]); pl.vy = -1; pl._sync();
+        const saved = cv.cargo.stomp(pl.feet);
+        out.saved = saved; out.welded = cr.welded;
+      }
+      // the game's own loop pays for it: a stomp the gate made directly is
+      // counted by stats, so drive the spill path through the frame instead
+      const s0 = d.getRun();
+      cv.cargo.stats.spilled += 2;
+      await frames(3);
+      out.afterSpill = d.getRun().runBonus - s0.runBonus;
+      out.hud = document.getElementById('kills').textContent;
+      out.timer = document.getElementById('timer').textContent;
+      return out;
+    });
     await q.close();
   }
   ok('haul: CARGO — trailers carry crates, welded to the deck, and a welded crate rides its truck',
@@ -1477,6 +1523,9 @@ s.listen(0, '127.0.0.1', async () => {
     && haul.shots[haul.shots.length - 1].turn > haul.shots[0].turn
     && haul.profile[1].speed > haul.profile[0].speed && haul.profile[1].turn > haul.profile[0].turn,
     JSON.stringify({ shots: haul.shots, profile: haul.profile }));
+  ok('haul: CARGO IS THE SCORE — a loose crate you land on sets back, a spilled one costs a second, and the HUD carries the load',
+    haul3.saved === 1 && haul3.welded && haul3.afterSpill === -2 && /load \d+/.test(haul3.hud),
+    JSON.stringify(haul3));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
   // waiting frames: heightAt is a pure function of (x, z, t), so the tests
@@ -1733,6 +1782,24 @@ s.listen(0, '127.0.0.1', async () => {
     JSON.stringify({ decl: tide.decl, base: tide.base, atMax: tide.atMax, gaps: tide.neverStruck }));
   ok('inca: the crest CARRIES the bone — a heap moves with the wave and is set down a few units on, not swept off the disc',
     tide.movedAvg > 2 && tide.movedAvg < 12 && tide.fell === 0, JSON.stringify({ movedAvg: tide.movedAvg, fell: tide.fell }));
+  // v54 THE EBB: from 45 s the sea pulls back every minute; the first ebb
+  // raises low steps, every one under the crest, and the water comes back
+  const ebb = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, g = d.gooObj();
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    d.setTime(44.9);
+    let maxDrain = 0;
+    for (let i = 0; i < 300 && !d.getRun().ebbSteps; i++) { await frames(1); maxDrain = Math.max(maxDrain, g.drain); }
+    for (let i = 0; i < 60; i++) { await frames(1); maxDrain = Math.max(maxDrain, g.drain); }
+    const steps = d.getPlatforms().slabs.map(s => +s.h.toFixed(2));
+    const run = d.getRun();
+    d.setTime(45 + 2.5 + 7 + 3 + 2); await frames(3);
+    return { maxDrain: +maxDrain.toFixed(2), steps, amp: g.cfg.amp, run, after: +g.drain.toFixed(2), glint: d.getTechArt().glint };
+  });
+  ok('inca: THE EBB — at 45 s the sea pulls back, low steps rise UNDER the crest, and the water comes back',
+    ebb.maxDrain >= 0.8 && ebb.run.ebbN === 1 && ebb.run.ebbSteps && ebb.steps.length === 5
+    && ebb.steps.every(h => h < ebb.amp) && ebb.after === 0 && ebb.glint > 0,
+    JSON.stringify(ebb));
   // v53 THE FINALE, season 2: THE SEA DRAINS at 180 s — the water goes and the
   // caustics with it, seven stone steps rise out of the temple floor, the sea
   // comes back; the steps stay, tall enough that a wave passes under the feet
@@ -1758,12 +1825,25 @@ s.listen(0, '127.0.0.1', async () => {
   ok('inca: the sea comes back and the run goes on harder — the steps stay',
     drain.after.done && drain.after.drain === 0 && drain.after.pressure > 1 && drain.glintAfter > 0 && drain.stepsAfter === 7, JSON.stringify(drain.after));
   await p.evaluate(() => { window.__hd.debug.platformsObj().clear(); window.__hd.debug.gibsObj().reset(); });
+  // v54 A RUN THAT ENDS: at 300 s the season is over — not a death, a recap
+  const ending = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    d.setTime(299.8);
+    for (let i = 0; i < 80 && d.getState().state === 'playing'; i++) await frames(1);
+    return { state: d.getState().state, run: d.getRun(), h1: document.querySelector('#msg h1')?.textContent,
+      lines: [...document.querySelectorAll('#msg .breakdown')].map(e => e.textContent) };
+  });
+  ok('every season ENDS at 300 s — RUN COMPLETE, and the recap says what the run did',
+    ending.state === 'dead' && ending.run.complete && ending.run.end === 300 && ending.h1 === 'RUN COMPLETE'
+    && ending.run.recap.length >= 1 && ending.lines.some(l => /ebb|finale|THE SEA/i.test(l)),
+    JSON.stringify(ending));
 
   // v52 (owner: *why is the weapon/hand so deformed? Use different types and
   // models in different seasons*): each season holds its own, and none of
   // them wobble — the lattice life crumpled the old claw every frame
-  ok('the hands: VOID keeps the claw, season 1 the needler, season 2 the jade club — none of them wobbling',
-    ctrl.sn.hand.model === 'hand' && em.sn.hand.model === 'needlerHand' && inca.sn.hand.model === 'jadeHand'
+  ok('the hands: VOID keeps the claw, season 1 the bare dagger hand, season 2 the jade club — none of them wobbling',
+    ctrl.sn.hand.model === 'hand' && em.sn.hand.model === 'daggerHand' && inca.sn.hand.model === 'jadeHand'
     && [ctrl, em, inca].every(r => r.sn.hand.wobble === 0),
     JSON.stringify({ void: ctrl.sn.hand, ember: em.sn.hand.model, inca: inca.sn.hand.model }));
   ok('the projectiles: season 2 throws obsidian shards, not season 1\'s nails',

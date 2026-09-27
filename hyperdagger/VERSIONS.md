@@ -2,6 +2,52 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v54 — 2026-09-27
+**Season 1 holds the Devil Daggers dagger; the rubble is the level; the ebb; cargo is the score; a run that ends**
+
+Owner, 2026-09-27: *next big steps?* → *all in order. Change season 1 weapon
+closer to the Devil Daggers example.*
+
+**The dagger** (`T.weapons.dd`, `voxel.js daggerHand`). Season 1 drops the
+needler (v52) for DD's weapon: a bare bone hand, back to the eye, four spread
+fingers whose last three cells CURL toward the palm, glowing tips; small white
+HDR blades in a wider fan, faster than the base dagger, released from a point
+that wanders across the fingers (`originJitter` is per season now). Three
+renders settled the pose: upright read as a stop sign, tilted hard it
+foreshortened into a slab, side-on it was a club — the back of the hand,
+lowered, with the fingers apart, is the one that reads as a hand. The needler
+stays in the registry as a profile.
+
+**The rubble is the level** (season 1, `rubbleFloor`). A gib that has gone to
+sleep is terrain: `PhysGibs.topAt` is a floor (re-said every frame, or a heap
+you stepped off stays under you), `blocks` stops nails and orbs, `pushOut`
+sends the swarm round it. Only chunks of 0.4 u and up count as cover, so a
+skull's bone is ground but not a wall. The piles come down and the rockfall
+comes down, and the floor at four minutes is what the first three left.
+
+**The ebb** (season 2, `ebb`). From 45 s the sea pulls back to 0.85 every
+minute (2.5 s out, 7 dry, 3 back), read off the season clock so a pause or a
+setTime lands in the right place. The first ebb raises five low steps, every
+one UNDER the crest: a place to be while the water is out, not a place to
+hide from it. The finale's full drain builds the tall steps over them.
+
+**Cargo is the score** (season 3, `cargoScore`). The run's time is the clock
+plus the load: a crate the road takes costs a second, and a loose crate you
+land on while it is still on its trailer sets back (`Cargo.stomp`) and pays
+one. A loose crate is not floor, so a body falls INTO it; the stomp counts the
+feet inside it, not only on its top. The HUD carries the load and the balance.
+
+**A run that ends** (`end: 300` on seasons 1–3; VOID has none). At 300 s the
+run is complete, not a death: RUN COMPLETE, no killer cam, a stinger instead
+of the death sound, and a recap line of only what happened — piles brought
+down, chunks on the floor, seconds stood on rubble, the finale survived, ebbs,
+times the sea hit you, crates loaded / saved / spilled, trucks jackknifed.
+
+Gate: the DD weapon and hand; standing on a heap and a shot stopping on it;
+the ebb draining, its steps under the crest, the water back; a stomp setting a
+crate back and a spill costing two seconds through the frame; RUN COMPLETE at
+300 with the recap. Tokens `?v=85`, worker cache v55.
+
 ## v53 — 2026-09-27
 **Physical gibs; the tide; cover that dies; cargo and the jackknife; the finales**
 

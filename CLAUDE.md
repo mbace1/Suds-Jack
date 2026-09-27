@@ -522,6 +522,17 @@ bake through `emissiveMap`), the mountain is a horizon at −88, and the manifes
 carries six pieces instead of eight. The season also owns the fog (ember-leaning,
 so distance melts into the glow), the motes (embers) and a matte ground ring
 outside the disc, because a monument on the void floats.
+**v54** (owner: *all in order; season 1's weapon closer to the Devil Daggers
+example*): season 1 holds DD's dagger again — a bare bone hand (`daggerHand`,
+back of the hand to the eye, fingers spread and curled, three renders to find
+the pose) and white blades (`T.weapons.dd`); a sleeping heap is TERRAIN in
+season 1 (`rubbleFloor`: `PhysGibs.topAt/blocks/pushOut`); season 2 EBBS every
+minute from 45 s and the first ebb raises low steps under the crest; season 3's
+time is the clock plus the LOAD (`cargoScore`, `Cargo.stomp`); and seasons 1–3
+END at `end: 300` in a RUN COMPLETE recap of what the run did. Two traps: a
+heap floor must re-say the base every frame or a heap you stepped off stays
+under you; and the gate is slow here (~0.3–0.5 s a frame under SwiftShader) —
+a season 3 section that runs for twenty minutes is working, not hung.
 `scripts/hd-loop.mjs` is the
 motion harness (the toko-drop one, ported): it stages a copy of the site
 subset the game needs, appends a harness to main.js, and records GIF loops

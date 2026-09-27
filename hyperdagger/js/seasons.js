@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=84';
+import { TUNING as T } from './tuning.js?v=85';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -126,9 +126,12 @@ export const SEASONS = [
       driftW: 0.18,             // rad/s
       avoidPlayer: 4.5,         // u — never grows under your feet
     },
-    // v52: the shale nail-gun (voxel.js needlerHand)
-    hand: { model: 'needlerHand', pose: { x: 0.46, y: -0.44, z: -1.05, rx: 0.02, ry: Math.PI + 0.16, rz: 0.03 },
-      muzzle: [0.36, -0.18], glow: [2.4, 0.5, 0.1] },
+    // v54 (owner: *change season 1's weapon closer to the Devil Daggers
+    // example*): the bare hand (voxel.js daggerHand), back to the eye, fingers
+    // up and tilted a little forward, white daggers off the fingertips. The
+    // needler (v52) stays in the registry as a profile; season 1 no longer wears it.
+    hand: { model: 'daggerHand', pose: { x: 0.44, y: -0.62, z: -1.05, rx: -0.45, ry: Math.PI + 0.30, rz: -0.16 },
+      muzzle: [0.30, -0.14], glow: [2.2, 0.22, 0.08] },
     // v53 THE FINALE (owner: *nothing in a season ends*): at three minutes the
     // sky throws shale. For `duration` seconds a chunk falls every `every`
     // seconds onto a random point of the disc from `height` up — a rock that
@@ -142,7 +145,14 @@ export const SEASONS = [
     goo: null,                  // season 2's, not season 1's
     inca: null,
     roster: null,
-    weapon: 'needler',
+    weapon: 'dd',   // v54: the Devil Daggers dagger — white blades from a bare hand (was the needler)
+    // v54 THE RUBBLE IS THE LEVEL: a heap that has come to rest is ground —
+    // you stand on it, a volley stops on it, the swarm goes round it. The
+    // piles come down, the rockfall comes down, and what you fight on at four
+    // minutes is what the first three left behind.
+    rubbleFloor: true,
+    // v54 A RUN THAT ENDS: at `end` seconds the season is over and the recap says what the run did
+    end: 300,
     built: true,
   },
   {
@@ -283,6 +293,18 @@ export const SEASONS = [
       jitter: 0.12,
     },
     weapon: 'obsidian',   // v52: turquoise crystal, not season 1's nail
+    // v54 THE EBB (owner-approved next leap): the finale's drain comes early
+    // and partial. From `from` seconds, every `every` seconds the sea pulls
+    // back to `depth` for a few seconds; on the first ebb low steps rise —
+    // UNDER the crest (a step is a place to be while the water is out, not a
+    // place to hide when it comes back: the crest still takes you off one).
+    // The finale's full drain at 180 builds the tall steps over them.
+    ebb: { from: 45, every: 60, depth: 0.85, out: 2.5, dry: 7, back: 3,
+      steps: { count: 5, rMin: 5, rMax: 18, wMin: 2.2, wMax: 3.0, hMin: 0.5, hMax: 0.8,
+        shale: { layer: 0.25, jitter: 0.08, turn: 0.04, tile: 0.8, tileLift: 0.05, tileTilt: 0.05,
+          color: [0.06, 0.11, 0.1], tileColor: [0.1, 0.17, 0.15], glow: [0.1, 0.3, 0.26] },
+        grow: 1.2, sink: 1.1, lifeMin: 99999, lifeMax: 99999, drift: 0, driftW: 0, avoidPlayer: 4 } },
+    end: 300,
     built: true,
     todo: [
       'the new season 2 sculpts (aquamarine / green / yellow, Aztec) — the recolour holds the slot until they arrive',
@@ -342,6 +364,11 @@ export const SEASONS = [
     gaze: { range: 24, cone: 0.16, grace: 0.2, dwell: 0.25, full: 1.2,
       speed: [16, 40], turn: [1.2, 10], every: [0.5, 0.26], life: 2.6, damage: 1,
       trucks: true },   // v53: the cabs lock too — three missiles and a truck jackknifes and spills its load
+    // v54 CARGO IS THE SCORE: the run's time is the clock PLUS the load — a
+    // crate that spills onto the road costs `spill` seconds, a loose crate you
+    // land on and set back pays `save`. The convoy is a load you are keeping whole.
+    cargoScore: { spill: 1, save: 1 },
+    end: 300,
     built: true,
     todo: [
       'trucks that read as trucks — a cab, a trailer, wheels (they are slabs)',

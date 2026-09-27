@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Solver } from './avbd/solver.js?v=1';
 import { Rigid } from './avbd/body.js?v=1';
-import { shadedBox, applyFaceShade } from './voxel.js?v=84';
+import { shadedBox, applyFaceShade } from './voxel.js?v=85';
 
 /**
  * CARGO (v53, season 3 — owner: *cargo, not decks*). Trailers carry stacked
@@ -142,6 +142,28 @@ export class Cargo {
       n++;
     }
     if (n) this.stats.jolts++;
+    return n;
+  }
+
+  /**
+   * v54 CARGO IS THE SCORE (season 3): land on a loose crate that is still on
+   * its trailer and your weight sets it back — it re-welds where it is. Returns
+   * how many were saved, so the caller can pay for them.
+   */
+  stomp(feet) {
+    let n = 0;
+    for (const cr of this.crates) {
+      if (cr.welded || !cr.truck || cr.stomped) continue;
+      const p = cr.b.positionLin, h = cr.s / 2;
+      if (Math.abs(feet.x - p[0]) > h + 0.3 || Math.abs(-feet.z - p[1]) > h + 0.3) continue;
+      if (feet.y > p[2] + h + 0.35 || feet.y < p[2] - h) continue;   // the feet in it or just on it (a loose crate is not floor, so a body falls INTO it)
+      const t = cr.truck, g = t.group;
+      _p.set(p[0], p[2], -p[1]).sub(g.position).applyEuler(_e.set(-g.rotation.x, -g.rotation.y, -g.rotation.z, 'ZYX'));
+      if (Math.abs(_p.x) > t.w / 2 || Math.abs(_p.z) > t.depth / 2 || _p.y < 0) continue;
+      cr.local.copy(_p); cr.welded = true; cr.b.mass = 0; cr.b.velocityLin.fill(0); cr.b.velocityAng.fill(0);
+      this.stats.rewelded++; this.stats.stomped = (this.stats.stomped || 0) + 1;
+      n++;
+    }
     return n;
   }
 
