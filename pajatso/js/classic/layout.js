@@ -1,17 +1,21 @@
-// THE PAJATSO FACE. The Finnish coin wall game (from the German Bajazzo, the
-// clown): one coin, a lever, a curved track over the top, brass nails, and
-// cups with a number painted over them. A coin that falls into a cup pays that
-// many coins; a coin that falls through to the bottom is the house's.
+// THE PAJATSO FACE, after the owner's photographs of a real one (a Finnish
+// 1 mk machine on an orange bar wall, 2026-09-27). What the photos settled:
 //
-// Pure: a layout in the same shape `Board` in ../board.js steps, so the
-// physics that were tuned by measurement for the pachinko board — the
-// rail, the valve, the knife-edge tip, the wedge rule — are the same physics
-// here. Only the face is new.
+//   - the winning places are a ROW OF WINDOWS across the top of the face, each
+//     with its payout printed under it: R · 1:00 · 1:50 · 1:50 · 7:00 · 1:50 ·
+//     1:50 · 1:00 · R. The 7:00 in the middle is the POTTI.
+//   - below them a grey band, red V deflectors, and then the thing everybody
+//     remembers: COLUMNS OF COINS behind chrome dividers, the machine's own
+//     money, stacked where you can see it. A coin that misses every window
+//     falls down there and joins the pile.
+//   - the POTTI opens the three middle columns. So the jackpot is BIGGER the more the
+//     machine has eaten, and you can see exactly how big before you pull.
 //
-// The coin is BIG, the way a real one on a real Pajatso is: 2.5 bu across on a
-// 60 bu face against the pachinko board's 2. Every clearance is sized off it.
+// Pure: a layout in the shape `Board` in ../board.js steps, so the rail, the
+// valve, the knife-edge tip and the wedge rule are the physics the pachinko
+// board was tuned with. The coin is BIG, 2.5 bu across on a 60 bu face.
 
-import { BOARD, seg, arc, buildGrid } from '../board.js?v=2';
+import { BOARD, seg, arc, buildGrid } from '../board.js?v=3';
 
 const deg = d => d * Math.PI / 180;
 
@@ -21,43 +25,40 @@ export const FACE = {
   LANE: 3.0,
   PIN_R: 0.4,
   // a gap a coin falls through clears its diameter by 12%; nothing on this
-  // face is narrower than a coin and wider than nothing (no fences at all)
+  // face is narrower than that and wider than nothing (no wells)
   CLEAR: 2.8,
-  // the spring. A Pajatso's range, measured so the weakest shot just gets
-  // round the guide and the strongest rides the rail down the right side
+  // the spring: the weakest pull just gets past the guide, the strongest rides
+  // the rail round and down the right side
   V_MIN: 104, V_MAX: 121,
-  CUP_W: 2.85, CUP_D: 3.0,
+  // the windows: a coin wide and a bit, a pitch that leaves a PASS between
+  WIN_W: 2.9, POTTI_W: 2.66, WIN_D: 3.0, WIN_Y: 52, PITCH: 6.0, MID: 1.5,
+  // the pot: thirteen columns behind chrome dividers
+  COLS: 13, COL_X0: -27, COL_X1: 30, COL_TOP: 30, STACK: 1.9, COL_MAX: 15,
 };
 
-// What each cup pays, painted over it. Named by WHERE a cup is, not by what it
-// pays: the numbers were set from measured rates (test/face.mjs), and the
-// first cut had them backwards — the clown's mouth, meant as the jackpot, was
-// hit more often than the two side chimneys together. So the chimneys are
-// the POTTI, and the clown pays the frequent big win.
-export const PAYS = {
-  star: 10,                    // POTTI: the two chimney cups high on the sides
-  clown: 5,                    // the clown's mouth, top centre
-  inner: 3,
-  mid: 2,
-  low: 2,
-  back: 1,                     // the middle slot at the bottom gives the coin back
-};
-export const JACKPOT = 'star';
+// What each window pays, in markka for the 1 mk coin it took. `R` gives the
+// coin back. The POTTI pays its 7:00 AND the three middle columns of the pot.
+export const PAYS = { R: 1, one: 1, half: 1.5, potti: 7 };
+export const LABEL = { R: 'R', one: '1:00', half: '1:50', potti: '7:00' };
+export const JACKPOT = 'potti';
+export const WINDOWS = ['R', 'one', 'half', 'half', 'potti', 'half', 'half', 'one', 'R'];
+// the pot a machine is hung on the wall with: a hump, highest where the V
+// deflectors send the most coins, the way the photographs show it
+export const POT_START = [3, 4, 5, 7, 9, 11, 12, 11, 9, 7, 5, 4, 3];
 
 export function buildPajatso(mods = {}) {
   const { C, R } = BOARD;
-  const { LANE, PIN_R, CLEAR, CUP_W, CUP_D, COIN_R } = FACE;
+  const { LANE, PIN_R, CLEAR, WIN_W, WIN_D, WIN_Y, PITCH, MID, COIN_R } = FACE;
   const pins = [], segs = [], pockets = [];
   const pin = (x, y, tag) => pins.push({ x, y, r: PIN_R, e: 0.5, tag: tag ?? null });
   const RAIL = { kind: 'rail', e: 0.1, mu: 0.012 };
 
-  // the rail: over the top and down both sides, the same circle the pachinko
-  // board uses
+  // the rail: over the top and down both sides
   segs.push(...arc(C.x, C.y, R, deg(-4), deg(180), 72, RAIL));
   const sideLow = 4.5;
   segs.push(seg(-R, C.y, -R, sideLow, RAIL));
   const rx = Math.cos(deg(-4)) * R, ry = C.y + Math.sin(deg(-4)) * R;
-  segs.push(seg(rx, ry, R - 0.05, 5.5, { e: 0.3 }));
+  segs.push(seg(rx, ry, R - 0.05, 0.2, { kind: 'wall', e: 0.3 }));
 
   // the lane: up the left, round to the upper left, where the guide lets go
   const Rin = R - LANE;
@@ -69,81 +70,63 @@ export function buildPajatso(mods = {}) {
   segs.push(seg(tip.x, tip.y, C.x + Math.cos(TIP) * (R - 0.1), C.y + Math.sin(TIP) * (R - 0.1),
     { kind: 'valve', e: 0.3, mu: 0.05 }));
 
-  // ── the cups ──────────────────────────────────────────────────────────
-  // Two walls and a floor, a sensor inside, and two guard nails over the mouth
-  // exactly a pass apart — the nail a coin has to get past is the whole game.
-  // A CHIMNEY is the cup's walls carried up above its mouth: a coin has to
-  // come in steeply to get down it, and the POTTI's has a nail over it too.
-  // Chimney tops, guards and the blocker are all placed a PASS from each
-  // other, never nearer — anything nearer is a well a coin sits in.
-  const cup = (id, pay, x, y, { w = CUP_W, chimney = 0 } = {}) => {
-    pockets.push({ id, kind: 'cup', pay, x, y, w, depth: CUP_D, chimney, chute: x < -9 ? 'L' : x > 9 ? 'R' : 'C',
-      open: true, flash: 0, hits: 0 });
-    const top = y + chimney;
-    segs.push(seg(x - w / 2, top, x - w / 2, y - CUP_D, { kind: 'cup', e: 0.25 }));
-    segs.push(seg(x + w / 2, top, x + w / 2, y - CUP_D, { kind: 'cup', e: 0.25 }));
-    segs.push(seg(x - w / 2, y - CUP_D, x + w / 2, y - CUP_D, { kind: 'cup', e: 0.1 }));
-    if (!chimney) {
-      const g = CLEAR / 2 + PIN_R + (mods.easyGuards ? 0.4 : 0);
-      pin(x - g, y + 2.1, 'guard'); pin(x + g, y + 2.1, 'guard');
-    }
-    // the clown: a nail straight over the chimney, high enough that the gap to
-    // each chimney top is a pass (centre to wall end: CLEAR + PIN_R)
-    if (pay === 'clown') pin(x, top + Math.sqrt((CLEAR + PIN_R + 0.1) ** 2 - (w / 2) ** 2), 'blocker');
-  };
-  const CUPS = [
-    ['clown', 'clown', 0, 58.5],
-    ['starL', 'star', -19.5, 45.5], ['starR', 'star', 19.5, 45.5],
-    ['innerL', 'inner', -9.6, 38.5], ['innerR', 'inner', 9.6, 38.5],
-    ['midL', 'mid', -10.5, 26], ['midR', 'mid', 10.5, 26],
-    ['lowL', 'low', -21, 17], ['lowR', 'low', 21, 17],
-  ];
-  const CHIMNEY = { clown: mods.lowChimney ? 1.5 : 3.6, star: 3.0 };
-  for (const [id, pay, x, y] of CUPS) cup(id, pay, x, y, { chimney: CHIMNEY[pay] ?? 0 });
+  // ── the windows: two walls and a floor each, open at the top. The wall
+  // tops are knife edges (board.js tips a coin balanced on one), and the air
+  // between two windows is a PASS, so a coin that misses falls on down. ──
+  WINDOWS.forEach((pay, i) => {
+    const x = MID + (i - 4) * PITCH, w = pay === JACKPOT ? FACE.POTTI_W : WIN_W;
+    const id = `w${i}`;
+    pockets.push({ id, kind: 'cup', pay, x, y: WIN_Y, w, depth: WIN_D, chimney: 0, chute: x < -9 ? 'L' : x > 9 ? 'R' : 'C',
+      open: true, flash: 0, hits: 0, window: i });
+    segs.push(seg(x - w / 2, WIN_Y, x - w / 2, WIN_Y - WIN_D, { kind: 'window', e: 0.25 }));
+    segs.push(seg(x + w / 2, WIN_Y, x + w / 2, WIN_Y - WIN_D, { kind: 'window', e: 0.25 }));
+    segs.push(seg(x - w / 2, WIN_Y - WIN_D, x + w / 2, WIN_Y - WIN_D, { kind: 'window', e: 0.1 }));
+    // the POTTI is guarded: a nail straight over its mouth, high enough that
+    // the gap to each wall top is a pass (centre to wall end CLEAR + PIN_R)
+    if (pay === JACKPOT && !mods.openPotti) pin(x, WIN_Y + Math.sqrt((CLEAR + PIN_R + 0.1) ** 2 - (w / 2) ** 2), 'guard');
+  });
 
-  // ── the kickers: ramps on both walls. The nails stop a pass short of each
-  // wall (the wedge rule), which leaves a free lane down it; without these the
-  // strongest shots rode the rail round and fell straight down the right wall
-  // and the weakest down the guide, and neither touched a nail. ──
-  const KICK = [];
-  for (const y of [40, 27, 9.5]) {
-    KICK.push([R, y + 2.6, R - 4.6, y]);            // right wall, sloping in and down
-    KICK.push([-Rin, y + 2.6, -Rin + 4.6, y]);      // left side, off the guide
-  }
+  // ── the kickers: a ramp off the right wall above the windows, so a coin
+  // that rides the rail all the way round is thrown back over the row rather
+  // than dropping down the gap by the wall every time ──
+  const KICK = [[R * Math.cos(deg(22)), C.y + R * Math.sin(deg(22)), 24.2, 58.4], [29.0, 58.5, 24.8, 55.6]];
   for (const [ax, ay, bx, by] of KICK) segs.push(seg(ax, ay, bx, by, { kind: 'kicker', e: 0.35, mu: 0.05 }));
 
-  // ── the bottom: slots, not cups. The middle one gives the coin back. ──
-  const SLOTS = [-30, -18, -3, 3, 18, 30];
-  for (const x of SLOTS.slice(1, -1)) segs.push(seg(x, 0.2, x, 5.0, { kind: 'divider', e: 0.2 }));
-  const slots = SLOTS.slice(0, -1).map((x0, i) => ({ x0, x1: SLOTS[i + 1], pay: i === 2 ? 'back' : null }));
+  // ── the red V: two long plates under the grey band that run coins in toward
+  // the middle columns — which is why the pot is a hump ──
+  const V = [[-24, 43.5, -5.2, 35.5], [27.5, 43.5, 8.2, 35.5]];
+  for (const [ax, ay, bx, by] of V) segs.push(seg(ax, ay, bx, by, { kind: 'deflector', e: 0.25, mu: 0.08 }));
 
-  // ── the nails: an offset lattice, cleared around every cup ──
-  const K = CLEAR + PIN_R + 0.2;
-  const boxes = [];
-  for (const [ax, ay, bx, by] of KICK) boxes.push([Math.min(ax, bx) - K, by - K, Math.max(ax, bx) + K, ay + K]);
-  for (const p of pockets) boxes.push([p.x - p.w / 2 - K, p.y - p.depth - 1.2, p.x + p.w / 2 + K, p.y + p.chimney + 3.4]);
-  const cleared = (x, y) => boxes.some(([x0, y0, x1, y1]) => x > x0 && x < x1 && y > y0 && y < y1);
-  const DX = 4.4, DY = 3.7;
+  // ── the pot: thirteen columns. A coin that gets into one is the machine's.
+  // A column is a pocket that pays nothing: `pot` in the pocket says which. ──
+  const { COLS, COL_X0, COL_X1, COL_TOP } = FACE;
+  const cw = (COL_X1 - COL_X0) / COLS;
+  const columns = [];
+  for (let k = 0; k < COLS; k++) {
+    const x0 = COL_X0 + k * cw, x1 = x0 + cw;
+    columns.push({ k, x0, x1, x: (x0 + x1) / 2 });
+    if (k > 0) segs.push(seg(x0, 0.2, x0, COL_TOP, { kind: 'divider', e: 0.2 }));
+    pockets.push({ id: `c${k}`, kind: 'cup', pay: null, pot: k, x: (x0 + x1) / 2, y: COL_TOP, w: cw - 0.2, depth: COL_TOP - 0.4,
+      chimney: 0, chute: 'C', open: true, flash: 0, hits: 0 });
+  }
+
+  // ── the nails: a sparse, staggered field in the red above the windows, so
+  // one pull is a neighbourhood of windows and never a single one ──
+  const PASS = CLEAR + 2 * PIN_R + 0.1;
+  const DX = 5.2, DY = 3.8;
   let row = 0;
-  for (let y = 8.6; y < 76; y += DY, row++) {
+  for (let y = 57.6; y < 76; y += DY, row++) {
     const off = row % 2 ? DX / 2 : 0;
-    for (let x = -26.4 + off; x <= 27; x += DX) {
-      const inCircle = y > C.y ? Math.hypot(x - C.x, y - C.y) < Rin - K : true;
-      const inBody = x > -Rin + K && x < R - K;
-      if (!inCircle || !inBody || cleared(x, y)) continue;
-      // a FIXED pattern of missing nails gives the face routes rather than a sieve
+    for (let x = -24 + off; x <= 27; x += DX) {
+      if (Math.hypot(x - C.x, y - C.y) > Rin - PASS) continue;
+      if (x < -Rin + PASS || x > R - PASS) continue;
       const h = Math.abs(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1;
-      if (h < 0.12) continue;
+      if (h < 0.1) continue;
       pin(x, y, 'field');
     }
   }
-
-  // THE WEDGE RULE, as one pass rather than a box per feature: a field nail
-  // may not stand closer than a PASS to any other nail or to the end of any
-  // wall, or a coin sits in the well between them. Every coin the first cut
-  // had to fish out was sitting on a guard or the POTTI's blocker with a
-  // lattice nail beside it.
-  const PASS = CLEAR + 2 * PIN_R + 0.1;
+  // THE WEDGE RULE as one pass: no field nail nearer than a pass to another
+  // nail or to the end of any wall
   const fixed = pins.filter(p => p.tag !== 'field');
   const ends = segs.filter(g => g.kind !== 'rail' && g.kind !== 'guide')
     .flatMap(g => [[g.ax, g.ay], [g.bx, g.by]]);
@@ -155,14 +138,17 @@ export function buildPajatso(mods = {}) {
   }
 
   const byId = Object.fromEntries(pockets.map(p => [p.id, p]));
-  // no warp on a Pajatso: a sensor nothing can ever be inside
   const warp = { x0: 99, x1: 99, y0: 99, y1: 99, to: { x: 0, y: 0 } };
-  const layout = { pins, segs, windmills: [], pockets, byId, warp, tip, Rin, slots, mods: { ...mods }, coinR: COIN_R };
+  const layout = { pins, segs, windmills: [], pockets, byId, warp, tip, Rin, columns, mods: { ...mods }, coinR: COIN_R };
   layout.grid = buildGrid(layout);
   return layout;
 }
 
-// where a coin that reached the bottom landed
-export function slotAt(L, x) {
-  return L.slots.find(s => x >= s.x0 && x < s.x1) ?? L.slots[x < 0 ? 0 : L.slots.length - 1];
+// which column a coin at x falls into
+export function columnAt(L, x) {
+  const c = L.columns.find(c => x >= c.x0 && x < c.x1);
+  return c ? c.k : x < 0 ? 0 : L.columns.length - 1;
 }
+export const MIDDLE = Math.floor(FACE.COLS / 2);
+// the columns the POTTI opens: the middle three, where the V sends the most
+export const POTTI_COLS = [MIDDLE - 1, MIDDLE, MIDDLE + 1];

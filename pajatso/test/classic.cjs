@@ -51,7 +51,7 @@ const settle = page => page.evaluate(() => { for (let i = 0; i < 40 && __pj.game
   check('the title is up, and says what the game is', await page.locator('#title').isVisible() && /PAJATSO/.test(await page.locator('#title h1').textContent()));
   check('the roguelike mode is one link away', (await page.locator('#pitLink').getAttribute('href')) === 'pit.html');
   await page.click('#start');
-  check('PLAY starts with twenty coins', await page.evaluate(() => __pj.started && __pj.game.coins === 20));
+  check('PLAY starts with thirty markka', await page.evaluate(() => __pj.started && __pj.game.coins === 30));
   check('the arcade\'s way home is on the page', await page.locator('.arcade-home').count() === 1);
   await page.waitForSelector('#tip:not([hidden])', { timeout: 5000 }).catch(() => {});
   check('the first thing it says is how to pull the lever', /lever/i.test(await page.locator('#tip').textContent()));
@@ -62,15 +62,15 @@ const settle = page => page.evaluate(() => { for (let i = 0; i < 40 && __pj.game
   await page.keyboard.up(' ');
   await page.waitForFunction(() => __pj.game.phase === 'flight', null, { timeout: 5000 }).catch(() => {});
   const k = await page.evaluate(() => ({ phase: __pj.game.phase, coins: __pj.game.coins, last: __pj.lastPull }));
-  check(`holding SPACE pulls, letting go fires a coin (${Math.round(k.last * 100)}%)`, k.phase === 'flight' && k.coins === 19 && k.last > 0.25);
+  check(`holding SPACE pulls, letting go fires a coin (${Math.round(k.last * 100)}%)`, k.phase === 'flight' && k.coins === 29 && k.last > 0.25);
   check('the knob springs back after the pull', await page.evaluate(() => __pj.power === 0));
-  check('one coin at a time: a second pull while it flies does nothing', await page.evaluate(() => { __pj.debug.pull(0.5); return __pj.game.coins === 19; }));
+  check('one coin at a time: a second pull while it flies does nothing', await page.evaluate(() => { __pj.debug.pull(0.5); return __pj.game.coins === 29; }));
   check('the coin comes to rest', (await settle(page)) !== 'flight');
   const before = await page.evaluate(() => __pj.game.coins);
   await page.keyboard.press('Enter');
   check('ENTER pulls the same again', await page.evaluate(b => __pj.game.coins === b - 1 && __pj.game.phase === 'flight', before));
   await settle(page);
-  const shown = await page.evaluate(() => Number(document.querySelector('#coins b').textContent));
+  const shown = await page.evaluate(() => Number(document.querySelector('#coins b').textContent.replace(',', '.')));
   check('the count on screen is the count in the machine', shown === await page.evaluate(() => __pj.game.coins));
 
   // run it dry, and the counter gives you another handful
@@ -81,11 +81,21 @@ const settle = page => page.evaluate(() => { for (let i = 0; i < 40 && __pj.game
     await page.evaluate(() => { if (__pj.game.coins > 0) __pj.debug.setCoins(0); __pj.game.phase = 'broke'; __pj.game.events.push({ t: 'broke' }); __pj.debug.advance(0.1); });
   }
   await page.waitForSelector('#broke:not([hidden])', { timeout: 10000 }).catch(() => {});
-  check('out of coins: the session is summed up', await page.locator('#broke').isVisible() && /OUT OF COINS/.test(await page.locator('#broke').textContent()));
+  check('out of markka: the session is summed up', await page.locator('#broke').isVisible() && /OUT OF MARKKA/.test(await page.locator('#broke').textContent()));
   await page.click('#more');
-  check('and twenty more carries on', await page.evaluate(() => __pj.game.coins === 20 && __pj.game.phase === 'idle'));
+  check('and thirty more from the bar carries on', await page.evaluate(() => __pj.game.coins === 30 && __pj.game.phase === 'idle'));
   await page.keyboard.press('Escape');
   check('Esc pauses', await page.evaluate(() => __pj.paused) && await page.locator('#paused').isVisible());
+  // the language switch: Finnish, then Japanese, kept for the next visit
+  await page.click('#paused .langs button[data-lang="fi"]');
+  check('the language switch turns the machine Finnish', await page.evaluate(() => document.documentElement.lang === 'fi'
+    && document.getElementById('resume').textContent === 'TAKAISIN KONEELLE' && /Markkaa/.test(document.getElementById('coins').textContent)));
+  check('markka are written with a Finnish comma', await page.evaluate(() => { __pj.debug.setCoins(12.5); __pj.debug.advance(0.05); return true; })
+    && await page.waitForFunction(() => document.querySelector('#coins b').textContent === '12,5' || document.querySelector('#coins b').textContent === '12,50', null, { timeout: 5000 }).then(() => true, () => false));
+  await page.click('#paused .langs button[data-lang="ja"]');
+  check('and Japanese', await page.evaluate(() => document.documentElement.lang === 'ja' && document.getElementById('resume').textContent === '台に戻る'));
+  check('the choice is kept', await page.evaluate(() => localStorage.getItem('pajatso.lang') === 'ja'));
+  await page.click('#paused .langs button[data-lang="en"]');
   await page.click('#resume');
   check('no errors through the session', errors.length === 0, errors.join(' | '));
   await ctx.close();

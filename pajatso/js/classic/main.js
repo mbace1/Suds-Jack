@@ -2,10 +2,11 @@
 // between the game (rules and physics), the view (the machine on a wall), the
 // HUD and the speakers.
 
-import { Pajatso, START_COINS } from './game.js?v=2';
-import { View } from './view.js?v=2';
-import { JACKPOT } from './layout.js?v=2';
-import { sfx, initAudio, setMuted, isMuted } from '../audio.js?v=2';
+import { Pajatso, START_COINS } from './game.js?v=3';
+import { View } from './view.js?v=3';
+import { JACKPOT } from './layout.js?v=3';
+import { t, mk, getLang, setLang, LANGS } from './lang.js?v=3';
+import { sfx, initAudio, setMuted, isMuted } from '../audio.js?v=3';
 import { watchPad } from '../../../hub/pad.js?v=9';   // the SAME token shell.js asks for: one reader on the page
 
 const params = new URLSearchParams(location.search);
@@ -31,19 +32,13 @@ let lastPull = store.get('pajatso.last', null);
 
 // ── first-time lines: each one once per browser, never twice ────────────
 const seen = new Set(store.get('pajatso.tips', []));
-const TIPS = {
-  pull: 'Pull the <b>lever</b> down and let go. How far you pull decides where the coin leaves the rail at the top — a short pull drops it on the left, a long one rides it round to the right.',
-  cups: 'A coin that falls into a <b>cup</b> pays the number painted under it. The bottom keeps it — except the green <b>1</b> in the middle, which gives it back.',
-  again: 'The green line on the lever is your last pull. <b>Tap</b> the lever to pull exactly the same again.',
-  potti: 'The two <b>★ POTTI</b> cups have chimneys: only a coin coming down steeply gets in. They pay <b>10</b>.',
-  right: 'Pull all the way and the coin rides the rail over the top and down the <b>right side</b> — a different game on the same machine.',
-};
+const TIPS = { pull: 'tipPull', windows: 'tipWindows', again: 'tipAgain', potti: 'tipPotti', right: 'tipRight' };
 let tipTimer = 0;
 function tip(id) {
   if (seen.has(id) || !started) return;
   seen.add(id); store.set('pajatso.tips', [...seen]);
   const el = $('tip');
-  el.innerHTML = `${TIPS[id]}<span class="x">tap to close</span>`;
+  el.innerHTML = `${t(TIPS[id], { n: mk(game.pottiNow) })}<span class="x">${t('close')}</span>`;
   el.hidden = false;
   tipTimer = 9;
 }
@@ -143,9 +138,10 @@ function pollTrigger() {
 
 // ── the HUD ────────────────────────────────────────────────────────────
 function hud() {
-  $('coins').querySelector('b').textContent = game.coins;
+  $('coins').querySelector('b').textContent = mk(game.coins);
+  $('pot').querySelector('b').textContent = mk(game.pottiNow);
   if (game.coins > best) { best = game.coins; store.set(BEST, best); }
-  $('best').querySelector('b').textContent = best;
+  $('best').querySelector('b').textContent = mk(best);
 }
 let toastT = 0;
 function toast(text, sub = '', cls = '', ms = 1400) {
@@ -196,19 +192,21 @@ function onEvent(ev) {
     case 'tick': sfx.tick(ev.v, ev.x); break;
     case 'rattle': sfx.rattle(); break;
     case 'win': {
-      view.pop(ev.cup); view.payout(ev.pay);
-      pop(ev.x, ev.y + 2, `+${ev.pay}`);
-      for (let i = 0; i < Math.min(ev.pay, 12); i++) setTimeout(() => sfx.spill(1), 300 + i * 90);
-      if (ev.kind === JACKPOT) { sfx.fever(); buzz([60, 40, 60, 40, 120]); toast('★ POTTI!', `${ev.pay} coins`, 'star', 2400); }
-      else if (ev.kind === 'clown') { sfx.win('coin'); buzz([30, 30, 60]); toast(`+${ev.pay}`, 'right in the clown’s mouth', '', 1600); }
-      else { sfx.win(ev.pay >= 3 ? 'bell' : 'cherry'); buzz(24); }
+      view.pop(ev.cup); view.catch(ev.x, ev.y);
+      // the POTTI's column coins spill out of the pot on their own; the rest
+      // of any win comes down the chute
+      view.payout(Math.ceil(ev.pay - ev.column));
+      pop(ev.x, ev.y + 2, ev.kind === 'R' ? 'R' : `+${mk(ev.pay)}`);
+      for (let i = 0; i < Math.min(Math.ceil(ev.pay), 14); i++) setTimeout(() => sfx.spill(1), 300 + i * 80);
+      if (ev.kind === JACKPOT) { sfx.fever(); buzz([60, 40, 60, 40, 120]); toast(t('pottiToast'), t('pottiSub', { n: mk(ev.pay) }), 'star', 2800); }
+      else if (ev.kind === 'R') { sfx.beep(); buzz(16); }
+      else { sfx.win(ev.pay > 1 ? 'bell' : 'cherry'); buzz(24); }
       break;
     }
-    case 'back': view.payout(1); sfx.beep(); pop(ev.x, 4, '+1'); break;
-    case 'lost': sfx.miss(); break;
-    case 'foul': sfx.foul(); toast('Not round the top', 'the coin rolls back to you — pull a little harder', '', 1600); break;
-    case 'returned': sfx.beep(); toast('Coin back', 'it stuck, so the keeper fished it out', '', 1400); break;
-    case 'ready': if (game.stats.shots === 1) tip('cups'); else if (game.stats.shots === 3) tip('again'); else if (game.stats.shots === 6) tip('potti'); break;
+    case 'lost': sfx.miss(); if (ev.kept) view.toPot(ev.column, ev.height); break;
+    case 'foul': sfx.foul(); toast(t('foul'), t('foulSub'), '', 1600); break;
+    case 'returned': sfx.beep(); toast(t('returned'), t('returnedSub'), '', 1400); break;
+    case 'ready': if (game.stats.shots === 1) tip('windows'); else if (game.stats.shots === 3) tip('again'); else if (game.stats.shots === 6) tip('potti'); break;
     case 'broke': setTimeout(showBroke, 900); break;
   }
 }
@@ -217,17 +215,17 @@ function showBroke() {
   if (!$('broke').hidden || game.phase !== 'broke') return;
   const s = game.stats;
   $('brokeSheet').innerHTML = `
-    <h1 style="font-size:clamp(40px, 11vw, 64px)">OUT OF COINS</h1>
-    <div class="sub">Kolikot loppuivat</div>
+    <h1 style="font-size:clamp(40px, 11vw, 64px)">${t('broke')}</h1>
+    <div class="sub">${t('brokeSub')}</div>
     <div class="stats">
-      <span>Pulls <b>${s.shots}</b></span><span>Won back <b>${s.won}</b></span>
-      <span>Biggest win <b>${s.biggest}</b></span><span>Most at once <b>${s.peak}</b></span>
-      <span>★ POTTI <b>${s.pottis}</b></span><span>Coins back <b>${s.backs}</b></span>
+      <span>${t('sPulls')} <b>${s.shots}</b></span><span>${t('sWon')} <b>${mk(s.won)}</b></span>
+      <span>${t('sBiggest')} <b>${mk(s.biggest)}</b></span><span>${t('sPeak')} <b>${mk(s.peak)}</b></span>
+      <span>${t('sPotti')} <b>${s.pottis}</b></span><span>${t('sBack')} <b>${s.backs}</b></span>
     </div>
-    <p>Your best ever: <b>${best}</b> coins at once.</p>
+    <p>${t('yourBest', { n: mk(best) })}</p>
     <div class="btns">
-      <button class="big" id="more">${START_COINS} MORE COINS</button>
-      <a class="big alt" href="pit.html">KUOPPA — roguelike mode ›</a>
+      <button class="big" id="more">${t('more', { n: START_COINS })}</button>
+      <a class="big alt" href="pit.html">${t('kuoppaShort')}</a>
     </div>`;
   $('broke').hidden = false;
   $('more').addEventListener('click', refill);
@@ -239,6 +237,23 @@ function refill() {
   $('broke').hidden = true;
   hud();
 }
+
+// ── the words, in the language chosen ─────────────────────────────────
+function applyLang() {
+  document.documentElement.lang = getLang();
+  for (const el of document.querySelectorAll('[data-i]')) el.innerHTML = t(el.dataset.i, { n: START_COINS });
+  for (const el of document.querySelectorAll('[data-il]')) el.setAttribute('aria-label', t(el.dataset.il));
+  for (const box of document.querySelectorAll('.langs')) {
+    box.replaceChildren(...LANGS.map(([code, label]) => {
+      const b = document.createElement('button');
+      b.textContent = label; b.lang = code; b.dataset.lang = code;
+      b.setAttribute('aria-pressed', String(code === getLang()));
+      b.addEventListener('click', () => { setLang(code); applyLang(); });
+      return b;
+    }));
+  }
+}
+applyLang();
 
 // ── start, pause, sound ────────────────────────────────────────────────
 let wake = null;
@@ -260,7 +275,7 @@ $('mute').addEventListener('click', toggleMute);
 $('resume').addEventListener('click', resume);
 $('restart').addEventListener('click', () => {
   game = new Pajatso({ seed: seed() + Math.floor(Math.random() * 1e6) });
-  view.L = game.L; view.clearTray(); resume(); hud();
+  view.L = game.L; view.clearTray(); view.shown = null; resume(); hud();
 });
 
 // ── the loop ───────────────────────────────────────────────────────────
@@ -302,6 +317,7 @@ window.__pj = {
     pull: p => release(p),
     // run the machine forward without waiting for frames
     advance(s) { const step = 1 / 30; for (let t = 0; t < s; t += step) { game.update(step); for (const ev of game.drain()) onEvent(ev); } },
-    setCoins(n) { game.coins = n; if (n > 0 && game.phase === 'broke') game.phase = 'idle'; },
+    setCoins(n) { game.coins = n; if (n >= 1 && game.phase === 'broke') game.phase = 'idle'; },
+    setLang(l) { setLang(l); applyLang(); },
   },
 };

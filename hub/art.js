@@ -1147,77 +1147,57 @@ export const ART = {
     g.p(61, 51, 2, 2, '#7a1a4a'); g.p(57, 55, 1, 1, '#4a1230');
   },
   // Pajatso: a cover, not an icon. The machine close on a pine kiosk wall.
-  // The framing device is the CHROME RAIL — the lightest line in the picture,
-  // round the red arch — and the one thing happening is a coin riding it over
-  // the top. The arch is 2600 bars (flat rows of red with hard seams, gold rays
-  // as every third row), the clown sits in it with his mouth for a cup, and the
-  // red knob of the lever is cropped by the right edge, which is what makes
-  // it the foreground: the hand is about to pull it.
+  // Pajatso, after the owner's photographs: a 1 mk machine on an orange Kallio
+  // bar wall. The framing device is the TEAK CASE, lighter than the red face
+  // inside it; the thing everybody remembers is the POT — columns of coins
+  // stacked in a hump behind chrome dividers — and the one thing happening is
+  // a coin riding the chrome rail over the top toward the row of windows,
+  // whose middle one is the red 7:00. Two brown bottles on top are cropped by
+  // the top edge and the crank by the right edge: the bar and the hand.
   pajatso(g, a) {
-    // knotty pine behind
-    for (let x = 0; x < W; x += 12) {
-      g.p(x, 0, 12, 72, mix('#6b3e1e', '#8a5528', ((x * 7) % 5) / 5));
-      g.p(x + 11, 0, 1, 72, '#3a1f0c');
+    // the bar: orange paint on a white wall
+    g.p(0, 0, W, 72, '#e9e4da');
+    for (let y = 0; y < 72; y++) g.p(14, y, 100, 1, mix('#e4611d', '#c94f14', (y % 7) / 14));
+    // two bottles on the case, cropped by the top edge
+    for (const [x, h] of [[50, 12], [66, 10]]) {
+      g.p(x, 8 - h + 4, 5, h - 2, '#6b2a0a'); g.p(x + 1, 0, 3, 8 - h + 4, '#5a2208'); g.p(x + 1, 8 - h + 5, 1, h - 4, '#d88a4a');
     }
-    // the cabinet, and its cream face
-    g.p(29, 0, 70, 72, '#4a220e');
-    g.p(29, 0, 70, 6, '#b3172b');
-    for (let x = 33; x < 96; x += 4) g.p(x, 2, 1, 1, '#ffe9a0');
-    g.p(33, 8, 62, 64, '#e9dcb6');
-    // the arch: rows of red, a gold ray every third row, the lane, the rail
-    const cx = 64, cy = 40, R = 30;
-    for (let y = cy - R; y < cy; y++) {
-      const hw = Math.sqrt(R * R - (cy - y) * (cy - y));
-      g.p(Math.round(cx - hw), y, Math.round(2 * hw), 1, (y % 3 === 0) ? '#d24a2c' : mix('#8f0f1c', '#c42236', (y - (cy - R)) / R));
-      const hl = Math.sqrt(Math.max(0, (R - 2) * (R - 2) - (cy - y) * (cy - y)));
-      g.p(Math.round(cx - hw), y, Math.max(1, Math.round(hw - hl)), 1, '#3b2616');
-      g.p(Math.round(cx + hl), y, Math.max(1, Math.round(hw - hl)), 1, '#3b2616');
-      g.p(Math.round(cx - hw), y, 1, 1, '#eef2f6'); g.p(Math.round(cx + hw) - 1, y, 1, 1, '#eef2f6');
+    // the case: teak, a black 1 mk plate down the right, the dark side beyond
+    g.p(28, 8, 74, 64, '#a8743e');
+    for (let x = 28; x < 102; x += 3) g.p(x, 8, 1, 64, mix('#8a5a2c', '#a8743e', ((x * 5) % 7) / 7));
+    g.p(101, 9, 4, 63, '#1c1c20');
+    g.p(91, 12, 7, 56, '#0d0d0f'); g.p(93, 26, 3, 4, '#c9ccd0'); g.p(92, 38, 5, 2, '#f4f4f4'); g.p(92, 50, 5, 1, '#9a9ca0');
+    // the face: red, darker at the top
+    for (let y = 12; y < 70; y++) g.p(32, y, 58, 1, mix('#5e0a12', '#a8141f', Math.min(1, (y - 12) / 22)));
+    // the rail over the top and down the left
+    const cx = 61, cy = 36, R = 24;
+    for (let t = Math.PI; t <= 2 * Math.PI + 0.01; t += 0.02) g.p(Math.round(cx + Math.cos(t) * R), Math.round(cy + Math.sin(t) * R), 1, 1, '#eef2f6');
+    for (let t = Math.PI; t <= Math.PI * 1.3; t += 0.03) g.p(Math.round(cx + Math.cos(t) * (R - 2)), Math.round(cy + Math.sin(t) * (R - 2)), 1, 1, '#c8ccd4');
+    g.p(cx - R, cy, 1, 34, '#eef2f6'); g.p(cx - R + 2, cy, 1, 32, '#c8ccd4');
+    // a few chrome nails in the red
+    for (let y = 18, r = 0; y < 32; y += 4, r++) for (let x = 46 + (r % 2) * 3; x < 80; x += 6) if (Math.hypot(x - cx, y - cy) < R - 4) g.p(x, y, 1, 1, '#e9ecef');
+    // THE GREY BAND and its nine windows, the red 7:00 in the middle
+    g.p(39, 33, 51, 9, '#c9ccd0'); g.p(39, 33, 51, 1, '#eef0f2');
+    for (let i = 0; i < 9; i++) {
+      const x = 40 + i * 5.6 | 0;
+      g.p(x, 34, 4, 3, '#0c0c0e'); g.p(x, 38, 4, 3, '#101012');
+      g.p(x + 1, 39, 2, 1, i === 4 ? '#ff3b3b' : '#f4f4f4');
     }
-    g.p(cx - 1, cy - R, 3, 1, '#eef2f6');
-    g.p(34, cy, 2, 32, '#eef2f6'); g.p(92, cy, 2, 32, '#eef2f6');       // the rail down both sides
-    g.p(36, cy, 60, 1, '#d9a632');
-    // the clown: hat, hair, face, nose, cross eyes, and his mouth is a cup
-    for (let i = 0; i < 7; i++) g.p(cx - 3 + Math.floor(i / 2), 13 + i, 7 - i, 1, i % 2 ? '#f3d23a' : '#2f5fb8');
-    g.p(cx, 12, 1, 1, '#fff4e0');
-    g.disc(cx - 7, 25, 2, '#e8641e'); g.disc(cx + 7, 25, 2, '#e8641e');
-    g.disc(cx, 25, 6, '#fbf3e6');
-    g.p(cx - 3, 22, 1, 3, '#2f5fb8'); g.p(cx - 4, 23, 3, 1, '#2f5fb8');
-    g.p(cx + 3, 22, 1, 3, '#2f5fb8'); g.p(cx + 2, 23, 3, 1, '#2f5fb8');
-    g.disc(cx, 26, 1, '#e0202e');
-    g.p(cx - 2, 29, 1, 3, '#caa24a'); g.p(cx + 2, 29, 1, 3, '#caa24a'); g.p(cx - 2, 31, 5, 1, '#caa24a');
-    // brass nails, a lattice over the whole face
-    for (let y = 18, r = 0; y < 68; y += 4, r++) {
-      for (let x = 38 + (r % 2) * 3; x < 92; x += 6) {
-        const inArch = y < cy ? Math.hypot(x - cx, y - cy) < R - 4 : true;
-        const nearClown = Math.abs(x - cx) < 9 && y < 34;
-        if (inArch && !nearClown) g.p(x, y, 1, 1, '#d8b25a');
-      }
-    }
-    // cups: the two POTTI chimneys (blue plaques, a gold star) and a pair of 3s
-    for (const [x, y, star] of [[42, 46, true], [86, 46, true], [52, 56, false], [76, 56, false]]) {
-      g.p(x - 2, y - (star ? 5 : 3), 1, star ? 5 : 3, '#caa24a'); g.p(x + 2, y - (star ? 5 : 3), 1, star ? 5 : 3, '#caa24a');
-      g.p(x - 2, y, 5, 1, '#caa24a');
-      g.p(x - 3, y + 2, 7, 4, star ? '#1f3f8f' : '#2a1a12');
-      g.p(x, y + 3, 1, 2, star ? '#ffe06a' : '#fff4e0');
-      if (star) { g.p(x - 1, y + 4, 3, 1, '#ffe06a'); }
-    }
-    // the red kickers on the walls
-    for (const y of [50, 62]) { g.line(36, y, 40, y + 3, '#8f1323'); g.line(92, y, 88, y + 3, '#8f1323'); }
-    // THE COIN, riding the rail over the top, with the rail flashing behind it
-    const ang = -Math.PI * 0.32, rr = R - 1;
+    // the V deflectors
+    g.line(40, 44, 58, 50, '#1a0306'); g.line(89, 44, 66, 50, '#1a0306');
+    // THE POT: pale columns, chrome dividers, and the hump of coins
+    g.p(38, 52, 52, 18, '#d7dadd');
+    for (let x = 38; x < 90; x += 4) g.p(x, 52, 1, 18, '#8e9297');
+    const hump = [2, 3, 4, 6, 8, 10, 11, 10, 8, 6, 4, 3, 2];
+    hump.forEach((n, k) => { for (let j = 0; j < n; j++) g.p(39 + k * 4, 69 - j * 1.6 | 0, 3, 1, j % 2 ? '#86651f' : a); });
+    g.p(58, 51, 12, 1, a);
+    // THE COIN, riding the rail over the top, the rail flashing behind it
+    const ang = -Math.PI * 0.36, rr = R - 1;
+    for (let i = 2; i <= 6; i++) { const t = ang - i * 0.09; g.p(Math.round(cx + Math.cos(t) * rr), Math.round(cy + Math.sin(t) * rr), 1, 1, mix(a, '#5e0a12', i / 5)); }
     const kx = Math.round(cx + Math.cos(ang) * rr), ky = Math.round(cy + Math.sin(ang) * rr);
-    for (let i = 2; i <= 6; i++) {
-      const t = ang - i * 0.08;
-      g.p(Math.round(cx + Math.cos(t) * rr), Math.round(cy + Math.sin(t) * rr), 1, 1, mix(a, '#3b2616', i / 5));
-    }
     g.disc(kx, ky, 3, '#3a2408'); g.disc(kx, ky, 2, a); g.p(kx - 1, ky - 1, 1, 1, '#fff6c0');
-    // the tray, a few coins already in it
-    g.p(31, 69, 66, 3, '#c8ccd4');
-    for (let x = 40; x < 88; x += 7) g.p(x, 68, 2, 1, a);
-    // the lever, cropped by the right edge: chrome arm and the red knob
-    g.p(118, 40, 3, 32, '#c8ccd4'); g.p(118, 40, 1, 32, '#eef2f6');
-    g.disc(122, 34, 9, '#7a0610'); g.disc(121, 33, 8, '#d4182c'); g.disc(118, 30, 2, '#ff8a8a');
+    // the crank on the side, cropped by the right edge
+    g.disc(112, 60, 5, '#c8ccd4'); g.p(111, 46, 3, 14, '#e9ecef'); g.p(113, 40, 15, 7, '#151515'); g.p(113, 40, 15, 1, '#555');
   },
 
   // Slay Kallio: a cover, in the house register — a sunlit park seen past a

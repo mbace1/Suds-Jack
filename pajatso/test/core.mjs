@@ -12,15 +12,16 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makeRng, seedOf } from '../js/rng.js?v=2';
-import { Board, buildLayout, BOARD } from '../js/board.js?v=2';
-import { Pusher, PUSHER } from '../js/pusher.js?v=2';
-import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=2';
-import { Engine, computeRules, VERSION } from '../js/engine.js?v=2';
-import * as D from '../js/data.js?v=2';
-import { playRun, playShift } from './bot.mjs?v=2';
-import { buildPajatso, FACE, PAYS, JACKPOT, slotAt } from '../js/classic/layout.js?v=2';
-import { Pajatso, START_COINS } from '../js/classic/game.js?v=2';
+import { makeRng, seedOf } from '../js/rng.js?v=3';
+import { Board, buildLayout, BOARD } from '../js/board.js?v=3';
+import { Pusher, PUSHER } from '../js/pusher.js?v=3';
+import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=3';
+import { Engine, computeRules, VERSION } from '../js/engine.js?v=3';
+import * as D from '../js/data.js?v=3';
+import { playRun, playShift } from './bot.mjs?v=3';
+import { buildPajatso, FACE, PAYS, JACKPOT, WINDOWS, LABEL, POT_START, POTTI_COLS, columnAt } from '../js/classic/layout.js?v=3';
+import { _STR } from '../js/classic/lang.js?v=3';
+import { Pajatso, START_COINS } from '../js/classic/game.js?v=3';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const GAME = path.resolve(HERE, '..');
@@ -355,33 +356,42 @@ section('pajatso: the face');
     if (gap < FACE.CLEAR - 0.05) tight.push(`${a.tag}@${a.x.toFixed(1)},${a.y.toFixed(1)}–${b.tag}@${b.x.toFixed(1)},${b.y.toFixed(1)} (${gap.toFixed(2)})`);
   }
   check(`no two nails closer than a pass (${FACE.CLEAR} bu of air)${tight.length ? ` — ${tight.slice(0, 3).join('; ')}` : ''}`, tight.length === 0);
-  check('every cup is wider than the coin and narrower than a coin and a half', L.pockets.every(p => p.w > d && p.w < d * 1.5));
-  check('every cup pays a painted number', L.pockets.every(p => Number.isInteger(PAYS[p.pay]) && PAYS[p.pay] >= 2));
-  check('the jackpot is the biggest number on the face', L.pockets.every(p => PAYS[p.pay] <= PAYS[JACKPOT]));
-  check('the face is symmetric: every cup has a mirror twin or stands in the middle',
-    L.pockets.every(p => Math.abs(p.x) < 0.01 || L.pockets.some(q => q.pay === p.pay && Math.abs(q.x + p.x) < 0.01 && Math.abs(q.y - p.y) < 0.01)));
-  check('the bottom is covered edge to edge, and exactly one slot gives the coin back',
-    L.slots[0].x0 <= -BOARD.R && L.slots[L.slots.length - 1].x1 >= BOARD.R && L.slots.filter(s => s.pay === 'back').length === 1
-    && slotAt(L, 0).pay === 'back' && !slotAt(L, -20).pay);
+  const wins = L.pockets.filter(p => p.window != null).sort((a, b) => a.x - b.x);
+  check(`the row of windows is the photograph's: ${wins.map(p => LABEL[p.pay]).join(' ')}`,
+    wins.map(p => LABEL[p.pay]).join(' ') === 'R 1:00 1:50 1:50 7:00 1:50 1:50 1:00 R');
+  check('every window is wider than the coin and narrower than a coin and a quarter', wins.every(p => p.w > d && p.w < d * 1.25));
+  check('the POTTI window is the narrowest, and guarded by a nail over its mouth',
+    wins.every(p => p.pay === JACKPOT || p.w > L.byId.w4.w) && L.pins.some(q => q.tag === 'guard' && Math.abs(q.x - L.byId.w4.x) < 0.01));
+  // between two windows is a pass: a coin that misses them falls on down
+  const gaps = wins.slice(1).map((p, i) => (p.x - p.w / 2) - (wins[i].x + wins[i].w / 2));
+  check(`the air between windows is a pass (${Math.min(...gaps).toFixed(2)} bu ≥ ${FACE.CLEAR})`, Math.min(...gaps) >= FACE.CLEAR);
+  check('the pot is thirteen columns covering the face edge to edge, one pocket each and none of them paying',
+    L.columns.length === FACE.COLS && L.columns[0].x0 <= -L.Rin && L.columns.at(-1).x1 >= BOARD.R
+    && L.pockets.filter(p => p.pot != null).length === FACE.COLS && L.pockets.every(p => p.pot == null || p.pay == null));
+  check('a coin anywhere across the bottom lands in a column', [-26.9, -10, 0, 1.5, 15, 29.9].every(x => columnAt(L, x) >= 0 && columnAt(L, x) < FACE.COLS));
+  check('the POTTI opens the three middle columns, which start as the top of the hump',
+    POTTI_COLS.length === 3 && POTTI_COLS.every(k => POT_START[k] >= Math.max(...POT_START) - 1));
+  check('the window labels and payouts agree (1:50 is one and a half)', WINDOWS.every(k => PAYS[k] > 0) && PAYS.half === 1.5 && PAYS.one === 1 && PAYS.R === 1);
 }
 
 section('pajatso: the machine');
 {
-  // the lever across its whole travel, a coin at a time
+  // the lever across its whole travel, a coin at a time, on a fresh pot
   const g = new Pajatso({ seed: 2024, coins: 1e9 });
-  const out = { win: 0, lost: 0, back: 0, foul: 0, returned: 0 };
+  const out = { win: 0, lost: 0, foul: 0, returned: 0 };
   const byPower = [];
-  let slowest = 0;
+  let slowest = 0, paid = 0, pottis = 0;
   for (let i = 0; i <= 10; i++) {
     const p = i / 10, seen = { L: 0, C: 0, R: 0 };
     for (let n = 0; n < 60; n++) {
+      g.pot = [...POT_START];
       g.pull(p);
       let t = 0;
       while (g.phase === 'flight' && t < 60) { g.update(1 / 30); t += 1 / 30; }
       slowest = Math.max(slowest, t);
       for (const ev of g.drain()) {
         if (ev.t in out) out[ev.t]++;
-        if (ev.t === 'win' || ev.t === 'lost' || ev.t === 'back') seen[(ev.x ?? 0) < -9 ? 'L' : (ev.x ?? 0) > 9 ? 'R' : 'C']++;
+        if (ev.t === 'win') { paid += ev.pay; if (ev.kind === JACKPOT) pottis++; seen[ev.x < -9 ? 'L' : ev.x > 9 ? 'R' : 'C']++; }
       }
     }
     byPower.push(seen);
@@ -390,48 +400,70 @@ section('pajatso: the machine');
   check(`every coin comes to rest: none on the face after the slowest shot (${slowest.toFixed(1)}s)`, slowest < 20 && g.phase === 'idle');
   check(`no coin has to be fished out (${out.returned} of ${N})`, out.returned <= N * 0.005);
   check(`fouls are rare across the lever (${out.foul} of ${N})`, out.foul <= N * 0.03);
-  check(`most coins are lost, as on a real one (${Math.round(100 * out.lost / N)}%)`, out.lost / N > 0.45 && out.lost / N < 0.8);
-  check(`every cup group is hit somewhere on the lever (${Object.keys(g.stats.hits).length} cups)`,
-    Object.keys(PAYS).filter(k => k !== 'back').every(k => Object.keys(g.stats.hits).some(id => buildPajatso().byId[id]?.pay === k)));
-  // the lever means something: a short pull and a long one end on different sides
+  check(`most coins go to the pot, as on a real one (${Math.round(100 * out.lost / N)}%)`, out.lost / N > 0.4 && out.lost / N < 0.75);
+  check(`every kind of window is hit somewhere on the lever`,
+    Object.keys(PAYS).every(k => Object.keys(g.stats.hits).some(id => buildPajatso().byId[id]?.pay === k)));
+  check(`the POTTI is rare (${pottis} in ${N})`, pottis > 0 && pottis < N * 0.03);
   const sideOf = s => (s.R - s.L) / Math.max(1, s.L + s.R + s.C);
   check(`the lever steers: a long pull lands further right than a short one (${sideOf(byPower[1]).toFixed(2)} → ${sideOf(byPower[10]).toFixed(2)})`,
     sideOf(byPower[10]) - sideOf(byPower[1]) > 0.3);
-  // what it pays back per coin, over the whole lever: a machine that keeps a
-  // little, never one that prints money
-  const rtp = (g.stats.won + g.stats.backs) / (g.stats.shots - out.foul - out.returned);
-  check(`it pays back a bit less than it takes (${rtp.toFixed(2)} a coin)`, rtp > 0.75 && rtp < 1.05);
+  // 660 coins see only a handful of POTTIs at ~40 each, so this band is wide
+  // on purpose; the number to tune by is test/face.mjs's, over 3000 coins
+  const rtp = paid / (N - out.foul - out.returned);
+  check(`on a fresh pot it pays back about what it takes (${rtp.toFixed(2)} a markka)`, rtp > 0.6 && rtp < 1.3);
 }
 
 section('pajatso: the rules');
 {
   const g = new Pajatso({ seed: 5, coins: 3 });
-  check(`a session starts with the handful (${START_COINS})`, new Pajatso().coins === START_COINS);
+  check(`a session starts with the handful (${START_COINS} mk)`, new Pajatso().coins === START_COINS && START_COINS >= 20);
   check('a pull puts a coin in and costs one', g.pull(0.4) && g.coins === 2 && g.inFlight);
   check('one coin at a time: no second pull while it is on the face', !g.pull(0.4) && g.coins === 2);
   g.finish();
   check('the coin comes to rest and the lever is free again', g.phase === 'idle' || g.phase === 'broke');
-  // a coin paid into a cup is paid exactly what is painted
-  const h = new Pajatso({ seed: 9, coins: 5 });
-  h.pull(0.5); h.drain();
-  h.onBoard({ t: 'pocket', pocket: 'clown' });
-  const ev = h.drain().find(e => e.t === 'win');
-  check(`a cup pays its painted number (${ev?.pay} for the clown)`, ev?.pay === PAYS.clown && h.coins === 4 + PAYS.clown);
-  // a foul costs nothing
+  const win = (id, coins = 5) => { const h = new Pajatso({ seed: 9, coins }); h.pull(0.5); h.drain(); h.onBoard({ t: 'pocket', pocket: id }); return [h, h.drain().find(e => e.t === 'win')]; };
+  const [h1, e1] = win('w2');
+  check(`a 1:50 window pays one and a half (${e1?.pay})`, e1?.pay === 1.5 && h1.coins === 5.5);
+  const [h2, e2] = win('w0');
+  check('R gives the coin back', e2?.pay === 1 && h2.coins === 5 && h2.stats.backs === 1);
+  const [h3, e3] = win('w4');
+  const col = POTTI_COLS.reduce((a, k) => a + POT_START[k], 0);
+  check(`the POTTI pays 7:00 and the three middle columns (${e3?.pay} = 7 + ${col})`,
+    e3?.pay === 7 + col && e3.column === col && POTTI_COLS.every(k => h3.pot[k] === 0) && h3.stats.pottis === 1);
+  check('and the columns it opened start filling again from nothing', h3.pottiNow === 7);
+  // a miss joins the pile it fell into
+  const m = new Pajatso({ seed: 9, coins: 5 });
+  m.pull(0.5); m.drain(); m.onBoard({ t: 'pocket', pocket: 'c6' });
+  const lost = m.drain().find(e => e.t === 'lost');
+  check('a coin that misses every window joins its column of the pot', lost?.column === 6 && m.pot[6] === POT_START[6] + 1 && m.pottiNow === 7 + col + 1);
+  const full = new Pajatso({ seed: 9, coins: 5, pot: POT_START.map(() => FACE.COL_MAX) });
+  full.pull(0.5); full.drain(); full.onBoard({ t: 'pocket', pocket: 'c0' });
+  check('a full column spills into the cash box: the pile never grows past the glass', full.pot[0] === FACE.COL_MAX && full.drain().find(e => e.t === 'lost')?.kept === false);
   const f = new Pajatso({ seed: 9, coins: 5 });
   f.pull(0.5); f.onBoard({ t: 'foul' });
   check('a coin that does not get round the top comes back', f.coins === 5);
-  // broke, and a refill
+  const half = new Pajatso({ seed: 9, coins: 0.5 });
+  check('fifty penni is not a pull: broke means under one markka', half.phase === 'broke' && !half.pull(0.5));
   const b = new Pajatso({ seed: 11, coins: 1 });
-  b.pull(0.95);
-  b.finish();
-  check('the last coin spent and lost leaves you broke, or paid you something', b.coins === 0 ? b.phase === 'broke' : b.phase === 'idle');
-  b.coins = 0; b.phase = 'broke';
-  check('broke means the lever does nothing', !b.pull(0.5));
-  check('twenty more from the counter starts a fresh session', b.refill() && b.coins === START_COINS && b.phase === 'idle' && b.stats.shots === 0);
-  // the same seed plays the same machine
-  const run = seed => { const x = new Pajatso({ seed, coins: 30 }); for (let i = 0; i < 12; i++) { x.pull(i / 11); x.finish(); } return x.coins; };
+  b.pull(0.95); b.finish();
+  check('the last markka spent and lost leaves you broke, or paid you something', b.coins < 1 ? b.phase === 'broke' : b.phase === 'idle');
+  b.coins = 0; b.phase = 'broke'; b.pot[6] = 1;
+  check(`${START_COINS} more from the bar starts a fresh session, and the pot stays what it was`,
+    b.refill() && b.coins === START_COINS && b.phase === 'idle' && b.stats.shots === 0 && b.pot[6] === 1);
+  const run = seed => { const x = new Pajatso({ seed, coins: 30 }); for (let i = 0; i < 12; i++) { x.pull(i / 11); x.finish(); } return `${x.coins}/${x.pot}`; };
   check('one seed, one session', run(77) === run(77));
+}
+
+section('pajatso: three languages');
+{
+  const keys = Object.keys(_STR.en);
+  const missing = ['fi', 'ja'].flatMap(l => keys.filter(k => !_STR[l][k]).map(k => `${l}.${k}`));
+  check(`every line is in Finnish and Japanese as well as English${missing.length ? ` — ${missing.slice(0, 5).join(', ')}` : ''}`, missing.length === 0);
+  const same = ['fi', 'ja'].flatMap(l => keys.filter(k => _STR[l][k] === _STR.en[k] && !/^(★ POTTI|★ POTTI!)$/.test(_STR.en[k])).map(k => `${l}.${k}`));
+  check(`and none of them is the English left in place${same.length ? ` — ${same.slice(0, 5).join(', ')}` : ''}`, same.length === 0);
+  const html = readFileSync(path.join(GAME, 'index.html'), 'utf8');
+  const used = [...html.matchAll(/data-il?="(\w+)"/g)].map(m => m[1]);
+  check(`every key the page asks for exists (${used.length})`, used.every(k => k in _STR.en));
 }
 
 // ── the files ────────────────────────────────────────────────────────────

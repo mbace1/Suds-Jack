@@ -304,34 +304,42 @@ carries (its bins stand inside the east quarter pipe; it has no decks).
 ### PAJATSO (`pajatso/`) — the Finnish coin wall game, ACTIVE (was PACHI PIT)
 **Owner, 2026-09-26, after playing v1:** *"make it Pajatso, change name. Start
 with regular Pajatso, then add a roguelike mode and tons of Pachinko like
-features."* `pajatso/ROADMAP.md` keeps that order. **v2 is the regular one**:
-`index.html` + `js/classic/` — a kiosk machine on a pine wall, twenty coins, one
-coin at a time, a lever pulled DOWN and let go, brass nails, cups that pay the
-number painted under them, two ★ POTTI chimneys, and the clown (the Bajazzo the
-machine is named after) whose mouth is a cup. **The face runs on the pachinko
-board's physics unchanged** (`js/board.js`'s `Board` steps any layout with that
-shape) with a bigger coin and its own layout, `js/classic/layout.js`; `game.js`
-is the pure rules, `view.js` the machine and the camera, `art.js` the painted
-face drawn from the same layout (move a cup and its paint moves). Tuned by
-measurement: `node pajatso/test/face.mjs` sweeps the lever and prints where the
-coins go and what comes back per coin (0.95 over the whole lever). Lessons in
-`VERSIONS.md` v2: **kickers on both walls** (the nails stop a pass short of a
-wall, which leaves a free lane down it), **the wedge rule as ONE pass** (no field
-nail nearer than a pass to any nail or wall end — the gate checks every pair),
-**the spring range is what makes the lever mean anything** (left / over the top
-/ round the right side), **paint what the physics says** (the clown was meant as
-the jackpot and was hit more often than the side chimneys, so the chimneys are
-the POTTI), and a **shared-board bug**: a cup's sensor reached 1.4 bu below its
-floor, paying coins that slid UNDER it. **Closer**, the owner's first note: the
-camera is fitted to the phone's WIDTH and leans in on the coin in flight
-(`test/classic.cjs` gates ≥24 px of coin on a 390 px phone). **Told**: five
-first-time lines, once per browser. Controls: drag the knob and let go, a TAP
-pulls the last pull again, SPACE held, pad A or RT. Gates: `node
-pajatso/test/core.mjs` (102, both modes), `NODE_PATH=$(npm root -g) node
-pajatso/test/classic.cjs` (28, the machine, desk and phone) and `.../smoke.cjs`
-(44, KUOPPA). Hub: id `pajatso`, marquee `pajatso` (the chrome rail round the red
-arch, a coin riding it, the knob cropped by the edge), accent `#ffd23f`, best
-score `pajatso.best` (most coins held at once). **The roguelike is KUOPPA**
+features."* `pajatso/ROADMAP.md` keeps that order and the owner's eight
+answers of 2026-09-27 (Kallio bar; pachinko parts **roguelike only, in order**;
+keep the debt run; jackpot bigger/rarer in base, maybe progressive in the
+roguelike; 30+ coins; fi/en/ja; Kuoppa is the roguelike). **v3 is the base
+machine, built on the owner's PHOTOGRAPHS of a real 1 mk Pajatso** (v2's
+clown-and-cups face was a guess from memory and is gone): `index.html` +
+`js/classic/` — a row of nine WINDOWS across the top with their payouts printed
+under them (`R 1:00 1:50 1:50 7:00 1:50 1:50 1:00 R`), a grey band, red V
+deflectors, and **the pot**: thirteen columns of coins stacked behind chrome
+dividers. A coin that misses every window joins its column and stays on
+screen (`game.pot`); **the POTTI is the red 7:00, paying seven AND the three
+middle columns**, so its size is on the glass before you pull. Money is
+markka (1:50 pays 1.5; under 1 mk is broke), 30 a session. The room is a
+Kallio bar: orange wall, teak case, black 1 mk plate, crank on the right side,
+two brown bottles on top. **The base machine gets NO pachinko parts** — those
+are the roguelike's. **The face runs on the pachinko board's physics
+unchanged** (`js/board.js`'s `Board` steps any layout with that shape) with a
+bigger coin and its own layout, `js/classic/layout.js`; `game.js` is the pure
+rules, `view.js` the machine, the room and the camera, `art.js` the paint drawn
+from the same layout, `lang.js` the three languages (English per-key
+fallback, first visit follows `sudsJackHubLang`). Tuned by measurement: `node
+pajatso/test/face.mjs` sweeps the lever (1.05 per markka on a fresh pot, 0.97
+with the pot left to run, POTTI 1 in ~95). Lessons in `VERSIONS.md` v2/v3:
+the wedge rule as ONE pass, kickers wherever the rail can drop a coin down a
+free lane by a wall, a sparse nail field is a sweet spot (v3's first sweep
+paid 3.1 a coin at one power), and a cup sensor that reached below its floor
+paid coins that slid UNDER it. The camera is fitted to the phone's WIDTH and
+leans in on the coin in flight (`test/classic.cjs` gates ≥24 px of coin on a
+390 px phone). Controls: drag the knob and let go, a TAP pulls the last pull
+again, SPACE held, pad A or RT. Gates: `node pajatso/test/core.mjs` (114,
+both modes and the language packs), `NODE_PATH=$(npm root -g) node
+pajatso/test/classic.cjs` (32) and `.../smoke.cjs` (44, KUOPPA). Hub: id
+`pajatso`, marquee `pajatso` (the teak case on the orange wall, the window row
+with its red 7:00, the pot's hump, a coin on the rail, bottles and crank
+cropped by the edges), accent `#ffd23f`, best score `pajatso.best` (most markka
+held at once). **The roguelike is KUOPPA**
 (`pit.html`), v1's pit run, one link from the title until it is rebuilt on the
 Pajatso face; what follows is its record, still true of that mode.
 
@@ -2822,8 +2830,8 @@ pajatso/        # PAJATSO — the coin wall game (index.html) + KUOPPA, the pit 
   VERSIONS.md   # what shipped and every trap the physics paid for
   vendor/       # three.js r167, local — not the CDN
   js/
-    classic/    # THE MACHINE: layout.js (the face), game.js (rules, pure), view.js (the
-                #   machine + the close camera), art.js (the paint, from the layout), main.js
+    classic/    # THE MACHINE: layout.js (windows, pot, V), game.js (rules + the pot, pure),
+                #   view.js (machine, bar, close camera), art.js (paint), lang.js (fi/en/ja), main.js
     rng.js      # mulberry32, the whole state one integer
     board.js    # THE SHOT: pachinko physics — nails, rails, valve, pockets, windmills (pure)
     pusher.js   # THE PAYOUT: quasi-static coin pusher — shelf, bed, stacking, lip, gutters (pure)
