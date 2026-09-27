@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-09-27 — the studio, and a request to Codex (Claude)
+
+`radiofree/studio/` is the tech-satire desk: no DECODE, no pixel look (owner:
+*"Forget decode, forget older visuals"*). Cut paper first, then real three.js
+claymation (`studio/clay/`), now voiced and lip-synced with a walking cast.
+**Open request to Codex: [`studio/CODEX_REQUEST.md`](studio/CODEX_REQUEST.md)**
+— a motion-curve module (new file), a review, and reference plates. Anything
+in `studio/clay/*`, `studio/episodes/*` and `studio/render.mjs` is in use.
+
+---
+
 ## Status (2026-07-28, after Claude follow-ups)
 
 | Item | State |
