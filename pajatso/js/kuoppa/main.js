@@ -4,14 +4,15 @@
 // nudge's voice, and the sheets between rounds — the vendor, the lock that
 // opens with its part's card, the end.
 
-import { Kuoppa, DATA as D, JOKER, CHARM } from './run.js?v=5';
-import './words.js?v=5';
-import { View } from '../classic/view.js?v=5';
-import { JACKPOT, LABEL } from '../classic/layout.js?v=5';
-import { getLang } from '../classic/lang.js?v=5';
-import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from '../classic/table.js?v=5';
-import { makeLcd, drawLcd } from './lcd.js?v=5';
-import { partCard } from './cards.js?v=5';
+import { Kuoppa, DATA as D, JOKER, CHARM } from './run.js?v=6';
+import './words.js?v=6';
+import { View } from '../classic/view.js?v=6';
+import { JACKPOT, LABEL } from '../classic/layout.js?v=6';
+import { getLang } from '../classic/lang.js?v=6';
+import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from '../classic/table.js?v=6';
+import { makeLcd, drawLcd } from './lcd.js?v=6';
+import { partCard } from './cards.js?v=6';
+import { STOP_ORDER, TIMING } from '../reels.js?v=6';
 
 let game = new Kuoppa({ seed: seedFrom() });
 const lcd = makeLcd();
@@ -20,7 +21,13 @@ view.lcdTexture = lcd.texture;
 let best = store.get('kuoppa.best', 0);           // most locks opened
 
 const viewUpdate = view.update.bind(view);
-view.update = (g, dt, time) => { if (view.lcdMesh) drawLcd(lcd, g, time, { reach: t('reach'), lcdShop: t('lcdShop'), lcdDue: t('lcdDue') }); viewUpdate(g, dt, time); };
+// REACH: while the last reel turns, the camera leans in on the LCD
+const reaching = g => { const s = g.spin; return !!(s && s.reach && s.t >= s.stops[STOP_ORDER[1]] && s.t < s.stops[STOP_ORDER[2]] + 0.6); };
+view.update = (g, dt, time) => {
+  if (view.lcdMesh) drawLcd(lcd, g, time, { reach: t('reach'), lcdShop: t('lcdShop'), lcdDue: t('lcdDue') });
+  view.focus = view.lcdMesh && reaching(g) ? { x: 1.5, y: 68.9, halfW: 9 } : null;
+  viewUpdate(g, dt, time);
+};
 
 // big numbers the Balatro way: 1 234, 56.7k, 8.9M, 1.2B
 const big = n => {
@@ -97,7 +104,10 @@ function onEvent(ev) {
     case 'tulip': sfx.tulip(ev.open); break;
     case 'held': view.pop(ev.cup); sfx.win('cherry'); break;
     case 'attacker': sfx.spill(1); buzz(14); break;
-    case 'spin': if (ev.reach) setTimeout(() => sfx.reach(), 1300); break;
+    case 'spin':
+      if (ev.reach) setTimeout(() => { sfx.reach(); buzz([40, 80, 40, 80, 40]); table.toast(t('reach'), '', 'reach', 1400); }, (TIMING.spin + TIMING.gap) * 1000);
+      break;
+    case 'stage': table.pop(ev.x, ev.y + 3, 'STAGE!', 'xmult'); sfx.win('coin'); break;
     case 'reel':
       if (ev.outcome === 'miss') break;
       if (ev.outcome === 'clover') { table.toast('☘', t('clover', { n: ev.drops }), '', 1500); sfx.win('coin'); }

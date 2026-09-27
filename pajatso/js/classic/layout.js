@@ -15,7 +15,7 @@
 // valve, the knife-edge tip and the wedge rule are the physics the pachinko
 // board was tuned with. The coin is BIG, 2.5 bu across on a 60 bu face.
 
-import { BOARD, seg, arc, buildGrid } from '../board.js?v=5';
+import { BOARD, seg, arc, buildGrid } from '../board.js?v=6';
 
 const deg = d => d * Math.PI / 180;
 

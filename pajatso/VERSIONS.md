@@ -4,6 +4,29 @@ The game was PACHI PIT for its first release; v2 renamed it and made the
 Finnish coin wall game the front door. The pit run is still here as KUOPPA
 (`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
 
+## v6 — 2026-09-27 — jokers that meet the parts, and the REACH
+
+The owner: *"Go ahead. Give me something to play soon."* So a short one.
+
+**Eight jokers that meet a part** — v5's measurement said the strongest runs
+are where a joker and a part meet, so every part has one now: the Pinwheel
+Kid (a coin that touches a windmill, +2 mult), the Stage Diva (a coin through
+the warp onto the stage, ×1.25), Right Hook (the electric tulip, ×1.15), the
+Coin Juggler (×3 windows, +5 mult), Flap Man (the attacker, +25 chips), the
+Nail Doctor (grows +1 mult for every coin in the heso), the Florist (×1.3 for
+every tulip left open at the round's end) and the Reach Addict (grows +2 for
+every REACH). The **stage** scores on its own now (+10 chips +1 mult, with a
+level plate), and the **electric tulip** scores as a heso of its own.
+
+**The REACH**: when the outside reels match and the last one is still turning,
+the camera leans in on the LCD in the yakumono, REACH! throbs across the
+screen, the phone buzzes a heartbeat, and it lets go when the reel stops.
+
+**Measured**: the first cut of the part jokers took the joker bot from 6% to
+**27%** wins — Stage Diva at ×1.5 and the Florist at ×1.5 a tulip compound
+hard. Toned (×1.25, ×1.15, ×1.3), it wins **15%**; the machine alone still
+falls at lock 3–4.
+
 ## v5 — 2026-09-27 — Balatro's shape, CloverPit's charms, pachinko's parts, the nudge
 
 The owner, after v4: *"Not sure what tulips are here. Maybe the extra

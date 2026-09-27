@@ -363,7 +363,8 @@ Lessons: **a run is the best instrument a machine has** (a run bot found a
 3.5-a-coin POTTI hot spot in the base face), **a part has to be somewhere the
 coins go**, the wedge rule counts a part's walls along their whole length, and
 **a sweep must not let its probes end the round** (the first v5 sweep kept
-clearing antes mid-measure). Gates: `core.mjs` 157, `classic.cjs` 32,
+clearing antes mid-measure). **v6** adds a joker for every part and the REACH
+(the camera leans in on the LCD). Gates: `core.mjs` 157, `classic.cjs` 32,
 `kuoppa.cjs` 31, `smoke.cjs` 44.
 **The old pit run (v1's KUOPPA)** (`pit.html`) is kept a small link from the
 new title; what follows is its record, still true of that mode.

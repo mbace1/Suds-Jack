@@ -1,8 +1,8 @@
 // THE INSTRUMENT for KUOPPA — never a gate.
 //   node pajatso/test/run.mjs face [shots]    the lever swept on every stage of the face
 //   node pajatso/test/run.mjs runs [n]        bots play whole runs; where they fall
-import { Kuoppa, DATA as D } from '../js/kuoppa/run.js?v=5';
-import { playRun, POLICIES } from './runbot.mjs?v=5';
+import { Kuoppa, DATA as D } from '../js/kuoppa/run.js?v=6';
+import { playRun, POLICIES } from './runbot.mjs?v=6';
 
 const mode = process.argv[2] ?? 'runs';
 const n = Number(process.argv[3] ?? (mode === 'face' ? 80 : 120));

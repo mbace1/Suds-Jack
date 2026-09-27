@@ -9,13 +9,13 @@
 // Nothing reaches the wallet except over an edge (and the side pockets, which
 // pay the tray directly — the board's one honest handout).
 
-import { Board, buildLayout, BOARD } from './board.js?v=5';
-import { Pusher, PUSHER } from './pusher.js?v=5';
-import { drawOutcome, buildGrid, linesShown, reachLines, LINES, STOP_ORDER, TIMING } from './reels.js?v=5';
-import { makeRng } from './rng.js?v=5';
-import * as D from './data.js?v=5';
+import { Board, buildLayout, BOARD } from './board.js?v=6';
+import { Pusher, PUSHER } from './pusher.js?v=6';
+import { drawOutcome, buildGrid, linesShown, reachLines, LINES, STOP_ORDER, TIMING } from './reels.js?v=6';
+import { makeRng } from './rng.js?v=6';
+import * as D from './data.js?v=6';
 
-export const VERSION = 5;       // the whole machine's release: the log's top entry, both modes
+export const VERSION = 6;       // the whole machine's release: the log's top entry, both modes
 const TICK = BOARD.DT;                 // 240 Hz: the board's step
 const PUSH_EVERY = 4;                  // the pusher runs at 60 Hz
 const CHUTE_X = { L: -14, C: 0, R: 14 };

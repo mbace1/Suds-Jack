@@ -1,6 +1,6 @@
 // Bots for KUOPPA: a policy is a pull power and a way of shopping. A measuring
 // instrument (test/run.mjs) and a gate's driver (core.mjs), never an opponent.
-import { Kuoppa, DATA as D, JOKER } from '../js/kuoppa/run.js?v=5';
+import { Kuoppa, DATA as D, JOKER } from '../js/kuoppa/run.js?v=6';
 
 // how much a bot likes a joker: ×mult first, then +mult, then chips
 const taste = id => {

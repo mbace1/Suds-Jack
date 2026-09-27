@@ -43,10 +43,13 @@ export const HITS = {
   reel:     { chips: 0,  mult: 0, lv: {} },
   x3:       { chips: 0,  mult: 0, lv: {} },
   nudge:    { chips: 0,  mult: 0, lv: {} },
+  stage:    { chips: 10, mult: 1, lv: { chips: 10, mult: 1 } },
+  denchu:   { chips: 5,  mult: 0, lv: { chips: 10, mult: 1 } },
+  mill:     { chips: 0,  mult: 0, lv: {} },
 };
-export const LEVELS = ['R', 'one', 'half', 'potti', 'tulip', 'heso', 'attacker', 'reel'];
+export const LEVELS = ['R', 'one', 'half', 'potti', 'tulip', 'heso', 'attacker', 'reel', 'stage'];
 // a level only means something once its part is on the machine
-export const LEVEL_NEEDS = { tulip: 'tulips', heso: 'chucker', attacker: 'fever', reel: 'chucker' };
+export const LEVEL_NEEDS = { tulip: 'tulips', heso: 'chucker', attacker: 'fever', reel: 'chucker', stage: 'chucker' };
 
 // ── the reels (part 1): a lottery drawn when a coin drops in the heso ─────
 export const OUTCOMES = { miss: 56, cherry: 18, bell: 11, coin: 6, clover: 5, seven: 2.2, mask: 0 };
@@ -175,6 +178,37 @@ export const JOKERS = [
   { id: 'brawler', price: 5, name: T('Bar Brawler', 'Tappelupukari', 'けんか屋'),
     text: T('Every nudge: +2 mult.', 'Jokainen tönäisy: +2 kerrointa.', 'ナッジするたび倍率+2。'),
     hit: (c, k) => { if (k === 'nudge') { c.mult += 2; return '+2 mult'; } } },
+  // ── jokers that meet a part (v6): the strongest runs are where they do ──
+  { id: 'pinwheel_kid', price: 6, needs: 'windmills', name: T('Pinwheel Kid', 'Tuulimylly-Teuvo', '風車小僧'),
+    text: T('Every coin that touches a windmill: +2 mult.', 'Jokainen tuulimyllyyn osuva kolikko: +2 kerrointa.', '風車に触れたコインごとに倍率+2。'),
+    hit: (c, k) => { if (k === 'mill') { c.mult += 2; return '+2 mult'; } } },
+  { id: 'stage_diva', price: 8, needs: 'chucker', name: T('Stage Diva', 'Lavadiiva', 'ステージの歌姫'),
+    text: T('Every coin through the warp onto the stage: ×1.25 mult.', 'Jokainen warpin kautta lavalle päässyt kolikko: ×1,25 kerroin.', 'ワープからステージに乗ったコインごとに倍率×1.25。'),
+    hit: (c, k) => { if (k === 'stage') { c.mult *= 1.25; return '×1.25'; } } },
+  { id: 'right_hook', price: 8, needs: 'chain', name: T('Right Hook', 'Oikea koukku', '右フック'),
+    text: T('Every coin in the electric tulip: ×1.15 mult.', 'Jokainen kolikko sähkötulppaaniin: ×1,15 kerroin.', '電チューに入るたび倍率×1.15。'),
+    hit: (c, k) => { if (k === 'denchu') { c.mult *= 1.15; return '×1.15'; } } },
+  { id: 'coin_juggler', price: 6, needs: 'multiplier', name: T('Coin Juggler', 'Kolikkojonglööri', 'コイン曲芸師'),
+    text: T('Every ×3 hit: +5 mult.', 'Jokainen ×3-osuma: +5 kerrointa.', '×3に入るたび倍率+5。'),
+    hit: (c, k) => { if (k === 'x3') { c.mult += 5; return '+5 mult'; } } },
+  { id: 'flap_man', price: 6, needs: 'fever', name: T('Flap Man', 'Läppämies', 'フラップ男'),
+    text: T('Every coin through the open attacker: +25 chips.', 'Jokainen kolikko avoimen attackerin läpi: +25 pelimerkkiä.', '開いたアタッカーに入るたびチップ+25。'),
+    hit: (c, k) => { if (k === 'attacker') { c.chips += 25; return '+25'; } } },
+  { id: 'nail_doctor', price: 7, needs: 'chucker', name: T('The Nail Doctor', 'Naulatohtori', '釘師'),
+    text: T('Gains +1 mult for every coin in the heso this run. Adds it at the end of every round.',
+      'Kasvaa +1 kerrointa jokaisesta hesoon menneestä kolikosta tällä kierroksella. Lisää sen joka kierroksen lopussa.',
+      'このランでヘソに入ったコインごとに倍率+1を貯める。毎ラウンドの終わりに加算。'),
+    on: (ev, j) => { if (ev.t === 'heso') j.n = (j.n ?? 0) + 1; },
+    end: (c, j) => { if (j.n) { c.mult += j.n; return `+${j.n} mult`; } }, grows: j => `+${j.n ?? 0}` },
+  { id: 'florist', price: 7, needs: 'tulips', name: T('The Florist', 'Kukkakauppias', '花屋'),
+    text: T('At the end of a round: ×1.3 mult for every tulip left open.', 'Kierroksen lopussa: ×1,3 kerroin jokaisesta auki jääneestä tulppaanista.', 'ラウンドの終わりに開いたままのチューリップごとに倍率×1.3。'),
+    end: c => { const n = c.run.L.pockets.filter(p => p.tulip && p.open).length; if (n) { const x = +(1.3 ** n).toFixed(2); c.mult *= x; return `×${x}`; } } },
+  { id: 'reach_addict', price: 6, needs: 'chucker', name: T('Reach Addict', 'Reach-riippuvainen', 'リーチ中毒'),
+    text: T('Gains +2 mult for every REACH on the reels. Adds it at the end of every round.',
+      'Kasvaa +2 kerrointa jokaisesta rullien REACHistä. Lisää sen joka kierroksen lopussa.',
+      'リーチのたびに倍率+2を貯める。毎ラウンドの終わりに加算。'),
+    on: (ev, j) => { if (ev.t === 'reach') j.n = (j.n ?? 0) + 2; },
+    end: (c, j) => { if (j.n) { c.mult += j.n; return `+${j.n} mult`; } }, grows: j => `+${j.n ?? 0}` },
   { id: 'beer_crate', price: 5, name: T('Crate of Beer', 'Kaljakori', 'ビールケース'),
     text: T('Five more coins to shoot every round.', 'Viisi kolikkoa lisää joka kierrokselle.', '毎ラウンド打てるコイン+5。'),
     rules: { extraDrops: 5 } },

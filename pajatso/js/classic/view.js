@@ -11,8 +11,8 @@
 // crank on the right side, two brown bottles on top, an orange wall.
 
 import * as THREE from 'three';
-import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=5';
-import { FACE, JACKPOT } from './layout.js?v=5';
+import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=6';
+import { FACE, JACKPOT } from './layout.js?v=6';
 
 const COIN_Z = 1.0;           // the coin rolls on the face this far out of it
 const PIN_LEN = 2.0;
@@ -374,6 +374,14 @@ export class View {
       const close = this.solve(x - halfW, x + halfW, y - halfH, y + halfH);
       const k = this.follow * this.zoom;
       tx = w.x + (close.x - w.x) * k; ty = w.y + (close.y - w.y) * k; td = w.d + (close.d - w.d) * k;
+    }
+    // a FOCUS (KUOPPA's REACH) pulls the camera onto one thing, over the follow
+    this.focusK = (this.focusK ?? 0) + ((this.focus ? 1 : 0) - (this.focusK ?? 0)) * Math.min(1, dt * 3);
+    if (this.focus) this.lastFocus = this.focus;
+    if (this.focusK > 0.001 && this.lastFocus) {
+      const f = this.lastFocus, hw = this.tall ? f.halfW : f.halfW * 1.4;
+      const cl = this.solve(f.x - hw, f.x + hw, f.y - hw * 0.9, f.y + hw * 0.9);
+      tx += (cl.x - tx) * this.focusK; ty += (cl.y - ty) * this.focusK; td += (cl.d - td) * this.focusK;
     }
     const ease = Math.min(1, dt * 4);
     this.cam.x += (tx - this.cam.x) * ease; this.cam.y += (ty - this.cam.y) * ease; this.cam.d += (td - this.cam.d) * ease;
