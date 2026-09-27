@@ -23,12 +23,12 @@ function relink() {
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=103';
-import { drawMarquee } from './art.js?v=19';
+import { GAMES, SKETCHES } from './games.js?v=104';
+import { drawMarquee } from './art.js?v=20';
 import * as feedback from './feedback.js?v=13';
-import * as topics from './topics.js?v=11';
+import * as topics from './topics.js?v=12';
 import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=11';
-import { watchPad, padPresent } from './pad.js?v=9';
+import { watchPad, padPresent } from './pad.js?v=10';
 import * as room from './arcade.js?v=5';
 
 const el = (tag, cls = '', text = '') => {
@@ -613,12 +613,14 @@ function markFresh(versions) {
   // Anything a previous run left behind comes off FIRST. This appends to the
   // DOM, so it has to be safe to call twice — "it is only called once" is
   // exactly the assumption that put two tags on every cabinet. The heading is
-  // reset here too, because it carries the count and a stale count is worse
-  // than none.
+  // reset ONLY when it carries a count this function wrote: it is shared with
+  // showPlayed()'s "N tried", and a blanket reset erased that line on every
+  // visit where nothing had moved.
   for (const old of document.querySelectorAll('.fresh')) old.remove();
   for (const cab of document.querySelectorAll('.cab.has-fresh')) cab.classList.remove('has-fresh');
   const head = document.getElementById('floor-head');
-  if (head) { head.textContent = t('floor'); delete head.dataset.fresh; }
+  const hadFresh = !!head?.dataset.fresh;
+  if (hadFresh) { head.textContent = t('floor'); delete head.dataset.fresh; }
 
   // A first visit has nothing to compare against, and marking all twelve as new
   // would say nothing while looking like it said something.
@@ -643,6 +645,9 @@ function markFresh(versions) {
   if (n && head) {
     head.textContent = `${t('floor')} · ${t('fresh.count', { n })}`;
     head.dataset.fresh = '1';
+  } else if (hadFresh) {
+    // the count this replaced is gone; the tried line owns the heading again
+    showPlayed();
   }
 }
 

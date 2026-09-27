@@ -486,6 +486,16 @@ function check(name, cond) {
     await page.waitForTimeout(200);
     return await page.locator('.tried').count() === 1;
   })());
+  // …and so does the TALLY, once versions.json has landed. The heading is shared
+  // with the "moved since you were last here" count, and making that one safe to
+  // run twice first shipped as a blanket reset of the heading — which erased
+  // "N tried" on every visit where nothing had moved. Read after the fetch, or
+  // this passes on the frame before the bug happens.
+  await page.waitForFunction(() => [...document.querySelectorAll('.ver')].some(v => v.textContent),
+    null, { timeout: 5000 });
+  await page.waitForTimeout(150);
+  const kept = await page.locator('#floor-head').textContent();
+  check(`and the tally survives the version numbers landing (${kept.split('·')[1]?.trim()})`, /1/.test(kept));
   // the floor does not reorder itself around it — moving the covers under
   // somebody who just learned where they were costs more than it gives
   const floorOrder = await page.$$eval('.cab:not(#cab-tokolive)', cs => cs.map(c => c.id));

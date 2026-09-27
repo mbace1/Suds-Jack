@@ -131,7 +131,10 @@ const serve = () => new Promise(res => {
   console.log(`\ndeploy check — ${ROOT}\n`);
   const all = await cabinets();
   const list = asked.length
-    ? all.filter(g => asked.some(a => g.path.replace(/\/$/, '') === a.replace(/\/$/, '')))
+    // A catalogue path is a URL: Flash Prince's is `flashprince/#flooded-city`,
+    // which never equals the folder a person types. Compare the folder parts.
+    ? all.filter(g => asked.some(a =>
+        g.path.split(/[#?]/)[0].replace(/\/$/, '') === a.split(/[#?]/)[0].replace(/\/$/, '')))
     : all;
   if (!list.length) {
     console.error(asked.length ? `no cabinet matches ${asked.join(', ')}` : 'no cabinets found');

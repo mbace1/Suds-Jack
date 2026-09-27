@@ -21,7 +21,7 @@ blank; a blank section reads as "checked, nothing to say".
 - [ ] `VERSIONS.md` has a new top entry (a number never reused — fetch and read the other lineage's log first)
 - [ ] Every module whose bytes changed has a bumped `?v=` token, and **only** those
 - [ ] `hub/games.js` title / tagline / controls / note still describe the game that ships
-- [ ] `node scripts/versions.mjs --check` agrees (never a plain regenerate on the deployed tree)
+- [ ] `node scripts/versions.mjs . --check` agrees — or `<site> --check` on the deployed tree, never a plain regenerate there
 
 ## Evidence
 
