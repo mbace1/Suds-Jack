@@ -1006,6 +1006,27 @@ s.listen(0, '127.0.0.1', async () => {
     JSON.stringify({ ground: ctrl.sn.ground, fog: ctrl.sn.fog, bd: ctrl.sn.backdrop }));
 
   const em = await seasonRead('ember');
+  // (this block runs FIRST on the ember page: a later check clears the pillars
+  //  as the cover check's control, and a felled pile is still a pile for the rest)
+  // v53 COVER THAT DIES (owner). Every pile has hit points; worn past half it
+  // leans; at zero it comes down as a heap of shale chunks — physical, so
+  // they stack — and it is gone as cover. Driven through debug.wearWall, the
+  // same function a nail and a shoving body call.
+  const coverDies = await p.evaluate(async () => {
+    const d = window.__hd.debug, G = d.gibsObj();
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const w0 = d.getWalls().walls;
+    const hp = w0.map(w => w.hp), maxHp = w0.map(w => w.maxHp);
+    d.wearWall(0, 40);
+    const mid = d.getWalls().walls[0];
+    const r = d.wearWall(0, 40);
+    await frames(40);
+    return { piles: w0.length, hp, maxHp, midHp: mid.hp, midLean: mid.lean, felled: r.felled, left: r.left, gibs: G.getState().n, gibsTop: G.getState().top };
+  });
+  ok('ember: COVER THAT DIES — every pile has hit points, worn past half it leans, at zero it collapses into a heap of shale',
+    coverDies.piles >= 5 && coverDies.maxHp.every(h => h === 70) && coverDies.hp.every(h => h === 70)
+    && coverDies.midHp === 30 && coverDies.midLean > 0.05 && coverDies.felled === 1 && coverDies.left === coverDies.piles - 1 && coverDies.gibs >= 8 && coverDies.gibsTop > 0.2,
+    JSON.stringify(coverDies));
   const pillars = em.walls.walls.filter(w => w.tag === 'pillar');
   ok('ember: it boots into its own season and says so',
     em.sn.current === 'ember' && em.sn.built === true, JSON.stringify(em.sn.current));
@@ -1173,25 +1194,6 @@ s.listen(0, '127.0.0.1', async () => {
   ok('ember: a gem lands ON a slab, not through it',
     cover.onSlab > cover.slabTop && cover.onFloor < 0.8, JSON.stringify(cover));
 
-  // v53 COVER THAT DIES (owner). Every pile has hit points; worn past half it
-  // leans; at zero it comes down as a heap of shale chunks — physical, so
-  // they stack — and it is gone as cover. Driven through debug.wearWall, the
-  // same function a nail and a shoving body call.
-  const coverDies = await p.evaluate(async () => {
-    const d = window.__hd.debug, G = d.gibsObj();
-    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    const w0 = d.getWalls().walls;
-    const hp = w0.map(w => w.hp), maxHp = w0.map(w => w.maxHp);
-    d.wearWall(0, 40);
-    const mid = d.getWalls().walls[0];
-    const r = d.wearWall(0, 40);
-    await frames(40);
-    return { piles: w0.length, hp, maxHp, midHp: mid.hp, midLean: mid.lean, felled: r.felled, left: r.left, gibs: G.getState().n, gibsTop: G.getState().top };
-  });
-  ok('ember: COVER THAT DIES — every pile has hit points, worn past half it leans, at zero it collapses into a heap of shale',
-    coverDies.piles >= 5 && coverDies.maxHp.every(h => h === 70) && coverDies.hp.every(h => h === 70)
-    && coverDies.midHp === 30 && coverDies.midLean > 0.05 && coverDies.felled === 1 && coverDies.left === coverDies.piles - 1 && coverDies.gibs >= 8 && coverDies.gibsTop > 0.2,
-    JSON.stringify(coverDies));
   // v53 THE FINALE, season 1: THE ROCKFALL at 180 s — shale falls for ten
   // seconds, a rock that lands on you is a hit, the fallen rock stays as
   // heaps, and the director is tighter after
