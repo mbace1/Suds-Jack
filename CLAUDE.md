@@ -1698,8 +1698,8 @@ time on the dune flats. It damps `vel.y - gRate` (the ground's own rate under th
 
 **The carve (v11, owner: "the feel is comparable to carving in powder").** The sled
 BANKS into a turn — each pad's rest height offset by the bank (`bank`/`bankSteer`,
-lagged `bankLag`, capped ~15 degrees) — and bank INTO the steer is the EDGE: up to
-`edge` 38% more grip, with the lowered pods digging in (`edgeDig`). The runners PLANE
+lagged `bankLag`) — and bank INTO the steer is the EDGE: up to
+`edge` 38% more grip, with the lowered pads digging in (`edgeDig`). The runners PLANE
 (`plane`: sink falls as the square root of speed from `planeMin` to `planeFull`), each
 pad PLOUGHS by its own sink x speed (`plow`) plus a load-scaled `wallow`, and the lateral
 forces roll the body out about `rollArm`. `rest` is 0.75 m (2.6 floated the old kit two
@@ -1708,11 +1708,27 @@ metres up). The synchronous ladder (3 s of sim a phase, NOSE on dune): quarter l
 formula chase seat (`SEATS[0]`: 8.6 m back, 2.35 up, FOV 60 opening with speed, rolled
 into the bank); `SEATS[1]` is the old high seat, swapped by C / RB / the CAM chip and
 remembered (`powderCam`). The CAM chip answers `touchend`/`pointerup`, since `input.js`
-cancels every touchstart for the sticks. **The kit is a formula car** (`craft.js`):
-lofted superellipse tub, cambered wings, sidepods and cover in the cream livery (in the
-accent colour it read as a maroon lump from behind), four pods on wishbones that
-`posePods` sits on the sand under their pads and steers at the front; ~7.5k triangles,
-22 draws.
+cancels every touchstart for the sticks.
+**v12, the owner's correction: "more like the reference concept art than actual formula
+cars ... the formula reference was only to high octane racing with miniscule movements
+at high speed and more snowboarding like at lower speeds. It's a rocket sled."** So the
+kit (`craft.js`) is the `ref/` plates' ROCKET SLED: a lofted cream fuselage from a chrome
+nose cone, a bubble canopy, the hull pinched open behind the cockpit on a machinery bay
+(the livery paints that stretch dark, so the pinch reads as a hole), the accent on the
+lower half with a flaked edge, rust, flank roundels, and chrome cans the size of the
+cockpit — NOSE: two either side of the nose with open fans plus two burning-only
+sustainers at the tail; AFT: two off the rear hub, bores to the camera. No pods: the
+cushion is invisible as on every plate, and `posePods` only lays its glow on the sand.
+The livery canvas is painted nose-at-top with `flipY = false` — flipped, the bay's dark
+band landed a metre forward. Under the 9,000-triangle ship budget (8.9k / 7.8k). **The
+feel** is measured by `test/ladder.mjs` (speed x lock in SIM time, rocks cleared, on
+the flats — on the rift floor half the mid-speed runs hit the wall and read as a
+washout): the lock shrinks as **1/v** past 20 m/s (`lockRef`/`lockMin`, because the
+yaw rate a given g needs is 1/v), the **bank depends on speed** (`bankMaxSlow` 27 deg
+to 12 m/s, blending to `bankMax` 11 by 40, the lean reading the STICK), and
+`rearCircle` 0.14 — at 0.28 the AFT sled slid 8-10 m/s at a QUARTER lock from 30 m/s
+up. A quarter lock at 180 km/h is now 5 degrees in 2 s on either chassis; full lock
+at 36 km/h is a 12 m carve at 26 degrees of lean.
 
 **The world** (`js/terrain.js`). Open, not a ribbon: `height(x, z)` is a pure function,
 and the tile meshes, the hover pads, the props and the dust all read it, so they cannot
@@ -1767,8 +1783,8 @@ what this look is made of.
 any real speed — the sticks and the pad are analog, the keyboard was not, and it was the
 keyboard the "nightmare" report came from. `input.js` **ramps the digital steer** (0.22 s
 to full lock, 0.09 s back) so a tap is a quarter turn and a hold a committed one; the
-vehicle **shrinks the lock with speed** (`speedLock`: all of it below 20 m/s, 55% at 45)
-because the sustainable yaw rate falls as 1/v; the spool is 0.75 s (idle to half thrust
+vehicle **shrinks the lock with speed** (since v12 as 1/v: all of it below 20 m/s, 40%
+at 50) because the sustainable yaw rate falls as 1/v; the spool is 0.75 s (idle to half thrust
 0.8 s, not 1.4); the camera in a slide looks **half way to the travel heading** so the
 sled slides across the frame instead of the world swinging round it; `brakeDrag` 7.
 `powder/test/keys.mjs` drives real key events: one second of A at 140 km/h is 17° of

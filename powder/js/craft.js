@@ -22,15 +22,14 @@
 //              cost (and not the 23 it was). The fans spin and the flames
 //              scale, so they stay live meshes.
 //
-// v11, on the owner's direction ("formula-shaped"): the kit is a FORMULA CAR
-// — see buildCraft. The rockets, fans, flames, chrome and the material
-// contract are unchanged; the body around them is new, and the four hover
-// pads the physics has always run on are finally VISIBLE, as pods on
-// wishbones where the wheels would be.
+// v11 made the kit a formula car; v12, on the owner's direction ("more like
+// the reference concept art than actual formula cars ... it's a rocket sled
+// after all"), made it the plates' ROCKET SLED — see buildCraft. The
+// rockets, fans, flames, chrome and the material contract carry through.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PAL, SUN_DIR } from './palette.js?v=11';
-import { models, numeralTexture, SHIP } from './models.js?v=11';
+import { PAL, SUN_DIR } from './palette.js?v=12';
+import { models, numeralTexture, SHIP } from './models.js?v=12';
 
 const _geo = {};
 const geo = (k, make) => _geo[k] || (_geo[k] = make());
@@ -207,9 +206,8 @@ function materials(env, accent) {
   // wears these same names, and craftFromModel swaps by them.
   const M = geo('mats', () => ({
     chrome: Object.assign(new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1.0, roughness: 0.10, envMap: env, envMapIntensity: 1.15 }), { name: 'CHROME' }),
-    // v11: most of the formula kit's GUNMETAL is carbon — floor, wings, pods,
-    // arms — so it is darker and less metallic than the old bands and bells
-    // were: a glossy near-black that still catches the sky along its edges
+    // GUNMETAL is the engine bay, the bands on the cans and the keels: a
+    // glossy near-black that still catches the sky along its edges
     gun:    Object.assign(new THREE.MeshStandardMaterial({ color: 0x2b2a33, metalness: 0.55, roughness: 0.34, envMap: env, envMapIntensity: 0.9 }), { name: 'GUNMETAL' }),
     glass:  Object.assign(new THREE.MeshPhongMaterial({ color: PAL.glass, specular: 0xffffff, shininess: 200, emissive: 0x4a5a8a, emissiveIntensity: 0.3, transparent: true, opacity: 0.92 }), { name: 'GLASS' }),
     intake: Object.assign(new THREE.MeshBasicMaterial({ color: PAL.intake }), { name: 'INTAKE' }),
@@ -295,11 +293,10 @@ function makeFlame(M) {
 }
 
 // ------------------------------------------------------------------ lofting
-// v11: the formula kit is LOFTED, not stacked out of primitives. A formula
-// car is one continuous surface from the nose tip to the gearbox, and a row of
-// cylinders and cones reads as a row of cylinders and cones however well it
-// is lit. `loft` sweeps a ring of points along z; the rings are superellipses
-// for bodywork and cambered airfoils for the wings.
+// The kit is LOFTED, not stacked out of primitives (v11): a fuselage is one
+// continuous surface from the nose cone to the tail, and a row of cylinders
+// and cones reads as a row of cylinders and cones however well it is lit.
+// `loft` sweeps a ring of superellipse points along z.
 
 /** A superellipse ring: n points, counterclockwise from +x seen from +z. */
 function superRing(w, h, p, n) {
@@ -309,21 +306,6 @@ function superRing(w, h, p, n) {
     pts.push([w * Math.sign(c) * Math.pow(Math.abs(c), e), h * Math.sign(s) * Math.pow(Math.abs(s), e)]);
   }
   return pts;
-}
-
-/**
- * A cambered airfoil ring, chord along +x from the leading edge at 0, 2k
- * points, counterclockwise. `aoa` pitches the trailing edge UP about the
- * leading edge, and a NEGATIVE camber is an inverted foil: a downforce wing.
- */
-function airfoilRing(chord, th, camber, aoa, k = 8) {
-  const yt = x => 5 * th * (0.2969 * Math.sqrt(x) - 0.126 * x - 0.3516 * x * x + 0.2843 * x ** 3 - 0.1036 * x ** 4);
-  const yc = x => camber * 4 * x * (1 - x);
-  const raw = [];
-  for (let i = 0; i < k; i++) { const x = 0.5 * (1 + Math.cos(i / k * Math.PI)); raw.push([x, yc(x) + yt(x)]); }
-  for (let i = 0; i < k; i++) { const x = 0.5 * (1 - Math.cos(i / k * Math.PI)); raw.push([x, yc(x) - yt(x)]); }
-  const c = Math.cos(aoa), s = Math.sin(aoa);
-  return raw.map(([x, y]) => [(x * c - y * s) * chord, (x * s + y * c) * chord]);
 }
 
 /**
@@ -377,71 +359,112 @@ function loft(sections, { capStart = true, capEnd = true } = {}) {
 // a second one
 const bodyRing = n => row => ({ z: row[0], y: row[3], pts: superRing(row[1], row[2], row[4] ?? 2.6, n) });
 
-/**
- * A wing spanning x from -span to +span: an airfoil lofted along the span and
- * turned so the chord runs back along +z from the leading edge at `le`.
- * rotateY(-90deg) sends the loft axis to -x and the chord to +z, which keeps
- * the leading edge FORWARD — the other way round puts it at the back.
- */
-function wing(chord, th, camber, aoa, span, le, y, k = 8) {
-  const ring = airfoilRing(chord, th, camber, aoa, k);
-  const g = loft([{ z: -span, pts: ring }, { z: span, pts: ring }]);
-  g.rotateY(-Math.PI / 2);
-  g.translate(0, y, le);
-  return g;
+/** A small seeded random, so every ship of one colour wears the same wear. */
+function rng(seed) {
+  let s = (seed >>> 0) || 1;
+  return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
 }
 
-const _up = new THREE.Vector3(0, 1, 0);
-/** A round rod from a to b: suspension arms, pylons, stalks. */
-function rod(a, b, r, n = 6) {
-  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b);
-  const g = new THREE.CylinderGeometry(r, r, A.distanceTo(B), n, 1, true);
-  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(_up, B.clone().sub(A).normalize()));
-  const m = A.add(B).multiplyScalar(0.5);
-  g.translate(m.x, m.y, m.z);
-  return g;
-}
+// The fuselage, nose to tail. Shared by both chassis: what differs is where
+// the cans hang off it. The BAY is where the hull pinches in behind the
+// cockpit and the machinery shows — the plates' open engine bays.
+//  z       half-w  half-h   centre-y  squareness
+const FUSE = [
+  [-4.20, 0.20, 0.16, -0.02, 2.0],
+  [-3.80, 0.35, 0.28,  0.00],
+  [-3.00, 0.54, 0.41,  0.03],
+  [-2.00, 0.67, 0.50,  0.06],
+  [-1.00, 0.74, 0.55,  0.08],
+  [ 0.10, 0.76, 0.56,  0.08],
+  [ 0.45, 0.71, 0.53,  0.08],
+  [ 0.70, 0.48, 0.45,  0.10],      // into the bay
+  [ 1.90, 0.48, 0.45,  0.10],
+  [ 2.15, 0.68, 0.52,  0.08],      // the rear hub the cans hang from
+  [ 2.90, 0.61, 0.45,  0.08],
+  [ 3.50, 0.40, 0.30,  0.10],
+  [ 3.85, 0.20, 0.16,  0.12, 2.0],
+];
+const FZ0 = FUSE[0][0], FZ1 = FUSE[FUSE.length - 1][0];
+const vOf = z => (z - FZ0) / (FZ1 - FZ0);
+const BAY = [0.62, 2.02];
 
 /**
- * The livery, painted for the tub's loft UVs: u runs round the section from
- * the right flank (0) over the top (0.25) to the left (0.5) and under (0.75);
- * v runs from the nose tip (0) to the gearbox (1). Cream bodywork, the accent
- * down the spine and across the nose, a pinstripe along each flank, and a
- * dark underside — the formula car's oldest trick, one colour on top.
+ * The livery, painted for the fuselage's loft UVs: u runs round the section
+ * from the right flank (0) over the top (0.25) to the left (0.5) and under
+ * (0.75); v runs nose (0) to tail (1). The plates' scheme: cream above, the
+ * accent below with a RAGGED edge where the paint has flaked, rust breaking
+ * through at the nose and round the bay, panel seams and rivets, and the
+ * bay itself dark — so the pinch in the hull reads as a hole.
  */
 function liveryTexture(accent) {
-  const W = 512, H = 256, c = document.createElement('canvas');
+  const W = 1024, H = 1024, c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
   const hex = v => '#' + new THREE.Color(v).getHexString();
+  const R = rng(accent * 7 + 3);
+  const rgba = (v, a) => 'rgba(' + [v >> 16 & 255, v >> 8 & 255, v & 255].join(',') + ',' + a + ')';
+  // NB the canvas's x is u and its y is v, so the nose is at the TOP
   g.fillStyle = hex(PAL.hull); g.fillRect(0, 0, W, H);
-  // the dark underside (u 0.62..0.88)
-  g.fillStyle = '#26232c'; g.fillRect(W * 0.62, 0, W * 0.26, H);
-  // the spine stripe, widening toward the cockpit
+  // the lower half in the accent, a hand's width ABOVE the equator on both
+  // flanks (u 0.47 left, 1.03 right — the canvas wraps), so from the chase
+  // seat it reads, with a flaked edge each side
   g.fillStyle = hex(accent);
-  g.beginPath();
-  g.moveTo(W * 0.215, 0); g.lineTo(W * 0.285, 0);
-  g.lineTo(W * 0.31, H * 0.42); g.lineTo(W * 0.30, H); g.lineTo(W * 0.20, H);
-  g.lineTo(W * 0.19, H * 0.42); g.closePath(); g.fill();
-  // the nose band
-  g.fillRect(0, 0, W, H * 0.07);
-  // flank pinstripes
-  g.fillRect(W * 0.02, H * 0.1, W * 0.012, H * 0.9);
-  g.fillRect(W * 0.468, H * 0.1, W * 0.012, H * 0.9);
-  // panel lines and fasteners: the HD detail the PS2 world lacks
-  g.strokeStyle = 'rgba(40,30,40,0.30)'; g.lineWidth = 1;
-  for (const v of [0.18, 0.36, 0.52, 0.71, 0.86]) { g.beginPath(); g.moveTo(0, H * v); g.lineTo(W, H * v + 2); g.stroke(); }
-  g.fillStyle = 'rgba(30,24,34,0.4)';
-  for (let x = 6; x < W; x += 14) for (const v of [0.19, 0.53, 0.72]) g.fillRect(x, H * v + 4, 1.5, 1.5);
-  // wear: chips at the leading edges, the plates' weathered livery
-  g.fillStyle = 'rgba(' + [accent >> 16 & 255, accent >> 8 & 255, accent & 255].join(',') + ',0.35)';
-  for (let i = 0; i < 18; i++) g.fillRect(Math.random() * W, Math.random() * H * 0.3, 3 + Math.random() * 10, 1 + Math.random() * 2);
+  g.fillRect(W * 0.47, 0, W * 0.53, H);
+  g.fillRect(0, 0, W * 0.03, H);
+  for (const edge of [0.47, 1.03]) {
+    for (let i = 0; i < 260; i++) {
+      const y = R() * H, r = 3 + R() * 11;
+      // paint INTO the cream (drips up) and cream INTO the paint (flakes)
+      const up = R() < 0.62;
+      g.fillStyle = up ? hex(accent) : hex(PAL.hull);
+      const x = (W * edge + (edge < 0.7 ? -1 : 1) * (up ? R() * 26 : -R() * 22)) % W;
+      g.beginPath(); g.ellipse(x, y, r, r * (0.3 + R() * 0.4), 0, 0, 7); g.fill();
+    }
+  }
+  // flecks of the accent up the flanks
+  g.fillStyle = hex(accent);
+  for (let i = 0; i < 70; i++) {
+    const x = (R() < 0.5 ? 0.04 + R() * 0.10 : 0.36 + R() * 0.10) * W;
+    g.beginPath(); g.ellipse(x, R() * H, 2 + R() * 4, 1 + R() * 1.5, 0, 0, 7); g.fill();
+  }
+  // rust: orange-brown, clustered at the nose, round the bay lip, at the tail
+  const rust = (v0, v1, n, big) => {
+    for (let i = 0; i < n; i++) {
+      const x = R() * W, y = (v0 + R() * (v1 - v0)) * H, r = 1.5 + R() * big;
+      g.fillStyle = R() < 0.5 ? 'rgba(150,72,36,0.85)' : 'rgba(112,52,30,0.75)';
+      g.beginPath(); g.ellipse(x, y, r * (1 + R()), r * 0.55, 0, 0, 7); g.fill();
+    }
+  };
+  rust(0.0, 0.10, 90, 7);
+  rust(vOf(BAY[0]) - 0.05, vOf(BAY[0]), 40, 5);
+  rust(vOf(BAY[1]), vOf(BAY[1]) + 0.05, 40, 5);
+  rust(0.15, 0.9, 50, 3);
+  // panel seams round the section, and one along each flank
+  g.strokeStyle = 'rgba(52,38,42,0.42)'; g.lineWidth = 1.5;
+  for (const z of [-3.4, -2.4, -0.2, 0.35, 2.4, 3.2]) {
+    const y = vOf(z) * H;
+    g.beginPath(); g.moveTo(0, y); g.lineTo(W, y + 3); g.stroke();
+  }
+  for (const u of [0.10, 0.40]) { g.beginPath(); g.moveTo(u * W, vOf(-3.6) * H); g.lineTo(u * W, H); g.stroke(); }
+  g.fillStyle = 'rgba(40,30,36,0.5)';
+  for (const z of [-2.4, -0.2, 2.4]) for (let x = 5; x < W; x += 16) g.fillRect(x, vOf(z) * H + 5, 2, 2);
+  // the bay: dark, with a hard lip where the skin was cut back
+  const b0 = vOf(BAY[0]) * H, b1 = vOf(BAY[1]) * H;
+  g.fillStyle = '#17151b'; g.fillRect(0, b0, W, b1 - b0);
+  g.fillStyle = 'rgba(0,0,0,0.35)';
+  g.fillRect(0, b0 - 14, W, 14); g.fillRect(0, b1, W, 12);
+  g.fillStyle = '#c9c3b3'; g.fillRect(0, b0 - 5, W, 5); g.fillRect(0, b1, W, 5);
+  // the tail cone in bare metal, rubbed
+  g.fillStyle = 'rgba(40,36,44,0.18)'; g.fillRect(0, vOf(3.55) * H, W, H);
   const t = new THREE.CanvasTexture(c);
-  t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace;
+  // canvas row 0 is the NOSE (v = 0), so no flip: flipped, the bay's dark
+  // band landed a metre forward of the bay, over the cockpit's back
+  t.flipY = false;
+  t.anisotropy = 8; t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
 
-/** The pods' ground glow: a soft radial pool, additive. */
+/** The pads' ground glow: a soft radial pool, additive. */
 let _padGlow = null;
 function padGlowMaterial(M) {
   return _padGlow || (_padGlow = new THREE.MeshBasicMaterial({
@@ -449,37 +472,45 @@ function padGlowMaterial(M) {
     transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }));
 }
 
-// The chassis numbers the physics uses, so the pods sit on the pads.
+// The chassis numbers the physics uses. v12: nothing hangs down to the
+// pads any more — the cushion is invisible, as it is on every plate — so
+// all that is left of the v11 pods is where the glow sits under them.
 export const POD = {
   hw: 1.6, hl: 3.0,          // pad half-track, half-wheelbase (vehicle.js SPEC)
-  r: 0.27, len: 0.95,        // pod capsule radius and straight length
-  squash: 0.74,              // pods are flatter than they are wide
-  clear: 0.07,               // m between the pod's belly and the sand it rides on
-  pivotY: -0.25,             // where the wishbones meet the chassis
-  travel: [-0.42, 0.22],     // how far a pod may droop / rise from the pivot, m
+  glowIn: 0.62,              // the glow pools pulled in toward the hull, x
+  glowUp: 0.04,              // m over the sand
 };
+
+/** A lathe along +z from a profile of [z, r]: cans, cones, spinners. */
+function lathe(profile, n = 24) {
+  const g = new THREE.LatheGeometry(profile.map(([z, r]) => new THREE.Vector2(Math.max(r, 0.0001), z)), n);
+  g.rotateX(Math.PI / 2);          // lathe axis +y → +z
+  return g;
+}
 
 /**
  * Build one ship. Returns a Group with userData:
- *   flares[]   the two flame groups (scaled by N1 in vehicle.pose)
- *   fans[]     the two turbine faces (spun by N1)
- *   hull       the merged hull mesh (flashed white on a strike)
- *   nozzles[]  local positions of the two exhaust exits, for the haze
- *   corners[]  the four pod assemblies, posed onto the ground by vehicle.pose
- *   glow       the pods' ground glow, one instanced mesh
+ *   flares[]   the flame groups (scaled by N1 in vehicle.pose)
+ *   fans[]     the turbine faces (spun by N1)
+ *   hull       the fuselage mesh (flashed white on a strike)
+ *   nozzles[]  local positions of the exhaust exits, for the haze
+ *   corners[]  one per pad: where its ground glow goes
+ *   glow       the pads' ground glow, one instanced mesh
  *   geos[]     merged geometries this ship owns, for dispose()
  *   mats[]     materials this ship owns, for dispose()
  *
- * v11, on the owner's direction: FORMULA-SHAPED. A lofted monocoque from a
- * needle nose to the gearbox, a halo over an open cockpit, sidepods, a floor
- * and diffuser, a front wing, a rear wing on tall endplates — and four hover
- * pods on carbon wishbones where the wheels would be, exactly over the four
- * pads the physics runs on, so what holds the car up is what you can see.
- * The pods ride their own suspension (vehicle.pose puts each one on the sand
- * under its pad, so a loaded pod sinks and an unloaded one droops) and the
- * front pair steers. The rockets are still the chassis: NOSE cans ride the
- * flanks ahead of the sidepods and pull, AFT cans sit in the tail under the
- * rear wing and push, and the physics applies the thrust at the same axle.
+ * v12, on the owner's direction: "more like the reference concept art than
+ * actual formula cars ... it's a rocket sled after all". So: the plates. A
+ * long cream fuselage from a chrome nose cone, a bubble canopy, the hull
+ * pinched open behind the cockpit on a bay full of machinery, and CHROME
+ * CANS — big ones, the size of the cockpit, which is what every plate is
+ * about. The formula kit's wings, halo, floor and the pods on wishbones are
+ * gone; the hover cushion is invisible, as it is in every picture.
+ *
+ * The rockets are still the chassis. NOSE: two cans on stub pylons either
+ * side of the nose, open fans in their mouths, pulling — twin tail fins at
+ * the back. AFT: two cans hung off the rear hub, pushing, their bores facing
+ * the chase camera with a spinner and the turbine in each — one dorsal fin.
  */
 export function buildCraft(env, accent, number, drive = 'front') {
   // a ship from the Blender pipeline, if one is registered for this chassis
@@ -488,9 +519,13 @@ export function buildCraft(env, accent, number, drive = 'front') {
 
   const { M, acc } = materials(env, accent);
   const g = new THREE.Group();
-  const hullMat = new THREE.MeshPhongMaterial({ map: liveryTexture(accent), color: 0xffffff, specular: 0x665544, shininess: 34 });
+  const hullMat = new THREE.MeshPhongMaterial({ map: liveryTexture(accent), color: 0xffffff, specular: 0x776655, shininess: 38 });
   hullMat.name = 'HULL';
-  const geos = [], mats = [hullMat];
+  // fins and pylons: the cream without the livery map (their UVs are not the
+  // fuselage's), weathered by a darker specular
+  const trimMat = new THREE.MeshPhongMaterial({ color: PAL.hull, specular: 0x554433, shininess: 26 });
+  trimMat.name = 'HULL';
+  const geos = [], mats = [hullMat, trimMat];
 
   const add = (geometry, mat, cast = true, parent = g) => {
     const m = new THREE.Mesh(geometry, mat);
@@ -499,230 +534,196 @@ export function buildCraft(env, accent, number, drive = 'front') {
     return m;
   };
   const front = drive === 'front';
-  const R16 = bodyRing(16), R20 = bodyRing(20);
 
-  // ---- the tub: nose tip to gearbox, one surface ---------------------------
-  //  z       half-w  half-h   centre-y
-  const TUB = [
-    [-5.00, 0.09, 0.06, -0.33, 2.2],
-    [-4.70, 0.15, 0.10, -0.26],
-    [-4.00, 0.24, 0.15, -0.14],
-    [-3.10, 0.30, 0.19, -0.05],
-    [-2.20, 0.37, 0.24,  0.03],
-    [-1.50, 0.42, 0.28,  0.06],
-    [-0.40, 0.44, 0.30,  0.05],
-    [ 0.30, 0.42, 0.33,  0.07],
-    [ 1.20, 0.36, 0.28,  0.02],
-    [ 2.20, 0.26, 0.21, -0.07],
-    [ 3.00, 0.18, 0.16, -0.14],
-    [ 3.45, 0.13, 0.11, -0.18, 2.2],
-  ];
-  const hull = add(geo('tub', () => loft(TUB.map(R20))), hullMat);
+  // ---- the fuselage ---------------------------------------------------------
+  const hull = add(geo('fuse', () => loft(FUSE.map(bodyRing(28)))), hullMat);
 
-  // ---- bodywork: sidepods and engine cover, in the hull's livery -----------
-  // v11: these were ACCENT, and from the chase seat they are most of what
-  // you see of the car — so it read as a dark maroon lump against the sand.
-  // The plates' cars are cream with the colour in the STRIPES; on the
-  // livery's u-around mapping the spine stripe runs along the top of each
-  // sidepod and the cover, which is where a racing stripe goes anyway.
-  const SIDEPOD = [
-    //  z     half-w half-h  y      x
-    [-1.05, 0.26, 0.18, -0.18, 0.80],
-    [-0.80, 0.33, 0.24, -0.16, 0.82],
-    [ 0.40, 0.34, 0.25, -0.18, 0.82],
-    [ 1.40, 0.24, 0.19, -0.25, 0.66],
-    [ 2.35, 0.11, 0.11, -0.31, 0.47],
-  ];
-  const pod = side => loft(SIDEPOD.map(([z, w, h, y, x]) => ({ z, x: side * x, y, pts: superRing(w, h, 2.8, 16) })));
-  const COVER = [
-    [-0.05, 0.20, 0.09, 0.45],
-    [ 0.35, 0.24, 0.20, 0.53],
-    [ 1.20, 0.18, 0.15, 0.43],
-    [ 2.20, 0.10, 0.10, 0.27],
-    [ 3.05, 0.05, 0.05, 0.12],
-  ];
-  const FIN = [[0.9, 0.012, 0.04, 0.60, 2], [2.0, 0.012, 0.16, 0.56, 2], [3.25, 0.012, 0.22, 0.48, 2]];
-  // endplates: a thin plate whose height changes along the chord
-  const plate = (x, rows) => loft(rows.map(([z, h, y]) => ({ z, x, y, pts: superRing(0.014, h, 2.4, 8) })));
-  add(merge([
-    { g: geo('podR', () => pod(1)) },
-    { g: geo('podL', () => pod(-1)) },
-    { g: geo('cover', () => loft(COVER.map(R16))) },
-  ]), hullMat);
-  // ---- accent: fin, endplates, mirrors, helmet -----------------------------
-  const accentParts = [
-    { g: geo('fin', () => loft(FIN.map(bodyRing(8)))) },
-    // front wing endplates
-    { g: geo('fepR', () => plate(1.75, [[-4.98, 0.12, -0.46], [-4.40, 0.20, -0.40], [-3.95, 0.16, -0.40]])) },
-    { g: geo('fepL', () => plate(-1.75, [[-4.98, 0.12, -0.46], [-4.40, 0.20, -0.40], [-3.95, 0.16, -0.40]])) },
-    // rear wing endplates, tall
-    { g: geo('repR', () => plate(1.09, [[3.30, 0.34, 0.30], [3.75, 0.55, 0.26], [4.18, 0.52, 0.29]])) },
-    { g: geo('repL', () => plate(-1.09, [[3.30, 0.34, 0.30], [3.75, 0.55, 0.26], [4.18, 0.52, 0.29]])) },
-    // mirrors, the helmet and the roll-hoop camera
-    { g: geo('mirror', () => new THREE.SphereGeometry(1, 10, 6)), pos: [0.63, 0.40, -1.42], scale: [0.11, 0.05, 0.04] },
-    { g: geo('mirror'), pos: [-0.63, 0.40, -1.42], scale: [0.11, 0.05, 0.04] },
-    { g: geo('helmet', () => new THREE.SphereGeometry(1, 14, 10)), pos: [0, 0.43, -0.72], scale: [0.18, 0.19, 0.21] },
-    { g: geo('tcam', () => new THREE.BoxGeometry(0.1, 0.06, 0.18)), pos: [0, 0.78, 0.30] },
-  ];
-  add(merge(accentParts), acc);
-
-  // ---- carbon: floor, diffuser, wings ---------------------------------------
-  const FLOOR = [[-2.40, 0.75], [-1.20, 0.95], [-0.60, 1.24], [2.20, 1.20], [2.90, 0.86], [3.40, 0.70]];
-  const gunParts = [
-    { g: geo('floor', () => loft(FLOOR.map(([z, w]) => ({ z, y: -0.50, pts: superRing(w, 0.025, 5, 12) })))) },
-    // the diffuser ramps up out of the floor, split by strakes
-    { g: geo('diff', () => loft([{ z: 2.70, y: -0.49, pts: superRing(0.74, 0.02, 5, 12) }, { z: 3.60, y: -0.28, pts: superRing(0.74, 0.02, 5, 12) }])) },
-    ...[-0.5, 0, 0.5].map(x => ({ g: geo('strake', () => new THREE.BoxGeometry(0.02, 0.18, 0.9)), pos: [x, -0.4, 3.15], rot: [-0.22, 0, 0] })),
-    // the front wing: a main plane on the floor line and a flap each side
-    { g: geo('fwing', () => wing(0.62, 0.10, -0.035, 0.06, 1.74, -4.96, -0.52)) },
-    { g: geo('fflapR', () => { const w = wing(0.36, 0.10, -0.04, 0.34, 0.72, -4.44, -0.44); w.translate(1.00, 0, 0); return w; }) },
-    { g: geo('fflapL', () => { const w = wing(0.36, 0.10, -0.04, 0.34, 0.72, -4.44, -0.44); w.translate(-1.00, 0, 0); return w; }) },
-    // the rear wing: main plane, a steep flap over it, and the beam wing
-    { g: geo('rwing', () => wing(0.56, 0.11, -0.05, 0.10, 1.08, 3.40, 0.50)) },
-    { g: geo('rflap', () => wing(0.32, 0.10, -0.05, 0.62, 1.08, 3.86, 0.62)) },
-    { g: geo('beam', () => wing(0.30, 0.10, -0.04, 0.12, 0.55, 3.55, -0.06)) },
-    // and the pillars that carry it off the gearbox
-    { g: geo('pillar', () => rod([0, -0.1, 3.3], [0, 0.48, 3.62], 0.03)) },
-  ];
-
-  // ---- chrome: the halo, pylons, stalks — and the rockets ------------------
+  // ---- the nose cone and probe, the canopy frame ---------------------------
   const chromeParts = [
-    { g: geo('halo', () => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-0.36, 0.30, -0.12), new THREE.Vector3(-0.31, 0.56, -0.45),
-      new THREE.Vector3(0, 0.66, -0.74), new THREE.Vector3(0.31, 0.56, -0.45), new THREE.Vector3(0.36, 0.30, -0.12)]), 20, 0.035, 6, false)) },
-    { g: geo('haloPost', () => rod([0, 0.66, -0.74], [0, 0.34, -1.30], 0.03)) },
-    { g: geo('stalkR', () => rod([0.40, 0.33, -1.36], [0.56, 0.40, -1.42], 0.012, 4)) },
-    { g: geo('stalkL', () => rod([-0.40, 0.33, -1.36], [-0.56, 0.40, -1.42], 0.012, 4)) },
+    { g: geo('noseCone', () => lathe([[-4.95, 0], [-4.80, 0.05], [-4.55, 0.11], [-4.32, 0.15], [-4.17, 0.17], [-4.12, 0.165]])), pos: [0, -0.02, 0] },
+    { g: geo('probe', () => zCyl(0.012, 0.02, 0.6, 6)), pos: [0, -0.02, -5.22] },
+    { g: geo('canopyBar', () => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0.56, -2.1), new THREE.Vector3(0, 0.88, -1.6),
+      new THREE.Vector3(0, 0.95, -1.05), new THREE.Vector3(0, 0.82, -0.45), new THREE.Vector3(0, 0.62, -0.1)]), 16, 0.025, 5, false)) },
+    { g: geo('canopyHoop', () => new THREE.TorusGeometry(1, 0.03, 5, 20, Math.PI)), pos: [0, 0.58, -1.62], scale: [0.39, 0.34, 1] },
   ];
+  // the canopy: a bubble sitting down into the hull, dark cockpit under it
+  const glass = add(geo('canopy', () => new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.55)), M.glass, false);
+  glass.position.set(0, 0.52, -1.1); glass.scale.set(0.41, 0.44, 1.02);
   const intakeParts = [
-    // the cockpit well and the visor
-    { g: geo('well', () => new THREE.SphereGeometry(1, 16, 8)), pos: [0, 0.345, -0.78], scale: [0.29, 0.05, 0.56] },
-    { g: geo('visor', () => new THREE.SphereGeometry(1, 12, 8)), pos: [0, 0.46, -0.86], scale: [0.14, 0.06, 0.09] },
-    // the airbox mouth over the driver's head
-    { g: geo('airbox', () => new THREE.SphereGeometry(1, 12, 8)), pos: [0, 0.60, -0.03], scale: [0.15, 0.12, 0.04] },
+    { g: geo('cockpit', () => new THREE.SphereGeometry(1, 16, 8)), pos: [0, 0.54, -1.1], scale: [0.38, 0.12, 0.94] },
+  ];
+  const accentParts = [
+    { g: geo('helmet', () => new THREE.SphereGeometry(1, 10, 8)), pos: [0, 0.74, -0.95], scale: [0.17, 0.18, 0.20] },
   ];
 
-  // Where the rockets are IS the chassis. NOSE: two cans on pylons along the
-  // flanks ahead of the sidepods, exhausting back over them — thrust at the
-  // front axle. AFT: two cans in the tail beside the gearbox, under the rear
-  // wing — thrust at the back. The physics applies it at the same axle.
-  const nx = front ? 0.96 : 0.40, ny = front ? 0.08 : -0.10;
-  const nr = front ? 0.165 : 0.18, nl = front ? 1.7 : 1.5;
-  const nz = front ? -2.45 : 3.0;                       // can centre z
-  const mouthZ = nz - nl / 2 - 0.04, bellZ = nz + nl / 2 + 0.18;
-  const nozzles = [];
-  for (const side of [-1, 1]) {
-    const sx = side * nx;
-    chromeParts.push(
-      { g: geo(front ? 'canF' : 'canA', () => zCyl(nr, nr - 0.02, nl, 18)), pos: [sx, ny, nz] },
-      // an OPEN ring: a capped collar sits in front of the turbine face and
-      // hides it behind a chrome disc, which is what the first render showed
-      { g: geo(front ? 'collarF' : 'collarA', () => zCyl(nr + 0.06, nr + 0.04, 0.22, 18, true)), pos: [sx, ny, mouthZ + 0.1] },
-    );
-    gunParts.push(
-      { g: geo(front ? 'bellF' : 'bellA', () => zCyl(nr - 0.05, nr + 0.05, 0.36, 18, true)), pos: [sx, ny, bellZ] },
-      { g: geo('ring', () => new THREE.TorusGeometry(1, 0.045, 8, 20)), pos: [sx, ny, nz - nl * 0.2], scale: [nr + 0.01, nr + 0.01, 1] },
-      { g: geo('ring'), pos: [sx, ny, nz + nl * 0.25], scale: [nr + 0.01, nr + 0.01, 1] },
-    );
-    if (front) {
-      // pylons from each can to the tub
-      chromeParts.push(
-        { g: geo(side > 0 ? 'pylR1' : 'pylL1', () => rod([side * 0.80, 0.10, -3.10], [side * 0.27, 0.00, -3.10], 0.035)) },
-        { g: geo(side > 0 ? 'pylR2' : 'pylL2', () => rod([side * 0.80, 0.10, -2.00], [side * 0.36, 0.06, -2.00], 0.035)) },
-      );
-      // the sidepod mouth is only an intake on this chassis
-      intakeParts.push({ g: geo('podMouth', () => new THREE.SphereGeometry(1, 12, 8)), pos: [side * 0.80, -0.18, -1.06], scale: [0.24, 0.16, 0.03] });
-    } else {
-      // the tail cans hang off the gearbox
-      chromeParts.push({ g: geo(side > 0 ? 'hangR' : 'hangL', () => rod([side * 0.40, -0.10, 2.6], [side * 0.14, -0.12, 2.6], 0.03)) });
+  // ---- the bay: machinery where the skin was cut back -----------------------
+  const gunParts = [];
+  for (const s of [-1, 1]) {
+    // three cylinder blocks along each side, finned
+    for (const [y, r, z0, z1] of [[0.26, 0.11, 0.72, 1.86], [0.02, 0.14, 0.80, 1.80], [-0.22, 0.10, 0.72, 1.70]]) {
+      gunParts.push({ g: geo('bayCyl' + r, () => zCyl(r, r, 1, 12)), pos: [s * 0.52, y, (z0 + z1) / 2], scale: [1, 1, z1 - z0] });
+      for (let z = z0 + 0.14; z < z1 - 0.05; z += 0.21) {
+        gunParts.push({ g: geo('bayFin', () => new THREE.TorusGeometry(1, 0.22, 3, 10)), pos: [s * 0.52, y, z], scale: [r * 1.05, r * 1.05, 0.2] });
+      }
     }
-    nozzles.push(new THREE.Vector3(sx, ny, bellZ + 0.18));
-    // the empties the pipeline contract names, so an export of the kit IS a
-    // reference file (pipeline/README.md)
-    const e = new THREE.Object3D(); e.name = side < 0 ? 'nozzle_L' : 'nozzle_R';
-    e.position.set(sx, ny, bellZ + 0.18); g.add(e);
+    // the plumbing, in chrome: headers out of the blocks into the cans
+    chromeParts.push(
+      { g: geo('pipeA' + s, () => pipe([s * 0.54, 0.30, 0.9], [s * 0.70, 0.46, 1.4], [s * 0.90, 0.34, 1.95], 0.04)) },
+      { g: geo('pipeB' + s, () => pipe([s * 0.58, 0.05, 1.0], [s * 0.76, -0.06, 1.5], [s * 0.94, 0.04, 2.0], 0.045)) },
+      { g: geo('pipeC' + s, () => pipe([s * 0.52, -0.20, 0.85], [s * 0.70, -0.32, 1.3], [s * 0.76, -0.26, 1.9], 0.035)) },
+    );
   }
-  add(merge(chromeParts), M.chrome);
-  add(merge(gunParts), M.gun);
-  add(merge(intakeParts), M.intake, false);
+  // the blower standing up out of the top of the bay, and its stacks
+  gunParts.push(
+    { g: geo('blower', () => new THREE.BoxGeometry(0.40, 0.22, 0.70)), pos: [0, 0.66, 1.25] },
+    { g: geo('blowerTop', () => zCyl(0.13, 0.13, 0.85, 12)), pos: [0, 0.83, 1.25] },
+  );
+  // short velocity stacks off the blower, dark: tall and chrome they read as a comb
+  for (const s of [-1, 1]) for (const z of [1.0, 1.5]) {
+    gunParts.push({ g: geo('stack', () => new THREE.CylinderGeometry(0.05, 0.06, 0.16, 10)), pos: [s * 0.13, 0.95, z] });
+  }
 
-  // ---- live parts: fans, flames ---------------------------------------------
-  // The turbine faces sit where the air goes in: the can mouths on the NOSE
-  // chassis, the sidepod mouths on the AFT one (the sidepod IS its intake).
-  const fans = [], flares = [];
+  // ---- the cans -------------------------------------------------------------
+  // Where the rockets are IS the chassis, and the physics applies the thrust
+  // at the same axle. Each can is one lathe: a rounded cowl, the barrel, a
+  // taper to the exit, a lip turned in.
+  const nozzles = [], fans = [], flares = [];
+  const cx = front ? 1.20 : 1.14, cy = front ? 0.00 : 0.06;
+  const cr = front ? 0.50 : 0.56, cl = front ? 2.0 : 2.2;
+  const cz = front ? -2.35 : 2.85;                        // can centre z
+  const zF = cz - cl / 2, zB = cz + cl / 2;
+  const canGeo = geo(front ? 'canF' : 'canA', () => front
+    // NOSE: an open mouth at the front (the fan shows) and a bell at the back
+    ? lathe([[zF - cz, cr * 0.86], [zF - cz + 0.02, cr * 1.02], [zF - cz + 0.14, cr], [zB - cz - 0.30, cr], [zB - cz - 0.05, cr * 0.86], [zB - cz, cr * 0.80]], 28)
+    // AFT: a closed cowl rounding into the hub, the barrel, a WIDE bore at the back
+    : lathe([[zF - cz - 0.05, 0.0], [zF - cz + 0.05, cr * 0.55], [zF - cz + 0.30, cr * 0.92], [zF - cz + 0.62, cr], [zB - cz - 0.25, cr], [zB - cz - 0.02, cr * 1.03], [zB - cz, cr * 0.96]], 28));
+  // the bore: a dark tube just inside the lip, so the exit is a hole
+  const boreGeo = geo(front ? 'boreF' : 'boreA', () => zCyl(cr * 0.9, cr * 0.9, 0.6, 24, true));
   for (const side of [-1, 1]) {
-    const fan = new THREE.Mesh(geo('fanDisc', () => { const b = new THREE.CircleGeometry(1, 18); b.rotateY(Math.PI); return b; }), M.fan);
-    if (front) { fan.scale.setScalar(nr); fan.position.set(side * nx, ny, mouthZ); }
-    else { fan.scale.set(0.22, 0.15, 1); fan.position.set(side * 0.80, -0.18, -1.07); }
+    const sx = side * cx;
+    chromeParts.push({ g: canGeo, pos: [sx, cy, cz] });
+    gunParts.push(
+      // two dark bands round the barrel, as on the plates
+      { g: geo('band', () => new THREE.TorusGeometry(1, 0.03, 6, 28)), pos: [sx, cy, cz - cl * 0.12], scale: [cr + 0.005, cr + 0.005, 1] },
+      { g: geo('band'), pos: [sx, cy, cz + cl * 0.02], scale: [cr + 0.005, cr + 0.005, 1] },
+    );
+    intakeParts.push({ g: boreGeo, pos: [sx, cy, front ? zB - 0.32 : zB - 0.32] });
+    if (front) {
+      // a stub pylon out to the hull, in the trim, and a dark intake throat
+      accentParts.push({ g: geo(side > 0 ? 'pylR' : 'pylL', () => loft([
+        { z: -2.8, x: side * 0.72, y: -0.02, pts: superRing(0.50, 0.06, 3, 12) },
+        { z: -2.0, x: side * 0.72, y: -0.02, pts: superRing(0.50, 0.08, 3, 12) },
+        { z: -1.5, x: side * 0.62, y: 0.0, pts: superRing(0.22, 0.05, 3, 12) }])) });
+      intakeParts.push({ g: geo('throatF', () => zCyl(cr * 0.9, cr * 0.9, 0.5, 24, true)), pos: [sx, cy, zF + 0.3] });
+      // spinner in the mouth, chrome
+      chromeParts.push({ g: geo('spinnerF', () => lathe([[-0.2, 0], [-0.12, 0.08], [0.02, 0.12], [0.1, 0.12]], 14)), pos: [sx, cy, zF + 0.16] });
+    } else {
+      // a spinner in the bore — the bullet in the hole on the plates
+      chromeParts.push({ g: geo('spinnerA', () => lathe([[-0.1, 0.16], [0.1, 0.15], [0.3, 0.10], [0.45, 0.0]], 16)), pos: [sx, cy, zB - 0.35] });
+    }
+    // the turbine face: in the mouth on the NOSE cans, deep in the bore on the AFT
+    const fan = new THREE.Mesh(geo('fanDisc', () => { const b = new THREE.CircleGeometry(1, 20); b.rotateY(Math.PI); return b; }), M.fan);
+    fan.scale.setScalar(cr * 0.88);
+    if (front) fan.position.set(sx, cy, zF + 0.28);
+    else { fan.position.set(sx, cy, zB - 0.55); fan.rotation.y = Math.PI; }
     fan.castShadow = false; fan.name = side < 0 ? 'fan_L' : 'fan_R';
     g.add(fan); fans.push(fan);
 
     const flame = makeFlame(M);
     flame.name = 'flame';
-    flame.position.set(side * nx, ny, bellZ - 0.1);
-    flame.scale.setScalar(front ? 0.85 : 0.8);
+    const fz = front ? zB - 0.1 : zB - 0.05;
+    flame.position.set(sx, cy, fz);
+    flame.scale.setScalar(front ? 1.2 : 1.3);
     flame.userData.base = flame.scale.x;
     g.add(flame); flares.push(flame);
     mats.push(flame.userData.core.material, flame.userData.sheath.material, flame.userData.glow.material);
+    nozzles.push(new THREE.Vector3(sx, cy, zB + 0.1));
+    // the empties the pipeline contract names, so an export of the kit IS a
+    // reference file (pipeline/README.md)
+    const e = new THREE.Object3D(); e.name = side < 0 ? 'nozzle_L' : 'nozzle_R';
+    e.position.set(sx, cy, zB + 0.1); g.add(e);
+  }
+  // NOSE: a smaller pair at the tail — the plate "5" with cans fore and aft.
+  // They are the sustainers: the thrust is still all at the front (the
+  // physics has it there), these only burn, a short flame on the same N1.
+  // Haze and wash stay keyed to the two main nozzles (userData.nozzles).
+  if (front) for (const side of [-1, 1]) {
+    const sr = 0.30, sl = 1.25, sz = 3.05, sx = side * 0.88, sy = 0.10;
+    chromeParts.push({ g: geo('canS', () => lathe([[-sl / 2 - 0.05, 0], [-sl / 2 + 0.05, sr * 0.6], [-sl / 2 + 0.25, sr * 0.95], [-sl / 2 + 0.4, sr], [sl / 2 - 0.15, sr], [sl / 2, sr * 1.04]], 16)), pos: [sx, sy, sz] });
+    gunParts.push({ g: geo('band'), pos: [sx, sy, sz + 0.1], scale: [sr + 0.005, sr + 0.005, 1] });
+    intakeParts.push({ g: geo('boreS', () => zCyl(sr * 0.88, sr * 0.88, 0.5, 16, true)), pos: [sx, sy, sz + sl / 2 - 0.25] });
+    chromeParts.push({ g: geo('spinnerS', () => lathe([[-0.1, 0.09], [0.08, 0.08], [0.24, 0.0]], 12)), pos: [sx, sy, sz + sl / 2 - 0.3] });
+    const flame = makeFlame(M);
+    flame.name = 'flame';
+    flame.position.set(sx, sy, sz + sl / 2 - 0.05);
+    flame.scale.setScalar(0.6);
+    flame.userData.base = 0.6;
+    g.add(flame); flares.push(flame);
+    mats.push(flame.userData.core.material, flame.userData.sheath.material, flame.userData.glow.material);
+  }
+  // AFT: a strut from the hub to each can, low, so the can reads as hung
+  if (!front) for (const s of [-1, 1]) {
+    accentParts.push({ g: geo(s > 0 ? 'strutR' : 'strutL', () => loft([
+      { z: 2.1, x: s * 0.80, y: -0.05, pts: superRing(0.30, 0.06, 3, 10) },
+      { z: 3.3, x: s * 0.80, y: -0.05, pts: superRing(0.30, 0.06, 3, 10) }])) });
   }
 
-  // ---- the pods: four corners on wishbones, posed by vehicle.pose ----------
-  // Each corner is an ASSEMBLY pivoting where the arms meet the chassis, so a
-  // pod travelling up and down swings on an arc the way a wheel does. The arms
-  // and (at the back) the pod are one mesh; at the FRONT the pod is its own
-  // mesh inside the assembly, because it also steers.
-  const corners = [];
-  const podGeo = geo('pod', () => {
-    const b = new THREE.CapsuleGeometry(POD.r, POD.len, 4, 14);
-    b.rotateX(Math.PI / 2); b.scale(1, POD.squash, 1);
-    return b;
-  });
-  const skegGeo = geo('skeg', () => new THREE.BoxGeometry(0.03, 0.14, 0.9));
-  for (const [i, [sx, sz]] of [[-1, -1], [1, -1], [-1, 1], [1, 1]].entries()) {
-    const isFront = sz < 0;
-    const inner = isFront ? 0.36 : 0.62;               // clear of the tub / the tail cans
-    const L = POD.hw - inner;
-    const asm = new THREE.Group();
-    asm.position.set(sx * inner, POD.pivotY, sz * POD.hl);
-    // arms in assembly space: a V above and a V below, meeting at the upright
-    const ox = sx * L;
-    const rods = [
-      rod([0, 0.10, -0.36], [ox, 0.07, 0], 0.028), rod([0, 0.10, 0.30], [ox, 0.07, 0], 0.028),
-      rod([0, -0.10, -0.40], [ox, -0.08, 0], 0.03), rod([0, -0.10, 0.34], [ox, -0.08, 0], 0.03),
-      rod([sx * 0.1, 0.18, 0.02], [ox * 0.92, -0.08, 0], 0.022),          // the pushrod
-    ];
-    const armParts = rods.map(r => ({ g: r }));
-    // at the back the pod is part of the arm mesh (it tilts a few degrees with
-    // travel, like camber); at the front it is its own mesh, because it steers
-    if (!isFront) armParts.push({ g: podGeo, pos: [ox, 0, 0] }, { g: skegGeo, pos: [ox + sx * 0.18, -0.02, 0] });
-    add(merge(armParts), M.gun, true, asm);
-    for (const r of rods) r.dispose();
-    const holder = new THREE.Group();
-    holder.position.set(ox, 0, 0);
-    let podMesh = null;
-    if (isFront) {
-      podMesh = add(merge([{ g: podGeo }, { g: skegGeo, pos: [sx * 0.18, -0.02, 0] }]), M.gun, true, holder);
+  // ---- fins -----------------------------------------------------------------
+  // a swept blade from a table of [z, half-thickness, height, root-y], and
+  // turned out by `lean` about its root
+  const fin = rows => loft(rows.map(([z, t, h, y]) => ({ z, y: y + h / 2, pts: superRing(t, h / 2, 2.2, 8) })));
+  const trimParts = [];
+  if (front) {
+    // twin tail fins, canted out — short: at the chase seat they are the
+    // whole back of the sled, and tall they read as a jet's
+    for (const s of [-1, 1]) {
+      const f = geo(s > 0 ? 'finR' : 'finL', () => {
+        const b = fin([[2.75, 0.02, 0.08, 0.46], [3.25, 0.03, 0.42, 0.42], [3.72, 0.022, 0.58, 0.38], [3.92, 0.012, 0.54, 0.42]]);
+        b.translate(0, -0.40, 0); b.rotateZ(-s * 0.32); b.translate(s * 0.30, 0.40, 0);
+        return b;
+      });
+      trimParts.push({ g: f });
     }
-    asm.add(holder);
-    g.add(asm);
-    corners.push({ asm, holder, pod: podMesh, side: sx, front: isFront, L, pad: i });
+  } else {
+    // one dorsal fin, swept hard, rising out of the rear hub
+    trimParts.push({ g: geo('finD', () => fin([[2.30, 0.02, 0.10, 0.50], [2.90, 0.04, 0.55, 0.48], [3.55, 0.03, 0.95, 0.40], [3.86, 0.015, 0.92, 0.44]])) });
+    // a needle stabiliser out each side of the hub, as on the "7" plate
+    for (const s of [-1, 1]) trimParts.push({ g: geo(s > 0 ? 'stabR' : 'stabL', () => loft([
+      { z: 2.3, x: s * 0.62, y: 0.30, pts: superRing(0.06, 0.025, 2.4, 8) },
+      { z: 3.2, x: s * 0.80, y: 0.36, pts: superRing(0.08, 0.025, 2.4, 8) },
+      { z: 3.6, x: s * 0.84, y: 0.38, pts: superRing(0.03, 0.02, 2.4, 8) }])) });
   }
+  // a chrome tail cone, the nose cone's twin
+  chromeParts.push({ g: geo('tailCone', () => lathe([[3.80, 0.20], [3.95, 0.19], [4.15, 0.13], [4.35, 0.05], [4.45, 0]])), pos: [0, 0.12, 0] });
+  // belly skids: two shallow keels, the only thing under the hull
+  for (const s of [-1, 1]) gunParts.push({ g: geo('keel', () => loft([
+    { z: -2.6, y: -0.42, pts: superRing(0.03, 0.02, 2.4, 8) },
+    { z: -1.8, y: -0.50, pts: superRing(0.035, 0.05, 2.4, 8) },
+    { z: 2.4, y: -0.49, pts: superRing(0.035, 0.05, 2.4, 8) },
+    { z: 3.0, y: -0.40, pts: superRing(0.03, 0.02, 2.4, 8) }])), pos: [s * 0.34, 0, 0] });
 
-  // the hover cushion's glow on the ground under each pod, one draw call
+  add(merge(chromeParts), M.chrome);
+  add(merge(gunParts), M.gun);
+  add(merge(intakeParts), M.intake, false);
+  add(merge(accentParts), acc);
+  add(merge(trimParts), trimMat);
+
+  // the pads' glow: one pool on the sand under each, one draw call
+  const corners = [0, 1, 2, 3].map(i => ({ pad: i }));
   const glow = new THREE.InstancedMesh(geo('glowQuad', () => { const b = new THREE.PlaneGeometry(1, 1); b.rotateX(-Math.PI / 2); return b; }), padGlowMaterial(M), 4);
   glow.frustumCulled = false; glow.castShadow = false;
   glow.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   g.add(glow);
 
-  // ---- roundels: the nose, the engine cover, the rear wing ------------------
+  // ---- the number: a roundel each flank, and on the nose ---------------------
   const numMat = new THREE.MeshBasicMaterial({ map: numberTexture(number, accent), transparent: true });
   numMat.name = 'DECAL';
   mats.push(numMat);
   add(merge([
-    { g: geo('decal', () => new THREE.PlaneGeometry(1, 1)), pos: [0, 0.105, -3.25], rot: [-Math.PI / 2, 0, 0], scale: [0.40, 0.40, 1] },
-    { g: geo('decal'), pos: [0.205, 0.44, 1.05], rot: [0, Math.PI / 2, 0], scale: [0.30, 0.30, 1] },
-    { g: geo('decal'), pos: [-0.205, 0.44, 1.05], rot: [0, -Math.PI / 2, 0], scale: [0.30, 0.30, 1] },
-    { g: geo('decal'), pos: [0, 0.585, 3.63], rot: [-Math.PI / 2 + 0.1, 0, 0], scale: [0.46, 0.46, 1] },
+    { g: geo('decal', () => new THREE.PlaneGeometry(1, 1)), pos: [0.772, 0.16, -0.40], rot: [0, Math.PI / 2, 0], scale: [0.70, 0.70, 1] },
+    { g: geo('decal'), pos: [-0.772, 0.16, -0.40], rot: [0, -Math.PI / 2, 0], scale: [0.70, 0.70, 1] },
+    { g: geo('decal'), pos: [0, 0.49, -2.85], rot: [-Math.PI / 2 + 0.14, 0, 0], scale: [0.50, 0.50, 1] },
   ]), numMat, false);
 
   hull.name = 'hull';
@@ -731,15 +732,11 @@ export function buildCraft(env, accent, number, drive = 'front') {
   // and its shadow, after the traverse so it keeps its own layer
   const B = (pos, scale) => ({ g: ubox(), pos, scale });
   const cast = castProxy([
-    B([0, 0.02, -0.75], [0.78, 0.55, 8.3]),                   // tub
-    B([0.78, -0.2, 0.65], [0.6, 0.45, 3.3]), B([-0.78, -0.2, 0.65], [0.6, 0.45, 3.3]),
-    B([0, 0.36, 1.4], [0.42, 0.42, 3.0]),                     // engine cover
-    B([0, 0.55, 3.75], [2.2, 0.1, 0.8]),                      // rear wing
-    B([1.09, 0.28, 3.75], [0.04, 0.55, 0.9]), B([-1.09, 0.28, 3.75], [0.04, 0.55, 0.9]),
-    B([0, -0.42, -4.45], [3.5, 0.07, 0.9]),                   // front wing
-    B([nx, ny, nz], [nr * 2, nr * 2, nl]), B([-nx, ny, nz], [nr * 2, nr * 2, nl]),   // the cans
-    ...[[1, -1], [-1, -1], [1, 1], [-1, 1]].map(([sx, sz]) =>
-      B([sx * POD.hw, -0.4, sz * POD.hl], [POD.r * 2, POD.r * 2 * POD.squash, POD.len])),
+    B([0, 0.08, -0.2], [1.4, 1.05, 7.6]),                    // fuselage
+    B([0, 0.08, -4.3], [0.4, 0.3, 1.0]),                     // nose
+    B([0, 0.72, -1.1], [0.6, 0.35, 1.7]),                    // canopy
+    B([cx, cy, cz], [cr * 1.9, cr * 1.9, cl]), B([-cx, cy, cz], [cr * 1.9, cr * 1.9, cl]),   // the cans
+    front ? B([0, 0.1, 3.05], [2.4, 0.6, 1.25]) : B([0, 0.85, 3.3], [0.08, 0.9, 1.3]),        // fins
   ]);
   g.add(cast); geos.push(cast.geometry);
   g.userData = { flares, fans, hull, nozzles, corners, glow, geos, mats, front, cast };
