@@ -3,8 +3,8 @@
 // pays back per markka put in: `node pajatso/test/face.mjs [shotsPerPower]`.
 // The pot is held at its starting hump for every power, so the POTTI column is
 // what a machine fresh on the wall would pay; `--live` lets it run.
-import { Pajatso } from '../js/classic/game.js?v=4';
-import { PAYS, POT_START, POTTI_COLS } from '../js/classic/layout.js?v=4';
+import { Pajatso } from '../js/classic/game.js?v=5';
+import { PAYS, POT_START, POTTI_COLS } from '../js/classic/layout.js?v=5';
 
 const N = Number(process.argv[2] ?? 150);
 const live = process.argv.includes('--live');

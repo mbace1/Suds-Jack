@@ -339,28 +339,32 @@ pajatso/test/classic.cjs` (32) and `.../smoke.cjs` (44, KUOPPA). Hub: id
 `pajatso`, marquee `pajatso` (the teak case on the orange wall, the window row
 with its red 7:00, the pot's hump, a coin on the rail, bottles and crank
 cropped by the edges), accent `#ffd23f`, best score `pajatso.best` (most markka
-held at once). **KUOPPA v4 is the roguelike ON the Pajatso face** (`kuoppa.html`,
-`js/kuoppa/`; owner: *"Go ahead"* on the roadmap): the house hands you 20
-coins a round (+5 a lock), the machine pays into your purse, a debt is due
-every third round, a vendor sells charms between rounds, and each debt paid
-**bolts the next pachinko part onto the face, in the owner's order** —
-START chucker + reels (an LCD in a box bolted on top of the case), tulips (the
-1:00 windows), FEVER (a jackpot opens the attacker under the right half of the
-window row: shoot right), windmills, chain (sevens ×3 after a jackpot, and a
-progressive POTTI +2 a round), ×3 multipliers (the R windows). `Kuoppa` IS the
-base machine — a subclass of `Pajatso` paying pulls from the round's coins
-(`canSpend`/`spend`, `window()`, `intoPot()` are the hooks) — and
-`buildPajatso(mods)` with no mods is exactly the base face. **Both pages stand
-at one table** (`js/classic/table.js`: lever, keys, pad, toasts, tips, the
-corner, the language switch, pause, the loop). Tuned with bots (`node
-pajatso/test/run.mjs runs|face`, `test/runbot.mjs`): no charms dies at lock
-5–6, prudent shopping wins ~19%, shooting right in FEVER ~23%. Two lessons:
-**a run is the best instrument a machine has** — the bot found a 3.5-a-coin
-POTTI hot spot in the BASE face that v3's sweep had called variance (the
-spring's wobble is ±4.5 now) — and **a part has to be somewhere the coins
-actually go** (FEVER first paid the right-hand pot columns, which the V plate
-starves). Gates: `core.mjs` 139, `classic.cjs` 32, `kuoppa.cjs` 28,
-`smoke.cjs` 44 (the old pit, still a small link away as `pit.html`).
+held at once). **KUOPPA (v5) is the roguelike ON the Pajatso face, in Balatro's shape**
+(`kuoppa.html`, `js/kuoppa/`; owner: *"charms like Clover Pit and maybe Jokers
+like Balatro, so levels can be raised and ante pushed 10x each 3 rounds"*,
+*"the Ante part is like Clover Pit deadline payment or the 3rd fight in
+Balatro"*). A round is a HAND: every coin scores CHIPS or MULT by its window,
+the window's LEVEL and the JOKERS, and the round scores CHIPS × MULT toward
+the ANTE (100, ×10 a lock). The third round is the DEADLINE round with a twist
+(`BOSSES`, shown at the vendor in advance). Money (markka) is separate and
+small; the vendor sells jokers (score), charms (machine, odds, money) and
+level plates; five and four slots, sell for half. Each lock cleared bolts on
+the next part **as its pachinko self**: heso + LCD in a gold YAKUMONO with a
+warp and a stage (`YAKU`, `HESO` in `layout.js`), tulips as red flowers that
+visibly open, the attacker as a flap that tips out in 大当たり, pinwheels,
+確変 RUSH with the ELECTRIC TULIP (`DENCHU`), ×3 windows; each with an
+illustrated card (`cards.js`). **THE NUDGE** is on both machines (`nudge()` in
+`game.js`, tap / ← → / LB RB): two free a coin, the third TILTS. **Toko
+replaced the raccoon** everywhere, drawn from `toko/js/face.js`. `Kuoppa` IS
+the base machine (`canSpend`/`spend`, `window()`, `intoPot()` are the hooks)
+and both pages share `js/classic/table.js`. Tuned with bots (`node
+pajatso/test/run.mjs runs|face`, `test/runbot.mjs`): the joker bot wins ~6%.
+Lessons: **a run is the best instrument a machine has** (a run bot found a
+3.5-a-coin POTTI hot spot in the base face), **a part has to be somewhere the
+coins go**, the wedge rule counts a part's walls along their whole length, and
+**a sweep must not let its probes end the round** (the first v5 sweep kept
+clearing antes mid-measure). Gates: `core.mjs` 157, `classic.cjs` 32,
+`kuoppa.cjs` 31, `smoke.cjs` 44.
 **The old pit run (v1's KUOPPA)** (`pit.html`) is kept a small link from the
 new title; what follows is its record, still true of that mode.
 
@@ -2854,8 +2858,9 @@ pajatso/        # PAJATSO — the coin wall game (index.html) + KUOPPA, the pit 
     classic/    # THE MACHINE: layout.js (windows, pot, V, and the parts as mods), game.js (rules,
                 #   pure), view.js (machine, bar, camera, topper), art.js, lang.js, table.js (the
                 #   lever/keys/pad/HUD/loop both pages share), main.js
-    kuoppa/     # THE ROGUELIKE on that face: run.js (pure: rounds, debts, parts, reels, vendor),
-                #   data.js, words.js (fi/en/ja), lcd.js (the reels on top of the case), main.js
+    kuoppa/     # THE ROGUELIKE on that face: run.js (pure: hands, antes, jokers, charms, levels,
+                #   the deadline twist, parts, reels), data.js, words.js (fi/en/ja), lcd.js (the
+                #   reels in the yakumono), cards.js (each part's picture), main.js
     rng.js      # mulberry32, the whole state one integer
     board.js    # THE SHOT: pachinko physics — nails, rails, valve, pockets, windmills (pure)
     pusher.js   # THE PAYOUT: quasi-static coin pusher — shelf, bed, stacking, lip, gutters (pure)

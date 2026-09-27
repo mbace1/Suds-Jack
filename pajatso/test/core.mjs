@@ -12,19 +12,19 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makeRng, seedOf } from '../js/rng.js?v=4';
-import { Board, buildLayout, BOARD } from '../js/board.js?v=4';
-import { Pusher, PUSHER } from '../js/pusher.js?v=4';
-import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=4';
-import { Engine, computeRules, VERSION } from '../js/engine.js?v=4';
-import * as D from '../js/data.js?v=4';
-import { playRun, playShift } from './bot.mjs?v=4';
-import { buildPajatso, FACE, PAYS, JACKPOT, WINDOWS, LABEL, POT_START, POTTI_COLS, columnAt } from '../js/classic/layout.js?v=4';
-import { _STR } from '../js/classic/lang.js?v=4';
-import '../js/kuoppa/words.js?v=4';
-import { Kuoppa, computeRules as kRules, DATA as KD } from '../js/kuoppa/run.js?v=4';
-import { playRun as playKuoppa, POLICIES } from './runbot.mjs?v=4';
-import { Pajatso, START_COINS } from '../js/classic/game.js?v=4';
+import { makeRng, seedOf } from '../js/rng.js?v=5';
+import { Board, buildLayout, BOARD } from '../js/board.js?v=5';
+import { Pusher, PUSHER } from '../js/pusher.js?v=5';
+import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=5';
+import { Engine, computeRules, VERSION } from '../js/engine.js?v=5';
+import * as D from '../js/data.js?v=5';
+import { playRun, playShift } from './bot.mjs?v=5';
+import { buildPajatso, FACE, PAYS, JACKPOT, WINDOWS, LABEL, POT_START, POTTI_COLS, columnAt } from '../js/classic/layout.js?v=5';
+import { _STR } from '../js/classic/lang.js?v=5';
+import '../js/kuoppa/words.js?v=5';
+import { Kuoppa, computeRules as kRules, DATA as KD } from '../js/kuoppa/run.js?v=5';
+import { playRun as playKuoppa, POLICIES } from './runbot.mjs?v=5';
+import { Pajatso, START_COINS } from '../js/classic/game.js?v=5';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const GAME = path.resolve(HERE, '..');
@@ -492,74 +492,140 @@ section('kuoppa: the parts on the face');
 section('kuoppa: the rules');
 {
   const g = new Kuoppa({ seed: 4 });
-  check(`a run starts with ${KD.DROPS} coins to shoot and a small purse`, g.drops === KD.DROPS && g.coins === KD.START_PURSE && g.phase === 'idle');
-  check('a pull is paid with the round\'s coins, not the purse', g.pull(0.4) && g.drops === KD.DROPS - 1 && g.coins === KD.START_PURSE);
+  check(`a run starts with ${KD.DROPS} coins to shoot, a little money and the first ante (${KD.anteFor(1)})`,
+    g.drops === KD.DROPS && g.coins === KD.START_MONEY && g.phase === 'idle' && g.ante === KD.ANTE_BASE);
+  check('the ante is ×10 a lock', [1, 2, 3, 8].every(a => KD.anteFor(a) === KD.ANTE_BASE * 10 ** (a - 1)));
+  check("a pull is paid with the round's coins, not the money", g.pull(0.4) && g.drops === KD.DROPS - 1 && g.coins === KD.START_MONEY);
   g.finish(); g.drain();
-  // the round runs out: the vendor
-  g.drops = 1; g.phase = 'idle'; g.pull(0.4); g.finish();
-  check('the last coin down ends the round and opens the vendor', g.phase === 'shop' && g.offers.length === KD.OFFERS && g.round === 2);
-  g.coins = 100;
-  const offer = g.offers.findIndex(o => o);
-  const price = g.offers[offer].price, id = g.offers[offer].id;
-  check('a charm costs its price and goes on your list', g.buy(offer) && g.coins === 100 - price && g.charms.includes(id) && g.offers[offer] === null);
-  check('it cannot be bought twice', !g.buy(offer));
-  const before = g.coins;
-  check('another look costs 2 and lays out new charms', g.reroll() && g.coins === before - KD.REROLL);
+  // scoring: base + level, chips and mult into the round's tally
+  const s0 = new Kuoppa({ seed: 5 });
+  s0.onBoard({ t: 'pocket', pocket: 'w2' });              // a 1:50
+  check(`a 1:50 scores ${KD.HITS.half.chips} chips`, s0.tally.chips === KD.HITS.half.chips && s0.tally.mult === 1);
+  s0.onBoard({ t: 'pocket', pocket: 'w0' });              // R
+  check('R scores mult and gives a markka back', s0.tally.mult === 2 && s0.coins === KD.START_MONEY + 1);
+  s0.levels.half = 3; s0.onBoard({ t: 'pocket', pocket: 'w3' });
+  check('a level plate raises what a window scores', s0.tally.chips === KD.HITS.half.chips * 2 + KD.HITS.half.lv.chips * 2 && s0.tally.mult === 2 + KD.HITS.half.lv.mult * 2);
+  s0.pot[5] = s0.pot[6] = s0.pot[7] = 4;
+  const m0 = s0.coins, x0 = s0.tally.mult;
+  s0.onBoard({ t: 'pocket', pocket: 'w4' });
+  check('the POTTI scores ×2 mult and pays the middle of the pot in markka', s0.tally.mult === (x0 + 0) * 2 && s0.coins === m0 + 12 && s0.pot[6] === 0);
+  // the round scores CHIPS × MULT and pays the barman's cut
+  const e = new Kuoppa({ seed: 6 });
+  e.tally.chips = 40; e.tally.mult = 3; e.drops = 0; e.phase = 'spent';
+  e.update(1 / 30);
+  const sc = e.drain().find(v => v.t === 'scored');
+  check('when the last coin is down the round scores chips × mult toward the ante', sc?.score === 120 && sc.total === 120);
+  check('reaching the ante early opens the lock and pays for the rounds not needed', e.deadline === 2 && e.parts[0] === 'chucker' && e.phase === 'shop'
+    && e.coins === KD.START_MONEY + KD.ROUND_PAY + KD.CLEAR_PAY + KD.EARLY_PAY * 2);
+  const f = new Kuoppa({ seed: 7 });
+  for (let r = 0; r < KD.ROUNDS; r++) { f.drops = 0; f.phase = 'spent'; f.tally.chips = 1; f.update(1 / 30); f.drain(); if (f.phase === 'shop') f.nextRound(); }
+  check('three rounds short of the ante: the floor opens', f.phase === 'fell');
+  // jokers
+  const j = new Kuoppa({ seed: 8 });
+  j.jokers = [{ id: 'bajazzo', n: 0 }, { id: 'bear', n: 0 }];
+  j.tally.chips = 10; j.drops = 0; j.phase = 'spent'; j.update(1 / 30);
+  const js = j.drain().find(v => v.t === 'scored');
+  check('jokers work in order at the round\'s end: (1 + 4) × 1.5', js.mult === 7.5 && js.score === 75 && js.labels.length === 2);
+  const k = new Kuoppa({ seed: 8 });
+  k.jokers = [{ id: 'mirror_ball', n: 0 }];
+  k.onBoard({ t: 'pocket', pocket: 'w1' });
+  check('the Mirror Ball scores the first window twice', k.tally.chips === 2 * KD.HITS.one.chips);
+  const st = new Kuoppa({ seed: 8 });
+  st.jokers = [{ id: 'stacker', n: 0 }];
+  st.onBoard({ t: 'pocket', pocket: 'c3' }); st.onBoard({ t: 'pocket', pocket: 'c4' });
+  check('a growing joker grows from what happens (the Stacker, +2 a coin in the pot)', st.jokers[0].n === 4);
+  // the vendor
+  const v = new Kuoppa({ seed: 9 });
+  v.coins = 100; v.drops = 0; v.phase = 'spent'; v.update(1 / 30); v.drain();
+  check('after a round short of the ante: the vendor, two cards and a level plate', v.phase === 'shop' && v.offers.length === 3 && v.offers[2].type === 'plate');
+  const plateKind = v.offers[2].id, lv0 = v.levels[plateKind];
+  check('a plate raises its window a level', v.buy(2) && v.levels[plateKind] === lv0 + 1);
+  const ji = v.offers.findIndex(o => o && o.type !== 'plate');
+  const bought = v.offers[ji];
+  check('a joker or charm is bought for its price and kept', v.buy(ji) && v.owned(bought.id));
+  const before = v.coins;
+  check('and sells back for half', v.sell(bought.type, bought.id) && v.coins === before + Math.max(1, Math.floor(bought.price * KD.SELL)) && !v.owned(bought.id));
+  const r0 = v.coins, rc = v.rerollCost;
+  check('another look costs more each time', v.reroll() && v.coins === r0 - rc && v.rerollCost === rc + 1);
   check('the vendor never stocks what you have, or what your machine has no part for',
-    g.eligible().every(c => !g.charms.includes(c.id) && (!c.needs || g.has(c.needs))));
-  check('the next round hands you the coins', g.nextRound() && g.phase === 'idle' && g.drops === g.handful);
-  // the debt
-  const d = new Kuoppa({ seed: 5 });
-  d.phase = 'due'; d.coins = KD.DEBTS[0] + 3;
-  check('paying the first debt opens lock 1 and bolts on the START chucker', d.payDebt() && d.coins === 3 && d.deadline === 2 && d.parts[0] === 'chucker' && !!d.L.byId.start && d.phase === 'shop');
-  d.phase = 'due'; d.coins = 1;
-  check('a debt you cannot pay opens the floor', !d.payDebt() && d.phase === 'fell');
-  const w = new Kuoppa({ seed: 6 });
-  let order = [];
-  for (let k = 0; k < KD.LOCKS; k++) { w.phase = 'due'; w.coins = w.debt; w.payDebt(); order.push(w.parts.at(-1) ?? '-'); }
-  check(`the parts come in the owner's order (${w.parts.join(' → ')})`, w.parts.join() === KD.PARTS.join() && w.phase === 'won');
+    ['joker', 'charm'].every(tp => v.eligible(tp).every(c => !v.owned(c.id) && (!c.needs || v.has(c.needs)))));
+  check('the next round hands you the coins', v.nextRound() && v.phase === 'idle' && v.drops === v.handful);
+  // the deadline round
+  const d = new Kuoppa({ seed: 10 });
+  d.boss = 'short_hand'; d.round = KD.ROUNDS;
+  check('the third round is the deadline round, and its twist bites only then', d.deadlineRound && d.handful === KD.DROPS - 10 && (d.round = 1, d.handful === KD.DROPS));
+  const dt = new Kuoppa({ seed: 10 });
+  dt.boss = 'taped_potti'; dt.round = KD.ROUNDS; dt.taped();
+  check('the taped POTTI is shut in the deadline round', dt.L.byId.w4.open === false);
+  dt.round = 1; dt.taped();
+  check('and open again after', dt.L.byId.w4.open === true);
+  check('every ante draws a twist the machine can have', KD.BOSSES.every(b => b.name.en && b.text.fi && b.text.ja) && !!new Kuoppa({ seed: 11 }).boss);
+  // the parts, in the owner's order
+  const w = new Kuoppa({ seed: 12 });
+  for (let a = 0; a < KD.LOCKS; a++) { w.tally.chips = w.ante; w.drops = 0; w.phase = 'spent'; w.update(1 / 30); w.drain(); if (w.phase === 'shop') w.nextRound(); }
+  check(`the parts come in the owner's order (${w.parts.join(' → ')}), and eight antes open the door`, w.parts.join() === KD.PARTS.join() && w.phase === 'won');
   // the parts' rules
-  const r = new Kuoppa({ seed: 7 });
+  const r = new Kuoppa({ seed: 13 });
   r.parts = [...KD.PARTS]; r.rebuild();
-  r.pull(0.5); r.drain();
   r.onBoard({ t: 'pocket', pocket: 'start' });
-  check('a coin in the chucker holds a spin', r.spins.length === 1);
-  r.board.coins.length = 0; r.phase = 'idle';
+  check('a coin in the heso holds a spin and scores', r.spins.length === 1 && r.tally.chips === KD.HITS.heso.chips);
   const drops = r.drops;
   r.onBoard({ t: 'pocket', pocket: 'w0' });
   check(`the ×3 window hands you ${KD.TIMES3} more coins to shoot`, r.drops === drops + KD.TIMES3);
   r.openFever();
-  check('a jackpot opens the FEVER gate', r.L.byId.attacker.open && r.fever > 0);
-  const c0 = r.coins;
-  r.onBoard({ t: 'pocket', pocket: 'attacker' });
-  check(`the open gate pays ${KD.FEVER.pays} a coin`, r.coins === c0 + KD.FEVER.pays);
+  check('a jackpot opens the attacker (大当たり)', r.L.byId.attacker.open && r.fever > 0);
   r.fever = 1; r.settle();
-  check('and shuts when FEVER runs out', !r.L.byId.attacker.open && r.fever === 0);
-  const p0 = r.pottiBase; r.phase = 'spent'; r.drops = 0; r.spins = []; r.spin = null; r.endRound();
-  check(`with the chain on, the POTTI grows ${KD.CHAIN.pottiPerRound} a round`, r.pottiBase === p0 + KD.CHAIN.pottiPerRound);
+  check('and it shuts when the pulls run out', !r.L.byId.attacker.open);
+  r.openRush();
+  check('確変 RUSH opens the electric tulip', r.L.byId.denchu.open === true && r.chance === KD.CHAIN.spins);
   // the reels pay the picture
-  const s = new Kuoppa({ seed: 8 });
-  s.parts = ['chucker']; s.rebuild();
-  let paidRight = true, spun = 0;
+  const sp = new Kuoppa({ seed: 14 });
+  sp.parts = ['chucker']; sp.rebuild();
+  let right = true, spun = 0;
   for (let i = 0; i < 300; i++) {
-    s.spins = [{ from: 'start' }]; s.spinGap = 0;
-    const c = s.coins, dr = s.drops;
-    s.update(1 / 30);
-    const sp = s.spin;
-    while (s.spin) s.update(1 / 30);
+    sp.spins = [{ from: 'start' }]; sp.spinGap = 0; sp.newTally(); sp.tally.chips = 100;
+    const dr = sp.drops, mo = sp.coins;
+    sp.update(1 / 30);
+    const s = sp.spin;
+    while (sp.spin) sp.update(1 / 30);
     spun++;
-    const shown = linesShown(sp.grid);
-    const want = shown.reduce((a, l) => a + (KD.REEL_PAY[l.symbol] ?? 0), 0);
-    const cl = shown.filter(l => l.symbol === 'clover').length * KD.CLOVER_DROPS;
-    if (s.coins - c !== want || s.drops - dr !== cl) paidRight = false;
-    s.drain();
+    const shown = linesShown(s.grid).map(l => l.symbol);
+    const want = { chips: 100, mult: 1, drops: dr, coins: mo };
+    for (const y of shown) {
+      if (y === 'cherry' || y === 'bell') want.chips += KD.REEL[y].chips;
+      if (y === 'coin') want.coins += KD.REEL.coin.money;
+      if (y === 'clover') want.drops += KD.REEL.clover.drops;
+      if (y === 'seven') want.mult *= 2;
+      if (y === 'mask') want.chips -= Math.floor(want.chips / 2);
+    }
+    if (sp.tally.chips !== want.chips || sp.tally.mult !== want.mult || sp.drops !== want.drops || sp.coins !== want.coins) right = false;
+    sp.drain();
   }
-  check(`the reels pay exactly what the picture shows (${spun} spins)`, paidRight);
-  check('charm rules combine: sums add, flags take the biggest', (() => { const x = kRules(['heavy_r', 'bent_nail', 'extra_coins']); return x.rPay === 1 && x.openPotti === 1 && x.extraDrops === 5; })());
-  // a whole run, twice, from one seed
-  const a = playKuoppa(99, POLICIES.prudent), b = playKuoppa(99, POLICIES.prudent);
-  check(`a bot plays a run to its end (${a.phase} at lock ${a.deadline}), and one seed is one run`,
-    (a.phase === 'fell' || a.phase === 'won') && a.deadline === b.deadline && a.coins === b.coins && a.charms.join() === b.charms.join());
+  check(`the reels score exactly what the picture shows (${spun} spins)`, right);
+  const x = kRules(['heavy_r', 'bent_nail', 'beer_crate', 'dark_pint']);
+  check('rules combine: sums add, flags take the biggest', x.rMoney === 1 && x.openPotti === 1 && x.extraDrops === 0);
+  const a1 = playKuoppa(99, POLICIES.balatro), b1 = playKuoppa(99, POLICIES.balatro);
+  check(`a bot plays a run to its end (${a1.phase} at lock ${a1.deadline}), and one seed is one run`,
+    (a1.phase === 'fell' || a1.phase === 'won') && a1.deadline === b1.deadline && a1.run.scored === b1.run.scored && a1.jokers.map(q => q.id).join() === b1.jokers.map(q => q.id).join());
+}
+
+section('pajatso: the nudge');
+{
+  const g = new Pajatso({ seed: 21 });
+  g.pull(0.5);
+  let t = 0; while (g.board.inLane(g.board.coins[0]) && t < 5) { g.update(1 / 60); t += 1 / 60; }
+  g.drain();
+  const c = g.board.coins[0], vx = c.vx;
+  check('a tap shoves the coin toward it', g.nudge(1, 0) && g.board.coins[0].vx > vx + 5);
+  check('the second is free too', g.nudge(-1, 0) && g.inFlight);
+  check('the third tilts: the coin is the machine\'s', g.nudge(1, 0) && !g.inFlight && g.drain().some(e => e.t === 'tilt'));
+  const h = new Pajatso({ seed: 22 });
+  h.pull(0.5);
+  check('a coin still climbing the lane cannot be nudged', !h.nudge(1, 0));
+  const k = new Kuoppa({ seed: 23 });
+  k.boss = 'tilt_sensor'; k.round = KD.ROUNDS;
+  k.pull(0.5); let u = 0; while (k.board.inLane(k.board.coins[0]) && u < 5) { k.update(1 / 60); u += 1 / 60; }
+  check('the Tilt Sensor tilts on the first nudge of the deadline round', k.nudge(1, 0) && !k.inFlight);
 }
 
 section('pajatso: three languages');
@@ -567,7 +633,9 @@ section('pajatso: three languages');
   const keys = Object.keys(_STR.en);
   const missing = ['fi', 'ja'].flatMap(l => keys.filter(k => !_STR[l][k]).map(k => `${l}.${k}`));
   check(`every line is in Finnish and Japanese as well as English${missing.length ? ` — ${missing.slice(0, 5).join(', ')}` : ''}`, missing.length === 0);
-  const same = ['fi', 'ja'].flatMap(l => keys.filter(k => _STR[l][k] === _STR.en[k] && !/^(★ POTTI|★ POTTI!|REACH!|FEVER!|CHANCE)$/.test(_STR.en[k])).map(k => `${l}.${k}`));
+  // pachinko's own words (大当たり, 確変, REACH) and the parts' Japanese names
+  // are the same in every language on purpose
+  const same = ['fi', 'ja'].flatMap(l => keys.filter(k => _STR[l][k] === _STR.en[k] && !/^(★ POTTI|★ POTTI!|REACH!|FEVER!|CHANCE|TILT!|Ante \{d\}\/8|大当たり!|確変 RUSH)$/.test(_STR.en[k]) && !k.startsWith('partJa_')).map(k => `${l}.${k}`));
   check(`and none of them is the English left in place${same.length ? ` — ${same.slice(0, 5).join(', ')}` : ''}`, same.length === 0);
   const html = readFileSync(path.join(GAME, 'index.html'), 'utf8') + readFileSync(path.join(GAME, 'kuoppa.html'), 'utf8');
   const used = [...html.matchAll(/data-il?="(\w+)"/g)].map(m => m[1]);
@@ -589,7 +657,7 @@ section('files');
   for (const f of files) {
     const src = readFileSync(f, 'utf8');
     for (const m of src.matchAll(/(?:from\s+|import\s*\(\s*)['"](\.{1,2}\/[^'"]+)['"]/g)) {
-      if (m[1].includes('hub/')) continue;
+      if (m[1].includes('hub/') || m[1].includes('toko/')) continue;    // the site's modules, on their own tokens
       const tok = m[1].match(/\?v=(\d+)$/)?.[1];
       if (tok !== token) odd.push(`${path.relative(GAME, f)} → ${m[1]}`);
     }

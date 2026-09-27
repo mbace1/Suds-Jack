@@ -4,8 +4,8 @@
 // machine (main.js) and KUOPPA (../kuoppa/main.js) each mount one and bring
 // only what is theirs — the rules, the events, the sheets between rounds.
 
-import { t, mk, getLang, setLang, LANGS } from './lang.js?v=4';
-import { sfx, initAudio, setMuted, isMuted } from '../audio.js?v=4';
+import { t, mk, getLang, setLang, LANGS } from './lang.js?v=5';
+import { sfx, initAudio, setMuted, isMuted } from '../audio.js?v=5';
 import { watchPad } from '../../../hub/pad.js?v=9';   // the SAME token shell.js asks for: one reader on the page
 
 export const params = new URLSearchParams(location.search);
@@ -104,6 +104,18 @@ export function mountTable(o) {
   });
   lever.addEventListener('pointercancel', () => { touchStart = null; st.pulling = null; st.power = 0; });
 
+  // THE NUDGE: a tap on the machine while a coin is out on the face shoves it
+  // toward the finger; ← → do the same from a keyboard, LB / RB from a pad
+  function nudgeToward(sx, sy) {
+    const c = game().board.coins[0];
+    if (!c || !live()) return false;
+    const [cx, cy] = view.toScreen(c.x, c.y);
+    if (game().nudge(sx - cx, cy - sy)) { buzz(18); return true; }
+    return false;
+  }
+  function nudgeSide(dir) { if (live()) game().nudge(dir, 0.35); }
+  $('gl').addEventListener('pointerdown', ev => { if (nudgeToward(ev.clientX, ev.clientY)) ev.preventDefault(); });
+
   // keys: hold SPACE (or ↓) to pull, let go to fire; ENTER pulls the same again
   addEventListener('keydown', ev => {
     if (ev.key === 'Escape' || ev.key === 'p' || ev.key === 'P') { togglePause(); return; }
@@ -112,6 +124,7 @@ export function mountTable(o) {
     if (!st.started || st.paused) { if (ev.key === 'Enter' && !st.started) begin(); return; }
     if (o.blocked?.()) return;
     if ((ev.key === ' ' || ev.key === 'ArrowDown') && !ev.repeat) { ev.preventDefault(); st.pulling = 'key'; st.power = 0; initAudio(); }
+    if ((ev.key === 'ArrowLeft' || ev.key === 'ArrowRight') && !ev.repeat) { ev.preventDefault(); nudgeSide(ev.key === 'ArrowLeft' ? -1 : 1); }
     if (ev.key === 'Enter' && st.lastPull != null) { ev.preventDefault(); release(st.lastPull); }
   });
   addEventListener('keyup', ev => {
@@ -130,6 +143,7 @@ export function mountTable(o) {
       if (o.blocked?.()) return;
       if (i === 0) { st.pulling = 'pad'; st.power = 0; initAudio(); }
       if (i === 3 && st.lastPull != null) release(st.lastPull);
+      if (i === 4 || i === 5) nudgeSide(i === 4 ? -1 : 1);
     },
     release(i) { if (i === 0 && st.pulling === 'pad') { st.pulling = null; release(st.power); } },
   });
@@ -251,7 +265,7 @@ export function mountTable(o) {
   requestAnimationFrame(frame);
 
   return {
-    st, tip, toast, pop, begin, pause, resume, applyLang, release,
+    st, tip, toast, pop, begin, pause, resume, applyLang, release, nudgeToward, nudgeSide,
     // run the machine forward without waiting for frames (the gates)
     advance(s) { const step = 1 / 30; for (let x = 0; x < s; x += step) { game().update(step); drain(); } },
     setLang(l) { setLang(l); applyLang(); o.onLang?.(); },

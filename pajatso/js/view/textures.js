@@ -4,7 +4,8 @@
 // every time you come back to it.
 
 import * as THREE from 'three';
-import { makeRng } from '../rng.js?v=4';
+import { makeRng } from '../rng.js?v=5';
+import { drawBadge } from '../../../toko/js/face.js';   // the brand's own mark, from the site's toko/
 
 export function canvas(w, h) {
   const c = document.createElement('canvas');
@@ -186,8 +187,8 @@ export function boardArt(layout, { W = 60, H = 84, ppu = 12 } = {}) {
     g.restore();
   }
   g.restore();
-  // the raccoon, lower left, watching you shoot
-  raccoonFace(g, X(-19), Y(12), 6.5 * ppu);
+  // Toko, lower left, watching you shoot
+  tokoFace(g, X(-19), Y(12), 6.5 * ppu);
   // the lane outside the guide rail
   g.fillStyle = 'rgba(0,0,0,0.35)';
   g.fillRect(X(-30), Y(50), 2.6 * ppu, 46 * ppu);
@@ -203,42 +204,14 @@ export function clover(g, x, y, s, col) {
   g.fillRect(x - s * 0.05, y, s * 0.1, s * 0.8);
 }
 
-// The landlord, as a painted face: grey fur, the black mask, and two eyes that
-// are the brightest thing in it.
-export function raccoonFace(g, x, y, s, { eyes = '#fff6c8', glow = false } = {}) {
-  g.save(); g.translate(x, y);
-  // ears
-  g.fillStyle = '#4b4a52';
-  for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(sx * s * 0.62, -s * 0.2); g.lineTo(sx * s * 0.75, -s * 0.85); g.lineTo(sx * s * 0.2, -s * 0.5); g.closePath(); g.fill(); }
-  g.fillStyle = '#d8d2c8';
-  for (const sx of [-1, 1]) { g.beginPath(); g.moveTo(sx * s * 0.6, -s * 0.3); g.lineTo(sx * s * 0.68, -s * 0.7); g.lineTo(sx * s * 0.32, -s * 0.5); g.closePath(); g.fill(); }
-  // head
-  g.fillStyle = '#8b8993';
-  g.beginPath(); g.ellipse(0, 0, s * 0.78, s * 0.58, 0, 0, Math.PI * 2); g.fill();
-  // white muzzle and brows
-  g.fillStyle = '#ece6da';
-  g.beginPath(); g.ellipse(0, s * 0.22, s * 0.42, s * 0.3, 0, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.ellipse(-s * 0.32, -s * 0.28, s * 0.22, s * 0.08, 0.3, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.ellipse(s * 0.32, -s * 0.28, s * 0.22, s * 0.08, -0.3, 0, Math.PI * 2); g.fill();
-  // the mask
-  g.fillStyle = '#16151b';
-  g.beginPath();
-  g.moveTo(-s * 0.72, -s * 0.05);
-  g.quadraticCurveTo(-s * 0.4, -s * 0.28, 0, -s * 0.06);
-  g.quadraticCurveTo(s * 0.4, -s * 0.28, s * 0.72, -s * 0.05);
-  g.quadraticCurveTo(s * 0.5, s * 0.2, s * 0.12, s * 0.06);
-  g.lineTo(-s * 0.12, s * 0.06);
-  g.quadraticCurveTo(-s * 0.5, s * 0.2, -s * 0.72, -s * 0.05);
-  g.fill();
-  // eyes
-  if (glow) { g.shadowColor = eyes; g.shadowBlur = s * 0.3; }
-  g.fillStyle = eyes;
-  g.beginPath(); g.arc(-s * 0.3, -s * 0.04, s * 0.085, 0, Math.PI * 2); g.fill();
-  g.beginPath(); g.arc(s * 0.3, -s * 0.04, s * 0.085, 0, Math.PI * 2); g.fill();
-  g.shadowBlur = 0;
-  // nose
-  g.fillStyle = '#16151b';
-  g.beginPath(); g.ellipse(0, s * 0.14, s * 0.1, s * 0.07, 0, 0, Math.PI * 2); g.fill();
+// The landlord is TOKO now (owner, 2026-09-27: "change any raccoon or similar
+// to Toko face"): the studio's own mark, drawn from the brand's geometry on
+// its magenta disc — never redrawn by hand, so it cannot drift from the logo.
+// `s` is the size the raccoon's head used to be; `glow` keeps its halo.
+export function tokoFace(g, x, y, s, { glow = false } = {}) {
+  g.save();
+  if (glow) { g.shadowColor = '#f0027f'; g.shadowBlur = s * 0.35; }
+  drawBadge(g, x, y, s * 0.78);
   g.restore();
 }
 
@@ -257,7 +230,7 @@ export function marquee() {
   const txt = g.createLinearGradient(0, 30, 0, 96);
   txt.addColorStop(0, '#fff3a8'); txt.addColorStop(0.5, '#ffc53a'); txt.addColorStop(1, '#e0761a');
   g.fillStyle = txt; g.fillText('PACHI PIT', w / 2 + 34, h / 2 + 1);
-  raccoonFace(g, 64, h / 2 + 8, 46);
+  tokoFace(g, 64, h / 2 + 8, 46);
   return tex(c, { nearest: false });
 }
 
@@ -317,7 +290,7 @@ export function drawSymbol(g, name, s) {
       g.strokeStyle = '#ffe0a0'; g.lineWidth = 1.5; g.stroke();
       break;
     case 'mask':
-      raccoonFace(g, 16, 18, 18, { eyes: '#ff3030', glow: false });
+      tokoFace(g, 16, 18, 18, { eyes: '#ff3030', glow: false });
       break;
   }
 }
@@ -380,7 +353,7 @@ export function poster() {
   g.fillStyle = '#1b1b1b'; g.font = 'bold 20px "Arial Black", Impact, sans-serif'; g.textAlign = 'center';
   g.fillText('WANTED', w / 2, 24);
   g.fillStyle = '#3a3a3a'; g.fillRect(14, 34, w - 28, 92);
-  raccoonFace(g, w / 2, 86, 40, { eyes: '#e8e0c0' });
+  tokoFace(g, w / 2, 86, 40, { eyes: '#e8e0c0' });
   g.fillStyle = '#1b1b1b'; g.font = 'bold 11px monospace';
   g.fillText('FOR RENT ARREARS', w / 2, 142);
   g.fillText('REWARD: 1 COIN', w / 2, 158);

@@ -3,14 +3,14 @@
 // the HUD (which knows what to press) and the speakers.
 
 import * as THREE from 'three';
-import { Engine } from './engine.js?v=4';
-import { Eye, QUALITY } from './view/render.js?v=4';
-import { Room } from './view/room.js?v=4';
-import { Machine, edgeZ, M, bx, by } from './view/machine.js?v=4';
-import { Hud } from './hud.js?v=4';
-import { bindInput } from './input.js?v=4';
-import { sfx, initAudio, setMuted, isMuted } from './audio.js?v=4';
-import { CHARMS, DEALS } from './data.js?v=4';
+import { Engine } from './engine.js?v=5';
+import { Eye, QUALITY } from './view/render.js?v=5';
+import { Room } from './view/room.js?v=5';
+import { Machine, edgeZ, M, bx, by } from './view/machine.js?v=5';
+import { Hud } from './hud.js?v=5';
+import { bindInput } from './input.js?v=5';
+import { sfx, initAudio, setMuted, isMuted } from './audio.js?v=5';
+import { CHARMS, DEALS } from './data.js?v=5';
 
 const params = new URLSearchParams(location.search);
 const store = {
@@ -176,7 +176,7 @@ function onEvent(ev) {
     case 'feverEnd': sfx.feverEnd(); break;
     case 'bandit':
       room.grab(ev.trapped); sfx.bandit(ev.trapped); fx.bandit = 1.6; buzz([90, 60, 140]);
-      hud.toast(ev.trapped ? 'CAUGHT!' : `BANDIT −${ev.took}¢`, ev.trapped ? 'the mousetrap got his paw' : 'three masks: a paw comes down for your wallet', 'red', 2400, true);
+      hud.toast(ev.trapped ? 'CAUGHT!' : `BANDIT −${ev.took}¢`, ev.trapped ? 'the mousetrap got his hand' : 'three Tokos: a hand comes down for your wallet', 'red', 2400, true);
       if (eye.station === 'machine') { lookUpT = 1.5; eye.turnTo('up'); }
       break;
     case 'shiftStart':

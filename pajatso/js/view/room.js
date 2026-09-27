@@ -6,8 +6,8 @@
 // under the stool is a grate, and it is a door too.
 
 import * as THREE from 'three';
-import * as T from './textures.js?v=4';
-import { CHARMS } from '../data.js?v=4';
+import * as T from './textures.js?v=5';
+import { CHARMS } from '../data.js?v=5';
 
 export const ROOM = { x0: -1.55, x1: 1.55, z0: -1.02, z1: 1.7, h: 3.0, seat: { x: 0, z: 0.38 } };
 
@@ -293,7 +293,7 @@ export class Room {
     }
     // the face, at the lip of the hole, for when you look up
     const c = T.canvas(256, 256), cx = c.getContext('2d');
-    T.raccoonFace(cx, 128, 150, 110, { eyes: '#fff2b0', glow: true });
+    T.tokoFace(cx, 128, 150, 110, { glow: true });
     const faceTex = new THREE.CanvasTexture(c); faceTex.colorSpace = THREE.SRGBColorSpace;
     this.face = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 0.55), new THREE.MeshBasicMaterial({ map: faceTex, transparent: true, depthWrite: false }));
     this.face.position.set(ROOM.seat.x, 3.02, ROOM.seat.z - 0.28);
