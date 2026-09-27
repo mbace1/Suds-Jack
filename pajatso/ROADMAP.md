@@ -8,22 +8,37 @@ features."*
 
 That is the order, and this file keeps it.
 
-## 1. Regular Pajatso — v2, SHIPPED
+## The owner's answers, 2026-09-27
 
-The classic machine is `index.html` (`js/classic/`): twenty coins, one at a
-time, a lever pulled down and let go, cups that pay their painted number,
-the ★ POTTI chimneys, the clown. The camera is fitted to the phone's width and
-leans in on the coin (≈30 px of coin on a 390 px phone); five first-time lines
-say what the face does. `VERSIONS.md` v2 has what it took.
+Eight short questions, eight answers — this file is ordered by them:
 
-Open on the classic machine, in the owner's hands next:
-- **Is it the right Pajatso?** The face is modelled on the Bajazzo/Pajatso type
-  from memory: cups among the nails, the bottom keeps the coin. Photos of a real
-  one (the pocket layout, the payout printing, the lever) would set the face,
-  the cover and the numbers properly.
-- **Does twenty coins last?** The machine pays back 0.95 a coin across the
-  lever; a session is ~60–120 pulls. `node pajatso/test/face.mjs` is where to
-  look before moving a number.
+1. **Photos of a real one** — sent: a Finnish 1 mk machine (v3 is built on them).
+2. **Kuoppa** — *"Kuoppa is roguelike."* It stays the roguelike mode.
+3. **Language** — fi / en / ja (v3).
+4. **Coins** — *"that or more"*: 30 mk a session (v3).
+5. **Jackpot** — *"B, maybe C (different per mode)"*: bigger and rarer in the
+   base game (v3: 7:00 plus the middle of the pot); possibly progressive in
+   the roguelike.
+6. **The run** — keep KUOPPA's debt-and-deadline shape.
+7. **Pachinko parts** — *"all in order, but only the special mode, not base"*:
+   the list in §3, in that order, and never on the base machine.
+8. **Setting** — a Kallio bar (v3).
+
+## 1. Regular Pajatso — v3, SHIPPED
+
+The base machine is `index.html` (`js/classic/`), and since v3 it is the
+photograph's: a row of windows across the top (R · 1:00 · 1:50 · 7:00 …), the
+pot stacked in columns behind the glass, the POTTI opening its middle three, a
+teak case on an orange bar wall. 30 mk, one coin at a time, fi / en / ja.
+**It gets no pachinko parts** (answer 7); what changes here is the machine
+itself — the look, the numbers, the feel of the lever.
+
+Open, in the owner's hands next:
+- **Does it feel like the one in the photo?** The windows, the pot and the case
+  are drawn from two pictures; anything that reads wrong is a picture away
+  from being right.
+- **Does 30 mk last?** The machine pays back ~0.97 a markka with the pot left
+  to run; `node pajatso/test/face.mjs` is where to look before moving a number.
 
 ## 2. The roguelike mode — on the Pajatso face (next)
 
@@ -42,21 +57,21 @@ are the same machine:
 - **KUOPPA's systems port across** where they fit (the vendor, the phone deals,
   the bandit); the pusher does not — the Pajatso pays straight into the tray.
 
-## 3. Tons of pachinko features — as things the run can bolt on
+## 3. The pachinko parts — the roguelike ONLY, in this order
 
-Each one a part you can add to the face, so the roguelike is also how you
-meet them:
+Answer 7 fixed both the order and the place: each part arrives in the
+roguelike mode, one at a time, and the base machine never gets them.
 
-- **Start chucker + reels**: a cup that spins a three-reel window over the clown;
-  a line pays, a REACH is a near-miss you watch (the lottery and the picture
-  code in `js/reels.js` is already built).
-- **Tulips**: cups that open when hit and shut on the next coin.
-- **FEVER / the attacker**: a gate on the right side that opens after a jackpot
-  and swallows right-side shots for a while — the "migi-uchi" game the right
-  side of the lever already is.
-- **Windmills**, a **warp** and a **stage** (all in `js/board.js` already).
-- **Ball multipliers**: a cup that pays in coins that then have to be played.
-- **Kakuhen-style chains**: a jackpot that makes the next one likelier.
+1. **Start chucker + reels**: a window that spins a three-reel picture; a line
+   pays, a REACH is a near-miss you watch (`js/reels.js` already draws the
+   outcome and builds the picture that shows it).
+2. **Tulips**: windows that open when hit and shut on the next coin.
+3. **FEVER / the attacker**: a gate that opens after a jackpot and swallows
+   right-side shots for a while.
+4. **Windmills** (in `js/board.js` already).
+5. **Chain jackpots** (kakuhen): a jackpot that makes the next one likelier —
+   and where answer 5's *maybe C*, a progressive POTTI, belongs.
+6. **Ball multipliers**: a window that pays in coins that then have to be played.
 
 ## Still true from the v1 list
 

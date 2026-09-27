@@ -6,8 +6,8 @@
 // under the stool is a grate, and it is a door too.
 
 import * as THREE from 'three';
-import * as T from './textures.js?v=2';
-import { CHARMS } from '../data.js?v=2';
+import * as T from './textures.js?v=3';
+import { CHARMS } from '../data.js?v=3';
 
 export const ROOM = { x0: -1.55, x1: 1.55, z0: -1.02, z1: 1.7, h: 3.0, seat: { x: 0, z: 0.38 } };
 

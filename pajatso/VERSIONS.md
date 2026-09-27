@@ -4,6 +4,72 @@ The game was PACHI PIT for its first release; v2 renamed it and made the
 Finnish coin wall game the front door. The pit run is still here as KUOPPA
 (`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
 
+## v3 — 2026-09-27 — the real machine, on a Kallio bar wall
+
+The owner sent two photographs of a real Pajatso — a Finnish 1 mk machine, one
+of them hanging on an orange bar wall with two brown bottles on top — and
+answered eight questions: *Kallio bar*; the pachinko parts *in order, but only
+the special mode, not base*; keep the debt-and-deadline run; *B, maybe C* for
+the jackpot (bigger and rarer here, perhaps progressive in the roguelike);
+*that or more* coins; the UI in all three languages; *Kuoppa is roguelike*.
+
+**The face is the photograph's, not v2's memory of one.** v2 guessed a
+Bajazzo-type face — cups among the nails, a clown with a cup for a mouth.
+The real one puts every winning place in a ROW OF WINDOWS across the top,
+payouts printed under them: `R · 1:00 · 1:50 · 1:50 · 7:00 · 1:50 · 1:50 ·
+1:00 · R`. Under them a grey band, red V deflectors, and the thing that makes a
+Pajatso a Pajatso: **the pot**, columns of coins stacked behind chrome
+dividers where you can see them. So:
+
+- A coin that misses every window falls past the V into a column and STAYS
+  THERE, on screen. The pot is state (`game.pot`, thirteen columns, a hump to
+  start, the way the photographs show it); a full column spills into the cash
+  box.
+- **The POTTI is the red 7:00**, and it pays seven AND the three middle
+  columns. That is the owner's *B*: bigger (≈40 mk on a fresh machine against
+  v2's 10) and rarer (1 in ~95 coins against 1 in ~30) — and its size is on
+  the glass before you pull, which no printed number can do. The HUD says
+  `POTTI now` too.
+- **Money is markka.** 1:50 pays one and a half, so the purse can hold 50 p;
+  a pull takes a whole markka, and under one markka you are out. **30 mk** a
+  session (the answer was "that or more"). `R` gives the coin back.
+- The POTTI window is 2.66 bu against the others' 2.9, and a nail stands over
+  its mouth a pass above each wall top — the same guard v2's clown had.
+
+Measured with `node pajatso/test/face.mjs` (rewritten for windows and the
+pot): **1.05 back per markka on a fresh pot and 0.97 with the pot left to run**
+— the difference is the POTTI paying out a hump the machine then has to eat
+back — POTTI 1 in 95, no coin fished out, no fouls. Two things it took:
+
+- *The first sweep had a sweet spot worth 3.1 a coin.* Twenty-odd nails in the
+  red let one pull land on the same window; a denser staggered field
+  (5.2 × 3.8, a tenth missing) makes every power a neighbourhood of windows.
+  Individual powers still read 0.5–2.4 over 150 coins, which is the POTTI's
+  variance at ~40 mk a hit, not a lane.
+- *The top of the lever was a dead zone* (88% lost): the strongest coins rode
+  the rail round and dropped down the gap by the right wall. A second kicker
+  just over the window row throws them back onto the last windows.
+
+**The room is a Kallio bar**: an orange painted panel on a white wall, the
+teak case, the black 1 mk plate (`1mk VAIHTOKONE · MYNTVÄXLARE 2×50p`) down
+the right of the glass, a chrome drawer pull, the crank on the right side of
+the case, two brown bottles on top and the corner of a bar table with two coin
+holes in it. No maker's plate is copied; the little brass one says PAJATSO.
+
+**Three languages** (`js/classic/lang.js`): fi / en / ja, a switch on the title
+and the pause sheet, English as the per-key fallback. The first visit follows
+the arcade's own choice (`sudsJackHubLang`), then the browser. Markka are
+written with a Finnish comma in Finnish. `core.mjs` fails on a key missing
+from a pack, on English left in one, and on a key the page asks for that does
+not exist.
+
+On a phone the purse sits beside the arcade's corner and nothing else: the
+best score moved off the top bar under 440 px (it read into the sound button),
+and `POTTI now` joined the pull numbers by the lever.
+
+Gates: `core.mjs` 114, `classic.cjs` 32 (the language switch, the comma, the
+choice kept), `smoke.cjs` 44 (KUOPPA, untouched).
+
 ## v2 — 2026-09-26 — Pajatso
 
 The owner, after v1: *"Boring, the mobile view should be much closer. Not told
