@@ -77,6 +77,56 @@ Port `cover-edges.js`, `directional-cover.mjs` and `design/C11_PORT_VECTORS.json
 New lab checkpoint version 4 / rules c11-v1; preserve campaign and Bear Path rules.
 Use resolved impact classifications for presentation; never reapply damage on recovery.
 
+## v4.59 — 2026-09-27
+
+**Sound, and the arrival.** Owner, 2026-09-27: answer 7, "yes" to sound (a tram bell, the till, street rain); answer 8, "sure, setting up" for an arrival when a run begins.
+
+- `web/js/v3/sound.js`. Everything is synthesised; there are no audio files. Every voice goes through one master gain. The bed is rain and the city's low hum, with a distant tram bell every 22–48 s. There are four sounds on top of it: the till when cash moves (a bright ring when money comes in, a lower one when it goes out), footsteps on a journey, a low sting when the road stops Aatami, and brakes then the bell for the arrival. Sound wakes on Begin or Resume; nothing plays before a tap. The pause menu has a **SOUND · ON/OFF** switch. It is remembered, and OFF closes the whole audio graph rather than turning it down. A browser without WebAudio gets silence, never an error.
+- **The arrival.** A new run opens on the 3 tram pulling into Piritori in the rain, drawn in CSS with no image. The doors open and Aatami steps off, lit by the tram windows on one side with a cold rim on the other. Three lines read "Kallio, 2003. Night, and raining." / "The 3 comes down Helsinginkatu and stops at Piritori." / "Aatami steps off with €160, 300 mk and a debt of €350" (read from the save). SKIP, any tap or any key ends it at once, and it ends by itself after about 8 s. It plays neither on Resume nor with `?skip` (Eeri's convention, which the gates use). Under reduced motion it is one still frame. It never changes the save. Afterwards the next step is lit.
+- **Landscape phones no longer scroll sideways.** The header was 920 px wide at 844×390 and 915×412: v3.css's 220 px and 300 px column floors, the day card and four 44 px buttons did not fit, so a phone zoomed the whole page out. Between 761 and 980 px the floors are gone and the wordmark and cards shrink instead. The header-fit gate now covers 844 and 915 (62 checks).
+- Gates: new `web/test/opening.cjs` (34 checks). It covers desktop and phone, button, tap and key skips, ending by itself, Resume and `?skip`, the save unchanged, one lit step afterwards, sound on through the master gain, OFF stops everything and is remembered, and the reduced-motion still. Every other browser gate now loads `?skip`.
+
+### Port
+
+Godot: an arrival scene on New Game (not Continue), skippable by any input, ending by itself, with the same three lines built from the save. Add a synthesised or bus-routed ambient bed plus the till, steps, sting and bell cues on the same triggers, a single master bus, and a persisted SOUND switch in the pause menu.
+
+## v4.58 — 2026-09-27
+
+**The road.** Owner, 2026-09-27 (DESIGN_AUTHORITY answers 2, 4, 6, 9, 10): travel should feel natural; things happen in transit and on arriving; about every third or fourth journey; a surprise for now; each costs a bit of time; the first ones are Aatami meeting dealers and doing low-end gigs, and bigger contacts and money come later.
+
+- `content/road-events-v1.json` holds nine events. Tier 0 is low-end hustle: a kid selling badly on Hämeentie, a €15 bag carried three stops, a ticket inspection, the kiosk regular, another seller on the corner. Tier 1 opens with a recruit or at story block 6: a torn pocket, an old classmate behind a bar, a €40 McCormick job, and the underpass. The underpass can become a fight.
+- `web/js/v3/road.js` holds the rules, and they are pure. Nothing fires before story block 2. Then the third journey since the last event fires on a coin flip and the fourth always does. The roll is deterministic from the save, so a reload replays the same road. Each event is seen once, and higher tiers come first once they open.
+- **A surprise:** the journey preview says nothing about the road. Its copy now promises only what still holds: the walk costs no money and does not turn the block.
+- **A bit of time:** every choice shows its minutes (+10 MIN … +60 MIN, or NO TIME). The day card's clock reads later (DAY 2 · NIGHT · 21:00). D002 is still open, so minutes never turn a block; a new block starts on the hour.
+- **Refused, never hidden:** a choice you cannot take is shown and says why ("needs 2 crew with you", "needs a pack on you"). Every event has an open way out.
+- **A road fight** is the ordinary battle marked `road`. It reports to no mission and does not turn the block. Injuries, arrests, loot and careers apply as in any fight. For now it borrows the Karhupuisto 2v2 scene; the underpass needs its own art.
+- A pending event survives a reload and blocks nothing but itself: the ledger waits until it is answered.
+- Gates: new `web/test/road.mjs` (119 checks, bare node: content grammar, gaps of 3 or 4 with a mean between 3 and 4, determinism, no repeats, tiers, requirements, pay, minutes, reload, the fight) and `web/test/road-browser.cjs` (38 checks, desktop and phone, real taps). The readability gate also judges the road screen now (56 checks). M1 now expects the journey counter and no event on day one (71 checks); M2's copy check follows the new preview line.
+
+### Port
+
+Godot: load `content/road-events-v1.json` and apply the same rules: gap of 3 or 4 after story block 2; a deterministic roll from contentId|block|journey count (FNV-1a, the same as `deterministicRoll`); once each; highest open tier first. The rolled phase is `transit` or `arrival`, and `any` fits either. Show a road screen with each choice's minutes and any refusal reason. Add minutes to the current block's clock only; they never turn the block. A road fight has no mission and no block advance. Save `road: {journeys, since, seen, pending, minutes, minutesBlock, last}`.
+
+## v4.57 — 2026-09-27
+
+**The first two minutes always offer one next step.** The owner delegated the target ("You tell me and let's see how far we are"). It is written and measured in `design/FIRST_TWO_MINUTES.md`.
+
+- **Measured on v4.56:** 3 of 11 opening steps on desktop and 5 on a phone had no lit action in view. Every time the story moved the lead, the copy said "go to the newly highlighted anchor" and offered no button.
+- **The next-step bar** is pinned above the command bar on the route screen and holds exactly one lit action derived from the state: ENTER the encounter at the lead, TRAVEL TO the lead when away (this plans the journey), TRAVEL when a journey is planned. It only routes to the ordinary actions (`nextStep()` in `app.js`), and a stale step does nothing. The side panel's own buttons stay, unlit. The opening is one step shorter.
+- **A new screen starts at its top.** Coming back to the map used to land mid-page. The phone encounter's scene takes a third of the screen, not half, so the choice arrives by the first scroll. The phone header is lighter.
+- **Money moves:** the cash card counts to the new value, pulses, and names the change (+€68 / −€45). It shows a still value under reduced motion. This is presentation only; the value shown at rest is always `state.cash`. The pill sits over the "€" label on a phone, so the label steps aside while it is up and the pill removes itself when it ends (the readability gate caught the overlap in CI, where the pill was still up when the ledger was measured).
+- **Plain words:** "Travel to Siltasaari"; "PUBLIC ANCHOR" is gone from the panel.
+- New gate `web/test/next-step.cjs` (57 checks, in CI) at phone, landscape phone and desktop:
+  - exactly one lit action in view at every route step, and it is the next step;
+  - planning through the bar changes nothing;
+  - arriving is free (D002);
+  - €183 and "+€68" at the sale.
+- Cache: `app.js?v=20`, `lantern.css?v=2`.
+
+### Port
+
+Godot: a presentation handoff. Its rail should end with one lit action derived the same way: ENTER at the lead, TRAVEL TO the lead when away, TRAVEL when a journey is planned. Plus a cash change readout. No rule changes.
+
 ## v4.56 — 2026-09-26
 
 **Lantern Noir: the city interface, lit.** The owner asked for a leap in art and readability. The direction is the owner's own shortlist of the C.16 stylized studies, 03 Lantern Noir first and 06 Ink After Dark second (`design/concepts/c16-stylized`), applied to the city interface: a dark, quiet ground, warm light only where the eye should go, one cool accent for what is yours, and large plain type. See `design/UI_LANTERN_NOIR.md`.

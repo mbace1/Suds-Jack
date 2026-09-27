@@ -1,10 +1,10 @@
 {
   "source": "mbace1/piritori-eden",
-  "commit": "40d3040cfa04034e192193ff4879db4735e9d294",
-  "version": "4.56",
+  "commit": "3dba9f6",
+  "version": "4.59",
   "files": {
-    "VERSIONS.md": "388492947a708308082a45615107d822e9662c92635c7b2915c50f1f14c1d8b6",
-    "act1.html": "ed43cb77e74ef4cca933dc8a6d67eac3fa6bd617a357bf1786db5a4cffe31e2d",
+    "VERSIONS.md": "8f360a86bc95244dec853e1593e6ff19ba819340c7ae5fa95d80cb051e06bb6e",
+    "act1.html": "e25b4d5c36a4ab7ba6fd9a16b8c846982157e03540adfe839cce80e405657ec3",
     "art/v3/QA.md": "57d3b33e4bb0a62e3f0e8a086945413b7e70a670e9f789507f42bdf738d730c6",
     "art/v3/README.md": "edd09d94e23a57a59c181037fa3e56bca8dfb541e322ff2ff2bc890ca9ee649e",
     "art/v3/animation/grass/calm-frame00.webp": "3cb7bd32135752dd35928cdfd6b9cbaa1f507b5d789611707264bc35faa27590",
@@ -166,9 +166,10 @@
     "art/v3/weather/ground/wet-sheen-v01.svg": "7f186de2feff129bb8316d162e5e6c0e08d6c62cd21aeeb1634f6fd8b85837d7",
     "art/v3/weather/mid/rain-fine-v01.svg": "d520568c636d41094054a14d4b39186bdce22973fb2d6a223695e39b6a149a92",
     "content/era1-slice-v1.json": "a1d94ef8c6561be062ec96b53559a6fa633b3e4e1a2f159d944f59206a3fbdee",
+    "content/road-events-v1.json": "87a37500f6af35f175265a11839175372a25a3b2a00c6d2405d5747ddafb5fd4",
     "data/map-geometry-web-v1.json": "7d4a8c76075c257d4c4a1765710f667c435f8b6a90f34ae49c3c9328b9254374",
     "fighter-test.css": "0b5728616ed2b42c95719b8eca5f63dc5c5c69cfaa9519b79e9d15bcfdf558ce",
-    "fighter-test.html": "1fbb552033680fa3364b10381cb24e095c7f723c45fa874baf4334ec3fc3bf66",
+    "fighter-test.html": "73d35ed5c1ad1225c8a93bb7796082a0e72ff776ec33a5c52248f6ccff5c4e39",
     "fonts/OFL-Barlow.txt": "4877e0c1b66f0b16cc3ebc4801c4def24c06252f618b9229428b20c7387aa0c0",
     "fonts/OFL-BarlowCondensed.txt": "046ee27d8bddc6b6ee08eee53c96dbf3ec1f6df561644e018507dd8ffcb11d31",
     "fonts/OFL-IBMPlexMono.txt": "23b0a9d0c6d3f140a0b77e483c5cfa6bba574325ef5cb189ed9f2fec4884533f",
@@ -188,8 +189,8 @@
     "fonts/ibm-plex-mono-latin-500-normal.woff2": "01d285447409c8a588692162439a038b8cbd7871309ee20267b0d2d91c6e8e22",
     "fonts/ibm-plex-mono-latin-ext-400-normal.woff2": "6bc0f226a5b7884a8170e3f62c63d7675609d4631bdc5931b5cdab81821f00eb",
     "fonts/ibm-plex-mono-latin-ext-500-normal.woff2": "6bb06407c97584b0867a959e05e8874693bfeb8c317de190811c51598f2d99ea",
-    "index.html": "9f511515e9372bb481581c640d7c50f8fa5ddf0cb5727352cd2f9d6b242d5dd3",
-    "js/v3/app.js": "228099bafc9cfd10b8dbab0eaf1e0ce633602e946c3c19e37c6bbae3214c7d67",
+    "index.html": "8b6d5ec4495ed91e80c3c7d27a2af7efe678c09f960bc1382fe667008d070a34",
+    "js/v3/app.js": "82a93152b98df614bc8738b5d13dc105ef229201b177402147c88723971092e9",
     "js/v3/battle.js": "4f9789d7702091cc183091da8d0a06301e25c3077b8b302e991ec6ed35be6035",
     "js/v3/board.js": "05de1af9da1b3e95c68f27c397f9748a668f685e9fd14e60eea34cfe314b495c",
     "js/v3/chapter-narrative.js": "a740db2a2584dc3f4747e7e82fdc154165434e6258d56f10ad143516142420fc",
@@ -202,15 +203,17 @@
     "js/v3/journey.js": "017573749697c40f9bed6e41356426e905714e7c4c1dc7c6bdbec2cafd2b0015",
     "js/v3/map-relief.js": "1cd45979a1e58d4511ad4035cce4c2c81fc23d4e8e186df5e27fb3efded5a91c",
     "js/v3/nameplates.js": "6070d838305ce773e73cc5a7e14d5bd100724c7d6215f3bd39240c377ba60419",
-    "js/v3/pause.js": "f599dc1da1b446330be6638c44dfa61b39101ee465319893cacce3f36f72dc5b",
+    "js/v3/pause.js": "cfe7f8459336f148d06df7702d541d290d7b109b807a7c9740720fa563613980",
     "js/v3/render3d.js": "014590b58b7eb15781782b1664ead0d568e857fa491737db00ba0a6fad5126cd",
+    "js/v3/road.js": "ae83b450d6c7411605f7690f7c1f270470cca4d87de0e9b4c09da0afdd89b271",
     "js/v3/scene-speaker.js": "3549d3d62f2bd4a226ac550deb9a0e22d3d330f83b8afe0375b4ee9637d5c15f",
+    "js/v3/sound.js": "8353aa0840b609604e99a31501e8064b514f9b64afd476956528ae4e32ab9fc3",
     "js/v3/stage-camera.js": "0689426c3501ef47c725f700b3068149e8c08e9b3467ceb65e4b96d8adbb7397",
     "js/v3/stance.js": "5e215ecc68d1eaeb47ac72acb79b365ccde4bbccdbc641919d1a325023dfd07d",
     "js/v3/state.js": "2e6b5e4fa13574f8b222cc70402d6d6626c0bcfd38d5608d60ee1d7b1144e587",
     "js/v3/testlist.js": "470da2672ff5cf431962deccc197992e4209b4496e8af98311fc537f3a5601db",
     "js/v3/visits.js": "7abb5d7c2aa1bbbc361a01818364596fbc9dd2ae523be2a1b1f3697c4bf6301e",
-    "lantern.css": "cd4f59bf36af993e7dac34b345bd2b8051072f9523f00510a0c16bf5bd346c1e",
+    "lantern.css": "529ca6cb2877e20473fe5cfadd34d419771c4c2f97c689aa754ede1c2a13a2a5",
     "map/kallio-era1-2003-v1.json": "e610ee91286fb3bfc45dbbbf36fc58f12ef4bc18eadff992b1c9f949ab8933f1",
     "map/kallio-transit-layer-v1.json": "7534911b692bcdc2f8fae71dcfab2762c6a7e79189436070b44b33dfcc97e9ef",
     "market/model.mjs": "6d367dbefb38a8a5667ba0d57d557b2722b9ff6aaa198aabcebc0a2b274ba563",
@@ -221,12 +224,5 @@
     "vendor/jsm/loaders/GLTFLoader.js": "1050864a94eeac64651c3b11b6e41e3a610bdef172f360a9d5a73c4494798756",
     "vendor/jsm/utils/BufferGeometryUtils.js": "c25b7930e570e9ec56173cd3b866ec8d2e10016630db3937efb439daf1cedbf6",
     "vendor/three.module.min.js": "54a7a52ddce0ad06fbd1d021fd03b1e1812d946114a2111e1260bcd490c6b840"
-  },
-  "siteEdits": {
-    "files": [
-      "fighter-test.html",
-      "index.html"
-    ],
-    "why": "site-owned tokens: ../hub/shell.js?v= (74 -> 75 with games.js) and fighter-test.html?v= (kept at the site's 451, then 452 with the shell); no other byte differs from the source commit"
   }
 }
