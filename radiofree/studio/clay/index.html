@@ -22,13 +22,18 @@
   // Rendering is software-slow in a sandbox, so this page draws on demand
   // rather than playing.
   import { makeClayFilm } from './cut.js';
+  import { makeVoicedFilm } from './voiced.js';
   import { loadFont } from './clay.js';
   import { renderAudio, wav } from '../film.js';
   const q = new URLSearchParams(location.search);
   await Promise.all(['Anton', 'Archivo Black', 'Space Grotesk'].map(f => document.fonts.load(`80px "${f}"`)));
   await loadFont('Anton', '../../lab/fonts/Anton.ttf');
-  const ep = await import(`../episodes/${q.get('ep') || 'bargain-bin-clay'}.js`);
-  const film = makeClayFilm(ep);
+  const id = q.get('ep') || 'bargain-bin-clay';
+  const mod = await import(`../episodes/${id}.js`);
+  // a voiced episode loads its lines first: their lengths ARE the timing
+  const ep = mod.load ? await mod.load() : mod;
+  const film = mod.load ? makeVoicedFilm(ep) : makeClayFilm(ep);
+  const audioEp = mod.load ? { shots: film.plan.shots } : ep;
   document.body.append(film.canvas);
   const scrub = document.getElementById('scrub'), clock = document.getElementById('clock');
   const show = (t) => { film.frame(t); clock.textContent = t.toFixed(2) + ' s'; };
@@ -36,7 +41,8 @@
   window.__studio = {
     tl: film.tl, canvas: film.canvas, exposures: 12,
     frame: (t) => film.frame(t),
-    audio: async () => { const w = wav(await renderAudio(ep)); let s = ''; for (let i = 0; i < w.length; i += 32768) s += String.fromCharCode(...w.subarray(i, i + 32768)); return btoa(s); },
+    voice: mod.load ? film.plan.speech.map((l) => ({ id: l.id, t0: l.t0, file: `radiofree/studio/voice/${id}/${l.id}.wav` })) : null,
+    audio: async () => { const w = wav(await renderAudio(audioEp)); let s = ''; for (let i = 0; i < w.length; i += 32768) s += String.fromCharCode(...w.subarray(i, i + 32768)); return btoa(s); },
   };
   if (!q.has('headless')) show(0);
 </script>

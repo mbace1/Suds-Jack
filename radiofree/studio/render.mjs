@@ -72,6 +72,18 @@ if (SHEET) {
     if (i % (CLAY ? 24 : 150) === 0) console.log(`  frame ${i}/${n}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   }
   fs.writeFileSync(path.join(dir, 'mix.wav'), Buffer.from(await page.evaluate(() => __studio.audio()), 'base64'));
+  // a voiced episode: every line laid at its time, the bed DUCKED under the
+  // voices (sidechain), then both summed — the page cannot hear the WAVs,
+  // ffmpeg can
+  const voice = await page.evaluate(() => __studio.voice);
+  if (voice && voice.length) {
+    const ins = voice.flatMap((v) => ['-i', path.join(ROOT, v.file)]);
+    const lay = voice.map((v, i) => `[${i + 1}:a]aresample=48000,adelay=${Math.round(v.t0 * 1000)}:all=1,volume=1.35[v${i}]`).join(';');
+    const graph = `${lay};${voice.map((_, i) => `[v${i}]`).join('')}amix=inputs=${voice.length}:normalize=0[vo];[vo]asplit=2[vk][vm];` +
+      `[0:a]aresample=48000[bed];[bed][vk]sidechaincompress=threshold=0.02:ratio=8:attack=15:release=350[duck];[duck][vm]amix=inputs=2:normalize=0[out]`;
+    execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', path.join(dir, 'mix.wav'), ...ins, '-filter_complex', graph, '-map', '[out]', '-ac', '2', path.join(dir, 'mixv.wav')]);
+    fs.renameSync(path.join(dir, 'mixv.wav'), path.join(dir, 'mix.wav'));
+  }
   const outFile = path.join(OUT, `${EP}.mp4`);
   execFileSync('ffmpeg', ['-v', 'error', '-y', '-framerate', String(RATE), '-i', path.join(dir, '%05d.jpg'),
     '-i', path.join(dir, 'mix.wav'), '-map', '0:v', '-map', '1:a',

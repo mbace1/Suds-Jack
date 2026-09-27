@@ -205,6 +205,14 @@ export async function renderAudio(ep) {
     },
     chain: (t) => { for (let i = 0; i < 14; i++) { osc('sine', 1800 + (i % 3) * 500, t + i * 0.11, 0.1, 0.12, sfx); hiss(t + i * 0.11, 0.03, 0.12, sfx, { type: 'highpass', f: 4000 }); } },
     click: (t) => { hiss(t, 0.03, 0.9, sfx, { type: 'highpass', f: 2500 }); osc('sine', 2100, t, 0.08, 0.4, sfx); const o = osc('sine', 110, t, 0.2, 0.7, sfx); o.frequency.exponentialRampToValueAtTime(50, t + 0.18); },
+    // the street, for the voiced clay cut
+    bell: (t) => { for (const d of [0, 0.32]) { osc('sine', 1975, t + d, 0.9, 0.3, sfx); osc('sine', 2637, t + d, 0.6, 0.16, sfx); osc('triangle', 988, t + d, 0.5, 0.1, sfx); } },
+    step: (t) => { hiss(t, 0.06, 0.28, sfx, { type: 'lowpass', f: 700 }); const o = osc('sine', 90, t, 0.07, 0.35, sfx); o.frequency.exponentialRampToValueAtTime(55, t + 0.06); },
+    bark: (t) => { for (const d of [0, 0.22]) { const o = osc('sawtooth', 520, t + d, 0.12, 0.28, sfx); o.frequency.exponentialRampToValueAtTime(260, t + d + 0.11); hiss(t + d, 0.1, 0.25, sfx, { f: 1200, q: 2 }); } },
+    coo: (t) => { for (const d of [0, 0.35]) { const o = osc('sine', 330, t + d, 0.32, 0.22, sfx); o.frequency.setValueAtTime(330, t + d); o.frequency.linearRampToValueAtTime(270, t + d + 0.3); } },
+    bonk: (t) => { const o = osc('sine', 240, t, 0.5, 0.9, sfx); o.frequency.exponentialRampToValueAtTime(90, t + 0.4); osc('triangle', 1400, t, 0.35, 0.18, sfx); hiss(t, 0.08, 0.5, sfx, { type: 'lowpass', f: 1500 }); },
+    beep: (t) => { osc('sine', 1760, t, 0.07, 0.18, sfx); osc('sine', 2349, t + 0.09, 0.1, 0.18, sfx); },
+    register: (t) => { hiss(t, 0.12, 0.35, sfx, { f: 3000, q: 2 }); osc('sine', 2093, t + 0.12, 1.0, 0.3, sfx); osc('sine', 2637, t + 0.12, 1.0, 0.2, sfx); },
     sting: (t) => {
       [60, 64, 67, 71, 72].forEach((m, i) => { osc('sine', hz(m), t + i * 0.06, 2.4, 0.18, sfx); osc('triangle', hz(m + 12), t + i * 0.06, 0.8, 0.06, sfx); });
       osc('sine', hz(36), t, 1.8, 0.5, sfx);

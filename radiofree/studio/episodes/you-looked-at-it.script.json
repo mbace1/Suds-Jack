@@ -1,0 +1,32 @@
+{
+  "id": "you-looked-at-it",
+  "title": "You Looked At It",
+  "desk": "TECH DESK · 27.09.2026",
+  "event": "Meta Connect 2026: its Muse agent comes to its AI glasses, woken by saying the agent's name and able to act on what the wearer is looking at (tracking nutrition, finding products, booking appointments, checking flight prices, locating items); more than 100 glasses styles by year end; hardware from $249; agent plans free, $20 and $100 a month. Company and agent renamed per EDITORIAL.md.",
+  "sources": [
+    "https://about.fb.com/news/2026/09/the-biggest-news-from-connect-2026/",
+    "https://www.digitaltrends.com/wearables/metas-muse-ai-agent-is-coming-to-its-smart-glasses-and-it-can-see-and-act-for-you/",
+    "https://www.socialmediatoday.com/news/meta-outlines-muse-ai-glasses-and-vr-device-updates-at-connect-2026/831223/"
+  ],
+  "voices": {
+    "HOST":   { "voice": "bm_george", "lang": "en-gb", "speed": 1.0 },
+    "MAN":    { "voice": "am_puck",   "lang": "en-us", "speed": 1.05 },
+    "GLANCE": { "voice": "af_nova",   "lang": "en-us", "speed": 1.08, "fx": "device" }
+  },
+  "lines": [
+    { "id": "open",   "who": "HOST",   "text": "Good evening. This is Radio Free Helsinki, and this is the tech desk." },
+    { "id": "news1",  "who": "HOST",   "text": "Periscope Platforms has new glasses with an assistant you wake by saying its name." },
+    { "id": "news2",  "who": "HOST",   "text": "And it acts on whatever you are looking at." },
+    { "id": "hey",    "who": "MAN",    "text": "Hey, Glance." },
+    { "id": "hello",  "who": "GLANCE", "text": "Hello. I see what you see." },
+    { "id": "cake",   "who": "GLANCE", "text": "Cake detected. Ordered." },
+    { "id": "dog",    "who": "GLANCE", "text": "Dog detected. Vet booked, Tuesday." },
+    { "id": "bird",   "who": "GLANCE", "text": "Bird detected. Checking flight prices." },
+    { "id": "styles", "who": "HOST",   "text": "There will be more than one hundred styles by the end of the year." },
+    { "id": "price1", "who": "HOST",   "text": "The glasses start at two hundred and forty-nine dollars." },
+    { "id": "price2", "who": "HOST",   "text": "The assistant is free. Or twenty dollars a month. Or one hundred." },
+    { "id": "stop",   "who": "MAN",    "text": "Glance, stop. I'm closing my eyes." },
+    { "id": "lamp",   "who": "GLANCE", "text": "Lamppost detected. Booking a doctor." },
+    { "id": "close",  "who": "HOST",   "text": "Looking, it turns out, is the new clicking. Good night." }
+  ]
+}
