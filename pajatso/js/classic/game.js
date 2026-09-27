@@ -15,9 +15,9 @@
 // Money is in markka. 1:50 pays one and a half, so a purse can hold 50 p;
 // a pull takes a whole markka.
 
-import { Board, BOARD } from '../board.js?v=3';
-import { makeRng } from '../rng.js?v=3';
-import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS } from './layout.js?v=3';
+import { Board, BOARD } from '../board.js?v=4';
+import { makeRng } from '../rng.js?v=4';
+import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS } from './layout.js?v=4';
 
 export const START_COINS = 30;
 // The face is stepped faster than the pachinko board: BOARD.G is slowed so a
@@ -35,6 +35,8 @@ export class Pajatso {
     this.board = new Board(this.L, this.rng);
     this.coins = coins;
     this.pot = [...pot];
+    this.pottiBase = PAYS[JACKPOT];
+    this.pottiCols = POTTI_COLS;
     this.phase = coins >= 1 ? 'idle' : 'broke';
     this.acc = 0;
     this.events = [];
@@ -43,18 +45,22 @@ export class Pajatso {
   }
 
   get inFlight() { return this.board.coins.length > 0; }
-  get canPull() { return this.phase === 'idle' && !this.inFlight && this.coins >= 1; }
+  // What a pull is paid with. The base machine takes a markka out of your
+  // purse; KUOPPA overrides these two to spend the round's coins instead.
+  get canSpend() { return this.coins >= 1; }
+  spend() { this.coins -= 1; }
+  get canPull() { return this.phase === 'idle' && !this.inFlight && this.canSpend; }
   // what the POTTI would pay right now: its 7:00 and the three middle columns
-  get pottiNow() { return PAYS[JACKPOT] + POTTI_COLS.reduce((a, k) => a + this.pot[k], 0); }
+  get pottiNow() { return this.pottiBase + this.pottiCols.reduce((a, k) => a + this.pot[k], 0); }
 
   // The lever, let go at `power` 0..1. Returns whether a coin went in.
   pull(power) {
     if (!this.canPull) return false;
     const p = Math.max(0, Math.min(1, power));
-    this.coins -= 1;
+    this.spend();
     this.stats.shots++;
     this.lastPower = p;
-    this.board.launch(p, { scale: FACE.SCALE, vMin: FACE.V_MIN, vMax: FACE.V_MAX, lane: FACE.LANE, y: 7.2 });
+    this.board.launch(p, { scale: FACE.SCALE, vMin: FACE.V_MIN, vMax: FACE.V_MAX, lane: FACE.LANE, y: 7.2, wobble: 4.5 });
     this.phase = 'flight';
     this.events.push({ t: 'insert', coins: this.coins });
     return true;
@@ -81,12 +87,8 @@ export class Pajatso {
     switch (ev.t) {
       case 'pocket': {
         const p = this.L.byId[ev.pocket];
-        if (p.pot != null) { this.intoPot(p.pot, ev.coin?.x ?? p.x); break; }
-        let pay = PAYS[p.pay] ?? 0, column = 0;
-        if (p.pay === JACKPOT) for (const k of POTTI_COLS) { column += this.pot[k]; this.pot[k] = 0; }
-        pay += column;
-        this.credit(pay, p.pay, p.id);
-        this.events.push({ t: 'win', pay, column, cup: p.id, kind: p.pay, x: p.x, y: p.y });
+        if (p.pot != null) this.intoPot(p.pot, ev.coin?.x ?? p.x);
+        else this.window(p, ev);
         break;
       }
       case 'exit': {
@@ -106,7 +108,20 @@ export class Pajatso {
       case 'launch': this.events.push({ t: 'launch', power: ev.power }); break;
       case 'tick': this.events.push(ev); break;
       case 'rattle': this.events.push({ t: 'rattle', x: ev.x, y: ev.y }); break;
+      case 'tulip': this.events.push({ t: 'tulip', cup: ev.pocket, open: ev.open }); break;
     }
+  }
+
+  // a coin in a window: its printed number, and the POTTI's columns
+  window(p) {
+    let pay = PAYS[p.pay] ?? 0, column = 0;
+    if (p.pay === JACKPOT) {
+      pay = this.pottiBase;
+      for (const k of this.pottiCols) { column += this.pot[k]; this.pot[k] = 0; }
+    }
+    pay += column;
+    this.credit(pay, p.pay, p.id);
+    this.events.push({ t: 'win', pay, column, cup: p.id, kind: p.pay, x: p.x, y: p.y });
   }
 
   // a coin that missed every window joins the pile behind the glass. A full
@@ -129,7 +144,7 @@ export class Pajatso {
   }
 
   settle() {
-    this.phase = this.coins >= 1 ? 'idle' : 'broke';
+    this.phase = this.canSpend ? 'idle' : 'broke';
     this.events.push({ t: this.phase === 'broke' ? 'broke' : 'ready', coins: this.coins });
   }
 

@@ -339,9 +339,30 @@ pajatso/test/classic.cjs` (32) and `.../smoke.cjs` (44, KUOPPA). Hub: id
 `pajatso`, marquee `pajatso` (the teak case on the orange wall, the window row
 with its red 7:00, the pot's hump, a coin on the rail, bottles and crank
 cropped by the edges), accent `#ffd23f`, best score `pajatso.best` (most markka
-held at once). **The roguelike is KUOPPA**
-(`pit.html`), v1's pit run, one link from the title until it is rebuilt on the
-Pajatso face; what follows is its record, still true of that mode.
+held at once). **KUOPPA v4 is the roguelike ON the Pajatso face** (`kuoppa.html`,
+`js/kuoppa/`; owner: *"Go ahead"* on the roadmap): the house hands you 20
+coins a round (+5 a lock), the machine pays into your purse, a debt is due
+every third round, a vendor sells charms between rounds, and each debt paid
+**bolts the next pachinko part onto the face, in the owner's order** —
+START chucker + reels (an LCD in a box bolted on top of the case), tulips (the
+1:00 windows), FEVER (a jackpot opens the attacker under the right half of the
+window row: shoot right), windmills, chain (sevens ×3 after a jackpot, and a
+progressive POTTI +2 a round), ×3 multipliers (the R windows). `Kuoppa` IS the
+base machine — a subclass of `Pajatso` paying pulls from the round's coins
+(`canSpend`/`spend`, `window()`, `intoPot()` are the hooks) — and
+`buildPajatso(mods)` with no mods is exactly the base face. **Both pages stand
+at one table** (`js/classic/table.js`: lever, keys, pad, toasts, tips, the
+corner, the language switch, pause, the loop). Tuned with bots (`node
+pajatso/test/run.mjs runs|face`, `test/runbot.mjs`): no charms dies at lock
+5–6, prudent shopping wins ~19%, shooting right in FEVER ~23%. Two lessons:
+**a run is the best instrument a machine has** — the bot found a 3.5-a-coin
+POTTI hot spot in the BASE face that v3's sweep had called variance (the
+spring's wobble is ±4.5 now) — and **a part has to be somewhere the coins
+actually go** (FEVER first paid the right-hand pot columns, which the V plate
+starves). Gates: `core.mjs` 139, `classic.cjs` 32, `kuoppa.cjs` 28,
+`smoke.cjs` 44 (the old pit, still a small link away as `pit.html`).
+**The old pit run (v1's KUOPPA)** (`pit.html`) is kept a small link from the
+new title; what follows is its record, still true of that mode.
 
 **Owner's brief, 2026-09-26:** *"a game that's mixed Clover Pit, Raccoin and
 Pachinko.. roguelike elements and 3D room like the Pit."* Read
@@ -2830,8 +2851,11 @@ pajatso/        # PAJATSO — the coin wall game (index.html) + KUOPPA, the pit 
   VERSIONS.md   # what shipped and every trap the physics paid for
   vendor/       # three.js r167, local — not the CDN
   js/
-    classic/    # THE MACHINE: layout.js (windows, pot, V), game.js (rules + the pot, pure),
-                #   view.js (machine, bar, close camera), art.js (paint), lang.js (fi/en/ja), main.js
+    classic/    # THE MACHINE: layout.js (windows, pot, V, and the parts as mods), game.js (rules,
+                #   pure), view.js (machine, bar, camera, topper), art.js, lang.js, table.js (the
+                #   lever/keys/pad/HUD/loop both pages share), main.js
+    kuoppa/     # THE ROGUELIKE on that face: run.js (pure: rounds, debts, parts, reels, vendor),
+                #   data.js, words.js (fi/en/ja), lcd.js (the reels on top of the case), main.js
     rng.js      # mulberry32, the whole state one integer
     board.js    # THE SHOT: pachinko physics — nails, rails, valve, pockets, windmills (pure)
     pusher.js   # THE PAYOUT: quasi-static coin pusher — shelf, bed, stacking, lip, gutters (pure)

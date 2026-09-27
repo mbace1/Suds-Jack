@@ -40,38 +40,41 @@ Open, in the owner's hands next:
 - **Does 30 mk last?** The machine pays back ~0.97 a markka with the pot left
   to run; `node pajatso/test/face.mjs` is where to look before moving a number.
 
-## 2. The roguelike mode — on the Pajatso face (next)
+## 2. The roguelike mode — KUOPPA on the Pajatso face, v4 SHIPPED
 
-Today the roguelike is KUOPPA (`pit.html`), the v1 pit run on a pachinko board
-over a coin pusher. It stays one link away from the title until the new mode
-replaces it. The plan is to rebuild the run ON the Pajatso face, so both modes
-are the same machine:
+`kuoppa.html` (`js/kuoppa/`): the house hands you coins a round, the machine
+pays into your purse, a debt is due every third round, the vendor sells
+charms between rounds, eight locks on the door. `VERSIONS.md` v4 has the
+numbers and what it took; `node pajatso/test/run.mjs` is the instrument
+(bots over whole runs, and the lever swept on every stage of the face).
 
-- **The run.** A handful of coins and a DEBT due every few sessions (CloverPit's
-  shape, which KUOPPA already has: the ATM, the deadline, the trapdoor, eight
-  padlocks). Between sessions the face can be changed.
-- **Changing the face is the deckbuilding.** Charms become physical changes to
-  the machine you can SEE: a nail moved, a cup widened, a cup's number
-  repainted, a kicker added, a chimney lowered. `buildPajatso(mods)` already
-  takes mods for exactly this (the pachinko board worked the same way).
-- **KUOPPA's systems port across** where they fit (the vendor, the phone deals,
-  the bandit); the pusher does not — the Pajatso pays straight into the tray.
+Open, in the owner's hands next:
+- **Is the curve right?** Bots win 19–23%; a person reads the machine and
+  should do better. The debts are one line in `js/kuoppa/data.js`.
+- **The charms are twelve plain ones.** CloverPit's pull is the charm that
+  changes what a run IS; the first twelve bend numbers. The next pass is
+  charms that combine (a tulip that stamps coins, a POTTI that opens FEVER
+  longer…), measured the same way.
+- **KUOPPA's v1 systems not yet ported**: the phone's deals, the raccoon
+  bandit, the ATM's interest (a charm has it for now).
 
-## 3. The pachinko parts — the roguelike ONLY, in this order
+## 3. The pachinko parts — the roguelike ONLY, in this order — all six IN (v4)
 
-Answer 7 fixed both the order and the place: each part arrives in the
-roguelike mode, one at a time, and the base machine never gets them.
+Each is bolted on by a debt paid, in the owner's order, and the base machine
+never gets them:
 
-1. **Start chucker + reels**: a window that spins a three-reel picture; a line
-   pays, a REACH is a near-miss you watch (`js/reels.js` already draws the
-   outcome and builds the picture that shows it).
-2. **Tulips**: windows that open when hit and shut on the next coin.
-3. **FEVER / the attacker**: a gate that opens after a jackpot and swallows
-   right-side shots for a while.
-4. **Windmills** (in `js/board.js` already).
-5. **Chain jackpots** (kakuhen): a jackpot that makes the next one likelier —
-   and where answer 5's *maybe C*, a progressive POTTI, belongs.
-6. **Ball multipliers**: a window that pays in coins that then have to be played.
+1. **Start chucker + reels** ✔ — a START pocket in the nails; the reels on an
+   LCD in a box bolted on top of the case.
+2. **Tulips** ✔ — the two 1:00 windows.
+3. **FEVER** ✔ — a jackpot opens the attacker under the right half of the
+   window row: shoot right.
+4. **Windmills** ✔ — two, beside the chucker.
+5. **Chain jackpots** ✔ — sevens ×3 for a while after a jackpot, and the
+   **progressive POTTI** (+2 mk a round) — answer 5's *maybe C*.
+6. **Ball multipliers** ✔ — the R windows become ×3.
+
+Next for the parts is depth, not count: a REACH with more theatre, a stage,
+the warp (`js/board.js` has both from v1), tulips that open each other.
 
 ## Still true from the v1 list
 

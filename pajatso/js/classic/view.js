@@ -11,8 +11,8 @@
 // crank on the right side, two brown bottles on top, an orange wall.
 
 import * as THREE from 'three';
-import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=3';
-import { FACE, JACKPOT } from './layout.js?v=3';
+import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=4';
+import { FACE, JACKPOT } from './layout.js?v=4';
 
 const COIN_Z = 1.0;           // the coin rolls on the face this far out of it
 const PIN_LEN = 2.0;
@@ -95,46 +95,15 @@ export class View {
     const glass = new THREE.MeshPhongMaterial({ color: 0x6b2a0a, shininess: 140, specular: 0xffc080, transparent: true, opacity: 0.88 });
     const pts = [[0, 0], [3.1, 0], [3.2, 0.4], [3.2, 9], [2.8, 11], [1.2, 13], [1.0, 16.5], [1.2, 17], [0, 17]].map(([x, y]) => new THREE.Vector2(x, y));
     const bottleGeo = new THREE.LatheGeometry(pts, 18);
-    for (const [x, sc] of [[-10, 1], [2, 0.92]]) { const b = new THREE.Mesh(bottleGeo, glass); b.position.set(x, 88, 0); b.scale.setScalar(sc); s.add(b); }
+    this.bottles = [];
+    for (const [x, sc] of [[-10, 1], [2, 0.92]]) { const b = new THREE.Mesh(bottleGeo, glass); b.position.set(x, 88, 0); b.scale.setScalar(sc); s.add(b); this.bottles.push(b); }
+    this.woodAcross = woodAcross; this.dark = dark;
 
-    // the face
-    const fc = faceCanvas(L);
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(fc.width / PPU, fc.height / PPU),
-      new THREE.MeshLambertMaterial({ map: tex(fc) }));
-    face.position.set(X0 + fc.width / PPU / 2, Y1 - fc.height / PPU / 2, 0); s.add(face);
-    this.faceMat = face.material;
-
-    // rails, windows, dividers and deflectors stand out of the face
-    const deflector = new THREE.MeshPhongMaterial({ color: 0x2a0508, shininess: 40 });
-    const segGeo = new THREE.BoxGeometry(1, 1, 1);
-    const kinds = { rail: chrome, guide: chrome, window: chrome, divider: chrome, kicker: chrome, lanefloor: chrome, wall: chrome, deflector };
-    for (const g of L.segs) {
-      const m = kinds[g.kind]; if (!m) continue;
-      const len = Math.hypot(g.bx - g.ax, g.by - g.ay);
-      const b = new THREE.Mesh(segGeo, m);
-      b.scale.set(len + 0.25, g.kind === 'deflector' ? 0.5 : 0.3, PIN_LEN + 0.2);
-      b.position.set((g.ax + g.bx) / 2, (g.ay + g.by) / 2, (PIN_LEN + 0.2) / 2);
-      b.rotation.z = Math.atan2(g.by - g.ay, g.bx - g.ax);
-      s.add(b);
-    }
-    // the nails: one instanced mesh, chrome
-    const pinGeo = new THREE.CylinderGeometry(FACE.PIN_R, FACE.PIN_R, PIN_LEN, 10);
-    pinGeo.rotateX(Math.PI / 2); pinGeo.translate(0, 0, PIN_LEN / 2);
-    const pins = new THREE.InstancedMesh(pinGeo, chrome, Math.max(1, L.pins.length));
-    const m4 = new THREE.Matrix4();
-    L.pins.forEach((p, i) => { m4.makeTranslation(p.x, p.y, 0); pins.setMatrixAt(i, m4); });
-    s.add(pins);
-
-    // a lamp behind each window that lights when it pays
-    this.lights = {};
-    for (const p of L.pockets) {
-      if (p.window == null) continue;
-      const jack = p.pay === JACKPOT;
-      const glow = new THREE.Mesh(new THREE.PlaneGeometry(jack ? 7 : 5.4, jack ? 8 : 6.6),
-        new THREE.MeshBasicMaterial({ color: jack ? 0xffe060 : 0xfff0c0, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
-      glow.position.set(p.x, p.y - 2.4, 0.06); s.add(glow);
-      this.lights[p.id] = glow.material;
-    }
+    this.tex = tex;
+    this.mats = { chrome, deflector: new THREE.MeshPhongMaterial({ color: 0x2a0508, shininess: 40 }),
+      petal: new THREE.MeshPhongMaterial({ color: 0xe0203a, shininess: 90, specular: 0xffc0c0 }),
+      mill: new THREE.MeshPhongMaterial({ color: 0xffd23f, shininess: 90, specular: 0xffffff }) };
+    this.buildFace(L);
 
     // the coin, and the coins of the pot
     const coinTex = tex(coinCanvas());
@@ -180,6 +149,94 @@ export class View {
     const fill = new THREE.DirectionalLight(0xbfd4ff, 0.35); fill.position.set(60, 20, 60); s.add(fill);
   }
 
+  // Everything that depends on the layout, in one group, so a part bolted on
+  // mid-run (KUOPPA) is a rebuild of the face and nothing else.
+  buildFace(L) {
+    if (this.faceGroup) {
+      this.scene.remove(this.faceGroup);
+      this.faceGroup.traverse(o => { if (o.geometry && o.geometry !== this.segGeo) o.geometry.dispose(); if (o.material?.map) { o.material.map.dispose(); o.material.dispose(); } });
+    }
+    const s = this.faceGroup = new THREE.Group();
+    this.scene.add(s);
+    const { chrome, deflector, petal, mill } = this.mats;
+    const fc = faceCanvas(L);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(fc.width / PPU, fc.height / PPU),
+      new THREE.MeshLambertMaterial({ map: this.tex(fc) }));
+    face.position.set(X0 + fc.width / PPU / 2, Y1 - fc.height / PPU / 2, 0); s.add(face);
+    this.faceMat = face.material;
+
+    // rails, windows, dividers and deflectors stand out of the face; a
+    // tulip's petals are drawn in both states and shown by the pocket's state
+    this.segGeo = this.segGeo ?? new THREE.BoxGeometry(1, 1, 1);
+    const kinds = { rail: chrome, guide: chrome, window: chrome, divider: chrome, kicker: chrome, lanefloor: chrome, wall: chrome, deflector, petal };
+    this.petals = [];
+    for (const g of L.segs) {
+      const m = kinds[g.kind]; if (!m) continue;
+      const len = Math.hypot(g.bx - g.ax, g.by - g.ay);
+      const b = new THREE.Mesh(this.segGeo, m);
+      b.scale.set(len + 0.25, g.kind === 'deflector' ? 0.5 : g.kind === 'petal' ? 0.55 : 0.3, PIN_LEN + 0.2);
+      b.position.set((g.ax + g.bx) / 2, (g.ay + g.by) / 2, (PIN_LEN + 0.2) / 2);
+      b.rotation.z = Math.atan2(g.by - g.ay, g.bx - g.ax);
+      s.add(b);
+      if (g.when) this.petals.push({ m: b, pocket: g.pocket, when: g.when });
+    }
+    // the nails: one instanced mesh, chrome
+    const pinGeo = new THREE.CylinderGeometry(FACE.PIN_R, FACE.PIN_R, PIN_LEN, 10);
+    pinGeo.rotateX(Math.PI / 2); pinGeo.translate(0, 0, PIN_LEN / 2);
+    const pins = new THREE.InstancedMesh(pinGeo, chrome, Math.max(1, L.pins.length));
+    const m4 = new THREE.Matrix4();
+    L.pins.forEach((p, i) => { m4.makeTranslation(p.x, p.y, 0); pins.setMatrixAt(i, m4); });
+    s.add(pins);
+    // windmills: a hub and four brass blades, turned by the physics
+    this.mills = [];
+    for (const w of L.windmills) {
+      const g = new THREE.Group(); g.position.set(w.x, w.y, 0.9);
+      for (let k = 0; k < 4; k++) {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(w.r * 2, 0.45, 1.2), mill);
+        b.rotation.z = k * Math.PI / 4; g.add(b);
+      }
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.6, 12), chrome); hub.rotation.x = Math.PI / 2; g.add(hub);
+      s.add(g); this.mills.push({ g, w });
+    }
+
+    // a lamp behind each window (and the chucker) that lights when it pays
+    this.lights = {};
+    for (const p of L.pockets) {
+      if (p.window == null && p.pay !== 'start') continue;
+      const jack = p.pay === JACKPOT;
+      const glow = new THREE.Mesh(new THREE.PlaneGeometry(jack ? 7 : 5.4, jack ? 8 : 6.6),
+        new THREE.MeshBasicMaterial({ color: jack ? 0xffe060 : p.pay === 'start' ? 0x80ffb0 : 0xfff0c0, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+      glow.position.set(p.x, p.y - 2.4, 0.06); s.add(glow);
+      this.lights[p.id] = glow.material;
+    }
+    // the attacker: FEVER's gate, a strip of light under the right half of the row
+    const att = L.byId.attacker;
+    this.gate = null;
+    if (att) {
+      const gm = new THREE.Mesh(new THREE.PlaneGeometry(att.w, 2.4),
+        new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+      gm.position.set(att.x, att.y - 1.1, 0.08); s.add(gm);
+      this.gate = { m: gm.material, p: att };
+    }
+  }
+
+  // KUOPPA's reels: an LCD in a box bolted on top of the case (the bottles
+  // move along the top to make room). `texture` is redrawn by its owner.
+  addTopper(texture) {
+    if (this.topper) return;
+    const g = this.topper = new THREE.Group();
+    const box = new THREE.Mesh(new THREE.BoxGeometry(40, 27, 9), this.woodAcross); box.position.set(1.5, 101, 1.5); g.add(box);
+    const bezel = new THREE.Mesh(new THREE.BoxGeometry(35, 23.5, 1), this.dark); bezel.position.set(1.5, 101, 6.1); g.add(bezel);
+    const scr = new THREE.Mesh(new THREE.PlaneGeometry(33, 22), new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
+    scr.position.set(1.5, 101, 6.7); g.add(scr);
+    this.scene.add(g);
+    this.bottles[0].position.x = -26; this.bottles[1].position.x = 28;
+    this.hasTopper = true;
+    this.fit(true);
+  }
+
+  setLayout(L) { this.L = L; this.buildFace(L); this.shown = null; }
+
   // The HUD tells the view what it covers; the view fits the machine into the rest.
   setInsets(top, bottom, right = 0, left = 0) {
     const i = this.insets;
@@ -215,7 +272,8 @@ export class View {
     // (the 1 mk plate and the crank run off the right edge: the face is the
     // game); on a wide screen, the case, the bottles and the crank.
     this.tall = this.W / this.H < 1.1;
-    const whole = this.tall ? this.solve(-32.5, 32, -6, 92) : this.solve(-38, 52, -12, 106);
+    const top = this.hasTopper ? 24 : 0;
+    const whole = this.tall ? this.solve(-32.5, 32, -6, 92 + top) : this.solve(-38, 52, -12, 106 + top);
     Object.assign(this.cam, { tx: whole.x, ty: whole.y, td: whole.d });
     this.whole = whole;
     if (snap) Object.assign(this.cam, { x: whole.x, y: whole.y, d: whole.d });
@@ -322,6 +380,9 @@ export class View {
       if (q.t <= 0) { this.scene.remove(q.m); this.caught.splice(i, 1); }
     }
 
+    for (const p of this.petals) p.m.visible = (p.when === 'open') === !!game.L.byId[p.pocket]?.open;
+    for (const { g, w } of this.mills) g.rotation.z = w.a;
+    if (this.gate) this.gate.m.opacity = this.gate.p.open ? 0.18 + 0.2 * Math.abs(Math.sin(time * 8)) : 0;
     for (const [id, m] of Object.entries(this.lights)) {
       const f = this.flash[id] ?? 0;
       m.opacity = f > 0 ? 0.3 + 0.35 * Math.abs(Math.sin(time * 14)) * Math.min(1, f) : 0;

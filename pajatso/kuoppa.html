@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Pajatso</title>
+  <title>Pajatso — Kuoppa</title>
   <meta name="theme-color" content="#2a1208">
   <style>
     :root {
@@ -35,10 +35,27 @@
     .stat b { display: block; font: 900 28px/1 var(--black); color: var(--cream); letter-spacing: .02em; }
     #coins b { color: var(--gold); font-size: 34px; }
     #pot b { color: #ff6a5a; }
+    #drops b { color: #bff5cf; }
+    #debt b { color: #ff9a8a; }
+    body.tall .stat b { font-size: 24px; }
+    .small { display: block; margin: 4px auto 0; min-height: 44px; line-height: 44px; color: var(--dim); font-size: 14px; text-decoration: underline; }
+    .cards { display: grid; gap: 10px; margin: 14px 0; text-align: left; }
+    .card { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 12px 14px; border-radius: 10px;
+      background: rgba(20, 10, 6, .8); border: 1px solid var(--line); }
+    .card h3 { font: 900 17px var(--black); color: var(--gold); letter-spacing: .02em; }
+    .card p { grid-column: 1; font-size: 14px; line-height: 1.35; margin: 0; color: var(--cream); }
+    .card button { grid-row: 1 / span 2; grid-column: 2; min-height: 48px; min-width: 96px; padding: 0 12px; border-radius: 8px;
+      background: linear-gradient(#e0202e, #8f0f1c); font: 900 14px var(--black); color: #fff4e0; }
+    .card button:disabled { background: #3a2a1a; color: var(--dim); cursor: default; }
+    .owned { font-size: 13px; color: var(--dim); margin: 6px 0; }
+    .owned b { color: var(--cream); font-weight: 700; }
+    .part { padding: 14px; border-radius: 10px; border: 2px solid var(--gold); background: rgba(40, 24, 6, .85); margin: 12px 0; text-align: left; }
+    .part h3 { font: 900 22px var(--black); color: var(--gold); margin-bottom: 6px; }
+    .pop.fever { color: #ffd23f; } .pop.bonus { color: #bff5cf; }
     body.tall .stat b { font-size: 24px; }
     body.tall #coins b { font-size: 30px; }
     /* a phone has room for the purse beside the arcade's corner and nothing else */
-    @media (max-width: 440px) { body.tall #best { display: none; } }
+
     #best { margin-left: auto; text-align: right; margin-right: 104px; }
     .langs { display: flex; justify-content: center; gap: 8px; margin: 0 0 14px; }
     .langs button { min-width: 52px; min-height: 44px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0,0,0,.35); font: 900 15px var(--black); letter-spacing: .06em; color: var(--dim); }
@@ -108,7 +125,7 @@
 
   <div id="top">
     <div class="stat" id="coins"><span data-i="money">Markka</span><b>30</b></div>
-    <div class="stat" id="best"><span data-i="best">Best</span><b>30</b></div>
+    <div class="stat" id="drops"><span data-i="left">Coins</span><b>20</b></div>
   </div>
   <div id="sys">
     <button class="sys" id="mute" data-il="muteLabel" aria-label="Sound on or off">♪</button>
@@ -116,9 +133,11 @@
   </div>
   <div id="panel">
     <div id="info">
+      <span id="debt"><span id="debtLbl">Debt 1/8</span> <b>30</b></span>
+      <span id="round"><span data-i="roundWord">Round</span> <b>1/3</b></span>
       <span id="pot"><span data-i="potti">POTTI now</span> <b>41</b></span>
       <span><span data-i="last">Last pull</span> <b id="last">—</b></span>
-      <span><span data-i="pull">Pull</span> <b id="pow">0%</b></span>
+      <span hidden><span data-i="pull">Pull</span> <b id="pow">0%</b></span>
     </div>
     <div id="lever" role="slider" tabindex="0" data-il="leverLabel" aria-label="The lever: pull down and let go. A tap pulls the same as last time."
       aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -132,15 +151,16 @@
 
   <div class="overlay" id="title">
     <div class="sheet">
-      <h1>PAJATSO</h1>
-      <div class="sub" data-i="sub">The Finnish coin wall game</div>
+      <h1>KUOPPA</h1>
+      <div class="sub" data-i="kSub">The roguelike</div>
       <div class="langs" role="group" data-il="langLabel" aria-label="Language"></div>
-      <p data-i="intro1"></p>
-      <p data-i="intro2"></p>
-      <p data-i="intro3"></p>
+      <p data-i="kIntro1"></p>
+      <p data-i="kIntro2"></p>
+      <p data-i="kIntro3"></p>
       <div class="btns">
-        <button class="big" id="start" data-i="play">PLAY</button>
-        <a class="big alt" id="pitLink" href="kuoppa.html" data-i="kuoppa">KUOPPA — roguelike mode (early) ›</a>
+        <button class="big" id="start" data-i="kPlay">START THE RUN</button>
+        <a class="big alt" id="baseLink" href="./" data-i="kBase">PAJATSO — the base machine ›</a>
+        <a class="small" id="oldPit" href="pit.html" data-i="kOldPit">the old pit (v1) ›</a>
       </div>
       <div class="keys" data-i="keys"></div>
     </div>
@@ -151,18 +171,18 @@
       <div class="langs" role="group" data-il="langLabel" aria-label="Language"></div>
       <div class="btns">
         <button class="big" id="resume" data-i="resume">BACK TO THE MACHINE</button>
-        <button class="big alt" id="restart" data-i="restart">START OVER</button>
-        <a class="big alt" href="kuoppa.html" data-i="kuoppaShort">KUOPPA — roguelike mode ›</a>
+        <button class="big alt" id="restart" data-i="again">ANOTHER RUN</button>
+        <a class="big alt" href="./" data-i="kBase">PAJATSO — the base machine ›</a>
       </div>
     </div>
   </div>
-  <div class="overlay" id="broke" hidden><div class="sheet" id="brokeSheet"></div></div>
+  <div class="overlay" id="run" hidden><div class="sheet" id="runSheet"></div></div>
 
   <script type="importmap">
   { "imports": { "three": "./vendor/three.module.min.js" } }
   </script>
   <script type="module" src="../hub/shell.js?v=42"></script>
-  <script type="module" src="js/classic/main.js?v=4"></script>
+  <script type="module" src="js/kuoppa/main.js?v=4"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=9';
