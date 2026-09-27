@@ -47,18 +47,24 @@ Then the 2D pieces at the end.
 ### Envelope
 
 The game's physics is a rigid body on four hover pads at **x ±1.6 m,
-z ±3.0 m, 0.9 m below the origin** (in game frame; Blender: x ±1.6,
-**y** ±3.0, z −0.9). The model must sit on those pads visually: the belly
-plate or the runners at roughly z −0.9 (Blender), the pad footprints inside
-the hull's plan. `powder_blender.py` draws them as empties.
+z ±3.0 m** (in game frame; Blender: x ±1.6, **y** ±3.0). Since v11 the
+origin rides **0.63–0.75 m** over the sand (the pads' rest gap is 0.75 m and
+they settle to ~0.63 under load), so the belly plate or the runners belong
+at roughly **z −0.6** (Blender), with the pad footprints inside the hull's
+plan. `powder_blender.py` draws the pads as empties at that height. (Before
+v11 this said z −0.9, for a hover height the formula kit no longer has.)
 
 | | min | max | kit today |
 |---|---|---|---|
-| Length (Blender Y), probe included | 8.5 m | 12.5 m | 9.4 / 9.8 m |
-| Width (X), across the nacelles | 2.2 m | 4.4 m | 2.4 / 2.8 m |
-| Height (Z) | 1.0 m | 3.2 m | 1.6 / 1.7 m |
-| Triangles, whole ship | — | **9,000** | 3,052 |
-| Draw calls after import | — | 14 | 14 |
+| Length (Blender Y), probe included | 8.5 m | 12.5 m | 9.2 / 9.2 m |
+| Width (X), across the nacelles | 2.2 m | 4.4 m | 3.7 / 3.7 m |
+| Height (Z) | 1.0 m | 3.2 m | 1.8 / 1.8 m |
+| Triangles, whole ship | — | **9,000** | 7,304 / 6,944 |
+| Draw calls after import | — | 24 | 22 |
+
+(v11: the kit is a formula car now — a needle nose, sidepods, front and
+rear wings, and four sprung pods on wishbones. The corners are separate
+meshes because the game poses them, which is where the draw calls went.)
 
 ("kit today" is measured from `models/reference/ship-nose.glb` /
 `ship-aft.glb` by the loader itself — the exact line it prints.)
@@ -97,8 +103,29 @@ but it will not get the chrome.
 | Object | Type | Where | Why |
 |---|---|---|---|
 | `nozzle_L`, `nozzle_R` | **Empty** (plain axes) | the exhaust exit of each bell, on the nacelle axis | flames and heat haze anchor here. **Required.** |
-| `fan_L`, `fan_R` | Mesh, material `FAN` | a disc just inside each intake mouth | spun by turbine N1. **Object rotation must be 0,0,0** and the mesh built so its face looks along +Y: the game spins it about its local Y axis. |
+| `fan_L`, `fan_R` | Mesh, material `FAN` | a disc just inside each intake mouth | spun by turbine N1. **Object rotation must be 0,0,0**, the face looking along +Y, **the object origin ON the disc's own centre**, and **a UV map on it**. See below — both of the last two are invisible in Blender and neither is subtle in game. |
 | `canopy` | Mesh, `GLASS` | forward of the origin | lets the validator catch a backwards ship |
+
+**The two fan traps.** The fans are the only parts the game moves, and both
+ways of getting them wrong look perfect in Blender.
+
+*The origin must be on the disc.* A rotation turns a mesh about its origin.
+Model a disc 1.1 m off the centreline, leave the object at the world origin
+the way anything built in world coordinates does, and the game does not spin
+it — it swings it round a 1.1 m circle, so each turbine face orbits out past
+the hull and back every revolution. In Blender set Object ▸ Set Origin ▸
+Origin to Geometry on each fan; in a script, `centre_origin()` in
+`authored/_lib.py` does it.
+
+*The disc needs a UV map.* The turbine face is a texture. A disc with no UV
+layer samples the texture at (0, 0) for every fragment, which paints a solid
+black circle in the mouth of each nacelle. Unwrap it (a plain planar
+projection is right — the disc is flat) or call `disc_uvs()`.
+
+`craft.js` now repairs both when it loads a model, so a ship that gets either
+one wrong still races correctly. Do not rely on that: the repair exists so a
+mistake is survivable, not so the contract is optional, and nothing outside
+the game will fix the file for you.
 
 The kit's positions, for reference (Blender frame, metres):
 

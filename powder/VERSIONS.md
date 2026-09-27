@@ -4,6 +4,127 @@ The `## vN` heading at the top is what the arcade floor shows as the build
 number (`scripts/versions.mjs` reads it at deploy time). The `?v=N` token on
 the module graph is a cache-bust, kept separately.
 
+## v11 — 2026-09-27
+A formula car that carves the sand like powder — and, underneath it, two
+bugs from the rebuild that had the car pointing the wrong way.
+
+THE ASK (owner): sand stays, but the feel should be carving in powder; a
+lower camera, the view widening with speed, speed streaks, more top end;
+formula-shaped craft; major visual upgrades.
+
+TWO BUGS FROM THE REBUILD, found by looking at the carve shot. The mesh took
+`+yaw` where physics and camera take a right-positive yaw, so the ship
+turned the opposite way to everything else: at a heading of 20 degrees it
+sat 40 degrees off its own path, and through every turn it swung its nose
+out of the corner. And the pads' feet were placed `pos + forward * z` while
+the kit and every moment put the nose at -z, so the front pads read the
+ground behind the car and the rear pads the ground ahead — self-consistent,
+so nothing ever diverged, but every crest unloaded the wrong end first and
+the car rode 3 degrees nose-UP down the 4.5% grade (it follows it now, 3.7
+down). A third, older one: the pad damper worked on ABSOLUTE vertical
+velocity, and on the grade the ground falls away at ~2 m/s, so the dampers
+pulled every pad off the sand. On the dune test venue the v10 car was in
+the air half the time at 150 km/h; v11, 0%.
+
+THE CARVE. The sled BANKS into a turn (each pad's rest height offset by the
+bank, lagged 0.12 s: 4-8 degrees at 0.4-0.7 g, 15 at most), and a bank into
+the steer is the EDGE: up to 38% more grip, and the lowered pods dig in.
+The runners PLANE — sink falls as the square root of speed from 4 to 34 m/s,
+so the sled rides up on top as it gets going — and each pad PLOUGHS by its
+own sink and speed instead of one drag multiplier. Measured with the NOSE
+chassis on the dune venue, 3 s of sim per phase: a quarter lock pulls 0.37 g
+at 0.7 m/s of slide, half 0.71 g at 1.4, full lock slides at 10.6 m/s and
+1.07 g, and releasing it straightens in about a second. v10 on the same sand
+slid 2.4 m/s at a quarter lock and leaned OUT of every turn.
+
+GROOVES. Each pod cuts one. The first cut was a ribbon laid a few cm over
+height(), and it never showed: the ground is drawn on a 6.25 m grid, so the
+rendered sand sits decimetres off the height function between vertices and
+the ribbon was half buried, half floating. `trench.js` is now a TRAIL MAP —
+a render target round the player that the pods stamp (depth and berm,
+max-blended) and the ground shader reads: the floor darker, the walls
+embossed toward the low sun, the berm lighter, the wind ripples wiped where
+a pod went through.
+
+SPRAY AND SPEED. Particles are STREAKS (`streaks.js`), drawn as their motion
+relative to the camera, not as discs. The sheet leaves the OUTSIDE of the
+carve; the rooster tail stays low; grains in the air sit below the lens so
+none reads as a scratch across the sky; everything fades out before it
+reaches the glass. The seat is a formula chase seat — 8.6 m back and 2.35 m
+up — with the field of view opening from 60 degrees with speed and the frame
+banking into the carve with the car. C / RB swaps to the old high seat
+(remembered). Planing is where the top end came from: 185 km/h flat out on
+the dune, 225 with the boost.
+
+THE FORMULA KIT. Needle nose, halo, sidepods, front and rear wings with
+endplates, four sprung pods on wishbones that sit on the sand under their
+pads and steer at the front; NOSE carries its cans beside the cockpit, AFT
+in the gearbox. About 7.5k triangles and 22 draw calls. The sidepods and
+engine cover are in the cream livery with the colour in the stripe, like the
+plates — in the accent colour, the car read as a maroon lump from behind.
+
+LIGHT AND SHADOW. The ships never threw a shadow on the sand: three draws a
+shadow map with the layers of the camera it is rendering for, and the pass
+that draws the ground never saw the HD ships. Each ship now carries a few
+boxes on their own layer that the world pass draws with no colour and no
+depth, and that cast. And a SHIP LIGHT, HD layer only, from over the
+camera's shoulder: the route runs toward a low sun, so every car you chase
+is backlit.
+
+SKY. The ringed body is lit — a half phase with a soft terminator, bands, a
+lilac limb, a ring with a gap in it, the body's shadow across the ring and
+the ring's across the body — and smaller. The flare keeps only the ghosts on
+the sun's side of the frame centre: past that they sat on the car.
+
+MEASURED. 319 draw calls and 105k triangles a frame at high (v7: 284 / 79k)
+— the difference is the kit, 22 draws a ship against 14. Under SwiftShader
+a frame costs about 1.8x v10's at low, spread over fill rate with no single
+cause (ships, spray and trail each move it by a quarter frame), which is why
+the wall-clock harnesses (keys, thumbs) read slower this version: read their
+deltas against a v11 run, never against v10's numbers.
+
+HARNESSES. `test/look.mjs` shoots the race through the game's own camera
+(menu, start, cruise, carve, rift, boost); `test/car.mjs` is the kit on a
+turntable; `debug.advance(n)` runs the whole race step n times at the sim's
+rate, so a shot is of a carve in progress rather than of a car still
+landing. `refexport.mjs` had lost its output path; it walks the nested kit
+now and merges the reference manifest instead of dropping the derrick.
+
+Tokens: every module `?v=10` → `?v=11`, moved together.
+
+## v10 — 2026-09-26
+Your thumbs, measured at last; and the Blender fans spin.
+
+TOUCH. The owner's main control scheme is on-screen twin-stick touch, and
+every controls number before this came from drive2 / corner, which override
+`input.read` with exact values — so they measured the physics and bypassed
+every scheme equally. `test/thumbs.mjs` drives the real touch path through
+CDP touch events and found a fault only a thumb could have: the stick's gate
+was a CIRCLE, and on the left stick x is steer and y is throttle, so full lock
+was only reachable at y = 0, which is zero throttle. Full lock and full power
+together were impossible; the most of both at once was 0.71 steer.
+The first guess was that the forced lift-off stepped the tail out. It did
+not — slip was 5.4 m/s against the keyboard's 5.8. The cost was the turbine:
+the natural hard-turn gesture took N1 from 0.62 to 0.27 in 1.5 s where the
+keyboard came out of the same turn at 0.90, and thrust goes as N1 squared.
+The gate is SQUARE now: each axis clamps on its own, the way W and D are
+independent keys. Thumb up then slid right sends 1.00 steer and 1.00 throttle,
+turns 17° (keyboard 17°) and holds N1 at 0.85 (keyboard 0.90). Nothing changes
+inside the circle, where the two gates agree; only a thumb past the rim reads
+differently. A pure sideways sweep still cuts power, because a thumb that is
+not pushing up is not asking for it — no throttle is added that was not
+asked for. The on-screen stick draws the same square and its knob clamps the
+same way, so it never shows a thumb stopping short of where the game hears it.
+
+BLENDER FANS. The authored ships' turbine discs orbited the hull and rendered
+black: built in world coordinates, each disc's origin sat at the ship's centre
+so `rotation.z` swung it round a 1.1 m circle, and a bmesh ring has no uv so
+the turbine texture sampled (0, 0) everywhere. `craft.js` re-centres a loaded
+fan on its own origin and gives a mapless disc a planar uv; the authored
+scripts do both at source.
+
+Tokens: every module `?v=9` → `?v=10`, moved together.
+
 ## v9 — 2026-09-07
 The keyboard, and the door for Blender.
 

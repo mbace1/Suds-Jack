@@ -21,8 +21,8 @@
 //                 it returns the deck when you are on it and the floor when
 //                 you are under it.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=9';
-import { populate, bakeProps, makePropKit } from './props.js?v=9';
+import { PAL, SUN_DIR } from './palette.js?v=11';
+import { populate, bakeProps, makePropKit } from './props.js?v=11';
 
 export const TILE = 100;
 const Q = 16;                    // 6.25 m resolution
@@ -65,6 +65,12 @@ export class Terrain {
     this.pool = [];
     this.kit = makePropKit();
     this.mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+    // v11: the trail map the pods cut their grooves into (trench.js points
+    // these at its render target; until then, a black texel and no box)
+    const none = new THREE.DataTexture(new Uint8Array(4), 1, 1);
+    none.needsUpdate = true;
+    this.trail = { tex: { value: none }, box: { value: new THREE.Vector3(0, 0, 0) } };
+    groundDetail(this.mat, this.trail);
     this.index = buildIndex();
     for (let i = 0; i < (RING * 2 + 1) * (RING * 2 + 1) + 6; i++) this.pool.push(new Tile(this));
   }
@@ -176,6 +182,32 @@ export class Terrain {
     return DUNE;
   }
 
+  /**
+   * The ground's colour at a point — what the tiles paint into their vertex
+   * colours, and what a trench is cut into (v11: trench.js reads it so a
+   * groove is the sand it runs through, not a stripe laid on top of it).
+   */
+  colorAt(x, z, y, s, out) {
+    if (s === SALT) {
+      out.copy(C.salt).lerp(C.saltDark, 0.5 + 0.5 * Math.sin(x * 0.11 + z * 0.07));
+    } else if (s === ROCK) {
+      const band = 0.5 + 0.5 * Math.sin(y * 0.52 + Math.sin(x * 0.02) * 1.4);
+      out.copy(C.rockDark).lerp(C.rockLit, band * 0.85).lerp(C.rock, 0.3);
+    } else if (s === ROAD) {
+      const r2 = this.roadAt(z, _r);
+      out.copy(C.road).lerp(C.roadEdge, smoothstep(ROAD_W * 0.32, ROAD_W * 0.5, r2.off));
+    } else if (s === GRAVEL) {
+      out.copy(C.gravel);
+    } else {
+      // white sand with a grey grain: the ripples are what the low sun
+      // has to rake, and the grey is the sky in the shadow side
+      out.copy(C.dune).lerp(C.duneDark, 0.5 + 0.5 * Math.sin(x * 0.021 - z * 0.017));
+    }
+    const c2 = this.canyon(x, z, _c);
+    if (c2.d < 1.05) out.lerp(_shade, (1 - Math.min(1, c2.d)) * c2.df * 0.42);
+    return out;
+  }
+
   normalAt(x, z, out) {
     const e = 2.0;
     const hl = this.height(x - e, z), hr = this.height(x + e, z);
@@ -228,6 +260,128 @@ export class Terrain {
 
 const _c = {}, _r = {};
 
+// ------------------------------------------------------------ ground detail
+// v11. The ground was vertex colour on a 6.25 m grid and nothing else, so at
+// 160 km/h nothing near the lens moved and the sand read as a painted floor.
+// Now it has a surface: WIND RIPPLES on the sand, laid across the sun so the
+// low key rakes them (lit face, shadowed face, every half metre), a fine
+// GRAIN, and on the salt pan the polygon CRUST a dry lake cracks into. Three
+// patterns in one tileable texture (R ripple height, G crust lines, B grain),
+// chosen per vertex by weights, embossed toward the sun in the shader — two
+// taps, no normal map, no tangents — and faded out with distance so the
+// repeat never shows and nothing shimmers.
+const DETAIL = 6;                                // m per repeat
+
+function detailTexture() {
+  const N = 256, img = new ImageData(N, N);
+  const rnd = mulberry32(911);
+  // tileable value noise, for perturbing the ripples
+  const G = 8, grid = Array.from({ length: G * G }, () => rnd());
+  const vnoise = (u, v) => {
+    const x = u * G, y = v * G, x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
+    const at = (i, j) => grid[((j % G + G) % G) * G + ((i % G + G) % G)];
+    const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+    return (at(x0, y0) * (1 - sx) + at(x0 + 1, y0) * sx) * (1 - sy) + (at(x0, y0 + 1) * (1 - sx) + at(x0 + 1, y0 + 1) * sx) * sy;
+  };
+  // crust: Voronoi cells, distances wrapped so the tile repeats
+  const sites = Array.from({ length: 22 }, () => [rnd(), rnd()]);
+  // the ripples run ACROSS the direction toward the sun, on an integer
+  // lattice so they tile: (1, -3) is ~the sun's bearing in (x, z)
+  const RA = 1, RB = -3, RK = 4;
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const u = i / N, v = j / N;
+    const ph = (RA * u + RB * v) * RK + 0.55 * vnoise(u, v) + 0.25 * vnoise(u * 2 + 0.3, v * 2 + 0.7);
+    const f = ph - Math.floor(ph);
+    // a ripple is asymmetric: a long stoss slope and a short steep lee
+    const rip = f < 0.72 ? f / 0.72 : (1 - f) / 0.28;
+    let d1 = 9, d2 = 9;
+    for (const [sx, sy] of sites) {
+      let dx = Math.abs(u - sx), dy = Math.abs(v - sy);
+      dx = Math.min(dx, 1 - dx); dy = Math.min(dy, 1 - dy);
+      const d = dx * dx + dy * dy;
+      if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
+    }
+    const edge = Math.sqrt(d2) - Math.sqrt(d1);
+    const crack = Math.max(0, 1 - edge / 0.012);
+    const k = (j * N + i) * 4;
+    img.data[k] = rip * 255;
+    img.data[k + 1] = crack * 255;
+    img.data[k + 2] = 90 + rnd() * 110;
+    img.data[k + 3] = 255;
+  }
+  const c = document.createElement('canvas');
+  c.width = c.height = N;
+  c.getContext('2d').putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.NoColorSpace;             // data, not colour
+  t.anisotropy = 8;
+  return t;
+}
+
+function groundDetail(mat, trail) {
+  const tex = detailTexture();
+  // toward the sun, in detail-texture space (x, z scale alike)
+  const toSun = new THREE.Vector2(-SUN_DIR[0], -SUN_DIR[2]).normalize();
+  mat.onBeforeCompile = sh => {
+    sh.uniforms.uDetail = { value: tex };
+    sh.uniforms.uToSun = { value: toSun };
+    sh.uniforms.uTrail = trail.tex;
+    sh.uniforms.uTrailBox = trail.box;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `#include <common>
+attribute vec2 aDuv;
+attribute vec2 aSurf;
+varying vec2 vDuv;
+varying vec2 vSurf;
+varying float vDist;
+varying vec2 vWxz;`)
+      .replace('#include <project_vertex>', `#include <project_vertex>
+vDuv = aDuv; vSurf = aSurf; vDist = -mvPosition.z;
+vWxz = (modelMatrix * vec4(transformed, 1.0)).xz;`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+uniform sampler2D uDetail;
+uniform vec2 uToSun;
+uniform sampler2D uTrail;
+uniform vec3 uTrailBox;
+varying vec2 vDuv;
+varying vec2 vSurf;
+varying float vDist;
+varying vec2 vWxz;`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+{
+  // near: full detail; by ~140 m the repeat would show, so it is gone
+  float near = 1.0 - smoothstep(35.0, 140.0, vDist);
+  vec3 d0 = texture2D(uDetail, vDuv).rgb;
+  // the emboss: height rising toward the sun is a face turned to it
+  float up = texture2D(uDetail, vDuv + uToSun * 0.006).r - d0.r;
+  float sand = vSurf.x, salt = vSurf.y;
+  // v11: the grooves (trench.js). R is how deep, G the berm either side.
+  // A groove's depth rising TOWARD the sun is ground falling toward it — a
+  // wall facing the sun — so the emboss here is depth ahead minus depth
+  // here, 30 cm toward the light; the floor darkens with depth (compacted,
+  // fresh-cut sand, and the shadow of its own walls) and the berm lightens.
+  vec2 tuv = (vWxz - uTrailBox.xy) * uTrailBox.z + 0.5;
+  vec2 tr = vec2(0.0);
+  float groove = 0.0;
+  // only where the map is (64 m round the player): most of the frame's
+  // ground is farther than that and should not pay for two more fetches
+  if (uTrailBox.z > 0.0 && tuv.x > 0.0 && tuv.x < 1.0 && tuv.y > 0.0 && tuv.y < 1.0) {
+    tr = texture2D(uTrail, tuv).rg;
+    float trSun = texture2D(uTrail, tuv + uToSun * 0.30 * uTrailBox.z).r;
+    groove = -tr.r * 0.30 + (trSun - tr.r) * 1.7 + tr.g * 0.16;
+  }
+  float rip = ((d0.r - 0.5) * 0.10 + up * 2.6) * (1.0 - min(1.0, tr.r * 1.6));
+  float grain = (d0.b - 0.5) * (0.10 + 0.08 * (1.0 - sand));
+  float crust = -d0.g * 0.26;
+  float k = 1.0 + near * (sand * rip + salt * crust + grain) + (1.0 - smoothstep(70.0, 190.0, vDist)) * groove;
+  diffuseColor.rgb *= clamp(k, 0.55, 1.4);
+}`);
+  };
+  mat.customProgramCacheKey = () => 'powder-ground-v11b';
+}
+
 function buildIndex() {
   const idx = [];
   for (let r = 0; r < Q; r++) for (let c = 0; c < Q; c++) {
@@ -253,9 +407,13 @@ class Tile {
     const n = (Q + 1) * (Q + 1);
     this.pos = new Float32Array(n * 3);
     this.col = new Float32Array(n * 3);
+    this.duv = new Float32Array(n * 2);          // v11: detail texture coordinates
+    this.surf = new Float32Array(n * 2);         // v11: sand-ness, salt-ness
     this.geo = new THREE.BufferGeometry();
     this.geo.setAttribute('position', new THREE.BufferAttribute(this.pos, 3));
     this.geo.setAttribute('color', new THREE.BufferAttribute(this.col, 3));
+    this.geo.setAttribute('aDuv', new THREE.BufferAttribute(this.duv, 2));
+    this.geo.setAttribute('aSurf', new THREE.BufferAttribute(this.surf, 2));
     this.geo.setIndex(terrain.index);
     this.mesh = new THREE.Mesh(this.geo, terrain.mat);
     this.mesh.receiveShadow = true;
@@ -277,29 +435,21 @@ class Tile {
         this.pos[v] = x; this.pos[v + 1] = y; this.pos[v + 2] = z;
 
         const s = t.surfaceAt(x, z);
-        if (s === SALT) {
-          _col.copy(C.salt).lerp(C.saltDark, 0.5 + 0.5 * Math.sin(x * 0.11 + z * 0.07));
-        } else if (s === ROCK) {
-          const band = 0.5 + 0.5 * Math.sin(y * 0.52 + Math.sin(x * 0.02) * 1.4);
-          _col.copy(C.rockDark).lerp(C.rockLit, band * 0.85).lerp(C.rock, 0.3);
-        } else if (s === ROAD) {
-          const r2 = t.roadAt(z, _r);
-          _col.copy(C.road).lerp(C.roadEdge, smoothstep(ROAD_W * 0.32, ROAD_W * 0.5, r2.off));
-        } else if (s === GRAVEL) {
-          _col.copy(C.gravel);
-        } else {
-          // white sand with a grey grain: the ripples are what the low sun
-          // has to rake, and the grey is the sky in the shadow side
-          _col.copy(C.dune).lerp(C.duneDark, 0.5 + 0.5 * Math.sin(x * 0.021 - z * 0.017));
-        }
-        const c2 = t.canyon(x, z, _c);
-        if (c2.d < 1.05) _col.lerp(_shade, (1 - Math.min(1, c2.d)) * c2.df * 0.42);
+        // v11: the detail texture repeats every DETAIL m, in world space so
+        // neighbouring tiles meet; the weights say which pattern this is
+        const vi = (v / 3) * 2;
+        this.duv[vi] = x / DETAIL; this.duv[vi + 1] = z / DETAIL;
+        this.surf[vi] = s === DUNE ? 1 : s === GRAVEL ? 0.55 : s === ROCK ? 0.25 : 0;
+        this.surf[vi + 1] = s === SALT ? 1 : 0;
+        t.colorAt(x, z, y, s, _col);
         this.col[v] = _col.r; this.col[v + 1] = _col.g; this.col[v + 2] = _col.b;
         v += 3;
       }
     }
     this.geo.attributes.position.needsUpdate = true;
     this.geo.attributes.color.needsUpdate = true;
+    this.geo.attributes.aDuv.needsUpdate = true;
+    this.geo.attributes.aSurf.needsUpdate = true;
     this.geo.computeVertexNormals();
     this.geo.computeBoundingSphere();
     t.scene.add(this.mesh);
