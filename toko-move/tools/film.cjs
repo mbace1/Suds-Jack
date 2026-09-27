@@ -9,21 +9,18 @@
 // ffmpeg stitches it all into an H.264 MP4 that plays on any phone.
 //
 // TOKO IS THE CURRENT TOKO (owner, 2026-09-27: "the toko faces and logos
-// should use the recent Toko", as in Helsinki Free Radio and Toko Live): the
-// face traced from the owner's master (toko/js/master.js), and on the cards the
-// CLAY badge Radio Free's films use (toko/js/toko3d.js, style 'clay', on twos —
-// posed at 12 fps and re-lumped each hold). The logo is that traced face beside
-// the logotype; lockup.js's drawLockup still draws the retired GEO face, so it
-// is not used. The clay style has shipped on the SITE (gh-pages) and not yet on
-// main, so render against the site tree — SITE_ROOT=/path/to/gh-pages — or the
-// badge falls back to the enamel pin (and to the flat traced badge without
-// WebGL). The run says which it got.
+// should use the recent Toko", as in Helsinki Free Radio and Toko Live): on the
+// cards the CLAY badge Radio Free's films use (toko/js/toko3d.js, style 'clay',
+// on twos — posed at 12 fps and re-lumped each hold), and the logo is the
+// lockup, whose face is the one traced from the owner's master. Without WebGL
+// the badge falls back to the flat traced badge; the run says which it got.
+// SITE_ROOT renders against another tree (the gh-pages site) instead of this one.
 //
 // Headless Chromium here has no H.264 encoder (WebCodecs offers VP9/AV1 only,
 // which not every phone plays in an MP4), so encoding is ffmpeg's job. It is a
 // capture-only dependency, never vendored — point FFMPEG at a binary:
 //
-//   SITE_ROOT=/path/to/gh-pages FFMPEG=/path/to/ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film.cjs out.mp4
+//   FFMPEG=/path/to/ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film.cjs out.mp4
 //
 // Output: 1080×1920, 30 fps, ~18 s.
 const { chromium } = require('playwright');
@@ -41,8 +38,8 @@ const CARD = () => `<!doctype html><html><head><meta charset="utf-8"><meta name=
   html,body{margin:0;width:${W}px;height:${H}px;background:#22282d;overflow:hidden}
   canvas{display:block;width:${W}px;height:${H}px}</style></head><body><canvas id="c"></canvas>
 <script type="module">
-import { drawMasterBadge, fillMaster, masterBounds } from '/toko/js/master.js';
-import { drawLogotype } from '/toko/js/lockup.js';
+import { drawMasterBadge } from '/toko/js/master.js';
+import { drawLockup } from '/toko/js/lockup.js';
 import { TOKO, WAYS } from '/toko/js/palette.js';
 const c = document.getElementById('c'), d = ${SCALE}; c.width = ${W} * d; c.height = ${H} * d;
 const x = c.getContext('2d'), w = c.width, h = c.height, M = TOKO.MAGENTA, PAPER = TOKO.PAPER;
@@ -58,12 +55,10 @@ function toko(cx, cy, R, tt, grin = 1) {
   if (t3d) { const img = t3d.render(pose), size = R * 2 * t3d.half * pop; x.drawImage(img, cx - size / 2, cy - size / 2, size, size); }
   else drawMasterBadge(x, cx, cy, R * pop, { ground: WAYS.SIGN.ground, ink: WAYS.SIGN.ink, squash: blink, grin });
 }
-// the logo: the traced face beside the three-line logotype, both the same height
+// the logo: the lockup (traced face beside the logotype), centred on cx
 function logo(cx, y, fh, col) {
-  const b = masterBounds(), fw = fh * b.w / b.h, size = fh / 3.12, gap = fh * 0.22;
-  const tw = drawLogotype(new OffscreenCanvas(8, 8).getContext('2d'), 0, 0, size).w, x0 = cx - (fw + gap + tw) / 2;
-  fillMaster(x, x0, y, fw, { color: col });
-  drawLogotype(x, x0 + fw + gap, y, size, { color: col });
+  const lw = drawLockup(new OffscreenCanvas(8, 8).getContext('2d'), 0, 0, fh).w;
+  drawLockup(x, cx - lw / 2, y, fh, { color: col });
 }
 const T = (s, px, y, col = PAPER, weight = 900) => { x.font = weight + ' ' + px * d + 'px ui-monospace, monospace'; x.fillStyle = col; x.textAlign = 'center'; x.fillText(s, w / 2, y * d); };
 window.paint = (kind, tt) => {
