@@ -1685,6 +1685,34 @@ crabbed sideways down the flats at 60 km/h with the driver doing nothing — `ya
 increases to the right while a rotation about +y turns the nose left, so the torque picks
 up a minus on the way into this convention. And `yaw = Math.PI` faces +z, not -z, so the
 whole field spawned backwards. All four are commented at the site.
+**And two more that survived to v11, found by LOOKING at a carve shot**, not by any
+number: the mesh took `+yaw` (so it turned opposite to the physics and the camera — at a
+heading of 20 degrees the car sat 40 off its own path, nose swinging OUT of every
+corner), and the pads' feet were placed `pos + forward*z` while the kit and every moment
+put the nose at -z (front pads reading the ground behind the car; self-consistent, so
+nothing diverged, but every crest unloaded the wrong end first and the car rode nose-up
+down the grade). `pose()` takes `-yaw` and the pads `- forward*z` now. A third: the pad
+damper used ABSOLUTE vertical velocity, so on the 4.5% grade — where the ground falls
+away at ~2 m/s — it pulled every pad off the sand and the v10 car was airborne half the
+time on the dune flats. It damps `vel.y - gRate` (the ground's own rate under that pad).
+
+**The carve (v11, owner: "the feel is comparable to carving in powder").** The sled
+BANKS into a turn — each pad's rest height offset by the bank (`bank`/`bankSteer`,
+lagged `bankLag`, capped ~15 degrees) — and bank INTO the steer is the EDGE: up to
+`edge` 38% more grip, with the lowered pods digging in (`edgeDig`). The runners PLANE
+(`plane`: sink falls as the square root of speed from `planeMin` to `planeFull`), each
+pad PLOUGHS by its own sink x speed (`plow`) plus a load-scaled `wallow`, and the lateral
+forces roll the body out about `rollArm`. `rest` is 0.75 m (2.6 floated the old kit two
+metres up). The synchronous ladder (3 s of sim a phase, NOSE on dune): quarter lock
+0.37 g at 0.7 m/s slip, half 0.71 g at 1.4, full 1.07 g sliding at 10.6. The camera is a
+formula chase seat (`SEATS[0]`: 8.6 m back, 2.35 up, FOV 60 opening with speed, rolled
+into the bank); `SEATS[1]` is the old high seat, swapped by C / RB / the CAM chip and
+remembered (`powderCam`). The CAM chip answers `touchend`/`pointerup`, since `input.js`
+cancels every touchstart for the sticks. **The kit is a formula car** (`craft.js`):
+lofted superellipse tub, cambered wings, sidepods and cover in the cream livery (in the
+accent colour it read as a maroon lump from behind), four pods on wishbones that
+`posePods` sits on the sand under their pads and steers at the front; ~7.5k triangles,
+22 draws.
 
 **The world** (`js/terrain.js`). Open, not a ribbon: `height(x, z)` is a pure function,
 and the tile meshes, the hover pads, the props and the dust all read it, so they cannot
@@ -1753,7 +1781,13 @@ exactly as CI does): `NODE_PATH=$(npm root -g) node powder/test/keys.mjs`. `driv
 `corner` are the lock ladders, `pad` and `touch` the two other input paths (stubbed pad,
 real CDP touch), `hazecheck` the with/without pixel diff, `perf2` the per-pass counts,
 `refexport` regenerates `models/reference/`, `roundtrip` loads it back. None is a gate
-yet: they print numbers for a person to read.
+yet: they print numbers for a person to read. v11 added `look` (the race through the
+game's own camera: menu, start, cruise, carve, rift, boost) and `car` (the kit on a
+turntable), both built on `__pw.debug.advance(n)`, which runs the whole race step n times
+at the sim's rate — under SwiftShader the loop gets a fraction of real time, so without it
+a shot is of a car still landing after its teleport. The wall-clock harnesses (`keys`,
+`thumbs`, `drive2`) read SLOWER in v11 because a SwiftShader frame costs ~1.8x v10's at
+low: compare their deltas within one version, never across.
 
 **The Blender pipeline (v9).** `powder/pipeline/README.md` is the contract and
 `js/models.js` **enforces** it at load: envelope (which way the ship faces is read off
@@ -1836,6 +1870,21 @@ front load digs the runners in and ploughs, which is why leaning forward through
 ground is slow. Carving *into* the roll earns extra grip (`edge`), so committing to a
 turn is rewarded.
 
+**Grooves, shadows and the ship light (v11).** A groove is a TRAIL MAP (`trench.js`): a
+render target round the player (128 m, 12.5 cm a texel on high) that every pod stamps,
+depth in R and berm in G, max-blended, scrolled by a ping-pong copy of whole texels; the
+ground shader reads it (floor darker, walls embossed toward the sun, berm lighter,
+ripples wiped). A ribbon laid over `height()` was tried first and never showed: the
+ground is drawn on a 6.25 m grid and the rendered sand sits decimetres off the height
+function between vertices. The ships never cast on the sand, because three draws a
+shadow map with the layers of the CAMERA it is rendering for and the world pass never
+sees layer 1: each ship carries shadow stand-ins (a few boxes) on `L_CAST` (layer 4),
+which `MASK_PS2` includes and the depth prepass must NOT (their boxes would punch holes
+in the HD ship); the stand-in material has no colour or depth writes. Calling
+`renderer.shadowMap.render()` directly was tried and crashes: it needs the render state
+that only exists inside `render()`. `shipLight` is an HD-only key over the camera's
+shoulder, because the route runs toward a low sun and every car you chase is backlit.
+
 **The render stack (v5, made honest in v7).** The world is PS2; the ships are not.
 Layers are `0` opaque world, `1` HD, `2` the world's transparencies (plume, scars), `3`
 sky. **The canvas is full-resolution; only the composer is 0.62x** — until v7 the canvas
@@ -1886,12 +1935,19 @@ plates, named for what they show: `sun-one`, `aft-five`, `intake-green`, `nose-g
 scheme, the gamepad second, the keyboard third.** Every controls pass measures touch
 first — the v8/v9 passes went keyboard-first because that was where the report came
 from, and the touch path had only the hidden auto-throttle fixed until `touch.mjs`
-(real CDP touch events) existed.
+(real CDP touch events) existed. **`drive2`/`corner` override `input.read`, so they
+measure the physics and cannot see ANY scheme's mapping** — `thumbs.mjs` is the
+touch pass, and it found (v10) that the stick's gate was a **circle**: x is steer and
+y is throttle on the left stick, so full lock was only reachable at y = 0, zero
+throttle. It did not cause extra oversteer (the first guess, refuted by slip 5.4 vs
+the keyboard's 5.8); it cost the **turbine**, N1 0.62 → 0.27 through a hard turn
+against the keyboard's 0.90. The gate is **square** now — axes clamp independently,
+as W and D always were — and the drawn stick follows it.
 
 **Controls.** Left stick steers and works the throttle; right stick pans the camera
 (x) and is your weight (y). Keyboard (v8): the arrow cluster **mirrors WASD** — W/Up
 throttle, S/Down brake, A/Left and D/Right steer — **Space** boost (lean back),
-**Shift** spoiler (lean forward), **Q/E** pan, F swaps the chassis on the menu, Esc
+**Shift** spoiler (lean forward), **Q/E** pan, **C** the camera seat (v11), F swaps the chassis on the menu, Esc
 pause. It used to split the arrows three ways (up/down were the weight axis, left/right
 panned the camera) and nothing did what an arrow key does in any other game.
 **Gamepad (v6)** is the scheme's natural home,
@@ -1900,7 +1956,7 @@ choice, and weight is a lean, not a button; keyboard flattens both to on and off
 `input.pollGamepad()` runs once per frame from `animate()` and feeds the SAME control
 struct as keys and glass, **merged rather than exclusive**, so a stick in one hand and
 a keyboard under the other still works: left stick steer + throttle/brake, right stick
-pan + weight, RT/LT additionally throttle/brake, A drop in, Start pause, Y swap chassis
+pan + weight, RT/LT additionally throttle/brake, A drop in, Start pause, Y swap chassis, RB the camera seat
 (buttons edge-detected in the poll, as the keyboard path does). Deadzone 0.16 with the
 remainder rescaled, so half-stick really is part power. `drawSticks()` early-returns
 while a pad is driving, so the touch overlay does not sit on top of a controller. The HUD is a telemetry cluster: N1, TGT, lateral g,

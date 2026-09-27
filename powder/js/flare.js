@@ -46,12 +46,16 @@ export function makeFlare(scene, toSun) {
   const halo = haloTex(), ring = ringTex(), disc = discTex();
   // element size is in pixels; distance 0 is the sun, 1 is the frame centre
   // mirrored, and the ghosts sit between
+  // v11: the ghosts stay — the plates have them — but only on the SUN'S
+  // side of the frame centre. The chain runs sun → centre → mirror point,
+  // and the low formula seat puts the car just under the centre, so every
+  // ghost past about 0.45 sat on the car or beside it and read as a bubble,
+  // a target or a UI bug. What is left is the part of the chain nearest the
+  // light, where a lens actually shows it.
   flare.addElement(new LensflareElement(halo, 300, 0, new THREE.Color(1.0, 0.94, 0.86)));
-  flare.addElement(new LensflareElement(ring, 44, 0.32, new THREE.Color(0.55, 0.38, 0.62)));
-  flare.addElement(new LensflareElement(disc, 30, 0.50, new THREE.Color(0.36, 0.60, 0.56)));
-  flare.addElement(new LensflareElement(ring, 82, 0.68, new THREE.Color(0.62, 0.45, 0.36)));
-  flare.addElement(new LensflareElement(disc, 20, 0.86, new THREE.Color(0.55, 0.42, 0.64)));
-  flare.addElement(new LensflareElement(ring, 120, 1.05, new THREE.Color(0.46, 0.35, 0.58)));
+  flare.addElement(new LensflareElement(ring, 46, 0.16, new THREE.Color(0.55, 0.38, 0.62).multiplyScalar(0.34)));
+  flare.addElement(new LensflareElement(disc, 20, 0.27, new THREE.Color(0.36, 0.60, 0.56).multiplyScalar(0.40)));
+  flare.addElement(new LensflareElement(ring, 26, 0.36, new THREE.Color(0.62, 0.45, 0.36).multiplyScalar(0.30)));
   flare.layers.set(1);
   scene.add(flare);
   const _v = new THREE.Vector3();
