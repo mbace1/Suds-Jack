@@ -65,9 +65,12 @@ if (SHEET) {
     '-vf', `scale=324:-1,tile=${cols}x${Math.ceil(shots.length / cols)}`, '-frames:v', '1', outFile]);
   console.log(outFile);
 } else {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'studio-frames-'));
+  // --frames <dir> reuses exposures already on disk (an audio or mux fix
+  // should not cost the hour the picture took)
+  const REUSE = arg('frames', '');
+  const dir = REUSE ? path.resolve(REUSE) : fs.mkdtempSync(path.join(os.tmpdir(), 'studio-frames-'));
   const n = Math.ceil(total * RATE), t0 = Date.now();
-  for (let i = 0; i < n; i++) {
+  for (let i = REUSE ? n : 0; i < n; i++) {
     fs.writeFileSync(path.join(dir, String(i).padStart(5, '0') + '.jpg'), await grab((i + 0.5) / RATE));
     if (i % (CLAY ? 24 : 150) === 0) console.log(`  frame ${i}/${n}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   }
@@ -79,7 +82,7 @@ if (SHEET) {
   if (voice && voice.length) {
     const ins = voice.flatMap((v) => ['-i', path.join(ROOT, v.file)]);
     const lay = voice.map((v, i) => `[${i + 1}:a]aresample=48000,adelay=${Math.round(v.t0 * 1000)}:all=1,volume=1.35[v${i}]`).join(';');
-    const graph = `${lay};${voice.map((_, i) => `[v${i}]`).join('')}amix=inputs=${voice.length}:normalize=0[vo];[vo]asplit=2[vk][vm];` +
+    const graph = `${lay};${voice.map((_, i) => `[v${i}]`).join('')}amix=inputs=${voice.length}:normalize=0,apad=whole_dur=${(total + 1.5).toFixed(2)}[vo];[vo]asplit=2[vk][vm];` +
       `[0:a]aresample=48000[bed];[bed][vk]sidechaincompress=threshold=0.02:ratio=8:attack=15:release=350[duck];[duck][vm]amix=inputs=2:normalize=0[out]`;
     execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', path.join(dir, 'mix.wav'), ...ins, '-filter_complex', graph, '-map', '[out]', '-ac', '2', path.join(dir, 'mixv.wav')]);
     fs.renameSync(path.join(dir, 'mixv.wav'), path.join(dir, 'mix.wav'));
@@ -90,7 +93,7 @@ if (SHEET) {
     '-r', String(OUT_FPS), '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-pix_fmt', 'yuv420p',
     '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000',
     '-shortest', '-movflags', '+faststart', outFile]);
-  fs.rmSync(dir, { recursive: true, force: true });
+  if (!REUSE) fs.rmSync(dir, { recursive: true, force: true });
   console.log(`${outFile}  ${total.toFixed(1)}s  ${n} frames  ${((Date.now() - t0) / 1000).toFixed(0)}s to render`);
 }
 await browser.close(); srv.close();

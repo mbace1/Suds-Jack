@@ -186,7 +186,7 @@ export async function renderAudio(ep) {
   const CUE = {
     ding: (t) => { osc('sine', 1318, t, 1.1, 0.35, sfx); osc('sine', 1760, t + 0.07, 1.2, 0.3, sfx); hiss(t, 0.04, 0.3, sfx, { type: 'highpass', f: 5000 }); },
     pop: (t) => { const o = osc('sine', 300, t, 0.12, 0.6, sfx); o.frequency.exponentialRampToValueAtTime(900, t + 0.08); },
-    whoosh: (t) => hiss(t - 0.15, 0.5, 0.45, sfx, { f: 400, f2: 3500, q: 1.4 }),
+    whoosh: (t) => hiss(Math.max(0, t - 0.15), 0.5, 0.45, sfx, { f: 400, f2: 3500, q: 1.4 }),   // a cue on the first frame cannot start before it
     stamp: (t) => { const o = osc('sine', 130, t, 0.3, 1, sfx); o.frequency.exponentialRampToValueAtTime(38, t + 0.25); hiss(t, 0.18, 0.8, sfx, { type: 'lowpass', f: 900 }); },
     creak: (t) => {
       const o = ac.createOscillator(), g = ac.createGain(), bp = ac.createBiquadFilter();
