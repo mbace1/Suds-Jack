@@ -1204,12 +1204,12 @@ s.listen(0, '127.0.0.1', async () => {
     d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
     const fired = d.getFinale();
     // a rock straight over the feet, with the invulnerability off: it must land as a hit
-    pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync(); d.setInvulnerable(false);
+    pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync(); d.setLife(60); d.setInvulnerable(false);   // a full clock: ten seconds of rock on a low one killed the body and froze the finale
     const life1 = d.getState().lifeT;
     G.rock(0, 0, 4, 0.95, [0.07, 0.06, 0.065]);
     let hit = false;
     for (let i = 0; i < 40 && !hit; i++) { await frames(1); const st = d.getState(); if (st.lifeT < life1 - 3 || st.state === 'dead') hit = true; }
-    d.setInvulnerable(true);
+    d.setInvulnerable(true); d.setLife(60);
     for (let i = 0; i < 900 && !d.getFinale().done; i++) await frames(1);
     return { decl: decl?.kind, at: decl?.at, fired: fired.active, kind: fired.kind, rocksEarly: fired.rocks, hit, after: d.getFinale(), heap: G.getState() };
   });
