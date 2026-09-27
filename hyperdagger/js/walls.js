@@ -25,7 +25,10 @@ export class Walls {
   }
 
   /** One slab: centre (x, z), yaw radians, len along its own x, height h, thickness. */
-  add({ x, z, yaw = 0, len = 12, h = 5, thick = 1, tag = null, material = null, geometry = null }) {
+  /** v53 COVER THAT DIES: `hp` makes a wall destructible — nails chip it,
+   *  bodies pushing on it wear it, and at zero main.js collapses it into rubble.
+   *  A wall with no `hp` is what it always was: solid forever. */
+  add({ x, z, yaw = 0, len = 12, h = 5, thick = 1, tag = null, material = null, geometry = null, hp = 0, color = null }) {
     if (geometry) {
       // v41: a prebuilt look (shale.js) whose origin is its BASE centre. The
       // collision box is still (len, h, thick) — the look jitters inside it.
@@ -33,7 +36,7 @@ export class Walls {
       m.position.set(x, 0, z);
       m.rotation.y = yaw;
       this.group.add(m);
-      this.walls.push({ x, z, yaw, len, h, thick, mesh: m, tag, cos: Math.cos(yaw), sin: Math.sin(yaw) });
+      this.walls.push({ x, z, yaw, len, h, thick, mesh: m, tag, cos: Math.cos(yaw), sin: Math.sin(yaw), hp, maxHp: hp, color, lean: 0 });
       return;
     }
     const geo = new THREE.BoxGeometry(len, h, thick);
@@ -108,6 +111,22 @@ export class Walls {
     return player.wallContact;
   }
 
+  /** v53: wear a destructible wall. Returns true the moment it has no hp left —
+   *  the caller collapses it (rubble, spray) and culls it; a wall that is not
+   *  destructible ignores the damage. Past half, it LEANS a little more with
+   *  each blow, so a pile that is about to go reads as about to go. */
+  damage(w, amount) {
+    if (!w || !w.maxHp || w.hp <= 0) return false;
+    w.hp = Math.max(0, w.hp - amount);
+    const k = 1 - w.hp / w.maxHp;
+    if (k > 0.5) {
+      w.lean = (k - 0.5) * 0.28;
+      w.mesh.rotation.z = w.lean;
+      w.mesh.rotation.x = w.lean * 0.4;
+    }
+    return w.hp <= 0;
+  }
+
   /**
    * v42: push a point out of any wall it is inside, horizontally, and return
    * the wall it was pushed from. This is what makes rock an OBSTACLE for the
@@ -154,5 +173,5 @@ export class Walls {
     return null;
   }
 
-  getState() { return { count: this.walls.length, walls: this.walls.map(w => ({ x: +w.x.toFixed(1), z: +w.z.toFixed(1), yaw: +w.yaw.toFixed(2), len: w.len, h: w.h, tag: w.tag })) }; }
+  getState() { return { count: this.walls.length, walls: this.walls.map(w => ({ x: +w.x.toFixed(1), z: +w.z.toFixed(1), yaw: +w.yaw.toFixed(2), len: w.len, h: w.h, tag: w.tag, hp: w.hp ?? 0, maxHp: w.maxHp ?? 0 })) }; }
 }

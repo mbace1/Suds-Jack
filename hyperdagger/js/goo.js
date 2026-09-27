@@ -47,7 +47,12 @@ export class GooWave {
     this.arenaR = arenaR;
     this.cfg = null;
     this.mesh = null;
-    this.t = 0;
+    this._t = 0; this._dist = 0;
+    // v53 THE TIDE: the live speed, gap and ripple — the config's values at tide 0,
+    // the `tide` block's at 1. The head is read off DISTANCE travelled, so a
+    // speed that changes mid-run cannot make the crest jump.
+    this.speed = 1; this.gap = 0; this.ripple = 0; this.tide = 0;
+    this.drain = 0;   // v53 the finale: 1 = the sea is gone
     this.dirX = 0; this.dirZ = 1;
     this.cells = [];   // {x, z} grid centres inside the disc
     this.count = 0;    // instances drawn this frame
@@ -70,6 +75,7 @@ export class GooWave {
     // which means starting at zero gives several seconds of flat water
     // before anything happens — the first thing you see should be the sea
     // already moving.
+    this.speed = cfg.speed; this.gap = cfg.gap; this.ripple = cfg.ripple; this.tide = 0;
     this.period = (this.arenaR * 2 + cfg.width * 2 + cfg.gap) / cfg.speed;
     this.t = draw() * this.period;
     const cell = cfg.cell, r = this.arenaR;
@@ -102,13 +108,30 @@ export class GooWave {
     this.scene.add(this.mesh);
   }
 
+  get t() { return this._t; }
+  set t(v) { this._t = v; this._dist = v * this.speed; }
+
+  /** v53: the tide, 0 → 1 — the sea coming in. Lerps the live speed, gap and
+   *  ripple from the config's values to the `tide` block's. */
+  setTide(k) {
+    const c = this.cfg, td = c?.tide;
+    if (!c) return;
+    k = Math.max(0, Math.min(1, k));
+    // keep the head where it is while the speed changes: rescale the clock, not the distance
+    this.tide = k;
+    this.speed = td ? c.speed + (td.speed - c.speed) * k : c.speed;
+    this.gap = td ? c.gap + (td.gap - c.gap) * k : c.gap;
+    this.ripple = td ? c.ripple + (td.ripple - c.ripple) * k : c.ripple;
+    this._t = this._dist / this.speed;
+  }
+
   /** How far along the wave's travel a point is — the crest is at `phase 0`. */
   _s(x, z) {
     const c = this.cfg;
     const along = x * this.dirX + z * this.dirZ;
     // the crest starts off one edge and walks to the other, then re-forms
     const span = this.arenaR * 2 + c.width * 2;
-    const head = -this.arenaR - c.width + ((this.t * c.speed) % (span + c.gap));
+    const head = -this.arenaR - c.width + (this._dist % (span + this.gap));
     this.head = head;   // v48: the floor shader reads where the crest is
     return along - head;
   }
@@ -130,8 +153,8 @@ export class GooWave {
       const eased = k * k * (3 - 2 * k);
       // a ripple along the crest, so it is a sea and not an extruded curve
       const across = x * -this.dirZ + z * this.dirX;
-      const ripple = 1 + Math.sin(across * c.rippleK + this.t * 1.7) * c.ripple;
-      h = c.amp * eased * ripple;
+      const ripple = 1 + Math.sin(across * c.rippleK + this.t * 1.7) * this.ripple;
+      h = c.amp * eased * ripple * (1 - this.drain);
     }
     // v46 IMPACT RINGS (Toko Drop's hit ripple, on a sea): each hit is a ring
     // that spreads from the point and fades — on the crest it deforms the
@@ -179,10 +202,10 @@ export class GooWave {
       const k = back ? 1 + s / w : 1 - s / (w * 0.55);
       const dk = back ? 1 / w : -1 / (w * 0.55);
       const across = x * -this.dirZ + z * this.dirX;
-      const ripple = 1 + Math.sin(across * c.rippleK + this.t * 1.7) * c.ripple;
+      const ripple = 1 + Math.sin(across * c.rippleK + this.t * 1.7) * this.ripple;
       // eased = k²(3−2k), so d(eased)/dk = 6k(1−k): zero at the crest, most
       // of the way down the flank
-      rate = Math.abs(c.amp * ripple * 6 * k * (1 - k) * dk) * c.speed;
+      rate = Math.abs(c.amp * ripple * 6 * k * (1 - k) * dk) * this.speed;
     }
     if (this.ripples.length) {
       const r = c.rippleHit ?? RIPPLE;
@@ -213,7 +236,7 @@ export class GooWave {
    */
   update(dt) {
     if (!this.cfg || !this.mesh) return;
-    this.t += dt;
+    this._t += dt; this._dist += this.speed * dt;
     const c = this.cfg, cell = c.cell;
     if (this.ripples.length) {
       const life = (c.rippleHit ?? RIPPLE).life;

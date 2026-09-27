@@ -118,6 +118,22 @@ const SCENARIOS = {
     tick: 'window._LOOP.haulTick()',
     every: 1,
   },
+  rockfall: {
+    title: 'SEASON 1 finale — THE ROCKFALL: the sky throws shale, and it stays as heaps',
+    mode: null, season: 'ember', setup: 'window._LOOP.finale(0.25)', tick: 'window._LOOP.finaleTick()', every: 1,
+  },
+  drain: {
+    title: 'SEASON 2 finale — THE SEA DRAINS: the temple floor, the steps rise, the sea returns',
+    mode: null, season: 'inca', setup: 'window._LOOP.finale(-0.2)', tick: 'window._LOOP.finaleTick()', every: 1,
+  },
+  pileup: {
+    title: 'SEASON 3 finale — THE PILE-UP: the convoy folds, a wall of wrecks and cargo',
+    mode: null, season: 'haul', setup: 'window._LOOP.finale(-0.1)', tick: 'window._LOOP.finaleTick()', every: 1,
+  },
+  cover: {
+    title: 'SEASON 1 — cover that dies: a pile worked on by nails and the swarm comes down',
+    mode: null, season: 'ember', setup: 'window._LOOP.cover()', tick: 'window._LOOP.coverTick()', every: 1,
+  },
   wavefloor: {
     title: 'SEASON 2 — the floor reads the wave: its shadow, and the foam at its foot',
     mode: 'move',
@@ -277,6 +293,37 @@ window._LOOP = {
     player.yaw += (((yaw - player.yaw + Math.PI * 3) % (Math.PI * 2)) - Math.PI) * 0.5;
     player.pitch += (pitch - player.pitch) * 0.5;
     player._sync();
+    return null;
+  },
+  // v53: the finale, from the floor; the clock is jumped to just before it
+  finale(pitch) {
+    this._f = 0; this.slow(0.5);
+    for (const e of enemies) e.alive = false; enemies.length = 0;
+    window.__hd.debug.setInvulnerable?.(true); window.__hd.debug.freezeDirector?.(true);
+    player.pitch = pitch; player._sync();
+    window.__hd.debug.setTime(179.6);
+    return null;
+  },
+  finaleTick() {
+    if (player.feet.y < -2 && truck.active) truck.active.respawnOn(player);
+    player.yaw += 0.004; player._sync();
+    return null;
+  },
+  // v53: cover that dies — face a pile, stream at it, and skulls grind it
+  cover() {
+    this._f = 0; this.slow(0.6);
+    for (const e of enemies) e.alive = false; enemies.length = 0;
+    const d = window.__hd.debug; d.setInvulnerable?.(true); d.freezeDirector?.(true);
+    const w = walls.walls[0]; const dx = w.x, dz = w.z, dist = Math.hypot(dx, dz);
+    player.feet.set(w.x - dx / dist * 6, 0, w.z - dz / dist * 6); player.yaw = Math.atan2(-dx, -dz); player.pitch = -0.02; player._sync();
+    this._wall = w; this._n = 0;
+    return null;
+  },
+  coverTick() {
+    const d = window.__hd.debug, w = this._wall;
+    this._n++;
+    if (this._n % 2 === 0 && walls.walls.includes(w)) d.inputObj().mouseDown = !d.inputObj().mouseDown;
+    if (!walls.walls.includes(w)) d.inputObj().mouseDown = false;
     return null;
   },
   // six units up, looking down the travel at the crest coming in — the one

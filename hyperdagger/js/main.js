@@ -51,6 +51,7 @@ const ENEMY_NAMES = {
   thorn: 'a thorn spike', orb: 'an orb', totem: 'a totem', dread: 'the DREAD SKULL',
   husk: 'a husk', revenant: 'a revenant',
   wave: 'THE WAVE',   // v48: season 2's sea — you were meant to jump it
+  rockfall: 'THE ROCKFALL',   // v53: season 1's finale
 };
 
 // player-tunable options (pause menu), persisted across sessions
@@ -1234,6 +1235,7 @@ function buildSeasonArena() {
         const thick = c.wMin + rng.next() * (c.wMax - c.wMin);
         const h = c.hMin + rng.next() * (c.hMax - c.hMin);
         walls.add({ x, z, yaw: rng.next() * Math.PI, len, h, thick, tag: 'pillar', material: shaleMat,
+          hp: c.hp ?? 0, color: c.rubble ?? [0.05, 0.045, 0.05],   // v53: cover that dies
           geometry: shaleGeometry({ w: len, h, d: thick, draw: rng.next, color: c.color, glow: c.glow, ...(c.shale ?? {}) }) });
         placed.push({ x, z });
         break;
@@ -1593,6 +1595,8 @@ function resetRun() {
   daggers.reset();
   debris.reset();
   physGibs.reset();
+  wallsFelled = 0;
+  finale = null; finaleDone = false; finalePressure = 1;
   litter.reset();
   gems.reset();
   orbs.reset();
@@ -2545,7 +2549,7 @@ function skullDirector() {
   else                         mk = () => new Skull(scene, at, Math.min(2.0, t * 0.012));
   audio.spawn();
   telegraph(at, [1.6, 1.4, 0.3], 0.55, () => enemies.push(mk()));
-  nextSkullAt = gameTime + Math.max(sp.floor, sp.base - gameTime * sp.slope);
+  nextSkullAt = gameTime + Math.max(sp.floor, sp.base - gameTime * sp.slope) / finalePressure;   // v53: tighter after the finale
 }
 function director(dt) {
   if (directorFrozen) { updatePending(dt); return; } // telegraphs still resolve
@@ -2591,7 +2595,7 @@ function director(dt) {
     // to walk the debut list, and the low early budget is what keeps that a
     // parade rather than a pile-up.
     const P = T.director.pulse;
-    nextPulseAt = gameTime + Math.max(P.floor, P.base - gameTime * P.slope);
+    nextPulseAt = gameTime + Math.max(P.floor, P.base - gameTime * P.slope) / finalePressure;   // v53: tighter after the finale
   }
   if (!flybyDone && gameTime >= 10) {
     flybyDone = true;
@@ -2765,6 +2769,97 @@ function fireDagger(spread, speed, homing, damage = 1) {
   daggers.fire(_p0, _hitDir, speed, homing, damage);
 }
 
+/** v53 COVER THAT DIES: wear a pile; at zero it comes down as rubble — physical
+ *  chunks that heap where it stood — with a spray of chips, and it is gone as
+ *  cover. Chips fly off every blow so a pile that is being worked on says so. */
+let wallsFelled = 0;
+const _col = new THREE.Color();
+
+// ---------------------------------------------------------------- the finale (v53)
+// Owner: *nothing in a season ends*. At `finale.at` seconds a season throws its
+// set piece; survive it and the run goes on, harder. One state object; each
+// kind is a small clock. `finalePressure` tightens the season's own director
+// after; `finaleDone` keeps it to once a run.
+let finale = null, finaleDone = false, finalePressure = 1;
+function startFinale() {
+  const f = S().finale;
+  if (!f || finale || finaleDone) return;
+  finale = { kind: f.kind, t: 0, cfg: f, phase: 0, rocks: 0, next: 0 };
+  announce('finale', f.name);
+  if (f.kind === 'pileup' && truck.active) {
+    const cv = truck.active;
+    let n = 0;
+    for (const t of cv.trucks) if (t.z < player.feet.z - 4 && t.z > player.feet.z - f.reach) { cv.wreck(t); n++; }
+    finale.wrecked = n;
+  }
+}
+function endFinale() {
+  const f = finale.cfg;
+  finale = null; finaleDone = true;
+  finalePressure = f.after?.pressure ?? 1;
+  if (f.kind === 'pileup' && truck.active) { truck.active.cfg.speed *= f.resume ?? 1; truck.active.cfg.skullMul = f.after?.skulls ?? 1; }
+  if (f.kind === 'drain') { goo.drain = 0; applySeasonFloorTerms(1); }
+}
+function applySeasonFloorTerms(k) {
+  const sn = S();
+  floorMat.uniforms.uCaustic.value = (sn.floor.caustic ?? 0) * k;
+  floorMat.uniforms.uGlint.value = (sn.floor.glint ?? 0) * k;
+}
+function updateFinale(dt) {
+  if (!finale) return;
+  const f = finale.cfg;
+  finale.t += dt;
+  if (finale.kind === 'rockfall') {
+    finale.next -= dt;
+    if (finale.t < f.duration && finale.next <= 0) {
+      finale.next = f.every;
+      const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * (ARENA_R - 2);
+      physGibs.on = gibsOn();
+      if (physGibs.rock(Math.cos(a) * r, Math.sin(a) * r, f.height, f.size, f.color)) finale.rocks++;
+    }
+    if (state === 'playing') {
+      const g = physGibs.fallingOn(player.feet.x, player.feet.y, player.feet.z);
+      if (g) { playerStruck(player.feet.x + (Math.random() - 0.5), player.feet.z + (Math.random() - 0.5), 'rockfall'); trauma = Math.max(trauma, 0.5); }
+    }
+    if (finale.t >= f.duration + 3) endFinale();
+  } else if (finale.kind === 'drain') {
+    const t = finale.t, a = f.drainFor, b = a + f.dryFor, c = b + f.refill;
+    if (t < a) goo.drain = t / a;
+    else if (t < b) {
+      goo.drain = 1;
+      if (finale.phase === 0) {
+        finale.phase = 1;
+        platforms.build(f.steps, rng.next,
+          (x, z, half) => walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < half + Math.max(w.len, w.thick) * 0.5 + 0.6), player);
+      }
+    } else if (t < c) goo.drain = 1 - (t - b) / f.refill;
+    else { endFinale(); return; }
+    applySeasonFloorTerms(1 - goo.drain);
+  } else if (finale.kind === 'pileup') {
+    if (finale.t >= f.duration) endFinale();
+  }
+}
+function wearWall(w, amount, at) {
+  if (amount >= 1 || Math.random() < amount * 3) {
+    debris.spawn(_seg.set(at.x + (Math.random() - 0.5) * 0.4, Math.min(at.y, w.h), at.z + (Math.random() - 0.5) * 0.4),
+      _col.setRGB(...w.color).multiplyScalar(2.2), _hitDir.set((Math.random() - 0.5) * 4, 2 + Math.random() * 3, (Math.random() - 0.5) * 4), 0.09, 0.8);
+  }
+  if (!walls.damage(w, amount)) return;
+  // down it comes
+  const vol = w.len * w.h * w.thick;
+  physGibs.on = gibsOn();
+  const chunk = 0.5;
+  physGibs.rubble(w.x, w.z, w.yaw, w.len, w.h, w.thick, Math.min(26, Math.max(8, Math.round(vol / (chunk ** 3) * 0.12))), chunk, w.color);
+  for (let i = 0; i < 40; i++) {
+    _seg.set(w.x + (Math.random() - 0.5) * w.len, Math.random() * w.h, w.z + (Math.random() - 0.5) * w.thick);
+    debris.spawn(_seg, _col.setRGB(...w.color).multiplyScalar(2.2), _hitDir.set((Math.random() - 0.5) * 6, 1 + Math.random() * 4, (Math.random() - 0.5) * 6), 0.1, 1.2);
+  }
+  trauma = Math.max(trauma, 0.3);
+  audio.gib(true);
+  walls.cull(x => x === w);
+  wallsFelled++;
+}
+
 function killEnemy(e, dir) {
   e.alive = false;
   kills += e.score;
@@ -2916,7 +3011,9 @@ function fireByHand(dt, w) {
 function updateGaze(dt) {
   fireTimer = 0; homingFireTimer = 0; fireWasHeld = false; homingWasHeld = false;
   camera.getWorldDirection(_fwd2);
-  for (const shot of gaze.update(dt, camera.position, _fwd2, enemies)) launchMissile(shot);
+  // v53: in the convoy the cabs are targets too — three missiles jackknife one
+  const targets = S().gaze?.trucks && truck.active ? enemies.concat(truck.active.targets()) : enemies;
+  for (const shot of gaze.update(dt, camera.position, _fwd2, targets)) launchMissile(shot);
 }
 function launchMissile(shot) {
   weaponActive = true;
@@ -2979,10 +3076,25 @@ function updateCombat(dt) {
     const d = daggers.active[i];
     // v41: rock stops a nail — pillars, court walls and standing slabs are
     // solid to projectiles; a needle through a pillar reads as a bug
-    if (walls.walls.length && walls.blocks(d.prev, d.m.position)) {
-      spawnSpark(d.m.position, false);
-      daggers.recycle(i);
-      continue;
+    // v53: a missile with a CAB for a target lands in it
+    if (d.target?.isTruck) {
+      d.target.center(_c);
+      if (segHitsSphere(d.prev, d.m.position, _c, 1.5)) {
+        if (truck.active?.hit(d.target.truck)) { toast('JACKKNIFE'); trauma = Math.max(trauma, 0.45); audio.gib(true); buzz(0.5, 0.3, 80); }
+        else audio.hit();
+        spawnSpark(d.m.position, true);
+        daggers.recycle(i);
+        continue;
+      }
+    }
+    if (walls.walls.length) {
+      const w = walls.blocks(d.prev, d.m.position);
+      if (w) {
+        spawnSpark(d.m.position, false);
+        if (w.maxHp) wearWall(w, d.damage ?? 1, d.m.position);   // v53: a nail chips the pile
+        daggers.recycle(i);
+        continue;
+      }
     }
     if (platforms.count) {
       const slab = platforms.blocks(d.prev, d.m.position);
@@ -3221,6 +3333,9 @@ function step(dt) {
   // stand on — a crest rolling past a slab must not drop you through it
   if (goo.cfg && M().arena !== 'track') {
     goo.update(dt);
+    // v53 THE TIDE: the sea comes in over the run, and the crest carries the bone
+    if (goo.cfg?.tide) { const td = goo.cfg.tide; goo.setTide((gameTime - td.from) / (td.to - td.from)); }
+    if (goo.cfg && physGibs.gibs.length) physGibs.carry(goo);
     // v48: a sea that HURTS is not a floor; one that does not still carries
     if (!goo.cfg.hurts) player.floorY = goo.carry(dt, player, player.floorY ?? 0);
   }
@@ -3285,7 +3400,12 @@ function step(dt) {
     // left alone — flying past the top of a pile is not a collision.
     if (solidArena && e.alive && e.type !== 'thorn') {
       const r = Math.max(0.4, (e.radius ?? 0.8) * 0.7);
-      if (walls.walls.length) walls.pushOut(e.pos, r, e.footOffset ?? 0.6);
+      if (walls.walls.length) {
+        const w = walls.pushOut(e.pos, r, e.footOffset ?? 0.6);
+        // v53: the swarm GRINDS the cover down — a body shoving on a pile wears
+        // it, a brute far faster; and the pile is what runs the clock on hiding
+        if (w && w.maxHp) wearWall(w, dt * (e.type === 'brute' ? (S().pillars?.brute ?? 10) : (S().pillars?.grind ?? 3)), e.pos);
+      }
       if (platforms.count) platforms.pushOut(e.pos, r, e.footOffset ?? 0.6);
     }
     if (e.type === 'watcher') {
@@ -3372,6 +3492,8 @@ function step(dt) {
   updateCombat(dt);
   debris.update(dt);
   physGibs.update(dt);
+  if (S().finale && !finale && !finaleDone && gameTime >= S().finale.at) startFinale();
+  updateFinale(dt);
   // style meter bleeds when you stop scoring — faster at higher ranks so the
   // top tiers stay fleeting and demand a continuous chain
   // provisional v4.1 soften (was 6 + 0.05v): S-rank was bleeding out between
@@ -3669,6 +3791,7 @@ window.__hd = {
     tuning() { return T; },
     inputObj() { return input; },
     getGibs() { return physGibs.getState(); },   // prototype: the physical gibs
+    wearWall(i, amount) { const w = walls.walls[i]; if (w) wearWall(w, amount, _seg.set(w.x, w.h * 0.5, w.z)); return { felled: wallsFelled, left: walls.walls.length }; },   // v53
     gibsObj() { return physGibs; },
     killEnemy(e, dx = 0, dz = -1) { if (e?.alive) killEnemy(e, new THREE.Vector3(dx, 0, dz).normalize()); },   // a kill without a dagger, for the gate
     gazeObj() { return gaze; },     // v51: the gaze lock, for the gate
@@ -3682,7 +3805,10 @@ window.__hd = {
         geo: h.object.geometry?.type, dist: +h.distance.toFixed(1), visible: h.object.visible,
         at: [+h.point.x.toFixed(1), +h.point.y.toFixed(1), +h.point.z.toFixed(1)] }));
     },
-    truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate   // v50: the gate taps the touch sticks the way a thumb does
+    truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
+    triggerFinale() { startFinale(); return !!finale; },   // v53
+    getFinale() { return { active: !!finale, kind: finale?.kind ?? null, t: +(finale?.t ?? 0).toFixed(2), phase: finale?.phase ?? 0, rocks: finale?.rocks ?? 0, wrecked: finale?.wrecked ?? 0, done: finaleDone, pressure: finalePressure, drain: +goo.drain.toFixed(2), declared: S().finale ?? null }; },
+    getConvoy() { const cv = truck.active; return cv ? { trucks: cv.trucks.length, jackknifed: cv.jackknifed, hp: cv.trucks.map(t => t.hp), cargo: cv.cargo.getState() } : null; },   // v53   // v50: the gate taps the touch sticks the way a thumb does
     getSeasons() {
       const sn = S();
       return {
@@ -3691,6 +3817,7 @@ window.__hd = {
         // v48: what the player can pick, and what season 2 is
         visible: SEASONS.filter(x => !x.hidden).map(x => ({ id: x.id, menu: x.menu ?? x.name })),
         spawns: sn.spawns ?? null, gooHurts: !!sn.goo?.hurts, gooAmp: sn.goo?.amp ?? 0, gooRipple: sn.goo?.ripple ?? 0,
+        tide: sn.goo?.tide ?? null, tideK: +goo.tide.toFixed(3), waveSpeed: goo.speed, waveGap: goo.gap,
         jumpApex: +((T.player.jumpV * T.player.jumpV) / (2 * -T.player.gravity)).toFixed(3),
         sky: { void: skyMat.uniforms.uVoid.value.toArray(), band: skyMat.uniforms.uBand.value, stars: skyMat.uniforms.uStars.value, horizon: skyMat.uniforms.uEmberCol.value.toArray() },
         floorTint: floorMat.uniforms.uTint.value.toArray(),

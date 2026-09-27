@@ -105,6 +105,12 @@ export const SEASONS = [
       color: [0.010, 0.009, 0.011], // darker (owner) — LINEAR, well under the grid
       glow: [0.030, 0.005, 0.004],  // the foot of each pile catches the horizon — barely
       minGap: 4.5,              // between piles, so there is always a way through
+      // v53 COVER THAT DIES (owner): a pile has hit points. A nail takes one, a
+      // shotgun a fistful; a body shoving against it wears it at `grind` a
+      // second, a brute at `brute`. Past half it leans; at zero it collapses
+      // into a heap of shale chunks (physical) and a spray of chips. Standing
+      // behind one has a clock now, and the swarm is what runs it.
+      hp: 70, grind: 3, brute: 10, rubble: [0.07, 0.06, 0.065],   // the chunks, a step lighter than the rock so a heap reads as a heap
       shale: { tile: 0, layer: 0.34, jitter: 0.16, turn: 0.09 },
     },
     platforms: {
@@ -123,6 +129,13 @@ export const SEASONS = [
     // v52: the shale nail-gun (voxel.js needlerHand)
     hand: { model: 'needlerHand', pose: { x: 0.46, y: -0.44, z: -1.05, rx: 0.02, ry: Math.PI + 0.16, rz: 0.03 },
       muzzle: [0.36, -0.18], glow: [2.4, 0.5, 0.1] },
+    // v53 THE FINALE (owner: *nothing in a season ends*): at three minutes the
+    // sky throws shale. For `duration` seconds a chunk falls every `every`
+    // seconds onto a random point of the disc from `height` up — a rock that
+    // lands on you is a hit — and the fallen rock stays as heaps: the new floor.
+    // Survive it and the run goes on, with the director `after.pressure` tighter.
+    finale: { at: 180, kind: 'rockfall', name: 'THE ROCKFALL', duration: 10, every: 0.2, height: 16, size: 0.95,
+      color: [0.07, 0.06, 0.065], after: { pressure: 1.3 } },
     goo: null,                  // season 2's, not season 1's
     inca: null,
     roster: null,
@@ -165,6 +178,17 @@ export const SEASONS = [
     fog: { color: [0.30, 0.19, 0.08], near: 24, far: 115 },
     dust: { color: [1.2, 0.85, 0.35], size: 0.07, opacity: 0.32 },   // pollen in the low sun
     ground: [0.012, 0.04, 0.045],                                     // the sea past the disc
+    // v53 THE FINALE: the sea DRAINS — over `drainFor` seconds the water goes,
+    // the caustics with it; the temple floor shows for `dryFor` seconds and
+    // seven stone steps rise out of it; then the sea comes back over `refill`
+    // and the tide goes on. The steps stay: stand on one and the wave passes
+    // under your feet — the refuges you earn by surviving the drain.
+    finale: { at: 180, kind: 'drain', name: 'THE SEA DRAINS', drainFor: 4, dryFor: 14, refill: 5,
+      steps: { count: 7, rMin: 5, rMax: 20, wMin: 2.4, wMax: 3.4, hMin: 1.5, hMax: 2.0,
+        shale: { layer: 0.3, jitter: 0.08, turn: 0.04, tile: 0.8, tileLift: 0.05, tileTilt: 0.05,
+          color: [0.06, 0.11, 0.10], tileColor: [0.10, 0.17, 0.15], glow: [0.10, 0.30, 0.26] },
+        grow: 1.6, sink: 1.1, lifeMin: 99999, lifeMax: 99999, drift: 0, driftW: 0, avoidPlayer: 4 },
+      after: { pressure: 1.3 } },
     // the jade macuahuitl, throwing obsidian (voxel.js jadeHand; tuning obsidian)
     hand: { model: 'jadeHand', pose: { x: 0.52, y: -0.5, z: -1.05, rx: 0.42, ry: Math.PI + 0.3, rz: -0.22 },
       muzzle: [0.36, -0.2], glow: [0.35, 2.4, 2.0] },
@@ -185,6 +209,12 @@ export const SEASONS = [
       amp: 1.1,                 // crest height above the floor — ×1.22 at the ripple's peak is 1.34, under the 1.54 apex with a hand of air
       width: 5,                 // v50: 8 was a hill you landed back on; 5 passes under one jump
       gap: 16,                  // clear water between one wave and the next
+      // v53 THE TIDE (owner: *the tide comes in*): from 30 s to 150 s the waves
+      // come CLOSER (gap 16 → 8) and FASTER (9 → 11: a faster crest is past in
+      // less of a jump, so the tide sharpens the read without closing the
+      // window — jumped in the gate at both ends) with a bigger swell along the
+      // crest; and the crest carries the bone heaps with it (gibs.js carry).
+      tide: { from: 30, to: 150, gap: 8, speed: 11, ripple: 0.18 },   // ripple UNDER 0.27: past it the swell dips the crest below hurtFrom and the wave has gaps you can walk through
       speed: 9,                 // u/s. Fitted by jumping a body over it in the real code (gate):
                                 // one jump clears in a 0.26 s window, the double jump in 0.79 s
       lean: 0.5,                // how far the crest leans forward as it steepens
@@ -280,6 +310,11 @@ export const SEASONS = [
     goo: null,
     inca: null,
     roster: null,
+    // v53 THE FINALE: THE PILE-UP. Every truck within `reach` ahead folds and
+    // stops dead: a wall of wrecks across the road you cross truck to truck,
+    // standing still, cargo everywhere. Past it the convoy runs `resume` faster
+    // and the skulls come thicker.
+    finale: { at: 180, kind: 'pileup', name: 'THE PILE-UP', reach: 70, duration: 14, resume: 1.2, after: { skulls: 1.4 } },
     weapon: 'missile',                   // v52: missiles that look like missiles
     hand: { model: 'launcherHand', pose: { x: 0.5, y: -0.46, z: -1.05, rx: 0.02, ry: Math.PI + 0.22, rz: 0.06 },
       muzzle: [0.4, -0.2], glow: [2.6, 1.3, 0.25] },                    // the missiles fly as daggers — every hit and kill path is theirs
@@ -302,7 +337,8 @@ export const SEASONS = [
     // has been held (up to `full`). A glance sends a lazy missile that can
     // miss; a held look sends a fast one that will not.
     gaze: { range: 24, cone: 0.16, grace: 0.2, dwell: 0.25, full: 1.2,
-      speed: [16, 40], turn: [1.2, 10], every: [0.5, 0.26], life: 2.6, damage: 1 },
+      speed: [16, 40], turn: [1.2, 10], every: [0.5, 0.26], life: 2.6, damage: 1,
+      trucks: true },   // v53: the cabs lock too — three missiles and a truck jackknifes and spills its load
     built: true,
     todo: [
       'trucks that read as trucks — a cab, a trailer, wheels (they are slabs)',

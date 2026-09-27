@@ -125,7 +125,7 @@ export class PhysGibs {
       // world → solver: (x, y, z) → (x, −z, y)
       const b = new Rigid(this.sv, [s, s, s], 1, c.friction, [x, -z, Math.max(y, s * 0.6)], [_s.x, -_s.z, _s.y]);
       b.velocityAng.set([(Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8]);
-      this.gibs.push({ b, s, r: k.r / k.n, g: k.g / k.n, bl: k.b / k.n, still: 0 });
+      this.gibs.push({ b, s, m: b.mass, r: k.r / k.n, g: k.g / k.n, bl: k.b / k.n, still: 0 });
       for (const v of k.vox) taken.add(v);
     }
     while (this.gibs.length > c.cap) { this._remove(0); this.stats.retired++; }
@@ -134,12 +134,94 @@ export class PhysGibs {
     return taken.size ? worldVoxels.filter(v => !taken.has(v)) : worldVoxels;
   }
 
+  /**
+   * RUBBLE (v53, season 1's cover that dies): a pile collapses into `count`
+   * chunks drawn from inside its box (centre x, z; yaw; len × h × thick),
+   * each `size` across, in `color`. They fall and heap where the pile stood.
+   */
+  rubble(x, z, yaw, len, h, thick, count, size, color) {
+    const c = this.cfg;
+    const room = Math.max(0, c.awakeCap - this.awake);
+    count = Math.min(count, room);
+    if (!this.on || count <= 0 || this.ms > c.budgetMs) { this.stats.refused++; return 0; }
+    const cs = Math.cos(yaw), sn = Math.sin(yaw);
+    for (let i = 0; i < count; i++) {
+      const u = (Math.random() - 0.5) * (len - size), v = (Math.random() - 0.5) * (thick - size);
+      const wx = x + u * cs + v * sn, wz = z - u * sn + v * cs, wy = size * 0.6 + Math.random() * (h - size);
+      const s = size * (0.7 + Math.random() * 0.6);
+      const b = new Rigid(this.sv, [s, s, s], 1, c.friction, [wx, -wz, wy], [(Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 0.6]);
+      b.velocityAng.set([(Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4]);
+      const k = 0.8 + Math.random() * 0.4;
+      this.gibs.push({ b, s, m: b.mass, r: color[0] * k, g: color[1] * k, bl: color[2] * k, still: 0 });
+    }
+    while (this.gibs.length > c.cap) { this._remove(0); this.stats.retired++; }
+    this.stats.sent += count;
+    return count;
+  }
+
+  /** v53 THE ROCKFALL: one chunk dropped from `y` at (x, z), flagged as a hazard
+   *  until it comes to rest — main asks `fallingOn(feet)` every frame. */
+  rock(x, z, y, size, color) {
+    const c = this.cfg;
+    if (!this.on || this.awake >= c.awakeCap) { this.stats.refused++; return null; }
+    const s = size * (0.8 + Math.random() * 0.4);
+    const b = new Rigid(this.sv, [s, s, s], 1, c.friction, [x, -z, y], [(Math.random() - 0.5) * 0.8, (Math.random() - 0.5) * 0.8, -2]);
+    b.velocityAng.set([(Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 5]);
+    const k = 0.85 + Math.random() * 0.3;
+    const g = { b, s, m: b.mass, r: color[0] * k, g: color[1] * k, bl: color[2] * k, still: 0, hazard: true };
+    this.gibs.push(g);
+    while (this.gibs.length > c.cap) { this._remove(0); this.stats.retired++; }
+    return g;
+  }
+
+  /** is a falling hazard about to land on a body standing at (x, y, z)? */
+  fallingOn(x, y, z, radius = 0.5) {
+    for (const g of this.gibs) {
+      if (!g.hazard || g.b.mass <= 0) continue;
+      const p = g.b.positionLin;
+      if (p[0] === undefined) continue;
+      if (g.b.velocityLin[2] > -3) continue;
+      if (Math.hypot(p[0] - x, -p[1] - z) > g.s * 0.5 + radius) continue;
+      if (p[2] - g.s * 0.5 > y + 2.2 || p[2] + g.s * 0.5 < y) continue;
+      g.hazard = false;   // one strike per rock
+      return g;
+    }
+    return null;
+  }
+
   _remove(i) {
     const { b } = this.gibs[i];
     for (const f of b.forces.slice()) f.destroy();
     const j = this.sv.bodies.indexOf(b);
     if (j >= 0) this.sv.bodies.splice(j, 1);
     this.gibs.splice(i, 1);
+  }
+
+  /**
+   * THE TIDE (v53, season 2): the crest lifts every gib it reaches, carries it
+   * along its travel and drops it where the crest leaves it — so the heaps
+   * move with the sea and the floor is never the same twice. A sleeping gib
+   * is woken by the water; it sleeps again where it lands.
+   */
+  carry(goo) {
+    if (!goo.cfg) return 0;
+    let n = 0;
+    for (const g of this.gibs) {
+      const b = g.b, p = b.positionLin;                 // solver (x, y, z) = world (x, −z, y)
+      const h = goo.heightAt(p[0], -p[1]);
+      if (h < g.s * 0.5 + 0.02) continue;              // no crest under it
+      const lift = h - (p[2] - g.s * 0.5);
+      if (lift <= 0) continue;                          // already riding above it
+      if (b.mass <= 0) { b.mass = g.m; g.still = 0; }   // the water wakes it
+      // slower than the crest, so the crest overtakes it and sets it down a few
+      // units on (at 0.9× it rode the crest clean off the disc — the first probe)
+      b.velocityLin[0] = goo.dirX * goo.speed * 0.45;
+      b.velocityLin[1] = -goo.dirZ * goo.speed * 0.45;
+      b.velocityLin[2] = Math.max(b.velocityLin[2], Math.min(lift * 14, 6));
+      n++;
+    }
+    this.stats.carried = (this.stats.carried || 0) + n;
+    return n;
   }
 
   update(dt) {
@@ -160,7 +242,7 @@ export class PhysGibs {
         const v = Math.hypot(b.velocityLin[0], b.velocityLin[1], b.velocityLin[2]);
         const w = Math.hypot(b.velocityAng[0], b.velocityAng[1], b.velocityAng[2]);
         g.still = (v < c.sleepV && w < c.sleepW) ? g.still + 1 : 0;
-        if (g.still > c.sleepSteps) { b.mass = 0; b.velocityLin.fill(0); b.velocityAng.fill(0); }
+        if (g.still > c.sleepSteps) { b.mass = 0; b.velocityLin.fill(0); b.velocityAng.fill(0); g.hazard = false; }
       }
     }
     if (steps) this.ms += ((spent / steps) - this.ms) * 0.15;

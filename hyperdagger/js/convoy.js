@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Skull } from './enemy.js?v=83';
+import { Cargo } from './cargo.js?v=83';
 
 /**
  * THE CONVOY — season 3 (HAUL) as Clustertruck (owner, 2026-09-23): *the
@@ -129,6 +130,8 @@ export class Convoy {
     this.carryX = 0; this.carryZ = 0;
     this.standing = null;
     this.built = false;
+    this.cargo = new Cargo(scene);   // v53: the loads
+    this.jackknifed = 0;
   }
 
   /** the gate and the loop harness read `platforms` the way they read the old road */
@@ -213,6 +216,8 @@ export class Convoy {
   clear() {
     for (const t of this.trucks) this._remove(t);
     this.trucks.length = 0;
+    this.cargo.clear();
+    this.jackknifed = 0;
     this.carryX = 0; this.carryZ = 0; this.standing = null;
     this.setVisible(false);
   }
@@ -282,18 +287,56 @@ export class Convoy {
       roll0: (Math.random() - 0.5) * 2 * c.roll, pitch0: (Math.random() - 0.5) * 2 * c.pitch,
       ph: Math.random() * 6.28, ph2: Math.random() * 6.28, bobW: 2.6 + Math.random() * 1.4,
       age: 0,
+      // v53 THE JACKKNIFE: three missiles in the cab and the truck folds — it
+      // brakes to a crawl, swings its trailer across the lane and spills its
+      // load. `proxy` is what the gaze locks: alive while the cab is whole.
+      hp: 3, jack: 0, jackYaw: 0, jackDir: Math.random() < 0.5 ? -1 : 1, jacked: false,
+      cabLocal: new THREE.Vector3(0, cab.position.y, cab.position.z),
     };
+    t.proxy = { isTruck: true, truck: t, alive: true, radius: 1.6, type: 'truck',
+      center: (v) => v.copy(t.cabLocal).applyEuler(t.group.rotation).add(t.group.position) };
     group.position.set(t.x, top, z);
     this.trucks.push(t);
+    this.cargo.load(t);   // v53: cargo, not decks
     return t;
   }
 
-  /** the height of truck `t`'s tilted top under (x, z), or null off its footprint */
+  /** the height of truck `t`'s tilted top under (x, z), or null off its footprint —
+   *  or of a welded crate riding on it, when one is under the feet (v53) */
   topAt(t, x, z) {
     const g = t.group.position;
     const lx = x - g.x, lz = z - g.z;
     if (Math.abs(lx) > t.w / 2 + 0.3 || Math.abs(lz) > t.depth / 2 + 0.3) return null;
-    return g.y + lx * Math.tan(t.group.rotation.z) - lz * Math.tan(t.group.rotation.x);
+    const top = g.y + lx * Math.tan(t.group.rotation.z) - lz * Math.tan(t.group.rotation.x);
+    const crate = this.cargo.topAt(x, z);
+    return crate !== null && crate > top ? crate : top;
+  }
+
+  /** v53: a missile in the cab. The third one jackknifes the truck. */
+  hit(t) {
+    if (t.jacked) return false;
+    t.hp--;
+    this.cargo.jolt(t, 1.5);
+    if (t.hp > 0) return false;
+    t.jacked = true; t.jack = 2.0; t.ts = 2; t.brakeT = 1.2;
+    t.proxy.alive = false;
+    this.cargo.jolt(t, 6);
+    this.jackknifed++;
+    return true;
+  }
+
+  /** v53 THE PILE-UP: a truck folds and STOPS where it is — the finale's wall */
+  wreck(t) {
+    if (!t.jacked) { t.hp = 0; t.jacked = true; t.jack = 2.0; t.proxy.alive = false; this.cargo.jolt(t, 6); this.jackknifed++; }
+    t.wrecked = true; t.ts = 0; t.brakeT = 0;
+    return t;
+  }
+
+  /** what the gaze may lock besides the skulls: every whole cab in the convoy */
+  targets() {
+    const out = [];
+    for (const t of this.trucks) if (t.proxy.alive) out.push(t.proxy);
+    return out;
   }
 
   /** the front of the convoy (most −z) */
@@ -399,8 +442,8 @@ export class Convoy {
     const dive = Math.max(0, t.brakeT) * this.cfg.diveK;            // nose down when it brakes
     g.rotation.set(
       t.pitch0 + Math.sin(t.age * 2.3 + t.ph2) * this.cfg.jostle * 0.6 - dive,
-      -t.vx * 0.035,
-      t.roll0 + Math.sin(t.age * 1.7 + t.ph) * this.cfg.jostle + lean,
+      -t.vx * 0.035 + t.jackYaw,
+      t.roll0 + Math.sin(t.age * 1.7 + t.ph) * this.cfg.jostle + lean + t.jackYaw * 0.18,
     );
     g.position.set(t.x, t.top + Math.sin(t.age * t.bobW + t.ph) * this.cfg.bob, t.z);
   }
@@ -415,7 +458,13 @@ export class Convoy {
         if (Math.random() < c.brakeChance) { t.brakeT = 1.4; t.ts = c.speed - c.speedVar - 7; }
         else t.ts = c.speed + (Math.random() * 2 - 1) * c.speedVar;
       }
-      if (t.brakeT > 0) { t.brakeT -= dt; if (t.brakeT <= 0) t.ts = c.speed + (Math.random() - 0.5) * c.speedVar; }
+      if (t.brakeT > 0) { t.brakeT -= dt; if (t.brakeT <= 0) t.ts = t.jacked ? 2 : c.speed + (Math.random() - 0.5) * c.speedVar; }
+      if (t.jacked) {
+        // the fold: the trailer swings out over a second and stays swung; it crawls
+        t.jack = Math.max(0, t.jack - dt);
+        t.jackYaw += (t.jackDir * 0.7 - t.jackYaw) * Math.min(1, dt * 2.2);
+        t.ts = Math.min(t.ts, t.wrecked ? 0 : 2);
+      }
       // LANES: drift to a neighbour, unless someone is beside you there
       t.laneT -= dt;
       if (t.laneT <= 0) {
@@ -434,7 +483,7 @@ export class Convoy {
       const want = Math.min(t.ts, limit);
       const acc = want < t.spd ? (t.brakeT > 0 ? 12 : 7) : 4;
       t.spd += Math.sign(want - t.spd) * Math.min(Math.abs(want - t.spd), acc * dt);
-      t.spd = Math.max(4, t.spd);
+      t.spd = t.wrecked ? Math.max(0, t.spd) : Math.max(4, t.spd);
       // steer to the lane's centre
       const tx = LANES[t.lane];
       const wantVx = Math.max(-c.laneSpeed, Math.min(c.laneSpeed, (tx - t.x) * 1.4));
@@ -446,6 +495,7 @@ export class Convoy {
       t.brakeMat.color.copy(t.brakeT > 0 || want < t.spd - 1 ? EDGE_BRAKE : _c.setHex(0x3a0806));
       t.edge.material.color.copy(t.brakeT > 0 ? EDGE_BRAKE : EDGE);
     }
+    this.cargo.update(dt, this.trucks, player.feet.z, ROAD_Y);   // v53
     this._layAhead(player.feet.z);
     for (let i = this.trucks.length - 1; i >= 0; i--) {
       const t = this.trucks[i];
@@ -453,7 +503,7 @@ export class Convoy {
       if (t.z > player.feet.z + 40 || t.z < player.feet.z - this.cfg.ahead - 60) { this._remove(t); this.trucks.splice(i, 1); }
     }
     // skulls come down the road at you — they are what the look is for
-    const rate = 0.25 + Math.min(0.9, gameTime * 0.016);
+    const rate = (0.25 + Math.min(0.9, gameTime * 0.016)) * (c.skullMul ?? 1);
     if (gameTime > c.skullsFrom && Math.random() < dt * rate) {
       const z = player.feet.z - 22 - Math.random() * 16;
       const x = LANES[Math.floor(Math.random() * LANES.length)] + (Math.random() - 0.5) * 2;
