@@ -17,11 +17,11 @@
 // Phases: idle → flight → idle | spent → (the round scores) → shop | fell |
 // won; shop → idle.
 
-import { Pajatso } from '../classic/game.js?v=5';
-import { buildPajatso, POTTI_COLS, MIDDLE } from '../classic/layout.js?v=5';
-import { makeRng } from '../rng.js?v=5';
-import { drawOutcome, buildGrid, linesShown, reachLines, STOP_ORDER, TIMING } from '../reels.js?v=5';
-import * as D from './data.js?v=5';
+import { Pajatso } from '../classic/game.js?v=6';
+import { buildPajatso, POTTI_COLS, MIDDLE, YAKU } from '../classic/layout.js?v=6';
+import { makeRng } from '../rng.js?v=6';
+import { drawOutcome, buildGrid, linesShown, reachLines, STOP_ORDER, TIMING } from '../reels.js?v=6';
+import * as D from './data.js?v=6';
 
 const JOKER = Object.fromEntries(D.JOKERS.map(j => [j.id, j]));
 const CHARM = Object.fromEntries(D.CHARMS.map(c => [c.id, c]));
@@ -38,6 +38,7 @@ export function computeRules(ids) {
 
 // which kind of hit a pocket is
 function kindOf(p) {
+  if (p.denchu) return 'denchu';
   if (p.pay === 'start') return 'heso';
   if (p.pay === 'attacker') return 'attacker';
   if (p.tulip) return 'tulip';
@@ -106,7 +107,7 @@ export class Kuoppa extends Pajatso {
   scoreHit(kind, where = {}) {
     const h = D.HITS[kind];
     if (!h || (kind === 'R' && this.twist('dry_r'))) return;
-    const L = this.twist('flat') ? 1 : this.levels[kind] ?? 1;
+    const L = this.twist('flat') ? 1 : this.levels[kind === 'denchu' ? 'heso' : kind] ?? 1;
     const t = this.tally;
     if (WINDOW_KINDS.has(kind)) { t.round.streak++; t.round.windows++; }
     const times = this.jokers.some(j => JOKER[j.id].retrigger?.(t)) && WINDOW_KINDS.has(kind) ? 2 : 1;
@@ -126,9 +127,10 @@ export class Kuoppa extends Pajatso {
   window(p) {
     const kind = kindOf(p);
     this.stats.hits[p.id] = (this.stats.hits[p.id] ?? 0) + 1;
-    if (kind === 'heso') {
+    if (kind === 'heso' || kind === 'denchu') {
+      this.hear({ t: 'heso' });
       if (this.spins.length < D.HOLD) { this.spins.push({ from: p.id }); this.events.push({ t: 'held', n: this.spins.length, x: p.x, y: p.y, cup: p.id }); }
-      this.scoreHit('heso', p);
+      this.scoreHit(kind, p);
       return;
     }
     if (kind === 'attacker') { this.scoreHit('attacker', p); this.events.push({ t: 'attacker', x: p.x, y: p.y }); return; }
@@ -163,6 +165,15 @@ export class Kuoppa extends Pajatso {
     return ok;
   }
 
+  // the windmills and the stage score too, once a coin
+  onBoard(ev) {
+    if (ev.t === 'tick' && ev.what === 'windmill') {
+      const c = this.board.coins[0];
+      if (c && !c.milled) { c.milled = true; this.scoreHit('mill', c); }
+    }
+    super.onBoard(ev);
+  }
+
   intoPot(k, x) {
     this.tally.round.streak = 0;
     super.intoPot(k, x);
@@ -191,6 +202,13 @@ export class Kuoppa extends Pajatso {
   // ── time: the physics at the machine's pace, the reels at the clock's ──
   update(dt) {
     super.update(dt);
+    // a coin through the warp onto the stage: inside the yakumono's frame
+    const c = this.board.coins[0];
+    if (c && !c.staged && this.has('chucker') && c.x > YAKU.x0 && c.x < YAKU.x1 && c.y > YAKU.y0 && c.y < YAKU.side) {
+      c.staged = true;
+      this.scoreHit('stage', c);
+      this.events.push({ t: 'stage', x: c.x, y: c.y });
+    }
     const h = Math.min(dt, 0.1);
     if (this.spin) {
       this.spin.t += h;
@@ -230,6 +248,7 @@ export class Kuoppa extends Pajatso {
     const len = stops[STOP_ORDER[2]] + TIMING.show;
     this.spin = { outcome, grid, line, reach: hasReach ? reach : null, t: 0, stops, len, from: src.from };
     this.run.spins++;
+    if (hasReach) this.hear({ t: 'reach' });
     this.events.push({ t: 'spin', outcome, reach: hasReach, len });
   }
 

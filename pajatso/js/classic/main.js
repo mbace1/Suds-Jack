@@ -2,10 +2,10 @@
 // about what happens in it. The lever, keys, pad, HUD voices, language and
 // loop are the table both pages stand at (table.js).
 
-import { Pajatso, START_COINS } from './game.js?v=5';
-import { View } from './view.js?v=5';
-import { JACKPOT } from './layout.js?v=5';
-import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=5';
+import { Pajatso, START_COINS } from './game.js?v=6';
+import { View } from './view.js?v=6';
+import { JACKPOT } from './layout.js?v=6';
+import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=6';
 
 const BEST = 'pajatso.best';
 let game = new Pajatso({ seed: seedFrom() });

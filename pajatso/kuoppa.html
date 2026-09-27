@@ -73,6 +73,8 @@
     .pop.chips { color: #7ab8ff; font-size: 24px; } .pop.mult { color: #ff6a6a; font-size: 22px; }
     .pop.joker { font: 900 15px var(--black); color: #fff; background: rgba(40,10,60,.8); padding: 2px 8px; border-radius: 6px; text-shadow: none; }
     .pop.nudge { font-size: 16px; color: #fff; }
+    #toast.reach { color: #ff4060; font-size: 70px; text-shadow: 0 4px 0 #000, 0 0 30px rgba(255,40,70,.9); animation: throb .35s ease-in-out infinite alternate; }
+    @keyframes throb { to { transform: scale(1.08); } }
     body.tall .stat b { font-size: 24px; }
     body.tall #coins b { font-size: 30px; }
     /* a phone has room for the purse beside the arcade's corner and nothing else */
@@ -202,8 +204,8 @@
   <script type="importmap">
   { "imports": { "three": "./vendor/three.module.min.js" } }
   </script>
-  <script type="module" src="../hub/shell.js?v=82"></script>
-  <script type="module" src="js/kuoppa/main.js?v=5"></script>
+  <script type="module" src="../hub/shell.js?v=83"></script>
+  <script type="module" src="js/kuoppa/main.js?v=6"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=9';
