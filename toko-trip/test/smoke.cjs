@@ -676,10 +676,12 @@ const check = (label, ok) => {
   check(`and the surf is glowing blue (fire ${visit.fire.seaFire}, tint ${visit.fire.tint.join(' ')})`,
     visit.fire.seaFire > 0.6 && visit.fire.tint[2] > visit.fire.tint[0] * 1.5);
   const aim = await page.evaluate(() => {
-    const tt = window.__tt, d = tt.debug, c = tt.camera.position, v = d.verdict.position;
-    const dx = v.x - c.x, dz = v.z - c.z;
+    // straight out to sea — the way the visit faced you — not at the board,
+    // which stands off to one side and can have sand under the ray
+    const tt = window.__tt, d = tt.debug, c = tt.camera.position;
+    const dx = Math.sin(tt.chair.yaw) * 1.5, dz = Math.cos(tt.chair.yaw) * 1.5;
     return {
-      sea: d.sparkAt(c.x, c.y, c.z, dx, -0.9, dz),            // down and out, into the water
+      sea: d.sparkAt(c.x, c.y, c.z, dx, -0.45, dz),           // out past the shallows, into the water
       sand: d.sparkAt(c.x, c.y, c.z, -dx * 0.2, -1, -dz * 0.2), // at your own feet
       sky: d.sparkAt(c.x, c.y, c.z, dx, 0.3, dz),
     };
@@ -703,9 +705,9 @@ const check = (label, ok) => {
     const d = window.__tt.debug;
     d.postcardAct();
     await new Promise(r => { const go = k => k ? requestAnimationFrame(() => go(k - 1)) : r(); go(5); });
-    const tt = window.__tt, c = tt.camera.position, v = d.verdict.position;
+    const tt = window.__tt, c = tt.camera.position;
     const r = await d.verdictAct({ uv: { x: 0.8, y: 0.5 } });
-    return { mood: tt.mood, fire: d.fire().seaFire, spark: d.sparkAt(c.x, c.y, c.z, v.x - c.x, -0.9, v.z - c.z), r };
+    return { mood: tt.mood, fire: d.fire().seaFire, spark: d.sparkAt(c.x, c.y, c.z, Math.sin(tt.chair.yaw) * 1.5, -0.9, Math.cos(tt.chair.yaw) * 1.5), r };
   });
   check(`the ripple visit is at golden hour, where the surf does not glow (fire ${noon.fire}, ${noon.spark} flecks)`,
     noon.mood === 0 && noon.fire < 0.25 && noon.spark === 0);
@@ -727,6 +729,42 @@ const check = (label, ok) => {
   check(`and when everything is tried the card says so rather than nagging (${done.card}, glow ${done.glow})`,
     done.card === null && done.fresh.length === 0);
   await page.evaluate(() => { window.__tt.debug.resetNews(); window.__tt.debug.goChair(); window.__tt.setMood(0, true); });
+
+  // ── the first sit (v21) ──
+  // The first headset session puts a board in front of the chair. It asks
+  // you to sit, offers the fix if the seat does not line up, then points at
+  // the postcard and goes — once per browser. Driven through its update with
+  // the seated flag set by hand: there is no head in a flat browser.
+  const sit1 = await page.evaluate(() => {
+    const d = window.__tt.debug, c = window.__tt.chair;
+    d.welcomeStart();
+    const s0 = d.firstSit();
+    d.welcomeUpdate(26);
+    const s1 = d.firstSit();
+    d.setSeated(true); d.welcomeUpdate(0.1);
+    const s2 = d.firstSit();
+    d.welcomeUpdate(10);
+    const s3 = d.firstSit();
+    d.setSeated(false);
+    const fx = Math.sin(c.yaw), fz = Math.cos(c.yaw);
+    const ahead = (s0.at[0] - c.p[0]) * fx + (s0.at[2] - c.p[2]) * fz;
+    return { s0, s1, s2, s3, ahead, target: d.rayTargets.includes(d.welcome) };
+  });
+  check(`the first sit stands a board in front of the chair (${sit1.ahead.toFixed(2)} m ahead, step ${sit1.s0.step})`,
+    sit1.s0.up && sit1.s0.step === 0 && sit1.ahead > 0.8 && sit1.ahead < 2 && sit1.target);
+  check(`if nobody sits, it says how to line the seat up (step ${sit1.s1.step})`, sit1.s1.step === 1);
+  check(`a sit moves it on (step ${sit1.s2.step})`, sit1.s2.step === 2);
+  check(`then it goes, and does not come back (done v${sit1.s3.done})`, sit1.s3.up === false && sit1.s3.done >= 21);
+  const perfVerdict = await page.evaluate(async () => {
+    const d = window.__tt.debug;
+    d.resetNews(); d.feedbackOff(); d.postcardAct();
+    await new Promise(r => { const go = k => k ? requestAnimationFrame(() => go(k - 1)) : r(); go(5); });
+    const r = await d.verdictAct({ uv: { x: 0.2 } });
+    d.resetNews(); d.goChair();
+    return r;
+  });
+  check(`a verdict carries the frame with it (${perfVerdict && perfVerdict.text.split(' · ').slice(-1)[0]})`,
+    perfVerdict && perfVerdict.perf && typeof perfVerdict.perf.fps === 'number' && perfVerdict.perf.tier && /fps/.test(perfVerdict.text));
 
   // ── the sand ──
   // The beach is the biggest surface in view from the chair, and the two
