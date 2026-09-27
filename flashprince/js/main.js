@@ -1023,6 +1023,15 @@ let tokoHeld = false;
 window.__tokoTable = {
   pause() { tokoHeld = true; },
   resume() { tokoHeld = false; last = performance.now(); },
+  // the run in this game's words (hub/playlog-auto.js logs it when you leave)
+  recap() {
+    const s = stage;
+    if (s.mode !== 'free') return null;
+    return [
+      `ROOM ${s.world.index + 1} OF ${ROOMS.length}, ${s.hero.health} HEALTH.`,
+      `${s.defeated.size} DOWN, ${s.tapes} ${s.tapes === 1 ? 'TAPE' : 'TAPES'} FOUND.`,
+    ];
+  },
 };
 
 function frame(now) {

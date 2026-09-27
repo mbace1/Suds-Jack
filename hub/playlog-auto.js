@@ -4,8 +4,12 @@
 import { GAMES } from './games.js?v=117';
 import { logPlay } from './playlog.js';
 
-const here = location.pathname.replace(/\/index\.html$/, '/').replace(/([^/])$/, '$1/');
-const entry = GAMES.find(g => here.endsWith(`/${g.path}`));
+// A catalogue path can carry a query or a hash (flashprince/#flooded-city) or
+// name a page rather than a folder (piritori/act1.html); both sides are
+// compared bare, or those cabinets never log anything at all.
+const bare = p => p.split(/[?#]/)[0].replace(/index\.html$/, '').replace(/\/+$/, '');
+const here = bare(location.pathname);
+const entry = GAMES.find(g => { const p = bare(g.path || ''); return p && here.endsWith(`/${p}`); });
 const onceKey = id => `tokoPlayVisit:${id}:${location.pathname}`;
 
 export function beginPlaySession(game) {

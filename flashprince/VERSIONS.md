@@ -1,5 +1,12 @@
 # Flash Prince — versions
 
+## v71 — 2026-09-27
+
+**Toko hears how far you got.** The table seam now carries a `recap()`: the
+room you are in out of how many, your health, how many you have put down
+and how many tapes you have found. The arcade logs it when you leave, and
+the next time you open Toko he starts there. `main.js` 70 -> 71.
+
 ## v70 — 2026-09-26
 
 **It starts again.** Since v68's merge (2026-08-28) a tape-drawing branch
