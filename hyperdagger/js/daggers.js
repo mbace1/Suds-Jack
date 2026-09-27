@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=83';
+import { TUNING as T } from './tuning.js?v=84';
 
 const _v = new THREE.Vector3();
 const _t = new THREE.Vector3();
@@ -36,6 +36,11 @@ export class DaggerPool {
 
   /** v41: a season's weapon profile re-shapes the projectile. `shape` is
    *  {r, len} for the cone, `color` an HDR triple; null puts the dagger back. */
+  /** v53: where a projectile dies as "into the floor". The disc's floor is y 0;
+   *  the convoy's road is three units down, and a missile steering onto a cab
+   *  at y −1.4 was recycled as a floor hit before it got there. */
+  floorY = -0.2;
+
   setShape(shape = null, color = null) {
     // v51b: a season's projectile is a SHAPE of its own, not just a size —
     // 'cone' (the dagger and the nail), 'shard' (season 2's obsidian: a long
@@ -138,7 +143,7 @@ export class DaggerPool {
       d.prev.copy(d.m.position);
       d.m.position.addScaledVector(d.vel, dt);
       d.life -= dt;
-      if (d.life <= 0 || d.m.position.y < -0.2) {
+      if (d.life <= 0 || d.m.position.y < this.floorY) {
         this.pool.push(d.m);
         this.active.splice(i, 1);
       }

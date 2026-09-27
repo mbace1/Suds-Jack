@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { shadedBox } from './voxel.js?v=83';
+import { shadedBox } from './voxel.js?v=84';
 
 /**
  * WALLS — the first geometry this arena has ever had that is not a floor.
@@ -173,5 +173,5 @@ export class Walls {
     return null;
   }
 
-  getState() { return { count: this.walls.length, walls: this.walls.map(w => ({ x: +w.x.toFixed(1), z: +w.z.toFixed(1), yaw: +w.yaw.toFixed(2), len: w.len, h: w.h, tag: w.tag, hp: w.hp ?? 0, maxHp: w.maxHp ?? 0 })) }; }
+  getState() { return { count: this.walls.length, walls: this.walls.map(w => ({ x: +w.x.toFixed(1), z: +w.z.toFixed(1), yaw: +w.yaw.toFixed(2), len: w.len, h: w.h, tag: w.tag, hp: w.hp ?? 0, maxHp: w.maxHp ?? 0, lean: +(w.lean ?? 0).toFixed(3) })) }; }
 }

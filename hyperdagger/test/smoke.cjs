@@ -892,9 +892,10 @@ s.listen(0, '127.0.0.1', async () => {
         const walls = hd.debug.getWalls();
         pl.feet.set(0, 0, 0); pl.yaw = 0; pl._sync();
         for (let i = 0; i < 40; i++) { pl.velocity.set(0, 0, -12); await frames(1); }
-        return { walls: walls.count, z: +pl.feet.z.toFixed(2), contact: pl.wallContact ? [+pl.wallContact.nx.toFixed(2), +pl.wallContact.nz.toFixed(2)] : null };
+        return { walls: walls.count, solid: walls.walls.every(w => !w.maxHp), z: +pl.feet.z.toFixed(2), contact: pl.wallContact ? [+pl.wallContact.nx.toFixed(2), +pl.wallContact.nz.toFixed(2)] : null };
       });
       ok(`${id}: the court has its four walls`, court.walls === 4, JSON.stringify(court));
+      ok(`${id}: the court's walls are not destructible — v53's hit points are the shale piles' only`, court.solid === true, JSON.stringify(court));
       ok(`${id}: a wall stops the body and reports its normal`,
         court.z > -16 && court.z < -14 && court.contact && court.contact[1] === 1, JSON.stringify(court));
       ok(`${id}: survives on the court`, late.state === 'playing', late.state);
@@ -1172,6 +1173,49 @@ s.listen(0, '127.0.0.1', async () => {
   ok('ember: a gem lands ON a slab, not through it',
     cover.onSlab > cover.slabTop && cover.onFloor < 0.8, JSON.stringify(cover));
 
+  // v53 COVER THAT DIES (owner). Every pile has hit points; worn past half it
+  // leans; at zero it comes down as a heap of shale chunks — physical, so
+  // they stack — and it is gone as cover. Driven through debug.wearWall, the
+  // same function a nail and a shoving body call.
+  const coverDies = await p.evaluate(async () => {
+    const d = window.__hd.debug, G = d.gibsObj();
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const w0 = d.getWalls().walls;
+    const hp = w0.map(w => w.hp), maxHp = w0.map(w => w.maxHp);
+    d.wearWall(0, 40);
+    const mid = d.getWalls().walls[0];
+    const r = d.wearWall(0, 40);
+    await frames(40);
+    return { piles: w0.length, hp, maxHp, midHp: mid.hp, midLean: mid.lean, felled: r.felled, left: r.left, gibs: G.getState().n, gibsTop: G.getState().top };
+  });
+  ok('ember: COVER THAT DIES — every pile has hit points, worn past half it leans, at zero it collapses into a heap of shale',
+    coverDies.piles >= 5 && coverDies.maxHp.every(h => h === 70) && coverDies.hp.every(h => h === 70)
+    && coverDies.midHp === 30 && coverDies.midLean > 0.05 && coverDies.felled === 1 && coverDies.left === coverDies.piles - 1 && coverDies.gibs >= 8 && coverDies.gibsTop > 0.2,
+    JSON.stringify(coverDies));
+  // v53 THE FINALE, season 1: THE ROCKFALL at 180 s — shale falls for ten
+  // seconds, a rock that lands on you is a hit, the fallen rock stays as
+  // heaps, and the director is tighter after
+  const rockfall = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player, G = d.gibsObj();
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const decl = d.getFinale().declared;
+    d.setTime(179.5); await frames(20);
+    const fired = d.getFinale();
+    // a rock straight over the feet, with the invulnerability off: it must land as a hit
+    pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync(); d.setInvulnerable(false);
+    const life1 = d.getState().lifeT;
+    G.rock(0, 0, 4, 0.95, [0.07, 0.06, 0.065]);
+    let hit = false;
+    for (let i = 0; i < 40 && !hit; i++) { await frames(1); const st = d.getState(); if (st.lifeT < life1 - 3 || st.state === 'dead') hit = true; }
+    d.setInvulnerable(true);
+    for (let i = 0; i < 260 && !d.getFinale().done; i++) await frames(1);
+    return { decl: decl?.kind, at: decl?.at, fired: fired.active, kind: fired.kind, rocksEarly: fired.rocks, hit, after: d.getFinale(), heap: G.getState() };
+  });
+  ok('ember: THE FINALE — at 180 s the rockfall fires and rock falls', rockfall.decl === 'rockfall' && rockfall.at === 180 && rockfall.fired && rockfall.kind === 'rockfall' && rockfall.rocksEarly >= 1, JSON.stringify({ decl: rockfall.decl, fired: rockfall.fired, rocks: rockfall.rocksEarly }));
+  ok('ember: a rock that lands on you is a hit', rockfall.hit === true, JSON.stringify({ hit: rockfall.hit }));
+  ok('ember: the rockfall ends, the fallen rock stays as heaps, and the run goes on harder',
+    rockfall.after.done && rockfall.after.pressure > 1 && rockfall.heap.n >= 10, JSON.stringify({ after: rockfall.after, heap: rockfall.heap.n }));
+
   const inca = await seasonRead('inca');
   ok('inca: season 2 is BUILT (v44) and still names what is open',
     inca.sn.current === 'inca' && inca.sn.built === true && inca.sn.todo.length >= 2
@@ -1279,7 +1323,7 @@ s.listen(0, '127.0.0.1', async () => {
   // longer it is held. Loaded the way a player arrives (no ?mode=). The
   // convoy is stepped directly where the question is physics, so a slow
   // renderer cannot change the answer.
-  let haul = {};
+  let haul = {}, haul2 = {};
   {
     const q = await b.newPage({ viewport: VIEW });
     q.on('pageerror', e => errs.push('pageerror: ' + e.message));
@@ -1354,8 +1398,62 @@ s.listen(0, '127.0.0.1', async () => {
       out.profile = [gz.profile(0), gz.profile(1)].map(p => ({ speed: p.speed, turn: p.turn }));
       return out;
     });
+    // v53 CARGO, THE JACKKNIFE and THE PILE-UP, on the same page
+    haul2 = await q.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug, pl = hd.player, cv = d.truckObj(), gz = d.gazeObj();
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+      const out = { cargo: d.getConvoy().cargo };
+      // a welded crate rides its truck; a hard brake slides the load
+      const t = cv.trucks.find(x => x !== cv.standing && cv.cargo.crates.some(c => c.truck === x && c.welded));
+      if (t) {
+        const cr = cv.cargo.crates.find(c => c.truck === t); const z0 = t.z, c0 = -cr.b.positionLin[1];
+        await frames(8);
+        out.rides = { truck: +(z0 - t.z).toFixed(2), crate: +(c0 - (-cr.b.positionLin[1])).toFixed(2) };
+        t.brakeT = 1.4; t.ts = 2; let loose = 0;
+        for (let i = 0; i < 30; i++) { await frames(1); loose = Math.max(loose, cv.cargo.crates.filter(c => c.truck === t && !c.welded).length); }
+        out.brake = { loose };
+      }
+      // three missiles in a cab: the truck folds
+      const t2 = cv.trucks.find(x => x !== cv.standing && x !== t && x.proxy.alive);
+      const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)]; await frames(60);
+      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1) };
+      // the gaze locks a cab in range and the missiles land in it
+      // (the body is kept twelve units behind the cab each frame: a standing
+      // body would be left behind by a truck doing twenty inside a second)
+      const cands = cv.trucks.filter(x => x.proxy.alive && x.z < pl.feet.z - 3).sort((a, b) => b.z - a.z);
+      const t3 = cands[0], hp0 = t3?.hp, cab = pl.camera.position.clone();
+      for (let i = 0; i < 90 && t3 && t3.hp === hp0; i++) {
+        pl.feet.set(t3.x, t3.group.position.y + 0.5, t3.z + 12); pl.vy = 0;
+        t3.proxy.center(cab);
+        const dx = cab.x - pl.camera.position.x, dy = cab.y - pl.camera.position.y, dz = cab.z - pl.camera.position.z;
+        pl.yaw = Math.atan2(-dx, -dz); pl.pitch = Math.atan2(dy, Math.hypot(dx, dz)); pl._sync();
+        await frames(1);
+      }
+      out.gaze = { cab: !!t3, hpBefore: hp0, hpAfter: t3?.hp, launched: gz.launched };
+      // THE PILE-UP at 180 s
+      d.setTime(179.5); await frames(20);
+      const f = d.getFinale();
+      await frames(50);
+      const wrecks = cv.trucks.filter(x => x.wrecked);
+      out.finale = { fired: f.active, kind: f.kind, wrecked: f.wrecked, wrecksNow: wrecks.length, stopped: wrecks.filter(x => x.spd < 1).length };
+      const speed0 = cv.cfg.speed;
+      for (let i = 0; i < 260 && !d.getFinale().done; i++) { await frames(1); if (pl.feet.y < -2) cv.respawnOn(pl); }
+      out.after = { done: d.getFinale().done, speed0, speed: cv.cfg.speed, skullMul: cv.cfg.skullMul };
+      return out;
+    });
     await q.close();
   }
+  ok('haul: CARGO — trailers carry crates, welded to the deck, and a welded crate rides its truck',
+    haul2.cargo.n > 0 && haul2.cargo.welded > 0 && haul2.rides && Math.abs(haul2.rides.truck - haul2.rides.crate) < 0.3, JSON.stringify({ cargo: haul2.cargo, rides: haul2.rides }));
+  ok('haul: a hard brake slides the load', haul2.brake && haul2.brake.loose >= 1, JSON.stringify(haul2.brake));
+  ok('haul: three missiles in a cab jackknife the truck — it folds, swings its trailer out and crawls',
+    haul2.jack.hits[2] === true && haul2.jack.jacked && Math.abs(haul2.jack.yaw) > 0.3 && haul2.jack.spd < 6, JSON.stringify(haul2.jack));
+  ok('haul: the gaze locks a cab and the missiles land in it', haul2.gaze.cab && haul2.gaze.hpAfter < haul2.gaze.hpBefore, JSON.stringify(haul2.gaze));
+  ok('haul: THE FINALE — at 180 s the pile-up: every truck ahead folds and stops dead',
+    haul2.finale.fired && haul2.finale.kind === 'pileup' && haul2.finale.wrecked >= 2 && haul2.finale.stopped >= 1, JSON.stringify(haul2.finale));
+  ok('haul: past the pile-up the convoy runs faster and the skulls come thicker',
+    haul2.after.done && haul2.after.speed > haul2.after.speed0 && haul2.after.skullMul > 1, JSON.stringify(haul2.after));
   ok('haul: season 3 is the TRUCK scheme with a double jump and dash',
     haul.mode === 'truck' && haul.jumps === 2 && haul.dash && haul.moving && haul.gazeOn, JSON.stringify(haul));
   ok('haul: the trucks DRIVE on their own', haul.truckMoved > 3, JSON.stringify({ moved: haul.truckMoved }));
@@ -1571,6 +1669,91 @@ s.listen(0, '127.0.0.1', async () => {
     && ctrl.sn.tech.floorWave[0] === 0 && ctrl.sn.tech.floorWave[1] === 0 && ctrl.sn.gooHurts === false
     && ctrl.sn.tech.grad === 0 && ctrl.sn.tech.sunSize === 0 && ctrl.sn.tech.glint === 0,   // v52: nor the golden hour   // v48: nor the floor's wave read, nor the hurt
     JSON.stringify({ tech: ctrl.sn.tech, inca: ctrl.inca }));
+
+  // v53 THE TIDE (owner: *the tide comes in*). By 150 s the waves are closer and
+  // faster; the wave is still jumped at full tide (the same sweep as above, at
+  // tide 1); and the crest lifts a heap of bone and sets it down a few units on.
+  const tide = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player, g = d.gooObj(), G = d.gibsObj(), H = 1 / 60;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const decl = g.cfg.tide, base = { speed: g.cfg.speed, gap: g.cfg.gap };
+    const sweep = () => {
+      const out = {};
+      for (const jumps of [1, 2]) {
+        pl.maxJumps = jumps; let ok = 0;
+        for (let lead = 0; lead < 1.4; lead += 0.01) {
+          g.t = (g.arenaR + g.cfg.width - g.speed * lead) / g.speed;
+          pl.feet.set(0, 0, 0); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+          pl.jumpBuffer = 1; pl.coyoteT = 0.08; pl.jumpsLeft = pl.maxJumps;
+          let struck = false, second = false;
+          for (let i = 0; i < 110; i++) {
+            g.t += H;
+            if (jumps === 2 && !second && i > 3 && pl.vy <= 0) { pl.jumpBuffer = 1; second = true; }
+            pl.update(H, { x: 0, y: 0 }, 0); pl.jumpBuffer = 0;
+            if (g.strikes(pl)) struck = true;
+          }
+          if (!struck) ok++;
+        }
+        out[jumps === 1 ? 'singleMs' : 'doubleMs'] = ok * 10;
+      }
+      return out;
+    };
+    g.setTide(1);
+    const atMax = { speed: g.speed, gap: g.gap, ...sweep() };
+    // no gaps in the crest at full tide: standing still across the wave, every point is struck
+    let never = 0;
+    for (const ox of [-8, -4, 0, 4, 8]) {
+      const px = ox * -g.dirZ, pz = ox * g.dirX; pl.feet.set(px, 0, pz); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+      g.t = (g.arenaR + g.cfg.width - 2) / g.speed; let hit = 0;
+      for (let i = 0; i < 120; i++) { g.t += H; if (g.strikes(pl)) hit++; }
+      if (!hit) never++;
+    }
+    g.setTide(0); pl.maxJumps = 2;
+    // the heap: one kill's bone, then a crest through it
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    G.reset();
+    const sk = d.spawnSkull(); const u = sk.update.bind(sk); sk.update = (...a) => { u(...a); sk.group.position.set(0, 1.2, 0); };
+    await frames(40); d.killEnemy(sk, 0, -1); await frames(60);
+    const before = G.gibs.map(x => [x.b.positionLin[0], x.b.positionLin[1]]);
+    const asleep = G.gibs.filter(x => x.b.mass <= 0).length;
+    g.t = (g.arenaR + g.cfg.width - 6) / g.speed; await frames(120);
+    const after = G.gibs.map(x => [x.b.positionLin[0], x.b.positionLin[1]]);
+    const moved = before.slice(0, after.length).map((h, i) => Math.hypot(h[0] - after[i][0], h[1] - after[i][1]));
+    return { decl, base, atMax, neverStruck: never, heap: before.length, asleep, movedAvg: +(moved.reduce((a, b) => a + b, 0) / Math.max(1, moved.length)).toFixed(2), fell: G.stats.fell, awake: G.awake };
+  });
+  ok('the gibs: a kill leaves a heap of bone that stays — chunks that stack, and sleep where they land',
+    tide.heap >= 8 && tide.asleep >= tide.heap - 2, JSON.stringify({ heap: tide.heap, asleep: tide.asleep }));
+  ok('inca: THE TIDE — by 150 s the waves are closer and faster, and the wave is still jumped at full tide, with no gaps in the crest',
+    tide.decl && tide.atMax.gap < tide.base.gap && tide.atMax.speed > tide.base.speed
+    && tide.atMax.singleMs >= 150 && tide.atMax.doubleMs >= 500 && tide.neverStruck === 0,
+    JSON.stringify({ decl: tide.decl, base: tide.base, atMax: tide.atMax, gaps: tide.neverStruck }));
+  ok('inca: the crest CARRIES the bone — a heap moves with the wave and is set down a few units on, not swept off the disc',
+    tide.movedAvg > 2 && tide.movedAvg < 12 && tide.fell === 0, JSON.stringify({ movedAvg: tide.movedAvg, fell: tide.fell }));
+  // v53 THE FINALE, season 2: THE SEA DRAINS at 180 s — the water goes and the
+  // caustics with it, seven stone steps rise out of the temple floor, the sea
+  // comes back; the steps stay, tall enough that a wave passes under the feet
+  const drain = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    d.setTime(179.5); await frames(20);
+    const fired = d.getFinale();
+    let drainMax = 0, glintAtDry = null, stepsAtDry = 0, stepH = [];
+    for (let i = 0; i < 640; i++) {   // the drain is 23 s of game time at ~0.05 s a frame here
+      await frames(1);
+      const f = d.getFinale();
+      if (f.drain > drainMax) drainMax = f.drain;
+      if (f.drain >= 0.999 && glintAtDry === null) { await frames(2); glintAtDry = d.getTechArt().glint; stepsAtDry = d.getPlatforms().count; stepH = d.getPlatforms().slabs.map(x => +x.h.toFixed(2)); }
+      if (f.done) break;
+    }
+    return { fired: fired.active, kind: fired.kind, drainMax, glintAtDry, stepsAtDry, stepH, after: d.getFinale(), glintAfter: d.getTechArt().glint, stepsAfter: d.getPlatforms().count };
+  });
+  ok('inca: THE FINALE — at 180 s the sea drains: the water goes to nothing and the sun\'s path with it',
+    drain.fired && drain.kind === 'drain' && drain.drainMax >= 0.999 && drain.glintAtDry === 0, JSON.stringify({ fired: drain.fired, drainMax: drain.drainMax, glint: drain.glintAtDry }));
+  ok('inca: stone steps rise out of the temple floor, every one tall enough to stand clear of the crest',
+    drain.stepsAtDry === 7 && drain.stepH.length === 7 && drain.stepH.every(h => h >= 1.5), JSON.stringify({ steps: drain.stepsAtDry, h: drain.stepH }));
+  ok('inca: the sea comes back and the run goes on harder — the steps stay',
+    drain.after.done && drain.after.drain === 0 && drain.after.pressure > 1 && drain.glintAfter > 0 && drain.stepsAfter === 7, JSON.stringify(drain.after));
+  await p.evaluate(() => { window.__hd.debug.platformsObj().clear(); window.__hd.debug.gibsObj().reset(); });
 
   // v52 (owner: *why is the weapon/hand so deformed? Use different types and
   // models in different seasons*): each season holds its own, and none of

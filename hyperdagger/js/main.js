@@ -5,32 +5,32 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=83';
-import { Player } from './player.js?v=83';
-import { DaggerPool } from './daggers.js?v=83';
-import { GemPool } from './gems.js?v=83';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=83';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=83';
-import { OrbPool } from './bullets.js?v=83';
-import { AudioKit } from './audio.js?v=83';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=83';
-import { TUNING as T } from './tuning.js?v=83';
-import { HyperEnvironment } from './environment.js?v=83';
-import { Backdrop } from './backdrop.js?v=83';
-import { Walls } from './walls.js?v=83';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=83';
-import { TruckTrack } from './truck.js?v=83';
-import { GazeLock } from './gaze.js?v=83';
-import { PhysGibs } from './gibs.js?v=83';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=83';
-import { Platforms } from './platforms.js?v=83';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=83';
-import { GooWave } from './goo.js?v=83';
-import { gelMaterial } from './gel.js?v=83';
-import { mosaicPalette, mosaicSkin } from './roster.js?v=83';
-import { Skullscape } from './inca.js?v=83';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=83';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=83';
+import { InputManager } from './input.js?v=84';
+import { Player } from './player.js?v=84';
+import { DaggerPool } from './daggers.js?v=84';
+import { GemPool } from './gems.js?v=84';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=84';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=84';
+import { OrbPool } from './bullets.js?v=84';
+import { AudioKit } from './audio.js?v=84';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=84';
+import { TUNING as T } from './tuning.js?v=84';
+import { HyperEnvironment } from './environment.js?v=84';
+import { Backdrop } from './backdrop.js?v=84';
+import { Walls } from './walls.js?v=84';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=84';
+import { TruckTrack } from './truck.js?v=84';
+import { GazeLock } from './gaze.js?v=84';
+import { PhysGibs } from './gibs.js?v=84';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=84';
+import { Platforms } from './platforms.js?v=84';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=84';
+import { GooWave } from './goo.js?v=84';
+import { gelMaterial } from './gel.js?v=84';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=84';
+import { Skullscape } from './inca.js?v=84';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=84';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=84';
 import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
@@ -1662,6 +1662,7 @@ function resetRun() {
   // pinned an experiment, which gets the tuning's road like it always did
   truck.setConfig(_urlMode ? null : S().truck);
   gaze.reset();
+  daggers.floorY = truck.active ? truck.fallY() - 0.6 : -0.2;   // v53: on the road the floor is three units down
   if (onTrack) truck.reset(player); else truck.clear();
   if (M().arena === 'court') walls.court(16, 12, 5); else walls.clear();
   buildSeasonArena(); // the season's rock and slabs, after the court's walls

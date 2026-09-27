@@ -2,6 +2,95 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v53 — 2026-09-27
+**Physical gibs; the tide; cover that dies; cargo and the jackknife; the finales**
+
+Owner, 2026-09-26/27: *prototype the physical gibs* → *next big leaps for any
+season?* → *go ahead on all.*
+
+**Physical gibs** (`js/gibs.js`, `js/avbd/`). A kill's biggest chunks go to a
+real rigid-body solver and heap where they land; the rest still flies as the
+classic debris. The solver is the CPU reference from three-avbd — Augmented
+Vertex Block Descent (Giles, Diaz & Yuksel, SIGGRAPH 2025), MIT — types
+stripped mechanically into `js/avbd/` with its notices, and ONE change to the
+port: two static bodies never get a contact. That is what makes it cheap: a
+gib still for twenty steps goes to sleep as a static body, so a settled heap
+costs a sphere test per pair and only the last kill's chunks are ever solved.
+Measured: a 24-chunk burst onto a 300-gib sleeping pile averages ~1 ms a step
+here, six kills at 4× CPU throttle peaked at 5 ms and averaged 0.5 ms. Caps
+on awake (72) and total (300) gibs, a running clock that falls back to classic
+debris past 4 ms, off on the road. Pause menu: GIBS STACK / GIBS CLASSIC.
+The first cut threw the chunks at 2–5 u/s and they scattered; they slump out
+of the body now, and six skulls killed in one spot leave a heap two cubes
+deep that stays.
+
+**Season 2: THE TIDE.** From 30 s to 150 s the waves come CLOSER (gap 16 → 8)
+and FASTER (9 → 11 u/s), and the crest lifts the bone heaps, carries them
+and sets them down about five units on — the floor is never the same twice.
+The head is read off distance travelled (`goo._dist`), so a speed that
+changes mid-run cannot make the crest jump; `t` is a property over it, so
+every probe that sets `g.t` still works. Jumped in the gate at both ends:
+one jump clears in a 0.26 s window at tide 0 and 0.37 s at full tide (a
+faster crest is past in less of a jump), the double jump in 0.79 / 0.91 s.
+Trap: the tide's bigger swell (ripple 0.3) dipped parts of the crest under
+`hurtFrom` and the wave had gaps you could walk through — it is 0.18, and
+the gate stands a body at five points across the crest and requires every
+one struck. The carry at 0.9× the crest's speed rode the heap clean off the
+disc; at 0.45× the crest overtakes it and drops it.
+
+**Season 1: COVER THAT DIES.** A shale pile has 70 hit points (`walls.add`
+takes `hp`). A nail takes one, a shotgun a fistful; a body shoving on it
+wears it at 3 a second, a brute at 10; past half it LEANS a little more with
+every blow; at zero it collapses into a heap of physical shale chunks with
+a spray of chips, and it is gone as cover. Measured: about four seconds of
+focused needler fire from five units, or a swarm of five bodies in five
+seconds. Standing behind a pile has a clock now, and the swarm runs it. The
+court's walls take no `hp` and are what they were.
+
+**Season 3: CARGO, NOT DECKS** (`js/cargo.js`). Trailers carry two to five
+stacked crates in a rigid-body solver of their own. Each trailer is a
+kinematic body posed from the truck every step, so a crate resting on it is
+carried by friction; a truck that brakes hard or swerves has its load
+SLIDE. What keeps it cheap: a crate riding quietly for twelve steps is
+WELDED — static, posed from its trailer at the offset it settled at — and a
+jolt (acceleration over 9 u/s², a jackknife, a hit) unwelds that trailer's
+load; on a steady convoy nothing is solved at all (0.22 ms a step with a
+load loose). A welded crate is floor: you stand on cargo that moves under
+you. **The cabs are gaze targets**: hold the look on one and the missiles
+land in it; the third JACKKNIFES the truck — it brakes to a crawl, swings
+its trailer across the lane (±0.7 rad) and spills its load. Trap: a crate
+that fell to the road could never be "quiet" relative to a truck doing
+twenty, so the re-weld test never ran and it stayed the truck's; a crate
+below its deck is the road's now.
+
+**All seasons: THE FINALE** at 180 s (`finale` on the season; `startFinale`
+/ `updateFinale` in main.js). Nothing in a season ends: at three minutes
+each throws its set piece, announced like a debut, and the run goes on
+with the director tighter (`after.pressure` divides the season's own cadence).
+- Season 1, THE ROCKFALL: for ten seconds a shale chunk falls every 0.2 s
+  from sixteen units up onto a random point of the disc; a rock that lands
+  on you is a hit (`gibs.fallingOn`, one strike per rock); the fallen rock
+  stays as heaps — the new floor. 41 rocks in the probe; pressure ×1.3 after.
+- Season 2, THE SEA DRAINS: over four seconds the water goes to nothing
+  (`goo.drain` scales the crest; the caustics and the sun's path fade with
+  it), the temple floor shows for fourteen, and seven stone steps rise out of
+  it (a `platforms.build` with a stone shale look, 1.5–2.0 tall: stand on one
+  and the wave passes under your feet); then the sea returns over five and
+  the tide goes on. The steps stay — the refuges you earn.
+- Season 3, THE PILE-UP: every truck within seventy units ahead folds and
+  STOPS where it is — a wall of wrecks across the road, cargo everywhere,
+  crossed truck to truck standing still; past it the convoy runs 1.2× and
+  the skulls come 1.4× thicker.
+
+**Gate.** Physical gibs (a heap that sleeps), the tide (closer, faster,
+jumped at full tide, no gaps, the heap carried and not swept off), cover
+(hp on every pile, the lean, the fall into a heap; the court's walls
+untouched), cargo (a welded crate rides, a brake slides the load, three
+hits jackknife, the gaze lands missiles in a cab), and all three finales.
+`hd-loop` gains `rockfall`, `drain`, `pileup` and `cover` scenarios.
+
+Tokens `?v=83` → `?v=84`, worker cache v54, precache regenerated.
+
 ## v52 — 2026-09-25
 **Season 2's visual leap; every season holds its own weapon; season 3 is Clustertruck**
 

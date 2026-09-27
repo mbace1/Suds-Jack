@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Solver } from './avbd/solver.js?v=1';
 import { Rigid } from './avbd/body.js?v=1';
-import { shadedBox, applyFaceShade } from './voxel.js?v=83';
+import { shadedBox, applyFaceShade } from './voxel.js?v=84';
 
 /**
  * PHYSICAL GIBS (prototype, owner: *prototype the physical gibs on a branch*).

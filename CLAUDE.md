@@ -491,7 +491,27 @@ on inside 24 u, faster (16 → 40) and tighter-turning (1.2 → 10) the longer t
 look is held. Missiles are daggers with `{ target, turn }`, so every hit and kill
 path is shared. Trap found on the way: twelve places read the SAVED `mode`
 variable where the mode in force (`M().id`) was meant, so season runs were filed
-and seeded under the wrong mode — never read `mode` directly. Four things renders settled, not reasoning: the star field was a
+and seeded under the wrong mode — never read `mode` directly. **v53 puts a rigid-body
+solver in the game** (`js/avbd/`: three-avbd's CPU reference of *Augmented Vertex
+Block Descent*, SIGGRAPH 2025, MIT, types stripped, one change — two static bodies
+never get a contact) and builds four things on it. **Physical gibs** (`js/gibs.js`):
+a kill's biggest chunks heap where they land and SLEEP (static after twenty still
+steps), so a settled heap costs nothing and only the last kill is ever solved;
+caps, a 4 ms clock that falls back to classic debris, off on the road. **The tide**
+(season 2): waves closer and faster over 30–150 s, the crest carrying the heaps
+five units on — the head reads off DISTANCE (`goo._dist`; `t` is a property over
+it) so a live speed cannot jump the crest, and the swell is capped at 0.18 because
+0.3 dipped the crest under `hurtFrom` and opened gaps. **Cover that dies** (season
+1): piles have `hp` (70), nails chip, shoving bodies grind, brutes faster, past half
+it leans, at zero it is rubble in the solver. **Cargo** (`js/cargo.js`, season 3):
+crates on kinematic trailers, WELDED (static, posed from the trailer) until a jolt
+unwelds that load, so a steady convoy solves nothing; welded crates are floor; the
+cabs are gaze targets and three missiles JACKKNIFE a truck. **The finale** at 180 s
+on every season (`finale` block; the rockfall, the sea draining and seven stone
+steps rising, the pile-up), announced like a debut, the director tighter after.
+The gate jumps the wave at full tide, stands a body across the crest for gaps,
+wears a pile down, brakes a loaded truck, jackknifes one, and fires all three
+finales. Four things renders settled, not reasoning: the star field was a
 snowstorm (threshold now passes a quarter of the cells); **linear 0.05 is a mid
 grey on screen**, so rock lives under 0.02; a tint on a near-black plate is
 near black, so floor glow is per season; and the owner's monuments "looked
