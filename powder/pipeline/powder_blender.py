@@ -44,7 +44,7 @@ SHIP = {
 }
 LAND = {'size': (3.0, 80.0), 'tris': 2500}
 # the physics: four hover pads, Blender frame (x, y, z), metres
-PADS = [(-1.6, 3.0, -0.9), (1.6, 3.0, -0.9), (-1.6, -3.0, -0.9), (1.6, -3.0, -0.9)]
+PADS = [(-1.6, 3.0, -0.6), (1.6, 3.0, -0.6), (-1.6, -3.0, -0.6), (1.6, -3.0, -0.6)]   # v11 ride height
 # where the kit puts things, per chassis — a starting point, not a rule
 KIT = {
     'nose': {'nozzles': ((-0.85, 1.39, -0.04), (0.85, 1.39, -0.04)),
@@ -146,7 +146,7 @@ def setup(kind='nose'):
         f.data.materials.append(_mat('FAN'))
         for c in f.users_collection: c.objects.unlink(f)
         col.objects.link(f)
-    print('[powder] SHIP scene (%s): nose along +Y, origin at the centre of mass, pads at x±1.6 y±3.0 z−0.9. Model inside REF_envelope; one object per material; keep nozzle_L/R where the bells end.' % kind)
+    print('[powder] SHIP scene (%s): nose along +Y, origin at the centre of mass, pads at x±1.6 y±3.0 z−0.6. Model inside REF_envelope; one object per material; keep nozzle_L/R where the bells end.' % kind)
 
 
 # ---------------------------------------------------------------- validate

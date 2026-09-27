@@ -77,6 +77,15 @@
       filter: saturate(.92) contrast(1.04);
     }
     @media (max-height: 520px) { #msg .plate { display: none; } }
+    /* v11: the seat swap for a thumb — C and RB do it on keys and pads */
+    #cam {
+      position: absolute; pointer-events: auto; touch-action: none;
+      top: calc(64px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left));
+      min-width: 44px; min-height: 44px; padding: 0 11px;
+      background: linear-gradient(180deg, rgba(29,23,38,.62), rgba(29,23,38,.34));
+      border: 1px solid rgba(240,230,210,.22); border-radius: 3px;
+      font-size: 11px; letter-spacing: 2px; cursor: pointer;
+    }
     #toast {
       position: fixed; bottom: 21%; left: 50%; transform: translateX(-50%);
       z-index: 11; font-size: 20px; font-weight: bold; letter-spacing: 4px;
@@ -89,6 +98,7 @@
   <canvas id="ui"></canvas>
 
   <div id="cluster" class="ui">
+    <button id="cam" class="ui" type="button" aria-label="Swap the camera seat">CAM</button>
     <div class="panel" id="speedo">
       <div class="lbl">GROUND SPEED</div>
       <div class="val"><span id="kph">0</span> <small>KM/H</small></div>
@@ -146,7 +156,7 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=9"></script>
+  <script type="module" src="js/main.js?v=11"></script>
   <script type="module" src="../hub/shell.js?v=42"></script>
 </body>
 </html>

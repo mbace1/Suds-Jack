@@ -117,3 +117,50 @@ export const RESET_ON_SALT = ([speed, n1]) => {
   if (g.input._kSteer !== undefined) g.input._kSteer = 0;
   g.terrain.update(x, z);
 };
+
+/**
+ * v11: a clean DEEP-SAND venue — the salt floor is the fast surface, and the
+ * carve, the sink and the planing live on the sand. Walks the flats beside
+ * the rift for a 320 m straight toward -z that is dune the whole way, nearly
+ * level and off the mesas. Returns { x, z } for the start of it (or null).
+ * Evaluate it in the page.
+ */
+export const FIND_DUNE = () => {
+  const g = window.__pw, T = g.terrain, n = new g.THREE.Vector3();
+  for (let z = -1400; z > -9000; z -= 260) {
+    for (let off = 150; off <= 420; off += 30) {
+      for (const sgn of [1, -1]) {
+        const x = T.canyonX(z) + sgn * off;
+        let ok = true;
+        for (let d = 0; d <= 320 && ok; d += 8) {
+          const zz = z - d;
+          if (T.surfaceAt(x, zz) !== 1) ok = false;                 // DUNE
+          else if (T.normalAt(x, zz, n).y < 0.992) ok = false;       // ~7 degrees
+          else if (T.mesa(x, zz) > 0.2) ok = false;
+        }
+        if (!ok) continue;
+        // Boulders are NOT a criterion: measured, every candidate straight
+        // passes within 4 m of one — the flats are littered on purpose. The
+        // venue switches their colliders off instead (RESET_ON_DUNE), so a
+        // handling number is never a rock strike; they still show on screen.
+        T.update(x, z); return { x, z };
+      }
+    }
+  }
+  return null;
+};
+
+/** Park on a FIND_DUNE venue at a speed and N1, heading -z. */
+export const RESET_ON_DUNE = ([x, z, speed, n1]) => {
+  const g = window.__pw, v = g.player;
+  v.pos.set(x, g.terrain.height(x, z) + 0.7, z);
+  v.yaw = 0; v.pitch = v.roll = 0; v.yawRate = v.pitchRate = v.rollRate = 0;
+  v.vel.set(0, 0, -speed); v._FLf = v._FLr = 0; v.n1 = n1; v.hitT = 0; v.impact = 0; v.damage = 0;
+  for (const pad of v.pads) { pad.sink = 0; pad.on = false; }
+  v.bankT = 0; v._gLatF = 0;
+  if (g.input._kSteer !== undefined) g.input._kSteer = 0;
+  // no boulder strikes on the test venue (see FIND_DUNE)
+  g.terrain.rocksNear = (_x, _z, out) => { out.length = 0; return out; };
+  g.terrain.update(x, z);
+};
+

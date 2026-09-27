@@ -1,7 +1,14 @@
 // Export the KIT ships and two kit landmarks as .glb, in exactly the form
+// the pipeline's contract takes (pipeline/README.md), into models/reference/.
+//
+//   NODE_PATH=$(npm root -g) node powder/test/refexport.mjs
+//
+// The manifest is MERGED, not rewritten: the reference set also carries
+// land-derrick-01, which came out of Blender rather than out of this script.
 import { open } from './_browser.mjs';
 const { page: p, root, close } = await open({ q: 'low' });
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync } from 'node:fs';
+const OUT = new URL('../models/reference/', import.meta.url).pathname;
 
 const exportShip = async (chassis) => {
   await p.evaluate(ch => window.__pw.debug.chassis(ch), chassis);
@@ -11,25 +18,34 @@ const exportShip = async (chassis) => {
     const g = window.__pw, T = g.THREE;
     const { GLTFExporter } = await import('https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/exporters/GLTFExporter.js');
     const src = g.player.mesh;
+    src.updateMatrixWorld(true);
+    const inv = new T.Matrix4().copy(src.matrixWorld).invert();
     const root = new T.Group(); root.name = 'ship';
-    const S = src.scale.x;                       // the kit's 0.74, baked into the geometry
-    for (const c of src.children) {
-      if (c.name === 'flame') continue;          // runtime, not asset
+    const rel = new T.Matrix4(), P = new T.Vector3(), Q = new T.Quaternion(), Sc = new T.Vector3();
+    // v11: the formula kit is built at scale 1 and nests — a corner's arm
+    // sits two groups deep and its pod three — so walk the whole tree and
+    // take each part's transform RELATIVE TO THE SHIP. Scale goes into the
+    // geometry (the contract wants object scale 1; the fans carry their
+    // radius as scale), position and rotation stay on the object, so a fan
+    // still spins about its own hub.
+    const runtime = o => { for (let q = o; q && q !== src; q = q.parent) if (q.name === 'flame') return true; return false; };
+    src.traverse(c => {
+      if (c === src || runtime(c)) return;
+      // the cushion glow and the shadow stand-in are the game's, not the asset's
+      if (c.isInstancedMesh || c.name === 'cast') return;
+      rel.multiplyMatrices(inv, c.matrixWorld).decompose(P, Q, Sc);
       if (c.isMesh) {
         const m = new T.Mesh(c.geometry.clone(), c.material);
-        // fans carry their radius as object scale; the contract wants object scale 1
-        const sc = c.scale.x !== 1 ? c.scale.x : 1;
-        m.geometry.scale(S * sc, S * sc, S * sc);
-        m.position.copy(c.position).multiplyScalar(S);
-        m.quaternion.copy(c.quaternion);
+        m.geometry.scale(Sc.x, Sc.y, Sc.z);
+        m.position.copy(P); m.quaternion.copy(Q);
         m.name = c.name || (c.material.name || 'part').toLowerCase();
         root.add(m);
       } else if (c.name.startsWith('nozzle')) {
         const e = new T.Object3D(); e.name = c.name;
-        e.position.copy(c.position).multiplyScalar(S);
+        e.position.copy(P);
         root.add(e);
       }
-    }
+    });
     // the sprite-less, envMap-less materials export cleanly; strip envMaps
     root.traverse(o => { if (o.isMesh) { const m = o.material.clone(); m.envMap = null; m.name = o.material.name; o.material = m; } });
     const bin = await new Promise((res, rej) => new GLTFExporter().parse(root, res, rej, { binary: true }));
@@ -80,11 +96,13 @@ await exportLand('land-monoliths-01.glb', new Function('T', 'g', `${paint}
     m.name = 'slab_' + s; root.add(m);
   }
   return root;`));
+const ours = ['land-arch-01.glb', 'land-monoliths-01.glb'];
+const prev = existsSync(OUT + 'manifest.json') ? JSON.parse(readFileSync(OUT + 'manifest.json', 'utf8')) : {};
 writeFileSync(OUT + 'manifest.json', JSON.stringify({
-  _: 'The kit, exported. Load with ?models=reference to exercise the pipeline door end to end.',
+  _: prev._ || 'The kit, exported. Load with ?models=reference to exercise the pipeline door end to end.',
   ships: { nose: 'ship-nose.glb', aft: 'ship-aft.glb' },
-  landmarks: ['land-arch-01.glb', 'land-monoliths-01.glb'],
-  numerals: null,
+  landmarks: [...ours, ...(prev.landmarks || []).filter(f => !ours.includes(f))],
+  numerals: prev.numerals ?? null,
 }, null, 2) + '\n');
 console.log('reference manifest written');
 await close();
