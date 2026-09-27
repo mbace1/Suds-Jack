@@ -1,64 +1,95 @@
 // KUOPPA — the roguelike, on the Pajatso face. Pure: no DOM, no three.js, no
-// clock; seeded, with its own rng streams so a shop never depends on a bounce
-// and a reel never depends on a shop.
+// clock; seeded, with its own rng streams so a vendor never depends on a
+// bounce and a reel never depends on a vendor.
 //
-// It IS the base machine (a subclass of `Pajatso`), with three differences:
-//   - a pull is paid with the ROUND's coins, not the purse: the house hands
-//     you DROPS each round and whatever the machine pays goes in your purse
-//   - every ROUNDS rounds a debt is due out of the purse; pay it and the
-//     next pachinko part is bolted onto the face, fail it and you fall
-//   - between rounds a vendor sells charms that bend the machine you have
+// v5 is Balatro's shape on a pachinko machine. A ROUND is a hand: every coin
+// that lands somewhere scores CHIPS or MULT (by the window's LEVEL, bent by
+// the JOKERS), and when the round's last coin is down the round scores
+// CHIPS × MULT toward the ANTE — 100, then ×10 every lock. Reach it within
+// three rounds and the lock opens, the next pachinko part is bolted on, and
+// the rounds you did not need are paid for; miss it and the floor opens.
+// MONEY (markka) is separate and small: it buys jokers, charms and level
+// plates from the vendor between rounds.
 //
-// Phases: idle → flight → (idle | spent) … spent → shop | due → shop → idle;
-// due → fell | won.
+// It IS the base machine (a subclass of `Pajatso`): `coins` is the money,
+// and a pull is paid with the ROUND's coins (`drops`), not with it.
+//
+// Phases: idle → flight → idle | spent → (the round scores) → shop | fell |
+// won; shop → idle.
 
-import { Pajatso, SPEED } from '../classic/game.js?v=4';
-import { buildPajatso, PAYS, JACKPOT, POTTI_COLS, MIDDLE } from '../classic/layout.js?v=4';
-import { makeRng } from '../rng.js?v=4';
-import { drawOutcome, buildGrid, linesShown, reachLines, STOP_ORDER, TIMING } from '../reels.js?v=4';
-import * as D from './data.js?v=4';
+import { Pajatso } from '../classic/game.js?v=5';
+import { buildPajatso, POTTI_COLS, MIDDLE } from '../classic/layout.js?v=5';
+import { makeRng } from '../rng.js?v=5';
+import { drawOutcome, buildGrid, linesShown, reachLines, STOP_ORDER, TIMING } from '../reels.js?v=5';
+import * as D from './data.js?v=5';
 
-export function computeRules(charms) {
+const JOKER = Object.fromEntries(D.JOKERS.map(j => [j.id, j]));
+const CHARM = Object.fromEntries(D.CHARMS.map(c => [c.id, c]));
+
+export function computeRules(ids) {
   const r = {};
   for (const k in D.RULES) r[k] = 0;
-  for (const id of charms) {
-    const c = D.CHARMS.find(x => x.id === id);
+  for (const id of ids) {
+    const c = CHARM[id] ?? JOKER[id];
     for (const [k, v] of Object.entries(c?.rules ?? {})) r[k] = D.RULES[k] === 'max' ? Math.max(r[k], v) : r[k] + v;
   }
   return r;
 }
 
-const half = n => Math.round(n * 2) / 2;
+// which kind of hit a pocket is
+function kindOf(p) {
+  if (p.pay === 'start') return 'heso';
+  if (p.pay === 'attacker') return 'attacker';
+  if (p.tulip) return 'tulip';
+  return p.pay;                       // R, one, half, potti, x3
+}
+const WINDOW_KINDS = new Set(['R', 'one', 'half', 'potti', 'tulip', 'x3']);
 
 export class Kuoppa extends Pajatso {
   constructor({ seed = 1 } = {}) {
-    super({ seed, coins: D.START_PURSE });
+    super({ seed, coins: D.START_MONEY });
     this.reelRng = makeRng((this.seed ^ 0x9e3779b9) >>> 0);
     this.shopRng = makeRng((Math.imul(this.seed, 2654435761) ^ 0x51ed270b) >>> 0);
-    this.deadline = 1;             // which padlock is next
-    this.round = 1;                // round within the deadline
-    this.drops = D.DROPS;          // coins left to shoot this round
+    this.deadline = 1;             // which lock (ante) is next
+    this.round = 1;                // round within the ante
+    this.anteTotal = 0;            // what this ante's rounds have scored
     this.parts = [];
-    this.charms = [];
+    this.jokers = [];              // [{ id, n }] — n is a growing joker's own counter
+    this.charms = [];              // [id]
+    this.levels = Object.fromEntries(D.LEVELS.map(k => [k, 1]));
     this.rules = computeRules([]);
-    this.spins = [];               // held: spins waiting their turn
-    this.spin = null;              // the one on the reels now
-    this.spinGap = 0;
-    this.fever = 0;                // coins left in FEVER
-    this.chance = 0;               // spins left on the chain's better odds
-    this.offers = [];
-    this.run = { pottis: 0, spins: 0, sevens: 0, fevers: 0, earned: 0, paid: 0, charmsBought: 0 };
+    this.drops = this.handful;     // coins left to shoot this round
+    this.spins = []; this.spin = null; this.spinGap = 0;
+    this.fever = 0;                // pulls left with the attacker open
+    this.chance = 0;               // spins left in RUSH (確変)
+    this.pottiChips = 0;           // the progressive POTTI (the chain)
+    this.offers = []; this.rerollCost = D.REROLL;
+    this.bossRng = makeRng((this.seed * 7 + 0x2545f491) >>> 0);
+    this.pickBoss();
+    this.newTally();
+    this.run = { pottis: 0, spins: 0, sevens: 0, fevers: 0, best: 0, scored: 0, bought: 0, plates: 0 };
     this.phase = 'idle';
   }
 
   has(part) { return this.parts.includes(part); }
-  get debt() { return D.DEBTS[this.deadline - 1] ?? 0; }
-  get handful() { return D.DROPS + D.DROPS_PER_LOCK * (this.deadline - 1) + this.rules.extraDrops; }
+  // the deadline round's twist, drawn when the ante begins
+  pickBoss() {
+    const pool = D.BOSSES.filter(b => !b.needs || this.has(b.needs));
+    this.boss = pool[this.bossRng.int(pool.length)].id;
+  }
+  get deadlineRound() { return this.round === D.ROUNDS; }
+  twist(id) { return this.deadlineRound && this.boss === id; }
+  get tiltAtOnce() { return this.twist('tilt_sensor'); }
+  get extraNudges() { return this.rules?.extraNudges ?? 0; }
+  get ante() { return D.anteFor(this.deadline); }
+  get handful() { return Math.max(5, D.DROPS + D.DROPS_PER_LOCK * (this.deadline - 1) + (this.rules?.extraDrops ?? 0) - (this.twist?.('short_hand') ? 10 : 0)); }
   get busy() { return this.inFlight || !!this.spin || this.spins.length > 0; }
-
-  // ── a pull is paid with the round's coins ───────────────────────────
   get canSpend() { return this.drops >= 1; }
   spend() { this.drops -= 1; }
+
+  newTally() {
+    this.tally = { chips: 0, mult: 1, round: { pottis: 0, streak: 0, windows: 0 }, run: this };
+  }
 
   settle() {
     if (this.fever > 0 && --this.fever === 0) { this.gate(false); this.events.push({ t: 'feverEnd' }); }
@@ -66,45 +97,96 @@ export class Kuoppa extends Pajatso {
     else this.phase = 'spent';
   }
 
-  credit(pay, kind, id) {
-    super.credit(pay, kind, id);
-    this.run.earned += pay;
+  // tell the growing jokers what happened
+  hear(ev) {
+    for (const j of this.jokers) JOKER[j.id].on?.(ev, j);
   }
 
-  // ── the windows, with the parts and charms on them ────────────────────
-  window(p) {
-    if (p.pay === 'start') {
-      this.stats.hits.start = (this.stats.hits.start ?? 0) + 1;
-      if (this.spins.length < D.HOLD) { this.spins.push({ from: 'start' }); this.events.push({ t: 'held', n: this.spins.length, x: p.x, y: p.y, cup: p.id }); }
-      else this.events.push({ t: 'overflow', x: p.x, y: p.y, cup: p.id });
-      return;
+  // ── scoring one hit: base + level, then every joker in order ────────────
+  scoreHit(kind, where = {}) {
+    const h = D.HITS[kind];
+    if (!h || (kind === 'R' && this.twist('dry_r'))) return;
+    const L = this.twist('flat') ? 1 : this.levels[kind] ?? 1;
+    const t = this.tally;
+    if (WINDOW_KINDS.has(kind)) { t.round.streak++; t.round.windows++; }
+    const times = this.jokers.some(j => JOKER[j.id].retrigger?.(t)) && WINDOW_KINDS.has(kind) ? 2 : 1;
+    for (let n = 0; n < times; n++) {
+      let chips = h.chips + (h.lv.chips ?? 0) * (L - 1) + (kind === 'potti' ? this.pottiChips : 0);
+      if (this.twist('watered')) chips = Math.floor(chips / 2);
+      const mult = h.mult + (h.lv.mult ?? 0) * (L - 1);
+      t.chips += chips; t.mult += mult;
+      if (h.xmult) t.mult *= h.xmult;
+      const labels = [];
+      for (const j of this.jokers) { const say = JOKER[j.id].hit?.(t, kind, j); if (say) labels.push({ id: j.id, say }); }
+      this.events.push({ t: 'score', kind, chips, mult, xmult: h.xmult ?? 1, labels, x: where.x ?? 0, y: where.y ?? 40, again: n > 0 });
     }
-    if (p.pay === 'attacker') {
-      this.credit(D.FEVER.pays, 'fever', p.id);
-      this.events.push({ t: 'attacker', pay: D.FEVER.pays, x: p.x, y: p.y });
-      return;
-    }
-    if (p.pay === 'x3') {
-      this.drops += D.TIMES3;
-      this.stats.hits[p.id] = (this.stats.hits[p.id] ?? 0) + 1;
-      this.events.push({ t: 'win', pay: 0, bonus: D.TIMES3, column: 0, cup: p.id, kind: 'x3', x: p.x, y: p.y });
-      return;
-    }
-    let pay = PAYS[p.pay] ?? 0, column = 0;
-    if (p.pay === 'half') pay += this.rules.halfPay;
-    if (p.pay === 'R') pay += this.rules.rPay;
-    if (p.pay === JACKPOT) {
-      pay = this.pottiBase;
-      for (const k of this.pottiCols) { column += this.pot[k]; this.pot[k] = 0; }
-      this.run.pottis++;
-      this.pottiBase = PAYS[JACKPOT];
-      if (this.has('chain')) { this.chance = D.CHAIN.spins; this.events.push({ t: 'chance', spins: this.chance }); }
-      this.openFever();
-    }
-    pay += column;
-    this.credit(pay, p.pay, p.id);
-    this.events.push({ t: 'win', pay, column, cup: p.id, kind: p.pay, x: p.x, y: p.y, tulip: !!p.tulip });
   }
+
+  // ── the pockets ────────────────────────────────────────────────────────
+  window(p) {
+    const kind = kindOf(p);
+    this.stats.hits[p.id] = (this.stats.hits[p.id] ?? 0) + 1;
+    if (kind === 'heso') {
+      if (this.spins.length < D.HOLD) { this.spins.push({ from: p.id }); this.events.push({ t: 'held', n: this.spins.length, x: p.x, y: p.y, cup: p.id }); }
+      this.scoreHit('heso', p);
+      return;
+    }
+    if (kind === 'attacker') { this.scoreHit('attacker', p); this.events.push({ t: 'attacker', x: p.x, y: p.y }); return; }
+    if (kind === 'x3') {
+      const n = D.TIMES3 + ((this.levels.x3 ?? 1) - 1);
+      this.drops += n;
+      this.scoreHit('x3', p);
+      this.events.push({ t: 'win', pay: 0, bonus: n, column: 0, cup: p.id, kind: 'x3', x: p.x, y: p.y });
+      return;
+    }
+    let money = 0, column = 0;
+    if (kind === 'R') money = 1 + this.rules.rMoney;
+    if (kind === 'potti') {
+      for (const k of this.pottiCols) { column += this.pot[k]; this.pot[k] = 0; }
+      money = column;                     // the pot is money, the Pajatso way
+      this.tally.round.pottis++;
+      this.run.pottis++;
+    }
+    this.scoreHit(kind, p);
+    if (kind === 'potti') {
+      this.pottiChips = 0;
+      this.openFever();
+      if (this.has('chain')) this.openRush();
+    }
+    if (money) this.credit(money, kind, p.id);
+    this.events.push({ t: 'win', pay: money, column, cup: p.id, kind, x: p.x, y: p.y, tulip: !!p.tulip });
+  }
+
+  nudge(dx, dy) {
+    const ok = super.nudge(dx, dy);
+    if (ok && this.board.coins.length) this.scoreHit('nudge', this.board.coins[0]);
+    return ok;
+  }
+
+  intoPot(k, x) {
+    this.tally.round.streak = 0;
+    super.intoPot(k, x);
+    this.hear({ t: 'lost' });
+  }
+
+  // a jackpot — a line of sevens or the POTTI — opens the attacker (大当たり)
+  openFever() {
+    if (!this.has('fever')) return;
+    this.fever = D.FEVER.pulls + this.rules.feverLong + 1;   // +1: the coin that won it settles first
+    this.gate(true);
+    this.run.fevers++;
+    this.events.push({ t: 'fever', pulls: this.fever - 1 });
+  }
+  // …and with the chain on, RUSH (確変): sevens ×3, the electric tulip open
+  openRush() {
+    this.chance = D.CHAIN.spins;
+    this.denchu(true);
+    this.events.push({ t: 'chance', spins: this.chance });
+  }
+  // the taped POTTI: shut for the deadline round only
+  taped() { const w = this.L.byId.w4; if (w) w.open = !this.twist('taped_potti'); }
+  gate(open) { const a = this.L.byId.attacker; if (a) a.open = open; }
+  denchu(open) { const d = this.L.byId.denchu; if (d) d.open = open; }
 
   // ── time: the physics at the machine's pace, the reels at the clock's ──
   update(dt) {
@@ -115,7 +197,6 @@ export class Kuoppa extends Pajatso {
       if (this.spin.t >= this.spin.len) { const s = this.spin; this.spin = null; this.resolveSpin(s); this.spinGap = 0.25; }
     } else if (this.spinGap > 0) this.spinGap -= h;
     else if (this.spins.length) this.beginSpin(this.spins.shift());
-    // a round is over when its last coin is down and the reels are still
     if (this.phase === 'spent') {
       if (this.canSpend) { this.phase = 'idle'; this.events.push({ t: 'ready', coins: this.coins }); }
       else if (!this.busy) this.endRound();
@@ -132,13 +213,14 @@ export class Kuoppa extends Pajatso {
   weights() {
     const w = { ...D.OUTCOMES };
     w.seven = (w.seven + this.rules.wSeven) * (this.chance > 0 ? D.CHAIN.sevenX : 1);
-    w.mask = D.MASK_PER_DEADLINE * (this.deadline - 1);
+    w.mask = D.MASK_PER_LOCK * (this.deadline - 1) * (this.twist('toko_night') ? 3 : 1) + (this.twist('toko_night') ? 3 : 0);
     return w;
   }
 
   beginSpin(src) {
-    const outcome = drawOutcome(this.reelRng, this.weights());
-    if (this.chance > 0) this.chance--;
+    let outcome = drawOutcome(this.reelRng, this.weights());
+    if (outcome === 'miss' && this.rules.horseshoe) outcome = drawOutcome(this.reelRng, this.weights());
+    if (this.chance > 0 && --this.chance === 0) { this.denchu(false); this.events.push({ t: 'rushEnd' }); }
     const { grid, line, reach } = buildGrid(this.reelRng, outcome);
     const hasReach = reachLines(grid).length > 0;
     const stops = [];
@@ -154,103 +236,133 @@ export class Kuoppa extends Pajatso {
   // the machine pays what the PICTURE shows, never the draw
   resolveSpin(s) {
     const shown = linesShown(s.grid);
-    if (!shown.length) { this.events.push({ t: 'reel', outcome: 'miss', pay: 0 }); return; }
+    if (!shown.length) { this.events.push({ t: 'reel', outcome: 'miss' }); return; }
+    const L = this.levels.reel;
     for (const { symbol } of shown) {
-      let pay = 0;
-      if (symbol === 'clover') {
-        this.drops += D.CLOVER_DROPS;
-        this.events.push({ t: 'reel', outcome: symbol, pay: 0, drops: D.CLOVER_DROPS });
-        continue;
-      }
-      if (symbol === 'mask') {
-        const took = half(this.coins * D.MASK_TAKES);
-        this.coins -= took;
-        this.events.push({ t: 'reel', outcome: symbol, pay: -took });
-        continue;
-      }
-      pay = D.REEL_PAY[symbol] ?? 0;
-      if (pay) this.credit(pay, 'reel', `reel:${symbol}`);
+      const r = D.REEL[symbol] ?? {}, t = this.tally, ev = { t: 'reel', outcome: symbol };
+      if (r.chips) { ev.chips = r.chips * L; t.chips += ev.chips; }
+      if (r.money) { ev.money = r.money * L; this.credit(ev.money, 'reel', `reel:${symbol}`); }
+      if (r.drops) { ev.drops = r.drops + (L - 1); this.drops += ev.drops; }
+      if (r.xmult) { ev.xmult = r.xmult + 0.5 * (L - 1); t.mult *= ev.xmult; }
+      if (r.halveChips) { ev.halved = Math.floor(t.chips / 2); t.chips -= ev.halved; }
+      this.events.push(ev);
+      this.hear(ev);
       if (symbol === 'seven') {
         this.run.sevens++;
         this.openFever();
-        if (this.has('chain')) { this.chance = D.CHAIN.spins; this.events.push({ t: 'chance', spins: this.chance }); }
+        if (this.has('chain')) this.openRush();
       }
-      this.events.push({ t: 'reel', outcome: symbol, pay });
     }
   }
 
-  // a jackpot — a line of sevens or the POTTI — opens the gate on the right
-  openFever() {
-    if (!this.has('fever')) return;
-    this.fever = D.FEVER.pulls + this.rules.feverLong + 1;   // +1: the coin that won it settles first
-    this.gate(true);
-    this.run.fevers++;
-    this.events.push({ t: 'fever', pulls: this.fever - 1 });
-  }
-
-  gate(open) { const a = this.L.byId.attacker; if (a) a.open = open; }
-
-  // ── the run ────────────────────────────────────────────────────────────
+  // ── the round scores ─────────────────────────────────────────────────
   endRound() {
-    if (this.rules.interest > 0) {
-      const add = half(this.coins * this.rules.interest);
-      if (add > 0) { this.coins += add; this.events.push({ t: 'interest', pay: add }); }
-    }
-    if (this.has('chain')) this.pottiBase += D.CHAIN.pottiPerRound;     // the progressive POTTI
-    this.events.push({ t: 'roundEnd', round: this.round, deadline: this.deadline });
+    const t = this.tally, labels = [];
+    for (const j of this.jokers) { const say = JOKER[j.id].end?.(t, j); if (say) labels.push({ id: j.id, say }); }
+    const score = Math.floor(t.chips * t.mult);
+    this.anteTotal += score;
+    this.run.scored += score;
+    this.run.best = Math.max(this.run.best, score);
+    // money: the barman's cut and interest on what you kept
+    const interest = Math.min(D.INTEREST.cap + this.rules.interestCap, Math.floor(this.coins / D.INTEREST.per));
+    const pay = D.ROUND_PAY + interest;
+    this.coins += pay;
+    if (this.has('chain')) this.pottiChips += D.CHAIN.pottiPerRound;     // the progressive POTTI
+    this.events.push({ t: 'scored', chips: t.chips, mult: t.mult, score, labels, total: this.anteTotal, ante: this.ante, pay, interest, round: this.round });
+    this.hear({ t: 'scored' });
+    this.newTally();
     this.round++;
-    if (this.round > D.ROUNDS) { this.phase = 'due'; this.events.push({ t: 'due', debt: this.debt, coins: this.coins }); }
+    if (this.anteTotal >= this.ante) this.clearAnte();
+    else if (this.round > D.ROUNDS) { this.phase = 'fell'; this.events.push({ t: 'fell', total: this.anteTotal, ante: this.ante }); }
     else this.openShop();
   }
 
-  payDebt() {
-    if (this.phase !== 'due') return false;
-    const debt = this.debt;
-    if (this.coins < debt) { this.phase = 'fell'; this.events.push({ t: 'fell', debt, coins: this.coins }); return false; }
-    this.coins -= debt;
-    this.run.paid += debt;
+  clearAnte() {
+    const spare = D.ROUNDS - (this.round - 1);
+    const bonus = D.CLEAR_PAY + D.EARLY_PAY * spare;
+    this.coins += bonus;
+    const lock = this.deadline;
     this.deadline++;
-    this.round = 1;
-    if (this.deadline > D.LOCKS) { this.phase = 'won'; this.events.push({ t: 'won' }); return true; }
-    const part = D.PARTS[this.deadline - 2] ?? null;
+    this.round = 1; this.anteTotal = 0;
+    if (this.deadline > D.LOCKS) { this.phase = 'won'; this.events.push({ t: 'won' }); return; }
+    this.pickBoss();
+    const part = D.PARTS[lock - 1] ?? null;
     if (part) { this.parts.push(part); this.rebuild(); }
-    this.events.push({ t: 'paid', debt, part, deadline: this.deadline });
+    this.events.push({ t: 'cleared', lock, part, bonus, spare, next: this.ante });
     this.openShop();
-    return true;
   }
 
-  eligible() {
-    return D.CHARMS.filter(c => !this.charms.includes(c.id) && (!c.needs || this.has(c.needs)));
+  // ── the vendor ─────────────────────────────────────────────────────────
+  owned(id) { return this.jokers.some(j => j.id === id) || this.charms.includes(id); }
+  eligible(type) {
+    const list = type === 'joker' ? D.JOKERS : D.CHARMS;
+    return list.filter(c => !this.owned(c.id) && (!c.needs || this.has(c.needs)));
   }
+  levelKinds() { return D.LEVELS.filter(k => !D.LEVEL_NEEDS[k] || this.has(D.LEVEL_NEEDS[k])); }
 
   openShop() {
     this.phase = 'shop';
+    this.rerollCost = D.REROLL;
     this.stockShop();
     this.events.push({ t: 'shop', offers: this.offers.map(o => o?.id ?? null) });
   }
 
   stockShop() {
-    const pool = [...this.eligible()];
     this.offers = [];
-    for (let i = 0; i < D.OFFERS && pool.length; i++) this.offers.push(pool.splice(this.shopRng.int(pool.length), 1)[0]);
+    const pools = { joker: [...this.eligible('joker')], charm: [...this.eligible('charm')] };
+    for (let i = 0; i < 2; i++) {
+      const type = this.shopRng.next() < 0.65 && pools.joker.length ? 'joker' : pools.charm.length ? 'charm' : 'joker';
+      const pool = pools[type];
+      if (!pool.length) continue;
+      const c = pool.splice(this.shopRng.int(pool.length), 1)[0];
+      this.offers.push({ type, id: c.id, price: c.price });
+    }
+    const kinds = this.levelKinds();
+    const k = kinds[this.shopRng.int(kinds.length)];
+    this.offers.push({ type: 'plate', id: k, price: D.PLATE_PRICE });
+  }
+
+  canBuy(o) {
+    if (!o || this.phase !== 'shop' || this.coins < o.price) return false;
+    if (o.type === 'joker') return this.jokers.length < D.JOKER_SLOTS;
+    if (o.type === 'charm') return this.charms.length < D.CHARM_SLOTS;
+    return true;
   }
 
   buy(i) {
-    const c = this.offers[i];
-    if (this.phase !== 'shop' || !c || this.coins < c.price || this.charms.length >= D.SLOTS) return false;
-    this.coins -= c.price;
-    this.charms.push(c.id);
+    const o = this.offers[i];
+    if (!this.canBuy(o)) return false;
+    this.coins -= o.price;
     this.offers[i] = null;
-    this.run.charmsBought++;
-    this.rules = computeRules(this.charms);
-    this.rebuild();
-    this.events.push({ t: 'bought', id: c.id, price: c.price });
+    if (o.type === 'plate') { this.levels[o.id]++; this.run.plates++; }
+    else {
+      if (o.type === 'joker') this.jokers.push({ id: o.id, n: 0 });
+      else this.charms.push(o.id);
+      this.run.bought++;
+      this.recompute();
+    }
+    this.events.push({ t: 'bought', type: o.type, id: o.id, price: o.price, level: o.type === 'plate' ? this.levels[o.id] : undefined });
+    this.hear({ t: 'bought', type: o.type });
+    return true;
+  }
+
+  sell(type, id) {
+    if (this.phase !== 'shop') return false;
+    const def = type === 'joker' ? JOKER[id] : CHARM[id];
+    if (!def || !this.owned(id)) return false;
+    if (type === 'joker') this.jokers = this.jokers.filter(j => j.id !== id);
+    else this.charms = this.charms.filter(c => c !== id);
+    const back = Math.max(1, Math.floor(def.price * D.SELL));
+    this.coins += back;
+    this.recompute();
+    this.events.push({ t: 'sold', type, id, back });
     return true;
   }
 
   reroll() {
-    if (this.phase !== 'shop' || this.coins < D.REROLL) return false;
-    this.coins -= D.REROLL;
+    if (this.phase !== 'shop' || this.coins < this.rerollCost) return false;
+    this.coins -= this.rerollCost;
+    this.rerollCost++;
     this.stockShop();
     this.events.push({ t: 'shop', offers: this.offers.map(o => o?.id ?? null), reroll: true });
     return true;
@@ -260,14 +372,20 @@ export class Kuoppa extends Pajatso {
     if (this.phase !== 'shop') return false;
     this.drops = this.handful;
     this.phase = 'idle';
-    this.events.push({ t: 'round', round: this.round, deadline: this.deadline, drops: this.drops });
+    this.taped();
+    this.events.push({ t: 'round', boss: this.deadlineRound ? this.boss : null, round: this.round, deadline: this.deadline, drops: this.drops });
     return true;
+  }
+
+  recompute() {
+    this.rules = computeRules([...this.charms, ...this.jokers.map(j => j.id)]);
+    this.rebuild();
   }
 
   // the face as the parts and charms have made it
   get mods() {
     return { parts: [...this.parts], openPotti: this.rules.openPotti, winWiden: this.rules.winWiden,
-      rubberPins: this.rules.rubberPins, wideTulips: this.rules.wideTulips };
+      rubberPins: this.rules.rubberPins, wideTulips: this.rules.wideTulips, lifeNails: this.rules.lifeNails };
   }
 
   rebuild() {
@@ -276,9 +394,11 @@ export class Kuoppa extends Pajatso {
     this.board.setLayout(L);
     // a window that has only now become a tulip starts shut (setLayout carried
     // the plain window's open flag across)
-    for (const p of L.pockets) if (p.kind === 'tulip' && old.byId[p.id]?.kind !== 'tulip') p.open = !!p.alwaysOpen;
+    for (const p of L.pockets) if (p.kind === 'tulip' && !p.denchu && old.byId[p.id]?.kind !== 'tulip') p.open = !!p.alwaysOpen;
     this.L = L;
     this.gate(this.fever > 0);
+    this.denchu(this.chance > 0);
+    this.taped();
     this.board.magnet = this.rules.magnet;
     const n = this.rules.pottiCols || POTTI_COLS.length, h = (n - 1) / 2;
     this.pottiCols = Array.from({ length: n }, (_, i) => MIDDLE - h + i);
@@ -286,4 +406,4 @@ export class Kuoppa extends Pajatso {
   }
 }
 
-export { D as DATA, SPEED };
+export { D as DATA, JOKER, CHARM };

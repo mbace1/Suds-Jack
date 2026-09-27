@@ -4,6 +4,85 @@ The game was PACHI PIT for its first release; v2 renamed it and made the
 Finnish coin wall game the front door. The pit run is still here as KUOPPA
 (`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
 
+## v5 — 2026-09-27 — Balatro's shape, CloverPit's charms, pachinko's parts, the nudge
+
+The owner, after v4: *"Not sure what tulips are here. Maybe the extra
+features should look at more Pachinko like references. Also we need charms
+like Clover Pit and maybe Jokers like Balatro, so levels can be raised and
+ante pushed 10x each 3 rounds or so."* Then: *"Can we add mechanics, like
+tapping the phone to give the coin some momentum? The Ante part is like
+Clover Pit deadline payment or the 3rd fight in Balatro. Change any raccoon or
+similar to Toko face."*
+
+**A round is a hand.** Every coin that lands somewhere scores CHIPS or MULT —
+by the window it lands in, that window's LEVEL, and whatever the jokers do —
+and when the round's last coin is down the round scores **CHIPS × MULT**
+toward the **ANTE: 100, then ×10 every lock**, a billion at the eighth. Reach
+it within three rounds and the lock opens (the rounds you did not need pay 2
+mk each); miss it and the floor opens. **Money is separate and small**, the
+way Balatro keeps its dollars apart from its score: 3 mk a round, 1 in 5
+interest up to 5, R gives a markka back, and the POTTI pays the middle of the
+pot in markka — the Pajatso's own money, spent at the vendor.
+
+**The vendor** lays out two cards and a level plate: **22 JOKERS** (Balatro:
+the score — +mult, +chips, ×mult, per-hit ×mult that compounds, jokers that
+grow over the run, a retrigger), **13 CHARMS** (CloverPit: the machine, the
+odds and the money — a bent nail, filed windows, a magnet, a horseshoe, a
+savings book), and **LEVEL PLATES** for every kind of hit. Five joker slots,
+four charm slots, everything sells back for half, another look costs one more
+each time.
+
+**The deadline round.** The third round of every ante is the one the payment
+falls due on (CloverPit's ATM, Balatro's boss blind), and it carries a
+**twist**, drawn when the ante begins and shown at the vendor so you can shop
+for it: the Short Hand, the Tilt Sensor, the Taped POTTI, the Dry R, the
+Watered Beer, the Flat Plates, Toko's Night.
+
+**The parts, as a pachinko's** (*"not sure what tulips are here"*):
+- **Heso & the LCD**: a **yakumono** in the middle of the nails — the LCD in a
+  gold frame, a **warp** in its left side, a **stage** under the screen that
+  drops a coin through a hole onto the **heso** between its two life nails.
+  The reels left the box on top of the case for the middle of the face, where
+  every pachinko has them.
+- **Tulips**: red plastic flowers on the 1:00 windows whose petals visibly
+  swing open when a coin goes in and shut on the next.
+- **The attacker**: a red flap in a chrome frame under the right-hand windows
+  that tips out toward you in 大当たり.
+- **Windmills**: plastic pinwheels, two colours, hooked blades.
+- **確変 & the electric tulip (電チュー)**: RUSH after a jackpot — sevens ×3,
+  and a lidded second heso on the right opens its wings for shooting right.
+- Each part's card now carries a **picture** of the part doing what it does.
+
+**THE NUDGE**, on both machines: tap the machine while the coin is out on the
+face and it is shoved toward your finger (← → on a keyboard, LB/RB on a pad).
+Two a coin are free; the third **TILTS** and the coin is the machine's. A
+charm gives a third free nudge, a joker scores mult for every one, and a
+deadline twist makes the first one tilt.
+
+**Toko instead of the raccoon.** The reels' mask symbol, the old pit's wall,
+marquee and poster, its bandit and its phone are Toko now, drawn from the
+brand's own `toko/js/face.js` so the mark cannot drift. A line of Tokos halves
+the round's chips.
+
+**Measured** (`node pajatso/test/run.mjs runs`, 80 runs a policy): the machine
+alone falls at lock 3–4; plates alone at 4–5; the joker-buying bot (sells an
+adder for a multiplier when full) reaches lock 8 in 19% of runs and **wins
+6%**, its best round 7.3 billion. At ×10 an ante the late game needed more
+coins to compound on: 8 more coins a lock (5 left everyone at lock 6), and
+jokers that multiply per hit or grow. `run.mjs face` sweeps every stage of the
+face: no coin fished out, the heso found 4–8% of the time; its first cut read
+nonsense because every probe coin was the round's last and the sweep kept
+clearing antes and bolting parts on mid-measure.
+
+Two traps worth keeping: the **electric tulip first stood 2.5 bu from the end
+of the right-wall kicker** — a wedge 68 coins found in one sweep — and the
+**yakumono's walls count along their whole length** in the wedge rule, not
+only at their ends (a nail beside the roof is a well like any other).
+
+Gates: `core.mjs` 157 (scoring, levels, jokers, the vendor, the twists, the
+nudge, the reels paying the picture, the parts in order), `classic.cjs` 32,
+`kuoppa.cjs` 31, `smoke.cjs` 44.
+
 ## v4 — 2026-09-27 — KUOPPA on the Pajatso face, and the six parts
 
 The owner, on the roadmap: *"Go ahead."* The order was already set by their

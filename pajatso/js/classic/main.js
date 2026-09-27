@@ -2,10 +2,10 @@
 // about what happens in it. The lever, keys, pad, HUD voices, language and
 // loop are the table both pages stand at (table.js).
 
-import { Pajatso, START_COINS } from './game.js?v=4';
-import { View } from './view.js?v=4';
-import { JACKPOT } from './layout.js?v=4';
-import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=4';
+import { Pajatso, START_COINS } from './game.js?v=5';
+import { View } from './view.js?v=5';
+import { JACKPOT } from './layout.js?v=5';
+import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=5';
 
 const BEST = 'pajatso.best';
 let game = new Pajatso({ seed: seedFrom() });
@@ -15,7 +15,7 @@ let best = store.get(BEST, 0);
 const table = mountTable({
   game: () => game,
   view,
-  tips: { pull: 'tipPull', windows: 'tipWindows', again: 'tipAgain', potti: 'tipPotti', right: 'tipRight' },
+  tips: { pull: 'tipPull', windows: 'tipWindows', again: 'tipAgain', potti: 'tipPotti', right: 'tipRight', nudge: 'tipNudge' },
   tipVars: () => ({ n: mk(game.pottiNow) }),
   words: () => ({ n: START_COINS }),
   onEvent,
@@ -54,7 +54,9 @@ function onEvent(ev) {
     case 'lost': sfx.miss(); if (ev.kept) view.toPot(ev.column, ev.height); break;
     case 'foul': sfx.foul(); table.toast(t('foul'), t('foulSub'), '', 1600); break;
     case 'returned': sfx.beep(); table.toast(t('returned'), t('returnedSub'), '', 1400); break;
-    case 'ready': if (game.stats.shots === 1) table.tip('windows'); else if (game.stats.shots === 3) table.tip('again'); else if (game.stats.shots === 6) table.tip('potti'); break;
+    case 'ready': if (game.stats.shots === 1) table.tip('windows'); else if (game.stats.shots === 3) table.tip('again'); else if (game.stats.shots === 5) table.tip('nudge'); else if (game.stats.shots === 8) table.tip('potti'); break;
+    case 'nudge': sfx.rattle(); buzz(20); table.pop(ev.x, ev.y + 3, `${t('nudge')} ${'●'.repeat(Math.max(0, ev.left))}`); break;
+    case 'tilt': sfx.foul(); buzz([120, 60, 120]); table.toast(t('tilt'), t('tiltSub'), '', 1800); break;
     case 'broke': setTimeout(showBroke, 900); break;
   }
 }

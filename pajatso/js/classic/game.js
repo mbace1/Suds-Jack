@@ -15,15 +15,19 @@
 // Money is in markka. 1:50 pays one and a half, so a purse can hold 50 p;
 // a pull takes a whole markka.
 
-import { Board, BOARD } from '../board.js?v=4';
-import { makeRng } from '../rng.js?v=4';
-import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS } from './layout.js?v=4';
+import { Board, BOARD } from '../board.js?v=5';
+import { makeRng } from '../rng.js?v=5';
+import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS } from './layout.js?v=5';
 
 export const START_COINS = 30;
 // The face is stepped faster than the pachinko board: BOARD.G is slowed so a
 // rain of small coins can be watched, and one big coin at that pace took six
 // seconds a shot, which is a long time to hold a lever for nothing.
 export const SPEED = 1.7;
+// THE NUDGE (owner: "tapping the phone to give the coin some momentum"): a
+// bump of the cabinet shoves the coin toward where you tapped. Two a coin are
+// free; the third trips the TILT and the coin is the machine's.
+export const NUDGE = { free: 2, dv: 10, lift: 3 };
 
 const freshStats = coins => ({ shots: 0, won: 0, biggest: 0, peak: coins, pottis: 0, backs: 0, fouls: 0, lost: 0, hits: {} });
 
@@ -74,6 +78,28 @@ export class Pajatso {
       for (const ev of this.board.drain()) this.onBoard(ev);
     }
     if (this.phase === 'flight' && !this.inFlight) this.settle();
+  }
+
+  // Bump the cabinet: (dx, dy) is the way to shove, any length. Only a coin
+  // out on the face can be nudged — not one still climbing the lane.
+  get nudgesFree() { return NUDGE.free + (this.extraNudges ?? 0); }
+  nudge(dx, dy) {
+    const c = this.board.coins[0];
+    if (!c || this.phase !== 'flight' || this.board.inLane(c) || this.noNudge) return false;
+    c.nudges = (c.nudges ?? 0) + 1;
+    if (c.nudges > this.nudgesFree || this.tiltAtOnce) {
+      this.board.coins.splice(0, 1);
+      this.events.push({ t: 'tilt', x: c.x, y: c.y });
+      this.intoPot(null, c.x);
+      return true;
+    }
+    const d = Math.hypot(dx, dy) || 1;
+    c.vx += dx / d * NUDGE.dv;
+    c.vy += dy / d * NUDGE.dv * 0.6 + NUDGE.lift;
+    c.still = 0;
+    this.board.shake = 0.2;
+    this.events.push({ t: 'nudge', x: c.x, y: c.y, n: c.nudges, left: this.nudgesFree - c.nudges });
+    return true;
   }
 
   // run the machine until the coin is done — for tests and bots

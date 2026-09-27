@@ -40,41 +40,28 @@ Open, in the owner's hands next:
 - **Does 30 mk last?** The machine pays back ~0.97 a markka with the pot left
   to run; `node pajatso/test/face.mjs` is where to look before moving a number.
 
-## 2. The roguelike mode — KUOPPA on the Pajatso face, v4 SHIPPED
+## 2. The roguelike mode — KUOPPA, v5: Balatro's shape on the Pajatso
 
-`kuoppa.html` (`js/kuoppa/`): the house hands you coins a round, the machine
-pays into your purse, a debt is due every third round, the vendor sells
-charms between rounds, eight locks on the door. `VERSIONS.md` v4 has the
-numbers and what it took; `node pajatso/test/run.mjs` is the instrument
-(bots over whole runs, and the lever swept on every stage of the face).
+A round is a hand scored CHIPS × MULT; the ante is ×10 a lock and falls due
+on the third round, which carries a twist (CloverPit's deadline, Balatro's
+boss blind); jokers bend the score, charms the machine, plates raise levels;
+the parts arrive one per lock as their pachinko selves. `VERSIONS.md` v5.
 
 Open, in the owner's hands next:
-- **Is the curve right?** Bots win 19–23%; a person reads the machine and
-  should do better. The debts are one line in `js/kuoppa/data.js`.
-- **The charms are twelve plain ones.** CloverPit's pull is the charm that
-  changes what a run IS; the first twelve bend numbers. The next pass is
-  charms that combine (a tulip that stamps coins, a POTTI that opens FEVER
-  longer…), measured the same way.
-- **KUOPPA's v1 systems not yet ported**: the phone's deals, the raccoon
-  bandit, the ATM's interest (a charm has it for now).
+- **Is ×10 right?** A bot that buys well wins 6%; a person should do better.
+  `ANTE_X` is one number in `js/kuoppa/data.js`.
+- **More jokers that talk to the parts** — the strongest runs are the ones
+  where a joker and a part meet (Tulip Painter on tulips, Fever Dream in
+  大当たり). Every part could have two or three.
+- **The old pit's systems not yet ported**: the phone's deals (with Toko on
+  the line now), the bandit.
 
-## 3. The pachinko parts — the roguelike ONLY, in this order — all six IN (v4)
+## 3. The pachinko parts — the roguelike only, in the owner's order — v5
 
-Each is bolted on by a debt paid, in the owner's order, and the base machine
-never gets them:
-
-1. **Start chucker + reels** ✔ — a START pocket in the nails; the reels on an
-   LCD in a box bolted on top of the case.
-2. **Tulips** ✔ — the two 1:00 windows.
-3. **FEVER** ✔ — a jackpot opens the attacker under the right half of the
-   window row: shoot right.
-4. **Windmills** ✔ — two, beside the chucker.
-5. **Chain jackpots** ✔ — sevens ×3 for a while after a jackpot, and the
-   **progressive POTTI** (+2 mk a round) — answer 5's *maybe C*.
-6. **Ball multipliers** ✔ — the R windows become ×3.
-
-Next for the parts is depth, not count: a REACH with more theatre, a stage,
-the warp (`js/board.js` has both from v1), tulips that open each other.
+Heso & LCD (yakumono, warp, stage) → tulips → attacker → windmills → 確変 &
+the electric tulip → ×3. Next for the parts: REACH presentations with more
+theatre (a 3D stage the coin rolls on, the screen reacting), a second
+yakumono gimmick, a V-zone.
 
 ## Still true from the v1 list
 

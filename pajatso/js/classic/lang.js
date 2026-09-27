@@ -9,6 +9,8 @@ const KEY = 'pajatso.lang';
 
 const STR = {
   en: {
+    nudge: 'NUDGE', tilt: 'TILT!', tiltSub: 'bumped too hard — the coin is the machine’s',
+    tipNudge: '<b>Tap the machine</b> while the coin is out on the face: it shoves the coin toward your finger. Two nudges a coin are free — the third <b>TILTS</b>.',
     money: 'Markka', best: 'Best', last: 'Last pull', pull: 'Pull', lever: 'PULL ▼', potti: 'POTTI now',
     sub: 'The Finnish coin wall game · a Kallio bar',
     intro1: 'You have <b>{n} markka</b>. A pull takes one. Pull the lever down and let go: <b>how far you pull</b> decides where the coin leaves the rail over the top.',
@@ -32,6 +34,8 @@ const STR = {
     muteLabel: 'Sound on or off', pauseLabel: 'Pause', leverLabel: 'The lever: pull down and let go. A tap pulls the same as last time.', langLabel: 'Language',
   },
   fi: {
+    nudge: 'TÖNÄISY', tilt: 'TILT!', tiltSub: 'liian kova tönäisy — kolikko jää koneelle',
+    tipNudge: '<b>Napauta konetta</b>, kun kolikko on laudalla: se tönäisee kolikkoa sormesi suuntaan. Kaksi tönäisyä kolikkoa kohden on ilmaisia — kolmas <b>TILTTAA</b>.',
     money: 'Markkaa', best: 'Ennätys', last: 'Viimeksi', pull: 'Veto', lever: 'VEDÄ ▼', potti: 'POTTI nyt',
     sub: 'Kolikkopeli seinällä · kallioläinen baari',
     intro1: 'Sinulla on <b>{n} markkaa</b>. Yksi veto vie yhden. Vedä vipu alas ja päästä irti: <b>se, kuinka pitkälle vedät</b>, ratkaisee missä kolikko lähtee kiskolta.',
@@ -55,6 +59,8 @@ const STR = {
     muteLabel: 'Äänet päälle tai pois', pauseLabel: 'Tauko', leverLabel: 'Vipu: vedä alas ja päästä irti. Napautus toistaa edellisen vedon.', langLabel: 'Kieli',
   },
   ja: {
+    nudge: 'ナッジ', tilt: 'ティルト！', tiltSub: '叩きすぎ——コインは台のもの',
+    tipNudge: 'コインが盤面にある時に<b>台をタップ</b>すると、指の方へコインを押す。1枚につき2回まで無料——3回目は<b>ティルト</b>。',
     money: 'マルッカ', best: '最高', last: '前回', pull: '引き', lever: '引く ▼', potti: '今のポッティ',
     sub: 'フィンランドの壁掛けコインゲーム · カッリオのバー',
     intro1: '持ち金は<b>{n}マルッカ</b>。一回引くと一枚。レバーを下に引いて離す：<b>引く長さ</b>で、コインが上のレールから離れる場所が決まる。',

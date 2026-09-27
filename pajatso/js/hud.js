@@ -5,8 +5,8 @@
 // the engine's state itself, so a button and a key and a pad press all take
 // exactly the same path.
 
-import { CHARMS, DEALS, LOCKS, SHIFTS_PER_DEADLINE } from './data.js?v=4';
-import { FAMILY, GLYPH } from './view/room.js?v=4';
+import { CHARMS, DEALS, LOCKS, SHIFTS_PER_DEADLINE } from './data.js?v=5';
+import { FAMILY, GLYPH } from './view/room.js?v=5';
 
 const $ = id => document.getElementById(id);
 const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html !== undefined) n.innerHTML = html; return n; };
@@ -231,7 +231,7 @@ export class Hud {
           : `${left} padlock${left === 1 ? '' : 's'} left. One comes off for every debt you pay. The red phone only rings when you have paid.`}</p>`;
         return;
       }
-      p.innerHTML = `<h2>THE PHONE IS RINGING</h2><div class="line" id="callLine"></div><p>The raccoon has three deals. Take one.</p>`;
+      p.innerHTML = `<h2>THE PHONE IS RINGING</h2><div class="line" id="callLine"></div><p>Toko has three deals. Take one.</p>`;
       const cards = el('div', 'cards');
       e.phone.deals.forEach((id, i) => {
         const d = DEALS.find(x => x.id === id);
@@ -309,7 +309,7 @@ export class Hud {
     ];
     const title = kind === 'won' ? 'OUT.' : 'YOU FELL.';
     const line = kind === 'won'
-      ? 'The eighth padlock hits the floor and the door swings out onto a staircase. It goes up a long way. The raccoon says nothing, which is the nicest thing it has ever said.'
+      ? 'The eighth padlock hits the floor and the door swings out onto a staircase. It goes up a long way. Toko says nothing, which is the nicest thing he has ever said.'
       : `The ATM was ${e.debt - e.atm} short. The floor under the stool opens, and the pit turns out to have a pit.`;
     sheet.innerHTML = `<h1 style="font-size:clamp(44px,12vw,72px)">${title}</h1>
       <p style="margin-top:14px">${line}</p>

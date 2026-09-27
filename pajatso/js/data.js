@@ -207,8 +207,8 @@ export const CHARMS = [
   { id: 'mousetrap', family: 'raccoon', rarity: 1, price: 4, name: 'Mousetrap',
     text: 'The first paw that comes down each deadline gets caught instead of your coins.',
     rules: { mousetrap: 1 } },
-  { id: 'trash_panda', family: 'raccoon', rarity: 2, price: 6, name: 'Trash Panda',
-    text: "The raccoon's junk is worth 4 when it falls in your tray.",
+  { id: 'trash_panda', family: 'raccoon', rarity: 2, price: 6, name: "Toko's Junk",
+    text: "Toko's junk is worth 4 when it falls in your tray.",
     rules: { trashValue: 4 } },
 ];
 

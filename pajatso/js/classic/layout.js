@@ -15,7 +15,7 @@
 // valve, the knife-edge tip and the wedge rule are the physics the pachinko
 // board was tuned with. The coin is BIG, 2.5 bu across on a 60 bu face.
 
-import { BOARD, seg, arc, buildGrid } from '../board.js?v=4';
+import { BOARD, seg, arc, buildGrid } from '../board.js?v=5';
 
 const deg = d => d * Math.PI / 180;
 
@@ -50,11 +50,20 @@ export const POT_START = [3, 4, 5, 7, 9, 11, 12, 11, 9, 7, 5, 4, 3];
 // both arrive as `mods`, and with no mods this is exactly the base machine.
 //   parts: ['chucker', 'tulips', 'fever', 'windmills', 'chain', 'multiplier']
 //   openPotti, winWiden (bu), rubberPins, wideTulips
-export const CHUCKER = { x: 1.5, y: 66.2, w: 2.9, depth: 2.6 };
-export const MILLS = [[-13.5, 64.6], [16.5, 64.6]];
+// the YAKUMONO (役物): the frame round the LCD in the middle of the nails, as
+// on any modern pachinko — a roof that sheds coins both ways, a WARP mouth in
+// its left side, and a STAGE (the V at its bottom) that drops a coin through
+// a hole straight onto the HESO (ヘソ), the start chucker, under its life nails
+export const YAKU = { x0: -6.5, x1: 9.5, y0: 64.2, lip: 66.0, side: 71.2, apex: 75.2, mid: 1.5, hole: 1.6, warp: [67.0, 70.3] };
+export const HESO = { x: 1.5, y: 61.6, w: 2.9, depth: 2.4 };
+export const CHUCKER = HESO;
+// the ELECTRIC TULIP (電チュー): a second start pocket on the right, lidded
+// shut until the chain's RUSH opens its wings — shoot right
+export const DENCHU = { x: 19.5, y: 60.6, w: 2.9, depth: 2.4, wing: 4.2 };
+export const MILLS = [[-15.0, 63.2], [14.6, 67.4]];
 export const TULIPS = [1, 7];            // the two 1:00 windows
 export const TIMES3 = [0, 8];            // the two R windows
-export const ATTACKER = { x0: 3.8, x1: 29.6, y: 44.4 };
+export const ATTACKER = { x0: 12.2, x1: 27.8, y: 44.4 };
 
 export function buildPajatso(mods = {}) {
   const { C, R } = BOARD;
@@ -117,13 +126,33 @@ export function buildPajatso(mods = {}) {
   // nothing itself and spins the reels. Two life nails over its mouth a pass
   // apart, the way v2's cups were guarded. ──
   if (parts.has('chucker')) {
-    const { x, y, w, depth } = CHUCKER;
+    const { x0, x1, y0, lip, side, apex, mid, hole, warp: [wg0, wg1] } = YAKU;
+    const F = { kind: 'frame', e: 0.3, mu: 0.05 }, S = { kind: 'stage', e: 0.12, mu: 0.03 };
+    // the frame: up the left from the warp mouth, over the roof, down the right
+    const frame = [[x0, wg1], [x0, side], [mid - 3, apex - 0.9], [mid, apex], [mid + 3, apex - 0.9], [x1, side], [x1, lip]];
+    for (let i = 0; i < frame.length - 1; i++) segs.push(seg(...frame[i], ...frame[i + 1], F));
+    segs.push(seg(x0, wg0, x0, lip, F));
+    // the stage: a V from both lips down to a hole over the heso
+    segs.push(seg(x0, lip, mid - hole, y0, S));
+    segs.push(seg(mid + hole, y0, x1, lip, S));
+    const { x, y, w, depth } = HESO;
     pockets.push({ id: 'start', kind: 'cup', pay: 'start', x, y, w, depth, chimney: 0, chute: 'C', open: true, flash: 0, hits: 0 });
     segs.push(seg(x - w / 2, y, x - w / 2, y - depth, { kind: 'window', e: 0.25 }));
     segs.push(seg(x + w / 2, y, x + w / 2, y - depth, { kind: 'window', e: 0.25 }));
     segs.push(seg(x - w / 2, y - depth, x + w / 2, y - depth, { kind: 'window', e: 0.1 }));
-    const g = CLEAR / 2 + PIN_R;
-    pin(x - g, y + 2.1, 'life'); pin(x + g, y + 2.1, 'life');
+    // the life nails (命釘): a pass apart, between the stage's hole and the heso
+    const g = CLEAR / 2 + PIN_R + (mods.lifeNails ?? 0);
+    pin(x - g, y + 1.5, 'life'); pin(x + g, y + 1.5, 'life');
+  }
+  // ── the ELECTRIC TULIP (the chain's part): shut, a sloped lid over its mouth
+  // sheds coins off to the left; in RUSH its wings open and it catches ──
+  if (parts.has('chain')) {
+    const { x, y, w, depth, wing } = DENCHU;
+    pockets.push({ id: 'denchu', kind: 'tulip', pay: 'start', x, y, w, depth, narrow: w, chimney: 0, chute: 'R', open: false, alwaysOpen: true, flash: 0, hits: 0, denchu: true });
+    for (const s of [-1, 1]) segs.push(seg(x + s * w / 2, y, x + s * w / 2, y - depth, { kind: 'window', e: 0.25 }));
+    segs.push(seg(x - w / 2, y - depth, x + w / 2, y - depth, { kind: 'window', e: 0.1 }));
+    segs.push(seg(x + w / 2, y + 1.3, x - w / 2, y, { kind: 'lid', e: 0.2, mu: 0.04, pocket: 'denchu', when: 'closed' }));
+    for (const s of [-1, 1]) segs.push(seg(x + s * wing / 2, y + 1.6, x + s * w / 2, y, { kind: 'petal', e: 0.2, pocket: 'denchu', when: 'open' }));
   }
   // ── the ATTACKER (a part, FEVER's gate): the space under the right half of
   // the window row. Shut, it is nothing; open (FEVER), every coin that misses
@@ -183,11 +212,22 @@ export function buildPajatso(mods = {}) {
   }
   const ends = segs.filter(g => g.kind !== 'rail' && g.kind !== 'guide')
     .flatMap(g => [[g.ax, g.ay], [g.bx, g.by]]);
+  // the parts' walls count along their whole length, not only at their ends:
+  // a nail beside the yakumono's roof is a well like any other
+  const walls = segs.filter(g => ['frame', 'stage', 'lid', 'petal'].includes(g.kind));
+  const toSeg = (x, y, g) => {
+    const dx = g.bx - g.ax, dy = g.by - g.ay, L2 = dx * dx + dy * dy;
+    const t = Math.max(0, Math.min(1, ((x - g.ax) * dx + (y - g.ay) * dy) / L2));
+    return Math.hypot(x - g.ax - dx * t, y - g.ay - dy * t);
+  };
+  const inFrame = (x, y) => parts.has('chucker') && x > YAKU.x0 - 0.5 && x < YAKU.x1 + 0.5 && y > YAKU.y0 - 0.5 && y < YAKU.apex + 0.5;
   for (let i = pins.length - 1; i >= 0; i--) {
     const p = pins[i];
     if (p.tag !== 'field') continue;
     if (fixed.some(q => Math.hypot(q.x - p.x, q.y - p.y) < PASS)
-      || ends.some(([x, y]) => Math.hypot(x - p.x, y - p.y) < PASS - PIN_R)) pins.splice(i, 1);
+      || ends.some(([x, y]) => Math.hypot(x - p.x, y - p.y) < PASS - PIN_R)
+      || walls.some(g => toSeg(p.x, p.y, g) < CLEAR + PIN_R + 0.1)
+      || inFrame(p.x, p.y)) pins.splice(i, 1);
   }
 
   const byId = Object.fromEntries(pockets.map(p => [p.id, p]));

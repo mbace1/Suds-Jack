@@ -9,7 +9,7 @@
 // the pot behind chrome dividers on a pale ribbed back. A teak-veneer case, a
 // black 1 mk plate down the right, and an orange bar wall behind it all.
 
-import { LABEL, JACKPOT, FACE, POTTI_COLS } from './layout.js?v=4';
+import { LABEL, JACKPOT, FACE, POTTI_COLS, YAKU } from './layout.js?v=5';
 
 export const PPU = 16;                      // canvas pixels per board unit
 export const X0 = -31, Y1 = 82, W = 62, H = 82;   // the painted area, in board units
@@ -46,6 +46,17 @@ export function faceCanvas(L) {
   // KUOPPA's parts, where they are bolted on
   const st = L.byId.start;
   if (st) {
+    // the yakumono's panel: dark behind the LCD, a gold rim, a purple stage
+    const { x0, x1, y0, lip, side, apex, mid } = YAKU;
+    g.beginPath();
+    g.moveTo(px(x0), py(lip)); g.lineTo(px(x0), py(side)); g.lineTo(px(mid - 3), py(apex - 0.9)); g.lineTo(px(mid), py(apex));
+    g.lineTo(px(mid + 3), py(apex - 0.9)); g.lineTo(px(x1), py(side)); g.lineTo(px(x1), py(lip)); g.lineTo(px(mid), py(y0)); g.closePath();
+    const yg = g.createLinearGradient(0, py(apex), 0, py(y0));
+    yg.addColorStop(0, '#2a1446'); yg.addColorStop(0.8, '#120822'); yg.addColorStop(1, '#5a2a8a');
+    g.fillStyle = yg; g.fill();
+    g.strokeStyle = '#f0c040'; g.lineWidth = 0.35 * u; g.stroke();
+    // the warp's mouth, lit
+    g.fillStyle = '#6fe0ff'; g.fillRect(px(x0) - 0.3 * u, py(YAKU.warp[1]), 0.6 * u, (YAKU.warp[1] - YAKU.warp[0]) * u);
     g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(px(st.x), py(st.y - 1), 4.4 * u, 3.6 * u, 0, 0, Math.PI * 2); g.fill();
     g.fillStyle = '#0c0c0e'; g.fillRect(px(st.x - st.w / 2 - 0.5), py(st.y + 0.6), (st.w + 1) * u, (st.depth + 0.6) * u);
     const pw = 5.2 * u, ph = 1.9 * u, top = py(st.y - st.depth - 0.4);
@@ -53,6 +64,14 @@ export function faceCanvas(L) {
     g.strokeStyle = '#6fe08a'; g.lineWidth = 0.15 * u; g.strokeRect(px(st.x) - pw / 2, top, pw, ph);
     g.fillStyle = '#bff5cf'; g.font = `900 ${Math.round(1.1 * u)}px ${BLACK}`; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('START', px(st.x), top + ph / 2 + 0.05 * u);
+  }
+  const dn = L.byId.denchu;
+  if (dn) {
+    g.fillStyle = '#0c0c0e'; g.fillRect(px(dn.x - dn.w / 2 - 0.5), py(dn.y + 0.6), (dn.w + 1) * u, (dn.depth + 0.6) * u);
+    const pw = 5.6 * u, ph = 1.7 * u, top = py(dn.y - dn.depth - 0.4);
+    g.fillStyle = '#10306a'; g.fillRect(px(dn.x) - pw / 2, top, pw, ph);
+    g.fillStyle = '#bfe0ff'; g.font = `900 ${Math.round(1.0 * u)}px ${BLACK}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('電チュー', px(dn.x), top + ph / 2 + 0.05 * u);
   }
   const att = L.byId.attacker;
   if (att) {
@@ -111,12 +130,8 @@ function win(g, px, py, u, p) {
   const jack = p.pay === JACKPOT;
   const x = px(p.x), w = p.w * u;
   if (p.tulip) {
-    // a tulip: two painted red petals either side of the mouth
-    g.fillStyle = '#c8102e';
-    for (const s of [-1, 1]) {
-      g.beginPath(); g.ellipse(x + s * (w / 2 + 0.9 * u), py(p.y + 0.4), 1.0 * u, 2.2 * u, s * 0.5, 0, Math.PI * 2); g.fill();
-    }
-    g.fillStyle = '#3c8a2a'; g.fillRect(x - 0.2 * u, py(p.y - p.depth - 0.5), 0.4 * u, 0.5 * u);
+    // a tulip's stem and two leaves under the plastic flower
+    g.fillStyle = '#3c8a2a'; g.fillRect(x - 0.2 * u, py(p.y - p.depth - 0.5), 0.4 * u, 0.9 * u);
   }
   g.fillStyle = '#0c0c0e'; g.fillRect(x - w / 2 - 0.5 * u, py(p.y + 0.6), w + u, (p.depth + 0.6) * u);
   // the fork over the mouth: two chrome prongs and a bar
