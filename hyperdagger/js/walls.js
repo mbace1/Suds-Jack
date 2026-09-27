@@ -120,7 +120,7 @@ export class Walls {
     w.hp = Math.max(0, w.hp - amount);
     const k = 1 - w.hp / w.maxHp;
     if (k > 0.5) {
-      w.lean = (k - 0.5) * 0.28;
+      w.lean = (k - 0.5) * 0.7;   // 0.35 rad at the last blow — a pile about to go, not a nudge
       w.mesh.rotation.z = w.lean;
       w.mesh.rotation.x = w.lean * 0.4;
     }

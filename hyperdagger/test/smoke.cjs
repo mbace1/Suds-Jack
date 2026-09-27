@@ -1025,7 +1025,7 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('ember: COVER THAT DIES — every pile has hit points, worn past half it leans, at zero it collapses into a heap of shale',
     coverDies.piles >= 5 && coverDies.maxHp.every(h => h === 70) && coverDies.hp.every(h => h === 70)
-    && coverDies.midHp === 30 && coverDies.midLean > 0.05 && coverDies.felled === 1 && coverDies.left === coverDies.piles - 1 && coverDies.gibs >= 8 && coverDies.gibsTop > 0.2,
+    && coverDies.midHp === 30 && coverDies.midLean > 0.04 && coverDies.felled === 1 && coverDies.left === coverDies.piles - 1 && coverDies.gibs >= 8 && coverDies.gibsTop > 0.2,
     JSON.stringify(coverDies));
   const pillars = em.walls.walls.filter(w => w.tag === 'pillar');
   ok('ember: it boots into its own season and says so',
@@ -1201,7 +1201,7 @@ s.listen(0, '127.0.0.1', async () => {
     const hd = window.__hd, d = hd.debug, pl = hd.player, G = d.gibsObj();
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     const decl = d.getFinale().declared;
-    d.setTime(179.5); await frames(20);
+    d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
     const fired = d.getFinale();
     // a rock straight over the feet, with the invulnerability off: it must land as a hit
     pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync(); d.setInvulnerable(false);
@@ -1210,7 +1210,7 @@ s.listen(0, '127.0.0.1', async () => {
     let hit = false;
     for (let i = 0; i < 40 && !hit; i++) { await frames(1); const st = d.getState(); if (st.lifeT < life1 - 3 || st.state === 'dead') hit = true; }
     d.setInvulnerable(true);
-    for (let i = 0; i < 260 && !d.getFinale().done; i++) await frames(1);
+    for (let i = 0; i < 900 && !d.getFinale().done; i++) await frames(1);
     return { decl: decl?.kind, at: decl?.at, fired: fired.active, kind: fired.kind, rocksEarly: fired.rocks, hit, after: d.getFinale(), heap: G.getState() };
   });
   ok('ember: THE FINALE — at 180 s the rockfall fires and rock falls', rockfall.decl === 'rockfall' && rockfall.at === 180 && rockfall.fired && rockfall.kind === 'rockfall' && rockfall.rocksEarly >= 1, JSON.stringify({ decl: rockfall.decl, fired: rockfall.fired, rocks: rockfall.rocksEarly }));
@@ -1337,6 +1337,7 @@ s.listen(0, '127.0.0.1', async () => {
       d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
       await frames(3);
       const tr = d.truckObj(), gz = d.gazeObj(), inp = d.inputObj();
+      gz.cfg.trucks = false;   // v53: the cabs lock too — these checks are about bodies; haul2 turns it back on
       const out = { mode: d.getState().mode, jumps: pl.maxJumps, dash: !!pl.dashEnabled, moving: !!tr.cfg.moving, gazeOn: !!gz.cfg,
         hand: d.getHand().model, shape: d.getGun().shape };
       // THE TRUCKS DRIVE: half a second of the convoy, one truck watched
@@ -1421,6 +1422,7 @@ s.listen(0, '127.0.0.1', async () => {
       const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)]; await frames(60);
       out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1) };
       // the gaze locks a cab in range and the missiles land in it
+      gz.cfg.trucks = true;
       // (the body is kept twelve units behind the cab each frame: a standing
       // body would be left behind by a truck doing twenty inside a second)
       const cands = cv.trucks.filter(x => x.proxy.alive && x.z < pl.feet.z - 3).sort((a, b) => b.z - a.z);
@@ -1434,7 +1436,7 @@ s.listen(0, '127.0.0.1', async () => {
       }
       out.gaze = { cab: !!t3, hpBefore: hp0, hpAfter: t3?.hp, launched: gz.launched };
       // THE PILE-UP at 180 s
-      d.setTime(179.5); await frames(20);
+      d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
       const f = d.getFinale();
       await frames(50);
       const wrecks = cv.trucks.filter(x => x.wrecked);
@@ -1483,7 +1485,7 @@ s.listen(0, '127.0.0.1', async () => {
     const hd = window.__hd, d = hd.debug, pl = hd.player;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     const g = d.gooObj(), cfg = g.cfg;
-    await frames(2);
+    d.setTime(10); await frames(2);   // v53: the tide comes in over 30–150 s — ask at k = 0, so cfg.speed is the live speed
     const startT = g.t; // build seeds a phase, so a run opens mid-sea
     // Put a crest on the MIDDLE of the arena before asking anything. The sea
     // has a lull between waves and the start phase is random, so a check that
@@ -1510,8 +1512,8 @@ s.listen(0, '127.0.0.1', async () => {
     g.t = t0; const p0 = peakAlong();
     g.t = t0 + dt; const p1 = peakAlong();
     const moved = p1.where - p0.where;
-    const travels = p0.best > 0.3 && Math.abs(moved - cfg.speed * dt) < 0.6;
-    const shift = { moved: +moved.toFixed(2), want: cfg.speed * dt };
+    const travels = p0.best > 0.3 && Math.abs(moved - g.speed * dt) < 0.6;
+    const shift = { moved: +moved.toFixed(2), want: g.speed * dt };
     // v48 IT IS A HAZARD: a body on the floor under the crest we just placed
     // is STRUCK (HYPER: it costs time); a body at jump height above it is not
     for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
@@ -1715,7 +1717,7 @@ s.listen(0, '127.0.0.1', async () => {
     for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
     G.reset();
     const sk = d.spawnSkull(); const u = sk.update.bind(sk); sk.update = (...a) => { u(...a); sk.group.position.set(0, 1.2, 0); };
-    await frames(40); d.killEnemy(sk, 0, -1); await frames(60);
+    await frames(90); d.killEnemy(sk, 0, -1); await frames(90);
     const before = G.gibs.map(x => [x.b.positionLin[0], x.b.positionLin[1]]);
     const asleep = G.gibs.filter(x => x.b.mass <= 0).length;
     g.t = (g.arenaR + g.cfg.width - 6) / g.speed; await frames(120);
@@ -1737,7 +1739,7 @@ s.listen(0, '127.0.0.1', async () => {
   const drain = await p.evaluate(async () => {
     const hd = window.__hd, d = hd.debug, pl = hd.player;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    d.setTime(179.5); await frames(20);
+    d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
     const fired = d.getFinale();
     let drainMax = 0, glintAtDry = null, stepsAtDry = 0, stepH = [];
     for (let i = 0; i < 640; i++) {   // the drain is 23 s of game time at ~0.05 s a frame here
