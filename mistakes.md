@@ -70,3 +70,11 @@ this file once per session before finishing, and append anything new.
   matched them. The smoke test's "byte-identical apart from the base tag" rule
   is what exposed it. Fix: after any cascade, diff AnotherHUB against the
   root page with the base line stripped.
+
+- **A Python text-mode edit reflowed piritori-eden's `VERSIONS.md` from CRLF
+  to LF.** `open(p).read()` / `open(p, 'w').write()` normalises newlines, so
+  a one-sentence addition became a 5,000-line diff, and it reached `main`
+  before anyone noticed. It surfaced only because the hub diff for the next
+  deploy was the wrong size. Fix: edit with `open(p, newline='')` or in bytes,
+  and read `git diff --stat` before every commit. A file-sized diff for a
+  line-sized change is the tell.
