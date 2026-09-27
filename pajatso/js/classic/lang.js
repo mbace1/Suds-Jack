@@ -14,7 +14,7 @@ const STR = {
     intro1: 'You have <b>{n} markka</b>. A pull takes one. Pull the lever down and let go: <b>how far you pull</b> decides where the coin leaves the rail over the top.',
     intro2: 'The windows across the top pay what is printed under them: <b>R</b> gives the coin back, <b>1:00</b> pays one, <b>1:50</b> one and a half. A coin that misses them all falls into the <b>pot</b> — the columns of coins behind the glass.',
     intro3: 'The red <b>7:00</b> in the middle is the <b>POTTI</b>: seven markka and the three middle columns of the pot.',
-    play: 'PLAY', kuoppa: 'KUOPPA — roguelike mode (early) ›', kuoppaShort: 'KUOPPA — roguelike mode ›',
+    play: 'PLAY', kuoppa: 'KUOPPA — the roguelike: debts and pachinko parts ›', kuoppaShort: 'KUOPPA — roguelike mode ›',
     keys: 'Drag the lever down and let go · tap it to pull the same again · SPACE hold and release · ENTER same again · pad: hold A / RT',
     paused: 'PAUSED', resume: 'BACK TO THE MACHINE', restart: 'START OVER WITH {n}', close: 'tap to close',
     tipPull: 'Pull the <b>lever</b> down and let go. How far you pull decides where the coin leaves the rail at the top — a short pull drops it on the left, a long one rides it round to the right.',
@@ -37,7 +37,7 @@ const STR = {
     intro1: 'Sinulla on <b>{n} markkaa</b>. Yksi veto vie yhden. Vedä vipu alas ja päästä irti: <b>se, kuinka pitkälle vedät</b>, ratkaisee missä kolikko lähtee kiskolta.',
     intro2: 'Ylärivin ikkunat maksavat sen, mitä niiden alle on painettu: <b>R</b> antaa kolikon takaisin, <b>1:00</b> maksaa markan, <b>1:50</b> puolitoista. Ohi mennyt kolikko putoaa <b>pottiin</b> — lasin takana näkyviin kolikkopinoihin.',
     intro3: 'Keskellä punainen <b>7:00</b> on <b>POTTI</b>: seitsemän markkaa ja potin kolme keskimmäistä pinoa.',
-    play: 'PELAA', kuoppa: 'KUOPPA — roguelike-tila (kesken) ›', kuoppaShort: 'KUOPPA — roguelike-tila ›',
+    play: 'PELAA', kuoppa: 'KUOPPA — roguelike: velkoja ja pachinko-osia ›', kuoppaShort: 'KUOPPA — roguelike-tila ›',
     keys: 'Vedä vipua alas ja päästä · napauta: sama veto uudestaan · VÄLILYÖNTI pohjaan ja irti · ENTER sama uudestaan · ohjain: pidä A / RT',
     paused: 'TAUKO', resume: 'TAKAISIN KONEELLE', restart: 'ALOITA ALUSTA, {n} MK', close: 'sulje napauttamalla',
     tipPull: 'Vedä <b>vipu</b> alas ja päästä irti. Vedon pituus ratkaisee, missä kolikko lähtee kiskolta — lyhyt veto pudottaa sen vasemmalle, pitkä vie sen kaaren yli oikealle.',
@@ -60,7 +60,7 @@ const STR = {
     intro1: '持ち金は<b>{n}マルッカ</b>。一回引くと一枚。レバーを下に引いて離す：<b>引く長さ</b>で、コインが上のレールから離れる場所が決まる。',
     intro2: '上の窓は下に書かれた額を払う：<b>R</b>はコインが戻る、<b>1:00</b>は1枚、<b>1:50</b>は1.5枚。全部外れたコインは<b>ポット</b>へ——ガラスの奥に積まれたコインの列に落ちる。',
     intro3: '真ん中の赤い<b>7:00</b>が<b>ポッティ</b>：7マルッカと、ポットの真ん中の3列。',
-    play: 'プレイ', kuoppa: 'KUOPPA — ローグライクモード（開発中） ›', kuoppaShort: 'KUOPPA — ローグライクモード ›',
+    play: 'プレイ', kuoppa: 'KUOPPA — ローグライク：借金とパチンコ部品 ›', kuoppaShort: 'KUOPPA — ローグライクモード ›',
     keys: 'レバーを下にドラッグして離す · タップで同じ引きをもう一度 · スペース長押しで引く · ENTERで同じ引き · パッド：A長押し / RT',
     paused: '一時停止', resume: '台に戻る', restart: '{n}枚で最初から', close: 'タップで閉じる',
     tipPull: '<b>レバー</b>を下に引いて離す。引く長さで、コインがレールを離れる場所が決まる——短いと左に落ち、長いと上を回って右へ。',
@@ -109,5 +109,7 @@ export function mk(n) {
   const s = whole ? String(n) : n.toFixed(2);
   return lang === 'fi' ? s.replace('.', ',') : s;
 }
+// a page's own words join the same table (KUOPPA brings its run and parts)
+export function extend(packs) { for (const l of Object.keys(STR)) Object.assign(STR[l], packs[l] ?? {}); }
 // for the gate: every key in every language
 export const _STR = STR;

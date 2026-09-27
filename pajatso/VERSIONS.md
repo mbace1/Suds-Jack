@@ -4,6 +4,93 @@ The game was PACHI PIT for its first release; v2 renamed it and made the
 Finnish coin wall game the front door. The pit run is still here as KUOPPA
 (`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
 
+## v4 — 2026-09-27 — KUOPPA on the Pajatso face, and the six parts
+
+The owner, on the roadmap: *"Go ahead."* The order was already set by their
+answers: the roguelike keeps KUOPPA's debt-and-deadline shape, and the
+pachinko parts arrive **in order, in this mode only** — chucker + reels →
+tulips → FEVER → windmills → chain jackpots → ball multipliers. The base
+machine gets none of them.
+
+**The run** (`kuoppa.html`, `js/kuoppa/`). The house hands you **20 coins a
+round** (five more for every lock opened); whatever the machine pays goes in
+your **purse**; every third round a **debt** comes out of it (30 · 60 · 110 ·
+175 · 255 · 350 · 460 · 600). Pay it and the next part is **bolted onto the
+face** — the sheet says what it is and what it does; miss it and the floor
+opens. Between rounds the **vendor** lays out three of twelve charms (bent
+nail, brass plates, filed windows, heavy R, regular, savings book, rubber
+nails, fat pot — and, once their part is on, lucky seven, magnet, wired
+tulips, long fever). `Kuoppa` IS the base machine: a subclass of `Pajatso`
+that pays pulls from the round's coins instead of the purse (`canSpend`/
+`spend`, `window()` and `intoPot()` became hooks in `game.js` for it). Pure,
+seeded, three rng streams.
+
+**The parts, each where it lives on the photograph's face**
+(`buildPajatso(mods)` takes them; with no mods it is exactly v3's face):
+
+1. **START chucker + reels**: a pocket in the middle of the nails with two
+   life nails over it; a coin in it holds a spin (up to four), and the reels
+   are the old pit's lottery (`js/reels.js` — draw the outcome, build a picture
+   that shows it, pay the PICTURE). They play on an LCD in a **box bolted on
+   top of the case** (the bottles move along the top to make room), which
+   appears the moment the part does.
+2. **Tulips**: the two 1:00 windows; a coin opens the petals wide, the next
+   shuts them (`board.js`'s `when` walls, drawn in both states).
+3. **FEVER**: a jackpot — a line of sevens or the POTTI — opens the
+   **attacker**, a gate under the right half of the window row; while FEVER
+   lasts every coin that misses a window there pays 2 mk. *The first cut paid
+   the right-hand pot columns instead, and it did nothing*: the right V plate
+   funnels coins back to the middle, so a sweep read the same with FEVER on
+   and off. The gate is a zone the coins actually cross, and now a long pull
+   during FEVER pays ~1.6 a coin against 0.65 without it — the bot that
+   shoots right wins 23% of runs against 19% for the one that does not.
+4. **Windmills**: two, either side of the chucker, cleared of nails by the
+   wedge rule (blade radius + a pass).
+5. **Chain**: after a jackpot, sevens three times as often for eight spins,
+   and the **POTTI grows 2 mk a round** until somebody takes it — the owner's
+   *maybe C*, the progressive jackpot, in the mode it was meant for.
+6. **Multipliers**: the R windows become ×3 — three more coins to shoot.
+
+**The base machine had a hot spot, and the run found it.** A bot pulling at
+30% on every coin was being paid 3.5 a coin: the spring's wobble (±1.5 on a
+104–121 range) was narrow enough that one pull landed on the POTTI 7% of the
+time. v3's sweep had shown it as a bump and called it variance. The Pajatso's
+spring now wobbles ±4.5 (`wobble` in `game.js`): the POTTI rate is 1–2% at
+every setting, the whole lever pays 1.10 on a fresh pot and **0.98 with the
+pot left to run**, and the lowest pull fails the top 8% of the time (the coin
+comes back). *A run is the best instrument a machine has*: it plays one
+setting for hundreds of coins, which is exactly what a sweep averages away.
+
+**Tuned with bots** (`node pajatso/test/run.mjs runs`, `test/runbot.mjs`),
+150 runs a policy: pulling without buying (`steady`) reaches lock 5 in 60% of
+runs and never passes lock 6; buying what leaves the debt covered (`prudent`)
+**wins 19%**; the same while shooting right in FEVER **wins 23%**. Before the
+coins grew with the locks, income was flat while debts grew and nothing got
+past lock 6. `node pajatso/test/run.mjs face` sweeps the lever on every stage
+of the face: no coin fished out, no fouls, the chucker found 4–7% of the time.
+
+**The two pages share one table** (`js/classic/table.js`): the lever, keys,
+pad, toasts, first-time lines, the arcade's corner, the language switch,
+pause and the loop — so KUOPPA is its rules, its events and its sheets, and
+nothing about pulling a lever is written twice. The base page's `main.js` is
+100 lines now. Found on the way: after a debt was paid, the vendor opened on
+a timer and **replaced the sheet that says which part was just bolted on**
+before it could be read (`kuoppa.cjs` caught it: the button it clicked was
+detached from the page).
+
+On a phone the reels are the one thing up there that must be read, so the
+KUOPPA page fits the machine UNDER the top bar (`clearTop`), and the debt and
+round moved down beside the lever — the purse, the round's coins, HOME and
+Toko are all the top has room for.
+
+The old pit (v1's KUOPPA, `pit.html`) stays, a small link from the new title.
+
+Gates: `core.mjs` 139 (the parts on every stage of the face, the rules, the
+reels paying the picture, the parts in order, a bot run twice from one
+seed), `classic.cjs` 32, **`kuoppa.cjs` 28** (new: a round, the vendor, a
+debt paid and a part bolted on, a spin, a fall, both formats), `smoke.cjs` 44
+(the old pit).
+
 ## v3 — 2026-09-27 — the real machine, on a Kallio bar wall
 
 The owner sent two photographs of a real Pajatso — a Finnish 1 mk machine, one

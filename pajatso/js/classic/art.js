@@ -9,7 +9,7 @@
 // the pot behind chrome dividers on a pale ribbed back. A teak-veneer case, a
 // black 1 mk plate down the right, and an orange bar wall behind it all.
 
-import { LABEL, JACKPOT, FACE, POTTI_COLS } from './layout.js?v=3';
+import { LABEL, JACKPOT, FACE, POTTI_COLS } from './layout.js?v=4';
 
 export const PPU = 16;                      // canvas pixels per board unit
 export const X0 = -31, Y1 = 82, W = 62, H = 82;   // the painted area, in board units
@@ -43,6 +43,29 @@ export function faceCanvas(L) {
   g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(px(-27), py(band.top), 57 * u, 0.4 * u);
   g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(px(-27), py(band.bottom + 0.3), 57 * u, 0.3 * u);
   for (const p of L.pockets) if (p.window != null) win(g, px, py, u, p);
+  // KUOPPA's parts, where they are bolted on
+  const st = L.byId.start;
+  if (st) {
+    g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(px(st.x), py(st.y - 1), 4.4 * u, 3.6 * u, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#0c0c0e'; g.fillRect(px(st.x - st.w / 2 - 0.5), py(st.y + 0.6), (st.w + 1) * u, (st.depth + 0.6) * u);
+    const pw = 5.2 * u, ph = 1.9 * u, top = py(st.y - st.depth - 0.4);
+    g.fillStyle = '#0f3d22'; g.fillRect(px(st.x) - pw / 2, top, pw, ph);
+    g.strokeStyle = '#6fe08a'; g.lineWidth = 0.15 * u; g.strokeRect(px(st.x) - pw / 2, top, pw, ph);
+    g.fillStyle = '#bff5cf'; g.font = `900 ${Math.round(1.1 * u)}px ${BLACK}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('START', px(st.x), top + ph / 2 + 0.05 * u);
+  }
+  const att = L.byId.attacker;
+  if (att) {
+    const x0 = px(att.x - att.w / 2), w = att.w * u, y0 = py(att.y - 0.2), h = 1.0 * u;
+    g.save(); g.beginPath(); g.rect(x0, y0, w, h); g.clip();
+    for (let x = x0 - h; x < x0 + w + h; x += 1.2 * u) {
+      g.fillStyle = '#ffd23f'; g.beginPath(); g.moveTo(x, y0 + h); g.lineTo(x + 0.6 * u, y0 + h); g.lineTo(x + 0.6 * u + h, y0); g.lineTo(x + h, y0); g.closePath(); g.fill();
+    }
+    g.restore();
+    g.fillStyle = '#1a0306'; g.fillRect(px(att.x) - 3.4 * u, y0 - 0.1 * u, 6.8 * u, h + 0.2 * u);
+    g.fillStyle = '#ffd23f'; g.font = `900 ${Math.round(0.9 * u)}px ${BLACK}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('FEVER ▸', px(att.x), y0 + h / 2 + 0.05 * u);
+  }
 
   // the red V under the band, and its dark edges: they carry the eye into the
   // pot the way they carry the coins
@@ -87,6 +110,14 @@ export function faceCanvas(L) {
 function win(g, px, py, u, p) {
   const jack = p.pay === JACKPOT;
   const x = px(p.x), w = p.w * u;
+  if (p.tulip) {
+    // a tulip: two painted red petals either side of the mouth
+    g.fillStyle = '#c8102e';
+    for (const s of [-1, 1]) {
+      g.beginPath(); g.ellipse(x + s * (w / 2 + 0.9 * u), py(p.y + 0.4), 1.0 * u, 2.2 * u, s * 0.5, 0, Math.PI * 2); g.fill();
+    }
+    g.fillStyle = '#3c8a2a'; g.fillRect(x - 0.2 * u, py(p.y - p.depth - 0.5), 0.4 * u, 0.5 * u);
+  }
   g.fillStyle = '#0c0c0e'; g.fillRect(x - w / 2 - 0.5 * u, py(p.y + 0.6), w + u, (p.depth + 0.6) * u);
   // the fork over the mouth: two chrome prongs and a bar
   g.fillStyle = '#e9ecef';
@@ -96,7 +127,7 @@ function win(g, px, py, u, p) {
   const pw = 4.6 * u, ph = 2.6 * u, top = py(p.y - p.depth - 0.5);
   g.fillStyle = '#101012'; g.fillRect(x - pw / 2, top, pw, ph);
   g.strokeStyle = '#6d7076'; g.lineWidth = 0.15 * u; g.strokeRect(x - pw / 2, top, pw, ph);
-  g.fillStyle = jack ? '#ff3b3b' : '#f4f4f4';
+  g.fillStyle = jack ? '#ff3b3b' : p.pay === 'x3' ? '#ffd23f' : '#f4f4f4';
   g.font = `900 ${Math.round((p.pay === 'R' ? 1.9 : 1.45) * u)}px ${BLACK}`;
   g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText(LABEL[p.pay], x, top + ph / 2 + 0.08 * u);
