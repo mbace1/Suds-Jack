@@ -68,7 +68,13 @@ const skip = rootIdx >= 0 ? rootIdx + 1 : -1;
 const asked = argv.filter((a, i) => !a.startsWith('--') && i !== skip);
 
 const MIME = {
-  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  // `.mjs` is not a nicety: Piritori imports `../../market/model.mjs`, and
+  // without it this server answered `application/octet-stream`, the browser
+  // refused the module under strict MIME checking, and the check reported
+  // three console errors against a site that is in fact fine. GitHub Pages
+  // serves .mjs as text/javascript; so does this now.
+  '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
+  '.css': 'text/css',
   '.json': 'application/json', '.webmanifest': 'application/manifest+json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.webp': 'image/webp', '.svg': 'image/svg+xml', '.gif': 'image/gif',

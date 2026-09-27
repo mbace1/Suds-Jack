@@ -274,3 +274,4 @@ addEventListener('toko:seat', offerToko);     // or after
 // let a game know the shell is there, in case it wants to hide it during a
 // cutscene or move it out of the way of its own HUD
 window.__arcadeShell = { home, HOME, game: entry?.id ?? null, pad: padCfg ?? null, bridged, touchBtn, toko: () => tokoBtn };
+
