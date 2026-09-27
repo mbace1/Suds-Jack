@@ -26,6 +26,7 @@
 //   S / Down    brake             D / Right  steer right
 //   Space       boost, nose up    Shift      spoiler, nose down
 //   Q / E       pan the camera    F swap chassis (menu)   Esc pause
+//   C           chase seat: low (formula) / high
 // It used to split the arrow cluster three ways — up/down were the WEIGHT
 // axis while left/right panned the camera, and neither did what an arrow key
 // does in any other game. Nothing is doubled up now: one job per key.
@@ -41,11 +42,12 @@ export class InputManager {
     this.onStart = null;
     this.onPause = null;
     this.onSwap = null;
+    this.onCam = null;                  // v11: C / RB cycles the chase seat
     this.gamepad = false;
     this._pad = { steer: 0, throttle: 0, brake: false, pan: 0, lean: 0 };
     this._kSteer = 0;             // the keyboard's steer, ramped (see read)
     this._kT = performance.now();
-    this._padPrev = { start: false, pause: false, swap: false };
+    this._padPrev = { start: false, pause: false, swap: false, cam: false };
     this._init();
   }
 
@@ -57,6 +59,7 @@ export class InputManager {
         if (e.code === 'Enter') this.onStart?.();
         if (e.code === 'Escape') this.onPause?.();
         if (e.code === 'KeyF') this.onSwap?.();
+        if (e.code === 'KeyC') this.onCam?.();
       }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
       this.keys[e.code] = true;
@@ -103,7 +106,7 @@ export class InputManager {
   /**
    * Poll the first connected pad once per frame. Buttons are edge-detected
    * here so the callbacks fire once, the same way the keyboard path does.
-   * Standard mapping: 0 A, 3 Y, 6 LT, 7 RT, 8 Back, 9 Start.
+   * Standard mapping: 0 A, 3 Y, 5 RB, 6 LT, 7 RT, 8 Back, 9 Start.
    */
   pollGamepad() {
     const pads = navigator.getGamepads ? navigator.getGamepads() : null;
@@ -113,7 +116,7 @@ export class InputManager {
       this.gamepad = false;
       this._pad.steer = this._pad.throttle = this._pad.pan = this._pad.lean = 0;
       this._pad.brake = false;
-      this._padPrev.start = this._padPrev.pause = this._padPrev.swap = false;
+      this._padPrev.start = this._padPrev.pause = this._padPrev.swap = this._padPrev.cam = false;
       return;
     }
     this.gamepad = true;
@@ -136,11 +139,12 @@ export class InputManager {
     // stick and the way you would shift your weight on a board
     this._pad.lean = ax(3);
 
-    const start = hit(0), pause = hit(9), swap = hit(3);
+    const start = hit(0), pause = hit(9), swap = hit(3), cam = hit(5);
     if (start && !this._padPrev.start) this.onStart?.();
     if (pause && !this._padPrev.pause) this.onPause?.();
     if (swap && !this._padPrev.swap) this.onSwap?.();
-    this._padPrev.start = start; this._padPrev.pause = pause; this._padPrev.swap = swap;
+    if (cam && !this._padPrev.cam) this.onCam?.();
+    this._padPrev.start = start; this._padPrev.pause = pause; this._padPrev.swap = swap; this._padPrev.cam = cam;
   }
 
   _def(s, out) {

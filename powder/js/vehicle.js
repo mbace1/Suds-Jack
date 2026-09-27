@@ -64,9 +64,9 @@
 // Integrated at a fixed 120 Hz on an accumulator, because a spring this stiff
 // is not stable on a variable frame time.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=10';
-import { SURF, SALT } from './terrain.js?v=10';
-import { buildCraft, disposeCraft } from './craft.js?v=10';
+import { PAL } from './palette.js?v=11';
+import { SURF, SALT } from './terrain.js?v=11';
+import { buildCraft, disposeCraft, POD } from './craft.js?v=11';
 
 const G = 9.81;
 const HZ = 120, DTF = 1 / HZ;
@@ -74,7 +74,11 @@ const HZ = 120, DTF = 1 / HZ;
 export const SPEC = {
   mass: 1400,
   hw: 1.6, hl: 3.0,          // pad half-track, half-wheelbase
-  rest: 2.6,                 // hover cushion height
+  // v11: 2.6 m floated the old kit two metres off the sand. A formula car
+  // sits low — its floor ~0.14 m up — and the pads' dynamics do not care
+  // where the zero of the spring is (the natural frequency, the travel to
+  // lift-off and every moment are unchanged), so the cushion came down.
+  rest: 0.75,                // hover cushion height
   padK: 30000, padC: 4200,   // per pad
   Ixx: 2600, Iyy: 9000, Izz: 8700,
   thrust: 17000,             // N at N1 = 1
@@ -154,6 +158,44 @@ export const SPEC = {
   // half. 0.75 keeps the lag you can hear and cuts that to 0.8 s.
   spoolUp: 0.75, spoolDown: 0.6,
   brakeDrag: 7.0,               // measured at 5.2: 140 to 107 km/h in the first second, and a hover sled with no runners to dig in needs the brake to mean something
+
+  // ---- v11: CARVING IN POWDER --------------------------------------------
+  // The owner: "the feel is comparable to carving in powder". Flowsnow (the
+  // snowboarding cabinet, PR #480) had already measured most of what that
+  // takes; these are its ideas mapped onto four pads.
+  //
+  // PLANING. Speed brings you UP: the sink a loaded pad settles to falls as
+  // speed builds, on a SQUARE-ROOT curve. Flowsnow found the linear version
+  // made sink x speed peak mid-range and stalled riders at a walk; the root
+  // is "the whole difference between powder that rides and powder that is a
+  // wall". Slow is deep and draggy, fast is on top and light.
+  planeMin: 4, planeFull: 34, planeLift: 0.8,
+  // PLOUGH, per pad, proportional to how deep that pad is and how fast it is
+  // going — applied AT the pad, so a buried nose pitches down and a dug-in
+  // edge yaws the sled toward itself. (It replaces a v^2 drag multiplier at
+  // the centre of mass, which could do neither.) And a Coulomb part: the
+  // wallow from rest, gone once you are planing.
+  plow: 120,                 // N per (m of sink x m/s), per pad
+  wallow: 0.20,              // x pad load x (sink / surface depth), N
+  // THE BANK. The cushion leans the car INTO the turn — the inside pads
+  // shorten — the way a board goes up on its edge. Driven by the steering
+  // (the pilot tips in first) and held by the lateral g.
+  bank: 0.20,                // rad per g of lateral acceleration
+  bankSteer: 0.10,           // rad at full lock, before any g has built
+  bankMax: 0.27,             // rad, ~15 degrees
+  bankLag: 0.12,             // s
+  // THE EDGE, redefined. v4-v10 paid a grip bonus for rolling onto the
+  // OUTSIDE runners — and nothing in the model ever rolled the body in a
+  // turn (the lateral forces never entered the roll moment), so on flat
+  // ground it was dead code: 0.0 degrees of roll at 0.6 g, measured. Now the
+  // edge is the bank into the turn you are steering: up on the edge, it
+  // grips; flip the steering and for the moment the car rolls through level
+  // it has no edge and slides. That moment is the rhythm of carving.
+  edge: 0.38,                // extra mu at full edge
+  edgeFull: 0.14,            // rad of bank into the steer for full edge
+  edgeDig: 0.5,              // m of extra sink per m the bank lowers a pad
+  plantFloat: 0.4,           // how much planing takes off the edge's dig (the edge still cuts at speed)
+  rollArm: 0.55,             // m below the CoM the lateral forces act (roll out)
 };
 
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -199,6 +241,11 @@ export class Vehicle {
     this.onDeck = false;
     this.sink = 0;                      // mean runner sink, m — read by the HUD
     this.bite = 1;                      // rudder authority left, 1 planted, 0 sliding
+    this.plane = 0;                     // v11: 0 wallowing .. 1 on top, from speed
+    this.bankT = 0;                     // v11: the bank the cushion is leaning toward, rad
+    this._gLatF = 0;                    // lateral g, smoothed, drives the bank
+    this.edge = 0;                      // v11: 0..1, up on the edge into the turn
+    this.steerVis = 0;                  // the steer actually applied, for the pods
     this._FLf = 0; this._FLr = 0;       // relaxed axle forces (the sand's lag)
     this._lastThrust = 0;
     this.aiT = 0; this.aiOff = 0;
@@ -212,7 +259,7 @@ export class Vehicle {
     this.pads = [
       { x: -SPEC.hw, z: -SPEC.hl }, { x: SPEC.hw, z: -SPEC.hl },
       { x: -SPEC.hw, z: SPEC.hl }, { x: SPEC.hw, z: SPEC.hl },
-    ].map(p => ({ ...p, gap: SPEC.rest, f: 0, wx: 0, wz: 0, wy: 0, sink: 0 }));
+    ].map(p => ({ ...p, gap: SPEC.rest, f: 0, fS: 0, wx: 0, wz: 0, wy: 0, sink: 0, frac: 0, on: false, touch: false, gy: null }));
     this._n = new THREE.Vector3();
   }
 
@@ -250,15 +297,37 @@ export class Vehicle {
     if (this.heat >= 1) this.tripped = true;
     if (this.tripped && this.heat < 0.35) this.tripped = false;
 
+    // ---- the steer, and the bank it asks for ------------------------------
+    const speed0 = Math.hypot(this.vel.x, this.vel.z);
+    const lockScale = 1 - SPEC.speedLock * clamp((speed0 - SPEC.speedLockFrom) / SPEC.speedLockOver, 0, 1);
+    const steerIn = clamp(ctl.steer, -1, 1) * lockScale;
+    this.steerVis = steerIn;
+    // planing: speed brings the pads up out of the sand, on a square root
+    this.plane = Math.sqrt(clamp((speed0 - SPEC.planeMin) / (SPEC.planeFull - SPEC.planeMin), 0, 1));
+    // the bank: the pilot tips in with the stick and the lateral g holds it.
+    // roll > 0 is right-side-down, and a right turn (steer > 0, gLat > 0)
+    // leans the car into it — the board up on its edge
+    this._gLatF += (this.gLat - this._gLatF) * Math.min(1, dt / 0.1);
+    const wantBank = this.grounded
+      ? clamp(SPEC.bank * this._gLatF + SPEC.bankSteer * steerIn, -SPEC.bankMax, SPEC.bankMax) : 0;
+    this.bankT += (wantBank - this.bankT) * Math.min(1, dt / SPEC.bankLag);
+    const sinBank = Math.sin(this.bankT), sinRoll = Math.sin(this.roll);
+
     // ---- suspension: four pads, and the moments they make ----------------
     let Fy = 0, Mpitch = 0, Mroll = 0;
     let contacts = 0, onDeck = false;
     const cosP = Math.cos(this.pitch), cosR = Math.cos(this.roll);
     for (const pad of this.pads) {
-      // pad position in world, using the body's yaw and its current attitude
+      // pad position in world, using the body's yaw and its current attitude.
+      // The body frame has its nose at -z (the kit, and every moment below:
+      // tau_x = -z*F), so a pad at local z sits `-z` along the FORWARD
+      // vector. v11: this read `+ fx * lz` from the rebuild on, which put the
+      // front pads' feet on the ground BEHIND the car and the rear pads' in
+      // front — self-consistent, so nothing ever diverged, but every crest
+      // unloaded the wrong end first and the car rode nose-up down the grade
       const lx = pad.x * cosR, lz = pad.z * cosP;
-      pad.wx = this.pos.x + rx * lx + fx * lz;
-      pad.wz = this.pos.z + rz * lx + fz * lz;
+      pad.wx = this.pos.x + rx * lx - fx * lz;
+      pad.wz = this.pos.z + rz * lx - fz * lz;
       // and its height on the body, from pitch and roll about the centre
       // nose-up (pitch > 0) lifts the FRONT pads (z is negative forward);
       // roll > 0 is right-side-down, so it lowers the pads with positive x
@@ -271,10 +340,24 @@ export class Vehicle {
       const gy = g.h - pad.sink;
       const gap = pad.wy - gy;
       pad.gap = gap;
-      if (gap < SPEC.rest) {
+      // how fast the ground under this pad is rising, from the last step —
+      // the damper has to damp the pad RELATIVE to it (see below)
+      const gRate = pad.gy === null ? 0 : clamp((gy - pad.gy) / dt, -6, 6);
+      pad.gy = gy;
+      // the bank is the cushion itself leaning: the inside pads shorten, so
+      // the springs HOLD the car on its edge rather than fight it
+      const restP = SPEC.rest - pad.x * sinBank;
+      if (gap < restP) {
         contacts++;
-        const comp = SPEC.rest - gap;
-        const padVy = this.vel.y - this.pitchRate * pad.z - this.rollRate * pad.x;
+        const comp = restP - gap;
+        // v11: RELATIVE to the ground. v4 put the whole field on a 4.5%
+        // grade and the damper still measured the pad's absolute vertical
+        // speed — so at 40 m/s down the mountain, sinking ~1.8 m/s just by
+        // following the ground, every damper read that as its pad being
+        // crushed and pushed ~7.5 kN, the car floated at the cushion's edge
+        // (v10's HUD sat at GAP = rest on the descent) and the pads chattered
+        // in and out of contact every few steps. Uphill it did the opposite.
+        const padVy = this.vel.y - this.pitchRate * pad.z - this.rollRate * pad.x - gRate;
         let f = SPEC.padK * comp - SPEC.padC * padVy;
         if (f < 0) f = 0;                    // a cushion pushes, it never pulls
         pad.f = f;
@@ -287,8 +370,31 @@ export class Vehicle {
         // it digs in. Front runners only — that is where the weight moved.
         const front = pad.z < 0;
         const leanK = front ? 1 - this.lean * 0.55 : 1 + this.lean * 0.15;
-        const want = sS.sink * Math.min(2.2, f / (SPEC.mass * G / 4)) * leanK;
+        // v11: PLANING takes the sink off as speed builds, and the EDGE puts
+        // some back under the pads the bank has pushed down — the inside
+        // edge cuts, and keeps cutting at speed (planing takes less off it)
+        // The dig is gated by the EDGE — steering into the bank — never by
+        // the bank alone. Ungated, it was a spin: any stray lateral g banked
+        // the car, the lowered pads dug in, their plough yawed it toward
+        // them, which was more lateral g — measured, a straight run with the
+        // stick centred went to 20 m/s of slide in a second. A board turns
+        // when it is tipped, but only a rider tips it.
+        const soft = sS.sink / 0.55;
+        const lowered = Math.max(0, pad.x * sinRoll) * this.edge;
+        // v11: the sink follows a SMOOTHED load. Following the instantaneous
+        // one was a limit cycle, and it predates this version (v10's HUD sat
+        // at GAP = rest on deep sand): a loaded pad dug the ground out from
+        // under itself, lost contact, the sand came back, and it chattered on
+        // and off every few steps — which every per-pad effect then saw as
+        // flicker. Averaged over ~0.12 s the pad sits IN the sand.
+        const want = sS.sink * Math.min(2.2, pad.fS / (SPEC.mass * G / 4)) * leanK * (1 - SPEC.planeLift * this.plane)
+                   + lowered * SPEC.edgeDig * soft * (1 - SPEC.plantFloat * this.plane);
+        // landing in soft sand punches the pad in: the plop, not a bounce
+        // (closing speed relative to the ground, like the damper)
+        if (!pad.on && -padVy > 2) pad.sink = Math.max(pad.sink, Math.min(sS.sink * 1.2, -padVy * 0.035 * soft));
         pad.sink += (want - pad.sink) * Math.min(1, dt / (want > pad.sink ? 0.30 : 0.55));
+        pad.frac = pad.sink / Math.max(0.05, sS.sink);
+        pad.on = true;
         // Torque of a vertical force about the centre of mass: tau_x = -z*F,
         // tau_z = +x*F. Getting the pitch sign wrong here does not look like a
         // wrong sign, it looks like the craft being fired into orbit — more
@@ -297,7 +403,11 @@ export class Vehicle {
         // second. Both terms are written so that a displaced craft restores.
         Mpitch -= f * pad.z;
         Mroll -= f * pad.x;
-      } else { pad.f = 0; pad.sink += (0 - pad.sink) * Math.min(1, dt / 0.55); }
+      } else { pad.f = 0; pad.on = false; pad.sink += (0 - pad.sink) * Math.min(1, dt / 0.55); }
+      pad.fS += (pad.f - pad.fS) * Math.min(1, dt / 0.12);
+      // TOUCHING, for the sand's effects (grooves, spray, the glow): within
+      // a few cm of the cushion, not the spring's exact on/off
+      pad.touch = gap < restP + 0.08;
     }
     this.grounded = contacts > 0;
     this.onDeck = onDeck;
@@ -351,8 +461,6 @@ export class Vehicle {
     // steered. So thrust has a lateral component at the nose, and a yaw
     // moment with it: the pull through the corner that makes a front-drive
     // car drive the way it does.
-    const lockScale = 1 - SPEC.speedLock * clamp((speed - SPEC.speedLockFrom) / SPEC.speedLockOver, 0, 1);
-    const steerIn = clamp(ctl.steer, -1, 1) * lockScale;
     const frontDrive = this.drive === 'front';
     // front rockets point where the front is steered; rear rockets point
     // along the body and cannot pull the nose anywhere
@@ -376,11 +484,28 @@ export class Vehicle {
     this._lastThrust = thrust;
     if (frontDrive && this.grounded && dT > 0) Mz += dT * 0.9 * (S.drag - 0.8) * Math.sin(this.pos.x * 0.7 + this.pos.z * 0.3);
 
-    // body drag, plus the surface ploughing you
-    const plough = this.grounded ? 1 + this.sink * 2.2 : 1;
-    const kd = SPEC.drag * (airborne ? 0.7 : S.drag * plough) + (ctl.brake ? SPEC.brakeDrag : 0);
+    // body drag
+    const kd = SPEC.drag * (airborne ? 0.7 : S.drag) + (ctl.brake ? SPEC.brakeDrag : 0);
     Fx -= kd * speed * v.x;
     Fz -= kd * speed * v.z;
+    // v11: the PLOUGH, at each pad — how deep it is times how fast it goes,
+    // plus the wallow of a pad sat deep at walking pace. At the pad, so a
+    // buried nose pitches the car down and a dug-in edge yaws it toward
+    // itself. It used to multiply the v^2 drag at the centre of mass, which
+    // could do neither.
+    if (this.grounded && speed > 0.05) {
+      const ux = v.x / speed, uz = v.z / speed;
+      const aF = vF / speed, aL = vL / speed;          // share along the body / across it
+      const walk = Math.tanh(speed / 1.5);
+      for (const pad of this.pads) {
+        if (!pad.on) continue;
+        const F = SPEC.plow * pad.sink * speed + SPEC.wallow * pad.f * Math.min(1, pad.frac) * walk;
+        Fx -= ux * F; Fz -= uz * F;
+        const Fb = F * aF, Fl = -F * aL;               // back along the body, across it
+        Mz += pad.x * Fb - pad.z * Fl;                 // right-positive yaw
+        Mpitch -= Math.max(0.2, pad.gap) * Fb;         // drag below the CoM pitches the nose down
+      }
+    }
 
     // ---- grip, per axle, from the loads the pads are actually carrying ----
     // Front cap loses what the thrust is using (traction circle): power-on
@@ -391,12 +516,13 @@ export class Vehicle {
     if (this.grounded) {
       const Ff = this.pads[0].f + this.pads[1].f, Fr = this.pads[2].f + this.pads[3].f;
       const used = thrust * (frontDrive ? SPEC.circle : SPEC.rearCircle);
-      // THE EDGE: carving into the roll earns grip. The body has rolled onto
-      // the outside runners (roll > 0 is right-side-down); steering into that
-      // side is a committed carve, and it bites harder. Steering against it
-      // is a scrub and earns nothing.
-      const carve = clamp(-this.roll * steerIn * 6, 0, 1);
-      const mu = S.mu * (1 + SPEC.edge * carve);
+      // THE EDGE (v11): up on the edge, banked INTO the turn you are
+      // steering, the runners bite harder. Flip the steering and for the
+      // moment the car rolls back through level there is no edge at all —
+      // that moment is the rhythm of carving, and a flat sled just slides.
+      const edge = clamp(this.roll * Math.sign(steerIn) / SPEC.edgeFull, 0, 1) * Math.min(1, Math.abs(steerIn) * 3);
+      this.edge = edge;
+      const mu = S.mu * (1 + SPEC.edge * edge);
       let capF = mu * Ff, capR = mu * Fr;
       // the driven axle loses what the thrust is using — traction circle
       if (frontDrive) capF = Math.sqrt(Math.max(0, capF * capF - used * used));
@@ -415,7 +541,12 @@ export class Vehicle {
       Fx += rx * (FLf + FLr); Fz += rz * (FLf + FLr);
       // front force at z=-hl enters as +hl, rear at z=+hl as -hl (see thrust)
       Mz += SPEC.hl * (FLf - FLr);
-    } else { this._FLf *= 0.9; this._FLr *= 0.9; }
+      // and the lateral forces act at the ground, below the centre of mass:
+      // they roll the body OUT of the turn, as they do a car. v4-v10 never
+      // had this term, so no turn ever rolled the sled at all. The bank leans
+      // it in harder than this rolls it out, which is the point of a bank.
+      Mroll -= (FLf + FLr) * SPEC.rollArm;
+    } else { this._FLf *= 0.9; this._FLr *= 0.9; this.edge = 0; }
 
     // ---- walls: any steep ground you are closing on pushes back ----------
     const nh = Math.hypot(this._n.x, this._n.z);
@@ -521,7 +652,12 @@ export class Vehicle {
   // ---------------------------------------------------------------- visuals
   pose(dt = 0.016) {
     this.mesh.position.copy(this.pos);
-    this._e.set(this.pitch, this.yaw, -this.roll, 'YXZ');
+    // yaw is right-positive and a rotation about +y turns the nose LEFT, so
+    // the mesh takes -yaw. v11: it took +yaw from the rebuild on — the
+    // physics and the camera turned one way and the ship the other, so at a
+    // heading of 20 degrees the car sat 40 degrees off the way it was going,
+    // and through every turn it swung its nose out of the corner
+    this._e.set(this.pitch, -this.yaw, -this.roll, 'YXZ');
     this.mesh.quaternion.setFromEuler(this._e);
     const th = this.n1 * (this._od ? 2.4 : 1);
     // RICH when the throttle is ahead of the spool — the turbine is being
@@ -531,21 +667,62 @@ export class Vehicle {
     const rich = Math.max(0, Math.min(1, (this.throttle - this.n1) * 3.5));
     const flick = 0.85 + Math.random() * 0.3;
     const U = this.mesh.userData;
+    // the nose cans vector with the steering — thrust pulls the front where
+    // it is steered, so the exhaust leaves the other way (vehicle.stepFixed)
+    const vec = this.drive === 'front' ? -this.steerVis * SPEC.steerLock : 0;
     for (const f of U.flares) {
-      const u = f.userData;
-      f.scale.set(1 + rich * 0.25, 1 + rich * 0.25, (0.2 + th * 1.4) * (1 - rich * 0.3) * flick);
+      const u = f.userData, b = u.base || 1;
+      f.rotation.y = vec;
+      f.scale.set(b * (1 + rich * 0.25), b * (1 + rich * 0.25), b * (0.2 + th * 1.4) * (1 - rich * 0.3) * flick);
       u.core.material.opacity = 0.5 + th * 0.4;
       u.core.material.color.setRGB(2.2 - rich * 0.6, 2.1 - rich * 0.9, 1.9 - rich * 1.2 + (this._od ? 0.6 : 0));
       u.sheath.material.opacity = 0.2 + th * 0.35 + rich * 0.25;
       u.sheath.material.color.setRGB(1.6 + rich * 0.3, 0.9 - rich * 0.35, 0.45 - rich * 0.25);
-      u.glow.material.opacity = 0.15 + th * 0.35;
-      u.glow.scale.setScalar(1.4 + th * 1.6);
+      // v11: smaller — at the formula seat the old glow was a white blob
+      // the size of the cockpit sitting in the middle of the car
+      u.glow.material.opacity = 0.10 + th * 0.22;
+      u.glow.scale.setScalar(0.9 + th * 0.9);
       // shock diamonds stream out of the bell at the turbine's rate
       u.diamonds.offset.y -= (0.4 + this.n1 * 3.2) * dt;
     }
     for (const fan of U.fans) fan.rotation.z += (2 + this.n1 * 38) * dt;
-    U.hull.material.color.setHex(this.hitT > 0.35 ? 0xffffff : PAL.hull);
+    // a strike flashes the hull. The livery is painted INTO the map now, so
+    // the resting colour is white (unchanged), and the flash over-brightens
+    U.hull.material.color.setScalar(this.hitT > 0.35 ? 2.2 : 1);
+    if (U.corners) this.posePods(U);
     this.mesh.updateMatrixWorld();
+  }
+
+  /**
+   * v11: put each pod on the sand under its pad. pad.gap is the drop from
+   * the pad's anchor (at body height) to the ground it rides on — sink
+   * included, so a loaded pod in deep sand is visibly IN it — and each pod
+   * swings to it on its wishbones, about the pivot at the chassis. Airborne,
+   * they droop to the end of their travel; landing, they come up to meet it.
+   */
+  posePods(U) {
+    const G_ = U.glow, M4 = this._m4 || (this._m4 = new THREE.Matrix4());
+    const Q_ = this._q4 || (this._q4 = new THREE.Quaternion()), S_ = this._s4 || (this._s4 = new THREE.Vector3());
+    const P_ = this._p4 || (this._p4 = new THREE.Vector3());
+    const podH = POD.r * POD.squash;
+    for (let i = 0; i < U.corners.length; i++) {
+      const c = U.corners[i], pad = this.pads[c.pad];
+      const target = -pad.gap + POD.clear + podH;              // pod centre, body frame
+      const dy = clamp(target - POD.pivotY, POD.travel[0], POD.travel[1]);
+      const a = c.side * Math.asin(clamp(dy / c.L, -0.95, 0.95));
+      c.asm.rotation.z = a;
+      c.holder.rotation.z = -a;                                // the pod stays level
+      if (c.front) c.holder.rotation.y = -this.steerVis * SPEC.steerLock;
+      // the cushion's glow on the sand under it: bigger with load, gone in the air
+      const x = c.asm.position.x + c.side * c.L * Math.cos(a);
+      const load = clamp(pad.fS / (SPEC.mass * G / 4), 0, 2);
+      const k = pad.touch ? 0.55 + load * 0.35 : 0;
+      P_.set(x, POD.pivotY + dy - podH - 0.03, c.asm.position.z);
+      S_.set(0.95 * k, 1, 1.9 * k);
+      M4.compose(P_, Q_, S_);
+      G_.setMatrixAt(i, M4);
+    }
+    G_.instanceMatrix.needsUpdate = true;
   }
 
   /** World position of nozzle i, for the exhaust haze. */

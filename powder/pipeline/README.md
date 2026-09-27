@@ -47,18 +47,24 @@ Then the 2D pieces at the end.
 ### Envelope
 
 The game's physics is a rigid body on four hover pads at **x ±1.6 m,
-z ±3.0 m, 0.9 m below the origin** (in game frame; Blender: x ±1.6,
-**y** ±3.0, z −0.9). The model must sit on those pads visually: the belly
-plate or the runners at roughly z −0.9 (Blender), the pad footprints inside
-the hull's plan. `powder_blender.py` draws them as empties.
+z ±3.0 m** (in game frame; Blender: x ±1.6, **y** ±3.0). Since v11 the
+origin rides **0.63–0.75 m** over the sand (the pads' rest gap is 0.75 m and
+they settle to ~0.63 under load), so the belly plate or the runners belong
+at roughly **z −0.6** (Blender), with the pad footprints inside the hull's
+plan. `powder_blender.py` draws the pads as empties at that height. (Before
+v11 this said z −0.9, for a hover height the formula kit no longer has.)
 
 | | min | max | kit today |
 |---|---|---|---|
-| Length (Blender Y), probe included | 8.5 m | 12.5 m | 9.4 / 9.8 m |
-| Width (X), across the nacelles | 2.2 m | 4.4 m | 2.4 / 2.8 m |
-| Height (Z) | 1.0 m | 3.2 m | 1.6 / 1.7 m |
-| Triangles, whole ship | — | **9,000** | 3,052 |
-| Draw calls after import | — | 14 | 14 |
+| Length (Blender Y), probe included | 8.5 m | 12.5 m | 9.2 / 9.2 m |
+| Width (X), across the nacelles | 2.2 m | 4.4 m | 3.7 / 3.7 m |
+| Height (Z) | 1.0 m | 3.2 m | 1.8 / 1.8 m |
+| Triangles, whole ship | — | **9,000** | 7,304 / 6,944 |
+| Draw calls after import | — | 24 | 22 |
+
+(v11: the kit is a formula car now — a needle nose, sidepods, front and
+rear wings, and four sprung pods on wishbones. The corners are separate
+meshes because the game poses them, which is where the draw calls went.)
 
 ("kit today" is measured from `models/reference/ship-nose.glb` /
 `ship-aft.glb` by the loader itself — the exact line it prints.)

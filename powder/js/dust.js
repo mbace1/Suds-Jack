@@ -7,7 +7,7 @@
 // a lit quad has to match the shading of the ground it lies on and never
 // quite does.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=10';
+import { PAL } from './palette.js?v=11';
 
 const SCAR_MAX = 700;
 const SCAR_LIFE = 9;
@@ -38,13 +38,18 @@ attribute float aSize;
 attribute float aAlpha;
 uniform float uScale;
 uniform float uCap;
+uniform float uNear;
 varying float vAlpha;
 varying vec3 vCol;
 varying float vDepth;
 void main() {
-  vAlpha = aAlpha; vCol = color;
+  vCol = color;
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   vDepth = -mv.z;
+  // v11: gone by the time it reaches the lens — at the low formula seat the
+  // plume a car leaves behind streams past the camera, and a capped sprite a
+  // few metres off is a soft white pillar down the side of the frame
+  vAlpha = aAlpha * smoothstep(uNear, uNear * 2.5, vDepth);
   // Clamped: a puff that has grown for two seconds twenty metres from the
   // camera would otherwise resolve to a 900 px sprite and fill the frame.
   gl_PointSize = min(aSize * (uScale / max(-mv.z, 1.0)), uCap);
@@ -73,7 +78,7 @@ export class DustPool {
    * @param {object} opts  max, hard (texture), additive, lit/shd colours,
    *   size/sizeRand (base sprite size), grow, gravity, drag, life/lifeRand,
    *   alpha, scale/cap (pixel sizing), fog (0..1 how much it takes fog),
-   *   layer (render layer)
+   *   layer (render layer), near (m: faded out closer than this to the lens)
    */
   constructor(scene, fog, opts = {}) {
     const o = this.o = Object.assign({
@@ -81,7 +86,7 @@ export class DustPool {
       size: 1.6, sizeRand: 2.4, grow: 2.2, growPow: 5, gravity: 4.2, drag: 1.7,
       life: 0.6, lifeRand: 0.7, lifePow: 1.0, alpha: 0.5, scale: 210, cap: 120,
       fog: 1, layer: 0, back: 3, backPow: 16, up: 2.6, upRand: 3.5, upPow: 9,
-      spread: 2.6, spreadPow: 6,
+      spread: 2.6, spreadPow: 6, near: 0,
     }, opts);
     this.n = o.max;
     this.pos = new Float32Array(this.n * 3);
@@ -106,6 +111,7 @@ export class DustPool {
         fogColor: { value: new THREE.Color(fog.color) },
         fogNear: { value: fog.near }, fogFar: { value: fog.far },
         uFog: { value: o.fog }, uScale: { value: o.scale }, uCap: { value: o.cap },
+        uNear: { value: o.near },
       },
       vertexShader: VERT, fragmentShader: FRAG,
       transparent: true, depthWrite: false, vertexColors: true,

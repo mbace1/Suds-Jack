@@ -5,7 +5,7 @@
 //
 // The rule that keeps being relearned: horizon and fog must be the SAME value.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=10';
+import { PAL } from './palette.js?v=11';
 
 function gradientTexture() {
   const c = document.createElement('canvas');
@@ -51,21 +51,140 @@ function discTexture(inner, outer, spikes) {
   return t;
 }
 
-function ringedBody() {
+// ---- the ringed body ---------------------------------------------------------
+// v11. It was three flat unlit meshes — a pink disc, a paler partial sphere
+// for a lit edge, a flat translucent annulus — and under the PS2 posterise it
+// read as a sticker on the sky. Now it is LIT by the same sun as everything
+// else, which sits ahead and to the right of it, so what you see is what a
+// low sun behind a gas giant gives: mostly its night side, washed toward the
+// sky by the air in front of it, and a hard bright crescent on the sun side
+// with a soft terminator and a lilac limb. The ring is banded with a gap in
+// it; the body throws its shadow across the ring and the ring throws a band
+// of shadow across the crescent. Both are worked out per pixel against a
+// ray to the sun, in the planet's own frame, where the ring is the plane y=0.
+const BODY_VERT = `
+varying vec3 vN;
+varying vec3 vL;
+varying vec3 vV;
+void main() {
+  vL = position;
+  vN = normalize(mat3(modelMatrix) * normal);
+  vec4 wp = modelMatrix * vec4(position, 1.0);
+  vV = normalize(cameraPosition - wp.xyz);
+  gl_Position = projectionMatrix * viewMatrix * wp;
+}`;
+
+const BODY_FRAG = `
+uniform vec3 uSun;        // toward the sun, world
+uniform vec3 uSunL;       // toward the sun, the body's own frame
+uniform vec3 uLit, uDark, uLimb, uAir;
+uniform float uBands, uAirK, uRing;
+uniform vec2 uRingR;      // inner, outer radius, body radii
+varying vec3 vN;
+varying vec3 vL;
+varying vec3 vV;
+void main() {
+  float ndl = dot(normalize(vN), uSun);
+  float lit = smoothstep(-0.10, 0.30, ndl);
+  // the ring's shadow on the body: a ray to the sun that crosses the ring
+  // plane inside the ring's radii is in its shade
+  vec3 P = normalize(vL);
+  if (uRing > 0.0 && abs(uSunL.y) > 1e-3) {
+    float t = -P.y / uSunL.y;
+    if (t > 0.0) {
+      float r = length((P + uSunL * t).xz);
+      float inRing = smoothstep(uRingR.x, uRingR.x + 0.06, r) * (1.0 - smoothstep(uRingR.y - 0.08, uRingR.y, r));
+      lit *= 1.0 - 0.62 * inRing * uRing;
+    }
+  }
+  // latitude bands, drawn in the body's frame so they lie along the ring
+  float lat = P.y;
+  float band = 0.5 + 0.5 * sin(lat * 21.0 + 1.3 * sin(lat * 6.0 + 0.8));
+  vec3 surf = uLit * (1.0 - uBands * band);
+  vec3 col = mix(uDark, surf, lit);
+  // the limb: its own air, brightest on the lit side
+  float fr = pow(1.0 - max(0.0, dot(normalize(vN), vV)), 2.6);
+  col += uLimb * fr * (0.25 + 0.75 * lit);
+  // and ours, in front of it
+  col = mix(col, uAir, uAirK);
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+const RING_VERT = `
+varying vec3 vL;
+void main() {
+  vL = position;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+
+const RING_FRAG = `
+uniform vec3 uSunL;
+uniform vec3 uLit, uShade, uAir;
+uniform vec2 uRingR;
+uniform float uAirK;
+varying vec3 vL;
+void main() {
+  vec3 Q = vL;
+  float r = length(Q.xz);
+  float u = (r - uRingR.x) / (uRingR.y - uRingR.x);
+  // bands: a dim inner ring, the bright main ring, a GAP, a thinner outer one
+  float dens = 0.35 + 0.25 * sin(u * 61.0) * sin(u * 23.0 + 1.0);
+  dens *= smoothstep(0.0, 0.08, u) * (1.0 - smoothstep(0.93, 1.0, u));
+  dens *= 1.0 - 0.9 * (smoothstep(0.60, 0.63, u) - smoothstep(0.68, 0.71, u));
+  dens *= mix(0.55, 1.0, smoothstep(0.18, 0.30, u));
+  // the body's shadow: a ray to the sun from here that hits the unit sphere
+  float b = dot(Q, uSunL), c = dot(Q, Q) - 1.0;
+  float shadow = (b < 0.0 && b * b - c > 0.0) ? 1.0 : 0.0;
+  vec3 col = mix(uLit, uShade, shadow);
+  col = mix(col, uAir, uAirK);
+  gl_FragColor = vec4(col, clamp(dens * 1.25, 0.0, 1.0) * mix(0.9, 0.7, shadow));
+}`;
+
+function ringedBody(toSun) {
   const g = new THREE.Group();
-  g.add(new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14),
-    new THREE.MeshBasicMaterial({ color: PAL.planet, fog: false })));
-  const rim = new THREE.Mesh(
-    new THREE.SphereGeometry(1.008, 20, 14, 0, Math.PI * 0.62, 0, Math.PI),
-    new THREE.MeshBasicMaterial({ color: PAL.planetRim, fog: false }));
-  rim.rotation.y = -0.9;
-  g.add(rim);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(1.35, 2.15, 48),
-    new THREE.MeshBasicMaterial({ color: PAL.planetRim, fog: false, side: THREE.DoubleSide,
-      transparent: true, opacity: 0.5 }));
-  ring.rotation.x = Math.PI / 2 - 0.30; ring.rotation.z = 0.16;
+  const RR = new THREE.Vector2(1.32, 2.25);
+  const air = new THREE.Color(PAL.skyMid).lerp(new THREE.Color(PAL.horizon), 0.45);
+  const common = { uSun: { value: toSun.clone() }, uSunL: { value: new THREE.Vector3() }, uRingR: { value: RR } };
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), new THREE.ShaderMaterial({
+    uniforms: {
+      ...common,
+      uLit: { value: new THREE.Color(0xf4dcdc) }, uDark: { value: new THREE.Color(PAL.planet).multiplyScalar(0.42) },
+      uLimb: { value: new THREE.Color(0xb88ee0) }, uAir: { value: air },
+      uBands: { value: 0.24 }, uAirK: { value: 0.20 }, uRing: { value: 1 },
+    },
+    vertexShader: BODY_VERT, fragmentShader: BODY_FRAG, fog: false,
+  }));
+  g.add(body);
+  const ringGeo = new THREE.RingGeometry(RR.x, RR.y, 128, 1);
+  ringGeo.rotateX(-Math.PI / 2);                 // into the body's y=0 plane
+  const ring = new THREE.Mesh(ringGeo, new THREE.ShaderMaterial({
+    uniforms: {
+      uSunL: common.uSunL, uRingR: common.uRingR,
+      uLit: { value: new THREE.Color(PAL.planetRim).lerp(new THREE.Color(0xfff0e6), 0.3) },
+      uShade: { value: new THREE.Color(PAL.planet).multiplyScalar(0.55) },
+      uAir: { value: air }, uAirK: { value: 0.22 },
+    },
+    vertexShader: RING_VERT, fragmentShader: RING_FRAG,
+    transparent: true, side: THREE.DoubleSide, depthWrite: false, fog: false,
+  }));
   g.add(ring);
+  // the tilt: the ring opens about twenty degrees toward the road
+  g.rotation.set(0.36, 0, -0.17);
+  g.userData = { body, ring, sunL: common.uSunL.value };
   return g;
+}
+
+/** A moon: the body's shader without bands or a ring. */
+function moonBody(toSun) {
+  return new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), new THREE.ShaderMaterial({
+    uniforms: {
+      uSun: { value: toSun.clone() }, uSunL: { value: new THREE.Vector3(0, 1, 0) }, uRingR: { value: new THREE.Vector2(1, 1) },
+      uLit: { value: new THREE.Color(PAL.moon) }, uDark: { value: new THREE.Color(PAL.skyMid).multiplyScalar(0.9) },
+      uLimb: { value: new THREE.Color(0x6a5a8a) }, uAir: { value: new THREE.Color(PAL.skyHigh).lerp(new THREE.Color(PAL.skyMid), 0.5) },
+      uBands: { value: 0.0 }, uAirK: { value: 0.28 }, uRing: { value: 0 },
+    },
+    vertexShader: BODY_VERT, fragmentShader: BODY_FRAG, fog: false,
+  }));
 }
 
 function rangeGeometry() {
@@ -119,19 +238,28 @@ export function makeSky(scene, sunDir) {
   sun.renderOrder = -4;
   group.add(sun);
 
-  const planet = ringedBody();
-  planet.scale.setScalar(400); planet.renderOrder = -3;
+  const toSun = new THREE.Vector3(-sunDir[0], -sunDir[1], -sunDir[2]).normalize();
+  // v11: smaller (it was 40 degrees of sky with its ring) and lit. Lit by a
+  // sun swung toward the camera: the real one is 38 degrees from the planet
+  // and would light a hairline crescent; swung, it is a half phase whose lit
+  // side still faces the sun on the screen, which is all the eye checks.
+  const planetSun = toSun.clone().add(new THREE.Vector3(0, 0, 0.85)).normalize();
+  const planet = ringedBody(planetSun);
+  planet.scale.setScalar(330); planet.renderOrder = -3;
+  planet.userData.body.renderOrder = -3; planet.userData.ring.renderOrder = -2.5;
   group.add(planet);
+  // the sun in the planet's own frame, for the two shadows — the tilt never
+  // changes, so once
+  planet.updateMatrixWorld(true);
+  planet.userData.sunL.copy(planetSun).applyQuaternion(planet.quaternion.clone().invert()).normalize();
 
-  const moon = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12),
-    new THREE.MeshBasicMaterial({ color: PAL.moon, fog: false }));
+  const moon = moonBody(toSun);
   moon.scale.setScalar(52); moon.renderOrder = -3;
   group.add(moon);
 
   // the sky is its own layer so the full-res depth prepass can skip it
   group.traverse(o => o.layers.set(3));
   scene.add(group);
-  const toSun = new THREE.Vector3(-sunDir[0], -sunDir[1], -sunDir[2]).normalize();
   const _p = new THREE.Vector3();
 
   return {

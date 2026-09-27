@@ -33,18 +33,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=10';
-import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=10';
-import { Vehicle } from './vehicle.js?v=10';
-import { DustPool, ScarField } from './dust.js?v=10';
-import { Route, RADIUS } from './route.js?v=10';
-import { InputManager, STICK_R } from './input.js?v=10';
-import { AudioKit } from './audio.js?v=10';
-import { makeSky } from './sky.js?v=10';
-import { makeEnvMap } from './craft.js?v=10';
-import { HeatHaze } from './haze.js?v=10';
-import { makeFlare } from './flare.js?v=10';
-import { preloadModels, models } from './models.js?v=10';
+import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=11';
+import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=11';
+import { Vehicle } from './vehicle.js?v=11';
+import { DustPool, ScarField } from './dust.js?v=11';
+import { StreakPool } from './streaks.js?v=11';
+import { TrenchField } from './trench.js?v=11';
+import { Route, RADIUS } from './route.js?v=11';
+import { InputManager, STICK_R } from './input.js?v=11';
+import { AudioKit } from './audio.js?v=11';
+import { makeSky } from './sky.js?v=11';
+import { makeEnvMap, L_CAST } from './craft.js?v=11';
+import { HeatHaze } from './haze.js?v=11';
+import { makeFlare } from './flare.js?v=11';
+import { preloadModels, models } from './models.js?v=11';
 
 // Fog has to reach nearly the edge of the streamed world, not half way
 // into it, or the flats read as a 300 m milk bowl instead of a plain.
@@ -57,7 +59,14 @@ const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 // Render layers. 0 opaque world, 1 the HD ships and their effects, 2 the
 // world's own transparencies (plume, scars), 3 the sky.
 const L_WORLD = 0, L_HD = 1, L_FX = 2, L_SKY = 3;
-const MASK_PS2 = (1 << L_WORLD) | (1 << L_FX) | (1 << L_SKY);
+// v11: L_CAST (craft.js) is the ships' SHADOW STAND-INS. three draws a
+// shadow map with the layers of the camera it is rendering for, so the PS2
+// pass — the one that draws the sand — never saw the HD ships, and no ship
+// ever threw a shadow on the ground: the plates' strongest cue. The PS2
+// pass draws the stand-ins with no colour and no depth writes, and they
+// cast. The depth prepass must never see them: it would punch their boxes
+// out of the HD ship.
+const MASK_PS2 = (1 << L_WORLD) | (1 << L_FX) | (1 << L_SKY) | (1 << L_CAST);
 const MASK_OPAQUE = 1 << L_WORLD;
 const MASK_HD = 1 << L_HD;
 
@@ -116,20 +125,35 @@ scene.add(fill);
 const hemi = new THREE.HemisphereLight(0x8a6cc0, 0xe6e2de, 0.95);
 hemi.layers.enable(L_HD);
 scene.add(hemi);
+// v11: the SHIP light — HD layer only, so the world never sees it. The sun
+// is low and the route runs toward it, so from the chase seat every car is
+// backlit and its tail, the part you look at all race, sat in shade. The
+// plates light their craft like a studio does (the hull reads cream with
+// the sun behind it), and this is that: a soft key from over the camera's
+// shoulder, placed every frame by placeCamera.
+const shipLight = new THREE.DirectionalLight(0xfff1e2, 1.25);
+shipLight.layers.set(L_HD);
+scene.add(shipLight, shipLight.target);
 
 const sky = makeSky(scene, SUN_DIR);
 const terrain = new Terrain(scene, 11);
 const FOG = { color: PAL.fog, near: FOG_NEAR, far: FOG_FAR };
 // the plume: soft, fogged, world-coloured, on the PS2 layer with the world
-const dust = new DustPool(scene, FOG, { max: 1400, layer: L_FX });
-// spindrift: the fine curtain the outside runner throws in a carve. HD, white,
-// fast, barely affected by fog — the detail the PS2 layer cannot hold.
-const drift = new DustPool(scene, FOG, {
-  max: 900, layer: L_HD, lit: 0xffffff, shd: 0xdfe4f0, hard: false,
-  size: 0.5, sizeRand: 0.7, grow: 0.9, growPow: 1.6, gravity: 7.5, drag: 1.1,
-  life: 0.35, lifeRand: 0.4, lifePow: 0.3, alpha: 0.5, scale: 150, cap: 46,
-  fog: 0.35, back: 2, backPow: 8, up: 2.2, upRand: 3, upPow: 5, spread: 1.6, spreadPow: 3,
-});
+// v11: thinner and smaller than it was — at the low formula seat the old
+// plume wrapped the lens in white, and the spray streaks carry the sand now
+const dust = new DustPool(scene, FOG, { max: 1400, layer: L_FX, alpha: 0.30, size: 1.1, sizeRand: 1.6, grow: 1.6, growPow: 3.5, cap: 80, near: 5 });
+// v11: SPRAY — the sand a carving edge throws, and the rooster tail off the
+// rear pods at speed. Streaks, not discs (streaks.js says why): HD, so each
+// grain stays crisp against the dithered world. It replaces v5's spindrift,
+// which was keyed to SLIP — so a clean carve, the thing you are trying to
+// do, threw nothing at all, and only a mistake made it snow.
+// Short streaks (22 ms of motion, a tenth of the frame at most): at 45 ms
+// the sheet read as a porcupine of white sticks round the car.
+const spray = new StreakPool(scene, FOG, { max: 2600, layer: L_HD, blur: 0.022, maxLen: 0.10, maxW: 0.010, near: 2.0, gravity: 11, drag: 1.2, fog: 0.5 });
+// AIR — grains hanging in the air, streaked by your own speed. Additive and
+// faint; they only appear past ~80 km/h, and they are the thing nearest the
+// lens that moves, which is most of what makes speed read as speed.
+const air = new StreakPool(scene, FOG, { max: 320, layer: L_HD, additive: true, blur: 0.05, maxLen: 0.25, maxW: 0.006, near: 3.0, gravity: 0, drag: 0, fog: 0.8 });
 // sparks: struck off rock and off the walls. HD, additive, hard, heavy.
 const sparks = new DustPool(scene, FOG, {
   max: 500, layer: L_HD, additive: true, hard: true,
@@ -140,6 +164,10 @@ const sparks = new DustPool(scene, FOG, {
 });
 const scars = new ScarField(scene);
 scars.mesh.layers.set(L_FX);
+// v11: the grooves the pods cut in soft sand — a trail map the ground shader
+// reads (trench.js); the scars stay for the hard ground, where a pod
+// polishes rather than cuts
+const trenches = new TrenchField(renderer, terrain, QUALITY === 'high' ? 1024 : 512);
 const route = new Route(terrain, scene);
 const input = new InputManager();
 const audio = new AudioKit();
@@ -258,6 +286,9 @@ const state = {
   mode: 'menu', timer: START_TIME, gates: 0, rift: 0, score: 0, rank: 1,
   best: Number(localStorage.getItem('powderBest') || 0),
   camYaw: 0, camY: 0, pan: 0, shake: 0, toastT: 0, fov: 62, t: 0,
+  // v11: which chase seat — 0 the low formula seat, 1 the old high one
+  cam: Number(localStorage.getItem('powderCam') || 0) === 1 ? 1 : 0,
+  camBack: 10, camRoll: 0, buffet: 0,
 };
 
 let player = null, field = [];
@@ -266,6 +297,7 @@ const aiCtl = { steer: 0, throttle: 1, brake: false, overdrive: false };
 
 function startRace() {
   for (const c of field) c.dispose();
+  spray.clear(); air.clear(); trenches.clear();
   field = [];
   route.index = 0; route._built = -1;
   // start out on the flats beside the rim, not down in the rift — the first
@@ -342,10 +374,11 @@ function step(dt) {
   feedback();
   for (const v of field) { emitDust(v, dt); emitWash(v, dt); emitHaze(v, dt); layScar(v, dt); }
   dust.update(dt);
-  drift.update(dt);
   sparks.update(dt);
   haze.update(dt);
   scars.update(dt);
+  trenches.update(player.pos.x, player.pos.z);
+  emitAir(dt);
   terrain.update(player.pos.x, player.pos.z);
   route.update();
 
@@ -376,6 +409,9 @@ function step(dt) {
   for (let i = 1; i < field.length; i++) if (field[i].pos.z < player.pos.z) state.rank++;
 
   placeCamera(dt, false);
+  // the streaks are drawn relative to the camera, so they update after it
+  spray.update(dt, camera, player.vel);
+  air.update(dt, camera, player.vel);
   updateHud(dt);
   audio.drive(player.n1, clamp(player.speed / TOP_SPEED, 0, 1),
     player.grounded ? 1 : 0, Math.abs(player.slip), player.overdrive);
@@ -419,7 +455,7 @@ function emitDust(v, dt) {
   const power = clamp(0.2 + slip * 0.6 + v.speed / 150 + (v.overdrive ? 0.2 : 0), 0, 1);
   // salt is packed and throws almost nothing; the dune field is what smokes
   const yield_ = (v.surf === SALT || v.surf === ROAD) ? 0.25 : (S.drag - 0.6) + v.sink * 1.5;
-  let rate = (10 + slip * 70 + v.speed * 0.5) * yield_;
+  let rate = (6 + slip * 40 + v.speed * 0.3) * yield_;
   v._acc2 = (v._acc2 || 0) + rate * dt;
   const sign = Math.sign(v.slip) || 1;
   while (v._acc2 >= 1) {
@@ -431,21 +467,7 @@ function emitDust(v, dt) {
     dust.emit(_p, _fwd, _right, -sign * slip * 12, power);
   }
 
-  // SPINDRIFT: the fine curtain off the loaded outside runner. Only when the
-  // sled is actually carving — this is the snowboard read, and it belongs on
-  // the HD layer where it stays crisp against the dithered world.
-  const carving = Math.min(1, Math.abs(v.slip) / 5) * ((v.surf === SALT || v.surf === ROAD) ? 0.25 : 1);
-  if (carving > 0.12 && v.speed > 12) {
-    v._acc3 = (v._acc3 || 0) + carving * (30 + v.speed * 1.4) * dt;
-    while (v._acc3 >= 1) {
-      v._acc3 -= 1;
-      _p.copy(v.pos)
-        .addScaledVector(_fwd, -1.4 - Math.random() * 2.6)
-        .addScaledVector(_right, -sign * (1.1 + Math.random() * 1.4));
-      _p.y = terrain.height(_p.x, _p.z) + 0.35;
-      drift.emit(_p, _fwd, _right, -sign * (6 + carving * 16), carving);
-    }
-  }
+  emitSpray(v, dt);
 
   // SPARKS: the runners grinding rock, and every wall strike.
   if ((v.surf === 3 && Math.abs(v.slip) > 2.5 && v.speed > 10) || v.hitT > 0.3) {
@@ -459,6 +481,96 @@ function emitDust(v, dt) {
       sparks.emit(_p, _fwd, _right, (Math.random() - 0.5) * 14, 0.8);
     }
   } else v._acc4 = 0;
+}
+
+/**
+ * v11: the SPRAY. Driven by the EDGE and by burial, never by slip alone —
+ * Flowsnow's rule, and the one that makes a clean carve throw sand:
+ *   edge   up on the edge into a turn, the inside pods (the low side) cut,
+ *          and fling a wall of sand OUT of the turn, up and back
+ *   skid   sliding, the leading pods shove sand the way you are sliding
+ *   tail   planing fast over soft ground, the rear pods throw a rooster tail
+ * Soft ground throws; salt and the crossings barely do.
+ */
+const _sand = new THREE.Color(PAL.dust), _sandShd = new THREE.Color(PAL.dustShd), _sc = new THREE.Color();
+function emitSpray(v, dt) {
+  const soft = (v.surf === SALT || v.surf === ROAD) ? 0.12 : v.surf === 3 ? 0.05 : 1;
+  const sp = v.speed;
+  const skid = Math.min(1, Math.abs(v.slip) / 6);
+  const edgeI = Math.min(1, sp / 20) * v.edge * 1.25;
+  const skidI = Math.min(1, sp / 16) * skid * 1.5;
+  const tailI = v.plane * Math.min(1, Math.max(0, (sp - 18) / 30)) * 0.5;
+  const I = (edgeI + skidI + tailI) * soft;
+  if (I < 0.03) { v._acc3 = 0; return; }
+  // far away it is sub-pixel: spend the pool on what the camera can see
+  const d2 = camera.position.distanceToSquared(v.pos);
+  if (d2 > 160 * 160) return;
+  const near = v.isPlayer ? 1 : (d2 < 60 * 60 ? 0.6 : 0.3);
+  v._acc3 = (v._acc3 || 0) + I * 900 * near * dt;
+  if (v._acc3 < 1) return;
+  basis(v);
+  // roll > 0 is right-side-down: into a right-hand carve, so the OUTSIDE of
+  // the turn is on the left. Pads: 0 front-left, 1 front-right, 2 rear-left,
+  // 3 rear-right.
+  const out = -(Math.sign(v.roll) || 1);
+  const slipS = Math.sign(v.slip) || 1;
+  const pads = v.pads;
+  while (v._acc3 >= 1) {
+    v._acc3 -= 1;
+    const r = Math.random() * (edgeI + skidI + tailI);
+    let padI, ox, oy, ob, lat;                               // outward, up, back (m/s); spawn offset out (m)
+    if (r < edgeI) {
+      // the edge: the sheet leaves the OUTSIDE of the car, the way a board's
+      // spray fans out of a carve — mostly off the loaded outside pods, some
+      // out from under the belly off the inside edge that is dug in
+      const outside = Math.random() < 0.72;
+      const right = (out > 0) === outside;
+      padI = right ? (Math.random() < 0.62 ? 3 : 1) : (Math.random() < 0.62 ? 2 : 0);
+      ox = out * (5 + Math.random() * 11); oy = 1.5 + Math.random() * Math.random() * 7; ob = 1 + Math.random() * 5;
+      lat = out * (0.35 + Math.random() * 0.4);
+    } else if (r < edgeI + skidI) {      // the skid: shoved the way you slide
+      padI = slipS > 0 ? (Math.random() < 0.5 ? 1 : 3) : (Math.random() < 0.5 ? 0 : 2);
+      ox = slipS * (4 + Math.random() * 8); oy = 1.5 + Math.random() * 4; ob = 1 + Math.random() * 3;
+      lat = slipS * 0.3;
+    } else {                             // the rooster tail off the rear pods: low, and left behind
+      padI = Math.random() < 0.5 ? 2 : 3;
+      ox = (Math.random() - 0.5) * 2.5; oy = 1 + Math.random() * 3.5; ob = 3 + Math.random() * 6;
+      lat = 0;
+    }
+    const pad = pads[padI];
+    const gx = pad.wx + _right.x * lat + (Math.random() - 0.5) * 0.5 - _fwd.x * Math.random() * 0.8;
+    const gz = pad.wz + _right.z * lat + (Math.random() - 0.5) * 0.5 - _fwd.z * Math.random() * 0.8;
+    const gy = terrain.height(gx, gz) + 0.08;
+    // thrown with the pod: it keeps most of the sled's speed for its short
+    // life, so the sheet hangs beside the car instead of streaming at the lens
+    const vx = v.vel.x * 0.72 + _right.x * ox - _fwd.x * ob;
+    const vz = v.vel.z * 0.72 + _right.z * ox - _fwd.z * ob;
+    _sc.copy(_sand).lerp(_sandShd, Math.random() * 0.7);
+    // mostly fine grains, now and then a clump — one size of everything is
+    // what made the first cut read as hatching
+    const clump = Math.random() < 0.08;
+    spray.emit(gx, gy, gz, vx, oy, vz, clump ? 0.05 + Math.random() * 0.05 : 0.014 + Math.random() * 0.026,
+      0.3 + Math.random() * 0.45, _sc, clump ? 0.4 : 0.45 + Math.random() * 0.4);
+  }
+}
+
+/** v11: AIR — grains hanging in the air ahead, streaked by your own speed. */
+const _airCol = new THREE.Color(1.0, 0.94, 0.88);
+function emitAir(dt) {
+  const p = player, sp = p.speed;
+  const k = clamp((sp - 22) / 40, 0, 1);
+  if (k <= 0) return;
+  p._accAir = (p._accAir || 0) + (40 + sp * 3) * k * dt;
+  basis(p);
+  while (p._accAir >= 1) {
+    p._accAir -= 1;
+    const ahead = 18 + Math.random() * 70, side = (Math.random() < 0.5 ? -1 : 1) * (2.5 + Math.random() * 22);
+    const x = p.pos.x + _fwd.x * ahead + _right.x * side, z = p.pos.z + _fwd.z * ahead + _right.z * side;
+    // below the lens, so every grain is seen against the sand: up in the
+    // sky they read as scratches on the picture
+    const y = terrain.height(x, z) + 0.2 + Math.random() * Math.random() * 1.9;
+    air.emit(x, y, z, 0, 0, 0, 0.018 + Math.random() * 0.03, ahead / sp + 0.6, _airCol, (0.10 + Math.random() * 0.14) * k, 0);
+  }
 }
 
 function burst(v, n) {
@@ -507,20 +619,40 @@ function emitHaze(v, dt) {
   v._acc6 = (v._acc6 || 0) + (18 + th * 100) * dt;
   if (v._acc6 < 1) return;
   basis(v);
+  const U = v.mesh.userData;
   while (v._acc6 >= 1) {
     v._acc6 -= 1;
-    v.nozzle(Math.random() < 0.5 ? 0 : 1, _n);
-    _n.addScaledVector(_fwd, -0.4 - Math.random() * 1.2);
+    const i = Math.random() < 0.5 ? 0 : 1;
+    v.nozzle(i, _n);
+    // v11: it shows from the TAIL back. The chase camera looks down the
+    // exhaust, so every sprite between the lens and the car refracts the
+    // car — on the NOSE chassis, whose bells sit mid-ship, the rear wing and
+    // pods came out melted. The heat is still there; it just is not drawn
+    // over the thing you are steering.
+    const toTail = Math.max(0, 4.4 - U.nozzles[i].z);
+    _n.addScaledVector(_fwd, -0.4 - toTail - Math.random() * 1.2);
     // it leaves with the exhaust and is left behind by the sled
     _hv.copy(v.vel).multiplyScalar(0.55).addScaledVector(_fwd, -(4 + th * 14));
     _hv.y += 0.5;
-    haze.emit(_n, _hv, 2.2 + th * 2.6, 0.4 + th * 0.55);
+    const own = v.isPlayer ? 0.55 : 1;
+    haze.emit(_n, _hv, (2.2 + th * 2.6) * (v.isPlayer ? 0.75 : 1), (0.4 + th * 0.55) * own);
   }
 }
 
 function layScar(v, dt) {
   if (v._scar === undefined) v._scar = 0;
-  if (!v.grounded) return;
+  const soft = v.surf === 1 || v.surf === 2;           // DUNE, GRAVEL
+  // v11: on soft ground every pod cuts a groove, as deep as it sank — in a
+  // clean carve the rear pods run in the front pods' line (a little inside
+  // it, the way any car off-tracks), and in a slide they cut their own
+  for (let pi = 0; pi < 4; pi++) {
+    const pad = v.pads[pi];
+    if (!pad.touch || !soft || v.onDeck) { trenches.lift(v, pi); continue; }
+    const depth = clamp(pad.sink / 0.2, 0.35, 1) * (v.surf === 1 ? 1 : 0.6) * (pi < 2 ? 0.85 : 1);
+    const w = Math.min(0.8, 0.3 + Math.abs(v.slip) * 0.03);
+    trenches.lay(v, pi, pad.wx, pad.wz, w, depth);
+  }
+  if (!v.grounded || soft) return;
   v._scar += v.speed * dt;
   if (v._scar < 2.2) return;
   v._scar = 0;
@@ -540,14 +672,31 @@ function angleDelta(a, b) {
   return d;
 }
 
+/**
+ * The chase camera. v11, on the owner's direction ("a lower camera, a wider
+ * field of view as speed rises"): the default seat is a FORMULA seat — low,
+ * close, the car filling the lower third — because 160 km/h seen from 30 m
+ * up and 30 m back is a model railway. Measured before: the car was ~35 px
+ * across a 1280 px frame and nothing near the lens moved. The old high seat
+ * is still there (C on the keyboard, RB on a pad) for anyone who wants the
+ * whole field.
+ */
+const SEATS = [
+  //   back  +/speed  up    +/speed  ahead lookUp  fov  fov/speed  roll
+  { back: 8.6, backV: 0.030, up: 2.35, upV: 0.006, ahead: 16, lookUp: 0.9, fov: 60, fovV: 0.30, roll: 0.55 },
+  { back: 26, backV: 0.080, up: 8.0, upV: 0.020, ahead: 22, lookUp: 2.0, fov: 62, fovV: 0.075, roll: 0.22 },
+];
 function placeCamera(dt, snap) {
-  const p = player;
+  const p = player, S = SEATS[state.cam];
   // Anchored on the craft in world space; the HEADING is smoothed and the
   // position is snapped onto the rig. Lerping the position instead leaves a
   // lag of speed/rate metres, which at 90 m/s doubles the chase distance.
-  // the craft is ~11 m long, so 13 m of chase put the camera inside its own
-  // engines; this sits it in the lower third with the horizon in shot
-  const back = 26 + p.speed * 0.080;
+  // The distance breathes with speed, and backs off as the car sinks — a car
+  // bogged in deep sand fills the lens with its own plume (Flowsnow's
+  // camera does the same, for the same reason)
+  const wantBack = S.back + p.speed * S.backV + p.sink * 3.0;
+  state.camBack += (wantBack - state.camBack) * (snap ? 1 : Math.min(1, 2.5 * dt));
+  const back = state.camBack;
   // In a slide the camera splits the difference between where the nose
   // points and where the sled is actually travelling. Locked to the nose,
   // a 15 m/s slide swung the whole world round while the sled sat still in
@@ -564,35 +713,52 @@ function placeCamera(dt, snap) {
   state.pan += (wantPan - state.pan) * Math.min(1, 6 * dt);
   const rigYaw = state.camYaw + state.pan;
   const fx = Math.sin(rigYaw), fz = -Math.cos(rigYaw);
-  const ground = terrain.height(p.pos.x - fx * back, p.pos.z - fz * back);
+  const cx = p.pos.x - fx * back, cz = p.pos.z - fz * back;
+  const ground = terrain.height(cx, cz);
 
-  _camPos.set(p.pos.x - fx * back, 0, p.pos.z - fz * back);
+  _camPos.set(cx, 0, cz);
   // lean back and the camera drops and sits closer, so the nose lifting reads
-  const wantY = Math.max(ground + 5.0, p.pos.y + 8.0 + p.speed * 0.020 - p.lean * 1.6);
+  const wantY = Math.max(ground + 1.4, p.pos.y + S.up + p.speed * S.upV - p.lean * 0.6 + p.sink * 1.2);
   if (snap) state.camY = wantY;
-  else state.camY += (wantY - state.camY) * Math.min(1, 5 * dt);
+  else state.camY += (wantY - state.camY) * Math.min(1, 6 * dt);
   _camPos.y = state.camY;
 
-  const ahead = 22;
-  _look.set(p.pos.x + fx * ahead, p.pos.y + 2.0, p.pos.z + fz * ahead);
+  _look.set(p.pos.x + fx * S.ahead, p.pos.y + S.lookUp, p.pos.z + fz * S.ahead);
   camera.position.copy(_camPos);
   camera.lookAt(_look);
-  // a little of the craft's own roll, so a slide leans the frame
-  camera.rotateZ(clamp(-p.roll * 0.22 - p.slip * 0.004, -0.13, 0.13));
+  // The frame banks INTO the carve with the car — the board up on its edge,
+  // the horizon tipping with it — rather than rolling out of it like a car's
+  // camera. p.roll > 0 is right-side-down, and a negative rotateZ tips the
+  // view right.
+  const wantRoll = clamp(-p.roll * S.roll - p.slip * 0.003, -0.2, 0.2);
+  state.camRoll += (wantRoll - state.camRoll) * (snap ? 1 : Math.min(1, 7 * dt));
+  camera.rotateZ(state.camRoll);
 
+  // strikes shake it; SPEED buffets it — a fine, fast tremble that grows
+  // with the square of speed and with how soft the ground is, so 250 km/h
+  // over sand feels like 250 km/h over sand
   state.shake = Math.max(0, state.shake - dt * 1.9);
   const t = state.shake * state.shake;
-  if (t > 0.001) {
-    camera.position.x += (Math.random() - 0.5) * t * 2.2;
-    camera.position.y += (Math.random() - 0.5) * t * 1.8;
-    camera.rotateZ((Math.random() - 0.5) * t * 0.06);
+  const soft = p.grounded ? (p.surf === SALT || p.surf === ROAD ? 0.35 : 1) : 0.15;
+  const wantBuffet = clamp((p.speed - 25) / 55, 0, 1) ** 2 * soft;
+  state.buffet += (wantBuffet - state.buffet) * Math.min(1, 3 * dt);
+  const b = state.buffet * (state.cam === 0 ? 1 : 0.4);
+  if (t > 0.001 || b > 0.001) {
+    const ph = state.t * 47;
+    camera.position.x += (Math.random() - 0.5) * t * 2.2 + Math.sin(ph) * b * 0.035;
+    camera.position.y += (Math.random() - 0.5) * t * 1.8 + Math.sin(ph * 1.37 + 1.1) * b * 0.045;
+    camera.rotateZ((Math.random() - 0.5) * t * 0.06 + Math.sin(ph * 0.83) * b * 0.004);
   }
 
-  const wantFov = 62 + (p.overdrive ? 8 : 0) + p.speed * 0.075;
+  // the field of view opens with speed: the tunnel of a fast car
+  const wantFov = clamp(S.fov + (p.overdrive ? 7 : 0) + Math.max(0, p.speed - 8) * S.fovV, S.fov, 88);
   state.fov += (wantFov - state.fov) * Math.min(1, 3.5 * dt);
   if (Math.abs(camera.fov - state.fov) > 0.02) {
     camera.fov = state.fov; camera.updateProjectionMatrix();
   }
+  // over the camera's shoulder, onto the car
+  shipLight.position.copy(camera.position).addScaledVector(camera.up, 5);
+  shipLight.target.position.copy(p.pos);
   // keep the shadow volume on the craft or it quantises into stripes
   key.target.position.copy(p.pos);
   key.position.set(p.pos.x - SUN_DIR[0] * 220, p.pos.y - SUN_DIR[1] * 220, p.pos.z - SUN_DIR[2] * 220);
@@ -782,9 +948,10 @@ function idle(dt) {
   camera.position.lerp(_idle, Math.min(1, 1.6 * dt));
   camera.lookAt(x, terrain.height(x, z - 90) + 6, z - 90);
   dust.update(dt);
-  drift.update(dt);
   sparks.update(dt);
   scars.update(dt);
+  spray.update(dt, camera, null);
+  air.update(dt, camera, null);
   key.target.position.set(x, 0, z);
   key.position.set(x - SUN_DIR[0] * 220, -SUN_DIR[1] * 220, z - SUN_DIR[2] * 220);
   sky.update(camera);
@@ -807,6 +974,26 @@ input.onSwap = () => {
   localStorage.setItem(CKEY, CHASSIS);
   showMenu();
 };
+input.onCam = () => {
+  state.cam = state.cam ? 0 : 1;
+  localStorage.setItem('powderCam', String(state.cam));
+  toast(state.cam ? 'CAMERA: HIGH' : 'CAMERA: LOW', 900);
+};
+// and for a thumb: every touchstart is cancelled for the sticks, which kills
+// the synthesised click, so the chip answers touchend and pointerup (once)
+{
+  const cam = el('cam');
+  let camT = 0;
+  const tap = e => {
+    e.preventDefault();
+    const now = performance.now();
+    if (now - camT < 350) return;
+    camT = now;
+    input.onCam();
+  };
+  cam.addEventListener('touchend', tap, { passive: false });
+  cam.addEventListener('pointerup', tap);
+}
 input.onPause = () => {
   if (state.mode === 'race') {
     state.mode = 'paused';
@@ -833,8 +1020,8 @@ function showMenu() {
     ' <b style="color:#ffb066">FORWARD</b> TO PRESS IT DOWN.' +
     '<br>LEFT AND RIGHT PAN THE CAMERA.</small>' +
     '<br><small style="opacity:.65">W / &uarr; THROTTLE &nbsp; A D / &larr; &rarr; STEER &nbsp; S / &darr; BRAKE' +
-    '<br>SPACE BOOST &nbsp; SHIFT SPOILER &nbsp; Q E PAN &nbsp; F CHASSIS' +
-    '<br>GAMEPAD: STICKS AS ABOVE &nbsp;·&nbsp; RT / LT &nbsp;·&nbsp; A START &nbsp;·&nbsp; Y CHASSIS' +
+    '<br>SPACE BOOST &nbsp; SHIFT SPOILER &nbsp; Q E PAN &nbsp; C CAMERA &nbsp; F CHASSIS' +
+    '<br>GAMEPAD: STICKS AS ABOVE &nbsp;·&nbsp; RT / LT &nbsp;·&nbsp; RB CAMERA &nbsp;·&nbsp; A START &nbsp;·&nbsp; Y CHASSIS' +
     // which shop each chassis came out of, so an export that loaded says so
     `<br>SHIPS &nbsp;·&nbsp; NOSE ${models.ships.nose ? 'BLENDER' : 'KIT'} &nbsp;·&nbsp; AFT ${models.ships.aft ? 'BLENDER' : 'KIT'}` +
     (models.landmarks.length ? ` &nbsp;·&nbsp; ${models.landmarks.length} LANDMARK${models.landmarks.length > 1 ? 'S' : ''}` : '') + '</small>' +
@@ -858,7 +1045,7 @@ preloadModels(modelsDir ? `models/${modelsDir}/` : 'models/').then(() => {
 
 window.__pw = {
   THREE, scene, camera, renderer, composer, terrain, route, state, dust, scars,
-  audio, sky, input, drift, sparks, haze, flare, models, quality: QUALITY,
+  audio, sky, input, spray, air, trenches, sparks, haze, flare, models, quality: QUALITY,
   get chassis() { return CHASSIS; },
   get player() { return player; },
   get field() { return field; },
@@ -868,6 +1055,12 @@ window.__pw = {
     setQuality(q) { localStorage.setItem(QKEY, q); location.reload(); },
     tp(x, z) { if (player) { player.pos.set(x, terrain.height(x, z) + 4, z); player.vel.set(0, 0, 0); } },
     gate(i) { route.index = i; route._built = -1; },
+    // put the chase camera straight onto its rig (a harness after a teleport)
+    snapCamera() { if (player) placeCamera(0, true); },
+    // run the whole race step n times at the sim's own rate, synchronously —
+    // a harness under SwiftShader gets a fraction of real time from the loop,
+    // and a shot needs the grooves, spray and camera of a carve in progress
+    advance(n) { for (let i = 0; i < n && state.mode === 'race'; i++) step(1 / 120); },
     chassis(d) { CHASSIS = d === 'rear' ? 'rear' : 'front'; localStorage.setItem(CKEY, CHASSIS); showMenu(); },
   },
 };
