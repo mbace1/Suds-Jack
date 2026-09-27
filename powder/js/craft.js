@@ -28,8 +28,8 @@
 // rockets, fans, flames, chrome and the material contract carry through.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { PAL, SUN_DIR } from './palette.js?v=12';
-import { models, numeralTexture, SHIP } from './models.js?v=12';
+import { PAL, SUN_DIR } from './palette.js?v=11';
+import { models, numeralTexture, SHIP } from './models.js?v=11';
 
 const _geo = {};
 const geo = (k, make) => _geo[k] || (_geo[k] = make());
@@ -755,20 +755,36 @@ export function buildCraft(env, accent, number, drive = 'front') {
 export function craftFromModel(m, env, accent, number, drive) {
   const { M, acc } = materials(env, accent);
   const g = m.scene.clone(true);
-  const hullMat = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x554433, shininess: 28 });
-  hullMat.name = 'HULL';
+  // ONE HULL material per source map: a ship can carry more than one HULL
+  // mesh (the kit's reference export has the mapped fuselage AND unmapped
+  // trim), and with a single shared material whichever mesh came last set
+  // the map for all of them — the trim's panel texture over the livery.
+  const hullMats = new Map();
+  const hullFor = src => {
+    const key = (src && src.map) || null;
+    let hm = hullMats.get(key);
+    if (!hm) {
+      hm = new THREE.MeshPhongMaterial({ color: 0xffffff, specular: 0x554433, shininess: 28 });
+      hm.name = 'HULL';
+      hm.map = key || panelTexture(accent);
+      if (src && src.normalMap) hm.normalMap = src.normalMap;
+      hullMats.set(key, hm);
+    }
+    return hm;
+  };
   const numMat = new THREE.MeshBasicMaterial({ map: numberTexture(number, accent), transparent: true });
   numMat.name = 'DECAL';
-  const mats = [hullMat, numMat];
+  const mats = [numMat];
   let hull = null;
   g.traverse(o => {
     if (!o.isMesh) return;
     const src = o.material, name = src && src.name;
     switch (name) {
       case 'HULL':
-        hullMat.map = src.map || panelTexture(accent);
-        if (src.normalMap) hullMat.normalMap = src.normalMap;
-        o.material = hullMat; hull = hull || o; break;
+        o.material = hullFor(src);
+        // the strike flash goes on the painted hull, not a strip of trim
+        if (!hull || (src.map && !hull.userData.mapped)) { hull = o; o.userData.mapped = !!src.map; }
+        break;
       case 'ACCENT':   o.material = acc; break;
       case 'CHROME':   o.material = M.chrome; break;
       case 'GUNMETAL': o.material = M.gun; break;
@@ -836,7 +852,16 @@ export function craftFromModel(m, env, accent, number, drive) {
   const bb = new THREE.Box3().setFromObject(g), bs = bb.getSize(new THREE.Vector3()), bc = bb.getCenter(new THREE.Vector3());
   const cast = castProxy([{ g: ubox(), pos: bc.toArray(), scale: [bs.x * 0.8, bs.y * 0.7, bs.z * 0.95] }]);
   g.add(cast); geos.push(cast.geometry);
-  g.userData = { flares, fans, hull: hull || { material: hullMat }, nozzles, geos, mats, model: m.file, cast };
+  mats.push(...hullMats.values());
+  // the cushion's glow, as on the kit: an imported ship has no pods either,
+  // and without this it had no contact cue at all (vehicle.posePods)
+  const corners = [0, 1, 2, 3].map(i => ({ pad: i }));
+  const glow = new THREE.InstancedMesh(geo('glowQuad', () => { const b = new THREE.PlaneGeometry(1, 1); b.rotateX(-Math.PI / 2); return b; }), padGlowMaterial(M), 4);
+  glow.frustumCulled = false; glow.castShadow = false;
+  glow.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  glow.layers.set(1);
+  g.add(glow);
+  g.userData = { flares, fans, hull: hull || { material: hullFor(null) }, nozzles, corners, glow, geos, mats, model: m.file, cast };
   return g;
 }
 

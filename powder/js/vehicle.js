@@ -64,8 +64,8 @@
 // Integrated at a fixed 120 Hz on an accumulator, because a spring this stiff
 // is not stable on a variable frame time.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=12';
-import { SURF, SALT } from './terrain.js?v=12';
+import { PAL } from './palette.js?v=11';
+import { SURF, SALT } from './terrain.js?v=11';
 import { buildCraft, disposeCraft, POD } from './craft.js?v=12';
 
 const G = 9.81;

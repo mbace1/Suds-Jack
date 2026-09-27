@@ -66,7 +66,16 @@ carve at 174 km/h: slip 7.0 -> 2.6 m/s at 11.5 deg of bank.
 Not measured here: a real phone. `thumbs`/`keys` are wall-clock harnesses
 and this change moves the vehicle, not the input paths.
 
-Tokens: every module `?v=11` -> `?v=12`, moved together.
+Tokens: per module, as AGENTS.md has it — `craft.js` and `vehicle.js` (their
+bytes changed) and `main.js` (it imports both) go to `?v=12`; every other
+module keeps `?v=11`, byte-identical to v11, so a returning player's cache
+keeps them. (Until v11 this log moved the whole graph together.)
+
+The import path (`craftFromModel`) gets two fixes the kit exposed. Each
+distinct HULL map now gets its own material: the reference export carries
+the mapped fuselage AND unmapped trim, and with one shared material the
+trim's panel texture replaced the livery. And an imported ship gets the
+cushion's ground glow the kit has, since it has no pods either.
 
 ## v11 — 2026-09-27
 A formula car that carves the sand like powder — and, underneath it, two

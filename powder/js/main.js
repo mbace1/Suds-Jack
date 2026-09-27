@@ -33,20 +33,20 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=12';
-import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=12';
+import { PAL, SUN_DIR, FILL_DIR } from './palette.js?v=11';
+import { Terrain, SURF, SALT, ROAD, VIEW } from './terrain.js?v=11';
 import { Vehicle } from './vehicle.js?v=12';
-import { DustPool, ScarField } from './dust.js?v=12';
-import { StreakPool } from './streaks.js?v=12';
-import { TrenchField } from './trench.js?v=12';
-import { Route, RADIUS } from './route.js?v=12';
-import { InputManager, STICK_R } from './input.js?v=12';
-import { AudioKit } from './audio.js?v=12';
-import { makeSky } from './sky.js?v=12';
+import { DustPool, ScarField } from './dust.js?v=11';
+import { StreakPool } from './streaks.js?v=11';
+import { TrenchField } from './trench.js?v=11';
+import { Route, RADIUS } from './route.js?v=11';
+import { InputManager, STICK_R } from './input.js?v=11';
+import { AudioKit } from './audio.js?v=11';
+import { makeSky } from './sky.js?v=11';
 import { makeEnvMap, L_CAST } from './craft.js?v=12';
-import { HeatHaze } from './haze.js?v=12';
-import { makeFlare } from './flare.js?v=12';
-import { preloadModels, models } from './models.js?v=12';
+import { HeatHaze } from './haze.js?v=11';
+import { makeFlare } from './flare.js?v=11';
+import { preloadModels, models } from './models.js?v=11';
 
 // Fog has to reach nearly the edge of the streamed world, not half way
 // into it, or the flats read as a 300 m milk bowl instead of a plain.
