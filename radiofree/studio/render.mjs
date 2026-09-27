@@ -28,6 +28,10 @@ const EP = arg('ep', 'bargain-bin');
 const FPS = Number(arg('fps', 30));
 const OUT = path.resolve(arg('out', path.join(HERE, 'dist')));
 const SHEET = argv.includes('--sheet');
+// --clay: the plasticine cut. Twelve exposures a second, each held for two
+// frames of a 24 fps file — rendering 24 would only draw every pose twice.
+const CLAY = argv.includes('--clay');
+const RATE = CLAY ? 12 : FPS, OUT_FPS = CLAY ? 24 : FPS;
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.ttf': 'font/ttf', '.json': 'application/json' };
 const srv = http.createServer((q, r) => {
@@ -38,11 +42,12 @@ const srv = http.createServer((q, r) => {
 });
 await new Promise(res => srv.listen(0, res));
 const { chromium } = require('playwright');
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const page = await browser.newPage();
 page.on('pageerror', e => console.error('page error:', e.message));
-await page.goto(`http://localhost:${srv.address().port}/radiofree/studio/?ep=${EP}`);
-await page.waitForFunction(() => window.__studio, null, { timeout: 60000 });
+await page.goto(`http://localhost:${srv.address().port}/radiofree/studio/${CLAY ? 'clay/' : ''}?ep=${EP}&headless`);
+await page.waitForFunction(() => window.__studio, null, { timeout: 300000 });
+page.setDefaultTimeout(0);
 fs.mkdirSync(OUT, { recursive: true });
 
 const grab = (t, q = 0.9) => page.evaluate(([t, q]) => { __studio.frame(t); return __studio.canvas.toDataURL('image/jpeg', q); }, [t, q])
@@ -61,16 +66,16 @@ if (SHEET) {
   console.log(outFile);
 } else {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'studio-frames-'));
-  const n = Math.ceil(total * FPS), t0 = Date.now();
+  const n = Math.ceil(total * RATE), t0 = Date.now();
   for (let i = 0; i < n; i++) {
-    fs.writeFileSync(path.join(dir, String(i).padStart(5, '0') + '.jpg'), await grab(i / FPS));
-    if (i % 150 === 0) console.log(`  frame ${i}/${n}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+    fs.writeFileSync(path.join(dir, String(i).padStart(5, '0') + '.jpg'), await grab((i + 0.5) / RATE));
+    if (i % (CLAY ? 24 : 150) === 0) console.log(`  frame ${i}/${n}  ${((Date.now() - t0) / 1000).toFixed(0)}s`);
   }
   fs.writeFileSync(path.join(dir, 'mix.wav'), Buffer.from(await page.evaluate(() => __studio.audio()), 'base64'));
   const outFile = path.join(OUT, `${EP}.mp4`);
-  execFileSync('ffmpeg', ['-v', 'error', '-y', '-framerate', String(FPS), '-i', path.join(dir, '%05d.jpg'),
+  execFileSync('ffmpeg', ['-v', 'error', '-y', '-framerate', String(RATE), '-i', path.join(dir, '%05d.jpg'),
     '-i', path.join(dir, 'mix.wav'), '-map', '0:v', '-map', '1:a',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-pix_fmt', 'yuv420p',
+    '-r', String(OUT_FPS), '-c:v', 'libx264', '-preset', 'slow', '-crf', '19', '-pix_fmt', 'yuv420p',
     '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000',
     '-shortest', '-movflags', '+faststart', outFile]);
   fs.rmSync(dir, { recursive: true, force: true });

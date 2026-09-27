@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clay Studio</title>
+<style>
+  @font-face { font-family: 'Anton'; src: url(../../lab/fonts/Anton.ttf); }
+  @font-face { font-family: 'Archivo Black'; src: url(../../lab/fonts/ArchivoBlack.ttf); }
+  @font-face { font-family: 'Space Grotesk'; font-weight: 700; src: url(../../lab/fonts/SpaceGrotesk-Bold.ttf); }
+  html, body { margin: 0; background: #16151f; color: #eee; font: 15px system-ui, sans-serif; }
+  .bar { display: flex; gap: 8px; align-items: center; padding: 12px 16px; }
+  input[type=range] { flex: 1; min-height: 44px; }
+  canvas { display: block; margin: 0 auto 16px; width: min(100vw - 32px, 52vh); height: auto; }
+</style>
+<script type="importmap">{ "imports": { "three": "../vendor/three.module.min.js" } }</script>
+</head>
+<body>
+<div class="bar"><input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Position"><span id="clock">0.0 s</span></div>
+<script type="module">
+  // Scrub to look; the renderer (studio/render.mjs --clay) drives __studio.
+  // Rendering is software-slow in a sandbox, so this page draws on demand
+  // rather than playing.
+  import { makeClayFilm } from './cut.js';
+  import { loadFont } from './clay.js';
+  import { renderAudio, wav } from '../film.js';
+  const q = new URLSearchParams(location.search);
+  await Promise.all(['Anton', 'Archivo Black', 'Space Grotesk'].map(f => document.fonts.load(`80px "${f}"`)));
+  await loadFont('Anton', '../../lab/fonts/Anton.ttf');
+  const ep = await import(`../episodes/${q.get('ep') || 'bargain-bin-clay'}.js`);
+  const film = makeClayFilm(ep);
+  document.body.append(film.canvas);
+  const scrub = document.getElementById('scrub'), clock = document.getElementById('clock');
+  const show = (t) => { film.frame(t); clock.textContent = t.toFixed(2) + ' s'; };
+  scrub.onchange = () => show(scrub.value / 1000 * film.tl.total);
+  window.__studio = {
+    tl: film.tl, canvas: film.canvas, exposures: 12,
+    frame: (t) => film.frame(t),
+    audio: async () => { const w = wav(await renderAudio(ep)); let s = ''; for (let i = 0; i < w.length; i += 32768) s += String.fromCharCode(...w.subarray(i, i + 32768)); return btoa(s); },
+  };
+  if (!q.has('headless')) show(0);
+</script>
+</body>
+</html>

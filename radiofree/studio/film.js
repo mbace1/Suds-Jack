@@ -42,7 +42,7 @@ function parseCap(cap) {
   }
   return words;
 }
-function caption(ctx, shot, lt, desk) {
+export function caption(ctx, shot, lt, desk) {
   if (!shot.cap) return;
   const words = parseCap(shot.cap);
   ctx.save();
@@ -88,7 +88,7 @@ function caption(ctx, shot, lt, desk) {
 
 // ── the paper wipe ───────────────────────────────────────────────────────
 const WIPE_COLOURS = [PAL.toko, PAL.sun, PAL.mint, PAL.violet, PAL.coral, PAL.sky];
-function wipe(ctx, k, i) {
+export function wipe(ctx, k, i) {
   // k: 0 → sheet enters from the right, 0.5 → covers the frame, 1 → gone left
   const x = (1 - k * 2) * (W + 220);
   sheet(ctx, (g) => {

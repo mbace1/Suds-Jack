@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clay Bench</title>
+<style>
+  @font-face { font-family: 'Anton'; src: url(../../lab/fonts/Anton.ttf); }
+  @font-face { font-family: 'Archivo Black'; src: url(../../lab/fonts/ArchivoBlack.ttf); }
+  html, body { margin: 0; background: #16151f; }
+  canvas { display: block; margin: 0 auto; width: min(100vw, 52vh); height: auto; }
+</style>
+<script type="importmap">{ "imports": { "three": "../vendor/three.module.min.js" } }</script>
+</head>
+<body>
+<script type="module">
+  // The look bench: one hero set, one frame, so the clay can be judged on its
+  // own before any episode is built on it.
+  import * as THREE from 'three';
+  import { makeStage } from './engine.js';
+  import { loadFont, boilAll } from './clay.js';
+  import { customer, brainJar, priceTag, shelf, room, clayText, SKIN } from './puppets.js';
+  await loadFont('Anton', '../../lab/fonts/Anton.ttf');
+  await document.fonts.load('80px "Archivo Black"'); await document.fonts.load('80px Anton');
+  const st = makeStage();
+  document.body.append(st.renderer.domElement);
+  const { scene } = st;
+  scene.add(room());
+  const sh = shelf(70); sh.position.set(0, 24, -5); scene.add(sh);
+  [-20, 0, 20].forEach((x, i) => {
+    const j = brainJar({ seed: i + 1 }); j.position.set(x, 24.8, -5); scene.add(j);
+    const t = priceTag(['CHEAP', 'CHEAPER', 'CHEAPEST'][i]); t.position.set(x, 24, 1.2); scene.add(t);
+  });
+  const a = customer({ sweater: '#3f6fd0', skin: SKIN[0], style: 0, seed: 1 }); a.position.set(-9, 0, 16); a.rotation.y = 0.25; scene.add(a);
+  const b = customer({ sweater: '#e2573e', skin: SKIN[3], hair: '#15110f', style: 1, seed: 2 }); b.position.set(10, 0, 20); b.rotation.y = -0.3; scene.add(b);
+  a.userData.pose({ look: 0.3, mouth: 'grin', brow: 0.4 }); b.userData.pose({ look: -0.5, mouth: 'o', brow: 0.8, blink: 0.3 });
+  const title = clayText('BARGAIN BIN', { size: 5.2, depth: 2.2, color: '#ff4f8b', seed: 5 });
+  title.position.set(0, 44, -6); scene.add(title);
+  const cam = new THREE.Vector3(0, 22, 105), look = new THREE.Vector3(0, 21, 0);
+  window.__bench = (frame) => { boilAll(scene, frame); st.shoot(cam, look, { fov: 34, focus: cam.distanceTo(new THREE.Vector3(0, 12, 18)), aperture: 0.0014 }); st.render(frame); return st.renderer.domElement.toDataURL('image/jpeg', 0.92); };
+  console.log('fonts', document.fonts.check('40px "Archivo Black"'), document.fonts.check('40px Anton'), [...document.fonts].map(f => f.family + ':' + f.status).join());
+  window.__ready = true;
+</script>
+</body>
+</html>
