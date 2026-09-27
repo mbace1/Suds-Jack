@@ -1,5 +1,37 @@
 # Toko Trip — release log
 
+## v21 — 2026-09-27
+
+**The first Quest sit.** The owner's answers (2026-09-27): a visit is for
+pure unwinding, the next pass is comfort and polish, Quest 3 first, 10–15
+minute sits, begun seated in a real chair, and performance numbers may
+travel with a verdict but never on their own. They had not yet been in the
+island on the Quest, so this release makes that first session foolproof and
+makes it report back.
+
+- **The first sit.** The first headset session in a browser stands a board
+  in the sand 1.25 m in front of the chair, at seated eye height, turned to
+  the seat. It says *sit down in your real chair*. It notices the sit with
+  the same head-in-the-seat-band test the chime uses, then says *this is
+  your seat* and points at the postcard. After 25 s with nobody seated, it
+  gives the fix instead: *point at the deck chair and HOLD the trigger for
+  two seconds*, which recalibrates the seat from your head. Once per
+  browser; point at it to skip; `?firstsit` brings it back.
+- **A verdict carries the frame.** Each MORE / NOT THIS tap now carries fps,
+  frame ms, the worst frame, the quality tier, the backend and the
+  framebuffer scale, both as a `perf` field and at the end of the text. Only
+  on a tap: nothing is sent otherwise.
+- **The front door on the Quest browser** is a big ENTER VR in the middle of
+  the page, sized for a controller ray from arm's length instead of a mouse.
+  The frame-cost readout was already on the slate's top row in the headset.
+
+Gate (136): the board stands ahead of the chair and is aimable. With nobody
+seated it moves to the calibration hint, a sit moves it on, and then it goes
+and records that it has run. A verdict carries `perf`. The v20 glow check
+used to aim at the question board, which v20 had moved to the side, so
+depending on the tide the ray could graze sand. It aims straight out past the
+shallows now.
+
 ## v20 — 2026-09-26
 
 The owner asked to be hooked into testing. Two answers, and they work

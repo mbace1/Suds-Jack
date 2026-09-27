@@ -23,6 +23,11 @@
     @media (max-width: 520px) { #hints { font-size: 11px; line-height: 1.55; } }
     #hints a { color: #3aa8a0; pointer-events: auto; }
     #XRButton { bottom: auto !important; top: 16px !important; }
+    /* on the headset's own browser this button is the whole front door, so it
+       is big enough to hit with a controller ray from arm's length */
+    .quest #XRButton { top: 50% !important; transform: translate(-50%, -50%);
+      font-size: 26px !important; padding: 22px 40px !important; width: auto !important;
+      border-width: 2px !important; background: rgba(10,12,16,0.8) !important; }
     #mood-name {
       position: fixed; top: 14px; right: 16px; z-index: 3;
       color: #f2e9d8; font-size: 12px; letter-spacing: 0.14em; opacity: 0;
@@ -188,6 +193,7 @@
     // gaze + pinch, ~3.7K per eye) and desktop get the high one — a larger
     // framebuffer, a sharper shadow map, denser instancing, a denser mesh.
     // Everything that scales reads TIER; nothing else knows which device.
+    if (/OculusBrowser|Quest/i.test(navigator.userAgent)) document.documentElement.classList.add('quest');
     const TIER = /OculusBrowser|Quest/i.test(navigator.userAgent)
       ? { name: 'quest', fb: 1.0, shadow: 1024, density: 1, foam: 2000, seg: 168 }
       : { name: 'high', fb: 1.2, shadow: 2048, density: 2.2, foam: 3200, seg: 208 };
@@ -3467,6 +3473,7 @@
     let baseRef = null;
     renderer.xr.addEventListener('sessionstart', () => {
       baseRef = renderer.xr.getReferenceSpace();
+      if (!store.get('firstSit', 0) || /[?&]firstsit/.test(location.search)) welcomeStart();
       audioStart();
       shadowDirty();
     });
@@ -3499,7 +3506,7 @@
     //
     // Nothing nags: the card only glows while there is something you have not
     // tried, and when you have tried everything it just says so.
-    const TRIP_V = 20;
+    const TRIP_V = 21;
     const NEWS = [
       { v: 20, key: 'seafire', title: 'THE SURF GLOWS',
         lines: ['after sunset the break', 'lights up blue. point at', 'the sea and it answers.'],
@@ -3685,10 +3692,17 @@
       chime(more ? 659.25 : 440, more ? 880 : 392);
       if (!tried.includes(key)) { tried = [...tried, key]; store.set('tried', tried); }
       paintPostcard();
+      // How the frame was doing rides along — only on a tap, never on its
+      // own (owner's call, 2026-09-27). The first Quest sessions are the only
+      // measurement of the real target this island will get for a while.
+      const perf = { fps: perfSample.fps, ms: perfSample.ms, worst: perfSample.worst,
+        tier: TIER.name, backend: backendName(), fb: TIER.fb };
       const entry = {
         game: 'tokotrip', source: 'island', kind: 'try',
         rating: more ? 5 : 1,
-        text: `v${TRIP_V} · ${key} · ${more ? 'more of this' : 'not this'} · ${MOODS[moodIdx].name.toLowerCase()} · ${renderer.xr.isPresenting ? 'headset' : 'flat'}`,
+        text: `v${TRIP_V} · ${key} · ${more ? 'more of this' : 'not this'} · ${MOODS[moodIdx].name.toLowerCase()} · ${renderer.xr.isPresenting ? 'headset' : 'flat'}`
+          + ` · ${perf.fps} fps, worst ${perf.worst} ms, ${perf.tier}/${perf.backend}`,
+        perf,
         ts: Date.now(),
       };
       verdictSaid = { ...entry, how: 'kept' };
@@ -3696,6 +3710,72 @@
         try { verdictSaid.how = await feedbackMod.send(entry); } catch (e) { verdictSaid.how = 'failed'; }
       }
       return verdictSaid;
+    }
+
+    // ── the first sit ──
+    // The first time a headset session starts in this browser, a board stands
+    // in the sand in front of the chair and walks you through the one thing
+    // this island needs from you: SIT in your real chair. It notices the sit
+    // (the same head-in-the-seat-band test the chime uses). If the seat does
+    // not line up after a while it says how to fix that: hold the trigger on
+    // the chair. Then it points at the postcard and goes. Three lines, once,
+    // skippable by pointing at it — the tutorial is an object on the beach,
+    // like everything else here.
+    const welcomeMat = new THREE.MeshBasicMaterial({ transparent: true, toneMapped: false });
+    const welcome = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.36), welcomeMat);
+    welcome.visible = false;
+    scene.add(welcome);
+    let welcomeStep = -1, welcomeT = 0;
+    const WELCOME = [
+      ['WELCOME TO THE ISLAND', ['sit down in your real chair.', 'the deck chair here is that chair.']],
+      ['WELCOME TO THE ISLAND', ['not lining up? point at the deck chair', 'and HOLD the trigger for two seconds.']],
+      ['THIS IS YOUR SEAT', ['the postcard on the side table says', 'what is new. point + trigger to go.']],
+    ];
+    function paintWelcome(i) {
+      const cv = document.createElement('canvas');
+      cv.width = 720; cv.height = 360;
+      const g = cv.getContext('2d');
+      g.fillStyle = 'rgba(10,12,16,0.9)';
+      g.beginPath(); g.roundRect(0, 0, 720, 360, 18); g.fill();
+      g.strokeStyle = '#3aa8a0'; g.lineWidth = 4;
+      g.beginPath(); g.roundRect(8, 8, 704, 344, 14); g.stroke();
+      g.textAlign = 'center';
+      g.fillStyle = '#3aa8a0';
+      g.font = 'bold 44px ui-monospace, Menlo, Consolas, monospace';
+      g.fillText(WELCOME[i][0], 360, 96);
+      g.fillStyle = '#f2e9d8';
+      g.font = '32px ui-monospace, Menlo, Consolas, monospace';
+      WELCOME[i][1].forEach((l, k) => g.fillText(l, 360, 180 + k * 48));
+      g.fillStyle = 'rgba(242,233,216,0.45)';
+      g.font = '22px ui-monospace, Menlo, Consolas, monospace';
+      g.fillText('point here to skip', 360, 326);
+      const tx = new THREE.CanvasTexture(cv);
+      tx.colorSpace = THREE.SRGBColorSpace;
+      welcomeMat.map?.dispose();
+      welcomeMat.map = tx; welcomeMat.needsUpdate = true;
+    }
+    function welcomeStart() {
+      // in front of the seat along the direction the sitter faces, at seated
+      // eye height, turned back toward the seat — about arm's length and a
+      // half, which is as close as text can sit without crossing your eyes
+      const fx = Math.sin(chairYaw), fz = Math.cos(chairYaw);
+      const eyeY = chairP[1] + 0.72;
+      welcome.position.set(chairP[0] + fx * 1.25, eyeY - 0.05, chairP[2] + fz * 1.25);
+      welcome.lookAt(chairP[0], eyeY, chairP[2]);
+      welcomeStep = 0; welcomeT = 0;
+      paintWelcome(0);
+      welcome.visible = true;
+    }
+    function welcomeEnd() {
+      welcome.visible = false; welcomeStep = -1;
+      store.set('firstSit', TRIP_V);
+    }
+    function welcomeUpdate(dt) {
+      if (welcomeStep < 0) return;
+      welcomeT += dt;
+      if (welcomeStep < 2 && seated) { welcomeStep = 2; welcomeT = 0; paintWelcome(2); chime(523.25, 659.25); return; }
+      if (welcomeStep === 0 && welcomeT > 25) { welcomeStep = 1; paintWelcome(1); }
+      if (welcomeStep === 2 && welcomeT > 9) welcomeEnd();
     }
 
     // ── sparks: the sea answering where you point ──
@@ -3785,7 +3865,7 @@
     // `statics` carries the jetty deck, so it has to be aimable — and
     // `ownerOf` calls it ground, which is only true where the face points up.
     // actOn asks that, so the side of a rock is not a destination.
-    const rayTargets = [terrain, statics, totem, radio, chairHit, book, sign, slate, shell, postcard, verdict];
+    const rayTargets = [terrain, statics, totem, radio, chairHit, book, sign, slate, shell, postcard, verdict, welcome];
     const controllers = [];
     for (let i = 0; i < 2; i++) {
       const c = renderer.xr.getController(i);
@@ -3880,6 +3960,7 @@
         if (o === shell) return 'shell';
         if (o === postcard) return 'postcard';
         if (o === verdict) return 'verdict';
+        if (o === welcome) return 'welcome';
         if (o === terrain) return 'ground';
       }
       return null;
@@ -3895,6 +3976,7 @@
       if (kind === 'shell') return goChair();
       if (kind === 'postcard') return postcardAct();
       if (kind === 'verdict') return verdictAct(hit);
+      if (kind === 'welcome') return welcomeEnd();
       if (kind === 'chair') {
         // A LONG pinch on the chair recalibrates the seat from where your
         // head is right now — the whole calibration path on Vision Pro,
@@ -4115,9 +4197,14 @@
     let perfT = 0, perfN = 0, perfMs = 0, perfWorst = 0, perfCalls = 0, perfTris = 0;
     // the surface under the flat camera's feet, carried between frames so a
     // ray that starts at the feet has feet to start at
-    let footY = 0;
+    let footY = 0, eyeH = 1.5;
+    // CAPTURE: the loop can be paused and stepped by a fixed amount of game
+    // time, so a recording is smooth at 24 fps even on a machine that renders
+    // two frames a second. A browser's own fake clock was tried first and
+    // hangs its screenshots; stepping the game is the honest seam.
+    let stepDt = 0, stepT = 0;
     function animate() {
-      const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
+      const dt = stepDt || Math.min(0.05, clock.getDelta()), t = stepDt ? (stepT += stepDt) : clock.elapsedTime;
       tideT += dt * TIDE_RATES[comfort.time][1];
       tide = tideAt(tideT);
       dayT += dt * TIDE_RATES[comfort.time][1];
@@ -4150,7 +4237,7 @@
           const m = tryMove(eye.x, eye.z, nx, nz, footY);
           eye.x = m.x; eye.z = m.z; footY = m.y;
         }
-        eye.y += ((footY + 1.5) - eye.y) * Math.min(1, dt * 8);
+        eye.y += ((footY + eyeH) - eye.y) * Math.min(1, dt * 8);
         camera.position.copy(eye);
         camera.rotation.set(0, 0, 0);
         camera.rotateY(yaw);
@@ -4159,6 +4246,7 @@
       } else {
         vigUpdate(dt, xrSticks(dt));
         sitUpdate(dt);
+        welcomeUpdate(dt);
         // controller rays + the teleport marker
         marker.visible = false;
         for (const c of controllers) {
@@ -4485,12 +4573,15 @@
           return false;
         },
         // stand somewhere and face something — the flat camera, for the gate
-        stand: (x, z, ry, p = -0.15) => {
+        // `h` is the eye height, for the capture rig's close-ups; players
+        // stand at 1.5 m and nothing else in the game moves it
+        stand: (x, z, ry, p = -0.15, h = 1.5) => {
+          eyeH = h;
           // stand on what a PLAYER would stand on — the deck if there is one
           // over this column, the sand if there is not. Dropped from well
           // above, because this is a placement, not a step.
           footY = standY(x, z, gy(x, z) + 2) ?? gy(x, z);
-          eye.set(x, footY + 1.5, z); yaw = ry; pitch = p;
+          eye.set(x, footY + eyeH, z); yaw = ry; pitch = p;
         },
         book: () => ({ open: bookOpen, page: bookPage, pages: PAGES.length }),
         seated: () => seated,
@@ -4532,7 +4623,17 @@
         // the soundscape: where it comes from, and whether it is really off
         audioStart, gullCry, waterEdge,
         gustNow: gustStart, gustUpdate,
+        capture: (on) => {
+          if (on) { stepT = clock.elapsedTime; renderer.setAnimationLoop(null); }
+          else { stepDt = 0; clock.getDelta(); renderer.setAnimationLoop(animate); }
+          return on;
+        },
+        step: (dt = 1 / 24) => { stepDt = dt; animate(); return +stepT.toFixed(3); },
         postcard, verdict, postcardAct, verdictAct, NEWS, TRIP_V,
+        welcome, welcomeStart, welcomeUpdate, welcomeEnd,
+        firstSit: () => ({ step: welcomeStep, up: welcome.visible, done: store.get('firstSit', 0), seated,
+          at: welcome.position.toArray().map(v => +v.toFixed(2)) }),
+        setSeated: (v) => { seated = !!v; },
         news: () => ({ card: postcard.userData.item, fresh: fresh().map(n => n.key), tried: [...tried],
           verdictUp: verdict.visible, verdictFor: verdict.userData.item ?? null, said: verdictSaid,
           sendable: !!feedbackMod, glow: +postcardMat.emissiveIntensity.toFixed(2) }),
