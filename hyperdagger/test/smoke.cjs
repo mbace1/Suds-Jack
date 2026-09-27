@@ -1537,6 +1537,10 @@ s.listen(0, '127.0.0.1', async () => {
     const hd = window.__hd, d = hd.debug, pl = hd.player;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     const g = d.gooObj(), cfg = g.cfg;
+    // this page sat idle while the season 3 pages ran — twenty minutes of a
+    // live HYPER clock is a TIME OUT, so the run it left is over: start another
+    if (d.getState().state !== 'playing') { d.startGame(); d.setInvulnerable(true); d.freezeDirector(true); await frames(4); }
+    d.setLife(60);
     d.setTime(10); await frames(2);   // v53: the tide comes in over 30–150 s — ask at k = 0, so cfg.speed is the live speed
     const startT = g.t; // build seeds a phase, so a run opens mid-sea
     // Put a crest on the MIDDLE of the arena before asking anything. The sea
@@ -1790,7 +1794,7 @@ s.listen(0, '127.0.0.1', async () => {
   const ebb = await p.evaluate(async () => {
     const hd = window.__hd, d = hd.debug, g = d.gooObj();
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    d.setTime(44.9);
+    d.setLife(60); d.setTime(44.9);
     let maxDrain = 0;
     for (let i = 0; i < 300 && !d.getRun().ebbSteps; i++) { await frames(1); maxDrain = Math.max(maxDrain, g.drain); }
     for (let i = 0; i < 60; i++) { await frames(1); maxDrain = Math.max(maxDrain, g.drain); }
@@ -1809,7 +1813,7 @@ s.listen(0, '127.0.0.1', async () => {
   const drain = await p.evaluate(async () => {
     const hd = window.__hd, d = hd.debug, pl = hd.player;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
+    d.setLife(60); d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
     const fired = d.getFinale();
     let drainMax = 0, glintAtDry = null, stepsAtDry = 0, stepH = [];
     for (let i = 0; i < 640; i++) {   // the drain is 23 s of game time at ~0.05 s a frame here
