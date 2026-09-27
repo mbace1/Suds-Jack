@@ -1836,7 +1836,7 @@ s.listen(0, '127.0.0.1', async () => {
   const ending = await p.evaluate(async () => {
     const hd = window.__hd, d = hd.debug;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    d.setTime(299.8);
+    d.setLife(60); d.setTime(299.8);
     for (let i = 0; i < 80 && d.getState().state === 'playing'; i++) await frames(1);
     return { state: d.getState().state, run: d.getRun(), h1: document.querySelector('#msg h1')?.textContent,
       lines: [...document.querySelectorAll('#msg .breakdown')].map(e => e.textContent) };
