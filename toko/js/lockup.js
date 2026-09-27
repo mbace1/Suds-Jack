@@ -10,7 +10,7 @@
 // logotype works anyway and keeps the kit's no-external-assets promise.
 
 import { TOKO, TYPE, VOICE, SHEET } from './palette.js';
-import { drawFace, drawBadge, bounds, GEO } from './face.js';
+import { fillMaster, masterBounds, drawMasterBadge } from './master.js';
 import { drawWord, widthOf, M as WM } from './wordmark.js';
 
 // Nothing is substituted any more — the letterforms are ours and are drawn.
@@ -62,11 +62,16 @@ export function drawLogotypeLine(ctx, x, y, size, opts = {}) {
 // Face, gap, three lines. `h` is the height of the FACE, and the logotype is
 // sized to stand the same height beside it — which is the relationship in the
 // master artwork and the only one that looks right.
+//
+// THE FACE IS THE MASTER (owner, 2026-09-27: "the toko faces and logos should
+// use the recent Toko" — as Helsinki Free Radio, Toko Live, the sticker and the
+// counter already do). It was face.js's GEO face, measured off the artwork by
+// eye before the original was supplied and traced (master.js); the lockup and
+// the sticker sheet were the last two things still drawing it.
 export function drawLockup(ctx, x, y, h, opts = {}) {
   const { color = TOKO.INK, ground = null } = opts;
-  const b = bounds();
+  const b = masterBounds();
   const faceW = h * (b.w / b.h);
-  const boxW = faceW * (GEO.box / b.w);
 
   if (ground) {
     ctx.save();
@@ -75,7 +80,7 @@ export function drawLockup(ctx, x, y, h, opts = {}) {
     ctx.restore();
   }
 
-  drawFace(ctx, x - (b.x / GEO.box) * boxW, y - (b.y / GEO.box) * boxW, boxW, { color });
+  fillMaster(ctx, x, y, faceW, { color });
 
   const gap = h * 0.14;
   const size = h / 3.2;                        // three lines ≈ the face's height
@@ -99,7 +104,7 @@ export function drawSheet(ctx, x, y, cols, r, gap, opts = {}) {
   sheet.forEach((s, i) => {
     const cx = x + (i % cols) * pitch + r;
     const cy = y + Math.floor(i / cols) * pitch + r;
-    drawBadge(ctx, cx, cy, r, { ground: s.bg, ink: s.ink });
+    drawMasterBadge(ctx, cx, cy, r, { ground: s.bg, ink: s.ink });
   });
   return {
     w: cols * pitch - gap,
