@@ -1257,9 +1257,12 @@ s.listen(0, '127.0.0.1', async () => {
     ctrl.roster && ctrl.roster.palette === null && ctrl.roster.mean[0] >= ctrl.roster.mean[1] && ctrl.roster.mean[0] > 0.2,
     JSON.stringify(ctrl.roster));
   // v48 (owner): season 2 is JUST the wave. Nothing else stands in the sea.
-  ok('inca: nothing stands in the sea — no slabs, no rock; the wave is the arena',
-    inca.plats.count === 0 && inca.walls.count === 0 && inca.goo.on === true,
-    JSON.stringify({ plats: inca.plats.count, walls: inca.walls.count, goo: inca.goo.on }));
+  // (v54: the read runs its skulls at 50 s, past the first EBB at 45 — so the
+  //  ebb's low steps may be up; they are the only thing, and all under the crest)
+  ok('inca: nothing stands in the sea — no slabs, no rock; the wave is the arena (only the ebb\'s low steps, under the crest)',
+    (inca.plats.count === 0 || (inca.plats.count === 5 && inca.plats.slabs.every(s => s.h < inca.sn.gooAmp)))
+    && inca.walls.count === 0 && inca.goo.on === true,
+    JSON.stringify({ plats: inca.plats.count, h: inca.plats.slabs?.map(s => s.h), walls: inca.walls.count, goo: inca.goo.on }));
   ok('inca: the wave HURTS, and it is sized to a jump — the crest at the ripple\'s peak sits under the apex',
     inca.sn.gooHurts === true && inca.sn.gooAmp * (1 + inca.sn.gooRipple) < inca.sn.jumpApex - 0.12,
     JSON.stringify({ hurts: inca.sn.gooHurts, crestMax: +(inca.sn.gooAmp * (1 + inca.sn.gooRipple)).toFixed(2), apex: inca.sn.jumpApex }));
