@@ -66,10 +66,24 @@ carve at 174 km/h: slip 7.0 -> 2.6 m/s at 11.5 deg of bank.
 Not measured here: a real phone. `thumbs`/`keys` are wall-clock harnesses
 and this change moves the vehicle, not the input paths.
 
-Tokens: per module, as AGENTS.md has it — `craft.js` and `vehicle.js` (their
-bytes changed) and `main.js` (it imports both) go to `?v=12`; every other
+Tokens: per module, as AGENTS.md has it — `craft.js`, `vehicle.js` and
+`sky.js` (their bytes changed) go to `?v=12`, `main.js` to `?v=13`; every other
 module keeps `?v=11`, byte-identical to v11, so a returning player's cache
 keeps them. (Until v11 this log moved the whole graph together.)
+
+THE WHITE SCREEN (owner, on a phone: "Not working" — the race running,
+the HUD live, the view blank white). v11 shaded the ringed planet, and its
+limb used `pow(1.0 - max(0.0, dot(N, V)), 2.6)`. On a phone GPU the dot of
+two unit vectors can land a hair over 1, the base goes negative, and pow()
+of a negative is NaN. One NaN pixel, and bloom — which blurs every pixel
+into every other through its mips — made it the whole frame: white on the
+phone, black on a desktop GPU (`test/nan.mjs` plants one and shows it).
+Two fixes: the base is clamped at the site, and a SANITISE pass runs right
+after the scene render (`main.js`), replacing NaN with 0 and Infinity with
+a cap before bloom sees it, so the next stray NaN costs a pixel, not the
+picture. `nan.mjs` passes with it and fails without it. The same two-file
+fix went to the live v11 as a hotfix ahead of this release, so here
+`main.js` is `?v=13` (the hotfix holds 12) and `sky.js` is `?v=12`.
 
 The import path (`craftFromModel`) gets two fixes the kit exposed. Each
 distinct HULL map now gets its own material: the reference export carries

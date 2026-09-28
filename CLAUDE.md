@@ -1729,6 +1729,15 @@ to 12 m/s, blending to `bankMax` 11 by 40, the lean reading the STICK), and
 `rearCircle` 0.14 — at 0.28 the AFT sled slid 8-10 m/s at a QUARTER lock from 30 m/s
 up. A quarter lock at 180 km/h is now 5 degrees in 2 s on either chassis; full lock
 at 36 km/h is a 12 m carve at 26 degrees of lean.
+**A NaN is the whole frame, not a pixel** (v12, the owner's phone showed the race
+running under a blank WHITE view): the world renders into a half-float target that
+holds NaN, and bloom blurs every pixel into every other, so one NaN — here `pow()` of
+a hair-negative base in the planet's limb, which only a phone GPU produced — becomes
+the picture (white on mobile, black on desktop). A SANITISE pass after the scene
+render replaces NaN/Infinity before bloom, written as comparisons rather than
+`isnan()` (fast-math drivers fold it away); `test/nan.mjs` plants a NaN and fails
+without it. Any new shader: clamp a `pow()` base, and never trust a dot of unit
+vectors to stay inside [-1, 1].
 
 **The world** (`js/terrain.js`). Open, not a ribbon: `height(x, z)` is a pure function,
 and the tile meshes, the hover pads, the props and the dust all read it, so they cannot

@@ -42,7 +42,7 @@ import { TrenchField } from './trench.js?v=11';
 import { Route, RADIUS } from './route.js?v=11';
 import { InputManager, STICK_R } from './input.js?v=11';
 import { AudioKit } from './audio.js?v=11';
-import { makeSky } from './sky.js?v=11';
+import { makeSky } from './sky.js?v=12';
 import { makeEnvMap, L_CAST } from './craft.js?v=12';
 import { HeatHaze } from './haze.js?v=11';
 import { makeFlare } from './flare.js?v=11';
@@ -216,8 +216,30 @@ const GradeShader = {
     }`,
 };
 
+// v12: SANITISE before bloom. The world renders into a half-float target,
+// which holds NaN and Infinity, and bloom blurs every pixel into every
+// other through its mips — so ONE non-finite pixel anywhere in the scene
+// becomes the whole frame (black on a desktop GPU, WHITE on a phone's).
+// That was the v11 phone report: the race running, the view blank white,
+// traced to one pow() in the planet's limb. The pow is fixed at the site;
+// this is so the next stray NaN costs a pixel, not the picture. Written as
+// comparisons, which are false for NaN, rather than isnan(), which a
+// fast-math driver may fold away.
+const SanitizeShader = {
+  uniforms: { tDiffuse: { value: null } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; varying vec2 vUv;
+    float ok(float x) { return (x > -1.0 && x < 64.0) ? max(x, 0.0) : (x >= 64.0 ? 64.0 : 0.0); }
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      gl_FragColor = vec4(ok(c.r), ok(c.g), ok(c.b), 1.0);
+    }`,
+};
+
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
+composer.addPass(new ShaderPass(SanitizeShader));
 let bloom = null;
 if (QUALITY === 'high') {
   bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.85, 0.7, 0.72);
