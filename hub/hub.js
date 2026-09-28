@@ -23,7 +23,7 @@ function relink() {
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=120';
+import { GAMES, SKETCHES } from './games.js?v=121';
 import { drawMarquee } from './art.js?v=27';
 import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=12';
