@@ -53,12 +53,12 @@
     }
   </style>
 
-  <script type="module" src="hub/hub-entry.js?v=49"></script>
+  <script type="module" src="hub/hub-entry.js?v=50"></script>
   <script type="module">
     import { mountChat } from './toko/js/chat.js?v=20';
     // hub.js assigns window.__hub wholesale and hub-entry.js loads it without
     // waiting, so wait for the SAME module (same URL, one instance) first
-    await import('./hub/hub.js?v=126');
+    await import('./hub/hub.js?v=127');
     window.__hub.chat = mountChat(document.querySelector('header'));
   </script>
 
