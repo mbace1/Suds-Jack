@@ -85,6 +85,16 @@ picture. `nan.mjs` passes with it and fails without it. The same two-file
 fix went to the live v11 as a hotfix ahead of this release, so here
 `main.js` is `?v=13` (the hotfix holds 12) and `sky.js` is `?v=12`.
 
+THE HUD ON A PHONE HELD UPRIGHT (the same screenshot): the panels are
+fixed-position and placed for a landscape screen, so on a 412px-wide
+portrait one the NEXT GATE bar ran over the CLOCK, the telemetry ran over
+the ground speed, and the compass clipped the HUB button. A `max-width:
+600px` layout keeps the clock top right, drops the compass to its own line
+under it, and splits the bottom in half — speed and turbine left, the
+telemetry wrapped onto two rows right. `test/hud.mjs` renders the race at
+six real screen sizes and reports every pair of intersecting HUD boxes:
+three phone-portrait sizes failed before it and all six pass after.
+
 The import path (`craftFromModel`) gets two fixes the kit exposed. Each
 distinct HULL map now gets its own material: the reference export carries
 the mapped fuselage AND unmapped trim, and with one shared material the
