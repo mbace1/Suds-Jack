@@ -3,8 +3,8 @@
 // pays back per markka put in: `node pajatso/test/face.mjs [shotsPerPower]`.
 // The pot is held at its starting hump for every power, so the POTTI column is
 // what a machine fresh on the wall would pay; `--live` lets it run.
-import { Pajatso } from '../js/classic/game.js?v=6';
-import { PAYS, POT_START, POTTI_COLS } from '../js/classic/layout.js?v=6';
+import { Pajatso } from '../js/classic/game.js?v=7';
+import { PAYS, POT_START, POTTI_COLS } from '../js/classic/layout.js?v=7';
 
 const N = Number(process.argv[2] ?? 150);
 const live = process.argv.includes('--live');
@@ -36,4 +36,4 @@ for (let i = 0; i < STEPS; i++) {
   console.log(`${p.toFixed(2)}  ${rtp.toFixed(2)}  ${(100 * fouls / N).toFixed(0).padStart(3)}%  ${(100 * lost / N).toFixed(0).padStart(3)}%  ` +
     kinds.map(pct).join('') + ` ${rescued.toString().padStart(3)}  ${(time / N).toFixed(1)}`);
 }
-console.log(`\nwhole range: ${(all.out / all.in).toFixed(3)} back per markka in play; POTTI 1 in ${Math.round(all.in / Math.max(1, all.potti))}, paying ${(all.pay / Math.max(1, all.potti)).toFixed(1)} on average (the middle three start at ${POTTI_COLS.reduce((a, k) => a + POT_START[k], 0)})`);
+console.log(`\nwhole range: ${(all.out / all.in).toFixed(3)} back per markka in play; POTTI 1 in ${Math.round(all.in / Math.max(1, all.potti))}, paying ${(all.pay / Math.max(1, all.potti)).toFixed(1)} on average (its columns start at ${new Pajatso().pottiCols.reduce((a, k) => a + POT_START[k], 0)})`);

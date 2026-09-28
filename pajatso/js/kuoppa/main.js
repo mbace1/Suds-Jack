@@ -4,15 +4,15 @@
 // nudge's voice, and the sheets between rounds — the vendor, the lock that
 // opens with its part's card, the end.
 
-import { Kuoppa, DATA as D, JOKER, CHARM } from './run.js?v=6';
-import './words.js?v=6';
-import { View } from '../classic/view.js?v=6';
-import { JACKPOT, LABEL } from '../classic/layout.js?v=6';
-import { getLang } from '../classic/lang.js?v=6';
-import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from '../classic/table.js?v=6';
-import { makeLcd, drawLcd } from './lcd.js?v=6';
-import { partCard } from './cards.js?v=6';
-import { STOP_ORDER, TIMING } from '../reels.js?v=6';
+import { Kuoppa, DATA as D, JOKER, CHARM } from './run.js?v=7';
+import './words.js?v=7';
+import { View } from '../classic/view.js?v=7';
+import { JACKPOT, LABEL } from '../classic/layout.js?v=7';
+import { getLang } from '../classic/lang.js?v=7';
+import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from '../classic/table.js?v=7';
+import { makeLcd, drawLcd } from './lcd.js?v=7';
+import { partCard } from './cards.js?v=7';
+import { STOP_ORDER, TIMING } from '../reels.js?v=7';
 
 let game = new Kuoppa({ seed: seedFrom() });
 const lcd = makeLcd();

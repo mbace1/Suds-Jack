@@ -15,15 +15,27 @@
 // Money is in markka. 1:50 pays one and a half, so a purse can hold 50 p;
 // a pull takes a whole markka.
 
-import { Board, BOARD } from '../board.js?v=6';
-import { makeRng } from '../rng.js?v=6';
-import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS } from './layout.js?v=6';
+import { Board, BOARD } from '../board.js?v=7';
+import { makeRng } from '../rng.js?v=7';
+import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS, MIDDLE } from './layout.js?v=7';
 
 export const START_COINS = 30;
 // The face is stepped faster than the pachinko board: BOARD.G is slowed so a
 // rain of small coins can be watched, and one big coin at that pace took six
 // seconds a shot, which is a long time to hold a lever for nothing.
 export const SPEED = 1.7;
+// THE BASE MACHINE (owner, 2026-09-28: "Pajatso itself should only have the
+// slots with the pay out ... no need for the little nails"): no nail field, so
+// a pull is the spring against the windows and nothing else. The spring's
+// travel is fitted to the row (102 lands on the far left 1:00, 117 the far
+// right; the soft end starts at 103 so a wobble under it seldom fouls; past that the rail carries a coin round to the kickers), and it is a
+// hand on a spring, not a gun (wobble ±5 around where you let go), so a pull
+// aims at a neighbourhood of windows. On a bare face the 7:00 in the middle
+// catches 1 coin in ~36 whatever the guard does, so here the POTTI opens the
+// MIDDLE column only — three made the soft half of the lever pay 1.7 a markka.
+// Measured (face.mjs): 1.10 a markka on a fresh pot, 0.97 with the pot left to
+// run, the best pull ~1.3, fouls ~2%. KUOPPA keeps its nails (`mods: {}`).
+export const BASE_FACE = { nails: false, wobble: 5, vMin: 103, vMax: 118, pottiCols: [MIDDLE] };
 // THE NUDGE (owner: "tapping the phone to give the coin some momentum"): a
 // bump of the cabinet shoves the coin toward where you tapped. Two a coin are
 // free; the third trips the TILT and the coin is the machine's.
@@ -32,7 +44,7 @@ export const NUDGE = { free: 2, dv: 10, lift: 3 };
 const freshStats = coins => ({ shots: 0, won: 0, biggest: 0, peak: coins, pottis: 0, backs: 0, fouls: 0, lost: 0, hits: {} });
 
 export class Pajatso {
-  constructor({ seed = 1, coins = START_COINS, mods = {}, pot = POT_START } = {}) {
+  constructor({ seed = 1, coins = START_COINS, mods = BASE_FACE, pot = POT_START } = {}) {
     this.seed = seed >>> 0;
     this.rng = makeRng(this.seed);
     this.L = buildPajatso(mods);
@@ -40,7 +52,7 @@ export class Pajatso {
     this.coins = coins;
     this.pot = [...pot];
     this.pottiBase = PAYS[JACKPOT];
-    this.pottiCols = POTTI_COLS;
+    this.pottiCols = mods.pottiCols ?? POTTI_COLS;
     this.phase = coins >= 1 ? 'idle' : 'broke';
     this.acc = 0;
     this.events = [];
@@ -64,7 +76,7 @@ export class Pajatso {
     this.spend();
     this.stats.shots++;
     this.lastPower = p;
-    this.board.launch(p, { scale: FACE.SCALE, vMin: FACE.V_MIN, vMax: FACE.V_MAX, lane: FACE.LANE, y: 7.2, wobble: 4.5 });
+    this.board.launch(p, { scale: FACE.SCALE, vMin: this.L.mods.vMin ?? FACE.V_MIN, vMax: this.L.mods.vMax ?? FACE.V_MAX, lane: FACE.LANE, y: 7.2, wobble: this.L.mods.wobble ?? 4.5 });
     this.phase = 'flight';
     this.events.push({ t: 'insert', coins: this.coins });
     return true;

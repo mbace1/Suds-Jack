@@ -9,7 +9,7 @@
 // the pot behind chrome dividers on a pale ribbed back. A teak-veneer case, a
 // black 1 mk plate down the right, and an orange bar wall behind it all.
 
-import { LABEL, JACKPOT, FACE, POTTI_COLS, YAKU } from './layout.js?v=6';
+import { LABEL, JACKPOT, FACE, POTTI_COLS, YAKU } from './layout.js?v=7';
 
 export const PPU = 16;                      // canvas pixels per board unit
 export const X0 = -31, Y1 = 82, W = 62, H = 82;   // the painted area, in board units
@@ -103,8 +103,9 @@ export function faceCanvas(L) {
     gr.addColorStop(0, '#9fa3a8'); gr.addColorStop(0.35, '#eef0f2'); gr.addColorStop(0.7, '#d7dadd'); gr.addColorStop(1, '#8e9297');
     g.fillStyle = gr; g.fillRect(x0, py(FACE.COL_TOP), w, FACE.COL_TOP * u);
   }
-  // a gold line over the POTTI's three says which coins the 7:00 opens
-  const a = L.columns[POTTI_COLS[0]], b = L.columns[POTTI_COLS[POTTI_COLS.length - 1]];
+  // a gold line over the POTTI's columns says which coins the 7:00 opens
+  const pc = L.mods.pottiCols ?? POTTI_COLS;
+  const a = L.columns[pc[0]], b = L.columns[pc[pc.length - 1]];
   g.fillStyle = '#ffd23f';
   g.fillRect(px(a.x0) + 3, py(FACE.COL_TOP + 1.1), (b.x1 - a.x0) * u - 6, 0.45 * u);
   g.font = `900 ${Math.round(1.2 * u)}px ${BLACK}`; g.textAlign = 'center'; g.textBaseline = 'middle';

@@ -314,8 +314,14 @@ clown-and-cups face was a guess from memory and is gone): `index.html` +
 under them (`R 1:00 1:50 1:50 7:00 1:50 1:50 1:00 R`), a grey band, red V
 deflectors, and **the pot**: thirteen columns of coins stacked behind chrome
 dividers. A coin that misses every window joins its column and stays on
-screen (`game.pot`); **the POTTI is the red 7:00, paying seven AND the three
-middle columns**, so its size is on the glass before you pull. Money is
+screen (`game.pot`); **the POTTI is the red 7:00, paying seven AND the
+middle column** (KUOPPA: the middle three), so its size is on the glass before
+you pull. **v7: the base face has NO NAIL FIELD** (owner, 2026-09-28: *"only
+the slots with the pay out"*) — `BASE_FACE` in `game.js` fits the spring to
+the row (103 → 118) with ±5 wobble so the lever aims at a neighbourhood, and
+since a bare face's 7:00 catches ~1 coin in 36 whatever its guard does, the
+base POTTI opens one column rather than three. KUOPPA keeps its nails
+(`mods: {}`). Money is
 markka (1:50 pays 1.5; under 1 mk is broke), 30 a session. The room is a
 Kallio bar: orange wall, teak case, black 1 mk plate, crank on the right side,
 two brown bottles on top. **The base machine gets NO pachinko parts** — those

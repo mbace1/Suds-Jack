@@ -11,8 +11,8 @@
 // crank on the right side, two brown bottles on top, an orange wall.
 
 import * as THREE from 'three';
-import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=6';
-import { FACE, JACKPOT } from './layout.js?v=6';
+import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=7';
+import { FACE, JACKPOT } from './layout.js?v=7';
 
 const COIN_Z = 1.0;           // the coin rolls on the face this far out of it
 const PIN_LEN = 2.0;

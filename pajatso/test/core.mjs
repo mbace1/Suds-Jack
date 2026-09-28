@@ -12,19 +12,19 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makeRng, seedOf } from '../js/rng.js?v=6';
-import { Board, buildLayout, BOARD } from '../js/board.js?v=6';
-import { Pusher, PUSHER } from '../js/pusher.js?v=6';
-import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=6';
-import { Engine, computeRules, VERSION } from '../js/engine.js?v=6';
-import * as D from '../js/data.js?v=6';
-import { playRun, playShift } from './bot.mjs?v=6';
-import { buildPajatso, FACE, PAYS, JACKPOT, WINDOWS, LABEL, POT_START, POTTI_COLS, columnAt } from '../js/classic/layout.js?v=6';
-import { _STR } from '../js/classic/lang.js?v=6';
-import '../js/kuoppa/words.js?v=6';
-import { Kuoppa, computeRules as kRules, DATA as KD } from '../js/kuoppa/run.js?v=6';
-import { playRun as playKuoppa, POLICIES } from './runbot.mjs?v=6';
-import { Pajatso, START_COINS } from '../js/classic/game.js?v=6';
+import { makeRng, seedOf } from '../js/rng.js?v=7';
+import { Board, buildLayout, BOARD } from '../js/board.js?v=7';
+import { Pusher, PUSHER } from '../js/pusher.js?v=7';
+import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=7';
+import { Engine, computeRules, VERSION } from '../js/engine.js?v=7';
+import * as D from '../js/data.js?v=7';
+import { playRun, playShift } from './bot.mjs?v=7';
+import { buildPajatso, FACE, PAYS, JACKPOT, WINDOWS, LABEL, POT_START, POTTI_COLS, MIDDLE, columnAt } from '../js/classic/layout.js?v=7';
+import { _STR } from '../js/classic/lang.js?v=7';
+import '../js/kuoppa/words.js?v=7';
+import { Kuoppa, computeRules as kRules, DATA as KD } from '../js/kuoppa/run.js?v=7';
+import { playRun as playKuoppa, POLICIES } from './runbot.mjs?v=7';
+import { Pajatso, START_COINS } from '../js/classic/game.js?v=7';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const GAME = path.resolve(HERE, '..');
@@ -406,7 +406,10 @@ section('pajatso: the machine');
   check(`most coins go to the pot, as on a real one (${Math.round(100 * out.lost / N)}%)`, out.lost / N > 0.4 && out.lost / N < 0.75);
   check(`every kind of window is hit somewhere on the lever`,
     Object.keys(PAYS).every(k => Object.keys(g.stats.hits).some(id => buildPajatso().byId[id]?.pay === k)));
-  check(`the POTTI is rare (${pottis} in ${N})`, pottis > 0 && pottis < N * 0.03);
+  // the bare base face (no nails) catches ~1 in 36 in the 7:00, so the rarity
+  // is paid for in the POTTI opening one column, not three
+  check(`the POTTI is rare (${pottis} in ${N})`, pottis > 0 && pottis < N * 0.045);
+  check('the base machine is windows and nothing else: no nail field', !g.L.pins.some(p => p.tag === 'field'));
   const sideOf = s => (s.R - s.L) / Math.max(1, s.L + s.R + s.C);
   check(`the lever steers: a long pull lands further right than a short one (${sideOf(byPower[1]).toFixed(2)} → ${sideOf(byPower[10]).toFixed(2)})`,
     sideOf(byPower[10]) - sideOf(byPower[1]) > 0.3);
@@ -430,9 +433,9 @@ section('pajatso: the rules');
   const [h2, e2] = win('w0');
   check('R gives the coin back', e2?.pay === 1 && h2.coins === 5 && h2.stats.backs === 1);
   const [h3, e3] = win('w4');
-  const col = POTTI_COLS.reduce((a, k) => a + POT_START[k], 0);
-  check(`the POTTI pays 7:00 and the three middle columns (${e3?.pay} = 7 + ${col})`,
-    e3?.pay === 7 + col && e3.column === col && POTTI_COLS.every(k => h3.pot[k] === 0) && h3.stats.pottis === 1);
+  const col = POT_START[MIDDLE];
+  check(`the POTTI pays 7:00 and the middle column (${e3?.pay} = 7 + ${col})`,
+    e3?.pay === 7 + col && e3.column === col && h3.pot[MIDDLE] === 0 && h3.pot[MIDDLE - 1] === POT_START[MIDDLE - 1] && h3.stats.pottis === 1);
   check('and the columns it opened start filling again from nothing', h3.pottiNow === 7);
   // a miss joins the pile it fell into
   const m = new Pajatso({ seed: 9, coins: 5 });

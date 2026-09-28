@@ -15,7 +15,7 @@
 // valve, the knife-edge tip and the wedge rule are the physics the pachinko
 // board was tuned with. The coin is BIG, 2.5 bu across on a 60 bu face.
 
-import { BOARD, seg, arc, buildGrid } from '../board.js?v=6';
+import { BOARD, seg, arc, buildGrid } from '../board.js?v=7';
 
 const deg = d => d * Math.PI / 180;
 
@@ -97,7 +97,7 @@ export function buildPajatso(mods = {}) {
   // between two windows is a PASS, so a coin that misses falls on down. ──
   WINDOWS.forEach((base, i) => {
     const pay = parts.has('multiplier') && TIMES3.includes(i) ? 'x3' : base;
-    const x = MID + (i - 4) * PITCH, w = pay === JACKPOT ? FACE.POTTI_W : WIN_W;
+    const x = MID + (i - 4) * PITCH, w = pay === JACKPOT ? (mods.pottiW ?? FACE.POTTI_W) : WIN_W;
     const id = `w${i}`;
     const tulip = parts.has('tulips') && TULIPS.includes(i);
     pockets.push({ id, kind: tulip ? 'tulip' : 'cup', pay, x, y: WIN_Y, w, depth: WIN_D, chimney: 0, chute: x < -9 ? 'L' : x > 9 ? 'R' : 'C',
@@ -189,7 +189,8 @@ export function buildPajatso(mods = {}) {
   }
 
   // ── the nails: a sparse, staggered field in the red above the windows, so
-  // one pull is a neighbourhood of windows and never a single one ──
+  // one pull is a neighbourhood of windows and never a single one. KUOPPA's
+  // face only: the base machine is windows and nothing else (`nails: false`) ──
   const PASS = CLEAR + 2 * PIN_R + 0.1;
   const DX = 5.2, DY = 3.8;
   let row = 0;
@@ -200,7 +201,7 @@ export function buildPajatso(mods = {}) {
       if (x < -Rin + PASS || x > R - PASS) continue;
       const h = Math.abs(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1;
       if (h < 0.1) continue;
-      pin(x, y, 'field');
+      if (mods.nails !== false) pin(x, y, 'field');
     }
   }
   // THE WEDGE RULE as one pass: no field nail nearer than a pass to another
