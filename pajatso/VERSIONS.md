@@ -4,6 +4,37 @@ The game was PACHI PIT for its first release; v2 renamed it and made the
 Finnish coin wall game the front door. The pit run is still here as KUOPPA
 (`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
 
+## v7 — 2026-09-28 — the base machine is windows and nothing else
+
+The owner, after playing v6: *"Pajatso itself should only have the slots with
+the pay out.. meaning no need for the little nails that alter the first direct
+launch of the coin."* So the base machine's face has **no nail field**: the
+coin comes off the rail and falls straight at the window row, and the lever
+aims. KUOPPA keeps its nails — its parts sit in among them.
+
+What the nails did to the odds had to be done some other way, and the
+measuring (`test/face.mjs`) is the record of how:
+
+- **The spring is fitted to the row.** Mapped with the wobble off, launch
+  speed 102 lands on the far-left 1:00 and 117 on the far-right one; past that
+  the rail carries the coin round to the kickers. The lever now runs 103 → 118
+  (it was 104 → 121, which on a bare face left the left half unreachable and
+  made the soft end the hot spot).
+- **The spring is a hand, not a gun**: ±5 of wobble around where you let go,
+  so a pull aims at a neighbourhood of two or three windows, never one.
+- **The POTTI opens the middle column, not three.** On a bare face the 7:00
+  catches about 1 coin in 36 whatever its guard nail does — lifting the guard
+  made it *more* likely (it funnels), and narrowing the mouth to a hair over
+  the coin moved nothing. With three columns the soft half of the lever paid
+  1.7 a markka. One column: **1.10 a markka on a fresh pot, 0.97 with the pot
+  left to run, the best pull about 1.3, fouls ~2%**. The gold POTTI line over
+  the pot and the three languages say "the middle column" now.
+
+`BASE_FACE` in `js/classic/game.js` is the whole of it (`nails: false`, the
+spring, `pottiCols`); `Kuoppa` passes `mods: {}` so the roguelike's face is
+unchanged. Gates: `core.mjs` 158 (a new check: the base face has no field
+nail), `classic.cjs` 32, `kuoppa.cjs` 31.
+
 ## v6 — 2026-09-27 — jokers that meet the parts, and the REACH
 
 The owner: *"Go ahead. Give me something to play soon."* So a short one.

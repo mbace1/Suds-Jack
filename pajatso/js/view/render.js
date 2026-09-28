@@ -7,7 +7,7 @@
 // the vignette and the grain.
 
 import * as THREE from 'three';
-import { STATIONS } from './room.js?v=6';
+import { STATIONS } from './room.js?v=7';
 
 export const QUALITY = {
   chunky: { lines: 300 },

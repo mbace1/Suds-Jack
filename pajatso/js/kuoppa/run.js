@@ -17,11 +17,11 @@
 // Phases: idle → flight → idle | spent → (the round scores) → shop | fell |
 // won; shop → idle.
 
-import { Pajatso } from '../classic/game.js?v=6';
-import { buildPajatso, POTTI_COLS, MIDDLE, YAKU } from '../classic/layout.js?v=6';
-import { makeRng } from '../rng.js?v=6';
-import { drawOutcome, buildGrid, linesShown, reachLines, STOP_ORDER, TIMING } from '../reels.js?v=6';
-import * as D from './data.js?v=6';
+import { Pajatso } from '../classic/game.js?v=7';
+import { buildPajatso, POTTI_COLS, MIDDLE, YAKU } from '../classic/layout.js?v=7';
+import { makeRng } from '../rng.js?v=7';
+import { drawOutcome, buildGrid, linesShown, reachLines, STOP_ORDER, TIMING } from '../reels.js?v=7';
+import * as D from './data.js?v=7';
 
 const JOKER = Object.fromEntries(D.JOKERS.map(j => [j.id, j]));
 const CHARM = Object.fromEntries(D.CHARMS.map(c => [c.id, c]));
@@ -48,7 +48,7 @@ const WINDOW_KINDS = new Set(['R', 'one', 'half', 'potti', 'tulip', 'x3']);
 
 export class Kuoppa extends Pajatso {
   constructor({ seed = 1 } = {}) {
-    super({ seed, coins: D.START_MONEY });
+    super({ seed, coins: D.START_MONEY, mods: {} });
     this.reelRng = makeRng((this.seed ^ 0x9e3779b9) >>> 0);
     this.shopRng = makeRng((Math.imul(this.seed, 2654435761) ^ 0x51ed270b) >>> 0);
     this.deadline = 1;             // which lock (ante) is next
