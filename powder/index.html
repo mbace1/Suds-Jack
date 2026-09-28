@@ -46,6 +46,33 @@
     #nav #compass { font-size: 17px; font-weight: bold; letter-spacing: 2px; }
     #race .val { font-size: 30px; }
 
+    /* v11 hotfix: a phone held upright. The panels above are placed for a landscape
+       screen, and on a 412px-wide portrait one the NEXT GATE bar ran over the
+       CLOCK and the telemetry ran over the ground speed (the owner's phone
+       screenshot; test/hud.mjs measures every pair of boxes). So: the clock
+       stays top right, compact; the compass drops to its own line under it,
+       clear of the HUB button and the CAM chip; and the bottom splits in two
+       halves, speed and turbine on the left, the telemetry wrapped onto two
+       rows on the right. */
+    @media (max-width: 600px) {
+      .panel { padding: 7px 10px; }
+      .val { font-size: 22px; }
+      #race { top: calc(10px + env(safe-area-inset-top)); right: 10px; min-width: 0; }
+      #race .val { font-size: 22px; }
+      #race .row { gap: 12px; }
+      #race .row .val { font-size: 15px !important; }
+      #nav { top: calc(98px + env(safe-area-inset-top)); left: 84px; right: 10px;
+        transform: none; min-width: 0; }
+      #nav #compass { font-size: 14px; letter-spacing: 1px; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis; }
+      #speedo { left: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); min-width: 0; width: calc(50% - 15px); }
+      #speedo .val { font-size: 34px; }
+      #eng { left: 10px; bottom: calc(112px + env(safe-area-inset-bottom)); min-width: 0; width: calc(50% - 15px); }
+      #dyn { right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); min-width: 0; width: calc(50% - 15px); }
+      #dyn .row { flex-wrap: wrap; gap: 4px 12px; }
+      #dyn .row .val { font-size: 15px !important; }
+    }
+
     /* The panel has to fit the viewport it is given — a laptop in a browser
        window is often under 620px tall, and the menu grew a gamepad line.
        Everything in here is sized in vh with a px clamp, so it shrinks rather
