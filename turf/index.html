@@ -143,6 +143,9 @@
     transform-origin: 50% 50%;
     pointer-events: none;
   }
+  /* The cut plate (v45) is drawn NEAREST, like the cut figures: bands with
+     soft bilinear edges between them are a posterised photo, not a grid. */
+  #plate.cut { image-rendering: pixelated; image-rendering: crisp-edges; }
   /* No image-rendering: pixelated here any more. The canvas backing store is
      now SUPERSAMPLE x the board's logical size (render.js), so it already
      carries the art's own detail; forcing nearest-neighbour on top of that
@@ -234,6 +237,14 @@
      exist. It is CLOSED by default and one line tall: the result screen already
      gates Continue behind the skill pick, and pushing that button below the fold
      to make room for a report about legibility would be its own joke. */
+  /* The look switch (v45): a comparison, not a setting anyone should have to
+     hunt for, so it sits on the title where the owner flips it. */
+  .lookToggle {
+    min-height: 44px; padding: 8px 16px; background: transparent; color: #9aa0aa;
+    border: 1px solid #3a4048; font: inherit; font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; cursor: pointer;
+  }
+  .lookToggle b { color: #6fa8c9; font-weight: 700; }
   .report { width: 100%; max-width: 480px; text-align: left; }
   .report[hidden] { display: none; }
   .reportToggle {
@@ -347,6 +358,7 @@
     <p class="tag">Mouse or touch · drag to look around · arrows/WASD move, Enter/Space confirm,
       Esc cancel, E ends turn · pad: stick move, A confirm, B cancel, Y ends turn ·
       AUTO lets the crew play itself</p>
+    <button id="lookToggle" class="lookToggle" type="button" data-secondary></button>
     <div id="titleReport" class="report" hidden></div>
     <button id="titleStart" class="bigBtn" disabled>Loading…</button>
   </div>
@@ -359,7 +371,7 @@
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=46"></script>
+  <script type="module" src="js/main.js?v=47"></script>
   <script type="module" src="../hub/shell.js?v=42"></script>
 </body>
 </html>

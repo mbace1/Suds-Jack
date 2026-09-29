@@ -8,10 +8,11 @@ import {
   skillOffer, learnSkill, incomingArrivals, pendingArrivals, incomingThreats,
   awardXp, xpToNext, applyTrinkets,
 } from './combat.js?v=23';
-import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H } from './render.js?v=30';
+import { computeLayout, render, toScreen, SUPERSAMPLE, TILE_W, TILE_H, SPRITE_H,
+  setFigureLook, getFigureLook, FIGURE_LOOKS } from './render.js?v=31';
 import { createCamera, MIN_TILE_W } from './camera.js?v=4';
-import { createInputHandler } from './input.js?v=22';
-import { createAnimator } from './anim.js?v=9';
+import { createInputHandler } from './input.js?v=23';
+import { createAnimator } from './anim.js?v=10';
 import { momentumDamage, evasionOf } from './momentum.js?v=1';
 import { magOf, needsReload, roundsLeft } from './ammo.js?v=3';
 import { abilitiesFor, canAfford, whyNot, weaponSuits } from './abilities.js?v=5';
@@ -41,8 +42,19 @@ const levelUpsEl = $('levelUps');
 // page said v42 while VERSIONS.md said v43, which is slaykallio's third-place-a-
 // version-lives bug in a second project. It is read from here, written into the
 // title at boot, and smoke.mjs fails if it disagrees with the log's top entry.
-const VERSION = 'v44';
+const VERSION = 'v45';
 const reportEls = { result: $('resultReport'), title: $('titleReport') };
+
+// The figures' look (render.js FIGURE_LOOKS). `?figures=painted` overrides for
+// a link, a stored choice beats the default, and the default is the house
+// answer. Stored like the zoom: a preference, wrapped because storage can
+// throw in a private window.
+{
+  let pick = null;
+  try { pick = new URLSearchParams(location.search).get('figures'); } catch {}
+  if (!FIGURE_LOOKS.includes(pick)) { try { pick = localStorage.getItem('turf.figures'); } catch {} }
+  if (FIGURE_LOOKS.includes(pick)) setFigureLook(pick);
+}
 
 let DATA = null, state = null, layout = null, input = null, camera = null, enemyPhaseRunning = false;
 // The animation layer. It reads state.log rather than being called by
@@ -159,6 +171,64 @@ async function loadData() {
 
 
 let plateSpec = null;
+let plateWanted = null;
+
+// The plate's background stack. Until v44 the middle layer was a 55-85%
+// black scrim over the whole photograph, which is most of why the board read
+// as murk: the yard the fight stands in was painted out before a single tile
+// was drawn. v45 (the MST pass) lifts it to 18-42% — still darker toward the
+// bottom, where the stage meets the HUD, and the vignette still closes the
+// picture into the stage colour so a seated plate never ends in a seam.
+function setPlateImage(url) {
+  plateWanted = plateWanted && url.startsWith('data:') ? plateWanted : url;
+  const scrim = getFigureLook() === 'mst'
+    ? 'linear-gradient(rgba(7,8,11,0.18), rgba(7,8,11,0.42))'
+    : 'linear-gradient(rgba(7,8,11,0.55), rgba(7,8,11,0.85))';
+  plate.style.backgroundImage =
+    `radial-gradient(ellipse 78% 82% at 50% 58%, transparent 58%, #07080b 100%), ` +
+    `${scrim}, ` +
+    `radial-gradient(ellipse at 50% 30%, rgba(111,168,201,0.06), transparent 60%), ` +
+    `url(${url})`;
+  plate.classList.toggle('cut', url.startsWith('data:'));
+}
+
+// One cut per plate per session (mstcut.js flattenImage, in platecut.js's worker): the photograph
+// snapped to bands fitted to itself and lifted, drawn nearest — the backdrop
+// on the same grid as the figures standing in it. Swallowed on failure: a
+// nicety may never be why the yard does not appear.
+const plateCuts = new Map();
+let plateWorker = null, plateJobs = 0;
+function cutPlate(url) {
+  if (plateCuts.has(url)) return plateCuts.get(url);
+  const job = new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        if (!plateWorker) plateWorker = new Worker(new URL('./platecut.js?v=1', import.meta.url), { type: 'module' });
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        const cx = c.getContext('2d');
+        cx.drawImage(img, 0, 0);
+        const d = cx.getImageData(0, 0, c.width, c.height);
+        const id = ++plateJobs;
+        const onMsg = e => {
+          if (e.data.id !== id) return;
+          plateWorker.removeEventListener('message', onMsg);
+          if (e.data.error) { resolve(null); return; }
+          cx.putImageData(new ImageData(new Uint8ClampedArray(e.data.buf), e.data.w, e.data.h), 0, 0);
+          resolve(c.toDataURL('image/png'));
+        };
+        plateWorker.addEventListener('message', onMsg);
+        plateWorker.postMessage({ id, buf: d.data.buffer, w: c.width, h: c.height,
+          opts: { colours: 28, lift: 0.3 } }, [d.data.buffer]);
+      } catch { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+  plateCuts.set(url, job);
+  return job;
+}
 
 function fitPlate() {
   if (!plate) return;
@@ -383,11 +453,13 @@ function boot(seed) {
     // and a photograph that simply STOPS draws a hard horizontal seam. Fading
     // it out costs nothing and is what the dark edges of these plates already
     // do on their own.
-    plate.style.backgroundImage =
-      `radial-gradient(ellipse 78% 82% at 50% 58%, transparent 58%, #07080b 100%), ` +
-      `linear-gradient(rgba(7,8,11,0.55), rgba(7,8,11,0.85)), ` +
-      `radial-gradient(ellipse at 50% 30%, rgba(111,168,201,0.06), transparent 60%), ` +
-      `url(${encounter.background})`;
+    setPlateImage(encounter.background);
+    // The cut plate (v45) replaces the photograph once it is ready. The
+    // photograph goes up first so the yard is never missing for a frame.
+    if (getFigureLook() === 'mst') {
+      const want = encounter.background;
+      cutPlate(want).then(url => { if (url && plateWanted === want) setPlateImage(url); });
+    }
   } else {
     plateSpec = null;
     if (plate) plate.style.backgroundImage = 'none';
@@ -1243,6 +1315,15 @@ watchPad({
 // state for inspection, the commands a click ultimately calls, and boot()
 // to start a fresh encounter without going through the title screen.
 window.__turf = {
+  // The figures' look, for the comparison and the gate: `__turf.figures('painted')`.
+  figures: v => {
+    if (v !== undefined) {
+      setFigureLook(v);
+      try { localStorage.setItem('turf.figures', getFigureLook()); } catch {}
+      if (state && layout) render(canvas, state, layout, anim);
+    }
+    return getFigureLook();
+  },
   state: () => state,
   // WHAT A PERSON DID. `__turf.play.report()` folds this session together with
   // everything the site's shared local log has kept for this cabinet, and
@@ -1305,6 +1386,23 @@ window.__turf = {
 };
 
 if (verEl) verEl.textContent = VERSION;
+// The look switch on the title. Relabels itself, persists, and repaints; the
+// plate follows on the next boot (it is cut once per encounter).
+const lookToggle = $('lookToggle');
+function labelLook() {
+  if (!lookToggle) return;
+  const mst = getFigureLook() === 'mst';
+  lookToggle.innerHTML = `Look: <b>${mst ? 'pixel (MST)' : 'painted'}</b> · tap to compare`;
+}
+if (lookToggle) {
+  labelLook();
+  bindActivation(lookToggle, e => {
+    e.preventDefault();
+    window.__turf.figures(getFigureLook() === 'mst' ? 'painted' : 'mst');
+    labelLook();
+  });
+}
+
 loadData().then(data => {
   DATA = data;
   titleStart.disabled = false;

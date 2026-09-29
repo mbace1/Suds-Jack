@@ -39,10 +39,16 @@
 // edge survives the downscale and reads as thickness rather than as a stray
 // dark pixel. Measured by looking, at the zoom the game actually ships at.
 export const THICKNESS = 3.0;
+// v45 — THE CARDBOARD IS GONE (owner, 2026-09-29: "get rid of the cardboard
+// part of the player characters"). The extrusion above is no longer drawn:
+// `drawStandee` takes a `thickness` option that render.js passes as 0, and
+// anim.js no longer turns the figure, so there is no cut edge to show. The
+// constant and the edge code stay because they are the whole mechanism and
+// a toggle is one number, but nothing in the game asks for them now.
 // The angle a standee rests at. Zero is a card seen dead-on, which reads as
 // a flat drawing pinned to the screen — every Paper Mario standee is turned
 // a few degrees so its edge is doing some work.
-export const REST_YAW = 0.42;
+export const REST_YAW = 0;   // was 0.42 until v45: the resting turn WAS the cardboard
 
 const silhouettes = new Map();
 
@@ -78,7 +84,7 @@ export function drawStandee(ctx, entry, opts) {
   const {
     x, feetY, scale, mirror = false,
     yaw = 0, pitch = 0, lean = 0, hop = 0, squash = 0,
-    edge = '#1b1b1f', edgeLit = '#3a3a42',
+    edge = '#1b1b1f', edgeLit = '#3a3a42', thickness = THICKNESS, pixel = false,
   } = opts;
 
   const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
@@ -96,6 +102,9 @@ export function drawStandee(ctx, entry, opts) {
   const fallY = Math.sin(pitch) * cardH * 0.62;
 
   ctx.save();
+  // A pixel-cut figure (render.js, mstcut.js) is drawn NEAREST: smoothing a
+  // hard outline back into a soft one is the whole look undone in one flag.
+  if (pixel) ctx.imageSmoothingEnabled = false;
   ctx.translate(x, feetY - hop);
   if (lean) ctx.rotate(lean);
   // Pitch is a vertical foreshorten about the feet plus the top edge
@@ -116,7 +125,7 @@ export function drawStandee(ctx, entry, opts) {
   // screen however far the card is turned. A PITCHED card also shows the
   // extrusion as its top face, which is what makes a body on the floor read
   // as a board lying there rather than as a sprite that got small.
-  const depth = (Math.abs(sy) * THICKNESS + Math.sin(pitch) * THICKNESS * 0.8)
+  const depth = (Math.abs(sy) * thickness + Math.sin(pitch) * thickness * 0.8)
     / Math.max(0.001, Math.abs(cy));
   if (depth > 0.05) {
     const dir = sy >= 0 ? 1 : -1;
@@ -140,9 +149,9 @@ export function drawStandee(ctx, entry, opts) {
 // a thin sliver; one lying down throws its whole length. Returned in board
 // px as {w, h} so render.js can draw it with the same diamond helper it uses
 // for everything else.
-export function footprint(cardW, cardH, yaw, pitch, hop) {
+export function footprint(cardW, cardH, yaw, pitch, hop, thickness = THICKNESS) {
   const air = Math.min(1, hop / 4);
   const w = cardW * Math.abs(Math.cos(yaw)) * (1 - air * 0.25);
-  const h = (THICKNESS + Math.sin(pitch) * cardH * 0.55) * (1 - air * 0.25);
+  const h = (Math.max(2.5, thickness) + Math.sin(pitch) * cardH * 0.55) * (1 - air * 0.25);
   return { w, h };
 }

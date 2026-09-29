@@ -7,7 +7,9 @@ import { PAL } from './palette.js?v=14';
 import { key } from './grid.js?v=7';
 import { magOf, roundsLeft } from './ammo.js?v=3';
 import { incomingArrivals, incomingThreats } from './combat.js?v=23';
-import { drawStandee, footprint, THICKNESS } from './standee.js?v=2';
+import { drawStandee, footprint } from './standee.js?v=3';
+import { mstCut } from './mstcut.js?v=2';
+import { MST_ART, MST_PROPS } from './mstart.js?v=1';
 
 export const TILE_W = 32, TILE_H = 16, UNIT_H = 18;
 // The real on-board sprite height (drawUnitSprite) — taller than the old
@@ -47,6 +49,82 @@ const SIDE_MARGIN = 16;
 // fallback for exactly this one-call gap, so there's no loading flash of
 // broken art — worst case is one frame of the old placeholder shape.
 const imageCache = new Map();
+
+// THE FIGURES' LOOK (v45). 'mst' re-cuts every plate in Metal Slug Tactics'
+// technique (mstcut.js: a real pixel grid, hard silhouette, flat bands, a
+// 1px dark outline); 'painted' draws the plate as it was through v44. A
+// comparison rather than a decision, so it is a switch — the same rule
+// slaykallio's `figures`/`art` toggles follow.
+export const FIGURE_LOOKS = ['mst', 'painted'];
+let figureLook = 'mst';
+export function setFigureLook(v) { if (FIGURE_LOOKS.includes(v)) figureLook = v; }
+export function getFigureLook() { return figureLook; }
+// The figure's own pixel grid: how many pixels tall a standing body is.
+// Chosen off a contact sheet at 29 / 44 / 58 / 87 (VERSIONS.md v45): 29 is
+// the board's own grid and collapses a face to a blob (ART_REQUEST §2.4's
+// "messy and low detail", again); 87 is the backing store 1:1 and reads as
+// the painted plate with an outline; 58 is the first height at which a face,
+// a weapon and a pair of trainers are all still a decision.
+export const MST_H = 58;
+
+// One cut per image per reference height, cached on the entry. A pose frame
+// is cut at the height its CHARACTER'S idle is cut at, scaled by the frame's
+// own ink, so a crouch stays shorter than a stand and every frame of one
+// character shares a pixel size.
+// An AUTHORED sprite (mstart.js) for this image, if one is listed: drawn as
+// it is, nearest, on the figure grid — no cut. Its ink is scanned like any
+// plate's, and it is flagged pixel so the draw turns smoothing off.
+function authoredFor(src, table) {
+  const file = src && src.split('/').pop();
+  const path = file && table[file];
+  if (!path) return null;
+  const e = getImageEntry(path);
+  if (!e.loaded) return null;
+  e.pixel = true;
+  return e;
+}
+
+function mstEntryFor(entry, refEntry) {
+  if (!entry || !entry.loaded) return null;
+  const ownH = entry.inkBottom - entry.inkTop + 1;
+  const refH = refEntry && refEntry.loaded ? refEntry.inkBottom - refEntry.inkTop + 1 : ownH;
+  return mstCutAt(entry, Math.max(8, Math.round(MST_H * ownH / refH)));
+}
+// Cut pixels per BOARD pixel. Props are cut at this same density as the
+// figures, so a bin and the man standing beside it share one pixel grid —
+// a painted prop beside a pixel figure is two art languages on one board,
+// which is the mixed-register problem slaykallio v29 spent a version on.
+export const MST_DENSITY = MST_H / SPRITE_H;
+function mstCutAt(entry, nh, cover = 0.5) {
+  if (!entry || !entry.loaded) return null;
+  entry.mst = entry.mst || new Map();
+  const ck = `${nh}|${cover}`;
+  if (entry.mst.has(ck)) return entry.mst.get(ck);
+  let out = null;
+  try {
+    const { img } = entry;
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const cx = c.getContext('2d');
+    cx.drawImage(img, 0, 0);
+    const src = cx.getImageData(0, 0, c.width, c.height).data;
+    const cut = mstCut(src, c.width, c.height,
+      { left: entry.inkLeft, top: entry.inkTop, right: entry.inkRight, bottom: entry.inkBottom },
+      { height: nh, colours: 18, punch: 0.35, cover });
+    const o = document.createElement('canvas');
+    o.width = cut.w; o.height = cut.h;
+    o.getContext('2d').putImageData(new ImageData(cut.data, cut.w, cut.h), 0, 0);
+    // drawStandee reads naturalWidth/Height off whatever it is handed.
+    o.naturalWidth = cut.w; o.naturalHeight = cut.h;
+    out = {
+      img: o, loaded: true, pixel: true,
+      inkTop: cut.pad, inkBottom: cut.pad + nh - 1,
+      inkLeft: 0, inkRight: cut.w - 1,
+    };
+  } catch { out = null; }   // a tainted canvas or an old browser: draw the plate
+  entry.mst.set(ck, out);
+  return out;
+}
 let lastRenderArgs = null;
 function getImage(src) {
   if (!src) return null;
@@ -186,7 +264,16 @@ function drawFloor(g, layout, grid, fullCover, partialCover) {
       let fill = (gx + gy) % 2 === 0 ? [20,22,28,0.30] : [20,22,28,0.16];
       if (gy <= 1) fill = mixTint(fill, [58,47,44,0.22]);
       else if (gy >= grid.rows - 2) fill = mixTint(fill, [42,52,58,0.22]);
-      g.diamond(x, y, TILE_W, TILE_H, rgba(fill), 'rgba(10,11,14,0.55)');
+      // v45: the grid is a LIGHT hairline over a lit floor, Metal Slug
+      // Tactics' way, not a near-black 55% outline on every tile — which
+      // is what made the whole board read as murk. The checker is halved
+      // for the same reason; a tile is told from its neighbour by the line.
+      if (figureLook === 'mst') {
+        fill[3] *= 0.5;
+        g.diamond(x, y, TILE_W, TILE_H, rgba(fill), 'rgba(214,224,236,0.16)', 0.5);
+      } else {
+        g.diamond(x, y, TILE_W, TILE_H, rgba(fill), 'rgba(10,11,14,0.55)');
+      }
     }
   }
 }
@@ -420,8 +507,11 @@ function drawProp(g, layout, gx, gy, tall, art) {
   const { x, y } = toScreen(layout, gx, gy);
   const entry = getImageEntry(`art-src/sprites/props/${art}.png`);
   if (!entry.loaded) { drawPropFallback(g, layout, gx, gy, tall); return; }
-  const { img, inkTop, inkBottom, inkLeft, inkRight } = entry;
   const targetH = PROP_H[art] || (tall ? 26 : 18);
+  const cut = figureLook !== 'mst' ? null
+    : authoredFor(`${art}.png`, MST_PROPS) || mstCutAt(entry, Math.max(6, Math.round(targetH * MST_DENSITY)), 0.28);
+  const e = cut || entry;
+  const { img, inkTop, inkBottom, inkLeft, inkRight } = e;
   const scale = targetH / (inkBottom - inkTop + 1);
   const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
   // The ink's own bottom sits on the tile, so a plate with a deep transparent
@@ -433,7 +523,10 @@ function drawProp(g, layout, gx, gy, tall, art) {
   // off-centre in their cell, and centring the frame stands them beside
   // their own tile.
   const inkCx = (inkLeft + inkRight + 1) / 2 * scale;
+  const smooth = g.ctx.imageSmoothingEnabled;
+  if (e.pixel) g.ctx.imageSmoothingEnabled = false;
   g.ctx.drawImage(img, x - inkCx, drawY, w, h);
+  g.ctx.imageSmoothingEnabled = smooth;
 }
 
 // Owner direction, 2026-08-31: "start replacing player characters with
@@ -470,9 +563,14 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   // it is why the topple lands instead of just fading out.
   const air = post ? Math.min(1, post.hop / 4) : 0;
   if (post) {
-    const fp = footprint(TILE_W * 0.5, SPRITE_H, post.yaw, post.pitch, post.hop);
-    g.diamond(x, y, Math.max(4, fp.w), Math.max(2.5, fp.h),
-      `rgba(0,0,0,${0.42 - air * 0.16})`, null);
+    // v45: with the card's thickness gone a standing figure's footprint is a
+    // sliver, and a body with no shadow floats on a lit floor. A HARD oval
+    // the width of the stance, Metal Slug Tactics' drop shadow — it grows
+    // with the fall (the body lying along the floor) and fades in the air.
+    const fp = footprint(TILE_W * 0.5, SPRITE_H, post.yaw, post.pitch, post.hop, 0);
+    const sw = Math.max(TILE_W * 0.46, fp.w), sh = Math.max(TILE_H * 0.36, fp.h);
+    g.ctx.fillStyle = `rgba(6,7,10,${0.55 - air * 0.2})`;
+    g.ctx.beginPath(); g.ctx.ellipse(x, y, sw / 2, sh / 2, 0, 0, Math.PI * 2); g.ctx.fill();
   } else {
     g.diamond(x, y, TILE_W * 0.4, TILE_H * 0.35, 'rgba(0,0,0,0.35)', null);
   }
@@ -491,13 +589,25 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   // those keep the single static plate they already had.
   const frame = anim ? anim.spriteFor(unit) : null;
   const src = frame ? frame.src : unit.sprite;
-  const entry = src ? getImageEntry(src) : null;
+  let entry = src ? getImageEntry(src) : null;
   // The scale reference: this character's idle frame, so every pose of the
   // same character is drawn at ONE scale and a crouch stays shorter than a
   // stand. Falls back to the frame's own height until the idle has decoded,
   // and for the twelve characters whose sprite is a single static plate.
   const refEntry = frame && frame.refSrc ? getImageEntry(frame.refSrc) : null;
-  const refH = refEntry && refEntry.loaded ? refEntry.inkBottom - refEntry.inkTop + 1 : null;
+  let refH = refEntry && refEntry.loaded ? refEntry.inkBottom - refEntry.inkTop + 1 : null;
+  // The MST cut replaces the entry wholesale: its own canvas, its own ink
+  // bounds, and a reference height that IS the figure grid, so the scale
+  // below maps MST_H pixels onto SPRITE_H board pixels for every character.
+  const authored = figureLook === 'mst' ? authoredFor(src, MST_ART) : null;
+  const mst = authored || (figureLook === 'mst' ? mstEntryFor(entry, refEntry) : null);
+  if (mst) {
+    entry = mst;
+    // An authored frame of a posed character is drawn at the SAME scale as
+    // its idle, so a crouch stays shorter than a stand (the cut does this by
+    // construction; an authored set does it by being drawn on one grid).
+    refH = MST_H;
+  }
   // THE BODY IS A CARD. standee.js draws the plate as an extruded paper
   // standee under its own two angles — yaw about its vertical axis (showing
   // the cut edge), pitch about its feet (falling into the scene). The old
@@ -512,7 +622,8 @@ function drawUnit(g, layout, unit, isSelected, anim) {
       mirror: frame && frame.mirror,
       yaw: post.yaw, pitch: post.pitch, lean: post.lean,
       hop: post.hop, squash: post.squash,
-      edge: PAL.CARD_EDGE, edgeLit: PAL.CARD_EDGE_LIT,
+      thickness: 0,   // v45: no cardboard edge
+      pixel: !!entry.pixel,
     });
   } else {
     topY = entry && entry.loaded
@@ -540,7 +651,7 @@ function drawUnit(g, layout, unit, isSelected, anim) {
         mirror: frame && frame.mirror,
         yaw: post.yaw, pitch: post.pitch, lean: post.lean,
         hop: post.hop, squash: post.squash,
-        edge: 'rgba(0,0,0,0)', edgeLit: 'rgba(0,0,0,0)',
+        thickness: 0, pixel: !!entry.pixel,
       });
     } else {
       drawUnitSprite(g, entry, x, feetY, frame && frame.mirror);
@@ -548,21 +659,34 @@ function drawUnit(g, layout, unit, isSelected, anim) {
     g.ctx.restore();
   }
 
-  // role marker, same three glyphs either way — melee/ranged/control stay
-  // readable at a glance even once the sprite art tells you who it is
-  const markerY = topY + 8;
-  if (unit.role === 'melee') g.line(x - 5, markerY, x + 5, markerY - 3, PAL.INK, null, 2);
-  else if (unit.role === 'ranged') g.disc(x + 5, markerY, 1.6, PAL.INK);
-  else g.p(x - 6, markerY - 1, 12, 2, PAL.INK);
-
   // HP bar — not over a body that is mid-death-clip, where it would read as
   // an empty track floating above a corpse.
   if (unit.hp <= 0) return;
-  const hpW = 14, frac = Math.max(0, unit.hp / unit.maxHp);
+  // THE NAMEPLATE (v45). The role glyph used to be drawn at topY + 8, which
+  // on every figure is the face or the chest — a black slash across the one
+  // part of the art that says who this is. It lives on a plate above the
+  // head now, the way Metal Slug Tactics carries a unit's state: a dark
+  // frame, a faction-coloured cap holding the role glyph, and the HP track
+  // ticked once per point so damage reads as a COUNT rather than a sliver.
   const hpY = topY - 6;
-  g.p(x - hpW / 2, hpY, hpW, 2, PAL.HP_TRACK);
+  const capC = unit.faction === 'player' ? PAL.PLAYER
+    : unit.faction === 'objective' ? PAL.OBJECTIVE_EDGE : PAL.ENEMY;
+  g.p(x - 10, hpY - 2, 20, 5, PAL.INK);
+  g.p(x - 9, hpY - 1, 4, 3, capC);
+  if (unit.role === 'melee') g.line(x - 8.4, hpY + 1.6, x - 5.6, hpY - 0.6, PAL.INK, null, 0.8);
+  else if (unit.role === 'ranged') g.disc(x - 7, hpY + 0.5, 0.8, PAL.INK);
+  else g.line(x - 8.5, hpY + 0.5, x - 5.5, hpY + 0.5, PAL.INK, null, 0.8);
+  const trackX = x - 4, trackW = 13, frac = Math.max(0, unit.hp / unit.maxHp);
+  g.p(trackX, hpY - 1, trackW, 3, PAL.HP_TRACK);
   const hpColor = frac > 0.5 ? PAL.HP_GOOD : frac > 0.25 ? PAL.HP_MID : PAL.HP_BAD;
-  g.p(x - hpW / 2, hpY, hpW * frac, 2, hpColor);
+  g.ctx.fillStyle = hpColor;
+  g.ctx.fillRect(trackX, hpY - 1, trackW * frac, 3);
+  if (unit.maxHp > 1 && unit.maxHp <= 24) {
+    // One backing pixel wide: at a board pixel the ticks would eat the bar.
+    g.ctx.fillStyle = PAL.INK;
+    const hair = 1 / SUPERSAMPLE;
+    for (let i = 1; i < unit.maxHp; i++) g.ctx.fillRect(trackX + trackW * i / unit.maxHp - hair / 2, hpY - 1, hair, 3);
+  }
 
   // Momentum pips, one per tile still carried, above the HP bar. This game
   // promises full information — an enemy's whole plan is on screen before it
@@ -573,7 +697,7 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   if (mo > 0) {
     const pipW = 2, gap = 1, total = mo * pipW + (mo - 1) * gap;
     for (let i = 0; i < mo; i++) {
-      g.p(x - total / 2 + i * (pipW + gap), hpY - 3, pipW, 2, PAL.MOMENTUM);
+      g.p(x - total / 2 + i * (pipW + gap), hpY - 5, pipW, 2, PAL.MOMENTUM);
     }
   }
 
@@ -585,7 +709,7 @@ function drawUnit(g, layout, unit, isSelected, anim) {
   if (mag != null) {
     const pipW = 2, gap = 1, total = mag * pipW + (mag - 1) * gap;
     for (let i = 0; i < mag; i++) {
-      g.p(x - total / 2 + i * (pipW + gap), hpY + 3, pipW, 2,
+      g.p(x - total / 2 + i * (pipW + gap), hpY + 4, pipW, 2,
         i < roundsLeft(unit) ? PAL.AMMO : PAL.AMMO_SPENT);
     }
   }
@@ -604,6 +728,8 @@ function drawUnitSprite(g, entry, x, feetY, mirror, refH) {
   const scale = SPRITE_H / (refH || contentH);
   const w = img.naturalWidth * scale, h = img.naturalHeight * scale;
   const drawY = feetY - inkBottom * scale; // top of the FULL (padded) image, in screen space
+  const smooth = g.ctx.imageSmoothingEnabled;
+  if (entry.pixel) g.ctx.imageSmoothingEnabled = false;
   if (mirror) {
     // Mirroring is how two drawn facings cover the board's four directions
     // (anim.js's facingFor). Flip about the sprite's own centre line, not the
@@ -616,6 +742,7 @@ function drawUnitSprite(g, entry, x, feetY, mirror, refH) {
   } else {
     g.ctx.drawImage(img, x - w / 2, drawY, w, h);
   }
+  g.ctx.imageSmoothingEnabled = smooth;
   return feetY - contentH * scale; // top of the actual visible content, not the padded canvas
 }
 function drawUnitFallback(g, unit, x, feetY) {

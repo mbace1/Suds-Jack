@@ -18,6 +18,83 @@
 > rule, again: **fetch and read the other lineage's log before writing a heading**,
 > and "the other lineage" includes the deployed tree.
 
+## v45 — 2026-09-29
+
+**THE CARDBOARD IS GONE, AND THE BOARD IS DRAWN IN METAL SLUG TACTICS'
+TECHNIQUE.** Owner: *"Let's get rid of the cardboard part of the player
+characters. Also let's aim to make a huge leap into the visuals, more Metal Slug
+Tactics look that was in the art bible."* The bible is ART_REQUEST.md §2, and it
+names the technique in three measurable parts: a hard dark outline carrying the
+whole silhouette, flat fills with no soft edges, a real pixel grid.
+
+**The cardboard.** v38's standee drew a kraft-coloured extrusion behind every
+figure and rested it at 0.42 rad, so the cut edge always showed; moving swept
+the card through 1.3 rad like a Paper Mario turn. All of it is off: yaw is zero
+at rest, mid-stride, mid-swing and mid-fall, and render.js asks the standee for
+zero thickness. A figure faces the camera and flips by mirroring, as an MST
+sprite does. Hop, lean, lunge, recoil and the death fall stay — those are
+motion, not cardboard. Two v38 checks asserted the cardboard itself and are
+inverted rather than deleted.
+
+**The figures** (`js/mstcut.js`, pure, bare-node gated). Every plate is re-cut
+at load onto a 58-pixel figure grid: median-sampled (a mean smears the plates'
+own line art into every fill — the first draft was mud), hard alpha, flattened
+to 18 bands per sprite by k-means seeded MAXIMIN (quantile seeds put every
+centre in the mid-tones and ate the trainers, stripes and eyes), a gentle value
+stretch, a 4-neighbour cleanup and a closed 1px outline. **The height was chosen
+off a contact sheet**, not guessed (`tools/mst-sheet.html`): 29px is the board's
+own grid and collapses a face (ART_REQUEST §2.4's "messy and low detail",
+again), 87px is the plate with an outline, 58px is the first height at which a
+face, a weapon and a pair of trainers are all still a decision. **Three drafts
+were discarded on the way** and each is named in `mstcut.js`.
+
+**The props go through the same cut at the same density** (2 cut pixels per
+board pixel), because a painted bin beside a pixel man is two art languages on
+one board — slaykallio v29's lesson. Thin structure (a bicycle's frame and
+spokes) never reaches half a cut pixel and vanished into a smudge, so props cut
+at 28% coverage.
+
+**The board.** The plate carried a **55-85% black scrim** over the whole
+photograph — most of why the yard read as murk — and every tile had a 55%
+near-black outline. The scrim is 18-42% now and the grid a light hairline, so
+the courtyard is finally visible: buildings, railings, paving, kerb. The plate
+itself is **cut too** (`flattenImage`): median-denoised, snapped to 28 bands
+fitted to itself, lifted, and cleaned by two 3x3 majority passes — the first
+cut was a single-pixel speckle at a phone's zoom, and a majority filter alone
+could not touch it (no band held five of nine). It runs in a **module Worker**
+(`platecut.js`): ~1.2s on a desktop, several seconds on a phone, which on the
+main thread would freeze the board at the start of every encounter. The
+photograph stays up until the cut arrives, and for good if a Worker cannot
+start. Figures stand on a hard drop shadow again (with the card's thickness
+gone their footprint had shrunk to a sliver).
+
+**The nameplate.** The role glyph used to be drawn at `topY + 8` — across every
+figure's face or chest. It lives on a plate over the head now: dark frame,
+faction-coloured cap holding the glyph, HP ticked once per point so damage
+reads as a count.
+
+**A switch, not a replacement** — `Look: pixel (MST) / painted` on the title,
+`?figures=painted` for a link, persisted under `turf.figures` — because a style
+toggle is a comparison. The default is the MST look.
+
+**The ceiling is named, and the seam for going past it is built.** An algorithm
+cannot decide that an eye is one dark pixel. `js/mstart.js` maps a plate to a
+hand-authored sprite; listed, the board draws it and skips the cut. Proven end
+to end with a tinted stand-in before this shipped. `CODEX_BRIEF.md` is the work
+order for filling it: `node tools/mst-export.mjs` writes every cut as a
+native-size scaffold, `--check` runs the art-bible check (`mstProblems`, the one
+definition the gate uses too) on a delivery.
+
+Gates: `smoke.mjs` holds all 32 plates to the bible — a closed outline with no
+figure pixel touching empty space, alpha 0 or 255 only, ≤18 bands, the 58px
+grid, determinism — and asserts **the highlights survive against the draft
+that lost them** (every plate keeps ≥0.92 of its source's 99th-percentile
+brightness; the discarded settings fail that on most plates, so the check can
+tell a good cut from the rejected one). The plate filter is checked against its
+own disabled control, and `mstProblems` passes every cut and fails a painted
+plate. `test/png.mjs` is a 40-line PNG reader so all of this runs on the real
+art in bare node. Balance is untouched and reads identical.
+
 ## v44 — 2026-09-26
 
 **THE READING IS ON THE SCREEN NOW, AND THE VERSION LIVES IN ONE FILE.**

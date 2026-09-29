@@ -1,0 +1,44 @@
+<!doctype html><meta charset=utf-8>
+<!-- THE MST CONTACT SHEET (v45). The cut's height and band count were chosen
+     off this page, not guessed: each row is a real plate drawn as it ships
+     now beside cuts at several native heights, all at the size a figure
+     occupies on the board (x2). Render it before touching mstcut.js — the
+     first cut looked fine as numbers and was mud as a picture.
+     Serve the repo root and open /turf/tools/mst-sheet.html?n=blade,niner&h=44,58,87&k=18 -->
+<body style="margin:0;background:#1a1c22">
+<canvas id=c></canvas>
+<script type=module>
+import { mstCut } from '../js/mstcut.js';
+const names = (new URLSearchParams(location.search).get('n')||'blade,niner,wrench,sledge,gunner,deuce').split(',');
+const heights = (new URLSearchParams(location.search).get('h')||'29,44,58').split(',').map(Number);
+const K = +(new URLSearchParams(location.search).get('k')||12);
+const load = s => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = s; });
+const DISP = 87*2;          // figure ink height on screen: SPRITE_H * SUPERSAMPLE, x2 so a person can see it
+const cols = 1 + heights.length, cw = 150, ch = DISP + 30;
+const c = document.getElementById('c'); c.width = cw * cols; c.height = ch * names.length;
+const g = c.getContext('2d'); g.fillStyle = '#222630'; g.fillRect(0,0,c.width,c.height);
+g.font = '11px monospace'; g.fillStyle = '#aab';
+for (let r = 0; r < names.length; r++) {
+  const img = await load(`../art-src/sprites/${names[r]}-plate.png`);
+  const o = document.createElement('canvas'); o.width = img.width; o.height = img.height;
+  const oc = o.getContext('2d'); oc.drawImage(img,0,0);
+  const d = oc.getImageData(0,0,o.width,o.height).data;
+  let t=1e9,b=-1,l=1e9,rr=-1;
+  for (let y=0;y<o.height;y++) for (let x=0;x<o.width;x++) if (d[(y*o.width+x)*4+3]>40){t=Math.min(t,y);b=Math.max(b,y);l=Math.min(l,x);rr=Math.max(rr,x);}
+  const ink={left:l,top:t,right:rr,bottom:b}, ih=b-t+1, iw=rr-l+1;
+  // column 0: what ships now, smooth
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality='high';
+  const s = DISP/ih; g.drawImage(img, l, t, iw, ih, 20, r*ch+18, iw*s, DISP);
+  g.fillStyle='#aab'; g.fillText(names[r]+' now', 4, r*ch+12);
+  heights.forEach((h, k) => {
+    const cut = mstCut(d, o.width, o.height, ink, { height: h, colours: K });
+    const cc = document.createElement('canvas'); cc.width = cut.w; cc.height = cut.h;
+    cc.getContext('2d').putImageData(new ImageData(cut.data, cut.w, cut.h), 0, 0);
+    g.imageSmoothingEnabled = false;
+    const sc = DISP / (cut.h - 2*cut.pad);
+    g.drawImage(cc, (k+1)*cw + 20, r*ch + 18 - cut.pad*sc, cut.w*sc, cut.h*sc);
+    g.fillStyle='#aab'; g.fillText(`${h}px k${K}`, (k+1)*cw + 4, r*ch+12);
+  });
+}
+document.title = 'done';
+</script>

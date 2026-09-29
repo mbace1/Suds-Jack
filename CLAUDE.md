@@ -1203,6 +1203,40 @@ runs (whose command it is comes from the actor in the entry, since `state.turn` 
 flipped). `summarise()` is pure, its `headline` ranks quitting above losing on purpose, and
 `__turf.play.report()` prints it. No upload, no dashboard, no consent prompt — there is
 nothing to consent to.
+**NO CARDBOARD, AND METAL SLUG TACTICS' TECHNIQUE ON THE WHOLE BOARD** (v45,
+owner: *"get rid of the cardboard part of the player characters ... a huge leap
+into the visuals, more Metal Slug Tactics look that was in the art bible"*). The
+bible is ART_REQUEST §2: a hard outline carrying the silhouette, flat fills with
+no soft edges, a real pixel grid. **The cardboard** was v38's kraft extrusion and
+its resting 0.42 rad turn; yaw is zero everywhere now and the edge is never
+drawn (the standee keeps the mechanism behind a `thickness` of 0) — hop, lean,
+lunge and the death fall stay, because those are motion. **`js/mstcut.js`** is
+pure and re-cuts every plate at load onto a **58px figure grid** (`MST_H`),
+chosen off a contact sheet (`tools/mst-sheet.html`) rather than guessed: 29px is
+the board's own grid and collapses a face (§2.4's rejection, again), 87px is
+just the plate with an outline. Median sampling (a mean smears the plates' own
+line art into every fill), MAXIMIN-seeded k-means to 18 bands (quantile seeds
+ate every white trainer), hard alpha, a closed 1px outline. **Props are cut at
+the figures' density** (`MST_DENSITY`, 2 cut px per board px) so a bin and the
+man beside it share one grid, with a lower coverage threshold because a
+bicycle's spokes never reach half a pixel. **The board**: the plate had a 55-85%
+black scrim over the whole photograph and every tile a near-black outline —
+most of why the yard read as murk — so the scrim is 18-42% and the grid a light
+hairline; the plate is **cut too** (`flattenImage`: median denoise, 28 bands
+fitted to itself, a value lift, two 3x3 majority passes, because the first cut
+was a speckle no majority filter could touch) **in a module Worker**
+(`platecut.js`, ~1.2s desktop, seconds on a phone — never on the main thread),
+the photograph staying up until the cut arrives. The role glyph moved off every
+figure's chest onto a **nameplate** (dark frame, faction cap, HP ticked per
+point). It is a switch — `Look` on the title, `?figures=painted`, stored as
+`turf.figures` — because a style toggle is a comparison. **The ceiling is
+named**: an algorithm cannot decide an eye is one dark pixel, so `js/mstart.js`
+maps a plate to a **hand-authored** sprite the board then draws instead of the
+cut, `tools/mst-export.mjs` writes native scaffolds and `--check`s a delivery
+with `mstProblems` (the one definition the gate also uses), and
+**`CODEX_BRIEF.md`** is the work order. `test/png.mjs` reads PNGs in bare node so
+the gate holds all 32 real plates to the bible and asserts the highlights
+survive against the draft that lost them.
 **THE READING IS ON THE SCREEN, AND A RELEASE PIN LIVES IN ONE FILE** (v44).
 v41 built the instrument that answers GDD §9's exit criterion and then put the
 answer behind `__turf.play.report()` in a **console** — and this game is played
@@ -2861,6 +2895,9 @@ turf/           # TURF — grid tactics, past Milestone 1. Read GDD.md first
     anim.js     # the feel layer: log-driven tweens, hit flash, damage numbers, the only rAF
     audio.js    # synthesised kit, every voice through one master gain so mute really mutes
     playlog.js  # what a PERSON did: hesitation, what went unused, lethal misreads, where they STOPPED
+    mstcut.js   # the MST cut: pixel grid, hard outline, flat bands; flattenImage + mstProblems — pure
+    mstart.js   # plate -> hand-authored pixel sprite; listed ones replace the cut (CODEX_BRIEF.md)
+    platecut.js # the plate cut, in a module Worker so a phone never freezes on it
     impact.js   # what a blow FEELS like: tier by SHARE of maxHp, trauma, punch, hitstop, SFX layers — pure
     main.js     # boot, HUD, the enemy-phase pacing loop — the only DOM-touching file
     palette.js  # Nordic rain-and-sodium, deliberately desaturated next to the arcade's neon

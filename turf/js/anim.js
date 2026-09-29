@@ -24,7 +24,6 @@
 //     `unit.sprite` path for them. Adding a character is one line in CAST
 //     once its frames land, not a change to any of this logic.
 
-import { REST_YAW } from './standee.js?v=2';
 // The feel spec (MST_PARITY §2.7). Pure and bare-node tested; this file is
 // only the clock that drives it.
 import { tierFor, addTrauma, decayTrauma, shakeAt, punchAt, PUNCH_MS } from './impact.js?v=1';
@@ -93,7 +92,12 @@ const CLIPS = {
 // yaw turns it about its vertical axis and shows its cut edge, pitch takes
 // it over onto the floor. `lean` survives as a small picture-plane tilt for
 // the swing, because a body leaning into a blow really does tilt.
-const IDLE_POSTURE = { hop: 0, yaw: REST_YAW, pitch: 0, lean: 0, squash: 0, dir: 1 };
+// v45: yaw is always 0. The owner asked for the cardboard to go (2026-09-29),
+// and the card's TURN was half of it — a body swinging round its own axis and
+// going edge-on is a paper standee's move, not a soldier's. A figure faces the
+// camera and flips by mirroring, which is what Metal Slug Tactics' sprites do.
+// The field is kept so standee.js's transform stays one code path.
+const IDLE_POSTURE = { hop: 0, yaw: 0, pitch: 0, lean: 0, squash: 0, dir: 1 };
 
 // Deliberately small. This is a tactics board, not a platformer: the motion
 // has to say "that one moved" and then get out of the way of the numbers
@@ -103,7 +107,6 @@ const LEAN_MAX = 0.10;    // radians, leaning into travel
 const LUNGE = 2.6;        // board px thrown toward the target on a swing
 const RECOIL = 2.2;       // board px thrown away from a hit
 const BREATH_H = 0.5;     // idle bob, barely there and never zero
-const TURN_YAW = 1.30;    // radians the card sweeps through mid-turn
 // 70 degrees, not 90. A card taken all the way flat foreshortens to nothing
 // and reads as a smear; stopping short leaves a body on the floor that is
 // still legibly a body, and the extrusion showing as its top face does the
@@ -143,15 +146,7 @@ export function postureFor(a, tw, t) {
     // drift out of phase the way two independent clocks would.
     const land = Math.max(0, -Math.cos(k * Math.PI * 2 * strides));
     p.squash = land * 0.07;
-    // THE TURN, and this is the standee's signature move. A card does not
-    // mirror-flip; it swings round its own vertical axis and goes briefly
-    // edge-on. So a unit setting off sweeps its yaw through TURN_YAW and
-    // settles back to its resting angle — the same motion Paper Mario uses
-    // whenever a character changes which way it is looking.
-    p.yaw = dir * (REST_YAW + Math.sin(Math.min(1, k * 2.2) * Math.PI) * (TURN_YAW - REST_YAW));
     p.lean = dir * LEAN_MAX * 0.5 * Math.sin(Math.min(1, k * 3) * Math.PI / 2);
-  } else {
-    p.yaw = dir * REST_YAW;
   }
 
   if (!a) return p;
@@ -164,15 +159,11 @@ export function postureFor(a, tw, t) {
   if (pose === 'attack-windup') {
     p.lean = -dir * LEAN_MAX * 0.9 * k;
     p.hop += 0.6 * k;
-    // Turning square-on to wind up, so the swing reads as being thrown at
-    // something rather than performed side-on to the camera.
-    p.yaw = dir * (REST_YAW + 0.34 * k);
   } else if (pose === 'attack-release') {
     const punch = k < 0.35 ? k / 0.35 : 1 - (k - 0.35) / 0.65;
     p.lean = dir * LEAN_MAX * 1.6 * punch;
     p.lunge = dir * LUNGE * punch;
     p.squash = 0.05 * punch;
-    p.yaw = dir * (REST_YAW + 0.34 * (1 - punch));
   }
   // TAKING ONE. Thrown back and tipped away from the blow, snapping upright.
   else if (pose === 'hit') {
@@ -191,10 +182,7 @@ export function postureFor(a, tw, t) {
     // slow off the balance point, fast into the floor.
     p.pitch = FALL_PITCH * (k * k);
     p.hop = Math.sin(k * Math.PI) * 1.4;
-    // Squaring up as it falls: a card going over shows its face to the
-    // camera, which is both what reads best and what a falling standee does.
-    p.yaw = dir * REST_YAW * (1 - k);
-  } else if (pose === 'death-down') { p.pitch = FALL_PITCH; p.yaw = dir * 0.12; }
+  } else if (pose === 'death-down') { p.pitch = FALL_PITCH; }
   // Nothing is ever perfectly still. A board of frozen cutouts reads as a
   // paused game, and this is the cheapest possible answer to that: half a
   // pixel, on a slow clock offset per unit so the squad does not breathe in

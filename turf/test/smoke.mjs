@@ -35,6 +35,10 @@ import { tierFor, addTrauma, decayTrauma, shakeAt, punchAt, layersFor,
 // importing it touches no browser API. That laziness is what lets this gate
 // assert the kit actually HAS every voice the spec names.
 import { audio } from '../js/audio.js';
+import { mstCut, flattenImage, distinctColours, OUTLINE, mstProblems } from '../js/mstcut.js';
+import { MST_ART, MST_PROPS } from '../js/mstart.js';
+import { MST_H, MST_DENSITY } from '../js/render.js';
+import { readPng, inkBounds } from './png.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -1604,29 +1608,42 @@ check('death topples onto the floor and stays there', () => {
     `a downed card at ${down.pitch.toFixed(2)}rad is edge-on and unreadable`);
 });
 
-check('a standee is never square to the camera', () => {
-  // Yaw zero is a card seen dead-on, which is exactly what a flat drawing
-  // pinned to the screen looks like. Every resting pose carries some turn,
-  // so the cut edge is always doing a little work.
+check('the cardboard is gone: a figure faces the camera and never turns', () => {
+  // v45 inverts what v38 asserted here. Owner, 2026-09-29: "let's get rid of
+  // the cardboard part of the player characters." The card's resting turn and
+  // its mid-move sweep were what showed the cut edge, so both are ZERO now,
+  // at rest, mid-stride, mid-swing and mid-fall. A figure changes direction
+  // by mirroring, which is what a Metal Slug Tactics sprite does.
   const rest = postureFor(null, null, 1234);
-  assert.ok(Math.abs(rest.yaw) > 0.2, `a resting standee is square on (${rest.yaw})`);
+  assert.equal(rest.yaw, 0, `a resting figure is turned (${rest.yaw})`);
   assert.equal(rest.hop, 0, 'postureFor itself is pure — the breath is added per unit by the animator');
   assert.equal(rest.pitch, 0);
-  // And a mirrored unit turns the other way, or half the board faces the
-  // same direction regardless of where it is going.
-  const left = postureFor({ clip: 'move', i: 0, startedAt: 0, mirror: true },
-    { fgx: 0, fgy: -1, startedAt: 0, dur: 200 }, 10);
-  assert.ok(left.yaw < 0, 'a unit facing left still turns its card to the right');
+  const tw = { fgx: 0, fgy: -3, startedAt: 0, dur: 300 };
+  for (const t of [0, 68, 150, 299]) {
+    assert.equal(postureFor({ clip: 'move', i: 0, startedAt: 0, mirror: true }, tw, t).yaw, 0,
+      `a moving figure swings like a card at t=${t}`);
+  }
+  for (const i of [0, 1]) {
+    assert.equal(postureFor({ clip: 'attack', i, startedAt: 0, mirror: false }, null, 80).yaw, 0,
+      'a swing turns the card');
+    assert.equal(postureFor({ clip: 'death', i, startedAt: 0, mirror: false }, null, 120).yaw, 0,
+      'a fall turns the card');
+  }
+  // And the motion that is NOT cardboard is still there: a stride still hops.
+  assert.ok(postureFor(null, tw, 68).hop > 0.5, 'removing the card also removed the stride');
 });
 
-check('setting off swings the card through the turn', () => {
-  // The standee's signature move: a card does not mirror-flip, it swings
-  // round its own vertical axis and goes briefly edge-on.
-  const tw = { fgx: 0, fgy: -3, startedAt: 0, dur: 300 };
-  const rest = Math.abs(postureFor(null, null, 0).yaw);
-  const mid = Math.abs(postureFor(null, tw, 68).yaw);
-  assert.ok(mid > rest + 0.5, `the turn barely happens (${rest.toFixed(2)} -> ${mid.toFixed(2)})`);
-  assert.ok(Math.abs(postureFor(null, tw, 299).yaw) - rest < 0.05, 'the card never settles back');
+check('no cut edge is drawn: render.js asks the standee for zero thickness', () => {
+  // The extrusion code is kept in standee.js (it is the whole mechanism, and
+  // a toggle is one number), so what must hold is that the game never asks
+  // for it. Read off the source because the call needs a canvas.
+  const src = fs.readFileSync(path.join(ROOT, 'js', 'render.js'), 'utf8');
+  const calls = src.match(/drawStandee\(g\.ctx, entry, \{[\s\S]*?\}\);/g) || [];
+  assert.ok(calls.length >= 2, 'expected the body and its hit flash to draw through drawStandee');
+  for (const c of calls) {
+    assert.ok(/thickness: 0|edge: 'rgba\(0,0,0,0\)'/.test(c), `a standee is drawn with its edge: ${c.slice(0, 80)}`);
+  }
+  assert.ok(!/CARD_EDGE_LIT/.test(src), 'the kraft edge colour is still wired into render.js');
 });
 
 check('no two things spawn on one tile, and nothing spawns on full cover', () => {
@@ -2349,6 +2366,134 @@ check('a recorder that cannot reach the store still records, and a broken store 
   assert.equal(play.records().filter(r => r.type === 'encounter').length, 1, 'it kept the record in memory');
 });
 
+
+// ---------------------------------------------------------------------------
+// THE MST CUT (js/mstcut.js, v45). Owner, 2026-09-29: "more Metal Slug
+// Tactics look that was in the art bible". ART_REQUEST.md §2 names the
+// technique in three measurable parts — a hard outline carrying the whole
+// silhouette, flat fills with no soft edges, a real pixel grid — and §2.4 is
+// the warning: the first pixel cut of these plates was rejected as "messy and
+// low detail". Every check below runs on the REAL plates the board draws.
+console.log('the MST cut — the art bible, measured on the real plates');
+const PLATE_FILES = [...new Set(['units.json', 'enemies.json'].flatMap(f =>
+  [...fs.readFileSync(path.join(ROOT, 'data', f), 'utf8').matchAll(/"sprite": *"([^"]+)"/g)].map(m => m[1])))];
+const lumAt = (d, i) => 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+const pctl = (v, q) => { v.sort((a, b) => a - b); return v[Math.floor(q * (v.length - 1))]; };
+const isOutline = (d, i) => d[i] === OUTLINE[0] && d[i + 1] === OUTLINE[1] && d[i + 2] === OUTLINE[2];
+const SHIP = { height: MST_H, colours: 18, punch: 0.35 };
+const cuts = PLATE_FILES.map(f => {
+  const png = readPng(path.join(ROOT, f));
+  return { f, png, ink: inkBounds(png), cut: mstCut(png.data, png.w, png.h, inkBounds(png), SHIP) };
+});
+
+check('every character plate on the board goes through the cut', () => {
+  assert.ok(cuts.length >= 25, `only ${cuts.length} plates found`);
+  for (const { f, cut } of cuts) assert.equal(cut.h - cut.pad * 2, MST_H, `${f} is not on the ${MST_H}px grid`);
+  // One grid for everything on the board: props are cut at the figures' density.
+  assert.equal(MST_DENSITY, MST_H / 29, 'props and figures must share one pixel density');
+});
+
+check('1. a HARD outline closes every silhouette — no figure pixel touches empty space', () => {
+  for (const { f, cut } of cuts) {
+    const { data, w, h } = cut;
+    let open = 0, ink = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (!data[i + 3]) continue;
+      if (isOutline(data, i)) { ink++; continue; }
+      const empty = (xx, yy) => xx < 0 || yy < 0 || xx >= w || yy >= h || !data[(yy * w + xx) * 4 + 3];
+      if (empty(x - 1, y) || empty(x + 1, y) || empty(x, y - 1) || empty(x, y + 1)) open++;
+    }
+    assert.equal(open, 0, `${f}: ${open} figure pixels meet transparency with no outline between`);
+    assert.ok(ink > 100, `${f}: an outline of ${ink} pixels is not carrying a silhouette`);
+  }
+});
+
+check('2. no soft edge survives: every pixel is fully in or fully out', () => {
+  for (const { f, cut } of cuts) {
+    for (let i = 3; i < cut.data.length; i += 4) {
+      assert.ok(cut.data[i] === 0 || cut.data[i] === 255, `${f}: alpha ${cut.data[i]} is an anti-aliased edge`);
+    }
+  }
+});
+
+check('3. flat fills: each figure is a handful of bands, not a painting', () => {
+  for (const { f, cut } of cuts) {
+    const n = distinctColours(cut.data);
+    assert.ok(n <= SHIP.colours + 1, `${f}: ${n} colours is not flat`);
+    assert.ok(n >= 8, `${f}: ${n} colours has collapsed the figure`);
+  }
+});
+
+check('the highlights survive — what ART_REQUEST §2.4 lost — measured against the draft that lost them', () => {
+  // The first cut of v45 (quantile seeds, a mean sampler, 44px, 12 colours)
+  // turned every pair of white trainers grey. The measure is the cut's 99th
+  // percentile brightness against its own plate's; a gate with no control
+  // proves nothing, so the draft's settings must FAIL it on most plates.
+  const top = c => { const v = []; for (let i = 0; i < c.data.length; i += 4) if (c.data[i + 3] && !isOutline(c.data, i)) v.push(lumAt(c.data, i)); return pctl(v, 0.99); };
+  let draftPass = 0;
+  for (const { f, png, ink, cut } of cuts) {
+    const src = []; for (let i = 0; i < png.data.length; i += 4) if (png.data[i + 3] > 200) src.push(lumAt(png.data, i));
+    const s99 = pctl(src, 0.99);
+    assert.ok(top(cut) / s99 >= 0.92, `${f}: highlights at ${(top(cut) / s99).toFixed(2)} of the plate's`);
+    const draft = mstCut(png.data, png.w, png.h, ink, { height: 44, colours: 12, sample: 'area', seed: 'lum', punch: 0 });
+    if (top(draft) / s99 >= 0.92) draftPass++;
+  }
+  assert.ok(draftPass < cuts.length / 2, `the control passes on ${draftPass}/${cuts.length} — the gate cannot tell a good cut from the rejected one`);
+});
+
+check('the cut is deterministic: same plate, same pixels', () => {
+  // A sprite that re-quantises differently on each load is a flicker.
+  const { png, ink } = cuts[0];
+  const a = mstCut(png.data, png.w, png.h, ink, SHIP).data, b = mstCut(png.data, png.w, png.h, ink, SHIP).data;
+  assert.deepEqual(Buffer.from(a), Buffer.from(b));
+});
+
+check('the art-bible check passes every cut and fails a painted plate', () => {
+  // mstProblems is the ONE definition of an MST sprite — the gate below holds
+  // authored art to it and tools/mst-export.mjs --check runs it for whoever
+  // paints one. It must pass what the cut makes and fail what it replaces.
+  for (const { f, cut } of cuts) assert.deepEqual(mstProblems(cut, { height: MST_H, colours: 18 }), [], f);
+  const raw = cuts[0].png;
+  assert.ok(mstProblems(raw, { height: MST_H, colours: 18 }).length >= 2,
+    'a painted plate passes the art-bible check — the check cannot tell the two apart');
+});
+
+check('every AUTHORED sprite listed in mstart.js exists and meets the brief', () => {
+  // The seam CODEX_BRIEF.md delivers into. Empty until art lands; the moment
+  // a line is added, the file behind it is held to the same bar as the cut.
+  for (const [plate, file] of Object.entries(MST_ART)) {
+    const full = path.join(ROOT, file);
+    assert.ok(fs.existsSync(full), `${plate} -> ${file} is listed but missing`);
+    assert.deepEqual(mstProblems(readPng(full), { height: MST_H, colours: 18 }), [], `${file}`);
+  }
+  for (const [prop, file] of Object.entries(MST_PROPS)) {
+    const full = path.join(ROOT, file);
+    assert.ok(fs.existsSync(full), `${prop} -> ${file} is listed but missing`);
+    assert.deepEqual(mstProblems(readPng(full), { colours: 18 }), [], `${file}`);
+  }
+});
+
+check('the plate cut flattens grain into surfaces, and the filters are what does it', () => {
+  // A noisy two-region "yard": the speckle the first plate cut shipped.
+  const w = 120, h = 80, mk = () => {
+    const d = new Uint8ClampedArray(w * h * 4); let s = 7;
+    for (let i = 0; i < w * h; i++) {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      const base = (i % w) < w / 2 ? 70 : 150, n = (s % 41) - 20;
+      d[i * 4] = base + n; d[i * 4 + 1] = base + n - 10; d[i * 4 + 2] = base + n - 25; d[i * 4 + 3] = 255;
+    }
+    return d;
+  };
+  const flecks = d => { let n = 0; for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    const i = (y * w + x) * 4, v = d[i];
+    if ([-4, 4, -w * 4, w * 4].every(o => d[i + o] !== v)) n++; } return n; };
+  const raw = mk(); flattenImage(raw, w, h, { colours: 12, majority: false, denoise: false });
+  const cut = mk(); flattenImage(cut, w, h, { colours: 12 });
+  assert.ok(flecks(raw) > 200, `the control is not speckled (${flecks(raw)}) — the check proves nothing`);
+  assert.ok(flecks(cut) < flecks(raw) * 0.1, `denoise + majority left ${flecks(cut)} flecks of ${flecks(raw)}`);
+  assert.ok(distinctColours(cut) <= 12);
+});
 
 // ---------------------------------------------------------------------------
 // IMPACT (js/impact.js) — what a blow FEELS like, as data. Pure, so the whole

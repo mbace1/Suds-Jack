@@ -21,3 +21,7 @@ toko-move/shifts.out.json
 # test/shoot.cjs and test/contact.cjs default here; CI keeps them as an
 # artifact instead, and a run of the whole floor is ~50 PNGs
 shots/
+
+# TURF MST scaffolds — derived by turf/tools/mst-export.mjs, never committed
+# (turf/CODEX_BRIEF.md §2).
+/turf/art-src/sprites/mst-scaffold/
