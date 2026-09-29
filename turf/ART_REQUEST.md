@@ -845,7 +845,62 @@ in `data/encounters.json`:
   selected, which is the same readability bug the cache had before v26 gave
   it a marker.
 
-### 10.5 Board size — grown in v32, and where the limit is
+### 10.6 Six concepts exist now, and what measuring them found (2026-09-25)
+
+`art-src/backgrounds/concept/` holds one plate per subject in §10.4, drawn
+rather than photographed, and `tools/plate-concept.cjs` renders and measures
+them. They are **direction, not delivery** — but three of their outputs are
+directly useful to whoever makes the real plates.
+
+**The camera cannot be wrong, and that is the point.** `plate-draw.js`
+projects every ground line through `render.js`'s own `toScreen`, so a ground
+line is at a tile-edge angle by construction. §10.1 is the requirement this
+pipeline has actually failed — `dockyard.jpg` is a perspective render and
+three encounters had to be moved off it — and it cannot be failed here.
+A concept plate seated under a real board is in
+`VERSIONS.md`'s v43 entry; the grid sits on the drawn ground, which is §10.2's
+ten-second test passing.
+
+**Every floor quad is arithmetic.** `plates.js` wants `{cx, cy, halfW, halfH}`
+measured off the picture, and v33 is a whole version about getting that wrong
+by eye. The concepts return theirs exactly, because the floor is a rectangle
+the file placed. For these, the quad is
+`{ cx: 0.5, cy: 0.56, halfW: 0.39, halfH: 0.347 }`.
+
+**The real finding is that a plate lives on TONAL RANGE, not brightness.**
+Measured over the whole image:
+
+| plate | mean luminance | tonal range |
+|---|---|---|
+| `courtyard.jpg` (works) | 0.143 | 0.102 |
+| `schoolyard.jpg` (works) | 0.103 | 0.099 |
+| `dockyard.jpg` (rejected) | 0.059 | 0.045 |
+| the concepts | 0.09-0.10 | **0.043-0.055** |
+
+The concepts sit at the shipping plates' brightness and carry about half
+their range — and they land next to the plate that was *rejected*, which is
+the tell. §10.4's "dark and low-contrast by default" is right about the
+gradient and easy to over-read: a plate with no range has nothing left after
+`index.html` lays `.55→.85` over it. **So the number a delivered plate must
+hit is a tonal range near 0.10, not merely a dark average**, and the harness
+checks exactly that, calibrated on the two that work rather than guessed.
+
+**It is left FAILING on the concepts on purpose.** Raising the range by
+patching value across the yard reached 0.073 and made the pictures worse —
+stacked translucent slabs on flat iso ground read as sheets of glass, not
+resurfaced asphalt — so that draft was cut. The gap is structural: a
+code-drawn plate gets the geometry exactly right and cannot carry a
+photograph's incidental mess. That is the division of labour worth keeping.
+
+**And range must come from the EDGES.** Patching the yard also broke the
+quiet-middle rule on three plates, because the two requirements compete for
+the same pixels. `plates.js` already records the resolution: `courtyard.jpg`'s
+floor centre sits at 54%/68% "because the plate is mostly building". Its range
+is in its architecture. **A delivered plate should be mostly built edge and
+quiet floor** — which is also the composition that leaves the middle to the
+twelve sprites, their bars and their telegraph markers.
+
+## 10.5 Board size — grown in v32, and where the limit is
 
 The owner also asked for a bigger grid, meaning **more squares**. Done: every
 board is two columns wider (13x9 and 11x10, about 20% more tiles).

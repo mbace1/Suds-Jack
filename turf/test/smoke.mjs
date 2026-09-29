@@ -28,7 +28,7 @@ import { SPRITE_H, TILE_W, FULL_PROPS, PARTIAL_PROPS, PROP_H, RARE_PROPS } from 
 import { incomingThreats } from '../js/combat.js';
 import { PLATES } from '../js/plates.js';
 import { postureFor } from '../js/anim.js';
-import { createPlaylog, summarise } from '../js/playlog.js';
+import { createPlaylog, summarise, reportLines, reportText } from '../js/playlog.js';
 import { tierFor, addTrauma, decayTrauma, shakeAt, punchAt, layersFor,
          TIERS, MISS, TRAUMA_MS, PUNCH_MS, SHAKE_PX } from '../js/impact.js';
 // Safe in bare node: audio.js builds its context lazily on the first play, so
@@ -2249,6 +2249,95 @@ check('the report folds several encounters and counts each one\'s outcomes', () 
   assert.equal(out.medianDecideMs, 800, 'the median of 400/800/1200');
   assert.deepEqual(out.perEncounter.backlot, { played: 2, won: 1, lost: 1, quit: 0 });
   assert.deepEqual(out.perEncounter.underpass, { played: 1, won: 0, lost: 0, quit: 1 });
+});
+
+// A RELEASE PIN IS A NUMBER, SO IT LIVES IN ONE FILE. slaykallio paid for this
+// twice: a version typed into a second file becomes the third place a version
+// lives and the third one nobody moves. TURF's title screen had already drifted
+// (the page said v42 while the log said v43) and nothing failed. It is one
+// constant in main.js now, written into the title at boot, and checked here.
+check('main.js VERSION agrees with the top entry in VERSIONS.md', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'js', 'main.js'), 'utf8');
+  const pinned = src.match(/^const VERSION = '(v\d+)';/m);
+  assert.ok(pinned, 'main.js must declare a single VERSION constant');
+  const logged = fs.readFileSync(path.join(ROOT, 'VERSIONS.md'), 'utf8').match(/^## (v\d+)/m);
+  assert.ok(logged, 'VERSIONS.md must open with a ## vN heading');
+  assert.equal(pinned[1], logged[1],
+    `the game says ${pinned[1]} and the log says ${logged[1]} — one of them is advertising a release the other denies`);
+});
+
+check('the version is not typed into index.html as well', () => {
+  // The whole point of the constant. A literal here is how the drift started.
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const h1 = html.match(/<h1>TURF[\s\S]*?<\/h1>/);
+  assert.ok(h1, 'the title heading must exist');
+  assert.ok(!/v\d+/.test(h1[0]), `the title still carries a literal version: ${h1[0]}`);
+});
+
+// THE CARD. v41's reading was a console.table and this game is played on a
+// phone, so v44 puts it on screen. The wording is a pure function for exactly
+// the reason the numbers are: a report that blames the player for the board, or
+// that reads a single run as a pattern, is a worse instrument than no report.
+check('an unplayed session offers no card rather than a wall of zeros', () => {
+  const card = reportLines(summarise([]));
+  assert.equal(card.ready, false);
+  assert.equal(card.lines.length, 0, 'nothing to say means show nothing');
+});
+
+check('one block reads as one block, not as a pattern and not as a shrug', () => {
+  const card = reportLines(summarise([
+    { type: 'encounter', encounter: 'backlot', result: 'lose', commands: 8, cancels: 1, seconds: 95, medianDecideMs: 2600 },
+  ]));
+  assert.equal(card.ready, true);
+  assert.match(card.headline, /one block in/);
+  assert.match(card.headline, /the pattern is not yet/);
+  // summarise() keeps its own wording: it is read by the console and the bots
+  // too, and the card is not allowed to edit the instrument it reads.
+  assert.match(summarise([{ type: 'encounter', encounter: 'backlot', result: 'lose' }]).headline, /too few plays/);
+});
+
+check('the card never blames the player for the board', () => {
+  // Two readings are about the DESIGN and are written so they cannot be read as
+  // a score: closing under fire is usually correct, and a declined skill may be
+  // a bad skill. Both notes are load-bearing, so both are asserted.
+  const rows = [];
+  for (let i = 0; i < 4; i++) rows.push({ type: 'encounter', encounter: 'backlot', result: 'win',
+    commands: 10, cancels: 1, seconds: 120, medianDecideMs: 900, intoDanger: 3,
+    offered: { cleave: 2 }, taken: { move: 5 } });
+  const card = reportLines(summarise(rows));
+  const fire = card.lines.find(l => l.label === 'moves into fire');
+  // The card TOTALS across the session — four blocks at three each — which is
+  // the number a player recognises and the one the console prints.
+  assert.match(fire.value, /^12$/, 'twelve moves into more fire, none lethal');
+  assert.match(fire.note, /usually the right move/);
+  const kit = card.lines.find(l => l.label === 'offered and never used');
+  assert.match(kit.value, /cleave/);
+  assert.match(kit.note, /weak option or an unreadable button/);
+});
+
+check('a lethal misread is the one reading allowed to shout', () => {
+  const rows = [];
+  for (let i = 0; i < 3; i++) rows.push({ type: 'encounter', encounter: 'underpass', result: 'lose',
+    commands: 9, seconds: 100, intoDanger: 2, intoLethal: 1 });
+  const card = reportLines(summarise(rows));
+  const fire = card.lines.find(l => l.label === 'moves into fire');
+  // The word is upper-case because the view colours it by matching on it; if the
+  // wording ever loses the token, the colour silently stops and nothing else
+  // would catch it.
+  assert.match(fire.value, /LETHAL/);
+  assert.match(fire.note, /the bug to chase/);
+});
+
+check('the card flattens to text a person can paste back', () => {
+  const text = reportText(summarise([
+    { type: 'encounter', encounter: 'backlot', result: 'win', commands: 10, seconds: 120, medianDecideMs: 900 },
+    { type: 'abandon', encounter: 'underpass', commands: 3, seconds: 40 },
+  ]), { version: 'v44' });
+  assert.match(text, /^TURF v44 — session reading \(local only\)/);
+  assert.match(text, /blocks played: 2/);
+  assert.match(text, /stopped part-way/, 'a quit must survive the flattening — it is the loudest signal here');
+  assert.match(text, /underpass — played 1 \(1 stopped\)/);
+  assert.ok(!/\[object|undefined|NaN/.test(text), text);
 });
 
 check('a recorder that cannot reach the store still records, and a broken store never costs a run', () => {

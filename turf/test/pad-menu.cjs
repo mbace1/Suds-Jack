@@ -6,6 +6,16 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
  await p.evaluate(()=>{__turf.state().units.find(u=>u.uid==='p0').slots=1;__turf.finish('win');});
  assert(await p.locator('.offerBtn').count());await press(15);await press(0);assert.equal(await p.locator('.offerBtn').count(),0);
  await press(0);assert.equal(await p.evaluate(()=>__turf.sequence().index),1);
- await p.evaluate(()=>__turf.finish('lose'));await p.waitForTimeout(350);await press(0);assert.equal(await p.evaluate(()=>__turf.sequence().index),0);
+ await p.evaluate(()=>__turf.finish('lose'));await p.waitForTimeout(350);
+ // A SECONDARY OR HIDDEN BUTTON IS NEVER THE PAD'S DEFAULT A PRESS. v44's
+ // session card put a toggle above Continue and a Copy button inside its own
+ // collapsed body; both were enabled, so A stopped restarting the run and the
+ // bug would have read as "the controller does nothing on the result screen".
+ assert.deepEqual(await p.evaluate(()=>{
+  const menu=document.getElementById('result');
+  return [...menu.querySelectorAll('button:not(:disabled)')]
+   .filter(b=>b.getClientRects().length>0&&b.dataset.secondary===undefined).map(b=>b.id);
+ }),['resultAgain'],'only the action that advances the game may be the default');
+ await press(0);assert.equal(await p.evaluate(()=>__turf.sequence().index),0);
  console.log('PASS simulated gamepad: start, navigate skill choices, choose, continue, retry');
 }finally{await b.close();}})().catch(e=>{console.error(e);process.exit(1)});

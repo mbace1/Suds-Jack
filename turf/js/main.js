@@ -20,7 +20,7 @@ import { PLATES } from './plates.js?v=1';
 import { layersFor, tierFor } from './impact.js?v=1';
 // What a PERSON did, as opposed to what a bot did — a reader like anim.js, and
 // local-only. See the header in playlog.js for the four questions it answers.
-import { createPlaylog, hubEmitter, summarise } from './playlog.js?v=1';
+import { createPlaylog, hubEmitter, summarise, reportLines, reportText } from './playlog.js?v=2';
 import { audio } from './audio.js?v=2';
 import { watchPad } from '../../hub/pad.js?v=9';
 
@@ -33,9 +33,16 @@ const controls = { endTurn: $('endTurnBtn'), cancel: $('cancelBtn'), mute: $('mu
 const abilitiesEl = $('abilities');
 controls.auto = $('autoBtn');
 const squadEl = $('squad'), selPortraitEl = $('selPortrait'), selTextEl = $('selText'), toastEl = $('toast');
-const titleEl = $('title'), titleStart = $('titleStart');
+const titleEl = $('title'), titleStart = $('titleStart'), verEl = $('ver');
 const resultEl = $('result'), resultTitle = $('resultTitle'), resultBody = $('resultBody'), resultAgain = $('resultAgain');
 const levelUpsEl = $('levelUps');
+// A RELEASE PIN IS A NUMBER, SO IT LIVES IN ONE FILE. The title screen used to
+// carry the version as a literal in index.html, and it had already drifted — the
+// page said v42 while VERSIONS.md said v43, which is slaykallio's third-place-a-
+// version-lives bug in a second project. It is read from here, written into the
+// title at boot, and smoke.mjs fails if it disagrees with the log's top entry.
+const VERSION = 'v44';
+const reportEls = { result: $('resultReport'), title: $('titleReport') };
 
 let DATA = null, state = null, layout = null, input = null, camera = null, enemyPhaseRunning = false;
 // The animation layer. It reads state.log rather than being called by
@@ -1005,6 +1012,136 @@ function renderLevelUps() {
   }
 }
 
+// ---------------------------------------------------------------- the session card
+//
+// v41 built a reader for what a PERSON did, and through v42 the only way to see
+// it was `__turf.play.report()` in a console. This game is played on a phone.
+// A reading nobody can reach is a reading that does not exist, so the card is on
+// the screen — on the RESULT screen, where a block just ended, and on the TITLE
+// screen, which is the only place a QUIT can ever be read: a closed tab files
+// its record on the way out and there is no result screen left to put it on.
+//
+// It is closed by default, one line tall, showing the headline alone. Opening it
+// is one tap and the toggle is a real <button>, so it joins menuButtons() and a
+// pad-only player reaches it like everything else here.
+
+// One folding of the records, used by the card and by the console hook, because
+// two copies of "which rows count" is how two answers start. The site's shared
+// store keeps every cabinet's rows; only TURF's own encounter records carry the
+// fields summarise() reads, and de-duplicating on the timestamp keeps a session
+// that is BOTH in memory and on disk from being counted twice.
+async function sessionSummary() {
+  let stored = [];
+  try {
+    const mod = await import('../../hub/playlog.js');
+    stored = mod.readPlayLog({ game: 'turf', limit: 400 });
+  } catch { /* in-memory only; the reader is a nicety */ }
+  // The current session is in memory AND (via the emitter) on disk, so one
+  // folding has to drop the duplicates. The key carries the record's own
+  // numbers as well as its timestamp: on `at|type|encounter` alone, two blocks
+  // filed in the same millisecond collide and a real play is silently thrown
+  // away — which is exactly what a seeded history made it do, twice.
+  const seen = new Set();
+  const rows = [...stored, ...play.records()].filter(r => {
+    const k = `${r.at}|${r.type}|${r.encounter}|${r.commands}|${r.seconds}|${r.result || ''}`;
+    if (seen.has(k)) return false; seen.add(k); return true;
+  });
+  return summarise(rows);
+}
+
+// The copy button is the point of the whole card: the loop is play → copy →
+// paste, which is what turns one session on a sofa into something that can be
+// read by somebody who was not holding the phone.
+async function copyReport(button, out, summary) {
+  const text = reportText(summary, { version: VERSION });
+  out.value = text;
+  try {
+    await navigator.clipboard.writeText(text);
+    button.textContent = 'Copied';
+  } catch {
+    // Clipboard access is gated in plenty of contexts and refusing quietly
+    // would look like a dead button. Show the text instead and say so — a
+    // selectable textarea is a copy path on every browser there has ever been.
+    out.hidden = false;
+    out.focus(); out.select();
+    button.textContent = 'Select all and copy';
+  }
+  setTimeout(() => { button.textContent = COPY_LABEL; }, 2600);
+}
+
+const COPY_LABEL = 'Copy this reading';
+
+async function renderReport(host) {
+  if (!host) return;
+  const summary = await sessionSummary();
+  const card = reportLines(summary);
+  if (!card.ready) { host.hidden = true; return; }   // nothing to say: say nothing
+  host.hidden = false;
+  host.innerHTML = '';
+
+  const body = document.createElement('div');
+  body.className = 'reportBody';
+  body.hidden = true;
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'reportToggle';
+  toggle.setAttribute('aria-expanded', 'false');
+  // Reachable by direction, never the pad's default A — see menuButtons().
+  toggle.dataset.secondary = '';
+  toggle.innerHTML = `<span><b>Your session</b> · ${escapeHtml(card.headline)}</span>`;
+  bindActivation(toggle, e => {
+    e.preventDefault();
+    const open = body.hidden;
+    body.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+  // THE READER DOES NOT MEASURE THE READER. Counting the card as an affordance
+  // put the string `report` into its own "offered and never used" list — the
+  // card telling you, in the card, that you had not opened the card. anim.js's
+  // rule about staying outside what it watches, applied to the instrument.
+
+  const dl = document.createElement('dl');
+  for (const line of card.lines) {
+    const dt = document.createElement('dt'); dt.textContent = line.label;
+    const dd = document.createElement('dd');
+    // The only coloured value on the card. A lethal misread is the one reading
+    // here that names a bug rather than a preference, so it is allowed to shout.
+    dd.innerHTML = /LETHAL/.test(line.value)
+      ? escapeHtml(line.value).replace('LETHAL', '<span class="lethal">LETHAL</span>')
+      : escapeHtml(line.value);
+    if (line.note) { const em = document.createElement('em'); em.textContent = line.note; dd.appendChild(em); }
+    dl.append(dt, dd);
+  }
+  body.appendChild(dl);
+
+  if (card.encounters.length) {
+    const blocks = document.createElement('div');
+    blocks.className = 'blocks';
+    blocks.textContent = card.encounters
+      .map(e => `${e.id} ×${e.played}${e.quit ? ` (${e.quit} stopped)` : ''}`)
+      .join(' · ');
+    body.appendChild(blocks);
+  }
+
+  const copy = document.createElement('button');
+  copy.type = 'button'; copy.className = 'reportCopy'; copy.textContent = COPY_LABEL;
+  copy.dataset.secondary = '';   // reachable, never the default action
+  const out = document.createElement('textarea');
+  out.className = 'reportOut'; out.readOnly = true; out.hidden = true;
+  bindActivation(copy, e => { e.preventDefault(); copyReport(copy, out, summary); });
+  body.append(copy, out);
+
+  const foot = document.createElement('p');
+  foot.className = 'foot';
+  foot.textContent = 'Kept in this browser only. Nothing is uploaded, and there is no leaderboard.';
+  body.appendChild(foot);
+
+  host.append(toggle, body);
+}
+
+const escapeHtml = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
 function showResult(result, xpEvents = []) {
   resultEl.hidden = false;
   if (result === 'win') audio.win(); else audio.lose();
@@ -1033,6 +1170,10 @@ function showResult(result, xpEvents = []) {
     resultAgain.textContent = 'Run It Back';
   }
   renderLevelUps();
+  // Async and deliberately not awaited: the result screen must be up before the
+  // store answers, and the card appearing a tick later is invisible next to a
+  // result screen that waited for a dynamic import to resolve.
+  renderReport(reportEls.result);
 }
 
 bindActivation(titleStart, e => {
@@ -1064,7 +1205,24 @@ bindActivation(controls.cancel, e => { e.preventDefault(); play.cancelled(); inp
 // player can start, choose a skill, continue and retry without reaching for a mouse.
 function menuButtons() {
   const menu = !titleEl.hidden ? titleEl : !resultEl.hidden ? resultEl : null;
-  return menu ? [...menu.querySelectorAll('button:not(:disabled)')] : [];
+  if (!menu) return [];
+  // A BUTTON INSIDE A CLOSED PANEL IS NOT ON THE MENU. `:not(:disabled)` says
+  // nothing about whether a control is on screen, so the session card's Copy
+  // button — enabled, and sitting in a collapsed body — became the pad's default
+  // A press and a direction step onto nothing. getClientRects() is used rather
+  // than offsetParent because these overlays are `position: fixed` and that
+  // property is always null on a fixed element (kindling paid for that one).
+  const all = [...menu.querySelectorAll('button:not(:disabled)')]
+    .filter(b => b.getClientRects().length > 0);
+  // A SECONDARY BUTTON IS NEVER THE DEFAULT A PRESS. The pad falls back to
+  // buttons[0] when nothing on the menu holds focus, so adding the session
+  // card's toggle above Continue silently made A *open the report* instead of
+  // starting the next block — caught by pad-menu.cjs, and it would have been a
+  // genuinely baffling controller bug. Direction still walks onto it; it just
+  // sorts behind everything that advances the game. Reading order is unchanged:
+  // this only moves it in the PAD's list.
+  const secondary = all.filter(b => b.dataset.secondary !== undefined);
+  return secondary.length ? [...all.filter(b => b.dataset.secondary === undefined), ...secondary] : all;
 }
 watchPad({
   dir(dx, dy) {
@@ -1092,26 +1250,17 @@ window.__turf = {
   play: {
     records: () => play.records(),
     summarise,
+    // Same folding the on-screen card uses (sessionSummary), so the console and
+    // the panel can never give two answers about one session.
     report: async () => {
-      let stored = [];
-      try {
-        const mod = await import('../../hub/playlog.js');
-        stored = mod.readPlayLog({ game: 'turf', limit: 400 });
-      } catch { /* in-memory only */ }
-      // The store keeps every game's rows; only this cabinet's own encounter
-      // records carry the fields summarise() reads, and de-duplicating on the
-      // timestamp keeps a session that is BOTH in memory and on disk from
-      // being counted twice.
-      const seen = new Set();
-      const rows = [...stored, ...play.records()].filter(r => {
-        const k = `${r.at}|${r.type}|${r.encounter}`;
-        if (seen.has(k)) return false; seen.add(k); return true;
-      });
-      const out = summarise(rows);
-      console.log(out.headline);
-      console.table(out.perEncounter);
+      const out = await sessionSummary();
+      console.log(reportText(out, { version: VERSION }));
       return out;
     },
+    // The card's own text, for a gate that wants the words rather than a paint.
+    text: async () => reportText(await sessionSummary(), { version: VERSION }),
+    // Paint it where it lives, so a harness can open the card without winning.
+    card: host => renderReport(host === 'title' ? reportEls.title : reportEls.result),
   },
   layout: () => layout,
   // A way to make the animator DRAW. `anim` itself is already exposed below;
@@ -1155,10 +1304,15 @@ window.__turf = {
   audio,
 };
 
+if (verEl) verEl.textContent = VERSION;
 loadData().then(data => {
   DATA = data;
   titleStart.disabled = false;
   titleStart.textContent = 'Start';
+  // The title screen is the ONLY place a quit can be read: a closed tab files
+  // its record on the way out, and by the next visit there is no result screen
+  // left to put it on.
+  renderReport(reportEls.title);
 }).catch(err => {
   titleStart.textContent = 'Failed to load — reload';
   console.error('TURF: failed to load data', err);

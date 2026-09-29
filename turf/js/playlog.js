@@ -306,10 +306,108 @@ export function summarise(records) {
 function headlineFor(quits, plays, intoLethal, neverUsed) {
   if (plays < 3) return 'too few plays to say anything yet';
   if (quits / plays >= 0.34) return `stopped mid-encounter ${quits} of ${plays} times — that is the thing to fix`;
-  if (intoLethal > 0) return `walked into a lethal forecast ${intoLethal} time(s) — the telegraph is not landing`;
+  if (intoLethal > 0) return `walked into a lethal forecast ${intoLethal} ${intoLethal === 1 ? 'time' : 'times'} — the telegraph is not landing`;
   if (neverUsed.length >= 3) return `${neverUsed.length} offered things were never used: ${neverUsed.slice(0, 4).join(', ')}`;
   return 'played through without quitting, misreading a lethal, or ignoring the kit';
 }
+
+// --------------------------------------------------------------- the card
+
+/**
+ * The report as WORDS, and pure — no DOM, no clock — so the gate asserts the
+ * wording in bare node exactly as it asserts the numbers above.
+ *
+ * It exists because the report was a `console.table` and this game is played on
+ * a PHONE. A reading nobody can reach is a reading that does not exist: the
+ * owner's own playtests are mobile, and "open the console" is the step that
+ * ended the loop v41 was built to close.
+ *
+ * Every line is written to be readable by someone who did not build the game,
+ * and two of them are written to avoid blaming the player for the board:
+ * a move that ends under MORE fire is usually correct (you closed distance to
+ * shoot), and something offered-and-declined may be a bad skill rather than a
+ * bad decision. The wording says so rather than implying a score.
+ */
+export function reportLines(summary) {
+  if (!summary || !summary.plays) {
+    return { ready: false, headline: 'nothing recorded yet — play a block and come back', lines: [], encounters: [] };
+  }
+  const s = summary;
+  const lines = [];
+  const outcomes = [
+    s.wins ? `${s.wins} won` : null,
+    s.losses ? `${s.losses} lost` : null,
+    s.quits ? `${s.quits} stopped part-way` : null,
+  ].filter(Boolean);
+  lines.push({
+    label: 'blocks played', value: `${s.plays}${outcomes.length ? ` — ${outcomes.join(', ')}` : ''}`,
+    note: s.quits ? 'stopping is the loudest signal this game gets' : null,
+  });
+  if (s.seconds) lines.push({ label: 'time on the board', value: clock(s.seconds) });
+  if (s.medianDecideMs) {
+    lines.push({
+      label: 'reading the board', value: `${secs(s.medianDecideMs)} a turn, typically`,
+      note: 'the clock only runs while the board is yours — a long one is a legibility fact, not a slow player',
+    });
+  }
+  if (s.commands) {
+    lines.push({
+      label: 'second thoughts', value: `${s.cancelsPerCommand} cancels per command`,
+      note: s.cancelsPerCommand >= 0.4 ? 'high: something is being offered that is hard to read' : null,
+    });
+  }
+  lines.push({
+    label: 'moves into fire',
+    value: s.intoDanger
+      ? `${s.intoDanger}${s.intoLethal ? `, and ${s.intoLethal} into a LETHAL forecast` : ''}`
+      : 'none',
+    note: s.intoLethal
+      ? 'a lethal one is the case the telegraph exists to prevent — that is the bug to chase'
+      : 'closing distance under fire is usually the right move',
+  });
+  lines.push({
+    label: 'offered and never used',
+    value: s.neverUsed && s.neverUsed.length ? s.neverUsed.join(', ') : 'nothing — the whole kit got used',
+    note: s.neverUsed && s.neverUsed.length
+      ? 'could be a weak option or an unreadable button; only you know which'
+      : null,
+  });
+  const encounters = Object.entries(s.perEncounter || {}).map(([id, e]) => ({ id, ...e }));
+  // summarise()'s own headline is written for a reader with a sample and says
+  // "too few plays" under three. On the card that is the first thing a player
+  // sees after their FIRST block, and it reads as a shrug at what they just did.
+  // The numbers under it are real on play one; only the PATTERN is not — so the
+  // early line says exactly that and summarise() is left alone, because it is
+  // pure, gated, and read by the console and the bots too.
+  const headline = s.plays < 3
+    ? `${s.plays === 1 ? 'one block' : `${s.plays} blocks`} in — the numbers below are real, the pattern is not yet`
+    : s.headline;
+  return { ready: true, headline, lines, encounters };
+}
+
+/**
+ * The same card as one block of plain text, for handing back. The loop this
+ * closes is: play, copy, paste — which is the whole reason a card exists rather
+ * than a console call.
+ */
+export function reportText(summary, { version = '' } = {}) {
+  const card = reportLines(summary);
+  const out = [`TURF${version ? ` ${version}` : ''} — session reading (local only)`, card.headline, ''];
+  for (const l of card.lines) out.push(`${l.label}: ${l.value}`);
+  if (card.encounters.length) {
+    out.push('', 'per block:');
+    for (const e of card.encounters) {
+      const bits = [e.won && `${e.won} won`, e.lost && `${e.lost} lost`, e.quit && `${e.quit} stopped`].filter(Boolean);
+      out.push(`  ${e.id} — played ${e.played}${bits.length ? ` (${bits.join(', ')})` : ''}`);
+    }
+  }
+  return out.join('\n');
+}
+
+// A duration a person reads without converting. Sub-ten-second decisions keep
+// one decimal because the difference between 0.8s and 2.4s is the finding.
+const secs = ms => (ms < 10000 ? `${Math.round(ms / 100) / 10}s` : `${Math.round(ms / 1000)}s`);
+const clock = s => (s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`);
 
 // ---------------------------------------------------------------- the transport
 

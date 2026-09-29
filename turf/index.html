@@ -228,6 +228,51 @@
   /* The skill pick. One block per operator with a slot to spend, three
      cards each; the whole thing lives on the result screen because the pick
      is made BEFORE the next block, never during one. */
+  /* THE SESSION CARD. v41 built a reader for what a PERSON did; through v42 the
+     only way to see it was `__turf.play.report()` in a console, and this game is
+     played on a phone — a reading nobody can reach is a reading that does not
+     exist. It is CLOSED by default and one line tall: the result screen already
+     gates Continue behind the skill pick, and pushing that button below the fold
+     to make room for a report about legibility would be its own joke. */
+  .report { width: 100%; max-width: 480px; text-align: left; }
+  .report[hidden] { display: none; }
+  .reportToggle {
+    width: 100%; min-height: 44px; padding: 9px 12px; background: #14161c; color: #9aa0aa;
+    border: 1px solid #262a32; font: inherit; font-size: 11px; line-height: 1.45;
+    text-align: left; cursor: pointer; display: flex; gap: 8px; align-items: center;
+  }
+  .reportToggle::before { content: '▸'; color: #6fa8c9; flex: none; }
+  .reportToggle[aria-expanded="true"]::before { content: '▾'; }
+  .reportToggle b { color: #6fa8c9; letter-spacing: .1em; text-transform: uppercase; font-size: 10px; }
+  .reportBody { border: 1px solid #262a32; border-top: 0; background: #0f1116; padding: 10px 12px 12px; }
+  .reportBody[hidden] { display: none; }
+  .reportBody dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 11px; }
+  /* Two columns need a value column wide enough to hold a sentence. On a phone
+     it is not, and every reading wrapped to three lines beside a one-word
+     label — so under 430px the label sits ABOVE its value and the whole card
+     reads as a list. Seen on a screenshot; no gate would have called it. */
+  @media (max-width: 430px) {
+    .reportBody dl { grid-template-columns: 1fr; gap: 2px; }
+    .reportBody dt { padding-top: 8px; }
+    .reportBody dt:first-child { padding-top: 0; }
+  }
+  .reportBody dt { color: #7b818c; letter-spacing: .04em; text-transform: uppercase; font-size: 10px; padding-top: 2px; }
+  .reportBody dd { color: #d6d9de; }
+  .reportBody dd em { display: block; font-style: normal; color: #7b818c; font-size: 10px; line-height: 1.5; margin-top: 2px; }
+  .reportBody .lethal { color: #d98a72; }
+  .reportBody .blocks { margin-top: 10px; border-top: 1px solid #1c1f26; padding-top: 8px;
+    color: #9aa0aa; font-size: 10px; line-height: 1.7; }
+  .reportBody .foot { margin-top: 10px; color: #5d636d; font-size: 10px; line-height: 1.6; }
+  .reportCopy {
+    margin-top: 10px; min-height: 44px; width: 100%; padding: 10px; background: #1c1f26;
+    color: #d6d9de; border: 1px solid #3a4048; font: inherit; font-size: 11px;
+    letter-spacing: .08em; text-transform: uppercase; cursor: pointer;
+  }
+  .reportCopy:active { background: #6fa8c9; color: #0b0c0f; }
+  .reportOut {
+    width: 100%; margin-top: 8px; min-height: 120px; background: #0b0c0f; color: #9aa0aa;
+    border: 1px solid #262a32; font: inherit; font-size: 10px; padding: 8px; resize: vertical;
+  }
   #levelUps { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 480px; }
   #levelUps:empty { display: none; }
   .levelUp { border: 1px solid #262a32; background: #14161c; padding: 10px; text-align: left; }
@@ -295,13 +340,14 @@
   </div>
 
   <div id="title" class="overlay">
-    <h1>TURF <small style="font-size:14px">v42</small></h1>
+    <h1>TURF <small id="ver" style="font-size:14px"></small></h1>
     <p class="tag">Nordic street tactics — three operators, no way out but through.</p>
     <p>Choose an operator. Move into position. Read the rivals’ plans before you strike.</p>
     <p>Each operator can move and act once, in either order. Short field tips guide your first turn on the board.</p>
     <p class="tag">Mouse or touch · drag to look around · arrows/WASD move, Enter/Space confirm,
       Esc cancel, E ends turn · pad: stick move, A confirm, B cancel, Y ends turn ·
       AUTO lets the crew play itself</p>
+    <div id="titleReport" class="report" hidden></div>
     <button id="titleStart" class="bigBtn" disabled>Loading…</button>
   </div>
 
@@ -309,10 +355,11 @@
     <h1 id="resultTitle"></h1>
     <p id="resultBody"></p>
     <div id="levelUps"></div>
+    <div id="resultReport" class="report" hidden></div>
     <button id="resultAgain" class="bigBtn">Run It Back</button>
   </div>
 
-  <script type="module" src="js/main.js?v=44"></script>
+  <script type="module" src="js/main.js?v=46"></script>
   <script type="module" src="../hub/shell.js?v=42"></script>
 </body>
 </html>
