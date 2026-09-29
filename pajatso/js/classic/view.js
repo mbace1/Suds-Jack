@@ -11,8 +11,8 @@
 // crank on the right side, two brown bottles on top, an orange wall.
 
 import * as THREE from 'three';
-import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=8';
-import { FACE, JACKPOT } from './layout.js?v=8';
+import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=9';
+import { FACE, JACKPOT } from './layout.js?v=9';
 
 const COIN_Z = 1.0;           // the coin rolls on the face this far out of it
 const PIN_LEN = 2.0;
@@ -358,14 +358,18 @@ export class View {
   }
 
   // a coin that missed every window drops down its column onto the pile
-  toPot(k, height) {
-    const col = this.L.columns[k];
+  // ...and one that lands on a full stack first drops onto its top, then hops
+  // along the tops of the full stacks to the one it ends up in (game.intoPot)
+  toPot(k, height, from = k) {
+    const col = this.L.columns[k], src = this.L.columns[from] ?? col;
     if (!col) return;
     this.pending[k]++;
     const m = new THREE.Mesh(this.coinGeo, this.coinMat);
-    m.position.set(col.x, FACE.COL_TOP, COIN_Z);
+    m.position.set(src.x, FACE.COL_TOP, COIN_Z);
     this.scene.add(m);
-    this.falls.push({ m, k, to: this.stackAt(k, Math.max(0, height - 1)).y, v: 0 });
+    const to = this.stackAt(k, Math.max(0, height - 1)).y;
+    const hop = from !== k ? { x0: src.x, x1: col.x, top: this.stackAt(from, FACE.COL_MAX - 1).y + FACE.STACK * 0.6, t: -1, dur: 0.16 * Math.abs(k - from) + 0.12 } : null;
+    this.falls.push({ m, k, to: hop ? hop.top : to, final: to, v: 0, hop });
   }
 
   drawPot(pot) {
@@ -428,9 +432,22 @@ export class View {
     }
     this.shown = [...pot];
     for (let i = this.falls.length - 1; i >= 0; i--) {
-      const f = this.falls[i];
+      const f = this.falls[i], h = f.hop;
+      if (h && h.t >= 0) {
+        // bouncing along the tops of the full stacks
+        h.t += dt / h.dur;
+        const u = Math.min(1, h.t), n = Math.max(1, Math.round(Math.abs(h.x1 - h.x0) / 4.3));
+        f.m.position.x = h.x0 + (h.x1 - h.x0) * u;
+        f.m.position.y = h.top + Math.abs(Math.sin(u * Math.PI * n)) * 1.6;
+        f.m.rotation.z += dt * 12 * Math.sign(h.x1 - h.x0 || 1);
+        if (u >= 1) { f.hop = null; f.to = f.final; f.v = 0; }
+        continue;
+      }
       f.v += 160 * dt; f.m.position.y -= f.v * dt;
-      if (f.m.position.y <= f.to) { this.scene.remove(f.m); this.pending[f.k] = Math.max(0, this.pending[f.k] - 1); this.falls.splice(i, 1); }
+      if (f.m.position.y <= f.to) {
+        if (h && h.t < 0) { f.m.position.y = h.top; h.t = 0; this.onBounce?.(); continue; }
+        this.scene.remove(f.m); this.pending[f.k] = Math.max(0, this.pending[f.k] - 1); this.falls.splice(i, 1);
+      }
     }
     this.drawPot(pot);
     for (let i = this.caught.length - 1; i >= 0; i--) {

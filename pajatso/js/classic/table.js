@@ -4,9 +4,9 @@
 // machine (main.js) and KUOPPA (../kuoppa/main.js) each mount one and bring
 // only what is theirs — the rules, the events, the sheets between rounds.
 
-import { t, mk, getLang, setLang, LANGS } from './lang.js?v=8';
-import { sfx, initAudio, setMuted, isMuted, roll } from '../audio.js?v=8';
-import { BOARD } from '../board.js?v=8';
+import { t, mk, getLang, setLang, LANGS } from './lang.js?v=9';
+import { sfx, initAudio, setMuted, isMuted, roll } from '../audio.js?v=9';
+import { BOARD } from '../board.js?v=9';
 import { watchPad } from '../../../hub/pad.js?v=10';   // the SAME token shell.js asks for: one reader on the page
 
 export const params = new URLSearchParams(location.search);
@@ -277,6 +277,8 @@ export function mountTable(o) {
   const drain = () => { for (const ev of game().drain()) { result(ev); o.onEvent(ev); } };
   // every coin that lands in the tray is heard, and under a thumb felt
   view.onLand = small => { sfx.tray(small); buzz(small ? 4 : 6); };
+  // a coin hitting the top of a full stack and bouncing on to the next
+  view.onBounce = () => sfx.clack(14);
   // the coin on the rail: one held voice following its speed
   const { C, R } = BOARD;
   function rolling() {
