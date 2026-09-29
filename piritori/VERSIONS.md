@@ -77,6 +77,23 @@ Port `cover-edges.js`, `directional-cover.mjs` and `design/C11_PORT_VECTORS.json
 New lab checkpoint version 4 / rules c11-v1; preserve campaign and Bear Path rules.
 Use resolved impact classifications for presentation; never reapply damage on recovery.
 
+## v4.66 — 2026-09-29
+
+**Aatami fights first, then the crew does (H6.1).** Owner answer 24: "Aatami fights in first fights and then has minions do fighting" (COMBAT.md §9.9.1). Owner: "continue the build."
+
+- **Aatami is in canon.** `content.protagonist` gives him a fighter record: named, so he has no career ceiling. He has a condition like anyone who fights. He is never left critical, because the story is about who he sends.
+- **He fights while he cannot field a crew of three.** `fighters()` puts him on the board first, then the crew. With one hire he makes the second fighter; alone he cannot take a two-a-side fight, and the card says "needs 2 who can fight".
+- **He steps back for good.** The first fight after he has three crew, he stays at the edge of the board: a one-time beat in the fight log and a toast (`memory:aatami-stepped-back`). After that he stays out, even short-handed. The threshold is `steps_back_at_crew` (3), provisional until owner question 26 is answered.
+- **`fighters>=N` is a new requirement:** who can take the board. Every fight choice uses it: two mission battles, two road fights and four doors. `deployed-crew` keeps meaning crew with you, so the Brahenkenttä watch still needs someone else to watch the vans. Door escalation counts fighters too.
+- The 3D fight shows him as the generic hired-hand figure, because he has no model or head art yet.
+- `state.js` v9, `doors.js` v2, cascaded. Gates: `aatami.mjs` 18 (new), `aatami-browser.cjs` 16 (new: desktop and phone, Aatami in front with one hire, a closed fight alone, the step-back beat with three).
+
+### Port
+
+Godot: `protagonist`, `aatami_fights`, `step_back_if_ready`, `fighters`, the `fighters>=N` requirement, the fight lineup and the step-back beat, no critical for Aatami, and escalation counting fighters.
+
+**Status: landed in Godot 2026-09-29** (branch `godot/h6-port`). Canon is re-synced (the eight fight choices now read `fighters>=N`). `ContentRegistry.protagonist()` is `content.protagonist`, and `crew_member`/`has_crew` resolve `aatami` to it as `crewRecord` does, so he is named, has no career ceiling and keeps his authored name. `GameState` gains `aatami_fights` (the roster holds nobody the police took, so its size is the web's recruited-not-missing count), `step_back_if_ready` (remembers `memory:aatami-stepped-back` and returns the canon beat) and `fighters`, and the `fighters>=N` requirement. The shell steps him back before the lineup of any real fight, fields `fighters()`, and opens the fight's log with the beat (a line under the round through the first round); a refusal reads *needs N who can fight* (en/fi/ja, within the committed glyph subset). Door escalation counts fighters. On the board he is the generic fallback: the runner standee in 2D, the hired hand in 3D, with no portrait asked for. Not ported, because the port has no per-person campaign condition: the web's `crewStatus` entry and the courtyard's critical status, which the Godot fight never sets on anyone. `tools/web-reference.mjs` adds seven lineups and a one-hire escalation case, and test_story holds the port to them.
+
 ## v4.65 — 2026-09-29
 
 **A ten-day chapter of spine and doors (H1 + H2 of The Long Game).** Owner, 2026-09-29: "Go ahead" on design/H1_H2_PLAN.md, and answer 23: "Fights everyday, depending on the mission. Maybe 2 per day."
