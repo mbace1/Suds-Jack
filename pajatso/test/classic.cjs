@@ -140,7 +140,7 @@ const settle = page => page.evaluate(() => { for (let i = 0; i < 40 && __pj.game
   const c0 = await tp.evaluate(() => __pj.game.coins);
   await tp.dispatchEvent('#lever', 'pointerdown', { pointerId: 4, pointerType: 'touch', isPrimary: true, clientX: lx, clientY: top + 30 });
   await tp.dispatchEvent('#lever', 'pointerup', { pointerId: 4, pointerType: 'touch', isPrimary: true, clientX: lx, clientY: top + 30 });
-  check('a tap on the lever pulls exactly the same again', await tp.evaluate(c => __pj.game.coins === c - 1 && Math.abs(__pj.lastPull - 0.5) < 0.03, c0));
+  check('a tap on the lever pulls the same again', await tp.evaluate(c => __pj.game.coins === c - 1 && Math.abs(__pj.lastPull - 0.5) < 0.03, c0));
   await settle(tp);
   const small = await tp.evaluate(() => [...document.querySelectorAll('button, [role=slider], a')]
     .filter(b => b.offsetParent !== null && !b.closest('[hidden]'))
@@ -163,6 +163,31 @@ const settle = page => page.evaluate(() => { for (let i = 0; i < 40 && __pj.game
   await tp.tap('#start');
   await tp.waitForTimeout(900);
   check(`first-time lines are said once (${seen.join(', ')})`, seen.includes('pull') && await tp.locator('#tip').isHidden());
+  // v8: the lever remembers, the row shows where the coin went, wins land in
+  // the tray coin by coin, and a session has a target
+  const v8 = await tp.evaluate(() => {
+    localStorage.removeItem('pajatso.marks');
+    const out = {};
+    __pj.debug.pull(0.2); __pj.debug.advance(8);
+    __pj.debug.pull(0.7); __pj.debug.advance(8);
+    return out;
+  });
+  await tp.waitForTimeout(700);
+  const marks = await tp.evaluate(() => [...document.querySelectorAll('#lever .m')].map(m => m.className));
+  check(`the lever keeps a dot per pull, coloured by what it did (${marks.join(' / ')})`,
+    marks.length >= 2 && marks.slice(-2).every(c => /\b(win|back|potti|pot)\b/.test(c)));
+  const arrow = await tp.evaluate(() => __pj.view.markMesh.material.opacity);
+  check(`an arrow over the row shows where the last coin went (opacity ${arrow.toFixed(2)})`, arrow > 0.5);
+  const tray0 = await tp.evaluate(() => __pj.view.drops.length);
+  await tp.evaluate(() => { const g = __pj.game; g.pot[6] = 6; g.window(g.L.byId.w4); });
+  await tp.waitForTimeout(1500);
+  const tray = await tp.evaluate(() => ({ n: __pj.view.drops.length, landed: __pj.view.drops.filter(d => d.landed).length, halves: 0 }));
+  check(`a POTTI pours its coins into the tray (${tray.n - tray0} coins, ${tray.landed} landed)`, tray.n - tray0 >= 13 && tray.landed > 0);
+  const g0 = await tp.evaluate(() => __pj.debug.goal);
+  await tp.evaluate(g => { __pj.game.coins = g + 0.5; }, g0);
+  await tp.waitForTimeout(600);
+  const g1 = await tp.evaluate(() => ({ goal: __pj.debug.goal, toast: document.getElementById('toast').className, shown: document.querySelector('#goal b').textContent }));
+  check(`reaching the target moves it on and says so (${g0} → ${g1.goal})`, g1.goal === g0 + 30 && /show/.test(g1.toast) && g1.shown === String(g0 + 30));
   check('no errors on the phone', terr.length === 0, terr.join(' | '));
   await tctx.close();
 

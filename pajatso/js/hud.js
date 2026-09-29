@@ -5,8 +5,8 @@
 // the engine's state itself, so a button and a key and a pad press all take
 // exactly the same path.
 
-import { CHARMS, DEALS, LOCKS, SHIFTS_PER_DEADLINE } from './data.js?v=7';
-import { FAMILY, GLYPH } from './view/room.js?v=7';
+import { CHARMS, DEALS, LOCKS, SHIFTS_PER_DEADLINE } from './data.js?v=8';
+import { FAMILY, GLYPH } from './view/room.js?v=8';
 
 const $ = id => document.getElementById(id);
 const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html !== undefined) n.innerHTML = html; return n; };

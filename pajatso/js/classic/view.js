@@ -11,8 +11,8 @@
 // crank on the right side, two brown bottles on top, an orange wall.
 
 import * as THREE from 'three';
-import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=7';
-import { FACE, JACKPOT } from './layout.js?v=7';
+import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=8';
+import { FACE, JACKPOT } from './layout.js?v=8';
 
 const COIN_Z = 1.0;           // the coin rolls on the face this far out of it
 const PIN_LEN = 2.0;
@@ -118,6 +118,16 @@ export class View {
       new THREE.MeshPhongMaterial({ map: coinTex, shininess: 100 }),
     ];
     this.coinGeo = coinGeo; this.coinMat = coinMat;
+    // the 50 p piece a 1:50 pays with: smaller and nickel, not brass
+    this.halfGeo = coinGeo.clone(); this.halfGeo.scale(0.78, 0.78, 0.9);
+    this.halfMat = new THREE.MeshPhongMaterial({ color: 0xc9ccd2, shininess: 110, specular: 0xffffff });
+    // WHERE THE LAST COIN WENT: a small arrow over the window row, in the
+    // colour of what it won, standing until the next pull
+    const tri = new THREE.Shape(); tri.moveTo(-1.1, 1.4); tri.lineTo(1.1, 1.4); tri.lineTo(0, 0); tri.lineTo(-1.1, 1.4);
+    this.markMesh = new THREE.Mesh(new THREE.ShapeGeometry(tri),
+      new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
+    this.markMesh.position.set(0, FACE.WIN_Y + 1.3, 2.4); s.add(this.markMesh);
+    this.markT = 0;
     this.coin = new THREE.Mesh(coinGeo, coinMat); this.coin.visible = false; s.add(this.coin);
     this.coinShadow = new THREE.Mesh(new THREE.CircleGeometry(r * 1.05, 20),
       new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));
@@ -315,16 +325,29 @@ export class View {
     this.caught.push({ m, t: 1.1 });
   }
 
-  // coins dropping into the tray: the payout, as something you watch
-  payout(n, from = null) {
-    for (let k = 0; k < Math.min(n, 30); k++) {
-      const m = new THREE.Mesh(this.coinGeo, this.coinMat);
-      const p = from?.[k] ?? { x: -6 + Math.random() * 16, y: 2, z: 7 };
+  // the arrow over the row: `kind` is 'potti' | 'win' | 'back' | 'pot'
+  mark(x, kind) {
+    const col = { potti: 0xff3a4a, win: 0xffd23f, back: 0xf4f4f4, pot: 0x8f969e }[kind] ?? 0xffd23f;
+    this.markMesh.material.color.setHex(col);
+    this.markMesh.position.x = Math.max(-26, Math.min(28, x));
+    this.markT = 1; this.markFade = false;
+  }
+  clearMark() { this.markT = Math.min(this.markT, 0.35); this.markFade = true; }
+
+  // coins dropping into the tray: the payout, as something you watch. `n`
+  // whole markka and, when the win ends in 50 p, one nickel half; `from` is
+  // where each coin starts (the POTTI's column), top coin first
+  payout(n, from = null, half = false) {
+    const make = (small, p, k) => {
+      const m = new THREE.Mesh(small ? this.halfGeo : this.coinGeo, small ? this.halfMat : this.coinMat);
       m.position.set(p.x, p.y, p.z ?? 7);
       m.rotation.set(Math.random() * 3, Math.random() * 3, 0);
       this.scene.add(m);
-      this.drops.push({ m, t: from ? -k * 0.02 : -k * 0.08, vx: (Math.random() - 0.5) * 8, vy: from ? 0 : 3 + Math.random() * 4, vz: from ? 5 : 0, rest: false });
-    }
+      this.drops.push({ m, small, t: from ? -k * 0.07 : -k * 0.09, vx: (Math.random() - 0.5) * 8, vy: from ? 1.5 : 3 + Math.random() * 4, vz: from ? 5 : 0, rest: false, landed: false });
+    };
+    const count = Math.min(n, 30);
+    for (let k = 0; k < count; k++) make(false, from?.[k] ?? { x: -6 + Math.random() * 16, y: 2, z: 7 }, k);
+    if (half) make(true, { x: -6 + Math.random() * 16, y: 2, z: 7 }, count);
   }
   clearTray() { for (const d of this.drops) this.scene.remove(d.m); this.drops.length = 0; }
 
@@ -399,7 +422,8 @@ export class View {
     const pot = game.pot;
     if (this.shown) {
       const spill = [];
-      for (let k = 0; k < pot.length; k++) for (let j = pot[k]; j < this.shown[k]; j++) spill.push(this.stackAt(k, j));
+      // the top coin of a column goes first: a stack collapsing, not a list
+      for (let k = 0; k < pot.length; k++) for (let j = this.shown[k] - 1; j >= pot[k]; j--) spill.push(this.stackAt(k, j));
       if (spill.length) this.payout(spill.length, spill);
     }
     this.shown = [...pot];
@@ -435,6 +459,11 @@ export class View {
     }
 
     this.leverPivot.rotation.z = -this.lever * 1.1;
+    // the arrow drops in with a bounce, then stands; a new pull fades it
+    if (this.markFade) { this.markT = Math.max(0, this.markT - dt * 2); if (!this.markT) this.markFade = false; }
+    const mm = this.markMesh;
+    mm.material.opacity = this.markFade ? this.markT * 0.9 : this.markT > 0 ? 0.95 : 0;
+    mm.position.y = FACE.WIN_Y + 1.3 + (this.markFade ? 0 : Math.abs(Math.sin(time * 5)) * 0.5);
 
     // coins in the tray
     for (const d of this.drops) {
@@ -444,6 +473,7 @@ export class View {
       d.m.rotation.x += dt * 9; d.m.rotation.y += dt * 5;
       d.m.position.x = Math.max(-16, Math.min(20, d.m.position.x));
       if (d.m.position.y < this.trayY) {
+        if (!d.landed) { d.landed = true; this.onLand?.(d.small); }
         d.m.position.y = this.trayY; d.vy = -d.vy * 0.25; d.vx *= 0.5;
         if (Math.abs(d.vy) < 3) { d.rest = true; d.m.position.z = 7 + Math.random() * 2; d.m.rotation.set(Math.PI / 2 + (Math.random() - 0.5) * 0.3, 0, Math.random() * 6); }
       }

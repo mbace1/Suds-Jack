@@ -3,9 +3,9 @@
 // the machine wants of you. Redrawn every frame the view draws; the symbols
 // are the old pit's pixel art (../view/textures.js).
 
-import { makeReelScreen } from '../view/textures.js?v=7';
-import { LINES, STOP_ORDER } from '../reels.js?v=7';
-import { HOLD } from './data.js?v=7';
+import { makeReelScreen } from '../view/textures.js?v=8';
+import { LINES, STOP_ORDER } from '../reels.js?v=8';
+import { HOLD } from './data.js?v=8';
 
 // the screen in the yakumono is wide, so the reel canvas is too
 export function makeLcd() {

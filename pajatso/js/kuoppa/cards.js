@@ -4,7 +4,7 @@
 // the thing it does shown happening (owner, v4: "not sure what tulips are
 // here" — so the card SHOWS a tulip catching a coin).
 
-import { drawSymbol } from '../view/textures.js?v=7';
+import { drawSymbol } from '../view/textures.js?v=8';
 
 const W = 360, H = 180;
 

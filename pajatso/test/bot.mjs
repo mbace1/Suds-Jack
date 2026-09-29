@@ -9,8 +9,8 @@
 //   planner keep enough to cover what the debt still needs, spend the surplus
 //           on the charm the machine would most like
 
-import { Engine } from '../js/engine.js?v=7';
-import { CHARMS } from '../js/data.js?v=7';
+import { Engine } from '../js/engine.js?v=8';
+import { CHARMS } from '../js/data.js?v=8';
 
 const FAVOURITE = ['silver_die', 'mint', 'rubber_stamp', 'life_nails', 'loaded_bed', 'lucky_seven', 'hot_hopper',
   'silver_lining', 'overtime', 'gutter_guards', 'collection_plate', 'horseshoe', 'rubber_pins', 'gold_standard',

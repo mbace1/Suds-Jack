@@ -317,11 +317,14 @@ dividers. A coin that misses every window joins its column and stays on
 screen (`game.pot`); **the POTTI is the red 7:00, paying seven AND the
 middle column** (KUOPPA: the middle three), so its size is on the glass before
 you pull. **v7: the base face has NO NAIL FIELD** (owner, 2026-09-28: *"only
-the slots with the pay out"*) — `BASE_FACE` in `game.js` fits the spring to
-the row (103 → 118) with ±5 wobble so the lever aims at a neighbourhood, and
-since a bare face's 7:00 catches ~1 coin in 36 whatever its guard does, the
-base POTTI opens one column rather than three. KUOPPA keeps its nails
-(`mods: {}`). Money is
+the slots with the pay out"*); **v8 fits the spring to the row** —
+`BASE_FACE` in `game.js`: 102 → 116.5, ±5 wobble, and a `vFloor` that
+REFLECTS a wobble that would foul, so a pull chooses a SIDE of the row, not a
+window. That measurement is why the lever does not claim to aim: coins bounce
+off the window edges, so it keeps a **dot per pull coloured by the result**
+and an arrow over the row marks where the last coin went. A bare face's 7:00
+catches ~1 coin in 30 whatever its guard does, so the base POTTI opens one
+column. KUOPPA keeps its nails (`mods: {}`). Money is
 markka (1:50 pays 1.5; under 1 mk is broke), 30 a session. The room is a
 Kallio bar: orange wall, teak case, black 1 mk plate, crank on the right side,
 two brown bottles on top. **The base machine gets NO pachinko parts** — those
@@ -331,17 +334,22 @@ bigger coin and its own layout, `js/classic/layout.js`; `game.js` is the pure
 rules, `view.js` the machine, the room and the camera, `art.js` the paint drawn
 from the same layout, `lang.js` the three languages (English per-key
 fallback, first visit follows `sudsJackHubLang`). Tuned by measurement: `node
-pajatso/test/face.mjs` sweeps the lever (1.05 per markka on a fresh pot, 0.97
-with the pot left to run, POTTI 1 in ~95). Lessons in `VERSIONS.md` v2/v3:
+pajatso/test/face.mjs` sweeps the lever (v8: 1.19 per markka on a fresh pot, 1.01
+with the pot left to run, POTTI 1 in ~30 paying 7 + the middle column). Lessons in `VERSIONS.md` v2/v3:
 the wedge rule as ONE pass, kickers wherever the rail can drop a coin down a
 free lane by a wall, a sparse nail field is a sweet spot (v3's first sweep
 paid 3.1 a coin at one power), and a cup sensor that reached below its floor
 paid coins that slid UNDER it. The camera is fitted to the phone's WIDTH and
 leans in on the coin in flight (`test/classic.cjs` gates ≥24 px of coin on a
 390 px phone). Controls: drag the knob and let go, a TAP pulls the last pull
-again, SPACE held, pad A or RT. Gates: `node pajatso/test/core.mjs` (114,
+again, SPACE held, pad A or RT. v8 also made winning physical (whole markka
+and a nickel 50 p into the tray, each landing heard and felt; the POTTI takes
+the camera down to the pot as the middle stack pours out), gave the rail a
+rolling voice and window edges a clack, and a session a TARGET (double the
+30, then +30 each time). Gates: `node pajatso/test/core.mjs` (158,
 both modes and the language packs), `NODE_PATH=$(npm root -g) node
-pajatso/test/classic.cjs` (32) and `.../smoke.cjs` (44, KUOPPA). Hub: id
+pajatso/test/classic.cjs` (36), `.../kuoppa.cjs` (31, KUOPPA) and
+`.../smoke.cjs` (44, the old pit). Hub: id
 `pajatso`, marquee `pajatso` (the teak case on the orange wall, the window row
 with its red 7:00, the pot's hump, a coin on the rail, bottles and crank
 cropped by the edges), accent `#ffd23f`, best score `pajatso.best` (most markka

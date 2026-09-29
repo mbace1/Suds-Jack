@@ -285,7 +285,11 @@ export class Board {
     const { V_MIN, V_MAX, R, LANE } = BOARD;
     const p = Math.max(0, Math.min(1, power));
     // a machine with a different spring passes its own range (the Pajatso's)
-    const v = (props.vMin ?? V_MIN) + ((props.vMax ?? V_MAX) - (props.vMin ?? V_MIN)) * p + this.rng.wobble(props.wobble ?? 1.5);
+    let v = (props.vMin ?? V_MIN) + ((props.vMax ?? V_MAX) - (props.vMin ?? V_MIN)) * p + this.rng.wobble(props.wobble ?? 1.5);
+    // a spring with a floor (the Pajatso's): a wobble that would drop the coin
+    // back down the lane is reflected up off it instead, so the weakest pull
+    // still reaches the face and no speed piles up at the floor itself
+    if (props.vFloor != null && v < props.vFloor) v = props.vFloor + (props.vFloor - v);
     const scale = props.scale ?? 1;
     const coin = {
       id: _uid++, x: -R + (props.lane ?? LANE) / 2, y: props.y ?? 9.6, vx: 0, vy: v,
