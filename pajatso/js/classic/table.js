@@ -4,8 +4,9 @@
 // machine (main.js) and KUOPPA (../kuoppa/main.js) each mount one and bring
 // only what is theirs — the rules, the events, the sheets between rounds.
 
-import { t, mk, getLang, setLang, LANGS } from './lang.js?v=7';
-import { sfx, initAudio, setMuted, isMuted } from '../audio.js?v=7';
+import { t, mk, getLang, setLang, LANGS } from './lang.js?v=8';
+import { sfx, initAudio, setMuted, isMuted, roll } from '../audio.js?v=8';
+import { BOARD } from '../board.js?v=8';
 import { watchPad } from '../../../hub/pad.js?v=10';   // the SAME token shell.js asks for: one reader on the page
 
 export const params = new URLSearchParams(location.search);
@@ -33,7 +34,15 @@ export function mountTable(o) {
     pulling: null,              // 'touch' | 'key' | 'pad' | 'trigger'
     lastPull: store.get('pajatso.last', null),
     time: 0,
+    // THE LEVER'S MEMORY: the last pulls, each a dot beside the slot at the
+    // power it was pulled at, coloured by what that coin did. A spring this
+    // loose has no honest "this spot is that window" — so the lever shows you
+    // where YOUR pulls went, and the map is the one you draw yourself.
+    marks: store.get(o.marksKey ?? 'pajatso.marks', []),
+    marksDirty: true,
   };
+  const MARKS = 14;
+  const saveMarks = () => { st.marksDirty = true; store.set(o.marksKey ?? 'pajatso.marks', st.marks); };
   const live = () => st.started && !st.paused && !o.blocked?.();
 
   // ── first-time lines: each once per browser, never twice ─────────────
@@ -58,6 +67,17 @@ export function mountTable(o) {
     lever.querySelector('.fill').style.height = `${st.power * span}px`;
     const gh = lever.querySelector('.ghost');
     if (st.lastPull != null) { gh.hidden = false; gh.style.top = `${40 + st.lastPull * span}px`; }
+    if (st.marksDirty || st.marksSpan !== span) {
+      st.marksDirty = false; st.marksSpan = span;
+      const box = lever.querySelector('.marks');
+      box.replaceChildren(...st.marks.map((m, i) => {
+        const d = document.createElement('i');
+        d.className = `m ${m.r ?? 'wait'}`;
+        d.style.top = `${40 + m.p * span}px`;
+        d.style.opacity = String(0.3 + 0.7 * ((i + 1) / st.marks.length));
+        return d;
+      }));
+    }
     lever.setAttribute('aria-valuenow', String(Math.round(st.power * 100)));
     lever.classList.toggle('busy', !game().canPull);
     $('pow').textContent = `${Math.round(st.power * 100)}%`;
@@ -70,6 +90,10 @@ export function mountTable(o) {
     const pulled = game().pull(p);
     if (pulled) {
       st.lastPull = p; store.set('pajatso.last', p);
+      st.marks.push({ p: Math.round(p * 1000) / 1000, r: null });
+      while (st.marks.length > MARKS) st.marks.shift();
+      saveMarks();
+      view.clearMark?.();
       if (p > 0.8) setTimeout(() => tip('right'), 1500);
     }
     o.onRelease?.(p, pulled);
@@ -239,7 +263,30 @@ export function mountTable(o) {
   $('resume').addEventListener('click', resume);
 
   // ── the loop ──────────────────────────────────────────────────────────
-  const drain = () => { for (const ev of game().drain()) o.onEvent(ev); };
+  // what each coin did, for the lever's memory and the arrow over the row
+  function result(ev) {
+    const m = st.marks[st.marks.length - 1];
+    let r = null, x = ev.x;
+    if (ev.t === 'win') r = ev.kind === 'potti' ? 'potti' : ev.kind === 'R' ? 'back' : 'win';
+    else if (ev.t === 'lost' || ev.t === 'tilt') r = 'pot';
+    else if ((ev.t === 'foul' || ev.t === 'returned') && m && m.r == null) { st.marks.pop(); saveMarks(); return; }
+    if (!r) return;
+    if (x != null) view.mark?.(x, r);
+    if (m && m.r == null) { m.r = r; saveMarks(); }
+  }
+  const drain = () => { for (const ev of game().drain()) { result(ev); o.onEvent(ev); } };
+  // every coin that lands in the tray is heard, and under a thumb felt
+  view.onLand = small => { sfx.tray(small); buzz(small ? 4 : 6); };
+  // the coin on the rail: one held voice following its speed
+  const { C, R } = BOARD;
+  function rolling() {
+    const c = game().board.coins[0];
+    if (!c || st.paused) return roll(0);
+    const d = Math.hypot(c.x - C.x, c.y - C.y);
+    const onArc = c.y > C.y - 2 && Math.abs(d - (R - c.r)) < 0.5;
+    const inLane = c.x < -game().L.Rin;
+    roll(onArc || inLane ? Math.hypot(c.vx, c.vy) : 0);
+  }
   let lastT = performance.now();
   function frame(now) {
     requestAnimationFrame(frame);
@@ -252,6 +299,7 @@ export function mountTable(o) {
       game().update(dt);
       drain();
     }
+    rolling();
     if (toastT > 0) { toastT -= dt; if (toastT <= 0) $('toast').classList.remove('show'); }
     if (tipTimer > 0) { tipTimer -= dt; if (tipTimer <= 0) $('tip').hidden = true; }
     layout();

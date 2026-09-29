@@ -74,6 +74,28 @@ function roomTone() {
   const g2 = ctx.createGain(); g2.gain.value = 0.6; o2.connect(g2); g2.connect(room); o2.start();
 }
 
+// THE ROLL: a coin running round the chrome rail is one held voice, not a
+// string of ticks — a loop of filtered noise whose loudness and pitch follow
+// the coin's speed, silent the moment it leaves the rail. `roll(0)` is off.
+let rollGain = null, rollFilter = null;
+export function roll(speed = 0) {
+  if (!ctx) return;
+  if (!rollGain) {
+    const len = ctx.sampleRate;
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    // brown-ish noise: a rumble rather than a hiss
+    let v = 0; for (let i = 0; i < len; i++) { v = (v + (Math.random() * 2 - 1) * 0.12) * 0.985; d[i] = v * 3; }
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    rollFilter = ctx.createBiquadFilter(); rollFilter.type = 'bandpass'; rollFilter.Q.value = 1.4; rollFilter.frequency.value = 500;
+    rollGain = ctx.createGain(); rollGain.gain.value = 0;
+    src.connect(rollFilter); rollFilter.connect(rollGain); rollGain.connect(bus); src.start();
+  }
+  const k = Math.max(0, Math.min(1, speed / 120));
+  const t = ctx.currentTime;
+  rollGain.gain.setTargetAtTime(muted ? 0 : k * 0.22, t, k > 0 ? 0.03 : 0.06);
+  rollFilter.frequency.setTargetAtTime(300 + k * 1500, t, 0.05);
+}
+
 // ── the machine ──────────────────────────────────────────────────────────
 export const sfx = {
   launch() { if (!limit('launch', 60)) return; noise(0.05, { f: 900, q: 0.8, vol: 0.12 }); tone(180, { type: 'triangle', dur: 0.09, vol: 0.12, slide: 2.4 }); },
@@ -104,6 +126,18 @@ export const sfx = {
       noise(0.05, { f: 5000, q: 1.5, vol: 0.05, at: 0.12 + i * 0.03 });
     }
     if (value >= 5) tone(value >= 25 ? 1320 : 990, { type: 'triangle', dur: 0.2, vol: 0.06, at: 0.15 });
+  },
+  // a coin hitting the chrome edge of a window: a dull clack, not a ping
+  clack(v = 10) {
+    if (!limit('clack', 40)) return;
+    noise(0.04, { f: 1800 + Math.random() * 600, q: 3, vol: Math.min(0.14, 0.04 + v / 300) });
+    tone(620 + Math.random() * 120, { type: 'triangle', dur: 0.05, vol: Math.min(0.08, 0.02 + v / 500) });
+  },
+  // one coin landing in the tray: every one of them, so a jackpot is a rain
+  tray(small = false) {
+    if (!limit('tray', 22)) return;
+    tone((small ? 4200 : 3000) + Math.random() * 1600, { dur: 0.06, vol: 0.05 });
+    noise(0.05, { f: 5200, q: 1.5, vol: 0.045 });
   },
   gutter() { tone(160, { type: 'sine', dur: 0.3, vol: 0.06, slide: 0.4 }); },
   hopper() { if (!limit('hopper', 40)) return; tone(1800 + Math.random() * 800, { dur: 0.05, vol: 0.05 }); },

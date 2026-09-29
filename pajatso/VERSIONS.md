@@ -4,6 +4,48 @@ The game was PACHI PIT for its first release; v2 renamed it and made the
 Finnish coin wall game the front door. The pit run is still here as KUOPPA
 (`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
 
+## v8 — 2026-09-29 — the base machine, made to be played by hand
+
+The owner, on the five next steps for the base machine: *"Yes to all."* KUOPPA
+waits until the base machine feels right.
+
+**The spring is fitted to the row.** v7's lever ran 103 → 118 and, mapped with
+the wobble off, left the two left windows out of reach while the last tenth of
+the travel folded back to the middle. v8 runs **102 → 116.5**, and the wobble
+that used to foul a soft pull back down the lane is now **reflected up off a
+floor** (`vFloor`, `board.launch`) — nothing piles up at the floor and nothing
+fouls. Measured (`face.mjs`): **1.19 a markka on a fresh pot, 1.01 with the pot
+left to run**, the soft half of the lever about 1.2 and the hard half about 0.7.
+
+**The lever remembers instead of pretending to aim.** The plan was a tick per
+window on the lever. The measurement said no: coins land on the chrome window
+edges and bounce, so a pull chooses a SIDE of the row, not a window, and the
+7:00 is a few-percent chance spread over the whole soft half. Ticks that said
+"this spot is that window" would have lied. So the lever keeps **a dot per
+pull** (the last fourteen, per page) at the power it was pulled, coloured by
+what that coin did — gold a win, white an R, red the POTTI, grey the pot — and
+an **arrow over the window row** stands where the last coin went until the next
+pull. The map is the one you draw yourself.
+
+**Winning is coins, not a number.** A win drops its whole markka into the tray
+and, for a 1:50, one **nickel 50 p**; every coin that lands is its own clink
+and, under a thumb, a tick of vibration (`view.onLand`). The POTTI pulls the
+**camera down to the pot** and the middle stack **collapses from the top**, coin
+by coin, into the tray.
+
+**The flight has a voice.** A coin on the rail is one held **roll** — filtered
+noise whose loudness and pitch follow its speed, silent the moment it leaves the
+rail (`roll()` in `audio.js`). A coin on a chrome window edge **clacks** (and is
+felt when it hits hard); everything else keeps its small ping.
+
+**A session has a target**: double what you sat down with, then 30 more each
+time it is reached, with a toast and the count on the sheet when you go broke.
+A chalkboard of the day's best was considered and left out: on a phone the wall
+it would hang on is off the screen.
+
+Gates: `core.mjs` 158, `classic.cjs` 36 (four new checks: the dots, the arrow, the
+POTTI pouring into the tray, the target moving on), `kuoppa.cjs` 31.
+
 ## v7 — 2026-09-28 — the base machine is windows and nothing else
 
 The owner, after playing v6: *"Pajatso itself should only have the slots with

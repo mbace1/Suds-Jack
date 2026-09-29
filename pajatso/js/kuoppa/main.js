@@ -4,15 +4,15 @@
 // nudge's voice, and the sheets between rounds — the vendor, the lock that
 // opens with its part's card, the end.
 
-import { Kuoppa, DATA as D, JOKER, CHARM } from './run.js?v=7';
-import './words.js?v=7';
-import { View } from '../classic/view.js?v=7';
-import { JACKPOT, LABEL } from '../classic/layout.js?v=7';
-import { getLang } from '../classic/lang.js?v=7';
-import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from '../classic/table.js?v=7';
-import { makeLcd, drawLcd } from './lcd.js?v=7';
-import { partCard } from './cards.js?v=7';
-import { STOP_ORDER, TIMING } from '../reels.js?v=7';
+import { Kuoppa, DATA as D, JOKER, CHARM } from './run.js?v=8';
+import './words.js?v=8';
+import { View } from '../classic/view.js?v=8';
+import { JACKPOT, LABEL } from '../classic/layout.js?v=8';
+import { getLang } from '../classic/lang.js?v=8';
+import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from '../classic/table.js?v=8';
+import { makeLcd, drawLcd } from './lcd.js?v=8';
+import { partCard } from './cards.js?v=8';
+import { STOP_ORDER, TIMING } from '../reels.js?v=8';
 
 let game = new Kuoppa({ seed: seedFrom() });
 const lcd = makeLcd();
@@ -44,6 +44,7 @@ const winName = k => ({ R: 'R', one: '1:00', half: '1:50', potti: '7:00', tulip:
 
 const sheetOpen = () => !$('run').hidden;
 const table = mountTable({
+  marksKey: 'kuoppa.marks',
   game: () => game,
   view,
   tips: { pull: 'tipPull', round: 'kTipRound', vendor: 'kTipVendor', nudge: 'tipNudge', again: 'tipAgain', right: 'tipRight', deadline: 'kTipDeadline' },

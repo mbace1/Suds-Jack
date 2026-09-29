@@ -15,9 +15,9 @@
 // Money is in markka. 1:50 pays one and a half, so a purse can hold 50 p;
 // a pull takes a whole markka.
 
-import { Board, BOARD } from '../board.js?v=7';
-import { makeRng } from '../rng.js?v=7';
-import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS, MIDDLE } from './layout.js?v=7';
+import { Board, BOARD } from '../board.js?v=8';
+import { makeRng } from '../rng.js?v=8';
+import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS, MIDDLE } from './layout.js?v=8';
 
 export const START_COINS = 30;
 // The face is stepped faster than the pachinko board: BOARD.G is slowed so a
@@ -26,16 +26,17 @@ export const START_COINS = 30;
 export const SPEED = 1.7;
 // THE BASE MACHINE (owner, 2026-09-28: "Pajatso itself should only have the
 // slots with the pay out ... no need for the little nails"): no nail field, so
-// a pull is the spring against the windows and nothing else. The spring's
-// travel is fitted to the row (102 lands on the far left 1:00, 117 the far
-// right; the soft end starts at 103 so a wobble under it seldom fouls; past that the rail carries a coin round to the kickers), and it is a
-// hand on a spring, not a gun (wobble ±5 around where you let go), so a pull
-// aims at a neighbourhood of windows. On a bare face the 7:00 in the middle
-// catches 1 coin in ~36 whatever the guard does, so here the POTTI opens the
-// MIDDLE column only — three made the soft half of the lever pay 1.7 a markka.
-// Measured (face.mjs): 1.10 a markka on a fresh pot, 0.97 with the pot left to
-// run, the best pull ~1.3, fouls ~2%. KUOPPA keeps its nails (`mods: {}`).
-export const BASE_FACE = { nails: false, wobble: 5, vMin: 103, vMax: 118, pottiCols: [MIDDLE] };
+// a pull is the spring against the windows and nothing else. v8 fitted the
+// spring to the row: 102 → 116.5 spans it (past that the rail carries a coin
+// round and back), a wobble of ±5 makes a pull a SIDE of the row rather than
+// one window, and the floor reflects a wobble that would have dropped the coin
+// back down the lane, so the weakest pull still plays and nothing fouls. On a
+// bare face the 7:00 catches ~1 coin in 30 whatever its guard does, so the
+// POTTI opens only the MIDDLE column. Measured (face.mjs): 1.19 a markka on a
+// fresh pot, 1.01 with the pot left to run; the soft half of the lever about
+// 1.2, the hard half about 0.7 — knowing that is the skill, and doubling your
+// 30 at the best spot is a long evening, not a certainty.
+export const BASE_FACE = { nails: false, vMin: 102, vMax: 116.5, vFloor: 101.8, wobble: 5, pottiCols: [MIDDLE] };
 // THE NUDGE (owner: "tapping the phone to give the coin some momentum"): a
 // bump of the cabinet shoves the coin toward where you tapped. Two a coin are
 // free; the third trips the TILT and the coin is the machine's.
@@ -76,7 +77,7 @@ export class Pajatso {
     this.spend();
     this.stats.shots++;
     this.lastPower = p;
-    this.board.launch(p, { scale: FACE.SCALE, vMin: this.L.mods.vMin ?? FACE.V_MIN, vMax: this.L.mods.vMax ?? FACE.V_MAX, lane: FACE.LANE, y: 7.2, wobble: this.L.mods.wobble ?? 4.5 });
+    this.board.launch(p, { scale: FACE.SCALE, vMin: this.L.mods.vMin ?? FACE.V_MIN, vMax: this.L.mods.vMax ?? FACE.V_MAX, vFloor: this.L.mods.vFloor, lane: FACE.LANE, y: 7.2, wobble: this.L.mods.wobble ?? 4.5 });
     this.phase = 'flight';
     this.events.push({ t: 'insert', coins: this.coins });
     return true;
