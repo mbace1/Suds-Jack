@@ -77,6 +77,72 @@ Port `cover-edges.js`, `directional-cover.mjs` and `design/C11_PORT_VECTORS.json
 New lab checkpoint version 4 / rules c11-v1; preserve campaign and Bear Path rules.
 Use resolved impact classifications for presentation; never reapply damage on recovery.
 
+## v4.65 — 2026-09-29
+
+**A ten-day chapter of spine and doors (H1 + H2 of The Long Game).** Owner, 2026-09-29: "Go ahead" on design/H1_H2_PLAN.md, and answer 23: "Fights everyday, depending on the mission. Maybe 2 per day."
+
+- **H1, ten days.**
+  - Chapter 1 runs days 1–10: 20 blocks, 17 encounters. Days 1–7 are unchanged. Days 8–10 add three spine beats:
+    - *The Man Who Stayed*, day 8 at Piritori. Kello's reckoning, read from how the Thursday Tram was answered.
+    - *The Families Keep Books*, day 9 night at Linjat. A family calls in what it thinks you owe, read from standing.
+    - *The Shipment*, day 10 night at the new Sörnäinen quay site.
+  - The other three blocks of days 8–10 are doors.
+  - The debt payments stay on days 4 and 7.
+- **The shipment is on the schedule.** It is no longer a button in the ledger. Once the chapter goal is met, run it for its €400 stake, and it goes clean, messy or lost as before. If you can't run it, the boat leaves without you (the new outcome `missed`). You can also sell your slot to the McCormicks. Either way the chapter closes.
+- **Pasila is a look ahead (H8).**
+  - Day 7's four choices at Jaska's no longer end the game: `forecast-ending:best-match` records `memory:pasila-forecast:<id>` and the run goes on.
+  - After day 10 the game shows *Chapter 1 closes — to be continued*: the operation's outcome, H7's *Into chapter 2* list, and *Where this road points*, the Pasila ending the run is heading for (`forecastEnding`, pure).
+  - "Start a new ten days" replaces seven.
+- **H2, doors.** `content/doors-v1.json` holds 14 templates across six kinds (gig, pickup, sale, favour, watch, hit). Each has who offers it, where, a risk, a briefing with three steps and the stakes, things to look at, and choices in the ordinary grammar. `doors.js` is new and pure:
+  - A free block offers 2–3 doors, rolled once from the save and kept, so a reload shows the same board. No kind repeats before every kind has had a turn.
+  - Each door is pinned on the map. Taking one makes it the block's encounter at its anchor, with that anchor's scene. You walk there, do it, and it costs the block.
+  - A door is taken once a chapter.
+  - A *late* door opens only at night and closes when the block clock passes 22:00.
+- **Answer 23: fights every day, at most two.**
+  - Four doors can become a fight: two hits, a pickup and a sale. A fight depends on the job, not only on "hit".
+  - While fewer than two fights have happened today, every door block offers at least one of them.
+  - A fight choice needs a crew and `fights-today<2`. Every real fight counts toward the day (`recordFight`), so a road fight counts too.
+  - A door fight has no mission behind it; win or lose pays the door's own stakes (`fight.win` / `fight.lose`).
+  - Days 1–7 keep their authored rhythm until H6.
+- **Answers 24 and 25: fights are central, and bad deals escalate.**
+  - Nine doors now carry a fight. Ten choices are bad deals with `escalates` (skimming, looking inside, staying too long, a false name, selling what you saw), each at 20–50%, printed on the card as *can go bad · N%*.
+  - On a bad roll (deterministic, `escalation()` in doors.js) the door's own fight starts if the crew is there. If it is not, the door's losing stakes are paid.
+  - Nothing escalates past two fights a day, and every door keeps a safe way out.
+  - Answer 24, "Aatami fights in first fights and then has minions do fighting" (COMBAT.md §9.9.1), is recorded. City battles do not yet put him on the board; that is H6's first item.
+- `state.js` v8, cascaded: `currentSchedule` resolves a taken door, and the new requirements `fights-today` and `chapter-goal-met` exist. The effects `forecast-ending`, `chapter-ending:attempt` and `chapter-ending:missed` are added.
+- Gates: `doors.mjs` 692 (new: canon, offers, the late rule, taking, two fights a day, escalation, the beats, the look-ahead ending, a whole ten-day chapter), `doors-browser.cjs` 36 (new: desktop and phone, a door taken, walked to and done, a door fight, and a bad deal going bad with and without a crew). `chapter-browser.cjs` is now 20: the shipment is a real tap on day 10's night, and the chapter-close screen is checked. `v3-state` walks the authored week and no longer expects an ending. `validate-slice` expects 10 days, 20 blocks and 17 encounters.
+
+### Port
+
+Godot:
+- `doors-v1.json` (synced), `doors.gd`, days 8–10 and the three beats.
+- The shipment on the schedule, with the `missed` outcome.
+- `forecast-ending`, and the chapter-close screen with *Into chapter 2* and *Where this road points*.
+- `fights-today` and the daily count.
+- A door fight paying the door's own stakes.
+- Escalation (`escalates`, rolled with the label `escalate:<door>:<choice>`), and the *can go bad* tag.
+
+**Status: landed in Godot 2026-09-29** (branch `godot/h1h2-port`). `doors-v1.json` is synced (and `--check`ed). `scripts/city/doors.gd` is `doors.js`: the same `door:` roll labels in the same order, offers kept in `GameState.doors` under the web's key and shape, a taken door registered as the block's encounter (re-registered after a load) and standing at its own anchor. `GameState` gains `current_schedule`, `current_day`, `fights_today`/`record_fight` (`fightsByDay`), the `fights-today` and `chapter-goal-met` requirements, and `forecast-ending`, `chapter-ending:attempt` and `chapter-ending:missed`, with `forecast_ending` in the web's order. On screen: a door board heads the city rail on a free block (kind · from · where, title, premise, three steps, risk/fight/late tags, stakes, TAKE), each door pinned on the map, CHOOSE A DOOR as the lit step, the door briefed in its scene, a door fight recorded as such (no mission, the door's stakes on the result), and answer 25's bad deals: *can go bad · N%* on the choice, the `escalate:<door>:<choice>` roll taken before the block turns, the door's fight with a crew or its losing stakes alone. The ledger no longer carries the shipment button; after day 10 the city shows CHAPTER 1 CLOSES · TO BE CONTINUED with INTO CHAPTER 2, WHERE THIS ROAD POINTS and START A NEW TEN DAYS. `tools/web-reference.mjs` now records 90 door boards, five chains of takes, 540 bad-deal rolls and a whole ten-day walk, and test_story holds the Godot build to all of it.
+
+## v4.64 — 2026-09-29
+
+**The chapter turn (H7 of The Long Game).** Owner, 2026-09-29: "good to go in your order", with H7 first. Answer 21: time keeps the web rule, so the block turns only on a story beat, a door or nightfall, never on a trip or a trade. Answer 22: weapons carry; cash and produce need not, and each chapter opens on a standard stake. "Let's test these."
+
+- **`chapter_turn` in canon** (`content/era1-slice-v1.json`) gives one word per thing:
+  - `stake`: cash opens at €160.
+  - `reset`: stock, and mission unlocks, which are re-earned.
+  - `carry`: gear, crew, standing, contacts, built upgrades, debt, favours owed, markka, the exit fund and memories.
+  - It is the GDD persistence table of 2026-08-22 made data: what you built persists, what you were granted does not. Temporary help is dropped.
+- **`chapter.js` (new, pure).** `turnPlan` reads the save and changes nothing; `turnChapter` applies the rules and is the only writer. `turnChapter` opens the next chapter's goal and resets the chapter's own count, so the threshold counts this chapter only. It leaves `memory:chapter-turned:N`. Flipping a rule in the data flips the turn; the gate checks both directions.
+- **On screen.** After the Sörnäinen shipment, the chapter panel lists *Into chapter 2*: each row's value now → next, and whether it carries, resets or goes to the stake. It is shown, not applied: chapter 2 is not authored yet (H1+H2 is next), and the panel says so.
+- Gates: `chapter.mjs` 41 (new) and `chapter-browser.cjs` 16 (new: the shipment is a real tap, desktop and phone). The existing node gates are unchanged and green.
+
+### Port
+
+Godot: the same `chapter_turn` rules and turn (plan reads, turn writes, `memory:chapter-turned:N`), the *Into chapter 2* list after the operation, and answer 21: a ledger trade no longer spends a block.
+
+**Status: landed in Godot 2026-09-29** (branch `godot/h7-port`). `scripts/city/chapter.gd` is `chapter.js`: `turn_plan` reads the save against `chapter_turn` in canon and changes nothing; `turn_chapter` is the only writer (carry/reset/stake, the next chapter's goal, progress counters to zero, temporary crew dropped, `memory:chapter-turned:N` in the memories, which `has_flag` reads as the web's flag). It replaces Godot's older `begin_next_chapter`, whose ledger (cash to zero, flags cleared, gear decayed, day jumped) predated answer 22, and the chapter is no longer derived from the day, so a turn cannot be undone by the next block. After the shipment the market rail lists INTO CHAPTER 2 (label, now → next, carries / resets / standard stake) and says chapter 2 opens in a later build; there is no way on until chapter 2 is authored. Answer 21: `execute_offer` no longer calls `advance_block`, and the trade button no longer says it costs a block. Tests: test_story mirrors `chapter.mjs` (including a flipped copy of the rules), test_spine's ledger runs the real ending and turn, test_shell presses the shipment and reads the list, and both spine and shell assert a trade turns no block.
+
 ## v4.63 — 2026-09-28
 
 **Kello's cut pays, and the network carries the Thursday Load.** Owner, 2026-09-28: "1-4 go ahead". Item 2: the cut pays weekly, with the growing risk the pitch promised. Item 3: more road events tied to the Thursday Load through the network of odd Kallio people.
@@ -95,6 +161,8 @@ Use resolved impact classifications for presentation; never reapply damage on re
 ### Port
 
 Godot: the cut (`thursday-cut` / `cut-ended`, `state.cut.payments`, €30 per night, discovery 35% × n from payment 2, the same FNV roll labelled `kello-cut:<n>`), the story-triggered road event (never rolled), and the five network events plus two clues (data).
+
+**Status: landed in Godot 2026-09-29** (branch `godot/h7-port`). `PiritoriStory.settle_cut` is `settleCut`, saved as `cut: {payments}` under the web's key; `GameState.advance_block` settles it once a night block has ended (the web's `advanceAndSettle`), and a found-out cut raises the event through `PiritoriRoad.force` (`forceRoad`), which the road guard opens on the next screen. The city rail says "Kello's cut, counted on the square" for the block it landed in (en/fi/ja). `tools/web-reference.mjs` now walks the web's cut night by night and test_story holds every payment, roll and discovery to it (found out at block 4 on the reference save). The five network events and two clues arrived through sync earlier.
 
 ## v4.62 — 2026-09-27
 
