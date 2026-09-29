@@ -15,9 +15,9 @@
 // Money is in markka. 1:50 pays one and a half, so a purse can hold 50 p;
 // a pull takes a whole markka.
 
-import { Board, BOARD } from '../board.js?v=8';
-import { makeRng } from '../rng.js?v=8';
-import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS, MIDDLE } from './layout.js?v=8';
+import { Board, BOARD } from '../board.js?v=9';
+import { makeRng } from '../rng.js?v=9';
+import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS, MIDDLE } from './layout.js?v=9';
 
 export const START_COINS = 30;
 // The face is stepped faster than the pachinko board: BOARD.G is slowed so a
@@ -163,14 +163,29 @@ export class Pajatso {
     this.events.push({ t: 'win', pay, column, cup: p.id, kind: p.pay, x: p.x, y: p.y });
   }
 
-  // a coin that missed every window joins the pile behind the glass. A full
-  // column spills into the cash box, which nobody sees again.
+  // a coin that missed every window joins the pile behind the glass. A coin
+  // that lands on a FULL stack bounces off its top onto the next one — toward
+  // the side it came down on, then the other way — and rolls on across full
+  // stacks until one has room; only when every stack is full does it go to the
+  // cash box, which nobody sees again. So the pot fills sideways, and the
+  // middle column the POTTI opens keeps being fed from its neighbours.
   intoPot(k, x) {
     if (k == null) k = this.L.columns.find(c => x >= c.x0 && x < c.x1)?.k ?? (x < 0 ? 0 : this.pot.length - 1);
-    const kept = this.pot[k] < FACE.COL_MAX;
-    if (kept) this.pot[k]++;
+    let dest = k;
+    if (this.pot[k] >= FACE.COL_MAX) {
+      dest = null;
+      const side = x >= this.L.columns[k].x ? 1 : -1;
+      for (let d = 1; d < this.pot.length && dest == null; d++) {
+        for (const s of [side, -side]) {
+          const j = k + s * d;
+          if (j >= 0 && j < this.pot.length && this.pot[j] < FACE.COL_MAX) { dest = j; break; }
+        }
+      }
+    }
+    const kept = dest != null;
+    if (kept) this.pot[dest]++;
     this.stats.lost++;
-    this.events.push({ t: 'lost', x, column: k, kept, height: this.pot[k] });
+    this.events.push({ t: 'lost', x, column: kept ? dest : k, from: k, kept, height: this.pot[kept ? dest : k] });
   }
 
   credit(pay, kind, id) {

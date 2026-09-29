@@ -12,19 +12,19 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { makeRng, seedOf } from '../js/rng.js?v=8';
-import { Board, buildLayout, BOARD } from '../js/board.js?v=8';
-import { Pusher, PUSHER } from '../js/pusher.js?v=8';
-import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=8';
-import { Engine, computeRules, VERSION } from '../js/engine.js?v=8';
-import * as D from '../js/data.js?v=8';
-import { playRun, playShift } from './bot.mjs?v=8';
-import { buildPajatso, FACE, PAYS, JACKPOT, WINDOWS, LABEL, POT_START, POTTI_COLS, MIDDLE, columnAt } from '../js/classic/layout.js?v=8';
-import { _STR } from '../js/classic/lang.js?v=8';
-import '../js/kuoppa/words.js?v=8';
-import { Kuoppa, computeRules as kRules, DATA as KD } from '../js/kuoppa/run.js?v=8';
-import { playRun as playKuoppa, POLICIES } from './runbot.mjs?v=8';
-import { Pajatso, START_COINS } from '../js/classic/game.js?v=8';
+import { makeRng, seedOf } from '../js/rng.js?v=9';
+import { Board, buildLayout, BOARD } from '../js/board.js?v=9';
+import { Pusher, PUSHER } from '../js/pusher.js?v=9';
+import { drawOutcome, buildGrid, linesShown, reachLines, LINES } from '../js/reels.js?v=9';
+import { Engine, computeRules, VERSION } from '../js/engine.js?v=9';
+import * as D from '../js/data.js?v=9';
+import { playRun, playShift } from './bot.mjs?v=9';
+import { buildPajatso, FACE, PAYS, JACKPOT, WINDOWS, LABEL, POT_START, POTTI_COLS, MIDDLE, columnAt } from '../js/classic/layout.js?v=9';
+import { _STR } from '../js/classic/lang.js?v=9';
+import '../js/kuoppa/words.js?v=9';
+import { Kuoppa, computeRules as kRules, DATA as KD } from '../js/kuoppa/run.js?v=9';
+import { playRun as playKuoppa, POLICIES } from './runbot.mjs?v=9';
+import { Pajatso, START_COINS } from '../js/classic/game.js?v=9';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const GAME = path.resolve(HERE, '..');
@@ -442,6 +442,15 @@ section('pajatso: the rules');
   m.pull(0.5); m.drain(); m.onBoard({ t: 'pocket', pocket: 'c6' });
   const lost = m.drain().find(e => e.t === 'lost');
   check('a coin that misses every window joins its column of the pot', lost?.column === 6 && m.pot[6] === POT_START[6] + 1 && m.pottiNow === 7 + col + 1);
+  // a full stack bounces the coin on to the next one with room, toward the
+  // side it came down on; only a pot full everywhere loses it to the cash box
+  const fp = new Pajatso({ seed: 9, coins: 5 });
+  fp.pot[2] = fp.pot[3] = fp.pot[4] = FACE.COL_MAX;
+  fp.intoPot(3, fp.L.columns[3].x + 0.5);
+  const hop = fp.drain().find(e => e.t === 'lost');
+  check(`a coin on a full stack bounces on to the next with room (${hop?.from} → ${hop?.column})`, hop?.kept && hop.from === 3 && hop.column === 5 && fp.pot[5] === POT_START[5] + 1);
+  fp.pot.fill(FACE.COL_MAX); fp.intoPot(6, 1.5);
+  check('only a pot full everywhere loses the coin to the cash box', fp.drain().find(e => e.t === 'lost')?.kept === false);
   const full = new Pajatso({ seed: 9, coins: 5, pot: POT_START.map(() => FACE.COL_MAX) });
   full.pull(0.5); full.drain(); full.onBoard({ t: 'pocket', pocket: 'c0' });
   check('a full column spills into the cash box: the pile never grows past the glass', full.pot[0] === FACE.COL_MAX && full.drain().find(e => e.t === 'lost')?.kept === false);

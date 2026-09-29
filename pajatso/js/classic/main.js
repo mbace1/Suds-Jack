@@ -2,10 +2,10 @@
 // about what happens in it. The lever, keys, pad, HUD voices, language and
 // loop are the table both pages stand at (table.js).
 
-import { Pajatso, START_COINS } from './game.js?v=8';
-import { View } from './view.js?v=8';
-import { JACKPOT } from './layout.js?v=8';
-import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=8';
+import { Pajatso, START_COINS } from './game.js?v=9';
+import { View } from './view.js?v=9';
+import { JACKPOT } from './layout.js?v=9';
+import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=9';
 
 const BEST = 'pajatso.best';
 let game = new Pajatso({ seed: seedFrom() });
@@ -71,7 +71,7 @@ function onEvent(ev) {
       else { sfx.win(ev.pay > 1 ? 'bell' : 'cherry'); buzz(24); }
       break;
     }
-    case 'lost': sfx.miss(); if (ev.kept) view.toPot(ev.column, ev.height); break;
+    case 'lost': sfx.miss(); if (ev.kept) view.toPot(ev.column, ev.height, ev.from); break;
     case 'foul': sfx.foul(); table.toast(t('foul'), t('foulSub'), '', 1600); break;
     case 'returned': sfx.beep(); table.toast(t('returned'), t('returnedSub'), '', 1400); break;
     case 'ready': {

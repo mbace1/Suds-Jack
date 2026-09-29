@@ -346,7 +346,10 @@ again, SPACE held, pad A or RT. v8 also made winning physical (whole markka
 and a nickel 50 p into the tray, each landing heard and felt; the POTTI takes
 the camera down to the pot as the middle stack pours out), gave the rail a
 rolling voice and window edges a clack, and a session a TARGET (double the
-30, then +30 each time). Gates: `node pajatso/test/core.mjs` (158,
+30, then +30 each time). **v9: a coin landing on a FULL stack bounces
+along the tops to the next one with room** (`intoPot`), so the pot fills
+sideways and feeds the POTTI's column; only a pot full everywhere loses a
+coin to the cash box. Gates: `node pajatso/test/core.mjs` (160,
 both modes and the language packs), `NODE_PATH=$(npm root -g) node
 pajatso/test/classic.cjs` (36), `.../kuoppa.cjs` (31, KUOPPA) and
 `.../smoke.cjs` (44, the old pit). Hub: id

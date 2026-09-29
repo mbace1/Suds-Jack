@@ -4,6 +4,24 @@ The game was PACHI PIT for its first release; v2 renamed it and made the
 Finnish coin wall game the front door. The pit run is still here as KUOPPA
 (`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
 
+## v9 — 2026-09-29 — a full stack passes the coin on
+
+The owner: *"The coins stacks that are full below should make the coins bounce
+to the next stack."* Until now a coin that landed on a full column (15 coins)
+went to the cash box and was never seen again. Now it **drops onto the top of
+the full stack, bounces along the tops of the full stacks, and falls into the
+first one with room** — toward the side it came down on first, then the other
+way (`intoPot` in `game.js`; the hop is drawn in `view.toPot`, and each bounce
+clacks). Only a pot that is full everywhere loses a coin to the cash box.
+
+The pot now fills sideways, so the middle column the POTTI opens keeps being
+fed from its neighbours. Measured (`face.mjs`): 1.19 a markka on a fresh pot
+(unchanged — a fresh pot has no full stacks), **1.07 with the pot left to
+run** (was 1.01), the POTTI about 1 in 32 as before.
+
+Gates: `core.mjs` 160 (two new checks: the bounce, and the cash box only when
+every stack is full).
+
 ## v8 — 2026-09-29 — the base machine, made to be played by hand
 
 The owner, on the five next steps for the base machine: *"Yes to all."* KUOPPA

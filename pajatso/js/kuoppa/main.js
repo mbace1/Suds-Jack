@@ -4,15 +4,15 @@
 // nudge's voice, and the sheets between rounds — the vendor, the lock that
 // opens with its part's card, the end.
 
-import { Kuoppa, DATA as D, JOKER, CHARM } from './run.js?v=8';
-import './words.js?v=8';
-import { View } from '../classic/view.js?v=8';
-import { JACKPOT, LABEL } from '../classic/layout.js?v=8';
-import { getLang } from '../classic/lang.js?v=8';
-import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from '../classic/table.js?v=8';
-import { makeLcd, drawLcd } from './lcd.js?v=8';
-import { partCard } from './cards.js?v=8';
-import { STOP_ORDER, TIMING } from '../reels.js?v=8';
+import { Kuoppa, DATA as D, JOKER, CHARM } from './run.js?v=9';
+import './words.js?v=9';
+import { View } from '../classic/view.js?v=9';
+import { JACKPOT, LABEL } from '../classic/layout.js?v=9';
+import { getLang } from '../classic/lang.js?v=9';
+import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from '../classic/table.js?v=9';
+import { makeLcd, drawLcd } from './lcd.js?v=9';
+import { partCard } from './cards.js?v=9';
+import { STOP_ORDER, TIMING } from '../reels.js?v=9';
 
 let game = new Kuoppa({ seed: seedFrom() });
 const lcd = makeLcd();
@@ -123,7 +123,7 @@ function onEvent(ev) {
     case 'rushEnd': table.toast(t('rushEnd'), '', '', 1200); break;
     case 'nudge': sfx.rattle(); buzz(20); table.pop(ev.x, ev.y + 3, `${t('nudge')} ${'●'.repeat(Math.max(0, ev.left))}`, 'nudge'); break;
     case 'tilt': sfx.foul(); buzz([120, 60, 120]); table.toast(t('tilt'), t('tiltSub'), '', 1800); break;
-    case 'lost': sfx.miss(); if (ev.kept) view.toPot(ev.column, ev.height); break;
+    case 'lost': sfx.miss(); if (ev.kept) view.toPot(ev.column, ev.height, ev.from); break;
     case 'foul': sfx.foul(); table.toast(t('foul'), t('foulSub'), '', 1600); break;
     case 'returned': sfx.beep(); table.toast(t('returned'), t('returnedSub'), '', 1400); break;
     case 'ready': if (game.stats.shots === 2) table.tip('nudge'); else if (game.stats.shots === 5) table.tip('again'); break;

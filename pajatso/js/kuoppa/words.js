@@ -2,7 +2,7 @@
 // is the source; the Finnish and Japanese are drafts in the same register.
 // Jokers, charms and deadline twists carry their own three-language names in
 // data.js; this is everything else the page says.
-import { extend } from '../classic/lang.js?v=8';
+import { extend } from '../classic/lang.js?v=9';
 
 extend({
   en: {
