@@ -4,6 +4,27 @@ The game was PACHI PIT for its first release; v2 renamed it and made the
 Finnish coin wall game the front door. The pit run is still here as KUOPPA
 (`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
 
+## v10 — 2026-09-30 — the base machine on its own
+
+The owner: *"Polish just the Pajatso to the best it can be, forget the other
+modes and features."* So this page is Pajatso and nothing else:
+
+- **No other mode is linked from it** — the KUOPPA buttons are gone from the
+  title, the pause sheet and the out-of-money sheet. KUOPPA and the old pit
+  are still in the folder and still load at their own addresses; they are just
+  not a door on this machine any more (`classic.cjs` checks there is none).
+- **The panel beside the lever is two numbers**: the target and what the POTTI
+  pays now. "Last pull" and "Pull %" said again what the knob, its green line
+  and v8's dots already show.
+- **A first-time line gives way to the coin it is about**: pulling shortens any
+  tip on screen to about a second, instead of leaving it over the tray for
+  nine while your winnings land underneath it.
+- **An idle first visit shows which way the lever goes**: if you have not
+  pulled yet and the knob has sat still for four seconds, it tugs itself down
+  (and holds still under `prefers-reduced-motion`).
+
+Gates: `core.mjs` 160, `classic.cjs` 36.
+
 ## v9 — 2026-09-29 — a full stack passes the coin on
 
 The owner: *"The coins stacks that are full below should make the coins bounce

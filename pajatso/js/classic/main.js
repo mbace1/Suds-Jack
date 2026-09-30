@@ -2,10 +2,10 @@
 // about what happens in it. The lever, keys, pad, HUD voices, language and
 // loop are the table both pages stand at (table.js).
 
-import { Pajatso, START_COINS } from './game.js?v=9';
-import { View } from './view.js?v=9';
-import { JACKPOT } from './layout.js?v=9';
-import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=9';
+import { Pajatso, START_COINS } from './game.js?v=10';
+import { View } from './view.js?v=10';
+import { JACKPOT } from './layout.js?v=10';
+import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=10';
 
 const BEST = 'pajatso.best';
 let game = new Pajatso({ seed: seedFrom() });
@@ -100,7 +100,6 @@ function showBroke() {
     <p>${t('yourBest', { n: mk(best) })}</p>
     <div class="btns">
       <button class="big" id="more">${t('more', { n: START_COINS })}</button>
-      <a class="big alt" href="kuoppa.html">${t('kuoppaShort')}</a>
     </div>`;
   $('broke').hidden = false;
   $('more').addEventListener('click', refill);

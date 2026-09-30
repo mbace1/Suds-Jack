@@ -68,6 +68,10 @@
       background: radial-gradient(circle at 36% 32%, #ff8a8a, #d4182c 45%, #7a0610 100%); box-shadow: 0 6px 12px rgba(0,0,0,.6); pointer-events: none; }
     #lever .lbl { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font: 900 12px var(--black); letter-spacing: .08em; color: var(--dim); }
     #lever.busy { opacity: .55; }
+    /* a first visit that has not pulled yet: the knob shows which way it goes */
+    #lever.hint .knob { animation: tug 1.6s ease-in-out infinite; }
+    @keyframes tug { 0%, 55%, 100% { transform: translateY(0); } 25% { transform: translateY(22px); } }
+    @media (prefers-reduced-motion: reduce) { #lever.hint .knob { animation: none; } }
     /* upright: the lever and its numbers along the bottom, clear of the Toko
        badge in the bottom-left corner */
     body.tall #panel { left: calc(max(10px, env(safe-area-inset-left)) + 58px); height: 158px; }
@@ -125,8 +129,6 @@
     <div id="info">
       <span id="goal"><span data-i="target">Target</span> <b>60</b></span>
       <span id="pot"><span data-i="potti">POTTI now</span> <b>41</b></span>
-      <span><span data-i="last">Last pull</span> <b id="last">—</b></span>
-      <span><span data-i="pull">Pull</span> <b id="pow">0%</b></span>
     </div>
     <div id="lever" role="slider" tabindex="0" data-il="leverLabel" aria-label="The lever: pull down and let go. A tap pulls the same as last time."
       aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -148,7 +150,6 @@
       <p data-i="intro3"></p>
       <div class="btns">
         <button class="big" id="start" data-i="play">PLAY</button>
-        <a class="big alt" id="pitLink" href="kuoppa.html" data-i="kuoppa">KUOPPA — roguelike mode (early) ›</a>
       </div>
       <div class="keys" data-i="keys"></div>
     </div>
@@ -160,7 +161,6 @@
       <div class="btns">
         <button class="big" id="resume" data-i="resume">BACK TO THE MACHINE</button>
         <button class="big alt" id="restart" data-i="restart">START OVER</button>
-        <a class="big alt" href="kuoppa.html" data-i="kuoppaShort">KUOPPA — roguelike mode ›</a>
       </div>
     </div>
   </div>
@@ -169,8 +169,8 @@
   <script type="importmap">
   { "imports": { "three": "./vendor/three.module.min.js" } }
   </script>
-  <script type="module" src="../hub/shell.js?v=91"></script>
-  <script type="module" src="js/classic/main.js?v=9"></script>
+  <script type="module" src="../hub/shell.js?v=92"></script>
+  <script type="module" src="js/classic/main.js?v=10"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=9';
