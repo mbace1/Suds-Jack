@@ -2,10 +2,10 @@
 // about what happens in it. The lever, keys, pad, HUD voices, language and
 // loop are the table both pages stand at (table.js).
 
-import { Pajatso, START_COINS } from './game.js?v=10';
-import { View } from './view.js?v=10';
-import { JACKPOT } from './layout.js?v=10';
-import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=10';
+import { Pajatso, START_COINS } from './game.js?v=11';
+import { View } from './view.js?v=11';
+import { JACKPOT } from './layout.js?v=11';
+import { mountTable, store, $, buzz, seedFrom, t, mk, sfx } from './table.js?v=11';
 
 const BEST = 'pajatso.best';
 let game = new Pajatso({ seed: seedFrom() });
@@ -28,7 +28,13 @@ const table = mountTable({
   onRelease: (p, pulled) => { if (!pulled && game.phase === 'broke') showBroke(); },
 });
 
+let shownCoins = null, upTimer = 0;
 function hud() {
+  if (shownCoins != null && game.coins > shownCoins) {
+    const el = $('coins'); el.classList.remove('up'); void el.offsetWidth; el.classList.add('up');
+    clearTimeout(upTimer); upTimer = setTimeout(() => el.classList.remove('up'), 500);
+  }
+  shownCoins = game.coins;
   $('coins').querySelector('b').textContent = mk(game.coins);
   $('pot').querySelector('b').textContent = mk(game.pottiNow);
   if (game.coins > best) { best = game.coins; store.set(BEST, best); }
@@ -41,6 +47,9 @@ function hud() {
     table.toast(t('goalToast', { n: mk(reached) }), t('goalSub', { m: mk(goal) }), 'star', 2600);
   }
   $('goal').querySelector('b').textContent = mk(goal);
+  // the bar runs from where this target's climb started to the target itself
+  const from = goal - START_COINS;
+  $('goal').querySelector('.bar i').style.width = `${Math.max(0, Math.min(100, 100 * (game.coins - from) / (goal - from)))}%`;
 }
 
 // ── what happened in the machine, as sound and light ───────────────────

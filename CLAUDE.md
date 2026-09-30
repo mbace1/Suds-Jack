@@ -353,7 +353,10 @@ coin to the cash box. **v10 (owner, 2026-09-30: *"polish just the Pajatso,
 forget the other modes and features"*): the base page links NO other mode**
 — KUOPPA and the pit still load at their own addresses but are not a door on
 this machine, and are not being developed; the lever panel is Target + POTTI
-only, a pull shortens any tip, and an idle first visit tugs the knob. Gates: `node pajatso/test/core.mjs` (160,
+only, a pull shortens any tip, and an idle first visit tugs the knob. **v11**
+dressed it: a printed dome (sunburst, gold pinstripe, PAJATSO / 1 MARKKA),
+an enamel OLUTTA sign and a HINNAT price board on the bar wall with a lamp
+pool, a progress bar under TARGET, and the MARKKA counter pulsing on a gain. Gates: `node pajatso/test/core.mjs` (160,
 both modes and the language packs), `NODE_PATH=$(npm root -g) node
 pajatso/test/classic.cjs` (36), `.../kuoppa.cjs` (31, KUOPPA) and
 `.../smoke.cjs` (44, the old pit). Hub: id

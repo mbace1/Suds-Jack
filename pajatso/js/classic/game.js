@@ -15,9 +15,9 @@
 // Money is in markka. 1:50 pays one and a half, so a purse can hold 50 p;
 // a pull takes a whole markka.
 
-import { Board, BOARD } from '../board.js?v=10';
-import { makeRng } from '../rng.js?v=10';
-import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS, MIDDLE } from './layout.js?v=10';
+import { Board, BOARD } from '../board.js?v=11';
+import { makeRng } from '../rng.js?v=11';
+import { buildPajatso, FACE, PAYS, JACKPOT, POT_START, POTTI_COLS, MIDDLE } from './layout.js?v=11';
 
 export const START_COINS = 30;
 // The face is stepped faster than the pachinko board: BOARD.G is slowed so a

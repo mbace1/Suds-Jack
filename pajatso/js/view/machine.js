@@ -5,10 +5,10 @@
 // World units are metres; one board unit is a centimetre.
 
 import * as THREE from 'three';
-import { BOARD } from '../board.js?v=10';
-import { PUSHER } from '../pusher.js?v=10';
-import { LINES, STOP_ORDER } from '../reels.js?v=10';
-import * as T from './textures.js?v=10';
+import { BOARD } from '../board.js?v=11';
+import { PUSHER } from '../pusher.js?v=11';
+import { LINES, STOP_ORDER } from '../reels.js?v=11';
+import * as T from './textures.js?v=11';
 
 export const S = 0.01;
 export const M = {

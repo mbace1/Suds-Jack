@@ -4,7 +4,7 @@
 // every time you come back to it.
 
 import * as THREE from 'three';
-import { makeRng } from '../rng.js?v=10';
+import { makeRng } from '../rng.js?v=11';
 import { drawBadge } from '../../../toko/js/face.js';   // the brand's own mark, from the site's toko/
 
 export function canvas(w, h) {

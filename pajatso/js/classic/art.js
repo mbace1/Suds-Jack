@@ -9,7 +9,7 @@
 // the pot behind chrome dividers on a pale ribbed back. A teak-veneer case, a
 // black 1 mk plate down the right, and an orange bar wall behind it all.
 
-import { LABEL, JACKPOT, FACE, POTTI_COLS, YAKU } from './layout.js?v=10';
+import { LABEL, JACKPOT, FACE, POTTI_COLS, YAKU } from './layout.js?v=11';
 
 export const PPU = 16;                      // canvas pixels per board unit
 export const X0 = -31, Y1 = 82, W = 62, H = 82;   // the painted area, in board units
@@ -37,6 +37,48 @@ export function faceCanvas(L) {
   g.fillStyle = '#111'; g.fillRect(px(17.5), py(78.2), 7.6 * u, 3.6 * u);
   g.fillStyle = 'rgba(235,235,235,.75)';
   for (let r = 0; r < 6; r++) g.fillRect(px(18.1), py(77.6 - r * 0.5), (5.2 + (r % 3)) * u * 0.9, 0.18 * u);
+
+  // THE PRINTED FACE: with no nail field the dome over the windows is bare
+  // red, and a real coin wall is never bare there — it carries the maker's
+  // print. A sunburst from under the band, a gold pinstripe inside the lane,
+  // the name, and a few stars. Paint only: nothing here collides. KUOPPA's
+  // yakumono sits in the same place, so the print gives way to it.
+  if (!L.byId.start) {
+    const cx = px(1.5), cy = py(56.5), R = 26.2 * u;
+    g.save();
+    g.beginPath(); g.arc(px(0), py(50), 27 * u, Math.PI, 2 * Math.PI); g.lineTo(px(27), py(56.5)); g.lineTo(px(-27), py(56.5)); g.closePath(); g.clip();
+    for (let i = 0; i < 22; i++) {
+      const a0 = Math.PI + (i / 22) * Math.PI, a1 = a0 + Math.PI / 44;
+      g.fillStyle = i % 2 ? 'rgba(255, 190, 120, .07)' : 'rgba(40, 0, 6, .10)';
+      g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R * 1.3, a0, a1); g.closePath(); g.fill();
+    }
+    const glow = g.createRadialGradient(cx, cy, 0, cx, cy, R);
+    glow.addColorStop(0, 'rgba(255, 170, 90, .28)'); glow.addColorStop(0.55, 'rgba(255, 120, 60, .08)'); glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    g.fillStyle = glow; g.fillRect(0, 0, c.width, c.height);
+    g.restore();
+    // the pinstripe, two gold lines following the rail
+    for (const [r, w, a] of [[26.3, 0.22, 0.9], [25.6, 0.1, 0.6]]) {
+      g.strokeStyle = `rgba(240, 196, 80, ${a})`; g.lineWidth = w * u;
+      g.beginPath(); g.arc(px(0), py(50), r * u, Math.PI * 1.03, Math.PI * 1.97); g.stroke();
+    }
+    // the name, gold with a dark red edge and a shadow, set in the dome
+    const ny = py(66.5), size = Math.round(5.2 * u);
+    g.font = `900 ${size}px ${BLACK}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = 'rgba(20, 0, 4, .55)'; g.fillText('PAJATSO', cx + 0.35 * u, ny + 0.45 * u);
+    g.lineJoin = 'round'; g.strokeStyle = '#4a0610'; g.lineWidth = 0.7 * u; g.strokeText('PAJATSO', cx, ny);
+    const gold = g.createLinearGradient(0, ny - size / 2, 0, ny + size / 2);
+    gold.addColorStop(0, '#fff2b0'); gold.addColorStop(0.45, '#ffd23f'); gold.addColorStop(0.55, '#e0a020'); gold.addColorStop(1, '#ffe07a');
+    g.fillStyle = gold; g.fillText('PAJATSO', cx, ny);
+    g.font = `800 ${Math.round(1.25 * u)}px ${BLACK}`;
+    g.fillStyle = 'rgba(255, 236, 190, .85)'; g.fillText('★  1 MARKKA  ★', cx, py(61.6));
+    // stars in the corners of the dome
+    const star = (x, y, r) => {
+      g.beginPath();
+      for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? r * 0.45 : r; g.lineTo(px(x) + Math.cos(a) * rr * u, py(y) + Math.sin(a) * rr * u); }
+      g.closePath(); g.fillStyle = '#ffd23f'; g.fill();
+    };
+    for (const [x, y, r] of [[-16, 62, 0.9], [-11.5, 72.5, 0.6], [14.5, 63, 0.8], [-19.5, 67.2, 0.45], [19.8, 68.4, 0.5], [8.5, 73.2, 0.45]]) star(x, y, r);
+  }
 
   // THE GREY BAND and its windows
   g.fillStyle = '#c9ccd0'; g.fillRect(px(-27), py(band.top), 57 * u, (band.top - band.bottom) * u);
@@ -222,6 +264,45 @@ export function wallCanvas() {
     g.fillStyle = `rgba(${rnd() < 0.5 ? '255,160,80' : '120,30,0'}, ${0.03 + rnd() * 0.05})`;
     g.fillRect(rnd() * 512, rnd() * 512, 2 + rnd() * 10, 2 + rnd() * 10);
   }
+  return c;
+}
+
+// THE BAR'S WALL, for the screens wide enough to see it: an enamel beer sign
+// (no brand — just the word, in Finnish and Swedish, as a Helsinki bar has
+// it) and the price board, chalk on black
+export function signCanvas() {
+  const c = document.createElement('canvas'); c.width = 360; c.height = 240;
+  const g = c.getContext('2d');
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  rr(4, 4, 352, 232, 26); g.fillStyle = '#1d3f8a'; g.fill();
+  rr(16, 16, 328, 208, 18); g.fillStyle = '#f3ead2'; g.fill();
+  g.lineWidth = 5; g.strokeStyle = '#1d3f8a'; rr(26, 26, 308, 188, 12); g.stroke();
+  g.fillStyle = '#c8102e'; g.font = `900 78px ${BLACK}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('OLUTTA', 180, 100);
+  g.fillStyle = '#1d3f8a'; g.font = `800 30px ${BLACK}`; g.fillText('· ÖL ·', 180, 160);
+  // wear: chips off the enamel down to the dark steel, rust at the screw holes
+  let s = 7; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 26; i++) { g.fillStyle = `rgba(30, 20, 20, ${0.35 + rnd() * 0.4})`; g.beginPath(); g.arc(rnd() * 360, rnd() < 0.5 ? rnd() * 30 : 210 + rnd() * 30, 1 + rnd() * 4, 0, Math.PI * 2); g.fill(); }
+  for (const [x, y] of [[20, 20], [340, 20], [20, 220], [340, 220]]) {
+    g.fillStyle = 'rgba(140, 60, 20, .55)'; g.beginPath(); g.ellipse(x, y + 6, 7, 12, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#555'; g.beginPath(); g.arc(x, y, 5, 0, Math.PI * 2); g.fill();
+  }
+  return c;
+}
+export function boardCanvas() {
+  const c = document.createElement('canvas'); c.width = 240; c.height = 320;
+  const g = c.getContext('2d');
+  g.fillStyle = '#6b4526'; g.fillRect(0, 0, 240, 320);
+  g.fillStyle = '#1c1e1d'; g.fillRect(12, 12, 216, 296);
+  let s = 3; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 300; i++) { g.fillStyle = `rgba(255,255,255,${rnd() * 0.05})`; g.fillRect(12 + rnd() * 216, 12 + rnd() * 296, 6 + rnd() * 30, 1 + rnd() * 3); }
+  g.fillStyle = 'rgba(245, 240, 225, .92)'; g.textBaseline = 'middle';
+  g.font = `900 30px ${BLACK}`; g.textAlign = 'center'; g.fillText('HINNAT', 120, 44);
+  g.fillRect(50, 64, 140, 3);
+  g.font = '700 22px "Comic Sans MS", "Chalkboard SE", "Segoe Print", cursive, sans-serif';
+  const rows = [['Kahvi', '2,50'], ['Olut', '9,-'], ['Lonkero', '9,50'], ['Siideri', '10,-'], ['Makkara', '6,-']];
+  rows.forEach(([a, b], i) => { g.textAlign = 'left'; g.fillText(a, 30, 102 + i * 40); g.textAlign = 'right'; g.fillText(b, 210, 102 + i * 40); });
+  g.font = '700 16px sans-serif'; g.textAlign = 'center'; g.fillStyle = 'rgba(245, 240, 225, .6)'; g.fillText('mk', 120, 298);
   return c;
 }
 

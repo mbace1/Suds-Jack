@@ -4,9 +4,9 @@
 // machine (main.js) and KUOPPA (../kuoppa/main.js) each mount one and bring
 // only what is theirs — the rules, the events, the sheets between rounds.
 
-import { t, mk, getLang, setLang, LANGS } from './lang.js?v=10';
-import { sfx, initAudio, setMuted, isMuted, roll } from '../audio.js?v=10';
-import { BOARD } from '../board.js?v=10';
+import { t, mk, getLang, setLang, LANGS } from './lang.js?v=11';
+import { sfx, initAudio, setMuted, isMuted, roll } from '../audio.js?v=11';
+import { BOARD } from '../board.js?v=11';
 import { watchPad } from '../../../hub/pad.js?v=9';   // the SAME token shell.js asks for: one reader on the page
 
 export const params = new URLSearchParams(location.search);

@@ -36,6 +36,15 @@
     #coins b { color: var(--gold); font-size: 34px; }
     #pot b { color: #ff6a5a; }
     #goal b { color: var(--green); }
+    /* how far the purse is toward the target */
+    #goal .bar { display: block; height: 5px; margin-top: 4px; border-radius: 3px; background: rgba(0,0,0,.45); box-shadow: inset 0 0 0 1px rgba(111,224,138,.35); overflow: hidden; }
+    #goal .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #3fa860, var(--green)); transition: width .4s ease-out; }
+    body.tall #goal .bar { width: 150px; }
+    /* the purse gives a small gold jump when it goes up */
+    #coins b { display: inline-block; transform-origin: left center; }
+    #coins.up b { animation: gain .45s ease-out; }
+    @keyframes gain { 30% { transform: scale(1.18); color: #fff3a0; text-shadow: 0 2px 0 #000, 0 0 14px rgba(255, 210, 63, .9); } }
+    @media (prefers-reduced-motion: reduce) { #coins.up b { animation: none; } }
     body.tall .stat b { font-size: 24px; }
     body.tall #coins b { font-size: 30px; }
     /* a phone has room for the purse beside the arcade's corner and nothing else */
@@ -127,7 +136,7 @@
   </div>
   <div id="panel">
     <div id="info">
-      <span id="goal"><span data-i="target">Target</span> <b>60</b></span>
+      <span id="goal"><span data-i="target">Target</span> <b>60</b><i class="bar"><i></i></i></span>
       <span id="pot"><span data-i="potti">POTTI now</span> <b>41</b></span>
     </div>
     <div id="lever" role="slider" tabindex="0" data-il="leverLabel" aria-label="The lever: pull down and let go. A tap pulls the same as last time."
@@ -170,7 +179,7 @@
   { "imports": { "three": "./vendor/three.module.min.js" } }
   </script>
   <script type="module" src="../hub/shell.js?v=42"></script>
-  <script type="module" src="js/classic/main.js?v=10"></script>
+  <script type="module" src="js/classic/main.js?v=11"></script>
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD -->
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=9';
