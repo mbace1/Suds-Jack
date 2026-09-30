@@ -49,7 +49,7 @@ const settle = page => page.evaluate(() => { for (let i = 0; i < 40 && __pj.game
   await page.waitForFunction(() => !!window.__pj, null, { timeout: 20000 });
   check('the machine boots with no errors', errors.length === 0, errors.join(' | '));
   check('the title is up, and says what the game is', await page.locator('#title').isVisible() && /PAJATSO/.test(await page.locator('#title h1').textContent()));
-  check('the roguelike mode is one link away', (await page.locator('#pitLink').getAttribute('href')) === 'kuoppa.html');
+  check('the base machine stands alone: no other mode is linked from its page', await page.locator('a[href*="kuoppa"], a[href*="pit.html"]').count() === 0);
   await page.click('#start');
   check('PLAY starts with thirty markka', await page.evaluate(() => __pj.started && __pj.game.coins === 30));
   check('the arcade\'s way home is on the page', await page.locator('.arcade-home').count() === 1);

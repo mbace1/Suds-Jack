@@ -4,9 +4,9 @@
 // machine (main.js) and KUOPPA (../kuoppa/main.js) each mount one and bring
 // only what is theirs — the rules, the events, the sheets between rounds.
 
-import { t, mk, getLang, setLang, LANGS } from './lang.js?v=9';
-import { sfx, initAudio, setMuted, isMuted, roll } from '../audio.js?v=9';
-import { BOARD } from '../board.js?v=9';
+import { t, mk, getLang, setLang, LANGS } from './lang.js?v=10';
+import { sfx, initAudio, setMuted, isMuted, roll } from '../audio.js?v=10';
+import { BOARD } from '../board.js?v=10';
 import { watchPad } from '../../../hub/pad.js?v=9';   // the SAME token shell.js asks for: one reader on the page
 
 export const params = new URLSearchParams(location.search);
@@ -80,8 +80,10 @@ export function mountTable(o) {
     }
     lever.setAttribute('aria-valuenow', String(Math.round(st.power * 100)));
     lever.classList.toggle('busy', !game().canPull);
-    $('pow').textContent = `${Math.round(st.power * 100)}%`;
-    $('last').textContent = st.lastPull == null ? '—' : `${Math.round(st.lastPull * 100)}%`;
+    for (const [id, v] of [['pow', `${Math.round(st.power * 100)}%`], ['last', st.lastPull == null ? '—' : `${Math.round(st.lastPull * 100)}%`]]) { const el = $(id); if (el) el.textContent = v; }
+    // before the first pull of a visit, a knob that has sat still a few
+    // seconds tugs itself down: this is the way it goes
+    lever.classList.toggle('hint', st.started && !st.paused && !st.pulledOnce && st.power === 0 && st.time - (st.beganAt ?? 0) > 4);
     view.lever = st.power;
   }
   function release(p) {
@@ -89,6 +91,9 @@ export function mountTable(o) {
     initAudio();
     const pulled = game().pull(p);
     if (pulled) {
+      st.pulledOnce = true;
+      // a first-time line gives way to the coin it was about
+      if (tipTimer > 0) { tipTimer = Math.min(tipTimer, 1.2); }
       st.lastPull = p; store.set('pajatso.last', p);
       st.marks.push({ p: Math.round(p * 1000) / 1000, r: null });
       while (st.marks.length > MARKS) st.marks.shift();
@@ -247,7 +252,7 @@ export function mountTable(o) {
   async function stayAwake() { try { if (!wake && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener?.('release', () => { wake = null; }); } } catch { wake = null; } }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && st.started) stayAwake(); });
   function begin() {
-    st.started = true; $('title').hidden = true;
+    st.started = true; st.beganAt = st.time; $('title').hidden = true;
     initAudio(); stayAwake();
     setTimeout(() => tip('pull'), 400);
     o.onBegin?.();

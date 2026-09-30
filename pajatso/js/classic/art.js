@@ -9,7 +9,7 @@
 // the pot behind chrome dividers on a pale ribbed back. A teak-veneer case, a
 // black 1 mk plate down the right, and an orange bar wall behind it all.
 
-import { LABEL, JACKPOT, FACE, POTTI_COLS, YAKU } from './layout.js?v=9';
+import { LABEL, JACKPOT, FACE, POTTI_COLS, YAKU } from './layout.js?v=10';
 
 export const PPU = 16;                      // canvas pixels per board unit
 export const X0 = -31, Y1 = 82, W = 62, H = 82;   // the painted area, in board units

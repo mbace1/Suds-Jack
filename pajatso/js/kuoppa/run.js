@@ -17,11 +17,11 @@
 // Phases: idle → flight → idle | spent → (the round scores) → shop | fell |
 // won; shop → idle.
 
-import { Pajatso } from '../classic/game.js?v=9';
-import { buildPajatso, POTTI_COLS, MIDDLE, YAKU } from '../classic/layout.js?v=9';
-import { makeRng } from '../rng.js?v=9';
-import { drawOutcome, buildGrid, linesShown, reachLines, STOP_ORDER, TIMING } from '../reels.js?v=9';
-import * as D from './data.js?v=9';
+import { Pajatso } from '../classic/game.js?v=10';
+import { buildPajatso, POTTI_COLS, MIDDLE, YAKU } from '../classic/layout.js?v=10';
+import { makeRng } from '../rng.js?v=10';
+import { drawOutcome, buildGrid, linesShown, reachLines, STOP_ORDER, TIMING } from '../reels.js?v=10';
+import * as D from './data.js?v=10';
 
 const JOKER = Object.fromEntries(D.JOKERS.map(j => [j.id, j]));
 const CHARM = Object.fromEntries(D.CHARMS.map(c => [c.id, c]));

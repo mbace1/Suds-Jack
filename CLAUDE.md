@@ -349,7 +349,11 @@ rolling voice and window edges a clack, and a session a TARGET (double the
 30, then +30 each time). **v9: a coin landing on a FULL stack bounces
 along the tops to the next one with room** (`intoPot`), so the pot fills
 sideways and feeds the POTTI's column; only a pot full everywhere loses a
-coin to the cash box. Gates: `node pajatso/test/core.mjs` (160,
+coin to the cash box. **v10 (owner, 2026-09-30: *"polish just the Pajatso,
+forget the other modes and features"*): the base page links NO other mode**
+— KUOPPA and the pit still load at their own addresses but are not a door on
+this machine, and are not being developed; the lever panel is Target + POTTI
+only, a pull shortens any tip, and an idle first visit tugs the knob. Gates: `node pajatso/test/core.mjs` (160,
 both modes and the language packs), `NODE_PATH=$(npm root -g) node
 pajatso/test/classic.cjs` (36), `.../kuoppa.cjs` (31, KUOPPA) and
 `.../smoke.cjs` (44, the old pit). Hub: id
@@ -383,8 +387,8 @@ coins go**, the wedge rule counts a part's walls along their whole length, and
 clearing antes mid-measure). **v6** adds a joker for every part and the REACH
 (the camera leans in on the LCD). Gates: `core.mjs` 157, `classic.cjs` 32,
 `kuoppa.cjs` 31, `smoke.cjs` 44.
-**The old pit run (v1's KUOPPA)** (`pit.html`) is kept a small link from the
-new title; what follows is its record, still true of that mode.
+**The old pit run (v1's KUOPPA)** (`pit.html`) still loads at its address but
+is no longer linked from the base machine (v10); what follows is its record.
 
 **Owner's brief, 2026-09-26:** *"a game that's mixed Clover Pit, Raccoin and
 Pachinko.. roguelike elements and 3D room like the Pit."* Read
