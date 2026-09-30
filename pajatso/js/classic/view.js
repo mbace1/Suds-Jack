@@ -11,8 +11,8 @@
 // crank on the right side, two brown bottles on top, an orange wall.
 
 import * as THREE from 'three';
-import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, PPU, X0, Y1 } from './art.js?v=10';
-import { FACE, JACKPOT } from './layout.js?v=10';
+import { faceCanvas, coinCanvas, plateCanvas, nameCanvas, woodCanvas, wallCanvas, tableCanvas, signCanvas, boardCanvas, PPU, X0, Y1 } from './art.js?v=11';
+import { FACE, JACKPOT } from './layout.js?v=11';
 
 const COIN_Z = 1.0;           // the coin rolls on the face this far out of it
 const PIN_LEN = 2.0;
@@ -55,6 +55,19 @@ export class View {
     const wt = tex(wallCanvas()); wt.wrapS = wt.wrapT = THREE.RepeatWrapping; wt.repeat.set(2, 3);
     const wall = new THREE.Mesh(new THREE.PlaneGeometry(128, 400), new THREE.MeshLambertMaterial({ map: wt }));
     wall.position.set(2, 40, -9); s.add(wall);
+    // the enamel sign on the orange, the price board on the white, and the
+    // lamp over the machine warming the wall behind it — wide screens only
+    // see them; upright, the camera is fitted to the face
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(20, 13.3), new THREE.MeshPhongMaterial({ map: tex(signCanvas()), shininess: 60, specular: 0x555555 }));
+    sign.position.set(-50, 66, -8.6); sign.rotation.z = 0.025; s.add(sign);
+    const board = new THREE.Mesh(new THREE.PlaneGeometry(15, 20), new THREE.MeshLambertMaterial({ map: tex(boardCanvas()) }));
+    board.position.set(84, 58, -9.0); board.rotation.z = -0.02; s.add(board);
+    const lg = document.createElement('canvas'); lg.width = lg.height = 256;
+    const lgg = lg.getContext('2d'), rad = lgg.createRadialGradient(128, 128, 0, 128, 128, 128);
+    rad.addColorStop(0, 'rgba(255, 214, 150, .55)'); rad.addColorStop(0.5, 'rgba(255, 170, 90, .18)'); rad.addColorStop(1, 'rgba(255, 150, 60, 0)');
+    lgg.fillStyle = rad; lgg.fillRect(0, 0, 256, 256);
+    const lamp = new THREE.Mesh(new THREE.PlaneGeometry(150, 110), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(lg), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    lamp.position.set(4, 108, -8.5); s.add(lamp);
     const tt = tex(tableCanvas());
     const tableTop = new THREE.MeshLambertMaterial({ map: tt });
     const tableSide = new THREE.MeshLambertMaterial({ color: 0x8a6238 });

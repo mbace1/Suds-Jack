@@ -4,6 +4,26 @@ The game was PACHI PIT for its first release; v2 renamed it and made the
 Finnish coin wall game the front door. The pit run is still here as KUOPPA
 (`pit.html`), the roguelike mode, until it is rebuilt on the Pajatso face.
 
+## v11 — 2026-09-30 — the machine dressed, the panel reading
+
+The owner: *"Polish the UI and visuals as well."*
+
+- **The face is printed**, the way the real ones are: a sunburst out of the
+  dome, a double gold pinstripe round it, PAJATSO in gold with ★ 1 MARKKA ★
+  under it and six stars. Only on the base face — KUOPPA's dome carries the
+  yakumono and keeps its plain paint.
+- **The bar has a wall**: an enamel OLUTTA · ÖL sign to the left of the case,
+  a chalk HINNAT board to the right (a coffee 2,50, a beer 9 — the markka
+  you are holding are priced in the room), and a warm lamp pool on the orange
+  wall behind the machine. They sit outside the phone's crop and show on any
+  screen wide enough to have a wall.
+- **The target is a bar, not just a number**: a thin gold fill under TARGET
+  runs from where this target started to where it is.
+- **Money arriving is seen as well as heard**: the MARKKA counter pulses
+  gold when it goes up.
+
+No rule, no number and no tuning moved. Gates: `core.mjs` 160, `classic.cjs` 36.
+
 ## v10 — 2026-09-30 — the base machine on its own
 
 The owner: *"Polish just the Pajatso to the best it can be, forget the other
