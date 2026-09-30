@@ -1,7 +1,7 @@
 // Automatic local-only play evidence for every catalogue page that loads pad.js.
 // Runs, deaths and failures belong to the games themselves because the shared
 // shell cannot infer those semantics honestly.
-import { GAMES } from './games.js?v=127';
+import { GAMES } from './games.js?v=128';
 import { logPlay } from './playlog.js';
 
 // A catalogue path can carry a query or a hash (flashprince/#flooded-city) or
