@@ -6,6 +6,9 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
+const release = fs.readFileSync(path.join(ROOT, 'toko-live/VERSIONS.md'), 'utf8').match(/^## v(\d+)\b/m);
+if (!release) throw new Error('Toko Live VERSIONS.md has no release heading');
+const expectedVersion = release[1];
 const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.md':'text/plain','.webp':'image/webp','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml'};
 let failures = 0;
 const check = (name, cond, detail='') => { console.log(`${cond?'PASS':'FAIL'}  ${name}${detail?` — ${detail}`:''}`); if(!cond) failures++; };
@@ -24,8 +27,8 @@ async function ask(page, text, expectProject){
   const u0=await user.count(), t0=await toko.count();
   await input.fill(text);
   await input.press('Enter');
+  await page.clock.runFor(500);
   await page.waitForFunction(n=>document.querySelectorAll('.toko-chat .tc-me').length>n,t0,{timeout:3000});
-  await page.waitForTimeout(500);
   const u1=await user.count(), t1=await toko.count();
   const reply=(await toko.nth(t1-1).textContent()||'').trim();
   check(`one user turn: ${text}`,u1===u0+1,`${u0}→${u1}`);
@@ -39,13 +42,20 @@ async function ask(page, text, expectProject){
   const base=`http://127.0.0.1:${server.address().port}`;
   const browser=await chromium.launch();
   const page=await browser.newPage({viewport:{width:1280,height:800}});
+  // Install before boot so the existing 24-second idle-aside timer is owned
+  // by the clock too. Each real input below advances only its reply window;
+  // an ambient aside cannot race the strict one-turn/one-reply assertions.
+  await page.clock.install();
   const pageErrors=[]; const local404=[];
   page.on('pageerror',e=>pageErrors.push(String(e)));
   page.on('response',r=>{if(r.url().startsWith(base)&&r.status()>=400)local404.push(`${r.status()} ${r.url()}`)});
   await page.goto(`${base}/Suds-Jack/toko-live/`,{waitUntil:'networkidle'});
   await page.waitForSelector('.toko-chat .tc-say-row input',{timeout:5000});
+  await page.clock.pauseAt(new Date(Date.now()+100));
 
-  check('visible build marker is v45',(await page.title()).includes('v45')&&(await page.locator('#state-label').textContent()||'').includes('V45'));
+  check(`visible build marker matches release v${expectedVersion}`,
+    (await page.title())===`Toko Live v${expectedVersion}`
+      && new RegExp(`\\bV${expectedVersion}\\b`).test(await page.locator('#state-label').textContent()||''));
   check('no page exceptions',pageErrors.length===0,pageErrors.join(' | '));
   check('no local 404s',local404.length===0,local404.join(' | '));
 
