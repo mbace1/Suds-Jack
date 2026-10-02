@@ -51,7 +51,10 @@ ok(diagSource.includes("FP-MOVE-9"), 'diagnostics expose the visible movement bu
 ok(diagSource.includes('transitionFaults'), 'diagnostics read the live transition fault count');
 ok(diagSource.includes('health: this.health'), 'diagnostics expose landing damage');
 ok(indexSource.includes('js/character-animation.js?v=10'), 'playable index loads character-specific animation profile');
-ok(indexSource.includes('js/main.js?v=10'), 'playable index launches campaign main loop v10');
+// The campaign's cache token changes independently of its public release.
+// Keep checking the real, versioned entry instead of pinning an obsolete token.
+ok(/<script\b[^>]*\bsrc=["']js\/main\.js\?v=\d+["'][^>]*>/.test(indexSource), 'playable index launches the versioned campaign main loop');
+await readFile(new URL('../js/main.js', import.meta.url), 'utf8');
 ok(!indexSource.includes('movement-lab-v3.js'), 'playable index must not launch the movement lab');
 ok(!indexSource.includes('movement-diagnostics.js'), 'playable index must not load movement-only diagnostics');
 ok(labSource.includes('movement-diagnostics.js?v=9'), 'movement lab loads diagnostics v9');
