@@ -396,36 +396,43 @@ export const ART = {
     for (let i = 0; i < 5; i++) g.p(58 + i * 8, 40 - i * (4 - i * 0.7), 3, 3, '#f2f2e8');   // the throw
   },
 
-  // Powder: the racer, its plume, and the blown-out sun the plates always have
+  // Powder: white sand under a purple sky, the rift, a bridge, two sleds
   powder(g, a) {
-    g.bands(['#8d9aad', '#b0b4b0', '#e6ddc6']);
-    g.p(0, 30, W, H - 30, '#efe7d2');            // the field
-    g.disc(100, 12, 8, '#fffdf4');               // sun, no colour left in it
-    for (let i = 0; i < 8; i++) {
-      const t = i / 8 * Math.PI * 2;
-      g.line(100 + Math.cos(t) * 10, 12 + Math.sin(t) * 10,
-        100 + Math.cos(t) * 15, 12 + Math.sin(t) * 15, a);
+    g.bands(['#1c1440', '#4a2f7a', '#8b5fa8', '#d9a4cc']);
+    g.p(0, 34, W, H - 34, '#e6e2de');            // the sand, white with grey in it
+    g.disc(100, 20, 15, '#a07898');              // the ringed body
+    g.disc(90, 15, 6, '#e6c8e0');
+    for (let i = -22; i <= 22; i++) g.p(100 + i, 20 + (i * i) / 60 - 4, 1, 1, '#e6c8e0');
+    g.disc(28, 9, 4, '#fff3dc');                 // the sun
+    g.disc(28, 9, 7, 'rgba(255,220,200,0.35)');  // and its bloom
+    for (let y = 40; y < H; y++) {               // the rift
+      const w = 12 + (y - 40) * 2.2, cx = 58 + (y - 40) * 0.3;
+      g.p(cx - w / 2 - 5, y, 5, 1, '#8a5c56');
+      g.p(cx - w / 2, y, w, 1, y % 3 ? '#f6f4f0' : '#d8d4d2');
+      g.p(cx + w / 2, y, 5, 1, '#5a4a8e');
     }
-    for (let y = 30; y < H; y++) {               // the packed line, running away
-      g.p(20 - (y - 30) * 0.9, y, 6 + (y - 30) * 2.2, 1, '#d8cba8');
-    }
-    g.p(18, 33, 5, 2, '#4a4753');                // boulders out on the field
-    g.p(104, 42, 6, 3, '#4a4753');
-    g.p(6, 50, 4, 2, '#4a4753');
-    for (let i = 0; i < 7; i++) {                // plume off the inside edge
-      g.disc(74 + i * 7, 44 - i * 2, Math.max(2, 6 - i), i & 1 ? '#f6f0e0' : '#d5c9ae');
-    }
-    g.disc(50, 60, 12, '#cfc6ae');               // hard blob shadow, close under
-    g.p(34, 51, 30, 5, '#e8dfc6');               // cream fuselage
-    g.p(27, 52, 8, 3, '#e8dfc6');
-    g.p(22, 53, 5, 1, '#b9bec7');                // needle probe
-    g.p(48, 51, 6, 5, '#6b3550');                // the one accent panel
-    g.p(39, 48, 9, 3, '#2b3340');                // canopy
-    g.p(56, 48, 12, 4, '#b9bec7');               // chrome cans
-    g.p(56, 55, 12, 4, '#b9bec7');
-    g.p(67, 48, 2, 4, '#14141a');                // black intake mouths
-    g.p(67, 55, 2, 4, '#14141a');
-    g.p(60, 44, 3, 5, '#e8dfc6');                // fin
+    g.p(30, 44, 62, 3, '#9c94a8');               // the bridge deck
+    g.p(30, 43, 62, 1, '#6a6272');
+    for (const px of [44, 58, 72]) g.p(px, 47, 2, 12, '#6a6272');
+    g.p(10, 28, 4, 22, '#5c5478');               // monoliths on the rim
+    g.p(18, 24, 3, 26, '#9088b4');
+    g.p(112, 34, 6, 3, '#80708c');               // a rock that hangs
+    // the aft-rocket sled, behind: flame trailing from the tail
+    g.p(28, 50, 16, 3, '#e8dfc6');
+    g.p(36, 50, 4, 3, '#25493f');
+    g.p(24, 51, 4, 2, a);
+    // the nose-rocket sled, leading, carving: spindrift off its outside runner
+    for (let i = 0; i < 9; i++) g.p(48 + i * 3, 60 - i, 2, 2, i % 2 ? '#ffffff' : '#dfe4f0');
+    g.p(56, 55, 24, 4, '#e8dfc6');               // fuselage
+    g.p(52, 56, 5, 2, '#e8dfc6');
+    g.p(66, 55, 5, 4, '#6b3550');                // accent band
+    g.p(59, 53, 6, 2, '#2b3340');                // canopy
+    g.p(48, 53, 6, 3, '#c4c8d2');                // the rockets, on the NOSE
+    g.p(48, 58, 6, 3, '#c4c8d2');
+    g.p(45, 53, 3, 3, a);                        // their flame
+    g.p(45, 58, 3, 3, a);
+    g.p(44, 54, 2, 1, '#ffffff');
+    g.p(44, 59, 2, 1, '#ffffff');
   },
 
   // SKLTR: green bones in the dark
@@ -1586,6 +1593,59 @@ export const ART = {
     // the d-pad, four ticks, and the two face buttons in the accent
     g.p(38, 64, 6, 2, '#3a424d'); g.p(40, 62, 2, 6, '#3a424d');
     g.p(88, 62, 2, 2, '#e2dccd'); g.p(92, 65, 2, 2, '#e2dccd');
+  },
+
+  // Pajatso, after the owner's photographs: a 1 mk machine on an orange Kallio
+  // bar wall. The framing device is the TEAK CASE, lighter than the red face
+  // inside it; the thing everybody remembers is the POT — columns of coins
+  // stacked in a hump behind chrome dividers — and the one thing happening is
+  // a coin riding the chrome rail over the top toward the row of windows,
+  // whose middle one is the red 7:00. Two brown bottles on top are cropped by
+  // the top edge and the crank by the right edge: the bar and the hand.
+  pajatso(g, a) {
+    // the bar: orange paint on a white wall
+    g.p(0, 0, W, 72, '#e9e4da');
+    for (let y = 0; y < 72; y++) g.p(14, y, 100, 1, mix('#e4611d', '#c94f14', (y % 7) / 14));
+    // two bottles on the case, cropped by the top edge
+    for (const [x, h] of [[50, 12], [66, 10]]) {
+      g.p(x, 8 - h + 4, 5, h - 2, '#6b2a0a'); g.p(x + 1, 0, 3, 8 - h + 4, '#5a2208'); g.p(x + 1, 8 - h + 5, 1, h - 4, '#d88a4a');
+    }
+    // the case: teak, a black 1 mk plate down the right, the dark side beyond
+    g.p(28, 8, 74, 64, '#a8743e');
+    for (let x = 28; x < 102; x += 3) g.p(x, 8, 1, 64, mix('#8a5a2c', '#a8743e', ((x * 5) % 7) / 7));
+    g.p(101, 9, 4, 63, '#1c1c20');
+    g.p(91, 12, 7, 56, '#0d0d0f'); g.p(93, 26, 3, 4, '#c9ccd0'); g.p(92, 38, 5, 2, '#f4f4f4'); g.p(92, 50, 5, 1, '#9a9ca0');
+    // the face: red, darker at the top
+    for (let y = 12; y < 70; y++) g.p(32, y, 58, 1, mix('#5e0a12', '#a8141f', Math.min(1, (y - 12) / 22)));
+    // the rail over the top and down the left
+    const cx = 61, cy = 36, R = 24;
+    for (let t = Math.PI; t <= 2 * Math.PI + 0.01; t += 0.02) g.p(Math.round(cx + Math.cos(t) * R), Math.round(cy + Math.sin(t) * R), 1, 1, '#eef2f6');
+    for (let t = Math.PI; t <= Math.PI * 1.3; t += 0.03) g.p(Math.round(cx + Math.cos(t) * (R - 2)), Math.round(cy + Math.sin(t) * (R - 2)), 1, 1, '#c8ccd4');
+    g.p(cx - R, cy, 1, 34, '#eef2f6'); g.p(cx - R + 2, cy, 1, 32, '#c8ccd4');
+    // a few chrome nails in the red
+    for (let y = 18, r = 0; y < 32; y += 4, r++) for (let x = 46 + (r % 2) * 3; x < 80; x += 6) if (Math.hypot(x - cx, y - cy) < R - 4) g.p(x, y, 1, 1, '#e9ecef');
+    // THE GREY BAND and its nine windows, the red 7:00 in the middle
+    g.p(39, 33, 51, 9, '#c9ccd0'); g.p(39, 33, 51, 1, '#eef0f2');
+    for (let i = 0; i < 9; i++) {
+      const x = 40 + i * 5.6 | 0;
+      g.p(x, 34, 4, 3, '#0c0c0e'); g.p(x, 38, 4, 3, '#101012');
+      g.p(x + 1, 39, 2, 1, i === 4 ? '#ff3b3b' : '#f4f4f4');
+    }
+    // the V deflectors
+    g.line(40, 44, 58, 50, '#1a0306'); g.line(89, 44, 66, 50, '#1a0306');
+    // THE POT: pale columns, chrome dividers, and the hump of coins
+    g.p(38, 52, 52, 18, '#d7dadd');
+    for (let x = 38; x < 90; x += 4) g.p(x, 52, 1, 18, '#8e9297');
+    const hump = [2, 3, 4, 6, 8, 10, 11, 10, 8, 6, 4, 3, 2];
+    hump.forEach((n, k) => { for (let j = 0; j < n; j++) g.p(39 + k * 4, 69 - j * 1.6 | 0, 3, 1, j % 2 ? '#86651f' : a); });
+    g.p(58, 51, 12, 1, a);
+    // THE COIN, riding the rail over the top, the rail flashing behind it
+    const ang = -Math.PI * 0.36, rr = R - 1;
+    for (let i = 2; i <= 6; i++) { const t = ang - i * 0.09; g.p(Math.round(cx + Math.cos(t) * rr), Math.round(cy + Math.sin(t) * rr), 1, 1, mix(a, '#5e0a12', i / 5)); }
+    const kx = Math.round(cx + Math.cos(ang) * rr), ky = Math.round(cy + Math.sin(ang) * rr);
+    g.disc(kx, ky, 3, '#3a2408'); g.disc(kx, ky, 2, a); g.p(kx - 1, ky - 1, 1, 1, '#fff6c0');
+    // the crank on the side, cropped by the right edge
+    g.disc(112, 60, 5, '#c8ccd4'); g.p(111, 46, 3, 14, '#e9ecef'); g.p(113, 40, 15, 7, '#151515'); g.p(113, 40, 15, 1, '#555');
   },
 };
 

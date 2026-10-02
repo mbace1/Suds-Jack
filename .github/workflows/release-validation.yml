@@ -1,0 +1,47 @@
+name: arcade release validation
+
+on:
+  pull_request:
+    paths:
+      - 'hub/**'
+      - 'scripts/sw-shell.mjs'
+      - 'sw.js'
+      - 'index.html'
+      - 'test/hub-*.cjs'
+      - 'test/deploy-check.cjs'
+      - 'toko-live/test/runtime.cjs'
+      - 'flashprince/test/movement-contract.mjs'
+      - '.github/workflows/release-validation.yml'
+
+concurrency:
+  group: arcade-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser for release checks
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Catalogue, controls, HOME and cache graph
+        run: node test/hub-smoke.cjs
+      - name: Current release metadata
+        run: node scripts/versions.mjs . --check
+      - name: Real cabinet entries and HOME routes
+        run: node test/deploy-check.cjs
+      - name: Worker update and fresh offline mobile page
+        run: node test/hub-offline.cjs
+      - name: Preserve offline evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arcade-release-evidence
+          path: reports/release/
+          if-no-files-found: ignore

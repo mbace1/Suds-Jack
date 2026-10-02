@@ -68,7 +68,13 @@ const skip = rootIdx >= 0 ? rootIdx + 1 : -1;
 const asked = argv.filter((a, i) => !a.startsWith('--') && i !== skip);
 
 const MIME = {
-  '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
+  // `.mjs` is not a nicety: Piritori imports `../../market/model.mjs`, and
+  // without it this server answered `application/octet-stream`, the browser
+  // refused the module under strict MIME checking, and the check reported
+  // three console errors against a site that is in fact fine. GitHub Pages
+  // serves .mjs as text/javascript; so does this now.
+  '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
+  '.css': 'text/css',
   '.json': 'application/json', '.webmanifest': 'application/manifest+json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
   '.webp': 'image/webp', '.svg': 'image/svg+xml', '.gif': 'image/gif',
@@ -125,7 +131,10 @@ const serve = () => new Promise(res => {
   console.log(`\ndeploy check — ${ROOT}\n`);
   const all = await cabinets();
   const list = asked.length
-    ? all.filter(g => asked.some(a => g.path.replace(/\/$/, '') === a.replace(/\/$/, '')))
+    // A catalogue path is a URL: Flash Prince's is `flashprince/#flooded-city`,
+    // which never equals the folder a person types. Compare the folder parts.
+    ? all.filter(g => asked.some(a =>
+        g.path.split(/[#?]/)[0].replace(/\/$/, '') === a.split(/[#?]/)[0].replace(/\/$/, '')))
     : all;
   if (!list.length) {
     console.error(asked.length ? `no cabinet matches ${asked.join(', ')}` : 'no cabinets found');

@@ -44,7 +44,12 @@ const BUILT = /import\(\s*'(\.\/[\w.-]+\.js)'\s*\+/g;
 
 const tokenOf = ref => ref.match(/\?v=\d+/)?.[0] ?? '';
 
-export function shellOf(root, read) {
+// `entries` exists because the page is not the only door. The worker's list is
+// the graph reachable from index.html and nothing else, which is right — but
+// `hub/shell.js` is reached from a GAME's page, one level down, and a deploy
+// that forgets a module it pulls in ships a site with no HOME button on any
+// cabinet. deploy-hub.mjs passes both doors; sw.js still walks from the page.
+export function shellOf(root, read, entries = ['index.html']) {
   // A folder that ships its own service worker caches itself, and a second
   // worker reaching in from out here would be two answers to the same
   // question. A narrower scope wins the page, so those keep controlling
@@ -109,15 +114,31 @@ export function shellOf(root, read) {
     }
   };
 
-  visit('index.html', '');
+  for (const e of entries) visit(e, '');
   return [...out].sort();
 }
 
 // `./` and `./index.html` are the fixed head: the page shell is network-first
 // and carries no token, so it can never come out of a walk for tokens.
-export const withShell = (sw, list) => sw.replace(
-  /(const SHELL = \[\n {2}'\.\/',\n {2}'\.\/index\.html',\n)(?: {2}'[^']*',\n)*(\];)/,
-  (_, head, tail) => head + list.map(u => `  './${u}',`).join('\n') + '\n' + tail);
+//
+// EVERY newline here is `\r?\n`, and the replacement writes back whichever the
+// file already uses. The first cut hard-coded `\n` — and sw.js is a CRLF file,
+// so the pattern never matched ONCE: every deploy walked the graph, printed
+// "sw.js vN, precaching 23 modules", and wrote the list it had just computed
+// nowhere. The worker sat on `hub/hub.js?v=46` while the page asked for `?v=81`
+// for as long as that was true, which is the exact failure this module was
+// written to make impossible — an arcade that loads perfectly online and is
+// blank the moment you lose signal. A generator that cannot fail loudly has to
+// be asserted on its OUTPUT, which is why hub-smoke.cjs now does.
+export const withShell = (sw, list) => {
+  const eol = sw.includes('\r\n') ? '\r\n' : '\n';
+  const re = new RegExp(
+    `(const SHELL = \\[\r?\n {2}'\\./',\r?\n {2}'\\./index\\.html',\r?\n)` +
+    `(?: {2}'[^']*',\r?\n)*(\\];)`);
+  if (!re.test(sw)) throw new Error('sw.js: no SHELL array to write into');
+  return sw.replace(re, (_, head, tail) =>
+    head + list.map(u => `  './${u}',`).join(eol) + eol + tail);
+};
 
 if (import.meta.filename === process.argv[1]) {
   const root = process.argv[2] ?? path.resolve(import.meta.dirname, '..');

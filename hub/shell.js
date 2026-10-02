@@ -1,6 +1,6 @@
 // The arcade shell — one line in a game's index.html and it gets a way home.
 //
-//   <script type="module" src="../hub/shell.js?v=42"></script>
+//   <script type="module" src="../hub/shell.js?v=43"></script>
 //
 // It adds a HOME button in the top-left corner and a controller binding for
 // the same thing, and does nothing else: it installs no key handlers and no
@@ -13,9 +13,9 @@
 // takes you back — long enough that it cannot be hit by accident mid-run,
 // short enough that you do not have to wonder whether it is working.
 
-import { watchPad } from './pad.js?v=9';
-import { GAMES } from './games.js?v=103';
-import { attachPad, holdKey } from './padkeys.js?v=9';
+import { watchPad } from './pad.js?v=10';
+import { GAMES } from './games.js?v=104';
+import { attachPad, holdKey } from './padkeys.js?v=10';
 
 const HOLD_MS = 750;
 const START = 9, BACK = 8;
@@ -274,3 +274,4 @@ addEventListener('toko:seat', offerToko);     // or after
 // let a game know the shell is there, in case it wants to hide it during a
 // cutscene or move it out of the way of its own HUD
 window.__arcadeShell = { home, HOME, game: entry?.id ?? null, pad: padCfg ?? null, bridged, touchBtn, toko: () => tokoBtn };
+
