@@ -403,16 +403,32 @@ function check(name, cond) {
   // this caught feedback.js at ?v=7 in sw.js while the page had already moved
   // to ?v=9, which is a hub that loads online and is blank on a plane. There is
   // no build step to generate it, so it is checked instead.
+  //
+  // It asks the WALKER, not a second pattern of its own. The first version of
+  // this check matched `hub/*.js` out of index.html and hub.js — which is the
+  // hand-kept list with extra steps all over again: the counter at the top of
+  // the page is twelve modules under toko/ and not one of them was looked at,
+  // and hub-entry.js's dynamic imports were invisible to it. So it green-lit a
+  // worker pinned at `hub/hub.js?v=46` while the page asked for `?v=81`,
+  // because withShell's LF-only regex had never matched a CRLF sw.js and no
+  // deploy had ever written the list it printed. Comparing the walk against
+  // what is actually in the file is the only form of this check that can see
+  // a generator that silently does nothing.
   const swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
-  const pageSrc = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  const hubSrc = fs.readFileSync(path.join(ROOT, 'hub', 'hub.js'), 'utf8');
-  const needed = new Set([
-    ...(pageSrc.match(/hub\/[a-z0-9]+\.(?:js|css)\?v=\d+/g) ?? []),
-    ...[...hubSrc.matchAll(/from '\.\/([a-z0-9]+\.js\?v=\d+)'/g)].map(m => `hub/${m[1]}`),
-  ]);
-  const absent = [...needed].filter(u => !swSrc.includes(u));
-  check(`the offline shell names every module the page asks for (${needed.size})${absent.length ? ` — missing ${absent}` : ''}`,
-    absent.length === 0);
+  const { shellOf } = await import('../scripts/sw-shell.mjs');
+  const walked = shellOf(ROOT, f => {
+    try { return fs.readFileSync(path.join(ROOT, f), 'utf8'); } catch { return null; }
+  });
+  // `\r?$` — sw.js has MIXED endings, so a bare `$` reads some lines and not
+  // others, and a check that silently sees two thirds of a list is worse than
+  // one that sees none.
+  const listed = [...swSrc.matchAll(/^ {2}'\.\/([^'\r]*)',\r?$/gm)].map(m => m[1])
+    .filter(u => u !== '' && u !== 'index.html');
+  const absent = walked.filter(u => !listed.includes(u));
+  const extra = listed.filter(u => !walked.includes(u));
+  check(`the offline shell IS the page's module graph (${walked.length})`
+    + `${absent.length ? ` — missing ${absent}` : ''}${extra.length ? ` — stale ${extra}` : ''}`,
+    absent.length === 0 && extra.length === 0);
 
   // The live floor deliberately removed search/tag chrome and the randomizer;
   // their stale tests previously timed out after the production baseline was
@@ -470,6 +486,16 @@ function check(name, cond) {
     await page.waitForTimeout(200);
     return await page.locator('.tried').count() === 1;
   })());
+  // …and so does the TALLY, once versions.json has landed. The heading is shared
+  // with the "moved since you were last here" count, and making that one safe to
+  // run twice first shipped as a blanket reset of the heading — which erased
+  // "N tried" on every visit where nothing had moved. Read after the fetch, or
+  // this passes on the frame before the bug happens.
+  await page.waitForFunction(() => [...document.querySelectorAll('.ver')].some(v => v.textContent),
+    null, { timeout: 5000 });
+  await page.waitForTimeout(150);
+  const kept = await page.locator('#floor-head').textContent();
+  check(`and the tally survives the version numbers landing (${kept.split('·')[1]?.trim()})`, /1/.test(kept));
   // the floor does not reorder itself around it — moving the covers under
   // somebody who just learned where they were costs more than it gives
   const floorOrder = await page.$$eval('.cab:not(#cab-tokolive)', cs => cs.map(c => c.id));
@@ -784,7 +810,7 @@ function check(name, cond) {
   const versions = JSON.parse(fs.readFileSync(path.join(ROOT, 'hub', 'versions.json'), 'utf8'));
   const unversioned = games.filter(g => g.inRepo && !versions[g.id]);
   const honestlyUnversioned = unversioned.every(g => {
-    const dir = path.join(ROOT, g.path);
+    const dir = path.join(ROOT, g.path.split(/[#?]/)[0]);
     const log = path.join(dir, 'VERSIONS.md');
     const html = path.join(dir, 'index.html');
     if (fs.existsSync(log)) return false;
@@ -821,7 +847,7 @@ function check(name, cond) {
     //    twenty-three others were on ?v=37.
     const shells = new Map();
     for (const g of games.filter(g => g.inRepo && g.live !== false)) {
-      const html = path.join(ROOT, g.path, 'index.html');
+      const html = path.join(ROOT, g.path.split(/[#?]/)[0], 'index.html');
       if (!fs.existsSync(html)) continue;
       const m = fs.readFileSync(html, 'utf8').match(/hub\/shell\.js\?v=(\d+)/);
       if (m) shells.set(g.id, m[1]);
@@ -842,7 +868,7 @@ function check(name, cond) {
     //    turf (32 vs 34). Same parse as scripts/versions.mjs's topOf().
     const behind = [];
     for (const g of games.filter(g => g.inRepo)) {
-      const log = path.join(ROOT, g.path, 'VERSIONS.md');
+      const log = path.join(ROOT, g.path.split(/[#?]/)[0], 'VERSIONS.md');
       if (!fs.existsSync(log)) continue;
       const m = fs.readFileSync(log, 'utf8').match(/^##\s*v(\d+)(?:\.(\d+))?/m);
       if (!m) continue;
@@ -937,6 +963,41 @@ function check(name, cond) {
     marks.every(([id, label]) => (id in older) ? label !== 'new' : label === 'new'));
   const head = await rp.locator('#floor-head').textContent();
   check(`the heading says how many (${head.split('·')[1]?.trim()})`, head.includes(String(ids.length)));
+  check('and exactly one tag per cabinet, never two',
+    marks.length === new Set(ids).size, `${marks.length} tags over ${new Set(ids).size} cabinets`);
+
+  // ── and it stays one tag when the floor is REBUILT mid-fetch ──
+  // Every `updated` tag used to be on screen twice, and neither the check above
+  // nor a local server could see it. showVersions() ran on every render() and
+  // started its own fetch; three ordinary things rebuild the floor (the WebXR
+  // probe resolving, the konami unlock, a language switch), so two fetches were
+  // in flight across a rack that had been thrown away and rebuilt, and BOTH
+  // landed on the new cabinets. 46 tags over 26 cabinets, while the heading —
+  // which counts one run — said 23.
+  //
+  // Reproducing it needs the fetch to be SLOW, which a loopback server is not,
+  // so the route holds versions.json for 400ms: that is the window a real
+  // network gives and the local one does not. It then switches language inside
+  // that window, which is the most ordinary way a person opens it.
+  await rp.route('**/versions.json*', async r => {
+    await new Promise(x => setTimeout(x, 400));
+    await r.continue();
+  });
+  await rp.goto(`${base}/index.html`, { waitUntil: 'commit' });
+  await rp.waitForSelector('.lang-btn[data-lang="fi"]', { timeout: 5000 });
+  await rp.locator('.lang-btn[data-lang="fi"]').click();
+  await rp.waitForFunction(() => document.querySelectorAll('.fresh').length > 0,
+    null, { timeout: 5000 });
+  await rp.waitForTimeout(700);
+  const twice = await rp.$$eval('.cab', ns => ns
+    .map(c => [c.id, c.querySelectorAll('.fresh').length])
+    .filter(([, n]) => n > 1));
+  check(`a rebuild during the fetch does not double the tag${twice.length ? ` — ${twice.slice(0, 4).map(t => t.join(':'))}` : ''}`,
+    twice.length === 0);
+  const reHead = await rp.locator('#floor-head').textContent();
+  const reTags = await rp.locator('.fresh').count();
+  check(`and the heading's count still matches the tags (${reTags})`,
+    reHead.includes(String(reTags)));
   await back.close();
 
   // ── a controller ──
@@ -1018,7 +1079,12 @@ function check(name, cond) {
   // could turn the arcade's gate red. Smallest entry page, decided by bytes so
   // it stays true as the floor changes.
   const light = [...shelled].sort((a, b) => {
-    const size = g => { try { return fs.statSync(path.join(ROOT, g.path, 'index.html')).size; }
+    // `g.path` is a URL, not a folder: Flash Prince's is `flashprince/#flooded-city`,
+    // and joining that asks for a directory named `#flooded-city`. It read as
+    // Infinity, the lightest page on the floor dropped out, and the checks
+    // below landed on Kindling — a React build that injects its HOME button
+    // after hydration — and failed there instead of testing shell.js.
+    const size = g => { try { return fs.statSync(path.join(ROOT, g.path.split(/[#?]/)[0], 'index.html')).size; }
                         catch { return Infinity; } };
     return size(a) - size(b);
   })[0] ?? shelled[0];

@@ -40,9 +40,18 @@ const { GAMES } = await import(pathToFileURL(path.join(ROOT, 'hub', 'games.js'))
 // a float cannot be displayed (`15.10` and `15.1` are the same number, and
 // `15.0` prints as `15`). The label is what a reader sees; the key is what
 // the hub's "this moved" diff sorts on. minor is capped at 999.
+//
+// A SERIES-LETTER heading is read too — `# C.19 — Night Shift` is release 19
+// of Option C, and the cabinet already launches it with `release=19`. Left
+// unread, the only number anyone could put on that cabinet was typed by hand
+// into versions.json, which is the third-place-a-number-lives problem this
+// file exists to remove; and with no log, --repair would have offered the
+// page's `?v=4` CACHE TOKEN instead. `## vN` still wins when a log has both.
 function topOf(file) {
   if (!existsSync(file)) return null;
-  const m = readFileSync(file, 'utf8').match(/^##\s*v(\d+)(?:\.(\d+))?/m);
+  const src = readFileSync(file, 'utf8');
+  const m = src.match(/^##\s*v(\d+)(?:\.(\d+))?/m)
+    ?? src.match(/^#{1,2}\s*[A-Z]\.(\d+)(?:\.(\d+))?\b/m);
   if (!m) return null;
   return ver(m[1], m[2]);
 }
@@ -70,9 +79,17 @@ function rootLogOwner() {
   return owner ? { id: owner.id, v: topOf(f) } : null;   // v is the {v,n} pair
 }
 
+// The cabinet's own folder first, then its PROJECT's. A catalogue path can
+// point deep into a project — optionc-lab opens `piritori-c17/web/crew-run/`
+// while its log is `piritori-c17/VERSIONS.md` — and a log anywhere in the
+// project is a better answer than a cache token next to the page.
 function fromLog(dir) {
-  const r = topOf(path.join(dir, 'VERSIONS.md'));
-  return r ? { ...r, from: 'VERSIONS.md' } : null;
+  const top = path.join(ROOT, path.relative(ROOT, dir).split(path.sep)[0]);
+  for (const d of dir === top ? [dir] : [dir, top]) {
+    const r = topOf(path.join(d, 'VERSIONS.md'));
+    if (r) return { ...r, from: 'VERSIONS.md' };
+  }
+  return null;
 }
 
 function fromToken(dir) {
@@ -105,7 +122,13 @@ const rootLog = rootLogOwner();
 const out = {};
 const missing = [];
 for (const g of [...GAMES, ...EXTRA]) {
-  const dir = path.join(ROOT, g.path);
+  // A catalogue `path` is a URL, not a directory: Flash Prince's is
+  // `flashprince/#flooded-city`, because the cabinet deep-links into the game.
+  // Joining that onto ROOT asks for a folder named `#flooded-city`, which is
+  // never there — so the cabinet was reported as unsourceable on every run
+  // while its log sat in plain sight one level up, and the number in
+  // versions.json (v68, correct) was flagged as drift nobody could fix.
+  const dir = path.join(ROOT, g.path.split(/[#?]/)[0]);
   if (!existsSync(dir) || !statSync(dir).isDirectory()) { missing.push(`${g.id} (not here)`); continue; }
   const owned = rootLog && rootLog.id === g.id && rootLog.v
     ? { v: rootLog.v.v, n: rootLog.v.n, from: 'VERSIONS.md' } : null;
@@ -148,7 +171,14 @@ if (process.argv.includes('--check')) {
       bad.push(`${id}: versions.json v${w.v}, its log says v${r.v}  (${dir})`);
     }
   }
+  // `inRepo: false` says the cabinet's source lives in another repository —
+  // toko-drop-godot and piritori-godot are both built elsewhere and their
+  // numbers are written here by hand. A tree that cannot source one of those
+  // is not drifting, it is doing exactly what the flag says, and reporting it
+  // every run trains people to read past the list.
+  const elsewhere = new Set(GAMES.filter(g => g.inRepo === false).map(g => g.id));
   for (const [id, w] of Object.entries(was)) {
+    if (!out[id] && elsewhere.has(id)) continue;
     if (!out[id]) bad.push(`${id}: in versions.json (v${w.v}) but the tree cannot source it`);
     else if (w.from === 'VERSIONS.md' && out[id].from !== 'VERSIONS.md') {
       bad.push(`${id}: versions.json claims a log this tree does not have`);

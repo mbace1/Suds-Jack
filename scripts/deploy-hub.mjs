@@ -34,6 +34,22 @@ const REPO = path.resolve(import.meta.dirname, '..');
 const site = process.argv[2];
 const dry = process.argv.includes('--dry');
 
+// `--take <path>` deploys one file the held-bytes guard would otherwise skip.
+//
+// The guard answers "has this branch ever held the site's bytes", which is the
+// right question but not a complete one: it cannot tell "the site has work we
+// lack" from "we have SUPERSEDED the site's version". The second happens every
+// time this branch edits a file the site also edited — and with no way past the
+// guard, such a file can never be deployed again at all. A guard with no
+// override is a wall.
+//
+// So the override exists, and it is deliberately PER FILE and on the command
+// line rather than a blanket --force: the decision that main's copy wins is
+// made once, out loud, for a named file, by somebody who read the diff. The
+// script's own refusal message already says that reading it is the point.
+const take = new Set(
+  process.argv.reduce((a, v, i, all) => (v === '--take' && all[i + 1] ? [...a, all[i + 1]] : a), []));
+
 if (!site || !fs.existsSync(path.join(site, 'index.html'))) {
   console.error('usage: node scripts/deploy-hub.mjs <siteRoot> [--dry]');
   process.exit(2);
@@ -53,12 +69,25 @@ const OWNED = [
   'hub/hub.js', 'hub/hub.css', 'hub/i18n.js', 'hub/topics.js',
   'hub/feedback.js', 'hub/pad.js', 'hub/padkeys.js', 'hub/shell.js',
   'hub/arcade.js',
+  // pad.js imports playlog-auto.js for its side effect, and playlog-auto.js
+  // imports playlog.js. Neither carries a token and neither was in here, so a
+  // deploy that moved pad.js took the site's HOME button off every cabinet.
+  'hub/playlog.js', 'hub/playlog-auto.js',
   'scripts/versions.mjs',
   // The sting is the hub's now — hub.js imports it on Play — so it ships with
   // the hub. NOT the counter's files: chat.js and dialogue*.js are actively
   // rewritten from another direction and belong to whoever is doing that. The
   // guard below would catch it either way; keeping them out says so up front.
-  'toko/js/sting.js', 'toko/js/board.js', 'toko/index.html',
+  //
+  // AND NOT THE BRAND BOARD, for the same reason and on the same evidence.
+  // `toko/index.html` and `toko/js/board.js` were in here and should not have
+  // been: the live side has FORKED them architecturally — board.js there is a
+  // thin wrapper importing a `board-base.js` plus its own layers
+  // (approved-face-only, the news modules), while this branch keeps the
+  // monolith and loads each layer from its own <script> tag. Both work. Which
+  // shape the board should have is the brand lane's call, not a deploy
+  // script's, and the guard was correctly refusing them on every run.
+  'toko/js/sting.js',
 ];
 const THEIRS = ['hub/games.js', 'hub/art.js'];
 
@@ -174,7 +203,15 @@ for (const f of [...files, 'sw.js']) {
 // ...and with the tail newline normalised: a tool on the site side wrote a
 // file without one, and "every byte identical except the last is missing"
 // spent a run being reported as foreign work.
-const bare = s => s.replace(/\?v=\d+/g, '').replace(/\s*$/, '\n');
+//
+// ...and with LINE ENDINGS normalised, which cost a whole diagnosis. This
+// repo holds a mix — hub/hub.js is CRLF in git and LF on the deployed tree,
+// and several files are mixed within themselves, so `file` reports "CRLF" for
+// a file node then reads as LF. The guard's question is "is this the same
+// CODE", and \r is not code: six files were being reported as somebody else's
+// work, blocking the deploy of a hub.js whose only real difference was the
+// tokens this script renumbers itself.
+const bare = s => s.replace(/\r\n/g, '\n').replace(/\?v=\d+/g, '').replace(/\s*$/, '\n');
 
 const held = (f, text) => {
   const want = bare(text);
@@ -200,9 +237,13 @@ for (const f of OWNED) {
   const theirs = read(site, f);
   if (theirs != null && bare(theirs) === bare(mine)) continue;   // same code, older numbers
   if (theirs != null && !held(f, theirs)) {
-    stale.push(f);
-    note(`! ${f} — the site carries work this branch has never held; NOT overwritten`);
-    continue;
+    if (take.has(f)) {
+      note(`  ${f} — guard overridden with --take; this branch's copy wins`);
+    } else {
+      stale.push(f);
+      note(`! ${f} — the site carries work this branch has never held; NOT overwritten`);
+      continue;
+    }
   }
   write(site, f, mine);
   changed.add(f);
@@ -217,8 +258,11 @@ for (const f of OWNED) {
   const arts = [...cat.matchAll(/art: '([a-z0-9]+)'/g)].map(m => m[1]);
   // `(g)` as well as `(g, a)` — a marquee that does not tint from an accent
   // takes one argument, and hard-coding two reported the brand mark as a
-  // missing drawing on the one deploy that added it
-  const drawn = new Set([...art.matchAll(/^ {2}([a-z0-9]+)\(g(?:, a)?\)/gm)].map(m => m[1]));
+  // missing drawing on the one deploy that added it. The SPACE is optional
+  // too: `warehouse(g,a){` is written without one and was reported as a blank
+  // marquee on every run while its drawing sat four lines away. A checker that
+  // reads formatting rather than structure finds formatting.
+  const drawn = new Set([...art.matchAll(/^ {2}([a-z0-9]+)\s*\(\s*g\s*(?:,\s*a\s*)?\)/gm)].map(m => m[1]));
   const blank = arts.filter(a => !drawn.has(a));
   if (blank.length) note(`! the site lists cabinets with no marquee: ${blank}`);
 }
@@ -228,12 +272,20 @@ for (const f of OWNED) {
 // site for a file that is not there and the arcade would not boot at all. This
 // is the one failure the rest of the script cannot catch, because everything
 // downstream reasons about references rather than about files.
+//
+// It WALKS, for the two reasons the precache list walks. The first cut read
+// three files — index.html, hub.js, shell.js — and matched `?v=\d+` in them,
+// so it was blind in both directions at once: `hub/pad.js` imports
+// `./playlog-auto.js` one hop further out than it looked, and that import is
+// bare, carrying no token for it to match. Both playlog modules went to the
+// site missing, every page 404'd on them, and because shell.js is what pulls
+// pad.js in, EVERY cabinet on the site lost its HOME button while this check
+// reported nothing. The walker already handles depth and untokened specifiers;
+// there was never a reason for a second, worse copy of it here.
 {
-  const graph = [read(REPO, 'index.html'), read(REPO, 'hub/hub.js'), read(REPO, 'hub/shell.js')]
-    .join('\n');
-  const want = new Set([...graph.matchAll(/(?:\.\/|hub\/)([\w.-]+\.(?:js|css))\?v=\d+/g)]
-    .map(m => `hub/${m[1]}`));
-  const missing = [...want].filter(f => read(site, f) == null);
+  const want = shellOf(REPO, f => read(REPO, f), ['index.html', 'hub/shell.js'])
+    .map(u => u.split('?')[0]);
+  const missing = [...new Set(want)].filter(f => read(site, f) == null);
   if (missing.length) {
     note(`! the page asks for ${missing.join(', ')} and the site does not have it`);
     note('  add it to OWNED in this script — nothing else will copy it');
@@ -301,7 +353,11 @@ try {
     { cwd: site, encoding: 'utf8' });
   for (const line of out.split('\n')) {
     const f = line.slice(3).trim();
-    if (f && /^hub\/[\w.-]+\.(?:js|css)$/.test(f)) bump.add(f);
+    // A DELETED file is dirty too, and handing it a new number announced
+    // `hub/toko-cabinet.js -> v1` for a file that had just been removed as
+    // dead. Porcelain does not distinguish gone-on-purpose from anything else,
+    // so ask the tree rather than the status letter.
+    if (f && /^hub\/[\w.-]+\.(?:js|css)$/.test(f) && read(site, f) != null) bump.add(f);
   }
 } catch { note('! the site is not a git checkout — site-side edits cannot be detected'); }
 
@@ -387,6 +443,8 @@ if (stale.length) {
     `\nnot in this branch, so deploying would delete it. Bring it back first:` +
     stale.map(f => `\n  cp ${path.join(site, f)} ${f}`).join('') +
     `\nread the diff before you commit it — this only proves the bytes differ,` +
-    `\nnot that theirs is the version you want.`);
+    `\nnot that theirs is the version you want. If you read it and THIS branch` +
+    `\nis the one that should win, say so per file:` +
+    stale.map(f => `\n  --take ${f}`).join(''));
 }
 console.log('\nnext: node scripts/versions.mjs ' + site);

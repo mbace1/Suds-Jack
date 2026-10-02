@@ -12,7 +12,7 @@ import {
 } from './combat.js?v=23';
 import { abilityTargets, findAbility } from './abilities.js?v=5';
 import { key } from './grid.js?v=7';
-import { watchPad } from '../../hub/pad.js?v=9';
+import { watchPad } from '../../hub/pad.js?v=10';
 
 export function createInputHandler({
   canvas, getState, getLayout, onChange, consumedDrag, clearDrag, getAbilities,

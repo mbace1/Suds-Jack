@@ -23,12 +23,12 @@ function relink() {
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=103';
-import { drawMarquee } from './art.js?v=19';
+import { GAMES, SKETCHES } from './games.js?v=104';
+import { drawMarquee } from './art.js?v=20';
 import * as feedback from './feedback.js?v=13';
-import * as topics from './topics.js?v=11';
+import * as topics from './topics.js?v=12';
 import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=11';
-import { watchPad, padPresent } from './pad.js?v=9';
+import { watchPad, padPresent } from './pad.js?v=10';
 import * as room from './arcade.js?v=5';
 
 const el = (tag, cls = '', text = '') => {
@@ -454,13 +454,24 @@ function notesLink() {
 // VERSIONS.md (Toko Drop's convention, now every project's) or falls back to
 // the ?v= module token it already carries. Fetched rather than baked in, so
 // shipping a new build of one game does not mean re-deploying the arcade.
+//
+// FETCHED ONCE. render() runs this on every rebuild, and three ordinary things
+// rebuild the floor: the WebXR probe resolving, the konami unlock, and a
+// language switch. Each one used to start its own fetch, so two were in flight
+// across a rack that had just been thrown away and rebuilt — and BOTH resolved
+// against the new cabinets, so every `updated` tag was appended twice while the
+// heading, which counts one run, said half the number. Holding the answer means
+// a re-render fills the numbers synchronously instead, which also removes the
+// blink of version-less cabinets on every language switch.
+let versionsOnce = null;
 async function showVersions() {
-  let versions;
-  try {
-    const res = await fetch(new URL('hub/versions.json', document.baseURI), { cache: 'no-cache' });
-    if (!res.ok) return;
-    versions = await res.json();
-  } catch { return; }               // offline, or not generated yet: no numbers
+  versionsOnce ??= fetch(new URL('hub/versions.json', document.baseURI), { cache: 'no-cache' })
+    .then(res => (res.ok ? res.json() : null))
+    .catch(() => null);
+  const versions = await versionsOnce;
+  // offline, or not generated yet: no numbers. Cleared rather than kept, so a
+  // later render can try again instead of being stuck with the failure.
+  if (!versions) { versionsOnce = null; return; }
   for (const slot of document.querySelectorAll('.ver')) {
     const v = versions[slot.dataset.game];
     if (!v) continue;
@@ -598,6 +609,19 @@ function markFresh(versions) {
   pendingSeen = now;
 
   const seen = readSeen();
+
+  // Anything a previous run left behind comes off FIRST. This appends to the
+  // DOM, so it has to be safe to call twice — "it is only called once" is
+  // exactly the assumption that put two tags on every cabinet. The heading is
+  // reset ONLY when it carries a count this function wrote: it is shared with
+  // showPlayed()'s "N tried", and a blanket reset erased that line on every
+  // visit where nothing had moved.
+  for (const old of document.querySelectorAll('.fresh')) old.remove();
+  for (const cab of document.querySelectorAll('.cab.has-fresh')) cab.classList.remove('has-fresh');
+  const head = document.getElementById('floor-head');
+  const hadFresh = !!head?.dataset.fresh;
+  if (hadFresh) { head.textContent = t('floor'); delete head.dataset.fresh; }
+
   // A first visit has nothing to compare against, and marking all twelve as new
   // would say nothing while looking like it said something.
   if (!seen) return;
@@ -618,10 +642,12 @@ function markFresh(versions) {
     slot.after(tag);
     slot.closest('.cab')?.classList.add('has-fresh');
   }
-  const head = document.getElementById('floor-head');
   if (n && head) {
     head.textContent = `${t('floor')} · ${t('fresh.count', { n })}`;
     head.dataset.fresh = '1';
+  } else if (hadFresh) {
+    // the count this replaced is gone; the tried line owns the heading again
+    showPlayed();
   }
 }
 
