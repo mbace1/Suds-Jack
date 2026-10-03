@@ -66,7 +66,7 @@
 import * as THREE from 'three';
 import { PAL } from './palette.js?v=11';
 import { SURF, SALT } from './terrain.js?v=11';
-import { buildCraft, disposeCraft, POD } from './craft.js?v=11';
+import { buildCraft, disposeCraft, POD } from './craft.js?v=12';
 
 const G = 9.81;
 const HZ = 120, DTF = 1 / HZ;
@@ -89,8 +89,13 @@ export const SPEC = {
   // Full lock at 140 km/h is a slide whatever the rudder does, because the
   // sustainable yaw rate falls as 1/v. So the lock the driver can ask for
   // shrinks with speed — the same thing every racer does, and a physical
-  // truth about steering racks under load. 1.0 below 20 m/s, 0.55 at 45.
-  speedLock: 0.45, speedLockFrom: 20, speedLockOver: 25,
+  // truth about steering racks under load.
+  // v12 (owner: "miniscule movements at high speed and more snowboarding
+  // like at lower speeds"): it shrinks as 1/v rather than on a line, because
+  // the yaw rate a given lateral g needs IS 1/v — so the stick asks for the
+  // same g at every speed past lockRef, and at 180 km/h a quarter of it is a
+  // correction, not a swerve. 1.0 to 20 m/s, 0.67 at 30, 0.5 at 40, 0.4 at 50.
+  lockRef: 20, lockMin: 0.34,
   // Rudder and yaw damping are a PAIR, and they set two DIFFERENT things: the
   // steady yaw rate under full lock is steer/yawDamp, and the time to reach it
   // is Izz/yawDamp. The old 9000/12000 gave 0.75 rad/s after a 0.73 s time
@@ -152,7 +157,13 @@ export const SPEC = {
   // rearSteer was 1.9 against a 9000 rudder. Against 45000 that made the aft
   // sled three times twitchier than the nose sled at quarter lock, which is
   // not "a different character", it is a different game. Re-measured at 1.15.
-  rearSteer: 1.15, rearCircle: 0.28,
+  // v12: rearCircle 0.28 → 0.14. At 0.28 full power ate so much of the rear
+  // grip that the aft sled slid 8–10 m/s at a QUARTER lock from 30 m/s up —
+  // every input a slide, the opposite of "miniscule movements at high speed".
+  // At 0.14 a quarter lock at 180 km/h is 5 degrees and no slide, and it is
+  // still the looser of the two at half lock (4 m/s against 1.4): power
+  // still steps the tail out, it just has to be asked. (ladder.mjs)
+  rearSteer: 1.15, rearCircle: 0.14,
   // Thrust goes as N1 squared, so a 1.3 s spool was 1.4 s from idle to HALF
   // thrust: press the throttle and the game does nothing for a second and a
   // half. 0.75 keeps the lag you can hear and cuts that to 0.8 s.
@@ -180,9 +191,16 @@ export const SPEC = {
   // THE BANK. The cushion leans the car INTO the turn — the inside pads
   // shorten — the way a board goes up on its edge. Driven by the steering
   // (the pilot tips in first) and held by the lateral g.
+  // v12: the bank depends on SPEED. Slow, it is a board — deep over on its
+  // edge, the pilot throwing it in (bankSteerSlow) before any g has built;
+  // fast, it is a rocket sled — a few degrees, set by the g and nothing else.
+  // Blended from bankSlowTo to bankFastFrom m/s.
   bank: 0.20,                // rad per g of lateral acceleration
-  bankSteer: 0.10,           // rad at full lock, before any g has built
-  bankMax: 0.27,             // rad, ~15 degrees
+  bankSteer: 0.08,           // rad at full lock, before any g has built — fast
+  bankMax: 0.20,             // rad, ~11 degrees — fast
+  bankSteerSlow: 0.34,       // the same, slow
+  bankMaxSlow: 0.48,         // rad, ~27 degrees — slow
+  bankSlowTo: 12, bankFastFrom: 40,
   bankLag: 0.12,             // s
   // THE EDGE, redefined. v4-v10 paid a grip bonus for rolling onto the
   // OUTSIDE runners — and nothing in the model ever rolled the body in a
@@ -299,7 +317,7 @@ export class Vehicle {
 
     // ---- the steer, and the bank it asks for ------------------------------
     const speed0 = Math.hypot(this.vel.x, this.vel.z);
-    const lockScale = 1 - SPEC.speedLock * clamp((speed0 - SPEC.speedLockFrom) / SPEC.speedLockOver, 0, 1);
+    const lockScale = Math.max(SPEC.lockMin, SPEC.lockRef / Math.max(speed0, SPEC.lockRef));
     const steerIn = clamp(ctl.steer, -1, 1) * lockScale;
     this.steerVis = steerIn;
     // planing: speed brings the pads up out of the sand, on a square root
@@ -308,8 +326,13 @@ export class Vehicle {
     // roll > 0 is right-side-down, and a right turn (steer > 0, gLat > 0)
     // leans the car into it — the board up on its edge
     this._gLatF += (this.gLat - this._gLatF) * Math.min(1, dt / 0.1);
+    const fast = clamp((speed0 - SPEC.bankSlowTo) / (SPEC.bankFastFrom - SPEC.bankSlowTo), 0, 1);
+    const bankMax = SPEC.bankMaxSlow + (SPEC.bankMax - SPEC.bankMaxSlow) * fast;
+    const bankSteer = SPEC.bankSteerSlow + (SPEC.bankSteer - SPEC.bankSteerSlow) * fast;
+    // steerIn has the speed's lock already taken out of it; the lean the
+    // pilot throws is on the STICK, so it reads ctl.steer
     const wantBank = this.grounded
-      ? clamp(SPEC.bank * this._gLatF + SPEC.bankSteer * steerIn, -SPEC.bankMax, SPEC.bankMax) : 0;
+      ? clamp(SPEC.bank * this._gLatF + bankSteer * clamp(ctl.steer, -1, 1), -bankMax, bankMax) : 0;
     this.bankT += (wantBank - this.bankT) * Math.min(1, dt / SPEC.bankLag);
     const sinBank = Math.sin(this.bankT), sinRoll = Math.sin(this.roll);
 
@@ -694,31 +717,22 @@ export class Vehicle {
   }
 
   /**
-   * v11: put each pod on the sand under its pad. pad.gap is the drop from
-   * the pad's anchor (at body height) to the ground it rides on — sink
-   * included, so a loaded pod in deep sand is visibly IN it — and each pod
-   * swings to it on its wishbones, about the pivot at the chassis. Airborne,
-   * they droop to the end of their travel; landing, they come up to meet it.
+   * The hover cushion's glow, a pool on the sand under each pad. pad.gap is
+   * the drop from the pad's anchor (at body height) to the ground it rides
+   * on, so the pool sits on the sand under a banked or pitched hull; bigger
+   * with load, gone in the air. v12: the pods that used to stand here are
+   * gone with the formula kit — the cushion is invisible on every plate.
    */
   posePods(U) {
     const G_ = U.glow, M4 = this._m4 || (this._m4 = new THREE.Matrix4());
     const Q_ = this._q4 || (this._q4 = new THREE.Quaternion()), S_ = this._s4 || (this._s4 = new THREE.Vector3());
     const P_ = this._p4 || (this._p4 = new THREE.Vector3());
-    const podH = POD.r * POD.squash;
     for (let i = 0; i < U.corners.length; i++) {
-      const c = U.corners[i], pad = this.pads[c.pad];
-      const target = -pad.gap + POD.clear + podH;              // pod centre, body frame
-      const dy = clamp(target - POD.pivotY, POD.travel[0], POD.travel[1]);
-      const a = c.side * Math.asin(clamp(dy / c.L, -0.95, 0.95));
-      c.asm.rotation.z = a;
-      c.holder.rotation.z = -a;                                // the pod stays level
-      if (c.front) c.holder.rotation.y = -this.steerVis * SPEC.steerLock;
-      // the cushion's glow on the sand under it: bigger with load, gone in the air
-      const x = c.asm.position.x + c.side * c.L * Math.cos(a);
+      const pad = this.pads[U.corners[i].pad];
       const load = clamp(pad.fS / (SPEC.mass * G / 4), 0, 2);
       const k = pad.touch ? 0.55 + load * 0.35 : 0;
-      P_.set(x, POD.pivotY + dy - podH - 0.03, c.asm.position.z);
-      S_.set(0.95 * k, 1, 1.9 * k);
+      P_.set(pad.x * POD.glowIn, -clamp(pad.gap, 0, 1.4) + POD.glowUp, pad.z);
+      S_.set(1.3 * k, 1, 2.2 * k);
       M4.compose(P_, Q_, S_);
       G_.setMatrixAt(i, M4);
     }

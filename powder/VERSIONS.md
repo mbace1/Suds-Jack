@@ -4,6 +4,103 @@ The `## vN` heading at the top is what the arcade floor shows as the build
 number (`scripts/versions.mjs` reads it at deploy time). The `?v=N` token on
 the module graph is a cache-bust, kept separately.
 
+## v12 — 2026-09-27
+A rocket sled, off the concept plates — and the feel the formula brief
+actually meant: tiny, exact movements flat out, a board's lean slow.
+
+THE ASK (owner): "Make the ships look more like the reference concept art
+than actual formula cars. The formula reference was only to high octane
+racing with miniscule movements at high speed and more snowboarding like
+at lower speeds. It's a rocket sled after all."
+
+THE SHIP (`craft.js`). The plates in `ref/`, read as a set: a long cream
+fuselage from a chrome nose cone, a bubble canopy, the hull cut open behind
+the cockpit on a bay full of machinery, the accent on the lower half with
+a flaked edge, rust at the nose and round the bay, a number roundel on each
+flank — and CHROME CANS the size of the cockpit, which is what every plate
+is about. Built as a kit again, lofted: the fuselage pinches in over the
+bay and the livery paints that stretch dark, so the pinch reads as a hole
+with finned blocks, headers and a blower in it. NOSE carries its two cans
+either side of the nose on stub pylons, open fans in their mouths, and a
+smaller pair of sustainers at the tail (the "5" plate, cans fore and aft;
+the thrust is still all at the front, they only burn). AFT hangs two big
+cans off the rear hub, bores to the chase camera, a spinner in each, one
+dorsal fin. The formula kit's wings, halo, floor and the pods on wishbones
+are gone, and the hover cushion is invisible, as on every plate — only its
+glow on the sand is left (`posePods`).
+
+Found on the way: the livery canvas was painted nose-at-top and then
+FLIPPED on upload (`CanvasTexture.flipY`), so the bay's dark band landed a
+metre forward of the bay, across the back of the cockpit. And the budget:
+the first cut was 10.5-11.9k triangles, over the pipeline's 9,000 for a
+ship — the finned bay blocks were most of it. The references re-exported
+and round-tripped at 8,938 (NOSE) / 7,794 (AFT).
+
+THE FEEL, measured first (`test/ladder.mjs`, new: speed x lock in SIM time,
+the race loop paused, on the rock-cleared flats — on the rift floor half the
+mid-speed runs met the canyon wall and read as a handling washout). v11 had
+it half right and half backwards:
+  - NOSE was already fine-grained fast (a quarter lock at 50 m/s: 7 deg of
+    heading in 2 s) but never leaned slow: 11-13 deg of bank at most.
+  - AFT slid at EVERY lock from 30 m/s up — 8-10 m/s of slip at a QUARTER
+    lock — because full power ate the rear grip (`rearCircle` 0.28).
+Three changes:
+  - the lock shrinks as 1/v past 20 m/s (`lockRef`, floor `lockMin` 0.34),
+    not on a line — the yaw rate a given g needs IS 1/v, so the stick asks
+    for the same g at every speed: 1.0 to 20 m/s, 0.67 at 30, 0.4 at 50.
+  - the bank depends on speed: `bankMaxSlow` 27 deg and `bankSteerSlow` to
+    12 m/s, blending to 11 deg by 40. The pilot's lean reads the STICK, not
+    the speed-scaled steer, so a slow turn goes over on its edge at once.
+  - `rearCircle` 0.28 -> 0.14.
+Held-speed ladder, v11 -> v12 (heading in 2 s / slip m/s / bank deg):
+  NOSE 10 m/s full   89 / 2.0 / 11  ->  89 / 2.1 / 26
+  NOSE 50 m/s quarter 7 / 0.7 / 3   ->   5 / 0.5 / 3
+  NOSE 50 m/s full   28 / 9.2 / 11  ->  21 / 5.9 / 9
+  AFT  50 m/s quarter 20 / 9.6 / 3  ->   5 / 0.6 / 3
+  AFT  50 m/s full   38 / 17.2 / 7  ->  22 / 6.7 / 8
+  AFT  30 m/s half   45 / 10.9 / 5  ->  24 / 1.8 / 9
+AFT is still the looser at half lock (4.0 m/s of slip at 50 against NOSE's
+1.4): power steps the tail out, it just has to be asked. The look run's
+carve at 174 km/h: slip 7.0 -> 2.6 m/s at 11.5 deg of bank.
+
+Not measured here: a real phone. `thumbs`/`keys` are wall-clock harnesses
+and this change moves the vehicle, not the input paths.
+
+Tokens: per module, as AGENTS.md has it — `craft.js`, `vehicle.js` and
+`sky.js` (their bytes changed) go to `?v=12`, `main.js` to `?v=13`; every other
+module keeps `?v=11`, byte-identical to v11, so a returning player's cache
+keeps them. (Until v11 this log moved the whole graph together.)
+
+THE WHITE SCREEN (owner, on a phone: "Not working" — the race running,
+the HUD live, the view blank white). v11 shaded the ringed planet, and its
+limb used `pow(1.0 - max(0.0, dot(N, V)), 2.6)`. On a phone GPU the dot of
+two unit vectors can land a hair over 1, the base goes negative, and pow()
+of a negative is NaN. One NaN pixel, and bloom — which blurs every pixel
+into every other through its mips — made it the whole frame: white on the
+phone, black on a desktop GPU (`test/nan.mjs` plants one and shows it).
+Two fixes: the base is clamped at the site, and a SANITISE pass runs right
+after the scene render (`main.js`), replacing NaN with 0 and Infinity with
+a cap before bloom sees it, so the next stray NaN costs a pixel, not the
+picture. `nan.mjs` passes with it and fails without it. The same two-file
+fix went to the live v11 as a hotfix ahead of this release, so here
+`main.js` is `?v=13` (the hotfix holds 12) and `sky.js` is `?v=12`.
+
+THE HUD ON A PHONE HELD UPRIGHT (the same screenshot): the panels are
+fixed-position and placed for a landscape screen, so on a 412px-wide
+portrait one the NEXT GATE bar ran over the CLOCK, the telemetry ran over
+the ground speed, and the compass clipped the HUB button. A `max-width:
+600px` layout keeps the clock top right, drops the compass to its own line
+under it, and splits the bottom in half — speed and turbine left, the
+telemetry wrapped onto two rows right. `test/hud.mjs` renders the race at
+six real screen sizes and reports every pair of intersecting HUD boxes:
+three phone-portrait sizes failed before it and all six pass after.
+
+The import path (`craftFromModel`) gets two fixes the kit exposed. Each
+distinct HULL map now gets its own material: the reference export carries
+the mapped fuselage AND unmapped trim, and with one shared material the
+trim's panel texture replaced the livery. And an imported ship gets the
+cushion's ground glow the kit has, since it has no pods either.
+
 ## v11 — 2026-09-27
 A formula car that carves the sand like powder — and, underneath it, two
 bugs from the rebuild that had the car pointing the wrong way.
