@@ -10,7 +10,7 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #020202; color: #e8dcc8; font-family: system-ui, sans-serif; }
-    #canvas-game, #canvas-ui { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+    #canvas-game, #canvas-ui { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: crisp-edges; image-rendering: pixelated; }
     #canvas-ui { pointer-events: none; }
     #msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: safe center; overflow-y: auto; text-align: center; background: rgba(0,0,0,0.72); z-index: 10; padding: 1.5rem; }
     #msg h1 { font-size: 2.2rem; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
@@ -32,6 +32,19 @@
     #pauseBtn:hover { opacity: 1; }
     #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(120,10,10,0.55) 100%); opacity: 0; z-index: 4; transition: opacity 0.15s; }
     body.in-run #msg { display: none; }
+    /* During a run the HUD is the clock only. Kills, gems and style stay
+       readable between runs. Pause, HOME and the signature retreat so they
+       do not sit on the arena. signature.js sets opacity inline, so the
+       shared badge needs !important here rather than in toko/. */
+    body.in-run #kills,
+    body.in-run #gems,
+    body.in-run #style { display: none; }
+    body.in-run #timer { font-size: 27px; }
+    body.in-run #pauseBtn { opacity: 0.12; }
+    body.in-run #pauseBtn:hover { opacity: 1; }
+    body.in-run .arcade-home,
+    body.in-run .toko-signature { opacity: 0.05 !important; }
+    .arcade-home, .toko-signature, #pauseBtn { transition: opacity 0.35s ease; }
   </style>
 </head>
 <body>
