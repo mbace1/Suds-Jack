@@ -5,35 +5,36 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=85';
-import { Player } from './player.js?v=85';
-import { DaggerPool } from './daggers.js?v=85';
-import { GemPool } from './gems.js?v=85';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=85';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=85';
-import { OrbPool } from './bullets.js?v=85';
-import { AudioKit } from './audio.js?v=85';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=85';
-import { TUNING as T } from './tuning.js?v=85';
-import { HyperEnvironment } from './environment.js?v=85';
-import { Backdrop } from './backdrop.js?v=85';
-import { Walls } from './walls.js?v=85';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=85';
-import { TruckTrack } from './truck.js?v=85';
-import { GazeLock } from './gaze.js?v=85';
-import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=85';
-import { Platforms } from './platforms.js?v=85';
-import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
-import { GooWave } from './goo.js?v=85';
-import { gelMaterial } from './gel.js?v=85';
-import { mosaicPalette, mosaicSkin } from './roster.js?v=85';
-import { Skullscape } from './inca.js?v=85';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=85';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=85';
+import { InputManager } from './input.js?v=86';
+import { Player } from './player.js?v=86';
+import { DaggerPool } from './daggers.js?v=86';
+import { GemPool } from './gems.js?v=86';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=86';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=86';
+import { OrbPool } from './bullets.js?v=86';
+import { AudioKit } from './audio.js?v=86';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=86';
+import { TUNING as T } from './tuning.js?v=86';
+import { HyperEnvironment } from './environment.js?v=86';
+import { Backdrop } from './backdrop.js?v=86';
+import { Walls } from './walls.js?v=86';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=86';
+import { TruckTrack } from './truck.js?v=86';
+import { GazeLock } from './gaze.js?v=86';
+import { PhysGibs } from './gibs.js?v=86';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=86';
+import { Platforms } from './platforms.js?v=86';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=86';
+import { GooWave } from './goo.js?v=86';
+import { gelMaterial } from './gel.js?v=86';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=86';
+import { Skullscape } from './inca.js?v=86';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=86';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=86';
 import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
-const ARENA_R = 26;
+const ARENA_R = 26; // the control disc. A season may stand on a smaller one.
+let discR = ARENA_R;
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
 // profile's value where it has one and the dagger's otherwise. applySeason
 // swaps it; the fire sites ask wpn() and never T.weapon directly for
@@ -52,6 +53,7 @@ const ENEMY_NAMES = {
   husk: 'a husk', revenant: 'a revenant',
   wave: 'THE WAVE',   // v48: season 2's sea — you were meant to jump it
   rockfall: 'THE ROCKFALL',   // v53: season 1's finale
+  void: 'the void',
 };
 
 // player-tunable options (pause menu), persisted across sessions
@@ -1146,6 +1148,9 @@ function M() { return modeById(_urlMode || S().mode || mode); }
 function applyRunAbilities() {
   const m = M(), extra = _urlMode ? null : S().abilities;
   applyAbilities(player, extra ? { ...m, abilities: { ...(m.abilities ?? {}), ...extra } } : m);
+  // A season may refuse the mode's rim. Season 1 clamps: the disc is the
+  // floor you stay on, not a kill plane.
+  if (!_urlMode && S().edge) player.edgeMode = S().edge;
 }
 
 // ------------------------------------------------------------ seasons (v41)
@@ -1156,6 +1161,18 @@ const _urlSeason = new URLSearchParams(location.search).get('season');
 let season = seasonById(_urlSeason || localStorage.getItem(SEASON_KEY) || 'ember').id;
 /** The active season's declaration — ask this, never `season === '...'`. */
 function S() { return seasonById(season); }
+
+function applyDisc() {
+  const r = S().arena ?? ARENA_R;
+  discR = r;
+  player.arenaR = r;
+  physGibs.arenaR = r;
+  floor.geometry.dispose();
+  floor.geometry = new THREE.CircleGeometry(r, 64).rotateX(-Math.PI / 2);
+  ground.geometry.dispose();
+  ground.geometry = new THREE.RingGeometry(r + 0.3, 190, 72).rotateX(-Math.PI / 2);
+  environment.setRadius(r);
+}
 
 /** Put the season on the sky, the fog, the motes, the floor, the monuments
  *  and the hand. Called at boot, when the menu cycles it, and by
@@ -1211,6 +1228,7 @@ function applySeason() {
   WP = T.weapons?.[sn.weapon] ?? {};
   daggers.setShape(WP.shape ?? null, WP.color ?? null);
   audio.fireTone = WP.fireTone ?? 1;
+  applyDisc();
 }
 
 /** The rock and the slabs, seeded from the run's rng so a DAILY arena is
@@ -1254,6 +1272,9 @@ let hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
 const HYPER_START = T.hyper.start;
 const HYPER_CAP = T.hyper.cap;
 const HYPER_HIT_COST = T.hyper.hitCost;
+function lifeStart() { return S().life?.start ?? HYPER_START; }
+function lifeCap() { return S().life?.cap ?? HYPER_CAP; }
+function lifeHit() { return S().life?.hitCost ?? HYPER_HIT_COST; }
 let lifeT = HYPER_START;
 let mercyT = 0; // post-hit i-frames (hyper mode)
 
@@ -1653,7 +1674,7 @@ function resetRun() {
   trauma = 0;
   fovKick = 0;
   slowmo = 0;
-  lifeT = HYPER_START;
+  lifeT = lifeStart();
   mercyT = 0;
   player.reset();
   applyRunAbilities(); // jumps, dash, reap, glide, air dashes, edge — mode, then the season's extras
@@ -2126,7 +2147,7 @@ function clearPending() {
 function ringSpot(minPlayerDist, draw = rng.next) {
   for (let tries = 0; tries < 12; tries++) {
     const a = draw() * Math.PI * 2;
-    const r = ARENA_R * (0.45 + draw() * 0.4);
+    const r = discR * (0.45 + draw() * 0.4);
     _sv.set(Math.cos(a) * r, 0, Math.sin(a) * r);
     if (_sv.distanceTo(player.feet) < minPlayerDist) continue;
     let nearTotem = false;
@@ -2153,13 +2174,14 @@ function totemCount() {
   return n;
 }
 
-function spawnSerpent(ghost = serpentsSpawned % 2 === 1, at = null, ddRules = false) {
+function spawnSerpent(ghost = serpentsSpawned % 2 === 1, at = null, ddRules = false, fly = false, nSeg = 12) {
   if (!ddRules) announce(ghost ? 'ghostSerpent' : 'serpent', ghost ? 'THE PALE SERPENT' : 'THE SERPENT');
   const p = at ? at.clone() : ringSpot(14).clone();
-  p.y = 8;
+  p.y = fly ? 3.4 : 8;
   audio.roar();
   serpentsSpawned++;
-  const s = new Serpent(scene, p, ARENA_R + 5, ghost);
+  const bound = fly ? discR * 0.88 : ARENA_R + 5;
+  const s = new Serpent(scene, p, bound, ghost, nSeg, fly);
   if (ddRules) {
     // 75 HP and 25 gems across twelve exposed body nodes.
     s.segments.forEach((seg, i) => {
@@ -2271,7 +2293,7 @@ function ddEdgeSpot(i) {
   // A fixed golden-angle walk makes simultaneous spawns legible without
   // turning the script into a repeating four-corner pattern.
   const a = i * 2.399963229728653;
-  const r = ARENA_R * 0.84;
+  const r = discR * 0.84;
   return new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r);
 }
 
@@ -2284,6 +2306,88 @@ function spawnDDEntry(kind, index) {
     enemies.push(new Spider(scene, at, true));
   } else if (kind === 'centipede') {
     spawnSerpent(false, at, true);
+  }
+}
+
+// Season 1. Jump and dash stay. The rim does not kill — edge clamp holds
+// the body on the stone. One skull, then other bodies. The flying centipede
+// is the serpent, held in the air. No crowned skull, splitter, watcher,
+// blinker or dread: those all read as another skull.
+//
+// The clock (season life.start / cap / hitCost) is the survival budget.
+// Aimed shape, not a measured playtest yet:
+//   ~49s  a player who clears the opening and eats the first squid wave
+//   ~90s  a clean player who meets the first centipede and the second brute
+//   ~300s the overlapping centipedes and squid exhales are not clearable
+function emberSkullCap() {
+  if (gameTime < 36) return 5;
+  if (gameTime < 90) return 9;
+  if (gameTime < 180) return 14;
+  return 22;
+}
+const EMBER_SPAWNSET = [
+  [3, 'skull'], [8, 'skull'], [14, 'skull'], [22, 'skull'],
+  [28, 'spider'],
+  [36, 'squid1'],
+  [48, 'skull'],
+  [58, 'brute'],
+  [72, 'centipede'],
+  [88, 'spider'],
+  [100, 'squid1'],
+  [112, 'centipede'],
+  [128, 'brute'],
+  [142, 'squid2'],
+  [156, 'centipede'],
+  [170, 'spider'],
+  [184, 'brute'],
+  [198, 'squid2'],
+  [212, 'centipede'],
+  [226, 'spider'],
+  [240, 'squid2'],
+  [254, 'centipede'],
+  [268, 'brute'],
+  [282, 'squid2'],
+  [296, 'centipede'],
+];
+
+function discEdge(i, frac) {
+  const a = i * 2.399963229728653;
+  const r = discR * frac;
+  return new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r);
+}
+
+function spawnEmberEntry(kind, index) {
+  const at = discEdge(index, 0.62);
+  audio.spawn();
+  if (kind === 'skull') {
+    if (skullCount() >= emberSkullCap()) return;
+    at.y = 1.15;
+    enemies.push(new Skull(scene, at, Math.min(1.2, gameTime * 0.01)));
+  } else if (kind === 'squid1' || kind === 'squid2') {
+    enemies.push(new Totem(scene, at, 22, kind === 'squid1' ? 1 : 2));
+  } else if (kind === 'spider') {
+    announce('spider', 'THE THIEVES');
+    enemies.push(new Spider(scene, at, true));
+  } else if (kind === 'brute') {
+    announce('brute', 'THE BRUTES');
+    at.y = 1.25;
+    enemies.push(new Brute(scene, at, 0));
+  } else if (kind === 'centipede') {
+    announce('centipede', 'THE CENTIPEDE');
+    spawnSerpent(false, at, true, true, gameTime >= 150 ? 12 : 8);
+  }
+}
+
+function emberDirector() {
+  while (pureScriptCursor < EMBER_SPAWNSET.length &&
+      gameTime >= EMBER_SPAWNSET[pureScriptCursor][0]) {
+    const [, kind] = EMBER_SPAWNSET[pureScriptCursor];
+    spawnEmberEntry(kind, pureScriptCursor);
+    pureScriptCursor++;
+  }
+  emitSpawnerWaves(true, true);
+  for (let i = serpents.length - 1; i >= 0; i--) {
+    if (!serpents[i].alive) serpents.splice(i, 1);
   }
 }
 
@@ -2491,21 +2595,22 @@ function runPulse(n) {
   if (lastPulsePicks.length > 20) lastPulsePicks.shift();
 }
 
-function emitSpawnerWaves(ddRules = false) {
+function emitSpawnerWaves(ddRules = false, skullOnly = false) {
+  const cap = skullOnly ? emberSkullCap() : SKULL_CAP;
   for (const e of enemies) {
     if ((e.type !== 'totem' && e.type !== 'leviathan') || !e.emit) continue;
     e.emit = false;
     const m = e.mouthPos(_sv).clone();
     if (ddRules && e.ddTier) {
-      const count = e.ddTier === 1 ? 9 : 10;
-      for (let i = 0; i < count && skullCount() < SKULL_CAP; i++) {
+      const count = skullOnly ? (e.ddTier === 1 ? 4 : 5) : (e.ddTier === 1 ? 9 : 10);
+      for (let i = 0; i < count && skullCount() < cap; i++) {
         const at = m.clone().add(_c.set(
           (Math.random() - 0.5) * 1.6,
           (Math.random() - 0.5) * 0.8,
           (Math.random() - 0.5) * 1.6));
         enemies.push(new Skull(scene, at));
       }
-      if (skullCount() < SKULL_CAP) {
+      if (!skullOnly && skullCount() < SKULL_CAP) {
         const leader = new Wraith(scene, m, e.ddTier === 2 ? 1.5 : 0);
         leader.hp = e.ddTier === 1 ? 5 : 10;
         leader.gemDrop = 1;
@@ -2561,6 +2666,8 @@ function skullDirector() {
 }
 function director(dt) {
   if (directorFrozen) { updatePending(dt); return; } // telegraphs still resolve
+  // Season 1 keeps HYPER's jump and dash, but not HYPER's roster.
+  if (S().spawns?.script === 'dd') { updatePending(dt); emberDirector(); return; }
   const dir = M().director;
   if (dir === 'none') { updatePending(dt); return; } // the track/bench is the pressure
   if (dir === 'ddSpawnset') { ddDirector(); return; }
@@ -2920,7 +3027,7 @@ function killEnemy(e, dir) {
   kills += e.score;
   killsByType[e.type] = (killsByType[e.type] || 0) + 1;
   addStyle(STYLE_GAIN[e.type] ?? 3);
-  if (M().lethality === 'clock') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
+  if (M().lethality === 'clock') lifeT = Math.min(lifeCap(), lifeT + e.score); // kills buy time
   e.center(_c);
   let deathVox = e.deathVoxels?.() ?? e.sprite.worldVoxels();
   physGibs.on = gibsOn();
@@ -3300,7 +3407,7 @@ function playerStruck(sx, sz, killerType, killer = null) {
   // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
   triggerRipple(0.5);
   buzz(1, 1, 160);
-  lifeT -= HYPER_HIT_COST;
+  lifeT -= lifeHit();
   mercyT = 1.2;
   trauma = 1;
   audio.gib(true);
@@ -3410,6 +3517,13 @@ function step(dt) {
   }
   const _vyBefore = player.vy;
   player.update(dt);
+  // PURE's rim is a kill (edge 'void'). A season that clamps never sets
+  // overEdge, so this does not fire on season 1.
+  if (player.edgeMode === 'void' && player.overEdge && state === 'playing' && !invulnerable && M().arena !== 'track') {
+    lastKiller = 'void';
+    die();
+    return;
+  }
   // v48 THE WAVE STRIKES: a body inside the crest is hit, and shoved along
   // the wave's own travel — out of it, the way a wave throws you. A body
   // that jumped is above it and is not.
@@ -3903,6 +4017,8 @@ window.__hd = {
       return {
         ids: SEASONS.map(x => x.id), current: season, name: sn.name, built: sn.built, todo: sn.todo ?? [],
         weapon: sn.weapon, pillars: !!sn.pillars, platforms: sn.platforms?.count ?? 0,
+        disc: discR, jumps: player.maxJumps, dash: !!player.dashEnabled, edge: player.edgeMode,
+        rubble: !!sn.rubbleFloor, finaleKind: sn.finale?.kind ?? null,
         // v48: what the player can pick, and what season 2 is
         visible: SEASONS.filter(x => !x.hidden).map(x => ({ id: x.id, menu: x.menu ?? x.name })),
         spawns: sn.spawns ?? null, gooHurts: !!sn.goo?.hurts, gooAmp: sn.goo?.amp ?? 0, gooRipple: sn.goo?.ripple ?? 0,

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS, modelFor } from './voxel.js?v=85';
-import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=85';
+import { VoxelSprite, MODELS, modelFor } from './voxel.js?v=86';
+import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=86';
 
 // fraction of the lattice lost before the mesh skin comes off (v4.35: ~22%)
 const SKIN_SHED = 0.22;
@@ -568,9 +568,10 @@ export class SerpentSegment extends VoxelEnemy {
 }
 
 export class Serpent {
-  constructor(scene, origin, bound, ghost = false, nSeg = 12) {
+  constructor(scene, origin, bound, ghost = false, nSeg = 12, fly = false) {
     this.bound = bound;
     this.ghost = ghost;
+    this.fly = fly;
     this.t = Math.random() * 10;
     this.attackT = 6;
     this.attacking = 0;
@@ -596,7 +597,17 @@ export class Serpent {
     if (this.attacking > 0) {
       this.attacking -= dt;
       _tv.copy(playerEye);
-      speed = 12.5;
+      speed = this.fly ? 11 : 12.5;
+    } else if (this.fly) {
+      // A chain in the air, over the disc, not a crawler on the stone.
+      const a = this.t * 0.7;
+      const rad = Math.min(6.2, this.bound * 0.62);
+      _tv.set(
+        playerEye.x + Math.cos(a) * rad,
+        3.3 + Math.sin(this.t * 1.35) * 1.05,
+        playerEye.z + Math.sin(a * 0.85) * rad,
+      );
+      speed = 7.4;
     } else {
       const a = this.t * 0.55;
       _tv.set(
@@ -609,7 +620,8 @@ export class Serpent {
     this.vel.addScaledVector(_sd, 13 * dt);
     if (this.vel.length() > speed) this.vel.setLength(speed);
     head.pos.addScaledVector(this.vel, dt);
-    if (head.pos.y < 0.8) head.pos.y = 0.8;
+    const floorY = this.fly ? 2.35 : 0.8;
+    if (head.pos.y < floorY) head.pos.y = floorY;
     const hr = Math.hypot(head.pos.x, head.pos.z);
     if (hr > this.bound) { head.pos.x *= this.bound / hr; head.pos.z *= this.bound / hr; }
     head.group.lookAt(_tv.copy(head.pos).add(this.vel));
@@ -620,7 +632,8 @@ export class Serpent {
       const d = _sd.length() || 0.001;
       const spacing = 0.95;
       if (d > spacing) s.pos.addScaledVector(_sd, (d - spacing) / d);
-      if (s.pos.y < 0.6) s.pos.y = 0.6;
+      const segFloor = this.fly ? 1.7 : 0.6;
+      if (s.pos.y < segFloor) s.pos.y = segFloor;
       s.group.lookAt(prev.pos);
       prev = s;
     }

@@ -585,15 +585,20 @@ export function getVoxelStyle() { return { ...STYLE }; }
 // Face tones in BoxGeometry's vertex order: +x, -x, +y, -y, +z, -z (4 verts
 // each). The light sits high, a little in front and to the +x side, so the
 // two sides differ — the reason a lit cube reads as a cube and not a hexagon.
-const FACE_TONES = [0.74, 0.58, 1.0, 0.40, 0.86, 0.50];
+const FACE_TONES = [0.62, 0.38, 1.0, 0.24, 0.9, 0.32];
 /** The one box every cube in the game shares, carrying its face tone. */
 export function shadedBox(size) {
-  const g = new THREE.BoxGeometry(size, size, size);
-  const n = g.getAttribute('position').count; // 24
+  return stampFaceShade(new THREE.BoxGeometry(size, size, size));
+}
+/** BoxGeometry vertex order is +x, -x, +y, -y, +z, -z. Trucks and posts use
+ *  this so a flat fill still reads as a solid. */
+export function stampFaceShade(geometry) {
+  const n = geometry.getAttribute('position').count;
   const a = new Float32Array(n);
-  for (let i = 0; i < n; i++) a[i] = FACE_TONES[(i / 4) | 0];
-  g.setAttribute('faceShade', new THREE.BufferAttribute(a, 1));
-  return g;
+  const faces = (n / 4) | 0;
+  for (let i = 0; i < n; i++) a[i] = FACE_TONES[Math.min(faces - 1, (i / 4) | 0)] ?? 1;
+  geometry.setAttribute('faceShade', new THREE.BufferAttribute(a, 1));
+  return geometry;
 }
 const _faceMats = new Set();
 /** Teach a MeshBasicMaterial the face tone. Callers with their own vertex
@@ -606,11 +611,22 @@ export function applyFaceShade(material, decls = '', body = '', uniforms = null)
     Object.assign(shader.uniforms, u, uniforms || {});
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>',
-        '#include <common>\nattribute float faceShade;\nvarying float vFaceShade;\n' + decls)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFaceShade = faceShade;\n' + body);
+        '#include <common>\nattribute float faceShade;\nvarying float vFaceShade;\nvarying vec3 vHdN;\nvarying vec3 vHdW;\n' + decls)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvFaceShade = faceShade;\n' + body)
+      .replace('#include <project_vertex>', `#include <project_vertex>
+#ifdef USE_INSTANCING
+        vHdW = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;
+        vHdN = normalize(mat3(modelMatrix) * mat3(instanceMatrix) * objectNormal);
+#else
+        vHdW = (modelMatrix * vec4(transformed, 1.0)).xyz;
+        vHdN = normalize(mat3(modelMatrix) * objectNormal);
+#endif`);
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uFaceK;\nvarying float vFaceShade;')
-      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= mix(1.0, vFaceShade, uFaceK);');
+      .replace('#include <common>', '#include <common>\nuniform float uFaceK;\nvarying float vFaceShade;\nvarying vec3 vHdN;\nvarying vec3 vHdW;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+diffuseColor.rgb *= mix(1.0, vFaceShade, uFaceK);
+float hdNdV = max(dot(normalize(vHdN), normalize(cameraPosition - vHdW)), 0.0);
+diffuseColor.rgb += vec3(0.62, 0.10, 0.028) * pow(1.0 - hdNdV, 2.35) * uFaceK;`);
   };
   _faceMats.add(material);
   return u;

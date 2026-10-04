@@ -2,6 +2,24 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+## v56 — 2026-10-04
+**Season 1: the rim does not kill you. The swarm does.**
+
+The void edge was an instant death, and HYPER's clock (start 30, drain 1/s) ran out before an enemy had to. Season 1 now clamps at the rim. Its clock is start 52, cap 74, a hit costs 12. The script is still one skull first, then a spider and a squid, then a brute, then a flying centipede (the serpent, held in the air over the disc). Later waves overlap until a clear past ~300s should not happen. Monuments from the manifest are background only, outside the disc. Enemy GLBs were already voxelized by the manifest — no new meshes.
+
+Aimed, not yet measured on a human: a shaky run ~49s, a clean run ~90s, the late overlap dies out by ~300s. Q-029.
+
+## v55 — 2026-10-04
+**Season 1 is a small Devil Daggers disc: jump and dash, one skull, then other types**
+
+Owner, 2026-10-04: *It should have jump and dash. The problem was that there are lots of obstacles in a large level and lots of similar flying skulls. We just need one skull and then other types in a smaller level, so season 1 closer to Devil Daggers.*
+
+**The disc.** Season 1 no longer builds shale piles or drifting slabs, and settled gibs are not a floor. The monuments and the ground ring are off, so the fight is a stone in the void. `arena: 14` (the control stays 26). Jump and dash stay: HYPER's body, two jumps.
+
+**The roster.** Season 1 does not use the pulse director. A fixed script spawns the basic skull only for the opening, then a spider, a squid that exhales that same skull, a brute, and the centipede. No crowned skull, splitter, watcher, blinker, or dread. The squid's exhale is skulls only, and the disc holds at most twelve of them.
+
+The dagger, the five-minute ending, and seasons 2 and 3 are unchanged.
+
 ## v54 — 2026-09-27
 **Season 1 holds the Devil Daggers dagger; the rubble is the level; the ebb; cargo is the score; a run that ends**
 

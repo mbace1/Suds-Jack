@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=85';
+import { TUNING as T } from './tuning.js?v=86';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -82,76 +82,41 @@ export const SEASONS = [
     // dash on — plus a double jump. VOID declares none and stays the control.
     mode: 'hyper',
     abilities: { jumps: 2 },
-    blurb: 'black shale you can barely see, slabs that rise and drift, a needler',
+    blurb: 'a small disc — the rim holds you, the swarm does not',
     sky: { void: [0.0015, 0.0015, 0.0015], horizon: [0.30, 0.02, 0.02], band: 4.8, stars: 0.22 },
     floor: { tint: [1, 1, 1], glow: 0.9 },
-    // The owner's Meshy monuments were made for THIS season. The asset rig's
-    // white light never reaches a piece at z −40, so they rendered as black
-    // shapes with pink rims; the bake carries its own light now and the
-    // crimson fills become the rims they were meant to be.
-    backdrop: { visible: true, emissive: 0.45 },
-    // LIGHTING AND VFX (owner: "could help smooth out the look"): the fog
-    // leans toward the horizon's ember instead of pure black, so distance
-    // melts into the glow rather than into a hole; the motes are embers; a
-    // matte ground stands under the monuments so nothing floats.
-    fog: { color: [0.030, 0.005, 0.005], near: 16, far: 64 },
+    // Background only. The pieces sit outside the disc (manifest `at`).
+    // They are not cover and the ground ring stays off.
+    backdrop: { visible: true, emissive: 0.42 },
+    fog: { color: [0.030, 0.005, 0.005], near: 16, far: 68 },
     dust: { color: [0.85, 0.38, 0.20], size: 0.075, opacity: 0.24 },
-    ground: [0.006, 0.0025, 0.0025],
-    pillars: {
-      count: 5,                 // fewer objects in general (owner)
-      rMin: 7, rMax: 21,        // radius band they stand in (the disc is 26)
-      hMin: 3, hMax: 7,         // shorter (owner)
-      wMin: 1.1, wMax: 2.4,     // footprint side, each axis drawn separately
-      color: [0.010, 0.009, 0.011], // darker (owner) — LINEAR, well under the grid
-      glow: [0.030, 0.005, 0.004],  // the foot of each pile catches the horizon — barely
-      minGap: 4.5,              // between piles, so there is always a way through
-      // v53 COVER THAT DIES (owner): a pile has hit points. A nail takes one, a
-      // shotgun a fistful; a body shoving against it wears it at `grind` a
-      // second, a brute at `brute`. Past half it leans; at zero it collapses
-      // into a heap of shale chunks (physical) and a spray of chips. Standing
-      // behind one has a clock now, and the swarm is what runs it.
-      hp: 70, grind: 3, brute: 10, rubble: [0.22, 0.19, 0.19],   // the chunks: lighter than the rock, or a heap on the void floor is invisible
-      shale: { tile: 0, layer: 0.34, jitter: 0.16, turn: 0.09 },
-    },
-    platforms: {
-      count: 4,
-      rMin: 4, rMax: 19,
-      wMin: 2.6, wMax: 4.6,     // footprint
-      hMin: 0.4, hMax: 1.6,     // LOW mostly — the draw is SQUARED (owner)
-      shale: { layer: 0.2, jitter: 0.1, turn: 0.05, tile: 0.65, tileLift: 0.06, tileTilt: 0.08,
-        color: [0.014, 0.013, 0.015], tileColor: [0.022, 0.020, 0.019], glow: [0.045, 0.008, 0.006] },
-      grow: 1.4, sink: 1.1,     // s
-      lifeMin: 14, lifeMax: 24, // s standing before it sinks and re-seeds elsewhere
-      drift: 0.9,               // u — the slow orbit radius
-      driftW: 0.18,             // rad/s
-      avoidPlayer: 4.5,         // u — never grows under your feet
-    },
-    // v54 (owner: *change season 1's weapon closer to the Devil Daggers
-    // example*): the bare hand (voxel.js daggerHand), back to the eye, fingers
-    // up and tilted a little forward, white daggers off the fingertips. The
-    // needler (v52) stays in the registry as a profile; season 1 no longer wears it.
+    ground: null,
+    // v55 (owner): the piles and the drifting slabs were the problem — a
+    // large level full of obstacles. The disc is empty. Cover stays in the
+    // code; this season does not ask for it.
+    pillars: null,
+    platforms: null,
+    // v54 weapon, kept: the bare Devil Daggers hand and white daggers.
     hand: { model: 'daggerHand', pose: { x: 0.44, y: -0.62, z: -1.05, rx: -0.45, ry: Math.PI + 0.30, rz: -0.16 },
       muzzle: [0.30, -0.14], glow: [2.2, 0.22, 0.08] },
-    // v53 THE FINALE (owner: *nothing in a season ends*): at three minutes the
-    // sky throws shale. For `duration` seconds a chunk falls every `every`
-    // seconds onto a random point of the disc from `height` up — a rock that
-    // lands on you is a hit — and the fallen rock stays as heaps: the new floor.
-    // Survive it and the run goes on, with the director `after.pressure` tighter.
-    // (the rock is PALE — the first loop dropped shale-dark chunks against a
-    // black sky and nothing could be seen falling — and each drop stands a
-    // beam on its landing spot for the fall, the way a heavy spawn is marked)
-    finale: { at: 180, kind: 'rockfall', name: 'THE ROCKFALL', duration: 10, every: 0.2, height: 16, size: 0.95,
-      color: [0.46, 0.38, 0.34], beam: [1.6, 0.32, 0.1], after: { pressure: 1.3 } },
-    goo: null,                  // season 2's, not season 1's
+    // v55: no rockfall. Falling shale is another obstacle on a disc that is
+    // supposed to stay open. The run still ends.
+    finale: null,
+    goo: null,
     inca: null,
     roster: null,
-    weapon: 'dd',   // v54: the Devil Daggers dagger — white blades from a bare hand (was the needler)
-    // v54 THE RUBBLE IS THE LEVEL: a heap that has come to rest is ground —
-    // you stand on it, a volley stops on it, the swarm goes round it. The
-    // piles come down, the rockfall comes down, and what you fight on at four
-    // minutes is what the first three left behind.
-    rubbleFloor: true,
-    // v54 A RUN THAT ENDS: at `end` seconds the season is over and the recap says what the run did
+    weapon: 'dd',
+    rubbleFloor: false,
+    // Smaller than the 26-unit control. The rim CLAMPS. Stepping off is not
+    // a death — HYPER's clock and this edge were killing runs before an
+    // enemy did. The clock below is long enough that a clean player is
+    // still alive for the first real wave; hits are what spend it.
+    arena: 14,
+    edge: 'clamp',
+    life: { start: 52, cap: 74, hitCost: 12 },
+    // One skull, then other types. Not the pulse parade of watchers,
+    // blinkers, crowned skulls and dread skulls.
+    spawns: { script: 'dd' },
     end: 300,
     built: true,
   },

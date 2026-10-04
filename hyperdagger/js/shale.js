@@ -114,5 +114,21 @@ export function shaleGeometry(o) {
 
 /** The one material every shale piece shares: unlit, vertex-coloured. */
 export function shaleMaterial() {
-  return new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true });
+  const m = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true });
+  // A slab of stacked rock was a flat fill. A cheap wrap light plus a cool
+  // rim is enough for the faces to separate without becoming a second gel.
+  m.onBeforeCompile = shader => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vShN;\nvarying vec3 vShW;')
+      .replace('#include <project_vertex>', `#include <project_vertex>
+vShW = (modelMatrix * vec4(transformed, 1.0)).xyz;
+vShN = normalize(mat3(modelMatrix) * objectNormal);`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vShN;\nvarying vec3 vShW;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+float shNd = max(dot(normalize(vShN), normalize(cameraPosition - vShW)), 0.0);
+diffuseColor.rgb *= 0.62 + 0.5 * shNd;
+diffuseColor.rgb += vec3(0.16, 0.28, 0.24) * pow(1.0 - shNd, 2.1) * 0.55;`);
+  };
+  return m;
 }

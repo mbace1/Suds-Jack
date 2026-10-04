@@ -12,16 +12,36 @@ export class HyperEnvironment {
     this.group.name = 'minimal-environment';
     scene.add(this.group);
 
-    this.horizonMat = new THREE.MeshBasicMaterial({
-      color: 0x30292c,
+    this.horizonMat = new THREE.ShaderMaterial({
       transparent: true,
-      opacity: 0.16,
       depthWrite: false,
-      fog: true,
-      toneMapped: true,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+      uniforms: {
+        uColor: { value: new THREE.Color(0.85, 0.12, 0.04) },
+        uOpacity: { value: 0.55 },
+        uTime: { value: 0 },
+      },
+      vertexShader: /* glsl */`
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: /* glsl */`
+        uniform vec3 uColor;
+        uniform float uOpacity;
+        uniform float uTime;
+        varying vec2 vUv;
+        void main() {
+          float band = pow(1.0 - abs(vUv.y - 0.5) * 2.0, 1.35);
+          float breathe = 0.82 + 0.18 * sin(uTime * 0.65 + vUv.x * 26.0);
+          float a = band * uOpacity * breathe;
+          gl_FragColor = vec4(uColor * a, a);
+        }`,
     });
     this.horizon = new THREE.Mesh(
-      new THREE.TorusGeometry(arenaR + 2.2, 0.025, 3, 128),
+      new THREE.TorusGeometry(arenaR + 2.2, 0.055, 6, 160),
       this.horizonMat,
     );
     this.horizon.name = 'horizon-line';
@@ -40,18 +60,24 @@ export class HyperEnvironment {
     };
   }
 
+  setRadius(arenaR) {
+    this.horizon.geometry.dispose();
+    this.horizon.geometry = new THREE.TorusGeometry(arenaR + 1.1, 0.055, 6, 160);
+    this.horizon.rotation.x = Math.PI / 2;
+    this.horizon.position.y = -0.36;
+  }
+
   setQuality() {}
 
   setAccent(color) {
     const c = color.clone();
     const peak = Math.max(c.r, c.g, c.b, 1e-5);
-    this.horizonMat.color.copy(c).multiplyScalar(0.24 / peak);
+    this.horizonMat.uniforms.uColor.value.copy(c).multiplyScalar(1.15 / peak);
   }
 
-  update(_dt, { intensity = 0 } = {}) {
-    // Keep the background still. A tiny visibility lift preserves the horizon
-    // during dense fights without making it another reactive effect.
-    this.horizonMat.opacity = 0.14 + Math.min(1, intensity) * 0.02;
+  update(dt, { intensity = 0 } = {}) {
+    this.horizonMat.uniforms.uTime.value += dt;
+    this.horizonMat.uniforms.uOpacity.value = 0.42 + Math.min(1, intensity) * 0.2;
   }
 
   getState() {

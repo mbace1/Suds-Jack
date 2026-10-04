@@ -1005,241 +1005,63 @@ s.listen(0, '127.0.0.1', async () => {
     ctrl.sn.ground === false && ctrl.sn.fog.far === 72 && ctrl.sn.backdrop.visible === false,
     JSON.stringify({ ground: ctrl.sn.ground, fog: ctrl.sn.fog, bd: ctrl.sn.backdrop }));
 
-  const em = await seasonRead('ember');
-  // (this block runs FIRST on the ember page: a later check clears the pillars
-  //  as the cover check's control, and a felled pile is still a pile for the rest)
-  // v53 COVER THAT DIES (owner). Every pile has hit points; worn past half it
-  // leans; at zero it comes down as a heap of shale chunks — physical, so
-  // they stack — and it is gone as cover. Driven through debug.wearWall, the
-  // same function a nail and a shoving body call.
-  const coverDies = await p.evaluate(async () => {
-    const d = window.__hd.debug, G = d.gibsObj();
-    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    const w0 = d.getWalls().walls;
-    const hp = w0.map(w => w.hp), maxHp = w0.map(w => w.maxHp);
-    d.wearWall(0, 40);
-    const mid = d.getWalls().walls[0];
-    const r = d.wearWall(0, 40);
-    await frames(40);
-    return { piles: w0.length, hp, maxHp, midHp: mid.hp, midLean: mid.lean, felled: r.felled, left: r.left, gibs: G.getState().n, gibsTop: G.getState().top };
-  });
-  ok('ember: COVER THAT DIES — every pile has hit points, worn past half it leans, at zero it collapses into a heap of shale',
-    coverDies.piles >= 5 && coverDies.maxHp.every(h => h === 70) && coverDies.hp.every(h => h === 70)
-    && coverDies.midHp === 30 && coverDies.midLean > 0.04 && coverDies.felled === 1 && coverDies.left === coverDies.piles - 1 && coverDies.gibs >= 8 && coverDies.gibsTop > 0.2,
-    JSON.stringify(coverDies));
-  // v54 THE RUBBLE IS THE LEVEL: the heap that pile left, once it has come to
-  // rest, is ground you stand on and cover a shot stops on
-  const rubble = await p.evaluate(async () => {
-    const hd = window.__hd, d = hd.debug, pl = hd.player, G = d.gibsObj();
-    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    for (let i = 0; i < 400 && G.awake; i++) await frames(1);
-    const g = G.gibs.filter(x => x.b.mass <= 0 && x.s >= 0.4).sort((a, b) => (b.b.positionLin[2] + b.s / 2) - (a.b.positionLin[2] + a.s / 2))[0];
-    if (!g) return { none: true, n: G.gibs.length, awake: G.awake };
-    const top = g.b.positionLin[2] + g.s / 2, x = g.b.positionLin[0], z = -g.b.positionLin[1], y = g.b.positionLin[2];
-    pl.feet.set(x, top + 0.3, z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
-    await frames(20);
-    const stood = pl.feet.y;
-    const V = pl.feet.constructor;
-    const blocked = !!G.blocks(new V(x - 3, y, z), new V(x + 3, y, z));
-    const clear = !G.blocks(new V(x - 3, y + 3, z), new V(x + 3, y + 3, z));
-    pl.feet.set(0, 0, 0); pl._sync();
-    return { top: +top.toFixed(2), stood: +stood.toFixed(2), blocked, clear, n: G.gibs.length };
-  });
-  ok('ember: THE RUBBLE IS THE LEVEL — a heap at rest is ground you stand on, and cover a shot stops on',
-    !rubble.none && rubble.top > 0.3 && Math.abs(rubble.stood - rubble.top) < 0.1 && rubble.blocked && rubble.clear,
-    JSON.stringify(rubble));
-  const pillars = em.walls.walls.filter(w => w.tag === 'pillar');
+  const em = await seasonRead('ember', '');
+  // v55: season 1 is a small empty disc. Jump and dash stay. One skull,
+  // then other types — not piles, slabs, or a crowd of skull-shaped flyers.
   ok('ember: it boots into its own season and says so',
     em.sn.current === 'ember' && em.sn.built === true, JSON.stringify(em.sn.current));
-  ok('ember: dark rock stands in the arena — five piles, none of them tall',
-    pillars.length >= 4 && pillars.length <= 5 && pillars.every(w => w.h >= 3 && w.h <= 7),
-    JSON.stringify(pillars.map(w => w.h)));
-  // "Low mostly" is a property of the DRAW, and four live slabs cannot show
-  // it — a seed where three of four land high is ordinary, and this check
-  // failed on one. Sample the generator instead: the height draw is squared,
-  // so the median must sit in the bottom quarter of the declared range.
-  const heights = await p.evaluate(() => {
-    const P = window.__hd.debug.platformsObj(), hs = [];
-    for (let i = 0; i < 80; i++) {
-      const q = P._make();
-      hs.push(q.h);
-      P.group.remove(q.mesh); q.mesh.geometry.dispose(); // built only to be measured
-    }
-    hs.sort((a, b) => a - b);
-    return { median: hs[40], min: hs[0], max: hs[79], n: hs.length };
-  });
-  ok('ember: the slabs are LOW mostly — the squared draw puts the median low',
-    em.plats.count === 4 && em.plats.slabs.every(s => s.h <= 1.6)
-    && heights.min >= 0.4 && heights.max <= 1.6
-    && heights.median < 0.4 + (1.6 - 0.4) * 0.45,
-    JSON.stringify({ live: em.plats.slabs.map(s => s.h), sampled: heights }));
-  // v54 (owner: *change season 1's weapon closer to the Devil Daggers example*)
+  ok('ember: a small empty disc, jump and dash, no cover and no rockfall',
+    em.walls.count === 0 && em.plats.count === 0 && em.sn.disc === 14
+    && em.sn.jumps === 2 && em.sn.dash === true
+    && em.sn.rubble === false && em.sn.finaleKind === null
+    && em.sn.edge === 'clamp'
+    && em.sn.spawns && em.sn.spawns.script === 'dd',
+    JSON.stringify({ walls: em.walls.count, plats: em.plats.count, disc: em.sn.disc, jumps: em.sn.jumps, dash: em.sn.dash, finale: em.sn.finaleKind }));
   ok('ember: the Devil Daggers dagger — small fast blades in a wide fan, from a bare hand',
     em.gun.weapon === 'dd' && em.gun.streamSpeed > 48 && em.gun.spread > 0.045
     && em.gun.shape && em.gun.shape.len < 0.3 && em.sn.hand.model === 'daggerHand',
     JSON.stringify({ gun: em.gun, hand: em.sn.hand.model }));
-  ok('ember: the fog leans to the ember and a ground stands under the monuments',
+  ok('ember: ember fog, monuments behind the disc, and the rim does not kill',
     em.sn.fog.color[0] > em.sn.fog.color[2] * 3 && em.sn.fog.far < 72
-    && em.sn.ground === true && em.sn.backdrop.visible === true && em.sn.backdrop.emissive > 0,
+    && em.sn.ground === false && em.sn.backdrop.visible === true
+    && em.sn.edge === 'clamp',
     JSON.stringify({ fog: em.sn.fog, ground: em.sn.ground, bd: em.sn.backdrop }));
   ok('ember: the sky carries a star field the control has not',
     em.sn.sky.stars > 0 && ctrl.sn.sky.stars === 0, JSON.stringify(em.sn.sky.stars));
 
-  // the slabs MOVE, are a floor, and CARRY the body standing on one
-  const slab = await p.evaluate(async () => {
-    const hd = window.__hd, d = hd.debug, pl = hd.player;
-    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    // Slabs are LOW mostly and a top under 0.45 is stepped onto rather than
-    // walked into, so the one under test is forced tall and grown.
-    const P = d.platformsObj(), sl = P.list[0];
-    sl.h = 2.0; sl.phase = 'live'; sl.k = 1; sl.t = 0; P._pose(sl);
-    await frames(2);
-    const a = d.getPlatforms().slabs[0];
-    await frames(40);
-    const b = d.getPlatforms().slabs[0];
-    const moved = Math.hypot(b.x - a.x, b.z - a.z);
-    // stand on it
-    pl.feet.set(b.x, b.top, b.z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
-    await frames(2);
-    const floorOn = pl.floorY;
-    const x0 = pl.feet.x, z0 = pl.feet.z;
-    await frames(30);
-    const carried = Math.hypot(pl.feet.x - x0, pl.feet.z - z0);
-    // and its SIDE is a wall: walk into it from the floor
-    const c = d.getPlatforms().slabs[0];
-    pl.feet.set(c.x + c.w / 2 + 2.5, 0, c.z); pl.vy = 0; pl._sync();
-    await frames(2);
-    for (let i = 0; i < 24; i++) { pl.velocity.set(-9, 0, 0); await frames(1); }
-    const stoppedAt = pl.feet.x - c.x;
-    return { moved: +moved.toFixed(3), floorOn: +floorOn.toFixed(2), top: +b.top.toFixed(2), carried: +carried.toFixed(3), stoppedAt: +stoppedAt.toFixed(2), halfW: c.w / 2 };
-  });
-  ok('ember: a slab drifts while it stands', slab.moved > 0.02, JSON.stringify(slab));
-  ok('ember: a standing slab IS the floor', Math.abs(slab.floorOn - slab.top) < 0.01 && slab.top > 1.5, JSON.stringify(slab));
-  ok('ember: a body standing on one is carried by it', slab.carried > 0.02, JSON.stringify(slab));
-  ok('ember: a slab side is a wall you cannot walk through',
-    slab.stoppedAt > slab.halfW, JSON.stringify(slab));
-
-  // rock stops a nail: one fired into a pillar dies, one fired at the sky does not
-  const nails = await p.evaluate(async () => {
-    const hd = window.__hd, d = hd.debug, pl = hd.player;
-    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
-    const w = d.getWalls().walls.find(x => x.tag === 'pillar');
-    // stand off the pillar and look straight at it
-    const len = Math.hypot(w.x, w.z), k = (len - 6) / len;
-    pl.feet.set(w.x * k, 0, w.z * k); pl.vy = 0; pl.velocity.set(0, 0, 0);
-    pl.yaw = -Math.atan2(w.x - pl.feet.x, -(w.z - pl.feet.z)); pl.pitch = 0.12; pl._sync();
-    hd.daggers.reset();
-    await frames(1);
-    hd.player.input.mouseDown = true; await frames(14); hd.player.input.mouseDown = false;
-    await frames(10);
-    const intoRock = hd.daggers.active.length;
-    // now at the sky, from the same spot
-    hd.daggers.reset(); pl.pitch = 0.9; pl._sync();
-    await frames(1);
-    hd.player.input.mouseDown = true; await frames(14); hd.player.input.mouseDown = false;
-    await frames(2);
-    const intoSky = hd.daggers.active.length;
-    hd.daggers.reset();
-    return { intoRock, intoSky };
-  });
-  ok('ember: rock stops a nail, open air does not',
-    nails.intoSky > 0 && nails.intoRock < nails.intoSky, JSON.stringify(nails));
-
-  // v42: the arena is COVER — rock stops an enemy orb, holds a body out of
-  // itself, and a slab is something a gem can land on.
-  const cover = await p.evaluate(async () => {
+  const roster = await p.evaluate(async () => {
     const hd = window.__hd, d = hd.debug;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
-    const w = d.getWalls().walls.find(x => x.tag === 'pillar');
-    const len = Math.hypot(w.x, w.z), k = (len + 6) / len;
-    const from = { x: w.x * k, z: w.z * k };
-    const dx = w.x - from.x, dz = w.z - from.z, dl = Math.hypot(dx, dz);
-    const V = (x, y, z) => ({ x, y, z, clone() { return V(this.x, this.y, this.z); } });
-    // a body cannot stand inside a pile
-    d.spawnSkull();
-    const e = hd.enemies[hd.enemies.length - 1]; e.hp = 9999;
-    e.pos.set(w.x, 1.2, w.z);
-    await frames(3);
-    const pushedOut = Math.hypot(e.pos.x - w.x, e.pos.z - w.z);
-    e.alive = false;
-    // a gem lands ON a slab. Driven synchronously with the magnet off and the
-    // player far away — it reaches the whole arena while the hand is idle.
-    const P = d.platformsObj(), sl = P.list[0];
-    sl.h = 1.6; sl.phase = 'live'; sl.k = 1; sl.t = 0; P._pose(sl);
-    const st = d.getPlatforms().slabs[0];
-    const floorAt = (x, z) => P.topAt(x, z, 0), far = { x: 999, y: 1, z: 999 };
-    hd.gems.reset();
-    hd.gems.spawn({ x: st.x, y: 3, z: st.z });
-    const g = hd.gems.active[hd.gems.active.length - 1]; g.vel.x = 0; g.vel.z = 0;
-    for (let i = 0; i < 150; i++) hd.gems.update(1 / 60, far, false, floorAt);
-    const onSlab = g.m.position.y;
-    hd.gems.spawn({ x: st.x + st.w / 2 + 5, y: 3, z: st.z });
-    const g2 = hd.gems.active[hd.gems.active.length - 1]; g2.vel.x = 0; g2.vel.z = 0;
-    for (let i = 0; i < 150; i++) hd.gems.update(1 / 60, far, false, floorAt);
-    const onFloor = g2.m.position.y;
-    hd.gems.reset();
-    // THE ORB, LAST, because the control removes the rock: the same shot from
-    // the same point, once with the pile there and once without. Comparing two
-    // DIFFERENT shots made the control frame-rate dependent — an orb fired
-    // outward reached the cull radius on a slow frame and read as blocked.
-    // Stepped by DISTANCE, never by a frame count: a frame here is anywhere
-    // between 16 ms and a second, so "40 frames" was long enough for the orb
-    // to reach its 7 s life cap and the control read as blocked.
-    // Fired ABOVE the slabs (they cap at 1.6): a slab happening to sit on the
-    // path is luck, and this check is about the PILE. The control below then
-    // clears both, so the only difference between the two shots is the rock.
-    const shot = async () => {
-      hd.orbs.reset();
-      hd.orbs.fire({ x: from.x, y: 2.2, z: from.z }, V(dx / dl * 9, 0, dz / dl * 9));
-      for (let i = 0; i < 120 && hd.orbs.active.length; i++) {
-        const q = hd.orbs.active[0].m.position;
-        if (Math.hypot(q.x - from.x, q.z - from.z) > 9) break; // past the pile, still flying
-        await frames(1);
-      }
-      const n = hd.orbs.active.length;
-      hd.orbs.reset();
-      return n;
+    const tally = async (t) => {
+      for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+      d.setTime(0); await frames(1);
+      d.setTime(t); d.freezeDirector(false);
+      await frames(4);
+      d.freezeDirector(true);
+      const kinds = {};
+      for (const e of hd.enemies) if (e.alive) kinds[e.constructor.name] = (kinds[e.constructor.name] || 0) + 1;
+      return kinds;
     };
-    const intoRock = await shot();
-    d.clearPillars();
-    d.platformsObj().clear(); // nothing left in the arena at all
-    const withoutRock = await shot();
-    return { intoRock, withoutRock, pushedOut: +pushedOut.toFixed(2), slabTop: st.top,
-      onSlab: +onSlab.toFixed(2), onFloor: +onFloor.toFixed(2) };
+    // the cursor has to walk the script from the start both times
+    const early = await tally(20);
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    d.setTime(0);
+    // pureScriptCursor is not reset by setTime — restart the run
+    d.startGame(); d.setInvulnerable(true); d.freezeDirector(true);
+    await frames(2);
+    const mid = await tally(40);
+    return { early, mid };
   });
-  ok('ember: rock is cover — the same orb dies on a pile and lives without it',
-    cover.intoRock === 0 && cover.withoutRock > 0, JSON.stringify(cover));
-  ok('ember: a body cannot stand inside rock — it is pushed clear',
-    cover.pushedOut > 0.5, JSON.stringify(cover));
-  ok('ember: a gem lands ON a slab, not through it',
-    cover.onSlab > cover.slabTop && cover.onFloor < 0.8, JSON.stringify(cover));
-
-  // v53 THE FINALE, season 1: THE ROCKFALL at 180 s — shale falls for ten
-  // seconds, a rock that lands on you is a hit, the fallen rock stays as
-  // heaps, and the director is tighter after
-  const rockfall = await p.evaluate(async () => {
-    const hd = window.__hd, d = hd.debug, pl = hd.player, G = d.gibsObj();
-    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    const decl = d.getFinale().declared;
-    d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
-    const fired = d.getFinale();
-    // a rock straight over the feet, with the invulnerability off: it must land as a hit
-    pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync(); d.setLife(60); d.setInvulnerable(false);   // a full clock: ten seconds of rock on a low one killed the body and froze the finale
-    const life1 = d.getState().lifeT;
-    G.rock(0, 0, 4, 0.95, [0.07, 0.06, 0.065]);
-    let hit = false;
-    for (let i = 0; i < 40 && !hit; i++) { await frames(1); const st = d.getState(); if (st.lifeT < life1 - 3 || st.state === 'dead') hit = true; }
-    d.setInvulnerable(true); d.setLife(60);
-    for (let i = 0; i < 900 && !d.getFinale().done; i++) await frames(1);
-    return { decl: decl?.kind, at: decl?.at, fired: fired.active, kind: fired.kind, rocksEarly: fired.rocks, hit, after: d.getFinale(), heap: G.getState() };
-  });
-  ok('ember: THE FINALE — at 180 s the rockfall fires and rock falls', rockfall.decl === 'rockfall' && rockfall.at === 180 && rockfall.fired && rockfall.kind === 'rockfall' && rockfall.rocksEarly >= 1, JSON.stringify({ decl: rockfall.decl, fired: rockfall.fired, rocks: rockfall.rocksEarly }));
-  ok('ember: a rock that lands on you is a hit', rockfall.hit === true, JSON.stringify({ hit: rockfall.hit }));
-  ok('ember: the rockfall ends, the fallen rock stays as heaps, and the run goes on harder',
-    rockfall.after.done && rockfall.after.pressure > 1 && rockfall.heap.n >= 10, JSON.stringify({ after: rockfall.after, heap: rockfall.heap.n }));
-
+  const skullShapes = ['Wraith', 'Splitter', 'Watcher', 'Blinker', 'DreadSkull'];
+  const earlyBad = skullShapes.filter(k => roster.early[k]);
+  const midBad = skullShapes.filter(k => roster.mid[k]);
+  ok('ember: the opening is one skull and nothing else',
+    roster.early.Skull >= 1 && !roster.early.Spider && !roster.early.Brute && !roster.early.Totem
+    && !roster.early.Serpent && earlyBad.length === 0,
+    JSON.stringify(roster.early));
+  ok('ember: then other types arrive — a spider and a spawner, still the same skull',
+    roster.mid.Skull >= 1 && roster.mid.Spider >= 1 && roster.mid.Totem >= 1 && midBad.length === 0,
+    JSON.stringify(roster.mid));
   const inca = await seasonRead('inca');
   ok('inca: season 2 is BUILT (v44) and still names what is open',
     inca.sn.current === 'inca' && inca.sn.built === true && inca.sn.todo.length >= 2
@@ -1678,9 +1500,9 @@ s.listen(0, '127.0.0.1', async () => {
   ok('inca: the same blow squashes a THICKENING gel less than a Newtonian one',
     nn.thick > nn.newton + 0.05 && nn.newton > 0.4,
     JSON.stringify({ thickened: nn.thick, newtonian: nn.newton }));
-  ok('ember: a shale slab is rock — it has no spring',
-    em.plats.slabs.length > 0 && em.plats.slabs.every(s => s.gel === false && s.sq === 1),
-    JSON.stringify(em.plats.slabs.map(s => [s.gel, s.sq])));
+  ok('ember: nothing stands on the disc',
+    em.plats.count === 0 && em.walls.count === 0,
+    JSON.stringify({ plats: em.plats.count, walls: em.walls.count }));
   ok('inca: the wave STRIKES a body standing in its path, and it costs time',
     wave.onFloor === true && wave.landed >= 1 && wave.cost >= 9, JSON.stringify(wave));
   ok('inca: a body that JUMPS clears it — feet above the crest are not struck',
