@@ -54,7 +54,7 @@ export class Sentry {
         const pastLeash = Math.abs(this.x - this.home) > 54 && Math.sign(this.x - this.home) === this.face;
         if (!floor || wall || pastLeash) { this.face *= -1; this.f = 0; }
         else this.x += step;
-        if (this.sees(hero)) this.go('spot');
+        if (this.sees(hero)) { this.faceHero(hero); this.go('spot'); }
         break;
       }
       case 'spot':
@@ -70,7 +70,11 @@ export class Sentry {
         }
         break;
       case 'recover':
-        if (this.f >= RECOVER) this.go(this.sees(hero) ? 'aim' : 'patrol');
+        if (this.f >= RECOVER) {
+          // Same as the first spot: seeing him is not the same as facing him.
+          if (this.sees(hero)) { this.faceHero(hero); this.go('aim'); }
+          else this.go('patrol');
+        }
         break;
       case 'hit':
         if (this.f >= 18) this.go('aim');
@@ -80,6 +84,13 @@ export class Sentry {
   }
 
   go(s) { this.state = s; this.f = 0; }
+
+  // SIGHT_NEAR lets him notice someone close behind. The gun was still
+  // pointing the way he had been walking, so that shot left the wrong way.
+  faceHero(hero) {
+    const dx = hero.x - this.x;
+    if (dx) this.face = Math.sign(dx);
+  }
 
   strike(game) {
     if (this.dead) return;
