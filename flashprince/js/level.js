@@ -130,7 +130,11 @@ export class World {
 
     for (const [, l] of this.loose) {
       if (l.t < 0) {
-        const on = hero && Math.abs(hero.x - (l.tx * TILE + 8)) < 12 && hero.y === l.ty * TILE;
+        // Feet rest anywhere in the pixel under the lip. A jump lands at
+        // 128.99 on a tile whose top is 128, and an exact compare never saw him.
+        const top = l.ty * TILE;
+        const on = hero && Math.abs(hero.x - (l.tx * TILE + 8)) < 12
+          && hero.y >= top && hero.y < top + 1;
         if (on) l.t = 0;
       } else if (l.t < LOOSE_HOLD + 40) l.t++;
     }
