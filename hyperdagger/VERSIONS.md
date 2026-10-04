@@ -2,6 +2,8 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
+Coordination changes live in versioncontrol.md and plans live in QUEUE.md.
+
 ## v54 — 2026-09-27
 **Season 1 holds the Devil Daggers dagger; the rubble is the level; the ebb; cargo is the score; a run that ends**
 
