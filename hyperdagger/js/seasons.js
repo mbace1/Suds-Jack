@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=80';
+import { TUNING as T } from './tuning.js?v=85';
 
 /**
  * THE SEASON REGISTRY — the arena's ART is declared, the way a mode is.
@@ -77,6 +77,11 @@ export const SEASONS = [
     id: 'ember',
     name: 'SEASON 1 — EMBER',
     menu: 'SEASON 1',
+    // v50 (owner, 2026-09-23): the modes are CONTROL SCHEMES a season picks,
+    // not a player toggle. Seasons 1 and 2 play HYPER's rules and body —
+    // dash on — plus a double jump. VOID declares none and stays the control.
+    mode: 'hyper',
+    abilities: { jumps: 2 },
     blurb: 'black shale you can barely see, slabs that rise and drift, a needler',
     sky: { void: [0.0015, 0.0015, 0.0015], horizon: [0.30, 0.02, 0.02], band: 4.8, stars: 0.22 },
     floor: { tint: [1, 1, 1], glow: 0.9 },
@@ -100,6 +105,12 @@ export const SEASONS = [
       color: [0.010, 0.009, 0.011], // darker (owner) — LINEAR, well under the grid
       glow: [0.030, 0.005, 0.004],  // the foot of each pile catches the horizon — barely
       minGap: 4.5,              // between piles, so there is always a way through
+      // v53 COVER THAT DIES (owner): a pile has hit points. A nail takes one, a
+      // shotgun a fistful; a body shoving against it wears it at `grind` a
+      // second, a brute at `brute`. Past half it leans; at zero it collapses
+      // into a heap of shale chunks (physical) and a spray of chips. Standing
+      // behind one has a clock now, and the swarm is what runs it.
+      hp: 70, grind: 3, brute: 10, rubble: [0.22, 0.19, 0.19],   // the chunks: lighter than the rock, or a heap on the void floor is invisible
       shale: { tile: 0, layer: 0.34, jitter: 0.16, turn: 0.09 },
     },
     platforms: {
@@ -115,34 +126,85 @@ export const SEASONS = [
       driftW: 0.18,             // rad/s
       avoidPlayer: 4.5,         // u — never grows under your feet
     },
+    // v54 (owner: *change season 1's weapon closer to the Devil Daggers
+    // example*): the bare hand (voxel.js daggerHand), back to the eye, fingers
+    // up and tilted a little forward, white daggers off the fingertips. The
+    // needler (v52) stays in the registry as a profile; season 1 no longer wears it.
+    hand: { model: 'daggerHand', pose: { x: 0.44, y: -0.62, z: -1.05, rx: -0.45, ry: Math.PI + 0.30, rz: -0.16 },
+      muzzle: [0.30, -0.14], glow: [2.2, 0.22, 0.08] },
+    // v53 THE FINALE (owner: *nothing in a season ends*): at three minutes the
+    // sky throws shale. For `duration` seconds a chunk falls every `every`
+    // seconds onto a random point of the disc from `height` up — a rock that
+    // lands on you is a hit — and the fallen rock stays as heaps: the new floor.
+    // Survive it and the run goes on, with the director `after.pressure` tighter.
+    // (the rock is PALE — the first loop dropped shale-dark chunks against a
+    // black sky and nothing could be seen falling — and each drop stands a
+    // beam on its landing spot for the fall, the way a heavy spawn is marked)
+    finale: { at: 180, kind: 'rockfall', name: 'THE ROCKFALL', duration: 10, every: 0.2, height: 16, size: 0.95,
+      color: [0.46, 0.38, 0.34], beam: [1.6, 0.32, 0.1], after: { pressure: 1.3 } },
     goo: null,                  // season 2's, not season 1's
     inca: null,
     roster: null,
-    weapon: 'needler',
+    weapon: 'dd',   // v54: the Devil Daggers dagger — white blades from a bare hand (was the needler)
+    // v54 THE RUBBLE IS THE LEVEL: a heap that has come to rest is ground —
+    // you stand on it, a volley stops on it, the swarm goes round it. The
+    // piles come down, the rockfall comes down, and what you fight on at four
+    // minutes is what the first three left behind.
+    rubbleFloor: true,
+    // v54 A RUN THAT ENDS: at `end` seconds the season is over and the recap says what the run did
+    end: 300,
     built: true,
   },
   {
     id: 'inca',
     name: 'SEASON 2 — INCA',
     menu: 'SEASON 2',
+    // v50 (owner, 2026-09-23): the modes are CONTROL SCHEMES a season picks,
+    // not a player toggle. Seasons 1 and 2 play HYPER's rules and body —
+    // dash on — plus a double jump. VOID declares none and stays the control.
+    mode: 'hyper',
+    abilities: { jumps: 2 },
     blurb: 'the sea — one wave, and you jump it',
     // v48 (owner, 2026-09-21): "make season 2 just the wave that you need to
     // jump over. Only random skulls as enemies otherwise." So: no slabs, no
     // rock, no roster but the skull family, and the wave is a HAZARD sized
     // to a single jump, not a floor that carries you.
     spawns: { only: 'skulls', base: 2.6, floor: 0.9, slope: 0.012, cap: 28, first: 1.2 },
-    // v44 TECH ART: a hazed white sky with a pale sun; caustics crawling the
-    // floor; gel on the wave and the slabs; a skullscape on the horizon.
-    sky: { void: [0.44, 0.49, 0.54], horizon: [0.02, 0.28, 0.95], band: 2.2, stars: 0,
-      haze: 0.16, sun: 0.9, sunDir: [0.35, 0.5, -0.78] },
-    // the floor's texture is near-black with bright grid lines, so a tint
-    // only shows where the glow lifts it: an aquamarine GRID on dark water —
-    // and the caustic is light moving on that water
-    floor: { tint: [0.30, 0.95, 0.82], glow: 3.4, caustic: 0.55 },
+    // v52 THE VISUAL LEAP (owner: "visual leap to season 2"). Looked at first:
+    // a flat overcast grey sky nothing could stand against, a floor whose
+    // grain read as gravel, everything one teal, and the giant skulls cropped
+    // into green slabs across half of every frame. Now: A DROWNED TEMPLE AT
+    // GOLDEN HOUR. A deep teal zenith falling to a horizon that burns gold
+    // toward a huge low sun ringed in stepped bands — a sun stone — so the
+    // skulls and the pyramids are whole dark SHAPES against light; the floor
+    // is dark water with its grid and the sun's broken path across it; the
+    // wave is backlit; the air carries gold.
+    sky: { void: [0.01, 0.06, 0.07], horizon: [0.30, 0.16, 0.04], band: 3.0, stars: 0,
+      haze: 0, sun: 1.0, sunDir: [0.0, 0.1, -1],
+      zenith: [0.006, 0.055, 0.068], glow: [0.95, 0.52, 0.13],
+      sunCol: [1.7, 1.0, 0.38], sunSize: 0.085, rings: 0.8 },
+    // the grid on dark water: the texture's grain pressed down to a quarter,
+    // the lines kept; caustics under it; and the sun's path on top
+    floor: { tint: [0.22, 0.85, 0.72], glow: 3.0, caustic: 0.4, grain: 0.45, glint: 1.0 },
     backdrop: { visible: false, emissive: 0 }, // season 1's monuments are season 1's; the Inca skullscape is on the list
-    fog: { color: [0.40, 0.46, 0.52], near: 20, far: 90 },
-    dust: { color: [0.60, 0.92, 0.85], size: 0.06, opacity: 0.2 },
-    ground: [0.05, 0.14, 0.13],
+    // gold air: the distance melts into the horizon's colour, not into grey
+    fog: { color: [0.30, 0.19, 0.08], near: 24, far: 115 },
+    dust: { color: [1.2, 0.85, 0.35], size: 0.07, opacity: 0.32 },   // pollen in the low sun
+    ground: [0.012, 0.04, 0.045],                                     // the sea past the disc
+    // v53 THE FINALE: the sea DRAINS — over `drainFor` seconds the water goes,
+    // the caustics with it; the temple floor shows for `dryFor` seconds and
+    // seven stone steps rise out of it; then the sea comes back over `refill`
+    // and the tide goes on. The steps stay: stand on one and the wave passes
+    // under your feet — the refuges you earn by surviving the drain.
+    finale: { at: 180, kind: 'drain', name: 'THE SEA DRAINS', drainFor: 4, dryFor: 14, refill: 5,
+      steps: { count: 7, rMin: 5, rMax: 20, wMin: 2.4, wMax: 3.4, hMin: 1.5, hMax: 2.0,
+        shale: { layer: 0.3, jitter: 0.08, turn: 0.04, tile: 0.8, tileLift: 0.05, tileTilt: 0.05,
+          color: [0.06, 0.11, 0.10], tileColor: [0.10, 0.17, 0.15], glow: [0.10, 0.30, 0.26] },
+        grow: 1.6, sink: 1.1, lifeMin: 99999, lifeMax: 99999, drift: 0, driftW: 0, avoidPlayer: 4 },
+      after: { pressure: 1.3 } },
+    // the jade macuahuitl, throwing obsidian (voxel.js jadeHand; tuning obsidian)
+    hand: { model: 'jadeHand', pose: { x: 0.52, y: -0.5, z: -1.05, rx: 0.42, ry: Math.PI + 0.3, rz: -0.22 },
+      muzzle: [0.36, -0.2], glow: [0.35, 2.4, 2.0] },
     pillars: null,
     platforms: null,           // v48: nothing stands in the sea — the wave is the arena
     // THE WAVE (v43). A crest sweeps the disc, rises, leans into its travel
@@ -155,11 +217,19 @@ export const SEASONS = [
       // crest sits under it with air to spare, and a double jump is a safety.
       // A wave you cannot clear is a wall that moves; this is a hurdle.
       hurts: true,              // contact is a HIT (HYPER: time + a shove; PURE: death); it no longer carries
-      hurtFrom: 0.35,           // the height at which water is wave — under it you are wading, not struck
+      hurtFrom: 0.8,            // v50: only the CREST hurts. At 0.35 the whole swell did, for a full
+                                // second at any point — longer than a jump stays in the air (0.72 s)
       amp: 1.1,                 // crest height above the floor — ×1.22 at the ripple's peak is 1.34, under the 1.54 apex with a hand of air
-      width: 8,                 // how long the back of the swell is
+      width: 5,                 // v50: 8 was a hill you landed back on; 5 passes under one jump
       gap: 16,                  // clear water between one wave and the next
-      speed: 8,                 // u/s along its own direction — a jump lasts 0.72 s, the crest is past in a third of that
+      // v53 THE TIDE (owner: *the tide comes in*): from 30 s to 150 s the waves
+      // come CLOSER (gap 16 → 8) and FASTER (9 → 11: a faster crest is past in
+      // less of a jump, so the tide sharpens the read without closing the
+      // window — jumped in the gate at both ends) with a bigger swell along the
+      // crest; and the crest carries the bone heaps with it (gibs.js carry).
+      tide: { from: 30, to: 150, gap: 8, speed: 11, ripple: 0.18 },   // ripple UNDER 0.27: past it the swell dips the crest below hurtFrom and the wave has gaps you can walk through
+      speed: 9,                 // u/s. Fitted by jumping a body over it in the real code (gate):
+                                // one jump clears in a 0.26 s window, the double jump in 0.79 s
       lean: 0.5,                // how far the crest leans forward as it steepens
       ripple: 0.22, rippleK: 0.19, // a swell along the crest: a sea, not an extrusion
       push: 0,                  // v48: it does not carry (kept for a sea that wants to — `hurts: false`)
@@ -176,7 +246,8 @@ export const SEASONS = [
       // matte, speckled. `shearRef` is how fast the surface has to be moving
       // (units per second) to count as fully seized — measured off the wave's
       // own slope, so it does not change with the frame rate.
-      seize: [0.80, 0.94, 0.92], seizeK: 0.3, shearRef: 5,   // v48: 0.8 painted the whole face pale — the seize is a frosting now, not the paint
+      seize: [0.80, 0.94, 0.92], seizeK: 0.3, shearRef: 9,   // v50: ×9/5 for the steeper, faster face (peak ~6.6 u/s)
+      // v48: 0.8 painted the whole face pale — the seize is a frosting now, not the paint
       // ...and `shearRef` is recalibrated with it: the break of THIS crest
       // peaks at ~3.7 u/s of surface motion (amp 1.1 down a face 4.4 long at
       // speed 8), so a 12 u/s "fully seized" meant the wave never seized at
@@ -198,8 +269,14 @@ export const SEASONS = [
       // the skull is the game's own string-art skull at ×22 — forty units of
       // bone, half-buried just past the rim, a DARK aquamarine silhouette
       // against the white sky (a pale skull in a pale fog was a cloud)
-      skulls: { count: 4, rMin: 3, rMax: 9, scale: 22, sinkMin: 0.3, sinkMax: 0.5, tint: [0.62, 0.72, 0.70] }, // the mosaic colours it (roster); the tint only holds it back from the sky
-      terraces: { count: 7, rMin: 24, rMax: 46, wMin: 14, wMax: 26, hMin: 9, hMax: 20, steps: 6, color: [0.20, 0.36, 0.37] },
+      // v52: OUT at the horizon, in a fan round the sun, unfogged and dark, so
+      // each is a whole silhouette with its gold eyes lit — just past the rim
+      // they cropped into green slabs that filled half of every frame
+      // (first try, ×34 at 40–64 out: seventy-five units wide, still looming overhead as slabs)
+      skulls: { count: 3, rMin: 72, rMax: 96, scale: 15, sinkMin: 0.04, sinkMax: 0.14, tint: [0.08, 0.12, 0.12],
+        arc: [-Math.PI / 2, 2.3], fog: false },
+      // the pyramids stay in the gold air, darker, so they layer into it
+      terraces: { count: 9, rMin: 28, rMax: 62, wMin: 14, wMax: 28, hMin: 9, hMax: 24, steps: 6, color: [0.035, 0.07, 0.07] },
     },
     // THE ROSTER (v45). Owner: *enemies will be new — aquamarine, green,
     // yellows, but also slightly Aztec themed*. The new sculpts arrive through
@@ -215,11 +292,87 @@ export const SEASONS = [
       mark: [0.95, 0.80, 0.18], // a red in the source goes yellow — the season has no red
       jitter: 0.12,
     },
-    weapon: 'needler',
+    weapon: 'obsidian',   // v52: turquoise crystal, not season 1's nail
+    // v54 THE EBB (owner-approved next leap): the finale's drain comes early
+    // and partial. From `from` seconds, every `every` seconds the sea pulls
+    // back to `depth` for a few seconds; on the first ebb low steps rise —
+    // UNDER the crest (a step is a place to be while the water is out, not a
+    // place to hide when it comes back: the crest still takes you off one).
+    // The finale's full drain at 180 builds the tall steps over them.
+    ebb: { from: 45, every: 60, depth: 0.85, out: 2.5, dry: 7, back: 3,
+      steps: { count: 5, rMin: 5, rMax: 18, wMin: 2.2, wMax: 3.0, hMin: 0.5, hMax: 0.8,
+        shale: { layer: 0.25, jitter: 0.08, turn: 0.04, tile: 0.8, tileLift: 0.05, tileTilt: 0.05,
+          color: [0.06, 0.11, 0.1], tileColor: [0.1, 0.17, 0.15], glow: [0.1, 0.3, 0.26] },
+        grow: 1.2, sink: 1.1, lifeMin: 99999, lifeMax: 99999, drift: 0, driftW: 0, avoidPlayer: 4 } },
+    end: 300,
     built: true,
     todo: [
       'the new season 2 sculpts (aquamarine / green / yellow, Aztec) — the recolour holds the slot until they arrive',
       'the Inca backdrop from real art, if any arrives — the skullscape is the game\'s own skull for now',
+    ],
+  },
+  {
+    // v51 (owner, 2026-09-23): *Season 3 should be the truck mode, with moving
+    // platforms and forward momentum. Also double jump and dash. No need for
+    // shoot, but if you look at enemies close enough it deploys homing
+    // missiles, with slightly longer look meaning faster, more targeted
+    // missiles.*
+    id: 'haul',
+    name: 'SEASON 3 — HAUL',
+    menu: 'SEASON 3',
+    mode: 'truck',                       // the Clustertruck rules: the road is the arena, falling is death
+    abilities: { jumps: 2, dash: true },
+    blurb: 'the convoy — trucks that drive, momentum you keep, and a look that fires',
+    sky: { void: [0.0015, 0.0015, 0.0022], horizon: [0.36, 0.13, 0.03], band: 4.2, stars: 0.3,
+      sun: 0.55, haze: 0.05, sunDir: [0.0, 0.05, -1] },   // a low sun dead ahead: you are driving into it
+    floor: { tint: [1, 1, 1], glow: 0.9 },   // the disc is hidden on the track
+    backdrop: { visible: false, emissive: 0 },
+    fog: { color: [0.022, 0.011, 0.006], near: 18, far: 72 },
+    dust: { color: [0.85, 0.55, 0.30], size: 0.05, opacity: 0.16 },
+    ground: null,
+    pillars: null,
+    platforms: null,
+    goo: null,
+    inca: null,
+    roster: null,
+    // v53 THE FINALE: THE PILE-UP. Every truck within `reach` ahead folds and
+    // stops dead: a wall of wrecks across the road you cross truck to truck,
+    // standing still, cargo everywhere. Past it the convoy runs `resume` faster
+    // and the skulls come thicker.
+    finale: { at: 180, kind: 'pileup', name: 'THE PILE-UP', reach: 70, duration: 14, resume: 1.2, after: { skulls: 1.4 } },
+    weapon: 'missile',                   // v52: missiles that look like missiles
+    hand: { model: 'launcherHand', pose: { x: 0.5, y: -0.46, z: -1.05, rx: 0.02, ry: Math.PI + 0.22, rz: 0.06 },
+      muzzle: [0.4, -0.2], glow: [2.6, 1.3, 0.25] },                    // the missiles fly as daggers — every hit and kill path is theirs
+    // THE CONVOY (truck.js): the trucks drive at their own speeds and sway in
+    // lane; standing on one carries you, and in the air you keep its speed.
+    // The gap between trucks is a real gap now (edge to edge ~1.5–6 u): one
+    // jump with a run-up clears the short ones, the double jump the long.
+    // v51b (owner: *based on Clustertruck — the platforms need to feel
+    // lopsided, fast moving*): js/convoy.js. Trucks at 20 ± 3 u/s that pick
+    // new speeds, change lanes and brake hard; trailers of different heights,
+    // each loaded crooked (roll ±`roll`, pitch ±`pitch`), jostling (`jostle`),
+    // bouncing (`bob`), leaning into lane changes and diving under braking.
+    // Touch the road and you are dead (`fallY`, just above the asphalt).
+    truck: { moving: true, speed: 20, speedVar: 3, laneSpeed: 3.2, brakeChance: 0.14, sideChance: 0.55,
+      ahead: 80, roll: 0.12, pitch: 0.05, jostle: 0.035, bob: 0.07, leanK: 0.05, diveK: 0.05,
+      skullsFrom: 3, fallY: -2.9 },
+    // THE GAZE (gaze.js): hold the look on an enemy inside `range` and within
+    // `cone` of the view's centre; after `dwell` a missile leaves every
+    // `every` seconds, its speed and turn rate lerped by how long the look
+    // has been held (up to `full`). A glance sends a lazy missile that can
+    // miss; a held look sends a fast one that will not.
+    gaze: { range: 24, cone: 0.16, grace: 0.2, dwell: 0.25, full: 1.2,
+      speed: [16, 40], turn: [1.2, 10], every: [0.5, 0.26], life: 2.6, damage: 1,
+      trucks: true },   // v53: the cabs lock too — three missiles and a truck jackknifes and spills its load
+    // v54 CARGO IS THE SCORE: the run's time is the clock PLUS the load — a
+    // crate that spills onto the road costs `spill` seconds, a loose crate you
+    // land on and set back pays `save`. The convoy is a load you are keeping whole.
+    cargoScore: { spill: 1, save: 1 },
+    end: 300,
+    built: true,
+    todo: [
+      'trucks that read as trucks — a cab, a trailer, wheels (they are slabs)',
+      'the missile look: they fly as daggers today',
     ],
   },
 ];

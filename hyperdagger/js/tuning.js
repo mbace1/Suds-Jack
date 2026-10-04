@@ -148,6 +148,40 @@ export const TUNING = {
       color: [3.0, 1.15, 0.38],         // hot brass, still a bloom-tripping HDR value
       fireTone: 1.5,                    // audio: the stream tick sits higher
     },
+    // v51b SEASON 2: obsidian — the needler's rhythm, a long turquoise
+    // crystal instead of a nail, so season 2 is not season 1 with a new sky
+    obsidian: {
+      rate: 1.2,
+      streamSpeed: 64,
+      shotgunSpeed: 96,
+      spread: 0.03,
+      shotgunSpread: 0.26,
+      shape: { kind: 'shard', r: 0.05, len: 0.36 },
+      color: [0.35, 2.6, 2.1],
+      fireTone: 1.2,
+    },
+    // v54 SEASON 1 (owner: *change season 1's weapon closer to the Devil
+    // Daggers example*): the dagger as DD has it — a bare hand, and small
+    // white blades poured from the fingertips in a visible fan. Thinner and
+    // shorter than the base dagger, a wider cone, a faster flight, and the
+    // release point wanders across the fingers (a laser from one pixel is a
+    // gun; DD's hand is a hand).
+    dd: {
+      streamSpeed: 56,
+      shotgunSpeed: 88,
+      spread: 0.07,
+      shotgunSpread: 0.22,
+      originJitter: 0.16,
+      shape: { r: 0.03, len: 0.26 },
+      color: [2.5, 2.5, 2.35],          // white, HDR — the daggers are the brightest thing in DD's frame
+      fireTone: 1.0,
+    },
+    // v51b SEASON 3: the gaze's missiles (they are never streamed or burst)
+    missile: {
+      shape: { kind: 'missile', r: 0.055, len: 0.44 },
+      color: [2.8, 1.35, 0.3],
+      fireTone: 0.8,
+    },
   },
 
   gems: {

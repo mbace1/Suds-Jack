@@ -384,7 +384,7 @@ export const MODELS = {
   // but returns to its own ash/bone identity instead of tracing DD's hand.
   hand: {
     voxelSize: 0.05,
-    wobble: 0.18,
+    wobble: 0,   // v51b: the lattice "life" on a viewmodel is a hand that never stops crumpling
     noHull: true,
     palette: { G: 0xbeb4a6, D: 0x4b4540, H: 0xe2d8c8, B: [3.2, 0.30, 0.06] },
     layers: [
@@ -394,6 +394,98 @@ export const MODELS = {
       ['.........', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', '.GDGDGDG.', 'GGGGGGGGG', '..GGGGG..', '...DGD...'],
       ['.........', '.........', '.........', '.........', '.........', '...G.....', '..GG.....', '.GGG.....', '.GDGG....', '..GGG....', '...G.....', '.........'],
     ],
+  },
+  // v51b SEASON HANDS (owner: *why is the weapon/hand so deformed? Use
+  // different types and models in different seasons*). The claw above was
+  // pitched away from the eye, so it showed its knuckles end-on, and the
+  // lattice wobble jittered every cube — nothing held a silhouette. These are
+  // held SIDE-ON, bottom right, with no wobble, each a shape you can name:
+  // row 0 (z = 0) is the MUZZLE, which the hand pose turns into the screen.
+  // `B` is each one's glow; the weapon level brightens it (main.js).
+  needlerHand: {   // SEASON 1 — a shale nail-gun with ember vents and a brass magazine
+    voxelSize: 0.034, wobble: 0, noHull: true,
+    palette: { S: 0x6a6058, D: 0x3a3430, H: 0x9a8e82, N: 0xc49440, B: [2.4, 0.5, 0.1] },
+    layers: sculptLayers(7, 23, 10, (x, y, z) => {
+      const cx = x - 3, ax = Math.abs(cx);
+      if (z <= 9 && y >= 6 && y <= 7 && ax <= 1) return z === 0 ? 'B' : (y === 7 && ax === 0 ? 'H' : 'S');   // barrel
+      if (z >= 2 && z <= 8 && z % 3 === 2 && y === 8 && ax <= 1) return 'D';                                   // shroud ribs
+      if (z >= 8 && z <= 18 && y >= 4 && y <= 8 && ax <= 2) {                                                   // receiver
+        if (y === 8) return ax <= 1 ? 'H' : 'D';
+        if (ax === 2 && y === 6 && (z === 10 || z === 12 || z === 14)) return 'B';                             // vents
+        return 'S';
+      }
+      if (z >= 10 && z <= 13 && y >= 1 && y <= 3 && ax <= 1) return y === 1 ? 'D' : 'N';                       // magazine
+      if (z >= 16 && z <= 19 && y <= 3 && ax <= 1) return 'D';                                                   // grip
+      if (z >= 19 && z <= 22 && y >= 5 && y <= 7 && ax <= 1) return 'S';                                         // stock
+      return '.';
+    }),
+  },
+  // v54 SEASON 1 (owner: *closer to the Devil Daggers example*): a BARE HAND,
+  // the way DD holds it — back of the hand to the eye, bottom right, fingers
+  // up and tilted a little forward, the daggers leaving the fingertips. Bone
+  // and ash like the old claw, five fingers this time, knuckles and joints
+  // drawn as a darker row on the back so the segments read; `B` at the tips
+  // is the glow the weapon level brightens (DD's hand lights up as it grows).
+  // Rows: x across (16), z depth (5: z 0 = the palm side, toward the enemy;
+  // z 4 = the back, toward the eye), y up (22).
+  daggerHand: {
+    voxelSize: 0.033, wobble: 0, noHull: true,
+    palette: { G: 0xbeb4a6, D: 0x5c554d, H: 0xe2d8c8, B: [2.2, 0.22, 0.08] },
+    layers: sculptLayers(18, 5, 22, (x, y, z) => {
+      const back = z === 4;
+      if (y <= 3) return (x >= 6 && x <= 11 && z >= 1 && z <= 3) ? (back ? 'G' : 'D') : '.';   // the wrist
+      if (y >= 4 && y <= 11 && x >= 2 && x <= 15 && z >= 1 && z <= 3) {                           // the palm
+        if (z === 3 && (x === 4 || x === 8 || x === 12) && y >= 7) return 'H';                     // metacarpal ridges on the back
+        if (z === 1 && y >= 6 && y <= 9 && x >= 6 && x <= 11) return 'H';                          // the hollow of the palm, lit
+        return 'G';
+      }
+      // the thumb: out from the palm's left edge and up
+      const th = [[0, 6], [0, 7], [0, 8], [-1, 9], [-1, 10], [-1, 11]];
+      for (const [tx, ty] of th) if ((x === tx + 1 || x === tx + 2) && y === ty && z >= 1 && z <= 2) return y === 11 ? 'B' : (y === 8 ? 'D' : 'G');
+      // four fingers, two wide with TWO cells of air between (a spread hand,
+      // or they read as one paddle), different lengths, the last three cells
+      // CURLED toward the palm side — DD's hand is a claw, not a salute
+      const F = [[2, 19], [6, 21], [10, 20], [14, 17]];
+      for (const [fx, top] of F) {
+        if (x < fx || x > fx + 1 || y < 12 || y > top) continue;
+        const curl = y > top - 3, lo = curl ? 0 : 1, hi = curl ? 2 : 3;
+        if (z < lo || z > hi) continue;
+        if (y === top) return 'B';                                                                  // the tip glows
+        if (z === hi && (y === 12 || y === top - 3)) return 'D';                                    // the knuckle and the bend
+        return 'G';
+      }
+      return '.';
+    }),
+  },
+  jadeHand: {      // SEASON 2 — a jade macuahuitl: obsidian teeth, gold bands, a glowing inlay
+    voxelSize: 0.034, wobble: 0, noHull: true,
+    palette: { J: 0x2a9a86, O: 0xd8aa3c, K: 0x14161a, W: 0x5a3a22, B: [0.35, 2.4, 2.0] },
+    layers: sculptLayers(3, 23, 11, (x, y, z) => {
+      const ax = Math.abs(x - 1);
+      if (z <= 14 && y >= 2 && y <= 8) {                                        // the paddle
+        if (z % 5 === 3) return 'O';
+        if (y === 5 && ax === 1 && z >= 1) return 'B';
+        return 'J';
+      }
+      if (z <= 13 && z % 2 === 0 && (y === 9 || y === 1) && ax === 0) return 'K'; // obsidian teeth
+      if (z === 0 && y >= 3 && y <= 7 && ax === 0) return 'K';
+      if (z >= 15 && z <= 22 && y >= 4 && y <= 6 && ax <= 1) return (z === 17 || z === 20) ? 'O' : 'W'; // the haft
+      return '.';
+    }),
+  },
+  launcherHand: {  // SEASON 3 — a wrist pod of missile tubes on a steel bracer; there is no trigger
+    voxelSize: 0.034, wobble: 0, noHull: true,
+    palette: { A: 0x5a5a60, K: 0x1a1a1c, Y: 0xd8a420, H: 0xf0c850, B: [2.6, 1.3, 0.25] },
+    layers: sculptLayers(9, 18, 9, (x, y, z) => {
+      const cx = x - 4, ax = Math.abs(cx);
+      if (z <= 8 && y >= 3 && y <= 8 && ax <= 4) {                               // the pod
+        if (z === 0) return ((cx === -3 || cx === 0 || cx === 3) && (y === 4 || y === 7)) ? 'B' : 'K';
+        if (y === 8) return (x + z) % 4 === 0 ? 'K' : 'H';
+        return (x + y + z) % 5 === 0 ? 'K' : 'Y';                                // hazard stripes
+      }
+      if (z >= 6 && z <= 17 && y <= 4 && ax <= 2) return (z === 10 || z === 14) ? 'K' : 'A'; // the bracer
+      return '.';
+    }),
   },
   totem: {
     voxelSize: 0.22,

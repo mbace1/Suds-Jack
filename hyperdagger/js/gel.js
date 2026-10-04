@@ -50,6 +50,7 @@ export function gelMaterial(o = {}) {
     uFresnel: { value: o.fresnel ?? 0.9 },
     uSpec: { value: o.spec ?? 0.7 },
     uSSS: { value: o.sss ?? 0.5 },
+    uSunCol: { value: new THREE.Color(1, 1, 0.94) },   // v52: the gloss is the sun's colour (season 2's is gold)
     // the solid phase: what a seized piece looks like
     uSeize: { value: new THREE.Color().setRGB(...(o.seize ?? [0.80, 0.94, 0.92])) },
     uSeizeK: { value: o.seizeK ?? 1.0 },
@@ -96,7 +97,7 @@ vGelN = normalize(mat3(modelMatrix) * normal);
       .replace('#include <common>', `#include <common>
 uniform float uTime; uniform vec3 uLip; uniform vec3 uSun;
 uniform float uCaustic; uniform float uFresnel; uniform float uSpec; uniform float uSSS;
-uniform vec3 uSeize; uniform float uSeizeK;
+uniform vec3 uSeize; uniform float uSeizeK; uniform vec3 uSunCol;
 varying vec3 vGelN; varying vec3 vGelW; varying float vGelS;`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 {
@@ -116,7 +117,7 @@ varying vec3 vGelN; varying vec3 vGelW; varying float vGelS;`)
   // and nowhere else.
   col += uLip * (fres * uFresnel * 0.4 + ca * uCaustic * 0.3);
   float sp = pow(max(dot(reflect(-V, N), uSun), 0.0), 28.0);
-  col += vec3(1.0, 1.0, 0.94) * sp * uSpec * 0.6;
+  col += uSunCol * sp * uSpec * 0.6;
   // v46 — Toko Drop's satin term: back-light bleeding through the gel (the
   // sun behind the body lights it from within) and a wrap so the side away
   // from the sun still carries the colour; a tight white rim at the edge
@@ -136,7 +137,7 @@ varying vec3 vGelN; varying vec3 vGelW; varying float vGelS;`)
   if (st > 0.001) {
     float sp2 = fract(sin(dot(floor(vGelW * 3.7), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
     col = mix(col, uSeize * (0.72 + 0.28 * sp2), st * 0.55);
-    col -= vec3(1.0, 1.0, 0.94) * sp * uSpec * 0.6 * st;   // the gloss goes first
+    col -= uSunCol * sp * uSpec * 0.6 * st;   // the gloss goes first
   }
   diffuseColor.rgb = col;
 }`);

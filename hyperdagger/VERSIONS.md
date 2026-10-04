@@ -2,37 +2,305 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
-## v51 — 2026-09-26
-**He remembers the run after you leave.** The recap v50 gave the table is
-now also published on `window.__tokoTable`, which is where the arcade's
-leave-logger (`hub/playlog-auto.js`) looks for it. Before this Hyper Dagger
-was the one tabled game whose runs never reached Toko's *last time* line:
-it handed the recap straight to `openTable` and nothing else could read it.
-The seam carries no pause or resume; `openToko` still holds the run.
+## v54 — 2026-09-27
+**Season 1 holds the Devil Daggers dagger; the rubble is the level; the ebb; cargo is the score; a run that ends**
+
+Owner, 2026-09-27: *next big steps?* → *all in order. Change season 1 weapon
+closer to the Devil Daggers example.*
+
+**The dagger** (`T.weapons.dd`, `voxel.js daggerHand`). Season 1 drops the
+needler (v52) for DD's weapon: a bare bone hand, back to the eye, four spread
+fingers whose last three cells CURL toward the palm, glowing tips; small white
+HDR blades in a wider fan, faster than the base dagger, released from a point
+that wanders across the fingers (`originJitter` is per season now). Three
+renders settled the pose: upright read as a stop sign, tilted hard it
+foreshortened into a slab, side-on it was a club — the back of the hand,
+lowered, with the fingers apart, is the one that reads as a hand. The needler
+stays in the registry as a profile.
+
+**The rubble is the level** (season 1, `rubbleFloor`). A gib that has gone to
+sleep is terrain: `PhysGibs.topAt` is a floor (re-said every frame, or a heap
+you stepped off stays under you), `blocks` stops nails and orbs, `pushOut`
+sends the swarm round it. Only chunks of 0.4 u and up count as cover, so a
+skull's bone is ground but not a wall. The piles come down and the rockfall
+comes down, and the floor at four minutes is what the first three left.
+
+**The ebb** (season 2, `ebb`). From 45 s the sea pulls back to 0.85 every
+minute (2.5 s out, 7 dry, 3 back), read off the season clock so a pause or a
+setTime lands in the right place. The first ebb raises five low steps, every
+one UNDER the crest: a place to be while the water is out, not a place to
+hide from it. The finale's full drain builds the tall steps over them.
+
+**Cargo is the score** (season 3, `cargoScore`). The run's time is the clock
+plus the load: a crate the road takes costs a second, and a loose crate you
+land on while it is still on its trailer sets back (`Cargo.stomp`) and pays
+one. A loose crate is not floor, so a body falls INTO it; the stomp counts the
+feet inside it, not only on its top. The HUD carries the load and the balance.
+
+**A run that ends** (`end: 300` on seasons 1–3; VOID has none). At 300 s the
+run is complete, not a death: RUN COMPLETE, no killer cam, a stinger instead
+of the death sound, and a recap line of only what happened — piles brought
+down, chunks on the floor, seconds stood on rubble, the finale survived, ebbs,
+times the sea hit you, crates loaded / saved / spilled, trucks jackknifed.
+
+Gate: the DD weapon and hand; standing on a heap and a shot stopping on it;
+the ebb draining, its steps under the crest, the water back; a stomp setting a
+crate back and a spill costing two seconds through the frame; RUN COMPLETE at
+300 with the recap. Tokens `?v=85`, worker cache v55.
+
+## v53 — 2026-09-27
+**Physical gibs; the tide; cover that dies; cargo and the jackknife; the finales**
+
+Owner, 2026-09-26/27: *prototype the physical gibs* → *next big leaps for any
+season?* → *go ahead on all.*
+
+**Physical gibs** (`js/gibs.js`, `js/avbd/`). A kill's biggest chunks go to a
+real rigid-body solver and heap where they land; the rest still flies as the
+classic debris. The solver is the CPU reference from three-avbd — Augmented
+Vertex Block Descent (Giles, Diaz & Yuksel, SIGGRAPH 2025), MIT — types
+stripped mechanically into `js/avbd/` with its notices, and ONE change to the
+port: two static bodies never get a contact. That is what makes it cheap: a
+gib still for twenty steps goes to sleep as a static body, so a settled heap
+costs a sphere test per pair and only the last kill's chunks are ever solved.
+Measured: a 24-chunk burst onto a 300-gib sleeping pile averages ~1 ms a step
+here, six kills at 4× CPU throttle peaked at 5 ms and averaged 0.5 ms. Caps
+on awake (72) and total (300) gibs, a running clock that falls back to classic
+debris past 4 ms, off on the road. Pause menu: GIBS STACK / GIBS CLASSIC.
+The first cut threw the chunks at 2–5 u/s and they scattered; they slump out
+of the body now, and six skulls killed in one spot leave a heap two cubes
+deep that stays.
+
+**Season 2: THE TIDE.** From 30 s to 150 s the waves come CLOSER (gap 16 → 8)
+and FASTER (9 → 11 u/s), and the crest lifts the bone heaps, carries them
+and sets them down about five units on — the floor is never the same twice.
+The head is read off distance travelled (`goo._dist`), so a speed that
+changes mid-run cannot make the crest jump; `t` is a property over it, so
+every probe that sets `g.t` still works. Jumped in the gate at both ends:
+one jump clears in a 0.26 s window at tide 0 and 0.37 s at full tide (a
+faster crest is past in less of a jump), the double jump in 0.79 / 0.91 s.
+Trap: the tide's bigger swell (ripple 0.3) dipped parts of the crest under
+`hurtFrom` and the wave had gaps you could walk through — it is 0.18, and
+the gate stands a body at five points across the crest and requires every
+one struck. The carry at 0.9× the crest's speed rode the heap clean off the
+disc; at 0.45× the crest overtakes it and drops it.
+
+**Season 1: COVER THAT DIES.** A shale pile has 70 hit points (`walls.add`
+takes `hp`). A nail takes one, a shotgun a fistful; a body shoving on it
+wears it at 3 a second, a brute at 10; past half it LEANS a little more with
+every blow; at zero it collapses into a heap of physical shale chunks with
+a spray of chips, and it is gone as cover. Measured: about four seconds of
+focused needler fire from five units, or a swarm of five bodies in five
+seconds. Standing behind a pile has a clock now, and the swarm runs it. The
+court's walls take no `hp` and are what they were.
+
+**Season 3: CARGO, NOT DECKS** (`js/cargo.js`). Trailers carry two to five
+stacked crates in a rigid-body solver of their own. Each trailer is a
+kinematic body posed from the truck every step, so a crate resting on it is
+carried by friction; a truck that brakes hard or swerves has its load
+SLIDE. What keeps it cheap: a crate riding quietly for twelve steps is
+WELDED — static, posed from its trailer at the offset it settled at — and a
+jolt (acceleration over 9 u/s², a jackknife, a hit) unwelds that trailer's
+load; on a steady convoy nothing is solved at all (0.22 ms a step with a
+load loose). A welded crate is floor: you stand on cargo that moves under
+you. **The cabs are gaze targets**: hold the look on one and the missiles
+land in it; the third JACKKNIFES the truck — it brakes to a crawl, swings
+its trailer across the lane (±0.7 rad) and spills its load. Trap: a crate
+that fell to the road could never be "quiet" relative to a truck doing
+twenty, so the re-weld test never ran and it stayed the truck's; a crate
+below its deck is the road's now.
+
+**All seasons: THE FINALE** at 180 s (`finale` on the season; `startFinale`
+/ `updateFinale` in main.js). Nothing in a season ends: at three minutes
+each throws its set piece, announced like a debut, and the run goes on
+with the director tighter (`after.pressure` divides the season's own cadence).
+- Season 1, THE ROCKFALL: for ten seconds a shale chunk falls every 0.2 s
+  from sixteen units up onto a random point of the disc; a rock that lands
+  on you is a hit (`gibs.fallingOn`, one strike per rock); the fallen rock
+  stays as heaps — the new floor. 41 rocks in the probe; pressure ×1.3 after.
+  Looked at: the first loop dropped shale-dark chunks against a black sky and
+  nothing could be seen falling, so the rock is PALE and each drop stands an
+  ember beam on its landing spot for the fall (the heavy-spawn telegraph), and
+  the gibs solver's gravity is 20 rather than the reference's 10, which
+  floated a rock down from the sky. Season 1's rubble is lighter for the same
+  reason: a shale-dark heap on the void floor was invisible.
+- Season 2, THE SEA DRAINS: over four seconds the water goes to nothing
+  (`goo.drain` scales the crest; the caustics and the sun's path fade with
+  it), the temple floor shows for fourteen, and seven stone steps rise out of
+  it (a `platforms.build` with a stone shale look, 1.5–2.0 tall: stand on one
+  and the wave passes under your feet); then the sea returns over five and
+  the tide goes on. The steps stay — the refuges you earn.
+- Season 3, THE PILE-UP: every truck within seventy units ahead folds and
+  STOPS where it is — a wall of wrecks across the road, cargo everywhere,
+  crossed truck to truck standing still; past it the convoy runs 1.2× and
+  the skulls come 1.4× thicker.
+
+**Gate.** Physical gibs (a heap that sleeps), the tide (closer, faster,
+jumped at full tide, no gaps, the heap carried and not swept off), cover
+(hp on every pile, the lean, the fall into a heap; the court's walls
+untouched), cargo (a welded crate rides, a brake slides the load, three
+hits jackknife, the gaze lands missiles in a cab), and all three finales.
+`hd-loop` gains `rockfall`, `drain`, `pileup` and `cover` scenarios.
+
+Tokens `?v=83` → `?v=84`, worker cache v54, precache regenerated.
+
+## v52 — 2026-09-25
+**Season 2's visual leap; every season holds its own weapon; season 3 is Clustertruck**
+
+Owner, 2026-09-23/25: *why is the weapon/hand so deformed? Use different
+types and models in different seasons. Also bullets. S3 is based on Cluster
+Truck, so the platforms need to feel lopsided, fast moving, etc. The
+environment can be abstract but needs more.* Then: *visual leap to season 2.*
+
+**Season 2: a drowned temple at golden hour.** Rendered and looked at first:
+a flat overcast grey sky nothing could stand against, a floor whose grain
+read as gravel, everything one teal, and giant skulls just past the rim
+cropped into green slabs across half of every frame (the Minecraft look).
+Now a deep teal zenith falls to a horizon that burns gold toward a huge low
+sun ringed in stepped bands, a sun stone that changes colour in whole bands
+the way a 2600 did (`uGrad`/`uZenith`/`uHorizon`/`uSunSize`/`uSunRings`,
+all zero outside season 2). The skulls stand at the true horizon (72–96
+past the rim) in a fan round the sun, unfogged and dark, so each is a whole
+silhouette with its gold eyes lit; the first try at ×34 was seventy-five
+units wide and still loomed. The pyramids are dark in gold air, layering
+into it. The floor is dark water: the texture's grain pressed down
+(`grain`), the grid kept, and the sun's broken path across it (`glint`).
+The gel's gloss takes the sun's colour, so the wave is backlit gold. Pollen
+in the air.
+
+**The hand is the season's.** The old claw was pitched away from the eye,
+so it showed its knuckles end-on, and the lattice wobble crumpled every
+cube every frame — nothing held a silhouette. `setHand(def)` swaps it per
+season, held side-on, bottom right, with no wobble: the claw for VOID, a
+shale nail-gun with ember vents for season 1, a jade macuahuitl with
+obsidian teeth for season 2, a hazard-striped missile pod for season 3.
+Shots leave from each hand's own `muzzle`; the weapon level brightens a
+season hand's glow instead of repainting it. **The projectiles are the
+season's too**: `setShape` takes a `kind` — nails for season 1, a long
+turquoise `shard` of obsidian for season 2 (`T.weapons.obsidian`), a turned
+`missile` with a nose and a flared tail for season 3.
+
+**Season 3 is Clustertruck** (`js/convoy.js`; `truck.js` is the classic road
+again and hands every call to the convoy when a season asks for one).
+Trucks, not slabs: a trailer you stand on and a cab in front, at trailer
+heights of their own so the next truck is up or down from this one, loaded
+crooked, jostling, bouncing, leaning into lane changes and diving under
+braking, at 20 ± 3 u/s with lane changes and hard brakes (brake lights say
+so). The body is held to the tilted top it stands on and carried by it, and
+keeps that momentum in the air; touching the road kills. The roadside is
+abstract and laid by index so a piece is always the same piece: a lit road
+with lane marks, barrier posts with reflectors, pylons with red lamps,
+monoliths off in the dusk, gantries over the road.
+
+**Found on the way.** The sky was a sphere on the arena's centre, and the
+road carries you out of it in under twenty seconds — past its wall the view
+looked out at the clear colour, a black block across the horizon. It
+follows the camera now. And the first convoy laid its road off the very
+front truck, so a runaway truck stopped the laying and left the road ahead
+empty; it lays off the frontmost truck within reach.
+
+**Gate** (189): the horizon skulls stand far out round the sun; a gradient
+sky with a sun disc, rings and a glint in season 2 and none of it in VOID;
+each season's hand and none wobbling; season 2 throws shards; season 3's
+pod and missile shape; the convoy checks read the tilted tops. Two old
+checks asserted the pale hazy sky and were rewritten. Two restart checks
+failed once while a loop recording ran beside the gate and passed alone —
+timing, not the game.
+
+Tokens `?v=82` → `?v=83`, worker cache v53, precache regenerated (61).
+
+## v51 — 2026-09-23
+**Season 3 — HAUL: a convoy that drives, momentum you keep, and a look that fires**
+
+Owner, 2026-09-23: *Season 3 should be the truck mode, with moving platforms
+and forward momentum. Also double jump and dash. No need for shoot, but if
+you look at enemies close enough it deploys homing missiles, with slightly
+longer look meaning faster, more targeted missiles.*
+
+**The trucks drive.** Season 3 declares `mode: 'truck'` plus `jumps: 2` and
+dash, and lays its own road through a new `truck` block that `TruckTrack`
+reads over `T.truck`. With `moving: true` every truck gets its own speed
+down the road (13 ± 0.8 u/s, a hair faster the further out it was laid) and
+a slow lane-sway. Nothing pushes you any more: the truck under you CARRIES
+you, and in the air you keep the velocity of the one you left, which is the
+Clustertruck feeling rather than a conveyor. New trucks are laid off the
+front truck's current position, since a fixed spawn cursor drifts away from
+a convoy that moves. Trucks you skip are culled behind you (they never fall).
+The gap is real now: 9.5 centre to centre, about 1.5 to 6 edge to edge, so a
+run-up jump clears the short ones and the double jump the long. A `?mode=`
+link still gets the tuning's static road, which the old course checks use.
+
+**No gun: the look is the trigger** (`js/gaze.js`). Every frame the lock asks
+which living enemy inside 24 u sits nearest the view's centre within a small
+cone. Holding the look on one body builds the lock; after a quarter second a
+missile leaves every 0.5 s, down to 0.26 s at a full lock (1.2 s). Each
+missile reads the lock at launch: speed 16 → 40 and turn rate 1.2 → 10. A
+glance sends a lazy missile that can miss, a held look a fast one that will
+not. Changing target restarts the lock. A missile is a dagger with a target
+and a turn rate (`DaggerPool.fire` takes `{ target, turn, life }`), so every
+hit, chip, gib and kill path is the daggers'. It leaves the gauntlet
+climbing and turns onto the body. The lock is drawn where the body is: a
+ring that tightens and whitens as the look is held, plus a centre mark.
+
+**Caught on the way: the saved mode was read where the mode in force was
+meant.** v50 made the season pick the mode, and twelve places still read
+the saved one: the daily board report, the daily seed, run history, the
+death line, the share text and the debug state. A season-1 run under HYPER
+rules was filed as PURE and seeded as PURE. All read `M().id` now.
+
+A season picked mid-run whose rules differ starts a fresh run instead of
+rebuilding under a live one: season 3 is a different game, not a new arena.
+
+**Gate** (8 new checks): season 3 is the truck scheme with double jump and
+dash; a truck moves on its own; it carries the body on it; in the air the
+body keeps that speed; the held trigger launches nothing; a body past range
+is not locked; a held look on a close skull launches missiles and kills it;
+a longer look sends faster and tighter-turning missiles. `hd-loop` gains a
+`haul` scenario and `mode: null` for an unpinned link.
+
+Still to do: trucks that read as trucks (they are slabs), and a missile
+that looks like one (they fly as daggers).
+
+Tokens `?v=81` → `?v=82`, worker cache v52, precache regenerated (60).
 
 ## v50 — 2026-09-23
-**He knows what happened.** Opened at the table on the recap, Toko's first
-lines are the run you were just in, in this game's own words, instead of the
-generic "straight off Hyper Dagger, then":
+**The wave can be jumped; seasons pick their control scheme; the right thumb jumps**
 
-    THE SERPENT GOT YOU AT 41.2S.
-    THAT IS THE THIRD TIME THE SERPENT HAS HAD YOU THIS WEEK.
-    YOUR BEST IS 63.0S.
-    GIB THE RINGS ONE BY ONE. THE PALE ONE IS ARMOURED FROM THE FRONT — SHOOT ITS RINGS FROM BEHIND.
+Owner, 2026-09-23, after playing v49 on a phone: *there is no jump in season
+2* — and then: *keep the modes as optional control schemes we can use later
+in specific seasons. This and S1 should still have double jump and dash on
+right stick. Shoot when holding right stick.*
 
-- `tokoRecap()` is the game's half: the death line (or the clock, paused), what
-  this game remembers about you — its own 40-run log, which now records WHEN
-  (`at`), so "this week" is a count and not a guess; nothing leaves the browser —
-  the best, and one honest tip per thing that kills you (`ENEMY_TIPS`). Enemies
-  with no honest tip get none rather than a platitude.
-- `toko/js/table.js` learned `recap(lang)` and `chat.js` learned `opening`: the
-  host's lines replace the greeting and the TELL button still follows, because
-  the point of knowing what happened is to make it easier to say something
-  about it. Both are allowed to throw; he opens either way.
-- In this game's English, like the rest of its UI — the counter's chrome stays
-  trilingual, the recap is the game's voice about itself.
-- Tokens: `main.js?v=81`, worker cache `hyperdagger-v52`, `chat.js?v=23`,
-  `table.js?v=3`.
+**There was a jump; it could not clear anything.** v49 sized the crest's
+HEIGHT against the jump's apex and never its LENGTH against the jump's
+airtime. The water was above the hurt line for 1.01 s at any point on the
+disc; a jump is in the air for 0.72 s. Every takeoff across a whole wave was
+tried at a clean 60 Hz and not one cleared it: you landed on the back of the
+swell. And v49's log said *the double jump is the safety* — PURE and HYPER
+grant one jump, so that sentence was false in both modes anyone plays. Now:
+only the CREST hurts (`hurtFrom` 0.35 → 0.8), the swell is shorter (`width`
+8 → 5) and a little faster (`speed` 8 → 9). Jumped in the real code, one
+good jump clears it in a 0.26 s window and the double jump in 0.79 s.
+`shearRef` 5 → 9 with it, for the steeper face.
+
+**The gate jumps it now.** The v48 check compared two numbers and passed an
+unjumpable wave. The new one runs a body over the wave at every takeoff
+moment and fails unless one jump has a window and two jumps have a wide one.
+
+**Modes are control schemes a season picks.** A season may declare `mode`
+and extra `abilities`; seasons 1 and 2 declare HYPER (the clock, dash, reap)
+plus `jumps: 2`. The MODE row left the pause menu. A `?mode=` link still
+wins, which is how the gate and the loop harness pin an experiment, and VOID
+declares nothing, so the control is untouched. `M()` asks link → season →
+saved; `applyRunAbilities()` lays the season's extras over the mode's.
+
+**Touch: the right stick is the whole action hand.** Hold it to fire (it
+already did), tap it to jump and tap again in the air for the double jump,
+flick it to dash. A right tap fired a shotgun burst from v29 until now, which
+is why the jump "did not work" under the right thumb. A left tap still jumps,
+and moving still auto-fires (the owner's call of 2026-07-31, left as it was).
+The menu's touch line says so.
+
+Tokens `?v=80` → `?v=81`, worker cache v51, precache regenerated.
 
 ## v49 — 2026-09-21
 **Season 2 is the wave you jump; the menus are "SEASON 1" and "SEASON 2"**

@@ -1,7 +1,8 @@
 // TRUCK mode — Clustertruck-style auto-scroll track on the Hyper Dagger body.
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=80';
-import { Skull } from './enemy.js?v=80';
+import { TUNING as T } from './tuning.js?v=85';
+import { Skull } from './enemy.js?v=85';
+import { Convoy } from './convoy.js?v=85';
 
 const matOk = new THREE.MeshBasicMaterial({ color: 0x3a342c });
 const matWarn = new THREE.MeshBasicMaterial({ color: 0x6a4030 });
@@ -12,9 +13,27 @@ export class TruckTrack {
     this.scene = scene;
     this.platforms = [];
     this.nextZ = 0;
+    this.convoy = null;
+    this.cfg = T.truck;
   }
 
+  /** v51: a season may ask for its own road (season 3's convoy of moving
+   *  trucks, js/convoy.js). Every call below hands itself to the convoy when
+   *  there is one; without one this is the classic road it always was, read
+   *  straight off T.truck so a gate that edits the tuning mid-run is heard. */
+  setConfig(extra) {
+    this.cfg = extra ? { ...T.truck, ...extra } : T.truck;
+    if (this.cfg.moving) { this.convoy ??= new Convoy(this.scene); this.convoy.cfg = this.cfg; }
+    else if (this.convoy) this.convoy.clear();
+  }
+
+  get active() { return this.cfg.moving ? this.convoy : null; }
+
+  /** below this the body is dead: the classic road's void, or the convoy's asphalt */
+  fallY() { return this.cfg.fallY; }
+
   clear() {
+    this.convoy?.clear();
     for (const p of this.platforms) {
       this.scene.remove(p.mesh);
       p.mesh.geometry.dispose();
@@ -55,6 +74,7 @@ export class TruckTrack {
 
   reset(player) {
     this.clear();
+    if (this.active) return this.active.reset(player);
     this.lastX = 0;
     for (let i = 0; i < 10; i++) {
       this.addPlatform(-i * T.truck.platformGap, this.walkX(i === 0));
@@ -76,6 +96,7 @@ export class TruckTrack {
    * screen. Nothing caught it because the mode was never actually reachable.)
    */
   preUpdate(dt, player) {
+    if (this.active) return this.active.preUpdate(dt, player);
     const boost = 1 + Math.min(0.6, Math.max(0, -player.feet.z) * 0.004);
     player.feet.z -= T.truck.scrollSpeed * boost * dt;
 
@@ -98,6 +119,7 @@ export class TruckTrack {
   }
 
   update(dt, player, gameTime, enemies, walls = null) {
+    if (this.active) return this.active.update(dt, player, gameTime, enemies);
     const ahead = player.feet.z - 45;
     while (this.nextZ > ahead) {
       this.addPlatform(this.nextZ, this.walkX());
