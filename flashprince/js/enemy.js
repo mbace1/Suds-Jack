@@ -138,6 +138,7 @@ export class Beast {
 
   update(world, hero, game) {
     this.f++;
+    if (this.hurtT > 0) this.hurtT--;
     if (this.dead) return;
     const dx = hero.x - this.x;
 
@@ -219,6 +220,7 @@ export class Drone {
 
   update(world, hero, game) {
     this.f++;
+    if (this.hurtT > 0) this.hurtT--;
     if (this.dead) { this.vy += 0.24; this.y += this.vy; return; }
     const dx = hero.x - this.x;
     this.face = Math.sign(dx) || this.face;
