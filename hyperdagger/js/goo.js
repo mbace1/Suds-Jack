@@ -1,0 +1,371 @@
+import * as THREE from 'three';
+import { gelMaterial, gelBox } from './gel.js?v=85';
+
+/**
+ * THE GOO WAVE — season 2's swell, made of the same cubes everything else in
+ * this game is made of.
+ *
+ * Owner's brief: *waves of goo voxels breaking across the arena*. So it is a
+ * travelling height field on a grid over the disc, cut into voxels: a long
+ * crest sweeps across, rises, leans forward as it steepens, and BREAKS —
+ * the leading face throws a scatter of loose cubes ahead of itself, which is
+ * what makes it surf rather than a moving hill.
+ *
+ * It is one InstancedMesh for the whole thing (the pattern every voxel body
+ * here uses), and only the cells near the crest are drawn — the count is set
+ * per frame, so a 46x46 grid costs a few hundred instances, not two thousand.
+ *
+ * AND IT IS NON-NEWTONIAN (v47). Goo that is worked hard seizes; goo left
+ * alone flows. So the sea holds a body that is MOVING and swallows one that
+ * is standing still — stop on a crest and you go under it, keep running and
+ * it is a floor. That is the whole verb, and it is the first thing the wave
+ * has ever asked of the player.
+ *
+ * WHAT IT IS TO PLAY: a moving FLOOR. `heightAt` answers what the crest is
+ * under any point, `preUpdate` hands that to the player the way `platforms`
+ * does, and a body standing on it is carried along the wave's direction — you
+ * ride it. It does no damage; whether the trough should hurt is a design call
+ * nobody has made, and a hazard that kills you before anyone has decided it
+ * should is worse than one that does not exist. See SEASONS.md.
+ */
+// the impact ring, unless the season says otherwise (`goo.rippleHit`)
+const RIPPLE = { amp: 1.4, speed: 6.5, width: 1.3, fade: 1.6, reach: 7, life: 1.6, max: 12 };
+// v47 shear thickening, on the body standing in it: how slow counts as still,
+// how long going under takes, how long climbing back out takes, how deep it goes
+const NON_NEWTONIAN = { flowBelow: 3.2, fall: 1.1, rise: 0.45, depth: 0.85 };
+
+const _c = new THREE.Color();
+const _m = new THREE.Matrix4();
+const _p = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+const _s = new THREE.Vector3();
+
+export class GooWave {
+  /** @param {THREE.Scene} scene @param {number} arenaR */
+  constructor(scene, arenaR) {
+    this.scene = scene;
+    this.arenaR = arenaR;
+    this.cfg = null;
+    this.mesh = null;
+    this._t = 0; this._dist = 0;
+    // v53 THE TIDE: the live speed, gap and ripple — the config's values at tide 0,
+    // the `tide` block's at 1. The head is read off DISTANCE travelled, so a
+    // speed that changes mid-run cannot make the crest jump.
+    this.speed = 1; this.gap = 0; this.ripple = 0; this.tide = 0;
+    this.drain = 0;   // v53 the finale: 1 = the sea is gone
+    this.dirX = 0; this.dirZ = 1;
+    this.cells = [];   // {x, z} grid centres inside the disc
+    this.count = 0;    // instances drawn this frame
+    this.spray = null; // (x, y, z, dirX, dirZ) => void — the caller's debris pool
+    this.sprayed = 0;  // this frame
+    this.ripples = []; // v46: {x, z, p, age} — rings spreading from an impact
+    this.sink = 0;     // v47: how far the standing body has gone under, 0..1
+    this.draw = Math.random;
+  }
+
+  /** Build the grid and the instance pool for a season's `goo` block. */
+  build(cfg, draw = Math.random) {
+    this.clear();
+    this.cfg = cfg;
+    if (!cfg) return;
+    // one direction per run, so a DAILY arena breaks the same way
+    const a = draw() * Math.PI * 2;
+    this.dirX = Math.cos(a); this.dirZ = Math.sin(a);
+    // ...and a PHASE, so a run opens mid-sea. The crest forms off one rim,
+    // which means starting at zero gives several seconds of flat water
+    // before anything happens — the first thing you see should be the sea
+    // already moving.
+    this.speed = cfg.speed; this.gap = cfg.gap; this.ripple = cfg.ripple; this.tide = 0;
+    this.period = (this.arenaR * 2 + cfg.width * 2 + cfg.gap) / cfg.speed;
+    this.t = draw() * this.period;
+    const cell = cfg.cell, r = this.arenaR;
+    for (let x = -r; x <= r; x += cell) {
+      for (let z = -r; z <= r; z += cell) {
+        if (x * x + z * z > r * r) continue;
+        this.cells.push({ x, z });
+      }
+    }
+    this.draw = draw;
+    // v47: rounded — every cube of the sea is a soft body
+    // rounded, and OVERLAPPING (>1 cell): the sea has to be one surface with
+    // creases, not a raft of pebbles with the floor showing between them
+    const g0 = cell * (cfg.fill ?? 1.05);
+    const geo = gelBox(g0, g0 * (cfg.round ?? 0.2), 4);
+    // v44: GEL. Not the cube ladder — goo is the thing light goes into, so
+    // this is the one material in the game that pretends to be lit (gel.js)
+    const mat = cfg.material ?? gelMaterial({ lip: cfg.lip, wobble: cfg.wobble, caustic: cfg.caustic, fresnel: cfg.fresnel, spec: cfg.spec });
+    this.mesh = new THREE.InstancedMesh(geo, mat, this.cells.length);
+    this.mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(this.cells.length * 3), 3);
+    // v47: per-cube STRESS — how fast this piece of the surface is moving.
+    // The breaking face and the impact rings are where the goo seizes, and
+    // the shader pales those out. Nothing else in the game has this.
+    this.stress = new THREE.InstancedBufferAttribute(new Float32Array(this.cells.length), 1);
+    this.mesh.geometry.setAttribute('aStress', this.stress);
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.frustumCulled = false;
+    this.mesh.count = 0;
+    this.mesh.name = 'goo';
+    this.scene.add(this.mesh);
+  }
+
+  get t() { return this._t; }
+  set t(v) { this._t = v; this._dist = v * this.speed; }
+
+  /** v53: the tide, 0 → 1 — the sea coming in. Lerps the live speed, gap and
+   *  ripple from the config's values to the `tide` block's. */
+  setTide(k) {
+    const c = this.cfg, td = c?.tide;
+    if (!c) return;
+    k = Math.max(0, Math.min(1, k));
+    // keep the head where it is while the speed changes: rescale the clock, not the distance
+    this.tide = k;
+    this.speed = td ? c.speed + (td.speed - c.speed) * k : c.speed;
+    this.gap = td ? c.gap + (td.gap - c.gap) * k : c.gap;
+    this.ripple = td ? c.ripple + (td.ripple - c.ripple) * k : c.ripple;
+    this._t = this._dist / this.speed;
+  }
+
+  /** How far along the wave's travel a point is — the crest is at `phase 0`. */
+  _s(x, z) {
+    const c = this.cfg;
+    const along = x * this.dirX + z * this.dirZ;
+    // the crest starts off one edge and walks to the other, then re-forms
+    const span = this.arenaR * 2 + c.width * 2;
+    const head = -this.arenaR - c.width + (this._dist % (span + this.gap));
+    this.head = head;   // v48: the floor shader reads where the crest is
+    return along - head;
+  }
+
+  /**
+   * The crest's height above the floor at (x, z), and 0 well away from it.
+   * A breaking wave is NOT a sine: it rises slowly on the back, peaks, and
+   * drops steeply down its face, so the profile is asymmetric.
+   */
+  heightAt(x, z) {
+    const c = this.cfg;
+    if (!c) return 0;
+    let h = 0;
+    const s = this._s(x, z);
+    const w = c.width;
+    if (s >= -w && s <= w * 0.55) {
+      // back of the wave: a long smooth rise. Face: a short steep fall.
+      const k = s <= 0 ? 1 - (-s / w) : 1 - (s / (w * 0.55));
+      const eased = k * k * (3 - 2 * k);
+      // a ripple along the crest, so it is a sea and not an extruded curve
+      const across = x * -this.dirZ + z * this.dirX;
+      const ripple = 1 + Math.sin(across * c.rippleK + this.t * 1.7) * this.ripple;
+      h = c.amp * eased * ripple * (1 - this.drain);
+    }
+    // v46 IMPACT RINGS (Toko Drop's hit ripple, on a sea): each hit is a ring
+    // that spreads from the point and fades — on the crest it deforms the
+    // wave, on flat water it is the splash itself, a ring of cubes
+    if (this.ripples.length) h += this.rippleAt(x, z);
+    return Math.max(0, h);
+  }
+
+  rippleAt(x, z) {
+    const r = this.cfg.rippleHit ?? RIPPLE;
+    let h = 0;
+    for (const q of this.ripples) {
+      const d = Math.hypot(x - q.x, z - q.z);
+      if (d > r.reach) continue;
+      const ring = q.age * r.speed;
+      const g = (d - ring) / r.width;
+      // a crest that spreads and fades, pulsing as it goes — never a trough,
+      // because a trough on flat water is nothing to draw
+      h += q.p * r.amp * Math.exp(-g * g) * Math.exp(-q.age * r.fade) * (0.75 + 0.25 * Math.cos(q.age * 9.0));
+    }
+    return h;
+  }
+
+  /**
+   * How fast the SURFACE is moving at (x, z), in units per second — which is
+   * the shear, and therefore how seized the goo is there.
+   *
+   * This is computed from the wave's own shape rather than by differencing
+   * two frames, and that is not tidiness: a frame difference is a measure of
+   * the RENDERER. At sixty frames a second the leading edge of the crest is
+   * one cube wide and at five it is thirty, so the first cut painted the
+   * whole sea solid white on a slow machine and a thin line on a fast one.
+   * The profile is pure in t, so its slope is knowable: a travelling shape's
+   * surface speed is its slope times its travel speed, and the steep FACE is
+   * where a breaking wave shears — the flat crest and the long back barely
+   * move at all. Impact rings carry their own, faster, term.
+   */
+  surfaceRate(x, z) {
+    const c = this.cfg;
+    if (!c) return 0;
+    let rate = 0;
+    const s = this._s(x, z), w = c.width;
+    if (s >= -w && s <= w * 0.55) {
+      const back = s <= 0;
+      const k = back ? 1 + s / w : 1 - s / (w * 0.55);
+      const dk = back ? 1 / w : -1 / (w * 0.55);
+      const across = x * -this.dirZ + z * this.dirX;
+      const ripple = 1 + Math.sin(across * c.rippleK + this.t * 1.7) * this.ripple;
+      // eased = k²(3−2k), so d(eased)/dk = 6k(1−k): zero at the crest, most
+      // of the way down the flank
+      rate = Math.abs(c.amp * ripple * 6 * k * (1 - k) * dk) * this.speed;
+    }
+    if (this.ripples.length) {
+      const r = c.rippleHit ?? RIPPLE;
+      for (const q of this.ripples) {
+        const d = Math.hypot(x - q.x, z - q.z);
+        if (d > r.reach) continue;
+        const g = (d - q.age * r.speed) / r.width;
+        const h = q.p * r.amp * Math.exp(-g * g) * Math.exp(-q.age * r.fade);
+        rate += Math.abs(2 * g * h * r.speed / r.width);
+      }
+    }
+    return rate;
+  }
+
+  /** v46: something struck the sea at (x, z) with `p` of a full blow */
+  hit(x, z, p = 1) {
+    if (!this.cfg) return;
+    const r = this.cfg.rippleHit ?? RIPPLE;
+    if (this.ripples.length >= r.max) this.ripples.shift();
+    this.ripples.push({ x, z, p: Math.min(1.5, p), age: 0 });
+  }
+
+  /**
+   * Advance the wave and pose every cube near the crest. Runs BEFORE
+   * player.update, like the track and the slabs, because a floor has to be
+   * known before gravity integrates. `floorFor(player)` is applied by the
+   * caller so the higher of slab-or-goo wins.
+   */
+  update(dt) {
+    if (!this.cfg || !this.mesh) return;
+    this._t += dt; this._dist += this.speed * dt;
+    const c = this.cfg, cell = c.cell;
+    if (this.ripples.length) {
+      const life = (c.rippleHit ?? RIPPLE).life;
+      for (const q of this.ripples) q.age += dt;
+      this.ripples = this.ripples.filter(q => q.age < life);
+    }
+    let n = 0;
+    this.sprayed = 0;
+    const sref = c.shearRef ?? 12;
+    for (const g of this.cells) {
+      const h = this.heightAt(g.x, g.z);
+      if (h < cell * 0.35) continue;                 // below the surface: not drawn
+      // NON-NEWTONIAN: the stress in a piece of goo is how fast it is being
+      // worked, not how far it has moved — the steep face of the break and
+      // the front of an impact ring, and nothing else
+      const shear = Math.min(1, this.surfaceRate(g.x, g.z) / sref);
+      // THE BREAK: the lip throws loose cubes ahead of itself. A wave that
+      // only rises and falls is a hill that moves; one that sheds is surf.
+      if (this.spray && h > c.amp * (c.sprayFrom ?? 0.8) && this.sprayed < (c.sprayMax ?? 6)
+        && this._s(g.x, g.z) > 0 && this.draw() < (c.sprayChance ?? 0.05)) {
+        this.spray(g.x, h + cell * 0.3, g.z, this.dirX, this.dirZ);
+        this.sprayed++;
+      }
+      // Cubes SNAP to the cell grid in y as well: goo made of voxels reads as
+      // voxels only if it steps. A smooth column of cubes is a smooth surface
+      // with seams, which is the look this game already rejected once.
+      const y = Math.round(h / cell) * cell;
+      if (y <= 0) continue;
+      const lean = Math.min(1, h / c.amp) * c.lean;  // the crest leans into its travel
+      _p.set(g.x + this.dirX * lean, y - cell * 0.5, g.z + this.dirZ * lean);
+      _q.set(0, 0, 0, 1);
+      _s.set(1, 1, 1);
+      _m.compose(_p, _q, _s);
+      this.mesh.setMatrixAt(n, _m);
+      // colour: deep in the body, bright at the lip — the break is the light.
+      // v48: the lip is a BAND at the top (`lipFrom`), not a ramp from the
+      // floor — a ramp painted the whole face pale and a crest at eye height
+      // was a white wall. The body stays dark; the foam is the top rows.
+      const hk = Math.min(1, h / c.amp), lf = c.lipFrom ?? 0;
+      const lt = lf > 0 ? Math.max(0, Math.min(1, (hk - lf) / (1 - lf))) : Math.min(1, hk / 0.92);
+      const lip = lt * lt * (3 - 2 * lt);
+      _c.setRGB(
+        c.deep[0] + (c.lip[0] - c.deep[0]) * lip,
+        c.deep[1] + (c.lip[1] - c.deep[1]) * lip,
+        c.deep[2] + (c.lip[2] - c.deep[2]) * lip,
+      );
+      this.mesh.setColorAt(n, _c);
+      this.stress.setX(n, shear);
+      n++;
+    }
+    this.mesh.count = n;
+    this.count = n;
+    this.mesh.instanceMatrix.needsUpdate = true;
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+    this.stress.needsUpdate = true;
+  }
+
+  /**
+   * What the wave is worth to the body: the crest under the feet as a floor,
+   * and — standing on it — a shove along the wave's own travel. That shove is
+   * the whole point: you are not standing on a hill, you are being carried.
+   */
+  carry(dt, player, floor) {
+    if (!this.cfg) return floor;
+    const c = this.cfg, f = player.feet;
+    const nn = c.nonNewtonian ?? NON_NEWTONIAN;
+    const h0 = this.heightAt(f.x, f.z);
+    if (h0 <= 0) { this.sink = Math.max(0, this.sink - dt / nn.rise); return floor; }
+    // only a crest at or below the feet holds you up — you are pushed by the
+    // face of the wave, never teleported to its top
+    if (h0 > f.y + 0.5) { this.sink = Math.max(0, this.sink - dt / nn.rise); return floor; }
+    // NON-NEWTONIAN: a body moving across the goo is held by it; a body
+    // standing still is not. Stop on the sea and you go under — which is why
+    // riding a wave is a thing you DO rather than a thing that happens.
+    const on = f.y <= h0 + 0.06 && player.vy <= 0;
+    const speed = Math.hypot(player.velocity.x, player.velocity.z);
+    if (on && speed < nn.flowBelow) this.sink = Math.min(1, this.sink + dt / nn.fall);
+    else this.sink = Math.max(0, this.sink - dt / nn.rise);
+    const h = h0 * (1 - this.sink * nn.depth);
+    if (h <= floor) return floor;
+    if (on) {
+      // the carry fades as you sink: half under, the sea has half a grip
+      const grip = 1 - this.sink * 0.85;
+      f.x += this.dirX * c.push * grip * dt;
+      f.z += this.dirZ * c.push * grip * dt;
+    }
+    return h;
+  }
+
+  /**
+   * v48 THE WAVE IS A HAZARD. Is the body inside it? True when the water
+   * under the feet is wave rather than wading (above `hurtFrom`) and the
+   * feet are below its surface. A body in the air above the crest is clear;
+   * that is the whole verb — you jump it.
+   */
+  strikes(player) {
+    const c = this.cfg;
+    if (!c || !c.hurts) return false;
+    const f = player.feet;
+    const h = this.heightAt(f.x, f.z);
+    if (h < (c.hurtFrom ?? 0.35)) return false;
+    return f.y < h - 0.12;
+  }
+
+  clear() {
+    if (this.mesh) {
+      this.scene.remove(this.mesh);
+      this.mesh.geometry.dispose();
+      if (!this.cfg?.material) this.mesh.material.dispose(); // a shared material is the caller's
+      this.mesh = null;
+    }
+    this.cells.length = 0;
+    this.ripples.length = 0;
+    this.cfg = null;
+    this.count = 0;
+  }
+
+  getState() {
+    return {
+      on: !!this.cfg,
+      cells: this.cells.length,
+      drawn: this.count,
+      t: +this.t.toFixed(2),
+      dir: [+this.dirX.toFixed(2), +this.dirZ.toFixed(2)],
+      period: +(this.period ?? 0).toFixed(2),
+      sprayed: this.sprayed,
+      ripples: this.ripples.length,
+      sink: +this.sink.toFixed(3),
+      peak: this.cfg ? this.cfg.amp : 0,
+    };
+  }
+}

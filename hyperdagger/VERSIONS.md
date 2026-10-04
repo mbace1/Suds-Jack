@@ -2,44 +2,375 @@
 
 <!-- Same rules as toko-drop/VERSIONS.md -->
 
-## v51 — 2026-09-26
-**He remembers the run after you leave.** The recap v50 gave the table is
-now also published on `window.__tokoTable`, which is where the arcade's
-leave-logger (`hub/playlog-auto.js`) looks for it. Before this Hyper Dagger
-was the one tabled game whose runs never reached Toko's *last time* line:
-it handed the recap straight to `openTable` and nothing else could read it.
-The seam carries no pause or resume; `openToko` still holds the run.
+## v54 — 2026-09-27
+**Season 1 holds the Devil Daggers dagger; the rubble is the level; the ebb; cargo is the score; a run that ends**
+
+Owner, 2026-09-27: *next big steps?* → *all in order. Change season 1 weapon
+closer to the Devil Daggers example.*
+
+**The dagger** (`T.weapons.dd`, `voxel.js daggerHand`). Season 1 drops the
+needler (v52) for DD's weapon: a bare bone hand, back to the eye, four spread
+fingers whose last three cells CURL toward the palm, glowing tips; small white
+HDR blades in a wider fan, faster than the base dagger, released from a point
+that wanders across the fingers (`originJitter` is per season now). Three
+renders settled the pose: upright read as a stop sign, tilted hard it
+foreshortened into a slab, side-on it was a club — the back of the hand,
+lowered, with the fingers apart, is the one that reads as a hand. The needler
+stays in the registry as a profile.
+
+**The rubble is the level** (season 1, `rubbleFloor`). A gib that has gone to
+sleep is terrain: `PhysGibs.topAt` is a floor (re-said every frame, or a heap
+you stepped off stays under you), `blocks` stops nails and orbs, `pushOut`
+sends the swarm round it. Only chunks of 0.4 u and up count as cover, so a
+skull's bone is ground but not a wall. The piles come down and the rockfall
+comes down, and the floor at four minutes is what the first three left.
+
+**The ebb** (season 2, `ebb`). From 45 s the sea pulls back to 0.85 every
+minute (2.5 s out, 7 dry, 3 back), read off the season clock so a pause or a
+setTime lands in the right place. The first ebb raises five low steps, every
+one UNDER the crest: a place to be while the water is out, not a place to
+hide from it. The finale's full drain builds the tall steps over them.
+
+**Cargo is the score** (season 3, `cargoScore`). The run's time is the clock
+plus the load: a crate the road takes costs a second, and a loose crate you
+land on while it is still on its trailer sets back (`Cargo.stomp`) and pays
+one. A loose crate is not floor, so a body falls INTO it; the stomp counts the
+feet inside it, not only on its top. The HUD carries the load and the balance.
+
+**A run that ends** (`end: 300` on seasons 1–3; VOID has none). At 300 s the
+run is complete, not a death: RUN COMPLETE, no killer cam, a stinger instead
+of the death sound, and a recap line of only what happened — piles brought
+down, chunks on the floor, seconds stood on rubble, the finale survived, ebbs,
+times the sea hit you, crates loaded / saved / spilled, trucks jackknifed.
+
+Gate: the DD weapon and hand; standing on a heap and a shot stopping on it;
+the ebb draining, its steps under the crest, the water back; a stomp setting a
+crate back and a spill costing two seconds through the frame; RUN COMPLETE at
+300 with the recap. Tokens `?v=85`, worker cache v55.
+
+## v53 — 2026-09-27
+**Physical gibs; the tide; cover that dies; cargo and the jackknife; the finales**
+
+Owner, 2026-09-26/27: *prototype the physical gibs* → *next big leaps for any
+season?* → *go ahead on all.*
+
+**Physical gibs** (`js/gibs.js`, `js/avbd/`). A kill's biggest chunks go to a
+real rigid-body solver and heap where they land; the rest still flies as the
+classic debris. The solver is the CPU reference from three-avbd — Augmented
+Vertex Block Descent (Giles, Diaz & Yuksel, SIGGRAPH 2025), MIT — types
+stripped mechanically into `js/avbd/` with its notices, and ONE change to the
+port: two static bodies never get a contact. That is what makes it cheap: a
+gib still for twenty steps goes to sleep as a static body, so a settled heap
+costs a sphere test per pair and only the last kill's chunks are ever solved.
+Measured: a 24-chunk burst onto a 300-gib sleeping pile averages ~1 ms a step
+here, six kills at 4× CPU throttle peaked at 5 ms and averaged 0.5 ms. Caps
+on awake (72) and total (300) gibs, a running clock that falls back to classic
+debris past 4 ms, off on the road. Pause menu: GIBS STACK / GIBS CLASSIC.
+The first cut threw the chunks at 2–5 u/s and they scattered; they slump out
+of the body now, and six skulls killed in one spot leave a heap two cubes
+deep that stays.
+
+**Season 2: THE TIDE.** From 30 s to 150 s the waves come CLOSER (gap 16 → 8)
+and FASTER (9 → 11 u/s), and the crest lifts the bone heaps, carries them
+and sets them down about five units on — the floor is never the same twice.
+The head is read off distance travelled (`goo._dist`), so a speed that
+changes mid-run cannot make the crest jump; `t` is a property over it, so
+every probe that sets `g.t` still works. Jumped in the gate at both ends:
+one jump clears in a 0.26 s window at tide 0 and 0.37 s at full tide (a
+faster crest is past in less of a jump), the double jump in 0.79 / 0.91 s.
+Trap: the tide's bigger swell (ripple 0.3) dipped parts of the crest under
+`hurtFrom` and the wave had gaps you could walk through — it is 0.18, and
+the gate stands a body at five points across the crest and requires every
+one struck. The carry at 0.9× the crest's speed rode the heap clean off the
+disc; at 0.45× the crest overtakes it and drops it.
+
+**Season 1: COVER THAT DIES.** A shale pile has 70 hit points (`walls.add`
+takes `hp`). A nail takes one, a shotgun a fistful; a body shoving on it
+wears it at 3 a second, a brute at 10; past half it LEANS a little more with
+every blow; at zero it collapses into a heap of physical shale chunks with
+a spray of chips, and it is gone as cover. Measured: about four seconds of
+focused needler fire from five units, or a swarm of five bodies in five
+seconds. Standing behind a pile has a clock now, and the swarm runs it. The
+court's walls take no `hp` and are what they were.
+
+**Season 3: CARGO, NOT DECKS** (`js/cargo.js`). Trailers carry two to five
+stacked crates in a rigid-body solver of their own. Each trailer is a
+kinematic body posed from the truck every step, so a crate resting on it is
+carried by friction; a truck that brakes hard or swerves has its load
+SLIDE. What keeps it cheap: a crate riding quietly for twelve steps is
+WELDED — static, posed from its trailer at the offset it settled at — and a
+jolt (acceleration over 9 u/s², a jackknife, a hit) unwelds that trailer's
+load; on a steady convoy nothing is solved at all (0.22 ms a step with a
+load loose). A welded crate is floor: you stand on cargo that moves under
+you. **The cabs are gaze targets**: hold the look on one and the missiles
+land in it; the third JACKKNIFES the truck — it brakes to a crawl, swings
+its trailer across the lane (±0.7 rad) and spills its load. Trap: a crate
+that fell to the road could never be "quiet" relative to a truck doing
+twenty, so the re-weld test never ran and it stayed the truck's; a crate
+below its deck is the road's now.
+
+**All seasons: THE FINALE** at 180 s (`finale` on the season; `startFinale`
+/ `updateFinale` in main.js). Nothing in a season ends: at three minutes
+each throws its set piece, announced like a debut, and the run goes on
+with the director tighter (`after.pressure` divides the season's own cadence).
+- Season 1, THE ROCKFALL: for ten seconds a shale chunk falls every 0.2 s
+  from sixteen units up onto a random point of the disc; a rock that lands
+  on you is a hit (`gibs.fallingOn`, one strike per rock); the fallen rock
+  stays as heaps — the new floor. 41 rocks in the probe; pressure ×1.3 after.
+  Looked at: the first loop dropped shale-dark chunks against a black sky and
+  nothing could be seen falling, so the rock is PALE and each drop stands an
+  ember beam on its landing spot for the fall (the heavy-spawn telegraph), and
+  the gibs solver's gravity is 20 rather than the reference's 10, which
+  floated a rock down from the sky. Season 1's rubble is lighter for the same
+  reason: a shale-dark heap on the void floor was invisible.
+- Season 2, THE SEA DRAINS: over four seconds the water goes to nothing
+  (`goo.drain` scales the crest; the caustics and the sun's path fade with
+  it), the temple floor shows for fourteen, and seven stone steps rise out of
+  it (a `platforms.build` with a stone shale look, 1.5–2.0 tall: stand on one
+  and the wave passes under your feet); then the sea returns over five and
+  the tide goes on. The steps stay — the refuges you earn.
+- Season 3, THE PILE-UP: every truck within seventy units ahead folds and
+  STOPS where it is — a wall of wrecks across the road, cargo everywhere,
+  crossed truck to truck standing still; past it the convoy runs 1.2× and
+  the skulls come 1.4× thicker.
+
+**Gate.** Physical gibs (a heap that sleeps), the tide (closer, faster,
+jumped at full tide, no gaps, the heap carried and not swept off), cover
+(hp on every pile, the lean, the fall into a heap; the court's walls
+untouched), cargo (a welded crate rides, a brake slides the load, three
+hits jackknife, the gaze lands missiles in a cab), and all three finales.
+`hd-loop` gains `rockfall`, `drain`, `pileup` and `cover` scenarios.
+
+Tokens `?v=83` → `?v=84`, worker cache v54, precache regenerated.
+
+## v52 — 2026-09-25
+**Season 2's visual leap; every season holds its own weapon; season 3 is Clustertruck**
+
+Owner, 2026-09-23/25: *why is the weapon/hand so deformed? Use different
+types and models in different seasons. Also bullets. S3 is based on Cluster
+Truck, so the platforms need to feel lopsided, fast moving, etc. The
+environment can be abstract but needs more.* Then: *visual leap to season 2.*
+
+**Season 2: a drowned temple at golden hour.** Rendered and looked at first:
+a flat overcast grey sky nothing could stand against, a floor whose grain
+read as gravel, everything one teal, and giant skulls just past the rim
+cropped into green slabs across half of every frame (the Minecraft look).
+Now a deep teal zenith falls to a horizon that burns gold toward a huge low
+sun ringed in stepped bands, a sun stone that changes colour in whole bands
+the way a 2600 did (`uGrad`/`uZenith`/`uHorizon`/`uSunSize`/`uSunRings`,
+all zero outside season 2). The skulls stand at the true horizon (72–96
+past the rim) in a fan round the sun, unfogged and dark, so each is a whole
+silhouette with its gold eyes lit; the first try at ×34 was seventy-five
+units wide and still loomed. The pyramids are dark in gold air, layering
+into it. The floor is dark water: the texture's grain pressed down
+(`grain`), the grid kept, and the sun's broken path across it (`glint`).
+The gel's gloss takes the sun's colour, so the wave is backlit gold. Pollen
+in the air.
+
+**The hand is the season's.** The old claw was pitched away from the eye,
+so it showed its knuckles end-on, and the lattice wobble crumpled every
+cube every frame — nothing held a silhouette. `setHand(def)` swaps it per
+season, held side-on, bottom right, with no wobble: the claw for VOID, a
+shale nail-gun with ember vents for season 1, a jade macuahuitl with
+obsidian teeth for season 2, a hazard-striped missile pod for season 3.
+Shots leave from each hand's own `muzzle`; the weapon level brightens a
+season hand's glow instead of repainting it. **The projectiles are the
+season's too**: `setShape` takes a `kind` — nails for season 1, a long
+turquoise `shard` of obsidian for season 2 (`T.weapons.obsidian`), a turned
+`missile` with a nose and a flared tail for season 3.
+
+**Season 3 is Clustertruck** (`js/convoy.js`; `truck.js` is the classic road
+again and hands every call to the convoy when a season asks for one).
+Trucks, not slabs: a trailer you stand on and a cab in front, at trailer
+heights of their own so the next truck is up or down from this one, loaded
+crooked, jostling, bouncing, leaning into lane changes and diving under
+braking, at 20 ± 3 u/s with lane changes and hard brakes (brake lights say
+so). The body is held to the tilted top it stands on and carried by it, and
+keeps that momentum in the air; touching the road kills. The roadside is
+abstract and laid by index so a piece is always the same piece: a lit road
+with lane marks, barrier posts with reflectors, pylons with red lamps,
+monoliths off in the dusk, gantries over the road.
+
+**Found on the way.** The sky was a sphere on the arena's centre, and the
+road carries you out of it in under twenty seconds — past its wall the view
+looked out at the clear colour, a black block across the horizon. It
+follows the camera now. And the first convoy laid its road off the very
+front truck, so a runaway truck stopped the laying and left the road ahead
+empty; it lays off the frontmost truck within reach.
+
+**Gate** (189): the horizon skulls stand far out round the sun; a gradient
+sky with a sun disc, rings and a glint in season 2 and none of it in VOID;
+each season's hand and none wobbling; season 2 throws shards; season 3's
+pod and missile shape; the convoy checks read the tilted tops. Two old
+checks asserted the pale hazy sky and were rewritten. Two restart checks
+failed once while a loop recording ran beside the gate and passed alone —
+timing, not the game.
+
+Tokens `?v=82` → `?v=83`, worker cache v53, precache regenerated (61).
+
+## v51 — 2026-09-23
+**Season 3 — HAUL: a convoy that drives, momentum you keep, and a look that fires**
+
+Owner, 2026-09-23: *Season 3 should be the truck mode, with moving platforms
+and forward momentum. Also double jump and dash. No need for shoot, but if
+you look at enemies close enough it deploys homing missiles, with slightly
+longer look meaning faster, more targeted missiles.*
+
+**The trucks drive.** Season 3 declares `mode: 'truck'` plus `jumps: 2` and
+dash, and lays its own road through a new `truck` block that `TruckTrack`
+reads over `T.truck`. With `moving: true` every truck gets its own speed
+down the road (13 ± 0.8 u/s, a hair faster the further out it was laid) and
+a slow lane-sway. Nothing pushes you any more: the truck under you CARRIES
+you, and in the air you keep the velocity of the one you left, which is the
+Clustertruck feeling rather than a conveyor. New trucks are laid off the
+front truck's current position, since a fixed spawn cursor drifts away from
+a convoy that moves. Trucks you skip are culled behind you (they never fall).
+The gap is real now: 9.5 centre to centre, about 1.5 to 6 edge to edge, so a
+run-up jump clears the short ones and the double jump the long. A `?mode=`
+link still gets the tuning's static road, which the old course checks use.
+
+**No gun: the look is the trigger** (`js/gaze.js`). Every frame the lock asks
+which living enemy inside 24 u sits nearest the view's centre within a small
+cone. Holding the look on one body builds the lock; after a quarter second a
+missile leaves every 0.5 s, down to 0.26 s at a full lock (1.2 s). Each
+missile reads the lock at launch: speed 16 → 40 and turn rate 1.2 → 10. A
+glance sends a lazy missile that can miss, a held look a fast one that will
+not. Changing target restarts the lock. A missile is a dagger with a target
+and a turn rate (`DaggerPool.fire` takes `{ target, turn, life }`), so every
+hit, chip, gib and kill path is the daggers'. It leaves the gauntlet
+climbing and turns onto the body. The lock is drawn where the body is: a
+ring that tightens and whitens as the look is held, plus a centre mark.
+
+**Caught on the way: the saved mode was read where the mode in force was
+meant.** v50 made the season pick the mode, and twelve places still read
+the saved one: the daily board report, the daily seed, run history, the
+death line, the share text and the debug state. A season-1 run under HYPER
+rules was filed as PURE and seeded as PURE. All read `M().id` now.
+
+A season picked mid-run whose rules differ starts a fresh run instead of
+rebuilding under a live one: season 3 is a different game, not a new arena.
+
+**Gate** (8 new checks): season 3 is the truck scheme with double jump and
+dash; a truck moves on its own; it carries the body on it; in the air the
+body keeps that speed; the held trigger launches nothing; a body past range
+is not locked; a held look on a close skull launches missiles and kills it;
+a longer look sends faster and tighter-turning missiles. `hd-loop` gains a
+`haul` scenario and `mode: null` for an unpinned link.
+
+Still to do: trucks that read as trucks (they are slabs), and a missile
+that looks like one (they fly as daggers).
+
+Tokens `?v=81` → `?v=82`, worker cache v52, precache regenerated (60).
 
 ## v50 — 2026-09-23
-<!-- continuing the SITE's count (v49 shipped there); see the v48 note -->
-**He knows what happened.** Opened at the table on the recap, Toko's first
-lines are the run you were just in, in this game's own words, instead of the
-generic "straight off Hyper Dagger, then":
+**The wave can be jumped; seasons pick their control scheme; the right thumb jumps**
 
-    THE SERPENT GOT YOU AT 41.2S.
-    THAT IS THE THIRD TIME THE SERPENT HAS HAD YOU THIS WEEK.
-    YOUR BEST IS 63.0S.
-    GIB THE RINGS ONE BY ONE. THE PALE ONE IS ARMOURED FROM THE FRONT — SHOOT ITS RINGS FROM BEHIND.
+Owner, 2026-09-23, after playing v49 on a phone: *there is no jump in season
+2* — and then: *keep the modes as optional control schemes we can use later
+in specific seasons. This and S1 should still have double jump and dash on
+right stick. Shoot when holding right stick.*
 
-- `tokoRecap()` is the game's half: the death line (or the clock, paused), what
-  this game remembers about you — its own 40-run log, which now records WHEN
-  (`at`), so "this week" is a count and not a guess; nothing leaves the browser —
-  the best, and one honest tip per thing that kills you (`ENEMY_TIPS`). Enemies
-  with no honest tip get none rather than a platitude.
-- `toko/js/table.js` learned `recap(lang)` and `chat.js` learned `opening`: the
-  host's lines replace the greeting and the TELL button still follows, because
-  the point of knowing what happened is to make it easier to say something
-  about it. Both are allowed to throw; he opens either way.
-- In this game's English, like the rest of its UI — the counter's chrome stays
-  trilingual, the recap is the game's voice about itself.
-- Tokens: `main.js?v=65`, worker cache `hyperdagger-v37`, `chat.js?v=23`,
-  `table.js?v=3`.
+**There was a jump; it could not clear anything.** v49 sized the crest's
+HEIGHT against the jump's apex and never its LENGTH against the jump's
+airtime. The water was above the hurt line for 1.01 s at any point on the
+disc; a jump is in the air for 0.72 s. Every takeoff across a whole wave was
+tried at a clean 60 Hz and not one cleared it: you landed on the back of the
+swell. And v49's log said *the double jump is the safety* — PURE and HYPER
+grant one jump, so that sentence was false in both modes anyone plays. Now:
+only the CREST hurts (`hurtFrom` 0.35 → 0.8), the swell is shorter (`width`
+8 → 5) and a little faster (`speed` 8 → 9). Jumped in the real code, one
+good jump clears it in a 0.26 s window and the double jump in 0.79 s.
+`shearRef` 5 → 9 with it, for the steeper face.
+
+**The gate jumps it now.** The v48 check compared two numbers and passed an
+unjumpable wave. The new one runs a body over the wave at every takeoff
+moment and fails unless one jump has a window and two jumps have a wide one.
+
+**Modes are control schemes a season picks.** A season may declare `mode`
+and extra `abilities`; seasons 1 and 2 declare HYPER (the clock, dash, reap)
+plus `jumps: 2`. The MODE row left the pause menu. A `?mode=` link still
+wins, which is how the gate and the loop harness pin an experiment, and VOID
+declares nothing, so the control is untouched. `M()` asks link → season →
+saved; `applyRunAbilities()` lays the season's extras over the mode's.
+
+**Touch: the right stick is the whole action hand.** Hold it to fire (it
+already did), tap it to jump and tap again in the air for the double jump,
+flick it to dash. A right tap fired a shotgun burst from v29 until now, which
+is why the jump "did not work" under the right thumb. A left tap still jumps,
+and moving still auto-fires (the owner's call of 2026-07-31, left as it was).
+The menu's touch line says so.
+
+Tokens `?v=80` → `?v=81`, worker cache v51, precache regenerated.
+
+## v49 — 2026-09-21
+**Season 2 is the wave you jump; the menus are "SEASON 1" and "SEASON 2"**
+
+**Numbered v49, not v48.** While this was being built, another agent shipped
+a different v48 to the site — *Toko at the table* — and a version number is
+not a thing two releases may share. That release is below, brought back into
+this tree with its ASK TOKO line at the top of the pause menu, above the
+season and mode rows this one adds. Tokens went to `?v=80` for the same
+reason: two different `main.js?v=79` files exist now, one of them live.
+
+Owner, 2026-09-21: *the intro menu should just read "season 1" and "season
+2", later 3 and so on. The pause menu should have these and the regular
+options. Make season 2 just the wave that you need to jump over. Polish the
+art of that. Only random skulls as enemies otherwise.*
+
+**The menus.** The intro is a title and two buttons, `SEASON 1` and
+`SEASON 2` — a season declares its `menu` label, VOID declares `hidden` and
+is the gate's control only — and pressing one starts the run in it. MODE
+moved into the pause menu (it takes effect at the next run), and the pause
+menu carries the seasons too: pick one mid-run and the arena is re-lit and
+REBUILT on the spot, seeded like a fresh start.
+
+**Season 2 is the wave, and nothing else.** No slabs, no rock: `platforms:
+null`. The gel mound — the material, the spring, the non-Newtonian goo of
+v46/v47 — is no longer in any season; it stays in the code and the gate
+stands one up from `GEL_MOUND_SAMPLE` to measure it. The wave stopped being
+a floor that carries you and became a HAZARD: `goo.strikes(player)` is true
+when the water under the feet is wave (above `hurtFrom`) and the feet are
+below its surface, and a strike is `playerStruck` — HYPER costs ten seconds
+and shoves you along the wave's own travel, PURE is death, the recap says
+`THE WAVE`. **It is sized to one jump.** `jumpV` 8.6 against gravity 24 is
+an apex of 1.54; the crest is `amp` 1.1, which at the ripple's peak is 1.34,
+a hand of air under the apex, and the double jump is the safety. The first
+number was 1.25 — at the ripple's peak that was 1.51 against 1.54, a jump
+you could only make perfectly, and the probe said so before a player did.
+
+**Only skulls.** A season may declare `spawns: { only: 'skulls' }` and get
+`skullDirector` and none of the other: no totems, no pulses, no thorns, no
+flyby, no leviathan, no revenant. The skull family at random on a cadence
+that tightens from 2.6 s to 0.9 s under a cap of 28 — the crowned join after
+thirty seconds, the splitter after forty-five, the dread after sixty.
+
+**The art of the wave, from a look at it.** The loops showed a crest at eye
+height as a flat pale wall: the seize phase painted the whole steep face,
+and at `cell` 1.0 a crest of jump height was ONE row of cubes, a fence. So:
+half cells (three rows at the crest, more and smaller cubes off the lip),
+the seize is a frosting (`seizeK` 0.8 → 0.3) not the paint, and the lip is a
+BAND — the top third of the crest (`lipFrom` 0.62) — over a body that stays
+dark water, instead of a ramp from the floor. And **the floor reads the
+wave**: the floor shader takes the crest's position (`uWave`) and darkens
+under the wave's body with a bright foam line at the foot of its face
+(`floorWave`), so you see it coming across the floor before it is on you —
+which is the read a hurdle needs. Then a second look, from six units up,
+caught the foam: an even line at floor glow is a laser bar across the arena,
+and two sines at one pitch only turned it into runway lights. Three sines at
+pitches that never line up, at `foam` 0.4 rather than 0.7, make clumps of no
+particular size.
+
+**Gate** — the INCA section is rewritten to what season 2 is now: nothing
+stands in the sea; the wave hurts and is sized under the jump apex; the
+skulls-only director, run for real seconds with every body checked; the
+intro reads `SEASON 1 | SEASON 2` with no MODE and no VOID; the pause menu
+carries `SEASON | MODE | SPEED …` and END RUN; a body on the floor under the
+crest is struck and it costs time; a body at jump height is not. The mound
+checks build the sample mound first and take it down after.
+
+Tokens `?v=79` → `?v=80`, worker cache v50, precache regenerated (59 entries).
 
 ## v48 — 2026-09-21
-<!-- v35–v47 were authored and shipped on gh-pages and are not in this tree
-     (its main.js is ~700 lines ahead). The number continues the SITE's count
-     so the two logs cannot spend the same heading twice; the join is still
-     owed, the way Eeri's was. -->
 **Toko at the table — the signature opens him HERE, over the paused run**
 - The badge in the corner has always claimed to be "the way to say something
   about the game you are standing in, from inside it", and then navigated to
@@ -86,8 +417,911 @@ generic "straight off Hyper Dagger, then":
   button inside the table could ever receive a synthesised click. A touch keeps
   the target it started on, so the guard is on all four phases now — a finger
   that began on the stick still releases it when it lifts over a button.
-- Tokens on this tree: `main.js?v=64`, `input.js?v=62`, worker cache `hyperdagger-v35`
-  (the site's own numbers move with its deploy).
+- Tokens: `main.js?v=79`, `input.js?v=79`, worker cache `hyperdagger-v49`.
+
+## v47 — 2026-09-10
+**Rounded corners, and goo that is non-Newtonian**
+
+Owner, on seeing season 2 move: *more rounded corners and non-Newtonian
+liquids*. Both are now real, and the second one is a verb rather than a look.
+
+**Every gel piece is a rounded box.** `gelBox` takes a subdivided cube,
+clamps each vertex into an inner core and pushes it back out to the bevel
+radius — which is the exact rounded-box surface and hands you the normal for
+free. The mound's cubes and the sea's cubes both wear it, and they now
+**overlap** their cell (1.05) instead of shrinking inside it: rounded cubes at
+0.96 are a tray of eggs, and at 1.05 the bevels intersect and the mound is one
+body with soft creases in it. That is the brief's "soft edges" and not a bag
+of marbles.
+
+**And it cost the rim half its strength.** A flat-faced box shows a fresnel
+rim only where its silhouette turns away; a rounded one curves away
+everywhere, so the number that lit an edge in v44 lit the whole piece and the
+sea went white. Fresnel 0.9 → 0.45, SSS 0.5 → 0.35. Nothing was wrong with the
+old number — the geometry under it changed.
+
+**Non-Newtonian: the fluid.** A shear-thickening liquid's stiffness is a
+function of how FAST it is deformed, not how far. `GelSpring` now raises its
+own spring constant with the strain rate (and its damping with it, because a
+seized fluid does not ring, it thuds), so the same blow that squashes a
+Newtonian gel to 0.55 only reaches 0.68 in this one. Hit it hard and it is
+nearly a solid.
+
+**Non-Newtonian: the verb.** Stand still on a gel mound, or on the wave, and
+the goo lets you through — you sink, and on the sea the carry fades as you go
+under. Keep moving and it holds you up like a floor. That is oobleck's one
+famous property and it is the first thing season 2 has ever asked of the
+player: the wave was a ride, and now riding it is something you DO. Enemies
+and gems are untouched (they read `topAt`, which is the surface, not what a
+standing body does to it), and shale is rock — nothing sinks into it.
+
+**Non-Newtonian: the tell.** Worked hard, the goo goes PALE AND MATTE (the wet
+highlight is the first thing a shear-thickened fluid loses) with a dry speckle
+in it; left alone it is dark and wet. The sea carries this per cube as an
+instanced attribute, so the breaking face and the rings around an impact are
+solid while the swell behind them stays liquid.
+
+**And that measure had to be rewritten once.** The first cut read stress as
+the difference between this frame's surface and last frame's — which measures
+the RENDERER. At sixty frames a second the leading edge of a crest is one cube
+wide, at five it is thirty, so the whole sea was solid white on a slow machine
+and a thin line on a fast one. The profile is pure in `t`, so its slope is
+knowable: a travelling shape's surface speed is its slope times its travel
+speed, `6k(1−k)` says the flat crest barely moves and the flank moves most,
+and impact rings carry their own faster term. Frame rate cannot touch it.
+
+**Gate: 158 checks** (was 154): a gel piece has more than a cube's 24
+vertices; the sea seizes somewhere and stays liquid mostly (a peak over 0.35,
+under 60% of cubes hot, the mean under 0.5 — a sea that is always seizing is
+just a white sea); standing still sinks the body to under 60% of the mound's
+height while running holds it at full height; the same blow squashes the
+thickening gel measurably less than the Newtonian one; and VOID carries no
+seize at all.
+
+## v46 — 2026-09-08
+**Gel and goo physics, from Toko Drop: the mound gives way, the sea splashes**
+
+Owner: *maybe also look at Toko Drop for gel and goo physics*. Toko Drop's
+gel has three things season 2's did not, and all three are in `enemy.js`
+there: a **squash spring** on the body (`_sq`/`_sqV` — spring 0.24, damp
+0.86, a `landSquish` of 0.32 on landing), a **hit ripple** that spreads from
+the impact point and decays, and a **subsurface term** in the fragment —
+back-light bleeding through the gel plus a wrap so the shadow side is never
+dead. Ported, each onto the thing in this arena it belongs to:
+
+- **The mound gives way** (`GelSpring` in `gel.js`, on every `look: 'gel'`
+  slab). Land on it and it squashes — harder from higher, volume kept, so x
+  and z swell by 1/√y and it reads as a body giving way rather than
+  shrinking — leave it upward and it springs back past rest, a nail in it
+  makes it flinch (`platforms.flinch`; `blocks` now returns the slab). While
+  it is giving way under you **your feet stay on it**: a floor that dips out
+  from under a body reads as a fall and would spend a jump, so the carry
+  holds the feet to the top and the body rides the recoil. Toko Drop's
+  numbers are per 60 Hz frame; the spring integrates in fixed 60 Hz
+  substeps so a slow renderer gets the same motion, only later. Shale slabs
+  are rock and have no spring.
+- **The sea splashes** (`GooWave.hit`). A nail crossing the surface, or the
+  body landing on the water, spreads a **ring** from the point — on the
+  crest it deforms the wave, on flat water it IS the splash, a ring of cubes
+  that widens and fades. Never a trough, because a trough on flat water is
+  nothing to draw. A nail also throws a few cubes and flies on: the wave is
+  water, not cover — what it costs is still the owner's call.
+- **The gel bleeds light** (`uSSS`). Toko Drop's satin term on the gel
+  fragment: the sun behind a body lights it from within, the side away from
+  the sun still carries the colour, and a tight white fresnel sits at the
+  very edge — all inside the v44 energy budget.
+
+**Gate: 154 checks** (was 151): a strike on flat water raises a ring that
+spreads and fades to nothing; a body landing on a gel mound squashes it and
+it springs back to rest with the feet still on top; a shale slab has no
+spring. Both are driven directly — the ring by ageing it, the spring by
+stepping `preUpdate` at 60 Hz — so neither is hostage to frame time.
+
+## v45 — 2026-09-08
+**Season 2's roster wears the season: a turquoise mosaic, banded, gold-eyed**
+
+Owner's direction on seeing v44: *enemies will be new — aquamarine, green,
+yellows, but also slightly Aztec themed*. The sculpts that will carry that
+are the owner's to make and arrive through the manifest seam the way the
+current roster did. What the game can own NOW is the colour — and it can own
+it for whatever body is in the slot, string-art or Meshy, today's skull or
+next month's — so a season may declare `roster`, and every body built under
+it is recoloured as it is built.
+
+The reference for the Aztec read is the **turquoise mosaic**: the skull masks
+tiled in turquoise, jade and gold tesserae. A voxel lattice IS that already —
+the voxels are the tesserae. `js/roster.js` keeps the bake's VALUE (sockets
+stay dark, crowns stay light, so every chip and gib still reads as the body it
+came off) and hands out the HUE by horizontal band of lattice rows —
+turquoise / jade / turquoise / gold — with the seam between bands jogging one
+row on alternate columns, which is the Aztec step motif in its cheapest form.
+A per-tessera value jitter breaks the fill into tiles. The eyes burn **gold**
+instead of ember, and a red mark in a source goes yellow: the season has no
+red in it.
+
+**The skin had to learn it too.** The alive body is the Meshy skin, a
+Lambert mesh worn over the lattice until the first real wound, so a recolour
+that stopped at the voxels showed bone until the first chip — the first
+render was a pink skull over a green lattice. `mosaicSkin` patches the skin's
+material with the same banding in the mesh's own space (the lattice pitch
+divided by the template's scale), so shedding the skin changes nothing but
+the edges. `VoxelSprite` asks the palette BEFORE it takes `base`, which is
+why LOOK SMOOTH's hull, the STYLE tint, chips, islands, gibs and the bone-yard
+all follow without knowing. VOID and EMBER declare `roster: null` and stay
+bone; the skullscape's monument skulls wear the mosaic too, which is what an
+Aztec skull monument is.
+
+**Gate: 151 checks** (was 149): a body built under INCA has green leading red
+by better than two to one with its eyes still lights, and the same body under
+VOID is bone. `hd-shell.mjs` found `roster.js` on its own.
+
+## v44 — 2026-09-08
+**Season 2 gets its tech art: gel, caustics, a hazed sun, the break, and a skullscape**
+
+Owner's brief: *go really crazy on the season 2 art style — think tech art*.
+Everything native in this game is unlit, a flat fill with a per-face tone,
+and goo cannot be that: goo is the thing light goes INTO. So `js/gel.js` is
+the one material in the game that pretends to be lit, and it pretends the
+cheap way — no lights, no normal maps, four terms added onto the flat colour
+in world space through `onBeforeCompile` on a `MeshBasicMaterial`:
+a **fresnel rim** that brightens where the surface turns away (a soft edge
+without rounding any geometry), a **caustic** of three sine fields drifting
+through world space so light moves *through* the body rather than sitting on
+it, one fixed-sun **specular** so a wet surface reads wet, and a vertex
+**wobble** — every piece breathes along its normal and its top leans with
+time, seeded by its own position, so a field of cubes is jelly and not a
+wall. The wave (instance colours) and the mounds (vertex colours) are two
+materials on ONE uniform set, so they share a clock and a lip.
+
+**The break.** The lip of the wave sheds loose cubes ahead of itself through
+the game's own debris pool (`goo.spray`): a wave that only rises and falls is
+a hill that moves; one that sheds is surf. The wave also opens mid-sea now —
+a random phase at build, since the crest forms off one rim and a run used to
+begin with seconds of flat water.
+
+**Soft edges on the large platforms** (the brief's words): INCA's slabs stop
+wearing shale beds and become **mounds** of goo cubes — columns on a grid, the
+height a rounded dome (1 − r⁴)^0.6 so the silhouette is soft while every piece
+is still a cube — in the gel material.
+
+**The skullscape.** There is no Meshy art for an *aquamarine Inca skullscape*,
+so `js/inca.js` builds it from what the game owns: the string-art skull every
+run has been fighting since v1 at **×22**, half-buried just past the rim and
+turned to face the arena, tinted a dark aquamarine so it is a silhouette
+against the white sky with its ember eyes still burning; and stepped
+**terraces** further out — a ziggurat skyline through the fog. Nothing there
+collides. Seeded, like the rest of the arena.
+
+**And the rest of the frame:** the floor shader carries the same caustic
+(`uCaustic`), the sky shader a **haze** and a pale **sun** (`uHaze`, `uSun`,
+`uSunDir` — the sun also lights the gel's specular), all of it zero outside
+INCA, which the gate asserts on VOID.
+
+**Two renders that settled what reasoning did not.** The first cut bloomed to
+white: the body colour already ramped to an HDR lip, and the rim and the
+caustic were added in that lip too — lip + lip + lip. It has an energy budget
+now (rim ×0.4, caustic ×0.3, specular ×0.6, the lip under 1.0 and a separate
+`rim` colour for the shader), and it was *still* pale, because a body that
+starts at 0.4 has nowhere to go but white once light is added to it. The
+bodies now start DARK — deep 0.012/0.09/0.11, lip 0.09/0.46/0.46 — and the
+shader is what makes them bright; the read is dark aquamarine goo with light
+crawling in it and edges that glow, which was the brief. The skull learned
+the same lesson from the other side: a pale skull in a pale fog was a cloud.
+
+**Gate: 149 checks** (was 145): the tech-art terms are on and the gel clock
+runs in INCA; the break sprays; the skullscape stands with every piece beyond
+the disc; and VOID carries none of it. `hd-shell.mjs` found `gel.js` and
+`inca.js` on its own, which is what it is for.
+
+## v43 — 2026-09-07
+**Season 2's goo wave: a swell of voxels that breaks across the arena**
+
+Owner's brief for season 2 named *waves of goo voxels breaking across the
+arena*, and this is that, on the bench it was meant for (MOVE in INCA).
+`js/goo.js` is a travelling height field over the disc cut into cubes: a
+crest sweeps across, rises along a long back, **leans into its own travel**
+as it steepens, and falls down a short steep face — a breaking wave is
+asymmetric, and a sine is not one. A ripple runs along the crest so it is a
+sea rather than an extruded curve. One InstancedMesh, ~250 of 1600 cells
+drawn at any moment, and the cubes **snap to the cell grid in y** as well as
+x and z: goo made of voxels only reads as voxels if it steps, and a smooth
+column of cubes is just a smooth surface with seams — the look this game
+already rejected once.
+
+**It is a moving FLOOR.** `heightAt` answers the crest height anywhere,
+`carry` hands it to the player the way the slabs do, and a body standing on
+it is pushed along the wave's own direction — you ride it. The higher of
+slab-or-crest wins, so a wave rolling past a platform cannot drop you
+through it. It does **no damage**, deliberately: whether the trough should
+hurt is a design call nobody has made, and a hazard that kills before anyone
+decided it should is worse than one that does not exist. It is seeded, so a
+DAILY sea breaks the same way for everyone.
+
+**INCA's floor finally reads.** The tint was there since v41 and the floor
+was still black: the floor texture is near-black with bright grid lines, so
+a tint only shows where the GLOW lifts it. At 3.4 the read is an aquamarine
+grid on dark water, which is the right answer anyway — a bright floor would
+cost the enemies their silhouettes under a white sky.
+
+**Gate: 145 checks** (was 140), and writing them found three things.
+
+Every wave check drives the wave's own clock rather than waiting frames —
+`heightAt` is a pure function of (x, z, t) — and each one starts by walking
+the clock until a crest covers the middle of the arena. That is not tidiness:
+the sea has a lull between waves and the start phase is random, so a check
+that assumes water at t≈0 fails one run in five, which is exactly what it did.
+
+**"It travels" cannot be tested by comparing heights.** The first version
+sampled the profile at t and again at t+2 shifted by speed×2, and it was
+wrong about the model: the ripple along the crest animates on its own clock,
+so the same water is a different height a second later. What travels is the
+crest's POSITION, and the ripple varies ACROSS the wave and never along it —
+so the peak along a line through the middle moves cleanly at exactly the
+declared speed. It also has to avoid straddling the period boundary, or the
+crest appears to move backwards by a whole span.
+
+**And the wave started off-stage.** The crest forms beyond one rim, so a run
+opened with several seconds of flat water before anything happened. Build now
+seeds a random phase: the first thing you see is a sea already moving.
+
+Two traps that were the test's, not the code's: `setSeason` re-lights the
+arena but does not rebuild it, so asking one page whether ANOTHER season has
+a wave would have lied — the no-wave check reads the season pages themselves;
+and v42's cover control started failing because its orb flew at slab height,
+where a slab happening to sit on the path is luck. It fires above them now,
+and the control clears the rock AND the slabs, so the only difference between
+the two shots is the thing under test.
+
+## v42 — 2026-09-06
+**The arena becomes cover**
+
+v41 put rock and slabs in the arena and they were art with a collision box:
+they stopped your body and your nails and nothing else. Enemy orbs flew
+through a pile, skulls drifted through one as if it were not there, and a gem
+dropped over a slab sank through it. Three changes make the season change how
+a run is PLAYED rather than only how it looks.
+
+**Rock stops an enemy orb.** An orb now keeps its previous position, and the
+loop segment-tests it against the piles and the standing slabs — a hit dies
+there with a spark. That is the whole claim: there is somewhere to put
+between you and a watcher's volley, and a pile you can barely see is a pile
+you have to remember. Segment, not point, because an orb crossing 9 u/s is
+faster than a pile is thick.
+
+**Rock is solid to bodies.** `Walls.pushOut` and `Platforms.pushOut` shove any
+enemy standing inside a piece out along the shortest axis, so the swarm has to
+come round rather than through. `e.pos` IS the group's position, so the push
+lands the same frame; anything higher than the piece it is over is left alone,
+which is what flying past the top of a pile means.
+
+**A gem lands on a slab.** `gems.update` takes a `floorAt(x, z)` and
+`Platforms.topAt` answers it, so a gem dropped over a platform rests on it at
+the same hover height instead of sinking through into the rock.
+
+Measured, not assumed: an orb fired at a pile is gone and one fired into open
+air from the same spot is still flying; a skull placed at a pile's centre is
+1.1 units clear of it three frames later; a gem dropped on a 1.6-high slab
+settles at 2.03 while one on the floor beside it settles at 0.42.
+
+**Gate: 140 checks** (was 137) — the three above, in EMBER, where the rock is.
+Two traps the probe found first: the gem magnet reaches the whole arena while
+the hand is idle, so a resting test has to drive `gems.update` itself with
+attraction off; and a spawned gem SCATTERS, so it must be dropped rather than
+thrown or it lands beside the slab it was meant to land on.
+
+**And the suite itself needed four fixes to become trustworthy**, all of them
+the test lying rather than the code failing.
+
+*A dead tab now fails loudly.* Under SwiftShader the renderer is OOM-killed
+partway through a long run; node then waits on an `evaluate` that will never
+resolve, and the suite hangs for twenty minutes looking like a slow machine.
+A `crash` and a `disconnected` handler end it in seconds — but the
+disconnect handler also fires on the CLEAN shutdown, and exiting from it
+killed two complete runs one line before their summary. It is guarded now.
+
+*The suite recycles its browser.* Measured with a sampler beside the run: the
+renderer climbs about a gigabyte every ten checks and the container's memory
+cgroup kills it at nine — which is what had been ending runs at a different
+check each time. Nothing leaks in the game: geometry, textures and the JS
+heap are flat across spawn/kill cycles, tier flips are flat across sixty of
+them, and **the v40 tree traces identically**, so this is the cost of
+software-rendering this scene for half an hour, not a regression. Four phases,
+each starting from ~170 MB, hold the peak at 2.6 GB.
+
+*Two checks were frame-rate dependent.* The orb control fired a second orb
+into open air and counted survivors after a fixed number of frames — but a
+frame here is anywhere between 16 ms and a second, and on a slow one the
+control orb reached its 7 s life cap and read as blocked. It is now the SAME
+shot fired twice, once with the rock there and once with it culled, stepped
+by DISTANCE travelled. And "the slabs are low mostly" judged four live slabs,
+where a seed putting three of them high is ordinary; it samples the height
+generator eighty times and asserts the median sits in the bottom quarter of
+the range, which is what the squared draw actually claims.
+
+*The start click moved.* v41 put SEASON beside MODE on the menu, so the
+viewport's dead centre is a button now, and "a click starts the run" was
+clicking one. It clicks below the panel.
+
+## v41 — 2026-09-06
+**Seasons: the arena's art is declared, like a mode — and season 1 is built**
+
+Owner's direction, recorded in `SEASONS.md`: season 1 is the current look
+(the Meshy skulls, the black void, one red horizon) plus **growing and
+moving platforms** and **dark rock pillars that are hard to see**, with a
+**needler** (fast nails) and a **shotgun** (a wider blast of the same
+nails) in the hand; season 2 is an aquamarine Inca skullscape with goo
+waves under a whiter sky. `js/seasons.js` is the registry, the way
+`modes.js` is: a season declares the sky, the fog, the motes, the ground,
+how the monuments are lit, the floor tint, its rock, its slabs and its
+weapon profile, and `main.js` asks `S()` instead of branching. SEASON sits
+beside MODE on the menu, `?season=<id>` deep-links one, and the sky changes
+under you when you cycle it so you see what you picked. Modes and seasons
+multiply — PURE in EMBER is the DD spine on black rock.
+
+**SEASON 0 — VOID** is the control: the arena exactly as it was, daggers,
+nothing standing. Every legacy section of the gate is pinned there, so the
+DD spine is still measured unchanged; it is the A in every A/B.
+
+**SEASON 1 — EMBER.** Five shale piles through `walls.js` and four slabs
+through the new `js/platforms.js`. A slab rises out of the floor over
+1.4 s, stands 14–24 s drifting a slow orbit, sinks and re-seeds elsewhere —
+never under your feet, never on the rock. A standing slab is a floor
+(`player.floorY`, the track's own value), its sides are walls that report
+`wallContact`, and a body on one is **carried**: the slab's motion this
+frame is added to the feet, or a moving floor reads as ice. Rock and slabs
+also **stop a nail** — `walls.blocks` / `platforms.blocks` are slab tests
+the dagger loop asks before the enemies, so a fast projectile cannot tunnel
+through a pile. Both draw from the run's rng, so a DAILY arena is the same
+for everyone.
+
+**The needler** is a weapon PROFILE, `T.weapons.needler`, laid over
+`T.weapon` by `wpn(key)` at the fire sites: the same tap/hold grammar, the
+projectile re-shaped into a nail (`DaggerPool.setShape` — a quarter of the
+dagger's girth, near twice its length, hot brass), the stream at 1.35× the
+tier's rate and 72 u/s in a tighter cone, the shotgun a wider blast (0.27
+rad against 0.18) of the same nails at 104 u/s, the tick a fifth higher.
+The DD economy — burst DPS under stream DPS — only gets safer with the
+rate, and the gate asserts it.
+
+**Then the owner looked, and it moved four things.** The slabs are **low,
+mostly** — the height draw is squared, so most sit at knee height and a top
+under 0.45 is stepped onto rather than walked into. Slabs and piles are
+**shale** (`js/shale.js`: stacked beds of uneven thickness, each nudged and
+turned off the one below, crooked tiles on a slab's top, one vertex-coloured
+unlit geometry apiece) — the first cut wore the floor's own plates and read
+as more floor. There are **fewer objects and they are darker and shorter**:
+five piles at 3–7 high instead of eight at 6–13, four slabs instead of five,
+six monuments instead of eight. And **lighting and vfx** smooth the rest:
+the fog is the season's and leans to the horizon's ember (16→64) so distance
+melts into the glow instead of into a hole, the motes are embers, and a
+matte ground ring stands outside the disc — because *3D assets shouldn't all
+float*, and a piece on the void does.
+
+**The monuments were the real find.** The owner's Meshy pieces were made for
+this season and "looked quite weird" in every wide shot: the gate a black
+arch with pink rims, a black blob with red veins filling the sky behind it.
+Hiding pieces one at a time named two causes. The asset rig's white light is
+aimed at enemies inside the disc and never reaches a piece at z −40, so only
+the crimson fills caught their edges — multiplying a piece's colour by four
+changed nothing, because nothing was lighting it. And the blob was the
+*mountain*, whose bake is near-black by nature, standing 34 high at −64. A
+season now owns the backdrop's look (`backdrop: {visible, emissive}` →
+`Backdrop.setLook`, the bake fed back through `emissiveMap` at 0.45 so the
+stone carries its own light and the fills become the rims they were meant to
+be), and the mountain stands at −88 and 30 high. VOID hides the backdrop
+entirely: the reference has none.
+
+**SEASON 2 — INCA is palette only**, and says so on the menu. A whiter sky
+kept under the bloom threshold, a saturated blue horizon, an aquamarine
+floor at a higher glow so the tint shows through the plates, four LARGE
+slabs that grow slower and stand longer, no rock, no monuments.
+`built: false` and a `todo` list name the goo waves, the soft-edged slabs,
+the Inca backdrop and a readability pass for bone against white — all still
+words.
+
+**Two numbers came off renders rather than reasoning.** The first star field
+was a snowstorm against the reference's handful, so the threshold passes a
+quarter of the cells it did. And **linear 0.05 is a mid grey on screen** —
+sRGB lifts the darks — which is why the shale is written at 0.010–0.022 and
+why a tint on a near-black floor plate did nothing until the floor glow
+became the season's too.
+
+**Gate: 137 checks** (was 121). Per season: it boots into itself, the sky, fog,
+ground and monuments wear the declared look, the hand holds the declared
+weapon; ember: five piles none of them tall, four slabs most of them
+knee-high, a slab that drifts, IS the floor, carries a body and stops one at
+its side, and a nail fired into rock dying while one fired at the sky flies
+on; inca: large slabs, no rock, and an honest `built: false`. The control is
+asserted to still be the old arena.
+
+**And the gate found something that was never a leak.** With the seasons
+section in, "spawn/kill cycles do not leak geometry" went red: geometries and
+the enemy array climbed by exactly one per spawn. Nothing was leaking. Dead
+enemies leave the array inside `updateCombat`, which only runs while a run is
+PLAYING — the suite had ended its run in an earlier section, so the prune
+never ran and a growing array read as an unbounded leak. In isolation the same
+cycle is flat at twelve geometries. The check now records the state it entered
+on and starts a fresh run if that run is over, which is the difference between
+a leak detector and a state detector. Same day, the v39 backdrop check was
+failing for the opposite reason — it hardcoded "at least eight pieces" and the
+owner's cut took the manifest to six, so it now asks the manifest how many it
+should find.
+
+**Lost and rebuilt.** The first cut of all this was written, reviewed
+against renders and corrected — and never committed before the container was
+reclaimed, so it went. Nothing but time was lost (the branch was at v40 on
+the remote), and the rule it cost is the obvious one: **commit the moment a
+piece stands up**, not when the release is tidy. This entry's code was
+pushed before its gate was written.
+
+## v40 — 2026-09-05
+**The first experiment on the bench: the wall run**
+
+Declared in v36 (`wallRun: false` — "needs walls"), given walls in v39,
+implemented here and switched on for MOVE, where a bad mechanic is obvious
+in ten seconds instead of hidden behind a fight. That is what the bench
+was built for, and this is the first thing built on it.
+
+**The move.** Airborne, touching a wall (`player.wallContact`, written by
+`walls.resolve` a frame earlier), moving along it faster than `minAlong`,
+clock not spent: the body sticks and runs — speed held at least at
+`wallRun.speed` along the tangent, leaned into the wall by `stick` so the
+contact survives the next frame, gravity at 6% with a slow sink, the camera
+banking `roll` away from the wall. A jump press mid-run kicks OFF along the
+normal (`jumpPush`) with `jumpUp` of a jump's lift, and spends the clock
+until the floor. The clock (`max` 1.3 s per contact) is what keeps it a move
+and not a mode. All of it in `T.player.wallRun`.
+
+**Two things the first probe taught.** Catching the wall at the top of a
+jump carried the jump's lift straight on up: the body climbed from 1.6 to
+4.8, cleared the 5-unit wall, lost contact, and the kick-off found nothing
+to kick from — entering the run now caps `vy` at a small `rise`. Then the
+sink at −1.4 brought a standing-jump run down to the floor in a second,
+before its clock; it is −0.5 now, because a wall run holds nearly flat and
+the clock is what ends it. Both settled by numbers off the probe, not by
+feel-guessing.
+
+**And a bug three releases old underneath it.** The jump gate required
+coyote time — a press on or just off the floor — which is the DD body's
+rule and right for one jump. v36 declared `jumps: 2` for TRUCK and `3` for
+MOVE and the gate stayed, so no mode had ever double-jumped; the check that
+shipped with v36 asserted the COUNT was applied and never that a second
+jump fired. A body granted more than one jump may now spend the rest in
+the air, and walking off an edge without jumping spends the first (a fall
+is not a free extra jump). The gate now jumps twice.
+
+**Then the TRUCK course.** The track generator had, since v36, widened one
+gap in eight after twenty seconds by a third — a hole you could still jump.
+It widens them past a jump now (`courseGap` 2.2) and lays a wall along one
+side of each, from the slab you leave to the slab you land on, alternating
+sides so the body has to read it: the way across is to run the wall. The
+auto-scroll IS the speed along it, so the move is jump, drift into the wall,
+hold — and the 1.3 s clock at track speed covers the hole. Course walls cull
+behind the player the way the slabs do. TRUCK has `wallRun: true` now.
+Proven: the clock jumped past twenty seconds, a course wall appears within
+a few seconds and a bot that neither jumps nor drifts dies in the hole.
+
+**And the walls learned to be seen.** The first capture of the wall run
+showed the bank and the hand piece and no wall at all: a vertical face of
+the floor's own unlit plates against a black sky is black on black, and the
+neon edge pass cannot rim what has no luminance edge. Walls wear a clone of
+the floor material at 2.1× glow — the same plates, a step brighter, so
+their silhouette exists.
+
+**The harness sees it.** `scripts/hd-loop.mjs wallrun` — take-off beside
+the north wall, the ride, the kick-off, with the bank in the frame. It
+needed two things to: `hold()` became a per-frame wrap on the held enemy's
+own update (a hold applied once per capture frame let a skull close three
+units between captures), and `slow(k)` — a `setTimeScale` knob on the game
+loop — because one SwiftShader capture frame is ~1.5 s of game time and a
+wall run is over in one.
+
+**The phone pass, and what it found.** A coarse-pointer context (Pixel 5:
+393×727 at dpr 2.75, `(pointer: coarse)` true) run under the software
+renderer at ~750 ms a frame held **tier 0 for the whole run** — 59 enemies,
+every one skinned at fine pitch, 856,587 instances on the field — and the
+governor reported 59.9 fps while doing it. One line: a frame over 250 ms
+was discarded as a tab-hidden gap, so a device genuinely slower than 4 fps
+was invisible to the governor that exists for it, and the EMA never left its
+16.7 ms initial value. A single slow frame is a gap; a RUN of them is the
+device. Four in a row count now (`perfTuning.gapMs`, `gapRun`), clamped so
+one true hitch cannot slam the EMA. Same context after: tier 1 at five
+seconds, 2 at ten, the floor at fifteen; skins off for new spawns, the
+coarse twins handed out, 165,286 instances with 57 alive. The six spawned
+before the drop keep their skins, by design.
+
+**Gate: 121 checks** — on the court page the run engages, holds height,
+kicks off along the normal, and a second jump fires in the air; on the
+track a course wall appears past twenty seconds with wall run on — and a
+bot that never jumps is in the first hole by frame 27 and dead by 60, so
+the track window lifts it out of the holes for its whole length, and the
+fall honours the same test-only invulnerability every other death does. The
+restart-frame check that went red under a shared CPU three runs running is
+not a wait: `setRunFrame` is one synchronous class toggle. What flips it
+back is `showPause()` on a lost pointer lock, which a headless click's lock
+request triggers differently under load — the frame retreated and the game
+paused, both correct, and the check accepts either now. And a governor
+check that only means something where frames are slow: if a raw frame
+exceeds the gap threshold the tier must move within eight seconds, and on a
+fast renderer it says so instead of pretending.
+
+## v39 — 2026-09-05
+**The arena, through the same seam — and the first walls it has ever had**
+
+Owner's order of work: ship v38, then the arena, then a motion harness,
+then the first experiment on the bench, then a phone pass. This is the
+arena.
+
+**The backdrop.** Six Meshy environment pieces had sat in `assets/env/`
+since the v37 rescue — a fallen giant's head, a cracked dais, a ruined gate,
+a hand clawing up out of rock, a fanged mountain, an inscribed obelisk —
+plus a plate-floor texture. `js/backdrop.js` places them from an `env`
+block in `assets/manifest.json`: OUTSIDE the play disc, scaled to a height,
+Lambert-lit by the asset rig on layer 2, never collided with, never damaged.
+v26's decision stands — "the fight owns the frame" — as the DEFAULT: delete
+the block and the one-horizon-line arena is back. The placement was made
+from renders, not guessed: mountain far and huge behind the gate so the
+spawn view is a composition (gate flanked by obelisks against the ember
+horizon, teeth behind), the head and the hand at the rim off to the sides.
+`floor.png` replaces the procedural soot canvas on the floor shader
+(`uRepeat` is a uniform now, so a texture sets its own tiling).
+
+**Named from the first render, fixed in the second:** every piece carried
+the same pink cast the skins do (`env.tint` pulls the bake toward bone,
+per-piece `tint` on top); the mountain's bake is near-black and vanished
+against the void (`lift`, a scalar brightness — 2.2 on the mountain); and
+the first walls were unlit flat-colour slabs that read as black paper
+cut-outs against the plated floor they stood on — they wear the floor's own
+shader material now, uv-scaled so the plates are the same size underfoot.
+
+**Walls.** `js/walls.js` — oriented slabs the player collides with. A point
+against a box in the wall's frame: push out along the shortest axis, kill
+the velocity into it, bend a dash along it, and report the contact normal
+as `player.wallContact` — the hook the next release's wall run reads. A new
+arena kind, `court`, is the disc plus four tangent walls at radius 16, and
+MOVE is a court now (`wallRun: true` declared on it, implemented next).
+The DD modes keep the open disc: enemies have no wall avoidance and are
+not being asked to. Proven in the gate: driven at −12 u/s into the north
+wall the body stops at z = −15.05 with normal (0, 1).
+
+**Gate: 114 checks, 113 green on this release's run.** The mode loop proves
+the court (four walls, a collision with the right normal, survives); the art
+page proves the backdrop (every named piece placed, every one outside the
+disc, the floor texture on, the v26 horizon still the environment
+underneath). The one red line is the restart-frame timing wait, run while a
+motion capture shared the CPU; it passed 108/108 an hour earlier and its
+wait is widened to 8 s here for v40's run to prove.
+
+## v38 — 2026-08-22
+**Retro voxel heaven — the roster is your Meshy art: the mesh alive, cubes underneath**
+
+Owner's brief: a total voxel redo with smaller voxels, maximum visual
+payoff, "retro voxel heaven", keeping the established plan. The first bench
+sheet settled the whole direction in one picture: the string-art skull at ×1
+and at ×27 have the SAME silhouette. Subdividing a blob is not detail. The
+payoff had to come from the sculpt, and — the owner's own correction when an
+SDF skull draft went up: "there are already skulls that look like this" — the
+sculpts are theirs, from Nano Banana through Meshy. The engine's job is to
+make them voxels.
+
+**The hybrid — the owner's second correction, on seeing the lattice alone:
+"what about the 3d models? these voxel balls alone don't look that good."**
+So it is both, which is what v4.35 always described: the real Meshy mesh
+rides as the ALIVE-SKIN — Lambert-lit, textured, the sculpt as sculpted —
+and the lattice cut from that same mesh sits underneath. Skin and lattice
+come from ONE prepared root, so they coincide exactly. A wound past 22% of
+the lattice sheds the skin and the cube body underneath, holes and all,
+fights on; a death bursts into cubes; the jaw and every other part hide
+under the skin while it is up. `skin: false` gives cubes-only, and the skins
+ride the perf tier's hull switch, so a low tier spawns bare lattices.
+
+**The voxel route.** A manifest kind with `as: "voxel"` is turned upright (`tilt`, `yaw`), scaled to the HEIGHT of the
+string-art slot it replaces (so hitboxes and every gameplay number hold),
+rasterized at `pitch` (default: a third of the slot's pitch — the ×27 mini
+size the game already budgets), and registered so `modelFor(kind)` hands it
+to the enemy class. Chips, severed islands, gibs and the bone-yard all work
+unchanged, because to the rest of the engine it is just voxels. Fourteen
+kinds are registered: skull, dread, brute, spider, totem, watcher, husk,
+blinker, thorn, egg, revenant, leviathan, serpent, serpent head.
+
+**Colour is snapped, not sampled.** A Meshy bake carries texture detail far
+finer than the lattice, and a cell sampled on its own is one random speck of
+it — the first cut rendered as static. One pass of a 26-neighbour average
+over the surface cells keeps the features a skull is made of (a socket's dark
+spans many cells) and drops the ones it is not; then `palette: "bone"` runs
+luminance through an S-curve and BANDS it to five values on the sculpt's
+ivory, keeping a strong source red as crimson (the totem's mouths survive).
+`lift` pulls a dark bake up the curve (brute, dread). `eyes` — normalized
+[x,y,z] in the model's box, z=1 the front — burn HDR ember within `eyeR`
+cells, recessed inside the socket, the way the sculpt's are. `jaw` cuts the
+bottom fraction into a hinged jaw with the hinge on the def (`hinge`), so
+the skull keeps its bite: the string-art skull's hand-tuned pivot offsets
+drew the voxelized jaw over the head as stripes.
+
+**The cube look.** Three things retro voxel art has that a smoothed hull
+throws away, all switchable through `setVoxelStyle` and all free per cube:
+every face under ONE light (top 1.0, front .86, +x .74, −x .58, back .50,
+bottom .40 — a `faceShade` attribute on the one box geometry every sprite,
+gib and bone shares; the light sits high, forward and to one side, which is
+why a lit cube reads as a cube and not a hexagon); the baked AO snapped to
+six value bands (with the per-voxel grain dropped when banding — rounded
+flecks read as dirt: "a skull that looked unwashed"); and the lattice life
+at 0.45 of the v4.31 shimmer, so a small voxel stays a small voxel. **Cubes
+are the default look now**; LOOK SMOOTH still exists.
+
+**The ladder still applies.** The governor walks string-art models down
+×27 → ×8 → ×1; a voxelized asset has no subdivision to walk, so a T4 phone
+would have got 16,653 cells per skull every spawn. Each kind is also cut at
+double pitch as `def.lod`, and `modelFor()` hands that out when the ladder
+is at its floor. Measured off the game: 149,549 cells across one of each of
+the fourteen at fine pitch, 22,661 at the floor — the skull 16,653 → 2,323,
+the leviathan 25,631 → 3,728.
+
+**Traps, all found by rendering:** `pitch` already meant the lattice cell
+size, and the rotation key reused the word — `pitch: 0.75` sliced the brute
+into 0.75-unit cubes (the key is `tilt`). The brute export arrived nose-down;
+a yaw cannot fix that, and its sign was settled by rendering four tilts, not
+by reasoning (+0.75). Tilting changes the bounding-box height, so the
+upright brute is ~6.5k cells and the foreshortened one was 39k — the smaller
+number is the honest one. A dark bake lands in the bottom bands and loses
+its sockets (`lift`). The watcher lost its iris to the bone remap
+(`palette: "keep"` + one ember at the pupil). A skin cut alongside a lattice
+may only be worn by a body cut from the SAME mesh: an enemy that spawns
+before the assets finish loading holds the string-art sculpt, and a Meshy
+skin over that would shed into a different skull — it stays a bare sculpt and
+the next spawn gets the real pair. Cubes are also strictly heavier than a
+hull under the SPHERE projection, which renders six cube faces per capture:
+the gate's projection section had always left that option switched on when
+it finished, which cost nothing while enemies wore smoothed skins and
+stalled the suite outright once they wore full lattices — it restores the
+default now. Skins ride the perf tier's hull switch, so the checks that test
+a skin have to force the tier that HAS one — under a software renderer the
+governor settles low and sheds them, which is the design working, not a bug.
+Nor could the gate leave a run playing while it waited for fourteen sculpts
+to load: the stationary player dies, the loop stops, and nothing ever puts a
+skin on anything — it waits for the art, THEN starts the run.
+The GLB urls are tokened (`?v=N`), because
+the loader asks for them by that url and an untokened request cannot match a
+tokened cache entry. The GLBs are NOT precached, though: 5 MB of art that
+fails soft is the wrong thing to make somebody download before the worker is
+useful, and sw.js is network-first with a cache write on every success, so
+they land the first time you actually play. A cold offline visit gets the
+string-art sculpts, which is the fail-soft path working as designed. The
+offline gate found this honestly — it cut the cord mid-install and the first
+kind the loader asked for was still in flight. And the smoke gate hung:
+its hull section reached into "whatever dread just spawned", which now has no
+hull by design — `debug.hullProbe()` proves LOOK SMOOTH on a string-art body
+instead.
+
+**What it costs to boot, measured rather than guessed:** cutting all fourteen
+lattices is 1,446 ms of main-thread work in total (skull 210, leviathan 191,
+thorn 26) — the rest of the ~14 s to a fully-armed roster is fetching and
+parsing 5 MB of GLB. So the kinds are fetched ONE at a time, in the order the
+director introduces them (skull first, leviathan last), with a frame yielded
+between each: the menu is up immediately, the game is playable at once, and
+the roster upgrades from string art to sculpt as each asset lands. `?assets=0`
+skips the lot — the gate uses it on the pages that test the mode registry
+rather than the art, because four reloads of 5 MB was most of the suite's
+wall clock.
+
+**The bench.** `voxel-lab.html` lists every registered asset, and
+`__lab.revox(kind, overrides)` re-cuts one live from the loaded mesh — tilt,
+yaw, lift, eyes, jaw, pitch — so an export is turned by looking at it. Copy
+the printed cfg into `assets/manifest.json` when it reads right. Every art
+question in this release was answered from a picture off this bench.
+
+## v37 — 2026-08-22
+**The Meshy art was in the repo and the loader was never called**
+
+Deploying v36 meant looking at what is actually on `gh-pages`, and what is on
+it is **5.1 MB of Meshy exports that no branch had ever carried**: twenty-one
+GLBs in `hyperdagger/assets/` — skull, brute, husk, dread, blinker, watcher,
+spider, thorn, totem, serpent, serpenthead, egg, revenant, leviathan, plus six
+environment pieces and a floor texture. Art added straight to the deploy
+target, which is the failure mode this repo already knows about: one reclaimed
+container and it is gone. It is in the branch now.
+
+**And none of it had ever been on screen**, for two separate reasons:
+
+- `preloadMeshEnemies()` **was never called from anywhere.** The whole
+  mesh-enemy system — loader, template cache, per-enemy skin swap, the
+  MESH_FOR_TYPE table — was written, shipped and unreachable. Exactly the
+  shape of the TRUCK bug in v36, found the same way: by asking what actually
+  runs rather than what exists.
+- It looked in `models/enemies/`, a second asset home that exists in no
+  branch, while the documented one (`assets/README.md`) is `assets/`. So even
+  called, it would have 404'd three times per boot and fallen back to voxels.
+
+**One seam now: `assets/manifest.json`.** A kind listed there is loaded; a
+kind absent is never requested, so the file existing is what makes "no art
+registered" cost nothing — not even the GLTF loader is fetched. A kind is a
+bare filename or `{ file, size, tint }`: `size` is the largest dimension in
+world units, `tint` MULTIPLIES the baked albedo, so a Meshy export can be
+pulled toward the house palette without flattening its texture away.
+`scripts/hd-shell.mjs` reads the same file, so the worker and the loader
+cannot disagree about which art exists.
+
+**The skins were also being thrown away.** `mesh-enemies.js` re-materialed
+every export to ONE flat unlit `MeshBasicMaterial` — and on an unlit pipeline
+a flat fill means no shading at all, so the totem rendered as a featureless
+pale slab with the texture Meshy baked for it discarded. `meshassets.js`
+already had the right conversion (Lambert, albedo map kept, lit by the asset
+rig on layer 2 so nothing native is touched); it is now exported as
+`toLambert()` and both importers share it. Rendered side by side the
+difference is the whole point of the pipeline: a white blob becomes a column
+of three screaming faces, and the skull and spider read as sculpts with their
+baked texture on. Worth naming for whoever turns them on: the Meshy exports
+are flesh-toned, and the house palette is black and white with dark red as the
+only contrast colour. `tint` is the knob for that.
+
+skull's fit moved 1.15 -> 1.40, the height of the string-art slot it replaces,
+because `assets/README.md` is explicit that a mismatch there changes how an
+enemy LOOKS against how it HITS.
+
+**Nothing is registered by default, and the gate is why.** Turning `skull` on
+hung the suite: a registered kind replaces that enemy's hand-authored sculpt
+AND its smoothed alive-hull — the whole v4.31/v4.32 look — so the hull section
+waits for a skin that is no longer there. That is not a broken test, it is the
+gate refusing a silent art swap. The mechanism ships working, the manifest
+ships empty with the fourteen available exports listed in it, and turning one
+on is one line followed by a look at a render. Which is the method: a suite
+that certifies *works* cannot see *looks*.
+
+**Gate: 108 checks** (was 92 at v36). One watches for 404s across the whole
+run — a miss here is fail-soft by design, which is exactly why it needed its
+own watch: three GLB requests could fail on every boot with nothing failing.
+The rest cover the seam and the hybrid rather than any particular art — the
+loader ran, everything declared loaded, the manifest parses, the worker
+precaches the manifest but deliberately not the art it names, every voxelized
+body wears the mesh it was cut from, no skin lands on a body that was not cut
+from it, and past 22% of the lattice the skin sheds and the cubes show. `debug.getMeshSkins()` reports what was
+declared against what loaded, because a system that fails soft needs a way to
+say it did nothing.
+
+## v36 — 2026-08-21
+**The mode lab — an experiment is a declaration, not a branch**
+
+Owner's direction: this stops being "a game with modes" and becomes a
+platform for testing FPS jump-and-dash ideas. PURE (Devil Daggers), HYPER
+and TRUCK are the three current guesses at what this body of movement is
+FOR, and there will be more — platformer courses, speed runs, wall running.
+Bone Dust started as a DD arena clone and shipped as a directional bullet-hell
+dodger; the point of a lab is that the shipped game is allowed to be a surprise.
+
+**TRUCK was lost, and that is why this release is a registry.** v33's notes
+promise "Mode cycles PURE → HYPER → TRUCK". The toggle was a two-way flip,
+`truck.js` was never imported by `main.js`, and the string "truck" appeared
+nowhere in it. A whole named mode existed only on paper for three releases
+and no gate noticed, because every gate knew the modes by name.
+
+- **`js/modes.js`** — the registry. A mode declares `abilities`, `director`,
+  `lethality`, `arena`, `edge` and its own `hiKey`; `main.js` asks the
+  registry instead of asking `mode === 'pure'` in twelve places. Adding an
+  experiment is one entry and no new branches. `?mode=<id>` deep-links one,
+  which is what makes a movement idea shareable for a playtest.
+- **The ability vocabulary** — `jumps`, `dash`, `reap`, `glide`, `airDash`,
+  `wallRun`. `applyAbilities(player, mode)` is the single call that
+  configures the body, so no mode can half-configure it by forgetting a
+  field. The DEFAULT jump count is main's deliberate one — extra height
+  comes from a downward shotgun, not a free air jump — and a mode that wants
+  a freer body says so.
+- **GLIDE** — hold jump while falling and gravity is cut to `glideGravity`.
+  Only on the way down: a glide that also lifts is a double jump with extra
+  steps, and the thing under test is hang time, not height.
+- **AIR DASH** — a charge that lets a dash punch THROUGH its own cooldown,
+  but only airborne and only as many times as the mode granted. Refills on
+  landing, so it buys air control and never an infinite dash.
+- **MOVE** — a fourth entry, and the actual bench: no director, nothing
+  lethal, every ability on, the rim clamps so you cannot fall out. New
+  mechanics land here first, where a bad one is obvious in ten seconds
+  instead of hidden behind a fight.
+- **WALL RUN is declared and not implemented** (`wallRun: false`). It needs
+  walls and the disc arena has none — a court/course arena is the
+  prerequisite. It is in the vocabulary so the next arena has somewhere to
+  plug into, and the gate reads it as a declaration, not a feature.
+
+**Three bugs, all of them the same bug — code nothing had ever run:**
+
+- `applyAbilities` folded every edge that was not `clamp` into `open`, so
+  PURE and HYPER — `edge: 'void'` — were configured with **no floor at all**
+  and the body fell through the arena. The declared edge now passes straight
+  through, and the gate asserts there is something under every mode's feet.
+- `main.js` called `truck.reset(player)`; `truck.js` only had `seed(player)`.
+  An instant TypeError on the one path nothing could reach.
+- The track scrolled `T.truck.scrollSpeed` units **per frame** with no `dt` —
+  ~50× too fast at 60 fps and faster on a better screen.
+
+**The floor is now a value, not an assumption.** `player.floorY` is the
+surface under the feet: 0 on the disc, written per frame by the track, and
+`-Infinity` where there is no platform — which is how "the floor left"
+becomes an ordinary fall instead of a special case. `TruckTrack.preUpdate`
+runs BEFORE `player.update` for the same reason: after it, the body never
+reads as grounded and jumps never refill, which is the whole mode.
+Platform depth moved into tuning (`platformDepth` 5.4-6.8 on a 6.5 spacing),
+so the early track is a road with seams — the pressure is that it LEAVES the
+moment you touch it, not that every step is a jump. Real holes arrive later,
+when the generator widens the spacing.
+
+**A way out of a run.** The mode toggle only lives on the menu, and MOVE has
+no lethality at all — so before this there was no way to change experiment
+except reloading the page. The pause menu gains **END RUN**, which resets the
+field, puts the disc back and returns to the menu. (It deliberately does not
+wear `data-k`: the option rows share its chrome and the generic handler would
+have written `opts[undefined]`.)
+
+**The track is a route, not a scatter.** Platform x was an independent roll
+across the full width, which makes islands — a stationary body fell through
+the gaps between them at random, which is also what made the gate flaky. It
+is a bounded random walk now (±1.6 a step, clamped to ±5), so every slab
+overlaps the one before it laterally and the road visibly wanders instead of
+teleporting.
+
+**Gate: 92 checks** (was 71). The new section does not test "pure and hyper";
+it walks `MODES`, so whatever is in the registry has to boot, has to get the
+body it declared, and has to have a floor. Losing a mode the way TRUCK was
+lost is now structurally impossible. `debug.getModes()` is the lab bench
+readout: every entry, its resolved abilities, and what the player actually is
+right now. The track's own checks ask whether it keeps laying itself ahead of
+the player, NOT whether a bot that never steers stays on it — a road is a
+route, and certifying survival there would only measure whether it happened
+to run straight.
+
+## v35 — 2026-08-21
+**Reconciliation — the branch that was building on a v22-era game**
+
+A second lineage of this game had been developed in parallel on
+`claude/devil-daggers-hyper-demon-4vmk67`, branched before v26 and never
+merged, while `main` moved 478 commits ahead. Both sides rewrote the same
+files. `main` is adopted wholesale as the canonical lineage; the four
+releases it lacked are re-applied here, adapted rather than dragged across.
+
+Ported in:
+- **The difficulty curve** (`T.director` in tuning.js). Minute one is a
+  PARADE — first pulse at t=10, ~9.5 s cadence, six types debuting before
+  the minute is out, on a budget so low each arrives nearly alone (measured
+  per-pulse pressure in minute one is LOWER than the old curve even though
+  six things debut instead of four). Minute two is the SQUEEZE: same
+  cadence, budget climbing seven times faster. **HYPER only** — PURE keeps
+  its fixed, learnable DD_SPAWNSET, which is the whole point of it.
+- **The pressure ceiling.** Budget controls the spawn RATE; what kills you
+  is the standing POPULATION, and population runs away when spawns outpace
+  kills — a death spiral, since falling behind makes you fall further
+  behind. Measured over a real run the uncapped curve went 6 → 41 → 88 live
+  threats; with the ceiling a firing player sees 4.5 → 30 → a PLATEAU at
+  ~35. It governs the totem exhale too: that is the real faucet (several
+  totems on a ~2 s cycle out-produce the entire pulse system), and gating
+  only the pulses moved the measured population by barely one body.
+- **The uplit asset rig.** Native geometry is unlit MeshBasic, so these
+  lights touch imported GLBs only — and which lights is not a free choice.
+  This arena has two light sources: the floor and the ember horizon. So the
+  hemisphere is INVERTED (ground term = the grid, sky term = the void) and
+  three crimson horizon lights ring the player; both answer the same
+  beat/trauma signals the floor does. An import is lit BY the arena.
+- **`ARENA_ASSETS.floorPanel`** — a Meshy floor tile merged to one geometry,
+  instanced across the disc, clipped to the rim and quarter-turned at
+  random. Dormant until one is registered.
+
+Deliberately NOT ported: the plate-and-seam floor texture. `main` had
+already replaced the Tron grid with uneven soot and old blood, explicitly
+"without drawing a luminous grid" — newer art that supersedes it, and
+overwriting it would undo a decision made after mine.
+
+Two defects found on `main` while porting, both fixed here:
+- **`enemy.js` was imported at two different tokens** (`?v=61` from main.js,
+  `?v=63` from truck.js), so the browser instantiated the module twice and
+  every enemy class existed as two distinct constructors. This is the same
+  defect v34 fixed for voxel.js and tuning.js; enemy.js still had it. The
+  whole graph is normalized to one token (v=64) and audited.
+- **`meshassets.js` duplicated `mesh-enemies.js`.** The enemy-skin registry
+  is deleted from it — `mesh-enemies.js` owns that and is already wired —
+  and it keeps only what that module does not do: the floor-panel field and
+  the mesh voxelizer. `bakeShading` is exported from voxel.js and shared
+  rather than copied.
+
+Note for whoever ships next: `models/enemies/` does not exist, so
+`mesh-enemies.js` requests three GLBs that 404 on every boot. It is
+fail-soft (voxel fallback) but it is three wasted requests and a console
+warning until the models land or the registry is emptied.
 
 ## v34 — 2026-08-21
 **The game boots again, and the offline promise is real**

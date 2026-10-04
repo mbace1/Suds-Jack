@@ -67,7 +67,15 @@ export class AudioKit {
     const now = this.ctx.currentTime;
     if (now - this._lastFire < 0.075) return;
     this._lastFire = now;
-    this._noise(0.05, 'bandpass', 1600 + Math.random() * 600, 2, 0.08);
+    this._noise(0.05, 'bandpass', (1600 + Math.random() * 600) * (this.fireTone || 1), 2, 0.08);
+  }
+
+  /** DD tap-burst: a fistful of daggers at once — wide noise splash over a
+   *  low thump, unmistakably heavier than one stream tick. */
+  shotgun() {
+    if (!this.ctx) return;
+    this._noise(0.16, 'bandpass', 900 + Math.random() * 200, 1.2, 0.22);
+    this._tone('square', 110, 45, 0.14, 0.2);
   }
 
   hit() {

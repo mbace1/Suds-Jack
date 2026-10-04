@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=63';
+import { TUNING as T } from './tuning.js?v=85';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const EYE = T.player.eye;
@@ -37,7 +37,22 @@ export class Player {
     this.sens = 1; // look sensitivity multiplier (pause-menu option)
     this.aimAssist = 1; // <1 slows stick look near a target; main sets it per frame
     this.dashEnabled = true;
+    // Ability fields — modes.js applyAbilities() writes these. Defaults keep
+    // a Player usable before any mode has been applied.
+    this.maxJumps = MAX_JUMPS;
+    this.glideEnabled = false;
+    this.airDashes = 0;
+    this.airDashLeft = 0;
+    this.wallRunEnabled = false;
+    this.wallContact = null;   // walls.resolve() writes this after each update
+    this.wallRunning = false;
+    this.wallRunT = 0;         // seconds spent on the current wall contact
+    this.roll = 0;             // camera bank while running a wall
     this.edgeMode = 'void';
+    // The surface currently under the feet. The disc is flat at 0; a TRUCK
+    // track writes this per frame (and -Infinity where there is no platform,
+    // which is how "the floor left" becomes a fall rather than a special case).
+    this.floorY = 0;
     this.overEdge = false;
     this.reset();
   }
@@ -115,19 +130,33 @@ export class Player {
     if (this.input.consumeJump()) this.jumpBuffer = T.player.jumpBuffer;
     else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
 
-    let grounded = this.feet.y <= 0.001 && this.vy <= 0;
+    let grounded = this.feet.y <= this.floorY + 0.001 && this.vy <= 0;
     this.landedAgo += dt;
     if (grounded) {
       this.coyoteT = T.player.coyote;
       this.airTime = 0;
-      this.jumpsLeft = MAX_JUMPS;
+      this.jumpsLeft = this.maxJumps;
+      this.airDashLeft = this.airDashes;
+      this.wallRunT = 0;
       this.daggerJumpsLeft = T.player.daggerJumps;
     } else {
+      const hadCoyote = this.coyoteT > 0;
       this.coyoteT = Math.max(0, this.coyoteT - dt);
       this.airTime += dt;
+      // Leaving the floor without jumping spends the first jump the moment
+      // coyote time runs out — a fall is not a free extra jump.
+      if (hadCoyote && this.coyoteT <= 0 && this.jumpsLeft === this.maxJumps) this.jumpsLeft = Math.max(0, this.jumpsLeft - 1);
     }
 
-    if (this.jumpBuffer > 0 && this.coyoteT > 0 && this.jumpsLeft > 0) {
+    // One jump (the DD body) is coyote-gated: a press must be on or just off
+    // the floor. A body granted MORE than one may spend the rest in the air —
+    // v36 declared jumps: 2 and 3 for TRUCK and MOVE, and this gate kept
+    // every one of them grounded, so no mode had ever double-jumped.
+    const canJump = this.jumpsLeft > 0 && (this.coyoteT > 0 || this.maxJumps > 1);
+    // A press while RUNNING A WALL belongs to the wall run (the kick-off,
+    // below) — in MOVE, with three jumps, the air jump was taking it first
+    // and the body hopped straight up off the wall instead of kicking away.
+    if (this.jumpBuffer > 0 && canJump && !this.wallRunning) {
       const chained = grounded && this.landedAgo <= T.player.hopWindow;
       this.vy = JUMP_V;
       this.jumpsLeft--;
@@ -195,7 +224,13 @@ export class Player {
       this.dashBufFlick = null;
       this.dashT = 0;
     }
-    if (this.dashEnabled && this.dashBuf > 0 && this.dashCd <= 0) {
+    // AIR DASH — a mode with airDash charges may dash THROUGH the cooldown,
+    // but only off the ground and only as many times as it was granted. The
+    // charges refill on landing, so it buys air control, never infinite dash.
+    const airCharge = this.dashEnabled && this.dashBuf > 0 && this.dashCd > 0
+      && !grounded && this.airDashLeft > 0;
+    if (airCharge) this.airDashLeft--;
+    if (this.dashEnabled && this.dashBuf > 0 && (this.dashCd <= 0 || airCharge)) {
       const bufFlick = this.dashBufFlick;
       this.dashBuf = 0;
       this.dashBufFlick = null;
@@ -244,19 +279,64 @@ export class Player {
       this.overEdge = false;
     }
 
+    // WALL RUN — reads last frame's contact (walls.resolve runs after update,
+    // so the lag is one frame, which no one can feel). Airborne, touching a
+    // wall, moving along it, clock not spent: hold the body at height, hold
+    // its speed along the tangent, and lean it into the wall so the contact
+    // survives the next frame. A jump press while running kicks off the wall
+    // along its normal — the exit that makes the move worth entering.
+    const WR = T.player.wallRun;
+    const wc = this.wallContact;
+    const airborne = !grounded && this.feet.y > this.floorY + 0.05;
+    let running = false;
+    if (this.wallRunEnabled && wc && airborne && this.wallRunT < WR.max) {
+      const tx = -wc.nz, tz = wc.nx;                       // tangent along the wall
+      const along = this.velocity.x * tx + this.velocity.z * tz;
+      if (Math.abs(along) >= WR.minAlong || this.wallRunning) {
+        // catching the wall at the top of a jump must HOLD you there, not
+        // carry the jump on up past the wall's top edge and off it — the
+        // first probe climbed from 1.6 to 4.8 and lost the wall at 5
+        if (!this.wallRunning) this.vy = Math.min(this.vy, WR.rise);
+        running = true;
+        this.wallRunT += dt;
+        const sgn = along >= 0 ? 1 : -1;
+        const spd = Math.max(Math.abs(along), WR.speed);
+        this.velocity.set(tx * spd * sgn - wc.nx * WR.stick, 0, tz * spd * sgn - wc.nz * WR.stick);
+        if (this.vy < WR.sink) this.vy = WR.sink;            // a slow sink, never a fall
+        if (this.jumpBuffer > 0) {                            // the kick-off
+          this.jumpBuffer = 0;
+          this.vy = JUMP_V * WR.jumpUp;
+          this.velocity.x += wc.nx * WR.jumpPush;
+          this.velocity.z += wc.nz * WR.jumpPush;
+          this.wallRunT = WR.max;                             // spent until the floor
+          this.justJumped = true;
+          running = false;
+        }
+      }
+    }
+    this.wallRunning = running;
+    // camera bank: lean AWAY from the wall's normal side, ease back off it
+    const side = running ? Math.sign(wc.nx * _fwd.z - wc.nz * _fwd.x) || 1 : 0;
+    this.roll += ((running ? WR.roll * side : 0) - this.roll) * Math.min(1, dt * 10);
+
     // Vertical integration. A buffered landing press is consumed next frame,
     // before friction, which is what preserves speed through a bunny hop.
-    const wasAbove = this.feet.y > 0.001;
-    this.vy += GRAVITY * dt;
+    const wasAbove = this.feet.y > this.floorY + 0.001;
+    // GLIDE — hold jump while falling and the descent slows. Deliberately
+    // only on the way DOWN: a glide that also lifts is a double jump with
+    // extra steps, and the thing being tested here is hang time, not height.
+    this.gliding = !!(this.glideEnabled && this.vy < 0 && !grounded
+      && this.input.jumpHeld());
+    this.vy += GRAVITY * (this.wallRunning ? T.player.wallRun.gravity : this.gliding ? T.player.glideGravity : 1) * dt;
     this.feet.y += this.vy * dt;
-    if (this.edgeMode !== 'open' && this.feet.y < 0) {
-      this.feet.y = 0;
+    if (this.feet.y < this.floorY) {
+      this.feet.y = this.floorY;
       this.vy = 0;
       if (wasAbove) this.landedAgo = 0;
     }
 
     // Head-bob only while grounded and moving.
-    const moving = this.horizontalSpeed > 0.8 && this.feet.y <= 0.001;
+    const moving = this.horizontalSpeed > 0.8 && this.feet.y <= this.floorY + 0.001;
     this.bobK += ((moving ? 1 : 0) - this.bobK) * Math.min(1, dt * 8);
     this.bobT += dt * 11 * this.bobK;
 
@@ -269,7 +349,7 @@ export class Player {
       this.feet.y + EYE + Math.sin(this.bobT) * 0.045 * this.bobK,
       this.feet.z,
     );
-    this.camera.rotation.set(this.pitch, this.yaw, 0);
+    this.camera.rotation.set(this.pitch, this.yaw, this.roll); // roll: the wall-run bank
   }
 
   /** A downward tap-burst converts recoil into a dagger jump. The first must

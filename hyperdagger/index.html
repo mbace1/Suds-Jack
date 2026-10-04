@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Hyper Dagger</title>
-  <link rel="manifest" href="manifest.webmanifest?v=63">
+  <link rel="manifest" href="manifest.webmanifest?v=85">
   <link rel="icon" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #020202; color: #e8dcc8; font-family: system-ui, sans-serif; }
-    #canvas-game, #canvas-ui { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: crisp-edges; image-rendering: pixelated; }
+    #canvas-game, #canvas-ui { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
     #canvas-ui { pointer-events: none; }
     #msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: safe center; overflow-y: auto; text-align: center; background: rgba(0,0,0,0.72); z-index: 10; padding: 1.5rem; }
     #msg h1 { font-size: 2.2rem; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
@@ -32,10 +32,13 @@
     #pauseBtn:hover { opacity: 1; }
     #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(120,10,10,0.55) 100%); opacity: 0; z-index: 4; transition: opacity 0.15s; }
     body.in-run #msg { display: none; }
-    /* During a run the HUD is the clock only. Kills, gems and style stay
-       readable between runs. Pause, HOME and the signature retreat so they
-       do not sit on the arena. signature.js sets opacity inline, so the
-       shared badge needs !important here rather than in toko/. */
+    /* THE ACTIVE FRAME. During a run the HUD is clock-only: kills, gems and
+       the style badge are readable between runs, not mid-fight, and the
+       arcade shell (pause, HOME, signature) retreats almost to nothing so
+       the only chrome competing with the arena is the timer. Off-run
+       everything returns. main.js already toggled body.in-run in all the
+       right places and the gate already asserted this behaviour — the rules
+       themselves were simply never written, so the gate was red by three. */
     body.in-run #kills,
     body.in-run #gems,
     body.in-run #style { display: none; }
@@ -43,6 +46,9 @@
     body.in-run #pauseBtn { opacity: 0.12; }
     body.in-run #pauseBtn:hover { opacity: 1; }
     body.in-run .arcade-home,
+    /* !important because toko/js/signature.js sets opacity as an INLINE
+       style, which beats a stylesheet rule. toko/ is the shared brand
+       module five games import, so the override belongs here, not there. */
     body.in-run .toko-signature { opacity: 0.05 !important; }
     .arcade-home, .toko-signature, #pauseBtn { transition: opacity 0.35s ease; }
   </style>
@@ -67,15 +73,15 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=68"></script>
+  <script type="module" src="js/main.js?v=85"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=68').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=85').catch(() => {});
     }
   </script>
-  <script type="module" src="../hub/shell.js?v=43"></script>
+  <script type="module" src="../hub/shell.js?v=17"></script>
   <script type="module">
-    import { sign } from '../toko/js/signature.js?v=9';
+    import { sign } from '../toko/js/signature.js?v=3';
     // `open`: with a cursor the badge opens him at the table, over a paused
     // run, instead of leaving for the arcade. The href stays for middle-click.
     sign({ corner: 'bottom-left', counter: true, open: () => window.__hd && window.__hd.toko.open() });
