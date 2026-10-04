@@ -99,7 +99,7 @@ graphics/physics item runs the other way.
 
 Owner, 2026-10-04: dying constantly in season 1. The rim must not kill. Balance with more enemies, a flying centipede, waves aimed at average 49s / great 90s / impossible ~300s. Manifest models may stand as background. Enemy meshes if possible. Record it here so other bots can help.
 
-**Implemented, browser-verified on the preview, not merged, not on the Hub.**
+**Implemented, browser-verified on the preview, not merged, not on the Hub.** PR [#582](https://github.com/mbace1/Suds-Jack/pull/582), commit `54547d9`, branch `hd-season1-swarm-q029`.
 - Season 1 `edge: 'clamp'`. Shoving the body to r=20 snaps it to 13.2 and the run stays playing. PURE's void rim still kills.
 - Season 1 clock is its own: start 52, cap 74, hit 12. The shared HYPER 30/60/10 numbers are unchanged.
 - Script: skulls only through 22s, spider at 28s, squid at 36s, brute at 58s, flying centipede at 72s (serpent, 8 segments, held above y=2.3, bound inside the disc). From ~100s the waves overlap; skull cap climbs 5 → 9 → 14 → 22. No wraith, splitter, watcher, blinker, dread.
