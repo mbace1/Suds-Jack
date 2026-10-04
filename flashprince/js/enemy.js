@@ -49,7 +49,10 @@ export class Sentry {
         const ahead = this.x + this.face * 9;
         const floor = world.boxSolid(ahead - 3, this.y + 1, 6, 4);
         const wall = world.boxSolid(ahead - 3, this.y - 26, 6, 24);
-        if (!floor || wall || Math.abs(this.x - this.home) > 54) { this.face *= -1; this.f = 0; }
+        // Distance alone stays true after he turns, so he flipped every frame
+        // and never walked back. Reverse only while he is still walking away.
+        const pastLeash = Math.abs(this.x - this.home) > 54 && Math.sign(this.x - this.home) === this.face;
+        if (!floor || wall || pastLeash) { this.face *= -1; this.f = 0; }
         else this.x += step;
         if (this.sees(hero)) this.go('spot');
         break;
