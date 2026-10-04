@@ -40,13 +40,17 @@ export class OrbPool {
     if (!m) return;
     m.position.copy(pos);
     m.scale.setScalar(1);
-    this.active.push({ m, vel: vel.clone(), life: 7, age: Math.random() * 6 });
+    this.active.push({ m, vel: vel.clone(), prev: m.position.clone(), life: 7, age: Math.random() * 6 });
     this._commit();
   }
 
   update(dt, cullR) {
     for (let i = this.active.length - 1; i >= 0; i--) {
       const o = this.active[i];
+      // v42: keep last frame's position — rock stops an orb, and a slow orb
+      // that is nonetheless faster than a pile is thick would tunnel a
+      // point test the way a dagger would
+      o.prev.copy(o.m.position);
       o.m.position.addScaledVector(o.vel, dt);
       o.age += dt;
       o.m.scale.setScalar(1 + 0.16 * Math.sin(o.age * 9)); // menacing breathe

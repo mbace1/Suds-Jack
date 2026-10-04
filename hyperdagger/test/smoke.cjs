@@ -23,20 +23,80 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
 
 s.listen(0, '127.0.0.1', async () => {
   const base = 'http://127.0.0.1:' + s.address().port;
-  const b = await chromium.launch({
+  const errs = [];
+  const misses = [];
+  const launch = () => chromium.launch({
     executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
     env: { ...process.env, LD_LIBRARY_PATH: process.env.PLAYWRIGHT_CHROMIUM_LIB || process.env.LD_LIBRARY_PATH },
     args: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
       ? ['--no-sandbox', '--single-process', '--no-zygote', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--in-process-gpu']
       : ['--use-gl=swiftshader', '--disable-dev-shm-usage'],
   });
-  const p = await b.newPage({ viewport: { width: 1100, height: 720 } });
-  const errs = [];
-  p.on('pageerror', e => errs.push('pageerror: ' + e.message));
-  p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+  let b = await launch();
+  // The suite runs at 820x540, not 1100x720. Same 1.53 aspect (every frame
+  // check is a ratio, not a pixel), 45% fewer pixels for SwiftShader to
+  // carry — and the renderer's climb is what the container's memory cgroup
+  // kills at nine gigabytes. Measured: it reached 8.8 GB before the first
+  // recycle at the old size.
+  const VIEW = { width: 820, height: 540 };
+  let p = await b.newPage({ viewport: VIEW });
+  const watch = () => {
+    p.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+    p.on('response', r => { if (r.status() === 404) misses.push(r.url()); });
+    // A DEAD TAB MUST FAIL LOUDLY. Under SwiftShader the renderer runs out of
+    // memory partway through a long suite; node then sits on an evaluate that
+    // will never resolve and the run hangs for twenty minutes looking like a
+    // slow machine. These two end it in seconds instead.
+    p.on('crash', () => { console.log('  !! the page CRASHED — the renderer is gone'); process.exit(2); });
+    // ...but NOT while we are closing it on purpose: this handler fires on a
+    // clean shutdown too, and exiting from it killed two complete runs one
+    // line before their summary — they had passed everything.
+    b.on('disconnected', () => { if (!swapping && !done) { console.log('  !! the browser DISCONNECTED'); process.exit(2); } });
+  };
+  // ...and a long suite gets a FRESH one at the art boundary. Everything up to
+  // there runs ?assets=0; everything after loads 5 MB of sculpts and pays for
+  // the accumulated renderer heap of forty sections. Two browsers, half the
+  // peak, and the crash that has been ending runs late stops happening.
+  let swapping = false, done = false;
+  const freshBrowser = async () => {
+    swapping = true;
+    await b.close().catch(() => {});
+    b = await launch();
+    p = await b.newPage({ viewport: VIEW });
+    swapping = false;
+    watch();
+  };
+  /**
+   * A fresh browser AND the page state the suite runs on. Under SwiftShader
+   * the renderer climbs about a gigabyte every ten checks — measured — and
+   * the container's memory cgroup kills it at nine, which is what had been
+   * ending runs at a different check every time. Nothing leaks in the game
+   * (geometry, textures and the JS heap are all flat across spawn/kill
+   * cycles); it is the cost of software-rendering this scene for half an
+   * hour. So the suite recycles: each phase starts from ~170 MB.
+   */
+  const recycle = async () => {
+    await freshBrowser();
+    await p.goto(base + '/hyperdagger/?assets=0&season=void', { waitUntil: 'load' });
+    await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+    await p.evaluate(() => { window.__hd.debug.setSeason('void'); window.__hd.debug.startGame(); });
+    await p.evaluate(() => new Promise(r => { let c = 0; const f = () => (++c >= 4 ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); }));
+  };
+  // A 404 is fail-soft here (every asset path has a fallback) and that is
+  // exactly why it needs its own watch: three enemy GLBs were requested on
+  // every single boot for art that is in no branch, and nothing failed.
+  watch();
 
   // ---- boot --------------------------------------------------------------
-  await p.goto(base + '/hyperdagger/', { waitUntil: 'load' });
+  // assets=0 for the bulk of the suite. Everything from here to the v38
+  // section tests movement, gunfeel, the director, the render passes and the
+  // string-art sculpts — none of it needs 5 MB of Meshy skins in the scene,
+  // and with them loaded the software renderer takes minutes per section and
+  // stalls outright on the multi-render sphere captures. The art sections
+  // below navigate to a page that DOES load it, and check it there.
+  await p.goto(base + '/hyperdagger/?assets=0', { waitUntil: 'load' });
   await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
   ok('it boots with no errors', errs.length === 0, errs.slice(0, 3).join(' | '));
   ok('WebGL actually painted', await p.evaluate(() => {
@@ -45,8 +105,16 @@ s.listen(0, '127.0.0.1', async () => {
   }));
 
   // ---- start a run (skip the one-time tips card) -------------------------
+  // v41: every section below this line is the pre-season game, so it runs in
+  // the CONTROL season — VOID is the bare disc with daggers, which is what
+  // these checks were written against. The seasons section at the end
+  // navigates to its own pages.
+  await p.evaluate(() => window.__hd.debug.setSeason('void'));
   await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
-  await p.mouse.click(550, 360);
+  // low on the page, BELOW the menu panel: dead centre is a button now that
+  // v41 put SEASON beside MODE, and clicking a button is not "a click starts
+  // the run"
+  await p.mouse.click(410, 508);
   await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 });
   ok('a click starts the run', true);
 
@@ -190,6 +258,8 @@ s.listen(0, '127.0.0.1', async () => {
     Math.abs(gemRules31.xFiring - gemRules31.x0) < 0.001 &&
     gemRules31.xIdle < gemRules31.xFiring && gemRules31.blastVx > 0 && gemRules31.life === 10,
     JSON.stringify(gemRules31));
+
+  await recycle(); // phase 2 — the gunfeel and movement work is the expensive part
 
   // ---- v29 90s-FPS movement: diagonal, momentum, hop, dagger jump -------
   const move29 = await p.evaluate(async () => {
@@ -405,9 +475,15 @@ s.listen(0, '127.0.0.1', async () => {
   ok('assist slows only near a centred target', aim.clearRaw === 1 && aim.centredRaw < 0.7 && aim.offAxis === 1, JSON.stringify(aim));
   ok('assist + ramp stay inert without a pad', aim.assist === 1 && aim.ramp === 0, JSON.stringify(aim));
 
+  await recycle(); // phase 3
+
   // ---- v4.26 REAP: the bone-yard is a resource you spend -----------------
   const reap = await p.evaluate(async () => {
     const hd = window.__hd;
+    // Pin the tier that HAS a bone-yard. This section ran on tier 0 only
+    // because the governor was blind to slow frames (v40); now it drops to a
+    // floor tier here whose litter cap is zero, and REAP has nothing to spend.
+    hd.debug.setOpt('perf', 'high');
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     hd.debug.setPerfTier(0);
     hd.litter.reset(); hd.debris.reset();
@@ -433,6 +509,7 @@ s.listen(0, '127.0.0.1', async () => {
       cool: hd.debug.getReap().cool, again: hd.debug.reap() };
     h.alive = false; hd.litter.reset(); hd.debris.reset();
     res.fired = fired;
+    hd.debug.setOpt('perf', 'auto'); // hand the tier back
     return res;
   });
   ok('REAP refuses a bare floor, free', reap.bare === false && reap.coolAfterMiss === 0, JSON.stringify(reap));
@@ -528,7 +605,10 @@ s.listen(0, '127.0.0.1', async () => {
   }, token);
   ok('the skull is a sculpt now (≥300 source voxels)', detail31.count >= 300, JSON.stringify(detail31));
   ok('the basic skull owns a wider threatening horn silhouette (~2.38)', Math.abs(detail31.width - 2.38) < 0.02, JSON.stringify(detail31));
-  ok('AO bake gives bone real shading', detail31.boneShades > 10, JSON.stringify(detail31));
+  // v38: the bake snaps to STYLE.quantize value bands, so a sculpt carries a
+  // handful of hard bone tones rather than a gradient — that is the pixel-art
+  // read, and "more than one" is the thing being asserted, not "many"
+  ok('AO bake gives bone real shading (banded)', detail31.boneShades >= 3, JSON.stringify(detail31));
   ok('the firing hand is a broad four-tip claw', detail31.handCount > 140 && detail31.handWidth === 0.45 && detail31.handTips === 8, JSON.stringify(detail31));
   ok('the original ash-and-bone claw is restored',
     detail31.handColor.palm[0] > 0.3 && detail31.handColor.palm[0] < 1 &&
@@ -582,6 +662,12 @@ s.listen(0, '127.0.0.1', async () => {
     await frames(1);
     const low = hd.debug.getProjection();
     hd.debug.setOpt('perf', 'auto');
+    // Put it back to its default (OFF). Leaving it on made every later
+    // section pay six cube-face renders per capture, and since v38 those
+    // render full cube lattices rather than a smoothed hull — the suite
+    // stalled outright in the serpent motion test that follows.
+    hd.debug.setOpt('projection', false);
+    await frames(1);
     return { active, off, low };
   });
   ok('v23 spherical projection captures world and threats',
@@ -614,36 +700,25 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('the serpent swoops vertically (Y spread > 2.5)', swoop.max - swoop.min > 2.5, JSON.stringify(swoop));
 
-  // ---- v4.32 mesh hull: smooth skin alive, voxels where it tears ---------
+  // ---- v4.32 mesh hull: LOOK SMOOTH still works, on the thing that has one --
+  // Since v38 the cube look is the default and any roster slot may be a
+  // voxelized asset (no hull by design), so this no longer reaches into
+  // "whatever dread just spawned" — that hung the suite. The probe builds a
+  // string-art dread with the skin forced on and chips it.
   const hull = await p.evaluate(async () => {
     const hd = window.__hd;
-    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    hd.debug.setTime(0); // keep the live director out of this isolated mesh check
     hd.debug.setOpt('perf', 'high');
+    const probe = hd.debug.hullProbe();
     hd.debug.setOpt('look', 'smooth');
-    for (const e of hd.enemies) e.alive = false;
-    hd.enemies.length = 0;
-    hd.debug.spawnDread();
-    await frames(3);
-    const on = hd.debug.getLook();
-    const e = hd.enemies.filter(x => x.type === 'dread').pop();
-    const before = e.sprite.hull.geometry.getAttribute('position').count;
-    e.sprite.chip(e.sprite.worldVoxels()[0].pos, 40);
-    await frames(6); // past the re-skin throttle at clamped dt
-    const after = e.sprite.hull.geometry.getAttribute('position').count;
+    const smooth = hd.debug.getLook();
     hd.debug.setOpt('look', 'cubes');
     const cubes = hd.debug.getLook();
-    hd.debug.setOpt('look', 'smooth');
-    hd.debug.setOpt('perf', 'low');
-    const low = hd.debug.getLook();
     hd.debug.setOpt('perf', 'auto');
-    e.alive = false;
-    return { hullOn: on.sample?.hull, cubesHidden: on.sample?.cubes, handCubes: on.hand,
-      before, after, cubesBack: cubes.sample?.hull, lowShed: low.sample?.hull };
+    return { ...probe, smoothMode: smooth.mode, smoothHull: smooth.hullMode, cubesHull: cubes.hullMode };
   });
-  ok('the smooth skin is the default alive-look', hull.hullOn === true && hull.cubesHidden === 0 && hull.handCubes === false, JSON.stringify(hull));
+  ok('the cube look is the default alive-look', hull.defaultHull === false && hull.cubesHull === false, JSON.stringify(hull));
+  ok('LOOK SMOOTH still builds a skin that hides the cubes', hull.hadHull && hull.cubesHidden === 0 && hull.smoothHull === true, JSON.stringify(hull));
   ok('a chip tears and re-forms the skin', hull.after > 0 && hull.after !== hull.before, JSON.stringify(hull));
-  ok('LOOK CUBES and the low tier both fall back', hull.cubesBack === false && hull.lowShed === false, JSON.stringify(hull));
 
   // ---- long-run health: spawn/kill cycles must plateau, not climb --------
   // (the hull re-skin allocates a fresh BufferGeometry per rebuild, so this
@@ -652,6 +727,13 @@ s.listen(0, '127.0.0.1', async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     hd.debug.setTime(0); // generated pressure would measure the director, not leaks
+    // Dead enemies leave the array from updateCombat, which only runs while
+    // the run is PLAYING — so a run that ended in an earlier section makes
+    // this read as an unbounded leak when nothing is leaking. Report the
+    // state, and start a fresh run if this one is over.
+    const stateAtEntry = hd.debug.getState().state;
+    if (stateAtEntry !== 'playing') hd.debug.startGame();
+    hd.debug.setInvulnerable?.(true); // a dread spawned in your face must not end it mid-cycle
     for (const e of hd.enemies) e.alive = false;
     await frames(4);
     hd.debug.setOpt('perf', 'low'); // cheap frames — we count objects, not pixels
@@ -669,7 +751,9 @@ s.listen(0, '127.0.0.1', async () => {
     for (let i = 0; i < 4; i++) await cycle();
     const b = hd.debug.getHealth();
     hd.debug.setOpt('perf', 'auto');
-    return { a: { g: a.geometries, t: a.textures, sc: a.sceneChildren, en: a.enemies }, b: { g: b.geometries, t: b.textures, sc: b.sceneChildren, en: b.enemies } };
+    hd.debug.setInvulnerable?.(false);
+    return { stateAtEntry, state: hd.debug.getState().state,
+      a: { g: a.geometries, t: a.textures, sc: a.sceneChildren, en: a.enemies }, b: { g: b.geometries, t: b.textures, sc: b.sceneChildren, en: b.enemies } };
   });
   ok('spawn/kill cycles do not leak geometry', health.b.g - health.a.g <= 2 && health.b.t === health.a.t, JSON.stringify(health));
   ok('the scene graph returns to baseline', health.b.sc <= health.a.sc + 2 && health.b.en === health.a.en, JSON.stringify(health));
@@ -677,6 +761,16 @@ s.listen(0, '127.0.0.1', async () => {
   // ---- death → restart under 2 s -----------------------------------------
   const death = await p.evaluate(async () => {
     const hd = window.__hd;
+    // Guarantee a LIVE run before killing it. debug.die() is a no-op unless
+    // state === 'playing', and by this point in the suite the player has
+    // often already been killed by the director — so the assertion below
+    // read a stale frame and failed for reasons that had nothing to do with
+    // the frame logic. (Verified in isolation: die() clears in-run and a
+    // restart restores it, every time.)
+    if (hd.debug.getState().state !== 'playing') {
+      hd.debug.startGame?.();
+      await new Promise(r => requestAnimationFrame(r));
+    }
     hd.debug.die();
     return {
       state: hd.debug.getState().state,
@@ -686,21 +780,1258 @@ s.listen(0, '127.0.0.1', async () => {
   ok('debug.die() reaches the death screen', death.state === 'dead');
   await p.waitForTimeout(1200); // death screen ignores input for 700ms
   // click clear of the death screen's own buttons (they stopPropagation)
-  await p.mouse.click(880, 620);
+  await p.mouse.click(660, 470);
   const restarted = await p.waitForFunction(
     () => window.__hd.debug.getState().state === 'playing', null, { timeout: 4000 }).then(() => true, () => false);
   ok('one click restarts within 2s', restarted);
+  // setRunFrame is one synchronous class toggle, so no wait can be the cure
+  // for what failed here three times under a shared CPU. What CAN flip the
+  // frame back is showPause(): a lost pointer lock pauses the game, and a
+  // headless click's lock request lands differently under load. The frame
+  // retreated on restart and the game then paused — both correct — so a
+  // PAUSED overlay counts as the frame having done its job.
+  const retreated = await p.waitForFunction(
+    () => document.body.classList.contains('in-run') || /PAUSED/.test(document.getElementById('msg')?.textContent || ''),
+    null, { timeout: 8000 }).then(() => true, () => false);
   ok('the full shell returns off-run and retreats again on restart',
-    !death.activeFrame && await p.evaluate(() => document.body.classList.contains('in-run')));
+    !death.activeFrame && retreated);
 
-  // ---- v35 Toko at the table ----------------------------------------------
+  await recycle(); // phase 4
+
+  // ---- v36 the mode lab: every registered experiment boots ---------------
+  // This section exists because TRUCK was LOST. v33's notes promise a three-
+  // way mode cycle; the toggle was a two-way flip, truck.js was never
+  // imported, and nothing failed — a whole named experiment existed only on
+  // paper for three releases. So the gate does not test "pure and hyper", it
+  // walks the registry: whatever is in MODES has to boot, has to get the body
+  // it declared, and has to have something under its feet.
+  const registry = await p.evaluate(() => window.__hd.debug.getModes());
+  ok('the registry declares at least the three named experiments',
+    ['pure', 'hyper', 'truck'].every(id => registry.ids.includes(id)),
+    registry.ids.join(','));
+  ok('every mode declares a hi-score key or explicitly none',
+    registry.modes.every(m => typeof m.hiKey === 'string' || m.hiKey === null));
+  ok('every mode declares an arena, an edge, a director and a lethality',
+    registry.modes.every(m => m.arena && m.edge && m.director && m.lethality));
+
+  for (const id of registry.ids) {
+    // assets=0: this loop tests the mode registry, not the art, and fetching
+    // 5 MB of GLB on each of four reloads is most of the suite's wall clock
+    await p.goto(base + '/hyperdagger/?assets=0&mode=' + id, { waitUntil: 'load' });
+    await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+    await p.evaluate(() => window.__hd.debug.startGame());
+    const tick = n => p.evaluate(count => new Promise(r => {
+      let i = 0; const t = () => (++i > count ? r() : requestAnimationFrame(t)); requestAnimationFrame(t);
+    }), n);
+    // Read the body the moment the run opens. Later is not the same question:
+    // a bot never steers, and a track is a route, so "still alive after a
+    // minute" would only ever measure whether the road happened to run straight.
+    await tick(3);
+    const m = await p.evaluate(() => window.__hd.debug.getModes());
+    const decl = m.modes.find(x => x.id === m.current);
+    ok(`${id}: boots into its own mode`, m.current === id, m.current);
+    ok(`${id}: the body is the one the mode declared`,
+      m.player.maxJumps === decl.resolved.jumps
+      && m.player.abilities.dash === decl.resolved.dash
+      && m.player.abilities.glide === decl.resolved.glide
+      && m.player.edgeMode === decl.edge,
+      JSON.stringify({ got: m.player.maxJumps, want: decl.resolved.jumps, edge: m.player.edgeMode }));
+    // The bug this catches: an edge value folded into "open" left the disc
+    // modes with no floor at all and the body fell through the arena.
+    ok(`${id}: there is a floor under it`,
+      Number.isFinite(m.player.floorY) && m.player.feetY >= m.player.floorY - 0.6,
+      `floorY=${m.player.floorY} y=${m.player.feetY}`);
+    // A bot never jumps, so on a track it is in the first hole by frame ~27
+    // and dead by 60 — lift it out while the run ages, and let the fall
+    // respect the same test-only invulnerability every other death does.
+    if (decl.arena === 'track') {
+      await p.evaluate(async () => {
+        const hd = window.__hd, d = hd.debug, pl = hd.player;
+        d.setInvulnerable?.(true);
+        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+        for (let i = 0; i < 60; i++) { if (pl.feet.y < -1.5) { pl.feet.y = 0.5; pl.vy = 0; } await frames(1); }
+      });
+    } else await tick(60);
+    const late = await p.evaluate(() => ({
+      state: window.__hd.debug.getState().state,
+      platforms: window.__hd.debug.getModes().trackPlatforms,
+    }));
+    if (decl.arena === 'track') {
+      // A track keeps laying itself ahead of the player for as long as the
+      // run lasts; whether a bot that never steers stays on it is not the
+      // gate's business.
+      ok(`${id}: the track keeps building ahead`, late.platforms > 4, String(late.platforms));
+      // v40: THE COURSE — past 20 s some gaps widen beyond a jump and get a
+      // wall along one side to run across. Jump the clock and watch for one.
+      const course = await p.evaluate(async () => {
+        const hd = window.__hd, d = hd.debug, pl = hd.player;
+        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+        d.setInvulnerable?.(true);
+        d.setTime(24);
+        // deterministic: every gap past 20 s is a course gap for this check,
+        // and the bot — which neither jumps nor drifts — is lifted out of
+        // the holes it would otherwise die in before one came along
+        const T = d.tuning ? d.tuning() : null;
+        if (T) T.truck.courseChance = 1;
+        let walls = 0;
+        for (let i = 0; i < 240 && walls === 0; i++) {
+          pl.feet.x = 0; if (pl.feet.y < -1.5) { pl.feet.y = 0.5; pl.vy = 0; }
+          await frames(1); walls = d.getWalls().count;
+        }
+        if (T) T.truck.courseChance = 0.12;
+        return { walls, wallRun: d.getWallRun().enabled, courseTagged: d.getWalls().walls.length > 0, state: d.getState().state };
+      });
+      ok(`${id}: the course lays a wall beside a widened gap`, course.walls >= 1 && course.courseTagged, JSON.stringify(course));
+      ok(`${id}: wall run is on for the course`, course.wallRun === true, JSON.stringify(course));
+    } else if (decl.arena === 'court') {
+      // v39: the first geometry this arena has had that is not a floor
+      const court = await p.evaluate(async () => {
+        const hd = window.__hd, pl = hd.player;
+        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+        const walls = hd.debug.getWalls();
+        pl.feet.set(0, 0, 0); pl.yaw = 0; pl._sync();
+        for (let i = 0; i < 40; i++) { pl.velocity.set(0, 0, -12); await frames(1); }
+        return { walls: walls.count, solid: walls.walls.every(w => !w.maxHp), z: +pl.feet.z.toFixed(2), contact: pl.wallContact ? [+pl.wallContact.nx.toFixed(2), +pl.wallContact.nz.toFixed(2)] : null };
+      });
+      ok(`${id}: the court has its four walls`, court.walls === 4, JSON.stringify(court));
+      ok(`${id}: the court's walls are not destructible — v53's hit points are the shale piles' only`, court.solid === true, JSON.stringify(court));
+      ok(`${id}: a wall stops the body and reports its normal`,
+        court.z > -16 && court.z < -14 && court.contact && court.contact[1] === 1, JSON.stringify(court));
+      ok(`${id}: survives on the court`, late.state === 'playing', late.state);
+      // v40: the wall run — take off beside the north wall with speed along
+      // it, ride it holding height, kick off along its normal on a jump press;
+      // and the air jump, which v36 declared for this body and never delivered
+      const wr = await p.evaluate(async () => {
+        const hd = window.__hd, pl = hd.player, d = hd.debug;
+        const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+        pl.feet.set(-5, 0, -14.6); pl.yaw = -Math.PI / 2; pl.velocity.set(0, 0, 0); pl.vy = 0; pl._sync();
+        await frames(2);
+        let ran = 0, ys = [], kick = null;
+        for (let i = 0; i < 44; i++) {
+          if (i === 1) pl.jumpBuffer = 0.11;
+          if (i < 18) { pl.velocity.x = 9; pl.velocity.z = -3; } // hands off after the press, or the kick is overwritten
+          if (i === 18) pl.jumpBuffer = 0.11;
+          await frames(1);
+          const w = d.getWallRun();
+          if (w.running) { ran++; ys.push(w.y); }
+          if (i === 19) kick = { vz: +pl.velocity.z.toFixed(2), vy: +pl.vy.toFixed(2), wasRunning: w.running, t: w.t };
+        }
+        // the air jump: from the floor, jump, then jump again in the air
+        pl.feet.set(0, 0, 0); pl.velocity.set(0, 0, 0); pl.vy = 0; pl._sync(); await frames(2);
+        pl.jumpBuffer = 0.11; await frames(8);
+        const midAir = pl.feet.y > 0.5 && pl.vy < 6;
+        pl.jumpBuffer = 0.11; await frames(1);
+        const second = { midAir, vyAfter: +pl.vy.toFixed(2), jumpsLeft: pl.jumpsLeft, maxJumps: pl.maxJumps };
+        return { enabled: d.getWallRun().enabled, ran, yMin: +Math.min(...ys).toFixed(2), yMax: +Math.max(...ys).toFixed(2), kick, second };
+      });
+      ok(`${id}: wall run is on and engages`, wr.enabled && wr.ran >= 10, JSON.stringify(wr));
+      ok(`${id}: a wall run holds height instead of climbing off the wall or sinking to the floor`, wr.yMin > 0.4 && wr.yMax < 2.5, JSON.stringify(wr));
+      ok(`${id}: a jump press mid-run kicks off along the wall's normal`, wr.kick && wr.kick.vz > 1.5 && wr.kick.vy > 4, JSON.stringify(wr.kick));
+      ok(`${id}: a second jump fires in the air`, wr.second.midAir && wr.second.vyAfter > 6, JSON.stringify(wr.second));
+    } else {
+      ok(`${id}: survives a minute of its own director`, late.state === 'playing', late.state);
+    }
+  }
+
+  // The bench mode cannot kill you, so without a way out of a run the only
+  // way to change experiment was a page reload. (The loop above leaves the
+  // page on the last registered mode, which is exactly the one that proves it.)
+  await p.evaluate(() => window.__hd.debug.startGame()); // guarantee a live run
+  await p.click('#pauseBtn');  // (still on the assets=0 page from the loop above)
+  await p.waitForSelector('#endBtn', { timeout: 5000 });
+  await p.click('#endBtn');
+  const backAtMenu = await p.evaluate(() => ({
+    state: window.__hd.debug.getState().state,
+    canSwitch: document.querySelectorAll('[data-season]').length,   // v48: MODE moved to the pause menu; the intro is the seasons
+  }));
+  ok('END RUN leaves a run for the season menu', backAtMenu.state === 'menu', backAtMenu.state);
+  ok('and the seasons are there to pick from when you land', backAtMenu.canSwitch >= 2, backAtMenu.canSwitch);
+
+  // ---- v41 SEASONS: the arena's art is declared, like a mode --------------
+  // Each season boots its own page (?season=), because a season is read at
+  // boot the way a mode is. assets=0 throughout: this is about the arena the
+  // code builds, not about the Meshy skins.
+  const seasonReg = await p.evaluate(() => window.__hd.debug.getSeasons());
+  ok('the season registry is a list, and the page knows which one it is on',
+    Array.isArray(seasonReg.ids) && seasonReg.ids.length >= 3 && seasonReg.ids.includes('ember'),
+    JSON.stringify(seasonReg.ids));
+
+  const seasonRead = async (id, mode = 'hyper') => {
+    await p.goto(base + `/hyperdagger/?assets=0&season=${id}&mode=${mode}`, { waitUntil: 'load' });
+    await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+    return p.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug;
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
+      await frames(6);
+      const sn = d.getSeasons();
+      sn.tech = d.getTechArt();
+      sn.hand = d.getHand();   // v52: the season's own weapon
+      // v45: one body, built under this season, for the roster palette check
+      d.spawnSplitter(); await frames(2);
+      const roster = d.rosterSample();
+      // v48: the menus — the intro's buttons are still in the message box
+      // (startGame hides it, it does not empty it), and the pause menu is a
+      // press of the pause button away
+      const menu = { seasons: d.menuSeasons(), modeOnIntro: d.menuHas('#modeBtn'), oldSeasonBtn: d.menuHas('#seasonBtn') };
+      document.getElementById('pauseBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+      await frames(2);
+      const pause = { seasons: d.menuSeasons(), modeBtn: d.menuHas('#modeBtn'), endBtn: d.menuHas('#endBtn'),
+        rows: [...document.querySelectorAll('#msg .optrow span:first-child')].map(e => e.textContent.trim()).filter(Boolean) };
+      document.getElementById('msg').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));   // resume
+      await frames(2);
+      // v48: the director — in a skulls-only season, seconds of it spawn skulls and nothing else
+      let director = null;
+      if (sn.spawns && sn.spawns.only === 'skulls') {
+        for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+        d.setTime(50); d.freezeDirector(false);
+        for (let i = 0; i < 70; i++) await frames(1);
+        d.freezeDirector(true);
+        const types = {}; for (const e of hd.enemies) if (e.alive) types[e.type] = (types[e.type] || 0) + 1;
+        director = { types, total: hd.enemies.filter(e => e.alive).length };
+      }
+      return { sn, gun: d.getGun(), walls: d.getWalls(), plats: d.getPlatforms(), goo: d.getGoo(), inca: d.getInca(), roster, menu, pause, director };
+    });
+  };
+
+  const ctrl = await seasonRead('void');
+  ok('void: the control is the bare disc with daggers',
+    ctrl.walls.count === 0 && ctrl.plats.count === 0
+    && ctrl.gun.weapon === 'dagger' && ctrl.gun.streamSpeed === 48 && ctrl.gun.shape === null,
+    JSON.stringify({ walls: ctrl.walls.count, plats: ctrl.plats.count, gun: ctrl.gun.weapon }));
+  ok('void: no ground under the monuments, and the pre-season fog',
+    ctrl.sn.ground === false && ctrl.sn.fog.far === 72 && ctrl.sn.backdrop.visible === false,
+    JSON.stringify({ ground: ctrl.sn.ground, fog: ctrl.sn.fog, bd: ctrl.sn.backdrop }));
+
+  const em = await seasonRead('ember');
+  // (this block runs FIRST on the ember page: a later check clears the pillars
+  //  as the cover check's control, and a felled pile is still a pile for the rest)
+  // v53 COVER THAT DIES (owner). Every pile has hit points; worn past half it
+  // leans; at zero it comes down as a heap of shale chunks — physical, so
+  // they stack — and it is gone as cover. Driven through debug.wearWall, the
+  // same function a nail and a shoving body call.
+  const coverDies = await p.evaluate(async () => {
+    const d = window.__hd.debug, G = d.gibsObj();
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const w0 = d.getWalls().walls;
+    const hp = w0.map(w => w.hp), maxHp = w0.map(w => w.maxHp);
+    d.wearWall(0, 40);
+    const mid = d.getWalls().walls[0];
+    const r = d.wearWall(0, 40);
+    await frames(40);
+    return { piles: w0.length, hp, maxHp, midHp: mid.hp, midLean: mid.lean, felled: r.felled, left: r.left, gibs: G.getState().n, gibsTop: G.getState().top };
+  });
+  ok('ember: COVER THAT DIES — every pile has hit points, worn past half it leans, at zero it collapses into a heap of shale',
+    coverDies.piles >= 5 && coverDies.maxHp.every(h => h === 70) && coverDies.hp.every(h => h === 70)
+    && coverDies.midHp === 30 && coverDies.midLean > 0.04 && coverDies.felled === 1 && coverDies.left === coverDies.piles - 1 && coverDies.gibs >= 8 && coverDies.gibsTop > 0.2,
+    JSON.stringify(coverDies));
+  // v54 THE RUBBLE IS THE LEVEL: the heap that pile left, once it has come to
+  // rest, is ground you stand on and cover a shot stops on
+  const rubble = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player, G = d.gibsObj();
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    for (let i = 0; i < 400 && G.awake; i++) await frames(1);
+    const g = G.gibs.filter(x => x.b.mass <= 0 && x.s >= 0.4).sort((a, b) => (b.b.positionLin[2] + b.s / 2) - (a.b.positionLin[2] + a.s / 2))[0];
+    if (!g) return { none: true, n: G.gibs.length, awake: G.awake };
+    const top = g.b.positionLin[2] + g.s / 2, x = g.b.positionLin[0], z = -g.b.positionLin[1], y = g.b.positionLin[2];
+    pl.feet.set(x, top + 0.3, z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+    await frames(20);
+    const stood = pl.feet.y;
+    const V = pl.feet.constructor;
+    const blocked = !!G.blocks(new V(x - 3, y, z), new V(x + 3, y, z));
+    const clear = !G.blocks(new V(x - 3, y + 3, z), new V(x + 3, y + 3, z));
+    pl.feet.set(0, 0, 0); pl._sync();
+    return { top: +top.toFixed(2), stood: +stood.toFixed(2), blocked, clear, n: G.gibs.length };
+  });
+  ok('ember: THE RUBBLE IS THE LEVEL — a heap at rest is ground you stand on, and cover a shot stops on',
+    !rubble.none && rubble.top > 0.3 && Math.abs(rubble.stood - rubble.top) < 0.1 && rubble.blocked && rubble.clear,
+    JSON.stringify(rubble));
+  const pillars = em.walls.walls.filter(w => w.tag === 'pillar');
+  ok('ember: it boots into its own season and says so',
+    em.sn.current === 'ember' && em.sn.built === true, JSON.stringify(em.sn.current));
+  ok('ember: dark rock stands in the arena — five piles, none of them tall',
+    pillars.length >= 4 && pillars.length <= 5 && pillars.every(w => w.h >= 3 && w.h <= 7),
+    JSON.stringify(pillars.map(w => w.h)));
+  // "Low mostly" is a property of the DRAW, and four live slabs cannot show
+  // it — a seed where three of four land high is ordinary, and this check
+  // failed on one. Sample the generator instead: the height draw is squared,
+  // so the median must sit in the bottom quarter of the declared range.
+  const heights = await p.evaluate(() => {
+    const P = window.__hd.debug.platformsObj(), hs = [];
+    for (let i = 0; i < 80; i++) {
+      const q = P._make();
+      hs.push(q.h);
+      P.group.remove(q.mesh); q.mesh.geometry.dispose(); // built only to be measured
+    }
+    hs.sort((a, b) => a - b);
+    return { median: hs[40], min: hs[0], max: hs[79], n: hs.length };
+  });
+  ok('ember: the slabs are LOW mostly — the squared draw puts the median low',
+    em.plats.count === 4 && em.plats.slabs.every(s => s.h <= 1.6)
+    && heights.min >= 0.4 && heights.max <= 1.6
+    && heights.median < 0.4 + (1.6 - 0.4) * 0.45,
+    JSON.stringify({ live: em.plats.slabs.map(s => s.h), sampled: heights }));
+  // v54 (owner: *change season 1's weapon closer to the Devil Daggers example*)
+  ok('ember: the Devil Daggers dagger — small fast blades in a wide fan, from a bare hand',
+    em.gun.weapon === 'dd' && em.gun.streamSpeed > 48 && em.gun.spread > 0.045
+    && em.gun.shape && em.gun.shape.len < 0.3 && em.sn.hand.model === 'daggerHand',
+    JSON.stringify({ gun: em.gun, hand: em.sn.hand.model }));
+  ok('ember: the fog leans to the ember and a ground stands under the monuments',
+    em.sn.fog.color[0] > em.sn.fog.color[2] * 3 && em.sn.fog.far < 72
+    && em.sn.ground === true && em.sn.backdrop.visible === true && em.sn.backdrop.emissive > 0,
+    JSON.stringify({ fog: em.sn.fog, ground: em.sn.ground, bd: em.sn.backdrop }));
+  ok('ember: the sky carries a star field the control has not',
+    em.sn.sky.stars > 0 && ctrl.sn.sky.stars === 0, JSON.stringify(em.sn.sky.stars));
+
+  // the slabs MOVE, are a floor, and CARRY the body standing on one
+  const slab = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    // Slabs are LOW mostly and a top under 0.45 is stepped onto rather than
+    // walked into, so the one under test is forced tall and grown.
+    const P = d.platformsObj(), sl = P.list[0];
+    sl.h = 2.0; sl.phase = 'live'; sl.k = 1; sl.t = 0; P._pose(sl);
+    await frames(2);
+    const a = d.getPlatforms().slabs[0];
+    await frames(40);
+    const b = d.getPlatforms().slabs[0];
+    const moved = Math.hypot(b.x - a.x, b.z - a.z);
+    // stand on it
+    pl.feet.set(b.x, b.top, b.z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+    await frames(2);
+    const floorOn = pl.floorY;
+    const x0 = pl.feet.x, z0 = pl.feet.z;
+    await frames(30);
+    const carried = Math.hypot(pl.feet.x - x0, pl.feet.z - z0);
+    // and its SIDE is a wall: walk into it from the floor
+    const c = d.getPlatforms().slabs[0];
+    pl.feet.set(c.x + c.w / 2 + 2.5, 0, c.z); pl.vy = 0; pl._sync();
+    await frames(2);
+    for (let i = 0; i < 24; i++) { pl.velocity.set(-9, 0, 0); await frames(1); }
+    const stoppedAt = pl.feet.x - c.x;
+    return { moved: +moved.toFixed(3), floorOn: +floorOn.toFixed(2), top: +b.top.toFixed(2), carried: +carried.toFixed(3), stoppedAt: +stoppedAt.toFixed(2), halfW: c.w / 2 };
+  });
+  ok('ember: a slab drifts while it stands', slab.moved > 0.02, JSON.stringify(slab));
+  ok('ember: a standing slab IS the floor', Math.abs(slab.floorOn - slab.top) < 0.01 && slab.top > 1.5, JSON.stringify(slab));
+  ok('ember: a body standing on one is carried by it', slab.carried > 0.02, JSON.stringify(slab));
+  ok('ember: a slab side is a wall you cannot walk through',
+    slab.stoppedAt > slab.halfW, JSON.stringify(slab));
+
+  // rock stops a nail: one fired into a pillar dies, one fired at the sky does not
+  const nails = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    const w = d.getWalls().walls.find(x => x.tag === 'pillar');
+    // stand off the pillar and look straight at it
+    const len = Math.hypot(w.x, w.z), k = (len - 6) / len;
+    pl.feet.set(w.x * k, 0, w.z * k); pl.vy = 0; pl.velocity.set(0, 0, 0);
+    pl.yaw = -Math.atan2(w.x - pl.feet.x, -(w.z - pl.feet.z)); pl.pitch = 0.12; pl._sync();
+    hd.daggers.reset();
+    await frames(1);
+    hd.player.input.mouseDown = true; await frames(14); hd.player.input.mouseDown = false;
+    await frames(10);
+    const intoRock = hd.daggers.active.length;
+    // now at the sky, from the same spot
+    hd.daggers.reset(); pl.pitch = 0.9; pl._sync();
+    await frames(1);
+    hd.player.input.mouseDown = true; await frames(14); hd.player.input.mouseDown = false;
+    await frames(2);
+    const intoSky = hd.daggers.active.length;
+    hd.daggers.reset();
+    return { intoRock, intoSky };
+  });
+  ok('ember: rock stops a nail, open air does not',
+    nails.intoSky > 0 && nails.intoRock < nails.intoSky, JSON.stringify(nails));
+
+  // v42: the arena is COVER — rock stops an enemy orb, holds a body out of
+  // itself, and a slab is something a gem can land on.
+  const cover = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    const w = d.getWalls().walls.find(x => x.tag === 'pillar');
+    const len = Math.hypot(w.x, w.z), k = (len + 6) / len;
+    const from = { x: w.x * k, z: w.z * k };
+    const dx = w.x - from.x, dz = w.z - from.z, dl = Math.hypot(dx, dz);
+    const V = (x, y, z) => ({ x, y, z, clone() { return V(this.x, this.y, this.z); } });
+    // a body cannot stand inside a pile
+    d.spawnSkull();
+    const e = hd.enemies[hd.enemies.length - 1]; e.hp = 9999;
+    e.pos.set(w.x, 1.2, w.z);
+    await frames(3);
+    const pushedOut = Math.hypot(e.pos.x - w.x, e.pos.z - w.z);
+    e.alive = false;
+    // a gem lands ON a slab. Driven synchronously with the magnet off and the
+    // player far away — it reaches the whole arena while the hand is idle.
+    const P = d.platformsObj(), sl = P.list[0];
+    sl.h = 1.6; sl.phase = 'live'; sl.k = 1; sl.t = 0; P._pose(sl);
+    const st = d.getPlatforms().slabs[0];
+    const floorAt = (x, z) => P.topAt(x, z, 0), far = { x: 999, y: 1, z: 999 };
+    hd.gems.reset();
+    hd.gems.spawn({ x: st.x, y: 3, z: st.z });
+    const g = hd.gems.active[hd.gems.active.length - 1]; g.vel.x = 0; g.vel.z = 0;
+    for (let i = 0; i < 150; i++) hd.gems.update(1 / 60, far, false, floorAt);
+    const onSlab = g.m.position.y;
+    hd.gems.spawn({ x: st.x + st.w / 2 + 5, y: 3, z: st.z });
+    const g2 = hd.gems.active[hd.gems.active.length - 1]; g2.vel.x = 0; g2.vel.z = 0;
+    for (let i = 0; i < 150; i++) hd.gems.update(1 / 60, far, false, floorAt);
+    const onFloor = g2.m.position.y;
+    hd.gems.reset();
+    // THE ORB, LAST, because the control removes the rock: the same shot from
+    // the same point, once with the pile there and once without. Comparing two
+    // DIFFERENT shots made the control frame-rate dependent — an orb fired
+    // outward reached the cull radius on a slow frame and read as blocked.
+    // Stepped by DISTANCE, never by a frame count: a frame here is anywhere
+    // between 16 ms and a second, so "40 frames" was long enough for the orb
+    // to reach its 7 s life cap and the control read as blocked.
+    // Fired ABOVE the slabs (they cap at 1.6): a slab happening to sit on the
+    // path is luck, and this check is about the PILE. The control below then
+    // clears both, so the only difference between the two shots is the rock.
+    const shot = async () => {
+      hd.orbs.reset();
+      hd.orbs.fire({ x: from.x, y: 2.2, z: from.z }, V(dx / dl * 9, 0, dz / dl * 9));
+      for (let i = 0; i < 120 && hd.orbs.active.length; i++) {
+        const q = hd.orbs.active[0].m.position;
+        if (Math.hypot(q.x - from.x, q.z - from.z) > 9) break; // past the pile, still flying
+        await frames(1);
+      }
+      const n = hd.orbs.active.length;
+      hd.orbs.reset();
+      return n;
+    };
+    const intoRock = await shot();
+    d.clearPillars();
+    d.platformsObj().clear(); // nothing left in the arena at all
+    const withoutRock = await shot();
+    return { intoRock, withoutRock, pushedOut: +pushedOut.toFixed(2), slabTop: st.top,
+      onSlab: +onSlab.toFixed(2), onFloor: +onFloor.toFixed(2) };
+  });
+  ok('ember: rock is cover — the same orb dies on a pile and lives without it',
+    cover.intoRock === 0 && cover.withoutRock > 0, JSON.stringify(cover));
+  ok('ember: a body cannot stand inside rock — it is pushed clear',
+    cover.pushedOut > 0.5, JSON.stringify(cover));
+  ok('ember: a gem lands ON a slab, not through it',
+    cover.onSlab > cover.slabTop && cover.onFloor < 0.8, JSON.stringify(cover));
+
+  // v53 THE FINALE, season 1: THE ROCKFALL at 180 s — shale falls for ten
+  // seconds, a rock that lands on you is a hit, the fallen rock stays as
+  // heaps, and the director is tighter after
+  const rockfall = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player, G = d.gibsObj();
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const decl = d.getFinale().declared;
+    d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
+    const fired = d.getFinale();
+    // a rock straight over the feet, with the invulnerability off: it must land as a hit
+    pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync(); d.setLife(60); d.setInvulnerable(false);   // a full clock: ten seconds of rock on a low one killed the body and froze the finale
+    const life1 = d.getState().lifeT;
+    G.rock(0, 0, 4, 0.95, [0.07, 0.06, 0.065]);
+    let hit = false;
+    for (let i = 0; i < 40 && !hit; i++) { await frames(1); const st = d.getState(); if (st.lifeT < life1 - 3 || st.state === 'dead') hit = true; }
+    d.setInvulnerable(true); d.setLife(60);
+    for (let i = 0; i < 900 && !d.getFinale().done; i++) await frames(1);
+    return { decl: decl?.kind, at: decl?.at, fired: fired.active, kind: fired.kind, rocksEarly: fired.rocks, hit, after: d.getFinale(), heap: G.getState() };
+  });
+  ok('ember: THE FINALE — at 180 s the rockfall fires and rock falls', rockfall.decl === 'rockfall' && rockfall.at === 180 && rockfall.fired && rockfall.kind === 'rockfall' && rockfall.rocksEarly >= 1, JSON.stringify({ decl: rockfall.decl, fired: rockfall.fired, rocks: rockfall.rocksEarly }));
+  ok('ember: a rock that lands on you is a hit', rockfall.hit === true, JSON.stringify({ hit: rockfall.hit }));
+  ok('ember: the rockfall ends, the fallen rock stays as heaps, and the run goes on harder',
+    rockfall.after.done && rockfall.after.pressure > 1 && rockfall.heap.n >= 10, JSON.stringify({ after: rockfall.after, heap: rockfall.heap.n }));
+
+  const inca = await seasonRead('inca');
+  ok('inca: season 2 is BUILT (v44) and still names what is open',
+    inca.sn.current === 'inca' && inca.sn.built === true && inca.sn.todo.length >= 2
+    // v52: the pale overcast sky is gone — a DARK teal zenith now, and the
+    // light lives at the horizon and in the sun (checked with the tech art)
+    && inca.sn.sky.void[2] < 0.2 && inca.sn.sky.void[2] > inca.sn.sky.void[0] && inca.sn.floorTint[1] > inca.sn.floorTint[0],
+    JSON.stringify({ built: inca.sn.built, todo: inca.sn.todo.length, sky: inca.sn.sky.void }));
+  // v45 THE ROSTER. Owner: enemies will be aquamarine, green, yellows, Aztec.
+  // A body built under INCA wears the mosaic — green leads red by a wide
+  // margin and its eyes are still lights; the same body under VOID is bone.
+  ok('inca: a body built here wears the mosaic — green leads, the eyes still burn',
+    inca.roster && inca.roster.palette === 'mosaic' && inca.roster.mean[1] > inca.roster.mean[0] * 2 && inca.roster.hdr > 0,
+    JSON.stringify(inca.roster));
+  ok('void: the same body is bone',
+    ctrl.roster && ctrl.roster.palette === null && ctrl.roster.mean[0] >= ctrl.roster.mean[1] && ctrl.roster.mean[0] > 0.2,
+    JSON.stringify(ctrl.roster));
+  // v48 (owner): season 2 is JUST the wave. Nothing else stands in the sea.
+  // (v54: the read runs its skulls at 50 s, past the first EBB at 45 — so the
+  //  ebb's low steps may be up; they are the only thing, and all under the crest)
+  ok('inca: nothing stands in the sea — no slabs, no rock; the wave is the arena (only the ebb\'s low steps, under the crest)',
+    (inca.plats.count === 0 || (inca.plats.count === 5 && inca.plats.slabs.every(s => s.h < inca.sn.gooAmp)))
+    && inca.walls.count === 0 && inca.goo.on === true,
+    JSON.stringify({ plats: inca.plats.count, h: inca.plats.slabs?.map(s => s.h), walls: inca.walls.count, goo: inca.goo.on }));
+  ok('inca: the wave HURTS, and it is sized to a jump — the crest at the ripple\'s peak sits under the apex',
+    inca.sn.gooHurts === true && inca.sn.gooAmp * (1 + inca.sn.gooRipple) < inca.sn.jumpApex - 0.12,
+    JSON.stringify({ hurts: inca.sn.gooHurts, crestMax: +(inca.sn.gooAmp * (1 + inca.sn.gooRipple)).toFixed(2), apex: inca.sn.jumpApex }));
+  ok('inca: season 2 spawns only skulls, by declaration — and in practice: seconds of its director, and every body is a skull',
+    inca.sn.spawns && inca.sn.spawns.only === 'skulls' && inca.director && inca.director.total >= 1
+    && Object.keys(inca.director.types).every(k => k === 'skull'),
+    JSON.stringify({ spawns: inca.sn.spawns, director: inca.director }));
+  ok('the menus: the intro offers SEASON 1, 2 and 3 and nothing about VOID or MODE',
+    inca.sn.visible.length === 3 && inca.sn.visible.map(v => v.menu).join('|') === 'SEASON 1|SEASON 2|SEASON 3' && !inca.sn.visible.some(v => v.id === 'void')
+    && inca.menu.seasons.map(m => m.label).join('|') === 'SEASON 1|SEASON 2|SEASON 3' && inca.menu.modeOnIntro === false && inca.menu.oldSeasonBtn === false,
+    JSON.stringify({ visible: inca.sn.visible, menu: inca.menu }));
+  ok('the menus: the pause menu carries the seasons and the regular options — the MODE is the season\'s now (v50)',
+    inca.pause.seasons.length === 3 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 2).join('|') === 'SEASON|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
+    JSON.stringify(inca.pause));
+
+  // v50 THE WAVE IS A HURDLE — proven by jumping a body over it in the real
+  // code at a clean 60 Hz, at every takeoff moment across one wave. v48's
+  // check compared crest height with jump apex and passed a wave that hurt
+  // for a full second at any point, longer than a jump stays in the air: no
+  // timing cleared it, and on a phone that reads as "there is no jump".
+  const hurdle = await p.evaluate(() => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player, g = d.gooObj(), H = 1 / 60;
+    const t0 = g.t, mj = pl.maxJumps, out = {};
+    for (const jumps of [1, 2]) {
+      pl.maxJumps = jumps;
+      let ok = 0;
+      for (let lead = 0; lead < 1.4; lead += 0.01) {
+        g.t = (g.arenaR + g.cfg.width - g.cfg.speed * lead) / g.cfg.speed;
+        pl.feet.set(0, 0, 0); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+        pl.jumpBuffer = 1; pl.coyoteT = 0.08; pl.jumpsLeft = pl.maxJumps;
+        let struck = false, second = false;
+        for (let i = 0; i < 110; i++) {
+          g.t += H;
+          if (jumps === 2 && !second && i > 3 && pl.vy <= 0) { pl.jumpBuffer = 1; second = true; }   // the second press at the top
+          pl.update(H, { x: 0, y: 0 }, 0);
+          pl.jumpBuffer = 0;
+          if (g.strikes(pl)) struck = true;
+        }
+        if (!struck) ok++;
+      }
+      out[jumps === 1 ? 'singleMs' : 'doubleMs'] = ok * 10;
+    }
+    pl.maxJumps = mj; g.t = t0; pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync();
+    return out;
+  });
+  ok('inca: the wave can be JUMPED — one good jump clears it, and the double jump clears it easily',
+    hurdle.singleMs >= 150 && hurdle.doubleMs >= 500, JSON.stringify(hurdle));
+
+  // v50 THE SEASON PICKS THE SCHEME (owner: the modes are control schemes a
+  // season uses). Loaded the way a player arrives — no ?mode= in the link —
+  // on a fresh page, so no saved mode can stand in for the declaration.
+  const scheme = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    for (const id of ['ember', 'inca', 'void']) {
+      await q.goto(base + `/hyperdagger/?assets=0&season=${id}`, { waitUntil: 'load' });
+      await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+      scheme[id] = await q.evaluate(async () => {
+        const hd = window.__hd, d = hd.debug;
+        d.startGame(); d.setInvulnerable?.(true);
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const pl = hd.player, inp = d.inputObj();
+        // a quick tap on the RIGHT stick, the way a thumb makes one
+        const t = { identifier: 7, clientX: innerWidth * 0.75, clientY: innerHeight * 0.6 };
+        inp.consumeJump(); inp.consumeFireTap();
+        inp._touchStart({ changedTouches: [t] }); inp._touchEnd({ changedTouches: [t] });
+        return { mode: d.getState().mode, jumps: pl.maxJumps, dash: !!pl.dashEnabled,
+          tapJump: inp.consumeJump(), tapBurst: inp.consumeFireTap() };
+      });
+    }
+    await q.close();
+  }
+  ok('seasons 1 and 2 pick their scheme: HYPER rules, dash on, and a double jump',
+    ['ember', 'inca'].every(k => scheme[k].mode === 'hyper' && scheme[k].jumps === 2 && scheme[k].dash),
+    JSON.stringify(scheme));
+  ok('void declares none: the control keeps the saved mode (PURE — one jump, no dash)',
+    scheme.void.mode === 'pure' && scheme.void.jumps === 1 && !scheme.void.dash, JSON.stringify(scheme.void));
+  ok('touch: a tap on the RIGHT stick jumps (v29–v49 it fired a shotgun burst)',
+    scheme.inca.tapJump === true && scheme.inca.tapBurst === false, JSON.stringify(scheme.inca));
+
+  // v51 SEASON 3 — HAUL (owner, 2026-09-23): the truck mode with moving
+  // platforms and forward momentum, a double jump and dash, no gun — a look
+  // held on a close enemy launches homing missiles, faster and tighter the
+  // longer it is held. Loaded the way a player arrives (no ?mode=). The
+  // convoy is stepped directly where the question is physics, so a slow
+  // renderer cannot change the answer.
+  let haul = {}, haul2 = {}, haul3 = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    haul = await q.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug, pl = hd.player;
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
+      await frames(3);
+      const tr = d.truckObj(), gz = d.gazeObj(), inp = d.inputObj();
+      gz.cfg.trucks = false;   // v53: the cabs lock too — these checks are about bodies; haul2 turns it back on
+      const out = { mode: d.getState().mode, jumps: pl.maxJumps, dash: !!pl.dashEnabled, moving: !!tr.cfg.moving, gazeOn: !!gz.cfg,
+        hand: d.getHand().model, shape: d.getGun().shape };
+      // THE TRUCKS DRIVE: half a second of the convoy, one truck watched
+      const t0 = tr.platforms[3], z0 = t0.mesh.position.z;
+      tr.update(0.5, pl, 1, [], null);
+      out.truckMoved = +(z0 - t0.mesh.position.z).toFixed(2);
+      // CARRIED: stand on a truck and it takes you with it
+      // (v52: a trailer's top is its own height and TILTED — ask the convoy)
+      const p0 = tr.platforms[1];
+      const topHere = () => tr.topAt(p0, pl.feet.x, pl.feet.z) ?? p0.mesh.position.y;
+      pl.feet.set(p0.mesh.position.x, p0.mesh.position.y, p0.mesh.position.z); pl.feet.y = topHere(); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+      tr.preUpdate(1 / 60, pl);
+      let z1 = pl.feet.z;
+      for (let i = 0; i < 30; i++) { pl.feet.y = topHere(); tr.preUpdate(1 / 60, pl); }
+      out.carried = +((z1 - pl.feet.z) / 0.5).toFixed(2);
+      out.truckSpeed = +(-p0.vz).toFixed(2);
+      // MOMENTUM: in the air, over nothing, you keep that truck's speed
+      pl.feet.y = 40; z1 = pl.feet.z;
+      for (let i = 0; i < 30; i++) tr.preUpdate(1 / 60, pl);
+      out.airSpeed = +((z1 - pl.feet.z) / 0.5).toFixed(2);
+      // back onto a truck for the rest
+      tr.respawnOn(pl); pl._sync();
+      const lift = () => { if (pl.feet.y < -2) tr.respawnOn(pl); };
+      // the convoy spawns its own skulls; each window below keeps the enemy
+      // list to the one body under test, so a stray cannot take the lock
+      const only = (...es) => { for (const e of hd.enemies) if (!es.includes(e)) e.alive = false; hd.enemies.length = 0; hd.enemies.push(...es); };
+      only();
+      // NO GUN: the trigger held for a second of frames launches nothing
+      inp.mouseDown = true;
+      for (let i = 0; i < 20; i++) { only(); lift(); await frames(1); }
+      inp.mouseDown = false;
+      out.firedByTrigger = hd.daggers.active.length;
+      // pin a skull on the view axis, `dist` out, every frame
+      const cam = pl.camera, fwd = new cam.position.constructor();
+      const pin = (e, dist) => {
+        const u = e.update.bind(e);
+        e.update = (...a) => { u(...a); if (!e.alive) return; cam.getWorldDirection(fwd); e.group.position.copy(cam.position).addScaledVector(fwd, dist); };
+        cam.getWorldDirection(fwd); e.group.position.copy(cam.position).addScaledVector(fwd, dist);
+      };
+      // TOO FAR: a body past the range is not locked
+      const far = d.spawnSkull(); far.hp = 99999; pin(far, 40);
+      for (let i = 0; i < 20; i++) { only(far); lift(); await frames(1); }
+      out.farLocked = gz.target === far; out.farLaunched = gz.launched;
+      far.alive = false; only();
+      // CLOSE: look at it and the missiles leave; record each launch
+      const s = d.spawnSkull(); s.hp = 99999; pin(s, 10);
+      const shots = [];
+      for (let i = 0; i < 400 && shots.length < 6; i++) {
+        const n0 = gz.launched;
+        only(s); lift(); await frames(1);
+        if (gz.launched > n0) {
+          const m = hd.daggers.active[hd.daggers.active.length - 1];
+          if (m && m.target === s) shots.push({ k: +gz.k.toFixed(2), speed: +m.vel.length().toFixed(1), turn: +m.turn.toFixed(2) });
+        }
+      }
+      out.shots = shots;
+      // and they KILL it
+      s.hp = 1;
+      for (let i = 0; i < 300 && s.alive; i++) { if (s.alive) only(s); lift(); await frames(1); }
+      out.killed = !s.alive;
+      out.profile = [gz.profile(0), gz.profile(1)].map(p => ({ speed: p.speed, turn: p.turn }));
+      return out;
+    });
+    // v53 CARGO, THE JACKKNIFE and THE PILE-UP, on the same page
+    haul2 = await q.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug, pl = hd.player, cv = d.truckObj(), gz = d.gazeObj();
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+      const out = { cargo: d.getConvoy().cargo };
+      // a welded crate rides its truck; a hard brake slides the load
+      const t = cv.trucks.find(x => x !== cv.standing && cv.cargo.crates.some(c => c.truck === x && c.welded));
+      if (t) {
+        const cr = cv.cargo.crates.find(c => c.truck === t); const z0 = t.z, c0 = -cr.b.positionLin[1];
+        await frames(8);
+        out.rides = { truck: +(z0 - t.z).toFixed(2), crate: +(c0 - (-cr.b.positionLin[1])).toFixed(2) };
+        t.brakeT = 1.4; t.ts = 2; let loose = 0;
+        for (let i = 0; i < 30; i++) { await frames(1); loose = Math.max(loose, cv.cargo.crates.filter(c => c.truck === t && !c.welded).length); }
+        out.brake = { loose };
+      }
+      // three missiles in a cab: the truck folds
+      const t2 = cv.trucks.find(x => x !== cv.standing && x !== t && x.proxy.alive);
+      const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)]; await frames(60);
+      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1) };
+      // the gaze locks a cab in range and the missiles land in it
+      gz.cfg.trucks = true;
+      // (the body is kept twelve units behind the cab each frame: a standing
+      // body would be left behind by a truck doing twenty inside a second)
+      const cands = cv.trucks.filter(x => x.proxy.alive && x.z < pl.feet.z - 3).sort((a, b) => b.z - a.z);
+      const t3 = cands[0], hp0 = t3?.hp, cab = pl.camera.position.clone();
+      for (let i = 0; i < 90 && t3 && t3.hp === hp0; i++) {
+        pl.feet.set(t3.x, t3.group.position.y + 0.5, t3.z + 12); pl.vy = 0;
+        t3.proxy.center(cab);
+        const dx = cab.x - pl.camera.position.x, dy = cab.y - pl.camera.position.y, dz = cab.z - pl.camera.position.z;
+        pl.yaw = Math.atan2(-dx, -dz); pl.pitch = Math.atan2(dy, Math.hypot(dx, dz)); pl._sync();
+        await frames(1);
+      }
+      out.gaze = { cab: !!t3, hpBefore: hp0, hpAfter: t3?.hp, launched: gz.launched };
+      // THE PILE-UP at 180 s
+      d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
+      const f = d.getFinale();
+      await frames(50);
+      const wrecks = cv.trucks.filter(x => x.wrecked);
+      out.finale = { fired: f.active, kind: f.kind, wrecked: f.wrecked, wrecksNow: wrecks.length, stopped: wrecks.filter(x => x.spd < 1).length };
+      const speed0 = cv.cfg.speed;
+      for (let i = 0; i < 260 && !d.getFinale().done; i++) { await frames(1); if (pl.feet.y < -2) cv.respawnOn(pl); }
+      out.after = { done: d.getFinale().done, speed0, speed: cv.cfg.speed, skullMul: cv.cfg.skullMul };
+      return out;
+    });
+    // v54 CARGO IS THE SCORE: land on a loose crate still on its trailer and it
+    // sets back (+1 s); a crate the road takes costs one
+    haul3 = await q.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug, pl = hd.player, cv = d.truckObj();
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      const out = { before: d.getRun().runBonus };
+      const cr = cv.cargo.crates.find(c => c.welded && c.truck && c.truck !== cv.standing);
+      if (cr) {
+        cv.cargo.jolt(cr.truck, 0);
+        const p = cr.b.positionLin;
+        pl.feet.set(p[0], p[2] + cr.s / 2 - 0.1, -p[1]); pl.vy = -1; pl._sync();
+        const saved = cv.cargo.stomp(pl.feet);
+        out.saved = saved; out.welded = cr.welded;
+      }
+      // the game's own loop pays for it: a stomp the gate made directly is
+      // counted by stats, so drive the spill path through the frame instead
+      const s0 = d.getRun();
+      cv.cargo.stats.spilled += 2;
+      await frames(3);
+      out.afterSpill = d.getRun().runBonus - s0.runBonus;
+      out.hud = document.getElementById('kills').textContent;
+      out.timer = document.getElementById('timer').textContent;
+      return out;
+    });
+    await q.close();
+  }
+  ok('haul: CARGO — trailers carry crates, welded to the deck, and a welded crate rides its truck',
+    haul2.cargo.n > 0 && haul2.cargo.welded > 0 && haul2.rides && Math.abs(haul2.rides.truck - haul2.rides.crate) < 0.3, JSON.stringify({ cargo: haul2.cargo, rides: haul2.rides }));
+  ok('haul: a hard brake slides the load', haul2.brake && haul2.brake.loose >= 1, JSON.stringify(haul2.brake));
+  ok('haul: three missiles in a cab jackknife the truck — it folds, swings its trailer out and crawls',
+    haul2.jack.hits[2] === true && haul2.jack.jacked && Math.abs(haul2.jack.yaw) > 0.3 && haul2.jack.spd < 6, JSON.stringify(haul2.jack));
+  ok('haul: the gaze locks a cab and the missiles land in it', haul2.gaze.cab && haul2.gaze.hpAfter < haul2.gaze.hpBefore, JSON.stringify(haul2.gaze));
+  ok('haul: THE FINALE — at 180 s the pile-up: every truck ahead folds and stops dead',
+    haul2.finale.fired && haul2.finale.kind === 'pileup' && haul2.finale.wrecked >= 2 && haul2.finale.stopped >= 1, JSON.stringify(haul2.finale));
+  ok('haul: past the pile-up the convoy runs faster and the skulls come thicker',
+    haul2.after.done && haul2.after.speed > haul2.after.speed0 && haul2.after.skullMul > 1, JSON.stringify(haul2.after));
+  ok('haul: season 3 is the TRUCK scheme with a double jump and dash',
+    haul.mode === 'truck' && haul.jumps === 2 && haul.dash && haul.moving && haul.gazeOn, JSON.stringify(haul));
+  ok('haul: the trucks DRIVE on their own', haul.truckMoved > 3, JSON.stringify({ moved: haul.truckMoved }));
+  ok('haul: the hand is the missile pod, and the missiles are missile-shaped (v52)',
+    haul.hand === 'launcherHand' && haul.shape && haul.shape.kind === 'missile', JSON.stringify({ hand: haul.hand, shape: haul.shape }));
+  ok('haul: a truck carries the body standing on it',
+    Math.abs(haul.carried - haul.truckSpeed) < 0.5, JSON.stringify({ carried: haul.carried, truck: haul.truckSpeed }));
+  ok('haul: in the air you keep the speed of the truck you left — momentum, not a conveyor',
+    Math.abs(haul.airSpeed - haul.truckSpeed) < 0.5, JSON.stringify({ air: haul.airSpeed, truck: haul.truckSpeed }));
+  ok('haul: there is no gun — holding the trigger launches nothing', haul.firedByTrigger === 0, String(haul.firedByTrigger));
+  ok('haul: a body out of range is not locked', !haul.farLocked && haul.farLaunched === 0,
+    JSON.stringify({ locked: haul.farLocked, launched: haul.farLaunched }));
+  ok('haul: a look held on a close skull launches homing missiles, and they kill it',
+    haul.shots.length >= 2 && haul.killed, JSON.stringify({ shots: haul.shots.length, killed: haul.killed }));
+  ok('haul: a longer look sends faster, tighter-turning missiles',
+    haul.shots.length >= 2 && haul.shots[haul.shots.length - 1].speed > haul.shots[0].speed
+    && haul.shots[haul.shots.length - 1].turn > haul.shots[0].turn
+    && haul.profile[1].speed > haul.profile[0].speed && haul.profile[1].turn > haul.profile[0].turn,
+    JSON.stringify({ shots: haul.shots, profile: haul.profile }));
+  ok('haul: CARGO IS THE SCORE — a loose crate you land on sets back, a spilled one costs a second, and the HUD carries the load',
+    haul3.saved === 1 && haul3.welded && haul3.afterSpill === -2 && /load \d+/.test(haul3.hud),
+    JSON.stringify(haul3));
+
+  // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
+  // waiting frames: heightAt is a pure function of (x, z, t), so the tests
+  // are exact instead of hostage to a software renderer's frame time.
+  const wave = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const g = d.gooObj(), cfg = g.cfg;
+    // this page sat idle while the season 3 pages ran — twenty minutes of a
+    // live HYPER clock is a TIME OUT, so the run it left is over: start another
+    if (d.getState().state !== 'playing') { d.startGame(); d.setInvulnerable(true); d.freezeDirector(true); await frames(4); }
+    d.setLife(60);
+    d.setTime(10); await frames(2);   // v53: the tide comes in over 30–150 s — ask at k = 0, so cfg.speed is the live speed
+    const startT = g.t; // build seeds a phase, so a run opens mid-sea
+    // Put a crest on the MIDDLE of the arena before asking anything. The sea
+    // has a lull between waves and the start phase is random, so a check that
+    // assumes water at t≈0 is a check that fails one run in five.
+    let peak = 0, at = 0;
+    for (let i = 0; i < 900; i++) { g.t = i * 0.02; const h = g.heightAt(0, 0); if (h > peak) { peak = h; at = g.t; } }
+    g.t = at;
+    await frames(2);
+    const state = d.getGoo();
+    // IT TRAVELS, at the speed it declares. Comparing heights at t and t+2
+    // does NOT work: the ripple along the crest animates on its own clock, so
+    // the same water is a different height a second later. What travels is
+    // the crest's POSITION — and the ripple varies across the wave, never
+    // along it, so the peak along a line through the middle is clean.
+    const t0 = g.t, dt = 2;
+    const peakAlong = () => {
+      let best = -1, where = 0;
+      for (let i = -60; i <= 60; i += 0.25) {
+        const h = g.heightAt(g.dirX * i, g.dirZ * i);
+        if (h > best) { best = h; where = i; }
+      }
+      return { best, where };
+    };
+    g.t = t0; const p0 = peakAlong();
+    g.t = t0 + dt; const p1 = peakAlong();
+    const moved = p1.where - p0.where;
+    const travels = p0.best > 0.3 && Math.abs(moved - g.speed * dt) < 0.6;
+    const shift = { moved: +moved.toFixed(2), want: g.speed * dt };
+    // v48 IT IS A HAZARD: a body on the floor under the crest we just placed
+    // is STRUCK (HYPER: it costs time); a body at jump height above it is not
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    g.t = at;
+    pl.feet.set(0, 0, 0); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+    const onFloor = g.strikes(pl);
+    pl.feet.set(0, 1.4, 0); pl._sync();
+    const inAir = g.strikes(pl);
+    d.setInvulnerable(false);
+    pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync();
+    const before = d.waveStrikes();
+    await frames(3);
+    const after = d.waveStrikes();
+    d.setInvulnerable(true);
+    pl.feet.set(0, 0, 0); pl.vy = 0; pl._sync();
+    return { state, startT: +startT.toFixed(2), travels, shift, peak: +peak.toFixed(2), amp: cfg.amp,
+      onFloor, inAir, landed: after.strikes - before.strikes, cost: +(before.lifeT - after.lifeT).toFixed(2) };
+  });
+  ok('inca: a wave of voxels crosses the arena, and a run opens mid-sea',
+    wave.state.on && wave.state.cells > 500 && wave.state.drawn > 40 && wave.startT > 0,
+    JSON.stringify(wave));
+  ok('inca: the wave TRAVELS — the crest moves at the speed it declares',
+    wave.travels, JSON.stringify(wave));
+  ok('inca: the crest rises to the height the season declares',
+    wave.peak > wave.amp * 0.7 && wave.peak <= wave.amp * 1.35, JSON.stringify(wave));
+  // v46 GEL AND GOO PHYSICS (from Toko Drop): the impact ring and the squash
+  // spring, both driven directly — the ring by ageing it, the spring by
+  // stepping the platforms' own preUpdate at 60 Hz — so neither is hostage
+  // to a software renderer's frame time.
+  const phys = await p.evaluate(() => {
+    const hd = window.__hd, d = hd.debug, g = d.gooObj(), P = d.platformsObj(), pl = hd.player;
+    // a lull: walk the clock until the middle is flat water
+    for (let i = 0; i < 4000; i++) { if (g.heightAt(0, 0) === 0 && g.heightAt(2, 0) === 0 && g.heightAt(0, 2) === 0) break; g.t += 0.05; }
+    g.ripples.length = 0;
+    const flat = g.heightAt(0.3, 0);
+    g.hit(0, 0, 1);
+    const struck = g.heightAt(0.3, 0);
+    let spread = 0;
+    for (let i = 0; i < 40; i++) { g.ripples.forEach(q => q.age += 0.05); spread = Math.max(spread, g.heightAt(2.0, 0)); }
+    g.ripples.forEach(q => q.age += 2); g.update(0);
+    const after = { ripples: g.ripples.length, h: g.heightAt(0.3, 0) };
+    // the spring: stand every mound up, drop the body onto the nearest.
+    // v48: no season carries mounds any more (season 2 is the wave alone), so
+    // the gate stands the SAMPLE mound up — the block INCA carried through v47
+    P.build(d.gelMoundSample(), Math.random, null, pl);
+    for (const sl of P.list) { sl.phase = 'live'; sl.k = 1; sl.t = 0; sl.spring?.reset(); sl.sq = 1; sl.wasOn = false; P._pose(sl); }
+    const sl = P.list.slice().sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0];
+    const rest = sl.top;
+    pl.feet.set(sl.x, rest, sl.z); pl.vy = -14; pl._sync();
+    // the kick lands after this frame's spring step, so the squash shows on the NEXT step
+    P.preUpdate(1 / 60, pl, 0); pl.vy = 0; P.preUpdate(1 / 60, pl, 0);
+    const first = sl.sq, feetOnTop = Math.abs(pl.feet.y - sl.top) < 0.01;
+    let low = first;
+    for (let i = 0; i < 300; i++) { P.preUpdate(1 / 60, pl, 0); low = Math.min(low, sl.sq); }
+    return { flat, struck, spread, after, gel: !!sl.spring, rest, first, low, settled: sl.sq, top: sl.top, feetOnTop };
+  });
+  ok('inca: a strike on flat water raises a ring that spreads, then fades to nothing',
+    phys.flat === 0 && phys.struck > 0.5 && phys.spread > 0.2 && phys.after.ripples === 0 && phys.after.h === 0,
+    JSON.stringify({ struck: phys.struck, spread: phys.spread, after: phys.after }));
+  // v47 moved this one: the gel SHEAR-THICKENS now, so it meets a landing
+  // stiffer and no longer gives a quarter of its height away. It must still
+  // visibly squash and still come back to exactly rest; how far it goes is
+  // the thickening check's business, not this one's.
+  ok('gel: a body landing on a mound squashes it, and it springs back to rest (the sample mound)',
+    phys.gel && phys.first < 0.9 && phys.low < 0.85 && Math.abs(phys.settled - 1) < 0.02 && phys.feetOnTop,
+    JSON.stringify({ first: phys.first, low: phys.low, settled: phys.settled, feetOnTop: phys.feetOnTop }));
+  // v47 ROUNDED + NON-NEWTONIAN. The owner asked for "more rounded corners
+  // and non-Newtonian liquids", and both are testable: a rounded box has more
+  // than a cube's 24 vertices, and a shear-thickening fluid is one that is
+  // STIFFER when struck fast and one you SINK INTO when you stand still.
+  const nn = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, g = d.gooObj(), P = d.platformsObj(), pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    if (!P.list.length) P.build(d.gelMoundSample(), Math.random, null, pl);   // v48: the sample mound
+    for (const sl of P.list) { sl.phase = 'live'; sl.k = 1; sl.t = 0; sl.life = 999; sl.spring?.reset(); sl.sq = 1; sl.give = 0; sl.wasOn = false; P._pose(sl); }
+    // the sea, seizing: some of it is worked hard, most of it is not
+    let seize = { peakStress: 0, hotFrac: 1, meanStress: 1, drawn: 0, waveVerts: 0, rounded: false };
+    for (let i = 0; i < 30; i++) {
+      await frames(1); const s = d.getGel();
+      if (s.drawn && s.peakStress > seize.peakStress) seize = s;
+    }
+    // the verb: stand still and go under, run and be held. Driven by stepping
+    // preUpdate directly, so a slow renderer cannot change the answer.
+    const sl = P.list.slice().sort((a, b) => Math.hypot(a.x, a.z) - Math.hypot(b.x, b.z))[0];
+    const rest = sl.top;
+    pl.feet.set(sl.x, rest, sl.z); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+    for (let i = 0; i < 200; i++) { pl.velocity.set(0, 0, 0); pl.vy = 0; pl.feet.y = sl.top; P.preUpdate(1 / 60, pl, 0); }
+    const sunk = { give: sl.give, top: sl.top };
+    for (let i = 0; i < 200; i++) { pl.velocity.set(9, 0, 0); pl.vy = 0; pl.feet.y = sl.top; P.preUpdate(1 / 60, pl, 0); }
+    const held = { give: sl.give, top: sl.top };
+    // the fluid itself: the SAME blow into a thickening gel and a Newtonian one
+    const { GelSpring } = await import('./js/gel.js?v=79');
+    const run = o => { const s = new GelSpring(o); s.kick(-0.5); let lo = 1; for (let i = 0; i < 240; i++) { s.step(1 / 60); lo = Math.min(lo, s.sq); } return +lo.toFixed(3); };
+    return { seize, rest: +rest.toFixed(2), sunk, held, thick: run({ thicken: 3.2, rate: 0.09 }), newton: run({ thicken: 0 }) };
+  });
+  ok('inca: every gel piece is a ROUNDED box, not a cube',
+    nn.seize.rounded && nn.seize.waveVerts > 24,
+    JSON.stringify({ verts: nn.seize.waveVerts }));
+  ok('inca: the sea SEIZES where it breaks and stays liquid where it does not',
+    nn.seize.peakStress > 0.35 && nn.seize.hotFrac > 0 && nn.seize.hotFrac < 0.6 && nn.seize.meanStress < 0.5,
+    JSON.stringify(nn.seize));
+  ok('gel: stand still on a mound and you SINK; run and it holds you up (the sample mound — no season stands one now)',
+    nn.sunk.give > 0.8 && nn.sunk.top < nn.rest * 0.6 && nn.held.give < 0.05 && Math.abs(nn.held.top - nn.rest) < 0.02,
+    JSON.stringify({ rest: nn.rest, sunk: nn.sunk, held: nn.held }));
+  await p.evaluate(() => window.__hd.debug.platformsObj().clear());   // v48: the sample mound goes back down
+  ok('inca: the same blow squashes a THICKENING gel less than a Newtonian one',
+    nn.thick > nn.newton + 0.05 && nn.newton > 0.4,
+    JSON.stringify({ thickened: nn.thick, newtonian: nn.newton }));
+  ok('ember: a shale slab is rock — it has no spring',
+    em.plats.slabs.length > 0 && em.plats.slabs.every(s => s.gel === false && s.sq === 1),
+    JSON.stringify(em.plats.slabs.map(s => [s.gel, s.sq])));
+  ok('inca: the wave STRIKES a body standing in its path, and it costs time',
+    wave.onFloor === true && wave.landed >= 1 && wave.cost >= 9, JSON.stringify(wave));
+  ok('inca: a body that JUMPS clears it — feet above the crest are not struck',
+    wave.inAir === false, JSON.stringify(wave));
+
+  // v44 TECH ART: every term is the season's, and zero outside it
+  const tech = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const t0 = d.getTechArt();
+    await frames(6);
+    const t1 = d.getTechArt();
+    // spray: put a crest mid-arena (its lip is where cubes shed) and count
+    const g = d.gooObj();
+    let peak = 0, at = 0;
+    for (let i = 0; i < 900; i++) { g.t = i * 0.02; const h = g.heightAt(0, 0); if (h > peak) { peak = h; at = g.t; } }
+    g.t = at - 0.3;
+    let spray = 0;
+    for (let i = 0; i < 24; i++) { await frames(1); spray += d.getGoo().sprayed; }
+    return { t0, t1, spray, inca: d.getInca(), plats: d.getPlatforms().slabs.map(x => x.h) };
+  });
+  ok('inca: the floor reads the wave — a shadow under its body and a foam line at its foot',
+    tech.t1.floorWave[0] > 0 && tech.t1.floorWave[1] > 0 && Math.abs(tech.t1.waveHead) < 200,
+    JSON.stringify({ floorWave: tech.t1.floorWave, head: tech.t1.waveHead }));
+  ok('inca: the floor has caustics, the sky a gradient and a sun, and the gel clock runs (v52: the haze went with the grey)',
+    tech.t0.caustic > 0 && tech.t0.grad === 1 && tech.t0.sun > 0 && tech.t1.gelTime > tech.t0.gelTime,
+    JSON.stringify({ t0: tech.t0, t1: tech.t1 }));
+  ok('inca: the lip SHEDS — cubes spray off the break',
+    tech.spray > 0, JSON.stringify({ spray: tech.spray }));
+  ok('inca: a skullscape stands on the horizon — giant skulls sunk in the ground, terraces behind',
+    tech.inca.on && tech.inca.skulls.length >= 3 && tech.inca.terraces.length >= 5
+    && tech.inca.skulls.every(k => Math.hypot(...k.at) > 26) && tech.inca.terraces.every(t => Math.hypot(...t.at) > 26),
+    JSON.stringify(tech.inca));
+  // v52 THE VISUAL LEAP: a skull just past the rim cropped into green slabs
+  // across half of every frame. They stand out at the true horizon now, in a
+  // fan round the sun (−z), so each one is a whole silhouette against gold.
+  ok('inca: the horizon skulls stand FAR out, in a fan round the sun — not looming at the rim',
+    tech.inca.skulls.every(k => Math.hypot(...k.at) > 26 + 60) && tech.inca.skulls.every(k => k.at[1] < 0),
+    JSON.stringify(tech.inca.skulls));
+  ok('inca: a golden-hour sky — a gradient, a sun DISC ringed in stepped bands, and its path on the water',
+    tech.t1.grad === 1 && tech.t1.sunSize > 0 && tech.t1.rings > 0 && tech.t1.glint > 0,
+    JSON.stringify({ grad: tech.t1.grad, sunSize: tech.t1.sunSize, rings: tech.t1.rings, glint: tech.t1.glint }));
+  ok('void: none of the tech-art terms leak into the control',
+    ctrl.sn.tech && ctrl.sn.tech.caustic === 0 && ctrl.sn.tech.haze === 0 && ctrl.sn.tech.sun === 0 && ctrl.inca.on === false
+    && ctrl.sn.tech.seize === 0
+    && ctrl.sn.tech.floorWave[0] === 0 && ctrl.sn.tech.floorWave[1] === 0 && ctrl.sn.gooHurts === false
+    && ctrl.sn.tech.grad === 0 && ctrl.sn.tech.sunSize === 0 && ctrl.sn.tech.glint === 0,   // v52: nor the golden hour   // v48: nor the floor's wave read, nor the hurt
+    JSON.stringify({ tech: ctrl.sn.tech, inca: ctrl.inca }));
+
+  // v53 THE TIDE (owner: *the tide comes in*). By 150 s the waves are closer and
+  // faster; the wave is still jumped at full tide (the same sweep as above, at
+  // tide 1); and the crest lifts a heap of bone and sets it down a few units on.
+  const tide = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player, g = d.gooObj(), G = d.gibsObj(), H = 1 / 60;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const decl = g.cfg.tide, base = { speed: g.cfg.speed, gap: g.cfg.gap };
+    const sweep = () => {
+      const out = {};
+      for (const jumps of [1, 2]) {
+        pl.maxJumps = jumps; let ok = 0;
+        for (let lead = 0; lead < 1.4; lead += 0.01) {
+          g.t = (g.arenaR + g.cfg.width - g.speed * lead) / g.speed;
+          pl.feet.set(0, 0, 0); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+          pl.jumpBuffer = 1; pl.coyoteT = 0.08; pl.jumpsLeft = pl.maxJumps;
+          let struck = false, second = false;
+          for (let i = 0; i < 110; i++) {
+            g.t += H;
+            if (jumps === 2 && !second && i > 3 && pl.vy <= 0) { pl.jumpBuffer = 1; second = true; }
+            pl.update(H, { x: 0, y: 0 }, 0); pl.jumpBuffer = 0;
+            if (g.strikes(pl)) struck = true;
+          }
+          if (!struck) ok++;
+        }
+        out[jumps === 1 ? 'singleMs' : 'doubleMs'] = ok * 10;
+      }
+      return out;
+    };
+    g.setTide(1);
+    const atMax = { speed: g.speed, gap: g.gap, ...sweep() };
+    // no gaps in the crest at full tide: standing still across the wave, every point is struck
+    let never = 0;
+    for (const ox of [-8, -4, 0, 4, 8]) {
+      const px = ox * -g.dirZ, pz = ox * g.dirX; pl.feet.set(px, 0, pz); pl.vy = 0; pl.velocity.set(0, 0, 0); pl._sync();
+      g.t = (g.arenaR + g.cfg.width - 2) / g.speed; let hit = 0;
+      for (let i = 0; i < 120; i++) { g.t += H; if (g.strikes(pl)) hit++; }
+      if (!hit) never++;
+    }
+    g.setTide(0); pl.maxJumps = 2;
+    // the heap: one kill's bone, then a crest through it
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    G.reset();
+    const sk = d.spawnSkull(); const u = sk.update.bind(sk); sk.update = (...a) => { u(...a); sk.group.position.set(0, 1.2, 0); };
+    await frames(90); d.killEnemy(sk, 0, -1); await frames(90);
+    const before = G.gibs.map(x => [x.b.positionLin[0], x.b.positionLin[1]]);
+    const asleep = G.gibs.filter(x => x.b.mass <= 0).length;
+    g.t = (g.arenaR + g.cfg.width - 6) / g.speed; await frames(120);
+    const after = G.gibs.map(x => [x.b.positionLin[0], x.b.positionLin[1]]);
+    const moved = before.slice(0, after.length).map((h, i) => Math.hypot(h[0] - after[i][0], h[1] - after[i][1]));
+    return { decl, base, atMax, neverStruck: never, heap: before.length, asleep, movedAvg: +(moved.reduce((a, b) => a + b, 0) / Math.max(1, moved.length)).toFixed(2), fell: G.stats.fell, awake: G.awake };
+  });
+  ok('the gibs: a kill leaves a heap of bone that stays — chunks that stack, and sleep where they land',
+    tide.heap >= 8 && tide.asleep >= tide.heap - 2, JSON.stringify({ heap: tide.heap, asleep: tide.asleep }));
+  ok('inca: THE TIDE — by 150 s the waves are closer and faster, and the wave is still jumped at full tide, with no gaps in the crest',
+    tide.decl && tide.atMax.gap < tide.base.gap && tide.atMax.speed > tide.base.speed
+    && tide.atMax.singleMs >= 150 && tide.atMax.doubleMs >= 500 && tide.neverStruck === 0,
+    JSON.stringify({ decl: tide.decl, base: tide.base, atMax: tide.atMax, gaps: tide.neverStruck }));
+  ok('inca: the crest CARRIES the bone — a heap moves with the wave and is set down a few units on, not swept off the disc',
+    tide.movedAvg > 2 && tide.movedAvg < 12 && tide.fell === 0, JSON.stringify({ movedAvg: tide.movedAvg, fell: tide.fell }));
+  // v54 THE EBB: from 45 s the sea pulls back every minute; the first ebb
+  // raises low steps, every one under the crest, and the water comes back
+  const ebb = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, g = d.gooObj();
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    d.setLife(60); d.setTime(44.9);
+    let maxDrain = 0;
+    for (let i = 0; i < 300 && !d.getRun().ebbSteps; i++) { await frames(1); maxDrain = Math.max(maxDrain, g.drain); }
+    for (let i = 0; i < 60; i++) { await frames(1); maxDrain = Math.max(maxDrain, g.drain); }
+    const steps = d.getPlatforms().slabs.map(s => +s.h.toFixed(2));
+    const run = d.getRun();
+    d.setTime(45 + 2.5 + 7 + 3 + 2); await frames(3);
+    return { maxDrain: +maxDrain.toFixed(2), steps, amp: g.cfg.amp, run, after: +g.drain.toFixed(2), glint: d.getTechArt().glint };
+  });
+  ok('inca: THE EBB — at 45 s the sea pulls back, low steps rise UNDER the crest, and the water comes back',
+    ebb.maxDrain >= 0.8 && ebb.run.ebbN === 1 && ebb.run.ebbSteps && ebb.steps.length === 5
+    && ebb.steps.every(h => h < ebb.amp) && ebb.after === 0 && ebb.glint > 0,
+    JSON.stringify(ebb));
+  // v53 THE FINALE, season 2: THE SEA DRAINS at 180 s — the water goes and the
+  // caustics with it, seven stone steps rise out of the temple floor, the sea
+  // comes back; the steps stay, tall enough that a wave passes under the feet
+  const drain = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug, pl = hd.player;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    d.setLife(60); d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
+    const fired = d.getFinale();
+    let drainMax = 0, glintAtDry = null, stepsAtDry = 0, stepH = [];
+    for (let i = 0; i < 640; i++) {   // the drain is 23 s of game time at ~0.05 s a frame here
+      await frames(1);
+      const f = d.getFinale();
+      if (f.drain > drainMax) drainMax = f.drain;
+      if (f.drain >= 0.999 && glintAtDry === null) { await frames(2); glintAtDry = d.getTechArt().glint; stepsAtDry = d.getPlatforms().count; stepH = d.getPlatforms().slabs.map(x => +x.h.toFixed(2)); }
+      if (f.done) break;
+    }
+    return { fired: fired.active, kind: fired.kind, drainMax, glintAtDry, stepsAtDry, stepH, after: d.getFinale(), glintAfter: d.getTechArt().glint, stepsAfter: d.getPlatforms().count };
+  });
+  ok('inca: THE FINALE — at 180 s the sea drains: the water goes to nothing and the sun\'s path with it',
+    drain.fired && drain.kind === 'drain' && drain.drainMax >= 0.999 && drain.glintAtDry === 0, JSON.stringify({ fired: drain.fired, drainMax: drain.drainMax, glint: drain.glintAtDry }));
+  ok('inca: stone steps rise out of the temple floor, every one tall enough to stand clear of the crest',
+    drain.stepsAtDry === 7 && drain.stepH.length === 7 && drain.stepH.every(h => h >= 1.5), JSON.stringify({ steps: drain.stepsAtDry, h: drain.stepH }));
+  ok('inca: the sea comes back and the run goes on harder — the steps stay',
+    drain.after.done && drain.after.drain === 0 && drain.after.pressure > 1 && drain.glintAfter > 0 && drain.stepsAfter === 7, JSON.stringify(drain.after));
+  await p.evaluate(() => { window.__hd.debug.platformsObj().clear(); window.__hd.debug.gibsObj().reset(); });
+  // v54 A RUN THAT ENDS: at 300 s the season is over — not a death, a recap
+  const ending = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    d.setLife(60); d.setTime(299.8);
+    for (let i = 0; i < 80 && d.getState().state === 'playing'; i++) await frames(1);
+    return { state: d.getState().state, run: d.getRun(), h1: document.querySelector('#msg h1')?.textContent,
+      lines: [...document.querySelectorAll('#msg .breakdown')].map(e => e.textContent) };
+  });
+  ok('every season ENDS at 300 s — RUN COMPLETE, and the recap says what the run did',
+    ending.state === 'dead' && ending.run.complete && ending.run.end === 300 && ending.h1 === 'RUN COMPLETE'
+    && ending.run.recap.length >= 1 && ending.lines.some(l => /ebb|finale|THE SEA/i.test(l)),
+    JSON.stringify(ending));
+
+  // v52 (owner: *why is the weapon/hand so deformed? Use different types and
+  // models in different seasons*): each season holds its own, and none of
+  // them wobble — the lattice life crumpled the old claw every frame
+  ok('the hands: VOID keeps the claw, season 1 the bare dagger hand, season 2 the jade club — none of them wobbling',
+    ctrl.sn.hand.model === 'hand' && em.sn.hand.model === 'daggerHand' && inca.sn.hand.model === 'jadeHand'
+    && [ctrl, em, inca].every(r => r.sn.hand.wobble === 0),
+    JSON.stringify({ void: ctrl.sn.hand, ember: em.sn.hand.model, inca: inca.sn.hand.model }));
+  ok('the projectiles: season 2 throws obsidian shards, not season 1\'s nails',
+    inca.gun.weapon === 'obsidian' && inca.gun.shape && inca.gun.shape.kind === 'shard', JSON.stringify(inca.gun));
+  ok('ember and void have no wave — the sea is season 2\'s',
+    ctrl.goo.on === false && em.goo.on === false,
+    JSON.stringify({ void: ctrl.goo.on, ember: em.goo.on, inca: inca.goo.on }));
+
+  // back to the control for whatever follows
+  await p.goto(base + '/hyperdagger/?assets=0&season=void', { waitUntil: 'load' });
+  await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+  await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+
+  // ---- v38 the voxel route: the roster is the owner's Meshy art, as cubes --
+  // back onto a page that actually loads the art (the mode loop ran assets=0),
+  // in a FRESH browser — see freshBrowser above
+  await freshBrowser();
+  await p.goto(base + '/hyperdagger/', { waitUntil: 'load' });
+  await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+  await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+  // Wait for the art BEFORE starting a run. Loading fourteen sculpts takes
+  // real seconds on a software renderer, and a run left playing through it
+  // kills the stationary player — the loop then stops, baseUpdate never runs,
+  // and nothing ever puts a skin on anything.
+  await p.waitForFunction(() => Object.keys(window.__hd.debug.getVoxelModels()).length >= 14, null, { timeout: 180000 }).catch(() => {});
+  await p.evaluate(() => {
+    window.__hd.debug.startGame();
+    window.__hd.debug.freezeDirector?.(true);
+    window.__hd.debug.setInvulnerable?.(true);
+  });
+  // ---- v39 the backdrop: the owner's environment pieces, through the seam --
+  // How MANY pieces there are is the manifest's business, not this file's:
+  // v41 cut the set from eight to six ("less objects", owner) and a hardcoded
+  // >= 8 failed a correct tree. Ask the manifest and compare.
+  const wantPieces = await p.evaluate(async () => {
+    const r = await fetch('assets/manifest.json');
+    return r.ok ? ((await r.json()).env?.pieces ?? []).length : 0;
+  });
+  await p.waitForFunction(n => window.__hd.debug.getBackdrop().pieces.length >= n && window.__hd.debug.getBackdrop().floor, wantPieces, { timeout: 120000 }).catch(() => {});
+  const back = await p.evaluate(() => ({ ...window.__hd.debug.getBackdrop(), env: window.__hd.debug.getEnvironment() }));
+  ok('every backdrop piece the manifest names is placed',
+    wantPieces > 0 && back.pieces.length === wantPieces,
+    JSON.stringify({ want: wantPieces, got: back.pieces.map(x => x.file) }));
+  ok('every backdrop piece sits outside the play disc', back.pieces.every(x => Math.hypot(x.at[0], x.at[1]) > 26), JSON.stringify(back.pieces.map(x => x.at)));
+  ok('the floor wears the manifest texture', back.floor === true);
+  ok('the v26 horizon line is still the environment underneath', back.env.horizon === 1 && back.env.groupChildren === 1, JSON.stringify(back.env));
+
+  const vox = await p.evaluate(async () => {
+    const hd = window.__hd;
+    // skins ride the perf tier's hull switch, and this software renderer's
+    // governor settles low — force the tier that HAS them, or the check
+    // measures the shed path instead of the skin path
+    hd.debug.setOpt('perf', 'high');
+    const models = hd.debug.getVoxelModels();
+    const style = hd.debug.getVoxelStyle();
+    // spawn one of each overridden kind the debug menu can reach and read
+    // what the enemy is actually holding
+    for (const e of hd.enemies) e.alive = false;
+    hd.enemies.length = 0;
+    hd.debug.spawnSkull(); hd.debug.spawnDread(); hd.debug.spawnSpider(); hd.debug.spawnWatcher();
+    // the skin lands on the frame after spawn
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const held = hd.enemies.map(e => ({ type: e.type, voxels: e.sprite.voxels.length, size: +e.sprite.size.toFixed(3),
+      hull: !!e.sprite.hull, jaw: !!e.jaw, hinge: !!e.hinge, skin: !!e.meshRoot, twin: !!e.sprite.def.voxels }));
+    for (const e of hd.enemies) e.alive = false;
+    hd.enemies.length = 0;
+    const total = Object.values(models).reduce((a, m) => a + m.voxels, 0);
+    hd.debug.setOpt('perf', 'auto');
+    return { models, style, held, total, kinds: Object.keys(models).length };
+  });
+  ok('every kind the manifest names took its slot', vox.kinds >= 14, JSON.stringify(Object.keys(vox.models)));
+  ok('the skull kept its hinge through the swap', vox.models.skull?.hinge === true && vox.held.find(h => h.type === 'skull')?.jaw === true, JSON.stringify(vox.held));
+  ok('a spawned skull holds the voxelized asset, not the sculpt',
+    (vox.held.find(h => h.type === 'skull')?.voxels ?? 0) > 5000, JSON.stringify(vox.held));
+  ok('voxelized enemies wear no hull (cubes are the point)', vox.held.every(h => !h.hull), JSON.stringify(vox.held));
+  // the hybrid: alive, a voxelized body wears the Meshy mesh it was cut from
+  ok('a voxelized body wears its mesh as the alive-skin', vox.held.every(h => !h.twin || h.skin), JSON.stringify(vox.held));
+  ok('a skin never lands on a body that was not cut from it', vox.held.every(h => !h.skin || h.twin), JSON.stringify(vox.held));
+  const shed = await p.evaluate(async () => {
+    const hd = window.__hd;
+    hd.debug.setOpt('perf', 'high'); // as above: the skin only exists on a tier that has it
+    if (hd.debug.getState().state !== 'playing') { hd.debug.startGame(); hd.debug.setInvulnerable?.(true); }
+    hd.debug.spawnSkull();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const e = hd.enemies[hd.enemies.length - 1];
+    const before = !!e.meshRoot;
+    const sp = e.sprite; e.group.updateWorldMatrix(true, true);
+    for (let i = 0; i < 6; i++) { const wv = sp.worldVoxels(); if (!wv.length) break; sp.chip(wv[0].pos, Math.ceil(sp.voxels.length * 0.06)); }
+    e.baseUpdate(0.05);
+    const out = { before, after: !!e.meshRoot, shed: !!e.skinShed, lost: 1 - sp.aliveCount / sp.voxels.length, cubesVisible: sp.mesh.visible };
+    e.alive = false; hd.enemies.length = 0;
+    hd.debug.setOpt('perf', 'auto');
+    return out;
+  });
+  ok('past 22% of the lattice the skin sheds and the cube body shows', shed.before && !shed.after && shed.shed && shed.cubesVisible, JSON.stringify(shed));
+  ok('face tone and value banding are on', vox.style.faceShade === true && vox.style.quantize > 0, JSON.stringify(vox.style));
+  // one of each of the fourteen at rest is well inside one ×27 dread's worth
+  // of instances per enemy; the budget that matters is per-body, and no
+  // single body may exceed the 64³ cap the voxelizer enforces
+  ok('no voxelized body exceeds the lattice cap', Object.values(vox.models).every(m => m.voxels <= 262144), JSON.stringify(vox.models));
+  // the perf ladder's floor must still buy something: at ×1 a spawn holds
+  // the coarse twin, ~1/8 the cells of the fine cut
+  const lod = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const fine = hd.debug.getVoxelModels().skull;
+    hd.debug.setDetail(1);
+    hd.debug.spawnSkull();
+    const held = hd.enemies[hd.enemies.length - 1].sprite.voxels.length;
+    hd.enemies[hd.enemies.length - 1].alive = false;
+    hd.enemies.length = 0;
+    hd.debug.setOpt('detail', 'auto');
+    return { fine: fine.voxels, lodDeclared: fine.lod, held };
+  });
+  ok('every voxelized kind carries a coarse twin for the perf floor', Object.values(vox.models).every(m => m.lod > 0 && m.lod < m.voxels), JSON.stringify(vox.models));
+  // (a skull holds its HEAD — the jaw is a second sprite — so the held count
+  //  is at most the twin's, never equal to it)
+  ok('at the ladder floor a spawn holds the coarse twin', lod.held > 0 && lod.held <= lod.lodDeclared && lod.held < lod.fine / 3, JSON.stringify(lod));
+
+  // ---- v40 the governor sees a slow device -------------------------------
+  // It discarded every frame over 250 ms as a tab-hidden gap, so a device
+  // genuinely that slow was invisible to it. This renderer IS that slow with
+  // the art loaded, which is what makes the check possible here at all; on a
+  // fast renderer it cannot be exercised and says so rather than passing.
+  const gov = await p.evaluate(async () => {
+    const hd = window.__hd, d = hd.debug;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    d.setOpt('perf', 'auto');
+    for (let i = 0; i < 6; i++) { d.spawnDread(); d.spawnSkull(); } // real pressure
+    const t0 = performance.now(); await frames(4); const rawMs = (performance.now() - t0) / 4;
+    const before = d.getPerf().tier;
+    const until = performance.now() + 9000;
+    let after = before;
+    while (performance.now() < until && after === before) { await frames(2); after = d.getPerf().tier; }
+    for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
+    d.setOpt('perf', 'auto');
+    return { rawMs: +rawMs.toFixed(0), before, after, applicable: rawMs > 250 };
+  });
+  if (gov.applicable) ok('a run of slow frames moves the governor off tier 0', gov.after > gov.before, JSON.stringify(gov));
+  else ok('governor check: not applicable on a fast renderer (frames under the gap threshold)', true, JSON.stringify(gov));
+
+  // ---- v37 the Meshy seam ------------------------------------------------
+  // The loader for this whole system was never called from anywhere, so 5 MB
+  // of exported art had never once been on screen and nothing said so. These
+  // checks are about the SEAM, not about any particular art being on: the
+  // manifest is the single list, and an empty one must cost nothing.
+  const skins = await p.evaluate(() => window.__hd.debug.getMeshSkins());
+  ok('the mesh-skin loader actually runs at boot', skins.ran === true);
+  ok('every declared skin loaded', skins.declared.every(k => skins.loaded.includes(k)),
+    JSON.stringify(skins));
+  const manifest = await p.evaluate(async () => {
+    const r = await fetch('assets/manifest.json');
+    return r.ok ? await r.json() : null;
+  });
+  ok('the manifest is present and parses', !!manifest && typeof manifest.models === 'object');
+  const declaredFiles = Object.values(manifest?.models ?? {})
+    .map(v => (typeof v === 'string' ? v : v?.file)).filter(Boolean);
+  const cached = await p.evaluate(async () => {
+    const r = await fetch('sw.js');
+    return r.ok ? await r.text() : '';
+  });
+  // The manifest is precached (it is what says the art exists); the GLBs
+  // are NOT — ~5 MB that fails soft to the string-art sculpts, and the
+  // worker is network-first with a cache write, so they land the first time
+  // you play. Precaching them made install a 5 MB download to be useful.
+  ok('the worker precaches the manifest but not the art it names',
+    cached.includes('./assets/manifest.json')
+    && declaredFiles.every(f => !cached.includes(`./assets/${f}`)),
+    declaredFiles.join(','));
+
+  // ---- nothing is asked for that is not there ----------------------------
+  ok('the game never requests a file that is not in the tree',
+    misses.length === 0, misses.slice(0, 4).join(' | '));
+
+  // ---- Toko at the table (v48) ----------------------------------------------
   // Open him mid-run: the run pauses under him, he opens knowing the clock,
   // the game is still the page, and Esc puts you back on the pause screen.
   await p.evaluate(() => window.__hd.toko.open());
   const seated = await p.waitForFunction(
     () => document.querySelector('.toko-table .toko-chat.is-open'), null, { timeout: 15000 })
     .then(() => true, () => false);
-  ok('v35 ASK TOKO seats him at the table', seated);
+  ok('ASK TOKO seats him at the table', seated);
   const table35 = await p.evaluate(() => ({
     paused: getComputedStyle(document.getElementById('msg')).display !== 'none'
       && !document.body.classList.contains('in-run'),
@@ -720,7 +2051,7 @@ s.listen(0, '127.0.0.1', async () => {
   ok('Esc leaves the table and keeps the pause',
     await p.evaluate(() => !document.querySelector('.toko-table')
       && getComputedStyle(document.getElementById('msg')).display !== 'none'));
-  await p.mouse.click(550, 690); // clear of the buttons: resume
+  await p.mouse.click(410, 520); // clear of the buttons: resume (820x540)
   await p.waitForFunction(() => document.body.classList.contains('in-run'), null, { timeout: 4000 })
     .catch(() => {});
   await p.evaluate(() => window.__hd.debug.die());
@@ -731,27 +2062,10 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the death screen carries ASK TOKO', dead35.btn);
   ok('and he would open on the death line', /(GOT YOU|CLOCK RAN OUT) AT \d+\.\dS$/.test(dead35.cue), dead35.cue);
 
-  // ---- v50 he knows what happened -----------------------------------------
-  // Opened on the recap, his FIRST lines are the run you were just in, in the
-  // game's words, and the game's memory of you — not the generic hello.
-  await p.evaluate(() => window.__hd.toko.open());
-  const seated50 = await p.waitForFunction(
-    () => document.querySelector('.toko-table .toko-chat.is-open'), null, { timeout: 15000 })
-    .then(() => true, () => false);
-  ok('v50 he opens on the recap', seated50);
-  const recap50 = await p.evaluate(() => (window.__tokoLastTable || {}).opening || []);
-  ok('the first line is the death line', /(GOT YOU|CLOCK RAN OUT) AT \d+\.\dS\.$/.test(recap50[0] || ''), recap50[0]);
-  ok('and he knows your best', recap50.some(l => /BEST/.test(l)), recap50.join(' | '));
-  await p.waitForFunction(() => { const t = window.__hd.toko.table(); return t && t.chat() && !t.chat().busy(); }, null, { timeout: 20000 }).catch(() => {});
-  const typed50 = await p.evaluate(() => [...document.querySelectorAll('.toko-table .tc-log .tc-me')].map(x => x.textContent.trim()));
-  ok('and those are the lines he actually typed', typed50.length && !!recap50[0] && typed50[0].startsWith(recap50[0]), typed50.slice(0, 2).join(' | '));
-  for (let i = 0; i < 3 && await p.evaluate(() => !!document.querySelector('.toko-table')); i++) {
-    await p.keyboard.press('Escape'); await p.waitForTimeout(250);
-  }
-
   // ---- zero errors across the whole run ----------------------------------
   ok('still zero page errors at the end', errs.length === 0, errs.slice(0, 4).join(' | '));
 
+  done = true;
   await b.close();
   s.close();
   console.log(`\n${pass} passed, ${fail} failed`);
