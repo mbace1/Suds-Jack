@@ -1,6 +1,6 @@
 {
   "type": "module",
   "scripts": {
-    "test": "node test/movement-contract.mjs && node test/movement-geometry.mjs && node test/character-animation.mjs && node test/sentry-patrol.mjs && node test/loose-floor.mjs && node test/hurt-flash.mjs"
+    "test": "node test/movement-contract.mjs && node test/movement-geometry.mjs && node test/character-animation.mjs && node test/sentry-patrol.mjs && node test/sentry-aim.mjs && node test/loose-floor.mjs && node test/hurt-flash.mjs"
   }
 }
