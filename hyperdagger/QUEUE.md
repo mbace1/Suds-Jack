@@ -35,11 +35,18 @@ Statuses: Queued, In progress, Landed (with the SHA), Blocked, or Dropped. A dro
 
 No items. This queue is empty on purpose. Nothing here is waiting to be built.
 
-HD-001 is not an item in this file. D-sign is reserving it. The plan is not written here, and Mikael has not locked it. Do not assign HD-001 until that plan is written in this file.
+HD-001 is written. It is the In progress block, not a second item.
 
 ## In progress
 
-No items.
+### HD-001 — short press jumps, hold fires
+
+- status: In progress
+- size: M
+- blocked-by: —
+- design: Mikael's locked gun grammar (this block)
+
+A short press is a jump on sticks, mouse, and pad. Firing happens only while the button is held: mouse and pad stream after the stream delay, and touch streams while the right stick is held. Walking does not start the stream. A short press does not shotgun, and a short alt press (RMB/LT) does not dump a homing burst. Dash stays as it is. The old shotgun tap's height boost is not replaced.
 
 ## Landed
 

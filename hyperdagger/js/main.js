@@ -18,7 +18,7 @@ import { TUNING as T } from './tuning.js?v=85';
 import { HyperEnvironment } from './environment.js?v=85';
 import { Backdrop } from './backdrop.js?v=85';
 import { Walls } from './walls.js?v=85';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=85';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=86';
 import { TruckTrack } from './truck.js?v=85';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
@@ -1091,8 +1091,9 @@ let deathCam = null;                       // {yaw, pitch, t} — killer-focus l
 let gemCount = 0;
 let weaponLv = 1;
 let fireTimer = 0;
-// DD gunfeel state: how long the trigger has been held, whether it was held
-// last frame, and the lockout after a shotgun burst
+// How long primary fire has been held, and whether it was held last frame.
+// A release before the stream delay is a jump, not a burst. shotCd remains
+// the lockout a homing or leftover burst would set.
 let fireHeldT = 0;
 let fireWasHeld = false;
 let shotCd = 0;
@@ -1374,7 +1375,7 @@ function showMenu() {
      <p class="sub">a stripped-down Devil Daggers homage</p>
      <p>survive the swarm &mdash; time is your only score</p>
      <p class="keys">${controls} &middot; <b>ESC</b> options<br>
-     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; triggers fire &nbsp;|&nbsp; touch &mdash; right stick: <b>hold = fire</b> &middot; <b>tap = jump &times;2</b> &middot; <b>flick = dash</b></p>
+     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> or a <b>short trigger</b> jumps &middot; <b>hold trigger = fire</b> &nbsp;|&nbsp; touch &mdash; right stick: <b>hold = fire</b> &middot; <b>tap = jump &times;2</b> &middot; <b>flick = dash</b></p>
      ${SEASONS.filter(sn => !sn.hidden).map(sn =>
        `<button class="season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
@@ -1421,10 +1422,10 @@ function showTips() {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1>HOW TO SURVIVE</h1>
-     <p class="big">&#9876; <b>tap</b> = shotgun burst &middot; <b>hold</b> = stream</p>
-     <p class="sub">every dagger is aimed &mdash; on touch the stream runs itself while you move</p>
+     <p class="big">&#9876; <b>tap</b> = jump &middot; <b>hold</b> = stream</p>
+     <p class="sub">fire only while you hold it &mdash; walking does not shoot</p>
      <p class="big">&#10227; <b>jump as you land</b> to carry speed</p>
-     <p class="sub">burst down after takeoff, then again near the apex</p>
+     <p class="sub">space, a stick tap, or a short press</p>
      <p class="big">&#9670; <b>gems level your daggers</b></p>
      <p class="sub">10 / 70 &rarr; faster &middot; then bank 150 for the final hand; RMB spends homing</p>
      <p class="go">click / tap / press &#10005; to descend</p>`;
@@ -1621,7 +1622,7 @@ function resetRun() {
   weaponLv = 1;
   fireTimer = 0;
   // pretend the trigger is already down a long time, so releasing the click
-  // that started the run can never fire a spurious shotgun
+  // that started the run is not a short press (no jump, no burst)
   fireHeldT = 999;
   fireWasHeld = true;
   shotCd = 0;
@@ -2951,66 +2952,23 @@ function killEnemy(e, dir) {
   e.remove(scene);
 }
 
-/** The other half of DD's gunfeel: a tap dumps a fistful of daggers in a
- *  wide cone at once, then locks the hand out briefly. Burst damage for a
- *  brute in your face, at the cost of your stream. */
-function fireShotgun(w) {
-  weaponActive = true;
-  camera.getWorldDirection(_fwd2);
-  for (let i = 0; i < T.weapon.shotgunCount[weaponLv]; i++) {
-    fireDagger(wpn('shotgunSpread'),
-      wpn('shotgunSpeed') * (0.93 + Math.random() * 0.14), w.homing);
-  }
-  gems.blast(camera.position);
-  shotCd = T.weapon.shotgunCd;
-  recoil = 0.15;
-  hand.flash(1.25);
-  fovKick = Math.max(fovKick, 3.5);
-  trauma = Math.max(trauma, 0.22);
-  if (player.daggerJump(_fwd2)) {
-    fovKick = Math.max(fovKick, 7);
-    trauma = Math.max(trauma, 0.32);
-    buzz(0.65, 0.45, 110);
-  }
-  audio.shotgun();
-  buzz(0.5, 0.3, 90);
-}
-
-function fireHomingShot() {
-  const count = Math.min(homingAmmo, T.weapon.homingShot[weaponLv] || 0);
-  if (count <= 0) return false;
-  for (let i = 0; i < count; i++) {
-    fireDagger(T.weapon.shotgunSpread * 0.8,
-      T.weapon.shotgunSpeed * (0.93 + Math.random() * 0.14), true, T.weapon.homingDamage);
-  }
-  homingAmmo -= count;
-  shotCd = T.weapon.shotgunCd;
-  weaponActive = true;
-  recoil = 0.13;
-  hand.flash(1.4);
-  fovKick = Math.max(fovKick, 3.5);
-  trauma = Math.max(trauma, 0.2);
-  gems.blast(camera.position);
-  audio.shotgun();
-  return true;
-}
-
-/** The hand: DD's tap/hold gunfeel, touch auto-fire and the LV3 homing
- *  weapon. Moved out of updateCombat whole in v51 so a season whose hand is
- *  the GAZE can skip it in one branch. */
+/** The hand. HD-001: a short press jumps, the stream runs only while fire
+ *  is held, and walking does not shoot. Moved out of updateCombat whole in
+ *  v51 so a season whose hand is the GAZE can skip it in one branch. */
 function fireByHand(dt, w) {
   let streaming;
   if (input.touchMode && !input.gamepad) {
-    if (input.consumeFireTap() && shotCd <= 0) fireShotgun(w);
-    const mv = input.getMove();
-    streaming = input.firing || Math.hypot(mv.x, mv.y) > T.weapon.autoFireMove;
+    // A stick tap already jumps in input.js. Do not turn it into a shotgun.
+    // Holding the right stick is the stream. The move stick is not.
+    input.consumeFireTap();
+    streaming = input.firing;
   } else {
     const held = input.firing;
     if (held) {
       fireHeldT += dt;
     } else {
-      // a press released before the stream spun up was a TAP → shotgun
-      if (fireWasHeld && fireHeldT < T.weapon.streamDelay && shotCd <= 0) fireShotgun(w);
+      // mouse button 0 / pad RT/RB, released before the stream: jump, no burst
+      if (fireWasHeld && fireHeldT > 0 && fireHeldT < T.weapon.streamDelay) input._jump = true;
       fireHeldT = 0;
     }
     fireWasHeld = held;
@@ -3031,15 +2989,12 @@ function fireByHand(dt, w) {
     fireTimer = 0;
   }
 
-  // LV3+ stores gems as a separate RMB/LT homing weapon. It uses the same
-  // tap/hold grammar but consumes one banked dagger per projectile.
+  // LV3+ stores gems as a separate RMB/LT homing weapon. Firing only happens
+  // while it is held, so a short alt press does not dump a burst and is not
+  // a jump. One banked dagger per streamed projectile.
   const altHeld = input.altFiring;
   if (altHeld) homingHeldT += dt;
-  else {
-    if (homingWasHeld && homingHeldT < T.weapon.streamDelay &&
-        weaponLv >= 3 && homingAmmo > 0 && shotCd <= 0) fireHomingShot();
-    homingHeldT = 0;
-  }
+  else homingHeldT = 0;
   homingWasHeld = altHeld;
   const homingStreaming = altHeld && homingHeldT >= T.weapon.streamDelay &&
     weaponLv >= 3 && homingAmmo > 0;
@@ -3116,9 +3071,8 @@ function updateCombat(dt) {
   const w = WEAPON[weaponLv];
   weaponActive = false;
 
-  // DD gunfeel: TAP = shotgun burst, HOLD = stream — every dagger manually
-  // aimed on desktop and pad. Touch alone keeps the old auto-fire (a thumb
-  // can't work two sticks and a trigger; owner's call, 2026-07-31).
+  // HD-001: short press jumps, hold streams. Mouse, pad, and sticks.
+  // Walking does not shoot. Dash is not read here.
   shotCd = Math.max(0, shotCd - dt);
   // v51 SEASON 3: the look IS the trigger — no fire input is read at all
   if (S().gaze) updateGaze(dt);
