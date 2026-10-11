@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { toLambert, voxelizeMesh } from './meshassets.js?v=85';
+import { toLambert, voxelizeMesh, reliableTextures } from './meshassets.js?v=86';
 import { MODELS, registerVoxelModel, modelFor } from './voxel.js?v=85';
 
 // v45: a season's recolour of the alive-skin (roster.js `mosaicSkin`), set
@@ -279,7 +279,7 @@ export function preloadMeshEnemies() {
         new Promise(r => setTimeout(r, 3000)), // never block the roster on it
       ]);
     }
-    const loader = new GLTFLoader();
+    const loader = reliableTextures(new GLTFLoader());
     // Cutting fourteen lattices is seconds of synchronous main-thread work, so
     // it is yielded between kinds: the menu stays responsive and the roster
     // densifies as the assets land, rather than the page locking up at boot.

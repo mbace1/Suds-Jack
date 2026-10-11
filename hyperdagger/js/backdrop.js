@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { toLambert } from './meshassets.js?v=85';
+import { toLambert, reliableTextures } from './meshassets.js?v=86';
 
 /**
  * THE BACKDROP — the owner's Meshy environment pieces, placed OUTSIDE the
@@ -69,7 +69,7 @@ export class Backdrop {
       let GLTFLoader;
       try { ({ GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js')); }
       catch (e) { console.warn('[backdrop] GLTFLoader unavailable', e); return out; }
-      const loader = new GLTFLoader();
+      const loader = reliableTextures(new GLTFLoader());
       const cache = new Map(); // one fetch per file, many placements
       for (const cfg of pieces) {
         try {
