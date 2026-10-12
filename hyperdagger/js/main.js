@@ -900,12 +900,39 @@ function spawnShockwave(pos) {
   litter.shove(debris, pos.x, 0.4, pos.z, 7, 9); // bones leap back into the air
 }
 
+// HD-009: the jump's only answer was its sound. A small pale ring at the
+// feet (the shockwave's geometry, a quarter of its size and life, no gib
+// shove) reads the take-off without touching the jump itself. Pooled.
+const puffPool = [];
+const puffMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color().setRGB(1.1, 0.9, 0.8), transparent: true, opacity: 1,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+});
+function spawnJumpPuff(x, y, z) {
+  let m = puffPool.pop();
+  if (!m) {
+    if (sparks.length > 40) return;
+    m = new THREE.Mesh(ringGeo, puffMat.clone());
+    scene.add(m);
+  }
+  m.visible = true;
+  m.position.set(x, y + 0.04, z);
+  sparks.push({ m, t: 0.22, max: 0.22, big: false, ring: true, puff: true });
+  fx.jump++;
+}
+// HD-009: counters of feedback actually spawned, read by the gate
+// (test/action-feedback.cjs) through debug.feedback().
+const fx = { fire: 0, jump: 0, dash: 0 };
+
 function updateSparks(dt) {
   for (let i = sparks.length - 1; i >= 0; i--) {
     const s = sparks[i];
     s.t -= dt;
     const k = Math.max(0, s.t / s.max);
-    if (s.ring) {
+    if (s.puff) {
+      s.m.scale.setScalar(0.3 + (1 - k) * 1.3);
+      s.m.material.opacity = k * 0.55;
+    } else if (s.ring) {
       s.m.scale.setScalar(0.4 + (1 - k) * 7);
       s.m.material.opacity = k * 0.9;
     } else {
@@ -915,7 +942,10 @@ function updateSparks(dt) {
       s.m.rotateZ(s.roll);
     }
     if (s.t <= 0) {
-      if (s.ring) {
+      if (s.puff) {
+        s.m.visible = false;
+        puffPool.push(s.m);
+      } else if (s.ring) {
         scene.remove(s.m);
         s.m.material.dispose();
       } else {
@@ -3126,7 +3156,7 @@ function fireShotgun(w) {
     trauma = Math.max(trauma, 0.32);
     buzz(0.65, 0.45, 110);
   }
-  audio.shotgun();
+  audio.shotgun(); fx.fire++;
   buzz(0.5, 0.3, 90);
 }
 
@@ -3145,7 +3175,7 @@ function fireHomingShot() {
   fovKick = Math.max(fovKick, 3.5);
   trauma = Math.max(trauma, 0.2);
   gems.blast(camera.position);
-  audio.shotgun();
+  audio.shotgun(); fx.fire++;
   return true;
 }
 
@@ -3179,7 +3209,7 @@ function fireByHand(dt, w) {
         wpn('streamSpeed') * (0.86 + Math.random() * 0.28), w.homing);
       recoil = Math.min(0.035, recoil + 0.007);
       hand.flash(0.3);
-      audio.fire();
+      audio.fire(); fx.fire++;
     }
   } else {
     fireTimer = 0;
@@ -3206,7 +3236,7 @@ function fireByHand(dt, w) {
       homingAmmo--;
       recoil = Math.min(0.04, recoil + 0.008);
       hand.flash(0.45);
-      audio.fire();
+      audio.fire(); fx.fire++;
     }
   } else {
     homingFireTimer = 0;
@@ -3583,6 +3613,7 @@ function step(dt) {
     player.justDashed = false;
     audio.dash();
     trauma = Math.max(trauma, 0.15);
+    fx.dash++;
   }
   // dashing wades through the carnage — a moving sweep, dt-scaled so the kick
   // is the same at any frame rate, biased along the dash so gibs get shoved
@@ -3596,6 +3627,7 @@ function step(dt) {
   if (player.justJumped) {
     player.justJumped = false;
     audio.jump();
+    spawnJumpPuff(player.feet.x, player.feet.y, player.feet.z);
   }
   if (player.justBunnyHopped) {
     player.justBunnyHopped = false;
@@ -4032,6 +4064,8 @@ window.__hd = {
     /** The live feel numbers — the gate edits them in place (and puts them back). */
     tuning() { return T; },
     inputObj() { return input; },
+    /** HD-009: feedback spawned so far, plus the live recoil/FOV/dash values. */
+    feedback() { return { ...fx, recoil, fovKick, dashK: player.dashK, fov: camera.fov, puffs: sparks.filter(s => s.puff).length }; },
     getGibs() { return physGibs.getState(); },   // prototype: the physical gibs
     wearWall(i, amount) { const w = walls.walls[i]; if (w) wearWall(w, amount, _seg.set(w.x, w.h * 0.5, w.z)); return { felled: wallsFelled, left: walls.walls.length }; },   // v53
     gibsObj() { return physGibs; },
