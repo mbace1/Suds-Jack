@@ -2790,7 +2790,7 @@ function updateThreatVignette() {
   if (state !== 'playing') { document.getElementById('vignette').style.opacity = '0'; return; }
   let near = 0;
   for (const e of enemies) {
-    const d = Math.hypot(e.pos.x - player.pos.x, e.pos.z - player.pos.z);
+    const d = Math.hypot(e.pos.x - player.feet.x, e.pos.z - player.feet.z);
     if (d < 6) near = Math.max(near, 1 - d / 6);
   }
   document.getElementById('vignette').style.opacity = String(Math.min(0.55, near * 0.7));
