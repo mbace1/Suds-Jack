@@ -19,7 +19,7 @@ import { HyperEnvironment } from './environment.js?v=85';
 import { Backdrop } from './backdrop.js?v=85';
 import { Walls } from './walls.js?v=85';
 import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=85';
-import { TruckTrack } from './truck.js?v=85';
+import { TruckTrack } from './truck.js?v=87';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
 import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=85';
@@ -52,6 +52,8 @@ const ENEMY_NAMES = {
   husk: 'a husk', revenant: 'a revenant',
   wave: 'THE WAVE',   // v48: season 2's sea — you were meant to jump it
   rockfall: 'THE ROCKFALL',   // v53: season 1's finale
+  'the road': 'THE ROAD',     // season 3: off the convoy, the asphalt kills on touch
+  'the fall': 'THE FALL',     // the classic track: nothing under you
 };
 
 // player-tunable options (pause menu), persisted across sessions
@@ -1104,8 +1106,6 @@ let homingHeldT = 0;
 let homingWasHeld = false;
 let weaponActive = false;
 let styleVal = 0;
-  comboCount = 0;
-  comboTimer = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
 let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let comboCount = 0;
 let comboTimer = 0;
