@@ -1581,7 +1581,7 @@ function showDeath(timedOut, complete = false) {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1 class="dead">${complete ? 'RUN COMPLETE' : timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
-     <p class="big">${t}s &middot; ${timeTier(runT)} &middot; ${S().menu ?? S().name} &middot; ${M().name}</p>
+     <p class="big">${t}s &middot; <span class="tier">${timeTier(runT)}</span> &middot; ${S().menu ?? S().name} &middot; ${M().name}</p>
      <p>${kills} kills &middot; ${gemCount} gems</p>
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
