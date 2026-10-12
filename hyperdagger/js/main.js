@@ -2588,10 +2588,17 @@ let nextSkullAt = 0;   // v48: season 2's own clock
 // Season wave pacing — peaks and valleys so later stages still have breathing room
 let waveIdx = 0;
 let waveGapUntil = 0;
+let lastAnnouncedWave = -1;
 function currentWave() {
   const waves = S().waves;
   if (!waves || !waves.length) return null;
   while (waveIdx + 1 < waves.length && gameTime >= waves[waveIdx + 1].t) waveIdx++;
+  if (waveIdx !== lastAnnouncedWave && state === 'playing') {
+    lastAnnouncedWave = waveIdx;
+    const w = waves[waveIdx];
+    if (w.kind === 'finale') toast('FINALE', 1600);
+    else if (waveIdx > 0) toast(w.kind.toUpperCase(), 900);
+  }
   return waves[waveIdx];
 }
 function waveDirector() {
@@ -2605,16 +2612,21 @@ function waveDirector() {
   const aheadOnly = !!season.noRear;
 
   if (season.id === 'inca') {
-    // S2: wave-jump is the primary pressure; enemies are light support
-    if (Math.random() < density * 0.10) skullDirector();
+    // S2: prefer spawning in the trough (away from the crest)
+    const crestPhase = goo._dist ? (goo._dist % (goo.period || 10)) : 0;
+    const inTrough = crestPhase > 3 && crestPhase < (goo.period || 10) - 2;
+    if (inTrough && Math.random() < density * 0.12) skullDirector();
   } else if (aheadOnly) {
-    // S3: sparse forward spawns only
-    if (Math.random() < density * 0.08) {
-      const at = ringSpot(12).clone();
-      // bias forward (positive Z relative to player facing, approximate)
-      if (at.z < player.pos.z) at.z = player.pos.z + 8 + Math.random() * 10;
+    // S3: only spawn in the forward hemisphere relative to camera
+    if (Math.random() < density * 0.07) {
+      const at = ringSpot(14).clone();
+      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const toSpot = at.clone().sub(player.pos);
+      if (toSpot.dot(fwd) < 0) {
+        at.add(fwd.clone().multiplyScalar(16));
+      }
       at.y = 1.2;
-      telegraph(at, [1.8, 0.9, 0.3], 0.7, () => enemies.push(new Skull(scene, at, 0.5)));
+      telegraph(at, [1.8, 0.9, 0.3], 0.65, () => enemies.push(new Skull(scene, at, 0.4)));
     }
   } else {
     // S1 and others: classic mix
