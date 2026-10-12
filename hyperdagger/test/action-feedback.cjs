@@ -48,7 +48,13 @@ srv.listen(0, '127.0.0.1', async () => {
       const p = await ctx.newPage();
       const errs = [];
       p.on('pageerror', e => errs.push(e.message + ' @ ' + (e.stack || '').split('\n')[1]));
-      await p.addInitScript(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
+      await p.addInitScript(() => {
+        localStorage.setItem('hyperDaggerSeenTips', '1');
+        // seasons 1 and 2 declare HYPER (dash on). main lets a saved mode beat
+        // the season's (#591 fixes that), so save HYPER: the season's scheme
+        // either way.
+        localStorage.setItem('hyperDaggerModeV31', 'hyper');
+      });
       await p.goto(base + '/hyperdagger/index.html?assets=0');
       await p.waitForFunction(() => window.__hd && window.__hd.debug && window.__hd.debug.feedback, null, { timeout: 30000 });
       await p.evaluate(sid => { const d = window.__hd.debug; d.setSeason(sid); d.startGame(); }, id);
@@ -56,7 +62,7 @@ srv.listen(0, '127.0.0.1', async () => {
       await p.evaluate(() => { const d = window.__hd.debug; d.freezeDirector(true); d.setInvulnerable(true); d.spawnSkull(); d.spawnSkull(); });
       await installPeak(p);
       const info = await p.evaluate(() => ({ mode: window.__hd.debug.getState().mode, dash: window.__hd.player.dashEnabled }));
-      console.log('  ' + id + ' ' + JSON.stringify(info));
+      ok(`${id}: runs HYPER with the dash on`, info.mode === 'hyper' && info.dash, JSON.stringify(info));
       await frames(p, 30); // let the player settle on the floor
       const label = id === 'ember' ? 'season 1' : 'season 2';
 
@@ -71,7 +77,7 @@ srv.listen(0, '127.0.0.1', async () => {
       await p.mouse.down(); await frames(p, 25);
       f1 = await fb(p);
       await p.mouse.up();
-      ok(`${label}: holding fire shoots with recoil`, f1.fire > f0.fire && f1.recoil > 0, JSON.stringify(f1));
+      ok(`${label}: holding fire shoots with recoil`, f1.fire > f0.fire && f1.fireRecoil > 0, JSON.stringify(f1));
 
       // jump: a press spawns a puff at the feet
       await frames(p, 30);

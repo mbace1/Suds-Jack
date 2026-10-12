@@ -922,7 +922,7 @@ function spawnJumpPuff(x, y, z) {
 }
 // HD-009: counters of feedback actually spawned, read by the gate
 // (test/action-feedback.cjs) through debug.feedback().
-const fx = { fire: 0, jump: 0, dash: 0 };
+const fx = { fire: 0, jump: 0, dash: 0, fireRecoil: 0 };
 
 function updateSparks(dt) {
   for (let i = sparks.length - 1; i >= 0; i--) {
@@ -3156,7 +3156,7 @@ function fireShotgun(w) {
     trauma = Math.max(trauma, 0.32);
     buzz(0.65, 0.45, 110);
   }
-  audio.shotgun(); fx.fire++;
+  audio.shotgun(); fx.fire++; fx.fireRecoil = recoil;
   buzz(0.5, 0.3, 90);
 }
 
@@ -3175,7 +3175,7 @@ function fireHomingShot() {
   fovKick = Math.max(fovKick, 3.5);
   trauma = Math.max(trauma, 0.2);
   gems.blast(camera.position);
-  audio.shotgun(); fx.fire++;
+  audio.shotgun(); fx.fire++; fx.fireRecoil = recoil;
   return true;
 }
 
@@ -3209,7 +3209,7 @@ function fireByHand(dt, w) {
         wpn('streamSpeed') * (0.86 + Math.random() * 0.28), w.homing);
       recoil = Math.min(0.035, recoil + 0.007);
       hand.flash(0.3);
-      audio.fire(); fx.fire++;
+      audio.fire(); fx.fire++; fx.fireRecoil = recoil;
     }
   } else {
     fireTimer = 0;
@@ -3236,7 +3236,7 @@ function fireByHand(dt, w) {
       homingAmmo--;
       recoil = Math.min(0.04, recoil + 0.008);
       hand.flash(0.45);
-      audio.fire(); fx.fire++;
+      audio.fire(); fx.fire++; fx.fireRecoil = recoil;
     }
   } else {
     homingFireTimer = 0;
