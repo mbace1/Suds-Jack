@@ -38,6 +38,10 @@
     #style { font-size: 1.1rem; }
     #styleRank { font-size: 1.6rem; font-weight: 800; text-shadow: 0 1px 4px #000; }
     #crosshair { display: none; }
+    #combo { position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%); z-index: 7; pointer-events: none; font-size: 2.2rem; font-weight: 800; letter-spacing: 0.08em; text-shadow: 0 2px 8px #000; opacity: 0; transition: opacity 0.12s, transform 0.12s; }
+    #combo.show { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+    #threatRing { position: absolute; left: 50%; top: 50%; width: 28vmin; height: 28vmin; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; }
+    #threatRing .pip { position: absolute; width: 8px; height: 8px; background: #d8412f; border-radius: 50%; opacity: 0.85; box-shadow: 0 0 6px #d8412f; }
     #pauseBtn { position: absolute; top: 0.7rem; right: 0.7rem; z-index: 6; background: transparent; border: 0; color: #e8dcc8; opacity: 0.35; cursor: pointer; font-size: 1.2rem; }
     #pauseBtn:hover { opacity: 1; }
     #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(120,10,10,0.55) 100%); opacity: 0; z-index: 4; transition: opacity 0.15s; }
@@ -73,6 +77,8 @@
   <div id="style"><div id="styleRank"></div><div id="styleMult"></div><div id="styleFill"></div></div>
   <div id="toast"></div>
   <div id="crosshair">+</div>
+  <div id="combo"></div>
+  <div id="threatRing"></div>
   <button id="pauseBtn" title="Pause">⏸</button>
   <div id="msg"></div>
   <script type="importmap">

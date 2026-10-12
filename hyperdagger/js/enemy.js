@@ -412,10 +412,19 @@ export class Brute extends Skull {
     this.maxSpeed = 3.7 + speedBoost;
     this.accel = 6;
     this.knock = 1.6;
+    this._chargeT = 0;
   }
   update(dt, playerEye) {
     super.update(dt, playerEye);
     if (this.pos.y < 1.25) this.pos.y = 1.25;
+    const d = Math.hypot(this.pos.x - playerEye.x, this.pos.z - playerEye.z);
+    if (d < 5.5) {
+      this._chargeT += dt;
+      if (this._chargeT > 0.4) {
+        this.sprite.flash(1.4);
+        this._chargeT = 0;
+      }
+    } else this._chargeT = 0;
   }
 }
 

@@ -976,6 +976,8 @@ const elStyle = document.getElementById('style');
 const elStyleRank = document.getElementById('styleRank');
 const elStyleMult = document.getElementById('styleMult');
 const elStyleFill = document.getElementById('styleFill');
+const elCombo = document.getElementById('combo');
+const elThreatRing = document.getElementById('threatRing');
 const elMsg = document.getElementById('msg');
 const elToast = document.getElementById('toast');
 const elCross = document.getElementById('crosshair');
@@ -1101,8 +1103,12 @@ let homingFireTimer = 0;
 let homingHeldT = 0;
 let homingWasHeld = false;
 let weaponActive = false;
-let styleVal = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
+let styleVal = 0;
+  comboCount = 0;
+  comboTimer = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
 let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
+let comboCount = 0;
+let comboTimer = 0;
 let nextTotemAt = 0;
 let waveStrikes = 0;   // v48: how many times the sea has hit the body this run
 let nextLevAt = 0;
@@ -2717,6 +2723,38 @@ function updateThreatVignette() {
     if (d < 6) near = Math.max(near, 1 - d / 6);
   }
   document.getElementById('vignette').style.opacity = String(Math.min(0.55, near * 0.7));
+}
+
+function bumpCombo() {
+  comboCount++;
+  comboTimer = 1.8;
+  elCombo.textContent = '×' + comboCount;
+  elCombo.classList.add('show');
+}
+function updateCombo(dt) {
+  if (comboTimer > 0) {
+    comboTimer -= dt;
+    if (comboTimer <= 0) {
+      comboCount = 0;
+      elCombo.classList.remove('show');
+    }
+  }
+}
+function updateThreatRing() {
+  if (state !== 'playing') { elThreatRing.innerHTML = ''; return; }
+  const pips = [];
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+  const r = Math.min(window.innerWidth, window.innerHeight) * 0.14;
+  for (const e of enemies) {
+    const dx = e.pos.x - player.pos.x, dz = e.pos.z - player.pos.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 4 || d > 28) continue;
+    const ang = Math.atan2(dz, dx);
+    const x = Math.cos(ang) * r;
+    const y = Math.sin(ang) * r;
+    pips.push(`<div class="pip" style="left:${50 + (x / r) * 50}%; top:${50 + (y / r) * 50}%;"></div>`);
+  }
+  elThreatRing.innerHTML = pips.slice(0, 12).join('');
 }
 function updateStyleHud() {
   const idx = styleTierIdx(styleVal);
