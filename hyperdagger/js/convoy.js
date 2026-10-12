@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Skull } from './enemy.js?v=86';
+import { Skull } from './enemy.js?v=87';
 import { Cargo } from './cargo.js?v=85';
 
 /**
@@ -303,13 +303,16 @@ export class Convoy {
 
   /** the height of truck `t`'s tilted top under (x, z), or null off its footprint —
    *  or of a welded crate riding on it, when one is under the feet (v53) */
-  topAt(t, x, z) {
+  topAt(t, x, z, reach = Infinity) {
     const g = t.group.position;
     const lx = x - g.x, lz = z - g.z;
     if (Math.abs(lx) > t.w / 2 + 0.3 || Math.abs(lz) > t.depth / 2 + 0.3) return null;
     const top = g.y + lx * Math.tan(t.group.rotation.z) - lz * Math.tan(t.group.rotation.x);
     const crate = this.cargo.topAt(x, z);
-    return crate !== null && crate > top ? crate : top;
+    // a crate too tall to step onto is not a hole in the deck: the deck is
+    // still under you (it used to drop the whole truck, so a crate at your
+    // feet put the road under you and killed you on the first frame)
+    return crate !== null && crate > top && crate <= reach ? crate : top;
   }
 
   /** v53: a missile in the cab. The third one jackknifes the truck. */
@@ -388,10 +391,12 @@ export class Convoy {
     first.roll0 = 0; first.pitch0 = 0;
     this._pose(first, 0);
     this._layAhead(0);
-    player.feet.set(first.group.position.x, first.top, 0);
+    // spawn ON whatever is at the spawn point: the deck, or a crate loaded there
+    const spawnY = this.topAt(first, first.group.position.x, 0) ?? first.top;
+    player.feet.set(first.group.position.x, spawnY, 0);
     player.velocity.set(0, 0, 0);
     player.vy = 0;
-    player.floorY = first.top;
+    player.floorY = spawnY;
     player._sync();
     this.carryX = 0; this.carryZ = first.vz;
     this.standing = first;
@@ -419,7 +424,7 @@ export class Convoy {
     player.feet.z += this.carryZ * dt;
     let floor = -Infinity, under = null;
     for (const t of this.trucks) {
-      const h = this.topAt(t, player.feet.x, player.feet.z);
+      const h = this.topAt(t, player.feet.x, player.feet.z, player.feet.y + 0.45);
       if (h === null || h > player.feet.y + 0.45) continue;
       if (h > floor) { floor = h; under = t; }
     }

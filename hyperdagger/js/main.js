@@ -10,16 +10,16 @@ import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
 import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=85';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=86';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=87';
 import { OrbPool } from './bullets.js?v=85';
 import { AudioKit } from './audio.js?v=85';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=85';
 import { TUNING as T } from './tuning.js?v=85';
 import { HyperEnvironment } from './environment.js?v=85';
-import { Backdrop } from './backdrop.js?v=86';
+import { Backdrop } from './backdrop.js?v=87';
 import { Walls } from './walls.js?v=85';
 import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=85';
-import { TruckTrack } from './truck.js?v=86';
+import { TruckTrack } from './truck.js?v=88';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
 import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=85';
@@ -29,8 +29,8 @@ import { GooWave } from './goo.js?v=85';
 import { gelMaterial } from './gel.js?v=85';
 import { mosaicPalette, mosaicSkin } from './roster.js?v=85';
 import { Skullscape } from './inca.js?v=85';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=86';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=86';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=87';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=87';
 import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
@@ -52,6 +52,8 @@ const ENEMY_NAMES = {
   husk: 'a husk', revenant: 'a revenant',
   wave: 'THE WAVE',   // v48: season 2's sea — you were meant to jump it
   rockfall: 'THE ROCKFALL',   // v53: season 1's finale
+  'the road': 'THE ROAD',     // season 3: off the convoy, the asphalt kills on touch
+  'the fall': 'THE FALL',     // the classic track: nothing under you
 };
 
 // player-tunable options (pause menu), persisted across sessions
@@ -976,6 +978,8 @@ const elStyle = document.getElementById('style');
 const elStyleRank = document.getElementById('styleRank');
 const elStyleMult = document.getElementById('styleMult');
 const elStyleFill = document.getElementById('styleFill');
+const elCombo = document.getElementById('combo');
+const elThreatRing = document.getElementById('threatRing');
 const elMsg = document.getElementById('msg');
 const elToast = document.getElementById('toast');
 const elCross = document.getElementById('crosshair');
@@ -1101,8 +1105,10 @@ let homingFireTimer = 0;
 let homingHeldT = 0;
 let homingWasHeld = false;
 let weaponActive = false;
-let styleVal = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
+let styleVal = 0;
 let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
+let comboCount = 0;
+let comboTimer = 0;
 let nextTotemAt = 0;
 let waveStrikes = 0;   // v48: how many times the sea has hit the body this run
 let nextLevAt = 0;
@@ -1141,7 +1147,7 @@ let mode = modeById(_urlMode || localStorage.getItem(MODE_KEY) || 'pure').id;
  *  still wins (it is how the gate and the loop harness pin an experiment),
  *  then the season's declared `mode`, then the saved one (VOID declares
  *  none, so the control stays whatever the gate asks for). */
-function M() { return modeById(_urlMode || S().mode || mode); }
+function M() { return modeById(_urlMode || mode || S().mode); }
 /** The body for this run: the mode's abilities with the season's on top. */
 function applyRunAbilities() {
   const m = M(), extra = _urlMode ? null : S().abilities;
@@ -1272,7 +1278,7 @@ const DAILY_TABLE_KEY = 'hyperDaggerDailyBest';
 
 function todayStr() { return dateOverride ?? utcDateStr(); }
 
-function dailyKey(date, m) { return `hyperDaggerDaily:${date}:${m}`; }
+function dailyKey(date, m) { return `hyperDaggerDaily:${date}:${S().id}:${m}`; }
 
 function readDailyTable() {
   try { return JSON.parse(localStorage.getItem(DAILY_TABLE_KEY) || '[]'); } catch { return []; }
@@ -1328,10 +1334,10 @@ async function boardReport(date, m, t) {
     await fetch(BOARD_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' }, // dodges the CORS preflight Apps Script can't answer
-      body: JSON.stringify({ date, mode: m, t: Math.round(t * 10) / 10, name: getInitials() }),
+      body: JSON.stringify({ date, mode: m, season: S().id, t: Math.round(t * 10) / 10, name: getInitials() }),
     });
     const res = await fetch(
-      `${BOARD_ENDPOINT}?date=${date}&mode=${m}&t=${Math.round(t * 10) / 10}`);
+      `${BOARD_ENDPOINT}?date=${date}&mode=${m}&season=${S().id}&t=${Math.round(t * 10) / 10}`);
     const data = await res.json();
     const el = board();
     if (!el || !data || !Array.isArray(data.top)) return;
@@ -1351,7 +1357,7 @@ async function boardReport(date, m, t) {
 async function menuBoardLine() {
   if (!BOARD_ENDPOINT || runKind !== 'daily') return;
   try {
-    const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${M().id}`);
+    const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${M().id}&season=${S().id}`);
     const data = await res.json();
     const top = data?.top?.[0];
     const el = document.getElementById('menuBoard');
@@ -1373,10 +1379,18 @@ function showMenu() {
     `<h1>HYPER DAGGER</h1>
      <p class="sub">a stripped-down Devil Daggers homage</p>
      <p>survive the swarm &mdash; time is your only score</p>
-     <p class="keys">${controls} &middot; <b>ESC</b> options<br>
-     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; triggers fire &nbsp;|&nbsp; touch &mdash; right stick: <b>hold = fire</b> &middot; <b>tap = jump &times;2</b> &middot; <b>flick = dash</b></p>
-     ${SEASONS.filter(sn => !sn.hidden).map(sn =>
-       `<button class="season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}
+     <p class="keys">${controls} &middot; <b>ESC</b> options</p>
+     <div class="row-label">season</div>
+     <div class="seasons">
+       ${SEASONS.filter(sn => !sn.hidden).map(sn =>
+         `<button class="season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}
+     </div>
+     <div class="row-label">mode</div>
+     <div class="modes">
+       ${MODES.filter(m => m.id !== 'move').map(m =>
+         `<button class="mode${m.id === M().id ? ' on' : ''}" data-mode="${m.id}">${m.name}</button>`).join('')}
+       <button class="mode all" data-mode="all">ALL</button>
+     </div>
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
     : 'FREE &mdash; pure random'}</button>
@@ -1395,6 +1409,19 @@ function showMenu() {
       startGame();
     });
   }
+  for (const b of elMsg.querySelectorAll('button.mode')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      const id = b.dataset.mode;
+      if (id === 'all') {
+        mode = nextModeId(M().id);
+      } else {
+        mode = id;
+      }
+      localStorage.setItem(MODE_KEY, mode);
+      showMenu();
+    });
+  }
   document.getElementById('runKindBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     runKind = runKind === 'daily' ? 'free' : 'daily';
@@ -1404,11 +1431,13 @@ function showMenu() {
 }
 
 function bestLine() {
+  const sn = S().menu ?? S().name;
+  const m = M().name;
   if (runKind === 'daily') {
     const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), M().id)) || '0');
-    return dayBest > 0 ? `today's best ${dayBest.toFixed(1)}s &mdash; ` : '';
+    return dayBest > 0 ? `${sn} · ${m} · today's best ${dayBest.toFixed(1)}s &mdash; ` : `${sn} · ${m} · `;
   }
-  return hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : '';
+  return hiScore > 0 ? `${sn} · ${m} · best ${hiScore.toFixed(1)}s &mdash; ` : `${sn} · ${m} · `;
 }
 
 // One-time 3-tip card before the very first run — the mechanics that aren't
@@ -1421,16 +1450,26 @@ function showTips() {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1>HOW TO SURVIVE</h1>
-     <p class="big">&#9876; <b>tap</b> = shotgun burst &middot; <b>hold</b> = stream</p>
-     <p class="sub">every dagger is aimed &mdash; on touch the stream runs itself while you move</p>
-     <p class="big">&#10227; <b>jump as you land</b> to carry speed</p>
-     <p class="sub">burst down after takeoff, then again near the apex</p>
-     <p class="big">&#9670; <b>gems level your daggers</b></p>
-     <p class="sub">10 / 70 &rarr; faster &middot; then bank 150 for the final hand; RMB spends homing</p>
+     <p class="big">&#9876; <b>tap</b> = burst &middot; <b>hold</b> = stream</p>
+     <p class="sub">on touch the stream runs while you move</p>
+     <p class="big">&#10227; <b>jump on land</b> to keep speed</p>
+     <p class="sub">double jump and dash are available in most seasons</p>
+     <p class="big">&#9670; <b>time is the score</b></p>
+     <p class="sub">S/A/B/C tiers · below A is a fail</p>
      <p class="go">click / tap / press &#10005; to descend</p>`;
 }
 
 function hiKey() { return M().hiKey ?? 'hyperDaggerHiNone'; }
+
+/** Time tiers. Below A is a fail for ranking. S is the aspirational ceiling. */
+function timeTier(t) {
+  if (t >= 240) return 'S';
+  if (t >= 180) return 'A';
+  if (t >= 120) return 'B';
+  if (t >= 60)  return 'C';
+  return 'FAIL';
+}
+
 
 // last-10 run history (all modes together), most recent first
 const HISTORY_KEY = 'hyperDaggerHistory';
@@ -1536,20 +1575,20 @@ function showDeath(timedOut, complete = false) {
   const heavies = Math.floor(pulseN / 8);
   const pulseLine = pulseN > 0
     ? `<p class="breakdown">survived ${pulseN} pulse${pulseN === 1 ? '' : 's'}${heavies ? ` (${heavies} heavy)` : ''}</p>` : '';
-  const share = `HYPER DAGGER · ${runKind === 'daily' ? `daily ${runDate}` : 'free run'} · ${
-    M().id.toUpperCase()} · ${t}s · ${kills} kills · LV${weaponLv}${
+  const share = `HYPER DAGGER · ${S().menu ?? S().name} · ${M().name} · ${t}s · ${timeTier(runT)} · ${kills} kills${
     stylePeakIdx > 0 ? ` · rank ${STYLE_TIERS[stylePeakIdx].label}` : ''}`;
 
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1 class="dead">${complete ? 'RUN COMPLETE' : timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
-     <p class="big">${t}s &middot; ${kills} kills &middot; ${gemCount} gems</p>
+     <p class="big">${t}s &middot; <span class="tier">${timeTier(runT)}</span> &middot; ${S().menu ?? S().name} &middot; ${M().name}${runKind === 'daily' ? ' · DAILY' : ''}</p>
+     <p>${kills} kills &middot; ${gemCount} gems</p>
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      ${pulseLine}
      ${recapParts().length ? `<p class="breakdown">${recapParts().join(' &middot; ')}</p>` : ''}
      ${runKind === 'daily' ? dailyLines
-    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${M().id === 'pure' ? '' : ` &middot; ${M().id}`}</p>`}
+    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
      <button id="tokoBtn" class="opt">ASK TOKO</button>
@@ -1810,12 +1849,20 @@ const GAME = { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' };
 let table = null;
 let lastTimedOut = false;
 function tokoCue() {
-  const t = gameTime.toFixed(1);
+  const t = (gameTime + (runBonus || 0)).toFixed(1);
+  const tier = timeTier(gameTime + (runBonus || 0));
+  const sn = S().menu ?? S().name;
+  const mode = M().name;
+  const peak = stylePeakIdx > 0 ? STYLE_TIERS[stylePeakIdx].label : '-';
+  const wave = (typeof waveIdx === 'number' ? waveIdx + 1 : 1);
   if (state === 'dead') {
-    return `${lastTimedOut ? 'THE CLOCK RAN OUT' : `${(ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase()} GOT YOU`} AT ${t}S`;
+    const cause = lastTimedOut ? 'TIME OUT' : (ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase();
+    return `${sn} · ${mode} · wave ${wave} · ${t}s · ${tier} · peak ${peak} · ${cause} · ${kills} kills`;
   }
-  if (state === 'playing') return `${t}S IN. SAY WHAT YOU THINK`;
-  return null;                       // the menu: his own line
+  if (state === 'playing') {
+    return `${sn} · ${mode} · wave ${wave} · ${t}s in · ${tier} · peak ${peak} · ${kills} kills · say what you think`;
+  }
+  return null;
 }
 function openToko() {
   if (table) return table;
@@ -1938,7 +1985,7 @@ function showPause() {
   }
   elMsg.innerHTML =
     `<h1>PAUSED</h1>
-     <p class="sub">~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps &middot; ${voxCount.toLocaleString()} voxels on field &middot; new spawns use the VOXEL setting</p>
+     <p class="sub">${S().menu ?? S().name} · ${M().name} · ~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps</p>
      <button id="tokoBtn">ASK TOKO</button>
      <div class="optrow"><span>SEASON</span>${SEASONS.filter(sn => !sn.hidden).map(sn =>
        `<button class="opt season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}</div>
@@ -2076,7 +2123,7 @@ function updateThorns(dt) {
         th.t = 0.12;
         th.group.visible = true;
         audio.gib(false);
-        trauma = Math.max(trauma, 0.15);
+        trauma = Math.max(trauma, 0.22);
       }
       continue;
     }
@@ -2545,6 +2592,68 @@ let nextSkullAt = 0;   // v48: season 2's own clock
 // no pulses, no thorns, no flyby, no leviathan. The skull FAMILY, drawn at
 // random — the crowned, the splitter and the dread join as the run goes on —
 // on a cadence that tightens from `base` to `floor`, under `cap`.
+
+// Season wave pacing — peaks and valleys so later stages still have breathing room
+let waveIdx = 0;
+let waveGapUntil = 0;
+let lastAnnouncedWave = -1;
+function currentWave() {
+  const waves = S().waves;
+  if (!waves || !waves.length) return null;
+  while (waveIdx + 1 < waves.length && gameTime >= waves[waveIdx + 1].t) waveIdx++;
+  if (waveIdx !== lastAnnouncedWave && state === 'playing') {
+    lastAnnouncedWave = waveIdx;
+    const w = waves[waveIdx];
+    slowmo = Math.max(slowmo, 0.35);
+    trauma = Math.max(trauma, 0.12);
+    if (w.kind === 'finale') toast('FINALE', 1600);
+    else if (waveIdx > 0) toast(w.kind.toUpperCase(), 900);
+  }
+  return waves[waveIdx];
+}
+function waveDirector() {
+  const w = currentWave();
+  if (!w) return false;
+  if (gameTime < waveGapUntil) return true; // breathing
+  const density = w.density || 1;
+  const season = S();
+
+  // S3: no enemies from behind — only spawn in the forward half
+  const aheadOnly = !!season.noRear;
+
+  if (season.id === 'inca') {
+    // S2: prefer spawning in the trough (away from the crest)
+    const crestPhase = goo._dist ? (goo._dist % (goo.period || 10)) : 0;
+    const inTrough = crestPhase > 3 && crestPhase < (goo.period || 10) - 2;
+    if (inTrough && Math.random() < density * 0.12) skullDirector();
+  } else if (aheadOnly) {
+    // S3: strict forward cone relative to camera
+    if (Math.random() < density * 0.06) {
+      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      let at = ringSpot(16).clone();
+      let toSpot = at.clone().sub(player.pos).normalize();
+      let tries = 0;
+      while (toSpot.dot(fwd) < 0.35 && tries < 6) {
+        at = ringSpot(16).clone();
+        toSpot = at.clone().sub(player.pos).normalize();
+        tries++;
+      }
+      if (toSpot.dot(fwd) < 0.2) at.add(fwd.clone().multiplyScalar(18));
+      at.y = 1.2;
+      telegraph(at, [1.8, 0.9, 0.3], 0.6, () => enemies.push(new Skull(scene, at, 0.35)));
+    }
+  } else {
+    // S1 and others: classic mix
+    if (Math.random() < density * 0.12) {
+      const at = ringSpot(10).clone(); at.y = 1.2;
+      const r = rng.next();
+      const mk = r < 0.2 ? () => new Brute(scene, at) : () => new Skull(scene, at, Math.min(1.5, gameTime * 0.01));
+      telegraph(at, [1.6, 0.3, 0.2], 0.6, () => enemies.push(mk()));
+    }
+  }
+  if (Math.random() < 0.08) waveGapUntil = gameTime + (w.gap || 6);
+  return true;
+}
 function skullDirector() {
   const sp = S().spawns;
   if (gameTime < nextSkullAt || enemyCount('skull') >= (sp.cap ?? 28)) return;
@@ -2565,6 +2674,7 @@ function director(dt) {
   if (dir === 'none') { updatePending(dt); return; } // the track/bench is the pressure
   if (dir === 'ddSpawnset') { ddDirector(); return; }
   updatePending(dt);
+  if (waveDirector()) return;
   if (S().spawns?.only === 'skulls') { skullDirector(); return; }
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
@@ -2674,6 +2784,50 @@ function styleTierIdx(v) {
 }
 
 /** Paint the rank badge + fill bar to match the current meter value. */
+
+/** Pulse the vignette when enemies are close — a soft threat read. */
+function updateThreatVignette() {
+  if (state !== 'playing') { document.getElementById('vignette').style.opacity = '0'; return; }
+  let near = 0;
+  for (const e of enemies) {
+    const d = Math.hypot(e.pos.x - player.pos.x, e.pos.z - player.pos.z);
+    if (d < 6) near = Math.max(near, 1 - d / 6);
+  }
+  document.getElementById('vignette').style.opacity = String(Math.min(0.55, near * 0.7));
+}
+
+function bumpCombo() {
+  comboCount++;
+  comboTimer = 2.2;
+  elCombo.textContent = '×' + comboCount;
+  elCombo.classList.add('show');
+  if (comboCount >= 4 && comboCount % 2 === 0) addStyle(1);
+}
+function updateCombo(dt) {
+  if (comboTimer > 0) {
+    comboTimer -= dt;
+    if (comboTimer <= 0) {
+      comboCount = 0;
+      elCombo.classList.remove('show');
+    }
+  }
+}
+function updateThreatRing() {
+  if (state !== 'playing') { elThreatRing.innerHTML = ''; return; }
+  const pips = [];
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+  const r = Math.min(window.innerWidth, window.innerHeight) * 0.14;
+  for (const e of enemies) {
+    const dx = e.pos.x - player.pos.x, dz = e.pos.z - player.pos.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 5 || d > 22) continue;
+    const ang = Math.atan2(dz, dx);
+    const x = Math.cos(ang) * r;
+    const y = Math.sin(ang) * r;
+    pips.push(`<div class="pip" style="left:${50 + (x / r) * 50}%; top:${50 + (y / r) * 50}%;"></div>`);
+  }
+  elThreatRing.innerHTML = pips.slice(0, 12).join('');
+}
 function updateStyleHud() {
   const idx = styleTierIdx(styleVal);
   if (idx === 0) { elStyle.style.opacity = '0'; return; }
@@ -2700,10 +2854,10 @@ function addStyle(amount) {
     if (after > stylePeakIdx) stylePeakIdx = after;
     // only S+ interrupts with a toast/flourish — lower tiers read off the
     // HUD meter so we never clobber an enemy-debut announcement
-    if (after >= 5) {
+    if (after >= 3) {
       audio.levelup();
-      trauma = Math.max(trauma, 0.2);
-      toast(`RANK ${STYLE_TIERS[after].label}`, 900);
+      trauma = Math.max(trauma, 0.15);
+      toast(`RANK ${STYLE_TIERS[after].label}`, 1100);
     }
   }
 }
@@ -3587,6 +3741,7 @@ function step(dt) {
     styleVal = Math.max(0, styleVal - dt * (T.style.bleedBase + styleVal * T.style.bleedScale));
   }
   updateStyleHud();
+  updateThreatVignette();
   // music intensity: swarm density (live threats, not eggs) + run progress +
   // how hard you're chaining right now (the style meter)
   let threats = 0;

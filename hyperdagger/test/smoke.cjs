@@ -1497,6 +1497,58 @@ s.listen(0, '127.0.0.1', async () => {
     });
     await q.close();
   }
+  // ---- season 3 spawn: a crate at your feet is not a hole in the deck ------
+  // 12 Oct playtest: season 3 and a free run that rolled the convoy died at
+  // 0.7–2 s, "felled by something". A crate loaded where you spawn stood more
+  // than a step above your feet, so the floor probe skipped the WHOLE truck
+  // and the road became the floor on frame one. Planted deterministically
+  // here, stepped at the loop's slowest frame (dt 0.05), with no input.
+  let haulSpawn = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    // the convoy the way the mode menu / a free roll reaches it
+    await q.addInitScript(() => { localStorage.setItem('hyperDaggerModeV31', 'truck'); localStorage.setItem('hyperDaggerRunKind', 'free'); });
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    haulSpawn = await q.evaluate(async () => {
+      const hd = window.__hd, d = hd.debug, pl = hd.player;
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      d.startGame(); d.freezeDirector?.(true); d.setInvulnerable(true);
+      await frames(2);
+      const cv = d.truckObj();
+      if (!cv?.cargo) return { convoy: false, mode: d.getState().mode };
+      // a tall crate on the spawn spot of the first truck
+      const real = cv.cargo.topAt.bind(cv.cargo);
+      // (the deck's own bob is the convoy's; the crate rides 1.4 above the deck)
+      cv.cargo.topAt = (x, z) => { const f = cv.trucks[0]?.group.position;
+        return f && Math.abs(x - f.x) < 1.2 && Math.abs(z - f.z) < 1.2 ? f.y + 1.4 : real(x, z); };
+      cv.reset(pl);
+      const fallY = -2.9;   // seasons.js haul truck.fallY
+      let minY = Infinity, t = 0, roadFrames = 0;
+      for (let i = 0; i < 100; i++) {   // 5 s at the 0.05 clamp
+        cv.preUpdate(0.05, pl);
+        if (pl.floorY < -3) roadFrames++;
+        pl.update(0.05);
+        cv.update(0.05, pl, t += 0.05, [], null);
+        minY = Math.min(minY, pl.feet.y);
+      }
+      cv.cargo.topAt = real;
+      const out = { convoy: true, minY: +minY.toFixed(2), roadFrames, survived: minY > fallY };
+      // and when the road DOES take you, the recap names it
+      d.setInvulnerable(false);
+      pl.feet.y = -10; pl.vy = 0;
+      await frames(4);
+      out.state = d.getState().state;
+      out.cause = (document.body.innerText.match(/felled by ([^·\n]*)/i)?.[1] ?? '').trim();
+      return out;
+    });
+    await q.close();
+  }
+  ok('haul: a crate at the spawn point is not a hole — a no-input run stays on the deck for 5 s of slow frames (season 3 / free roll)',
+    haulSpawn.convoy && haulSpawn.survived && haulSpawn.roadFrames === 0, JSON.stringify(haulSpawn));
+  ok('haul: a fall to the road is named on the death screen, never "something"',
+    haulSpawn.state === 'dead' && /road/i.test(haulSpawn.cause) && !/something/i.test(haulSpawn.cause), JSON.stringify(haulSpawn));
   ok('haul: CARGO — trailers carry crates, welded to the deck, and a welded crate rides its truck',
     haul2.cargo.n > 0 && haul2.cargo.welded > 0 && haul2.rides && Math.abs(haul2.rides.truck - haul2.rides.crate) < 0.3, JSON.stringify({ cargo: haul2.cargo, rides: haul2.rides }));
   ok('haul: a hard brake slides the load', haul2.brake && haul2.brake.loose >= 1, JSON.stringify(haul2.brake));

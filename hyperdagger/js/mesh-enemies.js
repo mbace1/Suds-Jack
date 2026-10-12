@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { toLambert, voxelizeMesh, reliableTextures } from './meshassets.js?v=86';
+import { toLambert, voxelizeMesh, reliableTextures } from './meshassets.js?v=87';
 import { MODELS, registerVoxelModel, modelFor } from './voxel.js?v=85';
 
 // v45: a season's recolour of the alive-skin (roster.js `mosaicSkin`), set
