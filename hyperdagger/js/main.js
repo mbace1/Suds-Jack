@@ -2596,6 +2596,8 @@ function currentWave() {
   if (waveIdx !== lastAnnouncedWave && state === 'playing') {
     lastAnnouncedWave = waveIdx;
     const w = waves[waveIdx];
+    slowmo = Math.max(slowmo, 0.35);
+    trauma = Math.max(trauma, 0.12);
     if (w.kind === 'finale') toast('FINALE', 1600);
     else if (waveIdx > 0) toast(w.kind.toUpperCase(), 900);
   }
@@ -2617,16 +2619,20 @@ function waveDirector() {
     const inTrough = crestPhase > 3 && crestPhase < (goo.period || 10) - 2;
     if (inTrough && Math.random() < density * 0.12) skullDirector();
   } else if (aheadOnly) {
-    // S3: only spawn in the forward hemisphere relative to camera
-    if (Math.random() < density * 0.07) {
-      const at = ringSpot(14).clone();
+    // S3: strict forward cone relative to camera
+    if (Math.random() < density * 0.06) {
       const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-      const toSpot = at.clone().sub(player.pos);
-      if (toSpot.dot(fwd) < 0) {
-        at.add(fwd.clone().multiplyScalar(16));
+      let at = ringSpot(16).clone();
+      let toSpot = at.clone().sub(player.pos).normalize();
+      let tries = 0;
+      while (toSpot.dot(fwd) < 0.35 && tries < 6) {
+        at = ringSpot(16).clone();
+        toSpot = at.clone().sub(player.pos).normalize();
+        tries++;
       }
+      if (toSpot.dot(fwd) < 0.2) at.add(fwd.clone().multiplyScalar(18));
       at.y = 1.2;
-      telegraph(at, [1.8, 0.9, 0.3], 0.65, () => enemies.push(new Skull(scene, at, 0.4)));
+      telegraph(at, [1.8, 0.9, 0.3], 0.6, () => enemies.push(new Skull(scene, at, 0.35)));
     }
   } else {
     // S1 and others: classic mix
