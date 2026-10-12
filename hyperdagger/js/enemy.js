@@ -328,7 +328,7 @@ export class Watcher extends VoxelEnemy {
     this.fireT -= dt;
     if (this.fireT <= 0.7) {
       if (!this._warned) { this._warned = true; this.warnReq = true; }
-      this.sprite.flash(1.2);
+      this.sprite.flash(1.8);
     }
     if (this.fireT <= 0) {
       this.fireT = 4.2;

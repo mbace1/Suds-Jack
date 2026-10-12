@@ -2812,7 +2812,7 @@ function updateThreatRing() {
   for (const e of enemies) {
     const dx = e.pos.x - player.pos.x, dz = e.pos.z - player.pos.z;
     const d = Math.hypot(dx, dz);
-    if (d < 4 || d > 28) continue;
+    if (d < 5 || d > 22) continue;
     const ang = Math.atan2(dz, dx);
     const x = Math.cos(ang) * r;
     const y = Math.sin(ang) * r;
