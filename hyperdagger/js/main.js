@@ -2818,7 +2818,7 @@ function updateThreatRing() {
   const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
   const r = Math.min(window.innerWidth, window.innerHeight) * 0.14;
   for (const e of enemies) {
-    const dx = e.pos.x - player.pos.x, dz = e.pos.z - player.pos.z;
+    const dx = e.pos.x - player.feet.x, dz = e.pos.z - player.feet.z;
     const d = Math.hypot(dx, dz);
     if (d < 5 || d > 22) continue;
     const ang = Math.atan2(dz, dx);

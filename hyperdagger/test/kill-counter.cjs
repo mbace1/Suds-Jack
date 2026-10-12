@@ -28,8 +28,11 @@ const VIEWS = [
   { name: 'phone portrait', width: 390, height: 844, isMobile: true, hasTouch: true },
   { name: 'phone landscape', width: 844, height: 390, isMobile: true, hasTouch: true },
 ];
-// season id → how the run is started. null = free run: tap the empty menu.
-const RUNS = [['void', 'season'], ['ember', 'season'], ['inca', 'season'], ['haul', 'season'], ['free', 'menu']];
+// season id → how the run is started. 'season' presses that season's menu
+// button; 'menu' taps the menu away from its buttons. VOID (the control
+// season) has no button, so the hook selects it and the tap starts it; the
+// free run is a tap on a fresh menu with RUN: FREE.
+const RUNS = [['void', 'menu'], ['ember', 'season'], ['inca', 'season'], ['haul', 'season'], ['free', 'menu']];
 
 srv.listen(0, '127.0.0.1', async () => {
   const base = 'http://127.0.0.1:' + srv.address().port;
@@ -44,7 +47,7 @@ srv.listen(0, '127.0.0.1', async () => {
         const ctx = await b.newContext({ viewport: { width: v.width, height: v.height }, isMobile: v.isMobile, hasTouch: v.hasTouch });
         const p = await ctx.newPage();
         const errs = [];
-        p.on('pageerror', e => errs.push(e.message));
+        p.on('pageerror', e => errs.push(e.message + ' @ ' + (e.stack || '').split('\n')[1]));
         await p.addInitScript(() => {
           localStorage.setItem('hyperDaggerSeenTips', '1');
           localStorage.setItem('hyperDaggerRunKind', 'free');
@@ -59,6 +62,7 @@ srv.listen(0, '127.0.0.1', async () => {
         if (how === 'season') {
           await p.locator(`#msg button.season[data-season="${id}"]`).dispatchEvent('pointerdown');
         } else {
+          if (id !== 'free') await p.evaluate(sid => window.__hd.debug.setSeason(sid), id);
           // a free run: the run-kind is FREE, and a tap on the menu panel away
           // from its buttons descends into whatever the menu holds
           const box = await p.locator('#msg .go').boundingBox();
@@ -74,7 +78,10 @@ srv.listen(0, '127.0.0.1', async () => {
           await frames(3);
           // a fresh run starts at zero, whatever the director spawned so far
           const zero = document.getElementById('kills').textContent;
-          const sk = d.spawnSkull();
+          // two skulls, one killed: the other stays alive, so the HUD has to
+          // keep updating with an enemy on the field (main threw in the
+          // threat vignette whenever one was, before the counter's line ran)
+          const sk = d.spawnSkull(); d.spawnSkull();
           await frames(2);
           d.killEnemy(sk, 0, -1);
           await frames(4);
