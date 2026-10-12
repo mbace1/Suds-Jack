@@ -33,9 +33,41 @@ Statuses: Queued, In progress, Landed (with the SHA), Blocked, or Dropped. A dro
 
 ## Queued
 
-No items. This queue is empty on purpose. Nothing here is waiting to be built.
+### HD-002 — Unify scoring contract for all modes and seasons
 
-HD-001 is not an item in this file. D-sign is reserving it. The plan is not written here, and Mikael has not locked it. Do not assign HD-001 until that plan is written in this file.
+- status: Queued
+- size: M
+- blocked-by: —
+- design: PLATFORM.md, SEASONS.md, VERSIONS.md
+
+Make every mode and season combination report a single survival time as the score. Ensure both death and clean completeRun paths update personal bests, history, and daily tables. Standardize the recap to always show time, season, mode, and best delta.
+
+### HD-003 — Polish main menu for seasons and modes
+
+- status: Queued
+- size: S
+- blocked-by: —
+- design: SEASONS.md (owner brief on menu labels)
+
+Season buttons already exist. Add clear mode selector (or override), show current season blurb, personal best, and today's daily best on the title screen. Ensure gamepad and touch navigation covers the new controls.
+
+### HD-004 — Daily seeded runs and remote leaderboard for all modes
+
+- status: Queued
+- size: M
+- blocked-by: —
+- design: existing daily board skeleton in main.js
+
+Seed the director from UTC date + mode + season. Post finished runs (death or complete) to the existing Google Apps Script endpoint. Show top-10 and rank on the death/completion screen and today's best on the menu. Keep fully off if endpoint is empty.
+
+### HD-005 — Feature completeness pass on current seasons
+
+- status: Queued
+- size: L
+- blocked-by: HD-002
+- design: SEASONS.md, VERSIONS.md v54
+
+Verify Season 1 rubble/rockfall, Season 2 jumpable waves/tide/drain, and Season 3 truck/cargo/gaze all feed the pure timer correctly on PURE and HYPER. Confirm mobile and gamepad paths. Update VERSIONS.md and hub note.
 
 ## In progress
 
