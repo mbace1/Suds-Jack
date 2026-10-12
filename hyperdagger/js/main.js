@@ -2707,6 +2707,17 @@ function styleTierIdx(v) {
 }
 
 /** Paint the rank badge + fill bar to match the current meter value. */
+
+/** Pulse the vignette when enemies are close — a soft threat read. */
+function updateThreatVignette() {
+  if (state !== 'playing') { document.getElementById('vignette').style.opacity = '0'; return; }
+  let near = 0;
+  for (const e of enemies) {
+    const d = Math.hypot(e.pos.x - player.pos.x, e.pos.z - player.pos.z);
+    if (d < 6) near = Math.max(near, 1 - d / 6);
+  }
+  document.getElementById('vignette').style.opacity = String(Math.min(0.55, near * 0.7));
+}
 function updateStyleHud() {
   const idx = styleTierIdx(styleVal);
   if (idx === 0) { elStyle.style.opacity = '0'; return; }
@@ -2733,10 +2744,10 @@ function addStyle(amount) {
     if (after > stylePeakIdx) stylePeakIdx = after;
     // only S+ interrupts with a toast/flourish — lower tiers read off the
     // HUD meter so we never clobber an enemy-debut announcement
-    if (after >= 5) {
+    if (after >= 3) {
       audio.levelup();
-      trauma = Math.max(trauma, 0.2);
-      toast(`RANK ${STYLE_TIERS[after].label}`, 900);
+      trauma = Math.max(trauma, 0.15);
+      toast(`RANK ${STYLE_TIERS[after].label}`, 1100);
     }
   }
 }
@@ -3620,6 +3631,7 @@ function step(dt) {
     styleVal = Math.max(0, styleVal - dt * (T.style.bleedBase + styleVal * T.style.bleedScale));
   }
   updateStyleHud();
+  updateThreatVignette();
   // music intensity: swarm density (live threats, not eggs) + run progress +
   // how hard you're chaining right now (the style meter)
   let threats = 0;

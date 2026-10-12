@@ -33,8 +33,10 @@
     #style { bottom: 1.2rem; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; text-align: center; }
     #styleRank { font-size: 1.4rem; font-weight: 700; } #styleMult { font-size: 0.85rem; opacity: 0.8; }
     #styleFill { height: 3px; width: 0; background: #c81e1e; margin: 0.2rem auto 0; max-width: 8rem; }
-    #toast { position: absolute; top: 18%; left: 50%; transform: translateX(-50%); z-index: 8; opacity: 0; transition: opacity 0.2s; pointer-events: none; letter-spacing: 0.1em; text-shadow: 0 1px 3px #000; }
-    #toast.show { opacity: 1; }
+    #toast { position: absolute; top: 16%; left: 50%; transform: translateX(-50%); z-index: 8; opacity: 0; transition: opacity 0.18s, transform 0.18s; pointer-events: none; letter-spacing: 0.14em; text-shadow: 0 2px 6px #000; font-size: 1.35rem; font-weight: 700; }
+    #toast.show { opacity: 1; transform: translateX(-50%) scale(1.05); }
+    #style { font-size: 1.1rem; }
+    #styleRank { font-size: 1.6rem; font-weight: 800; text-shadow: 0 1px 4px #000; }
     #crosshair { display: none; }
     #pauseBtn { position: absolute; top: 0.7rem; right: 0.7rem; z-index: 6; background: transparent; border: 0; color: #e8dcc8; opacity: 0.35; cursor: pointer; font-size: 1.2rem; }
     #pauseBtn:hover { opacity: 1; }
