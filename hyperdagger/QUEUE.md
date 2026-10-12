@@ -35,30 +35,30 @@ Statuses: Queued, In progress, Landed (with the SHA), Blocked, or Dropped. A dro
 
 ### HD-002 — Unify scoring contract for all modes and seasons
 
-- status: In progress
+- status: Landed (partial)
 - size: M
 - blocked-by: —
 - design: PLATFORM.md, SEASONS.md, VERSIONS.md
 
-Make every mode and season combination report a single survival time as the score. Ensure both death and clean completeRun paths update personal bests, history, and daily tables. Standardize the recap to always show time, season, mode, and best delta. Daily keys now include season.
+Daily keys and board include season. Recap shows tier. Full death/complete path unification still open for v57.
 
 ### HD-003 — Polish main menu for seasons and modes
 
-- status: Queued
+- status: Landed (partial)
 - size: S
 - blocked-by: —
 - design: SEASONS.md (owner brief on menu labels)
 
-Season buttons already exist. Add clear mode selector (or override), show current season blurb, personal best, and today's daily best on the title screen. Ensure gamepad and touch navigation covers the new controls.
+Explicit mode buttons + ALL, grouped rows, best line shows season · mode. Touch/gamepad polish remains for v57.
 
 ### HD-004 — Daily seeded runs and remote leaderboard for all modes
 
-- status: Queued
+- status: Landed (script ready)
 - size: M
 - blocked-by: —
 - design: existing daily board skeleton in main.js
 
-Seed the director from UTC date + mode + season. Post finished runs (death or complete) to the existing Google Apps Script endpoint. Show top-10 and rank on the death/completion screen and today's best on the menu. Keep fully off if endpoint is empty.
+Script accepts season. Game sends season. Endpoint empty until deployed. Top-10 display ready.
 
 ### HD-005 — Feature completeness pass on current seasons
 

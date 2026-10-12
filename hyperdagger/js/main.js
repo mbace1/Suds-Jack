@@ -1582,7 +1582,8 @@ function showDeath(timedOut, complete = false) {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1 class="dead">${complete ? 'RUN COMPLETE' : timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
-     <p class="big">${t}s &middot; ${timeTier(runT)} &middot; ${kills} kills &middot; ${gemCount} gems</p>
+     <p class="big">${t}s &middot; ${timeTier(runT)} &middot; ${S().menu ?? S().name} &middot; ${M().name}</p>
+     <p>${kills} kills &middot; ${gemCount} gems</p>
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      ${pulseLine}
@@ -2115,7 +2116,7 @@ function updateThorns(dt) {
         th.t = 0.12;
         th.group.visible = true;
         audio.gib(false);
-        trauma = Math.max(trauma, 0.15);
+        trauma = Math.max(trauma, 0.22);
       }
       continue;
     }
