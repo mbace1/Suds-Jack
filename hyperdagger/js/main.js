@@ -2598,13 +2598,26 @@ function waveDirector() {
   const w = currentWave();
   if (!w) return false;
   if (gameTime < waveGapUntil) return true; // breathing
-  // density scales spawn pressure; gap schedules the next rest
   const density = w.density || 1;
-  if (S().spawns?.only === 'skulls') {
-    // reuse skullDirector but throttle by density
-    if (Math.random() < density * 0.15) skullDirector();
+  const season = S();
+
+  // S3: no enemies from behind — only spawn in the forward half
+  const aheadOnly = !!season.noRear;
+
+  if (season.id === 'inca') {
+    // S2: wave-jump is the primary pressure; enemies are light support
+    if (Math.random() < density * 0.10) skullDirector();
+  } else if (aheadOnly) {
+    // S3: sparse forward spawns only
+    if (Math.random() < density * 0.08) {
+      const at = ringSpot(12).clone();
+      // bias forward (positive Z relative to player facing, approximate)
+      if (at.z < player.pos.z) at.z = player.pos.z + 8 + Math.random() * 10;
+      at.y = 1.2;
+      telegraph(at, [1.8, 0.9, 0.3], 0.7, () => enemies.push(new Skull(scene, at, 0.5)));
+    }
   } else {
-    // light mix for ember
+    // S1 and others: classic mix
     if (Math.random() < density * 0.12) {
       const at = ringSpot(10).clone(); at.y = 1.2;
       const r = rng.next();
@@ -2612,7 +2625,6 @@ function waveDirector() {
       telegraph(at, [1.6, 0.3, 0.2], 0.6, () => enemies.push(mk()));
     }
   }
-  // schedule breathing gap after a burst
   if (Math.random() < 0.08) waveGapUntil = gameTime + (w.gap || 6);
   return true;
 }

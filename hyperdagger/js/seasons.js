@@ -173,19 +173,19 @@ export const SEASONS = [
     // dash on — plus a double jump. VOID declares none and stays the control.
     mode: 'hyper',
     abilities: { jumps: 2 },
-    blurb: 'the sea — one wave, and you jump it',
+    blurb: 'jump the waves — skulls are support',
     // v48 (owner, 2026-09-21): "make season 2 just the wave that you need to
     // jump over. Only random skulls as enemies otherwise." So: no slabs, no
     // rock, no roster but the skull family, and the wave is a HAZARD sized
     // to a single jump, not a floor that carries you.
     spawns: { only: 'skulls', base: 2.6, floor: 0.9, slope: 0.012, cap: 28, first: 1.2 },
     waves: [
-      { t: 0,   kind: 'skulls', density: 0.5, gap: 10 },
-      { t: 30,  kind: 'crowned', density: 0.7, gap: 8 },
-      { t: 60,  kind: 'splitters', density: 0.6, gap: 12 },
-      { t: 100, kind: 'skulls', density: 1.0, gap: 6 },
-      { t: 150, kind: 'dreads', density: 0.4, gap: 15 },
-      { t: 180, kind: 'finale', density: 1.2, gap: 5 },
+      { t: 0,   kind: 'wave', density: 0.4, gap: 12 },      // early: learn the jump
+      { t: 30,  kind: 'skulls', density: 0.6, gap: 10 },
+      { t: 55,  kind: 'wave', density: 0.7, gap: 9 },       // tighter waves
+      { t: 90,  kind: 'mix', density: 0.5, gap: 11 },       // light other pressure
+      { t: 140, kind: 'wave', density: 0.9, gap: 8 },
+      { t: 180, kind: 'finale', density: 1.1, gap: 6 },
     ],
     // v52 THE VISUAL LEAP (owner: "visual leap to season 2"). Looked at first:
     // a flat overcast grey sky nothing could stand against, a floor whose
@@ -338,12 +338,13 @@ export const SEASONS = [
     name: 'SEASON 3 — HAUL',
     menu: 'SEASON 3',
     waves: [
-      { t: 0,   kind: 'trucks', density: 0.4, gap: 12 },
-      { t: 40,  kind: 'gaze', density: 0.6, gap: 10 },
-      { t: 90,  kind: 'cargo', density: 0.5, gap: 14 },
-      { t: 150, kind: 'mix', density: 0.8, gap: 8 },
-      { t: 180, kind: 'finale', density: 1.1, gap: 6 },
+      { t: 0,   kind: 'trucks', density: 0.3, gap: 14 },    // learn the platforms
+      { t: 35,  kind: 'gaze', density: 0.5, gap: 12 },      // lock ahead
+      { t: 80,  kind: 'cargo', density: 0.4, gap: 15 },     // stomp/save pressure
+      { t: 130, kind: 'ahead', density: 0.7, gap: 10 },     // enemies only forward
+      { t: 180, kind: 'finale', density: 1.0, gap: 8 },
     ],
+    noRear: true,   // enemies spawn only in the forward hemisphere
     mode: 'truck',                       // the Clustertruck rules: the road is the arena, falling is death
     abilities: { jumps: 2, dash: true },
     blurb: 'the convoy — trucks that drive, momentum you keep, and a look that fires',
