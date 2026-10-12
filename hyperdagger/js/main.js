@@ -1575,8 +1575,7 @@ function showDeath(timedOut, complete = false) {
   const heavies = Math.floor(pulseN / 8);
   const pulseLine = pulseN > 0
     ? `<p class="breakdown">survived ${pulseN} pulse${pulseN === 1 ? '' : 's'}${heavies ? ` (${heavies} heavy)` : ''}</p>` : '';
-  const share = `HYPER DAGGER · ${runKind === 'daily' ? `daily ${runDate}` : 'free run'} · ${
-    M().id.toUpperCase()} · ${t}s · ${kills} kills · LV${weaponLv}${
+  const share = `HYPER DAGGER · ${S().menu ?? S().name} · ${M().name} · ${t}s · ${timeTier(runT)} · ${kills} kills${
     stylePeakIdx > 0 ? ` · rank ${STYLE_TIERS[stylePeakIdx].label}` : ''}`;
 
   elMsg.style.display = 'block';
@@ -1589,7 +1588,7 @@ function showDeath(timedOut, complete = false) {
      ${pulseLine}
      ${recapParts().length ? `<p class="breakdown">${recapParts().join(' &middot; ')}</p>` : ''}
      ${runKind === 'daily' ? dailyLines
-    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${M().id === 'pure' ? '' : ` &middot; ${M().id}`}</p>`}
+    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
      <button id="tokoBtn" class="opt">ASK TOKO</button>
