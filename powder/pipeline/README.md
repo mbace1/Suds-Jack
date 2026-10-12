@@ -52,19 +52,21 @@ origin rides **0.63–0.75 m** over the sand (the pads' rest gap is 0.75 m and
 they settle to ~0.63 under load), so the belly plate or the runners belong
 at roughly **z −0.6** (Blender), with the pad footprints inside the hull's
 plan. `powder_blender.py` draws the pads as empties at that height. (Before
-v11 this said z −0.9, for a hover height the formula kit no longer has.)
+v11 this said z −0.9, for a hover height the kit no longer has.)
 
 | | min | max | kit today |
 |---|---|---|---|
-| Length (Blender Y), probe included | 8.5 m | 12.5 m | 9.2 / 9.2 m |
-| Width (X), across the nacelles | 2.2 m | 4.4 m | 3.7 / 3.7 m |
-| Height (Z) | 1.0 m | 3.2 m | 1.8 / 1.8 m |
-| Triangles, whole ship | — | **9,000** | 7,304 / 6,944 |
-| Draw calls after import | — | 24 | 22 |
+| Length (Blender Y), probe included | 8.5 m | 12.5 m | 10.0 / 10.0 m |
+| Width (X), across the nacelles | 2.2 m | 4.4 m | 3.6 / 3.7 m |
+| Height (Z) | 1.0 m | 3.2 m | 1.7 / 2.0 m |
+| Triangles, whole ship | — | **9,000** | 8,938 / 7,794 |
+| Draw calls after import | — | 24 | 17 / 17 |
 
-(v11: the kit is a formula car now — a needle nose, sidepods, front and
-rear wings, and four sprung pods on wishbones. The corners are separate
-meshes because the game poses them, which is where the draw calls went.)
+(v12: the kit is the plates' rocket sled — a cream fuselage from a chrome
+nose cone, a bubble canopy, an open machinery bay, chrome cans the size of
+the cockpit. NOSE is 62 triangles under the budget, so anything added to
+the kit has to come out of something else. v11's formula car and its
+pods on wishbones are gone; the hover cushion is invisible.)
 
 ("kit today" is measured from `models/reference/ship-nose.glb` /
 `ship-aft.glb` by the loader itself — the exact line it prints.)

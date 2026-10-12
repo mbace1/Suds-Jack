@@ -103,7 +103,10 @@ void main() {
   vec3 surf = uLit * (1.0 - uBands * band);
   vec3 col = mix(uDark, surf, lit);
   // the limb: its own air, brightest on the lit side
-  float fr = pow(1.0 - max(0.0, dot(normalize(vN), vV)), 2.6);
+  // clamped, not max'd: on a phone GPU the dot of two unit vectors can
+  // land a hair over 1, and pow() of a negative is NaN — one NaN pixel that
+  // bloom then smeared over the whole frame (the v11 white screen)
+  float fr = pow(clamp(1.0 - dot(normalize(vN), vV), 0.0, 1.0), 2.6);
   col += uLimb * fr * (0.25 + 0.75 * lit);
   // and ours, in front of it
   col = mix(col, uAir, uAirK);
