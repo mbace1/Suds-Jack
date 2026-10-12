@@ -1977,7 +1977,7 @@ function showPause() {
   }
   elMsg.innerHTML =
     `<h1>PAUSED</h1>
-     <p class="sub">~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps &middot; ${voxCount.toLocaleString()} voxels on field &middot; new spawns use the VOXEL setting</p>
+     <p class="sub">${S().menu ?? S().name} · ${M().name} · ~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps</p>
      <button id="tokoBtn">ASK TOKO</button>
      <div class="optrow"><span>SEASON</span>${SEASONS.filter(sn => !sn.hidden).map(sn =>
        `<button class="opt season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}</div>
