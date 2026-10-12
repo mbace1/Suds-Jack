@@ -2584,6 +2584,38 @@ let nextSkullAt = 0;   // v48: season 2's own clock
 // no pulses, no thorns, no flyby, no leviathan. The skull FAMILY, drawn at
 // random — the crowned, the splitter and the dread join as the run goes on —
 // on a cadence that tightens from `base` to `floor`, under `cap`.
+
+// Season wave pacing — peaks and valleys so later stages still have breathing room
+let waveIdx = 0;
+let waveGapUntil = 0;
+function currentWave() {
+  const waves = S().waves;
+  if (!waves || !waves.length) return null;
+  while (waveIdx + 1 < waves.length && gameTime >= waves[waveIdx + 1].t) waveIdx++;
+  return waves[waveIdx];
+}
+function waveDirector() {
+  const w = currentWave();
+  if (!w) return false;
+  if (gameTime < waveGapUntil) return true; // breathing
+  // density scales spawn pressure; gap schedules the next rest
+  const density = w.density || 1;
+  if (S().spawns?.only === 'skulls') {
+    // reuse skullDirector but throttle by density
+    if (Math.random() < density * 0.15) skullDirector();
+  } else {
+    // light mix for ember
+    if (Math.random() < density * 0.12) {
+      const at = ringSpot(10).clone(); at.y = 1.2;
+      const r = rng.next();
+      const mk = r < 0.2 ? () => new Brute(scene, at) : () => new Skull(scene, at, Math.min(1.5, gameTime * 0.01));
+      telegraph(at, [1.6, 0.3, 0.2], 0.6, () => enemies.push(mk()));
+    }
+  }
+  // schedule breathing gap after a burst
+  if (Math.random() < 0.08) waveGapUntil = gameTime + (w.gap || 6);
+  return true;
+}
 function skullDirector() {
   const sp = S().spawns;
   if (gameTime < nextSkullAt || enemyCount('skull') >= (sp.cap ?? 28)) return;
@@ -2604,6 +2636,7 @@ function director(dt) {
   if (dir === 'none') { updatePending(dt); return; } // the track/bench is the pressure
   if (dir === 'ddSpawnset') { ddDirector(); return; }
   updatePending(dt);
+  if (waveDirector()) return;
   if (S().spawns?.only === 'skulls') { skullDirector(); return; }
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
@@ -2727,9 +2760,10 @@ function updateThreatVignette() {
 
 function bumpCombo() {
   comboCount++;
-  comboTimer = 1.8;
+  comboTimer = 2.2;
   elCombo.textContent = '×' + comboCount;
   elCombo.classList.add('show');
+  if (comboCount >= 4 && comboCount % 2 === 0) addStyle(1);
 }
 function updateCombo(dt) {
   if (comboTimer > 0) {

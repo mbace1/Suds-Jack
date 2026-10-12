@@ -153,6 +153,15 @@ export const SEASONS = [
     rubbleFloor: true,
     // v54 A RUN THAT ENDS: at `end` seconds the season is over and the recap says what the run did
     end: 300,
+    // Wave pacing: DD-like pressure with breathing gaps after heavies
+    waves: [
+      { t: 0,   kind: 'skulls', density: 0.6, gap: 8 },
+      { t: 25,  kind: 'mix', density: 0.8, gap: 6 },
+      { t: 50,  kind: 'heavies', density: 0.5, gap: 12 },
+      { t: 80,  kind: 'skulls', density: 1.0, gap: 5 },
+      { t: 120, kind: 'mix', density: 1.1, gap: 7 },
+      { t: 180, kind: 'finale', density: 1.3, gap: 4 },
+    ],
     built: true,
   },
   {
@@ -170,6 +179,14 @@ export const SEASONS = [
     // rock, no roster but the skull family, and the wave is a HAZARD sized
     // to a single jump, not a floor that carries you.
     spawns: { only: 'skulls', base: 2.6, floor: 0.9, slope: 0.012, cap: 28, first: 1.2 },
+    waves: [
+      { t: 0,   kind: 'skulls', density: 0.5, gap: 10 },
+      { t: 30,  kind: 'crowned', density: 0.7, gap: 8 },
+      { t: 60,  kind: 'splitters', density: 0.6, gap: 12 },
+      { t: 100, kind: 'skulls', density: 1.0, gap: 6 },
+      { t: 150, kind: 'dreads', density: 0.4, gap: 15 },
+      { t: 180, kind: 'finale', density: 1.2, gap: 5 },
+    ],
     // v52 THE VISUAL LEAP (owner: "visual leap to season 2"). Looked at first:
     // a flat overcast grey sky nothing could stand against, a floor whose
     // grain read as gravel, everything one teal, and the giant skulls cropped
