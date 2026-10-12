@@ -337,6 +337,13 @@ export const SEASONS = [
     id: 'haul',
     name: 'SEASON 3 — HAUL',
     menu: 'SEASON 3',
+    waves: [
+      { t: 0,   kind: 'trucks', density: 0.4, gap: 12 },
+      { t: 40,  kind: 'gaze', density: 0.6, gap: 10 },
+      { t: 90,  kind: 'cargo', density: 0.5, gap: 14 },
+      { t: 150, kind: 'mix', density: 0.8, gap: 8 },
+      { t: 180, kind: 'finale', density: 1.1, gap: 6 },
+    ],
     mode: 'truck',                       // the Clustertruck rules: the road is the arena, falling is death
     abilities: { jumps: 2, dash: true },
     blurb: 'the convoy — trucks that drive, momentum you keep, and a look that fires',
