@@ -1141,7 +1141,7 @@ let mode = modeById(_urlMode || localStorage.getItem(MODE_KEY) || 'pure').id;
  *  still wins (it is how the gate and the loop harness pin an experiment),
  *  then the season's declared `mode`, then the saved one (VOID declares
  *  none, so the control stays whatever the gate asks for). */
-function M() { return modeById(_urlMode || S().mode || mode); }
+function M() { return modeById(_urlMode || mode || S().mode); }
 /** The body for this run: the mode's abilities with the season's on top. */
 function applyRunAbilities() {
   const m = M(), extra = _urlMode ? null : S().abilities;
@@ -1272,7 +1272,7 @@ const DAILY_TABLE_KEY = 'hyperDaggerDailyBest';
 
 function todayStr() { return dateOverride ?? utcDateStr(); }
 
-function dailyKey(date, m) { return `hyperDaggerDaily:${date}:${m}`; }
+function dailyKey(date, m) { return `hyperDaggerDaily:${date}:${S().id}:${m}`; }
 
 function readDailyTable() {
   try { return JSON.parse(localStorage.getItem(DAILY_TABLE_KEY) || '[]'); } catch { return []; }
@@ -1328,10 +1328,10 @@ async function boardReport(date, m, t) {
     await fetch(BOARD_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' }, // dodges the CORS preflight Apps Script can't answer
-      body: JSON.stringify({ date, mode: m, t: Math.round(t * 10) / 10, name: getInitials() }),
+      body: JSON.stringify({ date, mode: m, season: S().id, t: Math.round(t * 10) / 10, name: getInitials() }),
     });
     const res = await fetch(
-      `${BOARD_ENDPOINT}?date=${date}&mode=${m}&t=${Math.round(t * 10) / 10}`);
+      `${BOARD_ENDPOINT}?date=${date}&mode=${m}&season=${S().id}&t=${Math.round(t * 10) / 10}`);
     const data = await res.json();
     const el = board();
     if (!el || !data || !Array.isArray(data.top)) return;
@@ -1351,7 +1351,7 @@ async function boardReport(date, m, t) {
 async function menuBoardLine() {
   if (!BOARD_ENDPOINT || runKind !== 'daily') return;
   try {
-    const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${M().id}`);
+    const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${M().id}&season=${S().id}`);
     const data = await res.json();
     const top = data?.top?.[0];
     const el = document.getElementById('menuBoard');
@@ -1377,6 +1377,7 @@ function showMenu() {
      gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; triggers fire &nbsp;|&nbsp; touch &mdash; right stick: <b>hold = fire</b> &middot; <b>tap = jump &times;2</b> &middot; <b>flick = dash</b></p>
      ${SEASONS.filter(sn => !sn.hidden).map(sn =>
        `<button class="season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}
+     <button id="modeBtn" class="opt">MODE: ${M().name}</button>
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
     : 'FREE &mdash; pure random'}</button>
@@ -1395,6 +1396,14 @@ function showMenu() {
       startGame();
     });
   }
+  document.getElementById('modeBtn').addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    const next = nextModeId(M().id);
+    mode = next;
+    localStorage.setItem(MODE_KEY, mode);
+    // clear URL mode so season can still influence if desired, but override sticks
+    showMenu();
+  });
   document.getElementById('runKindBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     runKind = runKind === 'daily' ? 'free' : 'daily';
@@ -1404,11 +1413,13 @@ function showMenu() {
 }
 
 function bestLine() {
+  const sn = S().menu ?? S().name;
+  const m = M().name;
   if (runKind === 'daily') {
     const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), M().id)) || '0');
-    return dayBest > 0 ? `today's best ${dayBest.toFixed(1)}s &mdash; ` : '';
+    return dayBest > 0 ? `${sn} · ${m} · today's best ${dayBest.toFixed(1)}s &mdash; ` : `${sn} · ${m} · `;
   }
-  return hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : '';
+  return hiScore > 0 ? `${sn} · ${m} · best ${hiScore.toFixed(1)}s &mdash; ` : `${sn} · ${m} · `;
 }
 
 // One-time 3-tip card before the very first run — the mechanics that aren't

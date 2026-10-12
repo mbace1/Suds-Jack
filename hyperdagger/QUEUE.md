@@ -35,12 +35,12 @@ Statuses: Queued, In progress, Landed (with the SHA), Blocked, or Dropped. A dro
 
 ### HD-002 — Unify scoring contract for all modes and seasons
 
-- status: Queued
+- status: In progress
 - size: M
 - blocked-by: —
 - design: PLATFORM.md, SEASONS.md, VERSIONS.md
 
-Make every mode and season combination report a single survival time as the score. Ensure both death and clean completeRun paths update personal bests, history, and daily tables. Standardize the recap to always show time, season, mode, and best delta.
+Make every mode and season combination report a single survival time as the score. Ensure both death and clean completeRun paths update personal bests, history, and daily tables. Standardize the recap to always show time, season, mode, and best delta. Daily keys now include season.
 
 ### HD-003 — Polish main menu for seasons and modes
 
