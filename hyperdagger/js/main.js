@@ -2631,11 +2631,11 @@ function waveDirector() {
     if (Math.random() < density * 0.06) {
       const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       let at = ringSpot(16).clone();
-      let toSpot = at.clone().sub(player.pos).normalize();
+      let toSpot = at.clone().sub(player.feet).normalize();
       let tries = 0;
       while (toSpot.dot(fwd) < 0.35 && tries < 6) {
         at = ringSpot(16).clone();
-        toSpot = at.clone().sub(player.pos).normalize();
+        toSpot = at.clone().sub(player.feet).normalize();
         tries++;
       }
       if (toSpot.dot(fwd) < 0.2) at.add(fwd.clone().multiplyScalar(18));
