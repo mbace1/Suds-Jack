@@ -1,3 +1,13 @@
+## v57 — in progress
+**Polished total experience: recap, menu, feedback**
+
+- Recap always shows season, mode, and colored tier
+- Share text carries season and tier
+- Menu and pause show current season and mode
+- Tips match current scoring and controls
+- Combo counter, threat ring, and wave toasts are live
+- Board script accepts season (endpoint still optional)
+
 # Hyper Dagger — Version Log
 
 <!-- Same rules as toko-drop/VERSIONS.md -->

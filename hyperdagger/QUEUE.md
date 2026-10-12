@@ -33,9 +33,41 @@ Statuses: Queued, In progress, Landed (with the SHA), Blocked, or Dropped. A dro
 
 ## Queued
 
-No items. This queue is empty on purpose. Nothing here is waiting to be built.
+### HD-002 — Unify scoring contract for all modes and seasons
 
-HD-001 is written. It is the In progress block, not a second item.
+- status: Landed (partial)
+- size: M
+- blocked-by: —
+- design: PLATFORM.md, SEASONS.md, VERSIONS.md
+
+Daily keys and board include season. Recap shows tier. Full death/complete path unification still open for v57.
+
+### HD-003 — Polish main menu for seasons and modes
+
+- status: Landed (partial)
+- size: S
+- blocked-by: —
+- design: SEASONS.md (owner brief on menu labels)
+
+Explicit mode buttons + ALL, grouped rows, best line shows season · mode. Touch/gamepad polish remains for v57.
+
+### HD-004 — Daily seeded runs and remote leaderboard for all modes
+
+- status: Landed (script ready)
+- size: M
+- blocked-by: —
+- design: existing daily board skeleton in main.js
+
+Script accepts season. Game sends season. Endpoint empty until deployed. Top-10 display ready.
+
+### HD-005 — Feature completeness pass on current seasons
+
+- status: Queued
+- size: L
+- blocked-by: HD-002
+- design: SEASONS.md, VERSIONS.md v54
+
+Verify Season 1 rubble/rockfall, Season 2 jumpable waves/tide/drain, and Season 3 truck/cargo/gaze all feed the pure timer correctly on PURE and HYPER. Confirm mobile and gamepad paths. Update VERSIONS.md and hub note.
 
 ## In progress
 

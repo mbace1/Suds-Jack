@@ -25,14 +25,14 @@
  */
 
 const SHEET_NAME = 'daily';
-const COLUMNS = ['date', 'mode', 't', 'name', 'at'];
+const COLUMNS = ['date', 'mode', 'season', 't', 'name', 'at'];
 
-/** Append one finished daily run: {date: 'YYYY-MM-DD', mode: 'pure'|'hyper',
- *  t: seconds, name: 3-char initials}. */
+/** Append one finished daily run: {date, mode, season, t, name}. */
 function doPost(e) {
   const data = JSON.parse(e.postData.contents);
   const date = String(data.date || '').slice(0, 10);
-  const mode = data.mode === 'hyper' ? 'hyper' : 'pure';
+  const mode = String(data.mode || 'pure').slice(0, 12);
+  const season = String(data.season || 'ember').slice(0, 12);
   const t = Number(data.t);
   const name = String(data.name || '???').toUpperCase().replace(/[^A-Z0-9?]/g, '').slice(0, 3) || '???';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !isFinite(t) || t <= 0 || t > 36000) {
@@ -41,7 +41,7 @@ function doPost(e) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
   if (sheet.getLastRow() === 0) sheet.appendRow(COLUMNS);
-  sheet.appendRow([date, mode, Math.round(t * 10) / 10, name, new Date().toISOString()]);
+  sheet.appendRow([date, mode, season, Math.round(t * 10) / 10, name, new Date().toISOString()]);
   return ContentService.createTextOutput('ok');
 }
 
@@ -60,9 +60,10 @@ function doGet(e) {
   const day = rows
     .filter(function (r) {
       const d = r[0] instanceof Date ? r[0].toISOString().slice(0, 10) : String(r[0]).slice(0, 10);
-      return d === date && String(r[1]) === mode;
+      const seasonMatch = !e.parameter.season || String(r[2]) === String(e.parameter.season);
+      return d === date && String(r[1]) === mode && seasonMatch;
     })
-    .map(function (r) { return { name: String(r[3] || '???'), t: Number(r[2]) }; })
+    .map(function (r) { return { name: String(r[4] || '???'), t: Number(r[3]) }; })
     .filter(function (r) { return isFinite(r.t) && r.t > 0; })
     .sort(function (a, b) { return b.t - a.t; });
   const out = {
