@@ -16,8 +16,16 @@
     #msg h1 { font-size: 2.2rem; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
     #msg .sub, #msg .keys, #msg .go, #msg .history, #msg .breakdown, #msg .cause { opacity: 0.85; margin: 0.35rem 0; max-width: 36rem; }
     #msg .big { font-size: 1.25rem; margin: 0.6rem 0; }
-    #msg button { margin: 0.4rem; padding: 0.55rem 1rem; background: #2a221c; color: #e8dcc8; border: 1px solid #5a4a3a; cursor: pointer; font: inherit; }
-    #msg button.on, #msg button.gfocus { border-color: #d8412f; background: #3a2820; }
+    #msg button { margin: 0.35rem; padding: 0.6rem 1.1rem; background: #1a1614; color: #e8dcc8; border: 1px solid #3a322c; cursor: pointer; font: inherit; letter-spacing: 0.04em; border-radius: 2px; transition: border-color 0.15s, background 0.15s; }
+    #msg button.on, #msg button.gfocus { border-color: #d8412f; background: #2a1e1a; box-shadow: 0 0 0 1px #d8412f33; }
+    #msg button:hover { border-color: #8a6a4a; }
+    #msg .seasons, #msg .modes { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; margin: 0.8rem 0; }
+    #msg button.season { min-width: 7.5rem; font-weight: 600; }
+    #msg button.season.on { background: #3a2218; }
+    #msg button.mode { min-width: 5.5rem; font-size: 0.92rem; }
+    #msg button.mode.all { border-style: dashed; }
+    #msg .row-label { font-size: 0.75rem; letter-spacing: 0.12em; opacity: 0.55; margin: 0.6rem 0 0.2rem; text-transform: uppercase; }
+    #msg h1 { text-shadow: 0 2px 8px #000; }
     #timer, #kills, #gems, #style { position: absolute; z-index: 5; pointer-events: none; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000; }
     #timer { top: 0.8rem; left: 50%; transform: translateX(-50%); font-size: 1.6rem; letter-spacing: 0.06em; }
     #kills, #gems { top: 0.9rem; font-size: 0.9rem; opacity: 0.75; }

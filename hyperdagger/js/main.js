@@ -1373,10 +1373,13 @@ function showMenu() {
     `<h1>HYPER DAGGER</h1>
      <p class="sub">a stripped-down Devil Daggers homage</p>
      <p>survive the swarm &mdash; time is your only score</p>
-     <p class="keys">${controls} &middot; <b>ESC</b> options<br>
-     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; triggers fire &nbsp;|&nbsp; touch &mdash; right stick: <b>hold = fire</b> &middot; <b>tap = jump &times;2</b> &middot; <b>flick = dash</b></p>
-     ${SEASONS.filter(sn => !sn.hidden).map(sn =>
-       `<button class="season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}
+     <p class="keys">${controls} &middot; <b>ESC</b> options</p>
+     <div class="row-label">season</div>
+     <div class="seasons">
+       ${SEASONS.filter(sn => !sn.hidden).map(sn =>
+         `<button class="season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}
+     </div>
+     <div class="row-label">mode</div>
      <div class="modes">
        ${MODES.filter(m => m.id !== 'move').map(m =>
          `<button class="mode${m.id === M().id ? ' on' : ''}" data-mode="${m.id}">${m.name}</button>`).join('')}
