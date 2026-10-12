@@ -1450,12 +1450,12 @@ function showTips() {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1>HOW TO SURVIVE</h1>
-     <p class="big">&#9876; <b>tap</b> = shotgun burst &middot; <b>hold</b> = stream</p>
-     <p class="sub">every dagger is aimed &mdash; on touch the stream runs itself while you move</p>
-     <p class="big">&#10227; <b>jump as you land</b> to carry speed</p>
-     <p class="sub">burst down after takeoff, then again near the apex</p>
-     <p class="big">&#9670; <b>gems level your daggers</b></p>
-     <p class="sub">10 / 70 &rarr; faster &middot; then bank 150 for the final hand; RMB spends homing</p>
+     <p class="big">&#9876; <b>tap</b> = burst &middot; <b>hold</b> = stream</p>
+     <p class="sub">on touch the stream runs while you move</p>
+     <p class="big">&#10227; <b>jump on land</b> to keep speed</p>
+     <p class="sub">double jump and dash are available in most seasons</p>
+     <p class="big">&#9670; <b>time is the score</b></p>
+     <p class="sub">S/A/B/C tiers · below A is a fail</p>
      <p class="go">click / tap / press &#10005; to descend</p>`;
 }
 
