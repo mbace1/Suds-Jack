@@ -1849,12 +1849,18 @@ const GAME = { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' };
 let table = null;
 let lastTimedOut = false;
 function tokoCue() {
-  const t = gameTime.toFixed(1);
+  const t = (gameTime + (runBonus || 0)).toFixed(1);
+  const tier = timeTier(gameTime + (runBonus || 0));
+  const sn = S().menu ?? S().name;
+  const mode = M().name;
   if (state === 'dead') {
-    return `${lastTimedOut ? 'THE CLOCK RAN OUT' : `${(ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase()} GOT YOU`} AT ${t}S`;
+    const cause = lastTimedOut ? 'TIME OUT' : (ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase();
+    return `${sn} · ${mode} · ${t}s · ${tier} · ${cause} · ${kills} kills`;
   }
-  if (state === 'playing') return `${t}S IN. SAY WHAT YOU THINK`;
-  return null;                       // the menu: his own line
+  if (state === 'playing') {
+    return `${sn} · ${mode} · ${t}s in · ${tier} · ${kills} kills · say what you think`;
+  }
+  return null;
 }
 function openToko() {
   if (table) return table;
