@@ -19,7 +19,7 @@ Version bumps are tied to milestones. Each milestone is a shippable slice of the
 - Brief slowmo + toast on wave transitions
 - Board script accepts season
 
-## v57 — Polished Total Experience
+## v57 — Polished Total Experience (in progress)
 - Consistent recap across death and complete
 - Stronger heavy telegraphs and hit confirmation
 - Menu and death screen visual polish
