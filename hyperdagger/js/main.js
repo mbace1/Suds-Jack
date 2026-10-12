@@ -54,7 +54,17 @@ const ENEMY_NAMES = {
   rockfall: 'THE ROCKFALL',   // v53: season 1's finale
   'the road': 'THE ROAD',     // season 3: off the convoy, the asphalt kills on touch
   'the fall': 'THE FALL',     // the classic track: nothing under you
+  egg: 'an egg', truck: 'a truck',   // HD-007: never lethal, but they land in the kill breakdown
 };
+// HD-007: every killer key the code can set has a name (test/killers.mjs walks
+// them). 'something' is only a last resort, and a dev build says when it fires.
+const DEV_BUILD = /^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || /[?&]dev\b/.test(location.search);
+function killerName(key) {
+  const name = ENEMY_NAMES[key];
+  if (name) return name;
+  if (DEV_BUILD) console.warn(`[hyperdagger] death fell back to 'something': no ENEMY_NAMES entry for killer ${JSON.stringify(key)}`);
+  return 'something';
+}
 
 // player-tunable options (pause menu), persisted across sessions
 // v25 deliberately starts from a clean image. A new key prevents old,
@@ -1561,7 +1571,7 @@ function showDeath(timedOut, complete = false) {
   const causeLine = complete ? `the season is over — ${S().menu ?? S().name} survived`
     : timedOut
     ? 'the clock ran out'
-    : `felled by ${ENEMY_NAMES[lastKiller] || 'something'}`;
+    : `felled by ${killerName(lastKiller)}`;
   const breakdown = Object.entries(killsByType)
     .sort((a, b) => b[1] - a[1])
     .map(([type, n]) => `${n}&times; ${ENEMY_NAMES[type] || type}`)
@@ -1856,7 +1866,7 @@ function tokoCue() {
   const peak = stylePeakIdx > 0 ? STYLE_TIERS[stylePeakIdx].label : '-';
   const wave = (typeof waveIdx === 'number' ? waveIdx + 1 : 1);
   if (state === 'dead') {
-    const cause = lastTimedOut ? 'TIME OUT' : (ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase();
+    const cause = lastTimedOut ? 'TIME OUT' : killerName(lastKiller).toUpperCase();
     return `${sn} · ${mode} · wave ${wave} · ${t}s · ${tier} · peak ${peak} · ${cause} · ${kills} kills`;
   }
   if (state === 'playing') {
