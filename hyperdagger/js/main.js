@@ -1853,12 +1853,14 @@ function tokoCue() {
   const tier = timeTier(gameTime + (runBonus || 0));
   const sn = S().menu ?? S().name;
   const mode = M().name;
+  const peak = stylePeakIdx > 0 ? STYLE_TIERS[stylePeakIdx].label : '-';
+  const wave = (typeof waveIdx === 'number' ? waveIdx + 1 : 1);
   if (state === 'dead') {
     const cause = lastTimedOut ? 'TIME OUT' : (ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase();
-    return `${sn} · ${mode} · ${t}s · ${tier} · ${cause} · ${kills} kills`;
+    return `${sn} · ${mode} · wave ${wave} · ${t}s · ${tier} · peak ${peak} · ${cause} · ${kills} kills`;
   }
   if (state === 'playing') {
-    return `${sn} · ${mode} · ${t}s in · ${tier} · ${kills} kills · say what you think`;
+    return `${sn} · ${mode} · wave ${wave} · ${t}s in · ${tier} · peak ${peak} · ${kills} kills · say what you think`;
   }
   return null;
 }
