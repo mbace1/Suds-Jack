@@ -1145,9 +1145,11 @@ let mode = modeById(_urlMode || localStorage.getItem(MODE_KEY) || 'pure').id;
 /** The active mode's declaration — ask this, never `mode === '...'`.
  *  v50 (owner): modes are control schemes a SEASON picks. A `?mode=` link
  *  still wins (it is how the gate and the loop harness pin an experiment),
- *  then the season's declared `mode`, then the saved one (VOID declares
- *  none, so the control stays whatever the gate asks for). */
-function M() { return modeById(_urlMode || mode || S().mode); }
+ *  then — when a season was CHOSEN (`?season=`, a season button) — that
+ *  season's declared `mode`, then the saved one (the PURE/HYPER/TRUCK/ALL
+ *  menu picks it, and a pick there clears the season's claim). VOID
+ *  declares none, so the control stays whatever was saved. */
+function M() { return modeById(_urlMode || (_seasonChosen && S().mode) || mode || S().mode); }
 /** The body for this run: the mode's abilities with the season's on top. */
 function applyRunAbilities() {
   const m = M(), extra = _urlMode ? null : S().abilities;
@@ -1160,6 +1162,8 @@ function applyRunAbilities() {
 const SEASON_KEY = 'hyperDaggerSeason';
 const _urlSeason = new URLSearchParams(location.search).get('season');
 let season = seasonById(_urlSeason || localStorage.getItem(SEASON_KEY) || 'ember').id;
+/** A season was chosen (link or button): its declared mode beats the saved one. */
+let _seasonChosen = !!_urlSeason;
 /** The active season's declaration — ask this, never `season === '...'`. */
 function S() { return seasonById(season); }
 
@@ -1403,6 +1407,7 @@ function showMenu() {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
       season = seasonById(b.dataset.season).id;
+      _seasonChosen = true;
       localStorage.setItem(SEASON_KEY, season);
       applySeason();
       hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');   // v50: the season's mode keys the best
@@ -1418,6 +1423,7 @@ function showMenu() {
       } else {
         mode = id;
       }
+      _seasonChosen = false;   // a mode picked here is the one you play
       localStorage.setItem(MODE_KEY, mode);
       showMenu();
     });
@@ -2021,6 +2027,7 @@ function showPause() {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
       season = seasonById(b.dataset.season).id;
+      _seasonChosen = true;
       const before = M().id;
       localStorage.setItem(SEASON_KEY, season);
       applySeason();
@@ -4070,7 +4077,7 @@ window.__hd = {
         ground: ground.visible,
       };
     },
-    setSeason(id) { season = seasonById(id).id; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
+    setSeason(id) { season = seasonById(id).id; _seasonChosen = true; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
     getPlatforms() { return platforms.getState(); },
     getGoo() { return goo.getState(); },
     gooHit(x, z, p) { goo.hit(x, z, p); },
