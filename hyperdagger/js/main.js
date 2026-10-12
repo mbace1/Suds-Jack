@@ -1377,7 +1377,11 @@ function showMenu() {
      gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; triggers fire &nbsp;|&nbsp; touch &mdash; right stick: <b>hold = fire</b> &middot; <b>tap = jump &times;2</b> &middot; <b>flick = dash</b></p>
      ${SEASONS.filter(sn => !sn.hidden).map(sn =>
        `<button class="season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}
-     <button id="modeBtn" class="opt">MODE: ${M().name}</button>
+     <div class="modes">
+       ${MODES.filter(m => m.id !== 'move').map(m =>
+         `<button class="mode${m.id === M().id ? ' on' : ''}" data-mode="${m.id}">${m.name}</button>`).join('')}
+       <button class="mode all" data-mode="all">ALL</button>
+     </div>
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
     : 'FREE &mdash; pure random'}</button>
@@ -1396,14 +1400,19 @@ function showMenu() {
       startGame();
     });
   }
-  document.getElementById('modeBtn').addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    const next = nextModeId(M().id);
-    mode = next;
-    localStorage.setItem(MODE_KEY, mode);
-    // clear URL mode so season can still influence if desired, but override sticks
-    showMenu();
-  });
+  for (const b of elMsg.querySelectorAll('button.mode')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      const id = b.dataset.mode;
+      if (id === 'all') {
+        mode = nextModeId(M().id);
+      } else {
+        mode = id;
+      }
+      localStorage.setItem(MODE_KEY, mode);
+      showMenu();
+    });
+  }
   document.getElementById('runKindBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     runKind = runKind === 'daily' ? 'free' : 'daily';
@@ -1442,6 +1451,16 @@ function showTips() {
 }
 
 function hiKey() { return M().hiKey ?? 'hyperDaggerHiNone'; }
+
+/** Time tiers. Below A is a fail for ranking. S is the aspirational ceiling. */
+function timeTier(t) {
+  if (t >= 240) return 'S';
+  if (t >= 180) return 'A';
+  if (t >= 120) return 'B';
+  if (t >= 60)  return 'C';
+  return 'FAIL';
+}
+
 
 // last-10 run history (all modes together), most recent first
 const HISTORY_KEY = 'hyperDaggerHistory';
@@ -1554,7 +1573,7 @@ function showDeath(timedOut, complete = false) {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1 class="dead">${complete ? 'RUN COMPLETE' : timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
-     <p class="big">${t}s &middot; ${kills} kills &middot; ${gemCount} gems</p>
+     <p class="big">${t}s &middot; ${timeTier(runT)} &middot; ${kills} kills &middot; ${gemCount} gems</p>
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      ${pulseLine}
