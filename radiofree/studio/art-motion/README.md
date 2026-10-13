@@ -37,3 +37,12 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
   a card walker with a timed LED. `shot-table-papercut.md` is its storyboard (lint
   green), `synth_rfp.py` its score (−14 LUFS, the last hit at 14.2 s rings out). It
   folds in every fix from `review-you-looked-at-it.md`.
+
+## Naming in the films (owner, 2026-10-13)
+
+"We can sometimes use real names to be clear." The films may name a real company,
+product or institution **when the story is unclear without it** — and only for what
+verifiably happened, taken from a source that is written down beside the shot table.
+Still no invented quote in a real person's mouth, no invented claim attached to a
+real name, and the joke stays on the language. This is the studio's rule: the daily
+wire (`EDITORIAL.md`, enforced in `tools/generate-wire.mjs`) still runs invented names.
