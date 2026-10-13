@@ -1664,8 +1664,8 @@ s.listen(0, '127.0.0.1', async () => {
   {
     const st = haulParts.stall || {};
     ok('haul: STALL — a jackknifed and a wrecked truck keep their deck height while the keel sags and the pods go red',
-      st.kept && st.game >= 1.2 && st.deckErr <= 1e-9 && st.jack.drop > 0.2 && st.jack.red && st.jack.pool
-      && st.wreck.drop > st.jack.drop && st.wreck.red && st.wreck.pool, JSON.stringify(st));
+      st.kept && st.game >= 1.2 && st.deckErr <= 1e-9 && st.jack.drop > 0.12 && st.jack.red && st.jack.pool
+      && st.wreck.drop > st.jack.drop + 0.05 && st.wreck.red && st.wreck.pool, JSON.stringify(st));
     ok('haul: STALL — a normal truck and a recovered one are not stalled',
       st.normal && !st.normal.red && !st.normal.stallMat && !st.normal.pool && Math.abs(st.normal.drop) <= 0.06 + 1e-9
       && st.recovered && !st.recovered.stallMat && !st.recovered.pool && !st.recovered.red, JSON.stringify({ normal: st.normal, recovered: st.recovered }));

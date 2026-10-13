@@ -64,7 +64,7 @@ const KEEL_H = 0.45;
 // child keel/pods and the world-space pool: the group, the deck, the crates
 // and every rule stay where they were.
 const STALL_RED = [1.9, 0.12, 0.06];   // the brake-light red (EDGE_BRAKE)
-const STALL_SAG = 0.3, STALL_LIST = 0.09, STALL_RATE = 1.4;   // u, rad, 1/s           // the tapered underside, inside CHASSIS (1.1)
+const STALL_SAG = 0.18, STALL_LIST = 0.09, STALL_RATE = 1.4;   // u, rad, 1/s           // the tapered underside, inside CHASSIS (1.1)
 const EDGE_BRAKE = new THREE.Color(1.9, 0.18, 0.1);
 
 /** deterministic 0…1 from an integer (and a salt) */
