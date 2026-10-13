@@ -980,7 +980,7 @@ const elKills = document.getElementById('kills');
 // run is actually playing that season's mode.
 const elClockLabel = document.getElementById('clockLabel');
 const elGoal = document.getElementById('goalCard');
-const GOAL_MS = 1800;
+const GOAL_MS = 1600;   // + the 0.3 s fade: gone by ~1.9 s
 let goalTimer = 0;
 function seasonRules() { return !!S().mode && M().id === S().mode && !_urlMode; }
 function goalLine() { return (seasonRules() && S().goal) || M().goal || ''; }

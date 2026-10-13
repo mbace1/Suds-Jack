@@ -64,7 +64,7 @@
        above the reticle that fades by ~2 s and never takes input. */
     #clockLabel { position: absolute; z-index: 5; pointer-events: none; display: none; left: 50%; transform: translateX(-50%); top: calc(0.8rem + 62px); font-size: 0.7rem; letter-spacing: 0.12em; opacity: 0.7; white-space: nowrap; text-shadow: 0 1px 2px #000; }
     body.in-run #clockLabel:not(:empty) { display: block; }
-    #goalCard { position: absolute; z-index: 6; pointer-events: none; left: 50%; top: max(calc(0.8rem + 86px), 24%); transform: translateX(-50%); max-width: calc(100vw - 2rem); padding: 0.35rem 0.9rem; font-size: clamp(0.8rem, 3.4vw, 1.15rem); font-weight: 800; letter-spacing: 0.14em; text-align: center; color: #e8dcc8; background: rgba(0,0,0,0.45); border-top: 1px solid #d8412f; border-bottom: 1px solid #d8412f; text-shadow: 0 1px 4px #000; opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0s linear 0.4s; }
+    #goalCard { position: absolute; z-index: 6; pointer-events: none; left: 50%; top: max(calc(0.8rem + 86px), 24%); transform: translateX(-50%); max-width: calc(100vw - 2rem); padding: 0.35rem 0.6rem; font-size: clamp(0.62rem, 2.6vw, 1.1rem); font-weight: 800; letter-spacing: 0.08em; text-align: center; white-space: nowrap; width: max-content; overflow: hidden; text-overflow: ellipsis; color: #e8dcc8; background: rgba(0,0,0,0.45); border-top: 1px solid #d8412f; border-bottom: 1px solid #d8412f; text-shadow: 0 1px 4px #000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s; }
     #goalCard.show { opacity: 1; visibility: visible; transition: opacity 0.15s ease; }
     body.in-run #pauseBtn { opacity: 0.12; }
     body.in-run #pauseBtn:hover { opacity: 1; }
