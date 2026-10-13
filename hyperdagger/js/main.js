@@ -1085,11 +1085,15 @@ function perfGovern(now, rawMs) {
 // ratio held below ratioFloor for ratioHoldMs steps the existing PERF_TIERS
 // ladder down one rung, the same lever the frame-time governor pulls.
 const DT_CAP = 0.05;
-const timeMon = { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0 };
+const timeMon = { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0, slowRun: 0 };
 Object.assign(perfTuning, { ratioWinMs: 2000, ratioFloor: 0.9, ratioHoldMs: 2000, ratioGapMs: 1000 });
 function timeMonitor(now, rawDt) {
   if (state !== 'playing' || paused) { timeMon.lowSince = 0; return; }
-  if (rawDt * 1000 > perfTuning.ratioGapMs) { timeMon.gaps++; return; } // a tab switch, not the device
+  // One or two frames over ratioGapMs are a tab switch; a RUN of them is the
+  // device (the governor's v40 lesson: a 1 fps box must not read as all gaps)
+  if (rawDt * 1000 > perfTuning.ratioGapMs) {
+    if (++timeMon.slowRun < 3) { timeMon.gaps++; return; }
+  } else timeMon.slowRun = 0;
   const g = Math.min(rawDt, DT_CAP);
   timeMon.win.push(now, rawDt, g); timeMon.raw += rawDt; timeMon.game += g;
   timeMon.totalRaw += rawDt; timeMon.totalGame += g; timeMon.frames++;
@@ -1111,7 +1115,7 @@ function timeRatioState() {
     gameS: +timeMon.totalGame.toFixed(2), drops: timeMon.drops, gaps: timeMon.gaps, low: !!timeMon.lowSince,
     floor: perfTuning.ratioFloor, cap: DT_CAP, tier: perfTier };
 }
-function resetTimeMonitor() { Object.assign(timeMon, { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0 }); }
+function resetTimeMonitor() { Object.assign(timeMon, { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0, slowRun: 0 }); }
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
