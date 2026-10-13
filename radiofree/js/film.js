@@ -29,10 +29,10 @@
 // the transitions and the surface are borrowed, and the drawing medium is not.
 // This station is a 128×152 pixel panel behind curved glass, and stays one.
 
-import { parseLine } from './wire.js?v=72';
-import { readFigures } from './visuals.js?v=72';
-import { PAL } from './palette.js?v=72';
-import { mix } from './screen.js?v=72';
+import { parseLine } from './wire.js?v=73';
+import { readFigures } from './visuals.js?v=73';
+import { PAL } from './palette.js?v=73';
+import { mix } from './screen.js?v=73';
 
 export const W = 1080, H = 1920;
 export const MONO = '"IBM Plex Mono", "SF Mono", Menlo, Consolas, "IPAGothic", monospace';
@@ -244,6 +244,33 @@ export function planFilm(entry, opts = {}) {
   });
   // any headline run not yet placed pops on the breath
   while (runAt.length < runs.length) runAt.push(t + 0.1);
+  // THE SOCIAL CUT (owner, 2026-10-13: "no need to have the decode part in
+  // the videos"). A clip posted to a feed is the bulletin, played straight:
+  // the reads, Toko's take, the card. No breath, no reveal, no plain
+  // readings — the reveal is set past the end of the film, so every effect
+  // keyed to it (shake, stamp, flash, payoff, meter) simply never arrives.
+  if (opts.social) {
+    // Toko's take closes the reads; if the last read was already on him, his
+    // shot runs on (two anchor shots back to back read as a jump cut)
+    const last = shots[shots.length - 1];
+    if (last && last.shot === 'anchor') { last.t1 = onBeat(last.t1 + T.take + 0.6); last.take = true; t = last.t1; }
+    else push('anchor', T.take + 0.6, LOOKS.green, { take: true });
+    const holdEnd = t;
+    push('card', T.card + 0.8, LOOKS.green, { free: true });
+    return {
+      S: t, fps, scale, shots, captions, social: true,
+      reveal: Infinity, holdStart: holdEnd, holdEnd, tellAt: -1,
+      runs: runs.map((text, i) => ({ text, t: runAt[i] })),
+      payoff: { text: '', t0: Infinity }, counter: null,
+      card: { t0: holdEnd, t1: t },
+      tag: { index: String(opts.index || 1).padStart(2, '0'), total: opts.total || 1, slug: copy.slug || '', date: opts.date || '' },
+      onAir: opts.onAir || 'ON AIR', fiction: opts.fiction || '', cta: opts.cta || '',
+      freq: opts.freq || '', accent: opts.accent || PAL.GREEN,
+      cuts: shots.map(s => s.t0).filter(x => x > 0), tone: story.tone || null,
+      heat: (opts.total || 1) > 1 ? clamp(((opts.index || 1) - 1) / ((opts.total || 1) - 1)) : 0,
+      meter: { before: opts.spinsBefore || 0, after: opts.spinsBefore || 0, total: Math.max(1, opts.spinsTotal || 1) },
+    };
+  }
   push('broll', T.breath, LOOKS.violet);
 
   const reveal = t;
@@ -616,7 +643,9 @@ export function paintFilm(ctx, plan, t, shots) {
 
   // ── the lower third ──
   const x = 54, maxW = W - 108;
-  const footerY = H - 96;
+  // a feed lays its own caption over the bottom ~20% of a vertical video,
+  // so the social cut lifts the footer out of that band
+  const footerY = plan.social ? H - 420 : H - 96;
   let y = band + 40;
   ctx.textBaseline = 'top';
 
@@ -854,6 +883,7 @@ function paintCard(ctx, plan, t) {
   }
   setFont(ctx, TYPE.footer + 2); ctx.fillStyle = '#5f8a74';
   ctx.fillText(plan.fiction, W / 2, H * 0.66);
+  if (plan.cta) { setFont(ctx, 34, 700); ctx.fillStyle = PAL.GREEN; ctx.letterSpacing = '4px'; ctx.fillText(plan.cta, W / 2, H * 0.71); ctx.letterSpacing = '0px'; }
   ctx.restore();
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   surface(ctx, plan, t);

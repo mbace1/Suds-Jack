@@ -617,8 +617,44 @@ async function main() {
   // The decoded set persists across visits, so once bulletins start being
   // archived a returning listener's set outgrows the feed — the sign-off has to
   // count against what AIRED or it reads "14/12".
+  // ── dead air: one more stop past the sign-off (RFH_DEAD_AIR.md) ──
+  // A best planted on this machine above a drop's line must dig its secret up;
+  // one below the line must not. The games are never opened: dead air only
+  // ever READS the bests the cabinets already write.
+  console.log('\ndead air');
+  await go(() => { localStorage.setItem('hyperDaggerHi', '61.4'); localStorage.setItem('tokoDropHi', '120'); localStorage.removeItem('rfhDeadAir'); });
+  await go((n) => __rfh.debug.go(n), 99);
+  await wait(1200);
+  const da = await go(() => ({
+    state: __rfh.state, hash: location.hash,
+    drops: document.querySelectorAll('.post.dead-air .dead-drop').length,
+    got: document.querySelectorAll('.post.dead-air .dead-drop.got').length,
+    secrets: [...document.querySelectorAll('.post.dead-air .dead-secret .dead-title')].map(h => h.textContent),
+    fresh: document.querySelectorAll('.post.dead-air .dead-secret.fresh').length,
+    go: [...document.querySelectorAll('.post.dead-air .dead-go')].map(a => a.getAttribute('href')),
+    card: document.querySelectorAll('.post.dead-air .dead-card').length,
+  }));
+  ok('dead air is the last stop on the dial', !!(da.state && da.state.deadair), JSON.stringify(da.state));
+  ok('...and deep-links as #dead-air', da.hash === '#dead-air', da.hash);
+  ok('every drop is listed', da.drops === 3, String(da.drops));
+  ok('a best past the line digs its secret up, and only that one',
+     da.got === 1 && da.secrets.length === 1 && /Pasila/.test(da.secrets[0]) && da.fresh === 1, JSON.stringify(da));
+  ok('the drops not yet dug link into their cabinets', da.go.length === 2 && da.go.every(h => /^\.\.\/[a-z-]+\/\?drop=/.test(h)), JSON.stringify(da.go));
+  ok('a dug secret can be saved as a card', da.card === 1, String(da.card));
+  for (const lang of ['fi', 'ja']) {
+    await go((l) => __rfh.debug.setLang(l), lang);
+    await wait(900);
+    const dl = await go(() => ({ s: __rfh.state, text: (document.querySelector('.post.dead-air') || {}).innerText || '' }));
+    ok(`dead air speaks ${lang}`, dl.s && dl.s.deadair && dl.text.length > 200 && !/You found the gap|Most people tune/.test(dl.text),
+       dl.text.slice(0, 120));
+  }
+  await go((l) => __rfh.debug.setLang(l), 'en');
+  await wait(900);
+
   console.log('\nsign-off');
   await go((n) => __rfh.debug.go(n), 99);
+  await wait(900);
+  await go((n) => __rfh.debug.go(n), -1);
   await wait(1200);
   const off = await go(() => {
     const head = document.querySelector('.post.sign-off .tally-head');

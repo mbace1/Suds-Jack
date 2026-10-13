@@ -62,6 +62,7 @@ const SECONDS = Number(arg('seconds', 0));
 const FPS = Number(arg('fps', 30));
 
 const LIMIT = Number(arg('limit', 0));
+const SOCIAL = process.argv.includes('--social');   // the feed cut: no DECODE, a link line on the card
 const OUT = path.resolve(process.cwd(), arg('out', path.join(RF, 'dist', 'clips')));
 
 if (!Number.isFinite(SECONDS) || SECONDS < 0) { console.error('--seconds must be a number'); process.exit(2); }
@@ -146,11 +147,11 @@ async function main() {
 
       for (let i = 0; i < ids.length; i++) {
         const t0 = Date.now();
-        const got = await page.evaluate(async ({ i, seconds, fps }) => {
+        const got = await page.evaluate(async ({ i, seconds, fps, social }) => {
           const d = window.__rfh.debug;
-          await d.exportMp4(i, { noDownload: true, seconds: seconds || undefined, fps });
+          await d.exportMp4(i, { noDownload: true, seconds: seconds || undefined, fps, social });
           return d.takeExport();
-        }, { i, seconds: SECONDS, fps: FPS });
+        }, { i, seconds: SECONDS, fps: FPS, social: SOCIAL });
 
         if (!got || got.error || !got.base64) {
           problems.push(`${day}/${lang}/${ids[i]}: ${got && got.error ? got.error : 'nothing came back'}`);

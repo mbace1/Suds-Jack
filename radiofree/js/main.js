@@ -1,14 +1,15 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=72';
-import { Post, Reader } from './codec.js?v=72';
-import { Package } from './package.js?v=72';
+import { PAL, SECTOR_COLOR } from './palette.js?v=73';
+import { Post, Reader } from './codec.js?v=73';
+import { Package } from './package.js?v=73';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=72';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=72';
-import * as audio from './audio.js?v=72';
-import { PixelScreen } from './screen.js?v=72';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=72';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=73';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=73';
+import * as audio from './audio.js?v=73';
+import { PixelScreen } from './screen.js?v=73';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=73';
+import * as dead from './deadair.js?v=73';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -233,7 +234,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
   cancelAnimationFrame(raf);
   try {
     if (i !== active) scrollToPost(i, true);
-    const { exportPost } = await import('./export.js?v=72');
+    const { exportPost } = await import('./export.js?v=73');
     // the morning is ONE episode: the SPIN-O-METER on Toko's desk counts every
     // spin DECODE has shown so far, across the bulletins before this one
     const spins = (q) => ((q.copy && q.copy.lines) || []).join(' ').split('{{').length - 1;
@@ -244,7 +245,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
     const out = await exportPost(p, {
       t, parseLine, index: i + 1, total: STORIES.length, spinsBefore, spinsTotal,
       date: formatDate(new Date()), accent: SECTOR_COLOR[p.story.sector],
-      seconds: opts.seconds, fps: opts.fps, clay: opts.clay,
+      seconds: opts.seconds, fps: opts.fps, clay: opts.clay, social: opts.social,
       freq: (SECTORS.find(x => x.id === p.story.sector) || {}).freq || '',
       onProgress: k => { if (lbl) lbl.textContent = `${Math.round(k * 100)}%`; },
     });
@@ -277,7 +278,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
 function boot() {
   booted = true;
   if (TTS && !tts) {
-    import('./tts.js?v=72').then(m => { tts = m; ttsSpeak(posts[active]); })
+    import('./tts.js?v=73').then(m => { tts = m; ttsSpeak(posts[active]); })
       .catch(err => console.warn('[rfh] tts prototype did not load:', err));
   }
   paintSound();
@@ -378,6 +379,7 @@ function buildFeed() {
       els: { art, bulletin, box, decodeBtn } });
   });
   buildSignOff(STORIES.length, date);
+  if (!CLEAN && dead.open()) buildDeadAir(STORIES.length + 1);
   measure();
 }
 
@@ -417,6 +419,89 @@ function buildSignOff(i, date) {
   post.accent = PAL.GREEN;
   post.renderStatic();
   posts.push({ signoff: true, post, els: { art, tally }, decoded: false, read: true });
+}
+
+// DEAD AIR (RFH_DEAD_AIR.md): one more stop past the sign-off. The carrier is
+// gone; the handler is not. It is built like the sign-off — a static panel
+// and a caption — and painted on arrival, because that is when a listener
+// coming back from a cabinet has a new best on this machine to dig with.
+function buildDeadAir(i) {
+  const art = el('article', 'post sign-off dead-air');
+  art.dataset.id = 'dead-air';
+  art.dataset.index = String(i);
+  art.style.setProperty('--accent', PAL.GREEN);
+  const media = el('div', 'post-media');
+  const slot = el('div', 'media-slot');
+  media.appendChild(slot);
+  const cap = el('div', 'post-caption');
+  const body = el('div', 'dead-body');
+  cap.append(body, el('p', 'fiction', t('fiction')));
+  art.append(media, cap);
+  feed.appendChild(art);
+  const post = new Post(slot, { visual: 'signoff', sector: 'GAMING' }, { freq: '--.--' }, i);
+  post.silent = true;
+  post.accent = PAL.GREEN;
+  post.renderStatic();
+  posts.push({ signoff: true, deadair: true, post, els: { art, body }, decoded: false, read: true });
+}
+
+function paintDeadAir(p) {
+  const lang = getLang(), c = dead.copyOf(lang);
+  const { dug, fresh } = dead.dig();
+  const wrap = p.els.body;
+  wrap.innerHTML = '';
+  const tag = el('p', 'tag');
+  tag.innerHTML = `<span class="rec">${c.tag}</span> · --.--`;
+  wrap.append(tag, el('h2', 'head', c.head));
+  const talk = el('div', 'bulletin dead-handler');
+  for (const line of c.handler) talk.appendChild(el('p', 'bulletin-line', line));
+  const m = dead.DROPS.length;
+  talk.appendChild(el('p', 'bulletin-line dead-progress',
+    dug.length >= m ? c.done : dead.fill(c.progress, { n: dug.length, m })));
+  wrap.appendChild(talk);
+
+  wrap.appendChild(el('p', 'tally-head', c.jobs));
+  for (const d of dead.DROPS) {
+    const best = dead.bestOf(d), got = dug.includes(d.secret);
+    const row = el('div', 'dead-drop' + (got ? ' got' : ''));
+    const what = el('span', 'dead-what', `${d.game} — ${dead.fill(c.line[d.unit], { x: dead.formatLine(d, lang) })}`);
+    const how = el('span', 'dead-how', got ? c.dug
+      : best == null ? c.none : dead.fill(c.best, { x: dead.formatValue(d, best, lang) }));
+    row.append(what, how);
+    if (!got) {
+      const go = el('a', 'dead-go', c.go);
+      go.href = `${d.path}?drop=${d.id}`;
+      row.appendChild(go);
+    }
+    wrap.appendChild(row);
+  }
+
+  for (const id of dug) {
+    const sec = c.secrets[id];
+    if (!sec) continue;
+    const box = el('section', 'dead-secret' + (fresh.includes(id) ? ' fresh' : ''));
+    const h = el('h3', 'dead-title', sec.title);
+    if (fresh.includes(id)) h.appendChild(el('span', 'dead-new', ' ' + c.fresh));
+    box.appendChild(h);
+    for (const para of sec.text) box.appendChild(el('p', 'dead-text', para));
+    const save = el('button', 'dead-card', c.card);
+    save.onclick = () => saveCard(id, lang);
+    box.appendChild(save);
+    wrap.appendChild(box);
+  }
+}
+
+function saveCard(id, lang) {
+  const cv = document.createElement('canvas');
+  cv.width = 1080; cv.height = 1920;
+  dead.paintCard(cv.getContext('2d'), id, lang);
+  cv.toBlob(b => {
+    if (!b) return;
+    const url = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href = url; a.download = `rfh-dead-air-${id}-${lang}.png`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  }, 'image/png');
 }
 
 function paintTally(p) {
@@ -497,6 +582,17 @@ function setActive(i, first = false) {
   p.post.goLive();
   p.els.art.classList.add('live');
 
+  if (p.deadair) {
+    document.documentElement.style.setProperty('--accent', PAL.GREEN);
+    $('freq').textContent = '--.--';
+    $('call').textContent = dead.copyOf(getLang()).tag;
+    document.title = `${dead.copyOf(getLang()).tag} — Radio Free Helsinki`;
+    setHash('dead-air');
+    paintDeadAir(p);
+    audio.carrierDuck(false);
+    if (!first) audio.recode();
+    return;
+  }
   if (p.signoff) {
     document.documentElement.style.setProperty('--accent', PAL.GREEN);
     $('freq').textContent = '--.--';
@@ -533,6 +629,7 @@ function setHash(id) {
 
 function indexFromHash() {
   const id = decodeURIComponent(location.hash.replace(/^#/, ''));
+  if (id === 'dead-air') return posts.findIndex(p => p.deadair);
   return id ? posts.findIndex(p => !p.signoff && p.story.id === id) : -1;
 }
 
@@ -655,6 +752,7 @@ window.__rfh = {
   get state() {
     const p = posts[active];
     if (!p) return null;
+    if (p.deadair) return { signoff: true, deadair: true, index: active, dug: dead.readState().dug, lang: getLang() };
     if (p.signoff) return { signoff: true, index: active,
         decodedCount: STORIES.filter(s => decodedIds.has(s.id)).length, lang: getLang() };
     return { channel: p.story.sector, index: active, decoded: p.decoded,

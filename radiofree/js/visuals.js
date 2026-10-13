@@ -4,8 +4,8 @@
 //   B-ROLL   — low-poly Helsinki news footage
 // Face shots are handled in codec.js (large masked Toko), not here.
 
-import { PAL } from './palette.js?v=72';
-import { mix, shade, bayer } from './screen.js?v=72';
+import { PAL } from './palette.js?v=73';
+import { mix, shade, bayer } from './screen.js?v=73';
 
 export const PANEL_W = 128, PANEL_H = 152;
 const W = PANEL_W, H = PANEL_H;
@@ -890,7 +890,7 @@ function katajanokka(scr, t, d) {
 // band with people on it, pines holding the frame. Decoded, the machine's
 // coverage cone lights up and it is a wedge — the rest of the beach was never
 // looked at, which is where the decimal point came from.
-function beach(scr, t, d) {
+function beach(scr, t, d, f) {
   field(scr, d, false);
   scr.bands(0, 0, W, 44, [mix('#7fb6c8', '#3a2c10', d), mix('#b9d8de', '#4a3714', d)]);
   // water, dithered in 2px CELLS — sampling at even pixels only reaches four

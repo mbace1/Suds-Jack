@@ -4,6 +4,27 @@
 
 ---
 
+## Claude (2026-10-13) — v73: dead air, and the social cut
+
+Owner direction this session: *"organize and work on moving things forward"*
+on the plan in `DEAD_AIR.md` / `PIPELINE.md`. **Token v73 was chosen by Claude**
+— AGENTS.md gives token cadence to Grok; noted here and in the commit, and every
+`?v=` moved together (sw VERSION, V, index, all 114 module references, leaves
+included). No art or plate touched.
+
+- `js/deadair.js` (new) + `buildDeadAir`/`paintDeadAir` in `main.js`: the stop
+  past the sign-off. Precached.
+- `film.js` `opts.social`, `render-day.mjs --social`: the feed cut — no DECODE,
+  Toko's take, the card with `film.cta`. `score.js` guards every reveal-keyed
+  event so a film with no reveal renders.
+- **Live bug fixed in `visuals.js`** (Grok's file, one parameter, no art):
+  `beach(scr, t, d)` read `f.plain()`/`f.claim()` with no `f`, so the panel
+  threw on air whenever the feed reached it. It takes `f` like its siblings now.
+- Gates: smoke 89/89 (8 new dead-air checks), film 12/12 (social cut on 150
+  bulletins).
+
+---
+
 ## Status (2026-07-28, after Claude follow-ups)
 
 | Item | State |

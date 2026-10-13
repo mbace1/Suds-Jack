@@ -64,6 +64,18 @@ sign-off is the same move made specific to you, which is why the count is real
 rather than flattering. What you decoded persists (`rfhDecoded`), so a
 technique found once is still credited on the next visit.
 
+## Dead air
+
+Scroll past the sign-off and the air is dead — and somebody is in it. Toko,
+off the band, talking to *you*: a listener who found the frequency. The
+broadcast says what it can; what it cannot, he buries in the one place the
+archive does not index — a score nobody reaches. Get far enough in one of the
+cabinets and the page digs it up next time you tune past the end: a piece of
+the story nobody is broadcasting, or a file on one of the wire's invented
+companies. Each saves as a card. It reads the bests the games already keep on
+this machine and sends nothing. `#dead-air` opens it; `DEAD_AIR.md` is the
+design and what is built; `js/deadair.js` is all of it but the page.
+
 ## Sharing a bulletin
 
 The address follows the scroll — `#seabed` while you are on the seabed story —

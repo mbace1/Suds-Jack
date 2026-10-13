@@ -43,6 +43,7 @@ const STR = {
     'hint.swipe': 'swipe up for the next video',
     'tell.prefix': 'TELL: ',
     'fiction': 'Real events · invented names · real techniques',
+    'film.cta': 'LINK IN BIO',
 
     'sector.GAMING': 'GAMES / STUDIOS',
     'sector.INDUSTRY': 'TECH / INDUSTRY',
@@ -86,6 +87,7 @@ const STR = {
     'hint.swipe': 'pyyhkäise ylös seuraavaan videoon',
     'tell.prefix': 'TUNNISTAT NÄIN: ',
     'fiction': 'Todellisia tapahtumia · keksityt nimet · todellisia keinoja',
+    'film.cta': 'LINKKI BIOSSA',
 
     'sector.GAMING': 'PELIT / STUDIOT',
     'sector.INDUSTRY': 'TEKNIIKKA / TEOLLISUUS',
@@ -129,6 +131,7 @@ const STR = {
     'hint.swipe': '上にスワイプで次の動画へ',
     'tell.prefix': '見分け方：',
     'fiction': '実際の出来事 · 架空の名前 · 実在する手法',
+    'film.cta': 'リンクはプロフィールに',
 
     'sector.GAMING': 'ゲーム / スタジオ',
     'sector.INDUSTRY': 'テクノロジー / 産業',

@@ -23,8 +23,8 @@
 // landed on, because "MP4" that turns out to be AV1 is a fact the person
 // uploading it needs.
 
-import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=72';
-import { renderSoundtrack } from './score.js?v=72';
+import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=73';
+import { renderSoundtrack } from './score.js?v=73';
 import { makeToko3D } from '../../toko/js/toko3d.js?v=2';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';
@@ -106,6 +106,7 @@ export async function exportPost(entry, opts = {}) {
     fps, seconds: opts.seconds, index: opts.index, total: opts.total, date: opts.date,
     spinsBefore: opts.spinsBefore, spinsTotal: opts.spinsTotal,
     accent: opts.accent, freq: opts.freq, onAir: t('tag.onair'), fiction: t('fiction'),
+    social: !!opts.social, cta: opts.social ? t('film.cta') : '',
   });
   const n = Math.max(1, Math.round(plan.S * fps));
   // CLAY — the default for every film since 2026-09-26 (owner: "if the clay

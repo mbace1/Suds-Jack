@@ -89,17 +89,21 @@ export async function renderSoundtrack(plan, opts = {}) {
     g.setTargetAtTime(0.9 * SCORE.duck, c.t0, 0.04);
     g.setTargetAtTime(0.9, c.t1, 0.12);
   }
-  g.setTargetAtTime(0.0, breath0, 0.05);          // the breath: the bed drops out
-  g.setValueAtTime(0.0, reveal - 0.001);
-  g.setValueAtTime(1.0, reveal);                  // and slams back on the reveal
+  if (Number.isFinite(reveal)) {                  // a social cut has no reveal
+    g.setTargetAtTime(0.0, breath0, 0.05);        // the breath: the bed drops out
+    g.setValueAtTime(0.0, reveal - 0.001);
+    g.setValueAtTime(1.0, reveal);                // and slams back on the reveal
+  }
   g.setTargetAtTime(0.0, holdEnd - 0.02, 0.03);   // the tube dies, the bed with it
 
   // bed filter: closed on the cold open, open for the reads, brightest in the hold
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.8;
   lp.frequency.setValueAtTime(500, 0);
   lp.frequency.exponentialRampToValueAtTime(2600, T.open);
-  lp.frequency.setValueAtTime(2600, reveal - 0.001);
-  lp.frequency.setValueAtTime(5200, reveal);
+  if (Number.isFinite(reveal)) {
+    lp.frequency.setValueAtTime(2600, reveal - 0.001);
+    lp.frequency.setValueAtTime(5200, reveal);
+  }
   lp.connect(music);
 
   const nBeats = Math.ceil(holdEnd / beat);
@@ -129,7 +133,7 @@ export async function renderSoundtrack(plan, opts = {}) {
     }
   }
   // the riser across the breath
-  riser(ctx, sfx, noise, breath0, reveal);
+  if (Number.isFinite(reveal)) riser(ctx, sfx, noise, breath0, reveal);
 
   // the card: a chord that rings, and the ident — three notes, A E A'
   const card = holdEnd;
@@ -171,8 +175,10 @@ export async function renderSoundtrack(plan, opts = {}) {
     words.forEach((w, wi) => blip(ctx, sfx, r.t + wi * T.wordStagger, 700 + wi * 55, 0.05));
   }
   // the reveal: the hit, then the stamp
-  impact(ctx, sfx, noise, reveal);
-  stamp(ctx, sfx, noise, reveal + T.flash + 0.05);
+  if (Number.isFinite(reveal)) {
+    impact(ctx, sfx, noise, reveal);
+    stamp(ctx, sfx, noise, reveal + T.flash + 0.05);
+  }
   // plain readings: the strike scratches, the keys click
   for (const c of plan.captions.filter(c => c.kind === 'pair')) {
     scratch(ctx, sfx, noise, c.t0 + 0.08, T.strike);

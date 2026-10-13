@@ -164,5 +164,34 @@ ok('a Japanese headline breaks at its punctuation and after a particle, never in
    === JSON.stringify(['首都のクラブ、', 'カップ決勝をホームで1点差で落とす。', 'クラブは「学び」と表現']));
 ok('never more than four runs', splitRuns('a, b, c, d, e, f, g').length <= 4);
 
+// ── THE SOCIAL CUT: the bulletin played straight — no reveal, no decoded shot ──
+{
+  const bad = [];
+  let n = 0;
+  for (const day of days) {
+    const wire = JSON.parse(fs.readFileSync(path.join(RF, 'wire', day + '.json'), 'utf8'));
+    for (const story of wire.stories) for (const lang of LANGS) {
+      const copy = wire.copy[lang] && wire.copy[lang][story.id];
+      if (!copy) continue;
+      const tag = `${day}/${lang}/${story.id}`, full = planFilm({ story, copy }, { index: 1, total: 1 });
+      const p = planFilm({ story, copy }, { index: 1, total: 1, social: true, cta: 'LINK IN BIO' });
+      n++;
+      if (p.shots.some(x => x.decoded)) bad.push(`${tag}: a decoded shot in the social cut`);
+      if (p.captions.some(c => c.kind !== 'read')) bad.push(`${tag}: a plain reading or tell in the social cut`);
+      if (Number.isFinite(p.reveal)) bad.push(`${tag}: the social cut has a reveal`);
+      for (let i = 1; i < p.shots.length; i++) {
+        if (!near(p.shots[i].t0, p.shots[i - 1].t1)) bad.push(`${tag}: a gap in the social cut`);
+        if (p.shots[i].shot === p.shots[i - 1].shot) bad.push(`${tag}: two consecutive ${p.shots[i].shot} shots in the social cut`);
+      }
+      const end = p.shots[p.shots.length - 1], take = p.shots[p.shots.length - 2];
+      if (end.shot !== 'card' || !near(end.t1, p.S)) bad.push(`${tag}: the social cut does not end on the card`);
+      if (!(take && take.shot === 'anchor' && take.take)) bad.push(`${tag}: Toko does not take before the card`);
+      if (!(p.S < full.S)) bad.push(`${tag}: the social cut is not shorter than the full film`);
+      if (p.cta !== 'LINK IN BIO') bad.push(`${tag}: the card lost its link line`);
+    }
+  }
+  ok(`the social cut plays ${n} bulletins straight: reads, Toko's take, the card`, bad.length === 0, bad.slice(0, 3).join(' | '));
+}
+
 console.log(`\n${checks - fails}/${checks} passed`);
 process.exit(fails ? 1 : 0);
