@@ -80,14 +80,27 @@ All three obey `EDITORIAL.md`'s naming rule: real places, invented everyone, no 
 - Never ends: **one drop a week**, owner-paced. The week's drop can lean on that week's real bulletins, which is what makes the story feel like the city rather than a plot.
 - **Open now.** `GATE` is one switch: off, every drop is reachable from the dial; on, the week's frequency printed on that week's clips is the only way in. Build the switch on day one so turning it on later is a flag, not a rewrite.
 
-## 8. The clips
+## 8. The films that point here (rev. 2, after the studio)
 
-The social export is the film kit's existing cut minus the DECODE reveal: cold open, the bulletin, Toko, the card. Plus the badge, the fiction line, and one line — *Radio Free Helsinki · link in bio*. Nothing in a clip names a drop while the gate is off.
+The clips are no longer the bulletin films. Since 2026-10-13 the socials carry the **studio's papercut films** (`studio/art-motion/`, nine steps, house captions, −14 LUFS; see `PIPELINE.md`). Dead air meets them in three places:
+
+- **The end card.** One line on every film's card — *keep listening past 104.40* — and `#dead-air` in the post. Nothing in a film names a drop or a secret while `GATE` is off.
+- **The mask.** In the films everybody wears Toko's traced master face as a magenta mask, and *the mask itself is the device* (*You Looked At It*: the red light on the strap is what looks, orders and bills). In dead air the handler is that same face with the mask's light off — the one place in the city it is not recording. That is the line between the films and this page, and pieces should use it.
+- **The world.** Pieces draw on the films' Helsinki: the masked queue under LOOKING IS FREE*, the forest cleared for a data centre. But **dead air keeps the wire's naming rule** (invented names, always): the films may say Doodle because they carry sources; a piece is fiction, and fiction is never attached to a real company. The file on *Warehouse of Thought Oy* stays under that name.
+
+The old v73 social cut of the bulletin films still exists (`render-day.mjs --social`) and stays off unless the owner wants a daily auto-track.
 
 ## 9. Not in this design
 
 No account. No server. No leaderboard. No body for Toko. No real names. No second app.
 
-## 10. Still to decide, later, one at a time
+## 10. Next (v2)
 
-The handler's antagonist (the archive? a ministry? nobody — just the city). The first piece's hook. Whether drops ever expire.
+1. **Piece III — the mask.** Grim register, the mask as the device: a listener in the tram-stop queue who takes the mask off and finds the light still blinking in their pocket. Drawn from *You Looked At It*, under invented names. Its drop: a fourth cabinet whose best is really written to disk (Powder `powderBest` or Paper Route `paperRouteHi`).
+2. **The handler parser**: `toko/js/chat.js`'s typed parser in the panel, topics opened by the listener's own words.
+3. **The card in the house style?** The card is a social asset, and the films have moved to papercut. Decide whether it follows them or stays a frame off the station.
+4. Tune the three drop lines from real runs.
+
+## 11. Still to decide, later, one at a time
+
+The handler's antagonist (the archive? a ministry? nobody — just the city). Whether drops ever expire. Whether the card goes papercut.

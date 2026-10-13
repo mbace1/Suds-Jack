@@ -22,6 +22,13 @@ included). No art or plate touched.
   threw on air whenever the feed reached it. It takes `f` like its siblings now.
 - Gates: smoke 89/89 (8 new dead-air checks), film 12/12 (social cut on 150
   bulletins).
+- **Read with the studio** (`claude/radio-free-helsinki-pvtsw5`,
+  `radiofree/studio/art-motion/`, 2026-10-13): the socials carry the studio's
+  papercut films now, not the bulletin films, so `PIPELINE.md` is rev. 2 and
+  the v73 social cut is an optional track, off. Dead air keeps the wire's
+  invented names even where a film names the real company (see PIPELINE.md
+  "Two naming rules"). The studio folder should reach `main` BY PATH — that
+  branch's app has diverged from the live one.
 
 ---
 
