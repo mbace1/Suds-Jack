@@ -4259,7 +4259,6 @@ window.__hd = {
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
     setTime(t) { gameTime = t; },
-    die() { if (state === 'playing') die(false); },
     report() { return runReport(); },
     setRunKind(k) { runKind = k; localStorage.setItem('hyperDaggerRunKind', k); },
     setDate(s) { dateOverride = s; },
