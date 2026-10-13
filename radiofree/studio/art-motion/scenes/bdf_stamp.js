@@ -16,7 +16,7 @@ SCENES['bdf_stamp'] = (() => {
     g.fillText('TO: Doodle (Finland)', -320, -350); g.fillText('RE: MUHOS · KAJAANI', -320, -312);
     g.fillStyle = 'rgba(21,18,15,.55)'; const r = U.rng(4); for (let i = 0; i < 14; i++) g.fillRect(-320, -240 + i * 40, 520 + r() * 120, 12);
     g.fillStyle = K.ink; g.font = '26px "RobotoCondensed"'; g.fillText('Written explanation by 14.10.', -320, 400);   // only what the order is reported to say: no paraphrase on the agency's letterhead
-    g.strokeStyle = '#8a8a86'; g.lineWidth = 6; g.beginPath(); g.moveTo(-250, -520); g.lineTo(-250, -440); g.lineTo(-220, -440); g.lineTo(-220, -500); g.stroke();   // a paper clip
+    g.strokeStyle = '#8a8a86'; g.lineWidth = 6; g.beginPath(); g.moveTo(110, -520); g.lineTo(110, -446); g.lineTo(140, -446); g.lineTo(140, -500); g.stroke();   // a paper clip, in the gap between the agency's name and the date
   }, 14);
   // the stamp: a wooden handle, a dark base; the impression it leaves
   const stamp = () => sprite('bdf_stamp_tool', 360, 420, 180, 400, (g) => {

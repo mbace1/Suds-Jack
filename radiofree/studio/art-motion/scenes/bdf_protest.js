@@ -42,8 +42,9 @@ SCENES['bdf_protest'] = (() => {
       ], cam);
       // the signatures: sheets falling like leaves, and the counter
       // the crowd's own tag: what this was, and how many
-      c.save(); c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(110, 1180, 500, 70, 8); c.fill(); c.restore();
-      c.fillStyle = K.ink; c.font = '34px "ArchivoBlack-400"'; c.fillText('≈100 · ARKADIANKATU · 12.10', 130, 1228);
+      c.save(); c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.font = '34px "ArchivoBlack-400"'; const tagW = c.measureText('≈100 · ARKADIANKATU · 12.10').width + 44;   // the card is cut to the words, not the words squeezed to the card
+      c.fillStyle = K.ochre; c.beginPath(); c.roundRect(110, 1180, tagW, 70, 8); c.fill(); c.restore();
+      c.fillStyle = K.ink; c.font = '34px "ArchivoBlack-400"'; c.fillText('≈100 · ARKADIANKATU · 12.10', 132, 1228);
       // the initiative, on a card of its own: signatures to parliament, not people at the door
       const n = all ? 50000 : Math.round(50000 * Math.pow(clamp(lt / T_HIT, 0, 1), 0.6) / 1000) * 1000;
       c.save(); c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 18; c.shadowOffsetX = 10; c.shadowOffsetY = 14; c.fillStyle = K.card; c.beginPath(); c.roundRect(170, 130, 740, 300, 12); c.fill(); c.restore();

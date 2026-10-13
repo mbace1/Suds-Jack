@@ -61,3 +61,9 @@ to read"): a shot runs twelve beats (~6.4 s) — the action in its first three s
 then the picture holds — and shots dissolve over half a second. A line fades in ~0.8 s
 AFTER the cut, never with it; the second joins at ~3 s below it without moving it; both
 are gone before the dissolve. The keyword lights up only once its line has been read.
+
+Width rule (owner: "some clipping still with text"): no caption line is wider than
+800 px. The styles carry 140 px side margins because libass wraps a \pos line at the
+frame minus the margins; at 80 px, lines of 890-905 px ran to the bezel and into
+TikTok's right-hand buttons. Scene text gets the same care: a label's card is cut to
+its measured words, and nothing that swings or zooms may carry text past the frame.

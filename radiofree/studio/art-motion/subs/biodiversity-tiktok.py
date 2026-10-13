@@ -4,7 +4,9 @@ a bit longer ... without blocking important pic details").
 Every shot gets its two narrator lines as one centred block that holds until the cut: the
 first line lands early, the second joins it mid-shot. The block's height is placed per shot
 in a band where nothing that matters is (listed in SAFE), which also keeps it out of
-TikTok's own bottom and right-hand UI. Three test styles: A outline, B box, C word-pop — and H, the house style the owner chose
+TikTok's own bottom and right-hand UI; the 140 px side margins are
+what libass wraps a positioned line at, so no line is wider than 800 px (v6: lines of 890-905 px
+ran to the bezel). Three test styles: A outline, B box, C word-pop — and H, the house style the owner chose
 ("outline with occasionally pops on important words"): A, with the one word per shot
 that carries it, in [brackets], landing ochre-yellow and large, then settling.
 """
@@ -17,7 +19,7 @@ SHOTS = [
  (1, 0.90, 3.00, 420, "In September, Doodle promised €13 billion.", "Part of it for local [biodiversity]."),
  (2, 0.80, 3.00, 640, "Then the forest at Muhos came down.", "About [330 hectares], by the company's own count."),
  (3, 0.80, 3.00, 700, "The biodiversity was [stacked neatly].", "Above 200 hectares, the law asks for an assessment first."),
- (4, 0.80, 3.00, 880, "On 7 October, the regulator said [stop].", "Until the impact assessment is done."),
+ (4, 0.80, 3.00, 870, "On 7 October, the regulator said [stop].", "Until the assessment is done."),
  (5, 0.70, 2.60, 615, "About a hundred came to Doodle's door.", "[Fifty thousand] signed an initiative to parliament."),
 ]
 SAFE = {0: "between the council window and the residents' heads", 1: "below the strings, after the cheque has passed",
@@ -33,10 +35,10 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: A,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,80,80,0,1
+Style: A,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
 Style: B,Poppins ExtraBold,72,&H00000000,&H00000000,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,3,18,0,5,90,90,0,1
-Style: H,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,80,80,0,1
-Style: C,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,80,80,0,1
+Style: H,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
+Style: C,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

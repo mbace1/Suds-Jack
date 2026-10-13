@@ -31,7 +31,7 @@ SCENES['bdf_pile'] = (() => {
         { fn: (g, ox) => {
           for (const [x, y] of SLOTS) put(g, logEnd(R), x + ox, y, { lift: 1.4 });
           put(g, logEnd(R), TOP[0] + ox, ly, { lift: 1.6 + (1 - kd) * 2 });
-          if (lt > T_LOG * 0.6) { g.save(); g.translate(TOP[0] + 30 + ox, ly + 10); g.rotate(swing); g.scale(turn, 1); put(g, tag(), 0, 0, { lift: 1.2 }); g.restore(); }
+          if (lt > T_LOG * 0.6) { g.save(); g.translate(TOP[0] + 30 + ox, ly + 10); g.rotate(swing); g.scale(turn * 0.82, 0.82); put(g, tag(), 0, 0, { lift: 1.2 }); g.restore(); }   // 0.82: at full size the swing carried its far end past the frame
         }, d: 0.45 },
         { fn: (g, ox) => {
           glow(g, 260 + ox, BASE - 160, 260, 'rgba(240,170,70,', 0.22); moose(g, 150 + ox, BASE + 60, 0.8, 0.4, 1.8);      // left of the pile, so the tag swings out clear of it
