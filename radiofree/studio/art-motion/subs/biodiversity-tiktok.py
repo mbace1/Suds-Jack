@@ -19,7 +19,7 @@ SHOTS = [
  (1, 0.90, 3.00, 420, "In September, Doodle promised €13 billion.", "Part of it for local [biodiversity]."),
  (2, 0.80, 3.00, 640, "Then the forest at Muhos came down.", "About [330 hectares], by the company's own count."),
  (3, 0.80, 3.00, 700, "The biodiversity was [stacked neatly].", "Above 200 hectares, the law asks for an assessment first."),
- (4, 0.80, 3.00, 870, "On 7 October, the regulator said [stop].", "Until the assessment is done."),
+ (4, 0.80, 3.00, 870, "On 6 October, the regulator said [stop].", "Until the assessment is done."),
  (5, 0.70, 2.60, 615, "About a hundred came to Doodle's door.", "[Fifty thousand] signed an initiative to parliament."),
 ]
 SAFE = {0: "between the council window and the residents' heads", 1: "below the strings, after the cheque has passed",

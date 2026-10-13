@@ -12,7 +12,7 @@ SCENES['bdf_stamp'] = (() => {
   const letter = () => sprite('bdf_letter', 780, 1060, 390, 530, (g) => {
     g.fillStyle = K.card; g.fillRect(-360, -500, 720, 1000);
     g.fillStyle = K.ink; g.font = '30px "RobotoCondensed"'; g.fillText('LUPA- JA VALVONTAVIRASTO', -320, -420);
-    g.font = '24px "RobotoCondensed"'; g.fillText('7.10.2026', 200, -420);
+    g.font = '24px "RobotoCondensed"'; g.fillText('6.10.2026', 200, -420);   // the order's own date (LVV press release, 6.10.2026); the press reported it on the 7th
     g.fillText('TO: Doodle (Finland)', -320, -350); g.fillText('RE: MUHOS · KAJAANI', -320, -312);
     g.fillStyle = 'rgba(21,18,15,.55)'; const r = U.rng(4); for (let i = 0; i < 14; i++) g.fillRect(-320, -240 + i * 40, 520 + r() * 120, 12);
     g.fillStyle = K.ink; g.font = '26px "RobotoCondensed"'; g.fillText('Written explanation by 14.10.', -320, 400);   // only what the order is reported to say: no paraphrase on the agency's letterhead
