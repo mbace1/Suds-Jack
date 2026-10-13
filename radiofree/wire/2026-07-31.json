@@ -16,6 +16,7 @@
       "sector": "RFH",
       "visual": "crowd",
       "broll": "chase",
+      "figures": [],
       "filed": "2026-07-31"
     },
     {
@@ -23,6 +24,7 @@
       "sector": "RFH",
       "visual": "chart",
       "broll": "approach",
+      "figures": [],
       "filed": "2026-07-31"
     },
     {
@@ -30,6 +32,7 @@
       "sector": "RFH",
       "visual": "heat",
       "broll": "winterhall",
+      "figures": [],
       "filed": "2026-07-31"
     },
     {

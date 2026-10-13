@@ -3,12 +3,12 @@
 // and Helsinki ambience breathe longer, immediate repeats are blocked, and
 // DECODE gets an uninterrupted analysis hold before normal cutting resumes.
 
-import { PixelScreen, shade, mix } from './screen.js?v=37';
-import { PAL, SECTOR_COLOR } from './palette.js?v=37';
-import { Toko } from './toko.js?v=37';
-import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=37';
-import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=41';
-import { preferredScenes } from './editorialmap.js?v=43';
+import { PixelScreen, shade, mix } from './screen.js?v=73';
+import { PAL, SECTOR_COLOR } from './palette.js?v=73';
+import { Toko } from './toko.js?v=73';
+import { drawVisual, readFigures, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=73';
+import { drawAmbient, AMBIENT_KEYS } from './ambient.js?v=73';
+import { preferredScenes } from './editorialmap.js?v=73';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -112,6 +112,7 @@ export class Post {
     this.toko = new Toko();
     this.toko.t = seed * 1.7;
     this.story = story;
+    this.figures = readFigures(story && story.figures);
     this.freq = sector.freq;
     this.accent = SECTOR_COLOR[story.sector] || PAL.GREEN;
     this.t = seed * 0.9;
@@ -204,14 +205,14 @@ export class Post {
     } else {
       this.toko.draw(this.portrait, this.signal, false);
       if (ambientShot) drawAmbient(this.shot.key, this.panel, this.t, this.decode);
-      else drawVisual(visualKey, this.panel, this.t, this.decode);
+      else drawVisual(visualKey, this.panel, this.t, this.decode, this.figures);
       s.ctx.drawImage(this.panel.canvas, VF.x, VF.y);
       s.ctx.drawImage(this.portrait.canvas, PF.x, PF.y);
     }
 
     const line = mix(PAL.GREEN_DIM, PAL.AMBER_DIM, this.decode);
     this.frame(VF, line, mix(this.accent, PAL.AMBER, this.decode));
-    this.frame(PF, line, mix(PAL.GEL_RIM, PAL.AMBER, this.decode));
+    this.frame(PF, line, mix('#f0027f', PAL.AMBER, this.decode));
     this.decodeCue();
     this.dataColumn();
     this.waveband(mix(this.accent, PAL.AMBER_HOT, this.decode));

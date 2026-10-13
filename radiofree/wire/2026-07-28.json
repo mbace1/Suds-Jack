@@ -30,6 +30,7 @@
       "sector": "RFH",
       "visual": "chart2",
       "broll": "station",
+      "figures": [],
       "filed": "2026-07-28"
     },
     {
@@ -37,6 +38,7 @@
       "sector": "RFH",
       "visual": "heat",
       "broll": "harbour",
+      "figures": [],
       "filed": "2026-07-28"
     },
     {
@@ -44,6 +46,7 @@
       "sector": "RFH",
       "visual": "border",
       "broll": "suomenlinna",
+      "figures": [],
       "filed": "2026-07-28"
     }
   ],

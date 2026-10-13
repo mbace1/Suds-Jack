@@ -75,13 +75,26 @@ async function launch() {
 }
 
 // ── the checks that never open a browser ─────────────────────────────────
-function staticChecks() {
+let wireFiles = [];
+async function staticChecks() {
   console.log('\nshell');
   const sw = fs.readFileSync(path.join(RF, 'sw.js'), 'utf8');
   const html = fs.readFileSync(path.join(RF, 'index.html'), 'utf8');
 
-  const v = (sw.match(/const V = `\?v=(\d+)`/) || [])[1];
-  const ver = (sw.match(/const VERSION = 'v(\d+)'/) || [])[1];
+  // WHITESPACE-TOLERANT ON PURPOSE. sw.js was reformatted to
+  // `const VERSION='v61';` and these two patterns stopped matching, so the five
+  // shell checks below graded against `undefined` and reported red for a reason
+  // that had nothing to do with the shell. A gate that cannot read its own
+  // subject is worse than no gate: it produces a failure everyone learns to
+  // scroll past.
+  // TOLERANT OF A SUFFIX TOO. `deploy-hub.mjs` stamps its own number onto this
+  // worker when the arcade shell is deployed, so the live file reads
+  // `VERSION='v62-hub66'` — which the previous pattern did not match either,
+  // and would have put this check back to grading against `undefined` the first
+  // time anybody deployed the hub. The cache NAME may carry whatever the site
+  // wants; what has to agree with the module tokens is the number in front.
+  const v = (sw.match(/const V\s*=\s*[`'"]\?v=(\d+)[`'"]/) || [])[1];
+  const ver = (sw.match(/const VERSION\s*=\s*['"`]v(\d+)[-\w]*['"`]/) || [])[1];
   ok('sw.js VERSION and V agree', v && ver && v === ver, `VERSION=v${ver} V=?v=${v}`);
 
   // Only radiofree's own tokens; ../hub and ../toko keep their own versions.
@@ -93,7 +106,7 @@ function staticChecks() {
     .map(f => f.replace(/\.js$/, ''));
   // the LIST THAT MAPS TO ./js/ — sw.js also spreads a list of ../toko
   // modules, and matching the first spread grades this against the wrong one
-  const jsSpread = sw.match(/\.\.\.\[([^\]]+)\]\s*\n?\s*\.map\([^)]*`\.\/js\//);
+  const jsSpread = sw.match(/\.\.\.\[([^\]]+)\]\s*\n?\s*\.map\([^)]*`\.?\/?js\//);
   const listed = (jsSpread || [, ''])[1]
     .split(',').map(s => s.trim().replace(/'/g, '')).filter(Boolean);
   const missing = modules.filter(m => !listed.includes(m));
@@ -123,7 +136,8 @@ function staticChecks() {
   // cache-first, `wire/index.json` is a list of broadcasts frozen on the day the
   // app was installed — the job would run, the file would land, and no installed
   // copy would ever learn an episode existed.
-  const isWire = (sw.match(/const isWire = \(u\) => ([\s\S]*?);\n/) || [, ''])[1];
+  // same whitespace trap as VERSION above: `const isWire=u=>...` all on one line
+  const isWire = (sw.match(/isWire\s*=\s*\(?u\)?\s*=>\s*([\s\S]*?);/) || [, ''])[1];
   ok('the worker treats every wire/ file as content, not shell',
      /wire\.json/.test(isWire) && /\/wire\//.test(isWire), isWire.replace(/\s+/g, ' '));
   ok('the precache names no dated episode',
@@ -131,13 +145,109 @@ function staticChecks() {
      'a named episode list is a list of yesterdays once the job runs daily');
   ok('install caches whatever the index points at', /precacheNewest/.test(sw));
 
-  // The deployed site is a curated root with no `.github` in it, and the gate
-  // runs there too (against gh-pages, before a deploy is believed). Absent
-  // entirely = a site checkout, so there is nothing to grade; present but
-  // missing the job = somebody deleted the job.
+  // THE ONE DEPENDENCY. mediabunny is vendored (no CDN — the app's rule) and
+  // fetched by <script> the first time somebody exports. It must NOT be in the
+  // precache: 683 KB for a button most listeners never press would double the
+  // offline shell. And kokoro-js must not appear anywhere in the shell at all —
+  // it is a held prototype behind a flag, and the flag is the whole point.
+  ok('the encoder is vendored, not fetched from a CDN',
+     fs.existsSync(path.join(RF, 'vendor', 'mediabunny-1.58.1.min.js'))
+       && !/cdn\.[a-z]+\.[a-z]+\/[^'"]*mediabunny/.test(fs.readFileSync(path.join(RF, 'js', 'export.js'), 'utf8')));
+  ok('the encoder is not in the offline shell', !/vendor\//.test(sw), 'vendor/ named in sw.js');
+  ok('the TTS model is not in the offline shell', !/kokoro|huggingface|onnx/i.test(sw));
+  ok('index.html loads no third-party script', !/<script[^>]+src="https?:/.test(html));
+
+  // EVERY EPISODE ON DISK HAS TO BE AIRABLE. The daily job validates what it
+  // generates, but nothing validated an episode a person committed by hand —
+  // and that is exactly how `2026-09-01` shipped: seven bulletins carrying no
+  // `{{...|...}}` in any language, rejected by `loadWire`, silently skipped, and
+  // the station served a twelve-day-old morning to everybody who opened it. The
+  // app degrading gracefully is what made it invisible. So every episode in
+  // `wire/` is graded here, and the NEWEST is called out on its own, because
+  // that is the one a reader actually gets.
+  const { validateWire, LANGS } = await import(require('url').pathToFileURL(path.join(RF, 'js', 'wire.js')).href);
+  const { PANEL_KEYS, BROLL_KEYS, NUMERIC_PANELS } =
+    await import(require('url').pathToFileURL(path.join(RF, 'js', 'visuals.js')).href);
+
+  // Copy written for a reader, matched against a number written for a panel.
+  // Thin spaces and a Finnish decimal comma are the same number as a dot and
+  // no space, so the haystack is normalised rather than the needle widened.
+  const digitsOf = (str) => String(str)
+    .replace(/(\d)[\s\u00a0\u202f,.](?=\d\d\d(?!\d))/g, '$1')   // 1 200 / 1,200 → 1200
+    .replace(/(\d),(\d)/g, '$1.$2');                              // 12,4 → 12.4
+  const trimZero = (v) => String(Math.round(v * 100) / 100);
+  const hasNumber = (hay, want) => {
+    const esc = want.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(?:^|[^\\d.])${esc}(?![\\d])`).test(hay);
+  };
+  const { SECTOR_COLOR } = await import(require('url').pathToFileURL(path.join(RF, 'js', 'palette.js')).href);
+  const index = JSON.parse(fs.readFileSync(path.join(RF, 'wire', 'index.json'), 'utf8'));
+  const eps = (index.episodes || []).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+  ok('the index lists at least one morning', eps.length > 0, JSON.stringify(eps));
+  wireFiles = eps.map(d => ['wire/' + d + '.json', path.join(RF, 'wire', d + '.json')]);
+  wireFiles.push(['wire.json', path.join(RF, 'wire.json')]);
+  const unairable = [], loose = [], offFigures = [];
+  for (const [label, file] of wireFiles) {
+    if (!fs.existsSync(file)) { unairable.push(`${label}: missing`); continue; }
+    let parsed;
+    try { parsed = JSON.parse(fs.readFileSync(file, 'utf8')); }
+    catch (e) { unairable.push(`${label}: ${e.message}`); continue; }
+    const v = validateWire(parsed, { panelKeys: PANEL_KEYS, brollKeys: BROLL_KEYS,
+                                     sectorIds: Object.keys(SECTOR_COLOR) });
+    if (!v.ok) unairable.push(`${label}: ${v.errors.length} problems — ${v.errors[0]}`);
+    // Strict is the AUTHORING bar, and it is deliberately higher than the
+    // airing one: the browser must keep playing a wire whose graphic it can
+    // only half-illustrate, but nobody may commit one.
+    const strictV = validateWire(parsed, {
+      panelKeys: PANEL_KEYS, brollKeys: BROLL_KEYS,
+      sectorIds: Object.keys(SECTOR_COLOR),
+      numericPanels: NUMERIC_PANELS, strict: true,
+    });
+    if (!strictV.ok) loose.push(`${label}: ${strictV.errors[0]}`);
+    // ── and the numbers on the panel have to be the bulletin's ──────
+    for (const st of (parsed.stories || [])) {
+      if (!Array.isArray(st.figures) || !st.figures.length) continue;
+      const hay = LANGS.map(l => {
+        const c = (parsed.copy && parsed.copy[l] && parsed.copy[l][st.id]) || null;
+        if (!c) return '';
+        return [c.head, c.slug, c.decodeNote, c.tell, ...(c.lines || [])].join(' ');
+      }).map(digitsOf);
+      for (const f of st.figures) {
+        for (const key of ['claim', 'plain']) {
+          const want = trimZero(f[key]);
+          // a fall of 92 is written "92" as often as "-92"
+          const alts = want.startsWith('-') ? [want, want.slice(1)] : [want];
+          if (!hay.some(h => alts.some(a => hasNumber(h, a)))) {
+            offFigures.push(`${label} "${st.id}": the panel will print ${want}`
+              + `${f.unit || ''} and no language's copy says ${want}`);
+          }
+        }
+      }
+    }
+  }
+  ok('every episode on disk would actually air', unairable.length === 0,
+     unairable.join('\n         '));
+  ok('the NEWEST episode is the one that airs',
+     !unairable.some(u => u.startsWith('wire/' + eps[0])), eps[0]);
+  ok('every numeric panel is given the bulletin\'s own figures', loose.length === 0,
+     loose.join('\n         '));
+  // The defect this whole pass exists for: a chart captioned with some other
+  // morning's arithmetic. A figure the copy never says is one the listener
+  // cannot check, which is the station arguing with itself on air.
+  ok('a panel never prints a number its bulletin does not say', offFigures.length === 0,
+     offFigures.slice(0, 6).join('\n         '));
+
+  // The gate runs on BOTH trees — the source repo and a gh-pages checkout before
+  // a deploy is believed — so it has to know which one it is standing in, and
+  // `.github` exists is not the answer: the deployed site carries one stray
+  // workflow left behind by somebody else's deploy, which made this block grade
+  // the site for a job the site is not supposed to have and fail every deploy.
+  // The root `test/` tree is the honest marker — the source repo has it and
+  // gh-pages deliberately ships no test dirs at its root. On the source tree a
+  // missing job still fails, which is the case worth catching.
+  const authoring = fs.existsSync(path.join(ROOT, 'test', 'hub-smoke.cjs'));
   const wf = path.join(ROOT, '.github', 'workflows', 'radiofree-wire.yml');
-  if (fs.existsSync(path.join(ROOT, '.github'))
-      && ok('the daily job exists', fs.existsSync(wf))) {
+  if (authoring && ok('the daily job exists', fs.existsSync(wf))) {
     const y = fs.readFileSync(wf, 'utf8');
     ok('it runs the generator and then the app\'s own validator',
        y.includes('tools/generate-wire.mjs') && y.includes('tools/validate-wire.mjs'));
@@ -152,7 +262,7 @@ function staticChecks() {
 // company's name off the source headline.
 async function generatorChecks() {
   console.log('\ngenerator');
-  const g = await import('file://' + path.join(RF, 'tools', 'generate-wire.mjs'));
+  const g = await import(require('url').pathToFileURL(path.join(RF, 'tools', 'generate-wire.mjs')).href);
 
   const rss = `<rss><channel>
     <item><title>Nokia Oyj cuts 340 jobs at its Espoo site</title><link>x</link>
@@ -170,7 +280,7 @@ async function generatorChecks() {
   ok('a place is not a name', !names.some(n => /Espoo/.test(n)), names.join(', '));
 
   const story = (id, tech, line, lineFi, lineJa) => ({
-    id, visual: 'chart2', broll: 'harbour',
+    id, visual: 'chart2', broll: 'harbour', figures: [],
     en: { slug: 'S', head: 'h', lines: [line], technique: tech, decodeNote: 'n', tell: 't' },
     fi: { slug: 'S', head: 'h', lines: [lineFi], technique: tech + ' FI', decodeNote: 'n', tell: 't' },
     ja: { slug: 'S', head: 'h', lines: [lineJa], technique: tech + ' JA', decodeNote: 'n', tell: 't' },
@@ -205,7 +315,7 @@ async function generatorChecks() {
 async function rotationChecks() {
   console.log('\nrotation');
   const { rotate, validateWire } = await import(
-    'file://' + path.join(RF, 'js', 'wire.js'));
+    require('url').pathToFileURL(path.join(RF, 'js', 'wire.js')).href);
 
   const S = (id, sector, filed, retired) => ({
     id, sector, visual: 'chart', broll: 'katu',
@@ -250,7 +360,7 @@ async function rotationChecks() {
 
 async function main() {
   console.log('Radio Free Helsinki — gate');
-  staticChecks();
+  await staticChecks();
   await rotationChecks();
   await generatorChecks();
 
@@ -270,7 +380,9 @@ async function main() {
 
   const errs = [];
   page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
-  page.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
+  // the first stack frame too: "f is not defined" with no file behind it cost
+  // a search of every module for a bare f
+  page.on('pageerror', e => errs.push('PAGEERROR ' + e.message + ' @ ' + String(e.stack || '').split('\n').slice(1, 3).join(' ').trim()));
 
   const go = (fn, ...a) => page.evaluate(fn, ...a);
   const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -313,6 +425,58 @@ async function main() {
   ok('the archive picker is on screen with a choice to make',
      await go(() => { const a = document.getElementById('archive');
                       return !!a && !a.hidden && a.querySelectorAll('option').length >= 2; }));
+
+  // ── the pictures are actually lit ────────────────────────────────
+  // THE CHECK THAT WOULD HAVE CAUGHT IT. `sceneweather.js` painted an opaque
+  // near-black rectangle over the whole frame at dusk — `shade()` multiplies, it
+  // is not an alpha — and every one of the thirteen ambient scenes rendered at a
+  // mean luminance of 1.1/255 against 13-19 with the pass working. Nothing else
+  // in the suite could see it: the DOM was correct, the canvas was the right
+  // size, the console was clean, and the feed was a black rectangle. It only
+  // fires at dusk/night/dawn off the Helsinki clock, so it also passed anyone
+  // who happened to look at midday. Art needs a ruler, and this is the cheapest
+  // honest one: a picture nobody can see is a picture that is not there.
+  console.log('\nthe pictures are lit');
+  const lum = await go(async () => {
+    const { PixelScreen } = await import('./js/screen.js');
+    const { drawAmbient, AMBIENT_KEYS } = await import('./js/ambient.js');
+    const out = {};
+    // Every scene, at four points around the clock, because the grade this
+    // exists to police is the one that only runs after dark.
+    const HOURS = [3, 9, 15, 21];
+    for (const key of AMBIENT_KEYS) {
+      let worst = 999;
+      for (const h of HOURS) {
+        const when = new Date(Date.UTC(2026, 0, 15, h, 0, 0));
+        const scr = new PixelScreen(null, 128, 152);
+        drawAmbient(key, scr, 3.1, 0, null, 1, when);
+        const cv = document.createElement('canvas');
+        cv.width = scr.canvas.width; cv.height = scr.canvas.height;
+        const cx = cv.getContext('2d');
+        cx.drawImage(scr.canvas, 0, 0);
+        const d = cx.getImageData(0, 0, cv.width, cv.height).data;
+        let sum = 0, n = 0, max = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          const L = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+          sum += L; n++; if (L > max) max = L;
+        }
+        worst = Math.min(worst, Math.round(max));
+        out[key] = Math.min(out[key] === undefined ? 999 : out[key], +(sum / n).toFixed(1));
+      }
+      out[key] = { mean: out[key], max: worst };
+    }
+    return out;
+  });
+  // A FLOOR, NOT A TARGET, and the numbers are set to catch the failure rather
+  // than to enforce a brightness. Measured on the real set: blacked out, every
+  // scene reads mean 1.1 / max 29; working, they run mean 13-19 with the two
+  // dimmest — `rooftops` and `merihaka`, both of which are meant to be a dark
+  // roofline at night and were checked by eye — at max 83-88. So the bar sits
+  // between the two with room on both sides. Raising it further would be this
+  // gate having an opinion about art, which is not its job.
+  const dark = Object.entries(lum).filter(([, m]) => m.mean < 5 || m.max < 60);
+  ok('every ambient scene has a picture in it at every hour', dark.length === 0,
+     dark.map(([k, m]) => `${k} mean ${m.mean} max ${m.max}`).join('; '));
 
   console.log('\nthe cut package');
   ok('a post opens on its own footage',
@@ -378,6 +542,56 @@ async function main() {
      String(dk));
   const plain = await go(() => document.querySelectorAll('.post.live .plain').length);
   ok('the plain readings are showing', plain > 0, String(plain));
+
+  // ── export ──────────────────────────────────────────────────────
+  // The export steps the live package into a canvas and hands it to WebCodecs
+  // through mediabunny. Headless Chromium has no H.264, so this rung of the
+  // ladder is AV1-in-MP4 — the point is that the file exists, is a video, and
+  // carries exactly the frames its plan says. A desktop Chrome lands on 'avc'.
+  // `seconds` is a TARGET the film's reading budgets compress toward (never
+  // below 55%), so a one-second target is the shortest film the copy allows.
+  console.log('\nexport');
+  const exp = await go(() => __rfh.debug.exportMp4(undefined, { seconds: 1, fps: 10, noDownload: true }));
+  ok('a bulletin renders to a video file through the app\'s own button path',
+     exp && !exp.error && exp.bytes > 2000, JSON.stringify(exp));
+  ok('the file is a video container with a real codec in it',
+     exp && /^video\//.test(exp.type || '') && ['avc', 'av1', 'vp9', 'hevc', 'vp8'].includes(exp.codec),
+     JSON.stringify(exp));
+  ok('it carries exactly the frames its plan says', exp && exp.frames === Math.round(exp.seconds * 10),
+     JSON.stringify({ frames: exp && exp.frames, seconds: exp && exp.seconds }));
+  ok('a one-second target is the copy\'s shortest film, not a one-second file',
+     exp && exp.seconds >= 10 && exp.scale <= 0.5501, JSON.stringify({ seconds: exp && exp.seconds, scale: exp && exp.scale }));
+  ok('DECODE fired inside the clip, as a cut', exp && exp.revealed > 0, String(exp && exp.revealed));
+  ok('the live loop resumed after the export',
+     await go(async () => { const a = __rfh.debug.beat(); await new Promise(r => setTimeout(r, 900)); return __rfh.debug.shot() !== null; }));
+  ok('every post has the export button, and clean mode has none',
+     await go(() => document.querySelectorAll('.post:not(.sign-off) .export-btn').length
+                    === document.querySelectorAll('.post:not(.sign-off)').length));
+  ok('the encoder library reached the page by script tag, once',
+     await go(() => document.querySelectorAll('script[src*="mediabunny"]').length === 1
+                    && typeof window.Mediabunny === 'object'));
+
+  // ── the held prototype ──────────────────────────────────────────
+  // Without the flag nothing about TTS is loaded or fetched. With it, the app
+  // still boots and still reads in text if the model never arrives — which,
+  // with no network here, is exactly what happens.
+  console.log('\ntts (held)');
+  const ttsOff = await go(() => __rfh.debug.tts());
+  ok('without the flag the prototype is off and unloaded', ttsOff && !ttsOff.enabled && !ttsOff.loaded, JSON.stringify(ttsOff));
+  ok('and nothing from a model CDN was ever requested',
+     await go(() => !performance.getEntriesByType('resource').some(r => /jsdelivr|huggingface|kokoro/i.test(r.name))));
+  const tp = await browser.newPage();
+  const terr = [];
+  tp.on('pageerror', e => terr.push(e.message));
+  await tp.goto(base + '?tts=kokoro', { waitUntil: 'load' });
+  await wait(600);
+  await tp.evaluate(() => window.__rfh.debug.tuneIn());
+  await wait(2500);
+  const ttsOn = await tp.evaluate(() => ({ s: __rfh.debug.tts(), posts: document.querySelectorAll('.post').length, shot: __rfh.debug.shot() }));
+  ok('with the flag the app still boots and reads', ttsOn.posts > 1 && ttsOn.shot !== null && terr.length === 0,
+     JSON.stringify(ttsOn) + ' ' + terr.join('; '));
+  ok('and reports the prototype as enabled rather than pretending it is off', ttsOn.s && ttsOn.s.enabled, JSON.stringify(ttsOn.s));
+  await tp.close();
 
   console.log('\nstate');
   await go(() => __rfh.debug.go(1));
