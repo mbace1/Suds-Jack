@@ -65,7 +65,8 @@ s.listen(0, '127.0.0.1', async () => {
     cv.cfg.skullsFrom = 1e9;              // no skulls: main's enemy path stays out of this
     cv.reset(pl);
     const first = cv.trucks[0];
-    const spawn = { floorY: pl.floorY, feetY: pl.feet.y, groupY: first.group.position.y, top: first.top };
+    const spawn = { floorY: pl.floorY, feetY: pl.feet.y, groupY: first.group.position.y, top: first.top,
+      crate: cv.cargo.topAt(first.group.position.x, 0) !== null };   // spawned on a crate (main #590): the floor is the crate
     await frames(3);                      // a few live frames: poses, cargo stepped
     const geo = m => m.geometry.parameters;
     const trucks = cv.trucks.map(t => {
@@ -131,8 +132,8 @@ s.listen(0, '127.0.0.1', async () => {
     f = t => t.bobErr < 1e-9 && t.bobMax <= P.bob + E && t.bobMax > P.bob * 0.95 && Math.abs(t.bobDy) <= P.bob + E;
     ok('pin: _pose bob — group.y = top + sin(age·bobW + ph)·0.07, never more, and it reaches 0.07', all(T, f), bad(T, f));
     const sp = r.spawn;
-    ok('pin: the spawn floor is the first deck at its bobbed height (|floorY − top| ≤ 0.07)',
-      near(sp.floorY, sp.feetY) && Math.abs(sp.floorY - sp.top) <= P.bob + E && sp.floorY >= sp.groupY - E, JSON.stringify(sp));
+    ok('pin: the spawn floor is the first deck at its bobbed height (|floorY − top| ≤ 0.07), or a crate on it',
+      near(sp.floorY, sp.feetY) && (sp.crate || Math.abs(sp.floorY - sp.top) <= P.bob + E) && sp.floorY >= sp.groupY - E, JSON.stringify(sp));
     f = t => t.cab && near(t.cab.height, P.cab.h) && near(t.cab.depth, P.cab.l) && near(t.cab.width, t.w * P.cab.wK) && near(t.cab.x, 0)
       && near(t.cab.y, -(t.top - (P.ROAD_Y + P.CHASSIS * P.cab.chassisK)) + P.cab.h / 2) && near(t.cab.z, -(t.depth / 2 + P.cab.l / 2 + P.cab.gap));
     ok('pin: cab 2.3 × 2.6 at y = −(top − (ROAD_Y + 0.66)) + 1.15, z = −(depth/2 + 1.55)', all(T, f), bad(T, f));
