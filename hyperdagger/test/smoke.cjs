@@ -1582,16 +1582,48 @@ s.listen(0, '127.0.0.1', async () => {
         t.group.traverse(o => { if (o !== t.group) { names.push(o.name || '?'); if (isWheel(o)) wheels++; } });
         return { group: t.group.name, names: names.sort().join(',') };
       });
-      return { convoy: true, trucks: cv.trucks.length, wheels, shared: !!(cv.wheelGeo || cv.wheelMat), parts };
+      // HD-014 step 3 HOVER: the keel floats, the deck does not float more
+      // than the 0.07 bob, every truck has its pods and a pool on the road
+      const ts = cv.trucks.slice(0, 6), keel0 = ts.map(t => t.keel?.position.y);
+      let maxDy = 0, keelMoved = 0;
+      for (let i = 0; i < 20; i++) {
+        await frames(1);
+        for (const [j, t] of ts.entries()) {
+          if (!cv.trucks.includes(t)) continue;
+          maxDy = Math.max(maxDy, Math.abs(t.group.position.y - t.top));
+          if (t.keel) keelMoved = Math.max(keelMoved, Math.abs(t.keel.position.y - keel0[j]));
+        }
+      }
+      const hover = cv.trucks.map(t => {
+        let pods = 0, draws = 0;
+        t.group.traverse(o => { if (o.name === 'pod') pods++; if ((o.isMesh || o.isLineSegments) && o.visible) draws++; });
+        const pool = t.pool;
+        return { pods, draws: draws + (pool ? 1 : 0), keel: !!t.keel && t.keel.parent?.name === 'truck',
+          pool: !!pool && pool.parent === cv.scene && Math.abs(pool.position.y - (-3.2 + 0.02)) < 1e-6
+            && Math.hypot(pool.position.x - t.group.position.x, pool.position.z - t.group.position.z) < 1 };
+      });
+      return { convoy: true, trucks: cv.trucks.length, wheels, shared: !!(cv.wheelGeo || cv.wheelMat), parts,
+        hover: { maxDy: +maxDy.toFixed(4), keelMoved: +keelMoved.toFixed(4), trucks: hover } };
     });
     await q.close();
   }
   ok('haul: no wheel meshes or wheel geometry on any truck (HD-014 landspeeders)',
     haulParts.convoy && haulParts.trucks > 0 && haulParts.wheels === 0 && !haulParts.shared,
     JSON.stringify({ trucks: haulParts.trucks, wheels: haulParts.wheels, shared: haulParts.shared }));
-  ok('haul: every truck part is named — truck: hull, deck, edge, cab, glass, brake ×2, nothing else',
-    haulParts.convoy && haulParts.parts.every(p => p.group === 'truck' && p.names === 'brake,brake,cab,deck,edge,glass,hull'),
-    JSON.stringify(haulParts.parts?.find(p => p.group !== 'truck' || p.names !== 'brake,brake,cab,deck,edge,glass,hull')));
+  ok('haul: every truck part is named — truck: hull, deck, edge, cab, glass, brake ×2, keel (fin ×2, pod ×4), nothing else',
+    haulParts.convoy && haulParts.parts.every(p => p.group === 'truck' && p.names === 'brake,brake,cab,deck,edge,fin,fin,glass,hull,keel,pod,pod,pod,pod'),
+    JSON.stringify(haulParts.parts?.find(p => p.group !== 'truck' || p.names !== 'brake,brake,cab,deck,edge,fin,fin,glass,hull,keel,pod,pod,pod,pod')));
+  {
+    const h = haulParts.hover || {}, ht = h.trucks || [];
+    ok('haul: HOVER — the keel floats under the hull while the deck stays inside the 0.07 bob',
+      haulParts.convoy && h.keelMoved > 0.005 && h.maxDy <= 0.07 + 1e-9 && ht.every(t => t.keel), JSON.stringify({ keelMoved: h.keelMoved, maxDy: h.maxDy }));
+    ok('haul: HOVER — four thruster pods on every truck, and a glow pool on the road under it',
+      ht.length > 0 && ht.every(t => t.pods === 4 && t.pool), JSON.stringify(ht.find(t => t.pods !== 4 || !t.pool)));
+    // perf (plan risk 3): draws per truck no more than main's wheeled truck
+    // (hull, deck, edge, cab, glass, 8 wheels, 2 brake lights = 15)
+    ok('haul: HOVER — draws per truck ≤ 15, the wheeled truck\'s count',
+      ht.length > 0 && ht.every(t => t.draws <= 15), JSON.stringify(ht.map(t => t.draws).slice(0, 4)));
+  }
   ok('haul: a crate at the spawn point is not a hole — a no-input run stays on the deck for 5 s of slow frames (season 3 / free roll)',
     haulSpawn.convoy && haulSpawn.survived && haulSpawn.roadFrames === 0, JSON.stringify(haulSpawn));
   ok('haul: a fall to the road is named on the death screen, never "something"',
