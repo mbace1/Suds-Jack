@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { TUNING as T } from './tuning.js?v=85';
 import { Skull } from './enemy.js?v=85';
-import { Convoy } from './convoy.js?v=87';
+import { Convoy } from './convoy.js?v=89';
 
 const matOk = new THREE.MeshBasicMaterial({ color: 0x3a342c });
 const matWarn = new THREE.MeshBasicMaterial({ color: 0x6a4030 });

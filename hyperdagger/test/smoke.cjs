@@ -1545,6 +1545,44 @@ s.listen(0, '127.0.0.1', async () => {
     });
     await q.close();
   }
+  // ---- HD-014 step 2: landspeeders have no wheels, and the parts have names
+  // A wheel is the old shared 0.5×0.9×0.9 box, a mesh named 'wheel', or the
+  // convoy still holding wheelGeo/wheelMat. Named parts are what the hover
+  // steps find; the part list is exactly today's minus the eight wheels.
+  let haulParts = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    await q.addInitScript(() => { localStorage.setItem('hyperDaggerModeV31', 'truck'); localStorage.setItem('hyperDaggerRunKind', 'free'); });
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    haulParts = await q.evaluate(async () => {
+      const d = window.__hd.debug;
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      d.startGame(); d.freezeDirector?.(true); d.setInvulnerable(true);
+      await frames(2);
+      const cv = d.truckObj();
+      if (!cv?.cargo) return { convoy: false };
+      cv.cfg.skullsFrom = 1e9;
+      cv.reset(window.__hd.player);
+      const isWheel = o => o.name === 'wheel' || (o.geometry && (o.geometry === cv.wheelGeo
+        || (o.geometry.parameters && o.geometry.parameters.width === 0.5 && o.geometry.parameters.height === 0.9 && o.geometry.parameters.depth === 0.9)));
+      let wheels = 0;
+      const parts = cv.trucks.map(t => {
+        const names = [];
+        t.group.traverse(o => { if (o !== t.group) { names.push(o.name || '?'); if (isWheel(o)) wheels++; } });
+        return { group: t.group.name, names: names.sort().join(',') };
+      });
+      return { convoy: true, trucks: cv.trucks.length, wheels, shared: !!(cv.wheelGeo || cv.wheelMat), parts };
+    });
+    await q.close();
+  }
+  ok('haul: no wheel meshes or wheel geometry on any truck (HD-014 landspeeders)',
+    haulParts.convoy && haulParts.trucks > 0 && haulParts.wheels === 0 && !haulParts.shared,
+    JSON.stringify({ trucks: haulParts.trucks, wheels: haulParts.wheels, shared: haulParts.shared }));
+  ok('haul: every truck part is named — truck: hull, deck, edge, cab, glass, brake ×2, nothing else',
+    haulParts.convoy && haulParts.parts.every(p => p.group === 'truck' && p.names === 'brake,brake,cab,deck,edge,glass,hull'),
+    JSON.stringify(haulParts.parts?.find(p => p.group !== 'truck' || p.names !== 'brake,brake,cab,deck,edge,glass,hull')));
   ok('haul: a crate at the spawn point is not a hole — a no-input run stays on the deck for 5 s of slow frames (season 3 / free roll)',
     haulSpawn.convoy && haulSpawn.survived && haulSpawn.roadFrames === 0, JSON.stringify(haulSpawn));
   ok('haul: a fall to the road is named on the death screen, never "something"',
