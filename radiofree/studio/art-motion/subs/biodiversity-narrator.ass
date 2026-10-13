@@ -1,0 +1,26 @@
+[Script Info]
+; The Biodiversity Fund — the quiet narrator. Burned in with: ffmpeg -vf "subtitles=narrator.ass:fontsdir=fonts"
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Narrator,EB Garamond,60,&H00C8D8E2,&H00C8D8E2,&H26100C0A,&H26100C0A,0,1,0,0,100,100,0.5,0,3,14,0,2,120,120,200,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.25,0:00:01.75,Narrator,,0,0,0,,{\fad(220,260)}In March, the council in Muhos voted yes.
+Dialogue: 0,0:00:01.85,0:00:03.10,Narrator,,0,0,0,,{\fad(220,260)}Outside, it rained. One resident appealed.
+Dialogue: 0,0:00:03.40,0:00:04.85,Narrator,,0,0,0,,{\fad(220,260)}In September, Doodle promised thirteen billion euros.
+Dialogue: 0,0:00:04.95,0:00:06.30,Narrator,,0,0,0,,{\fad(220,260)}Part of it for local biodiversity.
+Dialogue: 0,0:00:06.60,0:00:08.05,Narrator,,0,0,0,,{\fad(220,260)}Then the forest at Muhos came down.
+Dialogue: 0,0:00:08.15,0:00:09.55,Narrator,,0,0,0,,{\fad(220,260)}About 330 hectares, by the company’s own count.
+Dialogue: 0,0:00:09.80,0:00:11.25,Narrator,,0,0,0,,{\fad(220,260)}The biodiversity was stacked neatly.
+Dialogue: 0,0:00:11.35,0:00:12.75,Narrator,,0,0,0,,{\fad(220,260)}Above 200 hectares, the law asks for an assessment first.
+Dialogue: 0,0:00:13.00,0:00:14.45,Narrator,,0,0,0,,{\fad(220,260)}On the seventh of October, the regulator said stop.
+Dialogue: 0,0:00:14.55,0:00:15.95,Narrator,,0,0,0,,{\fad(220,260)}Until the impact assessment is done.
+Dialogue: 0,0:00:16.15,0:00:17.10,Narrator,,0,0,0,,{\fad(220,260)}Fifty thousand signed within days.
+Dialogue: 0,0:00:17.20,0:00:18.15,Narrator,,0,0,0,,{\fad(220,260)}Now parliament has to take it up.
