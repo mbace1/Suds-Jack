@@ -34,7 +34,8 @@ def marked(line, pop):
 def t(x): h = int(x // 3600); m = int(x % 3600 // 60); s = x % 60; return f"{h}:{m:02d}:{s:05.2f}"
 
 
-def build(SHOTS, CUT, path):
+def build(SHOTS, CUT, path, manual=False):
+    """manual=True: every line break is written into the text as \\N and libass never wraps (WrapStyle 2)"""
     ev = []; last = len(CUT) - 2
     for i, a, b, y, l1, l2 in SHOTS:
         s0, s1 = CUT[i], CUT[i + 1] - (0.35 if i < last else 0.3)
@@ -42,5 +43,6 @@ def build(SHOTS, CUT, path):
         ev.append((s0 + a, s0 + b, top + r"{\fad(280,0)}" + marked(l1, True)))
         if l2: ev.append((s0 + b, s1, rf"{{\an8\pos(540,{y - 150})\fad(0,260)}}" + marked(l1, False) + r"\N{\alpha&HFF&\t(0,280,\alpha&H00&)}" + marked(l2, True)))
         else: ev[-1] = (s0 + a, s1, ev[-1][2].replace(r"{\fad(280,0)}", r"{\fad(280,260)}"))
-    open(path, 'w').write(HEAD + "".join(f"Dialogue: 0,{t(a)},{t(b)},H,,0,0,0,,{x}\n" for a, b, x in ev))
+    head = HEAD.replace('WrapStyle: 0', 'WrapStyle: 2') if manual else HEAD
+    open(path, 'w').write(head + "".join(f"Dialogue: 0,{t(a)},{t(b)},H,,0,0,0,,{x}\n" for a, b, x in ev))
     print('captions ->', path)

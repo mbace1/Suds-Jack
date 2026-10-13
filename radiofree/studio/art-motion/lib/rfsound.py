@@ -109,9 +109,9 @@ class Mix:
         t0 = int(ring_from * SR); tt = np.arange(e - t0) / SR; mix[t0:] *= np.exp(-tt / tau)[:, None]
         fade = int(0.3 * SR); mix[-fade:] *= np.linspace(1, 0, fade)[:, None]
         raw = tempfile.mktemp(suffix='.wav'); sf.write(raw, mix, SR)
-        p = subprocess.run(['ffmpeg', '-hide_banner', '-i', raw, '-af', f'loudnorm=I={lufs}:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'], capture_output=True, text=True)
+        p = subprocess.run(['ffmpeg', '-hide_banner', '-i', raw, '-af', f'loudnorm=I={lufs}:TP=-2:LRA=11:print_format=json', '-f', 'null', '-'], capture_output=True, text=True)
         js = json.loads(p.stderr[p.stderr.rindex('{'):])
-        af = (f"loudnorm=I={lufs}:TP=-1.5:LRA=11:measured_I={js['input_i']}:measured_TP={js['input_tp']}:"
+        af = (f"loudnorm=I={lufs}:TP=-2:LRA=11:measured_I={js['input_i']}:measured_TP={js['input_tp']}:"
               f"measured_LRA={js['input_lra']}:measured_thresh={js['input_thresh']}:offset={js['target_offset']}:linear=true")
         subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-af', af, '-ar', str(SR), out], check=True)
         print(out, e / SR)

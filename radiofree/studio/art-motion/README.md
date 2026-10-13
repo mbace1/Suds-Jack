@@ -45,6 +45,11 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
   Scores and captions build on `lib/rfsound.py` (the synthesised orchestra, two-pass
   loudnorm to −14 LUFS) and `lib/rfcaps.py` (house style H), so a new film is data.
 
+- `eras_dr.js` — **Unexpectedly, a Deer** (Toko thinker #1, papercut, 37.5 s): a Kallio flat,
+  a Finnish hound, and a home camera whose AI writes the dog up as a deer — the behaviour
+  reviewers documented in Google's Gemini for Home (renamed Doodle Home). `scenes/dr_*.js`,
+  `synth_dr.py`, `subs/deer-captions.py`, `shot-table-deer.md`, `review-deer-v3.md`.
+
 ## The standard procedure (owner, 2026-10-13: "make this the standard procedure")
 
 Every film goes through the same nine steps; The Biodiversity Fund v6 is the worked

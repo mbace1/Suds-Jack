@@ -1,0 +1,25 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: H,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.80,0:00:03.00,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}This flat has a {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}smart camera{\c&HFFFFFF&}.
+Dialogue: 0,0:00:03.00,0:00:06.08,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}This flat has a {\c&H3AB8F2&}smart camera{\c&HFFFFFF&}.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}It watches the room\Nand writes up the day.
+Dialogue: 0,0:00:07.23,0:00:09.43,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}The dog crosses the room.
+Dialogue: 0,0:00:09.43,0:00:12.51,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}The dog crosses the room.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}The camera {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}takes a note{\c&HFFFFFF&}.
+Dialogue: 0,0:00:13.66,0:00:15.86,H,,0,0,0,,{\an8\pos(540,250)}{\fad(280,0)}In the evening,\Nthe {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}daily brief{\c&HFFFFFF&}.
+Dialogue: 0,0:00:15.86,0:00:18.94,H,,0,0,0,,{\an8\pos(540,250)\fad(0,260)}In the evening,\Nthe {\c&H3AB8F2&}daily brief{\c&HFFFFFF&}.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}One line of it, word for word.
+Dialogue: 0,0:00:20.09,0:00:22.29,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}Toko looks at the dog.
+Dialogue: 0,0:00:22.29,0:00:25.36,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}Toko looks at the dog.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}The dog looks {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}back{\c&HFFFFFF&}.
+Dialogue: 0,0:00:26.51,0:00:28.71,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}It was not a one-off.
+Dialogue: 0,0:00:28.71,0:00:31.79,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}It was not a one-off.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}The same reviewer's dogs\Nwere logged as {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}deer{\c&HFFFFFF&},\Nclip after clip.
+Dialogue: 0,0:00:32.84,0:00:34.34,H,,0,0,0,,{\an8\pos(540,250)}{\fad(280,0)}Other users' cats\Nwere logged as raccoons.
+Dialogue: 0,0:00:34.34,0:00:37.20,H,,0,0,0,,{\an8\pos(540,250)\fad(0,260)}Other users' cats\Nwere logged as raccoons.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}It needs a {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}$20-a-month{\c&HFFFFFF&}\Nplan, still in early access.
