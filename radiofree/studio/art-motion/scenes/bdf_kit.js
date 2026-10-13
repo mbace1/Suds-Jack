@@ -76,5 +76,18 @@ window.BDF = (() => {
     g.fillStyle = C.trunk; g.fillRect(-30 * s, -36 * s, 60 * s, 36 * s);
     g.fillStyle = C.stumpL; g.beginPath(); g.ellipse(0, -36 * s, 30 * s, 10 * s, 0, 0, TAU); g.fill();
   }, 5);
-  return { C, spruceShape, row, tree, mist, moose, harvester, logEnd, stump };
+  // The Doodle wordmark in Google's six (blue red yellow blue green red), a touch muted for
+  // card, set in a round geometric sans; an optional ink outline keeps the yellow legible on ochre.
+  const DOODLE = ['#4a82e0', '#de4a3c', '#f4bd2a', '#4a82e0', '#3aa35a', '#de4a3c'];
+  function doodleLogo(g, x, y, size, { align = 'left', outline = 0 } = {}) {
+    g.save(); g.font = size + 'px "Poppins-600"'; g.textAlign = 'left'; g.lineJoin = 'round';
+    const L = 'Doodle'.split(''), ws = L.map((ch) => g.measureText(ch).width), tw = ws.reduce((a, b) => a + b, 0) - size * 0.02 * 5;
+    let px = align === 'center' ? x - tw / 2 : align === 'right' ? x - tw : x;
+    for (let i = 0; i < 6; i++) {
+      if (outline) { g.strokeStyle = '#15120f'; g.lineWidth = outline * 2; g.strokeText(L[i], px, y); }
+      g.fillStyle = DOODLE[i]; g.fillText(L[i], px, y); px += ws[i] - size * 0.02;
+    }
+    g.restore();
+  }
+  return { C, spruceShape, row, tree, mist, moose, harvester, logEnd, stump, doodleLogo };
 })();

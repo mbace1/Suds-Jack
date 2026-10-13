@@ -13,8 +13,8 @@ SCENES['bdf_protest'] = (() => {
     g.fillStyle = '#3b3a2c'; for (let y = 260; y < 1100; y += 120) for (let x = 40; x < W; x += 140) g.fillRect(x, y, 110, 90);    // the glass, dark floors
     g.fillStyle = '#5a4a2c'; for (const [x, y] of [[320, 380], [600, 500], [180, 620], [880, 380]]) g.fillRect(x, y, 110, 90);    // a few floors still lit
     g.fillStyle = '#c98a44'; g.fillRect(200, 980, 680, 260);                                                                          // the lobby
-    g.fillStyle = K.ochre; g.font = '120px "PlayfairDisplay-700"'; g.textAlign = 'center'; g.fillText('Doodle', 540, 940);
-    g.fillStyle = K.card; g.font = '22px "RobotoCondensed"'; g.fillText('ARKADIANKATU · HELSINKI', 540, 975);
+    BDF.doodleLogo(g, 540, 940, 124, { align: 'center' });
+    g.fillStyle = K.card; g.font = '22px "RobotoCondensed"'; g.textAlign = 'center'; g.fillText('ARKADIANKATU · HELSINKI', 540, 975);
   });
   const placard = (k) => sprite('bdf_placard_' + k, 200, 420, 100, 400, (g) => {
     g.fillStyle = '#6a5038'; g.fillRect(-6, -160, 12, 160);

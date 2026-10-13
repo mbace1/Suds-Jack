@@ -9,8 +9,8 @@ SCENES['bdf_cheque'] = (() => {
   const cheque = () => sprite('bdf_cheque', 860, 420, 430, 210, (g) => {
     g.fillStyle = K.ochre; g.beginPath(); g.roundRect(-400, -180, 800, 360, 10); g.fill();
     g.strokeStyle = K.ink; g.lineWidth = 3; g.strokeRect(-380, -160, 760, 320);
-    g.fillStyle = K.ink; g.font = '58px "PlayfairDisplay-700"'; g.fillText('Doodle', -360, -98);
-    g.font = '24px "RobotoCondensed"'; g.fillText('9.9.2026', 250, -110);
+    BDF.doodleLogo(g, -360, -96, 62, { outline: 3 });
+    g.fillStyle = K.ink; g.font = '24px "RobotoCondensed"'; g.fillText('9.9.2026', 250, -110);
     g.fillText('PAY', -360, -40); g.fillRect(-300, -36, 640, 3); g.font = '40px "RobotoCondensed"'; g.fillText('Finland', -290, -46);
     g.font = '70px "Anton-400"'; g.fillText('€13 000 000 000', -360, 50);
     g.font = '30px "RobotoCondensed"'; g.fillText('INCL.: local biodiversity, education…', -360, 122);   // INCL., not FOR: the fund is part of the €13 bn, not all of it
