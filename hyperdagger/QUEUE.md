@@ -60,15 +60,6 @@ Explicit mode buttons + ALL, grouped rows, best line shows season · mode. Touch
 
 Script accepts season. Game sends season. Endpoint empty until deployed. Top-10 display ready.
 
-### HD-006 — Season 3 new runs must survive the first five seconds
-
-- status: In progress (being fixed on branch fix/hyperdagger-season3-spawn-death)
-- size: M
-- blocked-by: —
-- design: NOTES.md (12 Oct 2026 playtest)
-
-From NOTES.md (12 Oct 2026), new Season 3 runs died at 1.3 s and 0.7 s with 0 kills, death screen "felled by something". Free mode on the truck highway shows the same deaths (2.0, 0.7, 2.0 s). Add a headless test that a new run survives the first 5 s with no input so spawn kills cannot return silently.
-
 ## In progress
 
 ### HD-005 — Feature completeness pass on current seasons
@@ -159,7 +150,14 @@ Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover h
 
 ## Landed
 
-No items.
+### HD-006 — Season 3 new runs must survive the first five seconds
+
+- status: Landed (#590, 603e76d)
+- size: M
+- blocked-by: —
+- design: NOTES.md (12 Oct 2026 playtest)
+
+From NOTES.md (12 Oct 2026), new Season 3 runs died at 1.3 s and 0.7 s with 0 kills, death screen "felled by something". Free mode on the truck highway shows the same deaths (2.0, 0.7, 2.0 s). Add a headless test that a new run survives the first 5 s with no input so spawn kills cannot return silently.
 
 ## Blocked
 
