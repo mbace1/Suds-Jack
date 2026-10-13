@@ -38,6 +38,13 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
   green), `synth_rfp.py` its score (−14 LUFS, the last hit at 14.2 s rings out). It
   folds in every fix from `review-you-looked-at-it.md`.
 
+- `eras_doh.js` — **On Hold** (Doodle #2, 37.5 s): Doodle froze two sites over a tax rise,
+  Finland raised the tax anyway and dropped the support, Doodle came anyway — and on
+  6.10.2026 the regulator put both sites on hold again. `scenes/doh_*.js`, `synth_doh.py`,
+  `subs/on-hold-captions.py`, `shot-table-onhold.md` (sources), `review-onhold-v2.md`.
+  Scores and captions build on `lib/rfsound.py` (the synthesised orchestra, two-pass
+  loudnorm to −14 LUFS) and `lib/rfcaps.py` (house style H), so a new film is data.
+
 ## The standard procedure (owner, 2026-10-13: "make this the standard procedure")
 
 Every film goes through the same nine steps; The Biodiversity Fund v6 is the worked
