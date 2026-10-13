@@ -31,3 +31,9 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
   Returns), `ts_hours` (Book of Hours, October), `ts_paper` (papercut shadowbox,
   LOOKING IS FREE*), `ts_munch` (expressionist oil, The Total). The masks are the
   only faces in any of them.
+- `eras_rfp.js` — **You Looked At It, the papercut cut** (owner picked test 11 of 12,
+  2026-10-13: "Paper cut box is the best so far"). `scenes/rfp_kit.js` is the box:
+  card sheets with their shadows baked once, a parallax stack, a focus-point camera,
+  a card walker with a timed LED. `shot-table-papercut.md` is its storyboard (lint
+  green), `synth_rfp.py` its score (−14 LUFS, the last hit at 14.2 s rings out). It
+  folds in every fix from `review-you-looked-at-it.md`.
