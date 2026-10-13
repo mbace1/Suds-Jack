@@ -1546,7 +1546,7 @@ function showDeath(timedOut, complete = false) {
   let best = false;
   let dailyLines = '';
   if (runKind === 'daily') {
-    const key = dailyKey(runDate, mode); // runDate, not today — midnight straddle
+    const key = dailyKey(runDate, M().id); // runDate, not today — midnight straddle; M(), the mode PLAYED (the saved one loses to a chosen season)
     const dayBest = parseFloat(localStorage.getItem(key) || '0');
     best = runT > dayBest;
     if (best) localStorage.setItem(key, String(runT));
