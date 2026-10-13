@@ -51,17 +51,23 @@ s.listen(0, '127.0.0.1', async () => {
   const kill = setTimeout(() => { console.log('  !! perf gate timed out'); process.exit(2); }, 240000);
 
   /** One seeded (DAILY) season-1 run with the director live, `secs` real seconds. */
-  async function run(label, { throttle = 0, perf = 'auto', isolate = false } = {}) {
+  async function run(label, { throttle = 0, perf = 'auto', isolate = false, shim = true } = {}) {
     const p = await b.newPage({ viewport: { width: 820, height: 540 } });
     const errs = { pos: 0, other: [] };
-    p.on('pageerror', e => (/player\.pos|reading 'pos'/.test(e.message) ? errs.pos++ : errs.other.push(e.message)));
+    p.on('pageerror', e => (/player\.pos|reading 'pos'|reading 'x'/.test(e.message) ? errs.pos++ : errs.other.push(e.message)));
     p.on('crash', () => { console.log('  !! page crashed'); process.exit(2); });
     await p.addInitScript(() => { localStorage.setItem('hyperDaggerSeenTips', '1'); localStorage.setItem('hyperDaggerRunKind', 'daily'); });
     await p.goto(base + '/hyperdagger/?assets=0&season=ember', { waitUntil: 'load' });
     await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 30000 });
     if (throttle) { const c = await p.context().newCDPSession(p); await c.send('Emulation.setCPUThrottlingRate', { rate: throttle }); }
-    const out = await p.evaluate(async ({ secs, perf, isolate }) => {
+    const out = await p.evaluate(async ({ secs, perf, isolate, shim }) => {
       const d = window.__hd.debug;
+      // TEST-ONLY alias for main's missing player.pos (the real fix is
+      // #591/#593/#594). Without it the throw aborts animate() before
+      // composer.render(), so every enemy frame skips the render and the box
+      // looks FAST. No-ops once a build defines player.pos.
+      const pl = window.__hd.player, shimmed = shim && pl.pos === undefined;
+      if (shimmed) Object.defineProperty(pl, 'pos', { get() { return this.feet; }, configurable: true });
       d.setOpt('perf', perf);
       if (perf === 'auto') d.setPerfTier(0);
       if (isolate) Object.assign(d.perfTuning, { downMs: 1e9, settleMs: 300, ratioHoldMs: 1000 }); // only the ratio monitor may act
@@ -82,11 +88,11 @@ s.listen(0, '127.0.0.1', async () => {
       ft.shift(); const sorted = ft.slice().sort((a, b) => a - b), q = k => +(sorted[Math.min(sorted.length - 1, Math.floor(k * sorted.length))] || 0).toFixed(1);
       const lifeGain = (st.gameTime ?? st.lifeT) - g0;
       const mon = hasMon ? d.getTimeRatio() : { total: +(lifeGain / real).toFixed(3), ratio: NaN, realS: real, drops: 0, floor: 0.9, absent: true };
-      return { mon, clockRatio: +(lifeGain / real).toFixed(3), real: +real.toFixed(2), state: st.state,
+      return { shimmed, mon, clockRatio: +(lifeGain / real).toFixed(3), real: +real.toFixed(2), state: st.state,
         frames: ft.length, p50: q(0.5), p95: q(0.95), max: q(1), maxEnemies, tier0, tier: d.getPerfTier().tier, pr0, pr: d.getPerfTier().pixelRatio };
-    }, { secs: SECONDS, perf, isolate });
+    }, { secs: SECONDS, perf, isolate, shim });
     await p.close();
-    console.log(`  [${label}] ratio ${out.mon.total} (window ${out.mon.ratio}, game clock ${out.clockRatio})${out.mon.absent ? ' [no monitor on this build]' : ''}, ${out.frames} frames, ft p50 ${out.p50} / p95 ${out.p95} / max ${out.max} ms, ` +
+    console.log(`  [${label}${out.shimmed ? ', player.pos shimmed' : ''}] ratio ${out.mon.total} (window ${out.mon.ratio}, game clock ${out.clockRatio})${out.mon.absent ? ' [no monitor on this build]' : ''}, ${out.frames} frames, ft p50 ${out.p50} / p95 ${out.p95} / max ${out.max} ms, ` +
       `enemies ≤${out.maxEnemies}, tier ${out.tier0}→${out.tier}, pr ${out.pr0}→${out.pr}, monitor drops ${out.mon.drops}, player.pos errors ${errs.pos}, other errors ${errs.other.length}`);
     return { ...out, errs };
   }
@@ -97,6 +103,11 @@ s.listen(0, '127.0.0.1', async () => {
   ok('monitor ratio agrees with the frame clock', Math.abs(a.mon.realS - a.real) / a.real < 0.25, `monitor ${a.mon.realS}s vs page ${a.real}s`);
   ok(`game-to-real ratio ≥ budget ${BUDGET}`, a.mon.total >= BUDGET, `${a.mon.total}`);
   ok('no page errors besides the known player.pos throw', a.errs.other.length === 0, a.errs.other.slice(0, 2).join(' | '));
+
+  // as main ships today, unshimmed: reported, not gated — the per-frame
+  // throw skips rendering, so this number flatters the build
+  const raw = await run('unthrottled, as shipped (no shim)', { shim: false });
+  console.log(`  note: as-shipped ratio ${raw.mon.total} with ${raw.errs.pos} player.pos throws is NOT a real perf number`);
 
   const t = await run(`throttled ×${THROTTLE}`, { throttle: THROTTLE, isolate: true });
   ok('throttled: the monitor sees slow motion', t.mon.total < t.mon.floor, `ratio ${t.mon.total} < floor ${t.mon.floor}`);
