@@ -9,8 +9,9 @@ window.RFP = (() => {
   const K = {
     // v2 (owner: "fall, darker palette with one or two contrast colours"): the dusk is DUSK, the lamps are the
     // brightest thing in the box, and only two colours are loud — ochre light and the magenta of the masks
-    sky0: '#141715', sky1: '#22241e', sky2: '#4a3022', sky3: '#7c4428', sky4: '#a8642f',
-    ink: '#1a1612', card: '#e2d3b2', cardD: '#c4b496', green: '#29473a', greenD: '#1a3027', red: '#a8321e', rust: '#9a4422',
+    // v3 (owner, 2026-10-13: "this style is great. It can be a bit darker"): one more stop down
+    sky0: '#0e110f', sky1: '#181c19', sky2: '#3a271e', sky3: '#5e3522', sky4: '#82502a',
+    ink: '#15120f', card: '#d8c8a8', cardD: '#b8a88c', green: '#29473a', greenD: '#1a3027', red: '#a8321e', rust: '#9a4422',
     ochre: '#e3a33a', mag: '#f0027f',
     roof: '#2c1a15', roof2: '#46291f', stone: '#5e5446', stoneD: '#463e34', park: '#24321e', birch: '#d9a62e', birchD: '#b5801c',
     mapleA: '#d9542a', mapleB: '#f0a030', mapleC: '#b8322a', gold: '#e0b84a', wood: '#3a2618', lamp: '#ffd98a',
@@ -78,7 +79,7 @@ window.RFP = (() => {
   }
   /** the dusk sky at four o'clock in October: banded like cut card, not a smooth gradient */
   const dusk = (key, horizon = 1100) => sheet('rfp_sky_' + key, (g) => {
-    const bands = [K.sky0, K.sky1, '#2f2a22', '#3b2c22', K.sky2, '#62392a', K.sky3, K.sky4];
+    const bands = [K.sky0, K.sky1, '#221f1a', '#2c231d', K.sky2, '#4a2e22', K.sky3, K.sky4];
     const step = horizon / bands.length;
     bands.forEach((col, i) => { g.fillStyle = col; g.beginPath(); g.moveTo(-M, -M + (i ? i * step : -M)); for (let x = -M; x <= W + M; x += 60) g.lineTo(x, i * step + Math.sin(x * 0.006 + i) * 14); g.lineTo(W + M, H + M); g.lineTo(-M, H + M); g.closePath(); g.fill(); });
   }, 10);
