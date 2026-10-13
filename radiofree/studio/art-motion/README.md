@@ -50,6 +50,12 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
   reviewers documented in Google's Gemini for Home (renamed Doodle Home). `scenes/dr_*.js`,
   `synth_dr.py`, `subs/deer-captions.py`, `shot-table-deer.md`, `review-deer-v3.md`.
 
+- `eras_cw.js` — **Committee of the Whole** (Coxon #2, papercut, 37.5 s): New York's council
+  hearing on AI risk, 5.10.2026 — the companies came under threat of subpoena, one not at all;
+  Jacob Coxon's estimate; no company gave a number; "flippant at best". Coxon is a real person:
+  shown only from behind, never masked. `scenes/cw_*.js`, `synth_cw.py`,
+  `subs/committee-captions.py`, `shot-table-committee.md`, `review-committee-v2.md`.
+
 ## The standard procedure (owner, 2026-10-13: "make this the standard procedure")
 
 Every film goes through the same nine steps; The Biodiversity Fund v6 is the worked
