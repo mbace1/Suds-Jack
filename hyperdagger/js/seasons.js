@@ -347,7 +347,7 @@ export const SEASONS = [
     noRear: true,   // enemies spawn only in the forward hemisphere
     mode: 'truck',                       // the Clustertruck rules: the road is the arena, falling is death
     abilities: { jumps: 2, dash: true },
-    blurb: 'the convoy — trucks that drive, momentum you keep, and a look that fires',
+    blurb: 'the convoy — hovering trucks that drive, momentum you keep, and a look that fires',
     sky: { void: [0.0015, 0.0015, 0.0022], horizon: [0.36, 0.13, 0.03], band: 4.2, stars: 0.3,
       sun: 0.55, haze: 0.05, sunDir: [0.0, 0.05, -1] },   // a low sun dead ahead: you are driving into it
     floor: { tint: [1, 1, 1], glow: 0.9 },   // the disc is hidden on the track
@@ -396,7 +396,7 @@ export const SEASONS = [
     end: 300,
     built: true,
     todo: [
-      'trucks that read as trucks — a cab, a trailer, wheels (they are slabs)',
+      'trucks that read as landspeeder skiffs — hovering hulls on thruster pods that still carry the cargo',
       'the missile look: they fly as daggers today',
     ],
   },
