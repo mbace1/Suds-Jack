@@ -138,7 +138,7 @@ From NOTES.md (12 Oct 2026 free mode), the run-start click does not lock the mou
 
 ### HD-014 — Season 3 trucks become floating landspeeders
 
-- status: In progress (#598, #599, #600, #602, #603, #607)
+- status: In progress (#598, #599, #600, #602, #603, #607, #613)
 - size: M
 - blocked-by: HD-006
 - design: NOTES.md (12 Oct 2026, Mikael design direction)
