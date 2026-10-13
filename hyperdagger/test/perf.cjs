@@ -67,19 +67,26 @@ s.listen(0, '127.0.0.1', async () => {
       if (isolate) Object.assign(d.perfTuning, { downMs: 1e9, settleMs: 300, ratioHoldMs: 1000 }); // only the ratio monitor may act
       d.setInvulnerable(true);
       d.startGame();
-      await new Promise(r => setTimeout(r, 500)); // past the spawn beat
-      d.resetTimeRatio();
+      // a pack on the field from frame one (setup only): the director's own
+      // opening beat is longer than a 5 s window at a few fps on this box
+      for (let i = 0; i < 6; i++) d.spawnSkull();
+      d.spawnSpider(); d.spawnSpider(); d.spawnWatcher();
+      await new Promise(r => setTimeout(r, 500));
+      const hasMon = !!d.getTimeRatio; // main has no monitor: fall back to the game clock
+      if (hasMon) d.resetTimeRatio();
       const tier0 = d.getPerfTier().tier, pr0 = d.getPerfTier().pixelRatio;
       const ft = []; let last = performance.now(), maxEnemies = 0;
       const t0 = performance.now(), g0 = d.getState().gameTime ?? d.getState().lifeT;
       await new Promise(r => { const f = now => { ft.push(now - last); last = now; maxEnemies = Math.max(maxEnemies, window.__hd.enemies.filter(e => e.alive).length); (now - t0 >= secs * 1000) ? r() : requestAnimationFrame(f); }; requestAnimationFrame(f); });
       const real = (performance.now() - t0) / 1000, st = d.getState();
       ft.shift(); const sorted = ft.slice().sort((a, b) => a - b), q = k => +(sorted[Math.min(sorted.length - 1, Math.floor(k * sorted.length))] || 0).toFixed(1);
-      return { mon: d.getTimeRatio(), real: +real.toFixed(2), lifeGain: +((st.gameTime ?? st.lifeT) - g0).toFixed(2), state: st.state,
+      const lifeGain = (st.gameTime ?? st.lifeT) - g0;
+      const mon = hasMon ? d.getTimeRatio() : { total: +(lifeGain / real).toFixed(3), ratio: NaN, realS: real, drops: 0, floor: 0.9, absent: true };
+      return { mon, clockRatio: +(lifeGain / real).toFixed(3), real: +real.toFixed(2), state: st.state,
         frames: ft.length, p50: q(0.5), p95: q(0.95), max: q(1), maxEnemies, tier0, tier: d.getPerfTier().tier, pr0, pr: d.getPerfTier().pixelRatio };
     }, { secs: SECONDS, perf, isolate });
     await p.close();
-    console.log(`  [${label}] ratio ${out.mon.total} (window ${out.mon.ratio}), ${out.frames} frames, ft p50 ${out.p50} / p95 ${out.p95} / max ${out.max} ms, ` +
+    console.log(`  [${label}] ratio ${out.mon.total} (window ${out.mon.ratio}, game clock ${out.clockRatio})${out.mon.absent ? ' [no monitor on this build]' : ''}, ${out.frames} frames, ft p50 ${out.p50} / p95 ${out.p95} / max ${out.max} ms, ` +
       `enemies ≤${out.maxEnemies}, tier ${out.tier0}→${out.tier}, pr ${out.pr0}→${out.pr}, monitor drops ${out.mon.drops}, player.pos errors ${errs.pos}, other errors ${errs.other.length}`);
     return { ...out, errs };
   }
