@@ -1301,8 +1301,11 @@ function gcDailyKeys() {
   const stale = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    const m = k && k.match(/^hyperDaggerDaily:(\d{4}-\d{2}-\d{2}):(\w+)$/);
-    if (m && m[1] !== today) stale.push({ k, date: m[1], mode: m[2] });
+    // `<date>:<season>:<mode>` since HD-002, `<date>:<mode>` before it. Only a
+    // PAST day goes: today's key (and a future one, a clock set back) stays,
+    // and anything not exactly this shape is not a daily key and is never touched.
+    const m = k && k.match(/^hyperDaggerDaily:(\d{4}-\d{2}-\d{2}):(?:([a-z]+):)?([a-z]+)$/);
+    if (m && m[1] < today) stale.push({ k, date: m[1], mode: m[3] });
   }
   for (const s of stale) {
     const t = parseFloat(localStorage.getItem(s.k) || '0');
