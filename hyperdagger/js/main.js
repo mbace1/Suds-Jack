@@ -3972,6 +3972,7 @@ window.__hd = {
     // moves does not survive long enough to measure anything.
     freezeDirector(on = true) { directorFrozen = !!on; return directorFrozen; },
     startGame() { startGame(); }, // tests need a guaranteed-live run to measure
+    die(timedOut = false) { if (state === 'playing') die(!!timedOut); return state; },   // HD-012: the death screen on demand
     setInvulnerable(on = true) { invulnerable = !!on; return invulnerable; },
     getPressure() { return { live: livePressure(), ceiling: +pressureCeiling().toFixed(1) }; },
     /** THE LAB BENCH. Every registered experiment, what it declares, and what
