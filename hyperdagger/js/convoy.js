@@ -47,6 +47,17 @@ const _e = new THREE.Euler();
 const TRAILERS = [0x7a6450, 0x9a8a70, 0x46686a, 0x654f68, 0x8a4834, 0xa89c84, 0x55624a];
 const CABS = [0x2a2a2e, 0x3a2620, 0x22303a, 0x3a3a30];
 const EDGE = new THREE.Color(1.5, 0.62, 0.2);
+
+/** HD-014 (#598, B2 + C2 + D2 + E2): the landspeeders' thruster and road-glow
+ *  colour. Mikael's pick, not answered yet (plan Q3) — a ONE-LINE switch:
+ *  AMBER matches the season 3 sun and the missile glow (seasons.js haul
+ *  gun.glow 2.6/1.3/0.25); CYAN is the cool contrast. */
+export const HOVER_GLOWS = { AMBER: [2.6, 1.3, 0.25], CYAN: [0.3, 1.6, 2.4] };
+export const HOVER_GLOW = HOVER_GLOWS.AMBER;
+// C2 float: the child keel's own slow bob (u) and roll lag (rad), 0.8–1.2 Hz.
+// Visual only — the group (deck, crates, topAt) keeps its 0.07 bob.
+const FLOAT_AMP = 0.06, FLOAT_ROLL = 0.025;
+const KEEL_H = 0.45;           // the tapered underside, inside CHASSIS (1.1)
 const EDGE_BRAKE = new THREE.Color(1.9, 0.18, 0.1);
 
 /** deterministic 0…1 from an integer (and a salt) */
@@ -116,6 +127,20 @@ class Strip {
 
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 const mat = (col, fog = true) => new THREE.MeshBasicMaterial({ color: col, fog });
+
+/** move the vertices of a box that pass `sel` toward its centre line: x by
+ *  kx, z by kz, then z back by `dz(v)` (B2's taper and the canopy's rake).
+ *  `parameters` stay the box's own, so the box still reads as w × h × d. */
+function taper(geo, sel, kx, kz, dz = () => 0) {
+  const a = geo.attributes.position, v = new THREE.Vector3();
+  for (let i = 0; i < a.count; i++) {
+    v.fromBufferAttribute(a, i);
+    if (!sel(v)) continue;
+    a.setXYZ(i, v.x * kx, v.y, v.z * kz + dz(v));
+  }
+  a.needsUpdate = true;
+  geo.computeBoundingBox(); geo.computeBoundingSphere();
+}
 
 function compose(x, y, z, sx, sy, sz, ry = 0, m = _m) {
   _e.set(0, ry, 0); _q.setFromEuler(_e);
@@ -202,6 +227,23 @@ export class Convoy {
       return _c.setRGB(2.4, 1.2, 0.35);
     });
     this.strips = [this.posts, this.lamps, this.pylons, this.pylonLamps, this.monoliths, this.gantryPosts, this.gantryBeams, this.gantryLights];
+    // HD-014: shared by every truck (one geometry, one material each — the
+    // pulse is a colour lerp on the shared material, once a frame)
+    const g = new THREE.Color(...HOVER_GLOW);
+    this.podGeo = new THREE.CylinderGeometry(0.22, 0.3, 0.32, 8);
+    this.podMat = new THREE.MeshBasicMaterial({ color: g.clone(), fog: false });
+    this.finGeo = box(0.06, 0.34, 1);
+    this.poolGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+    // a soft pool, not a slab: a radial falloff drawn once
+    const pc = document.createElement('canvas'); pc.width = pc.height = 64;
+    const px = pc.getContext('2d'), rg = px.createRadialGradient(32, 32, 0, 32, 32, 32);
+    rg.addColorStop(0, '#fff'); rg.addColorStop(0.45, 'rgba(255,255,255,0.55)'); rg.addColorStop(1, 'rgba(255,255,255,0)');
+    px.fillStyle = rg; px.fillRect(0, 0, 64, 64);
+    this.poolTex = new THREE.CanvasTexture(pc);
+    this.poolMat = new THREE.MeshBasicMaterial({ map: this.poolTex, color: g.clone().multiplyScalar(0.35), transparent: true, opacity: 0.7,
+      blending: THREE.AdditiveBlending, depthWrite: false });
+    this.glow = g;
+    this.shared = new Set([this.podGeo, this.podMat, this.finGeo, this.poolGeo, this.poolMat]);
   }
 
   setVisible(v) {
@@ -222,14 +264,24 @@ export class Convoy {
   _remove(t) {
     this.scene.remove(t.group);
     t.group.traverse(o => {
-      if (o.isMesh || o.isLineSegments) { o.geometry.dispose(); o.material.dispose(); }
+      if (o.isMesh || o.isLineSegments) {
+        if (!this.shared.has(o.geometry)) o.geometry.dispose();
+        if (!this.shared.has(o.material)) o.material.dispose();
+      }
     });
+    if (t.pool) this.scene.remove(t.pool);   // world-space, shared geo/mat
   }
 
   /** A truck: trailer (the floor), cab in front, an outline and brake
    *  lights. HD-014: no wheels (the trucks become landspeeders), and every
    *  part is NAMED so later steps can find it: 'hull' (the trailer body),
    *  'deck' (the roof slab you land on), 'edge', 'cab', 'glass', 'brake'.
+   *  HD-014 step 3 (B2 skiff): the hull's underside is tapered, the cab is a
+   *  canopy pod (its box and centre unchanged — the gaze locks it), and a
+   *  child 'keel' under the hull carries the 'fin's and four thruster 'pod's
+   *  at the old axle positions. The keel floats (C2) on its own; the group,
+   *  the hull and the deck do not move any more than they did. The road
+   *  'pool' (E2) is world-space, so it does not tilt with the truck.
    *  Its group's origin is the CENTRE OF THE TRAILER TOP, so the tilt is about the point you stand on and topAt() stays exact. */
   _truck(lane, z, speed, depth = 7 + Math.random() * 4.5) {
     const c = this.cfg;
@@ -239,7 +291,9 @@ export class Convoy {
     const group = new THREE.Group();
     group.name = 'truck';
     const trailerCol = TRAILERS[Math.floor(Math.random() * TRAILERS.length)];
-    const trailer = new THREE.Mesh(box(w, trailerH, depth), mat(trailerCol));
+    const hullGeo = box(w, trailerH, depth);
+    taper(hullGeo, v => v.y < 0, 0.8, 1);            // B2: the bottom face narrows; the top face is the deck, untouched
+    const trailer = new THREE.Mesh(hullGeo, mat(trailerCol));
     trailer.position.y = -trailerH / 2;
     trailer.name = 'hull';
     group.add(trailer);
@@ -254,13 +308,18 @@ export class Convoy {
     group.add(edge);
     // the cab: lower than the trailer, in front of it (−z)
     const cabH = 2.3, cabL = 2.6;
-    const cab = new THREE.Mesh(box(w * 0.92, cabH, cabL), mat(CABS[Math.floor(Math.random() * CABS.length)]));
+    const cabGeo = box(w * 0.92, cabH, cabL);
+    taper(cabGeo, v => v.y > 0, 0.72, 1, v => (v.z < 0 ? cabL * 0.45 : 0));   // a canopy: narrow, raked-back top
+    const cab = new THREE.Mesh(cabGeo, mat(CABS[Math.floor(Math.random() * CABS.length)]));
     cab.name = 'cab';
     cab.position.set(0, -(top - (ROAD_Y + CHASSIS * 0.6)) + cabH / 2, -(depth / 2 + cabL / 2 + 0.25));
     group.add(cab);
-    const glass = new THREE.Mesh(box(w * 0.8, 0.6, 0.05), mat(0x8fa8b0));
+    const glass = new THREE.Mesh(box(w * 0.7, 0.9, 0.05), mat(0x8fa8b0));
     glass.name = 'glass';
-    glass.position.set(0, cab.position.y + 0.45, cab.position.z - cabL / 2 - 0.03);
+    // the canopy pane, laid on the raked front (the face leans 0.45·cabL back
+    // over its height); 70% of the way up it
+    glass.position.set(0, cab.position.y + cabH * 0.2, cab.position.z - cabL / 2 + cabL * 0.45 * 0.7 - 0.04);
+    glass.rotation.x = Math.atan2(cabL * 0.45, cabH);
     group.add(glass);
     // brake lights on the back of the trailer (+z)
     const brakeMat = new THREE.MeshBasicMaterial({ color: 0x3a0806, fog: false });
@@ -270,6 +329,33 @@ export class Convoy {
       b.position.set(sx * (w / 2 - 0.4), -trailerH + 0.35, depth / 2 + 0.04);
       group.add(b);
     }
+    // B2 + D2: the keel — a narrower box under the hull — with side fins and
+    // four thruster pods where the axles were; C2 floats it in _hover()
+    const keel = new THREE.Mesh(box(w * 0.6, KEEL_H, depth * 0.86), mat(_c.setHex(trailerCol).offsetHSL(0, 0, -0.12).getHex()));
+    keel.name = 'keel';
+    const keelY = -trailerH - KEEL_H / 2;
+    keel.position.y = keelY;
+    for (const sx of [-1, 1]) {
+      const fin = new THREE.Mesh(this.finGeo, keel.material);
+      fin.name = 'fin';
+      fin.scale.z = depth * 0.5;
+      fin.position.set(sx * (w * 0.3 + 0.03), 0, depth * 0.12);
+      fin.rotation.z = sx * 0.5;
+      keel.add(fin);
+      for (const pz of [depth * 0.31, -depth * 0.3]) {
+        const pod = new THREE.Mesh(this.podGeo, this.podMat);
+        pod.name = 'pod';
+        pod.position.set(sx * (w * 0.3 - 0.1), -KEEL_H / 2 - 0.12, pz);
+        keel.add(pod);
+      }
+    }
+    group.add(keel);
+    // E2: a glow pool on the asphalt, world-space (posed in _hover)
+    const pool = new THREE.Mesh(this.poolGeo, this.poolMat);
+    pool.name = 'pool';
+    pool.scale.set(w * 1.5, 1, depth * 1.15);
+    pool.renderOrder = 1;
+    this.scene.add(pool);
     this.scene.add(group);
     const t = {
       group, mesh: group, edge, brakeMat,
@@ -286,10 +372,15 @@ export class Convoy {
       // load. `proxy` is what the gaze locks: alive while the cab is whole.
       hp: 3, jack: 0, jackYaw: 0, jackDir: Math.random() < 0.5 ? -1 : 1, jacked: false,
       cabLocal: new THREE.Vector3(0, cab.position.y, cab.position.z),
+      keel, keelY, pool,
     };
+    // C2: 0.8–1.2 Hz off the truck's own phase — no new Math.random, so the
+    // RNG stream (and so every deck) is the one it was
+    t.floatW = Math.PI * 2 * (0.8 + 0.4 * t.ph / 6.28);
     t.proxy = { isTruck: true, truck: t, alive: true, radius: 1.6, type: 'truck',
       center: (v) => v.copy(t.cabLocal).applyEuler(t.group.rotation).add(t.group.position) };
     group.position.set(t.x, top, z);
+    this._hover(t);
     this.trucks.push(t);
     this.cargo.load(t);   // v53: cargo, not decks
     return t;
@@ -384,6 +475,7 @@ export class Convoy {
     const first = this._truck(1, 0, c.speed);
     first.roll0 = 0; first.pitch0 = 0;
     this._pose(first, 0);
+    this._hover(first);
     this._layAhead(0);
     // spawn ON whatever is at the spawn point: the deck, or a crate loaded there
     const spawnY = this.topAt(first, first.group.position.x, 0) ?? first.top;
@@ -447,8 +539,21 @@ export class Convoy {
     g.position.set(t.x, t.top + Math.sin(t.age * t.bobW + t.ph) * this.cfg.bob, t.z);
   }
 
+  /** HD-014 C2 + E2, visual only: the keel floats under the hull, and the
+   *  road glow sits under the truck. Reads the group; never writes it. */
+  _hover(t) {
+    const k = t.keel, a = t.age * t.floatW + t.ph2;
+    k.position.y = t.keelY + Math.sin(a) * FLOAT_AMP;
+    k.rotation.z = Math.sin(a - 0.9) * FLOAT_ROLL;          // a roll that lags the float
+    const g = t.group.position;
+    t.pool.position.set(g.x, ROAD_Y + 0.02, g.z + 0.3);
+    t.pool.rotation.y = t.group.rotation.y;
+  }
+
   update(dt, player, gameTime, enemies) {
     const c = this.cfg;
+    // D2: the pods pulse — one colour lerp on the shared material
+    if (this.podMat) this.podMat.color.copy(this.glow).multiplyScalar(0.8 + 0.2 * Math.sin(gameTime * 9));
     for (const t of this.trucks) {
       // THINK: a new speed every few seconds, and sometimes a hard brake
       t.nextThink -= dt;
@@ -491,6 +596,7 @@ export class Convoy {
       t.vz = -t.spd;
       t.z += t.vz * dt;
       this._pose(t, dt);
+      this._hover(t);
       t.brakeMat.color.copy(t.brakeT > 0 || want < t.spd - 1 ? EDGE_BRAKE : _c.setHex(0x3a0806));
       t.edge.material.color.copy(t.brakeT > 0 ? EDGE_BRAKE : EDGE);
     }
