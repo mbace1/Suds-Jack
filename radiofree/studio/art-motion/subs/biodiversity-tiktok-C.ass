@@ -1,0 +1,104 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: A,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,80,80,0,1
+Style: B,Poppins ExtraBold,72,&H00000000,&H00000000,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,3,18,0,5,90,90,0,1
+Style: C,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,80,80,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.15,0:00:00.30,C,,0,0,0,,{\an5\pos(540,1160)}{\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}In
+Dialogue: 0,0:00:00.30,0:00:00.46,C,,0,0,0,,{\an5\pos(540,1160)}In {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}March,
+Dialogue: 0,0:00:00.46,0:00:00.61,C,,0,0,0,,{\an5\pos(540,1160)}In March, {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}the
+Dialogue: 0,0:00:00.61,0:00:00.76,C,,0,0,0,,{\an5\pos(540,1160)}In March, the {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}council
+Dialogue: 0,0:00:00.76,0:00:00.92,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}in
+Dialogue: 0,0:00:00.92,0:00:01.07,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Muhos
+Dialogue: 0,0:00:01.07,0:00:01.22,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in Muhos {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}voted
+Dialogue: 0,0:00:01.22,0:00:01.38,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in Muhos voted {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}yes.
+Dialogue: 0,0:00:01.38,0:00:01.53,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in Muhos voted yes.
+Dialogue: 0,0:00:01.53,0:00:01.68,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in Muhos voted yes. \N {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Outside,
+Dialogue: 0,0:00:01.68,0:00:01.84,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in Muhos voted yes.\NOutside, {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}it
+Dialogue: 0,0:00:01.84,0:00:01.99,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in Muhos voted yes.\NOutside, it {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}rained.
+Dialogue: 0,0:00:01.99,0:00:02.14,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in Muhos voted yes.\NOutside, it rained. {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}One
+Dialogue: 0,0:00:02.14,0:00:02.30,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in Muhos voted yes.\NOutside, it rained. One {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}resident
+Dialogue: 0,0:00:02.30,0:00:03.13,C,,0,0,0,,{\an5\pos(540,1160)}In March, the council in Muhos voted yes.\NOutside, it rained. One resident {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}appealed.
+Dialogue: 0,0:00:03.81,0:00:03.97,C,,0,0,0,,{\an5\pos(540,420)}{\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}In
+Dialogue: 0,0:00:03.97,0:00:04.12,C,,0,0,0,,{\an5\pos(540,420)}In {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}September,
+Dialogue: 0,0:00:04.12,0:00:04.28,C,,0,0,0,,{\an5\pos(540,420)}In September, {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Doodle
+Dialogue: 0,0:00:04.28,0:00:04.43,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}promised
+Dialogue: 0,0:00:04.43,0:00:04.58,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle promised {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}€13
+Dialogue: 0,0:00:04.58,0:00:04.74,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle promised €13 {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}billion.
+Dialogue: 0,0:00:04.74,0:00:04.89,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle promised €13 billion.
+Dialogue: 0,0:00:04.89,0:00:05.05,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle promised €13 billion. \N {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Part
+Dialogue: 0,0:00:05.05,0:00:05.20,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle promised €13 billion.\NPart {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}of
+Dialogue: 0,0:00:05.20,0:00:05.35,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle promised €13 billion.\NPart of {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}it
+Dialogue: 0,0:00:05.35,0:00:05.51,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle promised €13 billion.\NPart of it {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}for
+Dialogue: 0,0:00:05.51,0:00:05.66,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle promised €13 billion.\NPart of it for {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}local
+Dialogue: 0,0:00:05.66,0:00:06.35,C,,0,0,0,,{\an5\pos(540,420)}In September, Doodle promised €13 billion.\NPart of it for local {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}biodiversity.
+Dialogue: 0,0:00:06.58,0:00:06.72,C,,0,0,0,,{\an5\pos(540,640)}{\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Then
+Dialogue: 0,0:00:06.72,0:00:06.87,C,,0,0,0,,{\an5\pos(540,640)}Then {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}the
+Dialogue: 0,0:00:06.87,0:00:07.01,C,,0,0,0,,{\an5\pos(540,640)}Then the {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}forest
+Dialogue: 0,0:00:07.01,0:00:07.15,C,,0,0,0,,{\an5\pos(540,640)}Then the forest {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}at
+Dialogue: 0,0:00:07.15,0:00:07.30,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Muhos
+Dialogue: 0,0:00:07.30,0:00:07.44,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}came
+Dialogue: 0,0:00:07.44,0:00:07.58,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}down.
+Dialogue: 0,0:00:07.58,0:00:07.73,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came down.
+Dialogue: 0,0:00:07.73,0:00:07.87,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came down. \N {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}About
+Dialogue: 0,0:00:07.87,0:00:08.02,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came down.\NAbout {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}330
+Dialogue: 0,0:00:08.02,0:00:08.16,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came down.\NAbout 330 {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}hectares,
+Dialogue: 0,0:00:08.16,0:00:08.30,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came down.\NAbout 330 hectares, {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}by
+Dialogue: 0,0:00:08.30,0:00:08.45,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came down.\NAbout 330 hectares, by {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}the
+Dialogue: 0,0:00:08.45,0:00:08.59,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came down.\NAbout 330 hectares, by the {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}company's
+Dialogue: 0,0:00:08.59,0:00:08.73,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came down.\NAbout 330 hectares, by the company's {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}own
+Dialogue: 0,0:00:08.73,0:00:09.56,C,,0,0,0,,{\an5\pos(540,640)}Then the forest at Muhos came down.\NAbout 330 hectares, by the company's own {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}count.
+Dialogue: 0,0:00:09.79,0:00:09.94,C,,0,0,0,,{\an5\pos(540,700)}{\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}The
+Dialogue: 0,0:00:09.94,0:00:10.08,C,,0,0,0,,{\an5\pos(540,700)}The {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}biodiversity
+Dialogue: 0,0:00:10.08,0:00:10.22,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}was
+Dialogue: 0,0:00:10.22,0:00:10.37,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}stacked
+Dialogue: 0,0:00:10.37,0:00:10.51,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}neatly.
+Dialogue: 0,0:00:10.51,0:00:10.66,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.
+Dialogue: 0,0:00:10.66,0:00:10.80,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly. \N {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Above
+Dialogue: 0,0:00:10.80,0:00:10.94,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.\NAbove {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}200
+Dialogue: 0,0:00:10.94,0:00:11.09,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.\NAbove 200 {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}hectares,
+Dialogue: 0,0:00:11.09,0:00:11.23,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.\NAbove 200 hectares, {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}the
+Dialogue: 0,0:00:11.23,0:00:11.37,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.\NAbove 200 hectares, the {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}law
+Dialogue: 0,0:00:11.37,0:00:11.52,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.\NAbove 200 hectares, the law {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}asks
+Dialogue: 0,0:00:11.52,0:00:11.66,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.\NAbove 200 hectares, the law asks {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}for
+Dialogue: 0,0:00:11.66,0:00:11.81,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.\NAbove 200 hectares, the law asks for {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}an
+Dialogue: 0,0:00:11.81,0:00:11.95,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.\NAbove 200 hectares, the law asks for an {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}assessment
+Dialogue: 0,0:00:11.95,0:00:12.78,C,,0,0,0,,{\an5\pos(540,700)}The biodiversity was stacked neatly.\NAbove 200 hectares, the law asks for an assessment {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}first.
+Dialogue: 0,0:00:13.01,0:00:13.17,C,,0,0,0,,{\an5\pos(540,880)}{\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}On
+Dialogue: 0,0:00:13.17,0:00:13.34,C,,0,0,0,,{\an5\pos(540,880)}On {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}7
+Dialogue: 0,0:00:13.34,0:00:13.50,C,,0,0,0,,{\an5\pos(540,880)}On 7 {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}October,
+Dialogue: 0,0:00:13.50,0:00:13.66,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}the
+Dialogue: 0,0:00:13.66,0:00:13.83,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}regulator
+Dialogue: 0,0:00:13.83,0:00:13.99,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the regulator {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}said
+Dialogue: 0,0:00:13.99,0:00:14.16,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the regulator said {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}stop.
+Dialogue: 0,0:00:14.16,0:00:14.32,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the regulator said stop.
+Dialogue: 0,0:00:14.32,0:00:14.49,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the regulator said stop. \N {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Until
+Dialogue: 0,0:00:14.49,0:00:14.65,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the regulator said stop.\NUntil {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}the
+Dialogue: 0,0:00:14.65,0:00:14.81,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the regulator said stop.\NUntil the {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}impact
+Dialogue: 0,0:00:14.81,0:00:14.98,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the regulator said stop.\NUntil the impact {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}assessment
+Dialogue: 0,0:00:14.98,0:00:15.14,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the regulator said stop.\NUntil the impact assessment {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}is
+Dialogue: 0,0:00:15.14,0:00:15.99,C,,0,0,0,,{\an5\pos(540,880)}On 7 October, the regulator said stop.\NUntil the impact assessment is {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}done.
+Dialogue: 0,0:00:16.17,0:00:16.29,C,,0,0,0,,{\an5\pos(540,615)}{\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}About
+Dialogue: 0,0:00:16.29,0:00:16.41,C,,0,0,0,,{\an5\pos(540,615)}About {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}a
+Dialogue: 0,0:00:16.41,0:00:16.53,C,,0,0,0,,{\an5\pos(540,615)}About a {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}hundred
+Dialogue: 0,0:00:16.53,0:00:16.65,C,,0,0,0,,{\an5\pos(540,615)}About a hundred {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}came
+Dialogue: 0,0:00:16.65,0:00:16.77,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}to
+Dialogue: 0,0:00:16.77,0:00:16.89,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Doodle's
+Dialogue: 0,0:00:16.89,0:00:17.01,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to Doodle's {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}door.
+Dialogue: 0,0:00:17.01,0:00:17.13,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to Doodle's door.
+Dialogue: 0,0:00:17.13,0:00:17.25,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to Doodle's door. \N {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}Fifty
+Dialogue: 0,0:00:17.25,0:00:17.37,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to Doodle's door.\NFifty {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}thousand
+Dialogue: 0,0:00:17.37,0:00:17.49,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to Doodle's door.\NFifty thousand {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}signed
+Dialogue: 0,0:00:17.49,0:00:17.61,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to Doodle's door.\NFifty thousand signed {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}an
+Dialogue: 0,0:00:17.61,0:00:17.73,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to Doodle's door.\NFifty thousand signed an {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}initiative
+Dialogue: 0,0:00:17.73,0:00:17.85,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to Doodle's door.\NFifty thousand signed an initiative {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}to
+Dialogue: 0,0:00:17.85,0:00:18.13,C,,0,0,0,,{\an5\pos(540,615)}About a hundred came to Doodle's door.\NFifty thousand signed an initiative to {\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}parliament.
