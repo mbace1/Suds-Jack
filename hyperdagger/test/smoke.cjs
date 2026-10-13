@@ -1443,14 +1443,18 @@ s.listen(0, '127.0.0.1', async () => {
         out.brake = { loose };
       }
       // three missiles in a cab: the truck folds
-      const t2 = cv.trucks.find(x => x !== cv.standing && x !== t && x.proxy.alive);
+      // a truck AHEAD of the body: a crawling one drifts back ~20 u/s and the
+      // convoy drops a truck 40 u behind you, which stops its clock mid-check
+      const free = x => x !== cv.standing && x !== t && x.proxy.alive;
+      const t2 = cv.trucks.filter(x => free(x) && x.z < pl.feet.z - 8).sort((a, b) => b.z - a.z)[0]
+        ?? cv.trucks.find(free);
       const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)];
       // 1.8 s of GAME time on the truck's own clock (t.age, stepped by the
       // convoy's dt), not 60 frames: a faster renderer covers less game time
       // per frame, and the brake to a crawl is a game-time question
       const age0 = t2.age;
-      for (let i = 0; i < 2000 && t2.age - age0 < 1.8; i++) await frames(1);
-      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1), game: +(t2.age - age0).toFixed(2) };
+      for (let i = 0; i < 2000 && t2.age - age0 < 1.8 && cv.trucks.includes(t2); i++) await frames(1);
+      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1), game: +(t2.age - age0).toFixed(2), kept: cv.trucks.includes(t2) };
       // the gaze locks a cab in range and the missiles land in it
       gz.cfg.trucks = true;
       // (the body is kept twelve units behind the cab each frame: a standing
