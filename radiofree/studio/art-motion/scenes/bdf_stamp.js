@@ -15,7 +15,7 @@ SCENES['bdf_stamp'] = (() => {
     g.font = '24px "RobotoCondensed"'; g.fillText('7.10.2026', 200, -420);
     g.fillText('TO: Doodle (Finland)', -320, -350); g.fillText('RE: MUHOS · KAJAANI', -320, -312);
     g.fillStyle = 'rgba(21,18,15,.55)'; const r = U.rng(4); for (let i = 0; i < 14; i++) g.fillRect(-320, -240 + i * 40, 520 + r() * 120, 12);
-    g.fillStyle = K.ink; g.font = '26px "RobotoCondensed"'; g.fillText('Until the environmental impact', -320, 300); g.fillText('assessment is complete.', -320, 334); g.fillText('Written explanation by 14.10.', -320, 400);
+    g.fillStyle = K.ink; g.font = '26px "RobotoCondensed"'; g.fillText('Written explanation by 14.10.', -320, 400);   // only what the order is reported to say: no paraphrase on the agency's letterhead
     g.strokeStyle = '#8a8a86'; g.lineWidth = 6; g.beginPath(); g.moveTo(-250, -520); g.lineTo(-250, -440); g.lineTo(-220, -440); g.lineTo(-220, -500); g.stroke();   // a paper clip
   }, 14);
   // the stamp: a wooden handle, a dark base; the impression it leaves

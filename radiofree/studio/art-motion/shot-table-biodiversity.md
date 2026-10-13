@@ -12,8 +12,8 @@ v2 (owner, 2026-10-13): "people are starting to revolt — more on the angle of 
 | 3.2–6.4 | a dark spruce forest in card, a moose between the trunks, a giant ochre cheque from Doodle | the cheque lowers into the trees on two strings and lands; its memo line reads INCL. LOCAL BIODIVERSITY; the moose looks up | 停 | €13 BN | scenes/bdf_cheque.js |
 | 6.4–9.6 | the same forest from the side, row after row of card spruces, a harvester with a red light | on each beat a spruce tips over and lies down with its shadow; a counter climbs in hectares | 横移 | 330 HA | scenes/bdf_felling.js |
 | 9.6–12.8 | the felled trunks stacked into one tidy log pile, a hand-tied tag on it, the moose beside it | the last log lands on the pile; the tag swings round to read BIODIVERSITY FUND | 缓推 | BIODIVERSITY FUND | scenes/bdf_pile.js |
-| 12.8–16.1 | a letter on the regulator's desk, a gloved hand in a sleeve with a rubber stamp | the letter slides in; the stamp comes down on the beat: SUSPEND BY 23.10; the camera pushes in on it | 砸入 | SUSPEND BY 23.10 | scenes/bdf_stamp.js |
-| 16.1–18.2 | a crowd in masks outside Doodle's office in Helsinki, holding spruce-shaped placards, paper falling | the placards bob on the beat and all go up on the last hit; a counter climbs to 50 000 signatures | 拉远 | 50 000 SIGNATURES | scenes/bdf_protest.js |
+| 12.8–16.1 | a letter on the regulator's desk (only what the order is reported to say: no paraphrase on its letterhead), a gloved hand in a sleeve with a rubber stamp | the letter slides in; the stamp comes down on the beat: SUSPEND BY 23.10; the camera pushes in on it | 砸入 | SUSPEND BY 23.10 | scenes/bdf_stamp.js |
+| 16.1–18.2 | a crowd in masks and city coats outside Doodle's office in Helsinki, tagged ≈100 · ARKADIANKATU · 12.10, and above it a separate card for the citizens' initiative | the spruce placards bob on the beat and all go up on the last hit; the initiative's counter climbs to 50 000 signed, to parliament | 拉远 | 50 000 SIGNED | scenes/bdf_protest.js |
 ## Sources (the naming rule for films: README, "Naming in the films")
 
 Doodle is Google; Tuike Finland Oy is its Finnish company. Places and the regulator are real.
@@ -26,3 +26,5 @@ Doodle is Google; Tuike Finland Oy is its Finnish company. Places and the regula
 - Protest: about 100 people protested outside Google's Helsinki office on Arkadiankatu on 12 Oct 2026, organised by Luontoliitto. Helsinki Times; Yle.
 - Initiative: the citizens' initiative "Datakeskukset kuriin" (limits on data centres' grid connections and a data-centre fee), opened 15 Sept 2026, passed the 50,000 signatures needed for parliament within a few days. Kaleva.
 - Local opinion in Muhos is reported as mixed (jobs and tax revenue against doubts). Kaleva; Yle. The film therefore shows the residents unasked, not opposed.
+- Halt until the assessment: Finnish reporting has the agency ordering work stopped until the environmental impact assessment (YVA) is complete. Yle; aisuomi.fi. Used by the narrator only, never typed on the agency's letter.
+- v2 review (review-biodiversity-v2.md): the protest (≈100, 12.10) and the initiative (50 000, to parliament) were one picture; they are two cards now.

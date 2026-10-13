@@ -1,9 +1,10 @@
 // Shot 6 · 16.1–18.2 s · The people. Helsinki at night outside Doodle's glass office,
-// its name lit in ochre over the lobby. A crowd in magenta masks, rows deep, holds up
-// placards cut as spruces — the trees from the forest, carried back to the city — and
-// they rise together on the beat. Sheets of paper come down like leaves and stack:
-// the citizens' initiative, 50 000 signatures in days, which parliament now has to
-// take up. On the last hit every placard goes up at once and the counter lands.
+// its name lit in ochre over the lobby. A crowd in magenta masks — in city coats, not the
+// Muhos residents' — holds up placards cut as spruces, rising on the beat and all at
+// once on the last hit; a tag says what it was: about 100, Arkadiankatu, 12.10. Above it,
+// on a card of its own, the OTHER thing that happened: the citizens' initiative to
+// parliament, 50 000 signatures within days. Two events, kept apart on screen (v2
+// review: one picture made them read as 50 000 people at Doodle's door).
 SCENES['bdf_protest'] = (() => {
   const { K, W, H, sheet, sprite, stack, box, dusk, put, glow, ease, move, pop, walker } = RFP, { C } = BDF, TAU = Math.PI * 2, { clamp, lerp } = U;
   const B = 60 / 112, T_HIT = 1.28;
@@ -35,17 +36,20 @@ SCENES['bdf_protest'] = (() => {
             const x = ((i + 0.5 + (ri % 2) * 0.3) / n) * (W + 120) - 60 + ox * (0.5 + ri * 0.25), ph = i * 0.7 + ri;
             const bob = all ? -60 * ease.back((lt - T_HIT) / 0.25) : -Math.max(0, Math.sin((lt / B) * Math.PI + ph)) * 26;
             put(g, placard((i + ri) % 3), x + 60 * s, y - 120 * s + bob * s, { sc: s, rot: Math.sin(lt * 2 + ph) * 0.05, lift: 1 + ri * 0.5 });
-            walker(g, x, y, s, { coat: ['#26332b', '#2e2a22', '#33241c'][(i + ri) % 3], scarf: K.rust, t: lt + ph, tilt: Math.sin(lt * 2.4 + ph) * 0.05, led: false, lift: 1.2 + ri * 0.5 });
+            walker(g, x, y, s, { coat: ['#3a3530', '#4a3a2c', '#2e3236', '#5a4630'][(i + ri) % 4], scarf: ['#8a7a5a', K.ochre, '#5a5a52'][(i * 2 + ri) % 3], t: lt + ph, tilt: Math.sin(lt * 2.4 + ph) * 0.05, led: false, lift: 1.2 + ri * 0.5 });
           }
         }, d: 0.5 },
       ], cam);
       // the signatures: sheets falling like leaves, and the counter
-      const r = U.rng(9); c.fillStyle = K.card;
-      for (let i = 0; i < 30; i++) { const x = r() * W, sp = 300 + r() * 300, y = ((lt * sp + r() * 900) % 1300) - 100, a = lt * 3 + i; c.save(); c.translate(x + Math.sin(lt * 2 + i) * 30, y); c.rotate(a); c.fillRect(-14, -18, 28, 36); c.restore(); }
+      // the crowd's own tag: what this was, and how many
+      c.save(); c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(110, 1180, 500, 70, 8); c.fill(); c.restore();
+      c.fillStyle = K.ink; c.font = '34px "ArchivoBlack-400"'; c.fillText('≈100 · ARKADIANKATU · 12.10', 130, 1228);
+      // the initiative, on a card of its own: signatures to parliament, not people at the door
       const n = all ? 50000 : Math.round(50000 * Math.pow(clamp(lt / T_HIT, 0, 1), 0.6) / 1000) * 1000;
-      c.save(); c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 18; c.shadowOffsetX = 10; c.shadowOffsetY = 14; c.fillStyle = K.card; c.beginPath(); c.roundRect(200, 150, 680, 230, 12); c.fill(); c.restore();
-      c.fillStyle = K.mag; c.font = '130px "Anton-400"'; c.textAlign = 'center'; c.fillText(n.toLocaleString('fi-FI').replace(/ /g, ' '), 540, 300);
-      c.fillStyle = K.ink; c.font = '34px "ArchivoBlack-400"'; c.fillText('SIGNATURES · IN DAYS', 540, 352); c.textAlign = 'left';
+      c.save(); c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 18; c.shadowOffsetX = 10; c.shadowOffsetY = 14; c.fillStyle = K.card; c.beginPath(); c.roundRect(170, 130, 740, 300, 12); c.fill(); c.restore();
+      c.fillStyle = K.ink; c.font = '30px "ArchivoBlack-400"'; c.textAlign = 'center'; c.fillText("CITIZENS' INITIATIVE", 540, 186);
+      c.fillStyle = K.mag; c.font = '130px "Anton-400"'; c.fillText(String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '), 540, 326);
+      c.fillStyle = K.ink; c.font = '34px "ArchivoBlack-400"'; c.fillText('SIGNED · TO PARLIAMENT', 540, 392); c.textAlign = 'left';
       box(c);
     },
   };
