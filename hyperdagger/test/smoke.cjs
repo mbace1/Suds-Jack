@@ -1506,11 +1506,14 @@ s.listen(0, '127.0.0.1', async () => {
       // the same frames (the pile-up left dozens loose: 1 in 5 runs one more
       // landed, -3 for -2). So count the spills the frame saw and ask that
       // each one was charged, with our two among them.
-      const s0 = d.getRun(), sp0 = cv.cargo.stats.spilled;
+      const s0 = d.getRun(), sp0 = cv.cargo.stats.spilled, st0 = cv.cargo.stats.stomped || 0;
       cv.cargo.stats.spilled += 2;
       await frames(3);
       out.afterSpill = d.getRun().runBonus - s0.runBonus;
       out.spills = cv.cargo.stats.spilled - sp0;
+      // and the frame's own stomp pays back: the body still stands where we
+      // put it, so a second loose crate there is set back in-frame (+1)
+      out.saves = (cv.cargo.stats.stomped || 0) - st0;
       out.hud = document.getElementById('kills').textContent;
       out.timer = document.getElementById('timer').textContent;
       return out;
@@ -1669,7 +1672,7 @@ s.listen(0, '127.0.0.1', async () => {
     && haul.profile[1].speed > haul.profile[0].speed && haul.profile[1].turn > haul.profile[0].turn,
     JSON.stringify({ shots: haul.shots, profile: haul.profile }));
   ok('haul: CARGO IS THE SCORE — a loose crate you land on sets back, a spilled one costs a second, and the HUD carries the load',
-    haul3.saved >= 1 && haul3.welded && haul3.spills >= 2 && haul3.afterSpill === -haul3.spills && /load \d+/.test(haul3.hud),
+    haul3.saved >= 1 && haul3.welded && haul3.spills >= 2 && haul3.afterSpill === haul3.saves - haul3.spills && /load \d+/.test(haul3.hud),
     JSON.stringify(haul3));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
