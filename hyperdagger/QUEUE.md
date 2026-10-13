@@ -35,7 +35,7 @@ Statuses: Queued, In progress, Landed (with the SHA), Blocked, or Dropped. A dro
 
 ### HD-002 — Unify scoring contract for all modes and seasons
 
-- status: Landed (partial); the open daily-key part is in progress (#605, #606)
+- status: Landed (partial); the open daily-key part is in progress (#605, #606); the shared run end is in progress (#609)
 - size: M
 - blocked-by: —
 - design: PLATFORM.md, SEASONS.md, VERSIONS.md
@@ -44,7 +44,7 @@ Daily keys and board include season. Recap shows tier. Full death/complete path 
 
 ### HD-003 — Polish main menu for seasons and modes
 
-- status: Landed (partial); the open season-vs-saved-mode part is in progress (#591)
+- status: Landed (partial); the open season-vs-saved-mode part is in progress (#591); touch/gamepad menu polish is in progress (#610, #611)
 - size: S
 - blocked-by: —
 - design: SEASONS.md (owner brief on menu labels)
