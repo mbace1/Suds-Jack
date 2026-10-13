@@ -14,10 +14,11 @@ import soundfile as sf
 from pathlib import Path
 
 SR = 48000
-DUR = 18.8
+DUR = 38.2
 N = int(DUR * SR)
 BEAT = 60 / 112
-CUT = [k * 6 * BEAT for k in range(6)]
+SHOT = 12                                       # v4: ten beats a shot, so the picture holds and the captions can be read
+CUT = [k * SHOT * BEAT for k in range(6)]
 rng = np.random.default_rng(11)
 L = np.zeros(N); R = np.zeros(N)
 OUT = Path(__file__).with_name("配乐_bdf.wav")
@@ -106,7 +107,7 @@ def crowd(d):                                   # a crowd: many detuned formant 
 # ── the bed: wind through spruce, rain over the council, gusting ───────────
 wind = noise(DUR, 120, 1800); wind *= 0.05 * (1 + 0.6 * np.sin(2 * np.pi * 0.17 * tv(DUR)) * np.sin(2 * np.pi * 0.05 * tv(DUR) + 1))
 L[:len(wind)] += wind; R[:len(wind)] += np.roll(wind, 900)
-rain = noise(CUT[1], 600, 7000) * 0.04; L[:len(rain)] += rain; R[:len(rain)] += np.roll(rain, 700)
+rain = noise(CUT[1] + 0.5, 600, 7000) * 0.04; L[:len(rain)] += rain; R[:len(rain)] += np.roll(rain, 700)
 
 CHORD = [[50, 53, 57], [46, 50, 53], [43, 46, 50], [45, 49, 52], [38, 50, 53], [50, 53, 57]]
 MOTIF = [0, 1, 2]
@@ -123,10 +124,11 @@ add(kick() * 0.6, CUT[1], 0.8); add(card(), CUT[1], 0.6)
 add(glide(220, 110, 0.9), CUT[1] + 0.1, 0.25, 0.2)
 add(stamp(), CUT[1] + 1.0, 0.9); add(card(), CUT[1] + 1.02, 0.7); add(bell(), CUT[1] + 1.04, 0.3, 0.3)
 for i, b in enumerate([3, 3.5, 4]): add(horn(CHORD[1][MOTIF[i]], 0.6 if i == 2 else 0.2), CUT[1] + beat(b), 0.3, 0.2)
+for i, b in enumerate([7, 7.5, 8]): add(horn(CHORD[1][MOTIF[i]] - 12, 0.8 if i == 2 else 0.25), CUT[1] + beat(b), 0.25, -0.2)
 
 # shot 3 · the felling: the march starts; a saw before each beat, a fall on it
 add(kick() * 0.7, CUT[2], 0.9); add(card(), CUT[2], 0.6)
-for b in range(6): add(tuba(CHORD[2][0] - 12) * 0.5, CUT[2] + beat(b)); add(snare() * (0.45 if b % 2 else 0.2), CUT[2] + beat(b + 0.5))
+for b in range(SHOT): add(tuba(CHORD[2][0] - 12) * 0.5, CUT[2] + beat(b)); add(snare() * (0.45 if b % 2 else 0.2), CUT[2] + beat(b + 0.5))
 for k in range(1, 6):
     t0 = CUT[2] + k * BEAT
     add(saw(), t0 - 0.34, 0.7, 0.3 - k * 0.1); add(creak(), t0 + 0.05, 0.6, 0.2); add(fall(), t0 + 0.34, 1.0, -0.1); add(click(), t0 + 0.05, 0.6, 0.4)
@@ -134,22 +136,22 @@ for i, b in enumerate([1, 1.5, 2]): add(brass(CHORD[2][MOTIF[i]] + 12, 0.5 if i 
 
 # shot 4 · the fund: bassoon motif; the last log lands, the tag swings round
 add(kick() * 0.6, CUT[3], 0.8); add(card(), CUT[3], 0.6)
-for b in range(6): add(tuba(CHORD[3][0] - 12) * 0.4, CUT[3] + beat(b)); add(snare() * 0.18, CUT[3] + beat(b + 0.5))
+for b in range(SHOT): add(tuba(CHORD[3][0] - 12) * 0.4, CUT[3] + beat(b)); add(snare() * 0.18, CUT[3] + beat(b + 0.5))
 for i, b in enumerate([0, 0.5, 1]): add(bassoon(CHORD[3][MOTIF[i]], 0.45 if i == 2 else 0.15), CUT[3] + beat(b), 0.5, -0.15)
 add(thump(), CUT[3] + BEAT, 1.0); add(card(), CUT[3] + 2 * BEAT, 0.8); add(bell(), CUT[3] + 2 * BEAT + 0.03, 0.35, 0.3)
 add(blip(), CUT[3] + 3.2 * BEAT, 0.4, -0.4)
 
 # shot 5 · the order: the letter slides in, a roll, the stamp on the beat
 add(kick() * 0.6, CUT[4], 0.8); add(rustle(0.35), CUT[4], 0.8, 0.3)
-for b in range(6): add(tuba(CHORD[4][0] - 12) * 0.55, CUT[4] + beat(b)); add(kick() * 0.35, CUT[4] + beat(b))
+for b in range(SHOT): add(tuba(CHORD[4][0] - 12) * 0.55, CUT[4] + beat(b)); add(kick() * 0.35, CUT[4] + beat(b))
 for k in range(6): add(snare(0.05) * (0.2 + k * 0.06), CUT[4] + beat(0.5) + k * BEAT / 4)
 add(stamp(), CUT[4] + beat(2), 1.0); add(kick() * 0.8, CUT[4] + beat(2), 0.8); add(brass(CHORD[4][2] + 12, 0.7), CUT[4] + beat(2), 0.6)
 
 # shot 6 · the people: a crowd on the beat, the paper falling, the last hit at T_HIT ringing out
-T_HIT = CUT[5] + 1.28
+T_HIT = CUT[5] + 3.0
 add(kick() * 0.7, CUT[5], 0.9)
-for b in range(3): add(crowd(0.32), CUT[5] + beat(b) + 0.02, 0.8, 0.0); add(kick() * 0.4, CUT[5] + beat(b))
-for k in range(10): add(rustle(0.12), CUT[5] + 0.1 + k * 0.11, 0.25, -0.5 + k * 0.1)
+for b in range(6): add(crowd(0.32), CUT[5] + beat(b) + 0.02, 0.6 + b * 0.1, 0.0); add(kick() * 0.4, CUT[5] + beat(b))
+
 add(crowd(0.9), T_HIT, 1.0); add(stamp(), T_HIT, 1.0)
 for m in (38, 50, 53, 57): add(horn(m + 12, 0.7), T_HIT, 0.32)
 add(pizz(26 + 12), T_HIT, 0.9); add(bell(), T_HIT + 0.02, 0.3, -0.2)
@@ -157,8 +159,9 @@ add(pizz(26 + 12), T_HIT, 0.9); add(bell(), T_HIT + 0.02, 0.3, -0.2)
 mix = np.stack([L, R], 1)
 mix = np.tanh(mix * 1.2) / 1.2
 mix /= max(1e-9, np.abs(mix).max()) / 0.89
-end = int((CUT[5] + 4 * BEAT) * SR); mix = mix[:end]
+end = int((CUT[5] + 10 * BEAT) * SR); mix = mix[:end]
 # ring out, never a chop: after the last hit, everything decays exponentially to the end
-t0 = int((T_HIT + 0.1) * SR); tt = np.arange(end - t0) / SR; mix[t0:] *= np.exp(-tt / 0.18)[:, None]
+t0 = int((T_HIT + 0.3) * SR); tt = np.arange(end - t0) / SR; mix[t0:] *= np.exp(-tt / 0.5)[:, None]
+fade = int(0.3 * SR); mix[-fade:] *= np.linspace(1, 0, fade)[:, None]
 sf.write(OUT, mix, SR)
 print(OUT, end / SR)

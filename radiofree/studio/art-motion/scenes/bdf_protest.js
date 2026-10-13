@@ -7,7 +7,7 @@
 // review: one picture made them read as 50 000 people at Doodle's door).
 SCENES['bdf_protest'] = (() => {
   const { K, W, H, sheet, sprite, stack, box, dusk, put, glow, ease, move, pop, walker } = RFP, { C } = BDF, TAU = Math.PI * 2, { clamp, lerp } = U;
-  const B = 60 / 112, T_HIT = 1.28;
+  const B = 60 / 112, T_HIT = 3.0;   // v5: the shot runs ten beats, so the crowd builds longer before the placards go up
   const office = () => sheet('bdf_office', (g) => {
     g.fillStyle = '#20231f'; g.fillRect(-90, 200, W + 180, 1100);
     g.fillStyle = '#3b3a2c'; for (let y = 260; y < 1100; y += 120) for (let x = 40; x < W; x += 140) g.fillRect(x, y, 110, 90);    // the glass, dark floors
@@ -23,7 +23,7 @@ SCENES['bdf_protest'] = (() => {
   const ROWS = [[1420, 0.62, 9], [1560, 0.8, 7], [1730, 1.0, 5]];
   return {
     draw(c, lt) {
-      const cam = { x: Math.sin(lt * 0.9) * 14, y: 0, z: move(lt, 0, 2.1, 1.12, 1), fx: 540, fy: 1400 };
+      const cam = { x: Math.sin(lt * 0.9) * 14, y: 0, z: move(lt, 0, 5.0, 1.12, 1), fx: 540, fy: 1400 };
       const all = lt >= T_HIT;
       stack(c, [
         { sh: dusk('bdf', 600), d: 0.04, lift: 0 },

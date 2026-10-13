@@ -9,15 +9,16 @@ TikTok's own bottom and right-hand UI. Three test styles: A outline, B box, C wo
 that carries it, in [brackets], landing ochre-yellow and large, then settling.
 """
 import sys
-B = 60 / 112; CUT = [k * 6 * B for k in range(6)] + [30 * B + 4 * B]
+B = 60 / 112; SHOT = 12                         # v4: ten beats a shot (eras_bdf.js), the ending eight
+CUT = [k * SHOT * B for k in range(6)] + [5 * SHOT * B + 10 * B]
 # (shot, first-line start, second-line start, y centre of the block, line 1, line 2)
 SHOTS = [
- (0, 0.15, 1.55, 1160, "In March, the council in Muhos [voted yes].", "Outside, it rained. One resident appealed."),
- (1, 0.60, 1.70, 420, "In September, Doodle promised €13 billion.", "Part of it for local [biodiversity]."),
- (2, 0.15, 1.55, 640, "Then the forest at Muhos came down.", "About [330 hectares], by the company's own count."),
- (3, 0.15, 1.55, 700, "The biodiversity was [stacked neatly].", "Above 200 hectares, the law asks for an assessment first."),
- (4, 0.15, 1.55, 880, "On 7 October, the regulator said [stop].", "Until the impact assessment is done."),
- (5, 0.10, 0.95, 615, "About a hundred came to Doodle's door.", "[Fifty thousand] signed an initiative to parliament."),
+ (0, 0.80, 3.00, 1160, "In March, the council in Muhos [voted yes].", "Outside, it rained. One resident appealed."),
+ (1, 0.90, 3.00, 420, "In September, Doodle promised €13 billion.", "Part of it for local [biodiversity]."),
+ (2, 0.80, 3.00, 640, "Then the forest at Muhos came down.", "About [330 hectares], by the company's own count."),
+ (3, 0.80, 3.00, 700, "The biodiversity was [stacked neatly].", "Above 200 hectares, the law asks for an assessment first."),
+ (4, 0.80, 3.00, 880, "On 7 October, the regulator said [stop].", "Until the impact assessment is done."),
+ (5, 0.70, 2.60, 615, "About a hundred came to Doodle's door.", "[Fifty thousand] signed an initiative to parliament."),
 ]
 SAFE = {0: "between the council window and the residents' heads", 1: "below the strings, after the cheque has passed",
         2: "the sky over the treetops, under the counter", 3: "the sky over the clearing, above the pile and its tag",
@@ -42,21 +43,24 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 POP = "&H3AB8F2&"                                  # the film's ochre, pushed toward TikTok yellow
 def marked(line, pop):
-    """[word] -> coloured; pop=True gives it the entrance (large, then settling) — only on the line that just landed"""
+    """[word] -> coloured. pop=True: the word starts white with the rest of the line and only lights up
+    (ochre, a little larger, then settling) after 0.5 s, once the line has been read — v4, owner:
+    "some text pops in first. Hard to read". pop=False: already lit, still."""
     import re
     def sub(m):
-        anim = r"\fscx128\fscy128\t(80,260,\fscx100\fscy100)" if pop else ""
-        return "{\\c" + POP + anim + "}" + m.group(1) + "{\\c&HFFFFFF&\\fscx100\\fscy100}"
+        if pop: return r"{\t(500,650,\c" + POP + r"\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}" + m.group(1) + r"{\c&HFFFFFF&}"
+        return "{\\c" + POP + "}" + m.group(1) + "{\\c&HFFFFFF&}"
     return re.sub(r"\[([^\]]+)\]", sub, line)
 plain = lambda line: line.replace("[", "").replace("]", "")
 def build(style):
     ev = []
     for i, a, b, y, l1, l2 in SHOTS:
-        s0, s1 = CUT[i], CUT[i + 1] - 0.08
+        s0, s1 = CUT[i], CUT[i + 1] - (0.35 if i < 5 else 0.3)   # v4: gone before the dissolve, never straddling two pictures
         if style == 'H':
-            pop = r"{\fscx112\fscy112\t(0,120,\fscx100\fscy100)}"
-            ev.append((s0 + a, s0 + b, 'H', rf"{{\an5\pos(540,{y - 60})}}{pop}" + marked(l1, True)))
-            ev.append((s0 + b, s1, 'H', rf"{{\an5\pos(540,{y})}}" + marked(l1, False) + r"\N" + pop + marked(l2, True)))
+            fade = r"{\fad(280,0)}"
+            # anchored at the TOP of the block, so line one stays exactly where it was when line two joins
+            ev.append((s0 + a, s0 + b, 'H', rf"{{\an8\pos(540,{y - 150})}}" + fade + marked(l1, True)))
+            ev.append((s0 + b, s1, 'H', rf"{{\an8\pos(540,{y - 150})\fad(0,260)}}" + marked(l1, False) + r"\N{\alpha&HFF&\t(0,280,\alpha&H00&)}" + marked(l2, True)))
             continue
         l1, l2 = plain(l1), plain(l2)
         if style in 'AB':
