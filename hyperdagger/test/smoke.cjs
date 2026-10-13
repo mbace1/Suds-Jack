@@ -1486,7 +1486,11 @@ s.listen(0, '127.0.0.1', async () => {
       const hd = window.__hd, d = hd.debug, pl = hd.player, cv = d.truckObj();
       const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
       const out = { before: d.getRun().runBonus };
-      const cr = cv.cargo.crates.find(c => c.welded && c.truck && c.truck !== cv.standing);
+      // by now haul2's jackknives and pile-up have spilled much of the load:
+      // if no welded crate is left off your truck, load one (main's load())
+      const pick = () => cv.cargo.crates.find(c => c.welded && c.truck && c.truck !== cv.standing);
+      for (const t of cv.trucks) { if (pick()) break; if (t !== cv.standing) cv.cargo.load(t); }
+      const cr = pick();
       if (cr) {
         cv.cargo.jolt(cr.truck, 0);
         const p = cr.b.positionLin;
@@ -1496,10 +1500,15 @@ s.listen(0, '127.0.0.1', async () => {
       }
       // the game's own loop pays for it: a stomp the gate made directly is
       // counted by stats, so drive the spill path through the frame instead
-      const s0 = d.getRun();
+      // Every spill costs `spill` s — ours AND any loose crate the road takes in
+      // the same frames (the pile-up left dozens loose: 1 in 5 runs one more
+      // landed, -3 for -2). So count the spills the frame saw and ask that
+      // each one was charged, with our two among them.
+      const s0 = d.getRun(), sp0 = cv.cargo.stats.spilled;
       cv.cargo.stats.spilled += 2;
       await frames(3);
       out.afterSpill = d.getRun().runBonus - s0.runBonus;
+      out.spills = cv.cargo.stats.spilled - sp0;
       out.hud = document.getElementById('kills').textContent;
       out.timer = document.getElementById('timer').textContent;
       return out;
@@ -1658,7 +1667,7 @@ s.listen(0, '127.0.0.1', async () => {
     && haul.profile[1].speed > haul.profile[0].speed && haul.profile[1].turn > haul.profile[0].turn,
     JSON.stringify({ shots: haul.shots, profile: haul.profile }));
   ok('haul: CARGO IS THE SCORE — a loose crate you land on sets back, a spilled one costs a second, and the HUD carries the load',
-    haul3.saved === 1 && haul3.welded && haul3.afterSpill === -2 && /load \d+/.test(haul3.hud),
+    haul3.saved === 1 && haul3.welded && haul3.spills >= 2 && haul3.afterSpill === -haul3.spills && /load \d+/.test(haul3.hud),
     JSON.stringify(haul3));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
