@@ -14,31 +14,6 @@
 
 Coordination changes live in versioncontrol.md and plans live in QUEUE.md.
 
-## HD-012 + HD-013 — 2026-10-13
-**The load line steps out from under HUB; the start click locks the mouse**
-
-From the 12 Oct free-mode playtest (NOTES.md, free.png, free-midrun.png).
-
-**HD-012.** `#kills` ("33 kills · load 33 · +0s" in season 3) sat at the
-top-left corner the arcade shell's fixed HUB button owns, so on the death
-screen it printed through HUB. It is a stat line meant to read between runs,
-so it moves under HUB (safe-area aware) rather than hiding.
-
-**HD-013.** The window pointerdown handler already requested pointer lock,
-but the SEASON buttons that start a run `stopPropagation()`, so the start
-click never reached it and mouse look stayed dead until a second click.
-`lockPointer(e)` now runs from the season buttons, the pause menu's season
-switch and the window tap (start, retry, resume), mouse only. A refused lock
-(promise rejection or `pointerlockerror`) pauses the run like an unlock does,
-and the rejection is caught. Touch and pad never ask for lock.
-
-Gate: `test/hud-lock.cjs` — #kills vs HUB boxes on the death screen at
-390x844, 844x390, 1280x720; season click → requestPointerLock (spied) inside
-the gesture, mouse movement turns the camera while locked, unlock pauses,
-resume re-locks, refusal pauses, touch never locks.
-Tokens `main.js?v=94`, `sw.js?v=91`, worker cache v64 (above open #595),
-precache regenerated (70).
-
 ## v54 — 2026-09-27
 **Season 1 holds the Devil Daggers dagger; the rubble is the level; the ebb; cargo is the score; a run that ends**
 
