@@ -57,7 +57,14 @@ export const HOVER_GLOW = HOVER_GLOWS.AMBER;
 // C2 float: the child keel's own slow bob (u) and roll lag (rad), 0.8–1.2 Hz.
 // Visual only — the group (deck, crates, topAt) keeps its 0.07 bob.
 const FLOAT_AMP = 0.06, FLOAT_ROLL = 0.025;
-const KEEL_H = 0.45;           // the tapered underside, inside CHASSIS (1.1)
+const KEEL_H = 0.45;
+// HD-014 step 4 (F2 STALL): a jackknifed truck's thrusters fade to red and
+// sputter, its keel stops floating and sags; a wrecked one (the pile-up)
+// grounds — the keel drops until the pods touch the road. Visual only, on the
+// child keel/pods and the world-space pool: the group, the deck, the crates
+// and every rule stay where they were.
+const STALL_RED = [1.9, 0.12, 0.06];   // the brake-light red (EDGE_BRAKE)
+const STALL_SAG = 0.3, STALL_LIST = 0.09, STALL_RATE = 1.4;   // u, rad, 1/s           // the tapered underside, inside CHASSIS (1.1)
 const EDGE_BRAKE = new THREE.Color(1.9, 0.18, 0.1);
 
 /** deterministic 0…1 from an integer (and a salt) */
@@ -243,7 +250,13 @@ export class Convoy {
     this.poolMat = new THREE.MeshBasicMaterial({ map: this.poolTex, color: g.clone().multiplyScalar(0.35), transparent: true, opacity: 0.7,
       blending: THREE.AdditiveBlending, depthWrite: false });
     this.glow = g;
-    this.shared = new Set([this.podGeo, this.podMat, this.finGeo, this.poolGeo, this.poolMat]);
+    // F2: the stalled pods and pool share their own pair, so a stall is a
+    // material swap on that truck (no per-truck materials, no new draws)
+    this.stallMix = new THREE.Color(...STALL_RED);
+    this.podStallMat = new THREE.MeshBasicMaterial({ color: this.stallMix.clone(), fog: false });
+    this.poolStallMat = this.poolMat.clone();
+    this.poolStallMat.color.copy(this.stallMix).multiplyScalar(0.22);
+    this.shared = new Set([this.podGeo, this.podMat, this.finGeo, this.poolGeo, this.poolMat, this.podStallMat, this.poolStallMat]);
   }
 
   setVisible(v) {
@@ -541,17 +554,39 @@ export class Convoy {
 
   /** HD-014 C2 + E2, visual only: the keel floats under the hull, and the
    *  road glow sits under the truck. Reads the group; never writes it. */
-  _hover(t) {
+  _hover(t, dt = 0) {
     const k = t.keel, a = t.age * t.floatW + t.ph2;
-    k.position.y = t.keelY + Math.sin(a) * FLOAT_AMP;
-    k.rotation.z = Math.sin(a - 0.9) * FLOAT_ROLL;          // a roll that lags the float
+    // F2: 0 → 1 over ~0.7 s once the truck has jackknifed (or been wrecked)
+    if (t.jacked && !t.stalled) this._stall(t);
+    else if (!t.jacked && t.stalled) this._stall(t, false);   // a fold undone (a reset): thrusters back
+    t.stallK = t.jacked ? Math.min(1, (t.stallK || 0) + dt * STALL_RATE) : 0;
+    const s = t.stallK || 0, float = Math.sin(a) * FLOAT_AMP * (1 - s);
+    // the sag: STALL_SAG below the float; wrecked, all the way down until the
+    // pods' feet touch the road (group y is the deck, so the road is −(y − ROAD_Y))
+    const ground = -(t.group.position.y - ROAD_Y) + KEEL_H / 2 + 0.12 + 0.16;
+    const low = t.wrecked ? ground : t.keelY - STALL_SAG;
+    k.position.y = t.keelY + float + (low - t.keelY) * s;
+    k.rotation.z = Math.sin(a - 0.9) * FLOAT_ROLL * (1 - s) + t.jackDir * STALL_LIST * s;   // it lists to the fold
     const g = t.group.position;
     t.pool.position.set(g.x, ROAD_Y + 0.02, g.z + 0.3);
     t.pool.rotation.y = t.group.rotation.y;
   }
 
+  /** F2: this truck's pods and pool go to the shared stall pair (or back) */
+  _stall(t, on = true) {
+    t.stalled = on;
+    t.keel.traverse(o => { if (o.name === 'pod') o.material = on ? this.podStallMat : this.podMat; });
+    t.pool.material = on ? this.poolStallMat : this.poolMat;
+  }
+
   update(dt, player, gameTime, enemies) {
     const c = this.cfg;
+    // F2: the stalled ones sputter — dim red, with a cough now and then
+    if (this.podStallMat) {
+      const cough = Math.sin(gameTime * 23) * Math.sin(gameTime * 7.1) > 0.55 ? 0.15 : 0.45 + 0.1 * Math.sin(gameTime * 13);
+      this.podStallMat.color.copy(this.stallMix).multiplyScalar(cough);
+      this.poolStallMat.opacity = 0.7 * (cough + 0.2);
+    }
     // D2: the pods pulse — one colour lerp on the shared material
     if (this.podMat) this.podMat.color.copy(this.glow).multiplyScalar(0.8 + 0.2 * Math.sin(gameTime * 9));
     for (const t of this.trucks) {
@@ -596,7 +631,7 @@ export class Convoy {
       t.vz = -t.spd;
       t.z += t.vz * dt;
       this._pose(t, dt);
-      this._hover(t);
+      this._hover(t, dt);
       t.brakeMat.color.copy(t.brakeT > 0 || want < t.spd - 1 ? EDGE_BRAKE : _c.setHex(0x3a0806));
       t.edge.material.color.copy(t.brakeT > 0 ? EDGE_BRAKE : EDGE);
     }

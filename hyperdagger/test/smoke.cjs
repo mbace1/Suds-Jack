@@ -1616,8 +1616,31 @@ s.listen(0, '127.0.0.1', async () => {
           pool: !!pool && pool.parent === cv.scene && Math.abs(pool.position.y - (-3.2 + 0.02)) < 1e-6
             && Math.hypot(pool.position.x - t.group.position.x, pool.position.z - t.group.position.z) < 1 };
       });
+      // HD-014 step 4 STALL (F2): fold one truck, wreck another, leave a third
+      // be; ~1 s of game time later the folded/wrecked keels are down and
+      // their pods red while the decks sit where they did; a fold undone
+      // (jacked cleared, as a reset would) gets its thrusters back
+      const ahead = cv.trucks.filter(t => t !== cv.standing && t.z < window.__hd.player.feet.z - 8).sort((a, b) => b.z - a.z);
+      const [tj, tw, tn] = ahead;
+      let stall = { n: ahead.length };
+      if (tn) {
+        cv.hit(tj); cv.hit(tj); cv.hit(tj); cv.wreck(tw);
+        const age0 = tj.age, red = c => c.r > 3 * c.g && c.r > 3 * c.b;
+        let deckErr = 0;
+        for (let i = 0; i < 2000 && tj.age - age0 < 1.2 && [tj, tw, tn].every(t => cv.trucks.includes(t)); i++) {
+          await frames(1);
+          for (const t of [tj, tw, tn]) deckErr = Math.max(deckErr, Math.abs(t.group.position.y - t.top) - cv.cfg.bob);
+        }
+        const st = t => { const pod = t.keel.children.find(o => o.name === 'pod');
+          return { drop: +(t.keelY - t.keel.position.y).toFixed(3), red: red(pod.material.color), stallMat: pod.material === cv.podStallMat,
+            pool: t.pool.material === cv.poolStallMat, top: t.top, jacked: t.jacked, wrecked: !!t.wrecked }; };
+        stall = { n: ahead.length, game: +(tj.age - age0).toFixed(2), deckErr: +deckErr.toFixed(5), jack: st(tj), wreck: st(tw), normal: st(tn),
+          kept: [tj, tw, tn].every(t => cv.trucks.includes(t)) };
+        tj.jacked = false; await frames(2); stall.recovered = st(tj);
+        tj.jacked = true;                  // as it was: the rest of the page sees the fold
+      }
       return { convoy: true, trucks: cv.trucks.length, wheels, shared: !!(cv.wheelGeo || cv.wheelMat), parts,
-        hover: { maxDy: +maxDy.toFixed(4), keelMoved: +keelMoved.toFixed(4), trucks: hover } };
+        hover: { maxDy: +maxDy.toFixed(4), keelMoved: +keelMoved.toFixed(4), trucks: hover }, stall };
     });
     await q.close();
   }
@@ -1637,6 +1660,15 @@ s.listen(0, '127.0.0.1', async () => {
     // (hull, deck, edge, cab, glass, 8 wheels, 2 brake lights = 15)
     ok('haul: HOVER — draws per truck ≤ 15, the wheeled truck\'s count',
       ht.length > 0 && ht.every(t => t.draws <= 15), JSON.stringify(ht.map(t => t.draws).slice(0, 4)));
+  }
+  {
+    const st = haulParts.stall || {};
+    ok('haul: STALL — a jackknifed and a wrecked truck keep their deck height while the keel sags and the pods go red',
+      st.kept && st.game >= 1.2 && st.deckErr <= 1e-9 && st.jack.drop > 0.2 && st.jack.red && st.jack.pool
+      && st.wreck.drop > st.jack.drop && st.wreck.red && st.wreck.pool, JSON.stringify(st));
+    ok('haul: STALL — a normal truck and a recovered one are not stalled',
+      st.normal && !st.normal.red && !st.normal.stallMat && !st.normal.pool && Math.abs(st.normal.drop) <= 0.06 + 1e-9
+      && st.recovered && !st.recovered.stallMat && !st.recovered.pool && !st.recovered.red, JSON.stringify({ normal: st.normal, recovered: st.recovered }));
   }
   ok('haul: a crate at the spawn point is not a hole — a no-input run stays on the deck for 5 s of slow frames (season 3 / free roll)',
     haulSpawn.convoy && haulSpawn.survived && haulSpawn.roadFrames === 0, JSON.stringify(haulSpawn));
