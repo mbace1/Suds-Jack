@@ -14,7 +14,7 @@ SCENES['bdf_felling'] = (() => {
     draw(c, lt) {
       const hx = lerp(1180, 120, clamp(lt / 3.0, 0, 1));
       const cam = { x: lerp(30, -30, lt / 3.2), y: 0, z: 1 };
-      const fallen = FRONT.filter((f) => lt >= f.t + 0.3).length;
+      const fallen = FRONT.filter((f) => lt >= f.t + 0.05).length;   // the count ticks as each tree starts to go, so 330 holds on screen
       stack(c, [
         { sh: dusk('bdf', 900), d: 0.04, lift: 0 },
         { sh: row('far', 1000, 20, 340, C.far, null, 3), d: 0.12, lift: 0.5 },
@@ -38,9 +38,9 @@ SCENES['bdf_felling'] = (() => {
       // the counter: card, top centre, climbing a tree at a time
       const ha = 66 * fallen;
       c.save(); c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 18; c.shadowOffsetX = 10; c.shadowOffsetY = 14;
-      c.fillStyle = K.ochre; c.beginPath(); c.roundRect(300, 170, 480, 170, 12); c.fill(); c.restore();
-      c.fillStyle = K.ink; c.font = '120px "Anton-400"'; c.textAlign = 'right'; c.fillText(String(ha), 610, 305); c.textAlign = 'left'; c.font = '64px "Anton-400"'; c.fillText('HA', 640, 300);
-      c.font = '24px "RobotoCondensed"'; c.fillText('MUHOS · FELLED', 320, 205);
+      c.fillStyle = K.ochre; c.beginPath(); c.roundRect(300, 150, 480, 210, 12); c.fill(); c.restore();
+      c.fillStyle = K.ink; c.font = '30px "ArchivoBlack-400"'; c.textAlign = 'center'; c.fillText('MUHOS · FELLED', 540, 198);
+      c.font = '120px "Anton-400"'; c.textAlign = 'right'; c.fillText(String(ha), 640, 335); c.textAlign = 'left'; c.font = '64px "Anton-400"'; c.fillText('HA', 664, 330);
       box(c);
     },
   };

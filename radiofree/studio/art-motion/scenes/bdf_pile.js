@@ -34,7 +34,7 @@ SCENES['bdf_pile'] = (() => {
           if (lt > T_LOG * 0.6) { g.save(); g.translate(TOP[0] + 30 + ox, ly + 10); g.rotate(swing); g.scale(turn, 1); put(g, tag(), 0, 0, { lift: 1.2 }); g.restore(); }
         }, d: 0.45 },
         { fn: (g, ox) => {
-          moose(g, 150 + ox, BASE + 60, 0.8, 0.4, 1.8);      // left of the pile, so the tag swings out clear of it
+          glow(g, 260 + ox, BASE - 160, 260, 'rgba(240,170,70,', 0.22); moose(g, 150 + ox, BASE + 60, 0.8, 0.4, 1.8);      // left of the pile, so the tag swings out clear of it
           // the ear turns: a small card flick on the head
           if (lt > T_EAR && lt < T_EAR + 0.6) glow(g, 128 + ox, BASE - 180, 40, 'rgba(240,170,70,', 0.15);
         }, d: 0.5 },

@@ -6,7 +6,7 @@
 // its head is a separate piece so it can look up.
 window.BDF = (() => {
   const { K, W, H, sheet, sprite, put, glow } = RFP, TAU = Math.PI * 2, { clamp, lerp } = U;
-  const C = { far: '#22332a', mid: '#18251e', near: '#101a15', edge: '#34503f', trunk: '#2a1d15', mist: '#3c4a42', ground: '#1e1914', stump: '#6a5238', stumpL: '#9a7c52', moose: '#21160f', hall: '#1a1d1f' };
+  const C = { far: '#22332a', mid: '#18251e', near: '#101a15', edge: '#34503f', trunk: '#2a1d15', mist: '#3c4a42', ground: '#1e1914', stump: '#6a5238', stumpL: '#9a7c52', moose: '#2e2017', hall: '#1a1d1f' };
   /** one spruce, drawn with its base at (0,0) and its tip at (0,-h) */
   function spruceShape(g, h, col, edge, seed) {
     // a narrow cone of drooping tiers: each branch tip hangs below where it leaves the trunk

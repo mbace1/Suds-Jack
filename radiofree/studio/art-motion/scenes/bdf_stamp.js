@@ -8,7 +8,6 @@ SCENES['bdf_stamp'] = (() => {
   const desk = () => sheet('bdf_desk', (g) => {
     g.fillStyle = '#2a1d15'; g.fillRect(-90, -90, W + 180, H + 180);
     g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 3; for (let y = 40; y < H; y += 26) { g.beginPath(); g.moveTo(-90, y); g.bezierCurveTo(300, y + 8, 700, y - 8, W + 90, y + 4); g.stroke(); }
-    g.strokeStyle = 'rgba(120,90,60,.35)'; g.lineWidth = 4; g.beginPath(); g.arc(880, 1640, 70, 0.3, 5.6); g.stroke();   // a coffee ring
   });
   const letter = () => sprite('bdf_letter', 780, 1060, 390, 530, (g) => {
     g.fillStyle = K.card; g.fillRect(-360, -500, 720, 1000);
@@ -16,7 +15,7 @@ SCENES['bdf_stamp'] = (() => {
     g.font = '24px "RobotoCondensed"'; g.fillText('7.10.2026', 200, -420);
     g.fillText('TO: Doodle (Finland)', -320, -350); g.fillText('RE: MUHOS · KAJAANI', -320, -312);
     g.fillStyle = 'rgba(21,18,15,.55)'; const r = U.rng(4); for (let i = 0; i < 14; i++) g.fillRect(-320, -240 + i * 40, 520 + r() * 120, 12);
-    g.fillStyle = K.ink; g.font = '26px "RobotoCondensed"'; g.fillText('Written explanation by 14.10.', -320, 360);
+    g.fillStyle = K.ink; g.font = '26px "RobotoCondensed"'; g.fillText('Until the environmental impact', -320, 300); g.fillText('assessment is complete.', -320, 334); g.fillText('Written explanation by 14.10.', -320, 400);
     g.strokeStyle = '#8a8a86'; g.lineWidth = 6; g.beginPath(); g.moveTo(-250, -520); g.lineTo(-250, -440); g.lineTo(-220, -440); g.lineTo(-220, -500); g.stroke();   // a paper clip
   }, 14);
   // the stamp: a wooden handle, a dark base; the impression it leaves
