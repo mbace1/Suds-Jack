@@ -64,7 +64,7 @@ SCENES['rfp_square'] = (() => {
         { sh: square(), d: 0.42, lift: 0.6 },
         { sh: lamps(), d: 0.5, lift: 1.2 },
         { fn: (g, ox) => { glow(g, 100 + ox, 730, 280, 'rgba(255,214,140,', 0.95); glow(g, 990 + ox, 790, 280, 'rgba(255,214,140,', 0.95); }, d: 0.5 },
-        { fn: (g, ox) => put(g, clock(), 240 + ox, 1180, { lift: 1.6 }), d: 0.7 },
+        { fn: (g, ox) => put(g, clock(), 285 + ox, 1180, { lift: 1.6 }), d: 0.7 },
         { fn: (g, ox) => {
           const step = Math.sin(lt * 5.2), x = wx + ox;
           const led = lt < T_WAKE ? 0 : lt < T_ANSWER ? clamp((lt - T_WAKE) / 0.12, 0, 1) : (lt < T_ANSWER + 0.5 ? (Math.floor((lt - T_ANSWER) * 8) % 2 === 0 ? 1 : 0.15) : 1);
