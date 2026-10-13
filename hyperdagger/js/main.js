@@ -5,7 +5,7 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=85';
+import { InputManager } from './input.js?v=87';
 import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
@@ -1728,6 +1728,7 @@ function startGame() {
   input.consumeJump();
   input.consumeDash();
   input.consumeDashFlick();
+  input.releaseTouches();   // HD-003: the finger that tapped to start is not a jump when it lifts
   state = 'playing';
   paused = false;
   setRunFrame(true);
@@ -1806,6 +1807,8 @@ window.addEventListener('pointerdown', e => {
   if (e.target && e.target.closest && e.target.closest('.toko-table')) return;
   audio.ensure();
   const isMouse = e.pointerType === 'mouse';
+  // HD-003: a finger that taps to start or retry is UI — its lift is not a jump
+  if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead')) input.swallowTouchAt(e.clientX, e.clientY);
   if (state === 'menu') {
     if (!localStorage.getItem(TIPS_KEY)) {
       localStorage.setItem(TIPS_KEY, '1');
