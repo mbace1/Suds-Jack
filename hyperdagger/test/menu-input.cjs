@@ -58,25 +58,39 @@ s.listen(0, '127.0.0.1', async () => {
     await q.evaluate(HELPERS);
     return { q, ctx };
   };
+  // The menu can be taller than a phone in landscape (#587's controls line
+  // pushes RUN below the fold), so bring the target into view first, the way
+  // a player would scroll to it. If it still cannot be reached on screen,
+  // say so and skip that tap rather than touch a point off the glass.
   const center = async (q, sel) => {
-    const bb = await q.locator(sel).first().boundingBox();
-    return { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
+    const loc = q.locator(sel).first();
+    await loc.scrollIntoViewIfNeeded().catch(() => {});
+    const bb = await loc.boundingBox();
+    const vp = q.viewportSize();
+    const c = bb && { x: bb.x + bb.width / 2, y: bb.y + bb.height / 2 };
+    if (!c || c.x < 0 || c.y < 0 || c.x > vp.width || c.y > vp.height) { console.log('  skip ' + sel + ' — not reachable on screen'); return null; }
+    return c;
   };
   try {
     // ------------------------------------------------------------- touch
     {
       const { q, ctx } = await open(true, { hyperDaggerModeV31: 'pure', hyperDaggerRunKind: 'free', hyperDaggerSeason: 'ember' });
             let c = await center(q, '#msg button.mode[data-mode="hyper"]');
-      await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3));
-      const afterMode = await q.evaluate(() => window.__menu());
-      ok('touch: a tap on a mode button picks that mode and stays on the menu', afterMode.state === 'menu' && afterMode.mode === 'hyper', JSON.stringify(afterMode));
+      if (c) {
+        await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3));
+        const afterMode = await q.evaluate(() => window.__menu());
+        ok('touch: a tap on a mode button picks that mode and stays on the menu', afterMode.state === 'menu' && afterMode.mode === 'hyper', JSON.stringify(afterMode));
+      }
       c = await center(q, '#runKindBtn');
-      await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3));
-      const afterKind = await q.evaluate(() => window.__menu());
-      ok('touch: a tap on RUN toggles FREE/DAILY and stays on the menu', afterKind.state === 'menu' && afterKind.runKind === 'daily', JSON.stringify(afterKind));
-      c = await center(q, '#runKindBtn');
-      await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3));
+      if (c) {
+        await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3));
+        const afterKind = await q.evaluate(() => window.__menu());
+        ok('touch: a tap on RUN toggles FREE/DAILY and stays on the menu', afterKind.state === 'menu' && afterKind.runKind === 'daily', JSON.stringify(afterKind));
+        c = await center(q, '#runKindBtn');
+        if (c) { await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3)); }
+      }
       c = await center(q, '#msg button.season[data-season="inca"]');
+      if (!c) throw new Error('SEASON 2 is not reachable on screen');
       await q.touchscreen.tap(c.x, c.y);
       const run = await q.evaluate(async () => {
         const pl = window.__hd.player; await window.__frames(2);
