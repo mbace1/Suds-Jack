@@ -10,13 +10,13 @@ window.RFM = (() => {
   const shapes = Object.fromEntries(Object.entries(M.shapes).map(([k, a]) => { const p = new Path2D(); for (let i = 0; i < a.length; i += 2) i ? p.lineTo(a[i], a[i + 1]) : p.moveTo(a[i], a[i + 1]); p.closePath(); return [k, p]; }));
 
   /** one mask: a carrier disc, the white face, a halftone shade, a strap; optional smart glasses */
-  function mask(c, x, y, r, color, { glasses = false, led = false, t = 0, tilt = 0, strap = true, shade = true, glint = 0 } = {}) {
+  function mask(c, x, y, r, color, { glasses = false, led = false, t = 0, tilt = 0, strap = true, shade = true, glint = 0, face = C.cream, frame = C.ruska, ink = C.ink } = {}) {
     c.save(); c.translate(x, y); c.rotate(tilt);
-    if (strap) { c.fillStyle = C.ink; c.fillRect(-r * 1.08, -r * 0.18, r * 2.16, r * 0.14); }
+    if (strap) { c.fillStyle = ink; c.fillRect(-r * 1.08, -r * 0.18, r * 2.16, r * 0.14); }
     c.fillStyle = color; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.fill();
     // the face: the master trace, placed by its own frame (it sits a little low — part of the drawing)
     const s = (r * 2 * 0.72) / 700;
-    c.save(); c.translate(-350 * s, -350 * s + r * 0.06); c.scale(s, s); c.fillStyle = C.cream; for (const k of ['eyeL', 'eyeR', 'mouthOuter', 'mouthInner']) c.fill(shapes[k]); c.restore();
+    c.save(); c.translate(-350 * s, -350 * s + r * 0.06); c.scale(s, s); c.fillStyle = face; for (const k of ['eyeL', 'eyeR', 'mouthOuter', 'mouthInner']) c.fill(shapes[k]); c.restore();
     if (shade) { // a pressed-tin shade: halftone dots on the lower right, clipped to the disc
       c.save(); c.beginPath(); c.arc(0, 0, r, 0, TAU); c.clip(); c.globalAlpha = 0.28;
       c.fillStyle = P.dotPattern(c, 'rfm_shade', Math.max(6, r / 9), Math.max(1.6, r / 34), C.ink);
@@ -26,7 +26,7 @@ window.RFM = (() => {
     if (glint) { c.fillStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(-r * 0.45, -r * 0.5, r * 0.18, r * 0.08, -0.6, 0, TAU); c.fill(); }
     if (glasses) { // the smart glasses, worn over the mask's eyes — ochre frames, the red light
       const gy = -r * 0.22, gr = r * 0.3;
-      c.lineWidth = Math.max(3, r * 0.07); c.strokeStyle = C.ruska;
+      c.lineWidth = Math.max(3, r * 0.07); c.strokeStyle = frame;
       for (const sx of [-1, 1]) { c.beginPath(); c.arc(sx * r * 0.36, gy, gr, 0, TAU); c.stroke(); }
       c.beginPath(); c.moveTo(-r * 0.06, gy); c.lineTo(r * 0.06, gy); c.stroke();
       c.beginPath(); c.moveTo(-r * 0.66, gy); c.lineTo(-r * 1.0, gy - r * 0.04); c.moveTo(r * 0.66, gy); c.lineTo(r * 1.0, gy - r * 0.04); c.stroke();
@@ -85,5 +85,5 @@ window.RFM = (() => {
     for (const sx of [-1, 1]) { c.fillStyle = W_; c.fillRect(sx * 250 - 40, -560, 80, 120); c.fillStyle = G; c.beginPath(); c.ellipse(sx * 250, -560, 50, 58, 0, Math.PI, 0); c.fill(); }
     c.restore();
   }
-  return { mask, front, hand, S, dusk, cathedral };
+  return { mask, front, hand, S, dusk, cathedral, shapes };
 })();

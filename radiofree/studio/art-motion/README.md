@@ -22,3 +22,9 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
   toko face"): the traced master face (`scenes/toko_master.js`, GENERATED from
   `toko/js/master.js`, unchanged) worn as a mask in the carrier colours, so a
   figure can face the camera without code ever drawing a face.
+- `eras_ts.js` — **eight style tests** for the owner to approve, one story (a masked
+  Helsinki where looking is buying), 4 s each: `ts_hopper` (night light), `ts_lino`
+  (two-plate linocut), `ts_poster` (Constructivist photomontage), `ts_grain`
+  (editorial grain), `ts_ukiyoe` (Hiroshige rain on Pitkäsilta), `ts_deco` (Cassandre
+  tram, destination KASSA), `ts_riso` (three inks + key, multiplied, misregistered),
+  `ts_comic` (Lichtenstein close-up). The masks are the only faces in any of them.
