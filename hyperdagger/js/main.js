@@ -1748,6 +1748,7 @@ function startGame() {
  */
 function endRun() {
   paused = false;
+  gfocus = -1;   // HD-003: the pause menu's focus is not the main menu's — A there starts a run, as the menu says
   resetRun();
   truck.clear();
   walls.clear();
