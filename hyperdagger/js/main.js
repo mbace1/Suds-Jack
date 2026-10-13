@@ -1086,7 +1086,7 @@ function perfGovern(now, rawMs) {
 // ladder down one rung, the same lever the frame-time governor pulls.
 const DT_CAP = 0.05;
 const timeMon = { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0, slowRun: 0 };
-Object.assign(perfTuning, { ratioWinMs: 2000, ratioFloor: 0.9, ratioHoldMs: 2000, ratioGapMs: 1000 });
+Object.assign(perfTuning, { ratioWinMs: 2000, ratioFloor: 0.9, ratioHoldMs: 2000, ratioGapMs: 3000 });
 function timeMonitor(now, rawDt) {
   if (state !== 'playing' || paused) { timeMon.lowSince = 0; return; }
   // One or two frames over ratioGapMs are a tab switch; a RUN of them is the
