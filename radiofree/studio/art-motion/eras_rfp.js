@@ -8,7 +8,7 @@ window.PUNCH = 0;
 window.SCENE_LIBS = ['scenes/rfa_kit.js', 'scenes/toko_master.js', 'scenes/rfm_kit.js', 'scenes/rfp_kit.js'];
 window.ERAS = [
   { id: 'rfp_square', dur: B6 },
-  { id: 'rfp_lens', dur: B6, transition: { type: 'cut', dur: 0.02 } },
+  { id: 'rfp_window', dur: B6, transition: { type: 'cut', dur: 0.02 } },
   { id: 'rfp_receipt', dur: B6, transition: { type: 'cut', dur: 0.02 } },
   { id: 'rfp_queue', dur: B6, transition: { type: 'cut', dur: 0.02 } },
   { id: 'rfp_pocket', dur: B4, transition: { type: 'cut', dur: 0.02 } },

@@ -29,10 +29,10 @@ SCENES['rfp_queue'] = (() => {
   });
   // the string the leaf now hangs by, and the tag tied on just above the stem
   const soldTag = () => sprite('rfp_q_sold', 420, 460, 120, 380, (g) => {
-    g.strokeStyle = K.card; g.lineWidth = 3; g.beginPath(); g.moveTo(0, -380); g.lineTo(0, 0); g.stroke();
+    g.strokeStyle = K.card; g.lineWidth = 3; g.beginPath(); g.moveTo(0, -96); g.lineTo(0, 0); g.stroke();
     g.beginPath(); g.moveTo(0, -60); g.lineTo(60, -40); g.stroke();
     g.save(); g.translate(60, -40); g.rotate(0.25);
-    g.fillStyle = K.red; g.beginPath(); g.moveTo(0, -36); g.lineTo(170, -36); g.lineTo(170, 36); g.lineTo(0, 36); g.lineTo(-26, 0); g.closePath(); g.fill();
+    g.fillStyle = K.mag; g.beginPath(); g.moveTo(0, -36); g.lineTo(170, -36); g.lineTo(170, 36); g.lineTo(0, 36); g.lineTo(-26, 0); g.closePath(); g.fill();
     g.fillStyle = K.card; g.beginPath(); g.arc(-6, 0, 8, 0, TAU); g.fill();
     g.font = '52px "Anton-400"'; g.textAlign = 'center'; g.fillText('SOLD', 92, 19); g.restore();
   }, 6);
@@ -41,10 +41,11 @@ SCENES['rfp_queue'] = (() => {
       // open tight on the queue and pull back to show the billboard over them; then lean in to the bought leaf
       const pull = move(lt, 0, 1.1, 1.32, 1) * move(lt, T_SOLD, 0.6, 1, 1.06), cam = { x: lerp(20, -20, lt / 3.2), y: 0, z: pull, fx: 540, fy: lt < T_SOLD ? 1300 : 1000 };
       // the leaf: falls and sways until it is bought, then hangs
-      const tl = Math.min(lt, T_SOLD), lx = 560 + Math.sin(tl * 2.4) * 70, ly = lerp(-80, 1040, tl / T_SOLD);
+      // the leaf comes down BESIDE the billboard (never across its words), then drifts in under the shelter roof
+      const tl = Math.min(lt, T_SOLD), ly = lerp(-80, 1194, tl / T_SOLD), lx = (ly < 760 ? 985 : lerp(985, 600, (ly - 760) / 434)) + Math.sin(tl * 2.4) * 18;
       const hang = lt > T_SOLD ? Math.sin((lt - T_SOLD) * 5) * Math.exp(-(lt - T_SOLD) * 2) * 0.4 : 0;
-      const turn = lt < T_TURN ? 0 : ease.back((lt - T_TURN) / 0.16), allOn = lt > T_SOLD && lt < T_SOLD + 0.7;
-      const QUEUE = [[210, S.YELLOW, '#4a2a1a', K.mapleC], [430, S.PINK, '#22302a', K.birch], [650, S.ORANGE, '#3a2a40', K.green], [870, S.GREEN, '#3a2f24', K.red]];
+      const turn = lt < T_TURN ? 0 : ease.back((lt - T_TURN) / 0.16), allOn = lt >= T_SOLD;
+      const QUEUE = [[210, K.mag, '#3a2418', K.rust], [430, K.mag, '#1e2b25', '#6a5a2a'], [650, K.mag, '#2e2a22', K.green], [870, K.mag, '#2a2c22', K.rust]];
       stack(c, [
         { sh: dusk('q', 900), d: 0.05, lift: 0 },
         { sh: town(), d: 0.15, lift: 0.8 },
@@ -56,14 +57,16 @@ SCENES['rfp_queue'] = (() => {
         { fn: (g, ox) => {
           QUEUE.forEach(([x, col, coat, scarf], i) => {
             const wx = x + ox, dir = clamp((lx - wx) / 300, -1, 1);
-            walker(g, wx, 1370 + (i % 2) * 14, 0.92, { coat, scarf, color: col, t: lt + i * 0.13, tilt: Math.sin(lt * 1.6 + i) * 0.03, look: dir * turn, led: allOn ? 1 : true, lift: 1.8 });
+            walker(g, wx, 1370 + (i % 2) * 14, 0.92, { coat, scarf, color: col, t: lt + i * 0.13, tilt: Math.sin(lt * 1.6 + i) * 0.03, look: dir * turn, led: allOn ? 1 : 0, lift: 1.8 });
+            // every light comes on at once: a ring off each bead
+            if (lt >= T_SOLD && lt < T_SOLD + 0.6) { const q = (lt - T_SOLD) / 0.6, s2 = 0.92, lxx = wx + s2 * (dir * turn * 30 + 73), lyy = 1370 + (i % 2) * 14 - s2 * 54; g.strokeStyle = `rgba(255,70,40,${1 - q})`; g.lineWidth = 6; g.beginPath(); g.arc(lxx, lyy, 12 + q * 110, 0, Math.PI * 2); g.stroke(); }
           });
         }, d: 0.75 },
         { fn: (g, ox) => {
           // falling it tumbles; bought, it swings stem-up from the string
           const sold = lt >= T_SOLD, rot = sold ? Math.PI + hang : Math.sin(lt * 3) * 0.9;
-          put(g, leafSprite('birch', K.birch), lx + ox, ly, { rot, sc: 2.2, lift: 2.4 });
-          if (sold) { const ks = pop(lt, T_SOLD, 0.22), sx = lx + ox - Math.sin(rot) * 97, sy = ly + Math.cos(rot) * 97; put(g, soldTag(), sx, sy, { sc: 0.4 + 0.6 * ks, rot: hang, lift: 2.6 }); }
+          put(g, leafSprite('birch', K.birch), lx + ox, ly, { rot, sc: 1.9, lift: 2.4 });
+          if (sold) { const ks = pop(lt, T_SOLD, 0.22), sx = lx + ox - Math.sin(rot) * 84, sy = ly + Math.cos(rot) * 84; put(g, soldTag(), sx, sy, { sc: 0.4 + 0.6 * ks, rot: hang, lift: 2.6 }); }
         }, d: 0.85 },
       ], cam);
       RFP.leaves(c, lt + 11, { n: 8, seed: 41, cam });

@@ -171,6 +171,7 @@ mix = np.stack([L, R], 1)
 mix = np.tanh(mix * 1.2) / 1.2
 mix /= max(1e-9, np.abs(mix).max()) / 0.89
 end = int(15.0 * SR); mix = mix[:end]
-fade = int(0.35 * SR); mix[-fade:] *= np.linspace(1, 0, fade)[:, None] ** 1.5      # ring out, never a chop
+# ring out, never a chop: from just after the 14.2 s hit, everything decays exponentially, reaching ~-40 dB at 14.95 s
+t0 = int(14.3 * SR); tt = np.arange(end - t0) / SR; mix[t0:] *= np.exp(-tt / 0.141)[:, None]
 sf.write(OUT, mix, SR)
 print(OUT)

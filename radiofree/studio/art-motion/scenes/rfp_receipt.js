@@ -44,16 +44,16 @@ SCENES['rfp_receipt'] = (() => {
       c.fillStyle = K.ink; c.font = '50px "RobotoCondensed"'; c.fillText(what, X0 + 34, y); c.font = '30px "RobotoCondensed"'; c.fillStyle = '#6a5c4e'; c.fillText(how, X0 + 34, y + 44);
       const k = clamp((lt - T[i]) / 0.12, 0, 1), sc = lerp(1.6, 1, ease.out(k));
       c.save(); c.translate(X1 - 130, y + 6); c.rotate(-0.12 + (i % 2) * 0.08); c.scale(sc, sc); c.globalAlpha = 0.25 + 0.75 * k;
-      c.strokeStyle = K.red; c.lineWidth = 6; c.font = (verdict === '?' ? '84px' : '46px') + ' "Anton-400"'; const tw = c.measureText(verdict).width;
-      c.strokeRect(-tw / 2 - 18, -48, tw + 36, 74); c.fillStyle = K.red; c.textAlign = 'center'; c.fillText(verdict, 0, verdict === '?' ? 22 : 12); c.textAlign = 'left';
+      c.strokeStyle = K.mag; c.lineWidth = 6; c.font = (verdict === '?' ? '84px' : '46px') + ' "Anton-400"'; const tw = c.measureText(verdict).width;
+      c.strokeRect(-tw / 2 - 18, -48, tw + 36, 74); c.fillStyle = K.mag; c.textAlign = 'center'; c.fillText(verdict, 0, verdict === '?' ? 22 : 12); c.textAlign = 'left';
       c.restore();
     });
     if (lt >= T[4]) {
       const y = TOP + HEAD + 4 * LINE + 30, k = clamp((lt - T[4]) / 0.14, 0, 1), sc = lerp(1.5, 1, ease.out(k));
       c.fillStyle = K.ink; c.fillRect(X0 + 30, y - 70, X1 - X0 - 60, 4);
       c.font = '50px "RobotoCondensed"'; c.fillText('TOTAL', X0 + 34, y);
-      c.save(); c.translate(X1 - 150, y - 14); c.scale(sc, sc); c.fillStyle = K.red; c.font = '96px "Anton-400"'; c.textAlign = 'center'; c.fillText('$249', 0, 20); c.restore();
-      c.fillStyle = K.red; c.font = '40px "Anton-400"'; c.textAlign = 'center'; c.fillText('+ EVERYTHING', 540, y + 76); c.textAlign = 'left';
+      c.save(); c.translate(X1 - 150, y - 14); c.scale(sc, sc); c.fillStyle = K.mag; c.font = '96px "Anton-400"'; c.textAlign = 'center'; c.fillText('$249', 0, 20); c.restore();
+      c.fillStyle = K.mag; c.font = '40px "Anton-400"'; c.textAlign = 'center'; c.fillText('+ EVERYTHING', 540, y + 76); c.textAlign = 'left';
     }
     return y1;
   }
@@ -72,6 +72,8 @@ SCENES['rfp_receipt'] = (() => {
       RFP.leaves(c, lt + 7, { n: 8, seed: 31, cam });
       const y1 = receipt(c, lt);
       // the hand holds the foot of the paper and is drawn down with it
+      // the sleeve runs to the bottom of the frame whatever length the paper has reached — never a cut-off limb
+      c.fillStyle = '#2b3a30'; c.beginPath(); c.moveTo(540 - 80, y1 + 40 + 380); c.lineTo(540 + 80, y1 + 40 + 380); c.lineTo(540 + 120, H + 40); c.lineTo(540 - 120, H + 40); c.closePath(); c.fill();
       hand(c, 540, y1 + 40, 0.95, 0, { sleeve: '#2b3a30', cuff: K.rust });
       put(c, bar(), 540, TOP - 50, { lift: 1.6 });
       ledAt(c, 870, TOP - 70, 16, lt < T[0] ? 0.3 : Math.floor(lt * 4) % 2 === 0 ? 1 : 0.25);

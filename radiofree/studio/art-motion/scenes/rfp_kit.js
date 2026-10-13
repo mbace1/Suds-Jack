@@ -7,9 +7,12 @@
 window.RFP = (() => {
   const W = 1080, H = 1920, M = 90, TAU = Math.PI * 2, P = PAINT, { clamp, lerp } = U, { mask, S, shapes } = RFM;
   const K = {
-    sky0: '#2a201c', sky1: '#5a2c22', sky2: '#b34a26', sky3: '#e2733a', sky4: '#f2b25a',
-    ink: '#1f1a16', card: '#f4ead2', cardD: '#d9cbb0', green: '#2f6a50', greenD: '#1f4a38', red: '#c8231c', rust: '#c2541c',
-    roof: '#4a2420', roof2: '#6e3226', stone: '#8a7a68', stoneD: '#6a5c4e', park: '#33482c', birch: '#f0c23a', birchD: '#d99a1c',
+    // v2 (owner: "fall, darker palette with one or two contrast colours"): the dusk is DUSK, the lamps are the
+    // brightest thing in the box, and only two colours are loud — ochre light and the magenta of the masks
+    sky0: '#141715', sky1: '#22241e', sky2: '#4a3022', sky3: '#7c4428', sky4: '#a8642f',
+    ink: '#1a1612', card: '#e2d3b2', cardD: '#c4b496', green: '#29473a', greenD: '#1a3027', red: '#a8321e', rust: '#9a4422',
+    ochre: '#e3a33a', mag: '#f0027f',
+    roof: '#2c1a15', roof2: '#46291f', stone: '#5e5446', stoneD: '#463e34', park: '#24321e', birch: '#d9a62e', birchD: '#b5801c',
     mapleA: '#d9542a', mapleB: '#f0a030', mapleC: '#b8322a', gold: '#e0b84a', wood: '#3a2618', lamp: '#ffd98a',
   };
   const CACHE = {};
@@ -75,7 +78,7 @@ window.RFP = (() => {
   }
   /** the dusk sky at four o'clock in October: banded like cut card, not a smooth gradient */
   const dusk = (key, horizon = 1100) => sheet('rfp_sky_' + key, (g) => {
-    const bands = [K.sky0, K.sky1, '#7a3524', K.sky2, '#cf5c2c', K.sky3, '#ea9446', K.sky4];
+    const bands = [K.sky0, K.sky1, '#2f2a22', '#3b2c22', K.sky2, '#62392a', K.sky3, K.sky4];
     const step = horizon / bands.length;
     bands.forEach((col, i) => { g.fillStyle = col; g.beginPath(); g.moveTo(-M, -M + (i ? i * step : -M)); for (let x = -M; x <= W + M; x += 60) g.lineTo(x, i * step + Math.sin(x * 0.006 + i) * 14); g.lineTo(W + M, H + M); g.lineTo(-M, H + M); g.closePath(); g.fill(); });
   }, 10);
@@ -112,7 +115,7 @@ window.RFP = (() => {
   const ease = { out: (k) => 1 - Math.pow(1 - clamp(k, 0, 1), 3), back: (k) => { k = clamp(k, 0, 1); const s = 1.9; return 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2); } };
   const pop = (lt, t0, dur = 0.28) => (lt < t0 ? 0 : ease.back((lt - t0) / dur));
   /** a masked walker in card, facing us. Origin at the neck; s scales it */
-  function walker(c, x, y, s, { coat = K.green, scarf = K.red, color = S.YELLOW, t = 0, tilt = 0, look = 0, step = 0, led = true, umbrella = null, lift = 1 } = {}) {
+  function walker(c, x, y, s, { coat = K.green, scarf = K.red, color = K.mag, t = 0, tilt = 0, look = 0, step = 0, led = true, umbrella = null, lift = 1 } = {}) {
     c.save(); c.translate(x, y); c.scale(s, s);
     const body = (g) => {
       g.fillStyle = K.ink; for (const sx of [-1, 1]) { g.beginPath(); g.roundRect(sx * 34 - 18 + (sx > 0 ? step : -step) * 6, 300, 36, 150, 10); g.fill(); }
@@ -126,10 +129,11 @@ window.RFP = (() => {
     if (umbrella) umbrella(c);
     c.save(); c.translate(look * 30, 0);
     c.fillStyle = 'rgba(15,8,4,.35)'; c.beginPath(); c.arc(12, -34, 76, 0, TAU); c.fill();
-    mask(c, 0, -46, 72, color, { glasses: true, led: false, t, tilt: tilt + look * 0.32, strap: false, shade: false, face: K.card, frame: K.ink, ink: K.ink });
+    // no glasses (owner: "why do all Toko faces have glasses?"): the MASK is the device, its light on the strap
+    mask(c, 0, -46, 72, color, { glasses: false, led: false, t, tilt: tilt + look * 0.32, strap: true, shade: false, face: K.card, frame: K.ink, ink: K.ink });
     // the red light, driven by the shot: true = the steady blink, a number = brightness 0..1
     const b = led === true ? (Math.floor(t * 4) % 2 === 0 ? 1 : 0) : +led || 0;
-    c.translate(0, -46); c.rotate(tilt + look * 0.32); ledAt(c, 72 * 0.82, -72 * 0.42, 9, b);
+    c.translate(0, -46); c.rotate(tilt + look * 0.32); ledAt(c, 72 * 1.02, -72 * 0.11, 12, b);
     c.restore();
     c.restore();
   }
@@ -137,7 +141,7 @@ window.RFP = (() => {
   function ledAt(c, x, y, r, b) {
     c.fillStyle = b > 0.05 ? `rgb(${lerp(110, 255, b) | 0},${lerp(20, 42, b) | 0},${lerp(16, 28, b) | 0})` : '#5a1410';
     c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
-    if (b > 0.05) glow(c, x, y, r * 7, 'rgba(255,60,36,', 0.6 * b);
+    if (b > 0.05) glow(c, x, y, r * 8, 'rgba(255,60,36,', 0.75 * b);
   }
   /** a gloved hand in a sleeve and cuff, fingers closed round something — straight creases, no curve */
   function hand(c, x, y, s, rot = 0, { sleeve = K.green, cuff = K.red, glove = K.ink } = {}) {
@@ -150,9 +154,19 @@ window.RFP = (() => {
       g.strokeStyle = 'rgba(255,240,210,.18)'; g.lineWidth = 3; for (let i = 0; i < 3; i++) { g.beginPath(); g.moveTo(-28 + i * 30, 8); g.lineTo(-28 + i * 30, 24); g.stroke(); }
     }, 9), x, y, { rot, sc: s });
   }
+  /** a gloved fist closed round a shaft (vertical through its middle), the sleeve running off down-right; straight knuckles */
+  function fist(c, x, y, s, rot = 0, { sleeve = K.green, cuff = K.red, glove = K.ink, len = 420 } = {}) {
+    put(c, sprite(`rfp_fist_${sleeve}_${cuff}_${len}`, 260, len + 160, 110, 70, (g) => {
+      g.fillStyle = sleeve; g.beginPath(); g.moveTo(-40, 40); g.lineTo(60, 40); g.lineTo(120, len); g.lineTo(-10, len); g.closePath(); g.fill();
+      g.fillStyle = cuff; g.save(); g.translate(12, 52); g.rotate(-0.2); g.fillRect(-58, -12, 120, 26); g.restore();
+      g.fillStyle = glove; g.beginPath(); g.roundRect(-50, -46, 100, 90, 26); g.fill();
+      g.beginPath(); g.roundRect(-58, 0, 92, 30, 15); g.fill();
+      g.strokeStyle = 'rgba(255,240,210,.2)'; g.lineWidth = 3; g.beginPath(); g.moveTo(40, -36); g.lineTo(40, 36); g.moveTo(-30, -2); g.lineTo(30, -2); g.stroke();
+    }, 9), x, y, { rot, sc: s });
+  }
   /** a lamp's glow: added light, the one thing in a paper box that is not paper */
   function glow(c, x, y, r, col = 'rgba(255,214,140,', a = 0.55) {
     c.save(); c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col + a + ')'); g.addColorStop(1, col + '0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); c.restore();
   }
-  return { K, W, H, M, sheet, sprite, layer, put, stack, box, dusk, leafSprite, leaves, words, ease, pop, move, walker, hand, glow, ledAt, canvas };
+  return { K, W, H, M, sheet, sprite, layer, put, stack, box, dusk, leafSprite, leaves, words, ease, pop, move, walker, hand, fist, glow, ledAt, canvas };
 })();
