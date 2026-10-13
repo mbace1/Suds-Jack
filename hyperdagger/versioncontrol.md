@@ -33,7 +33,3 @@ Live behavior in that tree: a short stick tap sets jump, firing is hold, a flick
 The live page did move. gh-pages `dae58935792548c2bc7d5f6946c7fbdb83e2558c` (`dae58935`), 4 Oct 2026, 13:15:55 EEST, message "Publish Hyper Dagger from main 0c8492c (hyperdagger/ only)." The expected "about 13:17" was the commit time above, not 13:17. Tokens re-checked the same afternoon from that commit and from the live files: `js/main.js?v=85` in `index.html`, and `const CACHE = 'hyperdagger-v55'` in `sw.js`.
 
 Checked when this log was opened, 4 Oct 2026, Europe/Helsinki: `origin/main` had moved on to `8aa15e0cc7d19bd157fcec119fe9bdd98d6b75dc` (PR #579, 13:24 EEST). That commit is not a Hyper Daggers change, and gh-pages was still `dae58935`. The live page was still the publish above, not the new main tip.
-
-## 2026-10-13 — HD-011 perf budget and game-clock monitor (branch, not landed)
-
-Branch `feat/hyperdagger-perf-budget`, off main `603e76d` (#590). Not merged, not deployed; the live page did not move. Adds a game-time/real-time monitor to `js/main.js` (`__hd.debug.getTimeRatio()`), a ratio-driven step down the existing `PERF_TIERS` ladder under perf `auto`, and `test/perf.cjs`. The 0.05 s dt cap and physics are unchanged; the substep option is proposed in the pull request for Mikael. Tokens: `js/main.js?v=95`, `sw.js?v=92`, `hyperdagger-v65`, above #596 (v94, v91, v64).
