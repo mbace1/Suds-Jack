@@ -44,7 +44,7 @@ Daily keys and board include season. Recap shows tier. Full death/complete path 
 
 ### HD-003 — Polish main menu for seasons and modes
 
-- status: Landed (partial); the open season-vs-saved-mode part is in progress (#591); touch/gamepad menu polish is in progress (#610, #611)
+- status: Landed (partial); the open season-vs-saved-mode part is in progress (#591); touch/gamepad menu polish is in progress (#610, #611, #612)
 - size: S
 - blocked-by: —
 - design: SEASONS.md (owner brief on menu labels)
