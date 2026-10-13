@@ -6,7 +6,7 @@
 
 | 时间段 | 画面里的物 | 它在做什么 | 镜头 | 屏上字 | 做法 |
 |---|---|---|---|---|---|
-| 0–3.2 | a masked walker under an umbrella, hand on the handle, before the cut-card Helsinki Cathedral at dusk, a street clock at 16:02 | says the wake word: a red card speech wedge pops out of the mask, then the red light on the mask's strap wakes and double-blinks back | 横移 | HEY LOOKSY | scenes/rfp_square.js |
+| 0–3.2 | a masked walker under an umbrella, hand on the handle, before the cut-card Helsinki Cathedral at dusk, a street clock at 16:02 | says the wake word: an ochre card speech wedge pops out of the mask, then the red light on the mask's strap wakes and double-blinks back | 横移 | HEY LOOKSY | scenes/rfp_square.js |
 | 3.2–6.4 | the back of the masked head over the shoulder at a lit bakery window, three cakes on a counter | the strap's light blinks, card brackets snap onto the middle cake, ORDERED slams onto the glass, then ALSO ORDERED? on the loaves | 砸入 | ORDERED | scenes/rfp_window.js |
 | 6.4–9.6 | a gloved hand in a sleeve and cuff holding a paper receipt fed from a slot in the card | the receipt feeds down one stamped line a beat, the header held, ending TOTAL $249 | 停 | $249 | scenes/rfp_receipt.js |
 | 9.6–12.8 | a queue of four masked people at a tram stop under a lit billboard, LOOKING IS FREE* | a birch leaf falls between them; every head turns to it at once; a SOLD tag clips onto it | 拉远 | LOOKING IS FREE | scenes/rfp_queue.js |
