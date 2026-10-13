@@ -88,7 +88,9 @@ s.listen(0, '127.0.0.1', async () => {
         for (const t of [tj, tw]) bobErr = Math.max(bobErr, Math.abs(t.group.position.y - t.top) - bob);
       }
       const kept = [tj, tw].every(t => cv.trucks.includes(t));
-      const crates = cv.cargo.crates.filter(c => c.welded && (c.truck === tj || c.truck === tw));
+      // a fold unwelds its own load by design, so: every crate still welded after
+      // the fold and the wreck, on any truck, rests where load() put it
+      const crates = cv.cargo.crates.filter(c => c.welded && c.truck);
       fold.kept = kept; fold.jacked = tj.jacked; fold.wrecked = !!tw.wrecked; fold.stalled = [tj.stalled, tw.stalled];
       fold.topErr = Math.max(...[tj, tw].map(t => Math.abs(t.top - (ROAD_Y + 1.1 + t.trailerH))));
       fold.bobErr = bobErr;
@@ -119,7 +121,7 @@ s.listen(0, '127.0.0.1', async () => {
     const f = r.fold;
     ok('step 4: a jackknifed and a wrecked truck keep the deck pins (top, 0.07 bob, deck centre, cab centre)',
       f.kept && f.jacked && f.wrecked && f.topErr < E && f.bobErr <= 1e-9 && f.centre < E && f.cabErr < E, JSON.stringify(f));
-    ok('step 4: their welded crates keep their rest heights', f.kept && f.crateErr < E, JSON.stringify({ crates: f.crates, err: f.crateErr }));
+    ok('step 4: after a fold and a wreck, every welded crate keeps its rest height', f.kept && f.crates > 0 && f.crateErr < E, JSON.stringify({ crates: f.crates, err: f.crateErr }));
     const l = r.life;
     ok('risk 4: a despawned truck leaves the scene with its pool, and disposes its own parts', !l.poolInScene && !l.groupInScene && l.ownDisposed > 0, JSON.stringify(l));
     ok('risk 4: the shared hover geometry/materials are never disposed by a despawn, and every other truck keeps its pods', l.shared >= 5 && l.disposed === 0 && l.othersHavePods, JSON.stringify(l));
