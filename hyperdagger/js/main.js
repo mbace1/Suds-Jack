@@ -1807,8 +1807,8 @@ window.addEventListener('pointerdown', e => {
   if (e.target && e.target.closest && e.target.closest('.toko-table')) return;
   audio.ensure();
   const isMouse = e.pointerType === 'mouse';
-  // HD-003: a finger that taps to start or retry is UI — its lift is not a jump
-  if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead')) input.swallowTouchAt(e.clientX, e.clientY);
+  // HD-003: a finger that taps to start, retry or resume is UI — its lift is not a jump
+  if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead' || (state === 'playing' && paused))) input.swallowTouchAt(e.clientX, e.clientY);
   if (state === 'menu') {
     if (!localStorage.getItem(TIPS_KEY)) {
       localStorage.setItem(TIPS_KEY, '1');
