@@ -38,6 +38,34 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
   green), `synth_rfp.py` its score (−14 LUFS, the last hit at 14.2 s rings out). It
   folds in every fix from `review-you-looked-at-it.md`.
 
+## The standard procedure (owner, 2026-10-13: "make this the standard procedure")
+
+Every film goes through the same nine steps; The Biodiversity Fund v6 is the worked
+example (`eras_bdf.js`, `scenes/bdf_*.js`, `synth_bdf.py`, `subs/biodiversity-tiktok.py`).
+
+1. **Record first.** Research the story and write the sources down beside the shot
+   table before a frame is drawn: every on-screen number, date and quote has a URL.
+   Real names only for what verifiably happened; no invented quote or reaction in a
+   real person's mouth; a claim someone makes without evidence is shown as *theirs*.
+2. **Shot table** (`shot-table-<film>.md`): papercut shadowbox, one stop dark, fall
+   palette, ochre light + magenta masks; six shots of twelve beats at 112 BPM
+   (~6.4 s), the last ten; half-second crossfades. Screen text ≤ 8 words a shot.
+3. **Stills before film.** Render each shot's key moment with `--solo --stills` and
+   LOOK: a hero must be lit or rimmed, nothing important behind a caption, no text
+   past its card or the frame. Fix, re-still.
+4. **Score** (`synth_<film>.py`): every cut and hit on the beat grid, normalised to
+   −14 LUFS, the tail rings out — never a chop.
+5. **Render** at 1080×1920, 30 fps, with the score.
+6. **House captions** (style H, see below): white Poppins ExtraBold with outline,
+   the line fades in ~0.8 s after the cut, line two joins at ~3 s, one keyword
+   lights ochre once read, gone 0.35 s before the dissolve, no line wider than 800 px.
+7. **Independent review** by a fresh agent that has not seen the build: facts
+   against sources, then the picture frame by frame.
+8. **Fix what the review finds**, re-render, and pull a 1 fps contact sheet of the
+   captioned cut — every frame checked for clipping and collisions before it ships.
+9. **Deliver** the captioned MP4 (the one that ships) and the plain one; commit the
+   scenes, film table, score, captions script, shot table with sources, and review.
+
 ## Naming in the films (owner, 2026-10-13)
 
 "We can sometimes use real names to be clear." The films may name a real company,
