@@ -87,16 +87,17 @@ def badge(sz):
     put(c,face(int(sz*.58),(255,255,255)),sz//2,int(sz*.52),shadow=(120,0,60),off=max(3,sz//90)); return c
 p=Image.new('RGBA',(1080,1080),NI+(255,)); p.alpha_composite(skyline(1080,1080,1080,3).resize((1080,1080))); 
 p=Image.blend(p,Image.new('RGBA',p.size,NI+(255,)),0.5); p.alpha_composite(badge(860),(110,110)); p.save(F+'profile-1080.png'); circ(F+'profile-1080.png',F+'profile-circle-preview.png')
-def rfh_banner(W,H,sx,sy,sw,sh,name):
-    c=cover(R+'katu.jpg',W,H); c=Image.blend(c,Image.new('RGBA',(W,H),NI+(255,)),0.72)
-    g=Image.new('RGBA',(W,H),(0,0,0,0)); ImageDraw.Draw(g).ellipse((W*.3,-H*.4,W*.9,H*.5),fill=OC+(40,)); c.alpha_composite(g.filter(ImageFilter.GaussianBlur(H//8)))
-    c.alpha_composite(skyline(W,H,H,7))
-    d=ImageDraw.Draw(c); bs=int(sh*.78); c.alpha_composite(badge(bs),(sx+int(sh*.05),sy+(sh-bs)//2))
-    tx=sx+int(sh*.15)+bs
-    text(d,(tx,sy+int(sh*.40)),'RADIO FREE',int(sh*.17),OC,'lm'); text(d,(tx,sy+int(sh*.62)),'HELSINKI',int(sh*.17),MG,'lm')
-    text(d,(tx,sy+int(sh*.82)),'@radiofreehki · news & radio satire',int(sh*.06),(225,220,210),'lm')
+def rfh_banner(W,H,sx,sy,sw,sh,name,align='c'):
+    """minimal: flat dark field, off-white wordmark, ONE accent (magenta thin rule)"""
+    c=Image.new('RGBA',(W,H),NI+(255,)); d=ImageDraw.Draw(c)
+    fs=int(sh*.17); f=ImageFont.truetype(BOLD,fs); word='RADIO FREE HELSINKI'
+    while f.getlength(word)>sw*.86: fs-=2; f=ImageFont.truetype(BOLD,fs)
+    tw=f.getlength(word); cx=sx+sw//2 if align=='c' else sx+sw-int(tw/2)
+    cy=sy+sh//2; d.text((cx,cy),word,font=f,fill=(236,232,224),anchor='mm')
+    rw=int(tw*.18); ry=cy+int(fs*.85); d.rectangle((cx-rw//2,ry,cx+rw//2,ry+max(3,fs//22)),fill=MG)
     c.convert('RGB').save(F+name)
-rfh_banner(1500,500,60,20,1380,460,'x-header-1500x500.png')
+# X header: wordmark pushed right so the avatar (bottom-left) has room
+rfh_banner(1500,500,520,60,900,300,'x-header-1500x500.png',align='r')
 rfh_banner(2560,1440,507,508,1546,423,'youtube-2560x1440.png')
 rfh_banner(1920,1080,140,260,1640,560,'generic-1920x1080.png')
 # safe-area overlays
