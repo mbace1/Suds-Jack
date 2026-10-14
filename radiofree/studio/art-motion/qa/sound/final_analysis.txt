@@ -1,0 +1,48 @@
+配乐_doh_m14.wav             DC=7.6e-04 clip=0 centroid=   179Hz A-wtd= 1564Hz flat=0.000 <250Hz=81.0% >4k= 1.4% onsets/s= 2.6 tempo≈[np.int64(112), np.int64(176), np.int64(148)]
+                           shot RMS dB:  -18.2  -13.7  -21.3  -19.0  -13.3  -15.5
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 1.19, 112: 2.4, 140: 0.85}  lag pulse: {84: -0.071, 112: 0.302, 140: -0.042, 168: -0.041}  bands <100/100-250/250-1k/1-4k/>4k: 56.2% 24.9% 13.7%  3.9%  1.4%
+                           picture hits: 21/21 have an onset within 30 ms 
+配乐_hp_m14.wav              DC=2.7e-04 clip=0 centroid=   271Hz A-wtd= 1046Hz flat=0.000 <250Hz=49.2% >4k= 1.1% onsets/s= 3.3 tempo≈[np.int64(84), np.int64(104), np.int64(141)]
+                           shot RMS dB:  -19.1  -18.4  -18.0  -16.5  -13.5  -17.3
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 2.09, 112: 1.79, 140: 1.64}  lag pulse: {84: 0.555, 112: -0.045, 140: 0.161, 168: -0.202}  bands <100/100-250/250-1k/1-4k/>4k: 24.0% 25.2% 45.8%  3.9%  1.1%
+                           picture hits: 12/12 have an onset within 30 ms 
+配乐_cw_m14.wav              DC=1.3e-03 clip=0 centroid=   213Hz A-wtd= 1121Hz flat=0.000 <250Hz=66.1% >4k= 0.7% onsets/s= 2.7 tempo≈[np.int64(112), np.int64(75), np.int64(125)]
+                           shot RMS dB:  -19.2  -15.6  -16.5  -19.3  -19.5  -14.1
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 2.64, 112: 3.86, 140: 1.67}  lag pulse: {84: -0.046, 112: 0.5, 140: -0.036, 168: -0.058}  bands <100/100-250/250-1k/1-4k/>4k: 35.8% 30.4% 26.9%  6.3%  0.7%
+                           picture hits: 13/14 have an onset within 30 ms MISSING: bell 2@1.300(-52ms)
+配乐_bot_m14.wav             DC=8.1e-05 clip=0 centroid=   592Hz A-wtd= 1522Hz flat=0.000 <250Hz=26.0% >4k= 3.3% onsets/s= 1.5 tempo≈[np.int64(112), np.int64(152), np.int64(157)]
+                           shot RMS dB:  -20.2  -17.3  -19.5  -20.5  -20.0  -12.6
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 3.08, 112: 2.4, 140: 2.44}  lag pulse: {84: 0.003, 112: 0.042, 140: -0.04, 168: -0.035}  bands <100/100-250/250-1k/1-4k/>4k:  3.0% 23.0% 54.2% 16.5%  3.3%
+                           picture hits: 9/9 have an onset within 30 ms 
+配乐_doh_s2_m14.wav          DC=9.8e-05 clip=0 centroid=   415Hz A-wtd= 1993Hz flat=0.000 <250Hz=61.8% >4k= 4.7% onsets/s= 5.4 tempo≈[np.int64(140), np.int64(93), np.int64(70)]
+                           shot RMS dB:  -19.4  -15.5  -17.4  -17.2  -15.1  -15.7
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 1.0, 112: 1.15, 140: 2.6}  lag pulse: {84: -0.07, 112: 0.063, 140: 0.52, 168: -0.091}  bands <100/100-250/250-1k/1-4k/>4k: 37.8% 24.0% 19.7% 13.8%  4.7%
+                           picture hits: 21/21 have an onset within 30 ms 
+配乐_hp_s2_m14.wav           DC=1.8e-04 clip=0 centroid=   266Hz A-wtd= 1137Hz flat=0.000 <250Hz=63.2% >4k= 1.2% onsets/s= 6.7 tempo≈[np.int64(84), np.int64(104), np.int64(154)]
+                           shot RMS dB:  -20.6  -15.9  -15.1  -15.6  -19.5  -14.7
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 1.45, 112: 0.94, 140: 1.12}  lag pulse: {84: 0.603, 112: -0.098, 140: 0.132, 168: -0.214}  bands <100/100-250/250-1k/1-4k/>4k: 29.1% 34.1% 32.7%  2.9%  1.2%
+                           picture hits: 12/12 have an onset within 30 ms 
+配乐_cw_s2_m14.wav           DC=2.3e-04 clip=0 centroid=   229Hz A-wtd= 1224Hz flat=0.000 <250Hz=68.6% >4k= 1.3% onsets/s= 5.2 tempo≈[np.int64(125), np.int64(94), np.int64(75)]
+                           shot RMS dB:  -16.4  -16.5  -15.7  -19.4  -15.8  -16.6
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 2.05, 112: 1.1, 140: 1.08}  lag pulse: {84: 0.108, 112: -0.053, 140: -0.056, 168: -0.064}  bands <100/100-250/250-1k/1-4k/>4k: 34.3% 34.3% 28.6%  1.5%  1.3%
+                           picture hits: 14/14 have an onset within 30 ms 
+配乐_bot_s2_m14.wav          DC=3.0e-05 clip=0 centroid=   674Hz A-wtd= 1336Hz flat=0.000 <250Hz=27.5% >4k= 1.7% onsets/s= 8.1 tempo≈[np.int64(168), np.int64(84), np.int64(173)]
+                           shot RMS dB:  -15.8  -18.3  -16.3  -18.0  -19.1  -17.6
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 1.64, 112: 1.15, 140: 1.14}  lag pulse: {84: 0.21, 112: 0.014, 140: -0.042, 168: 0.163}  bands <100/100-250/250-1k/1-4k/>4k:  9.9% 17.6% 50.4% 20.4%  1.7%
+                           picture hits: 9/9 have an onset within 30 ms 
+doh_mus.wav                DC=1.8e-04 clip=0 centroid=   260Hz A-wtd= 1565Hz flat=0.000 <250Hz=73.8% >4k= 1.8% onsets/s= 4.7 tempo≈[np.int64(140), np.int64(93), np.int64(70)]
+                           shot RMS dB:  -27.4  -21.3  -22.5  -22.4  -20.4  -22.0
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 1.12, 112: 1.11, 140: 3.13}  lag pulse: {84: -0.093, 112: -0.015, 140: 0.713, 168: -0.11}  bands <100/100-250/250-1k/1-4k/>4k: 48.0% 25.8% 16.1%  8.4%  1.8%
+                           picture hits: 15/21 have an onset within 30 ms MISSING: sign drop@0.536(-141ms), envelope lands@16.636(-785ms), sign in puddle@26.614(-54ms), lights off 1@32.643(+40ms), gate shut@33.914(-58ms), notice pinned@34.643(+66ms)
+hp_mus.wav                 DC=2.4e-04 clip=0 centroid=   258Hz A-wtd=  951Hz flat=0.000 <250Hz=64.5% >4k= 0.7% onsets/s= 6.1 tempo≈[np.int64(173), np.int64(156), np.int64(165)]
+                           shot RMS dB:  -29.6  -22.1  -19.2  -21.0  -27.9  -18.1
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 1.47, 112: 1.01, 140: 1.12}  lag pulse: {84: -0.022, 112: 0.063, 140: -0.034, 168: -0.03}  bands <100/100-250/250-1k/1-4k/>4k: 32.5% 32.0% 31.9%  2.8%  0.7%
+                           picture hits: 11/12 have an onset within 30 ms MISSING: hourglass turned@26.786(+350ms)
+cw_mus.wav                 DC=2.6e-04 clip=0 centroid=   215Hz A-wtd= 1046Hz flat=0.000 <250Hz=74.3% >4k= 0.9% onsets/s= 5.4 tempo≈[np.int64(84), np.int64(168), np.int64(180)]
+                           shot RMS dB:  -23.7  -21.7  -20.1  -27.9  -20.7  -19.4
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 2.12, 112: 1.06, 140: 1.08}  lag pulse: {84: 0.248, 112: -0.031, 140: -0.065, 168: -0.065}  bands <100/100-250/250-1k/1-4k/>4k: 45.3% 29.0% 23.9%  1.0%  0.9%
+                           picture hits: 12/14 have an onset within 30 ms MISSING: bell 1@0.600(-589ms), bell 2@1.300(+631ms)
+bot_mus.wav                DC=5.4e-05 clip=0 centroid=   442Hz A-wtd=  918Hz flat=0.000 <250Hz=38.1% >4k= 0.6% onsets/s= 2.1 tempo≈[np.int64(84), np.int64(168), np.int64(112)]
+                           shot RMS dB:  -17.4  -20.4  -19.9  -26.0  -23.7  -18.3
+                           lattice fit (x chance) 84|168 / 112 / 140: {84: 5.38, 112: 1.81, 140: 1.5}  lag pulse: {84: 0.332, 112: 0.023, 140: -0.051, 168: 0.257}  bands <100/100-250/250-1k/1-4k/>4k: 13.3% 24.9% 50.7% 10.5%  0.6%
+                           picture hits: 2/9 have an onset within 30 ms MISSING: LED wakes@0.900(+167ms), chirp@13.757(+131ms), chirp 2@15.957(+107ms), chirp 3@20.186(+166ms), chirp 5@27.314(-168ms), grown-up sits@33.043(+162ms), LAST HIT lamp@35.143(+206ms)
