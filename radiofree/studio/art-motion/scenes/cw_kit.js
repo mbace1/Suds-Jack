@@ -7,24 +7,97 @@ window.CW = (() => {
   const { K, W, H, sheet, sprite, put, glow, ledAt, walker } = RFP, TAU = Math.PI * 2, { clamp, lerp } = U;
   const C = { marble: '#8c8573', marbleL: '#a39b86', marbleD: '#6e6858', wood: '#3a2618', woodL: '#5a3a24', woodD: '#2a1a10', brass: '#c9a24a', suit: '#23272b', hair: '#3a2a1e', green: '#24321e' };
 
-  /** City Hall: two wings, the portico, the cupola with its clock and the figure on top */
-  const hall = () => sheet('cw_hall', (g) => {
-    g.fillStyle = C.green; for (const x of [-60, 1060]) { g.beginPath(); g.ellipse(x, 1330, 220, 300, 0, 0, TAU); g.fill(); }   // trees either side
-    g.fillStyle = C.marbleD; g.fillRect(-40, 1080, W + 80, 420);                                                              // the wings
-    g.fillStyle = C.marble; g.fillRect(250, 1010, 580, 490);                                                                  // the centre block
-    g.fillStyle = C.marbleL; g.fillRect(-40, 1066, W + 80, 18); g.fillRect(240, 996, 600, 18);                                // cornices
-    g.fillStyle = C.marble; g.fillRect(400, 760, 280, 250); g.fillStyle = C.marbleL; g.fillRect(390, 748, 300, 16);           // the drum
-    g.fillStyle = C.marbleD; g.beginPath(); g.moveTo(420, 748); g.quadraticCurveTo(540, 600, 660, 748); g.closePath(); g.fill(); // the cupola
-    g.fillStyle = C.marble; g.fillRect(520, 560, 40, 70); g.beginPath(); g.arc(540, 556, 16, 0, TAU); g.fill();                // the lantern and Justice
-    g.fillStyle = '#e8e0c8'; g.beginPath(); g.arc(540, 870, 62, 0, TAU); g.fill(); g.strokeStyle = K.ink; g.lineWidth = 5; g.beginPath(); g.arc(540, 870, 62, 0, TAU); g.stroke();
-    g.lineWidth = 6; g.beginPath(); g.moveTo(540, 870); g.lineTo(540, 828); g.moveTo(540, 870); g.lineTo(572, 880); g.stroke();   // the clock, ten past seven
-    g.fillStyle = C.marbleL; for (let i = 0; i < 6; i++) g.fillRect(300 + i * 92, 1030, 30, 380);                              // the portico's columns
-    g.fillStyle = C.marbleD; g.fillRect(250, 1410, 580, 30); g.fillStyle = '#4a4538'; for (let k = 0; k < 4; k++) g.fillRect(200 - k * 30, 1440 + k * 22, 680 + k * 60, 22);   // the steps
-    g.fillStyle = '#1a1714'; g.fillRect(-90, 1530, W + 180, H);                                                               // the plaza
+  /** City Hall as it is — drawn in final frame coordinates. Two storeys of marble under one long
+   *  balustrade; the centre a two-storey portico (columns below, columns above, its own balustrade);
+   *  behind it the cupola: a square clock stage, a round colonnaded drum, a small dome, and Justice
+   *  on top, gilt, with her scales. Park trees close the sides. Owner, 2026-10-14: "I wasn't sure it
+   *  looked like" New York — so the building is the real silhouette and the skyline is behind it. */
+  function balustrade(g, x0, x1, y, h = 22, col = C.marbleL) {
+    g.fillStyle = col; g.fillRect(x0, y - 6, x1 - x0, 7); g.fillRect(x0, y + h, x1 - x0, 6);
+    for (let x = x0 + 6; x < x1 - 6; x += 15) { g.beginPath(); g.ellipse(x + 4, y + h / 2 + 1, 4, h / 2, 0, 0, TAU); g.fill(); }
+  }
+  const hall = () => sheet('cw_hall2', (g) => {
+    // the wings
+    g.fillStyle = C.marbleD; g.fillRect(-90, 1170, W + 180, 400);
+    g.fillStyle = C.marbleL; g.fillRect(-90, 1156, W + 180, 16); balustrade(g, -90, W + 90, 1126);
+    g.fillStyle = C.marble; for (const x of [-60, 1030]) g.fillRect(x, 1150, 110, 420);                               // the end pavilions
+    g.fillStyle = C.marbleL; for (const x of [-50, 30, 1040, 1120]) g.fillRect(x - 6, 1180, 12, 380);                  // pilasters
+    g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(-90, 1360, W + 180, 8);                                                 // the string course
+    // the portico
+    g.fillStyle = C.marble; g.fillRect(320, 1070, 440, 500);
+    g.fillStyle = C.marbleL; g.fillRect(310, 1056, 460, 16); balustrade(g, 310, 770, 1026);
+    g.fillStyle = C.marbleL; g.fillRect(310, 1330, 460, 24);                                                           // entablature
+    for (let i = 0; i < 6; i++) { const x = 346 + i * 78; g.fillStyle = C.marbleL; g.fillRect(x, 1090, 24, 236); g.fillRect(x - 5, 1086, 34, 10); g.fillRect(x, 1360, 26, 200); g.fillRect(x - 5, 1356, 36, 10); }
+    g.fillStyle = '#4a4538'; for (let i = 0; i < 5; i++) { const x = 378 + i * 78; g.fillRect(x, 1104, 40, 220); }     // shadowed bays between the upper columns
+    // the steps and the plaza
+    g.fillStyle = '#2f2b25'; for (let i = 0; i < 5; i++) { const x = 380 + i * 78; g.beginPath(); g.roundRect(x, 1390, 40, 170, [20, 20, 0, 0]); g.fill(); }   // the arched doors between the lower columns
+    g.fillStyle = '#3a362e'; g.fillRect(-90, 1566, W + 180, 110);                                                     // the plinth
+    g.fillStyle = '#4a4538'; for (let k = 0; k < 5; k++) g.fillRect(290 - k * 26, 1570 + k * 20, 500 + k * 52, 20);
+    g.fillStyle = '#1a1714'; g.fillRect(-90, 1670, W + 180, H);
+    // the cupola: clock stage, colonnaded drum, dome, lantern
+    g.fillStyle = C.marble; g.fillRect(440, 880, 200, 160); g.fillStyle = C.marbleL; g.fillRect(430, 868, 220, 14); g.fillRect(430, 1036, 220, 12);
+    g.fillStyle = '#e8e0c8'; g.beginPath(); g.arc(540, 958, 56, 0, TAU); g.fill(); g.strokeStyle = K.ink; g.lineWidth = 5; g.beginPath(); g.arc(540, 958, 56, 0, TAU); g.stroke();
+    g.lineWidth = 6; g.beginPath(); g.moveTo(540, 958); g.lineTo(540, 920); g.moveTo(540, 958); g.lineTo(568, 968); g.stroke();   // ten past seven
+    g.fillStyle = C.marbleD; g.fillRect(470, 760, 140, 108);                                                            // the drum's shadowed core
+    g.fillStyle = C.marbleL; for (let i = 0; i < 6; i++) g.fillRect(470 + i * 25, 762, 12, 104); g.fillRect(458, 750, 164, 14); g.fillRect(458, 864, 164, 10);
+    g.fillStyle = C.marble; g.beginPath(); g.ellipse(540, 752, 76, 64, 0, Math.PI, TAU); g.fill();                     // the dome
+    g.fillStyle = C.marbleL; for (let i = -2; i <= 2; i++) { g.beginPath(); g.ellipse(540 + i * 26, 730, 4, 26, i * 0.1, 0, TAU); g.fill(); }   // ribs
+    g.fillStyle = C.marble; g.fillRect(526, 650, 28, 42); g.fillStyle = C.marbleL; g.fillRect(520, 644, 40, 8);         // the lantern
+    // Justice, gilt: a standing figure, the scales held out to her left, the sword down to her right
+    g.fillStyle = '#c9a24a'; g.beginPath(); g.moveTo(528, 644); g.lineTo(532, 600); g.quadraticCurveTo(540, 588, 548, 600); g.lineTo(552, 644); g.closePath(); g.fill();
+    g.beginPath(); g.arc(540, 582, 9, 0, TAU); g.fill();
+    g.strokeStyle = '#c9a24a'; g.lineWidth = 5; g.beginPath(); g.moveTo(546, 600); g.lineTo(570, 572); g.stroke();       // the raised arm
+    g.lineWidth = 3; g.beginPath(); g.moveTo(556, 572); g.lineTo(584, 572); g.stroke();
+    for (const x of [556, 584]) { g.beginPath(); g.moveTo(x, 572); g.lineTo(x, 584); g.stroke(); g.beginPath(); g.ellipse(x, 586, 7, 3, 0, 0, TAU); g.fill(); }
+    g.lineWidth = 4; g.beginPath(); g.moveTo(533, 604); g.lineTo(518, 640); g.stroke();                                // the sword
   }, 14);
-  /** the windows of City Hall, lit by the caller (each is [x, y]) */
-  const WINDOWS = [[30, 1130], [120, 1130], [210, 1130], [870, 1130], [960, 1130], [1050, 1130], [30, 1300], [120, 1300], [210, 1300], [870, 1300], [960, 1300], [1050, 1300]];
-  function windows(c, n, ox = 0) { WINDOWS.forEach(([x, y], i) => { c.fillStyle = i < n ? '#e0a650' : '#2b2822'; c.beginPath(); c.roundRect(x - 26 + ox, y, 52, 110, [26, 26, 0, 0]); c.fill(); }); }
+  /** the windows of City Hall, lit by the caller: the wings' upper (square) then lower (arched) rows */
+  const WINDOWS = [[200, 1200], [260, 1200], [820, 1200], [880, 1200], [140, 1200], [940, 1200], [200, 1400], [260, 1400], [820, 1400], [880, 1400], [140, 1400], [940, 1400]];
+  function windows(c, n, ox = 0) { WINDOWS.forEach(([x, y], i) => { c.fillStyle = i < n ? '#e0a650' : '#2b2822'; c.beginPath(); c.roundRect(x - 20 + ox, y, 40, i % 12 < 6 ? 120 : 130, i % 12 < 6 ? 3 : [20, 20, 0, 0]); c.fill(); }); }
+  /** lower Manhattan behind it, as seen from City Hall Park: One World Trade Center far left, the
+   *  Woolworth Building's gothic tower and copper crown, the Municipal Building's tiers and gilt
+   *  statue on the right, ordinary towers between with lit windows */
+  const skyline = () => sheet('cw_skyline', (g) => {
+    const S0 = '#20262c', S1 = '#2a3137', S2 = '#353d44';
+    const towers = [[330, 410, 780], [405, 470, 840], [620, 700, 720], [700, 790, 800], [-20, 60, 640], [470, 540, 900]];
+    g.fillStyle = S0; for (const [a, b, top] of towers) g.fillRect(a, top, b - a, 1200 - top);
+    g.fillStyle = 'rgba(224,166,80,.55)'; let r = 7;
+    for (const [a, b, top] of towers) for (let y = top + 20; y < 1150; y += 26) for (let x = a + 8; x < b - 8; x += 18) { r = (r * 9301 + 49297) % 233280; if (r / 233280 < 0.18) g.fillRect(x, y, 7, 10); }
+    // One World Trade Center
+    g.fillStyle = S1; g.beginPath(); g.moveTo(60, 1200); g.lineTo(70, 330); g.lineTo(120, 330); g.lineTo(170, 1200); g.closePath(); g.fill();
+    g.fillStyle = S2; g.beginPath(); g.moveTo(115, 1200); g.lineTo(95, 330); g.lineTo(120, 330); g.lineTo(170, 1200); g.closePath(); g.fill();
+    g.fillStyle = S1; g.fillRect(93, 230, 4, 100);
+    // the Woolworth Building
+    g.fillStyle = S1; g.fillRect(165, 610, 150, 600); g.fillRect(195, 440, 90, 180); g.fillRect(210, 380, 60, 70);
+    g.fillStyle = S2; for (let x = 172; x < 312; x += 16) g.fillRect(x, 616, 4, 590); for (let x = 200; x < 284; x += 14) g.fillRect(x, 446, 3, 170);
+    g.fillStyle = '#4f6b62'; g.beginPath(); g.moveTo(206, 384); g.lineTo(240, 300); g.lineTo(274, 384); g.closePath(); g.fill();   // the copper crown
+    g.fillRect(238, 262, 4, 40);
+    for (const [x, y] of [[196, 440], [284, 440], [210, 380], [270, 380]]) { g.beginPath(); g.moveTo(x - 7, y); g.lineTo(x, y - 30); g.lineTo(x + 7, y); g.fill(); }   // pinnacles
+    // the Municipal Building
+    g.fillStyle = S1; g.fillRect(790, 640, 300, 570); g.fillRect(850, 560, 160, 90); g.fillRect(885, 495, 90, 70); g.fillRect(905, 450, 50, 50);
+    g.fillStyle = S2; for (let x = 858; x < 1004; x += 18) g.fillRect(x, 566, 6, 80); for (let x = 890; x < 972; x += 14) g.fillRect(x, 500, 4, 60);
+    g.fillStyle = S1; g.beginPath(); g.ellipse(930, 450, 25, 18, 0, Math.PI, TAU); g.fill();
+    g.fillStyle = '#c9a24a'; g.beginPath(); g.moveTo(922, 432); g.lineTo(926, 396); g.quadraticCurveTo(930, 388, 934, 396); g.lineTo(938, 432); g.closePath(); g.fill();   // Civic Fame, gilt: a robed figure
+    g.beginPath(); g.arc(930, 382, 6, 0, TAU); g.fill(); g.strokeStyle = '#c9a24a'; g.lineWidth = 3; g.beginPath(); g.moveTo(934, 398); g.lineTo(946, 372); g.stroke(); g.beginPath(); g.moveTo(926, 400); g.lineTo(916, 412); g.stroke();
+    g.beginPath(); g.arc(946, 368, 6, Math.PI * 0.9, Math.PI * 2.1); g.stroke();   // the crown she holds up
+    g.fillStyle = 'rgba(224,166,80,.45)'; for (let y = 660; y < 1150; y += 28) for (let x = 802; x < 1080; x += 22) { r = (r * 9301 + 49297) % 233280; if (r / 233280 < 0.14) g.fillRect(x, y, 8, 11); }
+  }, 6);
+  /** a New York taxi, side on, in card */
+  const taxi = () => sprite('cw_taxi', 300, 120, 150, 110, (g) => {
+    g.fillStyle = '#e8b520'; g.beginPath(); g.moveTo(-140, -20); g.lineTo(-130, -54); g.lineTo(-70, -58); g.lineTo(-44, -92); g.lineTo(52, -92); g.lineTo(84, -58); g.lineTo(136, -52); g.lineTo(144, -20); g.closePath(); g.fill();
+    g.fillStyle = '#1d2226'; g.beginPath(); g.moveTo(-36, -86); g.lineTo(2, -86); g.lineTo(2, -60); g.lineTo(-58, -60); g.closePath(); g.fill(); g.beginPath(); g.moveTo(10, -86); g.lineTo(48, -86); g.lineTo(74, -60); g.lineTo(10, -60); g.closePath(); g.fill();
+    g.fillStyle = '#f4ecd0'; g.fillRect(-14, -108, 44, 16); g.fillStyle = K.ink; g.font = '12px "ArchivoBlack-400"'; g.textAlign = 'center'; g.fillText('TAXI', 8, -96);
+    g.fillStyle = K.ink; g.font = '15px "ArchivoBlack-400"'; g.fillText('NYC', -40, -32);
+    g.fillStyle = '#15120f'; for (const x of [-86, 86]) { g.beginPath(); g.arc(x, -16, 22, 0, TAU); g.fill(); }
+    g.fillStyle = '#6a6458'; for (const x of [-86, 86]) { g.beginPath(); g.arc(x, -16, 9, 0, TAU); g.fill(); }
+  }, 6);
+  /** a small ochre tag in the box's lower corner — where and what, so a viewer far from New York knows */
+  function tag(c, text, lt, dur, x = 110, y = 1700) {
+    const a = clamp((lt - 0.5) / 0.3, 0, 1) * clamp((dur - 0.6 - lt) / 0.3, 0, 1); if (a <= 0) return;
+    c.save(); c.globalAlpha = a; c.font = '32px "ArchivoBlack-400"'; const w = c.measureText(text).width + 44;
+    c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(x, y, w, 66, 8); c.fill(); c.shadowColor = 'transparent';
+    c.fillStyle = K.ink; c.fillText(text, x + 22, y + 45); c.restore();
+  }
 
   /** the council chamber: panelled walls, the curved dais, the seal */
   const chamber = () => sheet('cw_chamber', (g) => {
@@ -94,5 +167,5 @@ window.CW = (() => {
   }, 12);
   const table = () => sheet('cw_table', (g) => { g.fillStyle = C.woodL; g.fillRect(-90, 1460, W + 180, 60); g.fillStyle = C.wood; g.fillRect(-90, 1520, W + 180, H); g.fillStyle = 'rgba(255,240,210,.06)'; g.fillRect(-90, 1460, W + 180, 8); }, 12);
 
-  return { C, hall, windows, chamber, dais, council, dial, needle, plate, mic, backView, envelope, stampMark, gavel, block, chair, table };
+  return { C, hall, windows, skyline, taxi, tag, chamber, dais, council, dial, needle, plate, mic, backView, envelope, stampMark, gavel, block, chair, table };
 })();

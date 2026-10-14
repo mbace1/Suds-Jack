@@ -15,7 +15,7 @@ SCENES['cw_gavel'] = (() => {
         { fn: (g, ox) => { glow(g, 540 + ox, 1100, 640, 'rgba(240,170,70,', 0.26); g.fillStyle = 'rgba(255,230,180,.4)'; const r = U.rng(12); for (let i = 0; i < 26; i++) g.fillRect((r() * 900 + 90 + lt * 12 * (r() - 0.3) + ox) % W, 700 + (r() * 700 + lt * 18 * r()) % 700, 3, 3); }, d: 0.06 },   // dust in the lamp
         { sh: sheet('cw_daisclose', (g) => { g.fillStyle = D.C.woodL; g.fillRect(-90, 1380, W + 180, 70); g.fillStyle = D.C.wood; g.fillRect(-90, 1450, W + 180, H); g.fillStyle = 'rgba(255,240,210,.07)'; g.fillRect(-90, 1380, W + 180, 8); }), d: 0.2, lift: 1 },
         { fn: (g, ox) => {
-          put(g, D.plate('SPEAKER', 240), 880 + ox, 1460, { lift: 1.4 });
+          put(g, D.plate('SPEAKER MENIN', 270), 890 + ox, 1470, { lift: 1.4 });
           put(g, D.block(), 640 + ox, 1400, { lift: 1.2 });
           // the gavel swings about a point off the frame's right edge: raised, then down on its block
           const a = lerp(-0.06, 0.55, up);   // canvas angles run clockwise: positive lifts the head

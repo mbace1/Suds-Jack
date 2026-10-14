@@ -89,6 +89,13 @@ clay surface re-lumped per pose so it boils like real stop-motion — while came
 move every frame. People wear Toko masks (rigid: the acting is in body, posture and props); real
 people are still never given faces. Papercut is the second style, for when a story suits it.
 
+**Fixes stay in the film's own style** (owner, 2026-10-14: "Make all the changes in the current
+video styles still. Only new videos in new style"). A papercut film is fixed in papercut — and
+gets the papercut sign-off; only new films, and remakes the owner names (the Deer, in clay), are
+made in clay. The sign-off exists twice for that reason: `scenes/so_ident.js` (papercut: the
+Cathedral over the rooftops, Toko at a mic beside the pirate mast) and the clay ident; the
+lettering and jingle are shared (`subs/signoff-captions.ass`, `synth_signoff.py`).
+
 Cost: three.js under SwiftShader renders about 6.5 s a frame here — roughly 100 minutes for a
 37.5 s film — so stills come first, always, and the full render runs in the background. The
 clay kit lives in `clay/` (scene, sculpting, materials, the Toko mask from the traced master,

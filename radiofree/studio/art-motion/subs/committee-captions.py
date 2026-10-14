@@ -6,11 +6,11 @@ from rfcaps import build
 B = 60 / 112; SHOT = 12
 CUT = [k * SHOT * B for k in range(6)] + [5 * SHOT * B + 10 * B]
 SHOTS = [
- (0, 0.80, 3.00, 420, "On 5 October, New York's\\Ncouncil met as one committee", "of [all 51 members],\\Nfor one hearing: AI risk."),
- (1, 0.80, 3.00, 420, "Meta agreed to come.", "Three others came only under\\Nthe [threat of subpoenas]."),
+ (0, 0.80, 3.00, 420, "On 5 October, the\\N[New York City Council]", "met as a committee of\\Nall 51 members, on AI risk."),
+ (1, 0.80, 3.00, 360, "It invited five AI companies.\\NMeta said yes.", "Three came only under\\Nthe [threat of subpoenas]."),
  (2, 0.80, 3.00, 420, "Jacob Coxon, ex-Anthropic:", "\"On our current path, I think\\Nit is more likely than not that\\Nhumanity [loses control]…\""),
  (3, 0.80, 3.00, 420, "Asked for the odds\\Nof catastrophe,", "none of the four companies\\N[gave a number]."),
- (4, 0.80, 2.00, 420, "The Speaker called\\NOpenAI's answer", "\"[flippant at best].\""),
- (5, 0.70, 2.20, 420, "One company did not come,\\Ndespite a [subpoena].", "The council is pursuing it\\Nin court."),
+ (4, 0.80, 2.00, 420, "Council Speaker Julie Menin\\Ncalled OpenAI's answer", "\"[flippant at best].\""),
+ (5, 0.70, 2.20, 420, "SpaceXAI did not come,\\Ndespite a [subpoena].", "The council is pursuing\\Nthe subpoena in court."),
 ]
 build(SHOTS, CUT, str(Path(__file__).with_name('cw_H.ass')), manual=True)

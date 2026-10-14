@@ -1,8 +1,10 @@
-# Committee of the Whole — Coxon #2, v4, 37.5 s, portrait 1080×1920, 112 BPM
+# Committee of the Whole — Coxon #2, v5, 37.5 s, portrait 1080×1920, 112 BPM
 
 Coxon #2 (owner, 2026-10-13: "2 for the Jacob Coxon (real name can be used)"). On 5 October 2026 New York's city council sat all 51 members for one hearing on AI risk; the companies came only under threat of subpoena, one did not come at all; Jacob Coxon told them it is more likely than not that humanity loses control; asked for the odds of catastrophe, none of the four companies gave a number. The satire is on the industry's attendance and its answer — never on Coxon, whose words are quoted exactly and only where sourced. Real names: Coxon, OpenAI, Anthropic, Meta, SpaceXAI, Speaker Julie Menin (README, "Naming in the films"); Google stays Doodle, the house name.
 
 v4 (independent review v2, `review-committee-v2.md`): "flippant at best" was said to OpenAI's answer, so the caption names it and OpenAI's blank card sits in the gavel shot's foreground; Coxon's quote keeps "On our current path, I think" — his conditional estimate, not a flat prediction — and the dial is labelled as his estimate; the council "met as one committee of all 51 members" (membership, not a roll call); the banner's date is American (OCT 5, 2026); "pursuing it in court" is the council's own wording; the stamp and gavel land earlier; one plate size for all four companies; the mic clear of the dais lettering; the question card's wire starts below the captions; an ordinary shirt collar on Coxon.
+
+v5 (owner, 2026-10-14: "great, maybe some clarity needed. Visuals can help, because I wasn't sure it looked like" New York): the opening is New York City Hall as it is — the long balustraded front, the two-storey portico, the clock stage and colonnaded cupola with gilt Justice — with lower Manhattan behind it (One World Trade Center, the Woolworth Building's copper crown, the Municipal Building and its gilt Civic Fame), a yellow cab crossing, and a tag, CITY HALL · NEW YORK. (The hearing was in City Hall's council chamber, not a courthouse; the court comes in only at the end, for SpaceXAI.) Captions: the council is named in full; it "invited five AI companies"; the Speaker is "Council Speaker Julie Menin", so nobody takes her for the US House Speaker of Coxon #1, and her nameplate says SPEAKER MENIN; the company that did not come is named, SpaceXAI.
 
 画风：Papercut shadowbox, the house style: New York City Hall and its council chamber cut from cream and dark card at night, ochre lamplight, magenta masks on the council, and the one blinking red light — the microphone's.
 色板：#0e110f #1c2a22 #3a2a20 #e3a33a #f0027f #d8c8a8
@@ -10,14 +12,23 @@ v4 (independent review v2, `review-committee-v2.md`): "flippant at best" was sai
 
 | 时间段 | 画面里的物 | 它在做什么 | 镜头 | 屏上字 | 做法 |
 |---|---|---|---|---|---|
-| 0–6.4 | New York City Hall at night — the white front, the cupola and its clock | the windows light up one by one; a banner unrolls over the portico: COMMITTEE OF THE WHOLE · OCT 5, 2026 · ALL 51 MEMBERS; members climb the steps | 缓推 | COMMITTEE OF THE WHOLE | scenes/cw_hall.js |
+| 0–6.4 | New York City Hall at dusk — the balustraded front, the portico, the clock stage and cupola with gilt Justice — and lower Manhattan behind it; a yellow cab crosses; tag CITY HALL · NEW YORK | the windows light up one by one; a banner unrolls over the portico: COMMITTEE OF THE WHOLE · OCT 5, 2026 · ALL 51 MEMBERS; members climb the steps | 缓推 | COMMITTEE OF THE WHOLE | scenes/cw_hall.js |
 | 6.4–12.9 | the Speaker's desk: five envelopes, META · DOODLE · OPENAI · ANTHROPIC · SPACEXAI | META turns over: YES; a magenta SUBPOENA stamp thumps down beside the rest; DOODLE, OPENAI, ANTHROPIC turn over, the last one late; SPACEXAI stays blank | 停 | SUBPOENA | scenes/cw_letters.js |
 | 12.9–19.3 | the chamber from behind the witness table: Coxon's back, his nameplate, the microphone's red light, the masked council at the dais | a dial behind the dais, LOSS OF CONTROL · COXON'S ESTIMATE, ON OUR CURRENT PATH, swings past 50 on the beat | 缓推 | > 50 | scenes/cw_mic.js |
 | 19.3–25.7 | the companies' table: four nameplates | a card comes down from the dais: THE ODDS? — and at each place an answer card pops up, blank: ? · ? · ? · ? | 停 | THE ODDS? | scenes/cw_odds.js |
 | 25.7–32.1 | the dais, close: the Speaker's gavel and plate; OpenAI's blank card and plate in the foreground | the gavel rises; FLIPPANT AT BEST slams down with the caption's keyword; the gavel comes down | 砸入 | FLIPPANT AT BEST | scenes/cw_gavel.js |
 | 32.1–37.5 | the end of the companies' table | an empty chair, nameplate SPACEXAI; the subpoena lands on its seat; on the last hit the court's stamp: TO COURT | 拉远 | SPACEXAI | scenes/cw_chair.js |
 
-## Captions (house style H, manual breaks)
+## Captions (house style H, manual breaks) — v5
+
+1. On 5 October, the · [New York City Council] / met as a committee of · all 51 members, on AI risk.
+2. It invited five AI companies. · Meta said yes. / Three came only under · the [threat of subpoenas].
+3. Jacob Coxon, ex-Anthropic: / "On our current path, I think · it is more likely than not that · humanity [loses control]…"
+4. Asked for the odds · of catastrophe, / none of the four companies · [gave a number].
+5. Council Speaker Julie Menin · called OpenAI's answer / "[flippant at best]."
+6. SpaceXAI did not come, · despite a [subpoena]. / The council is pursuing · the subpoena in court. (Review v5: with SpaceXAI the subject, "it" read as the company.)
+
+_v4, superseded:_
 
 1. On 5 October, New York's · council met as one committee / of [all 51 members], · for one hearing: AI risk.
 2. Meta agreed to come. / Three others came only under · the [threat of subpoenas].
