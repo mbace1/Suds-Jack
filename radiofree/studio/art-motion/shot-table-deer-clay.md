@@ -29,6 +29,18 @@ Toko thinker #1, remade in the house clay style (owner, 2026-10-14: "The deer vi
 
 The device's line (shot 3) is the reported wording, exact, and is attributed to the brief, never to a person. Everything the camera "says" in the film is limited to the documented behaviour: dogs as deer, cats as raccoons.
 
+## The short cut — the release (clay films go to the Toko Midori Games socials: short, no end slate)
+
+19.25 s cut from the full clay render (`clay/deer/`): the push-in on the camera and its $20/MO tag 2.0–5.75 s, the dog getting its DEER flag 8.25–12.0, the phone's brief 14.25–18.0, the antlered reflection and the cat's RACCOON flag 27.0–31.5, Toko's DOG tag 33.0–37.5; 0.25 s dissolves; the sound is the same pieces of the Toko-series score. Shot 4 (the antler pat) is out — it is the one the review flagged (the patting mitt read as a red ball with no arm) and the cut is better short.
+
+1. Toko's home camera · has [AI] now. / $20 a month.
+2. The dog crosses the room. / The camera [takes a note].
+3. That evening, · its [daily brief]:
+4. Real line. A reviewer's · dogs were logged as [deer]. / Other owners' cats: · raccoons.
+5. The AI brief: [$20 a month]. / Toko's brief: free. · It's a dog.
+
+Review v6 (`review-deer-clay-v6.md`): with no end slate, "Real line." tells the viewer the phone's words are the device's own. Before posting, check Gemini for Home is still "early access" and still $20 a month; the sources go in the post text.
+
 ## Sources
 
 Doodle Home stands for Google's Gemini for Home (Nest cameras, Home Brief). The flat, the dog, the cat and Toko are ours; the behaviour is the reviewers'.
