@@ -171,12 +171,34 @@ contexts or moods"*):
 - What does not change: **one face, one ground** — the face in one colour on
   another, never two colours inside the mark, never a gradient across it.
 
+**The owner's references, 2026-10-14** (sent in conversation; the files that arrived are in
+[`master/`](master/), the rest are described here until they are added):
+
+- **The head, in 3D** — the owner's own mock-up of Toko on a person in a black
+  *Toko Midori Games* T-shirt: the whole head is a smooth **magenta egg**, taller than wide,
+  on a round magenta **neck** that goes into the collar, the face in white set into its
+  upper half. No strap, no human head showing. **This is how Toko is built in 3D and clay.**
+- **The mask, as an object** — a die-cut flat card in the same egg-and-neck silhouette,
+  magenta with the white face or white with the black face, two strap holes at eye level;
+  printed as a sheet with cards and QR codes, and photographed lying on cherry petals at
+  the head of the owner's own shadow, so the shadow wears it.
+- **"What is Toko. Toko is like this."** — the owner's diagram behind §2b: *Toko Midori is
+  the one, the person* (the egg-and-neck head, magenta, white face) *but also Toko Midori is
+  clusters* — the same head filled with small heads, each one a member: current members, an
+  ex-member, members and players in the future.
+- **The logotype sheet** — the main one-line logotype, the three-line stack, the lockup
+  (face + three lines + ™), a "with mark" barcode block, and the sub-logos: `T「く」.`, a
+  brush *TOKO* and a brush character, a pixel *toko* with a magenta dot, and a magenta
+  stamp-bar. Colours as §3: RGB 0,0,0 / CMYK 0,0,0,100 and RGB 240,2,127 / CMYK 0,100,0,0.
+  The business card: the three-line logotype beside *The Game Creator · 美鳥十湖 · Toko Midori*.
+- **The colours** — the face in ten colours, on white and reversed (`master/README.md`).
+
 **Versions — valid, not original:**
 
 | | Status |
 |---|---|
 | **Toko Slomo** — grey hair, a mask, a knife behind his back; the owner's hand-made sheet in `turf/art-src/reference/toko-slomo-run.png` | **The Kallio Noir version of Toko.** Valid, owner-made — not the original. |
-| The magenta bust (`drawHead`), the clusters (`drawCluster`) | Assistant-drawn carriers built on `GEO`. Not the original. |
+| The magenta bust (`drawHead`), the clusters (`drawCluster`) | The *ideas* are the owner's — his diagram "What is Toko. Toko is like this." (2026-10-14 references) draws both. These drawings of them are assistant-made on `GEO`: versions, not the original. |
 | Toko Live's figure — dark hood, magenta hands, ring head | Assistant-drawn. Not the original. |
 | The teal gel (`radiofree/js/toko.js`, before v67) | An assistant's invention. Retired. |
 | The noodle-shop keeper with a yellow smiley mask (`piritori/art/rooms/toko.webp`) | Generated art — misspelled sign ("HENSLONKI"), garbled kana. Not a reference. |

@@ -29,3 +29,11 @@ files. The rest go here under the same names (`face-<colour>-on-white.jpg`,
 Note for `../js/palette.js`: the references' yellow measures `#FFCC00`, where `STICKER.YELLOW`
 is `#f5c400`. When the remaining files arrive, measure each and reconcile `STICKER` against
 them — the owner's files win.
+
+## The other references (2026-10-14)
+
+Sent the same day and described in `../BRAND.md` §2c until the files are added here: the 3D
+head on a person in the *Toko Midori Games* T-shirt (the model for every 3D and clay Toko),
+the die-cut mask sheet and the mask on cherry petals, the "What is Toko" diagram (the one and
+the clusters), the logotype sheet, the lockup with ™, the logotype on a monitor and over
+cherry blossom, and the business card.
