@@ -62,6 +62,14 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
   midterms. `scenes/hp_*.js`, `synth_hp.py`, `subs/handful-captions.py`,
   `shot-table-handful.md`, `review-handful-v2.md`. Finished films for download: `films/`.
 
+## Release names (owner, 2026-10-14)
+
+Finished films go in `films/` named `DD-MM-SeriesN-Title.mp4`: the release date, the series
+and its number, the title — hyphens for spaces, so the link works anywhere unescaped. Series:
+`Doodle` (the Google/Doodle stories), `Coxon` (Jacob Coxon), `Toko` (the Toko thinkers).
+E.g. `14-10-Doodle1-Biodiversity-Fund.mp4`. The repo is public, so each file has a direct
+download link: `https://raw.githubusercontent.com/mbace1/Suds-Jack/<commit>/radiofree/studio/art-motion/films/<name>`.
+
 ## The standard procedure (owner, 2026-10-13: "make this the standard procedure")
 
 Every film goes through the same nine steps; The Biodiversity Fund v6 is the worked
