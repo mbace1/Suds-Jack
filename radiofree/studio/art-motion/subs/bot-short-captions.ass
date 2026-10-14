@@ -1,0 +1,22 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: H,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
+Style: Bug,Poppins ExtraBold,30,&H30FFFFFF,&H30FFFFFF,&H80000000,&H00000000,0,0,0,0,100,100,1,0,1,3,0,7,0,0,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.30,0:00:19.88,Bug,,0,0,0,,{\an7\pos(92,88)\fad(400,0)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE HELSINKI
+Dialogue: 0,0:00:00.30,0:00:03.02,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}In a Cambridge study,\Na three-year-old\Ntold an AI toy:
+Dialogue: 0,0:00:03.67,0:00:06.53,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}"I'm sad."{\c&HFFFFFF&}
+Dialogue: 0,0:00:07.17,0:00:08.78,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}It misheard, and said:\N"Don't worry!
+Dialogue: 0,0:00:08.78,0:00:11.28,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}It misheard, and said:\N"Don't worry!\N{\alpha&HFF&\t(0,280,\alpha&H00&)}I'm a {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}happy little bot{\c&HFFFFFF&}."
+Dialogue: 0,0:00:11.93,0:00:14.65,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}"Let's keep\Nthe {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}fun{\c&HFFFFFF&} going."
+Dialogue: 0,0:00:15.90,0:00:17.50,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}Batteries included.
+Dialogue: 0,0:00:17.50,0:00:19.57,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}Batteries included.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}Parents {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}not included{\c&HFFFFFF&}.

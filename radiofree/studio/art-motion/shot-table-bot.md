@@ -24,6 +24,18 @@ Toko thinker #2 (owner, 2026-10-13: "one paper cut and another more like that wi
 5. Offered an imaginary present, / it [refused], and moved on.
 6. The researchers want · makers to test toys / [with children] first.
 
+## The short cut — the release (owner, 2026-10-14: "way too long and the message needs to be less subtle. Maybe a joke, something towards tech not being a surrogate for parents")
+
+19.9 s, cut from the same clay frames (no new render): the wide shot 1.0–4.6 s, the child slumped 8.6–12.4, the toy beaming 13.6–18.6, the two-shot 20.0–23.6, the grown-up arriving 32.6–37.5; 0.25 s dissolves; the sound is the same five pieces of the Toko-series score, so every hit stays on its picture. No end slate (the clay films go to the Toko Midori Games socials).
+
+1. In a Cambridge study, · a three-year-old · told an AI toy:
+2. ["I'm sad."]
+3. It misheard, and said: · "Don't worry! / I'm a [happy little bot]."
+4. "Let's keep · the [fun] going."
+5. Batteries included. / Parents [not included].
+
+The last line is the station's joke, not the study's words; "misheard" stays because the study says the toy misheard. The long cut (37.5 s) is kept in `previews/`.
+
 ## Sources
 
 The toy in the study is Gabbo, by Curio Interactive; ours is unbranded. The study is named because the story is unclear without it (README, "Naming in the films").
