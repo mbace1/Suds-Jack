@@ -20,8 +20,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 ev = [
  ("0:00:00.45", "0:00:03.00", "Big", r"{\pos(540,250)\fad(200,250)\fscx112\fscy112\t(0,160,\fscx100\fscy100)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE\NHELSINKI"),
- ("0:00:01.05", "0:00:03.00", "Mid", r"{\pos(540,520)\fad(240,250)}Toko, from Helsinki"),
- ("0:00:01.45", "0:00:03.00", "Small", r"{\pos(540,610)\fad(240,250)}LOCAL · GLOBAL · FREE RADIO"),
+ ("0:00:01.05", "0:00:03.00", "Small", r"{\pos(540,530)\fad(240,250)}LOCAL · GLOBAL · FREE RADIO"),
 ]
 Path(__file__).with_name('signoff.ass').write_text(HEAD + "".join(f"Dialogue: 0,{a},{b},{s},,0,0,0,,{t}\n" for a, b, s, t in ev))
 print('signoff.ass')

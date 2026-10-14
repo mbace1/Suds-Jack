@@ -92,9 +92,11 @@ people are still never given faces. Papercut is the second style, for when a sto
 **Fixes stay in the film's own style** (owner, 2026-10-14: "Make all the changes in the current
 video styles still. Only new videos in new style"). A papercut film is fixed in papercut — and
 gets the papercut sign-off; only new films, and remakes the owner names (the Deer, in clay), are
-made in clay. The sign-off exists twice for that reason: `scenes/so_ident.js` (papercut: the
-Cathedral over the rooftops, Toko at a mic beside the pirate mast) and the clay ident; the
-lettering and jingle are shared (`subs/signoff-captions.ass`, `synth_signoff.py`).
+made in clay. The sign-off is `scenes/so_ident.js` (papercut: the Cathedral over the rooftops,
+Toko at a mic beside the pirate mast) with `subs/signoff-captions.ass` and `synth_signoff.py`;
+its lettering is RADIO FREE HELSINKI and LOCAL · GLOBAL · FREE RADIO — no "Toko, from
+Helsinki" line (owner, 2026-10-14). **The clay films go to the Toko Midori Games socials and
+carry no end slate** (owner, same day: "no end slate for now").
 
 Cost: three.js under SwiftShader renders about 6.5 s a frame here — roughly 100 minutes for a
 37.5 s film — so stills come first, always, and the full render runs in the background. The
