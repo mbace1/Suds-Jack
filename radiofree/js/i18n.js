@@ -17,6 +17,7 @@ const STR = {
   en: {
     'gate.blurb': 'Pirate wire out of the capital, read by Toko, who has never been asked to be impartial.',
     'gate.fiction': 'The events are real. The names are not. Neither are the techniques — those are real too.',
+    'wire.stale': 'NOT TODAY\u2019S BROADCAST \u2014 the newest morning could not be played',
     'gate.btn': '▶ Tune in',
 
     'off.tag': 'TRANSMISSION ENDS',
@@ -32,6 +33,10 @@ const STR = {
     'rail.decode': 'DECODE',
     'rail.refold': 'RE-FOLD',
     'rail.next': 'NEXT',
+    'rail.export': 'MP4',
+    'a11y.export': 'Render this bulletin to a video file',
+    'export.busy': 'RENDER',
+    'export.fail': 'NO CODEC',
 
     'tag.onair': 'ON AIR',
     'standby': 'awaiting transmission',
@@ -55,6 +60,7 @@ const STR = {
   fi: {
     'gate.blurb': 'Piraattilähetys pääkaupungista, lukijana Toko, jolta ei ole koskaan pyydetty puolueettomuutta.',
     'gate.fiction': 'Tapahtumat ovat todellisia. Nimet eivät. Keinot ovat.',
+    'wire.stale': 'EI TÄMÄN PÄIVÄN LÄHETYS \u2014 uusinta aamua ei saatu soimaan',
     'gate.btn': '▶ Viritä',
 
     'off.tag': 'LÄHETYS PÄÄTTYY',
@@ -70,6 +76,10 @@ const STR = {
     'rail.decode': 'PURA',
     'rail.refold': 'TAITA',
     'rail.next': 'SEURAAVA',
+    'rail.export': 'MP4',
+    'a11y.export': 'Renderöi tämä sähke videotiedostoksi',
+    'export.busy': 'RENDERÖI',
+    'export.fail': 'EI KOODEKKIA',
 
     'tag.onair': 'SUORA',
     'standby': 'odottaa lähetystä',
@@ -93,6 +103,7 @@ const STR = {
   ja: {
     'gate.blurb': '首都から流れる海賊電波。読み手はトコ。中立でいてくれと頼まれたことは一度もない。',
     'gate.fiction': '出来事は実際のもの。名前は架空。手法は、実在する。',
+    'wire.stale': '本日の放送ではありません \u2014 最新の朝を再生できませんでした',
     'gate.btn': '▶ 受信する',
 
     'off.tag': '放送終了',
@@ -108,6 +119,10 @@ const STR = {
     'rail.decode': '解読',
     'rail.refold': '戻す',
     'rail.next': '次へ',
+    'rail.export': 'MP4',
+    'a11y.export': 'この記事を動画ファイルに書き出す',
+    'export.busy': '書き出し',
+    'export.fail': 'コーデックなし',
 
     'tag.onair': 'オンエア',
     'standby': '送信待ち',

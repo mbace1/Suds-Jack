@@ -12,9 +12,9 @@ import path from 'node:path';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
-const { validateWire } = await import(path.join(ROOT, 'js/wire.js'));
-const { PANEL_KEYS, BROLL_KEYS } = await import(path.join(ROOT, 'js/visuals.js'));
-const { SECTOR_COLOR } = await import(path.join(ROOT, 'js/palette.js'));
+const { validateWire } = await import(pathToFileURL(path.join(ROOT, 'js/wire.js')).href);
+const { PANEL_KEYS, BROLL_KEYS } = await import(pathToFileURL(path.join(ROOT, 'js/visuals.js')).href);
+const { SECTOR_COLOR } = await import(pathToFileURL(path.join(ROOT, 'js/palette.js')).href);
 
 const API = 'https://api.anthropic.com/v1/messages';
 const MODEL = process.env.RFH_MODEL || 'claude-opus-5';
@@ -27,12 +27,15 @@ const FEEDS = (process.env.RFH_FEEDS || [
   'https://www.theregister.com/headlines.atom',
 ].join(',')).split(',').map(s => s.trim()).filter(Boolean);
 
+// Each desk matches whole words from their start: unanchored, `city` filed
+// "capacity" under CITY, `ai` read "said" as TECH and `art` read "start" as
+// CULTURE.
 const DESKS = {
-  CITY: /helsinki|espoo|vantaa|tram|metro|street|city|restaurant|food|nightlife|museum|gallery|architecture|transport|harbour/i,
-  GAMES: /game|gaming|studio|developer|publisher|playstation|xbox|nintendo|steam|console|esport/i,
-  TECH: /ai|artificial intelligence|data cent|telecom|network|energy|chip|semiconductor|software|cloud|robot|industry|factory|logistics/i,
-  CULTURE: /film|music|art|museum|festival|theatre|book|design|culture|restaurant|food|nightlife/i,
-  SIGNAL: /gps|positioning|radio|satellite|cable|border|defen[cs]e|security|resilience|interference|drone|radar/i,
+  CITY: /\b(?:helsinki|espoo|vantaa|tram|metro|street|city|restaurant|food|nightlife|museum|gallery|architecture|transport|harbour)/i,
+  GAMES: /\b(?:game|gaming|studio|developer|publisher|playstation|xbox|nintendo|steam|console|esport)/i,
+  TECH: /\b(?:ai\b|artificial intelligence|data cent|telecom|network|energy|chip|semiconductor|software|cloud|robot|industry|factory|logistics)/i,
+  CULTURE: /\b(?:film|music|arts?\b|museum|festival|theatre|book|design|culture|restaurant|food|nightlife)/i,
+  SIGNAL: /\b(?:gps|positioning|radio|satellite|cable|border|defen[cs]e|security|resilience|interference|drone|radar)/i,
 };
 
 function decode(s = '') {

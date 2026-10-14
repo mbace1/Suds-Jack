@@ -4,7 +4,7 @@
 
 import { readFile, writeFile, rename } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -12,9 +12,9 @@ const ROOT = path.resolve(HERE, '..');
 const WIRE_DIR = path.join(ROOT, 'wire');
 const KEEP_EPISODES = Number(process.env.RFH_KEEP_EPISODES || 30);
 
-const { validateWire } = await import(path.join(ROOT, 'js/wire.js'));
-const { PANEL_KEYS, BROLL_KEYS } = await import(path.join(ROOT, 'js/visuals.js'));
-const { SECTOR_COLOR } = await import(path.join(ROOT, 'js/palette.js'));
+const { validateWire } = await import(pathToFileURL(path.join(ROOT, 'js/wire.js')).href);
+const { PANEL_KEYS, BROLL_KEYS } = await import(pathToFileURL(path.join(ROOT, 'js/visuals.js')).href);
+const { SECTOR_COLOR } = await import(pathToFileURL(path.join(ROOT, 'js/palette.js')).href);
 
 function helsinkiDate(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', {

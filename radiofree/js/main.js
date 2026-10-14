@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=37';
-import { Post, Reader } from './codec.js?v=37';
-import { Package } from './package.js?v=37';
+import { PAL, SECTOR_COLOR } from './palette.js?v=73';
+import { Post, Reader } from './codec.js?v=73';
+import { Package } from './package.js?v=73';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=37';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=37';
-import * as audio from './audio.js?v=37';
-import { PixelScreen } from './screen.js?v=37';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=37';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=73';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=73';
+import * as audio from './audio.js?v=73';
+import { PixelScreen } from './screen.js?v=73';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=73';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -23,6 +23,17 @@ const CLEAN = PARAMS.has('clean');
 // which morning's broadcast to play. An unknown or absent date plays the
 // newest — see loadWire's ladder.
 const WANT_DATE = PARAMS.get('date');
+// TTS — HELD. `?tts=kokoro` loads js/tts.js, which loads an 82M model from a
+// CDN. Without the flag the module is never imported and nothing is fetched;
+// see the header of tts.js for why it is not a feature.
+const TTS = PARAMS.get('tts') === 'kokoro';
+let tts = null;
+const ttsMouth = () => (tts ? tts.mouth() : 0);
+const ttsSpeak = (p) => {
+  if (!tts || !p || p.signoff) return;
+  const lang = getLang();
+  tts.speak(storyBroadcast(p.story.id, lang).join(' '), lang);
+};
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -93,6 +104,7 @@ function useLang(code) {
   paintGateLang();
   if (!booted) return;
   paintMastLang();
+  paintWireStatus();
   rebuildFeed();
 }
 
@@ -179,11 +191,99 @@ function buildArchive() {
   host.appendChild(sel);
 }
 
+// THE STATION SAYING IT IS STALE. `loadWire` degrades gracefully — an episode
+// that fails validation is skipped and the next one down plays — which is right,
+// and which is also how this feed spent twelve days serving a morning nobody had
+// asked for. The newest episode failed the validator on the day it was published
+// and the app said nothing at all: `WIRE_INFO.errors` carried
+// `episode 2026-09-01 unavailable; playing 2026-08-29` and no reader could ever
+// see it. A fallback that is invisible is indistinguishable from working.
+function paintWireStatus() {
+  const host = document.getElementById('wireStatus');
+  if (!host) return;
+  const stale = !!(WIRE_INFO.errors && WIRE_INFO.errors.length)
+    || (EPISODES.length && EPISODE && EPISODE !== EPISODES[0]);
+  host.hidden = CLEAN || !stale;
+  if (host.hidden) return;
+  host.textContent = t('wire.stale');
+  host.title = (WIRE_INFO.errors || []).join('\n');
+}
+
+// THE EXPORT. A post rendered to a video file by `js/export.js`, which steps
+// the package's own clock frame by frame — so the live loop is paused for the
+// duration, or the cut would run at double speed and the file would not be the
+// broadcast. The encoder library is fetched on first use and never precached;
+// see the header of export.js for why. `opts` (seconds, fps) exists for the
+// gate, which encodes a second of AV1 rather than fifteen of H.264.
+let exporting = false;
+let lastExport = null;
+// The bytes, held only when nobody is downloading them. `tools/render-day.mjs`
+// drives the button path rather than re-implementing it, so it needs the file
+// back out of the page — and one bulletin is a few megabytes, so it is HANDED
+// OVER rather than kept: takeExport() clears it, and a run of thirteen never
+// holds more than one.
+let lastBlob = null;
+async function exportActive(i = active, btn = null, opts = {}) {
+  const p = posts[i];
+  if (!p || p.signoff || exporting) return null;
+  exporting = true;
+  const lbl = btn && btn.querySelector('.lbl');
+  const was = lbl ? lbl.textContent : '';
+  if (lbl) lbl.textContent = t('export.busy');
+  cancelAnimationFrame(raf);
+  try {
+    if (i !== active) scrollToPost(i, true);
+    const { exportPost } = await import('./export.js?v=73');
+    // the morning is ONE episode: the SPIN-O-METER on Toko's desk counts every
+    // spin DECODE has shown so far, across the bulletins before this one
+    const spins = (q) => ((q.copy && q.copy.lines) || []).join(' ').split('{{').length - 1;
+    const stories = posts.filter(q => !q.signoff);
+    const at = stories.indexOf(p);
+    const spinsBefore = stories.slice(0, Math.max(0, at)).reduce((a, q) => a + spins(q), 0);
+    const spinsTotal = stories.reduce((a, q) => a + spins(q), 0);
+    const out = await exportPost(p, {
+      t, parseLine, index: i + 1, total: STORIES.length, spinsBefore, spinsTotal,
+      date: formatDate(new Date()), accent: SECTOR_COLOR[p.story.sector],
+      seconds: opts.seconds, fps: opts.fps, clay: opts.clay,
+      freq: (SECTORS.find(x => x.id === p.story.sector) || {}).freq || '',
+      onProgress: k => { if (lbl) lbl.textContent = `${Math.round(k * 100)}%`; },
+    });
+    const name = `rfh-${EPISODE || 'wire'}-${p.story.id}-${getLang()}.${out.ext}`;
+    lastExport = { name, codec: out.codec, ext: out.ext, type: out.blob.type,
+                   bytes: out.blob.size, frames: out.frames, seconds: out.seconds,
+                   scale: out.scale, revealed: out.revealed, audio: out.audio, lufs: out.lufs, toko3d: out.toko3d, ms: out.ms };
+    lastBlob = opts.noDownload ? out.blob : null;
+    if (!opts.noDownload) {
+      const url = URL.createObjectURL(out.blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }
+    return lastExport;
+  } catch (err) {
+    console.error('[rfh] export failed:', err);
+    if (lbl) lbl.textContent = t('export.fail');
+    lastExport = { error: String(err && err.message || err) };
+    lastBlob = null;
+    return lastExport;
+  } finally {
+    exporting = false;
+    if (lbl) setTimeout(() => { lbl.textContent = was; }, 1600);
+    last = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
+}
+
 function boot() {
   booted = true;
+  if (TTS && !tts) {
+    import('./tts.js?v=73').then(m => { tts = m; ttsSpeak(posts[active]); })
+      .catch(err => console.warn('[rfh] tts prototype did not load:', err));
+  }
   paintSound();
   paintMastLang();
   buildArchive();
+  paintWireStatus();
   $('lang').onclick = () => useLang(nextLang());
   // TYPEWRITER OFF. The copy is set, not typed, and the per-character blips
   // are silenced with it — owner's call, the bulletins read better as text
@@ -237,6 +337,13 @@ function buildFeed() {
     nextBtn.onclick = () => scrollToPost(i + 1);
     if (decodeBtn) rail.append(decodeBtn);
     rail.append(nextBtn);
+    if (!CLEAN) {
+      const exBtn = el('button', 'rail-btn export-btn');
+      exBtn.innerHTML = `<span class="glyph" aria-hidden="true">⬇</span><span class="lbl">${t('rail.export')}</span>`;
+      exBtn.setAttribute('aria-label', t('a11y.export'));
+      exBtn.onclick = () => exportActive(i, exBtn);
+      rail.append(exBtn);
+    }
     media.appendChild(rail);
     if (i === 0) media.appendChild(el('div', 'swipe-hint', t('hint.swipe')));
 
@@ -377,6 +484,7 @@ function watchScroll() {
 }
 
 function setActive(i, first = false) {
+  if (tts && i !== active) { tts.stop(); ttsSpeak(posts[i]); }
   if (i === active || !posts[i]) return;
   const prev = posts[active];
   if (prev) {
@@ -496,7 +604,6 @@ function bindControls() {
   });
 }
 
-
 // ── Toko at the table ──────────────────────────────────────────────────
 // The signature in the corner opens the counter over this game rather than
 // navigating away to the arcade (toko/js/table.js). Stopping the clock is the
@@ -514,7 +621,7 @@ function loop(now) {
   last = now;
   const p = posts[active];
   if (p) {
-    const mouth = p.signoff ? 0 : reader.update(dt, getLang());
+    const mouth = p.signoff ? 0 : Math.max(reader.update(dt, getLang()), ttsMouth());
     if (!p.signoff && reader.done) audio.carrierDuck(false);
     p.post.update(dt, mouth);
     p.post.draw();
@@ -574,6 +681,23 @@ window.__rfh = {
     go: d => scrollToPost(active + d),
     tuneChannel,
     toggleDecode: () => toggleDecode(active),
+    // render a post to a video file. Resolves the FACTS of the file — codec,
+    // container, bytes, frames — because a gate cannot open a download.
+    exportMp4: (i, opts) => exportActive(i === undefined ? active : i, null, opts || {}),
+    lastExport: () => lastExport,
+    // base64 rather than a transferable: a CDP round trip is the only way out
+    // of the page, and a JSON string is the one thing both drivers agree on
+    takeExport: async () => {
+      if (!lastBlob) return null;
+      const buf = new Uint8Array(await lastBlob.arrayBuffer());
+      lastBlob = null;
+      let bin = '';
+      for (let i = 0; i < buf.length; i += 0x8000) {
+        bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+      }
+      return { ...lastExport, base64: btoa(bin) };
+    },
+    tts: () => (tts ? tts.state() : { enabled: TTS, status: TTS ? 'not loaded' : 'off', loaded: false }),
     finishRead: () => reader.finish(),
     stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),
     // Anything inspecting the wire comes through here. stories.js holds it in

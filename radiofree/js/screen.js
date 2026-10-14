@@ -3,6 +3,11 @@
 // this broadcast (Toko's face, every story visual) is drawn in code — there are
 // no image assets, so the whole app works offline and re-tints in one edit.
 
+// MULTIPLIES a colour toward black. `f` is a BRIGHTNESS FACTOR, never an
+// opacity — `shade('#020509', 0.16)` is `#000001`, not a 16% wash, and painted
+// through the opaque `px()` it erases whatever was under it. `sceneweather.js`
+// was written against the other reading and blacked out every scene in the feed
+// after dusk. If you want translucency, use `scr.wash()`.
 export function shade(hex, f) {
   const n = parseInt(hex.slice(1), 16);
   const cl = v => Math.max(0, Math.min(255, Math.round(v)));
@@ -53,6 +58,21 @@ export class PixelScreen {
   px(x, y, w, h, color) {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+  }
+
+  // A TRANSLUCENT fill — the one thing `shade()` cannot do. Weather, a night
+  // grade and a passing figure all want to sit OVER the scene rather than
+  // replace it, and there was no way to say that: every caller reached for
+  // `shade(colour, 0.2)`, which is opaque and 20% as bright, so the whole
+  // frame went black. Alpha rather than a bayer stipple, because a full-frame
+  // dither at these alphas reads as a 4x4 checkerboard over the art — the same
+  // reason `scanlines()` uses it.
+  wash(x, y, w, h, color, alpha) {
+    if (alpha <= 0) return;
+    const c = this.ctx, prev = c.globalAlpha;
+    c.globalAlpha = Math.min(1, alpha);
+    this.px(x, y, w, h, color);
+    c.globalAlpha = prev;
   }
 
   // Horizontal sky / ground gradient used by Helsinki B-roll panels.
