@@ -1,4 +1,9 @@
 {
+  "optionc-lab": {
+    "v": "19",
+    "n": 19000,
+    "from": "VERSIONS.md"
+  },
   "concrete": {
     "v": "5",
     "n": 5000,
@@ -20,8 +25,8 @@
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
-    "v": "54",
-    "n": 54000,
+    "v": "57",
+    "n": 57000,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
@@ -122,11 +127,6 @@
   "tokolive": {
     "v": "48",
     "n": 48000,
-    "from": "VERSIONS.md"
-  },
-  "optionc-lab": {
-    "v": "19",
-    "n": 19000,
     "from": "VERSIONS.md"
   }
 }
