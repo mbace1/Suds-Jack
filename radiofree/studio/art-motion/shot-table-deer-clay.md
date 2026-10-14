@@ -31,7 +31,7 @@ The device's line (shot 3) is the reported wording, exact, and is attributed to 
 
 ## The short cut — the release (clay films go to the Toko Midori Games socials: short, no end slate)
 
-19.25 s cut from the full clay render (`clay/deer/`): the push-in on the camera and its $20/MO tag 2.0–5.75 s, the dog getting its DEER flag 8.25–12.0, the phone's brief 14.25–18.0, the antlered reflection and the cat's RACCOON flag 27.0–31.5, Toko's DOG tag 33.0–37.5; 0.25 s dissolves; the sound is the same pieces of the Toko-series score. Shot 4 (the antler pat) is out — it is the one the review flagged (the patting mitt read as a red ball with no arm) and the cut is better short.
+21 s cut from the full clay render (`clay/deer/`): the push-in on the camera and its $20/MO tag 0.5–6.0 s (lengthened — owner: "the first text goes too fast"), the dog getting its DEER flag 8.25–12.0, the phone's brief 14.25–18.0, the antlered reflection and the cat's RACCOON flag 27.0–31.5, Toko's DOG tag 33.0–37.5; 0.25 s dissolves; the sound is the same pieces of the Toko-series score. Shot 4 (the antler pat) is out — it is the one the review flagged (the patting mitt read as a red ball with no arm) and the cut is better short.
 
 1. Toko's home camera · has [AI] now. / $20 a month.
 2. The dog crosses the room. / The camera [takes a note].
