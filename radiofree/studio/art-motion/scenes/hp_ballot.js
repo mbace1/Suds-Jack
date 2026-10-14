@@ -28,6 +28,7 @@ SCENES['hp_ballot'] = (() => {
           }
         }, d: 0.3 },
       ], cam);
+      D.tag(c, 'US MIDTERMS', lt, 99);
       box(c);
     },
   };

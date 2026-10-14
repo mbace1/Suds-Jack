@@ -70,6 +70,14 @@ and its number, the title — hyphens for spaces, so the link works anywhere une
 E.g. `14-10-Doodle1-Biodiversity-Fund.mp4`. The repo is public, so each file has a direct
 download link: `https://raw.githubusercontent.com/mbace1/Suds-Jack/<commit>/radiofree/studio/art-motion/films/<name>`.
 
+Papercut light (v4, owner 2026-10-14: "spruced up … dynamic slight shadows"): the kit's light is
+set each frame from the camera — it sways with the camera's drift and the shadows lengthen on a
+push-in — and the farthest sheets are drawn from a cached, slightly blurred copy for depth.
+
+To test later (owner, 2026-10-14, on the first film going live: "it had small glitches on it
+but I like those, we can test very subtle glitches in the future as well"): a *very* subtle,
+deliberate glitch layer — a frame's tear or a one-row slip on a cut, never on a caption.
+
 ## House style (owner, 2026-10-14): claymation first
 
 "The claymation style looks amazing, let's start using that as primary for a bit." New films
@@ -111,7 +119,12 @@ example (`eras_bdf.js`, `scenes/bdf_*.js`, `synth_bdf.py`, `subs/biodiversity-ti
    against sources, then the picture frame by frame.
 8. **Fix what the review finds**, re-render, and pull a 1 fps contact sheet of the
    captioned cut — every frame checked for clipping and collisions before it ships.
-9. **Deliver** the captioned MP4 (the one that ships) and the plain one; commit the
+9. **The station.** Every film carries the Radio Free Helsinki bug top-left (in the captions,
+   `lib/rfcaps.py`) and ends on the 3 s clay sign-off — Toko at the mic in Helsinki, ON AIR,
+   "RADIO FREE HELSINKI · Toko, from Helsinki · LOCAL · GLOBAL · FREE RADIO" (owner, 2026-10-14:
+   the station is run by Toko from Helsinki, so it can speak on local and global agendas while
+   keeping a free radio running here). A story from elsewhere says where it is, in words and tags.
+10. **Deliver** the captioned MP4 (the one that ships) and the plain one; commit the
    scenes, film table, score, captions script, shot table with sources, and review.
 
 ## Naming in the films (owner, 2026-10-13)

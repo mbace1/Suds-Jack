@@ -19,6 +19,7 @@ SCENES['hp_desk'] = (() => {
         }, d: 0.25 },
         { sh: D.desk(), d: 0.3, lift: 1.4 },
       ], cam);
+      D.tag(c, 'THE DAILY SHOW · NEW YORK', lt, 6.43);
       box(c);
     },
   };

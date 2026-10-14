@@ -104,5 +104,12 @@ window.HP = (() => {
   }, 12);
   const ballot = () => sprite('hp_ballot', 150, 200, 75, 100, (g) => { g.fillStyle = '#efe8d8'; g.fillRect(-60, -82, 120, 164); g.strokeStyle = K.ink; g.lineWidth = 3; for (let i = 0; i < 4; i++) { g.strokeRect(-46, -60 + i * 34, 18, 18); g.fillStyle = 'rgba(21,18,15,.5)'; g.fillRect(-20, -54 + i * 34, 64, 6); } g.lineWidth = 5; g.beginPath(); g.moveTo(-44, -10); g.lineTo(-37, 0); g.lineTo(-26, -20); g.stroke(); }, 6);
 
-  return { C, COATS, post, POSTLEN, studio, desk, silhouette, globe, reach, capitol, capWindows, CAPWIN, podium, hourglass, snail, calendar, box, ballot };
+  /** a small ochre tag in the box's lower corner — where and what, so a viewer far from Washington knows */
+  function tag(c, text, lt, dur, x = 110, y = 1690) {
+    const a = clamp((lt - 0.5) / 0.3, 0, 1) * clamp((dur - 0.6 - lt) / 0.3, 0, 1); if (a <= 0) return;
+    c.save(); c.globalAlpha = a; c.font = '32px "ArchivoBlack-400"'; const w = c.measureText(text).width + 44;
+    c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(x, y, w, 66, 8); c.fill(); c.shadowColor = 'transparent';
+    c.fillStyle = K.ink; c.fillText(text, x + 22, y + 45); c.restore();
+  }
+  return { C, COATS, tag, post, POSTLEN, studio, desk, silhouette, globe, reach, capitol, capWindows, CAPWIN, podium, hourglass, snail, calendar, box, ballot };
 })();

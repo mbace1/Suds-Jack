@@ -46,21 +46,34 @@ window.RFP = (() => {
     tooth(g, c.width, c.height, key.length * 7 + 3);
     return (CACHE[key] = { c, s: shadowOf(c, blur), ox: pad + ox, oy: pad + oy });
   }
-  /** draw a sheet at its depth: shadow first (down-right), then the card */
-  function layer(c, sh, ox = 0, oy = 0, { lift = 1, alpha = 0.55 } = {}) {
-    c.save(); c.globalAlpha = alpha; c.drawImage(sh.s, ox - sh.m + 10 * lift, oy - sh.m + 14 * lift); c.restore();
-    c.drawImage(sh.c, ox - sh.m, oy - sh.m);
+  // v4 (owner, 2026-10-14: "dynamic slight shadows"): the light is not fixed. stack() sets it each frame from
+  // the camera — it sways with the camera's drift and the shadows lengthen as the camera pushes in — so every
+  // card's shadow slides a little under it, at its own depth, and the box reads as lit rather than printed.
+  const LIGHT = { dx: 10, dy: 14 };
+  /** draw a sheet at its depth: shadow first (down-right, where the light puts it), then the card */
+  function layer(c, sh, ox = 0, oy = 0, { lift = 1, alpha = 0.55, soft = 0 } = {}) {
+    c.save(); c.globalAlpha = alpha; c.drawImage(sh.s, ox - sh.m + LIGHT.dx * lift, oy - sh.m + LIGHT.dy * lift); c.restore();
+    c.drawImage(soft >= 0.6 ? blurred(sh, soft) : sh.c, ox - sh.m, oy - sh.m);
+  }
+  /** the far sheets a touch out of focus — a cached blurred copy, made once per sheet and amount */
+  const SOFT = new WeakMap();
+  function blurred(sh, b) {
+    const k = Math.round(b * 2) / 2; let m = SOFT.get(sh); if (!m) SOFT.set(sh, (m = {}));
+    if (m[k]) return m[k];
+    const out = canvas(sh.c.width, sh.c.height), g = out.getContext('2d'); g.filter = `blur(${k}px)`; g.drawImage(sh.c, 0, 0);
+    return (m[k] = out);
   }
   function put(c, sp, x, y, { rot = 0, sc = 1, lift = 1, alpha = 0.5 } = {}) {
-    for (const [dx, dy, img, a] of [[8 * lift, 11 * lift, sp.s, alpha], [0, 0, sp.c, 1]]) {
+    for (const [dx, dy, img, a] of [[LIGHT.dx * 0.8 * lift, LIGHT.dy * 0.8 * lift, sp.s, alpha], [0, 0, sp.c, 1]]) {
       c.save(); c.globalAlpha *= a; c.translate(x + dx, y + dy); c.rotate(rot); c.scale(sc, sc); c.drawImage(img, -sp.ox, -sp.oy); c.restore();
     }
   }
   /** the stack, back to front; cam = {x, y, z} — z scales about the frame centre */
   function stack(c, layers, cam = { x: 0, y: 0, z: 1 }) {
+    LIGHT.dx = 10 + (cam.x || 0) * 0.45; LIGHT.dy = 14 + (cam.y || 0) * 0.3 + ((cam.z || 1) - 1) * 40;
     for (const L of layers) {
       if (L.fn) { c.save(); zoom(c, cam, L.d); L.fn(c, -cam.x * L.d, -cam.y * L.d); c.restore(); continue; }
-      c.save(); zoom(c, cam, L.d); layer(c, L.sh, -cam.x * L.d + (L.x || 0), -cam.y * L.d + (L.y || 0), { lift: L.lift ?? 1, alpha: L.alpha ?? 0.55 }); c.restore();
+      c.save(); zoom(c, cam, L.d); layer(c, L.sh, -cam.x * L.d + (L.x || 0), -cam.y * L.d + (L.y || 0), { lift: L.lift ?? 1, alpha: L.alpha ?? 0.55, soft: L.soft ?? Math.max(0, 0.14 - L.d) * 25 }); c.restore();
     }
   }
   // z scales about the focus (cam.fx, cam.fy; the frame centre by default), more for nearer sheets

@@ -47,7 +47,7 @@ SCENES['doh_open'] = (() => {
         }, d: 0.4 },
       ], cam);
       leaves(c, lt + 8, { n: 6, seed: 92, cam });
-      D.tag(c, '9.9.2026 · KAJAANI · MUHOS', 110, 1690, D.tagA(lt, 6.43));
+      D.tag(c, '2026 · KAJAANI · MUHOS', 110, 1690, D.tagA(lt, 6.43));
       box(c);
     },
   };

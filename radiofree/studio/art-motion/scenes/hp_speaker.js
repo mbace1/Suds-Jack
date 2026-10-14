@@ -17,6 +17,7 @@ SCENES['hp_speaker'] = (() => {
           put(g, D.snail(), lerp(250, 330, lt / 6.4) + ox, 1205, { sc: 1.3, lift: 1.2 });
         }, d: 0.3 },
       ], cam);
+      D.tag(c, 'US HOUSE OF REPRESENTATIVES', lt, 6.43);
       box(c);
     },
   };

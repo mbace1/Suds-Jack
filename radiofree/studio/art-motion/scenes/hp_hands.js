@@ -15,6 +15,7 @@ SCENES['hp_hands'] = (() => {
         }, d: 0.3 },
         { fn: (g, ox) => { const kt = pop(lt, 2.0, 0.2); if (kt > 0) put(g, tally(), 540 + ox, 1300, { sc: lerp(1.5, 1, Math.min(kt, 1)), rot: -0.06, lift: 0.4 }); }, d: 0.3 },
       ], cam);
+      D.tag(c, 'REUTERS/IPSOS · US VOTERS', lt, 6.43);
       box(c);
     },
   };

@@ -1,0 +1,18 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Big,Poppins ExtraBold,104,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,2,0,1,7,3,8,0,0,0,1
+Style: Mid,Poppins ExtraBold,60,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,5,2,8,0,0,0,1
+Style: Small,Poppins ExtraBold,40,&H003AB8F2,&H003AB8F2,&H00000000,&H64000000,0,0,0,0,100,100,3,0,1,4,2,8,0,0,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.45,0:00:03.00,Big,,0,0,0,,{\pos(540,250)\fad(200,250)\fscx112\fscy112\t(0,160,\fscx100\fscy100)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE\NHELSINKI
+Dialogue: 0,0:00:01.05,0:00:03.00,Mid,,0,0,0,,{\pos(540,520)\fad(240,250)}Toko, from Helsinki
+Dialogue: 0,0:00:01.45,0:00:03.00,Small,,0,0,0,,{\pos(540,610)\fad(240,250)}LOCAL · GLOBAL · FREE RADIO

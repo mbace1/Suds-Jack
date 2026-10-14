@@ -1,0 +1,25 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: H,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.80,0:00:03.00,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}A plush toy\Nthat talks back.
+Dialogue: 0,0:00:03.00,0:00:06.08,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}A plush toy\Nthat talks back.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}It runs on {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}AI{\c&HFFFFFF&}.
+Dialogue: 0,0:00:07.23,0:00:09.43,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}In a Cambridge study,\Na three-year-old told it:
+Dialogue: 0,0:00:09.43,0:00:12.51,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}In a Cambridge study,\Na three-year-old told it:\N{\alpha&HFF&\t(0,280,\alpha&H00&)}{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}"I'm sad."{\c&HFFFFFF&}
+Dialogue: 0,0:00:13.66,0:00:15.86,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}It misheard, and said:\N"Don't worry!
+Dialogue: 0,0:00:15.86,0:00:18.94,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}It misheard, and said:\N"Don't worry!\N{\alpha&HFF&\t(0,280,\alpha&H00&)}I'm a {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}happy little bot{\c&HFFFFFF&}."
+Dialogue: 0,0:00:20.09,0:00:22.29,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}"Let's keep the fun going.
+Dialogue: 0,0:00:22.29,0:00:25.36,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}"Let's keep the fun going.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}What shall we talk\Nabout {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}next{\c&HFFFFFF&}?"
+Dialogue: 0,0:00:26.51,0:00:28.71,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}Offered an imaginary present,
+Dialogue: 0,0:00:28.71,0:00:31.79,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}Offered an imaginary present,\N{\alpha&HFF&\t(0,280,\alpha&H00&)}it {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}refused{\c&HFFFFFF&}, and moved on.
+Dialogue: 0,0:00:32.84,0:00:34.34,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}The researchers want\Nmakers to test toys
+Dialogue: 0,0:00:34.34,0:00:37.20,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}The researchers want\Nmakers to test toys\N{\alpha&HFF&\t(0,280,\alpha&H00&)}{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}with children{\c&HFFFFFF&} first.

@@ -16,6 +16,7 @@ SCENES['hp_capitol'] = (() => {
         { fn: (g, ox) => { const kt = pop(lt, 1.6, 0.2); if (kt > 0) put(g, tally(), 540 + ox, 670, { sc: lerp(1.5, 0.9, Math.min(kt, 1)), rot: -0.05, lift: 0.4 }); }, d: 0.2 },
       ], cam);
       leaves(c, lt + 6, { n: 6, seed: 61, cam });
+      D.tag(c, 'US CONGRESS · WASHINGTON', lt, 6.43);
       box(c);
     },
   };

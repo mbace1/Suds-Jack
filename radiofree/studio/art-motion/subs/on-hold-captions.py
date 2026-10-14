@@ -8,11 +8,11 @@ from rfcaps import build
 B = 60 / 112; SHOT = 12
 CUT = [k * SHOT * B for k in range(6)] + [5 * SHOT * B + 10 * B]
 SHOTS = [
- (0, 0.80, 3.00, 420, "In 2025, Doodle put two sites [on hold].", "It wanted to see the new electricity tax first."),
- (1, 0.80, 3.00, 390, "Finland raised the tax [anyway].", "From 0.05 to 2.24 cents a kWh."),
- (2, 0.80, 3.00, 400, "A new support scheme was meant to soften it.", "On 1 September, the government [dropped] it."),
- (3, 0.80, 3.00, 400, "Eight days later, Doodle announced", "at least [€13 billion] in Finland."),
- (4, 0.80, 3.00, 420, "Both sites on hold were [in the plan].", "Kajaani and Muhos."),
- (5, 0.70, 2.60, 400, "In October, the regulator told Doodle to [stop].", "Until the environmental assessment is done."),
+ (0, 0.80, 3.00, 420, "In 2025, Doodle put two\\NFinnish sites [on hold]", "until it knew the new\\Nelectricity tax."),
+ (1, 0.80, 3.00, 420, "Finland raised\\Nthat tax [anyway]:", "about 45 times higher,\\Nfrom 1 July 2026."),
+ (2, 0.80, 3.00, 420, "Then the government [dropped]", "the support meant\\Nto soften the blow."),
+ (3, 0.80, 3.00, 420, "Eight days later, Doodle\\Nannounced [€13 billion]", "in Finland anyway."),
+ (4, 0.80, 3.00, 420, "The tax didn't stop\\Nits site work:", "[over 500 hectares]\\Nof forest cleared."),
+ (5, 0.70, 2.20, 420, "What called a halt, for now,\\Nwas [environmental law]:", "the clearing came\\Nbefore the impact assessment."),
 ]
-build(SHOTS, CUT, str(Path(__file__).with_name('doh_H.ass')))
+build(SHOTS, CUT, str(Path(__file__).with_name('doh_H.ass')), manual=True)

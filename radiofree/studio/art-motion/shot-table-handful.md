@@ -1,4 +1,4 @@
-# A Handful of People — Coxon #1, v3, 37.5 s, portrait 1080×1920, 112 BPM
+# A Handful of People — Coxon #1, v4, 37.5 s, portrait 1080×1920, 112 BPM
 
 Coxon #1 (owner, 2026-10-13: "the John Stewart interview is central, as they look at a need for citizen action for the topics to be taken seriously"; 2026-10-14: the interview's lines as paraphrase, no quote marks). Coxon quits and says why; on The Daily Show he tells Jon Stewart the choice should not rest with a handful of people; most voters say AI could get out of control and that Congress is not taking it seriously; the Speaker says Congress won't take the lead; AI is now a campaign issue, and the midterms are on 3 November. The citizen action is the point; the satire is on the people in charge — never on Coxon, whose own words are quoted exactly.
 
@@ -17,19 +17,23 @@ v3 (independent review v2, `review-handful-v2.md`): Stewart is no longer said to
 | 25.7–32.1 | a podium, SPEAKER, and an hourglass on it | the hourglass is turned over; the sand runs from the top, very slowly; a snail crosses the lectern | 停 | — | scenes/hp_speaker.js |
 | 32.1–37.5 | a calendar, NOV 3, and a ballot box | hands from both sides bring ballots over the slot and drop them in; on the last hit the box jumps and the 3 is ringed in magenta | 砸入 | NOV 3 | scenes/hp_ballot.js |
 
-## Captions (house style H, manual breaks)
+## Captions (house style H, manual breaks) — v4
 
-1. In September, Jacob Coxon · quit Anthropic / and wrote [why].
+v4 (owner, 2026-10-14: "it needs to be clear that US Congress, etc."; Radio Free Helsinki speaks from Helsinki on local and global agendas): every American institution is named as American, and the picture carries tags — THE DAILY SHOW · NEW YORK, REUTERS/IPSOS · US VOTERS, US CONGRESS · WASHINGTON, US HOUSE OF REPRESENTATIVES, US MIDTERMS.
+
+Independent review v4 (`review-v4-onhold-handful.md`): SHIP — every figure re-verified; the Speaker's beat still aims at where he and Coxon differ (who leads). Its line-length flags were by character count; measured in pixels every line is under 800.
+
+1. In September, Jacob Coxon · quit the US AI lab Anthropic / and wrote [why].
 2. On The Daily Show, he told · Jon Stewart the choice / shouldn't rest with · [a handful of people].
-3. In a Reuters/Ipsos poll, · [62%] say AI could get / out of control and risk · humankind's future.
-4. 54% say Congress isn't · taking AI risks / [seriously enough].
-5. The Speaker of the House · says Congress won't / [take the lead].
-6. AI is now · a campaign issue. / The midterms: [November 3].
+3. In a poll of US voters, · [62%] say AI could get / out of control and risk · humankind's future.
+4. 54% say the US Congress · isn't taking AI risks / [seriously enough].
+5. The US House Speaker · says Congress won't / [take the lead].
+6. AI is now a campaign · issue in the US. / The midterms: [November 3].
 
 ## Sources
 
 - The post, 8/9 Sept 2026 (X, @hilbertspaess; TechCrunch dates it the 8th): "I resigned from Anthropic today. I spent the last three years doing pretraining research at both OpenAI and Anthropic. Neither company is acting responsibly. They are racing straight to self-improving superintelligence and gambling with our lives. More thoughts below." TechCrunch 9.9.2026; Axios 9.9.2026. The card shows the first sentence, the end of the second ("…at both OpenAI and Anthropic.", so "neither company" names its two) and the third; nothing is reworded. Fortune, NPR/WVIA, TNW 9.9.2026. Outlets differ on the 8th or 9th, so the card says September 2026.
-- The Daily Show with Jon Stewart, 5 Oct 2026 (Paramount+ lists 5 Oct; some outlets date the clip 6 Oct; not on screen): Coxon's point that the choice should not rest with a handful of people — PARAPHRASE, no quote marks. One transcription has him saying it "can't be the decision of a handful of… people" (Substack, "Too On the Nose"); Parade and Yahoo report the theme. Stewart is NOT said to have agreed — no source shows that.
+- The Daily Show with Jon Stewart, 5 Oct 2026 (Paramount+ lists 5 Oct; some outlets date the clip 6 Oct; not on screen): Coxon's point that the choice should not rest with a handful of people — PARAPHRASE, no quote marks. One transcription has him saying it "can't be the decision of a handful of… people" (Substack, "Too On the Nose"); Parade and Yahoo report the theme; StartupHub ("Former insider says AI escape was a warning") has him agreeing the choice cannot belong to a handful of people — so the line is his point either way. Stewart is NOT said to have agreed — no source shows that.
 - Reuters/Ipsos, six-day poll, published 7 Oct 2026: 62% of registered voters say AI could get out of control and risk the future of humankind; 54% say Congress has not taken AI risks seriously enough or at all (57% say the same of the administration). Reuters via The Star, 7.10.2026; Sinclair stations ("AI fears grow as Americans question whether Congress is taking risks seriously").
 - Speaker Mike Johnson, 13 Sept 2026 (CNN State of the Union; NBC Meet the Press): Axios's headline, "Johnson calls for AI solutions but says Congress won't take the lead" — the caption is that, as paraphrase. He also said action must be careful and proposed a meeting with AI executives; on 28 Sept he rebuffed calls to bring the House back from recess (Axios Hill Leaders). axios.com/2026/09/13/ai-safety-congress-law-mike-johnson; letsdatascience.com (CNN quote).
 - "AI has become a campaign issue ahead of the November 3 midterms": Reuters, 7.10.2026; Pew, 8.10.2026 (AI a "very important" factor for 44% of voters). Counterweight: NYT/Siena found under 1% name it their top issue.

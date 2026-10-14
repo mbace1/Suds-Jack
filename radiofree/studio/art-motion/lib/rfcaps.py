@@ -17,6 +17,7 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: H,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
+Style: Bug,Poppins ExtraBold,30,&H30FFFFFF,&H30FFFFFF,&H80000000,&H00000000,0,0,0,0,100,100,1,0,1,3,0,7,0,0,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -34,7 +35,10 @@ def marked(line, pop):
 def t(x): h = int(x // 3600); m = int(x % 3600 // 60); s = x % 60; return f"{h}:{m:02d}:{s:05.2f}"
 
 
-def build(SHOTS, CUT, path, manual=False):
+BUG = r"{\an7\pos(92,88)\fad(400,0)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE HELSINKI"   # the station, run by Toko from Helsinki
+
+
+def build(SHOTS, CUT, path, manual=False, bug=True):
     """manual=True: every line break is written into the text as \\N and libass never wraps (WrapStyle 2)"""
     ev = []; last = len(CUT) - 2
     for i, a, b, y, l1, l2 in SHOTS:
@@ -44,5 +48,6 @@ def build(SHOTS, CUT, path, manual=False):
         if l2: ev.append((s0 + b, s1, rf"{{\an8\pos(540,{y - 150})\fad(0,260)}}" + marked(l1, False) + r"\N{\alpha&HFF&\t(0,280,\alpha&H00&)}" + marked(l2, True)))
         else: ev[-1] = (s0 + a, s1, ev[-1][2].replace(r"{\fad(280,0)}", r"{\fad(280,260)}"))
     head = HEAD.replace('WrapStyle: 0', 'WrapStyle: 2') if manual else HEAD
-    open(path, 'w').write(head + "".join(f"Dialogue: 0,{t(a)},{t(b)},H,,0,0,0,,{x}\n" for a, b, x in ev))
+    if bug: ev.insert(0, (0.3, CUT[-1], BUG))
+    open(path, 'w').write(head + "".join(f"Dialogue: 0,{t(a)},{t(b)},{'Bug' if x is BUG else 'H'},,0,0,0,,{x}\n" for a, b, x in ev))
     print('captions ->', path)

@@ -39,6 +39,7 @@ Style: A,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,
 Style: B,Poppins ExtraBold,72,&H00000000,&H00000000,&H00FFFFFF,&H00FFFFFF,0,0,0,0,100,100,0,0,3,18,0,5,90,90,0,1
 Style: H,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
 Style: C,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
+Style: Bug,Poppins ExtraBold,30,&H30FFFFFF,&H30FFFFFF,&H80000000,&H00000000,0,0,0,0,100,100,1,0,1,3,0,7,0,0,0,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -79,6 +80,7 @@ def build(style):
                 tail = "" if last == "/" else (" " if shown[:-1] else "") + r"{\c&H00D4FF&\fscx115\fscy115\t(0,140,\c&HFFFFFF&\fscx100\fscy100)}" + last
                 end = s1 if k == n - 1 else t0 + (k + 1) * dt
                 ev.append((t0 + k * dt, end, 'C', rf"{{\an5\pos(540,{y})}}" + body + tail))
+    ev.insert(0, (0.3, CUT[-1], "Bug", r"{\an7\pos(92,88)\fad(400,0)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE HELSINKI"))   # the station, run by Toko from Helsinki
     return HEAD + "".join(f"Dialogue: 0,{t(a)},{t(b)},{st},,0,0,0,,{txt}\n" for a, b, st, txt in ev)
 for s in 'ABCH': open(f'tiktok_{s}.ass', 'w').write(build(s))
 print('ok', CUT[-1])
