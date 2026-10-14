@@ -163,6 +163,11 @@ contexts or moods"*):
   lesser Tokos; the master file itself is the yellow one.
 - **Other colours may carry a context or a mood** — a scene, a time of day, a
   game's own palette. The face is the same face in every one of them.
+- **The owner's colour references** (2026-10-14): the face in ten colours — magenta,
+  yellow, cyan, red, purple, orange, lime, green, blue, black — each as the colour on white
+  and white on the colour. They live in [`master/`](master/) with a table of measured
+  colours ([`master/README.md`](master/README.md)); where they disagree with `STICKER`,
+  the owner's files win.
 - What does not change: **one face, one ground** — the face in one colour on
   another, never two colours inside the mark, never a gradient across it.
 
