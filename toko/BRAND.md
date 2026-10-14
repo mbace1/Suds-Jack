@@ -177,7 +177,9 @@ contexts or moods"*):
 - **The head, in 3D** — the owner's own mock-up of Toko on a person in a black
   *Toko Midori Games* T-shirt: the whole head is a smooth **magenta egg**, taller than wide,
   on a round magenta **neck** that goes into the collar, the face in white set into its
-  upper half. No strap, no human head showing. **This is how Toko is built in 3D and clay.**
+  upper half. No strap, no human head showing. A reference, not an order: the clay films
+  keep their own Toko (owner, same day: *"I like all the clay elements in use.. don't change
+  them, at least not due to my dump of references for Toko"*).
 - **The mask, as an object** — a die-cut flat card in the same egg-and-neck silhouette,
   magenta with the white face or white with the black face, two strap holes at eye level;
   printed as a sheet with cards and QR codes, and photographed lying on cherry petals at
