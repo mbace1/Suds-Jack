@@ -70,6 +70,22 @@ and its number, the title — hyphens for spaces, so the link works anywhere une
 E.g. `14-10-Doodle1-Biodiversity-Fund.mp4`. The repo is public, so each file has a direct
 download link: `https://raw.githubusercontent.com/mbace1/Suds-Jack/<commit>/radiofree/studio/art-motion/films/<name>`.
 
+## House style (owner, 2026-10-14): claymation first
+
+"The claymation style looks amazing, let's start using that as primary for a bit." New films
+are made in the **Aardman plasticine** look approved from the clay tests (style 1 of four,
+2026-10-14): matte modelling clay with thumbprints and tool drags, chunky forms, a clay-and-card
+set, a warm lamp key against a cold window, shallow depth of field, graded a stop darker for the
+house's autumn. Posed **on twos** — 12 poses a second held two frames each in a 24 fps file, the
+clay surface re-lumped per pose so it boils like real stop-motion — while camera, rain and light
+move every frame. People wear Toko masks (rigid: the acting is in body, posture and props); real
+people are still never given faces. Papercut is the second style, for when a story suits it.
+
+Cost: three.js under SwiftShader renders about 6.5 s a frame here — roughly 100 minutes for a
+37.5 s film — so stills come first, always, and the full render runs in the background. The
+clay kit lives in `clay/` (scene, sculpting, materials, the Toko mask from the traced master,
+the render script). Captions and score are the same `lib/rfcaps.py` and `lib/rfsound.py`.
+
 ## The standard procedure (owner, 2026-10-13: "make this the standard procedure")
 
 Every film goes through the same nine steps; The Biodiversity Fund v6 is the worked
@@ -79,8 +95,8 @@ example (`eras_bdf.js`, `scenes/bdf_*.js`, `synth_bdf.py`, `subs/biodiversity-ti
    table before a frame is drawn: every on-screen number, date and quote has a URL.
    Real names only for what verifiably happened; no invented quote or reaction in a
    real person's mouth; a claim someone makes without evidence is shown as *theirs*.
-2. **Shot table** (`shot-table-<film>.md`): papercut shadowbox, one stop dark, fall
-   palette, ochre light + magenta masks; six shots of twelve beats at 112 BPM
+2. **Shot table** (`shot-table-<film>.md`): claymation first (see House style), papercut
+   when a story suits it — either way one stop dark, fall palette, magenta masks; six shots of twelve beats at 112 BPM
    (~6.4 s), the last ten; half-second crossfades. Screen text ≤ 8 words a shot.
 3. **Stills before film.** Render each shot's key moment with `--solo --stills` and
    LOOK: a hero must be lit or rimmed, nothing important behind a caption, no text
