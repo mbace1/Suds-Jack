@@ -56,6 +56,12 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
   shown only from behind, never masked. `scenes/cw_*.js`, `synth_cw.py`,
   `subs/committee-captions.py`, `shot-table-committee.md`, `review-committee-v2.md`.
 
+- `eras_hp.js` — **A Handful of People** (Coxon #1, papercut, 37.5 s): his resignation post,
+  his point to Jon Stewart that the choice should not rest with a handful of people (paraphrase),
+  the Reuters/Ipsos 62% and 54%, the Speaker saying Congress won't take the lead, and the
+  midterms. `scenes/hp_*.js`, `synth_hp.py`, `subs/handful-captions.py`,
+  `shot-table-handful.md`, `review-handful-v2.md`. Finished films for download: `films/`.
+
 ## The standard procedure (owner, 2026-10-13: "make this the standard procedure")
 
 Every film goes through the same nine steps; The Biodiversity Fund v6 is the worked
