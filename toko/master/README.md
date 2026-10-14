@@ -32,6 +32,9 @@ them — the owner's files win.
 
 ## The other references (2026-10-14)
 
+Old concepts, kept as the colour guide and the official reference — not strict guides
+(owner). The circle (the face on a disc) fits as well as the egg-and-neck head.
+
 Sent the same day and described in `../BRAND.md` §2c until the files are added here: the 3D
 head on a person in the *Toko Midori Games* T-shirt (a reference — the clay films keep their own Toko),
 the die-cut mask sheet and the mask on cherry petals, the "What is Toko" diagram (the one and

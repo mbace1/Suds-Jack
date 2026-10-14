@@ -172,7 +172,10 @@ contexts or moods"*):
   another, never two colours inside the mark, never a gradient across it.
 
 **The owner's references, 2026-10-14** (sent in conversation; the files that arrived are in
-[`master/`](master/), the rest are described here until they are added):
+[`master/`](master/), the rest are described here until they are added). Owner, same day:
+*"these are not strict guides but old concepts that serve as colour guide and official
+references"* — and *"the circle use as well fits"*: the face on a disc (the badge, and the
+round mask the films use) is as right as the egg-and-neck head below.
 
 - **The head, in 3D** — the owner's own mock-up of Toko on a person in a black
   *Toko Midori Games* T-shirt: the whole head is a smooth **magenta egg**, taller than wide,
