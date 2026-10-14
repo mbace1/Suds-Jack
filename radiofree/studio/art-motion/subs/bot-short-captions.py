@@ -14,4 +14,4 @@ SHOTS = [
  (3, 0.30, 0.30, 420, "\"Let's keep\\Nthe [fun] going.\"", ""),
  (4, 0.90, 2.50, 420, "Batteries included.", "Parents [not included]."),
 ]
-build(SHOTS, CUT, str(Path(__file__).with_name('bot_short_H.ass')), manual=True)
+build(SHOTS, CUT, str(Path(__file__).with_name('bot_short_H.ass')), manual=True, bug=False)   # clay films go to the Toko Midori Games socials: no station bug

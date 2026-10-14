@@ -12,7 +12,6 @@ Style: Bug,Poppins ExtraBold,30,&H30FFFFFF,&H30FFFFFF,&H80000000,&H00000000,0,0,
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:00.30,0:00:19.88,Bug,,0,0,0,,{\an7\pos(92,88)\fad(400,0)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE HELSINKI
 Dialogue: 0,0:00:00.30,0:00:03.02,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}In a Cambridge study,\Na three-year-old\Ntold an AI toy:
 Dialogue: 0,0:00:03.67,0:00:06.53,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}"I'm sad."{\c&HFFFFFF&}
 Dialogue: 0,0:00:07.17,0:00:08.78,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}It misheard, and said:\N"Don't worry!

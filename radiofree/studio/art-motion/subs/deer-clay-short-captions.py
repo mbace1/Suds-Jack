@@ -13,4 +13,4 @@ SHOTS = [
  (3, 0.30, 2.30, 420, "Real line. A reviewer's\\Ndogs were logged as [deer].", "Other owners' cats:\\Nraccoons."),
  (4, 0.60, 2.20, 420, "The AI brief: [$20 a month].", "Toko's brief: free.\\NIt's a dog."),
 ]
-build(SHOTS, CUT, str(Path(__file__).with_name('drc_short_H.ass')), manual=True)
+build(SHOTS, CUT, str(Path(__file__).with_name('drc_short_H.ass')), manual=True, bug=False)   # clay films go to the Toko Midori Games socials: no station bug

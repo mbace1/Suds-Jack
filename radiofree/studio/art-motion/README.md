@@ -96,7 +96,7 @@ made in clay. The sign-off is `scenes/so_ident.js` (papercut: the Cathedral over
 Toko at a mic beside the pirate mast) with `subs/signoff-captions.ass` and `synth_signoff.py`;
 its lettering is RADIO FREE HELSINKI and LOCAL · GLOBAL · FREE RADIO — no "Toko, from
 Helsinki" line (owner, 2026-10-14). **The clay films go to the Toko Midori Games socials and
-carry no end slate** (owner, same day: "no end slate for now").
+carry no end slate** (owner, same day: "no end slate for now") **and no RADIO FREE HELSINKI bug** (`build(..., bug=False)`).
 
 Cost: three.js under SwiftShader renders about 6.5 s a frame here — roughly 100 minutes for a
 37.5 s film — so stills come first, always, and the full render runs in the background. The

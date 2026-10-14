@@ -12,7 +12,6 @@ Style: Bug,Poppins ExtraBold,30,&H30FFFFFF,&H30FFFFFF,&H80000000,&H00000000,0,0,
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:00.30,0:00:21.00,Bug,,0,0,0,,{\an7\pos(92,88)\fad(400,0)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE HELSINKI
 Dialogue: 0,0:00:00.50,0:00:02.80,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}Toko's home camera\Nhas {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}AI{\c&HFFFFFF&} now.
 Dialogue: 0,0:00:02.80,0:00:04.90,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}Toko's home camera\Nhas {\c&H3AB8F2&}AI{\c&HFFFFFF&} now.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}$20 a month.
 Dialogue: 0,0:00:05.55,0:00:07.05,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}The dog crosses the room.
