@@ -580,15 +580,17 @@ def servo(d=0.5):
     x = sum(np.sin(k * ph) / k for k in range(1, 30)); return soft(x, 700, 4000) * np.sin(np.pi * t / d) ** 0.5 * 0.12
 
 
-def tram(d=4.0):
-    """a Helsinki tram passing in the rain: a rumble that swells and goes, rail joints, the bell twice"""
+def tram(d=4.0, bells=None):
+    """a Helsinki tram passing in the rain: a rumble that swells and goes, rail joints, the bell twice
+    (at 0.3 d and 0.32 s later, or at the offsets in `bells`)"""
     t = tv(d); sw = np.exp(-((t - d * 0.5) / (d * 0.22)) ** 2)
     out = noise(d, 30, 260) * sw * 0.25 + noise(d, 300, 2000) * sw * 0.03
     for k in range(int(d / 0.45)):
         tk = d * 0.2 + k * 0.45
         if tk < d * 0.85: out = over(out, pad(knock(0.5 * sw[min(len(t) - 1, int(tk * SR))], 120), tk))
     ding = lambda: sum(np.sin(2 * np.pi * f * tv(1.0)) * np.exp(-tv(1.0) * 5) for f in (1318, 3290)) * 0.08
-    return over(out, pad(ding(), d * 0.3), pad(ding(), d * 0.3 + 0.32))
+    bells = (d * 0.3, d * 0.3 + 0.32) if bells is None else bells
+    return over(out, *[pad(ding(), b) for b in bells])
 
 
 def sit(vel=0.7):
@@ -634,3 +636,87 @@ def true_peak(x, over_=4):
             seg = x[max(0, i - 256):i + step + 256, c]; N = len(seg)
             up = np.fft.irfft(np.fft.rfft(seg), N * over_) * over_; pk = max(pk, np.abs(up).max())
     return float(20 * np.log10(pk + 1e-12))
+
+
+
+# ─── Toko: the gadgets' small cold voice (Unexpectedly, a Deer) ─────────────────────────────
+def tinny(x, lo=750, hi=4800, bits=5, hold=4):
+    """any sound out of a gadget's tiny speaker: no lows, a peaky band, crushed to a few bits, sample-held"""
+    v = soft(x, lo, hi, 3); pk = max(1e-9, np.abs(v).max()); q = 2 ** (bits - 1) - 1
+    v = np.round(v / pk * q) / q * pk; v = np.repeat(v[::hold], hold)[:len(v)]
+    return soft(v, None, 7000)
+
+
+def cam_chime(notes=(84, 91, 96), step=0.075, d=0.07, last=0.16):
+    """the camera's voice: short square-edged pips in fifths and octaves (no thirds: a machine is sure,
+    not warm), out of its tiny speaker; the last pip held a little"""
+    parts = []
+    for i, n in enumerate(notes):
+        L = last if i == len(notes) - 1 else d; f = hz(n); t = tv(L + 0.1)
+        x = (np.sin(2 * np.pi * f * t) + 0.35 * np.sign(np.sin(2 * np.pi * f * t))) * np.minimum(1, t / 0.002) * np.exp(-np.maximum(0, t - L) * 45)
+        parts.append(pad(x, i * step))
+    return tinny(over(*parts)) * 0.4
+
+
+def cam_snap():
+    """the camera's brackets closing on something: two tiny clicks and a quick zip down"""
+    t = tv(0.06); z = np.sin(2 * np.pi * np.cumsum(np.geomspace(4200, 2200, len(t))) / SR) * np.exp(-t * 50)
+    c = lambda: noise(0.006, 2500, 9000) * np.exp(-tv(0.006) * 800)
+    return tinny(over(c(), pad(c() * 0.7, 0.012), z * 0.5)) * 0.5
+
+
+def led_tick(f=3100):
+    """an LED's faint electrical tick"""
+    t = tv(0.02); return tinny(np.sin(2 * np.pi * f * t) * np.exp(-t * 400) * np.minimum(1, t / 0.0005)) * 0.25
+
+
+def led_flicker(d=0.5, rate=20.0):
+    """an LED stuttering on: a run of faint ticks, alternately stronger and weaker"""
+    out = np.zeros(int((d + 0.05) * SR)); t = tv(0.012); tk = np.sin(2 * np.pi * 3100 * t) * np.exp(-t * 500)
+    for i in range(int(d * rate)):
+        a = int(i / rate * SR); out[a:a + len(tk)] += tk * (1.0 if i % 2 == 0 else 0.55)
+    return tinny(out) * 0.25
+
+
+def phone_buzz(d=0.35):
+    """a phone vibrating in a gloved hand: an off-balance motor near 165 Hz, rattling, damped by the glove"""
+    t = tv(d); ph = 2 * np.pi * np.cumsum(165 * (1 + 0.03 * np.sin(2 * np.pi * 9 * t))) / SR
+    s = np.tanh(3 * np.sin(ph)) + 0.3 * np.sin(2 * ph); rattle = noise(d, 800, 4000) * (0.5 + 0.5 * np.sign(np.sin(ph))) * 0.15
+    return soft(s * 0.5 + rattle, 90, 3000) * np.minimum(1, t / 0.008) * np.minimum(1, (d - t) / 0.03) * 0.5
+
+
+def fall_whistle(d=0.45, f0=2600, f1=900):
+    """a flag dropping in from the top of the frame, as the camera draws it: released with a tick, a tinny slide down"""
+    t = tv(d); s = np.sin(2 * np.pi * np.cumsum(np.geomspace(f0, f1, len(t))) / SR) * np.minimum(1, t / 0.004) * (0.6 + 0.4 * (1 - t / d))
+    return tinny(over(s, noise(0.005, 3000, 9000) * np.exp(-tv(0.005) * 900) * 0.8)) * 0.35
+
+
+def pin_wobble(d=0.5, f=1180):
+    """the flag pinned on and wobbling: a tinny boing whose pitch wobbles as it dies"""
+    t = tv(d); ff = f * (1 + 0.06 * np.sin(2 * np.pi * 11 * t) * np.exp(-t * 5))
+    s = np.sin(2 * np.pi * np.cumsum(ff) / SR) * np.exp(-t * 7)
+    return tinny(over(s, noise(0.006, 2000, 8000) * np.exp(-tv(0.006) * 700) * 1.2)) * 0.4
+
+
+def upright_slide(m0, m1, d=0.35, vel=0.8):
+    """the upright's comic slide: a plucked note whose finger slides to m1 — 'bwoop?' up, 'bwomp' down"""
+    f0, f1 = hz(m0), hz(m1); t = tv(d + 0.45); k = np.clip(t / d, 0, 1); f = f0 * (f1 / f0) ** (3 * k ** 2 - 2 * k ** 3)
+    ph = 2 * np.pi * np.cumsum(f) / SR
+    s = sum(abs(np.sin(np.pi * j * 0.18)) / j ** 0.9 * np.sin(j * ph) * np.exp(-t * (1.4 + 0.7 * j)) for j in range(1, 16))
+    return over(s * np.minimum(1, t / 0.004) * 0.5 * vel, noise(0.05, 30, 400) * np.exp(-tv(0.05) * 70) * 0.3 * vel)
+
+
+def fiddle(d=3.0, seed=12):
+    """hands tying a card tag on a collar: cord tugs, card taps, a little fabric — small and close"""
+    g = np.random.default_rng(seed); out = noise(d, 300, 3000) * 0.012 * (0.6 + 0.4 * np.sin(2 * np.pi * 1.3 * tv(d)))
+    for _ in range(int(d * 5)):
+        tt = g.uniform(0, d - 0.15); kind = int(g.integers(3))
+        x = (noise(0.03, 1200, 6000) * np.exp(-tv(0.03) * 120) * 0.12, knock(0.12, g.uniform(500, 900)), noise(0.08, 400, 2500) * np.sin(np.pi * tv(0.08) / 0.08) * 0.07)[kind]
+        a = int(tt * SR); out[a:a + len(x)] += x[:len(out) - a]
+    return out
+
+
+def card_flip():
+    """a card tag flipping round on its string: two soft flaps and a tap — paper, not plastic"""
+    f = lambda g: noise(0.05, 500, 5000) * np.exp(-tv(0.05) * 70) * g
+    return over(f(0.5), pad(f(0.35), 0.07), pad(knock(0.25, 600), 0.075))

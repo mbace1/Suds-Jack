@@ -44,7 +44,7 @@ s.tune(0, 0, [(0, 0, 81), (1, 0, 84), (3, 0, 86), (4, 0, 82), (4, 1, 81), (4, 2,
 s.fx(tram(3.0, (0.5, 0.75)), 1.2, 0.8, -0.3, 0.15)
 s.fx(led_tick(2600), s.snap(pop(0, 0)), 0.5, 0.35)                                          # "AI": a cold little pip
 s.fx(led_flicker(0.5), PB * 4, 0.9, 0.35); s.fx(servo(0.3), PB * 4, 0.7, 0.35); s.fx(cam_chime((91, 96), 0.09, 0.06, 0.1), PB * 4, 0.5, 0.35, 0.1)
-s.fx(card() * 0.3, PB * 4 + 0.12, 0.5, 0.35)                                               # the price tag set swinging
+s.fx(tag_pop(700), 2.26, 1.0, 0.35)                                               # the price tag set swinging
 for k in range(4): s.fx(led_tick(), PB * (5 + 2 * k), 0.4, 0.35)                           # the LED, bright on alternate beats
 s.fx(kalimba(93, 0.4), PB * 6, 0.12, -0.2, 0.2)                                             # the ear twitch
 
@@ -57,14 +57,14 @@ s.note(upright(36, 0.45, 0.75), s.bar(1, 3), 0.4, -0.1, 0.15); s.hold(s.bar(1, 3
 s.tune(1, 0, [(0, 0, 81), (1, 0, 84), (2, 0, 86)], 0.36)          # no box in bar 4: the stop must be dead
 s.note(kalimba(72, 0.8), T + PB, 0.5, -0.2, 0.3); s.note(kalimba(77, 0.8), T + PB + 0.13, 0.45, -0.2, 0.3)          # eyes open
 s.note(upright_slide(41, 34, 0.5, 0.8), T + PB * 2, 0.45, -0.1, 0.2)                                              # the stretch
-s.fx(step(), T + PB * 3, 1.3, -0.2); s.fx(jingle(), T + PB * 3, 0.6, -0.2)                                       # stands: the collar tag
-s.fx(servo(2.25), T + PB * 3 + 0.13, 0.55, 0.35)                                                                   # tracking
+s.fx(step(), T + 1.71, 1.7, -0.2); s.fx(jingle(), T + 1.71, 1.1, -0.2)                                       # stands: the collar tag
+s.fx(servo(2.25), T + 1.84, 0.55, 0.35)                                                                   # tracking
 for i in range(8):
     t = T + PB * 4 + i * PB / 2; s.fx(step(), t, 1.3, -0.3 + 0.08 * i); s.fx(led_tick(), t, 0.35, 0.35)
 s.fx(cam_snap(), T + 3.06, 0.9, 0.2); s.fx(led_tick(4200), T + PB * 6, 0.3, 0.2)                          # brackets, settled
 T_DEER = T + PB * 7
-s.fx(tinny(tag_pop(1200)), T_DEER, 0.8, 0.2); s.fx(cam_chime(SURE[0]), T_DEER, 0.75, 0.25, 0.12)
-s.note(kalimba(84, 0.6), T + 4.10, 0.3, -0.2, 0.3); s.note(kalimba(89, 0.6), T + 4.10 + 0.12, 0.27, -0.2, 0.3)   # looks up, a small wag
+s.fx(tinny(tag_pop(1200)), T_DEER, 0.8, 0.2); s.fx(cam_chime(SURE[0], last=0.1), T_DEER, 0.75, 0.25, 0.12)     # done before the dog looks up
+s.note(kalimba(84, 0.8), T + 4.10, 0.5, -0.2, 0.3); s.note(kalimba(89, 0.8), T + 4.10 + 0.12, 0.45, -0.2, 0.3)   # looks up, a small wag
 s.hold(s.bar(1, 5), (58, 60, 64), 3 * B, 0.3, 0.2, 36)                                                             # the band, carefully, back
 
 # ── shot 3 · the phone in the gloved hand, 18:42: a buzz; the brief slides up in the camera's own

@@ -67,6 +67,9 @@ and a bar is exactly two picture beats.
 - **Beds:** `room` tone, `vinyl` crackle, and `rain` on the window, all set by `beds()`.
 - **Gadgets:** a toy, a camera, an LED. These are the **only thin, electronic sounds in the
   room**, and they come out of a tiny speaker (`toy_voice`, `toy_ding`, `toy_blip`, `servo`).
+  The Deer's camera has its own small cold voice, all through `tinny()`. `cam_chime` is pips
+  in fifths and octaves, no thirds: a machine is sure, never warm. The rest are `cam_snap`,
+  `led_tick` and `led_flicker`, a flag that `fall_whistle`s and `pin_wobble`s, and `phone_buzz`.
 - **Foley:** soft and rounded: `sit`, `pat`, `paw`, `knock`, `tag_pop`, `lamp_click`, `tram`.
 - **Space:** a 0.65 s furnished room, with the top rolled off 2 dB.
 - **Rules:**
@@ -75,6 +78,9 @@ and a bar is exactly two picture beats.
     being sad.
   - Under captions the music box plays one note a bar.
   - A music box running down means something has been given up.
+  - In a comedy, a joke is timed by STOPPING. The band stops dead on the DEER flag. After the
+    two pats there is a real silence, 8 dB down to rain and room. The head tilts are
+    `upright_slide`s: 'bwoop?' up, 'bwomp' down.
 
 ## Which film uses which series
 
@@ -85,13 +91,13 @@ and a bar is exactly two picture beats.
 | A Handful of People | Coxon | `synth_hp_s2.py` → `配乐_hp_s2_m14.wav` | new (old kept) |
 | Committee of the Whole | Coxon | `synth_cw_s2.py` → `配乐_cw_s2_m14.wav` | new (old kept) |
 | Happy Little Bot | Toko | `synth_bot_s2.py` → `配乐_bot_s2_m14.wav` | new (old kept) |
-| Unexpectedly, a Deer (clay remake) | Toko | to be written from its events list (below) | not yet scored |
+| Unexpectedly, a Deer (clay remake) | Toko | `synth_dr_s2.py` → `配乐_dr_s2_m14.wav` | new (the papercut `synth_dr.py` and its wav are kept) |
 | Station sign-off | all series | `synth_signoff.py` → `signoff_m14.wav` | shared; frozen |
 
 Run a score with `uv run --with numpy --with soundfile python 音频/<script>.py` from this
 folder. It needs numpy and soundfile, and takes about 10 s.
 
-## Scoring a Toko film from an events list (for the clay Deer)
+## Scoring a Toko film from an events list (as the clay Deer was)
 
 ```python
 from rfseries import *                     # PB, CUT, END, T_HIT, pop(); Toko()
@@ -163,6 +169,19 @@ spectrogram per new score and an old-over-new comparison per film.
 - **Reading the spectrograms:** showspectrumpic's lowest bin spans roughly 20–57 Hz, so its
   low end looks heavier than it is. The STFT shares in `final_analysis.txt` are the better
   guide. Do not use the `stop=` option; its zoom mirrors the spectrum.
+
+**The clay Deer** (`synth_dr_s2.py`):
+- **Loudness:** −14.1 LUFS, −3.1 dBTP, LRA 9.2 LU, linear loudnorm, no clipping.
+- **Tempo:** the music stem sits on the 84|168 lattice at 5.6× chance (112 at 2.1×).
+- **Events:** 55 sounded events from `clay-deer/EVENTS.md`, every paw-fall included.
+  `qa/sound/hitcheck.py` finds 49 starting within 30 ms, with a median offset of 0 ms. It
+  looks for a ≥4 dB rise over the 20–80 ms before each event, which is finer than the
+  2048-point onsets.
+- **The six that don't register** are soft continuity sounds under a joke, by choice: four
+  hallway paws under the flag chimes and the RACCOON whistle, the last trot paw under the
+  DEER chime, and the price-tag swing under the passing tram.
+- **Global seconds win over beat labels.** "Dog stands up" is labelled beat 3 but happens at
+  8.14 s, and the first render had it 104 ms early.
 
 **Not yet confirmed by ear:**
 - The fife's deliberate sharpness (+0.6 %).
