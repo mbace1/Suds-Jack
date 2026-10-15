@@ -12,7 +12,7 @@ Style: Bug,Poppins ExtraBold,30,&H30FFFFFF,&H30FFFFFF,&H80000000,&H00000000,0,0,
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:00.30,0:00:37.50,Bug,,0,0,0,,{\an7\pos(92,88)\fad(400,0)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE HELSINKI
+Dialogue: 0,0:00:00.30,0:00:40.71,Bug,,0,0,0,,{\an7\pos(92,88)\fad(400,0)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE HELSINKI
 Dialogue: 0,0:00:00.80,0:00:03.00,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}On 5 October, the\N{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}New York City Council{\c&HFFFFFF&}
 Dialogue: 0,0:00:03.00,0:00:06.08,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}On 5 October, the\N{\c&H3AB8F2&}New York City Council{\c&HFFFFFF&}\N{\alpha&HFF&\t(0,280,\alpha&H00&)}met as a committee of\Nall 51 members, on AI risk.
 Dialogue: 0,0:00:07.23,0:00:09.43,H,,0,0,0,,{\an8\pos(540,210)}{\fad(280,0)}It invited five AI companies.\NMeta said yes.
@@ -23,5 +23,5 @@ Dialogue: 0,0:00:20.09,0:00:22.29,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}Aske
 Dialogue: 0,0:00:22.29,0:00:25.36,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}Asked for the odds\Nof catastrophe,\N{\alpha&HFF&\t(0,280,\alpha&H00&)}none of the four companies\N{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}gave a number{\c&HFFFFFF&}.
 Dialogue: 0,0:00:26.51,0:00:27.71,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}Council Speaker Julie Menin\Ncalled OpenAI's answer
 Dialogue: 0,0:00:27.71,0:00:31.79,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}Council Speaker Julie Menin\Ncalled OpenAI's answer\N{\alpha&HFF&\t(0,280,\alpha&H00&)}"{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}flippant at best{\c&HFFFFFF&}."
-Dialogue: 0,0:00:32.84,0:00:34.34,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}SpaceXAI did not come,\Ndespite a {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}subpoena{\c&HFFFFFF&}.
-Dialogue: 0,0:00:34.34,0:00:37.20,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}SpaceXAI did not come,\Ndespite a {\c&H3AB8F2&}subpoena{\c&HFFFFFF&}.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}Threatened with a judge,\Nit agreed to testify on {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}16 October{\c&HFFFFFF&}.
+Dialogue: 0,0:00:32.84,0:00:35.34,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}SpaceXAI did not come,\Ndespite a {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}subpoena{\c&HFFFFFF&}.
+Dialogue: 0,0:00:35.34,0:00:40.41,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}SpaceXAI did not come,\Ndespite a {\c&H3AB8F2&}subpoena{\c&HFFFFFF&}.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}Threatened with a judge,\Nit agreed to testify on {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}16 October{\c&HFFFFFF&}.
