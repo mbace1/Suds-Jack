@@ -18,3 +18,5 @@
 
 **Sources:** Politico (24 Sep 2026) and Bloomberg (25 Sep) on the White House Office of the National Cyber Director's request; the Telegraph and Reuters (11 Oct) on the restoration after 17 days, with the UK AI minister's "on the same voluntary terms" (quoted as reported); The Decoder, TNW, Computing; the Institute has no statutory power to compel access.
 **Risks / fairness:** OpenAI, Anthropic and Google DeepMind are treated alike and not singled out — the target is the voluntary regime. No person named; the minister's words are quoted only as reported. Disclosure: researched with Claude, an Anthropic model; the owner checks the balance.
+
+**As shipped (15 Oct 2026):** captions are in `subs/vt_caps.py` (they follow the pre-production review, `plan/review-preproduction.md`, where it differs from the table above); final review `plan/review-final-1-3.md`.

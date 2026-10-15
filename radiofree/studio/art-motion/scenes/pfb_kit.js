@@ -208,19 +208,19 @@ window.PFB = (() => {
     c.fillStyle = gr; c.beginPath(); c.ellipse(x, y - hgt * 0.5, rx, ry + hgt * 0.5, 0, 0, TAU); c.fill();
     c.restore();
   }
-  /** the sofa's back across the foreground, a red throw cushion, and a viewer from behind in a red cap */
+  /** the sofa's back across the foreground, a red throw cushion, and a viewer from behind in a plain grey cap (review: a red cap read as partisan) */
   const sofa = () => sheet('pfb_sofa', (g) => {
     g.translate(0, -70);
     g.save(); g.translate(340, 1760); g.scale(1.15, 1.15); g.translate(-340, -1760);
-    // the viewer: shoulders in a navy-and-cream plaid, the back of a head, a red ball cap seen from behind
+    // the viewer: shoulders in a navy-and-cream plaid, the back of a head, a plain grey ball cap seen from behind
     g.fillStyle = '#3b4a72'; g.beginPath(); g.moveTo(170, 1880); g.quadraticCurveTo(180, 1742, 300, 1730); g.lineTo(380, 1730); g.quadraticCurveTo(500, 1742, 510, 1880); g.closePath(); g.fill();
     g.strokeStyle = 'rgba(248,242,228,.35)'; g.lineWidth = 6; for (let x = 200; x < 500; x += 34) { g.beginPath(); g.moveTo(x, 1736); g.lineTo(x, 1880); g.stroke(); } for (let y = 1752; y < 1880; y += 34) { g.beginPath(); g.moveTo(170, y); g.lineTo(510, y); g.stroke(); }
     g.fillStyle = '#c99b7a'; g.fillRect(310, 1700, 60, 40);
     g.fillStyle = '#5a3a24'; g.beginPath(); g.ellipse(340, 1662, 62, 70, 0, 0, TAU); g.fill();
     g.fillStyle = '#c99b7a'; for (const sx of [-1, 1]) { g.beginPath(); g.ellipse(340 + sx * 62, 1668, 11, 19, 0, 0, TAU); g.fill(); }
-    g.fillStyle = C.red; g.beginPath(); g.ellipse(340, 1626, 66, 48, 0, Math.PI, TAU); g.fill(); g.fillRect(274, 1622, 132, 14);
-    g.fillStyle = '#5a3a24'; rr(g, 318, 1622, 44, 22, 8); g.fillStyle = C.redD; g.fillRect(318, 1630, 44, 5);   // the strap's gap at the back
-    g.fillStyle = C.redD; g.beginPath(); g.arc(340, 1578, 7, 0, TAU); g.fill();
+    g.fillStyle = '#7d8189'; g.beginPath(); g.ellipse(340, 1626, 66, 48, 0, Math.PI, TAU); g.fill(); g.fillRect(274, 1622, 132, 14);
+    g.fillStyle = '#5a3a24'; rr(g, 318, 1622, 44, 22, 8); g.fillStyle = '#62666e'; g.fillRect(318, 1630, 44, 5);   // the strap's gap at the back
+    g.fillStyle = '#62666e'; g.beginPath(); g.arc(340, 1578, 7, 0, TAU); g.fill();
     g.restore();
     // the sofa back: two cushions, piping, the arm on the right
     g.fillStyle = C.navyD; g.fillRect(-90, 1790, W + 180, 300);

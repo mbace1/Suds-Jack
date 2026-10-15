@@ -66,7 +66,7 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
 
 Finished films go in `films/` named `DD-MM-SeriesN-Title.mp4`: the release date, the series
 and its number, the title — hyphens for spaces, so the link works anywhere unescaped. Series:
-`Doodle` (the Google/Doodle stories), `Coxon` (Jacob Coxon), `Toko` (the Toko thinkers).
+`Doodle` (the Google/Doodle stories), `Coxon` (Jacob Coxon, and AI governance after him), `BigTech` (the other platforms), `Nordic` (the Nordics), `Toko` (the Toko thinkers).
 E.g. `14-10-Doodle1-Biodiversity-Fund.mp4`. The repo is public, so each file has a direct
 download link: `https://raw.githubusercontent.com/mbace1/Suds-Jack/<commit>/radiofree/studio/art-motion/films/<name>`.
 

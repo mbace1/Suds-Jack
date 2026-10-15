@@ -18,3 +18,6 @@
 
 **Sources:** NYT analysis (republished by the Philadelphia Inquirer, 2 Oct 2026): $55.7M from groups tied to OpenAI and Anthropic; 95 unique ads from four AI super PACs; only seven mention AI or an AI company; none mention data centres; the groups have worked to obscure their involvement as voters sour on AI. NBC News, "Ads funded by AI industry are flooding the 2026 election. They're about everything except AI." Texas Tribune on the same pattern. Election day: 3 Nov 2026.
 **Risks / fairness:** both networks, never one — OpenAI-aligned Leading the Future and Anthropic-aligned Public First Action. No donors named. No illegality alleged. (Anthropic says its $20M to the non-profit could not be used for election ads; the caption says "groups tied to", the NYT's own phrase.) The last line is the station's joke.
+
+**As shipped (15 Oct 2026):** captions are in `subs/pfb_caps.py` (they follow the pre-production review, `plan/review-preproduction.md`, where it differs from the table above); final review `plan/review-final-1-3.md`.
+"Only 7 of the 95 mention AI" was confirmed in the Philadelphia Inquirer's syndication of the NYT analysis ("Only seven mentioned AI or an AI company directly"); the viewer's cap is plain grey (final review: a red cap read as partisan).

@@ -1,5 +1,5 @@
 // Shot 1 · 0–6.4 s · The living room. An American living room in card, daytime: striped wallpaper,
-// a sash window, the walnut sideboard, a braided rug, a viewer in a red cap on the sofa. On the TV a
+// a sash window, the walnut sideboard, a braided rug, a viewer in a plain grey cap on the sofa. On the TV a
 // campaign ad: a waving flag, an eagle crossing, a diner on the hill — and along its foot the fine
 // print, a dark strip that says PAID FOR BY (the setup for the last shot; a light runs along it).
 // The camera eases in toward that strip; on the second half, magenta money drifts down into the room.

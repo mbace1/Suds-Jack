@@ -18,3 +18,5 @@
 
 **Sources:** Yle and MTV Uutiset on the anchors' joint campaign (April 2026); The Next Web, Technology.org, Android Headlines on the Frankfurt Regional Court ruling of 16 Sep 2026 (Meta liable; its "passive host" defence rejected because its own ranking and auction decide who sees what; not final); Reuters (Nov 2025) on Meta's internal documents, via Yle and PPC Land ("penalty bids": suspected but unconfirmed fraudsters charged higher rates; Meta calls the estimates rough and over-inclusive and the higher rates a deterrent).
 **Risks / fairness:** never show or imitate a real anchor's face — that is the scam; the newsreader is cardboard and faceless. Attribute the documents to Reuters. Say the ruling can be appealed. The Frankfurt plaintiff is not named.
+
+**As shipped (15 Oct 2026):** captions are in `subs/nrf_caps.py` (they follow the pre-production review, `plan/review-preproduction.md`, where it differs from the table above); final review `plan/review-final-1-3.md`.
