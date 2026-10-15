@@ -11,19 +11,19 @@
 // Exit 0 = safe to publish. Exit 1 = the app would show the off-air card.
 
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
 const target = path.resolve(process.argv[2] || path.join(ROOT, 'wire.json'));
 
-const { validateWire, rotate, LANGS } = await import(path.join(ROOT, 'js/wire.js'));
+const { validateWire, rotate, LANGS } = await import(pathToFileURL(path.join(ROOT, 'js/wire.js')).href);
 // These import cleanly under node because neither touches the DOM at module
 // scope — PixelScreen only reaches for `document` when one is constructed.
-const { PANEL_KEYS } = await import(path.join(ROOT, 'js/visuals.js'));
-const { BROLL_KEYS, NUMERIC_PANELS } = await import(path.join(ROOT, 'js/visuals.js'));
-const { SECTOR_COLOR } = await import(path.join(ROOT, 'js/palette.js'));
+const { PANEL_KEYS } = await import(pathToFileURL(path.join(ROOT, 'js/visuals.js')).href);
+const { BROLL_KEYS, NUMERIC_PANELS } = await import(pathToFileURL(path.join(ROOT, 'js/visuals.js')).href);
+const { SECTOR_COLOR } = await import(pathToFileURL(path.join(ROOT, 'js/palette.js')).href);
 
 let wire;
 try {

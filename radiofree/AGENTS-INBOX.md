@@ -652,3 +652,17 @@ one). Details and reasons in `MOTION.md`.
 Owner approved a clay Toko (Aardman), saw the test shot, and asked for it on
 all the satire videos. `clay` is now the film default (`--enamel` to opt out);
 the gate asserts `toko3d === 'clay'`. Next for the look: the miniature set.
+
+## 2026-10-13 — main caught up with the live station (v73)
+
+`main` had stopped at v66 while `gh-pages` went on to v72, and the v69–v72
+deploys had in turn dropped what main had: **Toko at the table** (`sign({ table:
+true })`, the `__tokoTable` pause in `main.js`, `toko/js/table.js` in the
+precache). Live, tapping Toko navigated away. v73 is v72 plus that, one token
+everywhere. On a phone the hub's TOKO button (beside HOME) sat on the archive
+picker, so on touch at ≤480 px the masthead starts after it and the dial (the
+post's own screen carries the frequency) gives way. Also: the Node tools import
+by file URL so the gates run on Windows, and `generate-programmed-wire.mjs`'s
+desks match whole words — `city` was filing "capacity" under CITY, which is
+what had `test/programming.cjs` failing. The morning wire workflow has failed
+daily since at least August: the repo has no `ANTHROPIC_API_KEY` secret.

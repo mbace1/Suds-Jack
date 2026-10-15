@@ -23,8 +23,8 @@
 // landed on, because "MP4" that turns out to be AV1 is a fact the person
 // uploading it needs.
 
-import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=72';
-import { renderSoundtrack } from './score.js?v=72';
+import { planFilm, paintFilm, shotAt, actAt, TIMING, W, H } from './film.js?v=73';
+import { renderSoundtrack } from './score.js?v=73';
 import { makeToko3D } from '../../toko/js/toko3d.js?v=2';
 
 const VENDOR = './vendor/mediabunny-1.58.1.min.js';

@@ -165,9 +165,9 @@ async function staticChecks() {
   // app degrading gracefully is what made it invisible. So every episode in
   // `wire/` is graded here, and the NEWEST is called out on its own, because
   // that is the one a reader actually gets.
-  const { validateWire, LANGS } = await import('file://' + path.join(RF, 'js', 'wire.js'));
+  const { validateWire, LANGS } = await import(require('url').pathToFileURL(path.join(RF, 'js', 'wire.js')).href);
   const { PANEL_KEYS, BROLL_KEYS, NUMERIC_PANELS } =
-    await import('file://' + path.join(RF, 'js', 'visuals.js'));
+    await import(require('url').pathToFileURL(path.join(RF, 'js', 'visuals.js')).href);
 
   // Copy written for a reader, matched against a number written for a panel.
   // Thin spaces and a Finnish decimal comma are the same number as a dot and
@@ -180,7 +180,7 @@ async function staticChecks() {
     const esc = want.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     return new RegExp(`(?:^|[^\\d.])${esc}(?![\\d])`).test(hay);
   };
-  const { SECTOR_COLOR } = await import('file://' + path.join(RF, 'js', 'palette.js'));
+  const { SECTOR_COLOR } = await import(require('url').pathToFileURL(path.join(RF, 'js', 'palette.js')).href);
   const index = JSON.parse(fs.readFileSync(path.join(RF, 'wire', 'index.json'), 'utf8'));
   const eps = (index.episodes || []).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
   ok('the index lists at least one morning', eps.length > 0, JSON.stringify(eps));
@@ -262,7 +262,7 @@ async function staticChecks() {
 // company's name off the source headline.
 async function generatorChecks() {
   console.log('\ngenerator');
-  const g = await import('file://' + path.join(RF, 'tools', 'generate-wire.mjs'));
+  const g = await import(require('url').pathToFileURL(path.join(RF, 'tools', 'generate-wire.mjs')).href);
 
   const rss = `<rss><channel>
     <item><title>Nokia Oyj cuts 340 jobs at its Espoo site</title><link>x</link>
@@ -315,7 +315,7 @@ async function generatorChecks() {
 async function rotationChecks() {
   console.log('\nrotation');
   const { rotate, validateWire } = await import(
-    'file://' + path.join(RF, 'js', 'wire.js'));
+    require('url').pathToFileURL(path.join(RF, 'js', 'wire.js')).href);
 
   const S = (id, sector, filed, retired) => ({
     id, sector, visual: 'chart', broll: 'katu',

@@ -45,9 +45,9 @@ import path from 'node:path';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
 
-const { validateWire, parseLine } = await import(path.join(ROOT, 'js/wire.js'));
-const { PANEL_KEYS, BROLL_KEYS, NUMERIC_PANELS } = await import(path.join(ROOT, 'js/visuals.js'));
-const { SECTOR_COLOR } = await import(path.join(ROOT, 'js/palette.js'));
+const { validateWire, parseLine } = await import(pathToFileURL(path.join(ROOT, 'js/wire.js')).href);
+const { PANEL_KEYS, BROLL_KEYS, NUMERIC_PANELS } = await import(pathToFileURL(path.join(ROOT, 'js/visuals.js')).href);
+const { SECTOR_COLOR } = await import(pathToFileURL(path.join(ROOT, 'js/palette.js')).href);
 
 // ── the desk ──────────────────────────────────────────────────────────────
 const API = 'https://api.anthropic.com/v1/messages';

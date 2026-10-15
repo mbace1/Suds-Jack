@@ -10,11 +10,11 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const RF = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const { planFilm, shotAt, actAt, splitRuns, TIMING } = await import(path.join(RF, 'js', 'film.js'));
-const { LANGS } = await import(path.join(RF, 'js', 'wire.js'));
+const { planFilm, shotAt, actAt, splitRuns, TIMING } = await import(pathToFileURL(path.join(RF, 'js', 'film.js')).href);
+const { LANGS } = await import(pathToFileURL(path.join(RF, 'js', 'wire.js')).href);
 
 let checks = 0, fails = 0;
 const ok = (name, cond, detail = '') => {

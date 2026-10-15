@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=72';
-import { Post, Reader } from './codec.js?v=72';
-import { Package } from './package.js?v=72';
+import { PAL, SECTOR_COLOR } from './palette.js?v=73';
+import { Post, Reader } from './codec.js?v=73';
+import { Package } from './package.js?v=73';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=72';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=72';
-import * as audio from './audio.js?v=72';
-import { PixelScreen } from './screen.js?v=72';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=72';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=73';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=73';
+import * as audio from './audio.js?v=73';
+import { PixelScreen } from './screen.js?v=73';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=73';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -233,7 +233,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
   cancelAnimationFrame(raf);
   try {
     if (i !== active) scrollToPost(i, true);
-    const { exportPost } = await import('./export.js?v=72');
+    const { exportPost } = await import('./export.js?v=73');
     // the morning is ONE episode: the SPIN-O-METER on Toko's desk counts every
     // spin DECODE has shown so far, across the bulletins before this one
     const spins = (q) => ((q.copy && q.copy.lines) || []).join(' ').split('{{').length - 1;
@@ -277,7 +277,7 @@ async function exportActive(i = active, btn = null, opts = {}) {
 function boot() {
   booted = true;
   if (TTS && !tts) {
-    import('./tts.js?v=72').then(m => { tts = m; ttsSpeak(posts[active]); })
+    import('./tts.js?v=73').then(m => { tts = m; ttsSpeak(posts[active]); })
       .catch(err => console.warn('[rfh] tts prototype did not load:', err));
   }
   paintSound();
@@ -604,7 +604,19 @@ function bindControls() {
   });
 }
 
+// ── Toko at the table ──────────────────────────────────────────────────
+// The signature in the corner opens the counter over this game rather than
+// navigating away to the arcade (toko/js/table.js). Stopping the clock is the
+// one thing it cannot work out for itself. The broadcast keeps its own time, so a
+// reader left mid-sentence is still mid-sentence when you come back.
+let tokoHeld = false;
+window.__tokoTable = {
+  pause() { tokoHeld = true; },
+  resume() { tokoHeld = false; last = performance.now(); },
+};
+
 function loop(now) {
+  if (tokoHeld) { last = now; raf = requestAnimationFrame(loop); return; }
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   const p = posts[active];
