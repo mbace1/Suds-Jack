@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Score for "Somebody Does the Dishes" (Toko, clay, 21.4 s) — its own music (SOUND.md).
+"""Score for "Somebody Does the Dishes" (Toko, clay, 24.4 s) — its own music (SOUND.md).
 
     uv run --with numpy --with soundfile python 音频/synth_dsh.py
 
@@ -11,15 +11,18 @@ the HVAC, a yawn, a stapler. Toko sips and the band goes drowsy; the clock leaps
 snort snaps the band awake. On the pull-back the bossa closes off as if through the wall and the
 office hum takes over; the split shot plays BOTH — the kitchen on the left, the cubicle on the
 right — while robot and man wobble on one leg together; the jingle comes back quieter for Toko's
-wave, and when the man waves back, a little two-note wave on the vibes. Every effect is at its
-second in clay-dishes/EVENTS.md (hard cuts, no grid).
+wave, and when the man waves back, a little two-note wave on the vibes. The last shot runs three
+seconds longer (owner, 2026-10-15): the hum carries on, his hand comes down and lands back on his
+controller with a click (22.5), one soft vibraphone chord rings out under the push-in, and everything
+fades with the picture over the last 0.35 s. Every effect is at its second in clay-dishes/EVENTS.md
+(hard cuts, no grid) or clay-dishes/film.js.
 """
 import sys
 from pathlib import Path
 for _d in (Path(__file__).resolve().parent, Path(__file__).resolve().parents[1]): sys.path.insert(0, str(_d / 'lib'))
 from rfseries import *
 
-DUR = 514 / 24                                                          # 21.42 s
+DUR = 586 / 24                                                          # 24.42 s (was 514 frames, 21.42 s)
 
 
 class Lounge(Score):
@@ -121,4 +124,9 @@ s.fx(toy_blip(2400), 18.20, 0.5, 0.2, 0.1); whirr(18.50, 0.5, 0.2); s.fx(servo(0
 s.music_span(19.60, DUR + 0.5, lambda x: x * np.maximum(0, 1 - np.arange(len(x)) / (0.012 * SR)))   # hard cut back to the cubicle
 for t, n in ((19.78, 79), (20.06, 83)): s.note(vibes(n, 0.9, 0.6, False), t, 0.32, 0.1, 0.3)       # hi!
 
-s.render(str(Path(__file__).with_name('配乐_dsh_m14.wav')), 20.9, tau=0.5, end=DUR)
+# ── 5c, longer: he waves on to 21.9, lowers his hand by 22.5 and is back on his controller (a click);
+# Toko waves on in the monitor; one soft chord on the vibes under the push-in, out with the picture's fade
+s.fx(over(click() * 0.35, knock(0.3, 2600) * 0.5, pad(knock(0.15, 1900) * 0.4, 0.045)), 22.50, 0.6, 0.15, 0.1)
+for j, n in enumerate((62, 66, 71, 74)): s.note(vibes(n, 1.6, 0.4), 23.0 + 0.06 * j, 0.14, -0.1 + 0.1 * j, 0.4)
+
+s.render(str(Path(__file__).with_name('配乐_dsh_m14.wav')), DUR - 0.35, tau=0.18, end=DUR)        # out with the picture

@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 for _d in (Path(__file__).resolve().parent, Path(__file__).resolve().parents[1]): sys.path.insert(0, str(_d / 'lib'))
 from rfcaps import build
-CUT = [0, 4.4, 8.4, 12.8, 16.4, 21.4]
+CUT = [0, 4.4, 8.4, 12.8, 16.4, 24.4]   # the last shot runs 3 s longer (owner: the end went out too fast)
 SHOTS = [
  (0, 0.30, 2.00, 420, "A home robot, [$20,000].", "It does the dishes."),
  (1, 0.30, 0.30, 420, "In a reviewer's 2025 test:\\N[slowly].", ""),

@@ -20,3 +20,5 @@
 **Risks / fairness:** it is a bill, not law — said in shot 3. The joke is on the law and on ourselves, never on people deepfakes have harmed. No minister named.
 
 **As shipped (15 Oct 2026):** captions in `subs/sat_caps.py` (they follow the pre-production review where it differs from the table); final review `plan/review-final-4-5.md` (fixes applied).
+
+**Owner, 15 Oct 2026: great, ready to ship.**

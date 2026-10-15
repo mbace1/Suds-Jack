@@ -19,3 +19,5 @@
 **Risks:** how much it can do alone is contested — "in a reviewer's test" and the maker's own claim (beat 4) keep it fair. No real faces.
 
 **As shipped (15 Oct 2026):** captions in `subs/dsh_caps.py` (they follow the pre-production review); clay source in `clay/dishes/`; no slate, no bug.
+
+**v2 (owner, 15 Oct 2026: "a bit longer at the end, the text goes out too fast"):** the last shot runs 3 s longer — 24.4 s in all; the operator lowers his hand at 21.9 s and goes back to work while Toko keeps waving on his monitor; "Now he's further away." holds 5.6 s.

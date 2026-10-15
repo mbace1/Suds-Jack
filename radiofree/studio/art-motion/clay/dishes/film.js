@@ -1,4 +1,4 @@
-// SOMEBODY DOES THE DISHES — Toko Midori Games, clay, 21.4 s, 1080×1920, 24 fps (514 frames).
+// SOMEBODY DOES THE DISHES — Toko Midori Games, clay, 24.4 s, 1080×1920, 24 fps (586 frames). Owner: the end was too fast — the last shot now runs 3 s longer: the operator waves for about two seconds, lowers his hand and goes back to work while Toko keeps waving on his monitor.
 //
 // Two worlds built side by side as one set, a wall between them: a sterile
 // white-and-mint "smart home" kitchen in the morning sun, and — through the wall's
@@ -28,8 +28,8 @@ import { robotHead, vrHeadset, controller, plate as makePlate, dishwasher, price
 
 const RES = Number(new URLSearchParams(location.search).get('res') || 1);
 const W = Math.round(1080 * RES), H = Math.round(1920 * RES), FPS = 24, POSE_FPS = 12;
-const CUTS = [0, 4.4, 8.4, 12.8, 16.4, 17.9, 19.6, 21.4];
-const FRAMES = 514;
+const CUTS = [0, 4.4, 8.4, 12.8, 16.4, 17.9, 19.6, 24.4];
+const FRAMES = 586;
 const SPLIT_GAP = 12;   // px between the two halves of the split, at 1080
 
 // ------------------------------------------------------------------ helpers
@@ -423,7 +423,7 @@ const SHOTS = [
   // 5b — over Toko's shoulder: he waves at the robot's camera eye
   { cam: (s) => camWave(s) },
   // 5c — the operator waves back; his monitor shows Toko
-  { cam: (s) => { const k = smooth(0, 1.8, s); return { ...frameCam({ T: add3(MAN_CHEST, [1, 2, -7]), at: [540, 1220], az: lerp(16, 13, k), el: 6, D: lerp(128, 120, k), fov: 30 }), focus: MAN_CHEST, ap: 4 }; } },
+  { cam: (s) => { const k = smooth(0, 1.8, s), k2 = smooth(1.8, 4.8, s); return { ...frameCam({ T: add3(MAN_CHEST, [1, 2, -7]), at: [540, 1220], az: lerp(16, 13, k), el: 6, D: lerp(lerp(128, 120, k), 113, k2), fov: 30 }), focus: MAN_CHEST, ap: 4 }; } },
 ];
 const SPLIT = [
   () => ({ ...frameCam({ T: add3(ROBOT_CHEST, [3.0, -6, -2]), at: [540, 1250], az: -20, el: 6, D: 214, fov: 30 }), focus: add3(ROBOT_CHEST, [3, -6, 0]), ap: 4 }),
@@ -519,7 +519,7 @@ function poseAll(tg, k) {
     // 5a: a big stretching yawn; 5c: the wave back
     const R = R_(MB.yaw), at = (v) => add3(MB.hip, R(v));
     const y = smooth(16.5, 16.95, tg) * (1 - smooth(17.4, 17.85, tg));
-    const wv = smooth(19.75, 20.1, tg), wave = Math.sin((tg - 20.0) * Math.PI * 2 * 1.3) * smooth(20.0, 20.2, tg);
+    const wv = smooth(19.75, 20.1, tg) * (1 - smooth(21.9, 22.5, tg)), wave = Math.sin((tg - 20.0) * Math.PI * 2 * 1.3) * smooth(20.0, 20.2, tg);
     MP = { hip: MB.hip, yaw: MB.yaw, lean: 0.06 - y * 0.16, side: 0, knee: STAND.knee, foot: STAND.foot, legs: null,
       hp: 0.2 - y * 0.75 + wv * 0.05, hr: wv * -0.14, hy: 0.1,
       elR: mix(mix(at([-6.6, 5.0, 1.5]), at([-7.5, 15, -0.5]), y), at([-10.2, 11.5, 3.4]), wv), hdR: mix(mix(at([-5.6, -0.5, 3.5]), at([-5.5, 24.5, 0.5]), y), at([-11.0 + wave * 3.6, 21.0, 8.0]), wv),
