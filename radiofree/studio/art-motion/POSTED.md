@@ -25,8 +25,8 @@ Toko 2 still needs to go out on Toko X ("Batteries included. Parents not include
 |---|---|---|---|
 | 16 Oct 9:52 | Toko 4, Somebody Does the Dishes | Toko IG (+ X if signed in) | The $20,000 home robot, in a reviewer's test: someone in a VR headset, somewhere else. Who's doing your dishes? #SomebodyDoesTheDishes #robots #claymation |
 | 16 Oct 9:52 | Coxon 1, A Handful of People | RFH IG + X | Should the choice rest with a handful of people? Midterms 3 Nov. #AI #AIsafety #midterms |
-| 16 Oct 21:52 | Nordic 1, Satire Excepted | RFH IG + X | IG: A Danish bill would make your face yours by law. Except for satire. Who decides what's satire? #L49 #deepfakes #Denmark #Folketinget / X: Your face, yours by law. Satire excepted. Who decides? #L49 #deepfakes |
-| 17 Oct 9:52 | Coxon 3, Paid For By | RFH IG + X | IG: AI super PACs spent $55.7M on midterm ads. Almost none mention AI. #midterms #AI #superPACs / X: $55.7M in AI super PAC ads. Where's the AI? #midterms |
+| 16 Oct 21:52 | Nordic 1, Satire Excepted | RFH IG + X | A Danish bill would make your face yours by law. Except for satire. Who decides what's satire? #L49 #deepfakes #Denmark #Folketinget |
+| 17 Oct 9:52 | Coxon 3, Paid For By | RFH IG + X | AI super PACs spent $55.7M on midterm ads. Almost none mention AI. #midterms #AI #superPACs |
 
 ## Waiting
 
