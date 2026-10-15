@@ -11,6 +11,6 @@ SHOTS = [
  (2, 0.80, 3.00, 420, "Jacob Coxon, ex-Anthropic:", "\"On our current path, I think\\Nit is more likely than not that\\Nhumanity [loses control]…\""),
  (3, 0.80, 3.00, 420, "Asked for the odds\\Nof catastrophe,", "none of the four companies\\N[gave a number]."),
  (4, 0.80, 2.00, 420, "Council Speaker Julie Menin\\Ncalled OpenAI's answer", "\"[flippant at best].\""),
- (5, 0.70, 2.20, 420, "SpaceXAI did not come,\\Ndespite a [subpoena].", "The council is pursuing\\Nthe subpoena in court."),
+ (5, 0.70, 2.20, 420, "SpaceXAI did not come,\\Ndespite a [subpoena].", "Threatened with a judge,\\Nit agreed to testify on [16 October]."),
 ]
 build(SHOTS, CUT, str(Path(__file__).with_name('cw_H.ass')), manual=True)

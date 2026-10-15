@@ -28,6 +28,8 @@ v5 (owner, 2026-10-14: "great, maybe some clarity needed. Visuals can help, beca
 5. Council Speaker Julie Menin · called OpenAI's answer / "[flippant at best]."
 6. SpaceXAI did not come, · despite a [subpoena]. / The council is pursuing · the subpoena in court. (Review v5: with SpaceXAI the subject, "it" read as the company.)
 
+v5.1 (2026-10-15, a correction to a released film): on 13 Oct Speaker Menin announced that SpaceXAI had agreed to testify at a Committee on Technology hearing on 16 Oct, after the council told it it would ask a state Supreme Court judge to enforce the subpoena; it never went to court (council press release 2026/10/13/3295; CNBC 13.10.2026; amNY). So caption 6's second half is now "Threatened with a judge, · it agreed to testify on [16 October]." and the closing stamp reads OCT 16, not TO COURT.
+
 _v4, superseded:_
 
 1. On 5 October, New York's · council met as one committee / of [all 51 members], · for one hearing: AI risk.
