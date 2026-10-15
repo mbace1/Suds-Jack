@@ -236,3 +236,58 @@ carried it. A 5 kHz squeak is heard over a tuba even when it barely moves the br
   - Shot 5 replays shot 1's music exactly (correlation 0.99, ±0.00 dB) under the same rhyming
     foley. Shot 6 plays through one smaller rattle until the door click cuts it.
   - −14.0 LUFS, −3.0 dBTP. 47/47 events within 30 ms. Music on the 84|168 lattice at 2.2×.
+- **4 · Irreversible** (`synth_irr.py` → `配乐_irr_m14.wav`): a glossy keynote groove in D major
+  at 140 (a soft four-on-the-floor, a `pluck` arpeggio, marimba, the sub), the twelve stars on a
+  rising glockenspiel. When the case begins it turns into courtroom pizzicato in D minor on the
+  same grid (new `pizz_str`: the quartet's bodies, plucked).
+  - "IRREVERSIBLE HARM" lands on a solemn low hit: timpani, bass drum, low trombones, cello and
+    a deep bell. The law book's pages turn and nine drawers burst one per eighth on climbing
+    plucks. The scale rocks on a two-note see-saw that never settles.
+  - The padlock clicks onto the keynote's glossy chord, as if it were a launch. A pencil, the tape
+    and a little photocopier (`copier`, `pencil`) keep working behind it; one pluck sits under the
+    last line.
+  - −13.7 LUFS, −3.0 dBTP. 41/41 events within 30 ms (the seventh star, under the tape, by spectral
+    flux). Music on the 140 lattice at 2.9×.
+- **5 · Satire Excepted** (`synth_sat.py` → `配乐_sat_m14.wav`): a jaunty Copenhagen waltz in G
+  major, 3/4 on the 168 grid, six bars a shot. A musette `accordion` (three reeds, one sharp and one
+  flat) plays the tune over its own oom-pah-pah bass buttons; a `harpsichord` breaks the chords. The
+  tune holds long notes while each caption appears.
+  - A celesta run lights the palace windows over lapping water, a boat's putter and two flags.
+    The copying press stamps on the waltz's downbeats (`press_stamp`) and the band leaves the
+    downbeat to it. The calendar's pages rip on harpsichord notes climbing D–E–F♯, each fluttering
+    away on a trill, and the pencil circles the 1st on G.
+  - On the rail the band stops dead for the tag (ding, then DING). On the scale a `slide_whistle`
+    rides the beam's computed angle, and the band can't choose between G major and G minor.
+  - A small ta-DA lands on "This has been satire.", then 1.3 s of room tone. On "Probably." a
+    `fagotto` (bassoon) doubts in two notes: D, then a sagging C♯ that never resolves, as the balance
+    swings back in.
+  - −13.9 LUFS, −3.3 dBTP. 34/34 events within 30 ms, with no limiting. Music on the 84|168
+    lattice at 3.8×.
+  - The events list puts the ta-da on "Probably."; the brief puts it on "This has been satire." and
+    gives "Probably." the bassoon. The score follows the brief.
+- **6 · Genius** (`synth_gen.py` → `配乐_gen_m14.wav`, 509 frames = 21.21 s): a cheesy game show and
+  sitcom groove in C at 109 BPM. The beat is 0.55 s because the sad trombone's wahs are 0.55 s
+  apart in the picture.
+  - The band is slap bass, combo organ, claps and game-show brass. Toko's room stays underneath:
+    flies, birds, a snoring dog, a kalimba for the dog's ear.
+  - The TA-DA stops the groove; the BURST is a fanfare and a confetti cannon.
+  - The rollback is the burst itself rewound (`tape_rewind`): the same fanfare reversed and
+    spooling faster, ending on a blip.
+  - A muted trombone plays wah-wah as the dog walks out.
+  - −14.0 LUFS, −2.8 dBTP. 25/25 events within 30 ms (median −2 ms).
+- **7 · Somebody Does the Dishes** (`synth_dsh.py` → `配乐_dsh_m14.wav`, 514 frames = 21.42 s): a
+  lounge bossa "smart home" jingle in G. Its quarter note is the robot's 0.7 s teleoperated jerk,
+  so the robot moves on the beat. Nylon guitar batida, upright, rim clave, shaker, a vibraphone
+  jingle.
+  - The band goes drowsy as Toko nods off and wakes on his snort.
+  - At the wall wipe it closes off into an office hum (`office_hum`), with a yawn and a stapler:
+    kitchen −15.3 dB against cubicle −21 to −25 dB.
+  - The split shot plays both worlds at once (kitchen left, cubicle right).
+  - The film ends on a two-note vibraphone wave.
+  - −13.8 LUFS, −2.7 dBTP. 30/30 events within 30 ms.
+- **Caption timing for 6 and 7 is assumed** (their captions are burned later): first line about
+  0.8 s after each cut. The tunes keep off those moments, but re-check once the caption files
+  exist.
+- The hit check now reports each onset at its **half-rise point**. Its first-crossing reading
+  showed −22 ms for Genius, because a fly or a bird in a quiet passage clears the 4 dB bar before
+  the hit itself. With the half-rise point every film reads a median of 0 to −2 ms.

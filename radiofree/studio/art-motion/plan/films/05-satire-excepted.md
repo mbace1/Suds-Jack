@@ -18,3 +18,5 @@
 
 **Sources:** Euronews (8 Oct 2026: Denmark tables a bill protecting faces and voices from deepfakes); PPC Land; Sumsub (13 Oct); EPRS note. Bill L 49, tabled 8 Oct by the culture minister; entry into force aimed at 1 Jan 2027; satire, parody, caricature and criticism stay allowed unless the fake is disinformation that seriously endangers others' rights; courts decide case by case.
 **Risks / fairness:** it is a bill, not law — said in shot 3. The joke is on the law and on ourselves, never on people deepfakes have harmed. No minister named.
+
+**As shipped (15 Oct 2026):** captions in `subs/sat_caps.py` (they follow the pre-production review where it differs from the table); final review `plan/review-final-4-5.md` (fixes applied).

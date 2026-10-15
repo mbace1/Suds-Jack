@@ -18,3 +18,5 @@
 
 **Sources:** Euronews (29 Sep 2026: Google appeals the EU data-sharing order, warning of "irreversible harm"); The Next Web; Reuters via The Star (1 Oct: interim suspension request); the DMA's Recital 61 ("irreversibly altered"), via the Wolters Kluwer competition blog and the European Law Blog.
 **Risks / fairness:** "irreversible harm" is Google's reported wording, quoted as such; the Commission's safeguards are said on screen (shot 5). Doodle is the house name for Google.
+
+**As shipped (15 Oct 2026):** captions in `subs/irr_caps.py` (they follow the pre-production review where it differs from the table); final review `plan/review-final-4-5.md` (fixes applied).

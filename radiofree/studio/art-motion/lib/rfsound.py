@@ -886,3 +886,391 @@ def phone_bell(d=0.65, f=(1180, 1470), rate=20.0, v=1.0):
     while tt < d:
         a = int(tt * SR); x = rings[i % 2]; out[a:a + len(x)] += x[:n - a] * (0.8 + 0.2 * (i % 3 == 0)); i += 1; tt += 1 / rate
     return out * 0.12 * v
+
+
+# ─── a sitcom and a game show (Genius; Toko's own) — and a lounge (Somebody Does the Dishes) ─
+def slap_bass(m, d=0.25, slap=True):
+    """an electric bass, thumbed: bright upper harmonics gone in a blink, a pop on the slap"""
+    f = hz(m); t = tv(d + 0.1); s = np.zeros(len(t))
+    for k in range(1, int(min(30, 6000 / f)) + 1):
+        s += np.sin(2 * np.pi * f * k * t + 0.3 * k) / k ** 0.9 * np.exp(-t * (2 + k * (1.2 if slap else 3.0)))
+    e = np.minimum(1, t / 0.002); e[t > d] *= np.exp(-(t[t > d] - d) / 0.02)
+    pop = noise(0.006, 2000, 7000) * np.exp(-tv(0.006) * 900) * (0.35 if slap else 0.1)
+    return over(np.tanh(s * e * 1.2) * 0.45, pop)
+
+
+def hammond(m, d=0.4, perc=True):
+    """a combo organ: drawbars (16', 8', 5 1/3', 4', 2 2/3', 2'), a key click, the rotor's shimmer"""
+    f = hz(m); t = tv(d + 0.08); rot = 1 + 0.003 * np.sin(2 * np.pi * 6.6 * t)
+    ph = 2 * np.pi * f * np.cumsum(rot) / SR
+    s = sum(a * np.sin(r * ph) for r, a in ((0.5, 0.5), (1, 1), (1.5, 0.45), (2, 0.75), (3, 0.35), (4, 0.3)) if f * r < 16000)
+    if perc: s = s + 0.6 * np.sin(3 * ph) * np.exp(-t * 9)
+    e = np.minimum(1, t / 0.004); e[t > d] *= np.exp(-(t[t > d] - d) / 0.015)
+    click = noise(0.005, 1000, 6000) * np.exp(-tv(0.005) * 800) * 0.15
+    return over(s * e * (1 + 0.15 * np.sin(2 * np.pi * 6.6 * t)) * 0.12, click)
+
+
+@lru_cache(maxsize=1024)
+def _nylon(m, d, vel):
+    f = hz(m); t = tv(d + 0.15); s = np.zeros(len(t))
+    for k in range(1, int(min(30, 6000 / f)) + 1):
+        body = 1 + sum(a * np.exp(-((k * f - c) / w) ** 2) for c, a, w in ((105, 1.2, 25), (210, 0.8, 50), (420, 0.5, 120)))
+        s += abs(np.sin(np.pi * k * 0.2)) / k * body * np.sin(2 * np.pi * f * k * t + k) * np.exp(-t * (1.4 + 0.9 * k + 0.0005 * k * f))
+    e = np.minimum(1, t / 0.003); e[t > d] *= np.exp(-(t[t > d] - d) / 0.04)
+    return over(s * e * 0.3 * vel, noise(0.01, 500, 3000) * np.exp(-tv(0.01) * 400) * 0.05 * vel)
+
+
+def nylon(m, d=0.4, vel=0.6):
+    """a nylon-string guitar, finger-plucked: round, the body's low resonances, a soft fingertip"""
+    return _nylon(int(m), round(float(d), 3), round(float(vel), 2))
+
+
+def vibes(m, d=1.2, vel=0.7, trem=True):
+    """a vibraphone: an aluminium bar (1 and 4), long ring, a soft mallet, the motor's slow tremolo"""
+    f = hz(m); t = tv(d)
+    s = np.sin(2 * np.pi * f * t) * np.exp(-t * 0.9) + 0.2 * vel * np.sin(2 * np.pi * 3.99 * f * t) * np.exp(-t * 9)
+    tr = 1 - (0.35 * (0.5 + 0.5 * np.sin(2 * np.pi * 5.0 * t)) if trem else 0)
+    return s * tr * np.minimum(1, t / 0.002) * np.minimum(1, (d - t) / 0.05) * 0.3 * vel
+
+
+def shaker(vel=0.5):
+    """a shaker: the seeds thrown and caught"""
+    t = tv(0.12); e = np.exp(-((t - 0.02) / 0.015) ** 2) + 0.5 * np.exp(-((t - 0.07) / 0.02) ** 2)
+    return noise(0.12, 4000, 12000) * e * 0.12 * vel
+
+
+def fly_buzz(d, f0=210, seed=0):
+    """a fly circling: a buzzing wingbeat whose pitch and loudness swing as it turns"""
+    g = np.random.default_rng(seed); t = tv(d)
+    f = f0 * (1 + 0.06 * np.sin(2 * np.pi * g.uniform(0.3, 0.6) * t + g.uniform(0, 6)) + 0.015 * np.sin(2 * np.pi * 7 * t))
+    ph = 2 * np.pi * np.cumsum(f) / SR; x = sum(np.sin(k * ph) / k for k in range(1, 12))
+    a = 0.55 + 0.45 * np.sin(2 * np.pi * g.uniform(0.25, 0.5) * t + g.uniform(0, 6))
+    return soft(x, 150, 3000) * a * 0.03
+
+
+def birds(d, rate=1.4, seed=1):
+    """birdsong through a window: sparse chirps that sweep, far off"""
+    g = np.random.default_rng(seed); n = int(d * SR); out = np.zeros(n); tt = g.uniform(0, 0.5)
+    while tt < d - 0.3:
+        k = int(g.integers(2, 5)); f0 = g.uniform(2600, 4500)
+        for j in range(k):
+            L = g.uniform(0.04, 0.09); t = tv(L); f = f0 * (1 + g.uniform(-0.25, 0.3) * t / L)
+            x = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * t / L) ** 2 * 0.012
+            a = int((tt + j * (L + 0.03)) * SR); out[a:a + len(x)] += x[:n - a]
+        tt += g.exponential(1 / rate) + 0.2
+    return out
+
+
+def snore(d, period=2.4, seed=2):
+    """an old dog snoring: a fluttering in-breath, a soft out-breath"""
+    g = np.random.default_rng(seed); n = int(d * SR); out = np.zeros(n); tt = 0.0
+    while tt < d:
+        L = 0.9; t = tv(L); flut = 0.5 + 0.5 * np.sign(np.sin(2 * np.pi * 32 * t))
+        x = soft(noise(L, 90, 1200) * flut, None, 900) * np.sin(np.pi * t / L) ** 1.5 * 0.08
+        y = noise(0.7, 200, 2000) * np.sin(np.pi * tv(0.7) / 0.7) * 0.02
+        for sig, off in ((x, 0), (y, L + 0.15)):
+            a = int((tt + off) * SR)
+            if a < n: out[a:a + len(sig)] += sig[:n - a]
+        tt += period * g.uniform(0.92, 1.08)
+    return out
+
+
+def sniff():
+    """a dog's quick sniff"""
+    t = tv(0.07); return noise(0.07, 1500, 7000) * np.minimum(1, t / 0.006) * np.exp(-t * 35) * 0.25
+
+
+def yawn(d=0.9, f0=180, seed=3):
+    """a person yawning: a voice opening from 'a' to 'o' and sinking, breath through it"""
+    t = tv(d); f = f0 * (1.2 - 0.45 * t / d) * (1 + 0.02 * np.sin(2 * np.pi * 5 * t))
+    src = np.sign(np.sin(2 * np.pi * np.cumsum(f) / SR)) * 0.5 + noise(d, 200, 4000) * 0.6
+    k = np.clip(t / d, 0, 1); out = np.zeros(len(t))
+    for i in range(4):                                     # four overlapping windows, each with its own formants
+        F = ((730 + (570 - 730) * i / 3), (1090 + (840 - 1090) * i / 3))
+        X = np.fft.rfft(src); fr = np.fft.rfftfreq(len(src), 1 / SR)
+        H = sum(np.exp(-((fr - c) / (c * 0.15)) ** 2) * a for c, a in zip(F, (1, 0.6)))
+        w = np.clip(1 - np.abs(k * 3 - i), 0, 1); out += np.fft.irfft(X * H, len(src)) * w
+    return out / max(1e-9, np.abs(out).max()) * np.sin(np.pi * t / d) ** 0.7 * 0.25
+
+
+def tape_rewind(x, d, s0=1.5, s1=5.0):
+    """a tape spooled backwards: x reversed, read ever faster (pitch climbing), with hiss and a squeal"""
+    y = x[::-1]; n = int(d * SR); sp = np.linspace(s0, s1, n); pos = np.cumsum(sp)
+    r = np.interp(pos, np.arange(len(y)), y, right=0)
+    t = tv(d); sq = np.sin(2 * np.pi * np.cumsum(np.linspace(2500, 6000, n)) / SR) * 0.015
+    return (soft(r, 200, 9000) + noise(d, 3000, 9000) * 0.01 + sq) * np.minimum(1, t / 0.03) * np.minimum(1, (d - t) / 0.03)
+
+
+def confetti_cannon():
+    """a party cannon: the pop, a gust of air, then the paper fluttering"""
+    t = tv(1.4); pop = np.sin(2 * np.pi * (60 + 120 * np.exp(-t * 40)) * t) * np.exp(-t * 18) * 0.5
+    gust = noise(1.4, 200, 6000) * np.exp(-t * 12) * 0.4
+    flutter = noise(1.4, 2500, 9000) * (0.5 + 0.5 * np.sign(np.sin(2 * np.pi * 37 * t))) * np.exp(-((t - 0.5) / 0.4) ** 2) * 0.05
+    return pop + gust + flutter
+
+
+def boing(f=330, d=0.9):
+    """a cartoon spring: a twang whose pitch wobbles and dies"""
+    t = tv(d); ff = f * (1 + 0.28 * np.sin(2 * np.pi * 9 * t) * np.exp(-t * 3.5)) * (1 + 0.6 * np.exp(-t * 30))
+    ph = 2 * np.pi * np.cumsum(ff) / SR
+    return (np.sin(ph) + 0.3 * np.sin(2 * ph) + 0.15 * np.sin(3 * ph)) * np.exp(-t * 3.2) * np.minimum(1, t / 0.002) * 0.25
+
+
+def shatter(seed=4):
+    """a ceramic thing smashed: a crack, shards ringing out, a low knock"""
+    g = np.random.default_rng(seed); t = tv(0.9)
+    crack = noise(0.9, 800, 9000) * np.exp(-t * 14) * 0.5
+    shards = sum(np.sin(2 * np.pi * g.uniform(1800, 7000) * t + g.uniform(0, 6)) * np.exp(-t * g.uniform(8, 30)) * g.uniform(0.02, 0.06) * (t > g.uniform(0, 0.25)) for _ in range(30))
+    return over(crack + shards, thump() * 0.5)
+
+
+def euler_disk(d=1.9, f=3300):
+    """a coin spinning down on its edge: the contact clicking faster and faster under a rising ring"""
+    n = int(d * SR); t = tv(d); u = np.clip(t / d, 0, 0.999)
+    rate = 6 / np.sqrt(1 - u) ** 1.0                      # the wobble speeds up as it settles
+    ph = 2 * np.pi * np.cumsum(rate) / SR; clicks = (np.sin(ph) > 0.97).astype(float)
+    ring = np.sin(2 * np.pi * f * t) * (0.4 + 0.6 * (0.5 + 0.5 * np.sin(ph)))
+    tk = np.exp(-tv(0.004) * 900); c = np.convolve(clicks, tk)[:n]
+    return (ring * 0.05 * (0.4 + 0.6 * u) + soft(c, 2000, 9000) * 0.12) * np.minimum(1, t / 0.05)
+
+
+def office_hum(d, seed=5):
+    """a cubicle at night: a fluorescent tube's 120 Hz buzz and its harmonics, the HVAC breathing"""
+    g = np.random.default_rng(seed); t = tv(d)
+    tube = sum(a * np.sin(2 * np.pi * 120 * k * t + g.uniform(0, 6)) for k, a in ((1, 1), (2, 0.5), (3, 0.35), (5, 0.12), (7, 0.08))) * 0.012
+    hvac = soft(g.standard_normal(len(t)), 50, 500) * 0.02 * (1 + 0.15 * np.sin(2 * np.pi * 0.11 * t))
+    return tube + hvac
+
+
+def stapler():
+    """a desk stapler: the press, the bite, the spring back"""
+    return over(knock(0.7, 1700) * 0.8, click() * 0.7, pad(knock(0.4, 2400) * 0.5, 0.05), pad(noise(0.02, 3000, 9000) * np.exp(-tv(0.02) * 300) * 0.2, 0.06))
+
+
+def slurp(d=0.4):
+    """a careful sip of hot tea"""
+    t = tv(d); x = noise(d, 400, 4000) * (0.5 + 0.5 * np.sin(2 * np.pi * 23 * t)) * np.sin(np.pi * t / d) ** 2
+    return soft(x, 500, 3500) * 0.12
+
+
+def rack_rattle(d=0.3, seed=6):
+    """a dishwasher rack rolling home: a rumble and the plates chattering in it"""
+    g = np.random.default_rng(seed); t = tv(d); x = noise(d, 80, 800) * np.sin(np.pi * t / d) * 0.15
+    for _ in range(9):
+        a = g.uniform(0, d - 0.05); x = over(x, pad(coin_clink(g.uniform(2200, 3800), 0.35), a))[:len(t)]
+    return x
+
+
+# ─── a courtroom and a keynote (Irreversible; Doodle family, its own music) ─────────────────
+@lru_cache(maxsize=1024)
+def _pizz_str(m, inst, vel):
+    f = hz(m); d = 1.0 if inst == 'cello' else 0.6; t = tv(d); s = np.zeros(len(t)); tot = 0.0
+    for k in range(1, int(min(30, 7000 / f)) + 1):
+        body = 1 + sum(a * np.exp(-((k * f - c) / w) ** 2) for c, a, w in BODY[inst])
+        a = abs(np.sin(np.pi * k * 0.13)) / k * body; tot += a
+        s += a * np.sin(2 * np.pi * f * k * t + k) * np.exp(-t * ((2.5 if inst == 'cello' else 4.5) + 0.8 * k + k * f / 3000))
+    thump = soft(noise(0.03, 60, 1500) * np.exp(-tv(0.03) * 120), None, 1200) * 0.15
+    return over(s / max(tot, 1e-9) * np.minimum(1, t / 0.002) * np.minimum(1, (d - t) / 0.03) * 0.6 * vel, thump * vel)
+
+
+def pizz_str(m, inst='violin', vel=0.7):
+    """strings plucked, not bowed: the same bodies as the quartet, the finger's thump, a short ring"""
+    return _pizz_str(int(m), inst, round(float(vel), 2))
+
+
+def copier(d=3.0, seed=7):
+    """a little photocopier: a motor's whirr, the carriage sweeping under the glass, a clunk per pass"""
+    g = np.random.default_rng(seed); t = tv(d); pas = 1.3
+    motor = soft(np.sign(np.sin(2 * np.pi * 96 * t)) * 0.02, 250, 2200)
+    ph = (t % pas) / pas; sweep_ = noise(d, 800, 5000) * np.sin(np.pi * ph) ** 2 * 0.02
+    out = motor + sweep_
+    for k in range(int(d / pas) + 1):
+        a = int((k * pas + pas * 0.98) * SR)
+        if a < len(t): x = knock(0.25, 600); out[a:a + len(x)] += x[:len(t) - a] * 0.4
+    return out * np.minimum(1, t / 0.2)
+
+
+def pencil(d=3.0, seed=8):
+    """a pencil copying fast: graphite hiss in quick strokes, catching on the paper"""
+    g = np.random.default_rng(seed); t = tv(d); stroke = 0.5 + 0.5 * np.sin(2 * np.pi * 5.5 * t + 2 * np.sin(2 * np.pi * 1.3 * t))
+    grip = 0.5 + 0.5 * ((g.random(len(t)) > 0.997).cumsum() % 2)
+    return noise(d, 2000, 8000) * stroke * grip * 0.06 * np.minimum(1, t / 0.05) * np.minimum(1, (d - t) / 0.05)
+
+
+# ─── a waltz in Copenhagen (Satire Excepted; the Nordics' own music) ─────────────────────────
+@lru_cache(maxsize=1024)
+def _reed(m, d, vel, cents):
+    """one free reed speaking: every harmonic, falling slowly, a nasal bump near 1.5 kHz; less air, fewer highs"""
+    f = hz(m) * 2 ** (cents / 1200); t = tv(d); s = np.zeros(len(t)); tot = 0.0; roll = 1500 + 3500 * vel
+    for k in range(1, int(min(40, 9000 / f)) + 1):
+        a = k ** -0.75 * (1 + 0.9 * np.exp(-((k * f - 1500) / 700) ** 2)) * np.exp(-k * f / roll); tot += a * a
+        s += a * np.sin(2 * np.pi * f * k * t + 0.7 * k * k)
+    return s / np.sqrt(0.5 * tot) * 0.25
+
+
+def accordion(m, d=0.4, vel=0.6, wet=10, a=0.025, r=0.07):
+    """a piano accordion: three reeds to a note — one true, one sharp and one flat by `wet` cents, so
+    the note beats (musette; wet=0 is one dry reed, for the bass buttons) — the bellows' slow speak and
+    soft stop, and a breath of air through the reeds"""
+    T = round(d + r, 3); t = tv(T); v = round(float(vel), 2); m = int(m)
+    s = _reed(m, T, v, 0)
+    if wet: s = (s + 0.8 * (_reed(m, T, v, int(wet)) + _reed(m, T, v, -int(wet)))) / 1.9
+    e = np.minimum(1, t / a) ** 1.5 * np.where(t < d, 1.0, np.exp(-(t - d) / (r / 3)))
+    e = e * (1 + 0.06 * np.sin(np.pi * np.minimum(t / max(d, 1e-3), 1)))            # the bellows lean in
+    air = soft(np.random.default_rng(m).standard_normal(len(t)), 1500, 6000) * 0.01
+    return (s + air) * e * (0.5 + 0.5 * vel)
+
+
+@lru_cache(maxsize=1024)
+def _harpsi(m, d, vel):
+    f = hz(m); T = d + 0.06; t = tv(T); s = np.zeros(len(t)); nd = int(d * SR)
+    for cents, p, gg in ((0.0, 0.11, 1.0), (3.5, 0.16, 0.7)):           # two 8' choirs, plucked near the nut
+        fc = f * 2 ** (cents / 1200); x = np.zeros(len(t)); tot = 0.0
+        for k in range(1, int(min(60, 12000 / fc)) + 1):
+            fk = fc * k * np.sqrt(1 + 1e-5 * k * k); a = abs(np.sin(np.pi * k * p)) / k ** 0.8 * np.exp(-fk / 7000)
+            x += a * np.sin(2 * np.pi * fk * t + 0.9 * k) * np.exp(-t * (0.4 + 0.5 * np.sqrt(f / 260) + 1.2 * fk / 3000)); tot += a * a
+        s += gg * x / np.sqrt(0.5 * tot)
+    damp = np.ones(len(t)); damp[nd:] = np.exp(-(t[nd:] - d) / 0.012)
+    g = np.random.default_rng(m + 1000)
+    quill = soft(g.standard_normal(int(0.006 * SR)), 2500, 9000) * np.exp(-tv(0.006) * 700) * 0.3
+    jack = soft(g.standard_normal(int(0.02 * SR)), 300, 2500) * np.exp(-tv(0.02) * 200) * 0.06
+    out = s * damp * np.minimum(1, t / 0.0008) * 0.12 * (0.8 + 0.2 * vel); out[:len(quill)] += quill * vel
+    out[nd:nd + len(jack)] += jack[:len(out) - nd]
+    return out
+
+
+def harpsichord(m, d=0.3, vel=0.8):
+    """a harpsichord: two choirs plucked by quills — bright, nasal, the same loudness however hard you
+    press — ringing until the damper falls at d, with the jack's little knock as it does"""
+    return _harpsi(int(m), round(float(d), 3), round(float(vel), 2))
+
+
+def fagotto(m, d=0.6, dyn=0.6, sag=0.0, vib=0.004, a=0.03, r=0.09, seed=0):
+    """a bassoon (the house kit's `bassoon` is a plain tone; this is the double reed): a buzzy source
+    through the instrument's fixed formants near 470 Hz and 1.15 kHz, a weak fundamental, a tongued
+    start scooping into pitch; `sag` lets a held note droop by that many semitones — doubt"""
+    T = d + r; t = tv(T); f0 = hz(m)
+    bend = 2 ** ((sag * (1 - np.exp(-np.maximum(0, t - 0.08) / max(d * 0.5, 0.05))) - 0.25 * np.exp(-t / 0.02)) / 12)
+    f = f0 * bend * (1 + vib * np.sin(2 * np.pi * 5.2 * t) * np.clip((t - 0.25) / 0.3, 0, 1))
+    ph = 2 * np.pi * np.cumsum(f) / SR; s = np.zeros(len(t)); tot = 0.0
+    for k in range(1, int(min(40, 7000 / f0)) + 1):
+        F = k * f0
+        A = k ** -0.6 * (0.04 + np.exp(-((F - 470) / 230) ** 2) + 0.55 * np.exp(-((F - 1150) / 320) ** 2) + 0.12 * np.exp(-((F - 2600) / 600) ** 2))
+        A *= np.exp(-F * (1 - dyn) / 2500) * (0.6 if k == 1 else 1.0); s += A * np.sin(k * ph + 0.5 * k); tot += A * A
+    s /= np.sqrt(0.5 * tot); g = np.random.default_rng(seed)
+    buzz = soft(g.standard_normal(len(t)), 300, 3000) * 0.04 * (0.5 + 0.5 * np.sin(ph) ** 2)
+    tongue = soft(g.standard_normal(int(0.02 * SR)), 400, 4000) * np.exp(-tv(0.02) * 200) * 0.15
+    e = np.minimum(1, t / a) * np.where(t < d, 1.0, np.exp(-(t - d) / (r / 3)))
+    return over((s * 0.3 + buzz) * e * (0.5 + 0.5 * dyn), tongue * dyn)
+
+
+def slide_whistle(f, amp, seed=0):
+    """a slide whistle: a nearly pure flute tone that goes wherever the plunger goes (f: Hz, per sample),
+    with breath under it; amp is its envelope, per sample"""
+    f = np.asarray(f, float); n = len(f); t = np.arange(n) / SR
+    ph = 2 * np.pi * np.cumsum(f * (1 + 0.004 * np.sin(2 * np.pi * 11 * t))) / SR
+    tone_ = np.sin(ph) + 0.12 * np.sin(2 * ph + 0.4) + 0.04 * np.sin(3 * ph + 1.1)
+    breath = soft(np.random.default_rng(seed).standard_normal(n), 1200, 7000) * 0.05
+    return (tone_ * 0.3 + breath) * np.asarray(amp, float)
+
+
+def water_lap(d, rate=1.6, seed=0):
+    """water against a canal wall: a low wash, soft irregular slaps, the odd drip"""
+    g = np.random.default_rng(seed); n = int(d * SR); t = tv(d)
+    out = soft(g.standard_normal(n), 120, 900) * 0.02 * (1 + 0.4 * np.sin(2 * np.pi * 0.3 * t)); k = 0.0
+    while True:
+        k += g.exponential(1 / rate)
+        if k > d - 0.45: break
+        L = g.uniform(0.18, 0.4); tt = tv(L); a = int(k * SR)
+        y = soft(g.standard_normal(len(tt)), 200, g.uniform(900, 1800)) * np.minimum(1, tt / 0.04) * np.exp(-tt / (L / 3)) * g.uniform(0.03, 0.08)
+        out[a:a + len(y)] += y[:n - a]
+        if g.random() < 0.3:
+            td = tv(0.05); dr = np.sin(2 * np.pi * np.cumsum(900 + 700 * np.minimum(1, td / 0.02)) / SR) * np.exp(-td * 70) * 0.02
+            b = a + int(0.1 * SR); out[b:b + len(dr)] += dr[:max(0, n - b)]
+    return out
+
+
+def putter(d, rate=7.5, seed=1):
+    """a canal boat's little diesel: low thumps a few times a second, never quite regular"""
+    g = np.random.default_rng(seed); n = int(d * SR); out = np.zeros(n); th = tv(0.09); k = 0.0
+    thud = np.sin(2 * np.pi * (55 + 25 * np.exp(-th * 60)) * th) * np.exp(-th * 45) + soft(g.standard_normal(len(th)), 80, 500) * np.exp(-th * 60) * 0.4
+    while k < d - 0.1:
+        a = int(k * SR); out[a:a + len(th)] += thud * g.uniform(0.7, 1.0); k += g.uniform(0.9, 1.1) / rate
+    return soft(out, 40, 600) * 0.5
+
+
+def flag_flap(d, rate=7.0, seed=2):
+    """a cloth flag in a steady breeze: a flutter at a few flaps a second, gusting"""
+    g = np.random.default_rng(seed); n = int(d * SR); t = tv(d)
+    ph = 2 * np.pi * np.cumsum(rate * (1 + 0.25 * np.sin(2 * np.pi * 0.17 * t + g.uniform(0, 6)))) / SR
+    return soft(g.standard_normal(n), 300, 4000) * (0.5 + 0.5 * np.sin(ph)) ** 3 * (0.6 + 0.4 * np.sin(2 * np.pi * 0.23 * t + g.uniform(0, 6))) * 0.06
+
+
+def press_stamp(vel=1.0, seed=3):
+    """a beech copying press coming down: KA, the platen striking the bed (iron ringing short over a
+    wooden thud), then CHUNK, the screw and frame settling a beat later, and a little rattle"""
+    g = np.random.default_rng(seed); t = tv(0.45)
+    ka = (np.sin(2 * np.pi * 2300 * t) * 0.5 + np.sin(2 * np.pi * 3570 * t) * 0.3) * np.exp(-t * 90) * 0.18
+    ka[:int(0.004 * SR)] += soft(g.standard_normal(int(0.004 * SR)), 2500, 10000) * 0.15
+    body = sum(a * np.sin(2 * np.pi * f * t) * np.exp(-t * dk) for f, a, dk in ((95, 1.0, 14), (180, 0.6, 22), (410, 0.35, 30), (690, 0.25, 40), (1230, 0.12, 55)))
+    hit = soft(g.standard_normal(int(0.06 * SR)), 300, 4000) * np.exp(-tv(0.06) * 70) * 0.35
+    tc = tv(0.2); chunk = np.sin(2 * np.pi * (140 + 40 * np.exp(-tc * 50)) * tc) * np.exp(-tc * 24) * 0.45 + soft(g.standard_normal(len(tc)), 150, 1500) * np.exp(-tc * 50) * 0.12
+    tk = tv(0.04); rattle = [pad(np.sin(2 * np.pi * f * tk) * np.exp(-tk * 120) * 0.06, dt) for f, dt in ((1900, 0.11), (2600, 0.15), (2100, 0.2))]
+    return over(ka, body * 0.8, hit, pad(chunk, 0.065), *rattle) * vel
+
+
+def platen_whoosh(d=0.12, seed=4):
+    """the platen rushing down: air pushed out ahead of it, rising to the moment it lands"""
+    t = tv(d); x = np.random.default_rng(seed).standard_normal(len(t))
+    return sweep(x, 800, 5000) * (t / d) ** 2 * 0.12
+
+
+def scanner(d=0.7, seed=5):
+    """a lens reading a face: a thin whine that follows the light down and back, a shimmer on top"""
+    t = tv(d); f = 1900 + 300 * np.sin(2 * np.pi * t / d); ph = 2 * np.pi * np.cumsum(f) / SR
+    sh = soft(np.random.default_rng(seed).standard_normal(len(t)), 4000, 9000) * (0.5 + 0.5 * np.sin(2 * np.pi * 31 * t))
+    return (np.sin(ph) * 0.05 + 0.02 * np.sin(2 * ph) + sh * 0.03) * np.sin(np.pi * t / d)
+
+
+def paper_rip(d=0.24, seed=6):
+    """a calendar page torn off: fibres parting as a dense crackle, the sheet's body under it"""
+    g = np.random.default_rng(seed); n = int(d * SR); t = tv(d); dens = np.minimum(1, t / 0.015) * (1 - t / d) ** 0.7
+    grains = (g.random(n) < dens * 0.08) * g.uniform(0.3, 1.0, n)
+    crackle = np.convolve(grains, np.exp(-tv(0.0015) * 3000))[:n]
+    return soft(crackle, 1500, 9000) * 0.5 + soft(g.standard_normal(n), 500, 2500) * dens * 0.08
+
+
+def page_flutter(d=0.8, seed=7):
+    """a torn sheet tumbling through the air: a flutter that slows as it falls away"""
+    g = np.random.default_rng(seed); t = tv(d); ph = 2 * np.pi * np.cumsum(np.linspace(18, 9, len(t))) / SR
+    return soft(g.standard_normal(len(t)), 700, 5000) * (0.5 + 0.5 * np.sin(ph)) ** 2 * np.minimum(1, t / 0.03) * (1 - t / d) ** 1.5 * 0.06
+
+
+def paper_slide(d=0.5, seed=8):
+    """a sheet sliding across wood"""
+    t = tv(d); return soft(np.random.default_rng(seed).standard_normal(len(t)), 900, 6000) * np.sin(np.pi * t / d) ** 0.7 * (1 + 0.2 * np.sin(2 * np.pi * 23 * t)) * 0.05
+
+
+def clank(vel=1.0, f=620):
+    """a brass pan taking a weight: the pan's modes ringing out over the knock of the contact"""
+    t = tv(1.2); s = sum(a * np.sin(2 * np.pi * f * r * t + r) * np.exp(-t * dk) for r, a, dk in ((1, 1, 6), (1.52, 0.6, 9), (2.27, 0.45, 12), (2.78, 0.3, 16), (3.6, 0.2, 22), (4.4, 0.12, 28)))
+    return over(s * 0.12 * np.minimum(1, t / 0.0006), knock(0.8, f * 0.45) * 0.8) * vel
+
+
+def wood_creak(d=0.4, f=650, rate=55, seed=9):
+    """wood under a little load: stick-slip pulses, each ringing the wood's resonance"""
+    g = np.random.default_rng(seed); n = int(d * SR); t = tv(d)
+    r = rate * (1 + 0.3 * np.sin(2 * np.pi * g.uniform(2, 4) * t + g.uniform(0, 6))) * (0.8 + 0.4 * t / d)
+    ph = np.cumsum(r) / SR; pulses = (np.diff(np.floor(ph), prepend=0) > 0) * g.uniform(0.5, 1, n)
+    kt = tv(0.02); kern = np.sin(2 * np.pi * f * kt) * np.exp(-kt * 250) + 0.4 * np.sin(2 * np.pi * 2.13 * f * kt) * np.exp(-kt * 400)
+    return np.convolve(pulses, kern)[:n] * np.sin(np.pi * t / d) * 0.25
+
+
+def hanger_rattle(times=(0.0, 0.025, 0.47, 0.92), vels=(1.0, 0.6, 0.4, 0.15), seed=10):
+    """a wire hanger lifted off its rail: a scrape, then the hanger swinging and ticking against the bar"""
+    g = np.random.default_rng(seed); n = int(0.15 * SR); sc = soft(g.standard_normal(n), 2500, 8000) * np.exp(-tv(0.15) * 25) * 0.1
+    tk = tv(0.08); ticks = []
+    for dt, v in zip(times, vels):
+        x = sum(np.sin(2 * np.pi * g.uniform(1500, 4000) * tk + g.uniform(0, 6)) * np.exp(-tk * g.uniform(80, 150)) for _ in range(3)) * 0.06 * v
+        x[:int(0.002 * SR)] += soft(g.standard_normal(int(0.002 * SR)), 3000, 10000) * 0.2 * v; ticks.append(pad(x, dt))
+    return over(sc, *ticks)
