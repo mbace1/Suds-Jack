@@ -720,3 +720,169 @@ def card_flip():
     """a card tag flipping round on its string: two soft flaps and a tap — paper, not plastic"""
     f = lambda g: noise(0.05, 500, 5000) * np.exp(-tv(0.05) * 70) * g
     return over(f(0.5), pad(f(0.35), 0.07), pad(knock(0.25, 600), 0.075))
+
+
+# ─── a brass band for a campaign ad (Paid For By; Coxon #3's own music) ─────────────────────
+def trumpet(m, d=0.3, dyn=0.75, vib=True):
+    """a bright band trumpet: harmonics peaking near 1.2 kHz, a quick bloom and a tongued attack,
+    a lip scoop into pitch, and vibrato only once a note is held"""
+    f = hz(m); t = tv(d + 0.1)
+    v = 1 + (0.004 * np.sin(2 * np.pi * 5.6 * t) * np.clip((t - 0.25) / 0.2, 0, 1) if vib else 0)
+    ph = 2 * np.pi * f * np.cumsum(v * (1 - 0.03 * np.exp(-t / 0.018))) / SR
+    p = 1.6 - 0.9 * dyn; bloom = 1 - np.exp(-t / 0.025); s = np.zeros(len(t)); tot = 0.0
+    for k in range(1, int(min(40, 9000 / f)) + 1):
+        a = k ** -p * (1 + 1.5 * np.exp(-((k * f - 1200) / 700) ** 2)); tot += a
+        s += a * np.sin(k * ph + 0.2 * k) * (1 if k <= 2 else bloom ** (0.3 + 0.15 * k))
+    tongue = noise(0.02, 1500, 7000) * np.exp(-tv(0.02) * 150) * 0.15 * dyn
+    return over(np.tanh(s / tot * 1.8) * env(d, 0.015, 0.1)[:len(t)] * (0.35 + 0.65 * dyn) * 0.55, tongue)
+
+
+def sousaphone(m, d=0.3, dyn=0.6, sag=0.0):
+    """a marching tuba: round, dark, a soft breath at the lips; sag= semitones the pitch sinks across
+    the note while it fades — the band's air going out of it"""
+    f = hz(m); t = tv(d + 0.25); k_ = np.clip(t / max(d, 1e-3), 0, 1)
+    bend = 2 ** (sag * k_ ** 2.2 / 12) * (1 - 0.02 * np.exp(-t / 0.03))
+    ph = 2 * np.pi * f * np.cumsum(bend) / SR; p = 1.9 - 1.0 * dyn; s = np.zeros(len(t)); tot = 0.0
+    for k in range(1, int(min(25, 4000 / f)) + 1):   # a lip formant near 320 Hz: the note a phone speaker can still play
+        a = k ** -p * (1 + 1.2 * np.exp(-((k * f - 320) / 220) ** 2)); tot += a; s += a * np.sin(k * ph + 0.4 * k)
+    e = env(d, 0.03, 0.25)[:len(t)] * (1 - 0.5 * k_ ** 2 * (sag != 0))
+    return (s / tot + noise(d + 0.25, 100, 1200) * np.exp(-t * 18) * 0.05 * dyn) * e * (0.4 + 0.6 * dyn) * 0.8
+
+
+def glock(m, d=1.6, vel=0.8):
+    """a glockenspiel: a steel bar's modes (1, 2.76, 5.40, 8.93), the fundamental ringing long,
+    a brass mallet's tick"""
+    f = hz(m); t = tv(d); s = np.zeros(len(t))
+    for r, a, dk in ((1, 1, 1.8), (2.756, 0.35, 6), (5.404, 0.12, 14), (8.933, 0.05, 25)):
+        if f * r < 20000: s += a * np.sin(2 * np.pi * f * r * t) * np.exp(-t * dk)
+    tick = noise(0.004, 4000, 12000) * np.exp(-tv(0.004) * 1200) * 0.3 * vel
+    return over(s * np.minimum(1, t / 0.0005) * np.minimum(1, (d - t) / 0.04) * 0.3 * vel, tick)   # damped at d, never cut
+
+
+def rally_clap(n=7, spread=0.018, vel=1.0, seed=None):
+    """a crowd of hands at a rally: n claps, each tuned a little differently, never quite together"""
+    g = np.random.default_rng(seed); parts = []
+    for i in range(n):
+        d = 0.25; t = tv(d); lo = g.uniform(700, 1100); hi = g.uniform(3500, 6500)
+        e = np.exp(-t * g.uniform(40, 70)) * np.minimum(1, t / 0.001)
+        parts.append(pad(noise(d, lo, hi) * e * g.uniform(0.6, 1.0), abs(g.normal(0, spread))))
+    return over(*parts) / np.sqrt(n) * 0.6 * vel
+
+
+def lra(x):
+    """loudness range (LU, EBU Tech 3342): K-weighted 3 s windows on a 0.1 s hop, gated at −70 LUFS and
+    20 LU under their mean, 95th minus 10th percentile — what loudnorm checks before it stays linear"""
+    n = len(x); f = np.fft.rfftfreq(n, 1 / SR); z = np.exp(-2j * np.pi * f / SR)
+    def biq(b, a): return (b[0] + b[1] * z + b[2] * z * z) / (a[0] + a[1] * z + a[2] * z * z)
+    H = biq((1.53512485958697, -2.69169618940638, 1.19839281085285), (1, -1.69065929318241, 0.73248077421585)) * biq((1, -2, 1), (1, -1.99004745483398, 0.99007225036621))
+    y = np.stack([np.fft.irfft(np.fft.rfft(x[:, c]) * np.abs(H), n) for c in range(x.shape[1])], 1)
+    w, h = int(3 * SR), int(0.1 * SR); c = np.concatenate([np.zeros((1, y.shape[1])), np.cumsum(y ** 2, 0)])
+    st = np.arange(0, n - w + 1, h); p = ((c[st + w] - c[st]) / w).sum(1); l = -0.691 + 10 * np.log10(p + 1e-20)
+    g = l[l > -70]
+    if not len(g): return 0.0
+    rel = -0.691 + 10 * np.log10(np.mean(10 ** ((g + 0.691) / 10))) - 20; g = g[g > rel]
+    return float(np.percentile(g, 95) - np.percentile(g, 10))
+
+
+def loudnorm_measure(x, lufs=-14.0):
+    """what finish()'s first loudnorm pass will measure on x (n, 2): input_i, input_tp, input_lra.
+    loudnorm's LRA is its own (it reads ~2.5 LU above ebur128's on these scores), so ask it."""
+    raw = tempfile.mktemp(suffix='.wav'); sf.write(raw, x, SR)
+    p = subprocess.run(['ffmpeg', '-hide_banner', '-i', raw, '-af', f'loudnorm=I={lufs}:TP=-2:LRA=11:print_format=json', '-f', 'null', '-'], capture_output=True, text=True)
+    js = json.loads(p.stderr[p.stderr.rindex('{'):]); return float(js['input_i']), float(js['input_tp']), float(js['input_lra'])
+
+
+# ─── a breaking-news theme, parodied (The Newsreader Was Fake; Doodle family, its own music) ─
+def saw_stab(m, d=0.25, bright=1.0, det=0.006):
+    """the news theme's synth brass: two detuned saws whose filter snaps open on the attack and closes to
+    a held glow — urgent, not glossy"""
+    f = hz(m); t = tv(d + 0.12); s = np.zeros(len(t))
+    for k in range(1, int(min(40, 11000 / f)) + 1):
+        a = (0.65 * np.exp(-t * (6 + 2.2 * k / bright)) + 0.35 / (1 + (k * f / (1400 * bright)) ** 2)) / k
+        s += a * (np.sin(2 * np.pi * f * k * t + 0.3 * k) + np.sin(2 * np.pi * f * (1 + det) * k * t + 1.7 * k)) * 0.5
+    e = np.minimum(1, t / 0.003); e[t > d] *= np.exp(-(t[t > d] - d) / 0.03)
+    return np.tanh(s * e * 1.4) * 0.45
+
+
+def clock_tick(tock=False):
+    """a studio stopwatch: a dry metal click and a tiny ring, tick higher than tock"""
+    t = tv(0.05); f = 1650 if tock else 2250
+    return over(noise(0.004, 3000, 10000) * np.exp(-tv(0.004) * 1400) * 0.5, (np.sin(2 * np.pi * f * t) + 0.4 * np.sin(2 * np.pi * 2.7 * f * t)) * np.exp(-t * 140) * 0.3)
+
+
+def coin_clink(f=3100, v=1.0):
+    """a coin landing: an inharmonic disc ring (1, 2.4, 3.9, 5.6), short, and a little second bounce"""
+    def ring(g): t = tv(0.3); return sum(a * np.sin(2 * np.pi * f * r * t + r) * np.exp(-t * dk) for r, a, dk in ((1, 1, 16), (2.4, 0.6, 22), (3.9, 0.35, 30), (5.6, 0.2, 40)) if f * r < 20000) * g
+    return over(ring(0.22 * v), pad(ring(0.08 * v), 0.045))
+
+
+def cash_register():
+    """KA-CHING: the key's clunk, the drawer flying out, the bell (two inharmonic rings) and coins jumping"""
+    t = tv(2.2)
+    bell = sum(a * np.sin(2 * np.pi * f * t) * np.exp(-t * dk) for f, a, dk in ((2637, 1, 1.6), (3951, 0.6, 2.2), (5274, 0.3, 3), (6603, 0.15, 4))) * 0.3
+    clunk = over(thump() * 0.5, noise(0.05, 300, 3000) * np.exp(-tv(0.05) * 60) * 0.4)
+    drawer = noise(0.25, 400, 4000) * np.sin(np.pi * tv(0.25) / 0.25) * 0.12
+    coins = over(*[pad(coin_clink(2600 + 400 * i, 0.6), 0.12 + 0.05 * i) for i in range(5)])
+    return over(clunk, pad(drawer, 0.03), pad(bell * np.minimum(1, t / 0.001), 0.06), pad(coins, 0.05))
+
+
+def printer(d=2.0, rate=60.0, seed=3):
+    """a receipt printer: the head chattering at `rate` lines a second over a small motor hum"""
+    g = np.random.default_rng(seed); n = int(d * SR); out = np.zeros(n); tk = noise(0.003, 1500, 7000) * np.exp(-tv(0.003) * 1500)
+    tt = 0.0
+    while tt < d - 0.01:
+        a = int(tt * SR); out[a:a + len(tk)] += tk[:n - a] * g.uniform(0.5, 1.0); tt += 1 / rate * g.uniform(0.85, 1.15)
+    hum = soft(np.sign(np.sin(2 * np.pi * 120 * tv(d))) * 0.02, 200, 2000)
+    return (out * 0.25 + hum) * np.minimum(1, tv(d) / 0.02) * np.minimum(1, (d - tv(d)) / 0.02)
+
+
+# ─── a string quartet, very proper (On the Same Voluntary Terms; Coxon #4's own music) ──────
+BODY = {'violin': ((290, 1.8, 70), (480, 1.3, 90), (1100, 0.6, 400), (2800, 1.6, 900)),
+        'viola': ((230, 1.8, 60), (380, 1.3, 80), (900, 0.6, 350), (2300, 1.3, 800)),
+        'cello': ((110, 1.7, 30), (200, 1.5, 50), (380, 1.1, 90), (1500, 0.9, 600))}
+
+
+@lru_cache(maxsize=2048)
+def _bowed(m, d, inst, dyn, stacc, seed):
+    g = np.random.default_rng(seed); f = hz(m); t = tv(d + 0.12); n = len(t)
+    rate = 5.3 + 0.4 * g.random(); depth = (0.0035 if inst != 'cello' else 0.003) * (0 if stacc else 1)
+    vib = 1 + depth * np.sin(2 * np.pi * rate * t + g.uniform(0, 6)) * np.clip((t - 0.15) / 0.2, 0, 1)
+    ph = 2 * np.pi * f * np.cumsum(vib * (1 + 0.004 * np.exp(-t / 0.02))) / SR
+    s = np.zeros(n); tot = 0.0
+    for k in range(1, int(min(40, 9000 / f)) + 1):
+        fk = k * f; body = 1 + sum(a * np.exp(-((fk - c) / w) ** 2) for c, a, w in BODY[inst])
+        a = k ** -(1.15 - 0.25 * dyn) * body; tot += a; s += a * np.sin(k * ph + g.uniform(0, 6))
+    a_ = 0.025 if stacc else 0.06; r_ = 0.05 if stacc else 0.1
+    e = np.minimum(1, t / a_); e[t > d] *= np.exp(-(t[t > d] - d) / (r_ / 3))
+    bow = noise(d + 0.12, 1800, 7000) * (0.01 + 0.02 * np.exp(-t / 0.4) + 0.08 * np.exp(-t / 0.05)) * dyn   # the hair bites, then settles
+    return (s / tot + bow) * e * (0.3 + 0.7 * dyn) * 0.55
+
+
+def violin(m, d=0.5, dyn=0.6, stacc=False, seed=0):
+    """a bowed violin: a bright string spectrum shaped by the body's resonances, vibrato after the
+    bow settles, a breath of bow hair on the attack (stacc=: a short, unvibrated detaché)"""
+    return _bowed(int(m), round(float(d), 3), 'violin', round(float(dyn), 2), bool(stacc), int(seed))
+
+
+def viola(m, d=0.5, dyn=0.5, stacc=False, seed=0):
+    return _bowed(int(m), round(float(d), 3), 'viola', round(float(dyn), 2), bool(stacc), int(seed))
+
+
+def cello(m, d=0.5, dyn=0.6, stacc=False, seed=0):
+    return _bowed(int(m), round(float(d), 3), 'cello', round(float(dyn), 2), bool(stacc), int(seed))
+
+
+def cello_hold(m, d=4.0, swell=(0.35, 0.7, 0.4)):
+    """one long cello note that sulks: the bow pressure swelling and sinking (three points across d)"""
+    x = cello(m, d, 0.7, False, 7); e = np.interp(np.arange(len(x)), np.linspace(0, len(x) - 1, len(swell)), swell)
+    return x * e
+
+
+def phone_bell(d=0.65, f=(1180, 1470), rate=20.0, v=1.0):
+    """an old telephone ringing: a hammer striking two bells twenty times a second"""
+    n = int((d + 0.6) * SR); out = np.zeros(n); t = tv(0.6)
+    rings = [sum(a * np.sin(2 * np.pi * fr * r * t) * np.exp(-t * dk) for r, a, dk in ((1, 1, 7), (2.7, 0.4, 14), (5.1, 0.15, 25))) for fr in f]
+    i = 0; tt = 0.0
+    while tt < d:
+        a = int(tt * SR); x = rings[i % 2]; out[a:a + len(x)] += x[:n - a] * (0.8 + 0.2 * (i % 3 == 0)); i += 1; tt += 1 / rate
+    return out * 0.12 * v

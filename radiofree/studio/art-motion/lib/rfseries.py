@@ -37,7 +37,8 @@ class Score:
     VERB = dict(t60=1.4, lo=150, hi=7000, pre=0.015, g=0.3)
     GLUE = dict(thresh=-16.0, ratio=2.5)       # thresholds are dB below the mix's own peak
     LIMIT = dict(ratio=8.0, look=0.003, rel=0.08)   # threshold found per score in render()
-    PLR = 11.3                                      # loudnorm goes dynamic past 12 dB
+    PLR = 11.3                                      # loudnorm goes dynamic past 12 dB of peak-to-loudness…
+    LRA = 10.8                                      # …or past 11 LU of ITS loudness range (finish()'s LRA=11)
     EQ = dict(fc=3000.0, db=0.0, hp=35.0)      # the series' tilt on the MUSIC bus
     PEAK = 1.0
 
@@ -71,7 +72,7 @@ class Score:
 
     def render(self, out, ring_from, tau=1.0, end=END):
         """pour, verb, glue, then the LIGHTEST limiter that gets the peak-to-loudness ratio under
-        PLR — measured on a simulation of finish()'s own soft clip, peak and tail — so the house
+        PLR and loudnorm's own loudness range under LRA — measured on a simulation of finish()'s own soft clip, peak and tail — so the house
         loudnorm stays in linear mode (−14 LUFS, −2 dBTP without its dynamic limiter pumping)"""
         if self.EQ.get('db') or self.EQ.get('hp'):
             for b in (self.mus, self.mwet): b.L = shelf(b.L, **self.EQ); b.R = shelf(b.R, **self.EQ)
@@ -88,7 +89,9 @@ class Score:
             x = np.tanh(np.stack([m.L, m.R], 1) * 1.2) / 1.2; x /= np.abs(x).max() / 0.89; e = int(end * SR); x = x[:e]
             t0 = int(ring_from * SR); x[t0:] *= np.exp(-np.arange(e - t0) / SR / tau)[:, None]; fd = int(0.3 * SR); x[-fd:] *= np.linspace(1, 0, fd)[:, None]
             plr = true_peak(x) - bs1770(x); tried.append(f'{thr}:{plr:.1f}')
-            if plr <= self.PLR: break
+            if plr <= self.PLR:                      # then confirm with loudnorm's own pass-1 numbers
+                I, tp, lr = loudnorm_measure(x); tried[-1] += f' (loudnorm: TP after gain {tp - 14 - I:.1f}, LRA {lr:.1f})'
+                if tp + (-14.0 - I) <= -2.1 and lr <= self.LRA: break
         print('  limiter threshold (dB below peak) : predicted PLR ->', '  '.join(tried))
         m.finish(out, end, ring_from, tau)
 

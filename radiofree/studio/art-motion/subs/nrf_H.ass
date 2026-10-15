@@ -1,0 +1,22 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: H,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
+Style: Bug,Poppins ExtraBold,30,&H30FFFFFF,&H30FFFFFF,&H80000000,&H00000000,0,0,0,0,100,100,1,0,1,3,0,7,0,0,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.30,0:00:37.50,Bug,,0,0,0,,{\an7\pos(92,88)\fad(400,0)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE HELSINKI
+Dialogue: 0,0:00:00.80,0:00:06.08,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}Finnish newsreaders found\Ntheir faces in {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}scam ads{\c&HFFFFFF&}.
+Dialogue: 0,0:00:07.23,0:00:12.51,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}In April, they asked Meta\Nto {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}remove{\c&HFFFFFF&} the fakes.
+Dialogue: 0,0:00:13.66,0:00:18.94,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}Meta sells its ad space\Nby {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}auction{\c&HFFFFFF&}.
+Dialogue: 0,0:00:20.09,0:00:25.36,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}Reuters: in Meta's papers,\Nsuspected scammers\Nwere charged {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}more{\c&HFFFFFF&}.
+Dialogue: 0,0:00:26.51,0:00:31.79,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}A German court: Meta picks\Nwho sees each ad,\Nso it is {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}liable{\c&HFFFFFF&}.
+Dialogue: 0,0:00:32.84,0:00:35.04,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}The newsreader was fake.
+Dialogue: 0,0:00:35.04,0:00:37.20,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}The newsreader was fake.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}The {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}invoice{\c&HFFFFFF&} was real.

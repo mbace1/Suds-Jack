@@ -187,3 +187,52 @@ spectrogram per new score and an old-over-new comparison per film.
 - The fife's deliberate sharpness (+0.6 %).
 - The worn tape at the end of On Hold.
 - Whether 168 BPM in 3/4 feels like a one-in-a-bar lilt or a hurry.
+
+## Films with their own music (from 2026-10-15)
+
+The owner's direction is that these films must not all sound the same. Each keeps its series
+(Coxon 1–2, Doodle 3–4, the Nordics 5, Toko 6–7) but gets its own lead instrument, key, tempo
+and feel, from "Music (its own)" in its shot table
+(`radiofree/studio/art-motion/plan/films/NN-*.md`).
+Each score's picture hits come from `plan/<id>-EVENTS.md`.
+
+Rendering rule added for these: `Score.render()` also asks loudnorm's own pass-1 measurement
+(true peak after gain ≤ −2.1, LRA ≤ 10.8 LU) before accepting a limiter setting. loudnorm's LRA
+reads about 2.5 LU above ebur128's, and above 11 LU it falls back to dynamic mode. The five scores
+above re-render byte-identically under this rule.
+
+The hit check (`qa/sound/hitcheck.py`) is now band-aware. An event counts when it rises ≥4 dB within
+±30 ms in any band (broadband, 150–600 Hz, 0.6–2.5 kHz, 2.5–10 kHz), and the report says which band
+carried it. A 5 kHz squeak is heard over a tuba even when it barely moves the broadband level.
+
+- **1 · Paid For By** (`synth_pfb.py` → `配乐_pfb_m14.wav`): a brassy campaign jingle in B♭ at
+  112: trumpets in thirds, sousaphone oom-pah, trombones, glockenspiel, rally claps, and the
+  Coxon snare and bass drum.
+  - It starts boxed inside the TV and opens out as the money drifts into the room.
+  - At the keyboard the glockenspiel plays a note per key and nothing on A or I.
+  - The end card's chord loses a section at each shrink of the fine print, leaving a breath of
+    silence for the last line (−34.5 dB against −12.8). Then one tuba note sags on the last hit.
+  - −13.8 LUFS, −3.0 dBTP. 69/69 events within 30 ms (61 broadband). Music on the 112 lattice
+    at 2.7×.
+- **3 · The Newsreader Was Fake** (`synth_nrf.py` → `配乐_nrf_m14.wav`): a breaking-news theme
+  parody in E minor at 140 (Doodle's sub bass). A stopwatch ticks on every beat. Urgent
+  saw-brass stabs (`saw_stab`) and timpani; a rising dominant arpeggio in each 3/4 break bar
+  lands on E minor at the cut.
+  - The bids climb, the villain paddle gets a tritone sting, and a riser lifts the gavel to its
+    bang.
+  - "Liable" launches a dry roll that stops dead 0.1 s before the LIABLE stamp (−35.5 dB, then
+    −12.3 dB).
+  - The tick stops on FLAT, a breath follows (−38.4 dB), then the ka-ching
+    (`cash_register`) over a small E-major stab, and the receipt `printer` at three times the
+    speed.
+  - −14.1 LUFS, −3.1 dBTP. 45/45 events within 30 ms. Music on the 140 lattice at 3.2×.
+- **2 · On the Same Voluntary Terms** (`synth_vt.py` → `配乐_vt_m14.wav`): a stiff-upper-lip
+  string-quartet minuet, an original tune in D major, 3/4 on the 168 grid (new
+  `violin`/`viola`/`cello`). The tune sits on long notes wherever a caption appears.
+  - The first chord of shot 3 is cut dead by the transatlantic ring (`phone_bell`): the music
+    stem drops from −14.1 to −43.3 dB.
+  - Through the seventeen days a single cello holds its D and sulks (`cello_hold`), re-bowing on
+    DAY 17.
+  - Shot 5 replays shot 1's music exactly (correlation 0.99, ±0.00 dB) under the same rhyming
+    foley. Shot 6 plays through one smaller rattle until the door click cuts it.
+  - −14.0 LUFS, −3.0 dBTP. 47/47 events within 30 ms. Music on the 84|168 lattice at 2.2×.
