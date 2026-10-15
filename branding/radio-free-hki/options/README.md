@@ -8,6 +8,7 @@ No art-motion folder on the RFH branch; clay + paper.js are the reference.
 - `icon-a-toko-mask-1080.png` / `-circle.png` / `-circle-96.png` — Toko face as papercut mask on magenta disc with ochre ring
 - `icon-b-toko-mic-1080.png` / `-circle.png` / `-circle-96.png` — Toko face on cream card behind a papercut ochre broadcast mic
 - `icon-c-mast-1080.png` / `-circle.png` / `-circle-96.png` — Papercut radio mast with magenta broadcast waves
+- `icon-c2-lattice-mast-1080.png` / `-circle.png` / `-circle-96.png` — Traditional tapering steel lattice transmitter mast with cross-bracing and magenta waves (Mikael pick of C, redrawn)
 - `icon-d-cathedral-1080.png` / `-circle.png` / `-circle-96.png` — Helsinki Cathedral silhouette with magenta broadcast arcs
 - `icon-e-monogram-1080.png` / `-circle.png` / `-circle-96.png` — RFH papercut monogram on ochre/magenta stacked cards
 
