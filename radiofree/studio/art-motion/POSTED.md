@@ -10,8 +10,8 @@ Accounts:
 
 | Film | Channel | Link | Copy |
 |---|---|---|---|
-| Doodle 1, Biodiversity Fund | RFH Instagram | https://www.instagram.com/p/DefOVo6o8ZL/ | not recorded |
-| Doodle 1, Biodiversity Fund | RFH X | https://x.com/radiofreehki/status/2110411010456871278 | not recorded |
+| Doodle 1, Biodiversity Fund | RFH Instagram | https://www.instagram.com/radiofreehelsinki/reel/DefOVo6o8ZL/ | Data center troubles in the cold North |
+| Doodle 1, Biodiversity Fund | RFH X | https://x.com/radiofreehki/status/2110411010456871278 (pinned) | Data center troubles in the cold North |
 | Toko 1, Unexpectedly, a Deer | Toko Instagram | https://www.instagram.com/p/DefdI89RLUm/ | How far will AI succeed? #Deerdog |
 | Doodle 2, On Hold | RFH Instagram | https://www.instagram.com/p/Deg4zITIRAt/ | Data center progress on hold? Who's waiting for whom? #Muhos #Kajaani #datakeskus #Finland |
 | Doodle 2, On Hold | RFH X | https://x.com/radiofreehki/status/2110709542644302058 | same as Instagram |
