@@ -24,3 +24,4 @@
 **v2 (owner, 15 Oct 2026: "confusing … work on the message directness"):** captions only — 1 Britain safety-tests new AI before it is released. 2 But only if the AI companies agree. 3 Then the White House asked two US companies to stop sharing new AI with Britain's testers. 4 The hold lasted 17 days. 5 Now testing is back — still only if the companies agree. 6 AI safety testing in Britain: / optional.
 
 **Coxon3 (Paid For By): owner, 15 Oct 2026 — great.**
+**v3 (owner, 15 Oct 2026: "needs to define 'agree' — with what?"):** shots 2 and 5 only — 2 No law makes AI companies show it to Britain first. / They do it by choice. (over the BY INVITATION tags) 5 Now testing is back. It's still up to the companies.
