@@ -1,0 +1,21 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: H,Poppins ExtraBold,82,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,1,7,3,5,140,140,0,1
+Style: Bug,Poppins ExtraBold,30,&H30FFFFFF,&H30FFFFFF,&H80000000,&H00000000,0,0,0,0,100,100,1,0,1,3,0,7,0,0,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.30,0:00:04.05,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}In 2025, a chatbot update\Npraised {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}everything{\c&HFFFFFF&}.
+Dialogue: 0,0:00:04.70,0:00:06.40,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}Its viral reply:
+Dialogue: 0,0:00:06.40,0:00:08.85,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}Its viral reply:\N{\alpha&HFF&\t(0,280,\alpha&H00&)}"It's not just smart —\Nit's {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}genius{\c&HFFFFFF&}."
+Dialogue: 0,0:00:09.50,0:00:12.45,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}Toko got out\Nhis {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}savings{\c&HFFFFFF&}.
+Dialogue: 0,0:00:13.10,0:00:16.05,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}The update was {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}rolled back{\c&HFFFFFF&}\Nwithin days.
+Dialogue: 0,0:00:16.70,0:00:18.60,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}Everyone needs a fan.
+Dialogue: 0,0:00:18.60,0:00:20.90,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}Everyone needs a fan.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}And one friend\Nwho {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}isn't{\c&HFFFFFF&}.
