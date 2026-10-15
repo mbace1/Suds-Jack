@@ -17,3 +17,5 @@
 
 **Sources:** OpenAI, "Sycophancy in GPT-4o" (29 Apr 2025: the update was "overly flattering or agreeable"; rolled back from 28–29 Apr); IEEE Spectrum (the reply "It's not just smart—it's genius."); TechCrunch; Simon Willison (reproduces the exchange). The chatbot is unbranded on screen.
 **Risks:** the poo example traces to one widely shared post; the behaviour itself is confirmed by its maker. Toko's savings are our fiction (he is our character).
+
+**As shipped (15 Oct 2026):** captions in `subs/gen_caps.py` (they follow the pre-production review); clay source in `clay/genius/`; no slate, no bug.

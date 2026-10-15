@@ -17,3 +17,5 @@
 
 **Sources:** The Wall Street Journal hands-on, "I Tried the First Humanoid Home Robot. It Got Weird." (28 Oct 2025), via Daring Fireball, Road to VR, Decrypt: teleoperated by a person in a VR headset; minutes to load a few items. 1X on preorders ($20,000 or $499/month, 2026 delivery) and "Expert Mode" (remote operators see through the robot's cameras with the owner's approval; the sessions train it to work alone). Brand renamed on screen.
 **Risks:** how much it can do alone is contested — "in a reviewer's test" and the maker's own claim (beat 4) keep it fair. No real faces.
+
+**As shipped (15 Oct 2026):** captions in `subs/dsh_caps.py` (they follow the pre-production review); clay source in `clay/dishes/`; no slate, no bug.
