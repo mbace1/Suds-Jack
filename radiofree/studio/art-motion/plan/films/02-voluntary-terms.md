@@ -25,3 +25,4 @@
 
 **Coxon3 (Paid For By): owner, 15 Oct 2026 — great.**
 **v3 (owner, 15 Oct 2026: "needs to define 'agree' — with what?"):** shots 2 and 5 only — 2 No law makes AI companies show it to Britain first. / They do it by choice. (over the BY INVITATION tags) 5 Now testing is back. It's still up to the companies.
+**v4 (owner, 15 Oct 2026: "still unclear — testing on whose behalf? what exactly, military AI?"):** 1 Britain's government tests new AI, like ChatGPT, before it is released. 2 It checks for cyberattack and bioweapon risks. / No law makes AI companies share it. 3 Then the White House asked OpenAI and Anthropic to stop sharing new AI with Britain's testers (Politico 24.9; named alike). 4 The hold lasted 17 days. / No official reason was given (research: no on-record reason). 5 and 6 as v3.
