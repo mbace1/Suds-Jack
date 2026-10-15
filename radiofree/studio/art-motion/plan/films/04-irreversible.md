@@ -20,3 +20,5 @@
 **Risks / fairness:** "irreversible harm" is Google's reported wording, quoted as such; the Commission's safeguards are said on screen (shot 5). Doodle is the house name for Google.
 
 **As shipped (15 Oct 2026):** captions in `subs/irr_caps.py` (they follow the pre-production review where it differs from the table); final review `plan/review-final-4-5.md` (fixes applied).
+
+**v2 (owner, 15 Oct 2026: "great but needs clarity and directness"):** 33.2 s — opens on the cabinet; one plain sentence per shot (Doodle keeps your searches → the EU told it to share search data with rivals, anonymised first → Doodle says that would do "irreversible harm" to your privacy → but the law already says the data must be irreversibly anonymised → Doodle is protecting your searches… from everyone but Doodle); the scale shot is cut; the punch holds 4.5 s; score re-cut (`synth_irr2.py`).

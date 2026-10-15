@@ -248,6 +248,17 @@ carried it. A 5 kHz squeak is heard over a tuba even when it barely moves the br
     last line.
   - −13.7 LUFS, −3.0 dBTP. 41/41 events within 30 ms (the seventh star, under the tape, by spectral
     flux). Music on the 140 lattice at 2.9×.
+  - **v2, the re-cut** (`synth_irr2.py` → `配乐_irr2_m14.wav`, 33.2 s; v1 kept). The owner asked
+    for "clarity and directness". The scenes run cabinet, order, court, law, lock, and the scale
+    is gone. Each scene keeps v1's sounds at its local times.
+    - The keynote now plays from the first frame: the cabinet is shown off like a product, its
+      drawers bursting on climbing plucks. The stars get a bar of their own (each with a small
+      twinkle, since the groove's tail now sits under them).
+    - The music turns into pizzicato at the court (12.86). The court skips one beat so the law
+      book's cover can land.
+    - After the punch (28.71), pencil and tape sink back under one long glossy breath. The copier
+      keeps whirring, and everything fades out by 33.2.
+    - −13.7 LUFS, −2.6 dBTP, linear. 40/40 events within 30 ms. Music on the 140 lattice at 3.2×.
 - **5 · Satire Excepted** (`synth_sat.py` → `配乐_sat_m14.wav`): a jaunty Copenhagen waltz in G
   major, 3/4 on the 168 grid, six bars a shot. A musette `accordion` (three reeds, one sharp and one
   flat) plays the tune over its own oom-pah-pah bass buttons; a `harpsichord` breaks the chords. The
@@ -275,7 +286,7 @@ carried it. A 5 kHz squeak is heard over a tuba even when it barely moves the br
     spooling faster, ending on a blip.
   - A muted trombone plays wah-wah as the dog walks out.
   - −14.0 LUFS, −2.8 dBTP. 25/25 events within 30 ms (median −2 ms).
-- **7 · Somebody Does the Dishes** (`synth_dsh.py` → `配乐_dsh_m14.wav`, 514 frames = 21.42 s): a
+- **7 · Somebody Does the Dishes** (`synth_dsh.py` → `配乐_dsh_m14.wav`, 586 frames = 24.42 s): a
   lounge bossa "smart home" jingle in G. Its quarter note is the robot's 0.7 s teleoperated jerk,
   so the robot moves on the beat. Nylon guitar batida, upright, rim clave, shaker, a vibraphone
   jingle.
@@ -283,8 +294,12 @@ carried it. A 5 kHz squeak is heard over a tuba even when it barely moves the br
   - At the wall wipe it closes off into an office hum (`office_hum`), with a yawn and a stapler:
     kitchen −15.3 dB against cubicle −21 to −25 dB.
   - The split shot plays both worlds at once (kitchen left, cubicle right).
-  - The film ends on a two-note vibraphone wave.
-  - −13.8 LUFS, −2.7 dBTP. 30/30 events within 30 ms.
+  - The man waves back on a two-note vibraphone wave.
+  - The last shot was lengthened by 3 s (owner, 2026-10-15). The office hum carries on and his hand
+    lands back on his controller with a click (22.5). One soft vibraphone chord rings under the
+    push-in, and everything fades with the picture over the last 0.35 s.
+  - −13.6 LUFS, −2.5 dBTP. 31/31 events within 30 ms. The 0.4 LU over target is loudnorm's own
+    linear offset, caused by the quiet tail; one more step of limiting did not move it.
 - **Caption timing for 6 and 7 is assumed** (their captions are burned later): first line about
   0.8 s after each cut. The tunes keep off those moments, but re-check once the caption files
   exist.
