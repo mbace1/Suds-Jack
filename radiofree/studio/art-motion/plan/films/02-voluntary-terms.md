@@ -20,3 +20,7 @@
 **Risks / fairness:** OpenAI, Anthropic and Google DeepMind are treated alike and not singled out — the target is the voluntary regime. No person named; the minister's words are quoted only as reported. Disclosure: researched with Claude, an Anthropic model; the owner checks the balance.
 
 **As shipped (15 Oct 2026):** captions are in `subs/vt_caps.py` (they follow the pre-production review, `plan/review-preproduction.md`, where it differs from the table above); final review `plan/review-final-1-3.md`.
+
+**v2 (owner, 15 Oct 2026: "confusing … work on the message directness"):** captions only — 1 Britain safety-tests new AI before it is released. 2 But only if the AI companies agree. 3 Then the White House asked two US companies to stop sharing new AI with Britain's testers. 4 The hold lasted 17 days. 5 Now testing is back — still only if the companies agree. 6 AI safety testing in Britain: / optional.
+
+**Coxon3 (Paid For By): owner, 15 Oct 2026 — great.**

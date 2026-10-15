@@ -13,13 +13,10 @@ Style: Bug,Poppins ExtraBold,30,&H30FFFFFF,&H30FFFFFF,&H80000000,&H00000000,0,0,
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 Dialogue: 0,0:00:00.30,0:00:37.50,Bug,,0,0,0,,{\an7\pos(92,88)\fad(400,0)}{\c&H7F02F0&}●{\c&HFFFFFF&} RADIO FREE HELSINKI
-Dialogue: 0,0:00:00.80,0:00:06.08,H,,0,0,0,,{\an8\pos(540,230)}{\fad(280,260)}Britain's AI Security\NInstitute tests new AI\N{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}before{\c&HFFFFFF&} it is released.
-Dialogue: 0,0:00:07.23,0:00:09.43,H,,0,0,0,,{\an8\pos(540,250)}{\fad(280,0)}Only when {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}invited{\c&HFFFFFF&}.
-Dialogue: 0,0:00:09.43,0:00:12.51,H,,0,0,0,,{\an8\pos(540,250)\fad(0,260)}Only when {\c&H3AB8F2&}invited{\c&HFFFFFF&}.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}No law makes\Nthe labs say yes.
-Dialogue: 0,0:00:13.66,0:00:18.94,H,,0,0,0,,{\an8\pos(540,230)}{\fad(280,260)}The White House asked\Ntwo US labs to {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}hold back{\c&HFFFFFF&}\Nnew models from the UK.
-Dialogue: 0,0:00:20.09,0:00:22.29,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,0)}The hold lasted
-Dialogue: 0,0:00:22.29,0:00:25.36,H,,0,0,0,,{\an8\pos(540,270)\fad(0,260)}The hold lasted\N{\alpha&HFF&\t(0,280,\alpha&H00&)}{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}17 days{\c&HFFFFFF&}.
-Dialogue: 0,0:00:26.51,0:00:28.71,H,,0,0,0,,{\an8\pos(540,250)}{\fad(280,0)}Then access came back,
-Dialogue: 0,0:00:28.71,0:00:31.79,H,,0,0,0,,{\an8\pos(540,250)\fad(0,260)}Then access came back,\N{\alpha&HFF&\t(0,280,\alpha&H00&)}on the same\N{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}voluntary{\c&HFFFFFF&} terms.
-Dialogue: 0,0:00:32.94,0:00:35.14,H,,0,0,0,,{\an8\pos(540,250)}{\fad(280,0)}Testing has resumed.
-Dialogue: 0,0:00:35.14,0:00:37.20,H,,0,0,0,,{\an8\pos(540,250)\fad(0,260)}Testing has resumed.\N{\alpha&HFF&\t(0,280,\alpha&H00&)}Until the phone\N{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}rings again{\c&HFFFFFF&}.
+Dialogue: 0,0:00:00.80,0:00:06.08,H,,0,0,0,,{\an8\pos(540,230)}{\fad(280,260)}Britain safety-tests\Nnew AI {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}before{\c&HFFFFFF&}\Nit is released.
+Dialogue: 0,0:00:07.23,0:00:12.51,H,,0,0,0,,{\an8\pos(540,250)}{\fad(280,260)}But only if the AI\Ncompanies {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}agree{\c&HFFFFFF&}.
+Dialogue: 0,0:00:13.66,0:00:18.94,H,,0,0,0,,{\an8\pos(540,230)}{\fad(280,260)}Then the White House asked\Ntwo US companies to\N{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}stop sharing{\c&HFFFFFF&} new AI\Nwith Britain's testers.
+Dialogue: 0,0:00:20.09,0:00:25.36,H,,0,0,0,,{\an8\pos(540,270)}{\fad(280,260)}The hold lasted\N{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}17 days{\c&HFFFFFF&}.
+Dialogue: 0,0:00:26.51,0:00:31.79,H,,0,0,0,,{\an8\pos(540,250)}{\fad(280,260)}Now testing is back —\Nstill only if\Nthe companies {\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}agree{\c&HFFFFFF&}.
+Dialogue: 0,0:00:32.94,0:00:34.74,H,,0,0,0,,{\an8\pos(540,250)}{\fad(280,0)}AI safety testing\Nin Britain:
+Dialogue: 0,0:00:34.74,0:00:37.20,H,,0,0,0,,{\an8\pos(540,250)\fad(0,260)}AI safety testing\Nin Britain:\N{\alpha&HFF&\t(0,280,\alpha&H00&)}{\t(500,650,\c&H3AB8F2&\fscx120\fscy120)\t(650,850,\fscx100\fscy100)}optional{\c&HFFFFFF&}.
