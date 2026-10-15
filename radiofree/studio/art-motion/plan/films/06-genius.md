@@ -19,3 +19,5 @@
 **Risks:** the poo example traces to one widely shared post; the behaviour itself is confirmed by its maker. Toko's savings are our fiction (he is our character).
 
 **As shipped (15 Oct 2026):** captions in `subs/gen_caps.py` (they follow the pre-production review); clay source in `clay/genius/`; no slate, no bug.
+
+**Scrapped (owner, 15 Oct 2026).** The file is kept in `previews/scrapped/`; the number Toko3 is not reused.
