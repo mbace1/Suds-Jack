@@ -69,6 +69,16 @@ Script accepts season. Game sends season. Endpoint empty until deployed. Top-10 
 
 Verify Season 1 rubble/rockfall, Season 2 jumpable waves/tide/drain, and Season 3 truck/cargo/gaze all feed the pure timer correctly on PURE and HYPER. Confirm mobile and gamepad paths. Update VERSIONS.md and hub note.
 
+### HD-015 — A Blender pipeline for hard-surface art, run on the PC, landed by PR
+
+- status: Queued
+- size: L
+- blocked-by: — (step 5, the first asset, waits on HD-014 steps 3–4)
+- design: docs/HD-015-blender-pipeline-plan.md
+- gate: plan before code; separate PRs; Mikael's yes to merge
+
+Mikael, 13 Oct 2026: *"We should have a blender pipeline also on the PC with PRs."* Meshy stays the route for sculpts that become voxels. Blender becomes the route for hard-surface parts whose dimensions the game depends on, starting with HD-014's landspeeder hull. One contract file read by both a Blender script and a bare-node validator, a CI lane for asset PRs, and a loader that swaps named procedural parts without touching collision.
+
 ## In progress
 
 No items.

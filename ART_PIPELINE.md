@@ -16,6 +16,10 @@ session.
 **A Meshy feature is always the primary choice. Look up what Meshy offers
 BEFORE building anything, and only build where Meshy has no feature.**
 
+*Recorded override (Mikael, 13 Oct 2026): Hyper Dagger's hard-surface parts —
+the ones whose exact dimensions the game depends on — go through Blender
+instead. Sculpts stay on Meshy. See `hyperdagger/pipeline/README.md`.*
+
 This is the owner's direction and it exists because it was learned the
 expensive way. One session built a mesh slicer, a cut-plane authoring tool, a
 hole-capper, a bind-rotation system and a joint-swing test — several hundred

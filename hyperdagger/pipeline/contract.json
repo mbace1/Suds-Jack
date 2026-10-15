@@ -1,0 +1,54 @@
+{
+  "note": "HD-015's Blender contract. Every number a Blender-built asset is held to lives here and nowhere else: the Blender library (pipeline/hd_blender.py) and the node validator (scripts/hd-asset-check.mjs) both read this file, so the two cannot drift. README.md beside it is the reasoning. Frame: Blender +Z up, +Y toward the cab, origin at the centre of the deck top; metres.",
+  "contract": 1,
+  "blender": {
+    "versions": ["4.5.13", "5.2.1"],
+    "saveFrom": "4.5.13"
+  },
+  "export": {
+    "export_format": "GLB",
+    "export_yup": true,
+    "export_apply": true,
+    "use_selection": true,
+    "export_extras": false,
+    "export_draco_mesh_compression_enable": false,
+    "export_image_format": "NONE",
+    "export_materials": "EXPORT",
+    "export_cameras": false,
+    "export_lights": false,
+    "export_animations": false
+  },
+  "materials": {
+    "names": ["HULL", "ACCENT", "GLASS", "GLOW", "DARK"],
+    "maxPerFile": 4
+  },
+  "kinds": {
+    "speeder": {
+      "what": "HD-014's landspeeder: season 3's convoy trucks, wheels gone, hovering. Replaces the named procedural parts 'hull' and 'cab' from convoy.js; the procedural roof stays the landing surface.",
+      "meshes": ["hull", "cab"],
+      "empties": ["pod_FL", "pod_FR", "pod_RL", "pod_RR", "glow", "band_lo", "band_hi"],
+      "width": 3.0,
+      "trailerH": 2.9,
+      "cuts": {
+        "short": { "depth": 7.75, "cabCentre": [0, 5.425, -2.19] },
+        "mid":   { "depth": 9.25, "cabCentre": [0, 6.175, -2.19] },
+        "long":  { "depth": 10.75, "cabCentre": [0, 6.925, -2.19] }
+      },
+      "cab": { "size": [2.76, 2.6, 2.3], "tolerance": 0.1 },
+      "hullTopZ": [-0.1, 0.0],
+      "minZ": -3.6,
+      "overhangX": 0.4,
+      "overhangY": 0.2,
+      "band": { "minHeight": 1.2 },
+      "budget": { "hullTris": 1500, "cabTris": 600, "bytes": 153600 },
+      "game": {
+        "source": "hyperdagger/js/convoy.js @ 603e76d8 (_truck, L238-297)",
+        "widthRange": [2.6, 3.4],
+        "depthRange": [7.0, 11.5],
+        "trailerHRange": [2.0, 3.8],
+        "CHASSIS": 1.1,
+        "ROAD_Y": -3.2
+      }
+    }
+  }
+}
