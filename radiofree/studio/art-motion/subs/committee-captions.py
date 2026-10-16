@@ -1,4 +1,5 @@
 """House captions for "Committee of the Whole" (style H, lib/rfcaps.py, every break by hand).
+v3 (16 Oct 2026): SpaceXAI testified on 16 October (Fox News live, teleSUR), so the last line is past tense.
 v2 (owner, 15 Oct 2026: the ending texts go too fast): the last shot runs sixteen beats (eras_cw2.js),
 and its second line joins at 3.2 s, after the OCT 16 stamp, so both lines have time to be read."""
 import sys
@@ -13,6 +14,6 @@ SHOTS = [
  (2, 0.80, 3.00, 420, "Jacob Coxon, ex-Anthropic:", "\"On our current path, I think\\Nit is more likely than not that\\Nhumanity [loses control]…\""),
  (3, 0.80, 3.00, 420, "Asked for the odds\\Nof catastrophe,", "none of the four companies\\N[gave a number]."),
  (4, 0.80, 2.00, 420, "Council Speaker Julie Menin\\Ncalled OpenAI's answer", "\"[flippant at best].\""),
- (5, 0.70, 3.20, 420, "SpaceXAI did not come,\\Ndespite a [subpoena].", "Threatened with a judge,\\Nit agreed to testify on [16 October]."),
+ (5, 0.70, 3.20, 420, "SpaceXAI did not come,\\Ndespite a [subpoena].", "Threatened with a judge,\\Nit testified on [16 October]."),
 ]
 build(SHOTS, CUT, str(Path(__file__).with_name('cw_H.ass')), manual=True)
