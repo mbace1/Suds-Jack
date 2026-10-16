@@ -182,5 +182,8 @@ window.RFP = (() => {
   function glow(c, x, y, r, col = 'rgba(255,214,140,', a = 0.55) {
     c.save(); c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col + a + ')'); g.addColorStop(1, col + '0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); c.restore();
   }
-  return { K, W, H, M, sheet, sprite, layer, put, stack, box, dusk, leafSprite, leaves, words, ease, pop, move, walker, hand, fist, glow, ledAt, canvas };
+  // Instagram's caption, channel line and buttons cover the bottom of a Reel (owner, 16.10.2026: the tags
+  // were hidden): no where/what tag may reach below SAFE_B — at least a tag's own height above where tags sat.
+  const SAFE_B = 1630;
+  return { SAFE_B, K, W, H, M, sheet, sprite, layer, put, stack, box, dusk, leafSprite, leaves, words, ease, pop, move, walker, hand, fist, glow, ledAt, canvas };
 })();

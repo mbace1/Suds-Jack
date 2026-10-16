@@ -39,6 +39,9 @@ half at ~3.0 s of each shot. Keep the RADIO FREE HELSINKI bug (the default). Kee
 800 px (≈ 26 characters). Burn with:
 `cd P/subs && ffmpeg -y -i ../渲染/成片_<id>.mp4 -vf "subtitles=<id>_H.ass:fontsdir=fonts,fade=t=out:st=37.15:d=0.35" -c:v libx264 -crf 18 -pix_fmt yuv420p ../渲染/<id>_captions.mp4`
 Captions sit in the top ~600 px: keep faces, labels and the action below y ≈ 700.
+The bottom is Instagram's (owner, 16 Oct 2026): its caption, channel line and buttons cover it, so no tag or
+other text may reach below y = 1630 — clamp to `RFP.SAFE_B` in your kit's `tag()` — and a right-aligned
+tag ends 160 px from the edge, clear of the button column.
 
 ## Editorial rules (hard)
 - Real people are never drawn with faces (backs, silhouettes, empty chairs, podiums). Generic

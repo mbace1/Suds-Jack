@@ -329,10 +329,11 @@ window.IRR = (() => {
   }
   /** the where/what tag in the lower corner: EU blue card, gold letters; '\n' breaks a line */
   function tag(c, text, lt, dur, x = 96, yb = 1800) {
+    yb = Math.min(yb, RFP.SAFE_B);   // above Instagram's caption and channel line
     const a = clamp((lt - 0.5) / 0.3, 0, 1) * clamp((dur - 0.6 - lt) / 0.3, 0, 1); if (a <= 0) return;
     const lines = text.split('\n');
     c.save(); c.globalAlpha = a; c.font = '32px "ArchivoBlack-400"'; const w = Math.max(...lines.map((l) => c.measureText(l).width)) + 44, h = 22 + lines.length * 42;
-    if (x === 'right') x = W - 96 - w;
+    if (x === 'right') x = W - 160 - w;   // clear of Instagram's button column on the right
     const y = yb - h;
     c.shadowColor = 'rgba(14,29,72,.35)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = C.eu; c.beginPath(); c.roundRect(x, y, w, h, 8); c.fill(); c.shadowColor = 'transparent';
     c.fillStyle = C.gold; c.textAlign = 'left'; lines.forEach((l, i) => c.fillText(l, x + 22, y + 45 + i * 42)); c.restore();

@@ -163,5 +163,9 @@ are gone before the dissolve. The keyword lights up only once its line has been 
 Width rule (owner: "some clipping still with text"): no caption line is wider than
 800 px. The styles carry 140 px side margins because libass wraps a \pos line at the
 frame minus the margins; at 80 px, lines of 890-905 px ran to the bezel and into
-TikTok's right-hand buttons. Scene text gets the same care: a label's card is cut to
+TikTok's right-hand buttons. Bottom rule (owner, 2026-10-16: the location tags "are blocked on Instagram by the bottom texts and channel
+info"): the bottom 290 px of the frame belong to Instagram's caption and channel line, and its buttons run
+down the right edge. Every where/what tag sits with its bottom edge at or above y = 1630 (`RFP.SAFE_B` in
+`scenes/rfp_kit.js`; each kit's `tag()` clamps to it), at least a tag's own height above where tags used to
+sit, and a right-aligned tag ends 160 px from the edge. Scene text gets the same care: a label's card is cut to
 its measured words, and nothing that swings or zooms may carry text past the frame.

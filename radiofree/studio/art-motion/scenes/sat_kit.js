@@ -134,9 +134,10 @@ window.SAT = (() => {
   }
   /** the where/what tag: Danish red card, white letters */
   function tag(c, text, lt, dur, x = 96, yb = 1800) {
+    yb = Math.min(yb, RFP.SAFE_B);   // above Instagram's caption and channel line
     const a = clamp((lt - 0.5) / 0.3, 0, 1) * clamp((dur - 0.6 - lt) / 0.3, 0, 1); if (a <= 0) return;
     c.save(); c.globalAlpha = a; c.font = '32px "ArchivoBlack-400"'; const w = c.measureText(text).width + 44, h = 64;
-    if (x === 'right') x = W - 96 - w;
+    if (x === 'right') x = W - 160 - w;   // clear of Instagram's button column on the right
     c.shadowColor = 'rgba(70,30,20,.35)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = C.red; c.beginPath(); c.roundRect(x, yb - h, w, h, 8); c.fill(); c.shadowColor = 'transparent';
     c.fillStyle = C.white; c.textAlign = 'left'; c.fillText(text, x + 22, yb - h + 44); c.restore();
   }

@@ -12,6 +12,7 @@ films taught, turned into the questions a pitch has to answer before anything is
 | "I wasn't sure it looked like" New York | Committee of the Whole | **Make the place recognisable.** Draw the real silhouette and the skyline behind it; a generic building is no building. |
 | "way too long … less subtle. Maybe a joke" | Happy Little Bot | **End on a joke in our own voice, over the image that answers it** ("Batteries included. / Parents not included." as the grown-up sits down). |
 | "the first text goes too fast" | Unexpectedly, a Deer | **Budget reading time.** Each caption holds ≥ 1 s + 1 s per ~20 characters before the next one appears; the first holds longest. |
+| "the bottom infos … are blocked on Instagram by the bottom texts and channel info" | A Handful of People | **Keep the bottom clear.** Instagram's caption, channel line and buttons cover the bottom of a Reel: no where/what tag or other text below y = 1630 (`RFP.SAFE_B`), and nothing in the right-hand 160 px below the middle of the frame. |
 | "funny … needs clarity or more jokes" | Unexpectedly, a Deer | **Set up the stake early** (the $20/MO tag in shot 1), so every later gag is paid for. |
 | "it had small glitches … I like those" | Biodiversity Fund | Test very subtle glitches later; never on a caption. |
 

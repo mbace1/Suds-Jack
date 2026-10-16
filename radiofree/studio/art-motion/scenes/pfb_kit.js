@@ -414,8 +414,9 @@ window.PFB = (() => {
 
   /** the where/what tag: a small brass card in the box's lower corner */
   function tag(c, text, lt, dur, x = 96, y = 1772) {
+    y = Math.min(y, RFP.SAFE_B - 66);   // above Instagram's caption and channel line
     const a = clamp((lt - 0.5) / 0.3, 0, 1) * clamp((dur - 0.6 - lt) / 0.3, 0, 1); if (a <= 0) return;
-    c.save(); c.globalAlpha = a; c.font = '32px "ArchivoBlack-400"'; const w = c.measureText(text).width + 44; if (x === 'right') x = W - 96 - w;
+    c.save(); c.globalAlpha = a; c.font = '32px "ArchivoBlack-400"'; const w = c.measureText(text).width + 44; if (x === 'right') x = W - 160 - w;   // clear of Instagram's button column on the right
     c.shadowColor = 'rgba(10,8,4,.45)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = C.brass; c.beginPath(); c.roundRect(x, y, w, 66, 8); c.fill(); c.shadowColor = 'transparent';
     c.fillStyle = C.navy; c.textAlign = 'left'; c.fillText(text, x + 22, y + 45); c.restore();
   }

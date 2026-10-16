@@ -19,7 +19,7 @@ SCENES['cw_mic'] = (() => {
       ], cam);
       // the house tag: who this is
       c.save(); c.font = '30px "ArchivoBlack-400"'; const t = 'WITNESS · JACOB COXON', w = c.measureText(t).width + 40; c.globalAlpha = clamp((lt - 0.5) / 0.3, 0, 1) * clamp((5.83 - lt) / 0.3, 0, 1);
-      c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 10; c.shadowOffsetX = 5; c.shadowOffsetY = 8; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(560, 1700, w, 64, 8); c.fill(); c.shadowColor = 'transparent'; c.fillStyle = K.ink; c.fillText(t, 580, 1744); c.restore();
+      c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 10; c.shadowOffsetX = 5; c.shadowOffsetY = 8; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(560, RFP.SAFE_B - 64, w, 64, 8); c.fill(); c.shadowColor = 'transparent'; c.fillStyle = K.ink; c.fillText(t, 580, RFP.SAFE_B - 20); c.restore();
       box(c);
     },
   };

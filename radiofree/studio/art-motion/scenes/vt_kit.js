@@ -45,6 +45,7 @@ window.VT = (() => {
   }
   /** the where/what tag: a brass card in the lower corner; a long one breaks at its last " · " and grows upward */
   function tag(c, text, lt, dur, x = 110, y = 1690) {
+    y = Math.min(y, RFP.SAFE_B - 66);   // above Instagram's caption and channel line (a two-line tag grows upward from here)
     const a = clamp((lt - 0.5) / 0.3, 0, 1) * clamp((dur - 0.6 - lt) / 0.3, 0, 1); if (a <= 0) return;
     c.save(); c.globalAlpha = a; c.font = '32px "ArchivoBlack-400"';
     let lines = [text]; if (c.measureText(text).width > 800) { const i = text.lastIndexOf(' · '); lines = [text.slice(0, i), text.slice(i + 3)]; }

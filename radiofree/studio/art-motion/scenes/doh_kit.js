@@ -116,6 +116,7 @@ window.DOH = (() => {
 
   /** a small ochre tag in the box's lower corner: what and when */
   function tag(c, text, x = 110, y = 1690, a = 1) {
+    y = Math.min(y, RFP.SAFE_B - 70);   // above Instagram's caption and channel line
     if (a <= 0) return; c.save(); c.globalAlpha = a; c.font = '34px "ArchivoBlack-400"'; const w = c.measureText(text).width + 44;
     c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(x, y, w, 70, 8); c.fill(); c.restore();
     c.save(); c.globalAlpha = a; c.fillStyle = K.ink; c.font = '34px "ArchivoBlack-400"'; c.fillText(text, x + 22, y + 48); c.restore();

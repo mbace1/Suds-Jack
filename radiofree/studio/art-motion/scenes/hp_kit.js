@@ -106,6 +106,7 @@ window.HP = (() => {
 
   /** a small ochre tag in the box's lower corner — where and what, so a viewer far from Washington knows */
   function tag(c, text, lt, dur, x = 110, y = 1690) {
+    y = Math.min(y, RFP.SAFE_B - 66);   // above Instagram's caption and channel line
     const a = clamp((lt - 0.5) / 0.3, 0, 1) * clamp((dur - 0.6 - lt) / 0.3, 0, 1); if (a <= 0) return;
     c.save(); c.globalAlpha = a; c.font = '32px "ArchivoBlack-400"'; const w = c.measureText(text).width + 44;
     c.shadowColor = 'rgba(10,6,2,.55)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(x, y, w, 66, 8); c.fill(); c.shadowColor = 'transparent';
