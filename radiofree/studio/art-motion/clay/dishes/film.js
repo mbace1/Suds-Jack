@@ -436,10 +436,11 @@ function camPull(s) {
   return { ...frameCam({ T, at: [540, lerp(1300, 1200, k)], az: lerp(-4, -8, k), el: lerp(6, 7, k), D, fov: 30 }), focus: T, ap: lerp(6, 5, k) };
 }
 const TOKO_W = { hip: [-47, 21.5, 7], yaw: 2.62 };   // standing at the robot's front-right, facing its eye
+// v3 (owner, 16.10.2026: tags must clear Instagram's bottom bar): the eye framed at 1040, not 1150, and the camera 15% further back, so the $20,000 tag hangs above y = 1630 and the clock stays under the caption
 function camWave(s) {
   const eye = add3(RB.hip, [0, 20.6, 0]);
   const k = smooth(0, 1.7, s);
-  return { ...frameCam({ T: add3(eye, [-5, -2, 3]), at: [lerp(560, 550, k), 1150], az: lerp(30, 26, k), el: 5, D: lerp(96, 90, k), fov: 30 }), focus: add3(eye, [-4, 0, 6]), ap: 5 };
+  return { ...frameCam({ T: add3(eye, [-5, -2, 3]), at: [lerp(560, 550, k), 1040], az: lerp(30, 26, k), el: 5, D: lerp(110, 104, k), fov: 30 }), focus: add3(eye, [-4, 0, 6]), ap: 5 };
 }
 
 // ------------------------------------------------------------------ the state of everything at global time tg (on twos)
