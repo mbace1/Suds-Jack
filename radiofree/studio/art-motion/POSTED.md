@@ -21,6 +21,8 @@ Accounts:
 | Coxon 1, A Handful of People | RFH X | https://x.com/radiofreehki/status/2110853869475705006 | same as Instagram |
 | Nordic 1, Satire Excepted | RFH Instagram | https://www.instagram.com/radiofreehelsinki/reel/DejVqutozju/ (reposted uncropped 16 Oct) | A Danish bill would make your face yours by law. Except for satire. Who decides what's satire? #L49 #deepfakes #Denmark #Folketinget |
 | Nordic 1, Satire Excepted | RFH X | https://x.com/radiofreehki/status/2111035485577449679 | same as Instagram |
+| Coxon 3, Paid For By | RFH Instagram | https://www.instagram.com/radiofreehelsinki/reel/DekjzHrI_tl/ (17 Oct ~01:00, uncropped, SAFE_B cut) | AI super PACs spent $55.7M on midterm ads. Almost none mention AI. #midterms #AI #superPACs |
+| Coxon 3, Paid For By | RFH X | https://x.com/radiofreehki/status/2111216618441212033 | same as Instagram |
 
 Toko 2 still needs to go out on Toko X ("Batteries included. Parents not included. 🤖") once the login works. Its Cambridge Story link (https://www.cam.ac.uk/stories/ai-toys-study-play) needs the phone app.
 
@@ -28,10 +30,10 @@ Toko 2 still needs to go out on Toko X ("Batteries included. Parents not include
 
 | When | Film | Channels | Copy (Middler) |
 |---|---|---|---|
-| 17 Oct 0:52 | Coxon 3, Paid For By | RFH IG + X | AI super PACs spent $55.7M on midterm ads. Almost none mention AI. #midterms #AI #superPACs |
+| 17 Oct 12:52 | Coxon 2, Committee of the Whole (v2) | RFH IG + X | waiting on Middler's copy; shown to Mikael first |
 
 ## Waiting
 
-- Coxon 2 (Committee of the Whole, v2) and Coxon 4 (On the Same Voluntary Terms, v4) redos are on this branch. They go out after Coxon 3, once Middler's copy has been shown to Mikael.
+- Coxon 2 (Committee of the Whole, v2) and Coxon 4 (On the Same Voluntary Terms, v4) redos are on this branch. Coxon 2 is next, then Coxon 4, each once Middler's copy has been shown to Mikael.
 - Doodle 3 (Irreversible) isn't approved yet.
 - Genius and The Newsreader Was Fake were scrapped.
