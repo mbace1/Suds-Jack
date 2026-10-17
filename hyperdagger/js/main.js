@@ -2631,11 +2631,11 @@ function waveDirector() {
     if (Math.random() < density * 0.06) {
       const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       let at = ringSpot(16).clone();
-      let toSpot = at.clone().sub(player.pos).normalize();
+      let toSpot = at.clone().sub(player.feet).normalize();
       let tries = 0;
       while (toSpot.dot(fwd) < 0.35 && tries < 6) {
         at = ringSpot(16).clone();
-        toSpot = at.clone().sub(player.pos).normalize();
+        toSpot = at.clone().sub(player.feet).normalize();
         tries++;
       }
       if (toSpot.dot(fwd) < 0.2) at.add(fwd.clone().multiplyScalar(18));
@@ -2790,7 +2790,7 @@ function updateThreatVignette() {
   if (state !== 'playing') { document.getElementById('vignette').style.opacity = '0'; return; }
   let near = 0;
   for (const e of enemies) {
-    const d = Math.hypot(e.pos.x - player.pos.x, e.pos.z - player.pos.z);
+    const d = Math.hypot(e.pos.x - player.feet.x, e.pos.z - player.feet.z);
     if (d < 6) near = Math.max(near, 1 - d / 6);
   }
   document.getElementById('vignette').style.opacity = String(Math.min(0.55, near * 0.7));
@@ -2818,7 +2818,7 @@ function updateThreatRing() {
   const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
   const r = Math.min(window.innerWidth, window.innerHeight) * 0.14;
   for (const e of enemies) {
-    const dx = e.pos.x - player.pos.x, dz = e.pos.z - player.pos.z;
+    const dx = e.pos.x - player.feet.x, dz = e.pos.z - player.feet.z;
     const d = Math.hypot(dx, dz);
     if (d < 5 || d > 22) continue;
     const ang = Math.atan2(dz, dx);

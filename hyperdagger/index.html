@@ -55,10 +55,15 @@
        everything returns. main.js already toggled body.in-run in all the
        right places and the gate already asserted this behaviour — the rules
        themselves were simply never written, so the gate was red by three. */
-    body.in-run #kills,
     body.in-run #gems,
     body.in-run #style { display: none; }
     body.in-run #timer { font-size: 27px; }
+    /* HD-008 (12 Oct playtest): the kill counter stays up for the whole run,
+       in every season and free mode. The top-left corner belongs to the
+       shell's HOME button (44px tall) mid-run, and top-right to pause, so
+       the counter tucks under the clock, centred, where nothing else lives
+       on a phone-sized viewport. */
+    body.in-run #kills { left: 50%; transform: translateX(-50%); top: calc(0.8rem + 42px); font-size: 0.85rem; white-space: nowrap; max-width: calc(100vw - 2rem); overflow: hidden; text-overflow: ellipsis; }
     body.in-run #pauseBtn { opacity: 0.12; }
     body.in-run #pauseBtn:hover { opacity: 1; }
     body.in-run .arcade-home,
@@ -91,10 +96,10 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=87"></script>
+  <script type="module" src="js/main.js?v=90"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=85').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=87').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=43"></script>
