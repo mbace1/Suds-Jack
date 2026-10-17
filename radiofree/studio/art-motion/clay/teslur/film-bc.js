@@ -485,6 +485,12 @@ if (IS_C) {
   // black servo joints at shoulders, elbows and knees
   for (let i = 0; i < 6; i++) joints.push(mesh(lumpy(ball(i < 2 ? 1.9 : 1.5, 1, 1, 1, 18), 0.03, 1, 1310 + i), RC.black, { parent: scene }));
 }
+if (!IS_C) {   // v4 polish (owner: "some clipping on Toko's face"): the hoodie's round collar sat where the mask's lower edge
+  // swings when he looks down at his work, and cut a dark wedge into the disc. A coverall's collar is lower and flatter,
+  // and the disc rides a little further forward.
+  toko.collar.geometry.scale(0.86, 0.62, 0.86); toko.collar.geometry.translate(0, -0.55, -0.55);
+  toko.mask.position.z += 0.35;
+}
 const muffs = new Muffs(EM, toko.head);
 const vac = new Canister(VM);
 // the janitor's kit, riding the torso: belt with pouches and a red rag, a name patch and a chest pocket
@@ -663,7 +669,7 @@ function walkLegs(ph) {
 function tokoPose(t) {
   const st = tokoState(t), Y = st.yaw, Rf = R_(Y);
   const hip0 = [st.x, 21.5, L.tokoZ];
-  const P = { hip: hip0, yaw: Y, lean: 0.1, side: 0, knee: STAND.knee, foot: STAND.foot, hp: 0.3, hr: 0, hy: clamp(-Y * 0.75, -0.95, 0.95), palm: [Rf([0, -1, -0.3]), Rf([0, -1, -0.3])] };
+  const P = { hip: hip0, yaw: Y, lean: 0.1, side: 0, knee: STAND.knee, foot: STAND.foot, hp: IS_C ? 0.3 : 0.16, hr: 0, hy: clamp(-Y * 0.75, -0.95, 0.95), palm: [Rf([0, -1, -0.3]), Rf([0, -1, -0.3])] };
   let lift = 0, vacPose;
   if (st.mode !== 2) {
     const ph = st.walk, sweep = sweepOf(t);
@@ -684,7 +690,7 @@ function tokoPose(t) {
     // the car hangs upper-left of him on screen: the face turns well off to screen-left and tips up to it (the read is
     // screen direction), then swings back level and square to the lens — a 1-rad turn and a 0.6-rad lift, so it reads
     P.hy = lerp(lerp(hyWalk, -1.45, kp), -0.45, kc);                       // toward the car (screen-left), then the camera
-    P.hp = lerp(lerp(lerp(0.3, 0.12, k), -0.62, kp), 0.0, kc) + br * 0.015; // head lifts to the car, then levels at us
+    P.hp = lerp(lerp(lerp(IS_C ? 0.3 : 0.16, 0.12, k), -0.62, kp), 0.0, kc) + br * 0.015; // head lifts to the car, then levels at us
     P.hr = lerp(lerp(0, 0.18, kp), 0.03, kc);
     P.hip = add3(hip0, [0, br * 0.1, 0]);
     vacPose = { d: lerp(24, 7, k), alpha: lerp(23, 0, k) * DEG, side: lerp(sweep0 * 5.5, -13, k), yaw: lerp(sweep0 * 0.36, 0, k) };
