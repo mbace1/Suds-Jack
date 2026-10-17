@@ -33,3 +33,23 @@ Live behavior in that tree: a short stick tap sets jump, firing is hold, a flick
 The live page did move. gh-pages `dae58935792548c2bc7d5f6946c7fbdb83e2558c` (`dae58935`), 4 Oct 2026, 13:15:55 EEST, message "Publish Hyper Dagger from main 0c8492c (hyperdagger/ only)." The expected "about 13:17" was the commit time above, not 13:17. Tokens re-checked the same afternoon from that commit and from the live files: `js/main.js?v=85` in `index.html`, and `const CACHE = 'hyperdagger-v55'` in `sw.js`.
 
 Checked when this log was opened, 4 Oct 2026, Europe/Helsinki: `origin/main` had moved on to `8aa15e0cc7d19bd157fcec119fe9bdd98d6b75dc` (PR #579, 13:24 EEST). That commit is not a Hyper Daggers change, and gh-pages was still `dae58935`. The live page was still the publish above, not the new main tip.
+
+## 2026-10-17 — v57, the 12 Oct playtest fixes, on main and on the live page
+
+PR #619, merge commit `a7b38706a4faed24afe8e09afd283c4a872780b1` (`a7b38706`), 17 Oct 2026, 23:13:25 EEST, merged by Mikael with "Create a merge commit". Parents: `27f7ad45` (main) and `82a223e1` (the PR head, `release/hyperdagger-v57`). Every gate in the PR's table passed on `82a223e1`.
+
+It combines 19 pull requests as merges: #587 #588 #589 #591 #592 #593 #594 #595 #596 #597 #604 #605 #606 #608 #609 #610 #611 #612 #615. Fifteen closed as merged on their own. #605, #608, #611 and #612 were stacked on other feature branches, so GitHub left them open. Their commits are all in `a7b38706`, and they were closed by hand with a note. Two test-only commits came from #600 and three from #602 as cherry-picks. Those two PRs are not part of this landing.
+
+The live page did move. gh-pages `cc5bd534`, 17 Oct 2026, 23:29:45 EEST, message "Publish Hyper Dagger v57 from main a7b38706 (PR #619)". Pages run 39066951974 (build, deploy and status report) concluded success at 23:31 EEST. It is the newest Pages run, so nothing superseded it. Read back from `cc5bd534` through the GitHub API:
+- `index.html` asks for `js/main.js?v=108`, `sw.js?v=108` and `../hub/shell.js?v=94`.
+- `sw.js` sets `const CACHE = 'hyperdagger-v78'`.
+- `hub/versions.json` has hyperdagger at v57.
+- The cabinet's controls line reads "short click = jump, hold = stream".
+
+What the publish carried besides `hyperdagger/` (minus `test/`, where the site's own two files were left as they were):
+- The cabinet's controls line in `hub/games.js`.
+- The one `hub/versions.json` row. It had read v51 since before v54 shipped, and `versions.mjs --check` named it as the only disagreement.
+- The token cascade a catalogue change needs on the site: `games.js` 130→131, `hub.js` 134→135, `hub-entry.js` 57→58, `shell.js` 93→94 in every page that asked for 93, and the arcade worker v123→v124.
+- The shell token on this game's page is the site's (`?v=94`), not main's `?v=43`.
+
+Not verified: the live page was not opened. This session's network policy refuses `mbace1.github.io`. The game's gates (offline, press-edges, menu-focus, menu-input, pause-resume-tap, hud-lock) passed against the site tree before the push. The arcade smoke gave the same 46 passes and 4 failures on that tree as on the untouched site, so the publish added no failure. Those 4 are failures of main's arcade test on the site's arcade, and they predate this publish.
