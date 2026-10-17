@@ -36,7 +36,9 @@ Toko 2 still needs to go out on Toko X ("Batteries included. Parents not include
 
 | When | Film | Channels | Copy (Middler) |
 |---|---|---|---|
-| (none) | Queue empty after Coxon 4; waiting for Mikael to pick the next RFH film | | |
+| in production | Coxon 5, The Chair Is Taken (slate 17 Oct) | RFH Instagram + X | — (write when finished) |
+| in production | Kill Switch (slate 17 Oct) | RFH Instagram + X | — (write when finished) |
+| in production | Welcome Home, tech satire 2 after Teslur (slate 17 Oct) | RFH Instagram + X | — (write when finished) |
 
 ## Waiting
 
