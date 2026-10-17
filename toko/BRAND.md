@@ -179,7 +179,8 @@ contexts or moods"*):
   yellow, cyan, red, purple, orange, lime, green, blue, black — each as the colour on white
   and white on the colour. They live in [`master/`](master/) with a table of measured
   colours ([`master/README.md`](master/README.md)); where they disagree with `STICKER`,
-  the owner's files win.
+  the owner's files win. **All ten can be used** (owner, 2026-10-17), and magenta
+  stays the original among them.
 - What does not change: **one face, one ground** — the face in one colour on
   another, never two colours inside the mark, never a gradient across it.
 
