@@ -1443,9 +1443,18 @@ s.listen(0, '127.0.0.1', async () => {
         out.brake = { loose };
       }
       // three missiles in a cab: the truck folds
-      const t2 = cv.trucks.find(x => x !== cv.standing && x !== t && x.proxy.alive);
-      const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)]; await frames(60);
-      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1) };
+      // a truck AHEAD of the body: a crawling one drifts back ~20 u/s and the
+      // convoy drops a truck 40 u behind you, which stops its clock mid-check
+      const free = x => x !== cv.standing && x !== t && x.proxy.alive;
+      const t2 = cv.trucks.filter(x => free(x) && x.z < pl.feet.z - 8).sort((a, b) => b.z - a.z)[0]
+        ?? cv.trucks.find(free);
+      const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)];
+      // 1.8 s of GAME time on the truck's own clock (t.age, stepped by the
+      // convoy's dt), not 60 frames: a faster renderer covers less game time
+      // per frame, and the brake to a crawl is a game-time question
+      const age0 = t2.age;
+      for (let i = 0; i < 2000 && t2.age - age0 < 1.8 && cv.trucks.includes(t2); i++) await frames(1);
+      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1), game: +(t2.age - age0).toFixed(2), kept: cv.trucks.includes(t2) };
       // the gaze locks a cab in range and the missiles land in it
       gz.cfg.trucks = true;
       // (the body is kept twelve units behind the cab each frame: a standing
@@ -1545,6 +1554,44 @@ s.listen(0, '127.0.0.1', async () => {
     });
     await q.close();
   }
+  // ---- HD-014 step 2: landspeeders have no wheels, and the parts have names
+  // A wheel is the old shared 0.5×0.9×0.9 box, a mesh named 'wheel', or the
+  // convoy still holding wheelGeo/wheelMat. Named parts are what the hover
+  // steps find; the part list is exactly today's minus the eight wheels.
+  let haulParts = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    await q.addInitScript(() => { localStorage.setItem('hyperDaggerModeV31', 'truck'); localStorage.setItem('hyperDaggerRunKind', 'free'); });
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    haulParts = await q.evaluate(async () => {
+      const d = window.__hd.debug;
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      d.startGame(); d.freezeDirector?.(true); d.setInvulnerable(true);
+      await frames(2);
+      const cv = d.truckObj();
+      if (!cv?.cargo) return { convoy: false };
+      cv.cfg.skullsFrom = 1e9;
+      cv.reset(window.__hd.player);
+      const isWheel = o => o.name === 'wheel' || (o.geometry && (o.geometry === cv.wheelGeo
+        || (o.geometry.parameters && o.geometry.parameters.width === 0.5 && o.geometry.parameters.height === 0.9 && o.geometry.parameters.depth === 0.9)));
+      let wheels = 0;
+      const parts = cv.trucks.map(t => {
+        const names = [];
+        t.group.traverse(o => { if (o !== t.group) { names.push(o.name || '?'); if (isWheel(o)) wheels++; } });
+        return { group: t.group.name, names: names.sort().join(',') };
+      });
+      return { convoy: true, trucks: cv.trucks.length, wheels, shared: !!(cv.wheelGeo || cv.wheelMat), parts };
+    });
+    await q.close();
+  }
+  ok('haul: no wheel meshes or wheel geometry on any truck (HD-014 landspeeders)',
+    haulParts.convoy && haulParts.trucks > 0 && haulParts.wheels === 0 && !haulParts.shared,
+    JSON.stringify({ trucks: haulParts.trucks, wheels: haulParts.wheels, shared: haulParts.shared }));
+  ok('haul: every truck part is named — truck: hull, deck, edge, cab, glass, brake ×2, nothing else',
+    haulParts.convoy && haulParts.parts.every(p => p.group === 'truck' && p.names === 'brake,brake,cab,deck,edge,glass,hull'),
+    JSON.stringify(haulParts.parts?.find(p => p.group !== 'truck' || p.names !== 'brake,brake,cab,deck,edge,glass,hull')));
   ok('haul: a crate at the spawn point is not a hole — a no-input run stays on the deck for 5 s of slow frames (season 3 / free roll)',
     haulSpawn.convoy && haulSpawn.survived && haulSpawn.roadFrames === 0, JSON.stringify(haulSpawn));
   ok('haul: a fall to the road is named on the death screen, never "something"',

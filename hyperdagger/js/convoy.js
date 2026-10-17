@@ -202,9 +202,6 @@ export class Convoy {
       return _c.setRGB(2.4, 1.2, 0.35);
     });
     this.strips = [this.posts, this.lamps, this.pylons, this.pylonLamps, this.monoliths, this.gantryPosts, this.gantryBeams, this.gantryLights];
-    // one draw each for the truck parts that have no per-truck state
-    this.wheelGeo = box(0.5, 0.9, 0.9);
-    this.wheelMat = mat(0x0c0c0d);
   }
 
   setVisible(v) {
@@ -225,54 +222,51 @@ export class Convoy {
   _remove(t) {
     this.scene.remove(t.group);
     t.group.traverse(o => {
-      if (o.isMesh || o.isLineSegments) {
-        if (o.geometry !== this.wheelGeo) o.geometry.dispose();
-        if (o.material !== this.wheelMat) o.material.dispose();
-      }
+      if (o.isMesh || o.isLineSegments) { o.geometry.dispose(); o.material.dispose(); }
     });
   }
 
-  /** A truck: trailer (the floor), cab in front, wheels, an outline and
-   *  brake lights. Its group's origin is the CENTRE OF THE TRAILER TOP, so
-   *  the tilt is about the point you stand on and topAt() stays exact. */
+  /** A truck: trailer (the floor), cab in front, an outline and brake
+   *  lights. HD-014: no wheels (the trucks become landspeeders), and every
+   *  part is NAMED so later steps can find it: 'hull' (the trailer body),
+   *  'deck' (the roof slab you land on), 'edge', 'cab', 'glass', 'brake'.
+   *  Its group's origin is the CENTRE OF THE TRAILER TOP, so the tilt is about the point you stand on and topAt() stays exact. */
   _truck(lane, z, speed, depth = 7 + Math.random() * 4.5) {
     const c = this.cfg;
     const w = 2.6 + Math.random() * 0.8;
     const trailerH = 2.0 + Math.random() * 1.8;          // tops from −0.1 to +1.7: up and down, not level
     const top = ROAD_Y + CHASSIS + trailerH;
     const group = new THREE.Group();
+    group.name = 'truck';
     const trailerCol = TRAILERS[Math.floor(Math.random() * TRAILERS.length)];
     const trailer = new THREE.Mesh(box(w, trailerH, depth), mat(trailerCol));
     trailer.position.y = -trailerH / 2;
+    trailer.name = 'hull';
     group.add(trailer);
     // a lighter roof: the surface you land on reads first
     const roof = new THREE.Mesh(box(w * 0.96, 0.06, depth * 0.98), mat(_c.setHex(trailerCol).offsetHSL(0, -0.05, 0.12).getHex()));
     roof.position.y = 0.01;
+    roof.name = 'deck';
     group.add(roof);
     const edge = new THREE.LineSegments(new THREE.EdgesGeometry(trailer.geometry), new THREE.LineBasicMaterial({ color: EDGE, fog: false }));
     edge.position.copy(trailer.position);
+    edge.name = 'edge';
     group.add(edge);
     // the cab: lower than the trailer, in front of it (−z)
     const cabH = 2.3, cabL = 2.6;
     const cab = new THREE.Mesh(box(w * 0.92, cabH, cabL), mat(CABS[Math.floor(Math.random() * CABS.length)]));
+    cab.name = 'cab';
     cab.position.set(0, -(top - (ROAD_Y + CHASSIS * 0.6)) + cabH / 2, -(depth / 2 + cabL / 2 + 0.25));
     group.add(cab);
     const glass = new THREE.Mesh(box(w * 0.8, 0.6, 0.05), mat(0x8fa8b0));
+    glass.name = 'glass';
     glass.position.set(0, cab.position.y + 0.45, cab.position.z - cabL / 2 - 0.03);
     group.add(glass);
-    // wheels: three axles under the trailer, one under the cab
-    const wy = -(top - ROAD_Y) + 0.45;
-    for (const wz of [depth * 0.38, depth * 0.24, -depth * 0.3, cab.position.z]) {
-      for (const sx of [-1, 1]) {
-        const wh = new THREE.Mesh(this.wheelGeo, this.wheelMat);
-        wh.position.set(sx * (w / 2 - 0.15), wy, wz);
-        group.add(wh);
-      }
-    }
     // brake lights on the back of the trailer (+z)
     const brakeMat = new THREE.MeshBasicMaterial({ color: 0x3a0806, fog: false });
     for (const sx of [-1, 1]) {
       const b = new THREE.Mesh(box(0.45, 0.25, 0.06), brakeMat);
+      b.name = 'brake';
       b.position.set(sx * (w / 2 - 0.4), -trailerH + 0.35, depth / 2 + 0.04);
       group.add(b);
     }
