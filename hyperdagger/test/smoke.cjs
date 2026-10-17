@@ -340,7 +340,7 @@ s.listen(0, '127.0.0.1', async () => {
     impact29.w === 8 && impact29.h === 8 && impact29.nearest && !impact29.mipmaps,
     JSON.stringify(impact29));
 
-  // ---- v4.29 DD gunfeel: TAP = shotgun, HOLD = stream, no auto-fire ------
+  // ---- HD-001: short press jumps, hold streams, walking does not shoot ---
   const gun = await p.evaluate(async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
@@ -352,13 +352,16 @@ s.listen(0, '127.0.0.1', async () => {
     hd.daggers.fire = (...args) => { shots++; return realFire(...args); };
     hd.player.input.touchMode = false;
     hd.enemies.length = 0;
-    // moving alone must fire NOTHING now (the old auto-fire is gone)
+    // moving alone must fire NOTHING (keyboard, and the touch move stick)
     const d0 = shots;
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
     await frames(12);
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
     const moveFired = shots - d0;
-    // TAP: trigger down for 2 frames (≤0.1s of clamped dt — under streamDelay)
+    // short primary press: under streamDelay. Jump, and do not fire.
+    hd.player.reset();
+    const jumpsBefore = hd.player.jumpsLeft;
+    const daggersBefore = hd.player.daggerJumpCount;
     const d1 = shots;
     hd.player.input.mouseDown = true;
     await frames(2);
@@ -368,8 +371,8 @@ s.listen(0, '127.0.0.1', async () => {
     const cdAfterTap = hd.debug.getGun().shotCd;
     const viewAfterTap = hd.debug.getWeaponView();
     const tapSpeeds = hd.daggers.active.map(d => d.vel.length());
-    // wait out the shotgun lockout, then HOLD: stream after streamDelay
-    while (hd.debug.getGun().shotCd > 0) await frames(2);
+    const shortJump = { jumpsLeft: hd.player.jumpsLeft, before: jumpsBefore,
+      vy: hd.player.vy, daggerJumps: hd.player.daggerJumpCount - daggersBefore };
     hd.daggers.reset();
     const d2 = shots;
     hd.player.input.mouseDown = true;
@@ -381,21 +384,45 @@ s.listen(0, '127.0.0.1', async () => {
     const streamed = shots - d2;
     const streamSpeeds = hd.daggers.active.map(d => d.vel.length());
     const d3 = shots;
-    hd.player.input.mouseDown = false; // long hold released → must NOT shotgun
+    hd.player.input.mouseDown = false; // long hold released → must NOT shotgun or jump-burst
     await frames(3);
     const releaseFired = shots - d3;
+    // pad RT/RB shares the primary-fire hold. pollGamepad overwrites _pad
+    // each frame, so the trigger has to come from a gamepad the poll can see.
+    hd.player.reset();
+    hd.daggers.reset();
+    const padJumpsBefore = hd.player.jumpsLeft;
+    const d4 = shots;
+    const buttons = Array.from({ length: 17 }, () => ({ pressed: false }));
+    const fakePad = { connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons, id: 'hd-001', vibrationActuator: null };
+    const prevPads = navigator.getGamepads ? navigator.getGamepads.bind(navigator) : null;
+    navigator.getGamepads = () => [fakePad];
+    buttons[7].pressed = true; // RT
+    await frames(2);
+    buttons[7].pressed = false;
+    await frames(2);
+    const pad = { fired: shots - d4, jumpsLeft: hd.player.jumpsLeft, before: padJumpsBefore, vy: hd.player.vy };
+    if (prevPads) navigator.getGamepads = prevPads;
+    hd.player.input.gamepad = false;
+    hd.player.input._pad.firing = false;
     hd.daggers.fire = realFire;
-    return { moveFired, tapFired, cdAfterTap, viewAfterTap, tapSpeeds,
-      early, responsive, streamed, streamSpeeds, releaseFired };
+    return { moveFired, tapFired, cdAfterTap, viewAfterTap, tapSpeeds, shortJump,
+      early, responsive, streamed, streamSpeeds, releaseFired, pad };
   });
   ok('moving alone no longer fires', gun.moveFired === 0, JSON.stringify(gun));
-  ok('a TAP fires the shotgun burst', gun.tapFired >= 10 && gun.cdAfterTap > 0, JSON.stringify(gun));
-  ok('the shotgun visibly kicks the claw', gun.viewAfterTap.recoil > 0.015 && gun.viewAfterTap.z > -1.46, JSON.stringify(gun.viewAfterTap));
-  ok('the stream keeps a short tap-detection window', gun.early === 0, JSON.stringify(gun));
+  ok('a short primary press jumps and does not fire',
+    gun.tapFired === 0 && gun.cdAfterTap === 0 && gun.tapSpeeds.length === 0 &&
+    gun.shortJump.daggerJumps === 0 && gun.shortJump.jumpsLeft < gun.shortJump.before && gun.shortJump.vy > 1,
+    JSON.stringify(gun));
+  ok('a short press does not kick a shotgun into the claw',
+    gun.viewAfterTap.recoil <= 0.015, JSON.stringify(gun.viewAfterTap));
+  ok('the stream keeps a short press window before it fires', gun.early === 0, JSON.stringify(gun));
   ok('a HOLD starts quickly and forms a dense stream', gun.responsive >= 2 && gun.streamed >= 6, JSON.stringify(gun));
-  ok('tap projectiles are faster than held projectiles',
-    Math.min(...gun.tapSpeeds) > Math.max(...gun.streamSpeeds), JSON.stringify({ tap: gun.tapSpeeds, stream: gun.streamSpeeds }));
-  ok('releasing a long hold is not a tap', gun.releaseFired <= 2, JSON.stringify(gun));
+  ok('a short press leaves no projectiles; the hold still streams',
+    gun.tapSpeeds.length === 0 && gun.streamSpeeds.length >= 1, JSON.stringify({ tap: gun.tapSpeeds, stream: gun.streamSpeeds }));
+  ok('releasing a long hold is not a burst', gun.releaseFired <= 2, JSON.stringify(gun));
+  ok('a short pad trigger jumps and does not fire',
+    gun.pad.fired === 0 && gun.pad.jumpsLeft < gun.pad.before && gun.pad.vy > 1, JSON.stringify(gun.pad));
 
   const touchBurst = await p.evaluate(async () => {
     const hd = window.__hd;
@@ -409,22 +436,43 @@ s.listen(0, '127.0.0.1', async () => {
     hd.player.pitch = -1.1;
     hd.player._sync();
     hd.player.input.touchMode = true;
+    hd.player.input.gamepad = false;
     hd.player.input._fireTap = true;
     const realFire = hd.daggers.fire.bind(hd.daggers);
     let shots = 0;
     hd.daggers.fire = (...args) => { shots++; return realFire(...args); };
     const before = hd.player.daggerJumpCount;
+    const vyBefore = hd.player.vy;
     await frames(2);
+    const tap = { shots, jumps: hd.player.daggerJumpCount - before, vy: hd.player.vy, vyBefore };
+    // walking on the move stick must not start the stream
+    hd.daggers.reset();
+    const dWalk = shots;
+    hd.player.input.right.active = false;
+    hd.player.input.left.active = true;
+    hd.player.input.left.dx = 40;
+    hd.player.input.left.dy = 0;
+    await frames(8);
+    const walkShots = shots - dWalk;
+    hd.player.input.left.active = false;
+    hd.player.input.left.dx = 0;
+    // holding the right stick is the stream
+    hd.daggers.reset();
+    const dHold = shots;
+    hd.player.input.right.active = true;
+    await frames(6);
+    const holdShots = shots - dHold;
+    hd.player.input.right.active = false;
     hd.daggers.fire = realFire;
-    const result = { shots,
-      jumps: hd.player.daggerJumpCount - before, vy: hd.player.vy };
     hd.player.input.touchMode = false;
     hd.player.reset();
-    return result;
+    return { tap, walkShots, holdShots };
   });
-  ok('touch right-tap fires the burst and can dagger-jump',
-    touchBurst.shots >= 10 && touchBurst.jumps === 1 && touchBurst.vy > 9,
+  ok('a touch tap does not shotgun and does not dagger-jump',
+    touchBurst.tap.shots === 0 && touchBurst.tap.jumps === 0 && touchBurst.tap.vy <= touchBurst.tap.vyBefore + 0.01,
     JSON.stringify(touchBurst));
+  ok('walking does not start the touch stream', touchBurst.walkShots === 0, JSON.stringify(touchBurst));
+  ok('holding the right stick fires', touchBurst.holdShots >= 2, JSON.stringify(touchBurst));
 
   const homing31 = await p.evaluate(async () => {
     const hd = window.__hd;
@@ -435,22 +483,34 @@ s.listen(0, '127.0.0.1', async () => {
     const lv3 = hd.debug.getGun();
     hd.debug.addGems(20);
     const banked = hd.debug.getGun();
+    hd.player.input.touchMode = false;
     hd.player.input.mouseAltDown = true;
     await frames(1);
     hd.player.input.mouseAltDown = false;
     await frames(2);
+    const short = hd.debug.getGun();
+    const shortHoming = hd.daggers.active.filter(d => d.homing && d.damage === 10).length;
+    hd.daggers.reset();
+    hd.player.input.mouseAltDown = true;
+    let guard = 0;
+    while (hd.debug.getGun().homing > 0 && guard < 80) { await frames(1); guard++; }
     const spent = hd.debug.getGun();
     const homing = hd.daggers.active.filter(d => d.homing && d.damage === 10).length;
+    hd.player.input.mouseAltDown = false;
+    await frames(2);
+    const afterRelease = hd.daggers.active.filter(d => d.homing && d.damage === 10).length;
     hd.debug.addGems(150);
     const lv4 = hd.debug.getGun();
     hd.daggers.reset();
-    return { lv3, banked, spent, homing, lv4 };
+    return { lv3, banked, short, shortHoming, spent, homing, afterRelease, lv4, guard };
   });
   ok('70 gems unlock LV3 and later gems become homing ammo',
     homing31.lv3.lv === 3 && homing31.lv3.homing === 0 && homing31.banked.homing === 20,
     JSON.stringify(homing31));
-  ok('RMB spends the bank as ten-damage homing daggers',
-    homing31.homing === 20 && homing31.spent.homing === 0,
+  ok('a short RMB does not dump the homing bank',
+    homing31.shortHoming === 0 && homing31.short.homing === 20, JSON.stringify(homing31));
+  ok('holding RMB streams the bank as ten-damage homing daggers',
+    homing31.homing >= 1 && homing31.spent.homing === 0 && homing31.afterRelease <= homing31.homing,
     JSON.stringify(homing31));
   ok('banking 150 homing daggers unlocks the final hand',
     homing31.lv4.lv === 4 && homing31.lv4.homing === 0,
