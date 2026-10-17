@@ -69,7 +69,7 @@ def gate(n, spans, fade=0.25):
     return g
 
 
-def build():
+def build(variant='B'):
     scene, card = Mix(END), Mix(END)
     N = scene.N; t = np.arange(N) / SR
     cut = EV['cut']
@@ -131,6 +131,16 @@ def build():
     scene.add(whut(0.6, 280, seed=22), EV['vac_off'], 0.6 * GAIN['jan'], -0.15)     # the motor switched off, asking: "whuut?"
     scene.add(tag_pop(520) * 0.6, EV['cup_pop'], 0.18 * GAIN['jan'], -0.1)           # the ear cup's seal breaking
 
+    if variant == 'C':                                                            # the TESLUR robot (EVENTS-C.md): servos, harder feet, an idle hum
+        for sw in EV['swishes']:
+            o = any(a_ <= sw <= b_ for a_, b_ in EV['offscreen'])
+            scene.add(servo(0.22), sw - 0.3, (0.08 if o else 0.16) * GAIN['jan'], -0.9 if o else -0.2)
+            scene.add(ui_tick(4200), sw, (0.05 if o else 0.1) * GAIN['jan'], -0.9 if o else -0.2)
+        for st, o in EV['steps']: scene.add(knock(0.5, 240), st, (0.12 if o else 0.25) * GAIN['jan'], -0.9 if o else -0.3)
+        for ss in (14.08, 14.40, 14.60, 14.75):
+            scene.add(servo(0.18), ss - 0.18, 0.18 * GAIN['jan'], -0.15); scene.add(ui_tick(3800), ss, 0.12 * GAIN['jan'], -0.15)
+        scene.add(hum(118, 2.1) * 0.6, 15.4, 0.12 * GAIN['jan'], -0.15)
+
     # ── HARD CUT, then the card
     c = int(cut * SR); f = int(0.012 * SR)
     for ch in (scene.L, scene.R): ch[c:c + f] *= np.linspace(1, 0, f); ch[c + f:] = 0
@@ -142,5 +152,6 @@ def build():
 
 
 if __name__ == '__main__':
-    m = build()
-    m.finish(str(HERE / '配乐_teslur_m14.wav'), END, END - 0.4, tau=0.3)
+    v = sys.argv[1] if len(sys.argv) > 1 else 'B'
+    m = build(v)
+    m.finish(str(HERE / ('配乐_teslur_m14.wav' if v == 'B' else f'配乐_teslur_{v}_m14.wav')), END, END - 0.4, tau=0.3)
