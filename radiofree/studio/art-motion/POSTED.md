@@ -27,6 +27,8 @@ Accounts:
 | Coxon 2, Committee of the Whole | RFH X | https://x.com/radiofreehki/status/2111397495234342974 (17 Oct ~13:02; latest cut ending "it testified on 16 October". An accidental duplicate, https://x.com/radiofreehki/status/2111397885904380118, waits for Mikael's OK to delete) | same as Instagram |
 | Teslur B, Janitor (v4) | RFH Instagram | https://www.instagram.com/radiofreehelsinki/reel/Del6p7ZIeoh/ (17 Oct ~13:41, Original aspect, uncropped; cut 9302f9f6, previews/17-10-Teslur-B-Janitor-v4.mp4; off-schedule at Mikael's request) | Future of cars, noise pollution. #Roadster |
 | Teslur B, Janitor (v4) | RFH X | https://x.com/radiofreehki/status/2111407558476898682 | same as Instagram |
+| Coxon 4, On the Same Voluntary Terms (v4) | RFH Instagram | https://www.instagram.com/radiofreehelsinki/reel/DenIvrYo489/ (18 Oct ~01:04, Original aspect, uncropped) | Britain's AI testers were shut out for 17 days at the White House's request. Now they're back, on the same voluntary terms. Who decides when they get a look? #AIsafety #AI #UK |
+| Coxon 4, On the Same Voluntary Terms (v4) | RFH X | https://x.com/radiofreehki/status/2111579176683655306 | same as Instagram |
 
 Toko 2 still needs to go out on Toko X ("Batteries included. Parents not included. 🤖") once the login works. Its Cambridge Story link (https://www.cam.ac.uk/stories/ai-toys-study-play) needs the phone app.
 
@@ -34,10 +36,9 @@ Toko 2 still needs to go out on Toko X ("Batteries included. Parents not include
 
 | When | Film | Channels | Copy (Middler) |
 |---|---|---|---|
-| 18 Oct 00:52 | Coxon 4, On the Same Voluntary Terms (v4) | RFH IG + X | requested from Middler 17 Oct; shown to Mikael at least 1 hour first |
+| (none) | Queue empty after Coxon 4; waiting for Mikael to pick the next RFH film | | |
 
 ## Waiting
 
-- Coxon 4 (On the Same Voluntary Terms, v4) is next, once Middler's copy has been shown to Mikael.
 - Doodle 3 (Irreversible) isn't approved yet.
 - Genius and The Newsreader Was Fake were scrapped.
