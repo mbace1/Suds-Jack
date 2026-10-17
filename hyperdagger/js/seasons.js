@@ -393,6 +393,10 @@ export const SEASONS = [
     // crate that spills onto the road costs `spill` seconds, a loose crate you
     // land on and set back pays `save`. The convoy is a load you are keeping whole.
     cargoScore: { spill: 1, save: 1 },
+    // HD-010: the run-start card and the clock's label say the line above in
+    // words (a season's `goal`/`clock` beat its mode's when it runs that mode)
+    goal: 'STAY ON THE CONVOY · CARGO IS THE SCORE',
+    clock: 'TIME + CARGO',
     end: 300,
     built: true,
     todo: [

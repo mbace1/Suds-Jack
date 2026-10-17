@@ -5,32 +5,32 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=85';
+import { InputManager } from './input.js?v=107';
 import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
 import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=85';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=85';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=107';
 import { OrbPool } from './bullets.js?v=85';
 import { AudioKit } from './audio.js?v=85';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=85';
 import { TUNING as T } from './tuning.js?v=85';
 import { HyperEnvironment } from './environment.js?v=85';
-import { Backdrop } from './backdrop.js?v=85';
+import { Backdrop } from './backdrop.js?v=107';
 import { Walls } from './walls.js?v=85';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=85';
-import { TruckTrack } from './truck.js?v=87';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=107';
+import { TruckTrack } from './truck.js?v=107';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=85';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=107';
 import { Platforms } from './platforms.js?v=85';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
 import { GooWave } from './goo.js?v=85';
 import { gelMaterial } from './gel.js?v=85';
 import { mosaicPalette, mosaicSkin } from './roster.js?v=85';
 import { Skullscape } from './inca.js?v=85';
-import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=85';
-import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=85';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=107';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=107';
 import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
@@ -54,7 +54,17 @@ const ENEMY_NAMES = {
   rockfall: 'THE ROCKFALL',   // v53: season 1's finale
   'the road': 'THE ROAD',     // season 3: off the convoy, the asphalt kills on touch
   'the fall': 'THE FALL',     // the classic track: nothing under you
+  egg: 'an egg', truck: 'a truck',   // HD-007: never lethal, but they land in the kill breakdown
 };
+// HD-007: every killer key the code can set has a name (test/killers.mjs walks
+// them). 'something' is only a last resort, and a dev build says when it fires.
+const DEV_BUILD = /^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || /[?&]dev\b/.test(location.search);
+function killerName(key) {
+  const name = ENEMY_NAMES[key];
+  if (name) return name;
+  if (DEV_BUILD) console.warn(`[hyperdagger] death fell back to 'something': no ENEMY_NAMES entry for killer ${JSON.stringify(key)}`);
+  return 'something';
+}
 
 // player-tunable options (pause menu), persisted across sessions
 // v25 deliberately starts from a clean image. A new key prevents old,
@@ -900,12 +910,39 @@ function spawnShockwave(pos) {
   litter.shove(debris, pos.x, 0.4, pos.z, 7, 9); // bones leap back into the air
 }
 
+// HD-009: the jump's only answer was its sound. A small pale ring at the
+// feet (the shockwave's geometry, a quarter of its size and life, no gib
+// shove) reads the take-off without touching the jump itself. Pooled.
+const puffPool = [];
+const puffMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color().setRGB(1.1, 0.9, 0.8), transparent: true, opacity: 1,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+});
+function spawnJumpPuff(x, y, z) {
+  let m = puffPool.pop();
+  if (!m) {
+    if (sparks.length > 40) return;
+    m = new THREE.Mesh(ringGeo, puffMat.clone());
+    scene.add(m);
+  }
+  m.visible = true;
+  m.position.set(x, y + 0.04, z);
+  sparks.push({ m, t: 0.22, max: 0.22, big: false, ring: true, puff: true });
+  fx.jump++;
+}
+// HD-009: counters of feedback actually spawned, read by the gate
+// (test/action-feedback.cjs) through debug.feedback().
+const fx = { fire: 0, jump: 0, dash: 0, fireRecoil: 0 };
+
 function updateSparks(dt) {
   for (let i = sparks.length - 1; i >= 0; i--) {
     const s = sparks[i];
     s.t -= dt;
     const k = Math.max(0, s.t / s.max);
-    if (s.ring) {
+    if (s.puff) {
+      s.m.scale.setScalar(0.3 + (1 - k) * 1.3);
+      s.m.material.opacity = k * 0.55;
+    } else if (s.ring) {
       s.m.scale.setScalar(0.4 + (1 - k) * 7);
       s.m.material.opacity = k * 0.9;
     } else {
@@ -915,7 +952,10 @@ function updateSparks(dt) {
       s.m.rotateZ(s.roll);
     }
     if (s.t <= 0) {
-      if (s.ring) {
+      if (s.puff) {
+        s.m.visible = false;
+        puffPool.push(s.m);
+      } else if (s.ring) {
         scene.remove(s.m);
         s.m.material.dispose();
       } else {
@@ -973,6 +1013,25 @@ const ui = document.getElementById('canvas-ui');
 const uiCtx = ui.getContext('2d');
 const elTimer = document.getElementById('timer');
 const elKills = document.getElementById('kills');
+// HD-010 (12 Oct playtest): a one-line goal card at every run start, and a
+// label under the clock that says what the number is. The words live on the
+// mode (modes.js) and, where a season changes the score, on the season
+// (seasons.js: HAUL's CARGO IS THE SCORE) — the season's line only when the
+// run is actually playing that season's mode.
+const elClockLabel = document.getElementById('clockLabel');
+const elGoal = document.getElementById('goalCard');
+const GOAL_MS = 1600;   // + the 0.3 s fade: gone by ~1.9 s
+let goalTimer = 0;
+function seasonRules() { return !!S().mode && M().id === S().mode && !_urlMode; }
+function goalLine() { return (seasonRules() && S().goal) || M().goal || ''; }
+function clockLine() { return (seasonRules() && S().clock) || M().clock || ''; }
+function showGoalCard() {
+  clearTimeout(goalTimer);
+  elGoal.textContent = goalLine();
+  elGoal.classList.toggle('show', !!elGoal.textContent);
+  goalTimer = setTimeout(() => elGoal.classList.remove('show'), GOAL_MS);
+}
+function hideGoalCard() { clearTimeout(goalTimer); elGoal.classList.remove('show'); }
 const elGems = document.getElementById('gems');
 const elStyle = document.getElementById('style');
 const elStyleRank = document.getElementById('styleRank');
@@ -1076,6 +1135,47 @@ function perfGovern(now, rawMs) {
   }
 }
 
+// HD-011 — the clock-keeping monitor. The loop clamps dt at DT_CAP, so a
+// device under 1/DT_CAP fps plays in slow motion (12 Oct playtest: 22 s real
+// for ~4 s of game). This measures how much of real time the clamp lets
+// through — ratio = sum(clamped dt) / sum(raw dt) over a rolling window — and
+// exposes it on __hd.debug.getTimeRatio(). It does NOT change the cap or the
+// physics; that call is the owner's (see the HD-011 PR). Under perf 'auto', a
+// ratio held below ratioFloor for ratioHoldMs steps the existing PERF_TIERS
+// ladder down one rung, the same lever the frame-time governor pulls.
+const DT_CAP = 0.05;
+const timeMon = { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0, slowRun: 0 };
+Object.assign(perfTuning, { ratioWinMs: 2000, ratioFloor: 0.9, ratioHoldMs: 2000, ratioGapMs: 3000 });
+function timeMonitor(now, rawDt) {
+  if (state !== 'playing' || paused) { timeMon.lowSince = 0; return; }
+  // One or two frames over ratioGapMs are a tab switch; a RUN of them is the
+  // device (the governor's v40 lesson: a 1 fps box must not read as all gaps)
+  if (rawDt * 1000 > perfTuning.ratioGapMs) {
+    if (++timeMon.slowRun < 3) { timeMon.gaps++; return; }
+  } else timeMon.slowRun = 0;
+  const g = Math.min(rawDt, DT_CAP);
+  timeMon.win.push(now, rawDt, g); timeMon.raw += rawDt; timeMon.game += g;
+  timeMon.totalRaw += rawDt; timeMon.totalGame += g; timeMon.frames++;
+  while (timeMon.win.length > 3 && now - timeMon.win[0] > perfTuning.ratioWinMs) {
+    timeMon.raw -= timeMon.win[1]; timeMon.game -= timeMon.win[2]; timeMon.win.splice(0, 3);
+  }
+  if (opts.perf !== 'auto' || now < perfSettleUntil || timeMon.raw * 1000 < perfTuning.ratioWinMs * 0.5) { timeMon.lowSince = 0; return; }
+  if (timeMon.game / timeMon.raw < perfTuning.ratioFloor) {
+    if (!timeMon.lowSince) timeMon.lowSince = now;
+    else if (now - timeMon.lowSince > perfTuning.ratioHoldMs && perfTier < PERF_TIERS.length - 1) {
+      timeMon.drops++; timeMon.lowSince = 0; setPerfTier(perfTier + 1);
+    }
+  } else timeMon.lowSince = 0;
+}
+function timeRatioState() {
+  const r = timeMon.raw > 0 ? timeMon.game / timeMon.raw : 1;
+  const t = timeMon.totalRaw > 0 ? timeMon.totalGame / timeMon.totalRaw : 1;
+  return { ratio: +r.toFixed(3), total: +t.toFixed(3), frames: timeMon.frames, realS: +timeMon.totalRaw.toFixed(2),
+    gameS: +timeMon.totalGame.toFixed(2), drops: timeMon.drops, gaps: timeMon.gaps, low: !!timeMon.lowSince,
+    floor: perfTuning.ratioFloor, cap: DT_CAP, tier: perfTier };
+}
+function resetTimeMonitor() { Object.assign(timeMon, { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0, slowRun: 0 }); }
+
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     perfSettleUntil = performance.now() + perfTuning.settleMs;
@@ -1095,8 +1195,9 @@ let deathCam = null;                       // {yaw, pitch, t} — killer-focus l
 let gemCount = 0;
 let weaponLv = 1;
 let fireTimer = 0;
-// DD gunfeel state: how long the trigger has been held, whether it was held
-// last frame, and the lockout after a shotgun burst
+// How long primary fire has been held, and whether it was held last frame.
+// A release before the stream delay is a jump, not a burst. shotCd remains
+// the lockout a homing or leftover burst would set.
 let fireHeldT = 0;
 let fireWasHeld = false;
 let shotCd = 0;
@@ -1145,9 +1246,11 @@ let mode = modeById(_urlMode || localStorage.getItem(MODE_KEY) || 'pure').id;
 /** The active mode's declaration — ask this, never `mode === '...'`.
  *  v50 (owner): modes are control schemes a SEASON picks. A `?mode=` link
  *  still wins (it is how the gate and the loop harness pin an experiment),
- *  then the season's declared `mode`, then the saved one (VOID declares
- *  none, so the control stays whatever the gate asks for). */
-function M() { return modeById(_urlMode || mode || S().mode); }
+ *  then — when a season was CHOSEN (`?season=`, a season button) — that
+ *  season's declared `mode`, then the saved one (the PURE/HYPER/TRUCK/ALL
+ *  menu picks it, and a pick there clears the season's claim). VOID
+ *  declares none, so the control stays whatever was saved. */
+function M() { return modeById(_urlMode || (_seasonChosen && S().mode) || mode || S().mode); }
 /** The body for this run: the mode's abilities with the season's on top. */
 function applyRunAbilities() {
   const m = M(), extra = _urlMode ? null : S().abilities;
@@ -1160,6 +1263,8 @@ function applyRunAbilities() {
 const SEASON_KEY = 'hyperDaggerSeason';
 const _urlSeason = new URLSearchParams(location.search).get('season');
 let season = seasonById(_urlSeason || localStorage.getItem(SEASON_KEY) || 'ember').id;
+/** A season was chosen (link or button): its declared mode beats the saved one. */
+let _seasonChosen = !!_urlSeason;
 /** The active season's declaration — ask this, never `season === '...'`. */
 function S() { return seasonById(season); }
 
@@ -1301,8 +1406,11 @@ function gcDailyKeys() {
   const stale = [];
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    const m = k && k.match(/^hyperDaggerDaily:(\d{4}-\d{2}-\d{2}):(\w+)$/);
-    if (m && m[1] !== today) stale.push({ k, date: m[1], mode: m[2] });
+    // `<date>:<season>:<mode>` since HD-002, `<date>:<mode>` before it. Only a
+    // PAST day goes: today's key (and a future one, a clock set back) stays,
+    // and anything not exactly this shape is not a daily key and is never touched.
+    const m = k && k.match(/^hyperDaggerDaily:(\d{4}-\d{2}-\d{2}):(?:([a-z]+):)?([a-z]+)$/);
+    if (m && m[1] < today) stale.push({ k, date: m[1], mode: m[3] });
   }
   for (const s of stale) {
     const t = parseFloat(localStorage.getItem(s.k) || '0');
@@ -1379,7 +1487,8 @@ function showMenu() {
     `<h1>HYPER DAGGER</h1>
      <p class="sub">a stripped-down Devil Daggers homage</p>
      <p>survive the swarm &mdash; time is your only score</p>
-     <p class="keys">${controls} &middot; <b>ESC</b> options</p>
+     <p class="keys">${controls} &middot; <b>ESC</b> options<br>
+     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> or a <b>short trigger</b> jumps &middot; <b>hold trigger = fire</b> &nbsp;|&nbsp; touch &mdash; right stick: <b>hold = fire</b> &middot; <b>tap = jump &times;2</b> &middot; <b>flick = dash</b></p>
      <div class="row-label">season</div>
      <div class="seasons">
        ${SEASONS.filter(sn => !sn.hidden).map(sn =>
@@ -1403,10 +1512,12 @@ function showMenu() {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
       season = seasonById(b.dataset.season).id;
+      _seasonChosen = true;
       localStorage.setItem(SEASON_KEY, season);
       applySeason();
       hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');   // v50: the season's mode keys the best
       startGame();
+      lockPointer(e);   // HD-013: this click IS the gesture that starts the run
     });
   }
   for (const b of elMsg.querySelectorAll('button.mode')) {
@@ -1418,6 +1529,7 @@ function showMenu() {
       } else {
         mode = id;
       }
+      _seasonChosen = false;   // a mode picked here is the one you play
       localStorage.setItem(MODE_KEY, mode);
       showMenu();
     });
@@ -1450,8 +1562,8 @@ function showTips() {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1>HOW TO SURVIVE</h1>
-     <p class="big">&#9876; <b>tap</b> = burst &middot; <b>hold</b> = stream</p>
-     <p class="sub">on touch the stream runs while you move</p>
+     <p class="big">&#9876; <b>tap</b> = jump &middot; <b>hold</b> = stream</p>
+     <p class="sub">fire only while you hold it &mdash; walking does not shoot</p>
      <p class="big">&#10227; <b>jump on land</b> to keep speed</p>
      <p class="sub">double jump and dash are available in most seasons</p>
      <p class="big">&#9670; <b>time is the score</b></p>
@@ -1488,13 +1600,13 @@ function pushRunHistory(entry) {
 // instead of guesses. Local only — nothing leaves the browser.
 const RUNLOG_KEY = 'hyperDaggerRunLog';
 
-function pushRunLog(timedOut) {
+function pushRunLog(timedOut, complete = false) {
   let log = [];
   try { log = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch { log = []; }
   log.unshift({
     t: Math.round(gameTime * 10) / 10,
     mode: M().id,
-    cause: timedOut ? 'timeout' : (lastKiller || 'unknown'),
+    cause: complete ? 'complete' : timedOut ? 'timeout' : (lastKiller || 'unknown'),
     kills,
     killsByType: { ...killsByType },
     lv: weaponLv,
@@ -1540,7 +1652,7 @@ function showDeath(timedOut, complete = false) {
   let best = false;
   let dailyLines = '';
   if (runKind === 'daily') {
-    const key = dailyKey(runDate, mode); // runDate, not today — midnight straddle
+    const key = dailyKey(runDate, M().id); // runDate, not today — midnight straddle; M(), the mode PLAYED (the saved one loses to a chosen season)
     const dayBest = parseFloat(localStorage.getItem(key) || '0');
     best = runT > dayBest;
     if (best) localStorage.setItem(key, String(runT));
@@ -1561,14 +1673,14 @@ function showDeath(timedOut, complete = false) {
   const causeLine = complete ? `the season is over — ${S().menu ?? S().name} survived`
     : timedOut
     ? 'the clock ran out'
-    : `felled by ${ENEMY_NAMES[lastKiller] || 'something'}`;
+    : `felled by ${killerName(lastKiller)}`;
   const breakdown = Object.entries(killsByType)
     .sort((a, b) => b[1] - a[1])
     .map(([type, n]) => `${n}&times; ${ENEMY_NAMES[type] || type}`)
     .join(' &middot; ');
 
   const hist = pushRunHistory({ t: runT, mode: M().id, daily: runKind === 'daily' || undefined });
-  pushRunLog(timedOut);
+  pushRunLog(timedOut, complete);
   const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
   const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
 
@@ -1594,7 +1706,7 @@ function showDeath(timedOut, complete = false) {
      <button id="tokoBtn" class="opt">ASK TOKO</button>
      <p class="go">click / tap / &#10005; to retry</p>`;
   wireToko();
-  lastTimedOut = !!timedOut;
+  lastTimedOut = !!timedOut; lastComplete = !!complete;
   document.getElementById('shareBtn').addEventListener('pointerdown', async e => {
     e.stopPropagation(); // don't let the copy tap restart the run
     const btn = e.currentTarget;
@@ -1660,7 +1772,7 @@ function resetRun() {
   weaponLv = 1;
   fireTimer = 0;
   // pretend the trigger is already down a long time, so releasing the click
-  // that started the run can never fire a spurious shotgun
+  // that started the run is not a short press (no jump, no burst)
   fireHeldT = 999;
   fireWasHeld = true;
   shotCd = 0;
@@ -1728,6 +1840,7 @@ function startGame() {
   input.consumeJump();
   input.consumeDash();
   input.consumeDashFlick();
+  input.releaseTouches();   // HD-003: the finger that tapped to start is not a jump when it lifts
   state = 'playing';
   paused = false;
   setRunFrame(true);
@@ -1736,6 +1849,7 @@ function startGame() {
   // made the frame feel like a generic browser FPS and is absent in the target.
   elCross.style.display = 'none';
   elPause.style.display = 'block';
+  showGoalCard();   // HD-010
   audio.droneStart();
   if (opts.music) audio.musicStart();
 }
@@ -1747,6 +1861,8 @@ function startGame() {
  */
 function endRun() {
   paused = false;
+  hideGoalCard();   // HD-010
+  gfocus = -1;   // HD-003: the pause menu's focus is not the main menu's — A there starts a run, as the menu says
   resetRun();
   truck.clear();
   walls.clear();
@@ -1764,9 +1880,24 @@ function endRun() {
 }
 
 /** v54: the season's end reached — the run is over and it was not a death */
-function completeRun() { runComplete = true; die(false, true); }
+function completeRun() { finishRun('complete'); }
 
-function die(timedOut = false, complete = false) {
+/** A death (`timedOut`: HYPER's clock ran out). Every caller ends here. */
+function die(timedOut = false, complete = false) { finishRun(complete ? 'complete' : timedOut ? 'timeout' : 'death'); }
+
+/**
+ * HD-002: THE one way a run ends — 'death' | 'timeout' | 'complete'. Death and
+ * the season's end share every step: the save (best or daily key + table),
+ * history, run log, results screen, Toko cue, music/SFX, input release. They
+ * differ only where the design says so (heading, cause line, stinger vs death
+ * sound, no killer cam). A run that has already ended cannot end again — a hit
+ * landing after the season's end used to save the run a second time.
+ */
+function finishRun(how) {
+  if (state !== 'playing') return false;
+  const timedOut = how === 'timeout', complete = how === 'complete';
+  runComplete = complete;
+  hideGoalCard();   // HD-010
   state = 'dead';
   setRunFrame(false);
   deathAt = performance.now();
@@ -1799,6 +1930,7 @@ function die(timedOut = false, complete = false) {
   elStyle.style.opacity = '0';
   if (document.pointerLockElement) document.exitPointerLock();
   showDeath(timedOut, complete);
+  return true;
 }
 
 window.addEventListener('pointerdown', e => {
@@ -1806,6 +1938,8 @@ window.addEventListener('pointerdown', e => {
   if (e.target && e.target.closest && e.target.closest('.toko-table')) return;
   audio.ensure();
   const isMouse = e.pointerType === 'mouse';
+  // HD-003: a finger that taps to start, retry or resume is UI — its lift is not a jump
+  if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead' || (state === 'playing' && paused))) input.swallowTouchAt(e.clientX, e.clientY);
   if (state === 'menu') {
     if (!localStorage.getItem(TIPS_KEY)) {
       localStorage.setItem(TIPS_KEY, '1');
@@ -1819,16 +1953,38 @@ window.addEventListener('pointerdown', e => {
     if (performance.now() - deathAt < 700) return;
     startGame();
   } else if (state === 'playing' && paused) {
+    // the mouse click that resumes is UI, as the one that starts a run is:
+    // its release must not land as a short press (a jump) — #619 review
+    if (isMouse) { fireHeldT = 999; fireWasHeld = true; }
     paused = false;
     setRunFrame(true);
     perfSettleUntil = performance.now() + perfTuning.settleMs; // stale EMA after pause
     elMsg.style.display = 'none';
     elPause.style.display = 'block';
   }
-  if (isMouse && state === 'playing' && !document.pointerLockElement) {
-    canvas.requestPointerLock();
-  }
+  lockPointer(e);
 });
+
+// HD-013: mouse look needs pointer lock, and a browser only grants it from
+// inside a user gesture. Every click that puts a live run under the mouse
+// (the window tap, a SEASON button, the pause menu's season switch, resume)
+// calls this from its own pointerdown — the season buttons stopPropagation,
+// so the window handler above never saw the click that started the run.
+function lockPointer(e) {
+  if (!e || e.pointerType !== 'mouse') return;      // touch and pad never lock
+  if (state !== 'playing' || paused || input.touchMode || document.pointerLockElement) return;
+  let r;
+  try { r = canvas.requestPointerLock(); } catch (_) { pointerLockRefused(); return; }
+  // Chromium returns a promise and rejects it on refusal (e.g. re-locking
+  // within ~1 s of Esc); unhandled, that is a console error every resume.
+  if (r && typeof r.catch === 'function') r.catch(pointerLockRefused);
+}
+// A refused lock is the same as an unlock: the run must not keep going with
+// a free cursor and a dead camera. Pause, so the next click asks again.
+function pointerLockRefused() {
+  if (state === 'playing' && !paused && !input.touchMode && !document.pointerLockElement) showPause();
+}
+document.addEventListener('pointerlockerror', pointerLockRefused);
 
 document.addEventListener('pointerlockchange', () => {
   if (state === 'playing' && !input.touchMode && !document.pointerLockElement && !paused) {
@@ -1847,7 +2003,7 @@ const elPause = document.getElementById('pauseBtn');
 // He opens knowing what just happened: the cue is the death line or the clock.
 const GAME = { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' };
 let table = null;
-let lastTimedOut = false;
+let lastTimedOut = false, lastComplete = false;
 function tokoCue() {
   const t = (gameTime + (runBonus || 0)).toFixed(1);
   const tier = timeTier(gameTime + (runBonus || 0));
@@ -1856,7 +2012,7 @@ function tokoCue() {
   const peak = stylePeakIdx > 0 ? STYLE_TIERS[stylePeakIdx].label : '-';
   const wave = (typeof waveIdx === 'number' ? waveIdx + 1 : 1);
   if (state === 'dead') {
-    const cause = lastTimedOut ? 'TIME OUT' : (ENEMY_NAMES[lastKiller] || 'SOMETHING').toUpperCase();
+    const cause = lastComplete ? 'RUN COMPLETE' : lastTimedOut ? 'TIME OUT' : killerName(lastKiller).toUpperCase();
     return `${sn} · ${mode} · wave ${wave} · ${t}s · ${tier} · peak ${peak} · ${cause} · ${kills} kills`;
   }
   if (state === 'playing') {
@@ -2020,13 +2176,17 @@ function showPause() {
   for (const b of elMsg.querySelectorAll('button.season')) {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
-      season = seasonById(b.dataset.season).id;
+      // the mode in force BEFORE the switch: M() reads the season once
+      // _seasonChosen is set, so read after, "before" is already the
+      // destination and a HAUL <-> EMBER switch never restarted (#619 review)
       const before = M().id;
+      season = seasonById(b.dataset.season).id;
+      _seasonChosen = true;
       localStorage.setItem(SEASON_KEY, season);
       applySeason();
       // v51: a season with different RULES (season 3 is the track) is a
       // different game — start it fresh rather than rebuild under a live run
-      if (M().id !== before && state === 'playing') { hiScore = parseFloat(localStorage.getItem(hiKey()) || '0'); startGame(); return; }
+      if (M().id !== before && state === 'playing') { hiScore = parseFloat(localStorage.getItem(hiKey()) || '0'); startGame(); lockPointer(e); return; }
       buildSeasonArena();
       applyRunAbilities();   // v50: a season carries its control scheme
       hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
@@ -2631,11 +2791,11 @@ function waveDirector() {
     if (Math.random() < density * 0.06) {
       const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
       let at = ringSpot(16).clone();
-      let toSpot = at.clone().sub(player.pos).normalize();
+      let toSpot = at.clone().sub(player.feet).normalize();
       let tries = 0;
       while (toSpot.dot(fwd) < 0.35 && tries < 6) {
         at = ringSpot(16).clone();
-        toSpot = at.clone().sub(player.pos).normalize();
+        toSpot = at.clone().sub(player.feet).normalize();
         tries++;
       }
       if (toSpot.dot(fwd) < 0.2) at.add(fwd.clone().multiplyScalar(18));
@@ -2790,7 +2950,7 @@ function updateThreatVignette() {
   if (state !== 'playing') { document.getElementById('vignette').style.opacity = '0'; return; }
   let near = 0;
   for (const e of enemies) {
-    const d = Math.hypot(e.pos.x - player.pos.x, e.pos.z - player.pos.z);
+    const d = Math.hypot(e.pos.x - player.feet.x, e.pos.z - player.feet.z);
     if (d < 6) near = Math.max(near, 1 - d / 6);
   }
   document.getElementById('vignette').style.opacity = String(Math.min(0.55, near * 0.7));
@@ -2818,7 +2978,7 @@ function updateThreatRing() {
   const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
   const r = Math.min(window.innerWidth, window.innerHeight) * 0.14;
   for (const e of enemies) {
-    const dx = e.pos.x - player.pos.x, dz = e.pos.z - player.pos.z;
+    const dx = e.pos.x - player.feet.x, dz = e.pos.z - player.feet.z;
     const d = Math.hypot(dx, dz);
     if (d < 5 || d > 22) continue;
     const ang = Math.atan2(dz, dx);
@@ -3105,70 +3265,35 @@ function killEnemy(e, dir) {
   e.remove(scene);
 }
 
-/** The other half of DD's gunfeel: a tap dumps a fistful of daggers in a
- *  wide cone at once, then locks the hand out briefly. Burst damage for a
- *  brute in your face, at the cost of your stream. */
-function fireShotgun(w) {
-  weaponActive = true;
-  camera.getWorldDirection(_fwd2);
-  for (let i = 0; i < T.weapon.shotgunCount[weaponLv]; i++) {
-    fireDagger(wpn('shotgunSpread'),
-      wpn('shotgunSpeed') * (0.93 + Math.random() * 0.14), w.homing);
+/** The hand. HD-001: a short press jumps, the stream runs only while fire
+ *  is held, and walking does not shoot. Moved out of updateCombat whole in
+ *  v51 so a season whose hand is the GAZE can skip it in one branch. */
+/** HD-001's press grammar for mouse button 0 and pad RT/RB: released before
+ *  the stream delay it is a jump, held past it it streams. Returns whether
+ *  the hold has reached the stream. Shared by the hand and by the gaze
+ *  season, which has no gun but keeps the short press = jump (#619 review). */
+function firePress(dt) {
+  const held = input.firing;
+  if (held) {
+    fireHeldT += dt;
+  } else {
+    // released before the stream: jump, no burst
+    if (fireWasHeld && fireHeldT > 0 && fireHeldT < T.weapon.streamDelay) input._jump = true;
+    fireHeldT = 0;
   }
-  gems.blast(camera.position);
-  shotCd = T.weapon.shotgunCd;
-  recoil = 0.15;
-  hand.flash(1.25);
-  fovKick = Math.max(fovKick, 3.5);
-  trauma = Math.max(trauma, 0.22);
-  if (player.daggerJump(_fwd2)) {
-    fovKick = Math.max(fovKick, 7);
-    trauma = Math.max(trauma, 0.32);
-    buzz(0.65, 0.45, 110);
-  }
-  audio.shotgun();
-  buzz(0.5, 0.3, 90);
+  fireWasHeld = held;
+  return held && fireHeldT >= T.weapon.streamDelay;
 }
 
-function fireHomingShot() {
-  const count = Math.min(homingAmmo, T.weapon.homingShot[weaponLv] || 0);
-  if (count <= 0) return false;
-  for (let i = 0; i < count; i++) {
-    fireDagger(T.weapon.shotgunSpread * 0.8,
-      T.weapon.shotgunSpeed * (0.93 + Math.random() * 0.14), true, T.weapon.homingDamage);
-  }
-  homingAmmo -= count;
-  shotCd = T.weapon.shotgunCd;
-  weaponActive = true;
-  recoil = 0.13;
-  hand.flash(1.4);
-  fovKick = Math.max(fovKick, 3.5);
-  trauma = Math.max(trauma, 0.2);
-  gems.blast(camera.position);
-  audio.shotgun();
-  return true;
-}
-
-/** The hand: DD's tap/hold gunfeel, touch auto-fire and the LV3 homing
- *  weapon. Moved out of updateCombat whole in v51 so a season whose hand is
- *  the GAZE can skip it in one branch. */
 function fireByHand(dt, w) {
   let streaming;
   if (input.touchMode && !input.gamepad) {
-    if (input.consumeFireTap() && shotCd <= 0) fireShotgun(w);
-    const mv = input.getMove();
-    streaming = input.firing || Math.hypot(mv.x, mv.y) > T.weapon.autoFireMove;
+    // A stick tap already jumps in input.js. Do not turn it into a shotgun.
+    // Holding the right stick is the stream. The move stick is not.
+    input.consumeFireTap();
+    streaming = input.firing;
   } else {
-    const held = input.firing;
-    if (held) {
-      fireHeldT += dt;
-    } else {
-      // a press released before the stream spun up was a TAP → shotgun
-      if (fireWasHeld && fireHeldT < T.weapon.streamDelay && shotCd <= 0) fireShotgun(w);
-      fireHeldT = 0;
-    }
-    fireWasHeld = held;
-    streaming = held && fireHeldT >= T.weapon.streamDelay;
+    streaming = firePress(dt);
   }
   if (streaming && shotCd <= 0) {
     weaponActive = true;
@@ -3179,21 +3304,18 @@ function fireByHand(dt, w) {
         wpn('streamSpeed') * (0.86 + Math.random() * 0.28), w.homing);
       recoil = Math.min(0.035, recoil + 0.007);
       hand.flash(0.3);
-      audio.fire();
+      audio.fire(); fx.fire++; fx.fireRecoil = recoil;
     }
   } else {
     fireTimer = 0;
   }
 
-  // LV3+ stores gems as a separate RMB/LT homing weapon. It uses the same
-  // tap/hold grammar but consumes one banked dagger per projectile.
+  // LV3+ stores gems as a separate RMB/LT homing weapon. Firing only happens
+  // while it is held, so a short alt press does not dump a burst and is not
+  // a jump. One banked dagger per streamed projectile.
   const altHeld = input.altFiring;
   if (altHeld) homingHeldT += dt;
-  else {
-    if (homingWasHeld && homingHeldT < T.weapon.streamDelay &&
-        weaponLv >= 3 && homingAmmo > 0 && shotCd <= 0) fireHomingShot();
-    homingHeldT = 0;
-  }
+  else homingHeldT = 0;
   homingWasHeld = altHeld;
   const homingStreaming = altHeld && homingHeldT >= T.weapon.streamDelay &&
     weaponLv >= 3 && homingAmmo > 0;
@@ -3206,7 +3328,7 @@ function fireByHand(dt, w) {
       homingAmmo--;
       recoil = Math.min(0.04, recoil + 0.008);
       hand.flash(0.45);
-      audio.fire();
+      audio.fire(); fx.fire++; fx.fireRecoil = recoil;
     }
   } else {
     homingFireTimer = 0;
@@ -3218,7 +3340,7 @@ function fireByHand(dt, w) {
  *  and missiles leave the gauntlet on their own, faster and tighter-turning
  *  the longer the look has been held. */
 function updateGaze(dt) {
-  fireTimer = 0; homingFireTimer = 0; fireWasHeld = false; homingWasHeld = false;
+  fireTimer = 0; homingFireTimer = 0; homingWasHeld = false;   // fireWasHeld is firePress's (a short press still jumps here)
   camera.getWorldDirection(_fwd2);
   // v53: in the convoy the cabs are targets too — three missiles jackknife one
   const targets = S().gaze?.trucks && truck.active ? enemies.concat(truck.active.targets()) : enemies;
@@ -3270,13 +3392,14 @@ function updateCombat(dt) {
   const w = WEAPON[weaponLv];
   weaponActive = false;
 
-  // DD gunfeel: TAP = shotgun burst, HOLD = stream — every dagger manually
-  // aimed on desktop and pad. Touch alone keeps the old auto-fire (a thumb
-  // can't work two sticks and a trigger; owner's call, 2026-07-31).
+  // HD-001: short press jumps, hold streams. Mouse, pad, and sticks.
+  // Walking does not shoot. Dash is not read here.
   shotCd = Math.max(0, shotCd - dt);
   // v51 SEASON 3: the look IS the trigger — no fire input is read at all
-  if (S().gaze) updateGaze(dt);
-  else fireByHand(dt, w);
+  if (S().gaze) {
+    if (!(input.touchMode && !input.gamepad)) firePress(dt);   // no gun, but a short press still jumps (a stick tap already does, in input.js)
+    updateGaze(dt);
+  } else fireByHand(dt, w);
 
   daggers.update(dt, enemies);
 
@@ -3583,6 +3706,7 @@ function step(dt) {
     player.justDashed = false;
     audio.dash();
     trauma = Math.max(trauma, 0.15);
+    fx.dash++;
   }
   // dashing wades through the carnage — a moving sweep, dt-scaled so the kick
   // is the same at any frame rate, biased along the dash so gibs get shoved
@@ -3596,6 +3720,7 @@ function step(dt) {
   if (player.justJumped) {
     player.justJumped = false;
     audio.jump();
+    spawnJumpPuff(player.feet.x, player.feet.y, player.feet.z);
   }
   if (player.justBunnyHopped) {
     player.justBunnyHopped = false;
@@ -3760,12 +3885,18 @@ function step(dt) {
     elTimer.textContent = lifeT.toFixed(1);
     elTimer.style.color = lifeT < 10 ? '#c81e1e' : '';
     elKills.textContent = `${kills} kills · run ${gameTime.toFixed(1)}s`;
+    elClockLabel.textContent = clockLine();
   } else {
     elTimer.textContent = (gameTime + runBonus).toFixed(1);   // v54: season 3's time carries the load
     elTimer.style.color = '';
-    elKills.textContent = S().cargoScore && truck.active && !_urlMode
-      ? `${kills} kills · load ${truck.active.cargo.crates.filter(c => c.welded).length} · ${runBonus >= 0 ? '+' : ''}${runBonus}s`
-      : `${kills} kills`;
+    // HD-010: "load 36 · +0s" said nothing. The clock's label says the clock
+    // is time PLUS cargo, how many crates ride on the truck and what the load
+    // has added; the kill line is kills.
+    const cargo = S().cargoScore && truck.active && !_urlMode;
+    elKills.textContent = `${kills} kills`;
+    elClockLabel.textContent = cargo
+      ? `${clockLine()} · ${truck.active.cargo.crates.filter(c => c.welded).length} CRATES ON BOARD · ${runBonus >= 0 ? '+' : ''}${runBonus}s`
+      : clockLine();
   }
   elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ` · HOMING ${homingAmmo}` : ''}`;
 }
@@ -3910,8 +4041,9 @@ function updateSphereProjection() {
 function animate() {
   requestAnimationFrame(animate);
   const rawDt = clock.getDelta(); // unclamped — the governor needs real frame cost
-  const dt = Math.min(rawDt, 0.05) * timeScale; // timeScale: the harness's slow-motion knob, 1 in play
+  const dt = Math.min(rawDt, DT_CAP) * timeScale; // timeScale: the harness's slow-motion knob, 1 in play
   perfGovern(performance.now(), rawDt * 1000);
+  timeMonitor(performance.now(), rawDt);
   input.pollGamepad();
   if (state !== 'playing' || paused) {
     gamepadMenu();
@@ -3972,6 +4104,8 @@ window.__hd = {
     // moves does not survive long enough to measure anything.
     freezeDirector(on = true) { directorFrozen = !!on; return directorFrozen; },
     startGame() { startGame(); }, // tests need a guaranteed-live run to measure
+    die(timedOut = false) { if (state === 'playing') die(!!timedOut); return state; },   // HD-012: the death screen on demand
+    getYaw() { return { yaw: player.yaw, pitch: player.pitch }; },   // HD-013: proves mouse look turns the camera
     setInvulnerable(on = true) { invulnerable = !!on; return invulnerable; },
     getPressure() { return { live: livePressure(), ceiling: +pressureCeiling().toFixed(1) }; },
     /** THE LAB BENCH. Every registered experiment, what it declares, and what
@@ -4032,6 +4166,8 @@ window.__hd = {
     /** The live feel numbers — the gate edits them in place (and puts them back). */
     tuning() { return T; },
     inputObj() { return input; },
+    /** HD-009: feedback spawned so far, plus the live recoil/FOV/dash values. */
+    feedback() { return { ...fx, recoil, fovKick, dashK: player.dashK, fov: camera.fov, puffs: sparks.filter(s => s.puff).length }; },
     getGibs() { return physGibs.getState(); },   // prototype: the physical gibs
     wearWall(i, amount) { const w = walls.walls[i]; if (w) wearWall(w, amount, _seg.set(w.x, w.h * 0.5, w.z)); return { felled: wallsFelled, left: walls.walls.length }; },   // v53
     gibsObj() { return physGibs; },
@@ -4049,6 +4185,7 @@ window.__hd = {
     },
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
+    getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
     getRun() { return { runBonus, cratesSaved, cratesSpilled, ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
     completeRun() { completeRun(); return runComplete; },
     getFinale() { return { active: !!finale, kind: finale?.kind ?? null, t: +(finale?.t ?? 0).toFixed(2), phase: finale?.phase ?? 0, rocks: finale?.rocks ?? 0, wrecked: finale?.wrecked ?? 0, done: finaleDone, pressure: finalePressure, drain: +goo.drain.toFixed(2), declared: S().finale ?? null }; },
@@ -4070,7 +4207,7 @@ window.__hd = {
         ground: ground.visible,
       };
     },
-    setSeason(id) { season = seasonById(id).id; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
+    setSeason(id) { season = seasonById(id).id; _seasonChosen = true; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
     getPlatforms() { return platforms.getState(); },
     getGoo() { return goo.getState(); },
     gooHit(x, z, p) { goo.hit(x, z, p); },
@@ -4237,7 +4374,6 @@ window.__hd = {
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
     setTime(t) { gameTime = t; },
-    die() { if (state === 'playing') die(false); },
     report() { return runReport(); },
     setRunKind(k) { runKind = k; localStorage.setItem('hyperDaggerRunKind', k); },
     setDate(s) { dateOverride = s; },
@@ -4306,6 +4442,9 @@ window.__hd = {
     },
     buzz(s, w, ms) { buzz(s ?? 1, w ?? 1, ms ?? 100); },
     forceFrameTime(ms) { forcedFrameTime = ms; },
+    /** HD-011: game-time / real-time under the dt cap (1 = keeping up). */
+    getTimeRatio() { return timeRatioState(); },
+    resetTimeRatio() { resetTimeMonitor(); return timeRatioState(); },
     getPerfTier() {
       return {
         tier: perfTier, ema: frameEMA, mode: opts.perf,
