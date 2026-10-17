@@ -172,7 +172,7 @@ s.listen(0, '127.0.0.1', async () => {
     raster28.buffer.h <= Math.ceil(raster28.viewport.h * 0.73),
     JSON.stringify(raster28));
   ok('the coarse buffer is enlarged with hard pixels',
-    raster28.scaling === 'pixelated', JSON.stringify(raster28));
+    ['pixelated', 'crisp-edges'].includes(raster28.scaling), JSON.stringify(raster28));   // index.html lists both; the later one wins where supported, and both are hard pixels
   ok('the soot floor is a tiny unfiltered texture',
     raster28.floor.w === 128 && raster28.floor.h === 128 &&
     raster28.floor.nearest === true && raster28.floor.mipmaps === false,
@@ -2121,7 +2121,7 @@ s.listen(0, '127.0.0.1', async () => {
   }));
   ok('the run is paused underneath him', table35.paused);
   ok('he is standing in this game', table35.from === 'hyperdagger', String(table35.from));
-  ok('and opens knowing the clock', /^\d+\.\dS IN\. SAY WHAT YOU THINK$/.test(table35.cue), table35.cue);
+  ok('and opens knowing the clock', /^.+ · .+ · wave \d+ · \d+\.\ds in · .+ · peak .+ · \d+ kills · say what you think$/.test(table35.cue), table35.cue);
   ok('a note here has the same transport as one on the floor', table35.hubShim);
   // his rule: one Esc steps out of the field, the next leaves him and the table
   for (let i = 0; i < 3 && await p.evaluate(() => !!document.querySelector('.toko-table')); i++) {
@@ -2139,7 +2139,7 @@ s.listen(0, '127.0.0.1', async () => {
     btn: !!document.getElementById('tokoBtn'), cue: window.__hd.toko.cue(),
   }));
   ok('the death screen carries ASK TOKO', dead35.btn);
-  ok('and he would open on the death line', /(GOT YOU|CLOCK RAN OUT) AT \d+\.\dS$/.test(dead35.cue), dead35.cue);
+  ok('and he would open on the death line', /^.+ · .+ · wave \d+ · \d+\.\ds · .+ · peak .+ · .+ · \d+ kills$/.test(dead35.cue), dead35.cue);
 
   // ---- zero errors across the whole run ----------------------------------
   ok('still zero page errors at the end', errs.length === 0, errs.slice(0, 4).join(' | '));
