@@ -49,12 +49,16 @@ export const ABILITY_DEFAULTS = {
  * @property {'disc'|'track'|'court'} arena          what you stand on — court = disc + walls
  * @property {'void'|'clamp'} edge                   what the rim does
  * @property {string} hiKey         localStorage best-score key (per experiment)
+ * @property {string} goal          HD-010: the run-start goal card — one line, the rules below in words
+ * @property {string} clock         HD-010: what the HUD clock means, the label under it
  */
 
 /** @type {Mode[]} */
 export const MODES = [
   {
     id: 'pure',
+    goal: 'SURVIVE THE SWARM · ONE TOUCH KILLS',
+    clock: 'TIME SURVIVED',
     name: 'PURE',
     blurb: 'the Devil Daggers spine — one touch, a fixed and learnable sky',
     controls: 'WASD move · tap fire = burst · hold = stream · Space jump ×2',
@@ -67,6 +71,8 @@ export const MODES = [
   },
   {
     id: 'hyper',
+    goal: 'SURVIVE THE CLOCK · KILLS BUY TIME',
+    clock: 'YOUR LIFE · KILLS ADD TIME',
     name: 'HYPER',
     blurb: 'the remix — a draining clock, dash and REAP, pressure that adapts',
     controls: 'WASD · fire · Space ×2 · Shift dash · R reap',
@@ -79,6 +85,8 @@ export const MODES = [
   },
   {
     id: 'truck',
+    goal: 'STAY ON THE CONVOY · THE ROAD KILLS',
+    clock: 'TIME SURVIVED',
     name: 'TRUCK',
     blurb: 'Clustertruck — the floor is leaving, keep your feet off it',
     controls: 'WASD · Space ×2 · Shift dash · run the walls · do not stop',
@@ -91,6 +99,8 @@ export const MODES = [
   },
   {
     id: 'move',
+    goal: 'NO THREATS · GO FEEL IT',
+    clock: '',
     name: 'MOVE',
     blurb: 'the movement playground — no threats, every ability on, go feel it',
     controls: 'WASD · Space ×3 · Shift dash · hold Space to glide',

@@ -18,11 +18,11 @@ import { TUNING as T } from './tuning.js?v=85';
 import { HyperEnvironment } from './environment.js?v=85';
 import { Backdrop } from './backdrop.js?v=85';
 import { Walls } from './walls.js?v=85';
-import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=85';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=88';
 import { TruckTrack } from './truck.js?v=87';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=85';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=87';
 import { Platforms } from './platforms.js?v=85';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
 import { GooWave } from './goo.js?v=85';
@@ -973,6 +973,25 @@ const ui = document.getElementById('canvas-ui');
 const uiCtx = ui.getContext('2d');
 const elTimer = document.getElementById('timer');
 const elKills = document.getElementById('kills');
+// HD-010 (12 Oct playtest): a one-line goal card at every run start, and a
+// label under the clock that says what the number is. The words live on the
+// mode (modes.js) and, where a season changes the score, on the season
+// (seasons.js: HAUL's CARGO IS THE SCORE) — the season's line only when the
+// run is actually playing that season's mode.
+const elClockLabel = document.getElementById('clockLabel');
+const elGoal = document.getElementById('goalCard');
+const GOAL_MS = 1600;   // + the 0.3 s fade: gone by ~1.9 s
+let goalTimer = 0;
+function seasonRules() { return !!S().mode && M().id === S().mode && !_urlMode; }
+function goalLine() { return (seasonRules() && S().goal) || M().goal || ''; }
+function clockLine() { return (seasonRules() && S().clock) || M().clock || ''; }
+function showGoalCard() {
+  clearTimeout(goalTimer);
+  elGoal.textContent = goalLine();
+  elGoal.classList.toggle('show', !!elGoal.textContent);
+  goalTimer = setTimeout(() => elGoal.classList.remove('show'), GOAL_MS);
+}
+function hideGoalCard() { clearTimeout(goalTimer); elGoal.classList.remove('show'); }
 const elGems = document.getElementById('gems');
 const elStyle = document.getElementById('style');
 const elStyleRank = document.getElementById('styleRank');
@@ -1736,6 +1755,7 @@ function startGame() {
   // made the frame feel like a generic browser FPS and is absent in the target.
   elCross.style.display = 'none';
   elPause.style.display = 'block';
+  showGoalCard();   // HD-010
   audio.droneStart();
   if (opts.music) audio.musicStart();
 }
@@ -1747,6 +1767,7 @@ function startGame() {
  */
 function endRun() {
   paused = false;
+  hideGoalCard();   // HD-010
   resetRun();
   truck.clear();
   walls.clear();
@@ -1767,6 +1788,7 @@ function endRun() {
 function completeRun() { runComplete = true; die(false, true); }
 
 function die(timedOut = false, complete = false) {
+  hideGoalCard();   // HD-010
   state = 'dead';
   setRunFrame(false);
   deathAt = performance.now();
@@ -3760,12 +3782,18 @@ function step(dt) {
     elTimer.textContent = lifeT.toFixed(1);
     elTimer.style.color = lifeT < 10 ? '#c81e1e' : '';
     elKills.textContent = `${kills} kills · run ${gameTime.toFixed(1)}s`;
+    elClockLabel.textContent = clockLine();
   } else {
     elTimer.textContent = (gameTime + runBonus).toFixed(1);   // v54: season 3's time carries the load
     elTimer.style.color = '';
-    elKills.textContent = S().cargoScore && truck.active && !_urlMode
-      ? `${kills} kills · load ${truck.active.cargo.crates.filter(c => c.welded).length} · ${runBonus >= 0 ? '+' : ''}${runBonus}s`
-      : `${kills} kills`;
+    // HD-010: "load 36 · +0s" said nothing. The clock's label says the clock
+    // is time PLUS cargo, how many crates ride on the truck and what the load
+    // has added; the kill line is kills.
+    const cargo = S().cargoScore && truck.active && !_urlMode;
+    elKills.textContent = `${kills} kills`;
+    elClockLabel.textContent = cargo
+      ? `${clockLine()} · ${truck.active.cargo.crates.filter(c => c.welded).length} CRATES ON BOARD · ${runBonus >= 0 ? '+' : ''}${runBonus}s`
+      : clockLine();
   }
   elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ` · HOMING ${homingAmmo}` : ''}`;
 }
@@ -4049,6 +4077,7 @@ window.__hd = {
     },
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
+    getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
     getRun() { return { runBonus, cratesSaved, cratesSpilled, ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
     completeRun() { completeRun(); return runComplete; },
     getFinale() { return { active: !!finale, kind: finale?.kind ?? null, t: +(finale?.t ?? 0).toFixed(2), phase: finale?.phase ?? 0, rocks: finale?.rocks ?? 0, wrecked: finale?.wrecked ?? 0, done: finaleDone, pressure: finalePressure, drain: +goo.drain.toFixed(2), declared: S().finale ?? null }; },
