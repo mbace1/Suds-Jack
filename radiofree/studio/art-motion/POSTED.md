@@ -25,6 +25,8 @@ Accounts:
 | Coxon 3, Paid For By | RFH X | https://x.com/radiofreehki/status/2111216618441212033 | same as Instagram |
 | Coxon 2, Committee of the Whole | RFH Instagram | https://www.instagram.com/radiofreehelsinki/reel/Del2ED8oaNi/ (17 Oct ~13:02, uncropped; earlier cut ending "it agreed to testify on 16 October") | NYC Council asked four AI companies for the odds of catastrophe. None gave a number. #AI #AIsafety #NYC |
 | Coxon 2, Committee of the Whole | RFH X | https://x.com/radiofreehki/status/2111397495234342974 (17 Oct ~13:02; latest cut ending "it testified on 16 October". An accidental duplicate, https://x.com/radiofreehki/status/2111397885904380118, waits for Mikael's OK to delete) | same as Instagram |
+| Teslur B, Janitor (v4) | RFH Instagram | https://www.instagram.com/radiofreehelsinki/reel/Del6p7ZIeoh/ (17 Oct ~13:41, Original aspect, uncropped; cut 9302f9f6, previews/17-10-Teslur-B-Janitor-v4.mp4; off-schedule at Mikael's request) | Future of cars, noise pollution. #Roadster |
+| Teslur B, Janitor (v4) | RFH X | https://x.com/radiofreehki/status/2111407558476898682 | same as Instagram |
 
 Toko 2 still needs to go out on Toko X ("Batteries included. Parents not included. 🤖") once the login works. Its Cambridge Story link (https://www.cam.ac.uk/stories/ai-toys-study-play) needs the phone app.
 
