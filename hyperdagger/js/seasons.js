@@ -153,6 +153,15 @@ export const SEASONS = [
     rubbleFloor: true,
     // v54 A RUN THAT ENDS: at `end` seconds the season is over and the recap says what the run did
     end: 300,
+    // Wave pacing: DD-like pressure with breathing gaps after heavies
+    waves: [
+      { t: 0,   kind: 'skulls', density: 0.6, gap: 8 },
+      { t: 25,  kind: 'mix', density: 0.8, gap: 6 },
+      { t: 50,  kind: 'heavies', density: 0.5, gap: 12 },
+      { t: 80,  kind: 'skulls', density: 1.0, gap: 5 },
+      { t: 120, kind: 'mix', density: 1.1, gap: 7 },
+      { t: 180, kind: 'finale', density: 1.3, gap: 4 },
+    ],
     built: true,
   },
   {
@@ -164,12 +173,20 @@ export const SEASONS = [
     // dash on — plus a double jump. VOID declares none and stays the control.
     mode: 'hyper',
     abilities: { jumps: 2 },
-    blurb: 'the sea — one wave, and you jump it',
+    blurb: 'jump the waves — skulls are support',
     // v48 (owner, 2026-09-21): "make season 2 just the wave that you need to
     // jump over. Only random skulls as enemies otherwise." So: no slabs, no
     // rock, no roster but the skull family, and the wave is a HAZARD sized
     // to a single jump, not a floor that carries you.
     spawns: { only: 'skulls', base: 2.6, floor: 0.9, slope: 0.012, cap: 28, first: 1.2 },
+    waves: [
+      { t: 0,   kind: 'wave', density: 0.4, gap: 12 },      // early: learn the jump
+      { t: 30,  kind: 'skulls', density: 0.6, gap: 10 },
+      { t: 55,  kind: 'wave', density: 0.7, gap: 9 },       // tighter waves
+      { t: 90,  kind: 'mix', density: 0.5, gap: 11 },       // light other pressure
+      { t: 140, kind: 'wave', density: 0.9, gap: 8 },
+      { t: 180, kind: 'finale', density: 1.1, gap: 6 },
+    ],
     // v52 THE VISUAL LEAP (owner: "visual leap to season 2"). Looked at first:
     // a flat overcast grey sky nothing could stand against, a floor whose
     // grain read as gravel, everything one teal, and the giant skulls cropped
@@ -320,6 +337,14 @@ export const SEASONS = [
     id: 'haul',
     name: 'SEASON 3 — HAUL',
     menu: 'SEASON 3',
+    waves: [
+      { t: 0,   kind: 'trucks', density: 0.3, gap: 14 },    // learn the platforms
+      { t: 35,  kind: 'gaze', density: 0.5, gap: 12 },      // lock ahead
+      { t: 80,  kind: 'cargo', density: 0.4, gap: 15 },     // stomp/save pressure
+      { t: 130, kind: 'ahead', density: 0.7, gap: 10 },     // enemies only forward
+      { t: 180, kind: 'finale', density: 1.0, gap: 8 },
+    ],
+    noRear: true,   // enemies spawn only in the forward hemisphere
     mode: 'truck',                       // the Clustertruck rules: the road is the arena, falling is death
     abilities: { jumps: 2, dash: true },
     blurb: 'the convoy — trucks that drive, momentum you keep, and a look that fires',
@@ -368,6 +393,10 @@ export const SEASONS = [
     // crate that spills onto the road costs `spill` seconds, a loose crate you
     // land on and set back pays `save`. The convoy is a load you are keeping whole.
     cargoScore: { spill: 1, save: 1 },
+    // HD-010: the run-start card and the clock's label say the line above in
+    // words (a season's `goal`/`clock` beat its mode's when it runs that mode)
+    goal: 'STAY ON THE CONVOY · CARGO IS THE SCORE',
+    clock: 'TIME + CARGO',
     end: 300,
     built: true,
     todo: [

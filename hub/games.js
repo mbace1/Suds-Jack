@@ -190,12 +190,12 @@ export const GAMES = [
     fi: {
       tagline: 'Devil Daggersista inspiroitunut käsikirjoitettu areena-FPS: opi vihollisaikataulu, kerää hakeutuvat tikarit ja selviä leukojaan kalisuttavasta kalloparvesta.',
       lineage: 'Devil Daggers',
-      controls: 'WASD + hiiri · LMB napauta/pidä sarja/suihku · RMB hakeutuvat tikarit · Väli hyppy · Esc tauko',
+      controls: 'WASD + hiiri · lyhyt painallus = hyppy, pito = suihku · RMB pito = hakeutuvat tikarit · Väli hyppy ×2 · Esc tauko',
     },
     ja: {
       tagline: 'Devil Daggersに着想を得たスクリプト型アリーナFPS。出現時刻を覚え、誘導ダガーを蓄え、顎を鳴らす骸骨の群れを生き延びろ。',
       lineage: 'Devil Daggers',
-      controls: 'WASD + マウス · 左クリック タップ/長押し 一斉射撃/連射 · 右クリック 誘導 · スペース ジャンプ · Esc 一時停止',
+      controls: 'WASD + マウス · 左クリック 短押し ジャンプ/長押し 連射 · 右クリック長押し 誘導 · スペース ジャンプ×2 · Esc 一時停止',
     },
     pad: 'native',
     status: 'active',
@@ -203,7 +203,7 @@ export const GAMES = [
     tagline: 'A scripted survival FPS inspired by Devil Daggers: learn the spawn clock, bank homing daggers, and survive the jawing skull swarm.',
     lineage: 'Devil Daggers',
     tags: ['fps', 'three.js', 'gamepad'],
-    controls: 'WASD + mouse · tap/hold LMB shot/stream · RMB homing · Space hop · Esc pause · touch/pad supported',
+    controls: 'WASD + mouse · short click = jump, hold = stream · hold RMB = homing · Space jump ×2 · Esc pause · touch/pad supported',
     path: 'hyperdagger/',
     inRepo: true,
     accent: '#d8412f',

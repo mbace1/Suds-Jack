@@ -15,19 +15,40 @@
     #msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: safe center; overflow-y: auto; text-align: center; background: rgba(0,0,0,0.72); z-index: 10; padding: 1.5rem; }
     #msg h1 { font-size: 2.2rem; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
     #msg .sub, #msg .keys, #msg .go, #msg .history, #msg .breakdown, #msg .cause { opacity: 0.85; margin: 0.35rem 0; max-width: 36rem; }
-    #msg .big { font-size: 1.25rem; margin: 0.6rem 0; }
-    #msg button { margin: 0.4rem; padding: 0.55rem 1rem; background: #2a221c; color: #e8dcc8; border: 1px solid #5a4a3a; cursor: pointer; font: inherit; }
-    #msg button.on, #msg button.gfocus { border-color: #d8412f; background: #3a2820; }
+    #msg .big { font-size: 1.35rem; margin: 0.5rem 0; font-weight: 600; }
+    #msg .cause { font-size: 0.95rem; }
+    #msg .tier { color: #d8412f; font-weight: 800; }
+    #msg button { margin: 0.35rem; padding: 0.6rem 1.1rem; background: #1a1614; color: #e8dcc8; border: 1px solid #3a322c; cursor: pointer; font: inherit; letter-spacing: 0.04em; border-radius: 2px; transition: border-color 0.15s, background 0.15s; }
+    #msg button.on, #msg button.gfocus { border-color: #d8412f; background: #3a241e; box-shadow: 0 0 0 1px #d8412f55; }
+    #msg button:hover { border-color: #8a6a4a; }
+    #msg .seasons, #msg .modes { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; margin: 0.8rem 0; }
+    #msg button.season { min-width: 7.5rem; font-weight: 600; }
+    #msg button.season.on { background: #3a2218; }
+    #msg button.mode { min-width: 5.5rem; font-size: 0.92rem; }
+    #msg button.mode.all { border-style: dashed; }
+    #msg .row-label { font-size: 0.75rem; letter-spacing: 0.12em; opacity: 0.55; margin: 0.6rem 0 0.2rem; text-transform: uppercase; }
+    #msg h1 { text-shadow: 0 2px 8px #000; }
     #timer, #kills, #gems, #style { position: absolute; z-index: 5; pointer-events: none; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000; }
     #timer { top: 0.8rem; left: 50%; transform: translateX(-50%); font-size: 1.6rem; letter-spacing: 0.06em; }
     #kills, #gems { top: 0.9rem; font-size: 0.9rem; opacity: 0.75; }
     #kills { left: 1rem; } #gems { right: 1rem; }
+    /* HD-012: the arcade shell's HUB button owns the top-left corner (fixed,
+       z-index above everything, ~44px tall). The kills/load line used to sit
+       at the same spot and printed straight through it on the death screen.
+       It is a stat line, not a control: it steps down under HUB instead. */
+    #kills { top: calc(max(10px, env(safe-area-inset-top)) + 54px); left: max(10px, env(safe-area-inset-left)); }
     #style { bottom: 1.2rem; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; text-align: center; }
     #styleRank { font-size: 1.4rem; font-weight: 700; } #styleMult { font-size: 0.85rem; opacity: 0.8; }
     #styleFill { height: 3px; width: 0; background: #c81e1e; margin: 0.2rem auto 0; max-width: 8rem; }
-    #toast { position: absolute; top: 18%; left: 50%; transform: translateX(-50%); z-index: 8; opacity: 0; transition: opacity 0.2s; pointer-events: none; letter-spacing: 0.1em; text-shadow: 0 1px 3px #000; }
-    #toast.show { opacity: 1; }
+    #toast { position: absolute; top: 16%; left: 50%; transform: translateX(-50%); z-index: 8; opacity: 0; transition: opacity 0.18s, transform 0.18s; pointer-events: none; letter-spacing: 0.14em; text-shadow: 0 2px 6px #000; font-size: 1.35rem; font-weight: 700; }
+    #toast.show { opacity: 1; transform: translateX(-50%) scale(1.05); }
+    #style { font-size: 1.1rem; }
+    #styleRank { font-size: 1.6rem; font-weight: 800; text-shadow: 0 1px 4px #000; }
     #crosshair { display: none; }
+    #combo { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); z-index: 7; pointer-events: none; font-size: 2.6rem; font-weight: 800; letter-spacing: 0.1em; text-shadow: 0 2px 10px #000, 0 0 20px #d8412f55; opacity: 0; transition: opacity 0.1s, transform 0.1s; }
+    #combo.show { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+    #threatRing { position: absolute; left: 50%; top: 50%; width: 28vmin; height: 28vmin; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; }
+    #threatRing .pip { position: absolute; width: 8px; height: 8px; background: #d8412f; border-radius: 50%; opacity: 0.85; box-shadow: 0 0 6px #d8412f; }
     #pauseBtn { position: absolute; top: 0.7rem; right: 0.7rem; z-index: 6; background: transparent; border: 0; color: #e8dcc8; opacity: 0.35; cursor: pointer; font-size: 1.2rem; }
     #pauseBtn:hover { opacity: 1; }
     #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(120,10,10,0.55) 100%); opacity: 0; z-index: 4; transition: opacity 0.15s; }
@@ -39,10 +60,22 @@
        everything returns. main.js already toggled body.in-run in all the
        right places and the gate already asserted this behaviour — the rules
        themselves were simply never written, so the gate was red by three. */
-    body.in-run #kills,
     body.in-run #gems,
     body.in-run #style { display: none; }
     body.in-run #timer { font-size: 27px; }
+    /* HD-008 (12 Oct playtest): the kill counter stays up for the whole run,
+       in every season and free mode. The top-left corner belongs to the
+       shell's HOME button (44px tall) mid-run, and top-right to pause, so
+       the counter tucks under the clock, centred, where nothing else lives
+       on a phone-sized viewport. */
+    body.in-run #kills { left: 50%; transform: translateX(-50%); top: calc(0.8rem + 42px); font-size: 0.85rem; white-space: nowrap; max-width: calc(100vw - 2rem); overflow: hidden; text-overflow: ellipsis; }
+    /* HD-010: what the clock means, small, under the clock and below the slot
+       #593 gives the kill counter; and the run-start goal card, one line
+       above the reticle that fades by ~2 s and never takes input. */
+    #clockLabel { position: absolute; z-index: 5; pointer-events: none; display: none; left: 50%; transform: translateX(-50%); top: calc(0.8rem + 62px); font-size: 0.7rem; letter-spacing: 0.12em; opacity: 0.7; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+    body.in-run #clockLabel:not(:empty) { display: block; }
+    #goalCard { position: absolute; z-index: 6; pointer-events: none; left: 50%; top: max(calc(0.8rem + 86px), 24%); transform: translateX(-50%); max-width: calc(100vw - 2rem); padding: 0.35rem 0.6rem; font-size: clamp(0.62rem, 2.6vw, 1.1rem); font-weight: 800; letter-spacing: 0.08em; text-align: center; white-space: nowrap; width: max-content; overflow: hidden; text-overflow: ellipsis; color: #e8dcc8; background: rgba(0,0,0,0.45); border-top: 1px solid #d8412f; border-bottom: 1px solid #d8412f; text-shadow: 0 1px 4px #000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s; }
+    #goalCard.show { opacity: 1; visibility: visible; transition: opacity 0.15s ease; }
     body.in-run #pauseBtn { opacity: 0.12; }
     body.in-run #pauseBtn:hover { opacity: 1; }
     body.in-run .arcade-home,
@@ -59,10 +92,14 @@
   <div id="vignette"></div>
   <div id="timer">0.0</div>
   <div id="kills">0 kills</div>
+  <div id="clockLabel"></div>
+  <div id="goalCard"></div>
   <div id="gems">◆ 0 · LV 1</div>
   <div id="style"><div id="styleRank"></div><div id="styleMult"></div><div id="styleFill"></div></div>
   <div id="toast"></div>
   <div id="crosshair">+</div>
+  <div id="combo"></div>
+  <div id="threatRing"></div>
   <button id="pauseBtn" title="Pause">⏸</button>
   <div id="msg"></div>
   <script type="importmap">
@@ -73,13 +110,13 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=85"></script>
+  <script type="module" src="js/main.js?v=108"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=85').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=108').catch(() => {});
     }
   </script>
-  <script type="module" src="../hub/shell.js?v=17"></script>
+  <script type="module" src="../hub/shell.js?v=94"></script>
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';
     // `open`: with a cursor the badge opens him at the table, over a paused
