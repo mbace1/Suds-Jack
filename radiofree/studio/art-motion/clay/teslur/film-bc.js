@@ -820,7 +820,7 @@ function poseAll(t) {
 }
 
 // ------------------------------------------------------------------ the camera: the livestream wide, locked off, a breath of drift
-const TUNE = { radScale: 1.5, maxBlur: 16, noTile: false, exp: 1.0, focus: 'set', ap: 1.6, hud: true };
+const TUNE = { radScale: 1.5, maxBlur: 16, noTile: false, exp: 1.0, focus: 'set', ap: 1.6, hud: true, gauges: true, bugY: 74 };   // v3 (owner, 17 Oct: "no need for gauges"): render with {gauges:false, bugY:200} — the bug clears Instagram's header
 function camAt(t) {
   const c = L.cam, d = c.drift;
   const pos = add3(c.pos, [Math.sin(t * 0.21) * 0.4 * d, Math.sin(t * 0.17 + 1) * 0.2 * d, 0]);
@@ -891,7 +891,7 @@ function topIcon(g, cx, cy, s) {
 }
 function bug(g) {
   // the stream bug, two boxes as the broadcast draws it: a black box with an outline, then LIVE on grey
-  const s = RES, x1 = 1040 * s, y = 74 * s, h = 34 * s, w2 = 78 * s, w1 = 160 * s, x0 = x1 - w2 - w1;
+  const s = RES, x1 = 1040 * s, y = TUNE.bugY * s, h = 34 * s, w2 = 78 * s, w1 = 160 * s, x0 = x1 - w2 - w1;
   g.save();
   g.fillStyle = 'rgba(0,0,0,0.85)'; g.fillRect(x0, y, w1, h);
   g.strokeStyle = 'rgba(235,238,242,0.9)'; g.lineWidth = 1.5 * s; g.strokeRect(x0 + 0.75 * s, y + 0.75 * s, w1 + w2 - 1.5 * s, h - 1.5 * s);
@@ -904,6 +904,7 @@ function bug(g) {
 // portrait layout: the gauges in a row at the top (the bottom belongs to the janitor and the caption bar)
 const HUD = { y: 250, r: 74, x: [150, 336, 744, 930] };
 function drawHUD(t) {
+  if (TUNE.gauges === false) { bug(g2d); return; }
   const g = g2d, s = RES, h = hudState(t);
   g.save();
   const X = HUD.x.map(v => v * s), Y = HUD.y * s, R = HUD.r * s;
@@ -928,13 +929,16 @@ const CARDM = {
   board: GB('#0b0b0c', { rough: 0.92, thumb: 0.015, thumbCell: 3, lump: 0.02, specks: 0.3, speckColor: '#1a1a1c', noBoil: true }),
   letters: surface({ color: '#efe9de', wrap: 0.35, wrapTint: '#ffe2c8', rough: 0.38, bump: 1.3, lump: 0.06, lumpF: 0.6, thumb: 0.06, thumbCell: 0.9, ridge: 0.09, tool: 1.2, grain: 0.004, grainF: 10, mottle: 0.1, specks: 0.5, speckColor: '#8a8478', roughVar: 0.12 }),
 };
+// v3 (owner, 17 Oct: "logo needs to be clay version of this" — the Tesla wordmark): squared bars with chamfered
+// corners and the wordmark's tells — the T's bar floats over its stem, the E is three bars with no spine — and U, R
+// drawn in the same hand, since the original has neither. Rolled clay, not the original's outlines.
 const GLYPH = {
-  T: { w: 6.6, s: [[[0, 10], [6.6, 10]], [[3.3, 10], [3.3, 0]]] },
-  E: { w: 5.8, s: [[[0, 0], [0, 10]], [[0, 10], [5.8, 10]], [[0, 5.1], [5.0, 5.1]], [[0, 0], [5.8, 0]]] },
-  S: { w: 6.0, s: [[[5.7, 8.5], [4.6, 9.75], [2.9, 10.05], [1.0, 9.45], [0.25, 7.7], [1.25, 6.0], [3.1, 5.25], [4.9, 4.45], [5.95, 2.7], [5.3, 0.75], [3.3, -0.05], [1.25, 0.35], [0.05, 1.55]]] },
-  L: { w: 5.6, s: [[[0, 10], [0, 0]], [[0, 0], [5.6, 0]]] },
-  U: { w: 6.4, s: [[[0, 10], [0, 3.6], [0.5, 1.2], [1.8, 0.15], [3.2, -0.05], [4.6, 0.15], [5.9, 1.2], [6.4, 3.6], [6.4, 10]]] },
-  R: { w: 6.2, s: [[[0, 0], [0, 10]], [[0, 10], [3.6, 10], [5.3, 9.4], [6.0, 7.7], [5.3, 6.0], [3.6, 5.2], [0, 5.2]], [[3.0, 5.2], [6.2, 0]]] },
+  T: { w: 7.4, s: [[[0, 9.35], [0.7, 10], [6.7, 10], [7.4, 9.35]], [[3.7, 8.35], [3.7, 0]]] },
+  E: { w: 6.4, s: [[[0, 9.4], [0.65, 10], [6.4, 10]], [[0, 5], [6.4, 5]], [[0, 0.6], [0.65, 0], [6.4, 0]]] },
+  S: { w: 6.6, s: [[[6.6, 10], [0.9, 10], [0, 9.1], [0, 5.95], [0.85, 5.1], [5.75, 5.1], [6.6, 4.25], [6.6, 0.9], [5.7, 0], [0, 0]]] },
+  L: { w: 6.0, s: [[[0, 10], [0, 0.9], [0.9, 0], [6.0, 0]]] },
+  U: { w: 6.6, s: [[[0, 10], [0, 0.9], [0.9, 0], [5.7, 0], [6.6, 0.9], [6.6, 10]]] },
+  R: { w: 6.6, s: [[[0, 0], [0, 9.1], [0.9, 10], [5.7, 10], [6.6, 9.1], [6.6, 6.0], [5.7, 5.1], [1.2, 5.1]], [[3.6, 4.1], [6.6, 0]]] },
 };
 /** roll a word of clay snakes: glyphs are strokes in a 10-high box */
 function word(text, { size = 1, r = 0.5, gap = 2.6, flat = 0.62, seed = 1 } = {}) {
@@ -955,7 +959,7 @@ const CARD_LAY = { D: 330, wordY: 0 };
 let cardWord;
 {
   mesh(new THREE.PlaneGeometry(900, 1300), CARDM.board, { parent: card, cast: false });
-  cardWord = mesh(word('TESLUR', { size: 0.9, r: 0.95, gap: 5.6, seed: 3, flat: 0.82 }), CARDM.letters, { pos: [0, CARD_LAY.wordY - 4.5, 0], parent: card });
+  cardWord = mesh(word('TESLUR', { size: 0.9, r: 0.95, gap: 4.6, seed: 3, flat: 0.6 }), CARDM.letters, { pos: [0, CARD_LAY.wordY - 4.5, 0], parent: card });
   cardWord.castShadow = true;
   card.add(new THREE.HemisphereLight('#e7ecf5', '#1a1a1c', 0.22));
   // a low raking key from the upper left, so every rolled snake gets a highlight, a shadow side and a cast shadow
@@ -979,7 +983,7 @@ function drawCard(t) {
     const pop = 1 + 0.22 * (1 - smooth(CARD_T + 0.8, CARD_T + 1.1, t));   // it pops in, a touch large, and settles
     g2d.translate(W / 2, (960 + 132) * RES); g2d.scale(pop, pop);
     g2d.font = `500 ${Math.round(58 * RES)}px Inter`; g2d.letterSpacing = `${(0.5 * RES).toFixed(1)}px`;
-    g2d.fillText('What?', 0, 18 * RES);
+    g2d.fillText('Whut?', 0, 18 * RES);   // owner, 17 Oct: "Whut?"
     g2d.restore();
   }
   if (TUNE.hud) bug(g2d);

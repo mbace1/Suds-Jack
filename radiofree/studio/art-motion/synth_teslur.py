@@ -143,8 +143,7 @@ def build(variant='B'):
     c = int(cut * SR); f = int(0.012 * SR)
     for ch in (scene.L, scene.R): ch[c:c + f] *= np.linspace(1, 0, f); ch[c + f:] = 0
     card.add(room(END - cut, 1.0, seed=9) * 0.2 * GAIN['card'], cut)
-    card.add(whut(0.6, 270, seed=22), EV['what'], 0.75 * GAIN['card'])
-    card.add(thup(0.6), EV['what'], 0.45 * GAIN['card'])
+    card.add(thup(0.6), EV['what'], 0.8 * GAIN['card'])                             # owner, 17 Oct: "thump only" (the whuut? A/B lost)
     out = Mix(END); out.L = scene.L + card.L; out.R = scene.R + card.R
     return out
 
