@@ -1949,9 +1949,13 @@ s.listen(0, '127.0.0.1', async () => {
     G.reset();
     const sk = d.spawnSkull(); const u = sk.update.bind(sk); sk.update = (...a) => { u(...a); sk.group.position.set(0, 1.2, 0); };
     // the heap is a question of the SOLVER settling, not of a frame count: a
-    // cheaper frame (HD-011's quality ladder) steps the solver less per frame
+    // cheaper frame (HD-011's quality ladder) steps the solver less per frame.
+    // Capped at 6 s of GAME time: an uncapped wait once ran season 2's clock
+    // past its first ebb (45 s), which raised the ebb's steps early and left
+    // the ebb check below nothing to raise.
     await frames(90); d.killEnemy(sk, 0, -1);
-    for (let i = 0; i < 600 && (G.awake > 0 || i < 90); i++) await frames(1);
+    const kill0 = d.getState().gameTime;
+    for (let i = 0; i < 600 && (G.awake > 0 || i < 90) && d.getState().gameTime - kill0 < 6; i++) await frames(1);
     const before = G.gibs.map(x => [x.b.positionLin[0], x.b.positionLin[1]]);
     const asleep = G.gibs.filter(x => x.b.mass <= 0).length;
     g.t = (g.arenaR + g.cfg.width - 6) / g.speed; await frames(120);
