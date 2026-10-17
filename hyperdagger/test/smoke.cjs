@@ -1048,11 +1048,17 @@ s.listen(0, '127.0.0.1', async () => {
       let director = null;
       if (sn.spawns && sn.spawns.only === 'skulls') {
         for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
-        d.setTime(50); d.freezeDirector(false);
-        // 3.5 s of GAME time, not 70 frames: since HD-011 the quality ladder
-        // steps down on a slow box, frames get cheaper, and 70 of them can
-        // cover less than the 1.2 s before the first skull is due
-        for (let i = 0; i < 2000 && d.getState().gameTime < 53.5; i++) await frames(1);
+        d.setLife?.(60); d.setTime(50); d.freezeDirector(false);   // a full HYPER clock, so the wait cannot end in TIME OUT
+        // Wait for bodies, not for a fixed window. Since v56 season 2's skulls
+        // come through its WAVE table: a wave change opens a breathing gap of
+        // up to 12 s, and inside a wave a skull is spawned only while the sea
+        // is in a trough, at random. A fixed 3.5 s after jumping the clock to
+        // 50 can fall entirely inside a gap — zero bodies by design, and the
+        // check read that as "the director spawns nothing". So: run the
+        // director (in GAME time, never frames) until three bodies have
+        // arrived, or 20 s of game time; then every one must be a skull.
+        const alive = () => hd.enemies.filter(e => e.alive).length;
+        for (let i = 0; i < 4000 && d.getState().gameTime < 70 && alive() < 3; i++) await frames(1);
         d.freezeDirector(true);
         const types = {}; for (const e of hd.enemies) if (e.alive) types[e.type] = (types[e.type] || 0) + 1;
         director = { types, total: hd.enemies.filter(e => e.alive).length };
@@ -1938,7 +1944,10 @@ s.listen(0, '127.0.0.1', async () => {
     for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
     G.reset();
     const sk = d.spawnSkull(); const u = sk.update.bind(sk); sk.update = (...a) => { u(...a); sk.group.position.set(0, 1.2, 0); };
-    await frames(90); d.killEnemy(sk, 0, -1); await frames(90);
+    // the heap is a question of the SOLVER settling, not of a frame count: a
+    // cheaper frame (HD-011's quality ladder) steps the solver less per frame
+    await frames(90); d.killEnemy(sk, 0, -1);
+    for (let i = 0; i < 600 && (G.awake > 0 || i < 90); i++) await frames(1);
     const before = G.gibs.map(x => [x.b.positionLin[0], x.b.positionLin[1]]);
     const asleep = G.gibs.filter(x => x.b.mass <= 0).length;
     g.t = (g.arenaR + g.cfg.width - 6) / g.speed; await frames(120);
