@@ -119,9 +119,15 @@
       c.beginPath(); c.moveTo(x - 30 * s, y - f); c.quadraticCurveTo(x - 12 * s, y - 8 * s, x, y); c.quadraticCurveTo(x + 12 * s, y - 8 * s, x + 30 * s, y - f); c.quadraticCurveTo(x + 12 * s, y + 2 * s, x, y + 5 * s); c.quadraticCurveTo(x - 12 * s, y + 2 * s, x - 30 * s, y - f); c.fill(); } }
     return {
       draw(c, lt) {
+        const z = 1 + lt * 0.012; c.save(); c.translate(W / 2, H * 0.6); c.scale(z, z); c.translate(-W / 2, -H * 0.6);
         c.drawImage(paper(), 0, 0);
         c.save(); c.globalCompositeOperation = 'multiply'; c.drawImage(blocks(), 2, -1); c.restore();   // the colour blocks, a hair off the key
-        crows(c, lt); house(c); ground(c); gate(c); toko(c, lt); tree(c); drone(c, lt);
+        crows(c, lt); house(c);
+        c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.08 + 0.05 * Math.sin(lt * 7) * Math.sin(lt * 3.1); c.fillStyle = K.glow; c.fillRect(270, 1080, 330, 190); c.restore();
+        ground(c); gate(c); toko(c, lt); tree(c); drone(c, lt);
+        { const t0 = 1.6, k = clamp((lt - t0) / 0.9), x = 742 - k * 20, y = k <= 0 ? 1180 : lerp(1180, 1760, k * k) - (k > 0.98 ? 0 : 0);   // the one that lets go
+          c.fillStyle = K.kaki; c.strokeStyle = K.key; c.lineWidth = 2.5; c.beginPath(); c.ellipse(x, y, 19, 17, k * 4, 0, TAU); c.fill(); c.stroke(); }
+        c.restore();
         // the title cartouche and the series cartouche, top right
         c.fillStyle = K.paper; c.fillRect(916, 70, 112, 380); c.strokeStyle = K.seal; c.lineWidth = 5; c.strokeRect(916, 70, 112, 380);
         vtext(c, '山里の秋', 972, 96, 72, 'NotoSerifJP-600', K.key);
@@ -143,8 +149,11 @@
     function gradTone(c, x0, y0, x1, y1, pitch, from, to) { c.fillStyle = INK; for (let y = y0; y < y1; y += pitch) { const k = (y - y0) / (y1 - y0), r = lerp(from, to, k) * pitch; if (r < 0.3) continue; for (let x = x0 + ((y / pitch) % 2) * pitch / 2; x < x1; x += pitch) { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); } } }
     const panel = (x, y, w, h) => { const p = new Path2D(); p.rect(x, y, w, h); return p; };
     /** SFX lettering: heavy gothic, a white outline round a black fill, set at an angle */
-    function sfx(c, s, x, y, size, rot, { vertical = false, fill = INK, stroke = PAGE, sw = 14 } = {}) {
-      c.save(); c.translate(x, y); c.rotate(rot); c.font = `${size}px "IPAPGothic"`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    let LT = 0;
+    const spring = (t0) => { const k = clamp((LT - t0) / 0.32); return k <= 0 ? 0 : 1 + Math.sin(k * Math.PI) * 0.25 * (1 - k); };
+    function sfx(c, s, x, y, size, rot, { vertical = false, fill = INK, stroke = PAGE, sw = 14, t0 = 0 } = {}) {
+      const sp = spring(t0); if (sp <= 0) return;
+      c.save(); c.translate(x, y); c.rotate(rot); c.scale(sp, sp); c.font = `${size}px "IPAPGothic"`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
       const chars = [...s]; chars.forEach((ch, i) => { const dx = vertical ? 0 : (i - (chars.length - 1) / 2) * size * 0.92, dy = vertical ? (i - (chars.length - 1) / 2) * size * 0.95 : 0;
         c.lineWidth = sw; c.strokeStyle = stroke; c.strokeText(ch, dx, dy); c.lineWidth = sw * 0.35; c.strokeStyle = fill; c.strokeText(ch, dx, dy); c.fillStyle = fill; c.fillText(ch, dx, dy); });
       c.restore();
@@ -163,8 +172,14 @@
       else { c.fillStyle = INK; c.beginPath(); c.arc(0, -18, 38, 0, TAU); c.fill(); }
       c.restore();
     }
+    const ease = (k) => { k = clamp(k); return k * k * (3 - 2 * k); };
+    // the reading camera: [time, centre x, centre y, zoom]
+    // manga reads right to left, then down: the camera pans across panel 1 from its right edge, then drops panel by panel
+    const CAM = [[0, 610, 392, 1.32], [1.3, 470, 392, 1.32], [1.8, 540, 965, 1.45], [3.0, 540, 965, 1.45], [3.5, 540, 1530, 1.36], [4.3, 540, 1530, 1.36], [4.9, 540, 960, 1.0], [9, 540, 960, 1.0]];
+    function camAt(t) { let i = 0; while (i < CAM.length - 2 && CAM[i + 1][0] <= t) i++; const a = CAM[i], b = CAM[i + 1], k = ease((t - a[0]) / (b[0] - a[0])); return [lerp(a[1], b[1], k), lerp(a[2], b[2], k), lerp(a[3], b[3], k)]; }
     return {
-      draw(c, lt) {
+      draw(c0, lt) {
+        const c = P.scratch('jpm_page').getContext('2d'); LT = lt;
         c.fillStyle = PAGE; c.fillRect(0, 0, W, H);
         const M = 48, G = 22, p1 = [M, 70, W - 2 * M, 640], p2 = [M, 70 + 640 + G, W - 2 * M, 500], p3 = [M, 70 + 640 + G + 500 + G, W - 2 * M, 1850 - (70 + 640 + G + 500 + G)];
         // ---- panel 1: the last train
@@ -178,7 +193,7 @@
         figure(c, 520, 430, 1.45, { maskCol: PURPLE, tone: 'mid' });
         c.strokeStyle = INK; c.lineWidth = 5; c.beginPath(); c.moveTo(560, 400); c.lineTo(600, 170); c.stroke(); c.beginPath(); c.arc(600 + Math.sin(lt * 3 + 5) * 4, 152, 22, 0, TAU); c.stroke();   // his arm up to a strap
         c.restore(); c.lineWidth = 7; c.strokeStyle = INK; c.stroke(pp);
-        sfx(c, 'ガタン', 250, p1[1] + 230, 96, -0.12); sfx(c, 'ゴトン', 820, p1[1] + 260, 96, 0.1);
+        sfx(c, 'ガタン', 820, p1[1] + 230, 96, 0.1, { t0: 0.2 }); sfx(c, 'ゴトン', 250, p1[1] + 260, 96, -0.12, { t0: 0.8 });
         c.fillStyle = PAGE; c.fillRect(p1[0] + 18, p1[1] + 352, 250, 76); c.lineWidth = 4; c.strokeRect(p1[0] + 18, p1[1] + 352, 250, 76);
         c.fillStyle = INK; c.font = '40px "IPAPGothic"'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText('0:47 終電', p1[0] + 36, p1[1] + 391);
         // ---- panel 2: the phone
@@ -194,7 +209,7 @@
         for (let k = 0; k < 3; k++) { c.beginPath(); c.roundRect(px + 200, py + 180 + k * 46, 60, 34, 16); c.fill(); c.stroke(); }
         c.lineWidth = 4; for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { c.beginPath(); c.arc(W / 2 + s * (150 + k * 22), py + 200, 40 + k * 22, s < 0 ? Math.PI * 0.8 : -Math.PI * 0.2, s < 0 ? Math.PI * 1.2 : Math.PI * 0.2); c.stroke(); }
         c.restore(); c.lineWidth = 7; c.stroke(pp);
-        sfx(c, 'ブブブ', 830, p2[1] + 110, 92, 0.18); sfx(c, 'ブブ', 190, p2[1] + 400, 80, -0.2);
+        sfx(c, 'ブブブ', 830, p2[1] + 110, 92, 0.18, { t0: 1.9 }); sfx(c, 'ブブ', 190, p2[1] + 400, 80, -0.2, { t0: 2.4 });
         // ---- panel 3: the room at 1:07
         pp = panel(...p3); c.save(); c.clip(pp);
         const wall = new Path2D(); wall.rect(p3[0], p3[1], p3[2], p3[3] * 0.62); fillTone(c, wall, 'light', 11, 1.4);
@@ -210,9 +225,12 @@
         c.fillStyle = PAGE; c.strokeStyle = INK; c.lineWidth = 4; for (const [x, y] of [[700, ly + 160], [740, ly + 180]]) { c.beginPath(); c.roundRect(x, y, 34, 60, 6); c.fill(); c.stroke(); }   // cans
         c.beginPath(); c.moveTo(130, ly + 200); c.lineTo(200, ly + 100); c.lineTo(270, ly + 200); c.closePath(); c.fill(); c.stroke();                                   // the konbini bag
         c.restore(); c.lineWidth = 7; c.stroke(pp);
-        sfx(c, 'シーン', 740, p3[1] + 330, 104, 0, { vertical: true });
+        sfx(c, 'シーン', 740, p3[1] + 330, 104, 0, { vertical: true, t0: 3.7 });
         c.fillStyle = INK; c.font = '30px "IPAPGothic"'; c.textAlign = 'center'; c.fillText('1:07', 930, p3[1] + 196);
         c.font = '24px "Poppins-800"'; c.textAlign = 'right'; c.fillText('TOKYO TOKO · 01', W - M, 1890);
+        const [cx, cy, z] = camAt(lt);
+        c0.fillStyle = PAGE; c0.fillRect(0, 0, W, H);
+        c0.save(); c0.translate(W / 2, H / 2); c0.scale(z, z); c0.translate(-cx, -cy); c0.drawImage(c.canvas, 0, 0); c0.restore();
       },
     };
   })();
@@ -221,11 +239,16 @@
   SCENES['jp_tokyo_citypop'] = (() => {
     const C = { sky0: '#1e3a8a', sky1: '#3b82c4', sky2: '#f2a6b8', sky3: '#ffd2a1', sun: '#ffe7b0', glass: '#7fb8e6', glassD: '#3d6fa8', glassL: '#c9e6ff', conc: '#f1e6da', concD: '#d9c4b4',
       road: '#5a5f7a', lamp: '#ffd27a', rail: '#ffffff', shadow: '#2d3561', suit: '#f3efe8', suitD: '#c9c2b8', ink: '#1b2140', pink: '#ff6fa8', mint: '#7fe0c8' };
+    const sky = () => P.cached('jpc_sky', W, H, (g) => { const sk = g.createLinearGradient(0, 0, 0, 1300); sk.addColorStop(0, C.sky0); sk.addColorStop(0.42, C.sky1); sk.addColorStop(0.78, C.sky2); sk.addColorStop(1, C.sky3); g.fillStyle = sk; g.fillRect(0, 0, W, 1400); });
+    function sun(c, lt) {   // low, cut by thin bands (the airbrush sleeve's signature), sinking
+      const y = 1060 + lt * 9; c.save(); c.beginPath(); c.arc(560, y, 170, 0, TAU); c.clip(); const sg = c.createLinearGradient(0, y - 170, 0, y + 170); sg.addColorStop(0, '#fff3c4'); sg.addColorStop(1, '#ffb27a'); c.fillStyle = sg; c.fillRect(380, y - 180, 360, 360);
+      c.fillStyle = C.sky2; for (let i = 0; i < 6; i++) c.fillRect(380, y + 20 + i * 28, 360, 6 + i * 3); c.restore(); }
+    function traffic(c, lt) {   // headlights one way, tail lights the other, along the expressway's curve
+      const at = (t, off) => { const x = lerp(-50, 1130, t); return [x, 1340 + Math.sin(t * Math.PI * 1.4) * -40 + (t > 0.5 ? (t - 0.5) * 60 : 0) + off - 30 * Math.sin(t * Math.PI)]; };
+      for (let i = 0; i < 9; i++) { const [x, y] = at(((lt * 0.12 + i / 9) % 1), 22); c.fillStyle = '#fff6d8'; c.fillRect(x - 6, y - 3, 12, 5); }
+      for (let i = 0; i < 9; i++) { const [x, y] = at(1 - ((lt * 0.1 + i / 9 + 0.05) % 1), 36); c.fillStyle = '#ff5a6a'; c.fillRect(x - 6, y - 3, 12, 5); }
+    }
     const stat = () => P.cached('jpc_static', W, H, (g) => {
-      const sk = g.createLinearGradient(0, 0, 0, 1300); sk.addColorStop(0, C.sky0); sk.addColorStop(0.42, C.sky1); sk.addColorStop(0.78, C.sky2); sk.addColorStop(1, C.sky3); g.fillStyle = sk; g.fillRect(0, 0, W, 1400);
-      // the sun, low, cut by thin bands (the airbrush sleeve's signature)
-      g.save(); g.beginPath(); g.arc(560, 1060, 170, 0, TAU); g.clip(); const sg = g.createLinearGradient(0, 890, 0, 1230); sg.addColorStop(0, '#fff3c4'); sg.addColorStop(1, '#ffb27a'); g.fillStyle = sg; g.fillRect(380, 880, 360, 360);
-      g.fillStyle = C.sky2; for (let i = 0; i < 6; i++) g.fillRect(380, 1080 + i * 28, 360, 6 + i * 3); g.restore();
       // the skyline: flat glass towers with window grids and one hard shadow plane each
       const r = rng(17);
       for (let i = 0; i < 9; i++) { const x = -40 + i * 130 + r() * 30, w = 90 + r() * 70, h = 220 + r() * 400, y = 1300 - h; if (x < 690 && x + w > 430) continue;
@@ -263,7 +286,7 @@
     }
     return {
       draw(c, lt) {
-        c.drawImage(stat(), 0, 0);
+        c.drawImage(sky(), 0, 0); sun(c, lt); c.drawImage(stat(), 0, 0); traffic(c, lt);
         toko(c, lt);
         // the sleeve: an inner border, the title, the catalogue line
         c.strokeStyle = '#ffffff'; c.lineWidth = 6; c.strokeRect(40, 40, W - 80, H - 80);

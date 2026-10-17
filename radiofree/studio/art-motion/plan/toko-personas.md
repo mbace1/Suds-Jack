@@ -61,5 +61,11 @@ Each Japanese persona has a Finnish counterpart. They answer the same news from 
 | `looks/toko-japan-clay.png` (`clay/japan/film-jp.js`) | **Clay**, on the Welcome Home stage kit.<br>Kyoto: kneeling at the irori with tea, the rotary phone and 電話は午前中のみ, 令和8年 10月, hoshigaki under the eaves.<br>Tokyo: 1:07 a.m., on the phone, 締切 明日, 未読 99+, neon in the window. |
 | `looks/toko-japan-styles.png` (`scenes/jp_kit.js`, `eras_jp.js`) | **Three new styles**, each matched to its persona:<br>Kyoto Toko as a **shin-hanga woodblock print**, in the register of Kawase Hasui's rural dusks. It has 山里の秋 in a cartouche, the 十湖 signature (美鳥十湖 is Toko Midori's name) and the Toko seal. A delivery drone waits beside him and he does not look at it.<br>Tokyo Toko as a **manga page** in ink and screentone, three panels (ガタン ゴトン, ブブブ 未読99+, シーン). The purple mask is the only colour.<br>Tokyo Toko as an **80s city-pop album cover**: 東京残業, TOKYO OVERTIME, the banded sun behind a man who does not turn round. |
 
+| `previews/17-10-Toko-Japan-motion-test.mp4` | **Motion test** (15 s, silent) of the three to test:<br>the woodblock pushes in slowly while crows cross, steam rises and a persimmon drops;<br>the manga is read **right to left, then down**, with each sound effect springing in as its panel is reached;<br>the city-pop sun sinks while traffic streams on the expressway. |
+| `looks/toko-more-styles.png` (`scenes/st_kit.js`, `eras_st.js`) | **Five more styles** (owner: "also consider others"):<br>**sumi-e** for Kyoto, with a haiku (電話鳴る / 山は答えず / 秋の暮 — native read needed);<br>a **16-bit JRPG** screen for Tokyo (トコ HP 3/99; 未読メッセージが 99+件 あります。▶読む 寝る);<br>a two-block **linocut** for Mökki Toko (MÖKILLÄ · 湖畔の小屋);<br>a **risograph** zine for Kallio Toko (PEURA 92% · 鹿);<br>**kamishibai** paper theatre for the pen pals (ペンパル · KIRJEKAVERIT, つづく · JATKUU). |
+
+Each style answers a persona: woodblock or sumi-e for the still one, manga or JRPG for the busy one, linocut for
+Mökki and risograph for Kallio, as the Finnish answers to the woodblock and the manga.
+
 The 2D styles need **IPA P Gothic** registered in the engine's `lib/fonts.js` as `IPAPGothic`, from
 `/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf`. The bundled Noto Sans SC has no kana.
