@@ -120,6 +120,12 @@ export class InputManager {
     this.touchMode = true;
     const now = performance.now();
     for (const t of e.changedTouches) {
+      const sw = this._swallow;
+      if (sw && now - sw.t < 500 && Math.abs(t.clientX - sw.x) < 2 && Math.abs(t.clientY - sw.y) < 2) {
+        this._swallow = null;
+        this._touchMap.set(t.identifier, 'ui');
+        continue;
+      }
       const side = t.clientX < window.innerWidth / 2 ? 'left' : 'right';
       const stick = this[side];
       if (!stick.active) {
@@ -153,6 +159,21 @@ export class InputManager {
       }
     }
   }
+
+  /** HD-003: let go of every finger that is down now. The tap that starts a
+   *  run (or retries it) began on the menu; its lift must not land in the
+   *  run as a stick tap — a jump — or a flick. Those fingers end as UI. */
+  releaseTouches() {
+    for (const id of this._touchMap.keys()) this._touchMap.set(id, 'ui');
+    for (const stick of [this.left, this.right]) { stick.active = false; stick.dx = 0; stick.dy = 0; stick.hist = []; }
+    this._jump = false;
+    this._dashFlick = null;
+  }
+
+  /** HD-003: the same, for a finger whose touchstart has not arrived yet —
+   *  the browser sends pointerdown (which starts the run) BEFORE touchstart.
+   *  The next touch to begin at this point, promptly, is that finger: UI. */
+  swallowTouchAt(x, y) { this._swallow = { x, y, t: performance.now() }; }
 
   _touchEnd(e) {
     const now = performance.now();
