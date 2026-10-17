@@ -776,9 +776,11 @@ the clay is part of the joke.
 X/YouTube `@radiofreehki`) and keeps to its own feed: each brand posts only its
 own films, and Radio Free never says how its films are made. Today **both
 profiles wear the green Toko mask**, which is the overlap; the owner picked a
-lattice radio mast (`icon-c2`, 2026-10-16) to give Radio Free its own icon.
-Whether it goes live now, and whether Radio Free credits *"a Toko Midori
-production"*, are open decisions in that plan.
+lattice radio mast (`icon-c2`, 2026-10-16) to give Radio Free its own icon;
+it goes live only once the owner has seen it at size and approved it.
+**No "a Toko Midori production" credit is needed** (owner, 2026-10-17: it
+*"makes sense but isn't necessary since the mask already establishes that"*) —
+Toko anchors every Radio Free film, and the mask is the credit.
 
 **The social kit is not to this canon yet.** The Toko Midori profile, X header
 and banners (`branding/toko-midori/` on the `branding/toko-rfh-socials`
