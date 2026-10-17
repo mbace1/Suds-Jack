@@ -4,7 +4,7 @@
 import { INK as I, AW, AH } from './print.js';
 
 const TAU = Math.PI * 2, LW = 6;
-const F = (wt, px) => `${wt} ${px}px "RobotoCondensed"`;
+const F = (wt, px) => `${wt} ${px}px "RobotoCondensed", "IPAPGothic"`;   // Japanese falls through to IPA P Gothic
 const ln = (g, w = LW, col = I.K) => { g.lineWidth = w; g.lineJoin = 'round'; g.lineCap = 'round'; g.strokeStyle = col; };
 const poly = (g, pts, close = true) => { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); if (close) g.closePath(); };
 const text = (g, s, x, y, font, { col = I.K, align = 'left', base = 'alphabetic' } = {}) => { g.font = font; g.fillStyle = col; g.textAlign = align; g.textBaseline = base; g.fillText(s, x, y); };
@@ -112,13 +112,14 @@ function callout(g, n, x, y, tx, ty) {
 function header(g, left) {
   g.fillStyle = I.K; g.fillRect(40, 40, AW - 80, 92);
   text(g, left, 64, 102, F(800, 46), { col: I.W });
-  text(g, 'IMPORTANT SAFEGUARDS', AW - 64, 100, F(700, 25), { col: I.W, align: 'right' });
-  text(g, 'EN · FI · SV · DA · NO · DE · FR · ES · IT · NL', 44, 166, F(600, 20));
+  text(g, 'IMPORTANT SAFEGUARDS', AW - 64, 90, F(700, 25), { col: I.W, align: 'right' });
+  text(g, '安全上のご注意', AW - 64, 120, F(400, 19), { col: I.W, align: 'right' });   // a Japanese manual's own heading
+  text(g, 'EN · FI · JA · SV · DA · NO · DE · FR · ES · IT · NL', 44, 166, F(600, 20));
 }
 function sectionHead(g, y, right) {
   // the triangle-with-! in the heading, then the heading in three languages
   g.save(); g.translate(62, y - 11); poly(g, [[0, -17], [19, 15], [-19, 15]]); g.fillStyle = I.Y; g.fill(); ln(g, 3); g.stroke(); text(g, '!', 0, 12, F(800, 22), { align: 'center' }); g.restore();
-  text(g, 'WARNINGS', 92, y, F(800, 34)); text(g, 'VAROITUKSET · VARNINGAR · WARNHINWEISE', 252, y, F(500, 19));
+  text(g, 'WARNINGS', 92, y, F(800, 34)); text(g, 'VAROITUKSET · 警告 · VARNINGAR', 252, y, F(500, 19));
   text(g, right, AW - 46, y, F(600, 24), { align: 'right' });
   ln(g, 3); g.beginPath(); g.moveTo(44, y + 16); g.lineTo(AW - 44, y + 16); g.stroke();
 }
@@ -127,15 +128,15 @@ function barcode(g, x, y, w, h, seed) { let bx = x, s = seed; g.fillStyle = I.K;
 
 // ------------------------------------------------------------------ the toaster side
 const LINES = [
-  ['Do not immerse in water.', 'FI Älä upota laitetta veteen.  SV Sänk inte ned apparaten i vatten.  DE Das Gerät nicht in Wasser tauchen.'],
-  ['Never insert metal objects.', 'FI Älä työnnä laitteeseen metalliesineitä.  SV För aldrig in metallföremål.  DE Keine Metallgegenstände einführen.'],
-  ['Unplug before cleaning.', 'FI Irrota pistoke ennen puhdistusta.  SV Dra ur kontakten före rengöring.  DE Vor der Reinigung den Netzstecker ziehen.'],
-  ['Keep out of reach of children.', 'FI Pidä poissa lasten ulottuvilta.  SV Förvaras utom räckhåll för barn.  DE Von Kindern fernhalten.'],
-  ['Never leave unattended while in use.', 'FI Älä jätä laitetta päälle ilman valvontaa.  SV Lämna aldrig apparaten utan uppsikt.  DE Nie unbeaufsichtigt betreiben.'],
+  ['Do not immerse in water.', 'FI Älä upota laitetta veteen.  JA 本体を水につけないでください。  SV Sänk inte ned apparaten i vatten.'],
+  ['Never insert metal objects.', 'FI Älä työnnä laitteeseen metalliesineitä.  JA 金属製のものを入れないでください。  SV För aldrig in metallföremål.'],
+  ['Unplug before cleaning.', 'FI Irrota pistoke ennen puhdistusta.  JA お手入れの前に電源プラグを抜いてください。  SV Dra ur kontakten före rengöring.'],
+  ['Keep out of reach of children.', 'FI Pidä poissa lasten ulottuvilta.  JA お子様の手の届かない所に置いてください。  SV Förvaras utom räckhåll för barn.'],
+  ['Never leave unattended while in use.', 'FI Älä jätä laitetta päälle ilman valvontaa.  JA 使用中はそばを離れないでください。  SV Lämna aldrig apparaten utan uppsikt.'],
 ];
 const PICTS = [
-  [triangle, 'heat', 'Hot surface', 'Kuuma pinta'], [triangle, 'shock', 'Electric shock', 'Sähköisku'], [triangle, 'child', 'Children', 'Lapset'], [forbid, 'water', 'No water', 'Ei vettä'],
-  [forbid, 'fork', 'No metal', 'Ei metallia'], [forbid, 'rain', 'Indoors only', 'Vain sisällä'], [must, 'plug', 'Unplug', 'Irrota pistoke'], [must, 'book', 'Read manual', 'Lue ohjeet'],
+  [triangle, 'heat', 'Hot surface', 'Kuuma pinta', '高温注意'], [triangle, 'shock', 'Electric shock', 'Sähköisku', '感電注意'], [triangle, 'child', 'Children', 'Lapset', '子供に注意'], [forbid, 'water', 'No water', 'Ei vettä', '水につけない'],
+  [forbid, 'fork', 'No metal', 'Ei metallia', '金属を入れない'], [forbid, 'rain', 'Indoors only', 'Vain sisällä', '屋内専用'], [must, 'plug', 'Unplug', 'Irrota pistoke', 'プラグを抜く'], [must, 'book', 'Read manual', 'Lue ohjeet', '取扱説明書を読む'],
 ];
 export function front(g) {
   header(g, 'TOASTER T-2');
@@ -150,8 +151,8 @@ export function front(g) {
   callout(g, 1, 120, 230, 205, 300); callout(g, 2, 560, 236, 486, 330); callout(g, 3, 110, 560, 222, 440); callout(g, 4, 600, 630, 656, 548);
   text(g, '1  Bread slots      2  Lever      3  Browning control      4  Plug', 44, 676, F(500, 19));
   sectionHead(g, 724, '3 / 48');
-  PICTS.forEach(([shape, sym, en, fi], i) => { const [x, y] = CELL(i); shape(g, x, y, 104, SYM[sym]); text(g, en, x, y + 72, F(700, 16), { align: 'center' }); text(g, fi, x, y + 90, F(400, 14), { align: 'center' }); });
-  LINES.forEach(([en, tr], i) => { const y = 1104 + i * 34; text(g, `${i + 1}.`, 44, y, F(800, 20)); text(g, en, 70, y, F(700, 20)); text(g, tr, 70, y + 16, F(400, 12)); });
+  PICTS.forEach(([shape, sym, en, fi, ja], i) => { const [x, y] = CELL(i); shape(g, x, y, 104, SYM[sym]); text(g, en, x, y + 70, F(700, 16), { align: 'center' }); text(g, fi, x, y + 87, F(400, 14), { align: 'center' }); text(g, ja, x, y + 104, F(400, 13), { align: 'center' }); });
+  LINES.forEach(([en, tr], i) => { const y = 1102 + i * 32; text(g, `${i + 1}.`, 44, y, F(800, 20)); text(g, en, 70, y, F(700, 20)); text(g, tr, 70, y + 16, F(400, 12)); });
   // the footer: what it was tested to, the bin, the barcode, the instruction to keep all of this
   ln(g, 3.5); g.beginPath(); g.ellipse(132, 1312, 86, 30, 0, 0, TAU); g.stroke(); text(g, 'IEC 60335-2-9', 132, 1313, F(700, 21), { align: 'center', base: 'middle' });
   g.beginPath(); g.roundRect(240, 1284, 128, 56, 9); g.stroke(); text(g, 'UL 1026', 304, 1313, F(700, 21), { align: 'center', base: 'middle' });
@@ -159,7 +160,7 @@ export function front(g) {
   g.save(); g.translate(492, 1312); ln(g, 3.5); poly(g, [[-17, -22], [17, -22], [13, 23], [-13, 23]]); g.stroke(); g.beginPath(); g.moveTo(-26, -29); g.lineTo(26, 32); g.moveTo(26, -29); g.lineTo(-26, 32); g.stroke(); g.restore();
   barcode(g, 560, 1286, 190, 46, 11); text(g, '6 412345 678906', 655, 1350, F(500, 15), { align: 'center' });
   text(g, '3', AW - 52, 1324, F(800, 30), { align: 'right' });
-  text(g, 'SAVE THESE INSTRUCTIONS · SÄILYTÄ NÄMÄ OHJEET · SPARA DESSA ANVISNINGAR', AW / 2, 1270, F(700, 15), { align: 'center' });
+  text(g, 'SAVE THESE INSTRUCTIONS · SÄILYTÄ NÄMÄ OHJEET · 大切に保管してください', AW / 2, 1274, F(700, 15), { align: 'center' });
 }
 
 // ------------------------------------------------------------------ the frontier model side: the same page, empty
@@ -175,9 +176,9 @@ export function back(g) {
   for (let i = 0; i < 8; i++) { const [x, y] = CELL(i); g.beginPath(); g.arc(x, y, 52, 0, TAU); g.stroke(); }
   g.setLineDash([]);
   for (let i = 0; i < 8; i++) { const [x, y] = CELL(i); text(g, '—', x, y + 80, F(700, 17), { align: 'center' }); }
-  text(g, '1.', 44, 1104, F(800, 20)); text(g, 'Release.', 70, 1104, F(700, 20)); text(g, 'FI Julkaise.  SV Släpp.  DE Veröffentlichen.', 70, 1120, F(400, 12));
+  text(g, '1.', 44, 1104, F(800, 20)); text(g, 'Release.', 70, 1104, F(700, 20)); text(g, 'FI Julkaise.  JA 公開する。  SV Släpp.', 70, 1120, F(400, 12));
   g.setLineDash([3, 7]); ln(g, 2);
-  for (let i = 1; i < 5; i++) { const y = 1104 + i * 34; text(g, `${i + 1}.`, 44, y, F(800, 20)); g.beginPath(); g.moveTo(70, y); g.lineTo(560, y); g.stroke(); g.beginPath(); g.moveTo(70, y + 14); g.lineTo(820, y + 14); g.stroke(); }
+  for (let i = 1; i < 5; i++) { const y = 1102 + i * 32; text(g, `${i + 1}.`, 44, y, F(800, 20)); g.beginPath(); g.moveTo(70, y); g.lineTo(560, y); g.stroke(); g.beginPath(); g.moveTo(70, y + 14); g.lineTo(820, y + 14); g.stroke(); }
   g.setLineDash([8, 8]); ln(g, 3);
   g.beginPath(); g.ellipse(132, 1312, 86, 30, 0, 0, TAU); g.stroke(); g.beginPath(); g.roundRect(240, 1284, 128, 56, 9); g.stroke();
   g.setLineDash([]);
@@ -185,5 +186,5 @@ export function back(g) {
   text(g, 'TESTED TO: —', 400, 1314, F(700, 21), { base: 'middle' });
   barcode(g, 600, 1286, 150, 46, 29);
   text(g, '4', AW - 52, 1324, F(800, 30), { align: 'right' });
-  text(g, 'SAVE THESE INSTRUCTIONS · SÄILYTÄ NÄMÄ OHJEET · SPARA DESSA ANVISNINGAR', AW / 2, 1270, F(700, 15), { align: 'center' });
+  text(g, 'SAVE THESE INSTRUCTIONS · SÄILYTÄ NÄMÄ OHJEET · 大切に保管してください', AW / 2, 1274, F(700, 15), { align: 'center' });
 }

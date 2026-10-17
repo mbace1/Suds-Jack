@@ -15,6 +15,7 @@ films taught, turned into the questions a pitch has to answer before anything is
 | "the bottom infos … are blocked on Instagram by the bottom texts and channel info" | A Handful of People | **Keep the bottom clear.** Instagram's caption, channel line and buttons cover the bottom of a Reel: no where/what tag or other text below y = 1630 (`RFP.SAFE_B`), and nothing in the right-hand 160 px below the middle of the frame. |
 | "funny … needs clarity or more jokes" | Unexpectedly, a Deer | **Set up the stake early** (the $20/MO tag in shot 1), so every later gag is paid for. |
 | "it had small glitches … I like those" | Biodiversity Fund | Test very subtle glitches later; never on a caption. |
+| "Add japanese text to the roster. If you use Finnish, sometimes consider japanese or both as additional theme elements" | Kill Switch | **Finnish and Japanese are the house's second voices** (the station speaks fi/en/ja). Wherever Finnish appears as texture (a label, a manual line, a sign, a jar), consider Japanese with it or instead of it. Set Japanese in a **gothic** (IPA P Gothic, `fonts-ipafont-gothic`), never the bundled serif; the bundled Noto Sans SC has no kana. Use the real conventions: a Japanese manual opens with 安全上のご注意. |
 
 And from the work itself:
 

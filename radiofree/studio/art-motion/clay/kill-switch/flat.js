@@ -10,6 +10,8 @@ const FONT_DIR = '../am/' + encodeURIComponent('代码工程') + '/lib/fonts/';
 for (const [fam, file, desc] of [['RobotoCondensed', 'RobotoCondensed-var.woff', { weight: '100 900' }], ['Kalam', 'Kalam-700.woff', {}], ['Poppins-800', 'Poppins-800.woff', {}]]) {
   const f = new FontFace(fam, `url(${FONT_DIR}${file})`, desc); document.fonts.add(await f.load());
 }
+// Japanese: IPA P Gothic (fonts-ipafont-gothic, IPA Font License) — a gothic, as Japanese manuals are set
+{ const f = new FontFace('IPAPGothic', 'url(../fonts/ipagp.ttf)'); document.fonts.add(await f.load()); }
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 

@@ -19,6 +19,7 @@ import { Toko } from '../clay-roadster/lib/toko.js';
 const W = 1080, H = 1920, TAU = Math.PI * 2;
 const FONT_DIR = '../am/' + encodeURIComponent('代码工程') + '/lib/fonts/';
 { const f = new FontFace('Inter', `url(${FONT_DIR}Inter-var.woff)`, { weight: '100 900' }); document.fonts.add(await f.load()); }
+{ const f = new FontFace('IPAPGothic', 'url(../fonts/ipagp.ttf)'); document.fonts.add(await f.load()); }   // Japanese, a gothic
 const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuffer: true });
 renderer.setPixelRatio(1); renderer.setSize(W, H, false);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -105,7 +106,12 @@ mesh(new RoundedBoxGeometry(24, 0.3, 11, 2, 0.12), M.cooktop, { pos: [48, CTOP +
 // open shelves either side of the window with jars, cups, a plant
 for (const [x0, x1] of [[-62, -20], [40, 68]]) mesh(lumpy(new RoundedBoxGeometry(x1 - x0, 1.4, 7, 2, 0.4), 0.02, 0.5, 600 + x0), M.oak, { pos: [(x0 + x1) / 2, 60, BACK + 3.6] });
 { const r = rng(23);
-  for (const x of [-58, -51, -44]) mesh(lumpy(new THREE.CylinderGeometry(2.4, 2.4, 6 + r() * 3, 20), 0.02, 1, 610 + x), M.jar, { pos: [x, 64.5, BACK + 3.6] });
+  const label = (fi, ja) => { const c = canvas(256, 200), g = c.getContext('2d'); g.fillStyle = '#f7f2e6'; g.fillRect(0, 0, 256, 200); g.strokeStyle = '#2a2523'; g.lineWidth = 6; g.strokeRect(10, 10, 236, 180);
+    g.fillStyle = '#2a2523'; g.textAlign = 'center'; g.font = '700 54px Inter'; g.fillText(fi, 128, 88); g.font = '64px IPAPGothic'; g.fillText(ja, 128, 166); const t = tex(c); return new THREE.MeshStandardMaterial({ map: t, roughness: 0.85 }); };
+  for (const [x, fi, ja] of [[-58, 'SUOLA', '塩'], [-51, 'SOKERI', '砂糖'], [-44, 'KAHVI', '珈琲']]) {
+    const h = 6 + r() * 3; mesh(lumpy(new THREE.CylinderGeometry(2.4, 2.4, h, 20), 0.02, 1, 610 + x), M.jar, { pos: [x, 61.4 + h / 2, BACK + 3.6] });
+    mesh(new THREE.CylinderGeometry(2.46, 2.46, 2.9, 24, 1, true, -0.8, 1.6), label(fi, ja), { pos: [x, 61.4 + h * 0.45, BACK + 3.6], cast: false });
+  }
   for (const x of [-34, -27]) mesh(lumpy(lathe([[0, 0], [2.1, 0], [2.4, 2.8], [2.5, 3.4], [0, 3.4]], 24), 0.02, 1, 620 + x), M.cup, { pos: [x, 60.7, BACK + 3.6] });
   for (const x of [46, 54]) mesh(lumpy(ball(3, 1, 0.5, 1, 20), 0.02, 1, 630 + x), M.cup, { pos: [x, 62, BACK + 3.6] });
 }
