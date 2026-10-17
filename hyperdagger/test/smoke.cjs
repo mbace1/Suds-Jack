@@ -1493,7 +1493,7 @@ s.listen(0, '127.0.0.1', async () => {
       cv.cargo.stats.spilled += 2;
       await frames(3);
       out.afterSpill = d.getRun().runBonus - s0.runBonus;
-      out.hud = document.getElementById('kills').textContent;
+      out.hud = document.getElementById('clockLabel').textContent;   // HD-010: the load reads on the clock's label now, not the kill line
       out.timer = document.getElementById('timer').textContent;
       return out;
     });
@@ -1606,7 +1606,7 @@ s.listen(0, '127.0.0.1', async () => {
     && haul.profile[1].speed > haul.profile[0].speed && haul.profile[1].turn > haul.profile[0].turn,
     JSON.stringify({ shots: haul.shots, profile: haul.profile }));
   ok('haul: CARGO IS THE SCORE — a loose crate you land on sets back, a spilled one costs a second, and the HUD carries the load',
-    haul3.saved === 1 && haul3.welded && haul3.afterSpill === -2 && /load \d+/.test(haul3.hud),
+    haul3.saved === 1 && haul3.welded && haul3.afterSpill === -2 && /\d+ CRATES ON BOARD · [+-]?\d+s/.test(haul3.hud),
     JSON.stringify(haul3));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
