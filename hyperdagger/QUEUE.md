@@ -52,6 +52,50 @@ Script accepts season. Game sends season. Endpoint empty until deployed. Top-10 
 Verify Season 1 rubble/rockfall, Season 2 jumpable waves/tide/drain, and Season 3 truck/cargo/gaze all feed the pure timer correctly on PURE and HYPER. Confirm mobile and gamepad paths. Update VERSIONS.md and hub note.
 
 
+### HD-016 — The convoy crashes on its own
+
+- status: Queued
+- size: M
+- blocked-by: HD-017 step 1 (the seeded convoy)
+- design: Mikael, 17 Oct 2026 — yes to the convoy crashing on its own, Clustertruck's comedy at the cost of fairness
+- gate: after HD-014 lands (both rewrite `convoy.js`); plan before code; separate PR; Mikael's yes to merge
+
+From the 17 Oct comparison with Clustertruck. Today's trucks are polite drivers: FOLLOW never lets one drive through the truck ahead. So the only chaos is a jackknife the player causes with missiles, plus the scripted pile-up at 180 s. Clustertruck's trucks crash on their own, and the disaster is the joy.
+
+Plan sketch:
+- A crash is the existing fold (crawl, trailer swung across the lane, load spilled), so there is no new wreck state. It has two causes:
+  - A REAR-END: now and then one truck ignores FOLLOW for a few seconds and closes on the truck ahead. On contact both jolt and the rear one folds.
+  - A BLOWOUT: a truck at speed folds in the middle of a lane change.
+- A one-second tell comes first: hazard lights blink and the truck wobbles. Surprise is the comedy. The tell keeps a fall the player's misread rather than a coin flip.
+- It can happen to the truck you stand on. A crawling wreck is still floor (the pile-up proves it). The danger is being left behind while the convoy drives off, so the move is to jump ship.
+- Rate: none in the first wave (learn the platforms), then roughly one every 20–30 s, and more after the finale. The rate is data on the season, measured with `hd-loop`, not set by eye.
+- The way forward always holds: a crash never leaves the road ahead empty, because laying works off the frontmost truck within reach.
+- Every roll comes from the run's own stream, so a daily run crashes the same way for everyone.
+- Open for Mikael: does a spill the convoy causes itself cost cargo seconds?
+
+### HD-017 — Hand-built roads on some days
+
+- status: Queued
+- size: L
+- blocked-by: —
+- design: Mikael, 17 Oct 2026 — yes to some days using a hand-built road, for mastery and speedruns; HD-004 (daily runs)
+- gate: plan before code; step 1 is its own small PR; Mikael's yes to merge each step
+
+Clustertruck's mastery comes from authored levels with lines you can learn. Season 3's road is generated. And, found while planning this item, it is not seeded either. `convoy.js` draws every gap, lane, deck height, speed and brake from `Math.random`. So a DAILY run shares the enemy schedule but every player gets a different road, and HD-004's promise that everyone faces the same seed does not hold for season 3.
+
+Plan sketch:
+1. Seed the convoy. A daily run draws its road from the run seed, so the same day gives everyone the same road. Free runs stay random. A check proves two daily runs lay the same trucks, and that a free run does not.
+2. Segments are the authoring unit: short hand-built pieces of 10–20 s, written as data. Each lists every truck's lane, gap, deck height and speed, plus scripted events (brake at t, lane change at t, crash at t). A first set, as examples:
+   - THE STAIRS: decks stepping up.
+   - THE LADDER: gaps only the double jump clears.
+   - THE WEAVE: lane changes under your feet.
+   - THE BRAKE WALL: a row braking at once.
+   - THE FUNNEL: one lane only.
+3. A hand-built road is a named, fixed chain of segments out to 300 s, with the pile-up still at 180 s. On its day it replaces the generated road, and the goal card names it (TODAY'S ROAD: THE LADDER). The trucks drive their script, so a line can be learned. Only the player's missiles change it.
+4. The daily board and run history stay keyed as they are (season:mode). The road's name rides on the entry.
+- Later: generated days could draw from the same segments, so the hand-built pieces turn up in ordinary runs too.
+- Open for Mikael: how often the daily is a hand-built road.
+
 ## In progress
 
 ### HD-014 — Season 3 trucks become floating landspeeders
