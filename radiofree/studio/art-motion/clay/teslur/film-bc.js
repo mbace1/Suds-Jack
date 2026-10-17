@@ -33,7 +33,7 @@ import { Toko } from './lib/toko.js';
 const Q = new URLSearchParams(location.search);
 const RES = Number(Q.get('res') || 1), VER = (Q.get('ver') || 'B').toUpperCase();
 const W = Math.round(1080 * RES), H = Math.round(1920 * RES), FPS = 24, POSE_FPS = 12;
-const CARD_T = 17.5, END_T = 21.0, FRAMES = Math.round(END_T * FPS);
+const CARD_T = 25.5, END_T = 29.5, FRAMES = Math.round(END_T * FPS);
 
 // ------------------------------------------------------------------ helpers
 const DEG = Math.PI / 180;
@@ -532,28 +532,39 @@ const JR = spot('#86c4ff', 70000, [130, 120, L.tokoZ - 150], [-6, 34, L.tokoZ], 
 const JR2 = spot('#ffd3a0', 12000, [-90, 40, L.tokoZ - 120], [-6, 26, L.tokoZ], 0.35, 0.7);
 
 // ------------------------------------------------------------------ the timeline (global seconds). Everything moves on ONES; the clay boils at 12 Hz.
-const TL = { car: { up1: 3.2, top: 5.6, down: 7.0, foot: 8.6, up2: 9.2, lip: 10.6 }, jetsOn: 11.45, jetsOff: 13.95, stop: 13.6, what: 14.0, vacOn: 0.4, vacOff: 14.0 };
-// the cough — puff … puff-puff … long wheeze … puff … puff. Each stutter throws clay smoke and the car hiccups.
+// The gag: the car and the janitor's vacuum are ONE thing. The car climbs while his vacuum runs (on just before he
+// walks in), drops back down the instant he walks out of frame with it, climbs again when he comes back — and
+// coughs the moment he stops and switches it off.
+const TL = {
+  car: { up1: 1.5, mid: 5.0, resume: 7.0, top: 10.0, down: 12.0, foot: 13.6, up2: 15.0, lip: 19.0 },
+  jetsOn: 19.6, jetsOff: 21.8,
+  vacOn1: 1.5, enter1: 2.5, exit1: 12.0, vacOn2: 15.0, enter2: 15.4, stop: 22.0, vacOff: 22.0, peek: 22.1, cam: 23.3,
+};
+// the cough — puff … puff-puff … long wheeze … big … small. Each stutter throws clay smoke and the car hiccups.
 const COUGH = [
-  { t: 14.05, size: 'small' },
-  { t: 14.62, size: 'medium' },
-  { t: 14.86, size: 'medium' },
-  { t: 15.45, size: 'wheeze', dur: 0.85 },
-  { t: 16.58, size: 'large' },
-  { t: 17.12, size: 'small' },
+  { t: 22.0, size: 'small' },
+  { t: 22.57, size: 'medium' },
+  { t: 22.81, size: 'medium' },
+  { t: 23.4, size: 'wheeze', dur: 0.85 },
+  { t: 24.53, size: 'large' },
+  { t: 25.07, size: 'small' },
 ];
 const CSZ = {   // puffs, puff size range (× clay unit), the hiccup's drop in cm (2 cm = 1 ft; 3.3–6.6 cm = 0.5–1 m), the G spike
   small: { n: 3, s: [1.8, 2.6], drop: 3.4, g: 1.3 }, medium: { n: 5, s: [2.4, 3.4], drop: 4.8, g: 1.9 },
   large: { n: 8, s: [3.2, 4.6], drop: 6.6, g: 2.6 }, wheeze: { n: 18, s: [1.2, 2.0], drop: 5.2, g: 0.5 },
 };
+const S_MID = A1 + (68 - RP.R1);   // half way up: on the vertical, pitch 90, ≈ half the ramp's height
+const inOut = (k) => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2);
 function carS(t) {
   const T = TL.car;
   if (t < T.up1) return S_PARK;
-  if (t < T.top) { const k = clamp((t - T.up1) / (T.top - T.up1)); const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2.6) / 2; return lerp(S_PARK, S_TOP, e); }
+  if (t < T.mid) return lerp(S_PARK, S_MID, inOut(clamp((t - T.up1) / (T.mid - T.up1))));
+  if (t < T.resume) return S_MID + Math.exp(-(t - T.mid) * 7) * Math.sin((t - T.mid) * 26) * 0.6;
+  if (t < T.top) return lerp(S_MID, S_TOP, inOut(clamp((t - T.resume) / (T.top - T.resume))));
   if (t < T.down) return S_TOP + Math.exp(-(t - T.top) * 7) * Math.sin((t - T.top) * 26) * 0.8;
   if (t < T.foot) return lerp(S_TOP, S_PARK, smooth(T.down, T.foot, t));
   if (t < T.up2) return S_PARK;
-  return lerp(S_PARK, S_LIP, Math.pow(clamp((t - T.up2) / (T.lip - T.up2)), 1.7));
+  return lerp(S_PARK, S_LIP, Math.pow(clamp((t - T.up2) / (T.lip - T.up2)), 1.45));
 }
 // the flight, as the broadcast: off the top upside down and nose-up, a half roll upright, level on the jets,
 // a slow turn that banks the canopy toward us. [t − lip, along −U, up, screen-left, yaw (250 = heading −U), pitch, roll]
@@ -585,113 +596,114 @@ function hiccup(c, a) {
 }
 function carState(t) {
   let pos, q, pitchWob = 0, bank = 0, phi = 0;
-  if (t < TL.car.lip) {
+  const T = TL.car;
+  if (t < T.lip) {
     const s = carS(t), r = rampAt(s), sag = s < S_ARC ? 2.2 * clamp(s / 10) : lerp(2.2, 0.7, clamp((s - S_ARC) / 10));
     pos = add3(r.P, mul3(r.N, sag)); phi = r.ph / DEG;
     q = basisQ(r.T, r.N);
-    if (t > TL.car.top && t < TL.car.down) {   // held by its own suction: a settle, then a faint tremble
-      const a = t - TL.car.top, w = Math.exp(-a * 5) * Math.sin(a * 20) * 1.2 + Math.sin(a * 31) * 0.18 + Math.sin(a * 47) * 0.1;
+    const hold = t > T.mid && t < T.resume ? t - T.mid : t > T.top && t < T.down ? t - T.top : -1;
+    if (hold >= 0) {   // held by its own suction: a settle, then a faint tremble
+      const w = Math.exp(-hold * 5) * Math.sin(hold * 20) * 1.2 + Math.sin(hold * 31) * 0.18 + Math.sin(hold * 47) * 0.1;
       q.multiply(new THREE.Quaternion().setFromAxisAngle(V([0, 0, 1]), w * DEG));
     }
   } else {
-    const k = keyed(FLY, t - TL.car.lip);
+    const k = keyed(FLY, t - T.lip);
     pos = add3(add3(add3(LIP, mul3(U, -k[0])), mul3(UP, k[1])), [-k[2], 0, 0]);
-    if (t > TL.car.lip + 1.4) { pos[1] += Math.sin(t * 5.3) * 0.8; bank += Math.sin(t * 3.7) * 2.5; }
+    if (t > T.lip + 1.4) { pos[1] += Math.sin(t * 5.3) * 0.8; bank += Math.sin(t * 3.7) * 2.5; }
     for (const c of COUGH) { const [d, pk, bk] = hiccup(c, t - c.t); pos[1] -= d; pitchWob += pk; bank += bk; }
     phi = 180 + k[4];
     q = new THREE.Quaternion().setFromAxisAngle(V([0, 1, 0]), k[3] * DEG)
       .multiply(new THREE.Quaternion().setFromAxisAngle(V([0, 0, 1]), (k[4] + pitchWob) * DEG))
       .multiply(new THREE.Quaternion().setFromAxisAngle(V([1, 0, 0]), (k[5] + bank) * DEG));
   }
-  return { pos, q, phi, onRamp: t < TL.car.lip };
+  return { pos, q, phi, onRamp: t < T.lip };
 }
 function carTravel(t) { return t < TL.car.lip ? carS(t) : S_LIP + (t - TL.car.lip) * 30; }
-/** the car's suction, 0–1 — the composer's vacuum-cleaner curve */
+/** the car's suction, 0–1 — the composer's vacuum-cleaner curve (it is his vacuum) */
 function suction(t) {
   const T = TL.car;
   if (t < T.up1 || t >= CARD_T) return 0;
-  if (t < T.top) return clamp(0.05 + 0.95 * Math.pow(smooth(T.up1, T.top, t), 0.8));
+  if (t < T.mid) return clamp(0.05 + 0.62 * Math.pow(smooth(T.up1, T.mid, t), 0.8));
+  if (t < T.resume) return 0.67 + 0.015 * Math.sin(t * 9);
+  if (t < T.top) return 0.67 + 0.33 * smooth(T.resume, T.top, t);
   if (t < T.down) return 1;
-  if (t < T.foot) { const k = (t - T.down) / (T.foot - T.down); return clamp(1 - 0.25 * k - 0.6 * k * k * k); }
+  if (t < T.down + 0.12) return 1 - (t - T.down) / 0.12;   // he walked out of frame with it: gone
   if (t < T.up2) return 0;
   if (t < T.lip) return clamp(0.08 + 0.92 * smooth(T.up2, T.lip, t));
-  if (t < TL.jetsOff) return 0.9;
-  let v = lerp(0.9, 0.3, smooth(TL.jetsOff, CARD_T, t));
+  if (t < TL.stop) return 0.9;
+  let v = lerp(0.9, 0.3, smooth(TL.stop, CARD_T, t));
   for (const c of COUGH) { const a = t - c.t, d = c.size === 'wheeze' ? c.dur : 0.25; if (a > -0.02 && a < d + 0.3) v *= c.size === 'wheeze' ? 0.35 + 0.15 * Math.sin(a * 30) : 0.15 + 0.85 * smooth(0.05, d + 0.3, a); }
   return clamp(v);
 }
 
-// [t, x, yaw] — mode: walk, vacuum in place, then stopped / "what?"
+// the janitor: two crossings at ONE even pace with a steady sweep, head down at his work — not paying attention.
+// Pass 1 right → left (nozzle into frame at 2.5, the canister's last edge out at 12.0); off-screen he goes round;
+// pass 2 left → right from 15.4 until he stops dead at 22.0, wherever he is.
 const WALK_YAW = 1.3;
-const TOKO_K = [
-  [0.0, -104, WALK_YAW], [0.4, -104, WALK_YAW], [3.0, -27, WALK_YAW], [7.0, -10, WALK_YAW],
-  [7.4, -10, -WALK_YAW], [9.1, -106, -WALK_YAW], [9.6, -106, WALK_YAW], [11.9, -20, WALK_YAW], [13.6, -9, WALK_YAW],
-  [14.1, -7, 0.32], [CARD_T, -7, 0.32],
-];
-const WALKS = [0.4, 7.4, 9.6], VACS = [3.0, 11.9];
+const PACE = 15.60, X1 = 73.63, X2 = -74.2, SWAP = 13.8;   // cm/s, and his body x when the nozzle touches the frame edge (calibrated)
 function tokoState(t) {
-  let i = 0; while (i < TOKO_K.length - 2 && TOKO_K[i + 1][0] <= t) i++;
-  const a = TOKO_K[i], b = TOKO_K[i + 1], k = clamp((t - a[0]) / (b[0] - a[0]));
-  const walking = WALKS.includes(a[0]), vacuuming = VACS.includes(a[0]);
-  const x = walking ? lerp(a[1], b[1], k < 0.08 ? k * k / 0.16 : k > 0.92 ? 1 - (1 - k) * (1 - k) / 0.16 : (k - 0.04) / 0.92) : lerp(a[1], b[1], smooth(0, 1, k));
-  const yaw = lerp(a[2], b[2], smooth(0, 1, k));
-  let dist = 0; for (let j = 0; j < i; j++) dist += Math.abs(TOKO_K[j + 1][1] - TOKO_K[j][1]);
-  dist += Math.abs(x - a[1]);
-  return { x, yaw, mode: t >= TL.stop ? 2 : walking ? 0 : vacuuming ? 1 : 0.5, walk: dist / 23, t };
+  const walk = PACE * t / 23;
+  if (t < SWAP) return { x: X1 - PACE * (t - TL.enter1), yaw: -WALK_YAW, mode: 0, walk, pass: 1, t };
+  if (t < TL.stop) return { x: X2 + PACE * (t - TL.enter2), yaw: WALK_YAW, mode: 0, walk, pass: 2, t };
+  return { x: X2 + PACE * (TL.stop - TL.enter2), yaw: lerp(WALK_YAW, 0.45, ease(TL.stop, TL.stop + 0.45, t)), mode: 2, walk: PACE * TL.stop / 23, pass: 2, t };
 }
 const STAND = { knee: [0, -10.4, 0.9], foot: [0, -20.75, 0.6] };
-const SWEEP_T = 1.15;   // one left-right sweep of the floor nozzle
+const SWEEP_T = 1.15;   // one left-right sweep of the floor nozzle, steady throughout
 /** C's servo: a quick move that stops dead with a tiny overshoot; B keeps the soft clay ease */
-const ease = (a, b, x) => {
+function ease(a, b, x) {
   if (!IS_C) return smooth(a, b, x);
   const u = clamp((x - a) / (b - a)), v = 1 - Math.pow(1 - u, 2.4);
   return x > b ? 1 + 0.05 * Math.exp(-(x - b) * 14) * Math.sin((x - b) * 36) : v;
-};
+}
 const sweepOf = (t) => { const v = Math.sin(t * Math.PI * 2 / SWEEP_T); return IS_C ? Math.sign(v) * Math.pow(Math.abs(v), 0.45) : v; };
+function walkLegs(ph) {
+  const kb = IS_C ? 0.55 : 1;   // the robot keeps its knees stiffer
+  return [0, 1].map(i => { const q = (ph + i * 0.5) * Math.PI * 2, sw = Math.sin(q), up = Math.max(0, Math.cos(q)); return { knee: [0, -10.2 + up * 1.2 * kb, 0.9 + sw * 3.0 + up * 2.0 * kb], foot: [0, -20.6 + up * 1.8 * kb, 0.6 + sw * 5.6], shoePitch: sw * 0.25 * kb }; });
+}
 function tokoPose(t) {
   const st = tokoState(t), Y = st.yaw, Rf = R_(Y);
   const hip0 = [st.x, 21.5, L.tokoZ];
-  const P = { hip: hip0, yaw: Y, lean: 0.1, side: 0, knee: STAND.knee, foot: STAND.foot, hp: 0.06, hr: 0, hy: clamp(-Y * 0.75, -0.95, 0.95), palm: [Rf([0, -1, -0.3]), Rf([0, -1, -0.3])] };
+  const P = { hip: hip0, yaw: Y, lean: 0.1, side: 0, knee: STAND.knee, foot: STAND.foot, hp: 0.3, hr: 0, hy: clamp(-Y * 0.75, -0.95, 0.95), palm: [Rf([0, -1, -0.3]), Rf([0, -1, -0.3])] };
   let lift = 0, vacPose;
-  const sweep = sweepOf(t);
   if (st.mode !== 2) {
-    const walking = st.mode === 0, ph = st.walk;
-    const push = st.mode === 1 ? Math.sin(t * Math.PI * 2 / (SWEEP_T * 2)) : 0;
-    if (walking) {
-      const kb = IS_C ? 0.55 : 1;   // the robot keeps its knees stiffer
-      P.legs = [0, 1].map(i => { const q = (ph + i * 0.5) * Math.PI * 2, sw = Math.sin(q), up = Math.max(0, Math.cos(q)); return { knee: [0, -10.2 + up * 1.2 * kb, 0.9 + sw * 3.0 + up * 2.0 * kb], foot: [0, -20.6 + up * 1.8 * kb, 0.6 + sw * 5.6], shoePitch: sw * 0.25 * kb }; });
-      P.hip = add3(hip0, [0, -Math.abs(Math.cos(ph * Math.PI * 2)) * 0.6 + 0.3, 0]);
-    } else {
-      P.legs = [{ knee: [0, -10.0, 3.4 + push * 1.0], foot: [0, -20.6, 4.6] }, { knee: [0, -10.4, -1.2], foot: [0, -20.6, -3.8], shoePitch: 0.2 }];
-      P.hip = add3(hip0, Rf([sweep * 0.5, -0.4 - push * 0.3, push * 1.2]));
-    }
-    P.lean = 0.22 + push * 0.06; P.side = sweep * 0.04; P.hy += sweep * 0.06;
-    vacPose = { d: 24 + push * 5, alpha: (23 - push * 4) * DEG, side: sweep * 5.5, yaw: sweep * 0.36 };
+    const ph = st.walk, sweep = sweepOf(t);
+    P.legs = walkLegs(ph);
+    P.hip = add3(hip0, [0, -Math.abs(Math.cos(ph * Math.PI * 2)) * 0.6 + 0.3, 0]);
+    P.lean = 0.22; P.side = sweep * 0.04; P.hy += sweep * 0.05;   // head down at the floor, never looking up
+    vacPose = { d: 24, alpha: 23 * DEG, side: sweep * 5.5, yaw: sweep * 0.36 };
   } else {
-    const S = TL.stop, Wt = TL.what;
-    const k = ease(S, S + 0.45, t), k2 = ease(Wt, Wt + 0.4, t), k3 = ease(Wt + 0.3, Wt + 0.75, t);
-    lift = clamp(ease(Wt + 0.12, Wt + 0.6, t), 0, 1.04);
-    const br = Math.sin((t - Wt) * 2.3) * smooth(Wt + 0.6, Wt + 1.1, t);   // he holds it, breathing
-    P.legs = [{ knee: mix([0, -10.0, 3.4], [0, -10.4, 1.3], k), foot: mix([0, -20.6, 4.6], [0, -20.75, 1.6], k) }, { knee: mix([0, -10.4, -1.2], [0, -10.4, 0.6], k), foot: mix([0, -20.6, -3.8], [0, -20.75, -0.4], k) }];
-    P.lean = lerp(0.22, 0.05, k) - k3 * 0.04 + br * 0.012; P.side = -k3 * 0.08; P.breathe = br * 0.9;
-    P.hr = k2 * 0.42 + Math.sin(Math.max(0, t - Wt - 0.6) * 1.7) * 0.035 * k3; P.hp = lerp(0.06, -0.2, k2) + br * 0.02; P.hy = lerp(lerp(clamp(-Y * 0.75, -0.95, 0.95), -0.05, k), -0.62, k2);
-    P.hip = add3(hip0, [0, br * 0.12, 0]);
-    vacPose = { d: lerp(24, 7, k), alpha: lerp(23, 0, k) * DEG, side: lerp(sweep * 5.5, -13, k), yaw: lerp(sweep * 0.36, 0, k) };
-    P.k2 = k2; P.k3 = k3; P.kStop = k; P.br = br;
+    // 22.0 he stops dead and stands the wand up; 22.1–22.5 one cup peeks a little off the ear and he looks UP at the car;
+    // 23.3–23.7 only his head turns, to look straight into the camera; he holds it, breathing (B) or idling (C)
+    const S = TL.stop, k = ease(S, S + 0.45, t), kp = ease(TL.peek, TL.peek + 0.4, t), kc = ease(TL.cam, TL.cam + 0.4, t);
+    lift = 0.3 * ease(TL.peek + 0.1, TL.peek + 0.4, t);
+    const br = Math.sin((t - S) * 2.3) * smooth(S + 0.6, S + 1.1, t) * (IS_C ? 0.35 : 1);
+    const legs0 = walkLegs(PACE * S / 23), sweep0 = sweepOf(S);
+    P.legs = [0, 1].map(i => ({ knee: mix(legs0[i].knee, [0, -10.4, i ? 0.6 : 1.3], k), foot: mix(legs0[i].foot, [0, -20.75, i ? -0.4 : 1.6], k), shoePitch: lerp(legs0[i].shoePitch, 0, k) }));
+    P.lean = lerp(0.22, 0.06, k) + br * 0.01; P.breathe = br * 0.8;
+    const hyWalk = clamp(-Y * 0.75, -0.95, 0.95);
+    // the car hangs upper-left of him on screen: the face turns well off to screen-left and tips up to it (the read is
+    // screen direction), then swings back level and square to the lens — a 1-rad turn and a 0.6-rad lift, so it reads
+    P.hy = lerp(lerp(hyWalk, -1.45, kp), -0.45, kc);                       // toward the car (screen-left), then the camera
+    P.hp = lerp(lerp(lerp(0.3, 0.12, k), -0.62, kp), 0.0, kc) + br * 0.015; // head lifts to the car, then levels at us
+    P.hr = lerp(lerp(0, 0.18, kp), 0.03, kc);
+    P.hip = add3(hip0, [0, br * 0.1, 0]);
+    vacPose = { d: lerp(24, 7, k), alpha: lerp(23, 0, k) * DEG, side: lerp(sweep0 * 5.5, -13, k), yaw: lerp(sweep0 * 0.36, 0, k) };
+    P.kStop = k; P.kReach = ease(S, S + 0.3, t); P.kc = kc; P.br = br;
   }
   return { P, st, lift, vacPose };
 }
 
-/** the canister on a leash: towed when the hose goes taut, nudged behind him (away from camera) when he walks past it.
- *  Integrated once at 96 Hz from t = 0, so any frame is still a pure function of t. → [x, z, yaw, speed cm/s] */
+/** the canister on a leash: towed when the hose goes taut, nudged behind him when he walks past it; set behind him
+ *  again when he goes round off-screen. Integrated once at 96 Hz, so any frame is still a pure function of t. */
 let DRUM_PATH = null;
 function drumAt(t) {
   if (!DRUM_PATH) {
     DRUM_PATH = [];
-    const s0 = tokoState(0); let p = [s0.x - 20, 0, L.tokoZ - 4], yaw = s0.yaw + 0.4, prev = p;
+    let p = null, yaw = 0, prev = null, pass = 0;
     for (let i = 0; i <= Math.ceil(END_T * 96); i++) {
       const st = tokoState(i / 96), c = [st.x, 0, L.tokoZ];
-      let d = sub3(p, c), dist = Math.hypot(d[0], d[2]);
+      if (st.pass !== pass) { pass = st.pass; p = add3(c, [st.yaw > 0 ? -20 : 20, 0, -3]); prev = p; yaw = st.yaw + 0.4; }
+      const d = sub3(p, c), dist = Math.hypot(d[0], d[2]);
       if (dist > 21) p = add3(c, mul3(d, 21 / dist));
       else if (dist < 14) { const n = nrm3(add3(d, [0, 0, -7])); p = add3(c, mul3(n, 14)); }
       const mv = sub3(p, prev); if (Math.hypot(mv[0], mv[2]) > 1e-3) yaw = lerp(yaw, Math.atan2(mv[0], mv[2]), 0.08);
@@ -720,23 +732,22 @@ function poseToko(t) {
   const dr = drumAt(t);
   vac.setDrum(dr[0], dr[1], dr[2]);
   vac.drum.rotation.z = Math.sin(t * 9.3) * 0.035 * clamp(dr[3] / 20); vac.drum.position.y = Math.abs(Math.sin(t * 9.3)) * 0.15 * clamp(dr[3] / 20);
-  if (st.mode !== 2 || (P.kStop ?? 0) < 0.6) {
-    const gR = vac.grip(-1), gL = vac.grip(1);
-    P.hdR = gR; P.hdL = gL;
-    const eb = IS_C ? 0.4 : 1;   // the robot's arms stay nearly straight
-    P.elR = add3(mix(at([-4.7, 13.4, 0.6]), gR, 0.5), Rf([-2.6 * eb, -2.2 * eb, -1.0 * eb]));
-    P.elL = add3(mix(at([4.7, 13.4, 0.6]), gL, 0.5), Rf([2.6 * eb, -2.2 * eb, -1.0 * eb]));
+  const eb = IS_C ? 0.4 : 1;   // the robot's arms stay nearly straight
+  const gR = vac.grip(-1), gL = vac.grip(1);
+  const elGripR = add3(mix(at([-4.7, 13.4, 0.6]), gR, 0.5), Rf([-2.6 * eb, -2.2 * eb, -1.0 * eb]));
+  const elGripL = add3(mix(at([4.7, 13.4, 0.6]), gL, 0.5), Rf([2.6 * eb, -2.2 * eb, -1.0 * eb]));
+  if (st.mode !== 2) {
+    P.hdR = gR; P.hdL = gL; P.elR = elGripR; P.elL = elGripL;
     P.palm = [Rf([0.3, -1, -0.2]), Rf([-0.3, -1, -0.2])];
   } else {
-    const k2 = P.k2, k3 = P.k3, br = P.br || 0;
-    toko.pose({ ...P, hdR: at([-6.4, -0.8, 3.0]), elR: at([-6.6, 6.0, 1.2]), hdL: at([6.4, -0.8, 3.0]), elL: at([6.6, 6.0, 1.2]) });
+    // the right hand goes from the wand to the right cup and holds it a little off the ear; the left drops to his side
+    const kr = P.kReach, kc = P.kc, br = P.br || 0;
+    toko.pose({ ...P, hdR: gR, elR: elGripR, hdL: gL, elL: elGripL });
     toko.group.updateMatrixWorld(true);
-    const cup = muffs.cups[0].localToWorld(V([-1.4, -3.4, -0.6])).toArray();
-    const restR = at([-6.2, -0.6, 3.4]), restL = at([6.2, -0.6, 3.4]);
-    P.hdR = mix(restR, cup, k2); P.elR = mix(at([-6.6, 6.0, 1.2]), at([-11.4, 9.6, 1.6]), k2);
-    P.hdL = mix(restL, at([13.6, 13.6 + br * 0.35, 6.4]), k3); P.elL = mix(at([6.6, 6.0, 1.2]), at([10.6, 7.6 + br * 0.2, 2.2]), k3);
-    P.palm = [Rf(mix([0, -1, 0.2], [0.6, 0.8, 0.0], k2)), Rf(mix([0, -1, 0.2], [0.15, 1, 0.25], k3))];
-    P.viaL = k3 > 0.01 ? mix(at([6.8, 2.6, 2.4]), at([12.4, 10.0, 4.6]), k3) : undefined;
+    const cup = muffs.cups[0].localToWorld(V([-1.6, -2.6, -0.4])).toArray();
+    P.hdR = mix(gR, cup, kr); P.elR = mix(elGripR, at([-10.0, 8.4 + br * 0.2, 1.2]), kr);
+    P.hdL = mix(gL, at([6.5, -0.6 + br * 0.15, 2.6]), kr); P.elL = mix(elGripL, at([6.9, 6.0, 1.0]), kr);
+    P.palm = [Rf(mix([0.3, -1, -0.2], [0.6, 0.8, 0.0], kr)), Rf(mix(mix([-0.3, -1, -0.2], [0, -1, 0.2], kr), [0.35, -0.5, 0.8], kc * 0.5))];
   }
   toko.pose(P);
   vac.hoseUpdate();
@@ -744,14 +755,13 @@ function poseToko(t) {
     const A = toko.anchor;
     [A.S[0], A.S[1], P.elR, P.elL].forEach((p, i) => joints[i].position.set(...p));
     [-1, 1].forEach((sg, i) => { const LG = (P.legs && P.legs[i]) || {}; joints[4 + i].position.set(...add3(P.hip, Rf(add3([sg * 3.0, 0, 0], LG.knee || P.knee)))); });
-    joints.forEach(j => { j.visible = st.x > -95; });
   }
   // the coverall's kit rides the torso
   const A = toko.anchor, a = P.lean ?? 0.1, sd = P.side || 0;
   waist.position.set(...add3(A.H0, [0, 1.2, 0])); waist.rotation.set(a * 0.4, Y, -sd * 0.4, 'YXZ');
   const fwd = Rf([0, -Math.sin(a * 0.8), Math.cos(a * 0.8)]), ch = mix(A.H1, A.H2, 0.55);
   chest.position.set(...add3(ch, mul3(fwd, 4.05))); chest.rotation.set(a * 0.8, Y, -sd * 0.6, 'YXZ');
-  const vis = st.x > -95; toko.group.visible = vis; waist.visible = vis; chest.visible = vis;
+  const vis = st.x > -110 && st.x < 120; toko.group.visible = vis; waist.visible = vis; chest.visible = vis; joints.forEach(j => { j.visible = vis; });
 }
 function pickPuffs(t) {
   const list = [], step = 1 / 24;
@@ -800,7 +810,7 @@ function poseAll(t) {
   poseCar(t);
   poseToko(t);
   posePuffs(t);
-  const run2 = t >= TL.car.up2 - 0.3;
+  const run2 = t >= TL.car.up2;
   const breathe = t < TL.car.up1 + 0.3 ? 0.78 + 0.22 * (0.5 + 0.5 * Math.cos(t * 2.4)) * (1 - smooth(TL.car.up1 - 0.2, TL.car.up1 + 0.3, t)) + 0.22 * smooth(TL.car.up1 - 0.2, TL.car.up1 + 0.3, t) : 1;
   const red = [2.4 * breathe, 0.1 * breathe, 0.08 * breathe];
   SM.ledRed.color.setRGB(...red);
@@ -834,10 +844,11 @@ const SUCK_DN = [[0, 978], [51.3, 3880], [97.8, 4708], [148, 4698], [190, 4697]]
 const table = (T, x) => { if (x <= T[0][0]) return T[0][1]; for (let i = 0; i < T.length - 1; i++) if (x <= T[i + 1][0]) return lerp(T[i][1], T[i + 1][1], (x - T[i][0]) / (T[i + 1][0] - T[i][0])); return T[T.length - 1][1]; };
 function hudState(t) {
   const cs = carState(t), alt = Math.max(0, cs.pos[1] - RP.foot[1]) / L.ft;
-  const run2 = t >= TL.car.up2 - 0.3, pitch = cs.onRamp ? cs.phi : 0;
+  const run2 = t >= TL.car.up2, pitch = cs.onRamp ? cs.phi : 0;
   const descending = t >= TL.car.down && t < TL.car.up2;
-  let suction = descending ? table(SUCK_DN, pitch) : table(SUCK_UP, pitch);
+  let suction = descending ? lerp(table(SUCK_DN, pitch), 200, smooth(TL.car.down, TL.car.down + 0.6, t)) : table(SUCK_UP, pitch);
   if (t > TL.car.top && t < TL.car.down) suction = 4697 + Math.round(Math.sin(t * 9) * 2);
+  if (t > TL.car.mid && t < TL.car.resume) suction += Math.round(Math.sin(t * 11) * 3);
   let g = 1.0;
   if (cs.onRamp && t > TL.car.up2) { const s = carS(t); g = s < 0 ? 1.0 + clamp((t - TL.car.up2) / 0.6) * 0.2 : s < A1 ? 1.5 : s < S_UP + 30 ? 0.9 : 1.1; }
   if (!cs.onRamp) { g = 0.3; for (const c of COUGH) { const a = t - c.t, d = c.size === 'wheeze' ? c.dur : 0.4; if (a >= 0 && a < d) g += CSZ[c.size].g * (c.size === 'wheeze' ? 0.5 + 0.5 * Math.sin(a * 19) : 1 - a / d); } }
@@ -954,7 +965,7 @@ let cardWord;
   const f = new THREE.PointLight('#c9d6f0', 2600, 0, 2); f.position.set(120, -50, 170); card.add(f);
   const rr = new THREE.PointLight('#ffffff', 1800, 0, 2); rr.position.set(40, 80, 40); card.add(rr);
 }
-function cardAlpha(t) { return { word: 1, what: smooth(CARD_T + 0.6, CARD_T + 0.95, t) }; }
+function cardAlpha(t) { return { word: 1, what: smooth(CARD_T + 0.8, CARD_T + 1.1, t) }; }
 function drawCard(t) {
   const a = cardAlpha(t);
   cardWord.visible = true; cardWord.scale.set(1, 1, 1);
@@ -965,8 +976,10 @@ function drawCard(t) {
   // "What?" — flat white type, smaller than the wordmark
   if (a.what > 0) {
     g2d.save(); g2d.globalAlpha = a.what; g2d.fillStyle = '#ffffff'; g2d.textAlign = 'center'; g2d.textBaseline = 'alphabetic';
+    const pop = 1 + 0.22 * (1 - smooth(CARD_T + 0.8, CARD_T + 1.1, t));   // it pops in, a touch large, and settles
+    g2d.translate(W / 2, (960 + 132) * RES); g2d.scale(pop, pop);
     g2d.font = `500 ${Math.round(58 * RES)}px Inter`; g2d.letterSpacing = `${(0.5 * RES).toFixed(1)}px`;
-    g2d.fillText('What?', W / 2, (960 + 150) * RES);
+    g2d.fillText('What?', 0, 18 * RES);
     g2d.restore();
   }
   if (TUNE.hud) bug(g2d);
@@ -994,11 +1007,11 @@ function probe(t) {
   };
 }
 const LOOKS = [
-  { name: 'look-B-1-foot', t: 2.95 },
-  { name: 'look-B-2-upside', t: 6.3 },
-  { name: 'look-B-3-jets', t: 12.45 },
-  { name: 'look-B-4-cough', t: 15.9 },
-  { name: 'look-B-5-card', t: 20.2 },
+  { name: 'look-B-1-foot', t: 3.0 },
+  { name: 'look-B-2-upside', t: 10.4 },
+  { name: 'look-B-3-jets', t: 20.6 },
+  { name: 'look-B-4-cough', t: 24.0 },
+  { name: 'look-B-5-card', t: 27.5 },
 ];
 window.__film = {
   probe, W, H, FPS, frames: FRAMES, L, VER, TL,
@@ -1007,18 +1020,30 @@ window.__film = {
   still(t) { lastKey = null; drawFrame(t); return out2d.toDataURL('image/png'); },
   stillCam(t, c) { lastKey = null; CAM_OVERRIDE = c; drapes.forEach(d => { d.visible = !!c.drapes; }); drawFrame(t); CAM_OVERRIDE = null; drapes.forEach(d => { d.visible = false; }); return out2d.toDataURL('image/png'); },
   carAt(t) { return carState(t).pos; },
+  /** the car and its HUD as numbers, no rendering: [t, s along the ramp, pitch (deg), altitude ft, suction kg, g] */
+  carLog(a, b, dt) { const o = []; for (let t = a; t <= b + 1e-9; t += dt) { const h = hudState(t); o.push([+t.toFixed(3), +carTravel(t).toFixed(2), +h.pitch.toFixed(1), +h.alt.toFixed(1), Math.round(h.suction), +h.g.toFixed(2)]); } return o; },
+  /** screen-space x extents (at 1080 wide) of the nozzle, the janitor and the canister — for timing the entrances and exits */
+  edges(t) {
+    lastKey = null; drawFrame(t);
+    // exact: every visible vertex projected (an AABB's corners overstate a long, tilted wand)
+    const ext = (o) => { let lo = 1e9, hi = -1e9; const v = new THREE.Vector3(); o.updateMatrixWorld(true);
+      o.traverseVisible((m) => { if (!m.isMesh || !m.geometry?.attributes?.position) return; const P = m.geometry.attributes.position;
+        for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(m.matrixWorld).project(camera); const sx = (v.x + 1) / 2 * 1080; if (sx < lo) lo = sx; if (sx > hi) hi = sx; } });
+      return [Math.round(lo), Math.round(hi)]; };
+    return { t, nozzle: ext(vac.group), body: ext(toko.group), drum: ext(vac.drum) };
+  },
   events() {
     // footsteps from the walk cycle: a foot lands when its phase crosses a quarter cycle
     const steps = []; let prev = null;
     for (let t = 0; t < CARD_T; t += 1 / 480) {
       const st = tokoState(t); if (st.mode !== 0) { prev = null; continue; }
       const k = Math.floor((st.walk - 0.25) * 2);
-      if (prev !== null && k !== prev) steps.push({ t: +t.toFixed(3), foot: k % 2 ? 'L' : 'R', onScreen: st.x > -52 });
+      if (prev !== null && k !== prev) steps.push({ t: +t.toFixed(3), foot: k % 2 ? 'L' : 'R', pass: st.pass, onScreen: Math.abs(st.x) < 50 });
       prev = k;
     }
-    const sweeps = []; for (let t = TL.vacOn; t < TL.stop; t += SWEEP_T / 2) sweeps.push(+t.toFixed(3));
+    const sweeps = []; for (let n = 0; ; n++) { const t = (n * 0.5 + 0.25) * SWEEP_T; if (t > TL.stop) break; if ((t > TL.vacOn1 && t < TL.exit1) || (t > TL.vacOn2)) sweeps.push(+t.toFixed(3)); }
     const suc = []; for (let t = 0; t <= END_T + 1e-6; t += 0.25) suc.push([+t.toFixed(2), +suction(t).toFixed(3)]);
-    return { TL, COUGH, CSZ, steps, sweeps, suc, card: CARD_T, what: CARD_T + 0.6, end: END_T, sweepT: SWEEP_T };
+    return { TL, COUGH, CSZ, steps, sweeps, suc, card: CARD_T, what: CARD_T + 0.8, whatIn: CARD_T + 1.1, end: END_T, pace: PACE, sweepT: SWEEP_T };
   },
   frame(i, q = 0.94) { drawFrame(i / FPS); return out2d.toDataURL('image/jpeg', q); },
   tune(o) { Object.assign(TUNE, o); lastKey = null; },
