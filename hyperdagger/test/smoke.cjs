@@ -1497,6 +1497,31 @@ s.listen(0, '127.0.0.1', async () => {
     });
     await q.close();
   }
+  // ---- a chosen season's mode beats the saved one ---------------------------
+  // 12 Oct (dbed4dd83): the saved / default mode was put ahead of the season's
+  // own, so ?season=haul with HYPER (or nothing, i.e. 'pure') saved booted the
+  // convoy season on foot. A link that names a season plays that season's
+  // scheme; the PURE/HYPER/TRUCK/ALL menu still picks the mode you play.
+  let pinned = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    await q.addInitScript(() => { localStorage.setItem('hyperDaggerModeV31', 'hyper'); });
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    pinned = await q.evaluate(async () => {
+      const d = window.__hd.debug;
+      const menuMode = d.getState().mode;
+      d.startGame();
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const st = d.getState();
+      const tr = d.truckObj();
+      return { menuMode, mode: st.mode, trucks: tr?.platforms?.length ?? 0 };
+    });
+    await q.close();
+  }
+  ok('season choice: ?season=haul with HYPER saved still runs the TRUCK scheme on the convoy',
+    pinned.menuMode === 'truck' && pinned.mode === 'truck' && pinned.trucks > 3, JSON.stringify(pinned));
   // ---- season 3 spawn: a crate at your feet is not a hole in the deck ------
   // 12 Oct playtest: season 3 and a free run that rolled the convoy died at
   // 0.7–2 s, "felled by something". A crate loaded where you spawn stood more
