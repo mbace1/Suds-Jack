@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Skull } from './enemy.js?v=87';
+import { Skull } from './enemy.js?v=107';
 import { Cargo } from './cargo.js?v=85';
 
 /**

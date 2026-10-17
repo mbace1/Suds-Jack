@@ -1,5 +1,43 @@
-## v57 — in progress
-**Polished total experience: recap, menu, feedback**
+## v57 — 2026-10-17
+**Polished total experience: recap, menu, feedback — and the 12 Oct playtest fixed**
+
+Owner, 17 Oct 2026: *go ahead with step 1* — land the controls and
+readability fixes from the 12 Oct playtest (HD-001 to HD-013) as one batch and
+put them live. Each was built and reviewed as its own PR (#587, #588, #589,
+#591–#597, #604–#606, #608–#612, #615); this release combines them.
+
+- **The gun grammar Mikael locked on 4 Oct (HD-001).** A short press jumps, on
+  sticks, mouse and pad. Firing happens only while the button is held. Walking
+  no longer starts the stream. The tap shotgun and its height boost are gone;
+  a short homing press is neither a burst nor a jump.
+- **Taps that only meant "go" (HD-003).** The tap that starts a run or resumes
+  from pause is not also a jump; the menus work by touch and gamepad; leaving a
+  run leaves no stale pad focus on the main menu.
+- **The desktop start click captures the mouse** (HD-013), so look works without
+  a second click.
+- **Every death names its killer** (HD-007); "felled by something" cannot
+  happen.
+- **The kill counter stays up** for the whole run, under the clock (HD-008).
+- **Actions read** (HD-009): a jump puff, and fire feedback on the held stream.
+- **Each season opens with a one-line goal card**, and a small label says what
+  the clock is counting (HD-010).
+- **The death screen's load line clears the HUB button** (HD-012).
+- **One way a run ends** (HD-002): dying and finishing a season share the save,
+  the history, the results screen and the Toko cue; a run cannot end twice.
+- **Daily bests are filed under the mode actually played**, and old daily keys
+  are cleaned up again (HD-005).
+- **A chosen season's mode beats the saved one**, so a season 3 link runs the
+  trucks again.
+- **A speed check** (HD-011): slow devices report the game clock falling behind
+  instead of quietly playing in slow motion.
+- Tests only: feature pins for seasons 1–2 under both schemes (HD-005), the Toko
+  cue and scaling checks, and one retry for a flaky embedded-texture decode.
+
+Merge notes: every changed module carries one token, `?v=107`, above anything
+any branch had used; the worker cache is `hyperdagger-v77` and the precache list
+was regenerated. Two overlaps needed hands: the goal card's style sits beside
+the kill counter's new slot, and the run's single ending also hides the goal
+card. Earlier in v57, already on main:
 
 - Recap always shows season, mode, and colored tier
 - Share text carries season and tier
