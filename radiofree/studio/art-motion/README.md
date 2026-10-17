@@ -15,6 +15,9 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
 
 **New films are built by pipeline** (from 17 Oct): `pipeline/README.md`. A film is a picture, a `copy.json` and a
 cue sheet; `pipeline/build.py` renders, captions, scores, mixes and checks a master in one command.
+- **The Chair Is Taken** (Coxon #5, papercut in clean light, ~41 s): `papercut/chair-is-taken/`, `scenes/ct_*.js`,
+  `scenes/rfp_clean.js`, `shot-table-chair.md`. The first papercut film through the pipeline.
+- **Kill Switch** (the flat safety leaflet, ~35 s): `flat/kill-switch/` (the 11 s pilot is `clay/kill-switch/film.js`).
 
 - `eras_rf.js` — the three style directions shown first (pop / constructivist / Matisse).
 - `eras_rfa.js` — **You Looked At It**, 15 s portrait: Constructivist poster × Helsinki

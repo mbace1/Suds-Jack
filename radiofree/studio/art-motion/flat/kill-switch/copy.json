@@ -47,7 +47,7 @@
       "id": "study", "at": "toNote+0.1", "until": "toWasher-0.15", "hold": "toWasher",
       "text": {
         "en": "California's governor vetoed / a [shutdown] rule in 2024. / In September he ordered a study.",
-        "fi": "Kalifornian kuvernööri kaatoi / [sammutussäännön] vuonna 2024. / Syyskuussa hän tilasi selvityksen.",
+        "fi": "Kalifornian kuvernööri kaatoi / [sammutussäännön] vuonna 2024. / Syyskuussa hän tilasi / selvityksen.",
         "ja": "カリフォルニア州知事は 2024年、 / [停止の] 義務化を 拒否。 / 9月に 命じたのは 調査。"
       },
       "source": "SB 1047 (a full-shutdown capability before training) vetoed 29 Sept 2024 (The Hill; TechRepublic). EO N-9-26, 18 Sept 2026, asks experts to recommend changes including a 'kill switch', by 16 Nov (governor's office; CalMatters; CNN; CNBC). A study, not a mandate."

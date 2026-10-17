@@ -190,10 +190,10 @@ function frame(t, captions = true) {
     chip(g, x1 + shake, y1, P.ui.switch1, '#d22b2b', 'x', ease.back(k1 / 0.3) * (1 - out1), 1 - out1); chip(g, x2, y2, P.ui.switch2, '#2f9a52', 'v', ease.back(k2 / 0.3) * (1 - out1), 1 - out1); }
   // 3 · the defect: an envelope drops into the postbox; the stopwatch sweeps to 24 hours
   { const inK = ease.back((t - T.toPost - 0.2) / 0.3) * (1 - clamp((t - T.flipA + 0.3) / 0.3)), a = 1 - clamp((t - T.flipA + 0.3) / 0.3);
-    const [px, py] = F(toDesk(H0, 640, 1080)), [sx, sy] = F(toDesk(H0, 270, 1080));
-    postbox(g, px, py, inK, a, t > T.drop + 0.35 && t < T.drop + 0.8 ? 1 - (t - T.drop - 0.35) / 0.45 : 0);
+    const [px, py] = [760, 1330], [sx, sy] = [320, 1330];                       // on the desk below the page, clear of the print
+    postbox(g, px, py, inK * 1.15, a, t > T.drop + 0.35 && t < T.drop + 0.8 ? 1 - (t - T.drop - 0.35) / 0.45 : 0);
     const ek = clamp((t - T.drop) / 0.4); if (t > T.drop - 0.3 && ek < 1) envelope(g, px, lerp(py - 520, py - 30, ease.out(ek)), 0.62 * (1 - ek * 0.4), lerp(-0.4, 0, ek), 1 - clamp((ek - 0.85) / 0.15));
-    stopwatch(g, sx, sy, ease.back((t - T.toPost - 0.35) / 0.3) * (1 - clamp((t - T.flipA + 0.3) / 0.3)), a, ease.io((t - T.clock) / 1.4)); }
+    stopwatch(g, sx, sy, 1.15 * ease.back((t - T.toPost - 0.35) / 0.3) * (1 - clamp((t - T.flipA + 0.3) / 0.3)), a, ease.io((t - T.clock) / 1.4)); }
   // 4 · the counter rolls to nothing; VOLUNTARY slaps across the empty warnings
   { const [kx, ky] = F(toDesk(H0, 700, 700)), cIn = t - (T.picts + 0.75), rollK = clamp((t - T.roll) / (T.rollEnd - T.roll)), fk = clamp((t - T.flipA) / (T.flipB - T.flipA));
     const n = t < T.roll ? 8 : Math.round(8 * (1 - rollK)), cOut = t > T.flipA && t < T.flipB ? 1 - Math.sin(fk * Math.PI) : 1;
