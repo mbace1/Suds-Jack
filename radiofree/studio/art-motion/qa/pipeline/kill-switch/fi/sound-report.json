@@ -1,0 +1,63 @@
+{
+ "wav": "build/fi/score.wav",
+ "measured": {
+  "I": -14.1,
+  "LRA": 1.2,
+  "TP": -3.6
+ },
+ "limiter": [
+  "None:10.5"
+ ],
+ "ducks": [
+  {
+   "t0": 0.7,
+   "t1": 2.315,
+   "db": -3.5,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption toaster reveal"
+  },
+  {
+   "t0": 5.05,
+   "t1": 6.8260000000000005,
+   "db": -3.5,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption model reveal"
+  }
+ ],
+ "quiet": [
+  [
+   7.47,
+   8.6
+  ]
+ ],
+ "checks": [
+  {
+   "check": "loudness",
+   "result": "pass",
+   "why": "-14.1 LUFS integrated (target -14.0)"
+  },
+  {
+   "check": "true peak",
+   "result": "pass",
+   "why": "-3.6 dBTP (at most -1.0)"
+  },
+  {
+   "check": "silence",
+   "result": "pass",
+   "why": "no unmarked gap over 1.5 s"
+  },
+  {
+   "check": "coverage",
+   "result": "pass",
+   "why": "34/34 cues have a sound within 40 ms"
+  },
+  {
+   "check": "exempt end",
+   "result": "pass",
+   "why": "the last frame: the sting lands 0.6 s before it and rings out across it"
+  }
+ ],
+ "placed": 164
+}

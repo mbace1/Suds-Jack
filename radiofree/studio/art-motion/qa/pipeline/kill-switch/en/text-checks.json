@@ -1,0 +1,202 @@
+[
+ {
+  "check": "copy toaster.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy toaster.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy toaster.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy toaster source",
+  "result": "pass",
+  "why": "UL 1026 (household cooking appliances, toasters included): the 6th-edition revis"
+ },
+ {
+  "check": "copy toaster pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy model.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy model.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy model.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy model source",
+  "result": "pass",
+  "why": "California Executive Order N-9-26, signed 18 Sept 2026, asks for recommendations"
+ },
+ {
+  "check": "copy model pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.switch1",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.switch2",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.warnings",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.dateline",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "width en:toaster",
+  "result": "pass",
+  "why": "widest line 735 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:toaster",
+  "result": "pass",
+  "why": "box {'x': 161, 'y': 162, 'w': 757, 'h': 308}"
+ },
+ {
+  "check": "reading time en:toaster",
+  "result": "pass",
+  "why": "on screen 3.65 s, needs 3.10 s (42 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:toaster",
+  "result": "pass",
+  "why": "last word up 2.41 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:toaster",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:toaster",
+  "result": "pass",
+  "why": "picture behind: edge 15.35 → scrim 0.48"
+ },
+ {
+  "check": "width en:model",
+  "result": "pass",
+  "why": "widest line 751 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:model",
+  "result": "pass",
+  "why": "box {'x': 153, 'y': 162, 'w': 773, 'h': 308}"
+ },
+ {
+  "check": "reading time en:model",
+  "result": "pass",
+  "why": "on screen 5.95 s, needs 3.10 s (42 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:model",
+  "result": "pass",
+  "why": "last word up 4.76 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:model",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:model",
+  "result": "pass",
+  "why": "picture behind: edge 19.38 → scrim 0.69"
+ },
+ {
+  "check": "ui en:dateline",
+  "result": "pass",
+  "why": "\"SACRAMENTO · ORDER N-9-26\" spans x 110–612"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:toaster",
+  "result": "pass",
+  "why": "Its standard asks for a second off switch."
+ },
+ {
+  "check": "sidecar lines en:model",
+  "result": "pass",
+  "why": "Its kill switch: a study, due 16 November."
+ },
+ {
+  "check": "sidecar fi:toaster",
+  "result": "pass",
+  "why": "3.65 s on this master, fi needs 3.41 s"
+ },
+ {
+  "check": "sidecar lines fi:toaster",
+  "result": "pass",
+  "why": "Turvastandardi vaatii toisen katkaisimen."
+ },
+ {
+  "check": "sidecar fi:model",
+  "result": "pass",
+  "why": "5.95 s on this master, fi needs 3.41 s"
+ },
+ {
+  "check": "sidecar lines fi:model",
+  "result": "pass",
+  "why": "Hätäkatkaisin: selvitys, määräaika 16.11."
+ },
+ {
+  "check": "sidecar ja:toaster",
+  "result": "warn",
+  "why": "3.65 s on this master, ja needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines ja:toaster",
+  "result": "pass",
+  "why": "その安全規格は2つ目の | 停止スイッチを求めている。"
+ },
+ {
+  "check": "sidecar ja:model",
+  "result": "pass",
+  "why": "5.95 s on this master, ja needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines ja:model",
+  "result": "pass",
+  "why": "AIのキルスイッチは調査中。 | 期限は11月16日。"
+ }
+]

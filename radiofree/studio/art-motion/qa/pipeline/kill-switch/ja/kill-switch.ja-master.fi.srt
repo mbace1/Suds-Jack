@@ -1,0 +1,7 @@
+1
+00:00:00,700 --> 00:00:05,700
+Turvastandardi vaatii toisen katkaisimen.
+
+2
+00:00:06,400 --> 00:00:12,350
+Hätäkatkaisin: selvitys, määräaika 16.11.

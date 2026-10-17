@@ -1,0 +1,134 @@
+{
+ "enter": 0,
+ "land": 0.5,
+ "punch1": 0.65,
+ "toToaster": 1.25,
+ "jam": 2.15,
+ "flip2": 2.65,
+ "toGrid": 3.05,
+ "picts": 3.15,
+ "flipA": 5.800000000000001,
+ "flipB": 6.300000000000001,
+ "roll": 6.6,
+ "rollEnd": 7.4,
+ "slap": 7.85,
+ "tap": 8.8,
+ "pull": 9.95,
+ "tagIn": 10.2,
+ "end": 12.35,
+ "lang": "ja",
+ "holds": [
+  {
+   "caption": "toaster",
+   "beat": "flipA",
+   "extra": 1.35
+  }
+ ],
+ "pictTimes": [
+  3.15,
+  3.235,
+  3.32,
+  3.405,
+  3.4899999999999998,
+  3.575,
+  3.66,
+  3.745
+ ],
+ "rollTicks": [
+  6.699999999999999,
+  6.8,
+  6.9,
+  7,
+  7.1,
+  7.2,
+  7.300000000000001,
+  7.4
+ ],
+ "words": [
+  {
+   "w": "その",
+   "t": 0.7,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "安全規格は",
+   "t": 0.852,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "2つ目の",
+   "t": 1.45,
+   "pop": true,
+   "caption": "toaster"
+  },
+  {
+   "w": "停止スイッチを",
+   "t": 1.753,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "求めている。",
+   "t": 2.504,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "AIの",
+   "t": 6.4,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "キルスイッチは",
+   "t": 6.627,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "調査",
+   "t": 7.378,
+   "pop": true,
+   "caption": "model"
+  },
+  {
+   "w": "中。",
+   "t": 7.529,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "期限は",
+   "t": 7.901,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "11月16日。",
+   "t": 8.128,
+   "pop": false,
+   "caption": "model"
+  }
+ ],
+ "captions": [
+  {
+   "id": "toaster",
+   "t0": 0.7,
+   "t1": 5.7
+  },
+  {
+   "id": "model",
+   "t0": 6.4,
+   "t1": 12.35
+  }
+ ],
+ "quiet": [
+  {
+   "t0": 8.82,
+   "t1": 9.95,
+   "why": "the joke: the tap stops the music"
+  }
+ ]
+}

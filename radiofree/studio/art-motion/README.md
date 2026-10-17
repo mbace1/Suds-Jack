@@ -13,6 +13,9 @@ uv run --with playwright==1.56.0 python <proj>/代码工程/render.py --film rfa
 ```
 (`playwright==1.56.0` matches the sandbox's preinstalled Chromium 1194.)
 
+**New films are built by pipeline** (from 17 Oct): `pipeline/README.md`. A film is a picture, a `copy.json` and a
+cue sheet; `pipeline/build.py` renders, captions, scores, mixes and checks a master in one command.
+
 - `eras_rf.js` — the three style directions shown first (pop / constructivist / Matisse).
 - `eras_rfa.js` — **You Looked At It**, 15 s portrait: Constructivist poster × Helsinki
   autumn; `shot-table.md` is its storyboard (lint green), `synth.py` its score

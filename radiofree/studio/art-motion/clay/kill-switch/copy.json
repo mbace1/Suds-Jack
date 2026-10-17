@@ -1,0 +1,44 @@
+{
+  "film": "kill-switch",
+  "cut": "pipeline pilot (the 11 s polish edit)",
+  "series": "rfh",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "toaster",
+      "at": "punch1+0.05", "until": "flipA-0.1", "hold": "flipA",
+      "text": {
+        "en": "Its standard / asks for a [second] / off switch.",
+        "fi": "Turvastandardi / vaatii [toisen] / katkaisimen.",
+        "ja": "その 安全規格は / [2つ目の] 停止スイッチを / 求めている。"
+      },
+      "source": "UL 1026 (household cooking appliances, toasters included): the 6th-edition revisions added a redundant control and a secondary operating control for cord-connected automatic toasters. InCompliance; Intertek."
+    },
+    {
+      "id": "model",
+      "at": "flipB+0.1", "until": "end", "hold": "end",
+      "text": {
+        "en": "Its kill switch: / a [study], / due 16 November.",
+        "fi": "Hätäkatkaisin: / [selvitys], / määräaika 16.11.",
+        "ja": "AIの キルスイッチは / [調査] 中。 / 期限は 11月16日。"
+      },
+      "source": "California Executive Order N-9-26, signed 18 Sept 2026, asks for recommendations, including a frontier-model \"kill switch\", by 16 Nov 2026. Governor's office; CalMatters; CNBC; CTV."
+    }
+  ],
+  "ui": {
+    "switch1": { "en": "SWITCH 1  JAMS", "fi": "KYTKIN 1  JUMISSA", "ja": "スイッチ1  故障" },
+    "switch2": { "en": "SWITCH 2  OFF", "fi": "KYTKIN 2  POIS", "ja": "スイッチ2  停止" },
+    "warnings": { "en": "WARNINGS", "fi": "VAROITUSTA", "ja": "件の警告" },
+    "dateline": { "en": "SACRAMENTO · ORDER N-9-26", "fi": "SACRAMENTO · MÄÄRÄYS N-9-26", "ja": "サクラメント・州知事令 N-9-26" }
+  },
+  "props": {
+    "note": { "en": "KILL SWITCH / study — due 16 Nov", "why": "a handwritten prop in the leaflet's world; it stays English in every master, and the caption carries it" }
+  },
+  "post": {
+    "en": "A toaster's safety standard asks for a second off switch, in case the first one fails. California's AI kill switch is a study, due 16 November.",
+    "fi": "Leivänpaahtimen turvastandardi vaatii toisen katkaisimen siltä varalta, että ensimmäinen pettää. Kalifornian tekoälyn hätäkatkaisin on selvitys, jonka määräaika on 16.11.",
+    "ja": "トースターの安全規格は、一つ目が故障したときのために二つ目の停止スイッチを求めている。カリフォルニア州のAIキルスイッチは調査中で、期限は11月16日。"
+  }
+}

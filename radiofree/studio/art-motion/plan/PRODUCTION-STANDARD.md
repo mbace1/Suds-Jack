@@ -105,8 +105,18 @@ Hold for now. When it comes:
 
 ## Order of work
 
-1. **Pilot all three pipelines on Kill Switch** (approved look, polish test done): its `copy.json`, the
-   caption renderer, the sound library v1 and the mix chain. Output: the first film made entirely by pipeline.
+1. ~~**Pilot all three pipelines on Kill Switch**~~ **Done, 17 Oct.** `pipeline/` (see its README): `copy.json`,
+   one caption renderer, sound library `sfx-1` (40 sounds), RFH stems, the mix chain, and one command that builds
+   and checks a master. There are three masters from one copy file:
+   - en, 11.0 s;
+   - fi, 11.0 s;
+   - ja, 12.35 s. The picture holds 1.35 s so the first line can be read, and the score follows the moved beats
+     with no edit.
+
+   All three: −14.1 LUFS, −4 dBTP; 0 fails. The warnings are the unread fi and ja lines.
+
+   The checks caught four lines over 800 px on their first run, one of them the polish test's own English line
+   (806 px, shipped). `pipeline/test_checks.py` proves each check fails on a broken input.
 2. **A 3D benchmark shot at the Aardman/Kubo bar:** Kyoto Toko at the irori, with full lighting, AO, an acting
    pass and the camera standard. It is a calibration for the owner, not a film.
 3. **Papercut refinement:** cleaner light and the feed-style edit on one shot of *The Chair Is Taken*.

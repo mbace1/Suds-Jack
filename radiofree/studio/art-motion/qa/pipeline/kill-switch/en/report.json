@@ -1,0 +1,75 @@
+{
+ "lang": "en",
+ "end": 11,
+ "holds": [],
+ "captions": [
+  {
+   "id": "toaster",
+   "text": "Its standard / asks for a [second] / off switch.",
+   "plain": "Its standard asks for a second off switch.",
+   "t0": 0.7,
+   "t1": 4.35,
+   "shown": 3.65,
+   "read": 3.1,
+   "lastWord": 1.935,
+   "widths": [
+    519,
+    735,
+    439
+   ],
+   "box": {
+    "x": 161,
+    "y": 162,
+    "w": 757,
+    "h": 308
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 15.35,
+    "busy": 0.67
+   },
+   "native": true
+  },
+  {
+   "id": "model",
+   "text": "Its kill switch: / a [study], / due 16 November.",
+   "plain": "Its kill switch: a study, due 16 November.",
+   "t0": 5.05,
+   "t1": 11,
+   "shown": 5.95,
+   "read": 3.1,
+   "lastWord": 6.24,
+   "widths": [
+    576,
+    344,
+    751
+   ],
+   "box": {
+    "x": 153,
+    "y": 162,
+    "w": 773,
+    "h": 308
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 19.38,
+    "busy": 0.96
+   },
+   "native": true
+  }
+ ],
+ "ui": {
+  "dateline": {
+   "text": "SACRAMENTO · ORDER N-9-26",
+   "x0": 110,
+   "x1": 612,
+   "ok": true
+  }
+ },
+ "frames": 330,
+ "fps": 30
+}

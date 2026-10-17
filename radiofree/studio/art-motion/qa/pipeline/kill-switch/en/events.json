@@ -1,0 +1,158 @@
+{
+ "enter": 0,
+ "land": 0.5,
+ "punch1": 0.65,
+ "toToaster": 1.25,
+ "jam": 2.15,
+ "flip2": 2.65,
+ "toGrid": 3.05,
+ "picts": 3.15,
+ "flipA": 4.45,
+ "flipB": 4.95,
+ "roll": 5.25,
+ "rollEnd": 6.05,
+ "slap": 6.5,
+ "tap": 7.45,
+ "pull": 8.6,
+ "tagIn": 8.85,
+ "end": 11,
+ "lang": "en",
+ "holds": [],
+ "pictTimes": [
+  3.15,
+  3.235,
+  3.32,
+  3.405,
+  3.4899999999999998,
+  3.575,
+  3.66,
+  3.745
+ ],
+ "rollTicks": [
+  5.35,
+  5.45,
+  5.55,
+  5.65,
+  5.75,
+  5.85,
+  5.95,
+  6.05
+ ],
+ "words": [
+  {
+   "w": "Its",
+   "t": 0.7,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "standard",
+   "t": 0.791,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "asks",
+   "t": 1.215,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "for",
+   "t": 1.329,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "a",
+   "t": 1.42,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "second",
+   "t": 1.465,
+   "pop": true,
+   "caption": "toaster"
+  },
+  {
+   "w": "off",
+   "t": 1.845,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "switch.",
+   "t": 1.935,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "Its",
+   "t": 5.05,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "kill",
+   "t": 5.141,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "switch:",
+   "t": 5.255,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "a",
+   "t": 5.656,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "study,",
+   "t": 5.702,
+   "pop": true,
+   "caption": "model"
+  },
+  {
+   "w": "due",
+   "t": 6.081,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "16",
+   "t": 6.172,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "November.",
+   "t": 6.24,
+   "pop": false,
+   "caption": "model"
+  }
+ ],
+ "captions": [
+  {
+   "id": "toaster",
+   "t0": 0.7,
+   "t1": 4.35
+  },
+  {
+   "id": "model",
+   "t0": 5.05,
+   "t1": 11
+  }
+ ],
+ "quiet": [
+  {
+   "t0": 7.47,
+   "t1": 8.6,
+   "why": "the joke: the tap stops the music"
+  }
+ ]
+}

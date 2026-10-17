@@ -1,0 +1,81 @@
+{
+ "lang": "ja",
+ "end": 12.35,
+ "holds": [
+  {
+   "caption": "toaster",
+   "beat": "flipA",
+   "extra": 1.35
+  }
+ ],
+ "captions": [
+  {
+   "id": "toaster",
+   "text": "その 安全規格は / [2つ目の] 停止スイッチを / 求めている。",
+   "plain": "その安全規格は2つ目の停止スイッチを求めている。",
+   "t0": 0.7,
+   "t1": 5.7,
+   "shown": 5,
+   "read": 5,
+   "lastWord": 2.504,
+   "widths": [
+    518,
+    784,
+    444
+   ],
+   "box": {
+    "x": 137,
+    "y": 168,
+    "w": 806,
+    "h": 311
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 14.72,
+    "busy": 0.62
+   },
+   "native": false
+  },
+  {
+   "id": "model",
+   "text": "AIの キルスイッチは / [調査] 中。 / 期限は 11月16日。",
+   "plain": "AIのキルスイッチは調査中。期限は11月16日。",
+   "t0": 6.4,
+   "t1": 12.35,
+   "shown": 5.95,
+   "read": 5,
+   "lastWord": 8.128,
+   "widths": [
+    665,
+    296,
+    621
+   ],
+   "box": {
+    "x": 196,
+    "y": 168,
+    "w": 687,
+    "h": 311
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 20.95,
+    "busy": 1
+   },
+   "native": false
+  }
+ ],
+ "ui": {
+  "dateline": {
+   "text": "サクラメント・州知事令 N-9-26",
+   "x0": 110,
+   "x1": 669,
+   "ok": true
+  }
+ },
+ "frames": 371,
+ "fps": 30
+}

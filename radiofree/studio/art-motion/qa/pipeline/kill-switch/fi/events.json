@@ -1,0 +1,110 @@
+{
+ "enter": 0,
+ "land": 0.5,
+ "punch1": 0.65,
+ "toToaster": 1.25,
+ "jam": 2.15,
+ "flip2": 2.65,
+ "toGrid": 3.05,
+ "picts": 3.15,
+ "flipA": 4.45,
+ "flipB": 4.95,
+ "roll": 5.25,
+ "rollEnd": 6.05,
+ "slap": 6.5,
+ "tap": 7.45,
+ "pull": 8.6,
+ "tagIn": 8.85,
+ "end": 11,
+ "lang": "fi",
+ "holds": [],
+ "pictTimes": [
+  3.15,
+  3.235,
+  3.32,
+  3.405,
+  3.4899999999999998,
+  3.575,
+  3.66,
+  3.745
+ ],
+ "rollTicks": [
+  5.35,
+  5.45,
+  5.55,
+  5.65,
+  5.75,
+  5.85,
+  5.95,
+  6.05
+ ],
+ "words": [
+  {
+   "w": "Turvastandardi",
+   "t": 0.7,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "vaatii",
+   "t": 1.321,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "toisen",
+   "t": 1.508,
+   "pop": true,
+   "caption": "toaster"
+  },
+  {
+   "w": "katkaisimen.",
+   "t": 1.915,
+   "pop": false,
+   "caption": "toaster"
+  },
+  {
+   "w": "Hätäkatkaisin:",
+   "t": 5.05,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "selvitys,",
+   "t": 5.671,
+   "pop": true,
+   "caption": "model"
+  },
+  {
+   "w": "määräaika",
+   "t": 6.158,
+   "pop": false,
+   "caption": "model"
+  },
+  {
+   "w": "16.11.",
+   "t": 6.426,
+   "pop": false,
+   "caption": "model"
+  }
+ ],
+ "captions": [
+  {
+   "id": "toaster",
+   "t0": 0.7,
+   "t1": 4.35
+  },
+  {
+   "id": "model",
+   "t0": 5.05,
+   "t1": 11
+  }
+ ],
+ "quiet": [
+  {
+   "t0": 7.47,
+   "t1": 8.6,
+   "why": "the joke: the tap stops the music"
+  }
+ ]
+}

@@ -1,0 +1,326 @@
+{
+ "lib": "sfx-1",
+ "sounds": [
+  {
+   "sound": "whoosh short in",
+   "seconds": 0.24,
+   "peak": 0.8,
+   "dc": -0.00129,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "whoosh mid in",
+   "seconds": 0.42,
+   "peak": 0.8,
+   "dc": -0.00064,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "whoosh long in",
+   "seconds": 0.8,
+   "peak": 0.8,
+   "dc": 0.00015,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "whoosh mid out",
+   "seconds": 0.42,
+   "peak": 0.8,
+   "dc": -0.0006,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "swish",
+   "seconds": 0.16,
+   "peak": 0.6,
+   "dc": -7e-05,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "pop",
+   "seconds": 0.11,
+   "peak": 0.749,
+   "dc": -0.00013,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "pop high",
+   "seconds": 0.11,
+   "peak": 0.667,
+   "dc": -9e-05,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "chip good",
+   "seconds": 0.32,
+   "peak": 0.7,
+   "dc": 8e-05,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "chip bad",
+   "seconds": 0.34,
+   "peak": 0.7,
+   "dc": 0.00107,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "tick 0",
+   "seconds": 0.05,
+   "peak": 0.6,
+   "dc": 9e-05,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "tick 4",
+   "seconds": 0.05,
+   "peak": 0.6,
+   "dc": 1e-05,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "tap",
+   "seconds": 0.16,
+   "peak": 0.8,
+   "dc": 0.00231,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "tap dull",
+   "seconds": 0.16,
+   "peak": 0.8,
+   "dc": 0.00347,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "slap",
+   "seconds": 0.22,
+   "peak": 0.85,
+   "dc": 0.00176,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "ripple",
+   "seconds": 0.6,
+   "peak": 0.35,
+   "dc": -0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "paper tap",
+   "seconds": 0.15,
+   "peak": 0.8,
+   "dc": 0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "paper drop",
+   "seconds": 0.235,
+   "peak": 0.8,
+   "dc": 0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "paper slide",
+   "seconds": 0.45,
+   "peak": 0.8,
+   "dc": -0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "paper flip",
+   "seconds": 0.43,
+   "peak": 0.8,
+   "dc": 0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "card tap",
+   "seconds": 0.24,
+   "peak": 0.8,
+   "dc": -0.00034,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "card drop",
+   "seconds": 0.325,
+   "peak": 0.8,
+   "dc": -0.00035,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "card slide",
+   "seconds": 0.45,
+   "peak": 0.8,
+   "dc": 0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "card flip",
+   "seconds": 0.52,
+   "peak": 0.8,
+   "dc": 4e-05,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "wood tap",
+   "seconds": 0.48,
+   "peak": 0.8,
+   "dc": -9e-05,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "wood drop",
+   "seconds": 0.565,
+   "peak": 0.8,
+   "dc": -0.00031,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "wood slide",
+   "seconds": 0.45,
+   "peak": 0.8,
+   "dc": 0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "wood flip",
+   "seconds": 0.48,
+   "peak": 0.8,
+   "dc": -0.00034,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "glass tap",
+   "seconds": 3.6,
+   "peak": 0.8,
+   "dc": 0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "glass drop",
+   "seconds": 3.685,
+   "peak": 0.8,
+   "dc": -0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "glass slide",
+   "seconds": 0.45,
+   "peak": 0.8,
+   "dc": -0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "glass flip",
+   "seconds": 3.6,
+   "peak": 0.8,
+   "dc": -0.0,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "clay tap",
+   "seconds": 0.2,
+   "peak": 0.8,
+   "dc": 0.00331,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "clay drop",
+   "seconds": 0.285,
+   "peak": 0.785,
+   "dc": 0.00189,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "clay slide",
+   "seconds": 0.45,
+   "peak": 0.8,
+   "dc": 3e-05,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "clay flip",
+   "seconds": 0.2,
+   "peak": 0.8,
+   "dc": 0.00401,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "stinger reveal",
+   "seconds": 1.4,
+   "peak": 0.85,
+   "dc": 0.00012,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "stinger deadpan",
+   "seconds": 0.5,
+   "peak": 0.85,
+   "dc": 0.00249,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "stinger alarm",
+   "seconds": 0.9,
+   "peak": 0.85,
+   "dc": -0.00021,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "logo rfh",
+   "seconds": 1.8,
+   "peak": 0.85,
+   "dc": 0.0001,
+   "edge": 0.0,
+   "finite": true
+  },
+  {
+   "sound": "logo toko",
+   "seconds": 1.4,
+   "peak": 0.8,
+   "dc": -0.00029,
+   "edge": 0.0,
+   "finite": true
+  }
+ ],
+ "bad": []
+}

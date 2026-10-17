@@ -1,0 +1,75 @@
+{
+ "lang": "fi",
+ "end": 11,
+ "holds": [],
+ "captions": [
+  {
+   "id": "toaster",
+   "text": "Turvastandardi / vaatii [toisen] / katkaisimen.",
+   "plain": "Turvastandardi vaatii toisen katkaisimen.",
+   "t0": 0.7,
+   "t1": 4.35,
+   "shown": 3.65,
+   "read": 3.412,
+   "lastWord": 1.915,
+   "widths": [
+    674,
+    531,
+    568
+   ],
+   "box": {
+    "x": 192,
+    "y": 162,
+    "w": 696,
+    "h": 308
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 15.53,
+    "busy": 0.68
+   },
+   "native": false
+  },
+  {
+   "id": "model",
+   "text": "Hätäkatkaisin: / [selvitys], / määräaika 16.11.",
+   "plain": "Hätäkatkaisin: selvitys, määräaika 16.11.",
+   "t0": 5.05,
+   "t1": 11,
+   "shown": 5.95,
+   "read": 3.412,
+   "lastWord": 6.426,
+   "widths": [
+    637,
+    361,
+    694
+   ],
+   "box": {
+    "x": 182,
+    "y": 162,
+    "w": 716,
+    "h": 308
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 20.24,
+    "busy": 1
+   },
+   "native": false
+  }
+ ],
+ "ui": {
+  "dateline": {
+   "text": "SACRAMENTO · MÄÄRÄYS N-9-26",
+   "x0": 110,
+   "x1": 658,
+   "ok": true
+  }
+ },
+ "frames": 330,
+ "fps": 30
+}
