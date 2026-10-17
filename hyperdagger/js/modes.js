@@ -61,7 +61,7 @@ export const MODES = [
     clock: 'TIME SURVIVED',
     name: 'PURE',
     blurb: 'the Devil Daggers spine — one touch, a fixed and learnable sky',
-    controls: 'WASD move · tap fire = burst · hold = stream · Space jump ×2',
+    controls: 'WASD move · short press = jump · hold = stream · Space jump ×2',
     abilities: { dash: false, reap: false }, // the DD body: one jump, shotgun for height
     director: 'ddSpawnset',   // the fixed spawnset: identical every run
     lethality: 'oneTouch',

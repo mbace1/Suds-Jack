@@ -71,7 +71,14 @@ Verify Season 1 rubble/rockfall, Season 2 jumpable waves/tide/drain, and Season 
 
 ## In progress
 
-No items.
+### HD-001 — short press jumps, hold fires
+
+- status: In progress
+- size: M
+- blocked-by: —
+- design: Mikael's locked gun grammar (this block)
+
+A short press is a jump on sticks, mouse, and pad. Firing happens only while the button is held: mouse and pad stream after the stream delay, and touch streams while the right stick is held. Walking does not start the stream. A short press does not shotgun, and a short alt press (RMB/LT) does not dump a homing burst. Dash stays as it is. The old shotgun tap's height boost is not replaced.
 
 ## Landed
 
