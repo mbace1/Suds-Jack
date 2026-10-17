@@ -69,6 +69,92 @@ Script accepts season. Game sends season. Endpoint empty until deployed. Top-10 
 
 Verify Season 1 rubble/rockfall, Season 2 jumpable waves/tide/drain, and Season 3 truck/cargo/gaze all feed the pure timer correctly on PURE and HYPER. Confirm mobile and gamepad paths. Update VERSIONS.md and hub note.
 
+
+### HD-006 — Season 3 new runs must survive the first five seconds
+
+- status: In progress (being fixed on branch fix/hyperdagger-season3-spawn-death)
+- size: M
+- blocked-by: —
+- design: NOTES.md (12 Oct 2026 playtest)
+
+From NOTES.md (12 Oct 2026), new Season 3 runs died at 1.3 s and 0.7 s with 0 kills, death screen "felled by something". Free mode on the truck highway shows the same deaths (2.0, 0.7, 2.0 s). Add a headless test that a new run survives the first 5 s with no input so spawn kills cannot return silently.
+
+### HD-007 — Name the killer on every death screen
+
+- status: Queued
+- size: S
+- blocked-by: —
+- design: NOTES.md (12 Oct 2026 playtest)
+
+From NOTES.md (12 Oct 2026), the death screen said "felled by something", which teaches the player nothing. Every enemy and hazard, in every season, must supply a real killer name on the death screen. Never fall back to "something".
+
+### HD-008 — Keep the kill counter visible during runs
+
+- status: Queued
+- size: S
+- blocked-by: —
+- design: NOTES.md (12 Oct 2026 playtest)
+
+From NOTES.md (12 Oct 2026), the kill counter shows before a run but disappears from the HUD in seasons 1 and 2. Keep it visible for the whole run so players can track kills without leaving the season.
+
+### HD-009 — Verify fire, jump, and dash feedback in seasons 1 and 2
+
+- status: Queued
+- size: S
+- blocked-by: —
+- design: NOTES.md (12 Oct 2026 playtest)
+
+From NOTES.md (12 Oct 2026), fire, jump, and dash had no visible feedback in seasons 1 and 2; the browser ran ~5x slow, so the miss may be frame-rate. Check muzzle flash, dash streak, and jump puff before adding new VFX.
+
+### HD-010 — Season start goal card and clear clock HUD copy
+
+- status: Queued
+- size: M
+- blocked-by: —
+- design: NOTES.md (12 Oct 2026 playtest)
+
+From NOTES.md (12 Oct 2026), the season clock counts down without explaining what it scores, and Season 3's "load 36 · +0s" is opaque. Show a one-line goal card at each season start (survive, haul crates, etc.), label what the countdown means, and explain Season 3's load line.
+
+### HD-011 — Perf budget smoke check and delta-time clamp review
+
+- status: Queued
+- size: M
+- blocked-by: —
+- design: NOTES.md (12 Oct 2026 playtest)
+
+From NOTES.md (12 Oct 2026), the box browser ran ~5x slower than real time, so slow devices can silently play in slow motion. Add a perf budget smoke check and review delta-time clamping so underpowered clients fail loudly instead of distorting feel.
+
+
+### HD-012 — Death-screen load debug line overlaps HUB
+
+- status: Queued
+- size: S
+- blocked-by: —
+- design: NOTES.md (12 Oct 2026 playtest, free.png)
+
+From NOTES.md (12 Oct 2026 free mode), the debug line "load 33 · +0s" sits on top of the HUB button on the death screen (free.png). Move or hide that line so the HUB control stays readable and clickable.
+
+### HD-013 — Desktop start click must lock the mouse for look
+
+- status: Queued
+- size: S
+- blocked-by: —
+- design: NOTES.md (12 Oct 2026 playtest, free-midrun.png)
+
+From NOTES.md (12 Oct 2026 free mode), the run-start click does not lock the mouse on desktop, so mouse look never engages (free-midrun.png). Capture the pointer on start so look works without a second click.
+
+### HD-014 — Season 3 trucks become floating landspeeders
+
+- status: Queued
+- size: M
+- blocked-by: HD-006
+- design: NOTES.md (12 Oct 2026, Mikael design direction)
+- gate: after HD-006; plan before code; separate PR; Mikael's yes to merge
+
+From NOTES.md (12 Oct 2026), Mikael's design direction: highway trucks become floating landspeeder platforms — no wheels, they hover, and cargo still rides on them. Cargo and haul rules stay the same so existing haul checks still mean something.
+
+Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover height or bob, and a glow or thruster under the hull. Do not change collision, cargo attachment, jackknife, haul scoring, or tests. Keep the existing haul and smoke checks green.
+
 ## In progress
 
 No items.
