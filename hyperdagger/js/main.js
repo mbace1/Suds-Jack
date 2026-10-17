@@ -1135,6 +1135,47 @@ function perfGovern(now, rawMs) {
   }
 }
 
+// HD-011 — the clock-keeping monitor. The loop clamps dt at DT_CAP, so a
+// device under 1/DT_CAP fps plays in slow motion (12 Oct playtest: 22 s real
+// for ~4 s of game). This measures how much of real time the clamp lets
+// through — ratio = sum(clamped dt) / sum(raw dt) over a rolling window — and
+// exposes it on __hd.debug.getTimeRatio(). It does NOT change the cap or the
+// physics; that call is the owner's (see the HD-011 PR). Under perf 'auto', a
+// ratio held below ratioFloor for ratioHoldMs steps the existing PERF_TIERS
+// ladder down one rung, the same lever the frame-time governor pulls.
+const DT_CAP = 0.05;
+const timeMon = { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0, slowRun: 0 };
+Object.assign(perfTuning, { ratioWinMs: 2000, ratioFloor: 0.9, ratioHoldMs: 2000, ratioGapMs: 3000 });
+function timeMonitor(now, rawDt) {
+  if (state !== 'playing' || paused) { timeMon.lowSince = 0; return; }
+  // One or two frames over ratioGapMs are a tab switch; a RUN of them is the
+  // device (the governor's v40 lesson: a 1 fps box must not read as all gaps)
+  if (rawDt * 1000 > perfTuning.ratioGapMs) {
+    if (++timeMon.slowRun < 3) { timeMon.gaps++; return; }
+  } else timeMon.slowRun = 0;
+  const g = Math.min(rawDt, DT_CAP);
+  timeMon.win.push(now, rawDt, g); timeMon.raw += rawDt; timeMon.game += g;
+  timeMon.totalRaw += rawDt; timeMon.totalGame += g; timeMon.frames++;
+  while (timeMon.win.length > 3 && now - timeMon.win[0] > perfTuning.ratioWinMs) {
+    timeMon.raw -= timeMon.win[1]; timeMon.game -= timeMon.win[2]; timeMon.win.splice(0, 3);
+  }
+  if (opts.perf !== 'auto' || now < perfSettleUntil || timeMon.raw * 1000 < perfTuning.ratioWinMs * 0.5) { timeMon.lowSince = 0; return; }
+  if (timeMon.game / timeMon.raw < perfTuning.ratioFloor) {
+    if (!timeMon.lowSince) timeMon.lowSince = now;
+    else if (now - timeMon.lowSince > perfTuning.ratioHoldMs && perfTier < PERF_TIERS.length - 1) {
+      timeMon.drops++; timeMon.lowSince = 0; setPerfTier(perfTier + 1);
+    }
+  } else timeMon.lowSince = 0;
+}
+function timeRatioState() {
+  const r = timeMon.raw > 0 ? timeMon.game / timeMon.raw : 1;
+  const t = timeMon.totalRaw > 0 ? timeMon.totalGame / timeMon.totalRaw : 1;
+  return { ratio: +r.toFixed(3), total: +t.toFixed(3), frames: timeMon.frames, realS: +timeMon.totalRaw.toFixed(2),
+    gameS: +timeMon.totalGame.toFixed(2), drops: timeMon.drops, gaps: timeMon.gaps, low: !!timeMon.lowSince,
+    floor: perfTuning.ratioFloor, cap: DT_CAP, tier: perfTier };
+}
+function resetTimeMonitor() { Object.assign(timeMon, { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0, slowRun: 0 }); }
+
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     perfSettleUntil = performance.now() + perfTuning.settleMs;
@@ -4029,8 +4070,9 @@ function updateSphereProjection() {
 function animate() {
   requestAnimationFrame(animate);
   const rawDt = clock.getDelta(); // unclamped — the governor needs real frame cost
-  const dt = Math.min(rawDt, 0.05) * timeScale; // timeScale: the harness's slow-motion knob, 1 in play
+  const dt = Math.min(rawDt, DT_CAP) * timeScale; // timeScale: the harness's slow-motion knob, 1 in play
   perfGovern(performance.now(), rawDt * 1000);
+  timeMonitor(performance.now(), rawDt);
   input.pollGamepad();
   if (state !== 'playing' || paused) {
     gamepadMenu();
@@ -4429,6 +4471,9 @@ window.__hd = {
     },
     buzz(s, w, ms) { buzz(s ?? 1, w ?? 1, ms ?? 100); },
     forceFrameTime(ms) { forcedFrameTime = ms; },
+    /** HD-011: game-time / real-time under the dt cap (1 = keeping up). */
+    getTimeRatio() { return timeRatioState(); },
+    resetTimeRatio() { resetTimeMonitor(); return timeRatioState(); },
     getPerfTier() {
       return {
         tier: perfTier, ema: frameEMA, mode: opts.perf,
