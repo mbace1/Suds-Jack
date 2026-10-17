@@ -1443,9 +1443,18 @@ s.listen(0, '127.0.0.1', async () => {
         out.brake = { loose };
       }
       // three missiles in a cab: the truck folds
-      const t2 = cv.trucks.find(x => x !== cv.standing && x !== t && x.proxy.alive);
-      const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)]; await frames(60);
-      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1) };
+      // a truck AHEAD of the body: a crawling one drifts back ~20 u/s and the
+      // convoy drops a truck 40 u behind you, which stops its clock mid-check
+      const free = x => x !== cv.standing && x !== t && x.proxy.alive;
+      const t2 = cv.trucks.filter(x => free(x) && x.z < pl.feet.z - 8).sort((a, b) => b.z - a.z)[0]
+        ?? cv.trucks.find(free);
+      const hits = [cv.hit(t2), cv.hit(t2), cv.hit(t2)];
+      // 1.8 s of GAME time on the truck's own clock (t.age, stepped by the
+      // convoy's dt), not 60 frames: a faster renderer covers less game time
+      // per frame, and the brake to a crawl is a game-time question
+      const age0 = t2.age;
+      for (let i = 0; i < 2000 && t2.age - age0 < 1.8 && cv.trucks.includes(t2); i++) await frames(1);
+      out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1), game: +(t2.age - age0).toFixed(2), kept: cv.trucks.includes(t2) };
       // the gaze locks a cab in range and the missiles land in it
       gz.cfg.trucks = true;
       // (the body is kept twelve units behind the cab each frame: a standing
@@ -1477,8 +1486,14 @@ s.listen(0, '127.0.0.1', async () => {
       const hd = window.__hd, d = hd.debug, pl = hd.player, cv = d.truckObj();
       const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
       const out = { before: d.getRun().runBonus };
-      const cr = cv.cargo.crates.find(c => c.welded && c.truck && c.truck !== cv.standing);
+      // by now haul2's jackknives and pile-up have spilled much of the load:
+      // if no welded crate is left off your truck, load one (main's load())
+      const pick = () => cv.cargo.crates.find(c => c.welded && c.truck && c.truck !== cv.standing);
+      for (const t of cv.trucks) { if (pick()) break; if (t !== cv.standing) cv.cargo.load(t); }
+      const cr = pick();
       if (cr) {
+        // (jolt unwelds the WHOLE load, so a neighbour inside the stomp's reach
+        // is set back too — 2 of 10 runs saved 2: at least ours, not exactly one)
         cv.cargo.jolt(cr.truck, 0);
         const p = cr.b.positionLin;
         pl.feet.set(p[0], p[2] + cr.s / 2 - 0.1, -p[1]); pl.vy = -1; pl._sync();
@@ -1487,10 +1502,18 @@ s.listen(0, '127.0.0.1', async () => {
       }
       // the game's own loop pays for it: a stomp the gate made directly is
       // counted by stats, so drive the spill path through the frame instead
-      const s0 = d.getRun();
+      // Every spill costs `spill` s — ours AND any loose crate the road takes in
+      // the same frames (the pile-up left dozens loose: 1 in 5 runs one more
+      // landed, -3 for -2). So count the spills the frame saw and ask that
+      // each one was charged, with our two among them.
+      const s0 = d.getRun(), sp0 = cv.cargo.stats.spilled, st0 = cv.cargo.stats.stomped || 0;
       cv.cargo.stats.spilled += 2;
       await frames(3);
       out.afterSpill = d.getRun().runBonus - s0.runBonus;
+      out.spills = cv.cargo.stats.spilled - sp0;
+      // and the frame's own stomp pays back: the body still stands where we
+      // put it, so a second loose crate there is set back in-frame (+1)
+      out.saves = (cv.cargo.stats.stomped || 0) - st0;
       out.hud = document.getElementById('kills').textContent;
       out.timer = document.getElementById('timer').textContent;
       return out;
@@ -1545,6 +1568,76 @@ s.listen(0, '127.0.0.1', async () => {
     });
     await q.close();
   }
+  // ---- HD-014 step 2: landspeeders have no wheels, and the parts have names
+  // A wheel is the old shared 0.5×0.9×0.9 box, a mesh named 'wheel', or the
+  // convoy still holding wheelGeo/wheelMat. Named parts are what the hover
+  // steps find; the part list is exactly today's minus the eight wheels.
+  let haulParts = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    await q.addInitScript(() => { localStorage.setItem('hyperDaggerModeV31', 'truck'); localStorage.setItem('hyperDaggerRunKind', 'free'); });
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    haulParts = await q.evaluate(async () => {
+      const d = window.__hd.debug;
+      const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+      d.startGame(); d.freezeDirector?.(true); d.setInvulnerable(true);
+      await frames(2);
+      const cv = d.truckObj();
+      if (!cv?.cargo) return { convoy: false };
+      cv.cfg.skullsFrom = 1e9;
+      cv.reset(window.__hd.player);
+      const isWheel = o => o.name === 'wheel' || (o.geometry && (o.geometry === cv.wheelGeo
+        || (o.geometry.parameters && o.geometry.parameters.width === 0.5 && o.geometry.parameters.height === 0.9 && o.geometry.parameters.depth === 0.9)));
+      let wheels = 0;
+      const parts = cv.trucks.map(t => {
+        const names = [];
+        t.group.traverse(o => { if (o !== t.group) { names.push(o.name || '?'); if (isWheel(o)) wheels++; } });
+        return { group: t.group.name, names: names.sort().join(',') };
+      });
+      // HD-014 step 3 HOVER: the keel floats, the deck does not float more
+      // than the 0.07 bob, every truck has its pods and a pool on the road
+      const ts = cv.trucks.slice(0, 6), keel0 = ts.map(t => t.keel?.position.y);
+      let maxDy = 0, keelMoved = 0;
+      for (let i = 0; i < 20; i++) {
+        await frames(1);
+        for (const [j, t] of ts.entries()) {
+          if (!cv.trucks.includes(t)) continue;
+          maxDy = Math.max(maxDy, Math.abs(t.group.position.y - t.top));
+          if (t.keel) keelMoved = Math.max(keelMoved, Math.abs(t.keel.position.y - keel0[j]));
+        }
+      }
+      const hover = cv.trucks.map(t => {
+        let pods = 0, draws = 0;
+        t.group.traverse(o => { if (o.name === 'pod') pods++; if ((o.isMesh || o.isLineSegments) && o.visible) draws++; });
+        const pool = t.pool;
+        return { pods, draws: draws + (pool ? 1 : 0), keel: !!t.keel && t.keel.parent?.name === 'truck',
+          pool: !!pool && pool.parent === cv.scene && Math.abs(pool.position.y - (-3.2 + 0.02)) < 1e-6
+            && Math.hypot(pool.position.x - t.group.position.x, pool.position.z - t.group.position.z) < 1 };
+      });
+      return { convoy: true, trucks: cv.trucks.length, wheels, shared: !!(cv.wheelGeo || cv.wheelMat), parts,
+        hover: { maxDy: +maxDy.toFixed(4), keelMoved: +keelMoved.toFixed(4), trucks: hover } };
+    });
+    await q.close();
+  }
+  ok('haul: no wheel meshes or wheel geometry on any truck (HD-014 landspeeders)',
+    haulParts.convoy && haulParts.trucks > 0 && haulParts.wheels === 0 && !haulParts.shared,
+    JSON.stringify({ trucks: haulParts.trucks, wheels: haulParts.wheels, shared: haulParts.shared }));
+  ok('haul: every truck part is named — truck: hull, deck, edge, cab, glass, brake ×2, keel (fin ×2, pod ×4), nothing else',
+    haulParts.convoy && haulParts.parts.every(p => p.group === 'truck' && p.names === 'brake,brake,cab,deck,edge,fin,fin,glass,hull,keel,pod,pod,pod,pod'),
+    JSON.stringify(haulParts.parts?.find(p => p.group !== 'truck' || p.names !== 'brake,brake,cab,deck,edge,fin,fin,glass,hull,keel,pod,pod,pod,pod')));
+  {
+    const h = haulParts.hover || {}, ht = h.trucks || [];
+    ok('haul: HOVER — the keel floats under the hull while the deck stays inside the 0.07 bob',
+      haulParts.convoy && h.keelMoved > 0.005 && h.maxDy <= 0.07 + 1e-9 && ht.every(t => t.keel), JSON.stringify({ keelMoved: h.keelMoved, maxDy: h.maxDy }));
+    ok('haul: HOVER — four thruster pods on every truck, and a glow pool on the road under it',
+      ht.length > 0 && ht.every(t => t.pods === 4 && t.pool), JSON.stringify(ht.find(t => t.pods !== 4 || !t.pool)));
+    // perf (plan risk 3): draws per truck no more than main's wheeled truck
+    // (hull, deck, edge, cab, glass, 8 wheels, 2 brake lights = 15)
+    ok('haul: HOVER — draws per truck ≤ 15, the wheeled truck\'s count',
+      ht.length > 0 && ht.every(t => t.draws <= 15), JSON.stringify(ht.map(t => t.draws).slice(0, 4)));
+  }
   ok('haul: a crate at the spawn point is not a hole — a no-input run stays on the deck for 5 s of slow frames (season 3 / free roll)',
     haulSpawn.convoy && haulSpawn.survived && haulSpawn.roadFrames === 0, JSON.stringify(haulSpawn));
   ok('haul: a fall to the road is named on the death screen, never "something"',
@@ -1579,7 +1672,7 @@ s.listen(0, '127.0.0.1', async () => {
     && haul.profile[1].speed > haul.profile[0].speed && haul.profile[1].turn > haul.profile[0].turn,
     JSON.stringify({ shots: haul.shots, profile: haul.profile }));
   ok('haul: CARGO IS THE SCORE — a loose crate you land on sets back, a spilled one costs a second, and the HUD carries the load',
-    haul3.saved === 1 && haul3.welded && haul3.afterSpill === -2 && /load \d+/.test(haul3.hud),
+    haul3.saved >= 1 && haul3.welded && haul3.spills >= 2 && haul3.afterSpill === haul3.saves - haul3.spills && /load \d+/.test(haul3.hud),
     JSON.stringify(haul3));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
