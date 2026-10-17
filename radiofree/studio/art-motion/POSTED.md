@@ -23,6 +23,8 @@ Accounts:
 | Nordic 1, Satire Excepted | RFH X | https://x.com/radiofreehki/status/2111035485577449679 | same as Instagram |
 | Coxon 3, Paid For By | RFH Instagram | https://www.instagram.com/radiofreehelsinki/reel/DekjzHrI_tl/ (17 Oct ~01:00, uncropped, SAFE_B cut) | AI super PACs spent $55.7M on midterm ads. Almost none mention AI. #midterms #AI #superPACs |
 | Coxon 3, Paid For By | RFH X | https://x.com/radiofreehki/status/2111216618441212033 | same as Instagram |
+| Coxon 2, Committee of the Whole | RFH Instagram | https://www.instagram.com/radiofreehelsinki/reel/Del2ED8oaNi/ (17 Oct ~13:02, uncropped; earlier cut ending "it agreed to testify on 16 October") | NYC Council asked four AI companies for the odds of catastrophe. None gave a number. #AI #AIsafety #NYC |
+| Coxon 2, Committee of the Whole | RFH X | https://x.com/radiofreehki/status/2111397495234342974 (17 Oct ~13:02; latest cut ending "it testified on 16 October". An accidental duplicate, https://x.com/radiofreehki/status/2111397885904380118, waits for Mikael's OK to delete) | same as Instagram |
 
 Toko 2 still needs to go out on Toko X ("Batteries included. Parents not included. 🤖") once the login works. Its Cambridge Story link (https://www.cam.ac.uk/stories/ai-toys-study-play) needs the phone app.
 
@@ -30,10 +32,10 @@ Toko 2 still needs to go out on Toko X ("Batteries included. Parents not include
 
 | When | Film | Channels | Copy (Middler) |
 |---|---|---|---|
-| 17 Oct 12:52 | Coxon 2, Committee of the Whole (v2) | RFH IG + X | waiting on Middler's copy; shown to Mikael first |
+| 18 Oct 00:52 | Coxon 4, On the Same Voluntary Terms (v4) | RFH IG + X | requested from Middler 17 Oct; shown to Mikael at least 1 hour first |
 
 ## Waiting
 
-- Coxon 2 (Committee of the Whole, v2) and Coxon 4 (On the Same Voluntary Terms, v4) redos are on this branch. Coxon 2 is next, then Coxon 4, each once Middler's copy has been shown to Mikael.
+- Coxon 4 (On the Same Voluntary Terms, v4) is next, once Middler's copy has been shown to Mikael.
 - Doodle 3 (Irreversible) isn't approved yet.
 - Genius and The Newsreader Was Fake were scrapped.
