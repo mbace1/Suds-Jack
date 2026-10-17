@@ -23,7 +23,9 @@ carrier set (§3 "The carriers": the nine flats plus black), drawn by the owner.
 | black | — still to add | — still to add | |
 
 The owner sent all twenty in the conversation of 2026-10-14; only the first five arrived as
-files. The rest go here under the same names (`face-<colour>-on-white.jpg`,
+files. On 2026-10-17 the owner said many more colours had been submitted since; a search of
+every branch that day still found only these five, so the rest were sent into a chat and
+never reached the repo. The rest go here under the same names (`face-<colour>-on-white.jpg`,
 `face-white-on-<colour>.jpg`), and their measured colours in this table.
 
 Note for `../js/palette.js`: the references' yellow measures `#FFCC00`, where `STICKER.YELLOW`
