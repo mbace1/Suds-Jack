@@ -1,4 +1,8 @@
-"""Sound for TESLUR (tech-satire clay film, ~29.5 s), v2: the car and the janitor's vacuum are ONE machine.
+"""Sound for TESLUR (tech-satire clay film, ~29.5 s), v3 (after the analysis of B v2: the vacuum crept in from
+-50 dB so its start was not heard until ~3 s, and the hype bed and crowd kept playing through the stop at 12.00, so
+the mix fell only 3.5 dB there): no bed, no crowd — night air only; the vacuum SWITCHES ON (click + 0.3 s spin-up)
+with the car and its stop is a real stop. v2 notes follow.
+ the car and the janitor's vacuum are ONE machine.
 
     uv run --with numpy --with soundfile python 音频/synth_teslur.py [B|C]
 
@@ -51,7 +55,7 @@ EV = dict(                                                                      
     cut=25.50, what=26.30,
     suction=read_suction(),
 )
-GAIN = dict(bed=0.27, crowd=1.0, vac=1.0, jets=1.0, coughs=1.0, jan=0.8, card=1.0)   # stem levels (teslur_stems.py)
+GAIN = dict(bed=0.0, crowd=0.0, vac=1.0, jets=1.0, coughs=1.0, jan=0.8, card=1.0)   # stem levels (teslur_stems.py)
 
 
 def curve(n, pts):
@@ -86,7 +90,9 @@ def build(variant='B'):
     on = np.zeros(N)
     for a, b in EV['vac']: on = np.maximum(on, (t >= a) & (t < b + 0.12))
     rel = int((EV['release'] + 0.12) * SR)                                            # 12.00: it dies in 0.12 s
-    lvl = np.clip(sc * 1.3, 0, 1) * on
+    spin = np.zeros(N)                                                                # v3: the vacuum SWITCHES ON with the car (a 0.3 s spin-up), it does not creep in
+    for a, b in EV['vac']: spin = np.maximum(spin, np.clip((t - a) / 0.3, 0, 1) * ((t >= a) & (t < b + 0.12)))
+    lvl = spin * (0.7 + 0.3 * sc)
     pan = curve(N, [(0, 0.95), (EV['pass1'][0], 0.9), (EV['pass1'][1], -0.9), (EV['run2'], -0.95), (EV['pass2'][0], -0.9), (EV['pass2'][1], 0.35), (END, 0.35)])
     motor = vac_motor(END, 1150, np.clip(0.55 + 0.45 * sc, 0, 1), roar=0.75, seed=44)
     body = vac_motor(END, 380, np.clip(sc, 0, 1), roar=0.9, seed=41) * 0.45          # the low suction the car hangs on
@@ -94,9 +100,11 @@ def build(variant='B'):
     for a, b in EV['vac']:                                                            # hard stops: a 0.12 s collapse, then nothing
         s1 = int(b * SR); f = int(0.12 * SR); v[s1:s1 + f] *= np.linspace(1, 0, f) ** 2; v[s1 + f: int((b + 0.5) * SR)] = 0
     a_ = (pan + 1) * np.pi / 4; scene.L += v * np.cos(a_) * 0.3; scene.R += v * np.sin(a_) * 0.3
+    for a, b in EV['vac']: scene.add(lamp_click(), a, 0.35 * GAIN['vac'], float(np.interp(a, t, pan)))      # the switch
+    scene.add(room(END, 1.0, seed=7) * 0.12, 0, 1.0)                                 # night air under everything, so a stop is a stop and not a dropout
     scene.add(over(soft(noise(0.12, 300, 3000), None, None) * np.exp(-tv(0.12) * 30), glide(900, 300, 0.12) * 0.4), EV['release'], 0.18, -0.9)   # the motor cut out (pass 1)
     dd = EV['down'][1] - EV['down'][0]
-    scene.add(noise(dd, 60, 600) * np.sin(np.pi * tv(dd) / dd), EV['down'][0], 0.22)  # the car rolling back down
+    scene.add(noise(dd, 60, 600) * np.sin(np.pi * tv(dd) / dd), EV['down'][0], 0.08)  # the car rolling back down — kept low: after 12.00 the point is the silence
 
     # ── the janitor's own sounds: steps and swishes while his vacuum runs, the stop, the cup's seal
     inside = lambda x: any(a <= x <= b for a, b in EV['vac'])
