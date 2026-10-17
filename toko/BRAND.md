@@ -4,20 +4,24 @@
 sticker sheet, the sting, and the one-line signature a game imports to be signed
 by it.
 
-Everything is **drawn in code from one geometry table**. There is not one image
-asset in this folder — the SVG logo files are *generated* from the same arcs the
-canvas strokes, so the file you hand a printer and the thing on screen cannot
-drift apart. No build step, no dependencies, no CDN. Open
-[`index.html`](index.html) to see all of it running.
+Everything is **drawn in code**. The one set of images in this folder is
+[`master/`](master/) — the owner's own artwork of the face, which is the canon
+(§2c) and what the code is traced from. Nothing on screen is a picture of it:
+the SVG logo files are *generated* from the same outlines the canvas fills, so
+the file you hand a printer and the thing on screen cannot drift apart. No build
+step, no dependencies, no CDN. Open [`index.html`](index.html) to see all of it
+running.
 
 > **Two things in here are reconstructions, not originals, and you should know
 > which:**
-> 1. **The face geometry** in `js/face.js` was measured off the master artwork
->    by eye. The master itself arrived on 2026-09-24 (`master/`) and is traced
->    to exact outlines in `js/master.js` — see §2c, which is the canon. `GEO`
->    still drives the brand board, the masthead, the sting and the favicon;
->    the signature in every game, the counter and the table draw the trace
->    (2026-09-25).
+> 1. **The face geometry** in `js/face.js` (`GEO`) was measured off the master
+>    artwork by eye. The master itself arrived on 2026-09-24 (`master/`) and is
+>    traced to exact outlines in `js/master.js` — see §2c, which is the canon.
+>    **The trace draws** the signature in every game, the counter, the table,
+>    the lockup, the sticker sheet and the 3D Toko (enamel and clay). **`GEO`
+>    still draws** the sting, the arcade masthead, the favicon, the badge the
+>    counter hands over as an SVG, and parts of the brand board. Moving those
+>    onto the trace is open; nothing new should be built on `GEO`.
 > 2. **The logotype typeface** is the owner's licence and is *not* redistributed
 >    here. See §4.
 
@@ -62,6 +66,12 @@ Round-capped strokes, one weight throughout, no fills and no corners.
   dropped from its ends.
 
 ### The eye has two states, and the logo is the closed one
+
+> This section describes `GEO`, the measurement by eye. **The traced master has
+> no pupils** (§2c): a surface drawn from the trace — the signature, the
+> counter, the table, the 3D Toko — stays closed-eyed and acts by squashing the
+> eyes (a blink) and breathing the smile. The open state below survives only on
+> the `GEO` surfaces that have not moved across yet.
 
 | | | |
 |---|---|---|
@@ -165,23 +175,109 @@ contexts or moods"*):
   lesser Tokos; the master file itself is the yellow one.
 - **Other colours may carry a context or a mood** — a scene, a time of day, a
   game's own palette. The face is the same face in every one of them.
+- **The owner's colour references** (2026-10-14): the face in ten colours — magenta,
+  yellow, cyan, red, purple, orange, lime, green, blue, black — each as the colour on white
+  and white on the colour. They live in [`master/`](master/) with a table of measured
+  colours ([`master/README.md`](master/README.md)); where they disagree with `STICKER`,
+  the owner's files win.
 - What does not change: **one face, one ground** — the face in one colour on
   another, never two colours inside the mark, never a gradient across it.
+
+**The owner's references, 2026-10-14** (sent in conversation; the files that arrived are in
+[`master/`](master/), the rest are described here until they are added). Owner, same day:
+*"these are not strict guides but old concepts that serve as colour guide and official
+references"* — and *"the circle use as well fits"*: the face on a disc (the badge, and the
+round mask the films use) is as right as the egg-and-neck head below.
+
+- **The head, in 3D** — the owner's own mock-up of Toko on a person in a black
+  *Toko Midori Games* T-shirt: the whole head is a smooth **magenta egg**, taller than wide,
+  on a round magenta **neck** that goes into the collar, the face in white set into its
+  upper half. No strap, no human head showing. A reference, not an order: the clay films
+  keep their own Toko (owner, same day: *"I like all the clay elements in use.. don't change
+  them, at least not due to my dump of references for Toko"*).
+- **The mask, as an object** — a die-cut flat card in the same egg-and-neck silhouette,
+  magenta with the white face or white with the black face, two strap holes at eye level;
+  printed as a sheet with cards and QR codes, and photographed lying on cherry petals at
+  the head of the owner's own shadow, so the shadow wears it.
+- **"What is Toko. Toko is like this."** — the owner's diagram behind §2b: *Toko Midori is
+  the one, the person* (the egg-and-neck head, magenta, white face) *but also Toko Midori is
+  clusters* — the same head filled with small heads, each one a member: current members, an
+  ex-member, members and players in the future.
+- **The logotype sheet** — the main one-line logotype, the three-line stack, the lockup
+  (face + three lines + ™), a "with mark" barcode block, and the sub-logos: `T「く」.`, a
+  brush *TOKO* and a brush character, a pixel *toko* with a magenta dot, and a magenta
+  stamp-bar. Colours as §3: RGB 0,0,0 / CMYK 0,0,0,100 and RGB 240,2,127 / CMYK 0,100,0,0.
+  The business card: the three-line logotype beside *The Game Creator · 美鳥十湖 · Toko Midori*.
+- **The colours** — the face in ten colours, on white and reversed (`master/README.md`).
 
 **Versions — valid, not original:**
 
 | | Status |
 |---|---|
 | **Toko Slomo** — grey hair, a mask, a knife behind his back; the owner's hand-made sheet in `turf/art-src/reference/toko-slomo-run.png` | **The Kallio Noir version of Toko.** Valid, owner-made — not the original. |
-| The magenta bust (`drawHead`), the clusters (`drawCluster`) | Assistant-drawn carriers built on `GEO`. Not the original. |
+| The magenta bust (`drawHead`), the clusters (`drawCluster`) | The *ideas* are the owner's — his diagram "What is Toko. Toko is like this." (2026-10-14 references) draws both. These drawings of them are assistant-made on `GEO`: versions, not the original. |
 | Toko Live's figure — dark hood, magenta hands, ring head | Assistant-drawn. Not the original. |
 | The teal gel (`radiofree/js/toko.js`, before v67) | An assistant's invention. Retired. |
 | The noodle-shop keeper with a yellow smiley mask (`piritori/art/rooms/toko.webp`) | Generated art — misspelled sign ("HENSLONKI"), garbled kana. Not a reference. |
 
-The 3D Toko (`js/toko3d.js`, three.js r167 in `vendor/`, used by Radio Free
-Helsinki's film and Toko Live's stage) is built from the trace and nothing
-else: the badge — the brand's own face-on-a-disc carrier — as a lacquered
-pin, the four traced outlines extruded onto it.
+The 3D Toko (`js/toko3d.js`, three.js r167 in `vendor/`) is built from the
+trace and nothing else: the badge — the brand's own face-on-a-disc carrier —
+with the four traced outlines raised on it. It has **two finishes**, and the
+default never moves under anyone who uses it:
+
+- **Enamel** (the default) — a lacquered pin. Toko Live's stage.
+- **Clay** (`style: 'clay'`, owner 2026-09-26: *"Clay Toko is ok, Aardman"*) —
+  the same face in plasticine: matte, thumbprinted, the strokes rolled rather
+  than cut, re-lumped a little on every held drawing, on twos. Radio Free
+  Helsinki's films since v72.
+
+**Clay is the house style for Toko on film** (Radio Free studio, 2026-10-14).
+The studio's clay films (`radiofree/studio/art-motion/clay/`) sculpt the head
+from `master.js` too — byte-identical copies in each film's `lib/`, and a
+generated `scenes/toko_master.js` for the 2D styles — so every Toko in every
+film is the traced face. The owner's 2026-10-14 references do not re-make it:
+*"I like all the clay elements in use.. don't change them"*.
+
+### Toko in a context — the personas
+
+Owner, 2026-10-17: *"consider Toko as a japanese persona with few different
+profile stereotypes … These can be counterparts to the Finnish ones. Both can
+also co-exist, but not all need to be in Finland."* A persona is **Toko in a
+context, not a new character**: the same traced face on a disc, worn as a mask,
+and **each persona owns one carrier** — which is the colour rule above doing
+its job (*"other colours may carry a context or a mood"*).
+
+| | Finland | Japan |
+|---|---|---|
+| **The recluse** — low tech, and content | **Mökki Toko** — a lakeside cottage in Savo. **Sky** `#4cb7e2` | **Kyoto Toko** — a thatched farmhouse in the hills north of Kyoto, irori hearth, rotary phone, *電話は午前中のみ*. **Green** `#12783a` |
+| **The urbanite** — too much, too fast | **Kallio Toko** — the Helsinki flat, the dog, gadgets that misfire. **Magenta**, the original | **Tokyo Toko** — younger, a 1K flat at 1 a.m., three screens, *未読 99+*. **Purple** `#7c1d96` |
+| **The night** | **Toko Slomo** — Kallio Noir, the owner's own | (open) |
+| **The worker** | **The janitor** (*Teslur*) — a yellow mask, ear defenders | (open) |
+
+Three rules come with them. **Stereotypes of lifestyle, never of people** —
+rural against urban, slow against busy, each right some of the time; no
+accents, no bowing gags (the mask means there is no face to caricature
+anyway). **Japanese on screen is real Japanese**, set in a gothic, and any line
+a viewer is meant to read gets a native read first — the counter's rule
+(`scripts/ja-review.mjs`). And **a persona is a stage, not a source**: a real
+news story in a persona's mouth is sourced like any other film. The full grid,
+the ways they meet (the twin film, the pen pals, the failing call) and the look
+tests are Radio Free's: `radiofree/studio/art-motion/plan/toko-personas.md`
+— which, like the whole studio, lives on the Radio Free lane's branch
+(`claude/radio-free-helsinki-pvtsw5`) and has not landed on `main` yet.
+
+### Toko on film — the same message, many formats
+
+Owner, 2026-10-15, scrapping a film that looked and sounded like the three
+before it: *"plan different settings and formats but with similar messaging."*
+So every Toko film is about **a person and a machine, and ends on the human
+side, in Toko's own voice** — one closing card in the counter's all-caps
+register, held at least four seconds. The message family: *don't be the
+audience · you still decide · the people behind the machine · go make your
+own.* What changes every time is the format, the setting, the light and the
+sound; clay stays the base. Clay films carry **no slate and no station bug**
+(owner, 2026-10-14). The six pitches are `plan/toko-formats.md`, beside the
+personas.
 
 ---
 
@@ -215,6 +311,20 @@ carrier is a whole surface or it is nothing.
 Several of those pairings — white on yellow especially — are nowhere near a text
 contrast ratio. They carry the **mark** and never type. `STICKER` and `SHEET` in
 `palette.js`.
+
+The carriers are on screens now, on purpose — a persona's mask, a film's mood —
+which is §2c's colour rule, not an exception to it. What stays print-only is
+the **sheet**: nine flats side by side is a print run of stickers, never a
+palette for one screen.
+
+**Reconcile `STICKER` against the owner's references — open.** The reference
+files in `master/` measure **yellow `#FFCC00`** where `STICKER.YELLOW` is
+`#f5c400`, and **cyan `#33B2D2`** where `STICKER.SKY` is `#4cb7e2`; magenta
+agrees (`#F0027E` is a JPEG of `#F0027F`). The owner's files win. It is not done
+yet because seven of the ten colours have not arrived as files, and the
+films in this fortnight's campaign are cut in the current palette — moving two
+flats now would change a persona's colour between one post and the next.
+Measure all ten when they land and move `STICKER` once.
 
 ---
 
@@ -552,8 +662,43 @@ Two things it does that look like fussiness and are not:
   `pointerup` never does). The `href` stays, so middle-click and
   open-in-new-tab keep working.
 
+### Toko at the table
+
+**`table: true`** (or **`open: fn`** for a game that seats him itself, as Hyper
+Dagger does) changes what the badge does: instead of leaving for the arcade,
+it opens the counter **over the game** — the run paused underneath, Esc or BACK
+returns you to it, and a note filed there lands under that cabinet. The
+overlay is [`js/table.js`](js/table.js); it isolates input at its root so a
+key typed at Toko is never also a key in the game, releases pointer lock, and
+finds which cabinet it is standing in from the catalogue.
+
+On a touch screen the badge stays a picture (the rule above), so
+`hub/shell.js` puts a **TOKO** button beside HOME on any page whose badge can
+seat him — just the dot under 480px, still 44px.
+
+A game talks to the table through one object, **`window.__tokoTable`**:
+
+```js
+window.__tokoTable = {
+  pause() {},        // stop the clock — the one thing the table cannot do itself
+  resume() {},       // and restart it without swallowing the conversation
+  cue() {},          // what he says first, in this game's words
+  recap() {},        // the run so far, a line or three — or null on a menu
+};
+```
+
+**`recap()` is how he remembers you.** As you leave, `hub/playlog-auto.js`
+reads it and logs it locally; the next time you open the counter or Toko Live
+within twelve hours, he opens on *LAST TIME, HYPER DAGGER: …* — once, never
+twice for the same run. Nothing leaves the browser. A title screen returns
+`null` and nothing is written.
+
 Signed on `main`: `toko-drop/`, `paperboy/`, `dropcabal/`, `hyperdagger/`,
-`flashprince/`.
+`flashprince/`, `slaykallio/`, `flowsnow/`, `eeri/`, `radiofree/`, `sudz/`
+(and the set-down `sudsjack/`). **All of them seat him at the table except
+`toko-drop/`** (owner: the table is for the others), and all the tabled ones
+publish a `recap()` except `radiofree/`, which has the table but not yet a
+recap.
 
 Other entry points:
 
@@ -590,10 +735,13 @@ so a cross-directory import would break the offline promise either way.
 
 **Do**
 
-- Draw the face from `GEO`. Every number there was measured; there is no
-  "roughly".
-- Align to `bounds()` — the ink — not to the design box.
-- Keep the two colours, and let the paper be the paper.
+- Draw the face from the trace — `js/master.js`. It is the face (§2c). `GEO`
+  is the older measurement by eye and is only still used where nobody has
+  moved a surface across yet; build nothing new on it.
+- Align to the ink (`masterBounds()`, or `bounds()` on a `GEO` surface) — never
+  to the design box.
+- Magenta and black when there is no reason to choose; any one carrier when
+  there is (§2c, §3). Let the paper be the paper.
 - Let it blink. That is the animation.
 - Say when the typeface is substituted.
 
@@ -601,11 +749,54 @@ so a cross-directory import would break the offline promise either way.
 
 - Don't re-weight the stroke. It closes the eyes.
 - Don't move the eyes apart. They line up with the mouth's tips.
-- Don't outline, gradient, bevel, shadow, or rotate the face.
+- Don't put two colours inside the mark — no outline, no drop shadow, no offset
+  shadow in a second colour, no gradient across it. **One face, one ground.**
+- Don't bevel or rotate the **flat** mark. The 3D badge (enamel or clay, §2c)
+  is the one carrier that has depth and light on it, and it turns because it
+  is an object in a scene.
+- Don't draw a face that is not the trace — not a re-drawing by eye, not a
+  generated one, not a pupil in an eye that has none.
 - Don't set body copy in magenta.
-- Don't take the sticker colours into anything on a screen.
+- Don't lay the sticker sheet's nine flats out as a palette for one screen.
 - Don't stretch the lockup — the logotype is the face's height, always.
-- Don't put the mark below 44px, and don't put it on a photograph.
+- Don't put the mark below 44px. Over a photograph or a busy scene, give it a
+  ground of its own — the badge — so the slots still read.
+
+---
+
+## 7b. Channels
+
+Toko Midori Games posts as **`tokomidorigames`** on Instagram, **`@tokomidori`**
+on X, and **`tokomidori`** on YouTube, TikTok, Reddit and Discord (the accounts
+in Radio Free's campaign plan, 2026-10-17). The register there is the
+counter's: light, deadpan, short. *#claymation* is fine — on Toko's channels
+the clay is part of the joke.
+
+**Radio Free Helsinki is a separate brand** (Instagram `radiofreehelsinki`,
+X/YouTube `@radiofreehki`) and keeps to its own feed: each brand posts only its
+own films, and Radio Free never says how its films are made. Today **both
+profiles wear the green Toko mask**, which is the overlap; the owner picked a
+lattice radio mast (`icon-c2`, 2026-10-16) to give Radio Free its own icon.
+Whether it goes live now, and whether Radio Free credits *"a Toko Midori
+production"*, are open decisions in that plan.
+
+**The social kit is not to this canon yet.** The Toko Midori profile, X header
+and banners (`branding/toko-midori/` on the `branding/toko-rfh-socials`
+branch, 2026-10-14) break four rules at once:
+
+1. **A shadow inside the mark** — black under the face on the profile, a
+   magenta offset under a green face on the X header. That is two colours in
+   the mark (§7).
+2. **The green is not a carrier.** It measures `#44FF88`; the brand's green is
+   `#12783a`, and the owner's references are the colour guide.
+3. **It is not the traced face.** Every stroke ends round; the trace ends every
+   stroke in a slanted cut.
+4. **The name is set in a stock sans**, not the drawn logotype (§4).
+
+They should be redrawn from the shipping modules — `fillMaster` for the face,
+`drawLockup` for the name — so the picture on the profile is the same face as
+the badge in every game's corner. Until then they are the one place the brand
+is drawn by hand.
 
 ---
 
@@ -615,24 +806,39 @@ so a cross-directory import would break the offline promise either way.
 toko/
   BRAND.md        this
   VERSIONS.md     the release log — one number for mark, sting, badge, counter
+  PATCH_NOTES.md  what changed for the counter between releases, and why
   index.html      the brand board — every mark live, with SVG downloads
   toko.css        the palette as custom properties + the CSS-only glitch
+  master/         THE ORIGINAL — the owner's face, 700 × 700, and his colour
+                  references (README.md: the measured colours, what is missing)
+  tools/
+    trace-master.cjs  traces master/ into js/master.js
+  vendor/         three.js r167 for the 3D Toko — local, not the CDN
   js/
+    master.js     THE FACE — the traced outlines; fillMaster, drawMasterBadge
+    toko3d.js     the 3D badge from the trace — enamel, or style: 'clay'
+    face.js       GEO, the older measurement by eye — canvas and SVG out of it
     palette.js    the two colours, the sticker sheet, the type spec, the words
-    face.js       THE MARK — one geometry table, canvas and SVG out of it
-    lockup.js     the logotype, the lockups, the sticker sheet, the credit line
+    wordmark.js   the logotype, drawn — twelve glyphs, no font file
+    lockup.js     the lockups, the sticker sheet, the credit line
     surface.js    a device-pixel-ratio canvas with a reduced-motion-safe loop
     glitch.js     tear / split / dropout / shuffle / scanlines / carrier / hit
-    util.js       seeded RNG + the resting pulse
+    util.js       seeded RNG, the blink, the drift, the resting pulse
     sting.js      the three-second sting (skippable from frame one)
     chat.js       the counter — the conversation panel, self-contained
     dialogue.js   what Toko says — topics, his question, the greetings,
                   the asides. Edit THIS to change the conversation
-    signature.js  sign() — the drop-in corner badge
+    dialogue.fi.js / dialogue.ja.js   the two language packs
+    brain*.js mind.js news-*.js play-*.js project-*.js game-lineage.js
+    conversation-plus.js chat-layout-fix.js
+                  the counter's extensions — local, no model and no network
+                  call except the public news feeds (PATCH_NOTES.md)
+    table.js      Toko at the table — the counter over a paused game
+    signature.js  sign() — the drop-in corner badge, and the seat at the table
     masthead.js   the animated lockup for the arcade hub
     board.js      wires the board out of the shipping modules
   test/
-    brand.cjs     the gate: geometry, SVG, sting, every signed game
+    brand.cjs     the gate: geometry, SVG, sting, every signed game, the table
   _tokentest.html   fixtures, not pages: the first proves the ?v= token
   _fromtest.html    reaches the packs, the second walks in from a cabinet
 ```
