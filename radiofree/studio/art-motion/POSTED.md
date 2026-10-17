@@ -34,11 +34,16 @@ Toko 2 still needs to go out on Toko X ("Batteries included. Parents not include
 
 ## Scheduled (about 12 hours apart)
 
+The next RFH films and why each sits where it does: `plan/RFH-NEXT.md` (18 Oct).
+
 | When | Film | Channels | Copy (Middler) |
 |---|---|---|---|
-| in production | Coxon 5, The Chair Is Taken (slate 17 Oct) | RFH Instagram + X | — (write when finished) |
-| in production | Kill Switch (slate 17 Oct) | RFH Instagram + X | — (write when finished) |
-| in production | Welcome Home, tech satire 2 after Teslur (slate 17 Oct) | RFH Instagram + X | — (write when finished) |
+| Tue 20 Oct 00:50 | Coxon 5, The Chair Is Taken (in production; greenlit 17 Oct) | RFH Instagram + X | — (write when finished) |
+| Thu 22 Oct 00:50 | Kill Switch (in production; greenlit 17 Oct) | RFH Instagram + X | — (write when finished) |
+| Sat 24 Oct 12:50 | Doodle 3, Irreversible (finished; waiting for approval and the shot-5 fix) | RFH Instagram + X | — |
+| Tue 27 Oct 00:50 | Welcome Home, tech satire 2 after Teslur (greenlit; needs the launch-film frames) | RFH Instagram + X | — (write when finished) |
+| Thu 29 Oct 12:50 | Nordic 2, the satire follow-up (proposed; the owner picks angle A or B) | RFH Instagram + X | — |
+| Sat 31 Oct 00:50 | Coxon 6, The Day After (proposed; midterm run-up) | RFH Instagram + X | — |
 
 ## Waiting
 
