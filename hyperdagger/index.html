@@ -32,6 +32,11 @@
     #timer { top: 0.8rem; left: 50%; transform: translateX(-50%); font-size: 1.6rem; letter-spacing: 0.06em; }
     #kills, #gems { top: 0.9rem; font-size: 0.9rem; opacity: 0.75; }
     #kills { left: 1rem; } #gems { right: 1rem; }
+    /* HD-012: the arcade shell's HUB button owns the top-left corner (fixed,
+       z-index above everything, ~44px tall). The kills/load line used to sit
+       at the same spot and printed straight through it on the death screen.
+       It is a stat line, not a control: it steps down under HUB instead. */
+    #kills { top: calc(max(10px, env(safe-area-inset-top)) + 54px); left: max(10px, env(safe-area-inset-left)); }
     #style { bottom: 1.2rem; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; text-align: center; }
     #styleRank { font-size: 1.4rem; font-weight: 700; } #styleMult { font-size: 0.85rem; opacity: 0.8; }
     #styleFill { height: 3px; width: 0; background: #c81e1e; margin: 0.2rem auto 0; max-width: 8rem; }
@@ -55,10 +60,22 @@
        everything returns. main.js already toggled body.in-run in all the
        right places and the gate already asserted this behaviour — the rules
        themselves were simply never written, so the gate was red by three. */
-    body.in-run #kills,
     body.in-run #gems,
     body.in-run #style { display: none; }
     body.in-run #timer { font-size: 27px; }
+    /* HD-008 (12 Oct playtest): the kill counter stays up for the whole run,
+       in every season and free mode. The top-left corner belongs to the
+       shell's HOME button (44px tall) mid-run, and top-right to pause, so
+       the counter tucks under the clock, centred, where nothing else lives
+       on a phone-sized viewport. */
+    body.in-run #kills { left: 50%; transform: translateX(-50%); top: calc(0.8rem + 42px); font-size: 0.85rem; white-space: nowrap; max-width: calc(100vw - 2rem); overflow: hidden; text-overflow: ellipsis; }
+    /* HD-010: what the clock means, small, under the clock and below the slot
+       #593 gives the kill counter; and the run-start goal card, one line
+       above the reticle that fades by ~2 s and never takes input. */
+    #clockLabel { position: absolute; z-index: 5; pointer-events: none; display: none; left: 50%; transform: translateX(-50%); top: calc(0.8rem + 62px); font-size: 0.7rem; letter-spacing: 0.12em; opacity: 0.7; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+    body.in-run #clockLabel:not(:empty) { display: block; }
+    #goalCard { position: absolute; z-index: 6; pointer-events: none; left: 50%; top: max(calc(0.8rem + 86px), 24%); transform: translateX(-50%); max-width: calc(100vw - 2rem); padding: 0.35rem 0.6rem; font-size: clamp(0.62rem, 2.6vw, 1.1rem); font-weight: 800; letter-spacing: 0.08em; text-align: center; white-space: nowrap; width: max-content; overflow: hidden; text-overflow: ellipsis; color: #e8dcc8; background: rgba(0,0,0,0.45); border-top: 1px solid #d8412f; border-bottom: 1px solid #d8412f; text-shadow: 0 1px 4px #000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s; }
+    #goalCard.show { opacity: 1; visibility: visible; transition: opacity 0.15s ease; }
     body.in-run #pauseBtn { opacity: 0.12; }
     body.in-run #pauseBtn:hover { opacity: 1; }
     body.in-run .arcade-home,
@@ -75,6 +92,8 @@
   <div id="vignette"></div>
   <div id="timer">0.0</div>
   <div id="kills">0 kills</div>
+  <div id="clockLabel"></div>
+  <div id="goalCard"></div>
   <div id="gems">◆ 0 · LV 1</div>
   <div id="style"><div id="styleRank"></div><div id="styleMult"></div><div id="styleFill"></div></div>
   <div id="toast"></div>
@@ -91,10 +110,10 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=87"></script>
+  <script type="module" src="js/main.js?v=108"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=85').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=108').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=43"></script>
