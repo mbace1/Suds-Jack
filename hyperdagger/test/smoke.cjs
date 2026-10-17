@@ -1976,6 +1976,11 @@ s.listen(0, '127.0.0.1', async () => {
   const ebb = await p.evaluate(async () => {
     const hd = window.__hd, d = hd.debug, g = d.gooObj();
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    // A fresh run first. The checks before this one wind season 2's clock
+    // back and forth and spend 30-40 s of it between them, so on a slow box
+    // the run may already have passed its first ebb — which raises the steps
+    // once per run — and this check would find nothing left to raise.
+    d.startGame(); d.setInvulnerable(true); d.freezeDirector(true); await frames(4);
     d.setLife(60); d.setTime(44.9);
     let maxDrain = 0;
     for (let i = 0; i < 300 && !d.getRun().ebbSteps; i++) { await frames(1); maxDrain = Math.max(maxDrain, g.drain); }
