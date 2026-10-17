@@ -8,7 +8,7 @@ HERE = Path(__file__).resolve().parent; sys.path[:0] = [str(HERE / 'sound'), str
 import numpy as np
 from mix import Session
 from sfx import pop
-from rfsound import SR
+from rfsound import SR, trombone
 
 tmp = Path(tempfile.mkdtemp()); ok = True
 
@@ -18,9 +18,12 @@ def expect(name, got, want):
     print(f"{'ok ' if good else 'BAD'}  {name}: {got} (want {want})")
 
 
-def sound(gap=None, quiet=(), cue_at=1.1):
-    """a 6 s mix of pops every 0.25 s, with an optional hole in it and one cue to cover"""
+def sound(gap=None, quiet=(), cue_at=1.1, bed=True):
+    """a 6 s mix of pops every 0.25 s over a held chord, with an optional hole in it and one cue to cover"""
     s = Session(6.5)
+    if bed:
+        for a, b in ([(0.1, gap[0]), (gap[1], 5.9)] if gap else [(0.1, 5.9)]):
+            if b - a > 0.3: s.note(trombone(48, b - a - 0.25, 0.4, a=0.05, r=0.15), a, 0.5)
     for t in np.arange(0.1, 5.9, 0.25):
         if gap and gap[0] <= t < gap[1]: continue
         s.fx(pop(), t, 0.6, name='pop')
@@ -30,6 +33,7 @@ def sound(gap=None, quiet=(), cue_at=1.1):
 
 r = sound(); expect('clean mix: all pass', sorted(set(r.values())), ['pass'])
 expect('a cue with nothing on it', sound(cue_at=1.1 + 0.125)['coverage'], 'FAIL')
+expect('hits with nothing between', sound(bed=False)['continuity'], 'warn')
 expect('an unmarked 2.2 s hole', sound(gap=(2.0, 4.2))['silence'], 'FAIL')
 expect('the same hole, marked quiet', sound(gap=(2.0, 4.2), quiet=[(2.0, 4.2)])['silence'], 'pass')
 

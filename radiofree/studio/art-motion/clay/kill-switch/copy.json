@@ -2,6 +2,7 @@
   "film": "kill-switch",
   "cut": "pipeline pilot (the 11 s polish edit)",
   "series": "rfh",
+  "captionSize": "big",
   "langs": ["en", "fi", "ja"],
   "native_read": { "en": true, "fi": false, "ja": false },
   "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",

@@ -14,6 +14,8 @@ tail rung out) → measured independently with ffmpeg's ebur128 → checks:
     loudness   integrated within 0.5 LU of −14
     true peak  at most −1.0 dBTP
     silence    no gap quieter than −50 dBFS longer than 1.5 s, unless it is marked `quiet` (a joke, a beat)
+    continuity (a warning) at most 8% of the film below −35 dBFS outside the quiet spans: a score that drops to the
+               room between its hits reads as unfinished (The Chair Is Taken v1 sat there 17% of its length)
     coverage   every cue the picture lists has a sound landing within 40 ms, or a written exemption
 """
 import sys, json, re, subprocess
@@ -31,6 +33,13 @@ def measure(path):
     s = p.stderr[p.stderr.rindex('Summary:'):]
     num = lambda k: float(re.search(k + r':\s+(-?[\d.]+|-inf)', s).group(1).replace('-inf', '-120'))
     return {'I': num('I'), 'LRA': num('LRA'), 'TP': num('Peak')}
+
+
+def session(series, dur):
+    """a Session that also writes in an rfseries voice — Coxon's chorale, roll_into, ruff and hit, Toko's waltz —
+    with every placement still logged and mixed by this chain. (Their at()/march() count on the old 37.5 s grid;
+    a pipeline film places by seconds from its events.)"""
+    return type(f'{series.__name__}Session', (Session, series), {})(dur)
 
 
 class Session(Score):
@@ -111,6 +120,8 @@ class Session(Score):
                 if run is not None and t - run > SILENCE_S: gaps.append((round(run, 2), round(t, 2)))
                 run = None
         inq = lambda a, b: any(a >= q0 - 0.1 and b <= q1 + 0.4 for q0, q1 in quiet)
+        tw = np.arange(len(rms)) * h / SR; live = np.array([(t < end - 0.6) and not any(q0 <= t < q1 for q0, q1 in quiet) for t in tw])
+        hollow = float((rms[live] < -35).mean()) if live.any() else 0.0
         times = np.array(sorted(e['t'] for e in self.log)) if self.log else np.zeros(0)
         missed = []
         for name, t in cues:
@@ -121,6 +132,7 @@ class Session(Score):
             {'check': 'true peak', 'result': 'pass' if M['TP'] <= TP_MAX else 'FAIL', 'why': f"{M['TP']:.1f} dBTP (at most {TP_MAX})"},
             {'check': 'silence', 'result': 'pass' if all(inq(a, b) for a, b in gaps) else 'FAIL',
              'why': 'no unmarked gap over 1.5 s' + ''.join(f'; {a}–{b} s ' + ('(marked quiet)' if inq(a, b) else 'UNMARKED') for a, b in gaps)},
+            {'check': 'continuity', 'result': 'pass' if hollow <= 0.08 else 'warn', 'why': f'{hollow:.0%} of the film below −35 dBFS outside the quiet spans (at most 8%)'},
             {'check': 'coverage', 'result': 'pass' if not missed else 'FAIL',
              'why': f"{len(cues) - len(exempt) - len(missed)}/{len(cues) - len(exempt)} cues have a sound within {int(COVER_S * 1000)} ms" + (f'; missing {missed}' if missed else '')},
             *({'check': f'exempt {k}', 'result': 'pass', 'why': v} for k, v in exempt.items()),
@@ -128,6 +140,7 @@ class Session(Score):
         rep = {'wav': str(wav), 'measured': M, 'limiter': list(tried), 'ducks': self.ducks, 'quiet': [list(q) for q in quiet], 'checks': checks, 'placed': len(self.log)}
         if report: Path(report).write_text(json.dumps(rep, indent=1))
         bad = [c for c in checks if c['result'] == 'FAIL']
-        for c in bad: print(f"  FAIL  {c['check']}: {c['why']}")
+        for c in checks:
+            if c['result'] != 'pass': print(f"  {c['result']:4}  {c['check']}: {c['why']}")
         print(f"sound: {len(checks) - len(bad)} pass, {len(bad)} FAIL  ({M['I']:.1f} LUFS, {M['TP']:.1f} dBTP, LRA {M['LRA']:.1f})")
         return rep

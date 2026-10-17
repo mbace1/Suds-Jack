@@ -56,7 +56,7 @@ style:
 | Style | Its polish | Why |
 |---|---|---|
 | Flat leaflet (Kill Switch) | **slick 2D motion design + creator-native edit** | The print stays flat; the polish is in how it moves. **Tested:** `previews/17-10-Kill-Switch-polish-test.mp4`. |
-| Papercut (RFH news) | **creator-native edit**, then **cleaner light** | Punch-ins, word-by-word captions and sound hits on the existing box; brighter, cleaner card and light. |
+| Papercut (RFH news) | **creator-native edit**, then **cleaner light** | Punch-ins, word-by-word captions and sound hits on the existing box; brighter, cleaner card and light. **Built (18 Oct):** `scenes/rfp_clean.js`, an opt-in layer: clean card, lit cut edges, contact and ambient shadows, a thinner box. Lighting is per film: cool room, warm practical lamps, motivated sources. First film: *The Chair Is Taken*. |
 | Clay launch-film parody (Welcome Home) | **premium 3D + cinematic realism** | It parodies a premium launch film, so premium is the point. **Tested (stills):** `looks/polish-welcome-home.png`. |
 | Clay (Toko, Teslur) | **creator-native edit**, premium 3D where the subject is a product | Clay stays where its warmth is the joke. |
 | Woodblock, sumi-e | **slick 2D motion**: layered parallax, depth, crisp edges | The texture stays, because the print is the subject. |

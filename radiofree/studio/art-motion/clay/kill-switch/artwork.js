@@ -43,6 +43,10 @@ const SYM = {
     g.strokeStyle = I.W; g.lineWidth = s * 0.09; g.lineCap = 'round'; g.beginPath(); g.moveTo(0, s * 0.18); g.quadraticCurveTo(0, s * 0.44, s * 0.3, s * 0.44); g.stroke(); },
   book(g, s) { g.fillStyle = I.W; poly(g, [[0, -s * 0.28], [-s * 0.42, -s * 0.38], [-s * 0.42, s * 0.3], [0, s * 0.4], [s * 0.42, s * 0.3], [s * 0.42, -s * 0.38]]); g.fill();
     g.strokeStyle = I.B; g.lineWidth = s * 0.05; g.beginPath(); g.moveTo(0, -s * 0.26); g.lineTo(0, s * 0.38); g.stroke(); },
+  flame(g, s) { g.fillStyle = I.K; g.beginPath(); g.moveTo(0, -s * 0.5); g.bezierCurveTo(s * 0.34, -s * 0.12, s * 0.3, s * 0.36, 0, s * 0.42); g.bezierCurveTo(-s * 0.3, s * 0.36, -s * 0.34, -s * 0.02, -s * 0.06, -s * 0.2);
+    g.bezierCurveTo(-s * 0.04, -s * 0.02, s * 0.04, -s * 0.24, 0, -s * 0.5); g.fill(); },
+  tap(g, s) { g.fillStyle = I.W; g.fillRect(-s * 0.42, -s * 0.12, s * 0.5, s * 0.2); g.fillRect(-s * 0.02, -s * 0.12, s * 0.2, s * 0.44); g.fillRect(-s * 0.2, -s * 0.42, s * 0.36, s * 0.12); g.fillRect(-s * 0.04, -s * 0.34, s * 0.08, s * 0.24);
+    g.beginPath(); g.arc(s * 0.08, s * 0.44, s * 0.06, 0, TAU); g.fill(); },
 };
 
 // ------------------------------------------------------------------ the instruction man, in a Toko mask
@@ -186,5 +190,54 @@ export function back(g) {
   text(g, 'TESTED TO: —', 400, 1314, F(700, 21), { base: 'middle' });
   barcode(g, 600, 1286, 150, 46, 29);
   text(g, '4', AW - 52, 1324, F(800, 30), { align: 'right' });
+  text(g, 'SAVE THESE INSTRUCTIONS · SÄILYTÄ NÄMÄ OHJEET · 大切に保管してください', AW / 2, 1274, F(700, 15), { align: 'center' });
+}
+
+// ------------------------------------------------------------------ the third leaflet (the full film): a washing machine's — Microsoft's president's own example
+function washerDrawing(g, x, y, s) {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  const D = [64, -54];
+  poly(g, [[150, -190], [150 + D[0], -190 + D[1]], [150 + D[0], 200 + D[1]], [150, 200]]); g.fillStyle = I.T22; g.fill(); ln(g); g.stroke();
+  poly(g, [[-190, -190], [-190 + D[0], -190 + D[1]], [150 + D[0], -190 + D[1]], [150, -190]]); g.fillStyle = I.T10; g.fill(); ln(g); g.stroke();
+  g.beginPath(); g.roundRect(-190, -190, 340, 390, 18); g.fillStyle = I.W; g.fill(); ln(g); g.stroke();
+  ln(g, 4); g.beginPath(); g.moveTo(-190, -110); g.lineTo(150, -110); g.stroke();                         // the control strip
+  g.beginPath(); g.roundRect(-172, -170, 90, 42, 6); g.fillStyle = I.T10; g.fill(); ln(g, 4); g.stroke();   // the drawer
+  g.beginPath(); g.arc(96, -150, 24, 0, TAU); g.fillStyle = I.W; g.fill(); ln(g, 4); g.stroke(); g.beginPath(); g.moveTo(96, -150); g.lineTo(108, -166); g.stroke();
+  g.fillStyle = I.K; for (const bx of [-30, 0, 30]) { g.beginPath(); g.arc(bx, -150, 7, 0, TAU); g.fill(); }
+  g.beginPath(); g.arc(-20, 50, 112, 0, TAU); g.fillStyle = I.T22; g.fill(); ln(g, 6); g.stroke();               // the door
+  g.beginPath(); g.arc(-20, 50, 82, 0, TAU); g.fillStyle = I.T10; g.fill(); ln(g, 4); g.stroke();
+  ln(g, 3); g.beginPath(); g.arc(-20, 50, 60, -2.4, -1.2); g.stroke();
+  g.fillStyle = I.K; g.beginPath(); g.roundRect(84, 30, 16, 44, 6); g.fill();
+  g.fillStyle = I.K; for (const fx of [-170, 120]) { g.beginPath(); g.roundRect(fx, 200, 34, 14, 4); g.fill(); }
+  g.restore();
+}
+const WASH_LINES = [
+  ['Do not wash items soiled with solvents.', 'FI Älä pese liuottimilla likaantuneita tekstiilejä.  JA 溶剤の付いた衣類は洗わないでください。  SV Tvätta inte plagg med lösningsmedel.'],
+  ['Keep children away from the open door.', 'FI Pidä lapset poissa avoimen luukun luota.  JA 開いた扉に子供を近づけないでください。  SV Håll barn borta från den öppna luckan.'],
+  ['Turn off the water supply after use.', 'FI Sulje vesihana käytön jälkeen.  JA 使用後は給水栓を閉めてください。  SV Stäng vattenkranen efter användning.'],
+  ['Unplug before servicing.', 'FI Irrota pistoke ennen huoltoa.  JA 点検の前に電源プラグを抜いてください。  SV Dra ur kontakten före service.'],
+  ['Do not install outdoors.', 'FI Älä asenna ulos.  JA 屋外に設置しないでください。  SV Installera inte utomhus.'],
+];
+const WASH_PICTS = [
+  [triangle, 'shock', 'Electric shock', 'Sähköisku', '感電注意'], [triangle, 'child', 'Children', 'Lapset', '子供に注意'], [triangle, 'heat', 'Hot water', 'Kuuma vesi', '高温注意'], [forbid, 'flame', 'No solvents', 'Ei liuottimia', '溶剤禁止'],
+  [forbid, 'rain', 'Indoors only', 'Vain sisällä', '屋内専用'], [must, 'tap', 'Water off', 'Sulje hana', '給水栓を閉める'], [must, 'plug', 'Unplug', 'Irrota pistoke', 'プラグを抜く'], [must, 'book', 'Read manual', 'Lue ohjeet', '取扱説明書を読む'],
+];
+/** the washing machine's page; `upto` (0..8) is how many warnings have filled in so far — it fills itself in on screen */
+export function washer(g, upto = 8) {
+  header(g, 'WASHING MACHINE W-8');
+  text(g, '230 V~  50 Hz  2100 W', AW - 44, 166, F(600, 20), { align: 'right' });
+  washerDrawing(g, 380, 440, 0.86);
+  man(g, 770, 650, 0.78, 'pull');
+  callout(g, 1, 120, 236, 205, 300); callout(g, 2, 610, 210, 520, 300); callout(g, 3, 120, 560, 240, 480);
+  text(g, '1  Detergent drawer      2  Programme dial      3  Door', 44, 676, F(500, 19));
+  sectionHead(g, 724, '5 / 48');
+  WASH_PICTS.forEach(([shape, sym, en, fi, ja], i) => { const [x, y] = CELL(i); if (i >= upto) { g.setLineDash([9, 9]); ln(g, 2.5); g.beginPath(); g.arc(x, y, 52, 0, TAU); g.stroke(); g.setLineDash([]); return; }
+    shape(g, x, y, 104, SYM[sym]); text(g, en, x, y + 70, F(700, 16), { align: 'center' }); text(g, fi, x, y + 87, F(400, 14), { align: 'center' }); text(g, ja, x, y + 104, F(400, 13), { align: 'center' }); });
+  WASH_LINES.forEach(([en, tr], i) => { const y = 1102 + i * 32; text(g, `${i + 1}.`, 44, y, F(800, 20)); text(g, en, 70, y, F(700, 20)); text(g, tr, 70, y + 16, F(400, 12)); });
+  ln(g, 3.5); g.beginPath(); g.ellipse(132, 1312, 86, 30, 0, 0, TAU); g.stroke(); text(g, 'IEC 60335-2-7', 132, 1313, F(700, 21), { align: 'center', base: 'middle' });
+  g.beginPath(); g.roundRect(240, 1284, 128, 56, 9); g.stroke(); text(g, 'UL 2157', 304, 1313, F(700, 21), { align: 'center', base: 'middle' });
+  text(g, 'CE', 418, 1314, F(800, 42), { align: 'center', base: 'middle' });
+  barcode(g, 560, 1286, 190, 46, 47); text(g, '6 412345 678913', 655, 1350, F(500, 15), { align: 'center' });
+  text(g, '5', AW - 52, 1324, F(800, 30), { align: 'right' });
   text(g, 'SAVE THESE INSTRUCTIONS · SÄILYTÄ NÄMÄ OHJEET · 大切に保管してください', AW / 2, 1274, F(700, 15), { align: 'center' });
 }

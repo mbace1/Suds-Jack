@@ -19,10 +19,15 @@ export const LINE_PAUSE = 0.22;                     // …with this pause at eac
 export const TAIL = 0.8;                            // the last word stays at least this long
 export const SAFE = { left: 140, right: 940, top: 150, bottom: 1630, rail: { x0: 930, y0: 980, y1: 1630 } };
 export const WIDTH = 800;                           // no line wider than this
-export const STYLE = {
-  latin: { family: 'Poppins-800', size: 82, lead: 98, stroke: 14, lift: 30 },
-  ja: { family: 'NotoSansJP-800', size: 74, lead: 104, stroke: 14, lift: 28 },
+// Two sizes. HOUSE is the house caption exactly as libass draws the ASS style "Poppins ExtraBold 82" that every film
+// before the pipeline used: libass scales a font so its Windows ascent + descent (1135 + 627 units) fill 82 px, so
+// the em is 46.5 px and lines step 87 px (measured: "It invited five AI companies." inks 661 px wide either way).
+// BIG is the creator-native size the Kill Switch pilot was built at (82 px em). copy.json picks: "captionSize".
+export const STYLES = {
+  house: { latin: { family: 'Poppins-800', size: 46.5, lead: 87, stroke: 14, lift: 17 }, ja: { family: 'NotoSansJP-800', size: 46, lead: 87, stroke: 14, lift: 17 } },
+  big: { latin: { family: 'Poppins-800', size: 82, lead: 98, stroke: 14, lift: 30 }, ja: { family: 'NotoSansJP-800', size: 74, lead: 104, stroke: 14, lift: 28 } },
 };
+export const STYLE = STYLES.house;
 export const BAND = { top: 240, low: 1180 };        // where a caption's first baseline sits, by placement
 const POP = '#f2b83a';
 export const SCRIM = 0.62;                          // the darkest a scrim gets, behind the busiest picture
@@ -45,7 +50,7 @@ export function parse(text, lang) {
 /** what a reader actually reads: no marks, no layout, and no segment spaces in Japanese */
 export function plain(text, lang) { const s = text.replace(/[[\]]/g, '').replace(/\s*\/\s*/g, ' ').trim(); return lang === 'ja' ? s.replace(/\s+/g, '') : s; }
 export function readTime(text, lang) { return 1 + plain(text, lang).length / RATE[lang]; }
-const styleOf = (lang) => (lang === 'ja' ? STYLE.ja : STYLE.latin);
+const styleOf = (lang, size = 'house') => (lang === 'ja' ? STYLES[size].ja : STYLES[size].latin);
 
 /** when each word comes on, from t0: reveal speed per character, a pause per line */
 function wordTimes(lines, lang, t0) {
@@ -59,8 +64,9 @@ function wordTimes(lines, lang, t0) {
  * (+offset); if the language needs longer than that, a HOLD is inserted before the caption's `hold` beat and every
  * beat from there on moves later — so a film's length comes from its copy, never the other way round.
  */
-export function plan(copy, lang, beats) {
-  const T = Object.fromEntries(beats); const order = beats.map(([n]) => n); const holds = [];
+export function plan(copy, lang, beats, { snap = 0 } = {}) {
+  // snap: a hold is rounded UP to a whole number of these (a beat), so a retimed cut still lands on the grid
+  const T = Object.fromEntries(beats); const order = beats.map(([n]) => n); const holds = []; const size = copy.captionSize || 'house';
   const at = (ref) => { if (typeof ref === 'number') return ref; const m = /^([A-Za-z0-9_]+)\s*([+-]\s*[\d.]+)?$/.exec(ref); if (!m || !(m[1] in T)) throw new Error('copy: unknown beat ' + ref); return T[m[1]] + (m[2] ? Number(m[2].replace(/\s/g, '')) : 0); };
   const caps = [];
   for (const c of copy.captions) {
@@ -69,7 +75,8 @@ export function plan(copy, lang, beats) {
     const { revealEnd } = wordTimes(lines, lang, t0);
     const need = Math.max(read, revealEnd - t0 + TAIL), span = at(c.until) - t0;
     if (span < need - 1e-6) {
-      const extra = +(need - span).toFixed(3), from = order.indexOf(c.hold || c.until.split(/[+-]/)[0].trim());
+      let extra = need - span; if (snap) extra = Math.ceil(extra / snap - 1e-9) * snap; extra = +extra.toFixed(4);
+      const from = order.indexOf(c.hold || c.until.split(/[+-]/)[0].trim());
       if (from < 0) throw new Error('copy: unknown hold beat for ' + c.id);
       for (const n of order.slice(from)) T[n] += extra;
       holds.push({ caption: c.id, beat: order[from], extra });
@@ -78,7 +85,7 @@ export function plan(copy, lang, beats) {
   }
   const resolved = caps.map(({ c, lines }) => {
     const t0 = at(c.at), t1 = at(c.until), { words } = wordTimes(lines, lang, t0);
-    return { id: c.id, lang, text: c.text[lang], lines, words, t0, t1, read: readTime(c.text[lang], lang), place: c.place || 'top', native: nativeRead(copy, c, lang) };
+    return { id: c.id, lang, size, text: c.text[lang], lines, words, t0, t1, read: readTime(c.text[lang], lang), place: c.place || 'top', native: nativeRead(copy, c, lang) };
   });
   const ui = Object.fromEntries(Object.entries(copy.ui || {}).map(([k, v]) => [k, v[lang] ?? v.en]));
   return { lang, T, holds, captions: resolved, ui, end: T.end ?? Math.max(...Object.values(T)) };
@@ -93,7 +100,7 @@ function wordPose(k, pop) {
 
 /** lay a caption out (no drawing): each word's x, each line's width and the caption's box */
 export function layout(ctx, cap) {
-  const st = styleOf(cap.lang); ctx.save(); ctx.font = `${st.size}px "${st.family}"`;
+  const st = styleOf(cap.lang, cap.size); ctx.save(); ctx.font = `${st.size}px "${st.family}"`;
   const space = cap.lang === 'ja' ? 0 : ctx.measureText(' ').width, y0 = BAND[cap.place] ?? cap.place, out = [];
   const widths = cap.lines.map((ln, i) => {
     const ws = ln.map((w) => ctx.measureText(w.w).width), total = ws.reduce((a, b) => a + b, 0) + space * (ln.length - 1);
@@ -132,7 +139,7 @@ export function measureBusy(ctx, plan, render, samples = 5) {
 export function draw(ctx, plan, t, { busy = {}, fadeOut = 0.25 } = {}) {
   for (const cap of plan.captions) {
     if (t < cap.t0 || t > cap.t1 + fadeOut) continue;
-    const st = styleOf(cap.lang), L = layout(ctx, cap), fade = clamp(1 - (t - cap.t1) / fadeOut);
+    const st = styleOf(cap.lang, cap.size), L = layout(ctx, cap), fade = clamp(1 - (t - cap.t1) / fadeOut);
     // the scrim hugs the words — a soft, blurred shadow of the caption's own box, never a band across the frame
     const sa = (busy[cap.id]?.busy ?? 0) * SCRIM * clamp((t - cap.t0) / 0.2) * fade;
     if (sa > 0.01) {
@@ -153,11 +160,13 @@ export function draw(ctx, plan, t, { busy = {}, fadeOut = 0.25 } = {}) {
 
 /** the station's bug, top left on every film: the magenta dot and the name, on a soft dark backing so it stays a
  *  label over the picture rather than becoming part of it when the camera moves in under it */
-export function bug(ctx, name = 'RADIO FREE HELSINKI') {
-  ctx.save(); ctx.font = `30px "${STYLE.latin.family}"`; const w = ctx.measureText('● ' + name).width;
-  ctx.filter = 'blur(10px)'; ctx.fillStyle = 'rgba(8,8,10,.45)'; ctx.beginPath(); ctx.roundRect(78, 82, w + 30, 50, 25); ctx.fill(); ctx.filter = 'none';
-  ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineJoin = 'round'; ctx.strokeText('● ' + name, 92, 118);
-  ctx.fillStyle = '#f0027f'; ctx.fillText('●', 92, 118); ctx.fillStyle = 'rgba(255,255,255,.88)'; ctx.fillText(' ' + name, 92 + ctx.measureText('●').width, 118); ctx.restore();
+export function bug(ctx, name = 'RADIO FREE HELSINKI', size = 'big') {
+  // house: the ASS bug every papercut film carries (Poppins ExtraBold "30" = a 17 px em, top-left at 92,88, 81% white)
+  const em = size === 'house' ? 17 : 30, base = size === 'house' ? 88 + em * 0.98 : 118, pad = em * 0.5;
+  ctx.save(); ctx.font = `${em}px "${STYLES.house.latin.family}"`; const w = ctx.measureText('● ' + name).width;
+  ctx.filter = `blur(${em / 3}px)`; ctx.fillStyle = 'rgba(8,8,10,.45)'; ctx.beginPath(); ctx.roundRect(92 - pad, base - em * 1.2, w + pad * 2, em * 1.66, em * 0.83); ctx.fill(); ctx.filter = 'none';
+  ctx.lineWidth = em / 5; ctx.strokeStyle = 'rgba(0,0,0,.5)'; ctx.lineJoin = 'round'; ctx.strokeText('● ' + name, 92, base);
+  ctx.fillStyle = '#f0027f'; ctx.fillText('●', 92, base); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillText(' ' + name, 92 + ctx.measureText('●').width, base); ctx.restore();
 }
 
 /** the events a score needs: every word (pops flagged) and every caption's in and out */

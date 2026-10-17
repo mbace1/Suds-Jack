@@ -1,9 +1,15 @@
 """Build one master of a film, by pipeline: picture → text → sound → encode → checks. One command, one report.
 
-    uv run --with numpy --with soundfile --with matplotlib python pipeline/build.py <film dir> --lang en --fonts <dir> --out <dir> [--air]
+    uv run --with numpy --with soundfile --with matplotlib python pipeline/build.py <film dir> --lang en --fonts <dir> --out <dir>
+        [--engine <huashu engine dir>] [--signoff <station sign-off mp4>] [--air]
 
-The film directory holds: film.html (sets window.__film, see render.mjs), copy.json (every word on screen, in every
-language) and score.py (the cue sheet: events.json in, a WAV out, through pipeline/sound). Out:
+Two kinds of film, one pipeline after the picture:
+  a PAGE film   film.html draws the frames itself and does its own captions through captions.js (Kill Switch);
+  an ENGINE film   film.json: a papercut film drawn by the huashu engine. plan.mjs resolves its timeline from the
+                copy (holds land on the beat grid), the scenes read it as window.FILM_PLAN, the engine renders the
+                picture, and the CAPTION PASS (text/overlay.html) puts the words on its frames (The Chair Is Taken).
+Both directories hold copy.json (every word on screen, in every language) and score.py (the cue sheet: events.json
+in, a WAV out, through pipeline/sound). Out:
     <out>/<lang>/<film>.<lang>.mp4          the master, captions burned in in <lang>
     <out>/<lang>/<film>.<lang>-master.*.srt/.vtt   sidecars, every language, on this master's timeline
     <out>/<lang>/stems/                      dry music and effects stems
@@ -28,7 +34,22 @@ fails = []
 # the global modules of the `node` that will run (not of whichever npm is first on PATH), plus any NODE_PATH already set
 npm = ':'.join(filter(None, [os.environ.get('NODE_PATH'), subprocess.run(['node', '-p', "require('path').resolve(process.execPath, '../../lib/node_modules')"], capture_output=True, text=True).stdout.strip()]))
 if (OUT / 'frames').exists(): shutil.rmtree(OUT / 'frames')
-run('node', HERE / 'render.mjs', FILM.relative_to(ART) / 'film.html', OUT, '--fonts', FONTS, '--lang', LANG, env={**os.environ, 'NODE_PATH': npm})
+FJ = json.load(open(FILM / 'film.json')) if (FILM / 'film.json').exists() else {'kind': 'page'}
+if FJ['kind'] == 'engine':
+    ENGINE = Path(opt('engine')).resolve(); key = FJ['engine']
+    run('node', HERE / 'plan.mjs', FILM, LANG, OUT)                                    # the timeline, from the copy
+    for lib in FJ['libs'] + [f'scenes/{s}.js' for s in FJ['scenes']]: shutil.copy(ART / lib, ENGINE / lib)   # stage: the repo is the source
+    shutil.copy(OUT / 'film-plan.js', ENGINE / 'scenes' / f'{key}_plan.js'); shutil.copy(OUT / 'eras.js', ENGINE / f'eras_{key}.js')
+    run('uv', 'run', '-q', '--with', 'playwright==1.56.0', 'python', ENGINE / 'render.py', '--film', key, '--width', '1080', '--height', '1920',
+        '--fps', FJ['fps'], '--out', OUT / 'picture.mp4', cwd=ENGINE)
+    if (OUT / 'src').exists(): shutil.rmtree(OUT / 'src')
+    (OUT / 'src').mkdir(); run('ffmpeg', '-y', '-loglevel', 'error', '-i', OUT / 'picture.mp4', '-q:v', '2', OUT / 'src' / 'f%05d.jpg')
+    n = len(list((OUT / 'src').glob('f*.jpg')))
+    run('node', HERE / 'render.mjs', 'pipeline/text/overlay.html', OUT, '--fonts', FONTS, '--lang', LANG, '--mount', f'_out={OUT}',
+        '--query', f'plan=/_out/plan.json&src=/_out/src/&n={n}', env={**os.environ, 'NODE_PATH': npm})
+    shutil.rmtree(OUT / 'src')
+else:
+    run('node', HERE / 'render.mjs', FILM.relative_to(ART) / 'film.html', OUT, '--fonts', FONTS, '--lang', LANG, env={**os.environ, 'NODE_PATH': npm})
 rep = json.load(open(OUT / 'report.json')); ev = json.load(open(OUT / 'events.json'))
 
 # 2. text: sidecars in every language, and the checks
@@ -48,10 +69,19 @@ final = [{'check': 'delivered loudness', 'result': 'pass' if abs(M['I'] - LUFS) 
          {'check': 'delivered true peak', 'result': 'pass' if M['TP'] <= TP_MAX else 'FAIL', 'why': f"{M['TP']:.1f} dBTP in the MP4"}]
 dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', mp4], capture_output=True, text=True).stdout)
 final.append({'check': 'length', 'result': 'pass' if abs(dur - ev['end']) < 0.1 else 'FAIL', 'why': f'{dur:.2f} s, the picture says {ev["end"]:.2f} s'})
+if opt('signoff'):                                                                     # the station's sign-off, as append_signoff.sh does it
+    so = OUT / f'{name}.{LANG}+signoff.mp4'
+    run('ffmpeg', '-loglevel', 'error', '-y', '-i', mp4, '-i', opt('signoff'), '-filter_complex',
+        '[0:v]setsar=1,fps=30[a0];[1:v]setsar=1,fps=30[b0];[0:a]aresample=48000[a1];[1:a]aresample=48000[b1];[a0][a1][b0][b1]concat=n=2:v=1:a=1[v][ac];[ac]alimiter=limit=0.63:attack=1:release=60:level=false[a]',
+        '-map', '[v]', '-map', '[a]', '-c:v', 'libx264', '-crf', '18', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', so)
+    MS = measure(so)
+    final += [{'check': 'with sign-off: loudness', 'result': 'pass' if abs(MS['I'] - LUFS) <= 1.0 else 'FAIL', 'why': f"{MS['I']:.1f} LUFS ({so.name})"},
+              {'check': 'with sign-off: true peak', 'result': 'pass' if MS['TP'] <= TP_MAX else 'FAIL', 'why': f"{MS['TP']:.1f} dBTP"}]
 
 # 5. QA images for a person: frames at each caption's fully-revealed moment and mid-way, and the score with its cues
 times = sorted({round(min(c['t1'] - 0.05, max(w['t'] for w in ev['words'] if w['caption'] == c['id']) + 0.6), 2) for c in ev['captions']} |
-               {round(ev[k], 2) for k in ('land', 'jam', 'picts', 'flipB', 'slap', 'tap', 'tagIn') if k in ev} | {round(ev['end'] - 0.3, 2)})
+               {round(ev[k], 2) for k in ('land', 'jam', 'picts', 'flipB', 'slap', 'tap', 'tagIn') if k in ev} | {round(ev['end'] - 0.3, 2)} |
+               {round(v + 0.25, 2) for v in (ev.get('cues') or {}).values()})
 frames = [min(int(round(x * rep['fps'])), rep['frames'] - 1) for x in times]
 sel = '+'.join(f'eq(n\\,{f})' for f in frames); cols = 6
 run('ffmpeg', '-y', '-loglevel', 'error', '-i', mp4, '-vf', f"select='{sel}',scale=300:-1,tile={cols}x{(len(frames) + cols - 1) // cols}:padding=6:color=0x222222", '-frames:v', '1', OUT / 'qa-frames.png')

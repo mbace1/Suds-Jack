@@ -1,0 +1,94 @@
+{
+  "film": "kill-switch",
+  "cut": "v1, the full film (the 11 s pilot is clay/kill-switch)",
+  "series": "rfh",
+  "captionSize": "house",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "leaflet", "at": "land+0.2", "until": "toToaster-0.15", "hold": "toToaster",
+      "text": {
+        "en": "A toaster comes / with a safety [leaflet].",
+        "fi": "Leivänpaahtimen mukana / tulee [turvaohje].",
+        "ja": "トースターには / 安全の [説明書が] つく。"
+      },
+      "source": "The station's own example (not Microsoft's: Brad Smith said washing machine and milk)."
+    },
+    {
+      "id": "second", "at": "toToaster+0.1", "until": "toPost-0.15", "hold": "toPost",
+      "text": {
+        "en": "Its US safety standard asks / for a [second] off switch.",
+        "fi": "Sen yhdysvaltalainen standardi / vaatii [toisen] katkaisimen.",
+        "ja": "米国の 安全規格は / [2つ目の] 停止スイッチを 求める。"
+      },
+      "source": "UL 1026: the 6th-edition revisions added a redundant control and a secondary operating control for cord-connected automatic toasters (InCompliance; Intertek). UL listing is voluntary in the US but near-universal."
+    },
+    {
+      "id": "report", "at": "toPost+0.1", "until": "flipA-0.15", "hold": "flipA",
+      "text": {
+        "en": "Find a dangerous defect? / Tell the regulator / within [24 hours].",
+        "fi": "Löytyikö vaarallinen vika? / Ilmoita viranomaiselle / [24 tunnin] sisällä.",
+        "ja": "危険な 欠陥を 見つけたら？ / [24時間] 以内に 当局へ 報告。"
+      },
+      "source": "Consumer Product Safety Act §15(b) (15 U.S.C. §2064(b); 16 CFR 1115): report 'immediately', which the CPSC reads as within 24 hours (CPSC; Foley; InCompliance; Stinson)."
+    },
+    {
+      "id": "voluntary", "at": "flipB+0.1", "until": "toNote-0.15", "hold": "toNote",
+      "text": {
+        "en": "A frontier AI model. / US federal pre-release rules: / [voluntary].",
+        "fi": "Huippuluokan tekoälymalli. / Liittovaltion säännöt / ennen julkaisua: [vapaaehtoiset].",
+        "ja": "最先端の AIモデル。 / 米連邦の 公開前ルールは / [任意]。"
+      },
+      "source": "EO 14409 (2 June 2026) asks developers for up to 30 days' early access and says it authorises no mandatory licensing or preclearance (CNBC; Crowell; WilmerHale; CRS IF13268). No federal statute requires pre-release testing (law-firm readings, June 2026). Binding rules elsewhere: California SB 53, EU AI Act Art. 55 — hence 'US federal'."
+    },
+    {
+      "id": "study", "at": "toNote+0.1", "until": "toWasher-0.15", "hold": "toWasher",
+      "text": {
+        "en": "California's governor vetoed / a [shutdown] rule in 2024. / In September he ordered a study.",
+        "fi": "Kalifornian kuvernööri kaatoi / [sammutussäännön] vuonna 2024. / Syyskuussa hän tilasi selvityksen.",
+        "ja": "カリフォルニア州知事は 2024年、 / [停止の] 義務化を 拒否。 / 9月に 命じたのは 調査。"
+      },
+      "source": "SB 1047 (a full-shutdown capability before training) vetoed 29 Sept 2024 (The Hill; TechRepublic). EO N-9-26, 18 Sept 2026, asks experts to recommend changes including a 'kill switch', by 16 Nov (governor's office; CalMatters; CNN; CNBC). A study, not a mandate."
+    },
+    {
+      "id": "washer", "at": "toWasher+0.1", "until": "back-0.15", "hold": "back",
+      "text": {
+        "en": "Microsoft's president: / \"Right now, your washing / machine is subject to more / safety rules than [AI].\"",
+        "fi": "Microsoftin presidentti: / \"Tällä hetkellä pesukoneesi / on tiukemmin säännelty / kuin [tekoäly].\"",
+        "ja": "マイクロソフト社長： / 「今は 洗濯機の ほうが / [AIより] 多くの 安全規則に / 従って いる」"
+      },
+      "source": "Brad Smith, BBC 'Big Boss Interview', October 2026: \"Right now, your washing machine is subject to more safety rules than AI.\" Verbatim in Engadget, Benzinga, Tech Digest, Fox Business, The Next Web. Microsoft builds and sells AI, hence 'Microsoft's president'. BBC date 11 or 12 Oct: VERIFY, so the tag says OCT 2026."
+    },
+    {
+      "id": "last", "at": "back+0.2", "until": "end-0.2", "hold": "end",
+      "text": {
+        "en": "The toaster has / a second off switch. / It's in the [leaflet].",
+        "fi": "Leivänpaahtimessa on / toinen katkaisin. / Se lukee [ohjeessa].",
+        "ja": "トースターには / 2つ目の 停止スイッチが ある。 / [説明書に] 書いて ある。"
+      },
+      "source": "The station's line."
+    }
+  ],
+  "ui": {
+    "switch1": { "en": "SWITCH 1  JAMS", "fi": "KYTKIN 1  JUMISSA", "ja": "スイッチ1  故障" },
+    "switch2": { "en": "SWITCH 2  OFF", "fi": "KYTKIN 2  POIS", "ja": "スイッチ2  停止" },
+    "warnings": { "en": "WARNINGS", "fi": "VAROITUSTA", "ja": "件の警告" },
+    "defect": { "en": "DEFECT", "fi": "VIKA", "ja": "欠陥" },
+    "voluntary": { "en": "VOLUNTARY", "fi": "VAPAAEHTOINEN", "ja": "任意" },
+    "tagReport": { "en": "CONSUMER PRODUCT SAFETY ACT § 15(b)", "fi": "CONSUMER PRODUCT SAFETY ACT § 15(b)", "ja": "米消費者製品安全法 15条(b)" },
+    "tagFederal": { "en": "WASHINGTON · EO 14409", "fi": "WASHINGTON · EO 14409", "ja": "ワシントン · 大統領令14409" },
+    "tagState": { "en": "SACRAMENTO · ORDER N-9-26", "fi": "SACRAMENTO · MÄÄRÄYS N-9-26", "ja": "サクラメント · 州知事令 N-9-26" },
+    "tagBBC": { "en": "BBC · OCT 2026", "fi": "BBC · LOKAKUU 2026", "ja": "BBC · 2026年10月" }
+  },
+  "props": {
+    "note": { "en": "KILL SWITCH / study — due 16 Nov", "why": "a handwritten prop in the leaflet's world; it stays English in every master, and the caption carries it" },
+    "washer": { "en": "WASHING MACHINE W-8 · UL 2157", "why": "the third leaflet: UL 2157 / CSA C22.2 No. 169 covers electric clothes washers (ANSI; Intertek; CSA)" }
+  },
+  "post": {
+    "en": "A toaster's US safety standard asks for a second off switch. US federal rules for frontier AI are voluntary. California's kill switch is a study, due 16 November. #AI #AIsafety #California",
+    "fi": "Leivänpaahtimen yhdysvaltalainen turvastandardi vaatii toisen katkaisimen. Huippuluokan tekoälyn liittovaltion säännöt ovat vapaaehtoisia. Kalifornian hätäkatkaisin on selvitys, määräaika 16.11.",
+    "ja": "トースターの米国安全規格は2つ目の停止スイッチを求める。最先端AIの米連邦ルールは任意。カリフォルニアのキルスイッチは調査中、期限は11月16日。"
+  }
+}

@@ -2,7 +2,8 @@
 // Render a film page in headless Chromium: frames, its events (for the score) and its text report (for the checks).
 //   NODE_PATH=$(npm root -g) node pipeline/render.mjs <page, relative to art-motion/> <outdir> --fonts <dir> [--lang en] [--stills 1.2,3.4] [--report-only]
 // The page sets window.__film = { fps, frames, events, report, frame(i) → JPEG data URL, still(t) → PNG data URL } and
-// window.__ready (or window.__failed). The server serves art-motion/ at / and the fonts directory at /_fonts/.
+// window.__ready (or window.__failed); frame() may return a promise. The server serves art-motion/ at / and the fonts
+// directory at /_fonts/; --mount name=dir (repeatable) serves dir at /name/, and --query adds to the page's URL.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,11 +13,12 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const argv = process.argv.slice(2), arg = (n, d) => { const i = argv.indexOf('--' + n); return i >= 0 ? argv[i + 1] : d; }, flag = (n) => argv.includes('--' + n);
-const [PAGE, OUT] = argv, FONTS = path.resolve(arg('fonts', '')), LANG = arg('lang', 'en');
+const [PAGE, OUT] = argv, FONTS = path.resolve(arg('fonts', '')), LANG = arg('lang', 'en'), QUERY = arg('query', '');
+const MOUNTS = { _fonts: FONTS }; argv.forEach((a, i) => { if (a === '--mount') { const [k, v] = argv[i + 1].split('='); MOUNTS[k] = path.resolve(v); } });
 fs.mkdirSync(OUT, { recursive: true });
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.woff': 'font/woff', '.ttf': 'font/ttf' };
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json', '.woff': 'font/woff', '.ttf': 'font/ttf', '.jpg': 'image/jpeg', '.png': 'image/png' };
 const srv = http.createServer((q, r) => {
-  const u = decodeURIComponent(q.url.split('?')[0]), [base, rel] = u.startsWith('/_fonts/') ? [FONTS, u.slice(8)] : [ROOT, u];
+  const u = decodeURIComponent(q.url.split('?')[0]), m = Object.keys(MOUNTS).find((k) => u.startsWith(`/${k}/`)), [base, rel] = m ? [MOUNTS[m], u.slice(m.length + 2)] : [ROOT, u];
   const p = path.join(base, rel);
   if (!p.startsWith(base)) { r.writeHead(403); r.end(); return; }
   fs.readFile(p, (e, b) => { if (e) { r.writeHead(404); r.end(); return; } r.writeHead(200, { 'content-type': MIME[path.extname(p)] || 'application/octet-stream' }); r.end(b); });
@@ -27,7 +29,7 @@ const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--ena
 try {
   const page = await browser.newPage({ viewport: { width: 540, height: 960 } }); page.setDefaultTimeout(0);
   page.on('pageerror', (e) => console.error('page error:', e.message));
-  await page.goto(`http://localhost:${srv.address().port}/${PAGE}?lang=${LANG}&fonts=/_fonts/`, { waitUntil: 'commit', timeout: 0 });
+  await page.goto(`http://localhost:${srv.address().port}/${PAGE}?lang=${LANG}&fonts=/_fonts/${QUERY ? '&' + QUERY : ''}`, { waitUntil: 'commit', timeout: 0 });
   await page.waitForFunction(() => window.__ready || window.__failed, null, { timeout: 0, polling: 300 });
   const failed = await page.evaluate(() => window.__failed); if (failed) throw new Error(failed);
   const { events, report, n, fps } = await page.evaluate(() => ({ events: window.__film.events, report: window.__film.report, n: window.__film.frames, fps: window.__film.fps }));

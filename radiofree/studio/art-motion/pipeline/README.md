@@ -14,6 +14,17 @@ uv run --with numpy --with soundfile python pipeline/test_checks.py    # the pip
 uv run --with numpy --with soundfile --with matplotlib python pipeline/sound/sheet.py <dir>   # the sound library, laid out to look at
 ```
 
+**Two kinds of film.**
+- A **page** film draws its own frames in a canvas page (`film.html`), e.g. Kill Switch.
+- An **engine** film (`film.json`) is a papercut film drawn by the huashu engine, e.g. *The Chair Is Taken*:
+  1. `plan.mjs` resolves the timeline from the copy. Holds are rounded up to whole beats, so cuts stay on the
+     grid. Cues can be tied to pop words (`"tip": "word:law"`), so the picture hits the word in every language.
+  2. The scenes read it as `window.FILM_PLAN`.
+  3. The engine renders the picture.
+  4. The **caption pass** (`text/overlay.html`) puts the same captions and bug on its frames.
+
+  Pass `--engine <dir>` and, for the station's ending, `--signoff previews/signoff-papercut.mp4`.
+
 `build.py` runs five stages and **fails on any FAIL**:
 
 | stage | what | where |
@@ -39,9 +50,13 @@ uv run --with numpy --with soundfile --with matplotlib python pipeline/sound/she
   - Words come on at 2.2× that rate, with a 0.22 s pause at each line break. The last word stays up at least 0.8 s.
   - If a language needs longer than the picture gives, `plan()` **inserts a hold** before the line's `hold` beat and
     every later beat moves. The Japanese Kill Switch is 12.35 s against the English 11.0: its first line needs 5.0 s.
-- **One renderer** (`captions.js`) draws the house look in every language: Poppins ExtraBold 82, or Noto Sans JP
-  ExtraBold 74 for Japanese; black outline; the pop word in amber, sprung. It also draws the station bug, on a soft
-  backing.
+- **One renderer** (`captions.js`) draws the house look in every language: black outline, the pop word in amber,
+  sprung. It also draws the station bug, on a soft backing.
+- **Size:** the "82" in the house ASS style is **not** an 82 px em. libass sizes Poppins by its Windows ascent +
+  descent, so the house caption is a **46.5 px em on 87 px lines**. Measured: one line inks 661 px either way.
+  - `"captionSize": "house"` (the default) reproduces it.
+  - `"big"` (82 px em) is the creator-native size the Kill Switch pilot was built at, 1.76× house. Which one the
+    feed wants is the owner's call.
 - **Scrims:** the renderer measures the picture behind each line on captionless frames (edge energy, the busiest of
   five samples). It draws a scrim only when that picture is busy, as a soft, blurred shadow of the caption's own box.
   It never draws a band across the frame.
