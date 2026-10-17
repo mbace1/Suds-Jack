@@ -2283,10 +2283,25 @@ the ruler was wrong. That is the general shape: **a gate that certifies *works* 
 The identity of the workshop, created by **美鳥十湖** (*Toko Midori*, "The Game
 Creator") — the masked artist behind the look of every cabinet here: anarchist,
 retro, pure-gameplay, art-first, using AI out loud while shouting **GO MAKE YOUR
-OWN**. Zero dependencies, no build step, and **no image assets** — everything is
-drawn in code and the SVG logo files are *generated* from the same arcs the
-canvas strokes, so a handed-over file can never drift from what's on screen.
-**The mark is the face** (`js/face.js`): four fat round-capped arcs and two
+OWN**. Zero dependencies, no build step, and everything on screen is **drawn
+in code** — the SVG logo files are *generated* from the same outlines the canvas
+fills, so a handed-over file can never drift from what's on screen.
+**Read `toko/BRAND.md` §2c before drawing Toko anywhere** — it is the canon,
+and it moved a lot in September–October. **The face is the owner's master
+artwork** (`toko/master/`, the only images in the folder, plus his 2026-10-14
+colour references) **traced to exact outlines in `js/master.js`**; that trace
+draws the signature, the counter, the table, the lockup, the sticker sheet and
+the 3D Toko (`js/toko3d.js`: enamel by default, `style: 'clay'` for Radio
+Free's films — **clay is the house style for Toko on film**). The trace has no
+pupils, so it acts by blinking and breathing the smile. **Magenta is the
+original colour, but any of the nine carriers is still the original Toko**,
+and a carrier may carry a context or a mood — which is how the **personas**
+work (Kallio magenta, Mökki sky, Kyoto green, Tokyo purple; Toko Slomo is the
+owner's Kallio Noir version). The rule that does not move: **one face, one
+ground** — no shadow, outline or second colour inside the mark. The paragraph
+below describes `GEO`, the OLDER measurement by eye, which still draws the
+sting, the masthead and the favicon and should not be built on.
+**The mark was first measured** (`js/face.js`): four fat round-capped arcs and two
 stems, all from ONE geometry table (`GEO`) that both the canvas painter and the
 SVG emitter read. The mouth is two nested arcs opening up, **both stopping short
 of a semicircle** so the tips stand up straight and leave air under the eyes;
@@ -2299,12 +2314,13 @@ computes the slot width and fails on it. Carriers: the bare face, reversed, the
 **badge** (face on a disc — stickers, favicon, the in-game signature) and the
 **icon** (full-bleed rounded square). **Minimum 44px**; `sign()` clamps to it.
 Align to `bounds()` (the ink), never the design box — the face hangs low in it.
-**Two colours only**: black `#000000` (CMYK 0/0/0/100) and magenta `#F0027F`
+**The identity pair**: black `#000000` (CMYK 0/0/0/100) and magenta `#F0027F`
 (CMYK 0/100/0/0) — both process primaries, so it prints anywhere with nothing to
 match; white is the paper, not a colour. Magenta is 4.0:1 on black — a *mark*
-colour, never body copy. The nine-flat **sticker sheet** (`SHEET`) is the single
-documented exception and is a **print run** (badges, pins, vinyl), not a palette;
-nothing digital reaches for it.
+colour, never body copy. The nine carrier flats (`STICKER`) carry the mark on
+screens too, one at a time (§2c); what stays print-only is the nine-up
+**sticker sheet** (`SHEET`). `STICKER` is due to be reconciled against the
+owner's references (`master/README.md`), whose files win.
 The **logotype** is a condensed squarish grotesque set in three lines, tight,
 with ™ at the foot of *Games*; the lockup is face + gap + three lines with the
 logotype standing the face's height. **The real typeface is the owner's licence
@@ -2330,7 +2346,13 @@ has `hub/shell.js`'s HOME button in the opposite corner; and it navigates on
 **`pointerup` and `touchend`, never `click`**, the same trap shell.js paid for.
 Signed on `main` AND on `gh-pages`: `toko-drop/`, `paperboy/` (black-on-white
 there — magenta fights the sunny-day palette), `dropcabal/`, `hyperdagger/`,
-`flashprince/`. **`gameoflife/` is
+`flashprince/`, `slaykallio/`, `flowsnow/`, `eeri/`, `radiofree/`, `sudz/`.
+**Toko at the table** (`js/table.js`, BRAND.md §6): every signed game except
+Toko Drop seats him over the paused game instead of leaving for the arcade
+(`sign({ table: true })`, or `open:` for Hyper Dagger), a TOKO button beside
+HOME does the same under a thumb, and a game's `window.__tokoTable` gives the
+table `pause`/`resume`/`cue`/`recap` — the recap is logged locally as you leave
+(`hub/playlog-auto.js`) and is what he opens on next time. **`gameoflife/` is
 deliberately unsigned** — the room where Toko takes the mask off (a magenta
 badge would undo a zen app built to send you outdoors), and its service worker
 precaches a list scoped to `/gameoflife/` with `test/offline.cjs` asserting
