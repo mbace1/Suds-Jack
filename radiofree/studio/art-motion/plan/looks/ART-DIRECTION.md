@@ -50,3 +50,17 @@ of the real thing, and every surface should be visibly made by hand.
 - Tags stay above `RFP.SAFE_B`.
 - No real faces, no brand names or logos.
 - Everything is drawn or modelled in code, with no stock images.
+
+## Owner's verdict, 17 Oct
+
+- **Welcome Home: v2** ("looks better"). The lit stop-motion stage is the direction.
+- **Kill Switch: flat.** "I liked the earlier flat look more." The photographed 3D leaflet (v2) is
+  shelved. **v3** (`clay/kill-switch/flat.js`, still `kill-switch-v3-flat.png`) goes back to v1's flat
+  vector leaflet on the dark worktop, and keeps what v2 added that is not a rendering effect:
+  - the artwork in ten languages, Finnish first;
+  - the masked instruction man;
+  - the manual's furniture;
+  - the fixed layout;
+  - the kill switch as a flat sticky note.
+
+  No paper texture, print simulation, depth of field or 3D.
