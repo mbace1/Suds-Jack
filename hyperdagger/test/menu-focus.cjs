@@ -33,7 +33,11 @@ const HELPERS = () => {
   window.__gp = gp; window.__plugged = true;
   navigator.getGamepads = () => (window.__plugged ? [gp] : [null]);
   // a press is held for a few frames then released, so the poll sees both edges
-  window.__press = async i => { gp.buttons[i].pressed = true; await window.__frames(3); gp.buttons[i].pressed = false; await window.__frames(3); };
+  // ONE frame down: the arcade shell sends you HOME after 750 ms of wall time
+  // holding Start, and three frames on a 250 ms-a-frame software renderer is
+  // that hold — the page navigated mid-test. One frame is still an edge the
+  // game's poll sees (it polls every frame).
+  window.__press = async i => { gp.buttons[i].pressed = true; await window.__frames(1); gp.buttons[i].pressed = false; await window.__frames(3); };
   window.__focus = () => { const b = document.querySelector('#msg button.gfocus'); return b ? (b.dataset.season ? 'season:' + b.dataset.season : b.dataset.mode ? 'mode:' + b.dataset.mode : b.id || b.textContent) : null; };
   window.__menu = () => ({ state: window.__hd.debug.getState().state, mode: window.__hd.debug.getState().mode,
     season: localStorage.getItem('hyperDaggerSeason'), runKind: localStorage.getItem('hyperDaggerRunKind') });

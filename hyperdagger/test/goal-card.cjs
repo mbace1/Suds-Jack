@@ -113,7 +113,16 @@ srv.listen(0, '127.0.0.1', async () => {
         // gone again: hidden by ~2 s (1.6 s + a 0.3 s fade); 2.5 s of wall time for a loaded box
         await p.waitForTimeout(Math.max(0, 2500 - (Date.now() - t0)));
         const after = await p.evaluate(() => { const g = document.getElementById('goalCard'); const cs = getComputedStyle(g); return { show: g.classList.contains('show'), vis: cs.visibility, op: +cs.opacity, state: window.__hd.debug.getState().state }; });
-        ok(`${label}: card hidden by ~2.5 s`, !after.show && after.vis === 'hidden', `${Date.now() - t0}ms ${JSON.stringify(after)}`);
+        // Two questions, because only one of them is the game's. The game
+        // DISMISSES the card on a 1.6 s wall-clock timer — that must hold. The
+        // 0.3 s CSS fade after it advances only as frames are drawn, and on a
+        // ~250 ms-a-frame software renderer it can still be mid-fade at 2.5 s;
+        // the same check failed that way on this PR's own branch (control run,
+        // 17 Oct). So: dismissed by 2.5 s, and fully hidden within 1.5 s more.
+        ok(`${label}: card dismissed by ~2.5 s`, !after.show, `${Date.now() - t0}ms ${JSON.stringify(after)}`);
+        let vis = after.vis;
+        for (let i = 0; i < 30 && vis !== 'hidden'; i++) { await p.waitForTimeout(50); vis = await p.evaluate(() => getComputedStyle(document.getElementById('goalCard')).visibility); }
+        ok(`${label}: card's fade finishes`, vis === 'hidden', `${Date.now() - t0}ms vis=${vis}`);
         ok(`${label}: run still going under it`, after.state === 'playing', after.state);
         const real = errs.filter(e => !/player\.pos/.test(e));
         if (real.length < errs.length) console.log(`  note ${label}: ${errs.length - real.length} player.pos error(s) on main, not counted`);

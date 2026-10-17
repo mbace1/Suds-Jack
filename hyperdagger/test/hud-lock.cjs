@@ -89,7 +89,17 @@ s.listen(0, '127.0.0.1', async () => {
     const paused = await p.evaluate(() => document.getElementById('msg').style.display === 'block');
     ok('unlock pauses the run', paused);
     const c0 = await p.evaluate(() => window.__lock.calls);
-    await p.mouse.click(640, 700);
+    // a click on the pause screen's BACKDROP: the menu has grown rows since
+    // this check was written, and (640, 700) is now an option button (GIBS),
+    // which takes the click for itself. Find a spot no control covers.
+    const backdrop = () => p.evaluate(() => {
+      for (const y of [360, 200, 520]) for (let x = 16; x < 400; x += 24) {
+        const el = document.elementFromPoint(x, y);
+        if (el && !el.closest('button, a, input, select, .toko-table, .arcade-home')) return { x, y };
+      }
+      return null;
+    });
+    { const sp = await backdrop(); ok('the pause screen has a backdrop to click', !!sp, JSON.stringify(sp)); await p.mouse.click(sp.x, sp.y); }
     await p.waitForTimeout(200);
     r = await p.evaluate(() => ({ calls: window.__lock.calls, locked: !!document.pointerLockElement, msg: document.getElementById('msg').style.display }));
     ok('resume click re-locks', r.calls > c0 && r.locked && r.msg === 'none', JSON.stringify(r));
@@ -99,7 +109,7 @@ s.listen(0, '127.0.0.1', async () => {
       document.exitPointerLock();
     });
     await p.waitForTimeout(200);
-    await p.mouse.click(640, 700);
+    { const sp = await backdrop(); ok('the pause screen has a backdrop to click', !!sp, JSON.stringify(sp)); await p.mouse.click(sp.x, sp.y); }
     await p.waitForTimeout(300);
     r = await p.evaluate(() => ({ locked: !!document.pointerLockElement, msg: document.getElementById('msg').style.display, state: __hd.debug.getRun().state }));
     ok('refused lock leaves the run paused', !r.locked && r.msg === 'block' && r.state === 'playing', JSON.stringify(r));

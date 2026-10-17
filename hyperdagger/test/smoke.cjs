@@ -1049,7 +1049,10 @@ s.listen(0, '127.0.0.1', async () => {
       if (sn.spawns && sn.spawns.only === 'skulls') {
         for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
         d.setTime(50); d.freezeDirector(false);
-        for (let i = 0; i < 70; i++) await frames(1);
+        // 3.5 s of GAME time, not 70 frames: since HD-011 the quality ladder
+        // steps down on a slow box, frames get cheaper, and 70 of them can
+        // cover less than the 1.2 s before the first skull is due
+        for (let i = 0; i < 2000 && d.getState().gameTime < 53.5; i++) await frames(1);
         d.freezeDirector(true);
         const types = {}; for (const e of hd.enemies) if (e.alive) types[e.type] = (types[e.type] || 0) + 1;
         director = { types, total: hd.enemies.filter(e => e.alive).length };
