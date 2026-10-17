@@ -1557,13 +1557,13 @@ function pushRunHistory(entry) {
 // instead of guesses. Local only — nothing leaves the browser.
 const RUNLOG_KEY = 'hyperDaggerRunLog';
 
-function pushRunLog(timedOut) {
+function pushRunLog(timedOut, complete = false) {
   let log = [];
   try { log = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch { log = []; }
   log.unshift({
     t: Math.round(gameTime * 10) / 10,
     mode: M().id,
-    cause: timedOut ? 'timeout' : (lastKiller || 'unknown'),
+    cause: complete ? 'complete' : timedOut ? 'timeout' : (lastKiller || 'unknown'),
     kills,
     killsByType: { ...killsByType },
     lv: weaponLv,
@@ -1637,7 +1637,7 @@ function showDeath(timedOut, complete = false) {
     .join(' &middot; ');
 
   const hist = pushRunHistory({ t: runT, mode: M().id, daily: runKind === 'daily' || undefined });
-  pushRunLog(timedOut);
+  pushRunLog(timedOut, complete);
   const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
   const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
 
@@ -1663,7 +1663,7 @@ function showDeath(timedOut, complete = false) {
      <button id="tokoBtn" class="opt">ASK TOKO</button>
      <p class="go">click / tap / &#10005; to retry</p>`;
   wireToko();
-  lastTimedOut = !!timedOut;
+  lastTimedOut = !!timedOut; lastComplete = !!complete;
   document.getElementById('shareBtn').addEventListener('pointerdown', async e => {
     e.stopPropagation(); // don't let the copy tap restart the run
     const btn = e.currentTarget;
@@ -1835,9 +1835,23 @@ function endRun() {
 }
 
 /** v54: the season's end reached — the run is over and it was not a death */
-function completeRun() { runComplete = true; die(false, true); }
+function completeRun() { finishRun('complete'); }
 
-function die(timedOut = false, complete = false) {
+/** A death (`timedOut`: HYPER's clock ran out). Every caller ends here. */
+function die(timedOut = false, complete = false) { finishRun(complete ? 'complete' : timedOut ? 'timeout' : 'death'); }
+
+/**
+ * HD-002: THE one way a run ends — 'death' | 'timeout' | 'complete'. Death and
+ * the season's end share every step: the save (best or daily key + table),
+ * history, run log, results screen, Toko cue, music/SFX, input release. They
+ * differ only where the design says so (heading, cause line, stinger vs death
+ * sound, no killer cam). A run that has already ended cannot end again — a hit
+ * landing after the season's end used to save the run a second time.
+ */
+function finishRun(how) {
+  if (state !== 'playing') return false;
+  const timedOut = how === 'timeout', complete = how === 'complete';
+  runComplete = complete;
   hideGoalCard();   // HD-010
   state = 'dead';
   setRunFrame(false);
@@ -1871,6 +1885,7 @@ function die(timedOut = false, complete = false) {
   elStyle.style.opacity = '0';
   if (document.pointerLockElement) document.exitPointerLock();
   showDeath(timedOut, complete);
+  return true;
 }
 
 window.addEventListener('pointerdown', e => {
@@ -1938,7 +1953,7 @@ const elPause = document.getElementById('pauseBtn');
 // He opens knowing what just happened: the cue is the death line or the clock.
 const GAME = { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' };
 let table = null;
-let lastTimedOut = false;
+let lastTimedOut = false, lastComplete = false;
 function tokoCue() {
   const t = (gameTime + (runBonus || 0)).toFixed(1);
   const tier = timeTier(gameTime + (runBonus || 0));
@@ -1947,7 +1962,7 @@ function tokoCue() {
   const peak = stylePeakIdx > 0 ? STYLE_TIERS[stylePeakIdx].label : '-';
   const wave = (typeof waveIdx === 'number' ? waveIdx + 1 : 1);
   if (state === 'dead') {
-    const cause = lastTimedOut ? 'TIME OUT' : killerName(lastKiller).toUpperCase();
+    const cause = lastComplete ? 'RUN COMPLETE' : lastTimedOut ? 'TIME OUT' : killerName(lastKiller).toUpperCase();
     return `${sn} · ${mode} · wave ${wave} · ${t}s · ${tier} · peak ${peak} · ${cause} · ${kills} kills`;
   }
   if (state === 'playing') {
