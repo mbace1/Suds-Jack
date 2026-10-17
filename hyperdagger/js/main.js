@@ -1953,6 +1953,9 @@ window.addEventListener('pointerdown', e => {
     if (performance.now() - deathAt < 700) return;
     startGame();
   } else if (state === 'playing' && paused) {
+    // the mouse click that resumes is UI, as the one that starts a run is:
+    // its release must not land as a short press (a jump) — #619 review
+    if (isMouse) { fireHeldT = 999; fireWasHeld = true; }
     paused = false;
     setRunFrame(true);
     perfSettleUntil = performance.now() + perfTuning.settleMs; // stale EMA after pause
@@ -2173,9 +2176,12 @@ function showPause() {
   for (const b of elMsg.querySelectorAll('button.season')) {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
+      // the mode in force BEFORE the switch: M() reads the season once
+      // _seasonChosen is set, so read after, "before" is already the
+      // destination and a HAUL <-> EMBER switch never restarted (#619 review)
+      const before = M().id;
       season = seasonById(b.dataset.season).id;
       _seasonChosen = true;
-      const before = M().id;
       localStorage.setItem(SEASON_KEY, season);
       applySeason();
       // v51: a season with different RULES (season 3 is the track) is a
@@ -3262,6 +3268,23 @@ function killEnemy(e, dir) {
 /** The hand. HD-001: a short press jumps, the stream runs only while fire
  *  is held, and walking does not shoot. Moved out of updateCombat whole in
  *  v51 so a season whose hand is the GAZE can skip it in one branch. */
+/** HD-001's press grammar for mouse button 0 and pad RT/RB: released before
+ *  the stream delay it is a jump, held past it it streams. Returns whether
+ *  the hold has reached the stream. Shared by the hand and by the gaze
+ *  season, which has no gun but keeps the short press = jump (#619 review). */
+function firePress(dt) {
+  const held = input.firing;
+  if (held) {
+    fireHeldT += dt;
+  } else {
+    // released before the stream: jump, no burst
+    if (fireWasHeld && fireHeldT > 0 && fireHeldT < T.weapon.streamDelay) input._jump = true;
+    fireHeldT = 0;
+  }
+  fireWasHeld = held;
+  return held && fireHeldT >= T.weapon.streamDelay;
+}
+
 function fireByHand(dt, w) {
   let streaming;
   if (input.touchMode && !input.gamepad) {
@@ -3270,16 +3293,7 @@ function fireByHand(dt, w) {
     input.consumeFireTap();
     streaming = input.firing;
   } else {
-    const held = input.firing;
-    if (held) {
-      fireHeldT += dt;
-    } else {
-      // mouse button 0 / pad RT/RB, released before the stream: jump, no burst
-      if (fireWasHeld && fireHeldT > 0 && fireHeldT < T.weapon.streamDelay) input._jump = true;
-      fireHeldT = 0;
-    }
-    fireWasHeld = held;
-    streaming = held && fireHeldT >= T.weapon.streamDelay;
+    streaming = firePress(dt);
   }
   if (streaming && shotCd <= 0) {
     weaponActive = true;
@@ -3326,7 +3340,7 @@ function fireByHand(dt, w) {
  *  and missiles leave the gauntlet on their own, faster and tighter-turning
  *  the longer the look has been held. */
 function updateGaze(dt) {
-  fireTimer = 0; homingFireTimer = 0; fireWasHeld = false; homingWasHeld = false;
+  fireTimer = 0; homingFireTimer = 0; homingWasHeld = false;   // fireWasHeld is firePress's (a short press still jumps here)
   camera.getWorldDirection(_fwd2);
   // v53: in the convoy the cabs are targets too — three missiles jackknife one
   const targets = S().gaze?.trucks && truck.active ? enemies.concat(truck.active.targets()) : enemies;
@@ -3382,8 +3396,10 @@ function updateCombat(dt) {
   // Walking does not shoot. Dash is not read here.
   shotCd = Math.max(0, shotCd - dt);
   // v51 SEASON 3: the look IS the trigger — no fire input is read at all
-  if (S().gaze) updateGaze(dt);
-  else fireByHand(dt, w);
+  if (S().gaze) {
+    if (!(input.touchMode && !input.gamepad)) firePress(dt);   // no gun, but a short press still jumps (a stick tap already does, in input.js)
+    updateGaze(dt);
+  } else fireByHand(dt, w);
 
   daggers.update(dt, enemies);
 

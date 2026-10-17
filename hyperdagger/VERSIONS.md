@@ -33,8 +33,19 @@ put them live. Each was built and reviewed as its own PR (#587, #588, #589,
 - Tests only: feature pins for seasons 1–2 under both schemes (HD-005), the Toko
   cue and scaling checks, and one retry for a flaky embedded-texture decode.
 
-Merge notes: every changed module carries one token, `?v=107`, above anything
-any branch had used; the worker cache is `hyperdagger-v77` and the precache list
+Review fixes (Codex on #619), each shown by a check that fails without it
+(`test/press-edges.cjs`):
+- **Switching season from the pause menu across rules restarts the run.** The
+  mode in force was read after the season changed, so "before" already was the
+  destination: HAUL → EMBER kept the convoy under HYPER rules.
+- **The mouse click that resumes from pause is not a jump**, the same as the
+  click that starts a run.
+- **Season 3 keeps HD-001's short press = jump** on mouse and pad; it has no
+  gun, and the press grammar now runs there too.
+
+Merge notes: every changed module carries one token, `?v=107` (main.js
+`?v=108` after the review fixes), above anything
+any branch had used; the worker cache is `hyperdagger-v78` and the precache list
 was regenerated. Two overlaps needed hands: the goal card's style sits beside
 the kill counter's new slot, and the run's single ending also hides the goal
 card. Earlier in v57, already on main:
