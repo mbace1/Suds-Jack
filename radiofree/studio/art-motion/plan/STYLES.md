@@ -11,23 +11,23 @@ Every look that has been made, with the owner's status. A style moves up only on
 
 | Style | Status | Where it is | Notes |
 |---|---|---|---|
-| Papercut shadowbox | **in use** | `scenes/rfp_kit.js`, every RFH news film | Owner, 17 Oct: "better but still less polished". See *Polish* below. |
-| Clay (Aardman plasticine) | **in use** | `clay/*`, Toko films, Teslur | Same note as papercut. |
+| Papercut shadowbox | **in use** | `scenes/rfp_kit.js`, every RFH news film | "Better but still less polished" → to be refined. Owner: may also suit **Eeri** (cardboard) and **Piritori** (Kallio Noir); a proposal for those projects, not a change from here. |
+| Clay (Aardman plasticine) | **in use** | `clay/*`, Toko films, Teslur | **The main 3D language**: "great and allows for lots of variations". Target: Aardman, and Laika's *Kubo*. |
 | Clay launch-film stage | **approved** (Welcome Home) | `clay/welcome/film-wh2.js` | "looks better" (17 Oct). |
 | Flat safety leaflet | **approved** (Kill Switch) | `clay/kill-switch/flat.js` | v3, with Finnish and Japanese. |
 | Photographed 3D leaflet | **shelved** | `clay/kill-switch/leaflet.js` | Owner preferred the flat look. |
-| Shin-hanga woodblock | **testing** | `scenes/jp_kit.js` `jp_kyoto_hanga` | Kyoto Toko. "Cool, needs refining." |
-| Manga page | **testing** | `scenes/jp_kit.js` `jp_tokyo_manga` | Tokyo Toko. "Cool, needs refining." |
-| Sumi-e ink wash | **testing** | `scenes/st_kit.js` `st_sumie` | Kyoto Toko, with the haiku. |
-| 16-bit JRPG | **testing** | `scenes/st_kit.js` `st_jrpg` | Tokyo Toko, with ▶読む 寝る. |
-| City-pop sleeve | **parked** | `scenes/jp_kit.js` `jp_tokyo_citypop` | Possible cover or end card for a Tokyo series. |
+| Shin-hanga woodblock | **testing** | `scenes/jp_kit.js` `jp_kyoto_hanga` | Kyoto Toko. One of the three "ones to test" (17 Oct). |
+| Manga page | **testing** | `scenes/jp_kit.js` `jp_tokyo_manga` | Tokyo Toko. "The manga look is nice and can be added to tests." |
+| Sumi-e ink wash | **testing** | `scenes/st_kit.js` `st_sumie` | Kyoto Toko, with the haiku. "Cool and need to be refined" (first 2 of the 5). |
+| 16-bit JRPG | **testing** | `scenes/st_kit.js` `st_jrpg` | Tokyo Toko, with ▶読む 寝る. "Cool and need to be refined" (first 2 of the 5). |
+| City-pop sleeve | **testing** | `scenes/jp_kit.js` `jp_tokyo_citypop` | One of the three "ones to test" (17 Oct). Possible cover or end card for a Tokyo series. |
 | Linocut | **parked** | `scenes/st_kit.js` `st_lino` | Mökki Toko. |
 | Risograph zine | **parked** | `scenes/st_kit.js` `st_riso` | Kallio Toko. |
 | Kamishibai | **parked** | `scenes/st_kit.js` `st_kamishibai` | The pen pals. A format more than a style. |
 | The twelve 13 Oct style tests | **parked** | `eras_ts.js` | Papercut was picked from these. |
 
-*"First 2 are cool and need to be refined" (17 Oct) is read here as both pairs: woodblock and manga
-(already "ones to test"), and sumi-e and JRPG (the first two of the newer five). All four are at testing.*
+*Owner, 17 Oct: "by first 2 I meant out of the 5", so sumi-e and JRPG. Manga was added separately. The bar for all of
+them is in `PRODUCTION-STANDARD.md`: 2D at feature-animation and Kurzgesagt level, 3D at Aardman and Laika's Kubo.*
 
 ## Polish
 
