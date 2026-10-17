@@ -32,6 +32,11 @@
     #timer { top: 0.8rem; left: 50%; transform: translateX(-50%); font-size: 1.6rem; letter-spacing: 0.06em; }
     #kills, #gems { top: 0.9rem; font-size: 0.9rem; opacity: 0.75; }
     #kills { left: 1rem; } #gems { right: 1rem; }
+    /* HD-012: the arcade shell's HUB button owns the top-left corner (fixed,
+       z-index above everything, ~44px tall). The kills/load line used to sit
+       at the same spot and printed straight through it on the death screen.
+       It is a stat line, not a control: it steps down under HUB instead. */
+    #kills { top: calc(max(10px, env(safe-area-inset-top)) + 54px); left: max(10px, env(safe-area-inset-left)); }
     #style { bottom: 1.2rem; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; text-align: center; }
     #styleRank { font-size: 1.4rem; font-weight: 700; } #styleMult { font-size: 0.85rem; opacity: 0.8; }
     #styleFill { height: 3px; width: 0; background: #c81e1e; margin: 0.2rem auto 0; max-width: 8rem; }
@@ -105,10 +110,10 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=100"></script>
+  <script type="module" src="js/main.js?v=106"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=97').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=103').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=43"></script>

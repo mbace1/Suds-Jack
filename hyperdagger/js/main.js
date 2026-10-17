@@ -1474,6 +1474,7 @@ function showMenu() {
       applySeason();
       hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');   // v50: the season's mode keys the best
       startGame();
+      lockPointer(e);   // HD-013: this click IS the gesture that starts the run
     });
   }
   for (const b of elMsg.querySelectorAll('button.mode')) {
@@ -1896,10 +1897,29 @@ window.addEventListener('pointerdown', e => {
     elMsg.style.display = 'none';
     elPause.style.display = 'block';
   }
-  if (isMouse && state === 'playing' && !document.pointerLockElement) {
-    canvas.requestPointerLock();
-  }
+  lockPointer(e);
 });
+
+// HD-013: mouse look needs pointer lock, and a browser only grants it from
+// inside a user gesture. Every click that puts a live run under the mouse
+// (the window tap, a SEASON button, the pause menu's season switch, resume)
+// calls this from its own pointerdown — the season buttons stopPropagation,
+// so the window handler above never saw the click that started the run.
+function lockPointer(e) {
+  if (!e || e.pointerType !== 'mouse') return;      // touch and pad never lock
+  if (state !== 'playing' || paused || input.touchMode || document.pointerLockElement) return;
+  let r;
+  try { r = canvas.requestPointerLock(); } catch (_) { pointerLockRefused(); return; }
+  // Chromium returns a promise and rejects it on refusal (e.g. re-locking
+  // within ~1 s of Esc); unhandled, that is a console error every resume.
+  if (r && typeof r.catch === 'function') r.catch(pointerLockRefused);
+}
+// A refused lock is the same as an unlock: the run must not keep going with
+// a free cursor and a dead camera. Pause, so the next click asks again.
+function pointerLockRefused() {
+  if (state === 'playing' && !paused && !input.touchMode && !document.pointerLockElement) showPause();
+}
+document.addEventListener('pointerlockerror', pointerLockRefused);
 
 document.addEventListener('pointerlockchange', () => {
   if (state === 'playing' && !input.touchMode && !document.pointerLockElement && !paused) {
@@ -2098,7 +2118,7 @@ function showPause() {
       applySeason();
       // v51: a season with different RULES (season 3 is the track) is a
       // different game — start it fresh rather than rebuild under a live run
-      if (M().id !== before && state === 'playing') { hiScore = parseFloat(localStorage.getItem(hiKey()) || '0'); startGame(); return; }
+      if (M().id !== before && state === 'playing') { hiScore = parseFloat(localStorage.getItem(hiKey()) || '0'); startGame(); lockPointer(e); return; }
       buildSeasonArena();
       applyRunAbilities();   // v50: a season carries its control scheme
       hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
@@ -4052,6 +4072,8 @@ window.__hd = {
     // moves does not survive long enough to measure anything.
     freezeDirector(on = true) { directorFrozen = !!on; return directorFrozen; },
     startGame() { startGame(); }, // tests need a guaranteed-live run to measure
+    die(timedOut = false) { if (state === 'playing') die(!!timedOut); return state; },   // HD-012: the death screen on demand
+    getYaw() { return { yaw: player.yaw, pitch: player.pitch }; },   // HD-013: proves mouse look turns the camera
     setInvulnerable(on = true) { invulnerable = !!on; return invulnerable; },
     getPressure() { return { live: livePressure(), ceiling: +pressureCeiling().toFixed(1) }; },
     /** THE LAB BENCH. Every registered experiment, what it declares, and what
@@ -4320,7 +4342,6 @@ window.__hd = {
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
     setTime(t) { gameTime = t; },
-    die() { if (state === 'playing') die(false); },
     report() { return runReport(); },
     setRunKind(k) { runKind = k; localStorage.setItem('hyperDaggerRunKind', k); },
     setDate(s) { dateOverride = s; },
