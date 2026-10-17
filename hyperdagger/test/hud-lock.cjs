@@ -89,9 +89,9 @@ s.listen(0, '127.0.0.1', async () => {
     const paused = await p.evaluate(() => document.getElementById('msg').style.display === 'block');
     ok('unlock pauses the run', paused);
     const c0 = await p.evaluate(() => window.__lock.calls);
-    // a click on the pause screen's BACKDROP: the menu has grown rows since
-    // this check was written, and (640, 700) is now an option button (GIBS),
-    // which takes the click for itself. Find a spot no control covers.
+    // a click on the pause screen's BACKDROP. On the combined v57 build
+    // (640, 700) lands on an option button (GIBS, measured 17 Oct), which
+    // takes the click for itself. Find a spot no control covers.
     const backdrop = () => p.evaluate(() => {
       for (const y of [360, 200, 520]) for (let x = 16; x < 400; x += 24) {
         const el = document.elementFromPoint(x, y);
