@@ -47,7 +47,7 @@ export async function buildFloorPanels(arenaR) {
   let root;
   try {
     const { GLTFLoader } = await import('../vendor/jsm/loaders/GLTFLoader.js');
-    root = (await new GLTFLoader().loadAsync(cfg.url)).scene;
+    root = (await reliableTextures(new GLTFLoader()).loadAsync(cfg.url)).scene;
   } catch (e) {
     console.warn(`floor panel failed (${e.message ?? e}) — procedural floor only`);
     return null;
@@ -286,4 +286,42 @@ function textureSampler(material) {
     const i = (y * data.w + x) * 4;
     return out.setRGB(data.px[i] / 255, data.px[i + 1] / 255, data.px[i + 2] / 255);
   };
+}
+
+/**
+ * Make a GLTFLoader's embedded-texture decode survive a flaky first try.
+ *
+ * In Chromium three's GLTFLoader decodes every embedded image (all our .glb
+ * files carry WebP) through ImageBitmapLoader: Blob -> blob: URL -> fetch ->
+ * createImageBitmap. That decode can reject on a starved box (CI's two
+ * cores, several parsers decoding at boot), and the loader has no retry: it
+ * logs "Couldn't load texture blob:…" and the mesh goes untextured. The
+ * blob URL is only revoked on success, so it is still valid after a failure;
+ * this retries that same URL once through TextureLoader (an <img> decode, a
+ * different path) before giving up. Nothing is silenced: if the retry fails
+ * too, the original error propagates and GLTFLoader logs it as before.
+ */
+export function reliableTextures(loader) {
+  loader.register(parser => {
+    const bitmap = parser.textureLoader;
+    if (!bitmap?.isImageBitmapLoader) return { name: 'HD_reliable_textures' };
+    const img = new THREE.TextureLoader(parser.options.manager);
+    img.setCrossOrigin(parser.options.crossOrigin);
+    // Not an ImageBitmapLoader any more, so GLTFLoader takes whatever this
+    // hands back as a finished Texture — both paths must therefore yield one.
+    parser.textureLoader = {
+      load(url, onLoad, onProgress, onError) {
+        bitmap.load(url, bm => {
+          const t = new THREE.Texture(bm);
+          t.needsUpdate = true;
+          onLoad(t);
+        }, onProgress, err => {
+          console.warn('[gltf] texture decode failed once, retrying via <img>', err?.message ?? err);
+          img.load(url, onLoad, undefined, () => onError(err));
+        });
+      },
+    };
+    return { name: 'HD_reliable_textures' };
+  });
+  return loader;
 }
