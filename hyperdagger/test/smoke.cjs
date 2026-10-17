@@ -138,8 +138,10 @@ s.listen(0, '127.0.0.1', async () => {
       weapon,
     };
   });
-  ok('the active frame is clock-only',
-    frame30.active && frame30.kills === 'none' && frame30.gems === 'none' &&
+  // HD-008 (12 Oct playtest): the kill counter is the one readout that stays
+  // up beside the clock — gems and the style badge still wait for the break
+  ok('the active frame is the clock and the kill counter',
+    frame30.active && frame30.kills !== 'none' && frame30.gems === 'none' &&
     frame30.style === 'none' && frame30.timer === '27px', JSON.stringify(frame30));
   ok('shell controls retreat during the fight',
     frame30.pause <= 0.16 && frame30.home <= 0.08 && frame30.signature <= 0.08,
