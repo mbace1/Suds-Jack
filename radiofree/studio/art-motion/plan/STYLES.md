@@ -49,3 +49,25 @@ cut are better but still have a feel that is less polished."
 - studio environment reflections;
 - Toko as a designer toy;
 - the same scene and camera.
+
+**The owner's answer (17 Oct):** "All of the above, some of course more fitting per style." So polish is assigned per
+style:
+
+| Style | Its polish | Why |
+|---|---|---|
+| Flat leaflet (Kill Switch) | **slick 2D motion design + creator-native edit** | The print stays flat; the polish is in how it moves. **Tested:** `previews/17-10-Kill-Switch-polish-test.mp4`. |
+| Papercut (RFH news) | **creator-native edit**, then **cleaner light** | Punch-ins, word-by-word captions and sound hits on the existing box; brighter, cleaner card and light. |
+| Clay launch-film parody (Welcome Home) | **premium 3D + cinematic realism** | It parodies a premium launch film, so premium is the point. **Tested (stills):** `looks/polish-welcome-home.png`. |
+| Clay (Toko, Teslur) | **creator-native edit**, premium 3D where the subject is a product | Clay stays where its warmth is the joke. |
+| Woodblock, sumi-e | **slick 2D motion**: layered parallax, depth, crisp edges | The texture stays, because the print is the subject. |
+| Manga, JRPG | **creator-native edit**: panel-by-panel reads, punch-ins, sound-effect hits | Their own grammar is already an edit. |
+
+**What the Kill Switch test does (the pattern for the rest):**
+- springs instead of drifts;
+- a camera that punches in on what to read;
+- elements that pop in staggered (the pictograms);
+- UI chips over the print (SWITCH 1 JAMS / SWITCH 2 OFF, the WARNINGS counter rolling 8 → 0);
+- house captions word by word, with a scrim behind them when the camera is in close;
+- a sound on every move (`synth_ks_polish.py`, from the Doodle palette's voices, −14 LUFS).
+
+The edit carries a joke: the tap on the kill switch stops the music.
