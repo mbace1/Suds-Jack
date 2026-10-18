@@ -227,7 +227,7 @@
  {
   "check": "scrim en:openai",
   "result": "pass",
-  "why": "picture behind: edge 4.37 → scrim 0.0"
+  "why": "picture behind: edge 4.38 → scrim 0.0"
  },
  {
   "check": "width en:anthropic",

@@ -52,7 +52,7 @@
 | text | reading time en:openai | pass | on screen 5.48 s, needs 4.55 s (71 chars at 20/s + 1 s) |
 | text | last word en:openai | pass | last word up 3.61 s (at least 0.8) |
 | text | key detail en:openai | pass | covers nothing the shot needs |
-| text | scrim en:openai | pass | picture behind: edge 4.37 → scrim 0.0 |
+| text | scrim en:openai | pass | picture behind: edge 4.38 → scrim 0.0 |
 | text | width en:anthropic | pass | widest line 767 px (limit 800) |
 | text | safe zone en:anthropic | pass | box {'x': 146, 'y': 191, 'w': 789, 'h': 160} |
 | text | reading time en:anthropic | pass | on screen 5.48 s, needs 4.05 s (61 chars at 20/s + 1 s) |
