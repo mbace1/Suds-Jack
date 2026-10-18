@@ -785,21 +785,18 @@ Toko anchors every Radio Free film, and the mask is the credit.
 
 **The social kit is not to this canon yet.** The Toko Midori profile, X header
 and banners (`branding/toko-midori/` on the `branding/toko-rfh-socials`
-branch, 2026-10-14) break four rules at once:
+branch, 2026-10-14) use the right face — it was made from the master file and
+matches the trace at 0.979 IoU — but break three rules around it:
 
 1. **A shadow inside the mark** — black under the face on the profile, a
    magenta offset under a green face on the X header. That is two colours in
    the mark (§7).
 2. **The green is not a carrier.** It measures `#44FF88`; the brand's green is
    `#12783a`, and the owner's references are the colour guide.
-3. **It is not the traced face.** Every stroke ends round; the trace ends every
-   stroke in a slanted cut.
-4. **The name is set in a stock sans**, not the drawn logotype (§4).
+3. **The name is set in a stock sans**, not the drawn logotype (§4).
 
-They should be redrawn from the shipping modules — `fillMaster` for the face,
-`drawLockup` for the name — so the picture on the profile is the same face as
-the badge in every game's corner. Until then they are the one place the brand
-is drawn by hand.
+The fix is small: the same pictures without the shadow, in a carrier colour,
+with the name drawn by `drawLockup`.
 
 ---
 
