@@ -17,9 +17,9 @@ SCENES['sb_before'] = (() => {
         { fn: (g, ox) => D.board(g, lt, { courts: [0, 1, (lt - tG) / 0.3], satire: [0, 1, (lt - tR) / 0.3] }, { x: D.BX + ox, y: D.BY - 40, sc: 0.84 }), d: 0.14 },
         { sh: D.bench(), d: 0.24, lift: 1.1 },
         { fn: (g, ox) => {
-          if (kp > 0) { const x = 318 + ox, y = 1110 + (1 - kp) * 700, sc = 0.6;
+          if (kp > 0) { const x = 334 + ox, y = 1110 + (1 - kp) * 700, sc = 0.72;
             put(g, D.pearStrip(), x, y, { sc, rot: -0.05, lift: 1.3 }); D.stamp(g, 'GUILTY', D.C.red, x, y + 20, lt - tG, { sc: 0.6, rot: -0.12 }); }
-          if (ka > 0) { const x = 790 + ox, y = 1110 + (1 - ka) * 800;
+          if (ka > 0) { const x = 826 + ox, y = 1110 + (1 - ka) * 800;
             put(g, D.adPoster(), x, y, { sc: 0.8, rot: 0.05, lift: 1.3 }); D.stamp(g, 'PROTECTED', D.C.green, x, y - 20, lt - tR, { w: 520, sc: 0.62, rot: 0.1 }); }
         }, d: 0.3 },
       ], cam);

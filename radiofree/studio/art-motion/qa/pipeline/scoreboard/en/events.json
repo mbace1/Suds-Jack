@@ -1,0 +1,412 @@
+{
+ "s1": 0,
+ "s2": 6.428571428571429,
+ "s3": 12.857142857142858,
+ "s4": 19.285714285714285,
+ "s5": 25.714285714285715,
+ "end": 32.142857142857146,
+ "sb_bill.phone": 0.3,
+ "sb_bill.stamp": 1.6,
+ "sb_bill.mask": 2.8264,
+ "sb_bench.lights": 6.8286,
+ "sb_bench.gavel": 7.7713,
+ "sb_before.pear": 13.3571,
+ "sb_before.guilty": 14.8135,
+ "sb_before.ad": 15.2153,
+ "sb_before.protected": 15.6471,
+ "sb_fakes.phone": 19.6857,
+ "sb_fakes.no": 20.833,
+ "sb_fakes.yes": 21.5984,
+ "sb_decider.row": 26.3143,
+ "sb_decider.decider": 27.6997,
+ "lang": "en",
+ "holds": [],
+ "cues": {
+  "sb_bill.phone": 0.3,
+  "sb_bill.stamp": 1.6,
+  "sb_bill.mask": 2.8264,
+  "sb_bench.lights": 6.8286,
+  "sb_bench.gavel": 7.7713,
+  "sb_before.pear": 13.3571,
+  "sb_before.guilty": 14.8135,
+  "sb_before.ad": 15.2153,
+  "sb_before.protected": 15.6471,
+  "sb_fakes.phone": 19.6857,
+  "sb_fakes.no": 20.833,
+  "sb_fakes.yes": 21.5984,
+  "sb_decider.row": 26.3143,
+  "sb_decider.decider": 27.6997
+ },
+ "words": [
+  {
+   "w": "Denmark's",
+   "t": 0.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "bill",
+   "t": 0.727,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "bans",
+   "t": 0.841,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "AI",
+   "t": 0.955,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "copies",
+   "t": 1.023,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "of",
+   "t": 1.402,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "your",
+   "t": 1.47,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "face,",
+   "t": 1.584,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "unless",
+   "t": 1.72,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "it's",
+   "t": 1.879,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "satire.",
+   "t": 1.993,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "Who",
+   "t": 2.395,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "decides",
+   "t": 2.485,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "what's",
+   "t": 2.667,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "satire?",
+   "t": 2.826,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "The",
+   "t": 7.029,
+   "pop": false,
+   "caption": "courts"
+  },
+  {
+   "w": "bill's",
+   "t": 7.119,
+   "pop": false,
+   "caption": "courts"
+  },
+  {
+   "w": "answer:",
+   "t": 7.279,
+   "pop": false,
+   "caption": "courts"
+  },
+  {
+   "w": "the",
+   "t": 7.68,
+   "pop": false,
+   "caption": "courts"
+  },
+  {
+   "w": "courts,",
+   "t": 7.771,
+   "pop": true,
+   "caption": "courts"
+  },
+  {
+   "w": "case",
+   "t": 7.953,
+   "pop": false,
+   "caption": "courts"
+  },
+  {
+   "w": "by",
+   "t": 8.067,
+   "pop": false,
+   "caption": "courts"
+  },
+  {
+   "w": "case.",
+   "t": 8.135,
+   "pop": false,
+   "caption": "courts"
+  },
+  {
+   "w": "Courts",
+   "t": 13.457,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "have",
+   "t": 13.616,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "ruled",
+   "t": 13.73,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "before.",
+   "t": 13.866,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "1831,",
+   "t": 14.268,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "mocking",
+   "t": 14.404,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "the",
+   "t": 14.586,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "king:",
+   "t": 14.677,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "guilty.",
+   "t": 14.814,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "1988,",
+   "t": 15.215,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "a",
+   "t": 15.352,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "parody",
+   "t": 15.397,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "ad:",
+   "t": 15.556,
+   "pop": false,
+   "caption": "before"
+  },
+  {
+   "w": "protected.",
+   "t": 15.647,
+   "pop": true,
+   "caption": "before"
+  },
+  {
+   "w": "2024,",
+   "t": 19.886,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "AI",
+   "t": 20.022,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "fakes.",
+   "t": 20.09,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "A",
+   "t": 20.469,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "Berlin",
+   "t": 20.515,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "court:",
+   "t": 20.674,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "no.",
+   "t": 20.833,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "A",
+   "t": 21.144,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "California",
+   "t": 21.189,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "court:",
+   "t": 21.439,
+   "pop": false,
+   "caption": "fakes"
+  },
+  {
+   "w": "yes.",
+   "t": 21.598,
+   "pop": true,
+   "caption": "fakes"
+  },
+  {
+   "w": "Two",
+   "t": 26.214,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "all",
+   "t": 26.305,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "since",
+   "t": 26.396,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "1831.",
+   "t": 26.532,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "Denmark's",
+   "t": 26.889,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "courts",
+   "t": 27.116,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "take",
+   "t": 27.495,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "the",
+   "t": 27.609,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "decider.",
+   "t": 27.7,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.5,
+   "t1": 6.079
+  },
+  {
+   "id": "courts",
+   "t0": 7.029,
+   "t1": 12.507
+  },
+  {
+   "id": "before",
+   "t0": 13.457,
+   "t1": 18.936
+  },
+  {
+   "id": "fakes",
+   "t0": 19.886,
+   "t1": 25.364
+  },
+  {
+   "id": "last",
+   "t0": 26.214,
+   "t1": 31.943
+  }
+ ],
+ "quiet": []
+}

@@ -37,7 +37,7 @@
       "hold": "s3",
       "text": {
         "en": "The bill's answer: / the [courts], case by case.",
-        "fi": "Lakiesityksen vastaus: / [tuomioistuimet], tapaus kerrallaan.",
+        "fi": "Lakiesityksen vastaus: / [tuomioistuimet], / tapaus kerrallaan.",
         "ja": "法案の 答え： / [裁判所が] 個別に 判断する。"
       },
       "source": "The minister concedes the line is hard to draw; the courts decide case by case (Euronews; PPC Land; sn.dk, 8 Oct 2026)."
@@ -50,7 +50,7 @@
       "hold": "s4",
       "text": {
         "en": "Courts have ruled before. / 1831, mocking the king: guilty. / 1988, a parody ad: [protected].",
-        "fi": "Oikeus on ratkaissut ennenkin. / 1831, kuninkaan pilkka: syyllinen. / 1988, parodiamainos: [suojattu].",
+        "fi": "Oikeus on ratkaissut ennenkin. / 1831, kuninkaan pilkka: tuomio. / 1988, parodiamainos: [suojattu].",
         "ja": "裁判所は 前にも 判断した。 / 1831年、 国王の 風刺： 有罪。 / 1988年、 パロディ広告： [保護]。"
       },
       "source": "Paris assize court, 14 Nov 1831: Charles Philipon convicted of outrage against the person of the King, six months and 2,000 francs; his defence was the four-head king-to-pear sketch (Encyclopædia Universalis; Public Domain Review; Wikipedia 'Pear (caricature)'). Hustler Magazine v. Falwell, 485 U.S. 46 (24 Feb 1988): the Supreme Court reversed damages over an ad parody marked 'not to be taken seriously' (Cornell LII). The pear strip in the picture is the defence sketch, drawn at that trial."
@@ -75,7 +75,7 @@
       "until": "end-0.2",
       "hold": "end",
       "text": {
-        "en": "Two all since 1831. / Denmark's courts take the [decider].",
+        "en": "Two all since 1831. / Denmark's courts / take the [decider].",
         "fi": "Tasan 2–2 vuodesta 1831. / Tanskan tuomioistuimet / ratkaisevat [voittajan].",
         "ja": "1831年から 2対2。 / [決勝点は] デンマークの 裁判所に。"
       },

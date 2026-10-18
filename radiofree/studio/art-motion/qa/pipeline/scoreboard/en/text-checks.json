@@ -1,0 +1,492 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "Bill L 49, tabled 8 Oct 2026 by Culture Minister Zenia Stampe: a new §73a of the"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy courts.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy courts.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy courts.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy courts source",
+  "result": "pass",
+  "why": "The minister concedes the line is hard to draw; the courts decide case by case ("
+ },
+ {
+  "check": "copy courts pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy before.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy before.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy before.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy before source",
+  "result": "pass",
+  "why": "Paris assize court, 14 Nov 1831: Charles Philipon convicted of outrage against t"
+ },
+ {
+  "check": "copy before pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy fakes.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy fakes.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy fakes.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy fakes source",
+  "result": "pass",
+  "why": "Landgericht Berlin II, 15 O 579/23 (reported 25 Feb 2024): a preliminary injunct"
+ },
+ {
+  "check": "copy fakes pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line over its own image. The board is labelled CASES IN THIS FILM:"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.tagBill",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.board",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.boardSmall",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tagParis",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tagWashington",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tagBerlin",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tagCalifornia",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.denmark",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "33 words: Denmark's deepfake bill exempts satire and leaves the courts to decide what satire is; cou"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "33 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 711 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 173, 'y': 191, 'w': 733, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 5.50 s (90 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 3.25 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 1.85 → scrim 0.0"
+ },
+ {
+  "check": "width en:courts",
+  "result": "pass",
+  "why": "widest line 593 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:courts",
+  "result": "pass",
+  "why": "box {'x': 233, 'y': 191, 'w': 615, 'h': 160}"
+ },
+ {
+  "check": "reading time en:courts",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 3.20 s (44 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:courts",
+  "result": "pass",
+  "why": "last word up 4.37 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:courts",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:courts",
+  "result": "pass",
+  "why": "picture behind: edge 1.04 → scrim 0.0"
+ },
+ {
+  "check": "width en:before",
+  "result": "pass",
+  "why": "widest line 718 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:before",
+  "result": "pass",
+  "why": "box {'x': 170, 'y': 191, 'w': 740, 'h': 247}"
+ },
+ {
+  "check": "reading time en:before",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 5.35 s (87 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:before",
+  "result": "pass",
+  "why": "last word up 3.29 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:before",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:before",
+  "result": "pass",
+  "why": "picture behind: edge 1.96 → scrim 0.0"
+ },
+ {
+  "check": "width en:fakes",
+  "result": "pass",
+  "why": "widest line 546 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:fakes",
+  "result": "pass",
+  "why": "box {'x': 256, 'y': 191, 'w': 568, 'h': 247}"
+ },
+ {
+  "check": "reading time en:fakes",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.00 s (60 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:fakes",
+  "result": "pass",
+  "why": "last word up 3.77 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:fakes",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:fakes",
+  "result": "pass",
+  "why": "picture behind: edge 0.96 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 430 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 314, 'y': 191, 'w': 452, 'h': 247}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 3.70 s (54 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.24 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 0.58 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "warn",
+  "why": "Denmark's bill bans AI copies of your face, | unless it's satire. Who decides what's satire?"
+ },
+ {
+  "check": "sidecar lines en:courts",
+  "result": "pass",
+  "why": "The bill's answer: the courts, case by | case."
+ },
+ {
+  "check": "sidecar lines en:before",
+  "result": "warn",
+  "why": "Courts have ruled before. 1831, mocking the | king: guilty. 1988, a parody ad: protected."
+ },
+ {
+  "check": "sidecar lines en:fakes",
+  "result": "pass",
+  "why": "2024, AI fakes. A Berlin court: no. A | California court: yes."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "Two all since 1831. Denmark's courts take | the decider."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "warn",
+  "why": "5.58 s on this master, fi needs 7.12 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "warn",
+  "why": "Tanskan lakiesitys kieltää tekoälykopiot kasvoistasi, | paitsi satiirissa. Kuka päättää, mikä on satiiria?"
+ },
+ {
+  "check": "sidecar fi:courts",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 4.35 s"
+ },
+ {
+  "check": "sidecar lines fi:courts",
+  "result": "pass",
+  "why": "Lakiesityksen vastaus: tuomioistuimet, | tapaus kerrallaan."
+ },
+ {
+  "check": "sidecar fi:before",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 6.47 s"
+ },
+ {
+  "check": "sidecar lines fi:before",
+  "result": "warn",
+  "why": "Oikeus on ratkaissut ennenkin. 1831, kuninkaan | pilkka: tuomio. 1988, parodiamainos: suojattu."
+ },
+ {
+  "check": "sidecar fi:fakes",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 5.41 s"
+ },
+ {
+  "check": "sidecar lines fi:fakes",
+  "result": "pass",
+  "why": "2024, tekoälyväärennökset. Berliinin | oikeus: ei. Kalifornian oikeus: kyllä."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 5.12 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Tasan 2–2 vuodesta 1831. Tanskan | tuomioistuimet ratkaisevat voittajan."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "warn",
+  "why": "5.58 s on this master, ja needs 7.50 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "warn",
+  "why": "デンマークの法案は顔のAIコピーを禁じる。 | 風刺は例外。何が風刺か、誰が決める？"
+ },
+ {
+  "check": "sidecar ja:courts",
+  "result": "pass",
+  "why": "5.48 s on this master, ja needs 4.00 s"
+ },
+ {
+  "check": "sidecar lines ja:courts",
+  "result": "pass",
+  "why": "法案の答え：裁判所が個別に | 判断する。"
+ },
+ {
+  "check": "sidecar ja:before",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 8.17 s"
+ },
+ {
+  "check": "sidecar lines ja:before",
+  "result": "warn",
+  "why": "裁判所は前にも判断した。1831年、国王の | 風刺：有罪。1988年、パロディ広告：保護。"
+ },
+ {
+  "check": "sidecar ja:fakes",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 7.50 s"
+ },
+ {
+  "check": "sidecar lines ja:fakes",
+  "result": "warn",
+  "why": "2024年、AIの偽動画。ベルリンの | 裁判所：不可。カリフォルニアの裁判所：可。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 5.33 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "1831年から2対2。決勝点は | デンマークの裁判所に。"
+ }
+]

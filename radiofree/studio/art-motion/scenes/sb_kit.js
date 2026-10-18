@@ -88,7 +88,8 @@ window.SB = (() => {
     };
     if (spin > 0) { const f = (spin * 9) % 1; to = from; k = f; }
     k = clamp(k, 0, 1);
-    face(to, -1); face(k < 1 ? from : to, 1);
+    if (k <= 0) { face(from, -1); face(from, 1); }                          // before the flip: the old card, whole (half of each read as "?")
+    else { face(to, -1); face(k < 1 ? from : to, 1); }
     if (k > 0 && k < 1) {                                                    // the falling flap: the old top folding down, then the new bottom
       c.save(); c.translate(x, y);
       if (k < 0.5) { const s = 1 - k * 2; c.scale(1, s); c.translate(-x, -y); face(from, -1); }

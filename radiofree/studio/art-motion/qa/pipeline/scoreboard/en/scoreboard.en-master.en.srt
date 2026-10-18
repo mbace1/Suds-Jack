@@ -1,0 +1,24 @@
+1
+00:00:00,500 --> 00:00:06,079
+Denmark's bill bans AI copies of your face,
+unless it's satire. Who decides what's satire?
+
+2
+00:00:07,029 --> 00:00:12,507
+The bill's answer: the courts, case by
+case.
+
+3
+00:00:13,457 --> 00:00:18,936
+Courts have ruled before. 1831, mocking the
+king: guilty. 1988, a parody ad: protected.
+
+4
+00:00:19,886 --> 00:00:25,364
+2024, AI fakes. A Berlin court: no. A
+California court: yes.
+
+5
+00:00:26,214 --> 00:00:31,943
+Two all since 1831. Denmark's courts take
+the decider.

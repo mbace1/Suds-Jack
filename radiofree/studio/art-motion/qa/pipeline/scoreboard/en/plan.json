@@ -1,0 +1,746 @@
+{
+ "film": "scoreboard",
+ "lang": "en",
+ "bpm": 112,
+ "fps": 30,
+ "T": {
+  "s1": 0,
+  "s2": 6.428571428571429,
+  "s3": 12.857142857142858,
+  "s4": 19.285714285714285,
+  "s5": 25.714285714285715,
+  "end": 32.142857142857146
+ },
+ "end": 32.142857142857146,
+ "holds": [],
+ "shots": [
+  {
+   "id": "sb_bill",
+   "t0": 0,
+   "dur": 6.428571428571429
+  },
+  {
+   "id": "sb_bench",
+   "t0": 6.428571428571429,
+   "dur": 6.428571428571429
+  },
+  {
+   "id": "sb_before",
+   "t0": 12.857142857142858,
+   "dur": 6.428571428571427
+  },
+  {
+   "id": "sb_fakes",
+   "t0": 19.285714285714285,
+   "dur": 6.428571428571431
+  },
+  {
+   "id": "sb_decider",
+   "t0": 25.714285714285715,
+   "dur": 6.428571428571431
+  }
+ ],
+ "cues": {
+  "sb_bill.phone": 0.3,
+  "sb_bill.stamp": 1.6,
+  "sb_bill.mask": 2.8264,
+  "sb_bench.lights": 6.8286,
+  "sb_bench.gavel": 7.7713,
+  "sb_before.pear": 13.3571,
+  "sb_before.guilty": 14.8135,
+  "sb_before.ad": 15.2153,
+  "sb_before.protected": 15.6471,
+  "sb_fakes.phone": 19.6857,
+  "sb_fakes.no": 20.833,
+  "sb_fakes.yes": 21.5984,
+  "sb_decider.row": 26.3143,
+  "sb_decider.decider": 27.6997
+ },
+ "captions": [
+  {
+   "id": "question",
+   "lang": "en",
+   "size": "house",
+   "text": "Denmark's bill bans AI copies / of your face, unless it's satire. / Who decides what's [satire]?",
+   "lines": [
+    [
+     {
+      "w": "Denmark's",
+      "pop": false
+     },
+     {
+      "w": "bill",
+      "pop": false
+     },
+     {
+      "w": "bans",
+      "pop": false
+     },
+     {
+      "w": "AI",
+      "pop": false
+     },
+     {
+      "w": "copies",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "of",
+      "pop": false
+     },
+     {
+      "w": "your",
+      "pop": false
+     },
+     {
+      "w": "face,",
+      "pop": false
+     },
+     {
+      "w": "unless",
+      "pop": false
+     },
+     {
+      "w": "it's",
+      "pop": false
+     },
+     {
+      "w": "satire.",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "Who",
+      "pop": false
+     },
+     {
+      "w": "decides",
+      "pop": false
+     },
+     {
+      "w": "what's",
+      "pop": false
+     },
+     {
+      "w": "satire?",
+      "pop": true
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "Denmark's",
+     "pop": false,
+     "line": 0,
+     "t": 0.5
+    },
+    {
+     "w": "bill",
+     "pop": false,
+     "line": 0,
+     "t": 0.7272727272727273
+    },
+    {
+     "w": "bans",
+     "pop": false,
+     "line": 0,
+     "t": 0.8409090909090909
+    },
+    {
+     "w": "AI",
+     "pop": false,
+     "line": 0,
+     "t": 0.9545454545454546
+    },
+    {
+     "w": "copies",
+     "pop": false,
+     "line": 0,
+     "t": 1.0227272727272727
+    },
+    {
+     "w": "of",
+     "pop": false,
+     "line": 1,
+     "t": 1.4018181818181819
+    },
+    {
+     "w": "your",
+     "pop": false,
+     "line": 1,
+     "t": 1.47
+    },
+    {
+     "w": "face,",
+     "pop": false,
+     "line": 1,
+     "t": 1.5836363636363635
+    },
+    {
+     "w": "unless",
+     "pop": false,
+     "line": 1,
+     "t": 1.7199999999999998
+    },
+    {
+     "w": "it's",
+     "pop": false,
+     "line": 1,
+     "t": 1.879090909090909
+    },
+    {
+     "w": "satire.",
+     "pop": false,
+     "line": 1,
+     "t": 1.9927272727272725
+    },
+    {
+     "w": "Who",
+     "pop": false,
+     "line": 2,
+     "t": 2.3945454545454545
+    },
+    {
+     "w": "decides",
+     "pop": false,
+     "line": 2,
+     "t": 2.4854545454545454
+    },
+    {
+     "w": "what's",
+     "pop": false,
+     "line": 2,
+     "t": 2.667272727272727
+    },
+    {
+     "w": "satire?",
+     "pop": true,
+     "line": 2,
+     "t": 2.826363636363636
+    }
+   ],
+   "t0": 0.5,
+   "t1": 6.078571428571429,
+   "read": 5.5,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "courts",
+   "lang": "en",
+   "size": "house",
+   "text": "The bill's answer: / the [courts], case by case.",
+   "lines": [
+    [
+     {
+      "w": "The",
+      "pop": false
+     },
+     {
+      "w": "bill's",
+      "pop": false
+     },
+     {
+      "w": "answer:",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "the",
+      "pop": false
+     },
+     {
+      "w": "courts,",
+      "pop": true
+     },
+     {
+      "w": "case",
+      "pop": false
+     },
+     {
+      "w": "by",
+      "pop": false
+     },
+     {
+      "w": "case.",
+      "pop": false
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "The",
+     "pop": false,
+     "line": 0,
+     "t": 7.0285714285714285
+    },
+    {
+     "w": "bill's",
+     "pop": false,
+     "line": 0,
+     "t": 7.119480519480519
+    },
+    {
+     "w": "answer:",
+     "pop": false,
+     "line": 0,
+     "t": 7.2785714285714285
+    },
+    {
+     "w": "the",
+     "pop": false,
+     "line": 1,
+     "t": 7.68038961038961
+    },
+    {
+     "w": "courts,",
+     "pop": true,
+     "line": 1,
+     "t": 7.771298701298701
+    },
+    {
+     "w": "case",
+     "pop": false,
+     "line": 1,
+     "t": 7.953116883116882
+    },
+    {
+     "w": "by",
+     "pop": false,
+     "line": 1,
+     "t": 8.066753246753246
+    },
+    {
+     "w": "case.",
+     "pop": false,
+     "line": 1,
+     "t": 8.134935064935064
+    }
+   ],
+   "t0": 7.0285714285714285,
+   "t1": 12.507142857142858,
+   "read": 3.2,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "before",
+   "lang": "en",
+   "size": "house",
+   "text": "Courts have ruled before. / 1831, mocking the king: guilty. / 1988, a parody ad: [protected].",
+   "lines": [
+    [
+     {
+      "w": "Courts",
+      "pop": false
+     },
+     {
+      "w": "have",
+      "pop": false
+     },
+     {
+      "w": "ruled",
+      "pop": false
+     },
+     {
+      "w": "before.",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "1831,",
+      "pop": false
+     },
+     {
+      "w": "mocking",
+      "pop": false
+     },
+     {
+      "w": "the",
+      "pop": false
+     },
+     {
+      "w": "king:",
+      "pop": false
+     },
+     {
+      "w": "guilty.",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "1988,",
+      "pop": false
+     },
+     {
+      "w": "a",
+      "pop": false
+     },
+     {
+      "w": "parody",
+      "pop": false
+     },
+     {
+      "w": "ad:",
+      "pop": false
+     },
+     {
+      "w": "protected.",
+      "pop": true
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "Courts",
+     "pop": false,
+     "line": 0,
+     "t": 13.457142857142857
+    },
+    {
+     "w": "have",
+     "pop": false,
+     "line": 0,
+     "t": 13.616233766233766
+    },
+    {
+     "w": "ruled",
+     "pop": false,
+     "line": 0,
+     "t": 13.729870129870129
+    },
+    {
+     "w": "before.",
+     "pop": false,
+     "line": 0,
+     "t": 13.866233766233766
+    },
+    {
+     "w": "1831,",
+     "pop": false,
+     "line": 1,
+     "t": 14.268051948051948
+    },
+    {
+     "w": "mocking",
+     "pop": false,
+     "line": 1,
+     "t": 14.404415584415585
+    },
+    {
+     "w": "the",
+     "pop": false,
+     "line": 1,
+     "t": 14.586233766233766
+    },
+    {
+     "w": "king:",
+     "pop": false,
+     "line": 1,
+     "t": 14.677142857142858
+    },
+    {
+     "w": "guilty.",
+     "pop": false,
+     "line": 1,
+     "t": 14.813506493506495
+    },
+    {
+     "w": "1988,",
+     "pop": false,
+     "line": 2,
+     "t": 15.215324675324677
+    },
+    {
+     "w": "a",
+     "pop": false,
+     "line": 2,
+     "t": 15.351688311688314
+    },
+    {
+     "w": "parody",
+     "pop": false,
+     "line": 2,
+     "t": 15.397142857142859
+    },
+    {
+     "w": "ad:",
+     "pop": false,
+     "line": 2,
+     "t": 15.556233766233767
+    },
+    {
+     "w": "protected.",
+     "pop": true,
+     "line": 2,
+     "t": 15.647142857142859
+    }
+   ],
+   "t0": 13.457142857142857,
+   "t1": 18.935714285714283,
+   "read": 5.35,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "fakes",
+   "lang": "en",
+   "size": "house",
+   "text": "2024, AI fakes. / A Berlin court: no. / A California court: [yes].",
+   "lines": [
+    [
+     {
+      "w": "2024,",
+      "pop": false
+     },
+     {
+      "w": "AI",
+      "pop": false
+     },
+     {
+      "w": "fakes.",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "A",
+      "pop": false
+     },
+     {
+      "w": "Berlin",
+      "pop": false
+     },
+     {
+      "w": "court:",
+      "pop": false
+     },
+     {
+      "w": "no.",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "A",
+      "pop": false
+     },
+     {
+      "w": "California",
+      "pop": false
+     },
+     {
+      "w": "court:",
+      "pop": false
+     },
+     {
+      "w": "yes.",
+      "pop": true
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "2024,",
+     "pop": false,
+     "line": 0,
+     "t": 19.885714285714286
+    },
+    {
+     "w": "AI",
+     "pop": false,
+     "line": 0,
+     "t": 20.022077922077923
+    },
+    {
+     "w": "fakes.",
+     "pop": false,
+     "line": 0,
+     "t": 20.09025974025974
+    },
+    {
+     "w": "A",
+     "pop": false,
+     "line": 1,
+     "t": 20.46935064935065
+    },
+    {
+     "w": "Berlin",
+     "pop": false,
+     "line": 1,
+     "t": 20.514805194805195
+    },
+    {
+     "w": "court:",
+     "pop": false,
+     "line": 1,
+     "t": 20.673896103896105
+    },
+    {
+     "w": "no.",
+     "pop": false,
+     "line": 1,
+     "t": 20.832987012987015
+    },
+    {
+     "w": "A",
+     "pop": false,
+     "line": 2,
+     "t": 21.143896103896104
+    },
+    {
+     "w": "California",
+     "pop": false,
+     "line": 2,
+     "t": 21.18935064935065
+    },
+    {
+     "w": "court:",
+     "pop": false,
+     "line": 2,
+     "t": 21.43935064935065
+    },
+    {
+     "w": "yes.",
+     "pop": true,
+     "line": 2,
+     "t": 21.59844155844156
+    }
+   ],
+   "t0": 19.885714285714286,
+   "t1": 25.364285714285714,
+   "read": 4,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "last",
+   "lang": "en",
+   "size": "house",
+   "text": "Two all since 1831. / Denmark's courts / take the [decider].",
+   "lines": [
+    [
+     {
+      "w": "Two",
+      "pop": false
+     },
+     {
+      "w": "all",
+      "pop": false
+     },
+     {
+      "w": "since",
+      "pop": false
+     },
+     {
+      "w": "1831.",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "Denmark's",
+      "pop": false
+     },
+     {
+      "w": "courts",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "take",
+      "pop": false
+     },
+     {
+      "w": "the",
+      "pop": false
+     },
+     {
+      "w": "decider.",
+      "pop": true
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "Two",
+     "pop": false,
+     "line": 0,
+     "t": 26.214285714285715
+    },
+    {
+     "w": "all",
+     "pop": false,
+     "line": 0,
+     "t": 26.305194805194805
+    },
+    {
+     "w": "since",
+     "pop": false,
+     "line": 0,
+     "t": 26.396103896103895
+    },
+    {
+     "w": "1831.",
+     "pop": false,
+     "line": 0,
+     "t": 26.532467532467532
+    },
+    {
+     "w": "Denmark's",
+     "pop": false,
+     "line": 1,
+     "t": 26.888831168831167
+    },
+    {
+     "w": "courts",
+     "pop": false,
+     "line": 1,
+     "t": 27.116103896103894
+    },
+    {
+     "w": "take",
+     "pop": false,
+     "line": 2,
+     "t": 27.495194805194803
+    },
+    {
+     "w": "the",
+     "pop": false,
+     "line": 2,
+     "t": 27.608831168831166
+    },
+    {
+     "w": "decider.",
+     "pop": true,
+     "line": 2,
+     "t": 27.699740259740256
+    }
+   ],
+   "t0": 26.214285714285715,
+   "t1": 31.942857142857147,
+   "read": 3.7,
+   "place": "top",
+   "native": true
+  }
+ ],
+ "ui": {
+  "tagBill": "BILL L 49 · FOLKETINGET · 8.10.2026",
+  "board": "COURTS · SATIRE",
+  "boardSmall": "CASES IN THIS FILM",
+  "tagParis": "PARIS · 14.11.1831",
+  "tagWashington": "US SUPREME COURT · 1988",
+  "tagBerlin": "LANDGERICHT BERLIN · 2024",
+  "tagCalifornia": "US DISTRICT COURT, CALIFORNIA · 2024",
+  "denmark": "DENMARK"
+ },
+ "keep": [],
+ "quiet": []
+}

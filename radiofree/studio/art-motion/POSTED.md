@@ -42,7 +42,7 @@ The next RFH films and why each sits where it does: `plan/RFH-NEXT.md` (18 Oct).
 | Thu 22 Oct 00:50 | Coxon 6, Kill Switch (**approved 18 Oct**, v2; `films/22-10-Coxon6-Kill-Switch.mp4`) | RFH Instagram + X | Suggested (from `copy.json`): Your toaster's safety standard requires a backup off switch. The most powerful AI models? US federal rules are voluntary, and California's "kill switch" is still a study, due 16 November. Who decides when AI gets an off switch? #AI #AIsafety #California |
 | Sat 24 Oct 12:50 | **Open.** Doodle 3 Irreversible was scrapped (owner, 18 Oct). The reserve, *It Was Only a Test*, can take it if made in time | RFH Instagram + X | — |
 | Tue 27 Oct 00:50 | Welcome Home, tech satire 2 after Teslur (in production; still wants the launch-film frames) | RFH Instagram + X | — (write when finished) |
-| Thu 29 Oct 12:50 | Nordic 2, The Scoreboard (in production, angle B) | RFH Instagram + X | — |
+| Thu 29 Oct 12:50 | Nordic 2, The Scoreboard (built, waiting for approval; `previews/18-10-Scoreboard-en.mp4`) | RFH Instagram + X | — |
 | Sat 31 Oct 00:50 | Coxon 7, The Day After (proposed; midterm run-up) | RFH Instagram + X | — |
 
 ## Waiting
