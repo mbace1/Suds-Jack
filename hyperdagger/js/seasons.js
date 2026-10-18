@@ -340,7 +340,7 @@ export const SEASONS = [
     waves: [
       { t: 0,   kind: 'trucks', density: 0.3, gap: 14 },    // learn the platforms
       { t: 35,  kind: 'gaze', density: 0.5, gap: 12 },      // lock ahead
-      { t: 80,  kind: 'cargo', density: 0.4, gap: 15 },     // stomp/save pressure
+      { t: 80,  kind: 'skulls', density: 0.4, gap: 15 },    // a lighter beat (v58: was 'cargo', the stomp/save beat, gone with HD-018)
       { t: 130, kind: 'ahead', density: 0.7, gap: 10 },     // enemies only forward
       { t: 180, kind: 'finale', density: 1.0, gap: 8 },
     ],
@@ -387,16 +387,13 @@ export const SEASONS = [
     // has been held (up to `full`). A glance sends a lazy missile that can
     // miss; a held look sends a fast one that will not.
     gaze: { range: 24, cone: 0.16, grace: 0.2, dwell: 0.25, full: 1.2,
-      speed: [16, 40], turn: [1.2, 10], every: [0.5, 0.26], life: 2.6, damage: 1,
-      trucks: true },   // v53: the cabs lock too — three missiles and a truck jackknifes and spills its load
-    // v54 CARGO IS THE SCORE: the run's time is the clock PLUS the load — a
-    // crate that spills onto the road costs `spill` seconds, a loose crate you
-    // land on and set back pays `save`. The convoy is a load you are keeping whole.
-    cargoScore: { spill: 1, save: 1 },
-    // HD-010: the run-start card and the clock's label say the line above in
-    // words (a season's `goal`/`clock` beat its mode's when it runs that mode)
-    goal: 'STAY ON THE CONVOY · CARGO IS THE SCORE',
-    clock: 'TIME + CARGO',
+      speed: [16, 40], turn: [1.2, 10], every: [0.5, 0.26], life: 2.6, damage: 1 },
+    // v58 (HD-018, Mikael: *you don't shoot trucks.. or save crates*): the look
+    // locks skulls only, and the load is not the score. v53 let the cabs lock
+    // and v54 paid for crates set back by a stomp and charged for crates the
+    // road took. Crates still ride, slide and spill, as floor and as spectacle,
+    // and the clock is TIME SURVIVED like the TRUCK mode's (no goal/clock of
+    // the season's own, so the mode's words show).
     end: 300,
     built: true,
     todo: [

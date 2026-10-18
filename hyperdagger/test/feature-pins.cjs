@@ -9,8 +9,9 @@
 //     - THE ROCKFALL: a rock on you kills (PURE) / costs exactly the HYPER hit (HYPER)
 //     - the WAVE: standing in the crest kills (PURE) / costs exactly the hit (HYPER)
 //     - THE DRAIN: a drained sea strikes nobody, in either mode
-//     - a hit never touches the score: the run's time stays gameTime + runBonus,
-//       runBonus 0 off the convoy, and PURE's HUD clock is that time
+//     - PURE's HUD clock is the run time. (Until v58 a check also asked that a
+//       hit left runBonus at 0; v58 removed runBonus, season 3's cargo, so the
+//       score is gameTime by construction and that check could no longer fail.)
 //   input, per mode: a pad's A jumps, a pad's B dashes only where the mode has
 //   a dash, the pad's left stick moves; a touch tap on the right stick jumps.
 //
@@ -101,13 +102,12 @@ s.listen(0, '127.0.0.1', async () => {
           return st.state === 'dead' || maxDrop > 1;
         });
         d.setInvulnerable(true);
-        const st = d.getState(), run = d.getRun();
-        return { struck, state: st.state, maxDrop: +maxDrop.toFixed(2), runBonus: run.runBonus, kind: d.getFinale().kind };
+        const st = d.getState();
+        return { struck, state: st.state, maxDrop: +maxDrop.toFixed(2), kind: d.getFinale().kind };
       });
       if (mode === 'pure') ok('ember/pure: THE ROCKFALL — a rock that lands on you is death', rock.kind === 'rockfall' && rock.state === 'dead', JSON.stringify(rock));
       else ok('ember/hyper: THE ROCKFALL — a rock that lands on you costs the HYPER hit (10 s of clock) and the run goes on',
         rock.kind === 'rockfall' && rock.state === 'playing' && Math.abs(rock.maxDrop - HIT) < 0.6, JSON.stringify(rock));
-      ok(`ember/${mode}: a rockfall hit never touches the score (runBonus 0 off the convoy)`, rock.runBonus === 0, JSON.stringify(rock));
 
       // ---------------------------------------------------- the clock on the HUD
       await fresh(q1);
@@ -115,9 +115,9 @@ s.listen(0, '127.0.0.1', async () => {
         const d = window.__hd.debug;
         await window.__wait(0.5);
         const st = d.getState();
-        return { timer: parseFloat(document.getElementById('timer').textContent), gameTime: st.gameTime, lifeT: st.lifeT, runBonus: d.getRun().runBonus };
+        return { timer: parseFloat(document.getElementById('timer').textContent), gameTime: st.gameTime, lifeT: st.lifeT };
       });
-      if (mode === 'pure') ok('ember/pure: the HUD clock is the run time (gameTime + runBonus)', Math.abs(hud.timer - (hud.gameTime + hud.runBonus)) < 0.25, JSON.stringify(hud));
+      if (mode === 'pure') ok('ember/pure: the HUD clock is the run time (gameTime)', Math.abs(hud.timer - hud.gameTime) < 0.25, JSON.stringify(hud));
       else ok('ember/hyper: the HUD clock is the life clock', Math.abs(hud.timer - hud.lifeT) < 0.25, JSON.stringify(hud));
 
       // ---------------------------------------------------- input: pad and touch
@@ -191,12 +191,11 @@ s.listen(0, '127.0.0.1', async () => {
           return st.state === 'dead' || maxDrop > 1;
         });
         d.setInvulnerable(true);
-        return { peak: +peak.toFixed(2), state: d.getState().state, maxDrop: +maxDrop.toFixed(2), runBonus: d.getRun().runBonus };
+        return { peak: +peak.toFixed(2), state: d.getState().state, maxDrop: +maxDrop.toFixed(2) };
       });
       if (mode === 'pure') ok('inca/pure: the WAVE — a body standing in the crest dies', wave.state === 'dead', JSON.stringify(wave));
       else ok('inca/hyper: the WAVE — a body standing in the crest pays the HYPER hit (10 s) and lives',
         wave.state === 'playing' && Math.abs(wave.maxDrop - HIT) < 0.6, JSON.stringify(wave));
-      ok(`inca/${mode}: a wave hit never touches the score (runBonus 0)`, wave.runBonus === 0, JSON.stringify(wave));
 
       await fresh(q2);
       const drain = await q2.evaluate(async () => {

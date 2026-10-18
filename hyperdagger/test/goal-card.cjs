@@ -41,7 +41,8 @@ const RUNS = [
   ['void', 'menu', 'SURVIVE THE SWARM · ONE TOUCH KILLS', /^TIME SURVIVED$/],
   ['ember', 'season', 'SURVIVE THE CLOCK · KILLS BUY TIME', /^YOUR LIFE · KILLS ADD TIME$/],
   ['inca', 'season', 'SURVIVE THE CLOCK · KILLS BUY TIME', /^YOUR LIFE · KILLS ADD TIME$/],
-  ['haul', 'season', 'STAY ON THE CONVOY · CARGO IS THE SCORE', /^TIME \+ CARGO · \d+ CRATES ON BOARD · [+-]\d+s$/],
+  // v58 (HD-018): the load left the score, so season 3 says the TRUCK mode's words
+  ['haul', 'season', 'STAY ON THE CONVOY · THE ROAD KILLS', /^TIME SURVIVED$/],
   ['free', 'menu', null, /\S/],   // a fresh menu: whatever it holds, the card is that run's line
 ];
 // #593's in-run kill counter, under the clock
