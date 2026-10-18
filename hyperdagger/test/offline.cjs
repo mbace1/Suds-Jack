@@ -82,7 +82,8 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
   ok('the game boots with the network gone', booted);
   if (booted) {
     await pg.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
-    await pg.mouse.click(550, 360);
+    // HD-019: START is the way in (a tap on the empty menu starts nothing)
+    { const bb = await pg.locator('#startBtn').boundingBox(); await pg.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2); }
     const playing = await pg.waitForFunction(
       () => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 }).then(() => true, () => false);
     ok('a run starts offline', playing);

@@ -76,9 +76,13 @@ srv.listen(0, '127.0.0.1', async () => {
         // it; VOID has no tab, so the hook selects it and START starts it
         if (how === 'season') await p.locator(`#msg button.mn-season[data-season="${id}"]`).dispatchEvent('pointerdown');
         else if (id !== 'free') await p.evaluate(sid => window.__hd.debug.setSeason(sid), id);
+        // a finger on START, as on the phone these views are: a mouse click
+        // asks for the pointer lock, and a locked pointer halves the software
+        // renderer's frame rate in headless Chromium (measured: ~400 ms a frame
+        // against ~200), which is the harness and not the game
         {
           const box = await p.locator('#startBtn').boundingBox();
-          if (box) await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+          if (box) await p.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
           else await p.evaluate(() => window.__hd.debug.startGame());
         }
         const t0 = Date.now();
