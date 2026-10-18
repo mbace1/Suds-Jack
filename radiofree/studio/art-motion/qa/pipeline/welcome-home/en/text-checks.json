@@ -1,0 +1,462 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The device recognises up to six enrolled household members by face (Tom's Guide,"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy data.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy data.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy data.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy data source",
+  "result": "pass",
+  "why": "Personal data is drawn from the user's iPhone and is not stored on the display: "
+ },
+ {
+  "check": "copy data pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy face.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy face.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy face.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy face source",
+  "result": "pass",
+  "why": "The company's side: camera and microphone data processed in Secure Exclaves 'can"
+ },
+ {
+  "check": "copy face pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ad.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy ad.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy ad.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy ad source",
+  "result": "pass",
+  "why": "The launch film ends with the family gathered round the display, using the secur"
+ },
+ {
+  "check": "copy ad pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line. A question, by design: how a visitor's face is handled is un"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.tag",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "33 words: The display says your data is not stored on it once you leave, but its maker has not said "
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "33 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 521 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 269, 'y': 191, 'w': 543, 'h': 334}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 4.45 s (69 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 3.49 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 6.46 → scrim 0.02"
+ },
+ {
+  "check": "width en:data",
+  "result": "pass",
+  "why": "widest line 719 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:data",
+  "result": "pass",
+  "why": "box {'x': 170, 'y': 191, 'w': 741, 'h': 247}"
+ },
+ {
+  "check": "reading time en:data",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.40 s (68 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:data",
+  "result": "pass",
+  "why": "last word up 3.56 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:data",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:data",
+  "result": "pass",
+  "why": "picture behind: edge 5.25 → scrim 0.0"
+ },
+ {
+  "check": "width en:face",
+  "result": "pass",
+  "why": "widest line 652 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:face",
+  "result": "pass",
+  "why": "box {'x': 203, 'y': 191, 'w': 674, 'h': 247}"
+ },
+ {
+  "check": "reading time en:face",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.35 s (67 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:face",
+  "result": "pass",
+  "why": "last word up 3.63 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:face",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:face",
+  "result": "pass",
+  "why": "picture behind: edge 2.83 → scrim 0.0"
+ },
+ {
+  "check": "width en:ad",
+  "result": "pass",
+  "why": "widest line 600 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:ad",
+  "result": "pass",
+  "why": "box {'x': 229, 'y': 191, 'w': 622, 'h': 334}"
+ },
+ {
+  "check": "reading time en:ad",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 5.30 s (86 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:ad",
+  "result": "pass",
+  "why": "last word up 3.02 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:ad",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:ad",
+  "result": "pass",
+  "why": "picture behind: edge 2.18 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 462 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 298, 'y': 191, 'w': 484, 'h': 247}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 3.65 s (53 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.24 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 0.51 → scrim 0.0"
+ },
+ {
+  "check": "ui en:tag",
+  "result": "pass",
+  "why": "\"A REAL AD, REMADE IN CLAY\" spans x 110–607"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "A home screen that knows your face. What | does it keep when you leave?"
+ },
+ {
+  "check": "sidecar lines en:data",
+  "result": "pass",
+  "why": "Your messages and calendar: its maker says | they're not stored on it."
+ },
+ {
+  "check": "sidecar lines en:face",
+  "result": "pass",
+  "why": "Your face? It says nobody can see it. How | long it's kept: not said."
+ },
+ {
+  "check": "sidecar lines en:ad",
+  "result": "warn",
+  "why": "Its own ad ends with the family watching the | daughter's boyfriend leave on its camera."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "It forgets your data when you leave. And | your guests?"
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.58 s on this master, fi needs 4.71 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Kotinäyttö, joka tuntee kasvosi. Mitä se | säilyttää, kun lähdet?"
+ },
+ {
+  "check": "sidecar fi:data",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 5.29 s"
+ },
+ {
+  "check": "sidecar lines fi:data",
+  "result": "pass",
+  "why": "Viestisi ja kalenterisi: valmistaja sanoo, | ettei niitä tallenneta siihen."
+ },
+ {
+  "check": "sidecar fi:face",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines fi:face",
+  "result": "pass",
+  "why": "Kasvosi? Se sanoo, ettei kukaan näe niitä. | Säilytysaika: ei kerrota."
+ },
+ {
+  "check": "sidecar fi:ad",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 5.94 s"
+ },
+ {
+  "check": "sidecar lines fi:ad",
+  "result": "warn",
+  "why": "Sen oma mainos päättyy, kun perhe katsoo | sen kamerasta tyttären poikaystävän lähtöä."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 3.71 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Se unohtaa tietosi, kun lähdet. Entä | vieraasi?"
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "pass",
+  "why": "5.58 s on this master, ja needs 4.67 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "pass",
+  "why": "顔を覚えるホーム画面。 | 出かけたら、何が残る？"
+ },
+ {
+  "check": "sidecar ja:data",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 6.17 s"
+ },
+ {
+  "check": "sidecar lines ja:data",
+  "result": "pass",
+  "why": "メッセージとカレンダーは本体に | 保存されない、とメーカーは言う。"
+ },
+ {
+  "check": "sidecar ja:face",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.83 s"
+ },
+ {
+  "check": "sidecar lines ja:face",
+  "result": "pass",
+  "why": "顔は？誰にも見えない、と言う。 | 保存期間は明かされていない。"
+ },
+ {
+  "check": "sidecar ja:ad",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.50 s"
+ },
+ {
+  "check": "sidecar lines ja:ad",
+  "result": "pass",
+  "why": "広告の最後、家族はそのカメラで | 娘の彼氏が帰るのを見る。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 4.17 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "出かけたらデータは忘れる。 | お客さんは？"
+ }
+]
