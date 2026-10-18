@@ -1,9 +1,9 @@
 {
  "wav": "build/en/score.wav",
  "measured": {
-  "I": -14.1,
-  "LRA": 1.1,
-  "TP": -3.7
+  "I": -13.9,
+  "LRA": 1.6,
+  "TP": -3.5
  },
  "limiter": [
   "None:10.5"
@@ -11,37 +11,77 @@
  "ducks": [
   {
    "t0": 0.7,
-   "t1": 2.335,
+   "t1": 2.0020000000000002,
    "db": -3.5,
    "attack": 0.06,
    "release": 0.3,
-   "why": "caption toaster reveal"
+   "why": "caption leaflet reveal"
   },
   {
-   "t0": 5.05,
-   "t1": 6.640000000000001,
+   "t0": 3.85,
+   "t1": 5.493,
    "db": -3.5,
    "attack": 0.06,
    "release": 0.3,
-   "why": "caption model reveal"
+   "why": "caption second reveal"
+  },
+  {
+   "t0": 7.7,
+   "t1": 9.767000000000001,
+   "db": -3.5,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption report reveal"
+  },
+  {
+   "t0": 12.8,
+   "t1": 14.799,
+   "db": -3.5,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption voluntary reveal"
+  },
+  {
+   "t0": 17.4,
+   "t1": 20.058,
+   "db": -3.5,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption study reveal"
+  },
+  {
+   "t0": 23,
+   "t1": 26.174,
+   "db": -3.5,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption washer reveal"
+  },
+  {
+   "t0": 29.9,
+   "t1": 31.854,
+   "db": -3.5,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption last reveal"
   }
  ],
  "quiet": [
   [
-   7.47,
-   8.6
+   19.32,
+   20.400000000000002
   ]
  ],
  "checks": [
   {
    "check": "loudness",
    "result": "pass",
-   "why": "-14.1 LUFS integrated (target -14.0)"
+   "why": "-13.9 LUFS integrated (target -14.0)"
   },
   {
    "check": "true peak",
    "result": "pass",
-   "why": "-3.7 dBTP (at most -1.0)"
+   "why": "-3.5 dBTP (at most -1.0)"
   },
   {
    "check": "silence",
@@ -49,15 +89,20 @@
    "why": "no unmarked gap over 1.5 s"
   },
   {
-   "check": "coverage",
+   "check": "continuity",
    "result": "pass",
-   "why": "34/34 cues have a sound within 40 ms"
+   "why": "0% of the film below \u221235 dBFS outside the quiet spans (at most 8%)"
   },
   {
-   "check": "exempt end",
+   "check": "coverage",
    "result": "pass",
-   "why": "the last frame: the sting lands 0.6 s before it and rings out across it"
+   "why": "50/50 cues have a sound within 40 ms"
+  },
+  {
+   "check": "exempt word leaflet.",
+   "result": "pass",
+   "why": "the last pop word lands with the fold (EV fold = the pop + 0.1) and the sting 0.6 s before the end"
   }
  ],
- "placed": 164
+ "placed": 434
 }

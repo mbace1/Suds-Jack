@@ -1,7 +1,33 @@
 1
-00:00:00,700 --> 00:00:04,350
-Its standard asks for a second off switch.
+00:00:00,700 --> 00:00:03,600
+A toaster comes with a safety leaflet.
 
 2
-00:00:05,050 --> 00:00:11,000
-Its kill switch: a study, due 16 November.
+00:00:03,850 --> 00:00:07,450
+Its US safety standard asks for a second
+off switch.
+
+3
+00:00:07,700 --> 00:00:12,050
+Find a dangerous defect? Tell the
+regulator within 24 hours.
+
+4
+00:00:12,800 --> 00:00:17,150
+A frontier AI model. US federal
+pre-release rules: voluntary.
+
+5
+00:00:17,400 --> 00:00:22,750
+California's governor vetoed a shutdown rule
+in 2024. In September he ordered a study.
+
+6
+00:00:23,000 --> 00:00:29,550
+Microsoft's president: "Right now, your washing
+machine is subject to more safety rules than AI."
+
+7
+00:00:29,900 --> 00:00:34,400
+The toaster has a second off switch. It's
+in the leaflet.

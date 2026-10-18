@@ -1,51 +1,176 @@
 [
  {
-  "check": "copy toaster.en",
+  "check": "copy leaflet.en",
   "result": "pass",
   "why": "present"
  },
  {
-  "check": "copy toaster.fi",
+  "check": "copy leaflet.fi",
   "result": "pass",
   "why": "present"
  },
  {
-  "check": "copy toaster.ja",
+  "check": "copy leaflet.ja",
   "result": "pass",
   "why": "present"
  },
  {
-  "check": "copy toaster source",
+  "check": "copy leaflet source",
   "result": "pass",
-  "why": "UL 1026 (household cooking appliances, toasters included): the 6th-edition revis"
+  "why": "The station's own example (not Microsoft's: Brad Smith said washing machine and "
  },
  {
-  "check": "copy toaster pop word",
+  "check": "copy leaflet pop word",
   "result": "pass",
   "why": "every language marks one"
  },
  {
-  "check": "copy model.en",
+  "check": "copy second.en",
   "result": "pass",
   "why": "present"
  },
  {
-  "check": "copy model.fi",
+  "check": "copy second.fi",
   "result": "pass",
   "why": "present"
  },
  {
-  "check": "copy model.ja",
+  "check": "copy second.ja",
   "result": "pass",
   "why": "present"
  },
  {
-  "check": "copy model source",
+  "check": "copy second source",
   "result": "pass",
-  "why": "California Executive Order N-9-26, signed 18 Sept 2026, asks for recommendations"
+  "why": "UL 1026: the 6th-edition revisions added a redundant control and a secondary ope"
  },
  {
-  "check": "copy model pop word",
+  "check": "copy second pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy report.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy report.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy report.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy report source",
+  "result": "pass",
+  "why": "Consumer Product Safety Act §15(b) (15 U.S.C. §2064(b); 16 CFR 1115): report 'im"
+ },
+ {
+  "check": "copy report pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy voluntary.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy voluntary.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy voluntary.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy voluntary source",
+  "result": "pass",
+  "why": "EO 14409 (2 June 2026) asks developers for up to 30 days' early access and says "
+ },
+ {
+  "check": "copy voluntary pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy study.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy study.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy study.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy study source",
+  "result": "pass",
+  "why": "SB 1047 (a full-shutdown capability before training) vetoed 29 Sept 2024 (The Hi"
+ },
+ {
+  "check": "copy study pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy washer.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy washer.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy washer.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy washer source",
+  "result": "pass",
+  "why": "Brad Smith, BBC 'Big Boss Interview', October 2026: \"Right now, your washing mac"
+ },
+ {
+  "check": "copy washer pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line."
+ },
+ {
+  "check": "copy last pop word",
   "result": "pass",
   "why": "every language marks one"
  },
@@ -65,74 +190,274 @@
   "why": "all languages"
  },
  {
-  "check": "copy ui.dateline",
+  "check": "copy ui.defect",
   "result": "pass",
   "why": "all languages"
  },
  {
-  "check": "width en:toaster",
+  "check": "copy ui.voluntary",
   "result": "pass",
-  "why": "widest line 735 px (limit 800)"
+  "why": "all languages"
  },
  {
-  "check": "safe zone en:toaster",
+  "check": "copy ui.tagReport",
   "result": "pass",
-  "why": "box {'x': 161, 'y': 162, 'w': 757, 'h': 308}"
+  "why": "all languages"
  },
  {
-  "check": "reading time en:toaster",
+  "check": "copy ui.tagFederal",
   "result": "pass",
-  "why": "on screen 3.65 s, needs 3.10 s (42 chars at 20/s + 1 s)"
+  "why": "all languages"
  },
  {
-  "check": "last word en:toaster",
+  "check": "copy ui.tagState",
   "result": "pass",
-  "why": "last word up 2.41 s (at least 0.8)"
+  "why": "all languages"
  },
  {
-  "check": "key detail en:toaster",
+  "check": "copy ui.tagBBC",
   "result": "pass",
-  "why": "covers nothing the shot needs"
+  "why": "all languages"
  },
  {
-  "check": "scrim en:toaster",
+  "check": "width en:leaflet",
   "result": "pass",
-  "why": "picture behind: edge 15.35 → scrim 0.48"
+  "why": "widest line 488 px (limit 800)"
  },
  {
-  "check": "width en:model",
+  "check": "safe zone en:leaflet",
   "result": "pass",
-  "why": "widest line 751 px (limit 800)"
+  "why": "box {'x': 285, 'y': 191, 'w': 510, 'h': 160}"
  },
  {
-  "check": "safe zone en:model",
+  "check": "reading time en:leaflet",
   "result": "pass",
-  "why": "box {'x': 153, 'y': 162, 'w': 773, 'h': 308}"
+  "why": "on screen 2.90 s, needs 2.90 s (38 chars at 20/s + 1 s)"
  },
  {
-  "check": "reading time en:model",
+  "check": "last word en:leaflet",
   "result": "pass",
-  "why": "on screen 5.95 s, needs 3.10 s (42 chars at 20/s + 1 s)"
+  "why": "last word up 2.00 s (at least 0.8)"
  },
  {
-  "check": "last word en:model",
-  "result": "pass",
-  "why": "last word up 4.76 s (at least 0.8)"
- },
- {
-  "check": "key detail en:model",
+  "check": "key detail en:leaflet",
   "result": "pass",
   "why": "covers nothing the shot needs"
  },
  {
-  "check": "scrim en:model",
+  "check": "scrim en:leaflet",
   "result": "pass",
-  "why": "picture behind: edge 19.38 → scrim 0.69"
+  "why": "picture behind: edge 0.28 → scrim 0.0"
  },
  {
-  "check": "ui en:dateline",
+  "check": "width en:second",
+  "result": "pass",
+  "why": "widest line 652 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:second",
+  "result": "pass",
+  "why": "box {'x': 203, 'y': 191, 'w': 674, 'h': 160}"
+ },
+ {
+  "check": "reading time en:second",
+  "result": "pass",
+  "why": "on screen 3.60 s, needs 3.60 s (52 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:second",
+  "result": "pass",
+  "why": "last word up 2.36 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:second",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:second",
+  "result": "pass",
+  "why": "picture behind: edge 0.27 → scrim 0.0"
+ },
+ {
+  "check": "width en:report",
+  "result": "pass",
+  "why": "widest line 605 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:report",
+  "result": "pass",
+  "why": "box {'x': 226, 'y': 191, 'w': 627, 'h': 247}"
+ },
+ {
+  "check": "reading time en:report",
+  "result": "pass",
+  "why": "on screen 4.35 s, needs 4.00 s (60 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:report",
+  "result": "pass",
+  "why": "last word up 2.68 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:report",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:report",
+  "result": "pass",
+  "why": "picture behind: edge 16.83 → scrim 0.55"
+ },
+ {
+  "check": "width en:voluntary",
+  "result": "pass",
+  "why": "widest line 685 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:voluntary",
+  "result": "pass",
+  "why": "box {'x': 187, 'y': 191, 'w': 707, 'h': 247}"
+ },
+ {
+  "check": "reading time en:voluntary",
+  "result": "pass",
+  "why": "on screen 4.35 s, needs 4.05 s (61 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:voluntary",
+  "result": "pass",
+  "why": "last word up 2.75 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:voluntary",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:voluntary",
+  "result": "pass",
+  "why": "picture behind: edge 15.87 → scrim 0.51"
+ },
+ {
+  "check": "width en:study",
+  "result": "pass",
+  "why": "widest line 796 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:study",
+  "result": "pass",
+  "why": "box {'x': 131, 'y': 191, 'w': 818, 'h': 247}"
+ },
+ {
+  "check": "reading time en:study",
+  "result": "pass",
+  "why": "on screen 5.35 s, needs 5.30 s (86 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:study",
+  "result": "pass",
+  "why": "last word up 3.09 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:study",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:study",
+  "result": "pass",
+  "why": "picture behind: edge 20.35 → scrim 0.72"
+ },
+ {
+  "check": "width en:washer",
+  "result": "pass",
+  "why": "widest line 651 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:washer",
+  "result": "pass",
+  "why": "box {'x': 204, 'y': 191, 'w': 673, 'h': 334}"
+ },
+ {
+  "check": "reading time en:washer",
+  "result": "pass",
+  "why": "on screen 6.55 s, needs 5.85 s (97 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:washer",
+  "result": "pass",
+  "why": "last word up 3.78 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:washer",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:washer",
+  "result": "pass",
+  "why": "picture behind: edge 17.97 → scrim 0.62"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 474 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 292, 'y': 191, 'w': 496, 'h': 247}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 4.50 s, needs 3.85 s (57 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 2.95 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 5.09 → scrim 0.0"
+ },
+ {
+  "check": "ui en:tagReport",
+  "result": "pass",
+  "why": "\"CONSUMER PRODUCT SAFETY ACT § 15(b)\" spans x 110–782"
+ },
+ {
+  "check": "ui en:tagFederal",
+  "result": "pass",
+  "why": "\"WASHINGTON · EO 14409\" spans x 110–540"
+ },
+ {
+  "check": "ui en:tagState",
   "result": "pass",
   "why": "\"SACRAMENTO · ORDER N-9-26\" spans x 110–612"
+ },
+ {
+  "check": "ui en:tagBBC",
+  "result": "pass",
+  "why": "\"BBC · OCT 2026\" spans x 110–407"
+ },
+ {
+  "check": "hold en:leaflet",
+  "result": "pass",
+  "why": "the picture holds 0.25 s before toToaster so the line can be read"
+ },
+ {
+  "check": "hold en:second",
+  "result": "pass",
+  "why": "the picture holds 0.35 s before toPost so the line can be read"
  },
  {
   "check": "native read en",
@@ -150,53 +475,178 @@
   "why": "NOT yet read by a native speaker"
  },
  {
-  "check": "sidecar lines en:toaster",
+  "check": "sidecar lines en:leaflet",
   "result": "pass",
-  "why": "Its standard asks for a second off switch."
+  "why": "A toaster comes with a safety leaflet."
  },
  {
-  "check": "sidecar lines en:model",
+  "check": "sidecar lines en:second",
   "result": "pass",
-  "why": "Its kill switch: a study, due 16 November."
+  "why": "Its US safety standard asks for a second | off switch."
  },
  {
-  "check": "sidecar fi:toaster",
+  "check": "sidecar lines en:report",
   "result": "pass",
-  "why": "3.65 s on this master, fi needs 3.41 s"
+  "why": "Find a dangerous defect? Tell the | regulator within 24 hours."
  },
  {
-  "check": "sidecar lines fi:toaster",
+  "check": "sidecar lines en:voluntary",
   "result": "pass",
-  "why": "Turvastandardi vaatii toisen katkaisimen."
+  "why": "A frontier AI model. US federal | pre-release rules: voluntary."
  },
  {
-  "check": "sidecar fi:model",
-  "result": "pass",
-  "why": "5.95 s on this master, fi needs 3.41 s"
- },
- {
-  "check": "sidecar lines fi:model",
-  "result": "pass",
-  "why": "Hätäkatkaisin: selvitys, määräaika 16.11."
- },
- {
-  "check": "sidecar ja:toaster",
+  "check": "sidecar lines en:study",
   "result": "warn",
-  "why": "3.65 s on this master, ja needs 5.00 s"
+  "why": "California's governor vetoed a shutdown rule | in 2024. In September he ordered a study."
  },
  {
-  "check": "sidecar lines ja:toaster",
-  "result": "pass",
-  "why": "その安全規格は2つ目の | 停止スイッチを求めている。"
+  "check": "sidecar lines en:washer",
+  "result": "warn",
+  "why": "Microsoft's president: \"Right now, your washing | machine is subject to more safety rules than AI.\""
  },
  {
-  "check": "sidecar ja:model",
+  "check": "sidecar lines en:last",
   "result": "pass",
-  "why": "5.95 s on this master, ja needs 5.00 s"
+  "why": "The toaster has a second off switch. It's | in the leaflet."
  },
  {
-  "check": "sidecar lines ja:model",
+  "check": "sidecar fi:leaflet",
+  "result": "warn",
+  "why": "2.90 s on this master, fi needs 3.29 s"
+ },
+ {
+  "check": "sidecar lines fi:leaflet",
   "result": "pass",
-  "why": "AIのキルスイッチは調査中。 | 期限は11月16日。"
+  "why": "Leivänpaahtimen mukana tulee turvaohje."
+ },
+ {
+  "check": "sidecar fi:second",
+  "result": "warn",
+  "why": "3.60 s on this master, fi needs 4.35 s"
+ },
+ {
+  "check": "sidecar lines fi:second",
+  "result": "pass",
+  "why": "Sen yhdysvaltalainen standardi vaatii | toisen katkaisimen."
+ },
+ {
+  "check": "sidecar fi:report",
+  "result": "warn",
+  "why": "4.35 s on this master, fi needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines fi:report",
+  "result": "pass",
+  "why": "Löytyikö vaarallinen vika? Ilmoita | viranomaiselle 24 tunnin sisällä."
+ },
+ {
+  "check": "sidecar fi:voluntary",
+  "result": "warn",
+  "why": "4.35 s on this master, fi needs 5.71 s"
+ },
+ {
+  "check": "sidecar lines fi:voluntary",
+  "result": "pass",
+  "why": "Huippuluokan tekoälymalli. Liittovaltion | säännöt ennen julkaisua: vapaaehtoiset."
+ },
+ {
+  "check": "sidecar fi:study",
+  "result": "warn",
+  "why": "5.35 s on this master, fi needs 6.47 s"
+ },
+ {
+  "check": "sidecar lines fi:study",
+  "result": "warn",
+  "why": "Kalifornian kuvernööri kaatoi sammutussäännön | vuonna 2024. Syyskuussa hän tilasi selvityksen."
+ },
+ {
+  "check": "sidecar fi:washer",
+  "result": "pass",
+  "why": "6.55 s on this master, fi needs 6.29 s"
+ },
+ {
+  "check": "sidecar lines fi:washer",
+  "result": "warn",
+  "why": "Microsoftin presidentti: \"Tällä hetkellä | pesukoneesi on tiukemmin säännelty kuin tekoäly.\""
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "4.50 s on this master, fi needs 4.35 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Leivänpaahtimessa on toinen katkaisin. Se | lukee ohjeessa."
+ },
+ {
+  "check": "sidecar ja:leaflet",
+  "result": "warn",
+  "why": "2.90 s on this master, ja needs 3.83 s"
+ },
+ {
+  "check": "sidecar lines ja:leaflet",
+  "result": "pass",
+  "why": "トースターには安全の説明書が | つく。"
+ },
+ {
+  "check": "sidecar ja:second",
+  "result": "warn",
+  "why": "3.60 s on this master, ja needs 4.83 s"
+ },
+ {
+  "check": "sidecar lines ja:second",
+  "result": "pass",
+  "why": "米国の安全規格は2つ目の | 停止スイッチを求める。"
+ },
+ {
+  "check": "sidecar ja:report",
+  "result": "warn",
+  "why": "4.35 s on this master, ja needs 5.17 s"
+ },
+ {
+  "check": "sidecar lines ja:report",
+  "result": "pass",
+  "why": "危険な欠陥を見つけたら？24時間 | 以内に当局へ報告。"
+ },
+ {
+  "check": "sidecar ja:voluntary",
+  "result": "warn",
+  "why": "4.35 s on this master, ja needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines ja:voluntary",
+  "result": "pass",
+  "why": "最先端のAIモデル。米連邦の | 公開前ルールは任意。"
+ },
+ {
+  "check": "sidecar ja:study",
+  "result": "warn",
+  "why": "5.35 s on this master, ja needs 7.33 s"
+ },
+ {
+  "check": "sidecar lines ja:study",
+  "result": "warn",
+  "why": "カリフォルニア州知事は2024年、停止の | 義務化を拒否。9月に命じたのは調査。"
+ },
+ {
+  "check": "sidecar ja:washer",
+  "result": "warn",
+  "why": "6.55 s on this master, ja needs 7.33 s"
+ },
+ {
+  "check": "sidecar lines ja:washer",
+  "result": "warn",
+  "why": "マイクロソフト社長：「今は洗濯機のほうが | AIより多くの安全規則に従っている」"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "warn",
+  "why": "4.50 s on this master, ja needs 6.17 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "warn",
+  "why": "トースターには2つ目の停止スイッチが | ある。説明書に書いてある。"
  }
 ]

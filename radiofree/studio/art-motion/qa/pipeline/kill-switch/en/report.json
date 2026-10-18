@@ -1,75 +1,248 @@
 {
  "lang": "en",
- "end": 11,
- "holds": [],
+ "end": 34.6,
+ "holds": [
+  {
+   "caption": "leaflet",
+   "beat": "toToaster",
+   "extra": 0.25
+  },
+  {
+   "caption": "second",
+   "beat": "toPost",
+   "extra": 0.35
+  }
+ ],
  "captions": [
   {
-   "id": "toaster",
-   "text": "Its standard / asks for a [second] / off switch.",
-   "plain": "Its standard asks for a second off switch.",
+   "id": "leaflet",
+   "text": "A toaster comes / with a safety [leaflet].",
+   "plain": "A toaster comes with a safety leaflet.",
    "t0": 0.7,
-   "t1": 4.35,
-   "shown": 3.65,
-   "read": 3.1,
-   "lastWord": 1.935,
+   "t1": 3.6,
+   "shown": 2.9,
+   "read": 2.9,
+   "lastWord": 1.602,
    "widths": [
-    519,
-    735,
-    439
+    392,
+    488
    ],
    "box": {
-    "x": 161,
-    "y": 162,
-    "w": 757,
-    "h": 308
+    "x": 285,
+    "y": 191,
+    "w": 510,
+    "h": 160
    },
    "inSafe": true,
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 15.35,
-    "busy": 0.67
+    "edge": 0.28,
+    "busy": 0
    },
    "native": true
   },
   {
-   "id": "model",
-   "text": "Its kill switch: / a [study], / due 16 November.",
-   "plain": "Its kill switch: a study, due 16 November.",
-   "t0": 5.05,
-   "t1": 11,
-   "shown": 5.95,
-   "read": 3.1,
-   "lastWord": 6.24,
+   "id": "second",
+   "text": "Its US safety standard asks / for a [second] off switch.",
+   "plain": "Its US safety standard asks for a second off switch.",
+   "t0": 3.85,
+   "t1": 7.45,
+   "shown": 3.6,
+   "read": 3.6,
+   "lastWord": 5.093,
    "widths": [
-    576,
-    344,
-    751
+    652,
+    551
    ],
    "box": {
-    "x": 153,
-    "y": 162,
-    "w": 773,
-    "h": 308
+    "x": 203,
+    "y": 191,
+    "w": 674,
+    "h": 160
    },
    "inSafe": true,
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 19.38,
-    "busy": 0.96
+    "edge": 0.27,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "report",
+   "text": "Find a dangerous defect? / Tell the regulator / within [24 hours].",
+   "plain": "Find a dangerous defect? Tell the regulator within 24 hours.",
+   "t0": 7.7,
+   "t1": 12.05,
+   "shown": 4.35,
+   "read": 4,
+   "lastWord": 9.367,
+   "widths": [
+    605,
+    412,
+    384
+   ],
+   "box": {
+    "x": 226,
+    "y": 191,
+    "w": 627,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 16.83,
+    "busy": 0.77
+   },
+   "native": true
+  },
+  {
+   "id": "voluntary",
+   "text": "A frontier AI model. / US federal pre-release rules: / [voluntary].",
+   "plain": "A frontier AI model. US federal pre-release rules: voluntary.",
+   "t0": 12.8,
+   "t1": 17.15,
+   "shown": 4.35,
+   "read": 4.05,
+   "lastWord": 14.399,
+   "widths": [
+    462,
+    685,
+    254
+   ],
+   "box": {
+    "x": 187,
+    "y": 191,
+    "w": 707,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 15.87,
+    "busy": 0.71
+   },
+   "native": true
+  },
+  {
+   "id": "study",
+   "text": "California's governor vetoed / a [shutdown] rule in 2024. / In September he ordered a study.",
+   "plain": "California's governor vetoed a shutdown rule in 2024. In September he ordered a study.",
+   "t0": 17.4,
+   "t1": 22.75,
+   "shown": 5.35,
+   "read": 5.3,
+   "lastWord": 19.658,
+   "widths": [
+    688,
+    583,
+    796
+   ],
+   "box": {
+    "x": 131,
+    "y": 191,
+    "w": 818,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 20.35,
+    "busy": 1
+   },
+   "native": true
+  },
+  {
+   "id": "washer",
+   "text": "Microsoft's president: / \"Right now, your washing / machine is subject to more / safety rules than [AI].\"",
+   "plain": "Microsoft's president: \"Right now, your washing machine is subject to more safety rules than AI.\"",
+   "t0": 23,
+   "t1": 29.55,
+   "shown": 6.55,
+   "read": 5.85,
+   "lastWord": 25.774,
+   "widths": [
+    523,
+    615,
+    651,
+    502
+   ],
+   "box": {
+    "x": 204,
+    "y": 191,
+    "w": 673,
+    "h": 334
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 17.97,
+    "busy": 0.86
+   },
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "The toaster has / a second off switch. / It's in the [leaflet].",
+   "plain": "The toaster has a second off switch. It's in the leaflet.",
+   "t0": 29.9,
+   "t1": 34.4,
+   "shown": 4.5,
+   "read": 3.85,
+   "lastWord": 31.454,
+   "widths": [
+    373,
+    474,
+    393
+   ],
+   "box": {
+    "x": 292,
+    "y": 191,
+    "w": 496,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 5.09,
+    "busy": 0
    },
    "native": true
   }
  ],
  "ui": {
-  "dateline": {
+  "tagReport": {
+   "text": "CONSUMER PRODUCT SAFETY ACT § 15(b)",
+   "x0": 110,
+   "x1": 782,
+   "ok": true
+  },
+  "tagFederal": {
+   "text": "WASHINGTON · EO 14409",
+   "x0": 110,
+   "x1": 540,
+   "ok": true
+  },
+  "tagState": {
    "text": "SACRAMENTO · ORDER N-9-26",
    "x0": 110,
    "x1": 612,
    "ok": true
+  },
+  "tagBBC": {
+   "text": "BBC · OCT 2026",
+   "x0": 110,
+   "x1": 407,
+   "ok": true
   }
  },
- "frames": 330,
+ "frames": 1038,
  "fps": 30
 }

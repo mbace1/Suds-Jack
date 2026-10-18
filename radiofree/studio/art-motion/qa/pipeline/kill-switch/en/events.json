@@ -1,157 +1,581 @@
 {
  "enter": 0,
  "land": 0.5,
- "punch1": 0.65,
- "toToaster": 1.25,
- "jam": 2.15,
- "flip2": 2.65,
- "toGrid": 3.05,
- "picts": 3.15,
- "flipA": 4.45,
- "flipB": 4.95,
- "roll": 5.25,
- "rollEnd": 6.05,
- "slap": 6.5,
- "tap": 7.45,
- "pull": 8.6,
- "tagIn": 8.85,
- "end": 11,
+ "picts": 0.9,
+ "toToaster": 3.75,
+ "jam": 4.65,
+ "flip2": 5.15,
+ "toPost": 7.6,
+ "drop": 8.1,
+ "clock": 8.6,
+ "flipA": 12.2,
+ "flipB": 12.7,
+ "roll": 13,
+ "rollEnd": 13.799999999999999,
+ "toNote": 17.3,
+ "slap": 17.700000000000003,
+ "tap": 19.3,
+ "toWasher": 22.900000000000002,
+ "back": 29.700000000000003,
+ "end": 34.6,
  "lang": "en",
- "holds": [],
+ "holds": [
+  {
+   "caption": "leaflet",
+   "beat": "toToaster",
+   "extra": 0.25
+  },
+  {
+   "caption": "second",
+   "beat": "toPost",
+   "extra": 0.35
+  }
+ ],
+ "vol": 14.399090909090908,
+ "fold": 31.553636363636365,
  "pictTimes": [
-  3.15,
-  3.235,
-  3.32,
-  3.405,
-  3.4899999999999998,
-  3.575,
-  3.66,
-  3.745
+  0.9,
+  0.985,
+  1.07,
+  1.155,
+  1.24,
+  1.3250000000000002,
+  1.4100000000000001,
+  1.495
  ],
  "rollTicks": [
-  5.35,
-  5.45,
-  5.55,
-  5.65,
-  5.75,
-  5.85,
-  5.95,
-  6.05
+  13.1,
+  13.2,
+  13.299999999999999,
+  13.399999999999999,
+  13.5,
+  13.6,
+  13.7,
+  13.799999999999999
+ ],
+ "clockTicks": [
+  8.6,
+  8.719999999999999,
+  8.84,
+  8.959999999999999,
+  9.08,
+  9.2,
+  9.32,
+  9.44,
+  9.559999999999999,
+  9.68,
+  9.799999999999999,
+  9.92
+ ],
+ "washTimes": [
+  24.000000000000004,
+  24.160000000000004,
+  24.320000000000004,
+  24.480000000000004,
+  24.640000000000004,
+  24.800000000000004,
+  24.960000000000004,
+  25.120000000000005
  ],
  "words": [
   {
-   "w": "Its",
+   "w": "A",
    "t": 0.7,
    "pop": false,
-   "caption": "toaster"
+   "caption": "leaflet"
+  },
+  {
+   "w": "toaster",
+   "t": 0.745,
+   "pop": false,
+   "caption": "leaflet"
+  },
+  {
+   "w": "comes",
+   "t": 0.927,
+   "pop": false,
+   "caption": "leaflet"
+  },
+  {
+   "w": "with",
+   "t": 1.284,
+   "pop": false,
+   "caption": "leaflet"
+  },
+  {
+   "w": "a",
+   "t": 1.397,
+   "pop": false,
+   "caption": "leaflet"
+  },
+  {
+   "w": "safety",
+   "t": 1.443,
+   "pop": false,
+   "caption": "leaflet"
+  },
+  {
+   "w": "leaflet.",
+   "t": 1.602,
+   "pop": true,
+   "caption": "leaflet"
+  },
+  {
+   "w": "Its",
+   "t": 3.85,
+   "pop": false,
+   "caption": "second"
+  },
+  {
+   "w": "US",
+   "t": 3.941,
+   "pop": false,
+   "caption": "second"
+  },
+  {
+   "w": "safety",
+   "t": 4.009,
+   "pop": false,
+   "caption": "second"
   },
   {
    "w": "standard",
-   "t": 0.791,
+   "t": 4.168,
    "pop": false,
-   "caption": "toaster"
+   "caption": "second"
   },
   {
    "w": "asks",
-   "t": 1.215,
+   "t": 4.373,
    "pop": false,
-   "caption": "toaster"
+   "caption": "second"
   },
   {
    "w": "for",
-   "t": 1.329,
+   "t": 4.706,
    "pop": false,
-   "caption": "toaster"
+   "caption": "second"
   },
   {
    "w": "a",
-   "t": 1.42,
+   "t": 4.797,
    "pop": false,
-   "caption": "toaster"
+   "caption": "second"
   },
   {
    "w": "second",
-   "t": 1.465,
+   "t": 4.843,
    "pop": true,
-   "caption": "toaster"
+   "caption": "second"
   },
   {
    "w": "off",
-   "t": 1.845,
+   "t": 5.002,
    "pop": false,
-   "caption": "toaster"
+   "caption": "second"
   },
   {
    "w": "switch.",
-   "t": 1.935,
+   "t": 5.093,
    "pop": false,
-   "caption": "toaster"
+   "caption": "second"
   },
   {
-   "w": "Its",
-   "t": 5.05,
+   "w": "Find",
+   "t": 7.7,
    "pop": false,
-   "caption": "model"
-  },
-  {
-   "w": "kill",
-   "t": 5.141,
-   "pop": false,
-   "caption": "model"
-  },
-  {
-   "w": "switch:",
-   "t": 5.255,
-   "pop": false,
-   "caption": "model"
+   "caption": "report"
   },
   {
    "w": "a",
-   "t": 5.656,
+   "t": 7.814,
    "pop": false,
-   "caption": "model"
+   "caption": "report"
   },
   {
-   "w": "study,",
-   "t": 5.702,
+   "w": "dangerous",
+   "t": 7.859,
+   "pop": false,
+   "caption": "report"
+  },
+  {
+   "w": "defect?",
+   "t": 8.086,
+   "pop": false,
+   "caption": "report"
+  },
+  {
+   "w": "Tell",
+   "t": 8.488,
+   "pop": false,
+   "caption": "report"
+  },
+  {
+   "w": "the",
+   "t": 8.602,
+   "pop": false,
+   "caption": "report"
+  },
+  {
+   "w": "regulator",
+   "t": 8.693,
+   "pop": false,
+   "caption": "report"
+  },
+  {
+   "w": "within",
+   "t": 9.14,
+   "pop": false,
+   "caption": "report"
+  },
+  {
+   "w": "24",
+   "t": 9.299,
    "pop": true,
-   "caption": "model"
+   "caption": "report"
   },
   {
-   "w": "due",
-   "t": 6.081,
+   "w": "hours.",
+   "t": 9.367,
    "pop": false,
-   "caption": "model"
+   "caption": "report"
   },
   {
-   "w": "16",
-   "t": 6.172,
+   "w": "A",
+   "t": 12.8,
    "pop": false,
-   "caption": "model"
+   "caption": "voluntary"
   },
   {
-   "w": "November.",
-   "t": 6.24,
+   "w": "frontier",
+   "t": 12.845,
    "pop": false,
-   "caption": "model"
+   "caption": "voluntary"
+  },
+  {
+   "w": "AI",
+   "t": 13.05,
+   "pop": false,
+   "caption": "voluntary"
+  },
+  {
+   "w": "model.",
+   "t": 13.118,
+   "pop": false,
+   "caption": "voluntary"
+  },
+  {
+   "w": "US",
+   "t": 13.497,
+   "pop": false,
+   "caption": "voluntary"
+  },
+  {
+   "w": "federal",
+   "t": 13.565,
+   "pop": false,
+   "caption": "voluntary"
+  },
+  {
+   "w": "pre-release",
+   "t": 13.747,
+   "pop": false,
+   "caption": "voluntary"
+  },
+  {
+   "w": "rules:",
+   "t": 14.02,
+   "pop": false,
+   "caption": "voluntary"
+  },
+  {
+   "w": "voluntary.",
+   "t": 14.399,
+   "pop": true,
+   "caption": "voluntary"
+  },
+  {
+   "w": "California's",
+   "t": 17.4,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "governor",
+   "t": 17.695,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "vetoed",
+   "t": 17.9,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "a",
+   "t": 18.279,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "shutdown",
+   "t": 18.325,
+   "pop": true,
+   "caption": "study"
+  },
+  {
+   "w": "rule",
+   "t": 18.529,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "in",
+   "t": 18.643,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "2024.",
+   "t": 18.711,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "In",
+   "t": 19.067,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "September",
+   "t": 19.135,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "he",
+   "t": 19.363,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "ordered",
+   "t": 19.431,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "a",
+   "t": 19.613,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "study.",
+   "t": 19.658,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "Microsoft's",
+   "t": 23,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "president:",
+   "t": 23.273,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "\"Right",
+   "t": 23.743,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "now,",
+   "t": 23.902,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "your",
+   "t": 24.015,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "washing",
+   "t": 24.129,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "machine",
+   "t": 24.531,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "is",
+   "t": 24.713,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "subject",
+   "t": 24.781,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "to",
+   "t": 24.963,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "more",
+   "t": 25.031,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "safety",
+   "t": 25.365,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "rules",
+   "t": 25.524,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "than",
+   "t": 25.66,
+   "pop": false,
+   "caption": "washer"
+  },
+  {
+   "w": "AI.\"",
+   "t": 25.774,
+   "pop": true,
+   "caption": "washer"
+  },
+  {
+   "w": "The",
+   "t": 29.9,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "toaster",
+   "t": 29.991,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "has",
+   "t": 30.173,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "a",
+   "t": 30.484,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "second",
+   "t": 30.529,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "off",
+   "t": 30.688,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "switch.",
+   "t": 30.779,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "It's",
+   "t": 31.181,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "in",
+   "t": 31.295,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "the",
+   "t": 31.363,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "leaflet.",
+   "t": 31.454,
+   "pop": true,
+   "caption": "last"
   }
  ],
  "captions": [
   {
-   "id": "toaster",
+   "id": "leaflet",
    "t0": 0.7,
-   "t1": 4.35
+   "t1": 3.6
   },
   {
-   "id": "model",
-   "t0": 5.05,
-   "t1": 11
+   "id": "second",
+   "t0": 3.85,
+   "t1": 7.45
+  },
+  {
+   "id": "report",
+   "t0": 7.7,
+   "t1": 12.05
+  },
+  {
+   "id": "voluntary",
+   "t0": 12.8,
+   "t1": 17.15
+  },
+  {
+   "id": "study",
+   "t0": 17.4,
+   "t1": 22.75
+  },
+  {
+   "id": "washer",
+   "t0": 23,
+   "t1": 29.55
+  },
+  {
+   "id": "last",
+   "t0": 29.9,
+   "t1": 34.4
   }
  ],
  "quiet": [
   {
-   "t0": 7.47,
-   "t1": 8.6,
+   "t0": 19.32,
+   "t1": 20.400000000000002,
    "why": "the joke: the tap stops the music"
   }
  ]
