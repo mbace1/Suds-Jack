@@ -153,8 +153,10 @@ Researched 15 October 2026 with web search excerpts only. Every page fetch faile
   work through a range of potential scenarios", which "are not treated as inevitable". Anthropic declined to comment.
 - **New and usable:** Axios reportedly lists the rules lawmakers would reach for afterwards. One with bipartisan
   support and "even some industry buy-in" is **a required kill switch on advanced AI**, and experts question whether
-  switching all AI off is workable. Several outlets repeat this, but it needs checking against the Axios text before
-  it airs. It is the bridge from *Kill Switch* (Coxon 6, 22 Oct), which ends "The AI's is a sticky note."
+  switching all AI off is workable. **Checked 18 Oct** against Axios's own indexed text (via search; the page itself
+  is unreachable from here): "others have bipartisan support and even some industry buy-in, including a required kill
+  switch on advanced AI". The bill behind it is the AI Kill Switch Act (Lieu, Moran); a Senate version (Kennedy) was
+  blocked by Rand Paul. The film's "One rule on the list: a required kill switch" stands. It is the bridge from *Kill Switch* (Coxon 6, 22 Oct), which ends "The AI's is a sticky note."
 - **Context, not for the film:**
   - On 29 Sep, Google, Meta, Anthropic, OpenAI, xAI and Nvidia signed a voluntary agreement on limited safety
     standards (Gizmodo).

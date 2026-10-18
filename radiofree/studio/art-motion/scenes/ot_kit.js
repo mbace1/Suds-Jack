@@ -36,17 +36,53 @@ window.OT = (() => {
   }, 8);
 
   // ── buildings, all drawn with the door's sill at y = 0 so they sit on one pavement ─────────────────────────────
-  /** a test lab: a white block, a black glass door with its sign, a red TEST light, the company's plate */
+  const WINDOWS = [[-150, -1250], [60, -1250], [-150, -950], [60, -950], [-150, -650]];
+  // ── the companies' marks, drawn in code (no image assets): OpenAI's knot, Anthropic's A\, Hugging Face's hug ────
+  /** OpenAI's mark: six rounded links turned about a hexagon, stroked */
+  function knot(g, x, y, R, col) { g.save(); g.translate(x, y); g.strokeStyle = col; g.lineWidth = R * 0.15; g.lineJoin = 'round';
+    for (let k = 0; k < 6; k++) { g.save(); g.rotate(k * Math.PI / 3); g.beginPath(); g.roundRect(R * 0.04, -R * 0.98, R * 0.56, R * 0.98, R * 0.28); g.stroke(); g.restore(); } g.restore(); }
+  /** Anthropic's mark: a slab A and a backslash, cut flat top and bottom; centred on x, standing on y, h tall */
+  function aMark(g, x, y, h, col) { g.save(); g.translate(x - 0.22 * h, y); g.beginPath(); g.rect(-h, -h, 3 * h, h); g.clip();
+    g.strokeStyle = col; g.lineCap = 'butt'; g.lineJoin = 'miter'; g.lineWidth = 0.2 * h;
+    g.beginPath(); g.moveTo(-0.42 * h, 0.1 * h); g.lineTo(0, -1.05 * h); g.lineTo(0.42 * h, 0.1 * h); g.stroke();
+    g.lineWidth = 0.13 * h; g.beginPath(); g.moveTo(-0.2 * h, -0.3 * h); g.lineTo(0.2 * h, -0.3 * h); g.stroke();
+    g.lineWidth = 0.2 * h; g.beginPath(); g.moveTo(0.47 * h, -1.05 * h); g.lineTo(0.89 * h, 0.1 * h); g.stroke(); g.restore(); }
+  /** Hugging Face's mark: the yellow hugging face */
+  function hug(g, x, y, r) { g.save(); g.translate(x, y);
+    g.fillStyle = '#ffd21e'; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill();
+    g.strokeStyle = '#3a3b45'; g.lineWidth = r * 0.12; g.lineCap = 'round'; for (const s of [-1, 1]) { g.beginPath(); g.arc(s * r * 0.36, -r * 0.12, r * 0.16, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); }
+    g.fillStyle = '#3a3b45'; g.beginPath(); g.ellipse(0, r * 0.3, r * 0.42, r * 0.28, 0, 0, Math.PI); g.fill(); g.fillStyle = '#ef4e4e'; g.beginPath(); g.ellipse(0, r * 0.48, r * 0.2, r * 0.1, 0, 0, TAU); g.fill();
+    g.fillStyle = '#ff9d0b'; for (const s of [-1, 1]) { g.beginPath(); g.ellipse(s * r * 0.62, r * 0.66, r * 0.3, r * 0.22, s * 0.6, 0, TAU); g.fill(); }
+    g.restore(); }
+
+  /** a test lab, each in its company's own clothes, around the same door: the black glass door with its sign, the
+   *  TEST light above the plate, the plate with the mark. OPENAI: a black glass tower, rounded at the top, its knot
+   *  in white. ANTHROPIC: ivory stone over a terracotta ground floor, arched windows, a stepped parapet, its A\ in
+   *  black. Door, plate and sill are where every scene expects them (scenes place the sign and letterbox by them). */
   const lab = (name) => sprite('ot_lab_' + name, 560, 1300, 280, 1250, (g) => {
-    g.fillStyle = C.lab; g.fillRect(-260, -1200, 520, 1200);
-    const cw = g.createLinearGradient(0, -1180, 0, -640); cw.addColorStop(0, '#2a3a46'); cw.addColorStop(1, '#1b252d'); g.fillStyle = cw; g.fillRect(-240, -1180, 480, 540);   // dark glass upper floors
-    g.fillStyle = 'rgba(207,219,224,.10)'; g.beginPath(); g.moveTo(-240, -1180); g.lineTo(-60, -1180); g.lineTo(-240, -820); g.closePath(); g.fill();       // the sky in the glass
-    g.fillStyle = '#4b5d69'; for (let x = -240; x <= 240; x += 96) g.fillRect(x - 3, -1180, 6, 540); for (let y = -1180; y <= -640; y += 108) g.fillRect(-240, y - 3, 480, 6);
-    g.fillStyle = C.labD; g.fillRect(-260, -640, 520, 10);
-    g.fillStyle = C.labD; g.fillRect(-140, -470, 280, 470);
+    const ant = /ANTHROPIC/.test(name);
+    if (!ant) {
+      g.fillStyle = '#17191b'; g.beginPath(); g.roundRect(-250, -1240, 500, 1240, [90, 90, 0, 0]); g.fill();
+      const sh = g.createLinearGradient(-250, -1240, 250, -700); sh.addColorStop(0, 'rgba(160,175,185,.16)'); sh.addColorStop(0.5, 'rgba(160,175,185,0)'); g.fillStyle = sh; g.fillRect(-250, -1240, 500, 600);
+      g.fillStyle = 'rgba(255,255,255,.08)'; for (let x = -200; x <= 200; x += 50) g.fillRect(x - 2, -1190, 4, 550);
+      knot(g, 0, -985, 125, '#f2f3f2');
+      g.fillStyle = '#d4d7d6'; g.fillRect(-250, -640, 500, 640); g.fillStyle = 'rgba(0,0,0,.07)'; for (let y = -560; y < 0; y += 80) g.fillRect(-250, y, 500, 3);
+      g.fillStyle = '#0d0e0f'; g.fillRect(-262, -652, 524, 26);                                                     // the canopy
+      g.fillStyle = '#2a2d2f'; g.fillRect(-140, -470, 280, 470);
+    } else {
+      g.fillStyle = '#e2d8c5'; g.fillRect(-175, -1238, 350, 34); g.fillStyle = '#efe8da'; g.fillRect(-250, -1206, 500, 1206);
+      g.fillStyle = '#cc785c'; g.fillRect(-258, -1186, 516, 22); g.fillRect(-258, -662, 516, 22);
+      aMark(g, 0, -960, 190, '#141413');
+      for (let i = 0; i < 4; i++) { const x = -195 + i * 105; g.fillStyle = '#d9cdb6'; g.beginPath(); g.roundRect(x - 8, -888, 96, 220, [48, 48, 0, 0]); g.fill();
+        g.fillStyle = '#2b2a28'; g.beginPath(); g.roundRect(x, -880, 80, 206, [40, 40, 0, 0]); g.fill(); g.fillStyle = '#d9cdb6'; g.fillRect(x + 38, -880, 4, 206); }
+      g.fillStyle = '#c46f53'; g.fillRect(-250, -640, 500, 640); g.fillStyle = 'rgba(0,0,0,.08)'; for (let y = -600; y < 0; y += 40) g.fillRect(-250, y, 500, 3);
+      g.fillStyle = '#efe8da'; g.beginPath(); g.roundRect(-140, -470, 280, 470, [24, 24, 0, 0]); g.fill();
+    }
     g.fillStyle = C.glass; g.fillRect(-110, -430, 220, 430); g.fillStyle = 'rgba(255,255,255,.08)'; g.beginPath(); g.moveTo(-110, -430); g.lineTo(-40, -430); g.lineTo(-110, -260); g.closePath(); g.fill();
     g.fillStyle = '#c7ccce'; g.fillRect(70, -250, 12, 60);                                                          // the handle
-    g.fillStyle = C.ink; g.beginPath(); g.roundRect(-235, -530, 470, 56, 6); g.fill(); g.fillStyle = C.cream; g.font = '36px "Anton-400"'; g.textAlign = 'center'; g.fillText(name, 0, -489);
+    g.fillStyle = ant ? '#141413' : C.ink; g.beginPath(); g.roundRect(-235, -530, 470, 56, 6); g.fill();
+    if (ant) aMark(g, -200, -488, 34, '#efe8da'); else knot(g, -200, -502, 21, '#f2f3f2');
+    g.fillStyle = C.cream; g.font = '34px "Anton-400"'; g.textAlign = 'center'; g.fillText(name, 22, -489);
     g.fillStyle = C.stoneD; g.fillRect(-170, 0, 340, 24);                                                           // the sill
   }, 12);
   /** the sign on a lab door; `ex` stamps EXEMPT under it */
@@ -65,21 +101,37 @@ window.OT = (() => {
     c.globalAlpha = on; c.fillStyle = C.red; c.beginPath(); c.roundRect(x - 52, y - 17, 104, 34, 8); c.fill(); c.fillStyle = '#ffe0d8'; c.font = '24px "Anton-400"'; c.textAlign = 'center'; c.fillText('TEST', x, y + 9); c.globalAlpha = 1;
     glow(c, x, y, 110, 'rgba(214,59,47,', 0.4 * on); }
   /** a brick house with steps up to its door; `door` is the door's colour, `name` an optional plate */
-  const house = (key, brick, brickD, door, name = '') => sprite('ot_house_' + key, 520, 1500, 260, 1450, (g) => {
+  /** a brick house with steps up to its door; `door` is the door's colour, `name` an optional plate (with Hugging
+   *  Face's mark when it is theirs). Three kinds, picked from the key so a street is never one house repeated: a flat
+   *  stone cornice, a gable with a round attic window and arched brick lintels, a slate mansard with dormers and
+   *  keystones. The glass is the same rectangle in all three, so houseLit() lights any of them. */
+  const house = (key, brick, brickD, door, name = '') => sprite('ot_house_' + key, 540, 1720, 270, 1660, (g) => {
+    const kind = [...key].reduce((a, ch) => a + ch.charCodeAt(0), 0) % 3;
+    if (kind === 1) { g.fillStyle = '#4a4f55'; g.beginPath(); g.moveTo(-262, -1396); g.lineTo(0, -1630); g.lineTo(262, -1396); g.closePath(); g.fill();
+      g.fillStyle = '#5c626a'; g.beginPath(); g.moveTo(-262, -1396); g.lineTo(0, -1630); g.lineTo(0, -1610); g.lineTo(-240, -1396); g.closePath(); g.fill();
+      g.fillStyle = C.render; g.beginPath(); g.arc(0, -1490, 44, 0, TAU); g.fill(); g.fillStyle = C.glass; g.beginPath(); g.arc(0, -1490, 32, 0, TAU); g.fill(); }
+    if (kind === 2) { g.fillStyle = '#3d434a'; g.beginPath(); g.moveTo(-252, -1396); g.lineTo(-205, -1570); g.lineTo(205, -1570); g.lineTo(252, -1396); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(255,255,255,.07)'; for (let y = -1550; y < -1400; y += 22) g.fillRect(-240, y, 480, 2);
+      for (const x of [-110, 110]) { g.fillStyle = C.render; g.fillRect(x - 46, -1540, 92, 110); g.beginPath(); g.moveTo(x - 56, -1540); g.lineTo(x, -1590); g.lineTo(x + 56, -1540); g.closePath(); g.fill(); g.fillStyle = C.glass; g.fillRect(x - 32, -1524, 64, 84); } }
     g.fillStyle = brick; g.fillRect(-240, -1400, 480, 1400);
     g.fillStyle = brickD; for (let y = -1380; y < 0; y += 22) for (let x = -240 + ((y / 22) % 2 ? 0 : 20); x < 240; x += 44) g.fillRect(x, y, 2, 20);
     g.fillStyle = 'rgba(0,0,0,.08)'; for (let y = -1390; y < 0; y += 22) g.fillRect(-240, y, 480, 2);
-    for (const [x, y] of [[-150, -1250], [60, -1250], [-150, -950], [60, -950], [-150, -650]]) { g.fillStyle = C.render; g.fillRect(x - 10, y - 10, 110, 170); g.fillStyle = C.glass; g.fillRect(x, y, 90, 150); g.fillStyle = C.render; g.fillRect(x + 43, y, 4, 150); }
+    if (kind === 0) { g.fillStyle = C.render; g.fillRect(-256, -1420, 512, 34); g.fillStyle = C.renderD; g.fillRect(-256, -1390, 512, 8); for (let x = -230; x < 240; x += 40) g.fillRect(x, -1386, 14, 12); }
+    for (const [x, y] of WINDOWS) {
+      if (kind === 1) { g.fillStyle = brickD; g.beginPath(); g.arc(x + 45, y, 62, Math.PI, 0); g.fill(); g.fillStyle = brick; g.beginPath(); g.arc(x + 45, y, 46, Math.PI, 0); g.fill(); }
+      g.fillStyle = C.render; g.fillRect(x - 10, y - 10, 110, 170); g.fillStyle = C.glass; g.fillRect(x, y, 90, 150); g.fillStyle = C.render; g.fillRect(x + 43, y, 4, 150);
+      if (kind === 2) { g.fillStyle = C.renderD; g.fillRect(x - 18, y + 158, 126, 14); g.fillStyle = C.render; g.beginPath(); g.moveTo(x + 33, y - 10); g.lineTo(x + 57, y - 10); g.lineTo(x + 62, y - 36); g.lineTo(x + 28, y - 36); g.closePath(); g.fill(); }
+    }
     g.fillStyle = C.render; g.fillRect(-10, -660, 200, 400); g.fillStyle = door; g.fillRect(10, -640, 160, 360);
     g.fillStyle = 'rgba(255,255,255,.12)'; for (const yy of [-610, -460]) g.fillRect(30, yy, 120, 120);
     g.fillStyle = '#d6b45a'; g.beginPath(); g.arc(150, -460, 8, 0, TAU); g.fill();
     for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? C.step : C.stone; g.fillRect(-30 - i * 30, -280 + i * 70, 260 + i * 60, 70); }   // four steps down to the pavement
-    if (name) { g.fillStyle = C.cream; g.beginPath(); g.roundRect(-30, -740, 240, 62, 6); g.fill(); g.fillStyle = C.ink; g.font = '34px "Anton-400"'; g.textAlign = 'center'; g.fillText(name, 90, -696); }
+    if (name) { const hf = /HUGGING/.test(name); g.fillStyle = C.cream; g.beginPath(); g.roundRect(hf ? -90 : -30, -740, hf ? 310 : 240, 62, 6); g.fill();
+      if (hf) hug(g, -56, -709, 24); g.fillStyle = C.ink; g.font = '34px "Anton-400"'; g.textAlign = 'center'; g.fillText(name, hf ? 108 : 90, -696); }
   }, 12);
   /** the steps' top: where footprints climb to (relative to the house's own origin) */
   const STEPS = [[90, -10], [60, -80], [90, -150], [100, -220], [100, -300]];
 
-  const WINDOWS = [[-150, -1250], [60, -1250], [-150, -950], [60, -950], [-150, -650]];
   /** a house at (x, y) scale sc, lit from inside in cyan: its door by kd, its windows one by one by kw (0..1) */
   function houseLit(c, x, y, sc, kd, kw = 0, lt = 0) {
     const fl = 0.85 + 0.15 * Math.sin(lt * 23 + x);
