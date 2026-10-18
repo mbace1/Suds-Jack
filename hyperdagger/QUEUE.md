@@ -91,26 +91,12 @@ Plan sketch:
    - THE WEAVE: lane changes under your feet.
    - THE BRAKE WALL: a row braking at once.
    - THE FUNNEL: one lane only.
-3. ONE hand-built road for now (Mikael, 18 Oct). It is a named, fixed chain of segments out to 300 s, with the pile-up still at 180 s. On its day it replaces the generated road, and the goal card names it (TODAY'S ROAD: THE LADDER). The trucks drive their script, so a line can be learned. Only the player's missiles change it.
+3. ONE hand-built road for now (Mikael, 18 Oct). It is a named, fixed chain of segments out to 300 s, with the pile-up still at 180 s. On its day it replaces the generated road, and the goal card names it (TODAY'S ROAD: THE LADDER). The trucks drive their script, so a line can be learned, and nothing the player does changes it (since HD-018, v58, the missiles do not reach the trucks).
 4. The daily board and run history stay keyed as they are (season:mode). The road's name rides on the entry.
 - Later: generated days could draw from the same segments, so the hand-built pieces turn up in ordinary runs too.
 - Schedule, as read from "just one for now": one road, and it is the daily one day a week, the same road every week, so a player races their own last time. Correct this line if that is not what was meant.
 
 ## In progress
-
-### HD-018 — Season 3: no truck shots, no crate saves, the load is not the score
-
-- status: In progress (v58)
-- size: S
-- blocked-by: —
-- design: Mikael, 18 Oct 2026 — *"You don't shoot trucks.. or save crates"*, then *"Sure"* to taking out the three mechanics that let you
-
-v53 made the cabs gaze targets (three missiles jackknife a truck). v54 let a stomp set a loose crate back for +1 s, and made the run's time the clock plus the load (−1 s per spill). All three came from a "go ahead on all" round, not a brief. HD-018 takes them out:
-- The look locks skulls only.
-- A stomp saves nothing.
-- The clock is the run time again (TIME SURVIVED, the TRUCK mode's words).
-
-Crates still ride and spill as floor and spectacle, and the fold stays for the pile-up and HD-016. The convoy's now-unused hit and cab proxy, and the cargo's unused stomp, are removed with HD-016, so that the HD-014 stack's files are not touched twice.
 
 ### HD-014 — Season 3 trucks become floating landspeeders
 
@@ -123,6 +109,8 @@ Crates still ride and spill as floor and spectacle, and the fold stays for the p
 From NOTES.md (12 Oct 2026), Mikael's design direction: highway trucks become floating landspeeder platforms — no wheels, they hover, and cargo still rides on them. Cargo and haul rules stay the same so existing haul checks still mean something.
 
 Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover height or bob, and a glow or thruster under the hull. Do not change collision, cargo attachment, jackknife, haul scoring, or tests. Keep the existing haul and smoke checks green.
+
+Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
 ## Landed
 
@@ -225,6 +213,20 @@ From NOTES.md (12 Oct 2026 free mode), the debug line "load 33 · +0s" sits on t
 - design: NOTES.md (12 Oct 2026 playtest, free-midrun.png)
 
 From NOTES.md (12 Oct 2026 free mode), the run-start click does not lock the mouse on desktop, so mouse look never engages (free-midrun.png). Capture the pointer on start so look works without a second click.
+
+### HD-018 — Season 3: no truck shots, no crate saves, the load is not the score
+
+- status: Landed (#622, 61a45808)
+- size: S
+- blocked-by: —
+- design: Mikael, 18 Oct 2026 — *"You don't shoot trucks.. or save crates"*, then *"Sure"* to taking out the three mechanics that let you
+
+v53 made the cabs gaze targets (three missiles jackknife a truck). v54 let a stomp set a loose crate back for +1 s, and made the run's time the clock plus the load (−1 s per spill). All three came from a "go ahead on all" round, not a brief. HD-018 takes them out:
+- The look locks skulls only.
+- A stomp saves nothing.
+- The clock is the run time again (TIME SURVIVED, the TRUCK mode's words).
+
+Crates still ride and spill as floor and spectacle, and the fold stays for the pile-up and HD-016. The convoy's now-unused hit and cab proxy, and the cargo's unused stomp, are removed with HD-016, so that the HD-014 stack's files are not touched twice.
 
 ## Blocked
 
