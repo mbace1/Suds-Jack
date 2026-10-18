@@ -107,3 +107,7 @@ holds the lines.
 
 - **Kill Switch** (`clay/kill-switch/film.js`, `copy.json`, `score.py`), the pilot: en, fi and ja masters,
   `previews/17-10-Kill-Switch-pipeline-*.mp4`. Reports are in `qa/pipeline/kill-switch-pilot/`.
+- **The Chair Is Taken** (Coxon #5, `papercut/chair-is-taken/`): the first engine film, `previews/18-10-Chair-Is-Taken-en.mp4`.
+  Reports are in `qa/pipeline/chair-is-taken/`.
+- **Kill Switch**, the full film (`flat/kill-switch/`): `previews/18-10-Kill-Switch-en.mp4`. Reports are in
+  `qa/pipeline/kill-switch/`.
