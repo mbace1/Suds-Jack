@@ -19,7 +19,7 @@ Format: one sharp line, then a question, then 2–4 hashtags. The same copy goes
 4. **Who's really in the box?** (Toko): the person or gap behind the gadget. *"Batteries included. Parents not included. 🤖"* (already approved) / *"Somebody always did the dishes. Now he's just further away."* (draft on file)
 
 ## 3. Calendar, Sat 17 – Fri 30 Oct (Helsinki times; RFH = IG + X + YT Shorts unless marked)
-Unposted finished films: **Coxon 3 Paid For By**, **Coxon 2 Committee of the Whole (v2 redo)** and **Coxon 4 On the Same Voluntary Terms (v4 redo)**, all copied to /workspace/videos at 00:54 today. Every film is also still unposted on both YouTube channels, and all Toko films are unposted on Toko X and TikTok. Doodle 3 Irreversible is finished but **not approved**. Genius and Newsreader are scrapped.
+Unposted finished films: **Coxon 3 Paid For By**, **Coxon 2 Committee of the Whole (v2 redo)** and **Coxon 4 On the Same Voluntary Terms (v4 redo)**, all copied to /workspace/videos at 00:54 today. Every film is also still unposted on both YouTube channels, and all Toko films are unposted on Toko X and TikTok. Genius, Newsreader and Doodle 3 Irreversible (18 Oct) are scrapped.
 The slot logic **[A]**: 00:50 reaches the US evening (17:50 ET), so it suits Coxon; 12:50 reaches the European day, so it suits Nordic, Doodle and Toko. This matches the 00:52/12:52 rhythm already in use.
 
 | Day | Slot | Brand | Post | Hook / note |
@@ -33,7 +33,7 @@ The slot logic **[A]**: 00:50 reaches the US evening (17:50 ET), so it suits Cox
 | Wed 21 | 12:50 | Toko | **Toko 1 Deer** on Toko X + YT/TikTok | Only the IG post exists so far |
 | Thu 22 | 12:50 | RFH | **Doodle 1 Biodiversity Fund**, repost with a sharp copy line (the live copy is vague, per the views plan) | "Deadline tomorrow" |
 | Fri 23 | 12:50 | RFH | X only: quote-post Doodle 1/2 **only if there is real news** on the 23.10 deadline | News-led |
-| Sat 24 | 12:50 | RFH | **Doodle 3 Irreversible**, *if approved*; otherwise no post | EU data case |
+| Sat 24 | 12:50 | RFH | **Open** (Irreversible scrapped 18 Oct); the reserve *It Was Only a Test* if made in time, otherwise no post | EU AI Act case |
 | Mon 26 | 00:50 | RFH | X thread: "Coxon 1–4", one film per reply, **pinned** until 4 Nov | One week to the midterms |
 | Tue 27 | 12:50 | Toko | Toko 4 + Toko 2 on YT/TikTok; Reddit/Discord share **[A: whether community rules allow]** | |
 | Wed 28 | 00:50 | RFH | Coxon 1 re-up on X (quote the pinned thread) + IG Story | "Should the choice rest with a handful of people?" |
@@ -56,7 +56,7 @@ The 12h RFH cadence runs out of new films on Mon 19. After that the plan drops t
 
 ## 6. Open decisions for Mikael
 1. When the full 9:16 Toko 4 and Toko 2 reposts go up, delete or archive the cropped originals?
-2. Approve Doodle 3 Irreversible for Sat 24 Oct? Commission a new film to keep the 12h RFH pace after 19 Oct?
+2. ~~Approve Doodle 3 Irreversible for Sat 24 Oct?~~ Scrapped 18 Oct. Commission a new film to keep the 12h RFH pace after 19 Oct?
 3. Go live with the lattice-mast RFH icon now? Rotate icons as well as banners, or banners only?
 4. Credit Toko on RFH ("a Toko Midori production"), or keep the brands fully separate?
 5. Repost Doodle 1 with new copy, or keep the original pinned post?
