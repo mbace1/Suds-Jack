@@ -71,14 +71,14 @@ Plan sketch:
 - Rate: none in the first wave (learn the platforms), then roughly one every 20–30 s, and more after the finale. The rate is data on the season, measured with `hd-loop`, not set by eye.
 - The way forward always holds: a crash never leaves the road ahead empty, because laying works off the frontmost truck within reach.
 - Every roll comes from the run's own stream, so a daily run crashes the same way for everyone.
-- Open for Mikael: does a spill the convoy causes itself cost cargo seconds?
+- Open for Mikael (18 Oct): he says the player does not shoot trucks or save crates, while the build does both (cabs lock and jackknife since v53; landing on a loose crate saves it since v54). If both go, a spill is nothing the player caused or could prevent, so it should not be in the score. Waiting on whether they go.
 
 ### HD-017 — Hand-built roads on some days
 
 - status: Queued
 - size: L
 - blocked-by: —
-- design: Mikael, 17 Oct 2026 — yes to some days using a hand-built road, for mastery and speedruns; HD-004 (daily runs)
+- design: Mikael, 17 Oct 2026 — yes to some days using a hand-built road, for mastery and speedruns; 18 Oct — just one road for now; HD-004 (daily runs)
 - gate: plan before code; step 1 is its own small PR; Mikael's yes to merge each step
 
 Clustertruck's mastery comes from authored levels with lines you can learn. Season 3's road is generated. And, found while planning this item, it is not seeded either. `convoy.js` draws every gap, lane, deck height, speed and brake from `Math.random`. So a DAILY run shares the enemy schedule but every player gets a different road, and HD-004's promise that everyone faces the same seed does not hold for season 3.
@@ -91,10 +91,10 @@ Plan sketch:
    - THE WEAVE: lane changes under your feet.
    - THE BRAKE WALL: a row braking at once.
    - THE FUNNEL: one lane only.
-3. A hand-built road is a named, fixed chain of segments out to 300 s, with the pile-up still at 180 s. On its day it replaces the generated road, and the goal card names it (TODAY'S ROAD: THE LADDER). The trucks drive their script, so a line can be learned. Only the player's missiles change it.
+3. ONE hand-built road for now (Mikael, 18 Oct). It is a named, fixed chain of segments out to 300 s, with the pile-up still at 180 s. On its day it replaces the generated road, and the goal card names it (TODAY'S ROAD: THE LADDER). The trucks drive their script, so a line can be learned. Only the player's missiles change it.
 4. The daily board and run history stay keyed as they are (season:mode). The road's name rides on the entry.
 - Later: generated days could draw from the same segments, so the hand-built pieces turn up in ordinary runs too.
-- Open for Mikael: how often the daily is a hand-built road.
+- Schedule, as read from "just one for now": one road, and it is the daily one day a week, the same road every week, so a player races their own last time. Correct this line if that is not what was meant.
 
 ## In progress
 
