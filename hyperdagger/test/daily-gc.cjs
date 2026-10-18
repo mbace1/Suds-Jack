@@ -39,6 +39,7 @@ for (const m of ['pure', 'hyper']) { stale[K(OLD, m)] = String(5 + m.length); ke
 Object.assign(kept, {
   hyperDaggerDailyBest: JSON.stringify([{ date: '2025-11-11', mode: 'pure', t: 99.9 }]),   // the table itself
   hyperDaggerHi: '120.5', hyperDaggerHiHyper: '80', hyperDaggerHiTruck: '60',             // the free-run bests
+  hyperDaggerHiTruckV58: '61',                                    // v58's TRUCK best (the v57 key above is left on the disk, unread)
   hyperDaggerModeV31: 'hyper', hyperDaggerSeason: 'ember', hyperDaggerRunKind: 'daily',
   'hyperDaggerDaily:junk': '1',                                   // look-alikes that are not a dated daily key
   [K(OLD, 'ember', 'pure', 'extra')]: '2',

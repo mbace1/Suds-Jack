@@ -25,13 +25,22 @@ Left in place on purpose: `Convoy.hit()`, the cabs' gaze proxy and
 `cargo.js`'s tokens, and with them `truck.js`'s, all three mid-edit in the
 HD-014 stack. HD-016 reworks the convoy and takes them out then.
 
+**The TRUCK best has a new key** (`hyperDaggerHiTruckV58`; Codex on #622).
+v54–v57 filed season 3's time plus its load there, so a best could pass 300,
+and v58's runs end at exactly 300: a record like that would stand forever as a
+best of a different metric. The old key is left on the disk, unread. Probed on
+v57, a 305 s record under the old key showed on the season-3 menu as "best
+305.0s"; on v58 there is no best until one is set.
+
 Found on the way: hud-lock waited up to 30 s, in each of its three views, for
 a "load" on the kill line that had not been there since HD-010. It waits for
 the kill line now.
 
 Gate: the look held on a cab for 2 s of game time never locks it and the cab
 takes nothing; standing in a loose crate and two spills leave the clock at the
-run time; the label reads TIME SURVIVED and the recap names no crates; the
+run time, and nothing sets the crate back (the save's own counter stays at 0;
+Codex on #622: the first cut only checked the pay); a v57 TRUCK best is not
+offered on the menu; the label reads TIME SURVIVED and the recap names no crates; the
 goal card says the TRUCK mode's line. Each of these fails on v57, run as a
 control: the look held the cab locked in 39 of 40 frames, and at 194 s the
 clock read 154.1, because the load had taken 40 s off, mostly for the 42 crates
@@ -39,7 +48,7 @@ the pile-up spilled. Four feature
 pins that asked a hit to leave `runBonus` at 0 are gone: with no bonus they
 could no longer fail.
 
-Tokens: `main.js` and `seasons.js` `?v=109`, `sw.js` `?v=109`, worker cache
+Tokens: `main.js`, `seasons.js` and `modes.js` `?v=109`, `sw.js` `?v=109`, worker cache
 `hyperdagger-v79`, precache regenerated (70).
 
 ## v57 — 2026-10-17

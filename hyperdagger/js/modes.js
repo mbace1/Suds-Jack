@@ -95,7 +95,10 @@ export const MODES = [
     lethality: 'oneTouch',
     arena: 'track',
     edge: 'open',             // falling off is the failure state
-    hiKey: 'hyperDaggerHiTruck',
+    // v58: a new key, because v54–v57 filed season 3's time PLUS its load here
+    // (a best could pass 300) and v58's runs end at exactly 300; the old key is
+    // left on the disk, unread, rather than ranked against a different metric
+    hiKey: 'hyperDaggerHiTruckV58',
   },
   {
     id: 'move',

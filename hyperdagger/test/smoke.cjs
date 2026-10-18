@@ -1584,7 +1584,12 @@ s.listen(0, '127.0.0.1', async () => {
         out.loose = !cr.welded;
       }
       cv.cargo.stats.spilled += 2;   // two crates the road took, as the frame sees them
+      // the save itself must be gone, not only its pay: v54's frame set the
+      // crate back through Cargo.stomp(), which counts every save it makes
+      // (v57's own check read the same counter), and nothing calls it now
+      const stomped0 = cv.cargo.stats.stomped || 0;
       await frames(3);
+      out.stomped = (cv.cargo.stats.stomped || 0) - stomped0;
       const st = d.getState(), run = d.getRun();
       out.timer = parseFloat(document.getElementById('timer').textContent);
       out.gameTime = +st.gameTime.toFixed(2);
@@ -1600,6 +1605,24 @@ s.listen(0, '127.0.0.1', async () => {
   // own, so ?season=haul with HYPER (or nothing, i.e. 'pure') saved booted the
   // convoy season on foot. A link that names a season plays that season's
   // scheme; the PURE/HYPER/TRUCK/ALL menu still picks the mode you play.
+  // v58 (HD-018, #622 review): v54–v57 filed season 3's time PLUS its load
+  // under the TRUCK best, so a record could pass 300, and v58's runs end at
+  // exactly 300 — that record would stand forever as a best of a different
+  // metric. The TRUCK best has a new key. Probed on v57 first: this page's
+  // menu read "best 305.0s"; on v58 it offers no best at all.
+  let truckBest = {};
+  {
+    const q = await b.newPage({ viewport: VIEW });
+    q.on('pageerror', e => errs.push('pageerror: ' + e.message));
+    await q.addInitScript(() => { localStorage.setItem('hyperDaggerHiTruck', '305.0'); localStorage.setItem('hyperDaggerSeenTips', '1'); });
+    await q.goto(base + '/hyperdagger/?assets=0&season=haul', { waitUntil: 'load' });
+    await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+    truckBest = await q.evaluate(() => ({ mode: window.__hd.debug.getState().mode,
+      best: (document.getElementById('msg').textContent.match(/best [\d.]+s/) || [null])[0] }));
+    await q.close();
+  }
+  ok('haul: a v57 TRUCK best (time plus load, 305 s) is not offered as the best to beat (v58)',
+    truckBest.mode === 'truck' && truckBest.best === null, JSON.stringify(truckBest));
   let pinned = {};
   {
     const q = await b.newPage({ viewport: VIEW });
@@ -1704,6 +1727,8 @@ s.listen(0, '127.0.0.1', async () => {
     JSON.stringify({ shots: haul.shots, profile: haul.profile }));
   ok('haul: the load is not the score — standing in a loose crate and two spills leave the clock at the run time (v58)',
     haul3.loose && Math.abs(haul3.timer - haul3.gameTime) < 0.25 && !haul3.keys.includes('runBonus'), JSON.stringify(haul3));
+  ok('haul: standing in a loose crate does not set it back — no save happens at all (v58)',
+    haul3.loose && haul3.stomped === 0, JSON.stringify({ loose: haul3.loose, stomped: haul3.stomped }));
   ok('haul: the clock says TIME SURVIVED and the recap says nothing about crates (v58)',
     haul3.hud === 'TIME SURVIVED' && !haul3.recap.some(r => /crate|saved|spilled|jackknif/i.test(r)), JSON.stringify({ hud: haul3.hud, recap: haul3.recap }));
 
