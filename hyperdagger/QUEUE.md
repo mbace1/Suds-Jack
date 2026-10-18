@@ -56,7 +56,7 @@ Verify Season 1 rubble/rockfall, Season 2 jumpable waves/tide/drain, and Season 
 
 - status: Queued
 - size: M
-- blocked-by: HD-017 step 1 (the seeded convoy)
+- blocked-by: HD-017 step 1 (the seeded convoy), HD-018
 - design: Mikael, 17 Oct 2026 — yes to the convoy crashing on its own, Clustertruck's comedy at the cost of fairness
 - gate: after HD-014 lands (both rewrite `convoy.js`); plan before code; separate PR; Mikael's yes to merge
 
@@ -71,7 +71,7 @@ Plan sketch:
 - Rate: none in the first wave (learn the platforms), then roughly one every 20–30 s, and more after the finale. The rate is data on the season, measured with `hd-loop`, not set by eye.
 - The way forward always holds: a crash never leaves the road ahead empty, because laying works off the frontmost truck within reach.
 - Every roll comes from the run's own stream, so a daily run crashes the same way for everyone.
-- Open for Mikael (18 Oct): he says the player does not shoot trucks or save crates, while the build does both (cabs lock and jackknife since v53; landing on a loose crate saves it since v54). If both go, a spill is nothing the player caused or could prevent, so it should not be in the score. Waiting on whether they go.
+- Settled 18 Oct: the player does not shoot trucks or save crates, and the load is not the score (HD-018). A crash costs nothing directly. The danger is being left behind on a wreck.
 
 ### HD-017 — Hand-built roads on some days
 
@@ -97,6 +97,20 @@ Plan sketch:
 - Schedule, as read from "just one for now": one road, and it is the daily one day a week, the same road every week, so a player races their own last time. Correct this line if that is not what was meant.
 
 ## In progress
+
+### HD-018 — Season 3: no truck shots, no crate saves, the load is not the score
+
+- status: In progress (v58)
+- size: S
+- blocked-by: —
+- design: Mikael, 18 Oct 2026 — *"You don't shoot trucks.. or save crates"*, then *"Sure"* to taking out the three mechanics that let you
+
+v53 made the cabs gaze targets (three missiles jackknife a truck). v54 let a stomp set a loose crate back for +1 s, and made the run's time the clock plus the load (−1 s per spill). All three came from a "go ahead on all" round, not a brief. HD-018 takes them out:
+- The look locks skulls only.
+- A stomp saves nothing.
+- The clock is the run time again (TIME SURVIVED, the TRUCK mode's words).
+
+Crates still ride and spill as floor and spectacle, and the fold stays for the pile-up and HD-016. The convoy's now-unused hit and cab proxy, and the cargo's unused stomp, are removed with HD-016, so that the HD-014 stack's files are not touched twice.
 
 ### HD-014 — Season 3 trucks become floating landspeeders
 
