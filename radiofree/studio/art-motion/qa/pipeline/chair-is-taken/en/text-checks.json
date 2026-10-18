@@ -1,0 +1,587 @@
+[
+ {
+  "check": "copy came.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy came.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy came.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy came source",
+  "result": "pass",
+  "why": "Subpoenaed 28 Sept 2026 (council press 2026/09/28/3266); threatened with a petit"
+ },
+ {
+  "check": "copy came pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy video.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy video.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy video.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy video source",
+  "result": "pass",
+  "why": "Appeared by video: CNBC ('appeared by video'), EFE ('por videoconferencia'), NY "
+ },
+ {
+  "check": "copy video pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy insurance.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy insurance.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy insurance.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy insurance source",
+  "result": "pass",
+  "why": "Asked whether the company carries catastrophic-risk insurance: \"I'm not aware of"
+ },
+ {
+  "check": "copy insurance pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy law.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy law.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy law.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy law source",
+  "result": "pass",
+  "why": "Asked whether the company would accept responsibility if its AI caused injury, p"
+ },
+ {
+  "check": "copy law pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy everybody.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy everybody.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy everybody.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy everybody source",
+  "result": "pass",
+  "why": "Asked how many staff work on AI safety: \"everybody is in charge of safety\" (NY D"
+ },
+ {
+  "check": "copy everybody pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy odds.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy odds.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy odds.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy odds source",
+  "result": "pass",
+  "why": "No outlet reports any probability or number from the company (amNY, CNBC, Fox, N"
+ },
+ {
+  "check": "copy odds pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy headcount.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy headcount.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy headcount.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy headcount source",
+  "result": "pass",
+  "why": "The station's line. She agreed to send the council a safety-staff number (NYDN, "
+ },
+ {
+  "check": "copy headcount pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.dateline",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "width en:came",
+  "result": "pass",
+  "why": "widest line 667 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:came",
+  "result": "pass",
+  "why": "box {'x': 195, 'y': 191, 'w': 689, 'h': 160}"
+ },
+ {
+  "check": "reading time en:came",
+  "result": "pass",
+  "why": "on screen 5.38 s, needs 3.40 s (48 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:came",
+  "result": "pass",
+  "why": "last word up 4.18 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:came",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:came",
+  "result": "pass",
+  "why": "picture behind: edge 2.64 → scrim 0.0"
+ },
+ {
+  "check": "width en:video",
+  "result": "pass",
+  "why": "widest line 778 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:video",
+  "result": "pass",
+  "why": "box {'x': 140, 'y': 191, 'w': 800, 'h': 160}"
+ },
+ {
+  "check": "reading time en:video",
+  "result": "pass",
+  "why": "on screen 4.48 s, needs 3.35 s (47 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:video",
+  "result": "pass",
+  "why": "last word up 3.37 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:video",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:video",
+  "result": "pass",
+  "why": "picture behind: edge 2.26 → scrim 0.0"
+ },
+ {
+  "check": "width en:insurance",
+  "result": "pass",
+  "why": "widest line 705 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:insurance",
+  "result": "pass",
+  "why": "box {'x': 177, 'y': 191, 'w': 727, 'h': 247}"
+ },
+ {
+  "check": "reading time en:insurance",
+  "result": "pass",
+  "why": "on screen 5.38 s, needs 4.60 s (72 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:insurance",
+  "result": "pass",
+  "why": "last word up 3.55 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:insurance",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:insurance",
+  "result": "pass",
+  "why": "picture behind: edge 2.08 → scrim 0.0"
+ },
+ {
+  "check": "width en:law",
+  "result": "pass",
+  "why": "widest line 559 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:law",
+  "result": "pass",
+  "why": "box {'x': 249, 'y': 191, 'w': 581, 'h': 247}"
+ },
+ {
+  "check": "reading time en:law",
+  "result": "pass",
+  "why": "on screen 5.38 s, needs 4.40 s (68 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:law",
+  "result": "pass",
+  "why": "last word up 3.51 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:law",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:law",
+  "result": "pass",
+  "why": "picture behind: edge 1.67 → scrim 0.0"
+ },
+ {
+  "check": "width en:everybody",
+  "result": "pass",
+  "why": "widest line 647 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:everybody",
+  "result": "pass",
+  "why": "box {'x': 206, 'y': 191, 'w': 669, 'h': 247}"
+ },
+ {
+  "check": "reading time en:everybody",
+  "result": "pass",
+  "why": "on screen 5.38 s, needs 4.00 s (60 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:everybody",
+  "result": "pass",
+  "why": "last word up 3.76 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:everybody",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:everybody",
+  "result": "pass",
+  "why": "picture behind: edge 2.42 → scrim 0.0"
+ },
+ {
+  "check": "width en:odds",
+  "result": "pass",
+  "why": "widest line 505 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:odds",
+  "result": "pass",
+  "why": "box {'x': 277, 'y': 191, 'w': 527, 'h': 160}"
+ },
+ {
+  "check": "reading time en:odds",
+  "result": "pass",
+  "why": "on screen 3.39 s, needs 2.85 s (37 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:odds",
+  "result": "pass",
+  "why": "last word up 2.46 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:odds",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:odds",
+  "result": "pass",
+  "why": "picture behind: edge 0.16 → scrim 0.0"
+ },
+ {
+  "check": "width en:headcount",
+  "result": "pass",
+  "why": "widest line 778 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:headcount",
+  "result": "pass",
+  "why": "box {'x': 140, 'y': 191, 'w': 800, 'h': 160}"
+ },
+ {
+  "check": "reading time en:headcount",
+  "result": "pass",
+  "why": "on screen 4.47 s, needs 4.00 s (60 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:headcount",
+  "result": "pass",
+  "why": "last word up 3.05 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:headcount",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:headcount",
+  "result": "pass",
+  "why": "picture behind: edge 2.1 → scrim 0.0"
+ },
+ {
+  "check": "hold en:headcount",
+  "result": "pass",
+  "why": "the picture holds 0.5357 s before end so the line can be read"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:came",
+  "result": "pass",
+  "why": "SpaceXAI was subpoenaed. On 16 October, it | came."
+ },
+ {
+  "check": "sidecar lines en:video",
+  "result": "pass",
+  "why": "By video. It sent a government-affairs | manager."
+ },
+ {
+  "check": "sidecar lines en:insurance",
+  "result": "pass",
+  "why": "Its catastrophe insurance? The manager was | \"not aware of the specifics\"."
+ },
+ {
+  "check": "sidecar lines en:law",
+  "result": "pass",
+  "why": "If its AI causes a death? \"We're | responsible for following the law.\""
+ },
+ {
+  "check": "sidecar lines en:everybody",
+  "result": "pass",
+  "why": "How many work on safety? \"Everybody is in | charge of safety.\""
+ },
+ {
+  "check": "sidecar lines en:odds",
+  "result": "pass",
+  "why": "Odds of catastrophe: no number given."
+ },
+ {
+  "check": "sidecar lines en:headcount",
+  "result": "pass",
+  "why": "Everybody is in charge of safety. The | headcount will follow."
+ },
+ {
+  "check": "sidecar fi:came",
+  "result": "pass",
+  "why": "5.38 s on this master, fi needs 3.65 s"
+ },
+ {
+  "check": "sidecar lines fi:came",
+  "result": "pass",
+  "why": "SpaceXAI sai haasteen. 16. lokakuuta se | tuli."
+ },
+ {
+  "check": "sidecar fi:video",
+  "result": "pass",
+  "why": "4.48 s on this master, fi needs 4.06 s"
+ },
+ {
+  "check": "sidecar lines fi:video",
+  "result": "pass",
+  "why": "Videolla. Se lähetti yhteiskuntasuhteiden | päällikön."
+ },
+ {
+  "check": "sidecar fi:insurance",
+  "result": "pass",
+  "why": "5.38 s on this master, fi needs 5.24 s"
+ },
+ {
+  "check": "sidecar lines fi:insurance",
+  "result": "pass",
+  "why": "Sen katastrofivakuutus? Päällikkö ei ollut | \"tietoinen yksityiskohdista\"."
+ },
+ {
+  "check": "sidecar fi:law",
+  "result": "warn",
+  "why": "5.38 s on this master, fi needs 5.47 s"
+ },
+ {
+  "check": "sidecar lines fi:law",
+  "result": "pass",
+  "why": "Jos sen tekoäly aiheuttaa kuoleman? | \"Olemme vastuussa lain noudattamisesta.\""
+ },
+ {
+  "check": "sidecar fi:everybody",
+  "result": "pass",
+  "why": "5.38 s on this master, fi needs 5.06 s"
+ },
+ {
+  "check": "sidecar lines fi:everybody",
+  "result": "pass",
+  "why": "Montako tekee turvallisuustyötä? \"Kaikki | vastaavat turvallisuudesta.\""
+ },
+ {
+  "check": "sidecar fi:odds",
+  "result": "warn",
+  "why": "3.39 s on this master, fi needs 3.65 s"
+ },
+ {
+  "check": "sidecar lines fi:odds",
+  "result": "pass",
+  "why": "Katastrofin todennäköisyys: lukua ei | annettu."
+ },
+ {
+  "check": "sidecar fi:headcount",
+  "result": "warn",
+  "why": "4.47 s on this master, fi needs 5.12 s"
+ },
+ {
+  "check": "sidecar lines fi:headcount",
+  "result": "pass",
+  "why": "Kaikki vastaavat turvallisuudesta. | Henkilömäärä toimitetaan myöhemmin."
+ },
+ {
+  "check": "sidecar ja:came",
+  "result": "warn",
+  "why": "5.38 s on this master, ja needs 5.50 s"
+ },
+ {
+  "check": "sidecar lines ja:came",
+  "result": "pass",
+  "why": "SpaceXAIは召喚された。 | 10月16日、出席した。"
+ },
+ {
+  "check": "sidecar ja:video",
+  "result": "warn",
+  "why": "4.48 s on this master, ja needs 4.67 s"
+ },
+ {
+  "check": "sidecar lines ja:video",
+  "result": "pass",
+  "why": "ビデオ出演。来たのは渉外担当の | マネージャー。"
+ },
+ {
+  "check": "sidecar ja:insurance",
+  "result": "pass",
+  "why": "5.38 s on this master, ja needs 4.50 s"
+ },
+ {
+  "check": "sidecar lines ja:insurance",
+  "result": "pass",
+  "why": "大惨事への保険は？「詳細は | 承知していない」"
+ },
+ {
+  "check": "sidecar ja:law",
+  "result": "warn",
+  "why": "5.38 s on this master, ja needs 6.00 s"
+ },
+ {
+  "check": "sidecar lines ja:law",
+  "result": "pass",
+  "why": "AIが死亡事故を起こしたら？ | 「我々には法律を守る責任がある」"
+ },
+ {
+  "check": "sidecar ja:everybody",
+  "result": "pass",
+  "why": "5.38 s on this master, ja needs 4.17 s"
+ },
+ {
+  "check": "sidecar lines ja:everybody",
+  "result": "pass",
+  "why": "安全担当は何人？「全員が安全の | 責任者」"
+ },
+ {
+  "check": "sidecar ja:odds",
+  "result": "warn",
+  "why": "3.39 s on this master, ja needs 3.50 s"
+ },
+ {
+  "check": "sidecar lines ja:odds",
+  "result": "pass",
+  "why": "大惨事の確率：数字は示されず。"
+ },
+ {
+  "check": "sidecar ja:headcount",
+  "result": "pass",
+  "why": "4.47 s on this master, ja needs 4.00 s"
+ },
+ {
+  "check": "sidecar lines ja:headcount",
+  "result": "pass",
+  "why": "全員が安全の責任者。人数は後日 | 連絡。"
+ }
+]

@@ -26,9 +26,9 @@ def drum(d=1.6):
     return x / max(1e-9, abs(x).max()) * 0.7
 
 
-# ---- the music: the bed from the landing to the tap, silence, then back from the washer and full again for the tableau
+# ---- the music: the bed from the landing to the tap, a second of silence, back at half strength, full again for the tableau
 bed(s, EV['land'], EV['tap'] + 0.02, quiet)
-bed(s, EV['toWasher'], EV['back'], quiet, level=1)                         # the washer: the groove at half strength
+bed(s, quiet[0][1], EV['back'], quiet, level=1)                             # back after the joke's second of silence, at half strength
 bed(s, EV['back'], END - 0.6, quiet)                                          # the tableau: the full groove on its own downbeat
 for cp in EV['captions']:
     last = max(w['t'] for w in EV['words'] if w['caption'] == cp['id'])
@@ -44,7 +44,7 @@ for i in range(3): s.fx(foley('card', 'tap', 0.7), EV['jam'] + i * 0.06, 0.45, -
 s.fx(chip(False), EV['jam'], 0.55, -0.4, name='switch 1 jams'); s.fx(chip(True), EV['flip2'], 0.55, 0.4, name='switch 2 off')
 # the defect: the postbox and stopwatch pop in, the envelope drops through the slot, the stopwatch ticks round a day
 s.fx(pop(0.9), EV['toPost'] + 0.2, 0.35, 0.3, name='postbox'); s.fx(pop(1.1), EV['toPost'] + 0.35, 0.35, -0.3, name='stopwatch')
-s.fx(foley('paper', 'flip'), EV['drop'] - 0.05, 0.6, 0.3, name='the envelope falls'); s.fx(foley('card', 'drop'), EV['drop'] + 0.38, 0.7, 0.3, name='into the box')
+s.fx(foley('paper', 'flip'), EV['drop'], 0.6, 0.3, name='the envelope falls'); s.fx(foley('card', 'drop'), EV['drop'] + 0.38, 0.7, 0.3, name='into the box')
 for i, tp in enumerate(EV['clockTicks']): s.fx(tick(i % 4, down=False), tp, 0.4, -0.3, name=f'stopwatch {i}')
 s.fx(chip(True), EV['clock'] + 1.42, 0.45, -0.3, name='24:00')
 # the turn: the model's side; the counter rolls to nothing; VOLUNTARY slaps on

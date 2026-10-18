@@ -1,0 +1,108 @@
+{
+ "wav": "build/en/score.wav",
+ "measured": {
+  "I": -14.0,
+  "LRA": 5.2,
+  "TP": -2.8
+ },
+ "limiter": [
+  "None:13.0",
+  "-2:13.0",
+  "-3:12.8",
+  "-4:12.0",
+  "-5:11.4",
+  "-6:11.2"
+ ],
+ "ducks": [
+  {
+   "t0": 0.7,
+   "t1": 2.297,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption came"
+  },
+  {
+   "t0": 8.029,
+   "t1": 9.535,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption video"
+  },
+  {
+   "t0": 13.557,
+   "t1": 15.784,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption insurance"
+  },
+  {
+   "t0": 19.986,
+   "t1": 22.258,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption law"
+  },
+  {
+   "t0": 26.414,
+   "t1": 28.436,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption everybody"
+  },
+  {
+   "t0": 32.743,
+   "t1": 34.067,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption odds"
+  },
+  {
+   "t0": 36.579,
+   "t1": 38.403,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption headcount"
+  }
+ ],
+ "quiet": [
+  [
+   36.12857142857143,
+   37.6622
+  ]
+ ],
+ "checks": [
+  {
+   "check": "loudness",
+   "result": "pass",
+   "why": "-14.0 LUFS integrated (target -14.0)"
+  },
+  {
+   "check": "true peak",
+   "result": "pass",
+   "why": "-2.8 dBTP (at most -1.0)"
+  },
+  {
+   "check": "silence",
+   "result": "pass",
+   "why": "no unmarked gap over 1.5 s"
+  },
+  {
+   "check": "continuity",
+   "result": "pass",
+   "why": "1% of the film below \u221235 dBFS outside the quiet spans (at most 8%)"
+  },
+  {
+   "check": "coverage",
+   "result": "pass",
+   "why": "33/33 cues have a sound within 40 ms"
+  }
+ ],
+ "placed": 216
+}

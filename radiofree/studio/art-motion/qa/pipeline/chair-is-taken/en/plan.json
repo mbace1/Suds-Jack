@@ -1,0 +1,874 @@
+{
+ "film": "chair-is-taken",
+ "lang": "en",
+ "bpm": 112,
+ "fps": 30,
+ "T": {
+  "s1": 0,
+  "s2": 6.428571428571429,
+  "s3": 12.857142857142858,
+  "s4": 19.285714285714285,
+  "s5": 25.714285714285715,
+  "s6": 32.142857142857146,
+  "last": 36.42857142857143,
+  "end": 41.249985714285714
+ },
+ "end": 41.249985714285714,
+ "holds": [
+  {
+   "caption": "headcount",
+   "beat": "end",
+   "extra": 0.5357
+  }
+ ],
+ "shots": [
+  {
+   "id": "ct_chamber",
+   "t0": 0,
+   "dur": 6.428571428571429
+  },
+  {
+   "id": "ct_screen",
+   "t0": 6.428571428571429,
+   "dur": 6.428571428571429
+  },
+  {
+   "id": "ct_binder",
+   "t0": 12.857142857142858,
+   "dur": 6.428571428571427
+  },
+  {
+   "id": "ct_scale",
+   "t0": 19.285714285714285,
+   "dur": 6.428571428571431
+  },
+  {
+   "id": "ct_hat",
+   "t0": 25.714285714285715,
+   "dur": 6.428571428571431
+  },
+  {
+   "id": "ct_dial",
+   "t0": 32.142857142857146,
+   "dur": 9.107128571428568
+  }
+ ],
+ "cues": {
+  "ct_chamber.lamps": 0.25,
+  "ct_chamber.doors": 1.9473,
+  "ct_chamber.rattle": 5.4,
+  "ct_screen.cart": 6.4286,
+  "ct_screen.bump": 7.2286,
+  "ct_screen.on": 7.6286,
+  "ct_screen.tile": 8.0968,
+  "ct_binder.push": 13.4071,
+  "ct_binder.hit": 14.2071,
+  "ct_binder.shrug": 15.3835,
+  "ct_scale.gavel": 19.7357,
+  "ct_scale.load": 20.5857,
+  "ct_scale.tip": 21.8575,
+  "ct_hat.first": 26.2143,
+  "ct_hat.pop": 27.2025,
+  "ct_hat.gone": 31.3143,
+  "ct_dial.dial": 32.4429,
+  "ct_dial.blank": 33.4401,
+  "ct_dial.tilt": 35.9786,
+  "ct_dial.land": 37.6622
+ },
+ "captions": [
+  {
+   "id": "came",
+   "lang": "en",
+   "size": "house",
+   "text": "SpaceXAI was [subpoenaed]. / On 16 October, it came.",
+   "lines": [
+    [
+     {
+      "w": "SpaceXAI",
+      "pop": false
+     },
+     {
+      "w": "was",
+      "pop": false
+     },
+     {
+      "w": "subpoenaed.",
+      "pop": true
+     }
+    ],
+    [
+     {
+      "w": "On",
+      "pop": false
+     },
+     {
+      "w": "16",
+      "pop": false
+     },
+     {
+      "w": "October,",
+      "pop": false
+     },
+     {
+      "w": "it",
+      "pop": false
+     },
+     {
+      "w": "came.",
+      "pop": false
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "SpaceXAI",
+     "pop": false,
+     "line": 0,
+     "t": 0.7
+    },
+    {
+     "w": "was",
+     "pop": false,
+     "line": 0,
+     "t": 0.9045454545454545
+    },
+    {
+     "w": "subpoenaed.",
+     "pop": true,
+     "line": 0,
+     "t": 0.9954545454545455
+    },
+    {
+     "w": "On",
+     "pop": false,
+     "line": 1,
+     "t": 1.488181818181818
+    },
+    {
+     "w": "16",
+     "pop": false,
+     "line": 1,
+     "t": 1.5563636363636362
+    },
+    {
+     "w": "October,",
+     "pop": false,
+     "line": 1,
+     "t": 1.6245454545454543
+    },
+    {
+     "w": "it",
+     "pop": false,
+     "line": 1,
+     "t": 1.8290909090909089
+    },
+    {
+     "w": "came.",
+     "pop": false,
+     "line": 1,
+     "t": 1.897272727272727
+    }
+   ],
+   "t0": 0.7,
+   "t1": 6.078571428571429,
+   "read": 3.4,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "video",
+   "lang": "en",
+   "size": "house",
+   "text": "By [video]. It sent / a government-affairs manager.",
+   "lines": [
+    [
+     {
+      "w": "By",
+      "pop": false
+     },
+     {
+      "w": "video.",
+      "pop": true
+     },
+     {
+      "w": "It",
+      "pop": false
+     },
+     {
+      "w": "sent",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "a",
+      "pop": false
+     },
+     {
+      "w": "government-affairs",
+      "pop": false
+     },
+     {
+      "w": "manager.",
+      "pop": false
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "By",
+     "pop": false,
+     "line": 0,
+     "t": 8.028571428571428
+    },
+    {
+     "w": "video.",
+     "pop": true,
+     "line": 0,
+     "t": 8.096753246753247
+    },
+    {
+     "w": "It",
+     "pop": false,
+     "line": 0,
+     "t": 8.255844155844155
+    },
+    {
+     "w": "sent",
+     "pop": false,
+     "line": 0,
+     "t": 8.324025974025973
+    },
+    {
+     "w": "a",
+     "pop": false,
+     "line": 1,
+     "t": 8.657662337662337
+    },
+    {
+     "w": "government-affairs",
+     "pop": false,
+     "line": 1,
+     "t": 8.703116883116882
+    },
+    {
+     "w": "manager.",
+     "pop": false,
+     "line": 1,
+     "t": 9.134935064935064
+    }
+   ],
+   "t0": 8.028571428571428,
+   "t1": 12.507142857142858,
+   "read": 3.35,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "insurance",
+   "lang": "en",
+   "size": "house",
+   "text": "Its catastrophe insurance? / The manager was \"not aware / of the [specifics]\".",
+   "lines": [
+    [
+     {
+      "w": "Its",
+      "pop": false
+     },
+     {
+      "w": "catastrophe",
+      "pop": false
+     },
+     {
+      "w": "insurance?",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "The",
+      "pop": false
+     },
+     {
+      "w": "manager",
+      "pop": false
+     },
+     {
+      "w": "was",
+      "pop": false
+     },
+     {
+      "w": "\"not",
+      "pop": false
+     },
+     {
+      "w": "aware",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "of",
+      "pop": false
+     },
+     {
+      "w": "the",
+      "pop": false
+     },
+     {
+      "w": "specifics\".",
+      "pop": true
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "Its",
+     "pop": false,
+     "line": 0,
+     "t": 13.557142857142857
+    },
+    {
+     "w": "catastrophe",
+     "pop": false,
+     "line": 0,
+     "t": 13.648051948051949
+    },
+    {
+     "w": "insurance?",
+     "pop": false,
+     "line": 0,
+     "t": 13.920779220779222
+    },
+    {
+     "w": "The",
+     "pop": false,
+     "line": 1,
+     "t": 14.390779220779223
+    },
+    {
+     "w": "manager",
+     "pop": false,
+     "line": 1,
+     "t": 14.481688311688314
+    },
+    {
+     "w": "was",
+     "pop": false,
+     "line": 1,
+     "t": 14.663506493506496
+    },
+    {
+     "w": "\"not",
+     "pop": false,
+     "line": 1,
+     "t": 14.754415584415588
+    },
+    {
+     "w": "aware",
+     "pop": false,
+     "line": 1,
+     "t": 14.868051948051951
+    },
+    {
+     "w": "of",
+     "pop": false,
+     "line": 2,
+     "t": 15.224415584415588
+    },
+    {
+     "w": "the",
+     "pop": false,
+     "line": 2,
+     "t": 15.292597402597407
+    },
+    {
+     "w": "specifics\".",
+     "pop": true,
+     "line": 2,
+     "t": 15.383506493506498
+    }
+   ],
+   "t0": 13.557142857142857,
+   "t1": 18.935714285714283,
+   "read": 4.6,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "law",
+   "lang": "en",
+   "size": "house",
+   "text": "If its AI causes a death? / \"We're responsible for / following the [law].\"",
+   "lines": [
+    [
+     {
+      "w": "If",
+      "pop": false
+     },
+     {
+      "w": "its",
+      "pop": false
+     },
+     {
+      "w": "AI",
+      "pop": false
+     },
+     {
+      "w": "causes",
+      "pop": false
+     },
+     {
+      "w": "a",
+      "pop": false
+     },
+     {
+      "w": "death?",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "\"We're",
+      "pop": false
+     },
+     {
+      "w": "responsible",
+      "pop": false
+     },
+     {
+      "w": "for",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "following",
+      "pop": false
+     },
+     {
+      "w": "the",
+      "pop": false
+     },
+     {
+      "w": "law.\"",
+      "pop": true
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "If",
+     "pop": false,
+     "line": 0,
+     "t": 19.985714285714284
+    },
+    {
+     "w": "its",
+     "pop": false,
+     "line": 0,
+     "t": 20.0538961038961
+    },
+    {
+     "w": "AI",
+     "pop": false,
+     "line": 0,
+     "t": 20.14480519480519
+    },
+    {
+     "w": "causes",
+     "pop": false,
+     "line": 0,
+     "t": 20.212987012987007
+    },
+    {
+     "w": "a",
+     "pop": false,
+     "line": 0,
+     "t": 20.372077922077917
+    },
+    {
+     "w": "death?",
+     "pop": false,
+     "line": 0,
+     "t": 20.417532467532464
+    },
+    {
+     "w": "\"We're",
+     "pop": false,
+     "line": 1,
+     "t": 20.796623376623373
+    },
+    {
+     "w": "responsible",
+     "pop": false,
+     "line": 1,
+     "t": 20.955714285714283
+    },
+    {
+     "w": "for",
+     "pop": false,
+     "line": 1,
+     "t": 21.228441558441556
+    },
+    {
+     "w": "following",
+     "pop": false,
+     "line": 2,
+     "t": 21.539350649350645
+    },
+    {
+     "w": "the",
+     "pop": false,
+     "line": 2,
+     "t": 21.76662337662337
+    },
+    {
+     "w": "law.\"",
+     "pop": true,
+     "line": 2,
+     "t": 21.85753246753246
+    }
+   ],
+   "t0": 19.985714285714284,
+   "t1": 25.364285714285714,
+   "read": 4.4,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "everybody",
+   "lang": "en",
+   "size": "house",
+   "text": "How many work on safety? / \"[Everybody] is in charge / of safety.\"",
+   "lines": [
+    [
+     {
+      "w": "How",
+      "pop": false
+     },
+     {
+      "w": "many",
+      "pop": false
+     },
+     {
+      "w": "work",
+      "pop": false
+     },
+     {
+      "w": "on",
+      "pop": false
+     },
+     {
+      "w": "safety?",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "\"Everybody",
+      "pop": true
+     },
+     {
+      "w": "is",
+      "pop": false
+     },
+     {
+      "w": "in",
+      "pop": false
+     },
+     {
+      "w": "charge",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "of",
+      "pop": false
+     },
+     {
+      "w": "safety.\"",
+      "pop": false
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "How",
+     "pop": false,
+     "line": 0,
+     "t": 26.414285714285715
+    },
+    {
+     "w": "many",
+     "pop": false,
+     "line": 0,
+     "t": 26.505194805194805
+    },
+    {
+     "w": "work",
+     "pop": false,
+     "line": 0,
+     "t": 26.618831168831168
+    },
+    {
+     "w": "on",
+     "pop": false,
+     "line": 0,
+     "t": 26.73246753246753
+    },
+    {
+     "w": "safety?",
+     "pop": false,
+     "line": 0,
+     "t": 26.800649350649348
+    },
+    {
+     "w": "\"Everybody",
+     "pop": true,
+     "line": 1,
+     "t": 27.20246753246753
+    },
+    {
+     "w": "is",
+     "pop": false,
+     "line": 1,
+     "t": 27.45246753246753
+    },
+    {
+     "w": "in",
+     "pop": false,
+     "line": 1,
+     "t": 27.520649350649347
+    },
+    {
+     "w": "charge",
+     "pop": false,
+     "line": 1,
+     "t": 27.588831168831163
+    },
+    {
+     "w": "of",
+     "pop": false,
+     "line": 2,
+     "t": 27.967922077922072
+    },
+    {
+     "w": "safety.\"",
+     "pop": false,
+     "line": 2,
+     "t": 28.03610389610389
+    }
+   ],
+   "t0": 26.414285714285715,
+   "t1": 31.792857142857144,
+   "read": 4,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "odds",
+   "lang": "en",
+   "size": "house",
+   "text": "Odds of catastrophe: / [no number] given.",
+   "lines": [
+    [
+     {
+      "w": "Odds",
+      "pop": false
+     },
+     {
+      "w": "of",
+      "pop": false
+     },
+     {
+      "w": "catastrophe:",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "no",
+      "pop": true
+     },
+     {
+      "w": "number",
+      "pop": false
+     },
+     {
+      "w": "given.",
+      "pop": false
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "Odds",
+     "pop": false,
+     "line": 0,
+     "t": 32.74285714285715
+    },
+    {
+     "w": "of",
+     "pop": false,
+     "line": 0,
+     "t": 32.856493506493514
+    },
+    {
+     "w": "catastrophe:",
+     "pop": false,
+     "line": 0,
+     "t": 32.924675324675334
+    },
+    {
+     "w": "no",
+     "pop": true,
+     "line": 1,
+     "t": 33.44012987012988
+    },
+    {
+     "w": "number",
+     "pop": false,
+     "line": 1,
+     "t": 33.5083116883117
+    },
+    {
+     "w": "given.",
+     "pop": false,
+     "line": 1,
+     "t": 33.66740259740261
+    }
+   ],
+   "t0": 32.74285714285715,
+   "t1": 36.12857142857143,
+   "read": 2.85,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "headcount",
+   "lang": "en",
+   "size": "house",
+   "text": "Everybody is in charge of safety. / The [headcount] will follow.",
+   "lines": [
+    [
+     {
+      "w": "Everybody",
+      "pop": false
+     },
+     {
+      "w": "is",
+      "pop": false
+     },
+     {
+      "w": "in",
+      "pop": false
+     },
+     {
+      "w": "charge",
+      "pop": false
+     },
+     {
+      "w": "of",
+      "pop": false
+     },
+     {
+      "w": "safety.",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "The",
+      "pop": false
+     },
+     {
+      "w": "headcount",
+      "pop": true
+     },
+     {
+      "w": "will",
+      "pop": false
+     },
+     {
+      "w": "follow.",
+      "pop": false
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "Everybody",
+     "pop": false,
+     "line": 0,
+     "t": 36.57857142857143
+    },
+    {
+     "w": "is",
+     "pop": false,
+     "line": 0,
+     "t": 36.805844155844156
+    },
+    {
+     "w": "in",
+     "pop": false,
+     "line": 0,
+     "t": 36.874025974025976
+    },
+    {
+     "w": "charge",
+     "pop": false,
+     "line": 0,
+     "t": 36.942207792207796
+    },
+    {
+     "w": "of",
+     "pop": false,
+     "line": 0,
+     "t": 37.1012987012987
+    },
+    {
+     "w": "safety.",
+     "pop": false,
+     "line": 0,
+     "t": 37.16948051948052
+    },
+    {
+     "w": "The",
+     "pop": false,
+     "line": 1,
+     "t": 37.5712987012987
+    },
+    {
+     "w": "headcount",
+     "pop": true,
+     "line": 1,
+     "t": 37.662207792207795
+    },
+    {
+     "w": "will",
+     "pop": false,
+     "line": 1,
+     "t": 37.88948051948052
+    },
+    {
+     "w": "follow.",
+     "pop": false,
+     "line": 1,
+     "t": 38.00311688311689
+    }
+   ],
+   "t0": 36.57857142857143,
+   "t1": 41.04998571428571,
+   "read": 4,
+   "place": "top",
+   "native": true
+  }
+ ],
+ "ui": {
+  "dateline": "NEW YORK CITY HALL · 16.10.2026"
+ },
+ "keep": [],
+ "quiet": []
+}
