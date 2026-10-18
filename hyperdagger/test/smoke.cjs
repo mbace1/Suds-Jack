@@ -1975,14 +1975,20 @@ s.listen(0, '127.0.0.1', async () => {
     for (const e of hd.enemies) e.alive = false; hd.enemies.length = 0;
     G.reset();
     const sk = d.spawnSkull(); const u = sk.update.bind(sk); sk.update = (...a) => { u(...a); sk.group.position.set(0, 1.2, 0); };
-    // the heap is a question of the SOLVER settling, not of a frame count: a
-    // cheaper frame (HD-011's quality ladder) steps the solver less per frame.
-    // Capped at 6 s of GAME time: an uncapped wait once ran season 2's clock
-    // past its first ebb (45 s), which raised the ebb's steps early and left
-    // the ebb check below nothing to raise.
+    // the heap is a question of the SOLVER settling, so the wait counts the
+    // solver's own steps. Not frames (a cheaper frame under HD-011's quality
+    // ladder steps it less), and not game time either: the solver takes at most
+    // `maxSteps` (2) 60 Hz steps a frame, so under 20 fps it runs slower than
+    // the game clock, and v57's 6 s game-time cap left it 4 s of settling on a
+    // 4 fps renderer (one v58 run: 15 of 18 asleep). The season clock is HELD
+    // instead, which is what that cap was for: season 2's first ebb (45 s)
+    // must not arrive and raise its steps under the heap. (The solver only
+    // steps while something is awake, so the 90-frame floor stays in frames.)
+    let solverSteps = 0; const realStep = G.sv.step.bind(G.sv); G.sv.step = () => { solverSteps++; return realStep(); };
     await frames(90); d.killEnemy(sk, 0, -1);
-    const kill0 = d.getState().gameTime;
-    for (let i = 0; i < 600 && (G.awake > 0 || i < 90) && d.getState().gameTime - kill0 < 6; i++) await frames(1);
+    const kill0 = d.getState().gameTime, steps0 = solverSteps;
+    for (let i = 0; i < 1500 && (G.awake > 0 || i < 90) && solverSteps - steps0 < 600; i++) { await frames(1); d.setTime(kill0); }
+    G.sv.step = realStep;
     const before = G.gibs.map(x => [x.b.positionLin[0], x.b.positionLin[1]]);
     const asleep = G.gibs.filter(x => x.b.mass <= 0).length;
     g.t = (g.arenaR + g.cfg.width - 6) / g.speed; await frames(120);
