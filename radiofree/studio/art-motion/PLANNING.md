@@ -8,6 +8,7 @@ films taught, turned into the questions a pitch has to answer before anything is
 | note | film | the rule it became |
 |---|---|---|
 | "the messaging isn't clear enough" | On Hold | **One argument, start to finish.** If the pitch can't say the insight in one sentence, it isn't ready. |
+| "None approved yet, messaging too unclear. Improve" | The Chair Is Taken, Kill Switch (v1) | **Ask it first, answer it last.** The rule above was already here, and both films broke it by listing what the research found: seven facts in one, six regulations in the other. Now the first caption asks the film's one question, the last answers it over its image, and at most three facts sit between, each one an answer to that question. A fact that answers something else is cut, however good. `copy.json` carries the `argument` (one sentence, ≤ 35 words) and a `role` per caption (`setup`, `evidence`, `punchline`), and the text checks FAIL a film without them. |
 | "it needs to be clear that US Congress, etc." | A Handful of People | **Say where and who.** The audience is in Helsinki and everywhere: name the country, the body, the city, in the caption *and* in a tag. |
 | "I wasn't sure it looked like" New York | Committee of the Whole | **Make the place recognisable.** Draw the real silhouette and the skyline behind it; a generic building is no building. |
 | "way too long … less subtle. Maybe a joke" | Happy Little Bot | **End on a joke in our own voice, over the image that answers it** ("Batteries included. / Parents not included." as the grown-up sits down). |

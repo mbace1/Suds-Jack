@@ -67,6 +67,17 @@ def main():
         miss = [L for L in copy['langs'] if L not in v]
         check(f'copy ui.{k}', not miss, 'all languages' if not miss else f'falls back to English in {miss}', warn=True)
 
+    # the message (owner, 18 Oct, on two films: "messaging too unclear"): ONE argument, the question asked by the first
+    # caption and answered by the last, at most three facts between — and a fact that does not answer it is cut
+    arg = copy.get('argument', ''); nw = len(arg.split()); roles = [c.get('role') for c in copy['captions']]
+    check('message: argument', bool(arg), f'{nw} words: {arg[:90]}' if arg else 'no "argument" in copy.json: write the film as one sentence before any caption')
+    if arg: check('message: one sentence', nw <= 35, f'{nw} words (at most 35)', warn=True)
+    check('message: roles', all(r in ('setup', 'evidence', 'punchline') for r in roles), ' → '.join(map(str, roles)))
+    check('message: asked first', roles[:1] == ['setup'] and roles.count('setup') == 1, 'the first caption is the one setup' if roles[:1] == ['setup'] else f'the first caption is {roles[:1]}')
+    check('message: answered last', roles[-1:] == ['punchline'] and roles.count('punchline') == 1, 'the last caption is the one punchline' if roles[-1:] == ['punchline'] else f'the last caption is {roles[-1:]}')
+    ev = roles.count('evidence'); check('message: three facts at most', ev <= 3, f'{ev} evidence captions (at most 3)')
+    if rep['captions']: t0 = min(c['t0'] for c in rep['captions']); check(f'message: question early {master}', t0 <= 1.5, f'the first caption is up at {t0:.2f} s (by 1.5 s)', warn=True)
+
     # the burned-in captions, as measured with the real fonts
     for c in rep['captions']:
         cid = f'{master}:{c["id"]}'

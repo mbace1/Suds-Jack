@@ -15,10 +15,9 @@
  "scenes": [
   "ct_chamber",
   "ct_screen",
-  "ct_binder",
   "ct_scale",
   "ct_hat",
-  "ct_dial"
+  "ct_end"
  ],
  "shots": [
   {
@@ -26,7 +25,7 @@
    "beats": 12,
    "cues": {
     "lamps": 0.25,
-    "doors": "word:came+0.05",
+    "doors": 4.4,
     "rattle": 5.4
    }
   },
@@ -38,15 +37,6 @@
     "bump": 0.8,
     "on": 1.2,
     "tile": "word:video"
-   }
-  },
-  {
-   "id": "ct_binder",
-   "beats": 12,
-   "cues": {
-    "push": 0.55,
-    "hit": 1.35,
-    "shrug": "word:specifics"
    }
   },
   {
@@ -68,16 +58,10 @@
    }
   },
   {
-   "id": "ct_dial",
-   "beats": 16,
-   "marks": {
-    "last": 8
-   },
+   "id": "ct_end",
+   "beats": 12,
    "cues": {
-    "dial": 0.3,
-    "blank": "word:pop",
-    "tilt": "mark:last-0.45",
-    "land": "word:headcount"
+    "land": "word:nobody"
    }
   }
  ],

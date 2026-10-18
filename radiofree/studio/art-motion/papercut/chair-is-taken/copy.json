@@ -1,74 +1,57 @@
 {
   "film": "chair-is-taken",
-  "cut": "Coxon 5, v1",
+  "cut": "Coxon 5, v2 (owner, 18 Oct: 'messaging too unclear') — one question, three answers",
   "series": "coxon",
   "captionSize": "house",
+  "argument": "Asked if it would accept responsibility for a death its AI caused, SpaceXAI came only under subpoena, by video, and answered with the law and 'everybody is in charge' — so nobody is.",
   "langs": ["en", "fi", "ja"],
   "native_read": { "en": true, "fi": false, "ja": false },
   "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
   "captions": [
     {
-      "id": "came", "at": "s1+0.7", "until": "s2-0.35", "hold": "s2",
+      "id": "question", "role": "setup", "at": "s1+0.5", "until": "s2-0.35", "hold": "s2",
       "text": {
-        "en": "SpaceXAI was [subpoenaed]. / On 16 October, it came.",
-        "fi": "SpaceXAI sai [haasteen]. / 16. lokakuuta se tuli.",
-        "ja": "SpaceXAIは [召喚]された。 / 10月16日、 出席した。"
+        "en": "New York asked Musk's SpaceXAI: / if your AI causes a death, / will you accept [responsibility]?",
+        "fi": "New York kysyi Muskin SpaceXAI:lta: / jos tekoälynne aiheuttaa kuoleman, / kannatteko [vastuun]?",
+        "ja": "NY市議会は SpaceXAIに 問うた。 / AIが 死亡事故を 起こしたら、 / [責任を] 負うのか？"
       },
-      "source": "Subpoenaed 28 Sept 2026 (council press 2026/09/28/3266); threatened with a petition to a judge, it agreed on 13 Oct to testify (council 2026/10/13/3295; CNBC 13 Oct); testified 16 Oct at the Committee on Technology (amNY, CNBC, Fox live, NY Daily News, PIX11, Crain's, EFE, NY1, council 2026/10/16/3301)."
+      "source": "Asked whether the company would accept responsibility if its AI caused injury, physical damage or death (amNY; Fox live), at the Committee on Technology hearing, City Hall, 16 Oct 2026. 'Musk's SpaceX, the AI side' is the research file's safe form (§8); the council and amNY write SpaceXAI."
     },
     {
-      "id": "video", "at": "s2+1.6", "until": "s3-0.35", "hold": "s3",
+      "id": "came", "role": "evidence", "at": "s2+0.6", "until": "s3-0.35", "hold": "s3",
       "text": {
-        "en": "By [video]. It sent / a government-affairs manager.",
-        "fi": "[Videolla]. Se lähetti / yhteiskuntasuhteiden päällikön.",
-        "ja": "[ビデオ] 出演。 / 来たのは 渉外担当の マネージャー。"
+        "en": "It took a subpoena / to get it to City Hall. / It came by [video].",
+        "fi": "Kaupungintalolle se saatiin / vasta haasteella. / Se tuli [videolla].",
+        "ja": "市庁舎に 呼ぶには / 召喚状が 必要だった。 / 来たのは [ビデオ] 越し。"
       },
-      "source": "Appeared by video: CNBC ('appeared by video'), EFE ('por videoconferencia'), NY Daily News ('testified virtually'). Title: senior manager of global government affairs (amNY, council, Fox, PIX); every outlet agrees on a government-affairs manager. The monitor in the chair is staging: no outlet says what stood at the table."
+      "source": "Subpoenaed 28 Sept 2026; agreed on 13 Oct to testify after talks about enforcement by a state judge (council 2026/10/13/3295; CNBC 13 Oct). Appeared by video: CNBC ('appeared by video'), EFE ('por videoconferencia'), NY Daily News ('testified virtually'). The monitor in the chair is staging: no outlet says what stood at the table."
     },
     {
-      "id": "insurance", "at": "s3+0.7", "until": "s4-0.35", "hold": "s4",
+      "id": "law", "role": "evidence", "at": "s3+0.7", "until": "s4-0.35", "hold": "s4",
       "text": {
-        "en": "Its catastrophe insurance? / The manager was \"not aware / of the [specifics]\".",
-        "fi": "Sen katastrofivakuutus? / Päällikkö ei ollut \"tietoinen / [yksityiskohdista]\".",
-        "ja": "大惨事への 保険は？ / 「[詳細は] 承知して いない」"
+        "en": "Its answer? / \"We're responsible for / following the [law].\"",
+        "fi": "Vastaus? / \"Olemme vastuussa / [lain] noudattamisesta.\"",
+        "ja": "答えは？ / 「我々には [法律を] / 守る 責任が ある」"
       },
-      "source": "Asked whether the company carries catastrophic-risk insurance: \"I'm not aware of the specifics of our insurance policies and what we have and we don't\" (Fox live, verbatim); amNY reports the same answer. Quoted: the fragment 'not aware of the specifics'."
+      "source": "The answer to that question: \"We're responsible for following the law.\" amNY and Fox live agree."
     },
     {
-      "id": "law", "at": "s4+0.7", "until": "s5-0.35", "hold": "s5",
+      "id": "everybody", "role": "evidence", "at": "s4+0.7", "until": "s5-0.35", "hold": "s5",
       "text": {
-        "en": "If its AI causes a death? / \"We're responsible for / following the [law].\"",
-        "fi": "Jos sen tekoäly aiheuttaa kuoleman? / \"Olemme vastuussa / [lain] noudattamisesta.\"",
-        "ja": "AIが 死亡事故を 起こしたら？ / 「我々には [法律を] 守る 責任が ある」"
-      },
-      "source": "Asked whether the company would accept responsibility if its AI caused injury, physical damage or death: \"We're responsible for following the law.\" amNY and Fox live agree."
-    },
-    {
-      "id": "everybody", "at": "s5+0.7", "until": "s6-0.35", "hold": "s6",
-      "text": {
-        "en": "How many work on safety? / \"[Everybody] is in charge / of safety.\"",
+        "en": "How many staff work on safety? / \"[Everybody] is in charge / of safety.\"",
         "fi": "Montako tekee turvallisuustyötä? / \"[Kaikki] vastaavat / turvallisuudesta.\"",
         "ja": "安全担当は 何人？ / 「[全員が] 安全の 責任者」"
       },
-      "source": "Asked how many staff work on AI safety: \"everybody is in charge of safety\" (NY Daily News, La Voce di New York). She later agreed to get the council a number (NYDN, amNY). The company's side, shown on the screen in shot 2: safety is \"core\" (amNY, council)."
+      "source": "Asked how many staff work on AI safety: \"everybody is in charge of safety\" (NY Daily News, La Voce di New York). She later agreed to get the council a number (NYDN, amNY). The company's side, on the screen in shot 2: safety is \"core\" (amNY, council)."
     },
     {
-      "id": "odds", "at": "s6+0.6", "until": "last-0.3", "hold": "last",
+      "id": "last", "role": "punchline", "at": "s5+0.5", "until": "end-0.2", "hold": "end",
       "text": {
-        "en": "Odds of catastrophe: / [no number] given.",
-        "fi": "Katastrofin todennäköisyys: / [lukua] ei annettu.",
-        "ja": "大惨事の 確率： / [数字は] 示されず。"
+        "en": "Everybody is in charge. / So [nobody] is.",
+        "fi": "Kaikki vastaavat. / Eli [kukaan] ei vastaa.",
+        "ja": "全員が 責任者。 / つまり [誰も] 責任を 取らない。"
       },
-      "source": "No outlet reports any probability or number from the company (amNY, CNBC, Fox, NYDN, MLex). Not 'refused': no outlet reports the 5 Oct question being put to it directly. On 5 Oct none of the four companies gave one either, Anthropic included."
-    },
-    {
-      "id": "headcount", "at": "last+0.15", "until": "end-0.2", "hold": "end",
-      "text": {
-        "en": "Everybody is in charge of safety. / The [headcount] will follow.",
-        "fi": "Kaikki vastaavat turvallisuudesta. / [Henkilömäärä] toimitetaan myöhemmin.",
-        "ja": "全員が 安全の 責任者。 / [人数は] 後日 連絡。"
-      },
-      "source": "The station's line. She agreed to send the council a safety-staff number (NYDN, amNY); MLex: the staffing question 'went unanswered'."
+      "source": "The station's line, over its own image: the SAFETY hat lands on the witness table and nobody picks it up."
     }
   ],
   "ui": {
@@ -77,14 +60,12 @@
   "props": {
     "plate": { "en": "SPACEXAI", "why": "the company's name on its nameplate, as in Committee of the Whole" },
     "screen": { "en": "GOV'T AFFAIRS · SPACEXAI / SAFETY IS \"CORE\"", "why": "the video tile's lower third: the company's own side, in its own word (amNY, council)" },
-    "binder": { "en": "CATASTROPHE INSURANCE", "why": "a prop" },
     "book": { "en": "LAW", "why": "a prop" },
-    "hat": { "en": "SAFETY", "why": "a prop" },
-    "dial": { "en": "ODDS OF CATASTROPHE · THE COMPANY'S NUMBER", "why": "Coxon #2's dial, relabelled; no needle" }
+    "hat": { "en": "SAFETY", "why": "a prop" }
   },
   "post": {
-    "en": "Subpoenaed, SpaceXAI came to New York's City Council: by video. Odds of catastrophe? No number. Who's in charge of safety? Everybody. #AI #AIsafety #NYC",
-    "fi": "Haasteen saanut SpaceXAI tuli New Yorkin kaupunginvaltuustoon: videolla. Katastrofin todennäköisyys? Ei lukua. Kuka vastaa turvallisuudesta? Kaikki.",
-    "ja": "召喚されたSpaceXAIはニューヨーク市議会に出席した。ビデオで。大惨事の確率は？数字なし。安全の責任者は？全員。"
+    "en": "New York asked Musk's SpaceXAI: if your AI causes a death, will you accept responsibility? It took a subpoena to get it there, and it came by video. \"We're responsible for following the law.\" Safety staff? \"Everybody is in charge of safety.\" #AI #AIsafety #NYC",
+    "fi": "New York kysyi Muskin SpaceXAI:lta: jos tekoälynne aiheuttaa kuoleman, kannatteko vastuun? Paikalle se saatiin vasta haasteella, ja se tuli videolla. \"Olemme vastuussa lain noudattamisesta.\" Turvallisuushenkilöstö? \"Kaikki vastaavat turvallisuudesta.\"",
+    "ja": "NY市議会はマスク氏のSpaceXAIに問うた。AIが死亡事故を起こしたら、責任を負うのか？召喚状でようやく呼ばれ、来たのはビデオ越し。「我々には法律を守る責任がある」。安全担当は？「全員が安全の責任者」。"
   }
 }

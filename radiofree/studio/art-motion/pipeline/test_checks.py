@@ -48,6 +48,16 @@ for name, patch, check in [('a line 830 px wide', {'widths': [830]}, 'width en:a
     subprocess.run([sys.executable, str(HERE / 'text' / 'text.py'), str(tmp / 'copy.json'), str(tmp / 'r.json'), str(tmp)], capture_output=True)
     res = {c['check']: c['result'] for c in json.load(open(tmp / 'text-checks.json'))}
     expect(name, res[check], 'FAIL')
+# the message lint: no argument, four facts, and a film that opens on a fact instead of its question all FAIL
+good = {**copy, 'argument': 'one sentence', 'captions': [{**copy['captions'][0], 'role': 'setup'}, {**copy['captions'][0], 'role': 'punchline'}]}
+(tmp / 'r.json').write_text(json.dumps({'lang': 'en', 'end': 3, 'holds': [], 'captions': [base], 'ui': {}}))
+for name, cp, check in [('a copy with no argument', {**good, 'argument': ''}, 'message: argument'),
+                        ('four facts', {**good, 'captions': good['captions'][:1] + [{**copy['captions'][0], 'role': 'evidence'}] * 4 + good['captions'][1:]}, 'message: three facts at most'),
+                        ('a film that opens on a fact', {**good, 'captions': [{**copy['captions'][0], 'role': 'evidence'}] + good['captions']}, 'message: asked first'),
+                        ('a caption with no role', {**good, 'captions': good['captions'] + [copy['captions'][0]]}, 'message: roles')]:
+    (tmp / 'copy.json').write_text(json.dumps(cp)); (tmp / 'text-checks.json').unlink(missing_ok=True)   # a crash must not read the last case's result
+    subprocess.run([sys.executable, str(HERE / 'text' / 'text.py'), str(tmp / 'copy.json'), str(tmp / 'r.json'), str(tmp)], capture_output=True)
+    expect(name, {c['check']: c['result'] for c in json.load(open(tmp / 'text-checks.json'))}[check], 'FAIL')
 copy['native_read']['en'] = False; (tmp / 'copy.json').write_text(json.dumps(copy)); (tmp / 'r.json').write_text(json.dumps({'lang': 'en', 'end': 3, 'holds': [], 'captions': [base], 'ui': {}}))
 for air, want in [(False, 'warn'), (True, 'FAIL')]:
     subprocess.run([sys.executable, str(HERE / 'text' / 'text.py'), str(tmp / 'copy.json'), str(tmp / 'r.json'), str(tmp)] + (['--air'] if air else []), capture_output=True)

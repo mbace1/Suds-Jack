@@ -10,7 +10,7 @@
 //   CAP.draw(ctx, plan, t, { busy });               // last thing drawn in a frame
 //   window.__film.report = CAP.report(ctx, plan);
 //
-// Copy syntax, all languages: "/" breaks a line, [word] is the pop word (amber, sprung).
+// Copy syntax, all languages: "/" breaks a line, [word] or [a few words] is the pop (amber, sprung).
 // Japanese: a space marks a segment boundary for the word-by-word reveal and is never drawn.
 
 export const RATE = { en: 20, fi: 17, ja: 6 };      // characters a second, on top of a 1 s base (house rule)
@@ -45,7 +45,11 @@ export async function loadCopy(url) { const r = await fetch(url); if (!r.ok) thr
 
 /** "Its safety standard / asks for a [second]" → [[{w, pop}], ...] (lines of words) */
 export function parse(text, lang) {
-  return text.split('/').map((ln) => ln.trim().split(/\s+/).filter(Boolean).map((w) => ({ w: w.replace(/[[\]]/g, ''), pop: /\[/.test(w) })));
+  let open = false;                                   // a pop can span words: "[sticky note]" lights both
+  return text.split('/').map((ln) => ln.trim().split(/\s+/).filter(Boolean).map((w) => {
+    if (w.includes('[')) open = true; const pop = open; if (w.includes(']')) open = false;
+    return { w: w.replace(/[[\]]/g, ''), pop };
+  }));
 }
 /** what a reader actually reads: no marks, no layout, and no segment spaces in Japanese */
 export function plain(text, lang) { const s = text.replace(/[[\]]/g, '').replace(/\s*\/\s*/g, ' ').trim(); return lang === 'ja' ? s.replace(/\s+/g, '') : s; }

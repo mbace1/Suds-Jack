@@ -19,7 +19,9 @@ uv run --with numpy --with soundfile --with matplotlib python pipeline/sound/she
 - An **engine** film (`film.json`) is a papercut film drawn by the huashu engine, e.g. *The Chair Is Taken*:
   1. `plan.mjs` resolves the timeline from the copy. Holds are rounded up to whole beats, so cuts stay on the
      grid. Cues can be tied to pop words (`"tip": "word:law"`), so the picture hits the word in every language.
-  2. The scenes read it as `window.FILM_PLAN`.
+  2. The scenes read it as `window.FILM_PLAN`. The plan is the first library the engine loads: the kits read it as
+     they load, and when it loaded last every cue in the picture fell back to its scene's default while the score
+     hit the planned times (Chair v1 shipped like that).
   3. The engine renders the picture.
   4. The **caption pass** (`text/overlay.html`) puts the same captions and bug on its frames.
 
@@ -60,7 +62,11 @@ uv run --with numpy --with soundfile --with matplotlib python pipeline/sound/she
 - **Scrims:** the renderer measures the picture behind each line on captionless frames (edge energy, the busiest of
   five samples). It draws a scrim only when that picture is busy, as a soft, blurred shadow of the caption's own box.
   It never draws a band across the frame.
+- **The message** (owner, 18 Oct: "messaging too unclear"): `argument` is the film in one sentence (≤ 35 words), and
+  every caption has a `role`. The first caption is the one `setup` (the question, up by 1.5 s), the last is the one
+  `punchline` (the answer, over its image), and at most three `evidence` captions sit between. `PLANNING.md` says why.
 - **Checks:**
+  - the message: the argument, the roles, asked first, answered last, three facts at most;
   - every line in every language, with a pop word and a source;
   - line width ≤ 800 px, measured;
   - the safe zone (top 150, bottom 1630, the right-hand rail);
@@ -107,7 +113,8 @@ holds the lines.
 
 - **Kill Switch** (`clay/kill-switch/film.js`, `copy.json`, `score.py`), the pilot: en, fi and ja masters,
   `previews/17-10-Kill-Switch-pipeline-*.mp4`. Reports are in `qa/pipeline/kill-switch-pilot/`.
-- **The Chair Is Taken** (Coxon #5, `papercut/chair-is-taken/`): the first engine film, `previews/18-10-Chair-Is-Taken-en.mp4`.
-  Reports are in `qa/pipeline/chair-is-taken/`.
-- **Kill Switch**, the full film (`flat/kill-switch/`): `previews/18-10-Kill-Switch-en.mp4`. Reports are in
-  `qa/pipeline/kill-switch/`.
+- **The Chair Is Taken** (Coxon #5, `papercut/chair-is-taken/`): the first engine film. v2, one question
+  (`previews/18-10-Chair-Is-Taken-v2-en.mp4`); v1 is `previews/18-10-Chair-Is-Taken-en.mp4`. Reports are in
+  `qa/pipeline/chair-is-taken/`.
+- **Kill Switch**, the full film (`flat/kill-switch/`): v2, one comparison (`previews/18-10-Kill-Switch-v2-en.mp4`);
+  v1 is `previews/18-10-Kill-Switch-en.mp4`. Reports are in `qa/pipeline/kill-switch/`.

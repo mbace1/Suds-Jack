@@ -5,9 +5,10 @@ the Finnish and Japanese masters — longer where their lines need it — are sc
 
     uv run --with numpy --with soundfile python papercut/chair-is-taken/score.py <events.json> <out.wav> [<report.json> <stems>]
 
-The one new sound in a Coxon film is the CALL: the screen in the chair joins with a video-call chime where a
-witness would have sat down, and buffers in ticks. The room goes quiet for the last line, and the hat lands on a
-dull tap and a deadpan button before the chorale closes in C minor.
+v2 (owner, 18 Oct: "messaging too unclear"): one question — will you accept responsibility? — and three answers;
+the insurance and the dial are gone. The one new sound in a Coxon film is the CALL: the screen in the chair joins
+with a video-call chime where a witness would have sat down, and buffers in ticks. The room goes quiet on the cut
+back to the table, and on "nobody" the hat lands on a dull tap and a deadpan button before the chorale closes.
 """
 import sys, json
 from pathlib import Path
@@ -21,8 +22,8 @@ EV = json.load(open(sys.argv[1])); OUT = sys.argv[2]
 REP = sys.argv[3] if len(sys.argv) > 3 else None; STEMS = sys.argv[4] if len(sys.argv) > 4 else None
 END = EV['end']; s = session(Coxon, END + 0.5); B = s.B
 Q = EV['cues']; c = lambda k: Q[k]
-S = [EV[f's{i}'] for i in range(1, 7)]
-quiet = [(EV['last'] - 0.3, c('ct_dial.land'))]
+S = [EV[f's{i}'] for i in range(1, 6)]
+quiet = [(S[4] + 0.1, c('ct_end.land'))]          # the room holds its breath for the answer
 
 
 def arrive(t, length='mid', g=0.6, pan=0.0, name='whoosh in'):
@@ -34,29 +35,30 @@ def arrive(t, length='mid', g=0.6, pan=0.0, name='whoosh in'):
 # stops for the last line.
 s.sfx.bed(room(END, 1.0), 900)
 k = 0
-while k * B < EV['last'] - 0.3:
+while k * B < S[4]:
     t = k * B; k += 1
     if t < 1.0 or any(a <= t < b for a, b in quiet): continue
     if k % 2: s.note(bass_drum(0.3), t, 0.3, 0, 0.25, stem='march', name='march')
     else: s.note(rim(0.4), t, 0.3, 0.3 if k % 4 else -0.3, 0.35, stem='march', name='clock')
-PAD = ['Cm_lo', 'Fm', 'Cm_lo', 'Ab', 'Fm', 'Cm_lo']
+PAD = ['Cm_lo', 'Fm', 'Ab', 'Fm']
 for i, ch in enumerate(PAD):
-    t0, t1 = EV[f's{i + 1}'], (EV[f's{i + 2}'] if i < 5 else EV['last'] - 0.3)
+    t0, t1 = EV[f's{i + 1}'], EV[f's{i + 2}']
     for j, n in enumerate(Coxon.CH[ch][:3]): s.note(trombone(n, max(0.5, t1 - t0 - 0.3), 0.16, a=0.6, r=0.6), t0 + 0.05, 0.3, -0.3 + 0.3 * j, 0.5, stem='pad', name=f'pad {i + 1}')
 for i, t in enumerate(S):                                                    # every cut lands on the corps; the roll arrives at it
     s.note(bass_drum(0.5), t, 0.42, 0, 0.3, stem='drums', name=f'cut {i + 1}')
     if i: s.roll_into(t, B * 0.9, 0.05, 0.35, 0.4)
 s.ruff(S[0], 0.4)
 
-# ── shot 1 · the chamber: the lamps strike; a chorale for the room; the doors open on "it came" — and nobody;
+# ── shot 1 · the question: the lamps strike; a chorale for the room; the doors open as it ends — and nobody;
 # a cart's wheels rattle closer under the cut
 for i in range(2): s.fx(lamp_click(), c('ct_chamber.lamps') + i * 0.14, 0.7, -0.4 + 0.8 * i, name=f'lamp {i + 1}')
 s.chorale(S[0] + 0.3, 'Cm', 1.6, 0.3, 0.38)
+QPOP = next(w['t'] for w in EV['words'] if w['pop'] and w['caption'] == 'question')
+s.chorale(QPOP + 0.03, 'G', 1.6, 0.32, 0.38)                                 # the question hangs on the dominant
 s.fx(wood_creak(0.7, 520, 40), c('ct_chamber.doors'), 0.55, 0, 0.3, name='the doors')
 s.fx(whoosh('long', 'out', 0.8), c('ct_chamber.doors') + 0.05, 0.35, 0, 0.3, name='the corridor air')
-s.chorale(c('ct_chamber.doors'), 'Ab', 2.4, 0.35, 0.42); s.note(fife(84, 0.12, 0.5), c('ct_chamber.doors') + 1.1, 0.28, 0.4, 0.45, name='a wry pip: nobody')
+s.chorale(c('ct_chamber.doors'), 'Ab', 1.8, 0.35, 0.42); s.note(fife(84, 0.12, 0.5), c('ct_chamber.doors') + 1.1, 0.28, 0.4, 0.45, name='a wry pip: nobody')
 s.fx(rack_rattle(1.2, 6), c('ct_chamber.rattle'), 0.35, 0.5, name='wheels, coming')
-s.chorale(S[0] + 4.6, 'G', 1.6, 0.3, 0.36)
 
 # ── shot 2 · the chair is taken: the cart rolls in and bumps the chair, the old subpoena slides off; the screen
 # strikes and buffers; on "video" it JOINS (the call chime); the company's chip pops; a buffering blip
@@ -69,15 +71,6 @@ s.fx(cam_chime((79, 84, 91)), c('ct_screen.tile'), 0.8, 0, 0.15, name='the call 
 s.chorale(c('ct_screen.tile') + 0.05, 'Fm', 2.4, 0.3, 0.38); s.note(timpani(41, 1.5, 0.45), c('ct_screen.tile') + 0.05, 0.35, -0.1, 0.35)
 s.fx(chip(True), c('ct_screen.tile') + 1.4, 0.4, -0.3, name='SAFETY IS "CORE"')
 for i in range(4): s.fx(tick(4 + i), c('ct_screen.tile') + 3.0 + i * 0.12, 0.25, 0.1, name='buffering again')
-
-# ── shot 3 · the insurance: the binder slides and stops dead on the stand; pages jump; on "specifics" the call
-# buffers and the room answers with the deadpan button
-s.fx(foley('card', 'slide'), c('ct_binder.push'), 0.6, -0.3, name='the binder slides')
-s.fx(foley('wood', 'drop'), c('ct_binder.hit'), 0.85, 0, name='it hits the stand'); s.note(timpani(36, 1.4, 0.55), c('ct_binder.hit'), 0.4, -0.1, 0.35)
-s.fx(page_flutter(0.8, 9) * 8, c('ct_binder.hit') + 0.05, 0.45, 0.2, name='pages')
-s.chorale(c('ct_binder.hit') + 0.1, 'Cm', 1.4, 0.3, 0.36)
-s.fx(stinger('deadpan'), c('ct_binder.shrug'), 0.7, name='"specifics"'); s.fx(pop(0.9), c('ct_binder.shrug') + 0.02, 0.3, name='pop word')
-for i in range(5): s.fx(tick(i), c('ct_binder.shrug') + 0.15 + i * 0.12, 0.22, 0.1, name='buffering')
 
 # ── shot 4 · the law: one tap of the gavel; the coffin card and the books drop onto the pans; on "law" the beam
 # comes down hard — a civic hit, a Neapolitan chord
@@ -98,22 +91,19 @@ s.fx(foley('paper', 'slide'), c('ct_hat.pop'), 0.4, 0, name='every hand up'); s.
 s.fife_line(c('ct_hat.pop') + 0.05, [(0, 79, 0.5), (0.5, 84, 0.5), (1, 87, 0.5), (1.5, 91, 1)], g=0.3, pan=0.3)
 s.note(timpani(43, 1.2, 0.45), c('ct_hat.pop'), 0.35, -0.1, 0.35)
 s.fx(whoosh('mid', 'out'), c('ct_hat.gone'), 0.4, 0.6, name='the hat leaves')
-s.chorale(S[4] + 3.4, 'Fm', 2.6, 0.28, 0.36)
+s.chorale(S[3] + 3.4, 'Fm', 2.6, 0.28, 0.36)
 
-# ── shot 6 · no number, and the hat: the dial is lowered in; on "no number" the stamp and a timpani; the room goes
-# quiet as the camera tilts down; on "headcount" the hat lands on the screen: a dull tap, the deadpan button, and
-# the chorale closes in C minor with the hall's bell
-s.fx(card(), c('ct_dial.dial'), 0.5, name='the dial'); s.chorale(c('ct_dial.dial'), 'Cm_lo', 1.0, 0.4, 0.45)
-s.fx(stamp(), c('ct_dial.blank'), 0.9, name='NO NUMBER'); s.hit(c('ct_dial.blank'), 0.8, 36, crash_=False); s.chorale(c('ct_dial.blank'), 'Cm', 1.9, 0.75, 0.48)
-arrive(c('ct_dial.tilt') + 1.0, 'long', 0.35, name='the camera tilts down')
-s.fx(hum(60, 2.2) * 0.5, c('ct_dial.tilt'), 0.3, name='the screen hums in the quiet')
-s.fx(whoosh('short', 'in'), c('ct_dial.land') - WHOOSH['short'] * 0.8, 0.45, 0.5, at=c('ct_dial.land') - 0.01, name='the hat drops')
-s.fx(tap(dull=True), c('ct_dial.land'), 1.0, name='"headcount": the hat lands'); s.fx(stinger('deadpan'), c('ct_dial.land') + 0.05, 0.6)
-END_HIT = c('ct_dial.land') + 0.9
+# ── shot 5 · the answer: the room goes quiet on the cut back to the table; on "nobody" the hat drops onto it: a
+# dull tap, the deadpan button, and the chorale closes in C minor with the hall's bell
+s.fx(hum(60, 2.2) * 0.5, S[4], 0.3, name='the screen hums in the quiet')
+s.fx(whoosh('short', 'in'), c('ct_end.land') - WHOOSH['short'] * 0.8, 0.45, -0.4, at=c('ct_end.land') - 0.01, name='the hat drops')
+s.fx(tap(dull=True), c('ct_end.land'), 1.0, -0.3, name='"nobody": the hat lands on the table'); s.fx(stinger('deadpan'), c('ct_end.land') + 0.05, 0.6)
+for i in range(3): s.fx(foley('card', 'tap', 0.5 - i * 0.12), c('ct_end.land') + 0.24 + i * 0.24, 0.35, -0.3, name=f'the hat rocks {i + 1}')
+END_HIT = c('ct_end.land') + 0.9
 s.chorale(END_HIT, 'Cm', 2.6, 0.75, 0.5); s.fx(tower_bell(48, 4.0), END_HIT + 0.02, 0.4, -0.2, 0.5)
 for i, n in enumerate([60, 55, 48]): s.note(trombone(n, 1.2 if i == 2 else 0.3, 0.8), END_HIT + 0.05 + i * B / 2, 0.38, 0.2, 0.5)
 for w in EV['words']:                                                          # the pop words the shots do not already answer
-    if w['pop'] and w['caption'] in ('came', 'video', 'odds'): s.fx(pop(1.4), w['t'] + 0.03, 0.32, 0.2, name=f'pop {w["w"]}')
+    if w['pop'] and w['caption'] in ('question', 'came'): s.fx(pop(1.4), w['t'] + 0.03, 0.32, 0.2, name=f'pop {w["w"]}')
 for cp in EV['captions']:
     last = max(w['t'] for w in EV['words'] if w['caption'] == cp['id']); s.duck(cp['t0'], last + 0.4, -3.0, why=f'caption {cp["id"]}')
 

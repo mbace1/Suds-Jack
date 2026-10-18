@@ -1,7 +1,8 @@
 // Shot 1 · The chamber, the chair still empty. The room is cool and dark, morning daylight in the tall windows; the
 // lamps strike one by one; the witness chair waits behind its table with Committee of the Whole's subpoena still
-// on the seat. On "it came" the double doors behind the chair swing open into the corridor's warm light — and
-// nobody walks through them. At the end a shadow crosses the doorway and something on wheels rattles closer.
+// on the seat. As the question finishes (v2: "will you accept responsibility?") the double doors behind the chair
+// swing open into the corridor's warm light — and nobody walks through them. Then a shadow crosses the doorway and
+// something on wheels rattles closer.
 SCENES['ct_chamber'] = (() => {
   const { stack, box, put } = RFP, D = CT, ID = 'ct_chamber', { clamp, lerp } = U;
   return {
