@@ -1,0 +1,25 @@
+{
+ "kind": "engine",
+ "engine": "st",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/st_kit.js"
+ ],
+ "scenes": ["st_trick", "st_berlin", "st_cal", "st_judge", "st_eu"],
+ "shots": [
+  { "id": "st_trick", "beats": 12, "cues": { "strip": 0.4, "pull": "line:2", "two": "word:pop" } },
+  { "id": "st_berlin", "beats": 12, "cues": { "banned": "line:1", "satire": "word:pop" } },
+  { "id": "st_cal", "beats": 12, "cues": { "voice": "line:2", "label": "word:pop" } },
+  { "id": "st_judge", "beats": 12, "cues": { "gavel": "line:1", "speech": "line:2", "ban": "word:pop" } },
+  { "id": "st_eu", "beats": 12, "cues": { "labelled": "line:2.start", "light": "word:pop" } }
+ ],
+ "quiet": [],
+ "keep": []
+}

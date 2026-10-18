@@ -1,0 +1,157 @@
+{
+ "lang": "en",
+ "end": 32.678557142857144,
+ "holds": [
+  {
+   "caption": "question",
+   "beat": "s2",
+   "extra": 0.5357
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "text": "AI insiders reportedly expect / a major AI disaster within a year. / What are they [getting ready]?",
+   "plain": "AI insiders reportedly expect a major AI disaster within a year. What are they getting ready?",
+   "t0": 0.5,
+   "t1": 6.614,
+   "shown": 6.114,
+   "read": 5.65,
+   "lastWord": 2.917,
+   "widths": [
+    692,
+    790,
+    706
+   ],
+   "box": {
+    "x": 134,
+    "y": 191,
+    "w": 812,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.14,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "attack",
+   "text": "Most likely a [cyberattack]: / banks, internet, power, water.",
+   "plain": "Most likely a cyberattack: banks, internet, power, water.",
+   "t0": 7.564,
+   "t1": 13.043,
+   "shown": 5.479,
+   "read": 3.85,
+   "lastWord": 8.943,
+   "widths": [
+    624,
+    725
+   ],
+   "box": {
+    "x": 167,
+    "y": 191,
+    "w": 747,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.18,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "plan",
+   "text": "Their reported plan: / brief Congress, and shape / the rules that come [after].",
+   "plain": "Their reported plan: brief Congress, and shape the rules that come after.",
+   "t0": 13.993,
+   "t1": 19.471,
+   "shown": 5.479,
+   "read": 4.65,
+   "lastWord": 15.956,
+   "widths": [
+    476,
+    630,
+    608
+   ],
+   "box": {
+    "x": 214,
+    "y": 191,
+    "w": 652,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 2.28,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "rule",
+   "text": "One rule on the list: / a required [kill switch].",
+   "plain": "One rule on the list: a required kill switch.",
+   "t0": 20.421,
+   "t1": 25.9,
+   "shown": 5.479,
+   "read": 3.25,
+   "lastWord": 21.505,
+   "widths": [
+    459,
+    515
+   ],
+   "box": {
+    "x": 271,
+    "y": 191,
+    "w": 537,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.16,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "The off switch: [the day after]. / Until then: the sticky note.",
+   "plain": "The off switch: the day after. Until then: the sticky note.",
+   "t0": 26.75,
+   "t1": 32.479,
+   "shown": 5.729,
+   "read": 3.95,
+   "lastWord": 28.197,
+   "widths": [
+    679,
+    628
+   ],
+   "box": {
+    "x": 190,
+    "y": 191,
+    "w": 701,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 2.65,
+    "busy": 0
+   },
+   "native": true
+  }
+ ],
+ "frames": 980,
+ "fps": 30
+}

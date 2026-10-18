@@ -1,0 +1,25 @@
+{
+ "kind": "engine",
+ "engine": "ot",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/ot_kit.js"
+ ],
+ "scenes": ["ot_door", "ot_house", "ot_three", "ot_letter", "ot_street"],
+ "shots": [
+  { "id": "ot_door", "beats": 12, "cues": { "glow": 0.8, "test": "word:pop" } },
+  { "id": "ot_house", "beats": 12, "cues": { "walk": 0.5, "in": "word:pop" } },
+  { "id": "ot_three", "beats": 12, "cues": { "walk": 0.4, "lit": "word:pop" } },
+  { "id": "ot_letter", "beats": 12, "cues": { "post": "word:pop", "exempt": "line:3" } },
+  { "id": "ot_street", "beats": 12, "cues": { "mat": "word:pop" } }
+ ],
+ "quiet": [],
+ "keep": []
+}

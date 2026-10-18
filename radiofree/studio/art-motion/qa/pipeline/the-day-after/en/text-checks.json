@@ -1,0 +1,482 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "Axios, 9 Oct 2026 (scoop): many AI industry insiders expect a large-scale AI eve"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy attack.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy attack.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy attack.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy attack source",
+  "result": "pass",
+  "why": "Axios via Decrypt and Gizmodo: most likely a cyberattack that cuts off financial"
+ },
+ {
+  "check": "copy attack pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy plan.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy plan.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy plan.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy plan source",
+  "result": "pass",
+  "why": "Axios: the planning focuses on educating members of Congress; executives believe"
+ },
+ {
+  "check": "copy plan pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy rule.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy rule.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy rule.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy rule source",
+  "result": "pass",
+  "why": "Axios, as repeated by several outlets: among the proposals with bipartisan suppo"
+ },
+ {
+  "check": "copy rule pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, over its own image: the kill switch behind glass marked OPEN"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.dateline",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.banks",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.internet",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.power",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.water",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "33 words: AI insiders reportedly expect a disaster within a year, and the industry's reported plan i"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "33 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 790 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 134, 'y': 191, 'w': 812, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 6.11 s, needs 5.65 s (93 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 3.70 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 0.14 → scrim 0.0"
+ },
+ {
+  "check": "width en:attack",
+  "result": "pass",
+  "why": "widest line 725 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:attack",
+  "result": "pass",
+  "why": "box {'x': 167, 'y': 191, 'w': 747, 'h': 160}"
+ },
+ {
+  "check": "reading time en:attack",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 3.85 s (57 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:attack",
+  "result": "pass",
+  "why": "last word up 4.10 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:attack",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:attack",
+  "result": "pass",
+  "why": "picture behind: edge 0.18 → scrim 0.0"
+ },
+ {
+  "check": "width en:plan",
+  "result": "pass",
+  "why": "widest line 630 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:plan",
+  "result": "pass",
+  "why": "box {'x': 214, 'y': 191, 'w': 652, 'h': 247}"
+ },
+ {
+  "check": "reading time en:plan",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.65 s (73 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:plan",
+  "result": "pass",
+  "why": "last word up 3.52 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:plan",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:plan",
+  "result": "pass",
+  "why": "picture behind: edge 2.28 → scrim 0.0"
+ },
+ {
+  "check": "width en:rule",
+  "result": "pass",
+  "why": "widest line 515 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:rule",
+  "result": "pass",
+  "why": "box {'x': 271, 'y': 191, 'w': 537, 'h': 160}"
+ },
+ {
+  "check": "reading time en:rule",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 3.25 s (45 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:rule",
+  "result": "pass",
+  "why": "last word up 4.39 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:rule",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:rule",
+  "result": "pass",
+  "why": "picture behind: edge 0.16 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 679 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 190, 'y': 191, 'w': 701, 'h': 160}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 3.95 s (59 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.28 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 2.65 → scrim 0.0"
+ },
+ {
+  "check": "hold en:question",
+  "result": "pass",
+  "why": "the picture holds 0.5357 s before s2 so the line can be read"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "warn",
+  "why": "AI insiders reportedly expect a major AI disaster | within a year. What are they getting ready?"
+ },
+ {
+  "check": "sidecar lines en:attack",
+  "result": "pass",
+  "why": "Most likely a cyberattack: banks, | internet, power, water."
+ },
+ {
+  "check": "sidecar lines en:plan",
+  "result": "pass",
+  "why": "Their reported plan: brief Congress, and | shape the rules that come after."
+ },
+ {
+  "check": "sidecar lines en:rule",
+  "result": "pass",
+  "why": "One rule on the list: a required kill | switch."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "The off switch: the day after. Until then: | the sticky note."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "warn",
+  "why": "6.11 s on this master, fi needs 7.71 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "warn",
+  "why": "Tekoälyalan sisäpiiri odottaa raporttien mukaan suurta | tekoälykatastrofia vuoden sisällä. Mihin he valmistautuvat?"
+ },
+ {
+  "check": "sidecar fi:attack",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 4.47 s"
+ },
+ {
+  "check": "sidecar lines fi:attack",
+  "result": "pass",
+  "why": "Todennäköisimmin kyberhyökkäys: pankit, | netti, sähkö, vesi."
+ },
+ {
+  "check": "sidecar fi:plan",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 6.06 s"
+ },
+ {
+  "check": "sidecar lines fi:plan",
+  "result": "warn",
+  "why": "Raportoitu suunnitelma: briifata kongressia | ja muokata säännöt, jotka tulevat jälkeen."
+ },
+ {
+  "check": "sidecar fi:rule",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 3.88 s"
+ },
+ {
+  "check": "sidecar lines fi:rule",
+  "result": "pass",
+  "why": "Yksi listan säännöistä: pakollinen | hätäkatkaisin."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 4.53 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Katkaisin tulee vasta jälkeenpäin. Siihen | asti: muistilappu."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "warn",
+  "why": "6.11 s on this master, ja needs 9.00 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "warn",
+  "why": "AI業界の内部者は1年以内の大規模なAI災害を | 予想していると報じられた。彼らは何を準備している？"
+ },
+ {
+  "check": "sidecar ja:attack",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.83 s"
+ },
+ {
+  "check": "sidecar lines ja:attack",
+  "result": "pass",
+  "why": "最もありそうなのはサイバー攻撃。 | 銀行、ネット、電気、水道。"
+ },
+ {
+  "check": "sidecar ja:plan",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.83 s"
+ },
+ {
+  "check": "sidecar lines ja:plan",
+  "result": "pass",
+  "why": "報じられた計画は議会への説明と、 | その後にできるルール作り。"
+ },
+ {
+  "check": "sidecar ja:rule",
+  "result": "pass",
+  "why": "5.48 s on this master, ja needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines ja:rule",
+  "result": "pass",
+  "why": "リストのルールの一つは | 義務化されたキルスイッチ。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 4.33 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "停止スイッチはその翌日。 | それまでは付箋。"
+ }
+]

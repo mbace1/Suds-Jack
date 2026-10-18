@@ -85,7 +85,7 @@ sound = json.load(open(OUT / 'sound-report.json'))
 
 # 4. encode, then measure what was actually delivered (AAC can raise a peak)
 mp4 = OUT / f'{name}.{LANG}.mp4'
-if (OUT / 'picture.mp4').exists():                                                       # the picture kept from the last build: mux the new sound onto it
+if FJ['kind'] != 'engine' and (OUT / 'picture.mp4').exists():                            # a page film's kept picture: mux the new sound onto it (an engine film's picture.mp4 has no words — its master is the caption pass's frames)
     run('ffmpeg', '-y', '-loglevel', 'error', '-i', OUT / 'picture.mp4', '-i', OUT / 'score.wav', '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
         '-movflags', '+faststart', '-c:a', 'aac', '-b:a', '256k', '-shortest', mp4)
 else:

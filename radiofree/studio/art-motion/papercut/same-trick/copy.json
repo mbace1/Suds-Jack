@@ -1,0 +1,75 @@
+{
+  "film": "same-trick",
+  "cut": "v1 (owner, 18 Oct: make it; replaces The Scoreboard) — one question: can a joke use AI to put words in a leader's mouth? Two courts, two answers.",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "The same AI trick got two verdicts: Berlin banned a fake chancellor as not clearly satire, a US judge struck down California's label law, and EU law now asks satire for a light label.",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question", "role": "setup", "at": "s1+0.5", "until": "s2-0.35", "hold": "s2",
+      "text": {
+        "en": "Can a joke use AI to put words / in a leader's mouth? / Two courts, [two answers].",
+        "fi": "Saako vitsi panna tekoälyllä / sanoja johtajan suuhun? / Kaksi oikeutta, [kaksi vastausta].",
+        "ja": "AIで 指導者の 口に 言葉を / 入れる 冗談は 許されるか？ / 二つの 法廷、 [二つの 答え]。"
+      },
+      "source": "The station's question. The cases: research-satire-history.md §10 (Berlin) and §12 (California); the EU rule: §Landing, AI Act Article 50(4)."
+    },
+    {
+      "id": "berlin", "role": "evidence", "at": "s2+0.6", "until": "s3-0.35", "hold": "s3",
+      "text": {
+        "en": "Berlin, 2024: a court banned / an AI video of the chancellor: / not clearly [satire].",
+        "fi": "Berliini 2024: oikeus kielsi / tekoälyvideon liittokanslerista: / ei selvästi [satiiria].",
+        "ja": "ベルリン、2024年： 裁判所は / 首相の AI動画を 禁じた。 / 明らかな [風刺] では ないと。"
+      },
+      "source": "Landgericht Berlin II, 15 O 579/23: a preliminary injunction for the federal government against the Zentrum für Politische Schönheit's AI-voiced Scholz video, reported 25 Feb 2024 (LTO, netzpolitik.org). Per FAZ (via turi2) the court found it not clearly recognisable as a fake or as satire: a paraphrase, so never in quote marks. No appeal outcome found, so 'banned', not 'finally'."
+    },
+    {
+      "id": "california", "role": "evidence", "at": "s3+0.6", "until": "s4-0.35", "hold": "s4",
+      "text": {
+        "en": "California, 2024: a parody ad / gave a candidate an AI voice. / A new law demanded a [label].",
+        "fi": "Kalifornia 2024: parodiamainos / antoi ehdokkaalle tekoälyäänen. / Uusi laki vaati [merkinnän].",
+        "ja": "カリフォルニア、2024年： パロディ広告が / 候補者に AIの 声を 与えた。 / 新法は [表示を] 求めた。"
+      },
+      "source": "A July 2024 parody campaign ad with a cloned candidate's voice; AB 2839, signed Sep 2024, allowed suits over deceptive election content and required parody and satire to carry labels (Reason, AI Business, Tech Policy Press)."
+    },
+    {
+      "id": "judge", "role": "evidence", "at": "s4+0.6", "until": "s5-0.35", "hold": "s5",
+      "text": {
+        "en": "A judge struck the law down: / answer a joke with more speech, / not a [ban].",
+        "fi": "Tuomari kumosi lain: / vitsiin vastataan puheella, / ei [kiellolla].",
+        "ja": "判事は その法律を 無効に した。 / 冗談には 言論で 応えよ、 / [禁止] では なく。"
+      },
+      "source": "Kohls v. Bonta, US District Court, E.D. California: preliminary injunction 2 Oct 2024; struck down as facially unconstitutional, August 2025 (Bloomberg Law, Turley, MediaPost). 'Answer a joke with more speech' is our plain summary of the order's counter-speech reasoning, so it is not quoted."
+    },
+    {
+      "id": "last", "role": "punchline", "at": "s5+0.5", "until": "end-0.2", "hold": "end",
+      "text": {
+        "en": "EU law since August: an AI fake / must be labelled. Satire too, / just [lightly].",
+        "fi": "EU-laki elokuusta: / tekoälyväärennös on merkittävä. / Satiirikin, mutta [kevyesti].",
+        "ja": "EU法は 8月から： AIの 偽物には / 表示が 必要。 風刺も、 / ただし [控えめに]。"
+      },
+      "source": "AI Act Article 50(4), applying from 2 Aug 2026: deep fakes must be disclosed; for evidently satirical work the duty is limited to disclosing that it exists, in an appropriate manner that does not hamper the display or enjoyment of the work."
+    }
+  ],
+  "ui": {
+    "tagBerlin": { "en": "BERLIN REGIONAL COURT · 2024", "fi": "BERLIININ ALIOIKEUS · 2024", "ja": "ベルリン地方裁判所 · 2024" },
+    "tagCalifornia": { "en": "CALIFORNIA · 2024", "fi": "KALIFORNIA · 2024", "ja": "カリフォルニア · 2024" },
+    "tagJudge": { "en": "US FEDERAL COURT · AUG 2025", "fi": "USA:N LIITTOVALTION OIKEUS · 8/2025", "ja": "米連邦地裁 · 2025年8月" },
+    "tagEU": { "en": "EU AI ACT · ART. 50 · 2.8.2026", "fi": "EU:N TEKOÄLYSÄÄDÖS · 50 ART. · 2.8.2026", "ja": "EU AI法 · 第50条 · 2026.8.2" }
+  },
+  "props": {
+    "banned": { "en": "BANNED", "why": "the court stamp on the Berlin phone: a preliminary injunction against further distribution" },
+    "tab": { "en": "NOT CLEARLY SATIRE", "why": "the court's reason as a label, a paraphrase (never in quote marks)" },
+    "vote": { "en": "VOTE", "why": "the campaign poster: a candidate, unnamed" },
+    "sticker": { "en": "LABEL REQUIRED", "why": "what AB 2839 demanded of parody; drawn as big as the poster's biggest word" },
+    "bug": { "en": "AI", "why": "the EU's answer: a small label in the corner, like a TV channel's corner bug" }
+  },
+  "post": {
+    "en": "Same trick, two verdicts. Berlin, 2024: a court barred an AI-voiced video of the chancellor as not clearly satire. California: a judge struck down a law demanding labels on AI parody. Since August, EU law asks for a label, kept light for satire. #AIAct #satire #EU",
+    "fi": "Sama temppu, kaksi tuomiota. Berliini 2024: oikeus kielsi tekoälyäänellä tehdyn liittokanslerivideon, koska se ei ollut selvästi satiiria. Kalifornia: tuomari kumosi lain, joka vaati merkintää tekoälyparodiaan. Elokuusta lähtien EU-laki vaatii merkinnän, satiirilta kevyen.",
+    "ja": "同じ手口、二つの判決。2024年ベルリン：裁判所はAI音声の首相動画を、明らかな風刺ではないとして禁じた。カリフォルニア：判事はAIパロディに表示を求める法律を無効とした。8月から、EU法は表示を求める。風刺には控えめに。"
+  }
+}

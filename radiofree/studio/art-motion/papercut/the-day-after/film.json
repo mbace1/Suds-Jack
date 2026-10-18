@@ -1,0 +1,26 @@
+{
+ "kind": "engine",
+ "engine": "dy",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/ct_kit.js",
+  "scenes/dy_kit.js"
+ ],
+ "scenes": ["dy_city", "dy_fuse", "dy_room", "dy_list", "dy_end"],
+ "shots": [
+  { "id": "dy_city", "beats": 12, "cues": { "flip": 0.6, "ready": "word:pop" } },
+  { "id": "dy_fuse", "beats": 12, "cues": { "cyber": "word:pop", "list": "line:2.start" } },
+  { "id": "dy_room", "beats": 12, "cues": { "after": "word:pop" } },
+  { "id": "dy_list", "beats": 12, "cues": { "kill": "word:pop" } },
+  { "id": "dy_end", "beats": 12, "cues": { "after": "word:pop", "note": "line:2.start" } }
+ ],
+ "quiet": [],
+ "keep": []
+}

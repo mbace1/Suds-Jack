@@ -1,0 +1,75 @@
+{
+  "film": "the-day-after",
+  "cut": "Coxon 7, v1 (owner approved the pitch, 18 Oct) — one question: what is the industry getting ready?",
+  "series": "coxon",
+  "captionSize": "house",
+  "argument": "AI insiders reportedly expect a disaster within a year, and the industry's reported plan is to shape the rules afterwards. The kill switch on that list comes after; until then, the sticky note.",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question", "role": "setup", "at": "s1+0.5", "until": "s2-0.35", "hold": "s2",
+      "text": {
+        "en": "AI insiders reportedly expect / a major AI disaster within a year. / What are they [getting ready]?",
+        "fi": "Tekoälyalan sisäpiiri odottaa / raporttien mukaan suurta / tekoälykatastrofia vuoden sisällä. / Mihin he [valmistautuvat]?",
+        "ja": "AI業界の 内部者は 1年以内の / 大規模な AI災害を 予想して いると 報じられた。 / 彼らは 何を [準備して] いる？"
+      },
+      "source": "Axios, 9 Oct 2026 (scoop): many AI industry insiders expect a large-scale AI event within six to twelve months. An insider forecast, not a company timeline; OpenAI says its scenarios are 'not treated as inevitable'. Confirmed across Decrypt, Gizmodo, Digital Trends, Inc42 (research-governance.md §4)."
+    },
+    {
+      "id": "attack", "role": "evidence", "at": "s2+0.6", "until": "s3-0.35", "hold": "s3",
+      "text": {
+        "en": "Most likely a [cyberattack]: / banks, internet, power, water.",
+        "fi": "Todennäköisimmin [kyberhyökkäys]: / pankit, netti, sähkö, vesi.",
+        "ja": "最も ありそうなのは [サイバー攻撃]。 / 銀行、 ネット、 電気、 水道。"
+      },
+      "source": "Axios via Decrypt and Gizmodo: most likely a cyberattack that cuts off financial services, internet connectivity, or power and water."
+    },
+    {
+      "id": "plan", "role": "evidence", "at": "s3+0.6", "until": "s4-0.35", "hold": "s4",
+      "text": {
+        "en": "Their reported plan: / brief Congress, and shape / the rules that come [after].",
+        "fi": "Raportoitu suunnitelma: / briifata kongressia ja muokata / säännöt, jotka tulevat [jälkeen].",
+        "ja": "報じられた 計画は 議会への 説明と、 / [その後に] できる ルール作り。"
+      },
+      "source": "Axios: the planning focuses on educating members of Congress; executives believe regulation has no chance of passing now and want to shape the rules leaders reach for after a first major event."
+    },
+    {
+      "id": "rule", "role": "evidence", "at": "s4+0.6", "until": "s5-0.35", "hold": "s5",
+      "text": {
+        "en": "One rule on the list: / a required [kill switch].",
+        "fi": "Yksi listan säännöistä: / pakollinen [hätäkatkaisin].",
+        "ja": "リストの ルールの 一つは / 義務化された [キルスイッチ]。"
+      },
+      "source": "Axios, as repeated by several outlets: among the proposals with bipartisan support and some industry buy-in, a required kill switch on advanced AI; experts question whether it is workable. CHECK against the Axios text before air (research-governance.md §4, refresh)."
+    },
+    {
+      "id": "last", "role": "punchline", "at": "s5+0.5", "until": "end-0.2", "hold": "end",
+      "text": {
+        "en": "The off switch: [the day after]. / Until then: the sticky note.",
+        "fi": "Katkaisin tulee [vasta jälkeenpäin]. / Siihen asti: muistilappu.",
+        "ja": "停止スイッチは [その翌日]。 / それまでは 付箋。"
+      },
+      "source": "The station's line, over its own image: the kill switch behind glass marked OPEN THE DAY AFTER, and on the glass the sticky note from Kill Switch (Coxon 6)."
+    }
+  ],
+  "ui": {
+    "dateline": { "en": "AXIOS · 9.10.2026 · REPORTEDLY", "fi": "AXIOS · 9.10.2026 · RAPORTTIEN MUKAAN", "ja": "AXIOS · 2026.10.9 · 報道による" },
+    "banks": { "en": "BANKS", "fi": "PANKIT", "ja": "銀行" },
+    "internet": { "en": "INTERNET", "fi": "NETTI", "ja": "ネット" },
+    "power": { "en": "POWER", "fi": "SÄHKÖ", "ja": "電気" },
+    "water": { "en": "WATER", "fi": "VESI", "ja": "水道" }
+  },
+  "props": {
+    "podium": { "en": "BRIEFING FOR CONGRESS", "why": "the podium's front panel: the plan, shown; English in every master, the caption carries it" },
+    "binder": { "en": "RULES / FOR THE DAY AFTER", "why": "the binder that lands on 'after'" },
+    "box": { "en": "IN CASE OF DISASTER / OPEN THE DAY AFTER", "why": "the emergency box's plate: the punchline, as a thing" },
+    "note": { "en": "KILL SWITCH / study — due 16 Nov", "why": "the exact sticky note from Kill Switch (Coxon 6): the callback" }
+  },
+  "post": {
+    "en": "AI insiders reportedly expect a major AI disaster within a year, most likely a cyberattack on banks, internet, power or water. The industry's reported plan: brief Congress and shape the rules that come after. One of them: a required kill switch. #AI #AIsafety",
+    "fi": "Tekoälyalan sisäpiiri odottaa raporttien mukaan suurta tekoälykatastrofia vuoden sisällä, todennäköisimmin kyberhyökkäystä pankkeihin, nettiin, sähköön tai veteen. Alan suunnitelma: briifata kongressia ja muokata säännöt, jotka tulevat jälkeen. Yksi niistä: pakollinen hätäkatkaisin.",
+    "ja": "AI業界の内部者は1年以内の大規模なAI災害を予想していると報じられた。最も可能性が高いのは銀行・ネット・電気・水道へのサイバー攻撃。業界の計画は議会への説明と、その後のルール作り。その一つが義務化されたキルスイッチ。"
+  }
+}

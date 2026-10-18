@@ -17,7 +17,7 @@ first; the one hard date is **The Day After, before the 3 Nov midterms**.
 
 **Queue (18 Oct):**
 1. *Welcome Home* v4: waiting for approval.
-2. *The Day After*: approved 18 Oct, building.
+2. *The Day After*: **built 18 Oct, waiting for approval**: `previews/18-10-The-Day-After-en.mp4` (32.7 s + slate; all checks pass). Before air: re-check the kill-switch detail against Axios.
 3. *It Was Only a Test* (`plan/films/11-only-a-test.md`): the owner said make it; pitched, waiting for a go on the
    captions.
 4. *Same Trick, Two Verdicts* (`plan/films/12-same-trick.md`): the owner said make it; pitched, waiting for a go on the
@@ -35,7 +35,7 @@ European day (Nordic and EU stories). All times are Helsinki time.
 | 3 | **Sat 24 Oct 12:50** | ~~**Irreversible** (Doodle 3)~~ **scrapped** (owner, 18 Oct). **Open**: the reserve, *It Was Only a Test*, the AI Act's first named case | papercut | ~30 s + slate | — | **Make it** (owner, 18 Oct). Research refreshed, pitched: `plan/films/11-only-a-test.md`. |
 | 4 | **Tue 27 Oct 00:50** | **Welcome Home** (tech satire 2, after Teslur): Pear's HomeView launch ad remade in clay. It sells privacy; its happy ending is the family watching the daughter's boyfriend on its camera | the plasticine clay stage (film-wh2) | ~28 s + card | The **3D clay standard** where the subject is a product. | **v4 built 18 Oct, waiting for approval**: `previews/18-10-Welcome-Home-v4-en.mp4` (owner on v3: all claymation, no 2D, the boot screen just "Pear AI. For the future.", built from the ad's own four frames). v1 and v2 did not land; v3 mixed styles. "Pear's new home screen, HomeView, is sold on privacy. But whose?" → "Her messages: private. Her boyfriend: family viewing." |
 | 5 | **Thu 29 Oct 12:50** | ~~**The Scoreboard** (Nordic 2)~~ **scrapped** (owner, 18 Oct: "still too vague as we only get the headlines … make it much better or scrap"). **Open.** | — | — | — | **Make it** (owner, 18 Oct): *Same Trick, Two Verdicts*, pitched: `plan/films/12-same-trick.md`. |
-| 6 | **Sat 31 Oct 00:50** | **The Day After** (Coxon 7, midterm run-up): the industry's most detailed known plan for the catastrophe it forecasts is about who writes the law afterwards | papercut | 37.5 s + slate | The Coxon set on its last pre-election slot. It hands over to the 2–3 Nov teasers. | **Approved 18 Oct, building**: `plan/films/10-the-day-after.md`. Research refreshed 18 Oct; the new detail is the required kill switch on the after-list, which makes it the payoff of *Kill Switch*. Ready Fri 30 Oct. |
+| 6 | **Sat 31 Oct 00:50** | **The Day After** (Coxon 7, midterm run-up): the industry's most detailed known plan for the catastrophe it forecasts is about who writes the law afterwards | papercut | 37.5 s + slate | The Coxon set on its last pre-election slot. It hands over to the 2–3 Nov teasers. | **Built 18 Oct, waiting for approval**: `previews/18-10-The-Day-After-en.mp4` (32.7 s + slate). `plan/films/10-the-day-after.md`. Research refreshed 18 Oct; the new detail is the required kill switch on the after-list, which makes it the payoff of *Kill Switch*. Ready Fri 30 Oct. |
 
 **Reserve:** *It Was Only a Test* (`research-governance.md` §2), the AI Act's first named case and an EU 12:50
 story. Irreversible was scrapped on 18 Oct, so it is the candidate for slot 3.

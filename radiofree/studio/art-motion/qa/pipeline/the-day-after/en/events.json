@@ -1,0 +1,400 @@
+{
+ "s1": 0,
+ "s2": 6.964271428571429,
+ "s3": 13.392842857142858,
+ "s4": 19.821414285714283,
+ "s5": 26.249985714285714,
+ "end": 32.678557142857144,
+ "dy_city.flip": 0.6,
+ "dy_city.ready": 2.7355,
+ "dy_fuse.cyber": 7.8825,
+ "dy_fuse.list": 8.3979,
+ "dy_room.after": 15.9556,
+ "dy_list.kill": 21.3914,
+ "dy_end.after": 27.1136,
+ "dy_end.note": 27.6745,
+ "lang": "en",
+ "holds": [
+  {
+   "caption": "question",
+   "beat": "s2",
+   "extra": 0.5357
+  }
+ ],
+ "cues": {
+  "dy_city.flip": 0.6,
+  "dy_city.ready": 2.7355,
+  "dy_fuse.cyber": 7.8825,
+  "dy_fuse.list": 8.3979,
+  "dy_room.after": 15.9556,
+  "dy_list.kill": 21.3914,
+  "dy_end.after": 27.1136,
+  "dy_end.note": 27.6745
+ },
+ "words": [
+  {
+   "w": "AI",
+   "t": 0.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "insiders",
+   "t": 0.568,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "reportedly",
+   "t": 0.773,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "expect",
+   "t": 1.023,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 1.402,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "major",
+   "t": 1.447,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "AI",
+   "t": 1.584,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "disaster",
+   "t": 1.652,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "within",
+   "t": 1.856,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 2.015,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "year.",
+   "t": 2.061,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "What",
+   "t": 2.417,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "are",
+   "t": 2.531,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "they",
+   "t": 2.622,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "getting",
+   "t": 2.735,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "ready?",
+   "t": 2.917,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "Most",
+   "t": 7.564,
+   "pop": false,
+   "caption": "attack"
+  },
+  {
+   "w": "likely",
+   "t": 7.678,
+   "pop": false,
+   "caption": "attack"
+  },
+  {
+   "w": "a",
+   "t": 7.837,
+   "pop": false,
+   "caption": "attack"
+  },
+  {
+   "w": "cyberattack:",
+   "t": 7.882,
+   "pop": true,
+   "caption": "attack"
+  },
+  {
+   "w": "banks,",
+   "t": 8.398,
+   "pop": false,
+   "caption": "attack"
+  },
+  {
+   "w": "internet,",
+   "t": 8.557,
+   "pop": false,
+   "caption": "attack"
+  },
+  {
+   "w": "power,",
+   "t": 8.784,
+   "pop": false,
+   "caption": "attack"
+  },
+  {
+   "w": "water.",
+   "t": 8.943,
+   "pop": false,
+   "caption": "attack"
+  },
+  {
+   "w": "Their",
+   "t": 13.993,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "reported",
+   "t": 14.129,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "plan:",
+   "t": 14.334,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "brief",
+   "t": 14.69,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "Congress,",
+   "t": 14.826,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "and",
+   "t": 15.054,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "shape",
+   "t": 15.145,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "the",
+   "t": 15.501,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "rules",
+   "t": 15.592,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "that",
+   "t": 15.728,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "come",
+   "t": 15.842,
+   "pop": false,
+   "caption": "plan"
+  },
+  {
+   "w": "after.",
+   "t": 15.956,
+   "pop": true,
+   "caption": "plan"
+  },
+  {
+   "w": "One",
+   "t": 20.421,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "rule",
+   "t": 20.512,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "on",
+   "t": 20.626,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "the",
+   "t": 20.694,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "list:",
+   "t": 20.785,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "a",
+   "t": 21.141,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "required",
+   "t": 21.187,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "kill",
+   "t": 21.391,
+   "pop": true,
+   "caption": "rule"
+  },
+  {
+   "w": "switch.",
+   "t": 21.505,
+   "pop": true,
+   "caption": "rule"
+  },
+  {
+   "w": "The",
+   "t": 26.75,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "off",
+   "t": 26.841,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "switch:",
+   "t": 26.932,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "the",
+   "t": 27.114,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "day",
+   "t": 27.205,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "after.",
+   "t": 27.295,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "Until",
+   "t": 27.675,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "then:",
+   "t": 27.811,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "the",
+   "t": 27.947,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "sticky",
+   "t": 28.038,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "note.",
+   "t": 28.197,
+   "pop": false,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.5,
+   "t1": 6.614
+  },
+  {
+   "id": "attack",
+   "t0": 7.564,
+   "t1": 13.043
+  },
+  {
+   "id": "plan",
+   "t0": 13.993,
+   "t1": 19.471
+  },
+  {
+   "id": "rule",
+   "t0": 20.421,
+   "t1": 25.9
+  },
+  {
+   "id": "last",
+   "t0": 26.75,
+   "t1": 32.479
+  }
+ ],
+ "quiet": []
+}
