@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Render a film page in headless Chromium: frames, its events (for the score) and its text report (for the checks).
 //   NODE_PATH=$(npm root -g) node pipeline/render.mjs <page, relative to art-motion/> <outdir> --fonts <dir> [--lang en] [--stills 1.2,3.4] [--report-only]
+//     [--from i] [--to j] [--resume]   frames i..j−1 only (a shard), and skip any frame already on disk (a render cut short)
 // The page sets window.__film = { fps, frames, events, report, frame(i) → JPEG data URL, still(t) → PNG data URL } and
 // window.__ready (or window.__failed); frame() may return a promise. The server serves art-motion/ at / and the fonts
 // directory at /_fonts/; --mount name=dir (repeatable) serves dir at /name/, and --query adds to the page's URL.
@@ -39,7 +40,9 @@ try {
   else if (arg('stills')) { for (const t of arg('stills').split(',').map(Number)) { const u = await page.evaluate((t) => window.__film.still(t), t); fs.writeFileSync(path.join(OUT, `t${t.toFixed(2)}.png`), Buffer.from(u.split(',')[1], 'base64')); } console.log('stills ->', OUT); }
   else {
     const dir = path.join(OUT, 'frames'); fs.mkdirSync(dir, { recursive: true }); const t0 = Date.now();
-    for (let i = 0; i < n; i++) { const u = await page.evaluate((i) => window.__film.frame(i), i); fs.writeFileSync(path.join(dir, `f${String(i).padStart(5, '0')}.jpg`), Buffer.from(u.split(',')[1], 'base64')); if (i % 60 === 0) console.log(`${i}/${n} ${((Date.now() - t0) / 1000).toFixed(0)}s`); }
+    const from = +arg('from', 0), to = Math.min(n, +arg('to', n));
+    for (let i = from; i < to; i++) { const f = path.join(dir, `f${String(i).padStart(5, '0')}.jpg`); if (flag('resume') && fs.existsSync(f) && fs.statSync(f).size > 0) continue;
+      const u = await page.evaluate((i) => window.__film.frame(i), i); fs.writeFileSync(path.join(dir, `f${String(i).padStart(5, '0')}.jpg`), Buffer.from(u.split(',')[1], 'base64')); if (i % 60 === 0) console.log(`${i}/${n} ${((Date.now() - t0) / 1000).toFixed(0)}s`); }
     console.log('frames ->', dir);
   }
 } finally { await browser.close(); srv.close(); }

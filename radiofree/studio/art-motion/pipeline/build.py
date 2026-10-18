@@ -2,6 +2,7 @@
 
     uv run --with numpy --with soundfile --with matplotlib python pipeline/build.py <film dir> --lang en --fonts <dir> --out <dir>
         [--engine <huashu engine dir>] [--reuse-picture] [--signoff <station sign-off mp4>] [--air]
+        [--jobs N] [--resume-picture]   (page films: N renderers on shards of the frames; keep frames already rendered)
 
 Two kinds of film, one pipeline after the picture:
   a PAGE film   film.html draws the frames itself and does its own captions through captions.js (Kill Switch);
@@ -33,7 +34,7 @@ fails = []
 # 1. picture: frames, events (the retimed beats and every word), the text report measured with the real fonts
 # the global modules of the `node` that will run (not of whichever npm is first on PATH), plus any NODE_PATH already set
 npm = ':'.join(filter(None, [os.environ.get('NODE_PATH'), subprocess.run(['node', '-p', "require('path').resolve(process.execPath, '../../lib/node_modules')"], capture_output=True, text=True).stdout.strip()]))
-if (OUT / 'frames').exists(): shutil.rmtree(OUT / 'frames')
+if (OUT / 'frames').exists() and '--resume-picture' not in a: shutil.rmtree(OUT / 'frames')   # --resume-picture: a page render cut short carries on
 FJ = json.load(open(FILM / 'film.json')) if (FILM / 'film.json').exists() else {'kind': 'page'}
 if FJ['kind'] == 'engine':
     ENGINE = Path(opt('engine')).resolve(); key = FJ['engine']
@@ -59,7 +60,13 @@ else:
         bad = [f"{L}:{c['id']} {max(c['widths'])} px" for c in r['captions'] if max(c['widths']) > 800 or not c['inSafe'] or c['inRail']] + \
               [f"{L}:ui.{k} to x {u['x1']}" for k, u in r.get('ui', {}).items() if not u['ok']]
         if bad: sys.exit('pre-flight: these lines do not fit, fix the copy before rendering: ' + '; '.join(bad))
-    run('node', HERE / 'render.mjs', FILM.relative_to(ART) / 'film.html', OUT, '--fonts', FONTS, '--lang', LANG, env={**os.environ, 'NODE_PATH': npm})
+    # a page film is the slow one (Welcome Home v4: ~12 s a frame, two scenes a frame), so it can render in shards side by side
+    jobs = int(opt('jobs', 1)); n = json.load(open(OUT / 'pre' / LANG / 'report.json'))['frames']
+    cmd = lambda i, j: ['node', str(HERE / 'render.mjs'), str(FILM.relative_to(ART) / 'film.html'), str(OUT), '--fonts', FONTS, '--lang', LANG, '--resume', '--from', str(i), '--to', str(j)]
+    ps = [subprocess.Popen(cmd(n * k // jobs, n * (k + 1) // jobs), cwd=ART, env={**os.environ, 'NODE_PATH': npm}) for k in range(jobs)]
+    if any(p.wait() for p in ps): sys.exit('render failed')
+    missing = [i for i in range(n) if not (OUT / 'frames' / f'f{i:05d}.jpg').exists()]
+    if missing: sys.exit(f'render: {len(missing)} frames missing, first {missing[0]}')
 rep = json.load(open(OUT / 'report.json')); ev = json.load(open(OUT / 'events.json'))
 
 # 2. text: sidecars in every language, and the checks
