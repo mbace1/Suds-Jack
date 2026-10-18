@@ -197,7 +197,7 @@
  {
   "check": "scrim en:question",
   "result": "pass",
-  "why": "picture behind: edge 2.78 → scrim 0.0"
+  "why": "picture behind: edge 1.1 → scrim 0.0"
  },
  {
   "check": "width en:openai",
@@ -227,7 +227,7 @@
  {
   "check": "scrim en:openai",
   "result": "pass",
-  "why": "picture behind: edge 2.33 → scrim 0.0"
+  "why": "picture behind: edge 4.37 → scrim 0.0"
  },
  {
   "check": "width en:anthropic",
@@ -287,7 +287,7 @@
  {
   "check": "scrim en:eu",
   "result": "pass",
-  "why": "picture behind: edge 0.43 → scrim 0.0"
+  "why": "picture behind: edge 0.42 → scrim 0.0"
  },
  {
   "check": "width en:last",
@@ -317,7 +317,7 @@
  {
   "check": "scrim en:last",
   "result": "pass",
-  "why": "picture behind: edge 0.43 → scrim 0.0"
+  "why": "picture behind: edge 1.63 → scrim 0.0"
  },
  {
   "check": "native read en",

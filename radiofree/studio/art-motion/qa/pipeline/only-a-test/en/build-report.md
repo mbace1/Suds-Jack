@@ -46,13 +46,13 @@
 | text | reading time en:question | pass | on screen 5.58 s, needs 3.90 s (58 chars at 20/s + 1 s) |
 | text | last word en:question | pass | last word up 3.93 s (at least 0.8) |
 | text | key detail en:question | pass | covers nothing the shot needs |
-| text | scrim en:question | pass | picture behind: edge 2.78 → scrim 0.0 |
+| text | scrim en:question | pass | picture behind: edge 1.1 → scrim 0.0 |
 | text | width en:openai | pass | widest line 704 px (limit 800) |
 | text | safe zone en:openai | pass | box {'x': 177, 'y': 191, 'w': 726, 'h': 247} |
 | text | reading time en:openai | pass | on screen 5.48 s, needs 4.55 s (71 chars at 20/s + 1 s) |
 | text | last word en:openai | pass | last word up 3.61 s (at least 0.8) |
 | text | key detail en:openai | pass | covers nothing the shot needs |
-| text | scrim en:openai | pass | picture behind: edge 2.33 → scrim 0.0 |
+| text | scrim en:openai | pass | picture behind: edge 4.37 → scrim 0.0 |
 | text | width en:anthropic | pass | widest line 767 px (limit 800) |
 | text | safe zone en:anthropic | pass | box {'x': 146, 'y': 191, 'w': 789, 'h': 160} |
 | text | reading time en:anthropic | pass | on screen 5.48 s, needs 4.05 s (61 chars at 20/s + 1 s) |
@@ -64,13 +64,13 @@
 | text | reading time en:eu | pass | on screen 5.48 s, needs 5.05 s (81 chars at 20/s + 1 s) |
 | text | last word en:eu | pass | last word up 3.38 s (at least 0.8) |
 | text | key detail en:eu | pass | covers nothing the shot needs |
-| text | scrim en:eu | pass | picture behind: edge 0.43 → scrim 0.0 |
+| text | scrim en:eu | pass | picture behind: edge 0.42 → scrim 0.0 |
 | text | width en:last | pass | widest line 543 px (limit 800) |
 | text | safe zone en:last | pass | box {'x': 257, 'y': 191, 'w': 565, 'h': 247} |
 | text | reading time en:last | pass | on screen 5.73 s, needs 4.20 s (64 chars at 20/s + 1 s) |
 | text | last word en:last | pass | last word up 3.90 s (at least 0.8) |
 | text | key detail en:last | pass | covers nothing the shot needs |
-| text | scrim en:last | pass | picture behind: edge 0.43 → scrim 0.0 |
+| text | scrim en:last | pass | picture behind: edge 1.63 → scrim 0.0 |
 | text | native read en | pass | read by a native speaker |
 | text | native read fi | warn | NOT yet read by a native speaker |
 | text | native read ja | warn | NOT yet read by a native speaker |
