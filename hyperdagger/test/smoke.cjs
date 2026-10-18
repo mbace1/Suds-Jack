@@ -878,7 +878,9 @@ s.listen(0, '127.0.0.1', async () => {
   for (const id of registry.ids) {
     // assets=0: this loop tests the mode registry, not the art, and fetching
     // 5 MB of GLB on each of four reloads is most of the suite's wall clock
-    await p.goto(base + '/hyperdagger/?assets=0&mode=' + id, { waitUntil: 'load' });
+    // on the control season by name: a VOID merely remembered is not offered
+    // back since HD-019, so the bare disc has to be asked for
+    await p.goto(base + '/hyperdagger/?assets=0&season=void&mode=' + id, { waitUntil: 'load' });
     await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
     await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
     await p.evaluate(() => window.__hd.debug.startGame());
@@ -1348,8 +1350,9 @@ s.listen(0, '127.0.0.1', async () => {
     inca.sn.visible.length === 3 && inca.sn.visible.map(v => v.menu).join('|') === 'SEASON 1|SEASON 2|SEASON 3' && !inca.sn.visible.some(v => v.id === 'void')
     && inca.menu.seasons.map(m => m.label).join('|') === 'SEASON 1|SEASON 2|SEASON 3' && inca.menu.modeOnIntro === false && inca.menu.oldSeasonBtn === false,
     JSON.stringify({ visible: inca.sn.visible, menu: inca.menu }));
-  ok('the menus: the pause menu carries the seasons and the regular options — the MODE is the season\'s now (v50)',
-    inca.pause.seasons.length === 3 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 2).join('|') === 'SEASON|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
+  // HD-019: RUN (FREE / DAILY) moved off the intro to sit under SEASON
+  ok('the menus: the pause menu carries the seasons, RUN and the regular options — the MODE is the season\'s now (v50)',
+    inca.pause.seasons.length === 3 && !inca.pause.modeBtn && inca.pause.rows.slice(0, 3).join('|') === 'SEASON|RUN|SPEED' && inca.pause.rows.includes('STYLE') && inca.pause.endBtn,
     JSON.stringify(inca.pause));
 
   // v50 THE WAVE IS A HURDLE — proven by jumping a body over it in the real

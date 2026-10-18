@@ -4293,7 +4293,8 @@ window.__hd = {
     gooHit(x, z, p) { goo.hit(x, z, p); },
     waveStrikes() { return { strikes: waveStrikes, hurts: !!goo.cfg?.hurts, inside: goo.strikes(player), lifeT: +lifeT.toFixed(2) }; },
     gelMoundSample() { return GEL_MOUND_SAMPLE; },
-    menuSeasons() { return [...elMsg.querySelectorAll('button.season')].map(b => ({ id: b.dataset.season, label: b.textContent.trim(), on: b.classList.contains('on') })); },
+    // the pause menu's season buttons, or the intro's tabs (HD-019), whose label is the SEASON N line
+    menuSeasons() { return [...elMsg.querySelectorAll('button.season, button.mn-season')].map(b => ({ id: b.dataset.season, label: (b.querySelector('.mn-n') ?? b).textContent.trim(), on: b.classList.contains('on') })); },
     menuHas(sel) { return !!elMsg.querySelector(sel); },
     getInca() { return skullscape.getState(); },
     // the mean colour of the first standing enemy's lattice — is the roster wearing the season?
