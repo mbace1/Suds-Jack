@@ -58,21 +58,22 @@ window.OT = (() => {
   /** a test lab, each in its company's own clothes, around the same door: the black glass door with its sign, the
    *  TEST light above the plate, the plate with the mark. OPENAI: a black glass tower, rounded at the top, its knot
    *  in white. ANTHROPIC: ivory stone over a terracotta ground floor, arched windows, a stepped parapet, its A\ in
-   *  black. Door, plate and sill are where every scene expects them (scenes place the sign and letterbox by them). */
-  const lab = (name) => sprite('ot_lab_' + name, 560, 1300, 280, 1250, (g) => {
+   *  black. Door, plate and sill are where every scene expects them (scenes place the sign and letterbox by them).
+   *  `mark: false` leaves the big facade mark off, for a close-up that would only crop it in half. */
+  const lab = (name, { mark = true } = {}) => sprite('ot_lab_' + name + (mark ? '' : '_bare'), 560, 1300, 280, 1250, (g) => {
     const ant = /ANTHROPIC/.test(name);
     if (!ant) {
       g.fillStyle = '#17191b'; g.beginPath(); g.roundRect(-250, -1240, 500, 1240, [90, 90, 0, 0]); g.fill();
       const sh = g.createLinearGradient(-250, -1240, 250, -700); sh.addColorStop(0, 'rgba(160,175,185,.16)'); sh.addColorStop(0.5, 'rgba(160,175,185,0)'); g.fillStyle = sh; g.fillRect(-250, -1240, 500, 600);
       g.fillStyle = 'rgba(255,255,255,.08)'; for (let x = -200; x <= 200; x += 50) g.fillRect(x - 2, -1190, 4, 550);
-      knot(g, 0, -985, 125, '#f2f3f2');
+      if (mark) knot(g, 0, -985, 125, '#f2f3f2');
       g.fillStyle = '#d4d7d6'; g.fillRect(-250, -640, 500, 640); g.fillStyle = 'rgba(0,0,0,.07)'; for (let y = -560; y < 0; y += 80) g.fillRect(-250, y, 500, 3);
       g.fillStyle = '#0d0e0f'; g.fillRect(-262, -652, 524, 26);                                                     // the canopy
       g.fillStyle = '#2a2d2f'; g.fillRect(-140, -470, 280, 470);
     } else {
       g.fillStyle = '#e2d8c5'; g.fillRect(-175, -1238, 350, 34); g.fillStyle = '#efe8da'; g.fillRect(-250, -1206, 500, 1206);
       g.fillStyle = '#cc785c'; g.fillRect(-258, -1186, 516, 22); g.fillRect(-258, -662, 516, 22);
-      aMark(g, 0, -960, 190, '#141413');
+      if (mark) aMark(g, 0, -960, 190, '#141413');
       for (let i = 0; i < 4; i++) { const x = -195 + i * 105; g.fillStyle = '#d9cdb6'; g.beginPath(); g.roundRect(x - 8, -888, 96, 220, [48, 48, 0, 0]); g.fill();
         g.fillStyle = '#2b2a28'; g.beginPath(); g.roundRect(x, -880, 80, 206, [40, 40, 0, 0]); g.fill(); g.fillStyle = '#d9cdb6'; g.fillRect(x + 38, -880, 4, 206); }
       g.fillStyle = '#c46f53'; g.fillRect(-250, -640, 500, 640); g.fillStyle = 'rgba(0,0,0,.08)'; for (let y = -600; y < 0; y += 40) g.fillRect(-250, y, 500, 3);

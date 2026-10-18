@@ -15,7 +15,7 @@ SCENES['ot_door'] = (() => {
         { sh: O.sky(), d: 0.03, lift: 0 },
         { fn: (g, ox) => { put(g, O.house('a', O.C.brick, O.C.brickD, O.C.doorG), -170 + ox, SILL, { sc: SC, lift: 1 }); put(g, O.house('b', O.C.brick2, O.C.brick2D, O.C.doorB), 1250 + ox, SILL, { sc: SC, lift: 1 }); }, d: 0.12 },
         { fn: (g, ox) => {
-          put(g, O.lab('OPENAI · TEST LAB'), 540 + ox, SILL, { sc: SC, lift: 1.4 });
+          put(g, O.lab('OPENAI · TEST LAB', { mark: false }), 540 + ox, SILL, { sc: SC, lift: 1.4 });
           O.testLight(g, 540 + ox, SILL - 600 * SC, lt);
           g.save(); g.translate(shake, 0); O.sign(g, 540 + ox, SILL - 390, 1.25, 0, wob); g.restore();
         }, d: 0.2 },
