@@ -50,15 +50,16 @@ const SCREEN_RIGHT = new THREE.Vector3(1, 0, -1).normalize();
 // averaged into cells only flip glyphs at random. It falls in the character
 // grid instead, as '/' over the dark cells — weather made of the same text.
 const rain = [];
+const RR = rng(SEED * 7 + 1);   // its own stream: drawing must never move the game's dice
 function rainStep(dt, cols, rows) {
   const want = Math.round(cols * rows / 26);
-  while (rain.length < want) rain.push({ x: R() * (cols + rows * 0.5), y: R() * rows, v: 26 + R() * 18, splash: 0 });
+  while (rain.length < want) rain.push({ x: RR() * (cols + rows * 0.5), y: RR() * rows, v: 26 + RR() * 18, splash: 0 });
   rain.length = Math.min(rain.length, want);
   for (const d of rain) {
-    if (d.splash > 0) { d.splash -= dt; if (d.splash <= 0) { d.x = R() * (cols + rows * 0.5); d.y = -R() * 4; } continue; }
+    if (d.splash > 0) { d.splash -= dt; if (d.splash <= 0) { d.x = RR() * (cols + rows * 0.5); d.y = -RR() * 4; } continue; }
     d.y += d.v * dt; d.x -= d.v * dt * 0.45;
     // most drops land somewhere on screen, not all at the bottom edge
-    if (d.y > rows || (d.y > 2 && R() < dt * 1.2)) d.splash = 0.12;
+    if (d.y > rows || (d.y > 2 && RR() < dt * 1.2)) d.splash = 0.12;
   }
 }
 function rainDraw(A) {

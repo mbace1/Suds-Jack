@@ -1,6 +1,6 @@
 // Record GLYPH//CITY to an MP4, frame by frame, off the game's own clock.
 //
-//   NODE_PATH=$(npm root -g) node glyphcity/tools/capture.mjs [out.mp4] [--w 1280 --h 720 --fps 30 --seed 7 --shot]
+//   NODE_PATH=$(npm root -g) node glyphcity/tools/capture.mjs [out.mp4] [--w 1280 --h 720 --fps 30 --seed 14 --shot]
 //
 // The page is opened with ?capture=1, which stops its rAF loop; every frame is
 // window.__gc.frame(1/fps), read back as a PNG and piped to ffmpeg. Because the
@@ -25,7 +25,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const args = process.argv.slice(2);
 const opt = (k, d) => { const i = args.indexOf('--' + k); return i >= 0 ? args[i + 1] : d; };
 const W = Number(opt('w', 1280)), H = Number(opt('h', 720)), FPS = Number(opt('fps', 30));
-const SEED = Number(opt('seed', 7)), ZOOM = opt('zoom', null);
+const SEED = Number(opt('seed', 14)), ZOOM = opt('zoom', null);
 const SHOT = args.includes('--shot');
 const OUT = args.find((a, i) => !a.startsWith('--') && !(i > 0 && args[i - 1].startsWith('--'))) || 'glyphcity.mp4';
 

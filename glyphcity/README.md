@@ -85,7 +85,7 @@ ASCII picture needs empty space between the towers to read at all.
 ## Video (`tools/capture.mjs`)
 
 ```
-NODE_PATH=$(npm root -g) node glyphcity/tools/capture.mjs out.mp4 [--w 1280 --h 720 --fps 30 --seed 7]
+NODE_PATH=$(npm root -g) node glyphcity/tools/capture.mjs out.mp4 [--w 1280 --h 720 --fps 30 --seed 14]
 NODE_PATH=$(npm root -g) node glyphcity/tools/capture.mjs stills --shot     # five PNG stills
 ```
 
@@ -93,8 +93,17 @@ NODE_PATH=$(npm root -g) node glyphcity/tools/capture.mjs stills --shot     # fi
 `window.__gc.frame(dt)`, so the video is timed by frame count and not by the
 wall clock: a slow software GPU gives a slow render, never a stuttering video.
 The default cut is 16.5 s: title over the attract run (0–3 s), the run with
-the HUD (3–11 s), a palette tour (11–15 s), and back to the title. `--w 1080
---h 1920` gives a vertical cut for social feeds.
+the HUD (3–11 s), a palette tour (11–15 s), and back to the title. `--w 720
+--h 1280` (or 1080×1920) gives a vertical cut for social feeds.
+
+The seed decides what happens on camera, and seeds differ a lot: over 24 of
+them the autopilot delivered in five, got hit by a car or flatlined in twelve, and
+in the rest did nothing much for 16 s. **Seed 14** is the default because it shows the
+whole loop: an uplink payout at 7 s, two car hits and a flatline during the
+palette tour. The game is deterministic from the seed and a render-free run of
+`__gc.step` reproduces a capture exactly (the rain has its own random stream
+for that reason), so a new cut can be scouted in seconds before spending
+three minutes rendering it.
 
 ## Not done yet (questions for approval)
 
