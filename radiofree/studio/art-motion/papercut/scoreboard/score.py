@@ -1,8 +1,8 @@
 """The Scoreboard (Nordic 2) — the cue sheet. The RFH series bed (stems.py: 112 BPM, A minor) and the library's
 sounds against the plan's events (pipeline/plan.mjs), so the Finnish and Japanese masters — longer where their lines
-need it — are scored by this same file. The board is the instrument: every score change is a flip-card clack, a
-court's verdict lands on a rubber stamp (a dull chip for COURTS, a bright one for SATIRE), and the DENMARK card's
-spin runs on into the sting, because the film ends before anyone has ruled.
+need it — are scored by this same file. v2: the match is SATIRE against THE POWERFUL, the courts the referee. The
+board is the instrument: every score change is a flip-card clack, a verdict lands on a rubber stamp (a dull chip
+where the powerful won, a bright one where satire did), and the DENMARK card's spin runs on into the sting.
 
     uv run --with numpy --with soundfile python papercut/scoreboard/score.py <events.json> <out.wav> [<report.json> <stems>]
 """
@@ -29,34 +29,35 @@ for cp in EV['captions']:
     s.duck(cp['t0'], last + 0.4, -3.5, why=f'caption {cp["id"]} reveal')
 for i, t in enumerate(S[1:]): s.fx(whoosh('short', 'in'), t - WHOOSH['short'] * 0.8, 0.35, 0, at=t, name=f'cut {i + 2}')
 
-# ── shot 1 · the bill: the phone rises and talks; the AI stamp and the BANNED band; the mask swings in, and its "?"
+# ── shot 1 · the bill: the phone rises and talks; the AI stamp and the BANNED band; the mask slides in, EXEMPT; the
+# board lights bulb by bulb; on "wins" the bulbs jump
 s.fx(foley('paper', 'tap', 0.7), S[0], 0.45, 0, name='the open: the room, a sheet settling'); motif(s, S[0] + 0.05, g=0.3)
 s.fx(whoosh('mid', 'in'), c('sb_bill.phone'), 0.5, -0.3, name='the phone rises')
-for i in range(4): s.fx(blip(1320 + 120 * (i % 2)), c('sb_bill.phone') + 0.5 + i * 0.22, 0.25, -0.3, name='its voice')
+for i in range(3): s.fx(blip(1320 + 120 * (i % 2)), c('sb_bill.phone') + 0.5 + i * 0.2, 0.25, -0.3, name='its voice')
 s.fx(stamp(), c('sb_bill.stamp'), 0.8, -0.3, name='AI'); s.fx(foley('paper', 'slide'), c('sb_bill.stamp') + 0.25, 0.55, -0.2, name='the BANNED band')
-s.fx(swish(), c('sb_bill.mask') - 0.9, 0.4, 0.5, name='the mask swings in')
-s.fx(pop(1.3), c('sb_bill.mask'), 0.5, 0.5, name='"satire": the question mark'); accent(s, c('sb_bill.mask'), S[0], 0.25, name='the question')
+s.fx(swish(), c('sb_bill.exempt') - 0.6, 0.35, 0.5, name='the mask slides in')
+s.fx(chip(True), c('sb_bill.exempt'), 0.45, 0.5, name='"exempts satire": EXEMPT'); accent(s, c('sb_bill.exempt'), S[0], 0.2, name='exempt')
+for i in range(8): s.fx(tick(i % 4, down=False), c('sb_bill.lights') + i * 0.12, 0.22, -0.6 + i * 0.17, name=f'bulbs {i + 1}')
+s.fx(gavel(), c('sb_bill.wins'), 0.75, 0.2, name='"wins": the bulbs jump'); accent(s, c('sb_bill.wins'), S[0], 0.25, name='the question')
 
-# ── shot 2 · the bench: the board's bulbs come on one by one; on "courts" the gavel
-for i in range(8): s.fx(tick(i % 4, down=False), c('sb_bench.lights') + i * 0.15, 0.22, -0.6 + i * 0.17, name=f'bulbs {i + 1}')
-s.fx(gavel(), c('sb_bench.gavel'), 0.9, 0.3, name='"courts": the gavel'); s.fx(thump(), c('sb_bench.gavel'), 0.35, 0.3)
+# ── shot 2 · 1831, Paris: the king's pear pinned up; on "the king" GUILTY and THE POWERFUL 1
+s.fx(swish(), c('sb_king.pear'), 0.35, -0.2, name='the pear strip rises'); s.fx(foley('paper', 'drop'), c('sb_king.pear') + 0.3, 0.55, -0.2, name='pinned up')
+s.fx(stamp(), c('sb_king.verdict'), 0.75, 0.1, name='GUILTY'); s.fx(chip(False), c('sb_king.verdict') + 0.02, 0.35, 0.1)
+s.fx(card_flip(), c('sb_king.verdict') + 0.05, 0.7, 0.35, name='THE POWERFUL 1')
 
-# ── shot 3 · courts have ruled before: the pear strip pinned up; GUILTY and COURTS 1; the ad; PROTECTED and SATIRE 1
-s.fx(swish(), c('sb_before.pear'), 0.35, -0.4, name='the pear strip rises'); s.fx(foley('paper', 'drop'), c('sb_before.pear') + 0.3, 0.55, -0.4, name='pinned up')
-s.fx(stamp(), c('sb_before.guilty'), 0.75, -0.4, name='GUILTY'); s.fx(chip(False), c('sb_before.guilty') + 0.02, 0.35, -0.4)
-s.fx(card_flip(), c('sb_before.guilty') + 0.05, 0.7, -0.3, name='COURTS 1')
-s.fx(foley('paper', 'slide'), c('sb_before.ad'), 0.5, 0.4, name='the ad poster')
-s.fx(stamp(), c('sb_before.protected'), 0.75, 0.4, name='PROTECTED'); s.fx(chip(True), c('sb_before.protected') + 0.02, 0.4, 0.4)
-s.fx(card_flip(), c('sb_before.protected') + 0.05, 0.7, 0.3, name='SATIRE 1'); accent(s, c('sb_before.protected'), S[0], 0.22, name='protected')
+# ── shot 3 · 1988: the parody ad pinned up; on "satire" PROTECTED and SATIRE 1
+s.fx(foley('paper', 'slide'), c('sb_ad.ad'), 0.5, 0.2, name='the ad poster')
+s.fx(stamp(), c('sb_ad.verdict'), 0.75, 0, name='PROTECTED'); s.fx(chip(True), c('sb_ad.verdict') + 0.02, 0.4, 0)
+s.fx(card_flip(), c('sb_ad.verdict') + 0.05, 0.7, -0.35, name='SATIRE 1'); accent(s, c('sb_ad.verdict'), S[0], 0.22, name='protected')
 
-# ── shot 4 · AI fakes: the phone talks; NO and COURTS 2; the speaker's voice; YES and SATIRE 2
+# ── shot 4 · AI fakes: the phone talks; BLOCKED and THE POWERFUL 2; the speaker's voice; PROTECTED and SATIRE 2
 s.fx(whoosh('mid', 'in'), c('sb_fakes.phone'), 0.45, -0.4, name='the phone rises')
 for i in range(3): s.fx(blip(1250 + 110 * (i % 2)), c('sb_fakes.phone') + 0.5 + i * 0.2, 0.22, -0.4, name='the fake voice')
-s.fx(stamp(), c('sb_fakes.no'), 0.75, -0.4, name='NO'); s.fx(chip(False), c('sb_fakes.no') + 0.02, 0.35, -0.4)
-s.fx(card_flip(), c('sb_fakes.no') + 0.05, 0.7, -0.3, name='COURTS 2')
+s.fx(stamp(), c('sb_fakes.no'), 0.75, -0.4, name='BLOCKED'); s.fx(chip(False), c('sb_fakes.no') + 0.02, 0.35, -0.4)
+s.fx(card_flip(), c('sb_fakes.no') + 0.05, 0.7, 0.35, name='THE POWERFUL 2')
 s.fx(swish(), c('sb_fakes.no') + 0.3, 0.3, 0.4, name='the speaker rises')
-s.fx(stamp(), c('sb_fakes.yes'), 0.75, 0.4, name='YES'); s.fx(chip(True), c('sb_fakes.yes') + 0.02, 0.4, 0.4)
-s.fx(card_flip(), c('sb_fakes.yes') + 0.05, 0.7, 0.3, name='SATIRE 2'); accent(s, c('sb_fakes.yes'), S[0], 0.22, name='yes')
+s.fx(stamp(), c('sb_fakes.yes'), 0.75, 0.4, name='PROTECTED'); s.fx(chip(True), c('sb_fakes.yes') + 0.02, 0.4, 0.4)
+s.fx(card_flip(), c('sb_fakes.yes') + 0.05, 0.7, -0.35, name='SATIRE 2'); accent(s, c('sb_fakes.yes'), S[0], 0.22, name='yes')
 
 # ── shot 5 · the decider: the DENMARK row slides in; the gavel lifts; on "decider" the card spins and does not stop
 s.fx(foley('wood', 'slide'), c('sb_decider.row'), 0.55, 0, name='the DENMARK row slides in'); s.fx(foley('card', 'drop'), c('sb_decider.row') + 0.45, 0.45)

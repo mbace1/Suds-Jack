@@ -1,9 +1,9 @@
 {
   "film": "scoreboard",
-  "cut": "Nordic 2, v1 — angle B, 'The Scoreboard', written to the one-question rule (owner, 18 Oct)",
+  "cut": "v2 (owner, 18 Oct: 'courts vs satire? It's more satire vs something else') — satire against the powerful, the courts as referee",
   "series": "rfh",
   "captionSize": "house",
-  "argument": "Denmark's deepfake bill exempts satire and leaves the courts to decide what satire is; courts have answered that both ways since 1831, two all in this film, so Denmark's courts take the decider.",
+  "argument": "Denmark's deepfake bill exempts satire, so courts will decide; when the powerful have taken a joke to court since 1831, it is two all, and Denmark is the next match.",
   "langs": [
     "en",
     "fi",
@@ -23,37 +23,37 @@
       "until": "s2-0.35",
       "hold": "s2",
       "text": {
-        "en": "Denmark's bill bans AI copies / of your face, unless it's satire. / Who decides what's [satire]?",
-        "fi": "Tanskan lakiesitys kieltää / tekoälykopiot kasvoistasi, / paitsi satiirissa. / Kuka päättää, mikä on [satiiria]?",
-        "ja": "デンマークの 法案は / 顔の AIコピーを 禁じる。 風刺は 例外。 / 何が [風刺か]、 誰が 決める？"
+        "en": "Denmark's deepfake bill / exempts satire. / When the powerful go to court / over a joke, who [wins]?",
+        "fi": "Tanskan deepfake-lakiesitys / sallii satiirin. / Kun vallanpitäjät vievät vitsin / oikeuteen, kuka [voittaa]?",
+        "ja": "デンマークの ディープフェイク / 法案は 風刺を 例外とする。 / 権力者が 冗談を 訴えたら、 / 勝つのは [誰]？"
       },
-      "source": "Bill L 49, tabled 8 Oct 2026 by Culture Minister Zenia Stampe: a new §73a of the Copyright Act, no realistic digital imitation of a person's appearance, voice or movements without consent; satire, parody and political or social criticism stay allowed unless the fake is misinformation that seriously endangers others; target 1 Jan 2027 (Euronews 8 Oct; PPC Land; sn.dk). A bill, not law: the caption and the tag both say so."
+      "source": "Bill L 49, tabled 8 Oct 2026 by Culture Minister Zenia Stampe: a new §73a of the Copyright Act, no realistic digital imitation of a person's appearance, voice or movements without consent; satire, parody and political or social criticism stay allowed unless the fake is misinformation that seriously endangers others; target 1 Jan 2027 (Euronews 8 Oct; PPC Land; sn.dk). A bill, not law: the caption and the tag both say so. The question is the station's: every case below is someone powerful against a satire of them."
     },
     {
-      "id": "courts",
+      "id": "king",
       "role": "evidence",
       "at": "s2+0.6",
       "until": "s3-0.35",
       "hold": "s3",
       "text": {
-        "en": "The bill's answer: / the [courts], case by case.",
-        "fi": "Lakiesityksen vastaus: / [tuomioistuimet], / tapaus kerrallaan.",
-        "ja": "法案の 答え： / [裁判所が] 個別に 判断する。"
+        "en": "1831, Paris: a king. / The court sided with [the king].",
+        "fi": "1831, Pariisi: kuningas. / Oikeus asettui / [kuninkaan] puolelle.",
+        "ja": "1831年、 パリ： 国王。 / 裁判所は [国王側]に ついた。"
       },
-      "source": "The minister concedes the line is hard to draw; the courts decide case by case (Euronews; PPC Land; sn.dk, 8 Oct 2026)."
+      "source": "Paris assize court, 14 Nov 1831: Charles Philipon, publisher of La Caricature, convicted of outrage against the person of King Louis-Philippe over caricatures of him; six months and 2,000 francs (Encyclopædia Universalis; Public Domain Review; Wikipedia 'Pear (caricature)'). The pear strip in the picture is his own defence sketch from that trial."
     },
     {
-      "id": "before",
+      "id": "preacher",
       "role": "evidence",
       "at": "s3+0.6",
       "until": "s4-0.35",
       "hold": "s4",
       "text": {
-        "en": "Courts have ruled before. / 1831, mocking the king: guilty. / 1988, a parody ad: [protected].",
-        "fi": "Oikeus on ratkaissut ennenkin. / 1831, kuninkaan pilkka: tuomio. / 1988, parodiamainos: [suojattu].",
-        "ja": "裁判所は 前にも 判断した。 / 1831年、 国王の 風刺： 有罪。 / 1988年、 パロディ広告： [保護]。"
+        "en": "1988: a TV preacher / and a parody ad. / The court sided with [satire].",
+        "fi": "1988: tv-saarnaaja / ja parodiamainos. / Oikeus asettui / [satiirin] puolelle.",
+        "ja": "1988年： テレビ伝道師と / パロディ広告。 / 裁判所は [風刺側]に ついた。"
       },
-      "source": "Paris assize court, 14 Nov 1831: Charles Philipon convicted of outrage against the person of the King, six months and 2,000 francs; his defence was the four-head king-to-pear sketch (Encyclopædia Universalis; Public Domain Review; Wikipedia 'Pear (caricature)'). Hustler Magazine v. Falwell, 485 U.S. 46 (24 Feb 1988): the Supreme Court reversed damages over an ad parody marked 'not to be taken seriously' (Cornell LII). The pear strip in the picture is the defence sketch, drawn at that trial."
+      "source": "Hustler Magazine v. Falwell, 485 U.S. 46 (24 Feb 1988): the televangelist Jerry Falwell sued over an ad parody marked 'not to be taken seriously'; the Supreme Court reversed his damages (Cornell LII; FIRE)."
     },
     {
       "id": "fakes",
@@ -62,11 +62,11 @@
       "until": "s5-0.35",
       "hold": "s5",
       "text": {
-        "en": "2024, AI fakes. / A Berlin court: no. / A California court: [yes].",
-        "fi": "2024, tekoälyväärennökset. / Berliinin oikeus: ei. / Kalifornian oikeus: [kyllä].",
-        "ja": "2024年、 AIの 偽動画。 / ベルリンの 裁判所： 不可。 / カリフォルニアの 裁判所： [可]。"
+        "en": "2024, AI fakes. / Berlin: the government won. / California: [satire] won.",
+        "fi": "2024, tekoälyväärennökset. / Berliini: hallitus voitti. / Kalifornia: [satiiri] voitti.",
+        "ja": "2024年、 AIの 偽動画。 / ベルリン： 政府の 勝ち。 / カリフォルニア： [風刺の] 勝ち。"
       },
-      "source": "Landgericht Berlin II, 15 O 579/23 (reported 25 Feb 2024): a preliminary injunction against the art collective's AI-voiced 'chancellor' video, found not clearly recognisable as fake or satire (LTO; netzpolitik.org; FAZ via turi2). Kohls v. Bonta, E.D. Cal., 2 Oct 2024: preliminary injunction against AB 2839 in a suit over an AI parody campaign ad; struck down Aug 2025 (Tech Policy Press; court order). No faces of either politician are drawn."
+      "source": "Berlin: Landgericht Berlin II, 15 O 579/23 (reported 25 Feb 2024), a preliminary injunction for the German federal government against an art collective's AI-voiced 'chancellor' video, found not clearly recognisable as fake or satire (LTO; netzpolitik.org; FAZ via turi2). California: Kohls v. Bonta, E.D. Cal., 2 Oct 2024, a preliminary injunction against the state's AB 2839 in a suit over an AI parody campaign ad; struck down Aug 2025 (Tech Policy Press; court order)."
     },
     {
       "id": "last",
@@ -75,23 +75,23 @@
       "until": "end-0.2",
       "hold": "end",
       "text": {
-        "en": "Two all since 1831. / Denmark's courts / take the [decider].",
-        "fi": "Tasan 2–2 vuodesta 1831. / Tanskan tuomioistuimet / ratkaisevat [voittajan].",
-        "ja": "1831年から 2対2。 / [決勝点は] デンマークの 裁判所に。"
+        "en": "Two all since 1831. / Denmark is the next [match].",
+        "fi": "Tasan 2–2 vuodesta 1831. / Seuraava ottelu: [Tanska].",
+        "ja": "1831年から 2対2。 / 次の 試合は [デンマーク]。"
       },
-      "source": "The station's line over its own image. The board is labelled CASES IN THIS FILM: the tally counts the four rulings shown, nothing more (COURTS: Paris 1831, Berlin 2024; SATIRE: Washington 1988, California 2024)."
+      "source": "The station's line over its own image. The board is labelled CASES IN THIS FILM: the tally counts the four rulings shown (THE POWERFUL: Paris 1831, Berlin 2024; SATIRE: Washington 1988, California 2024). L 49 is a bill: the tag says so."
     }
   ],
   "ui": {
     "tagBill": {
-      "en": "BILL L 49 · FOLKETINGET · 8.10.2026",
-      "fi": "LAKIESITYS L 49 · FOLKETINGET · 8.10.2026",
-      "ja": "法案 L 49 · デンマーク国会 · 2026.10.8"
+      "en": "DENMARK · BILL L 49 · 8.10.2026",
+      "fi": "TANSKA · LAKIESITYS L 49 · 8.10.2026",
+      "ja": "デンマーク · 法案 L 49 · 2026.10.8"
     },
     "board": {
-      "en": "COURTS · SATIRE",
-      "fi": "OIKEUS · SATIIRI",
-      "ja": "裁判所 · 風刺"
+      "en": "SATIRE · THE POWERFUL",
+      "fi": "SATIIRI · VALLANPITÄJÄT",
+      "ja": "風刺 · 権力者"
     },
     "boardSmall": {
       "en": "CASES IN THIS FILM",
@@ -122,17 +122,36 @@
       "en": "DENMARK",
       "fi": "TANSKA",
       "ja": "デンマーク"
+    },
+    "next": {
+      "en": "NEXT MATCH",
+      "fi": "SEURAAVA OTTELU",
+      "ja": "次の試合"
+    },
+    "exempt": {
+      "en": "SATIRE: EXEMPT",
+      "fi": "SATIIRI: SALLITTU",
+      "ja": "風刺： 例外"
+    },
+    "tagNext": {
+      "en": "BILL L 49 · COURTS WILL DECIDE",
+      "fi": "L 49 · OIKEUS PÄÄTTÄÄ",
+      "ja": "法案 L 49 · 裁判所が 判断"
     }
   },
   "props": {
     "parody": {
       "en": "AD PARODY — NOT TO BE TAKEN SERIOUSLY",
       "why": "the small print the 1988 parody carried, on a blank poster; never the parody's content"
+    },
+    "stamps": {
+      "en": "GUILTY / PROTECTED / BLOCKED",
+      "why": "rubber stamps on the exhibits: red where the powerful won, green where satire did"
     }
   },
   "post": {
-    "en": "Denmark's bill would ban AI copies of your face, unless it's satire. Who decides what's satire? The courts, case by case. Courts have ruled both ways since 1831: Paris, guilty; Washington, protected; Berlin, no; California, yes. #satire #deepfakes #Denmark",
-    "fi": "Tanskan lakiesitys kieltäisi tekoälykopiot kasvoistasi, paitsi satiirissa. Kuka päättää, mikä on satiiria? Tuomioistuimet, tapaus kerrallaan. Ne ovat ratkaisseet molempiin suuntiin vuodesta 1831: Pariisi syyllinen, Washington suojattu, Berliini ei, Kalifornia kyllä.",
-    "ja": "デンマークの法案は顔のAIコピーを禁じる。風刺は例外。何が風刺かは誰が決める？裁判所が個別に判断する。裁判所は1831年から両方向に判断してきた。パリは有罪、ワシントンは保護、ベルリンは不可、カリフォルニアは可。"
+    "en": "Denmark's deepfake bill exempts satire, so courts will decide what counts. When the powerful take a joke to court, who wins? Paris 1831: the king. Washington 1988: satire. Berlin 2024: the government. California 2024: satire. Two all. #satire #deepfakes #Denmark",
+    "fi": "Tanskan deepfake-lakiesitys sallii satiirin, joten tuomioistuimet päättävät, mikä sitä on. Kun vallanpitäjät vievät vitsin oikeuteen, kuka voittaa? Pariisi 1831: kuningas. Washington 1988: satiiri. Berliini 2024: hallitus. Kalifornia 2024: satiiri. Tasan.",
+    "ja": "デンマークのディープフェイク法案は風刺を例外とする。何が風刺かは裁判所が決める。権力者が冗談を訴えたら、勝つのは誰？パリ1831年は国王。ワシントン1988年は風刺。ベルリン2024年は政府。カリフォルニア2024年は風刺。2対2。"
   }
 }

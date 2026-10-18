@@ -14,8 +14,8 @@
  ],
  "scenes": [
   "sb_bill",
-  "sb_bench",
-  "sb_before",
+  "sb_king",
+  "sb_ad",
   "sb_fakes",
   "sb_decider"
  ],
@@ -24,27 +24,27 @@
    "id": "sb_bill",
    "beats": 12,
    "cues": {
-    "phone": 0.3,
-    "stamp": 1.6,
-    "mask": "word:pop"
+    "phone": 0.15,
+    "stamp": 0.75,
+    "exempt": "line:2",
+    "lights": "line:3.start",
+    "wins": "word:pop"
    }
   },
   {
-   "id": "sb_bench",
+   "id": "sb_king",
    "beats": 12,
    "cues": {
-    "lights": 0.4,
-    "gavel": "word:pop"
+    "pear": 0.4,
+    "verdict": "word:pop"
    }
   },
   {
-   "id": "sb_before",
+   "id": "sb_ad",
    "beats": 12,
    "cues": {
-    "pear": 0.5,
-    "guilty": "line:2",
-    "ad": "line:3.start",
-    "protected": "word:pop"
+    "ad": 0.4,
+    "verdict": "word:pop"
    }
   },
   {

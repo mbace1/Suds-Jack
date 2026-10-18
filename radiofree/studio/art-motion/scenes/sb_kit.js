@@ -1,7 +1,8 @@
 // The kit for "The Scoreboard" (Nordic 2) — the papercut box in CLEAN LIGHT (rfp_clean.js), made by the pipeline.
-// One question: Denmark's bill exempts satire, so who decides what satire is? The courts, and courts have answered
-// both ways since 1831. The device is an old flip-card scoreboard, COURTS | SATIRE, hung over a paper courtroom
-// bench and labelled small CASES IN THIS FILM, so the tally is honest about being a selection.
+// v2 (owner, 18 Oct: "courts vs satire? It's more satire vs something else"): the match is SATIRE against THE
+// POWERFUL, and the courts are the referee — the bench the board hangs over. One question: when the powerful take a
+// joke to court, who wins? Two all since 1831, and Denmark's deepfake bill is the next match. The board is labelled
+// small CASES IN THIS FILM, so the tally is honest about being a selection.
 // The look is Copenhagen, cool and pale: the Folketinget's grey stone and green copper, ash-wood furniture, daylight
 // from high windows. It must not repeat film 5 (Satire Excepted): no red, no candlelight, no balance scale.
 //   Times come from window.FILM_PLAN (pipeline/plan.mjs), loaded before this kit: SB.at('sb_before', 'guilty') is
@@ -98,14 +99,14 @@ window.SB = (() => {
     }
     c.fillStyle = 'rgba(0,0,0,.55)'; c.fillRect(x - w / 2, y - 1.5, w, 3);    // the split
   }
-  /** the whole board. s = { courts: [from, to, k], satire: [from, to, k] }, lit 0..1, dark 0..1 */
+  /** the whole board. s = { satire: [from, to, k], power: [from, to, k] }, lit 0..1, dark 0..1 */
   function board(c, lt, s, { lit = 1, dark = 0, x = BX, y = BY, sc = 1 } = {}) {
     c.save(); c.translate(x, y); c.scale(sc, sc); c.translate(-BX, -BY);
     put(c, boardBody(), BX, BY, { lift: 1.3 });
-    const [lc, ls] = ui('board', 'COURTS · SATIRE').split(' · ');
+    const [lc, ls] = ui('board', 'SATIRE · THE POWERFUL').split(' · ');
     c.fillStyle = C.cream; c.font = '54px "Anton-400"'; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
     c.fillText(lc, BX - BW / 4, BY - BH / 2 + 66); c.fillText(ls, BX + BW / 4, BY - BH / 2 + 66);
-    card(c, BX - BW / 4, BY + 30, ...s.courts); card(c, BX + BW / 4, BY + 30, ...s.satire);
+    card(c, BX - BW / 4, BY + 30, ...s.satire); card(c, BX + BW / 4, BY + 30, ...s.power);
     c.fillStyle = 'rgba(239,232,214,.75)'; c.font = '24px "ArchivoBlack-400"'; c.fillText(ui('boardSmall', 'CASES IN THIS FILM'), BX, BY + BH / 2 - 22);
     const n = 26; for (let i = 0; i < n; i++) {                              // the bulbs: they come on one by one, and go out for "dark"
       const t = i / n, px = t < 0.5 ? BX - BW / 2 + 10 + (t / 0.5) * (BW - 20) : BX + BW / 2 - 10 - ((t - 0.5) / 0.5) * (BW - 20), py = t < 0.5 ? BY - BH / 2 + 8 : BY + BH / 2 - 8;
@@ -124,6 +125,8 @@ window.SB = (() => {
     // a Dannebrog swallow-tail pennant, the colours only: white cross on red
     c.fillStyle = C.red; c.fillRect(BX - BW / 2 + 30, y - 30, 84, 60); c.fillStyle = '#fff'; c.fillRect(BX - BW / 2 + 56, y - 30, 12, 60); c.fillRect(BX - BW / 2 + 30, y - 6, 84, 12);
     c.fillStyle = C.cream; c.font = '64px "Anton-400"'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(ui('denmark', 'DENMARK'), BX - BW / 2 + 140, y + 4);
+    c.fillStyle = C.copperD; c.beginPath(); c.roundRect(BX - 150, y - 112, 300, 46, 10); c.fill();
+    c.fillStyle = C.cream; c.font = '30px "ArchivoBlack-400"'; c.textAlign = 'center'; c.fillText(ui('next', 'NEXT MATCH'), BX, y - 87);
     card(c, BX + BW / 2 - 100, y, '?', '?', 1, { w: 120, h: 96, font: 76, spin });
     c.restore();
   }
