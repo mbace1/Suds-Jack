@@ -22,7 +22,7 @@ import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './mode
 import { TruckTrack } from './truck.js?v=107';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=107';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=109';
 import { Platforms } from './platforms.js?v=85';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
 import { GooWave } from './goo.js?v=85';
@@ -1016,8 +1016,8 @@ const elKills = document.getElementById('kills');
 // HD-010 (12 Oct playtest): a one-line goal card at every run start, and a
 // label under the clock that says what the number is. The words live on the
 // mode (modes.js) and, where a season changes the score, on the season
-// (seasons.js: HAUL's CARGO IS THE SCORE) — the season's line only when the
-// run is actually playing that season's mode.
+// (none does since v58 took HAUL's cargo out of the score) — the season's line
+// only when the run is actually playing that season's mode.
 const elClockLabel = document.getElementById('clockLabel');
 const elGoal = document.getElementById('goalCard');
 const GOAL_MS = 1600;   // + the 0.3 s fade: gone by ~1.9 s
@@ -1646,7 +1646,7 @@ function runReport() {
 }
 
 function showDeath(timedOut, complete = false) {
-  const runT = gameTime + runBonus;   // v54: season 3's time carries the load
+  const runT = gameTime;
   const t = runT.toFixed(1);
   // daily times never touch the FREE all-time board — separate economies
   let best = false;
@@ -1750,7 +1750,7 @@ function resetRun() {
   debris.reset();
   physGibs.reset();
   wallsFelled = 0;
-  runBonus = 0; spilledSeen = -1; cratesSaved = 0; cratesSpilled = 0; ebbN = 0; ebbSteps = false; rubbleStands = 0; runComplete = false;
+  ebbN = 0; ebbSteps = false; rubbleStands = 0; runComplete = false;
   finale = null; finaleDone = false; finalePressure = 1;
   litter.reset();
   gems.reset();
@@ -2005,8 +2005,8 @@ const GAME = { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' };
 let table = null;
 let lastTimedOut = false, lastComplete = false;
 function tokoCue() {
-  const t = (gameTime + (runBonus || 0)).toFixed(1);
-  const tier = timeTier(gameTime + (runBonus || 0));
+  const t = gameTime.toFixed(1);
+  const tier = timeTier(gameTime);
   const sn = S().menu ?? S().name;
   const mode = M().name;
   const peak = stylePeakIdx > 0 ? STYLE_TIERS[stylePeakIdx].label : '-';
@@ -3095,7 +3095,6 @@ function fireDagger(spread, speed, homing, damage = 1) {
  *  chunks that heap where it stood — with a spray of chips, and it is gone as
  *  cover. Chips fly off every blow so a pile that is being worked on says so. */
 let wallsFelled = 0;
-let runBonus = 0, spilledSeen = -1, cratesSaved = 0, cratesSpilled = 0;   // v54: season 3's load, in seconds
 let ebbN = 0, ebbSteps = false, rubbleStands = 0;                           // v54: the ebb, and how often the rubble held you
 let runComplete = false;                                                     // v54: the season's end reached
 const _col = new THREE.Color();
@@ -3198,13 +3197,6 @@ function recapParts() {
   if (finaleDone) out.push(`survived ${S().finale?.name ?? 'the finale'}`);
   if (ebbN) out.push(`${ebbN} ebb${ebbN === 1 ? '' : 's'}`);
   if (goo.cfg && waveStrikes) out.push(`the sea hit you ${waveStrikes}×`);
-  const cv = truck.active;
-  if (cv && S().cargoScore) {
-    out.push(`${cv.cargo.crates.filter(c => c.welded).length} crates still loaded`);
-    if (cratesSaved) out.push(`${cratesSaved} saved`);
-    if (cratesSpilled) out.push(`${cratesSpilled} spilled`);
-    if (cv.jackknifed) out.push(`${cv.jackknifed} jackknifed`);
-  }
   return out;
 }
 
@@ -3342,9 +3334,8 @@ function fireByHand(dt, w) {
 function updateGaze(dt) {
   fireTimer = 0; homingFireTimer = 0; homingWasHeld = false;   // fireWasHeld is firePress's (a short press still jumps here)
   camera.getWorldDirection(_fwd2);
-  // v53: in the convoy the cabs are targets too — three missiles jackknife one
-  const targets = S().gaze?.trucks && truck.active ? enemies.concat(truck.active.targets()) : enemies;
-  for (const shot of gaze.update(dt, camera.position, _fwd2, targets)) launchMissile(shot);
+  // v58: the look locks skulls only — the cabs were targets from v53 to v57
+  for (const shot of gaze.update(dt, camera.position, _fwd2, enemies)) launchMissile(shot);
 }
 function launchMissile(shot) {
   weaponActive = true;
@@ -3408,17 +3399,6 @@ function updateCombat(dt) {
     const d = daggers.active[i];
     // v41: rock stops a nail — pillars, court walls and standing slabs are
     // solid to projectiles; a needle through a pillar reads as a bug
-    // v53: a missile with a CAB for a target lands in it
-    if (d.target?.isTruck) {
-      d.target.center(_c);
-      if (segHitsSphere(d.prev, d.m.position, _c, 1.5)) {
-        if (truck.active?.hit(d.target.truck)) { toast('JACKKNIFE'); trauma = Math.max(trauma, 0.45); audio.gib(true); buzz(0.5, 0.3, 80); }
-        else audio.hit();
-        spawnSpark(d.m.position, true);
-        daggers.recycle(i);
-        continue;
-      }
-    }
     if (walls.walls.length) {
       const w = walls.blocks(d.prev, d.m.position);
       if (w) {
@@ -3738,15 +3718,6 @@ function step(dt) {
       die();
       return;
     }
-    // v54 CARGO IS THE SCORE: set a loose crate back by landing on it, pay for every one the road takes
-    const cs = S().cargoScore, cv = truck.active;
-    if (cs && cv && !_urlMode && state === 'playing') {
-      const saved = player.vy <= 0.5 ? cv.cargo.stomp(player.feet) : 0;
-      if (saved) { cratesSaved += saved; runBonus += saved * cs.save; toast(`+${saved * cs.save}s · LOAD SAVED`, 900); audio.gem?.(); }
-      const sp = cv.cargo.stats.spilled;
-      if (spilledSeen < 0 || sp < spilledSeen) spilledSeen = sp;
-      if (sp > spilledSeen) { cratesSpilled += sp - spilledSeen; runBonus -= (sp - spilledSeen) * cs.spill; spilledSeen = sp; }
-    }
   }
   director(dt);
   const rubbleSolid = S().rubbleFloor && physGibs.gibs.length;   // v54: the swarm goes round a heap
@@ -3887,16 +3858,10 @@ function step(dt) {
     elKills.textContent = `${kills} kills · run ${gameTime.toFixed(1)}s`;
     elClockLabel.textContent = clockLine();
   } else {
-    elTimer.textContent = (gameTime + runBonus).toFixed(1);   // v54: season 3's time carries the load
+    elTimer.textContent = gameTime.toFixed(1);
     elTimer.style.color = '';
-    // HD-010: "load 36 · +0s" said nothing. The clock's label says the clock
-    // is time PLUS cargo, how many crates ride on the truck and what the load
-    // has added; the kill line is kills.
-    const cargo = S().cargoScore && truck.active && !_urlMode;
     elKills.textContent = `${kills} kills`;
-    elClockLabel.textContent = cargo
-      ? `${clockLine()} · ${truck.active.cargo.crates.filter(c => c.welded).length} CRATES ON BOARD · ${runBonus >= 0 ? '+' : ''}${runBonus}s`
-      : clockLine();
+    elClockLabel.textContent = clockLine();
   }
   elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ` · HOMING ${homingAmmo}` : ''}`;
 }
@@ -4186,7 +4151,7 @@ window.__hd = {
     truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
     triggerFinale() { startFinale(); return !!finale; },   // v53
     getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
-    getRun() { return { runBonus, cratesSaved, cratesSpilled, ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
+    getRun() { return { ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
     completeRun() { completeRun(); return runComplete; },
     getFinale() { return { active: !!finale, kind: finale?.kind ?? null, t: +(finale?.t ?? 0).toFixed(2), phase: finale?.phase ?? 0, rocks: finale?.rocks ?? 0, wrecked: finale?.wrecked ?? 0, done: finaleDone, pressure: finalePressure, drain: +goo.drain.toFixed(2), declared: S().finale ?? null }; },
     getConvoy() { const cv = truck.active; return cv ? { trucks: cv.trucks.length, jackknifed: cv.jackknifed, hp: cv.trucks.map(t => t.hp), cargo: cv.cargo.getState() } : null; },   // v53   // v50: the gate taps the touch sticks the way a thumb does

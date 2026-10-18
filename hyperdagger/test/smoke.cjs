@@ -1437,7 +1437,6 @@ s.listen(0, '127.0.0.1', async () => {
       d.startGame(); d.setInvulnerable?.(true); d.freezeDirector?.(true);
       await frames(3);
       const tr = d.truckObj(), gz = d.gazeObj(), inp = d.inputObj();
-      gz.cfg.trucks = false;   // v53: the cabs lock too — these checks are about bodies; haul2 turns it back on
       const out = { mode: d.getState().mode, jumps: pl.maxJumps, dash: !!pl.dashEnabled, moving: !!tr.cfg.moving, gazeOn: !!gz.cfg,
         hand: d.getHand().model, shape: d.getGun().shape };
       // THE TRUCKS DRIVE: half a second of the convoy, one truck watched
@@ -1517,7 +1516,8 @@ s.listen(0, '127.0.0.1', async () => {
         for (let i = 0; i < 30; i++) { await frames(1); loose = Math.max(loose, cv.cargo.crates.filter(c => c.truck === t && !c.welded).length); }
         out.brake = { loose };
       }
-      // three missiles in a cab: the truck folds
+      // THE FOLD — the crash the pile-up uses (and HD-016's will): driven
+      // through the convoy's own fold, since v58 no missile reaches a cab.
       // a truck AHEAD of the body: a crawling one drifts back ~20 u/s and the
       // convoy drops a truck 40 u behind you, which stops its clock mid-check
       const free = x => x !== cv.standing && x !== t && x.proxy.alive;
@@ -1530,20 +1530,26 @@ s.listen(0, '127.0.0.1', async () => {
       const age0 = t2.age;
       for (let i = 0; i < 2000 && t2.age - age0 < 1.8 && cv.trucks.includes(t2); i++) await frames(1);
       out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1), game: +(t2.age - age0).toFixed(2), kept: cv.trucks.includes(t2) };
-      // the gaze locks a cab in range and the missiles land in it
-      gz.cfg.trucks = true;
+      // v58 (HD-018, Mikael: *you don't shoot trucks*): the look held on a cab
+      // in range never locks it, and the cab takes nothing. Until v58 the
+      // season's own `gaze.trucks` made the cabs targets, and this same look
+      // locked inside the 0.25 s dwell and had missiles in the cab by 2 s.
       // (the body is kept twelve units behind the cab each frame: a standing
       // body would be left behind by a truck doing twenty inside a second)
       const cands = cv.trucks.filter(x => x.proxy.alive && x.z < pl.feet.z - 3).sort((a, b) => b.z - a.z);
       const t3 = cands[0], hp0 = t3?.hp, cab = pl.camera.position.clone();
-      for (let i = 0; i < 90 && t3 && t3.hp === hp0; i++) {
+      let cabLocked = 0, looked = 0;
+      const g0 = d.getState().gameTime;
+      for (let i = 0; i < 600 && t3 && d.getState().gameTime - g0 < 2.0; i++) {
         pl.feet.set(t3.x, t3.group.position.y + 0.5, t3.z + 12); pl.vy = 0;
         t3.proxy.center(cab);
         const dx = cab.x - pl.camera.position.x, dy = cab.y - pl.camera.position.y, dz = cab.z - pl.camera.position.z;
         pl.yaw = Math.atan2(-dx, -dz); pl.pitch = Math.atan2(dy, Math.hypot(dx, dz)); pl._sync();
         await frames(1);
+        looked++;
+        if (gz.target?.isTruck) cabLocked++;
       }
-      out.gaze = { cab: !!t3, hpBefore: hp0, hpAfter: t3?.hp, launched: gz.launched };
+      out.gaze = { cab: !!t3, hpBefore: hp0, hpAfter: t3?.hp, cabLocked, looked, game: +(d.getState().gameTime - g0).toFixed(2) };
       // THE PILE-UP at 180 s
       d.setTime(179.5); for (let i = 0; i < 200 && d.getState().gameTime < 180.3; i++) await frames(1);
       const f = d.getFinale();
@@ -1555,42 +1561,36 @@ s.listen(0, '127.0.0.1', async () => {
       out.after = { done: d.getFinale().done, speed0, speed: cv.cfg.speed, skullMul: cv.cfg.skullMul };
       return out;
     });
-    // v54 CARGO IS THE SCORE: land on a loose crate still on its trailer and it
-    // sets back (+1 s); a crate the road takes costs one
+    // v58 (HD-018, Mikael: *you don't .. save crates*): THE LOAD IS NOT THE
+    // SCORE. Stand in a loose crate on its trailer and spill two to the road:
+    // the clock is the run's time and nothing else, its label is the mode's,
+    // and the recap says nothing about crates. Until v58 the same frames paid
+    // +1 s for the crate stood in and charged -1 s for each spill, the label
+    // read "TIME + CARGO · N CRATES ON BOARD · ±Ns", and the recap counted the
+    // load — so every one of these fails on v57.
     haul3 = await q.evaluate(async () => {
       const hd = window.__hd, d = hd.debug, pl = hd.player, cv = d.truckObj();
       const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-      const out = { before: d.getRun().runBonus };
-      // by now haul2's jackknives and pile-up have spilled much of the load:
+      const out = {};
+      // by now haul2's fold and pile-up have spilled much of the load:
       // if no welded crate is left off your truck, load one (main's load())
       const pick = () => cv.cargo.crates.find(c => c.welded && c.truck && c.truck !== cv.standing);
       for (const t of cv.trucks) { if (pick()) break; if (t !== cv.standing) cv.cargo.load(t); }
       const cr = pick();
       if (cr) {
-        // (jolt unwelds the WHOLE load, so a neighbour inside the stomp's reach
-        // is set back too — 2 of 10 runs saved 2: at least ours, not exactly one)
-        cv.cargo.jolt(cr.truck, 0);
+        cv.cargo.jolt(cr.truck, 0);   // loose, still on its trailer: what v54's stomp set back
         const p = cr.b.positionLin;
         pl.feet.set(p[0], p[2] + cr.s / 2 - 0.1, -p[1]); pl.vy = -1; pl._sync();
-        const saved = cv.cargo.stomp(pl.feet);
-        out.saved = saved; out.welded = cr.welded;
+        out.loose = !cr.welded;
       }
-      // the game's own loop pays for it: a stomp the gate made directly is
-      // counted by stats, so drive the spill path through the frame instead
-      // Every spill costs `spill` s — ours AND any loose crate the road takes in
-      // the same frames (the pile-up left dozens loose: 1 in 5 runs one more
-      // landed, -3 for -2). So count the spills the frame saw and ask that
-      // each one was charged, with our two among them.
-      const s0 = d.getRun(), sp0 = cv.cargo.stats.spilled, st0 = cv.cargo.stats.stomped || 0;
-      cv.cargo.stats.spilled += 2;
+      cv.cargo.stats.spilled += 2;   // two crates the road took, as the frame sees them
       await frames(3);
-      out.afterSpill = d.getRun().runBonus - s0.runBonus;
-      out.spills = cv.cargo.stats.spilled - sp0;
-      // and the frame's own stomp pays back: the body still stands where we
-      // put it, so a second loose crate there is set back in-frame (+1)
-      out.saves = (cv.cargo.stats.stomped || 0) - st0;
-      out.hud = document.getElementById('clockLabel').textContent;   // HD-010: the load reads on the clock's label now, not the kill line
-      out.timer = document.getElementById('timer').textContent;
+      const st = d.getState(), run = d.getRun();
+      out.timer = parseFloat(document.getElementById('timer').textContent);
+      out.gameTime = +st.gameTime.toFixed(2);
+      out.hud = document.getElementById('clockLabel').textContent;
+      out.recap = run.recap;
+      out.keys = Object.keys(run);
       return out;
     });
     await q.close();
@@ -1675,9 +1675,10 @@ s.listen(0, '127.0.0.1', async () => {
   ok('haul: CARGO — trailers carry crates, welded to the deck, and a welded crate rides its truck',
     haul2.cargo.n > 0 && haul2.cargo.welded > 0 && haul2.rides && Math.abs(haul2.rides.truck - haul2.rides.crate) < 0.3, JSON.stringify({ cargo: haul2.cargo, rides: haul2.rides }));
   ok('haul: a hard brake slides the load', haul2.brake && haul2.brake.loose >= 1, JSON.stringify(haul2.brake));
-  ok('haul: three missiles in a cab jackknife the truck — it folds, swings its trailer out and crawls',
+  ok('haul: THE FOLD — a folded truck swings its trailer out and crawls (the pile-up\'s crash)',
     haul2.jack.hits[2] === true && haul2.jack.jacked && Math.abs(haul2.jack.yaw) > 0.3 && haul2.jack.spd < 6, JSON.stringify(haul2.jack));
-  ok('haul: the gaze locks a cab and the missiles land in it', haul2.gaze.cab && haul2.gaze.hpAfter < haul2.gaze.hpBefore, JSON.stringify(haul2.gaze));
+  ok('haul: the look never locks a cab, and the cab takes nothing — missiles are for skulls (v58)',
+    haul2.gaze.cab && haul2.gaze.looked > 0 && haul2.gaze.game >= 1.9 && haul2.gaze.cabLocked === 0 && haul2.gaze.hpAfter === haul2.gaze.hpBefore, JSON.stringify(haul2.gaze));
   ok('haul: THE FINALE — at 180 s the pile-up: every truck ahead folds and stops dead',
     haul2.finale.fired && haul2.finale.kind === 'pileup' && haul2.finale.wrecked >= 2 && haul2.finale.stopped >= 1, JSON.stringify(haul2.finale));
   ok('haul: past the pile-up the convoy runs faster and the skulls come thicker',
@@ -1701,9 +1702,10 @@ s.listen(0, '127.0.0.1', async () => {
     && haul.shots[haul.shots.length - 1].turn > haul.shots[0].turn
     && haul.profile[1].speed > haul.profile[0].speed && haul.profile[1].turn > haul.profile[0].turn,
     JSON.stringify({ shots: haul.shots, profile: haul.profile }));
-  ok('haul: CARGO IS THE SCORE — a loose crate you land on sets back, a spilled one costs a second, and the HUD carries the load',
-    haul3.saved >= 1 && haul3.welded && haul3.spills >= 2 && haul3.afterSpill === haul3.saves - haul3.spills && /\d+ CRATES ON BOARD · [+-]?\d+s/.test(haul3.hud),
-    JSON.stringify(haul3));
+  ok('haul: the load is not the score — standing in a loose crate and two spills leave the clock at the run time (v58)',
+    haul3.loose && Math.abs(haul3.timer - haul3.gameTime) < 0.25 && !haul3.keys.includes('runBonus'), JSON.stringify(haul3));
+  ok('haul: the clock says TIME SURVIVED and the recap says nothing about crates (v58)',
+    haul3.hud === 'TIME SURVIVED' && !haul3.recap.some(r => /crate|saved|spilled|jackknif/i.test(r)), JSON.stringify({ hud: haul3.hud, recap: haul3.recap }));
 
   // v43 THE GOO WAVE. Every check drives the wave's own clock rather than
   // waiting frames: heightAt is a pure function of (x, z, t), so the tests

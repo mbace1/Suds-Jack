@@ -29,7 +29,9 @@ s.listen(0, '127.0.0.1', async () => {
     { name: 'phone landscape', viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true },
     { name: 'desktop', viewport: { width: 1280, height: 720 } },
   ];
-  // --- HD-012: season 3 (haul) prints "N kills · load N · +Ns", the long form
+  // --- HD-012: season 3 (haul) printed "N kills · load N · +Ns", the long form.
+  // HD-010 moved the load onto the clock's label and v58 (HD-018) took it out of
+  // the score, so the line is "N kills" now; it still must clear HUB.
   for (const v of views) {
     const { name, ...opt } = v;
     const ctx = await b.newContext(opt);
@@ -38,7 +40,8 @@ s.listen(0, '127.0.0.1', async () => {
     await p.goto(base + '/hyperdagger/?assets=0&season=haul');
     await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 60000 });
     await p.evaluate(() => { __hd.debug.startGame(); __hd.debug.freezeDirector(true); });
-    await p.waitForFunction(() => /load/.test(document.getElementById('kills').textContent), null, { timeout: 30000 }).catch(() => {});
+    // (this waited up to 30 s for a "load" that has not been on this line since HD-010)
+    await p.waitForFunction(() => /kills/.test(document.getElementById('kills').textContent), null, { timeout: 30000 });
     await p.evaluate(() => __hd.debug.die(false));
     await p.waitForTimeout(400);
     const r = await p.evaluate(() => {
