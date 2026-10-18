@@ -4,7 +4,7 @@ The puppets TALK: a wordless babble out of a phone's tiny speaker, one syllable 
 the same clock the scenes use (tv_kit.js voice()), so the mouth and the sound agree. Nothing in it is a word, so
 nobody is quoted. The answers land as table sounds: a rubber stamp cuts the chancellor off mid-syllable, the sticker
 slaps on and the candidate goes on talking under it, muffled; the gavel knocks it off, the speech bubbles pop, and
-the voice comes back clear. In the EU the label lands and shrinks to a tick, and the voice never stops.
+the voice comes back clear. In the EU the label lands and shrinks to a corner bug that spoils nothing, and the voice never stops.
 
     uv run --with numpy --with soundfile python papercut/same-trick/score.py <events.json> <out.wav> [<report.json> <stems>]
 """
@@ -79,11 +79,13 @@ for j in range(4): s.fx(tag_pop(800 + 140 * j), tSp + j * 0.1, 0.35, [-0.5, 0.5,
 s.fx(chip(True), tN, 0.45, 0, name='"ban": the voice is back'); accent(s, tN, S[0], 0.28, name='ban')
 talk(tN, S[4] - 0.1, S[3], 0.7, 250, 0.2, 0.1, name='talking, clear')
 
-# ── shot 5 · the EU: the chancellor talks; the label comes down on "labelled" and shrinks to a corner tick on "lightly"
+# ── shot 5 · the EU: the chancellor talks; the label comes down on "need a label" and shrinks to a corner bug on
+# "spoil the joke", and the voice never stops
 tLb, tLi = c('tv_eu.labelled'), c('tv_eu.light')
 talk(S[4] + 0.05, END - 0.7, S[4], 0, 210, 0.17, -0.1, name='the chancellor, labelled and talking')
 s.fx(whoosh('mid', 'in'), tLb, 0.35, 0, name='"labelled": the label comes down')
-s.fx(tap(dull=True), tLi, 0.6, 0.3, name='"lightly": it shrinks to a corner bug'); s.fx(ui_tick(), tLi + 0.3, 0.35, 0.35); accent(s, tLi, S[0], 0.3, name='lightly')
+s.fx(tap(dull=True), tLi, 0.6, 0.3, name='"spoil the joke": the label shrinks to a corner bug'); accent(s, tLi, S[0], 0.3, name='spoil the joke')
+for j, w in enumerate([w for w in EV['words'] if w['caption'] == 'last' and w['pop']][1:]): s.fx(ui_tick(3400 - 300 * j), w['t'] + 0.01, 0.3, 0.35, at=w['t'] + 0.03, name=f'pop word {j + 2}: the bug settles')
 s.fx(stinger('deadpan'), tLi + 0.8, 0.45)
 motif(s, S[4] + 0.2, g=0.35)
 sting(s, END - 0.6)

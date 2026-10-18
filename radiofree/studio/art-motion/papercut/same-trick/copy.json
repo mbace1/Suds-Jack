@@ -3,7 +3,7 @@
   "cut": "v1 (owner, 18 Oct: make it; replaces The Scoreboard) — one question: can a joke use AI to put words in a leader's mouth? Two courts, two answers.",
   "series": "rfh",
   "captionSize": "house",
-  "argument": "The same AI trick got two verdicts: Berlin banned a fake chancellor as not clearly satire, a US judge struck down California's label law, and EU law now asks satire for a light label.",
+  "argument": "Same AI trick, two verdicts: Berlin banned a fake chancellor as not clearly satire, a US judge struck down California's label law, and EU law wants satire labelled without spoiling the joke.",
   "langs": ["en", "fi", "ja"],
   "native_read": { "en": true, "fi": false, "ja": false },
   "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
@@ -47,11 +47,11 @@
     {
       "id": "last", "role": "punchline", "at": "s5+0.5", "until": "end-0.2", "hold": "end",
       "text": {
-        "en": "EU law since August: an AI fake / must be labelled. Satire too, / just [lightly].",
-        "fi": "EU-laki elokuusta: / tekoälyväärennös on merkittävä. / Satiirikin, mutta [kevyesti].",
-        "ja": "EU法は 8月から： AIの 偽物には / 表示が 必要。 風刺も、 / ただし [控えめに]。"
+        "en": "EU law since August: AI fakes / need a label. For satire, / one that won't [spoil the joke].",
+        "fi": "EU-laki elokuusta: / tekoälyväärennös merkitään. / Satiiri [vitsiä pilaamatta].",
+        "ja": "EU法は 8月から： AIの 偽物には / 表示が 必要。 風刺には / [笑いを 壊さない] 表示を。"
       },
-      "source": "AI Act Article 50(4), applying from 2 Aug 2026: deep fakes must be disclosed; for evidently satirical work the duty is limited to disclosing that it exists, in an appropriate manner that does not hamper the display or enjoyment of the work."
+      "source": "AI Act Article 50(4), applying from 2 Aug 2026: deep fakes must be disclosed; for evidently satirical work the duty is limited to disclosing that it exists, in an appropriate manner that does not hamper the display or enjoyment of the work. 'One that won't spoil the joke' is our plain summary of that, so it is not quoted."
     }
   ],
   "ui": {
@@ -65,11 +65,11 @@
     "tab": { "en": "NOT CLEARLY SATIRE", "why": "the court's reason as a label, a paraphrase (never in quote marks)" },
     "vote": { "en": "VOTE", "why": "the campaign poster: a candidate, unnamed" },
     "sticker": { "en": "LABEL REQUIRED", "why": "what AB 2839 demanded of parody; drawn as big as the poster's biggest word" },
-    "bug": { "en": "AI", "why": "the EU's answer: a small label in the corner, like a TV channel's corner bug" }
+    "bug": { "en": "AI", "why": "the EU's answer: a label small enough not to spoil the joke, in the corner like a TV channel's corner bug" }
   },
   "post": {
-    "en": "Same trick, two verdicts. Berlin, 2024: a court barred an AI-voiced video of the chancellor as not clearly satire. California: a judge struck down a law demanding labels on AI parody. Since August, EU law asks for a label, kept light for satire. #AIAct #satire #EU",
-    "fi": "Sama temppu, kaksi tuomiota. Berliini 2024: oikeus kielsi tekoälyäänellä tehdyn liittokanslerivideon, koska se ei ollut selvästi satiiria. Kalifornia: tuomari kumosi lain, joka vaati merkintää tekoälyparodiaan. Elokuusta lähtien EU-laki vaatii merkinnän, satiirilta kevyen.",
-    "ja": "同じ手口、二つの判決。2024年ベルリン：裁判所はAI音声の首相動画を、明らかな風刺ではないとして禁じた。カリフォルニア：判事はAIパロディに表示を求める法律を無効とした。8月から、EU法は表示を求める。風刺には控えめに。"
+    "en": "Same trick, two verdicts. Berlin, 2024: a court barred an AI-voiced video of the chancellor as not clearly satire. California: a judge struck down a law demanding labels on AI parody. Since August, EU law asks for a label: for satire, one that won't spoil the joke. #AIAct #satire #EU",
+    "fi": "Sama temppu, kaksi tuomiota. Berliini 2024: oikeus kielsi tekoälyäänellä tehdyn liittokanslerivideon, koska se ei ollut selvästi satiiria. Kalifornia: tuomari kumosi lain, joka vaati merkintää tekoälyparodiaan. Elokuusta lähtien EU-laki vaatii merkinnän, satiirilta vitsiä pilaamatta.",
+    "ja": "同じ手口、二つの判決。2024年ベルリン：裁判所はAI音声の首相動画を、明らかな風刺ではないとして禁じた。カリフォルニア：判事はAIパロディに表示を求める法律を無効とした。8月から、EU法は表示を求める。風刺には、笑いを壊さない表示を。"
   }
 }

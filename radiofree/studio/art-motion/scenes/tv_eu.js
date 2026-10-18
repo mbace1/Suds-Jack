@@ -1,6 +1,6 @@
-// Shot 5 · The EU. Back to Berlin's phone, the paper chancellor talking again. On "must be labelled" the big yellow
-// label comes down from above, as it did in California; on "lightly" it shrinks, and shrinks, to a small AI tag in
-// the screen's corner — a TV channel's corner bug — and the jaw keeps going. Allowed, and labelled.
+// Shot 5 · The EU. Back to Berlin's phone, the paper chancellor talking again. On "need a label" the big yellow
+// label comes down from above, as it did in California; on "spoil the joke" it shrinks, and shrinks, to a small AI
+// tag in the screen's corner — a TV channel's corner bug — and the jaw keeps going. Labelled, and the joke intact.
 SCENES['tv_eu'] = (() => {
   const { box } = RFP, D = TV, ID = 'tv_eu', { clamp, lerp } = U, BUG = [540 + 150 * 1.1, 1010 - 330 * 1.1];
   return {
