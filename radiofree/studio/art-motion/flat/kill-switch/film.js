@@ -159,11 +159,21 @@ function tag(c, text, k) {
 /** one leaflet on the desk: its shadow, the paper, a flip (a squash and a lift), a fold shut (it closes toward its middle) */
 function leaflet(g, L, t, hideCells = null) {
   const sx = Math.cos(L.flip || 0), lift = Math.sin(L.flip || 0) * 60, fold = L.fold || 0;
-  g.save(); g.translate(L.x, L.y - lift); g.rotate(L.rot); g.scale(L.s * Math.abs(sx) * (1 + lift / 900), L.s * (1 + lift / 900) * (1 - 0.94 * fold));
+  g.save(); g.translate(L.x, L.y - lift); g.rotate(L.rot); g.scale(L.s * Math.abs(sx) * (1 + lift / 900), L.s * (1 + lift / 900));
+  if (fold > 0) {
+    // folding shut: the top half turns down over the bottom on the crease, and what is left is its blank back
+    const c = Math.cos(fold * Math.PI), top = c > 0;
+    g.save(); g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 40; g.shadowOffsetX = 18; g.shadowOffsetY = 26; g.fillStyle = PAPER; g.fillRect(-AW / 2, 0, AW, AH / 2); g.restore();
+    g.save(); g.beginPath(); g.rect(-AW / 2, 0, AW, AH / 2); g.clip(); g.drawImage(L.sheet, -AW / 2, -AH / 2, AW, AH); g.restore();
+    g.save(); g.scale(1, Math.max(0.001, Math.abs(c)));
+    if (top) { g.beginPath(); g.rect(-AW / 2, -AH / 2, AW, AH / 2); g.clip(); g.drawImage(L.sheet, -AW / 2, -AH / 2, AW, AH); g.fillStyle = `rgba(0,0,0,${(1 - c) * 0.3})`; g.fillRect(-AW / 2, -AH / 2, AW, AH / 2); }
+    else { g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 24; g.shadowOffsetY = 10; g.fillStyle = '#e4e0d4'; g.fillRect(-AW / 2, 0, AW, AH / 2); g.shadowColor = 'transparent';
+      g.fillStyle = `rgba(0,0,0,${0.25 * (1 + c)})`; g.fillRect(-AW / 2, 0, AW, AH / 2); }
+    g.restore(); g.restore(); return;
+  }
   g.save(); g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 40 + lift * 0.6; g.shadowOffsetX = 18; g.shadowOffsetY = 26 + lift; g.fillStyle = PAPER; g.fillRect(-AW / 2, -AH / 2, AW, AH); g.restore();
   g.drawImage(L.sheet, -AW / 2, -AH / 2, AW, AH);
   if (Math.abs(sx) < 0.98) { g.fillStyle = `rgba(0,0,0,${(1 - Math.abs(sx)) * 0.35})`; g.fillRect(-AW / 2, -AH / 2, AW, AH); }
-  if (fold > 0) { g.fillStyle = `rgba(0,0,0,${fold * 0.4})`; g.fillRect(-AW / 2, -AH / 2, AW, AH); }
   if (hideCells) { g.translate(-AW / 2, -AH / 2); for (let i = 0; i < 8; i++) {
     const [cx, cy] = CELL(i), k = t - hideCells[i], cw = 196, top = cy - 70, bot = cy + 112;
     if (k < 0.6) { g.fillStyle = PAPER; g.fillRect(cx - cw / 2, top, cw, bot - top); }

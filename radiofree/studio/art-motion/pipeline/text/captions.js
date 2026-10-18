@@ -142,9 +142,11 @@ export function draw(ctx, plan, t, { busy = {}, fadeOut = 0.25 } = {}) {
     const st = styleOf(cap.lang, cap.size), L = layout(ctx, cap), fade = clamp(1 - (t - cap.t1) / fadeOut);
     // the scrim hugs the words — a soft, blurred shadow of the caption's own box, never a band across the frame
     const sa = (busy[cap.id]?.busy ?? 0) * SCRIM * clamp((t - cap.t0) / 0.2) * fade;
-    if (sa > 0.01) {
-      const b = L.box; ctx.save(); ctx.filter = 'blur(26px)'; ctx.fillStyle = `rgba(8,8,10,${sa})`;
-      ctx.beginPath(); ctx.roundRect(b.x - 18, b.y - 6, b.w + 36, b.h + 12, 48); ctx.fill(); ctx.restore();
+    if (sa > 0.01) {                                  // it grows line by line with the reveal: never a dark box waiting for its words
+      const b = L.box, shown = cap.words.filter((w) => w.t <= t), lines = shown.length ? shown[shown.length - 1].line + 1 : 1;
+      const ws = L.widths.slice(0, lines), wmax = Math.max(...ws), h = b.h - (cap.lines.length - lines) * st.lead, x = 540 - wmax / 2 - (b.w - Math.max(...L.widths)) / 2;
+      ctx.save(); ctx.filter = 'blur(26px)'; ctx.fillStyle = `rgba(8,8,10,${sa})`;
+      ctx.beginPath(); ctx.roundRect(x - 18, b.y - 6, wmax + (b.w - Math.max(...L.widths)) + 36, h + 12, 48); ctx.fill(); ctx.restore();
     }
     ctx.save(); ctx.font = `${st.size}px "${st.family}"`; ctx.lineJoin = 'round'; ctx.textBaseline = 'alphabetic';
     cap.words.forEach((w, i) => {

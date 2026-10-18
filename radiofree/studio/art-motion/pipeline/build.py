@@ -1,7 +1,7 @@
 """Build one master of a film, by pipeline: picture → text → sound → encode → checks. One command, one report.
 
     uv run --with numpy --with soundfile --with matplotlib python pipeline/build.py <film dir> --lang en --fonts <dir> --out <dir>
-        [--engine <huashu engine dir>] [--signoff <station sign-off mp4>] [--air]
+        [--engine <huashu engine dir>] [--reuse-picture] [--signoff <station sign-off mp4>] [--air]
 
 Two kinds of film, one pipeline after the picture:
   a PAGE film   film.html draws the frames itself and does its own captions through captions.js (Kill Switch);
@@ -40,8 +40,9 @@ if FJ['kind'] == 'engine':
     run('node', HERE / 'plan.mjs', FILM, LANG, OUT)                                    # the timeline, from the copy
     for lib in FJ['libs'] + [f'scenes/{s}.js' for s in FJ['scenes']]: shutil.copy(ART / lib, ENGINE / lib)   # stage: the repo is the source
     shutil.copy(OUT / 'film-plan.js', ENGINE / 'scenes' / f'{key}_plan.js'); shutil.copy(OUT / 'eras.js', ENGINE / f'eras_{key}.js')
-    run('uv', 'run', '-q', '--with', 'playwright==1.56.0', 'python', ENGINE / 'render.py', '--film', key, '--width', '1080', '--height', '1920',
-        '--fps', FJ['fps'], '--out', OUT / 'picture.mp4', cwd=ENGINE)
+    if not ('--reuse-picture' in a and (OUT / 'picture.mp4').exists()):         # --reuse-picture: the scenes did not change, only words or sound
+        run('uv', 'run', '-q', '--with', 'playwright==1.56.0', 'python', ENGINE / 'render.py', '--film', key, '--width', '1080', '--height', '1920',
+            '--fps', FJ['fps'], '--out', OUT / 'picture.mp4', cwd=ENGINE)
     if (OUT / 'src').exists(): shutil.rmtree(OUT / 'src')
     (OUT / 'src').mkdir(); run('ffmpeg', '-y', '-loglevel', 'error', '-i', OUT / 'picture.mp4', '-q:v', '2', OUT / 'src' / 'f%05d.jpg')
     n = len(list((OUT / 'src').glob('f*.jpg')))
