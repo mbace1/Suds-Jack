@@ -18,8 +18,7 @@ first; the one hard date is **The Day After, before the 3 Nov midterms**.
 **Queue (18 Oct):**
 1. *Welcome Home* v4: waiting for approval.
 2. *The Day After*: **built 18 Oct, waiting for approval**: `previews/18-10-The-Day-After-en.mp4` (32.7 s + slate; all checks pass). Before air: re-check the kill-switch detail against Axios.
-3. *It Was Only a Test* (`plan/films/11-only-a-test.md`): the owner said make it; pitched, waiting for a go on the
-   captions.
+3. *It Was Only a Test* (`plan/films/11-only-a-test.md`): **built 18 Oct, waiting for approval**: `previews/18-10-It-Was-Only-a-Test-en.mp4` (32.1 s + slate; all checks pass).
 4. *Same Trick, Two Verdicts* (`plan/films/12-same-trick.md`): the owner said make it; pitched, waiting for a go on the
    captions.
 

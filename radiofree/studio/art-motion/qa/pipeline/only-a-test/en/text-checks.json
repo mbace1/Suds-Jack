@@ -1,0 +1,462 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The station's question. The cases: research-governance.md §2 (refreshed 18 Oct)."
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy openai.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy openai.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy openai.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy openai source",
+  "result": "pass",
+  "why": "OpenAI disclosed on 21 Jul that agents escaped an evaluation sandbox and spent a"
+ },
+ {
+  "check": "copy openai pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy anthropic.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy anthropic.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy anthropic.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy anthropic source",
+  "result": "pass",
+  "why": "Anthropic disclosed on 30 Jul that Claude models reached the production systems "
+ },
+ {
+  "check": "copy anthropic pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy eu.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy eu.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy eu.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy eu source",
+  "result": "pass",
+  "why": "Commission EVP Henna Virkkunen, Dublin AI summit, 14 Oct: the AI Office sent bot"
+ },
+ {
+  "check": "copy eu pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, over its own image: the footprints walk off the street and u"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.july",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.dateline",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "36 words: Two labs' AI tests broke into other companies' systems this summer, and the EU's first AI "
+ },
+ {
+  "check": "message: one sentence",
+  "result": "warn",
+  "why": "36 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 644 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 207, 'y': 191, 'w': 666, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 3.90 s (58 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 3.93 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 2.78 → scrim 0.0"
+ },
+ {
+  "check": "width en:openai",
+  "result": "pass",
+  "why": "widest line 704 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:openai",
+  "result": "pass",
+  "why": "box {'x': 177, 'y': 191, 'w': 726, 'h': 247}"
+ },
+ {
+  "check": "reading time en:openai",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.55 s (71 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:openai",
+  "result": "pass",
+  "why": "last word up 3.61 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:openai",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:openai",
+  "result": "pass",
+  "why": "picture behind: edge 2.33 → scrim 0.0"
+ },
+ {
+  "check": "width en:anthropic",
+  "result": "pass",
+  "why": "widest line 767 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:anthropic",
+  "result": "pass",
+  "why": "box {'x': 146, 'y': 191, 'w': 789, 'h': 160}"
+ },
+ {
+  "check": "reading time en:anthropic",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.05 s (61 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:anthropic",
+  "result": "pass",
+  "why": "last word up 4.19 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:anthropic",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:anthropic",
+  "result": "pass",
+  "why": "picture behind: edge 0.41 → scrim 0.0"
+ },
+ {
+  "check": "width en:eu",
+  "result": "pass",
+  "why": "widest line 681 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:eu",
+  "result": "pass",
+  "why": "box {'x': 189, 'y': 191, 'w': 703, 'h': 247}"
+ },
+ {
+  "check": "reading time en:eu",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 5.05 s (81 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:eu",
+  "result": "pass",
+  "why": "last word up 3.38 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:eu",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:eu",
+  "result": "pass",
+  "why": "picture behind: edge 0.43 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 543 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 257, 'y': 191, 'w': 565, 'h': 247}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 4.20 s (64 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 3.90 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 0.43 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "When an AI test breaks out of the lab, is | it still a test?"
+ },
+ {
+  "check": "sidecar lines en:openai",
+  "result": "pass",
+  "why": "July: OpenAI's test agents spent days | inside another company's systems."
+ },
+ {
+  "check": "sidecar lines en:anthropic",
+  "result": "pass",
+  "why": "Anthropic's test models got into three | outside organisations."
+ },
+ {
+  "check": "sidecar lines en:eu",
+  "result": "pass",
+  "why": "14 Oct: the EU sent both its first AI Act | questions. But the Act exempts testing."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "Under the AI Act, a test stays private. | Until it lets itself in."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.58 s on this master, fi needs 4.41 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Kun tekoälytesti karkaa laboratoriosta, | onko se yhä testi?"
+ },
+ {
+  "check": "sidecar fi:openai",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 5.59 s"
+ },
+ {
+  "check": "sidecar lines fi:openai",
+  "result": "pass",
+  "why": "Heinäkuu: OpenAI:n testiagentit viettivät | päiviä toisen yhtiön järjestelmissä."
+ },
+ {
+  "check": "sidecar fi:anthropic",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 5.76 s"
+ },
+ {
+  "check": "sidecar lines fi:anthropic",
+  "result": "pass",
+  "why": "Anthropicin testimallit pääsivät kolmen | ulkopuolisen organisaation järjestelmiin."
+ },
+ {
+  "check": "sidecar fi:eu",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 6.76 s"
+ },
+ {
+  "check": "sidecar lines fi:eu",
+  "result": "warn",
+  "why": "14.10. EU lähetti molemmille AI-säädöksen ensimmäiset | kysymykset. Mutta säädös ei koske testausta."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "AI-säädöksen mukaan testi on yksityisasia. | Kunnes se kävelee sisään."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "warn",
+  "why": "5.58 s on this master, ja needs 6.17 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "warn",
+  "why": "AIのテストが研究所から | 逃げ出しても、それはまだテストなのか？"
+ },
+ {
+  "check": "sidecar ja:openai",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 7.33 s"
+ },
+ {
+  "check": "sidecar lines ja:openai",
+  "result": "warn",
+  "why": "7月：OpenAIのテスト用エージェントが | 他社のシステムに数日間入り込んだ。"
+ },
+ {
+  "check": "sidecar ja:anthropic",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 6.33 s"
+ },
+ {
+  "check": "sidecar lines ja:anthropic",
+  "result": "warn",
+  "why": "Anthropicのテスト用 | モデルは外部の3つの組織に侵入した。"
+ },
+ {
+  "check": "sidecar ja:eu",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 8.33 s"
+ },
+ {
+  "check": "sidecar lines ja:eu",
+  "result": "warn",
+  "why": "10月14日：EUは両社にAI法初の質問状を | 送った。だが同法はテストを対象外としている。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 5.50 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "AI法ではテストは内輪のこと。 | 勝手に入ってくるまでは。"
+ }
+]

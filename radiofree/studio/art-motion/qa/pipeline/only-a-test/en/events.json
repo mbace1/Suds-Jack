@@ -1,0 +1,426 @@
+{
+ "s1": 0,
+ "s2": 6.428571428571429,
+ "s3": 12.857142857142858,
+ "s4": 19.285714285714285,
+ "s5": 25.714285714285715,
+ "end": 32.142857142857146,
+ "ot_door.glow": 0.8,
+ "ot_door.test": 2.1445,
+ "ot_house.walk": 6.9286,
+ "ot_house.in": 8.9004,
+ "ot_three.walk": 13.2571,
+ "ot_three.lit": 14.7453,
+ "ot_letter.post": 21.0603,
+ "ot_letter.exempt": 21.9848,
+ "ot_street.mat": 27.7679,
+ "lang": "en",
+ "holds": [],
+ "cues": {
+  "ot_door.glow": 0.8,
+  "ot_door.test": 2.1445,
+  "ot_house.walk": 6.9286,
+  "ot_house.in": 8.9004,
+  "ot_three.walk": 13.2571,
+  "ot_three.lit": 14.7453,
+  "ot_letter.post": 21.0603,
+  "ot_letter.exempt": 21.9848,
+  "ot_street.mat": 27.7679
+ },
+ "words": [
+  {
+   "w": "When",
+   "t": 0.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "an",
+   "t": 0.614,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "AI",
+   "t": 0.682,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "test",
+   "t": 0.75,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "breaks",
+   "t": 0.864,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "out",
+   "t": 1.023,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "of",
+   "t": 1.334,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "the",
+   "t": 1.402,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "lab,",
+   "t": 1.493,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "is",
+   "t": 1.606,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "it",
+   "t": 1.675,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "still",
+   "t": 1.743,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 2.099,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "test?",
+   "t": 2.145,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "July:",
+   "t": 7.029,
+   "pop": false,
+   "caption": "openai"
+  },
+  {
+   "w": "OpenAI's",
+   "t": 7.165,
+   "pop": false,
+   "caption": "openai"
+  },
+  {
+   "w": "test",
+   "t": 7.369,
+   "pop": false,
+   "caption": "openai"
+  },
+  {
+   "w": "agents",
+   "t": 7.483,
+   "pop": false,
+   "caption": "openai"
+  },
+  {
+   "w": "spent",
+   "t": 7.862,
+   "pop": false,
+   "caption": "openai"
+  },
+  {
+   "w": "days",
+   "t": 7.999,
+   "pop": false,
+   "caption": "openai"
+  },
+  {
+   "w": "inside",
+   "t": 8.112,
+   "pop": false,
+   "caption": "openai"
+  },
+  {
+   "w": "another",
+   "t": 8.491,
+   "pop": false,
+   "caption": "openai"
+  },
+  {
+   "w": "company's",
+   "t": 8.673,
+   "pop": false,
+   "caption": "openai"
+  },
+  {
+   "w": "systems.",
+   "t": 8.9,
+   "pop": true,
+   "caption": "openai"
+  },
+  {
+   "w": "Anthropic's",
+   "t": 13.457,
+   "pop": false,
+   "caption": "anthropic"
+  },
+  {
+   "w": "test",
+   "t": 13.73,
+   "pop": false,
+   "caption": "anthropic"
+  },
+  {
+   "w": "models",
+   "t": 13.844,
+   "pop": false,
+   "caption": "anthropic"
+  },
+  {
+   "w": "got",
+   "t": 14.003,
+   "pop": false,
+   "caption": "anthropic"
+  },
+  {
+   "w": "into",
+   "t": 14.094,
+   "pop": false,
+   "caption": "anthropic"
+  },
+  {
+   "w": "three",
+   "t": 14.427,
+   "pop": false,
+   "caption": "anthropic"
+  },
+  {
+   "w": "outside",
+   "t": 14.564,
+   "pop": false,
+   "caption": "anthropic"
+  },
+  {
+   "w": "organisations.",
+   "t": 14.745,
+   "pop": true,
+   "caption": "anthropic"
+  },
+  {
+   "w": "14",
+   "t": 19.886,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "Oct:",
+   "t": 19.954,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "the",
+   "t": 20.068,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "EU",
+   "t": 20.158,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "sent",
+   "t": 20.227,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "both",
+   "t": 20.34,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "its",
+   "t": 20.674,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "first",
+   "t": 20.765,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "AI",
+   "t": 20.901,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "Act",
+   "t": 20.969,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "questions.",
+   "t": 21.06,
+   "pop": true,
+   "caption": "eu"
+  },
+  {
+   "w": "But",
+   "t": 21.53,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "the",
+   "t": 21.621,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "Act",
+   "t": 21.712,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "exempts",
+   "t": 21.803,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "testing.",
+   "t": 21.985,
+   "pop": false,
+   "caption": "eu"
+  },
+  {
+   "w": "Under",
+   "t": 26.214,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "the",
+   "t": 26.351,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "AI",
+   "t": 26.442,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "Act,",
+   "t": 26.51,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "a",
+   "t": 26.623,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "test",
+   "t": 26.669,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "stays",
+   "t": 27.002,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "private.",
+   "t": 27.139,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "Until",
+   "t": 27.343,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "it",
+   "t": 27.48,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "lets",
+   "t": 27.768,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "itself",
+   "t": 27.882,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "in.",
+   "t": 28.041,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.5,
+   "t1": 6.079
+  },
+  {
+   "id": "openai",
+   "t0": 7.029,
+   "t1": 12.507
+  },
+  {
+   "id": "anthropic",
+   "t0": 13.457,
+   "t1": 18.936
+  },
+  {
+   "id": "eu",
+   "t0": 19.886,
+   "t1": 25.364
+  },
+  {
+   "id": "last",
+   "t0": 26.214,
+   "t1": 31.943
+  }
+ ],
+ "quiet": []
+}
