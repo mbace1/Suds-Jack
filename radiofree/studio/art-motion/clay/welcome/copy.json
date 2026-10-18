@@ -23,7 +23,7 @@
       "until": "s2-0.35",
       "hold": "s2",
       "text": {
-        "en": "A home screen that knows your face. / What does it keep / when you [leave]?",
+        "en": "A home screen / that knows your face. / What does it keep / when you [leave]?",
         "fi": "Kotinäyttö, joka tuntee kasvosi. / Mitä se säilyttää, / kun [lähdet]?",
         "ja": "顔を 覚える ホーム画面。 / [出かけたら]、 / 何が 残る？"
       },
@@ -49,8 +49,8 @@
       "until": "s4-0.35",
       "hold": "s4",
       "text": {
-        "en": "Your face? It says nobody can see it. / How long it's kept: [not said].",
-        "fi": "Kasvosi? Kukaan ei näe niitä, se sanoo. / Kauanko niitä säilytetään: [ei kerrota].",
+        "en": "Your face? It says / nobody can see it. / How long it's kept: [not said].",
+        "fi": "Kasvosi? Se sanoo, / ettei kukaan näe niitä. / Säilytysaika: [ei kerrota].",
         "ja": "顔は？ 誰にも 見えない、 と言う。 / 保存期間は [明かされていない]。"
       },
       "source": "The company's side: camera and microphone data processed in Secure Exclaves 'cannot be accessed' by the software, apps, the user or the company (release, quoted by Mac Observer, MacRumors and others). What is not said: where face-enrolment data is kept, in what form or for how long (ID Tech Wire; The Hack Academy). The film asks; it does not claim the data is kept."
@@ -62,7 +62,7 @@
       "until": "s5-0.35",
       "hold": "s5",
       "text": {
-        "en": "Its own ad ends with the family / watching the daughter's boyfriend / [leave] on its camera.",
+        "en": "Its own ad ends with / the family watching / the daughter's boyfriend / [leave] on its camera.",
         "fi": "Sen oma mainos päättyy, / kun perhe katsoo sen kamerasta / tyttären poikaystävän [lähtöä].",
         "ja": "広告の 最後、 家族は その カメラで / 娘の 彼氏が [帰る] のを 見る。"
       },
@@ -75,7 +75,7 @@
       "until": "end-0.2",
       "hold": "end",
       "text": {
-        "en": "It forgets your data when you leave. / And your [guests]?",
+        "en": "It forgets your data / when you leave. / And your [guests]?",
         "fi": "Se unohtaa tietosi, kun lähdet. / Entä [vieraasi]?",
         "ja": "出かけたら データは 忘れる。 / [お客さんは]？"
       },
@@ -84,9 +84,9 @@
   ],
   "ui": {
     "tag": {
-      "en": "A REAL LAUNCH FILM · 13.10.2026 · REMADE IN CLAY",
-      "fi": "OIKEA JULKAISUVIDEO · 13.10.2026 · SAVESTA",
-      "ja": "実在の 発表映像 · 2026.10.13 · 粘土で再現"
+      "en": "A REAL AD, REMADE IN CLAY",
+      "fi": "OIKEA MAINOS, SAVESTA",
+      "ja": "実在の広告を粘土で再現"
     }
   },
   "props": {

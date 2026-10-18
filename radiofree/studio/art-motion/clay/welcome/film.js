@@ -394,8 +394,8 @@ function doorFeed(g, lt, turn, box) {
   fig(500, 1120 + walk * (1 - turn), 2.6, '#9a9a9a', '#3f4a5c', turn);                        // the boyfriend, near the lens, turning back
   const v = g.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.5)'); g.fillStyle = v; g.fillRect(0, 0, W, H);
   barrel(g, 0.12);
-  g.fillStyle = 'rgba(20,20,22,.6)'; g.beginPath(); g.roundRect(70, 1440, 420, 84, 42); g.fill();
-  g.fillStyle = '#ff3b30'; g.beginPath(); g.arc(118, 1482, 14, 0, TAU); g.fill(); g.fillStyle = '#fff'; g.font = '600 44px Inter'; g.textBaseline = 'alphabetic'; g.fillText('Front Door', 150, 1498);
+  g.fillStyle = 'rgba(20,20,22,.6)'; g.beginPath(); g.roundRect(70, 1530, 420, 84, 42); g.fill();
+  g.fillStyle = '#ff3b30'; g.beginPath(); g.arc(118, 1572, 14, 0, TAU); g.fill(); g.fillStyle = '#fff'; g.font = '600 44px Inter'; g.textBaseline = 'alphabetic'; g.fillText('Front Door', 150, 1588);
   if (box > 0) { const blink = lt > 0 && Math.floor(lt * 2.4) % 2 ? 0.55 : 1; g.save(); g.globalAlpha = Math.min(1, box * 3); faceUI(g, [500, 1120 - 36 * 2.6], 125 * Math.min(1, 0.6 + box), P.props?.guest || 'GUEST 7: ?', 'Not recognised'); g.restore(); }
 }
 
