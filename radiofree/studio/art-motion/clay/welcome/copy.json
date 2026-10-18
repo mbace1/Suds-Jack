@@ -1,6 +1,6 @@
 {
   "film": "welcome-home",
-  "cut": "v3 (owner, 18 Oct: 'let's name the company Pear. Also more communication effort') — Pear HomeView, the irony inside its own ad, every beat shown",
+  "cut": "v4 (owner, 18 Oct, on v3: 'combining the 2 styles doesn't work, so all should use the claymation look at its finest', with four frames from the real ad) — every picture the clay set; the door camera is a second clay set on the display's glass",
   "series": "rfh",
   "captionSize": "house",
   "argument": "Pear's HomeView ad sells privacy: the brother can't read his sister's messages, yet its happy ending is the whole family watching her leave with her boyfriend on its door camera.",
@@ -19,7 +19,7 @@
     {
       "id": "question",
       "role": "setup",
-      "at": "s1+2.6",
+      "at": "s1+1.5",
       "until": "s2-0.35",
       "hold": "s2",
       "text": {
@@ -66,7 +66,7 @@
         "fi": "Hänen viestinsä: yksityisiä. / Poikaystävä: [perheen ohjelmaa].",
         "ja": "メッセージは 非公開。 / 彼氏は [家族で 視聴]。"
       },
-      "source": "The station's line, over the door camera's own view: 3 WATCHING."
+      "source": "The station's line, over the door camera's own view: 4 WATCHING (dad, mum, the brother and the other sister, round the display)."
     }
   ],
   "ui": {
@@ -76,9 +76,9 @@
       "ja": "実在の広告を粘土で再現"
     },
     "watching": {
-      "en": "3 WATCHING",
-      "fi": "3 KATSOO",
-      "ja": "3人が視聴中"
+      "en": "4 WATCHING",
+      "fi": "4 KATSOO",
+      "ja": "4人が視聴中"
     },
     "locked": {
       "en": "Locked · not your face",
@@ -92,17 +92,17 @@
     }
   },
   "props": {
-    "hoop": {
-      "en": "Welcome home.",
-      "why": "the embroidery-hoop opener, stitched round a rainbow pear (never the real logo)"
-    },
-    "title": {
-      "en": "Welcome Pear HomeView. / Designed for life at home.",
-      "why": "the parody's title card, after the real ad's own ('Designed for life at home'); Pear is the station's name for the company"
+    "boot": {
+      "en": "Pear AI. / For the future.",
+      "why": "the display's boot screen in shot 1 (owner: 'shoulda just said pear AI for the future or some similar'); a plain pear silhouette, never the real logo"
     },
     "screen": {
       "en": "Private by design.",
       "why": "Pear's line on its own screen in shot 1: the privacy pitch, shown"
+    },
+    "feed": {
+      "en": "Front Door · Live",
+      "why": "the door camera's own chrome over the clay porch, after the ad's frame 2: end call, mic, the grid"
     }
   },
   "post": {
