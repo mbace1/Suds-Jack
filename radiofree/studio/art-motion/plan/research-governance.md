@@ -146,6 +146,29 @@ Researched 15 October 2026 with web search excerpts only. Every page fetch faile
 - **Real names:** name no person. Labs only, if any.
 - **Fit with the strand:** it pairs with Coxon's own warning but must not use him as the setup.
 
+
+**Refreshed 18 Oct** (search excerpts again; axios.com and decrypt.co still do not resolve from this sandbox):
+- **Unchanged:** the scoop stands as reported, across Axios's own indexed summary, Decrypt, Gizmodo, Digital Trends,
+  Inc42 and others. No denial, and no follow-up reporting since 9 Oct. OpenAI's line is consistent: teams "discuss and
+  work through a range of potential scenarios", which "are not treated as inevitable". Anthropic declined to comment.
+- **New and usable:** Axios reportedly lists the rules lawmakers would reach for afterwards. One with bipartisan
+  support and "even some industry buy-in" is **a required kill switch on advanced AI**, and experts question whether
+  switching all AI off is workable. Several outlets repeat this, but it needs checking against the Axios text before
+  it airs. It is the bridge from *Kill Switch* (Coxon 6, 22 Oct), which ends "The AI's is a sticky note."
+- **Context, not for the film:**
+  - On 29 Sep, Google, Meta, Anthropic, OpenAI, xAI and Nvidia signed a voluntary agreement on limited safety
+    standards (Gizmodo).
+  - A Senate subcommittee probe (Hawley, 10 Sep) followed OpenAI's July incident with Hugging Face.
+  - The AI Kill Switch Act (Reps. Lieu and Moran, reportedly introduced 23 Jul) is single-sourced so far.
+- **Do not use:** a secondary claim that planners expect Democrats to win on 3 Nov and "move fast to shut down AI". It
+  conflicts with another summary of the same article, and it would put the station inside the midterm fight on a
+  detail it cannot check.
+- **Sources added:** [Axios (indexed)](https://www.axios.com/2026/10/09/ai-companies-day-after-major-attack) ·
+  [Yahoo/Decrypt](https://www.yahoo.com/news/politics/articles/openai-anthropic-quietly-rehearsing-day-194701652.html) ·
+  [Gizmodo](https://gizmodo.com/ai-companies-are-preparing-to-shape-the-rules-after-everything-goes-wrong-2000824187) ·
+  [Startup Fortune](https://startupfortune.com/ai-giants-are-quietly-scripting-the-rules-congress-will-pass-after-disaster/) ·
+  [The New American](https://thenewamerican.com/us/tech/ai-giants-prepare-for-a-catastrophic-ai-event-and-the-revolt-that-could-follow/) ·
+  [MindStudio, on the bill](https://www.mindstudio.ai/blog/ai-regulation-kill-switch-bills)
 ---
 
 ## 5. Paid For By (US midterms: the two missing letters)
