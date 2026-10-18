@@ -41,6 +41,14 @@
 // it in, because a second copy of those numbers is a second thing to keep in
 // step, and this repo has written down what that costs.
 export const ART = {
+  // World 1 — groundworks. Approved flat side views, black backing keyed
+  // out. Same lane as the rest of this world's dressing (`play`). The rope
+  // post was not approved and is not in this catalogue.
+  sawhorse:     { file: '2d/world1_sawhorse_lib_v1.webp',     label: 'sawhorse',     layer: 'play', h: 1.5 },
+  wheelbarrow:  { file: '2d/world1_wheelbarrow_lib_v1.webp',  label: 'wheelbarrow',  layer: 'play', h: 1.5 },
+  plankStack:   { file: '2d/world1_plank_stack_lib_v1.webp',  label: 'plank stack',  layer: 'play', h: 0.9 },
+  studFrame:    { file: '2d/world1_stud_frame_lib_v1.webp',   label: 'stud frame',   layer: 'play', h: 2.6 },
+
   // World 3 — the felt treeline (v15.55). Generated against the house craft
   // block and keyed with the shared hue-ratio key.
   treeSpruce:   { file: '2d/world3_tree_spruce_v1.webp', label: 'spruce',        layer: 'near', h: 8.4 },
@@ -48,6 +56,10 @@ export const ART = {
   treeBirch:    { file: '2d/world3_tree_birch_v1.webp',  label: 'birch',         layer: 'near', h: 7.6 },
   logTunnel:    { file: '2d/world3_log_tunnel_lib_v1.webp',    label: 'log tunnel',    layer: 'play', h: 8.2 },
   stumpClearing:{ file: '2d/world3_stump_clearing_lib_v1.webp', label: 'stump clearing', layer: 'play', h: 7.5 },
+  // Forest clearing, same cutout path as the log tunnel and the stump clearing.
+  fernClump:    { file: '2d/world3_fern_clump_lib_v1.webp',    label: 'fern clump',    layer: 'play', h: 1.8 },
+  felledLog:    { file: '2d/world3_felled_log_lib_v1.webp',    label: 'felled log',    layer: 'play', h: 1.4 },
+  brashPile:    { file: '2d/world3_brash_pile_lib_v1.webp',    label: 'brash pile',    layer: 'play', h: 1.6 },
 
   // World 4 — the NIGHT DEPOT, generated 2026-09-07. `world34-dressing.js`
   // built this world's warehouse out of about fifteen flat panels — a

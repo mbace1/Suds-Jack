@@ -12,8 +12,8 @@
 // at its foot.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=61';
-import { craftMat, craftBox } from './craft.js?v=61';
+import { PAL, mix } from './palette.js?v=64';
+import { craftMat, craftBox } from './craft.js?v=64';
 
 export function buildBankModel(rows = 3, width = 5) {
   const root = new THREE.Group();
@@ -655,5 +655,93 @@ export class Sheet {
       p.rotation.x += dt * 12; p.rotation.z += dt * 10;
       if (p.life >= 1) p.visible = false;
     }
+  }
+}
+
+// ---- THE FLOODED TRENCH, and the pump that empties it --------------------
+//
+// World 2's own verb (DESIGN §6.6, §8.4), and until now the only one of the
+// four that existed on paper and nowhere else. `js/parts.js`'s `flooded()`
+// has been complete for months — pit, deep water, a `drained` floor for the
+// prover, `clears: 'drain'` — and `js/rooms.js` says out loud in LEVEL 4
+// why no level used it: *"The excavator/bank at the peak is intentionally a
+// GREYBOX PROXY for the planned pump/flooded-trench ride."* This is the
+// thing that proxy was standing in for.
+//
+// THE WATER IS NOT THE GRID'S WATER. A '~' tile is SHALLOW water — a floor
+// you wade through, drawn by level.js over its own bed. A flooded trench is
+// the opposite: `flooded()` stamps the rows EMPTY, so to the collision map
+// it is a hole, exactly as DESIGN §6.6 requires ("water is PAINTED and never
+// entered… a pit that costs a life"). Nothing was drawing anything in it.
+// So the water here is this piece's own, and draining it is the one moment
+// in the game where a hole becomes a floor while you are looking at it.
+//
+// Draw the CHANGE, per this file's rule at the top: the surface DROPS a
+// step per pass rather than fading, and the wet walls it uncovers stay
+// darker than the dry earth above them, because a trench that has just been
+// emptied is not the same colour as one that was never full.
+export class Flood {
+  constructor(scene, level, rect, passes = 3) {
+    this.level = level; this.rect = rect;
+    this.passes = passes; this.done = 0;
+    this.group = new THREE.Group();
+    scene.add(this.group);
+
+    const w = rect.c1 - rect.c0 + 1;
+    const cx = (rect.c0 + rect.c1) / 2 + 0.5;
+
+    // the wet sides, uncovered as the level falls — drawn once, always
+    // there, and simply revealed by the surface dropping past them
+    const wall = craftBox(w, 2.2, 1.5, craftMat(mix(PAL.WATER_DK, PAL.INK, 0.45), 'card'));
+    wall.position.set(cx, rect.cy - 0.6, 0);
+    this.group.add(wall);
+
+    // the surface: one cut sheet of felt, the same material and the same
+    // rule as the shallow water in level.js — flat, matte, never a
+    // transparency and never a shader (ART_BRIEF §3.2).
+    //
+    // DEEP, so `WATER_DK` and not `WATER`. palette.js calls that pair
+    // load-bearing in as many words — telling SHALLOW from DEEP is "the
+    // level's real difficulty, so they must read apart at a glance and at
+    // 32 px" — and this trench is a hole in the collision map. Painting it
+    // the shallow colour would be telling a six-year-old to wade in.
+    this.top = craftBox(w, 0.22, 1.5, craftMat(PAL.WATER_DK, 'felt'));
+    this.group.add(this.top);
+    // the hand-cut rim at each end, so the water has an edge rather than
+    // fading out — same reason level.js gives for its own puddles
+    this.rims = [];
+    for (const ex of [rect.c0 - 0.02, rect.c1 + 1.02]) {
+      const rim = craftBox(0.12, 0.28, 1.52, craftMat(mix(PAL.WATER_DK, PAL.INK, 0.3), 'felt'));
+      this.rims.push(rim); this.group.add(rim);
+    }
+    this.place();
+  }
+
+  get remaining() { return this.passes - this.done; }
+  get cleared() { return this.remaining <= 0; }
+
+  // where the surface sits for the number of passes done so far. Full at
+  // the top of the trench, and one step lower each pass.
+  place() {
+    const y = this.rect.cy + 0.9 - (this.done / this.passes) * 2.0;
+    this.top.position.set((this.rect.c0 + this.rect.c1) / 2 + 0.5, y, 0);
+    for (let i = 0; i < this.rims.length; i++) {
+      this.rims[i].position.set(i === 0 ? this.rect.c0 - 0.02 : this.rect.c1 + 1.02, y, 0);
+    }
+    const gone = this.cleared;
+    this.top.visible = !gone;
+    for (const r of this.rims) r.visible = !gone;
+  }
+
+  // One pass of the pump. The last one hands the floor back: the trench
+  // stops being a hole in the COLLISION MAP, not merely in the picture —
+  // the same honesty `Sheet.flatten()` and the girder's seat are held to
+  // ("the span is a fact too", js/level.js).
+  drain() {
+    if (this.cleared) return false;
+    this.done++;
+    this.place();
+    if (this.cleared) this.level.fillRow(this.rect.c0, this.rect.c1, this.rect.cy);
+    return true;
   }
 }

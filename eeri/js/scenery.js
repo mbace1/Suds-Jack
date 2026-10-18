@@ -1,4 +1,4 @@
-import { ART } from './artprops.js?v=61';
+import { ART } from './artprops.js?v=64';
 
 // EERI — SCENERY AS DATA, which is the thing standing between this game and
 // an editor.

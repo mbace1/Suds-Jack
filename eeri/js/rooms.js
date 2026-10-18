@@ -28,12 +28,12 @@
 //   6 / WORLD 2-3 — THE PAIRING. Water + pipes + hoist, then the world ending.
 
 import {
-  ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm, sheet,
+  ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm, sheet, flooded,
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, blueprint, belt, tarp, shallow, deep, pipe,
   bucketBot, hoist, plank,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=61';
+} from './parts.js?v=64';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
@@ -270,10 +270,14 @@ export const ROOMS = [
   // gizmo for this world, not a second idea: it is still water as the
   // floor, just the floor that gives.
   //
-  // The excavator/bank at the peak is intentionally a GREYBOX PROXY for the
-  // planned pump/flooded-trench ride. It uses a verb already proved in World
-  // 1, so this level can be played and tuned now while art/engineering swap
-  // the proxy for the pump later without changing the water lesson.
+  // THE PROXY IS GONE (v15.69). This level used to end on an excavator and
+  // a silt bank — a GREYBOX standing in for the planned pump/flooded-trench
+  // ride, kept deliberately so the level could be played and tuned while
+  // art/engineering "swap the proxy for the pump later without changing the
+  // water lesson". This is that swap. The lesson is unchanged and now the
+  // peak asks for the world's OWN verb rather than World 1's: the trench is
+  // water you cannot cross, the pump is at the lip facing it, and what you
+  // drain is the floor you then walk over to the flag.
   {
     name: 'LEVEL 4 — THE WET TRENCH',
     idea: 'water as a floor',
@@ -322,11 +326,14 @@ export const ROOMS = [
       boltRun(5, 58, 63),
       boltRun(6, 58, 63),
 
-      // ── 4 · TEST / RIDE ── familiar tool use, new context. For this
-      // greybox the tall silt bank stands in for the flooded trench lock.
-      machine('excavator', 67, [59, 91]),
+      // ── 4 · TEST / RIDE ── the world's own tool, on its own job. The
+      // pump's range STOPS at the near lip (79) rather than spanning the
+      // trench: `flooded()` sets `blocksMachine`, so there is no track
+      // across it, and a machine is never asked to stand where its own job
+      // is. It works from the lip, which is what a site pump does.
+      machine('pump', 67, [59, 79]),
       boltRun(5, 66, 69),
-      bank(81, 85, 3),
+      flooded(81, 85),
       boltRun(5, 87, 90),
       golden(7, [89]),
       flagAt(92),

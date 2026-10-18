@@ -9,35 +9,35 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=61';
-import { Input } from './input.js?v=61';
-import { Level, ROOMS, LAB } from './level.js?v=61';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=64';
+import { Input } from './input.js?v=64';
+import { Level, ROOMS, LAB } from './level.js?v=64';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-  buildSheetModel, Sheet,
-} from './pieces.js?v=61';
-import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=61';
-import { Camera } from './camera.js?v=61';
-import { buildKidModel, Kid, Player } from './kid.js?v=61';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=61';
-import { buildCraneModel, Crane } from './crane.js?v=61';
-import { buildSkidderModel, buildLoaderModel } from './rigs.js?v=61';
-import { buildFlattenerModel } from './flattener.js?v=61';
-import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=61';
-import { Hoist } from './hoist.js?v=61';
-import { Plank } from './plank.js?v=61';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=61';
-import { WreckingBall } from './hazards.js?v=61';
-import { AudioKit } from './audio.js?v=61';
-import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=61';
-import { craftMat, craftBox, setRim } from './craft.js?v=61';
-import { CAST_RIM, CAST_LAMP, buildLamp } from './light.js?v=61';
-import { FXPool, attach as attachFX } from './fx.js?v=61';
-import { t as tr } from './lang.js?v=61';
-import { showIntro } from './intro.js?v=61';
-import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=61';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=61';
-import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=61';
+  buildSheetModel, Sheet, Flood,
+} from './pieces.js?v=64';
+import { buildLayers, LAYER_RECTS, PPU, layerPx } from './layers.js?v=64';
+import { Camera } from './camera.js?v=64';
+import { buildKidModel, Kid, Player } from './kid.js?v=64';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=64';
+import { buildCraneModel, Crane } from './crane.js?v=64';
+import { buildSkidderModel, buildLoaderModel, buildPumpModel } from './rigs.js?v=64';
+import { buildFlattenerModel } from './flattener.js?v=64';
+import { Robot, SteamVent, loadRobotAsset } from './robots.js?v=64';
+import { Hoist } from './hoist.js?v=64';
+import { Plank } from './plank.js?v=64';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=64';
+import { WreckingBall } from './hazards.js?v=64';
+import { AudioKit } from './audio.js?v=64';
+import { loadManifest, getModel, getPiece, uiAsset, manifestData } from './assets.js?v=64';
+import { craftMat, craftBox, setRim } from './craft.js?v=64';
+import { CAST_RIM, CAST_LAMP, buildLamp } from './light.js?v=64';
+import { FXPool, attach as attachFX } from './fx.js?v=64';
+import { t as tr } from './lang.js?v=64';
+import { showIntro } from './intro.js?v=64';
+import { toggleMenu, closeMenu, menuOpen, menuMove, menuPick } from './menu.js?v=64';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=64';
+import { buildWorldBuilding, PARTS as BUILD_PARTS } from './clockout.js?v=64';
 
 // ── Toko at the table ──────────────────────────────────────────────────────
 // The signature opens the counter over the game instead of leaving for the
@@ -351,6 +351,11 @@ async function boot() {
       ? new Sheet(group, level, def.sheet,
           await getPiece('sheet', () => buildSheetModel(def.sheet.rows, def.sheet.c1 - def.sheet.c0 + 1)))
       : null;
+    // WORLD 2's OWN JOB. Built here rather than out of `getPiece` because
+    // this one has no GLB behind it and never wanted one: it is water and a
+    // wet wall, both of which are craft material cut to the trench it is
+    // standing in, so its size comes from the room and not from an asset.
+    const flooded = def.flooded ? new Flood(group, level, def.flooded) : null;
     const ball = def.ball
       ? new WreckingBall(group, def.ball.px, def.ball.py, def.ball.len, def.ball.zoneW)
       : null;
@@ -389,6 +394,7 @@ async function boot() {
       skidder: { key: 'skidder', build: buildSkidderModel },
       loader: { key: 'loader', build: buildLoaderModel },
       flattener: { key: 'flattener', build: buildFlattenerModel },
+      pump: { key: 'pump', build: buildPumpModel },
     };
     const md = def.machines[0];
     let machine = null;
@@ -531,7 +537,7 @@ async function boot() {
 
     scene.add(group);
     return {
-      def, level, group, bank, girder, wall, sheet, ball, bolts, golden, blueprint,
+      def, level, group, bank, girder, wall, sheet, flooded, ball, bolts, golden, blueprint,
       robots, vents, machine, checkpoint, flag, hoists, planks,
     };
   }
@@ -626,6 +632,7 @@ async function boot() {
     ride: tr('hRide'),
     dig: tr('hDig'),
     flatten: tr('hFlatten'),
+    drain: tr('hDrain'),
     sling: tr('hSling'),
     carry: tr('hCarry'),
     seat: tr('hSeat'),
@@ -637,7 +644,7 @@ async function boot() {
   // ---- the mode machine ---------------------------------------------------
   let mode = 'foot';          // foot | mounting | riding | dismounting
   // `digT` went with the dig timer — the stroke owns that beat now
-  let moveT = 0, slingT = 0, flattenT = 0, cleared = false, transitioning = false;
+  let moveT = 0, slingT = 0, flattenT = 0, drainT = 0, cleared = false, transitioning = false;
   let stomps = 0;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
@@ -875,6 +882,9 @@ async function boot() {
       girder: () => site.girder ? { state: site.girder.state, carrying: !!exc?.carrying } : null,
       wall: () => site.wall ? { hits: site.wall.hits, cracked: site.wall.cracked, cleared: site.wall.cleared } : null,
       sheet: () => site.sheet ? { remaining: site.sheet.remaining, cleared: site.sheet.cleared } : null,
+      // `playthrough.cjs`'s bot has called this since it was written; until
+      // World 2's pump landed there was never a room in which it answered.
+      flooded: () => site.flooded ? { remaining: site.flooded.remaining, cleared: site.flooded.cleared } : null,
       machine: () => exc ? { kind: exc.kind, x: exc.x, track: exc.track, tamed: exc.tamed } : null,
       robots: () => site.robots.map((r) => ({
         x: +r.x.toFixed(2), y: +r.y.toFixed(2), h: r.h, kind: r.kind,
@@ -961,6 +971,7 @@ async function boot() {
       cleared: () => cleared,
       dig: () => site.bank?.dig(),
       flatten: () => site.sheet?.flatten(),
+      drain: () => site.flooded?.drain(),
       goSite: (i) => goSite(i),
       tris: () => renderer.info.render.triangles,
       // the 2D contract, computed rather than written down twice — the gate
@@ -1195,6 +1206,36 @@ async function boot() {
           cam.punch(site.bank.cleared ? 1.5 : 0.85);
         }
         if (near || Math.abs(exc.x - bk.c0) < 6) rideHint = HINT.dig;
+      }
+
+      // THE DRAIN (DESIGN §6.6, §8.4): World 2's own verb. Same GESTURE as
+      // the dig — park at it and hold ▼ — and deliberately so: §8.4's whole
+      // point is that the machines we already have get "easy puzzles… one
+      // verb and no new mechanic". What differs is not the input, it is what
+      // the level DOES: a bank gets shorter, a trench gets a floor. The
+      // reason to drain is that the far lip is somewhere to stand.
+      //
+      // Reach is measured off the STRAINER, not the machine, because a hose
+      // reaches past the wheels — and the trench blocks the machine (`flooded`
+      // sets `blocksMachine`), so the pump can never be parked on top of its
+      // own job the way the roller sits on the sheet.
+      if (site.flooded && !site.flooded.cleared) {
+        const fl = site.def.flooded;
+        const tip = exc.bucketWorld(buck).x;
+        const near = exc.kind === 'pump' && tip > fl.c0 - 2.2 && tip < fl.c1 + 2.2;
+        exc.digging = input.down.down && near;
+        if (exc.digging) {
+          drainT += dt;
+          if (drainT >= 0.8) {
+            drainT = 0;
+            site.flooded.drain();
+            audio.splat();
+            cam.punch(site.flooded.cleared ? 1.5 : 0.7);
+          }
+        } else {
+          drainT = 0;
+        }
+        if (near || Math.abs(exc.x - fl.c0) < 6) rideHint = HINT.drain;
       }
 
       // THE GIRDER: the same gesture, the other way round — the bucket

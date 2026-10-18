@@ -391,6 +391,21 @@
         "wheels",
         "beacon"
       ]
+    },
+    "pump": {
+      "file": "3d/pump_v1.glb",
+      "status": "placeholder",
+      "_note": "World 2's ride, and the world's own verb: DRAIN. Code-built placeholder in js/rigs.js today. A live pump_v1.glb must keep the EXCAVATOR's node contract and its offsets: boom at (0.55,0.50) off house, stick at (1.22,0) off boom, strainer at (0.92,0) off stick, machine about 2.5 long and 2.2 tall. The node is called `bucket` because the class drives it by that name; on this machine it is the STRAINER at the foot of a suction hose, and js/main.js measures its world x to decide whether the hose has reached the trench \u2014 so its REACH is the part that must not drift, the way crane_v1's did. Silhouette is plumbing rather than earthmoving: a fat horizontal barrel where the excavator carries its house, and a ribbed hose instead of a painted steel arm.",
+      "nodes": [
+        "house",
+        "boom",
+        "stick",
+        "bucket",
+        "seat",
+        "step",
+        "wheels",
+        "beacon"
+      ]
     }
   },
   "pieces": {

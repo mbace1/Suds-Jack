@@ -1,29 +1,294 @@
 # EERI — versions
 
-## v15.68 — 2026-09-26
+## v15.70 — 2026-10-18 — one Eeri: the live site's table hooks come home
 
-**Toko saw you play.** The recap this game gives Toko at the table — where you are, read off the title the game already writes, and nothing else: no score and no deaths, because this is a game for a six-year-old —
-is now also written to the shared play log (`hub/playlog.js`) as you leave,
-by `hub/playlog-auto.js`, in the game's own words. The next time you open Toko
-Live or the arcade's counter, he opens on it once: *"LAST TIME, EERI: …"*,
-then the TELL button filed under this game. `toko-live/LEVELS.md` level 1.
+**Owner's call, 2026-10-18: this repo is the real Eeri.** The live site
+(Suds-Jack `gh-pages`, `eeri/`) had drifted to its own v15.67/v15.68,
+which were not this repo's v15.67/v15.68 — they were the cabinet's
+chrome, landed there and never here. A line-by-line comparison (line
+endings and `?v=` tokens ignored) found this repo ahead everywhere
+except those two hooks, so they are carried over, and after this the
+live copy is a strict subset of what is here:
 
-## v15.67 — 2026-09-23
+- **Toko at the table** (the live site's v15.67): `sign({ table: true })`
+  in `index.html`, and `window.__tokoTable` in `js/main.js` — pause,
+  resume and a one-line recap read off the title the game already
+  writes. No score, no deaths. While held, the loop still CALLS
+  `clock.getDelta()` so coming back does not hand the first frame the
+  whole conversation.
+- **The play-log recap** (the live site's v15.68) needs nothing here:
+  `hub/playlog-auto.js` reads `__tokoTable.recap()` from the arcade's
+  side.
 
-**Toko at the table.** The signature in the corner opens the counter over this
-game instead of navigating away to the arcade, so the run you want to say
-something about is still there when you get back. Esc or BACK returns you to
-it, and a note filed here lands under this cabinet through the arcade's own
-transport. `clock.getDelta()` is still CALLED while held — it is what consumes the elapsed
-time — so coming back does not hand the first frame the whole conversation.
-Nothing in `spec/eeri.json` moves but its label: this is the cabinet's chrome,
-not the game's rules, so the Godot port has nothing to mirror.
+Also: `spec/eeri.json` had stopped at `15.49` while the game moved on
+twenty versions; it reads `15.70` now.
 
-Everything but the two lines below lives in `toko/js/table.js`, which works out
-which game it is standing in from the path and keeps its own input off the
-window — the game never sees a tap, a touch or a key that happened at the
-table. `window.__tokoTable` is this game's half: how to stop the clock, and
-what he should already know when he opens.
+### Both editors, brought up to the game they edit
+
+**The browser editor had been unstyled since it was rebuilt.** The first
+lines of its stylesheet were `//` comments, which CSS does not have, so the
+browser read them as part of the first selector and threw the `.ed` rule
+away — the font, and the fixed, click-through wrapper the whole layout
+assumes. Every rail row and palette entry rendered in Times. Fixed, along
+with the two things it was hiding: the sidebar now starts where the top
+bar actually ends (the bar wraps on a narrow window and covered the
+GAMEPLAY row), and the panel stops overflowing its column, which had cut
+off every PLACE tag. Its GAMEPLAY list catches up to `parts.js`: `sheet`,
+`flooded`, `plank`, and the pump among the machines.
+
+**The Godot editor could not build two of the game's five machine jobs.**
+No `F` tile, no FLATTENER or PUMP on the machine marker, and no way to say
+"this hole is a flooded trench". Now `F` paints the flattener's sheet,
+`EeriFloodedTrench` writes the trench exactly as `flooded()` compiles it,
+and an exported level with a job but no machine to do it says so.
+`test_leveleditor` 110; all fifteen Godot scenes green (394).
+
+## v15.69 — 2026-09-10 — World 2 gets its own verb: the pump, and the trench it empties
+
+**Design/Level lane, and it touches SHARED (`main.js`, `parts.js`,
+`manifest.json`, `lang.js`) — the seam a new machine has to cross.**
+Numbered at authoring; renumber at merge (PHASING §0.1).
+
+### The verb that existed everywhere except in the game
+
+v15.68 recorded that worlds 2, 3 and 4 ask only for World 1's verbs. This
+closes the first of them, and it turned out to be less a build than an
+**unfinished handover**, four files deep:
+
+- `js/parts.js` has had `flooded()` complete for months — the pit, the deep
+  water, a `drained` floor for the prover, `clears: 'drain'`;
+- `test/playthrough.cjs`'s bot has carried a `d.flooded` branch since the
+  day it was written;
+- `DESIGN.md` §8.4 approves the puzzle — *"a flooded trench with the
+  checkpoint on its far lip… the reason to drain is somewhere to stand"*;
+- `js/main.js` implemented **none of it**, so `compile()` never even
+  produced a `def.flooded` for anything to read;
+- and so `js/rooms.js` said out loud what it had done instead:
+
+  > *"The excavator/bank at the peak is intentionally a GREYBOX PROXY for
+  > the planned pump/flooded-trench ride… while art/engineering swap the
+  > proxy for the pump later without changing the water lesson."*
+
+**That is why every world's level 1 asked for DIG.** Not a design choice —
+a placeholder nobody came back to. This is the swap it asked for.
+
+### What is actually new
+
+- **`Flood` (`js/pieces.js`)** — the trench, and this file's rule is *draw
+  the CHANGE*, so the surface DROPS a step per pass rather than fading, and
+  the wet walls it uncovers stay darker than the dry earth above. The last
+  pass hands the floor back to the **collision map**, not just to the
+  picture — the same honesty `Sheet.flatten()` and the girder are held to
+  (`level.js`: *"the span is a fact too"*).
+- **`buildPumpModel` (`js/rigs.js`)** — a skid-mounted trash pump on the
+  excavator's node contract. That file's header has been complaining about
+  this exact absence since it was written: *"`MACHINE_SPEED` names a pump
+  and a pipelayer… so World 2's 'pump ride' is an excavator wearing the
+  word."* It no longer is. Silhouette is plumbing, not earthmoving: a fat
+  horizontal barrel where the excavator carries its house, a ribbed suction
+  hose for an arm, and `bucket` — the node the class drives and `main.js`
+  measures — is the **strainer** at the foot of it.
+- **The job** in `main.js`: park at the lip, hold ▼. Deliberately the same
+  GESTURE as the dig, per §8.4's "one verb and no new mechanic" — what
+  differs is not the input but what the level does. A bank gets shorter; a
+  trench gets a floor.
+
+### A readability bug caught before it shipped
+
+The first cut painted the water `PAL.WATER`. `palette.js` calls that pair
+load-bearing in as many words — telling SHALLOW from DEEP is *"the level's
+real difficulty, so they must read apart at a glance and at 32 px"* —
+and shallow is *"a floor you wade through"* while deep is *"a floor that is
+not there."* A flooded trench is a hole in the collision map. Painting it
+the shallow colour would have been an invitation to a six-year-old to walk
+into it. It is `WATER_DK`.
+
+### Reach is measured off the strainer
+
+Not off the machine. A hose reaches past the wheels, and `flooded()` sets
+`blocksMachine`, so unlike the roller on its sheet the pump can never be
+parked on top of its own job. Its range in LEVEL 4 stops at the near lip
+(79) for the same reason — a machine is never asked to stand where its work
+is.
+
+### What it moved
+
+The verbs actually placed across twelve levels were `dig` ×4, `span` ×3,
+`smash` ×4, `flatten` ×1. Now:
+
+    dig     LEVEL 1, 7, 10          (was 1, 4, 7, 10)
+    drain   LEVEL 4                 (new — and World 2's alone)
+    flatten LEVEL 2
+    smash   LEVEL 3, 6, 9, 12
+    span    LEVEL 5, 8, 11
+
+LEVEL 4 on the report card: asks 12 → 13, per-ten 1.37 → **1.49**, and
+`new` 1 → **3**. One of the four worlds now teaches something of its own.
+
+### Gates
+
+rooms 246, fx-smoke 31, dev-menu 36, world34 passes, report 12 levels /
+11 ship / 1 thin, **playthrough 25** (all twelve, since this changes SHARED
+code every level runs through), clockout 21.
+
+The proof that matters is LEVEL 4's own line: it finishes with **0 ride
+losses and no page errors**, and `flooded(81,85)` is five tiles against a
+`REACH.gap` of 3 — so the only way to that flag is across a trench the bot
+pumped dry. **The bot's `d.flooded` branch fired for the first time since
+it was written.**
+
+## v15.68 — 2026-09-10 — worlds 3 and 4 have no verb of their own
+
+**Design/Level lane. No game code changed** — two non-gate test tools and
+DESIGN §7. Numbered at authoring; renumber at merge (PHASING §0.1).
+
+### The finding, and it is a reading rather than a proposal
+
+Gate C landing (15.67) unblocked DESIGN §7's first item — the second ride
+machine per world, deferred *"until a world plays end to end."* Before
+spending it, the rooms were read to see what worlds 3 and 4 actually ask
+for. They ask for World 1's verbs:
+
+| level | machine | job placed | verb |
+|---|---|---|---|
+| 3-1 | skidder | `bank` | DIG |
+| 3-2 | skidder | `girderStack` + `chasm` | SPAN |
+| 3-3 | **crane** | — | SWING |
+| 4-1 | loader | `bank` | DIG |
+| 4-2 | loader | `girderStack` + `chasm` | SPAN |
+| 4-3 | **crane** | — | SWING |
+
+World 4 is a verb-for-verb copy of World 3, and both worlds' level 3 falls
+back to World 1's own crane. §8.4 permits a new machine to be a new MODEL
+on the excavator's class — that is how the skidder, the loader and the
+flattener all ship — but §6.6's rule is that **"a second machine that digs
+is not a second machine"**, and by that rule worlds 3 and 4 have none.
+
+`test/report.mjs` had measured the same thing from the other end all along:
+3-2, 3-3, 4-2 and 4-3 score **`new: 0`**. The code and the report card
+agree, which is why §7 now carries it as item 3.
+
+### And a justification in §6.6 that has quietly expired
+
+§6.6 sells world 2's pipe-layer (**LAY**) as *"the only machine so far that
+makes geometry you keep."* That is no longer true and probably has not been
+for some time: `js/level.js`'s `fillRow` already seats a girder as real
+collision, and its own comment says so — *"the span is a fact too."* LAY
+and SPAN land on the same tile edit. Building the pipe-layer as written
+spends a machine on a verb the excavator already has. Named in §7, not
+acted on: PHASING §0.1 puts a design direction with the owner.
+
+### The report card was right for the wrong reason
+
+Found while unifying stale `?v=` tokens in the two non-gate tools.
+`test/report.mjs` imported four modules at four tokens from four different
+eras, and a mismatched token is a **second instance** of that module — so
+`world34-register.js` filled one copy of rooms.js's live `ROOMS` while the
+report read another. On top of that it did `[...ROOMS, ...WORLD34_ROOMS]`,
+counting worlds 3 and 4 **twice**.
+
+Two bugs cancelling: a half-empty array plus a double-count printed the
+correct twelve. Unify the tokens and it printed **eighteen levels in a
+twelve-level game** — which is how the double-count became visible at all.
+Both fixed; the report card's output is byte-identical to before, and now
+for the right reason. Same "one token per module or its state splits" trap
+that twice unplugged 2.7 MB of layer art, wearing a different hat.
+
+`test/world34.mjs` carried the same drift (`parts.js?v=23`,
+`world34-rooms.js?v=1`) and is unified too.
+
+### Gates
+
+rooms 246, fx-smoke 31, dev-menu 36. `report.mjs` 12 levels / 11 ship / 1
+thin, `world34.mjs` structurally passes. The three browser gates are
+untouched by this change — no game code, no `bot.cjs`, no `clockout.cjs`.
+
+## v15.67 — 2026-09-09 — Gate C gets a gate: a world plays start to clock-out
+
+**Design/Level lane. No game code changed — this is a gate and a shared
+test module.** Numbered 15.67 at authoring; renumber at merge if the shelf
+moved (PHASING §0.1).
+
+### The hole this fills
+
+Every BUILD item in Phase C shipped — the camera moments (15.49), World 1's
+second machine (15.45), bolts, golden bolts, blueprints, level-select, the
+clock-out beat. **The gate that closes the phase was never written.**
+PHASING §3 states it plainly: *"Gate C: a full world plays start to
+clock-out with meta counting."* Nothing asserted that, and
+`playthrough.cjs` structurally cannot: it calls `goSite(i)` for each of the
+twelve levels in turn, so it proves twelve levels are each finishable and
+proves nothing whatever about a WORLD. A world is the unit Phase C is
+about — three levels in sequence, the golden bolts banking out of each one
+into the next, and a gate at the end that puts up what you built.
+
+That matters beyond tidiness. DESIGN §7's first still-open item — the
+second ride machine per world, which is the biggest remaining gameplay gap
+— is deferred in its own words *"until a world plays end to end."* That
+clause is Gate C. The gate was standing in front of the next tier of
+content, unproven.
+
+### What it guards that nothing else did
+
+`test/clockout.cjs` plays World 1 from site 0 and calls `goSite` **once**,
+at the start. Everything after that has to be the game moving itself,
+because "a world plays" is the whole claim.
+
+The assertion most worth having is an **absence**. From `js/main.js`'s own
+comment: with World 2 built, raising World 1's big flag advanced straight
+to level 4 and *"the gate — the world's whole curtain — became
+unreachable."* The rule that fixed it is that a level with a gate does not
+auto-advance: the flag raises and you walk out yourself. Until now that
+rule was protected by a comment. It is the likeliest thing here to regress
+precisely because it is nothing happening, and nothing happening is what
+regresses quietly.
+
+### One thing it deliberately does not claim
+
+The bot banks few or no golden bolts — they are hidden, and it is the dumb
+one. A gate that only ever saw `0/9` would prove the building exists and
+nothing about what it READS, so the finished reading is seeded through
+`debug.setGolden()`, the dev hook that exists for exactly this, in
+main.js's words: *"a bot that collects nothing can only ever show the
+first, so this is how the other eight get looked at."* The honestly-banked
+figure is printed next to it rather than hidden, so the run says which
+number is earned and which is seeded.
+
+### The bot moved, and did not get copied
+
+`clockout.cjs` needs the same bot `playthrough.cjs` drives. This repo's
+standing lesson is that a second copy drifts from the first — the precache
+list a token behind the page, the two hub pages, `dressing34.gd` still
+drawing art the browser build had deleted in 15.55. So the bot moved to
+**`test/bot.cjs`** and both gates require it. The extraction was verified
+byte-identical to the string it replaced before either gate was run.
+
+### A trap paid for while writing it
+
+The first cut settled the veil and *then* sampled the curtain. Clocking out
+starts a **four-second timer** that removes the card, resets `cleared` and
+loads the next world, so a late sample reads the world after this one — and
+would have reported "the card was never put up" when the card was put up
+and taken down on schedule. The state and the card are now read in **one
+evaluate** the moment the bot returns. A gate that accuses the game of
+something it did not do is worse than no gate.
+
+### What it reports, and the number that is earned
+
+Twenty-one checks, and the one worth reading is in the middle of the run:
+
+    (banked by the bot across the world: 2/9 — seeding 9 to read the finished building)
+
+**2 of 9 is earned.** The dumb bot, not looking for them, walked into two
+golden bolts across three levels and they banked from one level into the
+next through `bankGolden()` — which is the "with meta counting" half of
+Gate C actually happening rather than being asserted about. The 9 that
+follows it is seeded, and the line says so in the output so nobody reads
+the finished building as a score the bot got.
+
+Gates, each run singly: **clockout 21**, rooms 246, fx-smoke 31,
+dev-menu 36. `playthrough.cjs` re-run after the bot extraction, since it
+now requires the module rather than carrying the string.
 
 ## v15.66 — 2026-09-07 — World 4's depot stops being grey planes
 

@@ -399,6 +399,13 @@ export const flooded = (c0, c1) => ({
   // the drained floor is what the ride hands back, and `finishedGrid` needs
   // to know about it or every bolt over the trench reads as unreachable
   drained: { c0, c1, cy: GROUND - 1 },
+  // …and the RUNTIME needs it under its own name. `drained` above is the
+  // PROVER's view — "assume this ends up floor" — and says nothing about
+  // what is standing there until the pump arrives. Without this the room
+  // compiled a hole with no owner: main.js had nothing to build the water
+  // from, and `playthrough.cjs`'s bot has carried a `d.flooded` branch
+  // since the day it was written that could never once fire.
+  piece: { type: 'flooded', c0, c1, cy: GROUND - 1 },
   obstacle: { at: c0, kind: 'gap', size: c1 - c0 + 1, clears: 'drain' },
   blocksMachine: true,
 });
@@ -616,6 +623,7 @@ export function compile(room) {
   out.bank = pieceOf('bank');
   out.wall = pieceOf('wall');
   out.sheet = pieceOf('sheet');
+  out.flooded = pieceOf('flooded');
 
   const chasmPart = room.parts.find((p) => p.kind === 'chasm');
   out.girder = (out.stack && chasmPart) ? {

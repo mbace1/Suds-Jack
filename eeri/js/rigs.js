@@ -43,8 +43,8 @@
 // heads as the detail motif, an OPEN seat so the rider is never swallowed.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=61';
-import { craftMat } from './craft.js?v=61';
+import { PAL, mix } from './palette.js?v=64';
+import { craftMat } from './craft.js?v=64';
 
 // ---- the shared kit ------------------------------------------------------
 // Everything both machines are made of, so the two builders below read as
@@ -260,5 +260,110 @@ export function buildLoaderModel(tint = 0) {
   for (const dz of [-0.5, 0, 0.5]) box(bucket, 0.1, 0.05, 0.12, PAL.DARK, 0.5, -0.28, dz);
 
   boom.rotation.z = 0.24; stick.rotation.z = -0.9; bucket.rotation.z = -0.35;
+  return { root, nodes };
+}
+
+// ---- WORLD 2: THE PUMP ---------------------------------------------------
+// The one this file's own header said was missing. It opens by naming
+// "`MACHINE_SPEED` names a pump and a pipelayer, DESIGN describes them, and
+// `main.js` builds an excavator for anything that is not a crane — so World
+// 2's 'pump ride' is an excavator wearing the word." It no longer is.
+//
+// It carries the verb DRAIN, which is World 2's own and nobody else's, and
+// that is the whole point of building it: §6.6's rule is that "a second
+// machine that digs is not a second machine", and until this landed every
+// world's level 1 asked for DIG because `js/rooms.js` had greyboxed the
+// planned pump ride with an excavator and a silt bank, saying so in a
+// comment as it did it.
+//
+// THE SILHOUETTE, since that is what tells these apart. A skid-mounted
+// trash pump: no arm to speak of, a fat horizontal BARREL where the
+// excavator carries its house, and a thick SUCTION HOSE down the front
+// that ends in a strainer. It reads as plumbing rather than earthmoving at
+// 32 px, which is what World 2 is about.
+//
+// It is still an Excavator by class, so `bucket` is the node the game reads
+// to know where the work is happening (main.js measures `bucketWorld`) —
+// here that node is the strainer at the foot of the hose. Same contract,
+// different object, exactly as the skidder's `bucket` is a grapple.
+export function buildPumpModel(tint = 0) {
+  const { box, cyl } = kit(tint);
+  const root = new THREE.Group();   // origin at ground contact, facing +x
+  const nodes = {};
+  const BODY = PAL.MACHINE, BODY_DK = PAL.MACHINE_DK;
+
+  // WHEELED AND LOW — a site pump is towed to the lip of a trench and left
+  // there, so it sits on small road wheels rather than tracks.
+  const under = new THREE.Group(); under.name = 'tracks'; root.add(under);
+  const wheels = new THREE.Group(); wheels.name = 'wheels'; under.add(wheels);
+  box(under, 2.5, 0.28, 1.1, PAL.INK, 0, 0.42, 0);            // the skid frame
+  for (const dz of [0.56, -0.56]) {
+    for (const dx of [-0.85, 0.85]) {
+      const spin = new THREE.Group(); spin.position.set(dx, 0.34, dz);
+      cyl(spin, 0.34, 0.22, PAL.DARK, 0, 0, 0, 10).rotation.x = Math.PI / 2;
+      cyl(spin, 0.13, 0.24, PAL.STEEL[1], 0, 0, 0, 8).rotation.x = Math.PI / 2;
+      wheels.add(spin);
+    }
+  }
+  nodes.wheels = wheels;
+  nodes.step = stepOn(root, box, 0.95, 0.62, 0.62);
+
+  const house = new THREE.Group(); house.name = 'house'; house.position.y = 0.56;
+  root.add(house); nodes.house = house;
+
+  // THE BARREL. Lying along the machine rather than across it, so the
+  // silhouette is one long horizontal mass — the opposite read to the
+  // excavator's tall boxy house.
+  const barrel = cyl(house, 0.52, 2.0, BODY, -0.15, 0.62, 0, 14);
+  barrel.rotation.z = Math.PI / 2;
+  cyl(house, 0.55, 0.12, BODY_DK, -1.12, 0.62, 0, 14).rotation.z = Math.PI / 2;
+  cyl(house, 0.55, 0.12, BODY_DK, 0.82, 0.62, 0, 14).rotation.z = Math.PI / 2;
+  // bolt heads round the end plate — the house detail motif (ART_BRIEF §3.3)
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    cyl(house, 0.05, 0.07, PAL.STEEL[0], 0.88, 0.62 + Math.cos(a) * 0.36, Math.sin(a) * 0.36, 6)
+      .rotation.z = Math.PI / 2;
+  }
+  // the exhaust, so it is plainly an engine and not a tank
+  cyl(house, 0.08, 0.7, PAL.DARK, -0.95, 1.25, 0.3, 8);
+  cyl(house, 0.12, 0.12, PAL.INK, -0.95, 1.66, 0.3, 8);
+
+  nodes.seat = cabIn(house, box, cyl, 0.42);
+  nodes.beacon = beaconAt(house, box, -0.55, 1.1, -0.3);
+
+  // ---- the hose: boom → stick → strainer -------------------------------
+  // The Excavator class animates this chain whatever it is made of, so the
+  // hose IS the arm. Fat, dark and ribbed, which is how a suction hose
+  // reads next to a painted steel arm.
+  const boom = new THREE.Group(); boom.name = 'boom';
+  boom.position.set(0.55, 0.5, 0); house.add(boom); nodes.boom = boom;
+  cyl(boom, 0.17, 1.25, PAL.DARK, 0.6, 0, 0, 10).rotation.z = Math.PI / 2;
+  for (const rx of [0.15, 0.5, 0.85, 1.15]) {                  // the ribs
+    cyl(boom, 0.2, 0.08, PAL.INK, rx, 0, 0, 10).rotation.z = Math.PI / 2;
+  }
+
+  const stick = new THREE.Group(); stick.name = 'stick';
+  stick.position.set(1.22, 0, 0); boom.add(stick); nodes.stick = stick;
+  cyl(stick, 0.15, 0.95, PAL.DARK, 0.45, 0, 0, 10).rotation.z = Math.PI / 2;
+  for (const rx of [0.2, 0.5, 0.8]) {
+    cyl(stick, 0.18, 0.07, PAL.INK, rx, 0, 0, 10).rotation.z = Math.PI / 2;
+  }
+
+  // THE STRAINER is `bucket` — the node main.js measures to decide whether
+  // the machine is over its job. A cage rather than a scoop: this machine
+  // takes water away instead of picking earth up, and the silhouette has to
+  // say which.
+  const bucket = new THREE.Group(); bucket.name = 'bucket';
+  bucket.position.set(0.92, 0, 0); stick.add(bucket); nodes.bucket = bucket;
+  cyl(bucket, 0.26, 0.44, PAL.STEEL[1], 0.16, 0, 0, 10).rotation.z = Math.PI / 2;
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2;
+    box(bucket, 0.4, 0.05, 0.05, PAL.STEEL[0], 0.16, Math.cos(a) * 0.2, Math.sin(a) * 0.2);
+  }
+  cyl(bucket, 0.28, 0.06, PAL.INK, 0.4, 0, 0, 10).rotation.z = Math.PI / 2;
+
+  // At rest the hose hangs down and forward, ready at the lip — the same
+  // "it is already facing its job" posture the other rigs settle into.
+  boom.rotation.z = -0.35; stick.rotation.z = -0.5; bucket.rotation.z = -0.3;
   return { root, nodes };
 }

@@ -673,9 +673,49 @@ point at where the answer lives. Only genuinely open things stay open.
 1. **The second ride machine per world.** (The first is settled — §6.6.) One each is proposed in §6.6 and
    is the art queue's next item; the *second* of the "two per world, maybe
    more" is deliberately deferred until a world plays end to end.
+   **That deferral condition is now MET** — `test/clockout.cjs` (v15.67)
+   plays World 1 start to clock-out. Read item 3 before spending it.
 2. **Does a world's level 3 reuse its world's backdrop**, or does the big
    one get its own dress? Reusing is the cheap answer and probably right;
    it is named here so nobody assumes the expensive one.
+3. **Worlds 3 and 4 have no verb of their own, and this needs an owner
+   call before any more machine art is commissioned.** (Measured
+   2026-09-10, from the rooms themselves — not a proposal, a reading.)
+
+   | level | machine | the job placed | the verb it actually asks for |
+   |---|---|---|---|
+   | 3-1 | skidder | `bank` | DIG |
+   | 3-2 | skidder | `girderStack` + `chasm` | SPAN |
+   | 3-3 | **crane** | — | SWING |
+   | 4-1 | loader | `bank` | DIG |
+   | 4-2 | loader | `girderStack` + `chasm` | SPAN |
+   | 4-3 | **crane** | — | SWING |
+
+   World 4 is a **verb-for-verb copy of World 3**, both are re-skins of
+   World 1's verbs, and both worlds' level 3 falls back to World 1's own
+   crane. The skidder and the loader are new MODELS on the excavator's
+   class, which §8.4 explicitly permits — but §6.6's own rule is that
+   **"a second machine that digs is not a second machine"**, and by that
+   rule worlds 3 and 4 currently have none.
+
+   `test/report.mjs` measured the same thing independently and from the
+   other end: levels 3-2, 3-3, 4-2 and 4-3 score **`new: 0`** — the back
+   third of the game asks for nothing it has not already asked for. The
+   code and the report card agree, which is why this is listed as a
+   finding rather than an opinion.
+
+   **What it does NOT settle**, and why it is here rather than in a
+   branch: §6.6 already names the fix — cherry-picker (**RISE**) for
+   world 3, floodlight rig (**AIM**) for world 4 — and both bring verbs
+   the game genuinely lacks. But §6.6 also names **pipe-layer (LAY)** for
+   world 2 and justifies it as *"the only machine so far that makes
+   geometry you keep"*, and that justification is **no longer true**:
+   `level.js`'s `fillRow` already seats a girder as real collision — its
+   own comment reads *"the span is a fact too"* — so LAY and SPAN land on
+   the same tile edit. Building the pipe-layer as written would spend a
+   machine on a verb the excavator already has. Whether LAY survives as
+   its own verb, and in what order the three are built, is a design
+   direction and PHASING §0.1 puts those with the owner.
 
 ### 7.1 Answering rate — a note for whoever holds this file
 
