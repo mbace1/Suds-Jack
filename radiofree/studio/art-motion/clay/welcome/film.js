@@ -1,5 +1,5 @@
-// WELCOME HOME — the film, v1 (18 Oct). Slot 4, Tue 27 Oct 00:50. Premise 2, "Once You Leave", greenlit 17 Oct, written
-// to the one-question rule (PLANNING.md): "A home screen that knows your face. What does it keep when you leave?"
+// WELCOME HOME — the film, v2 (18 Oct; v1 "did not make much sense" to the owner). Slot 4, Tue 27 Oct 00:50. Greenlit 17 Oct as "Once You Leave"; v2 is written
+// to the one-question rule (PLANNING.md): "A home screen's launch ad sells privacy. But whose?"
 // The stage is the premium-3D polish test (film-wh3.js, the look STYLES.md assigns this film: smooth vinyl and lacquer,
 // studio reflections), on its own copy of the clay kit (lib/). Built from the research description; the owner's frames
 // from the real launch film are still wanted. 1080×1920, 30 fps, the puppets on twos. film.html?lang=en|fi|ja
@@ -285,51 +285,47 @@ function faceUI(c, at, rad, line1, line2) {
 }
 
 
-// ================================================================== THE FILM (v1, 18 Oct): one question, five shots
-// "What does it keep when you leave?" Every word on screen comes from copy.json through pipeline/text/captions.js; the
-// shot lengths come from the copy (holds land on the 112 BPM grid), so fi and ja are longer where their lines need it.
-//   1 the hoop, then the morning kitchen; the daughter heads out on "leave"
-//   2 over Mum's shoulder: her messages and calendar fill the screen; she leaves, and they fold away on "not stored"
-//   3 the screen's own view: her face box; a vault door swings over it, and a card: KEPT FOR —
-//   4 the ad's ending: the family round the screen, watching the door camera; they lean in on "leave"
-//   5 the door camera itself: the boyfriend turns to the lens, and on "guests" the box snaps on: GUEST 7: ?
+// ================================================================== THE FILM (v2, 18 Oct): the irony inside the ad itself
+// v1 ("What does it keep when you leave?") chained three facts a viewer cannot see — data not stored, face retention
+// unstated, guests — and the owner: "Welcome is not making much sense". v2 takes the one irony the real launch film
+// shows on its own: it sells privacy (her brother cannot open her messages), and its happy ending is the whole family
+// watching her leave with her boyfriend on its door camera. "A home screen's launch ad sells privacy. But whose?"
+//   1 the hoop, then the morning kitchen and the screen
+//   2 over her brother's shoulder: he reaches for her messages, and on "unlocks" the screen locks him out
+//   3 the ad's ending: the family round the screen, lit by it, leaning in on "camera"
+//   4 the door camera itself: she and her boyfriend walking away; he glances back; on "family viewing": 3 WATCHING
 await CAP.loadFonts(FONT_DIR);
 { const f = new FontFace('Kalam', `url(${FONT_DIR}Kalam-700.woff)`); document.fonts.add(await f.load()); }
 const COPY = await CAP.loadCopy('copy.json');
 const B = 60 / 112, FPS = 30, SAFE_B = 1630;
-const BEATS = [['s1', 0], ['s2', 12 * B], ['s3', 24 * B], ['s4', 36 * B], ['s5', 48 * B], ['end', 60 * B]];
+const BEATS = [['s1', 0], ['s2', 12 * B], ['s3', 24 * B], ['s4', 36 * B], ['end', 48 * B]];
 const P = CAP.plan(COPY, LANG, BEATS, { snap: B }), T = P.T, DUR = T.end;
 const capOf = (id) => P.captions.find((c) => c.id === id);
 const popOf = (id) => { const c = capOf(id); return (c.words.find((w) => w.pop) || c.words[0]).t; };
-const lineEnd = (id, n) => { const ws = capOf(id).words.filter((w) => w.line === n - 1); return ws[ws.length - 1].t; };
-const SHOTS = [T.s1, T.s2, T.s3, T.s4, T.s5, T.end];
-const EV = { hoopOut: 1.0, leave: popOf('question'), tilesIn: T.s2 + 0.35, fold: popOf('data'), boxOn: T.s3 + 0.45, vault: lineEnd('face', 1), kept: popOf('face'),
-  lean: popOf('ad'), turnBack: T.s5 + 0.9, guest: popOf('last') };
-EV.turn = Math.max(EV.tilesIn + 1.3, EV.fold - 0.9);
+const SHOTS = [T.s1, T.s2, T.s3, T.s4, T.end];
+const EV = { hoopOut: 1.0, lock: popOf('lock'), lean: popOf('ad'), turnBack: T.s4 + 1.2, watching: popOf('last') };
+EV.reach = EV.lock - 0.9;
 const EVENTS = { ...T, lang: LANG, holds: P.holds, ...EV, ...CAP.events(P), quiet: [] };
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), lerp = (a, b, k) => a + (b - a) * k;
 const ease = { out: (k) => 1 - Math.pow(1 - clamp(k), 3), io: (k) => { k = clamp(k); return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; },
   back: (k) => { k = clamp(k); const s = 1.7; return 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2); } };
 const twos = (t) => Math.floor(t * 12) / 12;                                    // the puppets act on twos; camera and light move every frame
 
-// ------------------------------------------------------------------ the screen's own pages: hers, then folding away
-function drawMine(k) {                                                            // k: 0 all there → 1 folded away
-  drawUI('flow'); const g = ui, w = 880, h = 580; if (k >= 1) { uiTex.needsUpdate = true; return; }
-  g.save(); g.fillStyle = `rgba(250,244,240,${0.55 * (1 - k)})`; g.fillRect(0, 0, w, h);
-  const tiles = [[40, 40, 470, 230, 'Messages', ['Dinner at 7?', 'Bring the charger x']], [530, 40, 310, 230, 'Today', ['8:30  Dentist', '17:00  Pickup']], [40, 290, 800, 250, 'Photos', null]];
-  tiles.forEach(([x, y, tw, th, title, lines], i) => {
-    const kk = clamp(k * 3 - i * 0.6), s = 1 - ease.io(kk); if (s <= 0.01) return;
-    g.save(); g.translate(x + tw / 2, y + th / 2); g.scale(1, s); g.globalAlpha = s;
-    g.fillStyle = 'rgba(255,255,255,.92)'; g.beginPath(); g.roundRect(-tw / 2, -th / 2, tw, th, 28); g.fill();
-    g.fillStyle = '#1d1b1f'; g.font = '700 38px Inter'; g.fillText(title, -tw / 2 + 30, -th / 2 + 58);
-    if (lines) { g.font = '500 32px Inter'; g.fillStyle = '#4a454c'; lines.forEach((l, j) => g.fillText(l, -tw / 2 + 30, -th / 2 + 118 + j * 52)); }
-    else for (let j = 0; j < 5; j++) { g.fillStyle = ['#f2b8a8', '#a8c8e8', '#f4d58a', '#b8d8b0', '#d8b8e8'][j]; g.beginPath(); g.roundRect(-tw / 2 + 30 + j * 152, -th / 2 + 80, 136, 140, 16); g.fill(); }
-    g.restore();
-  });
+// ------------------------------------------------------------------ the screen locks her brother out
+function drawLock(k) {                                                            // k: 0 her messages tile, blurred → 1 the lock card
+  drawUI('flow'); const g = ui, w = 880, h = 580;
+  g.save(); g.fillStyle = 'rgba(255,255,255,.9)'; g.beginPath(); g.roundRect(60, 60, 760, 460, 32); g.fill();
+  g.fillStyle = '#1d1b1f'; g.font = '700 46px Inter'; g.fillText('Messages', 100, 130);
+  g.filter = 'blur(9px)'; g.fillStyle = '#6a6470'; for (let j = 0; j < 4; j++) { g.beginPath(); g.roundRect(100 + (j % 2) * 220, 180 + j * 80, 420 - (j % 2) * 120, 52, 26); g.fill(); } g.filter = 'none';
+  if (k > 0) { const s = ease.back(k / 0.6);
+    g.save(); g.translate(440, 330); g.scale(s, s);
+    g.fillStyle = 'rgba(30,26,34,.92)'; g.beginPath(); g.roundRect(-330, -120, 660, 240, 40); g.fill();
+    g.strokeStyle = '#fff'; g.lineWidth = 12; g.beginPath(); g.arc(-220, -18, 34, Math.PI, 0); g.stroke(); g.fillStyle = '#fff'; g.beginPath(); g.roundRect(-268, -16, 96, 82, 14); g.fill();
+    g.font = '600 44px Inter'; g.textBaseline = 'middle'; g.fillText(P.ui.locked || 'Locked · not your face', -140, 6); g.restore(); }
   g.restore(); uiTex.needsUpdate = true;
 }
 
-// ------------------------------------------------------------------ 2D pieces: the hoop, the vault, the card, the door camera
+// ------------------------------------------------------------------ 2D pieces: the hoop and the door camera
 function hoop(g, k) {                                                             // k: 0 the hoop fills the frame → 1 zoomed through it
   if (k >= 1) return; const s = 1 + 6 * k * k, a = 1 - ease.io(k);
   g.save(); g.globalAlpha = a;
@@ -347,31 +343,12 @@ function hoop(g, k) {                                                           
   g.restore();
   g.save(); g.translate(0, -60); g.strokeStyle = '#3a2e28'; g.lineWidth = 3; g.setLineDash([9, 5]); g.stroke(pear); g.setLineDash([]);
   g.strokeStyle = '#5a7a3a'; g.lineWidth = 7; g.beginPath(); g.moveTo(6, -200); g.quadraticCurveTo(14, -240, 40, -250); g.stroke(); g.restore();
-  g.font = '700 96px Kalam'; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = '#3a2e28'; g.setLineDash([12, 6]); g.strokeText(P.props?.hoop || 'Welcome home.', 0, 250); g.setLineDash([]);
+  g.font = '700 96px Kalam'; g.textAlign = 'center'; g.lineWidth = 5; g.strokeStyle = '#3a2e28'; g.setLineDash([12, 6]); g.strokeText('Welcome home.', 0, 250); g.setLineDash([]);
   g.restore();
 }
-function vault(g, x, y, r, k) {                                                   // a round steel door swinging shut over the face box
-  if (k <= 0) return; const R = r * 1.3, sx = Math.max(0.03, ease.back(k));
-  g.save(); g.translate(x - R, y); g.scale(sx, 1); g.translate(R, 0);
-  g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 40; g.shadowOffsetY = 18;
-  const gr = g.createRadialGradient(-R * 0.3, -R * 0.4, R * 0.1, 0, 0, R); gr.addColorStop(0, '#e9edf0'); gr.addColorStop(0.7, '#a9b2b9'); gr.addColorStop(1, '#7d878f');
-  g.fillStyle = gr; g.beginPath(); g.arc(0, 0, R, 0, TAU); g.fill(); g.shadowColor = 'transparent';
-  g.strokeStyle = '#6a737a'; g.lineWidth = R * 0.06; g.beginPath(); g.arc(0, 0, R * 0.86, 0, TAU); g.stroke();
-  g.fillStyle = '#5d666d'; for (let i = 0; i < 12; i++) { const a = (i / 12) * TAU; g.beginPath(); g.arc(Math.cos(a) * R * 0.93, Math.sin(a) * R * 0.93, R * 0.035, 0, TAU); g.fill(); }
-  g.strokeStyle = '#4b535a'; g.lineWidth = R * 0.05; g.lineCap = 'round'; const spin = (1 - k) * 2;
-  for (let i = 0; i < 3; i++) { const a = spin + (i / 3) * TAU; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a) * R * 0.42, Math.sin(a) * R * 0.42); g.stroke(); }
-  g.beginPath(); g.arc(0, 0, R * 0.42, 0, TAU); g.stroke(); g.fillStyle = '#4b535a'; g.beginPath(); g.arc(0, 0, R * 0.09, 0, TAU); g.fill();
-  g.restore();
-}
-function keptCard(g, x, y, k) {
-  if (k <= 0) return; const s = ease.back(k / 0.35);
-  g.save(); g.translate(x, y); g.scale(s, s); g.rotate(-0.03);
-  g.shadowColor = 'rgba(0,0,0,.3)'; g.shadowBlur = 24; g.shadowOffsetY = 10; g.fillStyle = '#fbfaf7'; g.beginPath(); g.roundRect(-250, -70, 500, 140, 22); g.fill(); g.shadowColor = 'transparent';
-  g.fillStyle = '#1d1b1f'; g.font = '700 58px Inter'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(P.props?.kept || 'KEPT FOR: —', 0, 4);
-  g.restore();
-}
-/** the door camera, full frame: the front path, the daughter far off, the boyfriend nearer; he turns to the lens */
-function doorFeed(g, lt, turn, box) {
+/** the door camera, full frame: she and her boyfriend walking away down the path; he glances back at the lens; and
+ *  in the corner the camera says who is watching — the three faces from the kitchen */
+function doorFeed(g, lt, turn, watch) {
   const sky = g.createLinearGradient(0, 0, 0, 760); sky.addColorStop(0, '#bcd3e0'); sky.addColorStop(1, '#e8eee4'); g.fillStyle = sky; g.fillRect(0, 0, W, 760);
   g.fillStyle = '#6f8c5e'; g.fillRect(0, 760, W, H - 760);
   g.fillStyle = '#4f6b43'; for (let i = 0; i < 12; i++) { g.beginPath(); g.arc(-40 + i * 105, 730 + (i % 3) * 14, 90, 0, TAU); g.fill(); }
@@ -389,47 +366,42 @@ function doorFeed(g, lt, turn, box) {
     }
     if (front < 1) { g.save(); g.globalAlpha = 1 - front; g.fillStyle = mask; g.beginPath(); g.arc(x + 16 * s, y - 36 * s, 30 * s, -1.1, 1.1); g.fill(); g.restore(); }
   };
-  const walk = Math.sin(lt * 7) * 4;
-  fig(560 + Math.sin(lt * 0.5) * 6, 840 - lt * 6 + walk * 0.3, 0.55, '#f0027f', '#f2d36b', 0);   // the daughter, walking away
-  fig(500, 1120 + walk * (1 - turn), 2.6, '#9a9a9a', '#3f4a5c', turn);                        // the boyfriend, near the lens, turning back
+  const walk = Math.sin(lt * 7) * 5, away = lt * 9;
+  fig(640, 1110 - away + walk, 2.2, '#f0027f', '#f2d36b', 0);                   // her: the girl from the kitchen, walking away
+  fig(420, 1130 - away - walk, 2.5, '#9a9a9a', '#3f4a5c', turn);                // him, glancing back at the lens
   const v = g.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.5)'); g.fillStyle = v; g.fillRect(0, 0, W, H);
   barrel(g, 0.12);
   g.fillStyle = 'rgba(20,20,22,.6)'; g.beginPath(); g.roundRect(70, 1530, 420, 84, 42); g.fill();
-  g.fillStyle = '#ff3b30'; g.beginPath(); g.arc(118, 1572, 14, 0, TAU); g.fill(); g.fillStyle = '#fff'; g.font = '600 44px Inter'; g.textBaseline = 'alphabetic'; g.fillText('Front Door', 150, 1588);
-  if (box > 0) { const blink = lt > 0 && Math.floor(lt * 2.4) % 2 ? 0.55 : 1; g.save(); g.globalAlpha = Math.min(1, box * 3); faceUI(g, [500, 1120 - 36 * 2.6], 125 * Math.min(1, 0.6 + box), P.props?.guest || 'GUEST 7: ?', 'Not recognised'); g.restore(); }
+  g.fillStyle = '#ff3b30'; g.beginPath(); g.arc(118, 1572, 14, 0, TAU); g.fill(); g.fillStyle = '#fff'; g.font = '600 44px Inter'; g.textBaseline = 'alphabetic'; g.fillText(P.ui.door || 'Front Door', 150, 1588);
+  if (watch > 0) {                                                              // who is watching: the three masks from the kitchen
+    const s = ease.back(watch / 0.4); g.save(); g.translate(790, 1572); g.scale(s, s);
+    g.font = '700 40px Inter'; const label = P.ui.watching || '3 WATCHING', lw = g.measureText(label).width, pw = lw + 190;
+    g.fillStyle = 'rgba(255,255,255,.92)'; g.beginPath(); g.roundRect(-pw / 2, -42, pw, 84, 42); g.fill();
+    ['#3d6fd8', '#2fa84f', '#ff7414'].forEach((col, i) => { g.fillStyle = col; g.strokeStyle = '#fff'; g.lineWidth = 4; g.beginPath(); g.arc(-pw / 2 + 44 + i * 34, 0, 24, 0, TAU); g.fill(); g.stroke(); });
+    g.fillStyle = '#1d1b1f'; g.textBaseline = 'middle'; g.fillText(label, -pw / 2 + 160, 3); g.restore();
+  }
 }
 
 // ------------------------------------------------------------------ the shots
 const DEVF = () => DEV.localToWorld(new THREE.Vector3(0, 16.5, 0));
-const kidWalkOut = (t) => { const k = clamp((t - EV.leave + 1.3) / 1.7); return { x: lerp(40, -46, k), k }; };   // behind Mum, right to left, gone on "leave"
 const SHOT = [
-  { // 1 · the morning, the screen, the daughter heading out
+  { // 1 · the morning, the screen
     ui: () => drawUI('flow'), cam: (lt, d) => ({ pos: [lerp(31, 27, ease.io(lt / d)), 29.5, lerp(-17, -21, ease.io(lt / d))], at: [-2, 31, -78], fov: lerp(48, 44, ease.io(lt / d)), focus: DEVF, ap: 10 }),
     cast(t) {
       place('dad', 44, BACK + 31, Math.PI + 0.35, (at) => ({ lean: 0.14, hy: -1.1, hp: 0.05, elR: at([-6.2, 8.4, 4]), hdR: at([-4.4, 4.6 + Math.sin(t * 6) * 0.8, 9.4]), elL: at([6.4, 8.6, 3]), hdL: at([3.6, 5.6, 9.6]) }));
       place('mum', -3, ISL.z - 19, 0.3, (at) => ({ lean: 0.2, hp: -0.02, hy: 0.3, elR: at([-7.4, 7.4, 4.2]), hdR: at([-6.6, 1.6, 11.4]), elL: at([7.4, 7.4, 4.2]), hdL: at([6.6, 1.6, 11.4]) }));
-      const w = kidWalkOut(t), step = Math.sin(t * 14);
-      if (w.k > 0 && w.k < 1) place('kid', w.x, BACK + 36, -Math.PI / 2, (at) => ({ lean: 0.16, hp: -0.05, hy: 0.25, elR: at([-6.6, 8.6, 1.2 + step * 3]), hdR: at([-7.2, 2.4, 2.6 + step * 6]), elL: at([6.6, 8.6, 1.2 - step * 3]), hdL: at([7.2, 2.4, 2.6 - step * 6]) }));
-      CAST.son.wrap.visible = false;
+      CAST.son.wrap.visible = false; CAST.kid.wrap.visible = false;
     } },
-  { // 2 · over her shoulder: her things on the screen; she leaves, they fold away
-    ui: (t) => drawMine(t < EV.tilesIn ? 1 : clamp((t - (EV.fold - 0.55)) / 0.55)), devYaw: -0.42,
-    cam: (lt, d) => ({ pos: [-14, 44, lerp(18, 14, ease.io(lt / d))], at: [13, 28.5, -45], fov: lerp(26, 23, ease.io(lt / d)), focus: DEVF, ap: 8 }),
+  { // 2 · over her brother's shoulder: he reaches for her messages; the screen locks him out
+    ui: (t) => drawLock(clamp((t - EV.lock) / 0.35 + 0.001)), devYaw: -0.42,
+    cam: (lt, d) => ({ pos: [-14, 42, lerp(16, 12, ease.io(lt / d))], at: [13, 28.5, -45], fov: lerp(26, 23, ease.io(lt / d)), focus: DEVF, ap: 8 }),
     cast(t) {
-      const k = clamp((t - EV.turn) / 0.7), x = lerp(-2, -30, ease.io(k)), yaw = lerp(Math.PI - 0.35, Math.PI + 1.3, ease.out(k * 2)), step = k > 0 && k < 1 ? Math.sin(t * 14) : 0;
-      place('mum', x, -30 + k * 6, yaw, (at) => ({ lean: 0.16, hp: 0.06, hy: -0.15 * (1 - k), elR: at([-7, 7.6, 3 + step * 3]), hdR: at([-6.4, 2.4, 6 + step * 5]), elL: at([7, 7.6, 3 - step * 3]), hdL: at([6.4, 2.4, 6 - step * 5]) }));
+      const r = ease.out((t - EV.reach) / 0.5) * (1 - ease.out((t - EV.lock - 0.2) / 0.4)), back = ease.out((t - EV.lock - 0.1) / 0.4);
+      place('son', -2, -30 + back * 3, Math.PI - 0.35, (at) => ({ lean: 0.22 + r * 0.12 - back * 0.14, hp: 0.06, hy: -0.15 + back * 0.25, elR: at([-7, 7.6, 3 + r * 6]), hdR: at([-6.4, 4 + r * 5, 6 + r * 12]), elL: at([7, 7.6, 3]), hdL: at([6.4, 2.4, 6]) }));
       place('dad', 44, BACK + 31, Math.PI + 0.35, (at) => ({ lean: 0.14, hy: -1.1, hp: 0.05, elR: at([-6.2, 8.4, 4]), hdR: at([-4.4, 4.6, 9.4]), elL: at([6.4, 8.6, 3]), hdL: at([3.6, 5.6, 9.6]) }));
-      CAST.son.wrap.visible = false; CAST.kid.wrap.visible = false;
+      CAST.mum.wrap.visible = false; CAST.kid.wrap.visible = false;
     } },
-  { // 3 · the screen's own view: her face, the box, the vault, the card
-    ui: () => drawUI('flow'), hideDev: true, feed: true,
-    cam: (lt, d) => ({ pos: [14, 30, -44], at: [lerp(10, 9.4, ease.io(lt / d)), 37, -80], fov: lerp(74, 70, ease.io(lt / d)), focus: () => CAST.mum.toko.mask.getWorldPosition(new THREE.Vector3()), ap: 3 }),
-    cast(t) {
-      place('mum', 9, ISL.z - 21, -0.06, (at) => ({ lean: 0.24, hp: 0.0, hy: 0.06 + Math.sin(t * 1.3) * 0.05, elR: at([-7.2, 7.2, 4.4]), hdR: at([-6.4, 2.0, 11.6]), elL: at([7.2, 7.2, 4.4]), hdL: at([6.4, 2.0, 11.6]) }));
-      place('dad', 46, BACK + 30, Math.PI + 0.25, (at) => ({ lean: 0.14, hy: -0.4, elR: at([-6.2, 8.4, 4]), hdR: at([-4.4, 4.6, 9.4]), elL: at([6.4, 8.6, 3]), hdL: at([3.6, 5.6, 9.6]) }));
-      CAST.son.wrap.visible = false; CAST.kid.wrap.visible = false;
-    } },
-  { // 4 · the ad's ending: the family round the screen, lit by it, watching the door camera
+  { // 3 · the ad's ending: the family round the screen, lit by it, watching the door camera
     ui: () => drawUI('door'), devYaw: Math.PI + 0.2, screenGlow: (t) => 150 + Math.sin(t * 9) * 12,
     cam: (lt, d) => ({ pos: [lerp(36, 32, ease.io(lt / d)), 35, lerp(-12, -18, ease.io(lt / d))], at: [9, 36, -70], fov: lerp(46, 40, ease.io(lt / d)), focus: () => CAST.mum.toko.mask.getWorldPosition(new THREE.Vector3()), ap: 7 }),
     cast(t) {
@@ -440,11 +412,10 @@ const SHOT = [
       place('son', 15, ISL.z - 28, 0.0, (at) => ({ lean: L - 0.12, hp: 0.3, hy: -0.05, elR: at([-6.6, 8.6, 1.2]), hdR: at([-7.2, 2.4, 2.6]), elL: at([6.6, 8.6, 1.2]), hdL: at([7.2, 2.4, 2.6]) }));
       CAST.kid.wrap.visible = false;                                             // she is the one on the screen
     } },
-  { feed2d: true },                                                               // 5 · the door camera, full frame (2D)
+  { feed2d: true },                                                               // 4 · the door camera, full frame (2D)
 ];
-const project = (v) => { const p = v.clone().project(camera); return [(p.x + 1) / 2 * W, (1 - p.y) / 2 * H]; };
 
-/** the tag that says what this is: a real launch film, remade */
+/** the tag that says what this is: a real ad, remade */
 function tag(g, text, k) {
   if (k <= 0) return; g.save(); g.globalAlpha = k; g.font = '700 32px Inter'; const w = g.measureText(text).width + 60, x = 110, y = SAFE_B - 66 - 10;
   g.fillStyle = 'rgba(251,250,247,.94)'; g.beginPath(); g.roundRect(x, y, w, 66, 33); g.fill(); g.fillStyle = '#1d1b1f'; g.textBaseline = 'middle'; g.fillText(text, x + 30, y + 35); g.restore();
@@ -452,10 +423,10 @@ function tag(g, text, k) {
 
 // ------------------------------------------------------------------ one frame
 function frame(t, captions = true) {
-  let i = 0; while (i < 4 && t >= SHOTS[i + 1]) i++;
+  let i = 0; while (i < 3 && t >= SHOTS[i + 1]) i++;
   const S = SHOT[i], lt = t - SHOTS[i], d = SHOTS[i + 1] - SHOTS[i], tq = twos(t);
   g2d.setTransform(1, 0, 0, 1, 0, 0);
-  if (S.feed2d) doorFeed(g2d, lt, ease.io((t - EV.turnBack) / 0.5), clamp((t - EV.guest) / 0.25));
+  if (S.feed2d) doorFeed(g2d, lt, ease.io((t - EV.turnBack) / 0.5) * (1 - ease.io((t - EV.turnBack - 1.6) / 0.5)), clamp(t - EV.watching));
   else {
     setBoil(Math.floor(t * 12)); S.ui(tq); hideAll(); S.cast(tq); DEV.visible = !S.hideDev; DEV.rotation.y = S.devYaw ?? -0.18;
     scene.updateMatrixWorld(true);
@@ -466,16 +437,6 @@ function frame(t, captions = true) {
       threshold: 1.25, knee: 0.5, bloomA: 0.22, bloomB: 0.16, exposure: 1.02, vignette: 0.18, grain: 0.006, seed: Math.floor(t * 12),
       sat: 1.2, contrast: 1.16, lift: [0.0, 0.0, 0.004], gain: [1.02, 1.0, 0.99], toe: 0.02 });
     g2d.drawImage(renderer.domElement, 0, 0);
-    if (S.feed) {
-      barrel(g2d, 0.11);
-      const m = CAST.mum.toko.mask.getWorldPosition(new THREE.Vector3()); let [x, y] = project(m);
-      const R = Math.hypot(W / 2, H / 2), nx = (x - W / 2) / R, ny = (y - H / 2) / R, r2 = nx * nx + ny * ny, f = (1 + 0.11 * r2) / (1 + 0.11);
-      x = W / 2 + (x - W / 2) / f; y = H / 2 + (y - H / 2) / f;
-      const r = Math.abs(project(m.clone().add(new THREE.Vector3(4.6, 0, 0)))[0] - project(m)[0]) * 1.15;
-      if (t > EV.boxOn) faceUI(g2d, [x, y], r * lerp(1.3, 1, ease.out((t - EV.boxOn) / 0.2)), 'Good morning.', 'Recognised · 1 of 6');
-      vault(g2d, x, y, r, clamp((t - EV.vault + 0.1) / 0.45));
-      keptCard(g2d, W / 2, Math.min(SAFE_B - 120, y + r + 330), clamp(t - EV.kept));
-    }
     if (i === 0) { hoop(g2d, clamp((t - EV.hoopOut) / 0.7)); tag(g2d, P.ui.tag, clamp((t - 2.2) / 0.3) * clamp((SHOTS[1] - 0.3 - t) / 0.3)); }
   }
   CAP.bug(g2d, 'RADIO FREE HELSINKI', 'house');

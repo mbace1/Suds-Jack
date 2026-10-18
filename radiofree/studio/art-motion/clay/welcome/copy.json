@@ -1,9 +1,9 @@
 {
   "film": "welcome-home",
-  "cut": "v1 script — Premise 2 'Once You Leave' (greenlit 17 Oct), written to the one-question rule (owner, 18 Oct). Built from the research description; the owner's frames from the real launch film are still wanted.",
+  "cut": "v2 (owner, 18 Oct: 'Welcome is not making much sense') — the irony inside the ad itself: her messages are private, her boyfriend is family viewing",
   "series": "rfh",
   "captionSize": "house",
-  "argument": "The display says your data is not stored on it once you leave, but its maker has not said how long it keeps faces, and its own ad ends watching a guest leave.",
+  "argument": "The home screen's own launch ad sells privacy: her brother can't read her messages, yet its happy ending is the whole family watching her leave with her boyfriend on its camera.",
   "langs": [
     "en",
     "fi",
@@ -23,63 +23,50 @@
       "until": "s2-0.35",
       "hold": "s2",
       "text": {
-        "en": "A home screen / that knows your face. / What does it keep / when you [leave]?",
-        "fi": "Kotinäyttö, joka tuntee kasvosi. / Mitä se säilyttää, / kun [lähdet]?",
-        "ja": "顔を 覚える ホーム画面。 / [出かけたら]、 / 何が 残る？"
+        "en": "A home screen's launch ad / sells privacy. / But [whose]?",
+        "fi": "Kotinäytön julkaisumainos / myy yksityisyyttä. / Mutta [kenen]?",
+        "ja": "ホーム画面の 発表広告は / プライバシーを 売る。 / でも [誰の]？"
       },
-      "source": "The device recognises up to six enrolled household members by face (Tom's Guide, MacRumors, ABC, Mac Observer quoting the store FAQ). The device is unbranded on screen ('a home screen'), as Doodle and Teslur were."
+      "source": "The launch film of a home display that recognises up to six household members by face and shows each their own messages and calendar (Apple Newsroom via MacRumors and Mac Observer, 13 Oct 2026; Tom's Guide; ABC). On screen the device is unbranded, as Doodle and Teslur were; the tag says it is a real ad, remade."
     },
     {
-      "id": "data",
+      "id": "lock",
       "role": "evidence",
       "at": "s2+0.6",
       "until": "s3-0.35",
       "hold": "s3",
       "text": {
-        "en": "Your messages and calendar: / its maker says they're / [not stored] on it.",
-        "fi": "Viestisi ja kalenterisi: / valmistaja sanoo, / ettei niitä [tallenneta] siihen.",
-        "ja": "メッセージと カレンダーは / 本体に [保存されない]、 / と メーカーは 言う。"
+        "en": "In the ad, her brother tries / to read her messages. / Only her face [unlocks] them.",
+        "fi": "Mainoksessa veli yrittää / lukea siskonsa viestit. / Vain hänen kasvonsa / [avaavat] ne.",
+        "ja": "広告では 兄弟が 彼女の / メッセージを 見ようとする。 / 開けるのは [彼女の顔]だけ。"
       },
-      "source": "Personal data is drawn from the user's iPhone and is not stored on the display: Reuters (Nellis, 13 Oct), bluewin, ABC (a product marketing manager). Paraphrase, so no quote marks: the ABC wording is single-source and unverified (research §4b)."
+      "source": "In the launch film the brother tries to open his sister's messages on the display and fails, because it shows them only to her face (heise; Inc., Jason Aten). Messages and Calendar are shown only when the enrolled user's face is recognised (Apple Newsroom, via MacRumors and Mac Observer)."
     },
     {
-      "id": "face",
+      "id": "ad",
       "role": "evidence",
       "at": "s3+0.6",
       "until": "s4-0.35",
       "hold": "s4",
       "text": {
-        "en": "Your face? It says / nobody can see it. / How long it's kept: [not said].",
-        "fi": "Kasvosi? Se sanoo, / ettei kukaan näe niitä. / Säilytysaika: [ei kerrota].",
-        "ja": "顔は？ 誰にも 見えない、 と言う。 / 保存期間は [明かされていない]。"
+        "en": "Its happy ending: / the family watches her leave / with her boyfriend, / on its door [camera].",
+        "fi": "Onnellinen loppu: / perhe katsoo, kun hän lähtee / poikaystävänsä kanssa, / sen [ovikamerasta].",
+        "ja": "ハッピーエンド： 家族は / 彼氏と 出かける 彼女を / [玄関カメラで] 見る。"
       },
-      "source": "The company's side: camera and microphone data processed in Secure Exclaves 'cannot be accessed' by the software, apps, the user or the company (release, quoted by Mac Observer, MacRumors and others). What is not said: where face-enrolment data is kept, in what form or for how long (ID Tech Wire; The Hack Academy). The film asks; it does not claim the data is kept."
-    },
-    {
-      "id": "ad",
-      "role": "evidence",
-      "at": "s4+0.6",
-      "until": "s5-0.35",
-      "hold": "s5",
-      "text": {
-        "en": "Its own ad ends with / the family watching / the daughter's boyfriend / [leave] on its camera.",
-        "fi": "Sen oma mainos päättyy, / kun perhe katsoo sen kamerasta / tyttären poikaystävän [lähtöä].",
-        "ja": "広告の 最後、 家族は その カメラで / 娘の 彼氏が [帰る] のを 見る。"
-      },
-      "source": "The launch film ends with the family gathered round the display, using the security camera to watch the daughter leave with her boyfriend (Digital Today citing The Verge; Analytics Insight). Staged in clay with generic masked figures: no real actor, no footage, no logo."
+      "source": "The launch film ends with the whole family gathered round the display, using the security camera to watch the daughter leave with her boyfriend (Digital Today citing The Verge; Analytics Insight). Staged in clay with generic masked figures: no actor, no footage, no logo."
     },
     {
       "id": "last",
       "role": "punchline",
-      "at": "s5+0.5",
+      "at": "s4+0.5",
       "until": "end-0.2",
       "hold": "end",
       "text": {
-        "en": "It forgets your data / when you leave. / And your [guests]?",
-        "fi": "Se unohtaa tietosi, kun lähdet. / Entä [vieraasi]?",
-        "ja": "出かけたら データは 忘れる。 / [お客さんは]？"
+        "en": "Her messages: private. / Her boyfriend: [family viewing].",
+        "fi": "Hänen viestinsä: yksityisiä. / Poikaystävä: [perheen ohjelmaa].",
+        "ja": "メッセージは 非公開。 / 彼氏は [家族で 視聴]。"
       },
-      "source": "The station's line. A question, by design: how a visitor's face is handled is undisclosed, not shown to be kept (research §5 and §(c))."
+      "source": "The station's line, over the door camera's own view: 3 WATCHING."
     }
   ],
   "ui": {
@@ -87,25 +74,32 @@
       "en": "A REAL AD, REMADE IN CLAY",
       "fi": "OIKEA MAINOS, SAVESTA",
       "ja": "実在の広告を粘土で再現"
+    },
+    "watching": {
+      "en": "3 WATCHING",
+      "fi": "3 KATSOO",
+      "ja": "3人が視聴中"
+    },
+    "locked": {
+      "en": "Locked · not your face",
+      "fi": "Lukittu · ei sinun kasvosi",
+      "ja": "ロック中 · 本人の顔ではありません"
+    },
+    "door": {
+      "en": "Front Door",
+      "fi": "Etuovi",
+      "ja": "玄関"
     }
   },
   "props": {
     "hoop": {
       "en": "Welcome home.",
       "why": "the embroidery-hoop opener, stitched round a rainbow pear (never the real logo)"
-    },
-    "guest": {
-      "en": "GUEST 7: ?",
-      "why": "the door camera's face box over the boyfriend (the device knows six faces)"
-    },
-    "kept": {
-      "en": "KEPT FOR: —",
-      "why": "the card under the vault door: how long the face is kept, left blank because it is not said"
     }
   },
   "post": {
-    "en": "A home screen that knows your face. Its maker says your messages and calendar aren't stored on it once you leave. How long it keeps faces isn't said. And its own ad ends with the family watching the daughter's boyfriend leave on its camera. Your guests? #privacy #smarthome",
-    "fi": "Kotinäyttö, joka tuntee kasvosi. Valmistajan mukaan viestejäsi ja kalenteriasi ei tallenneta siihen, kun lähdet. Kauanko kasvoja säilytetään, ei kerrota. Ja sen oma mainos päättyy, kun perhe katsoo kamerasta tyttären poikaystävän lähtöä. Entä vieraasi?",
-    "ja": "顔を覚えるホーム画面。出かけたらメッセージとカレンダーは本体に保存されない、とメーカーは言う。顔の保存期間は明かされていない。そして広告の最後、家族はそのカメラで娘の彼氏が帰るのを見る。お客さんは？"
+    "en": "A home screen's launch ad sells privacy: her brother can't read her messages, because only her face unlocks them. Its happy ending? The whole family watching her leave with her boyfriend on its door camera. Her messages: private. Her boyfriend: family viewing. #privacy #smarthome",
+    "fi": "Kotinäytön julkaisumainos myy yksityisyyttä: veli ei pääse lukemaan siskonsa viestejä, koska vain hänen kasvonsa avaavat ne. Onnellinen loppu? Koko perhe katsoo ovikamerasta, kun hän lähtee poikaystävänsä kanssa. Viestit: yksityisiä. Poikaystävä: perheen ohjelmaa.",
+    "ja": "ホーム画面の発表広告はプライバシーを売る。兄弟は彼女のメッセージを見られない。開けるのは彼女の顔だけ。ハッピーエンドは？家族全員が玄関カメラで、彼氏と出かける彼女を見る。メッセージは非公開。彼氏は家族で視聴。"
   }
 }
