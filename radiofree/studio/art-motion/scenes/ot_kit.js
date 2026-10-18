@@ -147,9 +147,17 @@ window.OT = (() => {
     return [...path(from, via || foot0, n), ...STEPS.map(([sx, sy]) => [x + sx * sc, y + sy * sc])]; };
 
   // ── what got out: glowing footprints, a pair at a time ───────────────────────────────────────────────────────
-  const foot = () => sprite('ot_foot', 60, 90, 30, 45, (g) => {
-    g.fillStyle = C.cyan; g.beginPath(); g.ellipse(0, 6, 14, 24, 0, 0, TAU); g.fill();
-    for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(-12 + i * 6, -24 + Math.abs(i - 2) * 3, 4 - Math.abs(i - 2) * 0.6, 0, TAU); g.fill(); }
+  /** a shoe's print, not a bare foot: an outsole with a waist cut in on the arch side, a separate heel, and the
+   *  tread pressed out of both. 'L' is the mirror of 'R'. */
+  const foot = (side = 'R') => sprite('ot_shoe_' + side, 64, 96, 32, 48, (g) => {
+    g.scale(side === 'L' ? -0.8 : 0.8, 0.8); g.fillStyle = C.cyan;
+    g.beginPath(); g.moveTo(1, -50); g.bezierCurveTo(15, -50, 21, -36, 20, -20); g.bezierCurveTo(19, -6, 15, 5, 13, 11); g.lineTo(-5, 11);
+    g.bezierCurveTo(-10, 3, -18, -7, -18, -22); g.bezierCurveTo(-18, -39, -12, -50, 1, -50); g.closePath(); g.fill();
+    g.beginPath(); g.roundRect(-11, 20, 26, 30, [5, 5, 13, 13]); g.fill();
+    g.globalCompositeOperation = 'destination-out'; g.lineWidth = 2.6;
+    for (let y = -42; y < 8; y += 7) { g.beginPath(); g.moveTo(-22, y + 2); g.lineTo(-6, y - 1); g.lineTo(8, y + 2); g.lineTo(24, y - 1); g.stroke(); }
+    for (let y = 26; y < 48; y += 7) { g.beginPath(); g.moveTo(-14, y); g.lineTo(18, y); g.stroke(); }
+    g.globalCompositeOperation = 'source-over';
   }, 3);
   /** a trail of footprints along points, revealed up to k (0..1); each print glows. `sz` is a scale, or a function of y */
   function trail(c, pts, k, sz = 1, lt = 0) {
@@ -159,7 +167,7 @@ window.OT = (() => {
       const s = typeof sz === 'function' ? sz(y) : sz;
       const ox = Math.cos(a) * 14 * side * s, oy = Math.sin(a) * 14 * side * s;
       glow(c, x + ox, y + oy, 40 * s, 'rgba(63,240,230,', 0.35);
-      put(c, foot(), x + ox, y + oy, { sc: s * 0.8, rot: a, lift: 0.2 });
+      put(c, foot(side > 0 ? 'R' : 'L'), x + ox, y + oy, { sc: s * 0.8, rot: a, lift: 0.2 });
     }
   }
   /** points along a path from a to b, `n` steps, with an optional arc up (steps are climbed as the y drops) */
