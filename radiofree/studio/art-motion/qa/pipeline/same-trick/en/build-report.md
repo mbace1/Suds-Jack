@@ -3,7 +3,7 @@
 **PASSED**: 85 pass, 19 warn, 0 fail (preview build: unread languages warn)
 
 - length 32.13 s · holds none
-- delivered -14.1 LUFS, -2.8 dBTP, LRA 2.7
+- delivered -14.1 LUFS, -2.8 dBTP, LRA 2.9
 
 | stage | check | result | why |
 |---|---|---|---|
@@ -48,31 +48,31 @@
 | text | reading time en:question | pass | on screen 5.58 s, needs 4.80 s (76 chars at 20/s + 1 s) |
 | text | last word en:question | pass | last word up 3.59 s (at least 0.8) |
 | text | key detail en:question | pass | covers nothing the shot needs |
-| text | scrim en:question | pass | picture behind: edge 5.69 → scrim 0.0 |
+| text | scrim en:question | pass | picture behind: edge 5.48 → scrim 0.0 |
 | text | width en:berlin | pass | widest line 692 px (limit 800) |
 | text | safe zone en:berlin | pass | box {'x': 183, 'y': 191, 'w': 714, 'h': 247} |
 | text | reading time en:berlin | pass | on screen 5.48 s, needs 4.95 s (79 chars at 20/s + 1 s) |
 | text | last word en:berlin | pass | last word up 3.40 s (at least 0.8) |
 | text | key detail en:berlin | pass | covers nothing the shot needs |
-| text | scrim en:berlin | pass | picture behind: edge 5.28 → scrim 0.0 |
+| text | scrim en:berlin | pass | picture behind: edge 5.15 → scrim 0.0 |
 | text | width en:california | pass | widest line 705 px (limit 800) |
 | text | safe zone en:california | pass | box {'x': 176, 'y': 191, 'w': 727, 'h': 247} |
 | text | reading time en:california | pass | on screen 5.48 s, needs 5.35 s (87 chars at 20/s + 1 s) |
 | text | last word en:california | pass | last word up 3.20 s (at least 0.8) |
 | text | key detail en:california | pass | covers nothing the shot needs |
-| text | scrim en:california | pass | picture behind: edge 5.37 → scrim 0.0 |
+| text | scrim en:california | pass | picture behind: edge 5.2 → scrim 0.0 |
 | text | width en:judge | pass | widest line 785 px (limit 800) |
 | text | safe zone en:judge | pass | box {'x': 137, 'y': 191, 'w': 807, 'h': 247} |
 | text | reading time en:judge | pass | on screen 5.48 s, needs 4.55 s (71 chars at 20/s + 1 s) |
 | text | last word en:judge | pass | last word up 3.52 s (at least 0.8) |
 | text | key detail en:judge | pass | covers nothing the shot needs |
-| text | scrim en:judge | pass | picture behind: edge 6.68 → scrim 0.04 |
+| text | scrim en:judge | pass | picture behind: edge 6.46 → scrim 0.02 |
 | text | width en:last | pass | widest line 694 px (limit 800) |
 | text | safe zone en:last | pass | box {'x': 182, 'y': 191, 'w': 716, 'h': 247} |
 | text | reading time en:last | pass | on screen 5.73 s, needs 5.30 s (86 chars at 20/s + 1 s) |
 | text | last word en:last | pass | last word up 3.45 s (at least 0.8) |
 | text | key detail en:last | pass | covers nothing the shot needs |
-| text | scrim en:last | pass | picture behind: edge 5.28 → scrim 0.0 |
+| text | scrim en:last | pass | picture behind: edge 5.1 → scrim 0.0 |
 | text | native read en | pass | read by a native speaker |
 | text | native read fi | warn | NOT yet read by a native speaker |
 | text | native read ja | warn | NOT yet read by a native speaker |
@@ -102,7 +102,7 @@
 | text | sidecar ja:last | warn | 5.73 s on this master, ja needs 7.17 s |
 | text | sidecar lines ja:last | warn | EU法は8月から：AIの偽物には表示が / 必要。風刺には笑いを壊さない表示を。 |
 | sound | loudness | pass | -14.1 LUFS integrated (target -14.0) |
-| sound | true peak | pass | -2.8 dBTP (at most -1.0) |
+| sound | true peak | pass | -3.0 dBTP (at most -1.0) |
 | sound | silence | pass | no unmarked gap over 1.5 s |
 | sound | continuity | pass | 0% of the film below −35 dBFS outside the quiet spans (at most 8%) |
 | sound | coverage | pass | 25/25 cues have a sound within 40 ms |
@@ -110,4 +110,4 @@
 | delivery | delivered true peak | pass | -2.8 dBTP in the MP4 |
 | delivery | length | pass | 32.13 s, the picture says 32.14 s |
 | delivery | with sign-off: loudness | pass | -14.1 LUFS (same-trick.en+signoff.mp4) |
-| delivery | with sign-off: true peak | pass | -3.4 dBTP |
+| delivery | with sign-off: true peak | pass | -3.8 dBTP |

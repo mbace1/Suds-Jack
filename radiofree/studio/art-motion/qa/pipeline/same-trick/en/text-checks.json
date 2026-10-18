@@ -207,7 +207,7 @@
  {
   "check": "scrim en:question",
   "result": "pass",
-  "why": "picture behind: edge 5.69 → scrim 0.0"
+  "why": "picture behind: edge 5.48 → scrim 0.0"
  },
  {
   "check": "width en:berlin",
@@ -237,7 +237,7 @@
  {
   "check": "scrim en:berlin",
   "result": "pass",
-  "why": "picture behind: edge 5.28 → scrim 0.0"
+  "why": "picture behind: edge 5.15 → scrim 0.0"
  },
  {
   "check": "width en:california",
@@ -267,7 +267,7 @@
  {
   "check": "scrim en:california",
   "result": "pass",
-  "why": "picture behind: edge 5.37 → scrim 0.0"
+  "why": "picture behind: edge 5.2 → scrim 0.0"
  },
  {
   "check": "width en:judge",
@@ -297,7 +297,7 @@
  {
   "check": "scrim en:judge",
   "result": "pass",
-  "why": "picture behind: edge 6.68 → scrim 0.04"
+  "why": "picture behind: edge 6.46 → scrim 0.02"
  },
  {
   "check": "width en:last",
@@ -327,7 +327,7 @@
  {
   "check": "scrim en:last",
   "result": "pass",
-  "why": "picture behind: edge 5.28 → scrim 0.0"
+  "why": "picture behind: edge 5.1 → scrim 0.0"
  },
  {
   "check": "native read en",

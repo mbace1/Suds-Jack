@@ -27,7 +27,7 @@
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 5.69,
+    "edge": 5.48,
     "busy": 0
    },
    "native": true
@@ -56,7 +56,7 @@
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 5.28,
+    "edge": 5.15,
     "busy": 0
    },
    "native": true
@@ -85,7 +85,7 @@
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 5.37,
+    "edge": 5.2,
     "busy": 0
    },
    "native": true
@@ -114,8 +114,8 @@
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 6.68,
-    "busy": 0.05
+    "edge": 6.46,
+    "busy": 0.03
    },
    "native": true
   },
@@ -143,7 +143,7 @@
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 5.28,
+    "edge": 5.1,
     "busy": 0
    },
    "native": true

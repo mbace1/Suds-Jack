@@ -1,14 +1,16 @@
 {
- "wav": "/tmp/claude-0/-home-user-Suds-Jack/83745c96-d2f6-5fb2-9ae6-f4818d9d4e36/scratchpad/build-tv/en/score.wav",
+ "wav": "/tmp/claude-0/-home-user-Suds-Jack/83745c96-d2f6-5fb2-9ae6-f4818d9d4e36/scratchpad/build-tv3/en/score.wav",
  "measured": {
   "I": -14.1,
-  "LRA": 2.7,
-  "TP": -2.8
+  "LRA": 2.9,
+  "TP": -3.0
  },
  "limiter": [
-  "None:11.8",
-  "-2:11.8",
-  "-3:11.2"
+  "None:13.3",
+  "-2:13.3",
+  "-3:12.6",
+  "-4:11.8",
+  "-5:11.2"
  ],
  "ducks": [
   {
@@ -62,7 +64,7 @@
   {
    "check": "true peak",
    "result": "pass",
-   "why": "-2.8 dBTP (at most -1.0)"
+   "why": "-3.0 dBTP (at most -1.0)"
   },
   {
    "check": "silence",
@@ -80,5 +82,5 @@
    "why": "25/25 cues have a sound within 40 ms"
   }
  ],
- "placed": 442
+ "placed": 465
 }
