@@ -5,63 +5,69 @@
  "fps": 30,
  "T": {
   "s1": 0,
-  "s2": 6.428571428571429,
-  "s3": 12.857142857142858,
-  "s4": 19.285714285714285,
-  "s5": 25.714285714285715,
-  "end": 32.142857142857146
+  "s2": 6.964271428571429,
+  "s3": 13.392842857142858,
+  "s4": 19.821414285714283,
+  "s5": 26.249985714285714,
+  "end": 32.678557142857144
  },
- "end": 32.142857142857146,
- "holds": [],
+ "end": 32.678557142857144,
+ "holds": [
+  {
+   "caption": "question",
+   "beat": "s2",
+   "extra": 0.5357
+  }
+ ],
  "shots": [
   {
    "id": "sb_bill",
    "t0": 0,
+   "dur": 6.964271428571429
+  },
+  {
+   "id": "sb_king",
+   "t0": 6.964271428571429,
    "dur": 6.428571428571429
   },
   {
-   "id": "sb_bench",
-   "t0": 6.428571428571429,
-   "dur": 6.428571428571429
-  },
-  {
-   "id": "sb_before",
-   "t0": 12.857142857142858,
-   "dur": 6.428571428571427
+   "id": "sb_ad",
+   "t0": 13.392842857142858,
+   "dur": 6.428571428571425
   },
   {
    "id": "sb_fakes",
-   "t0": 19.285714285714285,
+   "t0": 19.821414285714283,
    "dur": 6.428571428571431
   },
   {
    "id": "sb_decider",
-   "t0": 25.714285714285715,
+   "t0": 26.249985714285714,
    "dur": 6.428571428571431
   }
  ],
  "cues": {
-  "sb_bill.phone": 0.3,
-  "sb_bill.stamp": 1.6,
-  "sb_bill.mask": 2.8264,
-  "sb_bench.lights": 6.8286,
-  "sb_bench.gavel": 7.7713,
-  "sb_before.pear": 13.3571,
-  "sb_before.guilty": 14.8135,
-  "sb_before.ad": 15.2153,
-  "sb_before.protected": 15.6471,
-  "sb_fakes.phone": 19.6857,
-  "sb_fakes.no": 20.833,
-  "sb_fakes.yes": 21.5984,
-  "sb_decider.row": 26.3143,
-  "sb_decider.decider": 27.6997
+  "sb_bill.phone": 0.15,
+  "sb_bill.stamp": 0.75,
+  "sb_bill.exempt": 1.4473,
+  "sb_bill.lights": 1.8491,
+  "sb_bill.wins": 3.1373,
+  "sb_king.pear": 7.3643,
+  "sb_king.verdict": 8.7388,
+  "sb_ad.ad": 13.7928,
+  "sb_ad.verdict": 15.751,
+  "sb_fakes.phone": 20.2214,
+  "sb_fakes.no": 21.5278,
+  "sb_fakes.yes": 22.1341,
+  "sb_decider.row": 26.85,
+  "sb_decider.decider": 27.8791
  },
  "captions": [
   {
    "id": "question",
    "lang": "en",
    "size": "house",
-   "text": "Denmark's bill bans AI copies / of your face, unless it's satire. / Who decides what's [satire]?",
+   "text": "Denmark's deepfake bill / exempts satire. / When the powerful go to court / over a joke, who [wins]?",
    "lines": [
     [
      {
@@ -69,41 +75,17 @@
       "pop": false
      },
      {
+      "w": "deepfake",
+      "pop": false
+     },
+     {
       "w": "bill",
-      "pop": false
-     },
-     {
-      "w": "bans",
-      "pop": false
-     },
-     {
-      "w": "AI",
-      "pop": false
-     },
-     {
-      "w": "copies",
       "pop": false
      }
     ],
     [
      {
-      "w": "of",
-      "pop": false
-     },
-     {
-      "w": "your",
-      "pop": false
-     },
-     {
-      "w": "face,",
-      "pop": false
-     },
-     {
-      "w": "unless",
-      "pop": false
-     },
-     {
-      "w": "it's",
+      "w": "exempts",
       "pop": false
      },
      {
@@ -113,19 +95,49 @@
     ],
     [
      {
-      "w": "Who",
+      "w": "When",
       "pop": false
      },
      {
-      "w": "decides",
+      "w": "the",
       "pop": false
      },
      {
-      "w": "what's",
+      "w": "powerful",
       "pop": false
      },
      {
-      "w": "satire?",
+      "w": "go",
+      "pop": false
+     },
+     {
+      "w": "to",
+      "pop": false
+     },
+     {
+      "w": "court",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "over",
+      "pop": false
+     },
+     {
+      "w": "a",
+      "pop": false
+     },
+     {
+      "w": "joke,",
+      "pop": false
+     },
+     {
+      "w": "who",
+      "pop": false
+     },
+     {
+      "w": "wins?",
       "pop": true
      }
     ]
@@ -138,244 +150,248 @@
      "t": 0.5
     },
     {
-     "w": "bill",
+     "w": "deepfake",
      "pop": false,
      "line": 0,
      "t": 0.7272727272727273
     },
     {
-     "w": "bans",
+     "w": "bill",
      "pop": false,
      "line": 0,
-     "t": 0.8409090909090909
+     "t": 0.9318181818181819
     },
     {
-     "w": "AI",
-     "pop": false,
-     "line": 0,
-     "t": 0.9545454545454546
-    },
-    {
-     "w": "copies",
-     "pop": false,
-     "line": 0,
-     "t": 1.0227272727272727
-    },
-    {
-     "w": "of",
+     "w": "exempts",
      "pop": false,
      "line": 1,
-     "t": 1.4018181818181819
-    },
-    {
-     "w": "your",
-     "pop": false,
-     "line": 1,
-     "t": 1.47
-    },
-    {
-     "w": "face,",
-     "pop": false,
-     "line": 1,
-     "t": 1.5836363636363635
-    },
-    {
-     "w": "unless",
-     "pop": false,
-     "line": 1,
-     "t": 1.7199999999999998
-    },
-    {
-     "w": "it's",
-     "pop": false,
-     "line": 1,
-     "t": 1.879090909090909
+     "t": 1.2654545454545454
     },
     {
      "w": "satire.",
      "pop": false,
      "line": 1,
-     "t": 1.9927272727272725
+     "t": 1.4472727272727273
     },
     {
-     "w": "Who",
+     "w": "When",
      "pop": false,
      "line": 2,
-     "t": 2.3945454545454545
-    },
-    {
-     "w": "decides",
-     "pop": false,
-     "line": 2,
-     "t": 2.4854545454545454
-    },
-    {
-     "w": "what's",
-     "pop": false,
-     "line": 2,
-     "t": 2.667272727272727
-    },
-    {
-     "w": "satire?",
-     "pop": true,
-     "line": 2,
-     "t": 2.826363636363636
-    }
-   ],
-   "t0": 0.5,
-   "t1": 6.078571428571429,
-   "read": 5.5,
-   "place": "top",
-   "native": true
-  },
-  {
-   "id": "courts",
-   "lang": "en",
-   "size": "house",
-   "text": "The bill's answer: / the [courts], case by case.",
-   "lines": [
-    [
-     {
-      "w": "The",
-      "pop": false
-     },
-     {
-      "w": "bill's",
-      "pop": false
-     },
-     {
-      "w": "answer:",
-      "pop": false
-     }
-    ],
-    [
-     {
-      "w": "the",
-      "pop": false
-     },
-     {
-      "w": "courts,",
-      "pop": true
-     },
-     {
-      "w": "case",
-      "pop": false
-     },
-     {
-      "w": "by",
-      "pop": false
-     },
-     {
-      "w": "case.",
-      "pop": false
-     }
-    ]
-   ],
-   "words": [
-    {
-     "w": "The",
-     "pop": false,
-     "line": 0,
-     "t": 7.0285714285714285
-    },
-    {
-     "w": "bill's",
-     "pop": false,
-     "line": 0,
-     "t": 7.119480519480519
-    },
-    {
-     "w": "answer:",
-     "pop": false,
-     "line": 0,
-     "t": 7.2785714285714285
+     "t": 1.8490909090909091
     },
     {
      "w": "the",
      "pop": false,
-     "line": 1,
-     "t": 7.68038961038961
+     "line": 2,
+     "t": 1.9627272727272727
     },
     {
-     "w": "courts,",
+     "w": "powerful",
+     "pop": false,
+     "line": 2,
+     "t": 2.0536363636363637
+    },
+    {
+     "w": "go",
+     "pop": false,
+     "line": 2,
+     "t": 2.2581818181818183
+    },
+    {
+     "w": "to",
+     "pop": false,
+     "line": 2,
+     "t": 2.3263636363636366
+    },
+    {
+     "w": "court",
+     "pop": false,
+     "line": 2,
+     "t": 2.394545454545455
+    },
+    {
+     "w": "over",
+     "pop": false,
+     "line": 3,
+     "t": 2.7509090909090914
+    },
+    {
+     "w": "a",
+     "pop": false,
+     "line": 3,
+     "t": 2.864545454545455
+    },
+    {
+     "w": "joke,",
+     "pop": false,
+     "line": 3,
+     "t": 2.9100000000000006
+    },
+    {
+     "w": "who",
+     "pop": false,
+     "line": 3,
+     "t": 3.046363636363637
+    },
+    {
+     "w": "wins?",
      "pop": true,
-     "line": 1,
-     "t": 7.771298701298701
-    },
-    {
-     "w": "case",
-     "pop": false,
-     "line": 1,
-     "t": 7.953116883116882
-    },
-    {
-     "w": "by",
-     "pop": false,
-     "line": 1,
-     "t": 8.066753246753246
-    },
-    {
-     "w": "case.",
-     "pop": false,
-     "line": 1,
-     "t": 8.134935064935064
+     "line": 3,
+     "t": 3.1372727272727277
     }
    ],
-   "t0": 7.0285714285714285,
-   "t1": 12.507142857142858,
-   "read": 3.2,
+   "t0": 0.5,
+   "t1": 6.6142714285714295,
+   "read": 5.6,
    "place": "top",
    "native": true
   },
   {
-   "id": "before",
+   "id": "king",
    "lang": "en",
    "size": "house",
-   "text": "Courts have ruled before. / 1831, mocking the king: guilty. / 1988, a parody ad: [protected].",
+   "text": "1831, Paris: a king. / The court sided with [the king].",
    "lines": [
-    [
-     {
-      "w": "Courts",
-      "pop": false
-     },
-     {
-      "w": "have",
-      "pop": false
-     },
-     {
-      "w": "ruled",
-      "pop": false
-     },
-     {
-      "w": "before.",
-      "pop": false
-     }
-    ],
     [
      {
       "w": "1831,",
       "pop": false
      },
      {
-      "w": "mocking",
+      "w": "Paris:",
       "pop": false
      },
      {
-      "w": "the",
+      "w": "a",
       "pop": false
      },
      {
-      "w": "king:",
-      "pop": false
-     },
-     {
-      "w": "guilty.",
+      "w": "king.",
       "pop": false
      }
     ],
     [
      {
-      "w": "1988,",
+      "w": "The",
+      "pop": false
+     },
+     {
+      "w": "court",
+      "pop": false
+     },
+     {
+      "w": "sided",
+      "pop": false
+     },
+     {
+      "w": "with",
+      "pop": false
+     },
+     {
+      "w": "the",
+      "pop": true
+     },
+     {
+      "w": "king.",
+      "pop": true
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "1831,",
+     "pop": false,
+     "line": 0,
+     "t": 7.564271428571429
+    },
+    {
+     "w": "Paris:",
+     "pop": false,
+     "line": 0,
+     "t": 7.700635064935065
+    },
+    {
+     "w": "a",
+     "pop": false,
+     "line": 0,
+     "t": 7.859725974025975
+    },
+    {
+     "w": "king.",
+     "pop": false,
+     "line": 0,
+     "t": 7.9051805194805205
+    },
+    {
+     "w": "The",
+     "pop": false,
+     "line": 1,
+     "t": 8.261544155844158
+    },
+    {
+     "w": "court",
+     "pop": false,
+     "line": 1,
+     "t": 8.35245324675325
+    },
+    {
+     "w": "sided",
+     "pop": false,
+     "line": 1,
+     "t": 8.488816883116886
+    },
+    {
+     "w": "with",
+     "pop": false,
+     "line": 1,
+     "t": 8.625180519480523
+    },
+    {
+     "w": "the",
+     "pop": true,
+     "line": 1,
+     "t": 8.738816883116886
+    },
+    {
+     "w": "king.",
+     "pop": true,
+     "line": 1,
+     "t": 8.829725974025978
+    }
+   ],
+   "t0": 7.564271428571429,
+   "t1": 13.042842857142858,
+   "read": 3.55,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "preacher",
+   "lang": "en",
+   "size": "house",
+   "text": "1988: a TV preacher / and a parody ad. / The court sided with [satire].",
+   "lines": [
+    [
+     {
+      "w": "1988:",
+      "pop": false
+     },
+     {
+      "w": "a",
+      "pop": false
+     },
+     {
+      "w": "TV",
+      "pop": false
+     },
+     {
+      "w": "preacher",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "and",
       "pop": false
      },
      {
@@ -387,104 +403,116 @@
       "pop": false
      },
      {
-      "w": "ad:",
+      "w": "ad.",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "The",
       "pop": false
      },
      {
-      "w": "protected.",
+      "w": "court",
+      "pop": false
+     },
+     {
+      "w": "sided",
+      "pop": false
+     },
+     {
+      "w": "with",
+      "pop": false
+     },
+     {
+      "w": "satire.",
       "pop": true
      }
     ]
    ],
    "words": [
     {
-     "w": "Courts",
+     "w": "1988:",
      "pop": false,
      "line": 0,
-     "t": 13.457142857142857
-    },
-    {
-     "w": "have",
-     "pop": false,
-     "line": 0,
-     "t": 13.616233766233766
-    },
-    {
-     "w": "ruled",
-     "pop": false,
-     "line": 0,
-     "t": 13.729870129870129
-    },
-    {
-     "w": "before.",
-     "pop": false,
-     "line": 0,
-     "t": 13.866233766233766
-    },
-    {
-     "w": "1831,",
-     "pop": false,
-     "line": 1,
-     "t": 14.268051948051948
-    },
-    {
-     "w": "mocking",
-     "pop": false,
-     "line": 1,
-     "t": 14.404415584415585
-    },
-    {
-     "w": "the",
-     "pop": false,
-     "line": 1,
-     "t": 14.586233766233766
-    },
-    {
-     "w": "king:",
-     "pop": false,
-     "line": 1,
-     "t": 14.677142857142858
-    },
-    {
-     "w": "guilty.",
-     "pop": false,
-     "line": 1,
-     "t": 14.813506493506495
-    },
-    {
-     "w": "1988,",
-     "pop": false,
-     "line": 2,
-     "t": 15.215324675324677
+     "t": 13.992842857142858
     },
     {
      "w": "a",
      "pop": false,
-     "line": 2,
-     "t": 15.351688311688314
+     "line": 0,
+     "t": 14.129206493506494
+    },
+    {
+     "w": "TV",
+     "pop": false,
+     "line": 0,
+     "t": 14.17466103896104
+    },
+    {
+     "w": "preacher",
+     "pop": false,
+     "line": 0,
+     "t": 14.242842857142858
+    },
+    {
+     "w": "and",
+     "pop": false,
+     "line": 1,
+     "t": 14.667388311688313
+    },
+    {
+     "w": "a",
+     "pop": false,
+     "line": 1,
+     "t": 14.758297402597405
     },
     {
      "w": "parody",
      "pop": false,
-     "line": 2,
-     "t": 15.397142857142859
+     "line": 1,
+     "t": 14.80375194805195
     },
     {
-     "w": "ad:",
+     "w": "ad.",
+     "pop": false,
+     "line": 1,
+     "t": 14.962842857142858
+    },
+    {
+     "w": "The",
      "pop": false,
      "line": 2,
-     "t": 15.556233766233767
+     "t": 15.27375194805195
     },
     {
-     "w": "protected.",
+     "w": "court",
+     "pop": false,
+     "line": 2,
+     "t": 15.364661038961042
+    },
+    {
+     "w": "sided",
+     "pop": false,
+     "line": 2,
+     "t": 15.501024675324679
+    },
+    {
+     "w": "with",
+     "pop": false,
+     "line": 2,
+     "t": 15.637388311688316
+    },
+    {
+     "w": "satire.",
      "pop": true,
      "line": 2,
-     "t": 15.647142857142859
+     "t": 15.751024675324679
     }
    ],
-   "t0": 13.457142857142857,
-   "t1": 18.935714285714283,
-   "read": 5.35,
+   "t0": 13.992842857142858,
+   "t1": 19.471414285714282,
+   "read": 4.25,
    "place": "top",
    "native": true
   },
@@ -492,7 +520,7 @@
    "id": "fakes",
    "lang": "en",
    "size": "house",
-   "text": "2024, AI fakes. / A Berlin court: no. / A California court: [yes].",
+   "text": "2024, AI fakes. / Berlin: the government won. / California: [satire] won.",
    "lines": [
     [
      {
@@ -510,38 +538,34 @@
     ],
     [
      {
-      "w": "A",
+      "w": "Berlin:",
       "pop": false
      },
      {
-      "w": "Berlin",
+      "w": "the",
       "pop": false
      },
      {
-      "w": "court:",
+      "w": "government",
       "pop": false
      },
      {
-      "w": "no.",
+      "w": "won.",
       "pop": false
      }
     ],
     [
      {
-      "w": "A",
+      "w": "California:",
       "pop": false
      },
      {
-      "w": "California",
-      "pop": false
-     },
-     {
-      "w": "court:",
-      "pop": false
-     },
-     {
-      "w": "yes.",
+      "w": "satire",
       "pop": true
+     },
+     {
+      "w": "won.",
+      "pop": false
      }
     ]
    ],
@@ -550,72 +574,66 @@
      "w": "2024,",
      "pop": false,
      "line": 0,
-     "t": 19.885714285714286
+     "t": 20.421414285714285
     },
     {
      "w": "AI",
      "pop": false,
      "line": 0,
-     "t": 20.022077922077923
+     "t": 20.55777792207792
     },
     {
      "w": "fakes.",
      "pop": false,
      "line": 0,
-     "t": 20.09025974025974
+     "t": 20.625959740259738
     },
     {
-     "w": "A",
+     "w": "Berlin:",
      "pop": false,
      "line": 1,
-     "t": 20.46935064935065
+     "t": 21.005050649350647
     },
     {
-     "w": "Berlin",
+     "w": "the",
      "pop": false,
      "line": 1,
-     "t": 20.514805194805195
+     "t": 21.18686883116883
     },
     {
-     "w": "court:",
+     "w": "government",
      "pop": false,
      "line": 1,
-     "t": 20.673896103896105
+     "t": 21.27777792207792
     },
     {
-     "w": "no.",
+     "w": "won.",
      "pop": false,
      "line": 1,
-     "t": 20.832987012987015
+     "t": 21.52777792207792
     },
     {
-     "w": "A",
+     "w": "California:",
      "pop": false,
      "line": 2,
-     "t": 21.143896103896104
+     "t": 21.861414285714282
     },
     {
-     "w": "California",
-     "pop": false,
-     "line": 2,
-     "t": 21.18935064935065
-    },
-    {
-     "w": "court:",
-     "pop": false,
-     "line": 2,
-     "t": 21.43935064935065
-    },
-    {
-     "w": "yes.",
+     "w": "satire",
      "pop": true,
      "line": 2,
-     "t": 21.59844155844156
+     "t": 22.134141558441556
+    },
+    {
+     "w": "won.",
+     "pop": false,
+     "line": 2,
+     "t": 22.293232467532466
     }
    ],
-   "t0": 19.885714285714286,
-   "t1": 25.364285714285714,
-   "read": 4,
+   "t0": 20.421414285714285,
+   "t1": 25.899985714285712,
+   "read": 4.35,
    "place": "top",
    "native": true
   },
@@ -623,7 +641,7 @@
    "id": "last",
    "lang": "en",
    "size": "house",
-   "text": "Two all since 1831. / Denmark's courts / take the [decider].",
+   "text": "Two all since 1831. / Denmark is the next [match].",
    "lines": [
     [
      {
@@ -645,17 +663,11 @@
     ],
     [
      {
-      "w": "Denmark's",
+      "w": "Denmark",
       "pop": false
      },
      {
-      "w": "courts",
-      "pop": false
-     }
-    ],
-    [
-     {
-      "w": "take",
+      "w": "is",
       "pop": false
      },
      {
@@ -663,7 +675,11 @@
       "pop": false
      },
      {
-      "w": "decider.",
+      "w": "next",
+      "pop": false
+     },
+     {
+      "w": "match.",
       "pop": true
      }
     ]
@@ -673,73 +689,76 @@
      "w": "Two",
      "pop": false,
      "line": 0,
-     "t": 26.214285714285715
+     "t": 26.749985714285714
     },
     {
      "w": "all",
      "pop": false,
      "line": 0,
-     "t": 26.305194805194805
+     "t": 26.840894805194804
     },
     {
      "w": "since",
      "pop": false,
      "line": 0,
-     "t": 26.396103896103895
+     "t": 26.931803896103894
     },
     {
      "w": "1831.",
      "pop": false,
      "line": 0,
-     "t": 26.532467532467532
+     "t": 27.06816753246753
     },
     {
-     "w": "Denmark's",
+     "w": "Denmark",
      "pop": false,
      "line": 1,
-     "t": 26.888831168831167
+     "t": 27.424531168831166
     },
     {
-     "w": "courts",
+     "w": "is",
      "pop": false,
      "line": 1,
-     "t": 27.116103896103894
-    },
-    {
-     "w": "take",
-     "pop": false,
-     "line": 2,
-     "t": 27.495194805194803
+     "t": 27.60634935064935
     },
     {
      "w": "the",
      "pop": false,
-     "line": 2,
-     "t": 27.608831168831166
+     "line": 1,
+     "t": 27.674531168831166
     },
     {
-     "w": "decider.",
+     "w": "next",
+     "pop": false,
+     "line": 1,
+     "t": 27.765440259740256
+    },
+    {
+     "w": "match.",
      "pop": true,
-     "line": 2,
-     "t": 27.699740259740256
+     "line": 1,
+     "t": 27.87907662337662
     }
    ],
-   "t0": 26.214285714285715,
-   "t1": 31.942857142857147,
-   "read": 3.7,
+   "t0": 26.749985714285714,
+   "t1": 32.47855714285714,
+   "read": 3.3,
    "place": "top",
    "native": true
   }
  ],
  "ui": {
-  "tagBill": "BILL L 49 · FOLKETINGET · 8.10.2026",
-  "board": "COURTS · SATIRE",
+  "tagBill": "DENMARK · BILL L 49 · 8.10.2026",
+  "board": "SATIRE · THE POWERFUL",
   "boardSmall": "CASES IN THIS FILM",
   "tagParis": "PARIS · 14.11.1831",
   "tagWashington": "US SUPREME COURT · 1988",
   "tagBerlin": "LANDGERICHT BERLIN · 2024",
   "tagCalifornia": "US DISTRICT COURT, CALIFORNIA · 2024",
-  "denmark": "DENMARK"
+  "denmark": "DENMARK",
+  "next": "NEXT MATCH",
+  "exempt": "SATIRE: EXEMPT",
+  "tagNext": "BILL L 49 · COURTS WILL DECIDE"
  },
  "keep": [],
  "quiet": []
