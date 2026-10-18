@@ -1532,8 +1532,8 @@ s.listen(0, '127.0.0.1', async () => {
       out.jack = { hits, jacked: t2.jacked, yaw: +t2.jackYaw.toFixed(2), spd: +t2.spd.toFixed(1), game: +(t2.age - age0).toFixed(2), kept: cv.trucks.includes(t2) };
       // v58 (HD-018, Mikael: *you don't shoot trucks*): the look held on a cab
       // in range never locks it, and the cab takes nothing. Until v58 the
-      // season's own `gaze.trucks` made the cabs targets, and this same look
-      // locked inside the 0.25 s dwell and had missiles in the cab by 2 s.
+      // season's own `gaze.trucks` made the cabs targets: run on v57, this
+      // same look held the cab locked in 39 of its 40 frames.
       // (the body is kept twelve units behind the cab each frame: a standing
       // body would be left behind by a truck doing twenty inside a second)
       const cands = cv.trucks.filter(x => x.proxy.alive && x.z < pl.feet.z - 3).sort((a, b) => b.z - a.z);

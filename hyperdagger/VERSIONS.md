@@ -32,7 +32,10 @@ the kill line now.
 Gate: the look held on a cab for 2 s of game time never locks it and the cab
 takes nothing; standing in a loose crate and two spills leave the clock at the
 run time; the label reads TIME SURVIVED and the recap names no crates; the
-goal card says the TRUCK mode's line. Each of these fails on v57. Four feature
+goal card says the TRUCK mode's line. Each of these fails on v57, run as a
+control: the look held the cab locked in 39 of 40 frames, and at 194 s the
+clock read 154.1, because the load had taken 40 s off, mostly for the 42 crates
+the pile-up spilled. Four feature
 pins that asked a hit to leave `runBonus` at 0 are gone: with no bonus they
 could no longer fail.
 
