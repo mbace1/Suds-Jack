@@ -1,41 +1,41 @@
 {
- "wav": "/tmp/claude-0/-home-user-Suds-Jack/83745c96-d2f6-5fb2-9ae6-f4818d9d4e36/scratchpad/wh3/en/en/score.wav",
+ "wav": "/tmp/claude-0/-home-user-Suds-Jack/83745c96-d2f6-5fb2-9ae6-f4818d9d4e36/scratchpad/build-wh4/en/score.wav",
  "measured": {
   "I": -14.0,
-  "LRA": 2.3,
-  "TP": -5.0
+  "LRA": 2.2,
+  "TP": -4.9
  },
  "limiter": [
-  "None:9.0"
+  "None:9.1"
  ],
  "ducks": [
   {
-   "t0": 2.6,
-   "t1": 4.8950000000000005,
+   "t0": 1.5,
+   "t1": 3.795,
    "db": -3.5,
    "attack": 0.06,
    "release": 0.3,
    "why": "caption question reveal"
   },
   {
-   "t0": 8.636,
-   "t1": 11.718,
+   "t0": 8.1,
+   "t1": 11.183,
    "db": -3.5,
    "attack": 0.06,
    "release": 0.3,
    "why": "caption lock reveal"
   },
   {
-   "t0": 15.6,
-   "t1": 18.977999999999998,
+   "t0": 15.064,
+   "t1": 18.442,
    "db": -3.5,
    "attack": 0.06,
    "release": 0.3,
    "why": "caption ad reveal"
   },
   {
-   "t0": 23,
-   "t1": 24.642999999999997,
+   "t0": 22.464,
+   "t1": 24.107,
    "db": -3.5,
    "attack": 0.06,
    "release": 0.3,
@@ -52,7 +52,7 @@
   {
    "check": "true peak",
    "result": "pass",
-   "why": "-5.0 dBTP (at most -1.0)"
+   "why": "-4.9 dBTP (at most -1.0)"
   },
   {
    "check": "silence",
@@ -67,8 +67,8 @@
   {
    "check": "coverage",
    "result": "pass",
-   "why": "13/13 cues have a sound within 40 ms"
+   "why": "17/17 cues have a sound within 40 ms"
   }
  ],
- "placed": 284
+ "placed": 286
 }

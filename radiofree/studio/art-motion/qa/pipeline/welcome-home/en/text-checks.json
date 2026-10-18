@@ -92,7 +92,7 @@
  {
   "check": "copy last source",
   "result": "pass",
-  "why": "The station's line, over the door camera's own view: 3 WATCHING."
+  "why": "The station's line, over the door camera's own view: 4 WATCHING (dad, mum, the b"
  },
  {
   "check": "copy last pop word",
@@ -151,8 +151,8 @@
  },
  {
   "check": "message: question early en",
-  "result": "warn",
-  "why": "the first caption is up at 2.60 s (by 1.5 s)"
+  "result": "pass",
+  "why": "the first caption is up at 1.50 s (by 1.5 s)"
  },
  {
   "check": "width en:question",
@@ -167,12 +167,12 @@
  {
   "check": "reading time en:question",
   "result": "pass",
-  "why": "on screen 5.09 s, needs 4.60 s (72 chars at 20/s + 1 s)"
+  "why": "on screen 5.65 s, needs 4.60 s (72 chars at 20/s + 1 s)"
  },
  {
   "check": "last word en:question",
   "result": "pass",
-  "why": "last word up 3.19 s (at least 0.8)"
+  "why": "last word up 3.76 s (at least 0.8)"
  },
  {
   "check": "key detail en:question",
@@ -182,7 +182,7 @@
  {
   "check": "scrim en:question",
   "result": "pass",
-  "why": "picture behind: edge 3.04 → scrim 0.0"
+  "why": "picture behind: edge 9.16 → scrim 0.17"
  },
  {
   "check": "width en:lock",
@@ -212,7 +212,7 @@
  {
   "check": "scrim en:lock",
   "result": "pass",
-  "why": "picture behind: edge 4.6 → scrim 0.0"
+  "why": "picture behind: edge 5.71 → scrim 0.0"
  },
  {
   "check": "width en:ad",
@@ -242,7 +242,7 @@
  {
   "check": "scrim en:ad",
   "result": "pass",
-  "why": "picture behind: edge 2.18 → scrim 0.0"
+  "why": "picture behind: edge 6.32 → scrim 0.01"
  },
  {
   "check": "width en:last",
@@ -272,17 +272,12 @@
  {
   "check": "scrim en:last",
   "result": "pass",
-  "why": "picture behind: edge 0.61 → scrim 0.0"
+  "why": "picture behind: edge 5.19 → scrim 0.0"
  },
  {
   "check": "ui en:tag",
   "result": "pass",
   "why": "\"A REAL AD, REMADE IN CLAY\" spans x 110–607"
- },
- {
-  "check": "hold en:question",
-  "result": "pass",
-  "why": "the picture holds 0.5357 s before s2 so the line can be read"
  },
  {
   "check": "hold en:lock",
@@ -332,7 +327,7 @@
  {
   "check": "sidecar fi:question",
   "result": "pass",
-  "why": "5.09 s on this master, fi needs 4.71 s"
+  "why": "5.65 s on this master, fi needs 4.71 s"
  },
  {
   "check": "sidecar lines fi:question",
@@ -372,7 +367,7 @@
  {
   "check": "sidecar ja:question",
   "result": "warn",
-  "why": "5.09 s on this master, ja needs 7.17 s"
+  "why": "5.65 s on this master, ja needs 7.17 s"
  },
  {
   "check": "sidecar lines ja:question",

@@ -51,22 +51,28 @@ if FJ['kind'] == 'engine':
         '--query', f'plan=/_out/plan.json&src=/_out/src/&n={n}', env={**os.environ, 'NODE_PATH': npm})
     shutil.rmtree(OUT / 'src')
 else:
-    # measure before drawing: a page film can take an hour and a half to render (Welcome Home did, and then failed on
-    # four lines 40–90 px too wide), while its text report takes seconds. Every language must fit before any frame.
-    for L in copy['langs']:
-        pre = OUT / 'pre' / L
-        run('node', HERE / 'render.mjs', FILM.relative_to(ART) / 'film.html', pre, '--fonts', FONTS, '--lang', L, '--query', 'busy=0', '--report-only', env={**os.environ, 'NODE_PATH': npm})
-        r = json.load(open(pre / 'report.json'))
-        bad = [f"{L}:{c['id']} {max(c['widths'])} px" for c in r['captions'] if max(c['widths']) > 800 or not c['inSafe'] or c['inRail']] + \
-              [f"{L}:ui.{k} to x {u['x1']}" for k, u in r.get('ui', {}).items() if not u['ok']]
-        if bad: sys.exit('pre-flight: these lines do not fit, fix the copy before rendering: ' + '; '.join(bad))
-    # a page film is the slow one (Welcome Home v4: ~12 s a frame, two scenes a frame), so it can render in shards side by side
-    jobs = int(opt('jobs', 1)); n = json.load(open(OUT / 'pre' / LANG / 'report.json'))['frames']
-    cmd = lambda i, j: ['node', str(HERE / 'render.mjs'), str(FILM.relative_to(ART) / 'film.html'), str(OUT), '--fonts', FONTS, '--lang', LANG, '--resume', '--from', str(i), '--to', str(j)]
-    ps = [subprocess.Popen(cmd(n * k // jobs, n * (k + 1) // jobs), cwd=ART, env={**os.environ, 'NODE_PATH': npm}) for k in range(jobs)]
-    if any(p.wait() for p in ps): sys.exit('render failed')
-    missing = [i for i in range(n) if not (OUT / 'frames' / f'f{i:05d}.jpg').exists()]
-    if missing: sys.exit(f'render: {len(missing)} frames missing, first {missing[0]}')
+    # --reuse-picture on a page film: keep the last master's picture stream, re-run only words, sound and the checks
+    PIC = OUT / 'picture.mp4'
+    if '--reuse-picture' in a and (OUT / f'{name}.{LANG}.mp4').exists() and (OUT / 'events.json').exists():
+        run('ffmpeg', '-y', '-loglevel', 'error', '-i', OUT / f'{name}.{LANG}.mp4', '-map', '0:v', '-c', 'copy', PIC)
+    else:
+        if PIC.exists(): PIC.unlink()
+        # measure before drawing: a page film can take an hour and a half to render (Welcome Home did, and then failed on
+        # four lines 40–90 px too wide), while its text report takes seconds. Every language must fit before any frame.
+        for L in copy['langs']:
+            pre = OUT / 'pre' / L
+            run('node', HERE / 'render.mjs', FILM.relative_to(ART) / 'film.html', pre, '--fonts', FONTS, '--lang', L, '--query', 'busy=0', '--report-only', env={**os.environ, 'NODE_PATH': npm})
+            r = json.load(open(pre / 'report.json'))
+            bad = [f"{L}:{c['id']} {max(c['widths'])} px" for c in r['captions'] if max(c['widths']) > 800 or not c['inSafe'] or c['inRail']] + \
+                  [f"{L}:ui.{k} to x {u['x1']}" for k, u in r.get('ui', {}).items() if not u['ok']]
+            if bad: sys.exit('pre-flight: these lines do not fit, fix the copy before rendering: ' + '; '.join(bad))
+        # a page film is the slow one (Welcome Home v4: ~12 s a frame, two scenes a frame), so it can render in shards side by side
+        jobs = int(opt('jobs', 1)); n = json.load(open(OUT / 'pre' / LANG / 'report.json'))['frames']
+        cmd = lambda i, j: ['node', str(HERE / 'render.mjs'), str(FILM.relative_to(ART) / 'film.html'), str(OUT), '--fonts', FONTS, '--lang', LANG, '--resume', '--from', str(i), '--to', str(j)]
+        ps = [subprocess.Popen(cmd(n * k // jobs, n * (k + 1) // jobs), cwd=ART, env={**os.environ, 'NODE_PATH': npm}) for k in range(jobs)]
+        if any(p.wait() for p in ps): sys.exit('render failed')
+        missing = [i for i in range(n) if not (OUT / 'frames' / f'f{i:05d}.jpg').exists()]
+        if missing: sys.exit(f'render: {len(missing)} frames missing, first {missing[0]}')
 rep = json.load(open(OUT / 'report.json')); ev = json.load(open(OUT / 'events.json'))
 
 # 2. text: sidecars in every language, and the checks
@@ -79,8 +85,12 @@ sound = json.load(open(OUT / 'sound-report.json'))
 
 # 4. encode, then measure what was actually delivered (AAC can raise a peak)
 mp4 = OUT / f'{name}.{LANG}.mp4'
-run('ffmpeg', '-y', '-loglevel', 'error', '-framerate', rep['fps'], '-i', OUT / 'frames' / 'f%05d.jpg', '-i', OUT / 'score.wav',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-c:a', 'aac', '-b:a', '256k', '-shortest', mp4)
+if (OUT / 'picture.mp4').exists():                                                       # the picture kept from the last build: mux the new sound onto it
+    run('ffmpeg', '-y', '-loglevel', 'error', '-i', OUT / 'picture.mp4', '-i', OUT / 'score.wav', '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
+        '-movflags', '+faststart', '-c:a', 'aac', '-b:a', '256k', '-shortest', mp4)
+else:
+    run('ffmpeg', '-y', '-loglevel', 'error', '-framerate', rep['fps'], '-i', OUT / 'frames' / 'f%05d.jpg', '-i', OUT / 'score.wav',
+        '-c:v', 'libx264', '-preset', 'slow', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-c:a', 'aac', '-b:a', '256k', '-shortest', mp4)
 M = measure(mp4)
 final = [{'check': 'delivered loudness', 'result': 'pass' if abs(M['I'] - LUFS) <= 0.5 else 'FAIL', 'why': f"{M['I']:.1f} LUFS in the MP4"},
          {'check': 'delivered true peak', 'result': 'pass' if M['TP'] <= TP_MAX else 'FAIL', 'why': f"{M['TP']:.1f} dBTP in the MP4"}]
@@ -120,6 +130,7 @@ lines = [f'# {name} — {LANG} master, built by pipeline', '', f'**{"FAILED" if 
          f'- length {dur:.2f} s · holds {ev.get("holds") or "none"}', f'- delivered {M["I"]:.1f} LUFS, {M["TP"]:.1f} dBTP, LRA {M["LRA"]:.1f}', '', '| stage | check | result | why |', '|---|---|---|---|']
 lines += [f'| {st} | {c["check"]} | {c["result"]} | {c["why"].replace("|", "/")} |' for st, c in allc]
 (OUT / 'build-report.md').write_text('\n'.join(lines) + '\n', encoding='utf-8')
-shutil.rmtree(OUT / 'frames')
+if (OUT / 'frames').exists(): shutil.rmtree(OUT / 'frames')
+if (OUT / 'picture.mp4').exists() and FJ['kind'] != 'engine': (OUT / 'picture.mp4').unlink()
 print(f'{name} {LANG}: {"FAILED" if bad else "PASSED"} — {len(bad)} fail, {len(warn)} warn → {mp4}')
 sys.exit(1 if bad else 0)

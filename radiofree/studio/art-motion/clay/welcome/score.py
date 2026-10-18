@@ -30,7 +30,7 @@ for cp in EV['captions']:
 for i, t in enumerate(CUTS): s.fx(whoosh('short', 'in'), t - WHOOSH['short'] * 0.8, 0.3, 0, at=t, name=f'cut {i + 2}')
 
 # ── 1 · the display boots (Pear AI. For the future.), turns to its pitch, and the camera pulls back into the kitchen
-motif(s, S[0], g=0.3)
+motif(s, S[0] + 0.03, g=0.3)                                   # 30 ms in: a full onset on sample 0 rings the sign-off join's AAC to −0.7 dBTP
 s.fx(chip(True), EV['boot'], 0.45, 0, name='the boot chime'); accent(s, EV['boot'] + 0.02, S[0], 0.18, name='Pear AI')
 s.fx(swish(), EV['flow'], 0.22, 0.1, name='the page turns: Private by design.')
 s.fx(whoosh('mid', 'out'), EV['pull0'], 0.25, 0, name='the camera pulls back')

@@ -1,12 +1,7 @@
 {
  "lang": "en",
- "end": 28.928514285714282,
+ "end": 28.392814285714284,
  "holds": [
-  {
-   "caption": "question",
-   "beat": "s2",
-   "extra": 0.5357
-  },
   {
    "caption": "lock",
    "beat": "s3",
@@ -23,11 +18,11 @@
    "id": "question",
    "text": "Pear's new home screen, / HomeView, is sold on privacy. / But whose [privacy]?",
    "plain": "Pear's new home screen, HomeView, is sold on privacy. But whose privacy?",
-   "t0": 2.6,
-   "t1": 7.686,
-   "shown": 5.086,
+   "t0": 1.5,
+   "t1": 7.15,
+   "shown": 5.65,
    "read": 4.6,
-   "lastWord": 4.495,
+   "lastWord": 3.395,
    "widths": [
     596,
     717,
@@ -43,8 +38,8 @@
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 3.04,
-    "busy": 0
+    "edge": 9.16,
+    "busy": 0.23
    },
    "native": true
   },
@@ -52,11 +47,11 @@
    "id": "lock",
    "text": "In Pear's own ad, / the brother tries to read / his sister's messages. / Only her face [unlocks] them.",
    "plain": "In Pear's own ad, the brother tries to read his sister's messages. Only her face unlocks them.",
-   "t0": 8.636,
-   "t1": 14.65,
+   "t0": 8.1,
+   "t1": 14.114,
    "shown": 6.014,
    "read": 5.7,
-   "lastWord": 11.318,
+   "lastWord": 10.783,
    "widths": [
     402,
     570,
@@ -73,7 +68,7 @@
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 4.6,
+    "edge": 5.71,
     "busy": 0
    },
    "native": true
@@ -82,11 +77,11 @@
    "id": "ad",
    "text": "Then the ad's happy ending: / the whole family watches her / leave with her boyfriend, / on HomeView's door [camera].",
    "plain": "Then the ad's happy ending: the whole family watches her leave with her boyfriend, on HomeView's door camera.",
-   "t0": 15.6,
-   "t1": 22.15,
+   "t0": 15.064,
+   "t1": 21.614,
    "shown": 6.55,
    "read": 6.45,
-   "lastWord": 18.578,
+   "lastWord": 18.042,
    "widths": [
     678,
     708,
@@ -103,8 +98,8 @@
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 2.18,
-    "busy": 0
+    "edge": 6.32,
+    "busy": 0.02
    },
    "native": true
   },
@@ -112,11 +107,11 @@
    "id": "last",
    "text": "Her messages: private. / Her boyfriend: [family viewing].",
    "plain": "Her messages: private. Her boyfriend: family viewing.",
-   "t0": 23,
-   "t1": 28.729,
+   "t0": 22.464,
+   "t1": 28.193,
    "shown": 5.729,
    "read": 3.65,
-   "lastWord": 24.243,
+   "lastWord": 23.707,
    "widths": [
     556,
     725
@@ -131,7 +126,7 @@
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 0.61,
+    "edge": 5.19,
     "busy": 0
    },
    "native": true
@@ -145,6 +140,6 @@
    "ok": true
   }
  },
- "frames": 868,
+ "frames": 852,
  "fps": 30
 }

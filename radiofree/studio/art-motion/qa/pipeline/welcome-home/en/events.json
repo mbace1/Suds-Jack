@@ -1,16 +1,11 @@
 {
  "s1": 0,
- "s2": 8.0357,
- "s3": 14.99997142857143,
- "s4": 22.499942857142855,
- "end": 28.928514285714282,
+ "s2": 7.5,
+ "s3": 14.46427142857143,
+ "s4": 21.964242857142857,
+ "end": 28.392814285714284,
  "lang": "en",
  "holds": [
-  {
-   "caption": "question",
-   "beat": "s2",
-   "extra": 0.5357
-  },
   {
    "caption": "lock",
    "beat": "s3",
@@ -22,337 +17,343 @@
    "extra": 1.0714
   }
  ],
- "hoopOut": 1,
- "title": 1.75,
- "titleOut": 2.9,
- "lock": 11.136609090909095,
- "inset": 17.024516883116885,
- "lean": 18.578153246753242,
- "turnBack": 23.699942857142855,
- "watching": 24.083579220779214,
- "reach": 10.236609090909095,
+ "boot": 0.15,
+ "flow": 2.1154545454545457,
+ "lock": 10.600909090909095,
+ "cut3b": 16.699725974025974,
+ "glance": 17.842453246753244,
+ "watching": 23.547879220779215,
+ "pull0": 2.4154545454545455,
+ "pull1": 5.015454545454546,
+ "cross": 4.215454545454546,
+ "dadLook": 4.715454545454546,
+ "reach": 9.700909090909095,
+ "feed0": 15.699725974025974,
+ "glance2": 23.997879220779215,
+ "cut4b": 25.147879220779217,
+ "tap": 10.150909090909094,
  "words": [
   {
    "w": "Pear's",
-   "t": 2.6,
+   "t": 1.5,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "new",
-   "t": 2.759,
+   "t": 1.659,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "home",
-   "t": 2.85,
+   "t": 1.75,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "screen,",
-   "t": 2.964,
+   "t": 1.864,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "HomeView,",
-   "t": 3.365,
+   "t": 2.265,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "is",
-   "t": 3.593,
+   "t": 2.493,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "sold",
-   "t": 3.661,
+   "t": 2.561,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "on",
-   "t": 3.775,
+   "t": 2.675,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "privacy.",
-   "t": 3.843,
+   "t": 2.743,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "But",
-   "t": 4.267,
+   "t": 3.167,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "whose",
-   "t": 4.358,
+   "t": 3.258,
    "pop": false,
    "caption": "question"
   },
   {
    "w": "privacy?",
-   "t": 4.495,
+   "t": 3.395,
    "pop": true,
    "caption": "question"
   },
   {
    "w": "In",
-   "t": 8.636,
+   "t": 8.1,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "Pear's",
-   "t": 8.704,
+   "t": 8.168,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "own",
-   "t": 8.863,
+   "t": 8.327,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "ad,",
-   "t": 8.954,
+   "t": 8.418,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "the",
-   "t": 9.265,
+   "t": 8.729,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "brother",
-   "t": 9.356,
+   "t": 8.82,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "tries",
-   "t": 9.538,
+   "t": 9.002,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "to",
-   "t": 9.674,
+   "t": 9.138,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "read",
-   "t": 9.742,
+   "t": 9.206,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "his",
-   "t": 10.076,
+   "t": 9.54,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "sister's",
-   "t": 10.167,
+   "t": 9.631,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "messages.",
-   "t": 10.371,
+   "t": 9.835,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "Only",
-   "t": 10.818,
+   "t": 10.283,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "her",
-   "t": 10.932,
+   "t": 10.396,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "face",
-   "t": 11.023,
+   "t": 10.487,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "unlocks",
-   "t": 11.137,
+   "t": 10.601,
    "pop": true,
    "caption": "lock"
   },
   {
    "w": "them.",
-   "t": 11.318,
+   "t": 10.783,
    "pop": false,
    "caption": "lock"
   },
   {
    "w": "Then",
-   "t": 15.6,
+   "t": 15.064,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "the",
-   "t": 15.714,
+   "t": 15.178,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "ad's",
-   "t": 15.805,
+   "t": 15.269,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "happy",
-   "t": 15.918,
+   "t": 15.382,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "ending:",
-   "t": 16.055,
+   "t": 15.519,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "the",
-   "t": 16.456,
+   "t": 15.921,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "whole",
-   "t": 16.547,
+   "t": 16.012,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "family",
-   "t": 16.684,
+   "t": 16.148,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "watches",
-   "t": 16.843,
+   "t": 16.307,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "her",
-   "t": 17.025,
+   "t": 16.489,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "leave",
-   "t": 17.335,
+   "t": 16.8,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "with",
-   "t": 17.472,
+   "t": 16.936,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "her",
-   "t": 17.585,
+   "t": 17.05,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "boyfriend,",
-   "t": 17.676,
+   "t": 17.141,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "on",
-   "t": 18.146,
+   "t": 17.611,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "HomeView's",
-   "t": 18.215,
+   "t": 17.679,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "door",
-   "t": 18.465,
+   "t": 17.929,
    "pop": false,
    "caption": "ad"
   },
   {
    "w": "camera.",
-   "t": 18.578,
+   "t": 18.042,
    "pop": true,
    "caption": "ad"
   },
   {
    "w": "Her",
-   "t": 23,
+   "t": 22.464,
    "pop": false,
    "caption": "last"
   },
   {
    "w": "messages:",
-   "t": 23.091,
+   "t": 22.555,
    "pop": false,
    "caption": "last"
   },
   {
    "w": "private.",
-   "t": 23.318,
+   "t": 22.782,
    "pop": false,
    "caption": "last"
   },
   {
    "w": "Her",
-   "t": 23.743,
+   "t": 23.207,
    "pop": false,
    "caption": "last"
   },
   {
    "w": "boyfriend:",
-   "t": 23.834,
+   "t": 23.298,
    "pop": false,
    "caption": "last"
   },
   {
    "w": "family",
-   "t": 24.084,
+   "t": 23.548,
    "pop": true,
    "caption": "last"
   },
   {
    "w": "viewing.",
-   "t": 24.243,
+   "t": 23.707,
    "pop": true,
    "caption": "last"
   }
@@ -360,23 +361,23 @@
  "captions": [
   {
    "id": "question",
-   "t0": 2.6,
-   "t1": 7.686
+   "t0": 1.5,
+   "t1": 7.15
   },
   {
    "id": "lock",
-   "t0": 8.636,
-   "t1": 14.65
+   "t0": 8.1,
+   "t1": 14.114
   },
   {
    "id": "ad",
-   "t0": 15.6,
-   "t1": 22.15
+   "t0": 15.064,
+   "t1": 21.614
   },
   {
    "id": "last",
-   "t0": 23,
-   "t1": 28.729
+   "t0": 22.464,
+   "t1": 28.193
   }
  ],
  "quiet": []
