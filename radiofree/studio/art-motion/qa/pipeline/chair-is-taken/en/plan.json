@@ -9,18 +9,10 @@
   "s3": 12.857142857142858,
   "s4": 19.285714285714285,
   "s5": 25.714285714285715,
-  "s6": 32.142857142857146,
-  "last": 36.42857142857143,
-  "end": 41.249985714285714
+  "end": 32.142857142857146
  },
- "end": 41.249985714285714,
- "holds": [
-  {
-   "caption": "headcount",
-   "beat": "end",
-   "extra": 0.5357
-  }
- ],
+ "end": 32.142857142857146,
+ "holds": [],
  "shots": [
   {
    "id": "ct_chamber",
@@ -33,381 +25,69 @@
    "dur": 6.428571428571429
   },
   {
-   "id": "ct_binder",
+   "id": "ct_scale",
    "t0": 12.857142857142858,
    "dur": 6.428571428571427
   },
   {
-   "id": "ct_scale",
+   "id": "ct_hat",
    "t0": 19.285714285714285,
    "dur": 6.428571428571431
   },
   {
-   "id": "ct_hat",
+   "id": "ct_end",
    "t0": 25.714285714285715,
    "dur": 6.428571428571431
-  },
-  {
-   "id": "ct_dial",
-   "t0": 32.142857142857146,
-   "dur": 9.107128571428568
   }
  ],
  "cues": {
   "ct_chamber.lamps": 0.25,
-  "ct_chamber.doors": 1.9473,
+  "ct_chamber.doors": 4.4,
   "ct_chamber.rattle": 5.4,
   "ct_screen.cart": 6.4286,
   "ct_screen.bump": 7.2286,
   "ct_screen.on": 7.6286,
-  "ct_screen.tile": 8.0968,
-  "ct_binder.push": 13.4071,
-  "ct_binder.hit": 14.2071,
-  "ct_binder.shrug": 15.3835,
-  "ct_scale.gavel": 19.7357,
-  "ct_scale.load": 20.5857,
-  "ct_scale.tip": 21.8575,
-  "ct_hat.first": 26.2143,
-  "ct_hat.pop": 27.2025,
-  "ct_hat.gone": 31.3143,
-  "ct_dial.dial": 32.4429,
-  "ct_dial.blank": 33.4401,
-  "ct_dial.tilt": 35.9786,
-  "ct_dial.land": 37.6622
+  "ct_screen.tile": 8.6958,
+  "ct_scale.gavel": 13.3071,
+  "ct_scale.load": 14.1571,
+  "ct_scale.tip": 15.1108,
+  "ct_hat.first": 19.7857,
+  "ct_hat.pop": 20.9103,
+  "ct_hat.gone": 24.8857,
+  "ct_end.land": 27.0479
  },
  "captions": [
   {
-   "id": "came",
+   "id": "question",
    "lang": "en",
    "size": "house",
-   "text": "SpaceXAI was [subpoenaed]. / On 16 October, it came.",
+   "text": "NYC asked Musk's SpaceXAI: / if your AI causes a death, / will you accept [responsibility]?",
    "lines": [
     [
      {
-      "w": "SpaceXAI",
+      "w": "NYC",
       "pop": false
      },
      {
-      "w": "was",
+      "w": "asked",
       "pop": false
      },
      {
-      "w": "subpoenaed.",
-      "pop": true
-     }
-    ],
-    [
-     {
-      "w": "On",
+      "w": "Musk's",
       "pop": false
      },
      {
-      "w": "16",
-      "pop": false
-     },
-     {
-      "w": "October,",
-      "pop": false
-     },
-     {
-      "w": "it",
-      "pop": false
-     },
-     {
-      "w": "came.",
-      "pop": false
-     }
-    ]
-   ],
-   "words": [
-    {
-     "w": "SpaceXAI",
-     "pop": false,
-     "line": 0,
-     "t": 0.7
-    },
-    {
-     "w": "was",
-     "pop": false,
-     "line": 0,
-     "t": 0.9045454545454545
-    },
-    {
-     "w": "subpoenaed.",
-     "pop": true,
-     "line": 0,
-     "t": 0.9954545454545455
-    },
-    {
-     "w": "On",
-     "pop": false,
-     "line": 1,
-     "t": 1.488181818181818
-    },
-    {
-     "w": "16",
-     "pop": false,
-     "line": 1,
-     "t": 1.5563636363636362
-    },
-    {
-     "w": "October,",
-     "pop": false,
-     "line": 1,
-     "t": 1.6245454545454543
-    },
-    {
-     "w": "it",
-     "pop": false,
-     "line": 1,
-     "t": 1.8290909090909089
-    },
-    {
-     "w": "came.",
-     "pop": false,
-     "line": 1,
-     "t": 1.897272727272727
-    }
-   ],
-   "t0": 0.7,
-   "t1": 6.078571428571429,
-   "read": 3.4,
-   "place": "top",
-   "native": true
-  },
-  {
-   "id": "video",
-   "lang": "en",
-   "size": "house",
-   "text": "By [video]. It sent / a government-affairs manager.",
-   "lines": [
-    [
-     {
-      "w": "By",
-      "pop": false
-     },
-     {
-      "w": "video.",
-      "pop": true
-     },
-     {
-      "w": "It",
-      "pop": false
-     },
-     {
-      "w": "sent",
+      "w": "SpaceXAI:",
       "pop": false
      }
     ],
     [
      {
-      "w": "a",
+      "w": "if",
       "pop": false
      },
      {
-      "w": "government-affairs",
-      "pop": false
-     },
-     {
-      "w": "manager.",
-      "pop": false
-     }
-    ]
-   ],
-   "words": [
-    {
-     "w": "By",
-     "pop": false,
-     "line": 0,
-     "t": 8.028571428571428
-    },
-    {
-     "w": "video.",
-     "pop": true,
-     "line": 0,
-     "t": 8.096753246753247
-    },
-    {
-     "w": "It",
-     "pop": false,
-     "line": 0,
-     "t": 8.255844155844155
-    },
-    {
-     "w": "sent",
-     "pop": false,
-     "line": 0,
-     "t": 8.324025974025973
-    },
-    {
-     "w": "a",
-     "pop": false,
-     "line": 1,
-     "t": 8.657662337662337
-    },
-    {
-     "w": "government-affairs",
-     "pop": false,
-     "line": 1,
-     "t": 8.703116883116882
-    },
-    {
-     "w": "manager.",
-     "pop": false,
-     "line": 1,
-     "t": 9.134935064935064
-    }
-   ],
-   "t0": 8.028571428571428,
-   "t1": 12.507142857142858,
-   "read": 3.35,
-   "place": "top",
-   "native": true
-  },
-  {
-   "id": "insurance",
-   "lang": "en",
-   "size": "house",
-   "text": "Its catastrophe insurance? / The manager was \"not aware / of the [specifics]\".",
-   "lines": [
-    [
-     {
-      "w": "Its",
-      "pop": false
-     },
-     {
-      "w": "catastrophe",
-      "pop": false
-     },
-     {
-      "w": "insurance?",
-      "pop": false
-     }
-    ],
-    [
-     {
-      "w": "The",
-      "pop": false
-     },
-     {
-      "w": "manager",
-      "pop": false
-     },
-     {
-      "w": "was",
-      "pop": false
-     },
-     {
-      "w": "\"not",
-      "pop": false
-     },
-     {
-      "w": "aware",
-      "pop": false
-     }
-    ],
-    [
-     {
-      "w": "of",
-      "pop": false
-     },
-     {
-      "w": "the",
-      "pop": false
-     },
-     {
-      "w": "specifics\".",
-      "pop": true
-     }
-    ]
-   ],
-   "words": [
-    {
-     "w": "Its",
-     "pop": false,
-     "line": 0,
-     "t": 13.557142857142857
-    },
-    {
-     "w": "catastrophe",
-     "pop": false,
-     "line": 0,
-     "t": 13.648051948051949
-    },
-    {
-     "w": "insurance?",
-     "pop": false,
-     "line": 0,
-     "t": 13.920779220779222
-    },
-    {
-     "w": "The",
-     "pop": false,
-     "line": 1,
-     "t": 14.390779220779223
-    },
-    {
-     "w": "manager",
-     "pop": false,
-     "line": 1,
-     "t": 14.481688311688314
-    },
-    {
-     "w": "was",
-     "pop": false,
-     "line": 1,
-     "t": 14.663506493506496
-    },
-    {
-     "w": "\"not",
-     "pop": false,
-     "line": 1,
-     "t": 14.754415584415588
-    },
-    {
-     "w": "aware",
-     "pop": false,
-     "line": 1,
-     "t": 14.868051948051951
-    },
-    {
-     "w": "of",
-     "pop": false,
-     "line": 2,
-     "t": 15.224415584415588
-    },
-    {
-     "w": "the",
-     "pop": false,
-     "line": 2,
-     "t": 15.292597402597407
-    },
-    {
-     "w": "specifics\".",
-     "pop": true,
-     "line": 2,
-     "t": 15.383506493506498
-    }
-   ],
-   "t0": 13.557142857142857,
-   "t1": 18.935714285714283,
-   "read": 4.6,
-   "place": "top",
-   "native": true
-  },
-  {
-   "id": "law",
-   "lang": "en",
-   "size": "house",
-   "text": "If its AI causes a death? / \"We're responsible for / following the [law].\"",
-   "lines": [
-    [
-     {
-      "w": "If",
-      "pop": false
-     },
-     {
-      "w": "its",
+      "w": "your",
       "pop": false
      },
      {
@@ -423,7 +103,295 @@
       "pop": false
      },
      {
-      "w": "death?",
+      "w": "death,",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "will",
+      "pop": false
+     },
+     {
+      "w": "you",
+      "pop": false
+     },
+     {
+      "w": "accept",
+      "pop": false
+     },
+     {
+      "w": "responsibility?",
+      "pop": true
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "NYC",
+     "pop": false,
+     "line": 0,
+     "t": 0.5
+    },
+    {
+     "w": "asked",
+     "pop": false,
+     "line": 0,
+     "t": 0.5909090909090909
+    },
+    {
+     "w": "Musk's",
+     "pop": false,
+     "line": 0,
+     "t": 0.7272727272727273
+    },
+    {
+     "w": "SpaceXAI:",
+     "pop": false,
+     "line": 0,
+     "t": 0.8863636363636364
+    },
+    {
+     "w": "if",
+     "pop": false,
+     "line": 1,
+     "t": 1.3336363636363635
+    },
+    {
+     "w": "your",
+     "pop": false,
+     "line": 1,
+     "t": 1.4018181818181816
+    },
+    {
+     "w": "AI",
+     "pop": false,
+     "line": 1,
+     "t": 1.5154545454545452
+    },
+    {
+     "w": "causes",
+     "pop": false,
+     "line": 1,
+     "t": 1.5836363636363633
+    },
+    {
+     "w": "a",
+     "pop": false,
+     "line": 1,
+     "t": 1.7427272727272725
+    },
+    {
+     "w": "death,",
+     "pop": false,
+     "line": 1,
+     "t": 1.7881818181818179
+    },
+    {
+     "w": "will",
+     "pop": false,
+     "line": 2,
+     "t": 2.167272727272727
+    },
+    {
+     "w": "you",
+     "pop": false,
+     "line": 2,
+     "t": 2.2809090909090908
+    },
+    {
+     "w": "accept",
+     "pop": false,
+     "line": 2,
+     "t": 2.3718181818181816
+    },
+    {
+     "w": "responsibility?",
+     "pop": true,
+     "line": 2,
+     "t": 2.5309090909090908
+    }
+   ],
+   "t0": 0.5,
+   "t1": 6.078571428571429,
+   "read": 5.25,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "came",
+   "lang": "en",
+   "size": "house",
+   "text": "It took a subpoena / to get it to City Hall. / It came by [video].",
+   "lines": [
+    [
+     {
+      "w": "It",
+      "pop": false
+     },
+     {
+      "w": "took",
+      "pop": false
+     },
+     {
+      "w": "a",
+      "pop": false
+     },
+     {
+      "w": "subpoena",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "to",
+      "pop": false
+     },
+     {
+      "w": "get",
+      "pop": false
+     },
+     {
+      "w": "it",
+      "pop": false
+     },
+     {
+      "w": "to",
+      "pop": false
+     },
+     {
+      "w": "City",
+      "pop": false
+     },
+     {
+      "w": "Hall.",
+      "pop": false
+     }
+    ],
+    [
+     {
+      "w": "It",
+      "pop": false
+     },
+     {
+      "w": "came",
+      "pop": false
+     },
+     {
+      "w": "by",
+      "pop": false
+     },
+     {
+      "w": "video.",
+      "pop": true
+     }
+    ]
+   ],
+   "words": [
+    {
+     "w": "It",
+     "pop": false,
+     "line": 0,
+     "t": 7.0285714285714285
+    },
+    {
+     "w": "took",
+     "pop": false,
+     "line": 0,
+     "t": 7.096753246753247
+    },
+    {
+     "w": "a",
+     "pop": false,
+     "line": 0,
+     "t": 7.21038961038961
+    },
+    {
+     "w": "subpoena",
+     "pop": false,
+     "line": 0,
+     "t": 7.255844155844156
+    },
+    {
+     "w": "to",
+     "pop": false,
+     "line": 1,
+     "t": 7.68038961038961
+    },
+    {
+     "w": "get",
+     "pop": false,
+     "line": 1,
+     "t": 7.748571428571428
+    },
+    {
+     "w": "it",
+     "pop": false,
+     "line": 1,
+     "t": 7.839480519480519
+    },
+    {
+     "w": "to",
+     "pop": false,
+     "line": 1,
+     "t": 7.907662337662337
+    },
+    {
+     "w": "City",
+     "pop": false,
+     "line": 1,
+     "t": 7.975844155844156
+    },
+    {
+     "w": "Hall.",
+     "pop": false,
+     "line": 1,
+     "t": 8.089480519480519
+    },
+    {
+     "w": "It",
+     "pop": false,
+     "line": 2,
+     "t": 8.445844155844156
+    },
+    {
+     "w": "came",
+     "pop": false,
+     "line": 2,
+     "t": 8.514025974025975
+    },
+    {
+     "w": "by",
+     "pop": false,
+     "line": 2,
+     "t": 8.627662337662338
+    },
+    {
+     "w": "video.",
+     "pop": true,
+     "line": 2,
+     "t": 8.695844155844156
+    }
+   ],
+   "t0": 7.0285714285714285,
+   "t1": 12.507142857142858,
+   "read": 4,
+   "place": "top",
+   "native": true
+  },
+  {
+   "id": "law",
+   "lang": "en",
+   "size": "house",
+   "text": "Its answer? / \"We're responsible for / following the [law].\"",
+   "lines": [
+    [
+     {
+      "w": "Its",
+      "pop": false
+     },
+     {
+      "w": "answer?",
       "pop": false
      }
     ],
@@ -458,81 +426,57 @@
    ],
    "words": [
     {
-     "w": "If",
+     "w": "Its",
      "pop": false,
      "line": 0,
-     "t": 19.985714285714284
+     "t": 13.557142857142857
     },
     {
-     "w": "its",
+     "w": "answer?",
      "pop": false,
      "line": 0,
-     "t": 20.0538961038961
-    },
-    {
-     "w": "AI",
-     "pop": false,
-     "line": 0,
-     "t": 20.14480519480519
-    },
-    {
-     "w": "causes",
-     "pop": false,
-     "line": 0,
-     "t": 20.212987012987007
-    },
-    {
-     "w": "a",
-     "pop": false,
-     "line": 0,
-     "t": 20.372077922077917
-    },
-    {
-     "w": "death?",
-     "pop": false,
-     "line": 0,
-     "t": 20.417532467532464
+     "t": 13.648051948051949
     },
     {
      "w": "\"We're",
      "pop": false,
      "line": 1,
-     "t": 20.796623376623373
+     "t": 14.049870129870131
     },
     {
      "w": "responsible",
      "pop": false,
      "line": 1,
-     "t": 20.955714285714283
+     "t": 14.20896103896104
     },
     {
      "w": "for",
      "pop": false,
      "line": 1,
-     "t": 21.228441558441556
+     "t": 14.481688311688313
     },
     {
      "w": "following",
      "pop": false,
      "line": 2,
-     "t": 21.539350649350645
+     "t": 14.792597402597405
     },
     {
      "w": "the",
      "pop": false,
      "line": 2,
-     "t": 21.76662337662337
+     "t": 15.019870129870132
     },
     {
      "w": "law.\"",
      "pop": true,
      "line": 2,
-     "t": 21.85753246753246
+     "t": 15.110779220779223
     }
    ],
-   "t0": 19.985714285714284,
-   "t1": 25.364285714285714,
-   "read": 4.4,
+   "t0": 13.557142857142857,
+   "t1": 18.935714285714283,
+   "read": 3.7,
    "place": "top",
    "native": true
   },
@@ -540,7 +484,7 @@
    "id": "everybody",
    "lang": "en",
    "size": "house",
-   "text": "How many work on safety? / \"[Everybody] is in charge / of safety.\"",
+   "text": "How many staff work on safety? / \"[Everybody] is in charge / of safety.\"",
    "lines": [
     [
      {
@@ -549,6 +493,10 @@
      },
      {
       "w": "many",
+      "pop": false
+     },
+     {
+      "w": "staff",
       "pop": false
      },
      {
@@ -598,159 +546,86 @@
      "w": "How",
      "pop": false,
      "line": 0,
-     "t": 26.414285714285715
+     "t": 19.985714285714284
     },
     {
      "w": "many",
      "pop": false,
      "line": 0,
-     "t": 26.505194805194805
+     "t": 20.076623376623374
+    },
+    {
+     "w": "staff",
+     "pop": false,
+     "line": 0,
+     "t": 20.190259740259737
     },
     {
      "w": "work",
      "pop": false,
      "line": 0,
-     "t": 26.618831168831168
+     "t": 20.326623376623374
     },
     {
      "w": "on",
      "pop": false,
      "line": 0,
-     "t": 26.73246753246753
+     "t": 20.440259740259737
     },
     {
      "w": "safety?",
      "pop": false,
      "line": 0,
-     "t": 26.800649350649348
+     "t": 20.508441558441554
     },
     {
      "w": "\"Everybody",
      "pop": true,
      "line": 1,
-     "t": 27.20246753246753
+     "t": 20.910259740259736
     },
     {
      "w": "is",
      "pop": false,
      "line": 1,
-     "t": 27.45246753246753
+     "t": 21.160259740259736
     },
     {
      "w": "in",
      "pop": false,
      "line": 1,
-     "t": 27.520649350649347
+     "t": 21.228441558441553
     },
     {
      "w": "charge",
      "pop": false,
      "line": 1,
-     "t": 27.588831168831163
+     "t": 21.29662337662337
     },
     {
      "w": "of",
      "pop": false,
      "line": 2,
-     "t": 27.967922077922072
+     "t": 21.675714285714278
     },
     {
      "w": "safety.\"",
      "pop": false,
      "line": 2,
-     "t": 28.03610389610389
+     "t": 21.743896103896095
     }
    ],
-   "t0": 26.414285714285715,
-   "t1": 31.792857142857144,
-   "read": 4,
+   "t0": 19.985714285714284,
+   "t1": 25.364285714285714,
+   "read": 4.3,
    "place": "top",
    "native": true
   },
   {
-   "id": "odds",
+   "id": "last",
    "lang": "en",
    "size": "house",
-   "text": "Odds of catastrophe: / [no number] given.",
-   "lines": [
-    [
-     {
-      "w": "Odds",
-      "pop": false
-     },
-     {
-      "w": "of",
-      "pop": false
-     },
-     {
-      "w": "catastrophe:",
-      "pop": false
-     }
-    ],
-    [
-     {
-      "w": "no",
-      "pop": true
-     },
-     {
-      "w": "number",
-      "pop": false
-     },
-     {
-      "w": "given.",
-      "pop": false
-     }
-    ]
-   ],
-   "words": [
-    {
-     "w": "Odds",
-     "pop": false,
-     "line": 0,
-     "t": 32.74285714285715
-    },
-    {
-     "w": "of",
-     "pop": false,
-     "line": 0,
-     "t": 32.856493506493514
-    },
-    {
-     "w": "catastrophe:",
-     "pop": false,
-     "line": 0,
-     "t": 32.924675324675334
-    },
-    {
-     "w": "no",
-     "pop": true,
-     "line": 1,
-     "t": 33.44012987012988
-    },
-    {
-     "w": "number",
-     "pop": false,
-     "line": 1,
-     "t": 33.5083116883117
-    },
-    {
-     "w": "given.",
-     "pop": false,
-     "line": 1,
-     "t": 33.66740259740261
-    }
-   ],
-   "t0": 32.74285714285715,
-   "t1": 36.12857142857143,
-   "read": 2.85,
-   "place": "top",
-   "native": true
-  },
-  {
-   "id": "headcount",
-   "lang": "en",
-   "size": "house",
-   "text": "Everybody is in charge of safety. / The [headcount] will follow.",
+   "text": "Everybody is in charge. / So [nobody] is.",
    "lines": [
     [
      {
@@ -766,33 +641,21 @@
       "pop": false
      },
      {
-      "w": "charge",
-      "pop": false
-     },
-     {
-      "w": "of",
-      "pop": false
-     },
-     {
-      "w": "safety.",
+      "w": "charge.",
       "pop": false
      }
     ],
     [
      {
-      "w": "The",
+      "w": "So",
       "pop": false
      },
      {
-      "w": "headcount",
+      "w": "nobody",
       "pop": true
      },
      {
-      "w": "will",
-      "pop": false
-     },
-     {
-      "w": "follow.",
+      "w": "is.",
       "pop": false
      }
     ]
@@ -802,66 +665,48 @@
      "w": "Everybody",
      "pop": false,
      "line": 0,
-     "t": 36.57857142857143
+     "t": 26.214285714285715
     },
     {
      "w": "is",
      "pop": false,
      "line": 0,
-     "t": 36.805844155844156
+     "t": 26.441558441558442
     },
     {
      "w": "in",
      "pop": false,
      "line": 0,
-     "t": 36.874025974025976
+     "t": 26.50974025974026
     },
     {
-     "w": "charge",
+     "w": "charge.",
      "pop": false,
      "line": 0,
-     "t": 36.942207792207796
+     "t": 26.577922077922075
     },
     {
-     "w": "of",
-     "pop": false,
-     "line": 0,
-     "t": 37.1012987012987
-    },
-    {
-     "w": "safety.",
-     "pop": false,
-     "line": 0,
-     "t": 37.16948051948052
-    },
-    {
-     "w": "The",
+     "w": "So",
      "pop": false,
      "line": 1,
-     "t": 37.5712987012987
+     "t": 26.979740259740257
     },
     {
-     "w": "headcount",
+     "w": "nobody",
      "pop": true,
      "line": 1,
-     "t": 37.662207792207795
+     "t": 27.047922077922074
     },
     {
-     "w": "will",
+     "w": "is.",
      "pop": false,
      "line": 1,
-     "t": 37.88948051948052
-    },
-    {
-     "w": "follow.",
-     "pop": false,
-     "line": 1,
-     "t": 38.00311688311689
+     "t": 27.207012987012984
     }
    ],
-   "t0": 36.57857142857143,
-   "t1": 41.04998571428571,
-   "read": 4,
+   "t0": 26.214285714285715,
+   "t1": 31.942857142857147,
+   "read": 2.85,
    "place": "top",
    "native": true
   }

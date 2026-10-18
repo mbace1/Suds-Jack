@@ -1,0 +1,70 @@
+{
+ "kind": "engine",
+ "engine": "sb",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/sb_kit.js"
+ ],
+ "scenes": [
+  "sb_bill",
+  "sb_bench",
+  "sb_before",
+  "sb_fakes",
+  "sb_decider"
+ ],
+ "shots": [
+  {
+   "id": "sb_bill",
+   "beats": 12,
+   "cues": {
+    "phone": 0.3,
+    "stamp": 1.6,
+    "mask": "word:pop"
+   }
+  },
+  {
+   "id": "sb_bench",
+   "beats": 12,
+   "cues": {
+    "lights": 0.4,
+    "gavel": "word:pop"
+   }
+  },
+  {
+   "id": "sb_before",
+   "beats": 12,
+   "cues": {
+    "pear": 0.5,
+    "guilty": "line:2",
+    "ad": "line:3.start",
+    "protected": "word:pop"
+   }
+  },
+  {
+   "id": "sb_fakes",
+   "beats": 12,
+   "cues": {
+    "phone": 0.4,
+    "no": "line:2",
+    "yes": "word:pop"
+   }
+  },
+  {
+   "id": "sb_decider",
+   "beats": 12,
+   "cues": {
+    "row": 0.6,
+    "decider": "word:pop"
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}

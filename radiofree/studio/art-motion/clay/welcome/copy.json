@@ -1,0 +1,69 @@
+{
+  "film": "welcome-home",
+  "cut": "v1 script — Premise 2 'Once You Leave' (greenlit 17 Oct), written to the one-question rule (owner, 18 Oct). Built from the research description; the owner's frames from the real launch film are still wanted.",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "The display says your data is not stored on it once you leave, but its maker has not said how long it keeps faces, and its own ad ends watching a guest leave.",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question", "role": "setup", "at": "s1+0.5", "until": "s2-0.35", "hold": "s2",
+      "text": {
+        "en": "A home screen that knows your face. / What does it keep / when you [leave]?",
+        "fi": "Kotinäyttö, joka tuntee kasvosi. / Mitä se säilyttää, / kun [lähdet]?",
+        "ja": "顔を 覚える ホーム画面。 / [出かけたら]、 / 何が 残る？"
+      },
+      "source": "The device recognises up to six enrolled household members by face (Tom's Guide, MacRumors, ABC, Mac Observer quoting the store FAQ). The device is unbranded on screen ('a home screen'), as Doodle and Teslur were."
+    },
+    {
+      "id": "data", "role": "evidence", "at": "s2+0.6", "until": "s3-0.35", "hold": "s3",
+      "text": {
+        "en": "Your messages and calendar: / its maker says they're / [not stored] on it.",
+        "fi": "Viestisi ja kalenterisi: / valmistaja sanoo, / ettei niitä [tallenneta] siihen.",
+        "ja": "メッセージと カレンダーは / 本体に [保存されない]、 / と メーカーは 言う。"
+      },
+      "source": "Personal data is drawn from the user's iPhone and is not stored on the display: Reuters (Nellis, 13 Oct), bluewin, ABC (a product marketing manager). Paraphrase, so no quote marks: the ABC wording is single-source and unverified (research §4b)."
+    },
+    {
+      "id": "face", "role": "evidence", "at": "s3+0.6", "until": "s4-0.35", "hold": "s4",
+      "text": {
+        "en": "Your face? It says nobody can see it. / How long it's kept: [not said].",
+        "fi": "Kasvosi? Kukaan ei näe niitä, se sanoo. / Kauanko niitä säilytetään: [ei kerrota].",
+        "ja": "顔は？ 誰にも 見えない、 と言う。 / 保存期間は [明かされていない]。"
+      },
+      "source": "The company's side: camera and microphone data processed in Secure Exclaves 'cannot be accessed' by the software, apps, the user or the company (release, quoted by Mac Observer, MacRumors and others). What is not said: where face-enrolment data is kept, in what form or for how long (ID Tech Wire; The Hack Academy). The film asks; it does not claim the data is kept."
+    },
+    {
+      "id": "ad", "role": "evidence", "at": "s4+0.6", "until": "s5-0.35", "hold": "s5",
+      "text": {
+        "en": "Its own ad ends with the family / watching the daughter's boyfriend / [leave] on its camera.",
+        "fi": "Sen oma mainos päättyy, / kun perhe katsoo sen kamerasta / tyttären poikaystävän [lähtöä].",
+        "ja": "広告の 最後、 家族は その カメラで / 娘の 彼氏が [帰る] のを 見る。"
+      },
+      "source": "The launch film ends with the family gathered round the display, using the security camera to watch the daughter leave with her boyfriend (Digital Today citing The Verge; Analytics Insight). Staged in clay with generic masked figures: no real actor, no footage, no logo."
+    },
+    {
+      "id": "last", "role": "punchline", "at": "s5+0.5", "until": "end-0.2", "hold": "end",
+      "text": {
+        "en": "It forgets your data when you leave. / And your [guests]?",
+        "fi": "Se unohtaa tietosi, kun lähdet. / Entä [vieraasi]?",
+        "ja": "出かけたら データは 忘れる。 / [お客さんは]？"
+      },
+      "source": "The station's line. A question, by design: how a visitor's face is handled is undisclosed, not shown to be kept (research §5 and §(c))."
+    }
+  ],
+  "ui": {
+    "tag": { "en": "A REAL LAUNCH FILM · 13.10.2026 · REMADE IN CLAY", "fi": "OIKEA JULKAISUVIDEO · 13.10.2026 · SAVESTA", "ja": "実在の 発表映像 · 2026.10.13 · 粘土で再現" }
+  },
+  "props": {
+    "hoop": { "en": "Welcome home.", "why": "the embroidery-hoop opener, stitched round a rainbow pear (never the real logo)" },
+    "guest": { "en": "GUEST 7: ?", "why": "the door camera's tile over the boyfriend" }
+  },
+  "post": {
+    "en": "A home screen that knows your face. Its maker says your messages and calendar aren't stored on it once you leave. How long it keeps faces isn't said. And its own ad ends with the family watching the daughter's boyfriend leave on its camera. Your guests? #privacy #smarthome",
+    "fi": "Kotinäyttö, joka tuntee kasvosi. Valmistajan mukaan viestejäsi ja kalenteriasi ei tallenneta siihen, kun lähdet. Kauanko kasvoja säilytetään, ei kerrota. Ja sen oma mainos päättyy, kun perhe katsoo kamerasta tyttären poikaystävän lähtöä. Entä vieraasi?",
+    "ja": "顔を覚えるホーム画面。出かけたらメッセージとカレンダーは本体に保存されない、とメーカーは言う。顔の保存期間は明かされていない。そして広告の最後、家族はそのカメラで娘の彼氏が帰るのを見る。お客さんは？"
+  }
+}

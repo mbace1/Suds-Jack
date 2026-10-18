@@ -11,8 +11,8 @@
     {
       "id": "question", "role": "setup", "at": "s1+0.5", "until": "s2-0.35", "hold": "s2",
       "text": {
-        "en": "New York asked Musk's SpaceXAI: / if your AI causes a death, / will you accept [responsibility]?",
-        "fi": "New York kysyi Muskin SpaceXAI:lta: / jos tekoälynne aiheuttaa kuoleman, / kannatteko [vastuun]?",
+        "en": "NYC asked Musk's SpaceXAI: / if your AI causes a death, / will you accept [responsibility]?",
+        "fi": "NYC kysyi Muskin SpaceXAI:lta: / jos tekoälynne / aiheuttaa kuoleman, / kannatteko [vastuun]?",
         "ja": "NY市議会は SpaceXAIに 問うた。 / AIが 死亡事故を 起こしたら、 / [責任を] 負うのか？"
       },
       "source": "Asked whether the company would accept responsibility if its AI caused injury, physical damage or death (amNY; Fox live), at the Committee on Technology hearing, City Hall, 16 Oct 2026. 'Musk's SpaceX, the AI side' is the research file's safe form (§8); the council and amNY write SpaceXAI."
@@ -39,7 +39,7 @@
       "id": "everybody", "role": "evidence", "at": "s4+0.7", "until": "s5-0.35", "hold": "s5",
       "text": {
         "en": "How many staff work on safety? / \"[Everybody] is in charge / of safety.\"",
-        "fi": "Montako tekee turvallisuustyötä? / \"[Kaikki] vastaavat / turvallisuudesta.\"",
+        "fi": "Montako tekee / turvallisuustyötä? / \"[Kaikki] vastaavat / turvallisuudesta.\"",
         "ja": "安全担当は 何人？ / 「[全員が] 安全の 責任者」"
       },
       "source": "Asked how many staff work on AI safety: \"everybody is in charge of safety\" (NY Daily News, La Voce di New York). She later agreed to get the council a number (NYDN, amNY). The company's side, on the screen in shot 2: safety is \"core\" (amNY, council)."

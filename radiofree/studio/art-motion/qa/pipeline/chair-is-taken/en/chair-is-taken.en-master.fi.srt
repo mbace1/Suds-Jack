@@ -1,34 +1,23 @@
 1
-00:00:00,700 --> 00:00:06,079
-SpaceXAI sai haasteen. 16. lokakuuta se
-tuli.
+00:00:00,500 --> 00:00:06,079
+NYC kysyi Muskin SpaceXAI:lta: jos tekoälynne
+aiheuttaa kuoleman, kannatteko vastuun?
 
 2
-00:00:08,029 --> 00:00:12,507
-Videolla. Se lähetti yhteiskuntasuhteiden
-päällikön.
+00:00:07,029 --> 00:00:12,507
+Kaupungintalolle se saatiin vasta
+haasteella. Se tuli videolla.
 
 3
 00:00:13,557 --> 00:00:18,936
-Sen katastrofivakuutus? Päällikkö ei ollut
-"tietoinen yksityiskohdista".
+Vastaus? "Olemme vastuussa lain
+noudattamisesta."
 
 4
 00:00:19,986 --> 00:00:25,364
-Jos sen tekoäly aiheuttaa kuoleman?
-"Olemme vastuussa lain noudattamisesta."
-
-5
-00:00:26,414 --> 00:00:31,793
 Montako tekee turvallisuustyötä? "Kaikki
 vastaavat turvallisuudesta."
 
-6
-00:00:32,743 --> 00:00:36,129
-Katastrofin todennäköisyys: lukua ei
-annettu.
-
-7
-00:00:36,579 --> 00:00:41,050
-Kaikki vastaavat turvallisuudesta.
-Henkilömäärä toimitetaan myöhemmin.
+5
+00:00:26,214 --> 00:00:31,943
+Kaikki vastaavat. Eli kukaan ei vastaa.

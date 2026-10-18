@@ -3,7 +3,8 @@
 //   node pipeline/plan.mjs <film dir> <lang> <out dir>
 // film.json gives the shots on the beat grid and each shot's cues; copy.json gives the words. The captions'
 // reading time may lengthen a shot (whole beats only, so every cut stays on the grid), and a cue may be tied to a
-// pop word ("word:law"), so the picture hits the moment the word lands. Out:
+// pop word ("word:law"), or to a line of the shot's caption ("line:2", "line:3.start") when a shot has several hits —
+// a spelling only matches one language, a line is in the same place in all three. Out:
 //   plan.json       the one timeline: beats, shots, cues, captions with every word's time — the caption pass,
 //                   the score and the checks all read this, so they cannot disagree
 //   film-plan.js    the same, as window.FILM_PLAN, for the engine's scenes
@@ -37,8 +38,14 @@ film.shots.forEach((s, i) => {
     let v;
     if (typeof spec === 'number') v = shots[i].t0 + spec;
     else {
-      const m = /^(word|mark):([^+-]+)([+-][\d.]+)?$/.exec(spec); if (!m) throw new Error(`cue ${name}: ${spec}`);
+      const m = /^(word|mark|line):([^+-]+)([+-][\d.]+)?$/.exec(spec); if (!m) throw new Error(`cue ${name}: ${spec}`);
       if (m[1] === 'mark') v = P.T[m[2]];
+      else if (m[1] === 'line') {                                  // "line:2" = the last word of line 2 of the shot's caption, "line:3.start" its first —
+        const [n, edge] = m[2].split('.'), inShot = (w) => w.t >= shots[i].t0 - 1e-6 && w.t < shots[i].t0 + shots[i].dur;   // the same place in every language,
+        const cap = P.captions.find((c) => c.words.some(inShot)); const ws = cap ? cap.words.filter((w) => w.line === Number(n) - 1) : [];   // where a spelling is not
+        if (!ws.length) throw new Error(`cue ${name}: no line ${n} in shot ${i + 1}`);
+        v = (edge === 'start' ? ws[0] : ws[ws.length - 1]).t;
+      }
       else {                                                       // the shot's own pop word, in THIS language: its position, not its spelling
         const pops = P.captions.flatMap((c) => c.words.filter((w) => w.pop && w.t >= shots[i].t0 - 1e-6 && w.t < shots[i].t0 + shots[i].dur));
         const own = P.captions.flatMap((c) => c.words).find((w) => norm(w.w) === norm(m[2]) && w.t >= shots[i].t0 - 1e-6 && w.t < shots[i].t0 + shots[i].dur);

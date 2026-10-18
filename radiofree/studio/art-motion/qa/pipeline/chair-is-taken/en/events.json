@@ -4,486 +4,396 @@
  "s3": 12.857142857142858,
  "s4": 19.285714285714285,
  "s5": 25.714285714285715,
- "s6": 32.142857142857146,
- "last": 36.42857142857143,
- "end": 41.249985714285714,
+ "end": 32.142857142857146,
  "ct_chamber.lamps": 0.25,
- "ct_chamber.doors": 1.9473,
+ "ct_chamber.doors": 4.4,
  "ct_chamber.rattle": 5.4,
  "ct_screen.cart": 6.4286,
  "ct_screen.bump": 7.2286,
  "ct_screen.on": 7.6286,
- "ct_screen.tile": 8.0968,
- "ct_binder.push": 13.4071,
- "ct_binder.hit": 14.2071,
- "ct_binder.shrug": 15.3835,
- "ct_scale.gavel": 19.7357,
- "ct_scale.load": 20.5857,
- "ct_scale.tip": 21.8575,
- "ct_hat.first": 26.2143,
- "ct_hat.pop": 27.2025,
- "ct_hat.gone": 31.3143,
- "ct_dial.dial": 32.4429,
- "ct_dial.blank": 33.4401,
- "ct_dial.tilt": 35.9786,
- "ct_dial.land": 37.6622,
+ "ct_screen.tile": 8.6958,
+ "ct_scale.gavel": 13.3071,
+ "ct_scale.load": 14.1571,
+ "ct_scale.tip": 15.1108,
+ "ct_hat.first": 19.7857,
+ "ct_hat.pop": 20.9103,
+ "ct_hat.gone": 24.8857,
+ "ct_end.land": 27.0479,
  "lang": "en",
- "holds": [
-  {
-   "caption": "headcount",
-   "beat": "end",
-   "extra": 0.5357
-  }
- ],
+ "holds": [],
  "cues": {
   "ct_chamber.lamps": 0.25,
-  "ct_chamber.doors": 1.9473,
+  "ct_chamber.doors": 4.4,
   "ct_chamber.rattle": 5.4,
   "ct_screen.cart": 6.4286,
   "ct_screen.bump": 7.2286,
   "ct_screen.on": 7.6286,
-  "ct_screen.tile": 8.0968,
-  "ct_binder.push": 13.4071,
-  "ct_binder.hit": 14.2071,
-  "ct_binder.shrug": 15.3835,
-  "ct_scale.gavel": 19.7357,
-  "ct_scale.load": 20.5857,
-  "ct_scale.tip": 21.8575,
-  "ct_hat.first": 26.2143,
-  "ct_hat.pop": 27.2025,
-  "ct_hat.gone": 31.3143,
-  "ct_dial.dial": 32.4429,
-  "ct_dial.blank": 33.4401,
-  "ct_dial.tilt": 35.9786,
-  "ct_dial.land": 37.6622
+  "ct_screen.tile": 8.6958,
+  "ct_scale.gavel": 13.3071,
+  "ct_scale.load": 14.1571,
+  "ct_scale.tip": 15.1108,
+  "ct_hat.first": 19.7857,
+  "ct_hat.pop": 20.9103,
+  "ct_hat.gone": 24.8857,
+  "ct_end.land": 27.0479
  },
  "words": [
   {
-   "w": "SpaceXAI",
-   "t": 0.7,
+   "w": "NYC",
+   "t": 0.5,
    "pop": false,
-   "caption": "came"
+   "caption": "question"
   },
   {
-   "w": "was",
-   "t": 0.905,
+   "w": "asked",
+   "t": 0.591,
    "pop": false,
-   "caption": "came"
+   "caption": "question"
   },
   {
-   "w": "subpoenaed.",
-   "t": 0.995,
+   "w": "Musk's",
+   "t": 0.727,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "SpaceXAI:",
+   "t": 0.886,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "if",
+   "t": 1.334,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "your",
+   "t": 1.402,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "AI",
+   "t": 1.515,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "causes",
+   "t": 1.584,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 1.743,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "death,",
+   "t": 1.788,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "will",
+   "t": 2.167,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "you",
+   "t": 2.281,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "accept",
+   "t": 2.372,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "responsibility?",
+   "t": 2.531,
    "pop": true,
-   "caption": "came"
+   "caption": "question"
   },
   {
-   "w": "On",
-   "t": 1.488,
+   "w": "It",
+   "t": 7.029,
    "pop": false,
    "caption": "came"
   },
   {
-   "w": "16",
-   "t": 1.556,
+   "w": "took",
+   "t": 7.097,
    "pop": false,
    "caption": "came"
   },
   {
-   "w": "October,",
-   "t": 1.625,
+   "w": "a",
+   "t": 7.21,
+   "pop": false,
+   "caption": "came"
+  },
+  {
+   "w": "subpoena",
+   "t": 7.256,
+   "pop": false,
+   "caption": "came"
+  },
+  {
+   "w": "to",
+   "t": 7.68,
+   "pop": false,
+   "caption": "came"
+  },
+  {
+   "w": "get",
+   "t": 7.749,
    "pop": false,
    "caption": "came"
   },
   {
    "w": "it",
-   "t": 1.829,
+   "t": 7.839,
    "pop": false,
    "caption": "came"
   },
   {
-   "w": "came.",
-   "t": 1.897,
+   "w": "to",
+   "t": 7.908,
    "pop": false,
    "caption": "came"
   },
   {
-   "w": "By",
-   "t": 8.029,
+   "w": "City",
+   "t": 7.976,
    "pop": false,
-   "caption": "video"
+   "caption": "came"
   },
   {
-   "w": "video.",
-   "t": 8.097,
-   "pop": true,
-   "caption": "video"
+   "w": "Hall.",
+   "t": 8.089,
+   "pop": false,
+   "caption": "came"
   },
   {
    "w": "It",
-   "t": 8.256,
+   "t": 8.446,
    "pop": false,
-   "caption": "video"
+   "caption": "came"
   },
   {
-   "w": "sent",
-   "t": 8.324,
+   "w": "came",
+   "t": 8.514,
    "pop": false,
-   "caption": "video"
+   "caption": "came"
   },
   {
-   "w": "a",
-   "t": 8.658,
+   "w": "by",
+   "t": 8.628,
    "pop": false,
-   "caption": "video"
+   "caption": "came"
   },
   {
-   "w": "government-affairs",
-   "t": 8.703,
-   "pop": false,
-   "caption": "video"
-  },
-  {
-   "w": "manager.",
-   "t": 9.135,
-   "pop": false,
-   "caption": "video"
+   "w": "video.",
+   "t": 8.696,
+   "pop": true,
+   "caption": "came"
   },
   {
    "w": "Its",
    "t": 13.557,
    "pop": false,
-   "caption": "insurance"
+   "caption": "law"
   },
   {
-   "w": "catastrophe",
+   "w": "answer?",
    "t": 13.648,
-   "pop": false,
-   "caption": "insurance"
-  },
-  {
-   "w": "insurance?",
-   "t": 13.921,
-   "pop": false,
-   "caption": "insurance"
-  },
-  {
-   "w": "The",
-   "t": 14.391,
-   "pop": false,
-   "caption": "insurance"
-  },
-  {
-   "w": "manager",
-   "t": 14.482,
-   "pop": false,
-   "caption": "insurance"
-  },
-  {
-   "w": "was",
-   "t": 14.664,
-   "pop": false,
-   "caption": "insurance"
-  },
-  {
-   "w": "\"not",
-   "t": 14.754,
-   "pop": false,
-   "caption": "insurance"
-  },
-  {
-   "w": "aware",
-   "t": 14.868,
-   "pop": false,
-   "caption": "insurance"
-  },
-  {
-   "w": "of",
-   "t": 15.224,
-   "pop": false,
-   "caption": "insurance"
-  },
-  {
-   "w": "the",
-   "t": 15.293,
-   "pop": false,
-   "caption": "insurance"
-  },
-  {
-   "w": "specifics\".",
-   "t": 15.384,
-   "pop": true,
-   "caption": "insurance"
-  },
-  {
-   "w": "If",
-   "t": 19.986,
-   "pop": false,
-   "caption": "law"
-  },
-  {
-   "w": "its",
-   "t": 20.054,
-   "pop": false,
-   "caption": "law"
-  },
-  {
-   "w": "AI",
-   "t": 20.145,
-   "pop": false,
-   "caption": "law"
-  },
-  {
-   "w": "causes",
-   "t": 20.213,
-   "pop": false,
-   "caption": "law"
-  },
-  {
-   "w": "a",
-   "t": 20.372,
-   "pop": false,
-   "caption": "law"
-  },
-  {
-   "w": "death?",
-   "t": 20.418,
    "pop": false,
    "caption": "law"
   },
   {
    "w": "\"We're",
-   "t": 20.797,
+   "t": 14.05,
    "pop": false,
    "caption": "law"
   },
   {
    "w": "responsible",
-   "t": 20.956,
+   "t": 14.209,
    "pop": false,
    "caption": "law"
   },
   {
    "w": "for",
-   "t": 21.228,
+   "t": 14.482,
    "pop": false,
    "caption": "law"
   },
   {
    "w": "following",
-   "t": 21.539,
+   "t": 14.793,
    "pop": false,
    "caption": "law"
   },
   {
    "w": "the",
-   "t": 21.767,
+   "t": 15.02,
    "pop": false,
    "caption": "law"
   },
   {
    "w": "law.\"",
-   "t": 21.858,
+   "t": 15.111,
    "pop": true,
    "caption": "law"
   },
   {
    "w": "How",
-   "t": 26.414,
+   "t": 19.986,
    "pop": false,
    "caption": "everybody"
   },
   {
    "w": "many",
-   "t": 26.505,
+   "t": 20.077,
+   "pop": false,
+   "caption": "everybody"
+  },
+  {
+   "w": "staff",
+   "t": 20.19,
    "pop": false,
    "caption": "everybody"
   },
   {
    "w": "work",
-   "t": 26.619,
+   "t": 20.327,
    "pop": false,
    "caption": "everybody"
   },
   {
    "w": "on",
-   "t": 26.732,
+   "t": 20.44,
    "pop": false,
    "caption": "everybody"
   },
   {
    "w": "safety?",
-   "t": 26.801,
+   "t": 20.508,
    "pop": false,
    "caption": "everybody"
   },
   {
    "w": "\"Everybody",
-   "t": 27.202,
+   "t": 20.91,
    "pop": true,
    "caption": "everybody"
   },
   {
    "w": "is",
-   "t": 27.452,
+   "t": 21.16,
    "pop": false,
    "caption": "everybody"
   },
   {
    "w": "in",
-   "t": 27.521,
+   "t": 21.228,
    "pop": false,
    "caption": "everybody"
   },
   {
    "w": "charge",
-   "t": 27.589,
+   "t": 21.297,
    "pop": false,
    "caption": "everybody"
   },
   {
    "w": "of",
-   "t": 27.968,
+   "t": 21.676,
    "pop": false,
    "caption": "everybody"
   },
   {
    "w": "safety.\"",
-   "t": 28.036,
+   "t": 21.744,
    "pop": false,
    "caption": "everybody"
   },
   {
-   "w": "Odds",
-   "t": 32.743,
-   "pop": false,
-   "caption": "odds"
-  },
-  {
-   "w": "of",
-   "t": 32.856,
-   "pop": false,
-   "caption": "odds"
-  },
-  {
-   "w": "catastrophe:",
-   "t": 32.925,
-   "pop": false,
-   "caption": "odds"
-  },
-  {
-   "w": "no",
-   "t": 33.44,
-   "pop": true,
-   "caption": "odds"
-  },
-  {
-   "w": "number",
-   "t": 33.508,
-   "pop": false,
-   "caption": "odds"
-  },
-  {
-   "w": "given.",
-   "t": 33.667,
-   "pop": false,
-   "caption": "odds"
-  },
-  {
    "w": "Everybody",
-   "t": 36.579,
+   "t": 26.214,
    "pop": false,
-   "caption": "headcount"
+   "caption": "last"
   },
   {
    "w": "is",
-   "t": 36.806,
+   "t": 26.442,
    "pop": false,
-   "caption": "headcount"
+   "caption": "last"
   },
   {
    "w": "in",
-   "t": 36.874,
+   "t": 26.51,
    "pop": false,
-   "caption": "headcount"
+   "caption": "last"
   },
   {
-   "w": "charge",
-   "t": 36.942,
+   "w": "charge.",
+   "t": 26.578,
    "pop": false,
-   "caption": "headcount"
+   "caption": "last"
   },
   {
-   "w": "of",
-   "t": 37.101,
+   "w": "So",
+   "t": 26.98,
    "pop": false,
-   "caption": "headcount"
+   "caption": "last"
   },
   {
-   "w": "safety.",
-   "t": 37.169,
-   "pop": false,
-   "caption": "headcount"
-  },
-  {
-   "w": "The",
-   "t": 37.571,
-   "pop": false,
-   "caption": "headcount"
-  },
-  {
-   "w": "headcount",
-   "t": 37.662,
+   "w": "nobody",
+   "t": 27.048,
    "pop": true,
-   "caption": "headcount"
+   "caption": "last"
   },
   {
-   "w": "will",
-   "t": 37.889,
+   "w": "is.",
+   "t": 27.207,
    "pop": false,
-   "caption": "headcount"
-  },
-  {
-   "w": "follow.",
-   "t": 38.003,
-   "pop": false,
-   "caption": "headcount"
+   "caption": "last"
   }
  ],
  "captions": [
   {
-   "id": "came",
-   "t0": 0.7,
+   "id": "question",
+   "t0": 0.5,
    "t1": 6.079
   },
   {
-   "id": "video",
-   "t0": 8.029,
+   "id": "came",
+   "t0": 7.029,
    "t1": 12.507
   },
   {
-   "id": "insurance",
+   "id": "law",
    "t0": 13.557,
    "t1": 18.936
   },
   {
-   "id": "law",
+   "id": "everybody",
    "t0": 19.986,
    "t1": 25.364
   },
   {
-   "id": "everybody",
-   "t0": 26.414,
-   "t1": 31.793
-  },
-  {
-   "id": "odds",
-   "t0": 32.743,
-   "t1": 36.129
-  },
-  {
-   "id": "headcount",
-   "t0": 36.579,
-   "t1": 41.05
+   "id": "last",
+   "t0": 26.214,
+   "t1": 31.943
   }
  ],
  "quiet": []

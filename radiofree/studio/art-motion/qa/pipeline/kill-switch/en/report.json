@@ -1,64 +1,83 @@
 {
  "lang": "en",
- "end": 34.6,
- "holds": [
-  {
-   "caption": "leaflet",
-   "beat": "toToaster",
-   "extra": 0.25
-  },
-  {
-   "caption": "second",
-   "beat": "toPost",
-   "extra": 0.35
-  }
- ],
+ "end": 23.7,
+ "holds": [],
  "captions": [
   {
-   "id": "leaflet",
-   "text": "A toaster comes / with a safety [leaflet].",
-   "plain": "A toaster comes with a safety leaflet.",
-   "t0": 0.7,
-   "t1": 3.6,
-   "shown": 2.9,
-   "read": 2.9,
-   "lastWord": 1.602,
+   "id": "question",
+   "text": "Which has a backup off switch: / your toaster, / or the most powerful [AI]?",
+   "plain": "Which has a backup off switch: your toaster, or the most powerful AI?",
+   "t0": 0.6,
+   "t1": 5.25,
+   "shown": 4.65,
+   "read": 4.45,
+   "lastWord": 2.54,
    "widths": [
-    392,
-    488
+    747,
+    312,
+    581
    ],
    "box": {
-    "x": 285,
+    "x": 155,
     "y": 191,
-    "w": 510,
-    "h": 160
+    "w": 769,
+    "h": 247
    },
    "inSafe": true,
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 0.28,
+    "edge": 0.27,
     "busy": 0
    },
    "native": true
   },
   {
-   "id": "second",
-   "text": "Its US safety standard asks / for a [second] off switch.",
-   "plain": "Its US safety standard asks for a second off switch.",
-   "t0": 3.85,
-   "t1": 7.45,
-   "shown": 3.6,
-   "read": 3.6,
-   "lastWord": 5.093,
+   "id": "toaster",
+   "text": "The toaster. / Its US safety standard requires / a [second] off switch.",
+   "plain": "The toaster. Its US safety standard requires a second off switch.",
+   "t0": 5.5,
+   "t1": 9.85,
+   "shown": 4.35,
+   "read": 4.25,
+   "lastWord": 7.258,
    "widths": [
-    652,
-    551
+    288,
+    740,
+    474
    ],
    "box": {
-    "x": 203,
+    "x": 159,
     "y": 191,
-    "w": 674,
+    "w": 762,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 1.82,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "ai",
+   "text": "The most powerful AI models? / US federal rules are [voluntary].",
+   "plain": "The most powerful AI models? US federal rules are voluntary.",
+   "t0": 10.1,
+   "t1": 14.15,
+   "shown": 4.05,
+   "read": 4,
+   "lastWord": 11.456,
+   "widths": [
+    719,
+    728
+   ],
+   "box": {
+    "x": 165,
+    "y": 191,
+    "w": 750,
     "h": 160
    },
    "inSafe": true,
@@ -71,157 +90,68 @@
    "native": true
   },
   {
-   "id": "report",
-   "text": "Find a dangerous defect? / Tell the regulator / within [24 hours].",
-   "plain": "Find a dangerous defect? Tell the regulator within 24 hours.",
-   "t0": 7.7,
-   "t1": 12.05,
-   "shown": 4.35,
-   "read": 4,
-   "lastWord": 9.367,
-   "widths": [
-    605,
-    412,
-    384
-   ],
-   "box": {
-    "x": 226,
-    "y": 191,
-    "w": 627,
-    "h": 247
-   },
-   "inSafe": true,
-   "inRail": false,
-   "covers": [],
-   "busy": {
-    "edge": 16.83,
-    "busy": 0.77
-   },
-   "native": true
-  },
-  {
-   "id": "voluntary",
-   "text": "A frontier AI model. / US federal pre-release rules: / [voluntary].",
-   "plain": "A frontier AI model. US federal pre-release rules: voluntary.",
-   "t0": 12.8,
-   "t1": 17.15,
-   "shown": 4.35,
-   "read": 4.05,
-   "lastWord": 14.399,
-   "widths": [
-    462,
-    685,
-    254
-   ],
-   "box": {
-    "x": 187,
-    "y": 191,
-    "w": 707,
-    "h": 247
-   },
-   "inSafe": true,
-   "inRail": false,
-   "covers": [],
-   "busy": {
-    "edge": 15.87,
-    "busy": 0.71
-   },
-   "native": true
-  },
-  {
    "id": "study",
-   "text": "California's governor vetoed / a [shutdown] rule in 2024. / In September he ordered a study.",
-   "plain": "California's governor vetoed a shutdown rule in 2024. In September he ordered a study.",
-   "t0": 17.4,
-   "t1": 22.75,
-   "shown": 5.35,
-   "read": 5.3,
-   "lastWord": 19.658,
+   "text": "California's AI \"kill switch\"? / Still a [study], due 16 November.",
+   "plain": "California's AI \"kill switch\"? Still a study, due 16 November.",
+   "t0": 14.4,
+   "t1": 18.75,
+   "shown": 4.35,
+   "read": 4.1,
+   "lastWord": 15.825,
    "widths": [
-    688,
-    583,
-    796
+    656,
+    730
    ],
    "box": {
-    "x": 131,
+    "x": 164,
     "y": 191,
-    "w": 818,
-    "h": 247
+    "w": 752,
+    "h": 160
    },
    "inSafe": true,
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 20.35,
-    "busy": 1
-   },
-   "native": true
-  },
-  {
-   "id": "washer",
-   "text": "Microsoft's president: / \"Right now, your washing / machine is subject to more / safety rules than [AI].\"",
-   "plain": "Microsoft's president: \"Right now, your washing machine is subject to more safety rules than AI.\"",
-   "t0": 23,
-   "t1": 29.55,
-   "shown": 6.55,
-   "read": 5.85,
-   "lastWord": 25.774,
-   "widths": [
-    523,
-    615,
-    651,
-    502
-   ],
-   "box": {
-    "x": 204,
-    "y": 191,
-    "w": 673,
-    "h": 334
-   },
-   "inSafe": true,
-   "inRail": false,
-   "covers": [],
-   "busy": {
-    "edge": 17.97,
-    "busy": 0.86
+    "edge": 19.62,
+    "busy": 0.97
    },
    "native": true
   },
   {
    "id": "last",
-   "text": "The toaster has / a second off switch. / It's in the [leaflet].",
-   "plain": "The toaster has a second off switch. It's in the leaflet.",
-   "t0": 29.9,
-   "t1": 34.4,
-   "shown": 4.5,
-   "read": 3.85,
-   "lastWord": 31.454,
+   "text": "The toaster's off switch / has a backup. / The AI's is a [sticky note].",
+   "plain": "The toaster's off switch has a backup. The AI's is a sticky note.",
+   "t0": 19.1,
+   "t1": 23.5,
+   "shown": 4.4,
+   "read": 4.25,
+   "lastWord": 20.904,
    "widths": [
-    373,
-    474,
-    393
+    555,
+    338,
+    565
    ],
    "box": {
-    "x": 292,
+    "x": 246,
     "y": 191,
-    "w": 496,
+    "w": 587,
     "h": 247
    },
    "inSafe": true,
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 5.09,
+    "edge": 0.27,
     "busy": 0
    },
    "native": true
   }
  ],
  "ui": {
-  "tagReport": {
-   "text": "CONSUMER PRODUCT SAFETY ACT § 15(b)",
+  "tagToaster": {
+   "text": "US TOASTER STANDARD · UL 1026",
    "x0": 110,
-   "x1": 782,
+   "x1": 665,
    "ok": true
   },
   "tagFederal": {
@@ -235,14 +165,8 @@
    "x0": 110,
    "x1": 612,
    "ok": true
-  },
-  "tagBBC": {
-   "text": "BBC · OCT 2026",
-   "x0": 110,
-   "x1": 407,
-   "ok": true
   }
  },
- "frames": 1038,
+ "frames": 711,
  "fps": 30
 }
