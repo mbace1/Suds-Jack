@@ -1,4 +1,4 @@
-// WELCOME HOME — the film, v2 (18 Oct; v1 "did not make much sense" to the owner). Slot 4, Tue 27 Oct 00:50. Greenlit 17 Oct as "Once You Leave"; v2 is written
+// WELCOME HOME — the film, v3 (18 Oct; the owner: "name the company Pear. Also more communication effort"). Slot 4, Tue 27 Oct 00:50. Greenlit 17 Oct as "Once You Leave"; v2 is written
 // to the one-question rule (PLANNING.md): "A home screen's launch ad sells privacy. But whose?"
 // The stage is the premium-3D polish test (film-wh3.js, the look STYLES.md assigns this film: smooth vinyl and lacquer,
 // studio reflections), on its own copy of the clay kit (lib/). Built from the research description; the owner's frames
@@ -178,14 +178,21 @@ scene.updateMatrixWorld(true);
   const pts = [a, add3(a, [0.6, -0.15, -0.6]), add3(HOLE, [-0.4, 0.15, 0.4]), add3(HOLE, [0, -0.6, 0]), add3(HOLE, [0, -3, 0])].map((p) => new THREE.Vector3(...p));
   mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.22, 10), M.cord); }
 
+/** Pear's mark: a plain pear silhouette with a leaf (the company is called Pear in this film; never the real logo) */
+function pearMark(g, x, y, r, col) {
+  g.save(); g.translate(x, y); g.fillStyle = col; g.beginPath(); g.moveTo(0, -r); g.bezierCurveTo(r * 0.45, -r, r * 0.5, -r * 0.35, r * 0.75, 0); g.bezierCurveTo(r * 1.1, r * 0.6, r * 0.7, r * 1.05, 0, r * 1.05);
+  g.bezierCurveTo(-r * 0.7, r * 1.05, -r * 1.1, r * 0.6, -r * 0.75, 0); g.bezierCurveTo(-r * 0.5, -r * 0.35, -r * 0.45, -r, 0, -r); g.fill();
+  g.beginPath(); g.ellipse(r * 0.35, -r * 1.2, r * 0.32, r * 0.14, -0.6, 0, Math.PI * 2); g.fill(); g.restore();
+}
 /** the screen: 'flow' = a soft colour field leaning toward whoever is near; 'door' = the door camera's feed */
 function drawUI(mode) {
   const g = ui, w = 880, h = 580; g.save();
   if (mode === 'flow') {
     g.fillStyle = '#f4c7c4'; g.fillRect(0, 0, w, h);
     for (const [x, y, r, c] of [[180, 160, 360, '255,170,150'], [640, 220, 380, '250,150,200'], [460, 520, 420, '170,160,250'], [780, 520, 300, '255,215,170']]) { const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(${c},.95)`); gr.addColorStop(1, `rgba(${c},0)`); g.fillStyle = gr; g.fillRect(0, 0, w, h); }
-    g.fillStyle = 'rgba(255,255,255,.95)'; g.font = '300 120px Inter'; g.fillText('7:42', 52, 150);
-    g.font = '500 40px Inter'; g.fillText('Good morning.', 58, 214);
+    g.fillStyle = 'rgba(255,255,255,.95)'; g.font = '300 96px Inter'; g.fillText('7:42', 52, 130);
+    g.font = '700 74px Inter'; g.fillText('Private', 56, 300); g.fillText('by design.', 56, 384);                                 // Pear's pitch, on its own screen
+    pearMark(g, 760, 70, 34, 'rgba(255,255,255,.95)'); g.font = '600 30px Inter'; g.fillText('HomeView', 650, 140);
   } else {
     // the door camera: a wide, slightly bent view of the front path, two figures walking away, a LIVE pill
     const sky = g.createLinearGradient(0, 0, 0, h); sky.addColorStop(0, '#cfe0ea'); sky.addColorStop(0.45, '#e9eee6'); sky.addColorStop(0.46, '#7f9a6a'); sky.addColorStop(1, '#6b8758'); g.fillStyle = sky; g.fillRect(0, 0, w, h);
@@ -198,6 +205,7 @@ function drawUI(mode) {
     g.fillStyle = 'rgba(20,20,22,.6)'; g.beginPath(); g.roundRect(30, 28, 300, 64, 32); g.fill();
     g.fillStyle = '#ff3b30'; g.beginPath(); g.arc(68, 60, 11, 0, TAU); g.fill();
     g.fillStyle = '#fff'; g.font = '600 34px Inter'; g.fillText('Front Door', 92, 72);
+    pearMark(g, 820, 60, 26, 'rgba(255,255,255,.9)');
   }
   g.restore(); uiTex.needsUpdate = true;
 }
@@ -285,25 +293,25 @@ function faceUI(c, at, rad, line1, line2) {
 }
 
 
-// ================================================================== THE FILM (v2, 18 Oct): the irony inside the ad itself
-// v1 ("What does it keep when you leave?") chained three facts a viewer cannot see — data not stored, face retention
-// unstated, guests — and the owner: "Welcome is not making much sense". v2 takes the one irony the real launch film
-// shows on its own: it sells privacy (her brother cannot open her messages), and its happy ending is the whole family
-// watching her leave with her boyfriend on its door camera. "A home screen's launch ad sells privacy. But whose?"
-//   1 the hoop, then the morning kitchen and the screen
-//   2 over her brother's shoulder: he reaches for her messages, and on "unlocks" the screen locks him out
-//   3 the ad's ending: the family round the screen, lit by it, leaning in on "camera"
-//   4 the door camera itself: she and her boyfriend walking away; he glances back; on "family viewing": 3 WATCHING
+// ================================================================== THE FILM (v3, 18 Oct): Pear HomeView, the irony inside its own ad
+// v1 ("What does it keep when you leave?") argued with what a viewer cannot see; v2 kept only what the real ad shows;
+// v3 (owner: "name the company Pear. Also more communication effort") names Pear and shows every beat on screen —
+// its title card, its privacy line on its own screen, what the family is watching, and who is watching it.
+//   1 the hoop; the title card, Welcome Pear HomeView; the kitchen, the screen saying Private by design
+//   2 over the brother's shoulder: he reaches for his sister's messages; on "unlocks", Locked · not your face
+//   3 the ad's ending: the family round the screen, and inset, what is on it — her and her boyfriend walking away
+//   4 the door camera itself: he glances back; on "family viewing": 3 WATCHING, and the reactions float up
 await CAP.loadFonts(FONT_DIR);
 { const f = new FontFace('Kalam', `url(${FONT_DIR}Kalam-700.woff)`); document.fonts.add(await f.load()); }
 const COPY = await CAP.loadCopy('copy.json');
 const B = 60 / 112, FPS = 30, SAFE_B = 1630;
-const BEATS = [['s1', 0], ['s2', 12 * B], ['s3', 24 * B], ['s4', 36 * B], ['end', 48 * B]];
+const BEATS = [['s1', 0], ['s2', 14 * B], ['s3', 26 * B], ['s4', 38 * B], ['end', 50 * B]];   // shot 1 is two beats longer: the title card
 const P = CAP.plan(COPY, LANG, BEATS, { snap: B }), T = P.T, DUR = T.end;
 const capOf = (id) => P.captions.find((c) => c.id === id);
 const popOf = (id) => { const c = capOf(id); return (c.words.find((w) => w.pop) || c.words[0]).t; };
 const SHOTS = [T.s1, T.s2, T.s3, T.s4, T.end];
-const EV = { hoopOut: 1.0, lock: popOf('lock'), lean: popOf('ad'), turnBack: T.s4 + 1.2, watching: popOf('last') };
+const lineEnd = (id, n) => { const ws = capOf(id).words.filter((w) => w.line === n - 1); return ws[ws.length - 1].t; };
+const EV = { hoopOut: 1.0, title: 1.75, titleOut: 2.9, lock: popOf('lock'), inset: lineEnd('ad', 2), lean: popOf('ad'), turnBack: T.s4 + 1.2, watching: popOf('last') };
 EV.reach = EV.lock - 0.9;
 const EVENTS = { ...T, lang: LANG, holds: P.holds, ...EV, ...CAP.events(P), quiet: [] };
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v)), lerp = (a, b, k) => a + (b - a) * k;
@@ -348,7 +356,7 @@ function hoop(g, k) {                                                           
 }
 /** the door camera, full frame: she and her boyfriend walking away down the path; he glances back at the lens; and
  *  in the corner the camera says who is watching — the three faces from the kitchen */
-function doorFeed(g, lt, turn, watch) {
+function doorFeed(g, lt, turn, watch, chrome = true) {
   const sky = g.createLinearGradient(0, 0, 0, 760); sky.addColorStop(0, '#bcd3e0'); sky.addColorStop(1, '#e8eee4'); g.fillStyle = sky; g.fillRect(0, 0, W, 760);
   g.fillStyle = '#6f8c5e'; g.fillRect(0, 760, W, H - 760);
   g.fillStyle = '#4f6b43'; for (let i = 0; i < 12; i++) { g.beginPath(); g.arc(-40 + i * 105, 730 + (i % 3) * 14, 90, 0, TAU); g.fill(); }
@@ -371,6 +379,7 @@ function doorFeed(g, lt, turn, watch) {
   fig(420, 1130 - away - walk, 2.5, '#9a9a9a', '#3f4a5c', turn);                // him, glancing back at the lens
   const v = g.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.75); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.5)'); g.fillStyle = v; g.fillRect(0, 0, W, H);
   barrel(g, 0.12);
+  if (!chrome) return;
   g.fillStyle = 'rgba(20,20,22,.6)'; g.beginPath(); g.roundRect(70, 1530, 420, 84, 42); g.fill();
   g.fillStyle = '#ff3b30'; g.beginPath(); g.arc(118, 1572, 14, 0, TAU); g.fill(); g.fillStyle = '#fff'; g.font = '600 44px Inter'; g.textBaseline = 'alphabetic'; g.fillText(P.ui.door || 'Front Door', 150, 1588);
   if (watch > 0) {                                                              // who is watching: the three masks from the kitchen
@@ -379,6 +388,37 @@ function doorFeed(g, lt, turn, watch) {
     g.fillStyle = 'rgba(255,255,255,.92)'; g.beginPath(); g.roundRect(-pw / 2, -42, pw, 84, 42); g.fill();
     ['#3d6fd8', '#2fa84f', '#ff7414'].forEach((col, i) => { g.fillStyle = col; g.strokeStyle = '#fff'; g.lineWidth = 4; g.beginPath(); g.arc(-pw / 2 + 44 + i * 34, 0, 24, 0, TAU); g.fill(); g.stroke(); });
     g.fillStyle = '#1d1b1f'; g.textBaseline = 'middle'; g.fillText(label, -pw / 2 + 160, 3); g.restore();
+  }
+}
+
+/** the parody's title card, after the real ad's own: "Welcome Pear HomeView. Designed for life at home." */
+function titleCard(g, t) {
+  const a = clamp((t - EV.title) / 0.25) * (1 - clamp((t - EV.titleOut) / 0.35)); if (a <= 0) return;
+  g.save(); g.globalAlpha = a; g.fillStyle = '#f7f5f1'; g.fillRect(0, 0, W, H);
+  const k = ease.out((t - EV.title) / 0.6); g.translate(540, 900 + (1 - k) * 30);
+  pearMark(g, 0, -170, 70, '#1d1b1f');
+  g.fillStyle = '#1d1b1f'; g.textAlign = 'center'; g.font = '600 70px Inter'; g.fillText('Welcome Pear HomeView.', 0, 40);
+  g.fillStyle = '#6a6470'; g.font = '500 44px Inter'; g.fillText('Designed for life at home.', 0, 110); g.restore();
+}
+/** what the family is watching, inset in shot 3: the door camera's own picture, so the viewer sees it too */
+const feedCan = canvas(W, H), feedG = feedCan.getContext('2d');
+function inset(g, lt, k) {
+  if (k <= 0) return; doorFeed(feedG, lt, 0, 0, false);
+  const s = ease.back(k / 0.4), w = 640, h = 540, x = 540, y = 1190;
+  g.save(); g.translate(x, y); g.scale(s, s); g.rotate(-0.02);
+  g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 40; g.shadowOffsetY = 16; g.fillStyle = '#111'; g.beginPath(); g.roundRect(-w / 2 - 10, -h / 2 - 10, w + 20, h + 20, 34); g.fill(); g.shadowColor = 'transparent';
+  g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 26); g.clip(); g.drawImage(feedCan, 60, 640, 960, 810, -w / 2, -h / 2, w, h);
+  g.restore();
+}
+/** live reactions floating off the WATCHING pill: eyes and hearts, the family's */
+function reactions(g, t0, t) {
+  for (let i = 0; i < 9; i++) {
+    const k = (t - t0 - i * 0.28) / 1.8; if (k <= 0 || k >= 1) continue;
+    const x = 790 + Math.sin(i * 2.3 + k * 5) * 70 + (i % 3 - 1) * 70, y = 1480 - k * 560, a = 1 - k * k, r = 48;
+    g.save(); g.globalAlpha = a; g.translate(x, y);
+    if (i % 3 === 1) { g.fillStyle = '#ff3b5c'; g.beginPath(); g.moveTo(0, r * 0.9); g.bezierCurveTo(-r * 1.3, -r * 0.1, -r * 0.6, -r * 1.1, 0, -r * 0.35); g.bezierCurveTo(r * 0.6, -r * 1.1, r * 1.3, -r * 0.1, 0, r * 0.9); g.fill(); }
+    else { g.fillStyle = '#ffcf33'; g.beginPath(); g.arc(0, 0, r, 0, TAU); g.fill(); for (const sx of [-1, 1]) { g.fillStyle = '#fff'; g.beginPath(); g.ellipse(sx * 17, -4, 14, 19, 0, 0, TAU); g.fill(); g.fillStyle = '#1d1b1f'; g.beginPath(); g.arc(sx * 17 + 5, -2, 8, 0, TAU); g.fill(); } }
+    g.restore();
   }
 }
 
@@ -426,7 +466,7 @@ function frame(t, captions = true) {
   let i = 0; while (i < 3 && t >= SHOTS[i + 1]) i++;
   const S = SHOT[i], lt = t - SHOTS[i], d = SHOTS[i + 1] - SHOTS[i], tq = twos(t);
   g2d.setTransform(1, 0, 0, 1, 0, 0);
-  if (S.feed2d) doorFeed(g2d, lt, ease.io((t - EV.turnBack) / 0.5) * (1 - ease.io((t - EV.turnBack - 1.6) / 0.5)), clamp(t - EV.watching));
+  if (S.feed2d) { doorFeed(g2d, lt, ease.io((t - EV.turnBack) / 0.5) * (1 - ease.io((t - EV.turnBack - 1.6) / 0.5)), clamp(t - EV.watching)); reactions(g2d, EV.watching + 0.3, t); }
   else {
     setBoil(Math.floor(t * 12)); S.ui(tq); hideAll(); S.cast(tq); DEV.visible = !S.hideDev; DEV.rotation.y = S.devYaw ?? -0.18;
     scene.updateMatrixWorld(true);
@@ -437,7 +477,8 @@ function frame(t, captions = true) {
       threshold: 1.25, knee: 0.5, bloomA: 0.22, bloomB: 0.16, exposure: 1.02, vignette: 0.18, grain: 0.006, seed: Math.floor(t * 12),
       sat: 1.2, contrast: 1.16, lift: [0.0, 0.0, 0.004], gain: [1.02, 1.0, 0.99], toe: 0.02 });
     g2d.drawImage(renderer.domElement, 0, 0);
-    if (i === 0) { hoop(g2d, clamp((t - EV.hoopOut) / 0.7)); tag(g2d, P.ui.tag, clamp((t - 2.2) / 0.3) * clamp((SHOTS[1] - 0.3 - t) / 0.3)); }
+    if (i === 0) { hoop(g2d, clamp((t - EV.hoopOut) / 0.7)); titleCard(g2d, t); tag(g2d, P.ui.tag, clamp((t - 3.2) / 0.3) * clamp((SHOTS[1] - 0.3 - t) / 0.3)); }
+    if (i === 2) inset(g2d, t - EV.inset + 0.5, clamp((t - EV.inset) / 0.4));
   }
   CAP.bug(g2d, 'RADIO FREE HELSINKI', 'house');
   if (captions) CAP.draw(g2d, P, t, { busy: BUSY || {} });

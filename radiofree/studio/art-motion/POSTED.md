@@ -41,10 +41,10 @@ The next RFH films and why each sits where it does: `plan/RFH-NEXT.md` (18 Oct).
 | Tue 20 Oct 00:50 | Coxon 5, The Chair Is Taken (**approved 18 Oct**, v2; `films/20-10-Coxon5-The-Chair-Is-Taken.mp4`) | RFH Instagram + X | Suggested (from `copy.json`): New York asked Musk's SpaceXAI: if your AI causes a death, will you accept responsibility? It took a subpoena to get it there, and it came by video. "We're responsible for following the law." Safety staff? "Everybody is in charge of safety." #AI #AIsafety #NYC |
 | Thu 22 Oct 00:50 | Coxon 6, Kill Switch (**approved 18 Oct**, v2; `films/22-10-Coxon6-Kill-Switch.mp4`) | RFH Instagram + X | Suggested (from `copy.json`): Your toaster's safety standard requires a backup off switch. The most powerful AI models? US federal rules are voluntary, and California's "kill switch" is still a study, due 16 November. Who decides when AI gets an off switch? #AI #AIsafety #California |
 | Sat 24 Oct 12:50 | **Open.** Doodle 3 Irreversible was scrapped (owner, 18 Oct). The reserve, *It Was Only a Test*, can take it if made in time | RFH Instagram + X | — |
-| Thu 29 Oct 12:50 | Nordic 2, The Scoreboard (v2 built, waiting for approval; `previews/18-10-Scoreboard-v2-en.mp4`) | RFH Instagram + X | — |
+| Thu 29 Oct 12:50 | **Open.** The Scoreboard was scrapped (owner, 18 Oct) | RFH Instagram + X | — |
 | Sat 31 Oct 00:50 | Coxon 7, The Day After (proposed; midterm run-up) | RFH Instagram + X | — |
 
 ## Waiting
 
-- Genius, The Newsreader Was Fake and Doodle 3 (Irreversible, 18 Oct) were scrapped.
+- Genius, The Newsreader Was Fake, Doodle 3 (Irreversible, 18 Oct) and Nordic 2 (The Scoreboard, 18 Oct) were scrapped.
 - Grok Bot: delete the duplicate Committee of the Whole post on RFH X (owner OK, 18 Oct; link above).
