@@ -106,4 +106,4 @@ holds the lines.
 ## Built so far
 
 - **Kill Switch** (`clay/kill-switch/film.js`, `copy.json`, `score.py`), the pilot: en, fi and ja masters,
-  `previews/17-10-Kill-Switch-pipeline-*.mp4`. Reports are in `qa/pipeline/kill-switch/`.
+  `previews/17-10-Kill-Switch-pipeline-*.mp4`. Reports are in `qa/pipeline/kill-switch-pilot/`.
