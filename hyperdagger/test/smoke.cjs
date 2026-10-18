@@ -111,12 +111,11 @@ s.listen(0, '127.0.0.1', async () => {
   // navigates to its own pages.
   await p.evaluate(() => window.__hd.debug.setSeason('void'));
   await p.evaluate(() => localStorage.setItem('hyperDaggerSeenTips', '1'));
-  // low on the page, BELOW the menu panel: dead centre is a button now that
-  // v41 put SEASON beside MODE, and clicking a button is not "a click starts
-  // the run"
-  await p.mouse.click(410, 508);
+  // HD-019: START, under the season's rules, is the one way in — a tap on the
+  // empty menu starts nothing (menu-input.cjs holds both halves of that)
+  { const bb = await p.locator('#startBtn').boundingBox(); await p.mouse.click(bb.x + bb.width / 2, bb.y + bb.height / 2); }
   await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 });
-  ok('a click starts the run', true);
+  ok('a click on START starts the run', true);
 
   // ---- v30 weapon-and-clock frame ---------------------------------------
   await p.waitForFunction(() =>

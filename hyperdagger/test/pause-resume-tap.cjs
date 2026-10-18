@@ -42,7 +42,7 @@ s.listen(0, '127.0.0.1', async () => {
       await q.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
       await q.evaluate(() => { const frame = () => new Promise(r => requestAnimationFrame(r)); window.__frames = async n => { for (let i = 0; i < n; i++) await frame(); }; });
       // start by a button (UI, never a stick), settle on the floor (game time)
-      let bb = await q.locator('#msg button.season[data-season="ember"]').boundingBox();
+      let bb = await q.locator('#startBtn').boundingBox();   // HD-019: the saved season is ember; START plays it
       await q.touchscreen.tap(bb.x + bb.width / 2, bb.y + bb.height / 2);
       await q.evaluate(async () => {
         const d = window.__hd.debug; let n = 0; while (d.getState().state !== 'playing' && n++ < 120) await window.__frames(1);

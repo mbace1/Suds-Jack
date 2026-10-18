@@ -72,11 +72,12 @@ srv.listen(0, '127.0.0.1', async () => {
         await p.addStyleTag({ content: KILLS_593 });
         const pre = await p.evaluate(() => getComputedStyle(document.getElementById('goalCard')).visibility);
         ok(`${label}: no card on the menu`, pre === 'hidden', pre);
-        if (how === 'season') {
-          await p.locator(`#msg button.season[data-season="${id}"]`).dispatchEvent('pointerdown');
-        } else {
-          if (id !== 'free') await p.evaluate(sid => window.__hd.debug.setSeason(sid), id);
-          const box = await p.locator('#msg .go').boundingBox();
+        // HD-019: a season tab picks the season and START underneath starts
+        // it; VOID has no tab, so the hook selects it and START starts it
+        if (how === 'season') await p.locator(`#msg button.mn-season[data-season="${id}"]`).dispatchEvent('pointerdown');
+        else if (id !== 'free') await p.evaluate(sid => window.__hd.debug.setSeason(sid), id);
+        {
+          const box = await p.locator('#startBtn').boundingBox();
           if (box) await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
           else await p.evaluate(() => window.__hd.debug.startGame());
         }

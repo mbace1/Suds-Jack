@@ -1,3 +1,31 @@
+## v59 — in progress
+**The menu is the season (HD-019)**
+
+Mikael, 18 Oct 2026: *"Redesign menu. Make it look very different and nicer.
+Only show season1-3, have the back ground and rules change as you choose it.
+Have a start button under neath."*
+
+- **Three season tabs, and the season is the background.** Picking EMBER, INCA
+  or HAUL builds that season's arena behind the menu, the same reset START
+  does, and the camera looks slowly about it. The overlay is a veil on the
+  right, not a dark sheet, so the arena is most of the screen. The panel takes
+  the season's colour: ember red, Inca teal, haul amber.
+- **The rules change with it.** Each season carries a `card` in seasons.js: a
+  line of place and the three rules that differ, then the best to beat,
+  labelled with the mode it is filed under (seasons 1 and 2 share HYPER's).
+  The controls line is built from the body the season gives you and the
+  device in hand, so season 3 no longer advertises a gun.
+- **START underneath is the one way in.** A season tab only picks. A tap on
+  the empty menu does nothing. Keys: ← → (or A / D, 1-3) pick, ENTER or SPACE
+  starts. A pad: left / right pick, A or START starts.
+- **Gone from the menu:** VOID (still a `?season=void` link, for the gate),
+  the PURE / HYPER / TRUCK / ALL row (the season declares its mode since v50;
+  the menu used to show PURE lit over season 1, which plays HYPER), and RUN
+  FREE / DAILY, which moved to the pause menu. It applies from the next run:
+  the run in progress keeps the seed and the table it started with.
+- No HUD and no hand on the menu. The menu used to show the clock, the kill
+  line and the gauntlet under the overlay.
+
 ## v58 — 2026-10-18
 **Season 3: you don't shoot trucks, you don't save crates, and the load is not the score (HD-018)**
 

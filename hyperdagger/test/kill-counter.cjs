@@ -28,10 +28,10 @@ const VIEWS = [
   { name: 'phone portrait', width: 390, height: 844, isMobile: true, hasTouch: true },
   { name: 'phone landscape', width: 844, height: 390, isMobile: true, hasTouch: true },
 ];
-// season id → how the run is started. 'season' presses that season's menu
-// button; 'menu' taps the menu away from its buttons. VOID (the control
-// season) has no button, so the hook selects it and the tap starts it; the
-// free run is a tap on a fresh menu with RUN: FREE.
+// season id → how the run is started. 'season' presses that season's tab,
+// then START (HD-019); 'menu' presses START on what the menu holds. VOID (the
+// control season) has no tab, so the hook selects it and START starts it; the
+// free run is START on a fresh menu with RUN: FREE.
 const RUNS = [['void', 'menu'], ['ember', 'season'], ['inca', 'season'], ['haul', 'season'], ['free', 'menu']];
 
 srv.listen(0, '127.0.0.1', async () => {
@@ -58,14 +58,15 @@ srv.listen(0, '127.0.0.1', async () => {
           const k = document.getElementById('kills');
           return { text: k.textContent, shown: getComputedStyle(k).display !== 'none' };
         });
-        ok(`${label}: menu shows the counter`, before.shown && /^0 kills/.test(before.text), JSON.stringify(before));
-        if (how === 'season') {
-          await p.locator(`#msg button.season[data-season="${id}"]`).dispatchEvent('pointerdown');
-        } else {
-          if (id !== 'free') await p.evaluate(sid => window.__hd.debug.setSeason(sid), id);
-          // a free run: the run-kind is FREE, and a tap on the menu panel away
-          // from its buttons descends into whatever the menu holds
-          const box = await p.locator('#msg .go').boundingBox();
+        // HD-019: the menu wears no HUD. The counter is the run's, and "0 kills"
+        // over a season you have not started said nothing
+        ok(`${label}: the menu shows no counter`, !before.shown, JSON.stringify(before));
+        // HD-019: a season tab picks the season and START underneath starts
+        // it; VOID has no tab, so the hook selects it and START starts it
+        if (how === 'season') await p.locator(`#msg button.mn-season[data-season="${id}"]`).dispatchEvent('pointerdown');
+        else if (id !== 'free') await p.evaluate(sid => window.__hd.debug.setSeason(sid), id);
+        {
+          const box = await p.locator('#startBtn').boundingBox();
           if (box) await p.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
           else await p.evaluate(() => window.__hd.debug.startGame());
         }
