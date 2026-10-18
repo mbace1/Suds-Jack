@@ -91,7 +91,7 @@ Plan sketch:
    - THE WEAVE: lane changes under your feet.
    - THE BRAKE WALL: a row braking at once.
    - THE FUNNEL: one lane only.
-3. ONE hand-built road for now (Mikael, 18 Oct). It is a named, fixed chain of segments out to 300 s, with the pile-up still at 180 s. On its day it replaces the generated road, and the goal card names it (TODAY'S ROAD: THE LADDER). The trucks drive their script, so a line can be learned. Only the player's missiles change it.
+3. ONE hand-built road for now (Mikael, 18 Oct). It is a named, fixed chain of segments out to 300 s, with the pile-up still at 180 s. On its day it replaces the generated road, and the goal card names it (TODAY'S ROAD: THE LADDER). The trucks drive their script, so a line can be learned, and nothing the player does changes it (since HD-018, v58, the missiles do not reach the trucks).
 4. The daily board and run history stay keyed as they are (season:mode). The road's name rides on the entry.
 - Later: generated days could draw from the same segments, so the hand-built pieces turn up in ordinary runs too.
 - Schedule, as read from "just one for now": one road, and it is the daily one day a week, the same road every week, so a player races their own last time. Correct this line if that is not what was meant.
@@ -109,6 +109,8 @@ Plan sketch:
 From NOTES.md (12 Oct 2026), Mikael's design direction: highway trucks become floating landspeeder platforms — no wheels, they hover, and cargo still rides on them. Cargo and haul rules stay the same so existing haul checks still mean something.
 
 Plan sketch: change the truck mesh/visuals only — remove wheels, add a hover height or bob, and a glow or thruster under the hull. Do not change collision, cargo attachment, jackknife, haul scoring, or tests. Keep the existing haul and smoke checks green.
+
+Note, 18 Oct (HD-018, v58): there is no haul scoring any more, and the missiles no longer jackknife a truck. The fold itself stays, for the pile-up and HD-016. Read "do not change haul scoring" as "do not bring a cargo score back", and "jackknife" as the fold.
 
 ## Landed
 
