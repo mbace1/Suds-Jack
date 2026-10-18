@@ -38,12 +38,12 @@ The next RFH films and why each sits where it does: `plan/RFH-NEXT.md` (18 Oct).
 
 | When | Film | Channels | Copy (Middler) |
 |---|---|---|---|
-| Tue 20 Oct 00:50 | Coxon 5, The Chair Is Taken (in production; greenlit 17 Oct) | RFH Instagram + X | — (write when finished) |
-| Thu 22 Oct 00:50 | Kill Switch (in production; greenlit 17 Oct) | RFH Instagram + X | — (write when finished) |
-| Sat 24 Oct 12:50 | Doodle 3, Irreversible (finished; waiting for approval and the shot-5 fix) | RFH Instagram + X | — |
-| Tue 27 Oct 00:50 | Welcome Home, tech satire 2 after Teslur (greenlit; needs the launch-film frames) | RFH Instagram + X | — (write when finished) |
-| Thu 29 Oct 12:50 | Nordic 2, the satire follow-up (proposed; the owner picks angle A or B) | RFH Instagram + X | — |
-| Sat 31 Oct 00:50 | Coxon 6, The Day After (proposed; midterm run-up) | RFH Instagram + X | — |
+| Tue 20 Oct 00:50 | Coxon 5, The Chair Is Taken (**approved 18 Oct**, v2; `films/20-10-Coxon5-The-Chair-Is-Taken.mp4`) | RFH Instagram + X | Suggested (from `copy.json`): New York asked Musk's SpaceXAI: if your AI causes a death, will you accept responsibility? It took a subpoena to get it there, and it came by video. "We're responsible for following the law." Safety staff? "Everybody is in charge of safety." #AI #AIsafety #NYC |
+| Thu 22 Oct 00:50 | Coxon 6, Kill Switch (**approved 18 Oct**, v2; `films/22-10-Coxon6-Kill-Switch.mp4`) | RFH Instagram + X | Suggested (from `copy.json`): Your toaster's safety standard requires a backup off switch. The most powerful AI models? US federal rules are voluntary, and California's "kill switch" is still a study, due 16 November. Who decides when AI gets an off switch? #AI #AIsafety #California |
+| Sat 24 Oct 12:50 | Doodle 3, Irreversible (finished; the shot-5 fix is in; waiting for approval) | RFH Instagram + X | — |
+| Tue 27 Oct 00:50 | Welcome Home, tech satire 2 after Teslur (in production; still wants the launch-film frames) | RFH Instagram + X | — (write when finished) |
+| Thu 29 Oct 12:50 | Nordic 2, The Scoreboard (in production, angle B) | RFH Instagram + X | — |
+| Sat 31 Oct 00:50 | Coxon 7, The Day After (proposed; midterm run-up) | RFH Instagram + X | — |
 
 ## Waiting
 

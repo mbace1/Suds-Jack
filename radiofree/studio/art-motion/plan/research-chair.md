@@ -9,6 +9,14 @@ the four labs at the 5 Oct hearing. Every lab is treated the same way below, and
 
 ## 0. HOW THIS WAS SOURCED (read first)
 
+**18 Oct re-check, before air (the v2 film's two quotes):** both found again in search coverage of the original
+articles, attributed to the witness by name. The pages themselves still would not open here (DNS failure).
+- "We're responsible for following the law": Fox News live blog and amNY, as the answer to the liability question.
+- "everybody is in charge of safety": NY Daily News (on Yahoo), as the answer to how many staff work on AI safety;
+  the Speaker then asked for the number by the end of the testimony.
+- Also confirmed: the 28 Sept subpoena was for the 5 Oct hearing, which SpaceXAI skipped.
+
+
 - **No article page could be opened.** WebFetch failed DNS on every host. curl through the
   session proxy got a 403 on council.nyc.gov, ny1.com, amny.com, foxnews.com, cnbc.com,
   pix11.com, yahoo.com, telesurenglish.net, briefs.co, qz.com and others. nypost.com and
