@@ -29,6 +29,16 @@ window.TV = (() => {
   /** the AI voice's loudness at t: syllables in phrases, with breaths — 0..1, times `talk` */
   const voice = (t, talk = 1) => talk * clamp(Math.abs(Math.sin(t * 9.7)) * (0.55 + 0.45 * Math.sin(t * 2.9 + 1.3)) * (Math.sin(t * 1.3) > -0.75 ? 1 : 0.1), 0, 1);
 
+  /** paper's finish on anything cut from it: fibre specks over the area, and the lit cut edge of the rectangle */
+  function grain(g, x, y, w, h, seed = 1, edge = true) {
+    const r = U.rng(seed); for (let i = 0; i < w * h / 900; i++) { g.fillStyle = r() > 0.5 ? 'rgba(0,0,0,.05)' : 'rgba(255,255,255,.10)'; g.fillRect(x + r() * w, y + r() * h, 1.5 + r() * 2, 1.5 + r() * 2); }
+    if (edge) { g.strokeStyle = 'rgba(255,255,255,.45)'; g.lineWidth = 2; g.beginPath(); g.moveTo(x + 1, y + h); g.lineTo(x + 1, y + 1); g.lineTo(x + w, y + 1); g.stroke(); }
+  }
+  /** a strip of masking tape, torn at both ends */
+  function tape(g, x, y, w, rot) { g.save(); g.translate(x, y); g.rotate(rot); g.fillStyle = 'rgba(232,220,180,.82)'; g.beginPath(); g.moveTo(-w / 2, -16);
+    for (let i = 0; i <= 6; i++) g.lineTo(-w / 2 + (i % 2 ? 5 : -3), -16 + i * 32 / 6); g.lineTo(w / 2, 16); for (let i = 0; i <= 6; i++) g.lineTo(w / 2 + (i % 2 ? -5 : 3), 16 - i * 32 / 6); g.closePath(); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(-w / 2, -16, w, 6); g.restore(); }
+
   // ── the table: a green cutting mat with its grid and rulers, a craft knife, offcuts ───────────────────────────
   const mat = () => sheet('tv_mat', (g) => {
     g.fillStyle = C.mat; g.fillRect(-90, -90, W + 180, H + 180);
@@ -38,7 +48,15 @@ window.TV = (() => {
     for (let x = 180, n = 1; x < W; x += 180, n++) g.fillText(String(n * 5), x, 1880);
     g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 2; const r = U.rng(11);                                    // old knife scores
     for (let i = 0; i < 18; i++) { const x = r() * W, y = r() * H, a = r() * TAU, l = 60 + r() * 220; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke(); }
-    g.fillStyle = 'rgba(0,0,0,.06)'; g.beginPath(); g.ellipse(W / 2, H * 0.55, W * 0.7, H * 0.5, 0, 0, TAU); g.fill();
+    g.fillStyle = C.major; g.font = '18px "ArchivoBlack-400"'; g.textAlign = 'center';
+    for (let x = 180, n = 1; x < W; x += 180, n++) { g.fillText(String(n * 5), x, 70); for (let k = 0; k < 5; k++) g.fillRect(x - 180 + k * 36, 44, 2, k ? 8 : 14); }
+    g.textAlign = 'left'; for (let y = 180, n = 1; y < H; y += 180, n++) g.fillText(String(n * 5), 52, y + 7);
+    g.strokeStyle = 'rgba(106,168,141,.55)'; g.lineWidth = 2; g.setLineDash([14, 10]);
+    for (const a of [Math.PI / 4, Math.PI / 3]) { g.beginPath(); g.moveTo(40, H - 40); g.lineTo(40 + Math.cos(a) * 2400, H - 40 - Math.sin(a) * 2400); g.stroke(); }
+    g.setLineDash([]); g.fillStyle = C.major; g.font = '16px "ArchivoBlack-400"'; g.fillText('45°', 250, H - 230); g.fillText('60°', 170, H - 330);
+    g.fillText('SELF-HEALING · A1', W - 280, H - 52);
+    const lamp = g.createRadialGradient(780, 560, 40, 780, 560, 1300); lamp.addColorStop(0, 'rgba(255,238,205,.16)'); lamp.addColorStop(0.55, 'rgba(255,238,205,.05)'); lamp.addColorStop(1, 'rgba(0,0,0,.10)');
+    g.fillStyle = lamp; g.fillRect(-90, -90, W + 180, H + 180);
   }, 4);
   const knife = () => sprite('tv_knife', 520, 80, 260, 40, (g) => {
     g.fillStyle = '#c8cdd0'; g.beginPath(); g.moveTo(-250, 0); g.lineTo(-170, -16); g.lineTo(-170, 16); g.closePath(); g.fill();
@@ -61,7 +79,9 @@ window.TV = (() => {
     const drop = open * 32, cut = 18;
     c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(5, 8, 74, 92, 0, 0, TAU); c.fill();
     c.fillStyle = '#2a1f1a'; c.fillRect(-42, cut - 2, 84, drop + 4);                                                  // the dark behind the open jaw
-    c.save(); c.beginPath(); c.rect(-90, -110, 180, 110 + cut); c.clip(); c.fillStyle = C.paper; c.beginPath(); c.ellipse(0, 0, 74, 92, 0, 0, TAU); c.fill(); c.restore();
+    const sh = c.createRadialGradient(-26, -40, 10, 0, 0, 100); sh.addColorStop(0, '#fbf7ec'); sh.addColorStop(1, C.paperD);
+    c.save(); c.beginPath(); c.rect(-90, -110, 180, 110 + cut); c.clip(); c.fillStyle = sh; c.beginPath(); c.ellipse(0, 0, 74, 92, 0, 0, TAU); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(0, 0, 72, 90, 0, Math.PI * 1.05, Math.PI * 1.7); c.stroke(); c.restore();
     c.save(); c.translate(0, drop); c.beginPath(); c.rect(-90, cut, 180, 90); c.clip(); c.fillStyle = C.paperD; c.beginPath(); c.ellipse(0, 0, 74, 92, 0, 0, TAU); c.fill();
     c.fillStyle = C.brass; c.beginPath(); c.arc(-50, cut + 6, 5, 0, TAU); c.arc(50, cut + 6, 5, 0, TAU); c.fill(); c.restore();     // two split-pin hinges
     if (mouth === 'cone') { const r = 30 + open * 10; for (let i = 0; i < 3; i++) { c.fillStyle = ['#5a6166', '#3c4245', '#202426'][i]; c.beginPath(); c.arc(0, 30 + drop * 0.4, r * (1 - i * 0.3), 0, TAU); c.fill(); } }
@@ -86,11 +106,16 @@ window.TV = (() => {
     g.fillStyle = C.paper; g.beginPath(); g.moveTo(-34, 30); g.lineTo(34, 30); g.lineTo(0, 130); g.closePath(); g.fill();
     g.fillStyle = C.navy; g.beginPath(); g.moveTo(-60, 30); g.lineTo(-10, 150); g.lineTo(-90, 120); g.closePath(); g.fill(); g.beginPath(); g.moveTo(60, 30); g.lineTo(10, 150); g.lineTo(90, 120); g.closePath(); g.fill();
     C.de.forEach((col, i) => { g.fillStyle = col; g.fillRect(70, 100 + i * 8, 26, 8); });                             // the lapel pin
+    g.fillStyle = '#4d5d63'; g.font = '18px "ArchivoBlack-400"'; g.textAlign = 'left'; g.fillText('12:50', -150, -322);
+    g.fillRect(118, -334, 30, 13); g.fillRect(149, -330, 3, 5); for (let i = 0; i < 3; i++) g.fillRect(84 + i * 9, -322 - i * 4, 6, 4 + i * 4);
+    g.fillStyle = 'rgba(255,255,255,.10)'; g.beginPath(); g.moveTo(-176, -200); g.lineTo(-40, -362); g.lineTo(40, -362); g.lineTo(-176, -110); g.closePath(); g.fill();   // glare
   }, 10);
   function phone(c, x, y, lt, talk, { sc = 1, rot = 0, lift = 1.2 } = {}) {
     c.save(); c.translate(x, y); c.rotate(rot); c.scale(sc, sc);
     put(c, phoneBody(), 0, 0, { lift });
     head(c, 0, -80, 1.15, voice(lt, talk)); wave(c, 0, 280, 280, lt, talk);
+    const pk = (lt * 0.06) % 1; c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(-150, 342, 300, 4); c.fillStyle = C.red; c.fillRect(-150, 342, 300 * pk, 4);   // the video's playhead
+    c.beginPath(); c.arc(-150 + 300 * pk, 344, 7, 0, TAU); c.fill();
     c.restore();
   }
   /** the California exhibit: a campaign poster, a paper candidate whose mouth is a loudspeaker cone */
@@ -101,6 +126,9 @@ window.TV = (() => {
     g.fillStyle = C.navy; g.beginPath(); g.moveTo(-170, 190); g.quadraticCurveTo(-160, 60, -70, 40); g.lineTo(70, 40); g.quadraticCurveTo(160, 60, 170, 190); g.closePath(); g.fill();
     g.fillStyle = C.paper; g.beginPath(); g.moveTo(-30, 40); g.lineTo(30, 40); g.lineTo(0, 120); g.closePath(); g.fill();
     g.fillStyle = C.paper; g.fillRect(-260, 330, 520, 50); g.fillStyle = C.navy; g.font = '120px "Anton-400"'; g.textAlign = 'center'; g.fillText('VOTE', 0, 352 - 10);
+    grain(g, -260, -380, 520, 760, 3);
+    const fold = g.createLinearGradient(-6, 0, 6, 0); fold.addColorStop(0, 'rgba(0,0,0,.08)'); fold.addColorStop(1, 'rgba(255,255,255,.12)'); g.fillStyle = fold; g.fillRect(-6, -380, 12, 760);   // folded once
+    tape(g, -236, -372, 110, -0.6); tape(g, 236, -372, 110, 0.6);
   }, 10);
   function poster(c, x, y, lt, talk, { sc = 1, rot = 0, lift = 1 } = {}) {
     c.save(); c.translate(x, y); c.rotate(rot); c.scale(sc, sc);
@@ -115,6 +143,10 @@ window.TV = (() => {
   // ── the answers, arriving from above ──────────────────────────────────────────────────────────────────────────
   const stampSp = (text, col, w) => sprite(`tv_stamp_${text}_${w}`, w + 40, 190, (w + 40) / 2, 95, (g) => {
     g.strokeStyle = col; g.lineWidth = 10; g.strokeRect(-w / 2, -72, w, 144); g.fillStyle = col; g.font = '104px "Anton-400"'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 0, 6);
+    g.globalCompositeOperation = 'destination-out'; const r = U.rng(text.length * 7);
+    for (let i = 0; i < 260; i++) { g.globalAlpha = 0.3 + r() * 0.7; g.beginPath(); g.arc(-w / 2 + r() * w, -76 + r() * 152, 1 + r() * 4, 0, TAU); g.fill(); }
+    g.globalAlpha = 0.35; for (let i = 0; i < 5; i++) { const y = -70 + r() * 140; g.fillRect(-w / 2, y, w, 2 + r() * 3); }
+    g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
   }, 3);
   /** a rubber stamp's mark, landing over 0.16 s from t = 0 */
   function stamp(c, text, col, x, y, t, { rot = -0.1, w = 440, sc = 1 } = {}) {
@@ -125,6 +157,7 @@ window.TV = (() => {
   const tabSp = (text) => sprite('tv_tab_' + text, 520, 110, 260, 55, (g) => {
     g.fillStyle = C.paper; g.beginPath(); g.roundRect(-240, -42, 480, 84, 6); g.fill(); g.fillStyle = C.red; g.fillRect(-240, -42, 18, 84);
     g.fillStyle = C.ink; g.font = '44px "Anton-400"'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 10, 4);
+    grain(g, -240, -42, 480, 84, 5); tape(g, 214, -30, 70, 0.5);
   }, 6);
   function tab(c, text, x, y, k, rot = 0.03) { if (k <= 0) return; put(c, tabSp(text), x, y + (1 - ease.back(k)) * -120, { rot, lift: 0.8, sc: lerp(0.9, 1, k) }); }
   /** the sticker the law demanded: as big as the poster's biggest word */
@@ -133,24 +166,59 @@ window.TV = (() => {
     g.strokeStyle = C.ink; g.lineWidth = 10; g.beginPath(); g.roundRect(-258, -108, 516, 216, 10); g.stroke();
     g.fillStyle = C.ink; g.textAlign = 'center'; g.font = '120px "Anton-400"'; g.fillText('LABEL', 0, 22); g.font = '46px "Anton-400"'; g.fillText('REQUIRED', 0, 84);
     g.fillStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.moveTo(180, -130); g.lineTo(280, -130); g.lineTo(280, -30); g.closePath(); g.fill();    // a peeling corner
+    g.fillStyle = 'rgba(255,255,255,.16)'; g.beginPath(); g.moveTo(-280, -40); g.lineTo(-170, -130); g.lineTo(-90, -130); g.lineTo(-280, 30); g.closePath(); g.fill();   // vinyl gloss
   }, 8);
-  /** k: 0..1 slaps it on; off: 0..1 knocks it away (sliding off right, spinning); sc shrinks it (the EU's answer) */
+  /** k: 0..1 slaps it on; off: 0..1 knocks it away (down and left, the way the gavel swings, spinning); sc shrinks
+   *  it (the EU's answer) */
   function sticker(c, x, y, k, off = 0, { sc = 1, rot = -0.06 } = {}) {
     if (k <= 0) return; const e = ease.out(k), o = ease.out(off);
-    put(c, stickerSp(), x + o * 900, y - o * 260 + Math.sin(o * Math.PI) * -120, { sc: lerp(1.45, 1, e) * sc, rot: rot + o * 2.6, lift: off > 0 ? lerp(0.4, 5, Math.sin(Math.min(1, o * 1.4) * Math.PI / 2)) : lerp(5, 0.35, e) });
+    put(c, stickerSp(), x - o * 860, y + o * 640 - Math.sin(o * Math.PI) * 160, { sc: lerp(1.45, 1, e) * sc * (1 + Math.sin(o * Math.PI) * 0.18), rot: rot - o * 3.4, lift: off > 0 ? lerp(0.4, 5, Math.sin(Math.min(1, o * 1.4) * Math.PI / 2)) : lerp(5, 0.35, e) });
   }
-  /** the gavel seen from above: the head's top and the handle running to a hand out of shot. h: its height, 0 on the
-   *  table, 1 raised */
-  const gavelSp = () => sprite('tv_gavel', 900, 260, 160, 130, (g) => {
-    g.fillStyle = C.woodD; g.beginPath(); g.roundRect(80, -16, 760, 32, 14); g.fill(); g.fillStyle = C.wood; g.fillRect(90, -12, 740, 10);
-    g.fillStyle = C.wood; g.beginPath(); g.roundRect(-140, -110, 280, 220, 40); g.fill();
-    g.fillStyle = C.woodD; for (const x of [-100, 100]) g.fillRect(x - 12, -110, 24, 220); g.fillStyle = C.brass; for (const x of [-120, 120]) g.fillRect(x - 6, -110, 12, 220);
-    g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(-140, -100, 280, 30);
+  /** the gavel, side on like every cut-out here: a turned mahogany head with brass rings and two striking faces on
+   *  a tapered handle with a knob. Origin at the grip end; the handle runs along +x, the head across it at x = HEADX. */
+  const HEADX = 600, HEADH = 150;
+  const gavelSp = () => sprite('tv_gavel2', 820, 360, 60, 180, (g) => {
+    g.fillStyle = C.woodD; g.beginPath(); g.moveTo(10, -13); g.lineTo(HEADX - 40, -19); g.lineTo(HEADX - 40, 19); g.lineTo(10, 13); g.closePath(); g.fill();
+    g.fillStyle = '#a8673d'; g.beginPath(); g.moveTo(14, -10); g.lineTo(HEADX - 40, -15); g.lineTo(HEADX - 40, -5); g.lineTo(14, -2); g.closePath(); g.fill();
+    g.fillStyle = C.woodD; g.beginPath(); g.ellipse(0, 0, 26, 24, 0, 0, TAU); g.fill(); g.fillStyle = '#a8673d'; g.beginPath(); g.ellipse(-6, -8, 12, 9, 0, 0, TAU); g.fill();   // the knob
+    const hx = HEADX, hw = 62;
+    const body = g.createLinearGradient(hx - hw, 0, hx + hw, 0); body.addColorStop(0, '#5a2e17'); body.addColorStop(0.35, '#a8673d'); body.addColorStop(0.7, '#7a3f22'); body.addColorStop(1, '#4f2814');
+    g.fillStyle = body; g.beginPath(); g.moveTo(hx - hw, -HEADH + 24); g.quadraticCurveTo(hx, -HEADH + 8, hx + hw, -HEADH + 24); g.lineTo(hx + hw, HEADH - 24); g.quadraticCurveTo(hx, HEADH - 8, hx - hw, HEADH - 24); g.closePath(); g.fill();
+    for (const sy of [-1, 1]) {
+      g.fillStyle = '#6b351b'; g.fillRect(hx - hw - 6, sy * (HEADH - 22) - 11, hw * 2 + 12, 22);                     // the striking faces, a step proud
+      g.fillStyle = C.brass; g.fillRect(hx - hw, sy * (HEADH - 52) - 6, hw * 2, 12); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(hx - hw, sy * (HEADH - 52) - 6, hw * 2, 3);
+    }
+    g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 2; for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(hx + k * 18, -HEADH + 50); g.bezierCurveTo(hx + k * 18 + 8, -30, hx + k * 18 - 8, 30, hx + k * 18, HEADH - 50); g.stroke(); }
   }, 10);
-  function gavel(c, x, y, h, rot = 0.4) { put(c, gavelSp(), x, y, { sc: lerp(1, 1.45, h), rot, lift: lerp(0.3, 7, h) }); }
+  /** the swing: the gavel is brought in, cocked, and swung about a hand off to the right so that its lower face lands
+   *  on (ix, iy) at tHit; it bounces, holds, and is taken away. Ghosts trail the fast part; the blow throws out ink
+   *  strokes and chips of the sticker. */
+  function gavelSwing(c, lt, tHit, ix, iy) {
+    const D = HEADX, P = [ix + D, iy - HEADH], deg = Math.PI / 180;
+    const ang = (t) => {
+      if (t < tHit - 0.4) return 210 * deg;
+      if (t < tHit - 0.2) return lerp(210, 222, ease.out((t - (tHit - 0.4)) / 0.2)) * deg;
+      if (t < tHit) { const k = (t - (tHit - 0.2)) / 0.2; return lerp(222, 180, k * k) * deg; }
+      const a = t - tHit; if (a < 0.4) return (180 - 7 * Math.sin(a * 22) * Math.exp(-a * 9)) * deg;
+      return lerp(180, 215, ease.io((a - 0.4) / 0.45)) * deg;
+    };
+    const slide = (t) => t < tHit - 0.4 ? 620 * (1 - ease.out((t - (tHit - 0.8)) / 0.4)) : t > tHit + 0.4 ? 700 * ease.io((t - tHit - 0.4) / 0.45) : 0;
+    if (lt < tHit - 0.8 || lt > tHit + 0.9) return;
+    const draw = (t, alpha) => { const th = ang(t), sl = slide(t), near = Math.abs(t - tHit) < 0.08;
+      c.save(); c.globalAlpha = alpha; put(c, gavelSp(), P[0] + sl, P[1] + sl * 0.2, { rot: th, lift: near ? 1.0 : 2.4 }); c.restore(); };
+    if (lt > tHit - 0.2 && lt < tHit) for (let k = 3; k >= 1; k--) draw(lt - k * 0.025, 0.16);
+    draw(lt, 1);
+    const a = lt - tHit; if (a >= 0 && a < 0.35) {                                                                   // the blow
+      const k = a / 0.35, r = U.rng(9); c.save(); c.globalAlpha = 1 - k; c.strokeStyle = C.ink; c.lineWidth = 7; c.lineCap = 'round';
+      for (let i = 0; i < 9; i++) { const an = Math.PI * 0.55 + i / 8 * Math.PI * 1.1 + (r() - 0.5) * 0.2, r0 = 70 + k * 90, r1 = r0 + 40 + r() * 30;
+        c.beginPath(); c.moveTo(ix + Math.cos(an) * r0, iy + Math.sin(an) * r0 * 0.8); c.lineTo(ix + Math.cos(an) * r1, iy + Math.sin(an) * r1 * 0.8); c.stroke(); }
+      c.fillStyle = C.yellow; for (let i = 0; i < 8; i++) { const an = r() * TAU, d = 40 + k * (160 + r() * 140); c.save(); c.translate(ix + Math.cos(an) * d, iy + Math.sin(an) * d + k * k * 120); c.rotate(r() * TAU + k * 6); c.fillRect(-9, -6, 18, 12); c.restore(); }
+      c.restore();
+    }
+  }
   /** "more speech": a paper speech bubble with ink scribble — words of its own, never ours */
   const bubbleSp = (i) => sprite('tv_bubble_' + i, 300, 220, 150, 110, (g) => {
-    g.fillStyle = '#fbf8f0'; g.beginPath(); g.ellipse(0, -10, 130, 80, 0, 0, TAU); g.fill();
+    g.fillStyle = '#fbf8f0'; g.beginPath(); g.ellipse(0, -10, 130, 80, 0, 0, TAU); g.fill(); g.strokeStyle = 'rgba(27,29,31,.35)'; g.lineWidth = 3; g.stroke();
     g.beginPath(); g.moveTo(i % 2 ? 40 : -40, 50); g.lineTo(i % 2 ? 90 : -90, 100); g.lineTo(i % 2 ? 0 : 0, 60); g.closePath(); g.fill();
     g.fillStyle = C.ink; const L = [[-80, -40, 150], [-80, -12, 120], [-80, 16, 140]].slice(0, 2 + (i % 2));
     for (const [x, y, w] of L) { g.beginPath(); g.roundRect(x, y, w, 12, 6); g.fill(); }
@@ -171,5 +239,5 @@ window.TV = (() => {
   }, 8);
   function qtag(c, x, y, k, rot = 0.12) { if (k <= 0) return; put(c, qtagSp(), x, y, { sc: lerp(1.5, 1, ease.out(k)), rot, lift: lerp(5, 0.6, ease.out(k)) }); }
 
-  return { C, FP, at, dur, ui, ease, punch, voice, mat, table, head, wave, phone, poster, stamp, tab, sticker, gavel, bubble, bug, qtag };
+  return { C, FP, at, dur, ui, ease, punch, voice, mat, table, head, wave, phone, poster, stamp, tab, sticker, gavelSwing, bubble, bug, qtag };
 })();
