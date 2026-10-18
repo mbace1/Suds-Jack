@@ -38,8 +38,11 @@ window.OT = (() => {
   // ── buildings, all drawn with the door's sill at y = 0 so they sit on one pavement ─────────────────────────────
   /** a test lab: a white block, a black glass door with its sign, a red TEST light, the company's plate */
   const lab = (name) => sprite('ot_lab_' + name, 560, 1300, 280, 1250, (g) => {
-    g.fillStyle = C.lab; g.fillRect(-260, -1200, 520, 1200); g.fillStyle = C.labD; for (let y = -1150; y < -460; y += 110) g.fillRect(-260, y, 520, 6);
-    for (const x of [-190, 80]) for (let y = -1120; y < -500; y += 110) { g.fillStyle = C.glassL; g.fillRect(x, y, 110, 70); }
+    g.fillStyle = C.lab; g.fillRect(-260, -1200, 520, 1200);
+    const cw = g.createLinearGradient(0, -1180, 0, -640); cw.addColorStop(0, '#2a3a46'); cw.addColorStop(1, '#1b252d'); g.fillStyle = cw; g.fillRect(-240, -1180, 480, 540);   // dark glass upper floors
+    g.fillStyle = 'rgba(207,219,224,.10)'; g.beginPath(); g.moveTo(-240, -1180); g.lineTo(-60, -1180); g.lineTo(-240, -820); g.closePath(); g.fill();       // the sky in the glass
+    g.fillStyle = '#4b5d69'; for (let x = -240; x <= 240; x += 96) g.fillRect(x - 3, -1180, 6, 540); for (let y = -1180; y <= -640; y += 108) g.fillRect(-240, y - 3, 480, 6);
+    g.fillStyle = C.labD; g.fillRect(-260, -640, 520, 10);
     g.fillStyle = C.labD; g.fillRect(-140, -470, 280, 470);
     g.fillStyle = C.glass; g.fillRect(-110, -430, 220, 430); g.fillStyle = 'rgba(255,255,255,.08)'; g.beginPath(); g.moveTo(-110, -430); g.lineTo(-40, -430); g.lineTo(-110, -260); g.closePath(); g.fill();
     g.fillStyle = '#c7ccce'; g.fillRect(70, -250, 12, 60);                                                          // the handle
