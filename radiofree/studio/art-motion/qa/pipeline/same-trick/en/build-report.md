@@ -1,9 +1,9 @@
 # same-trick — en master, built by pipeline
 
-**PASSED**: 86 pass, 18 warn, 0 fail (preview build: unread languages warn)
+**PASSED**: 85 pass, 19 warn, 0 fail (preview build: unread languages warn)
 
 - length 32.13 s · holds none
-- delivered -14.1 LUFS, -2.9 dBTP, LRA 2.7
+- delivered -14.1 LUFS, -2.8 dBTP, LRA 2.7
 
 | stage | check | result | why |
 |---|---|---|---|
@@ -36,8 +36,8 @@
 | text | copy ui.tagCalifornia | pass | all languages |
 | text | copy ui.tagJudge | pass | all languages |
 | text | copy ui.tagEU | pass | all languages |
-| text | message: argument | pass | 34 words: The same AI trick got two verdicts: Berlin banned a fake chancellor as not clearly satire, |
-| text | message: one sentence | pass | 34 words (at most 35) |
+| text | message: argument | pass | 32 words: Same AI trick, two verdicts: Berlin banned a fake chancellor as not clearly satire, a US j |
+| text | message: one sentence | pass | 32 words (at most 35) |
 | text | message: roles | pass | setup → evidence → evidence → evidence → punchline |
 | text | message: asked first | pass | the first caption is the one setup |
 | text | message: answered last | pass | the last caption is the one punchline |
@@ -67,12 +67,12 @@
 | text | last word en:judge | pass | last word up 3.52 s (at least 0.8) |
 | text | key detail en:judge | pass | covers nothing the shot needs |
 | text | scrim en:judge | pass | picture behind: edge 6.68 → scrim 0.04 |
-| text | width en:last | pass | widest line 740 px (limit 800) |
-| text | safe zone en:last | pass | box {'x': 159, 'y': 191, 'w': 762, 'h': 247} |
-| text | reading time en:last | pass | on screen 5.73 s, needs 4.75 s (75 chars at 20/s + 1 s) |
-| text | last word en:last | pass | last word up 3.77 s (at least 0.8) |
+| text | width en:last | pass | widest line 694 px (limit 800) |
+| text | safe zone en:last | pass | box {'x': 182, 'y': 191, 'w': 716, 'h': 247} |
+| text | reading time en:last | pass | on screen 5.73 s, needs 5.30 s (86 chars at 20/s + 1 s) |
+| text | last word en:last | pass | last word up 3.45 s (at least 0.8) |
 | text | key detail en:last | pass | covers nothing the shot needs |
-| text | scrim en:last | pass | picture behind: edge 5.92 → scrim 0.0 |
+| text | scrim en:last | pass | picture behind: edge 5.28 → scrim 0.0 |
 | text | native read en | pass | read by a native speaker |
 | text | native read fi | warn | NOT yet read by a native speaker |
 | text | native read ja | warn | NOT yet read by a native speaker |
@@ -80,7 +80,7 @@
 | text | sidecar lines en:berlin | pass | Berlin, 2024: a court banned an AI video / of the chancellor: not clearly satire. |
 | text | sidecar lines en:california | warn | California, 2024: a parody ad gave a candidate / an AI voice. A new law demanded a label. |
 | text | sidecar lines en:judge | pass | A judge struck the law down: answer a joke / with more speech, not a ban. |
-| text | sidecar lines en:last | pass | EU law since August: an AI fake must be / labelled. Satire too, just lightly. |
+| text | sidecar lines en:last | warn | EU law since August: AI fakes need a label. / For satire, one that won't spoil the joke. |
 | text | sidecar fi:question | warn | 5.58 s on this master, fi needs 6.00 s |
 | text | sidecar lines fi:question | warn | Saako vitsi panna tekoälyllä sanoja johtajan / suuhun? Kaksi oikeutta, kaksi vastausta. |
 | text | sidecar fi:berlin | warn | 5.48 s on this master, fi needs 5.88 s |
@@ -89,8 +89,8 @@
 | text | sidecar lines fi:california | warn | Kalifornia 2024: parodiamainos antoi ehdokkaalle / tekoälyäänen. Uusi laki vaati merkinnän. |
 | text | sidecar fi:judge | pass | 5.48 s on this master, fi needs 4.65 s |
 | text | sidecar lines fi:judge | pass | Tuomari kumosi lain: vitsiin vastataan / puheella, ei kiellolla. |
-| text | sidecar fi:last | pass | 5.73 s on this master, fi needs 5.59 s |
-| text | sidecar lines fi:last | pass | EU-laki elokuusta: tekoälyväärennös on / merkittävä. Satiirikin, mutta kevyesti. |
+| text | sidecar fi:last | pass | 5.73 s on this master, fi needs 5.29 s |
+| text | sidecar lines fi:last | pass | EU-laki elokuusta: tekoälyväärennös / merkitään. Satiiri vitsiä pilaamatta. |
 | text | sidecar ja:question | warn | 5.58 s on this master, ja needs 7.00 s |
 | text | sidecar lines ja:question | warn | AIで指導者の口に言葉を入れる冗談は / 許されるか？二つの法廷、二つの答え。 |
 | text | sidecar ja:berlin | warn | 5.48 s on this master, ja needs 7.50 s |
@@ -99,15 +99,15 @@
 | text | sidecar lines ja:california | warn | カリフォルニア、2024年：パロディ広告が / 候補者にAIの声を与えた。新法は表示を求めた。 |
 | text | sidecar ja:judge | warn | 5.48 s on this master, ja needs 6.33 s |
 | text | sidecar lines ja:judge | warn | 判事はその法律を無効にした。 / 冗談には言論で応えよ、禁止ではなく。 |
-| text | sidecar ja:last | warn | 5.73 s on this master, ja needs 6.67 s |
-| text | sidecar lines ja:last | warn | EU法は8月から：AIの偽物には / 表示が必要。風刺も、ただし控えめに。 |
+| text | sidecar ja:last | warn | 5.73 s on this master, ja needs 7.17 s |
+| text | sidecar lines ja:last | warn | EU法は8月から：AIの偽物には表示が / 必要。風刺には笑いを壊さない表示を。 |
 | sound | loudness | pass | -14.1 LUFS integrated (target -14.0) |
-| sound | true peak | pass | -2.9 dBTP (at most -1.0) |
+| sound | true peak | pass | -2.8 dBTP (at most -1.0) |
 | sound | silence | pass | no unmarked gap over 1.5 s |
 | sound | continuity | pass | 0% of the film below −35 dBFS outside the quiet spans (at most 8%) |
-| sound | coverage | pass | 23/23 cues have a sound within 40 ms |
+| sound | coverage | pass | 25/25 cues have a sound within 40 ms |
 | delivery | delivered loudness | pass | -14.1 LUFS in the MP4 |
-| delivery | delivered true peak | pass | -2.9 dBTP in the MP4 |
+| delivery | delivered true peak | pass | -2.8 dBTP in the MP4 |
 | delivery | length | pass | 32.13 s, the picture says 32.14 s |
 | delivery | with sign-off: loudness | pass | -14.1 LUFS (same-trick.en+signoff.mp4) |
-| delivery | with sign-off: true peak | pass | -3.7 dBTP |
+| delivery | with sign-off: true peak | pass | -3.4 dBTP |

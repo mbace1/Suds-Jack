@@ -147,12 +147,12 @@
  {
   "check": "message: argument",
   "result": "pass",
-  "why": "34 words: The same AI trick got two verdicts: Berlin banned a fake chancellor as not clearly satire,"
+  "why": "32 words: Same AI trick, two verdicts: Berlin banned a fake chancellor as not clearly satire, a US j"
  },
  {
   "check": "message: one sentence",
   "result": "pass",
-  "why": "34 words (at most 35)"
+  "why": "32 words (at most 35)"
  },
  {
   "check": "message: roles",
@@ -302,22 +302,22 @@
  {
   "check": "width en:last",
   "result": "pass",
-  "why": "widest line 740 px (limit 800)"
+  "why": "widest line 694 px (limit 800)"
  },
  {
   "check": "safe zone en:last",
   "result": "pass",
-  "why": "box {'x': 159, 'y': 191, 'w': 762, 'h': 247}"
+  "why": "box {'x': 182, 'y': 191, 'w': 716, 'h': 247}"
  },
  {
   "check": "reading time en:last",
   "result": "pass",
-  "why": "on screen 5.73 s, needs 4.75 s (75 chars at 20/s + 1 s)"
+  "why": "on screen 5.73 s, needs 5.30 s (86 chars at 20/s + 1 s)"
  },
  {
   "check": "last word en:last",
   "result": "pass",
-  "why": "last word up 3.77 s (at least 0.8)"
+  "why": "last word up 3.45 s (at least 0.8)"
  },
  {
   "check": "key detail en:last",
@@ -327,7 +327,7 @@
  {
   "check": "scrim en:last",
   "result": "pass",
-  "why": "picture behind: edge 5.92 → scrim 0.0"
+  "why": "picture behind: edge 5.28 → scrim 0.0"
  },
  {
   "check": "native read en",
@@ -366,8 +366,8 @@
  },
  {
   "check": "sidecar lines en:last",
-  "result": "pass",
-  "why": "EU law since August: an AI fake must be | labelled. Satire too, just lightly."
+  "result": "warn",
+  "why": "EU law since August: AI fakes need a label. | For satire, one that won't spoil the joke."
  },
  {
   "check": "sidecar fi:question",
@@ -412,12 +412,12 @@
  {
   "check": "sidecar fi:last",
   "result": "pass",
-  "why": "5.73 s on this master, fi needs 5.59 s"
+  "why": "5.73 s on this master, fi needs 5.29 s"
  },
  {
   "check": "sidecar lines fi:last",
   "result": "pass",
-  "why": "EU-laki elokuusta: tekoälyväärennös on | merkittävä. Satiirikin, mutta kevyesti."
+  "why": "EU-laki elokuusta: tekoälyväärennös | merkitään. Satiiri vitsiä pilaamatta."
  },
  {
   "check": "sidecar ja:question",
@@ -462,11 +462,11 @@
  {
   "check": "sidecar ja:last",
   "result": "warn",
-  "why": "5.73 s on this master, ja needs 6.67 s"
+  "why": "5.73 s on this master, ja needs 7.17 s"
  },
  {
   "check": "sidecar lines ja:last",
   "result": "warn",
-  "why": "EU法は8月から：AIの偽物には | 表示が必要。風刺も、ただし控えめに。"
+  "why": "EU法は8月から：AIの偽物には表示が | 必要。風刺には笑いを壊さない表示を。"
  }
 ]

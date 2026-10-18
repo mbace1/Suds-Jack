@@ -3,7 +3,7 @@
  "measured": {
   "I": -14.1,
   "LRA": 2.7,
-  "TP": -2.9
+  "TP": -2.8
  },
  "limiter": [
   "None:11.8",
@@ -45,7 +45,7 @@
   },
   {
    "t0": 26.214,
-   "t1": 28.576999999999998,
+   "t1": 28.895,
    "db": -3.5,
    "attack": 0.06,
    "release": 0.3,
@@ -62,7 +62,7 @@
   {
    "check": "true peak",
    "result": "pass",
-   "why": "-2.9 dBTP (at most -1.0)"
+   "why": "-2.8 dBTP (at most -1.0)"
   },
   {
    "check": "silence",
@@ -77,8 +77,8 @@
   {
    "check": "coverage",
    "result": "pass",
-   "why": "23/23 cues have a sound within 40 ms"
+   "why": "25/25 cues have a sound within 40 ms"
   }
  ],
- "placed": 441
+ "placed": 442
 }

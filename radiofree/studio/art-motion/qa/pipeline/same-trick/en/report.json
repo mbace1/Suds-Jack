@@ -121,29 +121,29 @@
   },
   {
    "id": "last",
-   "text": "EU law since August: an AI fake / must be labelled. Satire too, / just [lightly].",
-   "plain": "EU law since August: an AI fake must be labelled. Satire too, just lightly.",
+   "text": "EU law since August: AI fakes / need a label. For satire, / one that won't [spoil the joke].",
+   "plain": "EU law since August: AI fakes need a label. For satire, one that won't spoil the joke.",
    "t0": 26.214,
    "t1": 31.943,
    "shown": 5.729,
-   "read": 4.75,
-   "lastWord": 28.177,
+   "read": 5.3,
+   "lastWord": 28.495,
    "widths": [
-    740,
-    670,
-    272
+    694,
+    555,
+    684
    ],
    "box": {
-    "x": 159,
+    "x": 182,
     "y": 191,
-    "w": 762,
+    "w": 716,
     "h": 247
    },
    "inSafe": true,
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 5.92,
+    "edge": 5.28,
     "busy": 0
    },
    "native": true

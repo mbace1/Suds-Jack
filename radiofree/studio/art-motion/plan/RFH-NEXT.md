@@ -19,7 +19,7 @@ first; the one hard date is **The Day After, before the 3 Nov midterms**.
 1. *Welcome Home* v4: waiting for approval.
 2. *The Day After*: **APPROVED 18 Oct** (owner: "great"): `previews/18-10-The-Day-After-en.mp4`. A US story, so a 00:50 window, after *Kill Switch* airs (its last shot is Kill Switch's sticky note). Kill-switch detail checked against Axios 18 Oct.
 3. *It Was Only a Test* (`plan/films/11-only-a-test.md`): **built 18 Oct, waiting for approval**: `previews/18-10-It-Was-Only-a-Test-en.mp4` (32.1 s + slate; all checks pass).
-4. *Same Trick, Two Verdicts* (`plan/films/12-same-trick.md`): **built 18 Oct, waiting for approval**: `previews/18-10-Same-Trick-en.mp4` (32.1 s + slate; all checks pass). An EU/US story: a 12:50 release.
+4. *Same Trick, Two Verdicts* (`plan/films/12-same-trick.md`): **v2 built 18 Oct, waiting for approval**: `previews/18-10-Same-Trick-v2-en.mp4` (owner on v1: "great", but "just lightly" was unclear; the ending now reads "For satire, one that won't spoil the joke"). An EU/US story: a 12:50 release.
 
 Slots follow the calendar's logic: **00:50** reaches the US evening (US stories), and **12:50** reaches the
 European day (Nordic and EU stories). All times are Helsinki time.

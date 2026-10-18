@@ -15,8 +15,8 @@
  "tv_judge.gavel": 20.4084,
  "tv_judge.speech": 21.3103,
  "tv_judge.ban": 21.8484,
- "tv_eu.labelled": 27.1616,
- "tv_eu.light": 28.177,
+ "tv_eu.labelled": 27.1161,
+ "tv_eu.light": 28.2679,
  "lang": "en",
  "holds": [],
  "cues": {
@@ -30,8 +30,8 @@
   "tv_judge.gavel": 20.4084,
   "tv_judge.speech": 21.3103,
   "tv_judge.ban": 21.8484,
-  "tv_eu.labelled": 27.1616,
-  "tv_eu.light": 28.177
+  "tv_eu.labelled": 27.1161,
+  "tv_eu.light": 28.2679
  },
  "words": [
   {
@@ -431,62 +431,80 @@
    "caption": "last"
   },
   {
-   "w": "an",
+   "w": "AI",
    "t": 26.692,
    "pop": false,
    "caption": "last"
   },
   {
-   "w": "AI",
+   "w": "fakes",
    "t": 26.76,
    "pop": false,
    "caption": "last"
   },
   {
-   "w": "fake",
-   "t": 26.828,
+   "w": "need",
+   "t": 27.116,
    "pop": false,
    "caption": "last"
   },
   {
-   "w": "must",
-   "t": 27.162,
+   "w": "a",
+   "t": 27.23,
    "pop": false,
    "caption": "last"
   },
   {
-   "w": "be",
+   "w": "label.",
    "t": 27.275,
    "pop": false,
    "caption": "last"
   },
   {
-   "w": "labelled.",
-   "t": 27.343,
+   "w": "For",
+   "t": 27.434,
    "pop": false,
    "caption": "last"
   },
   {
-   "w": "Satire",
-   "t": 27.571,
+   "w": "satire,",
+   "t": 27.525,
    "pop": false,
    "caption": "last"
   },
   {
-   "w": "too,",
-   "t": 27.73,
+   "w": "one",
+   "t": 27.927,
    "pop": false,
    "caption": "last"
   },
   {
-   "w": "just",
-   "t": 28.063,
+   "w": "that",
+   "t": 28.018,
    "pop": false,
    "caption": "last"
   },
   {
-   "w": "lightly.",
-   "t": 28.177,
+   "w": "won't",
+   "t": 28.132,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "spoil",
+   "t": 28.268,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "the",
+   "t": 28.404,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "joke.",
+   "t": 28.495,
    "pop": true,
    "caption": "last"
   }
