@@ -1,115 +1,102 @@
 {
  "lang": "en",
- "end": 32.14285714285714,
- "holds": [],
+ "end": 28.928514285714282,
+ "holds": [
+  {
+   "caption": "question",
+   "beat": "s2",
+   "extra": 0.5357
+  },
+  {
+   "caption": "lock",
+   "beat": "s3",
+   "extra": 0.5357
+  },
+  {
+   "caption": "ad",
+   "beat": "s4",
+   "extra": 1.0714
+  }
+ ],
  "captions": [
   {
    "id": "question",
-   "text": "A home screen / that knows your face. / What does it keep / when you [leave]?",
-   "plain": "A home screen that knows your face. What does it keep when you leave?",
-   "t0": 0.5,
-   "t1": 6.079,
-   "shown": 5.579,
-   "read": 4.45,
-   "lastWord": 2.592,
+   "text": "Pear's new home screen, / HomeView, is sold on privacy. / But whose [privacy]?",
+   "plain": "Pear's new home screen, HomeView, is sold on privacy. But whose privacy?",
+   "t0": 2.6,
+   "t1": 7.686,
+   "shown": 5.086,
+   "read": 4.6,
+   "lastWord": 4.495,
    "widths": [
-    357,
-    521,
-    429,
-    402
+    596,
+    717,
+    470
    ],
    "box": {
-    "x": 269,
+    "x": 171,
     "y": 191,
-    "w": 543,
+    "w": 739,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 3.04,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "lock",
+   "text": "In Pear's own ad, / the brother tries to read / his sister's messages. / Only her face [unlocks] them.",
+   "plain": "In Pear's own ad, the brother tries to read his sister's messages. Only her face unlocks them.",
+   "t0": 8.636,
+   "t1": 14.65,
+   "shown": 6.014,
+   "read": 5.7,
+   "lastWord": 11.318,
+   "widths": [
+    402,
+    570,
+    528,
+    672
+   ],
+   "box": {
+    "x": 193,
+    "y": 191,
+    "w": 694,
     "h": 334
    },
    "inSafe": true,
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 6.46,
-    "busy": 0.03
-   },
-   "native": true
-  },
-  {
-   "id": "data",
-   "text": "Your messages and calendar: / its maker says they're / [not stored] on it.",
-   "plain": "Your messages and calendar: its maker says they're not stored on it.",
-   "t0": 7.029,
-   "t1": 12.507,
-   "shown": 5.479,
-   "read": 4.4,
-   "lastWord": 8.946,
-   "widths": [
-    719,
-    534,
-    374
-   ],
-   "box": {
-    "x": 170,
-    "y": 191,
-    "w": 741,
-    "h": 247
-   },
-   "inSafe": true,
-   "inRail": false,
-   "covers": [],
-   "busy": {
-    "edge": 5.25,
-    "busy": 0
-   },
-   "native": true
-  },
-  {
-   "id": "face",
-   "text": "Your face? It says / nobody can see it. / How long it's kept: [not said].",
-   "plain": "Your face? It says nobody can see it. How long it's kept: not said.",
-   "t0": 13.457,
-   "t1": 18.936,
-   "shown": 5.479,
-   "read": 4.35,
-   "lastWord": 15.306,
-   "widths": [
-    421,
-    435,
-    652
-   ],
-   "box": {
-    "x": 203,
-    "y": 191,
-    "w": 674,
-    "h": 247
-   },
-   "inSafe": true,
-   "inRail": false,
-   "covers": [],
-   "busy": {
-    "edge": 2.83,
+    "edge": 4.6,
     "busy": 0
    },
    "native": true
   },
   {
    "id": "ad",
-   "text": "Its own ad ends with / the family watching / the daughter's boyfriend / [leave] on its camera.",
-   "plain": "Its own ad ends with the family watching the daughter's boyfriend leave on its camera.",
-   "t0": 19.886,
-   "t1": 25.364,
-   "shown": 5.479,
-   "read": 5.3,
-   "lastWord": 22.341,
+   "text": "Then the ad's happy ending: / the whole family watches her / leave with her boyfriend, / on HomeView's door [camera].",
+   "plain": "Then the ad's happy ending: the whole family watches her leave with her boyfriend, on HomeView's door camera.",
+   "t0": 15.6,
+   "t1": 22.15,
+   "shown": 6.55,
+   "read": 6.45,
+   "lastWord": 18.578,
    "widths": [
-    487,
-    486,
-    600,
-    486
+    678,
+    708,
+    599,
+    703
    ],
    "box": {
-    "x": 229,
+    "x": 175,
     "y": 191,
-    "w": 622,
+    "w": 730,
     "h": 334
    },
    "inSafe": true,
@@ -123,29 +110,28 @@
   },
   {
    "id": "last",
-   "text": "It forgets your data / when you leave. / And your [guests]?",
-   "plain": "It forgets your data when you leave. And your guests?",
-   "t0": 26.214,
-   "t1": 31.943,
+   "text": "Her messages: private. / Her boyfriend: [family viewing].",
+   "plain": "Her messages: private. Her boyfriend: family viewing.",
+   "t0": 23,
+   "t1": 28.729,
    "shown": 5.729,
    "read": 3.65,
-   "lastWord": 27.7,
+   "lastWord": 24.243,
    "widths": [
-    462,
-    391,
-    419
+    556,
+    725
    ],
    "box": {
-    "x": 298,
+    "x": 167,
     "y": 191,
-    "w": 484,
-    "h": 247
+    "w": 747,
+    "h": 160
    },
    "inSafe": true,
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 0.51,
+    "edge": 0.61,
     "busy": 0
    },
    "native": true
@@ -159,6 +145,6 @@
    "ok": true
   }
  },
- "frames": 964,
+ "frames": 868,
  "fps": 30
 }

@@ -1,24 +1,19 @@
 1
-00:00:00,500 --> 00:00:06,079
-Kotinäyttö, joka tuntee kasvosi. Mitä se
-säilyttää, kun lähdet?
+00:00:02,600 --> 00:00:07,686
+Pearin uusi kotinäyttö HomeView myy
+yksityisyyttä. Mutta kenen?
 
 2
-00:00:07,029 --> 00:00:12,507
-Viestisi ja kalenterisi: valmistaja sanoo,
-ettei niitä tallenneta siihen.
+00:00:08,636 --> 00:00:14,650
+Pearin omassa mainoksessa veli yrittää lukea
+siskonsa viestit. Vain hänen kasvonsa avaavat ne.
 
 3
-00:00:13,457 --> 00:00:18,936
-Kasvosi? Se sanoo, ettei kukaan näe niitä.
-Säilytysaika: ei kerrota.
+00:00:15,600 --> 00:00:22,150
+Sitten onnellinen loppu: koko perhe katsoo, kun hän
+lähtee poikaystävänsä kanssa, HomeViewn ovikamerasta.
 
 4
-00:00:19,886 --> 00:00:25,364
-Sen oma mainos päättyy, kun perhe katsoo
-sen kamerasta tyttären poikaystävän lähtöä.
-
-5
-00:00:26,214 --> 00:00:31,943
-Se unohtaa tietosi, kun lähdet. Entä
-vieraasi?
+00:00:23,000 --> 00:00:28,729
+Hänen viestinsä: yksityisiä. Poikaystävä:
+perheen ohjelmaa.
