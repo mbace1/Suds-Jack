@@ -50,6 +50,15 @@ if FJ['kind'] == 'engine':
         '--query', f'plan=/_out/plan.json&src=/_out/src/&n={n}', env={**os.environ, 'NODE_PATH': npm})
     shutil.rmtree(OUT / 'src')
 else:
+    # measure before drawing: a page film can take an hour and a half to render (Welcome Home did, and then failed on
+    # four lines 40–90 px too wide), while its text report takes seconds. Every language must fit before any frame.
+    for L in copy['langs']:
+        pre = OUT / 'pre' / L
+        run('node', HERE / 'render.mjs', FILM.relative_to(ART) / 'film.html', pre, '--fonts', FONTS, '--lang', L, '--query', 'busy=0', '--report-only', env={**os.environ, 'NODE_PATH': npm})
+        r = json.load(open(pre / 'report.json'))
+        bad = [f"{L}:{c['id']} {max(c['widths'])} px" for c in r['captions'] if max(c['widths']) > 800 or not c['inSafe'] or c['inRail']] + \
+              [f"{L}:ui.{k} to x {u['x1']}" for k, u in r.get('ui', {}).items() if not u['ok']]
+        if bad: sys.exit('pre-flight: these lines do not fit, fix the copy before rendering: ' + '; '.join(bad))
     run('node', HERE / 'render.mjs', FILM.relative_to(ART) / 'film.html', OUT, '--fonts', FONTS, '--lang', LANG, env={**os.environ, 'NODE_PATH': npm})
 rep = json.load(open(OUT / 'report.json')); ev = json.load(open(OUT / 'events.json'))
 

@@ -27,10 +27,11 @@ uv run --with numpy --with soundfile --with matplotlib python pipeline/sound/she
 
   Pass `--engine <dir>` and, for the station's ending, `--signoff previews/signoff-papercut.mp4`.
 
-`build.py` runs five stages and **fails on any FAIL**:
+`build.py` runs its stages in order and **fails on any FAIL**:
 
 | stage | what | where |
 |---|---|---|
+| pre-flight | (page films) every language's text report, measured with the real fonts in seconds; a line over 800 px, out of the safe zone or a tag past the rail stops the build before any frame is drawn | `render.mjs --report-only` |
 | picture | headless Chromium renders the frames. The page also hands over its `events` (every beat and every word, retimed) and a `report` (every caption measured with the real fonts) | `render.mjs` |
 | text | sidecars (SRT and VTT) in every language on this master's timeline, plus the text checks | `text/text.py` |
 | sound | the film's cue sheet places sounds from the library and music from the series stems, then the mix chain masters and checks the result | `sound/` and the film's `score.py` |
