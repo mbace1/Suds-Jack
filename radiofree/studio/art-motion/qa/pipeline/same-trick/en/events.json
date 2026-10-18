@@ -1,0 +1,522 @@
+{
+ "s1": 0,
+ "s2": 6.428571428571429,
+ "s3": 12.857142857142858,
+ "s4": 19.285714285714285,
+ "s5": 25.714285714285715,
+ "end": 32.142857142857146,
+ "tv_trick.strip": 0.4,
+ "tv_trick.pull": 1.7427,
+ "tv_trick.two": 2.3945,
+ "tv_berlin.banned": 7.5286,
+ "tv_berlin.satire": 9.1049,
+ "tv_cal.voice": 14.8817,
+ "tv_cal.label": 15.7381,
+ "tv_judge.gavel": 20.4084,
+ "tv_judge.speech": 21.3103,
+ "tv_judge.ban": 21.8484,
+ "tv_eu.labelled": 27.1616,
+ "tv_eu.light": 28.177,
+ "lang": "en",
+ "holds": [],
+ "cues": {
+  "tv_trick.strip": 0.4,
+  "tv_trick.pull": 1.7427,
+  "tv_trick.two": 2.3945,
+  "tv_berlin.banned": 7.5286,
+  "tv_berlin.satire": 9.1049,
+  "tv_cal.voice": 14.8817,
+  "tv_cal.label": 15.7381,
+  "tv_judge.gavel": 20.4084,
+  "tv_judge.speech": 21.3103,
+  "tv_judge.ban": 21.8484,
+  "tv_eu.labelled": 27.1616,
+  "tv_eu.light": 28.177
+ },
+ "words": [
+  {
+   "w": "Can",
+   "t": 0.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 0.591,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "joke",
+   "t": 0.636,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "use",
+   "t": 0.75,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "AI",
+   "t": 0.841,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "to",
+   "t": 0.909,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "put",
+   "t": 0.977,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "words",
+   "t": 1.068,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "in",
+   "t": 1.425,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 1.493,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "leader's",
+   "t": 1.538,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "mouth?",
+   "t": 1.743,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "Two",
+   "t": 2.122,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "courts,",
+   "t": 2.213,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "two",
+   "t": 2.395,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "answers.",
+   "t": 2.485,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "Berlin,",
+   "t": 7.029,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "2024:",
+   "t": 7.21,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "a",
+   "t": 7.347,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "court",
+   "t": 7.392,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "banned",
+   "t": 7.529,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "an",
+   "t": 7.908,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "AI",
+   "t": 7.976,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "video",
+   "t": 8.044,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "of",
+   "t": 8.18,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "the",
+   "t": 8.249,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "chancellor:",
+   "t": 8.339,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "not",
+   "t": 8.832,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "clearly",
+   "t": 8.923,
+   "pop": false,
+   "caption": "berlin"
+  },
+  {
+   "w": "satire.",
+   "t": 9.105,
+   "pop": true,
+   "caption": "berlin"
+  },
+  {
+   "w": "California,",
+   "t": 13.457,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "2024:",
+   "t": 13.73,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "a",
+   "t": 13.866,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "parody",
+   "t": 13.912,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "ad",
+   "t": 14.071,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "gave",
+   "t": 14.359,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "a",
+   "t": 14.473,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "candidate",
+   "t": 14.518,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "an",
+   "t": 14.745,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "AI",
+   "t": 14.814,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "voice.",
+   "t": 14.882,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "A",
+   "t": 15.261,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "new",
+   "t": 15.306,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "law",
+   "t": 15.397,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "demanded",
+   "t": 15.488,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "a",
+   "t": 15.693,
+   "pop": false,
+   "caption": "california"
+  },
+  {
+   "w": "label.",
+   "t": 15.738,
+   "pop": true,
+   "caption": "california"
+  },
+  {
+   "w": "A",
+   "t": 19.886,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "judge",
+   "t": 19.931,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "struck",
+   "t": 20.068,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "the",
+   "t": 20.227,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "law",
+   "t": 20.318,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "down:",
+   "t": 20.408,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "answer",
+   "t": 20.765,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "a",
+   "t": 20.924,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "joke",
+   "t": 20.969,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "with",
+   "t": 21.083,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "more",
+   "t": 21.197,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "speech,",
+   "t": 21.31,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "not",
+   "t": 21.712,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "a",
+   "t": 21.803,
+   "pop": false,
+   "caption": "judge"
+  },
+  {
+   "w": "ban.",
+   "t": 21.848,
+   "pop": true,
+   "caption": "judge"
+  },
+  {
+   "w": "EU",
+   "t": 26.214,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "law",
+   "t": 26.282,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "since",
+   "t": 26.373,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "August:",
+   "t": 26.51,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "an",
+   "t": 26.692,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "AI",
+   "t": 26.76,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "fake",
+   "t": 26.828,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "must",
+   "t": 27.162,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "be",
+   "t": 27.275,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "labelled.",
+   "t": 27.343,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "Satire",
+   "t": 27.571,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "too,",
+   "t": 27.73,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "just",
+   "t": 28.063,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "lightly.",
+   "t": 28.177,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.5,
+   "t1": 6.079
+  },
+  {
+   "id": "berlin",
+   "t0": 7.029,
+   "t1": 12.507
+  },
+  {
+   "id": "california",
+   "t0": 13.457,
+   "t1": 18.936
+  },
+  {
+   "id": "judge",
+   "t0": 19.886,
+   "t1": 25.364
+  },
+  {
+   "id": "last",
+   "t0": 26.214,
+   "t1": 31.943
+  }
+ ],
+ "quiet": []
+}

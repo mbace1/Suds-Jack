@@ -1,0 +1,472 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The station's question. The cases: research-satire-history.md §10 (Berlin) and §"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy berlin.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy berlin.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy berlin.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy berlin source",
+  "result": "pass",
+  "why": "Landgericht Berlin II, 15 O 579/23: a preliminary injunction for the federal gov"
+ },
+ {
+  "check": "copy berlin pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy california.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy california.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy california.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy california source",
+  "result": "pass",
+  "why": "A July 2024 parody campaign ad with a cloned candidate's voice; AB 2839, signed "
+ },
+ {
+  "check": "copy california pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy judge.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy judge.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy judge.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy judge source",
+  "result": "pass",
+  "why": "Kohls v. Bonta, US District Court, E.D. California: preliminary injunction 2 Oct"
+ },
+ {
+  "check": "copy judge pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "AI Act Article 50(4), applying from 2 Aug 2026: deep fakes must be disclosed; fo"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.tagBerlin",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tagCalifornia",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tagJudge",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tagEU",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "34 words: The same AI trick got two verdicts: Berlin banned a fake chancellor as not clearly satire,"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "34 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 713 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 172, 'y': 191, 'w': 735, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 4.80 s (76 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 3.59 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 5.69 → scrim 0.0"
+ },
+ {
+  "check": "width en:berlin",
+  "result": "pass",
+  "why": "widest line 692 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:berlin",
+  "result": "pass",
+  "why": "box {'x': 183, 'y': 191, 'w': 714, 'h': 247}"
+ },
+ {
+  "check": "reading time en:berlin",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.95 s (79 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:berlin",
+  "result": "pass",
+  "why": "last word up 3.40 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:berlin",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:berlin",
+  "result": "pass",
+  "why": "picture behind: edge 5.28 → scrim 0.0"
+ },
+ {
+  "check": "width en:california",
+  "result": "pass",
+  "why": "widest line 705 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:california",
+  "result": "pass",
+  "why": "box {'x': 176, 'y': 191, 'w': 727, 'h': 247}"
+ },
+ {
+  "check": "reading time en:california",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 5.35 s (87 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:california",
+  "result": "pass",
+  "why": "last word up 3.20 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:california",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:california",
+  "result": "pass",
+  "why": "picture behind: edge 5.37 → scrim 0.0"
+ },
+ {
+  "check": "width en:judge",
+  "result": "pass",
+  "why": "widest line 785 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:judge",
+  "result": "pass",
+  "why": "box {'x': 137, 'y': 191, 'w': 807, 'h': 247}"
+ },
+ {
+  "check": "reading time en:judge",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.55 s (71 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:judge",
+  "result": "pass",
+  "why": "last word up 3.52 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:judge",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:judge",
+  "result": "pass",
+  "why": "picture behind: edge 6.68 → scrim 0.04"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 740 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 159, 'y': 191, 'w': 762, 'h': 247}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 4.75 s (75 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 3.77 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 5.92 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "Can a joke use AI to put words in a | leader's mouth? Two courts, two answers."
+ },
+ {
+  "check": "sidecar lines en:berlin",
+  "result": "pass",
+  "why": "Berlin, 2024: a court banned an AI video | of the chancellor: not clearly satire."
+ },
+ {
+  "check": "sidecar lines en:california",
+  "result": "warn",
+  "why": "California, 2024: a parody ad gave a candidate | an AI voice. A new law demanded a label."
+ },
+ {
+  "check": "sidecar lines en:judge",
+  "result": "pass",
+  "why": "A judge struck the law down: answer a joke | with more speech, not a ban."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "EU law since August: an AI fake must be | labelled. Satire too, just lightly."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "warn",
+  "why": "5.58 s on this master, fi needs 6.00 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "warn",
+  "why": "Saako vitsi panna tekoälyllä sanoja johtajan | suuhun? Kaksi oikeutta, kaksi vastausta."
+ },
+ {
+  "check": "sidecar fi:berlin",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 5.88 s"
+ },
+ {
+  "check": "sidecar lines fi:berlin",
+  "result": "pass",
+  "why": "Berliini 2024: oikeus kielsi tekoälyvideon | liittokanslerista: ei selvästi satiiria."
+ },
+ {
+  "check": "sidecar fi:california",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 6.24 s"
+ },
+ {
+  "check": "sidecar lines fi:california",
+  "result": "warn",
+  "why": "Kalifornia 2024: parodiamainos antoi ehdokkaalle | tekoälyäänen. Uusi laki vaati merkinnän."
+ },
+ {
+  "check": "sidecar fi:judge",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 4.65 s"
+ },
+ {
+  "check": "sidecar lines fi:judge",
+  "result": "pass",
+  "why": "Tuomari kumosi lain: vitsiin vastataan | puheella, ei kiellolla."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 5.59 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "EU-laki elokuusta: tekoälyväärennös on | merkittävä. Satiirikin, mutta kevyesti."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "warn",
+  "why": "5.58 s on this master, ja needs 7.00 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "warn",
+  "why": "AIで指導者の口に言葉を入れる冗談は | 許されるか？二つの法廷、二つの答え。"
+ },
+ {
+  "check": "sidecar ja:berlin",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 7.50 s"
+ },
+ {
+  "check": "sidecar lines ja:berlin",
+  "result": "warn",
+  "why": "ベルリン、2024年：裁判所は首相の | AI動画を禁じた。明らかな風刺ではないと。"
+ },
+ {
+  "check": "sidecar ja:california",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 8.33 s"
+ },
+ {
+  "check": "sidecar lines ja:california",
+  "result": "warn",
+  "why": "カリフォルニア、2024年：パロディ広告が | 候補者にAIの声を与えた。新法は表示を求めた。"
+ },
+ {
+  "check": "sidecar ja:judge",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 6.33 s"
+ },
+ {
+  "check": "sidecar lines ja:judge",
+  "result": "warn",
+  "why": "判事はその法律を無効にした。 | 冗談には言論で応えよ、禁止ではなく。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "warn",
+  "why": "5.73 s on this master, ja needs 6.67 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "warn",
+  "why": "EU法は8月から：AIの偽物には | 表示が必要。風刺も、ただし控えめに。"
+ }
+]

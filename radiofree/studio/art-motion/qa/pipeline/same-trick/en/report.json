@@ -1,0 +1,154 @@
+{
+ "lang": "en",
+ "end": 32.142857142857146,
+ "holds": [],
+ "captions": [
+  {
+   "id": "question",
+   "text": "Can a joke use AI to put words / in a leader's mouth? / Two courts, [two answers].",
+   "plain": "Can a joke use AI to put words in a leader's mouth? Two courts, two answers.",
+   "t0": 0.5,
+   "t1": 6.079,
+   "shown": 5.579,
+   "read": 4.8,
+   "lastWord": 2.485,
+   "widths": [
+    713,
+    485,
+    608
+   ],
+   "box": {
+    "x": 172,
+    "y": 191,
+    "w": 735,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 5.69,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "berlin",
+   "text": "Berlin, 2024: a court banned / an AI video of the chancellor: / not clearly [satire].",
+   "plain": "Berlin, 2024: a court banned an AI video of the chancellor: not clearly satire.",
+   "t0": 7.029,
+   "t1": 12.507,
+   "shown": 5.479,
+   "read": 4.95,
+   "lastWord": 9.105,
+   "widths": [
+    670,
+    692,
+    423
+   ],
+   "box": {
+    "x": 183,
+    "y": 191,
+    "w": 714,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 5.28,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "california",
+   "text": "California, 2024: a parody ad / gave a candidate an AI voice. / A new law demanded a [label].",
+   "plain": "California, 2024: a parody ad gave a candidate an AI voice. A new law demanded a label.",
+   "t0": 13.457,
+   "t1": 18.936,
+   "shown": 5.479,
+   "read": 5.35,
+   "lastWord": 15.738,
+   "widths": [
+    691,
+    705,
+    700
+   ],
+   "box": {
+    "x": 176,
+    "y": 191,
+    "w": 727,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 5.37,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "judge",
+   "text": "A judge struck the law down: / answer a joke with more speech, / not a [ban].",
+   "plain": "A judge struck the law down: answer a joke with more speech, not a ban.",
+   "t0": 19.886,
+   "t1": 25.364,
+   "shown": 5.479,
+   "read": 4.55,
+   "lastWord": 21.848,
+   "widths": [
+    690,
+    785,
+    240
+   ],
+   "box": {
+    "x": 137,
+    "y": 191,
+    "w": 807,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 6.68,
+    "busy": 0.05
+   },
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "EU law since August: an AI fake / must be labelled. Satire too, / just [lightly].",
+   "plain": "EU law since August: an AI fake must be labelled. Satire too, just lightly.",
+   "t0": 26.214,
+   "t1": 31.943,
+   "shown": 5.729,
+   "read": 4.75,
+   "lastWord": 28.177,
+   "widths": [
+    740,
+    670,
+    272
+   ],
+   "box": {
+    "x": 159,
+    "y": 191,
+    "w": 762,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 5.92,
+    "busy": 0
+   },
+   "native": true
+  }
+ ],
+ "frames": 964,
+ "fps": 30
+}

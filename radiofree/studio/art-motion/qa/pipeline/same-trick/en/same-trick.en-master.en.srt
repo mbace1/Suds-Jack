@@ -1,0 +1,24 @@
+1
+00:00:00,500 --> 00:00:06,079
+Can a joke use AI to put words in a
+leader's mouth? Two courts, two answers.
+
+2
+00:00:07,029 --> 00:00:12,507
+Berlin, 2024: a court banned an AI video
+of the chancellor: not clearly satire.
+
+3
+00:00:13,457 --> 00:00:18,936
+California, 2024: a parody ad gave a candidate
+an AI voice. A new law demanded a label.
+
+4
+00:00:19,886 --> 00:00:25,364
+A judge struck the law down: answer a joke
+with more speech, not a ban.
+
+5
+00:00:26,214 --> 00:00:31,943
+EU law since August: an AI fake must be
+labelled. Satire too, just lightly.
