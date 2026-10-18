@@ -1,4 +1,4 @@
-## v58 — in progress
+## v58 — 2026-10-18
 **Season 3: you don't shoot trucks, you don't save crates, and the load is not the score (HD-018)**
 
 Owner, 18 Oct 2026: *you don't shoot trucks.. or save crates*, then *sure* to
