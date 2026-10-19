@@ -195,18 +195,18 @@ const SIL = STEAM_AT.slice(0, 2).map(([x, y], i) => {
 // steam: soft puffs on cards, rising and spreading out of the open windows
 const puffC = canvas(256, 256); { const g = puffC.getContext('2d'), r = rng(3);
   for (let i = 0; i < 26; i++) { const x = 60 + r() * 136, y = 60 + r() * 136, rad = 30 + r() * 46, gr = g.createRadialGradient(x, y, 0, x, y, rad);
-    gr.addColorStop(0, 'rgba(255,255,255,.22)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 256, 256); } }
+    gr.addColorStop(0, 'rgba(255,255,255,.12)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 256, 256); } }
 const puffT = tex(puffC);
 const PUFFS = []; { const r = rng(9);
-  for (const [x, y] of STEAM_AT) for (let i = 0; i < 9; i++) {
+  for (const [x, y] of STEAM_AT) for (let i = 0; i < 18; i++) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: puffT, transparent: true, depthWrite: false, color: new THREE.Color(1.3, 1.3, 1.32), opacity: 0 }));
-    m.position.set(x, y, FZ + 10); scene.add(m); PUFFS.push({ m, x, y, ph: r(), sp: 0.42 + r() * 0.2, dx: (r() - 0.5) * 18, rot: (r() - 0.5) * 2 });
+    m.position.set(x, y, FZ + 10); scene.add(m); PUFFS.push({ m, x: x + (r() - 0.5) * 12, y, ph: r(), sp: 0.3 + r() * 0.16, dx: (r() - 0.5) * 22, rot: (r() - 0.5) * 2, w: 0.6 + r() * 0.5 });
   } }
 /** the steam: k = how hard it is coming out (it swells on "heating") */
 function steam(t, k) {
-  for (const p of PUFFS) { const u = (t * p.sp + p.ph) % 1, s = 10 + u * 34;
-    p.m.position.set(p.x + p.dx * u * 0.5, p.y + 10 + u * 40, FZ + 10 + u * 6); p.m.scale.set(s * 0.45, s * 0.45, 1); p.m.rotation.z = p.rot * u;
-    p.m.material.opacity = k * Math.sin(Math.PI * u) * 0.7; p.m.visible = k > 0.01; }
+  for (const p of PUFFS) { const u = (t * p.sp + p.ph) % 1, s = 6 + u * 26;                    // wisps: narrow, tall, thinning as they rise and drift
+    p.m.position.set(p.x + p.dx * u + Math.sin(t * 1.3 + p.ph * 9) * 2, p.y + 6 + u * 58, FZ + 10 + u * 6); p.m.scale.set(s * 0.5 * p.w, s * 1.1, 1); p.m.rotation.z = p.rot * u * 0.5;
+    p.m.material.opacity = k * Math.sin(Math.PI * Math.min(1, u * 1.3)) * 0.75; p.m.visible = k > 0.01; }
 }
 // the HOTELLI sign: a vertical box on a bracket, its letters magenta neon tubes
 const SIGN = { x: 0, y: 112, z: FZ + 16 };
@@ -269,7 +269,7 @@ const CAT = (() => {
   mesh0(lumpy(ball(4.2, 1.3, 0.62, 1.0, 40), 0.2, 0.5, 600), M.cat, { parent: g });
   const head = new THREE.Group(); head.position.set(3.9, 1.4, 1.6); g.add(head);
   mesh0(lumpy(ball(2.1, 1.08, 0.9, 1.0, 32), 0.1, 0.6, 601), M.cat, { parent: head });
-  for (const s of [-1, 1]) mesh0(lumpy(new THREE.ConeGeometry(0.85, 1.7, 10).translate(0, 0.85, 0), 0.03, 1, 602 + s), M.cat, { pos: [s * 1.1, 1.3, -0.2], rot: [-0.15, 0, -s * 0.35], parent: head });
+  g.userData.ears = [-1, 1].map((s) => mesh0(lumpy(new THREE.ConeGeometry(0.85, 1.7, 10).translate(0, 0.85, 0), 0.03, 1, 602 + s), M.cat, { pos: [s * 1.1, 1.3, -0.2], rot: [-0.15, 0, -s * 0.35], parent: head }));
   for (const s of [-1, 1]) mesh0(new THREE.TorusGeometry(0.42, 0.1, 6, 12, Math.PI).rotateZ(Math.PI), M.catDark, { pos: [s * 0.78, 0.35, 1.95], parent: head, cast: false });
   mesh0(ball(0.28, 1.2, 0.8, 0.8, 10), M.catDark, { pos: [0, -0.25, 2.1], parent: head, cast: false });
   mesh0(lumpy(sausage([[-4.6, 0.2, -1.2], [-3.4, 0.4, 3.0], [0.4, 0.5, 4.1], [3.2, 0.3, 3.6]], [1.05, 0.9, 0.7, 0.5], { steps: 40 }), 0.05, 1, 605), M.cat, { parent: g });
@@ -304,17 +304,17 @@ const SHOT = [
   { // 2 · wide: the base folds him up like a taco; arms crossed; on "flat" he turns to the lens
     t0: () => T.s2, t1: () => T.s3,
     set(t) { const [h, f] = foldAt(t), look = ease.io((t - EV.look) / 0.5); fold(h, f);
-      lie(rotOnBed(h), { a: h, f, hy: -1.05 * look, hp: 0.35 - 0.2 * look }); drawStrip(t, true); },
+      lie(rotOnBed(h, t), { a: h * LEAN, f, hy: -1.05 * look, hp: 0.35 - 0.3 * clamp(h / FOLD.h) - 0.05 * look }); drawStrip(t, true); },
     cam(t, lt, d) { const k = ease.io(lt / d), pos = V([lerp(26, 22, k), lerp(46, 44, k), lerp(150, 138, k)]), at = V([-1, 24, -40]);
       return { pos, at, fov: 38, focus: pos.distanceTo(V([-3, 20, -34])), ap: 5 }; } },
   { // 3 · across the street: steam out of three windows; on "heating" it swells
     t0: () => T.s3, t1: () => T.s4,
-    set(t) { const [h, f] = foldAt(t); fold(h, f); lie(rotOnBed(h), { a: h, f, hy: -1.05, hp: 0.15 }); drawStrip(t, true); },
+    set(t) { const [h, f] = foldAt(t); fold(h, f); lie(rotOnBed(h), { a: h * LEAN, f, hy: -1.05, hp: 0.0 }); drawStrip(t, true); },
     cam(t, lt, d) { const k = ease.io(lt / d), pos = V([lerp(10, 6, k), lerp(74, 78, k), -96]), at = V([lerp(4, 2, k), lerp(98, 104, k), FZ]);
       return { pos, at, fov: 52, focus: pos.distanceTo(V([0, 100, FZ])), ap: 3 }; } },
   { // 4 · the phone on the nightstand lights: BACKUP MODE
     t0: () => T.s4, t1: () => T.s5,
-    set(t) { const [h, f] = foldAt(t); fold(h, f); lie(rotOnBed(h), { a: h, f, hy: -1.05, hp: 0.15 }); drawStrip(t, true); },
+    set(t) { const [h, f] = foldAt(t); fold(h, f); lie(rotOnBed(h), { a: h * LEAN, f, hy: -1.05, hp: 0.0 }); drawStrip(t, true); },
     cam(t, lt, d) { const k = ease.io(lt / d), ph = PHONE.position, pos = V([ph.x + lerp(10, 8.5, k), ph.y + lerp(12, 10.5, k), ph.z + lerp(11, 9.5, k)]);
       return { pos, at: V([ph.x - 0.2, ph.y + 0.3, ph.z - 0.6]), fov: 30, focus: pos.distanceTo(ph), ap: 11 }; } },
   { // 5 · on the floor with the cat on his chest, the apron for a pillow; the bed behind, folded, still connecting. Toko's card.
@@ -324,11 +324,22 @@ const SHOT = [
       return { pos, at, fov: 38, focus: pos.distanceTo(V(ON_FLOOR)), ap: 4.5 }; } },
 ];
 /** his hip rides back as the head of the bed comes up (it hinges just behind him) */
-function rotOnBed(h) { return [ON_BED[0] + Math.sin(h) * 0.6, ON_BED[1] + Math.sin(h) * 0.8, ON_BED[2]]; }
+/** as the head of the bed comes up his back rides it: the torso leans further than the section (its lean is spread over
+ *  three segments, so the chest only reaches ~3/4 of it), and the pelvis slides into the crease and lifts a little */
+const LEAN = +(Q.get('lean') || 1.42), HIPX = +(Q.get('hipx') || -2.0), HIPY = +(Q.get('hipy') || 1.8);
+function rotOnBed(h, t = -1) { const st = t >= EV.fold1 ? -0.7 * Math.exp(-(t - EV.fold1) * 5) * Math.cos((t - EV.fold1) * 16) : 0;   // he settles when the motor stops
+  return [ON_BED[0] + Math.sin(h) * HIPX, ON_BED[1] + Math.sin(h) * HIPY + st, ON_BED[2]]; }
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 
 // the floor: the apron folded under his head, the cat on his chest
 const PILLOW = mesh(lumpy(new RoundedBoxGeometry(11, 2.6, 8, 3, 1.1), 0.3, 0.3, 960), M.apron, { pos: [ON_FLOOR[0] - 23.5, 1.3, ON_FLOOR[2]] });
+
+// his glove, reaching over from the bed for the phone: the magenta mitt, a thumb, the black jacket's sleeve and cuff
+const REACH = new THREE.Group(); scene.add(REACH); REACH.visible = false;
+mesh0(lumpy(ball(1.5, 1.28, 0.74, 1.08, 24), 0.06, 0.8, 640), M.glove, { parent: REACH });
+mesh0(lumpy(sausage([[0.3, 0.15, 0.95], [-0.45, 0.4, 1.45], [-1.15, 0.55, 1.35]], [0.55, 0.48, 0.42], { up: [0, 1, 0] }), 0.03, 1, 641), M.glove, { parent: REACH });
+mesh0(lumpy(sausage([[1.4, 0.3, 0], [6, 2.6, -0.4], [14, 6.5, -1]], [1.7, 1.9, 2.0], { up: [0, 1, 0] }), 0.08, 0.5, 642), M.jacket, { parent: REACH });
+mesh0(new THREE.TorusGeometry(1.45, 0.6, 10, 24).rotateY(Math.PI / 2), M.jacket, { pos: [1.5, 0.35, 0], parent: REACH });
 
 // ------------------------------------------------------------------ one frame
 function frame(t, captions = true) {
@@ -340,10 +351,15 @@ function frame(t, captions = true) {
   HOOK.visible = true; APRON_HUNG.visible = APRON_TIE.visible = !S.floor; PILLOW.visible = !!S.floor;
   CAT.visible = !!S.floor;
   if (S.floor) { const A = SLOMO.tk.anchor, ch = lerp3(A.H1, A.H2, 0.5), w = SLOMO.wrap.localToWorld(V([ch[0], ch[1], ch[2] + 4.2]));
-    CAT.position.copy(w).add(V([0, 2.2, 0])); CAT.rotation.set(0, 0.25, 0); CAT.scale.set(1, 1 + 0.035 * Math.sin(tq * 2.6), 1); }
+    CAT.position.copy(w).add(V([0, 2.2, 0])); CAT.rotation.set(0, 0.25, 0); CAT.scale.set(1, 1 + 0.035 * Math.sin(tq * 2.6), 1);
+    const tw = Math.max(0, Math.sin((tq - T.s5 - 1.4) * 9)) * (tq > T.s5 + 1.4 && tq < T.s5 + 1.75 ? 1 : 0); CAT.userData.ears[1].rotation.set(-0.15 - tw * 0.5, 0, -0.35 - tw * 0.3); }   // an ear flicks once
   // the phone wakes in shot 4 and stays lit on the stand after
   const wake = i >= 3 ? clamp((t - EV.wake) / 0.25) : 0, note = i >= 3 ? clamp(t - EV.notif) : 0;
   drawPhone(wake, note); phoneLight.position.copy(PHONE.position).add(V([0.6, 2.2, 1.2])); phoneLight.intensity = 26 * wake;
+  { const bz = [0, 0.55].some((d) => t >= EV.notif + d && t < EV.notif + d + 0.42) ? 1 : 0;                          // the two buzzes the score plays
+    PHONE.position.set(STAND[0] + 0.6 + bz * 0.06 * Math.sin(t * 190), 18.25, STAND[2] + 2.4 + bz * 0.05 * Math.cos(t * 170)); PHONE.rotation.y = 0.28 + bz * 0.02 * Math.sin(t * 150);
+    const r = i === 3 ? ease.io((tq - EV.notif - 1.9) / 0.55) : 0; REACH.visible = r > 0.01;                          // once it has been read, his glove comes over from the bed, behind the phone, to its far edge
+    if (REACH.visible) { REACH.position.copy(V(lerp3([STAND[0] + 11, 21.5, STAND[2] - 6], [STAND[0] + 2.6, 19.0, STAND[2] - 0.6], r))); REACH.rotation.set(0, 0.55, -0.15 + r * 0.15); REACH.scale.setScalar(0.72); } }
   // across the street: the steam, the fans, the sign's flicker, the rain
   steam(t, clamp(0.35 + (t >= EV.heat ? 0.65 * ease.out((t - EV.heat) / 0.6) : 0)));
   for (const s of SIL) s.fan.rotation.z = Math.sin(tq * 9 + s.ph) * 0.6;
