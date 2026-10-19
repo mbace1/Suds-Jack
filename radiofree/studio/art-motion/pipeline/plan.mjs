@@ -58,7 +58,7 @@ film.shots.forEach((s, i) => {
     cues[`${s.id}.${name}`] = +v.toFixed(4);
   }
 });
-const plan = { film: copy.film, lang: LANG, bpm: film.bpm, fps: film.fps, T: P.T, end: P.T.end, holds: P.holds, shots, cues, captions: P.captions, ui: P.ui, keep: film.keep || [],
+const plan = { film: copy.film, series: copy.series || 'rfh', lang: LANG, bpm: film.bpm, fps: film.fps, T: P.T, end: P.T.end, holds: P.holds, shots, cues, captions: P.captions, ui: P.ui, keep: film.keep || [],
   quiet: (film.quiet || []).map((q) => ({ t0: cues[q.from] ?? P.T[q.from], t1: cues[q.to] ?? P.T[q.to], why: q.why })) };
 fs.mkdirSync(OUT, { recursive: true });
 fs.writeFileSync(path.join(OUT, 'plan.json'), JSON.stringify(plan, null, 1));

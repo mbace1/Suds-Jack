@@ -18,7 +18,7 @@ for (const c of plan.captions) for (let k = 0; k < 5; k++) { const i = idx(c.t0 
 const BUSY = CAP.measureBusy(g, plan, (t) => { g.drawImage(imgs.get(idx(t)), 0, 0); return out; });
 
 const keep = (t) => (plan.keep || []).filter((k) => t >= k.t0 && t <= k.t1).map((k) => ({ what: k.what, x: k.rect[0], y: k.rect[1], w: k.rect[2], h: k.rect[3] }));
-async function frame(i) { const t = i / FPS; g.drawImage(await load(i), 0, 0); CAP.draw(g, plan, t, { busy: BUSY }); CAP.bug(g, 'RADIO FREE HELSINKI', plan.captions[0]?.size || 'house'); return out; }
+async function frame(i) { const t = i / FPS; g.drawImage(await load(i), 0, 0); CAP.draw(g, plan, t, { busy: BUSY }); if (plan.series !== 'toko') CAP.bug(g, 'RADIO FREE HELSINKI', plan.captions[0]?.size || 'house'); return out; }   // a Toko film carries no station bug
 const flat = Object.fromEntries(Object.entries(plan.cues).map(([k, v]) => [k, v]));
 window.__film = {
   fps: FPS, frames: N, lang: plan.lang,

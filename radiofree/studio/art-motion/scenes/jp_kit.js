@@ -118,16 +118,17 @@
     function crows(c, lt) { c.fillStyle = K.key; for (const [x0, y0, s, ph] of [[180, 300, 1, 0], [260, 340, 0.8, 1.3], [330, 280, 0.7, 2.1]]) { const x = x0 + lt * 18, y = y0 + Math.sin(lt * 2 + ph) * 6, f = Math.sin(lt * 9 + ph) * 8 * s;
       c.beginPath(); c.moveTo(x - 30 * s, y - f); c.quadraticCurveTo(x - 12 * s, y - 8 * s, x, y); c.quadraticCurveTo(x + 12 * s, y - 8 * s, x + 30 * s, y - f); c.quadraticCurveTo(x + 12 * s, y + 2 * s, x, y + 5 * s); c.quadraticCurveTo(x - 12 * s, y + 2 * s, x - 30 * s, y - f); c.fill(); } }
     return {
-      draw(c, lt) {
+      draw(c, lt, o = {}) {      // o.bare: no cartouches, signature or seal (when the picture carries captions); o.extra(c, lt): drawn into the print, under the tree
         const z = 1 + lt * 0.012; c.save(); c.translate(W / 2, H * 0.6); c.scale(z, z); c.translate(-W / 2, -H * 0.6);
         c.drawImage(paper(), 0, 0);
         c.save(); c.globalCompositeOperation = 'multiply'; c.drawImage(blocks(), 2, -1); c.restore();   // the colour blocks, a hair off the key
         crows(c, lt); house(c);
         c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.08 + 0.05 * Math.sin(lt * 7) * Math.sin(lt * 3.1); c.fillStyle = K.glow; c.fillRect(270, 1080, 330, 190); c.restore();
-        ground(c); gate(c); toko(c, lt); tree(c); drone(c, lt);
+        ground(c); gate(c); toko(c, lt); if (o.extra) o.extra(c, lt); tree(c); drone(c, lt);
         { const t0 = 1.6, k = clamp((lt - t0) / 0.9), x = 742 - k * 20, y = k <= 0 ? 1180 : lerp(1180, 1760, k * k) - (k > 0.98 ? 0 : 0);   // the one that lets go
           c.fillStyle = K.kaki; c.strokeStyle = K.key; c.lineWidth = 2.5; c.beginPath(); c.ellipse(x, y, 19, 17, k * 4, 0, TAU); c.fill(); c.stroke(); }
         c.restore();
+        if (o.bare) return;
         // the title cartouche and the series cartouche, top right
         c.fillStyle = K.paper; c.fillRect(916, 70, 112, 380); c.strokeStyle = K.seal; c.lineWidth = 5; c.strokeRect(916, 70, 112, 380);
         vtext(c, '山里の秋', 972, 96, 72, 'NotoSerifJP-600', K.key);

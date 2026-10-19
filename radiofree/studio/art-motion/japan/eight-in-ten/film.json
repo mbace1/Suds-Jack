@@ -1,0 +1,23 @@
+{
+ "kind": "engine",
+ "engine": "et",
+ "bpm": 90,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/jp_kit.js",
+  "scenes/et_kit.js"
+ ],
+ "scenes": ["et_split", "et_tokyo", "et_cups", "et_kyoto", "et_card"],
+ "shots": [
+  { "id": "et_split", "beats": 9, "cues": { "news": 1.0 } },
+  { "id": "et_tokyo", "beats": 7, "cues": { "stat": "word:pop" } },
+  { "id": "et_cups", "beats": 7, "cues": { "more": "word:pop" } },
+  { "id": "et_kyoto", "beats": 7, "cues": { "wire": 0.3 } },
+  { "id": "et_card", "beats": 9, "cues": { "pour": 0.6 } }
+ ],
+ "quiet": [],
+ "keep": []
+}
