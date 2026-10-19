@@ -10,7 +10,7 @@
   "scenes/jp_kit.js",
   "scenes/et_kit.js"
  ],
- "scenes": ["et_split", "et_tokyo", "et_cups", "et_kyoto", "et_card"],
+ "scenes": [],
  "shots": [
   { "id": "et_split", "beats": 9, "cues": { "news": 1.0 } },
   { "id": "et_tokyo", "beats": 7, "cues": { "stat": "word:pop" } },
