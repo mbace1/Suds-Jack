@@ -16,10 +16,10 @@ Owner, 18 Oct: "Continue these explorations but let's set the next Radio Free H 
 first; the one hard date is **The Day After, before the 3 Nov midterms**.
 
 **Queue (18 Oct):**
-1. *Welcome Home* v4: waiting for approval.
-2. *The Day After*: **APPROVED 18 Oct** (owner: "great"): `previews/18-10-The-Day-After-en.mp4`. A US story, so a 00:50 window, after *Kill Switch* airs (its last shot is Kill Switch's sticky note). Kill-switch detail checked against Axios 18 Oct.
-3. *It Was Only a Test* (`plan/films/11-only-a-test.md`): **v3 built 18 Oct, waiting for a final yes**: `previews/18-10-It-Was-Only-a-Test-v3-en.mp4` (owner on v2: "works, just the footsteps could look like shoes"; they are shoe prints now). An EU story: a 12:50 release.
-4. *Same Trick, Two Verdicts* (`plan/films/12-same-trick.md`): **v3 built 18 Oct, waiting for a final yes**: `previews/18-10-Same-Trick-v3-en.mp4` (owner on v2: "almost approved; the gavel is off; more polish to art and sounds": a real gavel swing, and a polish pass). An EU/US story: a 12:50 release.
+1. *Welcome Home* v4: **not approved** (owner, 19 Oct: "lots of clipping and the messaging is still quite unclear"). Being reworked.
+2. *The Day After*: **APPROVED 18 Oct**: `films/23-10-Coxon7-The-Day-After.mp4`, the first 00:50 window after *Kill Switch* (22 Oct), whose sticky note is its last shot. Kill-switch detail checked against Axios 18 Oct.
+3. *It Was Only a Test*: **APPROVED 19 Oct (v3)**: `films/19-10-Coxon8-It-Was-Only-a-Test.mp4`, the 12:50 window on 19 Oct (an EU story).
+4. *Same Trick, Two Verdicts*: **APPROVED 19 Oct (v3)**: `films/20-10-Coxon9-Same-Trick-Two-Verdicts.mp4`, the 12:50 window on 20 Oct (EU/US).
 
 Slots follow the calendar's logic: **00:50** reaches the US evening (US stories), and **12:50** reaches the
 European day (Nordic and EU stories). All times are Helsinki time.
