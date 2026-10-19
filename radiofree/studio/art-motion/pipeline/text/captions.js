@@ -26,6 +26,9 @@ export const WIDTH = 800;                           // no line wider than this
 export const STYLES = {
   house: { latin: { family: 'Poppins-800', size: 46.5, lead: 87, stroke: 14, lift: 17 }, ja: { family: 'NotoSansJP-800', size: 46, lead: 87, stroke: 14, lift: 17 } },
   big: { latin: { family: 'Poppins-800', size: 82, lead: 98, stroke: 14, lift: 30 }, ja: { family: 'NotoSansJP-800', size: 74, lead: 104, stroke: 14, lift: 28 } },
+  // NOIR: the pulp narration box (Backup Mode, Toko Slomo): condensed caps, white on a black box with a hairline rule,
+  // the pop in magenta; the film loads the two faces itself (Anton-400, NotoSerifJP-600)
+  noir: { latin: { family: 'Anton-400', size: 64, lead: 80, stroke: 0, lift: 22, box: true, pop: '#f0027f' }, ja: { family: 'NotoSerifJP-600', size: 54, lead: 80, stroke: 0, lift: 20, box: true, pop: '#f0027f' } },
 };
 export const STYLE = STYLES.house;
 export const BAND = { top: 240, low: 1180 };        // where a caption's first baseline sits, by placement
@@ -111,7 +114,7 @@ export function layout(ctx, cap) {
     let x = 540 - total / 2; ln.forEach((w, j) => { out.push({ w: w.w, x, width: ws[j], y: y0 + i * st.lead }); x += ws[j] + space; }); return total;
   });
   ctx.restore();
-  const asc = st.size * 0.82, desc = st.size * 0.28, pad = st.stroke / 2 + 4, wmax = Math.max(...widths);
+  const asc = st.size * 0.82, desc = st.size * 0.28, pad = st.box ? 30 : st.stroke / 2 + 4, wmax = Math.max(...widths);
   const box = { x: 540 - wmax / 2 - pad, y: y0 - asc - pad, w: wmax + pad * 2, h: (cap.lines.length - 1) * st.lead + asc + desc + pad * 2 };
   return { words: out, widths, box };
 }
@@ -145,6 +148,7 @@ export function draw(ctx, plan, t, { busy = {}, fadeOut = 0.25 } = {}) {
     if (t < cap.t0 || t > cap.t1 + fadeOut) continue;
     const st = styleOf(cap.lang, cap.size), L = layout(ctx, cap), fade = clamp(1 - (t - cap.t1) / fadeOut);
     // the scrim hugs the words — a soft, blurred shadow of the caption's own box, never a band across the frame
+    if (st.box) { noirBox(ctx, cap, L, st, t, fade); continue; }
     const sa = (busy[cap.id]?.busy ?? 0) * SCRIM * clamp((t - cap.t0) / 0.2) * fade;
     if (sa > 0.01) {                                  // it grows line by line with the reveal: never a dark box waiting for its words
       const b = L.box, shown = cap.words.filter((w) => w.t <= t), lines = shown.length ? shown[shown.length - 1].line + 1 : 1;
@@ -162,6 +166,25 @@ export function draw(ctx, plan, t, { busy = {}, fadeOut = 0.25 } = {}) {
     });
     ctx.restore();
   }
+}
+
+/** the noir narration box: a hard black box that opens line by line with the reveal, a hairline rule inside it, the
+ *  words typed on (no spring) and only the pop word sprung, in the style's own pop colour */
+function noirBox(ctx, cap, L, st, t, fade) {
+  const b = L.box, shown = cap.words.filter((w) => w.t <= t), lines = shown.length ? shown[shown.length - 1].line + 1 : 1;
+  const open = clamp((t - cap.t0) / 0.18), h = (b.h - (cap.lines.length - lines) * st.lead) * (0.25 + 0.75 * back(open));
+  ctx.save(); ctx.globalAlpha = fade;
+  ctx.fillStyle = 'rgba(8,8,10,.9)'; ctx.fillRect(b.x, b.y, b.w, h);
+  ctx.strokeStyle = 'rgba(244,240,232,.55)'; ctx.lineWidth = 2; ctx.strokeRect(b.x + 9, b.y + 9, b.w - 18, Math.max(0, h - 18));
+  ctx.beginPath(); ctx.rect(b.x, b.y, b.w, h); ctx.clip();
+  ctx.font = `${st.size}px "${st.family}"`; ctx.textBaseline = 'alphabetic';
+  cap.words.forEach((w, i) => {
+    const k = t - w.t, p = L.words[i]; if (k <= 0) return;
+    const s = w.pop ? wordPose(k, true) : 1;
+    ctx.save(); ctx.globalAlpha = clamp(k / 0.05) * fade; ctx.translate(p.x + p.width / 2, p.y - st.lift); ctx.scale(s, s); ctx.translate(-p.width / 2, st.lift);
+    ctx.fillStyle = w.pop ? st.pop : '#f4f0e8'; ctx.fillText(w.w, 0, 0); ctx.restore();
+  });
+  ctx.restore();
 }
 
 /** the station's bug, top left on every film: the magenta dot and the name, on a soft dark backing so it stays a

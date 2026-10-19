@@ -1,0 +1,108 @@
+{
+  "film": "backup-mode",
+  "cut": "v1 (owner, 19 Oct: backlog pick 2) — Toko Slomo's first film, Kallio Noir: a smart bed that needed the internet to lie flat, a year after the outage",
+  "series": "toko",
+  "captionSize": "noir",
+  "argument": "When the cloud went down, some AI smart beds stuck tilted or kept heating until the maker added an offline backup mode; lying down should never have needed the internet.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "night",
+      "role": "setup",
+      "at": "s1+1.2",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "ONE NIGHT LAST OCTOBER, / THE CLOUD WENT [DOWN].",
+        "fi": "ERÄÄNÄ YÖNÄ / VIIME LOKAKUUSSA / PILVI [KAATUI].",
+        "ja": "去年の 十月の ある夜、 / クラウドが [落ちた]。"
+      },
+      "source": "On 20 Oct 2025 an Amazon Web Services outage (US-East, from the small hours US time) took down services that depend on it, among them the smart-bed covers of a maker that markets its bed as AI (PCWorld, 20 Oct 2025; Tech Critter). The cloud provider and the maker are not named on screen."
+    },
+    {
+      "id": "flat",
+      "role": "evidence",
+      "at": "s2+0.5",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "MY BED CALLS ITSELF AI. / WITHOUT THE INTERNET, / IT COULDN'T LIE [FLAT].",
+        "fi": "SÄNKYNI SANOO OLEVANSA / TEKOÄLY. ILMAN NETTIÄ / SE EI PÄÄSSYT [SUORAKSI].",
+        "ja": "俺の ベッドは AIを 名乗る。 / ネット なしでは / [平らに] なれなかった。"
+      },
+      "source": "Owners reported beds stuck in an inclined position while the service was down (PCWorld; Tech Critter). The maker markets the bed as AI. Toko Slomo's bed is a fictional one, shown folded for the joke; the claim is only that some beds could not return to flat."
+    },
+    {
+      "id": "heat",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "SOME BEDS JUST / KEPT [HEATING].",
+        "fi": "JOTKUT SÄNGYT VAIN / [LÄMPENIVÄT LÄMPENEMISTÄÄN].",
+        "ja": "一部の ベッドは / ただ [熱くなり続けた]。"
+      },
+      "source": "Owners reported covers heating with no way to turn them down in the night (PCWorld, 'These smart beds began roasting their owners during AWS outage'). How many were affected is not documented, so 'some'."
+    },
+    {
+      "id": "backup",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": {
+        "en": "DAYS LATER, THE MAKER / ADDED A [BACKUP MODE].",
+        "fi": "PÄIVIÄ MYÖHEMMIN / VALMISTAJA LISÄSI / [VARATILAN].",
+        "ja": "数日後、 メーカーは / [バックアップモード] を 足した。"
+      },
+      "source": "Within about two days the maker shipped an offline Bluetooth 'Backup Mode' with manual temperature, base and on/off controls (PCWorld follow-up, 'More smart home makers should do what this one just did'). Said as 'days later' to stay inside what is documented."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.6",
+      "until": "end",
+      "hold": "end",
+      "place": 1330,
+      "text": {
+        "en": "SOME THINGS SHOULD WORK / WITHOUT THE INTERNET. / LYING DOWN WAS / [ONE OF THEM].",
+        "fi": "JOIDENKIN ASIOIDEN PITÄISI / TOIMIA ILMAN NETTIÄ. / MAKAAMINEN OLI / [YKSI NIISTÄ].",
+        "ja": "ネット なしで / 動くべき ものが ある。 / 横に なるのも / [その ひとつ] だった。"
+      },
+      "source": "Toko's card, in the counter's all-caps voice, held at least 4 s (the Toko films' rule). The station's line, from the research pack (research-toko.md §8)."
+    }
+  ],
+  "ui": {
+    "connecting": {
+      "en": "CONNECTING…",
+      "fi": "YHDISTETÄÄN…",
+      "ja": "接続中…"
+    },
+    "backup": {
+      "en": "BACKUP MODE",
+      "fi": "VARATILA",
+      "ja": "バックアップモード"
+    },
+    "backupSub": {
+      "en": "Bluetooth · no internet",
+      "fi": "Bluetooth · ilman nettiä",
+      "ja": "Bluetooth・ネット不要"
+    },
+    "time": {
+      "en": "3:07",
+      "fi": "3.07",
+      "ja": "3:07"
+    }
+  }
+}
