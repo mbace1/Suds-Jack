@@ -16,7 +16,7 @@ Owner, 18 Oct: "Continue these explorations but let's set the next Radio Free H 
 first; the one hard date is **The Day After, before the 3 Nov midterms**.
 
 **Queue (18 Oct):**
-1. *Welcome Home*: **APPROVED 19 Oct (v5)**: `films/21-10-BigTech2-Welcome-Home.mp4`, the 00:50 window on 21 Oct (a US tech story; between The Chair Is Taken and Kill Switch).
+1. *Welcome Home*: ~~approved 19 Oct (v5)~~ **approval withdrawn by the owner, 19 Oct** ("I'm going to cancel approval for the other apple / pear video as well"), after the sequel was shelved for drifting into devices and a crowd of people. Pulled from `films/` before its 21 Oct window; kept as `previews/scrapped/21-10-BigTech2-Welcome-Home-WITHDRAWN.mp4`. The number BigTech2 is not reused.
 2. *The Day After*: **APPROVED 18 Oct**: `films/23-10-Coxon7-The-Day-After.mp4`, the first 00:50 window after *Kill Switch* (22 Oct), whose sticky note is its last shot. Kill-switch detail checked against Axios 18 Oct.
 3. *It Was Only a Test*: **APPROVED 19 Oct (v3)**: `films/19-10-Coxon8-It-Was-Only-a-Test.mp4`, the 12:50 window on 19 Oct (an EU story).
 4. *Same Trick, Two Verdicts*: **APPROVED 19 Oct (v3)**: `films/20-10-Coxon9-Same-Trick-Two-Verdicts.mp4`, the 12:50 window on 20 Oct (EU/US).
