@@ -1,0 +1,50 @@
+{
+ "kind": "engine",
+ "engine": "ph",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/cw_kit.js",
+  "scenes/ph_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  {
+   "id": "ph_screen",
+   "beats": 14,
+   "cues": {
+    "flow": "line:2.start",
+    "whom": "word:pop"
+   }
+  },
+  {
+   "id": "ph_lock",
+   "beats": 12,
+   "cues": {
+    "reach": "line:1.start",
+    "lock": "word:pop"
+   }
+  },
+  {
+   "id": "ph_door",
+   "beats": 12,
+   "cues": {
+    "watch": "word:pop"
+   }
+  },
+  {
+   "id": "ph_last",
+   "beats": 12,
+   "cues": {
+    "priv": "line:1",
+    "date": "word:pop"
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}

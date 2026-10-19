@@ -1,0 +1,138 @@
+{
+  "film": "welcome-paper",
+  "cut": "v1 papercut (owner, 19 Oct: withdrew the clay cut, 'more about the apple devices and bunch of people'; asked for 'an Apple / Pear video in a different style like that' — the papercut). The approved v5 message, staged almost entirely on the display itself.",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "Pear's HomeView hides a teen's texts from her family, yet its own ad's happy ending has the family watching her date on its door camera.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question",
+      "role": "setup",
+      "at": "s1+1.5",
+      "until": "s2-0.35",
+      "hold": "s2",
+      "text": {
+        "en": "Pear sells its new home screen / on privacy. Privacy [from whom]?",
+        "fi": "Pear myy uutta kotinäyttöään / yksityisyydellä. Mutta [keneltä]?",
+        "ja": "Pearは 新しい ホーム画面を / プライバシーで 売る。 / [誰から] 守るのか？"
+      },
+      "source": "Pear is the station's name for the real company, as Doodle and Teslur are; HomeView is the real product. A home display that recognises up to six household members by face and shows each their own messages and calendar, launched 13 Oct 2026 with its privacy features up front (Apple Newsroom via MacRumors and Mac Observer; Tom's Guide; ABC)."
+    },
+    {
+      "id": "lock",
+      "role": "evidence",
+      "at": "s2+0.6",
+      "until": "s3-0.35",
+      "hold": "s3",
+      "text": {
+        "en": "Her brother can't read her texts. / Only her [face] unlocks them.",
+        "fi": "Veli ei voi lukea / hänen viestejään. Vain / hänen [kasvonsa] avaavat ne.",
+        "ja": "兄弟は 彼女の メッセージを 読めない。 / 開けるのは [彼女の顔] だけ。"
+      },
+      "source": "In the launch film the brother tries to open his sister's messages on the display and fails, because it shows them only to her face (heise; Inc., Jason Aten). Messages and Calendar are shown only when the enrolled user's face is recognised (Apple Newsroom, via MacRumors and Mac Observer)."
+    },
+    {
+      "id": "ad",
+      "role": "evidence",
+      "at": "s3+0.6",
+      "until": "s4-0.35",
+      "hold": "s4",
+      "text": {
+        "en": "Then, in Pear's own ad, / the family watches her date / on its door [camera].",
+        "fi": "Sitten Pearin mainoksessa / perhe katsoo hänen treffejään / [ovikamerasta].",
+        "ja": "そして Pearの 広告では 家族が / 彼女の デートを [玄関カメラで] 見る。"
+      },
+      "source": "The launch film ends with the whole family gathered round the display, using the security camera to watch the daughter leave with her boyfriend (Digital Today citing The Verge; Analytics Insight). Staged in papercut with generic masked figures: no actor, no footage, no logo."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s4+0.5",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "Her texts are private. / Her [date] isn't.",
+        "fi": "Viestit ovat yksityisiä. / [Treffit] eivät.",
+        "ja": "メッセージは 非公開。 / [デートは] 公開。"
+      },
+      "source": "The station's line, over the display's own screen at the end of the ad: her Messages, Locked, in one corner; the door camera on her date, 4 WATCHING (dad, mum, the brother and the other sister)."
+    }
+  ],
+  "ui": {
+    "tag": {
+      "en": "A REAL AD, REMADE IN PAPER",
+      "fi": "OIKEA MAINOS, PAPERISTA",
+      "ja": "実在の広告を紙で再現"
+    },
+    "watching": {
+      "en": "4 WATCHING",
+      "fi": "4 KATSOO",
+      "ja": "4人が視聴中"
+    },
+    "locked": {
+      "en": "Locked · not your face",
+      "fi": "Lukittu · ei sinun kasvosi",
+      "ja": "ロック中 · 本人の顔ではありません"
+    },
+    "door": {
+      "en": "Front Door",
+      "fi": "Etuovi",
+      "ja": "玄関"
+    },
+    "msgs": {
+      "en": "Messages",
+      "fi": "Viestit",
+      "ja": "メッセージ"
+    },
+    "lockedShort": {
+      "en": "Locked",
+      "fi": "Lukittu",
+      "ja": "ロック中"
+    },
+    "future": {
+      "en": "For the future.",
+      "fi": "Tulevaisuutta varten.",
+      "ja": "未来のために。"
+    },
+    "private1": {
+      "en": "Private",
+      "fi": "Yksityinen",
+      "ja": "プライバシーを"
+    },
+    "private2": {
+      "en": "by design.",
+      "fi": "alusta asti.",
+      "ja": "設計から。"
+    }
+  },
+  "props": {
+    "boot": {
+      "en": "Pear AI. / For the future.",
+      "why": "the display's boot screen in shot 1 (owner: 'shoulda just said pear AI for the future or some similar'); a plain pear silhouette, never the real logo"
+    },
+    "screen": {
+      "en": "Private by design.",
+      "why": "Pear's line on its own screen in shot 1: the privacy pitch, shown"
+    },
+    "feed": {
+      "en": "Front Door · Live",
+      "why": "the door camera's own chrome over the clay porch, after the ad's frame 2: end call, mic, the grid"
+    }
+  },
+  "post": {
+    "en": "Pear's new HomeView screen is sold on privacy. In Pear's own ad, the brother can't read his sister's messages: only her face unlocks them. The ad's happy ending? The whole family watching her leave with her boyfriend on HomeView's door camera. Her messages: private. Her boyfriend: family viewing. #privacy #smarthome",
+    "fi": "Pearin uusi HomeView myy yksityisyyttä. Pearin omassa mainoksessa veli ei pääse lukemaan siskonsa viestejä: vain hänen kasvonsa avaavat ne. Onnellinen loppu? Koko perhe katsoo HomeViewn ovikamerasta, kun hän lähtee poikaystävänsä kanssa. Viestit: yksityisiä. Poikaystävä: perheen ohjelmaa.",
+    "ja": "Pearの新しいHomeViewの売りはプライバシー。Pearの広告では、兄弟は姉妹のメッセージを見られない。開けるのは彼女の顔だけ。ハッピーエンドは？家族全員がHomeViewの玄関カメラで、彼氏と出かける彼女を見る。メッセージは非公開。彼氏は家族で視聴。"
+  }
+}
