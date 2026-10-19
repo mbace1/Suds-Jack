@@ -1,4 +1,8 @@
-# Guest in Her Own Kitchen (the Welcome Home sequel): pitch, 19 Oct
+# Guest in Her Own Kitchen (the Welcome Home sequel): pitch, 19 Oct — SHELVED
+
+**Shelved by the owner on 19 Oct, after the first stills:** "The style doesn't work here as well. The original claymation
+style was great, but now it's more about the apple devices and bunch of people. That's not really what we want to do."
+The code stays in `clay/guest/` as a record. It is not rendered and not to be resumed without the owner asking.
 
 This is backlog pick 3: the owner's "Pear sequel, *Remote Control for an iPhone*". The research was refreshed on 19 Oct
 (`plan/research-pear-sequel.md`) and **it changed the premise**.

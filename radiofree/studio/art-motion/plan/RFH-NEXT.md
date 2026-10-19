@@ -21,6 +21,7 @@ first; the one hard date is **The Day After, before the 3 Nov midterms**.
 3. *It Was Only a Test*: **APPROVED 19 Oct (v3)**: `films/19-10-Coxon8-It-Was-Only-a-Test.mp4`, the 12:50 window on 19 Oct (an EU story).
 4. *Same Trick, Two Verdicts*: **APPROVED 19 Oct (v3)**: `films/20-10-Coxon9-Same-Trick-Two-Verdicts.mp4`, the 12:50 window on 20 Oct (EU/US).
 5. *You Looked At It* (backlog pick 1, 19 Oct): **built 19 Oct, waiting for approval**: `previews/19-10-You-Looked-At-It-en.mp4` (17.1 s + sign-off). This is the papercut pilot of 13 Oct, now carrying news: Meta's Muse agent can buy what you see through its glasses (Connect, 23 Sep), and Muse's own terms put the loss on the user and say some buys cannot be undone (CNBC, 3 Oct). The terms are paraphrased, never quoted. It is a US tech story, so it goes in a 00:50 window; if approved it is filed as BigTech3.
+7. *Welcome Home sequel* (backlog pick 3): **shelved 19 Oct** after the first stills: the owner wants the original claymation style, not devices and a crowd of people (`plan/films/14-guest.md`).
 6. *Backup Mode* (backlog pick 2, Toko Slomo): pitched in `plan/films/13-backup-mode.md`. Clay, Kallio noir. It is timed for the anniversary of the 20 Oct 2025 outage.
 
 Slots follow the calendar's logic: **00:50** reaches the US evening (US stories), and **12:50** reaches the

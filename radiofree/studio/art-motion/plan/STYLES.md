@@ -13,6 +13,7 @@ Every look that has been made, with the owner's status. A style moves up only on
 |---|---|---|---|
 | Papercut shadowbox | **in use** | `scenes/rfp_kit.js`, every RFH news film | "Better but still less polished" → to be refined. Owner: may also suit **Eeri** (cardboard) and **Piritori** (Kallio Noir); a proposal for those projects, not a change from here. |
 | Clay (Aardman plasticine) | **in use** | `clay/*`, Toko films, Teslur | **The main 3D language**: "great and allows for lots of variations". Target: Aardman, and Laika's *Kubo*. |
+| Clay device-and-family kitchen (the Welcome Home sequel) | **shelved** (19 Oct) | `clay/guest/` | Owner: "The original claymation style was great, but now it's more about the apple devices and bunch of people. That's not really what we want to do." Clay goes back to the original style: Toko, a small cast, one simple story. |
 | Clay launch-film stage | **approved** (Welcome Home) | `clay/welcome/film-wh2.js` | "looks better" (17 Oct). |
 | Clay Kallio Noir | **built, waiting for the owner** (Backup Mode) | `clay/backup/film.js`, the `noir` caption style in `pipeline/text/captions.js` | Toko Slomo's first film. Grey plasticine only, a cold key striped through venetian blinds, and one colour (magenta) for the neon and the mask. Captions are pulp narration boxes (Anton) with a magenta pop word. |
 | Flat safety leaflet | **approved** (Kill Switch) | `clay/kill-switch/flat.js` | v3, with Finnish and Japanese. |

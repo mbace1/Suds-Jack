@@ -1,0 +1,109 @@
+{
+  "film": "guest",
+  "cut": "v1 (owner, 19 Oct: backlog pick 3, the Welcome Home sequel; re-premised on the refreshed research: a face counts only when its own new phone is home)",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "Pear's home screen recognises a face only when that person's own new phone is home and recently unlocked, so grandma with an older phone stays a guest.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "q",
+      "role": "setup",
+      "at": "s1+0.6",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "Pear's home screen greets / the family by face. / Does it [know] them?",
+        "fi": "Pearin kotinäyttö tervehtii / perhettä kasvoista. / [Tunteeko] se heidät?",
+        "ja": "Pearの ホーム画面は / 家族を 顔で 迎える。 / 本当に [わかって] いるのか？"
+      },
+      "source": "Pear is the station's name for the real company; HomeView is the real product (launched 13 Oct 2026; ships 13 Nov). It recognises up to six enrolled household members by face and voice (Apple Newsroom via MacRumors, Mac Observer, 13 Oct)."
+    },
+    {
+      "id": "phone",
+      "role": "evidence",
+      "at": "s2+0.5",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Only if their own new phone / is home and unlocked [lately].",
+        "fi": "Vain jos oma uusi puhelin / on kotona ja avattu [hiljattain].",
+        "ja": "自分の 新しい スマホが 家にあり、 / [最近] ロック解除 されていれば。"
+      },
+      "source": "Recognition needs that person's own registered phone or iPad with the maker's AI, on the home Wi-Fi and recently unlocked; 'recently' is not defined (Daring Fireball and 9to5Mac, 13 Oct; Apple's footnotes via MacRumors, Mac Observer). Shown as Mum unlocking it once and putting it back, never as the screen demanding to see it (research-pear-sequel §8.3)."
+    },
+    {
+      "id": "gran",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "Grandma's phone is too old. / She stays a [guest].",
+        "fi": "Mummon puhelin on liian vanha. / Hän jää [vieraaksi].",
+        "ja": "おばあちゃんの スマホは 古すぎる。 / ずっと [ゲスト] のまま。"
+      },
+      "source": "Phones without the maker's AI (older than the iPhone 15 Pro) are not recognised; without recognition a person gets the shared guest layer: timers, weather, music, accessories (iPhone in Canada and SmartWorld, 13 Oct; Daring Fireball; MacRumors 'HomeView tidbits', 14 Oct)."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s4+0.5",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "It sees your face. / It asks your [phone].",
+        "fi": "Se näkee kasvosi. / Se kysyy [puhelimeltasi].",
+        "ja": "顔は 見ている。 / でも 聞くのは [スマホ] に。"
+      },
+      "source": "The station's line: the face is seen by the screen, but the phone has to vouch for it."
+    }
+  ],
+  "ui": {
+    "tag": {
+      "en": "SEQUEL TO WELCOME HOME",
+      "fi": "JATKOA: TERVETULOA KOTIIN",
+      "ja": "「おかえり」の続編"
+    },
+    "morning": {
+      "en": "Good morning",
+      "fi": "Huomenta",
+      "ja": "おはよう"
+    },
+    "hello": {
+      "en": "Hello,",
+      "fi": "Hei,",
+      "ja": "こんにちは、"
+    },
+    "guest": {
+      "en": "Guest.",
+      "fi": "vieras.",
+      "ja": "ゲストさん"
+    },
+    "today": {
+      "en": "Today",
+      "fi": "Tänään",
+      "ja": "今日"
+    },
+    "msgs": {
+      "en": "Messages",
+      "fi": "Viestit",
+      "ja": "メッセージ"
+    },
+    "timer": {
+      "en": "Timer",
+      "fi": "Ajastin",
+      "ja": "タイマー"
+    }
+  }
+}
