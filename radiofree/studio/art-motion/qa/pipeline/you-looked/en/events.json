@@ -1,0 +1,251 @@
+{
+ "s1": 0,
+ "s2": 3.2142857142857144,
+ "s3": 6.428571428571429,
+ "s4": 10.178557142857143,
+ "s5": 13.928542857142858,
+ "end": 17.14282857142857,
+ "lang": "en",
+ "holds": [
+  {
+   "caption": "terms",
+   "beat": "s4",
+   "extra": 0.5357
+  },
+  {
+   "caption": "undone",
+   "beat": "s5",
+   "extra": 0.5357
+  }
+ ],
+ "cues": {},
+ "words": [
+  {
+   "w": "Meta's",
+   "t": 0.4,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "glasses",
+   "t": 0.559,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "are",
+   "t": 0.741,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "getting",
+   "t": 0.832,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "an",
+   "t": 1.234,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "AI",
+   "t": 1.302,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "that",
+   "t": 1.37,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "buys",
+   "t": 1.484,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "what",
+   "t": 1.597,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "you",
+   "t": 1.711,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "see.",
+   "t": 1.802,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "Who",
+   "t": 2.135,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "pays",
+   "t": 2.226,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "when",
+   "t": 2.34,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "you",
+   "t": 2.454,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "look?",
+   "t": 2.545,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "Its",
+   "t": 6.829,
+   "pop": false,
+   "caption": "terms"
+  },
+  {
+   "w": "own",
+   "t": 6.919,
+   "pop": false,
+   "caption": "terms"
+  },
+  {
+   "w": "terms:",
+   "t": 7.01,
+   "pop": false,
+   "caption": "terms"
+  },
+  {
+   "w": "the",
+   "t": 7.389,
+   "pop": false,
+   "caption": "terms"
+  },
+  {
+   "w": "losses",
+   "t": 7.48,
+   "pop": false,
+   "caption": "terms"
+  },
+  {
+   "w": "are",
+   "t": 7.639,
+   "pop": false,
+   "caption": "terms"
+  },
+  {
+   "w": "yours.",
+   "t": 7.73,
+   "pop": true,
+   "caption": "terms"
+  },
+  {
+   "w": "And",
+   "t": 10.579,
+   "pop": false,
+   "caption": "undone"
+  },
+  {
+   "w": "some",
+   "t": 10.669,
+   "pop": false,
+   "caption": "undone"
+  },
+  {
+   "w": "buys",
+   "t": 10.783,
+   "pop": false,
+   "caption": "undone"
+  },
+  {
+   "w": "can't",
+   "t": 11.117,
+   "pop": false,
+   "caption": "undone"
+  },
+  {
+   "w": "be",
+   "t": 11.253,
+   "pop": false,
+   "caption": "undone"
+  },
+  {
+   "w": "undone.",
+   "t": 11.321,
+   "pop": true,
+   "caption": "undone"
+  },
+  {
+   "w": "Looking",
+   "t": 14.229,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "is",
+   "t": 14.41,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "free*.",
+   "t": 14.479,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "*Terms",
+   "t": 14.858,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "apply.",
+   "t": 15.017,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.4,
+   "t1": 6.079
+  },
+  {
+   "id": "terms",
+   "t0": 6.829,
+   "t1": 9.829
+  },
+  {
+   "id": "undone",
+   "t0": 10.579,
+   "t1": 13.579
+  },
+  {
+   "id": "last",
+   "t0": 14.229,
+   "t1": 16.943
+  }
+ ],
+ "quiet": []
+}

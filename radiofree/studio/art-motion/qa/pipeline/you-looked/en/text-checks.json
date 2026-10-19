@@ -1,0 +1,387 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "Meta, Introducing Muse (about.fb.com, Sep 2026): the personal AI agent, woken by"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy terms.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy terms.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy terms.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy terms source",
+  "result": "pass",
+  "why": "Muse Supplemental Terms of Service (muse.ai/terms), Financial Actions: the user "
+ },
+ {
+  "check": "copy terms pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy undone.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy undone.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy undone.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy undone source",
+  "result": "pass",
+  "why": "The same section: certain transactions may be irreversible by their nature (muse"
+ },
+ {
+  "check": "copy undone pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, paying off the billboard over the queue (LOOKING IS FREE*, *"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.tag",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "32 words: Meta's glasses are getting an AI agent that buys what you see; Muse's own terms put any lo"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "32 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "2 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.40 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 703 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 177, 'y': 191, 'w': 725, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.68 s, needs 5.00 s (80 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 3.53 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 1.96 → scrim 0.0"
+ },
+ {
+  "check": "width en:terms",
+  "result": "pass",
+  "why": "widest line 493 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:terms",
+  "result": "pass",
+  "why": "box {'x': 283, 'y': 191, 'w': 515, 'h': 160}"
+ },
+ {
+  "check": "reading time en:terms",
+  "result": "pass",
+  "why": "on screen 3.00 s, needs 2.80 s (36 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:terms",
+  "result": "pass",
+  "why": "last word up 2.10 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:terms",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:terms",
+  "result": "pass",
+  "why": "picture behind: edge 0.91 → scrim 0.0"
+ },
+ {
+  "check": "width en:undone",
+  "result": "pass",
+  "why": "widest line 400 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:undone",
+  "result": "pass",
+  "why": "box {'x': 329, 'y': 191, 'w': 422, 'h': 160}"
+ },
+ {
+  "check": "reading time en:undone",
+  "result": "pass",
+  "why": "on screen 3.00 s, needs 2.50 s (30 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:undone",
+  "result": "pass",
+  "why": "last word up 2.26 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:undone",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:undone",
+  "result": "pass",
+  "why": "picture behind: edge 0.34 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 383 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 337, 'y': 191, 'w': 405, 'h': 160}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 2.71 s, needs 2.55 s (31 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 1.93 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 1.26 → scrim 0.0"
+ },
+ {
+  "check": "hold en:terms",
+  "result": "pass",
+  "why": "the picture holds 0.5357 s before s4 so the line can be read"
+ },
+ {
+  "check": "hold en:undone",
+  "result": "pass",
+  "why": "the picture holds 0.5357 s before s5 so the line can be read"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "Meta's glasses are getting an AI that buys | what you see. Who pays when you look?"
+ },
+ {
+  "check": "sidecar lines en:terms",
+  "result": "pass",
+  "why": "Its own terms: the losses are yours."
+ },
+ {
+  "check": "sidecar lines en:undone",
+  "result": "pass",
+  "why": "And some buys can't be undone."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "Looking is free*. *Terms apply."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.68 s on this master, fi needs 5.41 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Metan laseihin tulee tekoäly, joka ostaa | näkemäsi. Kuka maksaa, kun katsot?"
+ },
+ {
+  "check": "sidecar fi:terms",
+  "result": "warn",
+  "why": "3.00 s on this master, fi needs 3.06 s"
+ },
+ {
+  "check": "sidecar lines fi:terms",
+  "result": "pass",
+  "why": "Sen omat ehdot: tappiot ovat sinun."
+ },
+ {
+  "check": "sidecar fi:undone",
+  "result": "pass",
+  "why": "3.00 s on this master, fi needs 2.76 s"
+ },
+ {
+  "check": "sidecar lines fi:undone",
+  "result": "pass",
+  "why": "Eikä kaikkia ostoja voi perua."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "warn",
+  "why": "2.71 s on this master, fi needs 3.35 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Katsominen on ilmaista*. *Ehdot pätevät."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "warn",
+  "why": "5.68 s on this master, ja needs 5.83 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "pass",
+  "why": "Metaのメガネに見た物を買う | AIが来る。見たら誰が払う？"
+ },
+ {
+  "check": "sidecar ja:terms",
+  "result": "warn",
+  "why": "3.00 s on this master, ja needs 3.50 s"
+ },
+ {
+  "check": "sidecar lines ja:terms",
+  "result": "pass",
+  "why": "利用規約では損失はあなた持ち。"
+ },
+ {
+  "check": "sidecar ja:undone",
+  "result": "warn",
+  "why": "3.00 s on this master, ja needs 3.17 s"
+ },
+ {
+  "check": "sidecar lines ja:undone",
+  "result": "pass",
+  "why": "取り消せない買い物もある。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "warn",
+  "why": "2.71 s on this master, ja needs 4.17 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "見るのは無料*。*規約が | 適用されます。"
+ }
+]

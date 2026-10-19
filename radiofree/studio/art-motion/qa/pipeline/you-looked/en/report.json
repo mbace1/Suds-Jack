@@ -1,0 +1,133 @@
+{
+ "lang": "en",
+ "end": 17.14282857142857,
+ "holds": [
+  {
+   "caption": "terms",
+   "beat": "s4",
+   "extra": 0.5357
+  },
+  {
+   "caption": "undone",
+   "beat": "s5",
+   "extra": 0.5357
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "text": "Meta's glasses are getting / an AI that buys what you see. / Who pays when you [look]?",
+   "plain": "Meta's glasses are getting an AI that buys what you see. Who pays when you look?",
+   "t0": 0.4,
+   "t1": 6.079,
+   "shown": 5.679,
+   "read": 5,
+   "lastWord": 2.545,
+   "widths": [
+    631,
+    703,
+    621
+   ],
+   "box": {
+    "x": 177,
+    "y": 191,
+    "w": 725,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 1.96,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "terms",
+   "text": "Its own terms: / the losses are [yours].",
+   "plain": "Its own terms: the losses are yours.",
+   "t0": 6.829,
+   "t1": 9.829,
+   "shown": 3,
+   "read": 2.8,
+   "lastWord": 7.73,
+   "widths": [
+    340,
+    493
+   ],
+   "box": {
+    "x": 283,
+    "y": 191,
+    "w": 515,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.91,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "undone",
+   "text": "And some buys / can't be [undone].",
+   "plain": "And some buys can't be undone.",
+   "t0": 10.579,
+   "t1": 13.579,
+   "shown": 3,
+   "read": 2.5,
+   "lastWord": 11.321,
+   "widths": [
+    371,
+    400
+   ],
+   "box": {
+    "x": 329,
+    "y": 191,
+    "w": 422,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.34,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "Looking is free*. / *Terms [apply].",
+   "plain": "Looking is free*. *Terms apply.",
+   "t0": 14.229,
+   "t1": 16.943,
+   "shown": 2.714,
+   "read": 2.55,
+   "lastWord": 15.017,
+   "widths": [
+    383,
+    342
+   ],
+   "box": {
+    "x": 337,
+    "y": 191,
+    "w": 405,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 1.26,
+    "busy": 0
+   },
+   "native": true
+  }
+ ],
+ "frames": 514,
+ "fps": 30
+}
