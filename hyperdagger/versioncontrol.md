@@ -69,3 +69,19 @@ The live page did move. gh-pages `3b8fb141`, 18 Oct 2026, 15:37:18 EEST, message
 The publish carried `hyperdagger/` (minus `test/`, where the site's own two files were left as they were) and the one `hub/versions.json` row. No catalogue line changed, so no token cascade was needed. The deployed `VERSIONS.md` still read "v58 — in progress"; the dated heading in this entry's commit reaches the site with the next Hyper Dagger publish.
 
 Not verified: the live page was not opened. This session's network policy refuses `mbace1.github.io`. Before the push, the offline, press-edges, hud-lock and goal-card gates passed against the site tree, with the site's own hub and toko files.
+
+## 2026-10-19 — v59, the menu is the season, on main and on the live page
+
+PR #624, merge commit `a6f299ec172e73edb78a51470239551988115212` (`a6f299ec`), 19 Oct 2026, 11:59:15 EEST. Parents: `1de54988` (main) and `ca8bbeb3` (the PR head, `feat/hyperdagger-menu-redesign`). The full smoke passed 220/0 on `ca8bbeb3`. The other gates are listed in the PR. Codex reviewed it with no findings.
+
+What it changed, for a player (HD-019): the menu offers seasons 1 to 3 as tabs, builds the picked season's arena behind the menu with that season's rules, and starts it from START underneath. A tab only picks. The mode row is gone, RUN FREE / DAILY moved to the pause menu and applies from the next run, and the menu shows no HUD and no hand.
+
+The live page did move. gh-pages `b536d0a2`, 19 Oct 2026, 12:05:51 EEST, message "Publish Hyper Dagger v59 from main a6f299ec (PR #624)". Pages run 39227527492 (pages build and deployment) concluded success at 12:07 EEST. It is the newest Pages run. Read back from `b536d0a2` through the GitHub API:
+- `index.html` asks for `js/main.js?v=110`, `sw.js?v=110` and `../hub/shell.js?v=94`.
+- `sw.js` sets `const CACHE = 'hyperdagger-v80'`.
+- `hub/versions.json` has hyperdagger at v59.
+- The three player seasons carry their menu `card`, and `main.js` has the START path.
+
+The publish carried `hyperdagger/` (minus `test/`, where the site's own two files were left as they were) and the one `hub/versions.json` row. No catalogue line changed, so no token cascade was needed. The deployed `VERSIONS.md` still read "v59 — in progress". The dated heading in this entry's commit reaches the site with the next Hyper Dagger publish.
+
+Not verified: the live page was not opened. This session's network policy refuses `mbace1.github.io`. Before the push, the offline, menu-input, press-edges, hud-lock and goal-card gates passed against the site tree, with the site's own hub and toko files.
