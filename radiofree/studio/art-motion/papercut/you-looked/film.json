@@ -1,0 +1,23 @@
+{
+ "kind": "engine",
+ "engine": "yl",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/cw_kit.js"
+ ],
+ "scenes": ["yl_square", "yl_window", "yl_receipt", "yl_queue", "yl_pocket"],
+ "shots": [
+  { "id": "yl_square", "beats": 6, "cues": {} },
+  { "id": "yl_window", "beats": 6, "cues": {} },
+  { "id": "yl_receipt", "beats": 6, "cues": {} },
+  { "id": "yl_queue", "beats": 6, "cues": {} },
+  { "id": "yl_pocket", "beats": 6, "cues": {} }
+ ],
+ "quiet": [],
+ "keep": []
+}

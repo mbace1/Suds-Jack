@@ -1,0 +1,61 @@
+{
+  "film": "you-looked",
+  "cut": "pipeline cut (owner, 19 Oct: first of the backlog picks) — the papercut pilot of 13 Oct (approved test 11, v2 reviewed 8/10 SHIP) given the news it was always about: Meta's Muse agent coming to its glasses, and Muse's own terms",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "Meta's glasses are getting an AI agent that buys what you see; Muse's own terms put any loss on you and warn some purchases can't be undone, so looking stops being free.",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question", "role": "setup", "at": "s1+0.4", "until": "s3-0.35", "hold": "s3",
+      "text": {
+        "en": "Meta's glasses are getting / an AI that buys what you see. / Who pays when you [look]?",
+        "fi": "Metan laseihin tulee / tekoäly, joka ostaa näkemäsi. / Kuka maksaa, kun [katsot]?",
+        "ja": "Metaの メガネに / 見た物を 買う AIが 来る。 / 見たら [誰が] 払う？"
+      },
+      "source": "Meta, Introducing Muse (about.fb.com, Sep 2026): the personal AI agent, woken by name ('Hey Muse'), 'coming soon to AI glasses'; it can help you buy products you see (UploadVR; TechCrunch 23 Sep 2026, Connect). Checkout through Stripe Link, a single-use card per purchase, the user approving the total (CNBC 3 Oct 2026). The film's own device is a parody (LOOKSY), and the mask is the device, as in the pilot."
+    },
+    {
+      "id": "terms", "role": "evidence", "at": "s3+0.4", "until": "s4-0.35", "hold": "s4",
+      "text": {
+        "en": "Its own terms: / the losses are [yours].",
+        "fi": "Sen omat ehdot: / tappiot ovat [sinun].",
+        "ja": "利用規約では / 損失は [あなた] 持ち。"
+      },
+      "source": "Muse Supplemental Terms of Service (muse.ai/terms), Financial Actions: the user bears the financial loss from transactions Muse carries out on their instructions (reported by CNBC 3 Oct 2026). A paraphrase, so never in quote marks."
+    },
+    {
+      "id": "undone", "role": "evidence", "at": "s4+0.4", "until": "s5-0.35", "hold": "s5",
+      "text": {
+        "en": "And some buys / can't be [undone].",
+        "fi": "Eikä kaikkia ostoja / voi [perua].",
+        "ja": "取り消せない 買い物も / [ある]。"
+      },
+      "source": "The same section: certain transactions may be irreversible by their nature (muse.ai/terms; CNBC 3 Oct 2026). Paraphrased."
+    },
+    {
+      "id": "last", "role": "punchline", "at": "s5+0.3", "until": "end-0.2", "hold": "end",
+      "text": {
+        "en": "Looking is free*. / *Terms [apply].",
+        "fi": "Katsominen on ilmaista*. / *Ehdot [pätevät].",
+        "ja": "見るのは 無料*。 / *[規約が] 適用されます。"
+      },
+      "source": "The station's line, paying off the billboard over the queue (LOOKING IS FREE*, *SEE TERMS), over the mask going into a pocket and still glowing there."
+    }
+  ],
+  "ui": {
+    "tag": { "en": "META CONNECT · 23.9.2026", "fi": "META CONNECT · 23.9.2026", "ja": "META CONNECT · 2026.9.23" }
+  },
+  "props": {
+    "wake": { "en": "HEY LOOKSY!", "why": "the wake word, a parody of 'Hey Muse'; the device is the mask, as in the pilot" },
+    "receipt": { "en": "GLANCE RECEIPT · CAKE ORDERED · BAKERY ACQUIRED · BIRCH LEAF ? · PIGEON FOLLOWED · TOTAL $249 + EVERYTHING", "why": "the gag: everything looked at, bought; the total is a joke, not a price claim" },
+    "billboard": { "en": "LOOKING IS FREE* / *SEE TERMS", "why": "sets up the punchline" }
+  },
+  "post": {
+    "en": "Meta's glasses are getting Muse, an AI agent that can buy what you see. Its own terms say the losses are yours, and some purchases can't be undone. Looking is free*. *Terms apply. #AI #Meta #smartglasses",
+    "fi": "Metan laseihin on tulossa Muse, tekoälyagentti, joka voi ostaa näkemäsi. Sen omien ehtojen mukaan tappiot ovat sinun, eikä kaikkia ostoja voi perua. Katsominen on ilmaista*. *Ehdot pätevät.",
+    "ja": "Metaのメガネに、見た物を買えるAIエージェント「Muse」が来る。利用規約では損失は利用者持ちで、取り消せない買い物もある。見るのは無料*。*規約が適用されます。"
+  }
+}
