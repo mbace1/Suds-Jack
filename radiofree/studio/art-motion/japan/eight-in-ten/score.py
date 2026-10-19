@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 sys.path[:0] = [str(Path(__file__).resolve().parents[2] / 'pipeline' / 'sound'), str(Path(__file__).resolve().parents[2] / 'lib')]
 from mix import Session
-from sfx import whoosh, tick, WHOOSH
+from sfx import whoosh, slap, WHOOSH
 from rfsound import (SR, tv, hz, noise, soft, pluck, felt_piano, bass_drum, toy_voice, blip, stamp, rustle, room, vinyl, glide, chime, thump)
 
 EV = json.load(open(sys.argv[1])); OUT = sys.argv[2]
@@ -90,11 +90,11 @@ for i, t in enumerate(S[1:]): s.fx(whoosh('short', 'in'), t - WHOOSH['short'] * 
 radio_voice(S[0] + 0.5, 12)
 for i in range(3): s.fx(blip(1760 + 220 * i), Q['et_split.news'] + i * 0.28, 0.32, -0.4 + 0.4 * i, name=f'ピコン {i + 1}')
 s.fx(chime(81, 0.5), Q['et_split.news'], 0.12, 0, name='the news')
-# ── 2 · Tokyo: カタカタ, the assistants typing back, ブブ
-for k in range(14): s.fx(clack(), S[1] + 0.4 + k * 0.09 + 0.02 * np.sin(k * 3), 0.25, 0.3, name='カタカタ')
-for k in range(6): s.fx(tick(k % 3, down=False), S[1] + 0.7 + k * 0.35, 0.12, -0.3, name='typing back')
-s.fx(buzz(), S[1] + 1.0, 0.35, 0.2, name='ブブ'); s.fx(buzz(), S[1] + 1.45, 0.3, 0.2)
-s.fx(stamp(), Q['et_tokyo.stat'], 0.35, 0, name='"78%": the caption box')
+# ── 2 · Tokyo as the city-pop sleeve: the expressway under the balcony, the phone buzzing on the rail, the sticker slapped on
+s.fx(soft(noise(S[2] - S[1], 80, 1200), None, 700) * 0.5, S[1], 0.35, 0.3, name='the expressway')
+for k in range(4): s.fx(buzz(0.3), S[1] + 0.6 + k * 0.9, 0.22, 0.45, name='the phone on the rail')
+for j, m in enumerate([62, 65, 69, 72]): s.note(felt_piano(m, 1.6, 0.4), S[1] + 0.05 + j * 0.02, 0.18, -0.2 + 0.13 * j, 0.4, stem='keys', name='a city-pop chord')
+s.fx(slap(), Q['et_tokyo.stat'], 0.45, 0.2, name='"78%": the hype sticker'); s.fx(stamp(), Q['et_tokyo.stat'], 0.2, 0.2)
 # ── 3 · the cups: two phones drop in with a clunk; the seal
 mo = Q['et_cups.more']
 for i in range(2): s.fx(porcelain(1900 - 200 * i), mo + i * 0.3 + 0.45, 0.45, -0.2 + 0.4 * i, name=f'phone {7 + i} lands')

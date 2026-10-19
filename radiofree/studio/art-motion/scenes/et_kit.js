@@ -1,8 +1,8 @@
 // EIGHT IN TEN — Kyoto Toko and Tokyo Toko, one news story in two rooms (plan/films/15-japan.md; research
-// plan/research-japan.md §1). The owner's two Japan looks of 17 Oct: Kyoto in the shin-hanga woodblock
-// (scenes/jp_kit.js jp_kyoto_hanga, drawn bare and extended here), Tokyo as a manga page in ink and screentone.
+// plan/research-japan.md §1). The owner's three Japan looks of 17 Oct: Kyoto in the shin-hanga woodblock
+// (scenes/jp_kit.js jp_kyoto_hanga, drawn bare and extended here), Tokyo as a manga page and as the city-pop sleeve.
 //   et_split   the same news in both: the farmhouse radio says it, three screens in the 1K flat pop it (ピコン)
-//   et_tokyo   the manga page: an AI on every screen, 20代 78.2% in a caption box
+//   et_tokyo   the city-pop sleeve: Tokyo Toko's evening as an album, EIGHT IN TEN, a 20代 78.2% hype sticker
 //   et_cups    the number as a print: ten teacups; six hold a phone, two more phones drop in, two keep their tea
 //   et_kyoto   the farmhouse at dusk: the survey runs along the wire, past the house, and never stops
 //   et_card    Toko's card: his green glove pours tea into two cups
@@ -92,36 +92,22 @@
     };
   })();
 
-  // ================================================================== 2 · Tokyo, the manga page: an AI on every screen; 20代 78.2%
+  // ================================================================== 2 · Tokyo as the city-pop sleeve (the third of the owner's 17 Oct looks): the
+  // record of his evening, EIGHT IN TEN on side A, and on the shrink-wrap a hype sticker: 20代 78.2%
   SCENES['et_tokyo'] = (() => ({
     draw(c, lt) {
       const stat = cue('et_tokyo', 'stat', 1.6);
-      c.fillStyle = PAGE; c.fillRect(0, 0, W, H);
-      const p1 = [36, 500, W - 72, 860], p2 = [36, 1384, W - 72, 500];
-      // panel 1: the desk from above his shoulder: three screens, each an assistant typing back at him
-      let pp = rect(...p1); c.save(); c.clip(pp); fillTone(c, rect(...p1), 'light', 11, 1.3);
-      const z = 1 + lt * 0.02; c.translate(540, 900); c.scale(z, z); c.translate(-540, -900);
-      [[70, 560, 290, 230], [395, 530, 290, 260], [720, 560, 290, 230]].forEach(([x, y, w, h], i) => monitor(c, x, y, w, h, (X, Y, Wd) => {
-        c.fillStyle = INK; c.beginPath(); c.arc(X + 34, Y + 40, 18, 0, TAU); c.fill(); c.fillStyle = PAGE; c.font = '22px "Poppins-800"'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('AI', X + 34, Y + 41);
-        const n = Math.floor(clamp((lt - 0.2 - i * 0.25) * 3, 0, 4)); c.fillStyle = INK; for (let k = 0; k < n; k++) c.fillRect(X + 64, Y + 30 + k * 36, Wd * (0.45 + ((k + i) * 29 % 30) / 100), 10);
-        const dots = Math.floor(lt * 4 + i) % 4; for (let k = 0; k < dots; k++) { c.beginPath(); c.arc(X + 70 + k * 18, Y + 186, 5, 0, TAU); c.fill(); } }));
-      c.fillStyle = PAGE; c.fillRect(0, 920, W, 40); c.strokeStyle = INK; c.lineWidth = 6; c.beginPath(); c.moveTo(0, 920); c.lineTo(W, 920); c.stroke();
-      tokyoToko(c, 540, 1060, 1.45, lt);
-      c.restore(); c.lineWidth = 7; c.strokeStyle = INK; c.stroke(pp);
-      sfx(c, 'カタカタ', 830, p1[1] + 50, 64, 0.08, lt, 0.4);
-      // the caption box the manga gives the number: 20代 78.2%
-      { const k = clamp((lt - stat) / 0.4); if (k > 0) { const s = back(k / 0.8); c.save(); c.translate(240, 1290); c.scale(s, s);
-        c.fillStyle = PAGE; c.fillRect(-180, -60, 360, 120); c.strokeStyle = INK; c.lineWidth = 5; c.strokeRect(-180, -60, 360, 120);
-        c.fillStyle = INK; c.font = '42px "IPAPGothic"'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText('20代', -156, 2); c.font = '64px "Poppins-800"'; c.fillText('78.2%', -46, 6); c.restore(); } }
-      // panel 2: his hands and the phone: a fourth assistant, buzzing (ブブ)
-      pp = rect(...p2); c.save(); c.clip(pp); speed(c, 540, p2[1] + 250, 200, 800, 200, 11);
-      const px = 420 + Math.sin(lt * 40) * 3, py = p2[1] + 70; c.fillStyle = INK; c.beginPath(); c.roundRect(px, py, 240, 380, 34); c.fill();
-      c.fillStyle = PAGE; c.beginPath(); c.roundRect(px + 14, py + 30, 212, 320, 18); c.fill(); c.fillStyle = INK; c.beginPath(); c.arc(px + 50, py + 80, 20, 0, TAU); c.fill();
-      c.fillStyle = PAGE; c.font = '24px "Poppins-800"'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('AI', px + 50, py + 81); c.fillStyle = INK; for (let k = 0; k < 4; k++) c.fillRect(px + 30, py + 130 + k * 46, 150 - k * 18, 12);
-      c.fillStyle = S.PURPLE; c.strokeStyle = INK; c.lineWidth = 4; c.beginPath(); c.ellipse(px + 10, py + 290, 46, 70, 0.2, 0, TAU); c.fill(); c.stroke();
-      c.restore(); c.lineWidth = 7; c.strokeStyle = INK; c.stroke(pp);
-      sfx(c, 'ブブ', 830, p2[1] + 120, 84, 0.18, lt, 1.0);
-      c.fillStyle = INK; c.font = '24px "Poppins-800"'; c.textAlign = 'right'; c.textBaseline = 'alphabetic'; c.fillText('TOKYO TOKO · 02', W - 40, 1910);
+      SCENES['jp_tokyo_citypop'].draw(c, lt + 1.0, { bare: true });
+      // the sleeve: an inner border, the title low on the balcony's concrete, the catalogue line
+      c.strokeStyle = '#ffffff'; c.lineWidth = 6; c.strokeRect(40, 40, W - 80, H - 80);
+      c.save(); c.fillStyle = '#1b2140'; c.font = '118px "Exo2-800i"'; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+      c.fillText('EIGHT', 80, 1610); c.fillText('IN TEN', 80, 1726); c.fillStyle = '#ff6fa8'; c.font = '70px "IPAPGothic"'; c.fillText('十人に八人', 86, 1810);
+      c.fillStyle = '#1b2140'; c.font = '26px "Poppins-800"'; c.textAlign = 'right'; c.fillText('TOKO MIDORI · SIDE A', W - 80, 1840); c.restore();
+      // the hype sticker on the shrink-wrap, slapped on at the stat
+      const k = clamp((lt - stat) / 0.35); if (k > 0) { const sc = back(k / 0.8); c.save(); c.translate(830, 1580); c.rotate(-0.18); c.scale(sc, sc);
+        c.fillStyle = '#ffe14a'; c.beginPath(); for (let i = 0; i < 32; i++) { const a = i / 32 * TAU, r = i % 2 ? 128 : 146; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); } c.closePath(); c.fill();
+        c.strokeStyle = '#1b2140'; c.lineWidth = 4; c.stroke(); c.fillStyle = '#1b2140'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.font = '44px "IPAPGothic"'; c.fillText('20代', 0, -40); c.font = '62px "Poppins-800"'; c.fillText('78.2%', 0, 22); c.font = '22px "Poppins-800"'; c.fillText('ALREADY USING AI', 0, 74); c.restore(); }
     },
   }))();
 

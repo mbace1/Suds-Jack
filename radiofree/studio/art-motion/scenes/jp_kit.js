@@ -286,9 +286,10 @@
       c.fillStyle = C.mint; c.beginPath(); c.moveTo(326, 1178); c.lineTo(432, 1178); c.lineTo(418, 1228); c.lineTo(312, 1228); c.closePath(); c.fill();
     }
     return {
-      draw(c, lt) {
+      draw(c, lt, o = {}) {      // o.bare: the picture without the sleeve's border and type (a film sets its own)
         c.drawImage(sky(), 0, 0); sun(c, lt); c.drawImage(stat(), 0, 0); traffic(c, lt);
         toko(c, lt);
+        if (o.bare) return;
         // the sleeve: an inner border, the title, the catalogue line
         c.strokeStyle = '#ffffff'; c.lineWidth = 6; c.strokeRect(40, 40, W - 80, H - 80);
         c.fillStyle = '#ffffff'; c.font = '150px "Exo2-800i"'; c.textAlign = 'left'; c.shadowColor = 'rgba(30,40,110,.45)'; c.shadowOffsetX = 8; c.shadowOffsetY = 8;
