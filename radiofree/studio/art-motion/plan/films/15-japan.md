@@ -1,5 +1,10 @@
 # The Japan videos, looked back at (19 Oct), and what to make with them
 
+**Eight in Ten was built and NOT approved (19 Oct).** Owner: "You kind of took the 2 separate perspectives from Japan and
+turned them into 1 story with no good art style." Lessons for any next Japan film:
+- Kyoto Toko and Tokyo Toko are two perspectives, not one story. Each gets their own film.
+- A film is one look, made well, not a sampler of the style tests.
+
 The owner asked on 19 Oct: "Maybe look back at the Japan videos."
 
 ## What there is

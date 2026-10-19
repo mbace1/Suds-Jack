@@ -28,6 +28,9 @@ Every look that has been made, with the owner's status. A style moves up only on
 | Kamishibai | **parked** | `scenes/st_kit.js` `st_kamishibai` | The pen pals. A format more than a style. |
 | The twelve 13 Oct style tests | **parked** | `eras_ts.js` | Papercut was picked from these. |
 
+*Owner, 19 Oct, on Eight in Ten (woodblock + manga + city-pop in one film, not approved): "You kind of took the 2 separate
+perspectives from Japan and turned them into 1 story with no good art style." One persona, one look, per film.*
+
 *Owner, 17 Oct: "by first 2 I meant out of the 5", so sumi-e and JRPG. Manga was added separately. The bar for all of
 them is in `PRODUCTION-STANDARD.md`: 2D at feature-animation and Kurzgesagt level, 3D at Aardman and Laika's Kubo.*
 
