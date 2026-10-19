@@ -16,7 +16,7 @@ Owner, 18 Oct: "Continue these explorations but let's set the next Radio Free H 
 first; the one hard date is **The Day After, before the 3 Nov midterms**.
 
 **Queue (18 Oct):**
-1. *Welcome Home* v4: **not approved** (owner, 19 Oct: "lots of clipping and the messaging is still quite unclear"). Being reworked.
+1. *Welcome Home* **v5 built 19 Oct, waiting for approval**: `previews/19-10-Welcome-Home-v5-en.mp4` (owner on v4: "lots of clipping and the messaging is still quite unclear"; picked "texts vs date"; the family re-staged and checked clean by a collision probe; the last screen carries both halves). A US tech story: a 00:50 window, 21 Oct is free.
 2. *The Day After*: **APPROVED 18 Oct**: `films/23-10-Coxon7-The-Day-After.mp4`, the first 00:50 window after *Kill Switch* (22 Oct), whose sticky note is its last shot. Kill-switch detail checked against Axios 18 Oct.
 3. *It Was Only a Test*: **APPROVED 19 Oct (v3)**: `films/19-10-Coxon8-It-Was-Only-a-Test.mp4`, the 12:50 window on 19 Oct (an EU story).
 4. *Same Trick, Two Verdicts*: **APPROVED 19 Oct (v3)**: `films/20-10-Coxon9-Same-Trick-Two-Verdicts.mp4`, the 12:50 window on 20 Oct (EU/US).

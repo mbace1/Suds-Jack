@@ -1,132 +1,117 @@
 {
  "lang": "en",
- "end": 28.392814285714284,
- "holds": [
-  {
-   "caption": "lock",
-   "beat": "s3",
-   "extra": 0.5357
-  },
-  {
-   "caption": "ad",
-   "beat": "s4",
-   "extra": 1.0714
-  }
- ],
+ "end": 26.785714285714285,
+ "holds": [],
  "captions": [
   {
    "id": "question",
-   "text": "Pear's new home screen, / HomeView, is sold on privacy. / But whose [privacy]?",
-   "plain": "Pear's new home screen, HomeView, is sold on privacy. But whose privacy?",
+   "text": "Pear sells its new home screen / on privacy. Privacy [from whom]?",
+   "plain": "Pear sells its new home screen on privacy. Privacy from whom?",
    "t0": 1.5,
    "t1": 7.15,
    "shown": 5.65,
-   "read": 4.6,
-   "lastWord": 3.395,
+   "read": 4.05,
+   "lastWord": 2.993,
    "widths": [
-    596,
-    717,
-    470
+    731,
+    778
    ],
    "box": {
-    "x": 171,
+    "x": 140,
     "y": 191,
-    "w": 739,
-    "h": 247
-   },
-   "inSafe": true,
-   "inRail": false,
-   "covers": [],
-   "busy": {
-    "edge": 9.16,
-    "busy": 0.23
-   },
-   "native": true
-  },
-  {
-   "id": "lock",
-   "text": "In Pear's own ad, / the brother tries to read / his sister's messages. / Only her face [unlocks] them.",
-   "plain": "In Pear's own ad, the brother tries to read his sister's messages. Only her face unlocks them.",
-   "t0": 8.1,
-   "t1": 14.114,
-   "shown": 6.014,
-   "read": 5.7,
-   "lastWord": 10.783,
-   "widths": [
-    402,
-    570,
-    528,
-    672
-   ],
-   "box": {
-    "x": 193,
-    "y": 191,
-    "w": 694,
-    "h": 334
-   },
-   "inSafe": true,
-   "inRail": false,
-   "covers": [],
-   "busy": {
-    "edge": 5.71,
-    "busy": 0
-   },
-   "native": true
-  },
-  {
-   "id": "ad",
-   "text": "Then the ad's happy ending: / the whole family watches her / leave with her boyfriend, / on HomeView's door [camera].",
-   "plain": "Then the ad's happy ending: the whole family watches her leave with her boyfriend, on HomeView's door camera.",
-   "t0": 15.064,
-   "t1": 21.614,
-   "shown": 6.55,
-   "read": 6.45,
-   "lastWord": 18.042,
-   "widths": [
-    678,
-    708,
-    599,
-    703
-   ],
-   "box": {
-    "x": 175,
-    "y": 191,
-    "w": 730,
-    "h": 334
-   },
-   "inSafe": true,
-   "inRail": false,
-   "covers": [],
-   "busy": {
-    "edge": 6.32,
-    "busy": 0.02
-   },
-   "native": true
-  },
-  {
-   "id": "last",
-   "text": "Her messages: private. / Her boyfriend: [family viewing].",
-   "plain": "Her messages: private. Her boyfriend: family viewing.",
-   "t0": 22.464,
-   "t1": 28.193,
-   "shown": 5.729,
-   "read": 3.65,
-   "lastWord": 23.707,
-   "widths": [
-    556,
-    725
-   ],
-   "box": {
-    "x": 167,
-    "y": 191,
-    "w": 747,
+    "w": 800,
     "h": 160
    },
    "inSafe": true,
    "inRail": false,
    "covers": [],
    "busy": {
-    "edge": 5.19,
+    "edge": 7.75,
+    "busy": 0.12
+   },
+   "native": true
+  },
+  {
+   "id": "lock",
+   "text": "Her brother can't read her texts. / Only her [face] unlocks them.",
+   "plain": "Her brother can't read her texts. Only her face unlocks them.",
+   "t0": 8.1,
+   "t1": 13.579,
+   "shown": 5.479,
+   "read": 4.05,
+   "lastWord": 9.593,
+   "widths": [
+    765,
+    672
+   ],
+   "box": {
+    "x": 146,
+    "y": 191,
+    "w": 787,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 5.81,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "ad",
+   "text": "Then, in Pear's own ad, / the family watches her date / on its door [camera].",
+   "plain": "Then, in Pear's own ad, the family watches her date on its door camera.",
+   "t0": 14.529,
+   "t1": 20.007,
+   "shown": 5.479,
+   "read": 4.55,
+   "lastWord": 16.423,
+   "widths": [
+    546,
+    674,
+    464
+   ],
+   "box": {
+    "x": 192,
+    "y": 191,
+    "w": 696,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 5.39,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "Her texts are private. / Her [date] isn't.",
+   "plain": "Her texts are private. Her date isn't.",
+   "t0": 20.857,
+   "t1": 26.586,
+   "shown": 5.729,
+   "read": 2.9,
+   "lastWord": 21.804,
+   "widths": [
+    506,
+    331
+   ],
+   "box": {
+    "x": 276,
+    "y": 191,
+    "w": 528,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 5.25,
     "busy": 0
    },
    "native": true
@@ -140,6 +125,6 @@
    "ok": true
   }
  },
- "frames": 852,
+ "frames": 804,
  "fps": 30
 }

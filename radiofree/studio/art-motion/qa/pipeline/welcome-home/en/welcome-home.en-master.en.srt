@@ -1,19 +1,18 @@
 1
 00:00:01,500 --> 00:00:07,150
-Pear's new home screen, HomeView, is sold
-on privacy. But whose privacy?
+Pear sells its new home screen on privacy.
+Privacy from whom?
 
 2
-00:00:08,100 --> 00:00:14,114
-In Pear's own ad, the brother tries to read his
-sister's messages. Only her face unlocks them.
+00:00:08,100 --> 00:00:13,579
+Her brother can't read her texts. Only her
+face unlocks them.
 
 3
-00:00:15,064 --> 00:00:21,614
-Then the ad's happy ending: the whole family watches
-her leave with her boyfriend, on HomeView's door camera.
+00:00:14,529 --> 00:00:20,007
+Then, in Pear's own ad, the family watches
+her date on its door camera.
 
 4
-00:00:22,464 --> 00:00:28,193
-Her messages: private. Her boyfriend:
-family viewing.
+00:00:20,857 --> 00:00:26,586
+Her texts are private. Her date isn't.
