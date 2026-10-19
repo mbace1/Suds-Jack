@@ -297,7 +297,7 @@ const blobs = (g, list) => { for (const [x, y, r, c] of list) { const gr = g.cre
 /** the screen. 'boot' (k = how far it has woken): Pear AI, For the future. 'flow': the pitch, Private by design.
  *  'msgs' (k = 0 her messages → 1 locked): the brother's try. 'door' (k = the WATCHING pill): the camera's chrome only —
  *  the clay feed shows through where the canvas is clear */
-function drawUI(mode, k = 1, dim = 0) {
+function drawUI(mode, k = 1, dim = 0, lk = 0) {
   const g = ui, w = UW, h = UH; g.save(); g.clearRect(0, 0, w, h); g.textBaseline = 'alphabetic'; g.textAlign = 'left';
   if (mode === 'boot') {
     g.fillStyle = '#e9e2cf'; g.fillRect(0, 0, w, h); blobs(g, [[440, 300, 460, '176,214,120'], [120, 720, 420, '246,196,150'], [800, 60, 360, '214,232,170'], [780, 700, 300, '240,170,160']]);
@@ -344,6 +344,15 @@ function drawUI(mode, k = 1, dim = 0) {
       ['#2fa84f', '#3d6fd8', '#ff7414', '#ffc800'].forEach((c, i) => { const a = ease.back((k - 0.25 - i * 0.12) / 0.3); if (a <= 0) return;
         g.save(); g.translate(-pw / 2 + 52 + i * 34, 0); g.scale(a, a); g.fillStyle = c; g.strokeStyle = 'rgba(20,18,22,1)'; g.lineWidth = 5; g.beginPath(); g.arc(0, 0, 25, 0, TAU); g.fill(); g.stroke(); g.restore(); });
       g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(tx, -pw / 2 + 200, 3); g.restore();
+    }
+    if (lk > 0) { // her messages, still locked, in the corner of the same screen: the punchline's other half
+      const s = ease.back(lk / 0.5), mx = P.ui.msgs || 'Messages', lx = P.ui.lockedShort || 'Locked';
+      g.save(); g.translate(40, 290); g.scale(s, s); g.font = '700 40px Inter'; const cw = Math.max(g.measureText(mx).width, (g.font = '600 34px Inter', g.measureText(lx).width)) + 210;
+      g.fillStyle = 'rgba(255,255,255,.95)'; g.beginPath(); g.roundRect(0, 0, cw, 132, 30); g.fill();
+      g.fillStyle = '#f0027f'; g.beginPath(); g.arc(62, 66, 34, 0, TAU); g.fill(); g.strokeStyle = '#fff8f0'; g.lineWidth = 6; g.lineCap = 'round'; g.beginPath(); g.arc(62, 75, 14, 0.2, Math.PI - 0.2); g.stroke();
+      g.fillStyle = '#1d1b1f'; g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.font = '700 40px Inter'; g.fillText(mx, 116, 58);
+      g.strokeStyle = '#1d1b1f'; g.lineWidth = 6; g.beginPath(); g.arc(132, 86, 11, Math.PI, 0); g.stroke(); g.fillRect(117, 86, 30, 24);
+      g.fillStyle = '#5a5560'; g.font = '600 34px Inter'; g.fillText(lx, 158, 108); g.restore();
     }
   }
   if (dim > 0) { g.globalAlpha = 1; g.fillStyle = `rgba(0,0,0,${dim})`; g.fillRect(0, 0, w, h); }
@@ -550,9 +559,10 @@ const capOf = (id) => P.captions.find((c) => c.id === id);
 const popOf = (id) => { const c = capOf(id); return (c.words.find((w) => w.pop) || c.words[0]).t; };
 const lineStart = (id, n) => capOf(id).words.find((w) => w.line === n).t;
 const nLines = (id) => Math.max(...capOf(id).words.map((w) => w.line)) + 1;
-const EV = { boot: 0.15, flow: lineStart('question', 1) - 0.15, lock: popOf('lock'), cut3b: lineStart('ad', nLines('ad') - 2) - 0.1, glance: popOf('ad') - 0.2, watching: popOf('last') };
+const EV = { boot: 0.15, flow: lineStart('question', 1) - 0.15, lock: popOf('lock'), cut3b: lineStart('ad', nLines('ad') - 1) - 0.1, glance: popOf('ad') - 0.2, watching: popOf('last') };
 EV.pull0 = EV.flow + 0.3; EV.pull1 = EV.flow + 2.9; EV.cross = EV.pull1 - 0.8; EV.dadLook = EV.cross + 0.5; EV.reach = EV.lock - 0.9; EV.feed0 = EV.cut3b - 1.0; EV.glance2 = EV.watching + 0.45; EV.cut4b = EV.watching + 1.6;
 EV.tap = EV.reach + 0.45;
+EV.priv = capOf('last').words.filter((w) => w.line === 0).slice(-1)[0].t;            // "…private.": her texts' chip comes up on the same screen
 const EVENTS = { ...T, lang: LANG, holds: P.holds, ...EV, ...CAP.events(P), quiet: [] };
 const LOOK = Q.get('look');
 const twos = (t) => Math.floor(t * 12) / 12;                                          // the puppets act on twos; camera and light move every frame
@@ -561,7 +571,7 @@ const hold = (t, t0, a = 0.35, len = 1.4, b = 0.5) => ease.io((t - t0) / a) * (1
 // ------------------------------------------------------------------ the door camera's action: the couple off the porch and away up the path; she looks back
 function feedAction(tq) {
   const ft = Math.max(0, tq - EV.feed0), ph = ft * TAU * 0.92;
-  const step = (z) => lerp(0, GY, clamp((-72 - z) / 7)), zb = -62 - 10.5 * ft, zg = -55 - 10.5 * ft;
+  const step = (z) => lerp(0, GY, clamp((-72 - z) / 7)), zb = -62 - 5.5 * ft, zg = -55 - 5.5 * ft;   // an unhurried walk, so the couple stays big enough to read on the screen
   pose(FC.boy, -10, step(zb), zb, Math.PI, (at) => stroll(at, ph + 0.8));
   const g = Math.max(hold(tq, EV.glance, 0.3, 1.5, 0.5), ease.io((tq - EV.glance2) / 0.4));
   pose(FC.girl, 10, step(zg), zg, Math.PI + 0.85 * g, (at) => ({ ...stroll(at, ph, { lean: 0.08 }), hy: 1.9 * g, hp: 0.05 - 0.3 * g }));
@@ -578,8 +588,8 @@ const SHOT = [
     cast(t) {
       const look = ease.io((t - EV.dadLook) / 0.55);
       place('dad', 24, BACK + 30, lerp(-2.79, -1.95, look), (at) => ({ lean: 0.14 - look * 0.06, hy: lerp(0.3, 1.65, look), hp: 0.14 - look * 0.16, elR: at([-6.2, 8.4, 4]), hdR: at([-4.4, 4.6 + Math.sin(t * 6) * 0.8 * (1 - look), 9.4]), elL: at([6.4, 8.6, 3]), hdL: at([3.6, 5.6, 9.6]) }));
-      place('son', 9, BACK + 27, Math.PI - 0.15, (at) => ({ lean: 0.2, hp: 0.3, hy: 0.1, elR: at([-6.4, 7.6, 4]), hdR: at([-3.6, 3.6, 9.2]), elL: at([6.4, 7.6, 4]), hdL: at([3.4, 3.4, 9.2]) }));
-      place('sis', 2, ISL.z - 18, 0.05, (at) => ({ lean: 0.26, hp: 0.32, hy: 0.05, elR: at([-6.4, 7.2, 4.2]), hdR: at([-1.8, 3.4 + Math.sin(t * 9) * 0.5, 10.6 + Math.cos(t * 9) * 0.7]), elL: at([6.6, 7.4, 4]), hdL: at([3.6, 2.2, 10.4]) }));
+      place('son', 2, BACK + 27, Math.PI - 0.15, (at) => ({ lean: 0.2, hp: 0.3, hy: 0.1, elR: at([-6.4, 7.6, 4]), hdR: at([-3.6, 3.6, 9.2]), elL: at([6.4, 7.6, 4]), hdL: at([3.4, 3.4, 9.2]) }));
+      place('sis', 2, ISL.z - 23, 0.05, (at) => ({ lean: 0.26, hp: 0.32, hy: 0.05, elR: at([-6.4, 7.2, 4.2]), hdR: at([-1.8, 3.4 + Math.sin(t * 9) * 0.5, 10.6 + Math.cos(t * 9) * 0.7]), elL: at([6.6, 7.4, 4]), hdL: at([3.6, 2.2, 10.4]) }));
       const k = (t - EV.cross) / 3.0;                                               // the daughter: in from the right, past the lens, out to the left
       if (k > -0.05 && k < 1.05) place('girl', lerp(44, -16, k), lerp(-29, -24, k), Math.atan2(-60, 5), (at) => ({ ...stroll(at, t * TAU * 1.2, { stride: 3.8 }), hy: -0.25 }));
     },
@@ -612,32 +622,26 @@ const SHOT = [
     cast(t) { family(t, 1); },
     cam(t, lt, d) { const sc = SC(), sn = SN(), k = ease.io(lt / d), pos = sc.clone().addScaledVector(sn, lerp(47, 42, k)).add(V([0.6, lerp(2.6, 2.0, k), 0]));
       return { pos, at: sc.clone().add(V([0, -0.4, 0])), fov: 24, focus: pos.distanceTo(sc), ap: 7 }; } },
-  { // 3c · in on the glass for the punchline: on "family viewing", 4 WATCHING; she looks back again
-    t0: () => T.s4, t1: () => EV.cut4b, devYaw: Math.PI + 0.2, light: [0xd6e6ff, 170], feed: true,
-    ui(t) { drawUI('door', clamp((t - EV.watching) / 0.9)); DISP.uniforms.uFeed.value = 1; },
+  { // 3c · in on the glass for the punchline, to the end: on "private." her texts come up locked in the corner; on "date"
+    // 4 WATCHING; she looks back again. One screen, both halves of the joke.
+    t0: () => T.s4, t1: () => T.end, devYaw: Math.PI + 0.2, light: [0xd6e6ff, 170], feed: true,
+    ui(t) { drawUI('door', clamp((t - EV.watching) / 0.9), 0, clamp((t - EV.priv) / 0.45)); DISP.uniforms.uFeed.value = 1; },
     cast(t) { family(t, 1); },
     cam(t, lt, d) { const sc = SC(), sn = SN(), k = ease.io(lt / d), pos = sc.clone().addScaledVector(sn, lerp(34, 31, k)).add(V([-0.3, 1.0, 0]));
       return { pos, at: sc.clone().add(V([0, 0.5, 0])), fov: 24, focus: pos.distanceTo(sc), ap: 6 }; } },
-  { // 4 · the family, lit by it, leaning right in: family viewing
-    t0: () => EV.cut4b, t1: () => T.end, devYaw: Math.PI + 0.2, light: [0xd6e6ff, 80], feedUI: true,
-    ui(t) { drawUI('door', 1); DISP.uniforms.uFeed.value = 1; },
-    cast(t) { family(t, 3); },
-    cam(t, lt, d) { const k = ease.io(lt / d), pos = V([lerp(47, 45, k), lerp(41.6, 41.2, k), lerp(-6, -10, k)]);
-      return { pos, at: V([10, 37, -72]), fov: lerp(39, 36, k), focus: pos.distanceTo(CAST.son.tk.mask.getWorldPosition(new THREE.Vector3())), ap: 8 }; } },
 ];
-/** the family round the display: v = 0 the faces (3a), 1 behind the screen (3b), 2 over their heads (4) */
+/** the family round the display, in two tiers so nobody passes through anybody: the two kids in front, leaning over the
+ *  island's far edge (their hands on its top), the parents standing behind with their heads between the kids'. The same
+ *  places for the kids in the faces (v 0) and behind the screen (v 1); the parents step aside for v 1.
+ *  Spacing checked with __film.clip(t): no two figures within a cell of each other, nothing inside the island. */
 function family(t, v) {
-  const lean = v === 3 ? 0.06 + 0.06 * ease.out((t - EV.cut4b - 0.2) / 0.5) : v === 0 ? 0.04 * ease.out((t - T.s3 - 0.6) / 0.6) : 0;
-  const chew = v === 3 ? 0.4 : Math.max(0, Math.sin(t * 5)), face = (x, z) => Math.atan2(DEV.position.x - x, DEV.position.z - z);
-  const at = [ // [x, z] for son, mum, dad, sis: 0 the faces (3a), 1 behind the screen (3b), 3 the faces again, closer (4)
-    [[16, -62], [2, -70], [22, -80], [-2, -62]],
-    [[-4, -62], [-16, -72], [32, -74], [28, -62]], null,
-    [[16, -62], [6, -71], [23, -78], [-5, -61]]][v];
-  const [s, m, d, i] = at;
-  place('son', ...s, face(...s), (at) => ({ lean: 0.5 + lean, hp: 0.28, hy: -0.04, elR: at([-6.6, 6.2, 5]), hdR: at([-4.6, 1.2, 12.4]), elL: at([6.6, 6.2, 5]), hdL: at([4.8, 1.2, 12.4]) }));
-  place('mum', ...m, face(...m), (at) => ({ lean: 0.34 + lean, hp: 0.14, hy: 0.06, elR: at([-7, 6.4, 5.4]), hdR: at([-6, 0.6, 12.8]), elL: at([7, 6.4, 5.4]), hdL: at([6.2, 0.6, 12.8]) }));
-  place('dad', ...d, face(...d), (at) => ({ lean: 0.3 + lean, hp: 0.16, hy: -0.08, elR: at([-6.6, 6.0, 6]), hdR: at([-2.4, lerp(6, 12, chew), 9.6]), elL: at([7, 6.4, 5.4]), hdL: at([6.2, 0.6, 12.8]) }));
-  place('sis', ...i, face(...i) + 0.15, (at) => ({ lean: 0.3 + lean, hp: 0.08, hy: 0.08, elR: at([-6.4, 6.6, 5]), hdR: at([-4.4, 7.8 + Math.sin(t * 2.2) * 0.6, 9.8]), elL: at([6.6, 6.4, 5]), hdL: at([5.4, 1.4, 11.6]) }));
+  const lean = v === 0 ? 0.04 * ease.out((t - T.s3 - 0.6) / 0.6) : 0.03;
+  const chew = Math.max(0, Math.sin(t * 5)), face = (x, z) => Math.atan2(DEV.position.x - x, DEV.position.z - z);
+  const s = [16, -70], i = [-6, -70], m = v === 0 ? [-4, -84] : [-18, -80], d = v === 0 ? [15, -84] : [32, -80];   // behind the screen, the parents step aside: the camera is where they stood
+  place('son', ...s, face(...s), (at) => ({ lean: 0.24 + lean, hp: 0.22, hy: -0.04, elR: at([-6.6, 6.6, 4.6]), hdR: at([-4.6, 5.2, 10.0]), elL: at([6.6, 6.6, 4.6]), hdL: at([4.8, 5.2, 10.0]) }));
+  place('sis', ...i, face(...i) + 0.1, (at) => ({ lean: 0.22 + lean, hp: 0.1, hy: 0.08, elR: at([-6.4, 6.8, 4.6]), hdR: at([-4.4, 8.6 + Math.sin(t * 2.2) * 0.6, 8.8]), elL: at([6.6, 6.6, 4.6]), hdL: at([5.0, 3.4, 10.2]) }));
+  place('mum', ...m, face(...m), (at) => ({ lean: 0.06 + lean, hp: 0.08, hy: 0.04, elR: at([-6.8, 6.8, 2.4]), hdR: at([2.6, 7.4, 6.0]), elL: at([6.8, 6.8, 2.4]), hdL: at([-2.6, 7.0, 6.2]) }));
+  place('dad', ...d, face(...d), (at) => ({ lean: 0.05 + lean, hp: 0.1, hy: -0.06, elR: at([-6.4, 7.4, 3.6]), hdR: at([-2.6, lerp(8, 12.5, chew), 6.4]), elL: at([6.8, 6.2, 1.6]), hdL: at([6.2, 1.2, 3.0]) }));
   const fh = CAST.sis.tk.hands[0].getWorldPosition(new THREE.Vector3()); FORK.visible = true; FORK.position.copy(fh).add(V([0, 0.6, 0])); FORK.rotation.set(0.25, 0.55, 0.15);
   const bh = CAST.dad.tk.hands[0].getWorldPosition(new THREE.Vector3()); BITE.visible = chew < 0.85; BITE.position.copy(bh).add(V([0.6, 1.2, 0.8])); BITE.rotation.set(0.3, 0.4, 0.2);
 }
@@ -676,5 +680,24 @@ window.__film = { fps: FPS, frames: Math.round(DUR * FPS), events: EVENTS, lang:
   report: { ...CAP.report(g2d, P, { keep, busy: BUSY || {} }), ui: { tag: { text: P.ui.tag, x0: 110, x1: 110 + tagW, ok: 110 + tagW <= 940 } } },
   frame(i, q = 0.92) { return frame(i / FPS).toDataURL('image/jpeg', q); },
   probe(t) { frame(t, false); const out = []; for (const [k, c] of [...Object.entries(CAST), ...Object.entries(FC)]) c.wrap.traverse((o) => { if (!o.isMesh || !c.wrap.visible) return; o.geometry.computeBoundingBox(); const b = o.geometry.boundingBox, sz = b.getSize(new THREE.Vector3()); let nan = 0; for (const v of o.geometry.attributes.position.array) if (!Number.isFinite(v)) nan++; if (sz.length() > 30 || nan) out.push([k, o.material.color && o.material.color.getHexString(), sz.toArray().map((v) => +v.toFixed(1)), nan]); }); return out; },
-  still(t) { return frame(t).toDataURL('image/png'); } };
+  still(t) { return frame(t).toDataURL('image/png'); },
+  /** the clipping probe: pose frame t, sample every visible figure's (and prop's) vertices in world space, and report
+   *  each pair whose surfaces come within one 0.6-unit cell of each other, plus any body below the island's top inside
+   *  its footprint. A figure's own prop (dad's bite, sis's fork) is not a collision. */
+  clip(t) {
+    frame(t, false); const G = {}, v = new THREE.Vector3(), seen = (o) => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; };
+    for (const [k, c] of Object.entries(CAST)) if (c.wrap.visible) G[k] = c.wrap;
+    if (BITE.visible) G.bite = BITE; if (FORK.visible) G.fork = FORK; G.device = DEV;
+    const P2 = {}; for (const [k, o] of Object.entries(G)) { const a = []; o.traverse((m) => { if (!m.isMesh || !seen(m)) return; const A = m.geometry.attributes.position, st = Math.max(1, Math.floor(A.count / 3000));
+      for (let i = 0; i < A.count; i += st) { v.fromBufferAttribute(A, i).applyMatrix4(m.matrixWorld); a.push(v.x, v.y, v.z); } }); P2[k] = a; }
+    const R = 0.6, key = (x, y, z) => Math.floor(x / R) + ',' + Math.floor(y / R) + ',' + Math.floor(z / R), H = {};
+    for (const [k, a] of Object.entries(P2)) { const h = new Set(); for (let i = 0; i < a.length; i += 3) h.add(key(a[i], a[i + 1], a[i + 2])); H[k] = h; }
+    const own = { bite: 'dad', fork: 'sis' }, out = [], ks = Object.keys(P2);
+    for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++) { const a = ks[i], b = ks[j]; if (own[a] === b || own[b] === a) continue;
+      let n = 0; const A = P2[a]; for (let q = 0; q < A.length; q += 3) if (H[b].has(key(A[q], A[q + 1], A[q + 2]))) n++; if (n) out.push([a, b, n]); }
+    for (const k of Object.keys(CAST)) { const a = P2[k]; if (!a) continue; let n = 0;
+      for (let q = 0; q < a.length; q += 3) { const x = a[q], y = a[q + 1], z = a[q + 2]; if (Math.abs(x - ISL.x) < ISL.w / 2 - 1.5 && Math.abs(z - ISL.z) < ISL.d / 2 - 1.5 && y < CTOP - 0.3 && y > 1) n++; }
+      if (n) out.push([k, 'island', n]); }
+    return out;
+  } };
 window.__ready = true;

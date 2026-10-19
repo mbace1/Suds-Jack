@@ -1,9 +1,9 @@
 {
   "film": "welcome-home",
-  "cut": "v4 (owner, 18 Oct, on v3: 'combining the 2 styles doesn't work, so all should use the claymation look at its finest', with four frames from the real ad) — every picture the clay set; the door camera is a second clay set on the display's glass",
+  "cut": "v5 (owner, 19 Oct, on v4: 'lots of clipping and the messaging is still quite unclear'; picked the 'texts vs date' message) — one picture per line, the family re-staged clear of each other, and the last screen carries both halves: her texts locked, her date watched",
   "series": "rfh",
   "captionSize": "house",
-  "argument": "Pear's HomeView ad sells privacy: the brother can't read his sister's messages, yet its happy ending is the whole family watching her leave with her boyfriend on its door camera.",
+  "argument": "Pear's HomeView hides a teen's texts from her family, yet its own ad's happy ending has the family watching her date on its door camera.",
   "langs": [
     "en",
     "fi",
@@ -23,9 +23,9 @@
       "until": "s2-0.35",
       "hold": "s2",
       "text": {
-        "en": "Pear's new home screen, / HomeView, is sold on privacy. / But whose [privacy]?",
-        "fi": "Pearin uusi kotinäyttö / HomeView myy yksityisyyttä. / Mutta [kenen]?",
-        "ja": "Pearの 新しい ホーム画面 / HomeViewの 売りは プライバシー。 / でも [誰の]？"
+        "en": "Pear sells its new home screen / on privacy. Privacy [from whom]?",
+        "fi": "Pear myy uutta kotinäyttöään / yksityisyydellä. Mutta [keneltä]?",
+        "ja": "Pearは 新しい ホーム画面を / プライバシーで 売る。 [誰から] 守るのか？"
       },
       "source": "Pear is the station's name for the real company, as Doodle and Teslur are; HomeView is the real product. A home display that recognises up to six household members by face and shows each their own messages and calendar, launched 13 Oct 2026 with its privacy features up front (Apple Newsroom via MacRumors and Mac Observer; Tom's Guide; ABC)."
     },
@@ -36,9 +36,9 @@
       "until": "s3-0.35",
       "hold": "s3",
       "text": {
-        "en": "In Pear's own ad, / the brother tries to read / his sister's messages. / Only her face [unlocks] them.",
-        "fi": "Pearin omassa mainoksessa / veli yrittää lukea / siskonsa viestit. Vain hänen / kasvonsa [avaavat] ne.",
-        "ja": "Pearの 広告では 兄弟が / 姉妹の メッセージを 見ようとする。 / 開けるのは [彼女の顔]だけ。"
+        "en": "Her brother can't read her texts. / Only her [face] unlocks them.",
+        "fi": "Veli ei voi lukea / hänen viestejään. Vain / hänen [kasvonsa] avaavat ne.",
+        "ja": "兄弟は 彼女の メッセージを 読めない。 / 開けるのは [彼女の顔] だけ。"
       },
       "source": "In the launch film the brother tries to open his sister's messages on the display and fails, because it shows them only to her face (heise; Inc., Jason Aten). Messages and Calendar are shown only when the enrolled user's face is recognised (Apple Newsroom, via MacRumors and Mac Observer)."
     },
@@ -49,9 +49,9 @@
       "until": "s4-0.35",
       "hold": "s4",
       "text": {
-        "en": "Then the ad's happy ending: / the whole family watches her / leave with her boyfriend, / on HomeView's door [camera].",
-        "fi": "Sitten onnellinen loppu: / koko perhe katsoo, kun hän / lähtee poikaystävänsä kanssa, / HomeViewn [ovikamerasta].",
-        "ja": "そして ハッピーエンド： 家族全員が / 彼氏と 出かける 彼女を / HomeViewの [玄関カメラで] 見る。"
+        "en": "Then, in Pear's own ad, / the family watches her date / on its door [camera].",
+        "fi": "Sitten Pearin mainoksessa / perhe katsoo hänen treffejään / [ovikamerasta].",
+        "ja": "そして Pearの 広告では 家族が / 彼女の デートを [玄関カメラで] 見る。"
       },
       "source": "The launch film ends with the whole family gathered round the display, using the security camera to watch the daughter leave with her boyfriend (Digital Today citing The Verge; Analytics Insight). Staged in clay with generic masked figures: no actor, no footage, no logo."
     },
@@ -62,11 +62,11 @@
       "until": "end-0.2",
       "hold": "end",
       "text": {
-        "en": "Her messages: private. / Her boyfriend: [family viewing].",
-        "fi": "Hänen viestinsä: yksityisiä. / Poikaystävä: [perheen ohjelmaa].",
-        "ja": "メッセージは 非公開。 / 彼氏は [家族で 視聴]。"
+        "en": "Her texts are private. / Her [date] isn't.",
+        "fi": "Viestit ovat yksityisiä. / [Treffit] eivät.",
+        "ja": "メッセージは 非公開。 / [デートは] 公開。"
       },
-      "source": "The station's line, over the door camera's own view: 4 WATCHING (dad, mum, the brother and the other sister, round the display)."
+      "source": "The station's line, over the display's own screen at the end of the ad: her Messages, Locked, in one corner; the door camera on her date, 4 WATCHING (dad, mum, the brother and the other sister)."
     }
   ],
   "ui": {
@@ -89,6 +89,16 @@
       "en": "Front Door",
       "fi": "Etuovi",
       "ja": "玄関"
+    },
+    "msgs": {
+      "en": "Messages",
+      "fi": "Viestit",
+      "ja": "メッセージ"
+    },
+    "lockedShort": {
+      "en": "Locked",
+      "fi": "Lukittu",
+      "ja": "ロック中"
     }
   },
   "props": {
