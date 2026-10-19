@@ -1,0 +1,151 @@
+{
+ "lang": "en",
+ "end": 26,
+ "holds": [],
+ "captions": [
+  {
+   "id": "plan",
+   "text": "Japan's AI plan, in draft: / eight in ten of us using AI. / Who are the [other two]?",
+   "plain": "Japan's AI plan, in draft: eight in ten of us using AI. Who are the other two?",
+   "t0": 0.8,
+   "t1": 5.7,
+   "shown": 4.9,
+   "read": 4.9,
+   "lastWord": 2.922,
+   "widths": [
+    582,
+    610,
+    554
+   ],
+   "box": {
+    "x": 224,
+    "y": 191,
+    "w": 632,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 22.25,
+    "busy": 1
+   },
+   "native": true
+  },
+  {
+   "id": "twenties",
+   "text": "Tokyo Toko's twenties: / [78%] already use it.",
+   "plain": "Tokyo Toko's twenties: 78% already use it.",
+   "t0": 6.4,
+   "t1": 10.367,
+   "shown": 3.967,
+   "read": 3.1,
+   "lastWord": 7.506,
+   "widths": [
+    545,
+    447
+   ],
+   "box": {
+    "x": 257,
+    "y": 191,
+    "w": 567,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.38,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "all",
+   "text": "All ages: 58.8%. / The target: [80%].",
+   "plain": "All ages: 58.8%. The target: 80%.",
+   "t0": 11.067,
+   "t1": 15.033,
+   "shown": 3.967,
+   "read": 2.65,
+   "lastWord": 11.946,
+   "widths": [
+    375,
+    389
+   ],
+   "box": {
+    "x": 334,
+    "y": 191,
+    "w": 411,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 6.33,
+    "busy": 0.02
+   },
+   "native": true
+  },
+  {
+   "id": "online",
+   "text": "The survey was [online]. / The farmhouse wasn't asked.",
+   "plain": "The survey was online. The farmhouse wasn't asked.",
+   "t0": 15.733,
+   "t1": 19.7,
+   "shown": 3.967,
+   "read": 3.5,
+   "lastWord": 16.953,
+   "widths": [
+    547,
+    707
+   ],
+   "box": {
+    "x": 175,
+    "y": 191,
+    "w": 729,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 2.13,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "EIGHT IN TEN. / THE OTHER TWO / ARE HAVING [TEA].",
+   "plain": "EIGHT IN TEN. THE OTHER TWO ARE HAVING TEA.",
+   "t0": 20.9,
+   "t1": 26,
+   "shown": 5.1,
+   "read": 3.15,
+   "lastWord": 22.226,
+   "widths": [
+    544,
+    663,
+    708
+   ],
+   "box": {
+    "x": 175,
+    "y": 302,
+    "w": 730,
+    "h": 308
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 4.04,
+    "busy": 0
+   },
+   "native": true
+  }
+ ],
+ "frames": 780,
+ "fps": 30
+}
