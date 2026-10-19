@@ -641,9 +641,9 @@ function family(t, v) {
   place('son', ...s, face(...s), (at) => ({ lean: 0.24 + lean, hp: 0.22, hy: -0.04, elR: at([-6.6, 6.6, 4.6]), hdR: at([-4.6, 5.2, 10.0]), elL: at([6.6, 6.6, 4.6]), hdL: at([4.8, 5.2, 10.0]) }));
   place('sis', ...i, face(...i) + 0.1, (at) => ({ lean: 0.22 + lean, hp: 0.1, hy: 0.08, elR: at([-6.4, 6.8, 4.6]), hdR: at([-4.4, 8.6 + Math.sin(t * 2.2) * 0.6, 8.8]), elL: at([6.6, 6.6, 4.6]), hdL: at([5.0, 3.4, 10.2]) }));
   place('mum', ...m, face(...m), (at) => ({ lean: 0.06 + lean, hp: 0.08, hy: 0.04, elR: at([-6.8, 6.8, 2.4]), hdR: at([2.6, 7.4, 6.0]), elL: at([6.8, 6.8, 2.4]), hdL: at([-2.6, 7.0, 6.2]) }));
-  place('dad', ...d, face(...d), (at) => ({ lean: 0.05 + lean, hp: 0.1, hy: -0.06, elR: at([-6.4, 7.4, 3.6]), hdR: at([-2.6, lerp(8, 12.5, chew), 6.4]), elL: at([6.8, 6.2, 1.6]), hdL: at([6.2, 1.2, 3.0]) }));
+  place('dad', ...d, face(...d), (at) => ({ lean: 0.05 + lean, hp: 0.1, hy: -0.06, elR: at([-6.8, 6.4, 2.2]), hdR: at([-3.0, 6.6, 5.6]), elL: at([6.8, 6.2, 1.6]), hdL: at([6.2, 1.2, 3.0]) }));
   const fh = CAST.sis.tk.hands[0].getWorldPosition(new THREE.Vector3()); FORK.visible = true; FORK.position.copy(fh).add(V([0, 0.6, 0])); FORK.rotation.set(0.25, 0.55, 0.15);
-  const bh = CAST.dad.tk.hands[0].getWorldPosition(new THREE.Vector3()); BITE.visible = chew < 0.85; BITE.position.copy(bh).add(V([0.6, 1.2, 0.8])); BITE.rotation.set(0.3, 0.4, 0.2);
+  BITE.visible = false;   // dad's toast sat, to the lens, on the son's head: it read as clipping even with a hand's width between them
 }
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 

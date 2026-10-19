@@ -99,8 +99,9 @@ final.append({'check': 'length', 'result': 'pass' if abs(dur - ev['end']) < 0.1 
 if opt('signoff'):                                                                     # the station's sign-off, as append_signoff.sh does it
     so = OUT / f'{name}.{LANG}+signoff.mp4'
     run('ffmpeg', '-loglevel', 'error', '-y', '-i', mp4, '-i', opt('signoff'), '-filter_complex',
-        '[0:v]setsar=1,fps=30[a0];[1:v]setsar=1,fps=30[b0];[0:a]aresample=48000[a1];[1:a]aresample=48000[b1];[a0][a1][b0][b1]concat=n=2:v=1:a=1[v][ac];[ac]alimiter=limit=0.63:attack=1:release=60:level=false[a]',
+        '[0:v]setsar=1,fps=30[a0];[1:v]setsar=1,fps=30[b0];[0:a]aresample=48000[a1];[1:a]aresample=48000,volume=-2dB[b1];[a0][a1][b0][b1]concat=n=2:v=1:a=1[v][ac];[ac]alimiter=limit=0.63:attack=1:release=60:level=false[a]',
         '-map', '[v]', '-map', '[a]', '-c:v', 'libx264', '-crf', '18', '-preset', 'medium', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '256k', '-movflags', '+faststart', so)   # 256k as the master: at 192k AAC rang a glass chip up 2 dB
+    # the ident's own drum hit, 0.4 s in, is -1.7 dBTP on its own and AAC rang it to -0.8 at the join (Welcome Home v5): it goes in 2 dB down
     MS = measure(so)
     final += [{'check': 'with sign-off: loudness', 'result': 'pass' if abs(MS['I'] - LUFS) <= 1.0 else 'FAIL', 'why': f"{MS['I']:.1f} LUFS ({so.name})"},
               {'check': 'with sign-off: true peak', 'result': 'pass' if MS['TP'] <= TP_MAX else 'FAIL', 'why': f"{MS['TP']:.1f} dBTP"}]
