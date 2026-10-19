@@ -15,6 +15,8 @@ Owner, 18 Oct: "Continue these explorations but let's set the next Radio Free H 
 12:50), and the Grok bot posts it. The table below keeps its dates as targets. The real order is what is approved
 first; the one hard date is **The Day After, before the 3 Nov midterms**.
 
+**New strands (owner, 19 Oct):** "You can also add categories in global tech and military tech. Radio Free Helsinki is also about the dystopian future, trying to see how espionage and surveillance is almost at a brink of war in Finland and similar spots." So: **The Brink** (military tech, espionage and surveillance on the front lines) and **Global tech** (the dystopian near future, worldwide), alongside Coxon, Nordic and Doodle. Pillars 5 and 6 in `CAMPAIGN_PLAN.md` §2.
+
 **Queue (18 Oct):**
 1. *Welcome Home*: ~~approved 19 Oct (v5)~~ **approval withdrawn by the owner, 19 Oct** ("I'm going to cancel approval for the other apple / pear video as well"), after the sequel was shelved for drifting into devices and a crowd of people. Pulled from `films/` before its 21 Oct window; kept as `previews/scrapped/21-10-BigTech2-Welcome-Home-WITHDRAWN.mp4`. The number BigTech2 is not reused.
 2. *The Day After*: **APPROVED 18 Oct**: `films/23-10-Coxon7-The-Day-After.mp4`, the first 00:50 window after *Kill Switch* (22 Oct), whose sticky note is its last shot. Kill-switch detail checked against Axios 18 Oct.
