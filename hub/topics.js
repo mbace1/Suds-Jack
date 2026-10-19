@@ -94,6 +94,10 @@ const LEADS = {
   // game's own.
   eerigodot: ['look', 'controls'],
   tokodropgodot: ['look', 'balance'],
+  // 2.0 is a reboot whose first milestones are a LOOK lab (the night
+  // driveway) and a feel lab: how it reads comes first, then what the
+  // night should hold.
+  tokodrop2: ['look', 'idea'],
   tokotrip: ['look', 'more'],
   kindling: ['look', 'idea'],             // a mobile UX layer just landed on it
                                           // and the art target is changing under
@@ -191,6 +195,8 @@ const SPECIFIC = {
     'hyperdagger:controls': ['The dash does not go where I flick', 'Aim with a pad needs work'],
     'dropcabal:controls': ['Aiming with a thumb is fiddly', 'The roll comes out late'],
     'tokodrop:balance': ['The waves stop escalating', 'The dash cooldown is too long'],
+    'tokodrop2:look': ['The driveway is too dark to read', 'The light pool should fall off more'],
+    'tokodrop2:idea': ['A twist for one of the hours…', 'A 1.x gel I want back'],
     'gameoflife:idea': ['A story about…', 'Let me revisit a finished one', 'More that sends me outside'],
     'gameoflife:more': ['I actually went outside', 'The quiet is the point'],
     'kindling:look': ['The room is hard to read', 'Too many numbers on it now'],
@@ -221,6 +227,8 @@ const SPECIFIC = {
     'hyperdagger:controls': ['Syöksy ei mene napsautuksen suuntaan', 'Tähtäys ohjaimella kaipaa työtä'],
     'dropcabal:controls': ['Peukalolla tähtääminen on näpertämistä', 'Kierähdys lähtee myöhässä'],
     'tokodrop:balance': ['Aallot lakkaavat kiristymästä', 'Syöksyn jäähdytys on liian pitkä'],
+    'tokodrop2:look': ['Pihatie on liian tumma lukea', 'Valokeilan pitäisi hiipua enemmän'],
+    'tokodrop2:idea': ['Käänne jollekin yön tunnille…', '1.x:n geeli, jonka haluan takaisin'],
     'gameoflife:idea': ['Tarina aiheesta…', 'Anna palata jo koettuun', 'Lisää sellaista mikä vie ulos'],
     'gameoflife:more': ['Menin oikeasti ulos', 'Hiljaisuus on koko juju'],
     'kindling:look': ['Huonetta on vaikea lukea', 'Numeroita on nyt liikaa'],
@@ -251,6 +259,8 @@ const SPECIFIC = {
     'hyperdagger:controls': ['ダッシュが弾いた方向に行かない', 'パッドでの照準に手が要る'],
     'dropcabal:controls': ['親指で狙うのが細かすぎる', 'ローリングの出が遅い'],
     'tokodrop:balance': ['ウェーブが上がらなくなる', 'ダッシュのクールダウンが長い'],
+    'tokodrop2:look': ['ドライブウェイが暗すぎて読めない', '光の輪はもっと減衰してほしい'],
+    'tokodrop2:idea': ['夜のどこかの時間にひねりを…', '1.xのあのゼリーを戻してほしい'],
     'gameoflife:idea': ['こんな話が読みたい…', '終えたものにまた入らせて', '外へ向かわせるものをもっと'],
     'gameoflife:more': ['ほんとうに外に出ました', '静かさこそが本体'],
     'kindling:look': ['部屋が読みにくい', '数字が増えすぎた'],

@@ -109,6 +109,11 @@
     "n": 3900,
     "from": "hand"
   },
+  "tokodrop2": {
+    "v": "1",
+    "n": 1000,
+    "from": "hand"
+  },
   "tokotrip": {
     "v": "21",
     "n": 21000,

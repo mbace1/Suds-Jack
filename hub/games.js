@@ -185,6 +185,37 @@ export const GAMES = [
     art: 'gelgrid',
   },
   {
+    id: 'tokodrop2',
+    fi: {
+      tagline: 'Uusi alku: yksi yö yhdellä pihatiellä, selviä aamuun. Kaksi tilaa, Survival ja Hardival, ja geelit jotka lommoutuvat, tönivät ja roiskuvat — aamulla laatta on maalaus siitä, miten pelasit.',
+      lineage: 'Toko Drop / kahden tatin areena',
+      controls: 'ei vielä mitään painettavaa — M0 on näyttämö',
+      note: 'M0: tyhjä yöllinen pihatie — laatta, reunakivet, autotallin valo ja versio ruudulla. Geelit tulevat myöhemmin.',
+    },
+    ja: {
+      tagline: 'リブート版：ひと晩、ひとつのドライブウェイで夜明けまで生き延びろ。サバイバルとハーディバルの二つのモード。ゼリーはへこみ、押し合い、弾ける——朝にはコンクリートが君の戦いの絵になる。',
+      lineage: 'トコドロップ / ツインスティック・アリーナ',
+      controls: 'まだ操作はない——M0は舞台だけ',
+      note: 'M0：夜の空っぽのドライブウェイ——コンクリート、縁石、ガレージの灯り、画面に版番号。ゼリーはこれから。',
+    },
+    status: 'active',
+    note: 'M0: the empty night driveway — the slab, the curbs, the garage flood and the version on screen. The gels come later.',
+    title: 'Toko Drop 2.0',
+    tagline: 'The reboot: one night on one driveway, survive till dawn. Two modes, Survival and Hardival, and gels that dent, shove and splat — by sunrise the slab is a painting of how you played.',
+    lineage: 'Toko Drop / twin-stick arena',
+    tags: ['twin-stick', 'three.js', 'webgpu'],
+    controls: 'nothing to press yet — M0 is the stage',
+    // Played here, in the arcade: a deployed copy in toko-drop-2/, the way
+    // toko-drop-godot/ is. The source is its own repository
+    // (github.com/mbace1/toko-drop) and main does not carry the copy, so the
+    // gate must not fetch it. 1.x keeps its cabinet above, playable as it is.
+    path: 'toko-drop-2/',
+    inRepo: false,
+    deployedOnly: true,
+    accent: '#ffb468',
+    art: 'driveway',
+  },
+  {
     id: 'hyperdagger',
     score: { key: 'hyperDaggerHi', fmt: 'secs' },
     fi: {

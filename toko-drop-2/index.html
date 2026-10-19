@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#050506">
+  <meta name="color-scheme" content="dark">
+  <title>Toko Drop</title>
+  <link rel="icon" href="data:,">
+  <style>
+    /* --void (and theme-color above) are pre-boot copies of TUNING.render.clearColor;
+       main.js sets both from it once it runs. */
+    :root { --ink: #d9dce2; --dim: #6c707a; --void: #050506; --fault: #ff6a5c; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; background: var(--void); overflow: hidden; }
+    body {
+      touch-action: none;            /* no pinch, no pull-to-refresh: this is a game surface */
+      user-select: none; -webkit-user-select: none;
+      -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+      font: 600 12px/1 ui-monospace, "SF Mono", Menlo, Consolas, "Roboto Mono", monospace;
+      color: var(--ink);
+    }
+    #stage { position: fixed; inset: 0; }
+    #stage canvas { display: block; width: 100%; height: 100%; }
+    /* The version, always on screen: "is this the build I think it is" is the
+       first question every phone test asks. */
+    #ver {
+      position: fixed; z-index: 5; pointer-events: none;
+      right: max(12px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom));
+      font-size: 13px; letter-spacing: .08em; color: var(--ink); opacity: .82;
+    }
+    #backend { color: var(--dim); }
+    #fault {
+      position: fixed; left: max(10px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top));
+      max-width: min(92vw, 640px); max-height: 60vh; overflow: auto;
+      padding: 10px 12px; border: 1px solid var(--fault); background: rgba(5, 5, 6, .92);
+      color: var(--fault); font-weight: 400; line-height: 1.4; white-space: pre-wrap;
+      user-select: text; -webkit-user-select: text; touch-action: pan-y; z-index: 10;
+    }
+    #fault[hidden] { display: none; }
+  </style>
+  <!-- three.js r186, vendored (vendor/README.md). One renderer path: the WebGPU
+       build. 'three' and 'three/webgpu' are the SAME URL, so three loads once. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.webgpu.js?v=r186",
+      "three/webgpu": "./vendor/three/three.webgpu.js?v=r186",
+      "three/tsl": "./vendor/three/three.tsl.js?v=r186"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="ver">2.0 · v1<span id="backend"></span></div>
+  <pre id="fault" hidden></pre>
+  <script>
+    // A failure must be visible on the phone: there is no console there.
+    // Capture phase, because a module that fails to load fires `error` on its
+    // <script> element, which does not bubble to window. main.js also routes
+    // three's own errors here (shader compiles, GPU validation, device loss).
+    // Each message shows once, and the box stops growing after 40: an error
+    // that repeats every frame must not flood the page it is reporting on.
+    (function () {
+      var box = document.getElementById('fault'), seen = Object.create(null), shown = 0;
+      function fault(msg) {
+        msg = String(msg);
+        if (seen[msg] || shown >= 40) return;
+        seen[msg] = true; shown++;
+        box.hidden = false;
+        box.textContent += msg + '\n';
+      }
+      window.__fault = fault;
+      addEventListener('error', function (e) {
+        var el = e.target;
+        if (el && el !== window && (el.src || el.href)) { fault('failed to load ' + (el.src || el.href)); return; }
+        var where = e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '';
+        fault((e.message || 'error') + where);
+      }, true);
+      addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        fault('unhandled: ' + (r && r.message ? r.message : r));
+      });
+    })();
+  </script>
+  <script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
