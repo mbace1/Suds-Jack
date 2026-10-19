@@ -38,11 +38,13 @@ The next RFH films and why each sits where it does: `plan/RFH-NEXT.md` (18 Oct).
 
 | When | Film | Channels | Copy (Middler) |
 |---|---|---|---|
+| Mon 19 Oct 13:05 | Coxon 8, It Was Only a Test (**approved**, Claude 2d343964; `films/19-10-Coxon8-It-Was-Only-a-Test.mp4`) | RFH Instagram + X | **Copy shown to Mikael Mon 19 Oct 12:01 Helsinki (by Grok Bot)**, from `only-a-test/copy.json` post.en: This summer, AI tests at OpenAI and Anthropic broke into other companies' systems. On 14 Oct the EU sent both its first AI Act questions. But the AI Act exempts testing. So when a test breaks out of the lab, is it still a test? #AIAct #EU #AI |
 | Tue 20 Oct 00:50 | Coxon 5, The Chair Is Taken (**approved 18 Oct**, v2; `films/20-10-Coxon5-The-Chair-Is-Taken.mp4`) | RFH Instagram + X | **Copy shown to Mikael Mon 19 Oct 08:05 Helsinki (by Grok Bot)**, from `copy.json`: New York asked Musk's SpaceXAI: if your AI causes a death, will you accept responsibility? It took a subpoena to get it there, and it came by video. "We're responsible for following the law." Safety staff? "Everybody is in charge of safety." #AI #AIsafety #NYC |
+| Tue 20 Oct 12:50 | Coxon 9, Same Trick, Two Verdicts (**approved**, 2d343964; `films/20-10-Coxon9-Same-Trick-Two-Verdicts.mp4`) | RFH Instagram + X | **Copy shown to Mikael Mon 19 Oct 12:01 Helsinki (by Grok Bot)**, from `same-trick/copy.json` post.en: Same trick, two verdicts. Berlin, 2024: a court barred an AI-voiced video of the chancellor as not clearly satire. California: a judge struck down a law demanding labels on AI parody. Since August, EU law asks for a label: for satire, one that won't spoil the joke. #AIAct #satire #EU |
 | Thu 22 Oct 00:50 | Coxon 6, Kill Switch (**approved 18 Oct**, v2; `films/22-10-Coxon6-Kill-Switch.mp4`) | RFH Instagram + X | Suggested (from `copy.json`): Your toaster's safety standard requires a backup off switch. The most powerful AI models? US federal rules are voluntary, and California's "kill switch" is still a study, due 16 November. Who decides when AI gets an off switch? #AI #AIsafety #California |
+| Fri 23 Oct 00:50 | Coxon 7, The Day After (**approved**, 2d343964; `films/23-10-Coxon7-The-Day-After.mp4`) | RFH Instagram + X | Copy not yet shown to Mikael |
 | Sat 24 Oct 12:50 | **Open.** Doodle 3 Irreversible was scrapped (owner, 18 Oct). The reserve, *It Was Only a Test*, can take it if made in time | RFH Instagram + X | — |
 | Thu 29 Oct 12:50 | **Open.** The Scoreboard was scrapped (owner, 18 Oct) | RFH Instagram + X | — |
-| Sat 31 Oct 00:50 | Coxon 7, The Day After (proposed; midterm run-up) | RFH Instagram + X | — |
 
 ## Waiting
 
