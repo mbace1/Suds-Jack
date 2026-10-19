@@ -190,22 +190,22 @@ export const GAMES = [
     fi: {
       tagline: 'Uusi alku: yksi yö yhdellä pihatiellä, selviä aamuun. Kaksi tilaa, Survival ja Hardival, ja geelit jotka lommoutuvat, tönivät ja roiskuvat — aamulla laatta on maalaus siitä, miten pelasit.',
       lineage: 'Toko Drop / kahden tatin areena',
-      controls: 'ei vielä mitään painettavaa — M0 on näyttämö',
-      note: 'M0: tyhjä yöllinen pihatie — laatta, reunakivet, autotallin valo ja versio ruudulla. Geelit tulevat myöhemmin.',
+      controls: 'vasen puoli liikkuu · oikea puoli tähtää ja ampuu, irrota = syöksy · WASD, hiiri tähtää, pidä = ammu, välilyönti = syöksy · ohjain: tatit, RT, A',
+      note: 'v3, ensimmäinen pelattava: kuusi lajia kahdestatoista, Survival, Hardival ja päivän siemen. Seuraavaksi poimittavat, hedelmätikkaat ja aamunkoiton pomo.',
     },
     ja: {
       tagline: 'リブート版：ひと晩、ひとつのドライブウェイで夜明けまで生き延びろ。サバイバルとハーディバルの二つのモード。ゼリーはへこみ、押し合い、弾ける——朝にはコンクリートが君の戦いの絵になる。',
       lineage: 'トコドロップ / ツインスティック・アリーナ',
-      controls: 'まだ操作はない——M0は舞台だけ',
-      note: 'M0：夜の空っぽのドライブウェイ——コンクリート、縁石、ガレージの灯り、画面に版番号。ゼリーはこれから。',
+      controls: '左半分で移動 · 右半分で狙って撃つ、離すとダッシュ · WASD・マウスで狙い・押し続けて射撃・スペースでダッシュ · パッド：スティック、RT、A',
+      note: 'v3、初めて遊べる版：12種のうち6種、サバイバル、ハーディバル、デイリー。次はアイテム、フルーツの段、夜明けのボス。',
     },
     status: 'active',
-    note: 'M0: the empty night driveway — the slab, the curbs, the garage flood and the version on screen. The gels come later.',
+    note: 'v3, the first playable build: six of the twelve species, Survival, Hardival and a Daily seed. Pickups, the fruit ladder and the dawn boss come next.',
     title: 'Toko Drop 2.0',
     tagline: 'The reboot: one night on one driveway, survive till dawn. Two modes, Survival and Hardival, and gels that dent, shove and splat — by sunrise the slab is a painting of how you played.',
     lineage: 'Toko Drop / twin-stick arena',
     tags: ['twin-stick', 'three.js', 'webgpu'],
-    controls: 'nothing to press yet — M0 is the stage',
+    controls: 'left half moves · right half aims and fires, let go to dash · keys: WASD, mouse aims, hold to fire, Space dashes · pad: sticks, RT fires, A dashes',
     // Played here, in the arcade: a deployed copy in toko-drop-2/, the way
     // toko-drop-godot/ is. The source is its own repository
     // (github.com/mbace1/toko-drop) and main does not carry the copy, so the
