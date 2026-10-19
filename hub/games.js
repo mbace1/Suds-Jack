@@ -206,11 +206,11 @@ export const GAMES = [
     lineage: 'Toko Drop / twin-stick arena',
     tags: ['twin-stick', 'three.js', 'webgpu'],
     controls: 'nothing to press yet — M0 is the stage',
-    // Its own repository and its own Pages site, Toko Drop's turn in the
-    // one-repo-per-game move: github.com/mbace1/toko-drop, served at
-    // mbace1.github.io/toko-drop/. Nothing of it lives in this tree, so the
+    // Played here, in the arcade: a deployed copy in toko-drop-2/, the way
+    // toko-drop-godot/ is. The source is its own repository
+    // (github.com/mbace1/toko-drop) and main does not carry the copy, so the
     // gate must not fetch it. 1.x keeps its cabinet above, playable as it is.
-    path: 'https://mbace1.github.io/toko-drop/',
+    path: 'toko-drop-2/',
     inRepo: false,
     deployedOnly: true,
     accent: '#ffb468',
