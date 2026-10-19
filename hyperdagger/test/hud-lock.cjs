@@ -73,12 +73,16 @@ s.listen(0, '127.0.0.1', async () => {
     });
     await p.goto(base + '/hyperdagger/?assets=0');
     await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 60000 });
-    const btn = p.locator('#msg button.season').first();
-    await btn.click();
+    // HD-019: a season tab only picks (no run, no lock); START starts and locks
+    await p.locator('#msg button.mn-season[data-season="inca"]').click();
     await p.waitForTimeout(300);
-    let r = await p.evaluate(() => ({ lock: window.__lock, state: __hd.debug.getRun().state, locked: !!document.pointerLockElement }));
-    ok('season click starts the run', r.state === 'playing', r.state);
-    ok('season click calls requestPointerLock', r.lock.calls >= 1, JSON.stringify(r.lock));
+    let r = await p.evaluate(() => ({ lock: window.__lock, state: __hd.debug.getRun().state }));
+    ok('a season tab click picks without starting or locking', r.state === 'menu' && r.lock.calls === 0, JSON.stringify(r));
+    await p.locator('#startBtn').click();
+    await p.waitForTimeout(300);
+    r = await p.evaluate(() => ({ lock: window.__lock, state: __hd.debug.getRun().state, locked: !!document.pointerLockElement }));
+    ok('START click starts the run', r.state === 'playing', r.state);
+    ok('START click calls requestPointerLock', r.lock.calls >= 1, JSON.stringify(r.lock));
     ok('...from inside the user gesture', r.lock.active !== false, JSON.stringify(r.lock));
     await p.evaluate(() => { __hd.debug.freezeDirector(true); __hd.debug.setInvulnerable(true); });
     const y0 = await p.evaluate(() => __hd.debug.getYaw());
@@ -126,10 +130,32 @@ s.listen(0, '127.0.0.1', async () => {
     await p.addInitScript(() => { localStorage.setItem('hyperDaggerSeenTips', '1'); window.__calls = 0; HTMLCanvasElement.prototype.requestPointerLock = function () { window.__calls++; }; });
     await p.goto(base + '/hyperdagger/?assets=0');
     await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 60000 });
-    await p.locator('#msg button.season').first().tap();
+    await p.locator('#startBtn').tap();
     await p.waitForTimeout(300);
     const r = await p.evaluate(() => ({ calls: window.__calls, state: __hd.debug.getRun().state }));
     ok('touch tap starts the run without asking for pointer lock', r.state === 'playing' && r.calls === 0, JSON.stringify(r));
+    await ctx.close();
+  }
+  // HD-019: ENTER on the menu starts the run and asks for the lock from
+  // inside that key press (a key press is a user gesture, as a click is)
+  {
+    const ctx = await b.newContext({ viewport: { width: 1280, height: 720 } });
+    const p = await ctx.newPage();
+    await p.addInitScript(() => {
+      localStorage.setItem('hyperDaggerSeenTips', '1');
+      let locked = null; window.__lock = { calls: 0, active: false };
+      Object.defineProperty(Document.prototype, 'pointerLockElement', { configurable: true, get() { return locked; } });
+      HTMLCanvasElement.prototype.requestPointerLock = function () {
+        window.__lock.calls++; window.__lock.active = navigator.userActivation ? navigator.userActivation.isActive : null;
+        locked = this; document.dispatchEvent(new Event('pointerlockchange')); return Promise.resolve();
+      };
+    });
+    await p.goto(base + '/hyperdagger/?assets=0');
+    await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 60000 });
+    await p.keyboard.press('Enter');
+    await p.waitForTimeout(300);
+    const r = await p.evaluate(() => ({ lock: window.__lock, state: __hd.debug.getRun().state }));
+    ok('ENTER on the menu starts the run and asks for the lock inside the key press', r.state === 'playing' && r.lock.calls >= 1 && r.lock.active !== false, JSON.stringify(r));
     await ctx.close();
   }
   await b.close(); s.close();

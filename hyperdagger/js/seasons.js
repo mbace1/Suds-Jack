@@ -82,7 +82,14 @@ export const SEASONS = [
     // dash on — plus a double jump. VOID declares none and stays the control.
     mode: 'hyper',
     abilities: { jumps: 2 },
-    blurb: 'black shale you can barely see, slabs that rise and drift, a needler',
+    blurb: 'black shale you can barely see, slabs that rise and drift, the Devil Daggers dagger',
+    // HD-019: what the menu says when this season is picked — a name, one
+    // line of place, and the rules that differ, in the season's own colour
+    card: { title: 'EMBER', accent: '#e0482a',
+      tag: 'Black shale, drifting slabs and the Devil Daggers dagger.',
+      rules: ['Your clock drains — every kill buys time back',
+        'A touch costs 10 seconds, not the run',
+        'The rockfall comes at 3:00 · survive to 5:00'] },
     sky: { void: [0.0015, 0.0015, 0.0015], horizon: [0.30, 0.02, 0.02], band: 4.8, stars: 0.22 },
     floor: { tint: [1, 1, 1], glow: 0.9 },
     // The owner's Meshy monuments were made for THIS season. The asset rig's
@@ -174,6 +181,11 @@ export const SEASONS = [
     mode: 'hyper',
     abilities: { jumps: 2 },
     blurb: 'jump the waves — skulls are support',
+    card: { title: 'INCA', accent: '#2fbfa3',
+      tag: 'A drowned temple at golden hour. The sea is the threat.',
+      rules: ['Jump the waves — a crest that hits you costs 10 seconds',
+        'Your clock drains — every kill buys time back',
+        'The sea drains at 3:00 · survive to 5:00'] },
     // v48 (owner, 2026-09-21): "make season 2 just the wave that you need to
     // jump over. Only random skulls as enemies otherwise." So: no slabs, no
     // rock, no roster but the skull family, and the wave is a HAZARD sized
@@ -348,6 +360,11 @@ export const SEASONS = [
     mode: 'truck',                       // the Clustertruck rules: the road is the arena, falling is death
     abilities: { jumps: 2, dash: true },
     blurb: 'the convoy — trucks that drive, momentum you keep, and a look that fires',
+    card: { title: 'HAUL', accent: '#f0a830',
+      tag: 'A convoy at dusk, driving into the sun.',
+      rules: ['Stay on the trucks — the road kills, and so does a skull',
+        'No gun: hold your look on a skull and missiles fly',
+        'The pile-up comes at 3:00 · survive to 5:00'] },
     sky: { void: [0.0015, 0.0015, 0.0022], horizon: [0.36, 0.13, 0.03], band: 4.2, stars: 0.3,
       sun: 0.55, haze: 0.05, sunDir: [0.0, 0.05, -1] },   // a low sun dead ahead: you are driving into it
     floor: { tint: [1, 1, 1], glow: 0.9 },   // the disc is hidden on the track

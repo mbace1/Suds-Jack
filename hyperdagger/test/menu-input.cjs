@@ -1,4 +1,4 @@
-// Hyper Dagger — HD-003: the menu by touch and by gamepad.
+// Hyper Dagger — HD-003 / HD-019: the menu by touch, by keys and by gamepad.
 //   NODE_PATH=$(npm root -g) node hyperdagger/test/menu-input.cjs
 //
 // Real touches (a hasTouch context, page.touchscreen.tap) and a stubbed
@@ -75,53 +75,74 @@ s.listen(0, '127.0.0.1', async () => {
     return c;
   };
   try {
+    // HD-019: the menu is three season tabs, that season's arena behind them,
+    // its rules, and START. A tab only picks; START (or ENTER, or A) plays.
     // ------------------------------------------------------------- touch
     {
       const { q, ctx } = await open(true, { hyperDaggerModeV31: 'pure', hyperDaggerRunKind: 'free', hyperDaggerSeason: 'ember' });
-            let c = await center(q, '#msg button.mode[data-mode="hyper"]');
-      if (c) {
-        await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3));
-        const afterMode = await q.evaluate(() => window.__menu());
-        ok('touch: a tap on a mode button picks that mode and stays on the menu', afterMode.state === 'menu' && afterMode.mode === 'hyper', JSON.stringify(afterMode));
-      }
-      c = await center(q, '#runKindBtn');
-      if (c) {
-        await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3));
-        const afterKind = await q.evaluate(() => window.__menu());
-        ok('touch: a tap on RUN toggles FREE/DAILY and stays on the menu', afterKind.state === 'menu' && afterKind.runKind === 'daily', JSON.stringify(afterKind));
-        c = await center(q, '#runKindBtn');
-        if (c) { await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3)); }
-      }
-      c = await center(q, '#msg button.season[data-season="inca"]');
+      const shape = await q.evaluate(() => ({ tabs: [...document.querySelectorAll('#msg button.mn-season')].map(b => b.dataset.season),
+        others: [...document.querySelectorAll('#msg button')].filter(b => !b.matches('.mn-season, #startBtn')).map(b => b.id || b.textContent),
+        start: !!document.getElementById('startBtn'), menu: window.__menu() }));
+      ok('the menu offers seasons 1-3 and START, nothing else (no VOID, no mode row, no RUN)', shape.tabs.join(',') === 'ember,inca,haul' && shape.start && shape.others.length === 0, JSON.stringify(shape));
+      ok('the menu plays the season it shows: season 1 is HYPER, not the saved PURE', shape.menu.mode === 'hyper', JSON.stringify(shape.menu));
+      let c = await center(q, '#msg button.mn-season[data-season="inca"]');
       if (!c) throw new Error('SEASON 2 is not reachable on screen');
+      await q.touchscreen.tap(c.x, c.y); await q.evaluate(() => window.__frames(3));
+      const picked = await q.evaluate(() => ({ ...window.__menu(), on: document.querySelector('#msg button.mn-season.on')?.dataset.season,
+        tag: document.querySelector('#msg .mn-card')?.textContent ?? '', goo: window.__hd.debug.getGoo().on, slabs: window.__hd.debug.getPlatforms().count,
+        acc: getComputedStyle(document.getElementById('startBtn')).backgroundColor }));
+      ok('touch: a tap on SEASON 2 picks it and stays on the menu', picked.state === 'menu' && picked.season === 'inca' && picked.on === 'inca', JSON.stringify(picked));
+      ok("touch: the picked season's arena is behind the menu (Inca's sea, no Ember slabs)", picked.goo && picked.slabs === 0, JSON.stringify(picked));
+      ok("touch: the rules and START change with it (Inca's card, teal START)", /drowned temple/.test(picked.tag) && /Jump the waves/.test(picked.tag) && picked.acc === 'rgb(47, 191, 163)', JSON.stringify(picked));
+      // a tap on the empty menu is not a start any more
+      for (const [x, y] of [[60, 200], [784, 12]]) {
+        await q.touchscreen.tap(x, y); await q.evaluate(() => window.__frames(4));
+      }
+      const still = await q.evaluate(() => window.__menu());
+      ok('touch: a tap on empty menu space starts nothing', still.state === 'menu' && still.season === 'inca', JSON.stringify(still));
+      c = await center(q, '#startBtn');
+      if (!c) throw new Error('START is not reachable on screen');
       await q.touchscreen.tap(c.x, c.y);
       const run = await q.evaluate(async () => {
-        const pl = window.__hd.player; await window.__frames(2);
-        const st0 = window.__menu(); const y0 = pl.feet.y; let peak = 0, fired = 0;
-        const d0 = window.__hd.debug.getGun?.().fired ?? null;
-        await window.__game(0.6);
-        peak = pl.feet.y - y0;
-        return { ...st0, rise: +peak.toFixed(2), touchMode: window.__hd.debug.inputObj().touchMode, sticks: [window.__hd.debug.inputObj().left.active, window.__hd.debug.inputObj().right.active] };
+        let n = 0; while (window.__hd.debug.getState().state !== 'playing' && n++ < 120) await window.__frames(1);
+        const pl = window.__hd.player, inp = window.__hd.debug.inputObj(); const st0 = window.__menu(); const y0 = pl.feet.y; let peak = 0;
+        const t0 = window.__hd.debug.getState().gameTime;
+        for (let i = 0; i < 3000 && window.__hd.debug.getState().state === 'playing' && window.__hd.debug.getState().gameTime - t0 < 0.6; i++) { await window.__frames(1); peak = Math.max(peak, pl.feet.y - y0); }
+        return { ...st0, rise: +peak.toFixed(2), sticks: [inp.left.active, inp.right.active] };
       });
-      ok('touch: a tap on SEASON 2 starts season 2', run.state === 'playing' && run.season === 'inca', JSON.stringify(run));
-      ok('touch: the starting tap on a button leaves no stick held', !run.sticks[0] && !run.sticks[1], JSON.stringify(run));
+      ok('touch: a tap on START starts the season picked', run.state === 'playing' && run.season === 'inca', JSON.stringify(run));
+      ok('touch: the START tap leaves no stick held and is not a jump', run.rise < 0.2 && !run.sticks[0] && !run.sticks[1], JSON.stringify(run));
       await ctx.close();
-      // a tap on empty menu space (the "tap to descend" path, either half)
-      for (const side of ['left', 'right']) {
-        const o = await open(true, { hyperDaggerModeV31: 'pure', hyperDaggerRunKind: 'free', hyperDaggerSeason: 'ember' });
-        const x = side === 'left' ? 60 : 784, y = 370;
-        await o.q.touchscreen.tap(x, y);
-        const r = await o.q.evaluate(async () => {
-          let n = 0; while (window.__hd.debug.getState().state !== 'playing' && n++ < 120) await window.__frames(1);
-          const pl = window.__hd.player, inp = window.__hd.debug.inputObj(); const y0 = pl.feet.y; let peak = 0;
-          const t0 = window.__hd.debug.getState().gameTime;
-          for (let i = 0; i < 3000 && window.__hd.debug.getState().gameTime - t0 < 0.6; i++) { await window.__frames(1); peak = Math.max(peak, pl.feet.y - y0); }
-          return { state: window.__hd.debug.getState().state, rise: +peak.toFixed(2), sticks: [inp.left.active, inp.right.active] };
-        });
-        ok(`touch: a tap on empty menu space (${side} half) starts the run`, r.state === 'playing', JSON.stringify(r));
-        ok(`touch: that starting tap is not also a jump in the new run (${side} half)`, r.rise < 0.2 && !r.sticks[0] && !r.sticks[1], JSON.stringify(r));
-        await o.ctx.close();
+    }
+    // ------------------------------------------------------------- keys
+    {
+      const { q, ctx } = await open(false, { hyperDaggerModeV31: 'pure', hyperDaggerRunKind: 'free', hyperDaggerSeason: 'ember' });
+      await q.evaluate(() => window.__frames(2));
+      const seen = [];
+      for (const k of ['ArrowRight', 'ArrowRight', 'ArrowRight', 'ArrowLeft', 'Digit2', 'KeyD']) {
+        await q.keyboard.press(k); await q.evaluate(() => window.__frames(2));
+        seen.push(await q.evaluate(() => window.__menu().state + ':' + window.__menu().season));
       }
+      ok('keys: ← → step the season and wrap, 1-3 pick one, D steps too, all on the menu', seen.join(',') === 'menu:inca,menu:haul,menu:ember,menu:haul,menu:inca,menu:haul', seen.join(','));
+      const truckArena = await q.evaluate(() => ({ mode: window.__hd.debug.getState().mode, slabs: window.__hd.debug.getPlatforms().count, goo: window.__hd.debug.getGoo().on }));
+      ok("keys: season 3's road is behind the menu (TRUCK rules, no slabs, no sea)", truckArena.mode === 'truck' && truckArena.slabs === 0 && !truckArena.goo, JSON.stringify(truckArena));
+      await q.keyboard.press('Enter');
+      const go = await q.evaluate(async () => { let n = 0; while (window.__hd.debug.getState().state !== 'playing' && n++ < 60) await window.__frames(1); return window.__menu(); });
+      ok('keys: ENTER starts the season picked', go.state === 'playing' && go.season === 'haul', JSON.stringify(go));
+      await ctx.close();
+      // the very first START shows the tips card first
+      const ctx2 = await b.newContext({ viewport: { width: 844, height: 390 } });
+      const q2 = await ctx2.newPage(); q2.on('pageerror', e => errs.push('pageerror: ' + e.message));
+      await q2.addInitScript(() => { if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1'); localStorage.setItem('hyperDaggerSeason', 'ember'); localStorage.setItem('hyperDaggerRunKind', 'free'); });
+      await q2.goto(`${base}/hyperdagger/?assets=0`, { waitUntil: 'load' });
+      await q2.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 20000 });
+      await q2.evaluate(HELPERS);
+      await q2.locator('#startBtn').click();
+      const tips = await q2.evaluate(() => window.__menu().state);
+      await q2.mouse.click(400, 200);
+      const after = await q2.evaluate(async () => { let n = 0; while (window.__hd.debug.getState().state !== 'playing' && n++ < 60) await window.__frames(1); return window.__menu().state; });
+      ok('the first START shows the tips, and a click there descends', tips === 'tips' && after === 'playing', JSON.stringify({ tips, after }));
+      await ctx2.close();
     }
     // ------------------------------------------------------------- gamepad
     {
@@ -129,32 +150,22 @@ s.listen(0, '127.0.0.1', async () => {
       const nav = await q.evaluate(async () => {
         const seen = [];
         await window.__frames(3);
-        for (let i = 0; i < 9; i++) { await window.__press(13); seen.push(window.__focus()); }   // d-pad down through everything
-        const wrapped = window.__focus();
-        await window.__press(12); const up = window.__focus();                                   // and back up
-        return { seen, wrapped, up };
+        for (const btn of [15, 15, 15, 14]) { await window.__press(btn); seen.push(window.__menu().season); }   // right ×3 wraps, left steps back
+        const s0 = window.__menu();
+        for (const btn of [13, 12, 1]) await window.__press(btn);                                              // down, up, B
+        return { seen, s0, s1: window.__menu(), focus: window.__focus() };
       });
-      ok('pad: d-pad down walks every menu button in order and wraps', nav.seen.slice(0, 8).join(',') === 'season:ember,season:inca,season:haul,mode:pure,mode:hyper,mode:truck,mode:all,runKindBtn' && nav.seen[8] === 'season:ember', JSON.stringify(nav));
-      ok('pad: d-pad up steps back', nav.up === 'runKindBtn', JSON.stringify(nav));
-      const pick = await q.evaluate(async () => {
-        for (let i = 0; i < 12 && window.__focus() !== 'mode:hyper'; i++) await window.__press(13);
-        await window.__press(0);   // A on HYPER
-        const m = window.__menu(), f = window.__focus();
-        await window.__press(13);  // the focus survives the menu's rebuild: next is TRUCK
-        return { m, f, next: window.__focus() };
-      });
-      ok('pad: A on a mode button picks it, stays on the menu, and keeps the focus there', pick.m.state === 'menu' && pick.m.mode === 'hyper' && pick.f === 'mode:hyper' && pick.next === 'mode:truck', JSON.stringify(pick));
-      const kind = await q.evaluate(async () => { for (let i = 0; i < 12 && window.__focus() !== 'runKindBtn'; i++) await window.__press(13); await window.__press(0); const a = window.__menu(); await window.__press(0); return { a, b: window.__menu(), f: window.__focus() }; });
-      ok('pad: A on RUN toggles FREE/DAILY and back, focus kept', kind.a.runKind === 'daily' && kind.b.runKind === 'free' && kind.f === 'runKindBtn' && kind.b.state === 'menu', JSON.stringify(kind));
+      ok('pad: d-pad right/left step the season and wrap, on the menu', nav.seen.join(',') === 'inca,haul,ember,haul' && nav.s0.state === 'menu', JSON.stringify(nav));
+      ok('pad: down, up and B on the main menu change nothing and focus nothing', nav.s1.state === 'menu' && nav.s1.season === nav.s0.season && nav.focus === null, JSON.stringify(nav));
       const go = await q.evaluate(async () => {
-        for (let i = 0; i < 12 && window.__focus() !== 'season:inca'; i++) await window.__press(12);
-        await window.__press(0);   // A on SEASON 2
+        await window.__press(14);  // back to season 2
+        await window.__press(0);   // A starts it
         const pl = window.__hd.player; const st = window.__menu(); const y0 = pl.feet.y; let peak = 0;
         const t0 = window.__hd.debug.getState().gameTime;
-        for (let i = 0; i < 3000 && window.__hd.debug.getState().gameTime - t0 < 0.6; i++) { await window.__frames(1); peak = Math.max(peak, pl.feet.y - y0); }
-        return { ...st, rise: +peak.toFixed(2), focus: window.__focus() };
+        for (let i = 0; i < 3000 && window.__hd.debug.getState().state === 'playing' && window.__hd.debug.getState().gameTime - t0 < 0.6; i++) { await window.__frames(1); peak = Math.max(peak, pl.feet.y - y0); }
+        return { ...st, rise: +peak.toFixed(2) };
       });
-      ok('pad: A on SEASON 2 starts season 2', go.state === 'playing' && go.season === 'inca', JSON.stringify(go));
+      ok('pad: A starts the season picked', go.state === 'playing' && go.season === 'inca', JSON.stringify(go));
       ok('pad: the A that started the run is not also a jump in it', go.rise < 0.2, JSON.stringify(go));
       const death = await q.evaluate(async () => {
         const d = window.__hd.debug; d.die(); await window.__frames(2);
@@ -166,11 +177,17 @@ s.listen(0, '127.0.0.1', async () => {
       ok('pad: START on the death screen retries', death.st === 'playing', JSON.stringify(death));
       const pause = await q.evaluate(async () => {
         await window.__press(9); const paused = !!document.querySelector('#msg button'); const shown = document.getElementById('msg').style.display;
+        // FREE / DAILY lives in the pause menu since HD-019: from the next run
+        for (let i = 0; i < 40 && !(document.querySelector('#msg button.gfocus')?.dataset.run === 'daily'); i++) await window.__press(13);
+        await window.__press(0);
+        const kind = { saved: localStorage.getItem('hyperDaggerRunKind'), live: window.__hd.debug.getRunInfo().runKind,
+          note: /from the next run/.test(document.getElementById('msg').textContent), on: document.querySelector('#msg button.runkind.on')?.dataset.run };
         await window.__press(1);   // B resumes
         await window.__frames(2);
-        return { paused, shown, after: document.getElementById('msg').style.display, state: window.__hd.debug.getState().state };
+        return { paused, shown, kind, after: document.getElementById('msg').style.display, state: window.__hd.debug.getState().state };
       });
       ok('pad: START pauses mid-run and B resumes', pause.paused && pause.shown === 'block' && pause.after === 'none' && pause.state === 'playing', JSON.stringify(pause));
+      ok('pad: RUN DAILY in the pause menu is the next run\'s; this run stays FREE', pause.kind.saved === 'daily' && pause.kind.live === 'free' && pause.kind.note && pause.kind.on === 'daily', JSON.stringify(pause.kind));
       await ctx.close();
     }
   } catch (e) {

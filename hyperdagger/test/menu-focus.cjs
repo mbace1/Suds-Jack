@@ -1,5 +1,6 @@
 // Hyper Dagger — HD-003 follow-up probes: menu focus across screens, a pad
 // unplugged mid-menu, two fingers on the menu, a drifting stick, B on the menu.
+// HD-019: the main menu is season tabs + START, so C and D are written for it.
 //   NODE_PATH=$(npm root -g) node hyperdagger/test/menu-focus.cjs
 //
 // Real touches (a hasTouch context, page.touchscreen.tap) and a stubbed
@@ -101,36 +102,43 @@ s.listen(0, '127.0.0.1', async () => {
         await window.__press(0);                     // A on END RUN
         await window.__frames(3);
         const menuFocus = window.__focus(), st = window.__menu();
-        await window.__press(0);                     // A: "press ✕ … to descend"
+        await window.__press(0);                     // A on the main menu: START (HD-019)
         await window.__frames(3);
         return { at, menuFocus, menu: st, after: window.__menu() };
       });
       ok('B. pad: END RUN lands on the main menu with nothing focused', r.at === 'endBtn' && r.menu.state === 'menu' && r.menuFocus === null, JSON.stringify(r));
-      ok('B. pad: and A there starts a run, the way the menu says', r.after.state === 'playing' && r.after.runKind === r.menu.runKind, JSON.stringify(r));
+      ok('B. pad: and A there starts a run (START), the way the menu says', r.after.state === 'playing' && r.after.runKind === r.menu.runKind, JSON.stringify(r));
       await ctx.close();
     }
-    // C. pad unplugged and replugged mid-menu: nothing fires, focus still works
+    // C. pad unplugged and replugged mid-menu: nothing fires, the season still steps
     {
       const { q, ctx } = await open(false);
       const r = await q.evaluate(async () => {
-        for (let i = 0; i < 12 && window.__focus() !== 'mode:hyper'; i++) await window.__press(13);
-        const before = { f: window.__focus(), m: window.__menu() };
+        await window.__frames(3);
+        await window.__press(15);                    // right: season 2 (HD-019 — the main menu has no focus to walk)
+        const before = window.__menu();
         window.__plugged = false; await window.__frames(4);
         window.__plugged = true; await window.__frames(4);
-        const after = { f: window.__focus(), m: window.__menu() };
-        await window.__press(13);
-        return { before, after, next: window.__focus() };
+        const after = window.__menu();
+        await window.__press(15);
+        return { before, after, next: window.__menu() };
       });
-      ok('C. pad: unplug/replug mid-menu fires nothing and keeps the focus walkable',
-        r.after.m.state === 'menu' && r.after.m.mode === r.before.m.mode && r.after.m.runKind === r.before.m.runKind && r.next === 'mode:truck', JSON.stringify(r));
+      ok('C. pad: unplug/replug mid-menu fires nothing and right still steps the season',
+        r.before.season === 'inca' && r.after.state === 'menu' && r.after.season === 'inca' && r.after.runKind === r.before.runKind && r.next.season === 'haul' && r.next.state === 'menu', JSON.stringify(r));
       await ctx.close();
     }
-    // D. two fingers on the menu at once: one run, no jump, no stick held
+    // D. two fingers on the menu at once. On empty space they start nothing
+    // (HD-019: START is the way in); one on START and one on empty space start
+    // one run, with no jump and no stick held when they lift.
     {
       const { q, ctx } = await open(true);
       const cdp = await ctx.newCDPSession(q);
-      const pts = [{ x: 60, y: 370, id: 1 }, { x: 784, y: 370, id: 2 }];
-      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pts });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 60, y: 200, id: 1 }, { x: 300, y: 370, id: 2 }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      const idle = await q.evaluate(async () => { await window.__frames(4); const inp = window.__hd.debug.inputObj(); return { ...window.__menu(), sticks: [inp.left.active, inp.right.active] }; });
+      ok('D. touch: two fingers on empty menu space start nothing and hold no stick', idle.state === 'menu' && !idle.sticks[0] && !idle.sticks[1], JSON.stringify(idle));
+      const bb = await q.locator('#startBtn').boundingBox();
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: bb.x + bb.width / 2, y: bb.y + bb.height / 2, id: 3 }, { x: 60, y: 200, id: 4 }] });
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
       const r = await q.evaluate(async () => {
         const d = window.__hd.debug; let n = 0; while (d.getState().state !== 'playing' && n++ < 120) await window.__frames(1);
@@ -139,7 +147,7 @@ s.listen(0, '127.0.0.1', async () => {
         for (let i = 0; i < 3000 && d.getState().gameTime - t0 < 0.6; i++) { await window.__frames(1); peak = Math.max(peak, pl.feet.y - y0); }
         return { state: d.getState().state, rise: +peak.toFixed(2), sticks: [inp.left.active, inp.right.active] };
       });
-      ok('D. touch: two fingers on the menu start one run with no jump and no stick held', r.state === 'playing' && r.rise < 0.2 && !r.sticks[0] && !r.sticks[1], JSON.stringify(r));
+      ok('D. touch: a finger on START and one on empty space start one run with no jump and no stick held', r.state === 'playing' && r.rise < 0.2 && !r.sticks[0] && !r.sticks[1], JSON.stringify(r));
       await ctx.close();
     }
     // E. a stick drifting past the menu threshold, held through a pause: no focus walk; B on the main menu does nothing
