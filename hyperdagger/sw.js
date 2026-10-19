@@ -6,7 +6,7 @@
 //  - Tokened module requests (?v=N) stay network-first so a deploy with a
 //    bumped token always pulls the new graph; the old tokened entries age out.
 
-const CACHE = 'hyperdagger-v79';
+const CACHE = 'hyperdagger-v80';
 const PRECACHE = [
   './',
   './index.html',
@@ -47,8 +47,8 @@ const PRECACHE = [
   './js/gibs.js?v=85',
   './js/goo.js?v=85',
   './js/inca.js?v=85',
-  './js/input.js?v=107',
-  './js/main.js?v=109',
+  './js/input.js?v=110',
+  './js/main.js?v=110',
   './js/mesh-enemies.js?v=107',
   './js/meshassets.js?v=107',
   './js/modes.js?v=109',
@@ -56,7 +56,7 @@ const PRECACHE = [
   './js/player.js?v=85',
   './js/rng.js?v=85',
   './js/roster.js?v=85',
-  './js/seasons.js?v=109',
+  './js/seasons.js?v=110',
   './js/shale.js?v=85',
   './js/truck.js?v=107',
   './js/tuning.js?v=85',

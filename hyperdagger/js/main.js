@@ -5,7 +5,7 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=107';
+import { InputManager } from './input.js?v=110';
 import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
@@ -22,7 +22,7 @@ import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './mode
 import { TruckTrack } from './truck.js?v=107';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
-import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=109';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=110';
 import { Platforms } from './platforms.js?v=85';
 import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
 import { GooWave } from './goo.js?v=85';
@@ -1044,6 +1044,11 @@ const elToast = document.getElementById('toast');
 const elCross = document.getElementById('crosshair');
 function setRunFrame(active) {
   document.body.classList.toggle('in-run', active);
+  // HD-019: only the main menu wears the menu frame (no HUD, no hand) —
+  // every other screen comes through here, and showMenu puts it back after
+  document.body.classList.remove('on-menu');
+  elMsg.classList.remove('menu');
+  handGroup.visible = true;
 }
 const elVignette = document.getElementById('vignette');
 let toastTimeout = 0;
@@ -1263,6 +1268,9 @@ function applyRunAbilities() {
 const SEASON_KEY = 'hyperDaggerSeason';
 const _urlSeason = new URLSearchParams(location.search).get('season');
 let season = seasonById(_urlSeason || localStorage.getItem(SEASON_KEY) || 'ember').id;
+// HD-019: the menu offers seasons 1-3 only. A LINK to a hidden one (the
+// gate's VOID) is kept; a hidden one merely remembered is not offered back.
+if (!_urlSeason && seasonById(season).hidden) season = 'ember';
 /** A season was chosen (link or button): its declared mode beats the saved one. */
 let _seasonChosen = !!_urlSeason;
 /** The active season's declaration — ask this, never `season === '...'`. */
@@ -1375,6 +1383,10 @@ let mercyT = 0; // post-hit i-frames (hyper mode)
 // director-level draws use the seeded stream; enemy micro-jitter, debris and
 // gems stay Math.random.
 let runKind = localStorage.getItem('hyperDaggerRunKind') === 'daily' ? 'daily' : 'free';
+/** The kind THIS run was started as. `runKind` is the setting, and since
+ *  HD-019 it lives in the pause menu, so it can change mid-run: it applies
+ *  from the next run, and the run in progress keeps its seed and its table. */
+let runKindLive = runKind;
 let runSeed = 0;
 let runDate = ''; // pinned at resetRun so a run straddling UTC midnight scores against its seed day
 let dateOverride = null; // debug/test hook
@@ -1476,81 +1488,163 @@ async function menuBoardLine() {
   } catch { /* board offline — menu shows nothing extra */ }
 }
 
-function showMenu() {
-  setRunFrame(false);
-  elMsg.style.display = 'block';
-  // both lines come from the mode's own declaration, so a new experiment
-  // describes itself on the menu without touching this function
-  const modeLine = `${M().name} &mdash; ${M().blurb}`;
-  const controls = M().controls;
-  elMsg.innerHTML =
-    `<h1>HYPER DAGGER</h1>
-     <p class="sub">a stripped-down Devil Daggers homage</p>
-     <p>survive the swarm &mdash; time is your only score</p>
-     <p class="keys">${controls} &middot; <b>ESC</b> options<br>
-     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> or a <b>short trigger</b> jumps &middot; <b>hold trigger = fire</b> &nbsp;|&nbsp; touch &mdash; right stick: <b>hold = fire</b> &middot; <b>tap = jump &times;2</b> &middot; <b>flick = dash</b></p>
-     <div class="row-label">season</div>
-     <div class="seasons">
-       ${SEASONS.filter(sn => !sn.hidden).map(sn =>
-         `<button class="season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}
-     </div>
-     <div class="row-label">mode</div>
-     <div class="modes">
-       ${MODES.filter(m => m.id !== 'move').map(m =>
-         `<button class="mode${m.id === M().id ? ' on' : ''}" data-mode="${m.id}">${m.name}</button>`).join('')}
-       <button class="mode all" data-mode="all">ALL</button>
-     </div>
-     <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
-    ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
-    : 'FREE &mdash; pure random'}</button>
-     <p class="go"><span id="menuBoard"></span>${bestLine()}click / tap / press &#10005; or START to descend</p>`;
-  menuBoardLine();
-  // v48 (owner): the intro reads "SEASON 1", "SEASON 2" — later 3 and so on
-  // — and nothing else. Press one and you are in it. The regular options live
-  // in the pause menu; since v50 the MODE is the season's to declare.
-  for (const b of elMsg.querySelectorAll('button.season')) {
-    b.addEventListener('pointerdown', e => {
-      e.stopPropagation();
-      season = seasonById(b.dataset.season).id;
-      _seasonChosen = true;
-      localStorage.setItem(SEASON_KEY, season);
-      applySeason();
-      hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');   // v50: the season's mode keys the best
-      startGame();
-      lockPointer(e);   // HD-013: this click IS the gesture that starts the run
-    });
+// ---------------------------------------------------------- the menu (HD-019)
+// Mikael, 18 Oct 2026: "Only show season 1-3, have the background and rules
+// change as you choose it. Have a start button underneath." So the menu is
+// the picked season's own arena, live behind the glass, three season tabs,
+// that season's rules, and START. Picking a season no longer starts it, and
+// a tap on the empty screen does nothing: START is the one way in. The mode
+// row is gone (the season declares its mode, v50) and RUN FREE / DAILY moved
+// to the pause menu's options.
+
+/** The seasons the menu offers: the ones a player picks, with a card to show. */
+function menuSeasons() { return SEASONS.filter(sn => !sn.hidden && sn.card); }
+
+/** The season whose arena stands behind the menu now (null: none built). */
+let menuBuilt = null;
+let menuT = 0;
+
+/** Put a season behind the menu: its sky and light, its arena, its rules and
+ *  its best. Building the arena is a reset of the run, the same one START
+ *  does, so what you look at is the season you will play. */
+function previewSeason(id) {
+  season = seasonById(id).id;
+  _seasonChosen = true;
+  if (!S().hidden) localStorage.setItem(SEASON_KEY, season);
+  applySeason();
+  hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
+  if (menuBuilt !== season) {
+    resetRun();
+    menuBuilt = season;
+    menuT = 0;
   }
-  for (const b of elMsg.querySelectorAll('button.mode')) {
-    b.addEventListener('pointerdown', e => {
-      e.stopPropagation();
-      const id = b.dataset.mode;
-      if (id === 'all') {
-        mode = nextModeId(M().id);
-      } else {
-        mode = id;
-      }
-      _seasonChosen = false;   // a mode picked here is the one you play
-      localStorage.setItem(MODE_KEY, mode);
-      showMenu();
-    });
-  }
-  document.getElementById('runKindBtn').addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    runKind = runKind === 'daily' ? 'free' : 'daily';
-    localStorage.setItem('hyperDaggerRunKind', runKind);
-    showMenu();
-  });
 }
 
+function selectSeason(id) {
+  if (state !== 'menu') return;
+  previewSeason(id);
+  showMenu();
+}
+
+/** Left/right on a pad or the keys: the next season along, wrapping. */
+function stepSeason(d) {
+  const list = menuSeasons();
+  if (!list.length) return;
+  const i = list.findIndex(sn => sn.id === season);
+  const n = list.length;
+  selectSeason(list[i < 0 ? (d > 0 ? 0 : n - 1) : (i + d + n) % n].id);
+}
+
+/** START: the season on screen, now. The very first run gets the tips card. */
+function menuStart(e) {
+  if (state !== 'menu') return;
+  audio.ensure();
+  if (!localStorage.getItem(TIPS_KEY)) {
+    localStorage.setItem(TIPS_KEY, '1');
+    showTips();
+    return;
+  }
+  startGame();
+  lockPointer(e);   // HD-013: this press IS the gesture that starts the run
+}
+
+/** The menu's camera: stands where the run starts and looks slowly about, so
+ *  the season behind the glass is a place and not a still. */
+function menuCamera(dt) {
+  menuT += dt;
+  const sway = opts.motion ? Math.sin(menuT * 0.11) : 0;
+  player.yaw = (S().card?.yaw ?? 0) + sway * 0.42;
+  player.pitch = S().card?.pitch ?? 0.04;
+  player._sync();
+}
+
+/** The controls, for the device in hand and the season on screen — built
+ *  from the body this season gives you, so a season without a gun or a dash
+ *  never advertises one. (TRUCK mode's own line still says "run the walls",
+ *  which the convoy has none of.) */
+function menuKeysLine() {
+  const gun = !S().gaze, ab = player.abilities ?? {};
+  const jumps = (ab.jumps ?? 1) > 1 ? ` &times;${ab.jumps}` : '';
+  const touch = input.touchMode || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+  if (touch) {
+    return [gun ? 'right stick <b>hold</b> = fire' : 'look at a skull to fire',
+      `<b>tap</b> = jump${jumps}`, ab.dash ? '<b>flick</b> = dash' : ''].filter(Boolean).join(' &middot; ');
+  }
+  if (input.gamepad) {
+    return [`<b>A</b> jump${jumps}`, gun ? '<b>hold RT</b> fire' : 'look at a skull to fire', ab.dash ? '<b>B</b> dash' : '',
+      ab.reap ? '<b>X</b> reap' : ''].filter(Boolean).join(' &middot; ') + '<br><b>&#9664; &#9654;</b> season &middot; <b>A</b> start';
+  }
+  return ['WASD move', gun ? '<b>hold click</b> fire' : 'look at a skull to fire', `<b>Space</b> jump${jumps}`,
+    ab.dash ? '<b>Shift</b> dash' : '', ab.reap ? '<b>R</b> reap' : ''].filter(Boolean).join(' &middot; ')
+    + '<br><b>&larr; &rarr;</b> season &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
+}
+
+/** The best to beat, labelled with the MODE it is filed under: seasons 1
+ *  and 2 both play HYPER and share its best, so a per-season label would lie. */
 function bestLine() {
-  const sn = S().menu ?? S().name;
   const m = M().name;
   if (runKind === 'daily') {
     const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), M().id)) || '0');
-    return dayBest > 0 ? `${sn} · ${m} · today's best ${dayBest.toFixed(1)}s &mdash; ` : `${sn} · ${m} · `;
+    return `DAILY ${todayStr()} &middot; ${dayBest > 0 ? `today's best ${dayBest.toFixed(1)}s` : 'no time today yet'}`;
   }
-  return hiScore > 0 ? `${sn} · ${m} · best ${hiScore.toFixed(1)}s &mdash; ` : `${sn} · ${m} · `;
+  return hiScore > 0 ? `${m} &middot; best ${hiScore.toFixed(1)}s` : `${m} &middot; no best yet`;
 }
+
+function showMenu() {
+  setRunFrame(false);
+  // a link to a hidden season (the gate's VOID) is kept; a saved one is not
+  if (menuBuilt !== season) previewSeason(season);
+  document.body.classList.add('on-menu');
+  handGroup.visible = false;   // the hand is the run's; the menu is the place
+  elMsg.classList.add('menu');
+  elMsg.style.display = 'block';
+  const sn = S();
+  const card = sn.card ?? { title: sn.name, tag: sn.blurb, accent: '#d8412f', rules: [] };
+  elMsg.innerHTML =
+    `<div class="mn" style="--acc:${card.accent}">
+       <header class="mn-head">
+         <h1 class="mn-mark">HYPER DAGGER</h1>
+         <p class="mn-sub">survive &middot; time is the score</p>
+       </header>
+       <section class="mn-foot">
+         <div class="mn-seasons" role="tablist" aria-label="season">
+           ${menuSeasons().map((s, i) =>
+             `<button class="mn-season${s.id === season ? ' on' : ''}" data-season="${s.id}" role="tab" aria-selected="${s.id === season}" style="--sacc:${s.card.accent}"><span class="mn-n">SEASON ${i + 1}</span><span class="mn-t">${s.card.title}</span></button>`).join('')}
+         </div>
+         <div class="mn-card" role="tabpanel">
+           <p class="mn-tag">${card.tag}</p>
+           ${card.rules.length ? `<ul class="mn-rules">${card.rules.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+           <p class="mn-best"><span id="menuBoard"></span>${bestLine()}</p>
+         </div>
+         <button id="startBtn" class="mn-start">START</button>
+         <p class="mn-keys">${menuKeysLine()}</p>
+       </section>
+     </div>`;
+  menuBoardLine();
+  for (const b of elMsg.querySelectorAll('button.mn-season')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      audio.ensure();
+      selectSeason(b.dataset.season);
+    });
+  }
+  document.getElementById('startBtn').addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    if (e.pointerType === 'touch') input.swallowTouchAt(e.clientX, e.clientY);   // HD-003: its lift is not a jump
+    menuStart(e);
+  });
+}
+
+// the keys walk the menu too: ← → (or A / D, or 1-3) pick, ENTER or SPACE starts
+window.addEventListener('keydown', e => {
+  if (state === 'tips' && !e.repeat && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); startGame(); lockPointer(input.touchMode ? null : { pointerType: 'mouse' }); return; }
+  if (state !== 'menu' || e.repeat || !elMsg.classList.contains('menu')) return;
+  const list = menuSeasons();
+  if (e.code === 'ArrowLeft' || e.code === 'KeyA') stepSeason(-1);
+  else if (e.code === 'ArrowRight' || e.code === 'KeyD') stepSeason(1);
+  else if (/^Digit[1-9]$/.test(e.code) && list[+e.code.slice(5) - 1]) selectSeason(list[+e.code.slice(5) - 1].id);
+  else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); menuStart(input.touchMode ? null : { pointerType: 'mouse' }); }
+});
 
 // One-time 3-tip card before the very first run — the mechanics that aren't
 // obvious from the HUD. After this the menu stays terse.
@@ -1651,7 +1745,7 @@ function showDeath(timedOut, complete = false) {
   // daily times never touch the FREE all-time board — separate economies
   let best = false;
   let dailyLines = '';
-  if (runKind === 'daily') {
+  if (runKindLive === 'daily') {
     const key = dailyKey(runDate, M().id); // runDate, not today — midnight straddle; M(), the mode PLAYED (the saved one loses to a chosen season)
     const dayBest = parseFloat(localStorage.getItem(key) || '0');
     best = runT > dayBest;
@@ -1679,7 +1773,7 @@ function showDeath(timedOut, complete = false) {
     .map(([type, n]) => `${n}&times; ${ENEMY_NAMES[type] || type}`)
     .join(' &middot; ');
 
-  const hist = pushRunHistory({ t: runT, mode: M().id, daily: runKind === 'daily' || undefined });
+  const hist = pushRunHistory({ t: runT, mode: M().id, daily: runKindLive === 'daily' || undefined });
   pushRunLog(timedOut, complete);
   const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
   const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
@@ -1693,13 +1787,13 @@ function showDeath(timedOut, complete = false) {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1 class="dead">${complete ? 'RUN COMPLETE' : timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
-     <p class="big">${t}s &middot; <span class="tier">${timeTier(runT)}</span> &middot; ${S().menu ?? S().name} &middot; ${M().name}${runKind === 'daily' ? ' · DAILY' : ''}</p>
+     <p class="big">${t}s &middot; <span class="tier">${timeTier(runT)}</span> &middot; ${S().menu ?? S().name} &middot; ${M().name}${runKindLive === 'daily' ? ' · DAILY' : ''}</p>
      <p>${kills} kills &middot; ${gemCount} gems</p>
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      ${pulseLine}
      ${recapParts().length ? `<p class="breakdown">${recapParts().join(' &middot; ')}</p>` : ''}
-     ${runKind === 'daily' ? dailyLines
+     ${runKindLive === 'daily' ? dailyLines
     : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
@@ -1726,7 +1820,7 @@ function showDeath(timedOut, complete = false) {
       localStorage.setItem(INITIALS_KEY, v);
     });
   }
-  if (runKind === 'daily') boardReport(runDate, M().id, runT);
+  if (runKindLive === 'daily') boardReport(runDate, M().id, runT);
 }
 
 function clearEnemies() {
@@ -1737,7 +1831,8 @@ function clearEnemies() {
 
 function resetRun() {
   runDate = todayStr();
-  if (runKind === 'daily') {
+  runKindLive = runKind;
+  if (runKindLive === 'daily') {
     runSeed = fnv1a(runDate + ':' + M().id);
     rng.next = mulberry32(runSeed);
   } else {
@@ -1834,6 +1929,7 @@ function goFullscreen() {
 function startGame() {
   goFullscreen();
   resetRun();
+  menuBuilt = null;   // HD-019: the run is about to change the arena the menu showed
   gfocus = -1;
   // drain A/B edges accumulated while menuing so the run doesn't open with
   // a phantom jump or dash
@@ -1876,6 +1972,7 @@ function endRun() {
   elCross.style.display = 'none';
   audio.droneStop();
   audio.musicStop();
+  menuBuilt = null;   // HD-019: cleared above, so the menu builds its season again
   showMenu();
 }
 
@@ -1941,12 +2038,7 @@ window.addEventListener('pointerdown', e => {
   // HD-003: a finger that taps to start, retry or resume is UI — its lift is not a jump
   if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead' || (state === 'playing' && paused))) input.swallowTouchAt(e.clientX, e.clientY);
   if (state === 'menu') {
-    if (!localStorage.getItem(TIPS_KEY)) {
-      localStorage.setItem(TIPS_KEY, '1');
-      showTips();
-    } else {
-      startGame();
-    }
+    // HD-019: a tap on the empty menu is not a start — START is (menuStart)
   } else if (state === 'tips') {
     startGame();
   } else if (state === 'dead') {
@@ -2145,6 +2237,9 @@ function showPause() {
      <button id="tokoBtn">ASK TOKO</button>
      <div class="optrow"><span>SEASON</span>${SEASONS.filter(sn => !sn.hidden).map(sn =>
        `<button class="opt season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}</div>
+     <div class="optrow"><span>RUN</span>${['free', 'daily'].map(k =>
+       `<button class="opt runkind${k === runKind ? ' on' : ''}" data-run="${k}">${k === 'daily' ? 'DAILY SEED' : 'FREE'}</button>`).join('')}${
+       runKind !== runKindLive ? ' <span class="optnote">from the next run</span>' : ''}</div>
      ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
      ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
      ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
@@ -2163,7 +2258,7 @@ function showPause() {
      ${optRow('VOXEL', 'detail', ['auto', 1, 2, 3, 4], v => v === 'auto' ? 'AUTO' : ({ 1: '1X', 2: '8X', 3: '27X', 4: '64X' })[v])}
      ${optRow('LOOK', 'look', ['smooth', 'cubes'], v => v.toUpperCase())}
      ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}
-     <button id="endBtn" class="opt">END RUN &mdash; back to the mode menu</button>
+     <button id="endBtn" class="opt">END RUN &mdash; back to the season menu</button>
      <p class="go">click / tap anywhere else to resume</p>`;
   wireToko();
   document.getElementById('endBtn').addEventListener('pointerdown', e => {
@@ -2190,6 +2285,16 @@ function showPause() {
       buildSeasonArena();
       applyRunAbilities();   // v50: a season carries its control scheme
       hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
+      showPause();
+    });
+  }
+  // HD-019: FREE / DAILY moved here off the main menu. It is the next run's
+  // setting — the run in progress keeps the seed it started with.
+  for (const b of elMsg.querySelectorAll('button.runkind')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      runKind = b.dataset.run;
+      localStorage.setItem('hyperDaggerRunKind', runKind);
       showPause();
     });
   }
@@ -2650,7 +2755,7 @@ function runPulse(n) {
   const kind = pulseKind(n);
   // daily runs seed a FRESH stream per pulse index, so pulse N's pick
   // sequence is comparable across players regardless of when it fires
-  const draw = runKind === 'daily' ? mulberry32(mixSeed(runSeed, n)) : Math.random;
+  const draw = runKindLive === 'daily' ? mulberry32(mixSeed(runSeed, n)) : Math.random;
   let budget = pulseBudget(n, kind);
   let stagger = 0;
   const picks = [];
@@ -3961,6 +4066,15 @@ function menuButtons() {
 
 function gamepadMenu() {
   const ui = input.consumeUi();
+  if (state === 'menu' && elMsg.classList.contains('menu')) {
+    // HD-019: the main menu is one choice and one button — left/right is the
+    // season, A or START plays it; up, down and B have nothing to move
+    gfocus = -1;
+    if (ui.left) stepSeason(-1);
+    else if (ui.right) stepSeason(1);
+    if (ui.a || ui.start) menuStart(null);
+    return;
+  }
   const btns = menuButtons();
   if (gfocus >= btns.length) gfocus = btns.length - 1;
   if (ui.down && btns.length) gfocus = (gfocus + 1) % btns.length;
@@ -4029,6 +4143,7 @@ function animate() {
     if (hitStop > 0) hitStop -= rawDt;
     step(dt * opts.speed * ts);
   } else if (state !== 'playing') {
+    if (state === 'menu') menuCamera(dt);   // HD-019
     // death slow-mo: debris + daggers keep tumbling at quarter speed
     slowmo = Math.max(0, slowmo - dt * 0.8);
     const eff = dt * (1 - 0.75 * slowmo);
@@ -4178,7 +4293,8 @@ window.__hd = {
     gooHit(x, z, p) { goo.hit(x, z, p); },
     waveStrikes() { return { strikes: waveStrikes, hurts: !!goo.cfg?.hurts, inside: goo.strikes(player), lifeT: +lifeT.toFixed(2) }; },
     gelMoundSample() { return GEL_MOUND_SAMPLE; },
-    menuSeasons() { return [...elMsg.querySelectorAll('button.season')].map(b => ({ id: b.dataset.season, label: b.textContent.trim(), on: b.classList.contains('on') })); },
+    // the pause menu's season buttons, or the intro's tabs (HD-019), whose label is the SEASON N line
+    menuSeasons() { return [...elMsg.querySelectorAll('button.season, button.mn-season')].map(b => ({ id: b.dataset.season, label: (b.querySelector('.mn-n') ?? b).textContent.trim(), on: b.classList.contains('on') })); },
     menuHas(sel) { return !!elMsg.querySelector(sel); },
     getInca() { return skullscape.getState(); },
     // the mean colour of the first standing enemy's lattice — is the roster wearing the season?
@@ -4344,7 +4460,7 @@ window.__hd = {
     setDate(s) { dateOverride = s; },
     setBoardEndpoint(u) { BOARD_ENDPOINT = u || ''; },
     getBoardEndpoint() { return BOARD_ENDPOINT; },
-    getRunInfo() { return { runKind, runSeed, runDate, mode: M().id, pulseN }; },
+    getRunInfo() { return { runKind: runKindLive, runSeed, runDate, mode: M().id, pulseN }; },
     lastPulsePicks,
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },

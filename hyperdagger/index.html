@@ -28,6 +28,66 @@
     #msg button.mode.all { border-style: dashed; }
     #msg .row-label { font-size: 0.75rem; letter-spacing: 0.12em; opacity: 0.55; margin: 0.6rem 0 0.2rem; text-transform: uppercase; }
     #msg h1 { text-shadow: 0 2px 8px #000; }
+    /* HD-019 THE MENU. The season's own arena is the background, live: the
+       overlay is a veil on the right, not a dark sheet over everything, and
+       the whole panel stands in the season's colour (--acc). One column on
+       the right keeps the shell's HUB (top-left) and the signature
+       (bottom-left) out of the way; on a phone held upright it is the
+       bottom of the screen. */
+    #msg.menu { background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.72) 63%, rgba(0,0,0,0.9) 100%); padding: 0; justify-content: stretch; align-items: stretch; text-align: left; overflow: hidden; }
+    .mn { --acc: #d8412f; position: relative; display: flex; flex-direction: column; justify-content: space-between; width: min(27rem, 100%); height: 100%; margin-left: auto; padding: max(1.6rem, env(safe-area-inset-top)) max(2.2rem, env(safe-area-inset-right)) max(1.4rem, env(safe-area-inset-bottom)) 1.6rem; gap: 1rem; overflow-y: auto; }
+    .mn-head { animation: mnIn 0.5s ease both; }
+    #msg .mn-mark { font-size: clamp(2rem, 4.4vw, 3.3rem); font-weight: 900; letter-spacing: 0.02em; line-height: 0.92; margin: 0; text-shadow: none; color: #f4ece0; }
+    .mn-mark::after { content: ''; display: block; width: 3.2rem; height: 4px; margin-top: 0.7rem; background: var(--acc); transition: background 0.35s; }
+    .mn-sub { margin-top: 0.6rem; font-size: 0.78rem; letter-spacing: 0.24em; text-transform: uppercase; opacity: 0.6; }
+    .mn-foot { display: flex; flex-direction: column; gap: 0.75rem; }
+    .mn-seasons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+    #msg button.mn-season { --sacc: #888; position: relative; margin: 0; padding: 0.7rem 0.55rem 0.6rem; min-height: 44px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; text-align: left; background: rgba(10,9,8,0.72); border: 0; border-top: 3px solid rgba(232,220,200,0.2); border-radius: 0; color: rgba(232,220,200,0.68); transition: color 0.2s, border-color 0.2s, background 0.2s; }
+    #msg button.mn-season:hover { color: #e8dcc8; border-top-color: var(--sacc); }
+    #msg button.mn-season.on { color: #f4ece0; border-top-color: var(--sacc); background: linear-gradient(180deg, color-mix(in srgb, var(--sacc) 32%, rgba(10,9,8,0.72)), rgba(10,9,8,0.72)); box-shadow: none; }
+    .mn-n { font-size: 0.62rem; letter-spacing: 0.18em; opacity: 0.75; }
+    .mn-t { font-size: 1.05rem; font-weight: 800; letter-spacing: 0.08em; }
+    .mn-card { padding: 0.85rem 1rem 0.8rem; background: rgba(8,7,6,0.72); border-left: 3px solid var(--acc); transition: border-color 0.35s; animation: mnIn 0.35s ease both; }
+    .mn-tag { font-size: 0.98rem; line-height: 1.35; color: #f4ece0; margin: 0 0 0.55rem; }
+    .mn-rules { list-style: none; display: flex; flex-direction: column; gap: 0.32rem; margin: 0 0 0.65rem; padding: 0; }
+    .mn-rules li { position: relative; padding-left: 1.05rem; font-size: 0.86rem; line-height: 1.3; opacity: 0.88; }
+    .mn-rules li::before { content: ''; position: absolute; left: 0; top: 0.5em; width: 0.5rem; height: 2px; background: var(--acc); }
+    .mn-best { font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.6; margin: 0; font-variant-numeric: tabular-nums; }
+    #msg button.mn-start { margin: 0; width: 100%; min-height: 3.3rem; padding: 0.8rem 1rem; background: var(--acc); color: #0b0908; border: 0; border-radius: 0; font-size: 1.15rem; font-weight: 900; letter-spacing: 0.42em; text-indent: 0.42em; transition: background 0.35s, filter 0.15s, transform 0.15s; }
+    #msg button.mn-start:hover { filter: brightness(1.15); }
+    #msg button.mn-start:active { transform: scale(0.985); }
+    #msg button.mn-start:focus-visible { outline: 2px solid #f4ece0; outline-offset: 3px; }
+    .mn-keys { font-size: 0.72rem; line-height: 1.5; opacity: 0.55; margin: 0; }
+    .mn-keys b { font-weight: 700; opacity: 1; }
+    @keyframes mnIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .mn-head, .mn-card { animation: none; } }
+    /* a phone held upright: the panel is the bottom of the screen, the title the top */
+    @media (max-aspect-ratio: 4/5) {
+      #msg.menu { background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 36%, rgba(0,0,0,0.78) 62%, rgba(0,0,0,0.9) 100%); }
+      .mn { width: 100%; margin: 0; padding: max(4.4rem, calc(env(safe-area-inset-top) + 3.6rem)) 1rem max(4.2rem, calc(env(safe-area-inset-bottom) + 3.4rem)); }
+      .mn-head { text-align: center; }
+      .mn-mark::after { margin-left: auto; margin-right: auto; }
+    }
+    /* a short screen (a phone on its side): everything tighter, keys line off */
+    @media (max-height: 480px) {
+      .mn { width: min(25rem, 52%); padding-top: max(0.8rem, env(safe-area-inset-top)); padding-bottom: max(0.7rem, env(safe-area-inset-bottom)); gap: 0.5rem; }
+      #msg .mn-mark { font-size: 1.7rem; }
+      .mn-mark::after { margin-top: 0.4rem; height: 3px; }
+      .mn-sub { display: none; }
+      .mn-foot { gap: 0.45rem; }
+      #msg button.mn-season { padding: 0.45rem 0.5rem 0.4rem; }
+      .mn-t { font-size: 0.92rem; }
+      .mn-card { padding: 0.55rem 0.75rem; }
+      .mn-tag { font-size: 0.84rem; margin-bottom: 0.35rem; }
+      .mn-rules { gap: 0.2rem; margin-bottom: 0.4rem; }
+      .mn-rules li { font-size: 0.76rem; }
+      #msg button.mn-start { min-height: 2.9rem; padding: 0.55rem; font-size: 1rem; }
+      .mn-keys { display: none; }
+    }
+    /* the menu has no run to report on: no clock, no kills, no pause button */
+    body.on-menu #timer, body.on-menu #kills, body.on-menu #gems, body.on-menu #style,
+    body.on-menu #clockLabel, body.on-menu #pauseBtn, body.on-menu #combo, body.on-menu #threatRing { display: none; }
+    .optnote { font-size: 0.75rem; opacity: 0.6; }
     #timer, #kills, #gems, #style { position: absolute; z-index: 5; pointer-events: none; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000; }
     #timer { top: 0.8rem; left: 50%; transform: translateX(-50%); font-size: 1.6rem; letter-spacing: 0.06em; }
     #kills, #gems { top: 0.9rem; font-size: 0.9rem; opacity: 0.75; }
@@ -110,10 +170,10 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=109"></script>
+  <script type="module" src="js/main.js?v=110"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=109').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=110').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=94"></script>

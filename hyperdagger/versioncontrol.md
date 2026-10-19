@@ -53,3 +53,19 @@ What the publish carried besides `hyperdagger/` (minus `test/`, where the site's
 - The shell token on this game's page is the site's (`?v=94`), not main's `?v=43`.
 
 Not verified: the live page was not opened. This session's network policy refuses `mbace1.github.io`. The game's gates (offline, press-edges, menu-focus, menu-input, pause-resume-tap, hud-lock) passed against the site tree before the push. The arcade smoke gave the same 46 passes and 4 failures on that tree as on the untouched site, so the publish added no failure. Those 4 are failures of main's arcade test on the site's arcade, and they predate this publish.
+
+## 2026-10-18 — v58, season 3 without truck shots, crate saves or a cargo score, on main and on the live page
+
+PR #622, merge commit `61a458088a92a41683cb14c7bb5e752263f3a6dd` (`61a45808`), 18 Oct 2026, 15:33:03 EEST. Parents: `bbaa15df` (main) and `b796786a` (the PR head, `feat/hyperdagger-hd018-no-truck-shots`). The full smoke passed 220/0 on `b796786a`. The other gates are listed in the PR. The same day, #620 (the v57 landing record) and #621 (the HD-016, HD-017 and HD-018 plans) were merged with merge commits, as `f7d7001d` and `87853b89`.
+
+What it changed, for a player: in season 3 the look locks skulls only, landing in a loose crate saves nothing, and the clock is the run time (TIME SURVIVED). The TRUCK best moved to `hyperDaggerHiTruckV58`, so a v57 best that carried the load is not offered as one to beat.
+
+The live page did move. gh-pages `3b8fb141`, 18 Oct 2026, 15:37:18 EEST, message "Publish Hyper Dagger v58 from main 61a45808 (PR #622)". Pages run 39128050530 (build, deploy and status report) concluded success at 15:39 EEST. It is the newest Pages run. Read back from `3b8fb141` through the GitHub API:
+- `index.html` asks for `js/main.js?v=109`, `sw.js?v=109` and `../hub/shell.js?v=94`.
+- `sw.js` sets `const CACHE = 'hyperdagger-v79'`.
+- `hub/versions.json` has hyperdagger at v58.
+- Season 3's data has no cab lock and no `cargoScore`.
+
+The publish carried `hyperdagger/` (minus `test/`, where the site's own two files were left as they were) and the one `hub/versions.json` row. No catalogue line changed, so no token cascade was needed. The deployed `VERSIONS.md` still read "v58 — in progress"; the dated heading in this entry's commit reaches the site with the next Hyper Dagger publish.
+
+Not verified: the live page was not opened. This session's network policy refuses `mbace1.github.io`. Before the push, the offline, press-edges, hud-lock and goal-card gates passed against the site tree, with the site's own hub and toko files.

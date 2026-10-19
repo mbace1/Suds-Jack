@@ -62,8 +62,8 @@ export class InputManager {
     this._dash = false;
     this._dashFlick = null; // {x, y} normalized screen-space flick direction
     this._pad = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, firing: false, altFiring: false };
-    this._padPrev = { jump: false, dash: false, up: false, down: false, a: false, b: false, start: false };
-    this._ui = { up: false, down: false, a: false, b: false, start: false }; // menu edges
+    this._padPrev = { jump: false, dash: false, up: false, down: false, left: false, right: false, a: false, b: false, start: false };
+    this._ui = { up: false, down: false, left: false, right: false, a: false, b: false, start: false }; // menu edges
     this._init();
   }
 
@@ -229,7 +229,7 @@ export class InputManager {
       this._pad.look = { x: 0, y: 0 };
       this._pad.firing = false;
       this._pad.altFiring = false;
-      this._padPrev = { jump: false, dash: false, up: false, down: false, a: false, b: false, start: false };
+      this._padPrev = { jump: false, dash: false, up: false, down: false, left: false, right: false, a: false, b: false, start: false };
       return;
     }
     this.gamepad = true;
@@ -259,17 +259,24 @@ export class InputManager {
     this._padPrev.jump = jumpNow;
     this._padPrev.dash = dashNow;
     // menu-facing edges: d-pad (12/13) or left-stick Y past ±0.55 moves focus,
-    // A activates, B backs out of pause, Start (9) toggles pause
+    // d-pad (14/15) or stick X steps the main menu's season (HD-019), A
+    // activates, B backs out of pause, Start (9) toggles pause
     const upNow = btn(12) || (gp.axes[1] || 0) < -0.55;
     const downNow = btn(13) || (gp.axes[1] || 0) > 0.55;
+    const leftNow = btn(14) || (gp.axes[0] || 0) < -0.55;
+    const rightNow = btn(15) || (gp.axes[0] || 0) > 0.55;
     const startNow = btn(9);
     if (upNow && !this._padPrev.up) this._ui.up = true;
     if (downNow && !this._padPrev.down) this._ui.down = true;
+    if (leftNow && !this._padPrev.left) this._ui.left = true;
+    if (rightNow && !this._padPrev.right) this._ui.right = true;
     if (jumpNow && !this._padPrev.a) this._ui.a = true;
     if (dashNow && !this._padPrev.b) this._ui.b = true;
     if (startNow && !this._padPrev.start) this._ui.start = true;
     this._padPrev.up = upNow;
     this._padPrev.down = downNow;
+    this._padPrev.left = leftNow;
+    this._padPrev.right = rightNow;
     this._padPrev.a = jumpNow;
     this._padPrev.b = dashNow;
     this._padPrev.start = startNow;
@@ -290,7 +297,7 @@ export class InputManager {
   /** Edge-detected gamepad UI actions since last call (menus + pause). */
   consumeUi() {
     const u = this._ui;
-    this._ui = { up: false, down: false, a: false, b: false, start: false };
+    this._ui = { up: false, down: false, left: false, right: false, a: false, b: false, start: false };
     return u;
   }
 
