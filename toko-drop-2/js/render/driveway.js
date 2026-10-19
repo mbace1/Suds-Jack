@@ -7,7 +7,7 @@
 // Materials are TSL node materials only — one definition that compiles to
 // WGSL on WebGPU and GLSL on the WebGL 2 fallback, never painted twice.
 import * as THREE from 'three/webgpu';
-import { Fn, positionWorld, uv, vec2, float, abs, fract, min, fwidth, smoothstep, mix, color } from 'three/tsl';
+import { Fn, positionWorld, uv, vec2, float, abs, fract, min, fwidth, smoothstep, mix, color, texture } from 'three/tsl';
 
 // 1 inside a line of width `w` centred on distance 0, antialiased by the
 // screen-space rate of change of `d` so it stays crisp at any zoom.
@@ -19,14 +19,18 @@ const line = (d, w) => {
 // Distance from `x` to the nearest multiple of `period`, in the same units.
 const toGrid = (x, period) => abs(fract(x.div(period).add(0.5)).sub(0.5)).mul(period);
 
-function slabMaterial(T) {
+function slabMaterial(T, paint) {
   const { width, depth, panelX, panelZ, jointWidth } = T.driveway.slab;
   const m = new THREE.MeshLambertNodeMaterial();
   m.colorNode = Fn(() => {
     // joints measured from the slab's garage-side corner, so the pour lines up
     const p = positionWorld.xz.sub(vec2(-width / 2, -depth / 2));
     const d = min(toGrid(p.x, panelX), toGrid(p.y, panelZ));
-    return mix(color(T.colors.slab), color(T.colors.joint), line(d, jointWidth));
+    const concrete = mix(color(T.colors.slab), color(T.colors.joint), line(d, jointWidth));
+    if (!paint) return concrete;
+    // the night's painting lies on top (paint.js: its canvas top is the garage)
+    const splat = texture(paint, vec2(p.x.div(width), float(1).sub(p.y.div(depth))));
+    return mix(concrete, splat.rgb, splat.a);
   })();
   return m;
 }
@@ -44,7 +48,7 @@ function doorMaterial(T) {
 const lambert = (hex) => new THREE.MeshLambertNodeMaterial({ color: hex });
 const DECAL_LIFT = 0.005; // keeps a flat panel off the surface behind it (z-fighting); not a tuning value
 
-export function buildDriveway(T) {
+export function buildDriveway(T, paint = null) {
   const D = T.driveway, C = T.colors;
   const halfW = D.slab.width / 2, halfD = D.slab.depth / 2;
   const garageZ = -halfD;                                  // the garage face
@@ -67,7 +71,7 @@ export function buildDriveway(T) {
   const block = (w, h, d, material, x, y, z, name) => add(new THREE.BoxGeometry(w, h, d), material, x, y + h / 2, z, name);
 
   // the slab, the canvas for the night's painting
-  ground(D.slab.width, D.slab.depth, slabMaterial(T), 0, 0, 0, 'slab');
+  ground(D.slab.width, D.slab.depth, slabMaterial(T, paint), 0, 0, 0, 'slab');
 
   // curbs: the two sides, and the street curb running the whole frontage
   const curb = lambert(C.curb);
@@ -105,11 +109,14 @@ export function buildDriveway(T) {
   const M = T.light.moon;
   group.add(new THREE.HemisphereLight(M.sky, M.ground, M.intensity));
 
-  // What the view must always hold: slab, curbs, a strip of lawn either side
-  // where spawns rustle, a strip of street, and the door with its light.
+  // What the view must always hold is the place you PLAY: the slab and its
+  // curbs, nothing more. The garage, the lawns and the street live at the
+  // edges of the screen, cropped by it (owner, 2026-10-19: "show those at
+  // edges, not necessarily the whole area") — a wide phone shows more lawn,
+  // a tall one more door and street, and none of it costs the slab space.
   const arena = new THREE.Box3(
-    new THREE.Vector3(-(halfW + D.curb.width + D.lawn.margin), 0, garageZ),
-    new THREE.Vector3(halfW + D.curb.width + D.lawn.margin, D.house.wallHeight, streetZ + D.street.margin),
+    new THREE.Vector3(-(halfW + D.curb.width), 0, garageZ),
+    new THREE.Vector3(halfW + D.curb.width, D.curb.height, streetZ),
   );
 
   return { group, arena, poolCentre: spot.target.position.clone() };

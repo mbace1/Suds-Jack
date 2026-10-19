@@ -19,6 +19,72 @@
     Never `--no-verify`.
 -->
 
+## v3 — 2026-10-19
+**A game: twin sticks, six species, the night, HARDIVAL — playable from the menu**
+- Owner: *"I'm getting a feeling that there is no game here to test."* There
+  was not. This is the first build with one: a title menu (SURVIVAL,
+  HARDIVAL, DAILY), a run, a results screen, and back
+- **The rules live in `js/sim/`** — plain JS on a fixed 1/60 s step from a
+  seed, no DOM, no three, no clock — so `test/sim.mjs` asserts them in bare
+  node: replay is exact, standing still dies, a bot outlives standing
+  still, nothing leaves the slab or goes NaN, the bullet cap holds
+- **The hero is 1.x's** (`player.js` / `input.js` at v268): speed 6, dash
+  26 for 0.18 s on a 0.75 s cooldown, fire every 0.09 s, three lives with
+  1.2 s of mercy. Touch is 1.x's twin-stick — left half moves, right half
+  aims and fires, letting go of the aim stick dashes, top-centre pauses.
+  Keys: WASD, mouse aim, hold to fire, Space dash, Esc. Pad: sticks, RT,
+  A/RB/LB dash, Start. The dash is new: a **body-check** that shoves and
+  squashes every gel it meets
+- **Six species and the SPLITTA's minis**, unlocking across the first three
+  minutes: GLOBBO, YELA CUBE (darts), SPITTOR (aimed shot), ORANGE CUBE
+  (three-way), FANNER (seven-wide fan), SPLITTA (splits in three). They
+  rustle on a lawn or the street, then hop the curb; the slab is theirs to
+  cross, not to spawn on, and never within 2.6 of you
+- **Soft bodies**: every gel is a squash spring that hits, curbs, shoves
+  and its neighbours deform, and overlapping gels push apart instead of
+  stacking. Their own glow and a rim keep them readable in the dark
+- **The night**: 11 PM to 5 AM at two minutes an hour, pressure rising
+  toward dawn, which pays 5,000 a life and runs on into overtime. Combo
+  multiplier to ×8, graze points, an extra life every 20,000
+- **HARDIVAL** (1.x v220): every corpse seethes for 0.45 s, then fires back
+  in its species' dialect, slower and in corpse colours. A ring is rotated
+  half a step so you stand in a gap, and a corpse that dies on top of you
+  spends itself — the first cut aimed the ring's first bullet straight at
+  you and a bot died in 12 s; it now lasts 80-130 s
+- **The painting**: every kill splats the slab and its chunks bounce, settle
+  and splat where they land. It never clears until the next night. The
+  first cut carpeted the slab by kill 34; splats are smaller and darker
+  now and a settling chunk throws no drops
+- Synthesised sound through one master gain (off in the menu toggle), and
+  en / ja / fi menus and HUD
+- The first minute was empty at a spawn every 2.2 s; it is 1.6 now, five
+  alive at most to start, 24 by dawn, and the first gel is on its way at
+  0.6 s (`night.firstSpawn`) instead of 1.2
+- The smoke now PLAYS: it starts a run from the menu and drives real touch
+  events — aim, fire, release to dash — and fails unless shots, spawns and
+  a dash all happened
+- Cache tokens `?v=2` → `?v=3`; HUD label → `2.0 · v3`
+
+---
+
+## v2 — 2026-10-19
+**The slab fills the screen; the garage, lawns and street sit at its edges**
+- Owner, on the first phone look: *"The point was to show those at edges,
+  not necessarily the whole area."* The view now holds the place you PLAY,
+  the slab and its curbs, and lets the house front, the lawns and the street
+  crop at the screen edges. A wide phone shows more lawn, a tall one more
+  door and street; none of it costs the slab space
+- `TUNING.driveway.lawn.margin` and `street.margin` are gone: they existed
+  only to keep the surroundings in frame
+- The smoke's light check measured the pool against the bottom-left of the
+  screen, which was dark street until the street left the frame. It now
+  compares two WORLD points, under the flood and the slab's far street-side
+  corner, and asks for what the design says: warm in the pool, cool
+  moonlight at the edge. Re-proved against the light switched off
+- Cache tokens `?v=1` → `?v=2`; HUD label → `2.0 · v2`
+
+---
+
 ## v1 — 2026-10-19
 **M0: repo and rules — a blank night driveway with the version on screen**
 - **M0's commits all share v1.** The M0 gate pins the label at `2.0 · v1`,
