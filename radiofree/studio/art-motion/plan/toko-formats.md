@@ -3,6 +3,17 @@
 Owner, 2026-10-15: "Scrap Genius … these look and sound exactly the same. Look into the Toko
 persona and plan different settings and formats but with similar messaging."
 
+## Owner, 19 Oct: "wasn't sure this was a toko film"
+
+On Backup Mode: "Ok, wasn't sure this was a toko film. We need to work on the styles and themes a bit more."
+Nothing in it said Toko except the mask. The working proposal, to be tested on Backup Mode first:
+- **Bookends on every Toko film.** Open on the Toko sting (the face drawing itself, ~1.5 s). Close on Toko's card:
+  his all-caps line with the badge, ≥ 4 s, set the same way every time.
+- **One persona per film, named on screen** (Toko Slomo, Kyoto Toko…), in one look made well.
+- **The theme stated.** The closing line lands in the message family (don't be the audience · you still decide · the
+  people behind the machine · go make your own).
+- **Kept apart from RFH.** News films keep papercut and the station bug; Toko films keep clay and their own sound.
+
 ## Why the Toko films looked and sounded the same
 
 Happy Little Bot, the Deer, Genius and Dishes share every layer: the same clay renderer, grade
