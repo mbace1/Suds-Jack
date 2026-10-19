@@ -1,0 +1,417 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "Pear is the station's name for the real company, as Doodle and Teslur are; HomeV"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy lock.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy lock.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy lock.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy lock source",
+  "result": "pass",
+  "why": "In the launch film the brother tries to open his sister's messages on the displa"
+ },
+ {
+  "check": "copy lock pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ad.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy ad.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy ad.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy ad source",
+  "result": "pass",
+  "why": "The launch film ends with the whole family gathered round the display, using the"
+ },
+ {
+  "check": "copy ad pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, over the display's own screen at the end of the ad: her Mess"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.tag",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.watching",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.locked",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.door",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.msgs",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.lockedShort",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.future",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.private1",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.private2",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "25 words: Pear's HomeView hides a teen's texts from her family, yet its own ad's happy ending has th"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "25 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "2 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 1.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 778 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 140, 'y': 191, 'w': 800, 'h': 160}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.65 s, needs 4.05 s (61 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 4.16 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 1.35 → scrim 0.0"
+ },
+ {
+  "check": "width en:lock",
+  "result": "pass",
+  "why": "widest line 765 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:lock",
+  "result": "pass",
+  "why": "box {'x': 146, 'y': 191, 'w': 787, 'h': 160}"
+ },
+ {
+  "check": "reading time en:lock",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.05 s (61 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:lock",
+  "result": "pass",
+  "why": "last word up 3.99 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:lock",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:lock",
+  "result": "pass",
+  "why": "picture behind: edge 1.27 → scrim 0.0"
+ },
+ {
+  "check": "width en:ad",
+  "result": "pass",
+  "why": "widest line 674 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:ad",
+  "result": "pass",
+  "why": "box {'x': 192, 'y': 191, 'w': 696, 'h': 247}"
+ },
+ {
+  "check": "reading time en:ad",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.55 s (71 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:ad",
+  "result": "pass",
+  "why": "last word up 3.58 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:ad",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:ad",
+  "result": "pass",
+  "why": "picture behind: edge 0.95 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 506 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 276, 'y': 191, 'w': 528, 'h': 160}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 2.90 s (38 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.78 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 0.27 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "Pear sells its new home screen on privacy. | Privacy from whom?"
+ },
+ {
+  "check": "sidecar lines en:lock",
+  "result": "pass",
+  "why": "Her brother can't read her texts. Only her | face unlocks them."
+ },
+ {
+  "check": "sidecar lines en:ad",
+  "result": "pass",
+  "why": "Then, in Pear's own ad, the family watches | her date on its door camera."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "Her texts are private. Her date isn't."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.65 s on this master, fi needs 4.53 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Pear myy uutta kotinäyttöään | yksityisyydellä. Mutta keneltä?"
+ },
+ {
+  "check": "sidecar fi:lock",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 4.94 s"
+ },
+ {
+  "check": "sidecar lines fi:lock",
+  "result": "pass",
+  "why": "Veli ei voi lukea hänen viestejään. Vain | hänen kasvonsa avaavat ne."
+ },
+ {
+  "check": "sidecar fi:ad",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 5.06 s"
+ },
+ {
+  "check": "sidecar lines fi:ad",
+  "result": "pass",
+  "why": "Sitten Pearin mainoksessa perhe katsoo | hänen treffejään ovikamerasta."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 3.29 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Viestit ovat yksityisiä. Treffit eivät."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "warn",
+  "why": "5.65 s on this master, ja needs 6.33 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "warn",
+  "why": "Pearは新しいホーム画面を | プライバシーで売る。誰から守るのか？"
+ },
+ {
+  "check": "sidecar ja:lock",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.83 s"
+ },
+ {
+  "check": "sidecar lines ja:lock",
+  "result": "warn",
+  "why": "兄弟は彼女のメッセージを | 読めない。開けるのは彼女の顔だけ。"
+ },
+ {
+  "check": "sidecar ja:ad",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 6.17 s"
+ },
+ {
+  "check": "sidecar lines ja:ad",
+  "result": "pass",
+  "why": "そしてPearの広告では家族が | 彼女のデートを玄関カメラで見る。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 3.83 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "メッセージは非公開。デートは | 公開。"
+ }
+]

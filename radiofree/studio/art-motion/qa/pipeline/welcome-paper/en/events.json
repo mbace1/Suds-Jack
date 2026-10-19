@@ -1,0 +1,308 @@
+{
+ "s1": 0,
+ "s2": 7.5,
+ "s3": 13.928571428571429,
+ "s4": 20.357142857142858,
+ "end": 26.785714285714285,
+ "ph_screen.flow": 2.4245,
+ "ph_screen.whom": 2.8791,
+ "ph_lock.reach": 8.1,
+ "ph_lock.lock": 9.2973,
+ "ph_door.watch": 16.4231,
+ "ph_last.priv": 21.1753,
+ "ph_last.date": 21.6908,
+ "lang": "en",
+ "holds": [],
+ "cues": {
+  "ph_screen.flow": 2.4245,
+  "ph_screen.whom": 2.8791,
+  "ph_lock.reach": 8.1,
+  "ph_lock.lock": 9.2973,
+  "ph_door.watch": 16.4231,
+  "ph_last.priv": 21.1753,
+  "ph_last.date": 21.6908
+ },
+ "words": [
+  {
+   "w": "Pear",
+   "t": 1.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "sells",
+   "t": 1.614,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "its",
+   "t": 1.75,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "new",
+   "t": 1.841,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "home",
+   "t": 1.932,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "screen",
+   "t": 2.045,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "on",
+   "t": 2.425,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "privacy.",
+   "t": 2.493,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "Privacy",
+   "t": 2.697,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "from",
+   "t": 2.879,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "whom?",
+   "t": 2.993,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "Her",
+   "t": 8.1,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "brother",
+   "t": 8.191,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "can't",
+   "t": 8.373,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "read",
+   "t": 8.509,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "her",
+   "t": 8.623,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "texts.",
+   "t": 8.714,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "Only",
+   "t": 9.093,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "her",
+   "t": 9.206,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "face",
+   "t": 9.297,
+   "pop": true,
+   "caption": "lock"
+  },
+  {
+   "w": "unlocks",
+   "t": 9.411,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "them.",
+   "t": 9.593,
+   "pop": false,
+   "caption": "lock"
+  },
+  {
+   "w": "Then,",
+   "t": 14.529,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "in",
+   "t": 14.665,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "Pear's",
+   "t": 14.733,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "own",
+   "t": 14.892,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "ad,",
+   "t": 14.983,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "the",
+   "t": 15.294,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "family",
+   "t": 15.385,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "watches",
+   "t": 15.544,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "her",
+   "t": 15.726,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "date",
+   "t": 15.817,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "on",
+   "t": 16.15,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "its",
+   "t": 16.219,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "door",
+   "t": 16.309,
+   "pop": false,
+   "caption": "ad"
+  },
+  {
+   "w": "camera.",
+   "t": 16.423,
+   "pop": true,
+   "caption": "ad"
+  },
+  {
+   "w": "Her",
+   "t": 20.857,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "texts",
+   "t": 20.948,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "are",
+   "t": 21.084,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "private.",
+   "t": 21.175,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "Her",
+   "t": 21.6,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "date",
+   "t": 21.691,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "isn't.",
+   "t": 21.804,
+   "pop": false,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 1.5,
+   "t1": 7.15
+  },
+  {
+   "id": "lock",
+   "t0": 8.1,
+   "t1": 13.579
+  },
+  {
+   "id": "ad",
+   "t0": 14.529,
+   "t1": 20.007
+  },
+  {
+   "id": "last",
+   "t0": 20.857,
+   "t1": 26.586
+  }
+ ],
+ "quiet": []
+}

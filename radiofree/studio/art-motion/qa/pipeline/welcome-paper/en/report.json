@@ -1,0 +1,122 @@
+{
+ "lang": "en",
+ "end": 26.785714285714285,
+ "holds": [],
+ "captions": [
+  {
+   "id": "question",
+   "text": "Pear sells its new home screen / on privacy. Privacy [from whom]?",
+   "plain": "Pear sells its new home screen on privacy. Privacy from whom?",
+   "t0": 1.5,
+   "t1": 7.15,
+   "shown": 5.65,
+   "read": 4.05,
+   "lastWord": 2.993,
+   "widths": [
+    731,
+    778
+   ],
+   "box": {
+    "x": 140,
+    "y": 191,
+    "w": 800,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 1.35,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "lock",
+   "text": "Her brother can't read her texts. / Only her [face] unlocks them.",
+   "plain": "Her brother can't read her texts. Only her face unlocks them.",
+   "t0": 8.1,
+   "t1": 13.579,
+   "shown": 5.479,
+   "read": 4.05,
+   "lastWord": 9.593,
+   "widths": [
+    765,
+    672
+   ],
+   "box": {
+    "x": 146,
+    "y": 191,
+    "w": 787,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 1.27,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "ad",
+   "text": "Then, in Pear's own ad, / the family watches her date / on its door [camera].",
+   "plain": "Then, in Pear's own ad, the family watches her date on its door camera.",
+   "t0": 14.529,
+   "t1": 20.007,
+   "shown": 5.479,
+   "read": 4.55,
+   "lastWord": 16.423,
+   "widths": [
+    546,
+    674,
+    464
+   ],
+   "box": {
+    "x": 192,
+    "y": 191,
+    "w": 696,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.95,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "Her texts are private. / Her [date] isn't.",
+   "plain": "Her texts are private. Her date isn't.",
+   "t0": 20.857,
+   "t1": 26.586,
+   "shown": 5.729,
+   "read": 2.9,
+   "lastWord": 21.804,
+   "widths": [
+    506,
+    331
+   ],
+   "box": {
+    "x": 276,
+    "y": 191,
+    "w": 528,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.27,
+    "busy": 0
+   },
+   "native": true
+  }
+ ],
+ "frames": 804,
+ "fps": 30
+}
