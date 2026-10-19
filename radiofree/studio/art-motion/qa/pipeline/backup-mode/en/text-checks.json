@@ -1,0 +1,447 @@
+[
+ {
+  "check": "copy night.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy night.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy night.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy night source",
+  "result": "pass",
+  "why": "On 20 Oct 2025 an Amazon Web Services outage (US-East, from the small hours US t"
+ },
+ {
+  "check": "copy night pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy flat.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy flat.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy flat.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy flat source",
+  "result": "pass",
+  "why": "Owners reported beds stuck in an inclined position while the service was down (P"
+ },
+ {
+  "check": "copy flat pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy heat.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy heat.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy heat.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy heat source",
+  "result": "pass",
+  "why": "Owners reported covers heating with no way to turn them down in the night (PCWor"
+ },
+ {
+  "check": "copy heat pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy backup.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy backup.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy backup.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy backup source",
+  "result": "pass",
+  "why": "Within about two days the maker shipped an offline Bluetooth 'Backup Mode' with "
+ },
+ {
+  "check": "copy backup pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "Toko's card, in the counter's all-caps voice, held at least 4 s (the Toko films'"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.connecting",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.backup",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.backupSub",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.time",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "30 words: When the cloud went down, some AI smart beds stuck tilted or kept heating until the maker "
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "30 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 1.20 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:night",
+  "result": "pass",
+  "why": "widest line 601 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:night",
+  "result": "pass",
+  "why": "box {'x': 210, 'y': 158, 'w': 661, 'h': 210}"
+ },
+ {
+  "check": "reading time en:night",
+  "result": "pass",
+  "why": "on screen 3.50 s, needs 3.20 s (44 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:night",
+  "result": "pass",
+  "why": "last word up 2.39 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:night",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "width en:flat",
+  "result": "pass",
+  "why": "widest line 574 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:flat",
+  "result": "pass",
+  "why": "box {'x': 223, 'y': 158, 'w': 634, 'h': 290}"
+ },
+ {
+  "check": "reading time en:flat",
+  "result": "pass",
+  "why": "on screen 5.03 s, needs 4.35 s (67 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:flat",
+  "result": "pass",
+  "why": "last word up 3.18 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:flat",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "width en:heat",
+  "result": "pass",
+  "why": "widest line 398 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:heat",
+  "result": "pass",
+  "why": "box {'x': 311, 'y': 158, 'w': 458, 'h': 210}"
+ },
+ {
+  "check": "reading time en:heat",
+  "result": "pass",
+  "why": "on screen 2.73 s, needs 2.40 s (28 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:heat",
+  "result": "pass",
+  "why": "last word up 2.06 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:heat",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "width en:backup",
+  "result": "pass",
+  "why": "widest line 567 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:backup",
+  "result": "pass",
+  "why": "box {'x': 227, 'y': 158, 'w': 627, 'h': 210}"
+ },
+ {
+  "check": "reading time en:backup",
+  "result": "pass",
+  "why": "on screen 3.47 s, needs 3.10 s (42 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:backup",
+  "result": "pass",
+  "why": "last word up 2.41 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:backup",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 661 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 179, 'y': 1248, 'w': 721, 'h': 370}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.23 s, needs 4.65 s (73 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 3.03 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:night",
+  "result": "pass",
+  "why": "ONE NIGHT LAST OCTOBER, THE CLOUD WENT | DOWN."
+ },
+ {
+  "check": "sidecar lines en:flat",
+  "result": "pass",
+  "why": "MY BED CALLS ITSELF AI. WITHOUT THE | INTERNET, IT COULDN'T LIE FLAT."
+ },
+ {
+  "check": "sidecar lines en:heat",
+  "result": "pass",
+  "why": "SOME BEDS JUST KEPT HEATING."
+ },
+ {
+  "check": "sidecar lines en:backup",
+  "result": "pass",
+  "why": "DAYS LATER, THE MAKER ADDED A BACKUP MODE."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "SOME THINGS SHOULD WORK WITHOUT THE | INTERNET. LYING DOWN WAS ONE OF THEM."
+ },
+ {
+  "check": "sidecar fi:night",
+  "result": "pass",
+  "why": "3.50 s on this master, fi needs 3.47 s"
+ },
+ {
+  "check": "sidecar lines fi:night",
+  "result": "pass",
+  "why": "ERÄÄNÄ YÖNÄ VIIME LOKAKUUSSA PILVI KAATUI."
+ },
+ {
+  "check": "sidecar fi:flat",
+  "result": "pass",
+  "why": "5.03 s on this master, fi needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines fi:flat",
+  "result": "pass",
+  "why": "SÄNKYNI SANOO OLEVANSA TEKOÄLY. ILMAN | NETTIÄ SE EI PÄÄSSYT SUORAKSI."
+ },
+ {
+  "check": "sidecar fi:heat",
+  "result": "warn",
+  "why": "2.73 s on this master, fi needs 3.65 s"
+ },
+ {
+  "check": "sidecar lines fi:heat",
+  "result": "pass",
+  "why": "JOTKUT SÄNGYT VAIN LÄMPENIVÄT | LÄMPENEMISTÄÄN."
+ },
+ {
+  "check": "sidecar fi:backup",
+  "result": "warn",
+  "why": "3.47 s on this master, fi needs 3.65 s"
+ },
+ {
+  "check": "sidecar lines fi:backup",
+  "result": "pass",
+  "why": "PÄIVIÄ MYÖHEMMIN VALMISTAJA LISÄSI | VARATILAN."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "warn",
+  "why": "5.23 s on this master, fi needs 5.41 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "JOIDENKIN ASIOIDEN PITÄISI TOIMIA ILMAN | NETTIÄ. MAKAAMINEN OLI YKSI NIISTÄ."
+ },
+ {
+  "check": "sidecar ja:night",
+  "result": "warn",
+  "why": "3.50 s on this master, ja needs 4.17 s"
+ },
+ {
+  "check": "sidecar lines ja:night",
+  "result": "pass",
+  "why": "去年の十月のある夜、クラウドが | 落ちた。"
+ },
+ {
+  "check": "sidecar ja:flat",
+  "result": "warn",
+  "why": "5.03 s on this master, ja needs 6.00 s"
+ },
+ {
+  "check": "sidecar lines ja:flat",
+  "result": "pass",
+  "why": "俺のベッドはAIを名乗る。ネット | なしでは平らになれなかった。"
+ },
+ {
+  "check": "sidecar ja:heat",
+  "result": "warn",
+  "why": "2.73 s on this master, ja needs 3.83 s"
+ },
+ {
+  "check": "sidecar lines ja:heat",
+  "result": "pass",
+  "why": "一部のベッドはただ | 熱くなり続けた。"
+ },
+ {
+  "check": "sidecar ja:backup",
+  "result": "warn",
+  "why": "3.47 s on this master, ja needs 4.83 s"
+ },
+ {
+  "check": "sidecar lines ja:backup",
+  "result": "pass",
+  "why": "数日後、メーカーは | バックアップモードを足した。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "warn",
+  "why": "5.23 s on this master, ja needs 6.17 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "ネットなしで動くべきものがある。 | 横になるのもそのひとつだった。"
+ }
+]

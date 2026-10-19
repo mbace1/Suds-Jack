@@ -1,0 +1,138 @@
+{
+ "lang": "en",
+ "end": 24.166666666666668,
+ "holds": [],
+ "captions": [
+  {
+   "id": "night",
+   "text": "ONE NIGHT LAST OCTOBER, / THE CLOUD WENT [DOWN].",
+   "plain": "ONE NIGHT LAST OCTOBER, THE CLOUD WENT DOWN.",
+   "t0": 1.2,
+   "t1": 4.7,
+   "shown": 3.5,
+   "read": 3.2,
+   "lastWord": 2.306,
+   "widths": [
+    601,
+    561
+   ],
+   "box": {
+    "x": 210,
+    "y": 158,
+    "w": 661,
+    "h": 210
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": null,
+   "native": true
+  },
+  {
+   "id": "flat",
+   "text": "MY BED CALLS ITSELF AI. / WITHOUT THE INTERNET, / IT COULDN'T LIE [FLAT].",
+   "plain": "MY BED CALLS ITSELF AI. WITHOUT THE INTERNET, IT COULDN'T LIE FLAT.",
+   "t0": 5.5,
+   "t1": 10.533,
+   "shown": 5.033,
+   "read": 4.35,
+   "lastWord": 7.349,
+   "widths": [
+    574,
+    545,
+    492
+   ],
+   "box": {
+    "x": 223,
+    "y": 158,
+    "w": 634,
+    "h": 290
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": null,
+   "native": true
+  },
+  {
+   "id": "heat",
+   "text": "SOME BEDS JUST / KEPT [HEATING].",
+   "plain": "SOME BEDS JUST KEPT HEATING.",
+   "t0": 11.133,
+   "t1": 13.867,
+   "shown": 2.733,
+   "read": 2.4,
+   "lastWord": 11.808,
+   "widths": [
+    398,
+    333
+   ],
+   "box": {
+    "x": 311,
+    "y": 158,
+    "w": 458,
+    "h": 210
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": null,
+   "native": true
+  },
+  {
+   "id": "backup",
+   "text": "DAYS LATER, THE MAKER / ADDED A [BACKUP MODE].",
+   "plain": "DAYS LATER, THE MAKER ADDED A BACKUP MODE.",
+   "t0": 14.567,
+   "t1": 18.033,
+   "shown": 3.467,
+   "read": 3.1,
+   "lastWord": 15.628,
+   "widths": [
+    567,
+    562
+   ],
+   "box": {
+    "x": 227,
+    "y": 158,
+    "w": 627,
+    "h": 210
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": null,
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "SOME THINGS SHOULD WORK / WITHOUT THE INTERNET. / LYING DOWN WAS / [ONE OF THEM].",
+   "plain": "SOME THINGS SHOULD WORK WITHOUT THE INTERNET. LYING DOWN WAS ONE OF THEM.",
+   "t0": 18.933,
+   "t1": 24.167,
+   "shown": 5.233,
+   "read": 4.65,
+   "lastWord": 21.139,
+   "widths": [
+    661,
+    544,
+    405,
+    322
+   ],
+   "box": {
+    "x": 179,
+    "y": 1248,
+    "w": 721,
+    "h": 370
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": null,
+   "native": true
+  }
+ ],
+ "ui": {},
+ "frames": 725,
+ "fps": 30
+}

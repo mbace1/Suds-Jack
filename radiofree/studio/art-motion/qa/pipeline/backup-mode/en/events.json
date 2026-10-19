@@ -1,0 +1,326 @@
+{
+ "s1": 0,
+ "s2": 5,
+ "s3": 10.833333333333334,
+ "s4": 14.166666666666668,
+ "s5": 18.333333333333336,
+ "end": 24.166666666666668,
+ "lang": "en",
+ "holds": [],
+ "down": 2.306363636363636,
+ "flat": 7.349090909090909,
+ "heat": 11.807878787878789,
+ "notif": 15.41848484848485,
+ "card": 18.933333333333337,
+ "fold0": 5.45,
+ "fold1": 8.45,
+ "look": 7.099090909090909,
+ "wake": 14.466666666666669,
+ "thump": 8.45,
+ "words": [
+  {
+   "w": "ONE",
+   "t": 1.2,
+   "pop": false,
+   "caption": "night"
+  },
+  {
+   "w": "NIGHT",
+   "t": 1.291,
+   "pop": false,
+   "caption": "night"
+  },
+  {
+   "w": "LAST",
+   "t": 1.427,
+   "pop": false,
+   "caption": "night"
+  },
+  {
+   "w": "OCTOBER,",
+   "t": 1.541,
+   "pop": false,
+   "caption": "night"
+  },
+  {
+   "w": "THE",
+   "t": 1.965,
+   "pop": false,
+   "caption": "night"
+  },
+  {
+   "w": "CLOUD",
+   "t": 2.056,
+   "pop": false,
+   "caption": "night"
+  },
+  {
+   "w": "WENT",
+   "t": 2.193,
+   "pop": false,
+   "caption": "night"
+  },
+  {
+   "w": "DOWN.",
+   "t": 2.306,
+   "pop": true,
+   "caption": "night"
+  },
+  {
+   "w": "MY",
+   "t": 5.5,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "BED",
+   "t": 5.568,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "CALLS",
+   "t": 5.659,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "ITSELF",
+   "t": 5.795,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "AI.",
+   "t": 5.955,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "WITHOUT",
+   "t": 6.265,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "THE",
+   "t": 6.447,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "INTERNET,",
+   "t": 6.538,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "IT",
+   "t": 6.985,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "COULDN'T",
+   "t": 7.054,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "LIE",
+   "t": 7.258,
+   "pop": false,
+   "caption": "flat"
+  },
+  {
+   "w": "FLAT.",
+   "t": 7.349,
+   "pop": true,
+   "caption": "flat"
+  },
+  {
+   "w": "SOME",
+   "t": 11.133,
+   "pop": false,
+   "caption": "heat"
+  },
+  {
+   "w": "BEDS",
+   "t": 11.247,
+   "pop": false,
+   "caption": "heat"
+  },
+  {
+   "w": "JUST",
+   "t": 11.361,
+   "pop": false,
+   "caption": "heat"
+  },
+  {
+   "w": "KEPT",
+   "t": 11.694,
+   "pop": false,
+   "caption": "heat"
+  },
+  {
+   "w": "HEATING.",
+   "t": 11.808,
+   "pop": true,
+   "caption": "heat"
+  },
+  {
+   "w": "DAYS",
+   "t": 14.567,
+   "pop": false,
+   "caption": "backup"
+  },
+  {
+   "w": "LATER,",
+   "t": 14.68,
+   "pop": false,
+   "caption": "backup"
+  },
+  {
+   "w": "THE",
+   "t": 14.839,
+   "pop": false,
+   "caption": "backup"
+  },
+  {
+   "w": "MAKER",
+   "t": 14.93,
+   "pop": false,
+   "caption": "backup"
+  },
+  {
+   "w": "ADDED",
+   "t": 15.287,
+   "pop": false,
+   "caption": "backup"
+  },
+  {
+   "w": "A",
+   "t": 15.423,
+   "pop": false,
+   "caption": "backup"
+  },
+  {
+   "w": "BACKUP",
+   "t": 15.468,
+   "pop": true,
+   "caption": "backup"
+  },
+  {
+   "w": "MODE.",
+   "t": 15.628,
+   "pop": true,
+   "caption": "backup"
+  },
+  {
+   "w": "SOME",
+   "t": 18.933,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "THINGS",
+   "t": 19.047,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "SHOULD",
+   "t": 19.206,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "WORK",
+   "t": 19.365,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "WITHOUT",
+   "t": 19.699,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "THE",
+   "t": 19.881,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "INTERNET.",
+   "t": 19.972,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "LYING",
+   "t": 20.419,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "DOWN",
+   "t": 20.555,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "WAS",
+   "t": 20.669,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "ONE",
+   "t": 20.98,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "OF",
+   "t": 21.071,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "THEM.",
+   "t": 21.139,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "night",
+   "t0": 1.2,
+   "t1": 4.7
+  },
+  {
+   "id": "flat",
+   "t0": 5.5,
+   "t1": 10.533
+  },
+  {
+   "id": "heat",
+   "t0": 11.133,
+   "t1": 13.867
+  },
+  {
+   "id": "backup",
+   "t0": 14.567,
+   "t1": 18.033
+  },
+  {
+   "id": "last",
+   "t0": 18.933,
+   "t1": 24.167
+  }
+ ],
+ "quiet": []
+}
