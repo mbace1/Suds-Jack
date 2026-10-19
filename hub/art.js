@@ -1647,6 +1647,96 @@ export const ART = {
     // the crank on the side, cropped by the right edge
     g.disc(112, 60, 5, '#c8ccd4'); g.p(111, 46, 3, 14, '#e9ecef'); g.p(113, 40, 15, 7, '#151515'); g.p(113, 40, 15, 1, '#555');
   },
+  // Toko Drop 2.0: the driveway at night, seen from over the street. The flood
+  // over the garage is the only warm thing in the world, so its light is a
+  // stack of flat bars with hard seams poured down the slab — the 2600 way, one
+  // colour per band — narrow and bright at the door, wide and spent by the
+  // street. The hero is the one pale thing standing in it (lit, never a
+  // silhouette); a cube is hopping the curb out of the cold toward it, one
+  // splat is already on the slab (by dawn the slab is a painting), and a gel
+  // in the street is cropped by the frame, rimmed cold and warm, because
+  // cropping is what puts it nearer to you than the hero.
+  driveway(g, a) {
+    const ink = '#0a090b';
+    const slabTop = 21, slabBot = 63;
+    // a gel sits SQUASHED on the ground — an oval, not a ball — and the half
+    // pixel on the radius keeps the poles from growing a one-pixel spike
+    const oval = (cx, cy, rx, ry, c) => {
+      for (let dy = -ry; dy <= ry; dy++) {
+        const dx = Math.round(rx * Math.sqrt(Math.max(0, 1 - (dy / (ry + 0.5)) ** 2)));
+        g.p(cx - dx, cy + dy, dx * 2 + 1, 1, c);
+      }
+    };
+    const edge = (y) => { const t = (y - slabTop) / (slabBot - slabTop); return [30 - 22 * t, 98 + 22 * t]; };
+    g.p(0, 0, W, H, '#050506');
+
+    // the house front: roof, wall, and the garage door lit from just above
+    g.p(0, 0, W, 6, '#0c0d11');
+    g.p(0, 6, W, 15, '#191a20');
+    const DOOR = ['#f4dfbd', '#dbc4a0', '#b9a385', '#8e7d68'];   // pale paint, lit warm from above
+    for (let i = 0; i < 4; i++) g.p(36, 6 + i * 4, 56, 3, DOOR[i]);  // four panels, three seams
+    g.p(35, 6, 1, 15, ink); g.p(92, 6, 1, 15, ink);
+    g.p(48, 0, 32, 6, '#1a1714'); g.p(53, 1, 22, 5, '#2a231b');       // the flood warms the wall it hangs on
+    g.p(59, 2, 10, 4, ink); g.p(60, 3, 8, 2, '#fff7e6');          // the flood
+
+    // lawns either side, cold; the street beyond the far curb, colder
+    g.p(0, slabTop, W, slabBot - slabTop, '#142219');
+    for (const [x, y] of [[6, 26], [14, 48], [3, 58], [112, 29], [121, 40], [116, 55]]) g.p(x, y, 3, 1, '#1d3324');
+    g.p(0, slabBot + 2, W, H - slabBot - 2, '#101116');
+    for (let x = 4; x < W; x += 22) g.p(x, H - 3, 10, 1, '#2a2b30');
+
+    // the slab, and on it the pool: bands of rows, each one flat colour,
+    // inside a cone that widens as it falls toward the street
+    const POOL = ['#e8ab6a', '#cf955c', '#b07e50', '#8d6646', '#6c513d', '#4d3d34', '#3a3130'];
+    for (let y = slabTop; y < slabBot; y++) {
+      const [l, r] = edge(y), t = (y - slabTop) / (slabBot - slabTop);
+      g.p(l, y, r - l, 1, '#262a34');                               // moonlit concrete
+      const band = Math.min(POOL.length - 1, Math.floor(t * POOL.length));
+      const half = 12 + 40 * t;
+      g.p(64 - half - 4, y, (half + 4) * 2, 1, mix(POOL[band], '#262a34', 0.55));  // penumbra
+      g.p(64 - half, y, half * 2, 1, POOL[band]);
+      g.p(l, y, 1, 1, '#8f8c86'); g.p(r - 1, y, 2, 1, '#8f8c86');   // the side curbs
+    }
+    // expansion joints, converging on the door
+    for (const [x0, x1] of [[47, 36], [64, 64], [81, 92]]) g.line(x0, slabTop, x1, slabBot - 1, '#1c1814');
+    g.line(edge(42)[0], 42, edge(42)[1], 42, '#1c1814');
+    g.p(0, slabBot, W, 2, '#8f8c86');                               // the street curb
+
+    // the painting has started: one splat — a flat puddle and the drops it
+    // flung — already part of the slab
+    oval(37, 55, 5, 2, '#3a8a5d'); oval(43, 57, 2, 1, '#3a8a5d');
+    for (const [x, y] of [[30, 53], [46, 53], [33, 59], [41, 52]]) g.p(x, y, 2, 1, '#3a8a5d');
+    g.p(35, 54, 3, 1, '#86d6ad');
+
+    // a gel rustling on the far lawn, eyes catching the light
+    g.disc(13, 33, 5, ink); g.disc(13, 33, 4, '#2f7f66'); g.p(10, 31, 2, 1, '#8fd9bf');
+    g.p(13, 32, 1, 1, '#f2efe6'); g.p(16, 32, 1, 1, '#f2efe6');
+
+    // a cube hopping the near curb, its shadow left behind on the kerb
+    g.p(97, 52, 9, 2, '#0e0f13');
+    g.p(98, 37, 11, 11, ink); g.p(99, 38, 9, 9, '#cdb43a'); g.p(99, 38, 9, 3, '#f0de7a');
+    g.p(101, 42, 1, 2, ink); g.p(105, 42, 1, 2, ink);
+
+    // the hero: pearl-white, squashed on the slab, lit from the flood above,
+    // both eyes turned toward the cube
+    oval(60, 51, 9, 1, '#3a2a20');                                   // contact shadow
+    oval(60, 46, 9, 6, ink);
+    oval(60, 46, 8, 5, '#d6cdbd');
+    oval(60, 45, 7, 4, '#efe9dd');
+    g.p(55, 42, 7, 1, '#fffaf0'); g.p(54, 43, 2, 1, '#ffffff');      // the light on its crown
+    g.p(58, 44, 2, 3, ink); g.p(63, 44, 2, 3, ink);
+    g.p(59, 44, 1, 1, '#ffffff'); g.p(64, 44, 1, 1, '#ffffff');
+
+    // foreground: a gel in the street, cropped by the frame and rising over
+    // the kerb, rimmed cold (moon) and warm (flood) so it is never a black
+    // hole punched in the picture
+    oval(13, H + 2, 14, 12, '#6a7dab');
+    oval(15, H + 3, 14, 12, a);
+    oval(14, H + 4, 14, 12, '#11141c');
+    g.p(8, H - 5, 3, 3, '#f2efe6'); g.p(16, H - 5, 3, 3, '#f2efe6');
+    g.p(9, H - 5, 1, 1, ink); g.p(17, H - 5, 1, 1, ink);
+  },
+
 };
 
 // ── the glass ──────────────────────────────────────────────────────
