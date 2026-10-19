@@ -92,7 +92,7 @@ export function plan(copy, lang, beats, { snap = 0 } = {}) {
   }
   const resolved = caps.map(({ c, lines }) => {
     const t0 = at(c.at), t1 = at(c.until), { words } = wordTimes(lines, lang, t0);
-    return { id: c.id, lang, size, text: c.text[lang], lines, words, t0, t1, read: readTime(c.text[lang], lang), place: c.place || 'top', native: nativeRead(copy, c, lang) };
+    return { id: c.id, lang, size: c.size || size, text: c.text[lang], lines, words, t0, t1, read: readTime(c.text[lang], lang), place: c.place || 'top', native: nativeRead(copy, c, lang) };
   });
   const ui = Object.fromEntries(Object.entries(copy.ui || {}).map(([k, v]) => [k, v[lang] ?? v.en]));
   return { lang, T, holds, captions: resolved, ui, end: T.end ?? Math.max(...Object.values(T)) };

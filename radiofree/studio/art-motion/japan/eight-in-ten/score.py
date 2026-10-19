@@ -1,8 +1,8 @@
 """Eight in Ten (Kyoto Toko and Tokyo Toko) — the cue sheet. A Toko film, so not the house bed and no station sting:
 koto and shakuhachi in the in scale (D E♭ G A B♭) at 90 BPM, a little taiko on the cuts. Kyoto is the instruments, the
 crows and a radio's wordless announcer; Tokyo is the manga's own sound effects: ピコン on three screens, カタカタ, ブブ.
-The cups take their phones with a porcelain clunk, the 目標 seal stamps down, and the last shot is tea poured into two
-cups under the shakuhachi's long note. Every pop word gets a pluck.
+The cups take their phones with a porcelain clunk, the 目標 seal stamps down, and the last shot is the farmhouse
+again, two cups set down beside him, under the shakuhachi's long note. Every pop word gets a pluck.
 
     uv run --with numpy --with soundfile python japan/eight-in-ten/score.py <events.json> <out.wav> [<report.json> <stems>]
 """
@@ -56,7 +56,9 @@ def buzz(d=0.35):
     t = tv(d); return (np.sin(2 * np.pi * 160 * t) + 0.3 * np.sign(np.sin(2 * np.pi * 320 * t))) * (np.sin(2 * np.pi * 26 * t) > 0) * np.sin(np.pi * t / d) ** 0.5 * 0.3
 
 
-def porcelain(f=1900): t = tv(0.5); return (np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * f * 2.76 * t)) * np.exp(-t * 14) * 0.25 + thump() * 0.25
+def porcelain(f=1900):
+    t = tv(0.5); x = (np.sin(2 * np.pi * f * t) + 0.5 * np.sin(2 * np.pi * f * 2.76 * t)) * np.exp(-t * 14) * 0.25; th = thump() * 0.25
+    x[:len(th)] += th[:len(x)]; return x
 
 
 def pour(d=1.0):
@@ -105,8 +107,8 @@ for k in range(5): s.fx(rustle(0.35), Q['et_kyoto.wire'] + k * 0.65, 0.25, -0.6 
 s.fx(soft(noise(S[4] - S[3], 50, 200), None, 120) * 0.3, S[3], 0.3, 0, name='the wire hums')
 # ── 5 · Toko's card: tea into two cups, the shakuhachi's long note
 po = Q['et_card.pour']
-s.fx(pour(1.0), po, 0.45, -0.15, name='tea: the first cup'); s.fx(pour(1.0), po + 1.6, 0.45, 0.2, name='tea: the second cup')
-s.fx(porcelain(2400), po + 2.9, 0.25, 0.3, name='the pot set down')
+s.fx(porcelain(2400), po, 0.3, -0.1, name='a cup set down'); s.fx(porcelain(2250), po + 0.35, 0.25, 0.15, name='and the other')
+for t in (S[4] + 1.6, S[4] + 3.4): s.fx(caw(), t, 0.14, -0.6, name='a crow, far off')
 s.note(shaku(62, END - S[4] - 0.4, 0.55), S[4] + 0.2, 0.5, 0.1, 0.5, stem='shakuhachi', name='the long note')
 
 # ── the pop words: a pluck each (a chord on the last)

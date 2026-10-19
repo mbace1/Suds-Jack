@@ -5,7 +5,7 @@
 //   et_tokyo   the city-pop sleeve: Tokyo Toko's evening as an album, EIGHT IN TEN, a 20代 78.2% hype sticker
 //   et_cups    the number as a print: ten teacups; six hold a phone, two more phones drop in, two keep their tea
 //   et_kyoto   the farmhouse at dusk: the survey runs along the wire, past the house, and never stops
-//   et_card    Toko's card: his green glove pours tea into two cups
+//   et_card    Toko's card: the farmhouse print again, two cups of tea steaming beside him on the engawa
 // No face is drawn anywhere: the mask is the face (RFM.mask, the traced master). Timings come from window.FILM_PLAN.
 (() => {
   const W = 1080, H = 1920, TAU = Math.PI * 2, P = PAINT, { clamp, lerp } = U, { mask, S, shapes } = RFM, rng = U.rng;
@@ -158,52 +158,22 @@
     return { draw(c, lt) { c.drawImage(woodblock(lt + 2.5, wire), 0, 0); vtext(c, '十湖', 96, 1648, 54, 'NotoSerifJP-600', K.key); seal(c, 54, 1780, 84, K.seal, K.paper); } };
   })();
 
-  // ================================================================== 5 · Toko's card: tea for two
+  // ================================================================== 5 · Toko's card: the farmhouse print again, and now two cups on the engawa
+  // beside him, a kyusu between them, both steaming — the other two are having tea
   SCENES['et_card'] = (() => {
-    function pot(c, x, y, a) {                                                   // a kyusu with a side handle, tilted by a
-      c.save(); c.translate(x, y); c.rotate(a); c.strokeStyle = K.key; c.lineWidth = 5;
-      c.fillStyle = '#5b3a28'; c.beginPath(); c.ellipse(0, 0, 120, 92, 0, 0, TAU); c.fill(); c.stroke();
-      c.fillStyle = '#6e4834'; c.beginPath(); c.ellipse(0, -84, 64, 16, 0, 0, TAU); c.fill(); c.stroke(); c.beginPath(); c.arc(0, -104, 14, 0, TAU); c.fill(); c.stroke();
-      c.fillStyle = '#5b3a28'; c.beginPath(); c.moveTo(108, -24); c.lineTo(196, -70); c.lineTo(204, -54); c.lineTo(116, 18); c.closePath(); c.fill(); c.stroke();   // the spout
-      c.beginPath(); c.moveTo(-110, -10); c.lineTo(-200, -50); c.lineTo(-206, -26); c.lineTo(-112, 22); c.closePath(); c.fill(); c.stroke();                  // the handle, out to the side
-      c.fillStyle = S.GREEN; c.beginPath(); c.ellipse(-204, -36, 46, 34, -0.3, 0, TAU); c.fill(); c.stroke();                                                   // his green glove on it
-      c.restore();
-    }
-    function cup2(c, x, y, fill, lt, i) { c.strokeStyle = K.key; c.lineWidth = 5; c.fillStyle = K.glaze;
-      c.beginPath(); c.moveTo(x - 92, y - 70); c.quadraticCurveTo(x - 88, y + 70, x - 40, y + 92); c.lineTo(x + 40, y + 92); c.quadraticCurveTo(x + 88, y + 70, x + 92, y - 70); c.closePath(); c.fill(); c.stroke();
-      c.fillStyle = K.glazeD; c.fillRect(x - 86, y - 4, 172, 12);
-      c.fillStyle = fill > 0.05 ? K.tea : '#3a2e22'; c.beginPath(); c.ellipse(x, y - 70, 92, 20, 0, 0, TAU); c.fill(); c.stroke();
-      if (fill > 0.4) { c.strokeStyle = K.steam; c.lineWidth = 4; for (let k = 0; k < 2; k++) { c.beginPath(); for (let j = 0; j < 16; j++) c.lineTo(x - 16 + k * 32 + Math.sin(j * 0.8 + lt * 3 + k + i) * 9, y - 92 - j * 11); c.stroke(); } } }
-    return {
-      draw(c, lt) {
-        const pour = cue('et_card', 'pour', 0.6);
-        c.drawImage(paper(), 0, 0);
-        // the engawa's boards, the edge of the shoji's glow, a persimmon on the board
-        c.fillStyle = K.wood; c.fillRect(0, 1380, W, 540); c.strokeStyle = K.key; c.lineWidth = 4; for (let x = 0; x < W; x += 180) { c.beginPath(); c.moveTo(x, 1380); c.lineTo(x - 60, H); c.stroke(); }
-        c.beginPath(); c.moveTo(0, 1380); c.lineTo(W, 1380); c.stroke();
-        c.save(); c.globalCompositeOperation = 'multiply'; const gl = c.createRadialGradient(540, 1000, 50, 540, 1000, 800); gl.addColorStop(0, 'rgba(246,200,106,.25)'); gl.addColorStop(1, 'rgba(246,200,106,0)'); c.fillStyle = gl; c.fillRect(0, 0, W, H); c.restore();
-        c.fillStyle = K.kaki; c.beginPath(); c.ellipse(900, 1560, 40, 36, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#3d4a28'; c.fillRect(888, 1520, 24, 10);
-        // behind: the lit shoji, its lattice, the post; above, a persimmon branch across the corner
-        c.fillStyle = '#f3dd9a'; c.fillRect(0, 760, W, 620); c.strokeStyle = K.key; c.lineWidth = 3; for (let x = 0; x <= W; x += 90) { c.beginPath(); c.moveTo(x, 760); c.lineTo(x, 1380); c.stroke(); }
-        for (let y = 760; y <= 1380; y += 76) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }
-        c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.1 + 0.04 * Math.sin(lt * 6) * Math.sin(lt * 2.3); c.fillStyle = '#f6c86a'; c.fillRect(0, 760, W, 620); c.restore();
-        c.fillStyle = K.wood; c.fillRect(0, 740, W, 26); c.strokeRect(0, 740, W, 26); c.fillRect(980, 740, 40, 640); c.strokeRect(980, 740, 40, 640);
-        { c.strokeStyle = K.key; c.lineCap = 'round'; const br = [[1100, 60, 860, 200, 26], [960, 150, 900, 260, 14], [920, 180, 820, 150, 10]]; for (const [x0, y0, x1, y1, w] of br) { c.lineWidth = w; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 + 30, x1, y1); c.stroke(); }
-          c.lineWidth = 3; for (const [x, y] of [[870, 222], [905, 285], [826, 172], [960, 214]]) { c.fillStyle = K.kaki; c.beginPath(); c.ellipse(x, y + 18, 22, 20, 0, 0, TAU); c.fill(); c.stroke(); } }
-        c.fillStyle = K.wood; c.fillRect(0, 1380, W, 540); c.strokeStyle = K.key; c.lineWidth = 4; for (let x = 0; x < W + 200; x += 180) { c.beginPath(); c.moveTo(x, 1380); c.lineTo(x - 60, H); c.stroke(); }
-        c.beginPath(); c.moveTo(0, 1380); c.lineTo(W, 1380); c.stroke();
-        c.fillStyle = K.kaki; c.beginPath(); c.ellipse(940, 1600, 40, 36, 0, 0, TAU); c.fill(); c.stroke(); c.fillStyle = '#3d4a28'; c.fillRect(928, 1560, 24, 10);
-        // two cups; the pot pours into the first, then the second
-        // the pot tilts over the first cup, rises and moves to the second, tilts again, and sets down
-        const C1 = 470, C2 = 790, k1 = clamp((lt - pour) / 1.1), k2 = clamp((lt - pour - 1.6) / 1.1);
-        const tilt = (t0) => ease((lt - t0) / 0.3) * (1 - ease((lt - t0 - 1.0) / 0.3));
-        const a = 0.55 * Math.max(tilt(pour - 0.15), tilt(pour + 1.45)), cx = lerp(C1, C2, ease((lt - pour - 1.05) / 0.4)) + (lt > pour + 2.55 ? ease((lt - pour - 2.55) / 0.5) * 60 : 0);
-        cup2(c, C1, 1400, k1, lt, 0); cup2(c, C2, 1400, k2, lt, 1);
-        const ox = 205 * Math.cos(a) + 62 * Math.sin(a), oy = 205 * Math.sin(a) - 62 * Math.cos(a), pcx = cx - ox, pcy = 1040 - oy;   // the spout's tip sits over the cup
-        if (a > 0.35) { c.strokeStyle = K.tea; c.lineWidth = 9; c.beginPath(); c.moveTo(cx, pcy + oy); c.quadraticCurveTo(cx - 10, (pcy + oy + 1330) / 2, cx - 4, 1330); c.stroke(); }   // the stream
-        pot(c, pcx, pcy, a);
-        vtext(c, '十湖', 96, 1600, 54, 'NotoSerifJP-600', K.key); seal(c, 54, 1760, 96, K.seal, K.paper);
-      },
+    const tea = (c, lt) => {
+      const cupAt = (x, y, i) => { c.strokeStyle = K.key; c.lineWidth = 3; c.fillStyle = K.glaze;
+        c.beginPath(); c.moveTo(x - 17, y - 16); c.quadraticCurveTo(x - 16, y + 12, x - 8, y + 16); c.lineTo(x + 8, y + 16); c.quadraticCurveTo(x + 16, y + 12, x + 17, y - 16); c.closePath(); c.fill(); c.stroke();
+        c.fillStyle = K.tea; c.beginPath(); c.ellipse(x, y - 16, 17, 5, 0, 0, TAU); c.fill(); c.stroke();
+        c.strokeStyle = K.steam; c.lineWidth = 2.5; for (let k = 0; k < 2; k++) { c.beginPath(); for (let j = 0; j < 12; j++) c.lineTo(x - 5 + k * 10 + Math.sin(j * 0.8 + lt * 3 + k + i) * 4, y - 22 - j * 6); c.stroke(); } };
+      c.fillStyle = '#5b3a28'; c.strokeStyle = K.key; c.lineWidth = 3; c.beginPath(); c.ellipse(520, 1272, 30, 22, 0, 0, TAU); c.fill(); c.stroke();      // the kyusu
+      c.beginPath(); c.moveTo(546, 1266); c.lineTo(570, 1252); c.lineTo(572, 1258); c.lineTo(550, 1276); c.closePath(); c.fill(); c.stroke();
+      c.beginPath(); c.arc(520, 1250, 5, 0, TAU); c.fill(); c.stroke();
+      cupAt(470, 1290, 0); cupAt(588, 1290, 1);
     };
+    return { draw(c, lt) {
+      c.drawImage(woodblock(lt + 5.0), 0, 0);
+      const z = 1 + (lt + 5.0) * 0.012; c.save(); c.translate(W / 2, H * 0.6); c.scale(z, z); c.translate(-W / 2, -H * 0.6); tea(c, lt); c.restore();   // over the branch, in the print's own push-in
+      vtext(c, '十湖', 96, 1648, 54, 'NotoSerifJP-600', K.key); seal(c, 54, 1780, 84, K.seal, K.paper); } };
   })();
 })();

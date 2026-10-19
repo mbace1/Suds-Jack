@@ -4,12 +4,24 @@
   "series": "toko",
   "captionSize": "house",
   "argument": "Japan's draft AI plan aims for eight in ten people using generative AI; use stands at 58.8% by an online survey, so the people offline were never asked.",
-  "langs": ["en", "fi", "ja"],
-  "native_read": { "en": true, "fi": false, "ja": false },
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
   "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
   "captions": [
     {
-      "id": "plan", "role": "setup", "at": "s1+0.8", "until": "s2-0.3", "hold": "s2",
+      "id": "plan",
+      "role": "setup",
+      "at": "s1+0.8",
+      "until": "s2-0.3",
+      "hold": "s2",
       "text": {
         "en": "Japan's AI plan, in draft: / eight in ten of us using AI. / Who are the [other two]?",
         "fi": "Japanin AI-suunnitelman luonnos: / kahdeksan kymmenestä käyttää / tekoälyä. Entä [ne kaksi]?",
@@ -18,7 +30,11 @@
       "source": "Japan's first AI Basic Plan (cabinet, 23 Dec 2025); reports on its draft said it aimed to lift individual generative-AI use to 50% first and 80% eventually (Jiji via nippon.com, 5 Dec 2025). The 80% is confirmed for the draft only, hence 'in draft'. On 1 Oct 2026 the PM ordered an action plan to spread AI use by year-end (Japan Times; Jiji; Kyodo)."
     },
     {
-      "id": "twenties", "role": "evidence", "at": "s2+0.4", "until": "s3-0.3", "hold": "s3",
+      "id": "twenties",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.3",
+      "hold": "s3",
       "text": {
         "en": "Tokyo Toko's twenties: / [78%] already use it.",
         "fi": "Parikymppisistä / [78 %] käyttää jo.",
@@ -27,7 +43,11 @@
       "source": "2026 Information and Communications White Paper (MIC, 24 Jul 2026): 78.2% of people in their 20s have used generative AI (Kyodo via Sakigake, 24 Jul)."
     },
     {
-      "id": "all", "role": "evidence", "at": "s3+0.4", "until": "s4-0.3", "hold": "s4",
+      "id": "all",
+      "role": "evidence",
+      "at": "s3+0.4",
+      "until": "s4-0.3",
+      "hold": "s4",
       "text": {
         "en": "All ages: 58.8%. / The target: [80%].",
         "fi": "Kaikki ikäryhmät: 58,8 %. / Tavoite: [80 %].",
@@ -36,7 +56,11 @@
       "source": "Same white paper: 58.8% have used generative AI (ages 15–69, survey Jan–Feb 2026). The 80% is the draft plan's target (Jiji, 5 Dec 2025)."
     },
     {
-      "id": "online", "role": "evidence", "at": "s4+0.4", "until": "s5-0.3", "hold": "s5",
+      "id": "online",
+      "role": "evidence",
+      "at": "s4+0.4",
+      "until": "s5-0.3",
+      "hold": "s5",
       "text": {
         "en": "The survey was [online]. / The farmhouse wasn't asked.",
         "fi": "Kysely tehtiin [netissä]. / Maalaistaloa ei kysytty.",
@@ -45,13 +69,19 @@
       "source": "The white paper's usage figures come from an internet survey (about 1,200 respondents in Japan, ages 15–69), so people who are not online were not in it (MIC white paper, method notes; research-japan.md §1)."
     },
     {
-      "id": "last", "role": "punchline", "at": "s5+0.9", "until": "end", "hold": "end", "place": 430,
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.9",
+      "until": "end",
+      "hold": "end",
+      "place": 380,
       "text": {
         "en": "EIGHT IN TEN. / THE OTHER TWO / ARE HAVING [TEA].",
-        "fi": "KAHDEKSAN KYMMENESTÄ. / LOPUT KAKSI / JUOVAT [TEETÄ].",
+        "fi": "KAHDEKSAN / KYMMENESTÄ. / LOPUT KAKSI / JUOVAT [TEETÄ].",
         "ja": "十人に 八人。 / 残りの 二人は、 / [お茶] を 飲んでいる。"
       },
-      "source": "Kyoto Toko's card, in the counter's all-caps voice, held at least 4 s (the Toko films' rule). Kyoto Toko declines by choice, not by inability: you still decide."
+      "source": "Kyoto Toko's card, in the counter's all-caps voice, held at least 4 s (the Toko films' rule). Kyoto Toko declines by choice, not by inability: you still decide.",
+      "size": "big"
     }
   ],
   "ui": {}
