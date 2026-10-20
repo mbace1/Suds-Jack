@@ -1,21 +1,20 @@
-// world.js — the rules of a night on the driveway.
+// world.js — the rules of a run.
 //
 // Plain JS: no DOM, no three.js, no clock. One fixed step at a time from a
 // seed, so a run is reproducible and testable in bare node (test/sim.mjs).
 // The view reads the world; it never writes it. What happened during a step
 // is reported in `world.events` for the view and the sound to act on.
 //
-// Coordinates: the slab is centred on the origin, x across (right +), z from
-// the garage (−) toward the street (+). Gels arrive on the lawns either side
-// and on the street, rustle there, then hop the curb onto the slab.
-import { TUNING } from '../tuning.js?v=3';
-import { makeRng } from './rng.js?v=3';
+// Coordinates: the arena is centred on the origin, x across (right +), z
+// toward the bottom of the screen. Its size is 1.x's, chosen per run by the
+// screen's shape (TUNING.arena). Gels pop in on an ellipse inside it, as in
+// 1.x, swell into being, and the arena's edges are walls.
+//
+// Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
+import { TUNING } from '../tuning.js?v=4';
+import { makeRng } from './rng.js?v=4';
 
 const T = TUNING;
-const HX = T.driveway.slab.width / 2;
-const HZ = T.driveway.slab.depth / 2;
-const OUTSIDE = T.driveway.curb.width + 0.8;      // where a spawn waits, past the curb
-const NIGHT_LENGTH = (((T.night.dawnHour - T.night.startHour) % 24 + 24) % 24) * T.night.secondsPerHour;
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -38,27 +37,23 @@ function springStep(b, dt) {
   b.ex = clamp(b.ex, -0.45, 0.6); b.ez = clamp(b.ez, -0.45, 0.6); b.wy = clamp(b.wy, -0.5, 0.6);
 }
 
-export function createWorld({ seed = 1, mode = 'survival' } = {}) {
+export function createWorld({ seed = 1, mode = 'survival', arena = T.arena.landscape } = {}) {
   return {
-    seed, mode, rng: makeRng(seed), tick: 0, time: 0,
-    over: false, dawn: false, overtime: false,
+    seed, mode, rng: makeRng(seed), tick: 0, time: 0, over: false,
+    hx: arena.hx, hz: arena.hz,
     hero: {
-      x: 0, z: 1.5, px: 0, pz: 1.5, aimX: 0, aimZ: -1, faceX: 0, faceZ: -1,
+      x: 0, z: 0, px: 0, pz: 0, aimX: 1, aimZ: 0, faceX: 1, faceZ: 0,
       lives: T.hero.lives, mercy: 0, dash: 0, dashCd: 0, dashX: 0, dashZ: 0, dashId: 0,
       fireCd: 0, alive: true, body: body(),
     },
     gels: [], bullets: [], fuses: [],
-    spawnCd: T.night.firstSpawn, nextId: 1,
+    spawnCd: T.director.firstSpawn, nextId: 1,
     score: 0, mult: 1, combo: 0, comboT: 0, kills: 0, grazes: 0,
     nextExtend: T.score.extendEvery,
     killedBy: null,
     events: [],
   };
 }
-
-// The hour on the clock face, 23.0 → 29.0 (5 AM), and on into overtime.
-export function hourOf(w) { return T.night.startHour + w.time / T.night.secondsPerHour; }
-export const nightLength = NIGHT_LENGTH;
 
 // ── one step ───────────────────────────────────────────────────────
 // input: { mx, mz } move (length ≤ 1), { ax, az, aim } aim direction and
@@ -85,14 +80,6 @@ export function step(w, input) {
   // the chain cools
   if (w.comboT > 0 && (w.comboT -= dt) <= 0) { w.combo = 0; w.mult = 1; }
   if (w.gels.some((g) => !g.alive)) w.gels = w.gels.filter((g) => g.alive);
-
-  if (!w.dawn && w.time >= NIGHT_LENGTH) {
-    w.dawn = true; w.overtime = true;
-    const bonus = T.score.dawnBonus * h.lives;
-    w.score += bonus;
-    w.events.push({ type: 'dawn', bonus });
-    checkExtend(w);
-  }
   return w;
 }
 
@@ -140,7 +127,7 @@ function heroStep(w, input, dt) {
     h.x += (input.mx / Math.max(ml, 1)) * s * dt; h.z += (input.mz / Math.max(ml, 1)) * s * dt;
   }
 
-  const r = H.radius;
+  const r = H.radius, HX = w.hx, HZ = w.hz;
   if (h.x < -HX + r) { h.x = -HX + r; kick(h.body, 1, 0, 0.12); }
   if (h.x > HX - r) { h.x = HX - r; kick(h.body, 1, 0, 0.12); }
   if (h.z < -HZ + r) { h.z = -HZ + r; kick(h.body, 0, 1, 0.12); }
@@ -159,7 +146,7 @@ function heroStep(w, input, dt) {
 
 // ── who comes, and when ────────────────────────────────────────────
 function director(w, dt) {
-  const N = T.night, f = clamp(w.time / NIGHT_LENGTH, 0, 1);
+  const N = T.director, f = clamp(w.time / N.ramp, 0, 1);
   if ((w.spawnCd -= dt) > 0) return;
   const alive = w.gels.length;
   const max = Math.round(lerp(N.maxAlive[0], N.maxAlive[1], f));
@@ -167,8 +154,7 @@ function director(w, dt) {
   if (alive >= max) return;
   const kind = pickSpecies(w);
   const group = Math.min(max - alive, w.rng.int(N.groupOf[0], Math.round(lerp(N.groupOf[0], N.groupOf[1], f))));
-  const side = w.rng.int(0, 2);      // 0 left lawn, 1 right lawn, 2 the street
-  for (let i = 0; i < group; i++) spawn(w, kind, side);
+  for (let i = 0; i < group; i++) spawn(w, kind);
 }
 
 function pickSpecies(w) {
@@ -178,23 +164,26 @@ function pickSpecies(w) {
   return pool[0][0];
 }
 
-function spawn(w, kind, side) {
-  const S = T.species[kind], h = w.hero;
-  let x, z, tx, tz;
+// On the ellipse at `ring` of the arena (1.x), at a random angle, and never
+// near the hero: of a handful of tries, the farthest from you wins.
+function spawn(w, kind) {
+  const D = T.director, h = w.hero;
+  let bx = 0, bz = 0, best = -1;
   for (let tries = 0; tries < 6; tries++) {
-    if (side === 2) { x = w.rng.range(-HX + 1, HX - 1); z = HZ + OUTSIDE; tx = x; tz = HZ - S.radius - 0.6; }
-    else { const s = side === 0 ? -1 : 1; z = w.rng.range(-HZ + 1, HZ - 1); x = s * (HX + OUTSIDE); tx = s * (HX - S.radius - 0.6); tz = z; }
-    if (Math.hypot(tx - h.x, tz - h.z) > 2.6) break;          // never land on the hero
-    side = (side + 1) % 3;
+    const a = w.rng.range(0, Math.PI * 2);
+    const x = Math.cos(a) * w.hx * D.ring, z = Math.sin(a) * w.hz * D.ring;
+    const d = Math.hypot(x - h.x, z - h.z);
+    if (d > best) { best = d; bx = x; bz = z; }
+    if (d > D.clearOfHero) break;
   }
-  w.gels.push(makeGel(w, kind, x, z, 'rustle', tx, tz));
-  w.events.push({ type: 'spawn', x, z, kind });
+  w.gels.push(makeGel(w, kind, bx, bz, 'appear'));
+  w.events.push({ type: 'spawn', x: bx, z: bz, kind });
 }
 
-function makeGel(w, kind, x, z, state, tx = x, tz = z) {
+function makeGel(w, kind, x, z, state) {
   const S = T.species[kind];
   return {
-    id: w.nextId++, kind, x, z, px: x, pz: z, y: 0, fromX: x, fromZ: z, toX: tx, toZ: tz,
+    id: w.nextId++, kind, x, z, px: x, pz: z,
     r: S.radius, hp: S.hp, vx: 0, vz: 0, kx: 0, kz: 0, state, t: 0, alive: true,
     fireCd: (S.fireEvery || 2) * w.rng.range(0.6, 1.1), windup: false,
     dartCd: (S.dartEvery || 2) * w.rng.range(0.5, 1), dart: 0, dartX: 0, dartZ: 0,
@@ -209,15 +198,8 @@ function gelStep(w, g, dt) {
   springStep(g.body, dt);
   if (g.flash > 0) g.flash -= dt;
 
-  if (g.state === 'rustle') {
-    if ((g.t += dt) >= G.rustle) { g.state = 'hop'; g.t = 0; w.events.push({ type: 'hop', x: g.x, z: g.z }); }
-    return;
-  }
-  if (g.state === 'hop') {
-    const u = Math.min(1, (g.t += dt) / G.hop);
-    g.x = lerp(g.fromX, g.toX, u); g.z = lerp(g.fromZ, g.toZ, u);
-    g.y = Math.sin(Math.PI * u) * G.hopHeight;
-    if (u >= 1) { g.state = 'active'; g.y = 0; kick(g.body, 0, 0, 0); g.body.vwy -= 3.2; w.events.push({ type: 'land', x: g.x, z: g.z }); }
+  if (g.state === 'appear') {
+    if ((g.t += dt) >= G.appear) { g.state = 'active'; g.body.vwy -= 2.4; w.events.push({ type: 'land', x: g.x, z: g.z }); }
     return;
   }
 
@@ -250,7 +232,7 @@ function gelStep(w, g, dt) {
     if (!g.windup && g.fireCd <= S.windup) { g.windup = true; g.body.vwy += 2.2; }
     if (g.fireCd <= 0) {
       g.windup = false; g.fireCd = S.fireEvery * w.rng.range(0.85, 1.15);
-      const a = Math.atan2(nz, nx), col = livingColor(S.color);
+      const a = Math.atan2(nz, nx), col = S.bulletColor ?? livingColor(S.color);
       const sp = T.bullets.gelSpeed;
       if (g.kind === 'spittor') fire(w, g.x, g.z, a, sp, T.bullets.gelRadius, col, false, g.kind);
       else if (g.kind === 'orange') for (const o of [-1, 0, 1]) fire(w, g.x, g.z, a + o * S.spreadDeg * Math.PI / 180, sp, T.bullets.gelRadius, col, false, g.kind);
@@ -266,8 +248,8 @@ function gelStep(w, g, dt) {
   g.kx *= fr; g.kz *= fr;
   g.x += (g.vx + g.kx) * dt; g.z += (g.vz + g.kz) * dt;
 
-  // the curbs are walls: bodies flatten against them and bounce back
-  const r = g.r;
+  // the arena's edges are walls: bodies flatten against them and bounce back
+  const r = g.r, HX = w.hx, HZ = w.hz;
   if (g.x < -HX + r) { g.x = -HX + r; wall(w, g, 1, 0); }
   if (g.x > HX - r) { g.x = HX - r; wall(w, g, -1, 0); }
   if (g.z < -HZ + r) { g.z = -HZ + r; wall(w, g, 0, 1); }
@@ -284,7 +266,7 @@ function wall(w, g, nx, nz) {
 // Soft bodies: overlapping gels push apart, heavier ones shove lighter ones,
 // and each squashes along the contact. This is what makes a crowd pile.
 function separate(w) {
-  const gs = w.gels, k = T.gel.separation;
+  const gs = w.gels, k = T.gel.separation, HX = w.hx, HZ = w.hz;
   for (let i = 0; i < gs.length; i++) {
     const a = gs[i];
     if (a.state !== 'active' || !a.alive) continue;
@@ -321,15 +303,15 @@ function fan(w, x, z, a, count, arcDeg, speed, color, src) {
 }
 
 function bulletsStep(w, dt) {
-  const h = w.hero;
+  const h = w.hero, HX = w.hx, HZ = w.hz;
   for (const b of w.bullets) {
     b.x += b.vx * dt; b.z += b.vz * dt;
     if ((b.life -= dt) <= 0 || Math.abs(b.x) > HX + 1.5 || Math.abs(b.z) > HZ + 1.5) { b.dead = true; continue; }
     if (b.hero) {
       for (const g of w.gels) {
-        if (!g.alive || g.state === 'rustle') continue;
+        if (!g.alive || g.state !== 'active') continue;
         const dx = g.x - b.x, dz = g.z - b.z, rr = g.r + b.r;
-        if (dx * dx + dz * dz > rr * rr || g.y > 0.6) continue;
+        if (dx * dx + dz * dz > rr * rr) continue;
         b.dead = true;
         const l = Math.hypot(b.vx, b.vz) || 1, nx = b.vx / l, nz = b.vz / l;
         g.kx += nx * T.gel.hitKnock * (0.55 / g.r); g.kz += nz * T.gel.hitKnock * (0.55 / g.r);
@@ -389,16 +371,16 @@ function hurt(w, by) {
 function kill(w, g) {
   if (!g.alive) return;
   g.alive = false;
-  const S = T.species[g.kind], hard = w.mode === 'hardival';
+  const S = T.species[g.kind], hard = w.mode === 'hardcade';
   w.combo++; w.comboT = T.score.comboWindow;
   w.mult = Math.min(T.score.maxMult, 1 + Math.floor(w.combo / T.score.comboStep));
   w.score += Math.round(S.score * w.mult * (hard ? T.revenge.scoreMult : 1));
   w.kills++;
-  w.events.push({ type: 'kill', x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color });
+  w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color });
   if (S.children) {
     for (let i = 0; i < S.children; i++) {
       const a = (i / S.children) * Math.PI * 2 + w.rng.range(0, 1);
-      const c = makeGel(w, 'mini', g.x + Math.cos(a) * 0.4, g.z + Math.sin(a) * 0.4, 'active');
+      const c = makeGel(w, S.childKind, g.x + Math.cos(a) * 0.4, g.z + Math.sin(a) * 0.4, 'active');
       c.kx = Math.cos(a) * 6; c.kz = Math.sin(a) * 6;
       w.gels.push(c);
     }
@@ -407,7 +389,7 @@ function kill(w, g) {
   checkExtend(w);
 }
 
-// HARDIVAL: the corpse fires back in its species' dialect, slower, darker —
+// HARDCADE: the corpse fires back in its species' dialect, slower, darker —
 // after a fuse you can see, and never from on top of you. Fired from the
 // centre of a gel killed at point-blank, a ring lands the instant it exists:
 // the first cut did exactly that and a bot lasted twelve seconds. Revenge is

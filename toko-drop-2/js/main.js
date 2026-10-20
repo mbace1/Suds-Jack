@@ -7,16 +7,16 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=3';
-import { buildDriveway } from './render/driveway.js?v=3';
-import { fitCamera } from './render/view.js?v=3';
-import { Paint } from './render/paint.js?v=3';
-import { Actors } from './render/actors.js?v=3';
-import { createWorld, step, hourOf } from './sim/world.js?v=3';
-import { dailySeed } from './sim/rng.js?v=3';
-import { Input } from './input.js?v=3';
-import { UI, t, clockText } from './ui.js?v=3';
-import { Sound } from './audio.js?v=3';
+import { TUNING } from './tuning.js?v=4';
+import { buildFloor } from './render/floor.js?v=4';
+import { fitCamera } from './render/view.js?v=4';
+import { Splats } from './render/splats.js?v=4';
+import { Actors } from './render/actors.js?v=4';
+import { GEL_TIME } from './render/gel.js?v=4';
+import { createWorld, step } from './sim/world.js?v=4';
+import { Input } from './input.js?v=4';
+import { UI, t, timeText } from './ui.js?v=4';
+import { Sound } from './audio.js?v=4';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -48,36 +48,59 @@ document.getElementById('backend').textContent = ` · ${backend}`;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(T.render.clearColor);
-const paint = new Paint();
-const driveway = buildDriveway(T, paint.texture);
-scene.add(driveway.group);
-const actors = new Actors(scene, paint);
+// 1.x's light: white ambient and one sun. The gels are the only lit things.
+scene.add(new THREE.AmbientLight(0xffffff, T.light.ambient));
+const sun = new THREE.DirectionalLight(0xffffff, T.light.sun.intensity);
+sun.position.set(...T.light.sun.position);
+scene.add(sun);
+
+const splats = new Splats(scene);
+const actors = new Actors(scene, splats);
 const camera = new THREE.PerspectiveCamera();
+const camRest = new THREE.Vector3();
+let trauma = 0;
+// 1.x's shake: trauma adds up to 1 and decays; the camera moves by its square
+const shake = (amount) => { if (!reduceMotion) trauma = Math.min(1, trauma + amount); };
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ── the arena: 1.x's size for the screen's shape, chosen at each run start
+// (never mid-run), with the floor made to match ──────────────────────────
+let arenaName = null, arena = null, floor = null;
+let state = 'menu', mode = 'arcade', world = null, acc = 0, pendingDash = false, dyingT = 0;
+const screenArena = () => (stage.clientWidth >= stage.clientHeight ? 'landscape' : 'portrait');
+function useArena(name) {
+  if (name === arenaName) return;
+  arenaName = name; arena = T.arena[name];
+  if (floor) { scene.remove(floor.group); floor.dispose(); }
+  floor = buildFloor(T, arena.hx, arena.hz);
+  scene.add(floor.group);
+  actors.setArena(arena.hx, arena.hz);
+  resize();
+}
 
 function resize() {
   const w = Math.max(1, stage.clientWidth), h = Math.max(1, stage.clientHeight);
   renderer.setSize(w, h, false);
-  fitCamera(camera, driveway.arena, w / h, T.camera);
+  if (!floor) return;
+  if (state === 'menu' && screenArena() !== arenaName) return useArena(screenArena());
+  fitCamera(camera, floor.arena, w / h, { ...T.camera, tiltDeg: arena.tiltDeg });
+  camRest.copy(camera.position);
 }
-new ResizeObserver(resize).observe(stage);
-resize();
 
 // ── state ──────────────────────────────────────────────────────────
 const store = {
   num(k) { try { return Number(localStorage.getItem(k)) || 0; } catch { return 0; } },
   set(k, v) { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } },
 };
-const dayKey = () => new Date().toISOString().slice(0, 10);
-const bestKey = (m) => (m === 'daily' ? `toko2.best.daily.${dayKey()}` : `toko2.best.${m}`);
-const bests = () => ({ survival: store.num(bestKey('survival')), hardival: store.num(bestKey('hardival')), daily: store.num(bestKey('daily')) });
+const MODES = ['arcade', 'hardcade', 'survival'];
+const bestKey = (m) => `toko2.best.${m}`;
+const bests = () => Object.fromEntries(MODES.map((m) => [m, store.num(bestKey(m))]));
 
 const input = new Input(document);
 const sound = new Sound();
 sound.on = store.num('toko2.mute') !== 1;
 addEventListener('pointerdown', () => sound.unlock(), { once: true });
 addEventListener('keydown', () => sound.unlock(), { once: true });
-
-let state = 'menu', mode = 'survival', world = null, acc = 0, pendingDash = false, dyingT = 0, lastHour = 0;
 
 const ui = new UI({
   onStart: (m) => start(m),
@@ -89,21 +112,25 @@ const ui = new UI({
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
 
+useArena(screenArena());
+new ResizeObserver(resize).observe(stage);
+
 function toMenu() {
   state = 'menu'; input.enabled = false; ui.setHud(false);
+  useArena(screenArena());
   ui.title(bests(), sound.on, input.source);
 }
 
 function start(m) {
-  mode = m;
-  const seed = m === 'daily' ? dailySeed(new Date()) : (Math.random() * 2 ** 32) >>> 0;
-  world = createWorld({ seed, mode: m === 'hardival' ? 'hardival' : 'survival' });
-  paint.clear(); actors.reset();
-  acc = 0; pendingDash = false; lastHour = Math.floor(hourOf(world));
+  mode = MODES.includes(m) ? m : 'arcade';
+  useArena(screenArena());
+  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena });
+  splats.clear(); actors.reset(); trauma = 0;
+  acc = 0; pendingDash = false;
   state = 'play'; input.enabled = true;
   ui.hide(); ui.setHud(true);
   sound.unlock();
-  ui.banner(clockText(hourOf(world)), 1.4);
+  ui.banner(mode.toUpperCase(), 1.2);
 }
 
 function pause() { if (state !== 'play') return; state = 'paused'; input.enabled = false; ui.pause(); }
@@ -116,8 +143,8 @@ function finish() {
   if (newBest) store.set(k, world.score);
   ui.setHud(false);
   ui.results({
-    mode, score: world.score, best: Math.max(best, world.score), newBest, dawn: world.dawn,
-    reached: clockText(hourOf(world)), gotYou: world.killedBy ? T.species[world.killedBy]?.name : null,
+    mode, score: world.score, best: Math.max(best, world.score), newBest,
+    time: timeText(world.time), gotYou: world.killedBy ? T.species[world.killedBy]?.name : null,
     kills: world.kills, grazes: world.grazes,
   });
 }
@@ -125,12 +152,14 @@ function finish() {
 function onEvent(e) {
   debug.counts[e.type] = (debug.counts[e.type] || 0) + 1;
   sound.event(e);
-  if (e.type === 'kill') actors.burst(e.x, e.z, e.r, e.color);
+  actors.onEvent(e, world);
+  const K = T.shake;
+  if (e.type === 'kill') shake(K.kill + K.killPerRadius * e.r + (e.r >= T.death.big ? K.bigKill : 0));
+  else if (e.type === 'hurt') shake(K.hurt);
   else if (e.type === 'extend') ui.banner(t('extend'));
-  else if (e.type === 'dawn') ui.banner(`${t('dawn')} +${e.bonus.toLocaleString('en-US')}`, 2.4);
 }
 
-// screen-axis input → the world. The camera looks down with the garage at
+// screen-axis input → the world. The camera looks down with the far edge at
 // the top, so screen-down is +z; the mouse aims at the ground under it.
 const _ray = new THREE.Raycaster(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.45), _hit = new THREE.Vector3(), _ndc = new THREE.Vector2();
 function toWorld(inp) {
@@ -149,12 +178,12 @@ function toWorld(inp) {
 
 // ── the loop ───────────────────────────────────────────────────────
 const debug = {
-  THREE, renderer, scene, camera, backend, input, ui, actors, paint,
-  arena: driveway.arena, poolCentre: driveway.poolCentre,
+  THREE, renderer, scene, camera, backend, input, ui, actors,
+  get arena() { return floor.arena; }, splats,
   frames: 0, ready: false, counts: {},
   get world() { return world; }, get state() { return state; },
   start, pause, resume, toMenu,
-  // Look checks: run the night ahead under a simple bot (shoot the nearest
+  // Look checks: run the game ahead under a simple bot (shoot the nearest
   // gel, back away from it) with every event handled, so a screenshot can be
   // of the middle of a fight rather than its first second.
   advance(seconds) {
@@ -164,11 +193,11 @@ const debug = {
       const h = world.hero; let near = null, nd = Infinity;
       for (const g of world.gels) { if (g.state !== 'active') continue; const d = Math.hypot(g.x - h.x, g.z - h.z); if (d < nd) { nd = d; near = g; } }
       const inp = near
-        ? { mx: -(near.x - h.x) / nd - h.x / 8, mz: -(near.z - h.z) / nd - h.z / 4.5, ax: (near.x - h.x) / nd, az: (near.z - h.z) / nd, aim: true, fire: true, dash: false }
-        : { mx: 0, mz: 0, ax: 0, az: -1, aim: true, fire: true, dash: false };
+        ? { mx: -(near.x - h.x) / nd - h.x / world.hx, mz: -(near.z - h.z) / nd - h.z / world.hz, ax: (near.x - h.x) / nd, az: (near.z - h.z) / nd, aim: true, fire: true, dash: false }
+        : { mx: 0, mz: 0, ax: 1, az: 0, aim: true, fire: true, dash: false };
       step(world, inp);
       for (const e of world.events) onEvent(e);
-      if (i % 4 === 0) actors.stepChunks(T.sim.dt * 4);
+      if (i % 4 === 0) { actors.stepFx(T.sim.dt * 4, i * T.sim.dt); splats.step(T.sim.dt * 4); }
     }
   },
 };
@@ -177,8 +206,9 @@ window.__toko = debug;
 let last = performance.now();
 toMenu();
 renderer.setAnimationLoop(() => {
-  const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000);
+  const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000), time = now / 1000;
   last = now;
+  GEL_TIME.value = time;
   ui.pollPad(); ui.tick(dt);
   const inp = input.read(null);
 
@@ -196,8 +226,6 @@ renderer.setAnimationLoop(() => {
         acc -= T.sim.dt; steps++;
       }
       if (steps === T.sim.maxSteps) acc = Math.min(acc, T.sim.dt);   // a slow frame drops its backlog, not the game
-      const hr = Math.floor(hourOf(world));
-      if (hr !== lastHour && !world.over) { lastHour = hr; if (!world.dawn) ui.banner(clockText(hr)); }
       if (world.over) { state = 'dying'; dyingT = T.flow.deathBeat; input.enabled = false; }
     }
   } else if (state === 'paused') {
@@ -207,11 +235,16 @@ renderer.setAnimationLoop(() => {
   }
 
   if (world) {
-    actors.sync(world, state === 'play' ? acc / T.sim.dt : 1, now / 1000);
-    if (state !== 'paused') actors.stepChunks(dt);
-    ui.hud(world, hourOf(world));
-  }
-  paint.update();
+    const a = state === 'play' ? acc / T.sim.dt : 1;
+    actors.sync(world, a, time);
+    if (state !== 'paused') { actors.stepFx(dt, time); splats.step(dt); }
+    const h = world.hero;
+    floor.setPlayer(h.px + (h.x - h.px) * a, h.pz + (h.z - h.pz) * a);
+    ui.hud(world);
+  } else floor.setPlayer(0, 0);
+  trauma = Math.max(0, trauma - T.shake.decay * dt);
+  const m = trauma * trauma, A = T.shake.amp, F = T.shake.freq;
+  camera.position.set(camRest.x + Math.sin(time * F[0]) * m * A[0], camRest.y + Math.sin(time * F[1]) * m * A[1], camRest.z + Math.sin(time * F[2]) * m * A[2]);
   ui.drawSticks(input);
   renderer.render(scene, camera);
   debug.frames++;

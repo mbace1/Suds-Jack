@@ -2,32 +2,32 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=3';
+import { TUNING } from './tuning.js?v=4';
 
 const STR = {
   en: {
-    survival: 'Survive till dawn.', hardival: 'Every corpse shoots back.', daily: "Today's night — the same for everyone.",
+    arcade: 'Three lives, extra lives on score.', hardcade: 'Arcade, and every corpse shoots back.', survival: 'Endless. It only gets worse.', campaign: 'Rooms with their own clock — coming next.',
     best: 'BEST', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
-    over: 'THE NIGHT GOT YOU', made: 'YOU SAW THE DAWN', gotyou: 'GOT YOU', reached: 'REACHED', newbest: 'NEW BEST',
-    extend: 'EXTRA LIFE', dawn: 'DAWN', soundOn: 'SOUND ON', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
+    over: 'GAME OVER', gotyou: 'GOT YOU', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
+    extend: 'EXTRA LIFE', soundOn: 'SOUND ON', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
     hintTouch: 'LEFT THUMB MOVES · RIGHT THUMB AIMS AND FIRES · LET GO TO DASH',
     hintKeys: 'WASD MOVES · MOUSE AIMS · HOLD CLICK TO FIRE · SPACE DASHES · ESC PAUSES',
     hintPad: 'LEFT STICK MOVES · RIGHT STICK AIMS AND FIRES · A DASHES · START PAUSES',
   },
   ja: {
-    survival: '夜明けまで生き延びろ。', hardival: '倒した敵が撃ち返してくる。', daily: '今日の夜 — 全員同じ。',
+    arcade: 'ライフ3つ、スコアでエクステンド。', hardcade: 'アーケード、倒した敵が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: '制限時間のある部屋 — 次の版で。',
     best: 'ベスト', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
-    over: '夜にやられた', made: '夜明けを見た', gotyou: 'やられた相手', reached: '到達', newbest: '新記録',
-    extend: '1UP', dawn: '夜明け', soundOn: 'サウンド オン', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
+    over: 'ゲームオーバー', gotyou: 'やられた相手', time: 'タイム', newbest: '新記録', soon: '近日',
+    extend: '1UP', soundOn: 'サウンド オン', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
     hintTouch: '左手で移動 · 右手でエイムと射撃 · 離すとダッシュ',
     hintKeys: 'WASDで移動 · マウスでエイム · クリック長押しで射撃 · スペースでダッシュ · ESCで一時停止',
     hintPad: '左スティックで移動 · 右スティックでエイムと射撃 · Aでダッシュ · STARTで一時停止',
   },
   fi: {
-    survival: 'Selviä aamuun.', hardival: 'Jokainen raato ampuu takaisin.', daily: 'Tämän päivän yö — sama kaikille.',
+    arcade: 'Kolme elämää, lisäelämiä pisteistä.', hardcade: 'Arcade, ja jokainen raato ampuu takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'Huoneita omalla kellollaan — seuraavaksi.',
     best: 'ENNÄTYS', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
-    over: 'YÖ VOITTI', made: 'NÄIT AAMUN', gotyou: 'KAATAJA', reached: 'SAAVUTIT', newbest: 'UUSI ENNÄTYS',
-    extend: 'LISÄELÄMÄ', dawn: 'AAMU', soundOn: 'ÄÄNI PÄÄLLÄ', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
+    over: 'PELI OHI', gotyou: 'KAATAJA', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
+    extend: 'LISÄELÄMÄ', soundOn: 'ÄÄNI PÄÄLLÄ', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
     hintTouch: 'VASEN PEUKALO LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · IRROTA SYÖKSYÄKSESI',
     hintKeys: 'WASD LIIKKUU · HIIRI TÄHTÄÄ · PIDÄ PAINIKE POHJASSA AMPUAKSESI · VÄLILYÖNTI SYÖKSYY · ESC TAUKO',
     hintPad: 'VASEN TATTI LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · A SYÖKSYY · START TAUKO',
@@ -38,10 +38,10 @@ export const t = (k) => STR[lang][k] ?? STR.en[k] ?? k;
 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
-export function clockText(hour) {
-  const h24 = ((Math.floor(hour) % 24) + 24) % 24, m = Math.floor((hour % 1) * 60);
-  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${h24 < 12 ? 'AM' : 'PM'}`;
+// run time as m:ss
+export function timeText(seconds) {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 export class UI {
@@ -66,14 +66,14 @@ export class UI {
 
   setHud(visible) { this.hudEl.hidden = !visible; }
 
-  hud(w, hour) {
+  hud(w) {
     this.scoreEl.textContent = w.score.toLocaleString('en-US');
     this.multEl.textContent = w.mult > 1 ? `×${w.mult}` : '';
     if (this._lives !== w.hero.lives) {
       this._lives = w.hero.lives;
       this.livesEl.replaceChildren(...Array.from({ length: Math.max(0, w.hero.lives) }, () => el('i')));
     }
-    this.clockEl.textContent = clockText(hour);
+    this.clockEl.textContent = timeText(w.time);
   }
 
   banner(text, seconds = 1.6) {
@@ -92,11 +92,12 @@ export class UI {
     this._focus();
   }
   hide() { this.menuEl.hidden = true; this.buttons = []; }
-  _button(label, sub, fn) {
+  _button(label, sub, fn, disabled = false) {
     const b = el('button', 'item');
+    if (disabled) { b.classList.add('off'); b.setAttribute('aria-disabled', 'true'); }
     b.append(el('span', 'label', label));
     if (sub) b.append(el('span', 'sub', sub));
-    b.addEventListener('click', () => fn());
+    b.addEventListener('click', () => { if (!disabled) fn(); });
     b.addEventListener('pointerenter', () => { this.focusIndex = this.buttons.indexOf(b); this._focus(); });
     return b;
   }
@@ -110,9 +111,10 @@ export class UI {
     const fmt = (v) => (v ? `${t('best')} ${v.toLocaleString('en-US')}` : '');
     this._panel([
       logo,
+      this._button('ARCADE', `${t('arcade')} ${fmt(best.arcade)}`, () => this.h.onStart('arcade')),
+      this._button('HARDCADE', `${t('hardcade')} ${fmt(best.hardcade)}`, () => this.h.onStart('hardcade')),
       this._button('SURVIVAL', `${t('survival')} ${fmt(best.survival)}`, () => this.h.onStart('survival')),
-      this._button('HARDIVAL', `${t('hardival')} ${fmt(best.hardival)}`, () => this.h.onStart('hardival')),
-      this._button('DAILY', `${t('daily')} ${fmt(best.daily)}`, () => this.h.onStart('daily')),
+      this._button(`CAMPAIGN · ${t('soon')}`, t('campaign'), () => {}, true),
       this._button(sound ? t('soundOn') : t('soundOff'), null, () => this.h.onSound()),
       hint,
     ]);
@@ -127,11 +129,11 @@ export class UI {
     const row = (k, v) => rows.append(el('dt', null, k), el('dd', null, v));
     row(t('score'), r.score.toLocaleString('en-US') + (r.newBest ? `  ${t('newbest')}` : ''));
     row(t('best'), r.best.toLocaleString('en-US'));
-    row(t('reached'), r.reached);
+    row(t('time'), r.time);
     if (r.gotYou) row(t('gotyou'), r.gotYou);
     row(t('kills'), String(r.kills));
     row(t('grazes'), String(r.grazes));
-    this._panel([el('h2', r.dawn ? 'win' : null, r.dawn ? t('made') : t('over')), el('p', 'mode', r.mode.toUpperCase()), rows,
+    this._panel([el('h2', null, t('over')), el('p', 'mode', r.mode.toUpperCase()), rows,
       this._button(t('again'), null, () => this.h.onAgain()), this._button(t('menu'), null, () => this.h.onMenu())]);
   }
 

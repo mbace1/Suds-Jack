@@ -19,6 +19,56 @@
     Never `--no-verify`.
 -->
 
+## v4 — 2026-10-20
+**1.x's gelatin, on 1.x's floor, in 1.x's units — and ARCADE / HARDCADE / SURVIVAL**
+- Owner, 2026-10-19: *"Forget the night theme and time or other level art
+  importance for now. Try to get the basics done. Gelatin look, gameplay on
+  par."* The night, the clock, the dawn and the daily seed are gone
+- **The gel is 1.x's** (`js/render/gel.js`, from 1.x `enemy.js` at v268,
+  which already ran as a TSL graph on WebGPU): a physical material —
+  clearcoat 1.0, sheen 0.45, transmission 0.15 (0.25 on cubes), IOR 1.38 —
+  with three octaves of lumps that simmer at rest, a ripple that spreads from
+  where a bullet landed, the death thrash that swells the body before it
+  pops, translucency glow and wrap light on the emissive, and dome
+  refraction (thick at the belly, thin at the crown). v3's gels were a stock
+  lit material with a rim glow I had written; this is the real one
+- **The shapes are 1.x's**: the SDF gel dome with its rounded flat bottom,
+  squat by default, SPITTOR snouty and FANNER a pancake; cubes a rounded box
+  1.8 radii on a side. Each body breathes, smears along the floor when it
+  moves (nose up, rear dragging) and inflates while it winds up to fire. The
+  enemy eyes are gone, as in 1.x (v98); the hero keeps 1.x's black ovals,
+  moved just proud of the surface — 1.x's sat inside the body and vanished
+  whenever it stretched toward its aim
+- **The light and the floor are 1.x's**: white ambient 0.45 and one sun at
+  1.3, no tone mapping; a navy floor with a slowly pulsing grid in square
+  1.286 cells, a vignette, the grid fading toward the rim, a soft pool of
+  light following the hero, and the blue border rail
+- **The arena is 1.x's, so its numbers port without a rescale**: 38 × 22 on
+  a wide screen, 22 × 36 on a tall one, chosen at each run start. v3 ran
+  1.x's hero speed on a slab less than half that size, which made everything
+  twice as fast and cramped. The core six species take 1.x's colours,
+  radii, speeds and hit points; they pop in on 1.x's ellipse at 0.85 of the
+  arena, never within 6 of you, and swell into being for 0.3 s
+- **Modes**: ARCADE (three lives, extends), HARDCADE (the same, and every
+  corpse fires back) and SURVIVAL (endless, no extends). CAMPAIGN is on the
+  menu, greyed. ARCADE still runs the rising pressure, not 1.x's waves yet
+- **A kill is 1.x's** (`enemy.js` destroy/updateDeath, `main.js` onKill):
+  the body glows, thrashes and swells to 2.3× over 0.28 s while 5–6 chunks
+  and a spray of droplets fly out (smooth goo from blobs, angular from
+  cubes), squash and skid where they land and shrink away; a puddle and its
+  satellites spring in and fade over 5 s (1.x's 192-slot instanced splat
+  pool, `js/render/splats.js`); a big body's death ripples every gel within
+  3.5. Kills in quick succession throw more. The camera shakes as 1.x's did
+  (trauma squared, decaying 2.8/s): a kill by its size, a hit 0.38
+- **The permanent painting is gone.** On 1.x's dark floor it turned into
+  confetti by the second minute and drowned the gels; 1.x's fading puddles
+  are what read
+- Views are pooled per species, so a gel's material is built once and
+  reused rather than compiled mid-fight
+- Cache tokens `?v=3` → `?v=4`; HUD label → `2.0 · v4`
+
+---
+
 ## v3 — 2026-10-19
 **A game: twin sticks, six species, the night, HARDIVAL — playable from the menu**
 - Owner: *"I'm getting a feeling that there is no game here to test."* There
