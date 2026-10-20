@@ -1,0 +1,80 @@
+{
+  "film": "per-caller",
+  "cut": "Coxon, Per Caller, DRAFT v1 (20 Oct) — one question: can an AI call your cellphone about the election without asking?",
+  "series": "coxon",
+  "captionSize": "house",
+  "argument": "Not today: a political group has asked the FCC to let AI-voiced political calls reach cellphones without consent, a ruling could come before Election Day, and the proposed limit is three a month per caller.",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question", "role": "setup", "at": "s1+0.5", "until": "s2-0.35", "hold": "s2",
+      "text": {
+        "en": "Can an AI call your cellphone / about the election / [without asking]?",
+        "fi": "Saako tekoäly soittaa / kännykkääsi vaaleista / [kysymättä]?",
+        "ja": "AIは あなたの 携帯に / 選挙の 電話を / [断りなく] かけられる？"
+      },
+      "source": "The film's question. Today's rule: FCC declaratory ruling FCC 24-17 (Feb 2024). The request: Club for Growth's petition of 31 Aug 2026, FCC Public Notice DA 26-940, CG Docket 02-278 (re-checked 20 Oct, plan/films/16-per-caller.md)."
+    },
+    {
+      "id": "consent", "role": "evidence", "at": "s2+0.6", "until": "s3-0.35", "hold": "s3",
+      "text": {
+        "en": "Today, the rules say: / only with your [consent].",
+        "fi": "Nyt säännöt sanovat: / vain [suostumuksellasi].",
+        "ja": "今の ルールでは / あなたの [同意] が 必要。"
+      },
+      "source": "FCC 24-17 (Feb 2024): AI-generated voices are 'artificial' voices under the TCPA, so robocalls using them to cellphones need prior express consent unless an exemption applies (PBS NewsHour, Feb 2024; restated in every report on the petition, e.g. TheTelephony, Oct 2026)."
+    },
+    {
+      "id": "asked", "role": "evidence", "at": "s3+0.6", "until": "s4-0.35", "hold": "s4",
+      "text": {
+        "en": "A political group has [asked] / the FCC to drop that rule / for political calls.",
+        "fi": "Poliittinen ryhmä on [pyytänyt] / FCC:tä poistamaan säännön / poliittisilta puheluilta.",
+        "ja": "ある 政治団体が FCCに / 政治の 電話では その ルールを / 外すよう [求めた]。"
+      },
+      "source": "Club for Growth petition, filed 31 Aug 2026: a waiver of 47 CFR 64.1200(a)(1)(iii) and an exemption from 47 USC 227(b)(1)(A)(iii) so noncommercial political calls with an artificial or prerecorded voice, including an AI voice, can reach wireless numbers without prior express consent; industry-wide. FCC CGB Public Notice DA 26-940, 4 Sep 2026. AP, 7 Oct 2026. The group is not named on screen."
+    },
+    {
+      "id": "ruling", "role": "evidence", "at": "s4+0.6", "until": "s5-0.35", "hold": "s5",
+      "text": {
+        "en": "Comments closed 19 October. / A ruling could come / [before Election Day].",
+        "fi": "Lausuntoaika päättyi 19.10. / Päätös voi tulla / [ennen vaalipäivää].",
+        "ja": "意見募集は 10月19日に 締め切り。 / 判断は [投票日の 前に] / 出る 可能性が ある。"
+      },
+      "source": "DA 26-940: comments due 5 Oct, replies due 19 Oct 2026 (ITIF's reply comments dated 19 Oct; NCLC's opposition 5 Oct). AP, 7 Oct: the FCC could act as soon as late October, before the 3 Nov midterms; the notice sets no date, hence 'could'. No ruling found on 20 Oct."
+    },
+    {
+      "id": "last", "role": "punchline", "at": "s5+0.5", "until": "end-0.2", "hold": "end",
+      "text": {
+        "en": "The proposed limit: / three AI calls a month. / [Per caller].",
+        "fi": "Ehdotettu raja: / kolme tekoälypuhelua kuussa. / [Soittajaa kohden].",
+        "ja": "提案された 上限は / 月に 3回の AI電話。 / [発信者 ごとに]。"
+      },
+      "source": "The petition's own condition: no more than three calls from the same caller to a line in any 30-day period ('a month' rounds the 30 days), with an automated opt-out and a company-specific do-not-call list (TheTelephony; Techlicious; DA 26-940 as summarised). The queue is the plain arithmetic of 'from the same caller', drawn as such; it claims nothing about any group's intent."
+    }
+  ],
+  "ui": {
+    "tag1": { "en": "USA · FCC · DA 26-940", "fi": "USA · FCC · DA 26-940", "ja": "米国 · FCC · DA 26-940" },
+    "tag3": { "en": "PETITION · 31.8.2026", "fi": "HAKEMUS · 31.8.2026", "ja": "申請 · 2026.8.31" },
+    "tag5": { "en": "A REQUEST · NOT YET RULED", "fi": "PYYNTÖ · EI VIELÄ PÄÄTETTY", "ja": "要請中 · 未決定" },
+    "consent": { "en": "CONSENT", "fi": "SUOSTUMUS", "ja": "同意書" },
+    "sign": { "en": "SIGN HERE", "fi": "ALLEKIRJOITA", "ja": "ここに署名" },
+    "unknown": { "en": "UNKNOWN", "fi": "TUNTEMATON", "ja": "非通知" },
+    "calls": { "en": "CALLS", "fi": "PUHELUA", "ja": "件" },
+    "closed": { "en": "CLOSED", "fi": "PÄÄTTYI", "ja": "締切" },
+    "election": { "en": "ELECTION DAY", "fi": "VAALIPÄIVÄ", "ja": "投票日" }
+  },
+  "props": {
+    "form": { "en": "I agree to receive calls / made with an AI voice / on my cellphone. · SIGNATURE · DATE", "why": "the consent form's small print, under its translated heading: English in every master, the caption carries it" },
+    "petition": { "en": "PETITION · FOR A WAIVER · NO CONSENT NEEDED · FOR POLITICAL CALLS · TO CELLPHONES · AI AND RECORDED VOICES · MAX. 3 CALLS / 30 DAYS · per caller", "why": "the petition as a document: its terms, in the FCC's language; the punchline's 'per caller' is already in its small print" },
+    "plate": { "en": "FCC", "why": "the desk's brass plate: the body, named (a label, not a seal or a logo)" },
+    "calendar": { "en": "OCTOBER 2026 · NOVEMBER 2026 · S M T W T F S", "why": "a US wall calendar, so the week starts on Sunday and 3 November is a Tuesday" },
+    "cards": { "en": "AI CALL · 1/3 · 2/3 · 3/3", "why": "every call card says which of its caller's three it is: the arithmetic of 'per caller'" }
+  },
+  "post": {
+    "en": "Today an AI-voiced robocall to your cellphone needs your consent. A political group has asked the FCC to drop that for political calls, and a ruling could come before Election Day. The proposed limit: three calls a month, per caller. It is a request, not a rule. #AI #FCC #robocalls",
+    "fi": "Nyt tekoälyäänellä soitettu robottipuhelu kännykkään vaatii suostumuksesi. Poliittinen ryhmä on pyytänyt FCC:tä poistamaan säännön poliittisilta puheluilta, ja päätös voi tulla ennen vaalipäivää. Ehdotettu raja: kolme puhelua kuussa, soittajaa kohden. Kyse on pyynnöstä, ei säännöstä.",
+    "ja": "今のルールでは、AI音声の自動電話を携帯にかけるにはあなたの同意が必要。ある政治団体がFCCに、政治の電話ではそのルールを外すよう求めた。判断は投票日の前に出る可能性がある。提案された上限は月3回。ただし発信者ごとに。まだ要請の段階で、決定ではない。"
+  }
+}

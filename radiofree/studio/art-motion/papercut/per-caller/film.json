@@ -1,0 +1,25 @@
+{
+ "kind": "engine",
+ "engine": "pc",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/vendor/matter-0.20.0.min.js",
+  "scenes/pc_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "pc_table", "beats": 12, "cues": { "ring": "word:pop" } },
+  { "id": "pc_form", "beats": 12, "cues": { "consent": "word:pop" } },
+  { "id": "pc_desk", "beats": 12, "cues": { "slide": "line:1.start", "asked": "word:pop" } },
+  { "id": "pc_cal", "beats": 12, "cues": { "closed": "line:1", "flip": "line:2.start", "nov": "word:pop" } },
+  { "id": "pc_end", "beats": 12, "cues": { "caller": "word:pop", "fall": "word:pop+2.1", "hit": "word:pop+2.842" } }
+ ],
+ "quiet": [],
+ "keep": []
+}
