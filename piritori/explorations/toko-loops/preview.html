@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toko Loops — review</title>
+<style>
+  html, body { margin: 0; background: #0d0c0b; color: #e8dcc4; font: 14px/1.4 system-ui, sans-serif; }
+  canvas { display: block; width: 100%; height: auto; max-width: 1672px; margin: 0 auto; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 10px 16px; }
+  button { font: inherit; padding: 10px 14px; min-height: 44px; border-radius: 8px; border: 1px solid #5a4a36; background: #241e17; color: #e8dcc4; cursor: pointer; }
+  body.render .bar { display: none; }
+</style></head><body>
+<canvas id="c"></canvas>
+<div class="bar">
+  <button data-clip="idle">Idle</button><button data-clip="lean">Lean in (lowers his voice)</button>
+  <button data-clip="buy_info">BUY INFO</button><button data-clip="sabotage">RISK SABOTAGE</button><button data-clip="leave">LEAVE</button>
+  <button data-reel>Play the review reel</button>
+</div>
+<script type="module">
+import { createStage, pose, CLIPS } from './js/toko-stage.js';
+const cv = document.getElementById('c'), q = new URLSearchParams(location.search);
+const stage = await createStage(cv, { base: './layers/' }), g = cv.getContext('2d');
+// the review reel: every clip in the order a visit plays them, each blended in from where the last one left him
+const NOTES = { idle: 'IDLE — dries the cloth, breathes, blinks · loop 4.8 s', lean: 'LEAN IN — "lowers his voice" · loop 3.6 s',
+  buy_info: 'BUY INFO — slides the note across, the till rings €120 · 3.2 s', sabotage: 'RISK SABOTAGE — looks to the window, knits his brows, shakes his head · 3.4 s',
+  leave: 'LEAVE — a bow from the neck, the cloth raised · 2.6 s' };
+const BTN = { buy_info: [292, 793, 435, 131], sabotage: [737, 790, 481, 134], leave: [1228, 788, 412, 136] };
+const SEQ = [['idle', 9.6], ['lean', 3.6], ['buy_info', 3.2], ['idle', 4.8], ['lean', 1.8], ['sabotage', 3.4], ['idle', 2.4], ['leave', 2.6], ['idle', 2.6]];
+let acc = 0; const SEG = SEQ.map(([n, d]) => { const s = { n, t0: acc, d }; acc += d; return s; }); const DUR = acc;
+const step = (t, f) => Math.floor(t * f + 1e-6) / f, sm = (k) => { k = Math.min(1, Math.max(0, k)); return k * k * (3 - 2 * k); };
+function reelPose(t) {
+  const i = Math.max(0, SEG.findIndex((s) => t < s.t0 + s.d)), s = SEG[i === -1 ? SEG.length - 1 : i], lt = t - s.t0;
+  let p = pose(s.n, step(lt, 10));
+  if (i > 0 && lt < 0.3) { const pr = SEG[i - 1], a = pose(pr.n, step(pr.d, 10)), k = sm(lt / 0.3); const o = {}; for (const c in p) o[c] = a[c] + (p[c] - a[c]) * k; p = o; }
+  return { p, s };
+}
+function label(text, s, t) {
+  g.save(); g.font = '600 22px system-ui, sans-serif'; const w = g.measureText(text).width + 36;
+  g.fillStyle = 'rgba(13,12,11,.82)'; g.fillRect(24, 24, w, 46); g.fillStyle = '#f2b544'; g.fillRect(24, 24, 6, 46);
+  g.fillStyle = '#efe4cf'; g.fillText(text, 42, 55); g.restore();
+  const r = BTN[s.n]; if (r) { const a = 0.55 + 0.35 * Math.sin((t - s.t0) * 6);
+    g.save(); g.strokeStyle = `rgba(242,181,68,${a})`; g.lineWidth = 6; g.strokeRect(r[0] - 4, r[1] - 4, r[2] + 8, r[3] + 8); g.restore(); }
+}
+function reelFrame(t) { const { p, s } = reelPose(t); stage.frame(t, p); label(NOTES[s.n], s, t); }
+window.__review = { fps: 30, frames: Math.round(DUR * 30), dur: DUR,
+  frame(i) { reelFrame(i / 30); return cv.toDataURL('image/jpeg', 0.92); },
+  still(t, clip, lt) { if (clip === 'rest') stage.still(); else if (clip) stage.frame(t, pose(clip, lt)); else reelFrame(t); return cv.toDataURL('image/png'); } };
+// live: the in-game player, driven by the buttons; or the reel on a loop
+let mode = q.get('mode') || 'live', t0 = performance.now();
+document.querySelectorAll('[data-clip]').forEach((b) => b.onclick = () => { mode = 'live'; stage.play(b.dataset.clip, { then: b.dataset.clip === 'lean' ? 'lean' : 'idle' }); });
+document.querySelector('[data-reel]').onclick = () => { mode = 'reel'; t0 = performance.now(); };
+if (q.has('render')) document.body.classList.add('render');
+else (function loop() { const t = (performance.now() - t0) / 1000; if (mode === 'reel') reelFrame(t % DUR); else stage.tick(); requestAnimationFrame(loop); })();
+window.__ready = true;
+</script></body></html>
