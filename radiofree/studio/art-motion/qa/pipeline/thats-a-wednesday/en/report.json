@@ -1,0 +1,151 @@
+{
+ "lang": "en",
+ "end": 33.214285714285715,
+ "holds": [],
+ "captions": [
+  {
+   "id": "question",
+   "text": "Should you ask a chatbot / [when to vote]?",
+   "plain": "Should you ask a chatbot when to vote?",
+   "t0": 0.5,
+   "t1": 6.079,
+   "shown": 5.579,
+   "read": 2.9,
+   "lastWord": 1.47,
+   "widths": [
+    607,
+    333
+   ],
+   "box": {
+    "x": 225,
+    "y": 191,
+    "w": 629,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.25,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "study",
+   "text": "In a September study, [29%] of / chatbot answers on voting were / incomplete, wrong or outdated.",
+   "plain": "In a September study, 29% of chatbot answers on voting were incomplete, wrong or outdated.",
+   "t0": 6.929,
+   "t1": 12.507,
+   "shown": 5.579,
+   "read": 5.5,
+   "lastWord": 9.209,
+   "widths": [
+    688,
+    772,
+    761
+   ],
+   "box": {
+    "x": 143,
+    "y": 191,
+    "w": 794,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.28,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "wrong",
+   "text": "One chatbot even got / [Election Day] wrong.",
+   "plain": "One chatbot even got Election Day wrong.",
+   "t0": 13.457,
+   "t1": 18.936,
+   "shown": 5.479,
+   "read": 3,
+   "lastWord": 14.45,
+   "widths": [
+    516,
+    475
+   ],
+   "box": {
+    "x": 271,
+    "y": 191,
+    "w": 538,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 1.18,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "tuesday",
+   "text": "Election Day is / [Tuesday], November 3.",
+   "plain": "Election Day is Tuesday, November 3.",
+   "t0": 19.886,
+   "t1": 25.364,
+   "shown": 5.479,
+   "read": 2.8,
+   "lastWord": 20.878,
+   "widths": [
+    347,
+    538
+   ],
+   "box": {
+    "x": 260,
+    "y": 191,
+    "w": 560,
+    "h": 160
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.31,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "One chatbot said / November fourth. / [That's a Wednesday].",
+   "plain": "One chatbot said November fourth. That's a Wednesday.",
+   "t0": 26.614,
+   "t1": 33.014,
+   "shown": 6.4,
+   "read": 3.65,
+   "lastWord": 28.032,
+   "widths": [
+    411,
+    429,
+    503
+   ],
+   "box": {
+    "x": 277,
+    "y": 191,
+    "w": 525,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.31,
+    "busy": 0
+   },
+   "native": true
+  }
+ ],
+ "frames": 996,
+ "fps": 30
+}

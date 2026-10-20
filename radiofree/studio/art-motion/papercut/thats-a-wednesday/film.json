@@ -1,0 +1,26 @@
+{
+ "kind": "engine",
+ "engine": "wd",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/vendor/rough-4.6.6.js",
+  "scenes/wd_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "wd_booth", "beats": 12, "cues": { "ask": 0.9, "ball": "word:pop" } },
+  { "id": "wd_answers", "beats": 12, "cues": { "print": 0.3, "fall": "word:pop", "drop1": "line:3.start", "drop3": "line:3" } },
+  { "id": "wd_ticket", "beats": 12, "cues": { "slot": 0.4, "date": "word:pop", "tear": 4.2 } },
+  { "id": "wd_tuesday", "beats": 12, "cues": { "open": 0.3, "tue": "word:pop" } },
+  { "id": "wd_wednesday", "beats": 14, "cues": { "arrive": 0.3, "cal": "line:2", "wed": "word:Wednesday", "card": "line:3+1.25" } }
+ ],
+ "quiet": [],
+ "keep": []
+}

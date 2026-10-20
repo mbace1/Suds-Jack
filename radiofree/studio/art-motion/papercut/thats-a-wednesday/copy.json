@@ -1,0 +1,82 @@
+{
+  "film": "thats-a-wednesday",
+  "cut": "Coxon, DRAFT v1 (20 Oct 2026) — one question: should you ask a chatbot when to vote?",
+  "series": "coxon",
+  "captionSize": "house",
+  "argument": "Don't ask a chatbot when to vote: in a September study, 29% of chatbot voting answers were incomplete, wrong or out of date, and one said 4 November, a Wednesday. Ask your election office.",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question", "role": "setup", "at": "s1+0.5", "until": "s2-0.35", "hold": "s2",
+      "text": {
+        "en": "Should you ask a chatbot / [when to vote]?",
+        "fi": "Kannattaako chatbotilta kysyä, / [milloin äänestää]?",
+        "ja": "チャットボットに / [投票日を] 聞いて いい？"
+      },
+      "source": "The film's question. Peg: NPR, 'People are asking ChatGPT to help them decide how to vote in the midterms', 5 Oct 2026 (voters use chatbots for ballot research). Not quoted."
+    },
+    {
+      "id": "study", "role": "evidence", "at": "s2+0.5", "until": "s3-0.35", "hold": "s3",
+      "text": {
+        "en": "In a September study, [29%] of / chatbot answers on voting were / incomplete, wrong or outdated.",
+        "fi": "Syyskuun tutkimuksessa [29 %] / chatbottien vaalivastauksista / oli puutteellisia, virheellisiä / tai vanhentuneita.",
+        "ja": "9月の 調査では、 チャットボットの / 投票に 関する 回答の [29%]が / 不完全、 誤り、 または 古かった。"
+      },
+      "source": "Institute for Strategic Dialogue, 'Chatbots and the Ballot Box', published 3 Sep 2026: 29% of six chatbots' answers to basic English voting prompts were incomplete, inaccurate or outdated (The Hill, NBC News, Latin Times, Political Wire; the PDF itself could not be opened here). The tests ran in June, so 'a September study', never 'test'. Never 'lie': the 29% includes incomplete answers."
+    },
+    {
+      "id": "wrong", "role": "evidence", "at": "s3+0.6", "until": "s4-0.35", "hold": "s4",
+      "text": {
+        "en": "One chatbot even got / [Election Day] wrong.",
+        "fi": "Yksi chatbot ilmoitti jopa / [vaalipäivän] väärin.",
+        "ja": "ある チャットボットは / [投票日] まで 間違えた。"
+      },
+      "source": "ISD (as above): one of the six chatbots named 4 November 2026 as Election Day, in two responses (NBC News and The Hill summaries of the report). The chatbot is not named, on screen or here."
+    },
+    {
+      "id": "tuesday", "role": "evidence", "at": "s4+0.6", "until": "s5-0.35", "hold": "s5",
+      "text": {
+        "en": "Election Day is / [Tuesday], November 3.",
+        "fi": "Vaalipäivä on / [tiistai] 3. marraskuuta.",
+        "ja": "投票日は / 11月3日の [火曜日]。"
+      },
+      "source": "2 U.S.C. §7: the Tuesday after the first Monday in November. 3 Nov 2026 is a Tuesday (computed, 20 Oct 2026)."
+    },
+    {
+      "id": "last", "role": "punchline", "at": "s5+0.9", "until": "end-0.2", "hold": "end",
+      "text": {
+        "en": "One chatbot said / November fourth. / [That's a Wednesday].",
+        "fi": "Yksi chatbot sanoi / 4. marraskuuta. / [Se on keskiviikko].",
+        "ja": "ある チャットボットは / 11月4日だと 答えた。 / [それは 水曜日]。"
+      },
+      "source": "The station's line, over its own image: 4 Nov 2026 is a Wednesday (computed, 20 Oct 2026). The picture then points to the real source, the local election office."
+    }
+  ],
+  "ui": {
+    "tagMid": { "en": "US MIDTERMS 2026", "fi": "USA:N VÄLIVAALIT 2026", "ja": "米中間選挙 2026" },
+    "dateline": { "en": "ISD STUDY · 3.9.2026", "fi": "ISD:N TUTKIMUS · 3.9.2026", "ja": "ISDの調査 · 2026.9.3" },
+    "sign": { "en": "ASK ME ANYTHING", "fi": "KYSY MITÄ VAIN", "ja": "なんでも聞いて" },
+    "question": { "en": "WHEN DO I VOTE?", "fi": "MILLOIN ÄÄNESTÄN?", "ja": "投票日はいつ？" },
+    "ticketHead": { "en": "ELECTION DAY", "fi": "VAALIPÄIVÄ", "ja": "投票日" },
+    "ticketDate": { "en": "NOV 4", "fi": "4.11.", "ja": "11月4日" },
+    "polling": { "en": "POLLING PLACE", "fi": "ÄÄNESTYSPAIKKA", "ja": "投票所" },
+    "dayTue": { "en": "TUE 3", "fi": "TI 3.11.", "ja": "3日(火)" },
+    "closed": { "en": "POLLS CLOSED", "fi": "SULJETTU", "ja": "投票終了" },
+    "calHead": { "en": "NOVEMBER 2026", "fi": "MARRASKUU 2026", "ja": "2026年11月" },
+    "mon": { "en": "MON", "fi": "MA", "ja": "月" },
+    "tue": { "en": "TUE", "fi": "TI", "ja": "火" },
+    "wed": { "en": "WED", "fi": "KE", "ja": "水" },
+    "ask": { "en": "ASK YOUR LOCAL|ELECTION OFFICE", "fi": "KYSY OMALTA|VAALIVIRANOMAISELTA", "ja": "地元の|選挙管理委員会へ" }
+  },
+  "props": {
+    "sticker": { "en": "I VOTED", "why": "the American polling-place sticker, an artefact: English in every master, the caption carries the meaning" },
+    "gym": { "en": "GYM", "why": "the lettering over a US school gym's doors: an artefact, English in every master" }
+  },
+  "post": {
+    "en": "Should you ask a chatbot when to vote? In a September study by the Institute for Strategic Dialogue, 29% of chatbot answers to basic voting questions were incomplete, wrong or outdated. One chatbot gave Election Day as November 4. It's Tuesday, November 3. Ask your local election office. #Midterms #AI",
+    "fi": "Kannattaako chatbotilta kysyä, milloin äänestää? Institute for Strategic Dialoguen syyskuisessa tutkimuksessa 29 % chatbottien vastauksista perusäänestyskysymyksiin oli puutteellisia, virheellisiä tai vanhentuneita. Yksi chatbot ilmoitti vaalipäiväksi 4. marraskuuta. Se on tiistai 3. marraskuuta. Kysy omalta vaaliviranomaiselta.",
+    "ja": "投票日をチャットボットに聞いていい？ Institute for Strategic Dialogueの9月の調査では、投票の基本的な質問への回答の29%が不完全・誤り・古い情報だった。あるチャットボットは投票日を11月4日と答えた。正しくは11月3日（火）。地元の選挙管理委員会に確認を。"
+  }
+}

@@ -1,0 +1,467 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The station's question (research-brink-next.md §1; plan/films/17-tailgated.md)."
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy approach.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy approach.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy approach.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy approach source",
+  "result": "pass",
+  "why": "LeoLabs tracking via CNN, 19 Oct 2026: Kosmos 2612 closed from 350 km to less th"
+ },
+ {
+  "check": "copy approach pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy nolaw.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy nolaw.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy nolaw.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy nolaw source",
+  "result": "pass",
+  "why": "No collision or damage reported; LeoLabs (via CNN, 19 Oct): the craft strongly d"
+ },
+ {
+  "check": "copy nolaw pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy regard.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy regard.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy regard.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy regard source",
+  "result": "pass",
+  "why": "Outer Space Treaty (1967), Article IX, first sentence: States Parties shall cond"
+ },
+ {
+  "check": "copy regard pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, over its own image: the two satellites nose to tail with the"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.orbit",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.dateline",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.treaty",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "30 words: A Russian military satellite came within 5 km of a Finnish company's radar satellite. No l"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "30 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 562 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 248, 'y': 191, 'w': 584, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 3.80 s (56 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 4.05 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 0.78 → scrim 0.0"
+ },
+ {
+  "check": "width en:approach",
+  "result": "pass",
+  "why": "widest line 773 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:approach",
+  "result": "pass",
+  "why": "box {'x': 142, 'y': 191, 'w': 795, 'h': 247}"
+ },
+ {
+  "check": "reading time en:approach",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 5.35 s (87 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:approach",
+  "result": "pass",
+  "why": "last word up 3.29 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:approach",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:approach",
+  "result": "pass",
+  "why": "picture behind: edge 0.82 → scrim 0.0"
+ },
+ {
+  "check": "width en:nolaw",
+  "result": "pass",
+  "why": "widest line 578 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:nolaw",
+  "result": "pass",
+  "why": "box {'x': 240, 'y': 191, 'w': 600, 'h': 247}"
+ },
+ {
+  "check": "reading time en:nolaw",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.15 s (63 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:nolaw",
+  "result": "pass",
+  "why": "last word up 3.81 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:nolaw",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:nolaw",
+  "result": "pass",
+  "why": "picture behind: edge 0.76 → scrim 0.0"
+ },
+ {
+  "check": "width en:regard",
+  "result": "pass",
+  "why": "widest line 602 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:regard",
+  "result": "pass",
+  "why": "box {'x': 228, 'y': 191, 'w': 624, 'h': 247}"
+ },
+ {
+  "check": "reading time en:regard",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.30 s (66 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:regard",
+  "result": "pass",
+  "why": "last word up 3.70 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:regard",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:regard",
+  "result": "pass",
+  "why": "picture behind: edge 0.77 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 759 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 149, 'y': 191, 'w': 781, 'h': 160}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 3.65 s (53 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.42 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 1.8 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "Who decides how close one satellite may | come to another?"
+ },
+ {
+  "check": "sidecar lines en:approach",
+  "result": "warn",
+  "why": "16 Oct: a Russian military satellite came | within 5 km of a Finnish company's satellite."
+ },
+ {
+  "check": "sidecar lines en:nolaw",
+  "result": "pass",
+  "why": "Nothing collided. But no law or treaty | sets a minimum distance."
+ },
+ {
+  "check": "sidecar lines en:regard",
+  "result": "pass",
+  "why": "The nearest rule: the 1967 Outer Space | Treaty asks for due regard."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "Within five kilometres. Legal minimum | distance: none."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.58 s on this master, fi needs 5.18 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Kuka päättää, kuinka lähelle satelliitti | saa tulla toista satelliittia?"
+ },
+ {
+  "check": "sidecar fi:approach",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 6.18 s"
+ },
+ {
+  "check": "sidecar lines fi:approach",
+  "result": "warn",
+  "why": "16.10. Venäjän sotilassatelliitti tuli alle | 5 km:n päähän suomalaisyhtiön satelliitista."
+ },
+ {
+  "check": "sidecar fi:nolaw",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 5.76 s"
+ },
+ {
+  "check": "sidecar lines fi:nolaw",
+  "result": "pass",
+  "why": "Mitään ei törmännyt. Mutta mikään laki tai | sopimus ei määrää vähimmäisetäisyyttä."
+ },
+ {
+  "check": "sidecar fi:regard",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 5.41 s"
+ },
+ {
+  "check": "sidecar lines fi:regard",
+  "result": "pass",
+  "why": "Lähin sääntö: vuoden 1967 avaruussopimus | edellyttää asianmukaista huomiota."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 4.35 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Alle viisi kilometriä. Lain | vähimmäisetäisyys: ei mitään."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "pass",
+  "why": "5.58 s on this master, ja needs 5.33 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "pass",
+  "why": "衛星が別の衛星にどこまで近づいて | よいか、誰が決める？"
+ },
+ {
+  "check": "sidecar ja:approach",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 7.50 s"
+ },
+ {
+  "check": "sidecar lines ja:approach",
+  "result": "warn",
+  "why": "10月16日、ロシアの軍事衛星が | フィンランド企業の衛星の5km以内に近づいた。"
+ },
+ {
+  "check": "sidecar ja:nolaw",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.50 s"
+ },
+ {
+  "check": "sidecar lines ja:nolaw",
+  "result": "pass",
+  "why": "衝突はなかった。だが最低距離を | 定めた法律も条約もない。"
+ },
+ {
+  "check": "sidecar ja:regard",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 6.00 s"
+ },
+ {
+  "check": "sidecar lines ja:regard",
+  "result": "pass",
+  "why": "最も近いルールは1967年の | 宇宙条約。求めるのは妥当な考慮。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 3.83 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "5キロ以内。法定の最低距離は | なし。"
+ }
+]

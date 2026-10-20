@@ -1,0 +1,73 @@
+{
+  "film": "tailgated",
+  "cut": "The Brink 1, DRAFT v1 (20 Oct) — one question: who decides how close one satellite may come to another?",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "A Russian military satellite came within 5 km of a Finnish company's radar satellite. No law or treaty sets a minimum distance; the nearest rule asks only for due regard.",
+  "langs": ["en", "fi", "ja"],
+  "native_read": { "en": true, "fi": false, "ja": false },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question", "role": "setup", "at": "s1+0.5", "until": "s2-0.35", "hold": "s2",
+      "text": {
+        "en": "Who decides how close / one satellite may come / to [another]?",
+        "fi": "Kuka päättää, kuinka lähelle / satelliitti saa tulla / [toista satelliittia]?",
+        "ja": "衛星が 別の衛星に / どこまで 近づいて よいか、 / 誰が [決める]？"
+      },
+      "source": "The station's question (research-brink-next.md §1; plan/films/17-tailgated.md)."
+    },
+    {
+      "id": "approach", "role": "evidence", "at": "s2+0.6", "until": "s3-0.35", "hold": "s3",
+      "text": {
+        "en": "16 Oct: a Russian military / satellite came [within 5 km] / of a Finnish company's satellite.",
+        "fi": "16.10. Venäjän sotilassatelliitti / tuli [alle 5 km:n] päähän / suomalaisyhtiön satelliitista.",
+        "ja": "10月16日、 ロシアの 軍事衛星が / フィンランド企業の 衛星の / [5km以内] に 近づいた。"
+      },
+      "source": "LeoLabs tracking via CNN, 19 Oct 2026: Kosmos 2612 closed from 350 km to less than 5 km of ICEYE-X36 by early 16 Oct; Meduza: about 4.8 km on 16 Oct. ICEYE-X36 is owned/operated by the US unit of ICEYE, a Finnish company (BigGo, UNITED24, Meduza). Smaller figures conflict and are not used. Re-checked 20 Oct (plan/films/17-tailgated.md)."
+    },
+    {
+      "id": "nolaw", "role": "evidence", "at": "s3+0.6", "until": "s4-0.35", "hold": "s4",
+      "text": {
+        "en": "Nothing collided. / But no law or treaty sets / a [minimum distance].",
+        "fi": "Mitään ei törmännyt. / Mutta mikään laki tai sopimus / ei määrää [vähimmäisetäisyyttä].",
+        "ja": "衝突は なかった。 / だが [最低距離] を 定めた / 法律も 条約も ない。"
+      },
+      "source": "No collision or damage reported; LeoLabs (via CNN, 19 Oct): the craft strongly diverging, close-proximity activity ended. No legal limit: a University of Mississippi space-law professor to Axios, 17 Oct (syndicated copy; not quoted); Diplomacy and Law on Article IX; Scientific American (few international regulations)."
+    },
+    {
+      "id": "regard", "role": "evidence", "at": "s4+0.6", "until": "s5-0.35", "hold": "s5",
+      "text": {
+        "en": "The nearest rule: the 1967 / Outer Space Treaty asks / for [due regard].",
+        "fi": "Lähin sääntö: vuoden 1967 / avaruussopimus edellyttää / [asianmukaista huomiota].",
+        "ja": "最も近い ルールは 1967年の / 宇宙条約。 求めるのは / [妥当な考慮]。"
+      },
+      "source": "Outer Space Treaty (1967), Article IX, first sentence: States Parties shall conduct all their activities in outer space 'with due regard to the corresponding interests of all other States Parties'. It sets no distance. UN text as reproduced by likumi.lv and the Nepal Law Commission; Marchisio's Article IX commentary."
+    },
+    {
+      "id": "last", "role": "punchline", "at": "s5+0.5", "until": "end-0.2", "hold": "end",
+      "text": {
+        "en": "Within five kilometres. / Legal minimum distance: [none].",
+        "fi": "Alle viisi kilometriä. / Lain vähimmäisetäisyys: / [ei mitään].",
+        "ja": "5キロ以内。 / 法定の 最低距離は [なし]。"
+      },
+      "source": "The station's line, over its own image: the two satellites nose to tail with the 5 KM tag between them, and a minimum-distance road sign with its number left blank."
+    }
+  ],
+  "ui": {
+    "orbit": { "en": "LOW EARTH ORBIT", "fi": "MATALA KIERTORATA", "ja": "地球低軌道" },
+    "dateline": { "en": "LEOLABS TRACKING · 15–16.10.2026", "fi": "LEOLABS-SEURANTA · 15.–16.10.2026", "ja": "LEOLABS 追跡 · 2026.10.15–16" },
+    "treaty": { "en": "OUTER SPACE TREATY 1967 · ART. IX", "fi": "AVARUUSSOPIMUS 1967 · 9. ART.", "ja": "宇宙条約 1967 · 第9条" }
+  },
+  "props": {
+    "tag": { "en": "350 KM … 5 KM", "why": "the distance tag on the thread between the two satellites: numbers and a unit, the same in every master" },
+    "book": { "en": "ORBIT / RULES OF THE ROAD", "why": "the rulebook's cover, in English in every master; the caption carries the point" },
+    "page": { "en": "DUE REGARD", "why": "the only words in the book: Article IX's own words, in English in every master (the caption gives each language's treaty wording)" },
+    "sign": { "en": "— KM", "why": "the minimum-distance sign with its number left blank: the punchline as a thing" }
+  },
+  "post": {
+    "en": "A Russian military satellite came within 5 km of a Finnish company's radar satellite on 16 Oct, LeoLabs tracking shows. Nothing collided. No law or treaty sets how close one satellite may come to another. Who decides? #space #satellites #Finland",
+    "fi": "Venäjän sotilassatelliitti tuli 16.10. alle viiden kilometrin päähän suomalaisyhtiön tutkasatelliitista, LeoLabsin seuranta näyttää. Mitään ei törmännyt. Mikään laki tai sopimus ei määrää, kuinka lähelle satelliitti saa tulla toista. Kuka päättää?",
+    "ja": "10月16日、ロシアの軍事衛星がフィンランド企業のレーダー衛星の5km以内に近づいた（LeoLabsの追跡）。衝突はなかった。衛星同士がどこまで近づいてよいかを定めた法律も条約もない。誰が決める？"
+  }
+}

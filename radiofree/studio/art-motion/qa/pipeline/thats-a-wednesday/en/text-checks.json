@@ -1,0 +1,522 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The film's question. Peg: NPR, 'People are asking ChatGPT to help them decide ho"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy study.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy study.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy study.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy study source",
+  "result": "pass",
+  "why": "Institute for Strategic Dialogue, 'Chatbots and the Ballot Box', published 3 Sep"
+ },
+ {
+  "check": "copy study pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy wrong.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy wrong.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy wrong.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy wrong source",
+  "result": "pass",
+  "why": "ISD (as above): one of the six chatbots named 4 November 2026 as Election Day, i"
+ },
+ {
+  "check": "copy wrong pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy tuesday.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy tuesday.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy tuesday.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy tuesday source",
+  "result": "pass",
+  "why": "2 U.S.C. §7: the Tuesday after the first Monday in November. 3 Nov 2026 is a Tue"
+ },
+ {
+  "check": "copy tuesday pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, over its own image: 4 Nov 2026 is a Wednesday (computed, 20 "
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.tagMid",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.dateline",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.sign",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.question",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.ticketHead",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.ticketDate",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.polling",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.dayTue",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.closed",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.calHead",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.mon",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tue",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.wed",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.ask",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "34 words: Don't ask a chatbot when to vote: in a September study, 29% of chatbot voting answers were"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "34 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 607 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 225, 'y': 191, 'w': 629, 'h': 160}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 2.90 s (38 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 4.61 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 0.25 → scrim 0.0"
+ },
+ {
+  "check": "width en:study",
+  "result": "pass",
+  "why": "widest line 772 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:study",
+  "result": "pass",
+  "why": "box {'x': 143, 'y': 191, 'w': 794, 'h': 247}"
+ },
+ {
+  "check": "reading time en:study",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 5.50 s (90 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:study",
+  "result": "pass",
+  "why": "last word up 3.30 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:study",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:study",
+  "result": "pass",
+  "why": "picture behind: edge 0.28 → scrim 0.0"
+ },
+ {
+  "check": "width en:wrong",
+  "result": "pass",
+  "why": "widest line 516 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:wrong",
+  "result": "pass",
+  "why": "box {'x': 271, 'y': 191, 'w': 538, 'h': 160}"
+ },
+ {
+  "check": "reading time en:wrong",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 3.00 s (40 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:wrong",
+  "result": "pass",
+  "why": "last word up 4.49 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:wrong",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:wrong",
+  "result": "pass",
+  "why": "picture behind: edge 1.18 → scrim 0.0"
+ },
+ {
+  "check": "width en:tuesday",
+  "result": "pass",
+  "why": "widest line 538 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:tuesday",
+  "result": "pass",
+  "why": "box {'x': 260, 'y': 191, 'w': 560, 'h': 160}"
+ },
+ {
+  "check": "reading time en:tuesday",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 2.80 s (36 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:tuesday",
+  "result": "pass",
+  "why": "last word up 4.49 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:tuesday",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:tuesday",
+  "result": "pass",
+  "why": "picture behind: edge 0.31 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 503 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 277, 'y': 191, 'w': 525, 'h': 247}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 6.40 s, needs 3.65 s (53 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.98 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 0.31 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "Should you ask a chatbot when to vote?"
+ },
+ {
+  "check": "sidecar lines en:study",
+  "result": "warn",
+  "why": "In a September study, 29% of chatbot answers | on voting were incomplete, wrong or outdated."
+ },
+ {
+  "check": "sidecar lines en:wrong",
+  "result": "pass",
+  "why": "One chatbot even got Election Day wrong."
+ },
+ {
+  "check": "sidecar lines en:tuesday",
+  "result": "pass",
+  "why": "Election Day is Tuesday, November 3."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "One chatbot said November fourth. That's a | Wednesday."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.58 s on this master, fi needs 3.82 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Kannattaako chatbotilta kysyä, milloin | äänestää?"
+ },
+ {
+  "check": "sidecar fi:study",
+  "result": "warn",
+  "why": "5.58 s on this master, fi needs 7.35 s"
+ },
+ {
+  "check": "sidecar lines fi:study",
+  "result": "warn",
+  "why": "Syyskuun tutkimuksessa 29 % chatbottien vaalivastauksista | oli puutteellisia, virheellisiä tai vanhentuneita."
+ },
+ {
+  "check": "sidecar fi:wrong",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 3.71 s"
+ },
+ {
+  "check": "sidecar lines fi:wrong",
+  "result": "pass",
+  "why": "Yksi chatbot ilmoitti jopa vaalipäivän | väärin."
+ },
+ {
+  "check": "sidecar fi:tuesday",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 3.18 s"
+ },
+ {
+  "check": "sidecar lines fi:tuesday",
+  "result": "pass",
+  "why": "Vaalipäivä on tiistai 3. marraskuuta."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "6.40 s on this master, fi needs 4.12 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Yksi chatbot sanoi 4. marraskuuta. Se on | keskiviikko."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "pass",
+  "why": "5.58 s on this master, ja needs 4.00 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "pass",
+  "why": "チャットボットに投票日を聞いて | いい？"
+ },
+ {
+  "check": "sidecar ja:study",
+  "result": "warn",
+  "why": "5.58 s on this master, ja needs 8.33 s"
+ },
+ {
+  "check": "sidecar lines ja:study",
+  "result": "warn",
+  "why": "9月の調査では、チャットボットの投票に関する | 回答の29%が不完全、誤り、または古かった。"
+ },
+ {
+  "check": "sidecar ja:wrong",
+  "result": "pass",
+  "why": "5.48 s on this master, ja needs 4.33 s"
+ },
+ {
+  "check": "sidecar lines ja:wrong",
+  "result": "pass",
+  "why": "あるチャットボットは投票日まで | 間違えた。"
+ },
+ {
+  "check": "sidecar ja:tuesday",
+  "result": "pass",
+  "why": "5.48 s on this master, ja needs 3.33 s"
+ },
+ {
+  "check": "sidecar lines ja:tuesday",
+  "result": "pass",
+  "why": "投票日は11月3日の火曜日。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "6.40 s on this master, ja needs 5.67 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "warn",
+  "why": "あるチャットボットは11月4日だと | 答えた。それは水曜日。"
+ }
+]

@@ -1,0 +1,26 @@
+{
+ "kind": "engine",
+ "engine": "tg",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/vendor/rough-4.6.6.js",
+  "scenes/tg_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "tg_watch", "beats": 12, "cues": { "other": "word:pop" } },
+  { "id": "tg_close", "beats": 12, "cues": { "count": 0.15, "five": "word:pop" } },
+  { "id": "tg_book", "beats": 12, "cues": { "open": 1.0, "none": "word:pop" } },
+  { "id": "tg_regard", "beats": 12, "cues": { "flip": 0.3, "regard": "word:pop" } },
+  { "id": "tg_tail", "beats": 12, "cues": { "tag": "line:1.start", "none": "word:pop" } }
+ ],
+ "quiet": [],
+ "keep": []
+}

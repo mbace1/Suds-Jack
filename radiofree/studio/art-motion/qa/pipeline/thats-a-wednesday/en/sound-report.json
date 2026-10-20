@@ -1,0 +1,87 @@
+{
+ "wav": "/tmp/claude-0/-home-user-Suds-Jack/83745c96-d2f6-5fb2-9ae6-f4818d9d4e36/scratchpad/build-wd/en/score.wav",
+ "measured": {
+  "I": -14.0,
+  "LRA": 5.5,
+  "TP": -4.3
+ },
+ "limiter": [
+  "None:9.8"
+ ],
+ "ducks": [
+  {
+   "t0": 0.5,
+   "t1": 1.87,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption question"
+  },
+  {
+   "t0": 6.929,
+   "t1": 9.609,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption study"
+  },
+  {
+   "t0": 13.457,
+   "t1": 14.85,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption wrong"
+  },
+  {
+   "t0": 19.886,
+   "t1": 21.278,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption tuesday"
+  },
+  {
+   "t0": 26.614,
+   "t1": 28.432,
+   "db": -3.0,
+   "attack": 0.06,
+   "release": 0.3,
+   "why": "caption last"
+  }
+ ],
+ "quiet": [
+  [
+   25.814285714285717,
+   27.4052
+  ]
+ ],
+ "checks": [
+  {
+   "check": "loudness",
+   "result": "pass",
+   "why": "-14.0 LUFS integrated (target -14.0)"
+  },
+  {
+   "check": "true peak",
+   "result": "pass",
+   "why": "-4.3 dBTP (at most -1.0)"
+  },
+  {
+   "check": "silence",
+   "result": "pass",
+   "why": "no unmarked gap over 1.5 s"
+  },
+  {
+   "check": "continuity",
+   "result": "pass",
+   "why": "1% of the film below \u221235 dBFS outside the quiet spans (at most 8%)"
+  },
+  {
+   "check": "coverage",
+   "result": "pass",
+   "why": "30/30 cues have a sound within 40 ms"
+  }
+ ],
+ "placed": 255
+}

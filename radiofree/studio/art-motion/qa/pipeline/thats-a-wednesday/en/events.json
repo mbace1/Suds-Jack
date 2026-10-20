@@ -1,0 +1,336 @@
+{
+ "s1": 0,
+ "s2": 6.428571428571429,
+ "s3": 12.857142857142858,
+ "s4": 19.285714285714285,
+ "s5": 25.714285714285715,
+ "end": 33.214285714285715,
+ "wd_booth.ask": 0.9,
+ "wd_booth.ball": 1.2882,
+ "wd_answers.print": 6.7286,
+ "wd_answers.fall": 7.4286,
+ "wd_answers.drop1": 8.7322,
+ "wd_answers.drop3": 9.2095,
+ "wd_ticket.slot": 13.2571,
+ "wd_ticket.date": 14.1544,
+ "wd_ticket.tear": 17.0571,
+ "wd_tuesday.open": 19.5857,
+ "wd_tuesday.tue": 20.4694,
+ "wd_wednesday.arrive": 26.0143,
+ "wd_wednesday.cal": 27.4252,
+ "wd_wednesday.wed": 28.0316,
+ "wd_wednesday.card": 29.2816,
+ "lang": "en",
+ "holds": [],
+ "cues": {
+  "wd_booth.ask": 0.9,
+  "wd_booth.ball": 1.2882,
+  "wd_answers.print": 6.7286,
+  "wd_answers.fall": 7.4286,
+  "wd_answers.drop1": 8.7322,
+  "wd_answers.drop3": 9.2095,
+  "wd_ticket.slot": 13.2571,
+  "wd_ticket.date": 14.1544,
+  "wd_ticket.tear": 17.0571,
+  "wd_tuesday.open": 19.5857,
+  "wd_tuesday.tue": 20.4694,
+  "wd_wednesday.arrive": 26.0143,
+  "wd_wednesday.cal": 27.4252,
+  "wd_wednesday.wed": 28.0316,
+  "wd_wednesday.card": 29.2816
+ },
+ "words": [
+  {
+   "w": "Should",
+   "t": 0.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "you",
+   "t": 0.659,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "ask",
+   "t": 0.75,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 0.841,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "chatbot",
+   "t": 0.886,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "when",
+   "t": 1.288,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "to",
+   "t": 1.402,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "vote?",
+   "t": 1.47,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "In",
+   "t": 6.929,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "a",
+   "t": 6.997,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "September",
+   "t": 7.042,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "study,",
+   "t": 7.269,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "29%",
+   "t": 7.429,
+   "pop": true,
+   "caption": "study"
+  },
+  {
+   "w": "of",
+   "t": 7.519,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "chatbot",
+   "t": 7.808,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "answers",
+   "t": 7.989,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "on",
+   "t": 8.171,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "voting",
+   "t": 8.239,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "were",
+   "t": 8.399,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "incomplete,",
+   "t": 8.732,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "wrong",
+   "t": 9.005,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "or",
+   "t": 9.141,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "outdated.",
+   "t": 9.209,
+   "pop": false,
+   "caption": "study"
+  },
+  {
+   "w": "One",
+   "t": 13.457,
+   "pop": false,
+   "caption": "wrong"
+  },
+  {
+   "w": "chatbot",
+   "t": 13.548,
+   "pop": false,
+   "caption": "wrong"
+  },
+  {
+   "w": "even",
+   "t": 13.73,
+   "pop": false,
+   "caption": "wrong"
+  },
+  {
+   "w": "got",
+   "t": 13.844,
+   "pop": false,
+   "caption": "wrong"
+  },
+  {
+   "w": "Election",
+   "t": 14.154,
+   "pop": true,
+   "caption": "wrong"
+  },
+  {
+   "w": "Day",
+   "t": 14.359,
+   "pop": true,
+   "caption": "wrong"
+  },
+  {
+   "w": "wrong.",
+   "t": 14.45,
+   "pop": false,
+   "caption": "wrong"
+  },
+  {
+   "w": "Election",
+   "t": 19.886,
+   "pop": false,
+   "caption": "tuesday"
+  },
+  {
+   "w": "Day",
+   "t": 20.09,
+   "pop": false,
+   "caption": "tuesday"
+  },
+  {
+   "w": "is",
+   "t": 20.181,
+   "pop": false,
+   "caption": "tuesday"
+  },
+  {
+   "w": "Tuesday,",
+   "t": 20.469,
+   "pop": true,
+   "caption": "tuesday"
+  },
+  {
+   "w": "November",
+   "t": 20.674,
+   "pop": false,
+   "caption": "tuesday"
+  },
+  {
+   "w": "3.",
+   "t": 20.878,
+   "pop": false,
+   "caption": "tuesday"
+  },
+  {
+   "w": "One",
+   "t": 26.614,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "chatbot",
+   "t": 26.705,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "said",
+   "t": 26.887,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "November",
+   "t": 27.221,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "fourth.",
+   "t": 27.425,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "That's",
+   "t": 27.827,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "a",
+   "t": 27.986,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "Wednesday.",
+   "t": 28.032,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.5,
+   "t1": 6.079
+  },
+  {
+   "id": "study",
+   "t0": 6.929,
+   "t1": 12.507
+  },
+  {
+   "id": "wrong",
+   "t0": 13.457,
+   "t1": 18.936
+  },
+  {
+   "id": "tuesday",
+   "t0": 19.886,
+   "t1": 25.364
+  },
+  {
+   "id": "last",
+   "t0": 26.614,
+   "t1": 33.014
+  }
+ ],
+ "quiet": []
+}

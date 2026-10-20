@@ -1,0 +1,390 @@
+{
+ "s1": 0,
+ "s2": 6.428571428571429,
+ "s3": 12.857142857142858,
+ "s4": 19.285714285714285,
+ "s5": 25.714285714285715,
+ "end": 32.142857142857146,
+ "tg_watch.other": 2.0309,
+ "tg_close.count": 6.5786,
+ "tg_close.five": 8.2031,
+ "tg_book.open": 13.8571,
+ "tg_book.none": 14.9426,
+ "tg_regard.flip": 19.5857,
+ "tg_regard.regard": 21.5757,
+ "tg_tail.tag": 26.2143,
+ "tg_tail.none": 27.5252,
+ "lang": "en",
+ "holds": [],
+ "cues": {
+  "tg_watch.other": 2.0309,
+  "tg_close.count": 6.5786,
+  "tg_close.five": 8.2031,
+  "tg_book.open": 13.8571,
+  "tg_book.none": 14.9426,
+  "tg_regard.flip": 19.5857,
+  "tg_regard.regard": 21.5757,
+  "tg_tail.tag": 26.2143,
+  "tg_tail.none": 27.5252
+ },
+ "words": [
+  {
+   "w": "Who",
+   "t": 0.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "decides",
+   "t": 0.591,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "how",
+   "t": 0.773,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "close",
+   "t": 0.864,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "one",
+   "t": 1.22,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "satellite",
+   "t": 1.311,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "may",
+   "t": 1.538,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "come",
+   "t": 1.629,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "to",
+   "t": 1.963,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "another?",
+   "t": 2.031,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "16",
+   "t": 7.029,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "Oct:",
+   "t": 7.097,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "a",
+   "t": 7.21,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "Russian",
+   "t": 7.256,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "military",
+   "t": 7.438,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "satellite",
+   "t": 7.862,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "came",
+   "t": 8.089,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "within",
+   "t": 8.203,
+   "pop": true,
+   "caption": "approach"
+  },
+  {
+   "w": "5",
+   "t": 8.362,
+   "pop": true,
+   "caption": "approach"
+  },
+  {
+   "w": "km",
+   "t": 8.408,
+   "pop": true,
+   "caption": "approach"
+  },
+  {
+   "w": "of",
+   "t": 8.696,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "a",
+   "t": 8.764,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "Finnish",
+   "t": 8.809,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "company's",
+   "t": 8.991,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "satellite.",
+   "t": 9.219,
+   "pop": false,
+   "caption": "approach"
+  },
+  {
+   "w": "Nothing",
+   "t": 13.457,
+   "pop": false,
+   "caption": "nolaw"
+  },
+  {
+   "w": "collided.",
+   "t": 13.639,
+   "pop": false,
+   "caption": "nolaw"
+  },
+  {
+   "w": "But",
+   "t": 14.086,
+   "pop": false,
+   "caption": "nolaw"
+  },
+  {
+   "w": "no",
+   "t": 14.177,
+   "pop": false,
+   "caption": "nolaw"
+  },
+  {
+   "w": "law",
+   "t": 14.245,
+   "pop": false,
+   "caption": "nolaw"
+  },
+  {
+   "w": "or",
+   "t": 14.336,
+   "pop": false,
+   "caption": "nolaw"
+  },
+  {
+   "w": "treaty",
+   "t": 14.404,
+   "pop": false,
+   "caption": "nolaw"
+  },
+  {
+   "w": "sets",
+   "t": 14.564,
+   "pop": false,
+   "caption": "nolaw"
+  },
+  {
+   "w": "a",
+   "t": 14.897,
+   "pop": false,
+   "caption": "nolaw"
+  },
+  {
+   "w": "minimum",
+   "t": 14.943,
+   "pop": true,
+   "caption": "nolaw"
+  },
+  {
+   "w": "distance.",
+   "t": 15.124,
+   "pop": true,
+   "caption": "nolaw"
+  },
+  {
+   "w": "The",
+   "t": 19.886,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "nearest",
+   "t": 19.977,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "rule:",
+   "t": 20.158,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "the",
+   "t": 20.295,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "1967",
+   "t": 20.386,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "Outer",
+   "t": 20.719,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "Space",
+   "t": 20.856,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "Treaty",
+   "t": 20.992,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "asks",
+   "t": 21.151,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "for",
+   "t": 21.485,
+   "pop": false,
+   "caption": "regard"
+  },
+  {
+   "w": "due",
+   "t": 21.576,
+   "pop": true,
+   "caption": "regard"
+  },
+  {
+   "w": "regard.",
+   "t": 21.667,
+   "pop": true,
+   "caption": "regard"
+  },
+  {
+   "w": "Within",
+   "t": 26.214,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "five",
+   "t": 26.373,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "kilometres.",
+   "t": 26.487,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "Legal",
+   "t": 26.98,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "minimum",
+   "t": 27.116,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "distance:",
+   "t": 27.298,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "none.",
+   "t": 27.525,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.5,
+   "t1": 6.079
+  },
+  {
+   "id": "approach",
+   "t0": 7.029,
+   "t1": 12.507
+  },
+  {
+   "id": "nolaw",
+   "t0": 13.457,
+   "t1": 18.936
+  },
+  {
+   "id": "regard",
+   "t0": 19.886,
+   "t1": 25.364
+  },
+  {
+   "id": "last",
+   "t0": 26.214,
+   "t1": 31.943
+  }
+ ],
+ "quiet": []
+}
