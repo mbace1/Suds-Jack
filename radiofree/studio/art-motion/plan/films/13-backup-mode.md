@@ -1,3 +1,5 @@
+**SCRAPPED, owner, 21 Oct 2026:** "The back up video can be scrapped." Previews kept in `previews/scrapped/`.
+
 # Backup Mode (Toko Slomo, Kallio Noir): pitch, 19 Oct
 
 The owner picked it from the backlog on 19 Oct (`plan/toko-formats.md` #3, research `plan/research-toko.md` §8). It is
