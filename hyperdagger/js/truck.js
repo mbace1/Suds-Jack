@@ -1,8 +1,8 @@
 // TRUCK mode — Clustertruck-style auto-scroll track on the Hyper Dagger body.
 import * as THREE from 'three';
 import { TUNING as T } from './tuning.js?v=85';
-import { Skull } from './enemy.js?v=107';
-import { Convoy } from './convoy.js?v=107';
+import { Skull } from './enemy.js?v=111';
+import { Convoy } from './convoy.js?v=111';
 
 const matOk = new THREE.MeshBasicMaterial({ color: 0x3a342c });
 const matWarn = new THREE.MeshBasicMaterial({ color: 0x6a4030 });

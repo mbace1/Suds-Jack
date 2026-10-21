@@ -1,3 +1,21 @@
+## SDF skull pilot — review build after v59
+**One enemy, two rendering paths.** Open `?skull=sdf` to raymarch the regular
+chaser's skull inside a bounded proxy. Default play and the rest of the roster
+keep their existing visuals. `sdf-preview.html` compares the current voxel skull
+and the SDF skull, with rotation and 12/40-enemy swarm views.
+
+- Sculpted cranium, tapered horns, carved eye/nose cavities, individual teeth,
+  ember eyes and a lower jaw driven by the existing bite animation.
+- Surface depth is written for geometry occlusion. Each camera gets its own
+  local ray origin, including the game's cube-camera passes.
+- Same one-hit health, radius, movement, scoring and voxel death debris.
+  The SDF proxy does not participate in gameplay raycasts; enemy death disposes
+  the per-enemy shader material. Derived skulls keep their own identities.
+- Opt-in experiment, not a full renderer migration or a parity certification.
+  The shading is a local bone/ember rig, not a new physically lit arena pipeline.
+- Module tokens: changed enemy/main/truck/convoy imports at 111; new SDF module
+  at 1; worker cache 81 and generated precache (71 entries).
+
 ## v59 — in progress
 **The menu is the season (HD-019)**
 

@@ -69,3 +69,38 @@ The live page did move. gh-pages `3b8fb141`, 18 Oct 2026, 15:37:18 EEST, message
 The publish carried `hyperdagger/` (minus `test/`, where the site's own two files were left as they were) and the one `hub/versions.json` row. No catalogue line changed, so no token cascade was needed. The deployed `VERSIONS.md` still read "v58 — in progress"; the dated heading in this entry's commit reaches the site with the next Hyper Dagger publish.
 
 Not verified: the live page was not opened. This session's network policy refuses `mbace1.github.io`. Before the push, the offline, press-edges, hud-lock and goal-card gates passed against the site tree, with the site's own hub and toko files.
+
+
+## SDF skull pilot — implemented on codex/hyper-sdf-skull, pending review
+
+**Goal:** compare one signed-distance-field skull with the existing renderer
+before deciding whether to extend SDFs to other enemies.
+
+**Implemented:** bounded-proxy raymarch for the regular Skull behind
+`hyperdagger/?skull=sdf`; comparison controls at
+`hyperdagger/sdf-preview.html` (separate diagnostic route, never the cabinet
+entry). The default renderer is unchanged. Geometry, gameplay hit radius,
+movement, HP and voxel gibs retain the existing contract.
+
+**Verified locally:** `test/sdf-skull.cjs` compiled/rendered the shaders with
+Chromium 153 + SwiftShader, used the comparison/rotation controls, entered the
+real game with START, held the mouse to kill a staged skull, verified material
+disposal, and checked default play. Surface-depth tests put geometry behind
+and in front of the marched surface; the rear plane left a bone pixel
+[133,122,102], and the front green plane fully occluded it [0,255,0].
+`node scripts/hd-shell.mjs --check`, `test/killers.mjs` and syntax/diff checks
+also passed. The whole historical smoke suite was not rerun.
+
+**Performance:** the A/B harness can force GPU completion each frame with
+`?benchmark`. An 18-frame, 12-skull run on this shared software renderer at
+640px width measured voxel median/p95 2300/6200 ms and SDF 33/6066 ms. Both
+had multi-second stalls; this is an unstable diagnostic sample, **not evidence
+of an SDF speedup or a phone/tablet frame budget**. The comparison uses a small
+standalone scene, not the full game's postprocessing and cubemap costs.
+Screenshots and raw measurements live under `test/evidence/sdf-skull/`.
+
+**Next:** test the opt-in game on a physical iPad and desktop GPU, including a
+close skull and a full swarm; refine the sculpt against the owner target.
+
+**Exit:** acceptable hardware frame times plus visual approval before making
+SDFs the default or expanding the roster. Not merged; not live on Hub.

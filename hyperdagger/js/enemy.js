@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createSdfSkull, sdfSkullsEnabled } from './sdf-skull.js?v=1';
 import { VoxelSprite, MODELS, modelFor } from './voxel.js?v=85';
 import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=107';
 
@@ -27,7 +28,7 @@ class VoxelEnemy {
   center(out) { return out.copy(this.pos); }
 
   tryMeshVisual(type) {
-    if (this.meshRoot || this.skinShed) return true;
+    if (this.sdfRoot || this.meshRoot || this.skinShed) return true;
     const kind = MESH_FOR_TYPE[type] ?? type;
     const root = cloneMeshEnemy(kind, !!this.sprite.def.voxels);
     if (!root) return false;
@@ -73,6 +74,7 @@ class VoxelEnemy {
     this.hp -= dmg;
     for (const part of this.parts) part.flash();
     flashMeshRoot(this.meshRoot);
+    if (this.sdfRoot) this.sdfRoot.material.uniforms.flash.value = 1;
   }
 
   deathVoxels() { return this.parts.flatMap(part => part.worldVoxels()); }
@@ -83,6 +85,10 @@ class VoxelEnemy {
     scene.remove(this.group);
     for (const part of this.parts) part.dispose();
     this.meshRoot = null;
+    if (this.sdfRoot) {
+      this.sdfRoot.material.dispose();
+      this.sdfRoot = null;
+    }
   }
 }
 
@@ -118,6 +124,15 @@ export class Skull extends VoxelEnemy {
       this.jawT = Math.random() * Math.PI * 2;
       this.jawOpen = 0;
     }
+    // Only the base chaser opts in; crowns, splitters and minis keep their identity.
+    if (sdfSkullsEnabled && new.target === Skull) {
+      this.sdfRoot = createSdfSkull();
+      this.group.add(this.sdfRoot);
+      for (const part of this.parts) {
+        part.mesh.visible = false;
+        if (part.hull) part.hull.visible = false;
+      }
+    }
     this.type = 'skull';
     this.hp = 1;
     this.radius = 0.75;
@@ -144,6 +159,15 @@ export class Skull extends VoxelEnemy {
       } else {
         this.jawPivot.position.y = -0.44 - this.jawOpen * 0.12;
         this.jawPivot.position.z = -0.05 + this.jawOpen * 0.08;
+      }
+    }
+    if (this.sdfRoot) {
+      this.sdfRoot.material.uniforms.jawOpen.value = this.jawOpen || 0.1;
+      this.sdfRoot.material.uniforms.flash.value = Math.max(0, this.sdfRoot.material.uniforms.flash.value - dt * 8);
+      // VoxelSprite lazily creates a hull during update; it must stay hidden too.
+      for (const part of this.parts) {
+        part.mesh.visible = false;
+        if (part.hull) part.hull.visible = false;
       }
     }
     _dir.y += Math.sin(this.bobT) * 0.5;
