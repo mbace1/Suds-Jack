@@ -31,8 +31,9 @@ first; the one hard date is **The Day After, before the 3 Nov midterms**.
 10. *Tailgated* (The Brink 1), *Per Caller* (Coxon 10) and *That's a Wednesday* (Coxon 11), the first three of the six in
    `plan/IDEAS.md`: **APPROVED 21 Oct (v2 each)**. v1 drafts 20 Oct; owner on v1: Wednesday and Per Caller "should mention
    U.S. elections", so the captions now say US; Tailgated's end slide was polished (shorter line, a roadside
-   minimum-distance sign with no number). Filed: `films/22-10-Brink1-Tailgated.mp4` (Thu 22 Oct 12:50),
-   `films/24-10-Coxon10-Per-Caller.mp4` (Sat 24 Oct 00:50), `films/02-11-Coxon11-Thats-a-Wednesday.mp4` (Mon 2 Nov 00:50).
+   minimum-distance sign with no number). Approval: Mikael, Wed 21 Oct 13:32 Helsinki, "There are 3 more approved ones". Filed (the v2 drafts, unchanged):
+   `films/22-10-Brink1-Tailgated.mp4` (Thu 22 Oct 06:52), `films/22-10-Coxon10-Per-Caller.mp4` (Thu 22 Oct 12:52),
+   `films/22-10-Coxon11-Thats-a-Wednesday.mp4` (Thu 22 Oct 18:52), on the ~6 h cadence set 21 Oct (see `POSTED.md`).
 
 Slots follow the calendar's logic: **00:50** reaches the US evening (US stories), and **12:50** reaches the
 European day (Nordic and EU stories). All times are Helsinki time.

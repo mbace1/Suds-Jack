@@ -1,6 +1,6 @@
 # Film backlog
 
-Every approved pitch that hasn't been posted yet, judged against `POSTED.md`. Kept by Grok Bot. Updated 18 Oct 2026 (Helsinki time, EEST).
+Every approved pitch that hasn't been posted yet, judged against `POSTED.md`. Kept by Grok Bot. Updated 21 Oct 2026 (Helsinki time, EEST).
 
 Looks: papercut is the Radio Free Helsinki news look (`scenes/rfp_kit.js`); clay is the Toko and Teslur look (`clay/*`). See `README.md` ("House style") and `plan/STYLES.md`.
 
@@ -8,6 +8,9 @@ Looks: papercut is the Radio Free Helsinki news look (`scenes/rfp_kit.js`); clay
 |---|---|---|---|---|
 | The Chair Is Taken (Coxon 5, RFH; slate 17 Oct, #1) | `radiofree/studio/art-motion/plan/research-chair.md` | papercut (reuses the *Committee of the Whole* City Hall kit, `scenes/cw_*.js`) | approved by Mikael 18 Oct ("Approved kill switch and chair", commit 1c199d49); scheduled in POSTED.md | — (write when finished) |
 | Kill Switch (RFH; slate 17 Oct, #2) | `radiofree/studio/art-motion/plan/research-killswitch.md` | papercut strand (RFH), in its own new flat safety-leaflet look (`clay/kill-switch/flat.js`, approved 17 Oct) | approved by Mikael 18 Oct ("Approved kill switch and chair", commit 1c199d49); scheduled in POSTED.md | — (write when finished) |
+| Tailgated (Brink 1, RFH; `plan/IDEAS.md`) | `radiofree/studio/art-motion/plan/films/17-tailgated.md` | papercut | **approved v2** by Mikael Wed 21 Oct 13:32 Helsinki ("There are 3 more approved ones"); `films/22-10-Brink1-Tailgated.mp4`; scheduled Thu 22 Oct 06:52 in POSTED.md | `papercut/tailgated/copy.json` post.en (245 chars) |
+| Per Caller (Coxon 10, RFH; `plan/IDEAS.md`) | `radiofree/studio/art-motion/plan/films/16-per-caller.md` | papercut | **approved v2** by Mikael Wed 21 Oct 13:32 Helsinki ("There are 3 more approved ones"); `films/22-10-Coxon10-Per-Caller.mp4`; scheduled Thu 22 Oct 12:52 in POSTED.md | pending: trimmed X copy awaiting Mikael (post.en is 303 chars, over 280) |
+| That's a Wednesday (Coxon 11, RFH; `plan/IDEAS.md`) | `radiofree/studio/art-motion/plan/films/18-thats-a-wednesday.md` | papercut | **approved v2** by Mikael Wed 21 Oct 13:32 Helsinki ("There are 3 more approved ones"); `films/22-10-Coxon11-Thats-a-Wednesday.mp4`; scheduled Thu 22 Oct 18:52 in POSTED.md | pending: trimmed X copy awaiting Mikael (post.en is 329 chars, over 280) |
 | Welcome Home (RFH tech satire 2, after Teslur; slate 17 Oct, #3) | `radiofree/studio/art-motion/plan/research-welcome.md` | clay (Teslur kit; launch-film stage `clay/welcome/film-wh2.js`) | pitch, not approved by Mikael (off the schedule, 18 Oct) | — (write when finished) |
 | Irreversible (Doodle 3, RFH; slate 15 Oct, #4) | `radiofree/studio/art-motion/plan/research-doodle.md` (§1) | papercut | scrapped (owner, 18 Oct) | Doodle says sharing anonymised search data with rivals would do "irreversible harm" to your privacy. EU law already requires that data to be irreversibly anonymised. #DMA #privacy #EU |
 | The Newsreader Was Fake (Big Tech 1, RFH; slate 15 Oct, #3) | `radiofree/studio/art-motion/plan/research-doodle.md` (§3) | papercut | scrapped (`previews/scrapped/15-10-BigTech1-The-Newsreader-Was-Fake-SCRAPPED.mp4`) | — (write when finished) |
