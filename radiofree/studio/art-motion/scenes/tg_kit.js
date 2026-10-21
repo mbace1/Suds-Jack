@@ -437,17 +437,30 @@
     c.save(); c.strokeStyle = C.cream; c.lineWidth = 7; c.setLineDash([52, 44]); c.lineDashOffset = lt * 210;
     c.beginPath(); c.arc(E.x + ox, E.y + oy, ROAD, Math.PI * 1.5 - 0.75, Math.PI * 1.5 + 0.75); c.stroke(); c.restore();
   }
-  /** the sign: a white disc in a red ring, two satellites nose to tail on it, and where the number goes, nothing */
-  const sign = () => sprite('tg_sign', 320, 320, 160, 160, (g) => {
-    g.fillStyle = C.signR; g.beginPath(); g.arc(0, 0, 140, 0, TAU); g.fill();
-    g.fillStyle = C.signW; g.beginPath(); g.arc(0, 0, 110, 0, TAU); g.fill();
+  /** the sign: Europe's minimum-distance sign (two vehicles nose to tail in a red ring, the distance on a plate under
+   *  them), with satellites for the cars, and where the number goes an empty box. v2 (owner, 21 Oct: "the end slide
+   *  text and look may need polish"): the v1 sign hung on a thread through the caption and read as "minus KM". */
+  const sign = () => sprite('tg_sign3', 330, 330, 165, 165, (g) => {
+    g.fillStyle = C.signR; g.beginPath(); g.arc(0, 0, 150, 0, TAU); g.fill();
+    g.fillStyle = C.signW; g.beginPath(); g.arc(0, 0, 117, 0, TAU); g.fill();
     g.fillStyle = C.ink;
-    for (const x of [-46, 46]) { g.fillRect(x - 38, -26, 76, 12); g.fillRect(x - 14, -54, 28, 24); g.fillRect(x + 6, -62, 5, 8); }
-    g.textAlign = 'center'; g.font = '400 70px "Anton-400"'; g.fillText('— KM', 0, 58);
-  }, 8);
+    for (const x of [-46, 46]) {                                           // a satellite in profile: body, mast, panel
+      g.beginPath(); g.roundRect(x - 22, -40, 44, 30, 5); g.fill();
+      g.fillRect(x - 3, -56, 6, 16); g.fillRect(x - 38, -66, 76, 11);
+    }
+    g.strokeStyle = C.ink; g.lineWidth = 5; g.setLineDash([10, 7]);           // the plate: an empty box, then km
+    g.beginPath(); g.roundRect(-66, 10, 70, 58, 6); g.stroke(); g.setLineDash([]);
+    g.textAlign = 'left'; g.font = '400 60px "Anton-400"'; g.fillText('KM', 14, 64);
+  }, 9);
+  /** its post, origin at the foot */
+  const post = () => sprite('tg_post2', 26, 330, 13, 330, (g) => {
+    g.fillStyle = '#8d939c'; g.fillRect(-7, -330, 14, 330); g.fillStyle = '#b9bec5'; g.fillRect(-7, -330, 5, 330);
+    g.fillStyle = '#5b616b'; g.fillRect(-12, -16, 24, 16);
+  }, 6);
+  const SIGN_A = 0.265;                                                       // where it stands on the road, right of the traffic
   SCENES.tg_tail = { draw(c, lt) {
     const id = 'tg_tail', dd = dur(id), tT = at(id, 'tag', 0.5), tN = at(id, 'none', 1.81), T = lt + 4 * 6.43;
-    const cam = { x: Math.sin(lt * 0.3) * 8, y: 0, z: punch(lt, [tN], { kick: 0.03 }) * lerp(1.0, 0.97, ease.io(lt / dd)), fx: 540, fy: 1000 };
+    const cam = { x: Math.sin(lt * 0.3) * 8, y: 0, z: punch(lt, [tN], { kick: 0.03 }) * lerp(1.07, 1.02, ease.io(lt / dd)), fx: 540, fy: 1040 };
     const aR = 0.075 + Math.sin(lt * 0.8) * 0.004, aO = -0.215 + Math.sin(lt * 0.7 + 1) * 0.004, oS = 0.92, rS = 1.1;
     const pR = onRoad(aR, 66), pO = onRoad(aO, 30 + 44 * oS);
     stack(c, [...orbitLayers(lt, -0.03 * T), { sh: road(), d: 0.18, lift: 1.1 }, { fn: (g, ox, oy) => dashes(g, lt, ox, oy), d: 0.18 }, { d: 0.3, fn: (g, ox, oy) => {
@@ -457,13 +470,13 @@
       const nose = [pO[0] + ox + Math.cos(aO) * OTHER_NOSE * oS, pO[1] + oy + Math.sin(aO) * OTHER_NOSE * oS], back = [pR[0] + ox + Math.cos(aR) * RADAR_BACK * rS, pR[1] + oy + Math.sin(aR) * RADAR_BACK * rS];
       const m = thread(g, nose, back, 14);
       hang(g, m, 5, swing(lt, [[tT, 0.22], [tN + 0.4, 0.12]]));
-    } }, { d: 0.4, fn: (g, ox, oy) => {
-      const k = (lt - tN) / 0.5; if (k <= 0) return;
-      const sx = 830 + ox, top = 40, sy = lerp(-260, 720, ease.back(k)) + oy, rot = swing(lt, [[tN + 0.45, 0.16]], 0.02);
-      g.save(); g.translate(sx, top); g.rotate(rot);
-      g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 3.5; g.beginPath(); g.moveTo(8, 0); g.lineTo(8, sy - top - 140 + 12); g.stroke();
-      g.strokeStyle = C.thread; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, sy - top - 140); g.stroke();
-      put(g, sign(), 0, sy - top, { lift: 1.4 });
+    } }, { d: 0.18, fn: (g, ox, oy) => {
+      // on "none" the sign pops up from the roadside like a page in a pop-up book: it lies flat, swings up past
+      // upright, settles, and rocks once
+      const k = (lt - tN + 0.05) / 0.45; if (k <= 0) return;
+      const [bx, by] = onRoad(SIGN_A, 36), up = -0.14 + (1 - ease.back(k)) * 1.5 + swing(lt, [[tN + 0.45, 0.05]], 0.01);
+      g.save(); g.translate(bx + ox, by + oy); g.rotate(up);
+      put(g, post(), 0, 0, { lift: 1.2 }); put(g, sign(), 0, -330 - 122, { lift: 1.4, sc: 0.9 });
       g.restore();
     } }], cam);
     box(c);
