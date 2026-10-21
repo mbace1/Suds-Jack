@@ -2,6 +2,15 @@
 
 **Status: concept and renders sent for approval, 20 Oct 2026. Not wired into the game.**
 
+**v2, 21 Oct** (owner: "Loops review is good but could be slightly more animated"):
+- Idle is 6 s and fuller: bigger drying strokes, shoulders that breathe, a look about with a quizzical brow, finger
+  taps and two blinks.
+- Lean talks: small nods on the syllables, and the cloth hand lifts on the important word.
+- Buy info, sabotage and leave all act bigger. Leave has three waves.
+- The lantern swings further and the steam is thicker.
+- The fills behind moving pieces are shaded, so a gap reads as the cut-out's shadow and not as a light smear.
+- Render: `renders/toko-loops-review-v2.mp4`.
+
 Owner, 20 Oct: "Can you look at Project Piritori and the Toko Slomo concept and create looped animations that can act
 in game in the narrative scene? Approve concept and renders."
 
@@ -40,11 +49,11 @@ Each clip maps to one of the scene's own states.
 
 | Clip | When | What he does | Length |
 |---|---|---|---|
-| `idle` | the scene is open | dries the cloth round his fist, two breaths, a slow look about, one blink | 4.8 s loop |
+| `idle` | the scene is open | dries the cloth round his fist, breathes into his shoulders, looks about with a quizzical brow, taps the note, blinks | 6.0 s loop |
 | `lean` | "Toko lowers his voice": while his line is on screen | leans over the counter, stops drying, brows down and in, a small nod on the word | 3.6 s loop |
 | `buy_info` | BUY INFO | lifts his hand, slides the note across, the till rings €120, brows up, a nod; the note is yours | 3.2 s, then idle |
 | `sabotage` | RISK SABOTAGE | looks to the window, sets the cloth down, knits his brows, a slow shake of the head | 3.4 s, then idle |
-| `leave` | LEAVE | a bow from the neck, the cloth raised in a wave | 2.6 s, then idle |
+| `leave` | LEAVE | a bow from the neck, the cloth raised in three waves | 2.8 s, then idle |
 
 Frame zero of every clip, and `still()`, is the approved painting rebuilt from its pieces. Against the source PNG the
 mean difference is 0.17/765, and what remains is anti-aliasing at piece edges. That frame is the reduced-motion and

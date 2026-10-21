@@ -79,11 +79,18 @@ def rowfill(img, m, box, vblur=3, valid=None):
 dil = lambda m, k: cv2.dilate(m.astype(np.uint8), np.ones((k, k), np.uint8)) > 0
 keep = lambda filled, before, m: np.where(dil(m, 2)[..., None], filled, before)   # fill only under the piece; outside it the painting stays as painted
 plate = keep(rowfill(im, dil(toko, 5), (520, 80, 1000, 540)), im, toko)
+# what is revealed behind a moving piece is in that piece's shadow (v2, the bigger moves of 21 Oct): darken the fill,
+# softly, so a gap reads as the shadow a cut-out throws on the card behind it rather than as a light smear
+def shade(img, m, k=0.68, soft=5):
+    w = cv2.GaussianBlur(m.astype(np.float32), (0, 0), soft)[..., None]
+    return (img.astype(np.float32) * (1 - (1 - k) * w)).clip(0, 255).astype(np.uint8)
+plate = shade(plate, toko)
 # torso: fill under the head's lower half (the collar) and under both forearms, inside the torso's own reach
 collar = dil(head, 3) & poly([(690, 285), (840, 285), (840, 356), (690, 356)])
 under = (dil(foreR, 3) | dil(foreL, 3)) & poly([(600, 300), (930, 300), (930, 458), (600, 458)])
 torso_full = torso | collar | (under & ~poly([(760, 455), (960, 455), (960, 520), (760, 520)]))
 torso_img = rowfill(im, dil(head | foreR | foreL, 2) & ~torso, (560, 250, 980, 520), valid=torso & ~dil(head | foreR | foreL, 2))
+torso_img = shade(torso_img, dil(head | foreR | foreL, 2) & ~torso, 0.62, 3)
 # extend the torso 14 px below the counter edge so a breath never opens a gap; the counter hides it
 for x, y in counter_y.items():
     y = int(round(y)); torso_full[y:y + 14, x] = torso_full[y, x] or torso_full[y - 1, x]

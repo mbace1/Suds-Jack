@@ -29,45 +29,56 @@ const REST = { 'torso.s': 1, 'torso.sy': 1, 'torso.ty': 0, 'head.rot': 0, 'head.
 const loopKeys = (period, n, a, b, phase = 0) => {   // n cycles of a → b → a over the period
   const k = []; for (let i = 0; i <= n * 2; i++) k.push([phase + (i / (n * 2)) * period, i % 2 ? b : a]); return k; };
 const blinkAt = (t0) => [[0, 0], [t0, 0], [t0 + 0.1, 1], [t0 + 0.2, 1], [t0 + 0.3, 0]];
+// v2 (owner, 21 Oct: "good but could be slightly more animated"): bigger strokes, a look about with a quizzical brow,
+// finger taps, two blinks, talking nods while he lowers his voice, and fuller acting on every choice
 export const CLIPS = {
-  // drying the cloth round his fist, two breaths, a slow look about, one blink
-  idle: { dur: 4.8, loop: true, keys: {
-    'torso.sy': loopKeys(4.8, 2, 1, 1.007),
-    'fore_r.rot': loopKeys(4.8, 4, 0, 3 * D), 'fore_r.tx': loopKeys(4.8, 4, 0, 3, 0.3), 'fore_r.ty': loopKeys(4.8, 4, 0, -2, 0.15),
-    'head.rot': [[0, 0], [1.6, 1.2 * D], [3.2, -0.6 * D], [4.8, 0]],
-    'hand_l.rot': [[0, 0], [2.2, 0], [2.4, -1.2 * D], [2.6, 0], [4.8, 0]],
-    blink: blinkAt(3.5) } },
-  // "Toko lowers his voice": he leans over the counter, the cloth stops, the brows come down and in
-  lean: { dur: 3.6, loop: true, hold: { 'torso.s': 1.022, 'torso.ty': 5, 'head.ty': 9, 'head.rot': -2.2 * D, 'head.s': 1.015,
-    'brow_l.rot': 7 * D, 'brow_r.rot': -7 * D, 'brow_l.ty': 2, 'brow_r.ty': 2, 'fore_r.rot': -1 * D, 'fore_r.ty': 2 }, keys: {
-    'torso.sy': loopKeys(3.6, 1, 1, 1.006),
-    'head.ty': [[0, 9], [1.0, 9], [1.3, 12], [1.6, 9], [3.6, 9]],                  // a small nod on the important word
-    blink: blinkAt(2.5) } },
-  // BUY INFO: the hand lifts, slides the note across the counter to you, the till rings up the price, he nods
-  buy_info: { dur: 3.2, loop: false, hold: { 'torso.s': 1.022, 'torso.ty': 5, 'head.ty': 9, 'head.rot': -2.2 * D, 'head.s': 1.015 }, keys: {
-    'hand_l.rot': [[0, 0], [0.3, -3 * D], [0.6, -1 * D], [1.2, 0]],
-    'hand_l.tx': [[0, 0], [0.4, 0], [0.9, -16], [1.3, -16], [1.9, 0]], 'hand_l.ty': [[0, 0], [0.4, -4], [0.9, 12], [1.3, 12], [1.9, 0]],
-    'note.tx': [[0, 0], [0.4, 0], [0.9, -30], [2.4, -30], [2.9, -40]], 'note.ty': [[0, 0], [0.4, 0], [0.9, 30], [2.4, 30], [2.9, 52]],
-    'note.rot': [[0, 0], [0.9, -6 * D], [2.9, -9 * D]], 'note.a': [[0, 1], [2.5, 1], [2.9, 0]],
-    'brow_l.ty': [[0, 2], [1.4, 2], [1.6, -4], [2.4, -4], [2.8, 0]], 'brow_r.ty': [[0, 2], [1.4, 2], [1.6, -4], [2.4, -4], [2.8, 0]],
-    'brow_l.rot': [[0, 7 * D], [1.4, 7 * D], [1.6, 0], [3.2, 0]], 'brow_r.rot': [[0, -7 * D], [1.4, -7 * D], [1.6, 0], [3.2, 0]],
-    'head.ty': [[0, 9], [1.6, 9], [1.8, 15], [2.0, 9], [3.2, 4]],
+  // drying the cloth round his fist, breathing into his shoulders, a look about with a brow, finger taps, two blinks
+  idle: { dur: 6.0, loop: true, keys: {
+    'torso.sy': loopKeys(6.0, 2, 1, 1.012), 'torso.s': loopKeys(6.0, 2, 1, 1.004),
+    'fore_r.rot': loopKeys(6.0, 6, 0, 5 * D), 'fore_r.tx': loopKeys(6.0, 6, 0, 5, 0.25), 'fore_r.ty': loopKeys(6.0, 6, 0, -4, 0.12),
+    'head.rot': [[0, 0], [0.9, 2.6 * D], [2.1, 2.6 * D], [3.0, -2.2 * D], [4.4, -2.2 * D], [5.3, 0], [6.0, 0]],
+    'head.tx': [[0, 0], [0.9, 3], [2.1, 3], [3.0, -3], [4.4, -3], [5.3, 0], [6.0, 0]],
+    'head.ty': loopKeys(6.0, 2, 0, 1.5),
+    'brow_l.ty': [[0, 0], [1.0, -4], [1.9, -4], [2.3, 0], [6.0, 0]], 'brow_r.ty': [[0, 0], [3.1, 0], [3.4, -4], [4.2, -4], [4.6, 0], [6.0, 0]],
+    'hand_l.rot': [[0, 0], [2.2, 0], [2.3, -2.6 * D], [2.4, 0], [2.6, -2.6 * D], [2.7, 0], [6.0, 0]],
+    blink: [[0, 0], [1.4, 0], [1.5, 1], [1.6, 1], [1.7, 0], [4.8, 0], [4.9, 1], [5.0, 1], [5.1, 0], [5.2, 1], [5.3, 0]] } },
+  // "Toko lowers his voice": he leans over the counter, brows down and in, and talks: small nods on the syllables,
+  // the cloth hand lifting on the important word
+  lean: { dur: 3.6, loop: true, hold: { 'torso.s': 1.03, 'torso.ty': 7, 'head.ty': 12, 'head.rot': -3 * D, 'head.s': 1.02,
+    'brow_l.rot': 8 * D, 'brow_r.rot': -8 * D, 'brow_l.ty': 2, 'brow_r.ty': 2, 'fore_r.rot': -1 * D, 'fore_r.ty': 2 }, keys: {
+    'torso.sy': loopKeys(3.6, 1, 1, 1.01),
+    'head.ty': [[0, 12], [0.3, 14], [0.5, 12], [0.8, 15], [1.0, 12], [1.3, 17], [1.6, 12], [1.9, 14], [2.1, 12], [3.6, 12]],
+    'head.rot': [[0, -3 * D], [0.8, -4.2 * D], [1.6, -2 * D], [2.4, -3.6 * D], [3.6, -3 * D]],
+    'brow_l.ty': [[0, 2], [1.2, 2], [1.35, -3], [1.8, -3], [2.1, 2], [3.6, 2]], 'brow_r.ty': [[0, 2], [1.2, 2], [1.35, -3], [1.8, -3], [2.1, 2], [3.6, 2]],
+    'fore_r.rot': [[0, -1 * D], [1.1, -1 * D], [1.35, -6 * D], [1.9, -6 * D], [2.3, -1 * D], [3.6, -1 * D]],
+    blink: blinkAt(2.7) } },
+  // BUY INFO: the hand lifts, slides the note across the counter to you, the till rings up the price, brows up, a nod
+  buy_info: { dur: 3.2, loop: false, hold: { 'torso.s': 1.03, 'torso.ty': 7, 'head.ty': 12, 'head.rot': -3 * D, 'head.s': 1.02 }, keys: {
+    'hand_l.rot': [[0, 0], [0.3, -4.5 * D], [0.6, -1 * D], [1.2, 0]],
+    'hand_l.tx': [[0, 0], [0.4, 0], [0.9, -24], [1.3, -24], [1.9, 0]], 'hand_l.ty': [[0, 0], [0.4, -6], [0.9, 18], [1.3, 18], [1.9, 0]],
+    'note.tx': [[0, 0], [0.4, 0], [0.9, -44], [2.4, -44], [2.9, -56]], 'note.ty': [[0, 0], [0.4, 0], [0.9, 44], [2.4, 44], [2.9, 64]],
+    'note.rot': [[0, 0], [0.9, -8 * D], [2.9, -12 * D]], 'note.a': [[0, 1], [2.5, 1], [2.9, 0]],
+    'brow_l.ty': [[0, 2], [1.4, 2], [1.6, -6], [2.4, -6], [2.8, 0]], 'brow_r.ty': [[0, 2], [1.4, 2], [1.6, -6], [2.4, -6], [2.8, 0]],
+    'brow_l.rot': [[0, 8 * D], [1.4, 8 * D], [1.6, -2 * D], [2.6, -2 * D], [3.2, 0]], 'brow_r.rot': [[0, -8 * D], [1.4, -8 * D], [1.6, 2 * D], [2.6, 2 * D], [3.2, 0]],
+    'head.ty': [[0, 12], [1.6, 12], [1.8, 20], [2.0, 12], [2.15, 17], [2.3, 12], [3.2, 4]],
+    'torso.sy': [[0, 1], [1.5, 1], [1.8, 1.012], [2.6, 1]],
     till: [[0, 0], [1.1, 0], [1.2, 1], [3.2, 1]] }, events: [[1.2, 'till'], [0.9, 'paper']] },
-  // RISK SABOTAGE: he looks to the window, the cloth goes down, the brows knit, a slow shake of the head
+  // RISK SABOTAGE: he looks hard at the window, sets the cloth down, the brows knit, a slow shake of the head, a sigh
   sabotage: { dur: 3.4, loop: false, keys: {
-    'head.rot': [[0, 0], [0.4, 3.5 * D], [1.2, 3.5 * D], [1.5, -2.5 * D], [1.8, 2.5 * D], [2.1, -2.5 * D], [2.4, 0.8 * D], [3.4, 0]],
-    'head.tx': [[0, 0], [0.4, 6], [1.2, 6], [2.4, 1], [3.4, 0]],
-    'brow_l.rot': [[0, 0], [0.5, 10 * D], [2.8, 10 * D], [3.4, 0]], 'brow_r.rot': [[0, 0], [0.5, -10 * D], [2.8, -10 * D], [3.4, 0]],
-    'brow_l.ty': [[0, 0], [0.5, 3], [2.8, 3], [3.4, 0]], 'brow_r.ty': [[0, 0], [0.5, 3], [2.8, 3], [3.4, 0]],
-    'fore_r.rot': [[0, 0], [0.5, 4 * D], [2.8, 4 * D], [3.4, 0]], 'fore_r.ty': [[0, 0], [0.5, 7], [2.8, 7], [3.4, 0]],
-    'torso.sy': [[0, 1], [0.6, 1.009], [1.4, 1.0], [3.4, 1]],                    // a long breath out
+    'head.rot': [[0, 0], [0.4, 5.5 * D], [1.2, 5.5 * D], [1.5, -4 * D], [1.8, 4 * D], [2.1, -4 * D], [2.4, 1 * D], [3.4, 0]],
+    'head.tx': [[0, 0], [0.4, 10], [1.2, 10], [2.4, 1], [3.4, 0]], 'head.ty': [[0, 0], [0.4, -2], [1.2, -2], [2.6, 4], [3.4, 0]],
+    'brow_l.rot': [[0, 0], [0.5, 12 * D], [2.8, 12 * D], [3.4, 0]], 'brow_r.rot': [[0, 0], [0.5, -12 * D], [2.8, -12 * D], [3.4, 0]],
+    'brow_l.ty': [[0, 0], [0.5, 4], [2.8, 4], [3.4, 0]], 'brow_r.ty': [[0, 0], [0.5, 4], [2.8, 4], [3.4, 0]],
+    'fore_r.rot': [[0, 0], [0.5, 7 * D], [2.8, 7 * D], [3.4, 0]], 'fore_r.ty': [[0, 0], [0.5, 10], [2.8, 10], [3.4, 0]],
+    'torso.sy': [[0, 1], [0.6, 1.015], [1.4, 1.0], [2.6, 1.012], [3.4, 1]],          // a breath in, out, and a sigh
     blink: [[0, 0], [2.5, 0], [2.6, 1], [2.7, 1], [2.8, 0]] }, events: [[0.4, 'look']] },
-  // LEAVE: a small bow from the neck and the cloth raised in a wave
-  leave: { dur: 2.6, loop: false, keys: {
-    'head.ty': [[0, 0], [0.3, 13], [0.7, 13], [1.0, 0]], 'head.s': [[0, 1], [0.3, 0.985], [0.7, 0.985], [1.0, 1]],
-    'torso.s': [[0, 1], [0.3, 1.01], [1.0, 1]],
-    'fore_r.rot': [[0, 0], [0.9, 0], [1.2, -11 * D], [1.4, -7 * D], [1.6, -11 * D], [1.8, -7 * D], [2.0, -11 * D], [2.6, 0]],
-    'fore_r.ty': [[0, 0], [0.9, 0], [1.2, -6], [2.0, -6], [2.6, 0]],
+  // LEAVE: a bow from the neck and the cloth raised in a wave, three waves
+  leave: { dur: 2.8, loop: false, keys: {
+    'head.ty': [[0, 0], [0.3, 20], [0.75, 20], [1.05, 0]], 'head.s': [[0, 1], [0.3, 0.975], [0.75, 0.975], [1.05, 1]],
+    'torso.s': [[0, 1], [0.3, 1.018], [1.05, 1]],
+    'fore_r.rot': [[0, 0], [0.9, 0], [1.2, -13 * D], [1.38, -8 * D], [1.56, -13 * D], [1.74, -8 * D], [1.92, -13 * D], [2.1, -8 * D], [2.8, 0]],
+    'fore_r.ty': [[0, 0], [0.9, 0], [1.2, -7], [2.1, -7], [2.8, 0]],
+    'brow_l.ty': [[0, 0], [1.1, 0], [1.3, -5], [2.2, -5], [2.6, 0]], 'brow_r.ty': [[0, 0], [1.1, 0], [1.3, -5], [2.2, -5], [2.6, 0]],
     blink: blinkAt(0.35) }, events: [[0.3, 'bow']] },
 };
 
@@ -97,13 +108,13 @@ export async function createStage(canvas, { base = './layers/', seed = 11 } = {}
   const lid = (k) => { const p = pc[k], c = document.createElement('canvas'); c.width = p.w; c.height = p.h; const x = c.getContext('2d');
     x.drawImage(img[k], 0, 0); x.globalCompositeOperation = 'source-in'; x.fillStyle = `rgb(${L.lid_rgb})`; x.fillRect(0, 0, p.w, p.h); return c; };
   const LID = { eye_l: lid('eye_l'), eye_r: lid('eye_r') };
-  const R = rng(seed), steamPuffs = Array.from({ length: 5 }, (_, i) => ({ off: R() * 5, dx: -10 - R() * 30, s: 0.7 + R() * 0.5, seed: 100 + i }));
+  const R = rng(seed), steamPuffs = Array.from({ length: 7 }, (_, i) => ({ off: R() * 5, dx: -10 - R() * 36, s: 0.75 + R() * 0.55, seed: 100 + i }));
   const drops = Array.from({ length: 70 }, () => ({ x: R(), y: R(), l: 12 + R() * 16, v: 0.8 + R() * 0.5 }));
   const GLASS = [1400, 32, 1664, 446];
 
   function ambient(t) {
     // the lantern swings a degree and a half on its cord (6 held frames a swing)
-    const ls = Math.sin(step(t + 0.37, 6) * TAU / 3.1) * 1.4 * D;
+    const ls = Math.sin(step(t + 0.37, 6) * TAU / 3.1) * 2.2 * D;
     g.save(); about('lantern', PIVOTS.lantern, ls); put('lantern'); g.restore();
     // the tram rocks on its bogies and its headlights breathe in the rain
     const rock = step(t, 8), ry = Math.round(Math.sin(rock * TAU / 1.7) * 1);
@@ -119,7 +130,7 @@ export async function createStage(canvas, { base = './layers/', seed = 11 } = {}
     g.restore();
     // steam off the pot: cut-paper puffs that rise, swell and thin, 8 fps, never two in step
     const ts = step(t, 8);
-    for (const p of steamPuffs) { const k = ((ts + p.off) % 5) / 5, x = 262 + p.dx * k, y = 318 - k * 130, r = (10 + k * 34) * p.s, a = 0.26 * Math.sin(k * Math.PI);
+    for (const p of steamPuffs) { const k = ((ts + p.off) % 5) / 5, x = 262 + p.dx * k, y = 318 - k * 130, r = (10 + k * 34) * p.s, a = 0.34 * Math.sin(k * Math.PI);
       const pr = rng(p.seed); g.fillStyle = `rgba(226,214,192,${a})`; g.beginPath();
       for (let i = 0; i < 9; i++) { const an = i / 9 * TAU, rr = r * (0.75 + pr() * 0.4); g.lineTo(x + Math.cos(an) * rr, y + Math.sin(an) * rr * 0.8); }
       g.closePath(); g.fill(); }
