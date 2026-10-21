@@ -1,6 +1,7 @@
 # Toko Slomo, acted — looped animation for the noodle-bar narrative scene
 
-**Status: concept and renders sent for approval, 20 Oct 2026. Not wired into the game.**
+**Status: approved 21 Oct 2026 ("Approved, put it in the game"). In the game as `scene-toko-rig-v01`, v4.70, in
+mbace1/piritori-eden PR #105 (web build; Godot still shows the 3D Toko). In-game stills: `renders/in-game-*.jpg`.**
 
 **v2, 21 Oct** (owner: "Loops review is good but could be slightly more animated"):
 - Idle is 6 s and fuller: bigger drying strokes, shoulders that breathe, a look about with a quizzical brow, finger
