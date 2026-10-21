@@ -28,6 +28,12 @@ first; the one hard date is **The Day After, before the 3 Nov midterms**.
 7. *Welcome Home sequel* (backlog pick 3): **shelved 19 Oct** after the first stills: the owner wants the original claymation style, not devices and a crowd of people (`plan/films/14-guest.md`).
 6. *Backup Mode* (backlog pick 2, Toko Slomo): **v2 built 20 Oct, waiting for approval**: `previews/20-10-Backup-Mode-v2-en.mp4`. v2 fixes the owner's note on v1 ("face mask clips when the bed is bent"): he now lies along the bed's own fold, and the mask rides clear of the head section. v1 was `previews/19-10-Backup-Mode-en.mp4` (24.2 s; no slate, bug or sign-off; Toko's card held 5.2 s). Clay, Kallio noir (`plan/films/13-backup-mode.md`). The anniversary of the 20 Oct 2025 outage is tomorrow. It is a US story, so a 00:50 window.
 
+10. *Tailgated* (The Brink 1), *Per Caller* (Coxon 10) and *That's a Wednesday* (Coxon 11), the first three of the six in
+   `plan/IDEAS.md`: **APPROVED 21 Oct (v2 each)**. v1 drafts 20 Oct; owner on v1: Wednesday and Per Caller "should mention
+   U.S. elections", so the captions now say US; Tailgated's end slide was polished (shorter line, a roadside
+   minimum-distance sign with no number). Filed: `films/22-10-Brink1-Tailgated.mp4` (Thu 22 Oct 12:50),
+   `films/24-10-Coxon10-Per-Caller.mp4` (Sat 24 Oct 00:50), `films/02-11-Coxon11-Thats-a-Wednesday.mp4` (Mon 2 Nov 00:50).
+
 Slots follow the calendar's logic: **00:50** reaches the US evening (US stories), and **12:50** reaches the
 European day (Nordic and EU stories). All times are Helsinki time.
 

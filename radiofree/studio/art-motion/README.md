@@ -72,7 +72,7 @@ cue sheet; `pipeline/build.py` renders, captions, scores, mixes and checks a mas
 
 Finished films go in `films/` named `DD-MM-SeriesN-Title.mp4`: the release date, the series
 and its number, the title — hyphens for spaces, so the link works anywhere unescaped. Series:
-`Doodle` (the Google/Doodle stories), `Coxon` (Jacob Coxon, and AI governance after him), `BigTech` (the other platforms), `Nordic` (the Nordics), `Toko` (the Toko thinkers).
+`Doodle` (the Google/Doodle stories), `Coxon` (Jacob Coxon, and AI governance after him), `BigTech` (the other platforms), `Nordic` (the Nordics), `Toko` (the Toko thinkers), `Brink` (The Brink: military tech, espionage and surveillance on the front lines; owner, 19 Oct) and `Global` (global tech, the dystopian near future; owner, 19 Oct).
 E.g. `14-10-Doodle1-Biodiversity-Fund.mp4`. The repo is public, so each file has a direct
 download link: `https://raw.githubusercontent.com/mbace1/Suds-Jack/<commit>/radiofree/studio/art-motion/films/<name>`.
 
