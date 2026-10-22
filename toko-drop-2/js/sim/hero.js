@@ -18,8 +18,8 @@
 // trigger; `dash` an edge, true on the step it is asked. 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=6';
-import { BEHAVIOUR } from './species/index.js?v=6';   // read at run time only (a species' hitTest)
+import { TUNING } from '../tuning.js?v=7';
+import { BEHAVIOUR } from './species/index.js?v=7';   // read at run time only (a species' hitTest)
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -133,8 +133,14 @@ export function heroStep(w, input, dt, api) {
   // e.touches(): main.js:10166-10168), else centre to centre. The bodies are
   // the ones standing when the cut starts: one a cut brings into being is
   // judged from the next step, as world.js steps a snapshot of them.
+  //
+  // The CUT dash (owner, 2026-10-22: "likely we want dashes that go through
+  // and do damage in the end") is the same cut from level 0, as damage:
+  // every body it passes takes TUNING.hero.cut.hits, a boss's included; from
+  // level 1 it kills what is not a boss outright, as PASS does.
+  const cutting = w.dashMode === 'cut';
   if (dashing && w.dashMode === 'push') shove(w, h, api);
-  else if (dashing && h.dashLevel >= 1) {
+  else if (dashing && (h.dashLevel >= 1 || cutting)) {
     const R = H.dashKill.reach;
     for (const g of w.gels.slice()) {
       if (g.state !== 'active' || !g.alive || g.dashedBy === h.dashId) continue;
@@ -142,11 +148,11 @@ export function heroStep(w, input, dt, api) {
       if (!(B?.hitTest ? B.hitTest(w, g, h.x, h.z, R) : Math.hypot(g.x - h.x, g.z - h.z) < g.r + R)) continue;
       g.dashedBy = h.dashId;
       w.events.push({ type: 'dashCut', x: g.x, z: g.z, id: g.id });
-      if (!g.isBoss) { api.kill(w, g, 'dash'); continue; }
-      // a boss takes it as one of the hero's hits: the flash, the squash, and
-      // the hit event (the ripple from the side the hero came through, the
-      // sound) that world.js heroBulletsHit sends for a bullet
-      g.hp -= H.dashKill.bossHits; g.flash = T.gel.flash; g.sqV += T.gel.sq.hit;
+      if (!g.isBoss && h.dashLevel >= 1) { api.kill(w, g, 'dash'); continue; }
+      // a boss takes it as one of the hero's hits (a CUT, as its hits): the
+      // flash, the squash, and the hit event (the ripple from the side the
+      // hero came through, the sound) that world.js heroBulletsHit sends for a bullet
+      g.hp -= cutting ? H.cut.hits : H.dashKill.bossHits; g.flash = T.gel.flash; g.sqV += T.gel.sq.hit;
       w.events.push({ type: 'hit', x: h.x, z: h.z, id: g.id, kind: g.kind });
       if (g.hp <= 0) api.kill(w, g, 'dash');
     }

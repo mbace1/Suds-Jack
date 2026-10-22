@@ -2,11 +2,11 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=6';
+import { TUNING } from './tuning.js?v=7';
 
 const STR = {
   en: {
-    dash: 'DASH', push: 'PUSH', pass: 'PASS', pushSub: 'shoves gels away', passSub: '1.x: straight through them', gelHp: 'GEL HP', gelHpSub: 'tougher gels, same score',
+    dash: 'DASH', push: 'PUSH', pass: 'PASS', pushSub: 'shoves gels away', cut: 'CUT', cutSub: 'through them, and it hurts', passSub: '1.x: straight through them', gelHp: 'GEL HP', gelHpSub: 'tougher gels, same score',
     arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'Rooms with their own clock — coming next.',
     best: 'BEST', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
@@ -16,7 +16,7 @@ const STR = {
     hintPad: 'LEFT STICK MOVES · RIGHT STICK AIMS AND FIRES · A DASHES · START PAUSES',
   },
   ja: {
-    dash: 'ダッシュ', push: '押す', pass: '抜ける', pushSub: 'ゼリーを押しのける', passSub: '1.x：すり抜ける', gelHp: 'ゼリー耐久', gelHpSub: '硬いゼリー、スコアは同じ',
+    dash: 'ダッシュ', push: '押す', pass: '抜ける', pushSub: 'ゼリーを押しのける', cut: '貫く', cutSub: '貫いてダメージ', passSub: '1.x：すり抜ける', gelHp: 'ゼリー耐久', gelHpSub: '硬いゼリー、スコアは同じ',
     arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: '制限時間のある部屋 — 次の版で。',
     best: 'ベスト', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', time: 'タイム', newbest: '新記録', soon: '近日',
@@ -26,7 +26,7 @@ const STR = {
     hintPad: '左スティックで移動 · 右スティックでエイムと射撃 · Aでダッシュ · STARTで一時停止',
   },
   fi: {
-    dash: 'SYÖKSY', push: 'TÖNÄISY', pass: 'LÄPI', pushSub: 'tönäisee geelit sivuun', passSub: '1.x: suoraan läpi', gelHp: 'GEELIN KESTO', gelHpSub: 'sitkeämmät geelit, samat pisteet',
+    dash: 'SYÖKSY', push: 'TÖNÄISY', pass: 'LÄPI', pushSub: 'tönäisee geelit sivuun', cut: 'VIILTO', cutSub: 'läpi, ja se satuttaa', passSub: '1.x: suoraan läpi', gelHp: 'GEELIN KESTO', gelHpSub: 'sitkeämmät geelit, samat pisteet',
     arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'Huoneita omalla kellollaan — seuraavaksi.',
     best: 'ENNÄTYS', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
@@ -121,7 +121,7 @@ export class UI {
     const fmt = (v) => (v ? `${t('best')} ${v.toLocaleString('en-US')}` : '');
     const switches = el('div', 'row');
     switches.append(
-      this._button(`${t('dash')} · ${t(test.dash)}`, t(test.dash === 'push' ? 'pushSub' : 'passSub'), () => this.h.onDash?.()),
+      this._button(`${t('dash')} · ${t(test.dash)}`, t(`${test.dash}Sub`), () => this.h.onDash?.()),
       this._button(`${t('gelHp')} ×${test.hp}`, t('gelHpSub'), () => this.h.onGelHp?.()),
     );
     this._panel([

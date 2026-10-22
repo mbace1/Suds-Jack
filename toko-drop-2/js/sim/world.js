@@ -14,19 +14,20 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=6';
-import { makeRng } from './rng.js?v=6';
-import { BEHAVIOUR } from './species/index.js?v=6';
-import { DIRECTORS } from './director/index.js?v=6';
-import * as fire from './fire.js?v=6';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=6';
-import { swarmForces, resolveCrowd } from './crowd.js?v=6';
-import { revengeColor } from './color.js?v=6';
+import { TUNING } from '../tuning.js?v=7';
+import { makeRng } from './rng.js?v=7';
+import { BEHAVIOUR } from './species/index.js?v=7';
+import { DIRECTORS } from './director/index.js?v=7';
+import * as fire from './fire.js?v=7';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=7';
+import { swarmForces, resolveCrowd } from './crowd.js?v=7';
+import { revengeColor } from './color.js?v=7';
 
 const T = TUNING;
 
-// `dashMode` and `hpMult` are the title's two test switches: 1.x's dash or
-// the push dash (TUNING.hero.push), and every non-boss body's hit points ×
+// `dashMode` and `hpMult` are the title's two test switches: 1.x's dash
+// ('pass'), the PUSH dash (TUNING.hero.push) or the CUT dash (TUNING.hero.cut),
+// and every non-boss body's hit points ×
 // hpMult (the "bullet sponge" test; scores are unchanged).
 export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, dashMode = 'pass', hpMult = 1 } = {}) {
   const w = {

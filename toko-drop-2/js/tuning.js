@@ -7,8 +7,8 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=6';
-import WAVES from './tuning/waves.js?v=6';
+import { SPECIES } from './tuning/species/index.js?v=7';
+import WAVES from './tuning/waves.js?v=7';
 
 export const TUNING = {
   render: {
@@ -176,6 +176,13 @@ export const TUNING = {
     // bodies (the ANCHORED affix, the FIXED role) do not move at all. At dash
     // level 1 the first touch of a dash also hurts.
     push: { reach: 1.5, force: 18, heavy: 0.55, plough: true, squash: -0.45, hurt: 1 },
+    // The CUT dash (owner, 2026-10-22: "likely we want dashes that go through
+    // and do damage in the end"): 1.x's pass-through, with the dash level 1
+    // cut from the start, as damage. Every body it passes takes `hits` (2 is
+    // 0.2 s of the gun: at GEL HP ×1 it kills GLOBBO, YELA, SLUDGE and BAMBU
+    // and leaves the rest a shot from dead). It touches as the level 1 cut does
+    // (dashKill.reach); from dash level 1 a body that is not a boss dies outright.
+    cut: { hits: 2 },
     color: 0xffffff,        // 1.x: white satin (player.js:61)
     // 1.x's weapon pods (tuning.js:141-160, main.js:1985-2005, player.js:404-464):
     // one table, two levels a family; `rate` multiplies fireEvery. A pod drops

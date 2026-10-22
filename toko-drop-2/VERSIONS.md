@@ -19,6 +19,22 @@
     Never `--no-verify`.
 -->
 
+## v7 — 2026-10-22
+**A third dash on test: CUT goes through and hurts**
+- **DASH now cycles PUSH → CUT → PASS** (owner, 2026-10-22: "likely we want
+  dashes that go through and do damage in the end"). CUT is 1.x's
+  pass-through with the dash's level 1 cut from the start, as damage: every
+  body it passes takes 2 hits, a boss's included, once a dash. Two hits is
+  0.2 s of the gun: at GEL HP ×1 it kills GLOBBO, YELA, SLUDGE and BAMBU and
+  leaves the rest a shot from dead; at ×2 and ×3 they live through it. From
+  dash level 1 it kills what is not a boss outright, as PASS does
+- The switch is remembered as `toko2.dash`; v6's PASS choice is still read
+- `test/hero.mjs` holds CUT's hits, once-a-dash, the boss and the upgrade
+  (177 checks); the browser gate walks the DualSense across the new position
+- Cache tokens `?v=6` → `?v=7`; HUD label → `2.0 · v7`
+
+---
+
 ## v6 — 2026-10-22
 **The PUSH dash on test beside 1.x's, and tougher gels to push around**
 - **A DASH switch on the title** (owner, 2026-10-22: "the pushing dash should

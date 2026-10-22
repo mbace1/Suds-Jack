@@ -7,16 +7,16 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=6';
-import { buildFloor } from './render/floor.js?v=6';
-import { fitCamera } from './render/view.js?v=6';
-import { Splats } from './render/splats.js?v=6';
-import { Actors } from './render/actors.js?v=6';
-import { GEL_TIME } from './render/gel.js?v=6';
-import { createWorld, step, api as simApi } from './sim/world.js?v=6';
-import { Input } from './input.js?v=6';
-import { UI, t, timeText } from './ui.js?v=6';
-import { Sound } from './audio.js?v=6';
+import { TUNING } from './tuning.js?v=7';
+import { buildFloor } from './render/floor.js?v=7';
+import { fitCamera } from './render/view.js?v=7';
+import { Splats } from './render/splats.js?v=7';
+import { Actors } from './render/actors.js?v=7';
+import { GEL_TIME } from './render/gel.js?v=7';
+import { createWorld, step, api as simApi } from './sim/world.js?v=7';
+import { Input } from './input.js?v=7';
+import { UI, t, timeText } from './ui.js?v=7';
+import { Sound } from './audio.js?v=7';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -90,6 +90,7 @@ function resize() {
 // ── state ──────────────────────────────────────────────────────────
 const store = {
   num(k) { try { return Number(localStorage.getItem(k)) || 0; } catch { return 0; } },
+  str(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
   set(k, v) { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } },
 };
 const MODES = ['arcade', 'hardcade', 'survival'];
@@ -97,13 +98,15 @@ const bestKey = (m) => `toko2.best.${m}`;
 const bests = () => Object.fromEntries(MODES.map((m) => [m, store.num(bestKey(m))]));
 // The title's two test switches (owner, 2026-10-22: "the pushing dash should
 // be tested as it may be a better dynamic, allowing for more bullet sponge
-// enemies"): 1.x's pass-through dash or the PUSH dash (TUNING.hero.push), and
-// every non-boss gel's hit points ×1, ×2 or ×3. PUSH is what the test is for,
-// so it is what a first run gets.
-const HP_STEPS = [1, 2, 3];
+// enemies", then "likely we want dashes that go through and do damage in the
+// end"): the dash, PUSH (TUNING.hero.push), CUT (TUNING.hero.cut) or 1.x's
+// PASS, and every non-boss gel's hit points ×1, ×2 or ×3. PUSH is what the
+// test began with, so it is what a first run gets (v6 kept PASS as a 1 under
+// toko2.dashPass; that is still read).
+const DASHES = ['push', 'cut', 'pass'], HP_STEPS = [1, 2, 3];
 const tests = () => {
-  const hp = store.num('toko2.gelHp');
-  return { dash: store.num('toko2.dashPass') === 1 ? 'pass' : 'push', hp: HP_STEPS.includes(hp) ? hp : 1 };
+  const hp = store.num('toko2.gelHp'), d = store.str('toko2.dash');
+  return { dash: DASHES.includes(d) ? d : store.num('toko2.dashPass') === 1 ? 'pass' : 'push', hp: HP_STEPS.includes(hp) ? hp : 1 };
 };
 const showTitle = (keep = false) => ui.title(bests(), sound.on, input.source, tests(), keep);
 
@@ -120,7 +123,7 @@ const ui = new UI({
   onAgain: () => start(mode),
   onMenu: () => toMenu(),
   onSound: () => { sound.setOn(!sound.on); store.set('toko2.mute', sound.on ? 0 : 1); showTitle(true); },
-  onDash: () => { store.set('toko2.dashPass', tests().dash === 'push' ? 1 : 0); showTitle(true); },
+  onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); showTitle(true); },
   onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); showTitle(true); },
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });

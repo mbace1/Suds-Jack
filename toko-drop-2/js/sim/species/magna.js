@@ -36,7 +36,7 @@
 // No gun, no special hits (4 HP), harmless to touch in classic, no death of
 // its own (the core's kill, puddle and goo; a big death at r 0.8 — the
 // tether goes with it, in the look); not a HARDCADE biter.
-import { TUNING } from '../../tuning.js?v=6';
+import { TUNING } from '../../tuning.js?v=7';
 
 const COOLDOWN = TUNING.hero.dashCooldown;           // the hero's own dash cooldown (1.x DASH_CD, player.js:8): read back, not tuned here
 
