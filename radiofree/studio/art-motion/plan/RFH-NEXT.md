@@ -34,6 +34,9 @@ first; the one hard date is **The Day After, before the 3 Nov midterms**.
    minimum-distance sign with no number). Approval: Mikael, Wed 21 Oct 13:32 Helsinki, "There are 3 more approved ones". Filed (the v2 drafts, unchanged):
    `films/22-10-Brink1-Tailgated.mp4` (Thu 22 Oct 06:52), `films/22-10-Coxon10-Per-Caller.mp4` (Thu 22 Oct 12:52),
    `films/22-10-Coxon11-Thats-a-Wednesday.mp4` (Thu 22 Oct 18:52), on the ~6 h cadence set 21 Oct (see `POSTED.md`).
+   **Per Caller v3, approved 22 Oct** ("Per caller approved"): v2 was held on 22 Oct because its fourth caption, a ruling
+   could come before Election Day, went out of date (an FCC spokesperson told Reuters on 19 Oct there are no plans to act).
+   v3 changes only that caption and the post copy. Refiled as `films/23-10-Coxon10-Per-Caller.mp4` for Fri 23 Oct 00:52.
 
 Slots follow the calendar's logic: **00:50** reaches the US evening (US stories), and **12:50** reaches the
 European day (Nordic and EU stories). All times are Helsinki time.
