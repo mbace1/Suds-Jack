@@ -7,17 +7,19 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=15';
-import { buildFloor } from './render/floor.js?v=15';
-import { fitCamera } from './render/view.js?v=15';
-import { Splats } from './render/splats.js?v=15';
-import { Actors } from './render/actors.js?v=15';
-import { GEL_TIME } from './render/gel.js?v=15';
-import { studioEnvironment } from './render/env.js?v=15';
-import { createWorld, step, api as simApi } from './sim/world.js?v=15';
-import { Input } from './input.js?v=15';
-import { UI, t, timeText } from './ui.js?v=15';
-import { Sound } from './audio.js?v=15';
+import { TUNING } from './tuning.js?v=16';
+import { buildFloor } from './render/floor.js?v=16';
+import { fitCamera } from './render/view.js?v=16';
+import { Splats } from './render/splats.js?v=16';
+import { Actors } from './render/actors.js?v=16';
+import { GEL_TIME } from './render/gel.js?v=16';
+import { studioEnvironment } from './render/env.js?v=16';
+import { createWorld, step, api as simApi } from './sim/world.js?v=16';
+import { Input } from './input.js?v=16';
+import { UI, t, timeText } from './ui.js?v=16';
+import { Sound } from './audio.js?v=16';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=16';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=16';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -121,6 +123,7 @@ addEventListener('keydown', () => sound.unlock(), { once: true });
 
 const ui = new UI({
   onStart: (m) => start(m),
+  onIntro: () => start('arcade', { intro: true }),
   onResume: () => resume(),
   onPause: () => pause(),
   onAgain: () => start(mode),
@@ -134,13 +137,30 @@ const ui = new UI({
 useArena(screenArena());
 new ResizeObserver(resize).observe(stage);
 
+// ── the start intro (intro/intro.js): the title's INTRO button plays it and
+// then starts an ARCADE run (owner, 2026-10-22: "an intro button next to the
+// start button"). It never plays on its own; ?intro makes every start play it,
+// for testing. Any press skips it, except in its first moments, which still
+// belong to the press that started it.
+const intro = new Intro({
+  scene, actors, ui, T,
+  floor: () => floor, arena: () => arena, camera: () => camera, cameraRest: () => camRest,
+  aspect: () => Math.max(1, stage.clientWidth) / Math.max(1, stage.clientHeight),
+});
+let introT0 = 0, introSfx = null, introSkip = false, introStamp = 0;
+const introWanted = (asked) => asked || (params.has('intro') && !params.has('nointro'));
+const skipIntro = (e) => { if (state === 'intro' && e.timeStamp - introStamp > 350) introSkip = true; };
+addEventListener('pointerdown', skipIntro);
+addEventListener('keydown', skipIntro);
+const padPressed = () => { for (const p of navigator.getGamepads?.() ?? []) if (p?.buttons.some((b) => b.pressed)) return true; return false; };
+
 function toMenu() {
   state = 'menu'; input.enabled = false; ui.setHud(false);
   useArena(screenArena());
   showTitle();
 }
 
-function start(m) {
+function start(m, { intro: asked = false } = {}) {
   debug.hold = false; debug.freeCam = false;
   mode = MODES.includes(m) ? m : 'arcade';
   useArena(screenArena());
@@ -148,9 +168,23 @@ function start(m) {
   world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, dashMode: test.dash, hpMult: test.hp });
   splats.clear(); actors.reset(); trauma = 0;
   acc = 0; pendingDash = false;
+  sound.unlock();
+  ui.hide();
+  if (introWanted(asked)) {
+    state = 'intro'; input.enabled = false; ui.setHud(false);
+    ui.bannerEl.hidden = true; ui._bannerT = 0;          // nothing left over from a run before it
+    introSkip = false; introStamp = performance.now(); introT0 = performance.now() + 40;
+    intro.begin();
+    introSfx = sound.ctx && !capture.on ? scheduleIntroSfx(sound.ctx, sound.master, sound.ctx.currentTime + 0.04) : null;
+    return;
+  }
+  go();
+}
+// the run itself starts: straight from the title, or at the end of the intro
+function go() {
+  if (state === 'intro') { introSfx?.stop(); introSfx = null; intro.finish(); }
   state = 'play'; input.enabled = true;
   ui.hide(); ui.setHud(true);
-  sound.unlock();
   ui.banner(mode.toUpperCase(), 1.2);
 }
 
@@ -209,6 +243,21 @@ function toWorld(inp) {
   return out;
 }
 
+// a simple bot (shoot the nearest gel, back away from it): look checks and the intro film's tail
+function botInput(w) {
+  const h = w.hero; let near = null, nd = Infinity;
+  for (const g of w.gels) { if (g.state !== 'active') continue; const d = Math.hypot(g.x - h.x, g.z - h.z); if (d < nd) { nd = d; near = g; } }
+  return near
+    ? { mx: -(near.x - h.x) / nd - h.x / w.hx, mz: -(near.z - h.z) / nd - h.z / w.hz, ax: (near.x - h.x) / nd, az: (near.z - h.z) / nd, aim: true, fire: true, dash: false }
+    : { mx: 0, mz: 0, ax: 1, az: 0, aim: true, fire: true, dash: false };
+}
+
+// The intro's review film is captured frame by frame from the real game:
+// capture.on stops the animation loop, and debug.capFrame(seconds) draws the
+// frame at that time since the run was started (the intro, then the run under
+// the bot). debug.introWav(seconds) renders the intro's cues offline.
+const capture = { on: false, bot: false, t0: 0 };
+
 // ── the loop ───────────────────────────────────────────────────────
 const debug = {
   THREE, renderer, scene, camera, backend, input, ui, actors,
@@ -248,6 +297,10 @@ const debug = {
     }
   },
   freeCam: false, hold: false,
+  intro, INTRO,
+  capBegin(m = 'arcade') { capture.on = true; capture.bot = true; start(m, { intro: true }); introT0 = 0; last = 0; return state; },
+  capFrame(t) { frame(t * 1000, 1 / 30); return { state, t }; },
+  async introWav(seconds = INTRO.end + 0.5) { const b = await renderIntroSfxWav(seconds, T.audio.master); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(s); },
   // Look checks: run the game ahead under a simple bot (shoot the nearest
   // gel, back away from it) with every event handled, so a screenshot can be
   // of the middle of a fight rather than its first second.
@@ -270,20 +323,27 @@ window.__toko = debug;
 
 let last = performance.now();
 toMenu();
-renderer.setAnimationLoop(() => {
-  const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000), time = now / 1000;
+function frame(now, dtFixed) {
+  const dt = dtFixed ?? Math.min(0.1, (now - last) / 1000), time = now / 1000;
   last = now;
   GEL_TIME.value = time;
   ui.pollPad(); ui.tick(dt);
   const inp = input.read(null);
+  let introT = 0;
 
-  if (state === 'play' && debug.hold) {
+  if (state === 'intro') {
+    introT = (now - introT0) / 1000;
+    if (introT >= INTRO.end || introSkip || (!capture.on && introT > 0.35 && padPressed())) go();
+  }
+  if (state === 'intro') {
+    // the run is built but holds still: the intro owns the screen
+  } else if (state === 'play' && debug.hold) {
     // a look check: hold still
   } else if (state === 'play') {
     if (inp.pause) pause();
     else {
       pendingDash ||= inp.dash;
-      const w = toWorld(inp);
+      const w = capture.bot ? botInput(world) : toWorld(inp);
       acc += dt;
       let steps = 0;
       while (acc >= T.sim.dt && steps < T.sim.maxSteps && !world.over) {
@@ -313,9 +373,11 @@ renderer.setAnimationLoop(() => {
   trauma = Math.max(0, trauma - T.shake.decay * dt);
   const m = trauma * trauma, A = T.shake.amp, F = T.shake.freq;
   if (!debug.freeCam) camera.position.set(camRest.x + Math.sin(time * F[0]) * m * A[0], camRest.y + Math.sin(time * F[1]) * m * A[1], camRest.z + Math.sin(time * F[2]) * m * A[2]);
+  if (state === 'intro') intro.frame(introT, world);   // after sync: the intro poses the hero
   ui.drawSticks(input);
   actors.light.render(renderer);   // the arena's light map, which the floor reads
-  renderer.render(scene, camera);
+  renderer.render(scene, state === 'intro' ? intro.cam : camera);
   debug.frames++;
-});
+}
+renderer.setAnimationLoop(() => { if (!capture.on) frame(performance.now()); });
 debug.ready = true;

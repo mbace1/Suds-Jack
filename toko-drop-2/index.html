@@ -71,6 +71,10 @@
     #menu .row { display: flex; gap: 8px; }
     #menu .row .item { flex: 1 1 0; min-width: 0; }
     #menu .row .item .label { font-size: 14px; letter-spacing: .12em; }
+    /* the start row: ARCADE as large as the other modes, INTRO narrow beside it */
+    #menu .row.start .item .label { font-size: 17px; letter-spacing: .2em; }
+    #menu .row.start .item.narrow { flex: 0 0 34%; }
+    #menu .row.start .item.narrow .label { font-size: 15px; letter-spacing: .16em; }
     /* a phone held sideways is ~400 px tall: two columns, so the whole title
        (the test switches included) shows without scrolling */
     @media (orientation: landscape) and (max-height: 520px) {
@@ -116,7 +120,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v15<span id="backend"></span></div>
+  <div id="ver">2.0 · v16<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -147,6 +151,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=15"></script>
+  <script type="module" src="js/main.js?v=16"></script>
 </body>
 </html>

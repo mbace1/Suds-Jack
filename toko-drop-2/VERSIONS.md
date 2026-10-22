@@ -19,6 +19,35 @@
     Never `--no-verify`.
 -->
 
+## v16 — 2026-10-22
+**The start intro, behind an INTRO button beside ARCADE**
+- Owner, 2026-10-22: a start video. Then "make it live on the arcade version as an intro button next to the start button
+  in the menu". The title's first row is now ARCADE and, beside it, INTRO, which plays the intro and hands it straight to
+  an ARCADE run. It never plays on its own. `?intro` makes every start play it, for testing.
+- The intro, ~11 s, in the engine:
+  - The magenta Toko Midori Games™ lockup on black: the traced master face and the drawn logotype on one line. Toko
+    blinks.
+  - MIDORI fades. The camera pushes in while "drop" pops in under Toko, lower case. It holds a beat on the face plus
+    "Toko / drop".
+  - Then on in to the foot of the p, where a whitish drop gathers and lets go.
+  - The camera follows the drop down and swings to straight down as it lands.
+  - The floor's grid runs out of it in a blue ring to the rail. It opens its eyes. The camera pulls out to the game's
+    own view while the HUD comes in piece by piece.
+- **The drop is the hero.** Same mesh, same white satin gel, and it lands on the spawn point, so the run starts where the
+  intro leaves it. The floor shader gained a reveal for this: the void outside a radius, a crisp blue front on its edge,
+  and the grid lit behind it. At rest the reveal is off and play is unchanged.
+- A 16-bit cue for every stage: pulse waves, a triangle and noise through a SNES-style echo. They are synthesised and go
+  through the master gain, so mute mutes them.
+- Any key, pointer or pad press skips it, except in its first 0.35 s, which still belong to the press that started it.
+- `intro/master.js` and `intro/wordmark.js` are verbatim copies of the brand's `toko/js/`, because 2.0's own Pages has no
+  `../toko/`. The logotype never had a p: it is built from the logotype's own d, mirrored, with its stem run 28 units
+  below the baseline.
+- Every frame is a function of the intro's time, which is what `__toko.capBegin()` / `capFrame(t)` / `introWav()`
+  record the review film from.
+- **Made on the arcade copy, not in the source repo**, which was not reachable from the session that built it. The
+  source must take this as its v16 before its next deploy, or that deploy removes the intro. The patch and notes are in
+  Suds-Jack `handoff/toko-drop-2-intro/`.
+
 ## v15 — 2026-10-22
 **DRAPER and CLOAKER: all 27 of 1.x's gel types are in**
 - **DRAPER** is 1.x's wall-weaver. It holds about 11 from you, keeps its

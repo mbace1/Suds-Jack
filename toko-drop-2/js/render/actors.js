@@ -13,13 +13,13 @@
 // species, so a gel's material is built once and reused, never compiled
 // mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=15';
+import { TUNING } from '../tuning.js?v=16';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=15';
-import { LOOKS } from './looks/index.js?v=15';
-import { JellyBody } from './jelly.js?v=15';
-import { Juice } from './juice.js?v=15';
-import { ArenaLight } from './light.js?v=15';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=16';
+import { LOOKS } from './looks/index.js?v=16';
+import { JellyBody } from './jelly.js?v=16';
+import { Juice } from './juice.js?v=16';
+import { ArenaLight } from './light.js?v=16';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
