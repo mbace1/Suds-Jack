@@ -1,3 +1,4 @@
+import { sdfSkullsEnabled, setSdfSkullsEnabled } from './sdf-skull.js?v=2';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -10,7 +11,7 @@ import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
 import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=85';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=111';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=112';
 import { OrbPool } from './bullets.js?v=85';
 import { AudioKit } from './audio.js?v=85';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=85';
@@ -19,7 +20,7 @@ import { HyperEnvironment } from './environment.js?v=85';
 import { Backdrop } from './backdrop.js?v=107';
 import { Walls } from './walls.js?v=85';
 import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=109';
-import { TruckTrack } from './truck.js?v=111';
+import { TruckTrack } from './truck.js?v=112';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
 import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=110';
@@ -1616,11 +1617,27 @@ function showMenu() {
            ${card.rules.length ? `<ul class="mn-rules">${card.rules.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
            <p class="mn-best"><span id="menuBoard"></span>${bestLine()}</p>
          </div>
+         <div class="mn-render" role="group" aria-label="Renderer">
+           <button data-renderer="classic" aria-pressed="${!sdfSkullsEnabled}">CLASSIC</button>
+           <button data-renderer="sdf" aria-pressed="${sdfSkullsEnabled}">SDF PREVIEW</button>
+         </div>
+         <p class="mn-render-note">${sdfSkullsEnabled ? 'SDF BUILD 2 · sculpted skull family · other enemies use classic art' : 'CLASSIC · current game art'}<br>R / pad up-down switches renderer.</p>
          <button id="startBtn" class="mn-start">START</button>
          <p class="mn-keys">${menuKeysLine()}</p>
        </section>
      </div>`;
   menuBoardLine();
+  for (const b of elMsg.querySelectorAll('[data-renderer]')) {
+    const choose = e => {
+      e.preventDefault(); e.stopPropagation();
+      if (e.pointerType === 'touch' || e.type === 'touchend') input.swallowTouchAt(e.clientX ?? 0, e.clientY ?? 0);
+      setSdfSkullsEnabled(b.dataset.renderer === 'sdf');
+      showMenu();
+    };
+    b.addEventListener('pointerdown', e => e.stopPropagation());
+    b.addEventListener('pointerup', choose);
+    b.addEventListener('touchend', choose, { passive: false });
+  }
   for (const b of elMsg.querySelectorAll('button.mn-season')) {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
@@ -1640,7 +1657,8 @@ window.addEventListener('keydown', e => {
   if (state === 'tips' && !e.repeat && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); startGame(); lockPointer(input.touchMode ? null : { pointerType: 'mouse' }); return; }
   if (state !== 'menu' || e.repeat || !elMsg.classList.contains('menu')) return;
   const list = menuSeasons();
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') stepSeason(-1);
+  if (e.code === 'KeyR') { e.preventDefault(); setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
+  else if (e.code === 'ArrowLeft' || e.code === 'KeyA') stepSeason(-1);
   else if (e.code === 'ArrowRight' || e.code === 'KeyD') stepSeason(1);
   else if (/^Digit[1-9]$/.test(e.code) && list[+e.code.slice(5) - 1]) selectSeason(list[+e.code.slice(5) - 1].id);
   else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); menuStart(input.touchMode ? null : { pointerType: 'mouse' }); }
@@ -4070,6 +4088,7 @@ function gamepadMenu() {
     // HD-019: the main menu is one choice and one button — left/right is the
     // season, A or START plays it; up, down and B have nothing to move
     gfocus = -1;
+    if (ui.up || ui.down) { setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
     if (ui.left) stepSeason(-1);
     else if (ui.right) stepSeason(1);
     if (ui.a || ui.start) menuStart(null);

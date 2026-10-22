@@ -104,3 +104,31 @@ close skull and a full swarm; refine the sculpt against the owner target.
 
 **Exit:** acceptable hardware frame times plus visual approval before making
 SDFs the default or expanding the roster. Not merged; not live on Hub.
+
+
+## SDF build 2 — selectable preview and skull-family conversion
+
+Goal: a player can choose Classic / SDF before START, use all three seasons,
+and return to Classic. A separate `/hyperdagger-sdf/?skull=sdf` preview is
+prepared for direct testing without replacing the cabinet.
+
+Implemented: persistent renderer choice; mouse, touch, R and pad up/down;
+five distinct skull profiles; season tint; gallery profile selector. Existing
+health, radii, movement, scores and voxel gibs stay authoritative. SDF damage
+flashes but does not yet cut geometric bullet holes.
+
+Verified locally on the exact preview tree with the site's hub/Toko imports:
+`sdf-menu.cjs` passed mouse selection, reload persistence, R, real START,
+portrait touch, 44px controls, pad down and all five profile/HP/radius checks.
+`sdf-skull.cjs` passed depth occlusion, each profile's actual shader render,
+real held-fire kill, disposal, original collision/gibs and Classic override.
+Killer coverage, syntax, diff and generated precache checks passed. Full
+historical smoke and physical-device performance were not rerun/certified.
+
+Deployment keeps shared imports aligned to the site (shell 102, signature 3,
+table 5). The preview index omits worker registration: the existing worker's
+broad activation cleanup must not run from a second cabinet. No current
+cabinet files are replaced. The PR tracks source and deployment SHAs.
+
+Next and exit: `ROADMAP.md` now owns the staged conversion plan and physical
+GPU budgets. Test on iPad before enabling SDF as the main cabinet's default.

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createSdfSkull, sdfSkullsEnabled } from './sdf-skull.js?v=1';
-import { VoxelSprite, MODELS, modelFor } from './voxel.js?v=85';
+import { createSdfSkull, sdfSkullsEnabled } from './sdf-skull.js?v=2';
+import { VoxelSprite, MODELS, modelFor, getRosterPalette } from './voxel.js?v=85';
 import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=107';
 
 // fraction of the lattice lost before the mesh skin comes off (v4.35: ~22%)
@@ -124,14 +124,9 @@ export class Skull extends VoxelEnemy {
       this.jawT = Math.random() * Math.PI * 2;
       this.jawOpen = 0;
     }
-    // Only the base chaser opts in; crowns, splitters and minis keep their identity.
+    // Subclasses select their own profile after their gameplay fields are set.
     if (sdfSkullsEnabled && new.target === Skull) {
-      this.sdfRoot = createSdfSkull();
-      this.group.add(this.sdfRoot);
-      for (const part of this.parts) {
-        part.mesh.visible = false;
-        if (part.hull) part.hull.visible = false;
-      }
+      this.useSdfVisual('skull');
     }
     this.type = 'skull';
     this.hp = 1;
@@ -142,6 +137,22 @@ export class Skull extends VoxelEnemy {
     this.accel = 7.2;
     this.knock = 8;
     this.bobT = Math.random() * Math.PI * 2;
+  }
+
+  useSdfVisual(variant) {
+    if (!sdfSkullsEnabled) return;
+    const bone = new THREE.Color(.72,.66,.55), eyes = new THREE.Color(4.4,.12,.025);
+    const palette = getRosterPalette();
+    if (palette) {
+      palette(bone, { x: 0, y: 0, z: 0 }, .14);
+      palette(eyes, { x: 0, y: 0, z: 0 }, .14);
+    }
+    this.sdfRoot = createSdfSkull({ variant, bone, eyes });
+    this.group.add(this.sdfRoot);
+    for (const part of this.parts) {
+      part.mesh.visible = false;
+      if (part.hull) part.hull.visible = false;
+    }
   }
 
   update(dt, playerEye) {
@@ -279,6 +290,7 @@ export class Wraith extends Skull {
     this.hp = 2;
     this.score = 2;
     this.accel = 18;
+    this.useSdfVisual('wraith');
   }
 }
 
@@ -290,6 +302,7 @@ export class Splitter extends Skull {
     this.score = 2;
     this.knock = 4;
     this.splits = true;
+    this.useSdfVisual('splitter');
   }
 }
 
@@ -302,6 +315,7 @@ export class DreadSkull extends Skull {
     this.score = 5;
     this.accel = 22;
     this.knock = 2;
+    this.useSdfVisual('dread');
   }
 }
 
@@ -311,6 +325,7 @@ export class MiniSkull extends Skull {
     this.radius = 0.45;
     this.accel = 20;
     this.knock = 11;
+    this.useSdfVisual('mini');
   }
 }
 

@@ -1,3 +1,23 @@
+## SDF build 2 — experimental menu build
+**Classic or SDF, chosen before START.** The saved renderer choice is available
+through mouse/touch buttons, R, or gamepad up/down. The three seasons and their
+controls remain the same. A URL `?skull=sdf` explicitly opens the SDF preview;
+`?skull=classic` returns to the baseline. Making a menu choice removes the URL
+override so reload agrees with the selection.
+
+The conversion now covers the skull family: regular, crowned Wraith, cleft
+Splitter, small hornless Mini and crowned Dread. Each keeps its own health,
+radius, speed, scoring and death/split behavior. Season palettes tint the bone
+and eyes. SDF wounds currently flash; visual bullet-hole erosion remains a
+later step. The gallery cycles all five profiles.
+
+The separate `/hyperdagger-sdf/` preview is online-only and registers no worker.
+The current cabinet and its offline caches are preserved. Detailed physical
+GPU/iPad performance is still unverified. Expansion gates and targets are in
+`ROADMAP.md`; this release does not claim full SDF conversion or 95% parity.
+
+Tokens: enemy/main/truck/convoy 112, SDF module 2; source worker 82.
+
 ## SDF skull pilot — review build after v59
 **One enemy, two rendering paths.** Open `?skull=sdf` to raymarch the regular
 chaser's skull inside a bounded proxy. Default play and the rest of the roster

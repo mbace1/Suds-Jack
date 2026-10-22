@@ -1,9 +1,29 @@
 import * as THREE from 'three';
 
-// Opt-in pilot: the regular Skull only. The voxel lattice remains authoritative
-// for hits, chips and gibs. No fullscreen pass: march inside a tight proxy box.
-export const sdfSkullsEnabled = typeof location !== 'undefined' &&
-  new URLSearchParams(location.search).get('skull') === 'sdf';
+// The URL is an explicit override; otherwise retain the player's menu choice.
+const RENDER_KEY = 'hyperDaggerRenderer';
+function initialRenderer() {
+  if (typeof location === 'undefined') return false;
+  const choice = new URLSearchParams(location.search).get('skull');
+  if (choice === 'sdf' || choice === 'classic') return choice === 'sdf';
+  try { return localStorage.getItem(RENDER_KEY) === 'sdf'; } catch { return false; }
+}
+export let sdfSkullsEnabled = initialRenderer();
+export function setSdfSkullsEnabled(on) {
+  sdfSkullsEnabled = !!on;
+  try { localStorage.setItem(RENDER_KEY, on ? 'sdf' : 'classic'); } catch {}
+  // Clear the one-time URL override so reload agrees with the visible choice.
+  if (typeof location !== 'undefined') {
+    const url = new URL(location.href); url.searchParams.delete('skull');
+    try { history.replaceState(null, '', url); } catch {}
+  }
+  return sdfSkullsEnabled;
+}
+const PROFILES = {
+  skull: { id: 0, scale: 1.35 }, wraith: { id: 1, scale: 1.35 },
+  splitter: { id: 2, scale: 1.75 }, mini: { id: 3, scale: 0.78 },
+  dread: { id: 4, scale: 2.0 },
+};
 const geometry = new THREE.BoxGeometry(2.06, 1.9, 1.36);
 const vertexShader = `
 out vec3 localSurface;
@@ -20,6 +40,9 @@ uniform vec3 eyeLocal;
 uniform mat4 localToClip;
 uniform float jawOpen;
 uniform float flash;
+uniform float profile;
+uniform vec3 boneColor;
+uniform vec3 eyeColor;
 float ellipsoid(vec3 p, vec3 r) {
   // Conservative lower bound; sphere tracing must never step past a surface.
   return (length(p / r) - 1.0) * min(r.x, min(r.y, r.z));
@@ -37,7 +60,16 @@ vec2 field(vec3 p) {
   bone = smoothUnion(bone,ellipsoid(p-vec3(0,-0.10,0.23),vec3(0.39,0.24,0.29)),0.10);
   vec3 sym = vec3(abs(p.x),p.y,p.z);
   bone = smoothUnion(bone,ellipsoid(sym-vec3(0.37,-0.03,0.23),vec3(0.17,0.18,0.20)),0.05);
-  bone = smoothUnion(bone,capsule(sym,vec3(0.36,0.43,-0.08),vec3(0.91,0.79,-0.12),0.14,0.012),0.06);
+  if (profile != 3.0) bone = smoothUnion(bone,capsule(sym,vec3(0.36,0.43,-0.08),vec3(0.91,0.79,-0.12),0.14,0.012),0.06);
+  if (profile == 1.0 || profile == 4.0) {
+    // Crowned and dread skulls retain a readable rank silhouette.
+    bone=min(bone,capsule(sym,vec3(0.18,0.56,0.02),vec3(0.22,0.91,0.02),0.08,0.015));
+    bone=min(bone,capsule(p,vec3(0,0.57,0.02),vec3(0,0.94,0.02),0.075,0.012));
+  }
+  if (profile == 2.0) {
+    // A carved central cleft identifies the parent which splits into minis.
+    bone=max(bone,-capsule(p,vec3(0,0.65,0.32),vec3(0,0.28,0.40),0.025,0.012));
+  }
   // Carve real cavities, rather than painting eyes onto a sphere.
   float socket = ellipsoid(sym-vec3(0.235,0.16,0.405),vec3(0.16,0.17,0.235));
   bone = max(bone,-socket);
@@ -87,9 +119,9 @@ void main() {
   vec3 orbital=vec3(abs(p.x)-0.235,p.y-0.16,p.z-0.405);
   float inSocket=1.0-smoothstep(0.85,1.1,length(orbital.xy/vec2(0.16,0.17)));
   float cavity=mix(1.0,0.10+0.9*smoothstep(0.26,0.46,p.z),inSocket);
-  vec3 bone=vec3(0.72,0.66,0.55)*light*grain*cavity;
+  vec3 bone=boneColor*light*grain*cavity;
   bone+=vec3(0.18,0.012,0.004)*max(0.0,-n.y);
-  vec3 color=mix(bone,vec3(4.4,0.12,0.025),hit.y);
+  vec3 color=mix(bone,eyeColor,hit.y);
   outColor=vec4(mix(color,vec3(3),flash),1);
   // Write the marched surface depth, not the enclosing box's depth.
   vec4 clip=localToClip*vec4(p,1);
@@ -98,16 +130,19 @@ void main() {
   #include <colorspace_fragment>
 }`;
 
-export function createSdfSkull() {
+export function createSdfSkull({ variant = 'skull', bone = new THREE.Color(.72,.66,.55), eyes = new THREE.Color(4.4,.12,.025) } = {}) {
+  const config = PROFILES[variant] || PROFILES.skull;
   const material = new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3, vertexShader, fragmentShader,
     side: THREE.BackSide,
     uniforms: { eyeLocal: { value: new THREE.Vector3() }, localToClip: { value: new THREE.Matrix4() },
-      jawOpen: { value: 0.1 }, flash: { value: 0 } },
+      jawOpen: { value: 0.1 }, flash: { value: 0 }, profile: { value: config.id },
+      boneColor: { value: bone.clone() }, eyeColor: { value: eyes.clone() } },
   });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = 'SDF skull pilot';
-  mesh.scale.setScalar(1.35); // match the current 17-cell horn span (~2.4 units)
+  mesh.scale.setScalar(config.scale);
+  mesh.userData.sdfVariant = variant;
   mesh.layers.enable(2);
   // The proxy is a rendering surface only, never a gameplay hit target.
   mesh.raycast = () => {};

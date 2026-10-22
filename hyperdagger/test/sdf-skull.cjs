@@ -3,6 +3,7 @@
 const { chromium } = require('playwright');
 const http = require('http'), fs = require('fs'), path = require('path'), assert = require('assert/strict');
 const root = path.resolve(__dirname, '../..');
+const GAME=process.env.HD_GAME_PATH || 'hyperdagger';
 const server = http.createServer((req,res) => {
   let file=path.join(root,decodeURIComponent(req.url.split('?')[0]));
   if(fs.existsSync(file)&&fs.statSync(file).isDirectory())file=path.join(file,'index.html');
@@ -18,7 +19,7 @@ let browser;
  args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-dev-shm-usage']});
  const page=await browser.newPage({viewport:{width:640,height:480}});page.setDefaultTimeout(90000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
- await page.goto(base+'/hyperdagger/sdf-preview.html?benchmark');
+ await page.goto(base+'/'+GAME+'/sdf-preview.html?benchmark');
  await page.waitForFunction(()=>window.__sdfStudy?.stats().frameTimes.length>=3,null,{timeout:90000});
  assert.equal(await page.evaluate(()=>window.__sdfStudy.objects()[1].root.name),'SDF skull pilot');
  const output=process.env.HD_SDF_EVIDENCE;
@@ -35,9 +36,9 @@ let browser;
  await page.waitForFunction(()=>window.__sdfStudy.objects()[1].root.rotation.y!==0);
  assert.equal(await page.locator('#rotate').getAttribute('aria-pressed'),'true');
  // A plane behind the marched face must not cover it; a plane in front must.
- const depth=await page.evaluate(async()=>{
-  const THREE=await import('/hyperdagger/vendor/three.module.min.js');
-  const {createSdfSkull}=await import('/hyperdagger/js/sdf-skull.js?v=1');
+ const depth=await page.evaluate(async(game)=>{
+  const THREE=await import('/'+game+'/vendor/three.module.min.js');
+  const {createSdfSkull}=await import('/'+game+'/js/sdf-skull.js?v=2');
   const r=window.__sdfStudy.renderer,scene=new THREE.Scene();
   const cam=new THREE.PerspectiveCamera(35,1,.1,20);cam.position.set(0,.4,5);cam.updateMatrixWorld();
   const skull=createSdfSkull();scene.add(skull);
@@ -47,13 +48,19 @@ let browser;
   const behind=sample(0),front=sample(2);r.setRenderTarget(null);
   target.dispose();plane.geometry.dispose();plane.material.dispose();skull.material.dispose();
   return {behind,front};
- });
+ },GAME);
  assert.ok(depth.behind[0]>depth.behind[1]*.7,'marched face in front of rear occluder');
  assert.ok(depth.front[1]>depth.front[0]*2,'front geometry occludes SDF');
  console.log('PASS surface-depth occlusion',JSON.stringify(depth));
+ for(const variant of ['wraith','splitter','mini','dread']) {
+  await page.locator('#variant').click();
+  await page.waitForFunction(v=>window.__sdfStudy.objects()[1].root.userData.sdfVariant===v,variant);
+  await page.waitForFunction(()=>window.__sdfStudy.objects()[1].root.material.uniforms.localToClip.value.elements[0]!==1);
+ }
+ console.log('PASS every skull profile renders through the study controls');
  assert.deepEqual(errors,[],'lab shader compilation/render errors');
  // The real game starts from its visible START, not debug.startGame.
- await page.goto(base+'/hyperdagger/?assets=0&skull=sdf&season=ember');
+ await page.goto(base+'/'+GAME+'/?assets=0&skull=sdf&season=ember');
  await page.waitForFunction(()=>window.__hd,null,{timeout:90000});
  await page.evaluate(()=>{localStorage.setItem('hyperDaggerSeenTips','1');window.__hd.debug.setOpt('perf','low');});
  await page.locator('.mn-start').click();
@@ -66,15 +73,15 @@ let browser;
   return {sdf:!!s.sdfRoot,radius:s.radius,hp:s.hp,voxels:s.deathVoxels().length};
  });
  await page.evaluate(()=>window.__hd.debug.spawnSplitter());
- assert.equal(await page.evaluate(()=>!!window.__hd.enemies.at(-1).sdfRoot),false,'derived skull keeps its own visual');
+ assert.equal(await page.evaluate(()=>window.__hd.enemies.at(-1).sdfRoot.userData.sdfVariant),'splitter','splitter retains its own SDF profile');
  assert.equal(info.sdf,true);assert.equal(info.radius,.75);assert.equal(info.hp,1);assert.ok(info.voxels>0);
  await page.waitForFunction(()=>window.__sdfTarget.sdfRoot.material.uniforms.localToClip.value.elements[0]!==1);
  if(output)await page.screenshot({path:path.join(output,'sdf-game.png'),timeout:90000});
  await page.mouse.down();await page.waitForFunction(()=>!window.__hd.enemies.includes(window.__sdfTarget),null,{timeout:90000});await page.mouse.up();
  assert.equal(await page.evaluate(()=>window.__sdfTarget.sdfRoot),null,'death releases per-enemy SDF material');
  assert.deepEqual(errors,[],'game shader/runtime errors');
- // Default remains voxel, and a derived skull keeps its existing identity.
- await page.goto(base+'/hyperdagger/?assets=0&season=ember');await page.waitForFunction(()=>window.__hd,null,{timeout:90000});
+ // Explicit Classic overrides the saved preview choice.
+ await page.goto(base+'/'+GAME+'/?assets=0&skull=classic&season=ember');await page.waitForFunction(()=>window.__hd,null,{timeout:90000});
  assert.equal(await page.evaluate(()=>!!window.__hd.debug.spawnSkull().sdfRoot),false);
  assert.deepEqual(errors,[]);
  console.log('PASS: compare/rotate controls, SDF shaders, real START → aim → held fire → kill, collision radius, voxel gibs, material disposal, default renderer');
