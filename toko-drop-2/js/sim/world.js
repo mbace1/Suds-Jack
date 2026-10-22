@@ -1,63 +1,96 @@
 // world.js — the rules of a run.
 //
 // Plain JS: no DOM, no three.js, no clock. One fixed step at a time from a
-// seed, so a run is reproducible and testable in bare node (test/sim.mjs).
-// The view reads the world; it never writes it. What happened during a step
-// is reported in `world.events` for the view and the sound to act on.
+// seed, so a run is reproducible and testable in bare node (test/sim.mjs,
+// test/species.mjs). The view reads the world; it never writes it. What
+// happened during a step is reported in `world.events` for the view and the
+// sound to act on.
 //
 // Coordinates: the arena is centred on the origin, x across (right +), z
-// toward the bottom of the screen. Its size is 1.x's, chosen per run by the
-// screen's shape (TUNING.arena). Gels pop in on an ellipse inside it, as in
-// 1.x, swell into being, and the arena's edges are walls.
+// toward the bottom of the screen; its size is 1.x's (TUNING.arena). Each
+// species is a module (sim/species/), each mode's spawning a director
+// (sim/director/); docs/SIM_CONTRACT.md is the contract between them and
+// this file. The frame order is 1.x's (bullets-graze.md §7.1): everything
+// moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=4';
-import { makeRng } from './rng.js?v=4';
+import { TUNING } from '../tuning.js?v=5';
+import { makeRng } from './rng.js?v=5';
+import { BEHAVIOUR } from './species/index.js?v=5';
+import { DIRECTORS } from './director/index.js?v=5';
+import * as fire from './fire.js?v=5';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=5';
+import { swarmForces, resolveCrowd } from './crowd.js?v=5';
+import { revengeColor } from './color.js?v=5';
 
 const T = TUNING;
 
-const lerp = (a, b, t) => a + (b - a) * t;
+export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape } = {}) {
+  const w = {
+    seed, mode, rng: makeRng(seed), rngFx: makeRng((seed ^ 0x5bd1e995) >>> 0), tick: 0, time: 0, over: false,
+    hx: arena.hx, hz: arena.hz, hero: makeHero(),
+    gels: [], bullets: [], lobs: [], hazards: [], events: [],
+    heroBullets: 0, gelBullets: 0, refused: 0,
+    nextId: 1, score: 0, streak: 0, kills: 0, grazes: 0, nextMilestone: T.score.milestone, killedBy: null,
+    wave: 1, dir: null,
+  };
+  w.director = DIRECTORS[mode] ?? DIRECTORS.arcade;
+  w.dir = w.director.create(w, api);
+  return w;
+}
+
+// ── what species and directors may call (docs/SIM_CONTRACT.md) ──────
+export const api = {
+  T, fire,
+  S: (g) => T.species[g.kind],
+  // the body's walking speed now: its species' speed, the wave's escalation,
+  // the SWIFT affix and a SIREN's surge
+  speed(g) {
+    return T.species[g.kind].speed * g.speedMult * (g.affix === 'swift' ? T.variants.swiftSpeed : 1) * (g.surgeT > 0 ? g.surgeMult : 1);
+  },
+  spawn: (w, kind, x, z, opts) => spawn(w, kind, x, z, opts),
+  // a point on the ellipse at `frac` of the arena, at `angle`; with
+  // `clear`, the farthest of a few tries from the hero
+  ringPoint(w, angle, frac, clear = 0) {
+    let best = null, bd = -1;
+    for (let i = 0; i < (clear ? 6 : 1); i++) {
+      const a = i === 0 ? angle : w.rng.range(0, Math.PI * 2);
+      const x = Math.cos(a) * w.hx * frac, z = Math.sin(a) * w.hz * frac;
+      const d = Math.hypot(x - w.hero.x, z - w.hero.z);
+      if (d > bd) { bd = d; best = { x, z }; }
+      if (d > clear) break;
+    }
+    return best;
+  },
+  // hurt the hero unless they are in mercy or a dash; true if it landed
+  hurt(w, by) { if (!w.hero.alive || invincible(w.hero)) return false; hurtHero(w, by); return true; },
+  invincible: (w) => invincible(w.hero),
+  heroBullet(w, x, z, angle) {
+    if (w.heroBullets >= T.bullets.maxHero) return;
+    const s = T.bullets.heroSpeed;
+    w.bullets.push({ x, z, px: x, pz: z, vx: Math.cos(angle) * s, vz: Math.sin(angle) * s, speed: s, r: T.bullets.heroRadius,
+      life: T.bullets.life, hero: true, color: T.bullets.heroColor, src: null, revenge: false, homing: 0, grazed: false, dead: false });
+    w.heroBullets++;
+  },
+  kill: (w, g, src) => kill(w, g, src),
+  clamp(w, g) { if (!g) return; g.x = clamp(g.x, -w.hx + g.r, w.hx - g.r); g.z = clamp(g.z, -w.hz + g.r, w.hz - g.r); },
+  // points from anything but a kill or a graze (a wave's clear bonus), with
+  // the milestones that follow
+  score(w, n) { w.score += n; milestones(w); },
+  // how many more children (a split's brood) 1.x lets onto the floor now:
+  // children skip the live cap but stop at twice it (1.x main.js:10608-10620)
+  childrenAllowed(w) {
+    const cap = w.dir?.childCap > 0 ? w.dir.childCap : Infinity;
+    if (cap === Infinity) return Infinity;
+    let live = 0;
+    for (const g of w.gels) if (g.alive) live++;
+    return Math.max(0, cap - live);
+  },
+};
+
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
-function body() { return { ex: 0, ez: 0, vex: 0, vez: 0, wy: 0, vwy: 0 }; }
-
-// Squash along a contact normal: compress along it, bulge up. The spring
-// brings it back; the view turns ex/ez/wy into the gel's shape.
-function kick(b, nx, nz, amount) {
-  b.vex -= amount * nx * nx * 9;
-  b.vez -= amount * nz * nz * 9;
-  b.vwy += amount * 5;
-}
-
-function springStep(b, dt) {
-  const k = T.gel.spring, c = T.gel.damping;
-  b.vex += (-k * b.ex - c * b.vex) * dt; b.ex += b.vex * dt;
-  b.vez += (-k * b.ez - c * b.vez) * dt; b.ez += b.vez * dt;
-  b.vwy += (-k * b.wy - c * b.vwy) * dt; b.wy += b.vwy * dt;
-  b.ex = clamp(b.ex, -0.45, 0.6); b.ez = clamp(b.ez, -0.45, 0.6); b.wy = clamp(b.wy, -0.5, 0.6);
-}
-
-export function createWorld({ seed = 1, mode = 'survival', arena = T.arena.landscape } = {}) {
-  return {
-    seed, mode, rng: makeRng(seed), tick: 0, time: 0, over: false,
-    hx: arena.hx, hz: arena.hz,
-    hero: {
-      x: 0, z: 0, px: 0, pz: 0, aimX: 1, aimZ: 0, faceX: 1, faceZ: 0,
-      lives: T.hero.lives, mercy: 0, dash: 0, dashCd: 0, dashX: 0, dashZ: 0, dashId: 0,
-      fireCd: 0, alive: true, body: body(),
-    },
-    gels: [], bullets: [], fuses: [],
-    spawnCd: T.director.firstSpawn, nextId: 1,
-    score: 0, mult: 1, combo: 0, comboT: 0, kills: 0, grazes: 0,
-    nextExtend: T.score.extendEvery,
-    killedBy: null,
-    events: [],
-  };
-}
-
 // ── one step ───────────────────────────────────────────────────────
-// input: { mx, mz } move (length ≤ 1), { ax, az, aim } aim direction and
-// whether the player is aiming, fire, dash (edge: true on the step it is asked)
 export function step(w, input) {
   const dt = T.sim.dt;
   w.events.length = 0;
@@ -66,366 +99,225 @@ export function step(w, input) {
 
   const h = w.hero;
   h.px = h.x; h.pz = h.z;
-  for (const g of w.gels) { g.px = g.x; g.pz = g.z; }
+  for (const g of w.gels) { g.px = g.x; g.pz = g.z; g.shield = false; }
   for (const b of w.bullets) { b.px = b.x; b.pz = b.z; }
+  for (const l of w.lobs) { l.px = l.x; l.pz = l.z; }
 
-  heroStep(w, input, dt);
-  director(w, dt);
-  for (const g of w.gels) gelStep(w, g, dt);
-  separate(w);
-  fusesStep(w, dt);
+  w.director.step(w, dt, api);
+  heroStep(w, input, dt, api);
+  swarmForces(w, dt);
+  for (const g of w.gels.slice()) gelStep(w, g, dt);
+  applyPull(w);
+  resolveCrowd(w, dt);
   bulletsStep(w, dt);
+  lobsStep(w, dt);
+  hazardsStep(w, dt);
+  heroBulletsHit(w);
+  gelBulletsHit(w);
   contacts(w);
 
-  // the chain cools
-  if (w.comboT > 0 && (w.comboT -= dt) <= 0) { w.combo = 0; w.mult = 1; }
+  // bookkeeping
+  if (w.bullets.some((b) => b.dead)) {
+    w.bullets = w.bullets.filter((b) => !b.dead);
+    w.heroBullets = w.bullets.filter((b) => b.hero).length;
+    w.gelBullets = w.bullets.length - w.heroBullets;
+  }
   if (w.gels.some((g) => !g.alive)) w.gels = w.gels.filter((g) => g.alive);
+  for (const g of w.gels) { g.velX += ((g.x - g.px) / dt - g.velX) * 0.3; g.velZ += ((g.z - g.pz) / dt - g.velZ) * 0.3; }
+  h.velX += ((h.x - h.px) / dt - h.velX) * 0.3; h.velZ += ((h.z - h.pz) / dt - h.velZ) * 0.3;
   return w;
 }
 
-// ── the hero ───────────────────────────────────────────────────────
-function heroStep(w, input, dt) {
-  const h = w.hero, H = T.hero;
-  if (h.mercy > 0) h.mercy -= dt;
-  if (h.dashCd > 0) h.dashCd -= dt;
-  springStep(h.body, dt);
-
-  const ml = Math.hypot(input.mx, input.mz);
-  if (ml > 0.05) { h.faceX = input.mx / ml; h.faceZ = input.mz / ml; }
-  if (input.aim) {
-    const al = Math.hypot(input.ax, input.az);
-    if (al > 1e-6) { h.aimX = input.ax / al; h.aimZ = input.az / al; }
-  } else if (ml > 0.05) { h.aimX = h.faceX; h.aimZ = h.faceZ; }
-
-  // Dash: along the aim if aiming, else the way you are moving.
-  if (input.dash && h.dash <= 0 && h.dashCd <= 0) {
-    const dx = input.aim ? h.aimX : ml > 0.05 ? h.faceX : h.aimX;
-    const dz = input.aim ? h.aimZ : ml > 0.05 ? h.faceZ : h.aimZ;
-    h.dashX = dx; h.dashZ = dz; h.dash = H.dashTime; h.dashId++;
-    kick(h.body, dx, dz, -0.5);                 // stretch along the dash
-    w.events.push({ type: 'dash', x: h.x, z: h.z });
-  }
-
-  if (h.dash > 0) {
-    h.x += h.dashX * H.dashSpeed * dt; h.z += h.dashZ * H.dashSpeed * dt;
-    h.dash -= dt;
-    if (h.dash <= 0) h.dashCd = H.dashCooldown;
-    // the body-check: everything near is shoved, once per dash
-    for (const g of w.gels) {
-      if (g.state !== 'active' || g.shovedBy === h.dashId) continue;
-      const dx = g.x - h.x, dz = g.z - h.z, d = Math.hypot(dx, dz) || 1e-6;
-      if (d < H.shoveRadius + g.r) {
-        const nx = dx / d, nz = dz / d, heavy = 0.55 / g.r;
-        g.kx += nx * H.shove * heavy; g.kz += nz * H.shove * heavy;
-        g.shovedBy = h.dashId;
-        kick(g.body, nx, nz, T.gel.contactSquash * 1.4);
-        w.events.push({ type: 'shove', x: g.x, z: g.z, id: g.id });
-      }
-    }
-  } else if (ml > 0.01) {
-    const s = H.speed * Math.min(1, ml);
-    h.x += (input.mx / Math.max(ml, 1)) * s * dt; h.z += (input.mz / Math.max(ml, 1)) * s * dt;
-  }
-
-  const r = H.radius, HX = w.hx, HZ = w.hz;
-  if (h.x < -HX + r) { h.x = -HX + r; kick(h.body, 1, 0, 0.12); }
-  if (h.x > HX - r) { h.x = HX - r; kick(h.body, 1, 0, 0.12); }
-  if (h.z < -HZ + r) { h.z = -HZ + r; kick(h.body, 0, 1, 0.12); }
-  if (h.z > HZ - r) { h.z = HZ - r; kick(h.body, 0, 1, 0.12); }
-
-  if (h.fireCd > 0) h.fireCd -= dt;
-  if (input.fire && h.alive) {
-    while (h.fireCd <= 0) {
-      fire(w, h.x + h.aimX * (r + 0.1), h.z + h.aimZ * (r + 0.1), Math.atan2(h.aimZ, h.aimX),
-        T.bullets.heroSpeed, T.bullets.heroRadius, T.bullets.heroColor, true, null);
-      h.fireCd += H.fireEvery;
-      w.events.push({ type: 'shot' });
-    }
-  } else if (h.fireCd < 0) h.fireCd = 0;
-}
-
-// ── who comes, and when ────────────────────────────────────────────
-function director(w, dt) {
-  const N = T.director, f = clamp(w.time / N.ramp, 0, 1);
-  if ((w.spawnCd -= dt) > 0) return;
-  const alive = w.gels.length;
-  const max = Math.round(lerp(N.maxAlive[0], N.maxAlive[1], f));
-  w.spawnCd = lerp(N.spawnEvery[0], N.spawnEvery[1], f) * w.rng.range(0.8, 1.2);
-  if (alive >= max) return;
-  const kind = pickSpecies(w);
-  const group = Math.min(max - alive, w.rng.int(N.groupOf[0], Math.round(lerp(N.groupOf[0], N.groupOf[1], f))));
-  for (let i = 0; i < group; i++) spawn(w, kind);
-}
-
-function pickSpecies(w) {
-  const pool = Object.entries(T.species).filter(([, s]) => s.unlock <= w.time && s.weight > 0);
-  let total = pool.reduce((a, [, s]) => a + s.weight, 0), roll = w.rng.next() * total;
-  for (const [k, s] of pool) if ((roll -= s.weight) < 0) return k;
-  return pool[0][0];
-}
-
-// On the ellipse at `ring` of the arena (1.x), at a random angle, and never
-// near the hero: of a handful of tries, the farthest from you wins.
-function spawn(w, kind) {
-  const D = T.director, h = w.hero;
-  let bx = 0, bz = 0, best = -1;
-  for (let tries = 0; tries < 6; tries++) {
-    const a = w.rng.range(0, Math.PI * 2);
-    const x = Math.cos(a) * w.hx * D.ring, z = Math.sin(a) * w.hz * D.ring;
-    const d = Math.hypot(x - h.x, z - h.z);
-    if (d > best) { best = d; bx = x; bz = z; }
-    if (d > D.clearOfHero) break;
-  }
-  w.gels.push(makeGel(w, kind, bx, bz, 'appear'));
-  w.events.push({ type: 'spawn', x: bx, z: bz, kind });
-}
-
-function makeGel(w, kind, x, z, state) {
-  const S = T.species[kind];
-  return {
-    id: w.nextId++, kind, x, z, px: x, pz: z,
-    r: S.radius, hp: S.hp, vx: 0, vz: 0, kx: 0, kz: 0, state, t: 0, alive: true,
-    fireCd: (S.fireEvery || 2) * w.rng.range(0.6, 1.1), windup: false,
-    dartCd: (S.dartEvery || 2) * w.rng.range(0.5, 1), dart: 0, dartX: 0, dartZ: 0,
-    faceX: 0, faceZ: 1, flash: 0, wander: w.rng.range(0, Math.PI * 2), shovedBy: -1,
-    body: body(),
+// ── bodies ─────────────────────────────────────────────────────────
+function spawn(w, kind, x, z, o = {}) {
+  const S = T.species[kind], V = T.variants;
+  let r = S.radius, hp = S.hp;
+  if (o.variant === 'elite') { r *= V.elite.radius; if (!S.noHpMult) hp = Math.ceil(hp * V.elite.hp); }
+  else if (o.variant === 'elitelite' && !S.noHpMult) hp = Math.ceil(hp * V.elitelite.hp);
+  if (o.isBoss) r *= V.boss.radius;
+  if (o.hp != null) hp = o.hp;
+  const g = {
+    id: w.nextId++, kind, x, z, px: x, pz: z, vx: 0, vz: 0, kx: 0, kz: 0, velX: 0, velZ: 0,
+    r, hp, maxHp: hp, state: o.child || o.appear === false ? 'active' : 'appear', t: 0, alive: true,
+    flash: 0, sq: 1, sqV: 0, speedMult: o.speedMult ?? 1, intervalMult: o.intervalMult ?? 1,
+    variant: o.variant ?? 'normal', affix: o.affix ?? null, anchored: o.affix === 'anchored', isBoss: !!o.isBoss, child: !!o.child,
+    shield: false, surgeT: 0, surgeMult: 1, cloak: 0, tell: 0, faceX: 0, faceZ: 1, dashedBy: -1,
+    dodgeCd: 0, dodgeT: 0, dodgeVx: 0, dodgeVz: 0, mvPhase: w.rngFx.range(0, Math.PI * 2), mvSide: w.rngFx.next() < 0.5 ? 1 : -1,
+    nudgedX: 0, nudgedZ: 0, s: {},
   };
+  w.gels.push(g);
+  BEHAVIOUR[kind].init?.(w, g, api, o);
+  w.events.push({ type: 'spawn', id: g.id, x, z, kind, boss: g.isBoss, ping: !!o.ping });
+  return g;
 }
 
-// ── the gels ───────────────────────────────────────────────────────
 function gelStep(w, g, dt) {
-  const G = T.gel, S = T.species[g.kind], h = w.hero;
-  springStep(g.body, dt);
+  if (!g.alive) return;
+  const S = T.species[g.kind];
+  const [k, c] = T.gel.sq[S.family === 'cube' ? 'cube' : 'blob'];
+  g.sqV = (g.sqV - (g.sq - 1) * k) * c;
+  g.sq = clamp(g.sq + g.sqV, 0.55, 1.55);
   if (g.flash > 0) g.flash -= dt;
-
+  if (g.surgeT > 0) g.surgeT -= dt;
+  g.t += dt;
   if (g.state === 'appear') {
-    if ((g.t += dt) >= G.appear) { g.state = 'active'; g.body.vwy -= 2.4; w.events.push({ type: 'land', x: g.x, z: g.z }); }
+    if (g.t >= T.gel.appear) { g.state = 'active'; g.t = 0; w.events.push({ type: 'land', x: g.x, z: g.z }); }
     return;
   }
-
-  const dx = h.x - g.x, dz = h.z - g.z, d = Math.hypot(dx, dz) || 1e-6;
-  const nx = dx / d, nz = dz / d;
-  g.faceX = nx; g.faceZ = nz;
-  g.wander += dt * 1.7;
-  const wob = Math.sin(g.wander) * 0.35;           // a sway, so a chase is not a rail
-  let tx = (nx - nz * wob) * S.speed, tz = (nz + nx * wob) * S.speed;
-
-  if (g.kind === 'yela') {
-    if (g.dart > 0) { g.dart -= dt; tx = g.dartX * S.dartSpeed; tz = g.dartZ * S.dartSpeed; }
-    else if ((g.dartCd -= dt) <= 0) {
-      g.dart = S.dartTime; g.dartX = nx; g.dartZ = nz; g.dartCd = S.dartEvery * w.rng.range(0.8, 1.2);
-      kick(g.body, nx, nz, -0.3);
-    }
-  } else if (g.kind === 'spittor') {
-    const k = d > S.range + 0.5 ? 1 : d < S.range - 1 ? -1 : 0;
-    tx = (nx * k - nz * 0.4) * S.speed; tz = (nz * k + nx * 0.4) * S.speed;
-  } else if (g.kind === 'orange') {
-    const k = clamp((d - S.range) * 0.8, -1, 1);
-    tx = (nx * k - nz) * S.speed; tz = (nz * k + nx) * S.speed;
-  } else if (g.kind === 'fanner') {
-    tx *= 0.8; tz *= 0.8;
-  }
-
-  // shooters wind up (a swell you can read), then fire
-  if (S.fireEvery) {
-    g.fireCd -= dt;
-    if (!g.windup && g.fireCd <= S.windup) { g.windup = true; g.body.vwy += 2.2; }
-    if (g.fireCd <= 0) {
-      g.windup = false; g.fireCd = S.fireEvery * w.rng.range(0.85, 1.15);
-      const a = Math.atan2(nz, nx), col = S.bulletColor ?? livingColor(S.color);
-      const sp = T.bullets.gelSpeed;
-      if (g.kind === 'spittor') fire(w, g.x, g.z, a, sp, T.bullets.gelRadius, col, false, g.kind);
-      else if (g.kind === 'orange') for (const o of [-1, 0, 1]) fire(w, g.x, g.z, a + o * S.spreadDeg * Math.PI / 180, sp, T.bullets.gelRadius, col, false, g.kind);
-      else if (g.kind === 'fanner') fan(w, g.x, g.z, a, S.count, S.arcDeg, sp, col, g.kind);
-      kick(g.body, nx, nz, 0.2);
-      w.events.push({ type: 'gelShot', x: g.x, z: g.z, kind: g.kind });
-    }
-  }
-
-  const acc = Math.min(1, 7 * dt);
-  g.vx += (tx - g.vx) * acc; g.vz += (tz - g.vz) * acc;
-  const fr = Math.exp(-G.knockFriction * dt);
+  g.vx = g.vz = 0;
+  BEHAVIOUR[g.kind].step(w, g, dt, api);
+  if (!g.alive) return;
+  const fr = Math.exp(-T.gel.knockFriction * dt);
   g.kx *= fr; g.kz *= fr;
   g.x += (g.vx + g.kx) * dt; g.z += (g.vz + g.kz) * dt;
-
-  // the arena's edges are walls: bodies flatten against them and bounce back
-  const r = g.r, HX = w.hx, HZ = w.hz;
-  if (g.x < -HX + r) { g.x = -HX + r; wall(w, g, 1, 0); }
-  if (g.x > HX - r) { g.x = HX - r; wall(w, g, -1, 0); }
-  if (g.z < -HZ + r) { g.z = -HZ + r; wall(w, g, 0, 1); }
-  if (g.z > HZ - r) { g.z = HZ - r; wall(w, g, 0, -1); }
+  // the arena's edges are walls
+  const HX = w.hx - g.r, HZ = w.hz - g.r;
+  if (g.x < -HX || g.x > HX) { g.x = clamp(g.x, -HX, HX); if (Math.abs(g.kx) > 2) g.sqV += T.gel.sq.wall; g.kx *= -T.gel.wallBounce; }
+  if (g.z < -HZ || g.z > HZ) { g.z = clamp(g.z, -HZ, HZ); if (Math.abs(g.kz) > 2) g.sqV += T.gel.sq.wall; g.kz *= -T.gel.wallBounce; }
 }
 
-function wall(w, g, nx, nz) {
-  const vn = g.kx * nx + g.kz * nz;
-  if (vn < 0) { g.kx -= (1 + T.gel.wallBounce) * vn * nx; g.kz -= (1 + T.gel.wallBounce) * vn * nz; }
-  const hard = Math.min(1, Math.abs(vn) / 6);
-  if (hard > 0.15) { kick(g.body, nx, nz, T.gel.contactSquash * hard); w.events.push({ type: 'wall', x: g.x, z: g.z, hard }); }
-}
-
-// Soft bodies: overlapping gels push apart, heavier ones shove lighter ones,
-// and each squashes along the contact. This is what makes a crowd pile.
-function separate(w) {
-  const gs = w.gels, k = T.gel.separation, HX = w.hx, HZ = w.hz;
-  for (let i = 0; i < gs.length; i++) {
-    const a = gs[i];
-    if (a.state !== 'active' || !a.alive) continue;
-    for (let j = i + 1; j < gs.length; j++) {
-      const b = gs[j];
-      if (b.state !== 'active' || !b.alive) continue;
-      const dx = b.x - a.x, dz = b.z - a.z, rr = a.r + b.r;
-      const d2 = dx * dx + dz * dz;
-      if (d2 >= rr * rr) continue;
-      const d = Math.sqrt(d2) || 1e-6, nx = dx / d, nz = dz / d, over = rr - d;
-      const ma = a.r * a.r, mb = b.r * b.r, sa = mb / (ma + mb), sb = ma / (ma + mb);
-      a.x -= nx * over * k * sa; a.z -= nz * over * k * sa;
-      b.x += nx * over * k * sb; b.z += nz * over * k * sb;
-      // the push runs after the curb walls, so it may not undo them
-      a.x = clamp(a.x, -HX + a.r, HX - a.r); a.z = clamp(a.z, -HZ + a.r, HZ - a.r);
-      b.x = clamp(b.x, -HX + b.r, HX - b.r); b.z = clamp(b.z, -HZ + b.r, HZ - b.r);
-      const rel = (b.kx - a.kx) * nx + (b.kz - a.kz) * nz;   // closing knock speed
-      if (rel < 0) { a.kx += nx * rel * sa; a.kz += nz * rel * sa; b.kx -= nx * rel * sb; b.kz -= nz * rel * sb; }
-      const sq = Math.min(0.25, over / rr) * T.gel.contactSquash;
-      kick(a.body, nx, nz, sq); kick(b.body, nx, nz, sq);
-    }
-  }
-}
-
-// ── bullets ────────────────────────────────────────────────────────
-function fire(w, x, z, angle, speed, radius, color, hero, src) {
-  if (w.bullets.length >= T.bullets.max) return;
-  w.bullets.push({ x, z, px: x, pz: z, vx: Math.cos(angle) * speed, vz: Math.sin(angle) * speed, r: radius, life: T.bullets.life, hero, color, src, grazed: false, dead: false });
-}
-
-function fan(w, x, z, a, count, arcDeg, speed, color, src) {
-  const arc = arcDeg * Math.PI / 180;
-  for (let i = 0; i < count; i++) fire(w, x, z, a - arc / 2 + (count > 1 ? (arc * i) / (count - 1) : arc / 2), speed, T.bullets.gelRadius, color, false, src);
-}
-
-function bulletsStep(w, dt) {
-  const h = w.hero, HX = w.hx, HZ = w.hz;
-  for (const b of w.bullets) {
-    b.x += b.vx * dt; b.z += b.vz * dt;
-    if ((b.life -= dt) <= 0 || Math.abs(b.x) > HX + 1.5 || Math.abs(b.z) > HZ + 1.5) { b.dead = true; continue; }
-    if (b.hero) {
-      for (const g of w.gels) {
-        if (!g.alive || g.state !== 'active') continue;
-        const dx = g.x - b.x, dz = g.z - b.z, rr = g.r + b.r;
-        if (dx * dx + dz * dz > rr * rr) continue;
-        b.dead = true;
-        const l = Math.hypot(b.vx, b.vz) || 1, nx = b.vx / l, nz = b.vz / l;
-        g.kx += nx * T.gel.hitKnock * (0.55 / g.r); g.kz += nz * T.gel.hitKnock * (0.55 / g.r);
-        g.flash = 0.08;
-        kick(g.body, nx, nz, T.gel.contactSquash * 0.6);
-        g.hp -= T.bullets.heroDamage;
-        w.events.push({ type: 'hit', x: b.x, z: b.z, id: g.id, nx, nz });
-        if (g.hp <= 0) kill(w, g);
-        break;
-      }
-    } else if (h.alive) {
-      const dx = h.x - b.x, dz = h.z - b.z, d = Math.hypot(dx, dz);
-      if (d < T.hero.hitRadius + b.r) {
-        if (h.mercy <= 0 && h.dash <= 0) { b.dead = true; hurt(w, b.src); }
-      } else if (!b.grazed && d < T.graze.radius) {
-        b.grazed = true; w.grazes++;
-        w.score += T.graze.points * w.mult;
-        if (w.comboT > 0) w.comboT = Math.max(w.comboT, T.score.comboWindow * 0.5);
-        w.events.push({ type: 'graze', x: b.x, z: b.z });
-        checkExtend(w);
-      }
-    }
-  }
-  if (w.bullets.some((b) => b.dead)) w.bullets = w.bullets.filter((b) => !b.dead);
-}
-
-function contacts(w) {
-  const h = w.hero;
-  if (!h.alive) return;
-  for (const g of w.gels) {
-    if (!g.alive || g.state !== 'active') continue;
-    const dx = g.x - h.x, dz = g.z - h.z, d = Math.hypot(dx, dz) || 1e-6;
-    if (d > g.r + T.hero.radius * 0.8) continue;
-    if (h.mercy <= 0 && h.dash <= 0) {
-      hurt(w, g.kind);
-      g.kx += (dx / d) * 6; g.kz += (dz / d) * 6;
-      kick(g.body, dx / d, dz / d, T.gel.contactSquash);
-    }
-  }
-}
-
-function hurt(w, by) {
-  const h = w.hero;
-  h.lives--; h.mercy = T.hero.mercy;
-  w.combo = 0; w.mult = 1; w.comboT = 0;
-  w.killedBy = by;
-  kick(h.body, 0, 0, 0); h.body.vwy -= 4;
-  // a breath: gel bullets close to you are cleared
-  for (const b of w.bullets) if (!b.hero && Math.hypot(b.x - h.x, b.z - h.z) < 3) b.dead = true;
-  w.events.push({ type: 'hurt', x: h.x, z: h.z, by, lives: h.lives });
-  if (h.lives <= 0) {
-    h.alive = false; w.over = true;
-    w.events.push({ type: 'over', score: w.score, by });
-  }
-}
-
-function kill(w, g) {
+function kill(w, g, src = 'hero') {
   if (!g.alive) return;
   g.alive = false;
   const S = T.species[g.kind], hard = w.mode === 'hardcade';
-  w.combo++; w.comboT = T.score.comboWindow;
-  w.mult = Math.min(T.score.maxMult, 1 + Math.floor(w.combo / T.score.comboStep));
-  w.score += Math.round(S.score * w.mult * (hard ? T.revenge.scoreMult : 1));
-  w.kills++;
-  w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color });
-  if (S.children) {
-    for (let i = 0; i < S.children; i++) {
-      const a = (i / S.children) * Math.PI * 2 + w.rng.range(0, 1);
-      const c = makeGel(w, S.childKind, g.x + Math.cos(a) * 0.4, g.z + Math.sin(a) * 0.4, 'active');
-      c.kx = Math.cos(a) * 6; c.kz = Math.sin(a) * 6;
-      w.gels.push(c);
+  w.kills++; w.streak++;
+  w.score += Math.round(T.score.perKill * w.streak * (hard ? T.revenge.scoreMult : 1));
+  w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src });
+  BEHAVIOUR[g.kind].onKill?.(w, g, api, src);
+  // a big death shakes the bodies around it (1.x main.js:4517-4540)
+  if (g.r >= T.death.big) for (const o of w.gels) if (o.alive && o !== g && Math.hypot(o.x - g.x, o.z - g.z) <= T.death.shockRadius) o.sqV -= T.death.shockSquash;
+  // VOLATILE: an 8-ring at corpse speed on death, in every mode (1.x main.js:4367-4377)
+  if (g.affix === 'volatile') {
+    fire.ring(w, g.x, g.z, 8, w.rngFx.range(0, Math.PI * 2), { speedMult: T.revenge.speedMult, color: revengeColor(g.kind), src: g.kind, revenge: true });
+  }
+  if (hard && src !== 'env') revenge(w, g);
+  w.director.onKill?.(w, g, api);
+  milestones(w);
+}
+
+// HARDCADE: 1.x's corpse fire (main.js:4390-4420). Biters (or every corpse,
+// with `who: 'all'`) and bosses bloom from the corpse's centre the step they
+// die: AIMED is a tight burst at you, FAN a slow arc, RING the circle. Not
+// before `fromWave`, and not while the floor already holds `fieldCap` live
+// corpse bullets (a bloom that starts under the cap lands whole).
+function revenge(w, g) {
+  const R = T.revenge, S = T.species[g.kind];
+  if (!(g.isBoss || S.revenge || R.who === 'all') || w.wave < R.fromWave) return;
+  let live = 0;
+  for (const b of w.bullets) if (b.revenge && !b.dead) live++;
+  if (live >= Math.min(R.fieldCap.max, Math.round(R.fieldCap.base + w.wave * R.fieldCap.per)) || w.gelBullets >= R.poolGate) return;
+  const h = w.hero, near = Math.hypot(h.x - g.x, h.z - g.z) < 0.001;
+  const aim = near ? w.rngFx.range(0, Math.PI * 2) : Math.atan2(h.z - g.z, h.x - g.x);
+  const opts = { speedMult: R.speedMult, color: revengeColor(g.kind), src: g.kind, revenge: true };
+  const dialect = g.isBoss ? 'RING' : (S.revenge ?? 'RING');
+  const n = (c) => Math.max(1, Math.round(c * R.density));
+  if (dialect === 'AIMED') fire.fanStep(w, g.x, g.z, aim, n(R.aimed.count), R.aimed.spread, opts);
+  else if (dialect === 'FAN') fire.fanStep(w, g.x, g.z, aim, n(R.fan.count), R.fan.spread, opts);
+  else fire.ring(w, g.x, g.z, n(g.isBoss ? R.ring.boss : g.r > R.ring.bigRadius ? R.ring.big : R.ring.small), w.rngFx.range(0, Math.PI * 2), opts);
+  w.events.push({ type: 'revenge', x: g.x, z: g.z, kind: g.kind });
+}
+
+function milestones(w) {
+  while (w.score >= w.nextMilestone) { w.events.push({ type: 'milestone', score: w.nextMilestone }); w.nextMilestone += T.score.milestone; }
+}
+
+// ── bullets, lobs, hazards ─────────────────────────────────────────
+function bulletsStep(w, dt) {
+  const h = w.hero, HX = w.hx + 1.5, HZ = w.hz + 1.5;
+  for (const b of w.bullets) {
+    if (b.dead) continue;
+    if (b.homing && !b.hero) {
+      // steer toward the hero at no more than `homing` rad/s, at constant speed
+      const want = Math.atan2(h.z - b.z, h.x - b.x), cur = Math.atan2(b.vz, b.vx);
+      let d = want - cur; d = Math.atan2(Math.sin(d), Math.cos(d));
+      const a = cur + clamp(d, -b.homing * dt, b.homing * dt);
+      b.vx = Math.cos(a) * b.speed; b.vz = Math.sin(a) * b.speed;
+    }
+    b.x += b.vx * dt; b.z += b.vz * dt;
+    if ((b.life -= dt) <= 0 || Math.abs(b.x) > HX || Math.abs(b.z) > HZ) b.dead = true;
+  }
+}
+
+function lobsStep(w, dt) {
+  if (!w.lobs.length) return;
+  for (const l of w.lobs) {
+    l.t += dt;
+    const u = Math.min(1, l.t / l.flight);
+    l.x = l.x0 + (l.tx - l.x0) * u; l.z = l.z0 + (l.tz - l.z0) * u;
+    l.y = 0.5 + Math.sin(Math.PI * u) * l.height;
+    if (u >= 1) {
+      l.done = true;
+      w.events.push({ type: 'lobLand', x: l.x, z: l.z, color: l.color, splash: l.splash, src: l.src });
+      if (Math.hypot(w.hero.x - l.x, w.hero.z - l.z) < l.splash + T.hero.radius) api.hurt(w, l.src);
+      if (l.hazard) fire.hazard(w, l.x, l.z, { ...l.hazard, src: l.src, color: l.color });
     }
   }
-  if (hard) { w.fuses.push({ x: g.x, z: g.z, kind: g.kind, t: T.revenge.fuse }); w.events.push({ type: 'fuse', x: g.x, z: g.z, kind: g.kind }); }
-  checkExtend(w);
+  w.lobs = w.lobs.filter((l) => !l.done);
 }
 
-// HARDCADE: the corpse fires back in its species' dialect, slower, darker —
-// after a fuse you can see, and never from on top of you. Fired from the
-// centre of a gel killed at point-blank, a ring lands the instant it exists:
-// the first cut did exactly that and a bot lasted twelve seconds. Revenge is
-// meant to be the graze game, not a wall (1.x v220).
-function fusesStep(w, dt) {
-  if (!w.fuses.length) return;
-  for (const f of w.fuses) if ((f.t -= dt) <= 0) revenge(w, f);
-  w.fuses = w.fuses.filter((f) => f.t > 0);
+function hazardsStep(w, dt) {
+  if (!w.hazards.length) return;
+  const h = w.hero;
+  for (const z of w.hazards) {
+    z.life -= dt;
+    if (Math.hypot(h.x - z.x, h.z - z.z) < z.r) api.hurt(w, z.src);
+  }
+  w.hazards = w.hazards.filter((z) => z.life > 0);
 }
 
-function revenge(w, f) {
-  const R = T.revenge, h = w.hero, S = T.species[f.kind], sp = T.bullets.gelSpeed * R.speedMult;
-  const col = corpseColor(S.color), a = Math.atan2(h.z - f.z, h.x - f.x);
-  const before = w.bullets.length;
-  if (S.revenge === 'aimed') {
-    for (let i = 0; i < R.aimed.count; i++) fire(w, f.x, f.z, a, sp * (1 - i * 0.14), T.bullets.gelRadius, col, false, f.kind);
-  } else if (S.revenge === 'fan') fan(w, f.x, f.z, a, R.fan.count, R.fan.arcDeg, sp, col, f.kind);
-  // a ring is for grazing: rotated half a step so you stand in a gap, not on a bullet
-  else for (let i = 0; i < R.ring.count; i++) fire(w, f.x, f.z, a + ((i + 0.5) / R.ring.count) * Math.PI * 2, sp, T.bullets.gelRadius, col, false, f.kind);
-  // too close to fire at all: the corpse spends itself harmlessly
-  if (Math.hypot(h.x - f.x, h.z - f.z) < R.safeRadius) w.bullets.length = before;
-  else w.events.push({ type: 'revenge', x: f.x, z: f.z, kind: f.kind });
-}
-
-function checkExtend(w) {
-  while (w.score >= w.nextExtend) {
-    w.nextExtend += T.score.extendEvery;
-    if (w.hero.lives < T.score.maxLives) { w.hero.lives++; w.events.push({ type: 'extend', lives: w.hero.lives }); }
+// hero bullets → bodies: point against circle at post-move positions (1.x)
+function heroBulletsHit(w) {
+  for (const b of w.bullets) {
+    if (!b.hero || b.dead) continue;
+    for (const g of w.gels) {
+      if (!g.alive || g.state !== 'active') continue;
+      const B = BEHAVIOUR[g.kind];
+      const touching = B.hitTest ? B.hitTest(w, g, b.x, b.z, b.r) : Math.hypot(g.x - b.x, g.z - b.z) < b.r + g.r;
+      if (!touching) continue;
+      const res = B.onHit?.(w, g, b, api);
+      if (res === 'pass') continue;
+      b.dead = true;
+      if (res === 'block' || g.shield) { w.events.push({ type: 'block', x: b.x, z: b.z, id: g.id }); break; }
+      g.hp -= T.bullets.heroDamage;
+      g.flash = T.gel.flash;
+      g.sqV += T.gel.sq.hit;
+      w.events.push({ type: 'hit', x: b.x, z: b.z, id: g.id, kind: g.kind });
+      if (g.hp <= 0) kill(w, g, 'hero');
+      break;
+    }
   }
 }
 
-// colour helpers (numbers in, numbers out — the view turns them into colours)
-function mixHex(a, b, t) {
-  const ch = (c, s) => (c >> s) & 255;
-  const m = (s) => Math.round(ch(a, s) + (ch(b, s) - ch(a, s)) * t) << s;
-  return m(16) | m(8) | m(0);
+// gel bullets → the hero, then graze (1.x main.js:10839-10867): nothing
+// lands or grazes while you are invincible, and one bullet hit per step
+function gelBulletsHit(w) {
+  const h = w.hero;
+  if (!h.alive || invincible(h)) return;
+  for (const b of w.bullets) {
+    if (b.hero || b.dead) continue;
+    const d = Math.hypot(b.x - h.x, b.z - h.z);
+    if (d < b.r + T.hero.hitRadius) {
+      b.dead = true;
+      hurtHero(w, b.revenge ? `revenge:${b.src}` : b.src);
+      return;
+    }
+    if (!b.grazed && d < T.graze.radius) {
+      b.grazed = true; w.grazes++;
+      w.score += T.graze.points * (w.mode === 'hardcade' ? T.revenge.scoreMult : 1);
+      w.events.push({ type: 'graze', x: b.x, z: b.z });
+      milestones(w);
+    }
+  }
 }
-export const livingColor = (c) => mixHex(c, 0xffffff, 0.35);
-export const corpseColor = (c) => mixHex(c, 0x000000, T.revenge.darken);
+
+// bodies that hurt to touch (each species' `contact`; 1.x MELEE_TYPES)
+function contacts(w) {
+  const h = w.hero;
+  if (!h.alive || invincible(h)) return;
+  for (const g of w.gels) {
+    if (!g.alive || g.state !== 'active') continue;
+    const B = BEHAVIOUR[g.kind];
+    const touching = B.touches ? B.touches(w, g) : T.species[g.kind].contact && Math.hypot(g.x - h.x, g.z - h.z) < g.r + T.gel.contactRadius;
+    if (touching) { hurtHero(w, g.kind); return; }
+  }
+}

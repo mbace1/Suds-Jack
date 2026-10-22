@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=4';
+import { TUNING } from './tuning.js?v=5';
 
 const A = TUNING.audio;
 
@@ -44,18 +44,37 @@ export class Sound {
   event(e) {
     switch (e.type) {
       case 'shot': if ((this._shot++ & 1) === 0) this._tone('square', 1500, 900, 0.035, 0.035); break;
-      case 'gelShot': this._tone('triangle', 520, 300, 0.09, 0.06); break;
+      // 1.x's gels fire silently; a quiet tick is 2.0's, and a WEEVA's spiral
+      // (6-15 a second) would turn it into a drone, so those stay silent
+      case 'gelShot': if (!e.spiral) this._tone('triangle', 520, 300, 0.09, 0.04); break;
       case 'hit': this._tone('sine', 300, 160, 0.06, 0.08); break;
-      case 'kill': this._hiss(0.22, 0.22, 1400, 200, 1.2); this._tone('sine', 260, 70, 0.22, 0.16); break;
+      // 1.x's death voices by family (main.js:4476-4480, audio.js:243-249): a
+      // blob, a cube's crunch, and a species' own where it has one (TORO, BAMBU)
+      case 'kill': {
+        const S = TUNING.species[e.kind], d = S?.deathSound;
+        if (d) { this._tone(d.wave, d.f0, d.f1, d.dur, d.vol); if (d.noiseVol) this._hiss(d.noiseDur, d.noiseVol, 1400, 200, 1.2); }
+        else if (S?.family === 'cube') { this._tone('square', 380, 55, 0.18, 0.22); this._hiss(0.13, 0.09, 1400, 200, 1.2); }
+        else this._tone('sine', 420, 75, 0.22, 0.22);
+        break;
+      }
+      case 'scream': {   // 1.x sirenScream (audio.js:258-263), from the species' own tuning
+        const s = TUNING.species[e.kind]?.sound;
+        for (const v of s?.scream ?? []) this._tone(v.wave, v.from, v.to, v.dur, v.vol);
+        if (s?.noise) this._hiss(s.noise.dur, s.noise.vol, 800, 2400, 0.8);
+        break;
+      }
+      case 'lobLand': this._tone('sine', 150, 55, 0.28, 0.2); this._hiss(0.16, 0.12, 900, 300); break;   // 1.x lobSplash
+      case 'dashBoom': this._hiss(0.25, 0.3, 2200, 200, 1); this._tone('square', 220, 60, 0.2, 0.2); break;
+      case 'block': this._tone('square', 1300, 1100, 0.05, 0.08); break;      // 1.x's tinks
+      case 'weapon': [0, 0.08, 0.16].forEach((w, i) => this._tone('square', 660 * [1, 1.25, 1.5][i], 660 * [1, 1.25, 1.5][i], 0.12, 0.06, w)); break;
+      case 'curtainWarn': this._tone('sawtooth', 300, 420, 0.25, 0.12); break;
+      case 'clear': this._tone('triangle', 520, 780, 0.3, 0.1); break;
       case 'hurt': this._tone('sawtooth', 160, 45, 0.4, 0.2); this._hiss(0.3, 0.2, 600, 120); break;
-      case 'dash': this._hiss(0.16, 0.12, 400, 2600, 0.8); break;
-      case 'shove': this._tone('sine', 180, 90, 0.08, 0.12); break;
+
       case 'graze': this._tone('sine', 2400, 2600, 0.03, 0.04); break;
       case 'spawn': this._hiss(0.25, 0.05, 900, 500, 3); break;
       case 'land': this._tone('sine', 140, 70, 0.1, 0.1); break;
       case 'wall': this._tone('sine', 120, 80, 0.06, 0.05 * e.hard); break;
-      case 'extend': [0, 0.08, 0.16].forEach((w, i) => this._tone('square', 660 * [1, 1.25, 1.5][i], 660 * [1, 1.25, 1.5][i], 0.12, 0.06, w)); break;
-      case 'dawn': [0, 0.12, 0.24, 0.36].forEach((w, i) => this._tone('triangle', 440 * [1, 1.25, 1.5, 2][i], 440 * [1, 1.25, 1.5, 2][i], 0.5, 0.08, w)); break;
       case 'over': this._tone('sawtooth', 220, 40, 1.2, 0.18); break;
     }
   }

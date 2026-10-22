@@ -7,16 +7,16 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=4';
-import { buildFloor } from './render/floor.js?v=4';
-import { fitCamera } from './render/view.js?v=4';
-import { Splats } from './render/splats.js?v=4';
-import { Actors } from './render/actors.js?v=4';
-import { GEL_TIME } from './render/gel.js?v=4';
-import { createWorld, step } from './sim/world.js?v=4';
-import { Input } from './input.js?v=4';
-import { UI, t, timeText } from './ui.js?v=4';
-import { Sound } from './audio.js?v=4';
+import { TUNING } from './tuning.js?v=5';
+import { buildFloor } from './render/floor.js?v=5';
+import { fitCamera } from './render/view.js?v=5';
+import { Splats } from './render/splats.js?v=5';
+import { Actors } from './render/actors.js?v=5';
+import { GEL_TIME } from './render/gel.js?v=5';
+import { createWorld, step, api as simApi } from './sim/world.js?v=5';
+import { Input } from './input.js?v=5';
+import { UI, t, timeText } from './ui.js?v=5';
+import { Sound } from './audio.js?v=5';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -122,6 +122,7 @@ function toMenu() {
 }
 
 function start(m) {
+  debug.hold = false; debug.freeCam = false;
   mode = MODES.includes(m) ? m : 'arcade';
   useArena(screenArena());
   world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena });
@@ -152,16 +153,26 @@ function finish() {
 function onEvent(e) {
   debug.counts[e.type] = (debug.counts[e.type] || 0) + 1;
   sound.event(e);
+  input.feel?.(e);
   actors.onEvent(e, world);
   const K = T.shake;
   if (e.type === 'kill') shake(K.kill + K.killPerRadius * e.r + (e.r >= T.death.big ? K.bigKill : 0));
-  else if (e.type === 'hurt') shake(K.hurt);
-  else if (e.type === 'extend') ui.banner(t('extend'));
+  else if (e.type === 'hurt') { shake(K.hurt); ui.vignette(); }
+  else if (e.type === 'over') shake(T.heroLook.deathShake);
+  else if (e.type === 'dashBoom') shake(e.shake ?? T.hero.dashBoom.shake);
+  else if (e.type === 'shake') shake(e.amount);
+  else if (e.type === 'lobLand') shake(T.death.lobSplash.shake);
+  else if (e.type === 'milestone') ui.banner(e.score.toLocaleString('en-US'), 1.2);
+  else if (e.type === 'wave') ui.banner(`${t('wave')} ${e.wave}${e.label ? ` · ${e.label}` : ''}`, e.dur ?? 1.4);
+  else if (e.type === 'clear') ui.banner(`${t('wave')} ${e.wave} ${t('clear')} +${e.bonus.toLocaleString('en-US')}`, e.dur ?? 1.0);
+  else if (e.type === 'curtainWarn') ui.banner(`${String(e.style || '').toUpperCase()} ${t('curtain')}`, e.t ?? 1.1);
+  else if (e.type === 'weapon') ui.banner(e.down ? `${e.fam.toUpperCase()} ${t('podDown')}` : e.up ? `${e.fam.toUpperCase()} ${t('podUp')}` : `${e.fam.toUpperCase()} ${t('pod')}`, 1.2);
 }
 
 // screen-axis input → the world. The camera looks down with the far edge at
-// the top, so screen-down is +z; the mouse aims at the ground under it.
-const _ray = new THREE.Raycaster(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.45), _hit = new THREE.Vector3(), _ndc = new THREE.Vector2();
+// the top, so screen-down is +z; the mouse aims at the floor under it, and
+// a cursor within the hero's own radius gives no aim (1.x main.js:9228-9237).
+const _ray = new THREE.Raycaster(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3(), _ndc = new THREE.Vector2();
 function toWorld(inp) {
   const out = { mx: inp.mx, mz: inp.my, ax: inp.ax, az: inp.ay, aim: inp.aim, fire: inp.fire, dash: false };
   if (inp.source === 'keys' && input.mouse.seen && world) {
@@ -170,7 +181,7 @@ function toWorld(inp) {
     _ray.setFromCamera(_ndc, camera);
     if (_ray.ray.intersectPlane(_plane, _hit)) {
       const dx = _hit.x - world.hero.x, dz = _hit.z - world.hero.z, d = Math.hypot(dx, dz);
-      if (d > 0.05) { out.ax = dx / d; out.az = dz / d; out.aim = true; }
+      if (d > T.hero.radius) { out.ax = dx / d; out.az = dz / d; out.aim = true; }
     }
   }
   return out;
@@ -183,6 +194,28 @@ const debug = {
   frames: 0, ready: false, counts: {},
   get world() { return world; }, get state() { return state; },
   start, pause, resume, toMenu,
+  // Look checks for one species (test/lookshot.mjs): a quiet arena with only
+  // these bodies in it, the hero standing below them.
+  showcase(kinds, { spacing = 4, heroZ = 0.6 } = {}) {
+    start('arcade');
+    world.director = { step() {} };
+    const n = kinds.length;
+    kinds.forEach((k, i) => simApi.spawn(world, k, (i - (n - 1) / 2) * spacing, 0, { appear: false }));
+    world.hero.x = 0; world.hero.z = world.hz * heroZ; world.hero.px = 0; world.hero.pz = world.hero.z;
+    debug.hold = true;                 // the run only moves when idle() says so
+    return world.gels.map((g) => ({ id: g.id, kind: g.kind, x: g.x, z: g.z, r: g.r }));
+  },
+  // step the run with the hero standing still (optionally shooting at `aimAt`)
+  idle(seconds, aimAt = null) {
+    const n = Math.round(seconds / T.sim.dt);
+    for (let i = 0; i < n && !world.over; i++) {
+      const h = world.hero, a = aimAt ? Math.atan2(aimAt.z - h.z, aimAt.x - h.x) : 0;
+      step(world, { mx: 0, mz: 0, ax: Math.cos(a), az: Math.sin(a), aim: !!aimAt, fire: !!aimAt, dash: false });
+      for (const e of world.events) onEvent(e);
+      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt);
+    }
+  },
+  freeCam: false, hold: false,
   // Look checks: run the game ahead under a simple bot (shoot the nearest
   // gel, back away from it) with every event handled, so a screenshot can be
   // of the middle of a fight rather than its first second.
@@ -212,7 +245,9 @@ renderer.setAnimationLoop(() => {
   ui.pollPad(); ui.tick(dt);
   const inp = input.read(null);
 
-  if (state === 'play') {
+  if (state === 'play' && debug.hold) {
+    // a look check: hold still
+  } else if (state === 'play') {
     if (inp.pause) pause();
     else {
       pendingDash ||= inp.dash;
@@ -244,7 +279,7 @@ renderer.setAnimationLoop(() => {
   } else floor.setPlayer(0, 0);
   trauma = Math.max(0, trauma - T.shake.decay * dt);
   const m = trauma * trauma, A = T.shake.amp, F = T.shake.freq;
-  camera.position.set(camRest.x + Math.sin(time * F[0]) * m * A[0], camRest.y + Math.sin(time * F[1]) * m * A[1], camRest.z + Math.sin(time * F[2]) * m * A[2]);
+  if (!debug.freeCam) camera.position.set(camRest.x + Math.sin(time * F[0]) * m * A[0], camRest.y + Math.sin(time * F[1]) * m * A[1], camRest.z + Math.sin(time * F[2]) * m * A[2]);
   ui.drawSticks(input);
   renderer.render(scene, camera);
   debug.frames++;

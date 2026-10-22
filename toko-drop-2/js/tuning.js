@@ -7,6 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
+import { SPECIES } from './tuning/species/index.js?v=5';
+import WAVES from './tuning/waves.js?v=5';
+
 export const TUNING = {
   render: {
     clearColor: 0x0d0d1a,   // 1.x's background: the void past the floor, and the UI's ground
@@ -76,10 +79,34 @@ export const TUNING = {
   },
 
   // The hero's body (1.x player.js): a white satin sphere, calmer than the
-  // gels, with black eyes that face the last shot.
+  // gels, with black eyes that face the last shot. Times are seconds; the
+  // blinks are 1.x's opacity curves, base + amp·|sin(rate·t)| on the timer.
   heroLook: {
-    wobble: 0.6,
+    wobble: 0.6,            // 1.x uWobble on the hero (player.js:65); the gels wear 1.0
+    // 1.x's black ovals (player.js:81-93, 478-494): r 0.13 scaled (0.55, 1.15,
+    // 0.4), a 0.042 glint. 1.x set them 0.4 forward and 0.16 up, which buried
+    // them in the body (player-controls.md §14.2); 0.44 / 0.18 stand them proud.
     eye: { r: 0.13, scale: [0.55, 1.15, 0.4], forward: 0.44, side: 0.14, up: 0.18, glint: 0.042 },
+    opacity: 0.98,          // the body at rest (player.js:63)
+    flashColor: 0xff1100,   // red emissive from the hit to the END of mercy (player.js:266-273, 329-331)
+    mercyBlink: { base: 0.3, amp: 0.7, rate: 12 },    // opacity through mercy (player.js:328)
+    dashBlink: { base: 0.35, amp: 0.65, rate: 55 },   // opacity through a dash (player.js:280-282)
+    // dash ghosts: one every 0.03 s from the dash's first step (the sim emits
+    // a `ghost` event each time, 6 a dash), pooled 7, living 0.28 s at
+    // opacity 0.45·t and scale 0.6 + 0.4·t (player.js:13-15, 70-78, 284-294, 336-348)
+    ghost: { count: 7, every: 0.03, life: 0.28, color: 0x88bbff, opacity: 0.45, scale: 0.6 },
+    // the muzzle pop (player.js:99-108, 351-359, 467-474): at radius + 0.35
+    // along the shot, y 0.3, 0.05 s, opacity 0.9 → 0 while it swells 0.6 → 1.4
+    muzzle: { r: 0.2, color: 0xaaffcc, life: 0.05, opacity: 0.9, scale: [0.6, 1.4], offset: 0.35, y: 0.3 },
+    // the lunge (player.js:371-385), per 60 Hz step from the post-clamp
+    // position: walking settles at 0.15, a dash caps at 0.45. The sim keeps
+    // it (hero.stretch, stretchX/Z) so the view only copies it.
+    stretch: { vel: 0.4, perSpeed: 0.025, max: 0.45, ease: 0.35, minSpeed: 0.3 },
+    // the red screen vignette on a hit (main.js:4799, 5550-5564): alpha
+    // (t / 0.32)·0.55 from 0.35·min(cx, cy) to 1.05·max(cx, cy); off under reduce motion
+    vignette: { life: 0.32, alpha: 0.55, inner: 0.35, outer: 1.05 },
+    haptics: { hit: 35, death: [50, 40, 90] },        // navigator.vibrate ms (haptics.js:25, 30)
+    deathShake: 0.9,        // the fatal hit's extra shake, on top of the hit's (main.js:9033)
   },
 
   // ── the game ──────────────────────────────────────────────────────
@@ -95,55 +122,98 @@ export const TUNING = {
     pauseStripHalfWidth: 40,
   },
 
+  // The hero, as 1.x played it (player.js; docs/port-1x/player-controls.md
+  // §3-§9). Every timer is 1.x's per-frame one, ticked once a 60 Hz step,
+  // so the frame-quantised feel ports exactly: a dash is 11 steps, its
+  // cooldown runs out 45 steps after it ends, the gun fires every 6th step.
   hero: {
-    radius: 0.5,            // the body (1.x PLAYER_RADIUS)
-    hitRadius: 0.3,         // what bullets must touch: smaller than the body, as 1.x
-    speed: 6,               // 1.x SPEED
-    dashSpeed: 26,          // 1.x DASH_SPEED
-    dashTime: 0.18,         // 1.x DASH_DUR
-    dashCooldown: 0.75,     // 1.x DASH_CD
-    fireEvery: 0.09,        // 1.x FIRE_RATE
-    lives: 3,               // 1.x MAX_HP
-    mercy: 1.2,             // 1.x MERCY_DURATION
-    shoveRadius: 1.5,       // dash is a body-check: everything this close is shoved
-    shove: 11,              // and this hard (units/s of knock)
-    color: 0xffffff,        // 1.x: white satin
+    radius: 0.5,            // the body, and the hitbox (1.x PLAYER_RADIUS, player.js:17)
+    hitRadius: 0.5,         // a gel bullet hits at its 0.15 + 0.5 from the centre (main.js:10840-10853)
+    speed: 6,               // walk, u/s; no acceleration, an analog stick walks slower (SPEED, player.js:5, 320-321)
+    dashSpeed: 26,          // DASH_SPEED (player.js:6)
+    dashTime: 0.18,         // DASH_DUR (player.js:7): 11 steps, 4.77 u, i-frames through the 10 before it ends
+    dashCooldown: 0.75,     // DASH_CD (player.js:8), from the dash's END; a press inside it is lost (no buffer)
+    // 1.x dashes along the RAW move stick (main.js:9156-9158, player.js:247-249),
+    // so half a stick is half a dash; only with no move at all does it take the
+    // last shot's direction. true normalises it (player-controls.md trap T1).
+    dashNormalise: false,
+    fireEvery: 0.09,        // FIRE_RATE (player.js:9), ASSIGNED on each shot, not carried (player.js:465): 6 steps, 10/s
+    muzzle: 0.3,            // a shot leaves at radius + 0.3 = 0.8 from the centre (player.js:402-403)
+    mouseNoAim: 0.5,        // the mouse does not aim (so cannot fire) within this of the centre (main.js:9235)
+    rapidMult: 0.4,         // the fire-rate pickup's period while `rapid` runs (player.js:416); the pickup lands with the gates
+    // 1.x's pickups, which land with the gates: taken within reach + radius
+    // (main.js:11242), each timer takes the LONGER of what it has and what it
+    // is given (player.js:177-178; hero.js grantInvincibility / grantRapid)
+    pickup: { reach: 0.8, invincible: 3.0, rapid: 8.0 },   // main.js:11242, 11249, 11268
+    aim0: [1, 0],           // _lastAim before the first shot: screen-right (player.js:32; 1.x's reset() kept the last run's, player.js:191-232)
+    lives: 3,               // MAX_HP: lives are hp, a lost one does not respawn (player.js:10)
+    mercy: 1.2,             // MERCY_DURATION (player.js:11), from a non-fatal hit
+    flash: 0.25,            // the red hit flash (player.js:238); the body stays red until mercy ends
+    // The dash is 1.x's (i-frames, it passes through bodies) and upgrades
+    // (owner, 2026-10-21): level 1 KILLS what it passes through (a boss takes
+    // one hit a dash); level 2 adds 1.x's dash boom, a ring of hero bullets
+    // from where the dash's first step left you (1.x main.js:10216-10224, a
+    // roguelike card). The pickups that raise the level land with the gates.
+    // Touching = within the body's radius + reach: the hero's own radius, so a
+    // dash cuts exactly what would have hurt to walk into (1.x's contact test,
+    // e.radius + PLAYER_RADIUS, main.js:10895). 1.x's one body-cutting dash
+    // (NEX DEUS, a cabinet) reached 0.2 further and HIT for 1 rather than
+    // killing (main.js:10166-10183); bossHits is that 1, once a pass.
+    dashKill: { reach: 0.5, bossHits: 1 },
+    dashBoom: { count: 12, shake: 0.18, color: 0xff8844 },   // 12 rays, addShake(0.18), 0xff8844 (main.js:10216-10225)
+    color: 0xffffff,        // 1.x: white satin (player.js:61)
+    // 1.x's weapon pods (tuning.js:141-160, main.js:1985-2005, player.js:404-464):
+    // one table, two levels a family; `rate` multiplies fireEvery. A pod drops
+    // at level 1, the same family again earns level 2, and a hit knocks level
+    // 2 back to 1 — never off. HOMING is enemy-only since v88 (BOTFLY). The
+    // pods themselves land with the gates; `color` is each pod's orb (L1, L2).
+    weapons: {
+      spread:  { l1: { shots: 5, step: 9, rate: 1 }, l2: { shots: 7, step: 11, rate: 1 }, color: [0xffcc44, 0xffee11] },
+      burst:   { l1: { rounds: 4, rate: 2.0 }, l2: { rounds: 6, rate: 2.2 }, color: [0x44ffcc, 0x11ffee] },
+      laser:   { l1: { rails: 1, rate: 1 }, l2: { rails: 2, railGap: 0.55, rate: 1.5 }, color: [0xff3355, 0xff1133] },
+      rapid:   { l1: { rate: 0.45 }, l2: { rate: 0.30 }, color: [0xaa55ff, 0xcc22ff] },
+      shotgun: { l1: { pellets: 5, spread: 0.45, rate: 1.55 }, l2: { pellets: 7, spread: 0.5, rate: 1.5 }, color: [0xff8833, 0xffaa22] },
+      hitCostsLevel: true,
+      favourUnheld: 0.7,     // how strongly a drop favours a family you are NOT holding
+    },
+    // 1.x's squash spring, per 60 Hz step (player.js:362-365): a dash
+    // stretches it tall (player.js:252), a hit flattens it (player.js:241)
+    sq: { spring: 0.28, damp: 0.84, min: 0.55, max: 1.55, dash: 0.6, hit: -0.9 },
   },
 
   bullets: {
     heroSpeed: 24,          // 1.x PLAYER_BULLET_SPEED
-    heroRadius: 0.13,
+    heroRadius: 0.15,       // 1.x BULLET_R
     heroDamage: 1,
-    gelSpeed: 7,            // 1.x ENEMY_BULLET_SPEED
+    gelSpeed: 7,            // 1.x ENEMY_BULLET_SPEED; never escalates with the wave
     gelRadius: 0.15,
     life: 4,
-    max: 400,
-    heroColor: 0xfff4c8,
+    maxHero: 200,           // separate pools, so a dense field never silences your gun
+    maxGel: 300,            // 1.x's shared pool size
+    heroColor: 0x66ffcc,    // 1.x's player halo
+    gelColor: 0xff5533,     // 1.x's default enemy bullet
   },
 
-  graze: { radius: 0.9, points: 10 },   // a gel bullet passing this close, once each
+  graze: { radius: 1.2, points: 25 },   // 1.x: a gel bullet passing this close while you are vulnerable, once each
 
-  score: {
-    comboWindow: 1.6,       // seconds a kill keeps the chain alive
-    comboStep: 4,           // kills per multiplier step
-    maxMult: 8,
-    extendEvery: 20000,     // an extra life at every multiple of this
-    maxLives: 5,
-  },
+  // 1.x's score (main.js:4421-4453): every kill pays 100 × the streak, and the
+  // streak only resets when you are hit. A banner every 25,000; no extra lives.
+  score: { perKill: 100, milestone: 25000 },
 
   gel: {
+    // 1.x: a bullet never moves a body. Knock (kx, kz) is for whatever throws
+    // a body — nothing in the roster does yet.
     knockFriction: 6,       // knock velocity decays this fast (1/s)
-    hitKnock: 2.2,          // a bullet's push
-    wallBounce: 0.6,        // a wall returns this share of the speed
-    separation: 0.6,        // how hard overlapping gels push apart (share per step)
+    wallBounce: 0.6,        // a wall returns this share of the knock
     appear: 0.3,            // seconds a new gel swells into being; it can neither hurt nor be hit
-    spring: 70,             // squash spring stiffness
-    damping: 7,             // and its damping
-    contactSquash: 0.35,    // how much a hit / wall / shove squashes
+    flash: 0.12,            // 1.x hit flash
+    // 1.x's squash spring, per 60 Hz step (enemy.js:2728-2729), and its kicks
+    sq: { blob: [0.24, 0.86], cube: [0.18, 0.90], hit: -0.75, wall: -0.3 },
+    contactRadius: 0.5,     // touching: within the body's radius + 0.5 (1.x main.js:10886-10906)
   },
 
-  // Who comes and when: pressure rises over `ramp` seconds and then holds.
-  // 1.x pops bodies in on an ellipse at 0.85 of the arena, never on you.
+  // SURVIVAL's director: pressure rises over `ramp` seconds and then holds.
+  // 1.x pops bodies in on an ellipse at 0.85 of the arena.
   director: {
     firstSpawn: 0.6,
     ramp: 600,
@@ -152,22 +222,46 @@ export const TUNING = {
     groupOf: [1, 3],
     ring: 0.85,
     clearOfHero: 6,
+    secondsPerWave: 12,      // SURVIVAL reads ARCADE's roster as if a wave passed this often
   },
 
-  // The core six, in 1.x's colours, sizes, speeds and hit points (enemy.js
-  // CFG). `unlock` is seconds into the run; `weight` its share of spawns.
-  species: {
-    globbo:  { name: 'GLOBBO',      shape: 'blob', radius: 0.55, hp: 1, speed: 2.8, score: 100, color: 0x00ccaa, unlock: 0,   weight: 5, revenge: 'ring' },
-    yela:    { name: 'YELA CUBE',   shape: 'cube', radius: 0.7,  hp: 2, speed: 2.2, score: 150, color: 0xffdd00, unlock: 25,  weight: 4, revenge: 'ring',
-               dartEvery: 2.2, dartSpeed: 7.5, dartTime: 0.35 },
-    spittor: { name: 'SPITTOR',     shape: 'blob', radius: 0.9,  hp: 3, speed: 1.6, score: 200, color: 0xff5533, bulletColor: 0xff7755, unlock: 50,  weight: 3, revenge: 'aimed',
-               range: 9, fireEvery: 2.2, windup: 0.45 },
-    orange:  { name: 'ORANGE CUBE', shape: 'cube', radius: 0.75, hp: 4, speed: 1.4, score: 220, color: 0xff8800, bulletColor: 0xff6600, unlock: 90,  weight: 3, revenge: 'fan',
-               range: 8, fireEvery: 3.2, windup: 0.35, spreadDeg: 15 },
-    fanner:  { name: 'FANNER',      shape: 'blob', radius: 0.75, hp: 3, speed: 1.4, score: 260, color: 0xff00aa, bulletColor: 0xff66cc, unlock: 130, weight: 2, revenge: 'fan',
-               fireEvery: 1.5, windup: 0.5, count: 6, arcDeg: 70 },
-    splitta: { name: 'SPLITTA',     shape: 'blob', radius: 1.1,  hp: 5, speed: 1.0, score: 400, color: 0x88ff22, unlock: 170, weight: 1, revenge: 'ring',
-               children: 3, childKind: 'globbo' },
+  // Every species: one file each under tuning/species/ (1.x's CFG rows and
+  // each species' own numbers).
+  species: SPECIES,
+
+  // ARCADE's waves (tuning/waves.js).
+  waves: WAVES,
+
+  // 1.x's crowd solver (crowd.js, tuning.js:284): bodies keep a pad apart, and
+  // one closing on the hero behind another is pushed back and slid aside
+  crowd: { pad: 0.6, comfort: 1.5, push: 4.0, slide: 5.0, passes: 2 },
+
+  // 1.x's swarm forces (v210; tuning.js:287-319): each species takes a share
+  // of dodge (sidestep the hero's bullets), flock, the wave's current and a
+  // weave, by its role
+  movement: {
+    roles: {
+      SCHOOL:  { dodge: 0.9, flock: 1.0, current: 1.0,  weave: 0 },
+      DARTER:  { dodge: 1.0, flock: 0.5, current: 0.9,  weave: 0.5 },
+      DRIFTER: { dodge: 0.3, flock: 0.6, current: 1.0,  weave: 0.25 },
+      HUNTER:  { dodge: 0.4, flock: 0,   current: 0.5,  weave: 0.8 },
+      HOLDER:  { dodge: 0,   flock: 0,   current: 0.25, weave: 0 },
+      COMMIT:  { dodge: 0,   flock: 0,   current: 0.15, weave: 0 },
+      MASS:    { dodge: 0,   flock: 0,   current: 0.10, weave: 0 },
+      FIXED:   { dodge: 0,   flock: 0,   current: 0,    weave: 0 },
+      SUPPORT: { dodge: 0.5, flock: 0.3, current: 0.6,  weave: 0.3 },
+      HERDER:  { dodge: 0.6, flock: 0,   current: 0.3,  weave: 0.2 },
+    },
+    weaveSpeed: 1.7, weaveGain: 1.6,
+    dodge: { ahead: [0.5, 7], lane: 1.0, speed: 12, time: 0.3, decay: 5, cooldown: [0.8, 1.5], maxRadius: 1.1 },
+    flock: { radius: 4, cohesion: 0.5, align: 0.25 },
+    current: { stream: 1.2, ring: 1.1, pincer: 1.0, pincerSide: 6 },
+  },
+
+  // 1.x elites and affixes (main.js:9402-9422)
+  variants: {
+    elite: { hp: 2, radius: 1.2 }, elitelite: { hp: 1.5, affixChance: 0.5 }, swiftSpeed: 1.35, boss: { radius: 1.5 },
+    volatileGlow: [0x662200, 0x1a0800], volatileHz: 5,   // the VOLATILE fuse smoulders (1.x enemy.js:2653-2656)
   },
 
   // A kill, as 1.x played it (enemy.js destroy/updateDeath, main.js onKill):
@@ -183,6 +277,9 @@ export const TUNING = {
     shockRadius: 3.5, shockRipple: 0.75, shockSquash: 0.55,
     heatPerKill: 0.18, heatDecay: 0.35,    // kills in quick succession throw more
     whiten: 0.4,                           // a dying body glows its colour, this far toward white
+    hitFlash: 1.0,                         // 1.x: emissive #ffffff for the flash (enemy.js:2650-2652)
+    // a lob's splashdown (1.x main.js:10507-10514): droplets, a puddle, a shake
+    lobSplash: { droplets: 10, dropletSize: [0.09, 0.13], puddle: 1.1, shake: 0.12 },
   },
   splats: { capacity: 192, life: 5, opacity: 0.55, spring: 0.55, damp: 0.74, y: 0.01 },
   // 1.x's camera shake (main.js:665-737): trauma adds, decays, and moves the
@@ -191,16 +288,23 @@ export const TUNING = {
   audio: { master: 0.5 },
   flow: { deathBeat: 1.4 },                 // seconds the last hit holds the screen before the results
 
-  // HARDCADE: every corpse fires back in its species' dialect, slower, in
-  // corpse colours (1.x v220).
+  // HARDCADE's corpse fire, as 1.x had it (tuning.js:486-526, main.js:4390-4420):
+  // only the biters (the species with a `revenge` dialect) and bosses bite,
+  // from wave 3, while the floor holds fewer live corpse bullets than the
+  // cap. Slow, in a darker shift of the living colour, from the corpse's
+  // centre the frame it dies. `who: 'all'` makes every corpse bite.
   revenge: {
+    who: 'biters',
+    density: 1,              // owner: "more or less bullets" — scales every bloom's count (min 1)
     speedMult: 0.6,
-    fuse: 0.45,             // seconds a corpse seethes before it fires: time to step away
-    safeRadius: 1.4,        // a corpse this close to you when it fires spends itself harmlessly
-    aimed: { count: 3, gap: 0.12 },        // a burst at you
-    fan: { count: 5, arcDeg: 58 },
-    ring: { count: 8 },
-    darken: 0.45,                           // corpse colour: this far toward black
-    scoreMult: 1.5,
+    fromWave: 3,
+    fieldCap: { base: 14, per: 1.2, max: 44 },
+    poolGate: 240,
+    aimed: { count: 3, spread: 0.14 },
+    fan: { count: 5, spread: 0.5 },
+    ring: { small: 4, big: 7, boss: 14, bigRadius: 0.75 },
+    palette: { yellowLo: 0.10, yellowHi: 0.22, poisonHue: 0.285, poisonSatMin: 0.75, poisonL: 0.42,
+               warmHiCut: 0.92, satMul: 1.2, darkL: 0.55, coolL: 0.5, lFloor: 0.30 },
+    scoreMult: 1.5,          // 2.0 keeps HARDCADE's higher score (DIRECTION)
   },
 };

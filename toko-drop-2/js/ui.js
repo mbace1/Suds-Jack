@@ -2,32 +2,32 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=4';
+import { TUNING } from './tuning.js?v=5';
 
 const STR = {
   en: {
-    arcade: 'Three lives, extra lives on score.', hardcade: 'Arcade, and every corpse shoots back.', survival: 'Endless. It only gets worse.', campaign: 'Rooms with their own clock — coming next.',
+    arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and every corpse shoots back.', survival: 'Endless. It only gets worse.', campaign: 'Rooms with their own clock — coming next.',
     best: 'BEST', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
-    extend: 'EXTRA LIFE', soundOn: 'SOUND ON', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
+    wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
     hintTouch: 'LEFT THUMB MOVES · RIGHT THUMB AIMS AND FIRES · LET GO TO DASH',
     hintKeys: 'WASD MOVES · MOUSE AIMS · HOLD CLICK TO FIRE · SPACE DASHES · ESC PAUSES',
     hintPad: 'LEFT STICK MOVES · RIGHT STICK AIMS AND FIRES · A DASHES · START PAUSES',
   },
   ja: {
-    arcade: 'ライフ3つ、スコアでエクステンド。', hardcade: 'アーケード、倒した敵が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: '制限時間のある部屋 — 次の版で。',
+    arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、倒した敵が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: '制限時間のある部屋 — 次の版で。',
     best: 'ベスト', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', time: 'タイム', newbest: '新記録', soon: '近日',
-    extend: '1UP', soundOn: 'サウンド オン', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
+    wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
     hintTouch: '左手で移動 · 右手でエイムと射撃 · 離すとダッシュ',
     hintKeys: 'WASDで移動 · マウスでエイム · クリック長押しで射撃 · スペースでダッシュ · ESCで一時停止',
     hintPad: '左スティックで移動 · 右スティックでエイムと射撃 · Aでダッシュ · STARTで一時停止',
   },
   fi: {
-    arcade: 'Kolme elämää, lisäelämiä pisteistä.', hardcade: 'Arcade, ja jokainen raato ampuu takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'Huoneita omalla kellollaan — seuraavaksi.',
+    arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja jokainen raato ampuu takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'Huoneita omalla kellollaan — seuraavaksi.',
     best: 'ENNÄTYS', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
-    extend: 'LISÄELÄMÄ', soundOn: 'ÄÄNI PÄÄLLÄ', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
+    wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
     hintTouch: 'VASEN PEUKALO LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · IRROTA SYÖKSYÄKSESI',
     hintKeys: 'WASD LIIKKUU · HIIRI TÄHTÄÄ · PIDÄ PAINIKE POHJASSA AMPUAKSESI · VÄLILYÖNTI SYÖKSYY · ESC TAUKO',
     hintPad: 'VASEN TATTI LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · A SYÖKSYY · START TAUKO',
@@ -55,6 +55,7 @@ export class UI {
     this.clockEl = document.getElementById('clock');
     this.menuEl = document.getElementById('menu');
     this.bannerEl = document.getElementById('banner');
+    this.vignetteEl = document.getElementById('vignette');
     this.sticks = document.getElementById('sticks');
     this.sctx = this.sticks.getContext('2d');
     document.getElementById('pausebtn').addEventListener('click', () => this.h.onPause());
@@ -68,7 +69,7 @@ export class UI {
 
   hud(w) {
     this.scoreEl.textContent = w.score.toLocaleString('en-US');
-    this.multEl.textContent = w.mult > 1 ? `×${w.mult}` : '';
+    this.multEl.textContent = w.streak > 1 ? `×${w.streak}` : '';     // 1.x: every kill pays 100 × the streak
     if (this._lives !== w.hero.lives) {
       this._lives = w.hero.lives;
       this.livesEl.replaceChildren(...Array.from({ length: Math.max(0, w.hero.lives) }, () => el('i')));
@@ -82,6 +83,8 @@ export class UI {
     this._bannerT = seconds;
   }
   tick(dt) { if (this._bannerT > 0 && (this._bannerT -= dt) <= 0) this.bannerEl.hidden = true; }
+  // 1.x's red screen edge on a hit (main.js:5550-5564), 0.32 s; CSS plays it
+  vignette() { const v = this.vignetteEl; if (!v) return; v.classList.remove('on'); void v.offsetWidth; v.classList.add('on'); }
 
   // ── panels ─────────────────────────────────────────────────────
   _panel(children) {
@@ -147,11 +150,14 @@ export class UI {
     else if (e.code === 'Enter' || e.code === 'Space') { this._pick(); e.preventDefault(); }
     else if (e.code === 'Escape' && this.h.onBack) this.h.onBack();
   }
+  // The pad is read every frame, menu or not, so a button already held when
+  // a menu opens is not a press in it: Options pauses on its way down, and
+  // the same press must not then pick RESUME a frame later.
   pollPad() {
-    if (this.menuEl.hidden) return;
     const p = [...(navigator.getGamepads ? navigator.getGamepads() : [])].find((x) => x && x.connected);
-    if (!p) return;
+    if (!p) { this._padPrev = {}; return; }
     const now = { up: p.buttons[12]?.pressed || p.axes[1] < -0.6, down: p.buttons[13]?.pressed || p.axes[1] > 0.6, a: p.buttons[0]?.pressed, b: p.buttons[1]?.pressed, start: p.buttons[9]?.pressed };
+    if (this.menuEl.hidden) { this._padPrev = now; return; }
     const edge = (k) => now[k] && !this._padPrev[k];
     if (edge('down')) this._move(1);
     if (edge('up')) this._move(-1);

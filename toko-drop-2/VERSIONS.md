@@ -19,6 +19,96 @@
     Never `--no-verify`.
 -->
 
+## v5 — 2026-10-21
+**1.x's rules underneath: a species module each, 1.x's crowd, score, hits and HARDCADE**
+- **The core is rebuilt around 1.x's frame order** (bullets-graze.md §7.1):
+  the director, the hero, 1.x's swarm forces (SHEPHERD herd, dodge, flock,
+  weave, the wave's current), each body's own step, 1.x's crowd solver,
+  bullets, then every hit test against post-move positions
+- **Every species is its own module** (`docs/SIM_CONTRACT.md`): its numbers in
+  `js/tuning/species/<key>.js`, its behaviour in `js/sim/species/<key>.js`,
+  its look in `js/render/looks/<key>.js`, its checks in
+  `test/species/<key>.mjs`. All 27 of 1.x's classic ARCADE bodies exist,
+  seeded from 1.x's CFG rows; until each is ported it walks at you and, if it
+  is a shooter, fires a plain aimed shot
+- **1.x's rules**: a bullet never moves a body; a hit flashes 0.12 s and
+  squashes the 1.x spring; a gel bullet hits the hero at 0.65 (was 0.45);
+  contact hurts only for 1.x's melee species; graze pays 25 within 1.20 and
+  never while you are invincible; every kill pays 100 × the streak, which
+  only a hit resets; a banner every 25,000 and no extra lives
+- **HARDCADE is 1.x's corpse fire**: the ten biters and bosses bloom AIMED,
+  FAN or RING at 0.6 speed in 1.x's corpse colours, from wave 3, under the
+  field cap `min(44, 14 + 1.2·wave)`; `TUNING.revenge.who: 'all'` makes every
+  corpse bite
+- **The dash is 1.x's again** — i-frames, and it passes through bodies — and
+  it upgrades (owner, 2026-10-21): level 1 kills whatever it passes through
+  (a boss takes one hit a dash), level 2 adds 1.x's dash boom, a ring of 12
+  hero bullets on the dash's first frame. The pickups that raise the level
+  land with the gates. 2.0's shove is gone
+- HARDCADE's corpse fire has a volume knob, `TUNING.revenge.density` (owner:
+  "more or less bullets"), scaling every bloom's count
+- Hero and gel bullets have separate pools; SURVIVAL unlocks ARCADE's roster
+  as if a wave passed every 12 s
+- `node test/lookshot.mjs <key> <out>` renders one species alone in the arena
+  and close up (`__toko.showcase`, `__toko.idle`), so a look can be checked
+  against 1.x without playing to it
+- **ARCADE and HARDCADE run 1.x's wave director** (`js/sim/director/arcade.js`,
+  numbers in `js/tuning/waves.js`): wave kinds and rhythm, the budget, pools
+  in 1.x's draw order, the shooter plan, mob variants and affixes, fronts and
+  the live cap, pull-in, the round clock, CLEAR (500 × wave, a breather) or
+  CARRY, boss waves alternating OMEGA and the TWIN PRISMS with WARDEN escorts,
+  and the arena curtain. `test/director.mjs` holds it against 1.x's own
+  code on the same rng stream: 120 seeds × 48 waves identical
+- **The hero is 1.x's player.update, step for step**: walk 6 u/s with no
+  acceleration, an 11-step dash along the raw move stick, a 6-step gun, 1.x's
+  weapon pods (spread, burst, laser, rapid, shotgun; two levels; a hit knocks
+  level 2 down), mercy, the squash spring and the lunge. Input combines pad,
+  touch and keys by 1.x's priority. `test/hero.mjs`: 96 checks
+- **Twelve species have their 1.x behaviour, look and tests**: GLOBBO's
+  stalk-crouch-leap, YELA's edge-pivot flop and slime trail, SPITTOR's ring
+  from its hold band, FANNER's 6-then-9 fans and sway, ORANGE's tumbling wall
+  of 6–12, WEEVA's accelerating spiral, SLUDGE's poison trail, BAMBU's stalk
+  and lob, SPLITTA's death ring and brood, TORO's wheel and charge, SIREN's
+  scream and surge, MAGNA's pull and tether. Director, GLOBBO, SPITTOR,
+  FANNER and WEEVA are adversarially verified against 1.x; the rest await
+  their pass
+- **The core answers what the ports asked for**: an elite or boss on the
+  plain gel look is drawn at its real size (it was drawn at base size); the
+  hit flash is 1.x's white and a VOLATILE body smoulders orange before its
+  death ring; a dying body pops as a uniform dome from a reset squash, as
+  1.x's did; poison zones are invisible (the poured trail is the read); the
+  hero blinks and glows red through mercy, blinks faster through a dash,
+  lunges with its stretch, leaves 1.x's dash ghosts and pops its muzzle; the
+  mouse aims at the floor and gives no aim inside the hero's own radius; a
+  big death squashes the bodies around it; haptics, the death shake, the
+  dash boom's shake, TORO's charge shake, the lob splash (droplets, puddle,
+  shake), the curtain warning, the pod banners and the red hit vignette are
+  wired; kills play 1.x's voice by family (blob, cube, TORO, BAMBU), the
+  SIREN screams, gels fire quietly and a spiral is silent; `onKill` is told
+  what killed the body; `api.score` and `api.childrenAllowed` exist; the
+  crowd's nudge is readable by the next step
+- **YELA joins the verified list** (director, GLOBBO, SPITTOR, FANNER, WEEVA,
+  YELA). Its checker's fix: it turns back from the wall at its CFG radius, as
+  1.x does. WEEVA's checker moved the drill vibration onto the body's own
+  clock. The checkers for ORANGE, SPLITTA, SLUDGE, BAMBU, TORO, SIREN, MAGNA
+  and the hero ran out of budget before reporting; those ports pass their own
+  tests but are not yet held to 1.x by a second pair of eyes. The hero's
+  checker left 1.x's pickup timers behind (invincibility 3 s, rapid fire 8 s,
+  the longer of two wins) for the gates to hand out
+- **A DualSense in the menus**: the menus read the pad every frame, not only
+  while one is open, so the press that pauses no longer picks RESUME a frame
+  later (the pause menu flashed and vanished under a held Options)
+- **The browser gate covers the devices that will play it**: a phone both
+  ways up, a phone turned mid-run, an iPad both ways up, and an iPad driven by
+  a stubbed DualSense through the title, a run, the sticks, a dash and a
+  pause; every menu item and the pause button are held to 44 px. Pad presses
+  are timed off the game's frame counter, not the wall clock. `test/hero.mjs`
+  is part of `scripts/smoke.sh`; `node test/smoke.mjs --only <name>` runs one
+  scenario
+- Cache tokens `?v=4` → `?v=5`; HUD label → `2.0 · v5`
+
+---
+
 ## v4 — 2026-10-20
 **1.x's gelatin, on 1.x's floor, in 1.x's units — and ARCADE / HARDCADE / SURVIVAL**
 - Owner, 2026-10-19: *"Forget the night theme and time or other level art
