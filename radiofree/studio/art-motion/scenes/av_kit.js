@@ -435,7 +435,7 @@
     const jolt = lt > tS ? 12 * Math.exp(-(lt - tS) * 8) * Math.sin((lt - tS) * 24) : 0;
     const [rx, ry] = keyRowAt(bx, by, rot);
     // the stamp: hovers off to the right, winds up on "lift", slams on the pop, holds, and lifts away to the right
-    const hover = [rx + 250, ry - 330], wind = [rx + 210, ry - 450], down = [rx + 10, ry + 8];
+    const hover = [rx + 300, ry - 190], wind = [rx + 260, ry - 300], down = [rx + 10, ry + 8];
     let p = hover, sR = 0.18;
     if (lt < tL) p = [hover[0], hover[1] + Math.sin(lt * 2.2) * 10];
     else if (lt < tS - 0.12) { const k = ease.out((lt - tL) / Math.max(0.1, tS - 0.12 - tL)); p = [lerp(hover[0], wind[0], k), lerp(hover[1], wind[1], k)]; sR = lerp(0.18, 0.28, k); }

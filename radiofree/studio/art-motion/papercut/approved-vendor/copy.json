@@ -36,8 +36,8 @@
       "until": "s3-0.35",
       "hold": "s3",
       "text": {
-        "en": "15 Oct, researchers: its ads / delivered spyware just by loading. / [No click] needed.",
-        "fi": "Tutkijat 15.10.: sen mainokset / levittivät vakoiluohjelmaa / jo latautuessaan. [Ei klikkausta].",
+        "en": "15 Oct, researchers: its ads / delivered spyware on display. / [No click] needed.",
+        "fi": "Tutkijat 15.10.: sen mainokset / levittivät vakoiluohjelmaa / jo näkyessään. [Ei klikkausta].",
         "ja": "研究者 (10月15日): その広告は / 表示される だけで / スパイウェアを 配信。 [クリック不要]。"
       },
       "source": "Citizen Lab, 'Exposing AdFection', 15 Oct 2026: Discover-Tech's targeted ads delivered Candiru spyware with no click; the ad's code checked the device's ad ID and IP and, for a target, returned code that could load a browser exploit. Corroborated by Reuters, TechCrunch, The Record, CyberScoop, BleepingComputer (search summaries, 22 Oct). Re-checked 22 Oct (plan/films/20-approved-vendor.md)."

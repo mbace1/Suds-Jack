@@ -307,11 +307,11 @@
   /** the city's folding pieces, left to right: x ranges in the city's own space */
   const SEG = [[-60, 270], [270, 452], [452, 600], [600, 776], [776, 1080], [1080, 1460]];
   /** when each piece folds: the ends first, the middle last, the last one flat on the pop */
-  const foldAt = (i, tP) => { const order = [0, 5, 1, 4, 2, 3].indexOf(i); return tP - 0.42 + order * 0.07; };
+  const foldAt = (i, tP) => { const order = [0, 5, 1, 4, 2, 3].indexOf(i); return tP - 0.7 + order * 0.1; };   // score.py mirrors this
   function paperCity(g, x, y, s, lt, tP, glowK = 1) {
-    cityGlow(g, x, y, s, glowK * (1 - clamp((lt - tP + 0.4) / 0.4, 0, 1)));
+    cityGlow(g, x, y, s, glowK * (1 - clamp((lt - tP + 0.7) / 0.6, 0, 1)));
     SEG.forEach(([a, b], i) => {
-      const k = ease.io((lt - foldAt(i, tP)) / 0.24), sy = Math.cos(k * Math.PI / 2); if (sy <= 0.01) return;
+      const k = ease.io((lt - foldAt(i, tP)) / 0.3), sy = Math.cos(k * Math.PI / 2); if (sy <= 0.01) return;
       g.save(); g.beginPath(); g.rect(x + a * s, y - 900 * s, (b - a) * s, 900 * s + 4); g.clip();
       g.translate(0, y); g.scale(1, sy); g.translate(0, -y);
       put(g, cityFar(), x + 40 * s, y - 30 * s, { sc: s * 0.82, lift: 0.3 * sy });
@@ -323,7 +323,7 @@
   }
   /** the box unfolding up from the crease: a pop-up card rising past upright and settling */
   function boxUp(g, x, y, s, lt, tP) {
-    const k = (lt - tP + 0.12) / 0.34; if (k <= 0) return 0;
+    const k = (lt - tP + 0.2) / 0.45; if (k <= 0) return 0;
     const sy = Math.min(1.06, Math.sin(ease.back(k) * Math.PI / 2 * 0.98) + 0.02) * (1 + swing(lt, [[tP + 0.25, 0.03]]));
     g.save(); g.translate(x, y); g.scale(s, s * sy); put(g, dataBox(), 0, 0, { lift: 1.1 * clamp(k, 0, 1) }); g.restore();
     return clamp(k, 0, 1);
@@ -395,7 +395,7 @@
       { sh: ground('os_ground3b', 1450), d: 0.24, lift: 0.5 },
       { d: 0.3, fn: (g, ox, oy) => {
         popUp(g, sellSign(), 300 + ox, 1770 + oy, lt, tS, { sc: 1.05, lean: -0.03 });
-        popUp(g, doodleSign(), 790 + ox, 1790 + oy, lt, tD, { sc: 1.0, lean: 0.015 });
+        popUp(g, doodleSign(), 765 + ox, 1790 + oy, lt, tD, { sc: 1.0, lean: 0.015 });
       } }, { d: 0.3, fn: (g) => nightWash(g) }], cam);
     box(c);
   } };
