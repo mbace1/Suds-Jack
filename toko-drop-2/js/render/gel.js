@@ -13,9 +13,9 @@
 import * as THREE from 'three/webgpu';
 import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
-  materialEmissive, vec3, vec4, float, sin, dot, normalize, clamp,
+  materialEmissive, modelScale, vec3, vec4, float, sin, dot, normalize, clamp,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=9';
+import { TUNING } from '../tuning.js?v=10';
 
 const T = TUNING;
 
@@ -27,6 +27,7 @@ const SUN_DIR = new THREE.Vector3(...T.light.sun.position).normalize();
 
 // 1.x's contrast floor: a body darker than `minLum` gets a rim in its own hue,
 // lifted toward white, so its silhouette reads against the floor.
+const JELLY_FAMILIES = new Set(['blob', 'cube']);
 const lumOf = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
 function contrastRim(lum) {
   const C = T.material.contrast;
@@ -40,20 +41,31 @@ function contrastLift(col) {
 
 // fam: 'blob' or 'cube' (per-family overrides in TUNING.material.families).
 // radius: the body's world radius, so every size gets the same lump count.
-export function gelMaterial(hex, fam, radius, { wobble } = {}) {
-  const M = T.material, ov = M.families[fam] || {};
+// `jelly`: 2.0's see-through jelly (TUNING.material.jelly) or 1.x's satin.
+// The gel bodies are jelly (the blob and cube families) unless the tuning
+// turns it off; the crystals, the wheel and the stalk keep their tuned satin
+// (their looks set their own transmission), and the hero never is.
+export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly.on && JELLY_FAMILIES.has(fam) } = {}) {
+  const M = T.material, ov = M.families[fam] || {}, J = { ...M.jelly, ...(ov.jelly || {}) };
   const col = new THREE.Color(hex);
   const baseLum = lumOf(col);
   contrastLift(col);
+  // the hue at full strength (brightest channel 1): what white light becomes
+  // after `attenuation` radii of jelly
+  const deep = col.clone().multiplyScalar(1 / Math.max(col.r, col.g, col.b, 1e-3));
   const m = new THREE.MeshPhysicalNodeMaterial({
-    color: col, metalness: 0,
-    roughness: ov.roughness ?? M.roughness,
+    color: jelly ? col.clone().lerp(new THREE.Color(0xffffff), J.tintWhite) : col, metalness: 0,
+    roughness: jelly ? J.roughness : ov.roughness ?? M.roughness,
     clearcoat: M.clearcoat, clearcoatRoughness: M.clearcoatRoughness,
     sheen: M.sheen, sheenColor: col.clone().lerp(new THREE.Color(0xffffff), 0.4), sheenRoughness: 0.35,
-    transmission: ov.transmission ?? M.transmission,
-    thickness: M.thickness, ior: M.ior,
-    attenuationColor: col, attenuationDistance: 1.2,
+    transmission: jelly ? J.transmission : ov.transmission ?? M.transmission,
+    thickness: jelly ? J.thickness : M.thickness, ior: jelly ? J.ior : M.ior,
+    attenuationColor: jelly ? deep : col, attenuationDistance: 1.2,
+    dispersion: jelly ? J.dispersion : 0,
   });
+  // absorption scales with the body: the views are pooled at unit size and
+  // scaled, so the distance is in radii of the mesh as it stands
+  if (jelly) m.attenuationDistanceNode = float(J.attenuation).mul(modelScale.x);
   const u = {
     phase: uniform(Math.random() * Math.PI * 2),
     wobble: uniform(wobble ?? (fam === 'blob' ? 1.0 : 0.35)),
@@ -63,13 +75,16 @@ export function gelMaterial(hex, fam, radius, { wobble } = {}) {
     tear: uniform(0),                               // 1 at death onset, decays
     stretch: uniform(0),
     stretchDir: uniform(new THREE.Vector2(0, 0)),
-    sss: uniform(M.sss),
+    sss: uniform(jelly ? J.sss : M.sss),
     sssColor: uniform(col.clone().lerp(new THREE.Color(0xffffff), 0.25)),
     lightDir: uniform(SUN_DIR.clone()),
-    thick: uniform(M.thickness),
+    thick: uniform(jelly ? J.thickness : M.thickness),
     rim: uniform(contrastRim(baseLum)),
     rimPow: uniform(M.contrast.rimPow),
     rimColor: uniform(col.clone().lerp(new THREE.Color(0xffffff), M.contrast.rimWhite)),
+    core: uniform(jelly ? J.core : 0),
+    corePow: uniform(J.corePow),
+    coreColor: uniform(deep.clone()),
   };
   const t = GEL_TIME;
 
@@ -110,7 +125,9 @@ export function gelMaterial(hex, fam, radius, { wobble } = {}) {
   const rimF = float(1.0).sub(clamp(dot(N, V), 0.0, 1.0)).pow(u.rimPow);
   m.emissiveNode = materialEmissive
     .add(u.sssColor.mul(sss.add(wrap.mul(0.18).mul(u.sss)).add(u.tear.mul(fres.mul(1.1).add(0.7)))))
-    .add(u.rimColor.mul(rimF).mul(u.rim));
+    .add(u.rimColor.mul(rimF).mul(u.rim))
+    // the jelly's inner glow: the full hue where the body faces you
+    .add(u.coreColor.mul(clamp(dot(N, V), 0.0, 1.0).pow(u.corePow)).mul(u.core));
   // dome refraction: thick at the belly, thin at the crown
   m.thicknessNode = u.thick.mul(clamp(float(1.25).sub(positionLocal.y.div(u.radius).mul(0.41)), 0.55, 1.25));
   m.gel = u;

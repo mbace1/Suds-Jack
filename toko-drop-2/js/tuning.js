@@ -7,8 +7,8 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=9';
-import WAVES from './tuning/waves.js?v=9';
+import { SPECIES } from './tuning/species/index.js?v=10';
+import WAVES from './tuning/waves.js?v=10';
 
 export const TUNING = {
   render: {
@@ -57,8 +57,36 @@ export const TUNING = {
     contrast: { minLum: 0.16, rim: 2.2, rimPow: 2.0, rimWhite: 0.55, lift: 0.6 },
     families: {
       blob: {},
-      cube: { roughness: 0.10, transmission: 0.25 },   // firmer candy-glass
+      cube: { roughness: 0.10, transmission: 0.25, jelly: { transmission: 0.82, roughness: 0.07 } },   // firmer candy-glass
     },
+    // 2.0's JELLY (owner, 2026-10-22: the graphics pass, "real gelatin" first,
+    // held to their melon-jelly reference: refraction and Beer–Lambert colour).
+    // The body is mostly see-through: the floor bends behind it, and the hue
+    // is carried by absorption, so light that crosses a thick belly comes out
+    // deep and saturated while a thin edge stays pale and bright. The surface
+    // colour is the hue lifted toward white by `tintWhite` (three multiplies
+    // transmitted light by it as well as by the absorption); `attenuation` is
+    // the distance, in body radii, over which white light becomes the hue.
+    // `thickness` is local units (the unit dome is ~2 across). The hero keeps
+    // 1.x's white satin. `on: false` puts every gel back on 1.x's satin.
+    // `core`: an inner glow in the full hue where the body faces you (light
+    // scattered inside the jelly), so a gel keeps its colour over the dark
+    // floor it lets through; `corePow` how tightly it gathers to the middle
+    jelly: { on: true, transmission: 0.92, roughness: 0.05, thickness: 1.6, ior: 1.36, tintWhite: 0.6, attenuation: 0.85, sss: 0.3, dispersion: 0, core: 0.32, corePow: 1.6 },
+  },
+
+  // What the jelly reflects (render/env.js, 2.0's): a studio painted in code —
+  // the room's dark gradient, a soft box overhead that slides across every
+  // crown, and strip lights on the horizon that catch the sides (one in the
+  // grid's teal, one warm opposite). `intensity` is scene.environmentIntensity.
+  env: {
+    on: true, size: 512, intensity: 0.9,
+    zenith: 0x1a1c33, horizon: 0x2a2d4a, floor: 0x0d0d1a,
+    softbox: { color: 0xffffff, strength: 0.85, depth: 0.22 },
+    strips: [
+      { bearing: 70, width: 38, height: 0.06, span: 0.05, color: 0x7fffe0, strength: 0.9 },
+      { bearing: 250, width: 38, height: 0.06, span: 0.05, color: 0xffc890, strength: 0.75 },
+    ],
   },
 
   // The blob's shape and life (1.x `blob`): a dome with a rounded flat

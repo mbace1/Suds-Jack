@@ -5,6 +5,6 @@
 // each face and the mini reads rounder than its parent. It tumbles, breathes,
 // squashes and pops exactly as REDD does (enemy.js:1542-1565, 2739-2777,
 // 3013-3029), with its own shared geometry.
-import { cubeLook } from './redd.js?v=9';
+import { cubeLook } from './redd.js?v=10';
 
 export default cubeLook();

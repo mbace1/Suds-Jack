@@ -7,16 +7,17 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=9';
-import { buildFloor } from './render/floor.js?v=9';
-import { fitCamera } from './render/view.js?v=9';
-import { Splats } from './render/splats.js?v=9';
-import { Actors } from './render/actors.js?v=9';
-import { GEL_TIME } from './render/gel.js?v=9';
-import { createWorld, step, api as simApi } from './sim/world.js?v=9';
-import { Input } from './input.js?v=9';
-import { UI, t, timeText } from './ui.js?v=9';
-import { Sound } from './audio.js?v=9';
+import { TUNING } from './tuning.js?v=10';
+import { buildFloor } from './render/floor.js?v=10';
+import { fitCamera } from './render/view.js?v=10';
+import { Splats } from './render/splats.js?v=10';
+import { Actors } from './render/actors.js?v=10';
+import { GEL_TIME } from './render/gel.js?v=10';
+import { studioEnvironment } from './render/env.js?v=10';
+import { createWorld, step, api as simApi } from './sim/world.js?v=10';
+import { Input } from './input.js?v=10';
+import { UI, t, timeText } from './ui.js?v=10';
+import { Sound } from './audio.js?v=10';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -53,6 +54,8 @@ scene.add(new THREE.AmbientLight(0xffffff, T.light.ambient));
 const sun = new THREE.DirectionalLight(0xffffff, T.light.sun.intensity);
 sun.position.set(...T.light.sun.position);
 scene.add(sun);
+// what the jelly reflects (render/env.js): 2.0's, 1.x had nothing to reflect
+if (T.env.on) { scene.environment = studioEnvironment(); scene.environmentIntensity = T.env.intensity; }
 
 const splats = new Splats(scene);
 const actors = new Actors(scene, splats);

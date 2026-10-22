@@ -13,10 +13,10 @@
 // species, so a gel's material is built once and reused, never compiled
 // mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=9';
+import { TUNING } from '../tuning.js?v=10';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=9';
-import { LOOKS } from './looks/index.js?v=9';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=10';
+import { LOOKS } from './looks/index.js?v=10';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -70,7 +70,7 @@ export class Actors {
   _makeHero() {
     const L = T.heroLook, r = T.hero.radius;
     const root = new THREE.Group(), squash = new THREE.Group();
-    const mat = gelMaterial(T.hero.color, 'blob', 1, { wobble: L.wobble });
+    const mat = gelMaterial(T.hero.color, 'blob', 1, { wobble: L.wobble, jelly: false });   // the hero stays 1.x's white satin
     mat.transparent = true; mat.opacity = L.opacity;      // 1.x: the dash and mercy blinks drive opacity (player.js:62-63)
     const body = new THREE.Mesh(this.geo.hero, mat);
     body.scale.setScalar(r);
