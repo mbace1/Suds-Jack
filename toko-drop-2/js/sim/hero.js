@@ -18,8 +18,8 @@
 // trigger; `dash` an edge, true on the step it is asked. 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=8';
-import { BEHAVIOUR } from './species/index.js?v=8';   // read at run time only (a species' hitTest)
+import { TUNING } from '../tuning.js?v=9';
+import { BEHAVIOUR } from './species/index.js?v=9';   // read at run time only (a species' hitTest)
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -250,7 +250,7 @@ function volley(w, h, ax, az, fam, base, api) {
 // level 1, and the same family picked up again at level 1 takes it to
 // level 2. As 1.x wrote it, ANY other pick lands at level 1 — a different
 // family, and also the same family picked up while already at level 2
-// (held.level === 1 is part of the upgrade test, main.js:2066). Returns the
+// (held.level === 1 is part of the upgrade test, main.js:2065). Returns the
 // level now held.
 export function equipWeapon(w, fam) {
   const h = w.hero;
@@ -305,7 +305,7 @@ export function hurtHero(w, by) {
   if (!h.alive || invincible(h)) return false;
   h.lives--;
   w.streak = 0;                     // 1.x: the streak resets only on a hit, the fatal one too
-  w.killedBy = by;                  // the last one to land is what got you (main.js:4807)
+  w.killedBy = by;                  // the last one to land is what got you (main.js:4810)
   w.events.push({ type: 'hurt', x: h.x, z: h.z, by, lives: h.lives });
   // a hit knocks a level-2 pod down to level 1, never off (weaponTakeHit,
   // main.js:2083-2091, called from tryHitPlayer at main.js:4801)

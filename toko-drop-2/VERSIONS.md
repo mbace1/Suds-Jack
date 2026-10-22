@@ -19,6 +19,42 @@
     Never `--no-verify`.
 -->
 
+## v9 — 2026-10-22
+**Four more of 1.x's roster, and every earlier port held to 1.x**
+- **RIBBON**, 1.x's arc-mover: a tapered cyan strip whose body is its own
+  recent path. It steers with a turn limit and a weave, bends off the walls,
+  and is shot, touched and CUT along its whole length. It draws cyan, as
+  1.x's v251 did: v252's lighting change turned it near-black, and that is
+  undone here. Checked step by step against a copy of 1.x's code
+- **SLUG**: eleven green domes tapering to the tail, steering like RIBBON.
+  A shot on the head or tail takes that segment; a shot in the middle splits
+  it into two slugs, and the new one never splits again; its hit points are
+  its segments, so GEL HP does not change it. CUT eats the segments it
+  crosses
+- **REDD CUBE**, the flanker: it swings two faces off your line on 1.x's
+  tumble and hooks in close, and breaks into 4 to 8 REDD MINIs when it dies
+  (more in later waves), which tumble straight at you
+- **SHEPHERD**, the conductor: a hexagonal cone that keeps 9 from you,
+  circles, never fires and herds the gels around it (its pulsing ring is the
+  herd's reach)
+- SLUG, REDD and SHEPHERD are ported but not yet checked by a second agent;
+  RIBBON is
+- **The six ports that had no second check now have one**, all green with
+  high confidence. SLUDGE and TORO stop at the walls where 1.x stops them,
+  and keep a PUSH shove mid-tumble or at rest. BAMBU lands its lob on 1.x's
+  exact frame, a step later than before, dies with 1.x's own voice, and its
+  pieces fly on after it. SIREN pops round when it dies and lets a VOLATILE
+  fuse's glow show. MAGNA pulls before it walks, as 1.x ordered it. The
+  hero's suite grew to 192 checks against 1.x
+- A SLUG's new head is kept inside the arena: a fresh chain lies straight
+  back from where it spawned, so a shot that took the head (or a split) could
+  stand the next segment past a wall for a step
+- Corrected from v7: a CUT's 2 hits kill every gel of 2 hp or less; it does
+  not leave the rest one shot from dead (SLUG 11, TORO 6, SPLITTA 5)
+- Cache tokens `?v=8` → `?v=9`; HUD label → `2.0 · v9`
+
+---
+
 ## v8 — 2026-10-22
 **The bosses: OMEGA, the TWIN PRISMS and the WARDEN, as 1.x had them**
 - **OMEGA**, the three-act crystal: 15 hp as a boss, circling you at 7.5. Act

@@ -20,10 +20,11 @@
 //   INHALE   counts down, still moving; g.tell = k = 1 − inhaleT / 0.8 (the
 //            tell v141 meant and 1.x never drew: tuning `inhaleTell`). When
 //            it is out it SCREAMS on that step and the cruise timer redraws
-//   then its own velocity is smoothed for the look, and its clock advances.
+//   then its own walk, as far as the arena lets it go, is smoothed for the
+//   look (1.x `_velX`), and its clock advances.
 // The scream (1.x applied it right after the SIREN's own update): every other
 // living body that is not a boss and not a SIREN, with its centre strictly
-// within 7 of where this step's own move leaves the SIREN, gets surgeT = 3
+// within 7 of where this step's move leaves the SIREN, gets surgeT = 3
 // and surgeMult = 1.6 — set, not added, so a second scream refreshes and
 // never stacks. The core counts surgeT down at the top of each body's step
 // and api.speed multiplies by surgeMult while it runs, so the surge reaches
@@ -43,8 +44,8 @@ export default {
     s.inhaleT = 0;                                                   // 1.x `_inhaleT`
     s.screams = 0;                                                   // how many times it has screamed (the look's ring reads it)
     s.screamX = g.x; s.screamZ = g.z;                                // where it last screamed
-    s.clock = w.rng.range(S.clockStart[0], S.clockStart[1]);         // 1.x `_wobbleT`
-    s.phase = w.rng.range(S.phaseStart[0], S.phaseStart[1]);         // 1.x `_phase`
+    s.clock = w.rngFx.range(S.clockStart[0], S.clockStart[1]);       // 1.x `_wobbleT` (cosmetic: the look's own stream)
+    s.phase = w.rngFx.range(S.phaseStart[0], S.phaseStart[1]);       // 1.x `_phase`
     s.velX = 0; s.velZ = 0;                                          // 1.x `_velX/_velZ`: its own movement, smoothed
   },
 
@@ -62,7 +63,7 @@ export default {
       if (s.inhaleT <= 0) {
         g.tell = 0;                                                  // 1.x resets the swell the step it screams
         s.screamT = w.rng.range(S.screamEvery[0], S.screamEvery[1]);
-        scream(w, g, dt, S);
+        scream(w, g, dt, S, api);
       }
     } else {
       g.tell = 0;
@@ -71,19 +72,23 @@ export default {
     }
 
     // what its look smears and turns by: its own movement only, as 1.x
-    // measured it (the swarm forces before and the crowd after are not in it)
-    s.velX += (g.vx - s.velX) * S.velSmooth; s.velZ += (g.vz - s.velZ) * S.velSmooth;
+    // measured it — how far its own walk this step actually takes it (the
+    // swarm forces before, the crowd and any knock after are not in it, and
+    // a SIREN backed into a wall is not walking)
+    const [x0, z0] = held(w, g, g.x, g.z), [x1, z1] = held(w, g, g.x + g.vx * dt, g.z + g.vz * dt);
+    s.velX += ((x1 - x0) / dt - s.velX) * S.velSmooth; s.velZ += ((z1 - z0) / dt - s.velZ) * S.velSmooth;
     s.clock += dt;
   },
 };
 
-// 1.x main.js:10387-10397. 1.x screamed from where the SIREN's own move this
+// 1.x main.js:10387-10397. 1.x screamed from where the SIREN's move this
 // frame had left it; the core moves it after this step returns, so that is
-// its position plus this step's own velocity, held inside the arena as the
-// core will hold it.
-function scream(w, g, dt, S) {
-  const s = g.s;
-  const x = clamp(g.x + g.vx * dt, -w.hx + g.r, w.hx - g.r), z = clamp(g.z + g.vz * dt, -w.hz + g.r, w.hz - g.r);
+// where the core will put it: its position plus this step's own velocity and
+// what is left of a knock (a PUSH dash's shove, after the core's friction:
+// world.js gelStep), held inside the arena as the core will hold it.
+function scream(w, g, dt, S, api) {
+  const s = g.s, fr = Math.exp(-api.T.gel.knockFriction * dt);
+  const [x, z] = held(w, g, g.x + (g.vx + g.kx * fr) * dt, g.z + (g.vz + g.kz * fr) * dt);
   for (const o of w.gels) {
     if (!o.alive || o === g || o.isBoss || o.kind === g.kind) continue;
     if (Math.hypot(o.x - x, o.z - z) < S.reach) { o.surgeT = S.surgeTime; o.surgeMult = S.surgeMult; }
@@ -92,4 +97,6 @@ function scream(w, g, dt, S) {
   w.events.push({ type: 'scream', id: g.id, kind: g.kind, x, z, reach: S.reach });
 }
 
+// a point held inside the arena, as the core holds a body (world.js gelStep)
+const held = (w, g, x, z) => [clamp(x, -w.hx + g.r, w.hx - g.r), clamp(z, -w.hz + g.r, w.hz - g.r)];
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

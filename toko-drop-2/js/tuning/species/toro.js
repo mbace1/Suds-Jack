@@ -1,5 +1,5 @@
 // toro.js — TORO: its numbers. The 1.x CFG row (1.x enemy.js:590), melee
-// flag (1.x main.js:2410-2420), movement role (1.x tuning.js:300-316),
+// flag (1.x main.js:2410-2420), movement role (1.x tuning.js:293, 306),
 // revenge dialect (1.x tuning.js:496-513), and everything its port reads: the
 // creep → rev → telegraph → dash → recover cycle (1.x TUNING.toro,
 // tuning.js:64-80, and the literals enemy.js:2562-2647 writes inline), the
@@ -13,7 +13,8 @@ export default {
   name: 'TORO',
   deathLabel: 'Toro charger', // the death screen's name for it (1.x main.js:5036)
   family: 'custom',        // its own family: a group-bodied wheel (1.x GROUP_BODY, enemy.js:652); render/looks/toro.js builds it.
-                           // Its death chunks are 1.x's smooth goo (main.js:2435-2436: only YELA throws angular ones)
+                           // Its death chunks are 1.x's smooth goo (main.js:2618: only CUBE_TYPES_FX, the seven cubes at
+                           // main.js:2425-2428, throw angular ones)
   radius: 1.0,             // the hit and contact circle, whatever the yaw (1.x enemy.js:590, main.js:10650, 10894);
                            // the wheel itself is 1.96 across with spikes to 1.58 (species-a.md §5.4)
   hp: 6,                   // 1.x enemy.js:590
@@ -23,7 +24,7 @@ export default {
   bulletColor: null,       // it never fires (1.x enemy.js:590)
   fireInterval: null,      // 1.x enemy.js:590
   contact: true,           // touching it hurts in classic (1.x MELEE_TYPES, main.js:2415): within 1.0 + 0.5 (main.js:10894)
-  role: 'COMMIT',          // swarm-force profile: the wave's current at 0.15 and nothing else (1.x tuning.js:300-316);
+  role: 'COMMIT',          // swarm-force profile: the wave's current at 0.15 and nothing else (1.x tuning.js:293, 306);
                            // the current still drifts it through its rev and its telegraph, as in 1.x (species-a.md §10.4 trap 13)
   revenge: null,           // not a biter: in 1.x a TORO's corpse never fires (1.x tuning.js:496-497)
 
@@ -40,7 +41,8 @@ export default {
   dashDecel: 8,            // u/s², applied before each step's move (1.x tuning.js:66, enemy.js:2620)
   // the dash ends when the centre passes the arena's half size less the CFG radius — not the elite's
   // (1.x enemy.js:2566 `halfX − cfg.radius`) — and is clamped back to it (enemy.js:2626-2629); the arrow is
-  // measured to the same line (enemy.js:2602, arena.js:62-67)
+  // measured to the same line (enemy.js:2602, arena.js:62-67). An elite's line is its own radius in, where 2.0's
+  // core holds every body (sim/species/toro.js inset())
   minArrow: 0.5,           // the arrow is never shorter than this (1.x enemy.js:2602 `Math.max(0.5, …)`)
   recoverTime: 0.8,        // s standing still at the wall before the next idle (1.x tuning.js:80)
   wallSquash: -0.5,        // the wall hit's kick to the squash spring (1.x enemy.js:2632 `_sqV −= 0.5`)
@@ -52,12 +54,14 @@ export default {
   // 0.55..1.55. The core picks its spring by family (blob 0.24/0.86), so the behaviour runs this one in its place.
   squash: { spring: 0.18, damp: 0.90, min: 0.55, max: 1.55 },
 
-  // ── what the core does not do per species yet (reported in the port's contractGaps) ──
+  // ── its own feedback ──
   dashContactShake: 0.27,  // a non-fatal touch WHILE it dashes adds this camera shake (1.x main.js:10897); the behaviour
-                           // reports it as a `shake` event
-  deathChunks: { count: 8, size: 0.25 },   // its death throws 8 goo chunks of 0.25, not 5–6 of 0.18 (1.x enemy.js:3033-3034)
-  // its death sound, 'toro': a sawtooth 95 → 38 Hz over 0.45 s at 0.36, with noise at 0.14 for 0.22 s
-  // (1.x main.js:4477, audio.js:245)
+                           // reports it as a `shake` event, which main.js applies
+  // NOT read by the core yet (a contract gap: the view's burst throws every body T.death.chunks of
+  // T.death.chunkSize): its death throws 8 goo chunks of 0.25, not 5–6 of 0.18 (1.x enemy.js:3033-3034, 3038)
+  deathChunks: { count: 8, size: 0.25 },
+  // its death sound, 'toro' (audio.js reads it): a sawtooth 95 → 38 Hz over 0.45 s at 0.36, with noise at 0.14
+  // for 0.22 s (1.x main.js:4477, audio.js:245)
   deathSound: { wave: 'sawtooth', f0: 95, f1: 38, dur: 0.45, vol: 0.36, noiseVol: 0.14, noiseDur: 0.22 },
 
   // ── the look (render/looks/toro.js) ──

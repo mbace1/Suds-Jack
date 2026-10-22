@@ -10,7 +10,12 @@
 // 1.x wrote both and overwrote both in the same frame, so it never drew them
 // (species-a.md §8.4); the port draws the tell v141 meant, from g.tell (the
 // inhale's progress k, which the sim leaves at 0 when tuning `inhaleTell` is
-// off). The hit flash outranks it, as it outranked everything in 1.x.
+// off). The hit flash and a VOLATILE body's smoulder outrank the strobe, as
+// they outranked every species' own glow in 1.x.
+//
+// THE DEATH POP: the core grows an own look's root for its last 0.28 s and
+// stops updating it, so the mesh is put back to 1.x's plain round base
+// (r × the elite's 1.2, the squash reset) before each of those frames draws.
 //
 // THE SCREAM RING (1.x ScreamRing, main.js:2518-2540): a flat additive violet
 // ring, RingGeometry(0.82, 1.0, 40) at y 0.05, that grows from where it
@@ -61,8 +66,11 @@ export default {
       r * shp.x * sxz * swell,
       r * shp.y * (sy - drag * L.dragSink) * swell,
       r * shp.z * (sxz + drag) * swell);
-    // the inhale's strobe; the hit flash outranks it (1.x's emissive order, enemy.js:2650-2652)
-    if (g.flash <= 0 && g.tell > 0) v.mat.emissive.setHex(Math.sin(clock * L.strobeHz) > 0 ? L.strobe[0] : L.strobe[1]);
+    // the inhale's strobe; the hit flash and a VOLATILE body's smoulder
+    // outrank it, as they outranked every species' own glow in 1.x's emissive
+    // chain (enemy.js:2650-2656) — the core has already drawn those
+    if (g.flash <= 0 && g.affix !== 'volatile' && g.tell > 0) v.mat.emissive.setHex(Math.sin(clock * L.strobeHz) > 0 ? L.strobe[0] : L.strobe[1]);
+    if (!v.deathHook) { v.deathHook = true; v.mesh.onBeforeRender = () => { if (v.dyingT > 0) deathPose(v); }; }
 
     // a new scream lets a ring out where it was screamed
     const n = s.screams || 0;
@@ -76,6 +84,21 @@ export default {
   // seen (a ring still playing out from its last body is left to finish)
   reset(v) { v.yaw = v.S.look.yaw0; v.seen = 0; },
 };
+
+// The death pop. While a killed body plays out its last 0.28 s the core
+// stops updating its view and, for an own look, grows only the root
+// (1 + 1.3t); left alone, the mesh would keep its last shaped, breathing,
+// maybe swollen pose and the body group its undo of a squash the core has
+// just reset to 1 — a stretched dome where 1.x drew a round one. 1.x's
+// destroy() reset the squash and the scale to the plain base, r × the
+// elite's 1.2 (enemy.js:3013, 3026, `_deathBaseScale` 1482-1484), and
+// updateDeath grew that (enemy.js:2981); the mesh keeps its heading and
+// tilt, as 1.x's did.
+function deathPose(v) {
+  v.body.scale.set(1, 1, 1);
+  v.mesh.scale.setScalar(v.r ?? v.S.radius);
+  v.body.updateMatrixWorld(true);                      // this frame's draw reads the new pose
+}
 
 // the ring: one per view (a SIREN screams at most every 4.3 s; a ring lasts 0.55 s)
 function makeRing(ctx) {

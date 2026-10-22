@@ -16,13 +16,19 @@
 //           to a cardinal, with 1.x's 70/20/10 roll), turned back from a wall
 //           the coming stride would cross, and the cube tips over its leading
 //           bottom edge: its position is WRITTEN each step as origin + dir ×
-//           (L + D·cos ang), so what pushed it mid-tumble is lost (1.x trap
-//           15) — except the crowd solver, which moves the tumble's origin
-//           (1.x crowd.js:110-116). It lands one stride on, squashes, rests.
+//           (L + D·cos ang), so this step's swarm forces are lost (1.x trap
+//           15) — but the crowd solver moves the tumble's origin by its
+//           UNCLAMPED nudge (1.x crowd.js:110 adds `ax` to `_flopX0` before it
+//           clamps the position), and so does a PUSH dash's knock: both reach
+//           the step as g.nudgedX/Z. The arena clamp does not move the origin
+//           (1.x had none for a cube). It lands one stride on, squashes, rests.
 //   TRAIL   a point every 0.35 u it has moved (the look's poured droplets);
 //           points older than 3 s are dropped (180 steps, as 1.x's frames)
 //   POISON  every 0.5 s a zone where it stands: api.fire.hazard, lethal for
-//           its 2.5 s, which outlives the cube that poured it
+//           its 2.5 s, which outlives the cube that poured it. 1.x dropped it
+//           after the crowd had run (main.js:10426 then 10459); a species
+//           step has no later hook, so it drops where this step left the cube:
+//           one step of crowd nudge (≤ ~0.1 u) or PUSH knock (≤ ~0.25 u) short
 // It takes no special hits (1.x hit() is the generic one) and has no death
 // of its own: the core's kill, angular chunks and puddle; not a biter.
 //
@@ -42,7 +48,6 @@ export default {
     g.s.flop = false;
     g.s.ft = 0; g.s.dur = 0;
     g.s.x0 = g.x; g.s.z0 = g.z;
-    g.s.lx = g.x; g.s.lz = g.z;                 // where this step left it (see the nudge below)
     g.s.poisonT = S.poison.every;               // the clock starts full (enemy.js:1218)
     g.s.trail = [];
   },
@@ -50,11 +55,12 @@ export default {
   step(w, g, dt, api) {
     const S = api.S(g), F = S.flop, s = g.s, h = w.hero;
 
-    // The crowd solver ran after last step's write (and the core clamped);
-    // 1.x moved a live tumble's origin with every nudge (crowd.js:110-116).
-    // This step's swarm forces (g.x − g.px) are left out: the write below
-    // overwrites them, as 1.x's did.
-    if (s.flop) { s.x0 += g.px - s.lx; s.z0 += g.pz - s.lz; }
+    // The crowd solver (and a knock) moved it after last step's write; 1.x
+    // moved a live tumble's origin with every nudge, unclamped (crowd.js:110),
+    // so a nudge or a shove into the wall still carries the whole tumble and
+    // the core's walls hold the body in. This step's swarm forces are left
+    // out: the write below overwrites them, as 1.x's did.
+    if (s.flop) { s.x0 += g.nudgedX; s.z0 += g.nudgedZ; }
 
     // WANT (enemy.js:2316-2330)
     const ddx = h.x - g.x, ddz = h.z - g.z, dist = Math.hypot(ddx, ddz) || S.distFloor;
@@ -131,7 +137,5 @@ export default {
         src: g.kind, color: P.color, kind: P.kind,
       });
     }
-
-    s.lx = g.x; s.lz = g.z;
   },
 };

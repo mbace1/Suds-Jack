@@ -20,8 +20,12 @@ export default {
   fireInterval: 4.0,       // s × the wave's intervalMult, from a landing to the next telegraph (1.x enemy.js:591 = TUNING.bambu.lobCooldown, 2867)
   contact: false,          // its touch never hurts in classic (1.x MELEE_TYPES, main.js:2410-2420)
   role: 'HOLDER',          // swarm-force profile: the wave's current at 0.25 and nothing else (1.x tuning.js:306)
-  revenge: 'FAN',          // HARDCADE's corpse fire: 5 slow bullets, ±1.0 rad (1.x tuning.js:511)
+  revenge: 'FAN',          // HARDCADE's corpse fire: 5 slow bullets 0.5 rad apart, ±1.0 rad (1.x tuning.js:511, 515)
   noHpMult: true,          // elites and bosses never multiply its hp (1.x main.js:9385, 9403, 9408)
+  // its own death voice, not the blob's: onKill files it as 'bambu' (1.x main.js:4476-4480) and
+  // enemyDieType plays _tone(480, 0.30, 'triangle', 0.26, 190), no noise (1.x audio.js:246). The
+  // view's audio voices family 'cube' only, so a custom body names its voice here (audio.js reads it)
+  deathSound: { wave: 'triangle', f0: 480, f1: 190, dur: 0.30, vol: 0.26 },
 
   // ── the stalk: emerge, grow, regrow (1.x enemy.js:873-886, 2537-2549) ──
   segments: 3,             // a full tower (1.x tuning.js:84 bambu.segments)
@@ -62,19 +66,25 @@ export default {
     // the landing ring: 28 segments, flat at y 0.02, double-sided, no depth write (1.x enemy.js:914-924).
     // It flashes on the lob's own clock: sin(22 t) > 0 ? 0.75 : 0.2 through the telegraph, then
     // sin(40 t) > 0 ? 0.85 : 0.25 in flight (1.x enemy.js:2831-2832, 2855-2856). 1.x calls these
-    // `telegraphFlashHz` 22 and `flightFlashHz` 40, but they are radians a second (≈3.5 Hz and ≈6.4 Hz)
-    ringSegs: 28, ringY: 0.02,
+    // `telegraphFlashHz` 22 and `flightFlashHz` 40, but they are radians a second (≈3.5 Hz and ≈6.4 Hz).
+    // It is built at opacity 0.6 (1.x enemy.js:917), and the telegraph's first frame only shows it:
+    // the flash writes from the next, so a first ring opens at 0.6 and a later one at the last flight value
+    ringSegs: 28, ringY: 0.02, ringOpacity0: 0.6,
     telegraphFlashRate: 22, telegraphOpacity: [0.75, 0.2],
     flightFlashRate: 40, flightOpacity: [0.85, 0.25],
-    // a shot pops the top segment: 3 gel chunks from (segments left + 0.5) × 0.6, outward 3 u/s,
+    // a lost segment pops: 3 gel chunks from (segments left + 0.5) × 0.6, outward 3 u/s,
     // vy 2–5, tan, size 0.14 (1.x enemy.js:1627-1638), as smooth goo droplets, a 9 × 7 sphere
     // (1.x main.js:2436, 2617). They fly on 1.x's chunk physics: life 1.4, gravity 14, the floor
     // keeping 0.35 of their skid, a shrink over the last 0.3 s (TUNING.death), and land at
     // y ≤ 0.01 with a squash kick 0.4 × |vy| on a 0.32 / 0.80 spring held to 0.55..1.4
-    // (1.x main.js:1370-1381), per 60 Hz frame
+    // (1.x main.js:1366-1392), per 60 Hz frame. They are the floor's, not the stalk's: 1.x drained
+    // them into the one goo pool (main.js:10522-10527), so the killing shot's chunks fly on after
+    // the stalk is gone — one pool in the scene, on the sim's clock while a stalk is drawn (a pause
+    // freezes them, as it froze 1.x's pool) and on the frame clock otherwise
     popChunks: 3, popSpeed: 3, popUp: [2, 5], popSize: 0.14, popColor: 0xaa8844, popGeo: [9, 7],
     popFloor: 0.01, popSquash: { land: 0.4, spring: 0.32, damp: 0.80, min: 0.55, max: 1.4 },
     frameDtCap: 0.05,      // the chunks' frame clock is held to 1.x's own dt cap (1.x main.js:9268)
-    popPool: 9,            // chunks a view keeps in flight at once (three pops' worth; 2.0's budget, 1.x had a shared 384)
+    popPool: 36,           // chunks in flight at once, every stalk's together (2.0's budget; 1.x shared its 384,
+                           // reusing the one with least life when full: main.js:1342-1347)
   },
 };

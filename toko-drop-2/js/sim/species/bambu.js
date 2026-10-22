@@ -26,14 +26,25 @@
 //   TELL     0.7 s: the target is fixed (the hero's spot ± 1.2 on each axis,
 //            from the seeded stream), the ring flashes there and the charge
 //            orb climbs the stalk
-//   LOB      the step the tell runs out: the blob leaves the stalk's top
-//            (api.fire.lob, not a pool bullet: no graze, cannot be shot down)
-//            and flies 1.0 s whatever the distance; it hurts the hero inside
-//            the ring's outer edge + 0.5 at the instant it lands, then
-//            nothing lingers. The fire clock restarts at the landing
+//   LOB      the step the tell runs out the blob leaves the stalk's top; it
+//            flies 1.0 s whatever the distance and hurts the hero inside the
+//            ring's outer edge + 0.5 at the instant it lands, then nothing
+//            lingers. The fire clock restarts at the landing. The blob is the
+//            core's lob (api.fire.lob, not a pool bullet: no graze, cannot be
+//            shot down), handed over on the FIRST FLIGHT STEP: the core counts
+//            the step a lob is made in as flight, and 1.x's blob sits at p = 0
+//            on its launch frame and moves from the next, so made there it
+//            would fly a step ahead of 1.x and land a step early. Made a step
+//            later it is at 1.x's p on every step and lands on 1.x's frame.
 // It takes no squash spring (1.x skips it), never walks (speed 0; the wave's
 // current still drifts it), and if it dies mid-cycle the ring goes and the
 // blob in the air never lands.
+//
+// Every segment it loses POPS (the look throws three chunks from where it
+// was): a shot (onHit, 1.x hit()), and — this game's dashes, which take hp
+// without a shot — whatever else took its hp, since in 1.x every hp it ever
+// lost went through hit() and its pop. `s.pops` counts them; `s.popLog`
+// remembers the height of the last `segments` of them, for the look.
 export default {
   init(w, g, api) {
     const S = api.S(g), s = g.s;
@@ -48,9 +59,12 @@ export default {
     s.timer = 0;                       // 1.x _bambuTimer
     s.lobT = 0;                        // 1.x _lobT: the ring's flash clock, telegraph and flight
     s.tx = 0; s.tz = 0;                // 1.x _lobTargetX/Z
+    s.lx = 0; s.lz = 0;                // 1.x _lobStart: where the blob leaves from
+    s.launch = false;                  // a blob launched, owed to the core on the first flight step
     s.strain = 0;                      // the telegraph's progress the scale block read
     s.lob = null;                      // the lob in the air, so a death can take it back
-    s.pops = 0; s.popY = 0;            // segments shot off so far, and where the last one was (the look's chunks)
+    s.pops = 0; s.popY = 0;            // segments popped so far, and where the last one was
+    s.popLog = new Array(S.segments).fill(0);   // where the last few were (pop k at popLog[k % segments])
     g.sq = 1; g.sqV = 0;
   },
 
@@ -58,8 +72,8 @@ export default {
     const S = api.S(g), s = g.s;
     // 1.x skips the squash spring for BAMBU (enemy.js:2727): it never squashes
     g.sq = 1; g.sqV = 0;
-    // a segment lost to anything but a shot (the hp is the segments)
-    if (g.hp < s.segs) s.segs = Math.max(0, g.hp);
+    // a segment lost to anything but a shot (the hp is the segments): it pops
+    while (s.segs > Math.max(0, g.hp)) pop(w, g, S);
 
     // the movement switch (1.x enemy.js:2537-2560)
     if (s.emergeT > 0) s.emergeT -= dt;
@@ -90,13 +104,18 @@ export default {
       if (s.timer <= 0) {
         s.state = 'lobbing';
         s.timer = S.lobFlight;
-        api.fire.lob(w, g.x, g.z, s.tx, s.tz, S.lobFlight, S.lobArcHeight,
-          { splash: S.ring.outer, color: S.bulletColor, src: g.kind, size: S.lobBlobRadius });
-        s.lob = w.lobs[w.lobs.length - 1];
+        s.lx = g.x; s.lz = g.z;        // 1.x _lobStart (enemy.js:2845-2847)
+        s.launch = true;
         w.events.push({ type: 'gelShot', x: g.x, z: g.z, kind: g.kind, id: g.id, lob: true, tx: s.tx, tz: s.tz });
       }
     } else if (s.state === 'lobbing') {
       s.timer -= dt; s.lobT += dt;
+      if (s.launch) {
+        s.launch = false;
+        api.fire.lob(w, s.lx, s.lz, s.tx, s.tz, S.lobFlight, S.lobArcHeight,
+          { splash: S.ring.outer, color: S.bulletColor, src: g.kind, size: S.lobBlobRadius });
+        s.lob = w.lobs[w.lobs.length - 1];
+      }
       if (s.timer <= 0) {
         s.state = 'waiting';
         s.fireT = S.fireInterval * g.intervalMult;
@@ -110,23 +129,37 @@ export default {
   // The core then takes the hp. A WARDEN's aura blocks before 1.x's hit()
   // runs, so a shielded stalk loses nothing.
   onHit(w, g, b, api) {
-    if (g.shield) return;
-    const S = api.S(g), s = g.s;
-    if (s.segs <= 0) return;
-    s.segs--;
-    g.r = radius(S, s.segs);
-    s.pops++; s.popY = (s.segs + 0.5) * S.segHeight;      // 1.x segY (enemy.js:1630)
-    w.events.push({ type: 'segPop', id: g.id, kind: g.kind, segs: s.segs, x: g.x, z: g.z, y: s.popY });
+    if (g.shield || g.s.segs <= 0) return;
+    pop(w, g, api.S(g));
   },
 
   // Dying mid-cycle takes the ring and the blob with it: nothing lands
-  // (1.x enemy.js:3078-3079).
-  onKill(w, g) {
+  // (1.x enemy.js:3078-3079). A dash that took its last hp killed it before
+  // its own step could pop what the hp took, so those pop here (a shot has
+  // already popped its one; a kill that took no hp pops nothing, as 1.x's
+  // `hp = 1; hit()` kills popped only the top one). The radius it died at
+  // stays the one the core has just reported.
+  onKill(w, g, api) {
     const s = g.s;
+    while (s.segs > Math.max(0, g.hp)) pop(w, g, api.S(g), true);
     if (s.lob) { const i = w.lobs.indexOf(s.lob); if (i >= 0) w.lobs.splice(i, 1); s.lob = null; }
+    s.launch = false;
     s.state = 'dead';
   },
 };
+
+// The top segment comes off: the hitbox shrinks with it, and its chunks
+// leave from the middle of where it stood, (segments left + 0.5) × 0.6
+// (1.x enemy.js:1628-1631, 1469).
+function pop(w, g, S, keepR = false) {
+  const s = g.s;
+  s.segs--;
+  if (!keepR) g.r = radius(S, s.segs);
+  s.popY = (s.segs + 0.5) * S.segHeight;
+  s.popLog[s.pops % s.popLog.length] = s.popY;
+  s.pops++;
+  w.events.push({ type: 'segPop', id: g.id, kind: g.kind, segs: s.segs, x: g.x, z: g.z, y: s.popY });
+}
 
 // 1.x's radius getter: max(0.6, 0.6 × segments) (enemy.js:1469)
 function radius(S, segs) { return Math.max(S.hitRadius.min, segs * S.hitRadius.perSeg); }

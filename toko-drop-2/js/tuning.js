@@ -7,8 +7,8 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=8';
-import WAVES from './tuning/waves.js?v=8';
+import { SPECIES } from './tuning/species/index.js?v=9';
+import WAVES from './tuning/waves.js?v=9';
 
 export const TUNING = {
   render: {
@@ -102,7 +102,7 @@ export const TUNING = {
     // position: walking settles at 0.15, a dash caps at 0.45. The sim keeps
     // it (hero.stretch, stretchX/Z) so the view only copies it.
     stretch: { vel: 0.4, perSpeed: 0.025, max: 0.45, ease: 0.35, minSpeed: 0.3 },
-    // the red screen vignette on a hit (main.js:4799, 5550-5564): alpha
+    // the red screen vignette on a hit (main.js:4798, 5550-5564): alpha
     // (t / 0.32)·0.55 from 0.35·min(cx, cy) to 1.05·max(cx, cy); off under reduce motion
     vignette: { life: 0.32, alpha: 0.55, inner: 0.35, outer: 1.05 },
     haptics: { hit: 35, death: [50, 40, 90] },        // navigator.vibrate ms (haptics.js:25, 30)
@@ -179,8 +179,9 @@ export const TUNING = {
     // The CUT dash (owner, 2026-10-22: "likely we want dashes that go through
     // and do damage in the end"): 1.x's pass-through, with the dash level 1
     // cut from the start, as damage. Every body it passes takes `hits` (2 is
-    // 0.2 s of the gun: at GEL HP ×1 it kills GLOBBO, YELA, SLUDGE and BAMBU
-    // and leaves the rest a shot from dead). It touches as the level 1 cut does
+    // 0.2 s of the gun: at GEL HP ×1 it kills every body of 2 hp or less —
+    // GLOBBO, YELA, SLUDGE, BAMBU, BOTFLY and the minis — and takes 2 off the
+    // rest). It touches as the level 1 cut does
     // (dashKill.reach); from dash level 1 a body that is not a boss dies outright.
     cut: { hits: 2 },
     color: 0xffffff,        // 1.x: white satin (player.js:61)

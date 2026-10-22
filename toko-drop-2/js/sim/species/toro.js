@@ -20,7 +20,8 @@
 //               the rev's progress, 0..1)
 //   TELEGRAPH   0.5 s: the arrow, from where it stands to EXACTLY where the
 //               dash will stop — measured to the wall it will hit, one CFG
-//               radius in — flashing; no movement, no spin
+//               radius in (an elite: its own, see inset()) — flashing; no
+//               movement, no spin
 //   DASHING     22 u/s decelerating 8 u/s² to a 14 floor, rolling for real
 //               (speed / 0.68 rad/s). It never stops for you, a body or the
 //               clock: only for the wall, where it is clamped back inside and
@@ -30,7 +31,10 @@
 // affix and a SIREN's surge never reach it. Its role (COMMIT) gives it the
 // wave's current at 0.15 and nothing else, which drifts it through its rev
 // and telegraph as in 1.x (the arrow stays where it was laid); the crowd
-// solver can still nudge it. Hits are ordinary (6 hp, the 1.0 circle,
+// solver can still nudge it, and a PUSH dash's knock (g.kx/g.kz) moves it on
+// top of its own step: every state moves on from wherever the last step
+// left it (nothing is written from a stored origin), so a shove is carried,
+// never thrown away. Hits are ordinary (6 hp, the 1.0 circle,
 // whatever its yaw); touching it hurts (1.0 + 0.5), and a touch while it
 // dashes shakes the camera harder.
 //
@@ -44,7 +48,7 @@
 // Not ported: the CLOSE COMBAT boss's enrage (≤ 33% hp: creep 1.5, rev
 // ×0.625, idle ×0.45, 1.x enemy.js:1688-1696, 2571, 2580, 2642) — in classic
 // a TORO is never a boss (1.x main.js:239-262).
-import { TUNING } from '../../tuning.js?v=8';
+import { TUNING } from '../../tuning.js?v=9';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
@@ -70,7 +74,8 @@ export default {
 
     // the movement switch (1.x enemy.js:2562-2647), from where this step began
     const dx = h.x - g.x, dz = h.z - g.z, dist = Math.hypot(dx, dz) || 0.001;
-    const bx = w.hx - S.radius, bz = w.hz - S.radius;            // 1.x toroBX/toroBZ: CFG radius, not the elite's
+    const ri = inset(g, S);
+    const bx = w.hx - ri, bz = w.hz - ri;                        // 1.x toroBX/toroBZ (enemy.js:2566)
     let kick = 0;
     switch (s.state) {
       case 'idle': {
@@ -101,7 +106,7 @@ export default {
           s.stateT = S.telegraphTime;
           // the exact distance the centre will travel before the wall stops it (1.x arena.rayEdge)
           s.tx = g.x; s.tz = g.z;
-          s.len = Math.max(S.minArrow, rayEdge(w, g.x, g.z, s.dirX, s.dirZ, S.radius));
+          s.len = Math.max(S.minArrow, rayEdge(w, g.x, g.z, s.dirX, s.dirZ, ri));
           w.events.push({ type: 'tell', id: g.id, kind: g.kind, x: g.x, z: g.z, dx: s.dirX, dz: s.dirZ, len: s.len });
         }
         break;
@@ -169,6 +174,18 @@ function takeBackCoreSpring(w, g, S, api) {
   const [k, c] = api.T.gel.sq[S.family === 'cube' ? 'cube' : 'blob'];   // the core's choice (world.js gelStep)
   return g.sqV / c + (s.sq - 1) * k;
 }
+
+// How far in from the walls the dash stops, and the arrow is measured to.
+// 1.x: one CFG radius (enemy.js:2566 `halfX − cfg.radius`, the same for an
+// elite), which is where 1.x also left the wheel — it had no other clamp on
+// an enemy (1.x crowd.js clamps only what it nudges). 2.0's core holds every
+// body one of ITS OWN radii in after its step (world.js gelStep), so an
+// elite (1.2) can never reach 1.x's line: the dash would end 0.2 short of
+// the arrow's tip and could stand a step pinned at the wall first. So the
+// line is the farther-in of the two — 1.x's for an ordinary TORO (r = CFG
+// 1.0, identical), the core's for an elite — and 1.x's rule, "the arrowhead
+// tip exactly at impact" (enemy.js:2597-2603), still holds.
+function inset(g, S) { return Math.max(S.radius, g.r); }
 
 // 1.x arena.rayEdge on the rectangle (arena.js:62-67): how far from (x, z)
 // along (dx, dz) a body of radius r can go before it meets a wall

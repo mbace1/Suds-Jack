@@ -17,6 +17,11 @@ export default {
   contact: false,         // touching it hurts in classic (1.x MELEE_TYPES): it does not (1.x main.js:2410-2420)
   role: 'SUPPORT',          // swarm-force profile (TUNING.movement.roles; 1.x tuning.js:307)
   revenge: null,          // HARDCADE dialect if it bites: 'AIMED' | 'FAN' | 'RING'; null = it does not (1.x tuning.js:496-497)
+  // No deathSound: it dies with its family's voice, the blob's. 1.x gave it
+  // the cube's square crunch by accident — main.js chose the voice from its
+  // own BLOB_TYPES, which predates SIREN (1.x main.js:2422-2424, 4476-4480) —
+  // and the spec ports one family table instead (species-a.md §10.4.5), as
+  // MAGNA's port does.
 
   // ── the hold: "coward support: hovers at mid distance, backs away when pressed" (1.x enemy.js:1819-1823) ──
   keep: 9,                  // the distance it keeps from you (1.x enemy.js:1821 `const keep = 9`)

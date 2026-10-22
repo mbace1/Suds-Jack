@@ -9,10 +9,13 @@
 // second finger on a side already held is ignored; the side is decided where
 // the thumb lands. The top-centre strip is the pause button.
 // Keys: WASD / arrows move (normalised), Space dashes when it is RELEASED (1.x
-// since its first prototype), Esc pauses. The mouse aims where it points and
-// fires while any button is held. Pad: the left stick moves and the right
-// stick aims and fires past a radial deadzone (the raw values beyond it, as
-// 1.x), A / RB / RT dash, Start pauses.
+// since its first prototype), Esc pauses. 1.x paused on Esc's keyup
+// (input.js:48); here it is the keydown, because the pause menu (ui.js)
+// takes Esc on keydown to resume and a keyup pause would then pause the run
+// again on the same press. P is a second pause key, 2.0's own. The mouse
+// aims where it points and fires while any button is held. Pad: the left
+// stick moves and the right stick aims and fires past a radial deadzone (the
+// raw values beyond it, as 1.x), A / RB / RT dash, Start pauses.
 //
 // The three are MERGED the way 1.x merged them (input.js:170-208), not
 // switched: a pad stick that is pushed wins, then a touch stick that is held,
@@ -22,7 +25,7 @@
 //
 // Output is in SCREEN terms (x right, y down); main.js turns it into the
 // world, because only it knows where the camera is.
-import { TUNING } from './tuning.js?v=8';
+import { TUNING } from './tuning.js?v=9';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)

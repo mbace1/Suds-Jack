@@ -5,28 +5,36 @@
 //
 // 1.x js/enemy.js at v268: the tether's state 1171-1184, the movement branch
 // 1888-1906, the clocks 668/671/2724-2725, the velocity 2694-2697; main.js:
-// the pull 10189-10213 (MAGNA_REACH, MAGNA_PULL, magnaImmuneT 2542-2544).
+// the pull 10189-10213 (MAGNA_REACH, MAGNA_PULL, magnaImmuneT 2542-2544),
+// the swarm forces after it 10231-10360, the bodies' own updates 10369.
 // Spec: docs/port-1x/species-a.md §7. Every number is tuning/species/magna.js.
 //
-// Per step:
+// 1.x's frame, which this keeps: the hero moves; THEN the whole floor's pull
+// is worked out, from where every MAGNA stood at the end of the last frame,
+// and moves the hero; THEN the swarm forces move the bodies; THEN each MAGNA
+// walks, toward where the pull has left the hero. 2.0's step runs the swarm
+// forces before any body's step and applies the pull after them all, so the
+// first MAGNA to step each step works out the floor for every MAGNA:
+//
 //   IMMUNITY  1.x keeps one clock for the whole floor: every step the hero is
 //             dashing it is set to 1.2, otherwise it runs down by dt; while it
 //             is above 0 no MAGNA holds. The contract has no per-step world
-//             hook, so every MAGNA carries a copy and ticks it on its own step
-//             (all copies agree: same input, same arithmetic). One arriving
-//             takes the copy of a MAGNA already watching; with none on the
-//             floor it reads the clock back off the hero's dash cooldown,
-//             which starts at the same step the clock first runs down.
-//   THE HOLD  then, as 1.x's main.js did before the body's own update: it
-//             holds you while the clock is out and you are strictly between
-//             1.2 and 11 of it — immunity aside, not gated on mercy — and its
-//             share is 1.1 u/s along the line to it. The floor's sum is capped
-//             at 2.0 u/s in its own direction: each MAGNA adds what its share
-//             moves the CAPPED running sum of the MAGNAs before it this step,
-//             so the hero's pull this step is exactly cap(Σ shares) · dt
-//             (w.hero.pullX/pullZ; the core applies it after the bodies move
-//             and holds you inside the arena, as 1.x clamped it).
-//   THE WALK  farther than keep + 1 = 9 it walks at you at api.speed(g) (the
+//             hook, so every MAGNA carries a copy, written each step by the
+//             one that works out the floor from the copy of a MAGNA that held
+//             it the step before. With none on the floor last step it is read
+//             back off the hero's dash cooldown, which starts on the same step
+//             the clock first runs down (a gap: see adoptClock).
+//   THE HOLD  each MAGNA holds you while the clock is out and you are
+//             strictly between 1.2 and 11 of where it STOOD at the start of
+//             the step (g.px/g.pz: 1.x's pull reads the bodies before the
+//             swarm forces move them) — immunity aside, not gated on mercy.
+//             Its share is 1.1 u/s along the line to it; the floor's sum is
+//             capped at 2.0 u/s in its own direction and added to
+//             w.hero.pullX/pullZ once, as 1.x moved the hero once (the core
+//             applies it after the bodies move and holds you in the arena).
+//   THE WALK  from where the swarm forces left it, toward where the pull
+//             leaves you (1.x's e.update reads player.position after the
+//             pull): farther than keep + 1 = 9 it walks at api.speed(g) (the
 //             wave's speedMult, SWIFT, a SIREN's surge); otherwise it stands.
 //             It never backs away.
 //   THE TELL  the tether's opacity (g.s.tether, which the look draws) closes
@@ -35,18 +43,23 @@
 //             for the look and its clock advances, in 1.x's order.
 // No gun, no special hits (4 HP), harmless to touch in classic, no death of
 // its own (the core's kill, puddle and goo; a big death at r 0.8 — the
-// tether goes with it, in the look); not a HARDCADE biter.
-import { TUNING } from '../../tuning.js?v=8';
+// tether goes with it, in the look); not a HARDCADE biter. A PUSH dash's
+// knock is the core's (g.kx/g.kz on top of the walk's g.vx/g.vz); a CUT
+// dash's damage is the core's too. Neither changes the hold: any dash is a
+// dash to 1.x's clock.
+import { TUNING } from '../../tuning.js?v=9';
 
-const COOLDOWN = TUNING.hero.dashCooldown;           // the hero's own dash cooldown (1.x DASH_CD, player.js:8): read back, not tuned here
+// read back, not tuned here: the hero's own numbers (1.x player.js:8, 17)
+const COOLDOWN = TUNING.hero.dashCooldown;           // DASH_CD 0.75, from the dash's end
+const HERO_R = TUNING.hero.radius;                   // PLAYER_RADIUS 0.5: the pull's clamp (1.x main.js:10209-10212)
 
 export default {
   init(w, g, api) {
     const S = api.S(g), s = g.s;
-    s.tick = -1;                                                     // the last step it ticked the immunity on
+    s.tick = -1;                                                     // the last step the floor was worked out for it
     s.immune = 0;                                                    // its copy of 1.x's `magnaImmuneT`
     s.held = false;                                                  // 1.x `_pullActive`
-    s.pullX = 0; s.pullZ = 0;                                        // its share of the pull this step, u/s
+    s.heroX = w.hero.x; s.heroZ = w.hero.z;                          // where this step's pull leaves the hero
     s.tether = 0;                                                    // the tether's opacity, 1.x `_tether.material.opacity` (starts 0)
     s.clock = w.rngFx.range(S.clockStart[0], S.clockStart[1]);       // 1.x `_wobbleT` (cosmetic: the look's own stream)
     s.phase = w.rngFx.range(S.phaseStart[0], S.phaseStart[1]);       // 1.x `_phase`
@@ -54,30 +67,13 @@ export default {
   },
 
   step(w, g, dt, api) {
-    const S = api.S(g), s = g.s, h = w.hero;
+    const S = api.S(g), s = g.s;
 
-    // the floor's immunity clock (1.x main.js:10194-10195)
-    s.immune = s.tick === w.tick - 1 ? tickImmunity(s.immune, h, S, dt) : adoptImmunity(w, g, h, S, dt);
-    s.tick = w.tick;
-
-    // the hold and its share of the pull (1.x main.js:10196-10204)
-    const mx = g.x - h.x, mz = g.z - h.z, md = Math.hypot(mx, mz);
-    s.held = h.alive && s.immune <= 0 && md < S.reach && md > S.release;
-    s.pullX = s.held ? (mx / md) * S.pull : 0;
-    s.pullZ = s.held ? (mz / md) * S.pull : 0;
-    if (s.held) {
-      // the MAGNAs that have already pulled this step (1.x main.js:10206-10207)
-      let ax = 0, az = 0;
-      for (const o of w.gels) {
-        if (o === g || o.kind !== g.kind || !o.alive || o.s.tick !== w.tick) continue;
-        ax += o.s.pullX; az += o.s.pullZ;
-      }
-      const [x0, z0] = capped(ax, az, S.cap), [x1, z1] = capped(ax + s.pullX, az + s.pullZ, S.cap);
-      h.pullX += (x1 - x0) * dt; h.pullZ += (z1 - z0) * dt;
-    }
+    // the floor's pull (1.x main.js:10189-10213), once a step, by the first MAGNA to step
+    if (s.tick !== w.tick) holdFloor(w, g, S, dt);
 
     // the walk (1.x enemy.js:1888-1894), from where the swarm forces left it
-    const dx = h.x - g.x, dz = h.z - g.z, dist = Math.hypot(dx, dz) || 0.001;
+    const dx = s.heroX - g.x, dz = s.heroZ - g.z, dist = Math.hypot(dx, dz) || 0.001;
     if (dist > S.keep + S.keepBand) {
       const spd = api.speed(g);
       g.vx = (dx / dist) * spd; g.vz = (dz / dist) * spd;
@@ -96,31 +92,58 @@ export default {
   },
 };
 
-// 1.x main.js:10194-10195, one step of it: a dash sets it, otherwise it runs down
+// The floor this step, worked out by `g`, the first MAGNA to step. Its
+// members are `g` and every live MAGNA after it in the step order that is
+// active (each of those steps this step; one before it that has not stepped
+// has only just finished appearing, and moves from the next step). 1.x sums
+// the shares in the bodies' order and caps the sum (main.js:10196-10207).
+function holdFloor(w, g, S, dt) {
+  const h = w.hero, immune = floorClock(w, g, h, S, dt);
+  const gels = w.gels, members = [];
+  for (let i = gels.indexOf(g); i < gels.length; i++) {
+    const o = gels[i];
+    if (o.kind === g.kind && o.alive && (o === g || o.state === 'active')) members.push(o);
+  }
+  let px = 0, pz = 0;
+  for (const o of members) {
+    const s = o.s, mx = o.px - h.x, mz = o.pz - h.z, md = Math.hypot(mx, mz);
+    s.tick = w.tick; s.immune = immune;
+    s.held = h.alive && immune <= 0 && md < S.reach && md > S.release;
+    if (s.held) { px += (mx / md) * S.pull; pz += (mz / md) * S.pull; }
+  }
+  const l = Math.hypot(px, pz);
+  if (l > S.cap) { px *= S.cap / l; pz *= S.cap / l; }
+  h.pullX += px * dt; h.pullZ += pz * dt;
+  // where it leaves you once the core has applied it (hero.js applyPull: the
+  // move, then the arena clamp, as 1.x clamped it, main.js:10209-10212)
+  const hx = Math.max(-w.hx + HERO_R, Math.min(w.hx - HERO_R, h.x + px * dt));
+  const hz = Math.max(-w.hz + HERO_R, Math.min(w.hz - HERO_R, h.z + pz * dt));
+  for (const o of members) { o.s.heroX = hx; o.s.heroZ = hz; }
+}
+
+// 1.x main.js:10194-10195 for this step: from a MAGNA that held the floor the
+// step before (alive or killed since: its copy was the floor's), else read
+// back off the hero.
+function floorClock(w, g, h, S, dt) {
+  for (const o of w.gels) if (o.kind === g.kind && o.s.tick === w.tick - 1) return tickImmunity(o.s.immune, h, S, dt);
+  return adoptClock(h, S, dt);
+}
+
+// one step of 1.x's clock: a dash sets it, otherwise it runs down
 function tickImmunity(t, h, S, dt) {
   if (h.dash > 0) return S.immune;
   return t > 0 ? t - dt : t;
 }
 
-// A MAGNA's first step: the floor's clock as a MAGNA already on it carries it
-// (this step's tick done, or about to be), else read back off the hero. A
-// dash that ended `c = dashCooldown − dashCd` ago left 1.x's clock at
-// immune − dt − c (it first ran down on the step the dash ended, the step the
-// cooldown was set); a cooldown already out means the dash ended at least
-// `dashCooldown` (0.75 s) ago, and the 0.45 s of immunity 1.x could still
-// have had then is not recoverable from the hero: it is taken as out.
-function adoptImmunity(w, g, h, S, dt) {
-  for (const o of w.gels) {
-    if (o === g || o.kind !== g.kind || !o.alive) continue;
-    if (o.s.tick === w.tick) return o.s.immune;
-    if (o.s.tick === w.tick - 1) return tickImmunity(o.s.immune, h, S, dt);
-  }
+// With no MAGNA on the floor last step, 1.x's clock read back off the hero. A
+// dash that ended `c = dashCooldown − dashCd` ago left it at immune − dt − c
+// (it first ran down on the step the dash ended, the step the cooldown was
+// set). A cooldown already out means the dash ended at least `dashCooldown`
+// (0.75 s) ago, and the 0.45 s of immunity 1.x could still have had then is
+// not recoverable from the hero: it is taken as out (a contract gap — the
+// core would have to keep 1.x's floor clock, or the time since the last dash).
+function adoptClock(h, S, dt) {
   if (h.dash > 0) return S.immune;
   if (h.dashCd > 0) return Math.max(0, S.immune - dt - COOLDOWN + h.dashCd);
   return 0;
 }
-
-const capped = (x, z, cap) => {
-  const l = Math.hypot(x, z);
-  return l > cap ? [(x * cap) / l, (z * cap) / l] : [x, z];
-};

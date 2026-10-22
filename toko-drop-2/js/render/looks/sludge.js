@@ -16,7 +16,7 @@
 // death tear for BLOBS only (enemy.js:1609-1625, 2702-2708, 2986-2989): a cube
 // takes a bullet as a flash and a squash and dies as a pop, so the core's
 // writes land on stand-in uniforms and the real ones stay at rest. When it
-// dies a tumble snaps flat (1.x destroy()).
+// dies its squash and breath drop out and a tumble snaps flat (1.x destroy()).
 //
 // The trail (1.x SludgeRibbon, main.js:1602-1673): one squashed droplet
 // (r, 0.26 r, r) per trail point the sim keeps (g.s.trail), r = 1.5 × the
@@ -24,14 +24,18 @@
 // poured streak that dries down as its points age; opacity pulses
 // 0.35 + 0.2·|sin 5t| while the cube lives ("lethal"), and once it is dead the
 // droplets hold (age 0.5) and fade from 0.4 over 2 s. Fumes (v132) rise off a
-// live trail into one pool of 48 shared by every trail, as 1.x's bubble pool
-// was. The body's view is pooled and only updated while the body lives, so
-// the trail and the fumes animate themselves in onBeforeRender: a trail whose
-// body was not updated this frame is dead. Their clock is the sim's while any
+// live trail into one pool of 48 shared by every trail (1.x's bubble pool,
+// main.js:2442; 1.x also shared it with YELA's slime fizz and three other
+// fizzers, which no species look can reach). The body's view is pooled and
+// only updated while the body lives, so the trail and the fumes animate
+// themselves in onBeforeRender: a trail whose body was not updated this
+// frame is dead. Their clock is the sim's while any
 // cube is drawn — 1.x ran them in its game update, so a pause froze them
 // (main.js:9293-9299) — and the frame's (capped as 1.x's was) once every cube
 // is gone and only fading trails are left. Each view carries two trails, so a
 // view reused for a new cube leaves the last one's trail to finish its fade.
+// A new run clears every trail and fume of the last one the moment a cube of
+// the new run is drawn, as 1.x's clearFX did at startGame (main.js:7156-7171).
 const DEG = Math.PI / 180;
 const shared = new WeakMap();        // per scene: the cube, the droplet geometry, the fume pool, the clock
 
@@ -44,6 +48,7 @@ function sharedFor(ctx) {
     blobGeo: new THREE.SphereGeometry(1, R.segments[0], R.segments[1]),
     wall: ctx.GEL_TIME, cap: K.frameCap,
     clock: { now: 0, frame: null, world: null, simT: 0 },
+    trails: [], world: null,          // every trail in the scene, and the run they were last poured in
   };
   const mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, F.segments[0], F.segments[1]),
     new THREE.MeshBasicNodeMaterial({ color: F.color, transparent: true, opacity: F.opacity, depthWrite: false }), F.pool);
@@ -118,11 +123,22 @@ function makeTrail(ctx, sh) {
   const tr = {
     mesh, mat, R, sh, Fu: ctx.S.look.fumes, m: new THREE.Matrix4(),
     n: 0, x: new Float32Array(R.max), z: new Float32Array(R.max), age: new Float32Array(R.max),
-    hw: 0, seen: -Infinity, seenAt: 0, t: 0, last: null,
+    hw: 0, seen: -Infinity, seenAt: 0, t: 0, last: null, world: null,
   };
   mesh.onBeforeRender = () => drawTrail(tr);
   ctx.scene.add(mesh);
+  sh.trails.push(tr);
   return tr;
+}
+
+// A cube of a new run is being drawn: what the last run poured is gone, as
+// 1.x's clearFX swept its ribbons and its bubble pool at startGame
+// (main.js:7167, 7171).
+function newRun(sh, w) {
+  sh.world = w;
+  for (const tr of sh.trails) if (tr.world !== w) { tr.n = 0; tr.mesh.count = 0; }
+  const f = sh.fumes;
+  f.active.fill(0); f.mesh.count = 0;
 }
 
 // 1.x SludgeRibbon.update (main.js:1630-1671)
@@ -167,13 +183,16 @@ export default {
     const cube = new THREE.Mesh(sh.cubeGeo, mat);
     const tip = new THREE.Group(); tip.add(cube);
     const body = new THREE.Group(); body.add(tip);
-    const st = { seen: -Infinity, dead: false, gelTime: ctx.GEL_TIME };
-    // 1.x destroy(): a tumbling cube snaps flat, its squash spring zeroed
+    const st = { seen: -Infinity, dead: false, flop: false, L: 0, gelTime: ctx.GEL_TIME };
+    // 1.x destroy() (enemy.js:3013-3026): its squash spring zeroed and its
+    // scale made uniform, so a resting cube pops from its plain rest pose
+    // (centre L up) and a tumbling one snaps flat where it is in the air
     cube.onBeforeRender = () => {
       if (st.dead || st.seen === ctx.GEL_TIME.value || !st.squash) return;
       st.dead = true;
       tip.quaternion.identity();
       tip.scale.setScalar(st.r);
+      if (!st.flop) tip.position.y = st.L;
       body.scale.set(1 / st.squash.scale.x, 1 / st.squash.scale.y, 1 / st.squash.scale.z);
     };
     return {
@@ -186,7 +205,7 @@ export default {
     const S = v.S, F = S.flop, L0 = v.S.look, st = v.st, s = g.s;
     st.seen = st.gelTime.value; st.dead = false; st.squash = v.squash;
     const r = g.r * grow, L = F.halfEdge * r, tip = v.tip;
-    st.r = r;
+    st.r = r; st.L = L; st.flop = s.flop;
     if (s.flop) {
       // the tumble: the angle from how far along the stride the view has the
       // body (disp = L + D·cos ang), so the pivot edge stays put between steps
@@ -212,8 +231,10 @@ export default {
     }
 
     // the trail: copy the sim's points, aged on its clock
+    if (w && v.sh.world !== w) newRun(v.sh, w);
     const now = tick(v.sh, w);
     const tr = v.trails[v.cur], pts = s.trail, R = L0.ribbon, n = Math.min(pts.length, R.max);
+    tr.world = w;
     for (let i = 0; i < n; i++) {
       tr.x[i] = pts[i].x; tr.z[i] = pts[i].z;
       tr.age[i] = Math.max(0, Math.min(1, (g.t - pts[i].t) / S.trail.expire));
@@ -231,7 +252,7 @@ export default {
     v.cur = a.seen <= b.seen ? 0 : 1;
     const tr = v.trails[v.cur];
     tr.n = 0; tr.seen = -Infinity; tr.t = 0; tr.mesh.count = 0;
-    v.st.seen = -Infinity; v.st.dead = false;
+    v.st.seen = -Infinity; v.st.dead = false; v.st.flop = false;
     v.tip.quaternion.identity(); v.body.scale.set(1, 1, 1);
   },
 };

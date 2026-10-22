@@ -12,7 +12,8 @@
 //               spinning about the axle by the sim's angle. The squash spring
 //               scales it about the axle, as 1.x scaled its group — so the
 //               view's floor-anchored squash group is undone first.
-//   the glow    through the rev, black → 0x003319 (the hit flash outranks it)
+//   the glow    through the rev, black → 0x003319 (the hit flash and a
+//               VOLATILE fuse outrank it, 1.x enemy.js:2650-2662)
 //   the arrow   the telegraph, on the floor where it stood when the rev
 //               ended: a 0.34 shaft stretched to the dash's exact length and
 //               a three-sided arrowhead with its tip exactly where the dash
@@ -24,7 +25,14 @@
 // written for blob bodies only), so the material's gel handle is kept here
 // instead of on `mat`, where the core would drive both; the hit flash and the
 // death glow are the emissive, which the core still writes. A dying TORO
-// swells to 2.3x as 1.x's did (the core's own-look death).
+// swells to 2.3x as 1.x's did (the core's own-look death) — about its AXLE:
+// 1.x reset the squash and scaled the group, whose origin is the wheel's
+// centre at y 1.0 (enemy.js:2976-2977, 3013-3014, 3023-3024), while the core
+// swells an own look's root from the floor, which would lift the dying wheel
+// to 2.3 (more, by 1/sq, with the squash left on). So a dying view puts the
+// squash back to 1 and the axle at 1.0 / swell, under the core's swell.
+// Not drawn: 1.x's afterimage trail ({0.035, 0.85}, enemy.js:636), which
+// 1.x itself turned off under WebGPU (v193, main.js:10485-10489).
 //
 // The arrow stands in the world, not on the wheel: it hangs off the view's
 // root, offset to its world spot, so it goes with the view when it is pooled;
@@ -116,7 +124,7 @@ export default {
 
   update(v, g, w, time, grow) {
     const S = v.S, L = S.look, I = L.indicator, s = g.s;
-    if (v.fx.parent !== v.root) attachFx(v);
+    if (v.fx.parent !== v.root) attach(v);
 
     // undo the view's squash group (1/√sq, sq, 1/√sq about the floor): 1.x
     // squashed the wheel about its axle, below
@@ -137,8 +145,10 @@ export default {
     if (g.affix === 'anchored') v.mesh.scale.set(rm * L.anchored.xz, rm * L.anchored.y, rm * L.anchored.xz);
     else v.mesh.scale.setScalar(rm);
 
-    // the rev glow: (v << 8) | (v × 0.5), v = ⌊ramp × 0x33⌋; the flash outranks it
-    if (g.flash <= 0 && g.tell > 0) {
+    // the rev glow: (v << 8) | (v × 0.5), v = ⌊ramp × 0x33⌋; the flash and a
+    // VOLATILE body's smoulder outrank it (1.x's else-if order, enemy.js:2650-2662),
+    // and the core has already written those
+    if (g.flash <= 0 && g.affix !== 'volatile' && g.tell > 0) {
       const k = Math.floor(g.tell * L.revGlow);
       v.mat.emissive.setHex((k << 8) | (k * L.revGlowBlue));
     }
@@ -151,7 +161,10 @@ export default {
       v.ind.rotation.y = Math.atan2(s.dirX, s.dirZ);
       v.shaft.scale.z = s.len;
       v.arrow.position.z = s.len;
-      v.indMat.opacity = Math.sin(s.stateT * I.flashRate) > 0 ? I.opacity[0] : I.opacity[1];
+      // 1.x writes the flash only from the telegraph's second frame on (the
+      // first is the rev's last, enemy.js:2597-2612): on it the arrow keeps
+      // the opacity it had — 0.55 the first time, else the last flash's
+      if (s.stateT < S.telegraphTime) v.indMat.opacity = Math.sin(s.stateT * I.flashRate) > 0 ? I.opacity[0] : I.opacity[1];
     }
   },
 
@@ -159,13 +172,29 @@ export default {
   reset(v) { v.ind.visible = false; v.indMat.opacity = v.S.look.indicator.opacity0; },
 };
 
-// Hang the arrow off the view's root, once per view. A dying view swells its
-// root for 0.28 s; the arrow hides through it (1.x hid it at the kill).
-function attachFx(v) {
+// Once per view: hang the arrow off the view's root, and take over the two
+// things the core's death does not do as 1.x did. A dying view swells its
+// root about the floor for 0.28 s and this look's update no longer runs:
+//   the arrow  hides through it (1.x hid it at the kill, enemy.js:3074-3077)
+//   the wheel  swells about its axle, the squash reset (1.x destroy() and
+//              updateDeath, enemy.js:2976-2977, 3013-3014, 3023-3024): the
+//              body's undo of the squash group and the axle's squash go to
+//              1 (the core has set the squash group to 1), and the axle
+//              stands at 1.0 / swell, so the root's swell leaves its centre
+//              at 1.0
+function attach(v) {
   v.root.add(v.fx);
   const base = v.Object3D.prototype.updateMatrixWorld;
   v.fx.updateMatrixWorld = function (force) {
     this.visible = !(v.dyingT > 0);
+    base.call(this, force);
+  };
+  v.body.updateMatrixWorld = function (force) {
+    if (v.dyingT > 0) {
+      this.scale.set(1, 1, 1);
+      v.axle.scale.set(1, 1, 1);
+      v.axle.position.y = v.S.radius / (v.root.scale.y || 1);
+    }
     base.call(this, force);
   };
 }

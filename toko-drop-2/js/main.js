@@ -7,16 +7,16 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=8';
-import { buildFloor } from './render/floor.js?v=8';
-import { fitCamera } from './render/view.js?v=8';
-import { Splats } from './render/splats.js?v=8';
-import { Actors } from './render/actors.js?v=8';
-import { GEL_TIME } from './render/gel.js?v=8';
-import { createWorld, step, api as simApi } from './sim/world.js?v=8';
-import { Input } from './input.js?v=8';
-import { UI, t, timeText } from './ui.js?v=8';
-import { Sound } from './audio.js?v=8';
+import { TUNING } from './tuning.js?v=9';
+import { buildFloor } from './render/floor.js?v=9';
+import { fitCamera } from './render/view.js?v=9';
+import { Splats } from './render/splats.js?v=9';
+import { Actors } from './render/actors.js?v=9';
+import { GEL_TIME } from './render/gel.js?v=9';
+import { createWorld, step, api as simApi } from './sim/world.js?v=9';
+import { Input } from './input.js?v=9';
+import { UI, t, timeText } from './ui.js?v=9';
+import { Sound } from './audio.js?v=9';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
