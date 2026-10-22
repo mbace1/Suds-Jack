@@ -57,7 +57,10 @@
 // Where the contract cannot say it (docs/SIM_CONTRACT.md has no delayed
 // spawn): 1.x built the brood, and counted the valve, at the END of the pop;
 // here both happen at the kill, so the waiting brood counts as alive for
-// those 0.28 s (SPLITTA's port does the same).
+// those 0.28 s (SPLITTA's port does the same). Its parent's big-death
+// shockwave, which the core runs after onKill, is cancelled on the brood in
+// advance (1.x's never felt it, main.js:4518-4529); another big death during
+// the pop would still rattle it, where 1.x had nothing there to rattle.
 //
 // The flop is shared with REDD MINI (sim/species/reddmini.js), which is the
 // same cube on the same path with its heading straight at you.
@@ -174,13 +177,19 @@ export default {
     }
     const out = Math.min(n, api.childrenAllowed(w));
     const speedMult = g.speedMult * (g.affix === 'swift' ? api.T.variants.swiftSpeed : 1);
-    const wait = api.T.blob.death, appear = api.T.gel.appear;
+    const wait = api.T.blob.death, appear = api.T.gel.appear, X = api.T.death;
     for (let j = 0; j < out; j++) {
       const c = api.spawn(w, C.kind, pts[j][0], pts[j][1], { child: true, speedMult, intervalMult: g.intervalMult });
       // 2.0's walls hold every body; 1.x's child could stand up to 2.7 outside one
       api.clamp(w, c);
       // not yet: the core's `appear`, with the death pop's 0.28 s left of it
       c.state = 'appear'; c.t = appear - wait;
+      // 1.x's big-death shockwave squashed only the bodies alive at the kill,
+      // and the brood was built 0.28 s later ("newborn minnows must not be
+      // vaporized by the shockwave that birthed them", main.js:4518-4529). The
+      // core's shock runs after this hook and would kick these too, on exactly
+      // this test, so the kick is cancelled here in advance (exactly, to 0).
+      if (g.r >= X.big && Math.hypot(c.x - g.x, c.z - g.z) <= X.shockRadius) c.sqV += X.shockSquash;
     }
   },
 };

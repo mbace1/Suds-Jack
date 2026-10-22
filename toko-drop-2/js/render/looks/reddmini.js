@@ -4,7 +4,9 @@
 // (enemy.js:738, 807-809), so at r 0.32 its absolute 0.18 corners take most of
 // each face and the mini reads rounder than its parent. It tumbles, breathes,
 // squashes and pops exactly as REDD does (enemy.js:1542-1565, 2739-2777,
-// 3013-3029), with its own shared geometry.
-import { cubeLook } from './redd.js?v=11';
+// 3013-3029), with its own shared geometry. Born from a REDD, it is not drawn
+// while it waits out its parent's 0.28 s pop: 1.x built the brood only when
+// the pop ended, at full size (enemy.js:2992-3000, main.js:10586-10620).
+import { cubeLook } from './redd.js?v=12';
 
-export default cubeLook();
+export default cubeLook({ unborn: true });

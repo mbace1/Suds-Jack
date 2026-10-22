@@ -17,22 +17,33 @@ export default {
   revenge: null,           // not a biter (1.x tuning.js:496-497)
 
   // ── the walk (enemy.js:1793-1806) ──────────────────────────────────
-  // Plate-first advance: straight at the hero at its own speed until it is
-  // this close, then it holds (enemy.js:1797).
+  // Plate-first advance: straight at the hero at its own speed (1.x `spd`,
+  // enemy.js:1697-1698: CFG speed × _speedMult × the SIREN surge — api.speed)
+  // until it is this close, then it holds (dist > 1.3 walks, enemy.js:1797).
+  // Not ported: the boss enrage's × 1.45 in `spd` (enemy.js:1699): a BULWARK
+  // is never a boss in classic (the arcade's bosses are OMEGA and the TWIN
+  // PRISMS, js/sim/director/arcade.js).
   holdAt: 1.3,
+  // dist = hypot(toHero) || 0.001 (enemy.js:1682): on top of you it stands
+  distFloor: 0.001,
   // The facing chases the hero's direction: face += (toHero − face) ×
-  // min(1, turnRate × dt) every step, then normalised (enemy.js:1801-1806).
-  // A lerp, not a fixed rad/s (the v140 log calls it "2.2 rad/s"; the code
-  // is this), so a quick side-step stays a real answer. It starts facing +z,
-  // toward the bottom of the screen (enemy.js:1157) — the core spawns every
-  // body with faceX 0, faceZ 1, which is the same.
+  // min(1, turnRate × dt) every step, then normalised (enemy.js:1800-1806),
+  // walking or holding — it is outside the walk's `if`. A lerp, not a fixed
+  // rad/s (the v140 log calls it "2.2 rad/s"; the code is this), so a quick
+  // side-step stays a real answer. It starts facing +z, toward the bottom of
+  // the screen (enemy.js:1157) — the core spawns every body with faceX 0,
+  // faceZ 1, which is the same.
   turnRate: 2.2,
 
   // ── the block (main.js:10683-10700) ────────────────────────────────
-  // A hero bullet touching the body whose direction from the centre lies
-  // inside the front arc — dot(unit(bullet − body), face) > blockDot, i.e.
-  // ±60° of the facing — is spent with no damage, even a piercing one
-  // (main.js:10690).
+  // A hero bullet touching the body (the plain circle, |b − e| < br + radius:
+  // main.js:10648-10652) whose direction from the centre lies inside the
+  // front arc — dot(unit(bullet − body), face) > blockDot, i.e. strictly
+  // inside ±60° of the facing — is spent with no damage, even a piercing one
+  // (main.js:10684, 10690-10691). It is tested before a WARDEN's aura
+  // (main.js:10703), so a plate shot is the plate's, aura or no aura. 1.x
+  // moves every body before it tests a bullet, so the arc is the facing this
+  // step turned to (enemy.update, then main.js:10636).
   blockDot: 0.5,
 
   // ── the plate: the tell IS the hitbox arc (enemy.js:1149-1158) ─────
@@ -41,21 +52,22 @@ export default {
     color: 0xc7d4f2,           // MeshBasicMaterial, unlit pale steel (enemy.js:1155)
     y: 0.6,                    // centre height above the floor (enemy.js:1156, 1810)
     gap: 0.25,                 // it hovers at radius × radiusMult + 0.25 along the facing (enemy.js:1808)
-    // steel glint: opacity 0.75 + 0.2·|sin(2.2·wobbleT)| (enemy.js:1814)
+    // steel glint: opacity 0.75 + 0.2·|sin(2.2·_wobbleT)| (enemy.js:1814),
+    // _wobbleT starting anywhere in [0, 2π) (enemy.js:668)
     glintBase: 0.75, glintAmp: 0.2, glintHz: 2.2,
   },
 
-  // ── a blocked shot: steel sparks (main.js:10694-10698), flying on the
+  // ── a blocked shot: steel sparks (main.js:10695-10698), flying on the
   // goo chunk pool's physics (main.js:1349-1394). Three droplets thrown back
   // along the hit, from the bullet at the body's mid-height + 0.15.
   spark: {
-    count: 3,                  // main.js:10694
+    count: 3,                  // main.js:10695
     color: 0xc7d4f2,           // main.js:10698
     size: 0.08,                // main.js:10698
     spread: 1.6,               // atan2(hit) + (rand − 0.5) × 1.6 (main.js:10696)
     speed: 4,                  // cos/sin(a) × 4 (main.js:10698)
     up: [2, 4],                // vy = 2 + rand × 2 (main.js:10698)
-    lift: 0.15,                // y = fxY + 0.15; a blob's fxY is its radius (main.js:10697, enemy.js:1479)
+    lift: 0.15,                // y = e.fxY + 0.15; a BLOB_TYPE's fxY is its radius × the elite's 1.2 (main.js:10697, enemy.js:1468-1470, 1479)
     life: 1.4,                 // main.js:1353
     gravity: 14,               // main.js:1373
     floorAt: 0.01,             // it lands once y ≤ 0.01 while falling, and sits at y 0 (main.js:1377-1378)
@@ -63,7 +75,17 @@ export default {
     landSquash: 0.4,           // sqV −= |vy| × 0.4 on landing (main.js:1379)
     spring: 0.32, damp: 0.80,  // squash spring, per 60 Hz frame (main.js:1383)
     sqMin: 0.55, sqMax: 1.4,   // main.js:1384
+    sxFloor: 0.1,              // width 1/√max(sq, 0.1) (main.js:1386)
     shrink: 0.3,               // shrinks to nothing over its last 0.3 s (main.js:1387)
-    pool: 9,                   // droplets one plate keeps in flight (2.0: three blocks' worth; 1.x shared a 384 pool)
+    // 2.0: 1.x drew these from its shared 384-droplet goo pool (main.js:1284,
+    // 2436: SphereGeometry(1, 9, 7)), reusing the slot with the least life
+    // when full (main.js:1342-1347); this pool is the BULWARKs' own, shared
+    // by every BULWARK in the scene, and like 1.x's it outlives the body
+    pool: 96,
+    // 2.0: the sim keeps the last `log` blocks per body (where the bullet
+    // was) so the look throws every one of them, even from a frame that ran
+    // several sim steps (a shotgun volley on a plate is up to 7 blocks:
+    // 1.x tuning.js shotgun l2 pellets 7)
+    log: 12,
   },
 };

@@ -28,10 +28,14 @@
 // 2.3× about its own centre. Its brood comes out as the pop ends (the sim).
 //
 // REDD MINI (looks/reddmini.js) is the same cube at its own radius: each
-// calls cubeLook() for a look with its own shared geometry.
+// calls cubeLook() for a look with its own shared geometry. A brood passes
+// `{ unborn: true }`: 1.x built its minis only when the parent's pop ENDED
+// (enemy.js:2992-3000, main.js:10586-10620), full size, so a child waiting
+// out that pop in the core's `appear` is not drawn at all (the core would
+// grow it in from 15% at its spawn point, beside the swelling corpse).
 const DEG = Math.PI / 180;
 
-export function cubeLook() {
+export function cubeLook({ unborn = false } = {}) {
   let GEO = null;            // one rounded cube for every view of this species
   return {
     build(ctx) {
@@ -63,6 +67,7 @@ export function cubeLook() {
       const S = v.S, F = S.flop, K = S.look, s = g.s, b = v.body;
       const r = g.r * grow, L = F.halfExtent * r;
       v.rNow = r; b.userData.view = v;
+      b.visible = !(unborn && g.child && g.state === 'appear');   // not built yet: its parent is still popping
       v.squash.scale.set(1, 1, 1);           // the spring is drawn here: about the centre at rest, not at all mid-flop
       if (s.tumble) {
         const D = L * Math.SQRT2, a0 = F.arcStartDeg * DEG, a1 = F.arcEndDeg * DEG;
@@ -80,7 +85,7 @@ export function cubeLook() {
       }
     },
 
-    reset(v) { v.popped = false; v.body.quaternion.identity(); },
+    reset(v) { v.popped = false; v.body.quaternion.identity(); v.body.visible = true; },
   };
 }
 

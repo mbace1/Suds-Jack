@@ -58,10 +58,14 @@ export default {
   squash: { spring: 0.18, damp: 0.90, min: 0.55, max: 1.55 },   // per 60 Hz step; it squashes the HEAD only (enemy.js:2779)
 
   // ── the dash that cuts EATS (v253, 1.x enemy.js:1366-1385, main.js:10166-10175) ──
-  // 1.x built this for its one dash that cuts bodies (main.js:10152-10183):
-  // "a dash is a cut, not a shot: every segment it crosses is eaten and the
-  // animal closes the gap, shorter. Never a split." Here it is the slug's
-  // answer to the CUT dash (TUNING.hero.cut). One bite a dash.
+  // 1.x built this for its one dash that cuts bodies (main.js:10152-10183),
+  // which is the NEX DEUS cabinet's (the loop sits inside `if (nexdeusMode …)`,
+  // main.js:9978; v253's commit: "_slugCut() … stays as NEX DEUS's rule" —
+  // the classic dash only passes through): "a dash is a cut, not a shot:
+  // every segment it crosses is eaten and the animal closes the gap, shorter.
+  // Never a split." Here it is the slug's answer to 2.0's CUT dash
+  // (TUNING.hero.cut), which is that dash; and to a boss-hitting dash level 1.
+  // One bite a dash; a dash that kills it outright (level 1) eats nothing.
   cut: { pad: 0.35 },      // eats every segment within its r + the hero's radius + 0.35 of the hero (1.x main.js:10171 `PLAYER_RADIUS + 0.35`, enemy.js:1376)
 
   // ── its kill voice: 1.x filed it as neither blob nor toro/bambu/pyra, so it

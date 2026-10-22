@@ -19,6 +19,38 @@
     Never `--no-verify`.
 -->
 
+## v12 — 2026-10-22
+**PURP, PYRA, BOTFLY and BULWARK, and SLUG, REDD and SHEPHERD held to 1.x again**
+- **PURP CUBE** is 1.x's circler. It tumbles on REDD's shared cube flop
+  round a ring about 5 from you, firing a 2-arm pinwheel that turns each
+  pulse. On death it breaks into a brood of PURP MINIs, more the later the
+  wave (5 early, 45 from wave 25), held only by the child valve
+- **PYRA** is 1.x's spinner turret, a floating orange ring with 4, 6 or 8
+  gold holes. The holes are its hp: each hit closes one, and every hole
+  lost spins it faster. Every live hole fires a 3-shot fan each volley. It
+  never moves, and a PUSH dash leaves it standing. Its holes are drawn
+  where their shots leave (1.x drew them counter-rotating against their
+  own fans)
+- **BOTFLY** is 1.x's hovering bot. It orbits 8 from you and charges for
+  the last half second of its clock, then fires one homing shot that
+  steers with 1.x's lerp
+- **BULWARK** is 1.x's plate walker. It walks at you and turns its plate
+  to face you, and a shot that hits the plate is spent with a tink, even a
+  piercing one. It never fires and its corpse does not fire back
+- **REDD's brood no longer takes its parent's shockwave**, and is not
+  drawn while it waits out the parent's death pop (1.x builds the minis
+  when the pop ends)
+- **SLUG**: the CUT dash's last step no longer splits a slug twice. A dash
+  that kills a slug outright kills it whole, where its head lay. Two
+  middle hits in one frame split it the way 1.x did, and a freshly split
+  half no longer slides in from its spawn point for a frame
+- **SHEPHERD**: checked against 1.x, with tests for where the herd stops
+  (1.2) and that a boss is never herded
+- Species: 25 of 1.x's 27 types are in; DRAPER and CLOAKER are left
+- Cache tokens `?v=11` → `?v=12`; HUD label → `2.0 · v12`
+
+---
+
 ## v11 — 2026-10-22
 **Jelly that dents when hit, and big gels die sliced in two**
 - **A hit dents the jelly** where the shot landed, and the dent springs

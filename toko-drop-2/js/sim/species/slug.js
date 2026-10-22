@@ -40,8 +40,10 @@
 // the rule leaves it. A WARDEN's aura blocks before 1.x's hit() ran, so a
 // shielded slug loses nothing.
 //
-// THE DASH (enemy.js:1366-1385, v253): 1.x's one dash that cut bodies ATE a
-// slug — every segment within its r + the hero's radius + 0.35 of the hero is
+// THE DASH (enemy.js:1366-1385, v253): 1.x's one dash that cut bodies — the
+// NEX DEUS cabinet's (main.js:9978 `nexdeusMode`; v253's commit: "_slugCut()
+// stays as NEX DEUS's rule", the classic dash only passes through) — ATE a
+// slug: every segment within its r + the hero's radius + 0.35 of the hero is
 // gone and the animal closes the gap, shorter; never a split, one bite a dash;
 // eaten whole, it died to the dash then and there (main.js:10170-10175). 1.x
 // took the bite in its dash loop, before the bodies moved (main.js:10153 runs
@@ -73,10 +75,11 @@
 // touched but not cut, and it holds where it was laid (the forces are undone:
 // it was not on the floor for them); it walks from the step after.
 //
-// 1.x quirk NOT ported: two middle hits on one slug in one frame overwrote its
-// `_splitPts`, so the first back half never came into being (main.js:10626
-// reads one list per body). Here each split's half is its own animal.
-import { TUNING } from '../../tuning.js?v=11';
+// Two middle hits on one slug in one step are 1.x's too: it kept one list of
+// split points a body (`_splitPts`, main.js:10626 reads one per body), so the
+// second overwrote the first and that first back half never came into being —
+// its segments were gone. A SPREAD or SHOTGUN volley across a slug does that.
+import { TUNING } from '../../tuning.js?v=12';
 
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -95,6 +98,7 @@ export default {
     s.stepTick = -1;                                             // the step it last stepped in: a hitTest before it this step is the dash's
     s.event = null;                                              // 1.x _slugEvent: 'shorten' | 'split' | 'cut'
     s.splits = 0;                                                // halves it has thrown off (tests, the look)
+    s.half = null;                                               // the last half it split off (a second split the same step re-lays it)
     s.bent = false;                                              // the wall clamped this step's move
     s.sq = g.sq; s.sqTick = -1;                                  // the squash spring as this step last left it
     // a fresh slug lies straight back along its heading (1.x enemy.js:984-985);
@@ -187,7 +191,13 @@ export default {
 
   // the body, segment by segment, head first (1.x enemy.js:1444-1451). Asked
   // before its own step this step, it is the hero's dash asking (hero.js runs
-  // before the bodies; the bullet test after them), and a touch is the bite
+  // before the bodies; the bullet test after them, and nothing else asks),
+  // and a touch is the bite — unless that dash kills it outright (dash level
+  // 1 on a body that is not a boss: hero.js kills it whole, so nothing is
+  // eaten and it dies where its head is). Not gated on `h.dash > 0`: hero.js
+  // has already counted the dash's last step off when it cuts on it (0.18 s
+  // is 11 steps; on the 11th h.dash is below 0), so a slug first crossed on
+  // that step would take the cut's hits as hp — and SPLIT under the rule.
   hitTest(w, g, x, z, r) {
     const s = g.s, ch = s.chain, h = w.hero;
     if (s.born === w.tick) return false;                         // a split's half: not on the floor yet
@@ -196,7 +206,7 @@ export default {
     for (let i = 0; i < ch.length; i++) {
       if (Math.hypot(ch[i].x - x, ch[i].z - z) < ch[i].r + r) {
         s.hitSeg = i;
-        if (dashAsk && h.dash > 0 && x === h.x && z === h.z) bite(w, g, TUNING.species[g.kind]);
+        if (dashAsk && x === h.x && z === h.z && (g.isBoss || !(h.dashLevel >= 1))) bite(w, g, TUNING.species[g.kind]);
         return true;
       }
     }
@@ -266,12 +276,26 @@ function rule(w, g, S, api, i) {
   const front = pts.slice(0, i), back = pts.slice(i + 1).reverse();
   lay(w, g, S, front);
   s.event = 'split'; s.splits++;
+  // 1.x kept ONE list of split points a body (`_splitPts`, enemy.js:1362) and
+  // built the second animal from it the next frame (main.js:10626-10627), so
+  // a second split of the same body in the same frame — two pellets of a
+  // SPREAD or SHOTGUN volley across it — OVERWROTE the first: that first back
+  // half never came into being, and its segments were simply gone. The half
+  // this body split off this step is that list; a second split re-lays it as
+  // the newer back half, from its own new head (1.x's constructor, enemy.js:980).
+  const prev = s.half;
+  if (prev && prev.alive && prev.s.born === w.tick) {
+    prev.s.heading = Math.atan2(-back[0].z, -back[0].x);
+    lay(w, prev, S, back);
+    prev.faceX = Math.cos(prev.s.heading); prev.faceZ = Math.sin(prev.s.heading);
+    return 'split';
+  }
   // the second animal (1.x main.js:10625-10633): its own head, the parent's
   // pace (× swift, which 1.x baked into _speedMult) and fire clock, an
   // ordinary body (no variant, no affix) that never splits. 1.x's split
   // ignores the child valve (the valve, main.js:10608-10620, is SPLITTA's
   // and the MINIs' list only).
-  api.spawn(w, g.kind, back[0].x, back[0].z, {
+  s.half = api.spawn(w, g.kind, back[0].x, back[0].z, {
     child: true, chain: back, noSplit: true,
     speedMult: g.speedMult * (g.affix === 'swift' ? api.T.variants.swiftSpeed : 1), intervalMult: g.intervalMult,
   });

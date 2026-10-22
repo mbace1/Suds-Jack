@@ -87,6 +87,10 @@ export default {
   // sim keeps and the head where the view stands this frame
   update(v, g, w, time, grow) {
     const S = v.S, K = S.look, C = S.chain, s = g.s, ch = s.chain;
+    // a split's half laid this very step stands where it was laid: the view
+    // would slide it in from its spawn point (an old tail past the wall that
+    // the sim pulled in, or the half a second split the same step re-laid)
+    if (s.born === w.tick) v.root.position.set(g.x, 0, g.z);
     v.body.userData.view = v;
     v.mat.opacity = 1;
     v.eye.visible = true;

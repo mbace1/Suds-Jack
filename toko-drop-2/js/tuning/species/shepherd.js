@@ -34,8 +34,8 @@ export default {
   // Every OTHER living, non-boss body whose centre is within `radius` of a
   // living SHEPHERD (d² ≤ 7.5²) moves `speed` u/s straight at the hero while it
   // is farther than `stopAt` from you — one shepherd's pull; they don't stack.
-  // 2.8 is "matched to GLOBBO's own speed" (main.js:10251-10255).
-  herd: { radius: 7.5, speed: 2.8, stopAt: 1.2 },   // SHEPHERD_RADIUS (enemy.js:571); main.js:10246, 10249, 10256-10257
+  // 2.8 is "matched to GLOBBO's own speed" (main.js:10250-10254).
+  herd: { radius: 7.5, speed: 2.8, stopAt: 1.2 },   // SHEPHERD_RADIUS (enemy.js:571); main.js:10246, 10249, 10255-10256
 
   // ── the pocket (1.x enemy.js:1769-1791) ──
   // It "never attacks and never closes": it holds `distance` from you. Farther

@@ -1,5 +1,5 @@
 // index.js — who comes and when, per mode (docs/SIM_CONTRACT.md).
-import arcade from './arcade.js?v=11';
-import survival from './survival.js?v=11';
+import arcade from './arcade.js?v=12';
+import survival from './survival.js?v=12';
 
 export const DIRECTORS = { arcade, hardcade: arcade, survival };
