@@ -293,7 +293,7 @@
     g.save(); g.beginPath(); g.rect(GL.x0, GL.y0, GL.x1 - GL.x0, GL.y1 - GL.y0); g.clip();
     g.fillStyle = 'rgba(255,255,255,.10)'; g.beginPath(); g.moveTo(GL.x0 + 40, GL.y0); g.lineTo(GL.x0 + 120, GL.y0); g.lineTo(GL.x0 - 60, GL.y1); g.lineTo(GL.x0 - 140, GL.y1); g.closePath(); g.fill();
     g.fillStyle = 'rgba(255,255,255,.06)'; g.beginPath(); g.moveTo(GL.x0 + 160, GL.y0); g.lineTo(GL.x0 + 190, GL.y0); g.lineTo(GL.x0 + 10, GL.y1); g.lineTo(GL.x0 - 20, GL.y1); g.closePath(); g.fill();
-    if (gleam > 0 && gleam < 1) { const x = lerp(GL.x0 - 260, GL.x1 + 120, gleam), a = Math.sin(Math.PI * gleam); g.globalCompositeOperation = 'lighter'; const gr = g.createLinearGradient(x - 90, 0, x + 90, 0); gr.addColorStop(0, 'rgba(255,250,235,0)'); gr.addColorStop(0.5, `rgba(255,250,235,${0.5 * a})`); gr.addColorStop(1, 'rgba(255,250,235,0)'); g.fillStyle = gr; g.beginPath(); g.moveTo(x - 30, GL.y0); g.lineTo(x + 150, GL.y0); g.lineTo(x - 10, GL.y1); g.lineTo(x - 190, GL.y1); g.closePath(); g.fill(); }
+    if (gleam > 0 && gleam < 1) { const x = lerp(GL.x0 - 260, GL.x1 + 120, gleam), a = Math.sin(Math.PI * gleam); g.globalCompositeOperation = 'lighter'; const gr = g.createLinearGradient(x - 90, 0, x + 90, 0); gr.addColorStop(0, 'rgba(255,250,235,0)'); gr.addColorStop(0.5, `rgba(255,250,235,${0.78 * a})`); gr.addColorStop(1, 'rgba(255,250,235,0)'); g.fillStyle = gr; g.beginPath(); g.moveTo(x - 30, GL.y0); g.lineTo(x + 150, GL.y0); g.lineTo(x - 10, GL.y1); g.lineTo(x - 190, GL.y1); g.closePath(); g.fill(); }
     g.restore();
     g.restore();
   }
@@ -375,9 +375,9 @@
       const A = caseLayer(g, ox, oy, lt, { lamp: on, dust: lerp(0.05, 0.45, grow), snow: lerp(0, 34, grow), ice: lerp(0, 0.55, grow), web: lerp(0, 0.7, grow), gleam: (lt - tG) / 0.6 });
       const T = { x: A[0], y: A[1], rot: swing(lt, [[tS, 0.05], [tW + 0.45, 0.04]], 0.012), sc: 1 };
       const tip = drawTag(g, T, lt, { rows: [{ row: 0, t0: -10 }, { row: 1, t0: tW }], marks: [M.strike] });
-      const L = (p) => tagToLayer(T, p), rest = [W - 120 + ox, 1820 + oy];
-      const pen = tip || penAt(lt, [[tS - 0.6, rest], [tS, L(M.strike.start)], [tS + 0.3, L(M.strike.end)], [tW, L([-74, ROWS[1].y - 12])], [tW + 0.45, L([76, ROWS[1].y - 12])], [tW + 1.2, L([150, ROWS[1].y + 140])]]);
-      if (lt > tS - 0.6) marker(g, pen, -0.62);
+      const L = (p) => tagToLayer(T, p), rest = [W + 160 + ox, 2060 + oy];
+      const pen = tip || penAt(lt, [[tS - 0.6, rest], [tS, L(M.strike.start)], [tS + 0.3, L(M.strike.end)], [tW, L([-74, ROWS[1].y - 12])], [tW + 0.45, L([76, ROWS[1].y - 12])], [tW + 1.3, rest]]);
+      if (lt > tS - 0.6 && lt < tW + 1.3) marker(g, pen, -0.62);
     } }, { d: 0.3, fn: (g, ox, oy) => snowfall(g, lt + 2 * SH, ox, oy, { n: 110, sz: 1.3, a: 0.65, wind: 30 }) }], cam);
     tag(c, ui('applied', 'FINNISH GOVERNMENT: NOT APPLIED'), lt, dd);
     box(c);
@@ -397,7 +397,7 @@
     g.fillStyle = C.paperD; g.fillRect(-276, -386, 560, 780); g.fillStyle = C.paper; g.fillRect(-280, -390, 560, 780);
     g.fillStyle = C.ink; g.textAlign = 'left'; g.font = '400 36px "Anton-400"'; g.fillText('GOVERNMENT PROPOSAL', -236, -318);
     g.fillRect(-236, -298, 472, 3);
-    g.font = '400 60px "Anton-400"'; g.fillText('BORDER SECURITY ACT', -236, -222);
+    { const T = 'TEMPORARY MEASURES ACT'; g.font = '400 60px "Anton-400"'; const fz = Math.min(60, 60 * 472 / g.measureText(T).width); g.font = `400 ${fz.toFixed(1)}px "Anton-400"`; g.fillText(T, -236, -222); }
     g.font = '700 26px "LibreBaskerville-700"'; g.fillText('VALIDITY:', -236, -150); g.fillText('TO 31.12.2028', -236 + g.measureText('VALIDITY:  ').width, -150);
     g.fillText('CHANGES TO CONTENT:', -236, -100); g.fillStyle = C.red; g.fillText('NONE', -236 + g.measureText('CHANGES TO CONTENT:  ').width, -100); g.fillStyle = C.ink;
     g.fillStyle = C.grey; const r = U.rng(3); for (let y = -50; y < 360; y += 30) g.fillRect(-236, y, 300 + r() * 170, 9);
@@ -438,14 +438,14 @@
       imprint(g, STAMP[0] + ox, STAMP[1] + oy, lt >= tP ? 1 : 0);
       const Tt = { ...T, x: T.x + ox, y: T.y + oy };
       const tip = drawTag(g, Tt, lt, { rows: [{ row: 0, t0: -10 }, { row: 1, t0: -10 }, { row: 2, t0: tW }], marks: [M.was, M.strike] });
-      const L = (p) => tagToLayer(Tt, p), rest = [W - 60 + ox, 1880 + oy];
+      const L = (p) => tagToLayer(Tt, p), rest = [W + 160 + ox, 2060 + oy];
       const pen = tip || penAt(lt, [[tW - 1.0, rest], [M.strike.t0, L(M.strike.start)], [M.strike.t0 + 0.3, L(M.strike.end)], [tW, L([-74, ROWS[2].y - 12])], [tW + 0.45, L([76, ROWS[2].y - 12])], [tW + 1.1, rest]]);
       if (lt > tW - 1.0 && lt < tW + 1.1) marker(g, pen, -0.62);
       // the stamp: it drops from above the camera, lands on "agreed", lifts away
       const kS = (lt - tP + 0.22) / 0.22, kU = (lt - tP - 0.18) / 0.35;
       if (kS > 0 && kU < 1) { const h = kS < 1 ? lerp(-520, 0, ease.io(kS)) : lerp(0, -560, ease.io(kU)), a = kU > 0 ? 1 - ease.io(kU) : clamp(kS * 3, 0, 1); g.save(); g.globalAlpha = a; put(g, stampTool(), STAMP[0] + ox, STAMP[1] + oy + 70 + h, { sc: 0.9, lift: 0.6 - h / 60 }); g.restore(); }
-      // the two DISSENT cards slide in from the right edge, one after the other, above the proposal
-      [[0.55, 800, 1420, 0.07], [0.85, 640, 1500, -0.05]].forEach(([d, x, y, r]) => { const k = ease.out((lt - tP - d) / 0.3); if (k > 0) put(g, dissentCard(), lerp(W + 200, x, k) + ox, y + oy, { rot: r, lift: 0.5 }); });
+      // the two DISSENT cards slide in from the right edge, one after the other, beside the proposal and clear of the tag
+      [[0.55, 862, 650, 0.08], [0.85, 842, 790, -0.06]].forEach(([d, x, y, r]) => { const k = ease.out((lt - tP - d) / 0.3); if (k > 0) put(g, dissentCard(), lerp(W + 200, x, k) + ox, y + oy, { rot: r, lift: 0.5 }); });
     } }], cam);
     tag(c, ui('committee', 'COMMITTEE STATEMENT · 16.10.2026'), lt, dd);
     box(c);
@@ -456,12 +456,12 @@
   const marks5 = (tM) => (M5 && M5.key === tM ? M5 : (M5 = { key: tM, a: STRIKE[0](-10), b: STRIKE[1](-10), round: ROUND(tM) }));
   SCENES.bge_tail = { draw(c, lt) {
     const id = 'bge_tail', dd = dur(id), tT = at(id, 'tag', 0.3), tM = at(id, 'mark', 2.4), M = marks5(tM);
-    const cam = { x: Math.sin(lt * 0.25) * 6, y: 0, z: punch(lt, [tM], { kick: 0.03 }) * lerp(1.04, 0.98, ease.io(lt / dd)), fx: 560, fy: 1080 };
+    const cam = { x: Math.sin(lt * 0.25) * 6, y: 0, z: punch(lt, [tM], { kick: 0.03 }) * lerp(0.99, 1.12, ease.io(lt / dd)), fx: 600, fy: 1110 };
     stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
       const A = caseLayer(g, ox, oy, lt, { lamp: lt > tM && lt < tM + 0.2 ? 0.5 : 1, dust: 0.62, snow: 58, ice: 1, web: 1, gleam: (lt - tM - 0.25) / 0.6 });
       const T = { x: A[0], y: A[1], rot: swing(lt, [[tT, 0.16], [tM, 0.05]], 0.012), sc: 1 };
       const tip = drawTag(g, T, lt, { rows: [{ row: 0, t0: -10 }, { row: 1, t0: -10 }, { row: 2, t0: -10 }], marks: [M.a, M.b, M.round] });
-      const L = (p) => tagToLayer(T, p), rest = [W - 120 + ox, 1840 + oy];
+      const L = (p) => tagToLayer(T, p), rest = [W + 160 + ox, 2060 + oy];
       const pen = tip || penAt(lt, [[tM - 0.6, rest], [tM, L(M.round.start)], [tM + 0.42, L(M.round.end)], [tM + 1.2, rest]]);
       if (lt > tM - 0.6 && lt < tM + 1.2) marker(g, pen, -0.62);
     } }, { d: 0.3, fn: (g, ox, oy) => snowfall(g, lt + 4 * SH, ox, oy, { n: 120, sz: 1.3, a: 0.7, wind: 26 }) }], cam);

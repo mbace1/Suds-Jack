@@ -40,7 +40,7 @@ the punchline becomes *Never used. Still temporary. Now until 2028.* and the las
 | 1 | `bge_gate` | setup | When does a temporary law / stop being [temporary]? | Night at a closed road crossing, papercut: moon, spruce forest in two layers, a snowy road running into the trees, a striped barrier down with a red-on-white CLOSED sign, a grey board guardhouse with a lit window. On "temporary" a lamp clicks on above a small red case on the guardhouse wall. Snow falls. The camera drifts in toward the case. Tag: EASTERN BORDER · FINLAND. | `lamp` = pop |
 | 2 | `bge_case` | evidence | 2024: Finland passed / a temporary border law / for [one year]. | The wall, close: the red case, IN EMERGENCY / BREAK GLASS, the law on two clips behind its glass (ACT ON TEMPORARY MEASURES TO COMBAT INSTRUMENTALISED MIGRATION · 2024), a hammer on a chain beside it. On "one year" an ochre inspection tag drops onto the case's corner and swings: **VALID TO 2025**. Tag: IN FORCE 22.7.2024 · ONE YEAR. | `tag` = pop |
 | 3 | `bge_dust` | evidence | It has [never been used]. / In 2025 it was extended / to the end of 2026. | Time-lapse: pale bands of daylight sweep the wall, one a day; snow piles on top of the case, icicles grow along its sill, dust settles on the glass, a cobweb spreads from the hammer's chain. On "never been used" a gleam runs across the glass: whole. On "In 2025" the red marker strikes 2025 off the tag; on "to the end of 2026" it writes **2026**. Tag: FINNISH GOVERNMENT: NOT APPLIED. | `gleam` = pop, `strike` = line 2 start, `write` = line 3 start |
-| 4 | `bge_desk` | evidence | Now proposed: two more years, / unchanged. In October, / a committee [agreed]. | The committee's desk from above: a GOVERNMENT PROPOSAL, BORDER SECURITY ACT, VALIDITY: TO 31.12.2028, CHANGES TO CONTENT: **NONE**; the tag lies beside it. The marker strikes 2026 and writes **2028**. On "agreed" a rubber stamp comes down: a green tick. Two small cards slide in: **DISSENT**, **DISSENT**. Tag: COMMITTEE STATEMENT · 16.10.2026. | `write` = line 1 end, `stamp` = pop |
+| 4 | `bge_desk` | evidence | Now proposed: two more years, / unchanged. In October, / a committee [agreed]. | The committee's desk from above: a GOVERNMENT PROPOSAL, TEMPORARY MEASURES ACT, VALIDITY: TO 31.12.2028, CHANGES TO CONTENT: **NONE**; the tag lies beside it. The marker strikes 2026 and writes **2028**. On "agreed" a rubber stamp comes down: a green tick. Two small cards slide in: **DISSENT**, **DISSENT**. Tag: COMMITTEE STATEMENT · 16.10.2026. | `write` = line 1 end, `stamp` = pop |
 | 5 | `bge_tail` | punchline | Never used. Still temporary. / Proposed: until [2028]. | The case again, deep in snow, icicles long, the glass dusty and whole, the web complete. The tag swings, re-hung: 2025, 2026 struck, **2028**. On "2028" the marker circles it, and the glass gleams once more. Tag: PLENARY VOTE: STILL TO COME. | `tag` 0.3, `mark` = pop |
 
 **Punchline (as briefed):** *Never used. Still temporary. Proposed: until 2028.* "Proposed" holds until the plenary
@@ -66,8 +66,8 @@ of the shot's time. Behind it, the **time-lapse** of shot 3 (daylight bands, sno
   border is a lowered barrier in the snow.
 - **The threat is not argued.** Nothing says or shows whether the law is needed. The film asks only how "temporary"
   is decided: a law kept for years and never used.
-- **Names.** The Act by its own English name (on the booklet), "Border Security Act" (the government's own short
-  name) on the proposal, never "pushback law" or "käännytyslaki". The committee is unnamed in the caption and in the English
+- **Names.** The Act by its own English name (on the booklet), TEMPORARY MEASURES ACT, a short form of that name,
+  on the proposal (parent, 22 Oct: "Border Security Act" was replaced because in Finland it is the *so-called* name), never "pushback law" or "käännytyslaki". The committee is unnamed in the caption and in the English
   corner tag (COMMITTEE STATEMENT, which fits beside the button rail), and named in the Finnish and Japanese tags; the
   Chancellor of Justice is not in the film.
 - **Pending vote.** "Proposed" in the caption, PLENARY VOTE: STILL TO COME in the last tag; never "extended to 2028".
@@ -83,3 +83,13 @@ of the shot's time. Behind it, the **time-lapse** of shot 3 (daylight bands, sno
   rough.js from `scenes/vendor/`. English master only.
 - Shot 3's pop comes 0.76 s into the shot in English, so the time-lapse runs through the whole shot rather than
   ending on it; the camera goes in to the tag for the strike and the new year, then back out to the case.
+- **Result:** PASSED (86 text pass, 9 warn: unread fi/ja and their sidecar timings on the English master; sound 5
+  pass), 32.14 s + 3 s sign-off, −14.1 LUFS, −2.9 dBTP (−14.2 / −2.7 with the sign-off). Preview
+  `previews/22-10-Break-Glass-DRAFT-en.mp4` (35.1 s, 4.5 MB). Reports: the build's `build-report.md`, `qa-frames.png`.
+- **Fixed after looking:** the guardhouse and the wall were Finnish red board, and the red case vanished into them, so
+  both are now weathered blue-grey and the case is the loudest thing in the frame; the law's title ran off the booklet
+  (re-set in six lines); on the proposal CHANGES TO CONTENT collided with NONE and BORDER SECURITY ACT ran off the paper;
+  from above, the stamp was a brown disc and is now a stamp (knob, block, rubber) that drops in; the DISSENT cards first
+  covered the proposal's title and then the new 2028 on the tag, so they now land beside the proposal, clear of both;
+  the marker hand stayed parked in the corner for four seconds after writing 2026 and now leaves; the gleam on "never
+  been used" was too faint; the end was a static frame and is now a slow push in on the case and the circled 2028.
