@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyper Dagger — SDF skull study</title>
+<style>
+*{box-sizing:border-box}body{height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr);margin:0;background:#080605;color:#e8dcc8;font:15px system-ui}canvas{display:block;width:100%;height:100%;min-height:0}header{padding:16px 22px;min-height:190px}h1{font-size:22px;margin:0 0 6px}p{margin:5px 0;color:#bdb0a0}button,a{display:inline-block;min-height:44px;padding:12px;margin:6px 4px 0 0;background:#241a16;border:1px solid #82644d;color:#f4ece0;font:inherit}button[aria-pressed=true]{background:#9d3022}output{display:block;margin-top:8px;font-variant-numeric:tabular-nums}@media(max-width:600px){header{min-height:270px}canvas{height:100%}}
+</style>
+<header>
+<h1>Hyper Dagger · SDF build 2</h1>
+<p>Existing voxel skull on the left. SDF skull on the right. Same scale and bite cycle. SDF build 2.</p>
+<button id="compare" aria-pressed="true">Compare</button><button id="voxel" aria-pressed="false">Voxel swarm</button><button id="sdf" aria-pressed="false">SDF swarm</button>
+<button id="variant">Skull: regular</button><button id="count">Swarm: 12</button><button id="rotate" aria-pressed="false">Rotate</button>
+<a href="./?skull=sdf">Play SDF preview</a><a href="./">Play current renderer</a>
+<output id="stats">Warming up…</output>
+</header>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/":"./vendor/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull } from './js/enemy.js?v=112';
+import { createSdfSkull } from './js/sdf-skull.js?v=2';
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.setClearColor(0x080605);document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(38,1,0.1,100);
+camera.position.set(0,0.15,6.8);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshBasicMaterial({color:0x201511}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-1;scene.add(floor);
+const CLASSES={skull:Skull,wraith:Wraith,splitter:Splitter,mini:MiniSkull,dread:DreadSkull};
+let variant='skull';
+let mode='compare', count=12, rotating=false, objects=[],frameTimes=[],last=performance.now(),phase=0,warmup=12;
+function clear(){for(const o of objects){if(o.enemy)o.enemy.remove(scene);else {scene.remove(o.root);o.root.material.dispose();}}objects=[];}
+function add(kind,x,y,z){
+ if(kind==='voxel'){
+ const Enemy=CLASSES[variant];const enemy=new Enemy(scene,new THREE.Vector3(x,y,z));enemy.spawnK=1;enemy.group.scale.setScalar(1);
+ // The lab always uses the original lattice, independent of the game query flag.
+ if(enemy.sdfRoot){enemy.group.remove(enemy.sdfRoot);enemy.sdfRoot.material.dispose();enemy.sdfRoot=null;for(const part of enemy.parts){part.mesh.visible=true;if(part.hull)part.hull.visible=true;}}
+ objects.push({root:enemy.group,enemy});
+ }else {const root=createSdfSkull({variant});root.position.set(x,y,z);scene.add(root);objects.push({root});}
+}
+function rebuild(){clear();frameTimes=[];warmup=12;if(mode==='compare'){camera.position.set(0,0.15,6.8);add('voxel',-1.4,0,0);add('sdf',1.4,0,0);}
+ else {camera.position.set(0,0.6,10);for(let i=0;i<count;i++)add(mode,((i%6)-2.5)*1.8,Math.floor(i/6)*1.7-1.3,-Math.floor(i/18)*1.6);}}
+for(const id of ['compare','voxel','sdf'])document.getElementById(id).onclick=()=>{mode=id;for(const k of ['compare','voxel','sdf'])document.getElementById(k).setAttribute('aria-pressed',String(k===id));rebuild();};
+document.getElementById('variant').onclick=()=>{const variants=Object.keys(CLASSES);variant=variants[(variants.indexOf(variant)+1)%variants.length];document.getElementById('variant').textContent='Skull: '+variant;rebuild();};
+document.getElementById('count').onclick=()=>{count=count===12?40:12;document.getElementById('count').textContent='Swarm: '+count;rebuild();};
+document.getElementById('rotate').onclick=()=>{rotating=!rotating;document.getElementById('rotate').setAttribute('aria-pressed',String(rotating));};
+function resize(){const c=renderer.domElement;renderer.setSize(innerWidth,c.clientHeight,false);camera.aspect=c.clientWidth/c.clientHeight;camera.updateProjectionMatrix();}resize();addEventListener('resize',resize);rebuild();
+function frame(now){requestAnimationFrame(frame);const ms=now-last;last=now;phase+=Math.min(ms/1000,0.05);for(const o of objects){o.root.rotation.y=rotating?phase*0.5:0;const bite=0.05+Math.pow(0.5+0.5*Math.sin(phase*8),1.6)*0.42;if(o.enemy){for(const part of o.enemy.parts)part.update(0.016);if(o.enemy.jawPivot)o.enemy.jawPivot.rotation.x=bite;}else o.root.material.uniforms.jawOpen.value=bite;}
+ renderer.render(scene,camera);if(new URLSearchParams(location.search).has('benchmark'))renderer.getContext().finish();if(warmup>0)warmup--;else frameTimes.push(ms);if(frameTimes.length>180)frameTimes.shift();
+ if(frameTimes.length>10){const a=[...frameTimes].sort((a,b)=>a-b);document.getElementById('stats').textContent=`${mode} · ${objects.length} skulls · median ${a[Math.floor(a.length/2)].toFixed(1)} ms · p95 ${a[Math.floor(a.length*.95)].toFixed(1)} ms · ${renderer.info.render.calls} draws`;}}
+requestAnimationFrame(frame);
+window.__sdfStudy={renderer,scene,camera,objects:()=>objects,stats:()=>({mode,count,frameTimes:[...frameTimes]})};
+</script>
+</html>

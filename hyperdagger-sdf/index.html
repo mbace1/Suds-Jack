@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Hyper Dagger SDF — build 2 preview</title>
+  <link rel="manifest" href="manifest.webmanifest?v=85">
+  <link rel="icon" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #020202; color: #e8dcc8; font-family: system-ui, sans-serif; }
+    #canvas-game, #canvas-ui { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+    #canvas-ui { pointer-events: none; }
+    #msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: safe center; overflow-y: auto; text-align: center; background: rgba(0,0,0,0.72); z-index: 10; padding: 1.5rem; }
+    #msg h1 { font-size: 2.2rem; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+    #msg .sub, #msg .keys, #msg .go, #msg .history, #msg .breakdown, #msg .cause { opacity: 0.85; margin: 0.35rem 0; max-width: 36rem; }
+    #msg .big { font-size: 1.35rem; margin: 0.5rem 0; font-weight: 600; }
+    #msg .cause { font-size: 0.95rem; }
+    #msg .tier { color: #d8412f; font-weight: 800; }
+    #msg button { margin: 0.35rem; padding: 0.6rem 1.1rem; background: #1a1614; color: #e8dcc8; border: 1px solid #3a322c; cursor: pointer; font: inherit; letter-spacing: 0.04em; border-radius: 2px; transition: border-color 0.15s, background 0.15s; }
+    #msg button.on, #msg button.gfocus { border-color: #d8412f; background: #3a241e; box-shadow: 0 0 0 1px #d8412f55; }
+    #msg button:hover { border-color: #8a6a4a; }
+    #msg .seasons, #msg .modes { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; margin: 0.8rem 0; }
+    #msg button.season { min-width: 7.5rem; font-weight: 600; }
+    #msg button.season.on { background: #3a2218; }
+    #msg button.mode { min-width: 5.5rem; font-size: 0.92rem; }
+    #msg button.mode.all { border-style: dashed; }
+    #msg .row-label { font-size: 0.75rem; letter-spacing: 0.12em; opacity: 0.55; margin: 0.6rem 0 0.2rem; text-transform: uppercase; }
+    #msg h1 { text-shadow: 0 2px 8px #000; }
+    /* HD-019 THE MENU. The season's own arena is the background, live: the
+       overlay is a veil on the right, not a dark sheet over everything, and
+       the whole panel stands in the season's colour (--acc). One column on
+       the right keeps the shell's HUB (top-left) and the signature
+       (bottom-left) out of the way; on a phone held upright it is the
+       bottom of the screen. */
+    #msg.menu { background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.72) 63%, rgba(0,0,0,0.9) 100%); padding: 0; justify-content: stretch; align-items: stretch; text-align: left; overflow: hidden; }
+    .mn { --acc: #d8412f; position: relative; display: flex; flex-direction: column; justify-content: space-between; width: min(27rem, 100%); height: 100%; margin-left: auto; padding: max(1.6rem, env(safe-area-inset-top)) max(2.2rem, env(safe-area-inset-right)) max(1.4rem, env(safe-area-inset-bottom)) 1.6rem; gap: 1rem; overflow-y: auto; }
+    .mn-head { animation: mnIn 0.5s ease both; }
+    #msg .mn-mark { font-size: clamp(2rem, 4.4vw, 3.3rem); font-weight: 900; letter-spacing: 0.02em; line-height: 0.92; margin: 0; text-shadow: none; color: #f4ece0; }
+    .mn-mark::after { content: ''; display: block; width: 3.2rem; height: 4px; margin-top: 0.7rem; background: var(--acc); transition: background 0.35s; }
+    .mn-sub { margin-top: 0.6rem; font-size: 0.78rem; letter-spacing: 0.24em; text-transform: uppercase; opacity: 0.6; }
+    .mn-foot { display: flex; flex-direction: column; gap: 0.75rem; }
+    .mn-seasons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; }
+    #msg button.mn-season { --sacc: #888; position: relative; margin: 0; padding: 0.7rem 0.55rem 0.6rem; min-height: 44px; display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; text-align: left; background: rgba(10,9,8,0.72); border: 0; border-top: 3px solid rgba(232,220,200,0.2); border-radius: 0; color: rgba(232,220,200,0.68); transition: color 0.2s, border-color 0.2s, background 0.2s; }
+    #msg button.mn-season:hover { color: #e8dcc8; border-top-color: var(--sacc); }
+    #msg button.mn-season.on { color: #f4ece0; border-top-color: var(--sacc); background: linear-gradient(180deg, color-mix(in srgb, var(--sacc) 32%, rgba(10,9,8,0.72)), rgba(10,9,8,0.72)); box-shadow: none; }
+    .mn-n { font-size: 0.62rem; letter-spacing: 0.18em; opacity: 0.75; }
+    .mn-t { font-size: 1.05rem; font-weight: 800; letter-spacing: 0.08em; }
+    .mn-card { padding: 0.85rem 1rem 0.8rem; background: rgba(8,7,6,0.72); border-left: 3px solid var(--acc); transition: border-color 0.35s; animation: mnIn 0.35s ease both; }
+    .mn-tag { font-size: 0.98rem; line-height: 1.35; color: #f4ece0; margin: 0 0 0.55rem; }
+    .mn-rules { list-style: none; display: flex; flex-direction: column; gap: 0.32rem; margin: 0 0 0.65rem; padding: 0; }
+    .mn-rules li { position: relative; padding-left: 1.05rem; font-size: 0.86rem; line-height: 1.3; opacity: 0.88; }
+    .mn-rules li::before { content: ''; position: absolute; left: 0; top: 0.5em; width: 0.5rem; height: 2px; background: var(--acc); }
+    .mn-best { font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.6; margin: 0; font-variant-numeric: tabular-nums; }
+    #msg button.mn-start { margin: 0; width: 100%; min-height: 3.3rem; padding: 0.8rem 1rem; background: var(--acc); color: #0b0908; border: 0; border-radius: 0; font-size: 1.15rem; font-weight: 900; letter-spacing: 0.42em; text-indent: 0.42em; transition: background 0.35s, filter 0.15s, transform 0.15s; }
+    #msg button.mn-start:hover { filter: brightness(1.15); }
+    #msg button.mn-start:active { transform: scale(0.985); }
+    #msg button.mn-start:focus-visible { outline: 2px solid #f4ece0; outline-offset: 3px; }
+    .mn-render { display: flex; gap: 0.4rem; }
+    #msg .mn-render button { flex: 1; margin: 0; min-height: 44px; font-size: .8rem; }
+    #msg .mn-render button[aria-pressed="true"] { border-color: var(--acc); background: #3a241e; }
+    .mn-render-note { font-size: .68rem; color: #d8c7b2; line-height: 1.45; margin: 0; }
+    .mn-keys { font-size: 0.72rem; line-height: 1.5; opacity: 0.55; margin: 0; }
+    .mn-keys b { font-weight: 700; opacity: 1; }
+    @keyframes mnIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .mn-head, .mn-card { animation: none; } }
+    /* a phone held upright: the panel is the bottom of the screen, the title the top */
+    @media (max-aspect-ratio: 4/5) {
+      #msg.menu { background: linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 36%, rgba(0,0,0,0.78) 62%, rgba(0,0,0,0.9) 100%); }
+      .mn { width: 100%; margin: 0; padding: max(4.4rem, calc(env(safe-area-inset-top) + 3.6rem)) 1rem max(4.2rem, calc(env(safe-area-inset-bottom) + 3.4rem)); }
+      .mn-head { text-align: center; }
+      .mn-mark::after { margin-left: auto; margin-right: auto; }
+    }
+    /* a short screen (a phone on its side): everything tighter, keys line off */
+    @media (max-height: 480px) {
+      .mn { width: min(25rem, 52%); padding-top: max(0.8rem, env(safe-area-inset-top)); padding-bottom: max(0.7rem, env(safe-area-inset-bottom)); gap: 0.5rem; }
+      #msg .mn-mark { font-size: 1.7rem; }
+      .mn-mark::after { margin-top: 0.4rem; height: 3px; }
+      .mn-sub { display: none; }
+      .mn-foot { gap: 0.45rem; }
+      #msg button.mn-season { padding: 0.45rem 0.5rem 0.4rem; }
+      .mn-t { font-size: 0.92rem; }
+      .mn-card { padding: 0.55rem 0.75rem; }
+      .mn-tag { font-size: 0.84rem; margin-bottom: 0.35rem; }
+      .mn-rules { gap: 0.2rem; margin-bottom: 0.4rem; }
+      .mn-rules li { font-size: 0.76rem; }
+      #msg button.mn-start { min-height: 2.9rem; padding: 0.55rem; font-size: 1rem; }
+      .mn-render { display: flex; gap: 0.4rem; }
+    #msg .mn-render button { flex: 1; margin: 0; min-height: 44px; font-size: .8rem; }
+    #msg .mn-render button[aria-pressed="true"] { border-color: var(--acc); background: #3a241e; }
+    .mn-render-note { font-size: .68rem; color: #d8c7b2; line-height: 1.45; margin: 0; }
+    .mn-keys { display: none; }
+    }
+    /* the menu has no run to report on: no clock, no kills, no pause button */
+    body.on-menu #timer, body.on-menu #kills, body.on-menu #gems, body.on-menu #style,
+    body.on-menu #clockLabel, body.on-menu #pauseBtn, body.on-menu #combo, body.on-menu #threatRing { display: none; }
+    .optnote { font-size: 0.75rem; opacity: 0.6; }
+    #timer, #kills, #gems, #style { position: absolute; z-index: 5; pointer-events: none; font-variant-numeric: tabular-nums; text-shadow: 0 1px 2px #000; }
+    #timer { top: 0.8rem; left: 50%; transform: translateX(-50%); font-size: 1.6rem; letter-spacing: 0.06em; }
+    #kills, #gems { top: 0.9rem; font-size: 0.9rem; opacity: 0.75; }
+    #kills { left: 1rem; } #gems { right: 1rem; }
+    /* HD-012: the arcade shell's HUB button owns the top-left corner (fixed,
+       z-index above everything, ~44px tall). The kills/load line used to sit
+       at the same spot and printed straight through it on the death screen.
+       It is a stat line, not a control: it steps down under HUB instead. */
+    #kills { top: calc(max(10px, env(safe-area-inset-top)) + 54px); left: max(10px, env(safe-area-inset-left)); }
+    #style { bottom: 1.2rem; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; text-align: center; }
+    #styleRank { font-size: 1.4rem; font-weight: 700; } #styleMult { font-size: 0.85rem; opacity: 0.8; }
+    #styleFill { height: 3px; width: 0; background: #c81e1e; margin: 0.2rem auto 0; max-width: 8rem; }
+    #toast { position: absolute; top: 16%; left: 50%; transform: translateX(-50%); z-index: 8; opacity: 0; transition: opacity 0.18s, transform 0.18s; pointer-events: none; letter-spacing: 0.14em; text-shadow: 0 2px 6px #000; font-size: 1.35rem; font-weight: 700; }
+    #toast.show { opacity: 1; transform: translateX(-50%) scale(1.05); }
+    #style { font-size: 1.1rem; }
+    #styleRank { font-size: 1.6rem; font-weight: 800; text-shadow: 0 1px 4px #000; }
+    #crosshair { display: none; }
+    #combo { position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%); z-index: 7; pointer-events: none; font-size: 2.6rem; font-weight: 800; letter-spacing: 0.1em; text-shadow: 0 2px 10px #000, 0 0 20px #d8412f55; opacity: 0; transition: opacity 0.1s, transform 0.1s; }
+    #combo.show { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+    #threatRing { position: absolute; left: 50%; top: 50%; width: 28vmin; height: 28vmin; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; }
+    #threatRing .pip { position: absolute; width: 8px; height: 8px; background: #d8412f; border-radius: 50%; opacity: 0.85; box-shadow: 0 0 6px #d8412f; }
+    #pauseBtn { position: absolute; top: 0.7rem; right: 0.7rem; z-index: 6; background: transparent; border: 0; color: #e8dcc8; opacity: 0.35; cursor: pointer; font-size: 1.2rem; }
+    #pauseBtn:hover { opacity: 1; }
+    #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(120,10,10,0.55) 100%); opacity: 0; z-index: 4; transition: opacity 0.15s; }
+    body.in-run #msg { display: none; }
+    /* THE ACTIVE FRAME. During a run the HUD is clock-only: kills, gems and
+       the style badge are readable between runs, not mid-fight, and the
+       arcade shell (pause, HOME, signature) retreats almost to nothing so
+       the only chrome competing with the arena is the timer. Off-run
+       everything returns. main.js already toggled body.in-run in all the
+       right places and the gate already asserted this behaviour — the rules
+       themselves were simply never written, so the gate was red by three. */
+    body.in-run #gems,
+    body.in-run #style { display: none; }
+    body.in-run #timer { font-size: 27px; }
+    /* HD-008 (12 Oct playtest): the kill counter stays up for the whole run,
+       in every season and free mode. The top-left corner belongs to the
+       shell's HOME button (44px tall) mid-run, and top-right to pause, so
+       the counter tucks under the clock, centred, where nothing else lives
+       on a phone-sized viewport. */
+    body.in-run #kills { left: 50%; transform: translateX(-50%); top: calc(0.8rem + 42px); font-size: 0.85rem; white-space: nowrap; max-width: calc(100vw - 2rem); overflow: hidden; text-overflow: ellipsis; }
+    /* HD-010: what the clock means, small, under the clock and below the slot
+       #593 gives the kill counter; and the run-start goal card, one line
+       above the reticle that fades by ~2 s and never takes input. */
+    #clockLabel { position: absolute; z-index: 5; pointer-events: none; display: none; left: 50%; transform: translateX(-50%); top: calc(0.8rem + 62px); font-size: 0.7rem; letter-spacing: 0.12em; opacity: 0.7; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+    body.in-run #clockLabel:not(:empty) { display: block; }
+    #goalCard { position: absolute; z-index: 6; pointer-events: none; left: 50%; top: max(calc(0.8rem + 86px), 24%); transform: translateX(-50%); max-width: calc(100vw - 2rem); padding: 0.35rem 0.6rem; font-size: clamp(0.62rem, 2.6vw, 1.1rem); font-weight: 800; letter-spacing: 0.08em; text-align: center; white-space: nowrap; width: max-content; overflow: hidden; text-overflow: ellipsis; color: #e8dcc8; background: rgba(0,0,0,0.45); border-top: 1px solid #d8412f; border-bottom: 1px solid #d8412f; text-shadow: 0 1px 4px #000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0.3s; }
+    #goalCard.show { opacity: 1; visibility: visible; transition: opacity 0.15s ease; }
+    body.in-run #pauseBtn { opacity: 0.12; }
+    body.in-run #pauseBtn:hover { opacity: 1; }
+    body.in-run .arcade-home,
+    /* !important because toko/js/signature.js sets opacity as an INLINE
+       style, which beats a stylesheet rule. toko/ is the shared brand
+       module five games import, so the override belongs here, not there. */
+    body.in-run .toko-signature { opacity: 0.05 !important; }
+    .arcade-home, .toko-signature, #pauseBtn { transition: opacity 0.35s ease; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas-game"></canvas>
+  <canvas id="canvas-ui"></canvas>
+  <div id="vignette"></div>
+  <div id="timer">0.0</div>
+  <div id="kills">0 kills</div>
+  <div id="clockLabel"></div>
+  <div id="goalCard"></div>
+  <div id="gems">◆ 0 · LV 1</div>
+  <div id="style"><div id="styleRank"></div><div id="styleMult"></div><div id="styleFill"></div></div>
+  <div id="toast"></div>
+  <div id="crosshair">+</div>
+  <div id="combo"></div>
+  <div id="threatRing"></div>
+  <button id="pauseBtn" title="Pause">⏸</button>
+  <div id="msg"></div>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js",
+      "three/addons/": "./vendor/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js?v=112"></script>
+
+  <script type="module" src="../hub/shell.js?v=103"></script>
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=3';
+    // `open`: with a cursor the badge opens him at the table, over a paused
+    // run, instead of leaving for the arcade. The href stays for middle-click.
+    sign({ corner: 'bottom-left', counter: true, open: () => window.__hd && window.__hd.toko.open() });
+  </script>
+</body>
+</html>

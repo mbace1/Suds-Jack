@@ -1,0 +1,4570 @@
+import { sdfSkullsEnabled, setSdfSkullsEnabled } from './sdf-skull.js?v=2';
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { InputManager } from './input.js?v=110';
+import { Player } from './player.js?v=85';
+import { DaggerPool } from './daggers.js?v=85';
+import { GemPool } from './gems.js?v=85';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=85';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=112';
+import { OrbPool } from './bullets.js?v=85';
+import { AudioKit } from './audio.js?v=85';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=85';
+import { TUNING as T } from './tuning.js?v=85';
+import { HyperEnvironment } from './environment.js?v=85';
+import { Backdrop } from './backdrop.js?v=107';
+import { Walls } from './walls.js?v=85';
+import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=109';
+import { TruckTrack } from './truck.js?v=112';
+import { GazeLock } from './gaze.js?v=85';
+import { PhysGibs } from './gibs.js?v=85';
+import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=110';
+import { Platforms } from './platforms.js?v=85';
+import { shaleGeometry, shaleMaterial } from './shale.js?v=85';
+import { GooWave } from './goo.js?v=85';
+import { gelMaterial } from './gel.js?v=85';
+import { mosaicPalette, mosaicSkin } from './roster.js?v=85';
+import { Skullscape } from './inca.js?v=85';
+import { ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=107';
+import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRosterSkin } from './mesh-enemies.js?v=107';
+import { openTable } from '../../toko/js/table.js?v=5';   // v48 (theirs): Toko opens over the paused run
+
+const ARENA_R = 26;
+// v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
+// profile's value where it has one and the dagger's otherwise. applySeason
+// swaps it; the fire sites ask wpn() and never T.weapon directly for
+// anything a profile may own (speeds, spreads, the stream rate multiplier).
+let WP = {};
+const wpn = k => WP[k] ?? T.weapon[k];
+const SKULL_CAP = 64;
+const TOTEM_CAP = 6;
+const SERPENT_CAP = 2;
+
+// display names for the death-recap "felled by ___" line + kill breakdown
+const ENEMY_NAMES = {
+  skull: 'a skull', brute: 'a brute', serpent: 'the serpent', spider: 'a spider',
+  watcher: 'a watcher', blinker: 'a blinker', leviathan: 'THE LEVIATHAN',
+  thorn: 'a thorn spike', orb: 'an orb', totem: 'a totem', dread: 'the DREAD SKULL',
+  husk: 'a husk', revenant: 'a revenant',
+  wave: 'THE WAVE',   // v48: season 2's sea — you were meant to jump it
+  rockfall: 'THE ROCKFALL',   // v53: season 1's finale
+  'the road': 'THE ROAD',     // season 3: off the convoy, the asphalt kills on touch
+  'the fall': 'THE FALL',     // the classic track: nothing under you
+  egg: 'an egg', truck: 'a truck',   // HD-007: never lethal, but they land in the kill breakdown
+};
+// HD-007: every killer key the code can set has a name (test/killers.mjs walks
+// them). 'something' is only a last resort, and a dev build says when it fires.
+const DEV_BUILD = /^(localhost|127\.0\.0\.1|\[::1\]|)$/.test(location.hostname) || /[?&]dev\b/.test(location.search);
+function killerName(key) {
+  const name = ENEMY_NAMES[key];
+  if (name) return name;
+  if (DEV_BUILD) console.warn(`[hyperdagger] death fell back to 'something': no ENEMY_NAMES entry for killer ${JSON.stringify(key)}`);
+  return 'something';
+}
+
+// player-tunable options (pause menu), persisted across sessions
+// v25 deliberately starts from a clean image. A new key prevents old,
+// spectacle-heavy defaults from silently carrying into the reset.
+const OPTS_KEY = 'hyperDaggerOptsV26';
+const opts = Object.assign(
+  // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
+  // kicks off without touching the individual toggles); contrast=true brightens
+  // orbs + telegraphs and kills the floor's red flush for readability
+  { speed: 1, fov: 90, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, gibs: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'cubes' }, // v38: the cube look is the house look
+  JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
+
+// STYLE presets: hue targets for the accent recolor (null = native crimson).
+// Distilled in the Voxel Lab; bone/greys never shift, only red-dominant glow.
+const STYLE_HUES = { crimson: null, cyan: 0.5, gold: 0.11, violet: 0.77 };
+
+// ------------------------------------------------ performance governor
+// Auto-degrades render cost on weak devices (opts.perf 'auto'; 'high'/'low'
+// pin tier 0/4). The governor NEVER writes opts.* — effective pass state is
+// always userToggle && tierAllows (reconciled in applyOpts), so the pause
+// menu keeps showing user intent and a step-up can't resurrect a toggle the
+// user turned off.
+const BASE_PR = Math.min(window.devicePixelRatio, 2);
+// Devil Daggers' image is authored as a coarse software raster, not a clean
+// high-DPI WebGL frame. Keep every performance tier inside the same visual
+// language and let CSS enlarge the buffer with hard nearest-neighbour pixels.
+const SOFTWARE_PR = Math.min(BASE_PR, 0.72);
+// Phones open at ×27, not the ×64 desktop default: the governor needs a few
+// seconds of frame samples to react, and a mid-range phone spending those
+// seconds at the ceiling stutters through the opening spawn. An explicit
+// VOXEL pick still reaches ×64 on any device.
+// v4.31: the models themselves carry ~4× more voxels now, so the AUTO
+// subdivision ladder sits one tier lower for the same instance budget —
+// detail comes from the sculpt, not from subdividing a blob
+const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 2 : 3;
+const PERF_TIERS = [
+  // gibs = how many pieces ONE death throws (scales with the voxel density
+  // ladder below, so a ×64 enemy actually shatters instead of chunking)
+  { chroma: true,  smear: true,  edge: true,  hull: true,  sphereEvery: 2, pr: SOFTWARE_PR,                 bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
+  { chroma: false, smear: true,  edge: true,  hull: true,  sphereEvery: 3, pr: SOFTWARE_PR,                 bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
+  { chroma: false, smear: false, edge: false, hull: true,  sphereEvery: 4, pr: SOFTWARE_PR,                 bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
+  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: Math.min(SOFTWARE_PR, 0.62), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
+  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: Math.min(SOFTWARE_PR, 0.50), bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
+];
+// mutable so headless tests can shrink the timescales
+const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08, gapMs: 250, gapRun: 4 };
+let perfTier = 0;
+let frameEMA = 16.7;
+let perfSettleUntil = 0; // ignore samples until this performance.now()
+let perfBadSince = 0;
+let perfGoodSince = 0;
+let forcedFrameTime = null; // debug override (ms)
+
+// Devil-Daggers-style dagger levels, advanced by collecting gems.
+const LEVEL_GEMS = T.weapon.levelGems; // gems needed to reach index level
+const WEAPON = T.weapon.tiers;         // LV4 — the crimson hand (DD's fourth tier)
+const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1, dread: 3, husk: 4, revenant: 2 };
+
+// The gauntlet itself evolves with the weapon (DD's hand upgrades): knuckle
+// glow at LV2, red veins at LV3, full crimson-and-fire at LV4. Keys are the
+// hand model's palette letters; retint() rewrites just those voxels.
+const GAUNTLET_TIERS = [
+  null,
+  { G: 0xbeb4a6, D: 0x5c554d, H: 0xe2d8c8, B: [2.2, 0.22, 0.08] },
+  { G: 0xc8bdaa, D: 0x625a50, H: [1.25, 0.72, 0.40], B: [2.35, 0.24, 0.08] },
+  { G: 0x8c8174, D: [1.35, 0.10, 0.06], H: [1.5, 0.45, 0.22], B: [2.5, 0.26, 0.08] },
+  { G: 0x4a1010, D: [2.2, 0.16, 0.10], H: [2.0, 0.32, 0.12], B: [2.7, 0.34, 0.10] },
+];
+
+// Style/combo meter (Returnal/DMC-flavoured): fast kills and dash-throughs
+// fill it, idling bleeds it out. Rank climbs D→SSS; it drives music intensity
+// and the peak rank is a run-end brag. `min` is the fill needed to reach a
+// tier. Style gained per event scales with the meter, rewarding chains.
+const STYLE_TIERS = [
+  { min: 0, label: '', color: '' },
+  { min: 6, label: 'D', color: '#9a9a9a' },
+  { min: 15, label: 'C', color: '#c8c8c8' },
+  { min: 28, label: 'B', color: '#f0f0f0' },
+  { min: 45, label: 'A', color: '#ffffff' },
+  { min: 66, label: 'S', color: '#ff6b6b' },
+  { min: 92, label: 'SS', color: '#e83030' },
+  { min: 124, label: 'SSS', color: '#c81e1e' },
+];
+const STYLE_CAP = T.style.cap;
+// style awarded per kill by enemy type (dash-through orbs + gems add their own)
+const STYLE_GAIN = {
+  skull: 3, brute: 6, serpent: 5, spider: 5, watcher: 5,
+  blinker: 5, leviathan: 30, thorn: 0, dread: 8, husk: 9, revenant: 6,
+};
+
+// ---------------------------------------------------------------- renderer
+const canvas = document.getElementById('canvas-game');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+renderer.setPixelRatio(BASE_PR);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.86;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x020202, 24, 72);
+
+// ASSET LIGHT RIG (v4.37). Native geometry is unlit MeshBasic, so these
+// lights touch only LIT materials — imported GLBs. Which lights is not a
+// free choice: an import has to look like it is standing in THIS arena, and
+// this arena has exactly two light sources — the grid floor, which really
+// glows, and the ember horizon — with a black void overhead. So the rig is
+// UPLIT: the hemisphere's ground term is the white grid and its sky term is
+// the void, the inverse of a studio key. That is what stops an imported
+// skull reading as a product shot pasted into the scene.
+const lightRig = new THREE.Group();
+const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 1.0);
+hemi.color.setHex(0x0e0e12);       // sky = the void
+hemi.groundColor.setHex(0xf4f4ff); // ground = the glowing grid
+hemi.intensity = 2.0;
+const _rim = new THREE.DirectionalLight(0xdfe4ff, 0.35); // so crowns don't vanish
+_rim.position.set(-3, 9, -2);
+const EMBER_BASE = 0.55;
+const emberLights = [0, 2.09, 4.19].map(a => {
+  const l = new THREE.DirectionalLight(0xff1e1e, EMBER_BASE);
+  l.position.set(Math.cos(a) * 10, 1.2, Math.sin(a) * 10);
+  return l;
+});
+lightRig.add(hemi, _rim, ...emberLights);
+scene.add(lightRig);
+// A registered Meshy floor tile is merged to one geometry and instanced
+// across the disc, above the procedural floor. Dormant until registered —
+// see ARENA_ASSETS in meshassets.js and assets/README.md.
+let floorPanels = null;
+// TRUCK's track. v33's notes announced this mode; nothing ever imported
+// truck.js, so it was dead code and the mode was unreachable. The registry
+// declares arena:'track' and this is what serves it.
+const truck = new TruckTrack(scene);
+// v51: season 3's hand — look at an enemy long enough and missiles leave
+const gaze = new GazeLock();
+buildFloorPanels(ARENA_R).then(m => { if (m) { floorPanels = m; scene.add(m); } });
+// The Meshy enemy skins. Fire-and-forget at boot so the templates are ready
+// before the first spawn — and it was NEVER CALLED, which is why 5 MB of
+// exported art in assets/ had never once appeared in the game. Same shape of
+// bug as TRUCK: a whole system written, shipped and unreachable.
+preloadMeshEnemies();
+
+const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
+scene.add(camera); // so the first-person hand (a camera child) renders
+camera.layers.enable(1); // first-person layer; spherical world cameras omit it
+
+// v23: a real 360-degree scene source. The world cube gives the projection
+// shader geometry behind the player; the threat cube isolates enemy shapes so
+// rear silhouettes can burn red without tinting the entire arena. Low-res and
+// cadence-gated by the performance governor: awareness, not a second beauty render.
+const sphereWorldTarget = new THREE.WebGLCubeRenderTarget(192, {
+  minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+  generateMipmaps: false,
+});
+const sphereThreatTarget = new THREE.WebGLCubeRenderTarget(128, {
+  minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+  generateMipmaps: false,
+});
+const sphereWorldCamera = new THREE.CubeCamera(0.2, 220, sphereWorldTarget);
+sphereWorldCamera.layers.set(0);
+const sphereThreatCamera = new THREE.CubeCamera(0.2, 80, sphereThreatTarget);
+sphereThreatCamera.layers.set(2);
+const _sphereCamRot = new THREE.Matrix3();
+
+const SphereShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uWorld: { value: sphereWorldTarget.texture },
+    uThreat: { value: sphereThreatTarget.texture },
+    uCamRot: { value: _sphereCamRot },
+    uAspect: { value: window.innerWidth / window.innerHeight },
+    uAmount: { value: 1 },
+    uTint: { value: new THREE.Color(2.7, 0.12, 0.12) },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform samplerCube uWorld;
+    uniform samplerCube uThreat;
+    uniform mat3 uCamRot;
+    uniform float uAspect;
+    uniform float uAmount;
+    uniform vec3 uTint;
+    varying vec2 vUv;
+    void main() {
+      vec4 forward = texture2D(tDiffuse, vUv);
+      vec2 p = vUv * 2.0 - 1.0;
+      p.x *= uAspect;
+      float edgeR = sqrt(uAspect * uAspect + 1.0);
+      float nr = clamp(length(p) / edgeR, 0.0, 1.0);
+      vec2 radial = length(p) > 0.0001 ? normalize(p) : vec2(0.0);
+      // Centre stays conventional for aiming; the frame edge bends through
+      // the side view and reaches almost directly behind at the corners.
+      float theta = nr * 3.05;
+      vec3 localDir = vec3(radial * sin(theta), -cos(theta));
+      vec3 worldDir = normalize(uCamRot * localDir);
+      vec3 sphere = textureCube(uWorld, worldDir).rgb;
+      // A small cross-shaped dilation keeps distant threats legible after the
+      // deliberately tiny cube capture. It is still the enemy's real shape,
+      // not a HUD marker or a generic edge alarm.
+      vec3 tangent = normalize(cross(abs(worldDir.y) < 0.92 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), worldDir));
+      vec3 bitangent = normalize(cross(worldDir, tangent));
+      float threatLum = max(textureCube(uThreat, worldDir).r, max(textureCube(uThreat, worldDir).g, textureCube(uThreat, worldDir).b));
+      vec3 tx = textureCube(uThreat, normalize(worldDir + tangent * 0.035)).rgb;
+      vec3 nx = textureCube(uThreat, normalize(worldDir - tangent * 0.035)).rgb;
+      vec3 ty = textureCube(uThreat, normalize(worldDir + bitangent * 0.035)).rgb;
+      vec3 ny = textureCube(uThreat, normalize(worldDir - bitangent * 0.035)).rgb;
+      threatLum = max(threatLum, max(max(max(tx.r, max(tx.g, tx.b)), max(nx.r, max(nx.g, nx.b))), max(max(ty.r, max(ty.g, ty.b)), max(ny.r, max(ny.g, ny.b)))));
+      float rear = smoothstep(1.05, 2.45, theta);
+      float silhouette = smoothstep(0.018, 0.32, threatLum);
+      sphere = mix(sphere, sphere + uTint * (0.72 + threatLum * 0.48), silhouette * rear * 0.78);
+      // Fine scan breakup keeps the rear signal graphic rather than a red fog.
+      sphere += uTint * silhouette * rear * (0.035 + 0.025 * sin(vUv.y * 96.0));
+      float lens = smoothstep(0.12, 0.82, nr) * uAmount;
+      gl_FragColor = vec4(mix(forward.rgb, sphere, lens), forward.a);
+    }`,
+};
+
+// HYPERDEMON-ish chromatic aberration, driven by the trauma system
+const ChromaShader = {
+  uniforms: { tDiffuse: { value: null }, uAmount: { value: 0.0012 } },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float uAmount;
+    varying vec2 vUv;
+    void main() {
+      vec2 d = (vUv - 0.5) * uAmount;
+      gl_FragColor = vec4(
+        texture2D(tDiffuse, vUv - d).r,
+        texture2D(tDiffuse, vUv).g,
+        texture2D(tDiffuse, vUv + d).b,
+        1.0);
+    }`,
+};
+
+// v4.30 neon rim: a cross-gradient edge tint over the raw render — every
+// silhouette gets HYPERDEMON's wire glow. It sits BEFORE the smear and the
+// bloom on purpose: edges streak with motion and flare like everything else
+// bright, instead of being pasted on top of the finished frame.
+const EdgeShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uPx: { value: new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight) },
+    uTint: { value: new THREE.Color(1.6, 0.35, 0.35) }, // HDR so bloom bites (STYLE re-aims it)
+    uAmt: { value: 0.15 }, // v4.31: halved — a rim, not a wash (owner's call)
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform vec2 uPx;
+    uniform vec3 uTint;
+    uniform float uAmt;
+    varying vec2 vUv;
+    float lum(vec2 o) {
+      vec3 c = texture2D(tDiffuse, vUv + o * uPx).rgb;
+      return dot(c, vec3(0.299, 0.587, 0.114));
+    }
+    void main() {
+      vec4 base = texture2D(tDiffuse, vUv);
+      float gx = lum(vec2(1.0, 0.0)) - lum(vec2(-1.0, 0.0));
+      float gy = lum(vec2(0.0, 1.0)) - lum(vec2(0.0, -1.0));
+      // soft threshold keeps the dither of the sky quiet; only real
+      // silhouettes (enemy vs void, grid vs floor) light up
+      float e = clamp(length(vec2(gx, gy)) * 2.0 - 0.16, 0.0, 1.0);
+      gl_FragColor = vec4(base.rgb + uTint * e * uAmt, base.a);
+    }`,
+};
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const spherePass = new ShaderPass(SphereShader);
+composer.addPass(spherePass);
+const edgePass = new ShaderPass(EdgeShader);
+composer.addPass(edgePass);
+// motion smear on everything bright; damp is DYNAMIC since v4.30 — it deepens
+// mid-dash (see the fovKick block), so the hardest smear is always transient
+// and the 0.82-starburst trap stays closed
+const SMEAR_BASE = 0.74;
+const SMEAR_DASH = 0.12;
+const afterimage = new AfterimagePass(SMEAR_BASE);
+composer.addPass(afterimage);
+const bloom = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.32, 0.25, 0.78);
+composer.addPass(bloom);
+const chromaPass = new ShaderPass(ChromaShader);
+composer.addPass(chromaPass);
+
+// v22 spherical-awareness language: threats outside the forward view burn
+// into the screen periphery. This is direction information rather than a
+// conventional HUD arrow, keeping the view diegetic and readable at speed.
+const ThreatShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uRear: { value: 0 },
+    uSide: { value: 0 },
+    uTint: { value: new THREE.Color(2.5, 0.18, 0.18) },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float uRear;
+    uniform float uSide;
+    uniform vec3 uTint;
+    varying vec2 vUv;
+    void main() {
+      vec4 base = texture2D(tDiffuse, vUv);
+      vec2 p = vUv * 2.0 - 1.0;
+      float edge = smoothstep(0.38, 1.0, abs(p.x));
+      float band = smoothstep(0.08, 0.46, 1.0 - abs(p.y));
+      float scan = 0.68 + 0.32 * sin(p.y * 64.0);
+      float sideBias = 0.72 + 0.28 * sign(p.x) * uSide;
+      float signal = edge * band * scan * sideBias * uRear;
+      base.rgb += uTint * signal * 0.22;
+      gl_FragColor = base;
+    }`,
+};
+const threatPass = new ShaderPass(ThreatShader);
+composer.addPass(threatPass);
+
+// dash speedlines: additive radial streaks from screen centre while dashK is
+// hot (HYPERDEMON's punched-through-space read). Enabled only mid-dash, and
+// gated by the motion toggle + the same perf tier as the smear.
+const SpeedShader = {
+  uniforms: { tDiffuse: { value: null }, uAmount: { value: 0 }, uTime: { value: 0 } },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float uAmount;
+    uniform float uTime;
+    varying vec2 vUv;
+    float hash(float n) { return fract(sin(n) * 43758.5453); }
+    void main() {
+      vec4 col = texture2D(tDiffuse, vUv);
+      vec2 d = vUv - 0.5;
+      float ang = atan(d.y, d.x);
+      float r = length(d);
+      // ~60 radial spokes, randomly gated per-spoke, sliding outward
+      float spoke = floor((ang + 3.14159) * 9.55);
+      float gate = step(0.72, hash(spoke + floor(uTime * 14.0) * 61.0));
+      float line = smoothstep(0.92, 1.0, fract((ang + 3.14159) * 9.55));
+      float mask = smoothstep(0.12, 0.55, r); // keep the centre clean
+      col.rgb += vec3(1.0) * line * gate * mask * uAmount * 0.5;
+      gl_FragColor = col;
+    }`,
+};
+const speedPass = new ShaderPass(SpeedShader);
+speedPass.enabled = false;
+composer.addPass(speedPass);
+
+// impact distortion: a damped radial UV ripple from screen centre, fired on
+// heavy kills / player hits / death (HYPERDEMON's space-warp hits)
+const RippleShader = {
+  uniforms: { tDiffuse: { value: null }, uT: { value: 9 }, uAmp: { value: 0 } },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float uT;
+    uniform float uAmp;
+    varying vec2 vUv;
+    void main() {
+      vec2 d = vUv - 0.5;
+      float r = length(d);
+      float w = sin(r * 42.0 - uT * 16.0) * exp(-r * 3.5) * exp(-uT * 6.0) * uAmp;
+      vec2 uv = vUv + (r > 0.0001 ? d / r : vec2(0.0)) * w * 0.02;
+      gl_FragColor = texture2D(tDiffuse, uv);
+    }`,
+};
+const ripplePass = new ShaderPass(RippleShader);
+ripplePass.enabled = false;
+composer.addPass(ripplePass);
+composer.addPass(new OutputPass());
+
+let rippleT = 9;
+let rippleAmp = 0;
+
+function triggerRipple(amp) {
+  rippleT = 0;
+  rippleAmp = Math.max(rippleAmp, amp);
+}
+
+/** Controller haptics, behind the HAPTICS pause toggle. */
+function buzz(strong, weak, ms) {
+  if (opts.haptics) input.rumble(strong, weak, ms);
+}
+
+// ---------------------------------------------------------------- arena
+function makeFloorTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const hash = (x, y) => {
+    let n = Math.imul(x + 17, 374761393) ^ Math.imul(y + 31, 668265263);
+    n = Math.imul(n ^ (n >>> 13), 1274126177);
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+  };
+  // Uneven soot and old blood replace the clean Tron grid. Work in chunky
+  // 2x2 texels so the ground reads as a hand-made software texture in motion.
+  for (let y = 0; y < 128; y += 2) for (let x = 0; x < 128; x += 2) {
+    const n = hash(x >> 1, y >> 1);
+    const grit = 8 + Math.floor(n * 15);
+    g.fillStyle = `rgb(${grit + (n > 0.88 ? 7 : 0)},${Math.max(4, grit - 3)},${Math.max(3, grit - 5)})`;
+    g.fillRect(x, y, 2, 2);
+  }
+  // Broken slab seams give motion scale without drawing a luminous grid.
+  g.lineWidth = 1;
+  for (let i = 0; i <= 128; i += 16) {
+    g.strokeStyle = `rgba(96,32,22,${0.10 + hash(i, 1) * 0.08})`;
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 128); g.stroke();
+    g.beginPath(); g.moveTo(0, i); g.lineTo(128, i); g.stroke();
+  }
+  g.fillStyle = 'rgba(126,38,24,0.10)';
+  for (let i = 0; i < 36; i++) {
+    const x = Math.floor(hash(i, 7) * 128);
+    const y = Math.floor(hash(i, 19) * 128);
+    g.fillRect(x, y, 1 + (i & 1), 1);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.magFilter = tex.minFilter = THREE.NearestFilter;
+  tex.generateMipmaps = false;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// the grid simply stops at the arena edge — no barrier visual. The grid
+// pulses with the music and flushes red with trauma (HYPERDEMON's reactive
+// world): uPulse brightens the lines on the beat, uRed tints them.
+const floorMat = new THREE.ShaderMaterial({
+  uniforms: {
+    map: { value: makeFloorTexture() },
+    uPulse: { value: 0 },
+    uGlow: { value: 0.9 },
+    uRed: { value: 0 },
+    uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
+    uRepeat: { value: 10.0 }, // tiles across the disc; a backdrop floor texture sets its own
+    uTint: { value: new THREE.Color(1, 1, 1) }, // v41: the season's floor colour
+    uTime: { value: 0 },
+    uCaustic: { value: 0 }, // v44: light moving on water — INCA only
+    // v48 THE FLOOR READS THE WAVE: (dirX, dirZ, head, width) of the crest and
+    // (shadow, foam) strengths — a darkening under the wave's body and a bright
+    // line at the foot of its face. Zero outside a season with a sea.
+    uWave: { value: new THREE.Vector4(0, 1, -999, 1) },
+    uWaveK: { value: new THREE.Vector2(0, 0) },
+    // v52: the SUN'S PATH — the low sun reflected in dark water, broken by
+    // ripples. Zero outside season 2.
+    uGlint: { value: 0 },
+    uGlintCol: { value: new THREE.Color(1, 0.8, 0.4) },
+    uSunDirF: { value: new THREE.Vector3(0, 0.12, -1).normalize() },
+    uDark: { value: 1 },   // v52: how much of the floor texture's own grain survives
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    varying vec2 vWorld;
+    void main() { vUv = uv; vWorld = (modelMatrix * vec4(position, 1.0)).xz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D map;
+    uniform float uPulse;
+    uniform float uGlow;
+    uniform float uRed;
+    uniform vec3 uAccent;
+    uniform float uRepeat;
+    uniform vec3 uTint;
+    uniform float uTime;
+    uniform float uCaustic;
+    uniform vec4 uWave;
+    uniform vec2 uWaveK;
+    uniform float uGlint;
+    uniform vec3 uGlintCol;
+    uniform vec3 uSunDirF;
+    uniform float uDark;
+    varying vec2 vUv;
+    varying vec2 vWorld;
+    void main() {
+      vec3 tex = texture2D(map, vUv * uRepeat).rgb;
+      // v52: the grain between the lines is what read as gravel — a season
+      // can press it down (uDark < 1) and keep the lines, which are brighter
+      float lum = max(tex.r, max(tex.g, tex.b));
+      tex *= mix(uDark, 1.0, smoothstep(0.35, 0.7, lum));
+      vec3 col = tex * uTint;
+      col *= uGlow + uPulse * 0.28;
+      if (uWaveK.x > 0.0 || uWaveK.y > 0.0) {
+        // where this point is along the wave's travel, crest at 0 (goo.js _s)
+        float s = dot(vWorld, uWave.xy) - uWave.z;
+        float w = uWave.w;
+        // the body: from the back of the swell to the foot of the face
+        float body = smoothstep(-w, -w * 0.55, s) * (1.0 - smoothstep(w * 0.45, w * 0.58, s));
+        col *= 1.0 - uWaveK.x * body;
+        // the foam line: a wash just ahead of the face's foot — BROKEN along
+        // the crest by two slow sines, because an even line at floor glow is
+        // a laser bar across the arena (the first render), and foam is ragged
+        // (two sines at one pitch were a row of runway lights — three at
+        // pitches that never line up, plus the floor's own caustic field, are
+        // clumps of no particular size)
+        float across = dot(vWorld, vec2(-uWave.y, uWave.x));
+        float r1 = sin(across * 1.9 + uTime * 2.6) * sin(across * 0.73 - uTime * 1.7);
+        float r2 = sin(across * 3.7 - uTime * 1.1 + s * 2.3) * sin(across * 0.41 + uTime * 0.8);
+        float ragged = clamp(0.25 + 0.75 * abs(r1 * 0.6 + r2 * 0.7), 0.0, 1.0);
+        float foam = (1.0 - smoothstep(0.0, 1.4, abs(s - w * 0.62))) * ragged;
+        col += uTint * foam * foam * uWaveK.y * (uGlow * 0.35 + 0.4);
+      }
+      if (uCaustic > 0.0) {
+        // two sine fields sliding over each other, cubed: the bright threads
+        // light draws on the bottom of a pool
+        vec2 p = vUv * uRepeat;
+        float a = sin(p.x * 2.1 + uTime * 0.9) * sin(p.y * 1.7 - uTime * 0.7);
+        float b = sin((p.x + p.y) * 1.3 + uTime * 0.5) * sin((p.x - p.y) * 1.9 - uTime * 0.6);
+        float ca = pow(max(0.0, a * 0.55 + b * 0.45), 3.0);
+        col += uTint * ca * uCaustic;
+      }
+      if (uGlint > 0.0) {
+        vec3 P = vec3(vWorld.x, 0.0, vWorld.y);
+        vec3 V = normalize(P - cameraPosition);
+        vec3 R = reflect(V, vec3(0.0, 1.0, 0.0));
+        float g = max(dot(R, uSunDirF), 0.0);
+        float rip = 0.55 + 0.45 * sin(vWorld.x * 2.7 + uTime * 1.3) * sin(vWorld.y * 3.3 - uTime * 1.7);
+        col += uGlintCol * (pow(g, 90.0) * 2.4 + pow(g, 9.0) * 0.35) * rip * uGlint;
+      }
+      col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+});
+const floor = new THREE.Mesh(
+  new THREE.CircleGeometry(ARENA_R, 64).rotateX(-Math.PI / 2),
+  floorMat,
+);
+scene.add(floor);
+
+// Devil Daggers reference: almost-black void, with one low ember horizon.
+// No hue walk, bands or decorative motion compete with enemy silhouettes.
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide,
+  depthWrite: false,
+  fog: false,
+  uniforms: {
+    uTime: { value: 0 },
+    uEmber: { value: 0 },
+    uEmberCol: { value: new THREE.Color(0.30, 0.02, 0.02) }, // horizon glow (STYLE re-aims it)
+    // v41: a season declares the rest of the sky — its base colour, how
+    // tightly the band hugs the horizon, and a faint star field
+    uVoid: { value: new THREE.Color(0.0015, 0.0015, 0.0015) },
+    uBand: { value: 4.8 },
+    uStars: { value: 0 },
+    // v44: a hazed sky with a sun — INCA's; zero elsewhere
+    uHaze: { value: 0 },
+    uSun: { value: 0 },
+    uSunDir: { value: new THREE.Vector3(0.35, 0.5, -0.78).normalize() },
+    // v52 (season 2's visual leap): a sky that is a GRADIENT — zenith down to
+    // a horizon that burns brighter toward the sun — and a sun that is a disc
+    // ringed in stepped bands (a sun stone; a 2600 changing colour once per
+    // scanline). uGrad 0 leaves every other season's sky exactly as it was.
+    uGrad: { value: 0 },
+    uZenith: { value: new THREE.Color(0, 0, 0) },
+    uHorizon: { value: new THREE.Color(0, 0, 0) },
+    uSunCol: { value: new THREE.Color(1.0, 0.98, 0.9) },
+    uSunSize: { value: 0 },
+    uSunRings: { value: 0 },
+  },
+  vertexShader: /* glsl */`
+    varying vec3 vPos;
+    void main() {
+      vPos = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }`,
+  fragmentShader: /* glsl */`
+    varying vec3 vPos;
+    uniform float uTime;
+    uniform float uEmber;
+    uniform vec3 uEmberCol;
+    uniform vec3 uVoid;
+    uniform float uBand;
+    uniform float uStars;
+    uniform float uHaze;
+    uniform float uSun;
+    uniform vec3 uSunDir;
+    uniform float uGrad;
+    uniform vec3 uZenith;
+    uniform vec3 uHorizon;
+    uniform vec3 uSunCol;
+    uniform float uSunSize;
+    uniform float uSunRings;
+    float hash3(vec3 p) { p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3)); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+    void main() {
+      vec3 d = normalize(vPos);
+      float h = d.y;
+      vec3 col = uVoid;
+      if (uGrad > 0.0) {
+        // toward the sun the horizon burns; away from it, it cools
+        vec2 az = normalize(d.xz + 1e-5), sz = normalize(uSunDir.xz + 1e-5);
+        float toward = max(dot(az, sz), 0.0);
+        vec3 hor = mix(uHorizon * 0.5, uHorizon, pow(toward, 2.0));
+        float up = clamp(h, 0.0, 1.0);
+        col = mix(hor, uZenith, pow(up, 0.42));
+        if (h < 0.0) col = mix(hor, uZenith * 0.35, clamp(-h * 5.0, 0.0, 1.0));
+      }
+      float horiz = pow(max(0.0, 1.0 - abs(h) * uBand), 4.0);
+      col += uEmberCol * horiz * (0.52 + uEmber * 0.32);
+      if (uHaze > 0.0) {
+        // slow white haze in a band above the horizon, drifting
+        float hz = smoothstep(0.0, 0.35, h) * (1.0 - smoothstep(0.35, 0.8, h));
+        float n = sin(d.x * 3.0 + uTime * 0.05) * sin(d.z * 2.0 - uTime * 0.04) * 0.5 + 0.5;
+        col += vec3(uHaze) * hz * (0.35 + 0.65 * n);
+      }
+      if (uSun > 0.0 && uSunSize > 0.0) {
+        // a DISC with a hard edge, and around it stepped rings that fall off
+        // in whole bands — no gradient between a ring and the gap after it
+        float sd = max(dot(d, uSunDir), 0.0);
+        float ang = acos(clamp(dot(d, uSunDir), -1.0, 1.0)) / uSunSize;   // in sun radii
+        float disc = 1.0 - smoothstep(0.96, 1.0, ang);
+        float ring = 0.0;
+        if (ang > 1.25 && ang < 6.0) {
+          float band = floor((ang - 1.25) * 1.6);
+          ring = step(0.35, fract((ang - 1.25) * 1.6)) * max(0.0, 0.55 - band * 0.075);
+        }
+        col += uSunCol * (disc * 3.2 + ring * uSunRings + pow(sd, 10.0) * 0.45) * uSun;
+      } else if (uSun > 0.0) {
+        float sd = max(dot(d, uSunDir), 0.0);
+        col += vec3(1.0, 0.98, 0.9) * (pow(sd, 400.0) * 1.2 + pow(sd, 12.0) * 0.25) * uSun;
+      }
+      if (uStars > 0.0 && h > 0.02) {
+        // a sparse fixed star field — dim, under the bloom threshold, so it
+        // is atmosphere and never competes with an eye or a gem
+        vec3 g = floor(d * 160.0);
+        float s = hash3(g);
+        // sparse: the first cut was a snowstorm against the reference's
+        // handful, so the threshold is a quarter of the cells it was
+        float star = step(0.99915, s) * (0.45 + 0.55 * hash3(g + 1.7));
+        col += vec3(star * uStars * smoothstep(0.02, 0.25, h));
+      }
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+});
+// v51: the sky FOLLOWS the camera (see the render loop). It sat on the arena's
+// centre, which is fine inside a 26-unit disc — but the truck road carries you
+// out of a 220-unit sphere in under twenty seconds, and past its wall the view
+// looked out at the clear colour: a black block standing across the horizon.
+const skyMesh = new THREE.Mesh(new THREE.SphereGeometry(220, 32, 16), skyMat);
+scene.add(skyMesh);
+
+// drifting dust motes for depth + speed perception
+const dust = (() => {
+  const n = 80;
+  const pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random()) * 42;
+    pos[i * 3] = Math.cos(a) * r;
+    pos[i * 3 + 1] = Math.random() * 9;
+    pos[i * 3 + 2] = Math.sin(a) * r;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({
+    color: 0xb8aca4, size: 0.045, transparent: true, opacity: 0.12,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const p = new THREE.Points(geo, mat);
+  scene.add(p);
+  return p;
+})();
+
+// v41: a matte ground OUTSIDE the disc, under the monuments — a piece
+// standing on the void floats; on this it stands (owner: "3d assets
+// shouldn't all float"). A season names its colour or leaves it off; the
+// track never shows it, since its whole premise is nothing under you.
+const ground = new THREE.Mesh(
+  new THREE.RingGeometry(ARENA_R + 0.3, 190, 72).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ color: 0x000000 }),
+);
+ground.position.y = -0.08;
+ground.visible = false;
+scene.add(ground);
+
+// One horizon line only. The fight owns the rest of the frame.
+const environment = new HyperEnvironment(scene, ARENA_R);
+// …unless the manifest names a backdrop: the owner's Meshy pieces, placed
+// outside the rim and lit by the asset rig. The floor texture rides in too.
+const backdrop = new Backdrop(scene);
+backdrop.load('assets/manifest.json').then(r => {
+  if (r?.floor) {
+    floorMat.uniforms.map.value = r.floor.tex;
+    floorMat.uniforms.uRepeat.value = r.floor.repeat;
+  }
+}).catch(() => {});
+// the court's walls — empty on the disc, built by startGame for a court arena
+// The same plates as the floor, a step brighter: a vertical face of the
+// floor's own material has nothing lighting it and vanished into the sky, and
+// the neon edge pass cannot rim a black-on-black silhouette.
+const wallMat = floorMat.clone();
+wallMat.uniforms.uGlow.value = 2.1;
+const walls = new Walls(scene, wallMat);
+// v41 (owner: "shale rock that's dark" / "tile work that's crooked") — the
+// rock and the slabs are layered shale built by shale.js, one vertex-coloured
+// unlit material for all of it
+const shaleMat = shaleMaterial();
+const platforms = new Platforms(scene, shaleMat);
+// season 2's breaking wave — empty unless the season declares one
+const goo = new GooWave(scene, ARENA_R);
+// v44: ONE gel material for the wave and the gel slabs, so one uTime drives
+// every wobble and caustic; its terms are re-aimed per season in applySeason
+const gelMat = gelMaterial();
+// the mounds are merged geometry with a colour ATTRIBUTE, the wave is an
+// InstancedMesh with instance colours — two materials, one uniform set
+const gelMatV = gelMaterial({ vertexColors: true, shared: gelMat.userData.gel });
+platforms.gelMat = gelMatV;
+// and the skullscape on the horizon
+const skullscape = new Skullscape(scene, ARENA_R);
+const _sprayC = new THREE.Color();
+goo.spray = (x, y, z, dx, dz) => {
+  _sprayC.setRGB(...(S().goo?.rim ?? S().goo?.lip ?? [0.35, 0.95, 0.85]));
+  _sv.set(x, y, z);
+  _seg.set(dx * (3 + Math.random() * 3) + (Math.random() - 0.5) * 2, 4 + Math.random() * 4, dz * (3 + Math.random() * 3) + (Math.random() - 0.5) * 2);
+  debris.spawn(_sv, _sprayC, _seg, (S().goo?.cell ?? 1) * 0.42, 0.9 + Math.random() * 0.5);
+};
+
+// ---------------------------------------------------------------- actors
+const input = new InputManager();
+const player = new Player(camera, input, ARENA_R);
+const daggers = new DaggerPool(scene);
+const debris = new DebrisPool(scene);
+// PROTOTYPE (branch claude/hd-physical-gibs): a kill's biggest chunks go to a
+// real rigid-body solver and stack where they land (js/gibs.js, js/avbd/)
+const physGibs = new PhysGibs(scene, ARENA_R);
+/** physical gibs where there is a floor to heap on: the disc, not the road */
+const gibsOn = () => opts.gibs !== false && M().arena !== 'track';
+// settled gibs retire into the bone-yard: a static instanced mesh with no
+// per-frame physics, so a run's carnage accumulates for one draw call
+const litter = new LitterField(scene, 2500);
+debris.litter = litter;
+const gems = new GemPool(scene);
+const orbs = new OrbPool(scene);
+const audio = new AudioKit();
+const enemies = [];
+const serpents = [];
+
+// ------------------------------------------------------------- ground VFX
+// Blob shadows: flat dark discs under the player + every enemy so unlit
+// voxels stop floating — height finally reads (jumps, serpent dives, orbs).
+// One InstancedMesh; scale shrinks with altitude to fake soft attenuation.
+const SHADOW_CAP = 96;
+const shadows = new THREE.InstancedMesh(
+  new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, depthWrite: false }),
+  SHADOW_CAP,
+);
+shadows.frustumCulled = false;
+shadows.renderOrder = 1; // above the floor, below everything else
+scene.add(shadows);
+const _shM = new THREE.Matrix4();
+const _shQ = new THREE.Quaternion();
+const _shS = new THREE.Vector3();
+const _shP = new THREE.Vector3();
+
+function updateShadows() {
+  let i = 0;
+  const put = (x, y, z, base) => {
+    if (i >= SHADOW_CAP) return;
+    const k = Math.max(0, 1 - y / 9); // higher = smaller, gone by y=9
+    if (k <= 0.05) return;
+    _shM.compose(
+      _shP.set(x, 0.02, z),
+      _shQ.identity(),
+      _shS.setScalar(base * (0.55 + 0.45 * k) * k),
+    );
+    shadows.setMatrixAt(i++, _shM);
+  };
+  put(player.feet.x, player.feet.y, player.feet.z, 0.62);
+  for (const e of enemies) {
+    if (e.type === 'totem') continue; // grounded pillar — a disc just z-fights
+    e.center(_shP);
+    const y = _shP.y;
+    put(e.pos.x, Math.max(0, y - e.radius), e.pos.z, e.radius * 1.35);
+  }
+  shadows.count = i;
+  shadows.instanceMatrix.needsUpdate = true;
+}
+
+// Impact sparks (dagger hits) + shockwave rings (heavy kills). The spark is an
+// authored 8px software sprite rather than a clean translucent WebGL square.
+const sparks = [];
+const sparkPool = [];
+const sparkData = new Uint8Array(8 * 8 * 4);
+for (let y = 0; y < 8; y++) {
+  for (let x = 0; x < 8; x++) {
+    const dx = Math.abs(x - 3.5), dy = Math.abs(y - 3.5);
+    const core = dx <= 1 && dy <= 1;
+    const arm = (dx <= 0.5 && dy <= 3.5) || (dy <= 0.5 && dx <= 3.5);
+    const diag = Math.abs(dx - dy) < 0.35 && dx <= 2.5;
+    const a = core ? 255 : arm ? 220 : diag ? 150 : 0;
+    const i = (y * 8 + x) * 4;
+    sparkData[i] = 255; sparkData[i + 1] = core ? 210 : 88;
+    sparkData[i + 2] = core ? 120 : 18; sparkData[i + 3] = a;
+  }
+}
+const sparkTex = new THREE.DataTexture(sparkData, 8, 8, THREE.RGBAFormat);
+sparkTex.magFilter = THREE.NearestFilter;
+sparkTex.minFilter = THREE.NearestFilter;
+sparkTex.generateMipmaps = false;
+sparkTex.needsUpdate = true;
+const sparkGeo = new THREE.PlaneGeometry(0.68, 0.68);
+const sparkMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color().setRGB(2.6, 0.85, 0.28), map: sparkTex,
+  transparent: true, opacity: 1, alphaTest: 0.04,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+});
+const ringGeo = new THREE.RingGeometry(0.82, 1, 40).rotateX(-Math.PI / 2);
+const ringMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color().setRGB(2.4, 0.25, 0.25), transparent: true, opacity: 1,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+});
+
+function spawnSpark(pos, big = false) {
+  let m = sparkPool.pop();
+  if (!m) {
+    if (sparks.length > 40) return;
+    m = new THREE.Mesh(sparkGeo, sparkMat.clone());
+    scene.add(m);
+  }
+  m.visible = true;
+  m.position.copy(pos);
+  const roll = Math.random() * Math.PI * 2;
+  sparks.push({ m, t: 0.14, max: 0.14, big, ring: false, roll });
+}
+
+function spawnShockwave(pos) {
+  const m = new THREE.Mesh(ringGeo, ringMat.clone()); // rare (heavy kills only) — no pool
+  scene.add(m);
+  m.position.set(pos.x, 0.05, pos.z);
+  sparks.push({ m, t: 0.45, max: 0.45, big: true, ring: true });
+  // the ring isn't just a decal — it blasts the surrounding gib field outward
+  debris.shove(pos.x, 0.4, pos.z, 7, 11);
+  litter.shove(debris, pos.x, 0.4, pos.z, 7, 9); // bones leap back into the air
+}
+
+// HD-009: the jump's only answer was its sound. A small pale ring at the
+// feet (the shockwave's geometry, a quarter of its size and life, no gib
+// shove) reads the take-off without touching the jump itself. Pooled.
+const puffPool = [];
+const puffMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color().setRGB(1.1, 0.9, 0.8), transparent: true, opacity: 1,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+});
+function spawnJumpPuff(x, y, z) {
+  let m = puffPool.pop();
+  if (!m) {
+    if (sparks.length > 40) return;
+    m = new THREE.Mesh(ringGeo, puffMat.clone());
+    scene.add(m);
+  }
+  m.visible = true;
+  m.position.set(x, y + 0.04, z);
+  sparks.push({ m, t: 0.22, max: 0.22, big: false, ring: true, puff: true });
+  fx.jump++;
+}
+// HD-009: counters of feedback actually spawned, read by the gate
+// (test/action-feedback.cjs) through debug.feedback().
+const fx = { fire: 0, jump: 0, dash: 0, fireRecoil: 0 };
+
+function updateSparks(dt) {
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.t -= dt;
+    const k = Math.max(0, s.t / s.max);
+    if (s.puff) {
+      s.m.scale.setScalar(0.3 + (1 - k) * 1.3);
+      s.m.material.opacity = k * 0.55;
+    } else if (s.ring) {
+      s.m.scale.setScalar(0.4 + (1 - k) * 7);
+      s.m.material.opacity = k * 0.9;
+    } else {
+      s.m.scale.setScalar((s.big ? 1.6 : 0.8) * (0.4 + (1 - k) * 1.4));
+      s.m.material.opacity = k;
+      s.m.lookAt(camera.position);
+      s.m.rotateZ(s.roll);
+    }
+    if (s.t <= 0) {
+      if (s.puff) {
+        s.m.visible = false;
+        puffPool.push(s.m);
+      } else if (s.ring) {
+        scene.remove(s.m);
+        s.m.material.dispose();
+      } else {
+        s.m.visible = false;
+        sparkPool.push(s.m);
+      }
+      sparks.splice(i, 1);
+    }
+  }
+}
+
+// first-person voxel gauntlet, child of the camera; recoils on fire
+// v52 (owner: *why is the weapon/hand so deformed? Use different types and
+// models in different seasons*): the hand is the SEASON'S. A season declares
+// `hand: { model, pose, muzzle, glow }`; no hand is the old claw (VOID). The
+// claw showed its knuckles end-on and the lattice wobble crumpled it; the
+// season hands are held side-on, bottom right, still.
+const HAND_CLAW = { x: 0, y: -0.92, z: -1.5, rx: -0.75, ry: Math.PI + 0.12, rz: 0 };
+const HAND_BASE = { ...HAND_CLAW };
+let HAND_MUZZLE = [0.24, -0.26];   // where a shot leaves, in camera right/up units
+let hand = null, handDef;
+const handGroup = new THREE.Group();
+function setHand(def) {
+  def = def ?? null;
+  if (hand && handDef === def) return;
+  if (hand) handGroup.remove(hand.mesh);
+  handDef = def;
+  hand = new VoxelSprite(MODELS[def?.model ?? 'hand']);
+  // A true first-person overlay: world geometry can never hide it.
+  hand.material.depthTest = false;
+  hand.material.depthWrite = false;
+  hand.material.transparent = true;
+  hand.mesh.renderOrder = 20;
+  handGroup.add(hand.mesh);
+  Object.assign(HAND_BASE, def?.pose ?? HAND_CLAW);
+  HAND_MUZZLE = def?.muzzle ?? [0.24, -0.26];
+  handGroup.rotation.set(HAND_BASE.rx, HAND_BASE.ry, HAND_BASE.rz);
+  handGroup.position.set(HAND_BASE.x, HAND_BASE.y, HAND_BASE.z);
+  handGroup.traverse(o => o.layers.set(1));
+  if (def?.glow) hand.retint({ B: def.glow });
+}
+setHand(null);
+camera.add(handGroup);
+let recoil = 0;
+
+/** Re-skin the gauntlet to match the current dagger level (DD's evolving hand). */
+function applyGauntlet(lv) {
+  // a season hand keeps its own colours; the level brightens its glow only
+  if (handDef?.glow) { const k = 0.75 + 0.2 * lv; hand.retint({ B: handDef.glow.map(c => c * k) }); return; }
+  hand.retint(GAUNTLET_TIERS[Math.min(lv, GAUNTLET_TIERS.length - 1)]);
+}
+
+// ---------------------------------------------------------------- HUD
+const ui = document.getElementById('canvas-ui');
+const uiCtx = ui.getContext('2d');
+const elTimer = document.getElementById('timer');
+const elKills = document.getElementById('kills');
+// HD-010 (12 Oct playtest): a one-line goal card at every run start, and a
+// label under the clock that says what the number is. The words live on the
+// mode (modes.js) and, where a season changes the score, on the season
+// (none does since v58 took HAUL's cargo out of the score) — the season's line
+// only when the run is actually playing that season's mode.
+const elClockLabel = document.getElementById('clockLabel');
+const elGoal = document.getElementById('goalCard');
+const GOAL_MS = 1600;   // + the 0.3 s fade: gone by ~1.9 s
+let goalTimer = 0;
+function seasonRules() { return !!S().mode && M().id === S().mode && !_urlMode; }
+function goalLine() { return (seasonRules() && S().goal) || M().goal || ''; }
+function clockLine() { return (seasonRules() && S().clock) || M().clock || ''; }
+function showGoalCard() {
+  clearTimeout(goalTimer);
+  elGoal.textContent = goalLine();
+  elGoal.classList.toggle('show', !!elGoal.textContent);
+  goalTimer = setTimeout(() => elGoal.classList.remove('show'), GOAL_MS);
+}
+function hideGoalCard() { clearTimeout(goalTimer); elGoal.classList.remove('show'); }
+const elGems = document.getElementById('gems');
+const elStyle = document.getElementById('style');
+const elStyleRank = document.getElementById('styleRank');
+const elStyleMult = document.getElementById('styleMult');
+const elStyleFill = document.getElementById('styleFill');
+const elCombo = document.getElementById('combo');
+const elThreatRing = document.getElementById('threatRing');
+const elMsg = document.getElementById('msg');
+const elToast = document.getElementById('toast');
+const elCross = document.getElementById('crosshair');
+function setRunFrame(active) {
+  document.body.classList.toggle('in-run', active);
+  // HD-019: only the main menu wears the menu frame (no HUD, no hand) —
+  // every other screen comes through here, and showMenu puts it back after
+  document.body.classList.remove('on-menu');
+  elMsg.classList.remove('menu');
+  handGroup.visible = true;
+}
+const elVignette = document.getElementById('vignette');
+let toastTimeout = 0;
+
+function toast(text, ms = 1500) {
+  elToast.textContent = text;
+  elToast.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => elToast.classList.remove('show'), ms);
+}
+
+/** First-encounter announcement: big toast + stinger, once per run per key. */
+function announce(key, text) {
+  if (announced[key]) return;
+  announced[key] = true;
+  toast(text, 2200);
+  audio.stinger();
+  trauma = Math.max(trauma, 0.2);
+}
+
+/** One code path for pixel ratio + size so tier changes and window resizes
+ *  can't undo each other. EffectComposer caches its own pixel ratio — setting
+ *  only the renderer's is not enough. */
+function applyRenderScale() {
+  const pr = PERF_TIERS[perfTier].pr;
+  renderer.setPixelRatio(pr);
+  composer.setPixelRatio(pr);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  edgePass.uniforms.uPx.value.set(1 / (window.innerWidth * pr), 1 / (window.innerHeight * pr));
+}
+
+function resize() {
+  applyRenderScale();
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  spherePass.uniforms.uAspect.value = camera.aspect;
+  ui.width = window.innerWidth;
+  ui.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function setPerfTier(t) {
+  t = Math.max(0, Math.min(PERF_TIERS.length - 1, t));
+  if (t === perfTier) return;
+  perfTier = t;
+  applyRenderScale();
+  applyOpts();
+  perfSettleUntil = performance.now() + perfTuning.settleMs;
+  perfBadSince = 0;
+  perfGoodSince = 0;
+}
+
+/** Called once per frame with the UNCLAMPED delta (ms). EMA-based hysteresis:
+ *  step down after ~1.5s sustained over downMs, step up one tier per ~15s
+ *  stable under upMs. Samples right after tier changes / unpause /
+ *  tab-visibility flips are ignored (perfSettleUntil). */
+let perfSlowRun = 0; // consecutive real samples over the gap threshold
+function perfGovern(now, rawMs) {
+  if (opts.perf !== 'auto' || state !== 'playing' || paused) return;
+  let ms = forcedFrameTime ?? rawMs;
+  if (now < perfSettleUntil) { perfBadSince = 0; perfGoodSince = 0; return; }
+  // A frame over 250 ms is USUALLY a tab-hidden gap, and one or two of them
+  // are discarded as such. But a RUN of them is not a gap, it is the device:
+  // the phone pass (v40) found a coarse-pointer page at 750 ms per frame
+  // holding tier 0 forever with 59 skinned enemies and 856k instances on
+  // the field, because every sample the governor exists to see was thrown
+  // away as a tab switch and the EMA never left its 16.7 ms initial value.
+  // Four in a row count, clamped so one true hitch cannot slam the EMA.
+  if (forcedFrameTime === null && rawMs > perfTuning.gapMs) {
+    if (++perfSlowRun < perfTuning.gapRun) { perfBadSince = 0; perfGoodSince = 0; return; }
+    ms = Math.min(rawMs, perfTuning.gapMs * 1.6);
+  } else if (forcedFrameTime === null) {
+    perfSlowRun = 0;
+  }
+  frameEMA += (ms - frameEMA) * perfTuning.emaAlpha;
+  if (frameEMA > perfTuning.downMs) {
+    perfGoodSince = 0;
+    if (!perfBadSince) perfBadSince = now;
+    else if (now - perfBadSince > perfTuning.downHoldMs) setPerfTier(perfTier + 1);
+  } else if (frameEMA < perfTuning.upMs) {
+    perfBadSince = 0;
+    if (!perfGoodSince) perfGoodSince = now;
+    else if (now - perfGoodSince > perfTuning.stableMs) setPerfTier(perfTier - 1);
+  } else {
+    perfBadSince = 0;
+    perfGoodSince = 0;
+  }
+}
+
+// HD-011 — the clock-keeping monitor. The loop clamps dt at DT_CAP, so a
+// device under 1/DT_CAP fps plays in slow motion (12 Oct playtest: 22 s real
+// for ~4 s of game). This measures how much of real time the clamp lets
+// through — ratio = sum(clamped dt) / sum(raw dt) over a rolling window — and
+// exposes it on __hd.debug.getTimeRatio(). It does NOT change the cap or the
+// physics; that call is the owner's (see the HD-011 PR). Under perf 'auto', a
+// ratio held below ratioFloor for ratioHoldMs steps the existing PERF_TIERS
+// ladder down one rung, the same lever the frame-time governor pulls.
+const DT_CAP = 0.05;
+const timeMon = { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0, slowRun: 0 };
+Object.assign(perfTuning, { ratioWinMs: 2000, ratioFloor: 0.9, ratioHoldMs: 2000, ratioGapMs: 3000 });
+function timeMonitor(now, rawDt) {
+  if (state !== 'playing' || paused) { timeMon.lowSince = 0; return; }
+  // One or two frames over ratioGapMs are a tab switch; a RUN of them is the
+  // device (the governor's v40 lesson: a 1 fps box must not read as all gaps)
+  if (rawDt * 1000 > perfTuning.ratioGapMs) {
+    if (++timeMon.slowRun < 3) { timeMon.gaps++; return; }
+  } else timeMon.slowRun = 0;
+  const g = Math.min(rawDt, DT_CAP);
+  timeMon.win.push(now, rawDt, g); timeMon.raw += rawDt; timeMon.game += g;
+  timeMon.totalRaw += rawDt; timeMon.totalGame += g; timeMon.frames++;
+  while (timeMon.win.length > 3 && now - timeMon.win[0] > perfTuning.ratioWinMs) {
+    timeMon.raw -= timeMon.win[1]; timeMon.game -= timeMon.win[2]; timeMon.win.splice(0, 3);
+  }
+  if (opts.perf !== 'auto' || now < perfSettleUntil || timeMon.raw * 1000 < perfTuning.ratioWinMs * 0.5) { timeMon.lowSince = 0; return; }
+  if (timeMon.game / timeMon.raw < perfTuning.ratioFloor) {
+    if (!timeMon.lowSince) timeMon.lowSince = now;
+    else if (now - timeMon.lowSince > perfTuning.ratioHoldMs && perfTier < PERF_TIERS.length - 1) {
+      timeMon.drops++; timeMon.lowSince = 0; setPerfTier(perfTier + 1);
+    }
+  } else timeMon.lowSince = 0;
+}
+function timeRatioState() {
+  const r = timeMon.raw > 0 ? timeMon.game / timeMon.raw : 1;
+  const t = timeMon.totalRaw > 0 ? timeMon.totalGame / timeMon.totalRaw : 1;
+  return { ratio: +r.toFixed(3), total: +t.toFixed(3), frames: timeMon.frames, realS: +timeMon.totalRaw.toFixed(2),
+    gameS: +timeMon.totalGame.toFixed(2), drops: timeMon.drops, gaps: timeMon.gaps, low: !!timeMon.lowSince,
+    floor: perfTuning.ratioFloor, cap: DT_CAP, tier: perfTier };
+}
+function resetTimeMonitor() { Object.assign(timeMon, { win: [], raw: 0, game: 0, totalRaw: 0, totalGame: 0, frames: 0, lowSince: 0, drops: 0, gaps: 0, slowRun: 0 }); }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    perfSettleUntil = performance.now() + perfTuning.settleMs;
+  }
+});
+
+// ---------------------------------------------------------------- game state
+let state = 'menu'; // 'menu' | 'tips' | 'playing' | 'dead'
+let paused = false;
+let gameTime = 0;
+let kills = 0;
+let killsByType = {};
+let lastKiller = null;
+const lastKillerPos = new THREE.Vector3(); // where the fatal hit came from
+let lastKillerRef = null;                  // entity ref for the death-cam flash
+let deathCam = null;                       // {yaw, pitch, t} — killer-focus lerp
+let gemCount = 0;
+let weaponLv = 1;
+let fireTimer = 0;
+// How long primary fire has been held, and whether it was held last frame.
+// A release before the stream delay is a jump, not a burst. shotCd remains
+// the lockout a homing or leftover burst would set.
+let fireHeldT = 0;
+let fireWasHeld = false;
+let shotCd = 0;
+let homingAmmo = 0;
+let homingFireTimer = 0;
+let homingHeldT = 0;
+let homingWasHeld = false;
+let weaponActive = false;
+let styleVal = 0;
+let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
+let comboCount = 0;
+let comboTimer = 0;
+let nextTotemAt = 0;
+let waveStrikes = 0;   // v48: how many times the sea has hit the body this run
+let nextLevAt = 0;
+let nextThornAt = 0;
+let nextRevenantAt = 110; // the dead only rise once there are dead
+let nextPulseAt = 0; // budgeted pressure pulses (toko-drop's wave system, adapted)
+// debug/test only: stop new spawns while everything else keeps running, and
+// hold a run open for measurement. Neither is reachable from the UI.
+let directorFrozen = false;
+let timeScale = 1; // debug only — scripts/hd-loop.mjs slows a fast move so a 1.5 s capture frame can see it
+let invulnerable = false;
+let pulseN = 0;
+let pureScriptCursor = 0;
+let serpentsSpawned = 0;
+let musicI = 0; // smoothed music intensity, reused by the reactive floor + sky
+let levAlive = false; // Leviathan on the field — the sky's ember burns hotter
+let hitStop = 0; // heavy-kill micro time-freeze (seconds remaining)
+let announced = {};
+let deathAt = 0;
+let trauma = 0;
+let fovKick = 0;
+let slowmo = 0;
+// PURE = Devil Daggers rules (one touch kills). HYPER = HYPERDEMON rules:
+// a draining life-timer is your health — kills add seconds, hits cost 10.
+// New key intentionally returns existing players to the DD-authored default;
+// HYPER remains an optional remix they can select again from the menu.
+const MODE_KEY = 'hyperDaggerModeV31';
+// ?mode=truck makes an experiment a SHAREABLE LINK — the whole point of a
+// lab is handing someone one specific thing to react to. The registry
+// falls back to the first mode on anything it does not recognise, so a
+// stale key or a typo cannot boot a half-configured game.
+const _urlMode = new URLSearchParams(location.search).get('mode');
+let mode = modeById(_urlMode || localStorage.getItem(MODE_KEY) || 'pure').id;
+/** The active mode's declaration — ask this, never `mode === '...'`.
+ *  v50 (owner): modes are control schemes a SEASON picks. A `?mode=` link
+ *  still wins (it is how the gate and the loop harness pin an experiment),
+ *  then — when a season was CHOSEN (`?season=`, a season button) — that
+ *  season's declared `mode`, then the saved one (the PURE/HYPER/TRUCK/ALL
+ *  menu picks it, and a pick there clears the season's claim). VOID
+ *  declares none, so the control stays whatever was saved. */
+function M() { return modeById(_urlMode || (_seasonChosen && S().mode) || mode || S().mode); }
+/** The body for this run: the mode's abilities with the season's on top. */
+function applyRunAbilities() {
+  const m = M(), extra = _urlMode ? null : S().abilities;
+  applyAbilities(player, extra ? { ...m, abilities: { ...(m.abilities ?? {}), ...extra } } : m);
+}
+
+// ------------------------------------------------------------ seasons (v41)
+// A season is the arena's ART and the hand's weapon, declared in seasons.js
+// the way a mode is declared in modes.js. ?season=inca deep-links one.
+const SEASON_KEY = 'hyperDaggerSeason';
+const _urlSeason = new URLSearchParams(location.search).get('season');
+let season = seasonById(_urlSeason || localStorage.getItem(SEASON_KEY) || 'ember').id;
+// HD-019: the menu offers seasons 1-3 only. A LINK to a hidden one (the
+// gate's VOID) is kept; a hidden one merely remembered is not offered back.
+if (!_urlSeason && seasonById(season).hidden) season = 'ember';
+/** A season was chosen (link or button): its declared mode beats the saved one. */
+let _seasonChosen = !!_urlSeason;
+/** The active season's declaration — ask this, never `season === '...'`. */
+function S() { return seasonById(season); }
+
+/** Put the season on the sky, the fog, the motes, the floor, the monuments
+ *  and the hand. Called at boot, when the menu cycles it, and by
+ *  debug.setSeason. The ROCK and the SLABS are built per run by
+ *  buildSeasonArena, off the run's own rng. */
+function applySeason() {
+  const sn = S();
+  skyMat.uniforms.uVoid.value.setRGB(...sn.sky.void);
+  skyMat.uniforms.uBand.value = sn.sky.band;
+  skyMat.uniforms.uStars.value = sn.sky.stars;
+  styleTint(skyMat.uniforms.uEmberCol.value.setRGB(...sn.sky.horizon));
+  floorMat.uniforms.uTint.value.setRGB(...sn.floor.tint);
+  wallMat.uniforms.uTint.value.setRGB(...sn.floor.tint);
+  floorMat.uniforms.uGlow.value = sn.floor.glow;
+  wallMat.uniforms.uGlow.value = sn.floor.glow * 2.33; // the v40 ratio: a wall is a step brighter than the floor
+  backdrop.setLook(sn.backdrop ?? { visible: true, emissive: 0 });
+  if (sn.fog) { scene.fog.color.setRGB(...sn.fog.color); scene.fog.near = sn.fog.near; scene.fog.far = sn.fog.far; }
+  if (sn.dust) { dust.material.color.setRGB(...sn.dust.color); dust.material.size = sn.dust.size; dust.material.opacity = sn.dust.opacity; }
+  // v44 tech-art terms — every one of them zero outside INCA
+  floorMat.uniforms.uCaustic.value = sn.floor.caustic ?? 0;
+  floorMat.uniforms.uWaveK.value.set(sn.goo?.floorWave?.shadow ?? 0, sn.goo?.floorWave?.foam ?? 0);   // v48
+  skyMat.uniforms.uHaze.value = sn.sky.haze ?? 0;
+  skyMat.uniforms.uSun.value = sn.sky.sun ?? 0;
+  if (sn.sky.sunDir) skyMat.uniforms.uSunDir.value.set(...sn.sky.sunDir).normalize();
+  // v52: gradient sky, stepped sun, the sun's path on the floor
+  const sk = sn.sky;
+  skyMat.uniforms.uGrad.value = sk.zenith ? 1 : 0;
+  if (sk.zenith) { skyMat.uniforms.uZenith.value.setRGB(...sk.zenith); skyMat.uniforms.uHorizon.value.setRGB(...sk.glow); }
+  skyMat.uniforms.uSunCol.value.setRGB(...(sk.sunCol ?? [1.0, 0.98, 0.9]));
+  skyMat.uniforms.uSunSize.value = sk.sunSize ?? 0;
+  skyMat.uniforms.uSunRings.value = sk.rings ?? 0;
+  floorMat.uniforms.uGlint.value = sn.floor.glint ?? 0;
+  floorMat.uniforms.uGlintCol.value.setRGB(...(sk.sunCol ?? [1, 0.8, 0.4]));
+  if (sk.sunDir) floorMat.uniforms.uSunDirF.value.set(...sk.sunDir).normalize();
+  floorMat.uniforms.uDark.value = sn.floor.grain ?? 1;
+  // v45: the season's colour for every body built from here on (roster.js);
+  // the bodies already standing keep theirs — a season is applied on the
+  // menu, and the skullscape is rebuilt with the arena
+  setRosterPalette(sn.roster ? mosaicPalette(sn.roster) : null);
+  setRosterSkin(sn.roster ? mosaicSkin(sn.roster) : null);
+  const g = gelMat.userData.gel, gc = sn.goo;
+  g.uLip.value.setRGB(...(gc?.rim ?? gc?.lip ?? [0.35, 0.95, 0.85]));
+  g.uWobble.value = gc?.wobble ?? 0.05; g.uCaustic.value = gc?.caustic ?? 0.6;
+  g.uFresnel.value = gc?.fresnel ?? 0.9; g.uSpec.value = gc?.spec ?? 0.7; g.uSSS.value = gc?.sss ?? 0.5;
+  g.uSeize.value.setRGB(...(gc?.seize ?? [0.80, 0.94, 0.92])); g.uSeizeK.value = gc?.seizeK ?? 0;
+  if (sn.sky.sunDir) g.uSun.value.set(...sn.sky.sunDir).normalize();
+  if (g.uSunCol) g.uSunCol.value.setRGB(...(sn.sky.sunCol ?? [1, 1, 0.94]));   // v52: the gloss is the sun's colour
+  setHand(sn.hand ?? null);   // v52: a season holds its own weapon
+  ground.userData.on = !!sn.ground;
+  if (sn.ground) ground.material.color.setRGB(...sn.ground);
+  ground.visible = !!ground.userData.on && M().arena !== 'track';
+  gaze.setConfig(sn.gaze ?? null);   // v51
+  WP = T.weapons?.[sn.weapon] ?? {};
+  daggers.setShape(WP.shape ?? null, WP.color ?? null);
+  audio.fireTone = WP.fireTone ?? 1;
+}
+
+/** The rock and the slabs, seeded from the run's rng so a DAILY arena is
+ *  the same for everyone. Not on the track — it has its own floor. */
+function buildSeasonArena() {
+  platforms.clear();
+  goo.clear();
+  skullscape.clear();
+  walls.cull(w => w.tag === 'pillar');
+  ground.visible = !!ground.userData.on && M().arena !== 'track';
+  if (M().arena === 'track') return;
+  const sn = S();
+  if (sn.pillars) {
+    const c = sn.pillars, placed = [];
+    for (let i = 0; i < c.count; i++) {
+      for (let tries = 0; tries < 30; tries++) {
+        const a = rng.next() * Math.PI * 2, r = c.rMin + rng.next() * (c.rMax - c.rMin);
+        const x = Math.cos(a) * r, z = Math.sin(a) * r;
+        if (placed.some(q => Math.hypot(x - q.x, z - q.z) < c.minGap)) continue;
+        if (walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < 3.5)) continue; // off the court's own walls
+        const len = c.wMin + rng.next() * (c.wMax - c.wMin);
+        const thick = c.wMin + rng.next() * (c.wMax - c.wMin);
+        const h = c.hMin + rng.next() * (c.hMax - c.hMin);
+        walls.add({ x, z, yaw: rng.next() * Math.PI, len, h, thick, tag: 'pillar', material: shaleMat,
+          hp: c.hp ?? 0, color: c.rubble ?? [0.05, 0.045, 0.05],   // v53: cover that dies
+          geometry: shaleGeometry({ w: len, h, d: thick, draw: rng.next, color: c.color, glow: c.glow, ...(c.shale ?? {}) }) });
+        placed.push({ x, z });
+        break;
+      }
+    }
+  }
+  if (sn.goo) goo.build({ ...sn.goo, material: gelMat }, rng.next); // seeded: a DAILY sea breaks the same way
+  skullscape.build(sn.inca ?? null, rng.next);
+  if (sn.platforms) {
+    platforms.build(sn.platforms, rng.next,
+      (x, z, half) => walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < half + Math.max(w.len, w.thick) * 0.5 + 0.6),
+      player);
+  }
+}
+let hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
+const HYPER_START = T.hyper.start;
+const HYPER_CAP = T.hyper.cap;
+const HYPER_HIT_COST = T.hyper.hitCost;
+let lifeT = HYPER_START;
+let mercyT = 0; // post-hit i-frames (hyper mode)
+
+// -------------------------------------------------------- daily runs
+// DAILY seeds the director from the UTC date + mode so same-day players face
+// the same unlock schedule and per-pulse pick sequences (full determinism is
+// impossible — player input diverges the sim immediately; see rng.js). Only
+// director-level draws use the seeded stream; enemy micro-jitter, debris and
+// gems stay Math.random.
+let runKind = localStorage.getItem('hyperDaggerRunKind') === 'daily' ? 'daily' : 'free';
+/** The kind THIS run was started as. `runKind` is the setting, and since
+ *  HD-019 it lives in the pause menu, so it can change mid-run: it applies
+ *  from the next run, and the run in progress keeps its seed and its table. */
+let runKindLive = runKind;
+let runSeed = 0;
+let runDate = ''; // pinned at resetRun so a run straddling UTC midnight scores against its seed day
+let dateOverride = null; // debug/test hook
+const rng = { next: Math.random }; // director-level stream, swapped per run
+const DAILY_TABLE_KEY = 'hyperDaggerDailyBest';
+
+function todayStr() { return dateOverride ?? utcDateStr(); }
+
+function dailyKey(date, m) { return `hyperDaggerDaily:${date}:${S().id}:${m}`; }
+
+function readDailyTable() {
+  try { return JSON.parse(localStorage.getItem(DAILY_TABLE_KEY) || '[]'); } catch { return []; }
+}
+
+/** Fold a finished daily time into the capped all-time table; returns rank. */
+function pushDailyTable(date, m, t) {
+  const table = readDailyTable();
+  const rank = 1 + table.filter(e => e.t > t).length;
+  table.push({ date, mode: m, t });
+  table.sort((a, b) => b.t - a.t);
+  localStorage.setItem(DAILY_TABLE_KEY, JSON.stringify(table.slice(0, 30)));
+  return rank;
+}
+
+/** Merge stale per-day keys into the table, then delete them — localStorage
+ *  stays bounded at ≤2 live keys (pure+hyper today) plus one 30-entry table. */
+function gcDailyKeys() {
+  const today = todayStr();
+  const stale = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    // `<date>:<season>:<mode>` since HD-002, `<date>:<mode>` before it. Only a
+    // PAST day goes: today's key (and a future one, a clock set back) stays,
+    // and anything not exactly this shape is not a daily key and is never touched.
+    const m = k && k.match(/^hyperDaggerDaily:(\d{4}-\d{2}-\d{2}):(?:([a-z]+):)?([a-z]+)$/);
+    if (m && m[1] < today) stale.push({ k, date: m[1], mode: m[3] });
+  }
+  for (const s of stale) {
+    const t = parseFloat(localStorage.getItem(s.k) || '0');
+    if (t > 0) pushDailyTable(s.date, s.mode, t);
+    localStorage.removeItem(s.k);
+  }
+}
+gcDailyKeys();
+
+// ------------------------------------------------- global daily board
+// Optional remote leaderboard backed by scripts/daily-board.gs (Google Apps
+// Script, zero cost — deploy guide in that file's header, paste the /exec URL
+// here). Empty endpoint = feature fully off: zero fetches, no board DOM.
+let BOARD_ENDPOINT = '';
+const INITIALS_KEY = 'hyperDaggerInitials';
+
+function sanitizeInitials(v) {
+  return String(v || '').toUpperCase().replace(/[^A-Z0-9?]/g, '').slice(0, 3) || '???';
+}
+function getInitials() { return sanitizeInitials(localStorage.getItem(INITIALS_KEY)); }
+
+/** POST this daily run, then GET the day's top 10 into the death screen's
+ *  #board block. Fire-and-forget with quiet failure — never blocks the UI. */
+async function boardReport(date, m, t) {
+  if (!BOARD_ENDPOINT) return;
+  // re-query per use: a restart may have rebuilt the overlay's innerHTML
+  const board = () => document.getElementById('board');
+  try {
+    await fetch(BOARD_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // dodges the CORS preflight Apps Script can't answer
+      body: JSON.stringify({ date, mode: m, season: S().id, t: Math.round(t * 10) / 10, name: getInitials() }),
+    });
+    const res = await fetch(
+      `${BOARD_ENDPOINT}?date=${date}&mode=${m}&season=${S().id}&t=${Math.round(t * 10) / 10}`);
+    const data = await res.json();
+    const el = board();
+    if (!el || !data || !Array.isArray(data.top)) return;
+    const rows = data.top.map((r, i) =>
+      `#${i + 1} ${sanitizeInitials(r.name)} ${Number(r.t).toFixed(1)}s`).join('<br>');
+    el.innerHTML =
+      `<p class="history">GLOBAL TOP &middot; ${date}${
+        data.rank ? ` &middot; you: #${data.rank} of ${data.count} today` : ''}</p>
+       <p class="history">${rows || 'no runs yet today — yours is first'}</p>`;
+  } catch {
+    const el = board();
+    if (el) el.innerHTML = '<p class="history">board offline</p>';
+  }
+}
+
+/** Menu extra: today's global best for the selected mode (daily view only). */
+async function menuBoardLine() {
+  if (!BOARD_ENDPOINT || runKind !== 'daily') return;
+  try {
+    const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${M().id}&season=${S().id}`);
+    const data = await res.json();
+    const top = data?.top?.[0];
+    const el = document.getElementById('menuBoard');
+    if (el && top && state === 'menu') {
+      el.innerHTML = `today's global best ${Number(top.t).toFixed(1)}s by ${
+        sanitizeInitials(top.name)}<br>`;
+    }
+  } catch { /* board offline — menu shows nothing extra */ }
+}
+
+// ---------------------------------------------------------- the menu (HD-019)
+// Mikael, 18 Oct 2026: "Only show season 1-3, have the background and rules
+// change as you choose it. Have a start button underneath." So the menu is
+// the picked season's own arena, live behind the glass, three season tabs,
+// that season's rules, and START. Picking a season no longer starts it, and
+// a tap on the empty screen does nothing: START is the one way in. The mode
+// row is gone (the season declares its mode, v50) and RUN FREE / DAILY moved
+// to the pause menu's options.
+
+/** The seasons the menu offers: the ones a player picks, with a card to show. */
+function menuSeasons() { return SEASONS.filter(sn => !sn.hidden && sn.card); }
+
+/** The season whose arena stands behind the menu now (null: none built). */
+let menuBuilt = null;
+let menuT = 0;
+
+/** Put a season behind the menu: its sky and light, its arena, its rules and
+ *  its best. Building the arena is a reset of the run, the same one START
+ *  does, so what you look at is the season you will play. */
+function previewSeason(id) {
+  season = seasonById(id).id;
+  _seasonChosen = true;
+  if (!S().hidden) localStorage.setItem(SEASON_KEY, season);
+  applySeason();
+  hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
+  if (menuBuilt !== season) {
+    resetRun();
+    menuBuilt = season;
+    menuT = 0;
+  }
+}
+
+function selectSeason(id) {
+  if (state !== 'menu') return;
+  previewSeason(id);
+  showMenu();
+}
+
+/** Left/right on a pad or the keys: the next season along, wrapping. */
+function stepSeason(d) {
+  const list = menuSeasons();
+  if (!list.length) return;
+  const i = list.findIndex(sn => sn.id === season);
+  const n = list.length;
+  selectSeason(list[i < 0 ? (d > 0 ? 0 : n - 1) : (i + d + n) % n].id);
+}
+
+/** START: the season on screen, now. The very first run gets the tips card. */
+function menuStart(e) {
+  if (state !== 'menu') return;
+  audio.ensure();
+  if (!localStorage.getItem(TIPS_KEY)) {
+    localStorage.setItem(TIPS_KEY, '1');
+    showTips();
+    return;
+  }
+  startGame();
+  lockPointer(e);   // HD-013: this press IS the gesture that starts the run
+}
+
+/** The menu's camera: stands where the run starts and looks slowly about, so
+ *  the season behind the glass is a place and not a still. */
+function menuCamera(dt) {
+  menuT += dt;
+  const sway = opts.motion ? Math.sin(menuT * 0.11) : 0;
+  player.yaw = (S().card?.yaw ?? 0) + sway * 0.42;
+  player.pitch = S().card?.pitch ?? 0.04;
+  player._sync();
+}
+
+/** The controls, for the device in hand and the season on screen — built
+ *  from the body this season gives you, so a season without a gun or a dash
+ *  never advertises one. (TRUCK mode's own line still says "run the walls",
+ *  which the convoy has none of.) */
+function menuKeysLine() {
+  const gun = !S().gaze, ab = player.abilities ?? {};
+  const jumps = (ab.jumps ?? 1) > 1 ? ` &times;${ab.jumps}` : '';
+  const touch = input.touchMode || (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+  if (touch) {
+    return [gun ? 'right stick <b>hold</b> = fire' : 'look at a skull to fire',
+      `<b>tap</b> = jump${jumps}`, ab.dash ? '<b>flick</b> = dash' : ''].filter(Boolean).join(' &middot; ');
+  }
+  if (input.gamepad) {
+    return [`<b>A</b> jump${jumps}`, gun ? '<b>hold RT</b> fire' : 'look at a skull to fire', ab.dash ? '<b>B</b> dash' : '',
+      ab.reap ? '<b>X</b> reap' : ''].filter(Boolean).join(' &middot; ') + '<br><b>&#9664; &#9654;</b> season &middot; <b>A</b> start';
+  }
+  return ['WASD move', gun ? '<b>hold click</b> fire' : 'look at a skull to fire', `<b>Space</b> jump${jumps}`,
+    ab.dash ? '<b>Shift</b> dash' : '', ab.reap ? '<b>R</b> reap' : ''].filter(Boolean).join(' &middot; ')
+    + '<br><b>&larr; &rarr;</b> season &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
+}
+
+/** The best to beat, labelled with the MODE it is filed under: seasons 1
+ *  and 2 both play HYPER and share its best, so a per-season label would lie. */
+function bestLine() {
+  const m = M().name;
+  if (runKind === 'daily') {
+    const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), M().id)) || '0');
+    return `DAILY ${todayStr()} &middot; ${dayBest > 0 ? `today's best ${dayBest.toFixed(1)}s` : 'no time today yet'}`;
+  }
+  return hiScore > 0 ? `${m} &middot; best ${hiScore.toFixed(1)}s` : `${m} &middot; no best yet`;
+}
+
+function showMenu() {
+  setRunFrame(false);
+  // a link to a hidden season (the gate's VOID) is kept; a saved one is not
+  if (menuBuilt !== season) previewSeason(season);
+  document.body.classList.add('on-menu');
+  handGroup.visible = false;   // the hand is the run's; the menu is the place
+  elMsg.classList.add('menu');
+  elMsg.style.display = 'block';
+  const sn = S();
+  const card = sn.card ?? { title: sn.name, tag: sn.blurb, accent: '#d8412f', rules: [] };
+  elMsg.innerHTML =
+    `<div class="mn" style="--acc:${card.accent}">
+       <header class="mn-head">
+         <h1 class="mn-mark">HYPER DAGGER</h1>
+         <p class="mn-sub">survive &middot; time is the score</p>
+       </header>
+       <section class="mn-foot">
+         <div class="mn-seasons" role="tablist" aria-label="season">
+           ${menuSeasons().map((s, i) =>
+             `<button class="mn-season${s.id === season ? ' on' : ''}" data-season="${s.id}" role="tab" aria-selected="${s.id === season}" style="--sacc:${s.card.accent}"><span class="mn-n">SEASON ${i + 1}</span><span class="mn-t">${s.card.title}</span></button>`).join('')}
+         </div>
+         <div class="mn-card" role="tabpanel">
+           <p class="mn-tag">${card.tag}</p>
+           ${card.rules.length ? `<ul class="mn-rules">${card.rules.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+           <p class="mn-best"><span id="menuBoard"></span>${bestLine()}</p>
+         </div>
+         <div class="mn-render" role="group" aria-label="Renderer">
+           <button data-renderer="classic" aria-pressed="${!sdfSkullsEnabled}">CLASSIC</button>
+           <button data-renderer="sdf" aria-pressed="${sdfSkullsEnabled}">SDF PREVIEW</button>
+         </div>
+         <p class="mn-render-note">${sdfSkullsEnabled ? 'SDF BUILD 2 · sculpted skull family · other enemies use classic art' : 'CLASSIC · current game art'}<br>R / pad up-down switches renderer.</p>
+         <button id="startBtn" class="mn-start">START</button>
+         <p class="mn-keys">${menuKeysLine()}</p>
+       </section>
+     </div>`;
+  menuBoardLine();
+  for (const b of elMsg.querySelectorAll('[data-renderer]')) {
+    const choose = e => {
+      e.preventDefault(); e.stopPropagation();
+      if (e.pointerType === 'touch' || e.type === 'touchend') input.swallowTouchAt(e.clientX ?? 0, e.clientY ?? 0);
+      setSdfSkullsEnabled(b.dataset.renderer === 'sdf');
+      showMenu();
+    };
+    b.addEventListener('pointerdown', e => e.stopPropagation());
+    b.addEventListener('pointerup', choose);
+    b.addEventListener('touchend', choose, { passive: false });
+  }
+  for (const b of elMsg.querySelectorAll('button.mn-season')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      audio.ensure();
+      selectSeason(b.dataset.season);
+    });
+  }
+  document.getElementById('startBtn').addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    if (e.pointerType === 'touch') input.swallowTouchAt(e.clientX, e.clientY);   // HD-003: its lift is not a jump
+    menuStart(e);
+  });
+}
+
+// the keys walk the menu too: ← → (or A / D, or 1-3) pick, ENTER or SPACE starts
+window.addEventListener('keydown', e => {
+  if (state === 'tips' && !e.repeat && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); startGame(); lockPointer(input.touchMode ? null : { pointerType: 'mouse' }); return; }
+  if (state !== 'menu' || e.repeat || !elMsg.classList.contains('menu')) return;
+  const list = menuSeasons();
+  if (e.code === 'KeyR') { e.preventDefault(); setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
+  else if (e.code === 'ArrowLeft' || e.code === 'KeyA') stepSeason(-1);
+  else if (e.code === 'ArrowRight' || e.code === 'KeyD') stepSeason(1);
+  else if (/^Digit[1-9]$/.test(e.code) && list[+e.code.slice(5) - 1]) selectSeason(list[+e.code.slice(5) - 1].id);
+  else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); menuStart(input.touchMode ? null : { pointerType: 'mouse' }); }
+});
+
+// One-time 3-tip card before the very first run — the mechanics that aren't
+// obvious from the HUD. After this the menu stays terse.
+const TIPS_KEY = 'hyperDaggerSeenTips';
+
+function showTips() {
+  state = 'tips';
+  setRunFrame(false);
+  elMsg.style.display = 'block';
+  elMsg.innerHTML =
+    `<h1>HOW TO SURVIVE</h1>
+     <p class="big">&#9876; <b>tap</b> = jump &middot; <b>hold</b> = stream</p>
+     <p class="sub">fire only while you hold it &mdash; walking does not shoot</p>
+     <p class="big">&#10227; <b>jump on land</b> to keep speed</p>
+     <p class="sub">double jump and dash are available in most seasons</p>
+     <p class="big">&#9670; <b>time is the score</b></p>
+     <p class="sub">S/A/B/C tiers · below A is a fail</p>
+     <p class="go">click / tap / press &#10005; to descend</p>`;
+}
+
+function hiKey() { return M().hiKey ?? 'hyperDaggerHiNone'; }
+
+/** Time tiers. Below A is a fail for ranking. S is the aspirational ceiling. */
+function timeTier(t) {
+  if (t >= 240) return 'S';
+  if (t >= 180) return 'A';
+  if (t >= 120) return 'B';
+  if (t >= 60)  return 'C';
+  return 'FAIL';
+}
+
+
+// last-10 run history (all modes together), most recent first
+const HISTORY_KEY = 'hyperDaggerHistory';
+
+function pushRunHistory(entry) {
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { hist = []; }
+  hist.unshift(entry);
+  hist = hist.slice(0, 10);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  return hist;
+}
+
+// Run telemetry (toko-drop's hit-log pattern): one record per death, capped
+// at 40 runs, powering __hd.debug.report() so balance tuning works from data
+// instead of guesses. Local only — nothing leaves the browser.
+const RUNLOG_KEY = 'hyperDaggerRunLog';
+
+function pushRunLog(timedOut, complete = false) {
+  let log = [];
+  try { log = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch { log = []; }
+  log.unshift({
+    t: Math.round(gameTime * 10) / 10,
+    mode: M().id,
+    cause: complete ? 'complete' : timedOut ? 'timeout' : (lastKiller || 'unknown'),
+    kills,
+    killsByType: { ...killsByType },
+    lv: weaponLv,
+    gems: gemCount,
+    peak: STYLE_TIERS[stylePeakIdx].label || '-',
+    pulseN,
+    lastPulseKind: pulseKind(pulseN),
+  });
+  log = log.slice(0, 40);
+  localStorage.setItem(RUNLOG_KEY, JSON.stringify(log));
+}
+
+/** Console balance report over the run log: what kills players, when, and
+ *  how far the weapon/style economy gets. */
+function runReport() {
+  let log = [];
+  try { log = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch { log = []; }
+  if (!log.length) return { runs: 0 };
+  const ts = log.map(r => r.t).sort((a, b) => a - b);
+  const causes = {};
+  const kinds = {};
+  let lvSum = 0;
+  for (const r of log) {
+    causes[r.cause] = (causes[r.cause] || 0) + 1;
+    kinds[r.lastPulseKind || '-'] = (kinds[r.lastPulseKind || '-'] || 0) + 1;
+    lvSum += r.lv;
+  }
+  return {
+    runs: log.length,
+    medianT: ts[(ts.length / 2) | 0],
+    bestT: ts[ts.length - 1],
+    deathsByCause: Object.fromEntries(Object.entries(causes).sort((a, b) => b[1] - a[1])),
+    deathsByPulseKind: kinds,
+    avgWeaponLv: Math.round(lvSum / log.length * 10) / 10,
+    peaks: log.map(r => r.peak).join(' '),
+  };
+}
+
+function showDeath(timedOut, complete = false) {
+  const runT = gameTime;
+  const t = runT.toFixed(1);
+  // daily times never touch the FREE all-time board — separate economies
+  let best = false;
+  let dailyLines = '';
+  if (runKindLive === 'daily') {
+    const key = dailyKey(runDate, M().id); // runDate, not today — midnight straddle; M(), the mode PLAYED (the saved one loses to a chosen season)
+    const dayBest = parseFloat(localStorage.getItem(key) || '0');
+    best = runT > dayBest;
+    if (best) localStorage.setItem(key, String(runT));
+    const rank = pushDailyTable(runDate, M().id, runT);
+    dailyLines =
+      `<p>${best ? 'NEW DAILY BEST' : `today's best ${dayBest.toFixed(1)}s`} &middot; ${runDate}${
+        rank <= 30 ? ` &middot; daily #${rank} all-time` : ''}</p>${
+        BOARD_ENDPOINT
+          ? `<div id="board"><p class="history">fetching global top&hellip;</p></div>
+             <p class="history">initials <input id="initials" maxlength="3" value="${getInitials()}"> (next run's board name)</p>`
+          : ''}`;
+  } else if (runT > hiScore) {
+    best = true;
+    hiScore = runT;
+    localStorage.setItem(hiKey(), String(hiScore));
+  }
+
+  const causeLine = complete ? `the season is over — ${S().menu ?? S().name} survived`
+    : timedOut
+    ? 'the clock ran out'
+    : `felled by ${killerName(lastKiller)}`;
+  const breakdown = Object.entries(killsByType)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, n]) => `${n}&times; ${ENEMY_NAMES[type] || type}`)
+    .join(' &middot; ');
+
+  const hist = pushRunHistory({ t: runT, mode: M().id, daily: runKindLive === 'daily' || undefined });
+  pushRunLog(timedOut, complete);
+  const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
+  const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
+
+  const heavies = Math.floor(pulseN / 8);
+  const pulseLine = pulseN > 0
+    ? `<p class="breakdown">survived ${pulseN} pulse${pulseN === 1 ? '' : 's'}${heavies ? ` (${heavies} heavy)` : ''}</p>` : '';
+  const share = `HYPER DAGGER · ${S().menu ?? S().name} · ${M().name} · ${t}s · ${timeTier(runT)} · ${kills} kills${
+    stylePeakIdx > 0 ? ` · rank ${STYLE_TIERS[stylePeakIdx].label}` : ''}`;
+
+  elMsg.style.display = 'block';
+  elMsg.innerHTML =
+    `<h1 class="dead">${complete ? 'RUN COMPLETE' : timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
+     <p class="big">${t}s &middot; <span class="tier">${timeTier(runT)}</span> &middot; ${S().menu ?? S().name} &middot; ${M().name}${runKindLive === 'daily' ? ' · DAILY' : ''}</p>
+     <p>${kills} kills &middot; ${gemCount} gems</p>
+     <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
+     ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
+     ${pulseLine}
+     ${recapParts().length ? `<p class="breakdown">${recapParts().join(' &middot; ')}</p>` : ''}
+     ${runKindLive === 'daily' ? dailyLines
+    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}</p>`}
+     ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
+     <button id="shareBtn" class="opt">COPY RUN</button>
+     <button id="tokoBtn" class="opt">ASK TOKO</button>
+     <p class="go">click / tap / &#10005; to retry</p>`;
+  wireToko();
+  lastTimedOut = !!timedOut; lastComplete = !!complete;
+  document.getElementById('shareBtn').addEventListener('pointerdown', async e => {
+    e.stopPropagation(); // don't let the copy tap restart the run
+    const btn = e.currentTarget;
+    try {
+      await navigator.clipboard.writeText(share);
+      btn.textContent = 'COPIED';
+    } catch {
+      btn.textContent = share; // clipboard blocked — show it for manual copy
+    }
+  });
+  const initialsEl = document.getElementById('initials');
+  if (initialsEl) {
+    // taps/keys in the input must not restart the run
+    initialsEl.addEventListener('pointerdown', e => e.stopPropagation());
+    initialsEl.addEventListener('input', e => {
+      const v = sanitizeInitials(e.target.value);
+      localStorage.setItem(INITIALS_KEY, v);
+    });
+  }
+  if (runKindLive === 'daily') boardReport(runDate, M().id, runT);
+}
+
+function clearEnemies() {
+  for (const e of enemies) e.remove(scene);
+  enemies.length = 0;
+  serpents.length = 0;
+}
+
+function resetRun() {
+  runDate = todayStr();
+  runKindLive = runKind;
+  if (runKindLive === 'daily') {
+    runSeed = fnv1a(runDate + ':' + M().id);
+    rng.next = mulberry32(runSeed);
+  } else {
+    runSeed = 0;
+    rng.next = Math.random;
+  }
+  clearEnemies();
+  clearPending();
+  daggers.reset();
+  debris.reset();
+  physGibs.reset();
+  wallsFelled = 0;
+  ebbN = 0; ebbSteps = false; rubbleStands = 0; runComplete = false;
+  finale = null; finaleDone = false; finalePressure = 1;
+  litter.reset();
+  gems.reset();
+  orbs.reset();
+  clearThorns();
+  gameTime = 0;
+  kills = 0;
+  killsByType = {};
+  lastKiller = null;
+  lastKillerRef = null;
+  deathCam = null;
+  hitStop = 0;
+  rippleT = 9;
+  rippleAmp = 0;
+  levAlive = false;
+  endFlyby();
+  flybyDone = false;
+  gemCount = 0;
+  weaponLv = 1;
+  fireTimer = 0;
+  // pretend the trigger is already down a long time, so releasing the click
+  // that started the run is not a short press (no jump, no burst)
+  fireHeldT = 999;
+  fireWasHeld = true;
+  shotCd = 0;
+  homingAmmo = 0;
+  homingFireTimer = 0;
+  homingHeldT = 999;
+  homingWasHeld = true;
+  weaponActive = false;
+  styleVal = 0;
+  stylePeakIdx = 0;
+  // onboarding pacing lives in PULSE_POOL's unlock gates (watcher 25s …
+  // dread 120s) — pulses can only draw a type once its gate opens, so debuts
+  // still land one at a time. Totems/thorns/Leviathan stay on their own clocks.
+  nextTotemAt = T.director.totem.first;
+  nextThornAt = T.director.thorn.first;
+  nextSkullAt = S().spawns?.first ?? 0;   // v48: season 2's own clock
+  waveStrikes = 0;
+  nextLevAt = T.director.leviathan.first;
+  nextRevenantAt = T.director.revenant.first;
+  reapCool = 0;
+  nextPulseAt = T.director.pulse.first;
+  pulseN = 0;
+  pureScriptCursor = 0;
+  serpentsSpawned = 0;
+  musicI = 0;
+  applyGauntlet(1);
+  announced = {};
+  debuted = {};
+  trauma = 0;
+  fovKick = 0;
+  slowmo = 0;
+  lifeT = HYPER_START;
+  mercyT = 0;
+  player.reset();
+  applyRunAbilities(); // jumps, dash, reap, glide, air dashes, edge — mode, then the season's extras
+  // The disc and the track are different floors — showing both puts a lit
+  // grid under a mode whose entire premise is that there is nothing under you.
+  const onTrack = M().arena === 'track';
+  floor.visible = !onTrack;
+  shadows.visible = !onTrack;
+  // v51: a season lays its own road (moving trucks) — unless a ?mode= link
+  // pinned an experiment, which gets the tuning's road like it always did
+  truck.setConfig(_urlMode ? null : S().truck);
+  gaze.reset();
+  daggers.floorY = truck.active ? truck.fallY() - 0.6 : -0.2;   // v53: on the road the floor is three units down
+  if (onTrack) truck.reset(player); else truck.clear();
+  if (M().arena === 'court') walls.court(16, 12, 5); else walls.clear();
+  buildSeasonArena(); // the season's rock and slabs, after the court's walls
+}
+
+function goFullscreen() {
+  if (!input.touchMode || document.fullscreenElement) return;
+  const p = document.documentElement.requestFullscreen?.();
+  if (p && p.then) {
+    p.then(() => screen.orientation?.lock?.('landscape')).catch(() => {});
+  }
+}
+
+function startGame() {
+  goFullscreen();
+  resetRun();
+  menuBuilt = null;   // HD-019: the run is about to change the arena the menu showed
+  gfocus = -1;
+  // drain A/B edges accumulated while menuing so the run doesn't open with
+  // a phantom jump or dash
+  input.consumeJump();
+  input.consumeDash();
+  input.consumeDashFlick();
+  input.releaseTouches();   // HD-003: the finger that tapped to start is not a jump when it lifts
+  state = 'playing';
+  paused = false;
+  setRunFrame(true);
+  elMsg.style.display = 'none';
+  // The claw and its projectile stream are the sight. A pasted HUD crosshair
+  // made the frame feel like a generic browser FPS and is absent in the target.
+  elCross.style.display = 'none';
+  elPause.style.display = 'block';
+  showGoalCard();   // HD-010
+  audio.droneStart();
+  if (opts.music) audio.musicStart();
+}
+
+/**
+ * Leave the run and go back to the menu WITHOUT dying. A lab needs this: the
+ * mode toggle only lives on the menu, and MOVE has no lethality at all, so
+ * without a way out the only way to change experiment was a page reload.
+ */
+function endRun() {
+  paused = false;
+  hideGoalCard();   // HD-010
+  gfocus = -1;   // HD-003: the pause menu's focus is not the main menu's — A there starts a run, as the menu says
+  resetRun();
+  truck.clear();
+  walls.clear();
+  platforms.clear();
+  goo.clear();
+  skullscape.clear();
+  floor.visible = true;
+  shadows.visible = true;
+  state = 'menu';
+  elPause.style.display = 'none';
+  elCross.style.display = 'none';
+  audio.droneStop();
+  audio.musicStop();
+  menuBuilt = null;   // HD-019: cleared above, so the menu builds its season again
+  showMenu();
+}
+
+/** v54: the season's end reached — the run is over and it was not a death */
+function completeRun() { finishRun('complete'); }
+
+/** A death (`timedOut`: HYPER's clock ran out). Every caller ends here. */
+function die(timedOut = false, complete = false) { finishRun(complete ? 'complete' : timedOut ? 'timeout' : 'death'); }
+
+/**
+ * HD-002: THE one way a run ends — 'death' | 'timeout' | 'complete'. Death and
+ * the season's end share every step: the save (best or daily key + table),
+ * history, run log, results screen, Toko cue, music/SFX, input release. They
+ * differ only where the design says so (heading, cause line, stinger vs death
+ * sound, no killer cam). A run that has already ended cannot end again — a hit
+ * landing after the season's end used to save the run a second time.
+ */
+function finishRun(how) {
+  if (state !== 'playing') return false;
+  const timedOut = how === 'timeout', complete = how === 'complete';
+  runComplete = complete;
+  hideGoalCard();   // HD-010
+  state = 'dead';
+  setRunFrame(false);
+  deathAt = performance.now();
+  slowmo = 1;
+  trauma = 1;
+  triggerRipple(1);
+  buzz(1, 1, 320);
+  // killer-focus death cam: swing the view toward what got you during the
+  // slow-mo. TIME OUT has no killer — the clock did it — so no swing there.
+  if (!complete && !timedOut && lastKiller && lastKiller !== 'timeout') {
+    const dx = lastKillerPos.x - camera.position.x;
+    const dz = lastKillerPos.z - camera.position.z;
+    const hd = Math.hypot(dx, dz);
+    if (hd > 0.4) {
+      deathCam = {
+        yaw: Math.atan2(-dx, -dz),
+        pitch: Math.max(-0.9, Math.min(0.6, Math.atan2(lastKillerPos.y - camera.position.y, hd))),
+        t: 1.3,
+      };
+      lastKillerRef?.sprite?.flash?.(3); // the killer burns bright
+    }
+  }
+  audio.droneStop();
+  audio.musicStop();
+  if (complete) audio.stinger(); else audio.death();
+  elVignette.style.opacity = complete ? 0.35 : 1;
+  setTimeout(() => { elVignette.style.opacity = 0; }, 450);
+  elCross.style.display = 'none';
+  elPause.style.display = 'none';
+  elStyle.style.opacity = '0';
+  if (document.pointerLockElement) document.exitPointerLock();
+  showDeath(timedOut, complete);
+  return true;
+}
+
+window.addEventListener('pointerdown', e => {
+  // a tap at the table is a tap at the table — never a resume or a restart
+  if (e.target && e.target.closest && e.target.closest('.toko-table')) return;
+  audio.ensure();
+  const isMouse = e.pointerType === 'mouse';
+  // HD-003: a finger that taps to start, retry or resume is UI — its lift is not a jump
+  if (e.pointerType === 'touch' && (state === 'menu' || state === 'tips' || state === 'dead' || (state === 'playing' && paused))) input.swallowTouchAt(e.clientX, e.clientY);
+  if (state === 'menu') {
+    // HD-019: a tap on the empty menu is not a start — START is (menuStart)
+  } else if (state === 'tips') {
+    startGame();
+  } else if (state === 'dead') {
+    if (performance.now() - deathAt < 700) return;
+    startGame();
+  } else if (state === 'playing' && paused) {
+    // the mouse click that resumes is UI, as the one that starts a run is:
+    // its release must not land as a short press (a jump) — #619 review
+    if (isMouse) { fireHeldT = 999; fireWasHeld = true; }
+    paused = false;
+    setRunFrame(true);
+    perfSettleUntil = performance.now() + perfTuning.settleMs; // stale EMA after pause
+    elMsg.style.display = 'none';
+    elPause.style.display = 'block';
+  }
+  lockPointer(e);
+});
+
+// HD-013: mouse look needs pointer lock, and a browser only grants it from
+// inside a user gesture. Every click that puts a live run under the mouse
+// (the window tap, a SEASON button, the pause menu's season switch, resume)
+// calls this from its own pointerdown — the season buttons stopPropagation,
+// so the window handler above never saw the click that started the run.
+function lockPointer(e) {
+  if (!e || e.pointerType !== 'mouse') return;      // touch and pad never lock
+  if (state !== 'playing' || paused || input.touchMode || document.pointerLockElement) return;
+  let r;
+  try { r = canvas.requestPointerLock(); } catch (_) { pointerLockRefused(); return; }
+  // Chromium returns a promise and rejects it on refusal (e.g. re-locking
+  // within ~1 s of Esc); unhandled, that is a console error every resume.
+  if (r && typeof r.catch === 'function') r.catch(pointerLockRefused);
+}
+// A refused lock is the same as an unlock: the run must not keep going with
+// a free cursor and a dead camera. Pause, so the next click asks again.
+function pointerLockRefused() {
+  if (state === 'playing' && !paused && !input.touchMode && !document.pointerLockElement) showPause();
+}
+document.addEventListener('pointerlockerror', pointerLockRefused);
+
+document.addEventListener('pointerlockchange', () => {
+  if (state === 'playing' && !input.touchMode && !document.pointerLockElement && !paused) {
+    showPause();
+  }
+});
+
+// ------------------------------------------------------------- pause menu
+const elPause = document.getElementById('pauseBtn');
+
+// ---------------------------------------------------------------- Toko at the table
+// The signature used to leave the game for the counter; now it opens him HERE,
+// over a paused run, so "that serpent is unfair" can be said while the serpent
+// is still on the field. On touch the badge stays inert (that corner is the
+// left stick) and the pause and death screens carry an ASK TOKO line instead.
+// He opens knowing what just happened: the cue is the death line or the clock.
+const GAME = { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' };
+let table = null;
+let lastTimedOut = false, lastComplete = false;
+function tokoCue() {
+  const t = gameTime.toFixed(1);
+  const tier = timeTier(gameTime);
+  const sn = S().menu ?? S().name;
+  const mode = M().name;
+  const peak = stylePeakIdx > 0 ? STYLE_TIERS[stylePeakIdx].label : '-';
+  const wave = (typeof waveIdx === 'number' ? waveIdx + 1 : 1);
+  if (state === 'dead') {
+    const cause = lastComplete ? 'RUN COMPLETE' : lastTimedOut ? 'TIME OUT' : killerName(lastKiller).toUpperCase();
+    return `${sn} · ${mode} · wave ${wave} · ${t}s · ${tier} · peak ${peak} · ${cause} · ${kills} kills`;
+  }
+  if (state === 'playing') {
+    return `${sn} · ${mode} · wave ${wave} · ${t}s in · ${tier} · peak ${peak} · ${kills} kills · say what you think`;
+  }
+  return null;
+}
+function openToko() {
+  if (table) return table;
+  if (state === 'playing' && !paused) showPause();
+  // He needs a cursor. A run holds pointer lock, and a locked page sends every
+  // mouse event to the canvas at (0,0) no matter where the pointer is — a
+  // click on his menu would land on the floor and resume the game.
+  if (document.pointerLockElement) document.exitPointerLock();
+  table = openTable({
+    game: GAME, cue: tokoCue(),
+    onClose() {
+      table = null;
+      // whatever was typed at him is not a jump, a dash or a reap
+      input.consumeJump(); input.consumeDash(); input.consumeDashFlick(); input.consumeReap();
+    },
+  });
+  return table;
+}
+function wireToko() {
+  const b = document.getElementById('tokoBtn');
+  if (!b) return;
+  b.addEventListener('pointerdown', e => { e.stopPropagation(); openToko(); });
+}
+elPause.addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  if (state === 'playing' && !paused) {
+    if (document.pointerLockElement) document.exitPointerLock(); // triggers showPause
+    else showPause();
+  }
+});
+
+function saveOpts() {
+  localStorage.setItem(OPTS_KEY, JSON.stringify(opts));
+  applyOpts();
+}
+
+function applyOpts() {
+  // perf HIGH/LOW pin the tier; setPerfTier no-ops when unchanged so the
+  // recursive applyOpts call inside it terminates immediately
+  if (opts.perf === 'high') setPerfTier(0);
+  else if (opts.perf === 'low') setPerfTier(PERF_TIERS.length - 1);
+  const tier = PERF_TIERS[perfTier];
+  // voxel density: AUTO starts at the x64 design default and the governor
+  // walks it down the ladder (x27/x8/x1) as the tier degrades; an explicit
+  // VOXEL choice overrides it. Existing sprites keep their detail until they
+  // die — the swarm re-densifies within seconds.
+  const autoDetail = opts.perf === 'low' ? 1
+    : Math.min(AUTO_DETAIL_CEIL, [3, 2, 2, 1, 1][perfTier]);
+  setVoxelDetail(opts.detail === 'auto' ? autoDetail : opts.detail);
+  // reduced motion (opts.motion=false) and the perf tier both override the
+  // individual FX toggles without rewriting them — user intent stays in opts.*
+  afterimage.enabled = opts.smear && opts.motion && tier.smear;
+  chromaPass.enabled = opts.chroma && opts.motion && tier.chroma;
+  // the neon rim is a static effect, so the motion toggle leaves it alone
+  edgePass.enabled = opts.edge && tier.edge;
+  spherePass.enabled = opts.projection && tier.sphereEvery > 0;
+  // The peripheral warning was visually loud without improving the core aim.
+  // Keep rear awareness inside the optional spherical view only.
+  threatPass.enabled = false;
+  bloom.enabled = tier.bloom;
+  debris.softCap = tier.debrisCap;
+  debris.gibTarget = tier.gibs;
+  // LOW tier turns the bone-yard off; settled gibs fall back to expiring
+  debris.litter = tier.litter > 0 ? litter : null;
+  if (tier.litter <= 0) litter.reset();
+  // STYLE preset: re-hue every accent surface. Hue is applied at voxel parse
+  // for new spawns; live sprites re-derive from their pre-style base colors.
+  setStyleHue(STYLE_HUES[opts.style] ?? null);
+  hand.applyStyle();
+  litter.applyStyle();
+  // v4.32 LOOK: smooth hull skin vs raw cubes — user toggle gated by the
+  // perf tier (a skin rebuild on every chip is not free on weak hardware)
+  const hullOn = opts.look === 'smooth' && tier.hull;
+  setHullMode(hullOn);
+  // the Meshy skins ride the same tier switch as the hull: below it, the
+  // cube body stands alone (new spawns only — a skinned enemy keeps its skin)
+  setMeshSkins(tier.hull);
+  hand.setHull(hullOn); // noHull in the model def keeps it cubes regardless
+  for (const e of enemies) {
+    for (const part of e.parts || [e.sprite]) {
+      part.applyStyle?.();
+      part.setHull?.(hullOn);
+    }
+  }
+  if (flyby) for (const p of flyby.parts) { p.sprite.applyStyle(); p.sprite.setHull(hullOn); }
+  // high contrast: hotter orbs so projectiles read against the bloom
+  // (intensity picked first, then the style hue re-aims it)
+  styleTint(orbs.mat.color.setRGB(...(opts.contrast ? [3.4, 0.5, 0.5] : [2.6, 0.2, 0.2])));
+  styleTint(gems.mesh.material.color.setRGB(2.4, 0.15, 0.15));
+  styleTint(floorMat.uniforms.uAccent.value.setRGB(2.2, 0.25, 0.25));
+  styleTint(skyMat.uniforms.uEmberCol.value.setRGB(...S().sky.horizon));
+  styleTint(edgePass.uniforms.uTint.value.setRGB(1.6, 0.35, 0.35));
+  styleTint(threatPass.uniforms.uTint.value.setRGB(2.5, 0.18, 0.18));
+  styleTint(spherePass.uniforms.uTint.value.setRGB(2.7, 0.12, 0.12));
+  const envAccent = styleTint(new THREE.Color().setRGB(2.2, 0.22, 0.22));
+  environment.setAccent(envAccent);
+  environment.setQuality(perfTier);
+  player.sens = opts.sens;
+  // reconcile music with the toggle live (only while a run is active)
+  if (state === 'playing') {
+    if (opts.music && !audio.musicPlaying()) audio.musicStart();
+    else if (!opts.music && audio.musicPlaying()) audio.musicStop();
+  }
+}
+
+function optRow(label, key, values, fmt) {
+  const btns = values.map(v =>
+    `<button class="opt ${opts[key] === v ? 'on' : ''}" data-k="${key}" data-v="${v}">${fmt(v)}</button>`).join('');
+  return `<div class="optrow"><span>${label}</span>${btns}</div>`;
+}
+
+function showPause() {
+  paused = true;
+  setRunFrame(false);
+  elPause.style.display = 'none';
+  elMsg.style.display = 'block';
+  let voxCount = hand.aliveCount;
+  for (const e of enemies) {
+    for (const part of e.parts || [e.sprite]) voxCount += part.aliveCount;
+  }
+  elMsg.innerHTML =
+    `<h1>PAUSED</h1>
+     <p class="sub">${S().menu ?? S().name} · ${M().name} · ~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps</p>
+     <button id="tokoBtn">ASK TOKO</button>
+     <div class="optrow"><span>SEASON</span>${SEASONS.filter(sn => !sn.hidden).map(sn =>
+       `<button class="opt season${sn.id === season ? ' on' : ''}" data-season="${sn.id}">${sn.menu ?? sn.name}</button>`).join('')}</div>
+     <div class="optrow"><span>RUN</span>${['free', 'daily'].map(k =>
+       `<button class="opt runkind${k === runKind ? ' on' : ''}" data-run="${k}">${k === 'daily' ? 'DAILY SEED' : 'FREE'}</button>`).join('')}${
+       runKind !== runKindLive ? ' <span class="optnote">from the next run</span>' : ''}</div>
+     ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
+     ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
+     ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
+     ${optRow('SENS', 'sens', [0.7, 1, 1.3, 1.6], v => ({ 0.7: 'LOW', 1: 'MED', 1.3: 'HIGH', 1.6: 'MAX' })[v])}
+     ${optRow('AIM', 'aim', [true, false], v => v ? 'ASSIST ON' : 'ASSIST OFF')}
+     ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
+     ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
+     ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
+     ${optRow('', 'edge', [true, false], v => v ? 'EDGE ON' : 'EDGE OFF')}
+     ${optRow('', 'gibs', [true, false], v => v ? 'GIBS STACK' : 'GIBS CLASSIC')}
+     ${optRow('', 'music', [true, false], v => v ? 'MUSIC ON' : 'MUSIC OFF')}
+     ${optRow('A11Y', 'motion', [true, false], v => v ? 'MOTION FULL' : 'MOTION REDUCED')}
+     ${optRow('', 'contrast', [false, true], v => v ? 'CONTRAST HIGH' : 'CONTRAST NORMAL')}
+     ${optRow('PERF', 'perf', ['auto', 'high', 'low'], v => v.toUpperCase())}
+     ${optRow('', 'haptics', [true, false], v => v ? 'HAPTICS ON' : 'HAPTICS OFF')}
+     ${optRow('VOXEL', 'detail', ['auto', 1, 2, 3, 4], v => v === 'auto' ? 'AUTO' : ({ 1: '1X', 2: '8X', 3: '27X', 4: '64X' })[v])}
+     ${optRow('LOOK', 'look', ['smooth', 'cubes'], v => v.toUpperCase())}
+     ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}
+     <button id="endBtn" class="opt">END RUN &mdash; back to the season menu</button>
+     <p class="go">click / tap anywhere else to resume</p>`;
+  wireToko();
+  document.getElementById('endBtn').addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    endRun();
+  });
+  // v48: the seasons are in here too. Picking one mid-run re-lights and
+  // REBUILDS the arena on the spot (seeded by the run's rng, as at start);
+  // the bodies already standing keep theirs until the next run.
+  for (const b of elMsg.querySelectorAll('button.season')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      // the mode in force BEFORE the switch: M() reads the season once
+      // _seasonChosen is set, so read after, "before" is already the
+      // destination and a HAUL <-> EMBER switch never restarted (#619 review)
+      const before = M().id;
+      season = seasonById(b.dataset.season).id;
+      _seasonChosen = true;
+      localStorage.setItem(SEASON_KEY, season);
+      applySeason();
+      // v51: a season with different RULES (season 3 is the track) is a
+      // different game — start it fresh rather than rebuild under a live run
+      if (M().id !== before && state === 'playing') { hiScore = parseFloat(localStorage.getItem(hiKey()) || '0'); startGame(); lockPointer(e); return; }
+      buildSeasonArena();
+      applyRunAbilities();   // v50: a season carries its control scheme
+      hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
+      showPause();
+    });
+  }
+  // HD-019: FREE / DAILY moved here off the main menu. It is the next run's
+  // setting — the run in progress keeps the seed it started with.
+  for (const b of elMsg.querySelectorAll('button.runkind')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      runKind = b.dataset.run;
+      localStorage.setItem('hyperDaggerRunKind', runKind);
+      showPause();
+    });
+  }
+  // [data-k] and not just .opt — END RUN wears the same chrome but is not an
+  // option row, and the generic handler would write opts[undefined].
+  for (const b of elMsg.querySelectorAll('button.opt[data-k]')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      const k = b.dataset.k;
+      const raw = b.dataset.v;
+      opts[k] = raw === 'true' ? true : raw === 'false' ? false
+        : isNaN(parseFloat(raw)) ? raw : parseFloat(raw);
+      saveOpts();
+      showPause(); // re-render with the new selection
+    });
+  }
+}
+
+// ---------------------------------------------------------------- spawning
+const _sv = new THREE.Vector3();
+
+// telegraphed spawns: a light beam marks the spot, then the enemy appears
+const pending = [];
+
+function telegraph(pos, colorRGB, delay, fn) {
+  const hot = opts.contrast ? 1.4 : 1;
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.45, 0.45, 26, 10, 1, true),
+    new THREE.MeshBasicMaterial({
+      color: new THREE.Color().setRGB(colorRGB[0] * hot, colorRGB[1] * hot, colorRGB[2] * hot),
+      transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    }),
+  );
+  beam.position.set(pos.x, 13, pos.z);
+  scene.add(beam);
+  pending.push({ t: delay, total: delay, beam, fn });
+}
+
+function updatePending(dt) {
+  for (let i = pending.length - 1; i >= 0; i--) {
+    const p = pending[i];
+    p.t -= dt;
+    const k = 1 - Math.max(0, p.t) / p.total;
+    p.beam.material.opacity = Math.sin(k * Math.PI) * 0.5;
+    p.beam.rotation.y += dt * 4;
+    if (p.t <= 0) {
+      scene.remove(p.beam);
+      p.beam.geometry.dispose();
+      p.beam.material.dispose();
+      pending.splice(i, 1);
+      p.fn();
+    }
+  }
+}
+
+// Thorn hazard (area denial): a red sigil pulses under the player, then a
+// white voxel spike erupts — move, dash, or be airborne when it fires.
+const thorns = [];
+
+function spawnThorn(x, z) {
+  const sigil = new THREE.Mesh(
+    new THREE.CircleGeometry(1.3, 24).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({
+      color: new THREE.Color().setRGB(1.8, 0.12, 0.12),
+      transparent: true, opacity: 0.0,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    }),
+  );
+  sigil.position.set(x, 0.03, z);
+  scene.add(sigil);
+  const sprite = new VoxelSprite(MODELS.thorn);
+  const group = new THREE.Group();
+  group.add(sprite.mesh);
+  group.position.set(x, 0, z);
+  group.scale.y = 0.01;
+  group.visible = false;
+  scene.add(group);
+  thorns.push({ sigil, sprite, group, state: 'warn', t: 0.9, struck: false });
+  audio.warn();
+}
+
+function updateThorns(dt) {
+  for (let i = thorns.length - 1; i >= 0; i--) {
+    const th = thorns[i];
+    th.t -= dt;
+    if (th.state === 'warn') {
+      th.sigil.material.opacity = 0.25 + 0.35 * Math.abs(Math.sin(th.t * 18));
+      if (th.t <= 0) {
+        th.state = 'up';
+        th.t = 0.12;
+        th.group.visible = true;
+        audio.gib(false);
+        trauma = Math.max(trauma, 0.22);
+      }
+      continue;
+    }
+    if (th.state === 'up') {
+      th.group.scale.y = Math.min(1, 1 - th.t / 0.12);
+      if (th.t <= 0) { th.state = 'hold'; th.t = 1.1; }
+    } else if (th.state === 'hold') {
+      if (th.t <= 0) { th.state = 'down'; th.t = 0.35; }
+    } else {
+      th.group.scale.y = Math.max(0.01, th.t / 0.35);
+      if (th.t <= 0) { removeThorn(i); continue; }
+    }
+    th.sigil.material.opacity = Math.max(0, th.sigil.material.opacity - dt * 2);
+    // spike is lethal while up; a good jump (or dash-through timing) clears it
+    if (!th.struck && th.state !== 'down'
+        && Math.hypot(player.feet.x - th.group.position.x, player.feet.z - th.group.position.z) < 1.1
+        && player.feet.y < 1.4) {
+      th.struck = true;
+      if (playerStruck(th.group.position.x, th.group.position.z, 'thorn', th)) return;
+    }
+  }
+}
+
+function removeThorn(i) {
+  const th = thorns[i];
+  scene.remove(th.sigil);
+  th.sigil.geometry.dispose();
+  th.sigil.material.dispose();
+  scene.remove(th.group);
+  th.sprite.dispose();
+  thorns.splice(i, 1);
+}
+
+function clearThorns() {
+  for (let i = thorns.length - 1; i >= 0; i--) removeThorn(i);
+}
+
+function clearPending() {
+  for (const p of pending) {
+    scene.remove(p.beam);
+    p.beam.geometry.dispose();
+    p.beam.material.dispose();
+  }
+  pending.length = 0;
+}
+
+function ringSpot(minPlayerDist, draw = rng.next) {
+  for (let tries = 0; tries < 12; tries++) {
+    const a = draw() * Math.PI * 2;
+    const r = ARENA_R * (0.45 + draw() * 0.4);
+    _sv.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+    if (_sv.distanceTo(player.feet) < minPlayerDist) continue;
+    let nearTotem = false;
+    for (const e of enemies) {
+      if (e.type === 'totem' && Math.hypot(e.pos.x - _sv.x, e.pos.z - _sv.z) < 5) {
+        nearTotem = true;
+        break;
+      }
+    }
+    if (!nearTotem) return _sv;
+  }
+  return _sv;
+}
+
+function skullCount() {
+  let n = 0;
+  for (const e of enemies) if (e.type === 'skull') n++;
+  return n;
+}
+
+function totemCount() {
+  let n = 0;
+  for (const e of enemies) if (e.type === 'totem') n++;
+  return n;
+}
+
+function spawnSerpent(ghost = serpentsSpawned % 2 === 1, at = null, ddRules = false) {
+  if (!ddRules) announce(ghost ? 'ghostSerpent' : 'serpent', ghost ? 'THE PALE SERPENT' : 'THE SERPENT');
+  const p = at ? at.clone() : ringSpot(14).clone();
+  p.y = 8;
+  audio.roar();
+  serpentsSpawned++;
+  const s = new Serpent(scene, p, ARENA_R + 5, ghost);
+  if (ddRules) {
+    // 75 HP and 25 gems across twelve exposed body nodes.
+    s.segments.forEach((seg, i) => {
+      seg.hp = i === 0 ? 9 : 6;
+      seg.gemDrop = i === 0 ? 3 : 2;
+    });
+  }
+  serpents.push(s);
+  enemies.push(...s.segments);
+}
+
+// ---------------------------------------------- serpent teaser flyby
+// ~10s into every run a serpent circles just beyond the grid — harmless,
+// untargetable, gone in seconds — foreshadowing the real arrival at 100s.
+let flyby = null;
+let flybyDone = false;
+const FLYBY_SEGS = 8;
+
+function flybyPath(t, a0, out) {
+  // 0-2s swoop in from beyond the horizon, 2-9s low orbit, then climb away
+  const orbitR = ARENA_R * 1.08;
+  let r, y;
+  if (t < 2) { r = orbitR + (2 - t) * 14; y = 9 - t * 1.5; }
+  else if (t < 9) { r = orbitR; y = 6 + Math.sin(t * 1.4) * 1.5; }
+  else { r = orbitR + (t - 9) * 9; y = 6 + (t - 9) * 4; }
+  const a = a0 + t * 0.55;
+  return out.set(Math.cos(a) * r, y, Math.sin(a) * r);
+}
+
+function startFlyby() {
+  if (flyby) return;
+  announce('serpentTease', 'SOMETHING CIRCLES THE VOID');
+  audio.roar();
+  const parts = [];
+  for (let i = 0; i <= FLYBY_SEGS; i++) {
+    const sprite = new VoxelSprite(i === 0 ? MODELS.serpentHead : MODELS.serpent);
+    const g = new THREE.Group();
+    g.add(sprite.mesh);
+    g.position.set(0, -60, 0); // below the void until the path places it
+    scene.add(g);
+    parts.push({ sprite, g });
+  }
+  flyby = { parts, trail: [], t: 0, a0: Math.random() * Math.PI * 2 };
+}
+
+function endFlyby() {
+  if (!flyby) return;
+  for (const p of flyby.parts) {
+    scene.remove(p.g);
+    p.sprite.dispose();
+  }
+  flyby = null;
+}
+
+function updateFlyby(dt) {
+  if (!flyby) return;
+  const f = flyby;
+  f.t += dt;
+  flybyPath(f.t, f.a0, _sv);
+  f.trail.push({ x: _sv.x, y: _sv.y, z: _sv.z });
+  if (f.trail.length > 600) f.trail.shift();
+  f.parts[0].g.position.copy(_sv);
+  flybyPath(f.t + 0.15, f.a0, _c);
+  f.parts[0].g.lookAt(_c);
+  f.parts[0].sprite.update(dt);
+  // rings chain-follow the head by arc length along the recorded trail
+  let idx = f.trail.length - 1;
+  let acc = 0;
+  for (let i = 1; i < f.parts.length; i++) {
+    const target = i * 1.0;
+    while (idx > 0 && acc < target) {
+      const a = f.trail[idx], b = f.trail[idx - 1];
+      acc += Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+      idx--;
+    }
+    const tp = f.trail[idx];
+    f.parts[i].g.position.set(tp.x, tp.y, tp.z);
+    f.parts[i].g.lookAt(f.parts[i - 1].g.position);
+    f.parts[i].sprite.update(dt);
+  }
+  if (f.t > 14) endFlyby();
+}
+
+// ------------------------------------------------ DD-authored spawnset
+// PURE is deliberately learnable: the same threats arrive at the same second
+// every run. The first 229 seconds mirror DD's early-game structure using the
+// closest Hyper Dagger analogs (squid spawner, gem thief, centipede).
+const DD_SPAWNSET = [
+  [3, 'squid1'], [14, 'squid1'], [19, 'squid1'], [24, 'squid1'],
+  [39, 'squid2'], [39, 'spider'],
+  [49, 'squid2'], [49, 'squid1'],
+  [64, 'squid2'], [64, 'squid1'],
+  [79, 'squid2'], [79, 'squid1'],
+  [94, 'squid2'], [94, 'squid1'],
+  [109, 'squid2'], [114, 'centipede'], [119, 'spider'],
+  [134, 'squid2'], [134, 'squid1'],
+  [144, 'squid2'], [144, 'squid1'],
+  [154, 'squid2'], [154, 'squid1'],
+  [164, 'squid2'], [164, 'squid1'],
+  [174, 'centipede'], [174, 'spider'], [174, 'spider'], [174, 'spider'],
+  [184, 'squid2'], [184, 'squid1'],
+  [189, 'squid2'], [189, 'squid1'],
+  [199, 'spider'], [199, 'spider'], [199, 'spider'],
+  [229, 'squid1'], [229, 'squid1'], [229, 'squid1'],
+  [229, 'squid1'], [229, 'squid1'], [229, 'squid1'],
+];
+
+function ddEdgeSpot(i) {
+  // A fixed golden-angle walk makes simultaneous spawns legible without
+  // turning the script into a repeating four-corner pattern.
+  const a = i * 2.399963229728653;
+  const r = ARENA_R * 0.84;
+  return new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r);
+}
+
+function spawnDDEntry(kind, index) {
+  const at = ddEdgeSpot(index);
+  audio.spawn();
+  if (kind === 'squid1' || kind === 'squid2') {
+    enemies.push(new Totem(scene, at, 20, kind === 'squid1' ? 1 : 2));
+  } else if (kind === 'spider') {
+    enemies.push(new Spider(scene, at, true));
+  } else if (kind === 'centipede') {
+    spawnSerpent(false, at, true);
+  }
+}
+
+function ddDirector() {
+  while (pureScriptCursor < DD_SPAWNSET.length &&
+      gameTime >= DD_SPAWNSET[pureScriptCursor][0]) {
+    const [, kind] = DD_SPAWNSET[pureScriptCursor];
+    spawnDDEntry(kind, pureScriptCursor);
+    pureScriptCursor++;
+    pulseN = pureScriptCursor;
+  }
+  emitSpawnerWaves(true);
+  for (let i = serpents.length - 1; i >= 0; i--) {
+    if (!serpents[i].alive) serpents.splice(i, 1);
+  }
+}
+
+// ---------------------------------------------------- pulse director
+// Toko-drop's wave/budget system adapted to continuous time: every ~14s a
+// "pulse" fires with a budget that grows over the run (knee at 2.5 min),
+// spent on a [key, unlockTime, cost] pool. A deterministic rhythm shapes the
+// pulses — every 8th is HEAVY (guaranteed serpent/dread centrepiece), every
+// 4th a SPIKE (1.5× budget, favours heavies), every 3rd a SWARM (bodies only,
+// tight burst), and a normal pulse right after any intense one runs at half
+// budget (the breather). Unlock gates preserve the onboarding debut order.
+// the whole HYPER curve lives in tuning.js — see the essay on T.director.
+// PURE runs DD_SPAWNSET instead and is untouched by any of it.
+const PULSE_POOL = T.director.pool;
+const PULSE_CAPS = T.director.caps;
+const SWARM_KEYS = new Set(['skulls', 'blinker']);
+const SPIKE_KEYS = new Set(['brute', 'dread', 'spider', 'husk']);
+
+function pulseKind(n) {
+  if (n < 1) return 'normal'; // so pulse 1 isn't judged a post-"spike 0" breather
+  if (n % 8 === 0) return 'heavy';
+  if (n % 4 === 0) return 'spike';
+  if (n >= 3 && n % 3 === 0) return 'swarm';
+  return 'normal';
+}
+
+function pulseBudget(n, kind) {
+  // budget grows with PULSE INDEX, not wall time — the pulse count is the
+  // director's own clock, and it keeps daily pick sequences comparable
+  // across players (a time-based budget made the same pulse redraw
+  // differently depending on when it fired). Knee at pulse 11 ≈ the old
+  // 2.5-minute knee at average cadence.
+  const B = T.director.budget;
+  const base = B.base
+    + Math.min(n, B.kneeA) * B.rateA
+    + Math.max(0, Math.min(n, B.kneeB) - B.kneeA) * B.rateB
+    + Math.max(0, n - B.kneeB) * B.rateC;
+  const breather = kind === 'normal' && pulseKind(n - 1) !== 'normal';
+  const mod = kind === 'heavy' ? 1.6 : kind === 'spike' ? 1.5
+    : kind === 'swarm' ? 1.3 : breather ? 0.5 : 1;
+  return base * mod;
+}
+
+function enemyCount(type) {
+  let n = 0;
+  for (const e of enemies) if (e.type === type) n++;
+  return n;
+}
+
+function pulseEligible([key, unlock]) {
+  if (gameTime < unlock) return false;
+  if (key === 'serpent') return serpents.length < SERPENT_CAP;
+  if (key === 'skulls') return skullCount() <= SKULL_CAP - 3;
+  const cap = PULSE_CAPS[key];
+  return cap === undefined || enemyCount(key) < cap;
+}
+
+/** Telegraphed spawn of one pool pick, `stagger` seconds after the pulse.
+ *  `draw` is the pulse's PRNG (seeded per pulse index in daily runs) — the
+ *  telegraph callbacks capture it, and staggers are monotonic within a pulse,
+ *  so draw order stays deterministic even though spawns resolve later. */
+function spawnPick(key, stagger, draw = rng.next) {
+  debuted[key] = true;
+  const delay = 0.7 + stagger;
+  if (key === 'serpent') { spawnSerpent(); return; } // its own sky entrance
+  audio.spawn();
+  if (key === 'skulls') {
+    const at = ringSpot(12, draw).clone();
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => {
+      const boost = Math.min(6, gameTime * 0.06);
+      for (let i = 0; i < 3 && skullCount() < SKULL_CAP; i++) {
+        _sv.set(at.x + (draw() - 0.5) * 1.6, 1.1 + draw() * 0.8,
+          at.z + (draw() - 0.5) * 1.6);
+        enemies.push(gameTime > 60 && draw() < 0.3
+          ? new Wraith(scene, _sv, boost) : new Skull(scene, _sv, boost));
+      }
+    });
+  } else if (key === 'watcher') {
+    announce('watcher', 'THE WATCHERS');
+    const at = ringSpot(12, draw).clone();
+    at.y = 2.2;
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Watcher(scene, at, ARENA_R - 1)));
+  } else if (key === 'husk') {
+    announce('husk', 'THE HUSKS &mdash; BREAK THE SHELL');
+    const at = ringSpot(13, draw).clone();
+    telegraph(at, [2.2, 0.18, 0.18], delay + 0.15, () => {
+      at.y = 1.35;
+      enemies.push(new Husk(scene, at, Math.min(1.2, (gameTime - 30) * 0.008)));
+    });
+  } else if (key === 'brute') {
+    announce('brute', 'THE BRUTES');
+    const at = ringSpot(14, draw).clone();
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => {
+      at.y = 1.25;
+      enemies.push(new Brute(scene, at, Math.min(1.5, (gameTime - 40) * 0.01)));
+    });
+  } else if (key === 'spider') {
+    announce('spider', 'THE THIEVES');
+    const at = ringSpot(10, draw).clone();
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Spider(scene, at)));
+  } else if (key === 'blinker') {
+    announce('blinker', 'THE BLINKERS');
+    const at = ringSpot(12, draw).clone();
+    at.y = 1.2;
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Blinker(scene, at, ARENA_R - 1)));
+  } else if (key === 'dread') {
+    announce('dread', 'THE DREAD SKULL');
+    const at = ringSpot(15, draw).clone();
+    telegraph(at, [2.6, 0.2, 0.2], delay + 0.2, () => {
+      at.y = 1.5;
+      enemies.push(new DreadSkull(scene, at, Math.min(4, (gameTime - 110) * 0.008)));
+    });
+  }
+}
+
+// Which pool keys the player has actually MET this run. The rhythm+budget
+// lottery can otherwise delay a debut far past its unlock (measured: spiders
+// unlock at 75s but first appeared at a median of 139s, watchers as late as
+// 139s), which silently breaks the documented one-mechanic-at-a-time
+// onboarding — so an undebuted, unlocked type jumps the queue.
+let debuted = {};
+
+const lastPulsePicks = []; // debug: {n, kind, picks[]} per pulse, capped
+
+/** Live threats the ceiling counts — totems and eggs are furniture (they
+ *  don't chase and can't touch you), so they must not crowd out real
+ *  pressure. */
+function livePressure() {
+  let n = 0;
+  for (const e of enemies) if (e.alive && e.type !== 'totem' && e.type !== 'egg') n++;
+  return n;
+}
+
+/** How many live threats the floor may hold right now. HYPER only: PURE's
+ *  fixed spawnset is meant to be identical every run, so capping it would
+ *  break the thing that makes it learnable. */
+function pressureCeiling() {
+  const C = T.director.ceiling;
+  return Math.min(C.cap, C.base + gameTime * C.rate);
+}
+
+function runPulse(n) {
+  const kind = pulseKind(n);
+  // daily runs seed a FRESH stream per pulse index, so pulse N's pick
+  // sequence is comparable across players regardless of when it fires
+  const draw = runKindLive === 'daily' ? mulberry32(mixSeed(runSeed, n)) : Math.random;
+  let budget = pulseBudget(n, kind);
+  let stagger = 0;
+  const picks = [];
+  // DEBUT GUARANTEE: the earliest-unlocked type the player hasn't met yet
+  // spawns regardless of this pulse's kind or budget, so unlock times are
+  // real introduction times. PULSE_POOL is ordered by unlock, so `find`
+  // already yields the right one; it's deterministic (pulse fire times and
+  // `debuted` don't depend on random draws), which also makes daily runs
+  // MORE comparable, not less.
+  const debut = PULSE_POOL.find(e => !debuted[e[0]] && pulseEligible(e));
+  if (debut) {
+    spawnPick(debut[0], 0, draw);
+    budget -= debut[2];
+    picks.push(debut[0] + '*'); // starred in the debug log = forced debut
+  }
+  // heavy pulses open with a guaranteed centrepiece
+  if (kind === 'heavy') {
+    if (gameTime >= 100 && serpents.length < SERPENT_CAP) { spawnPick('serpent', 0, draw); budget -= 8; picks.push('serpent'); }
+    else if (gameTime >= 120 && enemyCount('dread') < PULSE_CAPS.dread) { spawnPick('dread', 0, draw); budget -= 6; picks.push('dread'); }
+  }
+  // The debut above is guaranteed — a new threat always gets its moment.
+  // Everything after it is FILLER, and filler is what the ceiling governs:
+  // at capacity a pulse stops adding bodies rather than burying a player
+  // who is already behind.
+  if (pressureCeiling() - livePressure() < 1) budget = 0;
+  for (let guard = 0; guard < 20 && budget > 0.5; guard++) {
+    if (livePressure() >= pressureCeiling()) break;
+    let pool = PULSE_POOL.filter(pulseEligible);
+    if (!pool.length) break;
+    if (kind === 'swarm') {
+      const p = pool.filter(([k]) => SWARM_KEYS.has(k));
+      if (p.length) pool = p;
+    } else if (kind === 'spike' && draw() < 0.7) {
+      const p = pool.filter(([k]) => SPIKE_KEYS.has(k));
+      if (p.length) pool = p;
+    }
+    const [key, , cost] = pool[(draw() * pool.length) | 0];
+    if (cost > budget + 1) continue; // too rich for what's left — redraw
+    spawnPick(key, stagger, draw);
+    budget -= cost;
+    picks.push(key);
+    stagger += kind === 'swarm' ? 0.12 + draw() * 0.3 : 0.4 + draw() * 0.8;
+  }
+  lastPulsePicks.push({ n, kind, picks });
+  if (lastPulsePicks.length > 20) lastPulsePicks.shift();
+}
+
+function emitSpawnerWaves(ddRules = false) {
+  for (const e of enemies) {
+    if ((e.type !== 'totem' && e.type !== 'leviathan') || !e.emit) continue;
+    e.emit = false;
+    const m = e.mouthPos(_sv).clone();
+    if (ddRules && e.ddTier) {
+      const count = e.ddTier === 1 ? 9 : 10;
+      for (let i = 0; i < count && skullCount() < SKULL_CAP; i++) {
+        const at = m.clone().add(_c.set(
+          (Math.random() - 0.5) * 1.6,
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 1.6));
+        enemies.push(new Skull(scene, at));
+      }
+      if (skullCount() < SKULL_CAP) {
+        const leader = new Wraith(scene, m, e.ddTier === 2 ? 1.5 : 0);
+        leader.hp = e.ddTier === 1 ? 5 : 10;
+        leader.gemDrop = 1;
+        enemies.push(leader);
+      }
+      audio.spawn();
+      continue;
+    }
+    if (skullCount() >= SKULL_CAP) continue;
+    // The exhale is the biggest spawn faucet in the game — several totems on
+    // a ~2 s cycle out-produce the entire pulse system — so the pressure
+    // ceiling has to govern it too. Gating only the pulses moved the measured
+    // population by barely one body. (HYPER only: the PURE exhale above runs
+    // its fixed script and must stay deterministic.)
+    if (M().director === 'pulse' && livePressure() >= pressureCeiling()) continue;
+    const boost = Math.min(6, gameTime * 0.06);
+    const roll = rng.next(); // seeded in daily runs — exhale mix is part of the schedule
+    const skull =
+      gameTime > 45 && roll < 0.15 ? new Splitter(scene, m, boost) :
+      gameTime > 60 && roll < 0.45 ? new Wraith(scene, m, boost) :
+      new Skull(scene, m, boost);
+    if (skull instanceof Splitter) announce('splitter', 'THE SPLITTERS');
+    else if (skull instanceof Wraith) announce('wraith', 'CROWNED SKULLS');
+    enemies.push(skull);
+    for (let i = 0; i < 4; i++) {
+      debris.spawn(m, skull.sprite.randomColor(),
+        _sv.clone().set((Math.random() - 0.5) * 4, 2 + Math.random() * 3, (Math.random() - 0.5) * 4),
+        0.14, 0.8);
+    }
+    audio.spawn();
+  }
+}
+
+let nextSkullAt = 0;   // v48: season 2's own clock
+// v48 (owner): "only random skulls as enemies otherwise." A season that says
+// `spawns.only: 'skulls'` gets THIS director and none of the other: no totems,
+// no pulses, no thorns, no flyby, no leviathan. The skull FAMILY, drawn at
+// random — the crowned, the splitter and the dread join as the run goes on —
+// on a cadence that tightens from `base` to `floor`, under `cap`.
+
+// Season wave pacing — peaks and valleys so later stages still have breathing room
+let waveIdx = 0;
+let waveGapUntil = 0;
+let lastAnnouncedWave = -1;
+function currentWave() {
+  const waves = S().waves;
+  if (!waves || !waves.length) return null;
+  while (waveIdx + 1 < waves.length && gameTime >= waves[waveIdx + 1].t) waveIdx++;
+  if (waveIdx !== lastAnnouncedWave && state === 'playing') {
+    lastAnnouncedWave = waveIdx;
+    const w = waves[waveIdx];
+    slowmo = Math.max(slowmo, 0.35);
+    trauma = Math.max(trauma, 0.12);
+    if (w.kind === 'finale') toast('FINALE', 1600);
+    else if (waveIdx > 0) toast(w.kind.toUpperCase(), 900);
+  }
+  return waves[waveIdx];
+}
+function waveDirector() {
+  const w = currentWave();
+  if (!w) return false;
+  if (gameTime < waveGapUntil) return true; // breathing
+  const density = w.density || 1;
+  const season = S();
+
+  // S3: no enemies from behind — only spawn in the forward half
+  const aheadOnly = !!season.noRear;
+
+  if (season.id === 'inca') {
+    // S2: prefer spawning in the trough (away from the crest)
+    const crestPhase = goo._dist ? (goo._dist % (goo.period || 10)) : 0;
+    const inTrough = crestPhase > 3 && crestPhase < (goo.period || 10) - 2;
+    if (inTrough && Math.random() < density * 0.12) skullDirector();
+  } else if (aheadOnly) {
+    // S3: strict forward cone relative to camera
+    if (Math.random() < density * 0.06) {
+      const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      let at = ringSpot(16).clone();
+      let toSpot = at.clone().sub(player.feet).normalize();
+      let tries = 0;
+      while (toSpot.dot(fwd) < 0.35 && tries < 6) {
+        at = ringSpot(16).clone();
+        toSpot = at.clone().sub(player.feet).normalize();
+        tries++;
+      }
+      if (toSpot.dot(fwd) < 0.2) at.add(fwd.clone().multiplyScalar(18));
+      at.y = 1.2;
+      telegraph(at, [1.8, 0.9, 0.3], 0.6, () => enemies.push(new Skull(scene, at, 0.35)));
+    }
+  } else {
+    // S1 and others: classic mix
+    if (Math.random() < density * 0.12) {
+      const at = ringSpot(10).clone(); at.y = 1.2;
+      const r = rng.next();
+      const mk = r < 0.2 ? () => new Brute(scene, at) : () => new Skull(scene, at, Math.min(1.5, gameTime * 0.01));
+      telegraph(at, [1.6, 0.3, 0.2], 0.6, () => enemies.push(mk()));
+    }
+  }
+  if (Math.random() < 0.08) waveGapUntil = gameTime + (w.gap || 6);
+  return true;
+}
+function skullDirector() {
+  const sp = S().spawns;
+  if (gameTime < nextSkullAt || enemyCount('skull') >= (sp.cap ?? 28)) return;
+  const at = ringSpot(10).clone(); at.y = 1.2;
+  const r = rng.next(), t = gameTime;
+  let mk;
+  if (t > 60 && r < 0.08)      mk = () => new DreadSkull(scene, at);
+  else if (t > 45 && r < 0.18) mk = () => new Splitter(scene, at);
+  else if (t > 30 && r < 0.30) mk = () => new Wraith(scene, at, Math.min(1.5, (t - 30) * 0.01));
+  else                         mk = () => new Skull(scene, at, Math.min(2.0, t * 0.012));
+  audio.spawn();
+  telegraph(at, [1.6, 1.4, 0.3], 0.55, () => enemies.push(mk()));
+  nextSkullAt = gameTime + Math.max(sp.floor, sp.base - gameTime * sp.slope) / finalePressure;   // v53: tighter after the finale
+}
+function director(dt) {
+  if (directorFrozen) { updatePending(dt); return; } // telegraphs still resolve
+  const dir = M().director;
+  if (dir === 'none') { updatePending(dt); return; } // the track/bench is the pressure
+  if (dir === 'ddSpawnset') { ddDirector(); return; }
+  updatePending(dt);
+  if (waveDirector()) return;
+  if (S().spawns?.only === 'skulls') { skullDirector(); return; }
+  if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
+    const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
+    const at = ringSpot(12).clone();
+    audio.spawn();
+    telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Totem(scene, at, interval)));
+    // cadence tightens from every 24s down to every 16s as the run goes on
+    const TT = T.director.totem;
+    nextTotemAt = gameTime + Math.max(TT.floor, TT.base - gameTime * TT.slope);
+  }
+  // THE REVENANT rises out of the player's own bone-yard — it needs a dense
+  // patch of corpses, devours it, and claws up on the spot. No carnage, no
+  // revenant: the spawn is gated on the litter field, not just the clock.
+  if (gameTime >= nextRevenantAt && enemyCount('revenant') < 3) {
+    const spot = litter.densestSpot(45, 4.5);
+    if (spot) {
+      announce('revenant', 'THE DEAD RISE');
+      litter.consume(spot.x, spot.z, 4.5, 160);
+      _sv.set(spot.x, 0.6, spot.z);
+      audio.spawn();
+      telegraph(_sv, [2.2, 0.2, 0.2], 0.7, () => {
+        _sv.set(spot.x, -0.6, spot.z);
+        audio.rise();
+        enemies.push(new Revenant(scene, _sv, Math.min(1.5, (gameTime - 110) * 0.006)));
+      });
+      nextRevenantAt = gameTime + Math.max(13, 24 - gameTime * 0.02);
+    } else {
+      nextRevenantAt = gameTime + 5; // no pile yet — look again shortly
+    }
+  }
+  if (gameTime >= nextPulseAt) {
+    pulseN++;
+    runPulse(pulseN);
+    // pulse cadence tightens from ~14s toward a 9s floor over the run
+    // fast from the first pulse on purpose: minute one needs enough pulses
+    // to walk the debut list, and the low early budget is what keeps that a
+    // parade rather than a pile-up.
+    const P = T.director.pulse;
+    nextPulseAt = gameTime + Math.max(P.floor, P.base - gameTime * P.slope) / finalePressure;   // v53: tighter after the finale
+  }
+  if (!flybyDone && gameTime >= 10) {
+    flybyDone = true;
+    startFlyby();
+  }
+  if (gameTime >= nextThornAt) {
+    announce('thorn', 'THORNS BENEATH');
+    spawnThorn(player.feet.x, player.feet.z);
+    nextThornAt = gameTime + Math.max(6, 12 - gameTime * 0.025);
+  }
+  if (gameTime >= nextLevAt) {
+    if (!enemies.some(e => e.type === 'leviathan')) {
+      // the boss always gets its entrance, even on respawns
+      announced.leviathan = false;
+      announce('leviathan', 'THE LEVIATHAN RISES');
+      audio.roar();
+      telegraph(new THREE.Vector3(0, 0, 0), [2.6, 0.2, 0.2], 1.2,
+        () => enemies.push(new Leviathan(scene, 5)));
+    }
+    nextLevAt = gameTime + 120;
+  }
+  emitSpawnerWaves(false);
+  for (let i = serpents.length - 1; i >= 0; i--) {
+    if (!serpents[i].alive) serpents.splice(i, 1);
+  }
+}
+
+// ---------------------------------------------------------------- weapon
+function levelForGems(n) {
+  return n >= LEVEL_GEMS[3] ? 3 : n >= LEVEL_GEMS[2] ? 2 : 1;
+}
+
+function setWeaponLevel(lv) {
+  if (lv <= weaponLv) return;
+  weaponLv = lv;
+  applyGauntlet(lv);
+  audio.levelup();
+  toast(lv === 4 ? 'LEVEL 4 — THE CRIMSON HAND'
+    : lv === 3 ? 'LEVEL 3 — RMB HOMING' : `DAGGERS LEVEL ${lv}`);
+  trauma = Math.max(trauma, lv === 4 ? 0.5 : 0.3);
+}
+
+function onGemsCollected(n) {
+  const before = gemCount;
+  gemCount += n;
+  audio.gem();
+  addStyle(n); // hoarding gems mid-fight keeps the meter warm
+  const lv = levelForGems(gemCount);
+  if (weaponLv < 3) {
+    setWeaponLevel(lv);
+    // Only gems beyond the 70-gem upgrade become spendable homing ammo.
+    homingAmmo += Math.max(0, gemCount - Math.max(before, LEVEL_GEMS[3]));
+  } else {
+    homingAmmo += n;
+  }
+  if (weaponLv === 3 && homingAmmo >= 150) {
+    homingAmmo -= 150;
+    setWeaponLevel(4);
+  }
+}
+
+// ---------------------------------------------------------------- style
+function styleTierIdx(v) {
+  for (let i = STYLE_TIERS.length - 1; i > 0; i--) {
+    if (v >= STYLE_TIERS[i].min) return i;
+  }
+  return 0;
+}
+
+/** Paint the rank badge + fill bar to match the current meter value. */
+
+/** Pulse the vignette when enemies are close — a soft threat read. */
+function updateThreatVignette() {
+  if (state !== 'playing') { document.getElementById('vignette').style.opacity = '0'; return; }
+  let near = 0;
+  for (const e of enemies) {
+    const d = Math.hypot(e.pos.x - player.feet.x, e.pos.z - player.feet.z);
+    if (d < 6) near = Math.max(near, 1 - d / 6);
+  }
+  document.getElementById('vignette').style.opacity = String(Math.min(0.55, near * 0.7));
+}
+
+function bumpCombo() {
+  comboCount++;
+  comboTimer = 2.2;
+  elCombo.textContent = '×' + comboCount;
+  elCombo.classList.add('show');
+  if (comboCount >= 4 && comboCount % 2 === 0) addStyle(1);
+}
+function updateCombo(dt) {
+  if (comboTimer > 0) {
+    comboTimer -= dt;
+    if (comboTimer <= 0) {
+      comboCount = 0;
+      elCombo.classList.remove('show');
+    }
+  }
+}
+function updateThreatRing() {
+  if (state !== 'playing') { elThreatRing.innerHTML = ''; return; }
+  const pips = [];
+  const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+  const r = Math.min(window.innerWidth, window.innerHeight) * 0.14;
+  for (const e of enemies) {
+    const dx = e.pos.x - player.feet.x, dz = e.pos.z - player.feet.z;
+    const d = Math.hypot(dx, dz);
+    if (d < 5 || d > 22) continue;
+    const ang = Math.atan2(dz, dx);
+    const x = Math.cos(ang) * r;
+    const y = Math.sin(ang) * r;
+    pips.push(`<div class="pip" style="left:${50 + (x / r) * 50}%; top:${50 + (y / r) * 50}%;"></div>`);
+  }
+  elThreatRing.innerHTML = pips.slice(0, 12).join('');
+}
+function updateStyleHud() {
+  const idx = styleTierIdx(styleVal);
+  if (idx === 0) { elStyle.style.opacity = '0'; return; }
+  const tier = STYLE_TIERS[idx];
+  const next = STYLE_TIERS[idx + 1];
+  const hi = next ? next.min : STYLE_CAP;
+  const frac = Math.max(0, Math.min(1, (styleVal - tier.min) / (hi - tier.min)));
+  elStyle.style.opacity = '1';
+  elStyleRank.textContent = tier.label;
+  elStyleRank.style.color = tier.color;
+  elStyleMult.textContent = '×' + (1 + idx * 0.5).toFixed(1);
+  elStyleFill.style.width = (frac * 100) + '%';
+  elStyleFill.style.background = tier.color;
+}
+
+/** Add to the style meter and remember the tier crossings for the recap +
+ *  a rank-up flourish (stinger + trauma) so climbing feels like an event. */
+function addStyle(amount) {
+  if (amount <= 0 || state !== 'playing') return;
+  const before = styleTierIdx(styleVal);
+  styleVal = Math.min(STYLE_CAP, styleVal + amount);
+  const after = styleTierIdx(styleVal);
+  if (after > before) {
+    if (after > stylePeakIdx) stylePeakIdx = after;
+    // only S+ interrupts with a toast/flourish — lower tiers read off the
+    // HUD meter so we never clobber an enemy-debut announcement
+    if (after >= 3) {
+      audio.levelup();
+      trauma = Math.max(trauma, 0.15);
+      toast(`RANK ${STYLE_TIERS[after].label}`, 1100);
+    }
+  }
+}
+
+// ------------------------------------------------------------- aim assist
+// Pad aim can't match a mouse on small fast targets, so the reticle gets
+// STICKY, not magnetic: near a target the look rate scales down, which makes
+// tracking hold. Nothing is ever aimed for you — it amplifies aim, it doesn't
+// replace it — and mouse and touch never see it at all.
+const AIM_CONE = T.aim.cone;
+const AIM_FADE = T.aim.fade;
+const AIM_SLOW = T.aim.slow;
+const AIM_MAX_D = T.aim.maxDist;
+const _aimF = new THREE.Vector3();
+const _aimT = new THREE.Vector3();
+
+/** The slowdown the nearest-to-centre target earns, ungated. */
+function aimAssistRawK() {
+  camera.getWorldDirection(_aimF);
+  let best = Infinity;
+  for (const e of enemies) {
+    e.center(_aimT);
+    _aimT.sub(camera.position);
+    const d = _aimT.length();
+    if (d < 1 || d > AIM_MAX_D) continue;
+    const ang = Math.acos(Math.min(1, Math.max(-1, _aimT.dot(_aimF) / d)));
+    if (ang < best) best = ang;
+  }
+  if (best >= AIM_FADE) return 1;
+  const t = best <= AIM_CONE ? 1 : (AIM_FADE - best) / (AIM_FADE - AIM_CONE);
+  return 1 - (1 - AIM_SLOW) * t;
+}
+
+function aimAssistK() {
+  if (!opts.aim || !input.gamepad) return 1; // pad only — touch was good as-is
+  return aimAssistRawK();
+}
+
+// ---------------------------------------------------------------- combat
+const _p0 = new THREE.Vector3();
+const _c = new THREE.Vector3();
+const _seg = new THREE.Vector3();
+const _hitDir = new THREE.Vector3();
+const _fwd2 = new THREE.Vector3();
+
+function segHitsSphere(p0, p1, c, r) {
+  _seg.copy(p1).sub(p0);
+  const len2 = _seg.lengthSq();
+  let t = 0;
+  if (len2 > 0) {
+    t = _p0.copy(c).sub(p0).dot(_seg) / len2;
+    t = Math.max(0, Math.min(1, t));
+  }
+  _p0.copy(p0).addScaledVector(_seg, t);
+  return _p0.distanceToSquared(c) <= r * r;
+}
+
+function fireDagger(spread, speed, homing, damage = 1) {
+  camera.getWorldDirection(_hitDir);
+  _hitDir.x += (Math.random() - 0.5) * spread * 2;
+  _hitDir.y += (Math.random() - 0.5) * spread * 2;
+  _hitDir.z += (Math.random() - 0.5) * spread * 2;
+  _hitDir.normalize();
+  // launch from the gauntlet corner, not the crosshair — with auto-fire on
+  // nearly all the time, streaks through screen centre are too distracting
+  _p0.copy(camera.position).addScaledVector(_hitDir, 0.85);
+  _seg.setFromMatrixColumn(camera.matrixWorld, 0); // camera right
+  _p0.addScaledVector(_seg, HAND_MUZZLE[0] + (Math.random() - 0.5) * wpn('originJitter'));
+  _c.setFromMatrixColumn(camera.matrixWorld, 1); // camera up
+  _p0.addScaledVector(_c, HAND_MUZZLE[1] + (Math.random() - 0.5) * wpn('originJitter'));
+  daggers.fire(_p0, _hitDir, speed, homing, damage);
+}
+
+/** v53 COVER THAT DIES: wear a pile; at zero it comes down as rubble — physical
+ *  chunks that heap where it stood — with a spray of chips, and it is gone as
+ *  cover. Chips fly off every blow so a pile that is being worked on says so. */
+let wallsFelled = 0;
+let ebbN = 0, ebbSteps = false, rubbleStands = 0;                           // v54: the ebb, and how often the rubble held you
+let runComplete = false;                                                     // v54: the season's end reached
+const _col = new THREE.Color();
+
+// ---------------------------------------------------------------- the finale (v53)
+// Owner: *nothing in a season ends*. At `finale.at` seconds a season throws its
+// set piece; survive it and the run goes on, harder. One state object; each
+// kind is a small clock. `finalePressure` tightens the season's own director
+// after; `finaleDone` keeps it to once a run.
+let finale = null, finaleDone = false, finalePressure = 1;
+function startFinale() {
+  const f = S().finale;
+  if (!f || finale || finaleDone) return;
+  finale = { kind: f.kind, t: 0, cfg: f, phase: 0, rocks: 0, next: 0 };
+  announce('finale', f.name);
+  if (f.kind === 'pileup' && truck.active) {
+    const cv = truck.active;
+    let n = 0;
+    for (const t of cv.trucks) if (t.z < player.feet.z - 4 && t.z > player.feet.z - f.reach) { cv.wreck(t); n++; }
+    finale.wrecked = n;
+  }
+}
+function endFinale() {
+  const f = finale.cfg;
+  finale = null; finaleDone = true;
+  finalePressure = f.after?.pressure ?? 1;
+  if (f.kind === 'pileup' && truck.active) { truck.active.cfg.speed *= f.resume ?? 1; truck.active.cfg.skullMul = f.after?.skulls ?? 1; }
+  if (f.kind === 'drain') { goo.drain = 0; applySeasonFloorTerms(1); }
+}
+function applySeasonFloorTerms(k) {
+  const sn = S();
+  floorMat.uniforms.uCaustic.value = (sn.floor.caustic ?? 0) * k;
+  floorMat.uniforms.uGlint.value = (sn.floor.glint ?? 0) * k;
+}
+function updateFinale(dt) {
+  if (!finale) return;
+  const f = finale.cfg;
+  finale.t += dt;
+  if (finale.kind === 'rockfall') {
+    finale.next -= dt;
+    if (finale.t < f.duration && finale.next <= 0) {
+      finale.next = f.every;
+      const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * (ARENA_R - 2);
+      physGibs.on = gibsOn();
+      const rx = Math.cos(a) * r, rz = Math.sin(a) * r;
+      if (physGibs.rock(rx, rz, f.height, f.size, f.color)) {
+        finale.rocks++;
+        telegraph(_seg.set(rx, 0, rz), f.beam ?? [1.6, 0.32, 0.1], Math.sqrt(2 * f.height / 20), () => {});   // a beam on the spot for the fall
+      }
+    }
+    if (state === 'playing') {
+      const g = physGibs.fallingOn(player.feet.x, player.feet.y, player.feet.z);
+      if (g) { playerStruck(player.feet.x + (Math.random() - 0.5), player.feet.z + (Math.random() - 0.5), 'rockfall'); trauma = Math.max(trauma, 0.5); }
+    }
+    if (finale.t >= f.duration + 3) endFinale();
+  } else if (finale.kind === 'drain') {
+    const t = finale.t, a = f.drainFor, b = a + f.dryFor, c = b + f.refill;
+    if (t < a) goo.drain = t / a;
+    else if (t < b) {
+      goo.drain = 1;
+      if (finale.phase === 0) {
+        finale.phase = 1;
+        platforms.build(f.steps, rng.next,
+          (x, z, half) => walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < half + Math.max(w.len, w.thick) * 0.5 + 0.6), player);
+      }
+    } else if (t < c) goo.drain = 1 - (t - b) / f.refill;
+    else { endFinale(); return; }
+    applySeasonFloorTerms(1 - goo.drain);
+  } else if (finale.kind === 'pileup') {
+    if (finale.t >= f.duration) endFinale();
+  }
+}
+// ---------------------------------------------------------------- the ebb (v54)
+// Season 2: the finale's drain, early and partial. Off the season's clock, not
+// a state machine, so a pause or a setTime lands in the right place.
+function updateEbb() {
+  const e = S().ebb;
+  if (!e || !goo.cfg || finale || state !== 'playing' || gameTime < e.from) return;
+  const c = (gameTime - e.from) % e.every, n = Math.floor((gameTime - e.from) / e.every) + 1;
+  let d = 0;
+  if (c < e.out) d = (c / e.out) * e.depth;
+  else if (c < e.out + e.dry) d = e.depth;
+  else if (c < e.out + e.dry + e.back) d = e.depth * (1 - (c - e.out - e.dry) / e.back);
+  if (d > 0 && n > ebbN) { ebbN = n; if (n === 1) announce('ebb', 'THE EBB'); }
+  if (d >= e.depth * 0.6 && !ebbSteps && !platforms.count) {
+    ebbSteps = true;
+    platforms.build(e.steps, rng.next,
+      (x, z, half) => walls.walls.some(w => Math.hypot(x - w.x, z - w.z) < half + Math.max(w.len, w.thick) * 0.5 + 0.6), player);
+  }
+  goo.drain = d;
+  applySeasonFloorTerms(1 - d);
+}
+
+/** v54: what the run DID, for the end screen — only the lines that happened */
+function recapParts() {
+  const out = [];
+  if (wallsFelled) out.push(`${wallsFelled} pile${wallsFelled === 1 ? '' : 's'} brought down`);
+  if (S().rubbleFloor && physGibs.gibs.length) out.push(`${physGibs.gibs.length} chunks on the floor`);
+  if (rubbleStands >= 1) out.push(`${rubbleStands.toFixed(0)}s stood on rubble`);
+  if (finaleDone) out.push(`survived ${S().finale?.name ?? 'the finale'}`);
+  if (ebbN) out.push(`${ebbN} ebb${ebbN === 1 ? '' : 's'}`);
+  if (goo.cfg && waveStrikes) out.push(`the sea hit you ${waveStrikes}×`);
+  return out;
+}
+
+function wearWall(w, amount, at) {
+  if (amount >= 1 || Math.random() < amount * 3) {
+    debris.spawn(_seg.set(at.x + (Math.random() - 0.5) * 0.4, Math.min(at.y, w.h), at.z + (Math.random() - 0.5) * 0.4),
+      _col.setRGB(...w.color).multiplyScalar(2.2), _hitDir.set((Math.random() - 0.5) * 4, 2 + Math.random() * 3, (Math.random() - 0.5) * 4), 0.09, 0.8);
+  }
+  if (!walls.damage(w, amount)) return;
+  // down it comes
+  const vol = w.len * w.h * w.thick;
+  physGibs.on = gibsOn();
+  const chunk = 0.5;
+  physGibs.rubble(w.x, w.z, w.yaw, w.len, w.h, w.thick, Math.min(26, Math.max(8, Math.round(vol / (chunk ** 3) * 0.12))), chunk, w.color);
+  for (let i = 0; i < 40; i++) {
+    _seg.set(w.x + (Math.random() - 0.5) * w.len, Math.random() * w.h, w.z + (Math.random() - 0.5) * w.thick);
+    debris.spawn(_seg, _col.setRGB(...w.color).multiplyScalar(2.2), _hitDir.set((Math.random() - 0.5) * 6, 1 + Math.random() * 4, (Math.random() - 0.5) * 6), 0.1, 1.2);
+  }
+  trauma = Math.max(trauma, 0.3);
+  audio.gib(true);
+  walls.cull(x => x === w);
+  wallsFelled++;
+}
+
+function killEnemy(e, dir) {
+  e.alive = false;
+  kills += e.score;
+  killsByType[e.type] = (killsByType[e.type] || 0) + 1;
+  addStyle(STYLE_GAIN[e.type] ?? 3);
+  if (M().lethality === 'clock') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
+  e.center(_c);
+  let deathVox = e.deathVoxels?.() ?? e.sprite.worldVoxels();
+  physGibs.on = gibsOn();
+  if (physGibs.on) deathVox = physGibs.burst(deathVox, e.sprite.size, _hitDir.copy(dir).multiplyScalar(5));   // the chunks stack; the rest is spray
+  debris.burst(deathVox, e.sprite.size,
+    _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
+  audio.gib(e.type !== 'skull');
+  // heavy kills stamp a shockwave ring into the floor, warp the frame, and
+  // freeze time for a beat (~50ms at 12% speed) so the impact lands
+  if (e.type === 'brute' || e.type === 'dread' || e.type === 'leviathan' || e.isHead) {
+    spawnShockwave(_c);
+    triggerRipple(e.type === 'leviathan' ? 1 : 0.7);
+    hitStop = 0.05;
+    buzz(0.7, 0.35, 90);
+  }
+  trauma = Math.max(trauma, e.type === 'skull' ? 0.18 : 0.35);
+  let drops = e.gemDrop ?? GEM_DROPS[e.type] ?? 0;
+  if (e.isHead && e.gemDrop === undefined) drops = 2;
+  if (e.type === 'spider') drops = 1 + e.stolen; // thieves give it all back
+  for (let i = 0; i < drops; i++) gems.spawn(_c);
+  if (e.splits) {
+    for (let i = 0; i < 3; i++) {
+      _seg.set(_c.x + (Math.random() - 0.5) * 1.2, _c.y, _c.z + (Math.random() - 0.5) * 1.2);
+      enemies.push(new MiniSkull(scene, _seg, Math.min(6, gameTime * 0.06)));
+    }
+  }
+  if (e.type === 'leviathan') trauma = 1;
+  e.remove(scene);
+}
+
+/** The hand. HD-001: a short press jumps, the stream runs only while fire
+ *  is held, and walking does not shoot. Moved out of updateCombat whole in
+ *  v51 so a season whose hand is the GAZE can skip it in one branch. */
+/** HD-001's press grammar for mouse button 0 and pad RT/RB: released before
+ *  the stream delay it is a jump, held past it it streams. Returns whether
+ *  the hold has reached the stream. Shared by the hand and by the gaze
+ *  season, which has no gun but keeps the short press = jump (#619 review). */
+function firePress(dt) {
+  const held = input.firing;
+  if (held) {
+    fireHeldT += dt;
+  } else {
+    // released before the stream: jump, no burst
+    if (fireWasHeld && fireHeldT > 0 && fireHeldT < T.weapon.streamDelay) input._jump = true;
+    fireHeldT = 0;
+  }
+  fireWasHeld = held;
+  return held && fireHeldT >= T.weapon.streamDelay;
+}
+
+function fireByHand(dt, w) {
+  let streaming;
+  if (input.touchMode && !input.gamepad) {
+    // A stick tap already jumps in input.js. Do not turn it into a shotgun.
+    // Holding the right stick is the stream. The move stick is not.
+    input.consumeFireTap();
+    streaming = input.firing;
+  } else {
+    streaming = firePress(dt);
+  }
+  if (streaming && shotCd <= 0) {
+    weaponActive = true;
+    fireTimer -= dt;
+    while (fireTimer <= 0) {
+      fireTimer += 1 / (w.stream * (WP.rate ?? 1));
+      fireDagger(wpn('spread'),
+        wpn('streamSpeed') * (0.86 + Math.random() * 0.28), w.homing);
+      recoil = Math.min(0.035, recoil + 0.007);
+      hand.flash(0.3);
+      audio.fire(); fx.fire++; fx.fireRecoil = recoil;
+    }
+  } else {
+    fireTimer = 0;
+  }
+
+  // LV3+ stores gems as a separate RMB/LT homing weapon. Firing only happens
+  // while it is held, so a short alt press does not dump a burst and is not
+  // a jump. One banked dagger per streamed projectile.
+  const altHeld = input.altFiring;
+  if (altHeld) homingHeldT += dt;
+  else homingHeldT = 0;
+  homingWasHeld = altHeld;
+  const homingStreaming = altHeld && homingHeldT >= T.weapon.streamDelay &&
+    weaponLv >= 3 && homingAmmo > 0;
+  if (homingStreaming && shotCd <= 0) {
+    weaponActive = true;
+    homingFireTimer -= dt;
+    while (homingFireTimer <= 0 && homingAmmo > 0) {
+      homingFireTimer += 1 / T.weapon.homingStream;
+      fireDagger(wpn('spread'), wpn('streamSpeed'), true, T.weapon.homingDamage);
+      homingAmmo--;
+      recoil = Math.min(0.04, recoil + 0.008);
+      hand.flash(0.45);
+      audio.fire(); fx.fire++; fx.fireRecoil = recoil;
+    }
+  } else {
+    homingFireTimer = 0;
+  }
+
+}
+
+/** v51: the gaze lock (gaze.js) — look at a body inside range long enough
+ *  and missiles leave the gauntlet on their own, faster and tighter-turning
+ *  the longer the look has been held. */
+function updateGaze(dt) {
+  fireTimer = 0; homingFireTimer = 0; homingWasHeld = false;   // fireWasHeld is firePress's (a short press still jumps here)
+  camera.getWorldDirection(_fwd2);
+  // v58: the look locks skulls only — the cabs were targets from v53 to v57
+  for (const shot of gaze.update(dt, camera.position, _fwd2, enemies)) launchMissile(shot);
+}
+function launchMissile(shot) {
+  weaponActive = true;
+  camera.getWorldDirection(_hitDir);
+  // it leaves the gauntlet corner climbing, then turns onto the target: a
+  // missile that flies out of the crosshair is a bullet
+  _p0.copy(camera.position).addScaledVector(_hitDir, 0.85);
+  _seg.setFromMatrixColumn(camera.matrixWorld, 0);
+  _p0.addScaledVector(_seg, HAND_MUZZLE[0]);
+  _c.setFromMatrixColumn(camera.matrixWorld, 1);
+  _p0.addScaledVector(_c, HAND_MUZZLE[1]);
+  _hitDir.addScaledVector(_c, 0.45).normalize();
+  const g = S().gaze;
+  daggers.fire(_p0, _hitDir, shot.speed, false, g.damage ?? 1, { target: shot.target, turn: shot.turn, life: g.life ?? 2.6 });
+  hand.flash(0.3 + 0.5 * shot.k);
+  audio.fire();
+}
+
+/** v51: the lock, drawn where the body is — a ring that tightens as the look
+ *  is held (red while it builds, white at full), and a centre mark, because
+ *  a look that fires needs to show where it is looking. */
+const _gz = new THREE.Vector3();
+function drawGaze(ctx) {
+  const W = ui.width, H = ui.height;
+  ctx.save();
+  ctx.fillStyle = 'rgba(232,220,200,0.55)';
+  ctx.beginPath(); ctx.arc(W / 2, H / 2, Math.max(2, H * 0.004), 0, Math.PI * 2); ctx.fill();
+  const t = gaze.target;
+  if (t && t.alive) {
+    t.center(_gz).project(camera);
+    if (_gz.z < 1) {
+      const x = (_gz.x * 0.5 + 0.5) * W, y = (-_gz.y * 0.5 + 0.5) * H, k = gaze.k;
+      const r = H * (0.07 - 0.045 * k);
+      const g = Math.round(40 + 180 * k);
+      ctx.strokeStyle = `rgba(230,${g},${g},${0.55 + 0.4 * k})`;
+      ctx.lineWidth = Math.max(1.5, H * 0.004);
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, y, r * 1.35, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k); ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function updateCombat(dt) {
+  const w = WEAPON[weaponLv];
+  weaponActive = false;
+
+  // HD-001: short press jumps, hold streams. Mouse, pad, and sticks.
+  // Walking does not shoot. Dash is not read here.
+  shotCd = Math.max(0, shotCd - dt);
+  // v51 SEASON 3: the look IS the trigger — no fire input is read at all
+  if (S().gaze) {
+    if (!(input.touchMode && !input.gamepad)) firePress(dt);   // no gun, but a short press still jumps (a stick tap already does, in input.js)
+    updateGaze(dt);
+  } else fireByHand(dt, w);
+
+  daggers.update(dt, enemies);
+
+  // dagger → enemy (segment vs sphere so fast daggers can't tunnel)
+  for (let i = daggers.active.length - 1; i >= 0; i--) {
+    const d = daggers.active[i];
+    // v41: rock stops a nail — pillars, court walls and standing slabs are
+    // solid to projectiles; a needle through a pillar reads as a bug
+    if (walls.walls.length) {
+      const w = walls.blocks(d.prev, d.m.position);
+      if (w) {
+        spawnSpark(d.m.position, false);
+        if (w.maxHp) wearWall(w, d.damage ?? 1, d.m.position);   // v53: a nail chips the pile
+        daggers.recycle(i);
+        continue;
+      }
+    }
+    if (S().rubbleFloor && physGibs.gibs.length && physGibs.blocks(d.prev, d.m.position)) {   // v54: the heap is cover
+      spawnSpark(d.m.position, false);
+      daggers.recycle(i);
+      continue;
+    }
+    if (platforms.count) {
+      const slab = platforms.blocks(d.prev, d.m.position);
+      if (slab) {
+        platforms.flinch(slab); // v46: a gel mound flinches at a nail (a shale slab does not)
+        spawnSpark(d.m.position, false);
+        daggers.recycle(i);
+        continue;
+      }
+    }
+    // v46: a nail crossing the sea's surface splashes — a ring and a few
+    // cubes — and flies on; the wave is water, not cover (owner's call pending)
+    if (goo.cfg && d.prev.y > 0.05 && d.m.position.y <= goo.heightAt(d.m.position.x, d.m.position.z) + 0.05
+      && Math.hypot(d.m.position.x, d.m.position.z) < ARENA_R) {
+      goo.hit(d.m.position.x, d.m.position.z, 0.5);
+      goo.spray(d.m.position.x, d.m.position.y + 0.3, d.m.position.z, (Math.random() - 0.5), (Math.random() - 0.5));
+    }
+    for (let j = 0; j < enemies.length; j++) {
+      const e = enemies[j];
+      if (!e.alive) continue;
+      e.center(_c);
+      if (!segHitsSphere(d.prev, d.m.position, _c, e.radius)) continue;
+      _hitDir.copy(d.vel).normalize();
+      if (e.armored) {
+        e.group.getWorldDirection(_fwd2);
+        if (_hitDir.dot(_fwd2) < 0.15) {
+          // head-on hit on a ghost ring: deflected
+          audio.clink();
+          debris.spawn(d.m.position, e.sprite.randomColor(),
+            _seg.set((Math.random() - 0.5) * 6, 2 + Math.random() * 2, (Math.random() - 0.5) * 6),
+            0.1, 0.35);
+          daggers.recycle(i);
+          break;
+        }
+      }
+      e.maxHp ??= e.hp;
+      e.hit(d.damage ?? 1, _hitDir);
+      // enemies may name their own hit voice (husk plating swallows daggers)
+      audio[e.hitSound && audio[e.hitSound] ? e.hitSound : 'hit']();
+      spawnSpark(d.m.position, e.hp <= 0);
+      // chip real voxels out of the model near the impact — bullet holes.
+      // Sized so an enemy is ~85% eroded by its final hit.
+      if (e.hp > 0 && e.sprite.chip) {
+        const chips = e.sprite.chip(d.m.position,
+          Math.ceil(e.sprite.voxels.length / (e.maxHp * 1.2)));
+        for (let k = 0; k < chips.length && k < 6; k++) {
+          debris.spawn(chips[k].pos, chips[k].color,
+            _seg.set(_hitDir.x * 3 + (Math.random() - 0.5) * 4, 1.5 + Math.random() * 3,
+              _hitDir.z * 3 + (Math.random() - 0.5) * 4),
+            e.sprite.size, 0.9);
+        }
+        // a hole can sever a whole region (jaw, crown, brow) — anything no
+        // longer connected to the body breaks away as one tumbling chunk
+        if (chips.length && e.sprite.detachIslands) {
+          for (const island of e.sprite.detachIslands()) {
+            const stride = Math.max(1, Math.ceil(island.length / 60));
+            const cvx = _hitDir.x * 2 + (Math.random() - 0.5) * 3;
+            const cvz = _hitDir.z * 2 + (Math.random() - 0.5) * 3;
+            const cvy = 2 + Math.random() * 2.5;
+            for (let k = 0; k < island.length; k += stride) {
+              // shared chunk velocity + a whisper of jitter so it reads as
+              // one piece coming off, not a spray
+              debris.spawn(island[k].pos, island[k].color,
+                _seg.set(cvx + (Math.random() - 0.5), cvy + Math.random(),
+                  cvz + (Math.random() - 0.5)),
+                e.sprite.size * Math.cbrt(stride), 1.5);
+            }
+          }
+        }
+      }
+      for (let k = 0; k < 2; k++) {
+        debris.spawn(d.m.position, e.sprite.randomColor(),
+          _seg.set((Math.random() - 0.5) * 5, 2 + Math.random() * 3, (Math.random() - 0.5) * 5),
+          0.12, 0.6);
+      }
+      // the shell giving way is its own beat — stinger, ripple, shockwave
+      if (e.checkCrack?.()) {
+        audio.breach();
+        triggerRipple(0.55);
+        spawnShockwave(_c);
+        toast('SHELL BREACHED', 1100);
+        trauma = Math.max(trauma, 0.3);
+        buzz(0.6, 0.3, 80);
+      }
+      if (e.hp <= 0) killEnemy(e, _hitDir);
+      daggers.recycle(i);
+      break;
+    }
+  }
+  for (let j = enemies.length - 1; j >= 0; j--) {
+    if (!enemies[j].alive) {
+      enemies[j].remove(scene); // no-op after killEnemy; releases debug/edge-path kills
+      enemies.splice(j, 1);
+    }
+  }
+
+  // gems: magnet + collect
+  _p0.copy(player.feet);
+  _p0.y += 1.1;
+  const got = gems.update(dt, _p0, !weaponActive,
+    platforms.count ? (x, z) => platforms.topAt(x, z, 0) : null);
+  if (got) onGemsCollected(got);
+
+  // enemy → player
+  if (mercyT > 0) mercyT -= dt;
+  for (const e of enemies) {
+    if (e.spawnK < 0.7) continue;
+    if (e.type === 'egg') continue; // eggs are targets, not threats
+    if (e.type === 'totem') {
+      player.pushOut(e.pos.x, e.pos.z, 2.0);
+      continue;
+    }
+    e.center(_c);
+    if (_c.distanceTo(_p0) < e.radius + 0.5 || _c.distanceTo(camera.position) < e.radius + 0.4) {
+      if (playerStruck(e.pos.x, e.pos.z, e.type, e)) return;
+    }
+  }
+
+  // orb → player: the dash phases through projectiles (never through bodies)
+  for (let i = orbs.active.length - 1; i >= 0; i--) {
+    const o = orbs.active[i];
+    if (o.m.position.distanceTo(_p0) < 0.72 || o.m.position.distanceTo(camera.position) < 0.62) {
+      if (player.dashK > 0) { // stylish dodge — credited once per orb
+        if (!o.phased) { o.phased = true; addStyle(4); }
+        continue;
+      }
+      const ox = o.m.position.x, oz = o.m.position.z;
+      orbs.recycle(i);
+      if (playerStruck(ox, oz, 'orb')) return;
+    }
+  }
+}
+
+/** One enemy/projectile contact. Returns true when the run ended. */
+function playerStruck(sx, sz, killerType, killer = null) {
+  if (invulnerable) return false; // debug/test only — see debug.setInvulnerable
+  lastKillerPos.set(sx, 1.2, sz);
+  lastKillerRef = killer;
+  if (M().lethality === 'none') return false;              // the bench cannot kill you
+  if (M().lethality !== 'clock') { lastKiller = killerType; die(); return true; }
+  if (mercyT > 0) return false;
+  lastKiller = killerType;
+  // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
+  triggerRipple(0.5);
+  buzz(1, 1, 160);
+  lifeT -= HYPER_HIT_COST;
+  mercyT = 1.2;
+  trauma = 1;
+  audio.gib(true);
+  elVignette.style.opacity = 0.8;
+  setTimeout(() => { if (state === 'playing') elVignette.style.opacity = 0; }, 300);
+  const dx = player.feet.x - sx, dz = player.feet.z - sz;
+  const d = Math.hypot(dx, dz) || 1;
+  player.nudge(dx / d * 3, dz / d * 3);
+  if (lifeT <= 0) { die(); return true; }
+  return false;
+}
+
+// ------------------------------------------------------------------ REAP
+// The bone-yard is the only resource in the game, and this is how you spend
+// it. Standing carnage is simultaneously a THREAT (revenants rise from dense
+// piles) and a RESERVE — reaping clears the threat and converts the bones into
+// a damaging pulse, but you can only do it where you have already killed, and
+// once spent the field is empty when the next serpent lands on you.
+// Deliberately has no HUD meter: the resource is the floor, in plain sight.
+const REAP_R = T.reap.radius;
+const REAP_MIN = T.reap.minBones;
+const REAP_COOL = T.reap.cooldown;
+let reapCool = 0;
+
+function tryReap() {
+  if (reapCool > 0) { audio.clink(); return false; }
+  const px = player.feet.x, pz = player.feet.z;
+  const taken = litter.consume(px, pz, REAP_R, 900);
+  if (taken < REAP_MIN) {
+    // nothing worth reaping — give the miss a voice so it doesn't feel broken
+    audio.clink();
+    return false;
+  }
+  reapCool = REAP_COOL;
+  // power scales with the pile you spent, capped so a huge yard isn't a nuke
+  const power = Math.min(1, taken / 300);
+  const dmg = 1 + Math.round(power * 5);
+  for (const e of enemies) {
+    if (!e.alive || e.type === 'totem') continue;
+    e.center(_c);
+    const d = Math.hypot(_c.x - px, _c.z - pz);
+    if (d > REAP_R) continue;
+    e.hit(dmg * (1 - d / REAP_R * 0.5), _hitDir.set(_c.x - px, 0, _c.z - pz).normalize());
+    if (e.hp <= 0) killEnemy(e, _hitDir);
+  }
+  debris.shove(px, 0.5, pz, REAP_R, 14);
+  spawnShockwave(_sv.set(px, 0, pz));
+  triggerRipple(0.8);
+  addStyle(Math.round(4 + power * 10));
+  audio.reap();
+  buzz(0.8, 0.5, 140);
+  trauma = Math.max(trauma, 0.45);
+  toast(`REAPED ${taken}`, 900);
+  return true;
+}
+
+// skulls shove each other apart so the swarm doesn't stack into one voxel blob
+const SEPARATES = new Set(['skull', 'brute', 'dread', 'husk', 'revenant']);
+
+function separateSkulls() {
+  for (let i = 0; i < enemies.length; i++) {
+    const a = enemies[i];
+    if (!SEPARATES.has(a.type)) continue;
+    for (let j = i + 1; j < enemies.length; j++) {
+      const b = enemies[j];
+      if (!SEPARATES.has(b.type)) continue;
+      const dx = b.pos.x - a.pos.x, dy = b.pos.y - a.pos.y, dz = b.pos.z - a.pos.z;
+      const d2 = dx * dx + dy * dy + dz * dz;
+      const min = a.radius + b.radius;
+      if (d2 >= min * min || d2 === 0) continue;
+      const d = Math.sqrt(d2);
+      const push = (min - d) / d * 0.5;
+      a.pos.x -= dx * push; a.pos.y -= dy * push; a.pos.z -= dz * push;
+      b.pos.x += dx * push; b.pos.y += dy * push; b.pos.z += dz * push;
+    }
+  }
+}
+
+// ---------------------------------------------------------------- loop
+const clock = new THREE.Clock();
+
+function step(dt) {
+  gameTime += dt;
+  player.aimAssist = aimAssistK();
+  // A track has to say what the floor is BEFORE the body integrates gravity,
+  // or the player never reads as grounded and never gets a jump back.
+  if (M().arena === 'track') truck.preUpdate(dt, player);
+  else if (platforms.count) platforms.preUpdate(dt, player, 0); // the season's slabs: a floor, and a carry
+  // the wave is a floor too, and the HIGHER of slab-or-crest is what you
+  // stand on — a crest rolling past a slab must not drop you through it
+  if (goo.cfg && M().arena !== 'track') {
+    goo.update(dt);
+    // v53 THE TIDE: the sea comes in over the run, and the crest carries the bone
+    if (goo.cfg?.tide) { const td = goo.cfg.tide; goo.setTide((gameTime - td.from) / (td.to - td.from)); }
+    if (goo.cfg && physGibs.gibs.length) physGibs.carry(goo);
+    // v48: a sea that HURTS is not a floor; one that does not still carries
+    if (!goo.cfg.hurts) player.floorY = goo.carry(dt, player, player.floorY ?? 0);
+  }
+  // v54 THE RUBBLE IS THE LEVEL: a heap at rest is ground, the higher of it or
+  // the slab under you (the base is re-said here every frame — without slabs
+  // nothing else resets it, and a heap you stepped off would stay under you)
+  if (S().rubbleFloor && M().arena !== 'track') {
+    const base = platforms.count ? player.floorY : 0;
+    const r = physGibs.gibs.length ? physGibs.topAt(player.feet.x, player.feet.z, player.feet.y + 0.45) : null;
+    player.floorY = r !== null && r > base ? r : base;
+    if (r !== null && r > base + 0.2 && player.feet.y <= r + 0.02) rubbleStands += dt;
+  }
+  const _vyBefore = player.vy;
+  player.update(dt);
+  // v48 THE WAVE STRIKES: a body inside the crest is hit, and shoved along
+  // the wave's own travel — out of it, the way a wave throws you. A body
+  // that jumped is above it and is not.
+  if (goo.cfg?.hurts && state === 'playing' && goo.strikes(player)) {
+    // playerStruck says whether it LANDED (mercy frames swallow the rest)
+    if (playerStruck(player.feet.x - goo.dirX * 2, player.feet.z - goo.dirZ * 2, 'wave') || mercyT >= 1.19) waveStrikes++;
+  }
+  // v46: the body landing on the sea (or the flat water) splashes it — a
+  // ring spreading from the feet, harder from higher
+  if (goo.cfg && _vyBefore < -5 && player.vy >= -0.01 && player.feet.y <= player.floorY + 0.02
+    && player.platform == null && Math.hypot(player.feet.x, player.feet.z) < ARENA_R) {
+    goo.hit(player.feet.x, player.feet.z, Math.min(1.2, -_vyBefore / 16));
+  }
+  if (walls.walls.length) walls.resolve(player);
+  if (platforms.count) platforms.resolve(player); // their sides are walls too
+  if (player.justDashed) {
+    player.justDashed = false;
+    audio.dash();
+    trauma = Math.max(trauma, 0.15);
+    fx.dash++;
+  }
+  // dashing wades through the carnage — a moving sweep, dt-scaled so the kick
+  // is the same at any frame rate, biased along the dash so gibs get shoved
+  // ahead and aside rather than blown radially
+  if (player.dashK > 0) {
+    debris.shove(player.feet.x, player.feet.y + 0.5, player.feet.z,
+      2.4, 26 * dt, player.dashDir.x, player.dashDir.z);
+    litter.shove(debris, player.feet.x, player.feet.y + 0.5, player.feet.z,
+      1.9, 9, player.dashDir.x, player.dashDir.z); // kick bones up as you pass
+  }
+  if (player.justJumped) {
+    player.justJumped = false;
+    audio.jump();
+    spawnJumpPuff(player.feet.x, player.feet.y, player.feet.z);
+  }
+  if (player.justBunnyHopped) {
+    player.justBunnyHopped = false;
+    fovKick = Math.max(fovKick, 2.4);
+  }
+  player.justDaggerJumped = false;
+  if (reapCool > 0) reapCool = Math.max(0, reapCool - dt);
+  const reapPressed = input.consumeReap();
+  if (player.abilities?.reap && reapPressed) tryReap();
+  if (M().arena === 'track') {
+    truck.update(dt, player, gameTime, enemies, walls); // the course lays walls beside its wide gaps
+    // the floor leaving is the whole game — falling off it is the death
+    if (player.feet.y < truck.fallY() && state === 'playing' && !invulnerable) {
+      lastKiller = truck.active ? 'the road' : 'the fall';   // v51b: the convoy's asphalt kills on touch
+      die();
+      return;
+    }
+  }
+  director(dt);
+  const rubbleSolid = S().rubbleFloor && physGibs.gibs.length;   // v54: the swarm goes round a heap
+  const solidArena = walls.walls.length || platforms.count || rubbleSolid;
+  for (const e of enemies) {
+    e.update(dt, camera.position, gems);
+    // v42: a body cannot stand inside rock. `e.pos` IS the group position, so
+    // the push lands this frame. Anything higher than the piece it is over is
+    // left alone — flying past the top of a pile is not a collision.
+    if (solidArena && e.alive && e.type !== 'thorn') {
+      const r = Math.max(0.4, (e.radius ?? 0.8) * 0.7);
+      if (walls.walls.length) {
+        const w = walls.pushOut(e.pos, r, e.footOffset ?? 0.6);
+        // v53: the swarm GRINDS the cover down — a body shoving on a pile wears
+        // it, a brute far faster; and the pile is what runs the clock on hiding
+        if (w && w.maxHp) wearWall(w, dt * (e.type === 'brute' ? (S().pillars?.brute ?? 10) : (S().pillars?.grind ?? 3)), e.pos);
+      }
+      if (platforms.count) platforms.pushOut(e.pos, r, e.footOffset ?? 0.6);
+      if (rubbleSolid) physGibs.pushOut(e.pos, r, e.footOffset ?? 0.6);
+    }
+    if (e.type === 'watcher') {
+      if (e.warnReq) { e.warnReq = false; audio.warn(); }
+      if (e.volley) {
+        for (const dir of e.volley) {
+          _sv.copy(e.pos).addScaledVector(dir, 1.0);
+          orbs.fire(_sv, dir.multiplyScalar(11));
+        }
+        e.volley = null;
+        audio.orb();
+      }
+    }
+    if (e.type === 'blinker' && e.puffReq) {
+      for (let k = 0; k < 6; k++) {
+        debris.spawn(e.puffReq, e.sprite.randomColor(),
+          _sv.set((Math.random() - 0.5) * 6, 1 + Math.random() * 3, (Math.random() - 0.5) * 6),
+          0.14, 0.5);
+      }
+      e.puffReq = null;
+      audio.blink();
+    }
+    if (e.type === 'spider' && e.layEgg) {
+      e.layEgg = false;
+      _sv.copy(e.pos);
+      _sv.y = 0.35;
+      enemies.push(new Egg(scene, _sv));
+      audio.spawn();
+    }
+    if (e.type === 'egg' && e.hatch && e.alive) {
+      e.alive = false;
+      e.remove(scene);
+      audio.roar();
+      for (let k = 0; k < 2; k++) {
+        _sv.set(e.pos.x + (Math.random() - 0.5), 1.2, e.pos.z + (Math.random() - 0.5));
+        enemies.push(new Skull(scene, _sv, Math.min(6, gameTime * 0.06)));
+      }
+    }
+    if (e.type === 'totem' && e.ringReq) {
+      e.ringReq = false;
+      audio.ring();
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        _sv.set(e.pos.x + Math.cos(a) * 1.3, 1.15, e.pos.z + Math.sin(a) * 1.3);
+        _hitDir.set(Math.cos(a) * 5.5, 0, Math.sin(a) * 5.5);
+        orbs.fire(_sv, _hitDir);
+      }
+    }
+    // Leviathan drag: pulls the player in along the floor — dash out
+    if (e.type === 'leviathan' && e.alive) {
+      if (e.pullStarted) {
+        e.pullStarted = false;
+        audio.pull();
+        trauma = Math.max(trauma, 0.3);
+      }
+      if (e.pullActive) {
+        const dx = e.pos.x - player.feet.x, dz = e.pos.z - player.feet.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 0.5) player.nudge(dx / d * 7 * dt, dz / d * 7 * dt);
+      }
+    }
+  }
+  for (const s of serpents) s.update(dt, camera.position);
+  separateSkulls();
+  updateShadows();
+  updateSparks(dt);
+  updateFlyby(dt);
+  updateThorns(dt);
+  orbs.update(dt, ARENA_R + 6);
+  // v42: rock is COVER. An orb that flies into a pile or a standing slab dies
+  // there — the season's whole claim on the fight is that there is now
+  // somewhere to put between you and a volley. Segment tests (an orb keeps
+  // its previous position) so a fast one cannot pass through a thin pile.
+  const rubbleCover = S().rubbleFloor && physGibs.gibs.length;   // v54
+  if (walls.walls.length || platforms.count || rubbleCover) {
+    for (let i = orbs.active.length - 1; i >= 0; i--) {
+      const o = orbs.active[i];
+      if ((walls.walls.length && walls.blocks(o.prev, o.m.position))
+        || (platforms.count && platforms.blocks(o.prev, o.m.position))
+        || (rubbleCover && physGibs.blocks(o.prev, o.m.position))) {
+        spawnSpark(o.m.position, false);
+        orbs.recycle(i);
+      }
+    }
+  }
+  updateCombat(dt);
+  debris.update(dt);
+  physGibs.update(dt);
+  if (S().finale && !finale && !finaleDone && gameTime >= S().finale.at) startFinale();
+  updateFinale(dt);
+  updateEbb();
+  // v54 A RUN THAT ENDS: the season is over at `end` seconds
+  if (S().end && state === 'playing' && gameTime >= S().end) { completeRun(); return; }
+  // style meter bleeds when you stop scoring — faster at higher ranks so the
+  // top tiers stay fleeting and demand a continuous chain
+  // provisional v4.1 soften (was 6 + 0.05v): S-rank was bleeding out between
+  // pulse peaks even on good runs — revisit once the run log has real data
+  if (styleVal > 0) {
+    styleVal = Math.max(0, styleVal - dt * (T.style.bleedBase + styleVal * T.style.bleedScale));
+  }
+  updateStyleHud();
+  updateThreatVignette();
+  // music intensity: swarm density (live threats, not eggs) + run progress +
+  // how hard you're chaining right now (the style meter)
+  let threats = 0;
+  levAlive = false;
+  for (const e of enemies) {
+    if (e.type !== 'egg' && e.type !== 'totem') threats++;
+    if (e.type === 'leviathan') levAlive = true;
+  }
+  const intensity = Math.min(1,
+    threats / 16 * 0.5 + Math.min(gameTime / 150, 1) * 0.25 + (styleVal / STYLE_CAP) * 0.35);
+  musicI += (intensity - musicI) * Math.min(1, dt * 3); // smoothed for the floor
+  audio.musicUpdate(intensity);
+  if (M().lethality === 'clock' && state === 'playing') {
+    lifeT -= dt; // the clock is your life
+    if (lifeT <= 0) { lifeT = 0; die(true); }
+    elTimer.textContent = lifeT.toFixed(1);
+    elTimer.style.color = lifeT < 10 ? '#c81e1e' : '';
+    elKills.textContent = `${kills} kills · run ${gameTime.toFixed(1)}s`;
+    elClockLabel.textContent = clockLine();
+  } else {
+    elTimer.textContent = gameTime.toFixed(1);
+    elTimer.style.color = '';
+    elKills.textContent = `${kills} kills`;
+    elClockLabel.textContent = clockLine();
+  }
+  elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ` · HOMING ${homingAmmo}` : ''}`;
+}
+
+const _threatForward = new THREE.Vector3();
+const _threatTo = new THREE.Vector3();
+const _threatInvQ = new THREE.Quaternion();
+function updateFeel(dt) {
+  // trauma-driven shake + chromatic aberration + FOV kicks (dash, shotgun)
+  trauma = Math.max(0, trauma - dt * 1.5);
+  const t2 = trauma * trauma;
+  if (opts.shake && opts.motion && state === 'playing' && !paused) {
+    camera.rotation.z += (Math.random() - 0.5) * t2 * 0.07;
+    camera.rotation.x += (Math.random() - 0.5) * t2 * 0.03;
+    camera.position.y += (Math.random() - 0.5) * t2 * 0.08;
+  }
+  chromaPass.uniforms.uAmount.value = 0.0012 + t2 * 0.02;
+  // reactive floor: grid thumps on the 138 BPM beat scaled by music intensity,
+  // and flushes red when you take trauma (high contrast keeps the grid clean)
+  if (state !== 'playing' || paused) musicI = Math.max(0, musicI - dt * 0.8);
+  const beat = 1 - ((performance.now() / 1000) * (138 / 60)) % 1;
+  floorMat.uniforms.uPulse.value = musicI * (0.25 + 0.75 * beat * beat);
+  floorMat.uniforms.uRed.value = opts.contrast ? 0 : t2 * 0.85;
+  // imported assets answer the same signals the floor does: the beat lifts
+  // the uplight, trauma flushes the ember ring
+  hemi.intensity = 2.0 + floorMat.uniforms.uPulse.value * 0.7;
+  const emberK = EMBER_BASE * (1 + t2 * 2.2);
+  for (const l of emberLights) l.intensity = emberK;
+  // Removed from the presentation: speedlines and screen-space ripples made
+  // the image busier without communicating anything the weapon/camera did not.
+  speedPass.enabled = false;
+  rippleT += dt;
+  if (rippleT > 0.8) rippleAmp = 0;
+  ripplePass.enabled = false;
+  // sky ember swells with trauma and while the Leviathan is on the field
+  skyMat.uniforms.uEmber.value = t2 * 0.9 + (levAlive ? 0.7 : 0);
+  environment.update(dt, { intensity: musicI, trauma: t2, leviathan: levAlive });
+
+  // Nearest off-camera threat drives the peripheral burn. Signed camera-space
+  // X biases the glow toward the side the player should turn toward.
+  camera.getWorldDirection(_threatForward);
+  let rear = 0, rearSide = 0;
+  for (const e of enemies) {
+    if (!e.alive || e.type === 'egg' || e.type === 'totem') continue;
+    _threatTo.set(e.pos.x - camera.position.x, e.pos.y - camera.position.y, e.pos.z - camera.position.z);
+    const dist = Math.max(0.01, _threatTo.length());
+    _threatTo.multiplyScalar(1 / dist);
+    const facing = _threatForward.dot(_threatTo);
+    if (facing > 0.15) continue;
+    const strength = (0.15 - facing) / 1.15 * Math.max(0, 1 - dist / 28);
+    if (strength > rear) {
+      rear = strength;
+      _threatInvQ.copy(camera.quaternion).invert();
+      _threatTo.applyQuaternion(_threatInvQ);
+      rearSide = Math.sign(_threatTo.x);
+    }
+  }
+  threatPass.uniforms.uRear.value += (rear - threatPass.uniforms.uRear.value) * Math.min(1, dt * 8);
+  threatPass.uniforms.uSide.value += (rearSide - threatPass.uniforms.uSide.value) * Math.min(1, dt * 6);
+  fovKick = Math.max(0, fovKick - dt * 18);
+  // smear deepens mid-dash — HYPERDEMON smears hardest at speed. dashK decays
+  // with the dash itself, so the heavy end is always transient.
+  if (afterimage.enabled) {
+    afterimage.uniforms['damp'].value = SMEAR_BASE + player.dashK * SMEAR_DASH;
+  }
+  const fov = opts.fov + (opts.motion ? player.dashK * 9 + player.speedK * 4 + fovKick : 0);
+  if (Math.abs(camera.fov - fov) > 0.01) {
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+  }
+  // The claw snaps back and rolls open on a burst. Stream fire stays a much
+  // smaller vibration so the two firing modes read before their audio does.
+  recoil = Math.max(0, recoil - dt * 0.28) * Math.exp(-7 * dt);
+  const handBob = Math.sin(performance.now() * 0.0017) * 0.005;
+  handGroup.position.set(
+    HAND_BASE.x + recoil * 0.45,
+    HAND_BASE.y + handBob - recoil * 0.28,
+    HAND_BASE.z + recoil * 1.65,
+  );
+  handGroup.rotation.set(
+    HAND_BASE.rx - recoil * 2.7,
+    HAND_BASE.ry,
+    HAND_BASE.rz + recoil * 1.25,
+  );
+  hand.update(dt);
+}
+
+// Gamepad menu navigation: d-pad / left stick moves focus across the overlay
+// buttons, A activates (or fires the screen's main action when nothing is
+// focused), B/Start resumes from pause, Start pauses mid-run. Focus is a CSS
+// class re-applied every frame so menu re-renders can't strand it.
+let gfocus = -1;
+
+function menuButtons() {
+  return elMsg.style.display === 'block' ? [...elMsg.querySelectorAll('button')] : [];
+}
+
+function gamepadMenu() {
+  const ui = input.consumeUi();
+  if (state === 'menu' && elMsg.classList.contains('menu')) {
+    // HD-019: the main menu is one choice and one button — left/right is the
+    // season, A or START plays it; up, down and B have nothing to move
+    gfocus = -1;
+    if (ui.up || ui.down) { setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
+    if (ui.left) stepSeason(-1);
+    else if (ui.right) stepSeason(1);
+    if (ui.a || ui.start) menuStart(null);
+    return;
+  }
+  const btns = menuButtons();
+  if (gfocus >= btns.length) gfocus = btns.length - 1;
+  if (ui.down && btns.length) gfocus = (gfocus + 1) % btns.length;
+  if (ui.up && btns.length) gfocus = gfocus <= 0 ? btns.length - 1 : gfocus - 1;
+  btns.forEach((b, i) => b.classList.toggle('gfocus', i === gfocus));
+  const resume = state === 'playing' && paused && (ui.b || ui.start);
+  if (ui.a && gfocus >= 0 && btns[gfocus]) {
+    btns[gfocus].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  } else if ((ui.a && gfocus < 0) || ui.start || resume) {
+    // ui.start here covers "press Start to play" from menu/tips/death —
+    // console muscle memory; while paused the resume branch means the same
+    // main action: start / retry / resume — same path as a screen tap.
+    // (Note: gamepad presses don't grant browser user-activation, so audio
+    // stays silent until the first real click/touch — unavoidable.)
+    gfocus = -1;
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  }
+}
+
+let sphereFrame = 0;
+let sphereWorldCaptures = 0;
+let sphereThreatCaptures = 0;
+function updateSphereProjection() {
+  camera.updateMatrixWorld();
+  _sphereCamRot.setFromMatrix4(camera.matrixWorld);
+  if (!spherePass.enabled) return;
+  const every = PERF_TIERS[perfTier].sphereEvery;
+  sphereFrame++;
+  sphereThreatCamera.position.copy(camera.position);
+  sphereWorldCamera.position.copy(camera.position);
+  // Enemy-only capture tracks more often; the arena is mostly static and can
+  // update at a slower cadence while camera rotation remains shader-side.
+  if (sphereFrame === 1 || sphereFrame % every === 0) {
+    sphereThreatCamera.update(renderer, scene);
+    sphereThreatCaptures++;
+  }
+  if (sphereFrame === 1 || sphereFrame % (every * 3) === 0) {
+    sphereWorldCamera.update(renderer, scene);
+    sphereWorldCaptures++;
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const rawDt = clock.getDelta(); // unclamped — the governor needs real frame cost
+  const dt = Math.min(rawDt, DT_CAP) * timeScale; // timeScale: the harness's slow-motion knob, 1 in play
+  perfGovern(performance.now(), rawDt * 1000);
+  timeMonitor(performance.now(), rawDt);
+  input.pollGamepad();
+  if (state !== 'playing' || paused) {
+    gamepadMenu();
+  } else if (input.consumeUi().start) {
+    // Start pauses mid-run (pointer-locked mice can't reach the ⏸ button)
+    if (document.pointerLockElement) document.exitPointerLock(); // triggers showPause
+    else showPause();
+  }
+  // sky bands accelerate with the music (warped clock keeps phase continuous)
+  skyMat.uniforms.uTime.value += dt * (1 + musicI * 1.8);
+  floorMat.uniforms.uTime.value += dt;
+  gelMat.userData.gel.uTime.value += dt;
+  if (goo.cfg) floorMat.uniforms.uWave.value.set(goo.dirX, goo.dirZ, goo.head ?? -999, goo.cfg.width);   // v48: the floor reads the crest
+  dust.rotation.y += dt * 0.012;
+  if (state === 'playing' && !paused) {
+    // heavy-kill hit-stop: a beat at 12% speed so the impact registers
+    const ts = hitStop > 0 ? 0.12 : 1;
+    if (hitStop > 0) hitStop -= rawDt;
+    step(dt * opts.speed * ts);
+  } else if (state !== 'playing') {
+    if (state === 'menu') menuCamera(dt);   // HD-019
+    // death slow-mo: debris + daggers keep tumbling at quarter speed
+    slowmo = Math.max(0, slowmo - dt * 0.8);
+    const eff = dt * (1 - 0.75 * slowmo);
+    debris.update(eff);
+    physGibs.update(eff);
+    daggers.update(eff);
+    updateSparks(eff); // in-flight sparks/shockwaves finish out in slow-mo
+    // killer-focus swing (shortest-path yaw so it never spins the long way)
+    if (deathCam && state === 'dead') {
+      deathCam.t -= dt;
+      const k = Math.min(1, dt * 4);
+      const dy = ((deathCam.yaw - camera.rotation.y + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+      camera.rotation.y += dy * k;
+      camera.rotation.x += (deathCam.pitch - camera.rotation.x) * k;
+      if (deathCam.t <= 0) deathCam = null;
+    }
+  }
+  updateFeel(dt);
+  updateSphereProjection();
+  skyMesh.position.copy(camera.position);   // v51: a sky you can drive out of is not a sky
+  composer.render();
+  uiCtx.clearRect(0, 0, ui.width, ui.height);
+  if (state === 'playing' && !paused) input.drawTouchUI(uiCtx);
+  if (state === 'playing' && !paused && S().gaze) drawGaze(uiCtx);   // v51
+}
+
+applyOpts();
+showMenu();
+animate();
+
+// tiny debug handle (console tinkering + automated smoke tests)
+window.__hd = {
+  enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
+  toko: { open: () => openToko(), table: () => table, cue: () => tokoCue() },
+  debug: {
+    // ported with the balance work: freeze spawns without freezing the game,
+    // and hold a run open — since the curve tightened, a player who never
+    // moves does not survive long enough to measure anything.
+    freezeDirector(on = true) { directorFrozen = !!on; return directorFrozen; },
+    startGame() { startGame(); }, // tests need a guaranteed-live run to measure
+    die(timedOut = false) { if (state === 'playing') die(!!timedOut); return state; },   // HD-012: the death screen on demand
+    getYaw() { return { yaw: player.yaw, pitch: player.pitch }; },   // HD-013: proves mouse look turns the camera
+    setInvulnerable(on = true) { invulnerable = !!on; return invulnerable; },
+    getPressure() { return { live: livePressure(), ceiling: +pressureCeiling().toFixed(1) }; },
+    /** THE LAB BENCH. Every registered experiment, what it declares, and what
+     *  the body is actually configured as right now — so a gate can walk the
+     *  registry instead of hard-coding a list of modes it happens to know. */
+    getModes() {
+      return {
+        ids: MODES.map(m => m.id),
+        current: M().id,   // v50: the mode in FORCE (link → season → saved), not the saved one
+        modes: MODES.map(m => ({ ...m, resolved: abilitiesOf(m) })),
+        player: {
+          abilities: player.abilities,
+          maxJumps: player.maxJumps,
+          edgeMode: player.edgeMode,
+          floorY: player.floorY,
+          feetY: player.feet.y,
+        },
+        trackPlatforms: truck.platforms.length,
+      };
+    },
+    /** The Meshy seam: what assets/manifest.json named and what loaded. */
+    getMeshSkins() { return meshSkinState(); },
+    /**
+     * The smooth-skin probe. LOOK SMOOTH still exists, but every roster slot
+     * may now be a voxelized asset (no hull by design), so a gate that reaches
+     * into "whatever dread just spawned" finds no skin to test. This builds a
+     * STRING-ART dread with the hull forced on, chips it, and reports — the
+     * skin is proven on the thing that has one.
+     */
+    hullProbe() {
+      const was = getHullMode();
+      setHullMode(true);
+      const sp = new VoxelSprite(MODELS.skullDread);
+      setHullMode(was);
+      const before = sp.hull ? sp.hull.geometry.getAttribute('position').count : 0;
+      scene.add(sp.mesh);
+      sp.mesh.updateWorldMatrix(true, false);
+      const wv = sp.worldVoxels();
+      sp.chip(wv[0].pos, 40);
+      sp.hullCd = 0; sp.update(0.2); // past the re-skin throttle
+      const after = sp.hull ? sp.hull.geometry.getAttribute('position').count : 0;
+      const cubesHidden = sp.mesh.count;
+      scene.remove(sp.mesh); sp.dispose();
+      return { hadHull: !!sp.hull, before, after, cubesHidden, defaultHull: was };
+    },
+    /** Which slots a voxelized asset has taken, and at what density. */
+    getVoxelModels() {
+      return Object.fromEntries(voxelOverrides().map(k => {
+        const d = modelFor(k);
+        return [k, { voxels: d.voxels.length, pitch: +d.voxelSize.toFixed(4), hinge: !!(d.head && d.jaw),
+          lod: d.lod ? d.lod.voxels.length : 0, skin: meshSkinState().loaded.includes(k) && meshSkinsOn() }];
+      }));
+    },
+    getVoxelStyle() { return getVoxelStyle(); },
+    setVoxelStyle(st) { setVoxelStyle(st); },
+    getBackdrop() { return backdrop.getState(); },
+    setTimeScale(k) { timeScale = Math.max(0.02, Math.min(1, +k || 1)); },
+    /** The live feel numbers — the gate edits them in place (and puts them back). */
+    tuning() { return T; },
+    inputObj() { return input; },
+    /** HD-009: feedback spawned so far, plus the live recoil/FOV/dash values. */
+    feedback() { return { ...fx, recoil, fovKick, dashK: player.dashK, fov: camera.fov, puffs: sparks.filter(s => s.puff).length }; },
+    getGibs() { return physGibs.getState(); },   // prototype: the physical gibs
+    wearWall(i, amount) { const w = walls.walls[i]; if (w) wearWall(w, amount, _seg.set(w.x, w.h * 0.5, w.z)); return { felled: wallsFelled, left: walls.walls.length }; },   // v53
+    gibsObj() { return physGibs; },
+    killEnemy(e, dx = 0, dz = -1) { if (e?.alive) killEnemy(e, new THREE.Vector3(dx, 0, dz).normalize()); },   // a kill without a dagger, for the gate
+    gazeObj() { return gaze; },     // v51: the gaze lock, for the gate
+    /** v51: what is under a point of the view (ndc x, y in −1…1) — every mesh
+     *  the ray crosses, nearest first. For "what is that black block". */
+    viewProbe(x = 0, y = 0) {
+      const rc = new THREE.Raycaster(); rc.setFromCamera(new THREE.Vector2(x, y), camera);
+      return rc.intersectObjects(scene.children, true).slice(0, 5).map(h => ({
+        name: h.object.name || h.object.parent?.name || '', type: h.object.type,
+        chain: (() => { const c = []; for (let o = h.object; o && o !== scene; o = o.parent) c.push(`${o.name || o.type}${o.visible ? '' : '(hidden)'}`); return c.join(' < '); })(),
+        geo: h.object.geometry?.type, dist: +h.distance.toFixed(1), visible: h.object.visible,
+        at: [+h.point.x.toFixed(1), +h.point.y.toFixed(1), +h.point.z.toFixed(1)] }));
+    },
+    truckObj() { return truck.active ?? truck; },   // v51: the convoy (or the classic road), for the gate
+    triggerFinale() { startFinale(); return !!finale; },   // v53
+    getGoal() { return { goal: goalLine(), clock: clockLine(), shown: elGoal.classList.contains('show'), ms: GOAL_MS }; },   // HD-010
+    getRun() { return { ebbN, ebbSteps, rubbleStands: +rubbleStands.toFixed(2), complete: runComplete, end: S().end ?? null, state, recap: recapParts() }; },   // v54
+    completeRun() { completeRun(); return runComplete; },
+    getFinale() { return { active: !!finale, kind: finale?.kind ?? null, t: +(finale?.t ?? 0).toFixed(2), phase: finale?.phase ?? 0, rocks: finale?.rocks ?? 0, wrecked: finale?.wrecked ?? 0, done: finaleDone, pressure: finalePressure, drain: +goo.drain.toFixed(2), declared: S().finale ?? null }; },
+    getConvoy() { const cv = truck.active; return cv ? { trucks: cv.trucks.length, jackknifed: cv.jackknifed, hp: cv.trucks.map(t => t.hp), cargo: cv.cargo.getState() } : null; },   // v53   // v50: the gate taps the touch sticks the way a thumb does
+    getSeasons() {
+      const sn = S();
+      return {
+        ids: SEASONS.map(x => x.id), current: season, name: sn.name, built: sn.built, todo: sn.todo ?? [],
+        weapon: sn.weapon, pillars: !!sn.pillars, platforms: sn.platforms?.count ?? 0,
+        // v48: what the player can pick, and what season 2 is
+        visible: SEASONS.filter(x => !x.hidden).map(x => ({ id: x.id, menu: x.menu ?? x.name })),
+        spawns: sn.spawns ?? null, gooHurts: !!sn.goo?.hurts, gooAmp: sn.goo?.amp ?? 0, gooRipple: sn.goo?.ripple ?? 0,
+        tide: sn.goo?.tide ?? null, tideK: +goo.tide.toFixed(3), waveSpeed: goo.speed, waveGap: goo.gap,
+        jumpApex: +((T.player.jumpV * T.player.jumpV) / (2 * -T.player.gravity)).toFixed(3),
+        sky: { void: skyMat.uniforms.uVoid.value.toArray(), band: skyMat.uniforms.uBand.value, stars: skyMat.uniforms.uStars.value, horizon: skyMat.uniforms.uEmberCol.value.toArray() },
+        floorTint: floorMat.uniforms.uTint.value.toArray(),
+        backdrop: backdrop.getState().look,
+        fog: { color: scene.fog.color.toArray(), near: scene.fog.near, far: scene.fog.far },
+        ground: ground.visible,
+      };
+    },
+    setSeason(id) { season = seasonById(id).id; _seasonChosen = true; localStorage.setItem(SEASON_KEY, season); applySeason(); if (state === 'menu') showMenu(); return season; },
+    getPlatforms() { return platforms.getState(); },
+    getGoo() { return goo.getState(); },
+    gooHit(x, z, p) { goo.hit(x, z, p); },
+    waveStrikes() { return { strikes: waveStrikes, hurts: !!goo.cfg?.hurts, inside: goo.strikes(player), lifeT: +lifeT.toFixed(2) }; },
+    gelMoundSample() { return GEL_MOUND_SAMPLE; },
+    // the pause menu's season buttons, or the intro's tabs (HD-019), whose label is the SEASON N line
+    menuSeasons() { return [...elMsg.querySelectorAll('button.season, button.mn-season')].map(b => ({ id: b.dataset.season, label: (b.querySelector('.mn-n') ?? b).textContent.trim(), on: b.classList.contains('on') })); },
+    menuHas(sel) { return !!elMsg.querySelector(sel); },
+    getInca() { return skullscape.getState(); },
+    // the mean colour of the first standing enemy's lattice — is the roster wearing the season?
+    rosterSample() {
+      const e = enemies.find(x => x.alive && x.sprite?.voxels?.length);
+      if (!e) return null;
+      let r = 0, g = 0, b = 0, n = 0, hdr = 0;
+      for (const v of e.sprite.voxels) { if (v.color.r > 1.05 || v.color.g > 1.05) { hdr++; continue; } r += v.color.r; g += v.color.g; b += v.color.b; n++; }
+      let skin = null; e.meshRoot?.traverse(o => { if (o.isMesh && skin === null) skin = !!o.material.userData.mosaic; });
+      return { type: e.type, skin, n, hdr, mean: [+(r / n).toFixed(3), +(g / n).toFixed(3), +(b / n).toFixed(3)], palette: S().roster?.palette ?? null };
+    },
+    getHand() { return { model: handDef?.model ?? 'hand', wobble: hand.baseWobble ?? 0, muzzle: HAND_MUZZLE.slice(), pose: { ...HAND_BASE } }; },   // v52
+    getTechArt() { return { grad: skyMat.uniforms.uGrad.value, sunSize: skyMat.uniforms.uSunSize.value, rings: skyMat.uniforms.uSunRings.value, glint: floorMat.uniforms.uGlint.value, floorWave: floorMat.uniforms.uWaveK.value.toArray(), waveHead: floorMat.uniforms.uWave.value.z, caustic: floorMat.uniforms.uCaustic.value, haze: skyMat.uniforms.uHaze.value, sun: skyMat.uniforms.uSun.value, gelTime: gelMat.userData.gel.uTime.value, gelLip: gelMat.userData.gel.uLip.value.toArray(), seize: gelMat.userData.gel.uSeizeK.value }; },
+    // v47: is the gel actually rounded, and is any of the sea seized right now?
+    getGel() {
+      const wv = goo.mesh ? goo.mesh.geometry.getAttribute('position').count : 0;
+      let peak = 0, hot = 0, sum = 0;
+      if (goo.stress) for (let i = 0; i < goo.count; i++) { const v = goo.stress.getX(i); peak = Math.max(peak, v); sum += v; if (v > 0.5) hot++; }
+      const sl = platforms.list.find(p => p.spring);
+      return { waveVerts: wv, rounded: wv > 24, peakStress: +peak.toFixed(3),
+        hotFrac: goo.count ? +(hot / goo.count).toFixed(3) : 0, meanStress: goo.count ? +(sum / goo.count).toFixed(3) : 0,
+        drawn: goo.count, sink: +goo.sink.toFixed(3),
+        moundGive: +(sl?.give ?? 0).toFixed(3), moundStress: +(sl?.spring?.stress ?? 0).toFixed(3) };
+    },
+    gooObj() { return goo; }, // the gate reads heightAt directly
+    platformsObj() { return platforms; }, // the gate forces one slab tall and grown
+    clearPillars() { walls.cull(w => w.tag === 'pillar'); return walls.walls.length; }, // the cover check's control: the same shot with the rock gone
+    /** The body's wall state — what the wall-run gate and the harness read. */
+    getWallRun() {
+      return { enabled: !!player.wallRunEnabled, running: !!player.wallRunning, t: +player.wallRunT.toFixed(2),
+        contact: player.wallContact ? [+player.wallContact.nx.toFixed(2), +player.wallContact.nz.toFixed(2)] : null,
+        roll: +player.roll.toFixed(3), y: +player.feet.y.toFixed(2), vy: +player.vy.toFixed(2) };
+    },
+    /** Where the governor settled — the phone pass reads this. */
+    getPerf() {
+      return { tier: perfTier, detail: getVoxelDetail(), fps: +(1000 / Math.max(1, frameEMA)).toFixed(1),
+        hull: getHullMode(), skins: meshSkinsOn(), coarse: !!window.matchMedia?.('(pointer: coarse)').matches };
+    },
+    getWalls() { return walls.getState(); },
+    getArena() {
+      return {
+        lights: lightRig.children.length,
+        uplit: hemi.groundColor.getHex() > hemi.color.getHex(),
+        ember: +emberLights[0].intensity.toFixed(2),
+        arenaSlots: Object.keys(ARENA_ASSETS),
+        panels: floorPanels ? floorPanels.userData.tiles : 0,
+      };
+    },
+    addGems(n) { onGemsCollected(n); },
+    addStyle(n) { addStyle(n); },
+    getStyle() { return { styleVal, tier: STYLE_TIERS[styleTierIdx(styleVal)].label, peak: STYLE_TIERS[stylePeakIdx].label }; },
+    spawnSerpent() { spawnSerpent(); },
+    spawnSpider() { enemies.push(new Spider(scene, ringSpot(8).clone())); },
+    spawnWatcher() { const p = ringSpot(8).clone(); p.y = 2.2; enemies.push(new Watcher(scene, p, ARENA_R - 1)); },
+    spawnSplitter() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Splitter(scene, p)); },
+    spawnThorn() { spawnThorn(player.feet.x, player.feet.z); },
+    spawnBlinker() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Blinker(scene, p, ARENA_R - 1)); },
+    reap() { return tryReap(); },
+    getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
+    getTuning() { return T; },
+    getGun() {
+      return {
+        shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2),
+        homing: homingAmmo, homingHeldT: +homingHeldT.toFixed(2), lv: weaponLv,
+        weapon: S().weapon, rate: WP.rate ?? 1, streamSpeed: wpn('streamSpeed'), shotgunSpeed: wpn('shotgunSpeed'),
+        spread: wpn('spread'), shotgunSpread: wpn('shotgunSpread'), shape: daggers.shape,
+      };
+    },
+    getMovement() {
+      return {
+        speed: +player.horizontalSpeed.toFixed(3),
+        vx: +player.velocity.x.toFixed(3), vz: +player.velocity.z.toFixed(3),
+        vy: +player.vy.toFixed(3), grounded: player.feet.y <= 0.001,
+        hops: player.hopCount, daggerJumps: player.daggerJumpCount,
+        daggerCharges: player.daggerJumpsLeft,
+      };
+    },
+    getImpact() {
+      return {
+        w: sparkTex.image.width, h: sparkTex.image.height,
+        nearest: sparkTex.magFilter === THREE.NearestFilter && sparkTex.minFilter === THREE.NearestFilter,
+        mipmaps: sparkTex.generateMipmaps,
+      };
+    },
+    getRaster() {
+      const map = floorMat.uniforms.map.value;
+      const gl = renderer.getContext();
+      return {
+        pixelRatio: renderer.getPixelRatio(),
+        buffer: { w: gl.drawingBufferWidth, h: gl.drawingBufferHeight },
+        viewport: { w: window.innerWidth, h: window.innerHeight },
+        scaling: getComputedStyle(canvas).imageRendering,
+        crosshair: getComputedStyle(elCross).display,
+        floor: {
+          w: map.image.width, h: map.image.height,
+          nearest: map.magFilter === THREE.NearestFilter && map.minFilter === THREE.NearestFilter,
+          mipmaps: map.generateMipmaps,
+        },
+      };
+    },
+    getWeaponView() {
+      hand.mesh.updateWorldMatrix(true, false);
+      _sv.setFromMatrixPosition(hand.mesh.matrixWorld).project(camera);
+      return {
+        recoil: +recoil.toFixed(3),
+        x: +handGroup.position.x.toFixed(3), y: +handGroup.position.y.toFixed(3), z: +handGroup.position.z.toFixed(3),
+        rx: +handGroup.rotation.x.toFixed(3), ry: +handGroup.rotation.y.toFixed(3), rz: +handGroup.rotation.z.toFixed(3),
+        count: hand.mesh.count, visible: hand.mesh.visible,
+        layers: { camera: camera.layers.mask, mesh: hand.mesh.layers.mask },
+        screen: { x: +_sv.x.toFixed(3), y: +_sv.y.toFixed(3), z: +_sv.z.toFixed(3) },
+      };
+    },
+    getLook() {
+      const e = enemies.find(x => x.alive && x.sprite);
+      return {
+        mode: opts.look, hullMode: getHullMode(),
+        sample: e ? { hull: !!e.sprite.hull, cubes: e.sprite.mesh.count, tris: e.sprite.hull ? e.sprite.hull.geometry.getAttribute('position').count / 3 : 0 } : null,
+        hand: !!hand.hull,
+      };
+    },
+    // aim: raw() reports the assist a stick WOULD get right now, ignoring the
+    // "is a stick even in use" gate, so tests can probe the falloff curve
+    // without faking a gamepad
+    getAim() {
+      return {
+        assist: +player.aimAssist.toFixed(3),
+        raw: +aimAssistRawK().toFixed(3),
+        ramp: +player.turnRamp.toFixed(3),
+        on: opts.aim,
+      };
+    },
+    spawnRevenant() {
+      const p = ringSpot(8).clone(); p.y = -0.6;
+      const r = new Revenant(scene, p); enemies.push(r); return r;
+    },
+    spawnHusk() { const p = ringSpot(9).clone(); p.y = 1.35; const h = new Husk(scene, p); enemies.push(h); return h; },
+    spawnSkull() { const p = ringSpot(8).clone(); p.y = 1.2; const s = new Skull(scene, p); enemies.push(s); return s; },
+    getSkullMouth() {
+      const s = enemies.find(e => e.alive && e.type === 'skull' && e.jawPivot);
+      if (s) {
+        s.jaw.mesh.updateWorldMatrix(true, false);
+        _sv.setFromMatrixPosition(s.jaw.mesh.matrixWorld).project(camera);
+        return {
+          animated: true, parts: s.parts.length,
+          open: +s.jawOpen.toFixed(3), angle: +s.jawPivot.rotation.x.toFixed(3),
+          phase: +s.jawT.toFixed(3),
+          jaw: {
+            alive: s.jaw.aliveCount, cubes: s.jaw.mesh.count, hull: !!s.jaw.hull,
+            tris: s.jaw.hull ? s.jaw.hull.geometry.getAttribute('position')?.count / 3 : 0,
+            screen: { x: +_sv.x.toFixed(3), y: +_sv.y.toFixed(3), z: +_sv.z.toFixed(3) },
+          },
+        };
+      }
+      return { animated: false, parts: 0, open: 0, angle: 0, phase: 0 };
+    },
+    spawnDread() { const p = ringSpot(8).clone(); p.y = 1.5; enemies.push(new DreadSkull(scene, p)); },
+    spawnGhostSerpent() { spawnSerpent(true); },
+    spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
+    setLife(n) { lifeT = n; },
+    setTime(t) { gameTime = t; },
+    report() { return runReport(); },
+    setRunKind(k) { runKind = k; localStorage.setItem('hyperDaggerRunKind', k); },
+    setDate(s) { dateOverride = s; },
+    setBoardEndpoint(u) { BOARD_ENDPOINT = u || ''; },
+    getBoardEndpoint() { return BOARD_ENDPOINT; },
+    getRunInfo() { return { runKind: runKindLive, runSeed, runDate, mode: M().id, pulseN }; },
+    lastPulsePicks,
+    getDailyTable() { return readDailyTable(); },
+    pulse(n) { runPulse(n ?? ++pulseN); },
+    setOpt(k, v) { opts[k] = v; saveOpts(); applyOpts(); },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, sphere: spherePass.enabled, threat: threatPass.enabled, rearSignal: threatPass.uniforms.uRear.value, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
+    getProjection() { return { enabled: spherePass.enabled, worldCaptures: sphereWorldCaptures, threatCaptures: sphereThreatCaptures, worldSize: sphereWorldTarget.width, threatSize: sphereThreatTarget.width }; },
+    getEnvironment() { return environment.getState(); },
+    getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
+    /** Everything that could leak over a long run: pool occupancy, scene graph
+     *  size, and GPU resource counts. A survival game lives or dies on the
+     *  30-minute run, so these must plateau rather than climb. */
+    getHealth() {
+      return {
+        t: +gameTime.toFixed(1),
+        enemies: enemies.length, serpents: serpents.length,
+        debris: debris.items.length, litter: litter.count,
+        daggers: daggers.active.length, orbs: orbs.active.length,
+        gems: gems.active.length, thorns: thorns.length,
+        pending: pending.length, sparks: sparks.length,
+        sceneChildren: scene.children.length,
+        geometries: renderer.info.memory.geometries,
+        textures: renderer.info.memory.textures,
+        programs: renderer.info.programs?.length ?? -1,
+      };
+    },
+    // renderer.info auto-resets on every internal composer pass, so reading it
+    // directly only ever sees the last fullscreen quad. Accumulate one whole
+    // frame instead: animate() re-registers its rAF first, so a callback queued
+    // here runs right after the next full composer render.
+    countDrawCalls() {
+      return new Promise(resolve => {
+        renderer.info.autoReset = false;
+        renderer.info.reset();
+        requestAnimationFrame(() => {
+          const calls = renderer.info.render.calls;
+          renderer.info.autoReset = true;
+          resolve(calls);
+        });
+      });
+    },
+    ripple(amp) { triggerRipple(amp ?? 1); },
+    flyby() { startFlyby(); },
+    getFlyby() { return flyby ? { t: flyby.t, parts: flyby.parts.length } : null; },
+    setDetail(n) { setVoxelDetail(n); },
+    getDetail() { return getVoxelDetail(); },
+    getStyleSample() {
+      // bone (must never shift) + the accent surfaces — for style smoke checks
+      const bone = hand.voxels.find(v => v.key === 'G');
+      const eye = enemies.find(e => e.sprite?.voxels.some(v => v.key === 'R'))
+        ?.sprite.voxels.find(v => v.key === 'R');
+      return {
+        style: opts.style,
+        bone: [bone.color.r, bone.color.g, bone.color.b],
+        eye: eye ? [eye.color.r, eye.color.g, eye.color.b] : null,
+        orb: [orbs.mat.color.r, orbs.mat.color.g, orbs.mat.color.b],
+        gem: [gems.mesh.material.color.r, gems.mesh.material.color.g, gems.mesh.material.color.b],
+        floor: floorMat.uniforms.uAccent.value.toArray(),
+        ember: skyMat.uniforms.uEmberCol.value.toArray(),
+      };
+    },
+    buzz(s, w, ms) { buzz(s ?? 1, w ?? 1, ms ?? 100); },
+    forceFrameTime(ms) { forcedFrameTime = ms; },
+    /** HD-011: game-time / real-time under the dt cap (1 = keeping up). */
+    getTimeRatio() { return timeRatioState(); },
+    resetTimeRatio() { resetTimeMonitor(); return timeRatioState(); },
+    getPerfTier() {
+      return {
+        tier: perfTier, ema: frameEMA, mode: opts.perf,
+        smear: afterimage.enabled, chroma: chromaPass.enabled, bloom: bloom.enabled,
+        pixelRatio: renderer.getPixelRatio(), debrisSoftCap: debris.softCap,
+      };
+    },
+    setPerfTier(t) { setPerfTier(t); },
+    perfTuning,
+    pulseInfo(n) { const k = pulseKind(n ?? pulseN); return { kind: k, budget: pulseBudget(n ?? pulseN, k) }; },
+    getState() { return { mode: M().id, lifeT, gameTime, mercyT, state, weaponLv, gemCount, homingAmmo }; },
+    getSchedule() {
+      return {
+        nextTotemAt, nextThornAt, nextLevAt, nextPulseAt, pulseN,
+        pureScriptCursor,
+        nextPureAt: DD_SPAWNSET[pureScriptCursor]?.[0] ?? null,
+      };
+    },
+  },
+};
+
+// v41: the season is on the sky before the first frame is drawn
+applySeason();
