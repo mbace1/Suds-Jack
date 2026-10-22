@@ -91,3 +91,10 @@ scheduled from the pop cue, so it lands on "all of Stockholm" in every language.
   read as mushrooms (smaller, darker crown clusters); the cable in the clearing was invisible (a perspective cable with
   a moonlit rim); the sign lettering ran off both boards; the map was soft (it sat on a far, blurred layer) and two
   price tags covered the place names; the 1 STOCKHOLM arrow hung off the label's edge.
+- **Fixed after the first build** (looking at the master): the fold took 0.4 s and could be missed, so the city now
+  folds over ~0.7 s through "about as much" and the box is up on "all"; the score's card flips follow it (`foldAt()`
+  is mirrored in `score.py`). The cut into the label dropped to about −65 dB for half a second, so the box's hum now
+  runs under it; the long pan whoosh was turned down.
+- **Result:** PASSED (84 text pass, 9 warn: the unread fi/ja drafts and their sidecar timings on the English master;
+  sound 5 pass), 32.14 s + 3 s sign-off, −13.9 LUFS, −3.3 dBTP, LRA 3.6. Preview
+  `previews/22-10-One-Stockholm-DRAFT-en.mp4` (35.1 s, 4.1 MB). Reports: `qa/pipeline/one-stockholm/en/`.

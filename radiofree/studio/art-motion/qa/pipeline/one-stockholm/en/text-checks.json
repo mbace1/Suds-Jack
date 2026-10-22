@@ -1,0 +1,467 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The station's question (plan/research-nordic-next.md §1; plan/films/21-one-stock"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy power.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy power.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy power.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy power source",
+  "result": "pass",
+  "why": "Deal documents as reported (Energinyheter 10 Sep and 14 Oct; hurbra.se; Dagens P"
+ },
+ {
+  "check": "copy power pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy jobs.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy jobs.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy jobs.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy jobs source",
+  "result": "pass",
+  "why": "500: the seller's figure — Torsboda Industrial Park, the municipal company selli"
+ },
+ {
+  "check": "copy jobs pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy price.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy price.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy price.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy price source",
+  "result": "pass",
+  "why": "Svenska kraftnät to Sveriges Radio ('Svenska kraftnät: Dyrare el om datacenter b"
+ },
+ {
+  "check": "copy price pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, over its own image: the box's appliance label, an arrow read"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.city",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.site",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.grid",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "35 words: Doodle's planned Swedish data centre may draw up to 2,000 MW, about all of Stockholm. Jobs"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "35 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 676 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 191, 'y': 191, 'w': 698, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 4.65 s (73 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 3.57 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 0.29 → scrim 0.0"
+ },
+ {
+  "check": "width en:power",
+  "result": "pass",
+  "why": "widest line 620 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:power",
+  "result": "pass",
+  "why": "box {'x': 219, 'y': 191, 'w': 642, 'h': 247}"
+ },
+ {
+  "check": "reading time en:power",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.30 s (66 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:power",
+  "result": "pass",
+  "why": "last word up 3.77 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:power",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:power",
+  "result": "pass",
+  "why": "picture behind: edge 0.64 → scrim 0.0"
+ },
+ {
+  "check": "width en:jobs",
+  "result": "pass",
+  "why": "widest line 621 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:jobs",
+  "result": "pass",
+  "why": "box {'x': 218, 'y': 191, 'w': 643, 'h': 247}"
+ },
+ {
+  "check": "reading time en:jobs",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.60 s (72 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:jobs",
+  "result": "pass",
+  "why": "last word up 3.52 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:jobs",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:jobs",
+  "result": "pass",
+  "why": "picture behind: edge 0.3 → scrim 0.0"
+ },
+ {
+  "check": "width en:price",
+  "result": "pass",
+  "why": "widest line 616 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:price",
+  "result": "pass",
+  "why": "box {'x': 221, 'y': 191, 'w': 638, 'h': 247}"
+ },
+ {
+  "check": "reading time en:price",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.75 s (75 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:price",
+  "result": "pass",
+  "why": "last word up 3.58 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:price",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:price",
+  "result": "pass",
+  "why": "picture behind: edge 0.92 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 547 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 255, 'y': 191, 'w': 569, 'h': 160}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 3.25 s (45 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.58 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 0.23 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "Doodle wants a Stockholm's worth of power. | How many jobs does Sweden get?"
+ },
+ {
+  "check": "sidecar lines en:power",
+  "result": "pass",
+  "why": "The deal allows up to 2,000 MW: about as | much as all of Stockholm."
+ },
+ {
+  "check": "sidecar lines en:jobs",
+  "result": "pass",
+  "why": "The seller says 500 jobs. Doodle: maybe | hundreds, it's still early days."
+ },
+ {
+  "check": "sidecar lines en:price",
+  "result": "pass",
+  "why": "The grid operator warns: unless new power | is built, prices rise nationwide."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "Power: one Stockholm. Jobs: too early to | say."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.58 s on this master, fi needs 5.06 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Doodle haluaa Tukholman verran sähköä. | Montako työpaikkaa Ruotsi saa?"
+ },
+ {
+  "check": "sidecar fi:power",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 4.76 s"
+ },
+ {
+  "check": "sidecar lines fi:power",
+  "result": "pass",
+  "why": "Sopimus sallii jopa 2 000 MW: suunnilleen | koko Tukholman verran."
+ },
+ {
+  "check": "sidecar fi:jobs",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 5.12 s"
+ },
+ {
+  "check": "sidecar lines fi:jobs",
+  "result": "pass",
+  "why": "Myyjä arvioi 500 työpaikkaa. Doodle: ehkä | satoja, ollaan vasta alussa."
+ },
+ {
+  "check": "sidecar fi:price",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 5.59 s"
+ },
+ {
+  "check": "sidecar lines fi:price",
+  "result": "pass",
+  "why": "Kantaverkkoyhtiö varoittaa: ilman uutta | tuotantoa hinnat nousevat koko maassa."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 3.88 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Sähköä: yksi Tukholma. Työpaikat: liian | aikaista."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "warn",
+  "why": "5.58 s on this master, ja needs 7.00 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "warn",
+  "why": "Doodleはストックホルム1つ分の | 電力を求める。スウェーデンの雇用は？"
+ },
+ {
+  "check": "sidecar ja:power",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.50 s"
+ },
+ {
+  "check": "sidecar lines ja:power",
+  "result": "pass",
+  "why": "契約の上限は2,000MW。ほぼ | ストックホルム全体分。"
+ },
+ {
+  "check": "sidecar ja:jobs",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 6.83 s"
+ },
+ {
+  "check": "sidecar lines ja:jobs",
+  "result": "warn",
+  "why": "売り手は500人の雇用と言う。 | Doodleは数百かも、まだ初期段階と。"
+ },
+ {
+  "check": "sidecar ja:price",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.83 s"
+ },
+ {
+  "check": "sidecar lines ja:price",
+  "result": "pass",
+  "why": "送電会社の警告：新たな発電が | なければ電気代は全国で上がる。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "電力：ストックホルム1つ分。 | 雇用：まだ言えない。"
+ }
+]
