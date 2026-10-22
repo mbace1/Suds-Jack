@@ -7,8 +7,8 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=12';
-import WAVES from './tuning/waves.js?v=12';
+import { SPECIES } from './tuning/species/index.js?v=13';
+import WAVES from './tuning/waves.js?v=13';
 
 export const TUNING = {
   render: {
@@ -356,6 +356,22 @@ export const TUNING = {
     lobSplash: { droplets: 10, dropletSize: [0.09, 0.13], puddle: 1.1, shake: 0.12 },
   },
   splats: { capacity: 192, life: 5, opacity: 0.55, spring: 0.55, damp: 0.74, y: 0.01 },
+
+  // 2.0's ARCADE JUICE (render/juice.js; owner, 2026-10-22: the graphics
+  // pass's second step, after the jelly). World-space additive glows in the
+  // colour of what made them, no screen bloom (the owner prefers colour to
+  // bloom). `white` lifts a glow toward white at its hot core; alpha is its
+  // strength. The gels' shots glow harder than yours: they are what you read.
+  juice: {
+    glowCap: 600, streakCap: 760, ringCap: 48, glowPow: 1.3,   // a glow's falloff from its centre (1 = a cone; higher = tighter)
+    bullet: {
+      hero: { halo: 5.0, haloAlpha: 0.42, trail: 0.03, trailMax: 0.9, width: 1.6, trailAlpha: 0.5, white: 0.35 },   // halo/width × the bullet's radius; trail = seconds of flight behind it
+      gel: { halo: 6.5, haloAlpha: 0.7, trail: 0.09, trailMax: 0.8, width: 1.8, trailAlpha: 0.55, white: 0.25 },
+    },
+    spark: { count: 8, max: 256, speed: [6, 13], life: [0.16, 0.3], drag: 6, len: 0.07, width: 0.16, alpha: 1, white: 0.75, y: 0.5, spread: 1.2 },   // a hit: hot streaks sprayed back out of the body, ±spread rad
+    flash: { max: 24, life: 0.14, r: 1.6, y: 0.7, swell: 0.4, alpha: 0.85, white: 0.6 },   // a kill: a hot disc, r and y × the body's radius
+    ring: { max: 32, life: 0.36, from: 0.9, small: 2.2, big: 3.6, boss: 5.0, y: 0.03, alpha: 0.7, white: 0.15, dashFrom: 0.6, dashTo: 3.2 },   // a kill's ring on the floor, from/to × the body's radius; the dash boom's in metres
+  },
   // 1.x's camera shake (main.js:665-737): trauma adds, decays, and moves the
   // camera by trauma squared
   shake: { decay: 2.8, amp: [1.8, 1.2, 1.2], freq: [41, 37, 43], kill: 0.07, killPerRadius: 0.13, hurt: 0.38, bigKill: 0.1 },

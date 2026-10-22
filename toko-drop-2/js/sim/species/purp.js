@@ -67,7 +67,7 @@
 // shockwave, which the core runs after onKill, is cancelled on the brood in
 // advance (1.x's never felt it, main.js:4518-4529); another big death during
 // the pop would still rattle it, where 1.x had nothing there to rattle.
-import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=12';
+import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=13';
 
 const TAU = Math.PI * 2;
 

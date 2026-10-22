@@ -19,6 +19,31 @@
     Never `--no-verify`.
 -->
 
+## v13 — 2026-10-22
+**Arcade juice: bullets glow, hits spark, kills flash and ring**
+- The graphics pass's second step, after the jelly (owner, 2026-10-22: D,
+  in order). It is all in colour and in world space, with no screen-wide
+  bloom, because the owner prefers colour over bloom. Each glow is drawn
+  additively in the colour of whatever made it (`js/render/juice.js`,
+  `TUNING.juice`)
+- **Every bullet is a small comet**: a soft halo round it and a short trail
+  behind it, both in its own colour. The gels' shots glow harder than yours,
+  because they are the ones you have to read
+- **A hit throws sparks**: hot streaks sprayed back out of the body from
+  where the shot landed (sprayed every way, half of them were hidden by the
+  jelly)
+- **A kill flashes and rings**: a hot disc in the body's colour that is gone
+  in a blink, and a ring sent across the floor. It is bigger for a big gel
+  and bigger again for a boss. The dash boom sends a ring too
+- Three instanced draws carry all of it
+- The smoke checks that every bullet in flight carries its glow, sampled
+  while the gun is held. It fails with the juice switched off: at the end of
+  a run no bullet is left in flight, so the first version of the check could
+  never fail
+- Cache tokens `?v=12` → `?v=13`; HUD label → `2.0 · v13`
+
+---
+
 ## v12 — 2026-10-22
 **PURP, PYRA, BOTFLY and BULWARK, and SLUG, REDD and SHEPHERD held to 1.x again**
 - **PURP CUBE** is 1.x's circler. It tumbles on REDD's shared cube flop

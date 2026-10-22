@@ -13,11 +13,12 @@
 // species, so a gel's material is built once and reused, never compiled
 // mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=12';
+import { TUNING } from '../tuning.js?v=13';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=12';
-import { LOOKS } from './looks/index.js?v=12';
-import { JellyBody } from './jelly.js?v=12';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=13';
+import { LOOKS } from './looks/index.js?v=13';
+import { JellyBody } from './jelly.js?v=13';
+import { Juice } from './juice.js?v=13';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -42,6 +43,7 @@ export class Actors {
 
     this.hero = this._makeHero();
     scene.add(this.hero.root);
+    this.juice = new Juice(scene);   // bullet comets, hit sparks, kill flashes and rings
 
     const sphere = new THREE.SphereGeometry(1, 10, 8);
     this.bullets = new THREE.InstancedMesh(sphere, new THREE.MeshBasicNodeMaterial(), T.bullets.maxHero + T.bullets.maxGel);
@@ -190,10 +192,12 @@ export class Actors {
     this.views.clear(); this.dying.length = 0; this.chunks.length = 0; this.heat = 0;
     for (const j of this.jellies) { this.scene.remove(j.mesh); j.geo.dispose(); }
     this.jellies.length = 0;
+    this.juice.reset();
   }
 
   // the sim's events that only the view cares about
   onEvent(e, w) {
+    this.juice.onEvent(e, w);
     if (e.type === 'ghost') {
       const G = T.heroLook.ghost, slot = this.hero.ghosts.reduce((a, b) => (a.life <= b.life ? a : b));
       slot.life = G.life; slot.mesh.position.set(e.x, 0, e.z); slot.mesh.visible = true;
@@ -314,6 +318,7 @@ export class Actors {
     bm.count = n;
     bm.instanceMatrix.needsUpdate = true;
     if (bm.instanceColor) bm.instanceColor.needsUpdate = true;
+    this.juice.sync(w, alpha, BULLET_Y);
 
     // lobs in flight, hazards on the floor (a slow pulse, fading out at the end)
     let k = 0;
@@ -369,6 +374,7 @@ export class Actors {
   // Everything that runs on the frame clock rather than the sim's: ripples
   // dying out, the dying playing out their last beat, chunks in flight.
   stepFx(dt, time) {
+    this.juice.step(dt);
     // jelly halves: step, redraw, and in their last part slump into the puddle
     const J = D.jelly;
     for (let i = this.jellies.length - 1; i >= 0; i--) {
