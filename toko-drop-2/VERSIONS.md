@@ -19,6 +19,33 @@
     Never `--no-verify`.
 -->
 
+## v15 — 2026-10-22
+**DRAPER and CLOAKER: all 27 of 1.x's gel types are in**
+- **DRAPER** is 1.x's wall-weaver. It holds about 11 from you, keeps its
+  broad face square to you, and every weave winds up for 0.9 s while its
+  end-spools tumble. Then it looms a curtain: 13 bullets across your line
+  with one 2-slot gap to slip through, marching at 0.72 of a shot's speed.
+  Two of them cross their curtains. A curtain loomed slanted near a wall
+  keeps the end bullets that start past the edge and walk back in, as 1.x's
+  did (the core's tighter bullet bounds would have deleted 113 of 771
+  curtains' bullets over 40 seeds)
+- **CLOAKER** is 1.x's ambush. It stands visible for about a second, cloaks
+  to a shimmer and runs to a flank 6.5–8 from you, then decloaks over
+  0.6 s and fires a 3-shot fan. It can be hit in every state, as in 1.x.
+  Its decloak strobe is drawn: 1.x wrote it and then overwrote it with
+  black in the same frame, so it never showed there (`look.strobe` false
+  restores that)
+- A body you cannot fully see dies its own way: an elite CLOAKER killed
+  while cloaked fades out as 1.x's did, rather than bursting into the
+  solid jelly halves of v11
+- Its shadow (v14) stays while it is cloaked: 1.x's shadow pass ignored a
+  body's opacity, so a cloaked CLOAKER cast a full shadow there too
+- Both are checked step by step against 1.x's own arithmetic: DRAPER 109
+  checks, CLOAKER 74. Species: 27 of 27
+- Cache tokens `?v=14` → `?v=15`; HUD label → `2.0 · v15`
+
+---
+
 ## v14 — 2026-10-22
 **The arena's light: shots and blasts light the floor, bodies cast shadows**
 - The graphics pass's third step (owner, 2026-10-22). The floor stays matte,

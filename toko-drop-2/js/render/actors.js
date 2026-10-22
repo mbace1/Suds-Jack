@@ -13,13 +13,13 @@
 // species, so a gel's material is built once and reused, never compiled
 // mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=14';
+import { TUNING } from '../tuning.js?v=15';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=14';
-import { LOOKS } from './looks/index.js?v=14';
-import { JellyBody } from './jelly.js?v=14';
-import { Juice } from './juice.js?v=14';
-import { ArenaLight } from './light.js?v=14';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=15';
+import { LOOKS } from './looks/index.js?v=15';
+import { JellyBody } from './jelly.js?v=15';
+import { Juice } from './juice.js?v=15';
+import { ArenaLight } from './light.js?v=15';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -150,9 +150,12 @@ export class Actors {
   // its own size and shape, cut in two by a vertical blade along the line
   // from the hero through it, the halves pushed apart off the blade. False
   // when it does not qualify (or the cap is reached): then it pops as 1.x's.
-  _sliceJelly(e, w) {
+  _sliceJelly(e, w, v) {
     const J = D.jelly, S = T.species[e.kind], mat = this.jellyMats.get(e.kind);
     if (!J.on || S?.family !== 'blob' || e.r < J.minRadius || !mat) return false;
+    // a body you could not fully see (a CLOAKER cloaked or coming out of it)
+    // dies its own way, fading: sliced, it would burst into solid jelly
+    if (v?.mat && v.mat.opacity < 1) return false;
     if (new Set(this.jellies.map((j) => j.from)).size >= J.max) return false;
     const sh = B.shapes[e.kind] || B.shape, h = w?.hero;
     let dx = h ? e.x - h.x : 0, dz = h ? e.z - h.z : 1;
@@ -224,7 +227,7 @@ export class Actors {
       const v = this.views.get(e.id);
       if (!v) return;
       this.views.delete(e.id);
-      if (this._sliceJelly(e, w)) { this._release(v); return; }
+      if (this._sliceJelly(e, w, v)) { this._release(v); return; }
       v.dyingT = B.death;
       v.mat?.emissive?.setHex(e.color).lerp(_white, D.whiten);
       this.dying.push(v);
