@@ -16,20 +16,32 @@ weapons and physical debris still use the existing geometry.
   `/hyperdagger/`. The preview does not register a service worker, so it
   cannot delete the current cabinet's offline caches.
 
-## Build 3 — hardware budget and combat readability
+## Build 3 — implemented experimental slice
+- Seven SDF enemy profiles, including the orbital Watcher and open-shell Totem.
+- Six bounded trajectory cuts per enemy; dark cut edges and hit flash.
+- Charge/spawn signals drive the Watcher iris and Totem core.
+- Season-direction lighting in world space and analytic SDF floor engravings.
+- Gameplay health, radii, firing/spawning, scoring and voxel deaths retained.
+- Dedicated Watcher/Totem encounter via the existing VOID director, with
+  separate test records; standard season wave tables are unchanged.
+
+Owner's latest "Go ahead" authorizes this preview expansion while physical
+GPU measurements remain open; it does not approve SDF as the default.
+
+## Next — hardware budget and combat readability
 - Measure full gameplay on physical iPad, Android phone and desktop GPU:
   close skull, 12-body pack, late-wave swarm, every season and cube projection.
 - Target 60 fps desktop / 30 fps tablet over a 60-second run; record p95 frame
   time, game/real-time ratio and browser/GPU. These are exit targets, not results.
 - Compare target size, crown recognition, damage flash and occlusion in motion.
-- Add SDF wound/erosion feedback for multi-hit enemies; the current preview
-  flashes on hit and retains voxel debris, but does not carve SDF bullet holes.
+- Review wound visibility across six-hit bodies and glancing impacts; expand
+  from the current six recent through-cuts only within a measured GPU budget.
 - Add SDF-specific distance/step budgets and a return-to-Classic recovery if
   measurements miss the budget. No automatic quality claim from SwiftShader.
 
 ## Build 4 — next enemy, one complete loop at a time
-1. Watcher: body, charging cue, firing, hit and death; preserve aimed volleys.
-2. Totem: sculpt, pulse animation, spawned skulls and break-up.
+1. Watcher: implemented in build 3; validate on physical devices.
+2. Totem: implemented in build 3; validate on physical devices.
 3. Spider and serpent: articulated limbs/rings; retain each segment's hitbox.
 4. Heavy/boss silhouettes only after all preceding conversions are tested.
 
@@ -38,7 +50,8 @@ loop, keep its distinct silhouette and timing, and stay within the hardware
 budget before another enemy starts. Existing voxel fallback remains available.
 
 ## Build 5 — environment and coherent lighting
-- Convert a small patch of arena detail first; preserve floor/edge collisions.
+- Build 3 adds material-only SDF floor inlays. Next convert a small patch
+  of genuine 3D arena detail; preserve floor/edge collisions.
 - Match SDF lighting to each season and its imported geometry; compare shadow,
   depth, fog, projection and postprocessing with the current build.
 - Only consider a fullscreen raymarch after measured GPU evidence supports it.
