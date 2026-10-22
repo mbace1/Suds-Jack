@@ -1,9 +1,9 @@
 {
   "film": "per-caller",
-  "cut": "Coxon, Per Caller, DRAFT v1 (20 Oct) — one question: can an AI call your cellphone about the election without asking? | v2 21 Oct: US in the question and the consent line (owner: 'same notes as Wednesday')",
+  "cut": "Coxon, Per Caller, DRAFT v1 (20 Oct) — one question: can an AI call your cellphone about the election without asking? | v2 21 Oct: US in the question and the consent line (owner: 'same notes as Wednesday') | v3 22 Oct: the ruling line updated (an FCC spokesperson told Reuters on 19 Oct the agency has no plans to act on the petition)",
   "series": "coxon",
   "captionSize": "house",
-  "argument": "Not today: a political group has asked the FCC to let AI-voiced political calls reach cellphones without consent, a ruling could come before Election Day, and the proposed limit is three a month per caller.",
+  "argument": "Not today: a political group has asked the FCC to let AI-voiced political calls reach cellphones without consent. The FCC says it has no plans to act before Election Day, and the proposed limit is three a month per caller.",
   "langs": [
     "en",
     "fi",
@@ -62,11 +62,11 @@
       "until": "s5-0.35",
       "hold": "s5",
       "text": {
-        "en": "Comments closed 19 October. / A ruling could come / [before Election Day].",
-        "fi": "Lausuntoaika päättyi 19.10. / Päätös voi tulla / [ennen vaalipäivää].",
-        "ja": "意見募集は 10月19日に 締め切り。 / 判断は [投票日の 前に] / 出る 可能性が ある。"
+        "en": "Comments closed 19 October. / The FCC says it has no plans / to act [before Election Day].",
+        "fi": "Lausuntoaika päättyi 19.10. / FCC:n mukaan päätöstä ei ole / tulossa [ennen vaalipäivää].",
+        "ja": "意見募集は 10月19日に 締め切り。 / FCCに よると [投票日の 前に] / 判断する 予定は ない。"
       },
-      "source": "DA 26-940: comments due 5 Oct, replies due 19 Oct 2026 (ITIF's reply comments dated 19 Oct; NCLC's opposition 5 Oct). AP, 7 Oct: the FCC could act as soon as late October, before the 3 Nov midterms; the notice sets no date, hence 'could'. No ruling found on 20 Oct."
+      "source": "DA 26-940: comments due 5 Oct, replies due 19 Oct 2026 (ITIF's reply comments dated 19 Oct; NCLC's opposition 5 Oct). Reuters (David Shepardson), 19 Oct 2026: an FCC spokesperson said no one at the agency has expressed interest in moving to an order on this or any of the petitions, and there are no plans to do so; Commissioner Gomez had said the agency could act within days. The film says the narrower, still-true 'no plans to act before Election Day' and quotes no one. Re-checked 22 Oct (search summaries; no ruling found)."
     },
     {
       "id": "last",
@@ -152,8 +152,8 @@
     }
   },
   "post": {
-    "en": "In the US today, an AI-voiced robocall to your cellphone needs your consent. A political group has asked the FCC to drop that for political calls, and a ruling could come before Election Day. The proposed limit: three calls a month, per caller. It is a request, not a rule. #AI #FCC #robocalls #Midterms",
-    "fi": "Nyt tekoälyäänellä soitettu robottipuhelu kännykkään vaatii suostumuksesi. Poliittinen ryhmä on pyytänyt FCC:tä poistamaan säännön poliittisilta puheluilta, ja päätös voi tulla ennen vaalipäivää. Ehdotettu raja: kolme puhelua kuussa, soittajaa kohden. Kyse on pyynnöstä, ei säännöstä.",
-    "ja": "今のルールでは、AI音声の自動電話を携帯にかけるにはあなたの同意が必要。ある政治団体がFCCに、政治の電話ではそのルールを外すよう求めた。判断は投票日の前に出る可能性がある。提案された上限は月3回。ただし発信者ごとに。まだ要請の段階で、決定ではない。"
+    "en": "In the US, an AI-voiced robocall to your cellphone needs your consent. A political group asked the FCC to drop that for political calls. The FCC says it has no plans to act on it before Election Day. The proposed limit: three calls a month, per caller. #AI #FCC #robocalls",
+    "fi": "Nyt tekoälyäänellä soitettu robottipuhelu kännykkään vaatii suostumuksesi. Poliittinen ryhmä on pyytänyt FCC:tä poistamaan säännön poliittisilta puheluilta. FCC:n mukaan päätöstä ei ole tulossa ennen vaalipäivää. Ehdotettu raja: kolme puhelua kuussa, soittajaa kohden.",
+    "ja": "今のルールでは、AI音声の自動電話を携帯にかけるにはあなたの同意が必要。ある政治団体がFCCに、政治の電話ではそのルールを外すよう求めた。FCCによると、投票日の前に判断する予定はない。提案された上限は月3回。ただし発信者ごとに。"
   }
 }

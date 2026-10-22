@@ -6,9 +6,24 @@ Engine key `pc`, `papercut/per-caller/`, kit `scenes/pc_kit.js` (every scene reg
 
 **The one question:** *Can an AI call your cellphone about the election without asking?*
 
-**The answer, in one sentence (copy.json `argument`):** Not today: a political group has asked the FCC to let AI-voiced
-political calls reach cellphones without consent, a ruling could come before Election Day, and the proposed limit
-is three a month per caller.
+**The answer, in one sentence (copy.json `argument`, v3):** Not today: a political group has asked the FCC to let
+AI-voiced political calls reach cellphones without consent. The FCC says it has no plans to act before Election Day,
+and the proposed limit is three a month per caller.
+
+## v3, 22 Oct: the ruling line went out of date
+
+The approved v2 was **held on 22 Oct** before its 12:52 slot (`POSTED.md`): its fourth caption said "A ruling could
+come before Election Day". On 19 Oct an FCC spokesperson told Reuters (David Shepardson) that no one at the agency had
+shown interest in moving to an order on this or any of the petitions, and that there were no plans to do so.
+Commissioner Gomez had said the agency could act within days, but she is one commissioner and the spokesperson speaks
+for the agency. Re-checked 22 Oct from search summaries; no ruling was found.
+
+- **Caption 4, v3:** "Comments closed 19 October. / The FCC says it has no plans / to act [before Election Day]." The
+  agency said no plans at all, so "before Election Day" is narrower and still true. It keeps the calendar shot as
+  it was: 19 Oct crossed out, the page torn to November, 3 circled on the pop. Nobody is quoted. fi and ja follow
+  (drafts, `native_read` false).
+- **`post` copy** in en/fi/ja: the same change. The en post is 272 characters.
+- Nothing else changed: same shots, same score, same punchline.
 
 ## The fact re-check (20 Oct 2026)
 

@@ -1,7 +1,7 @@
 // The kit for "Per Caller" (Coxon): the papercut box in CLEAN LIGHT (rfp_clean.js), made by the pipeline. Every scene of
 // the film is registered in this file ("scenes": [] in film.json).
 // One question: can an AI call your cellphone about the election without asking? Today, no: it needs your consent. A
-// political group has asked the FCC to drop that for political calls, and a ruling could come before Election Day.
+// political group has asked the FCC to drop that for political calls; the FCC says it has no plans to act before Election Day.
 // The proposed limit is three calls a month — PER CALLER. The look is a kitchen at night (plum wall, gingham oilcloth,
 // an unsigned CONSENT form, a phone in its stand) with a big window onto the street; then the FCC by day (sage panels,
 // a walnut desk, three empty chairs, a stamp that hovers and never lands); then the kitchen again, where the street
