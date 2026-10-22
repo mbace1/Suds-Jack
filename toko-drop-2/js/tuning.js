@@ -7,8 +7,8 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=10';
-import WAVES from './tuning/waves.js?v=10';
+import { SPECIES } from './tuning/species/index.js?v=11';
+import WAVES from './tuning/waves.js?v=11';
 
 export const TUNING = {
   render: {
@@ -102,6 +102,11 @@ export const TUNING = {
     breatheAmp: 0.13, breatheAmpSplitta: 0.18, breatheHz: 2.4,
     dragStretchPerSpeed: 0.10, dragMax: 0.35, rearDragTilt: 0.35,
     hitRipple: 0.28,        // seconds a hit ripple takes to die out
+    // 2.0's dent (the graphics pass): a shot pushes the jelly in where it lands
+    // and the dent springs back with an overshoot, over the ripple's 0.28 s.
+    // `depth` in radii, `focus` how tightly it gathers round the impact,
+    // `freq` rad/s and `damp` 1/s of the spring. 1.x only rippled.
+    dent: { depth: 0.24, focus: 5.5, freq: 34, damp: 9 },
     death: 0.28,            // seconds a dying gel thrashes, swells and fades before it bursts
     deathSwell: 1.3,        // how much bigger it gets by the end
   },
@@ -330,6 +335,23 @@ export const TUNING = {
     heatPerKill: 0.18, heatDecay: 0.35,    // kills in quick succession throw more
     whiten: 0.4,                           // a dying body glows its colour, this far toward white
     hitFlash: 1.0,                         // 1.x: emissive #ffffff for the flash (enemy.js:2650-2652)
+    hitFlashJelly: 0.4,                    // 2.0: a jelly body flashes at 0.4, so the dent (blob.dent) reads through it
+    // 2.0's jelly death (render/jelly.js; the owner's melon-jelly reference,
+    // ported from toko-drop-godot Q-052's scripts/jelly_body.gd): a big blob
+    // (`minRadius`, 1.x's own `big`) dies as a soft body of tetrahedra cut in
+    // two by a vertical blade along the line from the hero, the halves pushed
+    // `push` u/s off the blade, wobbling, slumping and melting into the
+    // puddle over `life` s. At most `max` at once; the rest pop as 1.x did.
+    // XPBD: `substeps` a frame, edge `edgeCompliance` (the wobble), volume
+    // held, `damp` 1/s, `friction` on the floor. The dome is the unit sphere
+    // raised `lift` (= blob.domeCut) and cut at the floor; `cells` the lattice.
+    jelly: {
+      on: true, minRadius: 0.75, max: 3, life: 1.3, push: 1.6, up: 0.8, shrinkFrom: 0.55,
+      cells: 4, lift: 0.7, segs: 32, rings: 12, faceRings: 3, faceArc: 24, faceChord: 6,   // the skin, and the clean cut face (rings, arc and floor-chord samples)
+      match: 0.04,   // its set: the pull toward its rest shape, a substep (0 = syrup, and unstable)
+      sliver: 0.25,  // a tet under this share of the mean volume (the cut flattened it) keeps no volume
+      substeps: 6, edgeCompliance: 0.02, volCompliance: 0, damp: 1.6, friction: 0.6, gravity: -9.8,
+    },
     // a lob's splashdown (1.x main.js:10507-10514): droplets, a puddle, a shake
     lobSplash: { droplets: 10, dropletSize: [0.09, 0.13], puddle: 1.1, shake: 0.12 },
   },

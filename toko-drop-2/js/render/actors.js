@@ -13,10 +13,11 @@
 // species, so a gel's material is built once and reused, never compiled
 // mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=10';
+import { TUNING } from '../tuning.js?v=11';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=10';
-import { LOOKS } from './looks/index.js?v=10';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=11';
+import { LOOKS } from './looks/index.js?v=11';
+import { JellyBody } from './jelly.js?v=11';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -30,6 +31,14 @@ export class Actors {
     this.views = new Map();      // live gels by id
     this.pool = {};              // released views by species
     this.dying = [];             // killed gels playing out their last beat
+    this.jellies = [];           // big gels dying as jelly halves (jelly.js)
+    this.jellyMats = new Map();  // their material, per species, built and warmed when it first appears
+    // the cut's code, warmed while the game loads: cold, the first slice of a
+    // run cost ~3x a warm one, a hitch on exactly the kill it decorates
+    if (T.death.jelly.on) {
+      const [a, b] = JellyBody.dome(1, 0.8).cut([0.1, 0, 0], [1, 0, 0]), buf = new Float32Array(a.vertexCount * 3);
+      a.step(1 / 60); a.fill(buf, buf.slice()); void b;
+    }
 
     this.hero = this._makeHero();
     scene.add(this.hero.root);
@@ -113,7 +122,54 @@ export class Actors {
     }
     v.shape = !v.own && S.family !== 'cube' ? (B.shapes[kind] || B.shape) : null;
     squash.add(v.body); root.add(squash);
+    if (S.family === 'blob' && D.jelly.on && !this.jellyMats.has(kind)) this._jellyMat(kind);
     return v;
+  }
+
+  // A species' jelly-death material: its own colour as plain jelly, made when
+  // the species first appears and drawn once out of sight so the pipeline is
+  // compiled then, not at the first slice (a WebGPU compile mid-fight stalls)
+  _jellyMat(kind) {
+    const mat = gelMaterial(T.species[kind].color, 'blob', 1, { wobble: 0 });
+    this.jellyMats.set(kind, mat);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0, 0.01, 0, 0, 0, 0, 0.01]), 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0]), 3));
+    const warm = new THREE.Mesh(g, mat);
+    warm.position.set(0, -50, 0); warm.frustumCulled = false;
+    this.scene.add(warm);
+    (this.warming ||= []).push({ mesh: warm, frames: 3 });
+    return mat;
+  }
+
+  // A big blob dies as jelly (TUNING.death.jelly, jelly.js): a soft body of
+  // its own size and shape, cut in two by a vertical blade along the line
+  // from the hero through it, the halves pushed apart off the blade. False
+  // when it does not qualify (or the cap is reached): then it pops as 1.x's.
+  _sliceJelly(e, w) {
+    const J = D.jelly, S = T.species[e.kind], mat = this.jellyMats.get(e.kind);
+    if (!J.on || S?.family !== 'blob' || e.r < J.minRadius || !mat) return false;
+    if (new Set(this.jellies.map((j) => j.from)).size >= J.max) return false;
+    const sh = B.shapes[e.kind] || B.shape, h = w?.hero;
+    let dx = h ? e.x - h.x : 0, dz = h ? e.z - h.z : 1;
+    const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+    const nrm = [-dz, 0, dx];                                   // square to the shot line
+    const halves = JellyBody.dome(e.r * sh.x, e.r * sh.y).cut([0, 0, 0], nrm);
+    halves.forEach((body, i) => {
+      if (!body) return;
+      const sgn = i === 0 ? 1 : -1;
+      body.kick(nrm[0] * J.push * sgn + dx * J.push * 0.35, J.up, nrm[2] * J.push * sgn + dz * J.push * 0.35);
+      const n = body.vertexCount, geo = new THREE.BufferGeometry();
+      const pos = new THREE.BufferAttribute(new Float32Array(n * 3), 3), nor = new THREE.BufferAttribute(new Float32Array(n * 3), 3);
+      pos.setUsage(THREE.DynamicDrawUsage); nor.setUsage(THREE.DynamicDrawUsage);
+      geo.setAttribute('position', pos); geo.setAttribute('normal', nor);
+      geo.setDrawRange(0, body.fill(pos.array, nor.array));
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(e.x, 0, e.z); mesh.frustumCulled = false;
+      this.scene.add(mesh);
+      this.jellies.push({ body, mesh, geo, from: e.id, age: 0 });
+    });
+    return true;
   }
 
   _take(kind) {
@@ -132,6 +188,8 @@ export class Actors {
     for (const v of this.views.values()) this._release(v);
     for (const v of this.dying) this._release(v);
     this.views.clear(); this.dying.length = 0; this.chunks.length = 0; this.heat = 0;
+    for (const j of this.jellies) { this.scene.remove(j.mesh); j.geo.dispose(); }
+    this.jellies.length = 0;
   }
 
   // the sim's events that only the view cares about
@@ -158,6 +216,7 @@ export class Actors {
       const v = this.views.get(e.id);
       if (!v) return;
       this.views.delete(e.id);
+      if (this._sliceJelly(e, w)) { this._release(v); return; }
       v.dyingT = B.death;
       v.mat?.emissive?.setHex(e.color).lerp(_white, D.whiten);
       this.dying.push(v);
@@ -232,7 +291,7 @@ export class Actors {
       // 1.x's glow order (enemy.js:2650-2690): the hit flash, then a VOLATILE
       // body's smoulder, then a tell in the body's colour
       if (v.mat?.emissive) {
-        if (g.flash > 0) v.mat.emissive.setScalar(D.hitFlash);
+        if (g.flash > 0) v.mat.emissive.setScalar(v.mat.userData?.jelly ? D.hitFlashJelly : D.hitFlash);
         else if (g.affix === 'volatile') v.mat.emissive.setHex(T.variants.volatileGlow[Math.sin(time * T.variants.volatileHz) > 0 ? 0 : 1]);
         else if (g.tell > 0) v.mat.emissive.setHex(v.S.color).multiplyScalar(g.tell * (0.5 + 0.5 * Math.sin(time * 30)));
         else v.mat.emissive.setScalar(0);
@@ -310,6 +369,22 @@ export class Actors {
   // Everything that runs on the frame clock rather than the sim's: ripples
   // dying out, the dying playing out their last beat, chunks in flight.
   stepFx(dt, time) {
+    // jelly halves: step, redraw, and in their last part slump into the puddle
+    const J = D.jelly;
+    for (let i = this.jellies.length - 1; i >= 0; i--) {
+      const j = this.jellies[i];
+      j.age += dt;
+      j.body.step(Math.min(dt, 1 / 30));
+      const pos = j.geo.attributes.position, nor = j.geo.attributes.normal;
+      j.geo.setDrawRange(0, j.body.fill(pos.array, nor.array));
+      pos.needsUpdate = true; nor.needsUpdate = true;
+      const t = j.age / J.life, k = t <= J.shrinkFrom ? 1 : Math.max(0, 1 - (t - J.shrinkFrom) / (1 - J.shrinkFrom));
+      j.mesh.scale.set(0.55 + 0.45 * k, k * k, 0.55 + 0.45 * k);
+      if (j.age >= J.life) { this.scene.remove(j.mesh); j.geo.dispose(); this.jellies.splice(i, 1); }
+    }
+    if (this.warming?.length) {
+      for (let i = this.warming.length - 1; i >= 0; i--) if (--this.warming[i].frames <= 0) { this.scene.remove(this.warming[i].mesh); this.warming[i].mesh.geometry.dispose(); this.warming.splice(i, 1); }
+    }
     // the hero's ghosts fade and shrink; the muzzle pop swells and fades
     const hv = this.hero, L = T.heroLook;
     for (const g of hv.ghosts) {

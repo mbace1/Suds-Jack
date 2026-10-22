@@ -7,17 +7,17 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=10';
-import { buildFloor } from './render/floor.js?v=10';
-import { fitCamera } from './render/view.js?v=10';
-import { Splats } from './render/splats.js?v=10';
-import { Actors } from './render/actors.js?v=10';
-import { GEL_TIME } from './render/gel.js?v=10';
-import { studioEnvironment } from './render/env.js?v=10';
-import { createWorld, step, api as simApi } from './sim/world.js?v=10';
-import { Input } from './input.js?v=10';
-import { UI, t, timeText } from './ui.js?v=10';
-import { Sound } from './audio.js?v=10';
+import { TUNING } from './tuning.js?v=11';
+import { buildFloor } from './render/floor.js?v=11';
+import { fitCamera } from './render/view.js?v=11';
+import { Splats } from './render/splats.js?v=11';
+import { Actors } from './render/actors.js?v=11';
+import { GEL_TIME } from './render/gel.js?v=11';
+import { studioEnvironment } from './render/env.js?v=11';
+import { createWorld, step, api as simApi } from './sim/world.js?v=11';
+import { Input } from './input.js?v=11';
+import { UI, t, timeText } from './ui.js?v=11';
+import { Sound } from './audio.js?v=11';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -304,7 +304,8 @@ renderer.setAnimationLoop(() => {
   if (world) {
     const a = state === 'play' ? acc / T.sim.dt : 1;
     actors.sync(world, a, time);
-    if (state !== 'paused') { actors.stepFx(dt, time); splats.step(dt); }
+    // a look check's hold freezes the effects too: they move only when idle() steps them
+    if (state !== 'paused' && !(state === 'play' && debug.hold)) { actors.stepFx(dt, time); splats.step(dt); }
     const h = world.hero;
     floor.setPlayer(h.px + (h.x - h.px) * a, h.pz + (h.z - h.pz) * a);
     ui.hud(world);

@@ -76,7 +76,7 @@
 // 1.x quirk NOT ported: two middle hits on one slug in one frame overwrote its
 // `_splitPts`, so the first back half never came into being (main.js:10626
 // reads one list per body). Here each split's half is its own animal.
-import { TUNING } from '../../tuning.js?v=10';
+import { TUNING } from '../../tuning.js?v=11';
 
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

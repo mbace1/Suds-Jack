@@ -13,9 +13,9 @@
 import * as THREE from 'three/webgpu';
 import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
-  materialEmissive, modelScale, vec3, vec4, float, sin, dot, normalize, clamp,
+  materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=10';
+import { TUNING } from '../tuning.js?v=11';
 
 const T = TUNING;
 
@@ -97,6 +97,13 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
   let p = positionLocal.add(normalLocal.mul(wave).mul(u.radius.mul(u.wobble).mul(0.13)));
   const hd = dot(normalize(q), vec3(u.hitDir.x, 0.0, u.hitDir.y));
   p = p.add(normalLocal.mul(sin(hd.mul(9.0).sub(float(1.0).sub(u.hit).mul(16.0)))).mul(u.hit).mul(0.11).mul(u.radius));
+  // 2.0's dent: pushed in where the shot landed, springing back through an
+  // overshoot (TUNING.blob.dent); the seconds since the hit come off `hit`,
+  // which runs from 1 to 0 over the ripple's life
+  const D = T.blob.dent, since = float(1.0).sub(u.hit).mul(T.blob.hitRipple);
+  const spring = cos(since.mul(D.freq)).mul(exp(since.mul(-D.damp)));
+  const focus = exp(float(1.0).sub(hd).mul(-D.focus));
+  p = p.sub(normalLocal.mul(focus.mul(spring).mul(clamp(u.hit.mul(40.0), 0.0, 1.0)).mul(u.radius.mul(D.depth))));
   const te = sin(q.x.mul(15.0).add(t.mul(34.0)))
     .add(sin(q.y.mul(17.0).sub(t.mul(29.0))))
     .add(sin(q.z.mul(13.0).add(t.mul(38.0))))
@@ -131,6 +138,7 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
   // dome refraction: thick at the belly, thin at the crown
   m.thicknessNode = u.thick.mul(clamp(float(1.25).sub(positionLocal.y.div(u.radius).mul(0.41)), 0.55, 1.25));
   m.gel = u;
+  m.userData.jelly = jelly;
   return m;
 }
 

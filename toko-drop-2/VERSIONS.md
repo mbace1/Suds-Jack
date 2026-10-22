@@ -19,6 +19,53 @@
     Never `--no-verify`.
 -->
 
+## v11 — 2026-10-22
+**Jelly that dents when hit, and big gels die sliced in two**
+- **A hit dents the jelly** where the shot landed, and the dent springs
+  back with a wobble (a damped spring in the gel shader, `blob.dent`), on
+  the blob and cube families. Their hit flash is softened to 0.4
+  (`death.hitFlashJelly`) because a full white flash hid the dent. Satin
+  bodies (crystals, TORO, BAMBU, the hero) keep the full flash
+- **Big gels die as jelly cut along your shot line** (`js/render/jelly.js`,
+  `death.jelly`). Any blob-family gel of radius 0.75 or more becomes a
+  small soft body at the kill: a lattice of tets, ported from the Godot
+  repo's `jelly_body.gd` (Q-052). It is cut by a vertical blade through
+  the line from you to it, the two halves are pushed apart, and each
+  wobbles, slumps and melts into its puddle over 1.3 s. Each half shows a
+  clean, flat cut face, a cross-section pinned to its own tets, and its
+  skin meets that face with no notches. At most 3 at once, and each
+  species' jelly material is built while it is still alive, so the first
+  slice does not stall WebGPU
+- **The soft body has a set.** The new gate found the first cut was
+  unstable: with edges this soft the lattice had no shear, so it flowed
+  like syrup until its tets were slivers. Then the hard volume constraint
+  fired particles off at 40 m/s, and one half in nine rolled back into
+  the blade. Two fixes, and each has a control in the test that fails
+  without it:
+  - A pull toward the rest shape, carried with the body's centre and
+    rotation (shape matching, `match` 0.04)
+  - No volume constraint on the slivers the cut flattens (`sliver` 0.25)
+- **A slice is cheap.** Each tet's inverse is computed once per cut, so
+  pinning about 500 render vertices is multiply-adds, and the cut's code
+  is warmed while the game loads (cold, the first slice of a run cost
+  about 3× a warm one). A warm cut is 5 to 8 ms on a desktop, and a sliced
+  body steps and draws in about 1 ms a frame
+- Effects (droplets, splats, jelly) now freeze along with the look hold
+  that captures use, so a frame shows the moment it asked for
+- `test/jelly.mjs`, 20 checks, joins `scripts/smoke.sh`. It checks:
+  - Volume, a clean cut and pinning
+  - A dome left alone for four seconds stays a dome
+  - The cut face stays flat through the slump
+  - Across 24 cuts, no particle ever outruns its kick and every pair of
+    halves parts by at least 0.3 m
+  - The frame cost
+- The smoke ends a running hurt flash before its screenshot. A hit in the
+  2 s run had caught the 0.32 s red vignette mid-flash, which tinted the
+  floor sample and failed the look check on a frame with nothing wrong in it
+- Cache tokens `?v=10` → `?v=11`; HUD label → `2.0 · v11`
+
+---
+
 ## v10 — 2026-10-22
 **The first graphics pass: the gels are jelly now**
 - **Every gel body is real jelly** (owner, 2026-10-22: the graphics pass,
