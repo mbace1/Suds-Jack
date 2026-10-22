@@ -7,8 +7,8 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=13';
-import WAVES from './tuning/waves.js?v=13';
+import { SPECIES } from './tuning/species/index.js?v=14';
+import WAVES from './tuning/waves.js?v=14';
 
 export const TUNING = {
   render: {
@@ -47,6 +47,23 @@ export const TUNING = {
   light: {
     ambient: 0.45,
     sun: { intensity: 1.3, position: [8, 20, 10] },
+    // 2.0's ARENA LIGHT (render/light.js; owner, 2026-10-22: the graphics
+    // pass's third step, no reflective floor). A top-down light map of the
+    // arena, perMetre texels a metre: soft pools of light (k = strength, in
+    // the colour of what threw it; r in metres) and contact shadows (r × the
+    // body's radius). `floor` is how the floor reads it: light lifts the
+    // whole floor by `spill` and its grid lines by `grid`.
+    arena: {
+      perMetre: 12, pow: 1.6, cap: 640, burstCap: 64,
+      bullet: { hero: { r: 0.9, k: 0.10 }, gel: { r: 1.15, k: 0.16 } },
+      burst: {
+        kill: { r: 4.0, k: 1.4, life: 0.32, big: 1.6, boss: 2.4 },   // a kill; a big or boss kill multiplies its strength (and its reach by the root)
+        dash: { r: 4.5, k: 1.1, life: 0.3 },                          // the dash boom
+        muzzle: { r: 1.3, k: 0.35, life: 0.06 },                       // each of the hero's shots
+      },
+      shadow: { cap: 300, r: 1.35, strength: 0.6 },
+      floor: { spill: 0.18, grid: 0.9 },
+    },
   },
 
   // The gelatin: 1.x's satin preset (tuning.js `material`), per-family

@@ -13,12 +13,13 @@
 // species, so a gel's material is built once and reused, never compiled
 // mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=13';
+import { TUNING } from '../tuning.js?v=14';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=13';
-import { LOOKS } from './looks/index.js?v=13';
-import { JellyBody } from './jelly.js?v=13';
-import { Juice } from './juice.js?v=13';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=14';
+import { LOOKS } from './looks/index.js?v=14';
+import { JellyBody } from './jelly.js?v=14';
+import { Juice } from './juice.js?v=14';
+import { ArenaLight } from './light.js?v=14';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -44,6 +45,7 @@ export class Actors {
     this.hero = this._makeHero();
     scene.add(this.hero.root);
     this.juice = new Juice(scene);   // bullet comets, hit sparks, kill flashes and rings
+    this.light = new ArenaLight();   // the light and shadow the floor reads (main.js draws it)
 
     const sphere = new THREE.SphereGeometry(1, 10, 8);
     this.bullets = new THREE.InstancedMesh(sphere, new THREE.MeshBasicNodeMaterial(), T.bullets.maxHero + T.bullets.maxGel);
@@ -76,7 +78,7 @@ export class Actors {
   }
 
   // The arena this run plays on.
-  setArena(hx, hz) { this.hx = hx; this.hz = hz; }
+  setArena(hx, hz) { this.hx = hx; this.hz = hz; this.light.setArena(hx, hz); }
 
   _makeHero() {
     const L = T.heroLook, r = T.hero.radius;
@@ -193,11 +195,13 @@ export class Actors {
     for (const j of this.jellies) { this.scene.remove(j.mesh); j.geo.dispose(); }
     this.jellies.length = 0;
     this.juice.reset();
+    this.light.reset();
   }
 
   // the sim's events that only the view cares about
   onEvent(e, w) {
     this.juice.onEvent(e, w);
+    this.light.onEvent(e);
     if (e.type === 'ghost') {
       const G = T.heroLook.ghost, slot = this.hero.ghosts.reduce((a, b) => (a.life <= b.life ? a : b));
       slot.life = G.life; slot.mesh.position.set(e.x, 0, e.z); slot.mesh.visible = true;
@@ -319,6 +323,7 @@ export class Actors {
     bm.instanceMatrix.needsUpdate = true;
     if (bm.instanceColor) bm.instanceColor.needsUpdate = true;
     this.juice.sync(w, alpha, BULLET_Y);
+    this.light.sync(w, alpha, this.views);
 
     // lobs in flight, hazards on the floor (a slow pulse, fading out at the end)
     let k = 0;
@@ -375,6 +380,7 @@ export class Actors {
   // dying out, the dying playing out their last beat, chunks in flight.
   stepFx(dt, time) {
     this.juice.step(dt);
+    this.light.step(dt);
     // jelly halves: step, redraw, and in their last part slump into the puddle
     const J = D.jelly;
     for (let i = this.jellies.length - 1; i >= 0; i--) {

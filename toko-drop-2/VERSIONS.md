@@ -19,6 +19,33 @@
     Never `--no-verify`.
 -->
 
+## v14 — 2026-10-22
+**The arena's light: shots and blasts light the floor, bodies cast shadows**
+- The graphics pass's third step (owner, 2026-10-22). The floor stays matte,
+  with no reflection: it is the grid it was, and later perhaps concrete. 1.x's
+  floor is unlit, a picture, so no scene light can reach it. Instead, each
+  frame a small top-down **light map** of the arena is drawn
+  (`js/render/light.js`, `TUNING.light.arena`), and the floor reads it:
+  - a shadow darkens what is under it
+  - light lifts the floor a little and its grid lines a lot, the way a lit
+    surface shows its texture
+- **What throws light**: every bullet, a soft pool in its colour; each of
+  your shots, a flicker at the muzzle; every kill, a burst in the body's
+  colour that lights the grid round it, stronger for a big gel and a boss;
+  and the dash boom
+- **Every body stands in a soft shadow**, the hero too. Overlapping shadows
+  take the darker of the two rather than adding up to black. A body its look
+  hides casts none, and neither does a brood still waiting out its parent's
+  pop
+- The map's rows run the other way from the floor's, which the floor's
+  sample accounts for. Checked on WebGPU and on WebGL 2, where a kill at the
+  near edge first lit the far edge
+- The smoke checks that every bullet in flight throws its pool of light. It
+  fails with the light map switched off
+- Cache tokens `?v=13` → `?v=14`; HUD label → `2.0 · v14`
+
+---
+
 ## v13 — 2026-10-22
 **Arcade juice: bullets glow, hits spark, kills flash and ring**
 - The graphics pass's second step, after the jelly (owner, 2026-10-22: D,

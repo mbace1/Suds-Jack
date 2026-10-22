@@ -8,11 +8,13 @@
 // Unlit, as 1.x's was: the floor is a picture, and the gels are the only
 // lit things on it.
 import * as THREE from 'three/webgpu';
-import { Fn, uv, uniform, float, abs, fract, min, sin, length, smoothstep, mix, fwidth } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=13';
+import { Fn, uv, uniform, float, abs, fract, min, sin, length, smoothstep, mix, fwidth, texture, clamp, vec2 } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=14';
 
-export function buildFloor(T, hx, hz) {
-  const F = T.floor;
+// `light` (optional) is the arena's light map (render/light.js): its rgb is
+// light thrown on the floor, its alpha the shadow of what stands on it
+export function buildFloor(T, hx, hz, light) {
+  const F = T.floor, LF = T.light.arena.floor;
   const group = new THREE.Group();
 
   const player = uniform(new THREE.Vector2(0.5, 0.5));   // the hero, in floor uv
@@ -37,7 +39,14 @@ export function buildFloor(T, hx, hz) {
     const pool = float(1).sub(smoothstep(0, F.poolRadius, length(p.sub(player))));
     const gridColor = mix(gridLo, gridHi, grid);
     const col = mix(base, gridColor, grid.mul(pulse).mul(0.7).mul(gridFade).mul(F.gridGlow));
-    return col.mul(vig).add(gridColor.mul(pool).mul(F.poolLift * 0.25)).add(base.mul(pool).mul(F.poolLift));
+    const lit = col.mul(vig).add(gridColor.mul(pool).mul(F.poolLift * 0.25)).add(base.mul(pool).mul(F.poolLift));
+    if (!light) return lit;
+    // a shadow darkens what is under it; light lifts the floor a little and
+    // its grid lines a lot, the way a lit surface shows its texture
+    // the map's camera looks straight down with the far edge at the top, so
+    // its rows run the other way from the floor's v
+    const L = texture(light, vec2(p.x, float(1).sub(p.y))), shade = clamp(L.a, 0, 1);
+    return lit.mul(float(1).sub(shade)).add(L.rgb.mul(grid.mul(gridFade).mul(LF.grid).add(LF.spill)));
   })();
 
   const plane = new THREE.Mesh(new THREE.PlaneGeometry(hx * 2, hz * 2).rotateX(-Math.PI / 2), mat);

@@ -19,7 +19,7 @@
 //
 // PURELY A LOOK, and pure JS: no three.js, no DOM, no clock. The kill, the
 // score and the revenge happened before a body is handed to this.
-import { TUNING } from '../tuning.js?v=13';
+import { TUNING } from '../tuning.js?v=14';
 
 const J = () => TUNING.death.jelly;
 

@@ -7,17 +7,17 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=13';
-import { buildFloor } from './render/floor.js?v=13';
-import { fitCamera } from './render/view.js?v=13';
-import { Splats } from './render/splats.js?v=13';
-import { Actors } from './render/actors.js?v=13';
-import { GEL_TIME } from './render/gel.js?v=13';
-import { studioEnvironment } from './render/env.js?v=13';
-import { createWorld, step, api as simApi } from './sim/world.js?v=13';
-import { Input } from './input.js?v=13';
-import { UI, t, timeText } from './ui.js?v=13';
-import { Sound } from './audio.js?v=13';
+import { TUNING } from './tuning.js?v=14';
+import { buildFloor } from './render/floor.js?v=14';
+import { fitCamera } from './render/view.js?v=14';
+import { Splats } from './render/splats.js?v=14';
+import { Actors } from './render/actors.js?v=14';
+import { GEL_TIME } from './render/gel.js?v=14';
+import { studioEnvironment } from './render/env.js?v=14';
+import { createWorld, step, api as simApi } from './sim/world.js?v=14';
+import { Input } from './input.js?v=14';
+import { UI, t, timeText } from './ui.js?v=14';
+import { Sound } from './audio.js?v=14';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -75,9 +75,9 @@ function useArena(name) {
   if (name === arenaName) return;
   arenaName = name; arena = T.arena[name];
   if (floor) { scene.remove(floor.group); floor.dispose(); }
-  floor = buildFloor(T, arena.hx, arena.hz);
-  scene.add(floor.group);
   actors.setArena(arena.hx, arena.hz);
+  floor = buildFloor(T, arena.hx, arena.hz, actors.light.texture);
+  scene.add(floor.group);
   resize();
 }
 
@@ -309,11 +309,12 @@ renderer.setAnimationLoop(() => {
     const h = world.hero;
     floor.setPlayer(h.px + (h.x - h.px) * a, h.pz + (h.z - h.pz) * a);
     ui.hud(world);
-  } else floor.setPlayer(0, 0);
+  } else { floor.setPlayer(0, 0); actors.light.clear(); }
   trauma = Math.max(0, trauma - T.shake.decay * dt);
   const m = trauma * trauma, A = T.shake.amp, F = T.shake.freq;
   if (!debug.freeCam) camera.position.set(camRest.x + Math.sin(time * F[0]) * m * A[0], camRest.y + Math.sin(time * F[1]) * m * A[1], camRest.z + Math.sin(time * F[2]) * m * A[2]);
   ui.drawSticks(input);
+  actors.light.render(renderer);   // the arena's light map, which the floor reads
   renderer.render(scene, camera);
   debug.frames++;
 });
