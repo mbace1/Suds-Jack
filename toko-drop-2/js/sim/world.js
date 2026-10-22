@@ -14,14 +14,14 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=7';
-import { makeRng } from './rng.js?v=7';
-import { BEHAVIOUR } from './species/index.js?v=7';
-import { DIRECTORS } from './director/index.js?v=7';
-import * as fire from './fire.js?v=7';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=7';
-import { swarmForces, resolveCrowd } from './crowd.js?v=7';
-import { revengeColor } from './color.js?v=7';
+import { TUNING } from '../tuning.js?v=8';
+import { makeRng } from './rng.js?v=8';
+import { BEHAVIOUR } from './species/index.js?v=8';
+import { DIRECTORS } from './director/index.js?v=8';
+import * as fire from './fire.js?v=8';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=8';
+import { swarmForces, resolveCrowd } from './crowd.js?v=8';
+import { revengeColor } from './color.js?v=8';
 
 const T = TUNING;
 
@@ -286,7 +286,7 @@ function heroBulletsHit(w) {
       const res = B.onHit?.(w, g, b, api);
       if (res === 'pass') continue;
       b.dead = true;
-      if (res === 'block' || g.shield) { w.events.push({ type: 'block', x: b.x, z: b.z, id: g.id }); break; }
+      if (res === 'block' || g.shield) { w.events.push({ type: 'block', x: b.x, z: b.z, id: g.id, by: res === 'block' ? 'plate' : 'aura' }); break; }
       g.hp -= T.bullets.heroDamage;
       g.flash = T.gel.flash;
       g.sqV += T.gel.sq.hit;

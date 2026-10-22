@@ -7,8 +7,8 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=7';
-import WAVES from './tuning/waves.js?v=7';
+import { SPECIES } from './tuning/species/index.js?v=8';
+import WAVES from './tuning/waves.js?v=8';
 
 export const TUNING = {
   render: {
@@ -291,7 +291,8 @@ export const TUNING = {
   // shockwave through nearby bodies when a big one goes, and the camera shaken.
   death: {
     chunks: [5, 6], chunkSize: 0.18, chunkSpeed: [3, 7], chunkUp: [3, 8],
-    droplets: 4, dropletsBig: 8, dropletSize: [0.09, 0.18], dropletSpeed: 2, dropletUp: [2.5, 6.5],
+    droplets: 4, dropletsBig: 8, dropletsBoss: 14,   // 1.x's extra burst: 4 small, 8 big, 14 a boss (main.js:4499)
+    dropletSize: [0.09, 0.18], dropletSpeed: 2, dropletUp: [2.5, 6.5],
     chunkLife: 1.4, gravity: 14, floorKeep: 0.35, shrink: 0.3,
     puddle: 1.5,                           // radius, as a share of the body's
     satellites: [0.6, 1.5], satelliteSize: [0.4, 0.7],

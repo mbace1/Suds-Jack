@@ -22,7 +22,7 @@
 //
 // Output is in SCREEN terms (x right, y down); main.js turns it into the
 // world, because only it knows where the camera is.
-import { TUNING } from './tuning.js?v=7';
+import { TUNING } from './tuning.js?v=8';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)

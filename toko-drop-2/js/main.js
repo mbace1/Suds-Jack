@@ -7,16 +7,16 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=7';
-import { buildFloor } from './render/floor.js?v=7';
-import { fitCamera } from './render/view.js?v=7';
-import { Splats } from './render/splats.js?v=7';
-import { Actors } from './render/actors.js?v=7';
-import { GEL_TIME } from './render/gel.js?v=7';
-import { createWorld, step, api as simApi } from './sim/world.js?v=7';
-import { Input } from './input.js?v=7';
-import { UI, t, timeText } from './ui.js?v=7';
-import { Sound } from './audio.js?v=7';
+import { TUNING } from './tuning.js?v=8';
+import { buildFloor } from './render/floor.js?v=8';
+import { fitCamera } from './render/view.js?v=8';
+import { Splats } from './render/splats.js?v=8';
+import { Actors } from './render/actors.js?v=8';
+import { GEL_TIME } from './render/gel.js?v=8';
+import { createWorld, step, api as simApi } from './sim/world.js?v=8';
+import { Input } from './input.js?v=8';
+import { UI, t, timeText } from './ui.js?v=8';
+import { Sound } from './audio.js?v=8';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -180,6 +180,8 @@ function onEvent(e) {
   else if (e.type === 'shake') shake(e.amount);
   else if (e.type === 'lobLand') shake(T.death.lobSplash.shake);
   else if (e.type === 'milestone') ui.banner(e.score.toLocaleString('en-US'), 1.2);
+  // a boss's act change or the surviving twin's rage: 1.x's 1.1 s popup (main.js:10398-10407); the 0.3 shake comes as its own event
+  else if (e.type === 'phase') ui.banner(e.label ?? 'BOSS PHASE!', e.dur ?? 1.1);
   else if (e.type === 'wave') ui.banner(`${t('wave')} ${e.wave}${e.label ? ` · ${e.label}` : ''}`, e.dur ?? 1.4);
   else if (e.type === 'clear') ui.banner(`${t('wave')} ${e.wave} ${t('clear')} +${e.bonus.toLocaleString('en-US')}`, e.dur ?? 1.0);
   else if (e.type === 'curtainWarn') ui.banner(`${String(e.style || '').toUpperCase()} ${t('curtain')}`, e.t ?? 1.1);

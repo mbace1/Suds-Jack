@@ -2,7 +2,7 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=7';
+import { TUNING } from './tuning.js?v=8';
 
 const STR = {
   en: {

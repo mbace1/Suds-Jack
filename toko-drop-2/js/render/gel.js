@@ -15,7 +15,7 @@ import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
   materialEmissive, vec3, vec4, float, sin, dot, normalize, clamp,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=7';
+import { TUNING } from '../tuning.js?v=8';
 
 const T = TUNING;
 

@@ -13,10 +13,10 @@
 // species, so a gel's material is built once and reused, never compiled
 // mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=7';
+import { TUNING } from '../tuning.js?v=8';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=7';
-import { LOOKS } from './looks/index.js?v=7';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=8';
+import { LOOKS } from './looks/index.js?v=8';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -177,7 +177,7 @@ export class Actors {
       }
     };
     throwOut(Math.round(rand(D.chunks[0], D.chunks[1] + 0.99) - 0.49), [D.chunkSize, D.chunkSize], D.chunkSpeed, D.chunkUp);
-    throwOut(Math.round((big ? D.dropletsBig : D.droplets) * (1 + this.heat)), D.dropletSize, [D.dropletSpeed, D.dropletSpeed + 4 * (1 + 0.5 * this.heat)], D.dropletUp);
+    throwOut(Math.round((e.boss ? D.dropletsBoss : big ? D.dropletsBig : D.droplets) * (1 + this.heat)), D.dropletSize, [D.dropletSpeed, D.dropletSpeed + 4 * (1 + 0.5 * this.heat)], D.dropletUp);
     if (this.splats) {
       this.splats.puddle(e.x, e.z, e.r * D.puddle, e.color);
       const sats = big ? 3 : this.heat > 0.5 ? 2 : 1;

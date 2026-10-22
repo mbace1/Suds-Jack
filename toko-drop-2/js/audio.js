@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=7';
+import { TUNING } from './tuning.js?v=8';
 
 const A = TUNING.audio;
 
@@ -66,7 +66,10 @@ export class Sound {
       }
       case 'lobLand': this._tone('sine', 150, 55, 0.28, 0.2); this._hiss(0.16, 0.12, 900, 300); break;   // 1.x lobSplash
       case 'dashBoom': this._hiss(0.25, 0.3, 2200, 200, 1); this._tone('square', 220, 60, 0.2, 0.2); break;
-      case 'block': this._tone('square', 1300, 1100, 0.05, 0.08); break;      // 1.x's tinks
+      // 1.x's tinks: a WARDEN's aura (shieldTink, audio.js:255), else a plate (plateTink, audio.js:266)
+      case 'block': if (e.by === 'aura') this._tone('triangle', 1900, 1400, 0.05, 0.10); else this._tone('square', 720, 480, 0.06, 0.15); break;
+      // a boss's act change or a twin's rage: 1.x phaseShift (audio.js:270-273), two rising saws 0.13 s apart
+      case 'phase': this._tone('sawtooth', 160, 230, 0.22, 0.32); this._tone('sawtooth', 210, 320, 0.26, 0.30, 0.13); break;
       case 'weapon': [0, 0.08, 0.16].forEach((w, i) => this._tone('square', 660 * [1, 1.25, 1.5][i], 660 * [1, 1.25, 1.5][i], 0.12, 0.06, w)); break;
       case 'curtainWarn': this._tone('sawtooth', 300, 420, 0.25, 0.12); break;
       case 'clear': this._tone('triangle', 520, 780, 0.3, 0.1); break;

@@ -19,6 +19,34 @@
     Never `--no-verify`.
 -->
 
+## v8 — 2026-10-22
+**The bosses: OMEGA, the TWIN PRISMS and the WARDEN, as 1.x had them**
+- **OMEGA**, the three-act crystal: 15 hp as a boss, circling you at 7.5. Act
+  one fires an aimed 5-fan every 0.9 s; at two thirds of its hp it goes to
+  two opposite turning streams every 0.24 s; at one third it enrages (×1.45
+  speed) and rings 12 every 0.7 s. Each act change flashes it gold. Its look
+  is 1.x's spinning icosahedron in a gold aura ring
+- **The TWIN PRISMS**: two octahedron shards that orbit you in opposite
+  directions and take turns with aimed 4-fans every 2.8 s. Kill one and the
+  survivor rages: faster, closer, a 10-ring every 0.75 s, its ring turns red
+- **The WARDEN**: a teal gel that never attacks and shields every other body
+  within 4.5 of it, bosses included; bullets inside its cyan ring are spent
+  for nothing and throw sparks. Kill the WARDEN and the shield drops that
+  same step
+- Each was ported and then held to 1.x by a second agent: OMEGA against a
+  frame-by-frame copy of 1.x's own code over 25 s of all three acts. Kept
+  for the owner: the twins take strict turns, half a period apart (1.x's
+  literal timing landed them 0.08 s apart at wave 8), and a boss is kept
+  off the walls by its boss size, a little further than 1.x did
+- **The core shows them**: "BOSS PHASE 2!", "BOSS PHASE 3!" and "THE SURVIVOR
+  RAGES!" get 1.x's 1.1 s popup and its phaseShift sound (two rising saws); a
+  WARDEN's block tinks as 1.x's shieldTink and a plate as its plateTink; a
+  boss death throws 1.x's 14 droplets; OMEGA dies with the cube's pop, as in
+  1.x
+- Cache tokens `?v=7` → `?v=8`; HUD label → `2.0 · v8`
+
+---
+
 ## v7 — 2026-10-22
 **A third dash on test: CUT goes through and hurts**
 - **DASH now cycles PUSH → CUT → PASS** (owner, 2026-10-22: "likely we want
