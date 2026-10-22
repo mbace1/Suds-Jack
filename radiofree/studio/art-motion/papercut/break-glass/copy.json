@@ -1,0 +1,143 @@
+{
+  "film": "break-glass",
+  "cut": "The Brink 2, DRAFT v1 (22 Oct) — one question: when does a temporary law stop being temporary?",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "Finland's temporary border law of 2024 has never been used. It was extended once, and now two more years are proposed, unchanged; a committee agreed. Never used, still temporary, proposed until 2028.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question",
+      "role": "setup",
+      "at": "s1+0.5",
+      "until": "s2-0.35",
+      "hold": "s2",
+      "text": {
+        "en": "When does a temporary law / stop being [temporary]?",
+        "fi": "Milloin väliaikainen laki / lakkaa olemasta [väliaikainen]?",
+        "ja": "一時的な 法律は / いつ [一時的] で なくなる？"
+      },
+      "source": "The station's question (research-brink-next.md §2; plan/films/19-break-glass.md)."
+    },
+    {
+      "id": "passed",
+      "role": "evidence",
+      "at": "s2+0.6",
+      "until": "s3-0.35",
+      "hold": "s3",
+      "text": {
+        "en": "2024: Finland passed / a temporary border law / for [one year].",
+        "fi": "2024: Suomi sääti / väliaikaisen rajalain, / voimaan [vuodeksi].",
+        "ja": "2024年、 フィンランドは / 一時的な 国境法を 制定。 / 期限は [1年]。"
+      },
+      "source": "The Act on Temporary Measures to Combat Instrumentalised Migration (the Border Security Act) took effect on 22 Jul 2024 for one year (EUAA; Finnish Government; Edilex on HE 148/2026). Re-checked 22 Oct (plan/films/19-break-glass.md)."
+    },
+    {
+      "id": "unused",
+      "role": "evidence",
+      "at": "s3+0.6",
+      "until": "s4-0.35",
+      "hold": "s4",
+      "text": {
+        "en": "It has [never been used]. / In 2025 it was extended / to the end of 2026.",
+        "fi": "Sitä ei ole [koskaan käytetty]. / Vuonna 2025 sitä jatkettiin / vuoden 2026 loppuun.",
+        "ja": "一度も [使われていない]。 / 2025年、 2026年末まで / 延長された。"
+      },
+      "source": "Never applied: the Finnish Government's and the Interior Ministry's situation pages (applying it would need a separate decision); Helsinki Times and others on the 2026 proposal. Extended to 31 Dec 2026 by Parliament on 4 Jun 2025, 168–29 (Eduskunta press release; EUAA)."
+    },
+    {
+      "id": "proposed",
+      "role": "evidence",
+      "at": "s4+0.6",
+      "until": "s5-0.35",
+      "hold": "s5",
+      "text": {
+        "en": "Now proposed: two more years, / unchanged. In October, / a committee [agreed].",
+        "fi": "Nyt esitys: kaksi vuotta lisää, / sisältö ennallaan. Lokakuussa / valiokunta [puolsi].",
+        "ja": "今度は 内容 そのままで / 2年 延長を 提案。 10月、 / 委員会が [了承]。"
+      },
+      "source": "Government proposal of 3 Sep 2026 (HE 148/2026, number single-source): validity to 31 Dec 2028, no changes to the content (Finnish Government; Edilex). Constitutional Law Committee statement, 16 Oct 2026: it can be enacted as an exception to the Constitution and is necessary; two members (Greens, Left Alliance) dissented (Yle, Kaleva/Uutissuomalainen, Demokraatti, Verkkouutiset). The plenary vote is still to come."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "Never used. Still temporary. / Proposed: until [2028].",
+        "fi": "Ei käytetty kertaakaan. / Yhä väliaikainen. / Esitys: [vuoden 2028] loppuun.",
+        "ja": "一度も 使われず、 なお 一時的。 / 提案は [2028年] まで。"
+      },
+      "source": "The station's line, over its own image: the emergency case with its glass whole, snowed over, and its validity tag rewritten 2025, 2026, 2028. 'Proposed' stays until the plenary vote passes; then 'Now until 2028' (IDEAS.md). Re-check on the morning of posting."
+    }
+  ],
+  "ui": {
+    "border": {
+      "en": "EASTERN BORDER · FINLAND",
+      "fi": "ITÄRAJA · SUOMI",
+      "ja": "フィンランド 東部国境"
+    },
+    "inforce": {
+      "en": "IN FORCE 22.7.2024 · ONE YEAR",
+      "fi": "VOIMAAN 22.7.2024 · VUODEKSI",
+      "ja": "2024.7.22 施行 · 期限1年"
+    },
+    "applied": {
+      "en": "FINNISH GOVERNMENT: NOT APPLIED",
+      "fi": "VALTIONEUVOSTO: EI SOVELLETTU",
+      "ja": "フィンランド政府：適用例なし"
+    },
+    "committee": {
+      "en": "COMMITTEE STATEMENT · 16.10.2026",
+      "fi": "PERUSTUSLAKIVALIOKUNTA · 16.10.",
+      "ja": "憲法委員会の 意見 · 2026.10.16"
+    },
+    "vote": {
+      "en": "PLENARY VOTE: STILL TO COME",
+      "fi": "TÄYSISTUNNON ÄÄNESTYS: TULOSSA",
+      "ja": "本会議の 採決：これから"
+    }
+  },
+  "props": {
+    "plate": {
+      "en": "IN EMERGENCY / BREAK GLASS",
+      "why": "the case's plate: the idiom is the joke, in English in every master; the caption carries the point"
+    },
+    "booklet": {
+      "en": "ACT ON TEMPORARY MEASURES TO COMBAT INSTRUMENTALISED MIGRATION · 2024",
+      "why": "the law behind the glass, by its own (English) name, never a nickname"
+    },
+    "tag": {
+      "en": "VALID TO · 2025 · 2026 · 2028",
+      "why": "the inspection tag: numbers, struck and rewritten by hand, the same in every master"
+    },
+    "bill": {
+      "en": "GOVERNMENT PROPOSAL / BORDER SECURITY ACT / VALIDITY: TO 31.12.2028 / CHANGES TO CONTENT: NONE",
+      "why": "the proposal on the committee desk, in English in every master; the caption carries the point"
+    },
+    "dissent": {
+      "en": "DISSENT",
+      "why": "two small cards for the two members who dissented; no names, no party colours"
+    },
+    "gate": {
+      "en": "CLOSED",
+      "why": "the sign on the barrier: the crossings have been closed since December 2023"
+    }
+  },
+  "post": {
+    "en": "In 2024 Finland passed a temporary border law for one year. It has never been used. In 2025 it was extended to the end of 2026. Now the government proposes two more years, unchanged, and a parliamentary committee has agreed; the plenary vote is still to come. When does temporary end? #Finland #law",
+    "fi": "Suomi sääti vuonna 2024 väliaikaisen rajalain vuodeksi. Sitä ei ole koskaan käytetty. Vuonna 2025 sitä jatkettiin vuoden 2026 loppuun. Nyt hallitus esittää kaksi vuotta lisää sisältö ennallaan, ja perustuslakivaliokunta puolsi; täysistunnon äänestys on vielä edessä. Milloin väliaikainen loppuu?",
+    "ja": "フィンランドは2024年、期限1年の一時的な国境法を制定した。一度も使われていない。2025年に2026年末まで延長。今度は内容そのままで2年の延長が提案され、議会の委員会が了承した。本会議の採決はこれから。一時的は、いつ終わる？"
+  }
+}

@@ -1,0 +1,25 @@
+{
+ "kind": "engine",
+ "engine": "av",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/vendor/rough-4.6.6.js",
+  "scenes/av_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "av_room", "beats": 12, "cues": { "slide": 0.9, "ad": "word:pop" } },
+  { "id": "av_eye", "beats": 12, "cues": { "open": "word:pop" } },
+  { "id": "av_bid", "beats": 12, "cues": { "one": "word:pop" } },
+  { "id": "av_list", "beats": 12, "cues": { "flip": "line:1.start", "six": "word:pop" } },
+  { "id": "av_stamp", "beats": 12, "cues": { "lift": "line:1.start", "stamp": "word:pop" } }
+ ],
+ "quiet": [],
+ "keep": []
+}

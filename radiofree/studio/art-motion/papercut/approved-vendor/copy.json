@@ -1,0 +1,130 @@
+{
+  "film": "approved-vendor",
+  "cut": "Global 1, DRAFT v1 (22 Oct) — one question: who approved the ad firm whose ads delivered spyware?",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "Researchers say an ad firm's targeted ads delivered spyware with no click, aimed at 45 devices in one newsroom. The firm sat on the ad industry's vendor list for six years, until an October suspension.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question",
+      "role": "setup",
+      "at": "s1+0.5",
+      "until": "s2-0.35",
+      "hold": "s2",
+      "text": {
+        "en": "Who approved the ad firm / whose ads delivered / [spyware]?",
+        "fi": "Kuka hyväksyi mainosyhtiön, / jonka mainokset levittivät / [vakoiluohjelmaa]?",
+        "ja": "スパイウェアを 配信した / 広告会社を 承認したのは / [誰]？"
+      },
+      "source": "The station's question (research-global-next.md §1; plan/films/20-approved-vendor.md). 'Approved': Reuters (15 Oct) reports IAB Europe saying the firm was suspended from its list of globally approved vendors; Citizen Lab reports IAB Europe says it vets and approves applications."
+    },
+    {
+      "id": "noclick",
+      "role": "evidence",
+      "at": "s2+0.6",
+      "until": "s3-0.35",
+      "hold": "s3",
+      "text": {
+        "en": "15 Oct, researchers: its ads / delivered spyware just by loading. / [No click] needed.",
+        "fi": "Tutkijat 15.10.: sen mainokset / levittivät vakoiluohjelmaa / jo latautuessaan. [Ei klikkausta].",
+        "ja": "研究者 (10月15日): その広告は / 表示される だけで / スパイウェアを 配信。 [クリック不要]。"
+      },
+      "source": "Citizen Lab, 'Exposing AdFection', 15 Oct 2026: Discover-Tech's targeted ads delivered Candiru spyware with no click; the ad's code checked the device's ad ID and IP and, for a target, returned code that could load a browser exploit. Corroborated by Reuters, TechCrunch, The Record, CyberScoop, BleepingComputer (search summaries, 22 Oct). Re-checked 22 Oct (plan/films/20-approved-vendor.md)."
+    },
+    {
+      "id": "targeted",
+      "role": "evidence",
+      "at": "s3+0.6",
+      "until": "s4-0.35",
+      "hold": "s4",
+      "text": {
+        "en": "At least 45 devices / at one newsroom / were [targeted].",
+        "fi": "Ainakin 45 laitetta / yhdessä uutistoimituksessa / oli [kohteena].",
+        "ja": "ある 報道機関で / 少なくとも 45台の 端末が / [標的] に された。"
+      },
+      "source": "Citizen Lab (15 Oct): at least 45 devices at one newsroom targeted in 2024 and 2025, spyware attributed 'with high confidence' to Candiru; it does not know which government was the customer. 'Targeted', not 'infected': not every targeted device is confirmed compromised (search summaries, 22 Oct). The newsroom is not named."
+    },
+    {
+      "id": "listed",
+      "role": "evidence",
+      "at": "s4+0.6",
+      "until": "s5-0.35",
+      "hold": "s5",
+      "text": {
+        "en": "It sat on the ad industry's / global vendor list / for [six years].",
+        "fi": "Yhtiö oli mainosalan / toimittajalistalla / [kuusi vuotta].",
+        "ja": "その会社は 広告業界の / 世界ベンダーリストに / [6年間] 載っていた。"
+      },
+      "source": "IAB Europe's Transparency & Consent Framework Global Vendor List: Discover-Tech registered as vendor 778 from 2 July 2020 (ppc.land, from the GVL archive) until its suspension in early October 2026 (8 Oct per Citizen Lab; 'last week' per IAB Europe to Reuters, 15 Oct). IAB Europe's own statement, 15 Oct: suspended from the GVL after an audit found TCF Policy violations."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "Approved vendor. / Until [October].",
+        "fi": "Hyväksytty toimittaja. / [Lokakuuhun] asti.",
+        "ja": "承認済み ベンダー。 / [10月] まで。"
+      },
+      "source": "The station's line, over its own image: a rubber stamp comes down on the firm's row of the list, SUSPENDED · OCT 2026, across six years of ticks. Not a quote; 'approved' is Reuters' wording for IAB Europe's list, and the suspension can be lifted or become an expulsion (IAB Europe, 15 Oct)."
+    }
+  ],
+  "ui": {
+    "room": {
+      "en": "A NEWSROOM · NIGHT",
+      "fi": "UUTISTOIMITUS · YÖ",
+      "ja": "報道機関 · 夜"
+    },
+    "dateline": {
+      "en": "CITIZEN LAB · 15.10.2026",
+      "fi": "CITIZEN LAB · 15.10.2026",
+      "ja": "シチズンラボ · 2026.10.15"
+    },
+    "count": {
+      "en": "AT LEAST 45 DEVICES · 2024–25",
+      "fi": "AINAKIN 45 LAITETTA · 2024–25",
+      "ja": "少なくとも45台 · 2024–25"
+    },
+    "list": {
+      "en": "IAB EUROPE · GLOBAL VENDOR LIST",
+      "fi": "IAB EUROPE · GLOBAL VENDOR LIST",
+      "ja": "IAB EUROPE · グローバル・ベンダーリスト"
+    }
+  },
+  "props": {
+    "banner": {
+      "en": "SALE",
+      "why": "the banner ad's one word, under its paper sun: an ordinary-looking ad, the same in every master"
+    },
+    "paddles": {
+      "en": "AUDIENCE: 2M · 640K · 90K · 1",
+      "why": "the bidders' paddles: audience sizes, and the one that wants a single device; numbers, the same in every master"
+    },
+    "clipboard": {
+      "en": "GLOBAL VENDOR LIST / PURPOSES · LEGAL BASIS · CONSENT",
+      "why": "the list's own name and the kinds of thing a vendor declares when it registers (IAB Europe's guidance), in English in every master; no vendor is named"
+    },
+    "stamp": {
+      "en": "SUSPENDED · OCT 2026",
+      "why": "the punchline as a thing: the stamp carries no logo and no company's name"
+    }
+  },
+  "post": {
+    "en": "Researchers say an ad firm's targeted ads delivered spyware without a click: at least 45 devices at one newsroom were targeted (Citizen Lab, 15 Oct). The firm had been on the ad industry's global vendor list since 2020, until a suspension in October. Who approved it? #privacy #spyware #adtech",
+    "fi": "Tutkijoiden mukaan mainosyhtiön kohdennetut mainokset levittivät vakoiluohjelmaa ilman klikkausta: ainakin 45 laitetta yhdessä uutistoimituksessa oli kohteena (Citizen Lab, 15.10.). Yhtiö oli mainosalan kansainvälisellä toimittajalistalla vuodesta 2020, kunnes se jäädytettiin lokakuussa. Kuka sen hyväksyi?",
+    "ja": "研究者によると、ある広告会社のターゲティング広告がクリックなしでスパイウェアを配信していた。ある報道機関の少なくとも45台の端末が標的に（シチズンラボ、10月15日）。この会社は2020年から広告業界の世界ベンダーリストに載っていたが、10月に資格停止となった。誰が承認したのか？"
+  }
+}

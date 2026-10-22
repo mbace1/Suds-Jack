@@ -1,0 +1,26 @@
+{
+ "kind": "engine",
+ "engine": "bge",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/vendor/rough-4.6.6.js",
+  "scenes/bge_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "bge_gate", "beats": 12, "cues": { "lamp": "word:pop" } },
+  { "id": "bge_case", "beats": 12, "cues": { "tag": "word:pop" } },
+  { "id": "bge_dust", "beats": 12, "cues": { "gleam": "word:pop", "strike": "line:2.start", "write": "line:3.start" } },
+  { "id": "bge_desk", "beats": 12, "cues": { "write": "line:1", "stamp": "word:pop" } },
+  { "id": "bge_tail", "beats": 12, "cues": { "tag": 0.3, "mark": "word:pop" } }
+ ],
+ "quiet": [],
+ "keep": []
+}
