@@ -188,24 +188,24 @@ export const GAMES = [
   {
     id: 'tokodrop2',
     fi: {
-      tagline: 'Uusi alku: 1.x:n hyytelö rakennettuna uudelleen WebGPU:lle — kaksi tattia ja geelit jotka väreilevät, turpoavat ja poksahtavat. Arcade, Hardcade (jokainen raato ampuu takaisin) ja Survival; Campaign seuraavaksi.',
+      tagline: 'Uusi alku: 1.x:n hyytelö rakennettuna uudelleen WebGPU:lle — kaksi tattia 1.x:n omia aaltoja ja geelejä vastaan. Arcade, Hardcade (purijoiden raadot ampuvat takaisin) ja Survival; Campaign seuraavaksi.',
       lineage: 'Toko Drop / kahden tatin areena',
-      controls: 'vasen puoli liikkuu · oikea puoli tähtää ja ampuu, irrota = syöksy · WASD, hiiri tähtää, pidä = ammu, välilyönti = syöksy · ohjain: tatit, RT, A',
-      note: 'v4: 1.x:n hyytelö, lattia ja kuolemat 1.x:n areenalla. Seuraavaksi Arcaden aallot, koko lajisto ja Campaign.',
+      controls: 'vasen puoli liikkuu · oikea puoli tähtää ja ampuu, irrota = syöksy · WASD, hiiri tähtää, pidä = ammu, välilyönti = syöksy · ohjain: vasen tatti liikkuu, oikea tähtää ja ampuu, risti/R1/R2 = syöksy, Options = tauko',
+      note: 'v5: 1.x:n aallot ja kaksitoista sen geeliä oikeine hyökkäyksineen; loput, pomot mukaan lukien, kävelevät ja ampuvat tavallisesti kunnes ne on siirretty. Seuraavaksi pomot, portit ja Campaign.',
     },
     ja: {
-      tagline: 'リブート版：1.xのゼリーをWebGPUで作り直し——ツインスティックで、波打ち、膨らみ、弾けるゼリーと戦う。アーケード、ハードケード（倒した敵が撃ち返す）、サバイバル。キャンペーンは次。',
+      tagline: 'リブート版：1.xのゼリーをWebGPUで作り直し——ツインスティックで1.xそのままのウェーブとゼリーに挑む。アーケード、ハードケード（噛みつく敵の残骸が撃ち返す）、サバイバル。キャンペーンは次。',
       lineage: 'トコドロップ / ツインスティック・アリーナ',
-      controls: '左半分で移動 · 右半分で狙って撃つ、離すとダッシュ · WASD・マウスで狙い・押し続けて射撃・スペースでダッシュ · パッド：スティック、RT、A',
-      note: 'v4：1.xのゼリー、床、撃破演出を1.xのアリーナで。次はアーケードのウェーブ、全種の敵、キャンペーン。',
+      controls: '左半分で移動 · 右半分で狙って撃つ、離すとダッシュ · WASD・マウスで狙い・押し続けて射撃・スペースでダッシュ · パッド：左スティックで移動、右スティックで狙って射撃、×/R1/R2でダッシュ、OPTIONSでポーズ',
+      note: 'v5：1.xのウェーブと、本来の攻撃を持つ12種のゼリー。ボスを含む残りは、移植まで普通に歩いて撃つ。次はボス、ゲート、キャンペーン。',
     },
     status: 'active',
-    note: 'v4: 1.x\'s gel look, floor and deaths, on 1.x\'s arena. Arcade waves, the full roster and Campaign come next.',
+    note: 'v5: 1.x\'s wave director and twelve of its gels with their real attacks; the rest, bosses included, walk and shoot plainly until they are ported. Bosses, gates and Campaign come next.',
     title: 'Toko Drop 2.0',
-    tagline: 'The reboot: 1.x\'s gelatin rebuilt for WebGPU — twin sticks against gels that ripple, swell and burst. Arcade, Hardcade (every corpse shoots back) and Survival; Campaign next.',
+    tagline: 'The reboot: 1.x\'s gelatin rebuilt for WebGPU — twin sticks against 1.x\'s own waves and gels. Arcade, Hardcade (the biters\' corpses shoot back) and Survival; Campaign next.',
     lineage: 'Toko Drop / twin-stick arena',
     tags: ['twin-stick', 'three.js', 'webgpu'],
-    controls: 'left half moves · right half aims and fires, let go to dash · keys: WASD, mouse aims, hold to fire, Space dashes · pad: sticks, RT fires, A dashes',
+    controls: 'left half moves · right half aims and fires, let go to dash · keys: WASD, mouse aims, hold to fire, Space dashes · pad: left stick moves, right stick aims and fires, Cross/R1/R2 dash, Options pauses',
     // Played here, in the arcade: a deployed copy in toko-drop-2/, the way
     // toko-drop-godot/ is. The source is its own repository
     // (github.com/mbace1/toko-drop) and main does not carry the copy, so the
