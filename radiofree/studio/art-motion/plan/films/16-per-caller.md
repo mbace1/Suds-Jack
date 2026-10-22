@@ -24,6 +24,10 @@ for the agency. Re-checked 22 Oct from search summaries; no ruling was found.
   (drafts, `native_read` false).
 - **`post` copy** in en/fi/ja: the same change. The en post is 272 characters.
 - Nothing else changed: same shots, same score, same punchline.
+- **Build:** PASSED (87 pass, 12 warn: the unread fi/ja text and their sidecar timings on the English master),
+  32.14 s + 3 s sign-off, −14.2 LUFS, −3.0 dBTP. Preview: `previews/22-10-Per-Caller-v3-en.mp4` (35.1 s, 4.4 MB).
+  The calendar shot was checked by eye: three clean lines, and the stamp hovers over November without coming down.
+- **`films/22-10-Coxon10-Per-Caller.mp4` is still the held v2.** It is replaced only when the owner approves v3.
 
 ## The fact re-check (20 Oct 2026)
 
