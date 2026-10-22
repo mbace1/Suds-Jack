@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=5';
+import { TUNING } from './tuning.js?v=6';
 
 const A = TUNING.audio;
 
@@ -48,6 +48,7 @@ export class Sound {
       // (6-15 a second) would turn it into a drone, so those stay silent
       case 'gelShot': if (!e.spiral) this._tone('triangle', 520, 300, 0.09, 0.04); break;
       case 'hit': this._tone('sine', 300, 160, 0.06, 0.08); break;
+      case 'shove': this._tone('sine', 180, 90, 0.08, 0.12); break;   // v4's body-check thump
       // 1.x's death voices by family (main.js:4476-4480, audio.js:243-249): a
       // blob, a cube's crunch, and a species' own where it has one (TORO, BAMBU)
       case 'kill': {

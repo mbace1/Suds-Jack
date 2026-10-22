@@ -68,6 +68,18 @@
     #menu .item.focus { outline: 2px solid var(--gold); outline-offset: 2px; border-color: var(--gold); }
     #menu .item.focus .label { color: var(--gold); }
     #menu .item.off { opacity: .45; cursor: default; }
+    #menu .row { display: flex; gap: 8px; }
+    #menu .row .item { flex: 1 1 0; min-width: 0; }
+    #menu .row .item .label { font-size: 14px; letter-spacing: .12em; }
+    /* a phone held sideways is ~400 px tall: two columns, so the whole title
+       (the test switches included) shows without scrolling */
+    @media (orientation: landscape) and (max-height: 520px) {
+      #menu { width: min(94vw, 820px); display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; align-content: start; }
+      #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats { grid-column: 1 / -1; }
+      #menu .logo { margin: 0 0 4px; }
+      #menu .item { margin: 5px 0; }
+      #menu .hint { margin-top: 6px; }
+    }
     #menu .hint { margin-top: 12px; font-size: 10px; font-weight: 400; line-height: 1.5; color: var(--dim); letter-spacing: .06em; }
     #menu .stats { display: grid; grid-template-columns: auto auto; gap: 6px 16px; justify-content: center; margin: 4px 0 12px; text-align: left; }
     #menu .stats dt { color: var(--dim); letter-spacing: .15em; }
@@ -104,7 +116,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v5<span id="backend"></span></div>
+  <div id="ver">2.0 · v6<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -135,6 +147,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=5"></script>
+  <script type="module" src="js/main.js?v=6"></script>
 </body>
 </html>

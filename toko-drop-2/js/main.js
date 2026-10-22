@@ -7,16 +7,16 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=5';
-import { buildFloor } from './render/floor.js?v=5';
-import { fitCamera } from './render/view.js?v=5';
-import { Splats } from './render/splats.js?v=5';
-import { Actors } from './render/actors.js?v=5';
-import { GEL_TIME } from './render/gel.js?v=5';
-import { createWorld, step, api as simApi } from './sim/world.js?v=5';
-import { Input } from './input.js?v=5';
-import { UI, t, timeText } from './ui.js?v=5';
-import { Sound } from './audio.js?v=5';
+import { TUNING } from './tuning.js?v=6';
+import { buildFloor } from './render/floor.js?v=6';
+import { fitCamera } from './render/view.js?v=6';
+import { Splats } from './render/splats.js?v=6';
+import { Actors } from './render/actors.js?v=6';
+import { GEL_TIME } from './render/gel.js?v=6';
+import { createWorld, step, api as simApi } from './sim/world.js?v=6';
+import { Input } from './input.js?v=6';
+import { UI, t, timeText } from './ui.js?v=6';
+import { Sound } from './audio.js?v=6';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -95,6 +95,17 @@ const store = {
 const MODES = ['arcade', 'hardcade', 'survival'];
 const bestKey = (m) => `toko2.best.${m}`;
 const bests = () => Object.fromEntries(MODES.map((m) => [m, store.num(bestKey(m))]));
+// The title's two test switches (owner, 2026-10-22: "the pushing dash should
+// be tested as it may be a better dynamic, allowing for more bullet sponge
+// enemies"): 1.x's pass-through dash or the PUSH dash (TUNING.hero.push), and
+// every non-boss gel's hit points ×1, ×2 or ×3. PUSH is what the test is for,
+// so it is what a first run gets.
+const HP_STEPS = [1, 2, 3];
+const tests = () => {
+  const hp = store.num('toko2.gelHp');
+  return { dash: store.num('toko2.dashPass') === 1 ? 'pass' : 'push', hp: HP_STEPS.includes(hp) ? hp : 1 };
+};
+const showTitle = (keep = false) => ui.title(bests(), sound.on, input.source, tests(), keep);
 
 const input = new Input(document);
 const sound = new Sound();
@@ -108,7 +119,9 @@ const ui = new UI({
   onPause: () => pause(),
   onAgain: () => start(mode),
   onMenu: () => toMenu(),
-  onSound: () => { sound.setOn(!sound.on); store.set('toko2.mute', sound.on ? 0 : 1); ui.title(bests(), sound.on, input.source); },
+  onSound: () => { sound.setOn(!sound.on); store.set('toko2.mute', sound.on ? 0 : 1); showTitle(true); },
+  onDash: () => { store.set('toko2.dashPass', tests().dash === 'push' ? 1 : 0); showTitle(true); },
+  onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); showTitle(true); },
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
 
@@ -118,14 +131,15 @@ new ResizeObserver(resize).observe(stage);
 function toMenu() {
   state = 'menu'; input.enabled = false; ui.setHud(false);
   useArena(screenArena());
-  ui.title(bests(), sound.on, input.source);
+  showTitle();
 }
 
 function start(m) {
   debug.hold = false; debug.freeCam = false;
   mode = MODES.includes(m) ? m : 'arcade';
   useArena(screenArena());
-  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena });
+  const test = tests();
+  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, dashMode: test.dash, hpMult: test.hp });
   splats.clear(); actors.reset(); trauma = 0;
   acc = 0; pendingDash = false;
   state = 'play'; input.enabled = true;
@@ -211,6 +225,16 @@ const debug = {
     for (let i = 0; i < n && !world.over; i++) {
       const h = world.hero, a = aimAt ? Math.atan2(aimAt.z - h.z, aimAt.x - h.x) : 0;
       step(world, { mx: 0, mz: 0, ax: Math.cos(a), az: Math.sin(a), aim: !!aimAt, fire: !!aimAt, dash: false });
+      for (const e of world.events) onEvent(e);
+      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt);
+    }
+  },
+  // step the run under one fixed input (a look check of a dash, say): `inp`
+  // is the sim's input, and its `dash` is an edge, so only the first step dashes
+  act(inp, seconds) {
+    const n = Math.round(seconds / T.sim.dt);
+    for (let i = 0; i < n && !world.over; i++) {
+      step(world, { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, ...inp, dash: i === 0 && !!inp.dash });
       for (const e of world.events) onEvent(e);
       actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt);
     }

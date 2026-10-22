@@ -5,7 +5,7 @@
 //
 // 1.x js/ at v268: the walk enemy.js:1748-1753; the velocity 1680, 2694-2697;
 // the low-HP strobe 2663-2665; the split 3058-3061, 2996-3000 and main.js
-// 10586-10620; the ring main.js:10731-10736. Spec: docs/port-1x/species-a.md
+// 10586-10620; the ring main.js:10729-10736. Spec: docs/port-1x/species-a.md
 // §6, bullets-graze.md §5.2. Every number is tuning/species/splitta.js.
 //
 // Per step (1.x's update, after the swarm forces have moved it):
@@ -13,7 +13,8 @@
 //           (CFG speed × the wave's speedMult × swift × a SIREN's surge);
 //           inside 1.2 it stands. Contact reaches r + 0.5 = 1.6, so the walk
 //           alone brings it onto you. SCHOOL: the swarm forces (the strongest
-//           dodge, full flock and current) are the core's, before this.
+//           dodge, full flock and current) are the core's, before this; an
+//           elite (r 1.32) is over the dodge's 1.1 gate and never sidesteps.
 //   TELL    at hp ≤ 2 g.tell is 1: the look strobes 1.x's dark green. It
 //           reads hp as this step starts, so a hit that takes it to 2 shows
 //           on the next step, as 1.x's emissive block (before the bullets) did.
@@ -31,6 +32,12 @@
 //           land when the 0.28 s death pop ends, as 1.x's did: spawned now,
 //           they are handed back to the core's `appear` with that long left,
 //           so until then they can neither hurt, be hit, nor move.
+//
+// Where the contract cannot say it (docs/SIM_CONTRACT.md has no delayed
+// spawn): 1.x built the brood, and counted the valve, at the END of the pop;
+// here both happen at the kill, so the waiting brood counts as alive for
+// those 0.28 s. And 1.x fired a VOLATILE affix's 8-ring before this ring
+// (main.js:4367-4377, then 10731); the core fires it after onKill.
 const TAU = Math.PI * 2;
 
 export default {
@@ -40,7 +47,7 @@ export default {
 
   step(w, g, dt, api) {
     const S = api.S(g), s = g.s, h = w.hero;
-    const dx = h.x - g.x, dz = h.z - g.z, dist = Math.hypot(dx, dz) || 0.001;
+    const dx = h.x - g.x, dz = h.z - g.z, dist = Math.hypot(dx, dz) || S.distFloor;
     if (dist > S.stopAt) {
       const spd = api.speed(g);
       g.vx = (dx / dist) * spd; g.vz = (dz / dist) * spd;
@@ -50,10 +57,11 @@ export default {
     s.velX += (g.vx - s.velX) * S.velSmooth; s.velZ += (g.vz - s.velZ) * S.velSmooth;
   },
 
-  onKill(w, g, api) {
+  onKill(w, g, api, src) {
     const S = api.S(g), R = S.ring, C = S.children;
-    // the ring: a player-bullet kill only (1.x main.js:10729-10736)
-    if (R.from.includes(killedBy(w, g))) {
+    // the ring: a player-bullet kill only (1.x main.js:10729-10736). The core
+    // names the killer; a call without one is a bullet's, the commonest.
+    if (R.from.includes(src ?? 'hero')) {
       api.fire.ring(w, g.x, g.z, R.count, R.base, { color: S.bulletColor, src: g.kind, speedMult: R.speedMult });
       w.events.push({ type: 'gelShot', x: g.x, z: g.z, kind: g.kind });
     }
@@ -65,28 +73,15 @@ export default {
       const d = C.dist[0] + w.rng.next() * (C.dist[1] - C.dist[0]);
       pts.push([g.x + Math.cos(a) * d, g.z + Math.sin(a) * d]);
     }
-    const cap = w.dir?.childCap > 0 ? w.dir.childCap : Infinity;
-    let live = 0;
-    if (cap < Infinity) for (const o of w.gels) if (o.alive) live++;
+    const n = Math.min(pts.length, api.childrenAllowed(w));
     const speedMult = g.speedMult * (g.affix === 'swift' ? api.T.variants.swiftSpeed : 1);
     const wait = api.T.blob.death, appear = api.T.gel.appear;
-    for (const [x, z] of pts) {
-      if (live >= cap) break;
-      const c = api.spawn(w, C.kind, x, z, { child: true, speedMult, intervalMult: g.intervalMult });
+    for (let j = 0; j < n; j++) {
+      const c = api.spawn(w, C.kind, pts[j][0], pts[j][1], { child: true, speedMult, intervalMult: g.intervalMult });
+      // 2.0's walls hold every body; 1.x's child could stand up to 2.7 outside one
       api.clamp(w, c);
       // not yet: the core's `appear`, with the death pop's 0.28 s left of it
       c.state = 'appear'; c.t = appear - wait;
-      live++;
     }
   },
 };
-
-// what killed it: the core's kill event, pushed just before onKill, names it
-// ('hero' a hero bullet, 'dash', 'env'); with none, the commonest — a bullet
-function killedBy(w, g) {
-  for (let i = w.events.length - 1; i >= 0; i--) {
-    const e = w.events[i];
-    if (e.type === 'kill' && e.id === g.id) return e.src;
-  }
-  return 'hero';
-}

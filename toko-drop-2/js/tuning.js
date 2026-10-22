@@ -7,8 +7,8 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=5';
-import WAVES from './tuning/waves.js?v=5';
+import { SPECIES } from './tuning/species/index.js?v=6';
+import WAVES from './tuning/waves.js?v=6';
 
 export const TUNING = {
   render: {
@@ -161,6 +161,21 @@ export const TUNING = {
     // killing (main.js:10166-10183); bossHits is that 1, once a pass.
     dashKill: { reach: 0.5, bossHits: 1 },
     dashBoom: { count: 12, shake: 0.18, color: 0xff8844 },   // 12 rays, addShake(0.18), 0xff8844 (main.js:10216-10225)
+    // The PUSH dash, on test beside 1.x's pass-through (owner, 2026-10-22: "the
+    // pushing dash should be tested as it may be a better dynamic, allowing
+    // for more bullet sponge enemies"). The world's `dashMode` picks ('pass' |
+    // 'push'); the title's DASH switch sets it. It began as 2.0 v3-v4's
+    // body-check (one knock of 11 at first contact, world.js:113-123 at v4),
+    // and measured, that opened almost no room: the hero overtakes what it
+    // just shoved and ends the dash inside the crowd (gap to the four nearest
+    // gels at 0.5 s: 0.89 with PASS, 1.02 with v4's shove). So it PLOUGHS:
+    // every step a body is within `reach` of the dashing hero it is kept
+    // moving straight away at no less than force × heavy / its radius, and it
+    // slides out on the core's knock friction (gel.knockFriction 3): 2.09 at
+    // 0.5 s, 1.45 at 1.0 s. A small gel flies, a boss barely moves; planted
+    // bodies (the ANCHORED affix, the FIXED role) do not move at all. At dash
+    // level 1 the first touch of a dash also hurts.
+    push: { reach: 1.5, force: 18, heavy: 0.55, plough: true, squash: -0.45, hurt: 1 },
     color: 0xffffff,        // 1.x: white satin (player.js:61)
     // 1.x's weapon pods (tuning.js:141-160, main.js:1985-2005, player.js:404-464):
     // one table, two levels a family; `rate` multiplies fireEvery. A pod drops
@@ -203,7 +218,7 @@ export const TUNING = {
   gel: {
     // 1.x: a bullet never moves a body. Knock (kx, kz) is for whatever throws
     // a body — nothing in the roster does yet.
-    knockFriction: 6,       // knock velocity decays this fast (1/s)
+    knockFriction: 3,       // knock velocity decays this fast (1/s); only the PUSH dash knocks: 3 lets a shoved gel slide out (it was 6, under which a shove opened no room)
     wallBounce: 0.6,        // a wall returns this share of the knock
     appear: 0.3,            // seconds a new gel swells into being; it can neither hurt nor be hit
     flash: 0.12,            // 1.x hit flash

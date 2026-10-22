@@ -26,9 +26,11 @@
 //           rigid tip, p = t / flop linear, the centre at L + D·cos(ang) along
 //           the heading from where the flop began and D·sin(ang) up, ang
 //           135° → 45°; WRITTEN from that origin, so a flop step's swarm
-//           forces are lost (1.x, species-b §10.4 trap 15); what moved it from
-//           outside since its last step (the crowd solver, a knock, the wall)
-//           moves the origin with it (1.x crowd.js:110). At p = 1 it lands: one
+//           forces are lost (1.x, species-b §10.4 trap 15); only the crowd
+//           solver moves the origin, by its UNCLAMPED nudge (g.nudgedX/Z: 1.x
+//           crowd.js:107-116 adds `ax` to `_flopX0` before it clamps the
+//           position, so a nudge into the wall still carries the whole tumble;
+//           the core's walls then hold the body in). At p = 1 it lands: one
 //           face on, a −0.32 kick to the squash spring, the rest of the cycle.
 //           cycle = 2L / spd, flop = min(0.30, 0.65·cycle): its average ground
 //           speed is exactly spd.
@@ -146,15 +148,14 @@ export default {
     const tier = Math.floor(iM > 0 ? (1 - iM) / W.tierStep : 0);
     s.shots = Math.min(W.shotsMax, W.shots + tier * W.shotsPerTier);   // 1.x `_totalShots`
     s.fireT = w.rng.range(W.firstShot[0], W.firstShot[1]);     // 1.x `_fireT = 1.5 + rand`
-    s.lastX = g.x; s.lastZ = g.z;                               // where its own step last put it
   },
 
   step(w, g, dt, api) {
     const S = api.S(g), R = S.target, W = S.wall, s = g.s;
-    // what moved it from outside since its own step last placed it (the crowd
-    // solver, a knock, the arena wall) carries a tumble's origin with it;
-    // g.px is from before this step's swarm forces, which a flop overwrites
-    if (s.flopping) { s.x0 += g.px - s.lastX; s.z0 += g.pz - s.lastZ; }
+    // the crowd solver's nudge at the end of the last step carries a tumble's
+    // origin with it, unclamped, as 1.x's crowd wrote it (crowd.js:107-116);
+    // nothing else does: this step's swarm forces are overwritten by the flop
+    if (s.flopping) { s.x0 += g.nudgedX; s.z0 += g.nudgedZ; }
     s.tumble = s.flopping;
     const ex = g.x, ez = g.z;
 
@@ -176,6 +177,5 @@ export default {
     // the strobe the look draws, as 1.x's emissive block read it: after the
     // wall (1.x enemy.js:2657); its progress through the last 0.6 s, 0..1
     g.tell = s.fireT < S.tellTime ? 1 - s.fireT / S.tellTime : 0;
-    s.lastX = g.x; s.lastZ = g.z;
   },
 };

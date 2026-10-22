@@ -38,7 +38,7 @@ export default {
   // ORANGE calls it with exact = true: the heading is the raw unit vector to
   // its target, not a cardinal, so it tumbles diagonally (1.x enemy.js:1509-1513, 2371)
   flop: {
-    halfExtent: 0.9,       // L = 0.9 · radius · rm: the RoundedBox is 1.8 radii on a side (1.x enemy.js:738, 1497)
+    halfExtent: 0.9,       // L = 0.9 · radius · rm: the RoundedBox is 1.8 radii on a side (1.x enemy.js:738, 1498)
     arcStartDeg: 135,      // the centre swings from 135° … (1.x tuning.js:58 arcStartDeg)
     arcEndDeg: 45,         // … to 45° about the planted edge: it advances 2L and lifts to L√2 (1.x tuning.js:58)
     timeMax: 0.30,         // a flop lasts min(0.30 s, … (1.x tuning.js:60 flopTimeMax)
@@ -77,7 +77,7 @@ export default {
     breatheAmp: 0.10,      // (1.x tuning.js:61 flop.breatheAmp)
     breatheRate: 2.4,      // rad/s on its own clock (1.x enemy.js:2773 `sin(_wobbleT · 2.4 + _phase)`)
     breatheXZ: 0.5,        // the breath gives back half of itself across (1.x enemy.js:2775 `× (1 − breathe · 0.5)`)
-    sqFloor: 0.1,          // the across-scale is 1/√max(sq, 0.1) (1.x enemy.js:2733)
+    sqFloor: 0.1,          // the across-scale is 1/√max(sq, 0.1) (1.x enemy.js:2732)
     // the tell: a square-wave emissive strobe on the frame clock (1.x enemy.js:2657-2658)
     strobeOn: 0x442200,    // (1.x enemy.js:2658)
     strobeOff: 0x000000,   // (1.x enemy.js:2658)

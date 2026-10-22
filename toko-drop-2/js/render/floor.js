@@ -9,7 +9,7 @@
 // lit things on it.
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, sin, length, smoothstep, mix, fwidth } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=5';
+import { GEL_TIME } from './gel.js?v=6';
 
 export function buildFloor(T, hx, hz) {
   const F = T.floor;

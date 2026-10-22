@@ -19,6 +19,52 @@
     Never `--no-verify`.
 -->
 
+## v6 — 2026-10-22
+**The PUSH dash on test beside 1.x's, and tougher gels to push around**
+- **A DASH switch on the title** (owner, 2026-10-22: "the pushing dash should
+  be tested as it may be a better dynamic, allowing for more bullet sponge
+  enemies"). PUSH ploughs: every step a gel is within 1.5 of the dashing
+  hero it is kept moving straight away at no less than 18 × 0.55 / its
+  radius, then slides out (knock friction 6 → 3), so a small gel flies and a
+  boss barely moves. It started as v3-v4's body-check (one knock of 11 at
+  first contact), and measured, that opened no room: the hero overtook what
+  it shoved and ended the dash inside the crowd. Gap from the hero to the
+  four nearest gels, half a second after dashing into a cluster: PASS 0.89,
+  v4's shove 1.02, the plough 2.09 (1.45 still at one second). PASS is 1.x's
+  dash, straight through. PUSH is what a first run gets; the choice is
+  remembered
+- **A GEL HP switch beside it**: every gel but a boss has ×1, ×2 or ×3 its hit
+  points, for testing the push against bullet sponges. Scores do not change
+- The dash upgrades work with either: at level 1 a PUSH also hits each body it
+  shoves (a boss included) and PASS kills what it passes; level 2's boom is
+  the same. Planted bodies (the ANCHORED affix, PYRA) do not move
+- A cube mid-tumble keeps a shove: the core reports a knock's displacement
+  with the crowd's nudge, which the tumbling cubes already carry (with no
+  shove, as in 1.x, nothing changes)
+- **ORANGE and SPLITTA are verified against 1.x** (the list is now the
+  director, GLOBBO, SPITTOR, FANNER, WEEVA, YELA, ORANGE and SPLITTA).
+  ORANGE's tumble takes the crowd's unclamped nudge as 1.x does, held against
+  a literal copy of 1.x's cube code on the same random stream. SPLITTA dies in
+  1.x's uniform dome pop (it popped in its last squash, half height under
+  rapid fire), no longer swells with its tell, and reads its killer from the
+  core
+- A phone no longer logs a refused buzz when a pad-only player is hit: the
+  haptics wait for the page's first tap, as Chrome requires
+- A phone held sideways shows the whole title in two columns (it scrolled,
+  and the switches would have sat below the fold); pause and results become
+  side-by-side buttons there
+- The pad flips a switch in place: the title keeps its focus when it redraws
+  (SOUND did the same thing and jumped back to ARCADE)
+- HARDCADE's line on the title says what v5 made it: the biters' corpses
+  shoot back, not every corpse
+- `test/hero.mjs` holds the push to its numbers, the plough and the
+  mid-tumble carry (170 checks); the browser gate checks a first run is PUSH
+  at ×1 and that a DualSense flips DASH in place. `__toko.act(input, s)` steps
+  a run under one input, for look checks of a dash
+- Cache tokens `?v=5` → `?v=6`; HUD label → `2.0 · v6`
+
+---
+
 ## v5 — 2026-10-21
 **1.x's rules underneath: a species module each, 1.x's crowd, score, hits and HARDCADE**
 - **The core is rebuilt around 1.x's frame order** (bullets-graze.md §7.1):

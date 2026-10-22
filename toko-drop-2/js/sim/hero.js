@@ -11,15 +11,15 @@
 //   4. mercy, the squash spring, the clamp, the stretch
 //   5. the gun, from where the clamp left you
 //   6. this game's dash upgrades (kill, boom), after the move as 1.x's dash
-//      boom was (main.js:10216-10225)
+//      boom was (main.js:10216-10225), or the PUSH dash's shove in its place
 //
 // Input (world axes): { mx, mz } the move stick, analog, length ≤ 1;
 // { ax, az } the aim and `aim` whether it points anywhere; `fire` the
 // trigger; `dash` an edge, true on the step it is asked. 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=5';
-import { BEHAVIOUR } from './species/index.js?v=5';   // read at run time only (a species' hitTest)
+import { TUNING } from '../tuning.js?v=6';
+import { BEHAVIOUR } from './species/index.js?v=6';   // read at run time only (a species' hitTest)
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -133,7 +133,8 @@ export function heroStep(w, input, dt, api) {
   // e.touches(): main.js:10166-10168), else centre to centre. The bodies are
   // the ones standing when the cut starts: one a cut brings into being is
   // judged from the next step, as world.js steps a snapshot of them.
-  if (dashing && h.dashLevel >= 1) {
+  if (dashing && w.dashMode === 'push') shove(w, h, api);
+  else if (dashing && h.dashLevel >= 1) {
     const R = H.dashKill.reach;
     for (const g of w.gels.slice()) {
       if (g.state !== 'active' || !g.alive || g.dashedBy === h.dashId) continue;
@@ -159,6 +160,36 @@ export function heroStep(w, input, dt, api) {
       bullet(w, h, h.x, h.z, Math.cos(a), Math.sin(a), B.color, api);
     }
     w.events.push({ type: 'dashBoom', x: h.x, z: h.z, shake: B.shake });
+  }
+}
+
+// The PUSH dash (TUNING.hero.push): every body whose edge is within reach of
+// the dashing hero is knocked straight away from it, once a dash, harder the
+// smaller it is. Planted bodies (ANCHORED, the FIXED role) stand. From dash
+// level 1 the shove is also a hit, a boss's included.
+function shove(w, h, api) {
+  const P = H.push;
+  for (const g of w.gels.slice()) {
+    if (g.state !== 'active' || !g.alive || g.anchored || (!P.plough && g.shovedBy === h.dashId)) continue;
+    if (T.species[g.kind].role === 'FIXED') continue;
+    let dx = g.x - h.x, dz = g.z - h.z, d = Math.hypot(dx, dz);
+    if (d >= P.reach + g.r) continue;
+    if (d < 1e-6) { dx = h.dashX; dz = h.dashZ; d = Math.hypot(dx, dz) || 1; }
+    const nx = dx / d, nz = dz / d, want = P.force * P.heavy / g.r;
+    if (P.plough) {
+      // every step it is in reach, it is kept moving away at least this fast
+      const along = g.kx * nx + g.kz * nz;
+      if (along < want) { g.kx += nx * (want - along); g.kz += nz * (want - along); }
+      if (g.shovedBy === h.dashId) continue;
+    } else { g.kx += nx * want; g.kz += nz * want; }
+    g.shovedBy = h.dashId;
+    g.sqV += P.squash;
+    w.events.push({ type: 'shove', x: g.x, z: g.z, id: g.id, kind: g.kind });
+    if (h.dashLevel >= 1) {
+      g.hp -= P.hurt; g.flash = T.gel.flash; g.sqV += T.gel.sq.hit;
+      w.events.push({ type: 'hit', x: h.x, z: h.z, id: g.id, kind: g.kind });
+      if (g.hp <= 0) api.kill(w, g, 'dash');
+    }
   }
 }
 

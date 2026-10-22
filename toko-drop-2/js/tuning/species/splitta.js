@@ -7,6 +7,10 @@
 // per-frame numbers. Spec: docs/port-1x/species-a.md §6, bullets-graze.md
 // §5.2. Contract: docs/SIM_CONTRACT.md.
 //
+// Not ported: 1.x's motion-trail afterimage (enemy.js:637, every 0.07 s at
+// 0.60 × radius) — it was off under 1.x's WEBGPU build since v193
+// (main.js:10485-10489), which is 2.0's reference look.
+//
 // 1.x citations are to /home/user/sj-site/toko-drop/js/ at v268.
 export default {
   name: 'SPLITTA',
@@ -24,6 +28,7 @@ export default {
   revenge: null,           // not a HARDCADE biter (1.x tuning.js:496-497); its living ring is its own
 
   // ── movement (1.x enemy.js:1748-1753) ──
+  distFloor: 0.001,        // its distance to you, floored so one standing on you never divides by zero (1.x enemy.js:1682 `|| 0.001`)
   stopAt: 1.2,             // it walks at you at spd only while farther than this (1.x enemy.js:1749 `dist > 1.2`);
                            // contact reaches r + 0.5 = 1.6, so unlike GLOBBO it touches by walking
   velSmooth: 0.3,          // 1.x _velX: its OWN walk each frame, eased 0.3 a frame (1.x enemy.js:1680, 2696-2697);

@@ -22,7 +22,7 @@
 //
 // Output is in SCREEN terms (x right, y down); main.js turns it into the
 // world, because only it knows where the camera is.
-import { TUNING } from './tuning.js?v=5';
+import { TUNING } from './tuning.js?v=6';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)
@@ -183,6 +183,9 @@ export class Input {
   // shaped one for the last.
   feel(e) {
     if (!this.haptics || typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    // Chrome refuses (and logs) a buzz before the page has had a tap or a
+    // click; a pad press is not one, so a pad-only player never gets here
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
     const V = TUNING.heroLook.haptics;
     if (e.type === 'hurt' && e.lives > 0) navigator.vibrate(V.hit);
     else if (e.type === 'over') navigator.vibrate(V.death);

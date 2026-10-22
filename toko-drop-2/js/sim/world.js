@@ -14,20 +14,23 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=5';
-import { makeRng } from './rng.js?v=5';
-import { BEHAVIOUR } from './species/index.js?v=5';
-import { DIRECTORS } from './director/index.js?v=5';
-import * as fire from './fire.js?v=5';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=5';
-import { swarmForces, resolveCrowd } from './crowd.js?v=5';
-import { revengeColor } from './color.js?v=5';
+import { TUNING } from '../tuning.js?v=6';
+import { makeRng } from './rng.js?v=6';
+import { BEHAVIOUR } from './species/index.js?v=6';
+import { DIRECTORS } from './director/index.js?v=6';
+import * as fire from './fire.js?v=6';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=6';
+import { swarmForces, resolveCrowd } from './crowd.js?v=6';
+import { revengeColor } from './color.js?v=6';
 
 const T = TUNING;
 
-export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape } = {}) {
+// `dashMode` and `hpMult` are the title's two test switches: 1.x's dash or
+// the push dash (TUNING.hero.push), and every non-boss body's hit points ×
+// hpMult (the "bullet sponge" test; scores are unchanged).
+export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, dashMode = 'pass', hpMult = 1 } = {}) {
   const w = {
-    seed, mode, rng: makeRng(seed), rngFx: makeRng((seed ^ 0x5bd1e995) >>> 0), tick: 0, time: 0, over: false,
+    seed, mode, dashMode, hpMult, rng: makeRng(seed), rngFx: makeRng((seed ^ 0x5bd1e995) >>> 0), tick: 0, time: 0, over: false,
     hx: arena.hx, hz: arena.hz, hero: makeHero(),
     gels: [], bullets: [], lobs: [], hazards: [], events: [],
     heroBullets: 0, gelBullets: 0, refused: 0,
@@ -109,6 +112,7 @@ export function step(w, input) {
   for (const g of w.gels.slice()) gelStep(w, g, dt);
   applyPull(w);
   resolveCrowd(w, dt);
+  for (const g of w.gels) { g.nudgedX += g.knockDX || 0; g.nudgedZ += g.knockDZ || 0; g.knockDX = g.knockDZ = 0; }
   bulletsStep(w, dt);
   lobsStep(w, dt);
   hazardsStep(w, dt);
@@ -136,12 +140,13 @@ function spawn(w, kind, x, z, o = {}) {
   else if (o.variant === 'elitelite' && !S.noHpMult) hp = Math.ceil(hp * V.elitelite.hp);
   if (o.isBoss) r *= V.boss.radius;
   if (o.hp != null) hp = o.hp;
+  if (!o.isBoss && w.hpMult !== 1) hp = Math.max(1, Math.round(hp * w.hpMult));
   const g = {
     id: w.nextId++, kind, x, z, px: x, pz: z, vx: 0, vz: 0, kx: 0, kz: 0, velX: 0, velZ: 0,
     r, hp, maxHp: hp, state: o.child || o.appear === false ? 'active' : 'appear', t: 0, alive: true,
     flash: 0, sq: 1, sqV: 0, speedMult: o.speedMult ?? 1, intervalMult: o.intervalMult ?? 1,
     variant: o.variant ?? 'normal', affix: o.affix ?? null, anchored: o.affix === 'anchored', isBoss: !!o.isBoss, child: !!o.child,
-    shield: false, surgeT: 0, surgeMult: 1, cloak: 0, tell: 0, faceX: 0, faceZ: 1, dashedBy: -1,
+    shield: false, surgeT: 0, surgeMult: 1, cloak: 0, tell: 0, faceX: 0, faceZ: 1, dashedBy: -1, shovedBy: -1,
     dodgeCd: 0, dodgeT: 0, dodgeVx: 0, dodgeVz: 0, mvPhase: w.rngFx.range(0, Math.PI * 2), mvSide: w.rngFx.next() < 0.5 ? 1 : -1,
     nudgedX: 0, nudgedZ: 0, s: {},
   };
@@ -170,6 +175,9 @@ function gelStep(w, g, dt) {
   const fr = Math.exp(-T.gel.knockFriction * dt);
   g.kx *= fr; g.kz *= fr;
   g.x += (g.vx + g.kx) * dt; g.z += (g.vz + g.kz) * dt;
+  // a knock moved it from outside, like the crowd: reported with the crowd's
+  // nudge (below), so a cube mid-tumble carries a shove instead of dropping it
+  g.knockDX = g.kx * dt; g.knockDZ = g.kz * dt;
   // the arena's edges are walls
   const HX = w.hx - g.r, HZ = w.hz - g.r;
   if (g.x < -HX || g.x > HX) { g.x = clamp(g.x, -HX, HX); if (Math.abs(g.kx) > 2) g.sqV += T.gel.sq.wall; g.kx *= -T.gel.wallBounce; }

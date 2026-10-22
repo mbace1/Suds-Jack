@@ -2,11 +2,12 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=5';
+import { TUNING } from './tuning.js?v=6';
 
 const STR = {
   en: {
-    arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and every corpse shoots back.', survival: 'Endless. It only gets worse.', campaign: 'Rooms with their own clock — coming next.',
+    dash: 'DASH', push: 'PUSH', pass: 'PASS', pushSub: 'shoves gels away', passSub: '1.x: straight through them', gelHp: 'GEL HP', gelHpSub: 'tougher gels, same score',
+    arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'Rooms with their own clock — coming next.',
     best: 'BEST', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
     wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
@@ -15,7 +16,8 @@ const STR = {
     hintPad: 'LEFT STICK MOVES · RIGHT STICK AIMS AND FIRES · A DASHES · START PAUSES',
   },
   ja: {
-    arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、倒した敵が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: '制限時間のある部屋 — 次の版で。',
+    dash: 'ダッシュ', push: '押す', pass: '抜ける', pushSub: 'ゼリーを押しのける', passSub: '1.x：すり抜ける', gelHp: 'ゼリー耐久', gelHpSub: '硬いゼリー、スコアは同じ',
+    arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: '制限時間のある部屋 — 次の版で。',
     best: 'ベスト', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', time: 'タイム', newbest: '新記録', soon: '近日',
     wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
@@ -24,7 +26,8 @@ const STR = {
     hintPad: '左スティックで移動 · 右スティックでエイムと射撃 · Aでダッシュ · STARTで一時停止',
   },
   fi: {
-    arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja jokainen raato ampuu takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'Huoneita omalla kellollaan — seuraavaksi.',
+    dash: 'SYÖKSY', push: 'TÖNÄISY', pass: 'LÄPI', pushSub: 'tönäisee geelit sivuun', passSub: '1.x: suoraan läpi', gelHp: 'GEELIN KESTO', gelHpSub: 'sitkeämmät geelit, samat pisteet',
+    arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'Huoneita omalla kellollaan — seuraavaksi.',
     best: 'ENNÄTYS', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
     wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
@@ -108,19 +111,30 @@ export class UI {
     (this.buttons || []).forEach((b, i) => b.classList.toggle('focus', i === this.focusIndex));
   }
 
-  title(best, sound, source) {
+  // `test` is the title's two test switches (owner, 2026-10-22): which dash,
+  // and how tough the gels are. `keep` holds the focus where it was, so a pad
+  // can flip a switch and stay on it.
+  title(best, sound, source, test = { dash: 'pass', hp: 1 }, keep = false) {
+    const prev = this.focusIndex;
     const logo = el('div', 'logo'); logo.append(el('span', 'name', 'TOKO DROP'), el('span', 'num', '2.0'));
     const hint = el('p', 'hint', t(source === 'pad' ? 'hintPad' : source === 'keys' ? 'hintKeys' : 'hintTouch'));
     const fmt = (v) => (v ? `${t('best')} ${v.toLocaleString('en-US')}` : '');
+    const switches = el('div', 'row');
+    switches.append(
+      this._button(`${t('dash')} · ${t(test.dash)}`, t(test.dash === 'push' ? 'pushSub' : 'passSub'), () => this.h.onDash?.()),
+      this._button(`${t('gelHp')} ×${test.hp}`, t('gelHpSub'), () => this.h.onGelHp?.()),
+    );
     this._panel([
       logo,
       this._button('ARCADE', `${t('arcade')} ${fmt(best.arcade)}`, () => this.h.onStart('arcade')),
       this._button('HARDCADE', `${t('hardcade')} ${fmt(best.hardcade)}`, () => this.h.onStart('hardcade')),
       this._button('SURVIVAL', `${t('survival')} ${fmt(best.survival)}`, () => this.h.onStart('survival')),
       this._button(`CAMPAIGN · ${t('soon')}`, t('campaign'), () => {}, true),
+      switches,
       this._button(sound ? t('soundOn') : t('soundOff'), null, () => this.h.onSound()),
       hint,
     ]);
+    if (keep && prev > 0 && prev < this.buttons.length) { this.focusIndex = prev; this._focus(); }
   }
 
   pause() {
