@@ -21,14 +21,14 @@ let browser;
  await page.keyboard.press('r');assert.equal(await page.locator('[data-renderer=classic]').getAttribute('aria-pressed'),'true');
  await page.keyboard.press('r');await page.locator('#startBtn').click();await page.waitForFunction(()=>window.__hd.debug.getState().state==='playing');
  const roster=await page.evaluate(async(game)=>{
-  const {Skull,Wraith,Splitter,MiniSkull,DreadSkull}=await import('/'+game+'/js/enemy.js?v=112');
+  const {Skull,Wraith,Splitter,MiniSkull,DreadSkull,Watcher,Totem}=await import('/'+game+'/js/enemy.js?v=113');
   const THREE=await import('/'+game+'/vendor/three.module.min.js');
   const scene=new THREE.Scene();
-  return [Skull,Wraith,Splitter,MiniSkull,DreadSkull].map(C=>{const e=new C(scene,new THREE.Vector3(0,2,0));const r={variant:e.sdfRoot?.userData.sdfVariant,hp:e.hp,radius:e.radius,score:e.score};e.remove(scene);return r;});
+  return [Skull,Wraith,Splitter,MiniSkull,DreadSkull,Watcher,Totem].map(C=>{const e=new C(scene,new THREE.Vector3(0,2,0),20);const r={variant:e.sdfRoot?.userData.sdfVariant,hp:e.hp,radius:e.radius,score:e.score};e.remove(scene);return r;});
  },GAME);
- assert.deepEqual(roster.map(e=>e.variant),['skull','wraith','splitter','mini','dread']);
- assert.deepEqual(roster.map(e=>e.hp),[1,2,4,1,8]);assert.deepEqual(roster.map(e=>e.radius),[.75,.75,1.05,.45,1.3]);
- console.log('PASS five distinct SDF profiles; original HP and collision radii');
+ assert.deepEqual(roster.map(e=>e.variant),['skull','wraith','splitter','mini','dread','watcher','totem']);
+ assert.deepEqual(roster.map(e=>e.hp),[1,2,4,1,8,4,25]);assert.deepEqual(roster.map(e=>e.radius),[.75,.75,1.05,.45,1.3,.85,1.7]);
+ console.log('PASS seven distinct SDF profiles; original HP and collision radii');
  if(process.env.HD_SDF_EVIDENCE){fs.mkdirSync(process.env.HD_SDF_EVIDENCE,{recursive:true});await page.goto(base+'/'+GAME+'/?assets=0&skull=sdf');await page.waitForFunction(()=>window.__hd);await page.screenshot({path:path.join(process.env.HD_SDF_EVIDENCE,'menu.png'),timeout:90000});}
  const ctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
  const touch=await ctx.newPage();touch.setDefaultTimeout(90000);touch.on('pageerror',e=>errors.push(e.message));

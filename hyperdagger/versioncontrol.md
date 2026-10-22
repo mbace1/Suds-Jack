@@ -132,3 +132,30 @@ cabinet files are replaced. The PR tracks source and deployment SHAs.
 
 Next and exit: `ROADMAP.md` now owns the staged conversion plan and physical
 GPU budgets. Test on iPad before enabling SDF as the main cabinet's default.
+
+
+## SDF build 3 — preview expansion, source PR #626
+
+Goal: make SDF visibly affect damage, non-skull bodies and the arena material.
+Implemented: six recent CSG trajectory holes per enemy, Watcher orbital iris,
+Totem helical shell/core, charge/spawn pulses, world-space season lighting,
+and 2D SDF floor inlays. Gameplay and floor collision are not converted. A dedicated test-arena entry
+uses VOID's legacy director with an initial Watcher/Totem, separate best,
+history and log keys, forced free-run scoring, and no daily board. Standard
+season wave tables remain unchanged.
+
+Browser evidence: the wound pixel test exposes a green background through a
+previously solid forehead ([140,128,107] → [0,255,0]); this fails if the wound
+only paints the surface. Six-cut cap checked. Both new core renders change
+from [143,18,4] idle to [255,56,14] charged in the isolated render control.
+The seven-profile HP/radius gate and pointer/touch/R/pad menu gate passed.
+Combat gates use real START and held mouse fire, observing a Watcher wound,
+kill/material disposal and a Totem's emitted SDF skull. Floor control changes [153,153,153] to [54,54,54] with engravings off/on.
+Natural timeout writes the test best/history and leaves seeded normal records
+and daily records unchanged. Physical iPad performance and the full
+historical smoke suite are not certified; no 95% fidelity claim is made.
+
+The preview tree uses the site's shared imports and omits worker registration.
+Source and deployment SHAs plus live verification are tracked in PR #626.
+Next: physical-device frame budget, then articulated enemies and a small 3D
+arena patch; keep the current Classic/SDF menu recovery.

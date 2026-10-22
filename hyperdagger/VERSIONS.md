@@ -1,3 +1,27 @@
+## SDF build 3 — carved damage, living machinery and floor inlays
+- Shots cut actual through-holes along their trajectories. Six recent cuts
+  are stored per enemy; dark rims and hit flash make wounds readable. The
+  cap replaces oldest cuts and avoids unbounded shader work.
+- Watcher: an orbital bone ring and recessed iris. Its existing 0.7-second
+  warning brightens/swells the iris before the same aimed three-orb volley.
+- Totem: a dark open helical shell around a breathing core. Existing spawn
+  timers drive its pulse; HP, rings, spawning, hit radius and scoring persist.
+- Skull family remains converted. SDF normals now light in world space from
+  the season's sun direction, with its horizon supplying the lower fill.
+- The arena gains broken annular engravings from 2D signed-distance fields.
+  These are material grooves on the existing floor, not raymarched terrain
+  or new collision. Classic mode disables them.
+- The menu/gallery include a TEST WATCHER + TOTEM arena: the legacy VOID
+  director begins with both enemies, with separate best/history/run-log keys
+  and no daily board. The three standard seasons retain their wave tables.
+- Gallery includes Watcher/Totem and a CARVE WOUND control. Start menu labels
+  SDF BUILD 3. The separate preview remains online-only.
+
+This is an authorized expansion of the experimental renderer; physical GPU
+and iPad frame budgets still gate default rollout. It does not claim that
+the whole scene is SDF, that physics uses SDFs, or that visual parity is 95%.
+Tokens: enemy/main/truck/convoy 113, SDF module 3; source worker 83.
+
 ## SDF build 2 — experimental menu build
 **Classic or SDF, chosen before START.** The saved renderer choice is available
 through mouse/touch buttons, R, or gamepad up/down. The three seasons and their

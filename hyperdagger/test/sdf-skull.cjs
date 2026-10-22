@@ -21,7 +21,7 @@ let browser;
  const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
  await page.goto(base+'/'+GAME+'/sdf-preview.html?benchmark');
  await page.waitForFunction(()=>window.__sdfStudy?.stats().frameTimes.length>=3,null,{timeout:90000});
- assert.equal(await page.evaluate(()=>window.__sdfStudy.objects()[1].root.name),'SDF skull pilot');
+ assert.equal(await page.evaluate(()=>window.__sdfStudy.objects()[1].root.name),'SDF skull');
  const output=process.env.HD_SDF_EVIDENCE;
  if(output){fs.mkdirSync(output,{recursive:true});await page.screenshot({path:path.join(output,'sdf-comparison.png'),timeout:90000});}
  const measurements={};
@@ -38,7 +38,7 @@ let browser;
  // A plane behind the marched face must not cover it; a plane in front must.
  const depth=await page.evaluate(async(game)=>{
   const THREE=await import('/'+game+'/vendor/three.module.min.js');
-  const {createSdfSkull}=await import('/'+game+'/js/sdf-skull.js?v=2');
+  const {createSdfSkull}=await import('/'+game+'/js/sdf-skull.js?v=3');
   const r=window.__sdfStudy.renderer,scene=new THREE.Scene();
   const cam=new THREE.PerspectiveCamera(35,1,.1,20);cam.position.set(0,.4,5);cam.updateMatrixWorld();
   const skull=createSdfSkull();scene.add(skull);
