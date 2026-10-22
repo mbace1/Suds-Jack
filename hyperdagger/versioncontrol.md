@@ -69,3 +69,93 @@ The live page did move. gh-pages `3b8fb141`, 18 Oct 2026, 15:37:18 EEST, message
 The publish carried `hyperdagger/` (minus `test/`, where the site's own two files were left as they were) and the one `hub/versions.json` row. No catalogue line changed, so no token cascade was needed. The deployed `VERSIONS.md` still read "v58 — in progress"; the dated heading in this entry's commit reaches the site with the next Hyper Dagger publish.
 
 Not verified: the live page was not opened. This session's network policy refuses `mbace1.github.io`. Before the push, the offline, press-edges, hud-lock and goal-card gates passed against the site tree, with the site's own hub and toko files.
+
+
+## SDF skull pilot — implemented on codex/hyper-sdf-skull, pending review
+
+**Goal:** compare one signed-distance-field skull with the existing renderer
+before deciding whether to extend SDFs to other enemies.
+
+**Implemented:** bounded-proxy raymarch for the regular Skull behind
+`hyperdagger/?skull=sdf`; comparison controls at
+`hyperdagger/sdf-preview.html` (separate diagnostic route, never the cabinet
+entry). The default renderer is unchanged. Geometry, gameplay hit radius,
+movement, HP and voxel gibs retain the existing contract.
+
+**Verified locally:** `test/sdf-skull.cjs` compiled/rendered the shaders with
+Chromium 153 + SwiftShader, used the comparison/rotation controls, entered the
+real game with START, held the mouse to kill a staged skull, verified material
+disposal, and checked default play. Surface-depth tests put geometry behind
+and in front of the marched surface; the rear plane left a bone pixel
+[133,122,102], and the front green plane fully occluded it [0,255,0].
+`node scripts/hd-shell.mjs --check`, `test/killers.mjs` and syntax/diff checks
+also passed. The whole historical smoke suite was not rerun.
+
+**Performance:** the A/B harness can force GPU completion each frame with
+`?benchmark`. An 18-frame, 12-skull run on this shared software renderer at
+640px width measured voxel median/p95 2300/6200 ms and SDF 33/6066 ms. Both
+had multi-second stalls; this is an unstable diagnostic sample, **not evidence
+of an SDF speedup or a phone/tablet frame budget**. The comparison uses a small
+standalone scene, not the full game's postprocessing and cubemap costs.
+Screenshots and raw measurements live under `test/evidence/sdf-skull/`.
+
+**Next:** test the opt-in game on a physical iPad and desktop GPU, including a
+close skull and a full swarm; refine the sculpt against the owner target.
+
+**Exit:** acceptable hardware frame times plus visual approval before making
+SDFs the default or expanding the roster. Not merged; not live on Hub.
+
+
+## SDF build 2 — selectable preview and skull-family conversion
+
+Goal: a player can choose Classic / SDF before START, use all three seasons,
+and return to Classic. A separate `/hyperdagger-sdf/?skull=sdf` preview is
+prepared for direct testing without replacing the cabinet.
+
+Implemented: persistent renderer choice; mouse, touch, R and pad up/down;
+five distinct skull profiles; season tint; gallery profile selector. Existing
+health, radii, movement, scores and voxel gibs stay authoritative. SDF damage
+flashes but does not yet cut geometric bullet holes.
+
+Verified locally on the exact preview tree with the site's hub/Toko imports:
+`sdf-menu.cjs` passed mouse selection, reload persistence, R, real START,
+portrait touch, 44px controls, pad down and all five profile/HP/radius checks.
+`sdf-skull.cjs` passed depth occlusion, each profile's actual shader render,
+real held-fire kill, disposal, original collision/gibs and Classic override.
+Killer coverage, syntax, diff and generated precache checks passed. Full
+historical smoke and physical-device performance were not rerun/certified.
+
+Deployment keeps shared imports aligned to the site (shell 102, signature 3,
+table 5). The preview index omits worker registration: the existing worker's
+broad activation cleanup must not run from a second cabinet. No current
+cabinet files are replaced. The PR tracks source and deployment SHAs.
+
+Next and exit: `ROADMAP.md` now owns the staged conversion plan and physical
+GPU budgets. Test on iPad before enabling SDF as the main cabinet's default.
+
+
+## SDF build 3 — preview expansion, source PR #626
+
+Goal: make SDF visibly affect damage, non-skull bodies and the arena material.
+Implemented: six recent CSG trajectory holes per enemy, Watcher orbital iris,
+Totem helical shell/core, charge/spawn pulses, world-space season lighting,
+and 2D SDF floor inlays. Gameplay and floor collision are not converted. A dedicated test-arena entry
+uses VOID's legacy director with an initial Watcher/Totem, separate best,
+history and log keys, forced free-run scoring, and no daily board. Standard
+season wave tables remain unchanged.
+
+Browser evidence: the wound pixel test exposes a green background through a
+previously solid forehead ([140,128,107] → [0,255,0]); this fails if the wound
+only paints the surface. Six-cut cap checked. Both new core renders change
+from [143,18,4] idle to [255,56,14] charged in the isolated render control.
+The seven-profile HP/radius gate and pointer/touch/R/pad menu gate passed.
+Combat gates use real START and held mouse fire, observing a Watcher wound,
+kill/material disposal and a Totem's emitted SDF skull. Floor control changes [153,153,153] to [54,54,54] with engravings off/on.
+Natural timeout writes the test best/history and leaves seeded normal records
+and daily records unchanged. Physical iPad performance and the full
+historical smoke suite are not certified; no 95% fidelity claim is made.
+
+The preview tree uses the site's shared imports and omits worker registration.
+Source and deployment SHAs plus live verification are tracked in PR #626.
+Next: physical-device frame budget, then articulated enemies and a small 3D
+arena patch; keep the current Classic/SDF menu recovery.
