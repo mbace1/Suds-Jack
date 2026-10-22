@@ -1,0 +1,23 @@
+1
+00:00:00,500 --> 00:00:06,079
+Who approved the ad firm whose ads
+delivered spyware?
+
+2
+00:00:07,029 --> 00:00:12,507
+15 Oct, researchers: its ads delivered
+spyware on display. No click needed.
+
+3
+00:00:13,457 --> 00:00:18,936
+At least 45 devices at one newsroom were
+targeted.
+
+4
+00:00:19,886 --> 00:00:25,364
+It sat on the ad industry's global vendor
+list for six years.
+
+5
+00:00:26,214 --> 00:00:31,943
+Approved vendor. Until October.

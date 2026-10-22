@@ -1,0 +1,472 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The station's question (research-global-next.md §1; plan/films/20-approved-vendo"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy noclick.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy noclick.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy noclick.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy noclick source",
+  "result": "pass",
+  "why": "Citizen Lab, 'Exposing AdFection', 15 Oct 2026: Discover-Tech's targeted ads del"
+ },
+ {
+  "check": "copy noclick pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy targeted.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy targeted.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy targeted.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy targeted source",
+  "result": "pass",
+  "why": "Citizen Lab (15 Oct): at least 45 devices at one newsroom targeted in 2024 and 2"
+ },
+ {
+  "check": "copy targeted pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy listed.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy listed.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy listed.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy listed source",
+  "result": "pass",
+  "why": "IAB Europe's Transparency & Consent Framework Global Vendor List: Discover-Tech "
+ },
+ {
+  "check": "copy listed pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, over its own image: a rubber stamp comes down on the firm's "
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.room",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.dateline",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.count",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.list",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "35 words: Researchers say an ad firm's targeted ads delivered spyware with no click, aimed at 45 dev"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "35 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 628 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 215, 'y': 191, 'w': 650, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 3.65 s (53 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 4.12 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 0.5 → scrim 0.0"
+ },
+ {
+  "check": "width en:noclick",
+  "result": "pass",
+  "why": "widest line 722 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:noclick",
+  "result": "pass",
+  "why": "box {'x': 168, 'y': 191, 'w': 744, 'h': 247}"
+ },
+ {
+  "check": "reading time en:noclick",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.75 s (75 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:noclick",
+  "result": "pass",
+  "why": "last word up 3.49 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:noclick",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:noclick",
+  "result": "pass",
+  "why": "picture behind: edge 0.66 → scrim 0.0"
+ },
+ {
+  "check": "width en:targeted",
+  "result": "pass",
+  "why": "widest line 453 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:targeted",
+  "result": "pass",
+  "why": "box {'x': 303, 'y': 191, 'w': 475, 'h': 247}"
+ },
+ {
+  "check": "reading time en:targeted",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 3.50 s (50 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:targeted",
+  "result": "pass",
+  "why": "last word up 4.11 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:targeted",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:targeted",
+  "result": "pass",
+  "why": "picture behind: edge 0.44 → scrim 0.0"
+ },
+ {
+  "check": "width en:listed",
+  "result": "pass",
+  "why": "widest line 605 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:listed",
+  "result": "pass",
+  "why": "box {'x': 226, 'y': 191, 'w': 627, 'h': 247}"
+ },
+ {
+  "check": "reading time en:listed",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.05 s (61 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:listed",
+  "result": "pass",
+  "why": "last word up 3.79 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:listed",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:listed",
+  "result": "pass",
+  "why": "picture behind: edge 0.21 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 435 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 312, 'y': 191, 'w': 457, 'h': 160}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 2.55 s (31 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.99 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 0.22 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "Who approved the ad firm whose ads | delivered spyware?"
+ },
+ {
+  "check": "sidecar lines en:noclick",
+  "result": "pass",
+  "why": "15 Oct, researchers: its ads delivered | spyware on display. No click needed."
+ },
+ {
+  "check": "sidecar lines en:targeted",
+  "result": "pass",
+  "why": "At least 45 devices at one newsroom were | targeted."
+ },
+ {
+  "check": "sidecar lines en:listed",
+  "result": "pass",
+  "why": "It sat on the ad industry's global vendor | list for six years."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "Approved vendor. Until October."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.58 s on this master, fi needs 5.18 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Kuka hyväksyi mainosyhtiön, jonka | mainokset levittivät vakoiluohjelmaa?"
+ },
+ {
+  "check": "sidecar fi:noclick",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 6.12 s"
+ },
+ {
+  "check": "sidecar lines fi:noclick",
+  "result": "warn",
+  "why": "Tutkijat 15.10.: sen mainokset levittivät | vakoiluohjelmaa jo näkyessään. Ei klikkausta."
+ },
+ {
+  "check": "sidecar fi:targeted",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 4.53 s"
+ },
+ {
+  "check": "sidecar lines fi:targeted",
+  "result": "pass",
+  "why": "Ainakin 45 laitetta yhdessä | uutistoimituksessa oli kohteena."
+ },
+ {
+  "check": "sidecar fi:listed",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 4.12 s"
+ },
+ {
+  "check": "sidecar lines fi:listed",
+  "result": "pass",
+  "why": "Yhtiö oli mainosalan toimittajalistalla | kuusi vuotta."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 3.29 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Hyväksytty toimittaja. Lokakuuhun asti."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "pass",
+  "why": "5.58 s on this master, ja needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "pass",
+  "why": "スパイウェアを配信した広告会社を | 承認したのは誰？"
+ },
+ {
+  "check": "sidecar ja:noclick",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 8.00 s"
+ },
+ {
+  "check": "sidecar lines ja:noclick",
+  "result": "warn",
+  "why": "研究者(10月15日):その広告は表示される | だけでスパイウェアを配信。クリック不要。"
+ },
+ {
+  "check": "sidecar ja:targeted",
+  "result": "pass",
+  "why": "5.48 s on this master, ja needs 5.33 s"
+ },
+ {
+  "check": "sidecar lines ja:targeted",
+  "result": "pass",
+  "why": "ある報道機関で少なくとも45台の | 端末が標的にされた。"
+ },
+ {
+  "check": "sidecar ja:listed",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.83 s"
+ },
+ {
+  "check": "sidecar lines ja:listed",
+  "result": "warn",
+  "why": "その会社は広告業界の | 世界ベンダーリストに6年間載っていた。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 3.50 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "承認済みベンダー。10月まで。"
+ }
+]
