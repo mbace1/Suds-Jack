@@ -1,3 +1,39 @@
+## v60 — in progress
+**SDF skulls on the live menu: SKULLS · CLASSIC | SDF (HD-020)**
+
+Mikael, 22 Oct 2026: *"Can you make an SDF toggle in the main menu?"*, then
+*"It should also work"*. Codex's SDF builds 1 and 2 (the two entries below,
+#626) had the skull family raymarched as signed distance fields and a
+Classic / SDF Preview pair on the menu, but only on the separate
+`/hyperdagger-sdf/` preview, and on a phone held sideways that pair, with its
+two-line note, pushed START off the bottom of the screen. This takes that work
+to the live game:
+
+- **One row, not two plus a note.** SKULLS, then CLASSIC and SDF as the two
+  halves of one segmented switch, 44 px tall, in the season's colour. It sits
+  between the rules card and START, and START now fits all three views
+  (desktop, phone upright, phone on its side). The controls line names the
+  keys: R on a keyboard, ▲▼ on a pad.
+- **Picked the way a season is.** One press on the menu, saved
+  (`hyperDaggerRenderer`), never a start. The skulls built from then on wear it.
+  CLASSIC is the default, so the game nobody switched is the game it was.
+- **It works in play, and a gate says so** (`test/sdf-play.cjs`, through the
+  real menu by touch, in all three seasons):
+  - the skulls the season's own director spawns are SDF skulls, never skinned;
+  - skull, splitter and dread come up as their own profiles with their own
+    health;
+  - an SDF skull in front of the eye is drawn;
+  - a kill throws its voxels and releases the shader, and a splitter splits
+    into SDF minis;
+  - in season 3 the look locks an SDF skull and the missiles kill it;
+  - END RUN, CLASSIC, START gives voxel skulls again.
+- With the Meshy skins loaded (the real page, not `?assets=0`), a CLASSIC
+  skull wears its skin and an SDF skull never does. The skins are attached
+  lazily and skip a skull that already has an SDF body.
+
+Tokens: `main.js` 113, `sw.js` 113, worker cache `hyperdagger-v83`, all above
+the 112 / v82 #626 reached; `sdf-skull.js` stays at 2 (unchanged here).
+
 ## SDF build 2 — experimental menu build
 **Classic or SDF, chosen before START.** The saved renderer choice is available
 through mouse/touch buttons, R, or gamepad up/down. The three seasons and their

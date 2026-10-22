@@ -57,10 +57,13 @@
     #msg button.mn-start:hover { filter: brightness(1.15); }
     #msg button.mn-start:active { transform: scale(0.985); }
     #msg button.mn-start:focus-visible { outline: 2px solid #f4ece0; outline-offset: 3px; }
-    .mn-render { display: flex; gap: 0.4rem; }
-    #msg .mn-render button { flex: 1; margin: 0; min-height: 44px; font-size: .8rem; }
-    #msg .mn-render button[aria-pressed="true"] { border-color: var(--acc); background: #3a241e; }
-    .mn-render-note { font-size: .68rem; color: #d8c7b2; line-height: 1.45; margin: 0; }
+    /* the skull renderer: one segmented row, a label and two halves, so it
+       costs one line of the panel and START still fits a phone on its side */
+    .mn-render { display: flex; align-items: stretch; background: rgba(10,9,8,0.72); border-top: 1px solid rgba(232,220,200,0.14); }
+    .mn-render-l { display: flex; align-items: center; padding: 0 0.75rem; font-size: 0.62rem; letter-spacing: 0.18em; opacity: 0.6; }
+    #msg .mn-render button { flex: 1; margin: 0; min-height: 44px; padding: 0 0.5rem; border: 0; border-radius: 0; background: transparent; color: rgba(232,220,200,0.6); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; }
+    #msg .mn-render button:hover { color: #e8dcc8; }
+    #msg .mn-render button[aria-pressed="true"] { color: #f4ece0; background: color-mix(in srgb, var(--acc) 26%, transparent); box-shadow: inset 0 -2px 0 var(--acc); }
     .mn-keys { font-size: 0.72rem; line-height: 1.5; opacity: 0.55; margin: 0; }
     .mn-keys b { font-weight: 700; opacity: 1; }
     @keyframes mnIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -86,11 +89,7 @@
       .mn-rules { gap: 0.2rem; margin-bottom: 0.4rem; }
       .mn-rules li { font-size: 0.76rem; }
       #msg button.mn-start { min-height: 2.9rem; padding: 0.55rem; font-size: 1rem; }
-      .mn-render { display: flex; gap: 0.4rem; }
-    #msg .mn-render button { flex: 1; margin: 0; min-height: 44px; font-size: .8rem; }
-    #msg .mn-render button[aria-pressed="true"] { border-color: var(--acc); background: #3a241e; }
-    .mn-render-note { font-size: .68rem; color: #d8c7b2; line-height: 1.45; margin: 0; }
-    .mn-keys { display: none; }
+      .mn-keys { display: none; }
     }
     /* the menu has no run to report on: no clock, no kills, no pause button */
     body.on-menu #timer, body.on-menu #kills, body.on-menu #gems, body.on-menu #style,
@@ -178,10 +177,10 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=112"></script>
+  <script type="module" src="js/main.js?v=113"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=112').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=113').catch(() => {});
     }
   </script>
   <script type="module" src="../hub/shell.js?v=43"></script>

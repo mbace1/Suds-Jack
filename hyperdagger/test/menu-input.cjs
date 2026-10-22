@@ -81,9 +81,10 @@ s.listen(0, '127.0.0.1', async () => {
     {
       const { q, ctx } = await open(true, { hyperDaggerModeV31: 'pure', hyperDaggerRunKind: 'free', hyperDaggerSeason: 'ember' });
       const shape = await q.evaluate(() => ({ tabs: [...document.querySelectorAll('#msg button.mn-season')].map(b => b.dataset.season),
-        others: [...document.querySelectorAll('#msg button')].filter(b => !b.matches('.mn-season, #startBtn')).map(b => b.id || b.textContent),
+        skulls: [...document.querySelectorAll('#msg [data-renderer]')].map(b => b.dataset.renderer + ':' + b.getAttribute('aria-pressed')),
+        others: [...document.querySelectorAll('#msg button')].filter(b => !b.matches('.mn-season, #startBtn, [data-renderer]')).map(b => b.id || b.textContent),
         start: !!document.getElementById('startBtn'), menu: window.__menu() }));
-      ok('the menu offers seasons 1-3 and START, nothing else (no VOID, no mode row, no RUN)', shape.tabs.join(',') === 'ember,inca,haul' && shape.start && shape.others.length === 0, JSON.stringify(shape));
+      ok('the menu offers seasons 1-3, SKULLS · CLASSIC | SDF and START, nothing else (no VOID, no mode row, no RUN)', shape.tabs.join(',') === 'ember,inca,haul' && shape.skulls.join(',') === 'classic:true,sdf:false' && shape.start && shape.others.length === 0, JSON.stringify(shape));
       ok('the menu plays the season it shows: season 1 is HYPER, not the saved PURE', shape.menu.mode === 'hyper', JSON.stringify(shape.menu));
       let c = await center(q, '#msg button.mn-season[data-season="inca"]');
       if (!c) throw new Error('SEASON 2 is not reachable on screen');
@@ -124,6 +125,9 @@ s.listen(0, '127.0.0.1', async () => {
         seen.push(await q.evaluate(() => window.__menu().state + ':' + window.__menu().season));
       }
       ok('keys: ← → step the season and wrap, 1-3 pick one, D steps too, all on the menu', seen.join(',') === 'menu:inca,menu:haul,menu:ember,menu:haul,menu:inca,menu:haul', seen.join(','));
+      const skulls = [];
+      for (let i = 0; i < 2; i++) { await q.keyboard.press('KeyR'); await q.evaluate(() => window.__frames(2)); skulls.push(await q.evaluate(() => window.__menu().state + ':' + localStorage.getItem('hyperDaggerRenderer'))); }
+      ok('keys: R flips SKULLS to SDF and back, on the menu (HD-020)', skulls.join(',') === 'menu:sdf,menu:classic', skulls.join(','));
       const truckArena = await q.evaluate(() => ({ mode: window.__hd.debug.getState().mode, slabs: window.__hd.debug.getPlatforms().count, goo: window.__hd.debug.getGoo().on }));
       ok("keys: season 3's road is behind the menu (TRUCK rules, no slabs, no sea)", truckArena.mode === 'truck' && truckArena.slabs === 0 && !truckArena.goo, JSON.stringify(truckArena));
       await q.keyboard.press('Enter');
@@ -152,11 +156,14 @@ s.listen(0, '127.0.0.1', async () => {
         await window.__frames(3);
         for (const btn of [15, 15, 15, 14]) { await window.__press(btn); seen.push(window.__menu().season); }   // right ×3 wraps, left steps back
         const s0 = window.__menu();
-        for (const btn of [13, 12, 1]) await window.__press(btn);                                              // down, up, B
-        return { seen, s0, s1: window.__menu(), focus: window.__focus() };
+        const skulls = [];
+        for (const btn of [13, 12]) { await window.__press(btn); skulls.push(localStorage.getItem('hyperDaggerRenderer')); }   // down, up: the skulls (HD-020)
+        await window.__press(1);                                                                                               // B
+        return { seen, s0, skulls, s1: window.__menu(), focus: window.__focus() };
       });
       ok('pad: d-pad right/left step the season and wrap, on the menu', nav.seen.join(',') === 'inca,haul,ember,haul' && nav.s0.state === 'menu', JSON.stringify(nav));
-      ok('pad: down, up and B on the main menu change nothing and focus nothing', nav.s1.state === 'menu' && nav.s1.season === nav.s0.season && nav.focus === null, JSON.stringify(nav));
+      ok('pad: down and up flip SKULLS to SDF and back; neither starts, steps the season or focuses anything', nav.skulls.join(',') === 'sdf,classic' && nav.s1.state === 'menu' && nav.s1.season === nav.s0.season && nav.focus === null, JSON.stringify(nav));
+      ok('pad: B on the main menu does nothing', nav.s1.state === 'menu', JSON.stringify(nav.s1));
       const go = await q.evaluate(async () => {
         await window.__press(14);  // back to season 2
         await window.__press(0);   // A starts it

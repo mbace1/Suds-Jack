@@ -1573,11 +1573,11 @@ function menuKeysLine() {
   }
   if (input.gamepad) {
     return [`<b>A</b> jump${jumps}`, gun ? '<b>hold RT</b> fire' : 'look at a skull to fire', ab.dash ? '<b>B</b> dash' : '',
-      ab.reap ? '<b>X</b> reap' : ''].filter(Boolean).join(' &middot; ') + '<br><b>&#9664; &#9654;</b> season &middot; <b>A</b> start';
+      ab.reap ? '<b>X</b> reap' : ''].filter(Boolean).join(' &middot; ') + '<br><b>&#9664; &#9654;</b> season &middot; <b>&#9650; &#9660;</b> skulls &middot; <b>A</b> start';
   }
   return ['WASD move', gun ? '<b>hold click</b> fire' : 'look at a skull to fire', `<b>Space</b> jump${jumps}`,
     ab.dash ? '<b>Shift</b> dash' : '', ab.reap ? '<b>R</b> reap' : ''].filter(Boolean).join(' &middot; ')
-    + '<br><b>&larr; &rarr;</b> season &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
+    + '<br><b>&larr; &rarr;</b> season &middot; <b>R</b> skulls &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
 }
 
 /** The best to beat, labelled with the MODE it is filed under: seasons 1
@@ -1617,26 +1617,24 @@ function showMenu() {
            ${card.rules.length ? `<ul class="mn-rules">${card.rules.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
            <p class="mn-best"><span id="menuBoard"></span>${bestLine()}</p>
          </div>
-         <div class="mn-render" role="group" aria-label="Renderer">
-           <button data-renderer="classic" aria-pressed="${!sdfSkullsEnabled}">CLASSIC</button>
-           <button data-renderer="sdf" aria-pressed="${sdfSkullsEnabled}">SDF PREVIEW</button>
+         <div class="mn-render" role="group" aria-label="Skull renderer">
+           <span class="mn-render-l">SKULLS</span>
+           <button data-renderer="classic" aria-pressed="${!sdfSkullsEnabled}" title="The voxel skulls the game ships with">CLASSIC</button>
+           <button data-renderer="sdf" aria-pressed="${sdfSkullsEnabled}" title="The skull family raymarched as signed distance fields; other enemies keep their art">SDF</button>
          </div>
-         <p class="mn-render-note">${sdfSkullsEnabled ? 'SDF BUILD 2 · sculpted skull family · other enemies use classic art' : 'CLASSIC · current game art'}<br>R / pad up-down switches renderer.</p>
          <button id="startBtn" class="mn-start">START</button>
          <p class="mn-keys">${menuKeysLine()}</p>
        </section>
      </div>`;
   menuBoardLine();
+  // The skull renderer is picked the way a season is: one press, on the
+  // menu, saved, and never a start. The skulls built from then on wear it.
   for (const b of elMsg.querySelectorAll('[data-renderer]')) {
-    const choose = e => {
-      e.preventDefault(); e.stopPropagation();
-      if (e.pointerType === 'touch' || e.type === 'touchend') input.swallowTouchAt(e.clientX ?? 0, e.clientY ?? 0);
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
       setSdfSkullsEnabled(b.dataset.renderer === 'sdf');
       showMenu();
-    };
-    b.addEventListener('pointerdown', e => e.stopPropagation());
-    b.addEventListener('pointerup', choose);
-    b.addEventListener('touchend', choose, { passive: false });
+    });
   }
   for (const b of elMsg.querySelectorAll('button.mn-season')) {
     b.addEventListener('pointerdown', e => {
