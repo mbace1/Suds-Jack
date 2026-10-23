@@ -6,16 +6,16 @@ and ja masters are scored by this same file.
 
     uv run --with numpy --with soundfile python papercut/one-stockholm-viral/score.py <events.json> <out.wav> [<report.json> <stems>]
 
-1 · the hit; the paper city folds, a card flip per piece (the kit's FOLD, mirrored); on "power" the box thumps up and
-    starts to hum.
+1 · the hit; the paper city folds a piece at a time while the caption types, a card flip each (the kit's FOLD,
+    mirrored); on "Stockholm" the box thumps up and starts to hum.
 2 · Stockholm on the water: the harbour laps, the windows click on in a sweep (SWEEP, mirrored); on "all of Stockholm"
     the city is lit on a slam, a chime and a sparkle.
 3 · the seller's sign creaks up on "500"; Doodle's printed sign pops up on its post, and a cheerful little chime.
-4 · the map slides in; the warning bonks; a pencil draws the turbine that is not built; on "nationwide" a coin clinks for
-    each price area, north to south, and the till.
-5 · the label slams in; the arrow slides home to 1 STOCKHOLM; on "too early to say" the stamp; on "back" the label falls,
-    the box folds down, the city stands up a card at a time (UNFOLD, mirrored) and the jingle lands sour as a riser
-    hands the last frame to the first.
+4 · the map slides in; the warning bonks on "operator"; a pencil draws the turbine that is not built on "new power";
+    on "nationwide" a coin clinks for each price area, north to south, and the till.
+5 · the label slams in; the arrow slides home to 1 STOCKHOLM; on "unclear" the stamp (TOO EARLY TO SAY); on "back"
+    the label falls, the box folds down, the city stands up a card at a time (UNFOLD, mirrored) and the jingle lands
+    sour as a riser hands the last frame to the first.
 """
 import sys, json
 from pathlib import Path
@@ -33,7 +33,7 @@ Q = EV['cues']; c = lambda k: Q[k]
 S = [EV[f's{i}'] for i in range(1, 6)] + [END]
 quiet = [(q['t0'], q['t1']) for q in EV.get('quiet', [])]
 BRIGHT, SOUR = Doodle.BRIGHT, Doodle.SOUR
-ORDER, FOLD_LEAD, FOLD_STEP = [0, 5, 1, 4, 2, 3], 0.5, 0.06                 # os_kit.js: ORDER, FOLD (the hook)
+ORDER, FOLD_T0, FOLD_END = [0, 5, 1, 4, 2, 3], 0.3, 0.25                   # os_kit.js: ORDER, FOLD (the hook)
 RORDER, UNFOLD_AT, UNFOLD_STEP = [3, 2, 4, 1, 5, 0], 0.22, 0.05             # os_kit.js: RORDER, UNFOLD (the loop)
 SWEEP = 0.15                                                                # os_kit.js: SWEEP (shot 2's windows)
 
@@ -78,7 +78,8 @@ def hook_land(t_land, g=0.28):
 tP = c('osv_hook.pop')
 hit(S[0] + 0.035, (62, 66, 69, 74), 1.0, 'frame 1')                                 # 35 ms in, never sample 0
 s.note(marimba(74, 0.4, 0.9), S[0] + 0.035, 0.28, 0.1, 0.35, stem='accent', name='first note')
-bed(0, max(S[0] + 2 * B, tP + B / 2), S[1] - B / 2, SOUR, 0.75)
+bed(0, S[0] + 2 * B, tP - B / 2, BRIGHT, 0.6)                                     # bright while the city stands
+bed(0, tP + B / 2, S[1] - B / 2, SOUR, 0.75)
 bed(1, S[1] + B / 2, S[2] - B / 2, SOUR, 0.85)
 bed(2, S[2] + B / 2, S[3] - B / 2, SOUR, 0.85)
 bed(3, S[3] + B / 2, S[4] - B / 2, SOUR, 0.9)
@@ -90,13 +91,13 @@ for i, t in enumerate(S[1:5]):
 for cp in EV['captions']:
     last = max(w['t'] for w in EV['words'] if w['caption'] == cp['id']); s.duck(cp['t0'], last + 0.4, -3.5, why=f'caption {cp["id"]}')
 
-# ── 1 · the paper city folds, a flip a piece, the ends first; on "power" the box thumps up and hums
+# ── 1 · the paper city folds, a flip a piece, the ends first; on "Stockholm" the box thumps up and hums
 for i in range(6):
-    t = max(0.06, tP - FOLD_LEAD + ORDER.index(i) * FOLD_STEP)
+    t = FOLD_T0 + (tP - FOLD_END - FOLD_T0) * ORDER.index(i) / 5                  # the kit's foldStart()
     s.fx(card_flip(), t, 0.4, -0.5 + 0.2 * i, name='the city folds' if ORDER.index(i) == 0 else f'the city folds {ORDER.index(i) + 1}')
-s.fx(thump(), tP, 0.6, 0, name='"power": the box comes up'); s.fx(foley('card', 'tap'), tP + 0.02, 0.45, 0)
-stab(tP + 0.03, (62, 65, 69, 74), 0.16, 0.6); accent(tP, 0, SOUR, 0.28, name='"power"')
-s.note(sub_bass(38, 0.4), tP, 0.3, 0, 0, stem='bass', name='"power": sub')
+s.fx(thump(), tP, 0.6, 0, name='"Stockholm": the box comes up'); s.fx(foley('card', 'tap'), tP + 0.02, 0.45, 0)
+stab(tP + 0.03, (62, 65, 69, 74), 0.16, 0.6); accent(tP, 0, SOUR, 0.28, name='"Stockholm"')
+s.note(sub_bass(38, 0.4), tP, 0.3, 0, 0, stem='bass', name='"Stockholm": sub')
 s.fx(clank(0.6, 520), tP + 0.22, 0.25, 0.1, name='the box settles')
 s.fx(hum(60, S[1] - tP - 0.3) * 0.9, tP + 0.15, 0.1, 0.1, name='the box hums')
 
@@ -120,22 +121,22 @@ s.fx(chip(True), tD + 0.5, 0.18, 0.3, name='a cheerful little chime, for nothing
 # ── 4 · the map: the warning bonks; the pencil draws what is not built; on "nationwide" a coin per price area; the till
 tW, tB4, tN = c('osv_map.warn'), c('osv_map.built'), c('osv_map.nation')
 s.fx(paper_slide(0.5) * 6, S[3] + 0.04, 0.3, 0, name='the map')
-s.fx(bonk(71), tW, 0.32, 0.25, name='"grid operator": the warning'); s.fx(pop(0.8), tW + 0.02, 0.25, 0.25)
-s.fx(pencil(0.7, seed=4), tB4, 0.6, 0.35, name='"without new power": drawn in dashes')
+s.fx(bonk(71), tW, 0.32, 0.25, name='"operator": the warning'); s.fx(pop(0.8), tW + 0.02, 0.25, 0.25)
+s.fx(pencil(0.7, seed=4), tB4, 0.6, 0.35, name='"new power": drawn in dashes')
 for i in range(4):
     t = tN - 0.06 + i * 0.12; s.fx(coin_clink(2600 + 260 * i), t, 0.4, 0.3 - 0.2 * i, name=f'price area {i + 1}'); s.fx(card_flip(), t + 0.04, 0.18, 0.3 - 0.2 * i)
 hit(tN, (62, 65, 70, 74), 0.85, '"nationwide"'); accent(tN, 3, name='"nationwide"')
 s.fx(cash_register(), tN + 0.6, 0.3, 0.1, name='the till')
 
-# ── 5 · the label slams in; the arrow to 1 STOCKHOLM; the stamp on "too early to say"; then back to frame 0
+# ── 5 · the label slams in; the arrow to 1 STOCKHOLM; the stamp on "unclear"; then back to frame 0
 tA, tJ, tB = c('osv_end.power'), c('osv_end.jobs'), c('osv_end.back')
 s.fx(stamp(), S[4] + 0.02, 0.4, 0, name='the label slams in'); s.fx(thump(), S[4] + 0.03, 0.4, 0)
 s.fx(hum(60, tB - S[4]) * 0.9, S[4] + 0.1, 0.08, 0.1, name='the box hums behind its label')
 s.fx(paper_slide(0.32) * 6, tA, 0.35, 0.3, name='"Power": the arrow slides in'); s.fx(foley('card', 'tap'), tA + 0.32, 0.5, 0.2, name='1 STOCKHOLM')
 s.note(marimba(81, 0.4, 0.9), tA + 0.33, 0.2, 0.2, 0.35, stem='accent', name='one')
-s.fx(press_stamp(1.0), tJ, 0.8, 0, name='"too early to say": the stamp'); s.fx(thump(), tJ + 0.01, 0.45, 0); s.fx(stamp(), tJ, 0.3, 0)
-s.note(kick_tight(1.0), tJ, 0.45, 0, 0, stem='drums', name='"too early to say": kick')
-accent(tJ, 4, SOUR, 0.22, name='"too early to say"'); stab(tJ + 0.02, (62, 65, 70, 74), 0.14, 0.5)
+s.fx(press_stamp(1.0), tJ, 0.8, 0, name='"unclear": the stamp'); s.fx(thump(), tJ + 0.01, 0.45, 0); s.fx(stamp(), tJ, 0.3, 0)
+s.note(kick_tight(1.0), tJ, 0.45, 0, 0, stem='drums', name='"unclear": kick')
+accent(tJ, 4, SOUR, 0.22, name='"unclear"'); stab(tJ + 0.02, (62, 65, 70, 74), 0.14, 0.5)
 s.fx(whoosh('short', 'out'), tB, 0.22, 0, name='"back": the label falls')
 s.fx(clank(0.5, 420), tB + 0.2, 0.2, 0.1, name='the box folds down')
 for o, i in enumerate(RORDER):

@@ -547,29 +547,31 @@
     box(c);
   } };
 
-  // ═════════ V2 · bgev_year: back to 2024, the case new and clean; on "one year" the tag drops on: VALID TO 2025 ═════════
+  // ═════════ V2 · bgev_year: what the law is for. Back to 2024, the case new and clean: the lamp clicks on at "In an
+  //            emergency,", the glass glints on "stop", and at the end of the sentence the tag drops on: VALID TO 2025 ═════════
   SCENES.bgev_year = { draw(c, lt) {
-    const id = 'bgev_year', dd = dur(id), tT = at(id, 'tag', 0.9), kD = (lt - tT) / 0.32;
-    const lampOn = lt < 0.12 ? 0 : lt < 0.32 ? 1 - (Math.floor((lt - 0.12) * 24) % 2) * 0.6 : 1;      // it clicks on as we arrive
-    const v = { z: lerp(1.0, 1.12, ease.io(lt / dd)) * (1 + kick(lt, tT, 0.03)), fx: 640, fy: 1150 };
+    const id = 'bgev_year', dd = dur(id), tL = at(id, 'lamp', 0.3), tP = at(id, 'stop', 1.0), tT = at(id, 'tag', 2.4), kD = (lt - tT) / 0.32;
+    const lampOn = lt < tL ? 0.15 : lt < tL + 0.2 ? 1 - (Math.floor((lt - tL) * 24) % 2) * 0.6 : 1;
+    const v = { z: lerp(1.0, 1.12, ease.io(lt / dd)) * (1 + kick(lt, tP, 0.025) + kick(lt, tT, 0.03)), fx: 640, fy: 1150 };
     view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
-      const A = caseLayer(g, ox, oy, lt, { lamp: lampOn, dust: 0.03 });
+      const A = caseLayer(g, ox, oy, lt, { lamp: lampOn, dust: 0.03, gleam: (lt - tP) / 0.55 });
       if (kD > 0) drawTag(g, { x: A[0], y: A[1], rot: swing(lt, [[tT, 0.22]]), sc: ease.back(kD) }, lt, { rows: [{ row: 0, t0: -10 }] });
     } }, { d: 0.3, fn: (g, ox, oy) => snowfall(g, lt + SH, ox, oy, { n: 60, sz: 1.3, a: 0.55 }) }], { x: Math.sin(lt * 0.3) * 8, y: 0, z: 1 }));
     corner(c, ui('inforce', 'IN FORCE 22.7.2024 · ONE YEAR'), win(lt, 0.35, dd - 0.3));
     box(c);
   } };
 
-  // ═════════ V3 · bgev_again: THE ESCALATION. Close on the tag: 2025 struck and 2026 written by the end of line 1, 2026
-  //            struck and 2028 written on the pop, the view stepping in on each; then the days run on, the snow piles ═════════
+  // ═════════ V3 · bgev_again: THE ESCALATION. Close on the tag, one line a year: 2025 struck at the end of line 1, 2026
+  //            written at the end of line 2, 2026 struck and 2028 written on the pop, the view stepping in on each new
+  //            year; then the days run on and the snow piles up ═════════
   let M3V = null;
-  const marks3v = (tW1, tW2) => {
-    if (M3V && M3V.key === `${tW1}|${tW2}`) return M3V;
-    const s1 = STRIKE[0](Math.max(0.08, tW1 - 0.4), 0.26), s2 = STRIKE[1](Math.max(tW1 + 0.47, tW2 - 0.4), 0.26);
-    return (M3V = { key: `${tW1}|${tW2}`, s1, s2 });
+  const marks3v = (tS1, tW1, tW2) => {
+    const key = `${tS1}|${tW1}|${tW2}`; if (M3V && M3V.key === key) return M3V;
+    const s1 = STRIKE[0](Math.max(0.08, tS1), 0.26), s2 = STRIKE[1](Math.max(tW1 + 0.47, tW2 - 0.4), 0.2);
+    return (M3V = { key, s1, s2, w2: Math.max(tW2, s2.t0 + s2.dur) });       // 2028 starts once 2026 is struck through
   };
   SCENES.bgev_again = { draw(c, lt) {
-    const id = 'bgev_again', dd = dur(id), tW1 = at(id, 'write1', 0.5), tW2 = at(id, 'write2', 1.4), M = marks3v(tW1, tW2);
+    const id = 'bgev_again', dd = dur(id), tW1 = at(id, 'write1', 1.2), tW2 = at(id, 'write2', 1.8), M = marks3v(at(id, 'strike1', 0.55), tW1, tW2);
     const step = (t) => clamp(ease.back((lt - t) / 0.28), 0, 1.2);
     const z = 1.28 + 0.12 * step(tW1) + 0.14 * step(tW2) + 0.04 * ease.io(clamp((lt - tW2 - 0.3) / Math.max(0.5, dd - tW2 - 0.3), 0, 1));
     const grow = ease.io(clamp(lt / dd, 0, 1));
@@ -577,14 +579,14 @@
     view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => days(g, lt, dd, ox, oy, 8) }, { d: 0.1, fn: (g, ox, oy) => {
       const A = caseLayer(g, ox, oy, lt, { lamp: 1, dust: lerp(0.06, 0.5, grow), snow: lerp(4, 46, grow), ice: lerp(0, 0.8, grow), web: lerp(0, 0.8, grow), gleam: -1 });
       const T = { x: A[0], y: A[1], rot: swing(lt, [[M.s1.t0, 0.05], [tW2, 0.07]], 0.012), sc: 1 };
-      const tip = drawTag(g, T, lt, { rows: [{ row: 0, t0: -10 }, { row: 1, t0: tW1 }, { row: 2, t0: tW2 }], marks: [M.s1, M.s2] });
+      const tip = drawTag(g, T, lt, { rows: [{ row: 0, t0: -10 }, { row: 1, t0: tW1 }, { row: 2, t0: M.w2 }], marks: [M.s1, M.s2] });
       const L = (p) => tagToLayer(T, p), rest = [W + 160 + ox, 2060 + oy];
       const pen = tip || penAt(lt, [[0, L([150, ROWS[0].y + 90])], [M.s1.t0, L(M.s1.start)], [M.s1.t0 + M.s1.dur, L(M.s1.end)], [tW1, L([-74, ROWS[1].y - 12])], [tW1 + 0.45, L([76, ROWS[1].y - 12])],
-        [M.s2.t0, L(M.s2.start)], [M.s2.t0 + M.s2.dur, L(M.s2.end)], [tW2, L([-74, ROWS[2].y - 12])], [tW2 + 0.45, L([76, ROWS[2].y - 12])], [tW2 + 1.2, rest]]);
-      if (lt < tW2 + 1.2) marker(g, pen, -0.62);
+        [M.s2.t0, L(M.s2.start)], [M.s2.t0 + M.s2.dur, L(M.s2.end)], [M.w2, L([-74, ROWS[2].y - 12])], [M.w2 + 0.45, L([76, ROWS[2].y - 12])], [M.w2 + 1.2, rest]]);
+      if (lt < M.w2 + 1.2) marker(g, pen, -0.62);
     } }, { d: 0.3, fn: (g, ox, oy) => snowfall(g, lt * 2.2 + 2 * SH, ox, oy, { n: 110, sz: 1.3, a: 0.65, wind: 34 }) }], { x: Math.sin(lt * 0.3 + 1) * 6, y: 0, z: 1 }));
     flash(c, lt - tW2, 0.12);
-    corner(c, ui('proposal', 'GOVERNMENT PROPOSAL · 3.9.2026'), win(lt, tW2 + 0.3, dd - 0.3));
+    corner(c, ui('proposal', 'GOVERNMENT PROPOSAL · 3.9.2026'), win(lt, tW1 + 0.3, dd - 0.3));   // whose proposal, before "Proposed:"
     box(c);
   } };
 

@@ -1,0 +1,100 @@
+{
+  "film": "label-sold-separately-viral-v2",
+  "cut": "Coxon 12, VIRAL CUT v2 (23 Oct 2026). Owner on v1: 'needs clarity of messaging'. Every caption stands on its own for a cold viewer, no riddle; hook-first and the loop kept; ~20 s; BIG captions.",
+  "series": "coxon",
+  "captionSize": "big",
+  "argument": "Of about 220 US midterm ads made at least partly with AI, which drew over $137M in airtime by 11 Oct (Wesleyan), only about 3 in 10 told viewers they used AI.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.2",
+      "hold": "s2",
+      "text": {
+        "en": "US midterms: / 220 political ads / made using [AI].",
+        "fi": "USA:n välivaalit: / 220 vaalimainosta / tehty [tekoälyllä].",
+        "ja": "米中間選挙： / 政治広告 220本が / [AI]で 作られた。"
+      },
+      "source": "220 ads in the 2026 US midterms made at least partly with AI ('made using AI' covers the partly-AI ones). Wesleyan Media Project release, 15 Oct 2026 (data through 11 Oct, with AdImpact), as reported by Gizmodo, the New York Times (via summaries) and others; the release itself was not opened. Re-checked 23 Oct: nothing newer found. Not quoted."
+    },
+    {
+      "id": "spent",
+      "role": "evidence",
+      "at": "s2+0.5",
+      "until": "s3-0.2",
+      "hold": "s3",
+      "text": {
+        "en": "Over [$137 million] / spent airing them.",
+        "fi": "Yli [137 milj. $] / niiden esitykseen.",
+        "ja": "[1億3700万ドル] 超を / 放映に 投じた。"
+      },
+      "source": "More than $137 million spent airing those 220 ads. Wesleyan Media Project release, 15 Oct 2026 (data through 11 Oct, with AdImpact), as reported by Gizmodo, the New York Times (via summaries) and others; the release itself was not opened. Re-checked 23 Oct: nothing newer found."
+    },
+    {
+      "id": "labels",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.2",
+      "hold": "s4",
+      "text": {
+        "en": "How many tell you / they used AI? / About [3 in 10].",
+        "fi": "Moniko kertoo / tekoälystä? / Noin [30 %].",
+        "ja": "AI使用を 明かすのは / 何本？ / 約 [10本に 3本]。"
+      },
+      "source": "Gizmodo: 27% carried an AI disclaimer; NYT (via summaries): about 70% had none; Wesleyan's 4 Sep update: 31%. Hence 'about 3 in 10'; the ripple sticks 66 of 220 (30%). Wesleyan Media Project release, 15 Oct 2026 (data through 11 Oct, with AdImpact), as reported by Gizmodo, the New York Times (via summaries) and others; the release itself was not opened. Re-checked 23 Oct: nothing newer found."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s4+0.3",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "Ten AI ads. / Three told you. / [Seven didn't].",
+        "fi": "10 AI-mainosta. / Kolme kertoi. / [Seitsemän ei].",
+        "ja": "AI広告 10本。 / 明かしたのは 3本。 / [7本は 黙っていた]。"
+      },
+      "source": "The station's line over its own image: the film's ten stand for Wesleyan's ~220, and about three in ten of those said they used AI. Not a count of ten real ads."
+    }
+  ],
+  "ui": {
+    "dateline": {
+      "en": "WESLEYAN MEDIA PROJECT · 15.10.2026",
+      "fi": "WESLEYAN MEDIA PROJECT · 15.10.2026",
+      "ja": "ウェズリアン・メディア・プロジェクト · 2026.10.15"
+    },
+    "count": {
+      "en": "$137,000,000",
+      "fi": "$137,000,000",
+      "ja": "$137,000,000"
+    },
+    "tagLabels": {
+      "en": "~3 IN 10 LABELLED · WESLEYAN",
+      "fi": "NOIN 3/10 MERKITTY · WESLEYAN",
+      "ja": "表示あり 約3割 · ウェズリアン"
+    }
+  },
+  "props": {
+    "label": {
+      "en": "MADE WITH AI",
+      "why": "the disclosure sticker on a US ad: an artefact, English in every master; the caption carries the meaning"
+    }
+  },
+  "post": {
+    "en": "US midterms: 220 political ads made using AI had aired by 11 Oct, with over $137M spent airing them, per the Wesleyan Media Project. How many told viewers they used AI? About 3 in 10. Would you have spotted the other 7? #Midterms #AI",
+    "fi": "USA:n välivaalit: 220 tekoälyllä tehtyä vaalimainosta oli esitetty 11.10. mennessä, ja niiden esitykseen käytettiin yli 137 miljoonaa dollaria, kertoo Wesleyan Media Project. Moniko kertoi käyttäneensä tekoälyä? Noin 3 kymmenestä. Olisitko tunnistanut loput 7?",
+    "ja": "米中間選挙：AIで作られた政治広告220本が10月11日までに放映され、放映費は1億3700万ドル超（ウェズリアン・メディア・プロジェクト）。AI使用を明かしたのは？約10本に3本。残りの7本、あなたは見抜けた？"
+  }
+}

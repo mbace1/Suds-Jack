@@ -16,8 +16,8 @@
  "scenes": [],
  "shots": [
   { "id": "bgev_hook", "beats": 8, "cues": { "hit": 0.035, "stamp": "word:pop" } },
-  { "id": "bgev_year", "beats": 9, "cues": { "tag": "word:pop" } },
-  { "id": "bgev_again", "beats": 9, "cues": { "write1": "line:1", "write2": "word:pop" } },
+  { "id": "bgev_year", "beats": 10, "cues": { "lamp": "line:1", "stop": "word:pop", "tag": "line:4" } },
+  { "id": "bgev_again", "beats": 9, "cues": { "strike1": "line:1", "write1": "line:2", "write2": "word:pop" } },
   { "id": "bgev_desk", "beats": 9, "cues": { "none": "line:1", "stamp": "word:pop" } },
   { "id": "bgev_tail", "beats": 9, "cues": { "stamp": "line:1", "gleam": "word:pop", "mark": "line:3" } }
  ],

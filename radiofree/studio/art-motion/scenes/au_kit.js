@@ -472,7 +472,9 @@
   // frame 0 exactly, so the film loops, and the loop says it: it happens again.
   // The camera is an outer zoom (zoomAt): stack()'s own cam.z is scaled by each layer's depth (0.1 here), so a punch of
   // 0.05 through it moves the picture by half a percent.
-  const V0 = { z: 1.1, fx: 540, fy: 1090 };
+  // ×1.22 about y 1040: the map bigger, the lamps above the tag's row and the toggles below it (at ×1.1 one toggle
+  // stuck out past the tag's end like a stray mark); the screen still ends left of the platforms' rail (x 930)
+  const V0 = { z: 1.22, fx: 540, fy: 1040 };
   const zoomAt = (c, z, fx, fy) => { c.translate(fx, fy); c.scale(z, z); c.translate(-fx, -fy); };
   const kickAt = (f, k) => (f >= 0 ? k * Math.exp(-f * 6) * (1 - Math.exp(-f * 50)) : 0);
   /** the tag at a given alpha, on from the very first frame (the hook has no time to fade one in) */
@@ -529,7 +531,7 @@
   SCENES.auv_hook = { draw(c, lt) {
     const id = 'auv_hook', dd = dur(id), tJ = at(id, 'jump', 0.3), tS = at(id, 'spin', 1.1), f = lt - tJ, s = lt - tS;
     const shake = f >= 0 ? Math.exp(-f * 8) * Math.sin(f * 75) * 14 : 0;
-    const z = V0.z * lerp(1, 1.06, ease.io(lt / dd)) + kickAt(f, 0.06) + kickAt(s, 0.035);
+    const z = V0.z * lerp(1, 1.04, ease.io(lt / dd)) + kickAt(f, 0.06) + kickAt(s, 0.035);
     cockpit(c, lt, { tJ, ph: clamp(s / 1.5, 0, 1), spin: s > 0 ? s / 1.5 : -1, z, sx: shake, sy: shake * 0.4 });
     if (f >= 0 && f < 0.22) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,190,110,${0.2 * (1 - f / 0.22)})`; c.fillRect(0, 0, W, H); c.restore(); }
     tagNow(c, HOOKTAG(), clamp((dd - 0.6 - lt) / 0.3, 0, 1));

@@ -380,6 +380,44 @@
   const fellV = (t, t0) => { const lane = Math.floor((t.x - BOX.x0) / 64), along = (BOX.y1 - t.y) / (BOX.y1 - BOX.y0); return t0 + lane * 0.075 + along * 0.2 + t.k * 0.06; };   // score.py mirrors this
   const HOOK_LEAD = 1.05;                                    // the front finishes this long after it starts: on "Gone."
 
+  // ── v2 (owner: "330 ha is huge"): ONE football pitch to the clearing's own scale, then as many as tile it. SITE is
+  //    552,990 px² and the clearing ~330 ha, so 0.409 px/m and a 105 × 68 m pitch (0.714 ha) is 43.0 × 27.8 px; 330 / 0.714 =
+  //    462, and 463 cells of the grid have their centre inside the red line. The patch (the lowest 40 %) holds ~185 of them
+  //    (130 / 0.714 = 182). Trees, road and car are drawn at the map's illustrative scale; only the area is to scale.
+  const PXM = (() => { let a = 0; SITE.forEach(([x1, y1], i) => { const [x2, y2] = SITE[(i + 1) % SITE.length]; a += x1 * y2 - x2 * y1; }); return Math.sqrt(Math.abs(a) / 2 / 3.3e6); })();
+  const PW = 105 * PXM, PH = 68 * PXM, P0 = { x: 525.5, y: 931.5 };          // P0: the first pitch, near the middle
+  const PITCHES = (() => {
+    const gx = P0.x - PW * 8.5, gy = P0.y - PH * 15.5, out = [];
+    for (let j = -2; j < 40; j++) for (let i = -2; i < 22; i++) { const x = gx + PW * (i + 0.5), y = gy + PH * (j + 0.5); if (inside(SITE, x, y)) out.push({ x, y, d: Math.hypot(x - P0.x, (y - P0.y) * 1.25), patch: y >= Y_PATCH }); }
+    const dm = Math.max(...out.map((p) => p.d)); out.forEach((p) => (p.d /= dm)); return out;
+  })();
+  const PS = 4;                                              // drawn at 4× the map, so it holds up under the 3× push-in
+  const pitchSp = () => sprite('cntv_pitch', PW * PS, PH * PS, (PW * PS) / 2, (PH * PS) / 2, (g) => {
+    const w = PW * PS, h = PH * PS, m = PXM * PS; g.translate(-w / 2, -h / 2);
+    for (let i = 0; i < 10; i++) { g.fillStyle = i % 2 ? '#4f8f38' : '#5da043'; g.fillRect((w * i) / 10, 0, w / 10 + 0.6, h); }
+    g.strokeStyle = '#f5f2e6'; g.lineWidth = 3; const L = 1.5 * m;
+    g.strokeRect(L, L, w - 2 * L, h - 2 * L); g.beginPath(); g.moveTo(w / 2, L); g.lineTo(w / 2, h - L); g.stroke();
+    g.beginPath(); g.arc(w / 2, h / 2, 9.15 * m, 0, TAU); g.stroke();
+    for (const side of [0, 1]) {
+      const bx = side ? w - L - 16.5 * m : L, gx = side ? w - L - 5.5 * m : L;
+      g.strokeRect(bx, h / 2 - 20.15 * m, 16.5 * m, 40.3 * m); g.strokeRect(gx, h / 2 - 9.15 * m, 5.5 * m, 18.3 * m);
+    }
+  }, 4);
+  /** the pitches tiled over the clearing, each appearing at its own time (kAt(p) → 0..1), cut to the red line */
+  function tilePitches(g, kAt) {
+    g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.clip();
+    const sp = pitchSp();
+    for (const p of PITCHES) { const k = kAt(p); if (k <= 0) continue; put(g, sp, p.x, p.y, { sc: ease.back(clamp(k, 0, 1)) / PS, lift: 0 }); }
+    g.restore();
+  }
+  /** a tag in screen space, centred: newsprint, one line */
+  function screenTag(c, text, x, y, { a = 1, size = 36 } = {}) {
+    if (a <= 0) return;
+    c.save(); c.globalAlpha = a; c.font = `${size}px "ArchivoBlack-400", ${JP}`; const w = c.measureText(text).width + 48, h = size + 34;
+    c.shadowColor = 'rgba(4,6,12,.6)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = C.news; c.beginPath(); c.roundRect(x - w / 2, y - h / 2, w, h, 8); c.fill();
+    c.shadowColor = 'transparent'; c.fillStyle = C.ink; c.textAlign = 'center'; c.fillText(text, x, y + size * 0.36); c.restore();
+  }
+
   // ═════════ V1 · cntv_hook: frame 0 — the forest inside the red line is already going, lane by lane, under the
   //            clipping "TREES · THE GUARDIAN'S ESTIMATE / 250,000"; the last lane falls on "Gone." ═════════
   SCENES.cntv_hook = { draw(c, lt) {
@@ -398,6 +436,30 @@
       } }], cam);
     c.restore();
     bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { k: lt / 0.25 });
+    box(c);
+  } };
+
+  // ═════════ V1b · cntv_pitch (v2): close on ONE football pitch on the cleared ground, tagged; then the camera pulls back
+  //            while it multiplies outward until the clearing is tiled, ~460 of them, the last landing on "460" ═════════
+  SCENES.cntv_pitch = { draw(c, lt) {
+    const id = 'cntv_pitch', dd = dur(id), tOne = at(id, 'pitch', 0.1), tT = at(id, 'tile', 1.15), tN = at(id, 'n', 2.2);
+    const kB = ease.io((lt - tT + 0.15) / (tN - tT + 0.55)), Z = lerp(3.1, 1.12, kB) * (1 + 0.012 * ease.io((lt - tN) / (dd - tN)));
+    const cam = vcam(lt, dd, { z: () => 1.03, hits: [tN], kick: 0.03, amp: 2 });
+    c.save(); camZ(c, Z, P0.x, P0.y);
+    stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
+      { d: 0.12, fn: (g, ox, oy) => {
+        g.save(); g.translate(ox, oy);
+        tilePitches(g, (p) => (p.d === 0 ? (lt - tOne) / 0.25 : (lt - tT - p.d * (tN - tT - 0.08)) / 0.16));
+        // the first pitch: a white rim that breathes until it multiplies
+        const kR = clamp((lt - tOne - 0.2) / 0.2, 0, 1) * (1 - clamp((lt - tT) / 0.3, 0, 1));
+        if (kR > 0) { g.strokeStyle = `rgba(255,252,235,${0.9 * kR})`; g.lineWidth = 1.6 + 0.5 * Math.sin(lt * 9); g.strokeRect(P0.x - PW / 2 - 2, P0.y - PH / 2 - 2, PW + 4, PH + 4); }
+        ringTo(g, 1, { pen: false, a: 0.9 });
+        if (lt > tN) { const f = Math.exp(-(lt - tN) * 6) * 0.22; g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fillStyle = `rgba(255,248,215,${f})`; g.fill(); g.restore(); }
+        g.restore();
+      } }], cam);
+    c.restore();
+    // the tag, in screen space, under the one pitch while it is alone
+    screenTag(c, ui('pitchTag', 'ONE FOOTBALL PITCH · 105 × 68 m'), P0.x, P0.y + (PH / 2) * Z + 70, { a: clamp((lt - tOne - 0.25) / 0.2, 0, 1) * (1 - clamp((kB - 0.15) / 0.25, 0, 1)) });
     box(c);
   } };
 
@@ -492,37 +554,69 @@
     // the last, English, slip is the biggest and lands ON the pop word
     headSlip(c, HEADS[5], { k: (lt - tW + 0.06) / 0.2, sc: 1.18 });
     if (lt > tW) { const f = Math.exp(-(lt - tW) * 6) * 0.25; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
-    tag(c, ui('world', 'HEADLINES IN SIX LANGUAGES · OCTOBER 2026'), lt, dd, 110, tW + 0.3);
+    // v2: this shot has no caption (the pitch beat took the third fact), so its label stands where a caption would
+    screenTag(c, ui('world', 'HEADLINES IN SIX LANGUAGES'), W / 2, 300, { a: clamp((lt - 0.25) / 0.25, 0, 1) * clamp((dd - 0.15 - lt) / 0.25, 0, 1), size: 44 });
     box(c);
   } };
 
-  // ═════════ V5 · cntv_end: saplings across 40 % of the clearing, the label on "130 ha"; v2 (owner: "ending too
-  //            abruptly") holds the punchline with the saplings still settling under a slow push-in, then eases back
-  //            out to frame 0's exact framing over ~1.9 s; the clipping rises into place on "clip" and the frame holds
-  //            still for the last ~0.7 s while the score's last chord rings: the join into the sign-off, and the loop ═════════
+  // ═════════ V5 · cntv_end (v2). Owner: "ending too abruptly", "the visual seems small for 130ha". The camera comes in
+  //            until the clearing fills the frame; the planted 40 % is bright, dense and edged, across the clearing's
+  //            whole width, with the pitch grid faint over everything so it reads as ~180 of the ~460; the label stands
+  //            on the bare ground above it with an arrow down, never on it. Then a long hold and a slow ease back out to
+  //            frame 0's exact framing; the clipping rises into place on "clip", and the frame holds still while the
+  //            score's last chord rings: the join into the sign-off, and the loop ═════════
+  const SAPSV = (() => { const out = []; let row = 0; for (let y = Y_PATCH + 9; y < BOX.y1; y += 16, row++) for (let x = BOX.x0 + 6 + (row % 2) * 8; x < BOX.x1; x += 16) if (inPatch(x, y)) out.push([x, y, row]); return out; })();
+  const NROWV = SAPSV.reduce((m, s) => Math.max(m, s[2]), 0) + 1;
+  const patchLabelV = () => sprite('cntv_patch', 400, 250, 0, 0, (g) => {
+    g.fillStyle = C.cream; g.beginPath(); g.roundRect(0, 0, 390, 240, 10); g.fill();
+    BDF.doodleLogo(g, 22, 50, 38);
+    g.fillStyle = C.ink; g.textAlign = 'left'; g.font = `26px "ArchivoBlack-400", ${JP}`; g.fillText(ui('planting', 'PLANTING PLANNED'), 22, 92);
+    g.font = '400 70px "Anton-400"'; g.fillText(ui('patchHa', '130 ha'), 22, 166);
+    g.fillStyle = '#2f6b26'; g.font = `24px "ArchivoBlack-400", ${JP}`; g.fillText(ui('pitches', '≈ 180 FOOTBALL PITCHES'), 22, 212);
+    g.fillStyle = C.sapD; g.fillRect(0, 230, 390, 10);
+  }, 6);
   SCENES.cntv_end = { draw(c, lt) {
     const id = 'cntv_end', dd = dur(id), tPl = at(id, 'plant', 0.9), tH = at(id, 'ha', 1.5), tB = at(id, 'back', dd - 2.6), tC = at(id, 'clip', dd - 1.1);
     const tL = Math.min(dd - 0.4, tC + 0.35);                 // home: frame 0's framing from here to the last frame
     const kR = ease.io((lt - tB) / (tL - tB));                // the return
-    const cam = vcam(lt, dd, { z: (l) => lerp(1.03 + 0.06 * ease.io((l - tPl + 0.3) / 0.6), V.z0, kR), hits: [tH], kick: 0.03 });
+    const cam = vcam(lt, dd, { z: (l) => lerp(1.03 + 0.06 * ease.io((l - tPl + 0.3) / 0.6), V.z0, kR), hits: [tH], kick: 0.03, amp: 3 });
     cam.x *= 1 - kR; cam.y *= 1 - kR;
-    // the push: in on the patch for the pop, on slowly through the hold, back to 1 by home
-    const zP = 1 + 0.035 * ease.io((lt - tPl + 0.2) / 0.8) + 0.07 * ease.io((lt - tH - 0.2) / (tB - tH - 0.2)), Z = lerp(zP, 1, kR);
+    // the push: in until the clearing fills the frame by the pop, on slowly through the hold, back to 1 by home
+    const zP = 1 + 0.24 * ease.io((lt + 0.25) / (tH + 0.15)) + 0.06 * ease.io((lt - tH - 0.2) / (tB - tH - 0.2)), Z = lt >= tL ? 1 : lerp(zP, 1, kR);
     if (lt >= tL) { cam.x = 0; cam.y = 0; cam.z = V.z0; }
-    // the saplings come up row by row over ~2.6 s, most of them by the pop, and the rest still settling through the hold
-    const kS = ease.out(clamp((lt - tPl) / 2.6, 0, 1));
-    c.save(); camZ(c, lt >= tL ? 1 : Z, V.fx, 1010);
+    // the saplings come up row by row over ~2.4 s, most of them by the pop, the rest still settling through the hold
+    const kS = ease.out(clamp((lt - tPl) / 2.4, 0, 1));
+    c.save(); camZ(c, Z, V.fx, 1010);
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
       { d: 0.12, fn: (g, ox, oy) => {
-        g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false });
-        if (kS > 0) { g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.clip(); g.fillStyle = `rgba(127,207,90,${0.18 * clamp(kS * 3, 0, 1)})`; g.fillRect(BOX.x0 - 10, Y_PATCH, BOX.x1 - BOX.x0 + 20, BOX.y1 - Y_PATCH + 10); g.strokeStyle = 'rgba(150,225,110,.9)'; g.lineWidth = 5; g.setLineDash([12, 9]); g.beginPath(); g.moveTo(BOX.x0 - 10, Y_PATCH); g.lineTo(BOX.x1 + 10, Y_PATCH); g.stroke(); g.restore(); }
-        for (const [x, y, row] of SAPS) {
-          const k = (kS * NROW - row) / 1.2; if (k <= 0) continue; const s = ease.back(clamp(k, 0, 1));
-          g.fillStyle = 'rgba(0,0,0,.45)'; g.beginPath(); g.arc(x + 2.5, y + 3.5, 7.5 * s, 0, TAU); g.fill();
-          g.fillStyle = C.sapD; g.beginPath(); g.arc(x, y, 8.5 * s, 0, TAU); g.fill(); g.fillStyle = C.sap; g.beginPath(); g.arc(x - 2, y - 2, 5.2 * s, 0, TAU); g.fill();
+        g.save(); g.translate(ox, oy);
+        g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.clip();
+        if (kS > 0) {
+          const a = clamp(kS * 3, 0, 1);
+          g.fillStyle = `rgba(118,205,80,${0.34 * a})`; g.fillRect(BOX.x0 - 10, Y_PATCH, BOX.x1 - BOX.x0 + 20, BOX.y1 - Y_PATCH + 10);
+          for (const [x, y, row] of SAPSV) {
+            const k = (kS * NROWV - row) / 1.4; if (k <= 0) continue; const s = ease.back(clamp(k, 0, 1)) * (1 + 0.03 * Math.sin(lt * 2.2 + x * 0.05));
+            g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.arc(x + 2, y + 3, 6.2 * s, 0, TAU); g.fill();
+            g.fillStyle = '#3f8a32'; g.beginPath(); g.arc(x, y, 7 * s, 0, TAU); g.fill(); g.fillStyle = '#9be36a'; g.beginPath(); g.arc(x - 1.6, y - 1.6, 4.4 * s, 0, TAU); g.fill();
+          }
         }
+        // the pitch grid, faint over the whole clearing, so the planted 40 % reads as ~180 of the ~460
+        g.strokeStyle = `rgba(250,246,230,${0.26 * clamp((lt - 0.1) / 0.5, 0, 1)})`; g.lineWidth = 1.2;
+        for (const p of PITCHES) g.strokeRect(p.x - PW / 2, p.y - PH / 2, PW, PH);
+        if (kS > 0) {   // the patch's edge: one bright solid line across the clearing's whole width, with a glow
+          const a = clamp(kS * 3, 0, 1);
+          g.strokeStyle = `rgba(160,240,110,${0.35 * a})`; g.lineWidth = 16; g.beginPath(); g.moveTo(BOX.x0, Y_PATCH); g.lineTo(BOX.x1, Y_PATCH); g.stroke();
+          g.strokeStyle = `rgba(200,255,160,${0.95 * a})`; g.lineWidth = 5; g.beginPath(); g.moveTo(BOX.x0, Y_PATCH); g.lineTo(BOX.x1, Y_PATCH); g.stroke();
+        }
+        g.restore();
+        ringTo(g, 1, { pen: false });
+        // the label on the bare ground above the patch, an arrow down into it
         const kL = (lt - tH + 0.08) / 0.25;
-        if (kL > 0) put(g, patchLabel(), 330, Y_PATCH - 196, { sc: ease.back(kL), rot: -0.03 + swing(lt, [[tH + 0.2, 0.04]]), lift: 1.0 });
+        if (kL > 0) {
+          const ax = 525, a0 = Y_PATCH - 62, a1 = Y_PATCH + 40, kA = clamp((lt - tH - 0.1) / 0.25, 0, 1);
+          put(g, patchLabelV(), 365, Y_PATCH - 262, { sc: 0.82 * ease.back(kL), rot: -0.02 + swing(lt, [[tH + 0.2, 0.03]]), lift: 1.0 });
+          if (kA > 0) { const y1 = lerp(a0, a1, ease.out(kA)); g.save(); g.strokeStyle = C.cream; g.fillStyle = C.cream; g.lineWidth = 7; g.lineCap = 'round'; g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 8; g.shadowOffsetX = 4; g.shadowOffsetY = 6; g.beginPath(); g.moveTo(ax, a0); g.lineTo(ax, y1 - 14); g.stroke(); g.beginPath(); g.moveTo(ax - 17, y1 - 20); g.lineTo(ax + 17, y1 - 20); g.lineTo(ax, y1 + 4); g.closePath(); g.fill(); g.restore(); }
+        }
         g.restore();
       } }], cam);
     c.restore();

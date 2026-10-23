@@ -415,11 +415,19 @@ window.LSS = (() => {
   const RANK = new Map(STUCK.map((key) => { const [x, y] = key.split(',').map(Number); return [key, Math.hypot(x - (M.home[0] + 0.5), (y - (M.home[1] + 2)) * M.ph / M.pw)]; })
     .sort((a, b) => a[1] - b[1]).map(([key], n) => [key, n]));
   /** the mosaic at pull-back k (0: the ten exactly where the wall had them, 1: all 220 on screen); stickAt(key) → the
-   *  sticker's k or 0; appear(q, r) → how far a set has popped in (the neighbours arrive as the camera pulls back) */
-  function mosaic(g, ox, lt, k, { stickAt = null, dim = 0, twinkle = 0, appear = null } = {}) {
+   *  sticker's k or 0; appear(q, r) → how far a set has popped in (the neighbours arrive as the camera pulls back);
+   *  ai(q, r, key) → [strength, size] of the AI sparkle on that set (v2); shelves: the wall's unit, carried along by the
+   *  pull-back and fading out, since it belongs to the ten and not to the 220 (v2) */
+  function mosaic(g, ox, lt, k, { stickAt = null, dim = 0, twinkle = 0, appear = null, ai = null, shelves = false } = {}) {
     const s0 = S0 * Math.pow(S1 / S0, k), yk = lerp(YK0, 1, k);
     const F = [lerp((M.home[0] + 0.5) * M.pw, (M.cols - 1) / 2 * M.pw, k), lerp((M.home[1] + 2) * M.ph, (M.rows - 1) / 2 * M.ph, k)];
     const P = [540, lerp(1012 + DY, 1085, k)];
+    if (shelves) { const f = 1 - clamp(k / 0.3, 0, 1); if (f > 0) {
+      const hx = P[0] + ((M.home[0] + 0.5) * M.pw - F[0]) * s0 + ox, hy = P[1] + ((M.home[1] + 2) * M.ph - F[1]) * s0 * yk, z = s0 / S0;
+      g.save(); g.translate(hx, hy); g.scale(z, z); g.translate(-540, -(1012 + DY)); g.globalAlpha = f;
+      g.save(); g.translate(0, DY); D.stripLight(g, OX, lt); g.restore();
+      RFP.layer(g, D.shelves(), OX, DY, { lift: 0.7, alpha: 0.55 * f, soft: 1.5 }); g.restore();
+    } }
     for (let r = 0; r < M.rows; r++) for (let q = 0; q < M.cols; q++) {
       const home = isHome(q, r), a = appear && !home ? appear(q, r) : 1; if (a <= 0.01) continue;
       const s = s0 * a, x = P[0] + (q * M.pw - F[0]) * s0 + ox, y = P[1] + (r * M.ph - F[1]) * s0 * yk, sc = s * M.pw / 290 * D.TVS;
@@ -430,6 +438,7 @@ window.LSS = (() => {
       const sk = stickAt ? stickAt(key) : 0;
       if (dim > 0 && !RANK.has(key)) { g.fillStyle = `rgba(4,8,8,${0.62 * dim})`; g.fillRect(x - D.TV.w * sc / 2, y - D.TV.h * sc / 2, D.TV.w * sc, D.TV.h * sc); }
       if (twinkle > 0) { const ph = ((q * 13 + r * 7) % 17) / 17, tw = Math.pow(Math.max(0, Math.sin(lt * 4.2 + ph * TAU)), 10) * twinkle; D.sparkle(g, x + 40 * sc, y - 40 * sc, Math.max(7, 26 * sc), tw); }
+      if (ai) { const [ak, ag] = ai(q, r, key); if (ak > 0.01) D.sparkle(g, x + 40 * sc, y - 40 * sc, Math.max(8, 24 * sc) * ag, ak * (0.88 + 0.12 * Math.sin(lt * 7 + q * 1.3 + r))); }
       if (sk > 0) D.label(g, x - 36 * sc, y - 50 * sc, sk, -0.12 + ((q * 5 + r) % 5 - 2) * 0.05, sc * (sc < 0.5 ? 1.6 : 1));
     }
   }
@@ -515,6 +524,78 @@ window.LSS = (() => {
         D.label(g, f.x + f.vx * t + Math.sin(t * 4 + f.x) * 40 + ox, y, 1, f.rot + f.spin * t, D.TVS); }
     }, d: 0.12 };
     framed(c, lerp(1, PUNCH, back), () => stack(c, wallLayers(lt, { labels: LABELS }, [ringLayer, fallLayer]), cam));
+    box(c);
+  } };
+
+  // ═══ VIRAL v2 (owner, 23 Oct: "needs clarity of messaging") ═══════════════════════════════════════════════════
+  // Every caption stands on its own for a cold viewer; no riddle. Four shots. The wall becomes the 220 as "220
+  // political ads" comes up, and every screen lights with the AI sparkle on "AI" (the sparkle IS "made using AI" from
+  // here on); the counter lands on $137 million; stickers ripple onto about 3 in 10 and the rest go dark; the ten again:
+  // the three labelled ones ringed on "Three told you.", the seven bare ones flaring with the sparkle on "Seven
+  // didn't." (AI, and no label), and the frame eases back to the opening one for the loop.
+  const fromHome = (q, r) => Math.hypot(q - M.home[0] - 0.5, (r - M.home[1] - 2) * M.ph / M.pw);
+  /** the AI sparkle arriving on every set at tA, in a wave out from the ten: [strength, size] */
+  const aiWave = (lt, tA) => (q, r) => { const t = lt - tA - 0.025 * fromHome(q, r); return t <= 0 ? [0, 1] : [Math.min(1, t / 0.08), 1 + 1.3 * Math.exp(-t * 4)]; };
+
+  // 1 · THE HOOK. Frame one is the wall of ten. On "220 political ads" the camera pulls back and the other 210 pop in
+  // round the ten; on "AI" every one of the 220 lights with the sparkle.
+  SCENES['lssv2_hook'] = { draw(c, lt) {
+    const ID = 'lssv2_hook', tP = D.at(ID, 'pull', 0.5), tA = D.at(ID, 'ai', 1.4);
+    const k = lt < tP ? -1 : D.ease.io(clamp((lt - tP) / 1.0, 0, 1));
+    const fk = (1 + (PUNCH - 1) * (1 - D.ease.out(lt / 0.5))) * (lt >= tA ? 1 + 0.025 * Math.exp(-(lt - tA) * 7) : 1);
+    const cam = { x: Math.sin(lt * 0.33) * 6, y: 0, z: D.punch(lt, [tA], { open: 0, kick: 0.4 }), fx: 540, fy: 1000 };
+    framed(c, fk, () => stack(c, k < 0 ? wallLayers(lt) : [
+      { sh: D.room(), d: 0.03, lift: 0 },
+      { fn: (g, ox) => mosaic(g, ox, lt, k, { shelves: true, ai: aiWave(lt, tA),
+        appear: (q, r) => D.pop(lt, tP + 0.06 + 0.045 * fromHome(q, r), 0.22) }), d: 0.08 },
+    ], cam));
+    box(c);
+  } };
+
+  // 2 · Over $137 million spent airing them. The 220 hold, all lit; the counter rolls up and lands on the pop.
+  SCENES['lssv2_count'] = { draw(c, lt) {
+    const ID = 'lssv2_count', tR = D.at(ID, 'roll', 0.1), tN = D.at(ID, 'count', 0.6), dur = D.dur(ID);
+    const cam = { x: Math.sin((lt + 4.8) * 0.33) * 6, y: 0, z: D.punch(lt, [tN], { kick: 0.5 }), fx: 540, fy: 1000 };
+    framed(c, 1 + 0.025 * Math.exp(-Math.max(0, lt - tN) * 7) * (lt >= tN ? 1 : 0), () => stack(c, [
+      { sh: D.room(), d: 0.03, lift: 0 },
+      { fn: (g, ox) => mosaic(g, ox, lt, 1, { ai: () => [1, 1] }), d: 0.08 },
+      { fn: (g, ox) => { const a = clamp((lt - tR + 0.1) / 0.2, 0, 1); if (a <= 0) return;
+        g.save(); g.globalAlpha = a; D.counter(g, 540 + ox, CY, D.ui('count', '$137,000,000'), clamp((lt - tR) / Math.max(0.2, tN - tR), 0, 1), lt); g.restore(); }, d: 0.1 },
+    ], cam));
+    CW.tag(c, D.ui('dateline', 'WESLEYAN MEDIA PROJECT · 15.10.2026'), lt, dur);
+    box(c);
+  } };
+
+  // 3 · How many tell you they used AI? About 3 in 10. A ripple out from the ten puts a MADE WITH AI sticker on 66 of
+  // the 220 (30%), landing on the pop; then the 154 with nothing go dark. The counter has said its piece and goes.
+  SCENES['lssv2_ripple'] = { draw(c, lt) {
+    const ID = 'lssv2_ripple', tA = D.at(ID, 'rip', 0.8), tB = D.at(ID, 'three', 1.6), dur = D.dur(ID), n = STUCK.length;
+    const stickAt = (key) => { if (!RANK.has(key)) return 0; const t = tA + (RANK.get(key) / (n - 1)) * (tB - tA); return D.pop(lt, t, 0.14); };
+    const dim = D.ease.out((lt - tB - 0.15) / 0.5);
+    const cam = { x: Math.sin((lt + 9.2) * 0.33) * 6, y: 0, z: D.punch(lt, [tB], { kick: 0.5 }), fx: 540, fy: 1000 };
+    framed(c, 1 + 0.025 * Math.exp(-Math.max(0, lt - tB) * 7) * (lt >= tB ? 1 : 0), () => stack(c, [
+      { sh: D.room(), d: 0.03, lift: 0 },
+      { fn: (g, ox) => mosaic(g, ox, lt, 1, { stickAt, dim, ai: (q, r, key) => [RANK.has(key) ? 1 : 1 - 0.85 * dim, 1] }), d: 0.08 },
+      { fn: (g, ox) => { const a = 1 - clamp(lt / 0.3, 0, 1); if (a <= 0) return;
+        g.save(); g.globalAlpha = a; D.counter(g, 540 + ox, CY, D.ui('count', '$137,000,000'), 1, lt); g.restore(); }, d: 0.1 },
+    ], cam));
+    CW.tag(c, D.ui('tagLabels', '~3 IN 10 LABELLED · WESLEYAN'), lt, dur);
+    box(c);
+  } };
+
+  // 4 · THE PUNCHLINE. Ten AI ads. Three told you. Seven didn't. The wall again with its three stickers: on "Three
+  // told you." the marker rings the three; on "Seven didn't." the seven bare screens flare with the AI sparkle (they
+  // are AI ads too, with nothing on them). Then the frame eases back to the opening one (1.03, the camera centred).
+  const BARE = [0, 1, 2, 3, 4, 5, 6].filter((i) => !D.LABELLED.includes(i));
+  SCENES['lssv2_end'] = { draw(c, lt) {
+    const ID = 'lssv2_end', tM = D.at(ID, 'mark', 0.8), tS = D.at(ID, 'seven', 1.4), dur = D.dur(ID), MK = D.marks(), RING = 0.32;
+    const back = D.ease.io(clamp((lt - (dur - 0.9)) / (0.9 - 1 / 30), 0, 1));                                    // the hand-off to frame one
+    const cam = { x: Math.sin(lt * 0.26) * 6 * (1 - back), y: 0, z: D.punch(lt, [tS], { kick: 0.5 }), fx: 540, fy: 1000 };
+    const ringLayer = { fn: (g, ox) => { g.save(); g.translate(OX + ox, DY);
+      MK.forEach((m, n) => { const k = (lt - tM - n * 0.08) / RING; if (k > 0) D.drawMark(g, m, D.ease.out(k)); }); g.restore(); }, d: 0.08 };
+    const sevenLayer = { fn: (g, ox) => { if (lt < tS) return; BARE.forEach((i, n) => { const t = lt - tS - n * 0.035; if (t <= 0) return; const p = D.SPOT[i];
+      D.sparkle(g, p.x + OX + ox + 40 * D.TVS, p.y + DY - 40 * D.TVS, 30 + 44 * Math.exp(-t * 3.5), Math.min(1, t / 0.1) * (0.85 + 0.15 * Math.sin(lt * 9 + i)) * (1 - back)); }); }, d: 0.08 };
+    framed(c, lerp(1, PUNCH, back) * (lt >= tS ? 1 + 0.02 * Math.exp(-(lt - tS) * 8) : 1), () => stack(c, wallLayers(lt, { labels: LABELS }, [ringLayer, sevenLayer]), cam));
     box(c);
   } };
 })();

@@ -400,12 +400,12 @@
   } };
 
   // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-  // THE VIRAL CUT (papercut/ends-in-3-viral; plan/films/23b-ends-in-3-viral.md): five shots at 124 BPM, the e3v_*
-  // scenes below. Nothing above this line changes, so the v1 draft renders exactly as it did. The hook is frame 0: the
-  // street, every phone lit with its last digit, MEXICO on the tag from the first frame; on `dark` the unlinked 3s die
-  // at once (the third 3 stays lit: most lines ending in 3 were linked, and the film does not say otherwise). Shot 5
-  // ends on shot 1's own framing (V0) with the people back in their first-frame poses, so the film loops: the last
-  // frame, every phone showing the alert, hands back to the first, every phone showing its digit.
+  // THE VIRAL CUT, v2 (papercut/ends-in-3-viral; plan/films/23b-ends-in-3-viral.md): four shots at 124 BPM, the e3v_*
+  // scenes below, re-cut after the owner's "needs clarity of messaging": hook (what), why (not linked to an ID), how (by
+  // last digit), punchline (the alert). Nothing above this line changes, so the v1 draft renders exactly as it did. The
+  // hook is frame 0: the street, every phone lit with its last digit, MEXICO on the tag from the first frame; on `dark`
+  // the unlinked 3s die at once (the third 3 stays lit: most lines ending in 3 were linked). The last shot ends on the
+  // hook's own framing (V0) with the people back in their first-frame poses, so the film loops.
   const V0 = { x: 0, y: 0, z: 1.1, fx: 540, fy: 1300 };
   const pose0 = (i) => ({ raise: 0.25 + 0.15 * Math.sin(i), look: Math.sin(i * 1.7) * 0.15 });   // everyone at lt = 0
   // the street sits 75 px left of v1's: the front row's last phone was under the platforms' right rail (x ≥ 930). A
@@ -437,11 +437,23 @@
     box(c);
   } };
 
-  // ═════════ V2 · e3v_rule: the registry, as e3_ledger, on this cut's own cues ═════════
-  SCENES.e3v_rule = { draw(c, lt) {
-    const id = 'e3v_rule', dd = dur(id), tL = at(id, 'lace', 2.0), tT = at(id, 'tie', 3.4);
+  // ═════════ V2 · e3v_why: WHY they were cut. The registry: the phone on the counter is grey (cut off), the ID card
+  //            apart from it — not linked. From line 2 a red string is wound round both; on the pop it is pulled tight,
+  //            the two slide together, and the phone comes back on (a line returns once it is linked) ═════════
+  /** the big phone on the counter, in a state: grey (cut off) or back (lit, with the green tick) */
+  const bigPhoneV = (state) => sprite(`e3v_big_${state}`, 250, 440, 125, 220, (g) => {
+    g.save(); g.scale(1.95, 1.95);
+    g.fillStyle = C.phone; g.beginPath(); g.roundRect(-PH.w / 2, -PH.h / 2, PH.w, PH.h, 18); g.fill();
+    g.fillStyle = state === 'grey' ? C.grey : C.screen; g.beginPath(); g.roundRect(-PH.sw / 2, -PH.sh / 2, PH.sw, PH.sh, 12); g.fill();
+    if (state !== 'grey') { g.fillStyle = C.screenD; g.fillRect(-PH.sw / 2, -PH.sh / 2, PH.sw, 16); }
+    g.fillStyle = state === 'grey' ? C.greyD : C.digit; g.textAlign = 'center'; g.font = '400 132px "Anton-400"'; g.fillText('3', 0, 46);
+    if (state === 'back') { g.fillStyle = '#2f7d4f'; g.beginPath(); g.arc(30, -66, 22, 0, TAU); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 7; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); g.moveTo(19, -66); g.lineTo(27, -57); g.lineTo(41, -76); g.stroke(); }
+    g.restore();
+  }, 9);
+  SCENES.e3v_why = { draw(c, lt) {
+    const id = 'e3v_why', dd = dur(id), tL = at(id, 'lace', 1.6), tT = at(id, 'tie', 2.6);
     const k = (lt - tL) / Math.max(0.5, tT - 0.2 - tL), tight = ease.back((lt - tT) / 0.3), bow = (lt - tT - 0.06) / 0.32;
-    const gap = lerp(0, 22, ease.out((lt - tT) / 0.25));
+    const gap = lerp(-40, 22, ease.out((lt - tT) / 0.25)), on = clamp((lt - tT - 0.08) / 0.12, 0, 1);   // apart (unlinked) until the tie
     const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tT], { kick: 0.04 }) * lerp(1.0, 1.08, ease.io(lt / dd)), fx: 540, fy: 1300 };
     stack(c, [
       { sh: office(), d: 0.05, lift: 0 },
@@ -455,8 +467,8 @@
       { sh: counter(), d: 0.24, lift: 0.6 },
       { d: 0.32, fn: (g, ox, oy) => {
         const pa = [360 + gap + ox, 1340 + oy, 118], ca = [740 - gap + ox, 1352 + oy, 140];
-        put(g, bigPhone(), pa[0], pa[1], { rot: -0.07, sc: 0.95, lift: 0.5 });
-        glow(g, pa[0], pa[1], 220, 'rgba(170,230,255,', 0.18);
+        put(g, bigPhoneV('grey'), pa[0], pa[1], { rot: -0.07, sc: 0.95, lift: 0.5 });
+        if (on > 0) { g.save(); g.globalAlpha = on; put(g, bigPhoneV('back'), pa[0], pa[1], { rot: -0.07, sc: 0.95, lift: 0.5 }); g.restore(); glow(g, pa[0], pa[1], 240, 'rgba(170,230,255,', 0.3 * on * (0.6 + 0.4 * Math.exp(-(lt - tT) * 3))); }
         put(g, idSp(), ca[0], ca[1], { rot: 0.05, sc: 1.24, lift: 0.5 });
         stringLoop(g, pa, ca, ease.io(k), clamp(tight, 0, 1.2), bow);
       } },
@@ -465,26 +477,45 @@
     box(c);
   } };
 
-  // ═════════ V3 · e3v_next: the escalation. 0–3 already crossed; the 4 crossed on "cut."; the 5 ringed on "31 October";
-  //            then 6, 7, 8 and 9 light in turn: it rolls on, digit by digit, to the end of the year ═════════
+  // ═════════ V3 · e3v_how: HOW — by the number's last digit. A slip with a phone number, its last digit boxed, flips
+  //            3 → 4 → 5 with the caption; under it the calendar of last digits: 0–2 already crossed, the 3 crossed on
+  //            "3s", the 4 on "4s", the 5 ringed on "5s" (due 31 Oct), then 6–9 light in turn: it rolls on ═════════
+  const CDY = 130;                                          // the calendar sits lower than v1's, under the number slip
   let MV = null;
-  const marksV = (t4, t5) => {
-    if (MV && MV.key === `${t4}|${t5}`) return MV;
+  const marksV = (t3, t4, t5) => {
+    const key = `${t3}|${t4}|${t5}`; if (MV && MV.key === key) return MV;
     const X = (d, t0, dd, seed) => { const [cx, cy] = cellAt(d), h = 74; return mkMark(t0, dd, [GEN().line(cx - h, cy - h * 1.2, cx + h, cy + h * 1.2, inkOf(seed)), GEN().line(cx + h, cy - h * 1.2, cx - h, cy + h * 1.2, inkOf(seed + 1))]); };
-    const old = [0, 1, 2, 3].map((d) => X(d, -10, 0.1, 10 + d * 3));
-    const four = X(4, t4 - 0.42, 0.42, 41);
-    const [c5x, c5y] = cellAt(5), ring5 = mkMark(t5 - 0.05, 0.42, [GEN().ellipse(c5x, c5y, 190, 270, inkOf(51, { strokeWidth: 8 }))]);
-    return (MV = { key: `${t4}|${t5}`, old, four, ring5 });
+    const old = [0, 1, 2].map((d) => X(d, -10, 0.1, 10 + d * 3));
+    const three = X(3, t3 - 0.26, 0.26, 31), s4 = Math.max(t3 + 0.02, t4 - 0.24), four = X(4, s4, t4 - s4, 41);
+    const [c5x, c5y] = cellAt(5), ring5 = mkMark(t5 - 0.04, 0.36, [GEN().ellipse(c5x, c5y, 190, 270, inkOf(51, { strokeWidth: 8 }))]);
+    return (MV = { key, old, three, four, ring5 });
   };
   const ROLL = (t5, d) => t5 + 0.62 + (d - 6) * 0.22;      // when each later digit lights (score.py mirrors it)
-  SCENES.e3v_next = { draw(c, lt) {
-    const id = 'e3v_next', dd = dur(id), t4 = at(id, 'four', 1.0), t5 = at(id, 'five', 2.5), M = marksV(t4, t5);
-    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [t4, t5], { kick: 0.035 }) * lerp(1.0, 1.07, ease.io(lt / dd)), fx: 540, fy: 960 };
+  /** the slip: a phone number with its middle masked; the last digit is drawn live, in its box */
+  const NUM = { x: 540, y: 600, w: 600, h: 124 };
+  const slipSp = () => sprite('e3v_slip', NUM.w + 20, NUM.h + 20, NUM.w / 2 + 10, NUM.h / 2 + 10, (g) => {
+    g.fillStyle = C.calPaperD; g.beginPath(); g.roundRect(-NUM.w / 2 + 4, -NUM.h / 2 + 5, NUM.w, NUM.h, 12); g.fill();
+    g.fillStyle = C.calPaper; g.beginPath(); g.roundRect(-NUM.w / 2, -NUM.h / 2, NUM.w, NUM.h, 12); g.fill();
+    g.fillStyle = C.ink; g.textAlign = 'left'; g.font = '400 84px "Anton-400"'; g.fillText('55', -NUM.w / 2 + 34, 32);
+    for (let i = 0; i < 7; i++) { g.beginPath(); g.arc(-NUM.w / 2 + 160 + i * 38 + (i >= 4 ? 22 : 0), 2, 11, 0, TAU); g.fill(); }
+  }, 8);
+  function slipDigit(g, lt, t4, t5) {
+    const x = NUM.x + NUM.w / 2 - 70, y = NUM.y, flip = (t) => clamp(Math.abs(lt - t) / 0.08, 0, 1);
+    const d = lt < t4 ? 3 : lt < t5 ? 4 : 5, sq = Math.min(flip(t4), flip(t5));
+    g.save(); g.translate(x, y); g.scale(1, Math.max(0.05, sq));
+    g.strokeStyle = C.red; g.lineWidth = 8; g.beginPath(); g.roundRect(-46, -54, 92, 108, 10); g.stroke();
+    g.fillStyle = d === 5 ? C.red : C.ink; g.textAlign = 'center'; g.font = '400 92px "Anton-400"'; g.fillText(String(d), 0, 34);
+    g.restore();
+  }
+  SCENES.e3v_how = { draw(c, lt) {
+    const id = 'e3v_how', dd = dur(id), t3 = at(id, 'three', 1.0), t4 = at(id, 'four', 1.2), t5 = at(id, 'five', 1.6), M = marksV(t3, t4, t5);
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [t3, t4, t5], { kick: 0.03 }) * lerp(1.0, 1.06, ease.io(lt / dd)), fx: 540, fy: 960 };
     stack(c, [
       { sh: cwall(), d: 0.05, lift: 0 },
-      { fn: (g, ox, oy) => glow(g, 540 + ox, 820 + oy, 760, 'rgba(255,220,160,', 0.12), d: 0.05 },
+      { fn: (g, ox, oy) => glow(g, 540 + ox, 860 + oy, 760, 'rgba(255,220,160,', 0.12), d: 0.05 },
+      { d: 0.24, fn: (g, ox, oy) => { put(g, slipSp(), NUM.x + ox, NUM.y + oy, { lift: 0.9, rot: 0.01 }); g.save(); g.translate(ox, oy); slipDigit(g, lt, t4, t5); g.restore(); } },
       { d: 0.3, fn: (g, ox, oy) => {
-        g.save(); g.translate(540, 960); g.scale(0.93, 0.93); g.translate(-540, -960);   // 7% smaller than v1's: the 9 column was under the right rail
+        g.save(); g.translate(540, 960); g.scale(0.93, 0.93); g.translate(-540, -960 + CDY);   // 7% smaller than v1's: the 9 column was under the right rail
         g.save(); g.translate(ox, oy);
         put(g, calSp(), CAL.x, CAL.y, { lift: 1.0, rot: -0.012 });
         put(g, rings(), CAL.x, CAL.y - CAL.top - 60, { lift: 0.6 });
@@ -495,10 +526,10 @@
           g.beginPath(); g.roundRect(cx - CAL.cw / 2 + 8, cy - CAL.ch / 2 + 8, CAL.cw - 16, CAL.ch - 16, 10); g.stroke(); g.restore();
         }
         const tips = [];
-        for (const m of [...M.old, M.four, M.ring5]) { const k = (lt - m.t0) / m.dur; if (k <= 0) continue; const tp = drawMark(g, m, ease.out(k)); if (k < 1) tips.push(tp); }
+        for (const m of [...M.old, M.three, M.four, M.ring5]) { const k = (lt - m.t0) / m.dur; if (k <= 0) continue; const tp = drawMark(g, m, ease.out(k)); if (k < 1) tips.push(tp); }
         g.restore();
         const L = (p) => [p[0] + ox, p[1] + oy], REST = [1260, 2050];
-        const keys = [[0, L(REST)], [M.four.t0 - 0.35, L(M.four.start)], [M.four.t0, L(M.four.start)], [M.four.t0 + M.four.dur, L(M.four.end)],
+        const keys = [[0, L(REST)], [M.three.t0 - 0.4, L(M.three.start)], [M.three.t0, L(M.three.start)], [M.three.t0 + M.three.dur, L(M.three.end)], [M.four.t0, L(M.four.start)], [M.four.t0 + M.four.dur, L(M.four.end)],
           [M.ring5.t0, L(M.ring5.start)], [M.ring5.t0 + M.ring5.dur, L(M.ring5.end)], [M.ring5.t0 + M.ring5.dur + 0.8, L(REST)]];
         marker(g, tips.length ? L(tips[0]) : penAt(lt, keys), -0.55);
         g.restore();
@@ -508,32 +539,17 @@
     box(c);
   } };
 
-  // ═════════ V4 · e3v_kept: the dead 3s stay grey; one owner taps, shows an ID card, and the phone comes back ═════════
-  SCENES.e3v_kept = { draw(c, lt) {
-    const id = 'e3v_kept', dd = dur(id), tT = at(id, 'tap', 0.25), tL = at(id, 'linked', 3.0);
-    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tL], { kick: 0.03 }) * lerp(1.16, 1.28, ease.io(lt / dd)), fx: 700, fy: 1300 };   // focus right of the subject: the right edge stays off the rail
-    streetV(c, lt, cam, (i) => {
-      let state = isCut(i) ? 'grey' : 'lit', idK = 0, tap = 0, glowA = isCut(i) ? 0 : 0.12;
-      if (i === BACKAGAIN) {
-        if (lt > tT && lt < tT + 0.6) tap = 1 - (lt - tT) / 0.6;
-        idK = clamp((lt - (tL - 0.5)) / 0.42, 0, 1);
-        if (lt >= tL) { state = 'back'; glowA = 0.5 * Math.exp(-(lt - tL) * 2.5) + 0.12; }
-      }
-      return { state, raise: 0.3, id: idK, tap, glowA, look: i === BACKAGAIN ? -0.3 * idK : Math.sin(lt * 0.5 + i * 1.7) * 0.15 };
-    });
-    tag(c, ui('kept', 'THE NUMBER IS KEPT'), lt, dd);
-    box(c);
-  } };
-
-  // ═════════ V5 · e3v_alert: on "gets through" every phone shows the alert, the grey one too; the camera ends on V0 ═════════
+  // ═════════ V4 · e3v_alert: "No calls, no texts": the cut-off phones stay grey and a thumb taps one; on "gets
+  //            through" every phone shows the alert, the grey ones too. The camera ends on V0 (the loop) ═════════
   SCENES.e3v_alert = { draw(c, lt) {
-    const id = 'e3v_alert', dd = dur(id), tA = at(id, 'alert', 1.6), k = ease.io(clamp(lt / dd, 0, 1)), endK = ease.io(clamp((lt - (dd - 0.7)) / 0.7, 0, 1));
+    const id = 'e3v_alert', dd = dur(id), tP = at(id, 'tap', 0.3), tA = at(id, 'alert', 1.6), k = ease.io(clamp(lt / dd, 0, 1)), endK = ease.io(clamp((lt - (dd - 0.7)) / 0.7, 0, 1));
     const hitZ = lt >= tA ? 0.03 * Math.exp(-(lt - tA) * 7) * (1 - Math.exp(-(lt - tA) * 60)) : 0;
     const cam = { x: Math.sin(lt * 0.3) * 8 * (1 - k), y: 0, z: lerp(1.2, V0.z, k) + hitZ, fx: V0.fx, fy: V0.fy };
     const pulse = lt >= tA ? 0.5 + 0.5 * Math.cos((lt - tA) * Math.PI * 2 / 0.9) : 0;
     streetV(c, lt, cam, (i) => {
-      const t = tA + (i % NB) * 0.02, on = lt >= t, grey = i === CUT[1], p0 = pose0(i);   // the back row's 3 is still cut off
-      return { state: on ? 'alert' : grey ? 'grey' : 'lit', raise: lerp(on ? 0.45 : 0.3, p0.raise, endK), glowA: on ? 0.25 + 0.3 * pulse : grey ? 0 : 0.12, look: lerp(on ? 0 : Math.sin(lt * 0.5 + i * 1.7) * 0.15, p0.look, endK) };
+      const t = tA + (i % NB) * 0.02, on = lt >= t, grey = isCut(i), p0 = pose0(i);
+      const tap = grey && lt > tP && lt < tP + 0.6 ? 1 - (lt - tP) / 0.6 : 0;          // a thumb on a dead screen
+      return { state: on ? 'alert' : grey ? 'grey' : 'lit', tap, raise: lerp(on ? 0.45 : 0.3, p0.raise, endK), glowA: on ? 0.25 + 0.3 * pulse : grey ? 0 : 0.12, look: lerp(on ? 0 : Math.sin(lt * 0.5 + i * 1.7) * 0.15, p0.look, endK) };
     });
     if (lt >= tA) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(232,69,44,${(0.05 + 0.05 * pulse) * (1 - 0.6 * endK)})`; c.fillRect(0, 0, W, H); c.restore(); }
     box(c);

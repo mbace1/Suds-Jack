@@ -1,9 +1,9 @@
 {
   "film": "count-the-trees-viral",
-  "cut": "Doodle 5, VIRAL CUT v2 (23 Oct; v2 after the owner's note 'Police car is too big, ending too abruptly') — owner: 'Doodle 5 is now becoming more of bigger news so we should highlight that and make it a viral video'. Hook first, escalate (before the assessment → a police inquiry → headlines in six languages), punch, loop. The v1 draft (papercut/count-the-trees) is unchanged.",
+  "cut": "Doodle 5, VIRAL CUT v2 (23 Oct). Owner on v1: 'Police car is too big, ending too abruptly', 'the visual seems small for 130ha', '330 ha is huge'. Hook first; one pitch, then ~460 of them; before the assessment → a police inquiry → headlines in six languages; punch on 130 ha (≈ 180 pitches), hold, ease back, loop. The v1 draft (papercut/count-the-trees) is unchanged.",
   "series": "rfh",
   "captionSize": "big",
-  "argument": "About 250,000 trees, by the Guardian's estimate, were cleared for Doodle's Muhos data centre before the required assessment. Police opened a preliminary inquiry; it made headlines worldwide. Felled: about 330 hectares. Planting planned: 130.",
+  "argument": "About 250,000 trees (by the Guardian's estimate), some 330 hectares or 460 football pitches, were cleared for Doodle's Muhos data centre before the required assessment. Police opened a preliminary inquiry. Planting planned: 130 hectares.",
   "langs": [
     "en",
     "fi",
@@ -30,11 +30,24 @@
       "source": "The Guardian's investigation, 22 Oct 2026: an estimated 250,000 trees felled at Muhos (about 330 ha), as reported by follow-ups (Tom's Guide; Yahoo News; Timberbiz; Common Dreams headline). The original cannot be opened from this session; the clipping on screen credits it as the Guardian's estimate. Re-checked 23 Oct (plan/films/25b-count-the-trees-viral.md)."
     },
     {
-      "id": "eia",
+      "id": "pitch",
       "role": "evidence",
-      "at": "s2+0.25",
+      "at": "s2+1.5",
       "until": "s3-0.3",
       "hold": "s3",
+      "text": {
+        "en": "330 hectares: / about [460] / football pitches.",
+        "fi": "330 hehtaaria: / noin [460] / jalkapallokenttää.",
+        "ja": "330ヘクタール＝ / サッカー場 / 約[460]面分。"
+      },
+      "source": "Arithmetic, not a report: a football pitch of 105 × 68 m is 7,140 m² = 0.714 ha; ~330 ha / 0.714 ha = 462 ('about 460'). The ~330 ha is the figure reported as Tuike Finland's own (the regulator says over 300; AFP, DCD, TechSpot). On screen the pitch is drawn to the clearing's own scale (0.409 px/m: 43.0 × 27.8 px) and 463 grid cells have their centre inside the red line."
+    },
+    {
+      "id": "eia",
+      "role": "evidence",
+      "at": "s3+0.15",
+      "until": "s4-0.3",
+      "hold": "s4",
       "text": {
         "en": "Cleared before / the required / [assessment].",
         "fi": "Hakattu ennen / lain vaatimaa / [arviointia].",
@@ -45,9 +58,9 @@
     {
       "id": "police",
       "role": "evidence",
-      "at": "s3+0.25",
-      "until": "s4-0.3",
-      "hold": "s4",
+      "at": "s4+0.25",
+      "until": "s5-0.3",
+      "hold": "s5",
       "text": {
         "en": "Police opened a / preliminary / [inquiry].",
         "fi": "Poliisi aloitti / [esiselvityksen].",
@@ -56,23 +69,10 @@
       "source": "Oulu police have opened a preliminary inquiry (esiselvitys) into the preparatory work at Muhos, to establish whether there is reason to suspect a crime such as environmental damage; it followed a request filed by a private person on 2 Oct, and two requests in all. Iltalehti, as carried by Kaleva ('IL: Poliisi on aloittanut esiselvityksen Googlen Muhoksen datakeskuksen valmistelutöistä') and MTV Uutiset; Yle; Kaleva ('Oulun poliisille on tehty kaksi tutkintapyyntöä'). An esiselvitys is not a criminal investigation, and the film does not call it one."
     },
     {
-      "id": "world",
-      "role": "evidence",
-      "at": "s4+1.0",
-      "until": "s5-0.3",
-      "hold": "s5",
-      "text": {
-        "en": "The story went / [worldwide].",
-        "fi": "Uutinen kiersi / [maailman].",
-        "ja": "ニュースは / [世界中] に。"
-      },
-      "source": "Coverage in at least six languages, 7–23 Oct 2026; each slip is a phrase as reported, with no masthead or outlet name: PT '250 mil árvores' (Amazonas Atual), RO 'sute de mii de copaci' (G4Media; GoNews), FI 'metsähakkuut Muhoksella' (Kaleva), DE '500 Fußballfelder Wald' (Pasquale Pillitteri, German edition), ES 'choca con un bosque' (Xataka), EN '250,000 trees' (Tom's Guide and others)."
-    },
-    {
       "id": "last",
       "role": "punchline",
-      "at": "s5+0.25",
-      "until": "end-1.6",
+      "at": "s6+0.25",
+      "until": "end-1.1",
       "hold": "end",
       "text": {
         "en": "Felled: ~330 ha. / Planting planned: / [130 ha].",
@@ -142,12 +142,22 @@
       "en": "130 ha",
       "fi": "130 ha",
       "ja": "130 ha"
+    },
+    "pitchTag": {
+      "en": "ONE FOOTBALL PITCH · 105 × 68 m",
+      "fi": "YKSI JALKAPALLOKENTTÄ · 105 × 68 m",
+      "ja": "サッカー場1面 · 105×68 m"
+    },
+    "pitches": {
+      "en": "≈ 180 FOOTBALL PITCHES",
+      "fi": "≈ 180 JALKAPALLOKENTTÄÄ",
+      "ja": "サッカー場 約180面分"
     }
   },
   "props": {
     "headlines": {
       "en": "250 MIL ÁRVORES · SUTE DE MII DE COPACI · METSÄHAKKUUT MUHOKSELLA · 500 FUSSBALLFELDER WALD · CHOCA CON UN BOSQUE · 250,000 TREES",
-      "why": "the slips are the coverage itself, each in its own language in every master: phrases as reported, with no masthead, logo or outlet name (never a publication's look)"
+      "why": "the slips are the coverage itself, each in its own language in every master: phrases as reported, with no masthead, logo or outlet name (never a publication's look); v2: the shot carries no caption (the pitch beat is the third fact), its label 'HEADLINES IN SIX LANGUAGES' stands at the top"
     },
     "car": {
       "en": "(a patrol car from above, no words)",
@@ -160,11 +170,15 @@
     "patch": {
       "en": "Doodle · PLANTING PLANNED · 130 ha",
       "why": "Doodle's own figure, without quote marks"
+    },
+    "pitch": {
+      "en": "one football pitch, 105 × 68 m, to the clearing’s scale; then ~460 of them tiling it",
+      "why": "owner, 23 Oct: \"330 ha is huge\" — the size felt, not just stated; arithmetic in the pitch caption source and plan/films/25b"
     }
   },
   "post": {
-    "en": "About 250,000 trees, by the Guardian's estimate, cleared at Muhos, Finland, for a Doodle data centre, before the required environmental assessment. Police have opened a preliminary inquiry. Planting planned: 130 of ~330 hectares. Who counts the trees? #Finland #AI",
-    "fi": "Noin 250 000 puuta The Guardianin arvion mukaan: Muhoksella hakattiin Doodlen datakeskukselle ennen lain vaatimaa ympäristöarviointia. Poliisi aloitti esiselvityksen. Istutus suunnitteilla: 130 hehtaaria noin 330:sta. Kuka laskee puut?",
-    "ja": "ガーディアン紙の推定で約25万本。フィンランド・ムホスで、Doodleのデータセンターのため、義務づけられた環境影響評価の前に森が伐採された。警察が予備調査を開始。植樹の計画は約330ヘクタールのうち130。木は誰が数える？"
+    "en": "About 250,000 trees, by the Guardian's estimate: ~330 ha, about 460 football pitches, cleared at Muhos, Finland, for a Doodle data centre before the required environmental assessment. Police have opened a preliminary inquiry. Planting planned: 130 ha. Who counts the trees?",
+    "fi": "Noin 250 000 puuta The Guardianin arvion mukaan: noin 330 hehtaaria, noin 460 jalkapallokenttää, hakattiin Muhoksella Doodlen datakeskukselle ennen lain vaatimaa ympäristöarviointia. Poliisi aloitti esiselvityksen. Istutus suunnitteilla: 130 ha. Kuka laskee puut?",
+    "ja": "ガーディアン紙の推定で約25万本。約330ヘクタール、サッカー場約460面分の森が、フィンランド・ムホスでDoodleのデータセンターのため、義務づけられた環境影響評価の前に伐採された。警察が予備調査を開始。植樹の計画は130ヘクタール。木は誰が数える？"
   }
 }

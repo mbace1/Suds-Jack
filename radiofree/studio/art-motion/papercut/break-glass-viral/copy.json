@@ -1,9 +1,9 @@
 {
   "film": "break-glass-viral",
-  "cut": "The Brink 2, VIRAL CUT v1 (23 Oct) of Break Glass in Emergency. Owner, 23 Oct, after the viral Doodle 5: 'Test other 2 as well and rest after'; this is one of the rest. The format is plan/films/23b-ends-in-3-viral.md. The hook is frame 0, and the last frame hands back to it.",
+  "cut": "The Brink 2, VIRAL CUT v1 (23 Oct) of Break Glass in Emergency. Owner, 23 Oct, after the viral Doodle 5: 'Test other 2 as well and rest after'; this is one of the rest. The format is plan/films/23b-ends-in-3-viral.md. The hook is frame 0, and the last frame hands back to it. Rewritten before the first review for the owner's clarity rule (23 Oct): every caption says plainly what, who and why.",
   "series": "rfh",
   "captionSize": "big",
-  "argument": "Finland's temporary border law of 2024 has never been used. It was extended to 2026, and now 2028 is proposed, unchanged; a committee agreed. Never used, still temporary.",
+  "argument": "Finland's 2024 emergency law lets it stop asylum claims at its Russian border. It has never been used, was extended to 2026, and 2028 is now proposed, unchanged; a committee agreed.",
   "langs": [
     "en",
     "fi",
@@ -23,24 +23,24 @@
       "until": "s2-0.3",
       "hold": "s2",
       "text": {
-        "en": "Finland's border law: / [never used].",
-        "fi": "Suomen rajalaki: / [ei kertaakaan käytetty].",
-        "ja": "フィンランドの 国境法、 / [一度も 使われず]。"
+        "en": "Finland's / border law: / [never used].",
+        "fi": "Suomen / rajalaki: / [ei kertaakaan käytetty].",
+        "ja": "フィンランドの / 国境法、 / [一度も 使われず]。"
       },
       "source": "The Act on Temporary Measures to Combat Instrumentalised Migration (2024) has never been applied: the Finnish Government's and the Interior Ministry's situation pages (applying it needs a separate decision); Helsinki Times and others on the 2026 proposal (plan/films/19-break-glass.md). 'Border law' describes it; the nickname is never used on screen."
     },
     {
-      "id": "year",
+      "id": "what",
       "role": "evidence",
-      "at": "s2+0.25",
-      "until": "s3-0.3",
+      "at": "s2+0.15",
+      "until": "s3-0.2",
       "hold": "s3",
       "text": {
-        "en": "Passed in 2024 / for [one year].",
-        "fi": "Säädetty 2024 / [vuodeksi].",
-        "ja": "2024年、 / [1年] 限りで 制定。"
+        "en": "In an emergency, / Finland may [stop] / asylum claims at / its Russian border.",
+        "fi": "Hätätilassa / Suomi voi [lopettaa] / turvapaikkahakemusten / vastaanoton itärajalla.",
+        "ja": "非常時には、 / ロシア国境で / 難民申請の 受付を / [止め られる]。"
       },
-      "source": "In force from 22 Jul 2024 for one year (EUAA; Finnish Government; Edilex on HE 148/2026), as v1."
+      "source": "The Act on Temporary Measures to Combat Instrumentalised Migration, in force from 22 Jul 2024 for one year: in a restricted area and as a last resort, it lets the government limit the receiving of asylum applications at the border (research-brink-next.md §2; Finnish Government; EUAA). 'Stop asylum claims' is that power in plain words; 'Russian border' is where it applies, the eastern land border with Russia, closed since Dec 2023. The critics' 'pushback law' wording is not used, and nothing says the power is in use."
     },
     {
       "id": "again",
@@ -49,11 +49,11 @@
       "until": "s4-0.3",
       "hold": "s4",
       "text": {
-        "en": "Extended to 2026. / Now proposed: / [2028].",
-        "fi": "Jatkettu 2026 loppuun. / Nyt esitys: / [2028].",
-        "ja": "2026年まで 延長。 / 今度の 提案は / [2028年]。"
+        "en": "Set to end in 2025. / Extended to 2026. / Proposed: [2028].",
+        "fi": "Piti päättyä 2025. / Jatkettiin 2026 loppuun. / Esitys: [2028].",
+        "ja": "2025年に 終わる はずが、 / 2026年まで 延長。 / 今度の 提案は [2028年]。"
       },
-      "source": "Extended to 31 Dec 2026 by Parliament on 4 Jun 2025, 168–29 (Eduskunta press release; EUAA). Government proposal of 3 Sep 2026 (HE 148/2026, number single-source): validity to 31 Dec 2028 (Finnish Government; Edilex). No plenary vote found on 23 Oct, so 'proposed' stands."
+      "source": "In force 22 Jul 2024 for one year, so to 2025; extended to 31 Dec 2026 by Parliament on 4 Jun 2025, 168–29 (Eduskunta; EUAA). Government proposal of 3 Sep 2026: validity to 31 Dec 2028 (Finnish Government; Edilex). No plenary vote found on 23 Oct, so 'Proposed' stands; the corner tag says whose proposal (GOVERNMENT PROPOSAL · 3.9.2026)."
     },
     {
       "id": "desk",
@@ -62,9 +62,9 @@
       "until": "s5-0.3",
       "hold": "s5",
       "text": {
-        "en": "Unchanged. / A committee [agreed].",
-        "fi": "Sisältö ennallaan. / Valiokunta [puolsi].",
-        "ja": "内容は そのまま。 / 委員会は [了承]。"
+        "en": "No changes at all. / A committee of / MPs [agreed].",
+        "fi": "Ei muutoksia. / Kansanedustajien / valiokunta [puolsi].",
+        "ja": "内容は 変わらず。 / 議員の 委員会が / [了承]。"
       },
       "source": "The 2026 proposal makes no changes to the content (Finnish Government; Edilex). Constitutional Law Committee statement, 16 Oct 2026: it can be enacted as an exception to the Constitution and is necessary; two members dissented (Yle, Kaleva/Uutissuomalainen, Demokraatti, Verkkouutiset), as v1."
     },
@@ -75,11 +75,11 @@
       "until": "end-0.45",
       "hold": "end",
       "text": {
-        "en": "Never used. / Still [temporary]. / Proposed: until 2028.",
+        "en": "Never used. / Still [temporary]. / Proposed till 2028.",
         "fi": "Ei käytetty. / Yhä [väliaikainen]. / Esitys: 2028 loppuun.",
         "ja": "使われず、 / なお [一時的]。 / 提案は 2028年まで。"
       },
-      "source": "The station's line, over its own image: the case, glass whole, NEVER USED stamped on it, its tag rewritten 2025, 2026, 2028. 'Proposed' stays until the plenary vote passes; then the third line becomes 'Now until 2028.' (fi 'Nyt 2028 loppuun.', ja '今は 2028年まで。'). Re-check on the morning of posting."
+      "source": "The station's line, over its own image: the case, glass whole, NEVER USED stamped on it, its tag rewritten 2025, 2026, 2028. 'Proposed' stays until the plenary vote passes; then the third line becomes 'Now till 2028.' (fi 'Nyt 2028 loppuun.', ja '今は 2028年まで。'). Re-check on the morning of posting."
     }
   ],
   "ui": {
@@ -136,8 +136,8 @@
     }
   },
   "post": {
-    "en": "Finland's temporary border law has never been used. Passed in 2024 for one year, extended to 2026, now proposed until 2028, unchanged. A parliamentary committee agreed; the plenary vote is still to come. When does temporary end? #Finland",
-    "fi": "Suomen väliaikaista rajalakia ei ole kertaakaan käytetty. Säädettiin 2024 vuodeksi, jatkettiin 2026 loppuun, nyt esitetään vuoden 2028 loppuun sisältö ennallaan. Perustuslakivaliokunta puolsi; täysistunnon äänestys on vielä edessä. Milloin väliaikainen loppuu?",
-    "ja": "フィンランドの一時的な国境法は、一度も使われていない。2024年に期限1年で制定、2026年末まで延長、今度は内容そのままで2028年末までの延長が提案され、議会の委員会が了承した。本会議の採決はこれから。一時的は、いつ終わる？"
+    "en": "Finland's emergency border law has never been used. Since 2024 it lets Finland stop asylum claims at its Russian border. Meant for one year, it got extended to 2026. Now 2028 is proposed, unchanged, and a committee of MPs agreed. The vote is yet to come. When does temporary end?",
+    "fi": "Suomen väliaikaista rajalakia ei ole kertaakaan käytetty. Se sallii turvapaikkahakemusten vastaanoton lopettamisen itärajalla. Säädettiin 2024 vuodeksi, jatkettiin 2026 loppuun, nyt esitetään 2028, ja valiokunta puolsi. Äänestys on vielä edessä. Milloin väliaikainen loppuu?",
+    "ja": "フィンランドの非常時の国境法は、一度も使われていない。2024年から1年の期限で、ロシア国境での難民申請の受付を止められる法律。2026年まで延長され、今度は内容そのままで2028年までが提案され、議員の委員会が了承した。本会議の採決はこれから。一時的は、いつ終わる？"
   }
 }

@@ -536,10 +536,11 @@
   // THE VIRAL CUT (papercut/one-stockholm-viral, plan/films/21b-one-stockholm-viral.md). Owner, 23 Oct: viral cuts of
   // the Doodle films, "test other 2 as well and rest after". The same map, the same helpers; five short shots at the
   // Doodle tempo. Frame 0 IS the hook: the lit paper Stockholm in the pines over a label strip (Doodle DATA CENTRE ·
-  // SWEDEN, UP TO 2,000 MW ≈ ALL OF STOCKHOLM), already starting to fold; on "power" it is flat and the grey box has
-  // come up out of the crease. Then the real skyline lit end to end in one sweep, the two job signs, the price tags,
-  // and the box's own label; on "back" the label drops away, the box folds down and the city stands up lit again,
-  // exactly as frame 0 has it, so a replay reads as one more turn of the same thing. v1's scenes above are untouched.
+  // SWEDEN, UP TO 2,000 MW ≈ ALL OF STOCKHOLM), folding a piece at a time from 0.3 s; on "Stockholm" it is flat and
+  // the grey box has come up out of the crease. Then the real skyline lit end to end in one sweep, the two job signs,
+  // the price tags, and the box's own label; on "back" the label drops away, the box folds down and the city stands up
+  // lit again, exactly as frame 0 has it, so a replay reads as one more turn of the same thing. v1's scenes above are
+  // untouched. Owner, 23 Oct (on the two test cuts): every caption must make sense on its own to a cold viewer.
   // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
   const V = { z0: 1.03, fx: 540, fy: 1150 };                  // frame 0's camera, and the last frame's
   /** a viral-cut camera: a drift that is 0 at both ends of the shot, a zoom path, and kicks on the hits */
@@ -548,10 +549,12 @@
     const e = Math.sin(Math.PI * clamp(lt / dd, 0, 1));
     return { x: Math.sin(lt * 2.1) * amp * e, y: Math.cos(lt * 1.7 + 1.2) * amp * 0.8 * e, z: zz, fx, fy };
   };
-  const ST = { x: 540, y: 1300, s: 0.66, box: 1.1 };           // the stand in the clearing: higher than v1's, clear of the strip
-  const ORDER = [0, 5, 1, 4, 2, 3];                            // the hook folds the ends first, the middle last…
+  const ST = { x: 540, y: 1300, s: 0.9, box: 1.4 };            // the stand in the clearing: bigger and higher than v1's, cropped by
+                                                               // the frame at both ends, clear of the strip and of a five-line caption
+  const ORDER = [0, 5, 1, 4, 2, 3];                            // the hook folds the ends first, the middle last, while the caption types…
   const RORDER = [3, 2, 4, 1, 5, 0];                           // …and the loop stands the middle up first, the ends last
-  const FOLD = { lead: 0.5, step: 0.06, len: 0.26 };           // score.py mirrors both of these
+  const FOLD = { t0: 0.3, end: 0.25, len: 0.26 };              // score.py mirrors both of these
+  const foldStart = (o, tP) => FOLD.t0 + (tP - FOLD.end - FOLD.t0) * o / 5;   // piece o of 6 starts here; the last is flat on the pop
   const UNFOLD = { at: 0.22, step: 0.05, len: 0.26 };
   /** the paper city with each piece folded by kOf(i), 0 standing and lit to 1 flat and dark */
   function cityK(g, x, y, s, kOf, glowK = 1) {
@@ -607,14 +610,15 @@
   }
 
   // ═════════ V1 · osv_hook: frame 0 — the paper Stockholm stands lit in the clearing over the strip; the ends are
-  //            already folding by a quarter second, it is flat on "power", and the grey box comes up out of the crease ═════════
+  //            folding a piece at a time from 0.3 s while the caption types, flat on "Stockholm", where the grey box comes
+  //            up out of the crease ═════════
   SCENES.osv_hook = { draw(c, lt) {
-    const id = 'osv_hook', dd = dur(id), tP = at(id, 'pop', 0.75);
+    const id = 'osv_hook', dd = dur(id), tP = at(id, 'pop', 2.2);
     const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)) + 0.03 * ease.io((l - tP - 0.2) / (dd - tP - 0.2)), hits: [tP], kick: 0.035 });
-    const kOf = (i) => ease.io((lt - (tP - FOLD.lead + ORDER.indexOf(i) * FOLD.step)) / FOLD.len);
+    const kOf = (i) => ease.io((lt - foldStart(ORDER.indexOf(i), tP)) / FOLD.len);
     const kb = (lt - tP + 0.2) / 0.38;
-    clearing(c, lt, cam, { kOf, sy: boxSy(kb) * (1 + swing(lt, [[tP + 0.18, 0.03]])), glowK: 1 - clamp((lt - tP + FOLD.lead) / 0.5, 0, 1), ledOn: kb >= 1 });
-    // on "power" the clearing flashes once, so the hit lands in the picture too
+    clearing(c, lt, cam, { kOf, sy: boxSy(kb) * (1 + swing(lt, [[tP + 0.18, 0.03]])), glowK: 1 - clamp((lt - FOLD.t0) / (tP - FOLD.t0), 0, 1), ledOn: kb >= 1 });
+    // on "Stockholm" the clearing flashes once, so the hit lands in the picture too
     if (lt > tP) { const f = Math.exp(-(lt - tP) * 6) * 0.2; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
     bigTag(c, { k: lt / 0.25 });
     box(c);
@@ -661,12 +665,15 @@
   } };
 
   // ═════════ V4 · osv_map: v1's map, faster — the warning on the grid operator's name, the turbine that is not
-  //            built drawn on the condition, and the four price tags on "nationwide" ═════════
+  //            built drawn on the condition, and the four price tags on "nationwide"; the whole map sits MAPDY lower than
+  //            v1's, under a four-line caption ═════════
+  const MAPDY = 50;
   SCENES.osv_map = { draw(c, lt) {
     const id = 'osv_map', dd = dur(id), tW = at(id, 'warn', 0.6), tB = at(id, 'built', 1.0), tN = at(id, 'nation', 2.2);
     const cam = vcam(lt, dd, { z: (l) => lerp(1.0, 1.06, ease.io(l / dd)), hits: [tW, tN], kick: 0.03, fx: 600, fy: 1000 });
     const [tx, ty] = proj(TORS), [sx, sy] = proj(STHLM);
-    stack(c, [{ sh: map(), d: 0.05, lift: 1.2, soft: 0 }, { d: 0.05, fn: (g, ox, oy) => {
+    stack(c, [{ sh: map(), d: 0.05, lift: 1.2, soft: 0, y: MAPDY }, { d: 0.05, fn: (g, ox, oy) => {
+      oy += MAPDY;
       glow(g, sx + ox, sy + oy, 40, 'rgba(255,210,122,', 0.5 + 0.1 * Math.sin(lt * 3)); g.fillStyle = C.win; g.beginPath(); g.arc(sx + ox, sy + oy, 7, 0, TAU); g.fill();
       const kw = (lt - tW + 0.05) / 0.3; if (kw > 0) put(g, warnSign(), tx + 40 + ox, ty - 14 + oy, { sc: 0.62 * ease.back(kw), lift: 0.8, rot: swing(lt, [[tW + 0.25, 0.08]]) });
       ghostTurbine(g, tx + 150 + ox, ty + 130 + oy, 0.95, (lt - tB) / 0.7, lt);
@@ -690,7 +697,7 @@
     const kOf = (i) => 1 - ease.io((lt - (tB + UNFOLD.at + RORDER.indexOf(i) * UNFOLD.step)) / UNFOLD.len);
     clearing(c, lt, cam, { kOf, sy: 1 - ease.io((lt - tB - 0.05) / 0.22), glowK: clamp((lt - tB - 0.45) / 0.3, 0, 1), ledOn: lt < tB, moonT: lt - dd });
     // the label: slams in on the cut, then on "back" it drops out of the frame under its own weight
-    const kL = (lt + 0.02) / 0.2, kd = clamp((lt - tB) / 0.45, 0, 1), L = { x: 540, y: 900 + 1500 * kd * kd, rot: -0.02 + 0.25 * kd * kd, sc: lerp(1.3, 0.92, ease.out(kL)) };
+    const kL = (lt + 0.02) / 0.2, kd = clamp((lt - tB) / 0.45, 0, 1), L = { x: 540, y: 930 + 1500 * kd * kd, rot: -0.02 + 0.25 * kd * kd, sc: lerp(1.3, 0.92, ease.out(kL)) };
     if (kd < 1) {
       put(c, label(), L.x, L.y, { rot: L.rot, sc: L.sc, lift: 0.6 + 0.8 * (1 - ease.out(kL)) });
       c.save(); c.translate(L.x, L.y); c.rotate(L.rot); c.scale(L.sc, L.sc);

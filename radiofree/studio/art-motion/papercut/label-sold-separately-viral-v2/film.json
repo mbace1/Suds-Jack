@@ -1,0 +1,54 @@
+{
+ "kind": "engine",
+ "engine": "lssv2",
+ "bpm": 124,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/vendor/rough-4.6.6.js",
+  "scenes/lss_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  {
+   "id": "lssv2_hook",
+   "beats": 10,
+   "cues": {
+    "hit": 0.0,
+    "pull": "line:2.start",
+    "ai": "word:pop"
+   }
+  },
+  {
+   "id": "lssv2_count",
+   "beats": 9,
+   "cues": {
+    "roll": 0.1,
+    "count": "word:pop"
+   }
+  },
+  {
+   "id": "lssv2_ripple",
+   "beats": 10,
+   "cues": {
+    "rip": "line:2.start",
+    "three": "word:pop"
+   }
+  },
+  {
+   "id": "lssv2_end",
+   "beats": 13,
+   "cues": {
+    "mark": "line:2.start",
+    "seven": "word:pop"
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}

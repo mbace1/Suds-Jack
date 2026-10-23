@@ -94,3 +94,26 @@ uv run -q --with numpy --with soundfile --with matplotlib python pipeline/build.
 Previews:
 - `previews/23-10-Approved-Vendor-VIRAL-en.mp4`: with the sign-off.
 - `previews/23-10-Approved-Vendor-VIRAL-loop-en.mp4`: the film-only loop master.
+
+**Result (23 Oct): PASSED.** 86 checks passed, 10 warnings, 0 failures.
+- The warnings: fi and ja have not been read by a native speaker, and their sidecars need more time than this en master
+  gives them, so fi and ja need masters of their own if they ship.
+- Sound: −14.1 LUFS, −3.5 dBTP, and 23 of 23 cues have a sound within 40 ms. The frame-1 hit is 35 ms in.
+- Length: 21.8 s for the film, 24.8 s with the sign-off. Reading time added one beat each to the noclick and listed
+  shots.
+
+**Looked at** (frame 0, 1 s, each pop, the whip and the last frame), and what was fixed before the build:
+- The banner was enlarged to s 3.0 and centred.
+- The cursor moved up by the headline. Parked next to the ad's corner, it read as about to click.
+- The newsroom ends at a column clear of the rail.
+- The mini banners were enlarged so the eyes read.
+- The clipboard was lowered under the four-line caption.
+- `stare` was moved after the cascade ends.
+- The last frame and frame 0 were compared side by side and match.
+
+**Known limits:**
+- **Frame 0 has no words.** The caption renderer draws a word only from frame 1, and "An ad firm's" is up by 0.3 s.
+  CITIZEN LAB is on the tag from frame 0. Choose the 1 s frame as the post's cover.
+- In the first second of shot 3 (zoomed in), the top rows of laptops sit behind the caption. The caption's stroke
+  keeps it readable.
+- The back rows' eyes are a few pixels across. The escalation reads from the cascade, the front rows and the red stare.

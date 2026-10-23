@@ -16,8 +16,8 @@
  "shots": [
   { "id": "osv_hook", "beats": 8, "cues": { "pop": "word:pop" } },
   { "id": "osv_city", "beats": 9, "cues": { "pop": "word:pop" } },
-  { "id": "osv_jobs", "beats": 9, "cues": { "sell": "line:1", "doodle": "word:pop" } },
-  { "id": "osv_map", "beats": 9, "cues": { "warn": "line:1", "built": "line:2.start", "nation": "word:pop" } },
+  { "id": "osv_jobs", "beats": 9, "cues": { "sell": "word:500", "doodle": "word:pop" } },
+  { "id": "osv_map", "beats": 9, "cues": { "warn": "line:2.start", "built": "line:3.start", "nation": "word:pop" } },
   { "id": "osv_end", "beats": 10, "cues": { "power": "line:1.start", "jobs": "word:pop", "back": 3.45 } }
  ],
  "quiet": [],

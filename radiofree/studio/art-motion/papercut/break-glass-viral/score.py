@@ -2,10 +2,11 @@
 the house 112), level 2 from the first beat, and the library's sounds against the plan's events (pipeline/plan.mjs), so
 the Finnish and Japanese masters are scored by this same file.
 
-Frame 1 is a hit: a thump and a knock, the snow knocked off the case. On "never used" the stamp comes down again. 2024:
-the lamp clicks on and the tag drops on "one year". The escalation: the marker strikes 2025 and writes 2026, strikes
-2026 and writes 2028 on the pop, a thump and a chime on it, then the days blow past as wind. The desk: NONE ringed on
-"Unchanged.", the rubber stamp on "agreed", two DISSENT cards. The end: NEVER USED stamped on "Never used.", the glass
+Frame 1 is a hit: a thump and a knock, the snow knocked off the case. On "never used" the stamp comes down again. What
+the law is for: the lamp clicks on at "In an emergency,", the glass glints on "stop", the tag drops on. The escalation,
+one line a year: 2025 struck, 2026 written, 2026 struck and 2028 written on the pop, a thump and a chime on it, then the
+days blow past as wind. The desk: NONE ringed on "No changes at all.", the rubber stamp on "agreed", two DISSENT
+cards. The end: NEVER USED stamped on "Never used.", the glass
 rings on "temporary", 2028 ringed on line 3, and the station's sting. Still sober: no alarms, no drums of war.
 The schedules here mirror scenes/bge_kit.js (the bgev_* scenes).
 
@@ -60,25 +61,28 @@ s.fx(thump(), tH, 0.75, 0, name='frame 1: the hit'); s.fx(knock(0.9), tH, 0.45, 
 s.fx(press_stamp(1.0), tP1, 0.85, 0, name='"never used": stamped'); s.fx(thump(), tP1, 0.4, 0)
 accent(s, tP1, S[0], 0.3, S=RFHV, name='never used')
 
-# ── 2 · 2024: the lamp clicks on as we arrive (bgev_year: on at 0.12 s), and on "one year" the tag drops on
-tT = c('bgev_year.tag')
-s.fx(lamp_click(), S[1] + 0.12, 0.5, -0.3, name='2024: the lamp clicks on'); s.fx(hum(100, 0.4) * 0.4, S[1] + 0.14, 0.05, -0.3)
-s.fx(tag_pop(), tT, 0.45, 0.3, name='"one year": the tag drops on'); s.fx(card_flip(), tT + 0.02, 0.35, 0.3); s.fx(tap(), tT + 0.04, 0.25, 0.3)
-accent(s, tT, S[0], 0.28, S=RFHV, name='one year'); s.fx(pin_wobble(0.6, 980), tT + 0.3, 0.12, 0.3, name='it swings')
+# ── 2 · what the law is for (bgev_year): the lamp clicks on at "In an emergency,", the glass glints on "stop", and at
+#      the end of the sentence the tag drops on (VALID TO 2025)
+tL, tP2, tT = c('bgev_year.lamp'), c('bgev_year.stop'), c('bgev_year.tag')
+s.fx(lamp_click(), tL, 0.55, -0.3, name='"In an emergency,": the lamp clicks on'); s.fx(hum(100, 0.4) * 0.4, tL + 0.02, 0.05, -0.3)
+s.fx(sparkle(91), tP2, 0.22, 0, name='"stop": the glass glints'); accent(s, tP2, S[0], 0.28, S=RFHV, name='stop')
+s.fx(tag_pop(), tT, 0.45, 0.3, name='the tag drops on: VALID TO 2025'); s.fx(card_flip(), tT + 0.02, 0.35, 0.3); s.fx(tap(), tT + 0.04, 0.25, 0.3)
+s.fx(pin_wobble(0.6, 980), tT + 0.3, 0.12, 0.3, name='it swings')
 
-# ── 3 · the escalation: the strikes and writes mirror marks3v (strike 0.26 s from max(0.08 s, write - 0.4)), then the days
-tW1, tW2 = c('bgev_again.write1'), c('bgev_again.write2')
-tS1 = max(S[2] + 0.08, tW1 - 0.4); tS2 = max(tW1 + 0.47, tW2 - 0.4)
-s.fx(swish(), tS1, 0.3, 0.3, name='2025 struck'); s.fx(pencil(0.26, seed=2), tS1, 0.9, 0.3)
-s.fx(pencil(0.45, seed=4), tW1, 0.75, 0.3, name='"2026", written'); s.fx(tick(1, down=False), tW1, 0.2, 0.3)
-s.fx(swish(), tS2, 0.32, 0.3, name='2026 struck'); s.fx(pencil(0.26, seed=6), tS2, 0.9, 0.3)
-s.fx(pencil(0.45, seed=8), tW2, 0.8, 0.3, name='"2028", written'); s.fx(thump(), tW2, 0.45, 0, name='"2028": the view steps in')
-s.fx(knock(0.8), tW2, 0.3, 0); s.fx(chime(88, 0.7), tW2 + 0.03, 0.18, 0.1); accent(s, tW2, S[0], 0.3, S=RFHV, name='2028')
+# ── 3 · the escalation, one line a year (mirrors marks3v): 2025 struck from line 1's end (0.26 s), 2026 written at line
+#      2's end, 2026 struck from max(write1 + 0.47, pop - 0.4) (0.2 s), 2028 written once it is through; the step on the pop
+tS1, tW1, tW2 = c('bgev_again.strike1'), c('bgev_again.write1'), c('bgev_again.write2')
+tS2 = max(tW1 + 0.47, tW2 - 0.4); tW28 = max(tW2, tS2 + 0.2)
+s.fx(swish(), tS1, 0.3, 0.3, name='"2025.": struck'); s.fx(pencil(0.26, seed=2), tS1, 0.9, 0.3)
+s.fx(pencil(0.45, seed=4), tW1, 0.75, 0.3, name='"2026.": written'); s.fx(tick(1, down=False), tW1, 0.2, 0.3)
+s.fx(swish(), tS2, 0.32, 0.3, name='2026 struck'); s.fx(pencil(0.2, seed=6), tS2, 0.9, 0.3)
+s.fx(thump(), tW2, 0.45, 0, name='"2028": the view steps in'); s.fx(knock(0.8), tW2, 0.3, 0)
+s.fx(pencil(0.45, seed=8), tW28, 0.8, 0.3, name='"2028", written'); s.fx(chime(88, 0.7), tW2 + 0.03, 0.18, 0.1); accent(s, tW2, S[0], 0.3, S=RFHV, name='2028')
 dd3 = S[3] - S[2]
 for i in range(8):
     t = S[2] + dd3 * (i + 0.5) / 8; s.fx(wind(0.8, 300, 2600) * 0.6, t - 0.4, 0.06, -0.6 + 1.2 * i / 7, name=f'a day {i + 1}')
 
-# ── 4 · the desk: NONE ringed (marks4v: from max(0.22 s, none - 0.2), 0.42 s), the stamp on "agreed", two DISSENT cards
+# ── 4 · the desk: NONE ringed on line 1 (marks4v: from max(0.22 s, none - 0.2), 0.42 s), the stamp on "agreed", two DISSENT cards
 tN, tP = c('bgev_desk.none'), c('bgev_desk.stamp')
 tR = max(S[3] + 0.22, tN - 0.2)
 s.fx(paper_slide(0.4), S[3] + 0.06, 0.22, 0, name='paper on the desk')
