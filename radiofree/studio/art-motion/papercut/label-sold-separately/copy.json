@@ -1,0 +1,128 @@
+{
+  "film": "label-sold-separately",
+  "cut": "Coxon 12, DRAFT v1 (23 Oct 2026): one question, would you know a political ad was made with AI? US in the question (owner, on the Coxon films: a channel called Radio Free Helsinki can be misread)",
+  "series": "coxon",
+  "captionSize": "house",
+  "argument": "Probably not: by mid-October about 220 US political ads made at least partly with AI had drawn more than $137 million, and only about 3 in 10 said so.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question",
+      "role": "setup",
+      "at": "s1+0.5",
+      "until": "s2-0.35",
+      "hold": "s2",
+      "text": {
+        "en": "US midterms: would you know / a political ad was / [made with AI]?",
+        "fi": "USA:n välivaalit: tunnistaisitko / vaalimainoksen, joka on / [tehty tekoälyllä]?",
+        "ja": "米中間選挙。 その 政治広告が / [AIで 作られた] と / 気づける だろうか？"
+      },
+      "source": "The film's question. Peg: the Wesleyan Media Project's 15 Oct count of AI-made ads in the 2026 midterms (New York Times, 16 Oct; Gizmodo). Not quoted."
+    },
+    {
+      "id": "spent",
+      "role": "evidence",
+      "at": "s2+0.5",
+      "until": "s3-0.35",
+      "hold": "s3",
+      "text": {
+        "en": "By mid-October: [$137 million] / spent airing about 220 ads / made at least partly with AI.",
+        "fi": "Lokakuun puoliväliin: [137 milj. dollaria] / noin 220 mainokseen, jotka on / tehty ainakin osin tekoälyllä.",
+        "ja": "10月中旬までに [1億3700万ドル]。 / AIを 少なくとも 一部に 使った / 約220本の 広告に。"
+      },
+      "source": "More than $137 million spent airing about 220 ads made at least partly with AI, through 11 Oct 2026, across 34 states. Wesleyan Media Project release, 15 Oct 2026 (data through 11 Oct), as reported by Gizmodo, Fortune/Yahoo, Campaigns & Elections and The National Desk (search excerpts, re-checked 23 Oct; the release itself was not opened). The count includes ads only enhanced with AI, hence 'at least partly'. The 2024 comparison (under $50,000) is left out of the film."
+    },
+    {
+      "id": "labels",
+      "role": "evidence",
+      "at": "s3+0.6",
+      "until": "s4-0.35",
+      "hold": "s4",
+      "text": {
+        "en": "Only about [3 in 10] / carried a label saying / AI was used.",
+        "fi": "Vain noin [3 kymmenestä] / kertoi merkinnällä, että / tekoälyä oli käytetty.",
+        "ja": "AI使用の 表示が あったのは / 約 [10本に 3本] だけ。"
+      },
+      "source": "27% of the identified ads carried a disclaimer saying they contained AI-generated content (Wesleyan, 15 Oct, via Gizmodo; Campaigns & Elections). Rounded to 'about 3 in 10'. The researchers say AI use is likely undercounted."
+    },
+    {
+      "id": "law",
+      "role": "evidence",
+      "at": "s4+0.6",
+      "until": "s5-0.35",
+      "hold": "s5",
+      "text": {
+        "en": "About 30 states require / some AI disclosure. There is / [no federal rule].",
+        "fi": "Noin 30 osavaltiota vaatii / jonkinlaisen merkinnän. / [Liittovaltion sääntöä] ei ole.",
+        "ja": "表示を 求める 州は 約30。 / [連邦の ルールは] ない。"
+      },
+      "source": "About 30 states require AI disclosure in political ads (Wesleyan via Gizmodo: 30; NCSL: 31 states regulating political deepfakes as of 23 Jun 2026, disclosure the main approach; some laws are narrow or blocked). No federal requirement: the FEC's 2024 interpretive rule only made its fraud rule technology-neutral, and the FCC's proposed broadcast disclosure rule was never finalized. Searched 23 Oct."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.6",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "Ten AI ads. / About three of them / [said so].",
+        "fi": "Kymmenen tekoälymainosta. / Noin kolme niistä / [kertoi sen].",
+        "ja": "AI広告 10本。 / そう 明かしたのは / [約3本]。"
+      },
+      "source": "The station's line, over its own image: 27% labelled, so about three in every ten."
+    }
+  ],
+  "ui": {
+    "tagMid": {
+      "en": "US MIDTERMS 2026",
+      "fi": "USA:N VÄLIVAALIT 2026",
+      "ja": "米中間選挙 2026"
+    },
+    "dateline": {
+      "en": "WESLEYAN MEDIA PROJECT · 15.10.2026",
+      "fi": "WESLEYAN MEDIA PROJECT · 15.10.2026",
+      "ja": "ウェズリアン・メディア・プロジェクト · 2026.10.15"
+    },
+    "count": {
+      "en": "$137,000,000",
+      "fi": "$137,000,000",
+      "ja": "$137,000,000"
+    },
+    "tagLabels": {
+      "en": "27% LABELLED · WESLEYAN",
+      "fi": "27 % MERKITTY · WESLEYAN",
+      "ja": "表示あり 27% · ウェズリアン"
+    },
+    "federal": {
+      "en": "FEDERAL",
+      "fi": "LIITTOVALTIO",
+      "ja": "連邦"
+    },
+    "tagLaw": {
+      "en": "STATE LAWS: ~30 · FEDERAL: NONE",
+      "fi": "OSAVALTIOT: ~30 · LIITTOVALTIO: EI",
+      "ja": "州法 約30 · 連邦 なし"
+    }
+  },
+  "props": {
+    "label": {
+      "en": "MADE WITH AI",
+      "why": "the disclosure sticker on a US ad: an artefact, English in every master; the caption carries the meaning"
+    }
+  },
+  "post": {
+    "en": "US midterms: would you know a political ad was made with AI? By 11 Oct, about 220 ads made at least partly with AI had drawn over $137M in airtime, per the Wesleyan Media Project. About 3 in 10 said so. About 30 states require some disclosure; no federal rule. #Midterms #AI",
+    "fi": "USA:n välivaalit: tunnistaisitko tekoälyllä tehdyn vaalimainoksen? Wesleyan Media Projectin mukaan 11.10. mennessä noin 220 ainakin osin tekoälyllä tehtyyn mainokseen oli käytetty yli 137 miljoonaa dollaria. Noin kolme kymmenestä kertoi sen. Noin 30 osavaltiota vaatii jonkinlaisen merkinnän; liittovaltion sääntöä ei ole.",
+    "ja": "米中間選挙：その政治広告がAIで作られたと気づける？ ウェズリアン・メディア・プロジェクトによると、10月11日までにAIを少なくとも一部に使った約220本の広告に1億3700万ドル超。AI使用を表示したのは約3割。表示を求める州は約30、連邦のルールはない。"
+  }
+}

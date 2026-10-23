@@ -1,0 +1,25 @@
+{
+ "kind": "engine",
+ "engine": "au",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/au_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "au_screen", "beats": 12, "cues": { "jump": "word:pop" } },
+  { "id": "au_chart", "beats": 12, "cues": { "unfold": "line:1.start", "spin": "word:pop" } },
+  { "id": "au_post", "beats": 12, "cues": { "env": "line:1.start", "plate": "word:pop" } },
+  { "id": "au_stamp", "beats": 12, "cues": { "s1": "word:pop", "s2": "line:2", "s3": "line:3" } },
+  { "id": "au_pile", "beats": 12, "cues": { "l1": "line:1.start", "l3": "line:1", "none": "word:pop" } }
+ ],
+ "quiet": [],
+ "keep": []
+}

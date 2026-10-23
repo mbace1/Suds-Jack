@@ -1,0 +1,26 @@
+{
+ "kind": "engine",
+ "engine": "lss",
+ "bpm": 112,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/vendor/rough-4.6.6.js",
+  "scenes/lss_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "lss_wall", "beats": 12, "cues": { "wink": "word:pop" } },
+  { "id": "lss_count", "beats": 12, "cues": { "roll": 0.2, "count": "word:pop" } },
+  { "id": "lss_labels", "beats": 12, "cues": { "l1": 0.45, "l2": 0.85, "l3": "word:pop", "pocket": "line:3.start" } },
+  { "id": "lss_law", "beats": 12, "cues": { "tabs": "line:1.start", "none": "word:pop" } },
+  { "id": "lss_end", "beats": 14, "cues": { "mark": "line:2.start", "said": "word:pop" } }
+ ],
+ "quiet": [],
+ "keep": []
+}

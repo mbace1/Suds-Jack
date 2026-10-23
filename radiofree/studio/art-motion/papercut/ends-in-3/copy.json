@@ -1,0 +1,139 @@
+{
+  "film": "ends-in-3",
+  "cut": "Global 2, DRAFT v1 (23 Oct) — one question: should a phone need its owner's ID to work?",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "Mexico ties every mobile line to its owner's ID number, against extortion and fraud. Unlinked lines are cut off by last digit, 2.2 million ending in 3, yet still get the earthquake alert.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question",
+      "role": "setup",
+      "at": "s1+0.5",
+      "until": "s2-0.35",
+      "hold": "s2",
+      "text": {
+        "en": "Should a phone need / its owner's ID / to [work]?",
+        "fi": "Pitäisikö puhelimen / vaatia omistajan henkilötunnus / [toimiakseen]?",
+        "ja": "電話が 使えるのに / 持ち主の IDが / [必要] だろうか？"
+      },
+      "source": "The station's question (research-global-next.md §2; plan/films/23-ends-in-3.md)."
+    },
+    {
+      "id": "rule",
+      "role": "evidence",
+      "at": "s2+0.6",
+      "until": "s3-0.35",
+      "hold": "s3",
+      "text": {
+        "en": "Mexico now ties every phone / line to its owner's ID, / against [extortion and fraud].",
+        "fi": "Meksiko sitoo nyt jokaisen / liittymän omistajan tunnukseen / [kiristystä ja petoksia] vastaan.",
+        "ja": "メキシコは 全ての 携帯回線を / 持ち主の IDに 結びつけた。 / 狙いは [恐喝と 詐欺] 対策。"
+      },
+      "source": "Mexico's telecom regulator, the CRT: since 9 Jan 2026 every mobile line must be linked to its holder's name and CURP (national ID number), through the phone company; the stated aim is to end the anonymous lines used for extortion and fraud (El Financiero, Mexico News Daily, Crónica; search summaries, 23 Oct). Postpaid lines are already tied to their holder by contract; the drive is mostly prepaid."
+    },
+    {
+      "id": "cut",
+      "role": "evidence",
+      "at": "s3+0.6",
+      "until": "s4-0.35",
+      "hold": "s4",
+      "text": {
+        "en": "Unlinked lines are cut off / by last digit. Ending in 3: / [2.2 million] lines.",
+        "fi": "Rekisteröimättömät katkaistaan / loppunumeron mukaan. Loppu 3: / [2,2 miljoonaa] liittymää.",
+        "ja": "未登録の 回線は 末尾の / 数字ごとに 停止。 末尾3は / [220万] 回線。"
+      },
+      "source": "CRT figures via El Financiero, 5 Oct 2026: 2,248,143 lines ending in 3 suspended after their deadline (30 Sep, with a grace to 23:59 on 3 Oct), as of 4 Oct; about 1.21 million had been reactivated by then. The calendar runs by last digit, 0 on 15 Aug to 9 on 31 Dec. Lines ending in 4 followed (1,328,000 suspended, Informador, 19 Oct); lines ending in 5 are due on 31 Oct (El Mañana, Récord, 21 Oct). Search summaries, 23 Oct."
+    },
+    {
+      "id": "kept",
+      "role": "evidence",
+      "at": "s4+0.6",
+      "until": "s5-0.35",
+      "hold": "s5",
+      "text": {
+        "en": "Calls, texts, data: off. / The number is kept until / the line is [linked].",
+        "fi": "Puhelut, viestit, data: poikki. / Numero säilyy, kunnes / liittymä on [rekisteröity].",
+        "ja": "通話・SMS・データは 停止。 / 番号は 残り、 登録すれば / 回線は [戻る]。"
+      },
+      "source": "CRT, as carried by El Universal, Milenio, Xataka and Récord (search summaries, 23 Oct): a suspended line cannot make or receive ordinary calls, send texts or use data; the number is not lost or cancelled, and service returns as soon as the line is linked."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "No ID, no phone. / The earthquake alert / still [gets through].",
+        "fi": "Ei tunnusta, ei puhelinta. / Maanjäristysvaroitus / [menee silti läpi].",
+        "ja": "IDなし、 電話なし。 / それでも 地震警報は / [届く]。"
+      },
+      "source": "The station's line, over its own image. The fact under it: a suspended line still receives the seismic alert and can still call 911 and other emergency and citizen-service numbers and its phone company (CRT via El Universal, Milenio, Xataka, ADN40; search summaries, 23 Oct). Not a quote."
+    }
+  ],
+  "ui": {
+    "place": {
+      "en": "MEXICO · 2026",
+      "fi": "MEKSIKO · 2026",
+      "ja": "メキシコ · 2026"
+    },
+    "registry": {
+      "en": "CRT · LINE REGISTRY · 2026",
+      "fi": "CRT · LIITTYMÄREKISTERI · 2026",
+      "ja": "CRT · 回線登録 · 2026"
+    },
+    "dateline": {
+      "en": "CRT · 4.10.2026",
+      "fi": "CRT · 4.10.2026",
+      "ja": "CRT · 2026.10.4"
+    },
+    "cutoff": {
+      "en": "LINES CUT OFF · ENDING IN 3",
+      "fi": "KATKAISTUT · LOPPU 3",
+      "ja": "停止回線 · 末尾3"
+    },
+    "kept": {
+      "en": "THE NUMBER IS KEPT",
+      "fi": "NUMERO SÄILYY",
+      "ja": "番号は 消えない"
+    }
+  },
+  "props": {
+    "digits": {
+      "en": "0–9 on the phones",
+      "why": "each phone shows the last digit of its line; numbers, the same in every master"
+    },
+    "calendar": {
+      "en": "2026 · 0–9 · 15/08 … 31/12",
+      "why": "the calendar of deadlines by last digit (CRT); digits and day/month dates, the same in every master"
+    },
+    "tally": {
+      "en": "2,248,143",
+      "why": "the CRT's count of suspended lines ending in 3, as of 4 Oct 2026; a number, the same in every master"
+    },
+    "id": {
+      "en": "ID · CURP",
+      "why": "the card's band and the name of Mexico's national ID number; the photo is a mask, no face, no name"
+    },
+    "alert": {
+      "en": "a triangle with a seismograph trace",
+      "why": "the alert screen is an icon only, so no master says the wrong words; it shows an alert, never a quake"
+    }
+  },
+  "post": {
+    "en": "Mexico now ties every mobile line to its owner's ID number, against extortion and fraud. Unlinked lines are cut off by last digit: 2,248,143 ending in 3, by the regulator's count on 4 Oct. A cut-off phone keeps its number and still gets the earthquake alert. Lines ending in 5: due 31 Oct. #Mexico #privacy",
+    "fi": "Meksiko sitoo nyt jokaisen matkapuhelinliittymän omistajan henkilötunnukseen kiristyksen ja petosten torjumiseksi. Rekisteröimättömät liittymät katkaistaan loppunumeron mukaan: viranomaisen mukaan 2 248 143 numeroon 3 päättyvää 4.10. Katkaistu puhelin säilyttää numeronsa ja saa yhä maanjäristysvaroituksen.",
+    "ja": "メキシコは全ての携帯回線を持ち主のID番号に結びつけた。狙いは恐喝と詐欺の対策。未登録の回線は末尾の数字ごとに停止され、規制当局によると10月4日時点で末尾3の回線は224万8143件。停止された電話も番号は残り、地震警報は届く。"
+  }
+}
