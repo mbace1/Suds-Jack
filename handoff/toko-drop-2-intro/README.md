@@ -29,6 +29,14 @@ intro button next to the start button in the menu", then "Make a PR after puttin
   is a v16 entry in `toko-drop-2/VERSIONS.md`. The catalogue note and the `versions.json` row were updated for this cabinet
   only.
 
+**Follow-up `fe85a015`: the token cascade.** `981f48c2` changed `hub/games.js` without moving its token, so a returning
+visitor's service worker kept the v15 note. The cascade the v15 deploy did, computed from the imports:
+- `games.js` v146, hub v150, shell v109, hub-entry v73
+- `sw` v139
+- the counter's chain to `board.js` v15
+
+Only tokens changed. The hub, AnotherHUB, the counter, `toko-drop-2` and `hyperdagger` load with no HTTP or page errors.
+
 ## Files here
 
 - `intro-v16.patch` is the exact deployed change, `git diff 25dae247 981f48c2 -- toko-drop-2/`. It applies cleanly to
