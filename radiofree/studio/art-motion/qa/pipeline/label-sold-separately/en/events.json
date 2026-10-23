@@ -1,0 +1,424 @@
+{
+ "s1": 0,
+ "s2": 6.428571428571429,
+ "s3": 12.857142857142858,
+ "s4": 19.285714285714285,
+ "s5": 25.714285714285715,
+ "end": 33.214285714285715,
+ "lss_wall.wink": 2.0082,
+ "lss_count.roll": 6.6286,
+ "lss_count.count": 7.2922,
+ "lss_labels.l1": 13.1571,
+ "lss_labels.l2": 13.4371,
+ "lss_labels.l3": 13.7071,
+ "lss_labels.pocket": 14.8517,
+ "lss_law.tabs": 19.8857,
+ "lss_law.none": 21.5303,
+ "lss_end.mark": 26.7734,
+ "lss_end.said": 27.7816,
+ "lang": "en",
+ "holds": [],
+ "cues": {
+  "lss_wall.wink": 2.0082,
+  "lss_count.roll": 6.6286,
+  "lss_count.count": 7.2922,
+  "lss_labels.l1": 13.1571,
+  "lss_labels.l2": 13.4371,
+  "lss_labels.l3": 13.7071,
+  "lss_labels.pocket": 14.8517,
+  "lss_law.tabs": 19.8857,
+  "lss_law.none": 21.5303,
+  "lss_end.mark": 26.7734,
+  "lss_end.said": 27.7816
+ },
+ "words": [
+  {
+   "w": "US",
+   "t": 0.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "midterms:",
+   "t": 0.568,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "would",
+   "t": 0.795,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "you",
+   "t": 0.932,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "know",
+   "t": 1.023,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 1.356,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "political",
+   "t": 1.402,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "ad",
+   "t": 1.629,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "was",
+   "t": 1.697,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "made",
+   "t": 2.008,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "with",
+   "t": 2.122,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "AI?",
+   "t": 2.235,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "By",
+   "t": 6.929,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "mid-October:",
+   "t": 6.997,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "$137",
+   "t": 7.292,
+   "pop": true,
+   "caption": "spent"
+  },
+  {
+   "w": "million",
+   "t": 7.406,
+   "pop": true,
+   "caption": "spent"
+  },
+  {
+   "w": "spent",
+   "t": 7.808,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "airing",
+   "t": 7.944,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "about",
+   "t": 8.103,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "220",
+   "t": 8.239,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "ads",
+   "t": 8.33,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "made",
+   "t": 8.641,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "at",
+   "t": 8.755,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "least",
+   "t": 8.823,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "partly",
+   "t": 8.959,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "with",
+   "t": 9.119,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "AI.",
+   "t": 9.232,
+   "pop": false,
+   "caption": "spent"
+  },
+  {
+   "w": "Only",
+   "t": 13.457,
+   "pop": false,
+   "caption": "labels"
+  },
+  {
+   "w": "about",
+   "t": 13.571,
+   "pop": false,
+   "caption": "labels"
+  },
+  {
+   "w": "3",
+   "t": 13.707,
+   "pop": true,
+   "caption": "labels"
+  },
+  {
+   "w": "in",
+   "t": 13.753,
+   "pop": true,
+   "caption": "labels"
+  },
+  {
+   "w": "10",
+   "t": 13.821,
+   "pop": true,
+   "caption": "labels"
+  },
+  {
+   "w": "carried",
+   "t": 14.109,
+   "pop": false,
+   "caption": "labels"
+  },
+  {
+   "w": "a",
+   "t": 14.291,
+   "pop": false,
+   "caption": "labels"
+  },
+  {
+   "w": "label",
+   "t": 14.336,
+   "pop": false,
+   "caption": "labels"
+  },
+  {
+   "w": "saying",
+   "t": 14.473,
+   "pop": false,
+   "caption": "labels"
+  },
+  {
+   "w": "AI",
+   "t": 14.852,
+   "pop": false,
+   "caption": "labels"
+  },
+  {
+   "w": "was",
+   "t": 14.92,
+   "pop": false,
+   "caption": "labels"
+  },
+  {
+   "w": "used.",
+   "t": 15.011,
+   "pop": false,
+   "caption": "labels"
+  },
+  {
+   "w": "About",
+   "t": 19.886,
+   "pop": false,
+   "caption": "law"
+  },
+  {
+   "w": "30",
+   "t": 20.022,
+   "pop": false,
+   "caption": "law"
+  },
+  {
+   "w": "states",
+   "t": 20.09,
+   "pop": false,
+   "caption": "law"
+  },
+  {
+   "w": "require",
+   "t": 20.249,
+   "pop": false,
+   "caption": "law"
+  },
+  {
+   "w": "some",
+   "t": 20.651,
+   "pop": false,
+   "caption": "law"
+  },
+  {
+   "w": "AI",
+   "t": 20.765,
+   "pop": false,
+   "caption": "law"
+  },
+  {
+   "w": "disclosure.",
+   "t": 20.833,
+   "pop": false,
+   "caption": "law"
+  },
+  {
+   "w": "There",
+   "t": 21.106,
+   "pop": false,
+   "caption": "law"
+  },
+  {
+   "w": "is",
+   "t": 21.242,
+   "pop": false,
+   "caption": "law"
+  },
+  {
+   "w": "no",
+   "t": 21.53,
+   "pop": true,
+   "caption": "law"
+  },
+  {
+   "w": "federal",
+   "t": 21.598,
+   "pop": true,
+   "caption": "law"
+  },
+  {
+   "w": "rule.",
+   "t": 21.78,
+   "pop": true,
+   "caption": "law"
+  },
+  {
+   "w": "Ten",
+   "t": 26.614,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "AI",
+   "t": 26.705,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "ads.",
+   "t": 26.773,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "About",
+   "t": 27.107,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "three",
+   "t": 27.243,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "of",
+   "t": 27.38,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "them",
+   "t": 27.448,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "said",
+   "t": 27.782,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "so.",
+   "t": 27.895,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.5,
+   "t1": 6.079
+  },
+  {
+   "id": "spent",
+   "t0": 6.929,
+   "t1": 12.507
+  },
+  {
+   "id": "labels",
+   "t0": 13.457,
+   "t1": 18.936
+  },
+  {
+   "id": "law",
+   "t0": 19.886,
+   "t1": 25.364
+  },
+  {
+   "id": "last",
+   "t0": 26.614,
+   "t1": 33.014
+  }
+ ],
+ "quiet": []
+}

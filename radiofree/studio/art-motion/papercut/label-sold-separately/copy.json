@@ -53,7 +53,7 @@
         "fi": "Vain noin [3 kymmenestä] / kertoi merkinnällä, että / tekoälyä oli käytetty.",
         "ja": "AI使用の 表示が あったのは / 約 [10本に 3本] だけ。"
       },
-      "source": "27% of the identified ads carried a disclaimer saying they contained AI-generated content (Wesleyan, 15 Oct, via Gizmodo; Campaigns & Elections). Rounded to 'about 3 in 10'. The researchers say AI use is likely undercounted."
+      "source": "Wesleyan Media Project, 15 Oct 2026, as reported: Gizmodo gives 27% of the identified ads with a disclaimer saying they contained AI-generated content; the New York Times' report (via summaries) gives about 70% with none, i.e. about 30% labelled; Wesleyan's 4 Sep update gave 69% of 164 ads without disclosure. The outlets differ by a few points, so the film says 'about 3 in 10' and puts no exact percentage on screen. The researchers say AI use is likely undercounted."
     },
     {
       "id": "law",
@@ -79,7 +79,7 @@
         "fi": "Kymmenen tekoälymainosta. / Noin kolme niistä / [kertoi sen].",
         "ja": "AI広告 10本。 / そう 明かしたのは / [約3本]。"
       },
-      "source": "The station's line, over its own image: 27% labelled, so about three in every ten."
+      "source": "The station's line, over its own image: Wesleyan's count has roughly 27-31% of the identified AI ads labelled, so about three in every ten."
     }
   ],
   "ui": {
@@ -99,9 +99,9 @@
       "ja": "$137,000,000"
     },
     "tagLabels": {
-      "en": "27% LABELLED · WESLEYAN",
-      "fi": "27 % MERKITTY · WESLEYAN",
-      "ja": "表示あり 27% · ウェズリアン"
+      "en": "~3 IN 10 LABELLED · WESLEYAN",
+      "fi": "NOIN 3/10 MERKITTY · WESLEYAN",
+      "ja": "表示あり 約3割 · ウェズリアン"
     },
     "federal": {
       "en": "FEDERAL",

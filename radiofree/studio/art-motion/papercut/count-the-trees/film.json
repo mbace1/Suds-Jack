@@ -14,7 +14,7 @@
  ],
  "scenes": [],
  "shots": [
-  { "id": "cnt_wood", "beats": 12, "cues": { "ring": "line:1", "gone": "word:pop" } },
+  { "id": "cnt_wood", "beats": 12, "cues": { "gone": "word:pop" } },
   { "id": "cnt_ha", "beats": 12, "cues": { "grid": "line:1.start", "eia": "word:pop" } },
   { "id": "cnt_trees", "beats": 12, "cues": { "loupe": "line:1.start", "count": "word:pop" } },
   { "id": "cnt_names", "beats": 12, "cues": { "snow": "line:1.start", "names": "word:pop" } },

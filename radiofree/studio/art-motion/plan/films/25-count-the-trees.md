@@ -8,9 +8,10 @@ this session cannot open. Numbering: Doodle 4 is *One Stockholm* (draft, 22 Oct)
 
 **The one question:** *How do you count a forest that is gone?*
 
-**The answer, in one sentence (copy.json `argument`):** Doodle's Muhos data-centre site was cleared before the required
-environmental assessment: over 300 hectares by the regulator's count, about 250,000 trees by the Guardian's estimate.
-Citizens gathered over 50,000 names for data-centre rules in days. Doodle plans tree planting across 130 hectares.
+**The answer (copy.json `argument`, 31 words):** Doodle's Muhos data-centre site was cleared before the required
+assessment: over 300 hectares by the regulator's count, about 250,000 trees by the Guardian's estimate. Doodle plans tree
+planting across 130 hectares. (The citizens' count is in shot 4 and the post copy; it was cut from the argument to keep it
+under the 35-word line.)
 
 **Why it is not a third copy of the Muhos films:** *The Biodiversity Fund* told the felling side-on (spruces tipping
 over, a hectare counter, the cheque, the regulator's stamp, the protest, Doodle's "fell short"); *On Hold* was the
@@ -37,7 +38,7 @@ Everything below is from WebSearch result summaries (eight queries, 22–23 Oct)
 
 | # | id | role | caption (en) | what we see (from directly above) | cues |
 |---|---|---|---|---|---|
-| 1 | `cnt_wood` | setup | How do you count / a forest that is [gone]? | A forest of card crowns from overhead: dark spruce stars, rounder pines, October birches in yellow patches, a bog, a gravel road, a dark stream. A red marker draws the site's boundary in dashes, closing on "gone". From the pop, the crowns inside go lane by lane from the road side, each leaving a puff of sawdust. What is left is soil, the harvester's ruts, slash, and a pale stump where every tree stood. Tag: MUHOS, FINLAND. | `ring` = line 1, `gone` = pop |
+| 1 | `cnt_wood` | setup | How do you count / a forest that is [gone]? | A forest of card crowns from overhead: dark spruce stars, rounder pines, October birches in yellow patches, a bog, a gravel road, a dark stream. A red marker draws the site's boundary in dashes, closing on "gone". From the pop, the crowns inside go lane by lane from the road side, each leaving a puff of sawdust. What is left is soil, the harvester's ruts, slash, and a pale stump where every tree stood. Tag: MUHOS, FINLAND. | `gone` = pop (the ring draws from the shot's start up to it) |
 | 2 | `cnt_ha` | evidence | The regulator counts / hectares: over 300, cleared / before the [assessment]. | A cream hectare grid fills the clearing row by row, while a card on the map counts HECTARES up to **300+**. On "assessment" an index card slides in, ENVIRONMENTAL IMPACT ASSESSMENT, with its tick box empty. Tag: LVV ORDERED A HALT · 6.10.2026. | `grid` = line 1 start, `eia` = pop |
 | 3 | `cnt_trees` | evidence | A newspaper counted trees: / an estimated [250,000]. | Closer in. A brass loupe crosses the clearing, the stumps under it twice the size, and every stump it passes keeps an ochre ring. A newspaper clipping on the map counts TREES · ESTIMATE up to **250,000** on the pop. Tag: THE GUARDIAN'S ESTIMATE · 22.10.2026. | `loupe` = line 1 start, `count` = pop |
 | 4 | `cnt_names` | evidence | Citizens count names: / over 50,000 in days, / for data-centre [rules]. | Signature slips fall on everything like the first snow, fluttering, and settle on the forest and the clearing. A card counts NAMES to **50,000+** on "rules". Tag: CITIZENS' INITIATIVE · 15.9.2026. | `snow` = line 1 start, `names` = pop |
@@ -79,3 +80,29 @@ The felling front (`fellAt()`) is mirrored in `score.py`, so each lane's knock l
   - LVV's next step after the 23 Oct deadline
   - any official tree count
   - the initiative's current total
+
+## Build (23 Oct, DRAFT v1)
+
+`pipeline/build.py papercut/count-the-trees --lang en` **passed**: text 96 pass / 6 warn, sound 5 pass, 0 fail. The
+warnings are the unread fi/ja and two ja sidecar lengths (`hectares` needs 6.0 s against 5.48 s, `names` 6.33 s against
+5.48 s). 32.1 s with no holds. −13.9 LUFS / −4.0 dBTP / LRA 3.0 on the film, −14.1 LUFS with the sign-off, and every cue
+sounded within 40 ms. Preview with the papercut sign-off: `previews/23-10-Count-the-Trees-DRAFT-en.mp4` (~35.2 s,
+~7.7 MB). Reports: `qa/pipeline/count-the-trees/en/`.
+
+**Fixed after looking:**
+- **The pops landed early in every shot** (line 1 ends ~0.75 s in, the pop ~1.5 s), so an action on line 1 was over
+  before the word it serves. Now the boundary draws until the pop and the felling sweeps after it (~1.5 s, lane by lane,
+  mirrored in `score.py`). The loupe crosses the whole shot, and the saplings grow on past their pop.
+- **Stumps showed through the gaps before the felling**, so the forest inside the ring looked thin, as if it were
+  already cut. Standing crowns now sit on dark forest-floor discs, so the inside reads as dense forest until it goes.
+- **The loupe's tick marks read as birds.** Each counted stump now keeps an ochre ring.
+- **The punchline patch was faint and covered by its label.** The saplings are bigger, with shadows, and sit on a green
+  wash behind a dashed edge. The label (Doodle wordmark, PLANTING PLANNED, 130 ha) moved onto the bare soil above the
+  patch. The wordmark had also crowded into its heading ("DoodlePLANTING"), so the label was laid out again.
+- **The EIA card** sat on the shot's tag, so it moved up to y 1352.
+- **The first full build failed on sound coverage**: `ring`, `loupe`, `snow` and `felled` had no sound within 40 ms.
+  The `ring` cue was dropped (the ring now runs to the pop). A glass tap lands on the loupe, and the first slip flutter
+  and the clipping's slide now sit exactly on their cues.
+- **The argument was 42 words** (warn), so it is now 31.
+- **Phone check:** at 360 px wide the forest reads as forest, the clearing as cut ground, and the 40 % patch as a part,
+  not the whole (stills: felling 2.3 s, loupe 15.6 s, punchline 30.8 s).

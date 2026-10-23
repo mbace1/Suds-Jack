@@ -185,7 +185,7 @@
   /** when a crown inside the site goes: from the pop, a front sweeping the clearing lane by lane from the road side */
   const fellAt = (t, tP) => { const lane = Math.floor((t.x - BOX.x0) / 64), along = (BOX.y1 - t.y) / (BOX.y1 - BOX.y0); return tP - 0.05 + lane * 0.1 + along * 0.28 + t.k * 0.08; };   // score.py mirrors this
   SCENES.cnt_wood = { draw(c, lt) {
-    const id = 'cnt_wood', dd = dur(id), tR = at(id, 'ring', 2.0), tP = at(id, 'gone', 3.0);
+    const id = 'cnt_wood', dd = dur(id), tP = at(id, 'gone', 3.0);
     const cam = camOf(lt, dd, [tP], { z0: 1.0, z1: 1.05, kick: 0.03 });
     const kRing = ease.io((lt - 0.12) / Math.max(0.6, tP - 0.17));   // the boundary closes on the pop
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 },
@@ -309,7 +309,7 @@
 
   // ═════════ 5 · cnt_end: Doodle's unit. The clearing again; the clipping says what was felled; on line 2 saplings
   //            come up in rows across 40 % of the clearing; on "130 hectares" its label lands, with the wordmark ═════════
-  const SAPS = (() => { const out = []; let row = 0; for (let y = Y_PATCH + 10; y < BOX.y1; y += 22, row++) for (let x = BOX.x0 + 8 + (row % 2) * 11; x < BOX.x1; x += 22) if (inPatch(x, y)) out.push([x, y, row]); return out; })();
+  const SAPS = (() => { const out = []; let row = 0; for (let y = Y_PATCH + 12; y < BOX.y1; y += 24, row++) for (let x = BOX.x0 + 10 + (row % 2) * 12; x < BOX.x1; x += 24) if (inPatch(x, y)) out.push([x, y, row]); return out; })();
   const NROW = SAPS.reduce((m, s) => Math.max(m, s[2]), 0) + 1;
   const patchLabel = () => sprite('cnt_patch', 400, 200, 0, 0, (g) => {
     g.fillStyle = C.cream; g.beginPath(); g.roundRect(0, 0, 390, 190, 10); g.fill();
@@ -327,14 +327,16 @@
         g.save(); g.translate(ox, oy);
         ringTo(g, 1, { pen: false, a: 0.6 });
         // the patch's own outline, dashed, from the first sapling on
-        if (kS > 0) { g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.clip(); g.strokeStyle = 'rgba(127,207,90,.8)'; g.lineWidth = 4; g.setLineDash([10, 9]); g.beginPath(); g.moveTo(BOX.x0 - 10, Y_PATCH); g.lineTo(BOX.x1 + 10, Y_PATCH); g.stroke(); g.restore(); }
+        // the patch: a green wash over the planted part, so 40 % reads as 40 %, and its dashed edge
+        if (kS > 0) { g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.clip(); g.fillStyle = `rgba(127,207,90,${0.16 * clamp(kS * 3, 0, 1)})`; g.fillRect(BOX.x0 - 10, Y_PATCH, BOX.x1 - BOX.x0 + 20, BOX.y1 - Y_PATCH + 10); g.strokeStyle = 'rgba(150,225,110,.9)'; g.lineWidth = 5; g.setLineDash([12, 9]); g.beginPath(); g.moveTo(BOX.x0 - 10, Y_PATCH); g.lineTo(BOX.x1 + 10, Y_PATCH); g.stroke(); g.restore(); }
         for (const [x, y, row] of SAPS) {
           const k = (kS * NROW - row) / 1.2; if (k <= 0) continue; const s = ease.back(clamp(k, 0, 1));
-          g.fillStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.arc(x + 2, y + 3, 5 * s, 0, TAU); g.fill();
-          g.fillStyle = C.sapD; g.beginPath(); g.arc(x, y, 6 * s, 0, TAU); g.fill(); g.fillStyle = C.sap; g.beginPath(); g.arc(x - 1.5, y - 1.5, 3.6 * s, 0, TAU); g.fill();
+          g.fillStyle = 'rgba(0,0,0,.45)'; g.beginPath(); g.arc(x + 2.5, y + 3.5, 7.5 * s, 0, TAU); g.fill();
+          g.fillStyle = C.sapD; g.beginPath(); g.arc(x, y, 8.5 * s, 0, TAU); g.fill(); g.fillStyle = C.sap; g.beginPath(); g.arc(x - 2, y - 2, 5.2 * s, 0, TAU); g.fill();
         }
         const kL = (lt - tH + 0.1) / 0.35;
-        if (kL > 0) put(g, patchLabel(), 330, Y_PATCH + 30, { sc: ease.back(kL), rot: -0.03 + swing(lt, [[tH + 0.25, 0.04]]), lift: 1.0 });
+        // the label sits on the bare soil just above the patch, its green foot on the patch's edge
+        if (kL > 0) put(g, patchLabel(), 330, Y_PATCH - 196, { sc: ease.back(kL), rot: -0.03 + swing(lt, [[tH + 0.25, 0.04]]), lift: 1.0 });
         g.restore();
       } }], cam);
     counter(c, 120, 1410, ui('felledLabel', 'FELLED · ESTIMATE'), '≈250,000', { style: 'news', w: 420, a: clamp((lt - tF + 0.1) / 0.3, 0, 1), rot: -0.025 });

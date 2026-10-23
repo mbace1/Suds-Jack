@@ -1,0 +1,482 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The film's question. Peg: the Wesleyan Media Project's 15 Oct count of AI-made a"
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy spent.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy spent.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy spent.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy spent source",
+  "result": "pass",
+  "why": "More than $137 million spent airing about 220 ads made at least partly with AI, "
+ },
+ {
+  "check": "copy spent pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy labels.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy labels.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy labels.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy labels source",
+  "result": "pass",
+  "why": "27% of the identified ads carried a disclaimer saying they contained AI-generate"
+ },
+ {
+  "check": "copy labels pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy law.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy law.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy law.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy law source",
+  "result": "pass",
+  "why": "About 30 states require AI disclosure in political ads (Wesleyan via Gizmodo: 30"
+ },
+ {
+  "check": "copy law pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, over its own image: 27% labelled, so about three in every te"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.tagMid",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.dateline",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.count",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tagLabels",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.federal",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.tagLaw",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "29 words: Probably not: by mid-October about 220 US political ads made at least partly with AI had d"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "29 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 725 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 166, 'y': 191, 'w': 747, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 4.00 s (60 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 3.84 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 0.43 → scrim 0.0"
+ },
+ {
+  "check": "width en:spent",
+  "result": "pass",
+  "why": "widest line 690 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:spent",
+  "result": "pass",
+  "why": "box {'x': 184, 'y': 191, 'w': 712, 'h': 247}"
+ },
+ {
+  "check": "reading time en:spent",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 5.25 s (85 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:spent",
+  "result": "pass",
+  "why": "last word up 3.28 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:spent",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:spent",
+  "result": "pass",
+  "why": "picture behind: edge 0.37 → scrim 0.0"
+ },
+ {
+  "check": "width en:labels",
+  "result": "pass",
+  "why": "widest line 521 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:labels",
+  "result": "pass",
+  "why": "box {'x': 268, 'y': 191, 'w': 543, 'h': 247}"
+ },
+ {
+  "check": "reading time en:labels",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 3.70 s (54 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:labels",
+  "result": "pass",
+  "why": "last word up 3.93 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:labels",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:labels",
+  "result": "pass",
+  "why": "picture behind: edge 0.46 → scrim 0.0"
+ },
+ {
+  "check": "width en:law",
+  "result": "pass",
+  "why": "widest line 664 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:law",
+  "result": "pass",
+  "why": "box {'x': 197, 'y': 191, 'w': 686, 'h': 247}"
+ },
+ {
+  "check": "reading time en:law",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.45 s (69 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:law",
+  "result": "pass",
+  "why": "last word up 3.58 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:law",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:law",
+  "result": "pass",
+  "why": "picture behind: edge 0.31 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 481 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 289, 'y': 191, 'w': 503, 'h': 247}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 6.40 s, needs 3.00 s (40 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 5.12 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 0.51 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "US midterms: would you know a political ad | was made with AI?"
+ },
+ {
+  "check": "sidecar lines en:spent",
+  "result": "warn",
+  "why": "By mid-October: $137 million spent airing | about 220 ads made at least partly with AI."
+ },
+ {
+  "check": "sidecar lines en:labels",
+  "result": "pass",
+  "why": "Only about 3 in 10 carried a label saying | AI was used."
+ },
+ {
+  "check": "sidecar lines en:law",
+  "result": "pass",
+  "why": "About 30 states require some AI | disclosure. There is no federal rule."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "Ten AI ads. About three of them said so."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.58 s on this master, fi needs 5.35 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "USA:n välivaalit: tunnistaisitko | vaalimainoksen, joka on tehty tekoälyllä?"
+ },
+ {
+  "check": "sidecar fi:spent",
+  "result": "warn",
+  "why": "5.58 s on this master, fi needs 6.94 s"
+ },
+ {
+  "check": "sidecar lines fi:spent",
+  "result": "warn",
+  "why": "Lokakuun puoliväliin: 137 milj. dollaria noin 220 | mainokseen, jotka on tehty ainakin osin tekoälyllä."
+ },
+ {
+  "check": "sidecar fi:labels",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 5.12 s"
+ },
+ {
+  "check": "sidecar lines fi:labels",
+  "result": "pass",
+  "why": "Vain noin 3 kymmenestä kertoi merkinnällä, | että tekoälyä oli käytetty."
+ },
+ {
+  "check": "sidecar fi:law",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 5.71 s"
+ },
+ {
+  "check": "sidecar lines fi:law",
+  "result": "pass",
+  "why": "Noin 30 osavaltiota vaatii jonkinlaisen | merkinnän. Liittovaltion sääntöä ei ole."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "6.40 s on this master, fi needs 4.24 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Kymmenen tekoälymainosta. Noin kolme | niistä kertoi sen."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "warn",
+  "why": "5.58 s on this master, ja needs 6.00 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "pass",
+  "why": "米中間選挙。その政治広告がAIで | 作られたと気づけるだろうか？"
+ },
+ {
+  "check": "sidecar ja:spent",
+  "result": "warn",
+  "why": "5.58 s on this master, ja needs 8.00 s"
+ },
+ {
+  "check": "sidecar lines ja:spent",
+  "result": "warn",
+  "why": "10月中旬までに1億3700万ドル。AIを | 少なくとも一部に使った約220本の広告に。"
+ },
+ {
+  "check": "sidecar ja:labels",
+  "result": "pass",
+  "why": "5.48 s on this master, ja needs 4.83 s"
+ },
+ {
+  "check": "sidecar lines ja:labels",
+  "result": "pass",
+  "why": "AI使用の表示があったのは約 | 10本に3本だけ。"
+ },
+ {
+  "check": "sidecar ja:law",
+  "result": "pass",
+  "why": "5.48 s on this master, ja needs 4.67 s"
+ },
+ {
+  "check": "sidecar lines ja:law",
+  "result": "pass",
+  "why": "表示を求める州は約30。連邦の | ルールはない。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "6.40 s on this master, ja needs 4.33 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "AI広告10本。そう明かしたのは | 約3本。"
+ }
+]

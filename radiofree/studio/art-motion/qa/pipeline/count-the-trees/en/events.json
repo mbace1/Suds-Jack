@@ -1,0 +1,326 @@
+{
+ "s1": 0,
+ "s2": 6.428571428571429,
+ "s3": 12.857142857142858,
+ "s4": 19.285714285714285,
+ "s5": 25.714285714285715,
+ "end": 32.142857142857146,
+ "cnt_wood.gone": 1.4927,
+ "cnt_ha.grid": 7.0286,
+ "cnt_ha.eia": 8.8322,
+ "cnt_trees.loupe": 13.4571,
+ "cnt_trees.count": 14.5862,
+ "cnt_names.snow": 19.8857,
+ "cnt_names.names": 21.6666,
+ "cnt_end.felled": 26.2143,
+ "cnt_end.plant": 27.0934,
+ "cnt_end.ha": 27.5025,
+ "lang": "en",
+ "holds": [],
+ "cues": {
+  "cnt_wood.gone": 1.4927,
+  "cnt_ha.grid": 7.0286,
+  "cnt_ha.eia": 8.8322,
+  "cnt_trees.loupe": 13.4571,
+  "cnt_trees.count": 14.5862,
+  "cnt_names.snow": 19.8857,
+  "cnt_names.names": 21.6666,
+  "cnt_end.felled": 26.2143,
+  "cnt_end.plant": 27.0934,
+  "cnt_end.ha": 27.5025
+ },
+ "words": [
+  {
+   "w": "How",
+   "t": 0.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "do",
+   "t": 0.591,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "you",
+   "t": 0.659,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "count",
+   "t": 0.75,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 1.106,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "forest",
+   "t": 1.152,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "that",
+   "t": 1.311,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "is",
+   "t": 1.425,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "gone?",
+   "t": 1.493,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "The",
+   "t": 7.029,
+   "pop": false,
+   "caption": "hectares"
+  },
+  {
+   "w": "regulator",
+   "t": 7.119,
+   "pop": false,
+   "caption": "hectares"
+  },
+  {
+   "w": "counts",
+   "t": 7.347,
+   "pop": false,
+   "caption": "hectares"
+  },
+  {
+   "w": "hectares:",
+   "t": 7.726,
+   "pop": false,
+   "caption": "hectares"
+  },
+  {
+   "w": "over",
+   "t": 7.953,
+   "pop": false,
+   "caption": "hectares"
+  },
+  {
+   "w": "300,",
+   "t": 8.067,
+   "pop": false,
+   "caption": "hectares"
+  },
+  {
+   "w": "cleared",
+   "t": 8.18,
+   "pop": false,
+   "caption": "hectares"
+  },
+  {
+   "w": "before",
+   "t": 8.582,
+   "pop": false,
+   "caption": "hectares"
+  },
+  {
+   "w": "the",
+   "t": 8.741,
+   "pop": false,
+   "caption": "hectares"
+  },
+  {
+   "w": "assessment.",
+   "t": 8.832,
+   "pop": true,
+   "caption": "hectares"
+  },
+  {
+   "w": "A",
+   "t": 13.457,
+   "pop": false,
+   "caption": "trees"
+  },
+  {
+   "w": "newspaper",
+   "t": 13.503,
+   "pop": false,
+   "caption": "trees"
+  },
+  {
+   "w": "counted",
+   "t": 13.73,
+   "pop": false,
+   "caption": "trees"
+  },
+  {
+   "w": "trees:",
+   "t": 13.912,
+   "pop": false,
+   "caption": "trees"
+  },
+  {
+   "w": "an",
+   "t": 14.291,
+   "pop": false,
+   "caption": "trees"
+  },
+  {
+   "w": "estimated",
+   "t": 14.359,
+   "pop": false,
+   "caption": "trees"
+  },
+  {
+   "w": "250,000.",
+   "t": 14.586,
+   "pop": true,
+   "caption": "trees"
+  },
+  {
+   "w": "Citizens",
+   "t": 19.886,
+   "pop": false,
+   "caption": "names"
+  },
+  {
+   "w": "count",
+   "t": 20.09,
+   "pop": false,
+   "caption": "names"
+  },
+  {
+   "w": "names:",
+   "t": 20.227,
+   "pop": false,
+   "caption": "names"
+  },
+  {
+   "w": "over",
+   "t": 20.606,
+   "pop": false,
+   "caption": "names"
+  },
+  {
+   "w": "50,000",
+   "t": 20.719,
+   "pop": false,
+   "caption": "names"
+  },
+  {
+   "w": "in",
+   "t": 20.878,
+   "pop": false,
+   "caption": "names"
+  },
+  {
+   "w": "days,",
+   "t": 20.947,
+   "pop": false,
+   "caption": "names"
+  },
+  {
+   "w": "for",
+   "t": 21.303,
+   "pop": false,
+   "caption": "names"
+  },
+  {
+   "w": "data-centre",
+   "t": 21.394,
+   "pop": false,
+   "caption": "names"
+  },
+  {
+   "w": "rules.",
+   "t": 21.667,
+   "pop": true,
+   "caption": "names"
+  },
+  {
+   "w": "Felled:",
+   "t": 26.214,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "about",
+   "t": 26.396,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "250,000",
+   "t": 26.532,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "trees.",
+   "t": 26.714,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "Planting",
+   "t": 27.093,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "planned:",
+   "t": 27.298,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "130",
+   "t": 27.502,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "hectares.",
+   "t": 27.593,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.5,
+   "t1": 6.079
+  },
+  {
+   "id": "hectares",
+   "t0": 7.029,
+   "t1": 12.507
+  },
+  {
+   "id": "trees",
+   "t0": 13.457,
+   "t1": 18.936
+  },
+  {
+   "id": "names",
+   "t0": 19.886,
+   "t1": 25.364
+  },
+  {
+   "id": "last",
+   "t0": 26.214,
+   "t1": 31.943
+  }
+ ],
+ "quiet": []
+}

@@ -1,0 +1,512 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The station's question (plan/films/25-count-the-trees.md). The site is Doodle's "
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy hectares.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy hectares.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy hectares.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy hectares source",
+  "result": "pass",
+  "why": "LVV (Finland's licensing and supervisory agency), 6 Oct 2026: preparatory work a"
+ },
+ {
+  "check": "copy hectares pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy trees.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy trees.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy trees.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy trees source",
+  "result": "pass",
+  "why": "The Guardian's investigation, 22 Oct 2026 (environment, ng-interactive): an esti"
+ },
+ {
+  "check": "copy trees pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy names.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy names.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy names.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy names source",
+  "result": "pass",
+  "why": "Citizens' initiative 'Datakeskukset kuriin' (opened 15 Sep 2026): grid-connectio"
+ },
+ {
+  "check": "copy names pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, two units on purpose. 130 ha: Doodle's own statement (AFP, a"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.place",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.halt",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.guardian",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.initiative",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.haLabel",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.treesLabel",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.namesLabel",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.felledLabel",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.eiaTitle",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.eiaTitle2",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.planting",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.patchHa",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "31 words: Doodle's Muhos data-centre site was cleared before the required assessment: over 300 hecta"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "31 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 500 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 279, 'y': 191, 'w': 522, 'h': 160}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 2.95 s (39 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 4.59 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 12.98 → scrim 0.36"
+ },
+ {
+  "check": "width en:hectares",
+  "result": "pass",
+  "why": "widest line 654 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:hectares",
+  "result": "pass",
+  "why": "box {'x': 202, 'y': 191, 'w': 676, 'h': 247}"
+ },
+ {
+  "check": "reading time en:hectares",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.55 s (71 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:hectares",
+  "result": "pass",
+  "why": "last word up 3.67 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:hectares",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:hectares",
+  "result": "pass",
+  "why": "picture behind: edge 12.75 → scrim 0.35"
+ },
+ {
+  "check": "width en:trees",
+  "result": "pass",
+  "why": "widest line 674 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:trees",
+  "result": "pass",
+  "why": "box {'x': 192, 'y': 191, 'w': 696, 'h': 160}"
+ },
+ {
+  "check": "reading time en:trees",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 3.40 s (48 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:trees",
+  "result": "pass",
+  "why": "last word up 4.35 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:trees",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:trees",
+  "result": "pass",
+  "why": "picture behind: edge 12.47 → scrim 0.33"
+ },
+ {
+  "check": "width en:names",
+  "result": "pass",
+  "why": "widest line 535 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:names",
+  "result": "pass",
+  "why": "box {'x': 261, 'y': 191, 'w': 557, 'h': 247}"
+ },
+ {
+  "check": "reading time en:names",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.25 s (65 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:names",
+  "result": "pass",
+  "why": "last word up 3.70 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:names",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:names",
+  "result": "pass",
+  "why": "picture behind: edge 17.5 → scrim 0.59"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 754 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 152, 'y': 191, 'w': 776, 'h': 160}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 4.00 s (60 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.35 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 12.93 → scrim 0.36"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "How do you count a forest that is gone?"
+ },
+ {
+  "check": "sidecar lines en:hectares",
+  "result": "pass",
+  "why": "The regulator counts hectares: over 300, | cleared before the assessment."
+ },
+ {
+  "check": "sidecar lines en:trees",
+  "result": "pass",
+  "why": "A newspaper counted trees: an estimated | 250,000."
+ },
+ {
+  "check": "sidecar lines en:names",
+  "result": "pass",
+  "why": "Citizens count names: over 50,000 in days, | for data-centre rules."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "Felled: about 250,000 trees. Planting | planned: 130 hectares."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.58 s on this master, fi needs 3.53 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Miten lasketaan metsä, joka on jo | kaadettu?"
+ },
+ {
+  "check": "sidecar fi:hectares",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 5.12 s"
+ },
+ {
+  "check": "sidecar lines fi:hectares",
+  "result": "pass",
+  "why": "Valvoja laskee hehtaareja: yli 300, | hakattu ennen ympäristöarviointia."
+ },
+ {
+  "check": "sidecar fi:trees",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 3.41 s"
+ },
+ {
+  "check": "sidecar lines fi:trees",
+  "result": "pass",
+  "why": "Sanomalehti laski puut: arviolta 250 000."
+ },
+ {
+  "check": "sidecar fi:names",
+  "result": "pass",
+  "why": "5.48 s on this master, fi needs 5.35 s"
+ },
+ {
+  "check": "sidecar lines fi:names",
+  "result": "pass",
+  "why": "Kansalaiset laskevat nimiä: yli 50 000 | päivissä datakeskusten sääntelylle."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 4.94 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Kaadettu: noin 250 000 puuta. Istutus | suunnitteilla: 130 hehtaaria."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "pass",
+  "why": "5.58 s on this master, ja needs 3.00 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "pass",
+  "why": "もうない森をどう数える？"
+ },
+ {
+  "check": "sidecar ja:hectares",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 6.00 s"
+ },
+ {
+  "check": "sidecar lines ja:hectares",
+  "result": "warn",
+  "why": "監督機関はヘクタールで：300超。 | 環境影響評価より先に伐採。"
+ },
+ {
+  "check": "sidecar ja:trees",
+  "result": "pass",
+  "why": "5.48 s on this master, ja needs 3.67 s"
+ },
+ {
+  "check": "sidecar lines ja:trees",
+  "result": "pass",
+  "why": "新聞は木を数えた：推定25万本。"
+ },
+ {
+  "check": "sidecar ja:names",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 6.33 s"
+ },
+ {
+  "check": "sidecar lines ja:names",
+  "result": "warn",
+  "why": "市民は署名を数える：数日で5万超、 | データセンターの規制を求めて。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 5.00 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "伐採：約25万本。植樹の計画： | 130ヘクタール。"
+ }
+]

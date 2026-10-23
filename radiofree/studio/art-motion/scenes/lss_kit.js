@@ -315,7 +315,7 @@ window.LSS = (() => {
         });
       }, d: 0.14 },
     ], cam);
-    CW.tag(c, D.ui('tagLabels', '27% LABELLED · WESLEYAN'), lt, dur);
+    CW.tag(c, D.ui('tagLabels', '~3 IN 10 LABELLED · WESLEYAN'), lt, dur);
     box(c);
   } };
 

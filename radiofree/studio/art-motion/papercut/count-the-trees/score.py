@@ -63,7 +63,7 @@ def accent(t, ch, i, g=0.26, name='accent'):
     s.note(marimba(chords_at(t, i, ch)[1][-1] + 12, 0.3, 0.9), t, g, 0.2, 0.35, stem='accent', name=name)
 
 # ── the music: bright over the standing forest, sour from the felling on
-tR, tGone = c('cnt_wood.ring'), c('cnt_wood.gone')
+tGone = c('cnt_wood.gone')
 s.note(marimba(74, 0.4, 0.9), S[0] + 0.035, 0.3, 0.1, 0.35, stem='accent', name='first note')     # 35 ms in
 s.note(sub_bass(50, 0.6), S[0] + 0.035, 0.2, 0, 0, stem='bass')
 bed(0, S[0] + B / 2, tGone - 0.1, BRIGHT, 1)
@@ -99,7 +99,7 @@ s.fx(bonk(71), tE + 0.05, 0.3, 0.3, name='the box is empty'); accent(tE, SOUR, 1
 # ── 3 · trees: the loupe glides; the count ticks faster and faster; a glock on the number
 tL, tC = c('cnt_trees.loupe'), c('cnt_trees.count')
 s.fx(page_flutter(0.6), S[2] + 0.1, 0.25, -0.3, name='the clipping')
-s.fx(whoosh(d=1.2, way='in', bright=0.3), tL - 0.2, 0.12, 0.2, name='the loupe')
+s.fx(whoosh(d=1.2, way='in', bright=0.3), tL - 0.2, 0.12, 0.2, name='the loupe'); s.fx(foley('glass', 'tap'), tL, 0.3, 0.1, name='line 1: the loupe is down')
 n = 14
 for i in range(n):
     k = (i + 1) / n; t = tL + (tC - tL) * (k ** 0.6) - 0.02; s.fx(clock_tick(i % 2 == 1), t, 0.2, 0.1, name=f'count {i + 1}')
@@ -109,12 +109,12 @@ for i in range(6): s.fx(tick(i % 4, down=False), tC + 0.6 + i * 0.45, 0.1, 0.2, 
 # ── 4 · names: paper snow; on "rules" the chime goes up a fifth
 tS, tN = c('cnt_names.snow'), c('cnt_names.names')
 for i in range(16):
-    t = tS - 0.05 + i * 0.16; s.fx(page_flutter(0.5, seed=10 + i), t, 0.1, -0.6 + 1.2 * ((i * 7) % 16) / 15, name=f'names fall {i + 1}')
+    t = tS + i * 0.16; s.fx(page_flutter(0.5, seed=10 + i), t, 0.12 if i else 0.2, -0.6 + 1.2 * ((i * 7) % 16) / 15, name=f'names fall {i + 1}')
 s.fx(chime(76, 0.5), tN, 0.24, 0.1, name='"rules": 50,000+'); s.fx(chime(83, 0.8), tN + 0.12, 0.24, 0.2); accent(tN, SOUR, 3, name='"rules"')
 
 # ── 5 · the clipping slides in; saplings come up row by row on a kalimba scale; the label lands; the button
 tF, tP2, tH = c('cnt_end.felled'), c('cnt_end.plant'), c('cnt_end.ha')
-s.fx(paper_slide(0.4) * 6, tF - 0.05, 0.3, -0.35, name='"Felled": the clipping')
+s.fx(paper_slide(0.4) * 6, tF, 0.3, -0.35, name='"Felled": the clipping')
 SCALE = [62, 64, 66, 69, 71, 74, 76, 78, 81, 83]
 for r in range(10):
     t = tP2 + 1.5 * r / 10; s.note(kalimba(SCALE[r], 0.6), t, 0.2, -0.3 + 0.06 * r, 0.3, stem='accent', name=f'saplings row {r + 1}')

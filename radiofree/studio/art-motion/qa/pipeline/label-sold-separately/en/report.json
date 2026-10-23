@@ -1,0 +1,154 @@
+{
+ "lang": "en",
+ "end": 33.214285714285715,
+ "holds": [],
+ "captions": [
+  {
+   "id": "question",
+   "text": "US midterms: would you know / a political ad was / [made with AI]?",
+   "plain": "US midterms: would you know a political ad was made with AI?",
+   "t0": 0.5,
+   "t1": 6.079,
+   "shown": 5.579,
+   "read": 4,
+   "lastWord": 2.235,
+   "widths": [
+    725,
+    419,
+    341
+   ],
+   "box": {
+    "x": 166,
+    "y": 191,
+    "w": 747,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.43,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "spent",
+   "text": "By mid-October: [$137 million] / spent airing about 220 ads / made at least partly with AI.",
+   "plain": "By mid-October: $137 million spent airing about 220 ads made at least partly with AI.",
+   "t0": 6.929,
+   "t1": 12.507,
+   "shown": 5.579,
+   "read": 5.25,
+   "lastWord": 9.232,
+   "widths": [
+    690,
+    636,
+    676
+   ],
+   "box": {
+    "x": 184,
+    "y": 191,
+    "w": 712,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.37,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "labels",
+   "text": "Only about [3 in 10] / carried a label saying / AI was used.",
+   "plain": "Only about 3 in 10 carried a label saying AI was used.",
+   "t0": 13.457,
+   "t1": 18.936,
+   "shown": 5.479,
+   "read": 3.7,
+   "lastWord": 15.011,
+   "widths": [
+    416,
+    521,
+    299
+   ],
+   "box": {
+    "x": 268,
+    "y": 191,
+    "w": 543,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.46,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "law",
+   "text": "About 30 states require / some AI disclosure. There is / [no federal rule].",
+   "plain": "About 30 states require some AI disclosure. There is no federal rule.",
+   "t0": 19.886,
+   "t1": 25.364,
+   "shown": 5.479,
+   "read": 4.45,
+   "lastWord": 21.78,
+   "widths": [
+    562,
+    664,
+    362
+   ],
+   "box": {
+    "x": 197,
+    "y": 191,
+    "w": 686,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.31,
+    "busy": 0
+   },
+   "native": true
+  },
+  {
+   "id": "last",
+   "text": "Ten AI ads. / About three of them / [said so].",
+   "plain": "Ten AI ads. About three of them said so.",
+   "t0": 26.614,
+   "t1": 33.014,
+   "shown": 6.4,
+   "read": 3,
+   "lastWord": 27.895,
+   "widths": [
+    259,
+    481,
+    183
+   ],
+   "box": {
+    "x": 289,
+    "y": 191,
+    "w": 503,
+    "h": 247
+   },
+   "inSafe": true,
+   "inRail": false,
+   "covers": [],
+   "busy": {
+    "edge": 0.51,
+    "busy": 0
+   },
+   "native": true
+  }
+ ],
+ "frames": 996,
+ "fps": 30
+}
