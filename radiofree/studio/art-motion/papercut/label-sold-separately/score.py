@@ -69,7 +69,7 @@ s.fx(stamp(), tN, 0.6, 0, name='"$137 million": the counter lands'); s.note(timp
 s.chorale(tN + 0.02, 'Db', 1.8, 0.5, 0.42)
 
 # ── 3 · the second fact: three stickers fly and slap, the third on "3 in 10"; the sheet goes in the pocket
-L = [c('lss_labels.l1'), c('lss_labels.l2'), c('lss_labels.l3')]; tP = c('lss_labels.pocket'); FLY = 0.34   # lss_kit.js: a sticker's flight
+L = [c('lss_labels.l1'), c('lss_labels.l2'), c('lss_labels.l3')]; tP = c('lss_labels.pocket'); FLY = 0.26   # lss_kit.js: a sticker's flight
 for i, t in enumerate(L):
     s.fx(paper_slide(0.12, 40 + i) * 6, t - FLY, 0.3, -0.5, name=f'sticker {i + 1} peels off the sheet')
     s.fx(swish(), t - FLY + 0.05, 0.22, 0.3 - 0.3 * i, name=f'sticker {i + 1} flies')
@@ -88,7 +88,7 @@ s.note(timpani(31, 1.6, 0.5), tE, 0.34, 0, 0.35)
 s.fife_line(tE + 0.4, [(0, 72, 2.2)], g=0.16, pan=-0.2)
 
 # ── 5 · the punchline: the marker rings three screens; "said so" is the deadpan button and the bell
-tM, tS = c('lss_end.mark'), c('lss_end.said'); RING, GAPR = 0.42, 0.08                                  # lss_kit.js: the rings' clock
+tM, tS = c('lss_end.mark'), c('lss_end.said'); RING, GAPR = 0.32, 0.05                                  # lss_kit.js: the rings' clock
 for i in range(3): s.fx(squeak(RING, 1600 + 80 * i, 2200 + 60 * i), tM + i * (RING + GAPR), 0.5, -0.4 + 0.2 * i, name=f'the marker rings screen {i + 1}')
 s.fx(stinger('deadpan'), tS + 0.05, 0.55, name='"said so": the deadpan button'); s.note(timpani(36, 1.2, 0.5), tS, 0.3, 0, 0.35)
 s.chorale(tS + 0.3, 'C', 2.8, 0.6, 0.5); s.fx(tower_bell(48, 4.0), tS + 0.35, 0.32, -0.2, 0.5)

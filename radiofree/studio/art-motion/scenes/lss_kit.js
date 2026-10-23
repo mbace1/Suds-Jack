@@ -293,7 +293,7 @@ window.LSS = (() => {
   // 3 · The second fact. A gloved hand holds a sheet of ten MADE WITH AI stickers below the wall. Three fly off it
   // and slap onto three screens (the third on "3 in 10"); then the sheet goes down, into the pocket.
   const SH = { x: 168, y: 1200, rot: 0.1, s: 0.86 };
-  const FLY = 0.34;
+  const FLY = 0.26;
   SCENES['lss_labels'] = { draw(c, lt) {
     const ID = 'lss_labels', T = [D.at(ID, 'l1', 0.5), D.at(ID, 'l2', 0.9), D.at(ID, 'l3', 1.4)], tP = D.at(ID, 'pocket', 3.6), dur = D.dur(ID);
     const kP = D.ease.in((lt - tP) / 0.7), shY = SH.y + 900 * kP;
@@ -345,7 +345,7 @@ window.LSS = (() => {
   // the seven others stay bare. The aide stands by on the right, the sheet in his pocket with seven labels still on it.
   SCENES['lss_end'] = { draw(c, lt) {
     const ID = 'lss_end', tM = D.at(ID, 'mark', 2.0), tS = D.at(ID, 'said', 3.4), dur = D.dur(ID), M = D.marks();
-    const RING = 0.42, GAPR = 0.08, sched = [0, 1, 2].map((n) => tM + n * (RING + GAPR));
+    const RING = 0.32, GAPR = 0.05, sched = [0, 1, 2].map((n) => tM + n * (RING + GAPR));
     const cam = { x: Math.sin(lt * 0.26) * 5, y: 0, z: D.punch(lt, [tS], { kick: 0.03 }) * lerp(1.0, 1.05, D.ease.io(lt / dur)), fx: 600, fy: 1150 };
     const labels = { 8: { k: 1, rot: -0.12 }, 9: { k: 1, rot: -0.06 }, 7: { k: 1, rot: -0.15 } };
     stack(c, [

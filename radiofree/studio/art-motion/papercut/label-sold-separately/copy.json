@@ -71,7 +71,7 @@
     {
       "id": "last",
       "role": "punchline",
-      "at": "s5+0.6",
+      "at": "s5+0.9",
       "until": "end-0.2",
       "hold": "end",
       "text": {
