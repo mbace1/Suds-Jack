@@ -1,0 +1,62 @@
+{
+ "kind": "engine",
+ "engine": "ham",
+ "bpm": 140,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/bdf_kit.js",
+  "scenes/ham_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  {
+   "id": "tsv_hook",
+   "beats": 7,
+   "cues": {
+    "secret": "word:pop"
+   }
+  },
+  {
+   "id": "tsv_map",
+   "beats": 9,
+   "cues": {
+    "glide": 0.9,
+    "cut": "word:pop"
+   }
+  },
+  {
+   "id": "tsv_fell",
+   "beats": 9,
+   "cues": {
+    "year": 0.15,
+    "fell": 0.45,
+    "permit": "word:pop"
+   }
+  },
+  {
+   "id": "tsv_secret",
+   "beats": 9,
+   "cues": {
+    "email": 0.1,
+    "close": 0.7,
+    "secrets": "word:pop"
+   }
+  },
+  {
+   "id": "tsv_end",
+   "beats": 15,
+   "cues": {
+    "ts": "word:pop",
+    "back": 4.2,
+    "clip": 5.65
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}

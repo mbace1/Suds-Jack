@@ -1,0 +1,169 @@
+{
+  "film": "trade-secret",
+  "cut": "Doodle 6, VIRAL CUT v1 (23 Oct). Hamina: the map of the flying squirrel forest felled without a permit, hidden at Doodle's emailed request as trade secrets. Hook first (the map under black bars, a squirrel peeking); 2007's forest and its yellow zones; 2021's halls and sand, the zones gone; the papers into a folder under a TRADE SECRET stamp; the stamp on the map; the bars slide back: loop.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Doodle emailed a Finnish authority to keep secret the papers on 1.3 ha of flying squirrel forest felled without a permit at its Hamina data centre; they were kept as trade secrets.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "Doodle asked / officials to keep / this map [secret].",
+        "fi": "Doodle pyysi / viranomaista / [salaamaan] kartan.",
+        "ja": "Doodleが 当局に / この地図の / [非公開を] 求めた。"
+      },
+      "source": "Helsingin Sanomat, 23 Oct 2026 (13:20): Google asked the Southeast Finland ELY Centre (Kaakkois-Suomen ELY-keskus) to keep secret the documents on felling flying squirrel forest; the authority hid the detailed-plan drawing showing the areas that should not have been felled; Google had asked for the secrecy by email. Headline: 'Google pyysi salaamaan luvattomat hakkuut osoittavan kartan: Viranomainen salasi'. Doodle = Google (house parody). 'This map' is the film's drawing of that detailed-plan map, after the published graphic."
+    },
+    {
+      "id": "map",
+      "role": "evidence",
+      "at": "s2+0.15",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "The map marked / flying squirrel / forest. / [No felling.]",
+        "fi": "Kartassa liito- / oravametsää. / [Ei hakkuita.]",
+        "ja": "地図には / モモンガの森。 / [伐採禁止]。"
+      },
+      "source": "HS, 23 Oct 2026: the hidden detailed-plan drawing shows the areas that were not to be felled at the data-centre site. HS's published graphic marks them in yellow as liito-oravametsää (flying squirrel forest). Flying squirrel breeding and resting sites may not be destroyed or weakened under Finland's Nature Conservation Act (Kymen Sanomat on the Horjalviikki plan draft, Oct 2026)."
+    },
+    {
+      "id": "fell",
+      "role": "evidence",
+      "at": "s3+0.15",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "Felled in 2018–19: / 1.3 ha of it, / [without a permit].",
+        "fi": "Hakattiin 2018–19: / 1,3 hehtaaria, / [ilman lupaa].",
+        "ja": "2018〜19年に / 1.3ヘクタールを / [無許可で] 伐採。"
+      },
+      "source": "HS, 23 Oct 2026: 1.3 ha of flying squirrel forest was destroyed in the Hamina data centre's expansion in 2018–2019 ('luvattomat hakkuut', unauthorised fellings). Yle and HS (Yle, 'Google subsidiary cut down flying squirrel habitat in Hamina'): Tuike Finland, Doodle's Finnish company, felled about 1.3 ha of flying squirrel habitat in 2018–2019; at a 2020 meeting with the authorities it was found to have had no permit to destroy it, and clearing stopped; the company called it an error caused by unclear zoning maps; no criminal report was made then."
+    },
+    {
+      "id": "secret",
+      "role": "evidence",
+      "at": "s4+0.15",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": {
+        "en": "The authority / kept the papers / as [trade secrets].",
+        "fi": "Viranomainen / salasi paperit: / [liikesalaisuus].",
+        "ja": "当局は 書類を / [営業秘密] として / 非公開に。"
+      },
+      "source": "HS, 23 Oct 2026: the authority (the Southeast Finland ELY Centre, named on the tag as HS names it) kept the papers secret as trade secrets ('Viranomainen salasi paperit liikesalaisuuksina'). The ELY Centres became elinvoimakeskus on 1 Jan 2026; HS names the ELY Centre, so the film does."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.25",
+      "until": "end-1.1",
+      "hold": "end",
+      "text": {
+        "en": "A felled forest, / filed as a / [trade secret].",
+        "fi": "Hakattu metsä / on nyt / [liikesalaisuus].",
+        "ja": "伐られた森が / [営業秘密] に。"
+      },
+      "source": "The punchline restates the two facts above (1.3 ha felled without a permit; the papers on it kept as trade secrets). 'Filed' is the film's word for the papers, not a claim about any archive."
+    }
+  ],
+  "ui": {
+    "clipLabel": {
+      "en": "DOODLE DATA CENTRE · HAMINA, FINLAND",
+      "fi": "DOODLEN DATAKESKUS · HAMINA",
+      "ja": "Doodleデータセンター · フィンランド・ハミナ"
+    },
+    "clipValue": {
+      "en": "MAP: HIDDEN",
+      "fi": "KARTTA: SALATTU",
+      "ja": "地図：非公開"
+    },
+    "zoneTag": {
+      "en": "FLYING SQUIRREL FOREST",
+      "fi": "LIITO-ORAVAMETSÄÄ",
+      "ja": "モモンガの森"
+    },
+    "felledLabel": {
+      "en": "FLYING SQUIRREL FOREST FELLED",
+      "fi": "LIITO-ORAVAMETSÄÄ HAKATTU",
+      "ja": "伐採された モモンガの森"
+    },
+    "felledValue": {
+      "en": "1.3 ha · 2018–2019",
+      "fi": "1,3 ha · 2018–2019",
+      "ja": "1.3 ha · 2018–2019"
+    },
+    "place": {
+      "en": "HAMINA, FINLAND",
+      "fi": "HAMINA",
+      "ja": "フィンランド・ハミナ"
+    },
+    "folderLabel": {
+      "en": "FLYING SQUIRREL FELLINGS · HAMINA",
+      "fi": "LIITO-ORAVAHAKKUUT · HAMINA",
+      "ja": "モモンガの森の伐採 · ハミナ"
+    },
+    "stamp": {
+      "en": "TRADE SECRET",
+      "fi": "LIIKESALAISUUS",
+      "ja": "営業秘密"
+    },
+    "authority": {
+      "en": "SOUTHEAST FINLAND ELY CENTRE",
+      "fi": "KAAKKOIS-SUOMEN ELY-KESKUS",
+      "ja": "南東フィンランドELYセンター"
+    },
+    "printHead": {
+      "en": "HAMINA · DETAILED PLAN",
+      "fi": "HAMINA · ASEMAKAAVA",
+      "ja": "ハミナ · 地区詳細計画"
+    },
+    "emailHead": {
+      "en": "EMAIL",
+      "fi": "SÄHKÖPOSTI",
+      "ja": "メール"
+    }
+  },
+  "props": {
+    "map": {
+      "en": "the site from above, drawn as cut card after HS's published satellite graphic: sea, the mill's sheds, forest, a dashed boundary, yellow flying squirrel zones; 2007, then 2021",
+      "why": "illustrative, after the published graphic (used as reference only, never embedded); the zones shown cleared are the ones the 2021 picture shows cleared"
+    },
+    "bars": {
+      "en": "(three-plus black redaction bars over the yellow zones, no words)",
+      "why": "the hook and the loop: the part of the map that was hidden is where not to cut"
+    },
+    "email": {
+      "en": "Doodle · EMAIL (no readable text)",
+      "why": "HS: the request was made by email; nothing is quoted, the lines are blank"
+    },
+    "stamp": {
+      "en": "TRADE SECRET",
+      "why": "HS: the papers were kept secret as trade secrets"
+    },
+    "squirrel": {
+      "en": "a flying squirrel, peeking and gliding",
+      "why": "the animal whose forest it was; no person appears"
+    }
+  },
+  "post": {
+    "en": "Doodle asked a Finnish authority, by email, to keep a map secret. It showed flying squirrel forest at Doodle's Hamina data centre: 1.3 ha of it was felled in 2018–19 without a permit. The papers were kept as trade secrets. Whose secret is a forest?",
+    "fi": "Doodle pyysi sähköpostilla viranomaista salaamaan kartan. Siinä oli liito-oravametsää Doodlen Haminan datakeskuksella: 1,3 hehtaaria siitä hakattiin 2018–19 ilman lupaa. Paperit salattiin liikesalaisuuksina. Kenen salaisuus metsä on?",
+    "ja": "Doodleはメールで、フィンランドの当局に地図の非公開を求めた。地図にはハミナのデータセンターのモモンガの森。そのうち1.3ヘクタールが2018〜19年に無許可で伐採された。書類は営業秘密として非公開に。森は誰の秘密？"
+  }
+}
