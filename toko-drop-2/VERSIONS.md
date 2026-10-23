@@ -19,6 +19,66 @@
     Never `--no-verify`.
 -->
 
+## v17 — 2026-10-23
+**Gates, pickups and the DASH pod; enemies dangerous on arrival; SDF gels on the title**
+- **Gates and pickups, 1.x's own** (owner, 2026-10-22: healing is 1.x's gates
+  as they are; `js/sim/pickups.js`, `js/render/pickups.js`, every number in
+  `js/tuning/pickups.js` with its 1.x line):
+  - **Gates** from wave 3, one a wave and at most three standing. Dash
+    through one for a heal, invincibility, faster fire or double score. Risk
+    gates from wave 5 flash green (double prize) and red (a dud). Drift gates
+    from wave 10 wander. Chained gates pay 500 × N, and a beam hurts gels
+    that touch it.
+  - **The convoy**: one a wave, gold moths that drop pods, nuggets and ×2.
+  - **The bounty** on waves 4, 7, 10, and so on: a marked gel, worth a pod
+    if you kill it within 8 s.
+  - Pickups bob, blink out and wear a glyph. A HUD row shows the pod, the
+    dash level and the timers.
+  - Two healing knobs (longer drops, a rare heart) are in tuning, off.
+- **The DASH pod** (owner: dash upgrades come from the convoy pods): the moth
+  that completes a clean sweep of a convoy drops a DASH pod while your dash is
+  below level 2. Level 1 kills what you dash through, level 2 adds the boom.
+  At level 2 it is a weapon pod.
+- **A hit knocks dash level 2 down to 1, never lower**, as 1.x's weapon pods
+  do (`hero.dashUpgrade.loseOnHit`; owner: "maybe", so it is one switch).
+- **Enemies are dangerous from their first frame** (owner: "c or less"). A
+  new body acts, hurts and can be shot on its first step, as in 1.x. The
+  swell is only drawn now, and shorter: `gel.swell` is 0.15 s. A brood
+  (REDD, PURP, SPLITTA) still waits, unseen and inert, through its parent's
+  0.28 s death pop, then comes out at rest. Eleven species tests moved and
+  were re-derived from 1.x's own numbers.
+- **The title**: DASH cycles PUSH and CUT only (a saved PASS falls back to
+  PUSH), and SURVIVAL is hidden (one word brings it back).
+- **GELS · CLASSIC / SDF** on the title (owner: an SDF menu option), saved
+  between visits; classic stays the default. In SDF mode, 17 gel types with
+  the shared dome or rounded cube are ray-marched (`js/render/sdf.js`) inside
+  a fitted hull. They keep the game's own jelly material, so the flash,
+  tells, CLOAKER's fade, death poses and dents all still work. The 10 custom
+  bodies and the hero stay as they are.
+  - One shader per species, so an arriving enemy builds nothing.
+  - The edges use alpha-to-coverage, within half a pixel of the surface.
+  - `?gels=sdf` opens it directly. Big gels still die as mesh jelly halves.
+    Merging between gels is off.
+- **`?fps`** puts a frame-time line beside the version in either style, and
+  **`?bench`** runs a fixed 24-body scene and leaves its result on screen,
+  for comparing the two on a phone and an iPad.
+- **Measured** (a bot, 200 seeded Arcade runs each, the same bot both times):
+  | | v15 | v16 |
+  |---|---|---|
+  | mean wave | 8.7 | 10.6 |
+  | time | 71 s | 92 s |
+  | hearts a run | — | 2.2 (0.21 a wave) |
+  | DASH pods a run | — | 2.4 (about 70% of a run at dash level 1–2) |
+  The dash share is the first balance knob to watch.
+- Tests: `test/pickups.mjs` (119 checks), `test/view.mjs` (58, the view's half
+  of arrival), new sim checks, and smoke scenarios for SDF on WebGPU and
+  WebGL 2 that fail when the SDF gels draw nothing.
+- Built on v16 (the start intro): INTRO stays beside ARCADE; the gel style is
+  applied when a run starts, before the intro, and the readout times the intro too
+- Cache tokens `?v=16` → `?v=17`; HUD label → `2.0 · v17`
+
+---
+
 ## v16 — 2026-10-22
 **The start intro, behind an INTRO button beside ARCADE**
 - Owner, 2026-10-22: a start video. Then "make it live on the arcade version as an intro button next to the start button
@@ -47,6 +107,13 @@
 - **Made on the arcade copy, not in the source repo**, which was not reachable from the session that built it. The
   source must take this as its v16 before its next deploy, or that deploy removes the intro. The patch and notes are in
   Suds-Jack `handoff/toko-drop-2-intro/`.
+- Reconciled into the source from the arcade deploy (gh-pages `981f48c2`,
+  built on the arcade copy because the source was out of reach; its handoff is
+  Suds-Jack `claude/radio-free-helsinki-pvtsw5`, `handoff/toko-drop-2-intro/`).
+  The patch applied to v15 unchanged; test and doc tokens moved to `?v=16`,
+  and the smoke's DualSense walk to the DASH switch counts INTRO (five downs)
+
+---
 
 ## v15 — 2026-10-22
 **DRAPER and CLOAKER: all 27 of 1.x's gel types are in**

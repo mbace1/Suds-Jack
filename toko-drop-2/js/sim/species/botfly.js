@@ -106,8 +106,10 @@ export default {
   // The last BOTFLY standing hands its shots on: nothing steers them with
   // 1.x's lerp once no BOTFLY steps, so they fly on under the core's homing
   // (the same 1.8, as a turn-rate cap at constant speed) — 1.x kept steering
-  // them for the rest of their 4 s. A BOTFLY still swelling into being does
-  // not count: it does not step yet.
+  // them for the rest of their 4 s. A BOTFLY that has just arrived counts: it
+  // steps from its first step, as 1.x's arrivals did (main.js:9436,
+  // 10367-10369). Only a body the core still holds inert (state 'appear', a
+  // brood waiting out a death pop) does not: it does not step yet.
   onKill(w, g) {
     if (w.gels.some((o) => o !== g && o.alive && o.state === 'active' && o.kind === g.kind)) return;
     for (const b of w.bullets) if (b.lerpTurn && !b.dead) { b.homing = b.lerpTurn; b.lerpTurn = 0; }

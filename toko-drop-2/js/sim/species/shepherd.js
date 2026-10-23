@@ -46,7 +46,7 @@ export default {
     const s = g.s;
     s.mode = 'close';                      // which arm of the pocket the last step took: 'close' | 'back' | 'circle'
     s.spin = 0;                            // 1.x mesh.rotation.y: the cone starts unturned (enemy.js:783-787, 1000)
-    s.sq = g.sq; s.sqV = g.sqV; s.sqTick = -1;   // the squash spring as this step last left it
+    s.sq = g.sq; s.sqV = g.sqV; s.sqTick = -1;   // the squash spring as this step last left it (-1: as spawned, never stepped)
   },
 
   step(w, g, dt, api) {
@@ -83,11 +83,16 @@ export default {
 // The velocity the squash spring was handed this step, before the core's own
 // spring ran on it: the core did sqV' = (sqV − (sq − 1)·k)·c on what this
 // step wrote last time plus any kicks since (a hit's −0.75, a shockwave, a
-// shove), so sqV = sqV'/c + (sq − 1)·k, exactly. On a body's first step there
-// is nothing to take back: both springs hold a body at rest still.
+// shove), so sqV = sqV'/c + (sq − 1)·k, exactly. The FIRST step is no
+// exception: a body is live from the step it arrives in (there is no inert
+// appear any more), so a PUSH or CUT dash in that step — the hero moves after
+// the director's spawn and before the bodies — has already kicked it, and
+// exactly one core spring has run on it since init left s.sq at its spawn
+// sq. Only a step it MISSED (the core holds no SHEPHERD inert, so never) falls
+// back to what the core left.
 function takeBackCoreSpring(w, g, S, api) {
   const s = g.s;
-  if (s.sqTick !== w.tick - 1) { s.sq = g.sq; return g.sqV; }
+  if (s.sqTick !== -1 && s.sqTick !== w.tick - 1) { s.sq = g.sq; return g.sqV; }
   const [k, c] = api.T.gel.sq[S.family === 'cube' ? 'cube' : 'blob'];   // the core's choice (world.js gelStep)
   return g.sqV / c + (s.sq - 1) * k;
 }

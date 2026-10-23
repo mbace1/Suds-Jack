@@ -16,13 +16,14 @@
 // any 10%; a rigid tip from the flop's origin, the crowd's nudge and a PUSH
 // dash's knock carried into it; a −0.32 squash on landing. It is born only as
 // a child (1.x spawns it from a PURP's corpse, main.js:10586-10620), active,
-// and waits out its parent's 0.28 s death pop in the core's `appear`.
+// and waits out its parent's 0.28 s death pop in the core's wait (state
+// 'appear', t < 0); out, it is live at once, as 1.x's was.
 // It is not otherwise special: no gun, no special hits, no brood, the core's
 // contact (r + 0.5) and death (angular chunks, a puddle); not a biter.
 // One thing the contract cannot say: 1.x's mini throws 2–3 chunks of 0.12
 // when it dies, not every cube's 5–6 of 0.18 (enemy.js:3035-3037); the
 // number is in its tuning (deathChunks) for the core to read.
-import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=16';
+import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=17';
 
 export default {
   init(w, g, api) { cubeInit(w, g, api); },

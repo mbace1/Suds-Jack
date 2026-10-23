@@ -39,6 +39,8 @@
     #mult { margin-left: 8px; color: var(--amber); font-size: 15px; }
     #lives { display: flex; gap: 6px; margin-top: 6px; }
     #lives i { width: 10px; height: 10px; border-radius: 50%; background: #f2efe6; box-shadow: 0 0 6px rgba(242, 239, 230, .6); }
+    #fx { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; max-width: min(56vw, 420px); font-size: 11px; letter-spacing: .08em; }
+    #fx span { white-space: nowrap; text-shadow: 0 0 6px currentColor; }
     #clock { position: absolute; right: max(14px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top)); font-size: 16px; letter-spacing: .1em; color: var(--amber); }
     #pausebtn { position: absolute; left: 50%; top: max(6px, env(safe-area-inset-top)); transform: translateX(-50%); pointer-events: auto;
       width: 64px; height: 44px; background: none; border: 1px solid var(--line); color: var(--ink); font: inherit; font-size: 14px; letter-spacing: .1em; }
@@ -47,7 +49,7 @@
     #vignette.on { animation: vig .32s linear forwards; }
     @keyframes vig { from { opacity: 1; } to { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { #vignette.on { animation: none; } }
-    #banner { position: fixed; left: 0; right: 0; top: 26%; text-align: center; font-size: clamp(22px, 5vw, 40px); letter-spacing: .3em; color: var(--amber);
+    #banner { position: fixed; left: 0; right: 0; top: 26%; padding: 0 16px; text-align: center; text-wrap: balance; font-size: clamp(22px, 5vw, 40px); letter-spacing: min(.3em, 1.1vw); color: var(--amber);
       pointer-events: none; z-index: 5; text-shadow: 0 0 18px rgba(255, 180, 104, .45); }
     #banner[hidden] { display: none; }
     #banner.pop { animation: pop .5s ease-out; }
@@ -113,14 +115,14 @@
   <div id="stage"></div>
   <canvas id="sticks"></canvas>
   <div id="hud" hidden>
-    <div id="scorebox"><span id="score">0</span><span id="mult"></span><div id="lives"></div></div>
+    <div id="scorebox"><span id="score">0</span><span id="mult"></span><div id="lives"></div><div id="fx"></div></div>
     <button id="pausebtn" aria-label="pause">II</button>
     <div id="clock"></div>
   </div>
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v16<span id="backend"></span></div>
+  <div id="ver">2.0 · v17<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -151,6 +153,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=16"></script>
+  <script type="module" src="js/main.js?v=17"></script>
 </body>
 </html>

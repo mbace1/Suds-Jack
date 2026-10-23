@@ -7,7 +7,7 @@
 // flock, solo hunters weave, and the whole wave rides one current. The crowd
 // solver runs after the bodies have moved: bodies keep a pad apart, and one
 // closing on you from behind another is held back and slid aside.
-import { TUNING } from '../tuning.js?v=16';
+import { TUNING } from '../tuning.js?v=17';
 
 const MV = TUNING.movement, C = TUNING.crowd;
 const ARCHS = ['stream', 'ring', 'pincer'];
@@ -98,7 +98,10 @@ export function swarmForces(w, dt) {
   }
 }
 
-// 1.x resolveCrowd, verbatim in behaviour
+// 1.x resolveCrowd, verbatim in behaviour. A brood let out this step
+// (`landTick`, world.js gelStep) is not in it: 1.x built the brood after its
+// crowd pass (main.js:10426, 10586-10620), so on that frame it was not there
+// to push or be pushed
 export function resolveCrowd(w, dt) {
   const gels = w.gels, h = w.hero, HX = w.hx, HZ = w.hz;
   // what the solver moves each body by, kept until the next solve so a species
@@ -108,10 +111,10 @@ export function resolveCrowd(w, dt) {
   for (let pass = 0; pass < C.passes; pass++) {
     for (let i = 0; i < gels.length; i++) {
       const a = gels[i];
-      if (!a.alive || a.state !== 'active' || a.anchored) continue;
+      if (!a.alive || a.state !== 'active' || a.anchored || a.landTick === w.tick) continue;
       for (let j = i + 1; j < gels.length; j++) {
         const b = gels[j];
-        if (!b.alive || b.state !== 'active' || b.anchored) continue;
+        if (!b.alive || b.state !== 'active' || b.anchored || b.landTick === w.tick) continue;
         const dx = a.x - b.x, dz = a.z - b.z, d = Math.hypot(dx, dz);
         if (d <= 0.001) continue;
         const contact = a.r + b.r + C.pad, comfort = contact * comfortK;

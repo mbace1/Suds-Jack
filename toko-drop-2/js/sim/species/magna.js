@@ -47,7 +47,7 @@
 // knock is the core's (g.kx/g.kz on top of the walk's g.vx/g.vz); a CUT
 // dash's damage is the core's too. Neither changes the hold: any dash is a
 // dash to 1.x's clock.
-import { TUNING } from '../../tuning.js?v=16';
+import { TUNING } from '../../tuning.js?v=17';
 
 // read back, not tuned here: the hero's own numbers (1.x player.js:8, 17)
 const COOLDOWN = TUNING.hero.dashCooldown;           // DASH_CD 0.75, from the dash's end
@@ -94,9 +94,10 @@ export default {
 
 // The floor this step, worked out by `g`, the first MAGNA to step. Its
 // members are `g` and every live MAGNA after it in the step order that is
-// active (each of those steps this step; one before it that has not stepped
-// has only just finished appearing, and moves from the next step). 1.x sums
-// the shares in the bodies' order and caps the sum (main.js:10196-10207).
+// active — each of those steps this step, a new one included: a body is live
+// from its first step, as 1.x's pump landed it before the pull (main.js:
+// 9350-9436, then 10189-10213). 1.x sums the shares in the bodies' order and
+// caps the sum (main.js:10196-10207).
 function holdFloor(w, g, S, dt) {
   const h = w.hero, immune = floorClock(w, g, h, S, dt);
   const gels = w.gels, members = [];

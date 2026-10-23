@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=16';
+import { TUNING } from './tuning.js?v=17';
 
 const A = TUNING.audio;
 
@@ -75,9 +75,23 @@ export class Sound {
       case 'clear': this._tone('triangle', 520, 780, 0.3, 0.1); break;
       case 'hurt': this._tone('sawtooth', 160, 45, 0.4, 0.2); this._hiss(0.3, 0.2, 600, 120); break;
 
+      // the pickups' voices, as 1.x reused them (audio.js:242-292, 374-377):
+      // pickup() on a take and a good gate, shieldTink() on a dud, milestone()
+      // on a chain and a bounty paid, shooterPing() when a bounty is marked,
+      // a moth's blob death; a DASH pod's level up rides the pod's own chime
+      case 'pickup': case 'gateDash':
+        if (e.dud) this._tone('triangle', 1900, 1400, 0.05, 0.10);
+        else [392, 523, 659].forEach((f, i) => this._tone('sine', f, f, 0.13, 0.18, i * 0.06));
+        break;
+      case 'gateChain': case 'bountyPaid': [523, 659, 784].forEach((f, i) => this._tone('triangle', f, f, 0.14, 0.18, i * 0.07)); break;
+      case 'bounty': this._tone('square', 1150, 1150, 0.06, 0.13); this._tone('square', 1550, 1550, 0.07, 0.11, 0.075); break;
+      case 'mothShot': this._tone('sine', 420, 75, 0.22, 0.22); break;
+      case 'dashLevel': if (e.up) [0, 0.08, 0.16].forEach((w, i) => this._tone('square', 660 * [1, 1.25, 1.5][i], 660 * [1, 1.25, 1.5][i], 0.12, 0.06, w)); break;
       case 'graze': this._tone('sine', 2400, 2600, 0.03, 0.04); break;
       case 'spawn': this._hiss(0.25, 0.05, 900, 500, 3); break;
-      case 'land': this._tone('sine', 140, 70, 0.1, 0.1); break;
+      // an arrival's thud lands when its swell in has (TUNING.gel.swell), not
+      // on top of the spawn hiss; a brood let out lands at once
+      case 'land': this._tone('sine', 140, 70, 0.1, 0.1, e.arrive ? TUNING.gel.swell : 0); break;
       case 'wall': this._tone('sine', 120, 80, 0.06, 0.05 * e.hard); break;
       case 'over': this._tone('sawtooth', 220, 40, 1.2, 0.18); break;
     }

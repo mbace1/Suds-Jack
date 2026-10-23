@@ -149,15 +149,14 @@ export default {
 // Strict turns (arcade-mode.md §5.4's fix): twin 1's first volley lands
 // half a calm period after the sibling's next one. Counted in whole steps,
 // the way both clocks will really run, so float residue cannot slip it a
-// step: the sibling's next volley is the step its clock runs out (after its
-// swell, if it is still swelling), mine lands half a period (rounded to a
-// step) after it, and my clock is set to run out on exactly that step of my
-// own — half a step of slack either side.
+// step: both bodies are live from their first step (as 1.x's were), so the
+// sibling's next volley is the step its clock runs out, mine lands half a
+// period (rounded to a step) after it, and my clock is set to run out on
+// exactly that step of my own — half a step of slack either side.
 function halfBehind(w, g, sib, F, api) {
-  const dt = api.T.sim.dt, appear = api.T.gel.appear;
+  const dt = api.T.sim.dt;
   const P = F.calm.every * g.intervalMult;
-  const sibNext = swellSteps(sib, appear, dt) + clockSteps(sib.s.fireT, dt);
-  let k = sibNext + Math.round(P / 2 / dt) - swellSteps(g, appear, dt);
+  let k = clockSteps(sib.s.fireT, dt) + Math.round(P / 2 / dt);
   const period = clockSteps(F.calm.every * sib.intervalMult, dt);
   while (k <= 0) k += period;
   return (k - 0.5) * dt;
@@ -166,15 +165,6 @@ function halfBehind(w, g, sib, F, api) {
 // the steps a 1.x countdown of t lasts on the fixed step: t −= dt, out at ≤ 0
 // (enemy.js:2471-2472)
 function clockSteps(t, dt) { let n = 0; while (t > 0) { t -= dt; n++; } return n; }
-
-// the steps a body has left to swell into being before its first active step
-// (the core's appear: t += dt, active at ≥ appear, with no step that tick)
-function swellSteps(g, appear, dt) {
-  if (g.state !== 'appear') return 0;
-  let t = g.t, n = 0;
-  while (t < appear) { t += dt; n++; }
-  return n;
-}
 
 // The velocity the squash spring was handed this step, before the core's own
 // spring ran on it: the core did sqV' = (sqV − (sq − 1)·k)·c on what this

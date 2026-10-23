@@ -7,8 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=16';
-import WAVES from './tuning/waves.js?v=16';
+import { SPECIES } from './tuning/species/index.js?v=17';
+import WAVES from './tuning/waves.js?v=17';
+import PICKUPS from './tuning/pickups.js?v=17';
 
 export const TUNING = {
   render: {
@@ -128,6 +129,38 @@ export const TUNING = {
     deathSwell: 1.3,        // how much bigger it gets by the end
   },
 
+  // The SDF gels (render/sdf.js), the title's GELS · SDF: the dome and the
+  // rounded cube drawn as ray-marched fields on a fitted proxy hull, with the
+  // same physical jelly, the same displacement law (gel.js gelDisplacement,
+  // taken at the rest point) and the same per-gel writes as the mesh. The
+  // switch itself is localStorage `toko2.gels` ('classic' | 'sdf'), not here.
+  //   steps     the march's budget; epsPx a hit within that many pixels;
+  //   acceptPx  a ray out of steps that close to the surface is a hit;
+  //   minStepPx the smallest step, in pixels at the ray's distance;
+  //   aa        alpha-to-coverage edges: a near miss within half a pixel of the
+  //             surface gets partial coverage (a wider feather grew every
+  //             silhouette, globbo +13%, and drew a dark fringe);
+  //   relax     × the Lipschitz step 1/√(1+T²), T = lip · (wobble, hit, tear).
+  //             The lip constants are MEASURED, not worst-case sums: 2.8 for
+  //             the hit (the research's sum of term bounds) made every hit gel
+  //             step at a third of the distance and run out of steps at the
+  //             rim (holes); against a 2000-step ground truth (bare node, the
+  //             dome field, idle/hit/death) hit 0.5 and wobble 0.3 overstep
+  //             nothing, and tear needs ~1.0 (below it the thrash crests
+  //             tunnel). The near-surface gradient is 1.0-1.4 at p90;
+  //   burstSteps more steps × max(hit, tear) while a hit or the thrash runs;
+  //   normalEps the gradient's tap, in radii; pad the hull's slack, in radii;
+  //   normals   'field' shades the lumps and dents, 'rest' the bare dome
+  //             (classic shades the rest normal: lumps only in the outline);
+  //   merge     smooth union between gels: off, the owner's call.
+  sdf: {
+    steps: 32, epsPx: 0.25, acceptPx: 2, minStepPx: 0.1, normalEps: 0.003, relax: 0.9, burstSteps: 32,
+    lip: { wobble: 0.3, hit: 0.5, tear: 1.0 },
+    hull: 'ico2', pad: 0.03,
+    normals: 'field', aa: true, merge: { on: false },
+    debug: null,           // 'steps': a heat map of the march instead of the jelly
+  },
+
   // The hero's body (1.x player.js): a white satin sphere, calmer than the
   // gels, with black eyes that face the last shot. Times are seconds; the
   // blinks are 1.x's opacity curves, base + amp·|sin(rate·t)| on the timer.
@@ -190,8 +223,8 @@ export const TUNING = {
     fireEvery: 0.09,        // FIRE_RATE (player.js:9), ASSIGNED on each shot, not carried (player.js:465): 6 steps, 10/s
     muzzle: 0.3,            // a shot leaves at radius + 0.3 = 0.8 from the centre (player.js:402-403)
     mouseNoAim: 0.5,        // the mouse does not aim (so cannot fire) within this of the centre (main.js:9235)
-    rapidMult: 0.4,         // the fire-rate pickup's period while `rapid` runs (player.js:416); the pickup lands with the gates
-    // 1.x's pickups, which land with the gates: taken within reach + radius
+    rapidMult: 0.4,         // the fire-rate pickup's period while `rapid` runs (player.js:416)
+    // 1.x's pickups (tuning/pickups.js, sim/pickups.js): taken within reach + radius
     // (main.js:11242), each timer takes the LONGER of what it has and what it
     // is given (player.js:177-178; hero.js grantInvincibility / grantRapid)
     pickup: { reach: 0.8, invincible: 3.0, rapid: 8.0 },   // main.js:11242, 11249, 11268
@@ -203,7 +236,7 @@ export const TUNING = {
     // (owner, 2026-10-21): level 1 KILLS what it passes through (a boss takes
     // one hit a dash); level 2 adds 1.x's dash boom, a ring of hero bullets
     // from where the dash's first step left you (1.x main.js:10216-10224, a
-    // roguelike card). The pickups that raise the level land with the gates.
+    // roguelike card). The convoy's DASH pod raises it (tuning/pickups.js dashPod).
     // Touching = within the body's radius + reach: the hero's own radius, so a
     // dash cuts exactly what would have hurt to walk into (1.x's contact test,
     // e.radius + PLAYER_RADIUS, main.js:10895). 1.x's one body-cutting dash
@@ -211,6 +244,11 @@ export const TUNING = {
     // killing (main.js:10166-10183); bossHits is that 1, once a pass.
     dashKill: { reach: 0.5, bossHits: 1 },
     dashBoom: { count: 12, shake: 0.18, color: 0xff8844 },   // 12 rays, addShake(0.18), 0xff8844 (main.js:10216-10225)
+    // a hit knocks dash level 2 down to 1, never below 1, as a hit does a pod
+    // (weaponTakeHit, main.js:2083-2091); false keeps the level for the run.
+    // The level comes from the convoy's DASH pod (tuning/pickups.js dashPod);
+    // whether a hit should cost it is the owner's open question ("maybe", 2026-10-22)
+    dashUpgrade: { loseOnHit: true },
     // The PUSH dash, on test beside 1.x's pass-through (owner, 2026-10-22: "the
     // pushing dash should be tested as it may be a better dynamic, allowing
     // for more bullet sponge enemies"). The world's `dashMode` picks ('pass' |
@@ -239,7 +277,7 @@ export const TUNING = {
     // one table, two levels a family; `rate` multiplies fireEvery. A pod drops
     // at level 1, the same family again earns level 2, and a hit knocks level
     // 2 back to 1 — never off. HOMING is enemy-only since v88 (BOTFLY). The
-    // pods themselves land with the gates; `color` is each pod's orb (L1, L2).
+    // pods drop from the convoy and the bounty (tuning/pickups.js); `color` is each pod's orb (L1, L2).
     weapons: {
       spread:  { l1: { shots: 5, step: 9, rate: 1 }, l2: { shots: 7, step: 11, rate: 1 }, color: [0xffcc44, 0xffee11] },
       burst:   { l1: { rounds: 4, rate: 2.0 }, l2: { rounds: 6, rate: 2.2 }, color: [0x44ffcc, 0x11ffee] },
@@ -278,7 +316,12 @@ export const TUNING = {
     // a body — nothing in the roster does yet.
     knockFriction: 3,       // knock velocity decays this fast (1/s); only the PUSH dash knocks: 3 lets a shoved gel slide out (it was 6, under which a shove opened no room)
     wallBounce: 0.6,        // a wall returns this share of the knock
-    appear: 0.3,            // seconds a new gel swells into being; it can neither hurt nor be hit
+    // seconds a new body is DRAWN swelling in, from 15% (its shadow from 0):
+    // the view's alone. It acts, hurts and can be hit from its first step, as
+    // 1.x's did (1.x had no appear phase; owner, 2026-10-22, "c or less": it
+    // was 0.3 s of a body that could neither hurt nor be hit). 0 pops it in
+    // at full size; a child (a split, a brood) never swells
+    swell: 0.15,
     flash: 0.12,            // 1.x hit flash
     // 1.x's squash spring, per 60 Hz step (enemy.js:2728-2729), and its kicks
     sq: { blob: [0.24, 0.86], cube: [0.18, 0.90], hit: -0.75, wall: -0.3 },
@@ -304,6 +347,9 @@ export const TUNING = {
 
   // ARCADE's waves (tuning/waves.js).
   waves: WAVES,
+
+  // 1.x's classic pickups: the drops, the gates, the convoy, the bounty (tuning/pickups.js).
+  pickups: PICKUPS,
 
   // 1.x's crowd solver (crowd.js, tuning.js:284): bodies keep a pad apart, and
   // one closing on the hero behind another is pushed back and slid aside

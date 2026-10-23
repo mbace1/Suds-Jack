@@ -12,8 +12,13 @@
 // out the instant the WARDEN dies — the shield drops with it. A dying view is
 // no longer updated, so the ring blanks itself in onBeforeRender while the
 // gel's death thrash (tear) runs, which is exactly while the body is dying.
-// It is also dark while the body is still appearing: 2.0's 0.3 s swell-in
-// (new, gel.appear) runs no step, so the shield is not up yet either.
+// It does not swell in with the body: the shield is up from the WARDEN's
+// first step, as 1.x's was (alive from its constructor, which built the ring
+// lit, enemy.js:662, 1124-1131), and the ring rides the root, which the view's
+// swell (TUNING.gel.swell) does not scale, so the tell is lit and full-size
+// through it — dark only while the core holds a body inert (state 'appear', a
+// brood's wait, which no WARDEN has: such a body has not stepped, and the sim
+// raises no shield for it).
 //
 // THE DEFLECTION (main.js:10709-10717): a shot the aura eats throws three
 // cyan droplets back along the hit, from the bullet at the shielded body's
@@ -55,6 +60,7 @@ export default {
   update(v, g, w, time) {
     const R = v.S.ring;
     if (v.ring.parent !== v.root) v.root.add(v.ring);
+    // lit from the first step, swell or no swell (enemy.js:1124-1131, 1764)
     v.ringMat.opacity = g.state === 'active' ? R.base + R.amp * Math.sin(time * R.hz + v.phase) : 0;
     if (w) v.sparks.world = w;
     v.sparks.frame(time);

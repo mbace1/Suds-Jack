@@ -96,15 +96,14 @@ export default {
 
     // 1.x's mesh: centre at the CFG radius, face to you, scaled (sx × rm,
     // sq × rm, sx × rm) in its own frame (enemy.js:1000, 2207, 2732, 2779); rm
-    // carries an elite's 1.2 (main.js:9406). A body still swelling into being
-    // grows from the floor, already facing you (it runs no step yet; 1.x's
-    // update turned it from its first frame).
+    // carries an elite's 1.2 (main.js:9406). While the view swells it in
+    // (TUNING.gel.swell, 2.0's alone) it grows from the floor; the body under
+    // it is live from its first step, so its face is the sim's, turned by that
+    // step as 1.x's first update turned it the frame it was made.
     const sx = 1 / Math.sqrt(Math.max(g.sq, L.sqFloor));
     const rm = (g.r / S.radius) * grow;
-    let fx = g.faceX, fz = g.faceZ;
-    if (g.state === 'appear' && w?.hero) { fx = w.hero.x - g.x; fz = w.hero.z - g.z; }
     v.mesh.position.set(0, S.radius * grow, 0);
-    v.mesh.rotation.set(0, Math.atan2(fx, fz), 0);
+    v.mesh.rotation.set(0, Math.atan2(g.faceX, g.faceZ), 0);
     v.mesh.scale.set(sx * rm, g.sq * rm, sx * rm);
 
     // the spools tumble through the wind-up and hold (enemy.js:2213)

@@ -21,7 +21,7 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=16';
+import { TUNING } from '../../tuning.js?v=17';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -288,7 +288,6 @@ function pump(w, d, dt, api) {
     const S = T.species[s.kind];
     const o = { speedMult: s.speedMult, intervalMult: s.intervalMult, variant: s.variant, affix: s.affix,
                 ping: s.shooter || W.ping.includes(s.kind) };
-    if (!P.appear) o.appear = false;
     if (s.boss) { o.isBoss = true; o.hp = S.bossHp ?? (S.noHpMult ? S.hp : Math.ceil(S.hp * W.boss.hpMult)); }
     const g = api.spawn(w, s.kind, p.x + s.ox, p.z + s.oz, o);
     if (s.ox || s.oz) api.clamp(w, g);

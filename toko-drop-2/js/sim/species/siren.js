@@ -5,7 +5,8 @@
 //
 // 1.x js/enemy.js at v268: the cycle's state 1165-1169, the surge's clock
 // 1698-1700, the movement branch 1819-1842, the clocks 668/671/2724-2725;
-// main.js: the scream 10387-10397 (SIREN_RADIUS 2541). Spec:
+// main.js: the scream 10387-10397 (SIREN_RADIUS 2541), a brood built after
+// the update loop 10586-10620 (enemy.js:2992-3000). Spec:
 // docs/port-1x/species-a.md §8. Every number is tuning/species/siren.js.
 //
 // Per step (1.x's update, after the swarm forces have moved it):
@@ -23,14 +24,24 @@
 //   then its own walk, as far as the arena lets it go, is smoothed for the
 //   look (1.x `_velX`), and its clock advances.
 // The scream (1.x applied it right after the SIREN's own update): every other
-// living body that is not a boss and not a SIREN, with its centre strictly
-// within 7 of where this step's move leaves the SIREN, gets surgeT = 3
-// and surgeMult = 1.6 — set, not added, so a second scream refreshes and
-// never stacks. The core counts surgeT down at the top of each body's step
-// and api.speed multiplies by surgeMult while it runs, so the surge reaches
-// whatever reads a body's walking speed, and not the swarm forces or the
-// crowd (1.x: what read `spd`). A body later in the step order than the
-// SIREN surges this very step, one earlier from the next — 1.x's frame order.
+// living body on the floor that is not a boss and not a SIREN, with its
+// centre strictly within 7 of where this step's move leaves the SIREN, gets
+// surgeT = 3 and surgeMult = 1.6 — set, not added, so a second scream
+// refreshes and never stacks. The core counts surgeT down at the top of each
+// body's step and api.speed multiplies by surgeMult while it runs, so the
+// surge reaches whatever reads a body's walking speed, and not the swarm
+// forces or the crowd (1.x: what read `spd`). A body later in the step order
+// than the SIREN surges this very step, one earlier from the next — 1.x's
+// frame order.
+// On the floor means 1.x's `enemies`: a body that has only just arrived is
+// (1.x had no appear: its pump pushed it at main.js:9436, before the update
+// loop that screams), a brood still waiting out its parent's 0.28 s death pop
+// (the core's state 'appear') is not — 1.x built it only once the pop had run
+// out (enemy.js:2992-3000), after the loop (main.js:10586-10620), so a scream
+// before then, the step it lands included, never reached it. (That step is
+// exact because a brood is pushed after every SIREN on the floor when it
+// dies: a SIREN later in the order arrived after the brood did, and its first
+// scream is 3.3 s off, far past the brood's 0.28 s wait.)
 // The scream's ring and sound are the view's: an event, and a counter its
 // look reads. The first scream comes 3.3–4.8 s after it arrives, then every
 // 4.3–5.8 s.
@@ -90,7 +101,7 @@ function scream(w, g, dt, S, api) {
   const s = g.s, fr = Math.exp(-api.T.gel.knockFriction * dt);
   const [x, z] = held(w, g, g.x + (g.vx + g.kx * fr) * dt, g.z + (g.vz + g.kz * fr) * dt);
   for (const o of w.gels) {
-    if (!o.alive || o === g || o.isBoss || o.kind === g.kind) continue;
+    if (!o.alive || o.state !== 'active' || o === g || o.isBoss || o.kind === g.kind) continue;
     if (Math.hypot(o.x - x, o.z - z) < S.reach) { o.surgeT = S.surgeTime; o.surgeMult = S.surgeMult; }
   }
   s.screams++; s.screamX = x; s.screamZ = z;

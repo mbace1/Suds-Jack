@@ -14,15 +14,18 @@
 // own) takes it on the cardinal path — a rest counts down (the forces stick),
 // then the cardinal of its larger axis 70%, the last one 20%, any 10%; a
 // rigid tip from the flop's origin, the crowd's nudge and a PUSH dash's knock
-// carried into it; a −0.32 squash on landing. It is born only as a child (1.x
-// spawns it from a REDD's corpse, main.js:10586-10620), active, and waits
-// out its parent's 0.28 s death pop in the core's `appear`.
+// carried into it; a −0.32 squash on landing. In arcade it is born as a child
+// (1.x spawns it from a REDD's corpse, main.js:10586-10620) and waits out its
+// parent's 0.28 s death pop in the core's wait (state 'appear', t < 0); out,
+// it is live at once, as 1.x's was. Spawned outright (1.x's GAUNDROP,
+// KAIKKI IRTI and TOKOTRON did, main.js:3558, 7903, 7950-7953) it is live
+// from its first step, like every body (1.x had no appear, enemy.js:659-660).
 // It is not otherwise special: no gun, no special hits, no brood, the core's
 // contact (r + 0.5) and death (angular chunks, a puddle); not a biter.
 // One thing the contract cannot say: 1.x's mini throws 2–3 chunks of 0.12
 // when it dies, not every cube's 5–6 of 0.18 (enemy.js:3035-3037); the
 // number is in its tuning (deathChunks) for the core to read.
-import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=16';
+import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=17';
 
 export default {
   init(w, g, api) { cubeInit(w, g, api); },

@@ -30,8 +30,9 @@
 //           intervalMult; ordinary bodies (hp 1, no variant, no affix, no
 //           ping), up to the director's child valve (the live cap × 2). They
 //           land when the 0.28 s death pop ends, as 1.x's did: spawned now,
-//           they are handed back to the core's `appear` with that long left,
-//           so until then they can neither hurt, be hit, nor move.
+//           they are handed back to the core's wait (state 'appear', t =
+//           −0.28), so until then they can neither hurt, be hit, move, nor
+//           be rattled by a big death's shockwave (its own or another's).
 //
 // Where the contract cannot say it (docs/SIM_CONTRACT.md has no delayed
 // spawn): 1.x built the brood, and counted the valve, at the END of the pop;
@@ -75,13 +76,16 @@ export default {
     }
     const n = Math.min(pts.length, api.childrenAllowed(w));
     const speedMult = g.speedMult * (g.affix === 'swift' ? api.T.variants.swiftSpeed : 1);
-    const wait = api.T.blob.death, appear = api.T.gel.appear;
+    const wait = api.T.blob.death;
     for (let j = 0; j < n; j++) {
       const c = api.spawn(w, C.kind, pts[j][0], pts[j][1], { child: true, speedMult, intervalMult: g.intervalMult });
       // 2.0's walls hold every body; 1.x's child could stand up to 2.7 outside one
       api.clamp(w, c);
-      // not yet: the core's `appear`, with the death pop's 0.28 s left of it
-      c.state = 'appear'; c.t = appear - wait;
+      // not yet: the core's wait (state 'appear', t < 0) for the death pop's
+      // 0.28 s — which also keeps it out of the big-death shockwave (a SPLITTA
+      // is big, 1.1) the core runs after this hook: 1.x built its GLOBBOs at
+      // rest, sq 1 and sqV 0 (enemy.js:669-670), after the shock (main.js:4518-4529)
+      c.state = 'appear'; c.t = -wait;
     }
   },
 };

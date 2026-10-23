@@ -15,7 +15,7 @@ import {
   uniform, positionLocal, normalLocal, normalView, positionViewDirection, cameraViewMatrix,
   materialEmissive, modelScale, vec3, vec4, float, sin, cos, exp, dot, normalize, clamp,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=16';
+import { TUNING } from '../tuning.js?v=17';
 
 const T = TUNING;
 
@@ -86,42 +86,80 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
     corePow: uniform(J.corePow),
     coreColor: uniform(deep.clone()),
   };
-  const t = GEL_TIME;
-
   // ── the vertex graph: lumps, hit ripple, death thrash, stretch ──
-  const q = positionLocal.div(u.radius);
+  // (the displacement is gelDisplacement, shared with the SDF field, sdf.js)
+  let p = positionLocal.add(normalLocal.mul(gelDisplacement(positionLocal.div(u.radius), u).mul(u.radius)));
+  // pressure before the pop: the death thrash inflates the body about its floor contact
+  p = p.mul(float(1.0).add(u.tear.mul(DISP.inflate)));
+  const sdir = vec3(u.stretchDir.x, 0.0, u.stretchDir.y);
+  p = p.add(sdir.mul(dot(p, sdir)).mul(u.stretch));
+  m.positionNode = vec3(p.x, p.y.mul(float(1.0).sub(u.stretch.mul(0.4))), p.z);
+
+  // ── the glow and the dome's refraction depth ──
+  m.emissiveNode = gelGlow(u, materialEmissive);
+  m.thicknessNode = gelThickness(u, positionLocal.y);
+  m.gel = u;
+  m.userData.jelly = jelly;
+  // the real uniforms and the family, for the SDF bodies (sdf.js): a cube look
+  // swaps `mat.gel` for stand-ins after build, and a custom look clears it
+  m.userData.u = u; m.userData.fam = fam;
+  return m;
+}
+
+// ── the displacement law, shared by the mesh (above) and the SDF field ──
+// The surface moves along its rest normal by gelDisplacement(q) radii, q the
+// rest point in radii (positionLocal / radius): three octaves of lumps that
+// simmer, a ripple from where a bullet landed, 2.0's dent, and the death
+// thrash. DISP holds its amplitudes, so gelReach (the most it can move, which
+// sizes the SDF proxy) cannot fall out of step with it.
+export const DISP = { lump: 0.13, simmer: 0.028, simmerHit: 0.075, ripple: 0.11, thrash: 0.22, inflate: 0.2 };
+
+// 2.0's dent: pushed in where the shot landed, springing back through an
+// overshoot (TUNING.blob.dent); the seconds since the hit come off `hit`,
+// which runs from 1 to 0 over the ripple's life
+function dentSpring(u) {
+  const D = T.blob.dent, since = float(1.0).sub(u.hit).mul(T.blob.hitRipple);
+  return cos(since.mul(D.freq)).mul(exp(since.mul(-D.damp))).mul(clamp(u.hit.mul(40.0), 0.0, 1.0));
+}
+
+export function gelDisplacement(q, u, t = GEL_TIME) {
+  const D = T.blob.dent;
   const wave = sin(q.x.mul(3.6).add(t.mul(2.1)).add(u.phase))
     .add(sin(q.y.mul(4.2).add(t.mul(1.6)).add(u.phase.mul(1.3))))
     .add(sin(q.z.mul(4.8).add(t.mul(2.5)).add(u.phase.mul(0.7))))
     .mul(0.3333);
-  let p = positionLocal.add(normalLocal.mul(wave).mul(u.radius.mul(u.wobble).mul(0.13)));
   const hd = dot(normalize(q), vec3(u.hitDir.x, 0.0, u.hitDir.y));
-  p = p.add(normalLocal.mul(sin(hd.mul(9.0).sub(float(1.0).sub(u.hit).mul(16.0)))).mul(u.hit).mul(0.11).mul(u.radius));
-  // 2.0's dent: pushed in where the shot landed, springing back through an
-  // overshoot (TUNING.blob.dent); the seconds since the hit come off `hit`,
-  // which runs from 1 to 0 over the ripple's life
-  const D = T.blob.dent, since = float(1.0).sub(u.hit).mul(T.blob.hitRipple);
-  const spring = cos(since.mul(D.freq)).mul(exp(since.mul(-D.damp)));
+  const ripple = sin(hd.mul(9.0).sub(float(1.0).sub(u.hit).mul(16.0))).mul(u.hit).mul(DISP.ripple);
   const focus = exp(float(1.0).sub(hd).mul(-D.focus));
-  p = p.sub(normalLocal.mul(focus.mul(spring).mul(clamp(u.hit.mul(40.0), 0.0, 1.0)).mul(u.radius.mul(D.depth))));
   const te = sin(q.x.mul(15.0).add(t.mul(34.0)))
     .add(sin(q.y.mul(17.0).sub(t.mul(29.0))))
     .add(sin(q.z.mul(13.0).add(t.mul(38.0))))
     .mul(0.3333);
-  p = p.add(normalLocal.mul(te).mul(u.radius.mul(u.tear).mul(0.22)));
   // a finer octave keeps the surface simmering, and seethes while a ripple is live
   const oct2 = sin(q.x.mul(8.3).add(t.mul(4.7)).add(u.phase.mul(2.1)))
     .add(sin(q.y.mul(9.1).sub(t.mul(3.9)).add(u.phase)))
     .add(sin(q.z.mul(7.7).add(t.mul(5.3))))
     .mul(0.3333);
-  p = p.add(normalLocal.mul(oct2).mul(u.radius.mul(u.wobble).mul(float(0.028).add(u.hit.mul(0.075)))));
-  // pressure before the pop: the death thrash inflates the body about its floor contact
-  p = p.mul(float(1.0).add(u.tear.mul(0.2)));
-  const sdir = vec3(u.stretchDir.x, 0.0, u.stretchDir.y);
-  p = p.add(sdir.mul(dot(p, sdir)).mul(u.stretch));
-  m.positionNode = vec3(p.x, p.y.mul(float(1.0).sub(u.stretch.mul(0.4))), p.z);
+  return wave.mul(u.wobble.mul(DISP.lump))
+    .add(ripple)
+    .sub(focus.mul(dentSpring(u)).mul(D.depth))
+    .add(te.mul(u.tear.mul(DISP.thrash)))
+    .add(oct2.mul(u.wobble.mul(float(DISP.simmer).add(u.hit.mul(DISP.simmerHit)))));
+}
 
-  // ── the glow: translucency, wrap light, the death flare, the contrast rim ──
+// The most gelDisplacement can move the surface, in radii: every sum of
+// three sines is at most 1, so this is the sum of the terms' amplitudes.
+export function gelReach(u) {
+  return u.wobble.mul(float(DISP.lump + DISP.simmer).add(u.hit.mul(DISP.simmerHit)))
+    .add(u.hit.mul(DISP.ripple))
+    .add(dentSpring(u).abs().mul(T.blob.dent.depth))
+    .add(u.tear.mul(DISP.thrash));
+}
+
+// The glow: translucency (light bleeding through from behind), wrap light,
+// the death flare and the contrast rim, on top of `emissive` (the flash, the
+// tell). Reads normalView, so it follows whatever normal the material shades.
+export function gelGlow(u, emissive) {
   const V = positionViewDirection;
   const L = normalize(cameraViewMatrix.mul(vec4(u.lightDir, 0.0)).xyz);
   const N = normalize(normalView);
@@ -130,16 +168,16 @@ export function gelMaterial(hex, fam, radius, { wobble, jelly = T.material.jelly
   const wrap = clamp(dot(N, L).mul(0.5).add(0.5), 0.0, 1.0);
   const fres = float(1.0).sub(clamp(dot(N, V), 0.0, 1.0)).pow(3.0);
   const rimF = float(1.0).sub(clamp(dot(N, V), 0.0, 1.0)).pow(u.rimPow);
-  m.emissiveNode = materialEmissive
+  return emissive
     .add(u.sssColor.mul(sss.add(wrap.mul(0.18).mul(u.sss)).add(u.tear.mul(fres.mul(1.1).add(0.7)))))
     .add(u.rimColor.mul(rimF).mul(u.rim))
     // the jelly's inner glow: the full hue where the body faces you
     .add(u.coreColor.mul(clamp(dot(N, V), 0.0, 1.0).pow(u.corePow)).mul(u.core));
-  // dome refraction: thick at the belly, thin at the crown
-  m.thicknessNode = u.thick.mul(clamp(float(1.25).sub(positionLocal.y.div(u.radius).mul(0.41)), 0.55, 1.25));
-  m.gel = u;
-  m.userData.jelly = jelly;
-  return m;
+}
+
+// dome refraction: thick at the belly, thin at the crown (y local)
+export function gelThickness(u, y) {
+  return u.thick.mul(clamp(float(1.25).sub(y.div(u.radius).mul(0.41)), 0.55, 1.25));
 }
 
 // ── shapes ─────────────────────────────────────────────────────────
@@ -174,6 +212,7 @@ export function domeGeometry() {
   const { domeCut, domeRound } = T.blob;
   const g = sdfGeometry((x, y, z) => smax(Math.hypot(x, y, z) - 1, -y - domeCut, domeRound), 72);
   g.translate(0, domeCut, 0);
+  g.userData.sdf = { shape: 'dome' };     // sdf.js draws it as a field
   return g;
 }
 

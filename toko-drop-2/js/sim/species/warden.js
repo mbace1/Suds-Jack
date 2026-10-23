@@ -25,7 +25,7 @@
 // per-bullet `w.alive`.
 //
 // Numbers: js/tuning/species/warden.js. Contract: docs/SIM_CONTRACT.md.
-import { TUNING } from '../../tuning.js?v=16';
+import { TUNING } from '../../tuning.js?v=17';
 
 export default {
   init(w, g) {
@@ -77,8 +77,12 @@ function cover(w, g, aura) {
   }
 }
 
-// the living WARDENs whose shield is up this step (one still appearing has
-// not stepped, so it shields nothing)
+// the living WARDENs whose shield is up this step: every one that has stepped,
+// which is every one from its first step (1.x's rule asked only w.alive, and a
+// body was alive from its constructor, main.js:10706-10708, enemy.js:662; 2.0's
+// director lands its spawns before the bodies step). Only a body the core
+// still holds inert (state 'appear', a brood's wait, which no WARDEN is) has
+// not stepped, and shields nothing
 const live = (w, kind) => w.gels.filter((k) => k.kind === kind && k.alive && k.s.tick === w.tick);
 
 // re-take every living WARDEN's aura from where the bodies stand now: drop

@@ -101,9 +101,10 @@ export default {
   // arena.js:56-60), shooters maximally separated from a seeded base angle
   // (main.js:7276-7284), everything else at i / total of the circle. 1.x has
   // NO keep-out around the hero (clearOfHero 0) and pops a body in at full
-  // size the frame it is due; `appear: true` keeps 2.0's 0.3 s swell
-  // (TUNING.gel.appear) — open question arcade-mode.md §10.6 #10.
-  placement: { ring: 0.85, clearOfHero: 0, appear: true },
+  // size the frame it is due. 2.0's body is dangerous from that frame too
+  // (arcade-mode.md §10.6 #10, owner 2026-10-22: "c or less"); only its look
+  // swells in, over TUNING.gel.swell.
+  placement: { ring: 0.85, clearOfHero: 0 },
 
   // besides the shooters, these get the entrance ping (1.x main.js:9376-9380)
   ping: ['warden', 'siren', 'magna'],

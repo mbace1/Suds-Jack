@@ -31,8 +31,8 @@
 // calls cubeLook() for a look with its own shared geometry. A brood passes
 // `{ unborn: true }`: 1.x built its minis only when the parent's pop ENDED
 // (enemy.js:2992-3000, main.js:10586-10620), full size, so a child waiting
-// out that pop in the core's `appear` is not drawn at all (the core would
-// grow it in from 15% at its spawn point, beside the swelling corpse).
+// out that pop in the core's wait (state 'appear') is not drawn at all, and
+// comes out at full size (a child never swells).
 const DEG = Math.PI / 180;
 
 export function cubeLook({ unborn = false } = {}) {
@@ -110,6 +110,7 @@ function roundedBox(THREE, size, radius, segments) {
     nr[i] = nx; nr[i + 1] = ny; nr[i + 2] = nz;
   }
   g.computeBoundingBox(); g.computeBoundingSphere();
+  g.userData.sdf = { shape: 'box', half: size / 2, round: rr };   // sdf.js draws it as a field
   return g;
 }
 

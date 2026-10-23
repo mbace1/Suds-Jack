@@ -14,22 +14,24 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=16';
-import { makeRng } from './rng.js?v=16';
-import { BEHAVIOUR } from './species/index.js?v=16';
-import { DIRECTORS } from './director/index.js?v=16';
-import * as fire from './fire.js?v=16';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=16';
-import { swarmForces, resolveCrowd } from './crowd.js?v=16';
-import { revengeColor } from './color.js?v=16';
+import { TUNING } from '../tuning.js?v=17';
+import { makeRng } from './rng.js?v=17';
+import { BEHAVIOUR } from './species/index.js?v=17';
+import { DIRECTORS } from './director/index.js?v=17';
+import * as fire from './fire.js?v=17';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=17';
+import { swarmForces, resolveCrowd } from './crowd.js?v=17';
+import { revengeColor } from './color.js?v=17';
+import * as pickups from './pickups.js?v=17';
 
 const T = TUNING;
 
 // `dashMode` and `hpMult` are the title's two test switches: 1.x's dash
 // ('pass'), the PUSH dash (TUNING.hero.push) or the CUT dash (TUNING.hero.cut),
 // and every non-boss body's hit points ×
-// hpMult (the "bullet sponge" test; scores are unchanged).
-export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, dashMode = 'pass', hpMult = 1 } = {}) {
+// hpMult (the "bullet sponge" test; scores are unchanged). `gateUsed`: the
+// player has dashed a gate before, so no gate wears the DASH THROUGH! hint.
+export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, dashMode = 'pass', hpMult = 1, gateUsed = false } = {}) {
   const w = {
     seed, mode, dashMode, hpMult, rng: makeRng(seed), rngFx: makeRng((seed ^ 0x5bd1e995) >>> 0), tick: 0, time: 0, over: false,
     hx: arena.hx, hz: arena.hz, hero: makeHero(),
@@ -38,6 +40,7 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
     nextId: 1, score: 0, streak: 0, kills: 0, grazes: 0, nextMilestone: T.score.milestone, killedBy: null,
     wave: 1, dir: null,
   };
+  w.pk = pickups.create(w, { gateUsed });   // 1.x's classic pickups (sim/pickups.js)
   w.director = DIRECTORS[mode] ?? DIRECTORS.arcade;
   w.dir = w.director.create(w, api);
   return w;
@@ -108,6 +111,7 @@ export function step(w, input) {
   for (const l of w.lobs) { l.px = l.x; l.pz = l.z; }
 
   w.director.step(w, dt, api);
+  pickups.afterDirector(w, dt);
   heroStep(w, input, dt, api);
   swarmForces(w, dt);
   for (const g of w.gels.slice()) gelStep(w, g, dt);
@@ -118,8 +122,10 @@ export function step(w, input) {
   lobsStep(w, dt);
   hazardsStep(w, dt);
   heroBulletsHit(w);
+  pickups.mothsHit(w);
   gelBulletsHit(w);
   contacts(w);
+  pickups.step(w, dt, api);
 
   // bookkeeping
   if (w.bullets.some((b) => b.dead)) {
@@ -144,7 +150,7 @@ function spawn(w, kind, x, z, o = {}) {
   if (!o.isBoss && w.hpMult !== 1) hp = Math.max(1, Math.round(hp * w.hpMult));
   const g = {
     id: w.nextId++, kind, x, z, px: x, pz: z, vx: 0, vz: 0, kx: 0, kz: 0, velX: 0, velZ: 0,
-    r, hp, maxHp: hp, state: o.child || o.appear === false ? 'active' : 'appear', t: 0, alive: true,
+    r, hp, maxHp: hp, state: 'active', t: 0, alive: true,
     flash: 0, sq: 1, sqV: 0, speedMult: o.speedMult ?? 1, intervalMult: o.intervalMult ?? 1,
     variant: o.variant ?? 'normal', affix: o.affix ?? null, anchored: o.affix === 'anchored', isBoss: !!o.isBoss, child: !!o.child,
     shield: false, surgeT: 0, surgeMult: 1, cloak: 0, tell: 0, faceX: 0, faceZ: 1, dashedBy: -1, shovedBy: -1,
@@ -154,6 +160,12 @@ function spawn(w, kind, x, z, o = {}) {
   w.gels.push(g);
   BEHAVIOUR[kind].init?.(w, g, api, o);
   w.events.push({ type: 'spawn', id: g.id, x, z, kind, boss: g.isBoss, ping: !!o.ping });
+  // dangerous from its first step, as 1.x's bodies were (owner, 2026-10-22):
+  // it lands now, and its swell in (TUNING.gel.swell) is the view's alone. A
+  // child is not announced: a split, or a brood that lands when it is let out.
+  // `arrive`: the same step as its spawn, so the sound holds the thud to the
+  // end of the swell (audio.js) rather than over the spawn's hiss
+  if (!g.child) w.events.push({ type: 'land', x, z, arrive: true });
   return g;
 }
 
@@ -166,8 +178,14 @@ function gelStep(w, g, dt) {
   if (g.flash > 0) g.flash -= dt;
   if (g.surgeT > 0) g.surgeT -= dt;
   g.t += dt;
+  // a brood waiting out its parent's death pop (its onKill set state 'appear'
+  // and t to minus the wait): inert, untouchable and undrawn until t reaches
+  // 0, then live at once, at full size — hit and touching from this step,
+  // moving from the next, as 1.x built it after its update loop (main.js:10586-10620)
+  // — and after its crowd pass (main.js:10426), so the crowd solver leaves it
+  // where it was laid on this step (`landTick`, crowd.js resolveCrowd)
   if (g.state === 'appear') {
-    if (g.t >= T.gel.appear) { g.state = 'active'; g.t = 0; w.events.push({ type: 'land', x: g.x, z: g.z }); }
+    if (g.t >= 0) { g.state = 'active'; g.t = 0; g.landTick = w.tick; w.events.push({ type: 'land', x: g.x, z: g.z }); }
     return;
   }
   g.vx = g.vz = 0;
@@ -190,11 +208,15 @@ function kill(w, g, src = 'hero') {
   g.alive = false;
   const S = T.species[g.kind], hard = w.mode === 'hardcade';
   w.kills++; w.streak++;
-  w.score += Math.round(T.score.perKill * w.streak * (hard ? T.revenge.scoreMult : 1));
+  w.score += Math.round(T.score.perKill * w.streak * (hard ? T.revenge.scoreMult : 1) * pickups.scoreMult(w));
+  pickups.onKill(w, g);             // the bounty pays (1.x main.js:4436-4448)
   w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src });
   BEHAVIOUR[g.kind].onKill?.(w, g, api, src);
-  // a big death shakes the bodies around it (1.x main.js:4517-4540)
-  if (g.r >= T.death.big) for (const o of w.gels) if (o.alive && o !== g && Math.hypot(o.x - g.x, o.z - g.z) <= T.death.shockRadius) o.sqV -= T.death.shockSquash;
+  // a big death shakes the bodies around it (1.x main.js:4517-4540) — the ones
+  // alive at the kill, so never a brood still waiting out a pop, this body's or
+  // another's: 1.x built that brood only when its pop ended ("newborn minnows
+  // must not be vaporized by the shockwave that birthed them", main.js:4518-4529)
+  if (g.r >= T.death.big) for (const o of w.gels) if (o.alive && o !== g && o.state !== 'appear' && Math.hypot(o.x - g.x, o.z - g.z) <= T.death.shockRadius) o.sqV -= T.death.shockSquash;
   // VOLATILE: an 8-ring at corpse speed on death, in every mode (1.x main.js:4367-4377)
   if (g.affix === 'volatile') {
     fire.ring(w, g.x, g.z, 8, w.rngFx.range(0, Math.PI * 2), { speedMult: T.revenge.speedMult, color: revengeColor(g.kind), src: g.kind, revenge: true });
@@ -312,7 +334,7 @@ function gelBulletsHit(w) {
     }
     if (!b.grazed && d < T.graze.radius) {
       b.grazed = true; w.grazes++;
-      w.score += T.graze.points * (w.mode === 'hardcade' ? T.revenge.scoreMult : 1);
+      w.score += T.graze.points * (w.mode === 'hardcade' ? T.revenge.scoreMult : 1) * pickups.scoreMult(w);   // × 2 under the multiplier (1.x main.js:10860)
       w.events.push({ type: 'graze', x: b.x, z: b.z });
       milestones(w);
     }

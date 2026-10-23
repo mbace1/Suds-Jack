@@ -14,7 +14,7 @@
 // a dying view is no longer updated, so the plate is discarded (no colour, no
 // depth) while the gel's death thrash (tear) runs, which is exactly while
 // the body is dying.
-// It swells in with the body through 2.0's 0.3 s appear (new, gel.appear).
+// It swells in with the body over the view's swell (new in 2.0, TUNING.gel.swell).
 //
 // THE SPARKS (main.js:10694-10698): a shot the plate shrugs off throws three
 // steel droplets back along the hit, from the bullet at the body's mid-height

@@ -194,6 +194,7 @@ export function roundedBox(THREE, size, radius, segments) {
     nr[i] = nx; nr[i + 1] = ny; nr[i + 2] = nz;
   }
   g.computeBoundingBox(); g.computeBoundingSphere();
+  g.userData.sdf = { shape: 'box', half: size / 2, round: radius };   // sdf.js draws it as a field
   return g;
 }
 

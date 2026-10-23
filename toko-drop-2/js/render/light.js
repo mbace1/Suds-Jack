@@ -20,7 +20,7 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=16';
+import { TUNING } from '../tuning.js?v=17';
 
 const T = TUNING, A = T.light.arena;
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
@@ -112,7 +112,7 @@ export class ArenaLight {
       if (g.state === 'appear' && g.t < 0) continue;              // a brood still waiting out its parent's pop is not there yet
       const v = views?.get(g.id);
       if (v && v.root && !v.root.visible) continue;
-      const grow = g.state === 'appear' ? smooth(g.t / T.gel.appear) : 1;
+      const grow = g.child || !(g.t < T.gel.swell) ? 1 : smooth(g.t / T.gel.swell);
       const r = g.r * S.r * grow * (v?.shadow ?? 1);
       if (r > 0.02) this._put(this.shades, s++, g.px + (g.x - g.px) * alpha, g.pz + (g.z - g.pz) * alpha, r, 0, 0);
     }

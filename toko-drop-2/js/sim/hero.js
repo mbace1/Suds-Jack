@@ -18,8 +18,8 @@
 // trigger; `dash` an edge, true on the step it is asked. 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=16';
-import { BEHAVIOUR } from './species/index.js?v=16';   // read at run time only (a species' hitTest)
+import { TUNING } from '../tuning.js?v=17';
+import { BEHAVIOUR } from './species/index.js?v=17';   // read at run time only (a species' hitTest)
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -312,6 +312,12 @@ export function hurtHero(w, by) {
   if (H.weapons.hitCostsLevel && h.weapon?.level >= 2) {
     h.weapon = { fam: h.weapon.fam, level: 1 };
     w.events.push({ type: 'weapon', fam: h.weapon.fam, level: 1, down: true });
+  }
+  // and the dash the same way: level 2 down to 1, never below 1
+  // (TUNING.hero.dashUpgrade.loseOnHit; the levels come from the convoy's DASH pod)
+  if (H.dashUpgrade.loseOnHit && h.dashLevel >= 2) {
+    h.dashLevel = 1;
+    w.events.push({ type: 'dashLevel', level: 1, down: true });
   }
   if (h.lives <= 0) {
     // 1.x die(): the hero just goes — no flash, no mercy, no squash

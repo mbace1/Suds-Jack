@@ -55,8 +55,10 @@
 // kill a chain of two the cut only half crossed — so the bite parks the hp out
 // of its reach and this step puts it back to the chain; eaten whole, the hp is
 // left at 0 and hero.js's hit is the kill. Any other hp it loses outside a
-// bullet (a shove at dash level 1) is 1.x's hit() with no segment recorded:
-// the one nearest the impact (the hero), under the rule.
+// bullet is 1.x's hit() with no segment recorded: the one nearest the impact,
+// under the rule — a gate's laser at the beam's crossing (`g.hitAt`, which
+// sim/pickups.js zap() records; a death there is 'env'), a shove at dash
+// level 1 at the hero.
 //
 // Its squash spring is 1.x's non-blob one, 0.18 / 0.90 a step (the slug is not
 // a BLOB_TYPE), kicked −0.4 by a hit; it squashes the head only. The core runs
@@ -79,7 +81,7 @@
 // split points a body (`_splitPts`, main.js:10626 reads one per body), so the
 // second overwrote the first and that first back half never came into being —
 // its segments were gone. A SPREAD or SHOTGUN volley across a slug does that.
-import { TUNING } from '../../tuning.js?v=16';
+import { TUNING } from '../../tuning.js?v=17';
 
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -126,8 +128,9 @@ export default {
       g.hp = s.chain.length;
       kick += (s.ate ? S.hitSquash : 0) - api.T.gel.sq.hit;
     } else if (g.hp < s.chain.length) {
-      // hp it lost outside a bullet this step (hero.js ran first): 1.x's
-      // hit() at the hero. The core kicked −0.75 with it; the slug takes −0.4
+      // hp it lost outside a bullet since its last step (hero.js ran first
+      // this step; a gate's laser at the end of the last): 1.x's hit() at the
+      // impact. The core kicked −0.75 with it; the slug takes −0.4
       kick += S.hitSquash - api.T.gel.sq.hit;
       outside(w, g, S, api);
       if (!g.alive) return;
@@ -323,14 +326,20 @@ function bite(w, g, S) {
 }
 
 // hp lost outside a bullet (step, above): 1.x hit() with no segment recorded,
-// the one nearest the impact, the hero (enemy.js:1342-1345), once a point of hp
+// the one nearest the impact (enemy.js:1342-1345), once a point of hp. The
+// impact is where the core recorded it (`g.hitAt`: a gate's laser, at the
+// beam's crossing, last step's end — and a death there is the laser's, 'env');
+// with none recorded it is the hero (a shove at dash level 1)
 function outside(w, g, S, api) {
   const s = g.s, h = w.hero, ch = s.chain, n = ch.length;
+  const at = g.hitAt && g.hitAt.tick >= w.tick - 1 ? g.hitAt : null;
+  g.hitAt = null;
+  const px = at ? at.x : h.x, pz = at ? at.z : h.z, src = at ? at.by : 'dash';
   ch[0].x = g.x; ch[0].z = g.z;                                  // the head is where the body is now
   let k = n - g.hp;
   g.hp = n;
   while (k-- > 0 && g.alive) {
-    if (rule(w, g, S, api, nearest(s.chain, h.x, h.z)) === 'die') api.kill(w, g, 'dash');
+    if (rule(w, g, S, api, nearest(s.chain, px, pz)) === 'die') api.kill(w, g, src);
   }
 }
 

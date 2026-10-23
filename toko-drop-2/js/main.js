@@ -7,19 +7,21 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=16';
-import { buildFloor } from './render/floor.js?v=16';
-import { fitCamera } from './render/view.js?v=16';
-import { Splats } from './render/splats.js?v=16';
-import { Actors } from './render/actors.js?v=16';
-import { GEL_TIME } from './render/gel.js?v=16';
-import { studioEnvironment } from './render/env.js?v=16';
-import { createWorld, step, api as simApi } from './sim/world.js?v=16';
-import { Input } from './input.js?v=16';
-import { UI, t, timeText } from './ui.js?v=16';
-import { Sound } from './audio.js?v=16';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=16';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=16';
+import { TUNING } from './tuning.js?v=17';
+import { buildFloor } from './render/floor.js?v=17';
+import { fitCamera } from './render/view.js?v=17';
+import { Splats } from './render/splats.js?v=17';
+import { Actors } from './render/actors.js?v=17';
+import { GEL_TIME } from './render/gel.js?v=17';
+import { studioEnvironment } from './render/env.js?v=17';
+import { createWorld, step, api as simApi } from './sim/world.js?v=17';
+import { stage as stagePk } from './sim/pickups.js?v=17';
+import { Input } from './input.js?v=17';
+import { UI, t, timeText } from './ui.js?v=17';
+import { Sound } from './audio.js?v=17';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=17';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=17';
+import { Readout } from './readout.js?v=17';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -98,20 +100,27 @@ const store = {
   str(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
   set(k, v) { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } },
 };
+// Every mode the sim runs, each with its best score. The title offers only
+// ARCADE and HARDCADE for now (ui.js TITLE_MODES; owner, 2026-10-22: "forget
+// survival for now"), but SURVIVAL still runs from here, as
+// __toko.start('survival') does, and keeps its best.
 const MODES = ['arcade', 'hardcade', 'survival'];
 const bestKey = (m) => `toko2.best.${m}`;
 const bests = () => Object.fromEntries(MODES.map((m) => [m, store.num(bestKey(m))]));
 // The title's two test switches (owner, 2026-10-22: "the pushing dash should
 // be tested as it may be a better dynamic, allowing for more bullet sponge
 // enemies", then "likely we want dashes that go through and do damage in the
-// end"): the dash, PUSH (TUNING.hero.push), CUT (TUNING.hero.cut) or 1.x's
-// PASS, and every non-boss gel's hit points ×1, ×2 or ×3. PUSH is what the
-// test began with, so it is what a first run gets (v6 kept PASS as a 1 under
-// toko2.dashPass; that is still read).
-const DASHES = ['push', 'cut', 'pass'], HP_STEPS = [1, 2, 3];
+// end"): the dash, PUSH (TUNING.hero.push) or CUT (TUNING.hero.cut), and
+// every non-boss gel's hit points ×1, ×2 or ×3. PUSH is what the test began
+// with, so it is what a first run gets. 1.x's PASS has left the switch
+// (owner, 2026-10-22: PUSH and CUT in the menu) but not the game: it is the
+// sim's own dash, createWorld's default, the base 1.x's dash levels build on.
+// A browser that saved it, as v7's 'pass' or v6's toko2.dashPass (no longer
+// read), plays PUSH.
+const DASHES = ['push', 'cut'], HP_STEPS = [1, 2, 3];
 const tests = () => {
   const hp = store.num('toko2.gelHp'), d = store.str('toko2.dash');
-  return { dash: DASHES.includes(d) ? d : store.num('toko2.dashPass') === 1 ? 'pass' : 'push', hp: HP_STEPS.includes(hp) ? hp : 1 };
+  return { dash: DASHES.includes(d) ? d : 'push', hp: HP_STEPS.includes(hp) ? hp : 1 };
 };
 const showTitle = (keep = false) => ui.title(bests(), sound.on, input.source, tests(), keep);
 
@@ -131,8 +140,28 @@ const ui = new UI({
   onSound: () => { sound.setOn(!sound.on); store.set('toko2.mute', sound.on ? 0 : 1); showTitle(true); },
   onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); showTitle(true); },
   onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); showTitle(true); },
+  gels: () => gels(), onGels: () => flipGels(),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
+
+// The title's GELS switch (render/sdf.js): 'classic' meshes or 'sdf' fields,
+// localStorage toko2.gels. ?gels=sdf|classic overrides it for a link, until
+// the menu changes it (then the URL loses it, so a reload agrees with the
+// menu). It takes effect at run start; the menu also redraws the world left
+// behind the title in the new style. The HUD label says ' · sdf' while on.
+const GELS = ['classic', 'sdf'];
+let urlGels = GELS.includes(params.get('gels')) ? params.get('gels') : null;
+const gels = () => urlGels ?? (GELS.includes(store.str('toko2.gels')) ? store.str('toko2.gels') : 'classic');
+const setLabel = () => { document.getElementById('backend').textContent = ` · ${backend}${actors.gels === 'sdf' ? ' · sdf' : ''}`; };
+function flipGels() {
+  const g = gels() === 'sdf' ? 'classic' : 'sdf';
+  store.set('toko2.gels', g);
+  if (urlGels) { urlGels = null; const u = new URL(location.href); u.searchParams.delete('gels'); history.replaceState(history.state, '', u); }
+  actors.setGels(g); setLabel(); showTitle(true);
+}
+actors.setGels(gels()); setLabel();
+// ?fps: the frame-time line beside the version; ?bench: the fixed 24-body scene (readout.js)
+const readout = new Readout({ renderer, backend, actors, on: params.has('fps') || params.has('bench') });
 
 useArena(screenArena());
 new ResizeObserver(resize).observe(stage);
@@ -165,10 +194,13 @@ function start(m, { intro: asked = false } = {}) {
   mode = MODES.includes(m) ? m : 'arcade';
   useArena(screenArena());
   const test = tests();
-  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, dashMode: test.dash, hpMult: test.hp });
+  // toko2.gateUsed: this browser has dashed a gate, so the DASH THROUGH! tag
+  // is not shown again (1.x's tokoDropGateUsed, main.js:5310, 11166)
+  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1 });
   splats.clear(); actors.reset(); trauma = 0;
   acc = 0; pendingDash = false;
   sound.unlock();
+  actors.setGels(gels()); setLabel();
   ui.hide();
   if (introWanted(asked)) {
     state = 'intro'; input.enabled = false; ui.setHud(false);
@@ -204,6 +236,7 @@ function finish() {
   });
 }
 
+let podDown = { tick: -1, text: '' };   // this step's pod knock-down, for the dash's banner
 function onEvent(e) {
   debug.counts[e.type] = (debug.counts[e.type] || 0) + 1;
   sound.event(e);
@@ -222,7 +255,19 @@ function onEvent(e) {
   else if (e.type === 'wave') ui.banner(`${t('wave')} ${e.wave}${e.label ? ` · ${e.label}` : ''}`, e.dur ?? 1.4);
   else if (e.type === 'clear') ui.banner(`${t('wave')} ${e.wave} ${t('clear')} +${e.bonus.toLocaleString('en-US')}`, e.dur ?? 1.0);
   else if (e.type === 'curtainWarn') ui.banner(`${String(e.style || '').toUpperCase()} ${t('curtain')}`, e.t ?? 1.1);
-  else if (e.type === 'weapon') ui.banner(e.down ? `${e.fam.toUpperCase()} ${t('podDown')}` : e.up ? `${e.fam.toUpperCase()} ${t('podUp')}` : `${e.fam.toUpperCase()} ${t('pod')}`, 1.2);
+  else if (e.type === 'weapon') {
+    const text = e.down ? `${e.fam.toUpperCase()} ${t('podDown')}` : e.up ? `${e.fam.toUpperCase()} ${t('podUp')}` : `${e.fam.toUpperCase()} ${t('pod')}`;
+    if (e.down) podDown = { tick: world.tick, text };
+    ui.banner(text, 1.2);
+  }
+  // 1.x's pickup banners (main.js:4439, 11171, 11189, 11197), which overwrite one another as 1.x's did
+  else if (e.type === 'gateDash') { if (e.banner) ui.banner(t(e.dud ? 'dud' : 'greenRush'), e.banner); }
+  else if (e.type === 'gateChain') ui.banner(`${t('gateChain')} ×${e.n}! +${e.pay.toLocaleString('en-US')}`, e.banner);
+  else if (e.type === 'bountyPaid') ui.banner(`${t('bounty')} +${e.pay.toLocaleString('en-US')}!`, e.banner);
+  // one hit that knocks down both a level-2 pod and a level-2 dash (hero.js
+  // hurtHero) says both in one banner, rather than the second hiding the first
+  else if (e.type === 'dashLevel') ui.banner(e.down ? (podDown.tick === world.tick ? `${podDown.text} · ${t('dashDown')}` : t('dashDown')) : `${t('dashUp')} · LV${e.level}`, 1.2);
+  else if (e.type === 'gateUsed') store.set('toko2.gateUsed', 1);
 }
 
 // screen-axis input → the world. The camera looks down with the far edge at
@@ -265,6 +310,8 @@ const debug = {
   frames: 0, ready: false, counts: {},
   get world() { return world; }, get state() { return state; },
   start, pause, resume, toMenu,
+  // the GELS style ('classic' | 'sdf'), for the smoke and the captures; the readout
+  get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel(); }, readout,
   // Look checks for one species (test/lookshot.mjs): a quiet arena with only
   // these bodies in it, the hero standing below them.
   showcase(kinds, { spacing = 4, heroZ = 0.6 } = {}) {
@@ -296,6 +343,9 @@ const debug = {
       actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt);
     }
   },
+  // Look checks: one of every pickup round the hero (sim/pickups.js stage),
+  // drawn from the next frame on
+  stagePickups() { return world ? stagePk(world) : null; },
   freeCam: false, hold: false,
   intro, INTRO,
   capBegin(m = 'arcade') { capture.on = true; capture.bot = true; start(m, { intro: true }); introT0 = 0; last = 0; return state; },
@@ -363,6 +413,7 @@ function frame(now, dtFixed) {
 
   if (world) {
     const a = state === 'play' ? acc / T.sim.dt : 1;
+    actors.pickups.playing = state === 'play';   // 1.x drew its gate and bounty tags only while playing (main.js:5893, 6018)
     actors.sync(world, a, time);
     // a look check's hold freezes the effects too: they move only when idle() steps them
     if (state !== 'paused' && !(state === 'play' && debug.hold)) { actors.stepFx(dt, time); splats.step(dt); }
@@ -377,7 +428,9 @@ function frame(now, dtFixed) {
   ui.drawSticks(input);
   actors.light.render(renderer);   // the arena's light map, which the floor reads
   renderer.render(scene, state === 'intro' ? intro.cam : camera);
+  readout.frame(now, state, world);
   debug.frames++;
 }
 renderer.setAnimationLoop(() => { if (!capture.on) frame(performance.now()); });
 debug.ready = true;
+if (params.has('bench')) debug.bench = readout.bench(debug);

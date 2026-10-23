@@ -13,13 +13,15 @@
 // species, so a gel's material is built once and reused, never compiled
 // mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=16';
+import { TUNING } from '../tuning.js?v=17';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=16';
-import { LOOKS } from './looks/index.js?v=16';
-import { JellyBody } from './jelly.js?v=16';
-import { Juice } from './juice.js?v=16';
-import { ArenaLight } from './light.js?v=16';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=17';
+import { LOOKS } from './looks/index.js?v=17';
+import { JellyBody } from './jelly.js?v=17';
+import { Juice } from './juice.js?v=17';
+import { ArenaLight } from './light.js?v=17';
+import { toSdf } from './sdf.js?v=17';
+import { PickupView } from './pickups.js?v=17';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -32,6 +34,8 @@ export class Actors {
     this.geo = { blob: domeGeometry(), cube: cubeGeometry(), hero: heroGeometry(), eye: new THREE.SphereGeometry(1, 12, 8) };
     this.views = new Map();      // live gels by id
     this.pool = {};              // released views by species
+    this.gels = 'classic';       // how the gels are drawn: 'classic' meshes or 'sdf' fields (setGels)
+    this.poolSdf = {};           // released SDF views by species: a view keeps the style it was built in
     this.dying = [];             // killed gels playing out their last beat
     this.jellies = [];           // big gels dying as jelly halves (jelly.js)
     this.jellyMats = new Map();  // their material, per species, built and warmed when it first appears
@@ -46,6 +50,7 @@ export class Actors {
     scene.add(this.hero.root);
     this.juice = new Juice(scene);   // bullet comets, hit sparks, kill flashes and rings
     this.light = new ArenaLight();   // the light and shadow the floor reads (main.js draws it)
+    this.pickups = new PickupView(scene, this);   // 1.x's drops, gates, convoy and bounty (render/pickups.js)
 
     const sphere = new THREE.SphereGeometry(1, 10, 8);
     this.bullets = new THREE.InstancedMesh(sphere, new THREE.MeshBasicNodeMaterial(), T.bullets.maxHero + T.bullets.maxGel);
@@ -126,6 +131,8 @@ export class Actors {
     }
     v.shape = !v.own && S.family !== 'cube' ? (B.shapes[kind] || B.shape) : null;
     squash.add(v.body); root.add(squash);
+    v.style = this.gels;
+    if (this.gels === 'sdf') v.sdf = toSdf(v);   // render/sdf.js: the dome and cube bodies as fields
     if (S.family === 'blob' && D.jelly.on && !this.jellyMats.has(kind)) this._jellyMat(kind);
     return v;
   }
@@ -180,7 +187,7 @@ export class Actors {
   }
 
   _take(kind) {
-    const v = this.pool[kind]?.pop() || this._makeGel(kind);
+    const v = (this.gels === 'sdf' ? this.poolSdf : this.pool)[kind]?.pop() || this._makeGel(kind);
     v.vx = v.vz = 0; v.hit = 0; v.dyingT = 0;
     if (v.mat?.gel) { v.mat.gel.hit.value = 0; v.mat.gel.tear.value = 0; }
     v.mat?.emissive?.setScalar(0);
@@ -189,7 +196,19 @@ export class Actors {
     return v;
   }
 
-  _release(v) { this.scene.remove(v.root); v.root.scale.setScalar(1); (this.pool[v.kind] ||= []).push(v); }
+  _release(v) { this.scene.remove(v.root); v.root.scale.setScalar(1); ((v.style === 'sdf' ? this.poolSdf : this.pool)[v.kind] ||= []).push(v); }
+
+  // The title's GELS switch: every view on the floor goes back to its pool and
+  // the next sync takes them again in the new style. Pools are kept, never
+  // disposed: some looks hang scene objects off each view.
+  setGels(style) {
+    style = style === 'sdf' ? 'sdf' : 'classic';
+    if (style === this.gels) return;
+    for (const v of this.views.values()) this._release(v);
+    for (const v of this.dying) this._release(v);
+    this.views.clear(); this.dying.length = 0;
+    this.gels = style;
+  }
 
   reset() {
     for (const v of this.views.values()) this._release(v);
@@ -199,12 +218,14 @@ export class Actors {
     this.jellies.length = 0;
     this.juice.reset();
     this.light.reset();
+    this.pickups.reset();
   }
 
   // the sim's events that only the view cares about
   onEvent(e, w) {
     this.juice.onEvent(e, w);
     this.light.onEvent(e);
+    this.pickups.onEvent(e);
     if (e.type === 'ghost') {
       const G = T.heroLook.ghost, slot = this.hero.ghosts.reduce((a, b) => (a.life <= b.life ? a : b));
       slot.life = G.life; slot.mesh.position.set(e.x, 0, e.z); slot.mesh.visible = true;
@@ -259,7 +280,7 @@ export class Actors {
     if (big && w) {
       for (const g of w.gels) {
         const v = this.views.get(g.id);
-        if (!v || !v.mat?.gel || g.id === e.id || Math.hypot(g.x - e.x, g.z - e.z) > D.shockRadius) continue;
+        if (!v || !v.mat?.gel || g.id === e.id || g.state === 'appear' || Math.hypot(g.x - e.x, g.z - e.z) > D.shockRadius) continue;
         v.hit = Math.max(v.hit, D.shockRipple);
         const dx = g.x - e.x, dz = g.z - e.z, c = Math.cos(v.yaw), s = Math.sin(v.yaw), l = Math.hypot(dx, dz) || 1;
         v.mat.gel.hitDir.value.set(-(dx * c - dz * s) / l, -(dx * s + dz * c) / l);
@@ -297,7 +318,10 @@ export class Actors {
       v.vx += ((g.x - g.px) / T.sim.dt - v.vx) * 0.3;
       v.vz += ((g.z - g.pz) / T.sim.dt - v.vz) * 0.3;
       v.squash.scale.set(1 / Math.sqrt(g.sq), g.sq, 1 / Math.sqrt(g.sq));
-      const grow = g.state === 'appear' ? 0.15 + 0.85 * smooth(g.t / T.gel.appear) : 1;
+      // the swell is the view's alone (the body is live from its first step): a
+      // child never swells, and a brood still waiting out its parent's pop is not drawn
+      v.root.visible = g.state !== 'appear';
+      const grow = g.child || !(g.t < T.gel.swell) ? 1 : 0.15 + 0.85 * smooth(g.t / T.gel.swell);
       if (!v.own) this._shape(v, time, grow, g.tell);
       // 1.x's glow order (enemy.js:2650-2690): the hit flash, then a VOLATILE
       // body's smoulder, then a tell in the body's colour
@@ -327,6 +351,7 @@ export class Actors {
     if (bm.instanceColor) bm.instanceColor.needsUpdate = true;
     this.juice.sync(w, alpha, BULLET_Y);
     this.light.sync(w, alpha, this.views);
+    this.pickups.sync(w, alpha, time);
 
     // lobs in flight, hazards on the floor (a slow pulse, fading out at the end)
     let k = 0;
@@ -384,6 +409,7 @@ export class Actors {
   stepFx(dt, time) {
     this.juice.step(dt);
     this.light.step(dt);
+    this.pickups.stepFx(dt);
     // jelly halves: step, redraw, and in their last part slump into the puddle
     const J = D.jelly;
     for (let i = this.jellies.length - 1; i >= 0; i--) {

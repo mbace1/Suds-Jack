@@ -16,10 +16,15 @@
 //              at y 0.05, its outer edge the herd's own 7.5 and 0.14 wide,
 //              following the body, its opacity breathing 0.16 + 0.10·sin(4t
 //              + phase) on the body's own clock. It does not grow with an
-//              elite (the herd does not), it is dark while the body is still
-//              appearing (2.0's 0.3 s swell-in runs no step, and the herd is
-//              not on yet either), and it goes out the instant the SHEPHERD
-//              dies — the herd is released with it (enemy.js:3009).
+//              elite (the herd does not), and it does not swell in with the
+//              body either: the herd is on from the SHEPHERD's first step, as
+//              1.x's was (built at 0.18 and pulsed from its first update,
+//              enemy.js:1141, 1788), so the tell is lit and full-size through
+//              the view's swell — dark only while the core holds a body inert
+//              (state 'appear', a brood's wait, which no SHEPHERD has: the
+//              herd is gated on the same state, sim/crowd.js). It goes out
+//              the instant the SHEPHERD dies — the herd is released with it
+//              (enemy.js:3009).
 //   the glow   the core's: the hit flash (white) and a VOLATILE fuse; 1.x's
 //              emissive chain gave a SHEPHERD nothing else (enemy.js:2649-2690).
 //   the death  the core swells a killed view's root 1 → 2.3 about the floor
@@ -98,7 +103,8 @@ export default {
     v.mesh.rotation.set(0, g.s.spin || 0, 0);
     v.mesh.scale.set(sx * rm, g.sq * rm, sx * rm);
 
-    // the herd ring (enemy.js:1787-1788): pulsing while the herd is on
+    // the herd ring (enemy.js:1787-1788): pulsing while the herd is on — from
+    // the first step, swell or no swell; the gate is the herd's own (crowd.js)
     v.ringMat.opacity = g.state === 'active' ? R.base + R.amp * Math.sin(time * R.hz + v.phase) : 0;
   },
 
