@@ -19,6 +19,19 @@
     Never `--no-verify`.
 -->
 
+## v25 — 2026-10-23
+**THE CAMPAIGN, from 1.x: eighteen rooms in six worlds, each with its own clock and goal, graded S to F**
+- CAMPAIGN on the title opens the room list (1.x v263-v265): six worlds of three rooms, a world not reached yet one locked line, each room with what it asks and its best grade. A room opens when the one before it is graded above F
+- A room is 1.x's authored level, its file copied as written (`levels/*.json`): its bodies arrive where and when it says, on its own clock. Goals: SURVIVE the clock, KILL a count (the room ends the moment you have it), NO HITS (one hit ends it)
+- Grades are 1.x's: the share of the room's bodies put down, a step off for every hit (never below C); a quota by how far behind the arrivals you finished; F for a room you did not get through
+- Shaped rooms: 1.x's arena shapes (`js/sim/shape.js`, its arena.js) — circles and rectangles, joined or intersected. Every wall clamps to the shape, the floor stops at it and its edge is the world's rail. On a portrait phone a room is laid along the screen (x and z swap)
+- The HUD clock shows the goal and the seconds left; a clear goes back to the list with the grade, a death to the death screen with the grade, AGAIN and ROOMS. Progress is kept in `toko2.campaign`
+- Not yet: the worlds' looks and their one rule each (1.x's current, line, blink, skid, furnace) — every room plays on the grid for now; BOOST LANE's Rush rules (2.0 has no Rush), so it plays as an arcade room
+- Gates: `test/campaign.mjs` (160: every room both ways up plays to a grade, shaped rooms hold everything, the goals, 1.x's grades, the route); smoke opens the list and plays THREE RINGS to a grade
+- Cache tokens `?v=24` → `?v=25`; HUD label → `2.0 · v25`
+
+---
+
 ## v24 — 2026-10-23
 **1.x's settings in OPTIONS: LANGUAGE, VOLUME, the announcer with its own volume, and REDUCE MOTION**
 - LANGUAGE · ENGLISH / SUOMI / 日本語 (1.x's title chips): picked once, kept in `toko2.lang`, the whole game follows; the browser's language until then

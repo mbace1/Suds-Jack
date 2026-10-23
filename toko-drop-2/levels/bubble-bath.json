@@ -1,0 +1,42 @@
+{
+  "format": 1,
+  "id": "bubble-bath",
+  "name": "BUBBLE BATH",
+  "arena": {
+    "combine": "union",
+    "shapes": [
+      {
+        "kind": "circle",
+        "c": [
+          -5,
+          0
+        ],
+        "r": 8
+      },
+      {
+        "kind": "circle",
+        "c": [
+          5,
+          0
+        ],
+        "r": 8
+      }
+    ]
+  },
+  "duration": 40,
+  "rules": {
+    "mode": "arcade",
+    "outside": "push"
+  },
+  "spawns": [
+    {"t":0,"type":"GLOBBO","px":-10,"pz":0},
+    {"t":0,"type":"GLOBBO","px":10,"pz":0},
+    {"t":6,"type":"SPLITTA","px":-5,"pz":-6},
+    {"t":12,"type":"GLOBBO","px":5,"pz":6},
+    {"t":12,"type":"GLOBBO","px":5,"pz":-6},
+    {"t":13.5,"type":"GLOBBO","px":-5,"pz":6},
+    {"t":18,"type":"SPLITTA","px":5,"pz":6,"speedMult":1.2},
+    {"t":24,"type":"SHEPHERD","px":-10,"pz":0,"speedMult":1.2},
+    {"t":30,"type":"SPLITTA","px":10,"pz":0,"speedMult":1.4}
+  ]
+}

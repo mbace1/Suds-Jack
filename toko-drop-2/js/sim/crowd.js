@@ -7,7 +7,7 @@
 // flock, solo hunters weave, and the whole wave rides one current. The crowd
 // solver runs after the bodies have moved: bodies keep a pad apart, and one
 // closing on you from behind another is held back and slid aside.
-import { TUNING } from '../tuning.js?v=24';
+import { TUNING } from '../tuning.js?v=25';
 
 const MV = TUNING.movement, C = TUNING.crowd;
 const ARCHS = ['stream', 'ring', 'pincer'];
@@ -142,6 +142,10 @@ export function resolveCrowd(w, dt) {
       }
     }
   }
+  // a campaign room's region is a wall for the crowd as well
+  if (w.region) for (const g of gels) if (g.alive && !w.region.contains(g.x, g.z, g.r)) { const p = w.region.clamp(g.x, g.z, g.r, _rp); g.nudgedX += p.x - g.x; g.nudgedZ += p.z - g.z; g.x = p.x; g.z = p.z; }
 }
 
 const clampTo = (v, m) => (v < -m ? -m : v > m ? m : v);
+
+const _rp = { x: 0, z: 0 };

@@ -8,7 +8,7 @@
 // the nadir) that three's renderer prefilters for reflections on its own.
 // Every number is TUNING.env; nothing here is loaded from a file.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=24';
+import { TUNING } from '../tuning.js?v=25';
 
 const hex = (c) => `#${new THREE.Color(c).getHexString()}`;
 

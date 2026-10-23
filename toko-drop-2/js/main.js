@@ -7,27 +7,29 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=24';
-import { buildFloor } from './render/floor.js?v=24';
-import { fitCamera, screenToWorld } from './render/view.js?v=24';
-import * as worldsSim from './sim/worlds.js?v=24';
-import * as reshapeSim from './sim/reshape.js?v=24';
-import { Scenery } from './render/scenery.js?v=24';
-import { Transit } from './render/transit.js?v=24';
-import { Splats } from './render/splats.js?v=24';
-import { Actors } from './render/actors.js?v=24';
-import { GEL_TIME } from './render/gel.js?v=24';
-import { studioEnvironment } from './render/env.js?v=24';
-import { Specimen } from './render/specimen.js?v=24';
-import { createWorld, step, api as simApi } from './sim/world.js?v=24';
-import { stage as stagePk } from './sim/pickups.js?v=24';
-import { Input } from './input.js?v=24';
-import { UI, t, timeText, LANGS, getLang, setLang } from './ui.js?v=24';
-import { Announcer } from './announcer.js?v=24';
-import { Sound } from './audio.js?v=24';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=24';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=24';
-import { Readout } from './readout.js?v=24';
+import { TUNING } from './tuning.js?v=25';
+import { buildFloor } from './render/floor.js?v=25';
+import { fitCamera, screenToWorld } from './render/view.js?v=25';
+import * as worldsSim from './sim/worlds.js?v=25';
+import * as reshapeSim from './sim/reshape.js?v=25';
+import { Scenery } from './render/scenery.js?v=25';
+import { Transit } from './render/transit.js?v=25';
+import { Splats } from './render/splats.js?v=25';
+import { Actors } from './render/actors.js?v=25';
+import { GEL_TIME } from './render/gel.js?v=25';
+import { studioEnvironment } from './render/env.js?v=25';
+import { Specimen } from './render/specimen.js?v=25';
+import { createWorld, step, api as simApi } from './sim/world.js?v=25';
+import { stage as stagePk } from './sim/pickups.js?v=25';
+import { Input } from './input.js?v=25';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=25';
+import { Announcer } from './announcer.js?v=25';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=25';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=25';
+import { Sound } from './audio.js?v=25';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=25';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=25';
+import { Readout } from './readout.js?v=25';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -109,14 +111,14 @@ const screenAngle = () => {
   try { const a = screen.orientation?.angle ?? window.orientation; return typeof a === 'number' ? a : 0; } catch { return 0; }
 };
 function useArena(name) {
-  if (name === arenaName && viewWorld === 1 && !boundsFloor) return;
+  if (name === arenaName && viewWorld === 1 && !boundsFloor && !roomFloor) return;
   arenaName = name; arena = T.arena[name]; angle0 = screenAngle();
   useWorld(1, arena.hx, arena.hz);
 }
 // the floor of world n (sim/worlds.js), at its size: the view's half of a
 // world change. A world past the first is bigger than the screen, and the
 // camera follows (viewBox)
-let viewWorld = 1, boundsFloor = false;
+let viewWorld = 1, boundsFloor = false, roomFloor = false;   // roomFloor: a campaign room's floor is down (useRoom)
 // world n's floor (render/floor.js), per the title's WORLDS look (v23):
 // STREET is the driveway and the sewer with their lawn and walls; NEON is
 // two abstract floors in the grid's own language, with 1.x's rail. The look
@@ -126,7 +128,7 @@ const WORLD_LOOKS = ['street', 'neon'];
 let urlWorlds = WORLD_LOOKS.includes(params.get('worlds')) ? params.get('worlds') : null;
 const worldsLook = () => urlWorlds ?? (WORLD_LOOKS.includes(store.str('toko2.worlds')) ? store.str('toko2.worlds') : 'street');
 function useWorld(n, hx, hz) {
-  viewWorld = n; boundsFloor = false;
+  viewWorld = n; boundsFloor = false; roomFloor = false;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
   floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[worldsLook()][n - 1] ?? 'grid', film: actors.gooKit.film });
@@ -141,7 +143,7 @@ let survivalMax = null;
 function useSurvival() {
   survivalMax = reshapeSim.maxSize(arenaName);
   const { hx, hz } = survivalMax;
-  viewWorld = 1; boundsFloor = true;
+  viewWorld = 1; boundsFloor = true; roomFloor = false;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
   floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', bounds: true, film: actors.gooKit.film });
@@ -221,7 +223,7 @@ function follow(dt, a) {
 // ARCADE and HARDCADE for now (ui.js TITLE_MODES; owner, 2026-10-22: "forget
 // survival for now"), but SURVIVAL still runs from here, as
 // __toko.start('survival') does, and keeps its best.
-const MODES = ['arcade', 'hardcade', 'survival'];
+const MODES = ['arcade', 'hardcade', 'survival', 'campaign'];
 const bestKey = (m) => `toko2.best.${m}`;
 const bests = () => Object.fromEntries(MODES.map((m) => [m, store.num(bestKey(m))]));
 // The title's two test switches (owner, 2026-10-22: "the pushing dash should
@@ -262,7 +264,7 @@ const ui = new UI({
   onIntro: () => start('arcade', { intro: true }),
   onResume: () => resume(),
   onPause: () => pause(),
-  onAgain: () => start(mode),
+  onAgain: () => start(mode, { room: lastRoom }),
   onMenu: () => toMenu(),
   onSound: () => { sound.setVolume(sound.volume > 0 ? 0 : 1); store.set('toko2.volume', sound.volume); refreshMenu(); },
   onVolume: () => { sound.setVolume(next(VOLUMES, sound.volume)); store.set('toko2.volume', sound.volume); sound.unlock(); sound.event?.({ type: 'pickup', kind: 'score' }); refreshMenu(); },
@@ -276,7 +278,9 @@ const ui = new UI({
   goo: () => gooOn(), onGoo: () => flipGoo(),
   worlds: () => worldsLook(), onWorlds: () => flipWorlds(),
   onSpecimen: (kind, box) => specimen.show(kind, box),
-  onTitle: (keep) => showTitle(keep),
+  onTitle: (keep) => (world?.room ? toMenu() : showTitle(keep)),
+  onCampaign: () => showCampaign(),
+  onRoom: (id) => startRoom(id),
   optionsState: () => ({ sound: sound.on, volume: sound.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests() }),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
@@ -343,24 +347,30 @@ function toMenu() {
   showTitle();
 }
 
-function start(m, { intro: asked = false } = {}) {
+function start(m, { intro: asked = false, room = null } = {}) {
   debug.hold = false; debug.freeCam = false;
   mode = MODES.includes(m) ? m : 'arcade';
+  if (mode === 'campaign' && !room) room = lastRoom;
+  if (mode === 'campaign' && !room) { showCampaign(); return; }
+  lastRoom = room;
   useArena(screenArena());
   const test = tests();
   // toko2.gateUsed: this browser has dashed a gate, so the DASH THROUGH! tag
   // is not shown again (1.x's tokoDropGateUsed, main.js:5310, 11166)
   // ?world=2 or 3 starts the run in a later world (a test on the phone)
   const startWorld = Math.max(1, Math.min(3, Number(params.get('world')) || 1));
-  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, shape: arenaName, world: startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1 });
-  if (world.world > 1) useWorld(world.world, world.hx, world.hz);
+  const turnRoom = arenaName === 'portrait';   // a room lies along the phone, either way up
+  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, shape: arenaName, world: mode === 'campaign' ? 1 : startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1,
+    room: mode === 'campaign' ? { ...room, turn: turnRoom } : null });
+  if (world.room) useRoom(world);
+  else if (world.world > 1) useWorld(world.world, world.hx, world.hz);
   if (world.shapeT) useSurvival();
   splats.clear(); actors.reset(); trauma = 0; transit.reset(floor);
   acc = 0; pendingDash = false;
   sound.unlock();
   actors.setGels(gels()); setLabel();
   ui.hide();
-  if (introWanted(asked)) {
+  if (mode !== 'campaign' && introWanted(asked)) {
     state = 'intro'; input.enabled = false; ui.setHud(false);
     ui.bannerEl.hidden = true; ui._bannerT = 0;          // nothing left over from a run before it
     introSkip = false; introStamp = performance.now(); introT0 = performance.now() + 40;
@@ -375,8 +385,58 @@ function go() {
   if (state === 'intro') { introSfx?.stop(); introSfx = null; intro.finish(); }
   state = 'play'; input.enabled = true;
   ui.hide(); ui.setHud(true);
-  ui.banner(mode.toUpperCase(), 1.2);
+  ui.banner(world?.room ? `${world.room.level.name} · ${goalText(world.room)}` : mode.toUpperCase(), world?.room ? 1.8 : 1.2);
   announcer.say('start');
+}
+
+// ── THE CAMPAIGN (sim/director/campaign.js) ─────────────────────────
+// progress is one object in localStorage, a room's best grade by id (1.x tokoDropCampaign)
+const CAMPAIGN_KEY = 'toko2.campaign';
+const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY) || '{}') || {}; } catch { return {}; } };
+let lastRoom = null;   // AGAIN replays it
+const levels = new Map();
+async function loadLevel(id) {
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=25`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  return levels.get(id);
+}
+// the list the room screen draws: worlds, their rooms, open or not, best grades
+async function campaignList() {
+  const p = campaignProgress(), all = campaignRooms();
+  const names = await Promise.all(all.map((r) => loadLevel(r.id).then((L) => L.name, () => r.id.toUpperCase())));
+  return T.campaign.worlds.map((wd, wi) => {
+    const mine = all.filter((r) => r.world === wi);
+    return { name: wd.name, rail: `#${wd.rail.toString(16).padStart(6, '0')}`, open: roomOpen(mine[0].index, p),
+      rooms: mine.map((r) => ({ ...r, name: names[r.index], open: roomOpen(r.index, p), grade: p[r.id]?.grade ?? null })) };
+  });
+}
+async function showCampaign(played = null) {
+  if (world && state !== 'menu') { state = 'menu'; input.enabled = false; ui.setHud(false); }
+  const list = await campaignList();
+  if (played) {
+    const flat = list.flatMap((wd) => wd.rooms), i = flat.findIndex((r) => r.id === played.id);
+    played.next = played.grade !== 'F' && flat[i + 1]?.open ? flat[i + 1].id : played.id;
+  }
+  ui.campaign(list, played);
+}
+async function startRoom(id) {
+  const r = campaignRooms().find((x) => x.id === id);
+  if (!r) return;
+  const level = await loadLevel(id);
+  start('campaign', { room: { id, goal: r.goal, kills: r.kills, world: r.world, level } });
+}
+// a room's floor: its box, and when it is not a rectangle its shape (render/floor.js `region`)
+function useRoom(w) {
+  viewWorld = 1; boundsFloor = false; roomFloor = true;
+  const hx = w.hx, hz = w.hz, sh = w.region?.shape;
+  if (floor) { scene.remove(floor.group); floor.dispose(); }
+  actors.setArena(hx, hz);
+  const rail = T.campaign.worlds[w.room.world]?.rail;
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', film: actors.gooKit.film, region: sh ? regionSlots(sh) : null, regionRail: rail });
+  if (rail != null) floor.border.material.color.setHex(rail);
+  scene.add(floor.group);
+  scenery.build(1, hx, hz);
+  camAt.set(0, 0, 0);
+  resize();
 }
 
 function pause() { if (state !== 'play') return; state = 'paused'; input.enabled = false; ui.pause(T.species[world?.killedBy] ? world.killedBy : null); }
@@ -385,10 +445,18 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 
 function finish() {
   state = 'over'; input.enabled = false;
+  ui.setHud(false);
+  // a room: its grade is kept; a clear goes back to the rooms, a death to the death screen
+  const R = world.roomResult;
+  if (R) {
+    const p = campaignProgress(), was = p[R.id]?.grade;
+    if (!was || betterGrade(R.grade, was)) { p[R.id] = { grade: R.grade, score: R.score, kills: R.kills }; store.set(CAMPAIGN_KEY, JSON.stringify(p)); }
+    if (R.outcome === 'clear') { showCampaign({ id: R.id, name: world.room.level.name, grade: R.grade, kills: R.kills }); return; }
+  }
   const k = bestKey(mode), best = store.num(k), newBest = world.score > best;
   if (newBest) store.set(k, world.score);
-  ui.setHud(false);
   ui.results({
+    room: R ? { ...world.room, name: world.room.level.name, grade: R.grade } : null,
     mode, score: world.score, best: Math.max(best, world.score), newBest,
     time: timeText(world.time), gotYou: world.killedBy ? T.species[world.killedBy]?.name : null, gotYouKind: T.species[world.killedBy] ? world.killedBy : null,
     kills: world.kills, grazes: world.grazes,

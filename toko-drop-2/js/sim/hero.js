@@ -21,8 +21,8 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=24';
-import { BEHAVIOUR } from './species/index.js?v=24';   // read at run time only (a species' hitTest)
+import { TUNING } from '../tuning.js?v=25';
+import { BEHAVIOUR } from './species/index.js?v=25';   // read at run time only (a species' hitTest)
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -341,7 +341,10 @@ export function clampHero(w) {
   const h = w.hero, r = H.radius;
   h.x = Math.max(-w.hx + r, Math.min(w.hx - r, h.x));
   h.z = Math.max(-w.hz + r, Math.min(w.hz - r, h.z));
+  // a campaign room's region (sim/shape.js), when it is not a rectangle
+  if (w.region && !w.region.contains(h.x, h.z, r)) { const p = w.region.clamp(h.x, h.z, r, _rp); h.x = p.x; h.z = p.z; }
 }
+const _rp = { x: 0, z: 0 };
 
 // One hit on the hero (a bullet, a body, a hazard, a lob): 1.x hit() and
 // tryHitPlayer (player.js:234-242, main.js:4789-4816). Nothing lands while
@@ -353,6 +356,7 @@ export function hurtHero(w, by) {
   h.lives--;
   w.streak = 0;                     // 1.x: the streak resets only on a hit, the fatal one too
   w.killedBy = by;                  // the last one to land is what got you (main.js:4810)
+  w.hits = (w.hits || 0) + 1;       // a campaign room grades on it (sim/director/campaign.js)
   w.events.push({ type: 'hurt', x: h.x, z: h.z, by, lives: h.lives });
   // a hit knocks a level-2 pod down to level 1, never off (weaponTakeHit,
   // main.js:2083-2091, called from tryHitPlayer at main.js:4801)

@@ -21,8 +21,8 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=24';
-import * as worlds from '../worlds.js?v=24';
+import { TUNING } from '../../tuning.js?v=25';
+import * as worlds from '../worlds.js?v=25';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 

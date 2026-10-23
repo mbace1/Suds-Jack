@@ -14,17 +14,18 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=24';
-import { makeRng } from './rng.js?v=24';
-import { BEHAVIOUR } from './species/index.js?v=24';
-import { DIRECTORS } from './director/index.js?v=24';
-import * as fire from './fire.js?v=24';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=24';
-import { swarmForces, resolveCrowd } from './crowd.js?v=24';
-import { revengeColor } from './color.js?v=24';
-import * as pickups from './pickups.js?v=24';
-import * as worlds from './worlds.js?v=24';
-import * as reshape from './reshape.js?v=24';
+import { TUNING } from '../tuning.js?v=25';
+import { makeRng } from './rng.js?v=25';
+import { BEHAVIOUR } from './species/index.js?v=25';
+import { DIRECTORS } from './director/index.js?v=25';
+import * as fire from './fire.js?v=25';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=25';
+import { swarmForces, resolveCrowd } from './crowd.js?v=25';
+import { revengeColor } from './color.js?v=25';
+import * as pickups from './pickups.js?v=25';
+import * as worlds from './worlds.js?v=25';
+import * as reshape from './reshape.js?v=25';
+import { Arena, levelShape, KIND } from './shape.js?v=25';
 
 const T = TUNING;
 
@@ -36,8 +37,16 @@ const T = TUNING;
 // `shape` is the run's screen shape, which picks every later world's arena
 // as `arena` picks world 1's; `world` starts the run further on (a test, or
 // ?world=), at that world's first wave.
-export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, shape = 'landscape', world = 1, dashMode = 'pass', hpMult = 1, gateUsed = false } = {}) {
+// `room` (mode 'campaign', sim/director/campaign.js) is an authored level:
+// its region sets the walls — its box in w.hx / w.hz, and when it is not a
+// rectangle, the shape itself in `w.region`, which every wall clamps to too.
+export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, shape = 'landscape', world = 1, dashMode = 'pass', hpMult = 1, gateUsed = false, room = null } = {}) {
   if (world > 1) arena = worlds.arenaFor(world, shape);
+  let region = null;
+  if (room) {
+    const sh = levelShape(room.level, room.turn);
+    if (sh) { region = new Arena(sh); arena = { hx: region.halfX, hz: region.halfZ }; if (sh.kind === KIND.RECT) region = null; }
+  }
   const w = {
     seed, mode, dashMode, hpMult, rng: makeRng(seed), rngFx: makeRng((seed ^ 0x5bd1e995) >>> 0), tick: 0, time: 0, over: false,
     shape, world, trans: null, lastBoss: null,
@@ -45,8 +54,10 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
     gels: [], bullets: [], lobs: [], hazards: [], events: [],
     heroBullets: 0, gelBullets: 0, refused: 0,
     nextId: 1, score: 0, streak: 0, kills: 0, grazes: 0, nextMilestone: T.score.milestone, killedBy: null,
-    wave: 1, dir: null,
+    wave: 1, dir: null, room, region, hits: 0,
   };
+  // the hero starts at the middle, or where a room's region has room for it
+  if (region && !region.contains(0, 0, T.hero.radius)) { const p = region.clamp(0, 0, T.hero.radius + 0.05, { x: 0, z: 0 }); w.hero.x = w.hero.px = p.x; w.hero.z = w.hero.pz = p.z; }
   w.pk = pickups.create(w, { gateUsed });   // 1.x's classic pickups (sim/pickups.js)
   w.director = DIRECTORS[mode] ?? DIRECTORS.arcade;
   w.dir = w.director.create(w, api);
@@ -92,7 +103,7 @@ export const api = {
     w.heroBullets++;
   },
   kill: (w, g, src) => kill(w, g, src),
-  clamp(w, g) { if (!g) return; g.x = clamp(g.x, -w.hx + g.r, w.hx - g.r); g.z = clamp(g.z, -w.hz + g.r, w.hz - g.r); },
+  clamp(w, g) { if (!g) return; g.x = clamp(g.x, -w.hx + g.r, w.hx - g.r); g.z = clamp(g.z, -w.hz + g.r, w.hz - g.r); inRegion(w, g, g.r); },
   // points from anything but a kill or a graze (a wave's clear bonus), with
   // the milestones that follow
   score(w, n) { w.score += n; milestones(w); },
@@ -113,7 +124,7 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 export function step(w, input) {
   const dt = T.sim.dt;
   w.events.length = 0;
-  if (w.over) return w;
+  if (w.over) { w.director.onOver?.(w); return w; }
   w.tick++; w.time += dt;
 
   const h = w.hero;
@@ -142,6 +153,8 @@ export function step(w, input) {
     contacts(w);
     pickups.step(w, dt, api);
   }
+  // a death in a campaign room ends the room (sim/director/campaign.js)
+  if (w.over && w.director.onOver) w.director.onOver(w);
 
   // bookkeeping
   if (w.bullets.some((b) => b.dead)) {
@@ -222,7 +235,20 @@ function gelStep(w, g, dt) {
   const HX = w.hx - g.r, HZ = w.hz - g.r;
   if (g.x < -HX || g.x > HX) { g.x = clamp(g.x, -HX, HX); if (Math.abs(g.kx) > 2) g.sqV += T.gel.sq.wall; g.kx *= -T.gel.wallBounce; }
   if (g.z < -HZ || g.z > HZ) { g.z = clamp(g.z, -HZ, HZ); if (Math.abs(g.kz) > 2) g.sqV += T.gel.sq.wall; g.kz *= -T.gel.wallBounce; }
+  // a room's region is a wall too: a knock off it comes back reflected
+  if (w.region && inRegion(w, g, g.r)) {
+    if (Math.hypot(g.kx, g.kz) > 2) { g.sqV += T.gel.sq.wall; g.kx *= -T.gel.wallBounce; g.kz *= -T.gel.wallBounce; }
+  }
 }
+
+// keep a body of radius r inside a room's region; true when it had to move
+export function inRegion(w, o, r) {
+  if (!w.region || w.region.contains(o.x, o.z, r)) return false;
+  const p = w.region.clamp(o.x, o.z, r, _rp);
+  o.x = p.x; o.z = p.z;
+  return true;
+}
+const _rp = { x: 0, z: 0 };
 
 function kill(w, g, src = 'hero') {
   if (!g.alive) return;
@@ -287,7 +313,7 @@ function bulletsStep(w, dt) {
       b.vx = Math.cos(a) * b.speed; b.vz = Math.sin(a) * b.speed;
     }
     b.x += b.vx * dt; b.z += b.vz * dt;
-    if ((b.life -= dt) <= 0 || Math.abs(b.x) > HX || Math.abs(b.z) > HZ) b.dead = true;
+    if ((b.life -= dt) <= 0 || Math.abs(b.x) > HX || Math.abs(b.z) > HZ || (w.region && w.region.sdf(b.x, b.z) > 1.5)) b.dead = true;
   }
 }
 

@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=24';
-import WAVES from './tuning/waves.js?v=24';
-import PICKUPS from './tuning/pickups.js?v=24';
+import { SPECIES } from './tuning/species/index.js?v=25';
+import WAVES from './tuning/waves.js?v=25';
+import PICKUPS from './tuning/pickups.js?v=25';
 
 export const TUNING = {
   render: {
@@ -451,6 +451,36 @@ export const TUNING = {
   // z) is picked, the floor warns for `warn` s where it will change, and the
   // walls slam there over `move` s. Past 1 the floor is bigger than the
   // screen and the camera follows.
+  // THE CAMPAIGN (1.x v263-v265, tuning.js:165-195): WORLDS of rooms, each
+  // room an authored level (levels/<id>.json) with its own clock and goal,
+  // graded S/A/B/C, and F for a room you did not get through. A room opens
+  // when the one before it has a grade above F, so the list is a route.
+  //   survive  — last the room's clock (the default)
+  //   quota    — put down `kills` bodies; the room ends the moment you do
+  //   flawless — one hit ends the room
+  // `name` is 1.x's depth look the world played in (its rule comes later).
+  campaign: {
+    worlds: [
+      { name: 'THE SURFACE', rail: 0x5555cc, rooms: [{ id: 'first-light' }, { id: 'three-rings' }, { id: 'boost-lane' }] },
+      { name: 'THE WELL', rail: 0x33ccbb, rooms: [{ id: 'undertow' }, { id: 'eddy', goal: 'quota', kills: 19 }, { id: 'slug-run', goal: 'flawless' }] },
+      { name: 'THE VEIN', rail: 0xdd3344, rooms: [{ id: 'pulse' }, { id: 'crossfire', goal: 'quota', kills: 18 }, { id: 'clot', goal: 'flawless' }] },
+      { name: 'THE VOID', rail: 0x8866cc, rooms: [{ id: 'lights-out' }, { id: 'the-pull', goal: 'quota', kills: 27 }, { id: 'siren-song' }] },
+      { name: 'THE FOAM', rail: 0x99ffee, rooms: [{ id: 'rink' }, { id: 'skate', goal: 'quota', kills: 30 }, { id: 'bubble-bath', goal: 'flawless' }] },
+      { name: 'THE KILN', rail: 0xffaa33, rooms: [{ id: 'bellows' }, { id: 'anvil', goal: 'quota', kills: 34 }, { id: 'forge' }] },
+    ],
+    // survive / flawless: the SHARE of the room's bodies you put down; living
+    // through it is a C on its own, S is every body
+    share: { B: 0.6, A: 0.85, S: 1.0 },
+    hitCost: 1,   // each hit taken costs a grade step (never below C)
+    // quota: seconds BEHIND, from the arrival of the last body the count needs to having them all
+    quotaLag: { S: 1.5, A: 3, B: 6 },
+    // 1.x's level type names → 2.0's species keys
+    kinds: { GLOBBO: 'globbo', YELA_CUBE: 'yela', SPITTOR: 'spittor', FANNER: 'fanner', ORANGE_CUBE: 'orange', WEEVA: 'weeva',
+             SLUDGE_CUBE: 'sludge', BAMBU: 'bambu', SPLITTA: 'splitta', REDD_CUBE: 'redd', PURP_CUBE: 'purp', PYRA: 'pyra',
+             BOTFLY: 'botfly', TORO: 'toro', BULWARK: 'bulwark', WARDEN: 'warden', DRAPER: 'draper', SIREN: 'siren',
+             CLOAKER: 'cloaker', MAGNA: 'magna', SHEPHERD: 'shepherd', RIBBON: 'ribbon', SLUG: 'slug' },
+    endHold: 0.6,   // s the room holds on its last frame before the list comes back
+  },
   survival: {
     reshape: {
       on: true, first: 20, every: 30, warn: 2.2, move: 0.45, shake: 0.32,

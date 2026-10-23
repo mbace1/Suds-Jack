@@ -21,8 +21,8 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=24';
-import { noise } from './scenery.js?v=24';
+import { GEL_TIME } from './gel.js?v=25';
+import { noise } from './scenery.js?v=25';
 
 // `light` (optional) is the arena's light map (render/light.js): its rgb is
 // light thrown on the floor, its alpha the shadow of what stands on it.
@@ -33,7 +33,11 @@ import { noise } from './scenery.js?v=24';
 // where it is going.
 // `film` (optional) is the goo on the floor (render/goo.js): its wet film and
 // the stain it dries to, two textures that swap every film step (setFilm).
-export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds = false, film = null } = {}) {
+// `region` (a campaign room that is not a rectangle, sim/shape.js slots()):
+// up to four rects and circles, joined or intersected. Outside it the floor
+// is the void, and its edge is drawn as 1.x's rail (`regionRail`), the box's
+// rail hidden.
+export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds = false, film = null, region = null, regionRail = null } = {}) {
   const F = T.floor, LF = T.light.arena.floor;
   const group = new THREE.Group();
 
@@ -53,6 +57,17 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   const W = T.worlds.floor;
   const bounds = hasBounds ? { cur: uniform(new THREE.Vector2(hx, hz)), next: uniform(new THREE.Vector2(hx, hz)), warn: uniform(0) } : null;
   const comeCol = uniform(new THREE.Color(0x40e8ff)), goCol = uniform(new THREE.Color(0xff3040));
+  // the room's region, as a signed distance at a floor point (1.x arena.js)
+  const regionSdf = region ? (wp) => {
+    let d = null;
+    for (const [k, a, b, c] of region.slots) {
+      if (!k) continue;
+      const di = k === 1 ? max(abs(wp.x).sub(a), abs(wp.y).sub(b)) : length(wp.sub(vec2(a, b))).sub(c);
+      d = d === null ? di : region.combine === 1 ? max(d, di) : min(d, di);
+    }
+    return d;
+  } : null;
+  const railCol = uniform(new THREE.Color(regionRail ?? F.rail));
 
   const wetTex = film ? texture(film.wetTexture) : null, dryTex = film ? texture(film.dryTexture) : null;
 
@@ -284,6 +299,12 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       const lit = mix(voidCol, out.mul(0.6), coming.mul(0.7)).add(comeCol.mul(S.mask.mul(0.9).add(0.08)).mul(coming));
       out = mix(lit, out.add(goCol.mul(S.mask.mul(0.8).add(0.12)).mul(going)), inCur);
     }
+    if (regionSdf) {
+      // outside the room's region the floor is gone; its edge is the rail
+      const d = regionSdf(w0), aa = max(fwidth(d), 1e-3);
+      const rail = float(1).sub(smoothstep(0.02, 0.07, abs(d))).add(float(1).sub(smoothstep(0, 0.5, abs(d))).mul(0.18));
+      out = mix(out, voidCol, smoothstep(aa.negate(), aa, d)).add(railCol.mul(rail).mul(1.2));
+    }
     // the reveal, in world units
     const rd = length(w0.sub(revealAt));
     const inside = float(1).sub(smoothstep(revealR.sub(1.1), revealR, rd));
@@ -303,7 +324,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     new THREE.LineBasicNodeMaterial({ color: F.rail, transparent: true }),   // transparent: the intro fades it in
   );
   border.position.y = F.railHeight / 2;
-  border.visible = style === 'grid' || style === 'hex' || style === 'tide';   // the abstract floors keep 1.x's rail
+  border.visible = !region && (style === 'grid' || style === 'hex' || style === 'tide');   // the abstract floors keep 1.x's rail; a shaped room draws its own
   group.add(border);
 
   // what the camera must hold: the floor and its rail
