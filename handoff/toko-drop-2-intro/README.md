@@ -1,78 +1,71 @@
-# Toko Drop 2.0: the start intro (draft for approval, 22 Oct 2026)
+# Toko Drop 2.0 v16: the start intro, behind an INTRO button
 
-Owner, 22 Oct: "Make a start video for toko drop." The game is 2.0, and the intro is built in-game with an MP4 for review
-(both picked by the owner in answer to a question).
+**Live on the arcade since 22 Oct 2026** as `gh-pages` commit `981f48c2` ("Arcade: Toko Drop 2.0 v16 — the start intro,
+behind an INTRO button beside ARCADE, at toko-drop-2/"). This folder reconciles that deploy back to `main` (AGENTS.md
+§2b), because `main` does not carry the 2.0 copy.
 
-**Status: built and recorded, waiting for approval. Not shipped.** The 2.0 source repo (`mbace1/toko-drop`) is not
-reachable from the session that built this: the Claude GitHub App is not installed on it. So the intro was built against
-the **deployed v15** (`gh-pages:toko-drop-2/`, which is plain ES modules and the same code) and staged here. To ship it,
-someone applies it in the source repo (see below).
+Owner, 22 Oct: "Make a start video for toko drop", then, after the review film, "make it live on the arcade version as an
+intro button next to the start button in the menu", then "Make a PR after putting it in v15 or 16".
 
-- Review film: `toko-drop-2-intro-review.mp4`, 1920×1080, 14 s: the 11 s intro, then 3 s of the run under the look
-  check's bot. Recorded frame by frame from the real game, with its own sound.
-- Patch: `intro-v15.patch`. It applies cleanly to deployed v15 (`patch -p1`, checked).
-- Files: `js/intro/{intro,sfx,master,wordmark}.js` (new), `js/render/floor.js` and `js/main.js` (changed).
-- Capture: `tools/film.cjs` (the film) and `tools/stills.cjs` (stills at chosen times).
+## What shipped
 
-## What it does (the owner's brief, in order)
+- **The title's first row is ARCADE and, beside it, INTRO.** INTRO plays the ~11 s intro and hands it straight to an
+  ARCADE run. The intro never plays on its own. `?intro` makes every start play it, for testing.
+- **The intro**, in the engine and computed from its own time `t`:
+  1. The magenta Toko Midori Games™ lockup on black, with the traced master face and the drawn logotype on one line.
+     Toko blinks.
+  2. MIDORI fades. The camera pushes in while "drop" pops in under Toko in lower case, then holds a beat on the face and
+     "Toko / drop".
+  3. The camera goes on in to the foot of the p, where a whitish drop gathers and lets go.
+  4. The camera follows the drop down and swings round to look straight down as it lands.
+  5. The floor's grid runs out of the drop in a blue ring, out to the rail.
+  6. The drop opens its eyes.
+  7. The camera pulls out to the game's own view while the HUD comes in.
+- **The drop is the hero.** It is the same mesh and the same white satin gel, and it lands on the spawn point.
+- **The floor shader gained a reveal.** At rest it is off, so play is unchanged.
+- **Sound:** a 16-bit cue for every stage, synthesised, through the master gain.
+- **Skipping:** any key, pointer or pad press skips the intro, except in its first 0.35 s.
+- **Versioning:** every `?v=` token moved 15 → 16, as 2.0's own releases move them. The HUD label reads `2.0 · v16`. There
+  is a v16 entry in `toko-drop-2/VERSIONS.md`. The catalogue note and the `versions.json` row were updated for this cabinet
+  only.
 
-| t (s) | picture | sound (16-bit: pulse waves, triangle, noise, a SNES-style echo) |
-|---|---|---|
-| 0.55 | Magenta Toko Midori Games™ on black: the traced master face on the left, the drawn logotype on one line | bright 25 % pulse arpeggio over a triangle root |
-| 2.05 | Toko blinks (the brand's resting animation) | the smallest tick |
-| 2.6 | MIDORI fades and sinks | two soft falling triangle notes |
-| 3.05–4.4 | Push in; "drop" pops in under "Toko", lower case, letter by letter; a beat on the face + **Toko / drop** title card | air rush; four staccato blips, C E G C |
-| 4.4–5.0 | On in to the foot of the p | |
-| 4.95–6.15 | A whitish drop gathers under the p, swells, stretches, hangs on a thread | rising wobbly bloop; a plink as it necks |
-| 6.15–6.93 | It lets go; the camera follows it down and swings over to look straight down as it lands | slide whistle down; thump, splat and plip |
-| 7.0–8.7 | The blue grid runs out of the drop in a ring, the camera pulling up to watch it reach the rail | shimmering climb on a thin pulse |
-| 9.0 | The camera comes down and round to its face; it **opens its eyes**, hops, and blinks | pi-ping |
-| 9.45–10.85 | Pull out to the game's own camera (view offset and all); score, lives, clock and pause come in one by one | a tick per HUD element |
-| 10.85 | The run starts (the mode banner, then wave 1) | a short major stab |
+**Follow-up `fe85a015`: the token cascade.** `981f48c2` changed `hub/games.js` without moving its token, so a returning
+visitor's service worker kept the v15 note. The cascade the v15 deploy did, computed from the imports:
+- `games.js` v146, hub v150, shell v109, hub-entry v73
+- `sw` v139
+- the counter's chain to `board.js` v15
 
-**The drop IS the hero**: the same mesh and the same white satin gel. It lands on the spawn point, so the run starts
-from exactly where the intro leaves it. The grid is the arena floor's own shader, given a reveal (the void outside a
-radius, a crisp blue front on its edge, the grid lit up behind it). At rest the reveal is off and play is unchanged.
+Only tokens changed. The hub, AnotherHUB, the counter, `toko-drop-2` and `hyperdagger` load with no HTTP or page errors.
 
-## Rules it follows
+## Files here
 
-- **Once per tab** (`sessionStorage toko2.intro`), before the first run only; AGAIN goes straight in. `?intro` plays it
-  every run, and `?nointro` never plays it. It is off under `prefers-reduced-motion`.
-- **Any press skips it**: key, pointer or pad. The first 0.35 s is ignored, because the press that started the run would
-  otherwise skip it too. A skip silences the scheduled cues and starts the run at once.
-- **Every frame is a function of t** (`intro.frame(t)`), so the game, a skip and the capture draw the same thing.
-- **The brand is the brand's own.** `master.js` and `wordmark.js` are verbatim copies of `toko/js/` (vendored, because
-  2.0's own Pages has no `../toko/`). The logotype never had a **p**, so it is built from the same parts as its d, mirrored,
-  with the stem run 28 units below the baseline. Two colours only: black and #F0027F.
-- **Sound is synthesised and goes through the game's master gain**, so mute mutes it. The film measures −27 LUFS
-  integrated with a peak of −12 dBFS: subtle, and the loudest cue sits a step below a kill.
+- `intro-v16.patch` is the exact deployed change, `git diff 25dae247 981f48c2 -- toko-drop-2/`. It applies cleanly to
+  v15. It adds `js/intro/{intro,sfx,master,wordmark}.js` and changes `js/main.js`, `js/ui.js`, `js/render/floor.js`,
+  `index.html` and `VERSIONS.md`, plus the token move.
+- `toko-drop-2-intro-review.mp4` is the review film: 1920×1080, 14 s, recorded frame by frame from the real game with its
+  own sound.
+- `tools/film.cjs` and `tools/stills.cjs` record the film and stills through `__toko.capBegin()` / `capFrame(t)` /
+  `introWav()`.
+- `tools/verify.cjs` is the release check. It drives the real route: the hub's cabinet link, the 2.0 title, clicking
+  INTRO, and the intro handing over to play.
 
-## To ship it (in `mbace1/toko-drop`)
+## How it was verified (Chromium on SwiftShader, which falls back to WebGL 2)
 
-1. Apply `intro-v15.patch` (or copy the files) onto the version it is based on, v15. Check that nothing newer touched
-   `main.js` or `render/floor.js`.
-2. `scripts/bump-version.sh 16`, so the new modules get `?v=16` like the rest. Fill in the stub:
+`tools/verify.cjs` against the deploy tree: 14/14 passed.
+- The hub links to `toko-drop-2/` and shows the v16 note. The label reads v16.
+- The first row is ARCADE + INTRO, and both buttons are at least 44 px.
+- INTRO starts the intro, which hands over to play on its own after about 11 s. The HUD is up and no inline styles are
+  left behind.
+- ARCADE still starts a run directly.
+- A key skips the intro.
+- The title fits at 390×844 and 844×390 with no sideways scroll.
+- No fault box and no page errors.
 
-   ```
-   ## v16 — 2026-10-2x
-   **The start intro: Toko Midori Games → Toko drop → the drop lands, the grid runs out of it, it opens its eyes**
-   - Before the first run of a tab: the magenta lockup on black, MIDORI goes, "drop" pops in under Toko, a whitish drop
-     gathers under the p and falls; the camera follows it down to looking straight down, the floor's grid runs out of it
-     in a blue ring, it opens its eyes, and the camera pulls out to the game's view as the HUD comes in. ~11 s.
-   - The drop is the hero (same mesh, same gel) and lands on the spawn point. The floor shader has a reveal for it
-     (off at rest).
-   - 16-bit cues for every stage, synthesised, through the master gain.
-   - Any press skips (not in its first 0.35 s); once per tab; ?intro / ?nointro; off under reduced motion.
-   ```
-3. Run the gates, then check it on a phone with `?intro`, held both ways.
+## Still open
 
-## Honest limits
-
-- **Never run on a real GPU or on the WebGPU backend.** Everything here ran on SwiftShader through `?webgl`. The phone
-  check is the real test.
-- **Built on deployed v15, not the source repo.** If the source has moved past v15 in `main.js` or `floor.js`, the patch
-  needs merging by hand.
-- **The arcade's own sting** plays once per browser on the first Play from the hub. So a first-ever visit from the hub
-  sees the Toko sting and then this lockup. Every visit after that sees only this.
-- **The pad skip has not been tested with a real controller.** The code path is there: any button, after 0.35 s.
-- The Godot port is untouched.
+- **The 2.0 source repo (`mbace1/toko-drop`) does not have this yet.** It was not reachable from the session that built
+  it (the Claude GitHub App is not installed on it). It must take `intro-v16.patch` as its v16, or renumber if it has
+  already used v16, before its next deploy. **A deploy from the source without it removes the intro from the arcade.**
+- It has not run on a real GPU, on the WebGPU backend, or on a phone. Check on a phone: open Toko Drop 2.0 from the hub
+  and press INTRO, holding the phone both ways.
+- The pad skip has not been tried with a real controller. The code path is there.
