@@ -416,27 +416,47 @@
   //            the squirrel peeks from behind the stamp; a hold; then on "back" the stamp lifts away and the four bars
   //            slide back over the zones, the clipping rises on "clip": frame 0 again ═════════
   SCENES.tsv_end = { draw(c, lt) {
-    const id = 'tsv_end', dd = dur(id), tT = at(id, 'ts', 1.4), tB = at(id, 'back', dd - 2.4), tC = at(id, 'clip', dd - 1.0);
-    const tL = Math.min(dd - 0.35, tC + 0.3), kR = ease.io((lt - tB) / (tL - tB));
-    const cam = vcam(lt, dd, { z: () => 1, hits: [tT], kick: 0.035, amp: 3 }); cam.x *= 1 - kR; cam.y *= 1 - kR; if (lt >= tL) { cam.x = cam.y = 0; cam.z = 1; }
-    // in from the fell's framing to a closer one for the stamp, then home: frame 0's zoom (1 + 0.04 at its start = 1)
-    const zIn = lerp(1.6, 1.42, ease.io(lt / (tT + 0.2))), Z = lt >= tL ? HZ : lerp(zIn, HZ, kR);
-    const bl = lt >= tL ? BLUR : BLUR * ease.io((lt - tB - 0.2) / (tL - tB - 0.2));
-    c.save(); camZ(c, Z, ZF.x, ZF.y); if (bl > 0.3) c.filter = `blur(${bl.toFixed(1)}px)`;
-    map(c, lt, cam, { zstate: (i) => ({ a: 1, gone: 1 }) }); c.filter = 'none';
+    const id = 'tsv_end', dd = dur(id), tT = at(id, 'ts', 1.4);
+    const cam = vcam(lt, dd, { z: () => 1, hits: [tT], kick: 0.035, amp: 3 });
+    // in from the fell's framing to a closer one for the stamp
+    const Z = lerp(1.6, 1.42, ease.io(lt / (tT + 0.2)));
+    c.save(); camZ(c, Z, ZF.x, ZF.y);
+    map(c, lt, cam, { zstate: (i) => ({ a: 1, gone: 1 }) });
     c.restore();
     // the stamp on the map (screen space), and the squirrel looking out from under it
-    // on "back" the stamp lifts off the paper: it rises a little toward the camera and fades (never through the caption)
-    const kS = (lt - tT + 0.08) / 0.16, kUp = ease.io((lt - tB) / 0.45), sx = 540, sy = 1010 - 50 * kUp;
-    if (kUp < 1) { c.save(); c.globalAlpha = 1 - kUp; c.translate(sx, sy); c.scale(1 + 0.15 * kUp, 1 + 0.15 * kUp); c.translate(-sx, -sy);
-      const kq = clamp((lt - tT - 0.5) / 0.35, 0, 1);
-      if (kq > 0) { c.save(); c.beginPath(); c.rect(0, 0, W, sy - 40); c.clip(); put(c, SQ_PEEK(), sx + 170, sy - 40 + 90 * (1 - ease.out(kq)), { sc: 0.9, lift: 0.4 }); c.restore(); }
-      stampMark(c, ui('stamp', 'TRADE SECRET'), sx, sy, { k: kS, rot: -0.14, size: 128 });
-      c.restore();
-    }
+    const kq = clamp((lt - tT - 0.5) / 0.35, 0, 1), sx = 540, sy = 1010;
+    if (kq > 0) { c.save(); c.beginPath(); c.rect(0, 0, W, sy - 40); c.clip(); put(c, SQ_PEEK(), sx + 170, sy - 40 + 90 * (1 - ease.out(kq)), { sc: 0.9, lift: 0.4 }); c.restore(); }
+    stampMark(c, ui('stamp', 'TRADE SECRET'), sx, sy, { k: (lt - tT + 0.08) / 0.16, rot: -0.14, size: 128 });
     if (lt > tT) { const f = Math.exp(-(lt - tT) * 7) * 0.22; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
+    box(c);
+  } };
+
+  // ═════════ 6 · tsv_lift (HS's update, 23 Oct 14:23: LVV lifted the secrecy after the story ran): the stamp peels off
+  //            the map and flies away, the squirrel glides out over the clear map, a tag says SECRECY LIFTED, the camera
+  //            settles to frame 0's framing and the clipping rises: MAP: PUBLIC, where frame 0 says MAP: HIDDEN ═════════
+  SCENES.tsv_lift = { draw(c, lt) {
+    const id = 'tsv_lift', dd = dur(id), tP = at(id, 'peel', 0.2), tR = at(id, 'ran', 2.4), tC = at(id, 'clip', dd - 1.0);
+    const tL = Math.min(dd - 0.35, tC + 0.3), kR = ease.io(lt / tL);
+    const cam = vcam(lt, dd, { z: () => 1, hits: [tR], kick: 0.03, amp: 3 }); cam.x *= 1 - kR; cam.y *= 1 - kR; if (lt >= tL) { cam.x = cam.y = 0; cam.z = 1; }
+    const Z = lt >= tL ? HZ : lerp(1.42, HZ, kR);
+    c.save(); camZ(c, Z, ZF.x, ZF.y);
+    map(c, lt, cam, { zstate: (i) => ({ a: 1, gone: 1 }) });
+    // the squirrel glides out over the map on "ran", from the long zone toward the eastern forest
+    const kg = (lt - tR + 0.2) / 1.4;
+    if (kg > 0 && kg < 1) {
+      const a = ZC[1], b = ZC[6], e = ease.io(kg), x = lerp(a.x - 40, b.x + 60, e), y = lerp(a.y, b.y - 40, e) - Math.sin(e * Math.PI) * 90;
+      const ang = Math.atan2(b.y - a.y, b.x - a.x) + Math.PI / 2;
+      put(c, SQ_GLIDE(), x, y, { sc: 0.42 * (1 + 0.3 * Math.sin(e * Math.PI)), rot: ang + Math.sin(kg * 9) * 0.08, lift: 2.2 });
+    }
+    c.restore();
+    // the stamp peels: a corner lifts, then it flies off up and right, turning
+    const kp = clamp((lt - tP) / 0.55, 0, 1);
+    if (kp < 1) { const e = ease.in ? ease.in(kp) : kp * kp; c.save(); c.globalAlpha = 1 - clamp((kp - 0.6) / 0.4, 0, 1);
+      stampMark(c, ui('stamp', 'TRADE SECRET'), 540 + 700 * e, 1010 - 520 * e, { k: 1, rot: -0.14 + 0.9 * e, sc: 1 + 0.25 * Math.sin(kp * Math.PI), size: 128 }); c.restore(); }
+    if (lt > tR) { const f = Math.exp(-(lt - tR) * 7) * 0.18; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
+    screenTag(c, ui('lifted', 'SECRECY LIFTED · 23.10.2026'), 540, 1300, { a: clamp((lt - tR + 0.05) / 0.25, 0, 1) * clamp((tC - 0.2 - lt) / 0.3, 0, 1), bg: C.zone, size: 40 });
     const kC = clamp((lt - tC + 0.32) / 0.32, 0, 1);
-    bigClip(c, ui('clipLabel', 'DOODLE DATA CENTRE · HAMINA, FINLAND'), ui('clipValue', 'MAP: HIDDEN'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
+    bigClip(c, ui('clipLabel', 'DOODLE DATA CENTRE · HAMINA, FINLAND'), ui('clipValue2', 'MAP: PUBLIC'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
     box(c);
   } };
 })();

@@ -49,11 +49,18 @@
   },
   {
    "id": "tsv_end",
-   "beats": 15,
+   "beats": 6,
    "cues": {
-    "ts": "word:pop",
-    "back": 4.2,
-    "clip": 5.65
+    "ts": 1.0
+   }
+  },
+  {
+   "id": "tsv_lift",
+   "beats": 14,
+   "cues": {
+    "peel": 0.2,
+    "ran": "word:pop",
+    "clip": 4.75
    }
   }
  ],

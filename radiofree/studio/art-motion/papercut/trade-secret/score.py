@@ -73,13 +73,13 @@ def hook_land(t_land, g=0.28):
     s.note(pluck(Doodle.LAND - 1.4, 0.5), t_land, g, 0.15, 0.4, stem='hook', name='hook lands')
 
 # ── the music
-tS = c('tsv_hook.secret'); tT, tB, tCl = c('tsv_end.ts'), c('tsv_end.back'), c('tsv_end.clip')
+tS = c('tsv_hook.secret'); tT, tB, tCl, tR = c('tsv_end.ts'), c('tsv_lift.peel'), c('tsv_lift.clip'), c('tsv_lift.ran')
 hit(S[0] + 0.035, (62, 65, 69, 74), 1.0, 'frame 1')
 s.note(marimba(74, 0.4, 0.9), S[0] + 0.035, 0.28, 0.1, 0.35, stem='accent', name='first note')
 bed(0, S[0] + 2 * B, S[1] - B / 2, 0.75)
-for i in range(1, NS - 1): bed(i, S[i] + B / 2, S[i + 1] - B / 2, 0.82)
-bed(NS - 1, S[NS - 1] + B / 2, tT - 0.05, 0.75)
-bed(NS - 1, tT + B, tB - 0.05, 0.6, drums=False)
+for i in range(1, NS - 2): bed(i, S[i] + B / 2, S[i + 1] - B / 2, 0.82)
+bed(NS - 2, S[NS - 2] + B / 2, tT - 0.05, 0.75)
+bed(NS - 2, tT + B, tB - 0.05, 0.6, drums=False)
 for i, t in enumerate(S[1:NS]):
     s.fx(riser(B * 1.5, 500, 7000), t - B * 1.5, 0.16, 0, name=f'riser into cut {i + 2}')
     s.fx(whoosh('short', 'in'), t - WHOOSH['short'] * 0.8, 0.22, 0, at=t, name=f'cut {i + 2}')
@@ -119,10 +119,12 @@ s.fx(paper_slide(0.3) * 4, tC, 0.2, 0, name='the folder starts to close'); s.fx(
 s.fx(stamp(), tSe, 0.6, 0, name='"trade secrets": the stamp'); s.fx(press_stamp(1.0, seed=5), tSe + 0.01, 0.45, 0)
 s.note(kick_tight(1.0), tSe, 0.45, 0, 0, stem='drums', name='"secrets": kick'); accent(tSe, 3, name='"secrets"')
 
-# ── 5 · the stamp on the map; the hold; the map blurs out; the clipping; the last chord
+# ── 5 · the stamp on the map; 6 · it peels off (lifted), the squirrel glides out on "ran"; the clipping; the last chord
 hit(tT, (62, 65, 70, 74), 0.85, '"trade secret"'); s.fx(stamp(), tT, 0.55, 0, name='the stamp on the map')
 s.fx(chime(76, 0.5), tT + 0.02, 0.2, 0.1); s.fx(glide(1500, 2400, 0.1), tT + 0.55, 0.07, 0.25, name='the squirrel peeks')
 hook_land(tB, 0.26)
+s.fx(paper_slide(0.35) * 5, tB, 0.25, 0.4, name='the stamp peels off')
+s.fx(chime(81, 0.7), tR, 0.22, 0.1, name='"ran"'); s.fx(glide(900, 2200, 1.2), tR - 0.2, 0.08, 0.3, name='the squirrel glides out')
 for j, n in enumerate((50, 57, 62, 65, 69, 76)):
     s.note(fm_ep(n, END - tB, 0.5, r=1.2), tB + 0.01 * j, 0.11, -0.35 + 0.14 * j, 0.45, stem='keys', name='the last chord')
 s.note(sub_bass(38, END - tB), tB, 0.22, 0, 0, stem='bass', name='the last chord: sub')

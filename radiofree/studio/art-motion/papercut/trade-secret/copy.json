@@ -59,8 +59,8 @@
       "id": "secret",
       "role": "evidence",
       "at": "s4+0.15",
-      "until": "s5-0.3",
-      "hold": "s5",
+      "until": "s6-0.3",
+      "hold": "s6",
       "text": {
         "en": "The authority / kept the papers / as [trade secrets].",
         "fi": "Viranomainen / salasi paperit: / [liikesalaisuus].",
@@ -69,17 +69,17 @@
       "source": "HS, 23 Oct 2026: the authority (the Southeast Finland ELY Centre, named on the tag as HS names it) kept the papers secret as trade secrets ('Viranomainen salasi paperit liikesalaisuuksina'). The ELY Centres became elinvoimakeskus on 1 Jan 2026; HS names the ELY Centre, so the film does."
     },
     {
-      "id": "last",
+      "id": "lift",
       "role": "punchline",
-      "at": "s5+0.25",
+      "at": "s6+0.45",
       "until": "end-1.1",
       "hold": "end",
       "text": {
-        "en": "A felled forest, / filed as a / [trade secret].",
-        "fi": "Hakattu metsä / on nyt / [liikesalaisuus].",
-        "ja": "伐られた森が / [営業秘密] に。"
+        "en": "Secret since 2020. / Lifted the day / the story [ran].",
+        "fi": "Salassa vuodesta 2020. / Salaus purettiin, / kun juttu [ilmestyi].",
+        "ja": "2020年から 非公開。 / 報道の その日に / [解除]。"
       },
-      "source": "The punchline restates the two facts above (1.3 ha felled without a permit; the papers on it kept as trade secrets). 'Filed' is the film's word for the papers, not a claim about any archive."
+      "source": "Helsingin Sanomat, Aino Heikkonen, 23 Oct 2026, 13:20, updated 14:23: the request for secrecy was made in spring 2020 (Kemppi's email with the report to the ELY Centre); 'LVV kumosi salauksen ja lähetti HS:lle liitteet sen jälkeen, kun tämä juttu oli julkaistu HS:n verkkosivuilla.' Lifted on 23 Oct, the day of publication."
     }
   ],
   "ui": {
@@ -137,6 +137,16 @@
       "en": "EMAIL",
       "fi": "SÄHKÖPOSTI",
       "ja": "メール"
+    },
+    "clipValue2": {
+      "en": "MAP: PUBLIC",
+      "fi": "KARTTA: JULKINEN",
+      "ja": "地図：公開"
+    },
+    "lifted": {
+      "en": "SECRECY LIFTED · 23.10.2026",
+      "fi": "SALAUS PURETTU · 23.10.2026",
+      "ja": "非公開を 解除 · 2026.10.23"
     }
   },
   "props": {

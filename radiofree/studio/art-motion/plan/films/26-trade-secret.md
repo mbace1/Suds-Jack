@@ -91,3 +91,16 @@ Before posting, check the HS text for:
 | Felled in 2018–19: 1.3 ha, without a permit | 1.3 ha of flying squirrel forest was destroyed at Tuike's site at Summa, 2018–2019. HS's headline calls the felling unauthorised. In early 2020 Tuike's representative admitted the destruction. | CONFIRMED. |
 | The authority kept the papers as trade secrets | The ELY Centre kept them secret. LVV gave the trade-secret grounds: Publicity Act §24, points 17 and 20. | CONFIRMED. NEW: **LVV lifted the secrecy and sent the attachments after the story was published** (update, 23 Oct 14:23). The city of Hamina had already released the same documents to HS as fully public. |
 | Planted punch: a felled forest, filed as a trade secret | The authority judged the felling an accident and made no criminal report. | True of 2020–2026. The post copy now says the papers were secret "for years, until a newspaper asked". The film itself does not mention the lifting; offered to the owner as a v4 end beat. |
+
+## v4 (owner, 23 Oct: "Add"): the lifting
+
+- A new last shot, `tsv_lift`, follows HS's 14:23 update.
+  - The TRADE SECRET stamp peels off the map and flies away.
+  - On "ran", the squirrel glides out and a tag reads SECRECY LIFTED · 23.10.2026.
+  - The clipping rises reading **MAP: PUBLIC**, in frame 0's exact framing, where frame 0 says MAP: HIDDEN. The loop
+    jump is the story: hidden, then public.
+- The punchline caption is now **Secret since 2020. / Lifted the day / the story ran.**
+- "A felled forest, filed as a trade secret" was cut. The pipeline allows three fact captions at most, and the line
+  repeated the one before it. "The authority kept the papers as trade secrets" now holds over the stamp landing on the
+  map.
+- Length: 24.9 s of film, plus the sign-off.
