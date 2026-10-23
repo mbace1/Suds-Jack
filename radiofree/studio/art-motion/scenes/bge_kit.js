@@ -480,7 +480,7 @@
   const SNOW0 = 40;                                                          // the snowfall's clock on frame 0
   const AGED = { lamp: 1, dust: 0.62, snow: 58, ice: 1, web: 1 };           // the case as frame 0 shows it
   const STILL = { x: 0, y: 0, z: 1 };                                        // the stack camera where the loop joins
-  const NU = { x: 548, y: 988, rot: -0.12 };                                 // the stamp, on the booklet's lower half
+  const NU = { x: 548, y: 1000, rot: -0.12 };                                // the label, over the booklet's lower half
   function view(c, v, fn) { c.save(); c.translate(v.fx + (v.sx || 0), v.fy + (v.sy || 0)); c.scale(v.z, v.z); c.translate(-v.fx, -v.fy); fn(); c.restore(); }
   const kick = (lt, h, s) => (lt >= h ? s * Math.exp(-(lt - h) * 7) * (1 - Math.exp(-(lt - h) * 60)) : 0);   // 0 on its own frame
   const shakeAt = (f) => (f >= 0 ? Math.exp(-f * 7) * Math.sin(f * 70) * 9 : 0);
