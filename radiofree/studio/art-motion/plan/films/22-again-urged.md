@@ -8,8 +8,7 @@ peg: the ITU's Radio Regulations Board meets in Geneva **26–30 Oct**, so the f
 **The one question:** *Who can make the GPS jamming stop?*
 
 **The answer, in one sentence (copy.json `argument`):** Finnish aviation sees GPS interference around the clock. Finland
-and the Baltic states took it to the ITU, the UN's radio body, whose board urged Russia to stop, again urged, and then
-strongly urged. No reply is on record.
+and the Baltics took it to the ITU, whose board urged Russia to stop, again, then strongly. No reply is on record.
 
 ## The fact re-check (23 Oct 2026)
 
@@ -45,8 +44,8 @@ weapons); the EU idea of suspending Russia's ITU registrations (floated, not ado
 | 1 | `au_screen` | setup | Who can make the / GPS jamming [stop]? | Night, a papercut cockpit: the windscreen's dark sky over a paper instrument panel, two round gauges, a row of lamps. In the middle, a moving-map screen: the Gulf of Finland, the coast, a scatter of lakes; a white plane icon gliding east along the coast. On "stop" the picture tears for three frames and the icon is suddenly sitting in the middle of a lake, a little amber GPS? flag beside it, while the GPS lamp on the panel blinks amber. Tag: OVER SOUTHERN FINLAND. | `jump` = pop |
 | 2 | `au_chart` | evidence | In Finland, aviation sees / GPS interference / [around the clock]. | The same panel, wider: two gloved hands (the pilot is out of frame) bring up a folded paper chart and unfold it, panel by panel; the screen behind still shows the plane in the lake. On "around the clock" the panel clock's hands spin through a whole day while the windscreen sky runs night → dawn → day → dusk → night. Tag: TRAFICOM · APRIL 2026. | `unfold` = line 1 start, `spin` = pop |
 | 3 | `au_post` | evidence | Finland and the Baltic states / complained to the UN's / radio body, the [ITU]. | Day, an office: a pale wall, a wooden desk, a tray marked INTERFERENCE REPORTS. Four envelopes are thrown in from the left one after another, each with a round postmark (FI, EE, LV, LT), and land in the tray. On "ITU" a nameplate on the desk flips up: ITU · RADIO REGULATIONS BOARD. Tag: ITU · GENEVA. | `env` = line 1 start, `plate` = pop |
-| 4 | `au_stamp` | evidence | Its board [urged] Russia / to stop. Then again urged. / Then strongly urged. | The board's desk from above: a cream letter, TO: THE ADMINISTRATION OF THE RUSSIAN FEDERATION, lines of grey text. A rubber stamp comes down: **URGE** (blue). The letter is sent off the top of the frame and a fresh one slides in: **AGAIN URGE**. Sent; a third: **STRONGLY URGE** (red, bigger, the desk jumps). Tag: RADIO REGULATIONS BOARD · 2025–26. | `s1` = pop, `s2` = line 2 end, `s3` = line 3 end |
-| 5 | `au_pile` | punchline | Urged. Again. Strongly. / Reply on record: [none]. | A closed door with a letter slot, a mat. Old letters lie on the mat already, unopened. On "Urged", "Again" and "Strongly" the three stamped letters drop through the slot one by one and land on the pile. Beside the pile lies the board's register card, REPLY: and a blank line; on "none" a stamp comes down on it: **NO RESPONSE RECEIVED**. The camera pushes in on the pile. Tag: BOARD MEETS AGAIN · 26–30.10. | `l1` = line 1 start, `l3` = line 1 end, `none` = pop |
+| 4 | `au_stamp` | evidence | Its board [urged] Russia / to stop. Then again urged. / Then strongly urged. | The board's desk from above: a cream letter, TO: THE ADMINISTRATION OF THE RUSSIAN FEDERATION, lines of grey text. A rubber stamp comes down: **URGE** (blue). The letter is sent off the top of the frame and a fresh one slides in: **AGAIN URGE**. Sent; a third: **STRONGLY URGE** (red, bigger, the desk jumps). Tag: RADIO REGULATIONS BOARD · 2025–26. | `s1` = pop, `s2` = line 2 end + 0.55, `s3` = line 3 end + 1.25 |
+| 5 | `au_pile` | punchline | Urged. Again. Strongly. / Reply on record: [none]. | A closed door with a letter slot, a mat. Old letters lie on the mat already, unopened. As the shot opens, the three stamped letters drop through the slot one by one and land on the pile, in time with "Urged. Again. Strongly." as it is read. Beside the pile lies the board's register card, REPLY: and a blank line; on "none" a stamp comes down on it: **NO RESPONSE RECEIVED**. The camera pushes in on the pile. Tag: BOARD MEETS AGAIN · 26–30.10. | `f1` 0.0, `f2` 0.4, `f3` 0.8, `none` = pop |
 
 **Punchline:** *Urged. Again. Strongly. Reply on record: none.* The idea's joke (*Urged. Again urged. Reply on record:
 none.*), one verb longer because the board itself went one verb further.
@@ -83,3 +82,17 @@ spoofing (the plane is suddenly somewhere it is not), never the method.
 ## Build notes (draft v1, 23 Oct)
 - Engine film, `papercut/again-urged/{film.json, copy.json, score.py}`, kit `scenes/au_kit.js` with every scene in it.
   English master only; fi and ja are drafts (`native_read` false).
+- **Result:** PASSED (88 text pass, 7 warn: unread fi/ja, their sidecar timings on the English master; sound 5 pass),
+  32.14 s + 3 s sign-off, −14.1 LUFS, −3.5 dBTP (−14.2 with the sign-off). Preview
+  `previews/23-10-Again-Urged-DRAFT-en.mp4` (35.1 s, 3.6 MB). Reports: the build's `build-report.md`, `qa-frames.png`.
+- **Fixed after looking:**
+  - The caption reveals in a second and a half, so the three stamps landed inside 1.7 s and the letters could not be
+    sent and replaced between them. Stamps 2 and 3 now come 0.55 s and 1.25 s after their lines, about 1.5 s apart, and
+    each letter is sent off the top as the next slides in.
+  - In shot 5 the three letters fell inside 0.3 s. They now drop on fixed beats from the cut, 0.4 s apart, and are
+    down before the stamp on "none".
+  - In shot 3 the tray's label ran off its plate (it read NTERFERENCE REPORT). A white "window light" block read as a
+    slab on the wall and is gone. The tray, nameplate and envelopes are 15–30 % bigger.
+  - The stamp texture was cut too hard into NO RESPONSE RECEIVED, so it has fewer and smaller gaps.
+  - Sound: the first envelope's throw sat 50 ms after its cue (coverage FAIL), and the argument ran to 39 words
+    (warn). Both are fixed.

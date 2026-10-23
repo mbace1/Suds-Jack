@@ -290,19 +290,18 @@
     // a tall window on the left with the light of a day in Geneva, and its shadow on the wall
     g.fillStyle = '#e4ecf1'; g.fillRect(90, 560, 260, 400); g.fillStyle = '#a9b8c3'; g.fillRect(90, 560, 260, 12); g.fillRect(214, 560, 12, 400); g.fillRect(90, 754, 260, 10);
     g.fillStyle = '#cfdbe3'; for (const [x, y] of [[100, 576], [230, 576], [100, 770], [230, 770]]) g.fillRect(x, y, 110, 172);
-    g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.moveTo(350, 560); g.lineTo(520, 640); g.lineTo(520, 1000); g.lineTo(350, 960); g.closePath(); g.fill();
     // the desk
     g.fillStyle = C.woodD; g.fillRect(-90, 1196, W + 180, 30);
     g.fillStyle = C.wood; g.fillRect(-90, 1170, W + 180, 30); g.fillStyle = C.woodL; g.fillRect(-90, 1170, W + 180, 6);
     g.fillStyle = C.woodD; g.fillRect(-90, 1226, W + 180, 300); g.fillStyle = 'rgba(0,0,0,.18)'; for (let x = -90; x < W + 90; x += 220) g.fillRect(x, 1226, 4, 300);
     g.fillStyle = C.floor; g.fillRect(-90, 1526, W + 180, H);
   }, 10);
-  const TRAY = { x: 780, y: 1170 };
+  const TRAY = { x: 770, y: 1170 }, TS = 1.25, PS = 1.15;
   const tray = () => sprite('au_tray', 380, 150, 190, 130, (g) => {
     g.fillStyle = C.woodD; g.beginPath(); g.moveTo(-180, -60); g.lineTo(180, -60); g.lineTo(168, 0); g.lineTo(-168, 0); g.closePath(); g.fill();
     g.fillStyle = C.woodL; g.fillRect(-180, -66, 360, 10);
-    g.fillStyle = C.paper; g.beginPath(); g.roundRect(-128, -50, 256, 36, 4); g.fill();
-    g.fillStyle = C.ink; g.textAlign = 'center'; g.font = '700 19px "LibreBaskerville-700"'; g.fillText('INTERFERENCE REPORTS', 0, -25);
+    g.fillStyle = C.paper; g.beginPath(); g.roundRect(-150, -50, 300, 36, 4); g.fill();
+    g.fillStyle = C.ink; g.textAlign = 'center'; g.font = '700 16px "LibreBaskerville-700"'; g.fillText('INTERFERENCE REPORTS', 0, -26);
   }, 8);
   const TRAYBACK = () => sprite('au_trayback', 380, 120, 190, 110, (g) => { g.fillStyle = C.wood; g.beginPath(); g.moveTo(-170, -100); g.lineTo(170, -100); g.lineTo(180, -60); g.lineTo(-180, -60); g.closePath(); g.fill(); }, 6);
   const POSTS = ['FI', 'EE', 'LV', 'LT'];
@@ -320,7 +319,7 @@
     if (k < 1) return { x: lerp(p0[0], p1[0], k), y: lerp(p0[1], p1[1], k) - arc * 4 * k * (1 - k), r: lerp(r0, r1, ease.out(k)) };
     const tb = lt - t0 - d; return { x: p1[0], y: p1[1] - Math.exp(-tb * 9) * Math.abs(Math.sin(tb * 17)) * 16, r: r1 + Math.exp(-tb * 7) * Math.sin(tb * 15) * 0.05 };
   }
-  const PLATE = { x: 330, y: 1172 };
+  const PLATE = { x: 290, y: 1172 };
   const plate = () => sprite('au_plate', 420, 150, 210, 140, (g) => {
     g.fillStyle = C.brassD; g.beginPath(); g.moveTo(-200, 0); g.lineTo(200, 0); g.lineTo(186, -126); g.lineTo(-186, -126); g.closePath(); g.fill();
     g.fillStyle = C.brass; g.beginPath(); g.moveTo(-192, -6); g.lineTo(192, -6); g.lineTo(180, -120); g.lineTo(-180, -120); g.closePath(); g.fill();
@@ -333,15 +332,15 @@
     const cam = { x: Math.sin(lt * 0.28) * 7, y: 0, z: punch(lt, [[tP, 0.03]]) * lerp(1.0, 1.08, ease.io(lt / dd)), fx: 600, fy: 1120 };
     const gap = clamp((tP - 0.3 - tE) / 4, 0.28, 0.5);
     stack(c, [{ sh: office(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
-      put(g, TRAYBACK(), TRAY.x + ox, TRAY.y + oy, { lift: 0.4 });
+      put(g, TRAYBACK(), TRAY.x + ox, TRAY.y + oy, { lift: 0.4, sc: TS });
       POSTS.forEach((code, i) => {
-        const p = thrown(lt, tE + i * gap, 0.55, [-220, 760 + i * 30], [TRAY.x - 6 + (i % 2 ? 10 : -12), TRAY.y - 62 - i * 9], 260, -0.9 + i * 0.2, (i % 2 ? 0.05 : -0.06));
-        if (p) put(g, envelope(code), p.x + ox, p.y + oy, { rot: p.r, sc: 0.62, lift: 0.8 });
+        const p = thrown(lt, tE + i * gap, 0.55, [-260, 740 + i * 30], [TRAY.x - 6 + (i % 2 ? 14 : -16), TRAY.y - 80 - i * 12], 280, -0.9 + i * 0.2, (i % 2 ? 0.05 : -0.06));
+        if (p) put(g, envelope(code), p.x + ox, p.y + oy, { rot: p.r, sc: 0.82, lift: 0.8 });
       });
-      put(g, tray(), TRAY.x + ox, TRAY.y + oy, { lift: 0.6 });
+      put(g, tray(), TRAY.x + ox, TRAY.y + oy, { lift: 0.6, sc: TS });
       // the nameplate, hinged at its foot: it flips up on "ITU"
       const kp = (lt - tP + 0.05) / 0.32;
-      if (kp > 0) { const s = ease.back(kp); g.save(); g.translate(PLATE.x + ox, PLATE.y + oy); g.scale(1, Math.max(0.02, s)); put(g, plate(), 0, 0, { lift: 0.7 * s }); g.restore(); }
+      if (kp > 0) { const s = ease.back(kp); g.save(); g.translate(PLATE.x + ox, PLATE.y + oy); g.scale(1, Math.max(0.02, s)); put(g, plate(), 0, 0, { lift: 0.7 * s, sc: PS }); g.restore(); }
     } }], cam);
     tag(c, ui('itu', 'ITU · GENEVA'), lt, dd);
     box(c);
@@ -372,12 +371,12 @@
     g.fillStyle = '#946b47'; g.beginPath(); g.ellipse(0, -196, 56, 44, 0, 0, TAU); g.fill(); g.fillStyle = '#ad8460'; g.beginPath(); g.ellipse(-16, -210, 22, 14, -0.4, 0, TAU); g.fill();
   }, 12);
   /** a rectangular stamp's imprint: double border, the word(s), a little ink texture where it did not take */
-  function imprint(g, x, y, k, lines, col, sc = 1, rot = -0.08) {
+  function imprint(g, x, y, k, lines, col, sc = 1, rot = -0.08, holes = 70) {
     if (k <= 0) return; g.save(); g.translate(x, y); g.rotate(rot); g.scale(sc, sc); g.globalAlpha = clamp(k, 0, 1) * 0.92;
     g.font = '400 64px "Anton-400"'; const w = Math.max(...lines.map((s) => g.measureText(s).width)) + 60, h = lines.length * 70 + 30;
     g.strokeStyle = col; g.lineWidth = 8; g.strokeRect(-w / 2, -h / 2, w, h); g.lineWidth = 3; g.strokeRect(-w / 2 + 12, -h / 2 + 12, w - 24, h - 24);
     g.fillStyle = col; g.textAlign = 'center'; lines.forEach((s, i) => g.fillText(s, 0, -h / 2 + 82 + i * 70));
-    g.globalCompositeOperation = 'destination-out'; const r = U.rng(lines.join('').length * 7); g.fillStyle = 'rgba(0,0,0,.5)'; for (let i = 0; i < 90; i++) g.fillRect(-w / 2 + r() * w, -h / 2 + r() * h, 2 + r() * 4, 1.5 + r() * 3);
+    g.globalCompositeOperation = 'destination-out'; const r = U.rng(lines.join('').length * 7); g.fillStyle = 'rgba(0,0,0,.5)'; for (let i = 0; i < holes; i++) g.fillRect(-w / 2 + r() * w, -h / 2 + r() * h, 1.5 + r() * 3, 1.2 + r() * 2.2);
     g.restore();
   }
   /** the stamp coming down on time t, landing at (x, y), lifting away */
@@ -447,19 +446,19 @@
     const tb = tf - T; return { x: land[0], y: land[1] - Math.exp(-tb * 10) * Math.abs(Math.sin(tb * 16)) * 14, r: rot1 };
   }
   SCENES.au_pile = { draw(c, lt) {
-    const id = 'au_pile', dd = dur(id), t1 = at(id, 'l1', 0.6), t3 = at(id, 'l3', 1.6), tN = at(id, 'none', 3.0), T = [t1, (t1 + t3) / 2, t3];
+    const id = 'au_pile', dd = dur(id), T = [at(id, 'f1', 0.0), at(id, 'f2', 0.4), at(id, 'f3', 0.8)], tN = at(id, 'none', 1.7);
     const cam = { x: Math.sin(lt * 0.25) * 6, y: 0, z: punch(lt, [[tN, 0.04]]) * lerp(1.0, 1.1, ease.io(lt / dd)), fx: 540, fy: 1260 };
     stack(c, [{ sh: hall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
       for (const o of OLD) { put(g, mail('old' + (o.st ? STAMPS.indexOf(o.st) : 'x'), o.st), o.x + ox, o.y + oy, { rot: o.r, sc: 0.7, lift: 0.3 }); }
       g.fillStyle = 'rgba(160,150,130,.18)'; g.fillRect(DOOR.x0 - 20 + ox, 1440 + oy, DOOR.x1 - DOOR.x0 + 40, 120);
       [[470, 1462, 0.32], [600, 1452, -0.28], [520, 1440, 0.12]].forEach(([x, y, r], i) => {
-        const p = falling(lt, T[i] - 0.3, [x, y], r); if (!p) return;
+        const p = falling(lt, T[i], [x, y], r); if (!p) return;
         if (p.clip) { g.save(); g.beginPath(); g.rect(0, SLOT.y + oy, W, H); g.clip(); put(g, mail(i, STAMPS[i]), p.x + ox, p.y + oy + 60, { rot: -Math.PI / 2 * 0, sc: 0.7, lift: 0.4 }); g.restore(); return; }
         put(g, mail(i, STAMPS[i]), p.x + ox, p.y + oy, { rot: p.r, sc: 0.7, lift: 0.5 });
       });
       // on "none": the stamp comes down on the closed door
       stamping(g, lt, tN, DOOR.x0 + 250 + ox, DOOR.y0 + 330 + oy, 1.2);
-      imprint(g, DOOR.x0 + 250 + ox, DOOR.y0 + 330 + oy, lt >= tN ? 1 : 0, ['NO RESPONSE', 'RECEIVED'], C.red, 0.92, -0.1);
+      imprint(g, DOOR.x0 + 250 + ox, DOOR.y0 + 330 + oy, lt >= tN ? 1 : 0, ['NO RESPONSE', 'RECEIVED'], C.red, 0.92, -0.1, 30);
     } }], cam);
     tag(c, ui('next', 'BOARD MEETS AGAIN · 26–30.10.'), lt, dd);
     box(c);

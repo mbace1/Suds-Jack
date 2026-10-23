@@ -67,7 +67,7 @@ tE, tP = c('au_post.env'), c('au_post.plate')
 gap = clamp((tP - 0.3 - tE) / 4, 0.28, 0.5)
 for i in range(4):
     t0 = tE + i * gap
-    s.fx(swish(), t0 + 0.05, 0.18, -0.6 + 0.3 * i, name=f'envelope {i + 1} thrown'); s.fx(tap(dull=True), t0 + 0.55, 0.32, 0.3, name=f'envelope {i + 1} lands')
+    s.fx(swish(), t0, 0.18, -0.6 + 0.3 * i, name=f'envelope {i + 1} thrown'); s.fx(tap(dull=True), t0 + 0.55, 0.32, 0.3, name=f'envelope {i + 1} lands')
 s.fx(card_flip(), tP - 0.02, 0.4, -0.3, name='"ITU": the nameplate flips up'); s.fx(clank(0.5, 980), tP + 0.06, 0.18, -0.3); accent(s, tP, S[1], 0.3, name='ITU')
 
 # ── 4 · the stamps: URGE, AGAIN URGE, STRONGLY URGE, each harder; letters sent and slid in between
@@ -82,10 +82,10 @@ for i, t in enumerate(T4):
     accent(s, t, S[1], 0.22 + 0.04 * i, name=['urged', 'again urged', 'strongly urged'][i])
 
 # ── 5 · the door: three letters through the slot onto the pile; on "none" the stamp comes down on the door
-t1, t3, tN = c('au_pile.l1'), c('au_pile.l3'), c('au_pile.none')
-for i, t in enumerate([t1, (t1 + t3) / 2, t3]):
-    s.fx(clank(0.45, 1150), t - 0.3, 0.22, 0.1, name=f'the slot, letter {i + 1}'); s.fx(page_flutter(0.35, seed=40 + i), t - 0.1, 0.18, 0.1)
-    s.fx(tap(dull=True), t + 0.27, 0.3, 0.1, name=f'letter {i + 1} on the pile')
+tN = c('au_pile.none')
+for i, t in enumerate([c('au_pile.f1'), c('au_pile.f2'), c('au_pile.f3')]):
+    s.fx(clank(0.45, 1150), t, 0.22, 0.1, name=f'the slot, letter {i + 1}'); s.fx(page_flutter(0.35, seed=40 + i), t + 0.18, 0.18, 0.1)
+    s.fx(tap(dull=True), t + 0.57, 0.3, 0.1, name=f'letter {i + 1} on the pile')
 s.fx(whoosh('short', 'in'), tN - WHOOSH['short'] * 0.8, 0.25, -0.1, at=tN - 0.02, name='the last stamp comes down')
 s.fx(press_stamp(1.1), tN, 0.85, -0.1, name='"none": NO RESPONSE RECEIVED'); s.fx(thump(), tN, 0.35, -0.1); accent(s, tN, S[1], 0.3, name='none')
 s.note(glock(81, 1.4, 0.6), tN + 0.03, 0.22, 0.1, 0.4, stem='motif', name='found'); s.fx(stinger('deadpan'), tN + 0.9, 0.45)

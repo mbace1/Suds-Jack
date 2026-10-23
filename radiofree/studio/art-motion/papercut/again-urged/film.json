@@ -17,8 +17,8 @@
   { "id": "au_screen", "beats": 12, "cues": { "jump": "word:pop" } },
   { "id": "au_chart", "beats": 12, "cues": { "unfold": "line:1.start", "spin": "word:pop" } },
   { "id": "au_post", "beats": 12, "cues": { "env": "line:1.start", "plate": "word:pop" } },
-  { "id": "au_stamp", "beats": 12, "cues": { "s1": "word:pop", "s2": "line:2", "s3": "line:3" } },
-  { "id": "au_pile", "beats": 12, "cues": { "l1": "line:1.start", "l3": "line:1", "none": "word:pop" } }
+  { "id": "au_stamp", "beats": 12, "cues": { "s1": "word:pop", "s2": "line:2+0.55", "s3": "line:3+1.25" } },
+  { "id": "au_pile", "beats": 12, "cues": { "f1": 0.0, "f2": 0.4, "f3": 0.8, "none": "word:pop" } }
  ],
  "quiet": [],
  "keep": []
