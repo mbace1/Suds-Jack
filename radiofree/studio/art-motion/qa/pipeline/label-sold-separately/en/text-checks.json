@@ -67,7 +67,7 @@
  {
   "check": "copy labels source",
   "result": "pass",
-  "why": "27% of the identified ads carried a disclaimer saying they contained AI-generate"
+  "why": "Wesleyan Media Project, 15 Oct 2026, as reported: Gizmodo gives 27% of the ident"
  },
  {
   "check": "copy labels pop word",
@@ -117,7 +117,7 @@
  {
   "check": "copy last source",
   "result": "pass",
-  "why": "The station's line, over its own image: 27% labelled, so about three in every te"
+  "why": "The station's line, over its own image: Wesleyan's count has roughly 27-31% of t"
  },
  {
   "check": "copy last pop word",
@@ -277,7 +277,7 @@
  {
   "check": "scrim en:labels",
   "result": "pass",
-  "why": "picture behind: edge 0.46 → scrim 0.0"
+  "why": "picture behind: edge 0.47 → scrim 0.0"
  },
  {
   "check": "width en:law",

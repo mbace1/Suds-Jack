@@ -20,7 +20,7 @@
 | text | copy labels.en | pass | present |
 | text | copy labels.fi | pass | present |
 | text | copy labels.ja | pass | present |
-| text | copy labels source | pass | 27% of the identified ads carried a disclaimer saying they contained AI-generate |
+| text | copy labels source | pass | Wesleyan Media Project, 15 Oct 2026, as reported: Gizmodo gives 27% of the ident |
 | text | copy labels pop word | pass | every language marks one |
 | text | copy law.en | pass | present |
 | text | copy law.fi | pass | present |
@@ -30,7 +30,7 @@
 | text | copy last.en | pass | present |
 | text | copy last.fi | pass | present |
 | text | copy last.ja | pass | present |
-| text | copy last source | pass | The station's line, over its own image: 27% labelled, so about three in every te |
+| text | copy last source | pass | The station's line, over its own image: Wesleyan's count has roughly 27-31% of t |
 | text | copy last pop word | pass | every language marks one |
 | text | copy ui.tagMid | pass | all languages |
 | text | copy ui.dateline | pass | all languages |
@@ -62,7 +62,7 @@
 | text | reading time en:labels | pass | on screen 5.48 s, needs 3.70 s (54 chars at 20/s + 1 s) |
 | text | last word en:labels | pass | last word up 3.93 s (at least 0.8) |
 | text | key detail en:labels | pass | covers nothing the shot needs |
-| text | scrim en:labels | pass | picture behind: edge 0.46 → scrim 0.0 |
+| text | scrim en:labels | pass | picture behind: edge 0.47 → scrim 0.0 |
 | text | width en:law | pass | widest line 664 px (limit 800) |
 | text | safe zone en:law | pass | box {'x': 197, 'y': 191, 'w': 686, 'h': 247} |
 | text | reading time en:law | pass | on screen 5.48 s, needs 4.45 s (69 chars at 20/s + 1 s) |

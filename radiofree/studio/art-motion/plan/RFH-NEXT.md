@@ -38,6 +38,18 @@ first; the one hard date is **The Day After, before the 3 Nov midterms**.
    could come before Election Day, went out of date (an FCC spokesperson told Reuters on 19 Oct there are no plans to act).
    v3 changes only that caption and the post copy. Refiled as `films/23-10-Coxon10-Per-Caller.mp4` for Fri 23 Oct 00:52.
 
+11. **Drafts waiting for the owner's verdict (22–23 Oct).** Each was fact-checked, built by pipeline, looked at and fixed:
+   - **Break Glass in Emergency** (Brink 2): `previews/22-10-Break-Glass-DRAFT-en.mp4`. The plenary vote is still to come.
+   - **Approved Vendor** (Global 1): `previews/22-10-Approved-Vendor-DRAFT-en.mp4`.
+   - **One Stockholm** (Doodle 4): `previews/22-10-One-Stockholm-DRAFT-en.mp4`. Check for a firm Doodle job number on
+     the day.
+   - **Again Urged** (Brink 3): `previews/23-10-Again-Urged-DRAFT-en.mp4`. The ITU board meets 26–30 Oct.
+   - **Ends in 3** (Global 2): `previews/23-10-Ends-in-3-DRAFT-en.mp4`. Next batch 31 Oct; 00:50 window.
+   - **Label Sold Separately** (Coxon 12): `previews/23-10-Label-Sold-Separately-DRAFT-en.mp4`. Before 3 Nov; 00:50
+     window.
+   - **Count the Trees** (Doodle 5, owner: "What about a new Doodle video"): `previews/23-10-Count-the-Trees-DRAFT-en.mp4`.
+     The 250,000 is the Guardian's estimate (22 Oct), read through other outlets' reports.
+
 Slots follow the calendar's logic: **00:50** reaches the US evening (US stories), and **12:50** reaches the
 European day (Nordic and EU stories). All times are Helsinki time.
 
