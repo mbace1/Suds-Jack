@@ -1,6 +1,6 @@
 {
   "film": "count-the-trees-viral",
-  "cut": "Doodle 5, VIRAL CUT v1 (23 Oct) — owner: 'Doodle 5 is now becoming more of bigger news so we should highlight that and make it a viral video'. Hook first, escalate (before the assessment → a police inquiry → headlines in six languages), punch, loop. The v1 draft (papercut/count-the-trees) is unchanged.",
+  "cut": "Doodle 5, VIRAL CUT v2 (23 Oct; v2 after the owner's note 'Police car is too big, ending too abruptly') — owner: 'Doodle 5 is now becoming more of bigger news so we should highlight that and make it a viral video'. Hook first, escalate (before the assessment → a police inquiry → headlines in six languages), punch, loop. The v1 draft (papercut/count-the-trees) is unchanged.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "About 250,000 trees, by the Guardian's estimate, were cleared for Doodle's Muhos data centre before the required assessment. Police opened a preliminary inquiry; it made headlines worldwide. Felled: about 330 hectares. Planting planned: 130.",
@@ -72,7 +72,7 @@
       "id": "last",
       "role": "punchline",
       "at": "s5+0.25",
-      "until": "end-0.45",
+      "until": "end-1.6",
       "hold": "end",
       "text": {
         "en": "Felled: ~330 ha. / Planting planned: / [130 ha].",

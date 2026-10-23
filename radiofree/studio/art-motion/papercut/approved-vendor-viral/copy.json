@@ -1,9 +1,9 @@
 {
   "film": "approved-vendor-viral",
-  "cut": "Global 1, VIRAL CUT v1 (23 Oct) of Approved Vendor — owner, 23 Oct: 'Test other 2 as well and rest after' (the viral format, plan/films/20b-approved-vendor-viral.md). The hook is frame 0; the last frame hands back to it.",
+  "cut": "Global 1, VIRAL CUT v1 (23 Oct) of Approved Vendor — owner, 23 Oct: 'Test other 2 as well and rest after' (the viral format, plan/films/20b-approved-vendor-viral.md). The hook is frame 0; the last frame hands back to it. Captions rewritten for clarity before the first build (coordinator, 23 Oct: every caption must stand on its own for a cold viewer).",
   "series": "rfh",
   "captionSize": "big",
-  "argument": "Researchers say an ad firm's ads delivered spyware with no click, targeting at least 45 devices at one newsroom; it sat on the ad industry's vendor list for six years, until an October suspension.",
+  "argument": "Researchers say an ad firm's ads delivered spyware with no click, targeting at least 45 devices at one newsroom; the firm sat on the ad industry's approved list for six years, suspended only in October.",
   "langs": [
     "en",
     "fi",
@@ -23,11 +23,11 @@
       "until": "s2-0.15",
       "hold": "s2",
       "text": {
-        "en": "This ad / delivered [spyware].",
-        "fi": "Tämä mainos / levitti / [vakoiluohjelmaa].",
-        "ja": "この 広告が / [スパイウェア] を 配信。"
+        "en": "An ad firm's / ads delivered / [spyware].",
+        "fi": "Mainosyhtiön / mainokset levittivät / [vakoiluohjelmaa].",
+        "ja": "広告会社の 広告が / [スパイウェア] を 配信。"
       },
-      "source": "Citizen Lab, 'Exposing AdFection', 15 Oct 2026: Discover-Tech's targeted ads delivered Candiru spyware; the ad's code checked the device's ad ID and IP and, for a target, returned code that could load a browser exploit. Reuters, TechCrunch, The Record, CyberScoop, BleepingComputer (v1 re-check, 22 Oct); re-checked 23 Oct (Dark Reading, PPC Land, The National, The Print; search summaries): nothing newer moves it. 'This ad' is the film's own banner, a stand-in for the firm's ads; never ads in general."
+      "source": "Citizen Lab, 'Exposing AdFection', 15 Oct 2026: Discover-Tech's targeted ads delivered Candiru spyware; the ad's code checked the device's ad ID and IP and, for a target, returned code that could load a browser exploit. Reuters, TechCrunch, The Record, CyberScoop, BleepingComputer (v1 re-check, 22 Oct); re-checked 23 Oct (Dark Reading, PPC Land, The National, The Print; search summaries): nothing newer moves it. The firm is not named; 'an ad firm's ads', never ads in general. The researchers are on the tag from frame 0 (CITIZEN LAB · 15.10.2026)."
     },
     {
       "id": "noclick",
@@ -36,11 +36,11 @@
       "until": "s3-0.15",
       "hold": "s3",
       "text": {
-        "en": "[No click] / needed.",
-        "fi": "[Klikkausta] / ei tarvittu.",
-        "ja": "[クリック] は / 不要。"
+        "en": "[No click] needed: / just seeing the ad / was enough.",
+        "fi": "[Klikkausta] ei tarvittu: / mainoksen näkeminen / riitti.",
+        "ja": "[クリック] 不要。 / 広告を 見る だけで / 十分 だった。"
       },
-      "source": "Citizen Lab (15 Oct): the delivery needed no click; showing the ad was enough. Corroborated by Reuters, TechCrunch, The Record (v1 table, plan/films/20-approved-vendor.md); unchanged on 23 Oct."
+      "source": "Citizen Lab (15 Oct): the delivery needed no click; the ad being shown was enough. Corroborated by Reuters, TechCrunch, The Record (v1 table, plan/films/20-approved-vendor.md); unchanged on 23 Oct."
     },
     {
       "id": "targeted",
@@ -49,9 +49,9 @@
       "until": "s4-0.15",
       "hold": "s4",
       "text": {
-        "en": "At least 45 devices / at one newsroom / [targeted].",
-        "fi": "Ainakin 45 laitetta / yhdessä toimituksessa / [kohteena].",
-        "ja": "ある 報道機関で / 少なくとも 45台が / [標的] に。"
+        "en": "At least 45 / devices at one / newsroom were / [targeted].",
+        "fi": "Ainakin 45 laitetta / yhdessä toimituksessa / oli [kohteena].",
+        "ja": "ある 報道機関で / 少なくとも 45台が / [標的] に された。"
       },
       "source": "Citizen Lab (15 Oct): at least 45 devices at one newsroom targeted in 2024 and 2025, spyware attributed 'with high confidence' to Candiru; it does not know which government was the customer. 'Targeted', not 'infected'. The newsroom is not named (v1 table; unchanged on 23 Oct)."
     },
@@ -62,11 +62,11 @@
       "until": "s5-0.15",
       "hold": "s5",
       "text": {
-        "en": "On the ad industry's / vendor list / for [six years].",
-        "fi": "Mainosalan / toimittajalistalla / [kuusi vuotta].",
-        "ja": "広告業界の / ベンダーリストに / [6年間]。"
+        "en": "For six years / the firm sat on / the ad industry's / [approved list].",
+        "fi": "Kuusi vuotta / yhtiö oli mainosalan / [hyväksytyllä listalla].",
+        "ja": "その会社は 6年間、 / 広告業界の / [承認済み リスト] に 載っていた。"
       },
-      "source": "IAB Europe's Transparency & Consent Framework Global Vendor List: Discover-Tech registered as vendor 778 from 2 July 2020 (ppc.land, from the GVL archive) until its suspension in early October 2026 (8 Oct per Citizen Lab; 'last week' per IAB Europe to Reuters, 15 Oct). Six years and three months, said as six years (v1 table)."
+      "source": "IAB Europe's Transparency & Consent Framework Global Vendor List: Discover-Tech registered as vendor 778 from 2 July 2020 (ppc.land, from the GVL archive) until its suspension in early October 2026 (8 Oct per Citizen Lab; 'last week' per IAB Europe to Reuters, 15 Oct). Six years and three months, said as six years. 'Approved list': Reuters' wording for IAB Europe's list of globally approved vendors; Citizen Lab reports IAB Europe says it vets and approves applications (v1 table)."
     },
     {
       "id": "last",
@@ -75,11 +75,11 @@
       "until": "end-0.45",
       "hold": "end",
       "text": {
-        "en": "Approved vendor. / Until [October].",
-        "fi": "Hyväksytty toimittaja. / [Lokakuuhun] asti.",
-        "ja": "承認済み ベンダー。 / [10月] まで。"
+        "en": "Approved vendor. / Suspended only / in [October].",
+        "fi": "Hyväksytty toimittaja. / Jäädytettiin vasta / [lokakuussa].",
+        "ja": "承認済み ベンダー。 / 資格停止は / [10月] に なってから。"
       },
-      "source": "The station's line, over its own image: a rubber stamp comes down on the firm's row of the list, SUSPENDED · OCT 2026. Not a quote; 'approved' is Reuters' wording for IAB Europe's list of globally approved vendors, and the suspension can be lifted or become an expulsion (IAB Europe, 15 Oct). It clears 0.45 s before the end so the last frame is the banner again (the loop)."
+      "source": "The station's line, over its own image: a rubber stamp comes down on the firm's row of the list, SUSPENDED · OCT 2026. 'Approved vendor' is not a quote: Reuters' wording for IAB Europe's list. Suspended in early October 2026 (8 Oct per Citizen Lab), after an audit found TCF Policy violations (IAB Europe, 15 Oct); 'only' because it had been listed since July 2020. The suspension can be lifted or become an expulsion. It clears 0.45 s before the end so the last frame is the banner again (the loop)."
     }
   ],
   "ui": {
@@ -123,8 +123,8 @@
     }
   },
   "post": {
-    "en": "This ad delivered spyware. No click needed. Researchers say an ad firm's ads targeted at least 45 devices at one newsroom (Citizen Lab, 15 Oct). The firm sat on the ad industry's vendor list for six years, until October. Would you have spotted it? #spyware #adtech",
-    "fi": "Tämä mainos levitti vakoiluohjelmaa. Klikkausta ei tarvittu. Tutkijoiden mukaan mainosyhtiön mainokset tähtäsivät ainakin 45 laitteeseen yhdessä toimituksessa (Citizen Lab, 15.10.). Yhtiö oli mainosalan toimittajalistalla kuusi vuotta, lokakuuhun asti. Olisitko huomannut?",
-    "ja": "この広告がスパイウェアを配信した。クリックは不要。研究者によると、ある広告会社のターゲティング広告が一つの報道機関の少なくとも45台の端末を狙った（シチズンラボ、10月15日）。その会社は6年間、広告業界のベンダーリストに載っていた。10月まで。あなたなら気づいた？"
+    "en": "An ad firm's ads delivered spyware. No click needed: seeing the ad was enough. At least 45 devices at one newsroom were targeted (Citizen Lab, 15 Oct). The firm sat on the ad industry's approved list for six years, suspended only in October. Would you have spotted it?",
+    "fi": "Mainosyhtiön mainokset levittivät vakoiluohjelmaa. Ei klikkausta: mainoksen näkeminen riitti. Ainakin 45 laitetta yhdessä toimituksessa oli kohteena (Citizen Lab, 15.10.). Yhtiö oli mainosalan hyväksytyllä listalla kuusi vuotta, jäädytettiin vasta lokakuussa. Huomaisitko?",
+    "ja": "広告会社の広告がスパイウェアを配信した。クリック不要、広告を見るだけで十分だった。ある報道機関で少なくとも45台の端末が標的に（シチズンラボ、10月15日）。その会社は6年間、広告業界の承認済みリストに載り、資格停止は10月になってから。あなたなら気づいた？"
   }
 }

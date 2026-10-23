@@ -358,6 +358,9 @@
     const e = Math.sin(Math.PI * clamp(lt / dd, 0, 1));
     return { x: Math.sin(lt * 2.1) * amp * e, y: Math.cos(lt * 1.7 + 1.2) * amp * 0.8 * e, z: zz, fx: V.fx, fy: V.fy };
   };
+  /** a zoom on the whole map, under the clipping and the box: the stack's per-layer zoom is ~10 % of z, too little to read
+   *  as a camera move. 1 on frame 0 and on the last frame, so the loop still matches */
+  const camZ = (c, z, fx = V.fx, fy = V.fy) => { if (z !== 1) { c.translate(fx, fy); c.scale(z, z); c.translate(-fx, -fy); } };
   /** the big clipping on frame 0 (and on the last frame, in the same place): torn newsprint, label over the number */
   function bigClip(c, label, value, { k = 1, a = 1, dy = 0 } = {}) {
     if (a <= 0) return;
@@ -381,7 +384,8 @@
   //            clipping "TREES · THE GUARDIAN'S ESTIMATE / 250,000"; the last lane falls on "Gone." ═════════
   SCENES.cntv_hook = { draw(c, lt) {
     const id = 'cntv_hook', dd = dur(id), tP = at(id, 'gone', 0.7), t0 = tP - HOOK_LEAD;
-    const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)) + 0.025 * ease.io((l - tP - 0.2) / (dd - tP - 0.2)), hits: [tP], kick: 0.035 });
+    const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)), hits: [tP], kick: 0.035 });
+    c.save(); camZ(c, 1 + 0.035 * ease.io((lt - tP - 0.2) / (dd - tP - 0.2)), V.fx, 950);   // a slow push on the empty site
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 },
       { d: 0.1, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); insideTrees(g, (t) => (lt - fellV(t, t0)) / 0.16); g.restore(); } },
       { sh: forest(), d: 0.1, lift: 0.9 },
@@ -392,6 +396,7 @@
         if (lt > tP) { const f = Math.exp(-(lt - tP) * 5) * 0.35; g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fillStyle = `rgba(255,236,190,${f})`; g.fill(); g.restore(); }
         g.restore();
       } }], cam);
+    c.restore();
     bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { k: lt / 0.25 });
     box(c);
   } };
@@ -425,6 +430,7 @@
     g.fillStyle = 'rgba(21,18,15,.2)'; for (let i = 0; i < 3; i++) g.fillRect(40, -20 + i * 24, 180 - i * 30, 7);
     g.fillStyle = '#9aa3ad'; g.fillRect(150, -128, 16, 64); g.strokeStyle = '#7d868f'; g.lineWidth = 5; g.beginPath(); g.roundRect(146, -132, 24, 72, 10); g.stroke();   // the paper clip
   }, 6);
+  const CAR_SC = 0.3;                                         // v2 (owner: "police car is too big"): ~26 × 55 px, half the road
   SCENES.cntv_police = { draw(c, lt) {
     const id = 'cntv_police', dd = dur(id), tC = at(id, 'car', 0.1), tI = at(id, 'inq', 1.35);
     const cam = vcam(lt, dd, { z: (l) => lerp(1.04, 1.08, ease.io(l / dd)), hits: [tI], kick: 0.03 });
@@ -436,16 +442,17 @@
         g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false, a: 0.9 });
         if (on) {
           // the blue light sweeping over the clearing from the car: two lobes, alternating
-          const R0 = 560, lx = cx + (strobe ? -40 : 40), ly = cy - 60, rg = g.createRadialGradient(lx, ly, 10, lx, ly, R0);
-          rg.addColorStop(0, 'rgba(70,130,255,.42)'); rg.addColorStop(1, 'rgba(70,130,255,0)');
+          const R0 = 760, lx = cx + (strobe ? -70 : 70), ly = cy - 90, rg = g.createRadialGradient(lx, ly, 6, lx, ly, R0);
+          rg.addColorStop(0, 'rgba(70,130,255,.5)'); rg.addColorStop(0.35, 'rgba(70,130,255,.2)'); rg.addColorStop(1, 'rgba(70,130,255,0)');
           g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rg; g.fillRect(lx - R0, ly - R0, R0 * 2, R0 * 2); g.restore();
         }
-        put(g, car(), cx, cy, { rot: ang, lift: 0.8 });
-        if (on) { g.save(); g.translate(cx, cy); g.rotate(ang); for (const [dx, lit] of [[-18, strobe], [18, !strobe]]) { g.fillStyle = lit ? '#7fb2ff' : '#1d3a7a'; g.beginPath(); g.roundRect(dx - 12, -5, 24, 12, 3); g.fill(); if (lit) { g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(120,170,255,.55)'; g.beginPath(); g.arc(dx, 1, 26, 0, TAU); g.fill(); g.globalCompositeOperation = 'source-over'; } } g.restore(); }
+        put(g, car(), cx, cy, { rot: ang, sc: CAR_SC, lift: 0.3 });
+        if (on) { g.save(); g.translate(cx, cy); g.rotate(ang); for (const [dx, lit] of [[-18, strobe], [18, !strobe]]) { const x = dx * CAR_SC; g.fillStyle = lit ? '#9cc4ff' : '#1d3a7a'; g.beginPath(); g.roundRect(x - 4, -2, 8, 4.5, 1.5); g.fill(); if (lit) { g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(120,170,255,.6)'; g.beginPath(); g.arc(x, 0, 15, 0, TAU); g.fill(); g.globalCompositeOperation = 'source-over'; } } g.restore(); }
         g.restore();
       } }], cam);
     const k = (lt - tI + 0.1) / 0.22;
-    if (k > 0) { const sc = lerp(2.0, 1.25, ease.out(k)); put(c, inqCard(), 540, 930 + swing(lt, [[tI + 0.15, 5]]), { sc, rot: 0.035, lift: 1.4 * (1 - 0.6 * ease.out(k)) + 0.5 }); }
+    // v2: smaller, and over the top of the site, so the stumps and the car on the road below stay in view
+    if (k > 0) { const sc = lerp(1.35, 0.92, ease.out(k)); put(c, inqCard(), 540, 655 + swing(lt, [[tI + 0.15, 5]]), { sc, rot: 0.035, lift: 1.4 * (1 - 0.6 * ease.out(k)) + 0.5 }); }
     tag(c, ui('police', 'OULU, FINLAND · OCTOBER 2026'), lt, dd, 110, 0.35);
     box(c);
   } };
@@ -489,15 +496,22 @@
     box(c);
   } };
 
-  // ═════════ V5 · cntv_end: saplings across 40 % of the clearing, the label on "130 ha", then the camera comes back to
-  //            frame 0's exact framing, the clipping in the same place: the loop ═════════
+  // ═════════ V5 · cntv_end: saplings across 40 % of the clearing, the label on "130 ha"; v2 (owner: "ending too
+  //            abruptly") holds the punchline with the saplings still settling under a slow push-in, then eases back
+  //            out to frame 0's exact framing over ~1.9 s; the clipping rises into place on "clip" and the frame holds
+  //            still for the last ~0.7 s while the score's last chord rings: the join into the sign-off, and the loop ═════════
   SCENES.cntv_end = { draw(c, lt) {
-    const id = 'cntv_end', dd = dur(id), tPl = at(id, 'plant', 0.9), tH = at(id, 'ha', 1.5), tB = at(id, 'back', dd - 0.75);
-    // in on the patch for the pop, then back out to frame 0's camera by the last frame
-    const zIn = 1.03 + 0.06 * ease.io((lt - tPl + 0.3) / 0.6), zOut = lerp(zIn, V.z0, ease.io((lt - tB) / (dd - tB)));
-    const cam = vcam(lt, dd, { z: () => (lt < tB ? zIn : zOut), hits: [tH], kick: 0.03 });
-    if (lt >= dd - 1 / 60) { cam.x = 0; cam.y = 0; cam.z = V.z0; }
-    const kS = clamp((lt - tPl) / 0.9, 0, 1);
+    const id = 'cntv_end', dd = dur(id), tPl = at(id, 'plant', 0.9), tH = at(id, 'ha', 1.5), tB = at(id, 'back', dd - 2.6), tC = at(id, 'clip', dd - 1.1);
+    const tL = Math.min(dd - 0.4, tC + 0.35);                 // home: frame 0's framing from here to the last frame
+    const kR = ease.io((lt - tB) / (tL - tB));                // the return
+    const cam = vcam(lt, dd, { z: (l) => lerp(1.03 + 0.06 * ease.io((l - tPl + 0.3) / 0.6), V.z0, kR), hits: [tH], kick: 0.03 });
+    cam.x *= 1 - kR; cam.y *= 1 - kR;
+    // the push: in on the patch for the pop, on slowly through the hold, back to 1 by home
+    const zP = 1 + 0.035 * ease.io((lt - tPl + 0.2) / 0.8) + 0.07 * ease.io((lt - tH - 0.2) / (tB - tH - 0.2)), Z = lerp(zP, 1, kR);
+    if (lt >= tL) { cam.x = 0; cam.y = 0; cam.z = V.z0; }
+    // the saplings come up row by row over ~2.6 s, most of them by the pop, and the rest still settling through the hold
+    const kS = ease.out(clamp((lt - tPl) / 2.6, 0, 1));
+    c.save(); camZ(c, lt >= tL ? 1 : Z, V.fx, 1010);
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
       { d: 0.12, fn: (g, ox, oy) => {
         g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false });
@@ -511,8 +525,9 @@
         if (kL > 0) put(g, patchLabel(), 330, Y_PATCH - 196, { sc: ease.back(kL), rot: -0.03 + swing(lt, [[tH + 0.2, 0.04]]), lift: 1.0 });
         g.restore();
       } }], cam);
-    // the clipping comes back up from below on "back", so the punchline has the frame to itself until then
-    const kC = clamp((lt - tB) / 0.32, 0, 1);
+    c.restore();
+    // the clipping comes back up from below and lands on "clip", so the punchline has the frame to itself until then
+    const kC = clamp((lt - tC + 0.32) / 0.32, 0, 1);
     bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
     box(c);
   } };

@@ -619,17 +619,17 @@
   } };
 
   // ═════════ V4 · avv_list: v1's vendor list on this cut's cues; the sheets riffle 2020 → 2026 and land on "six years" ═════════
-  const CBX = 524;                                        // the board 16 px left of v1's: its right edge was on the platforms' rail
+  const CBX = 524, CBY = CB.y + 90;                       // the board 16 px left of v1's (its right edge was on the platforms' rail) and 90 lower, under four BIG lines
   SCENES.avv_list = { draw(c, lt) {
     const id = 'avv_list', dd = dur(id), tF = at(id, 'flip', 0.25), tN = at(id, 'six', 1.53), F = flips(tF, tN);
     let top = 0, flipK = 0;
     F.ts.forEach((t, i) => { if (lt >= t + F.fd) top = i + 1; else if (lt >= t) { top = i; flipK = (lt - t) / F.fd; } });
     const jolt = lt > tN ? 10 * Math.exp(-(lt - tN) * 7) * Math.sin((lt - tN) * 20) : 0;
     const liveK = clamp((lt - 0.15) / 0.5, 0, 1);
-    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tN], { kick: 0.04 }) * lerp(1.0, 1.06, ease.io(lt / dd)), fx: 540, fy: 1060 };
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tN], { kick: 0.04 }) * lerp(1.0, 1.06, ease.io(lt / dd)), fx: 540, fy: CBY - 10 };
     stack(c, [
       { sh: lectern(), d: 0.05, lift: 0 },
-      { d: 0.3, fn: (g, ox, oy) => clipboard(g, CBX + ox, CB.y + oy + 40 * (1 - ease.out(lt / 0.4)), -0.025 + Math.sin(lt * 0.5) * 0.004, { top, flipK, liveK, jolt }) },
+      { d: 0.3, fn: (g, ox, oy) => clipboard(g, CBX + ox, CBY + oy + 40 * (1 - ease.out(lt / 0.4)), -0.025 + Math.sin(lt * 0.5) * 0.004, { top, flipK, liveK, jolt }) },
     ], cam);
     tag(c, ui('list', 'IAB EUROPE · GLOBAL VENDOR LIST'), lt, dd);
     box(c);
@@ -638,7 +638,7 @@
   // ═════════ V5 · avv_stamp: SUSPENDED on "October"; then a whip back to the banner, whose eye shuts into the sun (frame 0) ═════════
   /** v1's stamp on this cut's cues, the board at CBX, and the stamp kept above the rail: it hovers and winds up higher */
   function stampFrame(c, lt, dd, tL, tS) {
-    const rot = -0.025, bx = CBX, by = CB.y - 40;
+    const rot = -0.025, bx = CBX, by = CBY - 40;
     const jolt = lt > tS ? 12 * Math.exp(-(lt - tS) * 8) * Math.sin((lt - tS) * 24) : 0;
     const [rx, ry] = keyRowAt(bx, by, rot);
     const hover = [rx + 200, ry - 280], wind = [rx + 170, ry - 380], down = [rx + 10, ry + 8], away = [rx + 760, ry - 520];

@@ -14,10 +14,10 @@
  ],
  "scenes": [],
  "shots": [
-  { "id": "auv_hook", "beats": 9, "cues": { "hit": 0.035, "jump": 0.3, "spin": "word:pop" } },
-  { "id": "auv_post", "beats": 9, "cues": { "env": "line:1.start", "plate": "word:pop" } },
-  { "id": "auv_stamp", "beats": 10, "cues": { "s1": "word:pop", "s2": "line:2", "s3": "line:3+0.4" } },
-  { "id": "auv_none", "beats": 10, "cues": { "drop": 0.08, "none": "word:pop", "tear": "mark:end-0.75" } }
+  {"id": "auv_hook", "beats": 9, "cues": {"hit": 0.035, "jump": 0.3, "spin": "word:pop"}},
+  {"id": "auv_post", "beats": 10, "cues": {"env": "line:1.start", "plate": "word:pop"}},
+  {"id": "auv_stamp", "beats": 10, "cues": {"s1": "line:2", "s2": "line:4.start", "s3": "line:4+0.4"}},
+  {"id": "auv_none", "beats": 9, "cues": {"drop": 0.08, "none": "word:pop", "tear": "mark:end-0.75"}}
  ],
  "quiet": [],
  "keep": []
