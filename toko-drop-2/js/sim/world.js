@@ -14,15 +14,15 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=17';
-import { makeRng } from './rng.js?v=17';
-import { BEHAVIOUR } from './species/index.js?v=17';
-import { DIRECTORS } from './director/index.js?v=17';
-import * as fire from './fire.js?v=17';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=17';
-import { swarmForces, resolveCrowd } from './crowd.js?v=17';
-import { revengeColor } from './color.js?v=17';
-import * as pickups from './pickups.js?v=17';
+import { TUNING } from '../tuning.js?v=18';
+import { makeRng } from './rng.js?v=18';
+import { BEHAVIOUR } from './species/index.js?v=18';
+import { DIRECTORS } from './director/index.js?v=18';
+import * as fire from './fire.js?v=18';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=18';
+import { swarmForces, resolveCrowd } from './crowd.js?v=18';
+import { revengeColor } from './color.js?v=18';
+import * as pickups from './pickups.js?v=18';
 
 const T = TUNING;
 

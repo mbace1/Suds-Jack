@@ -4,10 +4,14 @@
 //
 // Touch is 1.x's twin-stick: a touch on the left half of the screen is a
 // floating move stick (analog, no deadzone, full at 60 px), a touch on the
-// right half a floating aim stick that aims and fires past 15 px, and
-// LETTING GO of the aim stick — or the system cancelling it — dashes. A
-// second finger on a side already held is ignored; the side is decided where
-// the thumb lands. The top-centre strip is the pause button.
+// right half a floating aim stick that aims and fires past 15 px. 1.x
+// dashed on every let-go of the aim stick; since v18 only a FLICK of it
+// dashes (owner, 2026-10-23), and how long and how fast the flick was says
+// how far and how fast the dash goes (js/flick.js reads it, hero.js
+// dashPlan prices it). A plain let-go, a tap or the system cancelling the
+// touch is no dash. A second finger on a side already held is ignored; the
+// side is decided where the thumb lands. The top-centre strip is the pause
+// button.
 // Keys: WASD / arrows move (normalised), Space dashes when it is RELEASED (1.x
 // since its first prototype), Esc pauses. 1.x paused on Esc's keyup
 // (input.js:48); here it is the keydown, because the pause menu (ui.js)
@@ -24,8 +28,11 @@
 // the aim came from, so main.js knows when to cast the mouse ray.
 //
 // Output is in SCREEN terms (x right, y down); main.js turns it into the
-// world, because only it knows where the camera is.
-import { TUNING } from './tuning.js?v=17';
+// world, because only it knows where the camera is. `dash` is false, true
+// (a button: 1.x's own dash) or a flick's gesture { kind: 'flick', sL, sV,
+// dirX, dirY }, its direction in screen axes too.
+import { TUNING } from './tuning.js?v=18';
+import { analyseTouch } from './flick.js?v=18';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)
@@ -34,8 +41,9 @@ const PAD_PAUSE = 9;               // Start / Options
 
 export class Input {
   constructor(target) {
-    this.left = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0 };
-    this.right = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0 };
+    this.left = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0, hist: [], wander: 0 };
+    this.right = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0, hist: [], wander: 0 };
+    this.lastGesture = null;     // the aim stick's last let-go as flick.js read it (the ?fps readout, the tests)
     this.keys = new Set();
     this.mouse = { x: 0, y: 0, down: false, seen: false };
     this.pad = { mx: 0, my: 0, ax: 0, ay: 0 };
@@ -54,7 +62,7 @@ export class Input {
     target.addEventListener('touchstart', (e) => { if (ui(e)) return; e.preventDefault(); this._touch(e, 'start'); }, opt);
     target.addEventListener('touchmove', (e) => { if (ui(e)) return; e.preventDefault(); this._touch(e, 'move'); }, opt);
     target.addEventListener('touchend', (e) => { if (ui(e)) return; e.preventDefault(); this._touch(e, 'end'); }, opt);
-    target.addEventListener('touchcancel', (e) => { if (ui(e)) return; e.preventDefault(); this._touch(e, 'end'); }, opt);
+    target.addEventListener('touchcancel', (e) => { if (ui(e)) return; e.preventDefault(); this._touch(e, 'cancel'); }, opt);
 
     addEventListener('keydown', (e) => {
       if (e.code === 'Space') { e.preventDefault(); if (!e.repeat && this.enabled) this._space = true; }
@@ -78,7 +86,7 @@ export class Input {
     target.addEventListener('contextmenu', (e) => { if (this.enabled) e.preventDefault(); });   // the right button is a trigger in play
   }
 
-  _release(s) { s.active = false; s.id = null; s.dx = 0; s.dy = 0; }
+  _release(s) { s.active = false; s.id = null; s.dx = 0; s.dy = 0; s.hist = []; s.wander = 0; }
 
   // keys, buttons and sticks let go of; a stick let go of this way is no dash
   reset() {
@@ -95,17 +103,35 @@ export class Input {
         if (t.clientY < I.pauseStripHeight && Math.abs(t.clientX - innerWidth / 2) < I.pauseStripHalfWidth) { this._pause = true; continue; }
         const s = t.clientX < innerWidth / 2 ? this.left : this.right;
         if (s.active) continue;
-        Object.assign(s, { active: true, id: t.identifier, ox: t.clientX, oy: t.clientY, dx: 0, dy: 0 });
+        Object.assign(s, { active: true, id: t.identifier, ox: t.clientX, oy: t.clientY, dx: 0, dy: 0, hist: [{ x: t.clientX, y: t.clientY, t: e.timeStamp }], wander: 0 });
       } else {
         const s = this.left.id === t.identifier ? this.left : this.right.id === t.identifier ? this.right : null;
         if (!s) continue;
-        if (kind === 'move') { s.dx = t.clientX - s.ox; s.dy = t.clientY - s.oy; }
-        else {
-          if (s === this.right) this._dash = true;     // 1.x input.js:106: letting go of the aim stick dashes
+        if (kind === 'move') {
+          s.dx = t.clientX - s.ox; s.dy = t.clientY - s.oy;
+          s.wander = Math.max(s.wander, Math.hypot(s.dx, s.dy));
+          s.hist.push({ x: t.clientX, y: t.clientY, t: e.timeStamp });
+          // the touchdown and the last 2 × strokeMs are all a flick can need
+          while (s.hist.length > 3 && s.hist[1].t < e.timeStamp - 2 * I.flick.strokeMs) s.hist.splice(1, 1);
+        } else {
+          if (s === this.right && kind === 'end') this._letGo(s, t, e.timeStamp);
           this._release(s);
         }
       }
     }
+  }
+
+  // the aim stick let go: a flick dashes, as far and as fast as it was
+  // flicked; anything else is the thumb coming off the glass
+  _letGo(s, t, stamp) {
+    const F = I.flick;
+    s.hist.push({ x: t.clientX, y: t.clientY, t: stamp });
+    const g = analyseTouch(s.hist, F, I.stickRadius);
+    g.wander = Math.max(g.wander, s.wander);
+    g.lenPx = g.L * I.stickRadius; g.pxPerMs = (g.V * I.stickRadius) / 1000;   // for the ?fps readout, in the units a thumb knows
+    if (g.kind === 'tap' && s.wander > F.tapPx) g.kind = 'release';
+    this.lastGesture = g;
+    if (g.kind === 'flick' || (g.kind === 'tap' && F.tap)) this._dash = g.kind === 'flick' ? g : true;
   }
 
   // One frame of input. `heroScreen` is where the hero is on screen (a

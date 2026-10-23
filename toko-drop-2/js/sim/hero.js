@@ -15,11 +15,14 @@
 //
 // Input (world axes): { mx, mz } the move stick, analog, length ≤ 1;
 // { ax, az } the aim and `aim` whether it points anywhere; `fire` the
-// trigger; `dash` an edge, true on the step it is asked. 1.x fires only
+// trigger; `dash` an edge on the step it is asked: true for 1.x's own dash
+// (a button), or a flick { kind: 'flick', sL, sV, dx, dz } (input.js, the
+// direction in world axes) for one as long and as fast as the flick was
+// (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=17';
-import { BEHAVIOUR } from './species/index.js?v=17';   // read at run time only (a species' hitTest)
+import { TUNING } from '../tuning.js?v=18';
+import { BEHAVIOUR } from './species/index.js?v=18';   // read at run time only (a species' hitTest)
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -33,6 +36,10 @@ export function makeHero() {
     mercy: 0, flash: 0,          // 1.x _mercyT, _flashT
     invinc: 0, rapid: 0,         // 1.x _invincBoost, _fireRateBoost: the pickups' timers
     dash: 0, dashCd: 0, dashX: 0, dashZ: 0, dashId: 0, ghostT: 0,
+    // a flick dash in flight (dashPlan): its speed (0 = 1.x's dash), the
+    // distance still to go, the cooldown it ends on, and its speed against
+    // 1.x's, which scales what it does to the bodies it meets
+    dashV: 0, dashLeft: 0, dashCdNext: 0, dashK: 1,
     fireCd: 0,                   // 1.x _fireT
     sq: 1, sqV: 0,
     stretch: 0, stretchX: 0, stretchZ: 1, sVelX: 0, sVelZ: 0, sPrevX: 0, sPrevZ: 0, sSeen: false,
@@ -60,17 +67,28 @@ export function heroStep(w, input, dt, api) {
   // 1. the press (player.js:244-253): dropped while dashing or cooling down
   let started = false;
   if (input.dash && h.dash <= 0 && h.dashCd <= 0) {
+    const g = typeof input.dash === 'object' ? input.dash : null, plan = g ? dashPlan(g) : null;
+    // a flick goes where it was flicked, its full length. A button goes
     // where you are walking; only with no move at all, the last shot's way
     // (main.js:9156-9158). Not normalised: half a stick, half a dash.
     let dx = h.aimX, dz = h.aimZ;
-    if (mx !== 0 || mz !== 0) {
+    const gl = g ? Math.hypot(g.dx || 0, g.dz || 0) : 0;
+    if (gl > 1e-9) { dx = g.dx / gl; dz = g.dz / gl; }
+    else if (mx !== 0 || mz !== 0) {
       const l = Math.hypot(mx, mz);
-      dx = H.dashNormalise ? mx / l : mx; dz = H.dashNormalise ? mz / l : mz;
+      dx = H.dashNormalise || plan ? mx / l : mx; dz = H.dashNormalise || plan ? mz / l : mz;
     }
-    h.dashX = dx; h.dashZ = dz; h.dash = H.dashTime; h.ghostT = 0; h.dashId++;
-    h.sqV += H.sq.dash;
+    h.dashX = dx; h.dashZ = dz; h.ghostT = 0; h.dashId++;
+    if (plan) {
+      h.dashV = plan.v; h.dashLeft = plan.d; h.dashCdNext = plan.cd; h.dashK = plan.v / H.flick.vStd;
+      h.dash = plan.steps * dt - dt / 2;           // > 0 through exactly plan.steps steps: the i-frames
+      h.sqV += H.sq.dash * clampTo(h.dashK, H.flick.squash);
+    } else {
+      h.dashV = 0; h.dashK = 1; h.dash = H.dashTime;
+      h.sqV += H.sq.dash;
+    }
     started = true;
-    w.events.push({ type: 'dash', x: h.x, z: h.z, dx, dz, level: h.dashLevel });
+    w.events.push({ type: 'dash', x: h.x, z: h.z, dx, dz, level: h.dashLevel, kind: g ? g.kind : 'button', d: plan?.d, v: plan?.v, steps: plan?.steps });
   }
 
   // 2. timers (player.js:260-268)
@@ -84,10 +102,14 @@ export function heroStep(w, input, dt, api) {
   const dashing = h.dash > 0;
   if (dashing) {
     h.dash -= dt;
-    h.x += h.dashX * H.dashSpeed * dt; h.z += h.dashZ * H.dashSpeed * dt;
+    if (h.dashV > 0) {
+      // a flick dash: exactly its distance, the last step moving what is left
+      const m = Math.min(h.dashLeft, h.dashV * dt);
+      h.x += h.dashX * m; h.z += h.dashZ * m; h.dashLeft -= m;
+    } else { h.x += h.dashX * H.dashSpeed * dt; h.z += h.dashZ * H.dashSpeed * dt; }
     // a ghost where the dash has got to (before the clamp, as 1.x copied it)
-    if ((h.ghostT -= dt) <= 0) { h.ghostT = L.ghost.every; w.events.push({ type: 'ghost', x: h.x, z: h.z }); }
-    if (h.dash <= 0) h.dashCd = H.dashCooldown;
+    if ((h.ghostT -= dt) <= 0) { h.ghostT = L.ghost.every; w.events.push({ type: 'ghost', x: h.x, z: h.z, k: h.dashK }); }
+    if (h.dash <= 0) h.dashCd = h.dashV > 0 ? h.dashCdNext : H.dashCooldown;
   } else {
     // no acceleration: the stick is the velocity, even through mercy
     h.x += mx * H.speed * dt; h.z += mz * H.speed * dt;
@@ -152,7 +174,7 @@ export function heroStep(w, input, dt, api) {
       // a boss takes it as one of the hero's hits (a CUT, as its hits): the
       // flash, the squash, and the hit event (the ripple from the side the
       // hero came through, the sound) that world.js heroBulletsHit sends for a bullet
-      g.hp -= cutting ? H.cut.hits : H.dashKill.bossHits; g.flash = T.gel.flash; g.sqV += T.gel.sq.hit;
+      g.hp -= cutting ? cutHits(h) : H.dashKill.bossHits; g.flash = T.gel.flash; g.sqV += T.gel.sq.hit;
       w.events.push({ type: 'hit', x: h.x, z: h.z, id: g.id, kind: g.kind });
       if (g.hp <= 0) api.kill(w, g, 'dash');
     }
@@ -169,6 +191,30 @@ export function heroStep(w, input, dt, api) {
   }
 }
 
+const clampTo = (x, [a, b]) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const STD_D = 26 * 11 / 60;    // 1.x's dash: 11 steps at 26 u/s, 4.77 u
+
+// What a flick is worth (TUNING.hero.flick): its length sL → the distance,
+// its speed sV → the speed, each 0..1. The strengths are quantised to 1/256
+// first, so a replay (or the Godot port) carrying them reproduces the dash
+// exactly; the rest is plain arithmetic on them.
+export function dashPlan(g) {
+  const F = H.flick, dt = T.sim.dt;
+  const q = (x) => Math.round(Math.max(0, Math.min(1, x || 0)) * 256) / 256;
+  const d = lerp(F.d[0], F.d[1], Math.pow(q(g.sL), F.dPow));
+  let v = lerp(F.v[0], F.v[1], Math.pow(q(g.sV), F.vPow));
+  let steps = Math.ceil(d / (v * dt) - 1e-6);
+  const s = clampTo(steps, F.steps);
+  if (s !== steps) { steps = s; v = d / (steps * dt); }
+  const cd = Math.max(F.cooldown.min, F.cooldown.at + F.cooldown.perU * (d - STD_D));
+  return { d, v, steps, cd };
+}
+
+// The CUT's hits (owner, 2026-10-23: a faster dash cuts deeper): 1.x's
+// button dash takes cut.hits, a flick that many × its speed against 1.x's
+const cutHits = (h) => (h.dashV > 0 ? clampTo(Math.round(H.cut.hits * h.dashK), H.flick.cut) : H.cut.hits);
+
 // The PUSH dash (TUNING.hero.push): every body whose edge is within reach of
 // the dashing hero is knocked straight away from it, once a dash, harder the
 // smaller it is. Planted bodies (ANCHORED, the FIXED role) stand. From dash
@@ -181,7 +227,7 @@ function shove(w, h, api) {
     let dx = g.x - h.x, dz = g.z - h.z, d = Math.hypot(dx, dz);
     if (d >= P.reach + g.r) continue;
     if (d < 1e-6) { dx = h.dashX; dz = h.dashZ; d = Math.hypot(dx, dz) || 1; }
-    const nx = dx / d, nz = dz / d, want = P.force * P.heavy / g.r;
+    const nx = dx / d, nz = dz / d, want = P.force * P.heavy / g.r * (h.dashV > 0 ? clampTo(h.dashK, H.flick.push) : 1);
     if (P.plough) {
       // every step it is in reach, it is kept moving away at least this fast
       const along = g.kx * nx + g.kz * nz;

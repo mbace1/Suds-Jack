@@ -19,6 +19,60 @@
     Never `--no-verify`.
 -->
 
+## v18 — 2026-10-23
+**The flick dash; the arena bigger and the right way round**
+- **Only a FLICK of the aim stick dashes** (owner, 2026-10-23: a plain
+  let-go is no dash; better flick detection and a longer dash; the length
+  and speed of the flick set the dash). 1.x dashed on every let-go and on a
+  tap; a tap and a cancelled touch are no dash now (`input.flick.tap` brings
+  1.x's tap back).
+  - `js/flick.js` reads the aim stick's history at the lift, off the
+    events' own timeStamps: a stroke still moving at the lift, long enough
+    and fast somewhere in it, is a flick. A thumb that stopped before it
+    lifted, or an aim sweep lifted while still creeping, is a let-go.
+  - The dash goes where it was flicked. The stroke's length sets the
+    distance, 2.4 to 11 u (1.x's was 4.77), and its peak speed sets the
+    speed, 18 to 46 u/s (1.x's was 26). Distance is exact; it lasts at
+    most 24 steps, and past that the speed gives way, never the distance.
+  - The i-frames are the dash, as 1.x's were. The cooldown grows with the
+    distance: 1.x's 0.75 s at 1.x's 4.77 u, plus or minus 0.1 s a unit.
+  - **CUT cuts deeper the faster the flick**: 1 to 4 hits (a button's dash
+    is still 2). PUSH shoves harder the same way.
+  - Pad and keys keep 1.x's fixed dash on a button (owner: the pad keeps a
+    button with a fixed dash).
+  - The touch hint says FLICK TO DASH. `?fps` shows the last flick as it was
+    read (px, px/ms) and the dash it bought.
+  - Measured with physical thumb strokes through real CDP touch events, on
+    a phone at 60 and 120 Hz and on an iPad. Taps, held let-goes, stop-lifts
+    and aim sweeps are no dash. A 7 mm flick reads as about 4 u, a 24 mm one
+    as 11 u.
+- **The camera keeps the whole arena, with trimmed margins** (owner: keep
+  the whole arena, trim the margins, as long as the orientation is right).
+  - The margin is 10 px a side instead of 5% of the screen. On a phone held
+    sideways the arena is about 4% bigger. Upright it is width-bound, so it
+    gains about 1%.
+  - **A phone turned mid-run turns the world with it.** The arena is still
+    1.x's, picked once a run, but it is no longer shown as a strip across
+    the new screen: it lies along the screen's long side, tilted toward the
+    new bottom. It turns the way that keeps it where it was on the glass,
+    read off the screen's orientation angle. The sticks, keys and pad turn
+    with it, so up is still up.
+  - The fit finds the distance on the half-extents first and then centres,
+    once.
+- Ghosts pool 10, up from 1.x's 7, for the longer dash.
+- Gates: the hero suite checks the flick reader and the flick dash, with
+  210 checks. The browser smoke now checks four things:
+  - a plain let-go does not dash, and a flick up the screen dashes once, up
+    the screen
+  - the arena sits about 10 px from the edge on its tight axis (v17 sat at
+    23 px)
+  - a turned phone turns the view, filling 45% of the upright screen's
+    height against 21% unturned
+  - an unturned screen is never turned
+- Cache tokens `?v=17` → `?v=18`; HUD label → `2.0 · v18`
+
+---
+
 ## v17 — 2026-10-23
 **Gates, pickups and the DASH pod; enemies dangerous on arrival; SDF gels on the title**
 - **Gates and pickups, 1.x's own** (owner, 2026-10-22: healing is 1.x's gates

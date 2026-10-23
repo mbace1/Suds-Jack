@@ -9,7 +9,7 @@
 // lit things on it.
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, sin, length, smoothstep, mix, fwidth, texture, clamp, vec2 } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=17';
+import { GEL_TIME } from './gel.js?v=18';
 
 // `light` (optional) is the arena's light map (render/light.js): its rgb is
 // light thrown on the floor, its alpha the shadow of what stands on it

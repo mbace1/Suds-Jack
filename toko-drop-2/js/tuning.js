@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=17';
-import WAVES from './tuning/waves.js?v=17';
-import PICKUPS from './tuning/pickups.js?v=17';
+import { SPECIES } from './tuning/species/index.js?v=18';
+import WAVES from './tuning/waves.js?v=18';
+import PICKUPS from './tuning/pickups.js?v=18';
 
 export const TUNING = {
   render: {
@@ -29,7 +29,11 @@ export const TUNING = {
     fov: 60,                // 1.x's vertical FOV
     near: 0.5,
     far: 400,
-    margin: 0.05,           // NDC kept clear around the arena (1.x fits to 0.96 / 0.93)
+    // CSS px kept clear round the arena (owner, 2026-10-23: trim the
+    // margins). 1.x fitted to 0.96 / 0.93 of the screen and v17 kept 5%;
+    // the HUD sits over the far edge's empty corners and the pause button
+    // was already over its middle, so a few px is all the arena needs
+    margin: { x: 10, y: 8 },
     searchMin: 5,
     searchMax: 200,
   },
@@ -177,7 +181,9 @@ export const TUNING = {
     // dash ghosts: one every 0.03 s from the dash's first step (the sim emits
     // a `ghost` event each time, 6 a dash), pooled 7, living 0.28 s at
     // opacity 0.45·t and scale 0.6 + 0.4·t (player.js:13-15, 70-78, 284-294, 336-348)
-    ghost: { count: 7, every: 0.03, life: 0.28, color: 0x88bbff, opacity: 0.45, scale: 0.6 },
+    // 2.0 pools 10, not 7: a long flick dash lays a ghost every 2 steps for
+    // up to 24, and with 0.28 s lives as many as 9 are up at once
+    ghost: { count: 10, every: 0.03, life: 0.28, color: 0x88bbff, opacity: 0.45, scale: 0.6 },
     // the muzzle pop (player.js:99-108, 351-359, 467-474): at radius + 0.35
     // along the shot, y 0.3, 0.05 s, opacity 0.9 → 0 while it swells 0.6 → 1.4
     muzzle: { r: 0.2, color: 0xaaffcc, life: 0.05, opacity: 0.9, scale: [0.6, 1.4], offset: 0.35, y: 0.3 },
@@ -203,6 +209,31 @@ export const TUNING = {
     padDeadzone: 0.2,       // 1.x GP_DEADZONE
     pauseStripHeight: 56,   // the top-centre pause strip on touch (1.x)
     pauseStripHalfWidth: 40,
+    // The FLICK (js/flick.js; owner, 2026-10-23): the dash read off the aim
+    // stick as it is let go. Lengths are in units of stickRadius CSS px (CSS
+    // px are already near physical: ~6.3 a mm on a Pixel, ~5.2 on an iPad
+    // Air, so a thumb's flick reads about the same on both); times in ms of
+    // the events' own timeStamps; speeds in units a second (5 = 0.3 px/ms).
+    // Measured against synthetic thumb strokes driven through real CDP touch
+    // events (a touchmove a display frame while the thumb moves, none while
+    // it rests), on a phone at 60 and 120 Hz and an iPad: a flick of 7 mm
+    // in 160 ms is read on both, a thumb that stops 60 ms before it lifts or
+    // sweeps the aim round slowly is not (scratchpad cam18/flicks.mjs).
+    flick: {
+      tap: false,                  // a tap is no dash (1.x's was); true makes it 1.x's dash again
+      tapMs: 200, tapPx: 12,       // shorter and stiller than this is a TAP
+      stopMs: 50,                  // no movement for this long before the lift: the thumb had stopped
+      releaseMs: 50,               // the speed at the lift is fitted over this much of the end
+      releaseFloor: 4,             // u/s at the lift under which it is a let-go, not a flick (0.24 px/ms)
+      peakFloor: 5,                // u/s the stroke must reach somewhere (0.3 px/ms; an aim sweep peaks near 2)
+      lengthFloor: 0.3,            // u of stroke under which it is a let-go (18 px, ~3 mm)
+      strokeFloor: 2,              // u/s: walking back from the lift, the stroke ends where the thumb was slower
+      strokeMs: 350,               // and it looks back no further
+      spanMs: 14,                  // a speed sample spans at least this (one sample's jitter is not a speed)
+      restMs: 30,                  // a gap with no events this long was the thumb at rest
+      length: [0.3, 2.5],          // stroke length → sL 0..1 (18 → 150 px)
+      speed: [6, 40],              // peak stroke speed → sV 0..1 (0.36 → 2.4 px/ms)
+    },
   },
 
   // The hero, as 1.x played it (player.js; docs/port-1x/player-controls.md
@@ -220,6 +251,26 @@ export const TUNING = {
     // so half a stick is half a dash; only with no move at all does it take the
     // last shot's direction. true normalises it (player-controls.md trap T1).
     dashNormalise: false,
+    // The FLICK dash (owner, 2026-10-23: the dash reacts to the flick's
+    // length and speed, goes where it was flicked, and runs longer than
+    // 1.x's). input.js reads the gesture, dashPlan below prices it: sL 0..1
+    // → the distance, sV 0..1 → the speed. Distance is exact (the last step
+    // moves what is left); it lasts ceil(d / (v·dt)) steps, clamped to
+    // `steps`, and when the clamp bites the speed gives way, never the
+    // distance. The i-frames are the dash, as 1.x's were. The cooldown, from
+    // the dash's END, grows with the distance: 1.x's 0.75 s at 1.x's 4.77 u.
+    // A button (A / RB / RT, Space) is still 1.x's own dash, to the step
+    // (owner: the pad keeps a fixed dash), and so is a bare input.dash true.
+    flick: {
+      d: [2.4, 11], v: [18, 46],           // a flick: sL → distance (u), sV → speed (u/s); 1.x's is 4.77 at 26
+      dPow: 1, vPow: 1,
+      vStd: 26,                            // the speed the scaled effects are measured against (1.x's)
+      steps: [4, 24],                      // 0.067 .. 0.4 s
+      cooldown: { at: 0.75, perU: 0.1, min: 0.35 },   // 0.75 s at 4.77 u, ± 0.1 s a unit
+      push: [0.75, 1.6],                   // the PUSH plough's force × v / vStd, clamped
+      cut: [1, 4],                         // the CUT's hits = round(cut.hits × v / vStd), clamped: a faster flick cuts deeper
+      squash: [0.6, 1.5],                  // the dash's squash kick × v / vStd, clamped
+    },
     fireEvery: 0.09,        // FIRE_RATE (player.js:9), ASSIGNED on each shot, not carried (player.js:465): 6 steps, 10/s
     muzzle: 0.3,            // a shot leaves at radius + 0.3 = 0.8 from the centre (player.js:402-403)
     mouseNoAim: 0.5,        // the mouse does not aim (so cannot fire) within this of the centre (main.js:9235)

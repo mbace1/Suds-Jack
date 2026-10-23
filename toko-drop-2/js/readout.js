@@ -12,13 +12,16 @@
 //   sim          game time over wall time while playing: a slow frame drops
 //                its backlog (TUNING.sim.maxSteps), and that shows here
 //   draws        the main pass's draw calls, read right after it
+//   flick        (v18) the aim stick's last let-go as js/flick.js read it —
+//                its stroke in px and peak px/ms, and the dash it bought —
+//                or what it was instead (a let-go, a tap: no dash)
 // The window restarts on every state change and skips a run's first 2 s.
 
 const RING = 300, SKIP = 2, EVERY = 0.5;
 
 export class Readout {
-  constructor({ renderer, backend, actors, on }) {
-    this.r = renderer; this.backend = backend; this.actors = actors; this.on = !!on;
+  constructor({ renderer, backend, actors, input, lastDash, on }) {
+    this.r = renderer; this.backend = backend; this.actors = actors; this.input = input; this.lastDash = lastDash; this.on = !!on;
     this.dt = new Float32Array(RING); this.n = 0; this.i = 0;
     this.last = 0; this.shown = 0; this.state = null; this.since = 0;
     this.sim0 = null; this.wall0 = 0; this.ratio = null; this.result = null;
@@ -65,8 +68,16 @@ export class Readout {
       A.gels.toUpperCase(), this.backend, `${c.width}×${c.height}@${+this.r.getPixelRatio().toFixed(2)}`,
       `${A.views.size} gels (${sdf} sdf)`,
       s ? `p50 ${f(s.p50)} · p95 ${f(s.p95)} · max ${Math.round(s.max)} ms · cap ${Math.round(s.cap)} Hz` : 'measuring',
-      `sim ${ratio == null ? '-' : ratio.toFixed(2) + 'x'}`, `${draws} draws`,
-    ].join(' · ');
+      `sim ${ratio == null ? '-' : ratio.toFixed(2) + 'x'}`, `${draws} draws`, this.flick(),
+    ].filter(Boolean).join(' · ');
+  }
+
+  flick() {
+    const g = this.input?.lastGesture, d = this.lastDash?.();
+    if (!g) return '';
+    if (g.kind !== 'flick') return `${g.kind}: no dash`;
+    const dash = d?.kind === 'flick' ? ` → ${d.d.toFixed(1)} u at ${Math.round(d.v)} u/s` : '';
+    return `flick ${Math.round(g.lenPx)} px ${g.pxPerMs.toFixed(2)} px/ms${dash}`;
   }
 
   // ?bench: 24 wave-one bodies in a fixed grid, the run held still, a short

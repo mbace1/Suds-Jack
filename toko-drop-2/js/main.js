@@ -7,21 +7,21 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=17';
-import { buildFloor } from './render/floor.js?v=17';
-import { fitCamera } from './render/view.js?v=17';
-import { Splats } from './render/splats.js?v=17';
-import { Actors } from './render/actors.js?v=17';
-import { GEL_TIME } from './render/gel.js?v=17';
-import { studioEnvironment } from './render/env.js?v=17';
-import { createWorld, step, api as simApi } from './sim/world.js?v=17';
-import { stage as stagePk } from './sim/pickups.js?v=17';
-import { Input } from './input.js?v=17';
-import { UI, t, timeText } from './ui.js?v=17';
-import { Sound } from './audio.js?v=17';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=17';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=17';
-import { Readout } from './readout.js?v=17';
+import { TUNING } from './tuning.js?v=18';
+import { buildFloor } from './render/floor.js?v=18';
+import { fitCamera, screenToWorld } from './render/view.js?v=18';
+import { Splats } from './render/splats.js?v=18';
+import { Actors } from './render/actors.js?v=18';
+import { GEL_TIME } from './render/gel.js?v=18';
+import { studioEnvironment } from './render/env.js?v=18';
+import { createWorld, step, api as simApi } from './sim/world.js?v=18';
+import { stage as stagePk } from './sim/pickups.js?v=18';
+import { Input } from './input.js?v=18';
+import { UI, t, timeText } from './ui.js?v=18';
+import { Sound } from './audio.js?v=18';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=18';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=18';
+import { Readout } from './readout.js?v=18';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -75,9 +75,21 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let arenaName = null, arena = null, floor = null;
 let state = 'menu', mode = 'arcade', world = null, acc = 0, pendingDash = false, dyingT = 0;
 const screenArena = () => (stage.clientWidth >= stage.clientHeight ? 'landscape' : 'portrait');
+// The view's TURN (owner, 2026-10-23: "as long as the orientation is
+// right"). 1.x picks the arena once a run, so a phone turned mid-run used to
+// show its landscape arena as a thin strip across an upright screen. Now
+// the world turns a quarter instead (render/view.js), so the arena lies along
+// the screen's long side again. Which way: the way that keeps the world
+// where it was on the glass, read off the screen's orientation angle as it
+// was when the arena was picked (an unknown angle turns it clockwise). The
+// sticks, the keys and the pad turn with it (toWorld), so up is still up.
+let turn = 0, angle0 = 0;
+const screenAngle = () => {
+  try { const a = screen.orientation?.angle ?? window.orientation; return typeof a === 'number' ? a : 0; } catch { return 0; }
+};
 function useArena(name) {
   if (name === arenaName) return;
-  arenaName = name; arena = T.arena[name];
+  arenaName = name; arena = T.arena[name]; angle0 = screenAngle();
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(arena.hx, arena.hz);
   floor = buildFloor(T, arena.hx, arena.hz, actors.light.texture);
@@ -90,7 +102,14 @@ function resize() {
   renderer.setSize(w, h, false);
   if (!floor) return;
   if (state === 'menu' && screenArena() !== arenaName) return useArena(screenArena());
-  fitCamera(camera, floor.arena, w / h, { ...T.camera, tiltDeg: arena.tiltDeg });
+  turn = 0;
+  if (screenArena() !== arenaName) {
+    const phi = (((angle0 - screenAngle()) % 360) + 360) % 360;
+    turn = phi === 270 ? 3 : 1;
+  }
+  // a turned arena takes the tilt of the screen it is now on: it lies along
+  // that screen's long side, as that screen's own arena would
+  fitCamera(camera, floor.arena, w / h, { ...T.camera, tiltDeg: T.arena[screenArena()].tiltDeg }, turn, { w, h });
   camRest.copy(camera.position);
 }
 
@@ -161,7 +180,8 @@ function flipGels() {
 }
 actors.setGels(gels()); setLabel();
 // ?fps: the frame-time line beside the version; ?bench: the fixed 24-body scene (readout.js)
-const readout = new Readout({ renderer, backend, actors, on: params.has('fps') || params.has('bench') });
+let lastDash = null;   // the sim's last dash event, for the readout's flick line
+const readout = new Readout({ renderer, backend, actors, input, lastDash: () => lastDash, on: params.has('fps') || params.has('bench') });
 
 useArena(screenArena());
 new ResizeObserver(resize).observe(stage);
@@ -238,6 +258,7 @@ function finish() {
 
 let podDown = { tick: -1, text: '' };   // this step's pod knock-down, for the dash's banner
 function onEvent(e) {
+  if (e.type === 'dash') lastDash = e;
   debug.counts[e.type] = (debug.counts[e.type] || 0) + 1;
   sound.event(e);
   input.feel?.(e);
@@ -271,11 +292,13 @@ function onEvent(e) {
 }
 
 // screen-axis input → the world. The camera looks down with the far edge at
-// the top, so screen-down is +z; the mouse aims at the floor under it, and
+// the top, so screen-down is +z (unless the view is turned: screenToWorld);
+// the mouse aims at the floor under it, and
 // a cursor within the hero's own radius gives no aim (1.x main.js:9228-9237).
 const _ray = new THREE.Raycaster(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3(), _ndc = new THREE.Vector2();
 function toWorld(inp) {
-  const out = { mx: inp.mx, mz: inp.my, ax: inp.ax, az: inp.ay, aim: inp.aim, fire: inp.fire, dash: false };
+  const [mx, mz] = screenToWorld(turn, inp.mx, inp.my), [ax, az] = screenToWorld(turn, inp.ax, inp.ay);
+  const out = { mx, mz, ax, az, aim: inp.aim, fire: inp.fire, dash: false };
   if (inp.source === 'keys' && input.mouse.seen && world) {
     const r = renderer.domElement.getBoundingClientRect();
     _ndc.set(((input.mouse.x - r.left) / r.width) * 2 - 1, -((input.mouse.y - r.top) / r.height) * 2 + 1);
@@ -308,7 +331,11 @@ const debug = {
   THREE, renderer, scene, camera, backend, input, ui, actors,
   get arena() { return floor.arena; }, splats,
   frames: 0, ready: false, counts: {},
-  get world() { return world; }, get state() { return state; },
+  get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
+  // stop and restart the drawing: the smoke's flick is thrown with the loop
+  // stopped, so each touch event is delivered on its own rather than
+  // coalesced behind a slow software-GPU frame
+  loop(on) { capture.on = !on; },
   start, pause, resume, toMenu,
   // the GELS style ('classic' | 'sdf'), for the smoke and the captures; the readout
   get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel(); }, readout,
@@ -338,7 +365,7 @@ const debug = {
   act(inp, seconds) {
     const n = Math.round(seconds / T.sim.dt);
     for (let i = 0; i < n && !world.over; i++) {
-      step(world, { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, ...inp, dash: i === 0 && !!inp.dash });
+      step(world, { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, ...inp, dash: i === 0 ? (typeof inp.dash === 'object' ? inp.dash : !!inp.dash) : false });
       for (const e of world.events) onEvent(e);
       actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt);
     }
@@ -392,7 +419,11 @@ function frame(now, dtFixed) {
   } else if (state === 'play') {
     if (inp.pause) pause();
     else {
-      pendingDash ||= inp.dash;
+      // a flick's direction is the screen's; the sim wants the world's
+      if (inp.dash && typeof inp.dash === 'object' && !pendingDash) {
+        const [dx, dz] = screenToWorld(turn, inp.dash.dirX, inp.dash.dirY);
+        pendingDash = { kind: inp.dash.kind, sL: inp.dash.sL, sV: inp.dash.sV, dx, dz };
+      } else pendingDash ||= inp.dash;
       const w = capture.bot ? botInput(world) : toWorld(inp);
       acc += dt;
       let steps = 0;
