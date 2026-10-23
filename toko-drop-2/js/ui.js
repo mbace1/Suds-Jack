@@ -2,7 +2,7 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=19';
+import { TUNING } from './tuning.js?v=20';
 
 const STR = {
   en: {
@@ -56,11 +56,10 @@ export const t = (k) => STR[lang][k] ?? STR.en[k] ?? k;
 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
-// The modes the title offers, top to bottom. SURVIVAL is off it for now
-// (owner, 2026-10-22: "forget survival for now"); only the title forgets it.
-// The mode still runs (main.js MODES), keeps its best score and its strings,
-// and listing it here again puts its row back as it was.
-const TITLE_MODES = ['arcade', 'hardcade'];
+// The modes the title offers, top to bottom. SURVIVAL was off it from v17
+// (owner, 2026-10-22: "forget survival for now") and is back from v20, its
+// floor changing size as you play (owner, 2026-10-23: "like Sektori").
+const TITLE_MODES = ['arcade', 'hardcade', 'survival'];
 
 // run time as m:ss
 export function timeText(seconds) {

@@ -7,24 +7,25 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=19';
-import { buildFloor } from './render/floor.js?v=19';
-import { fitCamera, screenToWorld } from './render/view.js?v=19';
-import * as worldsSim from './sim/worlds.js?v=19';
-import { Scenery } from './render/scenery.js?v=19';
-import { Transit } from './render/transit.js?v=19';
-import { Splats } from './render/splats.js?v=19';
-import { Actors } from './render/actors.js?v=19';
-import { GEL_TIME } from './render/gel.js?v=19';
-import { studioEnvironment } from './render/env.js?v=19';
-import { createWorld, step, api as simApi } from './sim/world.js?v=19';
-import { stage as stagePk } from './sim/pickups.js?v=19';
-import { Input } from './input.js?v=19';
-import { UI, t, timeText } from './ui.js?v=19';
-import { Sound } from './audio.js?v=19';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=19';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=19';
-import { Readout } from './readout.js?v=19';
+import { TUNING } from './tuning.js?v=20';
+import { buildFloor } from './render/floor.js?v=20';
+import { fitCamera, screenToWorld } from './render/view.js?v=20';
+import * as worldsSim from './sim/worlds.js?v=20';
+import * as reshapeSim from './sim/reshape.js?v=20';
+import { Scenery } from './render/scenery.js?v=20';
+import { Transit } from './render/transit.js?v=20';
+import { Splats } from './render/splats.js?v=20';
+import { Actors } from './render/actors.js?v=20';
+import { GEL_TIME } from './render/gel.js?v=20';
+import { studioEnvironment } from './render/env.js?v=20';
+import { createWorld, step, api as simApi } from './sim/world.js?v=20';
+import { stage as stagePk } from './sim/pickups.js?v=20';
+import { Input } from './input.js?v=20';
+import { UI, t, timeText } from './ui.js?v=20';
+import { Sound } from './audio.js?v=20';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=20';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=20';
+import { Readout } from './readout.js?v=20';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -96,17 +97,17 @@ const screenAngle = () => {
   try { const a = screen.orientation?.angle ?? window.orientation; return typeof a === 'number' ? a : 0; } catch { return 0; }
 };
 function useArena(name) {
-  if (name === arenaName && viewWorld === 1) return;
+  if (name === arenaName && viewWorld === 1 && !boundsFloor) return;
   arenaName = name; arena = T.arena[name]; angle0 = screenAngle();
   useWorld(1, arena.hx, arena.hz);
 }
 // the floor of world n (sim/worlds.js), at its size: the view's half of a
 // world change. A world past the first is bigger than the screen, and the
 // camera follows (viewBox)
-let viewWorld = 1;
+let viewWorld = 1, boundsFloor = false;
 const FLOOR_STYLE = ['grid', 'concrete', 'sewer'];   // world n's floor (render/floor.js)
 function useWorld(n, hx, hz) {
-  viewWorld = n;
+  viewWorld = n; boundsFloor = false;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
   floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[n - 1] ?? 'grid' });
@@ -115,12 +116,34 @@ function useWorld(n, hx, hz) {
   camAt.set(0, 0, 0);
   resize();
 }
+// SURVIVAL's floor (sim/reshape.js): the grid built at its biggest, with
+// the walls wherever they are now (floor.js `bounds`), its light map as big
+let survivalMax = null;
+function useSurvival() {
+  survivalMax = reshapeSim.maxSize(arenaName);
+  const { hx, hz } = survivalMax;
+  viewWorld = 1; boundsFloor = true;
+  if (floor) { scene.remove(floor.group); floor.dispose(); }
+  actors.setArena(hx, hz);
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', bounds: true });
+  scene.add(floor.group);
+  scenery.build(1, hx, hz);
+  camAt.set(0, 0, 0);
+  resize();
+}
+// the walls as they are, where SURVIVAL's floor is bigger than them
+function arenaBox() {
+  if (!world || !boundsFloor) return floor.arena;
+  return new THREE.Box3(new THREE.Vector3(-world.hx, 0, -world.hz), new THREE.Vector3(world.hx, T.floor.railHeight, world.hz));
+}
+let fitHx = 0, fitHz = 0;   // the walls the camera was last fitted to
+
 // what the camera fits: the whole arena, or on a bigger world's floor, a
 // box the size of the run's own 1.x arena, which it then carries round
 // after the hero (camAt) — so the bodies are the size they were in world 1
 function viewBox() {
   const A = T.arena[arenaName];
-  if (!world || viewWorld === 1 || (world.hx <= A.hx && world.hz <= A.hz)) return null;
+  if (!world || (world.hx <= A.hx + 1e-6 && world.hz <= A.hz + 1e-6)) return null;
   return new THREE.Box3(new THREE.Vector3(-A.hx, 0, -A.hz), new THREE.Vector3(A.hx, T.floor.railHeight, A.hz));
 }
 
@@ -137,7 +160,8 @@ function resize() {
   // a turned arena takes the tilt of the screen it is now on: it lies along
   // that screen's long side, as that screen's own arena would
   following = viewBox();
-  fitCamera(camera, following ?? floor.arena, w / h, { ...T.camera, tiltDeg: T.arena[screenArena()].tiltDeg }, turn, { w, h });
+  fitCamera(camera, following ?? arenaBox(), w / h, { ...T.camera, tiltDeg: T.arena[screenArena()].tiltDeg }, turn, { w, h });
+  fitHx = world?.hx ?? 0; fitHz = world?.hz ?? 0;
   camRest.copy(camera.position);
 }
 let following = null;   // the box the camera carries when it follows; null when the whole arena is on screen
@@ -283,6 +307,7 @@ function start(m, { intro: asked = false } = {}) {
   const startWorld = Math.max(1, Math.min(3, Number(params.get('world')) || 1));
   world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, shape: arenaName, world: startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1 });
   if (world.world > 1) useWorld(world.world, world.hx, world.hz);
+  if (world.shapeT) useSurvival();
   splats.clear(); actors.reset(); trauma = 0; transit.reset(floor);
   acc = 0; pendingDash = false;
   sound.unlock();
@@ -323,10 +348,24 @@ function finish() {
 }
 
 let podDown = { tick: -1, text: '' };   // this step's pod knock-down, for the dash's banner
+// SURVIVAL's floor, each frame: the walls where the sim has them, the rail
+// on them, the warning while the next size is coming, and the camera refitted
+// while they move
+function survivalFrame() {
+  const S = world.shapeT, B = floor.bounds, R = T.survival.reshape;
+  B.cur.value.set(world.hx, world.hz);
+  if (S?.to && S.phase !== 'hold') B.next.value.set(S.to.hx, S.to.hz); else B.next.value.set(world.hx, world.hz);
+  B.warn.value = !S ? 0 : S.phase === 'warn' ? Math.min(1, S.t / 0.25) : S.phase === 'move' ? 1 - S.t / R.move : 0;
+  floor.border.scale.set(world.hx / survivalMax.hx, 1, world.hz / survivalMax.hz);
+  if (world.hx !== fitHx || world.hz !== fitHz) resize();
+}
+
 function onEvent(e) {
   if (e.type === 'dash') lastDash = e;
   if (e.type === 'worldIn') { useWorld(e.world, e.hx, e.hz); splats.clear(); }   // the next world's floor, under the falling droplet; the last one's puddles went down the drain with it
   if (e.type.startsWith('world')) transit.onEvent(e, floor, world);
+  if (e.type === 'reshape') shake(T.survival.reshape.shake);
+  if (e.type === 'reshaped') splats.prune(e.hx, e.hz);
   debug.counts[e.type] = (debug.counts[e.type] || 0) + 1;
   sound.event(e);
   input.feel?.(e);
@@ -397,9 +436,10 @@ const capture = { on: false, bot: false, t0: 0 };
 // ── the loop ───────────────────────────────────────────────────────
 const debug = {
   THREE, renderer, scene, camera, backend, input, ui, actors,
-  get arena() { return floor.arena; }, splats,
+  get arena() { return arenaBox(); }, splats,
   frames: 0, ready: false, counts: {},
   get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
+  floor: () => floor,
   get following() { return !!following; }, get viewWorld() { return viewWorld; }, get floorStyle() { return floor?.style; }, camAt, scenery, transit,
   arenaFor: (n, shape) => worldsSim.arenaFor(n, shape),
   // straight on to the next world, as if its boss had just been cleared
@@ -534,6 +574,7 @@ function frame(now, dtFixed) {
     ui.hud(world);
   } else { floor.setPlayer(0, 0); actors.light.clear(); }
   transit.frame(world, floor);
+  if (world && boundsFloor) survivalFrame();
   trauma = Math.max(0, trauma - T.shake.decay * dt);
   const m = trauma * trauma, A = T.shake.amp, F = T.shake.freq;
   follow(dt, world && state === 'play' ? acc / T.sim.dt : 1);

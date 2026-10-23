@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=19';
+import { TUNING } from './tuning.js?v=20';
 
 const A = TUNING.audio;
 
@@ -76,6 +76,9 @@ export class Sound {
       // a world change (sim/worlds.js): the floor goes down the plughole —
       // a long falling gurgle — and the droplet lands in the next world with
       // a plop, and a rising three-note for the new place
+      // SURVIVAL's floor (sim/reshape.js): three warning blips, then the slam
+      case 'reshapeWarn': [0, 0.55, 1.1, 1.65].forEach((d, i) => this._tone('square', i === 3 ? 1320 : 880, i === 3 ? 1320 : 880, 0.07, 0.07, d)); break;
+      case 'reshape': this._hiss(0.35, 0.3, 2400, 150, 1); this._tone('sine', 110, 38, 0.45, 0.3); break;
       case 'worldOut': this._hiss(2.4, 0.22, 1800, 90, 2); this._tone('sawtooth', 330, 38, 2.6, 0.1); this._tone('sine', 90, 30, 2.2, 0.16, 0.4); break;
       case 'worldLand':
         this._tone('sine', 640, 130, 0.2, 0.22); this._hiss(0.22, 0.14, 1400, 300);

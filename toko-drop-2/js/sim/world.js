@@ -14,16 +14,17 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=19';
-import { makeRng } from './rng.js?v=19';
-import { BEHAVIOUR } from './species/index.js?v=19';
-import { DIRECTORS } from './director/index.js?v=19';
-import * as fire from './fire.js?v=19';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=19';
-import { swarmForces, resolveCrowd } from './crowd.js?v=19';
-import { revengeColor } from './color.js?v=19';
-import * as pickups from './pickups.js?v=19';
-import * as worlds from './worlds.js?v=19';
+import { TUNING } from '../tuning.js?v=20';
+import { makeRng } from './rng.js?v=20';
+import { BEHAVIOUR } from './species/index.js?v=20';
+import { DIRECTORS } from './director/index.js?v=20';
+import * as fire from './fire.js?v=20';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=20';
+import { swarmForces, resolveCrowd } from './crowd.js?v=20';
+import { revengeColor } from './color.js?v=20';
+import * as pickups from './pickups.js?v=20';
+import * as worlds from './worlds.js?v=20';
+import * as reshape from './reshape.js?v=20';
 
 const T = TUNING;
 
@@ -51,6 +52,7 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
   w.dir = w.director.create(w, api);
   // a run started in a later world rolls in at that world's first wave
   if (world > 1 && worlds.on(w)) { w.dir.wave = (world - 1) * T.waves.rhythm.bossEvery; w.dir.gapT = 1e-9; }
+  if (reshape.on(w)) reshape.create(w);   // SURVIVAL starts small and changes size as you play
   return w;
 }
 
@@ -122,6 +124,7 @@ export function step(w, input) {
 
   if (w.trans) worlds.step(w, dt);   // between two worlds the run is held, and the hero is the transition's
   else {
+    if (w.shapeT) reshape.step(w, dt);
     w.director.step(w, dt, api);
     pickups.afterDirector(w, dt);
     heroStep(w, input, dt, api);

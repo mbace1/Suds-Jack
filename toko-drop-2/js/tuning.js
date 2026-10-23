@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=19';
-import WAVES from './tuning/waves.js?v=19';
-import PICKUPS from './tuning/pickups.js?v=19';
+import { SPECIES } from './tuning/species/index.js?v=20';
+import WAVES from './tuning/waves.js?v=20';
+import PICKUPS from './tuning/pickups.js?v=20';
 
 export const TUNING = {
   render: {
@@ -437,6 +437,20 @@ export const TUNING = {
 
   // SURVIVAL's director: pressure rises over `ramp` seconds and then holds.
   // 1.x pops bodies in on an ellipse at 0.85 of the arena.
+  // SURVIVAL's floor changes size as you play (sim/reshape.js; owner,
+  // 2026-10-23: "like Sektori"): it starts small; `first` s in and every
+  // `every` s after, the next size (fractions of the run's 1.x arena, x then
+  // z) is picked, the floor warns for `warn` s where it will change, and the
+  // walls slam there over `move` s. Past 1 the floor is bigger than the
+  // screen and the camera follows.
+  survival: {
+    reshape: {
+      on: true, first: 20, every: 30, warn: 2.2, move: 0.45, shake: 0.32,
+      start: [0.55, 0.6],
+      sizes: [[0.55, 0.6], [0.85, 0.7], [0.7, 1.0], [1.0, 1.0], [1.3, 0.8], [0.62, 0.62], [1.35, 1.25], [0.9, 1.25], [1.15, 0.6]],
+    },
+  },
+
   director: {
     firstSpawn: 0.6,
     ramp: 600,

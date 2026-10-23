@@ -6,7 +6,7 @@
 // When the pool is full, the one with the least life left makes room.
 import * as THREE from 'three/webgpu';
 import { attribute } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=19';
+import { TUNING } from '../tuning.js?v=20';
 
 const S = TUNING.splats;
 
@@ -41,6 +41,16 @@ export class Splats {
     Object.assign(p, { on: true, x, z, r, life: S.life, max: S.life, op: S.opacity, sq: 0, sqV: 0 });
     this._c.setHex(hex);
     this.color.setXYZ(i, this._c.r, this._c.g, this._c.b);
+  }
+
+  // SURVIVAL's floor shrank (sim/reshape.js): the puddles past its walls are
+  // over the void now, and go
+  prune(hx, hz) {
+    for (let i = 0; i < this.s.length; i++) {
+      const p = this.s[i];
+      if (p.on && (Math.abs(p.x) > hx + p.r * 0.5 || Math.abs(p.z) > hz + p.r * 0.5)) { p.on = false; this._hide(i); }
+    }
+    this._flush();
   }
 
   _hide(i) { this._m.makeScale(0, 0, 0); this.mesh.setMatrixAt(i, this._m); this.alpha.setX(i, 0); }

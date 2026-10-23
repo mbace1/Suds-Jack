@@ -21,12 +21,17 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=19';
-import { noise } from './scenery.js?v=19';
+import { GEL_TIME } from './gel.js?v=20';
+import { noise } from './scenery.js?v=20';
 
 // `light` (optional) is the arena's light map (render/light.js): its rgb is
-// light thrown on the floor, its alpha the shadow of what stands on it
-export function buildFloor(T, hx, hz, light, { style = 'grid' } = {}) {
+// light thrown on the floor, its alpha the shadow of what stands on it.
+// `bounds`: SURVIVAL's floor changes size (sim/reshape.js). It is built at
+// its biggest; `bounds.cur` (half sizes) is where the walls are now, and
+// the rest is the void. While `bounds.warn` is up the floor lights where it
+// is about to change, as Sektori's does: cyan where floor is coming, red
+// where it is going.
+export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds = false } = {}) {
   const F = T.floor, LF = T.light.arena.floor;
   const group = new THREE.Group();
 
@@ -44,6 +49,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid' } = {}) {
   const swirl = uniform(0), swirlAt = uniform(new THREE.Vector2(0, 0)), swirlR = uniform(8), hole = uniform(0);
   const holeRim = uniform(new THREE.Color(style === 'grid' ? 0x2fe0ff : style === 'concrete' ? 0x9fd6ff : 0x6fffe0));
   const W = T.worlds.floor;
+  const bounds = hasBounds ? { cur: uniform(new THREE.Vector2(hx, hz)), next: uniform(new THREE.Vector2(hx, hz)), warn: uniform(0) } : null;
+  const comeCol = uniform(new THREE.Color(0x40e8ff)), goCol = uniform(new THREE.Color(0xff3040));
 
   // world (x, z) from floor uv and back: v runs from z = +hz to -hz
   const toWorld = (p) => vec2(p.x.sub(0.5).mul(hx * 2), float(hz).sub(p.y.mul(hz * 2)));
@@ -155,6 +162,18 @@ export function buildFloor(T, hx, hz, light, { style = 'grid' } = {}) {
     const inHole = float(1).sub(smoothstep(hole.mul(0.82), hole, r));
     const lip = float(1).sub(smoothstep(0, max(hole.mul(0.25), 0.05), abs(r.sub(hole)))).mul(select(hole.greaterThan(0.01), float(1), float(0)));
     out = mix(out, vec3(0.004, 0.006, 0.012), inHole).add(holeRim.mul(lip).mul(swirl).mul(0.9));
+    if (bounds) {
+      // inside the walls as they are now, and as they will be
+      const ax = abs(w0.x), az = abs(w0.y), e = 0.05;
+      const inCur = float(1).sub(smoothstep(bounds.cur.x.sub(e), bounds.cur.x, ax)).mul(float(1).sub(smoothstep(bounds.cur.y.sub(e), bounds.cur.y, az)));
+      const inNext = float(1).sub(smoothstep(bounds.next.x.sub(e), bounds.next.x, ax)).mul(float(1).sub(smoothstep(bounds.next.y.sub(e), bounds.next.y, az)));
+      const pulse = float(0.55).add(sin(GEL_TIME.mul(16)).mul(0.45)).mul(bounds.warn);
+      const coming = inNext.mul(float(1).sub(inCur)).mul(pulse), going = inCur.mul(float(1).sub(inNext)).mul(pulse);
+      // the floor that is coming shows faintly, its grid lit; the floor that
+      // is going burns red under its grid
+      const lit = mix(voidCol, out.mul(0.6), coming.mul(0.7)).add(comeCol.mul(S.mask.mul(0.9).add(0.08)).mul(coming));
+      out = mix(lit, out.add(goCol.mul(S.mask.mul(0.8).add(0.12)).mul(going)), inCur);
+    }
     // the reveal, in world units
     const rd = length(w0.sub(revealAt));
     const inside = float(1).sub(smoothstep(revealR.sub(1.1), revealR, rd));
@@ -181,7 +200,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid' } = {}) {
   const arena = new THREE.Box3(new THREE.Vector3(-hx, 0, -hz), new THREE.Vector3(hx, F.railHeight, hz));
 
   return {
-    group, arena, border, style,
+    group, arena, border, style, bounds,
     reveal: { at: revealAt, r: revealR, front: revealFront, void: voidCol },
     swirl: { k: swirl, at: swirlAt, r: swirlR, hole },
     // the light pool follows the hero (world x, z → floor uv)
