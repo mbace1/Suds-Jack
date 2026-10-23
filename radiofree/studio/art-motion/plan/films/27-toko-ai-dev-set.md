@@ -148,3 +148,27 @@ to be added as `?clean=1`), with the GLH's own sound bed. That waits until GLH's
 - **Toko's register.** The captions are plain and the card is Toko's all-caps voice. The owner approves the card
   wording; it is the one place the set has an opinion.
 - **Finnish and Japanese** are drafts until a native read, as in every film.
+
+## Film 1, built (v1, 23 Oct)
+
+- **Files:** `clay/loop/` (`film.html`, `film.js`, `copy.json`, `score.py`). It reuses Welcome Home's kit through `../welcome/lib/`, the
+  way Backup Mode does.
+- **Preview:** `previews/23-10-Toko-One-More-Loop-en.mp4`, 25.7 s. Toko's rule applies: no sign-off and no bug.
+- **Build:** pipeline PASSED, 96 pass, 4 warn, 0 fail (fi and ja are unread; two Japanese sidecars run 0.1–0.5 s short),
+  −13.7 LUFS, −2.8 dBTP.
+- **Look, iterated four times on stills before the render:**
+  1. The phone was placed in the wrong frame: it sat at lap height, and the over-the-shoulder shot looked at the gravel.
+  2. A true point-of-view shot is impossible here, because the face is only ~10 cm from the phone, so the camera ended up
+     inside the mask.
+  3. The over-the-shoulder camera is therefore set 11 cm to his right of the phone's sight line, which is what clears the
+     mask. The hood's strings are hidden for that shot only.
+  4. The phone light was moved toward the face so it lights the mask and not the gloves round the screen.
+  5. The lamp post was moved into frame 0.
+  6. The phone's clock is drawn at 40 px so the night reads in three jumps.
+- **Known, for v2:**
+  - In round one of shot 2 the "One more change?" chip sits at the very bottom edge of the frame.
+  - In round three the phone's clock rides up under the caption as he taps.
+  - The fix for both is aiming the over-the-shoulder camera from the phone's centre rather than above it.
+- **Score:** lo-fi night at 84 BPM in F (`LOFI` in `score.py`). The phone's chiptune and chimes are the only electronic
+  sounds. Crickets until dawn, then birds. The drones are faint filtered whirs. The card opens on `logo_toko`, the blink,
+  over a held Fmaj9.
