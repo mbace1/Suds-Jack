@@ -247,7 +247,13 @@
     for (let i = 0; i <= 16; i++) c.lineTo((w * i) / 16, (i % 2) * 7);
     c.lineTo(w, h); for (let i = 16; i >= 0; i--) c.lineTo((w * i) / 16, h - (i % 2) * 7); c.closePath(); c.fill();
     c.shadowColor = 'transparent';
-    c.fillStyle = C.ink; c.textAlign = 'left'; fitFont(c, label, 30, w - 52, `$px "ArchivoBlack-400", ${JP}`); c.fillText(label, 26, 46);
+    // the label: "Doodle" as its own wordmark, in the brand's colours (the parody's whole point), the rest in ink
+    c.fillStyle = C.ink; c.textAlign = 'left'; fitFont(c, label, 30, w - 52, `$px "ArchivoBlack-400", ${JP}`);
+    const mD = /^doodle/i.exec(label);
+    if (mD) {
+      const fs = parseFloat(c.font) * 1.3, rest = label.slice(6); c.save(); c.font = fs + 'px "Poppins-600"'; const lw = c.measureText('Doodle').width; c.restore();
+      BDF.doodleLogo(c, 26, 48, fs); c.fillText(rest, 26 + lw + (rest.startsWith(' ') ? 0 : 2), 46);
+    } else c.fillText(label, 26, 46);
     fitFont(c, value, 138, w - 52, `400 $px "Anton-400", ${JP}`); c.fillText(value, 24, 184);
     c.restore();
   }
@@ -366,7 +372,7 @@
   const EMAIL = () => sprite('ham_email', 470, 300, 235, 150, (g) => {
     g.fillStyle = '#fbfaf6'; g.fillRect(-235, -150, 470, 300);
     g.fillStyle = '#e8e4da'; g.fillRect(-235, -150, 470, 54);
-    BDF.doodleLogo(g, -212, -112, 30);
+    BDF.doodleLogo(g, -214, -110, 40);
     g.fillStyle = C.ink; g.font = `24px "ArchivoBlack-400", ${JP}`; g.textAlign = 'left'; g.fillText(ui('emailHead', 'EMAIL'), 60, -114);
     g.fillStyle = 'rgba(21,18,15,.22)'; for (let i = 0; i < 6; i++) g.fillRect(-206, -60 + i * 30, 400 - (i % 3) * 70, 9);
   }, 8);
