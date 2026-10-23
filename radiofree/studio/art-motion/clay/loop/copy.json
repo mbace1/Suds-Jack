@@ -1,0 +1,149 @@
+{
+  "film": "one-more-loop",
+  "cut": "v1 (owner, 23 Oct: 'Clay polished and planned well'; the park and the drones are the owner's own idea) — Toko set 1/4: the prototype took an hour, the loop took the night",
+  "series": "toko",
+  "captionSize": "house",
+  "argument": "With an AI, a working game prototype takes an hour, but the AI always offers one more change, and that loop can eat the whole night; only the person can say enough.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hour",
+      "role": "setup",
+      "at": "s1+0.8",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "Toko asked an AI / for a game prototype. / It took an [hour].",
+        "fi": "Toko pyysi tekoälyltä / peliprototyypin. / Siihen meni [tunti].",
+        "ja": "Tokoは AIに / ゲームの 試作を 頼んだ。 / かかったのは [1時間]。"
+      },
+      "source": "Observed, not reported: the film shows one way of working, Toko's own. No product is named or shown; the chat on the phone is drawn for the film."
+    },
+    {
+      "id": "more",
+      "role": "evidence",
+      "at": "s2+0.4",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Then: one more change. / And one [more].",
+        "fi": "Sitten: vielä yksi muutos. / Ja vielä [yksi].",
+        "ja": "それから もう1つ 変更。 / さらに [もう1つ]。"
+      },
+      "source": "The film's own picture: the phone's clock jumps 23:40, 01:55, 03:10 while he taps yes."
+    },
+    {
+      "id": "offers",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "It always offers / one more [change].",
+        "fi": "Se tarjoaa aina / vielä yhden [muutoksen].",
+        "ja": "AIは いつも / [もう1つ] 提案してくる。"
+      },
+      "source": "The generic shape of a chat assistant's reply, which commonly ends by offering a further iteration; written for the film and attributed to no product."
+    },
+    {
+      "id": "night",
+      "role": "punchline",
+      "at": "s4+0.5",
+      "until": "s5-0.2",
+      "hold": "s5",
+      "text": {
+        "en": "The prototype took an hour. / The loop took the [night].",
+        "fi": "Prototyyppiin meni tunti. / Kierteeseen koko [yö].",
+        "ja": "試作は 1時間。 / ループは [ひと晩]。"
+      },
+      "source": "The station's line, over the dawn: the same bench, the phone still asking."
+    }
+  ],
+  "ui": {
+    "card1": {
+      "en": "THE MACHINE NEVER SAYS ENOUGH.",
+      "fi": "KONE EI KOSKAAN SANO: RIITTÄÄ.",
+      "ja": "機械は もういいとは 言わない。"
+    },
+    "card2": {
+      "en": "YOU DO.",
+      "fi": "SINÄ SANOT.",
+      "ja": "言うのは あなた。"
+    },
+    "name": {
+      "en": "TOKO MIDORI · THE GAME CREATOR",
+      "fi": "TOKO MIDORI · PELINTEKIJÄ",
+      "ja": "美鳥十湖 · ゲームクリエイター"
+    },
+    "ask": {
+      "en": "Make me a game: a drop that dodges.",
+      "fi": "Tee minulle peli: väistelevä pisara.",
+      "ja": "ゲームを作って：よける しずく。"
+    },
+    "done": {
+      "en": "Here's your prototype.",
+      "fi": "Tässä prototyyppisi.",
+      "ja": "試作が できました。"
+    },
+    "more": {
+      "en": "One more change?",
+      "fi": "Vielä yksi muutos?",
+      "ja": "もう1つ 変更しますか？"
+    },
+    "yes": {
+      "en": "Yes",
+      "fi": "Kyllä",
+      "ja": "はい"
+    },
+    "no": {
+      "en": "No",
+      "fi": "Ei",
+      "ja": "いいえ"
+    },
+    "c1": {
+      "en": "Faster.",
+      "fi": "Nopeammaksi.",
+      "ja": "もっと速く。"
+    },
+    "c2": {
+      "en": "More fun.",
+      "fi": "Hauskemmaksi.",
+      "ja": "もっと楽しく。"
+    },
+    "c3": {
+      "en": "Make it feel right.",
+      "fi": "Tee siitä oikean tuntuinen.",
+      "ja": "しっくり くるように。"
+    },
+    "t0": { "en": "22:10", "fi": "22.10", "ja": "22:10" },
+    "t1": { "en": "23:40", "fi": "23.40", "ja": "23:40" },
+    "t2": { "en": "01:55", "fi": "1.55", "ja": "1:55" },
+    "t3": { "en": "03:10", "fi": "3.10", "ja": "3:10" },
+    "t4": { "en": "06:20", "fi": "6.20", "ja": "6:20" }
+  },
+  "props": {
+    "chat": {
+      "en": "a generic chat on Toko's phone: his requests, the AI's replies, each ending One more change?",
+      "why": "no product's interface, logo or name; translated in ui so the phone speaks the master's language"
+    },
+    "drones": {
+      "en": "(small dark drones crossing high over the park, a red light blinking; no words)",
+      "why": "owner, 23 Oct: atmosphere only — the same AI wave seen from above; they do nothing and belong to no one"
+    }
+  },
+  "post": {
+    "en": "The prototype took an hour. The loop took the night. The machine never says enough. You do. #gamedev #indiedev #AI #claymation",
+    "fi": "Prototyyppiin meni tunti. Kierteeseen koko yö. Kone ei koskaan sano: riittää. Sinä sanot. #pelinkehitys #indiedev #tekoäly",
+    "ja": "試作は1時間。ループはひと晩。機械はもういいとは言わない。言うのはあなた。#ゲーム開発 #インディーゲーム #AI"
+  }
+}
