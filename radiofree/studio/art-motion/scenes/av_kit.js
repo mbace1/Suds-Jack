@@ -461,4 +461,227 @@
     ], cam);
     box(c);
   } };
+
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  // THE VIRAL CUT (papercut/approved-vendor-viral; plan/films/20b-approved-vendor-viral.md): five shots at 124 BPM, the
+  // avv_* scenes below. Nothing above this line changes, so the v1 draft renders exactly as it did. Frame 0 is the hook:
+  // the SALE banner, big and cheerful, its paper sun turning, the dateline already up; at 0.45 s the sun opens into an
+  // eye and on "spyware" it looks straight at us. Then the laptop (the cursor never moved), the escalation (the camera
+  // pulls back from that laptop to a newsroom of 45 and on "targeted" their suns open one after another, until every
+  // eye looks at us), the list riffling six years, and the stamp. After the stamp the picture whips back to the banner
+  // and the eye shuts into the sun on frame 0's own framing, so the last frame hands back into the first.
+  const VAD = { x: 540, y: 1070, s: 3.0 };              // the hook's ad, centred (v1's AD2 sat at x 650, its edge on the platforms' right rail)
+  const V0 = { x: 0, y: 0, z: 1.0, fx: 540, fy: 1000 };  // frame 0's camera; avv_stamp ends on it
+  const VSPIN = 0.6;                                     // the sun's turn: lt·VSPIN in the hook, (lt − dd)·VSPIN at the end, so the loop does not jump
+  const VCUR = { x: 104, y: 640, s: 1.5 };               // the parked cursor, up by the headline and well away from the ad
+  const kick = (lt, t, a) => (lt >= t ? a * Math.exp(-(lt - t) * 7) * (1 - Math.exp(-(lt - t) * 60)) : 0);
+  /** the tag at a given alpha: the hook's is up from the very first frame (it has no time to fade one in) */
+  function tagAt(c, text, a, x = 110) {
+    if (a <= 0) return; const y = R.SAFE_B - 66;
+    c.save(); c.globalAlpha = a; c.font = `32px "ArchivoBlack-400", ${JP}`; const w = c.measureText(text).width + 44;
+    c.shadowColor = 'rgba(4,6,12,.6)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(x, y, w, 66, 8); c.fill(); c.shadowColor = 'transparent';
+    c.fillStyle = K.ink; c.fillText(text, x + 22, y + 45); c.restore();
+  }
+  /** the page behind the hook's banner: v1's close-up page with its article column narrowed, so the ad can sit centred */
+  const pageV = () => sheet('avv_page', (g) => {
+    g.fillStyle = C.page; g.fillRect(-90, -90, W + 180, H + 180);
+    const r = U.rng(31);
+    g.fillStyle = C.head; g.fillRect(-60, 470, 230, 44); g.fillRect(-60, 530, 170, 44);
+    g.fillStyle = C.text; for (let i = 0; i < 26; i++) { if (i === 9 || i === 18) continue; const y = 640 + i * 40; g.fillRect(-60, y, i === 8 || i === 17 ? 100 : 170 + r() * 40, 16); }
+    g.strokeStyle = C.pageD; g.lineWidth = 4; g.beginPath(); g.moveTo(214, -90); g.lineTo(214, H + 90); g.stroke();
+    g.fillStyle = C.bezel; g.fillRect(-90, 1700, W + 180, 400);
+    g.fillStyle = C.shellD; g.fillRect(-90, 1790, W + 180, 300);
+  }, 14);
+  /** the hook's picture: the page, the dim round an open eye, the ad (sun or eye), the parked cursor. avv_hook draws it
+   *  and so does the end of avv_stamp, with the same camera, which is what makes the loop seamless */
+  function hookFrame(c, cam, { o = 0, look = [0, 0], blink = 0, spin = 0, bounce = 0, red = 0 } = {}) {
+    stack(c, [
+      { sh: pageV(), d: 0.1, lift: 0.2 },
+      { d: 0.1, fn: (g) => { if (o <= 0) return; const v = g.createRadialGradient(VAD.x, VAD.y - 140, 240, VAD.x, VAD.y - 140, 1100); v.addColorStop(0, 'rgba(8,10,14,0)'); v.addColorStop(1, `rgba(8,10,14,${0.78 * clamp(o, 0, 1)})`); g.fillStyle = v; g.fillRect(-90, -90, W + 180, H + 180); } },
+      { d: 0.3, fn: (g, ox, oy) => {
+        ad(g, VAD.x + ox, VAD.y + oy, VAD.s * (1 + bounce), { o, look, blink, spin, lift: 1.4 });
+        if (o > 0) glow(g, VAD.x + ox, VAD.y + oy + SUN.y * VAD.s, 300 * clamp(o, 0, 1), 'rgba(216,64,47,', (0.12 + red) * clamp(o, 0, 1));
+        put(g, cursor(), VCUR.x + ox, VCUR.y + oy, { lift: 0.6, sc: VCUR.s });
+      } },
+    ], cam);
+  }
+
+  // ═════════ V1 · avv_hook: frame 0 is the banner, cheerful; at `open` the sun opens into an eye; on "spyware" it looks at us ═════════
+  SCENES.avv_hook = { draw(c, lt) {
+    const id = 'avv_hook', dd = dur(id), tH = at(id, 'hit', 0.035), tO = at(id, 'open', 0.45), tP = at(id, 'spy', 0.63);
+    const o = ease.out((lt - tO) / 0.3), toUs = ease.io((lt - tP) / 0.14);
+    const look = [lerp(-0.85, 0, toUs), lerp(-0.4, 0, toUs)];                // up at the cursor as it opens, then at us
+    const blink = Math.max(0, 1 - Math.abs(lt - (tP + 1.7)) / 0.09);
+    const bounce = lt >= tH ? 0.05 * Math.exp(-(lt - tH) * 6) * Math.sin((lt - tH) * 18) : 0;   // the cheerful bounce on the hit
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: V0.z * (1 + kick(lt, tH, 0.06) + kick(lt, tO, 0.15) + kick(lt, tP, 0.12)) * lerp(1, 1.25, ease.io(lt / dd)), fx: V0.fx, fy: V0.fy };
+    hookFrame(c, cam, { o, look, blink, spin: lt * VSPIN * (1 - o), bounce, red: lt >= tP ? 0.14 * Math.exp(-(lt - tP) * 3) : 0 });
+    tagAt(c, ui('dateline', 'CITIZEN LAB · 15.10.2026'), clamp((dd - 0.6 - lt) / 0.3, 0, 1));
+    box(c);
+  } };
+
+  /** a red marker ring, drawn on as k goes 0 → 1: a little more than one turn, opening as it goes, as a hand draws one */
+  function markerRing(g, x, y, rx, ry, k) {
+    if (k <= 0) return; const N = 72, p = new Path2D();
+    for (let i = 0; i <= N * clamp(k, 0, 1); i++) { const t = i / N, a = -2.3 + t * 1.12 * TAU, gr = (1 + 0.1 * t) * (1 + Math.sin(t * 9 + 1) * 0.02); i ? p.lineTo(x + Math.cos(a) * rx * gr, y + Math.sin(a) * ry * gr) : p.moveTo(x + Math.cos(a) * rx * gr, y + Math.sin(a) * ry * gr); }
+    for (const [dx, dy, col, w] of [[3, 5, 'rgba(0,0,0,.28)', 10], [0, 0, C.red, 9]]) { g.save(); g.translate(dx, dy); g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(p); g.restore(); }
+  }
+
+  // ═════════ V2 · avv_noclick: the laptop, the eye open in its corner; on "No click" the parked cursor is ringed ═════════
+  SCENES.avv_noclick = { draw(c, lt) {
+    const id = 'avv_noclick', dd = dur(id), tR = at(id, 'ring', 0.25), k = ease.io(lt / dd);
+    const cx = SC.x0 + 300 + 20, cy = SC.y0 + 330 + 30;                      // the middle of v1's parked cursor
+    const atCur = ease.io((lt - tR) / 0.15) * (1 - ease.io((lt - tR - 1.2) / 0.25));   // the eye looks down at it, then back at us
+    const look = [lerp(Math.sin(lt * 0.9) * 0.08, -1, atCur), lerp(0, 0.45, atCur)];
+    const blink = Math.max(0, 1 - Math.abs(lt - (tR + 2.2)) / 0.09);
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: lerp(1.9, 1.3, k) + kick(lt, tR, 0.12), fx: lerp(640, 600, k), fy: lerp(1060, 1080, k) };
+    stack(c, [
+      { sh: room(), d: 0.04, lift: 0 },
+      { fn: (g, ox, oy) => colleague(g, lt, ox, oy), d: 0.08 },
+      { sh: desk(), d: 0.2, lift: 0.4 },
+      { d: 0.3, fn: (g, ox, oy) => {
+        laptop(g, lt, ox, oy, 0, 0);
+        g.save(); g.beginPath(); g.rect(SC.x0 + ox, SC.y0 + oy, SC.x1 - SC.x0, SC.y1 - SC.y0); g.clip();
+        ad(g, AD1.x + ox, AD1.y + oy, AD1.s, { o: 1, look, blink, lift: 0.5 });
+        glow(g, AD1.x + ox, AD1.y + oy + SUN.y * AD1.s, 150, 'rgba(216,64,47,', 0.12);
+        if (lt >= tR && lt < tR + 0.4) { g.fillStyle = `rgba(216,64,47,${0.14 * (1 - (lt - tR) / 0.4)})`; g.fillRect(SC.x0 + ox, SC.y0 + oy, SC.x1 - SC.x0, SC.y1 - SC.y0); }
+        g.restore();
+        markerRing(g, cx + ox, cy + oy, 74, 88, ease.out((lt - tR) / 0.3));
+        const t1 = Math.abs(Math.sin(lt * 9)) * 6, t2 = Math.abs(Math.sin(lt * 9 + 1.7)) * 6;   // still typing: nobody clicked anything
+        hand(g, 360 + ox, 1452 + oy - t1, 0.82, 0.32);
+        hand(g, 720 + ox, 1452 + oy - t2, 0.82, -0.32);
+        glow(g, 540 + ox, 1330 + oy, 520, 'rgba(190,215,255,', 0.1);
+      } },
+    ], cam);
+    tag(c, ui('room', 'A NEWSROOM · NIGHT'), lt, dd);
+    box(c);
+  } };
+
+  // ── the newsroom of 45: six rows of desks, one laptop for each targeted device, each with the same banner ─────────
+  const ML = 2;                                           // the mini laptop is drawn at twice its size, for the pull-back
+  const miniLaptop = () => sprite('avv_mini', 280 * ML, 210 * ML, 140 * ML, 200 * ML, (g) => {
+    g.scale(ML, ML);
+    g.fillStyle = C.shellD; g.beginPath(); g.roundRect(-110, -192, 220, 152, 10); g.fill();
+    g.fillStyle = C.bezel; g.beginPath(); g.roundRect(-104, -186, 208, 140, 7); g.fill();
+    g.fillStyle = C.page; g.fillRect(-98, -180, 196, 128);
+    g.fillStyle = C.chrome; g.fillRect(-98, -180, 196, 10);
+    g.fillStyle = C.head; g.fillRect(-90, -162, 80, 7); g.fillRect(-90, -151, 60, 7);
+    g.fillStyle = C.text; for (let i = 0; i < 6; i++) g.fillRect(-90, -134 + i * 12, i === 5 ? 40 : 76, 4);
+    g.strokeStyle = C.pageD; g.lineWidth = 1.5; g.beginPath(); g.moveTo(12, -170); g.lineTo(12, -56); g.stroke();
+    g.fillStyle = C.shellD; g.beginPath(); g.moveTo(-112, -40); g.lineTo(112, -40); g.lineTo(132, 0); g.lineTo(-132, 0); g.closePath(); g.fill();
+    g.fillStyle = C.shell; g.beginPath(); g.moveTo(-110, -40); g.lineTo(110, -40); g.lineTo(128, -4); g.lineTo(-128, -4); g.closePath(); g.fill();
+    g.fillStyle = C.kb; for (let r = 0; r < 3; r++) g.fillRect(-96 - r * 5, -34 + r * 9, 192 + r * 10, 6);
+  }, 5);
+  const MAD = { x: 54, y: -116, s: 0.36 };                 // where the banner sits on a mini laptop's screen
+  // [count, scale, y of the desk line]: 12 + 10 + 8 + 7 + 5 + 3 = 45, every right edge left of x 905 (the platforms' rail)
+  const NEWS = [[12, 0.24, 800], [10, 0.30, 905], [8, 0.38, 1030], [7, 0.48, 1175], [5, 0.62, 1335], [3, 0.82, 1505]].flatMap(([n, s, y], ri) => {
+    const hs = 420 - 110 * s; return Array.from({ length: n }, (_, i) => ({ x: 480 - hs + (2 * hs * i) / (n - 1), y, s, ri, i }));
+  });
+  const HERO = NEWS.findIndex((l) => l.ri === 5 && l.i === 1);   // the front row's middle laptop: shot 2's, already open
+  // the order the others open in (seeded), and when: tOpen + 1.25·((k + 1)/44)^0.55, faster and faster (score.py mirrors it)
+  const ORDER = (() => { const r = U.rng(45), ids = NEWS.map((_, i) => i).filter((i) => i !== HERO); for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; } const at = {}; ids.forEach((id, k) => { at[id] = 1.25 * Math.pow((k + 1) / ids.length, 0.55); }); return at; })();
+  const newsFloor = () => sheet('avv_floor', (g) => {
+    g.fillStyle = '#0d1219'; g.fillRect(-90, 770, W + 180, H);
+    for (const [s, y] of [[0.24, 800], [0.30, 905], [0.38, 1030], [0.48, 1175], [0.62, 1335], [0.82, 1505]]) {
+      g.fillStyle = C.desk; g.fillRect(-90, y - 70 * s, W + 180, 82 * s);
+      g.fillStyle = C.deskL; g.fillRect(-90, y - 70 * s, W + 180, 4 * s + 1);
+      g.fillStyle = C.deskD; g.fillRect(-90, y + 12 * s, W + 180, 50 * s);
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(-90, y + 62 * s, W + 180, 30 * s);
+    }
+    // a column on the right, in front of the desks: the rows stop at it, clear of the platforms' right rail
+    g.fillStyle = '#0a0e13'; g.fillRect(918, -90, W, H + 180);
+    g.fillStyle = '#18212c'; g.fillRect(918, -90, 10, H + 180);
+    g.fillStyle = 'rgba(255,217,138,.06)'; g.fillRect(928, 700, 60, 900);
+  }, 12);
+
+  // ═════════ V3 · avv_count: the escalation. Pull back from that laptop to 45; on "targeted" their suns open, then all stare ═════════
+  SCENES.avv_count = { draw(c, lt) {
+    const id = 'avv_count', dd = dur(id), tP = at(id, 'pull', 0.25), tO = at(id, 'open', 1.51), tS = at(id, 'stare', 2.95);
+    const kP = ease.io((lt - tP) / 1.3), hero = NEWS[HERO], f = lt - tS;
+    const cam = { x: Math.sin(lt * 0.3) * 5 * kP, y: 0, z: lerp(4.2, 1.0, kP) + kick(lt, tO, 0.1) + kick(lt, tS, 0.3), fx: lerp(hero.x, 540, kP), fy: lerp(hero.y - 120, 1000, kP) };
+    const stare = ease.io(f / 0.12);
+    stack(c, [
+      { sh: room(), d: 0.12, lift: 0 },
+      { sh: newsFloor(), d: 0.3, lift: 0.3 },
+      { d: 0.3, fn: (g, ox, oy) => {
+        NEWS.forEach((l, i) => {
+          const x = l.x + ox, y = l.y + oy, s = l.s;
+          const o = i === HERO ? 1 : ease.back((lt - tO - ORDER[i]) / 0.16);
+          const roam = [Math.sin(lt * 1.3 + i * 2.1) * 0.8, Math.cos(lt * 0.9 + i * 1.7) * 0.4];
+          glow(g, x, y - 115 * s, 170 * s, f >= 0 ? 'rgba(216,64,47,' : 'rgba(190,215,255,', f >= 0 ? 0.2 * (0.6 + 0.4 * Math.cos(f * 7)) : 0.1);
+          put(g, miniLaptop(), x, y, { sc: s / ML, lift: 0.5 });
+          ad(g, x + MAD.x * s, y + MAD.y * s, MAD.s * s, { o, look: [lerp(roam[0], 0, stare), lerp(roam[1], 0, stare)], spin: lt * VSPIN * (1 - clamp(o, 0, 1)), lift: 0.25 });
+        });
+      } },
+    ], cam);
+    if (f >= 0 && f < 0.35) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(216,64,47,${0.18 * (1 - f / 0.35)})`; c.fillRect(0, 0, W, H); c.restore(); }
+    tag(c, ui('count', 'AT LEAST 45 DEVICES · 2024–25'), lt, dd);
+    box(c);
+  } };
+
+  // ═════════ V4 · avv_list: v1's vendor list on this cut's cues; the sheets riffle 2020 → 2026 and land on "six years" ═════════
+  const CBX = 524;                                        // the board 16 px left of v1's: its right edge was on the platforms' rail
+  SCENES.avv_list = { draw(c, lt) {
+    const id = 'avv_list', dd = dur(id), tF = at(id, 'flip', 0.25), tN = at(id, 'six', 1.53), F = flips(tF, tN);
+    let top = 0, flipK = 0;
+    F.ts.forEach((t, i) => { if (lt >= t + F.fd) top = i + 1; else if (lt >= t) { top = i; flipK = (lt - t) / F.fd; } });
+    const jolt = lt > tN ? 10 * Math.exp(-(lt - tN) * 7) * Math.sin((lt - tN) * 20) : 0;
+    const liveK = clamp((lt - 0.15) / 0.5, 0, 1);
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tN], { kick: 0.04 }) * lerp(1.0, 1.06, ease.io(lt / dd)), fx: 540, fy: 1060 };
+    stack(c, [
+      { sh: lectern(), d: 0.05, lift: 0 },
+      { d: 0.3, fn: (g, ox, oy) => clipboard(g, CBX + ox, CB.y + oy + 40 * (1 - ease.out(lt / 0.4)), -0.025 + Math.sin(lt * 0.5) * 0.004, { top, flipK, liveK, jolt }) },
+    ], cam);
+    tag(c, ui('list', 'IAB EUROPE · GLOBAL VENDOR LIST'), lt, dd);
+    box(c);
+  } };
+
+  // ═════════ V5 · avv_stamp: SUSPENDED on "October"; then a whip back to the banner, whose eye shuts into the sun (frame 0) ═════════
+  /** v1's stamp on this cut's cues, the board at CBX, and the stamp kept above the rail: it hovers and winds up higher */
+  function stampFrame(c, lt, dd, tL, tS) {
+    const rot = -0.025, bx = CBX, by = CB.y - 40;
+    const jolt = lt > tS ? 12 * Math.exp(-(lt - tS) * 8) * Math.sin((lt - tS) * 24) : 0;
+    const [rx, ry] = keyRowAt(bx, by, rot);
+    const hover = [rx + 200, ry - 280], wind = [rx + 170, ry - 380], down = [rx + 10, ry + 8], away = [rx + 760, ry - 520];
+    let p = hover, sR = 0.18;
+    if (lt < tL) p = [hover[0], hover[1] + Math.sin(lt * 2.2) * 10];
+    else if (lt < tS - 0.12) { const k = ease.out((lt - tL) / Math.max(0.1, tS - 0.12 - tL)); p = [lerp(hover[0], wind[0], k), lerp(hover[1], wind[1], k)]; sR = lerp(0.18, 0.28, k); }
+    else if (lt < tS) { const k = ease.in((lt - (tS - 0.12)) / 0.12); p = [lerp(wind[0], down[0], k), lerp(wind[1], down[1], k)]; sR = lerp(0.28, -0.1, k); }
+    else if (lt < tS + 0.42) { p = down; sR = -0.1; }
+    else { const k = ease.io((lt - tS - 0.42) / 0.5); p = [lerp(down[0], away[0], k), lerp(down[1], away[1], k)]; sR = lerp(-0.1, 0.3, k); }
+    const cam = { x: Math.sin(lt * 0.3) * 5, y: 0, z: punch(lt, [tS], { kick: 0.06, open: 0.02 }) * lerp(1.18, 1.26, ease.io(lt / dd)), fx: 560, fy: ry };
+    stack(c, [
+      { sh: lectern(), d: 0.05, lift: 0 },
+      { d: 0.3, fn: (g, ox, oy) => {
+        clipboard(g, bx + ox, by + oy, rot, { top: YEARS.length - 1, jolt });
+        if (lt >= tS) { const k = clamp((lt - tS) / 0.05, 0, 1); g.save(); g.globalAlpha = 0.92 * k; g.translate(rx + 10 + ox, ry + 8 + oy + jolt); g.rotate(-0.1); g.drawImage(inkSp().c, -inkSp().ox, -inkSp().oy); g.restore(); }
+        if (lt > tS && lt < tS + 0.5) { const k = (lt - tS) / 0.5; g.fillStyle = `rgba(243,234,212,${0.6 * (1 - k)})`; for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU, d = 170 + 120 * ease.out(k); g.beginPath(); g.arc(rx + 10 + ox + Math.cos(a) * d * 1.4, ry + 8 + oy + Math.sin(a) * d * 0.5, 6 * (1 - k) + 2, 0, TAU); g.fill(); } }
+      } },
+      { d: 0.34, fn: (g, ox, oy) => {
+        const near = lt >= tS - 0.12 && lt < tS + 0.42;
+        put(g, stampSp(), p[0] + ox, p[1] + oy, { rot: sR, sc: 0.96, lift: near ? 0.4 : 2.4 });
+        const nk = 220 * 0.96; fist(g, p[0] + ox + Math.sin(sR) * nk, p[1] + oy - Math.cos(sR) * nk, 1.0, 4.1 + sR, { sleeve: K.green, cuff: K.red, len: 1600 });
+      } },
+    ], cam);
+  }
+  /** the whip: paper-coloured and dark streaks across the frame, strongest mid-move */
+  function streaks(c, e) {
+    const a = Math.sin(Math.PI * clamp(e, 0, 1)); if (a <= 0.01) return; const r = U.rng(77);
+    c.save(); c.globalAlpha = a;
+    for (let i = 0; i < 28; i++) { const y = 60 + r() * (H - 120), w = 260 + r() * 700, h = 2 + r() * 7, x = (r() * 1.6 - 0.3) * W - e * 500; c.fillStyle = r() < 0.5 ? 'rgba(243,234,212,.4)' : 'rgba(10,8,6,.4)'; c.fillRect(x, y, w, h); }
+    c.restore();
+  }
+  SCENES.avv_stamp = { draw(c, lt) {
+    const id = 'avv_stamp', dd = dur(id), tL = at(id, 'lift', 0.49), tS = at(id, 'stamp', 0.99), tW = dd - 0.9, WD = 0.28, D = W + 180;
+    const e = ease.io((lt - tW) / WD);
+    // the banner at the end: the eye open as the whip lands, shut into the sun just before the cut; the camera eases to
+    // frame 0's (V0, no sway), and the sun's turn runs into the hook's, so the last frame is the first
+    const o = 1 - ease.io((lt - (tW + WD + 0.05)) / 0.4);
+    const endCam = { x: 0, y: 0, z: lerp(1.08, V0.z, ease.io((lt - tW) / (dd - tW))), fx: V0.fx, fy: V0.fy };
+    const endHook = { o, look: [0, 0], spin: (lt - dd) * VSPIN * (1 - o) };
+    c.fillStyle = '#0b0d10'; c.fillRect(0, 0, W, H);
+    if (e < 1) { c.save(); c.translate(e * D, 0); stampFrame(c, lt, dd, tL, tS); c.restore(); }
+    if (e > 0) { c.save(); c.translate((e - 1) * D, 0); hookFrame(c, endCam, endHook); c.restore(); streaks(c, e); }
+    tagAt(c, ui('dateline', 'CITIZEN LAB · 15.10.2026'), clamp((lt - (dd - 0.4)) / 0.25, 0, 1));
+    box(c);
+  } };
 })();

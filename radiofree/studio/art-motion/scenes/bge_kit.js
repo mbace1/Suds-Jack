@@ -468,4 +468,180 @@
     tag(c, ui('vote', 'PLENARY VOTE: STILL TO COME'), lt, dd);
     box(c);
   } };
+
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  // THE VIRAL CUT (papercut/break-glass-viral; plan/films/19b-break-glass-viral.md): five shots at 124 BPM, the bgev_*
+  // scenes below. Nothing above this line changes, so the v1 draft renders exactly as it did. The hook is frame 0: the
+  // case snowed over and dusty, its glass whole, NEVER USED stamped across it, its tag reading 2025, 2026, 2028 ringed,
+  // and FINLAND on the corner tag. Shot 5 stamps it again and ends on frame 0's view, state and snow, so the film loops.
+  // The moves here are a whole-picture VIEW (a true zoom): a stack camera's z only reaches a layer as 1 + (z-1)·d, which
+  // at the case's depth (0.1) is a push of a few per cent.
+  const VIEW0 = { z: 1.04, fx: 560, fy: 1000 };                              // frame 0; bgev_tail ends on it
+  const SNOW0 = 40;                                                          // the snowfall's clock on frame 0
+  const AGED = { lamp: 1, dust: 0.62, snow: 58, ice: 1, web: 1 };           // the case as frame 0 shows it
+  const STILL = { x: 0, y: 0, z: 1 };                                        // the stack camera where the loop joins
+  const NU = { x: 548, y: 988, rot: -0.12 };                                 // the stamp, on the booklet's lower half
+  function view(c, v, fn) { c.save(); c.translate(v.fx + (v.sx || 0), v.fy + (v.sy || 0)); c.scale(v.z, v.z); c.translate(-v.fx, -v.fy); fn(); c.restore(); }
+  const kick = (lt, h, s) => (lt >= h ? s * Math.exp(-(lt - h) * 7) * (1 - Math.exp(-(lt - h) * 60)) : 0);   // 0 on its own frame
+  const shakeAt = (f) => (f >= 0 ? Math.exp(-f * 7) * Math.sin(f * 70) * 9 : 0);
+  /** a corner tag at alpha a (bge's tag() fades on its own clock; the hook's has to be up on frame 0) */
+  function corner(c, text, a, x = 110) {
+    if (a <= 0) return; const y = R.SAFE_B - 66;
+    c.save(); c.globalAlpha = clamp(a, 0, 1); c.font = `32px "ArchivoBlack-400", ${JP}`; const w = c.measureText(text).width + 44;
+    c.shadowColor = 'rgba(4,6,12,.6)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(x, y, w, 66, 8); c.fill(); c.shadowColor = 'transparent';
+    c.fillStyle = K.ink; c.fillText(text, x + 22, y + 45); c.restore();
+  }
+  const win = (lt, a, b) => clamp((lt - a) / 0.3, 0, 1) * clamp((b - lt) / 0.3, 0, 1);
+
+  /** NEVER USED: a red rubber stamp, double-ruled, with the grain a stamp leaves; flat ink, so no sprite and no lift */
+  let NUC = null;
+  function neverUsed() {
+    if (NUC) return NUC;
+    const w = 420, h = 300, cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d');
+    g.translate(w / 2, h / 2); g.strokeStyle = C.red; g.fillStyle = C.red;
+    g.lineWidth = 12; g.beginPath(); g.roundRect(-196, -136, 392, 272, 16); g.stroke();
+    g.lineWidth = 4; g.beginPath(); g.roundRect(-178, -118, 356, 236, 8); g.stroke();
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    for (const [s, y] of [['NEVER', -8], ['USED', 104]]) { g.font = '400 112px "Anton-400"'; const fz = Math.min(112, 112 * 318 / g.measureText(s).width); g.font = `400 ${fz.toFixed(1)}px "Anton-400"`; g.fillText(s, 0, y); }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-out'; const r = U.rng(57);
+    for (let i = 0; i < 1100; i++) { g.globalAlpha = 0.25 + r() * 0.75; g.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 2); }
+    for (let i = 0; i < 7; i++) { g.save(); g.globalAlpha = 0.55; g.translate(r() * w, r() * h); g.rotate(-0.3 + r() * 0.6); g.fillRect(-30 - r() * 50, -1, 60 + r() * 110, 2 + r() * 2.5); g.restore(); }
+    return (NUC = cv);
+  }
+  function stampNU(g, ox, oy, sc, a) {
+    if (a <= 0) return; const cv = neverUsed();
+    g.save(); g.translate(NU.x + ox, NU.y + oy); g.rotate(NU.rot); g.scale(sc, sc); g.globalAlpha = 0.94 * clamp(a, 0, 1); g.drawImage(cv, -cv.width / 2, -cv.height / 2); g.restore();
+  }
+  /** the stamp coming down at tS: in from 1.7× over 0.12 s, a small bounce after (score.py lands press_stamp on tS) */
+  function landing(lt, tS) {
+    const k = (lt - tS + 0.12) / 0.12; if (k <= 0) return { sc: 1, a: 0 };
+    if (k < 1) return { sc: lerp(1.7, 1, k * k), a: clamp(k * 2.5, 0, 1) };
+    return { sc: 1 + 0.035 * Math.exp(-(lt - tS) * 9) * Math.sin((lt - tS) * 30), a: 1 };
+  }
+  /** snow knocked off the case's top by a hit at t = 0 */
+  const PUFF = (() => { const r = U.rng(131); return Array.from({ length: 48 }, () => ({ x: lerp(-CS.w / 2, CS.w / 2, r()), vx: (r() - 0.5) * 140, vy: -60 - r() * 140, s: 2 + r() * 4.5, d: 0.5 + r() * 0.7 })); })();
+  function puff(g, ox, oy, t) {
+    if (t <= 0 || t > 1.3) return; const X = CS.x + ox, Y = CS.y - CS.h / 2 - 30 + oy;
+    g.save(); g.fillStyle = C.snow;
+    for (const p of PUFF) { const k = t / p.d; if (k >= 1) continue; g.globalAlpha = 0.9 * (1 - k); g.beginPath(); g.arc(X + p.x + p.vx * t, Y + p.vy * t + 450 * t * t, p.s, 0, TAU); g.fill(); }
+    g.restore();
+  }
+  function flash(c, f, a = 0.16) { if (f < 0 || f >= 0.3) return; c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(216,64,47,${a * (1 - f / 0.3)})`; c.fillRect(0, 0, W, H); c.restore(); }
+  let MAGED = null;
+  const aged = () => MAGED || (MAGED = { a: STRIKE[0](-10), b: STRIKE[1](-10), round: ROUND(-10) });
+
+  // ═════════ V1 · bgev_hook: frame 0 is the case as it is now; a hit; on "never used" the stamp comes down again ═════════
+  SCENES.bgev_hook = { draw(c, lt) {
+    const id = 'bgev_hook', dd = dur(id), tH = at(id, 'hit', 0.035), tP = at(id, 'stamp', 0.72), f = lt - tP, M = aged();
+    const v = { z: VIEW0.z * (1 + kick(lt, tH, 0.03) + kick(lt, tP, 0.035)) * lerp(1, 1.05, ease.io(lt / dd)), fx: VIEW0.fx, fy: VIEW0.fy, sx: shakeAt(f) };
+    // the stamp lifts a hair before the word and slams back on it
+    const sc = f < -0.1 ? 1 : f < 0 ? 1 + 0.1 * ease.out((f + 0.1) / 0.1) : 1 + 0.1 * Math.exp(-f * 14) * Math.cos(f * 22);
+    view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
+      const A = caseLayer(g, ox, oy, lt, { ...AGED, gleam: -1 });
+      puff(g, ox, oy, lt - tH); puff(g, ox + 7, oy, lt - tP);
+      stampNU(g, ox, oy, sc, 1);
+      drawTag(g, { x: A[0], y: A[1], rot: swing(lt, [[tH, 0.035], [tP, 0.04]], 0.012), sc: 1 }, lt, { rows: [0, 1, 2].map((row) => ({ row, t0: -10 })), marks: [M.a, M.b, M.round] });
+    } }, { d: 0.3, fn: (g, ox, oy) => snowfall(g, SNOW0 + lt, ox, oy, { n: 120, sz: 1.3, a: 0.7, wind: 26 }) }], STILL));
+    flash(c, f);
+    corner(c, ui('act', 'FINLAND · TEMPORARY MEASURES ACT'), clamp((dd - 0.3 - lt) / 0.3, 0, 1));
+    box(c);
+  } };
+
+  // ═════════ V2 · bgev_year: back to 2024, the case new and clean; on "one year" the tag drops on: VALID TO 2025 ═════════
+  SCENES.bgev_year = { draw(c, lt) {
+    const id = 'bgev_year', dd = dur(id), tT = at(id, 'tag', 0.9), kD = (lt - tT) / 0.32;
+    const lampOn = lt < 0.12 ? 0 : lt < 0.32 ? 1 - (Math.floor((lt - 0.12) * 24) % 2) * 0.6 : 1;      // it clicks on as we arrive
+    const v = { z: lerp(1.0, 1.12, ease.io(lt / dd)) * (1 + kick(lt, tT, 0.03)), fx: 640, fy: 1150 };
+    view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
+      const A = caseLayer(g, ox, oy, lt, { lamp: lampOn, dust: 0.03 });
+      if (kD > 0) drawTag(g, { x: A[0], y: A[1], rot: swing(lt, [[tT, 0.22]]), sc: ease.back(kD) }, lt, { rows: [{ row: 0, t0: -10 }] });
+    } }, { d: 0.3, fn: (g, ox, oy) => snowfall(g, lt + SH, ox, oy, { n: 60, sz: 1.3, a: 0.55 }) }], { x: Math.sin(lt * 0.3) * 8, y: 0, z: 1 }));
+    corner(c, ui('inforce', 'IN FORCE 22.7.2024 · ONE YEAR'), win(lt, 0.35, dd - 0.3));
+    box(c);
+  } };
+
+  // ═════════ V3 · bgev_again: THE ESCALATION. Close on the tag: 2025 struck and 2026 written by the end of line 1, 2026
+  //            struck and 2028 written on the pop, the view stepping in on each; then the days run on, the snow piles ═════════
+  let M3V = null;
+  const marks3v = (tW1, tW2) => {
+    if (M3V && M3V.key === `${tW1}|${tW2}`) return M3V;
+    const s1 = STRIKE[0](Math.max(0.08, tW1 - 0.4), 0.26), s2 = STRIKE[1](Math.max(tW1 + 0.47, tW2 - 0.4), 0.26);
+    return (M3V = { key: `${tW1}|${tW2}`, s1, s2 });
+  };
+  SCENES.bgev_again = { draw(c, lt) {
+    const id = 'bgev_again', dd = dur(id), tW1 = at(id, 'write1', 0.5), tW2 = at(id, 'write2', 1.4), M = marks3v(tW1, tW2);
+    const step = (t) => clamp(ease.back((lt - t) / 0.28), 0, 1.2);
+    const z = 1.28 + 0.12 * step(tW1) + 0.14 * step(tW2) + 0.04 * ease.io(clamp((lt - tW2 - 0.3) / Math.max(0.5, dd - tW2 - 0.3), 0, 1));
+    const grow = ease.io(clamp(lt / dd, 0, 1));
+    const v = { z: z * (1 + kick(lt, tW2, 0.03)), fx: 760, fy: 1600, sx: shakeAt(lt - tW2) * 0.6 };
+    view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => days(g, lt, dd, ox, oy, 8) }, { d: 0.1, fn: (g, ox, oy) => {
+      const A = caseLayer(g, ox, oy, lt, { lamp: 1, dust: lerp(0.06, 0.5, grow), snow: lerp(4, 46, grow), ice: lerp(0, 0.8, grow), web: lerp(0, 0.8, grow), gleam: -1 });
+      const T = { x: A[0], y: A[1], rot: swing(lt, [[M.s1.t0, 0.05], [tW2, 0.07]], 0.012), sc: 1 };
+      const tip = drawTag(g, T, lt, { rows: [{ row: 0, t0: -10 }, { row: 1, t0: tW1 }, { row: 2, t0: tW2 }], marks: [M.s1, M.s2] });
+      const L = (p) => tagToLayer(T, p), rest = [W + 160 + ox, 2060 + oy];
+      const pen = tip || penAt(lt, [[0, L([150, ROWS[0].y + 90])], [M.s1.t0, L(M.s1.start)], [M.s1.t0 + M.s1.dur, L(M.s1.end)], [tW1, L([-74, ROWS[1].y - 12])], [tW1 + 0.45, L([76, ROWS[1].y - 12])],
+        [M.s2.t0, L(M.s2.start)], [M.s2.t0 + M.s2.dur, L(M.s2.end)], [tW2, L([-74, ROWS[2].y - 12])], [tW2 + 0.45, L([76, ROWS[2].y - 12])], [tW2 + 1.2, rest]]);
+      if (lt < tW2 + 1.2) marker(g, pen, -0.62);
+    } }, { d: 0.3, fn: (g, ox, oy) => snowfall(g, lt * 2.2 + 2 * SH, ox, oy, { n: 110, sz: 1.3, a: 0.65, wind: 34 }) }], { x: Math.sin(lt * 0.3 + 1) * 6, y: 0, z: 1 }));
+    flash(c, lt - tW2, 0.12);
+    corner(c, ui('proposal', 'GOVERNMENT PROPOSAL · 3.9.2026'), win(lt, tW2 + 0.3, dd - 0.3));
+    box(c);
+  } };
+
+  // ═════════ V4 · bgev_desk: the proposal; NONE ringed on "Unchanged."; the stamp on "agreed"; two DISSENT cards ═════════
+  let M4V = null;
+  const marks4v = (tN) => {
+    if (M4V && M4V.key === tN) return M4V;
+    const m = document.createElement('canvas').getContext('2d'); m.font = '700 26px "LibreBaskerville-700"';
+    const x0 = -236 + m.measureText('CHANGES TO CONTENT:  ').width, wN = m.measureText('NONE').width;
+    const ring = mkMark(Math.max(0.22, tN - 0.2), 0.42, [GEN().ellipse(x0 + wN / 2, -109, wN + 52, 58, ink(83, { strokeWidth: 6 }))]);
+    return (M4V = { key: tN, ring });
+  };
+  const billToLayer = (p, ox, oy) => [BILL.x + ox + Math.cos(BILL.rot) * p[0] - Math.sin(BILL.rot) * p[1], BILL.y + oy + Math.sin(BILL.rot) * p[0] + Math.cos(BILL.rot) * p[1]];
+  SCENES.bgev_desk = { draw(c, lt) {
+    const id = 'bgev_desk', dd = dur(id), tN = at(id, 'none', 0.4), tP = at(id, 'stamp', 1.15), M = marks4v(tN);
+    const v = { z: lerp(1.14, 1.19, ease.io(lt / dd)) * (1 + kick(lt, tP, 0.035)), fx: 470, fy: 900, sx: shakeAt(lt - tP) * 0.5 };
+    view(c, v, () => stack(c, [{ sh: desk(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
+      put(g, water(), GLASS[0] + ox, GLASS[1] + oy, { lift: 0.6 });
+      put(g, bill(), BILL.x + ox, BILL.y + oy, { rot: BILL.rot, lift: 0.5 });
+      g.save(); g.translate(BILL.x + ox, BILL.y + oy); g.rotate(BILL.rot); const k = (lt - M.ring.t0) / M.ring.dur, tp = k > 0 ? drawMark(g, M.ring, ease.out(k)) : null; g.restore();
+      imprint(g, STAMP[0] + ox, STAMP[1] + oy, lt >= tP ? 1 : 0);
+      const B = (p) => billToLayer(p, ox, oy), rest = [W + 160 + ox, 2060 + oy];
+      const pen = k > 0 && k < 1 && tp ? B(tp) : penAt(lt, [[0, B([250, 10])], [M.ring.t0, B(M.ring.start)], [M.ring.t0 + M.ring.dur, B(M.ring.end)], [M.ring.t0 + M.ring.dur + 0.8, rest]]);
+      if (lt < M.ring.t0 + M.ring.dur + 0.8) marker(g, pen, -0.62);
+      // the stamp drops from above the camera, lands on "agreed", lifts away (v1's, on this cut's cue)
+      const kS = (lt - tP + 0.22) / 0.22, kU = (lt - tP - 0.18) / 0.35;
+      if (kS > 0 && kU < 1) { const h = kS < 1 ? lerp(-520, 0, ease.io(kS)) : lerp(0, -560, ease.io(kU)), a = kU > 0 ? 1 - ease.io(kU) : clamp(kS * 3, 0, 1); g.save(); g.globalAlpha = a; put(g, stampTool(), STAMP[0] + ox, STAMP[1] + oy + 70 + h, { sc: 0.9, lift: 0.6 - h / 60 }); g.restore(); }
+      // the two DISSENT cards slide in from the right, low on the proposal and clear of the rail
+      [[0.55, 730, 1080, 0.08], [0.85, 712, 1222, -0.06]].forEach(([d, x, y, r]) => { const kc = ease.out((lt - tP - d) / 0.3); if (kc > 0) put(g, dissentCard(), lerp(W + 200, x, kc) + ox, y + oy, { rot: r, lift: 0.5 }); });
+    } }], { x: Math.sin(lt * 0.3) * 6, y: 0, z: 1 }));
+    corner(c, ui('committee', 'COMMITTEE STATEMENT · 16.10.2026'), win(lt, 0.35, dd - 0.3));
+    box(c);
+  } };
+
+  // ═════════ V5 · bgev_tail: the case as it is now; NEVER USED comes down on "Never used.", the glass rings on "temporary",
+  //            2028 is ringed on line 3; then the view settles onto frame 0's, so the last frame hands into the first ═════════
+  let M5V = null;
+  const marks5v = (tM) => (M5V && M5V.key === tM ? M5V : (M5V = { key: tM, round: ROUND(tM) }));
+  SCENES.bgev_tail = { draw(c, lt) {
+    const id = 'bgev_tail', dd = dur(id), tS = at(id, 'stamp', 0.4), tG = at(id, 'gleam', 0.9), tM = at(id, 'mark', 1.75), M = marks5v(tM), A0 = aged();
+    const endK = ease.io(clamp((lt - (dd - 0.7)) / 0.7, 0, 1)), f = lt - tS;
+    const zIn = lerp(1.1, 1.15, ease.io(clamp(lt / (dd - 0.7), 0, 1))) * (1 + kick(lt, tS, 0.035) + kick(lt, tM, 0.02));
+    const v = { z: VIEW0.z * lerp(zIn, 1, endK), fx: lerp(600, VIEW0.fx, endK), fy: lerp(1080, VIEW0.fy, endK), sx: shakeAt(f) * (1 - endK) };
+    const S = landing(lt, tS);
+    view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
+      const A = caseLayer(g, ox, oy, lt - dd, { ...AGED, gleam: (lt - tG) / 0.6 });
+      puff(g, ox, oy, f);
+      stampNU(g, ox, oy, S.sc, S.a);
+      const T = { x: A[0], y: A[1], rot: swing(lt, [[tS, 0.04], [tM, 0.05]], 0) * (1 - endK) + 0.012 * Math.sin((lt - dd) * 1.7), sc: 1 };
+      const tip = drawTag(g, T, lt, { rows: [0, 1, 2].map((row) => ({ row, t0: -10 })), marks: [A0.a, A0.b, M.round] });
+      const L = (p) => tagToLayer(T, p), rest = [W + 160 + ox, 2060 + oy];
+      const pen = tip || penAt(lt, [[tM - 0.6, rest], [tM, L(M.round.start)], [tM + 0.42, L(M.round.end)], [tM + 1.2, rest]]);
+      if (lt > tM - 0.6 && lt < tM + 1.2) marker(g, pen, -0.62);
+    } }, { d: 0.3, fn: (g, ox, oy) => snowfall(g, SNOW0 - dd + lt, ox, oy, { n: 120, sz: 1.3, a: 0.7, wind: 26 }) }], STILL));
+    flash(c, f);
+    corner(c, ui('vote', 'PLENARY VOTE: STILL TO COME'), win(lt, tM + 0.3, dd - 1.2));
+    corner(c, ui('act', 'FINLAND · TEMPORARY MEASURES ACT'), clamp((lt - (dd - 0.75)) / 0.3, 0, 1));
+    box(c);
+  } };
 })();

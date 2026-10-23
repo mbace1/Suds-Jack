@@ -1,0 +1,130 @@
+{
+  "film": "approved-vendor-viral",
+  "cut": "Global 1, VIRAL CUT v1 (23 Oct) of Approved Vendor — owner, 23 Oct: 'Test other 2 as well and rest after' (the viral format, plan/films/20b-approved-vendor-viral.md). The hook is frame 0; the last frame hands back to it.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Researchers say an ad firm's ads delivered spyware with no click, targeting at least 45 devices at one newsroom; it sat on the ad industry's vendor list for six years, until an October suspension.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.15",
+      "hold": "s2",
+      "text": {
+        "en": "This ad / delivered [spyware].",
+        "fi": "Tämä mainos / levitti / [vakoiluohjelmaa].",
+        "ja": "この 広告が / [スパイウェア] を 配信。"
+      },
+      "source": "Citizen Lab, 'Exposing AdFection', 15 Oct 2026: Discover-Tech's targeted ads delivered Candiru spyware; the ad's code checked the device's ad ID and IP and, for a target, returned code that could load a browser exploit. Reuters, TechCrunch, The Record, CyberScoop, BleepingComputer (v1 re-check, 22 Oct); re-checked 23 Oct (Dark Reading, PPC Land, The National, The Print; search summaries): nothing newer moves it. 'This ad' is the film's own banner, a stand-in for the firm's ads; never ads in general."
+    },
+    {
+      "id": "noclick",
+      "role": "evidence",
+      "at": "s2+0.25",
+      "until": "s3-0.15",
+      "hold": "s3",
+      "text": {
+        "en": "[No click] / needed.",
+        "fi": "[Klikkausta] / ei tarvittu.",
+        "ja": "[クリック] は / 不要。"
+      },
+      "source": "Citizen Lab (15 Oct): the delivery needed no click; showing the ad was enough. Corroborated by Reuters, TechCrunch, The Record (v1 table, plan/films/20-approved-vendor.md); unchanged on 23 Oct."
+    },
+    {
+      "id": "targeted",
+      "role": "evidence",
+      "at": "s3+0.25",
+      "until": "s4-0.15",
+      "hold": "s4",
+      "text": {
+        "en": "At least 45 devices / at one newsroom / [targeted].",
+        "fi": "Ainakin 45 laitetta / yhdessä toimituksessa / [kohteena].",
+        "ja": "ある 報道機関で / 少なくとも 45台が / [標的] に。"
+      },
+      "source": "Citizen Lab (15 Oct): at least 45 devices at one newsroom targeted in 2024 and 2025, spyware attributed 'with high confidence' to Candiru; it does not know which government was the customer. 'Targeted', not 'infected'. The newsroom is not named (v1 table; unchanged on 23 Oct)."
+    },
+    {
+      "id": "listed",
+      "role": "evidence",
+      "at": "s4+0.25",
+      "until": "s5-0.15",
+      "hold": "s5",
+      "text": {
+        "en": "On the ad industry's / vendor list / for [six years].",
+        "fi": "Mainosalan / toimittajalistalla / [kuusi vuotta].",
+        "ja": "広告業界の / ベンダーリストに / [6年間]。"
+      },
+      "source": "IAB Europe's Transparency & Consent Framework Global Vendor List: Discover-Tech registered as vendor 778 from 2 July 2020 (ppc.land, from the GVL archive) until its suspension in early October 2026 (8 Oct per Citizen Lab; 'last week' per IAB Europe to Reuters, 15 Oct). Six years and three months, said as six years (v1 table)."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.25",
+      "until": "end-0.45",
+      "hold": "end",
+      "text": {
+        "en": "Approved vendor. / Until [October].",
+        "fi": "Hyväksytty toimittaja. / [Lokakuuhun] asti.",
+        "ja": "承認済み ベンダー。 / [10月] まで。"
+      },
+      "source": "The station's line, over its own image: a rubber stamp comes down on the firm's row of the list, SUSPENDED · OCT 2026. Not a quote; 'approved' is Reuters' wording for IAB Europe's list of globally approved vendors, and the suspension can be lifted or become an expulsion (IAB Europe, 15 Oct). It clears 0.45 s before the end so the last frame is the banner again (the loop)."
+    }
+  ],
+  "ui": {
+    "dateline": {
+      "en": "CITIZEN LAB · 15.10.2026",
+      "fi": "CITIZEN LAB · 15.10.2026",
+      "ja": "シチズンラボ · 2026.10.15"
+    },
+    "room": {
+      "en": "A NEWSROOM · NIGHT",
+      "fi": "UUTISTOIMITUS · YÖ",
+      "ja": "報道機関 · 夜"
+    },
+    "count": {
+      "en": "AT LEAST 45 DEVICES · 2024–25",
+      "fi": "AINAKIN 45 LAITETTA · 2024–25",
+      "ja": "少なくとも45台 · 2024–25"
+    },
+    "list": {
+      "en": "IAB EUROPE · GLOBAL VENDOR LIST",
+      "fi": "IAB EUROPE · GLOBAL VENDOR LIST",
+      "ja": "IAB EUROPE · グローバル・ベンダーリスト"
+    }
+  },
+  "props": {
+    "banner": {
+      "en": "SALE · SHOP NOW ›",
+      "why": "the banner ad's words, under its paper sun: an ordinary-looking ad, the same in every master; it stands in for the firm's ads and carries no brand"
+    },
+    "newsroom": {
+      "en": "45 laptops, each with the same banner",
+      "why": "the escalation as a count: one laptop for each targeted device; laptops, not phones (v1's rule); no newsroom is named"
+    },
+    "clipboard": {
+      "en": "GLOBAL VENDOR LIST / PURPOSES · LEGAL BASIS · CONSENT · 2020–2026",
+      "why": "the list's own name, the kinds of thing a vendor declares, and one sheet a year, in English in every master; no vendor is named"
+    },
+    "stamp": {
+      "en": "SUSPENDED · OCT 2026",
+      "why": "the punchline as a thing: no logo and no company's name"
+    }
+  },
+  "post": {
+    "en": "This ad delivered spyware. No click needed. Researchers say an ad firm's ads targeted at least 45 devices at one newsroom (Citizen Lab, 15 Oct). The firm sat on the ad industry's vendor list for six years, until October. Would you have spotted it? #spyware #adtech",
+    "fi": "Tämä mainos levitti vakoiluohjelmaa. Klikkausta ei tarvittu. Tutkijoiden mukaan mainosyhtiön mainokset tähtäsivät ainakin 45 laitteeseen yhdessä toimituksessa (Citizen Lab, 15.10.). Yhtiö oli mainosalan toimittajalistalla kuusi vuotta, lokakuuhun asti. Olisitko huomannut?",
+    "ja": "この広告がスパイウェアを配信した。クリックは不要。研究者によると、ある広告会社のターゲティング広告が一つの報道機関の少なくとも45台の端末を狙った（シチズンラボ、10月15日）。その会社は6年間、広告業界のベンダーリストに載っていた。10月まで。あなたなら気づいた？"
+  }
+}

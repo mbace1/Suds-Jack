@@ -1,0 +1,153 @@
+{
+  "film": "one-stockholm-viral",
+  "cut": "Doodle 4, VIRAL CUT v1 (23 Oct) — owner: viral cuts of the Doodle films ('Test other 2 as well and rest after'); this is one of the rest. Hook first (a Stockholm's worth of power: the lit paper city folds into the grey box), escalate (the whole city lit → jobs: 500 says the seller, maybe hundreds says Doodle → prices nationwide, conditional), punch, loop. The v1 draft (papercut/one-stockholm) is unchanged.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Doodle's planned Swedish data centre may draw up to 2,000 MW, about all of Stockholm. Jobs: the seller says 500; Doodle, maybe hundreds. Without new power, the grid operator warns, prices rise nationwide.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "A Stockholm's / worth of [power].",
+        "fi": "Tukholman / verran [sähköä].",
+        "ja": "ストックホルム 1つ分の / [電力]。"
+      },
+      "source": "The comparison is the outlets' (Sveriges Radio: a data centre in Torsboda can demand as much electricity as all of Stockholm; Energinyheter, 10 Sep: more power than the city of Stockholm; E.ON: up to 1,000 MW, roughly Stockholm's total demand). The strip on frame 0 carries the hedge: UP TO 2,000 MW ≈ ALL OF STOCKHOLM. Re-checked 23 Oct (plan/films/21b-one-stockholm-viral.md)."
+    },
+    {
+      "id": "power",
+      "role": "evidence",
+      "at": "s2+0.25",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Up to 2,000 MW: / about [all of Stockholm].",
+        "fi": "Jopa 2 000 MW: / suunnilleen [koko Tukholman] verran.",
+        "ja": "最大 2,000MW。 / ほぼ [ストックホルム全体] 分。"
+      },
+      "source": "Deal documents as reported (Energinyheter 10 Sep and 14 Oct; hurbra.se; Dagens PS): 650 MW in phase one, a 1,000 MW target, an option to expand to 1,800–2,000 MW; Doodle says the current talks cover up to 1 GW — hence 'up to'. Stockholm comparison: Sveriges Radio (as much as all of Stockholm) and Energinyheter (more than the city of Stockholm); a Sweco presentation puts the city's draw at roughly 1,500 MW (order of magnitude). Unchanged since v1's re-check (22 Oct) and this cut's (23 Oct)."
+    },
+    {
+      "id": "jobs",
+      "role": "escalation",
+      "at": "s3+0.25",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "Jobs? The seller: 500. / Doodle: [maybe hundreds].",
+        "fi": "Työpaikat? Myyjä: 500. / Doodle: [ehkä satoja].",
+        "ja": "雇用は？ 売り手は 500人。 / Doodleは [数百かも]。"
+      },
+      "source": "500: the seller's figure — Torsboda Industrial Park, the municipal company selling the site, at least 500 direct jobs (Sundsvall municipality release 18 Jun; SVT 'Räknar med 500 jobb i Torsboda'). Doodle: could give hundreds of jobs (Sveriges Radio, about early Aug); SVT: no clearer than somewhere between 100 and 600, still early days; 14 Oct still no job figure (Energinyheter); 23 Oct re-check: still none. Nothing on screen is in quote marks, and nothing says Doodle denied the 500."
+    },
+    {
+      "id": "price",
+      "role": "evidence",
+      "at": "s4+0.25",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": {
+        "en": "Grid operator: / without new power, / prices rise [nationwide].",
+        "fi": "Kantaverkkoyhtiö: / ilman uutta tuotantoa / hinnat nousevat [koko maassa].",
+        "ja": "送電会社： / 新たな 発電が なければ / 電気代は [全国で] 上がる。"
+      },
+      "source": "Svenska kraftnät to Sveriges Radio ('Svenska kraftnät: Dyrare el om datacenter byggs i Torsboda'): a load like this without new generation would affect electricity prices across the whole country; it suggested the developer contribute its own generation. Echoed by Dagens PS. Conditional, as the caption says ('without new power'). The four price areas SE1–SE4 on the map are Sweden's bidding zones."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.25",
+      "until": "end-0.45",
+      "hold": "end",
+      "text": {
+        "en": "Power: one Stockholm. / Jobs: [too early to say].",
+        "fi": "Sähköä: yksi Tukholma. / Työpaikat: [liian aikaista].",
+        "ja": "電力： ストックホルム1つ分。 / 雇用： [まだ 言えない]。"
+      },
+      "source": "The station's line, over its own image: the box's appliance label, an arrow reading 1 STOCKHOLM at the longest bar, and TOO EARLY TO SAY stamped across the empty JOBS field. 'Too early' is Doodle's own position as reported (Sundsvall municipality, 5 Aug: too early to say how many jobs; SVT: too early to answer), said here without quote marks. Re-checked 23 Oct: no firm Doodle job figure has been published, so the line holds."
+    }
+  ],
+  "ui": {
+    "tagHead": {
+      "en": "DATA CENTRE · SWEDEN",
+      "fi": "DATAKESKUS · RUOTSI",
+      "ja": "データセンター · スウェーデン"
+    },
+    "upTo": {
+      "en": "UP TO",
+      "fi": "JOPA",
+      "ja": "最大"
+    },
+    "mw": {
+      "en": "2,000 MW",
+      "fi": "2 000 MW",
+      "ja": "2,000 MW"
+    },
+    "approx1": {
+      "en": "≈ ALL OF",
+      "fi": "≈ KOKO",
+      "ja": "≈ ストックホルム"
+    },
+    "approx2": {
+      "en": "STOCKHOLM",
+      "fi": "TUKHOLMA",
+      "ja": "全体分"
+    },
+    "city": {
+      "en": "STOCKHOLM",
+      "fi": "TUKHOLMA",
+      "ja": "ストックホルム"
+    },
+    "grid": {
+      "en": "GRID OPERATOR: SVENSKA KRAFTNÄT",
+      "fi": "KANTAVERKKO: SVENSKA KRAFTNÄT",
+      "ja": "送電網運用: SVENSKA KRAFTNÄT"
+    }
+  },
+  "props": {
+    "strip": {
+      "en": "Doodle DATA CENTRE · SWEDEN · UP TO 2,000 MW ≈ ALL OF STOCKHOLM",
+      "why": "frame 0's strip, a slice of the box's appliance label: the hook readable with the sound off; 'up to' and '≈' carry the hedges; its words are in each language's ui"
+    },
+    "seller": {
+      "en": "500 JOBS (OUR ESTIMATE)",
+      "why": "the seller's hand-painted sign: the seller's figure, owned on the sign itself; the caption carries it in each language"
+    },
+    "doodle": {
+      "en": "Doodle · MAYBE HUNDREDS. STILL EARLY DAYS.",
+      "why": "Doodle's printed sign: its reported position, not in quote marks; the caption carries it in each language"
+    },
+    "map": {
+      "en": "SE1 SE2 SE3 SE4 · STOCKHOLM · TORSBODA · kr",
+      "why": "the price areas' own codes, two place names and the currency: the same in every master"
+    },
+    "label": {
+      "en": "Doodle DATA CENTRE · TORSBODA, SWEDEN · POWER · 1 STOCKHOLM · JOBS",
+      "why": "the box's appliance label, the punchline as a thing; the caption gives each language's words"
+    },
+    "stamp": {
+      "en": "TOO EARLY TO SAY",
+      "why": "the stamp across the empty JOBS field; the punchline caption carries it in each language"
+    }
+  },
+  "post": {
+    "en": "A Stockholm's worth of power: Doodle's planned data centre in Torsboda, Sweden may draw up to 2,000 MW. Jobs? The seller says 500; Doodle, maybe hundreds. Without new power, the grid operator warns, prices rise nationwide. Good deal for Sweden? #Sweden #AI",
+    "fi": "Tukholman verran sähköä: Doodlen suunnittelema datakeskus Ruotsin Torsbodassa voi viedä jopa 2 000 MW. Työpaikat? Myyjä arvioi 500, Doodle ehkä satoja. Kantaverkkoyhtiö varoittaa: ilman uutta tuotantoa hinnat nousevat koko maassa. Hyvä kauppa Ruotsille?",
+    "ja": "ストックホルム1つ分の電力。スウェーデン・トルスボダに計画中のDoodleのデータセンターは最大2,000MWを使う可能性がある。雇用は？売り手は500人、Doodleは数百かも。送電会社は、新たな発電がなければ電気代は全国で上がると警告する。スウェーデンにとって良い取引？"
+  }
+}

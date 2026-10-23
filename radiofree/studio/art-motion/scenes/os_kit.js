@@ -531,4 +531,178 @@
       } }, { d: 0.16, fn: (g) => nightWash(g) }], cam);
     box(c);
   } };
+
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  // THE VIRAL CUT (papercut/one-stockholm-viral, plan/films/21b-one-stockholm-viral.md). Owner, 23 Oct: viral cuts of
+  // the Doodle films, "test other 2 as well and rest after". The same map, the same helpers; five short shots at the
+  // Doodle tempo. Frame 0 IS the hook: the lit paper Stockholm in the pines over a label strip (Doodle DATA CENTRE ·
+  // SWEDEN, UP TO 2,000 MW ≈ ALL OF STOCKHOLM), already starting to fold; on "power" it is flat and the grey box has
+  // come up out of the crease. Then the real skyline lit end to end in one sweep, the two job signs, the price tags,
+  // and the box's own label; on "back" the label drops away, the box folds down and the city stands up lit again,
+  // exactly as frame 0 has it, so a replay reads as one more turn of the same thing. v1's scenes above are untouched.
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  const V = { z0: 1.03, fx: 540, fy: 1150 };                  // frame 0's camera, and the last frame's
+  /** a viral-cut camera: a drift that is 0 at both ends of the shot, a zoom path, and kicks on the hits */
+  const vcam = (lt, dd, { z = () => 1, hits = [], kick = 0.03, amp = 4, fx = V.fx, fy = V.fy } = {}) => {
+    let zz = z(lt); for (const h of hits) if (lt >= h) zz += kick * Math.exp(-(lt - h) * 7) * (1 - Math.exp(-(lt - h) * 60));
+    const e = Math.sin(Math.PI * clamp(lt / dd, 0, 1));
+    return { x: Math.sin(lt * 2.1) * amp * e, y: Math.cos(lt * 1.7 + 1.2) * amp * 0.8 * e, z: zz, fx, fy };
+  };
+  const ST = { x: 540, y: 1300, s: 0.66, box: 1.1 };           // the stand in the clearing: higher than v1's, clear of the strip
+  const ORDER = [0, 5, 1, 4, 2, 3];                            // the hook folds the ends first, the middle last…
+  const RORDER = [3, 2, 4, 1, 5, 0];                           // …and the loop stands the middle up first, the ends last
+  const FOLD = { lead: 0.5, step: 0.06, len: 0.26 };           // score.py mirrors both of these
+  const UNFOLD = { at: 0.22, step: 0.05, len: 0.26 };
+  /** the paper city with each piece folded by kOf(i), 0 standing and lit to 1 flat and dark */
+  function cityK(g, x, y, s, kOf, glowK = 1) {
+    cityGlow(g, x, y, s, glowK);
+    SEG.forEach(([a, b], i) => {
+      const k = clamp(kOf(i), 0, 1), sy = Math.cos(k * Math.PI / 2); if (sy <= 0.01) return;
+      g.save(); g.beginPath(); g.rect(x + a * s, y - 900 * s, (b - a) * s, 900 * s + 4); g.clip();
+      g.translate(0, y); g.scale(1, sy); g.translate(0, -y);
+      put(g, cityFar(), x + 40 * s, y - 30 * s, { sc: s * 0.82, lift: 0.3 * sy });
+      lights(g, WF, x + 40 * s, y - 30 * s, s * 0.82, () => 0.7 * (1 - k));
+      put(g, cityNear(), x, y, { sc: s, lift: 0.9 * sy });
+      lights(g, WN, x, y, s, () => 1 - k);
+      g.restore();
+    });
+  }
+  /** how far up the box stands, k from 0 (flat) through a little overshoot to 1 */
+  const boxSy = (k) => (k <= 0 ? 0 : k >= 1 ? 1 : Math.min(1.08, 0.02 + 0.98 * ease.back(k)));
+  /** the clearing at the cable's end, with the city and the box in whatever state they are in */
+  function clearing(c, lt, cam, { kOf, sy = 0, glowK = 1, ledOn = false, moonT = lt }) {
+    stack(c, [{ sh: sky(), d: 0.02, lift: 0 }, { d: 0.03, fn: (g, ox, oy) => moon(g, 820 + ox, 560 + oy, moonT, 40) },
+      { sh: pinesFar(), d: 0.06, lift: 0.3 }, { sh: pinesMid(), d: 0.12, lift: 0.8 }, { sh: ground('os_ground2', 1290), d: 0.2, lift: 0.4 },
+      { d: 0.28, fn: (g, ox, oy) => {
+        const x = ST.x + ox, y = ST.y + oy, s = ST.s, cx = x - 700 * s;
+        g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(cx - 20, y - 2, 1400 * s + 40, 5);          // the crease both cards hinge on
+        cityK(g, cx, y, s, kOf, glowK);
+        if (sy > 0.01) { g.save(); g.translate(x, y); g.scale(ST.box, ST.box * sy); put(g, dataBox(), 0, 0, { lift: 1.1 * clamp(sy, 0, 1) }); g.restore(); }
+        if (ledOn) led(g, x, y, ST.box, lt);
+        lead(g, [[-60 + ox, 1800 + oy], [400 + ox, 1600 + oy], [x - BOX.w * ST.box / 2 + 30, y - 6]], 50, 20);
+      } }, { d: 0.28, fn: (g) => nightWash(g) }], cam);
+  }
+  /** the strip on frame 0 (and on the last frame, in the same place): a slice of the box's appliance label —
+   *  Doodle DATA CENTRE · SWEDEN, then UP TO over the number and ≈ ALL OF STOCKHOLM beside it, fitted to the card */
+  function bigTag(c, { k = 1, a = 1, dy = 0 } = {}) {
+    if (a <= 0) return;
+    const x = 130, y = 1356 + dy, w = 780, h = 262, sc = 1 + 0.05 * (1 - ease.out(k));
+    c.save(); c.globalAlpha = a; c.translate(x + w / 2, y + h / 2); c.rotate(-0.02); c.scale(sc, sc); c.translate(-w / 2, -h / 2);
+    c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 18; c.shadowOffsetX = 9; c.shadowOffsetY = 13;
+    c.fillStyle = C.label; c.beginPath(); c.roundRect(0, 0, w, h, 14); c.fill(); c.shadowColor = 'transparent';
+    c.strokeStyle = C.ink; c.lineWidth = 5; c.beginPath(); c.roundRect(10, 10, w - 20, h - 20, 10); c.stroke();
+    BDF.doodleLogo(c, 32, 64, 42);
+    c.fillStyle = C.ink; c.textAlign = 'right'; c.font = `27px "ArchivoBlack-400", ${JP}`; c.fillText(ui('tagHead', 'DATA CENTRE · SWEDEN'), w - 32, 58);
+    c.fillRect(24, 82, w - 48, 4);
+    // ≈ ALL OF / STOCKHOLM on the right, in a black class arrow pointing at the number
+    const a1 = ui('approx1', '≈ ALL OF'), a2 = ui('approx2', 'STOCKHOLM');
+    c.font = `34px "ArchivoBlack-400", ${JP}`; const aw = Math.max(c.measureText(a1).width, c.measureText(a2).width) + 40, ax = w - 26 - aw, ay = 112;
+    c.beginPath(); c.moveTo(ax - 34, ay + 58); c.lineTo(ax, ay); c.lineTo(ax + aw, ay); c.lineTo(ax + aw, ay + 116); c.lineTo(ax, ay + 116); c.closePath(); c.fill();
+    c.fillStyle = '#fff'; c.textAlign = 'left'; c.fillText(a1, ax + 18, ay + 48); c.fillText(a2, ax + 18, ay + 96);
+    // UP TO, small, over the number; the number as big as the room left of the arrow allows
+    c.fillStyle = C.ink; c.font = `400 40px "Anton-400", ${JP}`; c.fillText(ui('upTo', 'UP TO'), 30, 128);
+    const val = ui('mw', '2,000 MW'), room = ax - 34 - 30 - 22; c.font = '400 128px "Anton-400"'; const vw = c.measureText(val).width;
+    c.font = `400 ${Math.min(128, Math.floor(128 * room / vw))}px "Anton-400"`; c.fillText(val, 28, 236);
+    c.restore();
+  }
+
+  // ═════════ V1 · osv_hook: frame 0 — the paper Stockholm stands lit in the clearing over the strip; the ends are
+  //            already folding by a quarter second, it is flat on "power", and the grey box comes up out of the crease ═════════
+  SCENES.osv_hook = { draw(c, lt) {
+    const id = 'osv_hook', dd = dur(id), tP = at(id, 'pop', 0.75);
+    const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)) + 0.03 * ease.io((l - tP - 0.2) / (dd - tP - 0.2)), hits: [tP], kick: 0.035 });
+    const kOf = (i) => ease.io((lt - (tP - FOLD.lead + ORDER.indexOf(i) * FOLD.step)) / FOLD.len);
+    const kb = (lt - tP + 0.2) / 0.38;
+    clearing(c, lt, cam, { kOf, sy: boxSy(kb) * (1 + swing(lt, [[tP + 0.18, 0.03]])), glowK: 1 - clamp((lt - tP + FOLD.lead) / 0.5, 0, 1), ledOn: kb >= 1 });
+    // on "power" the clearing flashes once, so the hit lands in the picture too
+    if (lt > tP) { const f = Math.exp(-(lt - tP) * 6) * 0.2; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
+    bigTag(c, { k: lt / 0.25 });
+    box(c);
+  } };
+
+  // ═════════ V2 · osv_city: Stockholm from the water, its windows coming on in one sweep, left to right, the last
+  //            ones on "all of Stockholm", the whole city flashing once ═════════
+  const SWEEP = 0.15;                                          // when the sweep starts; score.py mirrors this
+  SCENES.osv_city = { draw(c, lt) {
+    const id = 'osv_city', dd = dur(id), tP = at(id, 'pop', 1.0);
+    const cam = vcam(lt, dd, { z: (l) => lerp(1.07, 1.01, ease.io(l / dd)), hits: [tP], kick: 0.04, fy: 1100 });
+    const flash = lt > tP ? Math.exp(-(lt - tP) * 3.5) : 0, allLit = 0.3 + 0.7 * clamp((lt - SWEEP) / (tP - SWEEP), 0, 1);
+    const k = (w) => { const t = w.on < 0 ? -1 : lerp(SWEEP, tP - 0.04, clamp((w.x + 20) / 1440, 0, 1)); return clamp((lt - t) / 0.08, 0, 1); };
+    stack(c, [{ sh: sky(), d: 0.02, lift: 0 }, { d: 0.03, fn: (g, ox, oy) => moon(g, 860 + ox, 610 + oy, lt) },
+      { d: 0.06, fn: (g, ox, oy) => { const x = -60 + ox, y = WL - 34 + oy, s = 0.78; put(g, cityFar(), x, y, { sc: s, lift: 0.4 }); lights(g, WF, x, y, s, (w) => k(w) * 0.8); } },
+      { sh: water(), d: 0.1, lift: 0 },
+      { d: 0.14, fn: (g, ox, oy) => {
+        const x = -70 + ox, y = WL + oy;
+        cityGlow(g, x, y, 1, allLit * (1 + flash));
+        put(g, cityNear(), x, y, { lift: 0.8 });
+        lights(g, WN, x, y, 1, k, { reflect: 1, lt });
+        if (flash > 0) lights(g, WN, x, y, 1, () => 1, { a: 0.5 * flash });
+      } },
+      { d: 0.3, fn: (g, ox, oy) => { const x = ox, y = QY + oy; put(g, quay(), x, y, { lift: 0.6 }); cable(g, x - 120, x + 1300, y + 150, { sag: 10, w: 34 }); } }], cam);
+    tag(c, ui('city', 'STOCKHOLM'), lt, dd, 110, 0.35);
+    box(c);
+  } };
+
+  // ═════════ V3 · osv_jobs: the box behind its fence; the seller's sign comes up on "500", Doodle's on its pop.
+  //            Both signs sit left of the right-hand rail ═════════
+  SCENES.osv_jobs = { draw(c, lt) {
+    const id = 'osv_jobs', dd = dur(id), tS = at(id, 'sell', 0.6), tD = at(id, 'doodle', 1.6);
+    const cam = vcam(lt, dd, { z: (l) => lerp(1.02, 1.07, ease.io(l / dd)), hits: [tS, tD], kick: 0.03, fy: 1250 });
+    stack(c, [{ sh: sky(), d: 0.02, lift: 0 }, { d: 0.03, fn: (g, ox, oy) => moon(g, 860 + ox, 520 + oy, lt + 12.86, 38) },
+      { sh: pinesFar(), d: 0.05, lift: 0.3 }, { sh: ground('os_ground3', 1230), d: 0.1, lift: 0.4 },
+      { d: 0.14, fn: (g, ox, oy) => { const x = 540 + ox, y = 1240 + oy, s = 1.2; g.save(); g.translate(x, y); g.scale(s, s); put(g, dataBox(), 0, 0, { lift: 1 }); g.restore(); led(g, x, y, s, lt); } },
+      { sh: fence(), d: 0.2, lift: 0.6 },
+      { sh: ground('os_ground3b', 1450), d: 0.24, lift: 0.5 },
+      { d: 0.3, fn: (g, ox, oy) => {
+        popUp(g, sellSign(), 285 + ox, 1770 + oy, lt, tS, { sc: 1.0, lean: -0.03 });
+        popUp(g, doodleSign(), 712 + ox, 1790 + oy, lt, tD, { sc: 0.92, lean: 0.015 });
+      } }, { d: 0.3, fn: (g) => nightWash(g) }], cam);
+    box(c);
+  } };
+
+  // ═════════ V4 · osv_map: v1's map, faster — the warning on the grid operator's name, the turbine that is not
+  //            built drawn on the condition, and the four price tags on "nationwide" ═════════
+  SCENES.osv_map = { draw(c, lt) {
+    const id = 'osv_map', dd = dur(id), tW = at(id, 'warn', 0.6), tB = at(id, 'built', 1.0), tN = at(id, 'nation', 2.2);
+    const cam = vcam(lt, dd, { z: (l) => lerp(1.0, 1.06, ease.io(l / dd)), hits: [tW, tN], kick: 0.03, fx: 600, fy: 1000 });
+    const [tx, ty] = proj(TORS), [sx, sy] = proj(STHLM);
+    stack(c, [{ sh: map(), d: 0.05, lift: 1.2, soft: 0 }, { d: 0.05, fn: (g, ox, oy) => {
+      glow(g, sx + ox, sy + oy, 40, 'rgba(255,210,122,', 0.5 + 0.1 * Math.sin(lt * 3)); g.fillStyle = C.win; g.beginPath(); g.arc(sx + ox, sy + oy, 7, 0, TAU); g.fill();
+      const kw = (lt - tW + 0.05) / 0.3; if (kw > 0) put(g, warnSign(), tx + 40 + ox, ty - 14 + oy, { sc: 0.62 * ease.back(kw), lift: 0.8, rot: swing(lt, [[tW + 0.25, 0.08]]) });
+      ghostTurbine(g, tx + 150 + ox, ty + 130 + oy, 0.95, (lt - tB) / 0.7, lt);
+      TAGS.forEach((p, i) => {
+        const t0 = tN - 0.06 + i * 0.12, k = (lt - t0) / 0.3; if (k <= 0) return;
+        const [x, y] = proj(p); put(g, priceTag(), x + ox, y - 40 + oy, { sc: 0.82 * ease.back(k), lift: 0.9, rot: swing(lt, [[t0 + 0.25, 0.18]]) });
+      });
+    } }], cam);
+    tag(c, ui('grid', 'GRID OPERATOR: SVENSKA KRAFTNÄT'), lt, dd, 110, 0.35);
+    box(c);
+  } };
+
+  // ═════════ V5 · osv_end: the box's appliance label slams in over the clearing; the arrow to 1 STOCKHOLM, the stamp
+  //            on "too early to say"; on "back" the label drops away, the box folds down, the city stands up lit and
+  //            the strip comes back up: the last frame is frame 0 ═════════
+  SCENES.osv_end = { draw(c, lt) {
+    const id = 'osv_end', dd = dur(id), tA = at(id, 'power', 0.3), tJ = at(id, 'jobs', 1.1), tB = at(id, 'back', dd - 0.85);
+    const zIn = lerp(1.08, 1.12, ease.io(lt / tB)), zOut = lerp(zIn, V.z0, ease.io((lt - tB) / (dd - tB)));
+    const cam = vcam(lt, dd, { z: () => (lt < tB ? zIn : zOut), hits: [tA + 0.3, tJ], kick: 0.03 });
+    if (lt >= dd - 1 / 60) { cam.x = 0; cam.y = 0; cam.z = V.z0; }
+    const kOf = (i) => 1 - ease.io((lt - (tB + UNFOLD.at + RORDER.indexOf(i) * UNFOLD.step)) / UNFOLD.len);
+    clearing(c, lt, cam, { kOf, sy: 1 - ease.io((lt - tB - 0.05) / 0.22), glowK: clamp((lt - tB - 0.45) / 0.3, 0, 1), ledOn: lt < tB, moonT: lt - dd });
+    // the label: slams in on the cut, then on "back" it drops out of the frame under its own weight
+    const kL = (lt + 0.02) / 0.2, kd = clamp((lt - tB) / 0.45, 0, 1), L = { x: 540, y: 900 + 1500 * kd * kd, rot: -0.02 + 0.25 * kd * kd, sc: lerp(1.3, 0.92, ease.out(kL)) };
+    if (kd < 1) {
+      put(c, label(), L.x, L.y, { rot: L.rot, sc: L.sc, lift: 0.6 + 0.8 * (1 - ease.out(kL)) });
+      c.save(); c.translate(L.x, L.y); c.rotate(L.rot); c.scale(L.sc, L.sc);
+      const [ex, ey] = BAR_END(6), k = ease.out((lt - tA) / 0.32);
+      if (lt > tA - 0.05) put(c, arrow(), lerp(ex + 520, ex + 6, k) + swing(lt, [[tA + 0.32, 6]]), ey, { lift: 0.5 + 0.6 * (1 - k) });
+      const ks = (lt - tJ + 0.02) / 0.16;
+      if (ks > 0) { const sc = lerp(1.7, 1, ease.out(ks)); c.save(); c.globalAlpha = clamp(ks * 1.5, 0, 1); put(c, stamp(), 0, LB.h / 2 - 125, { sc, rot: -0.09, lift: 1.4 * (1 - clamp(ks, 0, 1)) }); c.restore(); }
+      c.restore();
+    }
+    // the strip comes back up from below once the label has gone, so the punchline has the frame to itself until then
+    const kC = clamp((lt - tB - 0.15) / 0.32, 0, 1);
+    bigTag(c, { a: clamp(kC * 2.5, 0, 1), dy: 360 * (1 - ease.out(kC)) });
+    box(c);
+  } };
 })();

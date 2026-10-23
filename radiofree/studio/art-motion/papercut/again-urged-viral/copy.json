@@ -1,0 +1,137 @@
+{
+  "film": "again-urged-viral",
+  "cut": "The Brink 3, VIRAL CUT v1 (23 Oct) of Again Urged — owner, 23 Oct: 'Test other 2 as well and rest after' (the viral format, plan/films/22b-again-urged-viral.md). The hook is frame 0; the last frame hands back to it.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "GPS over Finland is jammed around the clock. Finland and the Baltics took it to the ITU; its board urged Russia to stop, again, then strongly. No reply is on record.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.15",
+      "hold": "s2",
+      "text": {
+        "en": "Over Finland, / GPS is jammed / [around the clock].",
+        "fi": "Suomen yllä / GPS:ää häiritään / [ympäri vuorokauden].",
+        "ja": "フィンランド 上空で / GPS妨害が / [24時間] 続く。"
+      },
+      "source": "Traficom, 21 Apr 2026: GNSS interference concentrated in aviation, around the clock, in southern and central Finland; observations up clearly since February. Traficom statistics (8 May 2026): daily since January 2024, originating outside Finland. 'Jammed' is the plain word for that interference (Traficom also logs spoofing, which is what the jumping icon shows). Re-checked 23 Oct (plan/films/22-again-urged.md, 22b)."
+    },
+    {
+      "id": "itu",
+      "role": "evidence",
+      "at": "s2+0.25",
+      "until": "s3-0.15",
+      "hold": "s3",
+      "text": {
+        "en": "Finland and the Baltics / took it to the UN's / [radio body].",
+        "fi": "Suomi ja Baltian maat / veivät asian YK:n / [radioelimelle].",
+        "ja": "フィンランドと バルト三国は / 国連の / [無線機関に] 訴えた。"
+      },
+      "source": "Estonia, Latvia and Lithuania: co-signed submission to the Radio Regulations Board, 98th meeting; Finland: joint statement at the ITU Council (June 2025) and the board's decision naming receivers in Estonia, Finland, Latvia and Lithuania (ITU 'Harmful interference to RNSS'); Traficom's interference reports. The nameplate on screen names the body: ITU, RADIO REGULATIONS BOARD."
+    },
+    {
+      "id": "urged",
+      "role": "evidence",
+      "at": "s3+0.25",
+      "until": "s4-0.15",
+      "hold": "s4",
+      "text": {
+        "en": "Its board [urged] Russia / to stop. Again. / Strongly.",
+        "fi": "Sen lautakunta [kehotti] Venäjää / lopettamaan. Uudelleen. / Painokkaasti.",
+        "ja": "委員会は ロシアに / 停止を [求めた]。 再び。 / 強く。"
+      },
+      "source": "ITU Radio Regulations Board: repeated instructions to urge the Administration of the Russian Federation to stop the interference; 100th meeting (Nov 2025) again urged it to immediately cease interference to receivers in Estonia, Finland, Latvia and Lithuania (Inside GNSS; ITU Council document); 2026, 101st and 102nd meetings: strongly urged (ITU 'Harmful interference to RNSS'). Minutes not opened; paraphrased, never quoted. The stamps' URGED / AGAIN URGED / STRONGLY URGED are the board's verbs as a record, not quotations."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s4+0.25",
+      "until": "end-1.0",
+      "hold": "end",
+      "text": {
+        "en": "Reply on record: / [none].",
+        "fi": "Vastauksia kirjattu: / [ei yhtään].",
+        "ja": "記録された 返答: / [なし]。"
+      },
+      "source": "ITU 'Harmful interference to RNSS': at the 102nd meeting the bureau reported no reply from Russia to the interference reports (Lithuania); 101st: Latvia had received no response. No Russian reply to the board found (re-checked 23 Oct). 'On record' because that is what the records show. Clears 0.75 s before the end so the loop's last frame has no words, like its first."
+    }
+  ],
+  "ui": {
+    "airspace": {
+      "en": "SOUTHERN FINLAND · TRAFICOM 2026",
+      "fi": "ETELÄ-SUOMI · TRAFICOM 2026",
+      "ja": "南フィンランド · TRAFICOM 2026"
+    },
+    "itu": {
+      "en": "ITU · GENEVA",
+      "fi": "ITU · GENEVE",
+      "ja": "ITU · ジュネーブ"
+    },
+    "board": {
+      "en": "RADIO REGULATIONS BOARD · 2025–26",
+      "fi": "RADIOMÄÄRÄYSLAUTAKUNTA · 2025–26",
+      "ja": "無線通信規則委員会 · 2025–26"
+    },
+    "next": {
+      "en": "BOARD MEETS AGAIN · 26–30.10.",
+      "fi": "LAUTAKUNTA KOKOONTUU · 26.–30.10.",
+      "ja": "次の 委員会 · 10月26–30日"
+    }
+  },
+  "props": {
+    "map": {
+      "en": "the moving-map screen: coast, sea and lakes, no place names",
+      "why": "the screen shows only shapes; the corner tag says where"
+    },
+    "flag": {
+      "en": "GPS?",
+      "why": "the small flag by the icon after it jumps: what a crew would ask, not a claim"
+    },
+    "lamp": {
+      "en": "GPS",
+      "why": "the panel's warning lamp"
+    },
+    "postmarks": {
+      "en": "FI · EE · LV · LT",
+      "why": "country codes on the four envelopes: Finland and the three Baltic states, no flags"
+    },
+    "tray": {
+      "en": "INTERFERENCE REPORTS",
+      "why": "the in-tray at the board's desk"
+    },
+    "plate": {
+      "en": "ITU · RADIO REGULATIONS BOARD",
+      "why": "the body's own name, on its nameplate"
+    },
+    "letter": {
+      "en": "TO: THE ADMINISTRATION OF THE RUSSIAN FEDERATION",
+      "why": "the ITU's own form of address for a member state; the letters are the board's"
+    },
+    "stamps": {
+      "en": "URGED · AGAIN URGED · STRONGLY URGED",
+      "why": "the board's three verbs, as stamps on one letter; not quotations"
+    },
+    "door": {
+      "en": "NO RESPONSE RECEIVED",
+      "why": "stamped on the closed door; the station's reading of the record"
+    }
+  },
+  "post": {
+    "en": "GPS over Finland is jammed around the clock (Traficom). Finland and the Baltics took it to the UN's radio body, the ITU. Its board urged Russia to stop. Again. Strongly. Reply on record: none. Finland and Lithuania trace it to Russia, which denies it. Who can make it stop?",
+    "fi": "Suomen yllä GPS:ää häiritään ympäri vuorokauden (Traficom). Suomi ja Baltia veivät asian YK:n ITU:lle. Sen lautakunta kehotti Venäjää lopettamaan. Uudelleen. Painokkaasti. Kirjattuja vastauksia: ei yhtään. Suomi ja Liettua jäljittävät sen Venäjälle, joka kiistää. Kuka lopettaa?",
+    "ja": "Traficomによると、フィンランド上空ではGPS妨害が24時間続いている。フィンランドとバルト三国は国連の無線機関ITUに訴えた。その委員会はロシアに停止を求めた。再び。強く。記録された返答はなし。フィンランドとリトアニアは発信源をロシアとしているが、ロシアは否定している。誰なら止められる？"
+  }
+}

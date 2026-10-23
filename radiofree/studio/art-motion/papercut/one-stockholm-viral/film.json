@@ -1,0 +1,25 @@
+{
+ "kind": "engine",
+ "engine": "os",
+ "bpm": 140,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/bdf_kit.js",
+  "scenes/os_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "osv_hook", "beats": 8, "cues": { "pop": "word:pop" } },
+  { "id": "osv_city", "beats": 9, "cues": { "pop": "word:pop" } },
+  { "id": "osv_jobs", "beats": 9, "cues": { "sell": "line:1", "doodle": "word:pop" } },
+  { "id": "osv_map", "beats": 9, "cues": { "warn": "line:1", "built": "line:2.start", "nation": "word:pop" } },
+  { "id": "osv_end", "beats": 10, "cues": { "power": "line:1.start", "jobs": "word:pop", "back": 3.45 } }
+ ],
+ "quiet": [],
+ "keep": []
+}

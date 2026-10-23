@@ -1,0 +1,24 @@
+{
+ "kind": "engine",
+ "engine": "au",
+ "bpm": 124,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/cw_kit.js",
+  "scenes/au_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "auv_hook", "beats": 9, "cues": { "hit": 0.035, "jump": 0.3, "spin": "word:pop" } },
+  { "id": "auv_post", "beats": 9, "cues": { "env": "line:1.start", "plate": "word:pop" } },
+  { "id": "auv_stamp", "beats": 10, "cues": { "s1": "word:pop", "s2": "line:2", "s3": "line:3+0.4" } },
+  { "id": "auv_none", "beats": 10, "cues": { "drop": 0.08, "none": "word:pop", "tear": "mark:end-0.75" } }
+ ],
+ "quiet": [],
+ "keep": []
+}

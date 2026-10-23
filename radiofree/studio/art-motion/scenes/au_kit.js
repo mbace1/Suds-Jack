@@ -463,4 +463,147 @@
     tag(c, ui('next', 'BOARD MEETS AGAIN · 26–30.10.'), lt, dd);
     box(c);
   } };
+
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  // THE VIRAL CUT (papercut/again-urged-viral; plan/films/22b-again-urged-viral.md): four shots at 124 BPM, the auv_*
+  // scenes below. Nothing above this line changes, so the v1 draft renders exactly as it did. The hook is frame 0: the
+  // cockpit at night, the plane gliding along the coast, the tag already up; at 0.3 s the screen tears and the icon is
+  // in a lake. The board's three stamps land on ONE letter and pile up on it. The last 0.75 s tears the hall back into
+  // frame 0 exactly, so the film loops, and the loop says it: it happens again.
+  // The camera is an outer zoom (zoomAt): stack()'s own cam.z is scaled by each layer's depth (0.1 here), so a punch of
+  // 0.05 through it moves the picture by half a percent.
+  const V0 = { z: 1.1, fx: 540, fy: 1090 };
+  const zoomAt = (c, z, fx, fy) => { c.translate(fx, fy); c.scale(z, z); c.translate(-fx, -fy); };
+  const kickAt = (f, k) => (f >= 0 ? k * Math.exp(-f * 6) * (1 - Math.exp(-f * 50)) : 0);
+  /** the tag at a given alpha, on from the very first frame (the hook has no time to fade one in) */
+  function tagNow(c, text, a = 1, x = 110) {
+    if (a <= 0) return; const y = R.SAFE_B - 66;
+    c.save(); c.globalAlpha = a; c.font = `32px "ArchivoBlack-400", ${JP}`; const w = c.measureText(text).width + 44;
+    c.shadowColor = 'rgba(4,6,12,.6)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(x, y, w, 66, 8); c.fill(); c.shadowColor = 'transparent';
+    c.fillStyle = K.ink; c.fillText(text, x + 22, y + 45); c.restore();
+  }
+  const HOOKTAG = () => ui('airspace', 'SOUTHERN FINLAND · TRAFICOM 2026');
+  /** au_screen's cockpit through the outer camera; at lt 0, before any jump, it is frame 0 exactly */
+  function cockpit(c, lt, { tJ = 99, ph = 0, spin = -1, z = V0.z, sx = 0, sy = 0 } = {}) {
+    c.save(); c.translate(sx, sy); zoomAt(c, z, V0.fx, V0.fy);
+    stack(c, [{ d: 0.02, fn: (g, ox, oy) => windscreen(g, ox, oy, ph) }, { sh: frame(), d: 0.1, lift: 0.4 },
+      { d: 0.1, fn: (g, ox, oy) => { screen(g, ox, oy, lt, tJ); gauges(g, ox, oy, lt, { gpsOn: lt >= tJ ? lt - tJ : -1, spin }); } }], { x: 0, y: 0, z: 1 });
+    c.restore();
+  }
+  let F0 = null;
+  /** frame 0 of the hook, painted once (nothing in it moves): where the loop lands */
+  function frame0() {
+    if (F0) return F0;
+    const o = document.createElement('canvas'); o.width = W; o.height = H;
+    const g = o.getContext('2d'); cockpit(g, 0); tagNow(g, HOOKTAG(), 1);
+    return (F0 = o);
+  }
+  const TEAR = 0.75;
+  /** the loop: from t0 the picture tears back into frame 0 band by band; every band is home and still by k 0.85, so
+   *  the last frame (k ≈ 0.96) is frame 0 to the pixel */
+  function loopBack(c, lt, t0) {
+    const k = (lt - t0) / TEAR; if (k <= 0) return;
+    const L = frame0(), n = 16, bh = H / n, r = U.rng(900 + Math.floor(lt * 30)), order = U.rng(31);
+    for (let i = 0; i < n; i++) {
+      const u = (k - order() * 0.5) / 0.35; if (u <= 0) continue;
+      const off = Math.round((1 - ease.out(u)) * (r() - 0.5) * 240);
+      c.drawImage(L, 0, i * bh, W, bh + 1, off, i * bh, W, bh + 1);
+    }
+    if (k < 0.3) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(120,255,230,${0.16 * (1 - k / 0.3)})`; c.fillRect(0, 0, W, H); c.restore(); }
+  }
+  // the board's verbs as stamps, past tense (a record, like RECEIVED): `at` on the letter, `em` [x, y, scale] on an envelope
+  const STV = [
+    { lines: ['URGED'], col: C.blue, sc: 0.85, rot: -0.12, at: [-100, -60], em: [-62, -30, 0.32] },
+    { lines: ['AGAIN', 'URGED'], col: C.blue, sc: 1.0, rot: 0.07, at: [95, 75], em: [52, -8, 0.36] },
+    { lines: ['STRONGLY', 'URGED'], col: C.red, sc: 1.3, rot: -0.07, at: [0, 230], em: [-4, 30, 0.46] },
+  ];
+  const mailV = (key, stamps) => sprite('auv_mail_' + key, 300, 190, 150, 95, (g) => {
+    g.fillStyle = C.paperD; g.fillRect(-140, -86, 284, 176); g.fillStyle = C.paper; g.fillRect(-144, -90, 284, 176);
+    g.strokeStyle = 'rgba(0,0,0,.14)'; g.lineWidth = 2; g.beginPath(); g.moveTo(-144, -90); g.lineTo(-2, 10); g.lineTo(140, -90); g.stroke();
+    g.fillStyle = C.grey; g.fillRect(-110, 58, 90, 7);
+    for (const S of stamps) imprint(g, S.em[0], S.em[1], 1, S.lines, S.col, S.em[2], S.rot, 30);
+  }, 6);
+
+  // ═════════ V1 · auv_hook: frame 0 is the cockpit; at 0.3 s the screen tears and the plane is in a lake; on "around the
+  //            clock" the windscreen runs a whole day and the clock spins with it ═════════
+  SCENES.auv_hook = { draw(c, lt) {
+    const id = 'auv_hook', dd = dur(id), tJ = at(id, 'jump', 0.3), tS = at(id, 'spin', 1.1), f = lt - tJ, s = lt - tS;
+    const shake = f >= 0 ? Math.exp(-f * 8) * Math.sin(f * 75) * 14 : 0;
+    const z = V0.z * lerp(1, 1.06, ease.io(lt / dd)) + kickAt(f, 0.06) + kickAt(s, 0.035);
+    cockpit(c, lt, { tJ, ph: clamp(s / 1.5, 0, 1), spin: s > 0 ? s / 1.5 : -1, z, sx: shake, sy: shake * 0.4 });
+    if (f >= 0 && f < 0.22) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(255,190,110,${0.2 * (1 - f / 0.22)})`; c.fillRect(0, 0, W, H); c.restore(); }
+    tagNow(c, HOOKTAG(), clamp((dd - 0.6 - lt) / 0.3, 0, 1));
+    box(c);
+  } };
+
+  // ═════════ V2 · auv_post: au_post on this cut's cues, the tray 70 px left (its right end was under the platforms' rail) ═════════
+  const TRV = { x: 700, y: 1170 };
+  SCENES.auv_post = { draw(c, lt) {
+    const id = 'auv_post', dd = dur(id), tE = at(id, 'env', 0.3), tP = at(id, 'plate', 2.2), p = lt - tP;
+    const z = lerp(1.0, 1.07, ease.io(lt / dd)) + kickAt(p, 0.045), gap = clamp((tP - 0.35 - tE) / 4, 0.2, 0.45);
+    c.save(); zoomAt(c, z, 540, 1150);
+    stack(c, [{ sh: office(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
+      put(g, TRAYBACK(), TRV.x + ox, TRV.y + oy, { lift: 0.4, sc: TS });
+      POSTS.forEach((code, i) => {
+        const q = thrown(lt, tE + i * gap, 0.55, [-260, 740 + i * 30], [TRV.x - 6 + (i % 2 ? 14 : -16), TRV.y - 80 - i * 12], 280, -0.9 + i * 0.2, (i % 2 ? 0.05 : -0.06));
+        if (q) put(g, envelope(code), q.x + ox, q.y + oy, { rot: q.r, sc: 0.82, lift: 0.8 });
+      });
+      put(g, tray(), TRV.x + ox, TRV.y + oy, { lift: 0.6, sc: TS });
+      const kp = (lt - tP + 0.05) / 0.32;
+      if (kp > 0) { const k = ease.back(kp); g.save(); g.translate(PLATE.x + ox, PLATE.y + oy); g.scale(1, Math.max(0.02, k)); put(g, plate(), 0, 0, { lift: 0.7 * k, sc: PS }); g.restore(); }
+    } }], { x: Math.sin(lt * 0.28) * 7, y: 0, z: 1 });
+    c.restore();
+    tag(c, ui('itu', 'ITU · GENEVA'), lt, dd);
+    box(c);
+  } };
+
+  // ═════════ V3 · auv_stamp: the escalation. One letter, three stamps in quick succession, piling up on it: URGED,
+  //            AGAIN URGED, STRONGLY URGED, each bigger and harder, the third red with the whole desk jumping ═════════
+  const LV = { x: 520, y: 1100 };
+  SCENES.auv_stamp = { draw(c, lt) {
+    const id = 'auv_stamp', dd = dur(id), T = [at(id, 's1', 0.5), at(id, 's2', 1.3), at(id, 's3', 2.1)];
+    const AMP = [5, 9, 18], KICK = [0.025, 0.04, 0.075];
+    let shx = 0, shy = 0, z = lerp(1.0, 1.05, ease.io(lt / dd));
+    T.forEach((t, i) => { const f = lt - t; if (f < 0) return; shx += Math.exp(-f * 9) * Math.sin(f * 62) * AMP[i]; shy += Math.exp(-f * 9) * Math.cos(f * 55) * AMP[i] * 0.5; z += kickAt(f, KICK[i]); });
+    const slap = ease.out(lt / 0.22);                                      // the letter is slapped down on the cut
+    c.save(); c.translate(shx, shy); zoomAt(c, z, LV.x, LV.y + 60);
+    stack(c, [{ sh: desk(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
+      put(g, letter(5), LV.x - 44 + ox, LV.y + 34 + oy, { rot: -0.09, lift: 0.3 });   // earlier letters under it
+      put(g, letter(6), LV.x + 36 + ox, LV.y - 22 + oy, { rot: 0.07, lift: 0.4 });
+      const x = LV.x + ox, y = LV.y + oy + lerp(-40, 0, slap), sc = lerp(1.06, 1, slap), rot = -0.02;
+      put(g, letter(4), x, y, { rot, sc, lift: lerp(2.2, 0.5, slap) });
+      g.save(); g.translate(x, y); g.rotate(rot); g.scale(sc, sc);
+      STV.forEach((S, i) => imprint(g, S.at[0], S.at[1], lt >= T[i] ? 1 : 0, S.lines, S.col, S.sc, S.rot, 45));
+      g.restore();
+      T.forEach((t, i) => stamping(g, lt, t, x + STV[i].at[0], y + STV[i].at[1], STV[i].sc));
+    } }], { x: Math.sin(lt * 0.3) * 5, y: 0, z: 1 });
+    c.restore();
+    const f3 = lt - T[2];
+    if (f3 >= 0 && f3 < 0.22) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(216,64,47,${0.16 * (1 - f3 / 0.22)})`; c.fillRect(0, 0, W, H); c.restore(); }
+    tag(c, ui('board', 'RADIO REGULATIONS BOARD · 2025–26'), lt, dd);
+    box(c);
+  } };
+
+  // ═════════ V4 · auv_none: the stamped letter drops through the slot onto the unopened pile; on "none" the door is
+  //            stamped; then the hall tears back into the cockpit's first frame: the loop ═════════
+  const OLDV = (() => { const r = U.rng(67); return Array.from({ length: 11 }, (_, i) => ({ x: 450 + (r() - 0.5) * 320, y: 1518 - i * 6 - r() * 10, r: (r() - 0.5) * 0.9, k: i % 3 })); })();
+  SCENES.auv_none = { draw(c, lt) {
+    const id = 'auv_none', dd = dur(id), tF = at(id, 'drop', 0.08), tN = at(id, 'none', 0.9), tT = at(id, 'tear', dd - TEAR), n = lt - tN;
+    const shx = n >= 0 ? Math.exp(-n * 8) * Math.sin(n * 70) * 10 : 0, z = lerp(1.0, 1.08, ease.io(lt / tT)) + kickAt(n, 0.05);
+    c.save(); c.translate(shx, 0); zoomAt(c, z, 540, 1150);
+    stack(c, [{ sh: hall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
+      for (const o of OLDV) put(g, mailV('old' + o.k, STV.slice(0, o.k)), o.x + ox, o.y + oy, { rot: o.r, sc: 0.7, lift: 0.3 });
+      g.fillStyle = 'rgba(160,150,130,.18)'; g.fillRect(DOOR.x0 - 20 + ox, 1440 + oy, DOOR.x1 - DOOR.x0 + 40, 120);
+      const p = falling(lt, tF, [520, 1446], 0.14);
+      if (p && p.clip) { g.save(); g.beginPath(); g.rect(0, SLOT.y + oy, W, H); g.clip(); put(g, mailV('all', STV), p.x + ox, p.y + oy + 60, { sc: 0.8, lift: 0.4 }); g.restore(); }
+      else if (p) put(g, mailV('all', STV), p.x + ox, p.y + oy, { rot: p.r, sc: 0.8, lift: 0.5 });
+      stamping(g, lt, tN, DOOR.x0 + 250 + ox, DOOR.y0 + 330 + oy, 1.2);
+      imprint(g, DOOR.x0 + 250 + ox, DOOR.y0 + 330 + oy, lt >= tN ? 1 : 0, ['NO RESPONSE', 'RECEIVED'], C.red, 0.95, -0.1, 30);
+    } }], { x: Math.sin(lt * 0.25) * 6, y: 0, z: 1 });
+    c.restore();
+    if (n >= 0 && n < 0.22) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(216,64,47,${0.14 * (1 - n / 0.22)})`; c.fillRect(0, 0, W, H); c.restore(); }
+    tag(c, ui('next', 'BOARD MEETS AGAIN · 26–30.10.'), lt, tT + 0.6);   // gone by the tear
+    loopBack(c, lt, tT);
+    box(c);
+  } };
 })();

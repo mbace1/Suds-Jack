@@ -1,0 +1,61 @@
+{
+ "kind": "engine",
+ "engine": "avv",
+ "bpm": 124,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/vendor/rough-4.6.6.js",
+  "scenes/av_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  {
+   "id": "avv_hook",
+   "beats": 8,
+   "cues": {
+    "hit": 0.035,
+    "open": 0.45,
+    "spy": "word:pop"
+   }
+  },
+  {
+   "id": "avv_noclick",
+   "beats": 7,
+   "cues": {
+    "ring": "word:pop"
+   }
+  },
+  {
+   "id": "avv_count",
+   "beats": 9,
+   "cues": {
+    "pull": "line:1.start",
+    "open": "word:pop",
+    "stare": 2.95
+   }
+  },
+  {
+   "id": "avv_list",
+   "beats": 9,
+   "cues": {
+    "flip": "line:1.start",
+    "six": "word:pop"
+   }
+  },
+  {
+   "id": "avv_stamp",
+   "beats": 9,
+   "cues": {
+    "lift": "word:pop-0.5",
+    "stamp": "word:pop"
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}
