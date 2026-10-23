@@ -408,6 +408,10 @@
   // frame, every phone showing the alert, hands back to the first, every phone showing its digit.
   const V0 = { x: 0, y: 0, z: 1.1, fx: 540, fy: 1300 };
   const pose0 = (i) => ({ raise: 0.25 + 0.15 * Math.sin(i), look: Math.sin(i * 1.7) * 0.15 });   // everyone at lt = 0
+  // the street sits 75 px left of v1's: the front row's last phone was under the platforms' right rail (x ≥ 930). A
+  // plain shift, not cam.x: cam.x also swings every paper shadow (LIGHT.dx), and the sheets carry 90 px of margin
+  const XO = 75;
+  function streetV(c, lt, cam, row) { c.save(); c.translate(-XO, 0); street(c, lt, cam, row); c.restore(); }
   /** the tag, on from the very first frame (the hook has no time to fade one in) */
   function tagNow(c, text, lt, dd, x = 110) {
     const y = R.SAFE_B - 66, a = clamp((dd - 0.6 - lt) / 0.3, 0, 1); if (a <= 0) return;
@@ -423,7 +427,7 @@
     const kick = f >= 0 ? 0.045 * Math.exp(-f * 5) * (1 - Math.exp(-f * 40)) : 0;
     const shake = f >= 0 ? Math.exp(-f * 7) * Math.sin(f * 70) * 9 : 0;
     const cam = { x: V0.x + shake, y: 0, z: (V0.z + kick) * lerp(1, 1.07, ease.io(lt / dd)), fx: V0.fx, fy: V0.fy };
-    street(c, lt, cam, (i) => {
+    streetV(c, lt, cam, (i) => {
       // the 3s flicker as they die: on, off, on, gone
       const cut = isCut(i), flick = cut && f >= 0 && f < 0.24 && Math.floor(f / 0.06) % 2 === 0, dead = cut && f >= 0 && !flick;
       return { state: dead ? 'grey' : 'lit', raise: 0.25 + 0.15 * Math.sin(lt * 0.8 + i), glowA: dead ? 0 : cut && f >= 0 ? 0.5 : 0.16, look: Math.sin(lt * 0.5 + i * 1.7) * 0.15 };
@@ -480,6 +484,7 @@
       { sh: cwall(), d: 0.05, lift: 0 },
       { fn: (g, ox, oy) => glow(g, 540 + ox, 820 + oy, 760, 'rgba(255,220,160,', 0.12), d: 0.05 },
       { d: 0.3, fn: (g, ox, oy) => {
+        g.save(); g.translate(540, 960); g.scale(0.93, 0.93); g.translate(-540, -960);   // 7% smaller than v1's: the 9 column was under the right rail
         g.save(); g.translate(ox, oy);
         put(g, calSp(), CAL.x, CAL.y, { lift: 1.0, rot: -0.012 });
         put(g, rings(), CAL.x, CAL.y - CAL.top - 60, { lift: 0.6 });
@@ -496,6 +501,7 @@
         const keys = [[0, L(REST)], [M.four.t0 - 0.35, L(M.four.start)], [M.four.t0, L(M.four.start)], [M.four.t0 + M.four.dur, L(M.four.end)],
           [M.ring5.t0, L(M.ring5.start)], [M.ring5.t0 + M.ring5.dur, L(M.ring5.end)], [M.ring5.t0 + M.ring5.dur + 0.8, L(REST)]];
         marker(g, tips.length ? L(tips[0]) : penAt(lt, keys), -0.55);
+        g.restore();
       } },
     ], cam);
     tag(c, ui('calendar', 'CRT · DEADLINES BY LAST DIGIT'), lt, dd);
@@ -505,8 +511,8 @@
   // ═════════ V4 · e3v_kept: the dead 3s stay grey; one owner taps, shows an ID card, and the phone comes back ═════════
   SCENES.e3v_kept = { draw(c, lt) {
     const id = 'e3v_kept', dd = dur(id), tT = at(id, 'tap', 0.25), tL = at(id, 'linked', 3.0);
-    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tL], { kick: 0.03 }) * lerp(1.2, 1.32, ease.io(lt / dd)), fx: 440, fy: 1300 };
-    street(c, lt, cam, (i) => {
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tL], { kick: 0.03 }) * lerp(1.16, 1.28, ease.io(lt / dd)), fx: 700, fy: 1300 };   // focus right of the subject: the right edge stays off the rail
+    streetV(c, lt, cam, (i) => {
       let state = isCut(i) ? 'grey' : 'lit', idK = 0, tap = 0, glowA = isCut(i) ? 0 : 0.12;
       if (i === BACKAGAIN) {
         if (lt > tT && lt < tT + 0.6) tap = 1 - (lt - tT) / 0.6;
@@ -525,7 +531,7 @@
     const hitZ = lt >= tA ? 0.03 * Math.exp(-(lt - tA) * 7) * (1 - Math.exp(-(lt - tA) * 60)) : 0;
     const cam = { x: Math.sin(lt * 0.3) * 8 * (1 - k), y: 0, z: lerp(1.2, V0.z, k) + hitZ, fx: V0.fx, fy: V0.fy };
     const pulse = lt >= tA ? 0.5 + 0.5 * Math.cos((lt - tA) * Math.PI * 2 / 0.9) : 0;
-    street(c, lt, cam, (i) => {
+    streetV(c, lt, cam, (i) => {
       const t = tA + (i % NB) * 0.02, on = lt >= t, grey = i === CUT[1], p0 = pose0(i);   // the back row's 3 is still cut off
       return { state: on ? 'alert' : grey ? 'grey' : 'lit', raise: lerp(on ? 0.45 : 0.3, p0.raise, endK), glowA: on ? 0.25 + 0.3 * pulse : grey ? 0 : 0.12, look: lerp(on ? 0 : Math.sin(lt * 0.5 + i * 1.7) * 0.15, p0.look, endK) };
     });

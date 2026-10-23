@@ -387,7 +387,10 @@ window.LSS = (() => {
 // on the last. v1's scenes above are untouched.
 (() => {
   const { W, H, stack, put, glow, box } = RFP, D = LSS, TAU = Math.PI * 2, { clamp, lerp } = U;
-  const DY = 40, OX = -75, PUNCH = 1.03, PX = 540, PY = 600, M = D.MOS;
+  const DY = 40, OX = -75, PUNCH = 1.03, PX = 540, PY = 600;
+  // the 220 stood up for a phone: 11 across and 20 down (v1's 20 × 11 used a third of a vertical frame), the ten in
+  // columns 4–5, rows 7–11; S0 is the wall's own scale, so the pull-back starts exactly where the wall left off
+  const M = { cols: 11, rows: 20, pw: D.MOS.pw, ph: D.MOS.ph, home: [4, 7] }, S0 = 290 / M.pw, S1 = 1.19, YK0 = 220 / (M.ph * S0), CY = 530;
   /** the whole frame (not the box) scaled about (PX, PY) */
   function framed(c, k, draw) { c.save(); if (k !== 1) { c.translate(PX, PY); c.scale(k, k); c.translate(-PX, -PY); } draw(); c.restore(); }
   /** the wall of ten, centred and 40 px down */
@@ -409,19 +412,21 @@ window.LSS = (() => {
     for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
     return [...HOMEL, ...cells.slice(0, 63)];
   })();
-  const RANK = new Map(STUCK.map((key) => { const [x, y] = key.split(',').map(Number); return [key, Math.hypot(x - (M.home[0] + 0.5), (y - (M.home[1] + 2)) * 1.25)]; })
+  const RANK = new Map(STUCK.map((key) => { const [x, y] = key.split(',').map(Number); return [key, Math.hypot(x - (M.home[0] + 0.5), (y - (M.home[1] + 2)) * M.ph / M.pw)]; })
     .sort((a, b) => a[1] - b[1]).map(([key], n) => [key, n]));
-  /** the mosaic at pull-back k (0: the home ten big, 1: all 220 on screen); stickAt(key) → the sticker's k or 0 */
-  function mosaic(g, ox, lt, k, { stickAt = null, dim = 0, twinkle = 0 } = {}) {
-    const s = lerp(290 / M.pw, 0.98, k);
+  /** the mosaic at pull-back k (0: the ten exactly where the wall had them, 1: all 220 on screen); stickAt(key) → the
+   *  sticker's k or 0; appear(q, r) → how far a set has popped in (the neighbours arrive as the camera pulls back) */
+  function mosaic(g, ox, lt, k, { stickAt = null, dim = 0, twinkle = 0, appear = null } = {}) {
+    const s0 = S0 * Math.pow(S1 / S0, k), yk = lerp(YK0, 1, k);
     const F = [lerp((M.home[0] + 0.5) * M.pw, (M.cols - 1) / 2 * M.pw, k), lerp((M.home[1] + 2) * M.ph, (M.rows - 1) / 2 * M.ph, k)];
-    const P = [540, lerp(1012, 1080, k)];
+    const P = [540, lerp(1012 + DY, 1085, k)];
     for (let r = 0; r < M.rows; r++) for (let q = 0; q < M.cols; q++) {
-      const x = P[0] + (q * M.pw - F[0]) * s + ox, y = P[1] + (r * M.ph - F[1]) * s, sc = s * M.pw / 290 * D.TVS;
+      const home = isHome(q, r), a = appear && !home ? appear(q, r) : 1; if (a <= 0.01) continue;
+      const s = s0 * a, x = P[0] + (q * M.pw - F[0]) * s0 + ox, y = P[1] + (r * M.ph - F[1]) * s0 * yk, sc = s * M.pw / 290 * D.TVS;
       if (x < -160 || x > W + 160 || y < 250 || y > H + 100) continue;
-      const key = `${q},${r}`, home = isHome(q, r), i = home ? (r - M.home[1]) * 2 + (q - M.home[0]) : (q * 7 + r * 3) % 10;
+      const key = `${q},${r}`, i = home ? (r - M.home[1]) * 2 + (q - M.home[0]) : (q * 7 + r * 3) % 10;
       put(g, D.tvCase(), x, y, { sc, lift: 0.6 * sc + 0.1 });
-      D.screen(g, x, y, sc, i, lt + q * 0.3 + r, { tiny: sc < 0.5, bright: 1 + 0.08 * Math.sin(lt * 6 + q * 1.7 + r * 2.3) });
+      D.screen(g, x, y, sc, i, home ? lt : lt + q * 0.3 + r, { tiny: sc < 0.5, bright: home ? 1 + 0.06 * Math.sin(lt * (7 + i) + i * 2) : 1 + 0.08 * Math.sin(lt * 6 + q * 1.7 + r * 2.3) });   // the ten carry on exactly as on the wall
       const sk = stickAt ? stickAt(key) : 0;
       if (dim > 0 && !RANK.has(key)) { g.fillStyle = `rgba(4,8,8,${0.62 * dim})`; g.fillRect(x - D.TV.w * sc / 2, y - D.TV.h * sc / 2, D.TV.w * sc, D.TV.h * sc); }
       if (twinkle > 0) { const ph = ((q * 13 + r * 7) % 17) / 17, tw = Math.pow(Math.max(0, Math.sin(lt * 4.2 + ph * TAU)), 10) * twinkle; D.sparkle(g, x + 40 * sc, y - 40 * sc, Math.max(7, 26 * sc), tw); }
@@ -441,9 +446,11 @@ window.LSS = (() => {
   // 2 · Trick question: all ten are. On the pop every screen sparkles at once, and keeps sparkling; a white flash.
   SCENES['lssv_all'] = { draw(c, lt) {
     const ID = 'lssv_all', tA = D.at(ID, 'all', 1.0);
-    const wink = lt < tA ? 0 : Math.min(1, (lt - tA) / 0.08) * (0.8 + 0.2 * Math.sin(lt * 8));
+    // every screen gets the AI sparkle at once, big on the pop (left to right with the blips) and staying lit after
+    const burst = { fn: (g, ox) => { if (lt < tA) return; D.SPOT.forEach((p, i) => { const t = lt - tA - i * 0.03; if (t <= 0) return;
+      D.sparkle(g, p.x + OX + ox + 40 * D.TVS, p.y + DY - 40 * D.TVS, 30 + 44 * Math.exp(-t * 3.5), Math.min(1, t / 0.1) * (0.85 + 0.15 * Math.sin(lt * 9 + i))); }); }, d: 0.08 };
     const cam = { x: Math.sin((lt + 3) * 0.33) * 6, y: 0, z: D.punch(lt, [tA], { open: 0, kick: 0.5 }), fx: 540, fy: 1000 };
-    framed(c, 1 + 0.02 * Math.exp(-Math.max(0, lt - tA) * 8) * (lt >= tA ? 1 : 0), () => stack(c, wallLayers(lt, { wink }), cam));
+    framed(c, 1 + 0.02 * Math.exp(-Math.max(0, lt - tA) * 8) * (lt >= tA ? 1 : 0), () => stack(c, wallLayers(lt, {}, [burst]), cam));
     if (lt >= tA) { c.fillStyle = `rgba(255,252,240,${0.32 * Math.exp(-(lt - tA) * 9)})`; c.fillRect(0, 0, W, H); }
     box(c);
   } };
@@ -456,9 +463,10 @@ window.LSS = (() => {
     const cam = { x: Math.sin(lt * 0.3) * 4, y: 0, z: D.punch(lt, [tN], { kick: 0.5 }), fx: 540, fy: 1000 };
     framed(c, 1 + 0.025 * Math.exp(-Math.max(0, lt - tN) * 7) * (lt >= tN ? 1 : 0), () => stack(c, [
       { sh: D.room(), d: 0.03, lift: 0 },
-      { fn: (g, ox) => mosaic(g, ox, lt, k, { twinkle: clamp((lt - 0.4) / 0.4, 0, 1) }), d: 0.08 },
+      { fn: (g, ox) => mosaic(g, ox, lt, k, { twinkle: clamp((lt - 0.4) / 0.4, 0, 1),
+        appear: (q, r) => D.pop(lt, 0.06 + 0.045 * Math.hypot(q - M.home[0] - 0.5, (r - M.home[1] - 2) * M.ph / M.pw), 0.22) }), d: 0.08 },
       { fn: (g, ox) => { if (lt < tR - 0.1) return; const a = clamp((lt - tR + 0.1) / 0.2, 0, 1);
-        g.save(); g.globalAlpha = a; D.counter(g, 540 + ox, 640, D.ui('count', '$137,000,000'), clamp((lt - tR) / Math.max(0.2, tN - tR), 0, 1), lt); g.restore(); }, d: 0.1 },
+        g.save(); g.globalAlpha = a; D.counter(g, 540 + ox, CY, D.ui('count', '$137,000,000'), clamp((lt - tR) / Math.max(0.2, tN - tR), 0, 1), lt); g.restore(); }, d: 0.1 },
     ], cam));
     CW.tag(c, D.ui('dateline', 'WESLEYAN MEDIA PROJECT · 15.10.2026'), lt, dur);
     box(c);
@@ -474,7 +482,7 @@ window.LSS = (() => {
     framed(c, 1 + 0.025 * Math.exp(-Math.max(0, lt - tB) * 7) * (lt >= tB ? 1 : 0), () => stack(c, [
       { sh: D.room(), d: 0.03, lift: 0 },
       { fn: (g, ox) => mosaic(g, ox, lt, 1, { stickAt, dim, twinkle: 0.6 * (1 - dim) }), d: 0.08 },
-      { fn: (g, ox) => { g.save(); g.globalAlpha = 0.9; D.counter(g, 540 + ox, 640, D.ui('count', '$137,000,000'), 1, lt); g.restore(); }, d: 0.1 },
+      { fn: (g, ox) => { g.save(); g.globalAlpha = 0.9; D.counter(g, 540 + ox, CY, D.ui('count', '$137,000,000'), 1, lt); g.restore(); }, d: 0.1 },
     ], cam));
     CW.tag(c, D.ui('tagLabels', '~3 IN 10 LABELLED · WESLEYAN'), lt, dur);
     box(c);
@@ -503,8 +511,8 @@ window.LSS = (() => {
     }, d: 0.08 };
     const fallLayer = { fn: (g, ox) => {
       for (const f of FALL) { const t = lt - tF - f.dt; if (t <= 0) continue;
-        const y = -90 + 260 * t + 0.5 * 2900 * t * t; if (y > H + 120) continue;
-        D.label(g, f.x + f.vx * t + Math.sin(t * 5 + f.x) * 26 + ox, y, 1, f.rot + f.spin * t, D.TVS); }
+        const y = -90 + 220 * t + 0.5 * 1800 * t * t; if (y > H + 120) continue;                                    // paper: slower than a stone
+        D.label(g, f.x + f.vx * t + Math.sin(t * 4 + f.x) * 40 + ox, y, 1, f.rot + f.spin * t, D.TVS); }
     }, d: 0.12 };
     framed(c, lerp(1, PUNCH, back), () => stack(c, wallLayers(lt, { labels: LABELS }, [ringLayer, fallLayer]), cam));
     box(c);
