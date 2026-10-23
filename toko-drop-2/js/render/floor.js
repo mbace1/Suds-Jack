@@ -20,9 +20,9 @@
 // vortex (sim/worlds.js's transition: `swirl` 0 → 1 winds it up round
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
-import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=20';
-import { noise } from './scenery.js?v=20';
+import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=21';
+import { noise } from './scenery.js?v=21';
 
 // `light` (optional) is the arena's light map (render/light.js): its rgb is
 // light thrown on the floor, its alpha the shadow of what stands on it.
@@ -31,7 +31,9 @@ import { noise } from './scenery.js?v=20';
 // the rest is the void. While `bounds.warn` is up the floor lights where it
 // is about to change, as Sektori's does: cyan where floor is coming, red
 // where it is going.
-export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds = false } = {}) {
+// `film` (optional) is the goo on the floor (render/goo.js): its wet film and
+// the stain it dries to, two textures that swap every film step (setFilm).
+export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds = false, film = null } = {}) {
   const F = T.floor, LF = T.light.arena.floor;
   const group = new THREE.Group();
 
@@ -51,6 +53,73 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   const W = T.worlds.floor;
   const bounds = hasBounds ? { cur: uniform(new THREE.Vector2(hx, hz)), next: uniform(new THREE.Vector2(hx, hz)), warn: uniform(0) } : null;
   const comeCol = uniform(new THREE.Color(0x40e8ff)), goCol = uniform(new THREE.Color(0xff3040));
+
+  const wetTex = film ? texture(film.wetTexture) : null, dryTex = film ? texture(film.dryTexture) : null;
+
+  // The goo on the floor (goo.js). Depths are millimetres.
+  //   the contact line  a film shows wherever it is deeper than `edge` mm,
+  //                     antialiased by the screen's own derivative, so its
+  //                     edge is as crisp as a real liquid's at any depth and
+  //                     two pools that meet merge along one outline
+  //   the body          the floor seen through the jelly, each channel
+  //                     absorbed by what the hue does not carry (Beer–Lambert:
+  //                     a thin film barely tints, a deep one is its own
+  //                     colour), plus the light the jelly scatters back in
+  //                     its own hue, which grows with depth the same way
+  //   the relief        the surface's slope, lit by the sun: the side of a
+  //                     bead or a pool's rim that faces the light is lifted,
+  //                     the far side dimmed, and the curve catches a glint.
+  //                     The flat middle of a pool mirrors nothing (the floor
+  //                     stays matte, owner 2026-10-22)
+  //   the light         a wet film catches the light thrown on the floor
+  //                     (the light map) a little more than bare floor does
+  //   the stain         what dried: the floor darkened toward the goo's
+  //                     hue, deeper where more goo dried, with the same
+  //                     crisp edge
+  const K = T.goo?.look;
+  const Ld = film ? normalize(vec3(...T.light.sun.position)) : null;
+  // A cubic B-spline read of the film in four bilinear taps (Sigg and
+  // Hadwiger's trick): a texel is 6 cm, and a plain bilinear read draws a
+  // drop's stain as the outline of the texels it fell in, a staircase. The
+  // B-spline's field is smooth to its second derivative, so its contour is
+  // round, the way a liquid's edge is.
+  const filmSize = uniform(new THREE.Vector2(512, 512));
+  const smoothRead = (tex, st) => {
+    const t = st.mul(filmSize).sub(0.5), i = t.floor(), f = t.sub(i);
+    const f2 = f.mul(f), f3 = f2.mul(f);
+    const w0 = float(1).sub(f).pow(3).div(6), w1 = float(4).sub(f2.mul(6)).add(f3.mul(3)).div(6);
+    const w2 = float(1).add(f.mul(3)).add(f2.mul(3)).sub(f3.mul(3)).div(6), w3 = f3.div(6);
+    const g0 = w0.add(w1), g1 = w2.add(w3);
+    const h0 = i.sub(0.5).add(w1.div(g0)), h1 = i.add(1.5).add(w3.div(g1));   // texel centres are at +0.5
+    const a = h0.div(filmSize), b = h1.div(filmSize);
+    const top = tex.sample(vec2(a.x, a.y)).mul(g0.x).add(tex.sample(vec2(b.x, a.y)).mul(g1.x));
+    const bot = tex.sample(vec2(a.x, b.y)).mul(g0.x).add(tex.sample(vec2(b.x, b.y)).mul(g1.x));
+    return top.mul(g0.y).add(bot.mul(g1.y));
+  };
+  const goo = (under, lightRgb, st) => {
+    const W = smoothRead(wetTex, st), Dr = smoothRead(dryTex, st);
+    const h = W.a, hue = W.rgb.div(max(h, 1e-4)), d = Dr.a, dHue = Dr.rgb.div(max(d, 1e-4));
+    const edgeOf = (v, at) => { const fw = fwidth(v).mul(0.75).add(1e-4); return smoothstep(float(at).sub(fw), float(at).add(fw), v); };
+    const dryK = edgeOf(d, K.dryEdge).mul(mix(float(K.dryBase), float(1), float(1).sub(exp(d.div(K.dryDepth).negate())))).mul(K.dryAlpha);
+    const stained = mix(under, under.mul(K.dryDark).add(dHue.mul(K.dryTint)), dryK);
+    // the slope (metres a metre) from the screen's own derivatives: how the
+    // smooth depth and the floor's x, z change across a pixel, solved for
+    // the depth's change along x and z. No texture read: the B-spline's field
+    // is smooth, so a 2×2 pixel quad's difference is its slope.
+    const wxz = positionWorld.xz, ax = dFdx(wxz), ay = dFdy(wxz), hX = dFdx(h), hY = dFdy(h);
+    const det = ax.x.mul(ay.y).sub(ax.y.mul(ay.x)), inv = float(0.001).div(select(abs(det).greaterThan(1e-9), det, float(1e-9)));
+    const sx = hX.mul(ay.y).sub(hY.mul(ax.y)).mul(inv), sz = ax.x.mul(hY).sub(ay.x.mul(hX)).mul(inv);
+    const n = normalize(vec3(sx.mul(-K.bump), 1, sz.mul(-K.bump)));
+    const Vd = normalize(cameraPosition.sub(positionWorld));
+    const curve = smoothstep(K.curve[0], K.curve[1], length(vec2(sx, sz)));
+    const relief = dot(n, Ld).sub(Ld.y).mul(K.relief);                        // > 0 facing the sun, < 0 turned from it
+    const glint = pow(max(dot(n, normalize(Ld.add(Vd))), 0), float(K.shine)).mul(K.spec).mul(curve);
+    const absorb = exp(vec3(1).sub(hue).mul(h.div(K.absorb)).negate());
+    const thick = float(1).sub(exp(h.div(K.absorb).negate()));
+    const body = stained.mul(absorb).add(hue.mul(thick).mul(K.scatter));
+    const wet = body.mul(float(1).add(relief)).add(mix(hue, vec3(1), 0.5).mul(max(relief, 0)).mul(K.rim)).add(vec3(glint)).add(lightRgb.mul(K.lit));
+    return mix(stained, wet, edgeOf(h, K.edge));
+  };
 
   // world (x, z) from floor uv and back: v runs from z = +hz to -hz
   const toWorld = (p) => vec2(p.x.sub(0.5).mul(hx * 2), float(hz).sub(p.y.mul(hz * 2)));
@@ -157,6 +226,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
       let take = S.mask.mul(LF.grid).add(LF.spill);
       if (S.wet) take = take.add(S.wet.mul(W.sewer.wetLight));
       out = out.mul(float(1).sub(shade)).add(L.rgb.mul(take));
+      // the goo over the floor, before the hole and the walls: they cut it
+      if (film) out = goo(out, L.rgb, vec2(p.x, float(1).sub(p.y)));
     }
     // the hole in the middle of the swirl, its lip catching the light
     const inHole = float(1).sub(smoothstep(hole.mul(0.82), hole, r));
@@ -205,6 +276,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     swirl: { k: swirl, at: swirlAt, r: swirlR, hole },
     // the light pool follows the hero (world x, z → floor uv)
     setPlayer(x, z) { player.value.set((x + hx) / (2 * hx), (hz - z) / (2 * hz)); },
+    // the film's current textures (they swap every film step) and its size in texels
+    setFilm(f) { if (!film) return; wetTex.value = f.wetTexture; dryTex.value = f.dryTexture; filmSize.value.set(1 / f.texel.value.x, 1 / f.texel.value.y); },
     dispose() {
       plane.geometry.dispose(); mat.dispose();
       border.geometry.dispose(); border.material.dispose();

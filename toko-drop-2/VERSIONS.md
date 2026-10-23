@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v21 — 2026-10-23
+**Splatter: kills throw real goo that pools, smears and dries on the floor — on by default, SPLATTER on the title turns it off**
+- `render/goo-sim.js` + `render/goo.js`: thrown droplets fly, land, slide and stamp a wet film on the floor (16 texels a metre, stepped 30×/s), which dries to a stain; bodies walking through it smear it. Hits, kills, lob landings and cuts all throw it
+- The floor reads the film in every world (grid, driveway, sewer, SURVIVAL), under the vortex hole and SURVIVAL's warning; a world change clears it with the floor
+- Title switch SPLATTER ON/OFF (fi ROISKEET, ja しぶき), kept in `toko2.goo`; `?goo=off|on` overrides it for a link. Off is 1.x's droplets and puddles, as before
+- Gates: `test/goo.mjs` (17); smoke checks the switch, that a kill lays film (and `?goo=off` lays none), and that no menu label is cut off
+- Cache tokens `?v=20` → `?v=21`; HUD label → `2.0 · v21`
+
+---
+
 ## v20 — 2026-10-23
 **SURVIVAL is back, and its floor changes size as you play**
 - **SURVIVAL's floor reshapes** (owner, 2026-10-23: "survival should be

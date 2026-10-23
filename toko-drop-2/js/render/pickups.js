@@ -27,9 +27,9 @@
 // go through the actors' own chunks.
 import * as THREE from 'three/webgpu';
 import { texture } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=20';
-import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=20';
-import { t as say } from '../ui.js?v=20';
+import { TUNING } from '../tuning.js?v=21';
+import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=21';
+import { t as say } from '../ui.js?v=21';
 
 const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty;
 const POOLS = 96;   // pools of light a frame: the drops, the beams, the moths

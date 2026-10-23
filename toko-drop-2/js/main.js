@@ -7,25 +7,25 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=20';
-import { buildFloor } from './render/floor.js?v=20';
-import { fitCamera, screenToWorld } from './render/view.js?v=20';
-import * as worldsSim from './sim/worlds.js?v=20';
-import * as reshapeSim from './sim/reshape.js?v=20';
-import { Scenery } from './render/scenery.js?v=20';
-import { Transit } from './render/transit.js?v=20';
-import { Splats } from './render/splats.js?v=20';
-import { Actors } from './render/actors.js?v=20';
-import { GEL_TIME } from './render/gel.js?v=20';
-import { studioEnvironment } from './render/env.js?v=20';
-import { createWorld, step, api as simApi } from './sim/world.js?v=20';
-import { stage as stagePk } from './sim/pickups.js?v=20';
-import { Input } from './input.js?v=20';
-import { UI, t, timeText } from './ui.js?v=20';
-import { Sound } from './audio.js?v=20';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=20';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=20';
-import { Readout } from './readout.js?v=20';
+import { TUNING } from './tuning.js?v=21';
+import { buildFloor } from './render/floor.js?v=21';
+import { fitCamera, screenToWorld } from './render/view.js?v=21';
+import * as worldsSim from './sim/worlds.js?v=21';
+import * as reshapeSim from './sim/reshape.js?v=21';
+import { Scenery } from './render/scenery.js?v=21';
+import { Transit } from './render/transit.js?v=21';
+import { Splats } from './render/splats.js?v=21';
+import { Actors } from './render/actors.js?v=21';
+import { GEL_TIME } from './render/gel.js?v=21';
+import { studioEnvironment } from './render/env.js?v=21';
+import { createWorld, step, api as simApi } from './sim/world.js?v=21';
+import { stage as stagePk } from './sim/pickups.js?v=21';
+import { Input } from './input.js?v=21';
+import { UI, t, timeText } from './ui.js?v=21';
+import { Sound } from './audio.js?v=21';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=21';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=21';
+import { Readout } from './readout.js?v=21';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -66,7 +66,16 @@ scene.add(sun);
 if (T.env.on) { scene.environment = studioEnvironment(); scene.environmentIntensity = T.env.intensity; }
 
 const splats = new Splats(scene);
-const actors = new Actors(scene, splats);
+const store = {
+  num(k) { try { return Number(localStorage.getItem(k)) || 0; } catch { return 0; } },
+  str(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+  set(k, v) { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } },
+};
+// the goo (render/goo.js) is on unless the title's SPLATTER switch says off
+// (localStorage toko2.goo); ?goo=off|on overrides it for a link, as ?gels does
+let urlGoo = ['on', 'off'].includes(params.get('goo')) ? params.get('goo') : null;
+const gooOn = () => (urlGoo ?? store.str('toko2.goo')) !== 'off';
+const actors = new Actors(scene, splats, { goo: gooOn() });
 const scenery = new Scenery(scene, T);   // the curb and the lawn, the sewer's walls (render/scenery.js)
 const camera = new THREE.PerspectiveCamera();
 const camRest = new THREE.Vector3();
@@ -110,7 +119,7 @@ function useWorld(n, hx, hz) {
   viewWorld = n; boundsFloor = false;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
-  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[n - 1] ?? 'grid' });
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[n - 1] ?? 'grid', film: actors.gooKit.film });
   scene.add(floor.group);
   scenery.build(n, hx, hz);
   camAt.set(0, 0, 0);
@@ -125,7 +134,7 @@ function useSurvival() {
   viewWorld = 1; boundsFloor = true;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
-  floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', bounds: true });
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', bounds: true, film: actors.gooKit.film });
   scene.add(floor.group);
   scenery.build(1, hx, hz);
   camAt.set(0, 0, 0);
@@ -198,11 +207,6 @@ function follow(dt, a) {
 }
 
 // ── state ──────────────────────────────────────────────────────────
-const store = {
-  num(k) { try { return Number(localStorage.getItem(k)) || 0; } catch { return 0; } },
-  str(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
-  set(k, v) { try { localStorage.setItem(k, String(v)); } catch { /* private mode */ } },
-};
 // Every mode the sim runs, each with its best score. The title offers only
 // ARCADE and HARDCADE for now (ui.js TITLE_MODES; owner, 2026-10-22: "forget
 // survival for now"), but SURVIVAL still runs from here, as
@@ -244,6 +248,7 @@ const ui = new UI({
   onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); showTitle(true); },
   onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); showTitle(true); },
   gels: () => gels(), onGels: () => flipGels(),
+  goo: () => gooOn(), onGoo: () => flipGoo(),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
 // the view of a world change: the swirl, the dark, the fall, the floor running out (render/transit.js)
@@ -265,6 +270,12 @@ function flipGels() {
   actors.setGels(g); setLabel(); showTitle(true);
 }
 actors.setGels(gels()); setLabel();
+function flipGoo() {
+  const on = !gooOn();
+  store.set('toko2.goo', on ? 'on' : 'off');
+  if (urlGoo) { urlGoo = null; const u = new URL(location.href); u.searchParams.delete('goo'); history.replaceState(history.state, '', u); }
+  actors.setGoo(on); actors.gooKit.render(renderer); floor.setFilm(actors.gooKit.film); splats.clear(); showTitle(true);
+}
 // ?fps: the frame-time line beside the version; ?bench: the fixed 24-body scene (readout.js)
 let lastDash = null;   // the sim's last dash event, for the readout's flick line
 const readout = new Readout({ renderer, backend, actors, input, lastDash: () => lastDash, on: params.has('fps') || params.has('bench') });
@@ -312,6 +323,12 @@ function start(m, { intro: asked = false } = {}) {
   acc = 0; pendingDash = false;
   sound.unlock();
   actors.setGels(gels()); setLabel();
+function flipGoo() {
+  const on = !gooOn();
+  store.set('toko2.goo', on ? 'on' : 'off');
+  if (urlGoo) { urlGoo = null; const u = new URL(location.href); u.searchParams.delete('goo'); history.replaceState(history.state, '', u); }
+  actors.setGoo(on); actors.gooKit.render(renderer); floor.setFilm(actors.gooKit.film); splats.clear(); showTitle(true);
+}
   ui.hide();
   if (introWanted(asked)) {
     state = 'intro'; input.enabled = false; ui.setHud(false);
@@ -362,7 +379,7 @@ function survivalFrame() {
 
 function onEvent(e) {
   if (e.type === 'dash') lastDash = e;
-  if (e.type === 'worldIn') { useWorld(e.world, e.hx, e.hz); splats.clear(); }   // the next world's floor, under the falling droplet; the last one's puddles went down the drain with it
+  if (e.type === 'worldIn') { useWorld(e.world, e.hx, e.hz); splats.clear(); actors.goo?.clear(); }   // the next world's floor, under the falling droplet; the last one's puddles went down the drain with it
   if (e.type.startsWith('world')) transit.onEvent(e, floor, world);
   if (e.type === 'reshape') shake(T.survival.reshape.shake);
   if (e.type === 'reshaped') splats.prune(e.hx, e.hz);
@@ -459,7 +476,13 @@ const debug = {
   loop(on) { capture.on = !on; },
   start, pause, resume, toMenu,
   // the GELS style ('classic' | 'sdf'), for the smoke and the captures; the readout
-  get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel(); }, readout,
+  get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel();
+function flipGoo() {
+  const on = !gooOn();
+  store.set('toko2.goo', on ? 'on' : 'off');
+  if (urlGoo) { urlGoo = null; const u = new URL(location.href); u.searchParams.delete('goo'); history.replaceState(history.state, '', u); }
+  actors.setGoo(on); actors.gooKit.render(renderer); floor.setFilm(actors.gooKit.film); splats.clear(); showTitle(true);
+} }, readout,
   // Look checks for one species (test/lookshot.mjs): a quiet arena with only
   // these bodies in it, the hero standing below them.
   showcase(kinds, { spacing = 4, heroZ = 0.6 } = {}) {
@@ -478,7 +501,7 @@ const debug = {
       const h = world.hero, a = aimAt ? Math.atan2(aimAt.z - h.z, aimAt.x - h.x) : 0;
       step(world, { mx: 0, mz: 0, ax: Math.cos(a), az: Math.sin(a), aim: !!aimAt, fire: !!aimAt, dash: false });
       for (const e of world.events) onEvent(e);
-      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt);
+      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt); actors.goo?.render(renderer);
     }
   },
   // step the run under one fixed input (a look check of a dash, say): `inp`
@@ -488,8 +511,14 @@ const debug = {
     for (let i = 0; i < n && !world.over; i++) {
       step(world, { mx: 0, mz: 0, ax: 1, az: 0, aim: false, fire: false, ...inp, dash: i === 0 ? (typeof inp.dash === 'object' ? inp.dash : !!inp.dash) : false });
       for (const e of world.events) onEvent(e);
-      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt);
+      actors.stepFx(T.sim.dt, i * T.sim.dt); splats.step(T.sim.dt); actors.goo?.render(renderer);
     }
+  },
+  // the goo (render/goo.js), for the smoke and the look checks: drops alive,
+  // 1.x's puddles on the floor, and the film round (x, z) read back
+  async gooAt(x, z) {
+    const g = actors.goo;
+    return { on: !!g, drops: g ? g.n : 0, splats: splats.s.filter((p) => p.on).length, ...(g ? await g.film.probe(renderer, x, z) : { wet: 0, dry: 0, covered: 0 }) };
   },
   // Look checks: one of every pickup round the hero (sim/pickups.js stage),
   // drawn from the next frame on
@@ -514,6 +543,9 @@ const debug = {
       step(world, inp);
       for (const e of world.events) onEvent(e);
       if (i % 4 === 0) { actors.stepFx(T.sim.dt * 4, i * T.sim.dt); splats.step(T.sim.dt * 4); }
+      // the goo's film catches up in half-second steps: a step a frame here
+      // would queue hundreds of GPU passes ahead of the next real frame
+      if (i % 30 === 29) actors.goo?.render(renderer, 0.5);
     }
   },
 };
@@ -582,6 +614,7 @@ function frame(now, dtFixed) {
   if (state === 'intro') intro.frame(introT, world);   // after sync: the intro poses the hero
   ui.drawSticks(input, following && world && state === 'play' ? offscreen() : null);
   actors.light.render(renderer);   // the arena's light map, which the floor reads
+  if (actors.goo) { actors.goo.render(renderer); floor.setFilm(actors.goo.film); }   // the goo's film steps (render/goo.js), and the floor reads where it now is
   renderer.render(scene, state === 'intro' ? intro.cam : camera);
   readout.frame(now, state, world);
   debug.frames++;

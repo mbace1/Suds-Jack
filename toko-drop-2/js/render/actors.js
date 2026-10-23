@@ -6,22 +6,25 @@
 //                     breath × the smear it drags along the floor)
 // A species with its own look (render/looks/, docs/SIM_CONTRACT.md) builds
 // its own body and moves it in its own update. A bullet sets off a ripple from where it landed. A kill is 1.x's:
-// the body thrashes, glows and swells to 2.3x for 0.28 s while chunks and
-// droplets of goo fly out, squash where they land and shrink away, and a
-// puddle with its satellites springs in and fades (splats.js); a big body's
-// death sends a shockwave through the gels around it. Views are pooled per
-// species, so a gel's material is built once and reused, never compiled
-// mid-fight.
+// the body thrashes, glows and swells to 2.3x for 0.28 s while chunks of goo
+// fly out, squash where they land and shrink away; a big body's death sends a
+// shockwave through the gels around it. The goo itself is 2.0's (goo.js):
+// droplets with volume that fly, ride the bodies they meet, splash, slide and
+// pool on the floor, which dries to a stain. With the goo off (`?goo=off`)
+// it is 1.x's again: droplets as chunks, and a puddle with its satellites
+// that springs in and fades (splats.js). Views are pooled per species, so a
+// gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=20';
+import { TUNING } from '../tuning.js?v=21';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=20';
-import { LOOKS } from './looks/index.js?v=20';
-import { JellyBody } from './jelly.js?v=20';
-import { Juice } from './juice.js?v=20';
-import { ArenaLight } from './light.js?v=20';
-import { toSdf } from './sdf.js?v=20';
-import { PickupView } from './pickups.js?v=20';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=21';
+import { LOOKS } from './looks/index.js?v=21';
+import { JellyBody } from './jelly.js?v=21';
+import { Juice } from './juice.js?v=21';
+import { ArenaLight } from './light.js?v=21';
+import { toSdf } from './sdf.js?v=21';
+import { PickupView } from './pickups.js?v=21';
+import { Goo } from './goo.js?v=21';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -29,7 +32,8 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const BULLET_Y = 0.45;
 
 export class Actors {
-  constructor(scene, splats) {
+  // `goo: false` keeps 1.x's droplets and puddles instead of the goo
+  constructor(scene, splats, { goo = true } = {}) {
     this.scene = scene; this.splats = splats; this.hx = 19; this.hz = 11; this.heat = 0;
     this.geo = { blob: domeGeometry(), cube: cubeGeometry(), hero: heroGeometry(), eye: new THREE.SphereGeometry(1, 12, 8) };
     this.views = new Map();      // live gels by id
@@ -51,6 +55,11 @@ export class Actors {
     this.juice = new Juice(scene);   // bullet comets, hit sparks, kill flashes and rings
     this.light = new ArenaLight();   // the light and shadow the floor reads (main.js draws it)
     this.pickups = new PickupView(scene, this);   // 1.x's drops, gates, convoy and bounty (render/pickups.js)
+    // droplets and the floor's film (render/goo.js); main.js steps the film.
+    // The kit is always built (the floor reads its film); `goo` is it while
+    // the title's SPLATTER switch is on, and null while 1.x's puddles stand in
+    this.gooKit = new Goo(scene);
+    this.goo = goo ? this.gooKit : null;
 
     const sphere = new THREE.SphereGeometry(1, 10, 8);
     this.bullets = new THREE.InstancedMesh(sphere, new THREE.MeshBasicNodeMaterial(), T.bullets.maxHero + T.bullets.maxGel);
@@ -83,7 +92,9 @@ export class Actors {
   }
 
   // The arena this run plays on.
-  setArena(hx, hz) { this.hx = hx; this.hz = hz; this.light.setArena(hx, hz); }
+  setArena(hx, hz) { this.hx = hx; this.hz = hz; this.light.setArena(hx, hz); this.gooKit.setArena(hx, hz); }
+  // the SPLATTER switch: off clears what is thrown and laid, and 1.x's puddles take over
+  setGoo(on) { if (!on) this.gooKit.clear(); this.goo = on ? this.gooKit : null; }
 
   _makeHero() {
     const L = T.heroLook, r = T.hero.radius;
@@ -233,6 +244,7 @@ export class Actors {
     this.juice.reset();
     this.light.reset();
     this.pickups.reset();
+    this.goo?.clear();
   }
 
   // the sim's events that only the view cares about
@@ -240,13 +252,14 @@ export class Actors {
     this.juice.onEvent(e, w);
     this.light.onEvent(e);
     this.pickups.onEvent(e);
+    if (this.goo) this._gooEvent(e, w);
     if (e.type === 'ghost') {
       const G = T.heroLook.ghost, slot = this.hero.ghosts.reduce((a, b) => (a.life <= b.life ? a : b));
       slot.life = G.life; slot.mesh.position.set(e.x, 0, e.z); slot.mesh.visible = true;
     } else if (e.type === 'shot' && !e.round) {
       const M = T.heroLook.muzzle, hv = this.hero;
       hv.muzzle.position.set(e.x, M.y, e.z); hv.muzzleT = M.life; hv.muzzle.visible = true;
-    } else if (e.type === 'lobLand') {
+    } else if (e.type === 'lobLand' && !this.goo) {
       const S = D.lobSplash;
       this.splats?.puddle(e.x, e.z, S.puddle, e.color);
       this.spray(e.x, e.z, S.droplets, e.color, S.dropletSize);
@@ -282,8 +295,8 @@ export class Actors {
       }
     };
     throwOut(Math.round(rand(D.chunks[0], D.chunks[1] + 0.99) - 0.49), [D.chunkSize, D.chunkSize], D.chunkSpeed, D.chunkUp);
-    throwOut(Math.round((e.boss ? D.dropletsBoss : big ? D.dropletsBig : D.droplets) * (1 + this.heat)), D.dropletSize, [D.dropletSpeed, D.dropletSpeed + 4 * (1 + 0.5 * this.heat)], D.dropletUp);
-    if (this.splats) {
+    if (!this.goo) throwOut(Math.round((e.boss ? D.dropletsBoss : big ? D.dropletsBig : D.droplets) * (1 + this.heat)), D.dropletSize, [D.dropletSpeed, D.dropletSpeed + 4 * (1 + 0.5 * this.heat)], D.dropletUp);
+    if (this.splats && !this.goo) {
       this.splats.puddle(e.x, e.z, e.r * D.puddle, e.color);
       const sats = big ? 3 : this.heat > 0.5 ? 2 : 1;
       for (let i = 0; i < sats; i++) {
@@ -301,6 +314,57 @@ export class Actors {
       }
     }
     return big;
+  }
+
+  // What throws goo (TUNING.goo.emit). Every spray comes out of the body at
+  // the height it would, the way the blow that made it went.
+  _gooEvent(e, w) {
+    const E = T.goo.emit, goo = this.goo, h = w?.hero;
+    const color = (kind) => T.species[kind]?.color ?? 0xffffff;
+    if (e.type === 'kill') {
+      // all round, and `exit` of it on through, the way the shot or the dash went
+      const K = E.kill, R = e.r;
+      let dx = 0, dz = 0;
+      if (e.src === 'dash' && h) { dx = h.dashX; dz = h.dashZ; } else if (h) { dx = e.x - h.x; dz = e.z - h.z; }
+      const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+      const n = Math.round((K.base + K.perR * R) * (1 + K.heat * this.heat)), nx = Math.round(n * K.exit), y = R * 0.8;
+      goo.spray(e.x, y, e.z, n - nx, e.color, { speed: K.speed, up: K.up });
+      goo.spray(e.x + dx * R * 0.5, y, e.z + dz * R * 0.5, nx, e.color, { dx, dz, cone: K.exitCone, speed: K.speed.map((s) => s * K.exitBoost), up: K.up });
+      goo.puddle(e.x, e.z, R * K.puddleR, K.puddle * R * R, e.color);
+    } else if (e.type === 'hit') {
+      // back out of the entry toward the gun, and a few out of the far side
+      const H = E.hit, g = w?.gels.find((x) => x.id === e.id);
+      if (!g) return;
+      let ox = e.x - g.x, oz = e.z - g.z; const l = Math.hypot(ox, oz) || 1; ox /= l; oz /= l;
+      goo.spray(e.x, BULLET_Y, e.z, H.count, color(e.kind), { dx: ox, dz: oz, cone: H.cone, speed: H.speed, up: H.up, size: H.size });
+      goo.spray(g.x - ox * g.r, BULLET_Y, g.z - oz * g.r, H.through, color(e.kind), { dx: -ox, dz: -oz, cone: 0.35, speed: H.speed, up: H.up, size: H.size });
+    } else if (e.type === 'lobLand') {
+      const L = E.lob;
+      goo.spray(e.x, 0.3, e.z, L.count, e.color, { speed: L.speed, up: L.up });
+      goo.puddle(e.x, e.z, L.puddleR, L.puddle, e.color);
+    } else if (e.type === 'shove') {
+      // the dash shoves a body: it slops forward off the way it was knocked
+      const S = E.shove, g = w?.gels.find((x) => x.id === e.id);
+      if (!g || !h) return;
+      let dx = g.x - h.x, dz = g.z - h.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+      goo.spray(g.x, g.r * 0.7, g.z, S.count, color(g.kind), { dx, dz, cone: S.cone, speed: S.speed, up: S.up, inherit: [g.kx * S.inherit, g.kz * S.inherit] });
+    } else if (e.type === 'dashCut') {
+      // the CUT: two sheets out of the sides of the blade, a few on along it, and its streak
+      const C = E.cut, g = w?.gels.find((x) => x.id === e.id);
+      if (!g || !h) return;
+      const hex = color(g.kind), l = Math.hypot(h.dashX, h.dashZ) || 1, dx = h.dashX / l, dz = h.dashZ / l;
+      for (const s of [1, -1]) goo.spray(g.x, g.r * 0.6, g.z, Math.round(C.count / 2), hex, { dx: -dz * s, dz: dx * s, cone: C.cone, speed: C.speed, up: C.up });
+      goo.spray(g.x, g.r * 0.6, g.z, C.along, hex, { dx, dz, cone: 0.3, speed: C.speed, up: C.up });
+      goo.pour(g.x, g.z, g.r * 0.25, C.streak * g.r, hex, dx, dz, g.r * 2);
+    } else if (e.type === 'hurt' && h) {
+      // the hero hit: the goo that hit him, splashed onto him from all round
+      // (fine drops, the only ones he wears)
+      const by = String(e.by || '').replace('revenge:', ''), c = _gooC.setHex(T.species[by]?.color ?? T.bullets.gelColor), rMax = T.goo.ride.heroMaxR;
+      for (let i = 0; i < E.hurt.count && goo.left > 0; i++, goo.left--) {
+        const a = Math.random() * Math.PI * 2, r = rMax * (0.4 + 0.6 * Math.random()), d = T.hero.radius * 1.25;
+        goo.sim.emit(h.x + Math.cos(a) * d, 0.5 + Math.random() * 0.5, h.z + Math.sin(a) * d, -Math.cos(a) * 2, 0.5, -Math.sin(a) * 2, r, c.r, c.g, c.b);
+      }
+    }
   }
 
   sync(w, alpha, time) {
@@ -371,6 +435,7 @@ export class Actors {
     this.juice.sync(w, alpha, BULLET_Y);
     this.light.sync(w, alpha, this.views);
     this.pickups.sync(w, alpha, time);
+    this.goo?.setBodies(w, alpha);
 
     // lobs in flight, hazards on the floor (a slow pulse, fading out at the end)
     let k = 0;
@@ -429,6 +494,7 @@ export class Actors {
     this.juice.step(dt);
     this.light.step(dt);
     this.pickups.stepFx(dt);
+    if (this.goo) { this.goo.step(dt); this.goo.sync(); }   // the goo's drops fly, and what they lay down goes to the film
     // jelly halves: step, redraw, and in their last part slump into the puddle
     const J = D.jelly;
     for (let i = this.jellies.length - 1; i >= 0; i--) {
@@ -512,5 +578,5 @@ export class Actors {
   }
 }
 
-const _white = new THREE.Color(0xffffff);
+const _white = new THREE.Color(0xffffff), _gooC = new THREE.Color();
 const smooth = (t) => { const u = Math.min(1, Math.max(0, t)); return u * u * (3 - 2 * u); };

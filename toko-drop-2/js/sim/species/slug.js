@@ -81,7 +81,7 @@
 // split points a body (`_splitPts`, main.js:10626 reads one per body), so the
 // second overwrote the first and that first back half never came into being —
 // its segments were gone. A SPREAD or SHOTGUN volley across a slug does that.
-import { TUNING } from '../../tuning.js?v=20';
+import { TUNING } from '../../tuning.js?v=21';
 
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

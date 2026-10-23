@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=20';
-import WAVES from './tuning/waves.js?v=20';
-import PICKUPS from './tuning/pickups.js?v=20';
+import { SPECIES } from './tuning/species/index.js?v=21';
+import WAVES from './tuning/waves.js?v=21';
+import PICKUPS from './tuning/pickups.js?v=21';
 
 export const TUNING = {
   render: {
@@ -540,6 +540,85 @@ export const TUNING = {
     lobSplash: { droplets: 10, dropletSize: [0.09, 0.13], puddle: 1.1, shake: 0.12 },
   },
   splats: { capacity: 192, life: 5, opacity: 0.55, spring: 0.55, damp: 0.74, y: 0.01 },
+
+  // 2.0's GOO (render/goo-sim.js, render/goo.js; owner, 2026-10-23: "more
+  // particle splatter and vfx, actually physical modelled vfx"). What a kill,
+  // a hit, a cut and a lob throw is DROPLETS with volume (4/3·π·r³, metres),
+  // and the floor is a thin FILM of goo they land in: what a drop loses to
+  // the floor is what the floor gains, the film spreads it, and it dries to a
+  // stain. It replaces 1.x's droplets and puddles (death.droplets*,
+  // splats); the chunks and the jelly halves stay. `?goo=off` turns it off,
+  // for comparison, and brings 1.x's back.
+  goo: {
+    cap: 2400,              // drops alive at once (all of them step in ~0.6 ms in bare node: test/goo.mjs)
+    budget: 320,            // drops one frame may throw: a boss's death cannot stall a frame
+    stampCap: 4096,         // what drops lay into the film between two film steps
+    life: 4, gravity: 14, bodyTop: 3,                         // s; m/s² (1.x's chunk gravity); no body stands taller (m)
+    air: { lin: 0.1, quad: 0.0005, wall: 0.15 },              // drag 1/s, and its quadratic part × speed / radius (≈ 3/8 · Cd · ρair/ρgoo, doubled for a lumpy drop); the rail returns this much
+    size: { min: 0.022, max: 0.085, skew: 2.2 },              // r = exp(lerp(ln min, ln max, u^skew)): mostly fine, a few fat; under a bullet's 0.15
+    sizeSpeed: 0.35,                                          // a drop's speed × (min / r)^this: a fat drop flies slower
+    // on the floor: kinetic friction mu and viscous drag 1/s while it slides;
+    // it sheds `shed` of its volume a metre in a streak `streakWide` × its
+    // width, sits `flat` × its radius high, stops under `stop` m/s or `minR`
+    // m and leaves a last blob `blob` × its radius; an impact leaves `impact`
+    // of it and keeps `keep` of its speed; a stain stretches at most `maxElong`
+    floor: { mu: 0.55, visc: 2.2, shed: 1.6, streakWide: 0.9, flat: 0.45, stop: 0.25, minR: 0.012, blob: 1.6, impact: 0.3, keep: 0.75, maxElong: 4 },
+    // a fast fat drop SPLASHES: past `speed` m/s down and `minR` m, a stain
+    // keeps `keep` of it and the rest flies on as a crown of up to `count`
+    // finer drops, thrown out at `out` × the fall plus `carry` × the travel
+    splash: { speed: 4.5, minR: 0.04, count: 4, perSpeed: 0.35, out: 0.35, carry: 0.4, up: 0.25, keep: 0.4 },
+    // a fast fine one BOUNCES (surface tension wins): a `mark` of it, `e` of its fall back up
+    bounce: { speed: 5, maxR: 0.035, e: 0.25, keep: 0.6, mark: 0.15 },
+    // riding a body: it creeps down the skin at creep + creepR·r² m/s, for at
+    // most `max` s, `proud` × its radius off the skin; off the foot it slides
+    // out at the body's speed × `carry` plus `out` m/s. The hero wears only
+    // fine drops (under `heroMaxR` m) and none mid-dash: he must stay readable
+    ride: { creep: 0.6, creepR: 60, max: 1.6, carry: 0.6, out: 1.2, proud: 0.35, heroMaxR: 0.03 },
+    // the impostor: stretched by `stretch` × its screen speed (at most
+    // `maxStretch`), wrap-lit, with a fresnel rim, a glint and a glow of its own
+    drop: { stretch: 0.09, maxStretch: 3.2, gloss: 28, glint: 0.7, diffuse: 0.75, ambient: 0.35, rim: 0.8, glow: 0.18 },
+    // its shadow straight below it: `size` × its radius on the floor, `grow`
+    // × its radius wider a metre up, `alpha` at the floor and 1/(1 + fade·h) above
+    shadow: { size: 1.3, grow: 4, alpha: 0.5, fade: 1.5, y: 0.006 },
+    // THE FILM, `perMetre` texels a metre, stepped `hz` times a second. Depths
+    // in MILLIMETRES (a half float is precise there). Goo deeper than `yield`
+    // runs toward its neighbours (`spread` of the difference a side a step,
+    // ≤ 0.2 for a stable step, at full rate once `ref` mm of it can run);
+    // every wet texel loses `evap` mm/s, and `deposit` of what it loses stays
+    // as the stain (`ring` of it at the film's edge, where a drying film
+    // lays down what it carried: the coffee ring; `ringAt` mm is how dry a
+    // neighbour must be for this to be the edge), which halves every
+    // `dryHalfLife` s. Bodies drag the film at `drag` × their speed over
+    // `foot` × their radius. A stamp is at least `minWid` texels wide.
+    // Nothing reaching the film for `wetFor` s means it has all dried: then
+    // the stain fades a step every `idleEvery` s.
+    film: { perMetre: 16, hz: 30, stampCap: 4096, minWid: 0.8, yield: 6, spread: 0.2, ref: 10, evap: 4, deposit: 0.6, ring: 2.5, ringAt: 0.5, dryHalfLife: 8,
+      drag: 0.5, foot: 0.9, wetFor: 20, idleEvery: 0.5 },
+    // how the floor shows it (floor.js): the wet film's contact line (mm),
+    // its absorption depth (mm), how much of its own hue a deep film
+    // scatters back, the slope's bump, which slopes count as curved (m/m),
+    // how strongly the sun lifts the side of a slope facing it, the glint
+    // and the lit rim, the arena light it catches; the stain's contact line
+    // (mm), how strong the thinnest stain is (`dryBase`) and the depth (mm)
+    // over which it comes to `dryAlpha`, how dark and how tinted it dries
+    look: { edge: 0.35, absorb: 6, scatter: 0.22, bump: 4, curve: [0.02, 0.12], relief: 1.4, shine: 50, spec: 0.55, rim: 0.35, lit: 1.0,
+      dryEdge: 0.08, dryBase: 0.2, dryDepth: 2.5, dryAlpha: 0.5, dryDark: 0.7, dryTint: 0.14 },
+    // a body's puddle: `lobes` blobs, `spread` × its radius off the middle, each `size` × its radius by its share
+    puddle: { lobes: 6, spread: 1.0, size: [0.3, 0.7] },
+    // what throws goo
+    emit: {
+      // a kill: base + perR × its radius drops (more while kills come fast:
+      // `heat`), `exit` of them thrown on the way the shot or dash went, and
+      // `puddle` × r² m³ poured where it stood, over `puddleR` × its radius
+      kill: { base: 10, perR: 45, heat: 0.5, exit: 0.45, exitCone: 0.7, exitBoost: 1.3, speed: [1.5, 6.5], up: [2, 6], puddle: 0.03, puddleR: 0.8 },
+      // a hit: back-spray out of the entry toward the gun, a few out of the far side
+      hit: { count: 3, cone: 0.8, speed: [2, 6], up: [1, 4], size: { min: 0.016, max: 0.04, skew: 1.6 }, through: 1 },
+      lob: { count: 26, speed: [2.5, 6.5], up: [2, 5], puddle: 0.04, puddleR: 0.6 },          // a lob's splashdown
+      shove: { count: 8, cone: 1.0, speed: [1.5, 4], up: [1, 3], inherit: 0.5 },                // the dash shoves a body: it slops forward
+      cut: { count: 16, along: 6, cone: 0.5, speed: [3, 7], up: [1.5, 4], streak: 0.012 },        // the CUT dash: two sheets out of the sides, a streak along the cut
+      hurt: { count: 10 },                                                                         // the hero hit: goo splashed onto him
+    },
+  },
 
   // 2.0's ARCADE JUICE (render/juice.js; owner, 2026-10-22: the graphics
   // pass's second step, after the jelly). World-space additive glows in the

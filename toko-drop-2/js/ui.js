@@ -2,7 +2,7 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=20';
+import { TUNING } from './tuning.js?v=21';
 
 const STR = {
   en: {
@@ -11,7 +11,7 @@ const STR = {
     arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'Rooms with their own clock — coming next.',
     best: 'BEST', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
-    wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
+    wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
     greenRush: 'GREEN RUSH! DOUBLE PRIZE', dud: 'DUD! GREEN MEANS GO', dashThrough: 'DASH THROUGH!', gateChain: 'GATE CHAIN', bounty: 'BOUNTY',
     world2: 'WORLD 2 · THE DRIVEWAY', world3: 'WORLD 3 · THE SEWER',
     dashUp: 'DASH UP', dashDown: 'DASH KNOCKED DOWN TO LV1', fxInv: 'INVINCIBLE', fxRapid: 'RAPID FIRE', fxMult: 'SCORE', fxDash: 'DASH',
@@ -26,7 +26,7 @@ const STR = {
     arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: '制限時間のある部屋 — 次の版で。',
     best: 'ベスト', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', time: 'タイム', newbest: '新記録', soon: '近日',
-    wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
+    wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
     greenRush: 'グリーンラッシュ！賞品2倍', dud: 'ハズレ！緑で行け', dashThrough: 'ダッシュで抜けろ！', gateChain: 'ゲートチェーン', bounty: '賞金首',
     world2: 'ワールド2 · ドライブウェイ', world3: 'ワールド3 · 下水道',
     dashUp: 'ダッシュ強化', dashDown: 'ダッシュが LV1 に', fxInv: '無敵', fxRapid: '連射', fxMult: 'スコア', fxDash: 'ダッシュ',
@@ -41,7 +41,7 @@ const STR = {
     arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'Huoneita omalla kellollaan — seuraavaksi.',
     best: 'ENNÄTYS', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
-    wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
+    wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
     greenRush: 'VIHREÄ RYNTÄYS! TUPLAPALKINTO', dud: 'SUUTARI! VIHREÄLLÄ MENNÄÄN', dashThrough: 'SYÖKSY LÄPI!', gateChain: 'PORTTIKETJU', bounty: 'PALKKIO',
     world2: 'MAAILMA 2 · PIHATIE', world3: 'MAAILMA 3 · VIEMÄRI',
     dashUp: 'SYÖKSY PARANI', dashDown: 'SYÖKSY PUTOSI LV1:EEN', fxInv: 'KUOLEMATON', fxRapid: 'PIKATULI', fxMult: 'PISTEET', fxDash: 'SYÖKSY',
@@ -183,12 +183,14 @@ export class UI {
     if (keep && prev > 0 && prev < this.buttons.length) { this.focusIndex = prev; this._focus(); }
   }
 
-  // the GELS switch (render/sdf.js) beside SOUND: how the gels are drawn
+  // the GELS switch (render/sdf.js) beside SOUND: how the gels are drawn;
+  // and SPLATTER (render/goo.js), off for a phone that cannot carry it
   _gelsRow(sound) {
     const g = this.h.gels?.() === 'sdf' ? 'sdf' : 'classic', row = el('div', 'row');
     row.append(
       this._button(`${t('gels')} · ${t(g)}`, t(`${g}Sub`), () => this.h.onGels?.()),
       this._button(sound ? t('soundOn') : t('soundOff'), null, () => this.h.onSound()),
+      this._button(this.h.goo?.() === false ? t('gooOff') : t('gooOn'), null, () => this.h.onGoo?.()),
     );
     return row;
   }
