@@ -96,3 +96,63 @@ dBTP, 25/25 cues covered, and the frame-1 hit peaks at -4.5 dBFS 35 ms in.
 - **The loop seam:** on the last frame the screens are red (the alert) and the caption is at 63%. On the first frame
   the screens are white digits and there is no caption. The camera, the framing and the poses match exactly, and the
   frame-1 hit lands on the change.
+
+## v2 (23 Oct): clarity of messaging
+
+The owner, on v1: "needs clarity of messaging". v1 never said that the lines were cut because they were not linked to
+an ID, and "Ending in 4: cut" did not say what "ending in" means. v2 keeps the hook-first loop, and each caption
+answers one question for a cold viewer: what happened, why, how, and the twist.
+
+The build edits the same folder in place. The v1 viral previews stay in `previews/`: `…-VIRAL-en.mp4` and
+`…-VIRAL-loop-en.mp4`.
+
+- The scenes are `e3v_hook`, `e3v_why`, `e3v_how` and `e3v_alert`. `e3v_rule`, `e3v_next` and `e3v_kept` are gone.
+- v1's kit above the viral block is still untouched.
+- 40 beats at 124 BPM = 19.35 s, plus the sign-off (22.4 s).
+
+| # | id | beats | caption (en, BIG) | picture | cues |
+|---|---|---|---|---|---|
+| 1 | `e3v_hook` | 8 | Mexico: / [2.2 million] phone / lines cut off. | Frame 0: the street, every phone lit with its last digit, MEXICO · 2026 on the tag. On the pop the two unlinked 3s flicker and die (a kick and a red flash); the linked 3 stays lit. | `hit` 0.035, `dark` = pop |
+| 2 | `e3v_why` | 10 | Not linked to an ID: / a new rule against / [extortion, fraud]. | The registry counter. A grey (cut-off) phone showing 3 and an ID card lie apart: not linked. From line 2 a red string is wound round both. On the pop it is pulled tight, they slide together, and the phone comes back on with a green tick: a line returns once it is linked. | `lace` = line 2 start, `tie` = pop |
+| 3 | `e3v_how` | 11 | Cut by last digit: / 3s, then 4s, / [5s] next, on 31 Oct. | A slip with a phone number, the middle masked (`55 •••• •••3`, no real number), its last digit boxed. Under it, the calendar of last digits with 0–2 already crossed. The X lands on the 3 on "3s" and on the 4 on "4s". The 5 is ringed on "5s" (31/10). The slip's digit flips 3 → 4 → 5 in step, then 6–9 light in turn. | `three` = line 2 start, `four` = line 2 end, `five` = pop |
+| 4 | `e3v_alert` | 11 | No calls, no texts. / But quake alerts / still [get through]. | The street. Both cut-off phones are grey, and a thumb taps one on "No calls". On the pop every phone shows the alert, the grey ones too: no quake, no damage. Over the last 0.7 s the camera, the poses and the red return to frame 0's, so the film loops. | `tap` = line 1 start, `alert` = pop |
+
+**Words versus the spine.** The coordinator's lines were kept, with four changes to pass the 800 px width check at the
+big size:
+
+- "[2.2 million] phone lines" is 937 px, so the hook breaks after "phone".
+- "extortion and fraud." is 852 px, so it became "[extortion, fraud]." (695). Both words are on screen, as the reason
+  must be.
+- "number's last digit:" is 824 px, so line 1 became "Cut by last digit:", and the slip shows which digit is meant.
+- "But the quake alert" is 808 px, so it became "But quake alerts / still [get through]."
+
+**Facts** are as in the re-check above:
+
+- the 3s were suspended from about 4 Oct (2,248,143);
+- the 4s from about 18 Oct (1,328,000 by 19 Oct);
+- the 5s are due 31 Oct, unchanged as of 23 Oct.
+
+The 0s to 2s went before; the calendar shows them crossed and the caption does not count them. "2.2 million" is the
+3s alone, so it undercounts rather than overclaims.
+
+**Posts** (copy.json `post`), hook-first and ending in a question:
+
+- `en`: 278 characters
+- `es`: 273 characters
+- `fi`: 275 characters
+- `ja`: 110 characters
+
+The en and es posts say why (no ID linked), the official reason, the last-digit order and that lines come back once
+linked.
+
+**Build:** PASSED, 0 fail, 6 warn. The warnings are fi/ja native reads, and fi/ja sidecars needing 0.1–0.8 s more
+than this en master gives them. Sound is −14.0 LUFS, −4.1 dBTP, with every cue covered.
+
+**Looked at:** every caption beat at 360 px wide, with the rail overlaid. One fix: the registry's ID card sat under
+the right rail, so the phone and card were moved 35–45 px left. The marker hand crosses the rail for a moment while
+writing; nothing that needs to be read sits under it.
+
+**Previews:**
+
+- `previews/23-10-Ends-in-3-VIRAL-v2-en.mp4` (22.4 s, with the sign-off)
+- `previews/23-10-Ends-in-3-VIRAL-v2-loop-en.mp4` (19.35 s, no sign-off; the one to post if the platform loops)
