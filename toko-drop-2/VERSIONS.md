@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v23 — 2026-10-23
+**OPTIONS, like 1.x: the title keeps the modes, every switch moves to one page, and the pause menu and the death screen open it too**
+- Title: ARCADE / INTRO, HARDCADE, SURVIVAL, CAMPAIGN (soon), OPTIONS
+- OPTIONS: DASH and GEL HP, GELS and WORLDS, SOUND and SPLATTER, BACK. BACK, Esc or Circle returns to where it was opened, focus on OPTIONS. DASH and GEL HP take effect from the next run (said on the page), the rest at once
+- Pause: RESUME, OPTIONS, QUIT under the GOT YOU card; death screen: AGAIN, MENU, OPTIONS
+- Smoke walks into OPTIONS by keys and by pad, checks the title carries no switch, and opens OPTIONS from the pause menu and back
+- Cache tokens `?v=22` → `?v=23`; HUD label → `2.0 · v23`
+
+---
+
 ## v22 — 2026-10-23
 **Each new world has its own gel (HOPPA hops the driveway, WORMA swims under the sewer), and WORLDS · NEON on the title swaps in abstract floors**
 - HOPPA (driveway, lime): squats and glows, marks a ring on the floor where it will land, hops 2.6 u high to where you are heading and lands with a slow ring of 8 shots. In the air it is over your head: it cannot touch you and bullets pass under it

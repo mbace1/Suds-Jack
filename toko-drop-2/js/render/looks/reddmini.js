@@ -7,6 +7,6 @@
 // 3013-3029), with its own shared geometry. Born from a REDD, it is not drawn
 // while it waits out its parent's 0.28 s pop: 1.x built the brood only when
 // the pop ended, at full size (enemy.js:2992-3000, main.js:10586-10620).
-import { cubeLook } from './redd.js?v=22';
+import { cubeLook } from './redd.js?v=23';
 
 export default cubeLook({ unborn: true });

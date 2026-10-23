@@ -2,15 +2,15 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=22';
-import { GEL_LINES } from './gels-said.js?v=22';
+import { TUNING } from './tuning.js?v=23';
+import { GEL_LINES } from './gels-said.js?v=23';
 
 const STR = {
   en: {
     intro: 'INTRO', introSub: 'watch it begin, then play',
     dash: 'DASH', push: 'PUSH', pushSub: 'shoves gels away', cut: 'CUT', cutSub: 'through them, and it hurts', gelHp: 'GEL HP', gelHpSub: 'tougher gels, same score',
     arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'Rooms with their own clock — coming next.',
-    best: 'BEST', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
+    best: 'BEST', options: 'OPTIONS', optionsSub: 'dash, gels, worlds, sound', back: 'BACK', nextRun: 'from the next run', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', lastHit: 'LAST HIT BY', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
     wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
     greenRush: 'GREEN RUSH! DOUBLE PRIZE', dud: 'DUD! GREEN MEANS GO', dashThrough: 'DASH THROUGH!', gateChain: 'GATE CHAIN', bounty: 'BOUNTY',
@@ -25,7 +25,7 @@ const STR = {
     intro: 'イントロ', introSub: '始まりを見てからプレイ',
     dash: 'ダッシュ', push: '押す', pushSub: 'ゼリーを押しのける', cut: '貫く', cutSub: '貫いてダメージ', gelHp: 'ゼリー耐久', gelHpSub: '硬いゼリー、スコアは同じ',
     arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: '制限時間のある部屋 — 次の版で。',
-    best: 'ベスト', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
+    best: 'ベスト', options: 'オプション', optionsSub: 'ダッシュ・ゼリー・ワールド・サウンド', back: '戻る', nextRun: '次のプレイから', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', lastHit: '最後に当てた相手', time: 'タイム', newbest: '新記録', soon: '近日',
     wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
     greenRush: 'グリーンラッシュ！賞品2倍', dud: 'ハズレ！緑で行け', dashThrough: 'ダッシュで抜けろ！', gateChain: 'ゲートチェーン', bounty: '賞金首',
@@ -40,7 +40,7 @@ const STR = {
     intro: 'INTRO', introSub: 'katso alku, sitten pelaa',
     dash: 'SYÖKSY', push: 'TÖNÄISY', pushSub: 'tönäisee geelit sivuun', cut: 'VIILTO', cutSub: 'läpi, ja se satuttaa', gelHp: 'GEELIN KESTO', gelHpSub: 'sitkeämmät geelit, samat pisteet',
     arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'Huoneita omalla kellollaan — seuraavaksi.',
-    best: 'ENNÄTYS', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
+    best: 'ENNÄTYS', options: 'ASETUKSET', optionsSub: 'syöksy, geelit, maailmat, ääni', back: 'TAKAISIN', nextRun: 'seuraavasta pelistä', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', lastHit: 'VIIMEKSI OSUI', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
     wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
     greenRush: 'VIHREÄ RYNTÄYS! TUPLAPALKINTO', dud: 'SUUTARI! VIHREÄLLÄ MENNÄÄN', dashThrough: 'SYÖKSY LÄPI!', gateChain: 'PORTTIKETJU', bounty: 'PALKKIO',
@@ -153,9 +153,7 @@ export class UI {
     (this.buttons || []).forEach((b, i) => b.classList.toggle('focus', i === this.focusIndex));
   }
 
-  // `test` is the title's two test switches (owner, 2026-10-22): which dash,
-  // and how tough the gels are. `keep` holds the focus where it was, so a pad
-  // can flip a switch and stay on it.
+  // `keep` holds the focus where it was (on OPTIONS, coming back from it).
   title(best, sound, source, test = { dash: 'push', hp: 1 }, keep = false) {
     const prev = this.focusIndex;
     const logo = el('div', 'logo'); logo.append(el('span', 'name', 'TOKO DROP'), el('span', 'num', '2.0'));
@@ -166,23 +164,40 @@ export class UI {
     const introBtn = this._button(t('intro'), t('introSub'), () => this.h.onIntro?.());
     introBtn.classList.add('narrow');
     startRow.append(this._button('ARCADE', `${t('arcade')} ${fmt(best.arcade)}`, () => this.h.onStart('arcade')), introBtn);
-    const switches = el('div', 'row');
-    switches.append(
-      this._button(`${t('dash')} · ${t(test.dash)}`, t(`${test.dash}Sub`), () => this.h.onDash?.()),
-      this._button(`${t('gelHp')} ×${test.hp}`, t('gelHpSub'), () => this.h.onGelHp?.()),
-    );
+    this.optBack = null;
     this._panel([
       logo,
       startRow,
       // ARCADE leads the start row, beside INTRO; the other modes follow
       ...TITLE_MODES.filter((m) => m !== 'arcade').map((m) => this._button(m.toUpperCase(), `${t(m)} ${fmt(best[m])}`, () => this.h.onStart(m))),
       this._button(`CAMPAIGN · ${t('soon')}`, t('campaign'), () => {}, true),
-      switches,
-      ...this._gelsRow(sound),
+      // every switch is in OPTIONS (owner, 2026-10-23: "we don't need all
+      // these in the start screen, please make an option menu like 1.x")
+      this._button(t('options'), t('optionsSub'), () => this.openOptions(() => { this.h.onTitle?.(); this._focusOn(t('options')); })),
       hint,
     ]);
     if (keep && prev > 0 && prev < this.buttons.length) { this.focusIndex = prev; this._focus(); }
   }
+
+  // OPTIONS, 1.x's way (its title OPTIONS opened the pause menu's settings,
+  // v109): one page of every switch, reached from the title, the pause menu
+  // and the death screen, and BACK (or Esc, or B) to where it was opened.
+  // `back` redraws that menu. The test switches (DASH, GEL HP) take effect
+  // from the next run; the rest at once.
+  openOptions(back) {
+    if (back) this.optBack = back;
+    const o = this.h.optionsState?.() ?? { sound: true, test: { dash: 'push', hp: 1 } }, keep = this.optBack && this.menuEl.querySelector('h2.opt') ? this.focusIndex : 0;
+    const switches = el('div', 'row');
+    switches.append(
+      this._button(`${t('dash')} · ${t(o.test.dash)}`, t(`${o.test.dash}Sub`), () => this.h.onDash?.()),
+      this._button(`${t('gelHp')} ×${o.test.hp}`, t('gelHpSub'), () => this.h.onGelHp?.()),
+    );
+    this._panel([el('h2', 'opt', t('options')), switches, ...this._gelsRow(o.sound), this._button(t('back'), null, () => this.closeOptions()), el('p', 'hint', `${t('dash')} · ${t('gelHp')}: ${t('nextRun')}`)]);
+    if (keep > 0 && keep < this.buttons.length) { this.focusIndex = keep; this._focus(); }
+  }
+  _focusOn(label) { const i = this.buttons.findIndex((b) => b.querySelector('.label')?.textContent === label); if (i >= 0) { this.focusIndex = i; this._focus(); } }
+  closeOptions() { const b = this.optBack; this.optBack = null; b?.(); }
+  get inOptions() { return !!this.optBack; }
 
   // the GELS switch (render/sdf.js) beside SOUND: how the gels are drawn;
   // WORLDS (v23): which look worlds 2 and 3 wear; and below them SOUND and
@@ -217,10 +232,13 @@ export class UI {
 
   pause(lastHit = null) {
     const card = this._gelCard(lastHit, t('lastHit'));
-    this._panel([el('h2', null, t('paused')), ...(card ? [card] : []), this._button(t('resume'), null, () => this.h.onResume()), this._button(t('quit'), null, () => this.h.onMenu())]);
+    this.optBack = null;
+    this._panel([el('h2', null, t('paused')), ...(card ? [card] : []), this._button(t('resume'), null, () => this.h.onResume()),
+      this._button(t('options'), null, () => this.openOptions(() => { this.pause(lastHit); this._focusOn(t('options')); })), this._button(t('quit'), null, () => this.h.onMenu())]);
   }
 
   results(r) {
+    this.optBack = null;
     const rows = el('dl', 'stats');
     const row = (k, v) => rows.append(el('dt', null, k), el('dd', null, v));
     row(t('score'), r.score.toLocaleString('en-US') + (r.newBest ? `  ${t('newbest')}` : ''));
@@ -231,7 +249,8 @@ export class UI {
     row(t('grazes'), String(r.grazes));
     const card = this._gelCard(r.gotYouKind, t('gotyou'));
     this._panel([el('h2', null, t('over')), el('p', 'mode', r.mode.toUpperCase()), ...(card ? [card] : []), rows,
-      this._button(t('again'), null, () => this.h.onAgain()), this._button(t('menu'), null, () => this.h.onMenu())]);
+      this._button(t('again'), null, () => this.h.onAgain()), this._button(t('menu'), null, () => this.h.onMenu()),
+      this._button(t('options'), null, () => this.openOptions(() => { this.results(r); this._focusOn(t('options')); }))]);
   }
 
   // ── pad and keys in menus ──────────────────────────────────────
@@ -242,7 +261,7 @@ export class UI {
     if (e.code === 'ArrowDown' || e.code === 'KeyS') { this._move(1); e.preventDefault(); }
     else if (e.code === 'ArrowUp' || e.code === 'KeyW') { this._move(-1); e.preventDefault(); }
     else if (e.code === 'Enter' || e.code === 'Space') { this._pick(); e.preventDefault(); }
-    else if (e.code === 'Escape' && this.h.onBack) this.h.onBack();
+    else if (e.code === 'Escape') { if (this.optBack) this.closeOptions(); else this.h.onBack?.(); }
   }
   // The pad is read every frame, menu or not, so a button already held when
   // a menu opens is not a press in it: Options pauses on its way down, and
@@ -256,7 +275,7 @@ export class UI {
     if (edge('down')) this._move(1);
     if (edge('up')) this._move(-1);
     if (edge('a') || edge('start')) this._pick();
-    if (edge('b') && this.h.onBack) this.h.onBack();
+    if (edge('b')) { if (this.optBack) this.closeOptions(); else this.h.onBack?.(); }
     this._padPrev = now;
   }
 

@@ -7,26 +7,26 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=22';
-import { buildFloor } from './render/floor.js?v=22';
-import { fitCamera, screenToWorld } from './render/view.js?v=22';
-import * as worldsSim from './sim/worlds.js?v=22';
-import * as reshapeSim from './sim/reshape.js?v=22';
-import { Scenery } from './render/scenery.js?v=22';
-import { Transit } from './render/transit.js?v=22';
-import { Splats } from './render/splats.js?v=22';
-import { Actors } from './render/actors.js?v=22';
-import { GEL_TIME } from './render/gel.js?v=22';
-import { studioEnvironment } from './render/env.js?v=22';
-import { Specimen } from './render/specimen.js?v=22';
-import { createWorld, step, api as simApi } from './sim/world.js?v=22';
-import { stage as stagePk } from './sim/pickups.js?v=22';
-import { Input } from './input.js?v=22';
-import { UI, t, timeText } from './ui.js?v=22';
-import { Sound } from './audio.js?v=22';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=22';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=22';
-import { Readout } from './readout.js?v=22';
+import { TUNING } from './tuning.js?v=23';
+import { buildFloor } from './render/floor.js?v=23';
+import { fitCamera, screenToWorld } from './render/view.js?v=23';
+import * as worldsSim from './sim/worlds.js?v=23';
+import * as reshapeSim from './sim/reshape.js?v=23';
+import { Scenery } from './render/scenery.js?v=23';
+import { Transit } from './render/transit.js?v=23';
+import { Splats } from './render/splats.js?v=23';
+import { Actors } from './render/actors.js?v=23';
+import { GEL_TIME } from './render/gel.js?v=23';
+import { studioEnvironment } from './render/env.js?v=23';
+import { Specimen } from './render/specimen.js?v=23';
+import { createWorld, step, api as simApi } from './sim/world.js?v=23';
+import { stage as stagePk } from './sim/pickups.js?v=23';
+import { Input } from './input.js?v=23';
+import { UI, t, timeText } from './ui.js?v=23';
+import { Sound } from './audio.js?v=23';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=23';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=23';
+import { Readout } from './readout.js?v=23';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -238,6 +238,8 @@ const tests = () => {
   return { dash: DASHES.includes(d) ? d : 'push', hp: HP_STEPS.includes(hp) ? hp : 1 };
 };
 const showTitle = (keep = false) => ui.title(bests(), sound.on, input.source, tests(), keep);
+// a switch flipped: redraw the menu it is on (OPTIONS, or the title)
+const refreshMenu = () => (ui.inOptions ? ui.openOptions() : showTitle(true));
 
 const input = new Input(document);
 const sound = new Sound();
@@ -252,13 +254,15 @@ const ui = new UI({
   onPause: () => pause(),
   onAgain: () => start(mode),
   onMenu: () => toMenu(),
-  onSound: () => { sound.setOn(!sound.on); store.set('toko2.mute', sound.on ? 0 : 1); showTitle(true); },
-  onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); showTitle(true); },
-  onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); showTitle(true); },
+  onSound: () => { sound.setOn(!sound.on); store.set('toko2.mute', sound.on ? 0 : 1); refreshMenu(); },
+  onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); refreshMenu(); },
+  onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); refreshMenu(); },
   gels: () => gels(), onGels: () => flipGels(),
   goo: () => gooOn(), onGoo: () => flipGoo(),
   worlds: () => worldsLook(), onWorlds: () => flipWorlds(),
   onSpecimen: (kind, box) => specimen.show(kind, box),
+  onTitle: (keep) => showTitle(keep),
+  optionsState: () => ({ sound: sound.on, test: tests() }),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
 // the view of a world change: the swirl, the dark, the fall, the floor running out (render/transit.js)
@@ -279,19 +283,19 @@ function flipGels() {
   const g = gels() === 'sdf' ? 'classic' : 'sdf';
   store.set('toko2.gels', g);
   if (urlGels) { urlGels = null; const u = new URL(location.href); u.searchParams.delete('gels'); history.replaceState(history.state, '', u); }
-  actors.setGels(g); setLabel(); showTitle(true);
+  actors.setGels(g); setLabel(); refreshMenu();
 }
 actors.setGels(gels()); setLabel();
 function flipWorlds() {
   store.set('toko2.worlds', worldsLook() === 'neon' ? 'street' : 'neon');
   if (urlWorlds) { urlWorlds = null; const u = new URL(location.href); u.searchParams.delete('worlds'); history.replaceState(history.state, '', u); }
-  showTitle(true);   // it takes effect at the next world change
+  refreshMenu();   // it takes effect at the next world change
 }
 function flipGoo() {
   const on = !gooOn();
   store.set('toko2.goo', on ? 'on' : 'off');
   if (urlGoo) { urlGoo = null; const u = new URL(location.href); u.searchParams.delete('goo'); history.replaceState(history.state, '', u); }
-  actors.setGoo(on); actors.gooKit.render(renderer); floor.setFilm(actors.gooKit.film); splats.clear(); showTitle(true);
+  actors.setGoo(on); actors.gooKit.render(renderer); floor.setFilm(actors.gooKit.film); splats.clear(); refreshMenu();
 }
 // ?fps: the frame-time line beside the version; ?bench: the fixed 24-body scene (readout.js)
 let lastDash = null;   // the sim's last dash event, for the readout's flick line
