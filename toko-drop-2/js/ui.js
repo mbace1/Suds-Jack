@@ -2,19 +2,19 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=26';
-import { GEL_LINES } from './gels-said.js?v=26';
+import { TUNING } from './tuning.js?v=28';
+import { GEL_LINES } from './gels-said.js?v=28';
 
 const STR = {
   en: {
     intro: 'INTRO', introSub: 'watch it begin, then play',
     dash: 'DASH', push: 'PUSH', pushSub: 'shoves gels away', cut: 'CUT', cutSub: 'through them, and it hurts', gelHp: 'GEL HP', gelHpSub: 'tougher gels, same score',
     arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'rooms with their own clock — cleared opens the next', goalSurvive: 'SURVIVE', goalQuota: 'KILL', goalFlawless: 'NO HITS', roomLocked: 'LOCKED', grade: 'GRADE', rooms: 'ROOMS', worldLocked: 'clear the world before it',
-    best: 'BEST', options: 'OPTIONS', optionsSub: 'dash, gels, worlds, sound, language', back: 'BACK', nextRun: 'from the next run', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
+    best: 'BEST', hard: 'HARD', on: 'ON', off: 'OFF', hardSub: 'arcade becomes HARDCADE: the biters\' corpses shoot back', options: 'OPTIONS', optionsSub: 'dash, gels, worlds, sound, language', back: 'BACK', nextRun: 'from the next run', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', lastHit: 'LAST HIT BY', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
     wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', volume: 'VOLUME', annOn: 'ANNOUNCER ON', annOff: 'ANNOUNCER OFF', annVol: 'ANNOUNCER VOL.', motionOn: 'REDUCE MOTION ON', motionOff: 'REDUCE MOTION OFF', motionOnH: 'no camera shake', motionOffH: 'full screen-shake', langName: 'LANGUAGE · ENGLISH', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
     greenRush: 'GREEN RUSH! DOUBLE PRIZE', dud: 'DUD! GREEN MEANS GO', dashThrough: 'DASH THROUGH!', gateChain: 'GATE CHAIN', bounty: 'BOUNTY',
-    world2: 'WORLD 2 · THE DRIVEWAY', world3: 'WORLD 3 · THE SEWER',
+    world2: 'WORLD 2 · THE DRIVEWAY', world3: 'WORLD 3 · THE SEWER', world4: 'WORLD 4 · THE CISTERN', world5: 'WORLD 5 · THE BOILER ROOM', world6: 'WORLD 6 · THE RIVER', world7: 'WORLD 7 · THE ICE SHEET', world8: 'WORLD 8 · THE DEEP', world9: 'WORLD 9 · THE CORE', won: 'RUN COMPLETE', wonSub: 'all nine worlds',
     dashUp: 'DASH UP', dashDown: 'DASH KNOCKED DOWN TO LV1', fxInv: 'INVINCIBLE', fxRapid: 'RAPID FIRE', fxMult: 'SCORE', fxDash: 'DASH',
     hintTouch: 'LEFT THUMB MOVES · RIGHT THUMB AIMS AND FIRES · FLICK TO DASH',
     hintKeys: 'WASD MOVES · MOUSE AIMS · HOLD CLICK TO FIRE · SPACE DASHES · ESC PAUSES',
@@ -25,11 +25,11 @@ const STR = {
     intro: 'イントロ', introSub: '始まりを見てからプレイ',
     dash: 'ダッシュ', push: '押す', pushSub: 'ゼリーを押しのける', cut: '貫く', cutSub: '貫いてダメージ', gelHp: 'ゼリー耐久', gelHpSub: '硬いゼリー、スコアは同じ',
     arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: 'それぞれの制限時間を持つ部屋 — クリアで次が開く', goalSurvive: '生き残れ', goalQuota: '撃破', goalFlawless: 'ノーダメージ', roomLocked: 'ロック中', grade: '評価', rooms: '部屋', worldLocked: '前のワールドをクリア',
-    best: 'ベスト', options: 'オプション', optionsSub: 'ダッシュ・ゼリー・ワールド・サウンド・言語', back: '戻る', nextRun: '次のプレイから', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
+    best: 'ベスト', hard: 'ハード', on: 'オン', off: 'オフ', hardSub: 'アーケードがHARDCADEに：噛みつく敵の残骸が撃ち返す', options: 'オプション', optionsSub: 'ダッシュ・ゼリー・ワールド・サウンド・言語', back: '戻る', nextRun: '次のプレイから', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', lastHit: '最後に当てた相手', time: 'タイム', newbest: '新記録', soon: '近日',
     wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', volume: '音量', annOn: 'アナウンサー オン', annOff: 'アナウンサー オフ', annVol: 'アナウンサー音量', motionOn: '手ぶれ軽減 オン', motionOff: '手ぶれ軽減 オフ', motionOnH: 'カメラ揺れなし', motionOffH: '画面揺れ演出あり', langName: '言語 · 日本語', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
     greenRush: 'グリーンラッシュ！賞品2倍', dud: 'ハズレ！緑で行け', dashThrough: 'ダッシュで抜けろ！', gateChain: 'ゲートチェーン', bounty: '賞金首',
-    world2: 'ワールド2 · ドライブウェイ', world3: 'ワールド3 · 下水道',
+    world2: 'ワールド2 · ドライブウェイ', world3: 'ワールド3 · 下水道', world4: 'ワールド4 · 貯水槽', world5: 'ワールド5 · ボイラー室', world6: 'ワールド6 · 川', world7: 'ワールド7 · 氷原', world8: 'ワールド8 · 深淵', world9: 'ワールド9 · コア', won: 'ラン完走', wonSub: '9ワールドすべて',
     dashUp: 'ダッシュ強化', dashDown: 'ダッシュが LV1 に', fxInv: '無敵', fxRapid: '連射', fxMult: 'スコア', fxDash: 'ダッシュ',
     hintTouch: '左手で移動 · 右手でエイムと射撃 · はじいてダッシュ',
     hintKeys: 'WASDで移動 · マウスでエイム · クリック長押しで射撃 · スペースでダッシュ · ESCで一時停止',
@@ -40,11 +40,11 @@ const STR = {
     intro: 'INTRO', introSub: 'katso alku, sitten pelaa',
     dash: 'SYÖKSY', push: 'TÖNÄISY', pushSub: 'tönäisee geelit sivuun', cut: 'VIILTO', cutSub: 'läpi, ja se satuttaa', gelHp: 'GEELIN KESTO', gelHpSub: 'sitkeämmät geelit, samat pisteet',
     arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'huoneita omalla kellollaan — läpäisy avaa seuraavan', goalSurvive: 'SELVIYDY', goalQuota: 'KAADA', goalFlawless: 'EI OSUMIA', roomLocked: 'LUKITTU', grade: 'ARVOSANA', rooms: 'HUONEET', worldLocked: 'läpäise edellinen maailma',
-    best: 'ENNÄTYS', options: 'ASETUKSET', optionsSub: 'syöksy, geelit, maailmat, ääni, kieli', back: 'TAKAISIN', nextRun: 'seuraavasta pelistä', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
+    best: 'ENNÄTYS', hard: 'VAIKEA', on: 'PÄÄLLÄ', off: 'POIS', hardSub: 'arcadesta tulee HARDCADE: purijoiden raadot ampuvat takaisin', options: 'ASETUKSET', optionsSub: 'syöksy, geelit, maailmat, ääni, kieli', back: 'TAKAISIN', nextRun: 'seuraavasta pelistä', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', lastHit: 'VIIMEKSI OSUI', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
     wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', volume: 'ÄÄNENVOIMAKKUUS', annOn: 'SELOSTAJA PÄÄLLÄ', annOff: 'SELOSTAJA POIS', annVol: 'SELOSTAJAN ÄÄNI', motionOn: 'VÄHENNÄ LIIKETTÄ PÄÄLLÄ', motionOff: 'VÄHENNÄ LIIKETTÄ POIS', motionOnH: 'ei kameran tärinää', motionOffH: 'täysi ruudun tärinä', langName: 'KIELI · SUOMI', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
     greenRush: 'VIHREÄ RYNTÄYS! TUPLAPALKINTO', dud: 'SUUTARI! VIHREÄLLÄ MENNÄÄN', dashThrough: 'SYÖKSY LÄPI!', gateChain: 'PORTTIKETJU', bounty: 'PALKKIO',
-    world2: 'MAAILMA 2 · PIHATIE', world3: 'MAAILMA 3 · VIEMÄRI',
+    world2: 'MAAILMA 2 · PIHATIE', world3: 'MAAILMA 3 · VIEMÄRI', world4: 'MAAILMA 4 · VESISÄILIÖ', world5: 'MAAILMA 5 · KATTILAHUONE', world6: 'MAAILMA 6 · JOKI', world7: 'MAAILMA 7 · JÄÄKENTTÄ', world8: 'MAAILMA 8 · SYVYYS', world9: 'MAAILMA 9 · YDIN', won: 'LÄPI PELATTU', wonSub: 'kaikki yhdeksän maailmaa',
     dashUp: 'SYÖKSY PARANI', dashDown: 'SYÖKSY PUTOSI LV1:EEN', fxInv: 'KUOLEMATON', fxRapid: 'PIKATULI', fxMult: 'PISTEET', fxDash: 'SYÖKSY',
     hintTouch: 'VASEN PEUKALO LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · SIPAISE SYÖKSYÄKSESI',
     hintKeys: 'WASD LIIKKUU · HIIRI TÄHTÄÄ · PIDÄ PAINIKE POHJASSA AMPUAKSESI · VÄLILYÖNTI SYÖKSYY · ESC TAUKO',
@@ -68,7 +68,10 @@ const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls)
 // The modes the title offers, top to bottom. SURVIVAL was off it from v17
 // (owner, 2026-10-22: "forget survival for now") and is back from v20, its
 // floor changing size as you play (owner, 2026-10-23: "like Sektori").
-const TITLE_MODES = ['arcade', 'hardcade', 'survival'];
+// the title's modes (owner, 2026-10-23): ARCADE, with a HARD switch that
+// turns it into HARDCADE, and the CAMPAIGN. SURVIVAL still runs (main.js
+// MODES) but is off the title for now
+const TITLE_MODES = ['arcade'];
 
 // run time as m:ss
 export function timeText(seconds) {
@@ -175,13 +178,15 @@ export class UI {
     const startRow = el('div', 'row start');
     const introBtn = this._button(t('intro'), t('introSub'), () => this.h.onIntro?.());
     introBtn.classList.add('narrow');
-    startRow.append(this._button('ARCADE', `${t('arcade')} ${fmt(best.arcade)}`, () => this.h.onStart('arcade')), introBtn);
+    const hard = !!this.h.hard?.(), m = hard ? 'hardcade' : 'arcade';
+    startRow.append(this._button(m.toUpperCase(), `${t(m)} ${fmt(best[m])}`, () => this.h.onStart(m)), introBtn);
+    const hardBtn = this._button(`${t('hard')} · ${hard ? t('on') : t('off')}`, t('hardSub'), () => this.h.onHard?.());
     this.optBack = null;
     this._panel([
       logo,
       startRow,
       // ARCADE leads the start row, beside INTRO; the other modes follow
-      ...TITLE_MODES.filter((m) => m !== 'arcade').map((m) => this._button(m.toUpperCase(), `${t(m)} ${fmt(best[m])}`, () => this.h.onStart(m))),
+      hardBtn,
       this._button('CAMPAIGN', t('campaign'), () => this.h.onCampaign?.()),
       // every switch is in OPTIONS (owner, 2026-10-23: "we don't need all
       // these in the start screen, please make an option menu like 1.x")
@@ -303,7 +308,7 @@ export class UI {
     row(t('grazes'), String(r.grazes));
     const card = this._gelCard(r.gotYouKind, t('gotyou'));
     if (r.room) row(t('grade'), r.room.grade);
-    this._panel([el('h2', null, t('over')), el('p', 'mode', r.room ? `${r.room.name} · ${goalText(r.room)}` : r.mode.toUpperCase()), ...(card ? [card] : []), rows,
+    this._panel([el('h2', null, r.won ? t('won') : t('over')), el('p', 'mode', r.won ? `${r.mode.toUpperCase()} · ${t('wonSub')}` : r.room ? `${r.room.name} · ${goalText(r.room)}` : r.mode.toUpperCase()), ...(card ? [card] : []), rows,
       this._button(t('again'), null, () => this.h.onAgain()), r.room ? this._button(t('rooms'), null, () => this.h.onCampaign?.()) : this._button(t('menu'), null, () => this.h.onMenu()),
       this._button(t('options'), null, () => this.openOptions(() => { this.results(r); this._focusOn(t('options')); }))]);
   }

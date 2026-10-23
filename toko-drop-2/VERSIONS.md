@@ -19,6 +19,31 @@
     Never `--no-verify`.
 -->
 
+## v28 — 2026-10-23
+**Worlds 4-9 each have a floor of their own**
+- THE CISTERN: stone slabs under shallow water, light off the surface wandering over them, the column bases standing in it
+- THE BOILER ROOM: riveted steel plates, scorched, and grates the fire breathes through
+- THE RIVER: dark water running the long way with its streaks moving, pebbled banks at both edges
+- THE ICE SHEET: dark ice, deeper in places, cracked, frost along the cracks
+- THE DEEP: black silt in slow ripples, lit only by specks of living light (THE DEEP's dark rule closes in over it)
+- THE CORE: black, traced with circuitry; rings run out from the middle and light the traces as they pass
+- Each world's rail, landing front and drain rim wear its own colour; the floors were toned down from the first renders so the gels stay the brightest thing on them
+- Smoke: the world runs check each world's floor; the staged-pickups check clears the run's own gates first (a gate caught cooling down had its beam off, failing world 3 now and then)
+- Cache tokens `?v=27` → `?v=28`; HUD label → `2.0 · v28`
+
+---
+
+## v27 — 2026-10-23
+**Arcade becomes nine worlds and can be won; the title is ARCADE with a HARD switch, and the campaign**
+- Title (owner, 2026-10-23): ARCADE beside INTRO, HARD · OFF/ON (on, ARCADE becomes HARDCADE and starts it; kept in `toko2.hard`), CAMPAIGN, OPTIONS. SURVIVAL is off the title (it still runs)
+- Arcade is nine worlds (owner: "let's do both and make it 9 worlds"): the grid, the driveway, the sewer, then THE CISTERN, THE BOILER ROOM, THE RIVER, THE ICE SHEET, THE DEEP and THE CORE, each opened by the boss before it. Worlds 4-9 have their own size and colours (their own floors and gels come next)
+- From the cistern on, each world plays under one of 1.x's world rules, as the campaign does: the cistern the line, the boiler room the updraft, the river the current, the ice sheet the slick floor, the deep the dark; THE CORE plays all five in turn, 20 s each
+- The ninth boss wins the run: RUN COMPLETE, with the score
+- Gates: `test/worlds.mjs` 29 (nine worlds, 3 → 4 under its rule, 9's boss wins, the core cycles); smoke checks the HARD switch, that SURVIVAL is off the title, and runs `world9`
+- Cache tokens `?v=26` → `?v=27`; HUD label → `2.0 · v27`
+
+---
+
 ## v26 — 2026-10-23
 **The campaign's six worlds wear their own floors and play by their one rule each, as in 1.x**
 - Each world's floor colour and rail are 1.x's depth looks: THE SURFACE, THE WELL (teal), THE VEIN (red), THE VOID (near-black), THE FOAM (pale aqua), THE KILN (amber)

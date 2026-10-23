@@ -21,8 +21,8 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=26';
-import { noise } from './scenery.js?v=26';
+import { GEL_TIME } from './gel.js?v=28';
+import { noise } from './scenery.js?v=28';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -55,10 +55,10 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   // it. At rest revealR is huge and the front is off, so play is unchanged.
   // A droplet landing in a new world reveals that world's floor the same way.
   const revealAt = uniform(new THREE.Vector2(0, 0)), revealR = uniform(1e4), revealFront = uniform(0);
-  const voidCol = uniform(new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color({ grid: 0x5f8cff, concrete: 0xffd9a0, sewer: 0x7fd8d0, hex: 0xff5fd0, tide: 0x5fffe8 }[style] ?? 0x5f8cff));
+  const voidCol = uniform(new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color({ grid: 0x5f8cff, concrete: 0xffd9a0, sewer: 0x7fd8d0, hex: 0xff5fd0, tide: 0x5fffe8, cistern: 0x7fe8ff, boiler: 0xffb060, river: 0x7fffe0, ice: 0xe0f4ff, deep: 0x6688ff, core: 0xff66ee }[style] ?? 0x5f8cff));
   // the drain's swirl
   const swirl = uniform(0), swirlAt = uniform(new THREE.Vector2(0, 0)), swirlR = uniform(8), hole = uniform(0);
-  const holeRim = uniform(new THREE.Color({ grid: 0x2fe0ff, concrete: 0x9fd6ff, sewer: 0x6fffe0, hex: 0xff7fe0, tide: 0x7ffff0 }[style] ?? 0x2fe0ff));
+  const holeRim = uniform(new THREE.Color({ grid: 0x2fe0ff, concrete: 0x9fd6ff, sewer: 0x6fffe0, hex: 0xff7fe0, tide: 0x7ffff0, cistern: 0x6fefff, boiler: 0xffaa44, river: 0x6fffdd, ice: 0xcff0ff, deep: 0x5577ff, core: 0xff55ee }[style] ?? 0x2fe0ff));
   const W = T.worlds.floor;
   const bounds = hasBounds ? { cur: uniform(new THREE.Vector2(hx, hz)), next: uniform(new THREE.Vector2(hx, hz)), warn: uniform(0) } : null;
   const comeCol = uniform(new THREE.Color(0x40e8ff)), goCol = uniform(new THREE.Color(0xff3040));
@@ -261,7 +261,106 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     return { col: col.mul(float(1).sub(end.mul(0.7))), mask: line.add(grid.mul(0.4)), lineCol: vec3(...D.lineCol) };
   };
 
-  const surface = { concrete, sewer, hex, tide }[style] ?? grid;
+  // ── worlds 4-9 (v28): each world's own floor ──────────────────────
+  const v3 = (a) => vec3(...a);
+  const along = (w) => (hx >= hz ? w.x : w.y), across = (w) => (hx >= hz ? w.y : w.x);
+  // THE CISTERN: a flooded vault — stone slabs under shallow water, the
+  // light off the surface wandering over them, the bases of the columns
+  const cistern = (p, w) => {
+    const C = W.cistern;
+    const u = w.div(C.slab), f = fract(u), g = min(min(f.x, float(1).sub(f.x)), min(f.y, float(1).sub(f.y))).mul(C.slab);
+    const aa = max(fwidth(g), 1e-4), grout = float(1).sub(smoothstep(float(C.grout).sub(aa), float(C.grout).add(aa), g));
+    const tone = noise(tfloor(u).mul(1.7)).mul(0.5).add(noise(w.mul(2.2)).mul(0.2)).add(0.55);
+    let stone = v3(C.stone).mul(tone);
+    stone = mix(stone, stone.mul(0.45), grout);
+    const t = GEL_TIME;
+    const ca = sin(noise(w.mul(0.45).add(vec2(t.mul(0.11), t.mul(0.07)))).mul(9).add(noise(w.mul(1.2).sub(vec2(t.mul(0.09), 0))).mul(4))).mul(0.5).add(0.5);
+    const caustic = smoothstep(0.93, 1.0, ca);
+    // the column bases: a square plinth every `column` m, its edge catching the light
+    const q = fract(w.div(C.column).add(0.5)).sub(0.5).mul(C.column), dq = max(abs(q.x), abs(q.y));
+    const plinth = float(1).sub(smoothstep(C.plinth - 0.03, C.plinth + 0.03, dq));
+    const rim = float(1).sub(smoothstep(0, 0.07, abs(dq.sub(C.plinth))));
+    let col = mix(stone, v3(C.water), C.depth).add(v3(C.caustic).mul(caustic.mul(0.1)));
+    col = mix(col, v3(C.stone).mul(0.35), plinth).add(v3(C.rim).mul(rim.mul(0.5)));
+    return { col, mask: caustic.mul(0.6).add(grout.mul(0.3)).add(rim), lineCol: v3(C.caustic), wet: float(0.8) };
+  };
+  // THE BOILER ROOM: riveted steel plates, scorched, and grates the fire glows through
+  const boiler = (p, w) => {
+    const B = W.boiler, P = vec2(...B.plate);
+    const u = w.div(P), f = fract(u);
+    const sx = min(f.x, float(1).sub(f.x)).mul(B.plate[0]), sz = min(f.y, float(1).sub(f.y)).mul(B.plate[1]);
+    const sd = min(sx, sz), aa = max(fwidth(sd), 1e-4);
+    const seam = float(1).sub(smoothstep(float(B.seam).sub(aa), float(B.seam).add(aa), sd));
+    const rv = length(vec2(min(sx, 0.35).sub(0.18), min(sz, 0.35).sub(0.18)));
+    const rivet = float(1).sub(smoothstep(0.05, 0.075, rv));
+    const tone = noise(tfloor(u).mul(2.3)).mul(0.35).add(0.75);
+    let col = v3(B.steel).mul(tone).add(v3(B.rivet).mul(rivet.mul(0.8)));
+    col = mix(col, v3(B.scorch), smoothstep(0.55, 0.8, noise(w.mul(0.21).add(3.3))).mul(0.8));
+    col = col.mul(float(1).sub(seam.mul(0.7)));
+    // the grates: slots with the fire under them, breathing
+    const gq = fract(w.div(B.grate).add(0.5)).sub(0.5).mul(B.grate);
+    const inG = float(1).sub(smoothstep(0, 0.05, max(abs(gq.x).sub(B.grateW[0]), abs(gq.y).sub(B.grateW[1]))));
+    const slot = smoothstep(0.35, 0.5, abs(fract(gq.x.mul(2.2)).sub(0.5)).mul(-1).add(0.5).mul(2));
+    const pulse = float(0.55).add(sin(GEL_TIME.mul(B.pulse).add(noise(tfloor(w.div(B.grate)).mul(3)).mul(6))).mul(0.45));
+    const fire = inG.mul(float(1).sub(slot)).mul(pulse);
+    col = mix(col, v3(B.glow).mul(0.6), fire).add(v3(B.glow).mul(inG.mul(0.08)));
+    return { col, mask: seam.mul(0.4).add(fire), lineCol: v3(B.glow) };
+  };
+  // THE RIVER: dark water running the long way, its streaks moving with it,
+  // pebbled banks at both edges
+  const river = (p, w) => {
+    const R = W.river, a = along(w), c = across(w), half = hx >= hz ? hz : hx;
+    const flow = a.sub(GEL_TIME.mul(R.flow));
+    const streak = smoothstep(0.88, 1.0, sin(flow.mul(1.1).add(noise(vec2(flow.mul(0.25), c.mul(0.7))).mul(7)).add(noise(w.mul(0.9)).mul(2))).mul(0.5).add(0.5));
+    const swirl = noise(vec2(flow.mul(0.6), c.mul(1.4))).mul(0.4);
+    let col = mix(v3(R.water), v3(R.waterHi), streak.mul(0.14).add(swirl.mul(0.18)));
+    const bank = smoothstep(half * R.bank, half * (R.bank + 0.08), abs(c));
+    const peb = noise(w.mul(2.8)).mul(0.6).add(noise(w.mul(7.1)).mul(0.4));
+    const stones = v3(R.pebble).mul(peb.mul(0.8).add(0.45));
+    const foam = float(1).sub(smoothstep(0, 0.35, abs(abs(c).sub(half * R.bank)))).mul(noise(vec2(flow.mul(1.5), c)).mul(0.6).add(0.4));
+    col = mix(col, stones, bank).add(v3(R.foam).mul(foam.mul(0.35)));
+    return { col, mask: streak.mul(float(1).sub(bank)).add(foam), lineCol: v3(R.waterHi), wet: float(1).sub(bank) };
+  };
+  // THE ICE SHEET: pale ice, darker where it is deep, cracked, frost along the cracks
+  const ice = (p, w) => {
+    const I = W.ice, n = noise(w.mul(I.scale)), n2 = noise(w.mul(I.scale * 2.7).add(9.1));
+    const r1 = abs(n.sub(0.5)), r2 = abs(n2.sub(0.5));
+    const aa1 = max(fwidth(r1), 1e-4), aa2 = max(fwidth(r2), 1e-4);
+    const crack = float(1).sub(smoothstep(0.004, float(0.012).add(aa1), r1)).add(float(1).sub(smoothstep(0.003, float(0.008).add(aa2), r2)).mul(0.6));
+    const frost = float(1).sub(smoothstep(0, 0.06, r1)).mul(noise(w.mul(9)).mul(0.6).add(0.4));
+    const depth = noise(w.mul(0.12).add(4.4));
+    let col = mix(v3(I.deep), v3(I.base), depth.mul(0.7).add(0.3));
+    col = col.add(v3(I.frost).mul(frost.mul(0.1))).add(v3(I.crack).mul(min(crack, 1).mul(0.3)));
+    return { col, mask: min(crack, 1), lineCol: v3(I.crack), wet: float(0.6) };
+  };
+  // THE DEEP: black silt in slow ripples, lit only by what lives in it
+  const deep = (p, w) => {
+    const D = W.deep, t = GEL_TIME;
+    const rip = smoothstep(0.7, 1.0, sin(w.x.mul(0.9).add(noise(w.mul(0.3)).mul(6))).mul(0.5).add(0.5));
+    let col = mix(v3(D.silt), v3(D.ripple), rip.mul(0.6).add(noise(w.mul(1.7)).mul(0.3)));
+    const cell = tfloor(w.mul(D.specks)), rnd = noise(cell.mul(1.31));
+    const fp = fract(w.mul(D.specks)).sub(0.5), dot2 = length(fp);
+    const tw = sin(t.mul(float(1.2).add(rnd.mul(2))).add(rnd.mul(40))).mul(0.5).add(0.5);
+    const speck = smoothstep(0.86, 0.95, rnd).mul(float(1).sub(smoothstep(0.03, 0.14, dot2))).mul(tw);
+    col = col.add(mix(v3(D.glow), v3(D.glow2), smoothstep(0.9, 0.95, rnd)).mul(speck.mul(1.6)));
+    return { col, mask: speck.add(rip.mul(0.15)), lineCol: v3(D.glow) };
+  };
+  // THE CORE: black, traced with circuitry; rings go out from the middle and
+  // light the traces as they pass
+  const core = (p, w) => {
+    const K = W.core, u = w.div(K.cell), f = fract(u).sub(0.5), id = tfloor(u);
+    const pick = noise(id.mul(0.77));
+    const trace = select(pick.greaterThan(0.5), abs(f.x), abs(f.y));
+    const aa = max(fwidth(trace), 1e-4), line = float(1).sub(smoothstep(float(0.03).sub(aa), float(0.03).add(aa), trace));
+    const node = float(1).sub(smoothstep(0.06, 0.1, length(f))).mul(smoothstep(0.7, 0.75, pick));
+    const r = length(w), ring = fract(r.div(K.ringEvery * K.ringSpeed).sub(GEL_TIME.div(K.ringEvery)));
+    const band = smoothstep(0.0, 0.05, ring).mul(float(1).sub(smoothstep(0.05, 0.18, ring)));
+    const lit = line.add(node).mul(float(0.25).add(band.mul(1.6)));
+    const col = v3(K.base).add(mix(v3(K.line), v3(K.pulse), band).mul(lit));
+    return { col, mask: line.add(node), lineCol: v3(K.pulse) };
+  };
+
+  const surface = { concrete, sewer, hex, tide, cistern, boiler, river, ice, deep, core }[style] ?? grid;
 
   const mat = new THREE.MeshBasicNodeMaterial();
   mat.colorNode = Fn(() => {
@@ -329,7 +428,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     new THREE.LineBasicNodeMaterial({ color: F.rail, transparent: true }),   // transparent: the intro fades it in
   );
   border.position.y = F.railHeight / 2;
-  border.visible = !region && (style === 'grid' || style === 'hex' || style === 'tide');   // the abstract floors keep 1.x's rail; a shaped room draws its own
+  border.visible = !region && style !== 'concrete' && style !== 'sewer';   // the abstract floors keep 1.x's rail; a shaped room draws its own
   group.add(border);
 
   // what the camera must hold: the floor and its rail

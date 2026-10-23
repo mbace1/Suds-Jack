@@ -18,7 +18,8 @@
 // While a transition runs the run is held: no director, no bodies, no gun;
 // the hero is the transition's and cannot be hurt. Every number is
 // TUNING.worlds.
-import { TUNING } from '../tuning.js?v=26';
+import { TUNING } from '../tuning.js?v=28';
+import * as rules from './rules.js?v=28';
 
 const T = TUNING, WD = T.worlds;
 
@@ -38,6 +39,8 @@ export const heavyShare = (w) => (on(w) ? WD.list[w.world - 1]?.heavy ?? 0 : 0);
 
 // A world ends with its boss wave
 export const endsWorld = (w, wave) => on(w) && w.world < last() && wave === w.world * T.waves.rhythm.bossEvery;
+// and the last world's boss wave ends the run, won
+export const endsRun = (w, wave) => on(w) && w.world === last() && wave === w.world * T.waves.rhythm.bossEvery;
 
 // The frame spawns are placed in: world 1's arena, around the hero, kept
 // inside the floor. In world 1 that is the arena itself; on a bigger floor
@@ -105,6 +108,7 @@ function swap(w) {
   w.world = tr.to;
   const A = arenaFor(w.world, w.shape);
   w.hx = A.hx; w.hz = A.hz;
+  rules.create(w);   // the new world's rule, from its first step
   h.x = h.px = 0; h.z = h.pz = 0; h.sink = 0; h.fall = 1;
   h.velX = h.velZ = 0; h.sVelX = h.sVelZ = 0; h.sSeen = false;
   tr.swapped = true; tr.swapAt = tr.t;

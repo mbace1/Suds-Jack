@@ -7,29 +7,29 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=26';
-import { buildFloor } from './render/floor.js?v=26';
-import { fitCamera, screenToWorld } from './render/view.js?v=26';
-import * as worldsSim from './sim/worlds.js?v=26';
-import * as reshapeSim from './sim/reshape.js?v=26';
-import { Scenery } from './render/scenery.js?v=26';
-import { Transit } from './render/transit.js?v=26';
-import { Splats } from './render/splats.js?v=26';
-import { Actors } from './render/actors.js?v=26';
-import { GEL_TIME } from './render/gel.js?v=26';
-import { studioEnvironment } from './render/env.js?v=26';
-import { Specimen } from './render/specimen.js?v=26';
-import { createWorld, step, api as simApi } from './sim/world.js?v=26';
-import { stage as stagePk } from './sim/pickups.js?v=26';
-import { Input } from './input.js?v=26';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=26';
-import { Announcer } from './announcer.js?v=26';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=26';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=26';
-import { Sound } from './audio.js?v=26';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=26';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=26';
-import { Readout } from './readout.js?v=26';
+import { TUNING } from './tuning.js?v=28';
+import { buildFloor } from './render/floor.js?v=28';
+import { fitCamera, screenToWorld } from './render/view.js?v=28';
+import * as worldsSim from './sim/worlds.js?v=28';
+import * as reshapeSim from './sim/reshape.js?v=28';
+import { Scenery } from './render/scenery.js?v=28';
+import { Transit } from './render/transit.js?v=28';
+import { Splats } from './render/splats.js?v=28';
+import { Actors } from './render/actors.js?v=28';
+import { GEL_TIME } from './render/gel.js?v=28';
+import { studioEnvironment } from './render/env.js?v=28';
+import { Specimen } from './render/specimen.js?v=28';
+import { createWorld, step, api as simApi } from './sim/world.js?v=28';
+import { stage as stagePk } from './sim/pickups.js?v=28';
+import { Input } from './input.js?v=28';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=28';
+import { Announcer } from './announcer.js?v=28';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=28';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=28';
+import { Sound } from './audio.js?v=28';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=28';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=28';
+import { Readout } from './readout.js?v=28';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -124,6 +124,8 @@ let viewWorld = 1, boundsFloor = false, roomFloor = false;   // roomFloor: a cam
 // two abstract floors in the grid's own language, with 1.x's rail. The look
 // is kept in toko2.worlds; ?worlds=street|neon overrides it for a link
 const FLOOR_STYLE = { street: ['grid', 'concrete', 'sewer'], neon: ['grid', 'hex', 'tide'] };
+// worlds 4-9 have one floor each, whichever look the first three wear (v28)
+for (const L of Object.values(FLOOR_STYLE)) L.push('cistern', 'boiler', 'river', 'ice', 'deep', 'core');
 const WORLD_LOOKS = ['street', 'neon'];
 let urlWorlds = WORLD_LOOKS.includes(params.get('worlds')) ? params.get('worlds') : null;
 const worldsLook = () => urlWorlds ?? (WORLD_LOOKS.includes(store.str('toko2.worlds')) ? store.str('toko2.worlds') : 'street');
@@ -131,9 +133,11 @@ function useWorld(n, hx, hz) {
   viewWorld = n; boundsFloor = false; roomFloor = false;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
+  const WD = T.worlds.list[n - 1];
   floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[worldsLook()][n - 1] ?? 'grid', film: actors.gooKit.film });
+  if (WD?.rail != null) floor.setRail(WD.rail);
   scene.add(floor.group);
-  scenery.build(worldsLook() === 'street' ? n : 1, hx, hz);   // NEON stands nothing round its floors
+  scenery.build(worldsLook() === 'street' && n <= 3 ? n : 1, hx, hz);   // NEON stands nothing round its floors
   camAt.set(0, 0, 0);
   resize();
 }
@@ -261,6 +265,9 @@ addEventListener('keydown', () => sound.unlock(), { once: true });
 
 const ui = new UI({
   onStart: (m) => start(m),
+  // the title's HARD switch: ARCADE becomes HARDCADE (toko2.hard)
+  hard: () => store.str('toko2.hard') === 'on',
+  onHard: () => { store.set('toko2.hard', store.str('toko2.hard') === 'on' ? 'off' : 'on'); showTitle(true); },
   onIntro: () => start('arcade', { intro: true }),
   onResume: () => resume(),
   onPause: () => pause(),
@@ -358,7 +365,7 @@ function start(m, { intro: asked = false, room = null } = {}) {
   // toko2.gateUsed: this browser has dashed a gate, so the DASH THROUGH! tag
   // is not shown again (1.x's tokoDropGateUsed, main.js:5310, 11166)
   // ?world=2 or 3 starts the run in a later world (a test on the phone)
-  const startWorld = Math.max(1, Math.min(3, Number(params.get('world')) || 1));
+  const startWorld = Math.max(1, Math.min(T.worlds.list.length, Number(params.get('world')) || 1));
   const turnRoom = arenaName === 'portrait';   // a room lies along the phone, either way up
   world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, shape: arenaName, world: mode === 'campaign' ? 1 : startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1,
     room: mode === 'campaign' ? { ...room, turn: turnRoom } : null });
@@ -396,7 +403,7 @@ const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY)
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=26`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=28`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -447,10 +454,9 @@ darkEl.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:1;opa
 document.body.appendChild(darkEl);
 const _hp = new THREE.Vector3(), _hq = new THREE.Vector3();
 function ruleFrame() {
-  const S = world?.rule, WD = world?.room ? T.campaign.worlds[world.room.world] : null;
+  const S = world?.rule, WD = world?.room ? T.campaign.worlds[world.room.world] : world ? T.worlds.list[world.world - 1] : null;
   if (!S || !WD || state === 'menu') { if (darkEl.style.opacity !== '0') darkEl.style.opacity = '0'; return; }
-  if (S.warnT > 0 && roomFloor) floor.setRail(WD.rail, 0.35 + 0.45 * Math.abs(Math.sin(S.warnT * 14)));
-  else if (roomFloor) floor.setRail(WD.rail);
+  if (WD.rail != null) floor.setRail(WD.rail, S.warnT > 0 ? 0.35 + 0.45 * Math.abs(Math.sin(S.warnT * 14)) : 0);
   if (S.kind === 'dark') {
     const D = T.campaign.rules.dark, k = S.dark * (reduceMotion() ? 0.45 : 1), h = world.hero;
     // world units to pixels at the hero, so the dark's radii are the room's
@@ -480,9 +486,10 @@ function finish() {
   const k = bestKey(mode), best = store.num(k), newBest = world.score > best;
   if (newBest) store.set(k, world.score);
   ui.results({
+    won: !!world.won,
     room: R ? { ...world.room, name: world.room.level.name, grade: R.grade } : null,
     mode, score: world.score, best: Math.max(best, world.score), newBest,
-    time: timeText(world.time), gotYou: world.killedBy ? T.species[world.killedBy]?.name : null, gotYouKind: T.species[world.killedBy] ? world.killedBy : null,
+    time: timeText(world.time), gotYou: world.killedBy ? T.species[world.killedBy]?.name : null, gotYouKind: !world.won && T.species[world.killedBy] ? world.killedBy : null,
     kills: world.kills, grazes: world.grazes,
   });
 }

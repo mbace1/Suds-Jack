@@ -21,8 +21,8 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=26';
-import * as worlds from '../worlds.js?v=26';
+import { TUNING } from '../../tuning.js?v=28';
+import * as worlds from '../worlds.js?v=28';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -377,6 +377,8 @@ function roundEnd(w, d, dt, api) {
     // a world's boss wave cleared: the floor opens (sim/worlds.js), and the
     // breather starts when the droplet has landed in the next world (onWorld)
     if (worlds.endsWorld(w, d.wave)) { d.present = false; worlds.begin(w); }
+    // the last world's boss: the run is won (v27, owner: "make arcade mode complete")
+    else if (worlds.endsRun(w, d.wave)) { w.won = true; w.over = true; w.events.push({ type: 'won', score: w.score, wave: d.wave }); }
     else d.gapT = W.clear.breather;
   }
 }

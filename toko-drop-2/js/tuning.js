@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=26';
-import WAVES from './tuning/waves.js?v=26';
-import PICKUPS from './tuning/pickups.js?v=26';
+import { SPECIES } from './tuning/species/index.js?v=28';
+import WAVES from './tuning/waves.js?v=28';
+import PICKUPS from './tuning/pickups.js?v=28';
 
 export const TUNING = {
   render: {
@@ -41,7 +41,25 @@ export const TUNING = {
       { id: 'grid', heavy: 0 },
       { id: 'driveway', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 4, arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
       { id: 'sewer', heavy: 0.5, species: [['worma', 0, 3]], speciesWeight: 3, arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
+      // v27 (owner, 2026-10-23: "let's do both and make it 9 worlds"): down
+      // the pipes, then out to sea. Each world past the sewer plays under one
+      // of 1.x's world rules (sim/rules.js; TUNING.campaign.rules), and has a
+      // floor of its own (render/floor.js, TUNING.worlds.floor[id])
+      { id: 'cistern', heavy: 0.5, rule: 'sweep', rail: 0x3fb8d0,
+        arena: { landscape: { hx: 26, hz: 14 }, portrait: { hx: 14, hz: 26 } } },
+      { id: 'boiler', heavy: 0.55, rule: 'updraft', rail: 0xff8a33,
+        arena: { landscape: { hx: 23, hz: 14 }, portrait: { hx: 14, hz: 23 } } },
+      { id: 'river', heavy: 0.55, rule: 'current', rail: 0x44ddbb,
+        arena: { landscape: { hx: 34, hz: 12 }, portrait: { hx: 12, hz: 34 } } },
+      { id: 'ice', heavy: 0.6, rule: 'slip', rail: 0xbfe6ff,
+        arena: { landscape: { hx: 28, hz: 17 }, portrait: { hx: 17, hz: 28 } } },
+      { id: 'deep', heavy: 0.6, rule: 'dark', rail: 0x4455cc,
+        arena: { landscape: { hx: 24, hz: 16 }, portrait: { hx: 16, hz: 24 } } },
+      { id: 'core', heavy: 0.65, rule: 'cycle', rail: 0xee44dd,
+        arena: { landscape: { hx: 19, hz: 11 }, portrait: { hx: 11, hz: 19 } } },
     ],
+    // THE CORE plays every rule in turn, `cycleEvery` s each
+    cycle: { rules: ['current', 'sweep', 'dark', 'slip', 'updraft'], every: 20 },
     heavy: { radius: 1.3, hp: 2 },   // × a normal body's; not an elite's, a boss's or a child's
     heavyLook: { darken: 0.55 },     // its colour (and what light becomes inside it) × this: denser
     // the transition, in seconds: pulled round and in to the hole, sinking
@@ -67,6 +85,15 @@ export const TUNING = {
              lineLo: [0.35, 0.03, 0.3], lineHi: [1.0, 0.35, 0.75] },
       tide: { scale: 0.11, flow: 0.12, bands: 7, line: 0.06, grid: 2.2, lo: [0.004, 0.01, 0.02], hi: [0.01, 0.04, 0.06],
               lineCol: [0.15, 0.85, 0.8], gridCol: [0.03, 0.06, 0.12] },
+      // worlds 4-9 (v28): linear rgb
+      cistern: { slab: 2.4, grout: 0.04, stone: [0.03, 0.042, 0.048], water: [0.003, 0.02, 0.028], depth: 0.6, caustic: [0.25, 0.75, 0.8],
+                 column: 8, plinth: 0.75, rim: [0.2, 0.6, 0.7] },
+      boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.05, 0.04, 0.035], rivet: [0.16, 0.12, 0.09], grate: 6.4, grateW: [1.4, 0.5],
+                glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6 },
+      river: { water: [0.004, 0.025, 0.03], waterHi: [0.08, 0.35, 0.3], flow: 1.6, bank: 0.78, pebble: [0.05, 0.05, 0.045], foam: [0.5, 0.75, 0.7] },
+      ice: { base: [0.055, 0.085, 0.125], deep: [0.02, 0.035, 0.07], crack: [0.85, 0.95, 1.0], scale: 0.35, frost: [0.6, 0.75, 0.85] },
+      deep: { silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6 },
+      core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5 },
     },
   },
   // what stands round a world's floor (render/scenery.js). Colours are
