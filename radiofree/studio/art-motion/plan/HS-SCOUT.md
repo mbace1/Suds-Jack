@@ -18,7 +18,16 @@ Already made, so excluded: Muhos felling (*Count the Trees*), Hamina map (*Trade
 
 ---
 
-## 1 · Two Directors, One Agent (Humppila) · Nordic · High
+## 0 · Reference: how *Trade Secret* (HS, 23 Oct) played out
+
+- **13:20** HS publishes.
+- **14:23** Update: LVV lifts the secrecy and sends the attachments once the story is online.
+- **The same day:** Yle runs its own story ("Ely-keskus salasi tietoja Googlen hakkuista Haminassa", 74-20253090), crediting HS as first. Kymen Sanomat follows. LVV's nature chief says that under today's law a criminal report would probably have been made. SLL Kymenlaakso announces a police request.
+- **Readers:** 99 comments by the evening (from the owner's paste). The top themes are national shame ("how prostrate can this country be"); whether other flying-squirrel cases in the region were also hidden or never supervised; and Vantaa building expensive artificial trees for flying squirrels while a whole forest is felled elsewhere and hidden as a trade secret. Commenters are not named here.
+
+---
+
+## 1 · Two Directors, One Agent (Humppila) · **HS** · Nordic · High
 
 **Pitch.** A small Finnish municipality abolished two director posts, and the municipal manager now does one of the
 jobs herself with AI agents. The Deputy Ombudsman has opened an inquiry.
@@ -52,9 +61,15 @@ jobs herself with AI agents. The Deputy Ombudsman has opened an inquiry.
 - **Still developing:** the Ombudsman, the administrative court and the police are all pending.
 - The peg is about a month old. It is revived whenever the Ombudsman reports.
 
+**Reactions.**
+- Reported follow-ups: the Deputy Ombudsman's own-initiative inquiry; the ex-director's appeal and criminal complaint; a social-media comment by the finance minister (wording unverified).
+- No Kuntaliitto or ministry statement found.
+- The headline went viral: STT copies in at least three regional papers, and a vauva.fi discussion thread.
+- Comment counts were not visible.
+
 ---
 
-## 2 · Size: Confidential (Vaala) · Doodle · High if verified
+## 2 · Size: Confidential (Vaala) · *secondary: Maaseudun Tulevaisuus* · Doodle · High if verified
 
 **Pitch.** Doodle buys land for a data centre. The town says the size of the area is confidential, while one seller
 put its own hectares in a press release.
@@ -86,9 +101,11 @@ put its own hectares in a press release.
   hook.
 - It is the Doodle strand again, though not Muhos.
 
+**Reactions.** None found beyond the original reporting. The secrecy remark itself is the reaction to press questions.
+
 ---
 
-## 3 · Speak Freely (Muhos's comment rule) · Doodle / Nordic · Med (careful)
+## 3 · Speak Freely (Muhos's comment rule) · *secondary: Yle interview, Kaleva; HS reported the leave* · Doodle / Nordic · Med (careful)
 
 **Pitch.** During the felling scandal, all comment on the Google case went through one office. The town has since
 promised that its staff may talk to the press again.
@@ -123,9 +140,13 @@ promised that its staff may talk to the press again.
 - It would be a third Muhos film, which `IDEAS.md` cautions against.
 - The press-freedom angle is the defensible one: the rule, and the promise to change it.
 
+**Reactions.**
+- Within days: an expert criticised the rule; Kaleva ran an editorial (a responsible leader cannot hide from publicity); the board chair responded; the technical director denied any crisis; the municipality promised change.
+- This is the one case where coverage visibly changed a rule.
+
 ---
 
-## 4 · Tax Up, Refund Planned (data-centre electricity tax) · Nordic · Med (verify)
+## 4 · Tax Up, Refund Planned (data-centre electricity tax) · *secondary: no outlet story found, press releases* · Nordic · Med (verify)
 
 **Pitch.** Finland moved data centres up an electricity-tax class, and the government is planning a new support model
 to compensate.
@@ -152,9 +173,11 @@ to compensate.
   can be a punchline.
 - No HS story was found. The October peg is unknown; check the budget debate.
 
+**Reactions.** Parliamentary: the Vestman bill gathered more than 100 MP signatures; the opposition demands a separate data-centre tax. No HS reader reaction found.
+
 ---
 
-## 5 · Halted, Except Stabilising (Muhos/Kajaani) · Doodle · Med-low
+## 5 · Halted, Except Stabilising (Muhos/Kajaani) · *secondary: Kaleva* · Doodle · Med-low
 
 **Pitch.** Told to stop all ground-altering work by 23 Oct, Doodle answered that the sites may still need
 "stabilisation works".
@@ -171,9 +194,11 @@ to compensate.
 
 **Risks.** Single headline, and a third Muhos film. The peg is today, 23 Oct, the halt deadline.
 
+**Reactions.** Part of the Muhos chain below.
+
 ---
 
-## 6 · Asked, Refused, Felled Anyway (Muhos, the exemption) · Doodle · Low (overlap)
+## 6 · Asked, Refused, Felled Anyway (Muhos, the exemption) · **HS** (28 Sep) · Doodle · Low (overlap)
 
 **Pitch.** Doodle asked to be excused from the impact assessment, was told no, and the felling went on to August.
 
@@ -190,9 +215,16 @@ to compensate.
 
 **Risks.** It largely duplicates *Count the Trees*. Keep it as a line for a Count the Trees follow-up rather than a film.
 
+**Reactions** (the whole Muhos chain after HS's 28 Sep story):
+- LVV halt order (6 Oct).
+- A private person's police request (2 Oct); the police preliminary inquiry (IL, 7 Oct); a second request (Kaleva).
+- The PM said Google must follow Finnish law (MTV); the environment minister called it a serious neglect, if true; MPs demanded full compensation (Kaleva).
+- Google apologised (Yle: *Emme yltäneet tavoitteisiin*; MTV interview with the Google country head).
+- International pickup: AFP, DCD, Tom's Guide, and the Guardian's 22 Oct estimate.
+
 ---
 
-## 7 · Can't Say Who (Seinäjoki) · Nordic · Low
+## 7 · Can't Say Who (Seinäjoki) · *secondary: Yle* · Nordic · Low
 
 **Pitch.** A €1.5bn AI data centre has fully leased its first phase, and nobody will say to whom.
 
@@ -207,6 +239,8 @@ to compensate.
 - [DCD on Microsoft](https://www.datacenterdynamics.com/en/news/microsoft-signs-on-for-capacity-at-pure-dc-data-center-in-finland-report/)
 
 **Risks.** Commercial confidentiality is normal, so this is a weak twist without the Yle text.
+
+**Reactions.** Not seen.
 
 ---
 
@@ -250,3 +284,28 @@ Finnish, through WebSearch "extended". Add `HS:` or a town name to pull the STT 
 
 **Terms that found nothing:** Kela AI errors; HS ChatGPT in an official decision; Traficom or DVV system errors; a
 deepfake of a Finnish minister; an Imatra groundwater initiative; data-centre code names in Pirkanmaa.
+
+---
+
+## Pattern: what usually happens after HS runs this kind of story
+
+1. **The authority moves the same day, or within a week.** Secrecy is lifted (Trade Secret, within an hour); a halt is
+   ordered (Muhos, 8 days); an Ombudsman inquiry opens (Humppila). The fastest change is always the one that costs the
+   authority nothing.
+2. **Yle and the regional paper re-report within hours**, crediting HS. Then STT copies spread it to Uusi Suomi,
+   Kaleva, Kymen Sanomat and others. A small HS item becomes national through its copies; the HS original itself drops
+   off the front page.
+3. **Politicians comment within 1–3 days**, with a minister or the PM restating the law ("must follow Finnish law",
+   "serious neglect, if true"). The opposition proposes a bill or a tax.
+4. **The company apologises, or reframes**: an accident, unclear maps, a small slip, "we acted on our best
+   understanding". It rarely disputes the facts.
+5. **The civil-society escalation follows**: SLL or a private person files a police request, and a preliminary inquiry
+   opens.
+6. **International pickup comes only for the big numbers** (Muhos: 250,000 trees, 330 ha); the small, perfect
+   absurdities, like the Hamina map, stay Finnish.
+7. **Readers' themes repeat**: national shame or servility toward big tech; "is this the only case?"; and a
+   double-standard comparison (Vantaa's artificial trees). The comparison is usually the best line for a film's
+   punchline.
+
+**For RFH:** the window for a film is the first 24–48 hours, when the authority's move gives the story its own twist.
+Lifted the day the story ran is the model.
