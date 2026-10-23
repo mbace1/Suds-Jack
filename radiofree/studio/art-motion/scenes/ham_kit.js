@@ -4,7 +4,7 @@
 // the sea to the west and south, the mill's long sheds along the shore, a breakwater, forest to the east, a dashed
 // site boundary and, in yellow, the flying squirrel forest that was not to be cut. In 2018–19, 1.3 ha of it was felled
 // without a permit; Doodle asked the authority by email to keep the papers secret, and they were kept as trade secrets.
-// The film: frame 0 is the map with its yellow zones under black redaction bars, a flying squirrel peeking over one;
+// The film: frame 0 is the whole map blacked out, strip after strip, a flying squirrel peeking over one;
 // the bars lift (2007, the forest), the year turns (2021: halls, sand, the zones gone), the papers go into a folder and
 // a TRADE SECRET stamp comes down, and the stamp lands on the map itself; then the bars slide back: frame 0 again.
 // Fair on purpose: the map is illustrative, after the published graphic, not a survey; the zones felled on screen are
@@ -178,13 +178,10 @@
   }
   const ZC = ZONES.map((z) => { const xs = z.P.map((p) => p[0]), ys = z.P.map((p) => p[1]); return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2, w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) }; });
 
-  // ── the redaction bars over the zones (frame 0, and the last frame): three black strips laid at an angle
-  const BARS = [
-    { x: MX(437), y: MY(917), w: 92, h: 70, r: -0.3 },             // over zone 1
-    { x: MX(479), y: MY(1016), w: 210, h: 62, r: -0.89 },          // over the long zone
-    { x: MX(568), y: MY(1305), w: 250, h: 66, r: 1.5 },            // over the chain of four in the south
-    { x: MX(733), y: MY(1255), w: 225, h: 82, r: -0.42 },          // over the ellipse by the bay
-  ];
+  // ── the redaction: the WHOLE map is blacked out (owner, 23 Oct: the authority hid the whole map, not just the zones),
+  //    as a stack of black strips edge to edge, thin slivers of map showing between them. Laid out in SCREEN space at
+  //    frame 0's zoom and mapped back to map space (BARS is built once HZ and ZF exist, below)
+  let BARS = [];
   function bar(c, b, k = 1, dx = 0) {
     if (k <= 0) return; const kk = ease.back(clamp(k, 0, 1));
     c.save(); c.translate(b.x + dx, b.y); c.rotate(b.r); c.scale(lerp(1.25, 1, kk), lerp(1.25, 1, kk));
@@ -275,6 +272,14 @@
   const camZ = (c, z, fx = V.fx, fy = V.fy) => { if (z !== 1) { c.translate(fx, fy); c.scale(z, z); c.translate(-fx, -fy); } };
   const ZF = { x: MX(560), y: MY(1150) };                   // the zones' middle: where the shots push in
   const HZ = 1.3;                                            // frame 0's zoom, and the last frame's: the bars read big
+  {
+    const m = (sx, sy) => ({ x: ZF.x + (sx - ZF.x) / HZ, y: ZF.y + (sy - ZF.y) / HZ });
+    let r = 7; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
+    for (let sy = -40, i = 0; sy < H + 80; sy += 166, i++) {
+      const x0 = -80 - rnd() * 60, x1 = W + 80 + rnd() * 60, c0 = m((x0 + x1) / 2, sy + 75);
+      BARS.push({ x: c0.x, y: c0.y, w: (x1 - x0) / HZ, h: 150 / HZ, r: (rnd() - 0.5) * 0.03 });
+    }
+  }
 
   /** the map, 2021 (frame 0's and the last frame's), or any state: halls k, cut trees gone(t), zones state */
   function map(c, lt, cam, { hallsK = 1, gone = () => 2, zstate, extra } = {}) {
@@ -283,7 +288,7 @@
       { sh: forest(), d: 0.1, lift: 0.9 },
       { d: 0.12, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); bound(g, 0.85); zones(g, lt, zstate); if (extra) extra(g); g.restore(); } }], cam);
   }
-  const PEEK = { x: BARS[2].x, y: BARS[2].y - BARS[2].w / 2 + 6 };   // the squirrel looks over the top of the southern bar (clear of the IG rail)
+  const PEEK = { x: ZF.x + (430 - ZF.x) / HZ, y: BARS[6].y - BARS[6].h / 2 + 4 };   // the squirrel looks over the top edge of a strip mid-frame (clear of the IG rail)
 
   // ═════════ 1 · tsv_hook: frame 0 — the 2021 map, its yellow zones already under four black bars, a flying squirrel
   //            peeking over one; the clipping says MAP: HIDDEN. On "secret" the bars thump and the squirrel ducks ═════════
@@ -295,8 +300,8 @@
     // the squirrel peeks, ducks on the hit, and comes back up
     const duck = lt > tS ? clamp(1 - Math.exp(-(lt - tS) * 9) * 1.4, 0, 1) * 0 + clamp((lt - tS - 0.55) / 0.3, 0, 1) : 1;
     const up = ease.out(duck) * (1 + 0.04 * Math.sin(lt * 5));
+    BARS.forEach((b, i) => { const th = lt > tS ? Math.exp(-(lt - tS - i * 0.025) * 8) * clamp((lt - tS - i * 0.025) * 30, 0, 1) : 0; bar(c, b, 1 - 0.08 * th); });
     c.save(); c.beginPath(); c.rect(0, 0, W, PEEK.y + 2); c.clip(); put(c, SQ_PEEK(), PEEK.x, PEEK.y + 110 * (1 - up), { sc: 0.9, lift: 0.4 }); c.restore();
-    BARS.forEach((b, i) => { const th = lt > tS ? Math.exp(-(lt - tS - i * 0.06) * 8) * clamp((lt - tS - i * 0.06) * 30, 0, 1) : 0; bar(c, b, 1 - 0.08 * th); });
     c.restore();
     bigClip(c, ui('clipLabel', 'DOODLE DATA CENTRE · HAMINA, FINLAND'), ui('clipValue', 'MAP: HIDDEN'), { k: lt / 0.25, dy: 420 * ease.io((lt - dd + 0.55) / 0.5) });
     box(c);
@@ -318,7 +323,7 @@
       put(c, SQ_GLIDE(), x, y, { sc: 0.42 * (1 + 0.25 * Math.sin(e * Math.PI)), rot: ang + Math.sin(kg * 9) * 0.08, lift: 2.2 });
     }
     // the bars leave: sliding off to the right and up, one after another
-    BARS.forEach((b, i) => { const k = ease.io((lt - 0.05 - i * 0.08) / 0.45); if (k < 1) bar(c, b, 1 - k * 0.2, k * 900); });
+    BARS.forEach((b, i) => { const k = ease.io((lt - 0.05 - i * 0.035) / 0.45); if (k < 1) bar(c, b, 1 - k * 0.2, (i % 2 ? -1 : 1) * k * 1100); });
     c.restore();
     yearCard(c, '2007', 210, 700, { a: clamp((lt - 0.35) / 0.25, 0, 1) });
     screenTag(c, ui('zoneTag', 'FLYING SQUIRREL FOREST'), 520, 1490, { a: clamp((lt - 0.5) / 0.3, 0, 1) * clamp((dd - 0.2 - lt) / 0.3, 0, 1), bg: C.zone, size: 40 });
@@ -432,7 +437,7 @@
     if (lt > tT) { const f = Math.exp(-(lt - tT) * 7) * 0.22; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
     // the bars slide back in from the right, one after another, and settle exactly where frame 0 has them
     c.save(); camZ(c, Z, ZF.x, ZF.y);
-    BARS.forEach((b, i) => { const k = ease.out((lt - tB - 0.25 - i * 0.12) / 0.4); if (k > 0) bar(c, b, 1, (1 - k) * 900); });
+    BARS.forEach((b, i) => { const k = ease.out((lt - tB - 0.25 - i * 0.05) / 0.4); if (k > 0) bar(c, b, 1, (i % 2 ? -1 : 1) * (1 - k) * 1100); });
     // the squirrel back at its post (frame 0's peek), once the bars are home
     const kq0 = clamp((lt - tB - 0.9) / 0.3, 0, 1); if (kq0 > 0) { c.save(); c.beginPath(); c.rect(0, 0, W, PEEK.y + 2); c.clip(); put(c, SQ_PEEK(), PEEK.x, PEEK.y + 110 * (1 - ease.out(kq0)), { sc: 0.9, lift: 0.4 }); c.restore(); }
     c.restore();
