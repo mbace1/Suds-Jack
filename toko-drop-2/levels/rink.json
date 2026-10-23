@@ -1,76 +1,143 @@
 {
-  "format": 1,
-  "id": "rink",
-  "name": "RINK",
-  "arena": {
-    "shapes": [
-      {
-        "kind": "circle",
-        "c": [
-          0,
-          0
-        ],
-        "r": 11
-      }
-    ]
-  },
-  "duration": 40,
-  "rules": {
-    "mode": "arcade",
-    "outside": "push"
-  },
-  "spawns": [
-    {"t":0,"type":"YELA_CUBE","px":8.5,"pz":0,"speedMult":1.4},
-    {"t":0,"type":"YELA_CUBE","px":-8.5,"pz":0,"speedMult":1.4},
-    {"t":1.5,"type":"YELA_CUBE","px":-7.4,"pz":-4.2,"speedMult":1.4},
-    {"t":1.5,"type":"YELA_CUBE","px":7.4,"pz":4.2,"speedMult":1.4},
-    {"t":3,"type":"YELA_CUBE","px":8.5,"pz":0,"speedMult":1.4},
-    {"t":3,"type":"YELA_CUBE","px":-8.5,"pz":0,"speedMult":1.4},
-    {"t":4,"type":"GLOBBO","px":4.6,"pz":7.2,"speedMult":1.4},
-    {"t":4,"type":"GLOBBO","px":-7.2,"pz":4.6,"speedMult":1.4},
-    {"t":4,"type":"GLOBBO","px":3.9,"pz":-7.6,"speedMult":1.4},
-    {"t":5.5,"type":"GLOBBO","px":-4.6,"pz":-7.2,"speedMult":1.4},
-    {"t":5.5,"type":"GLOBBO","px":7.6,"pz":3.9,"speedMult":1.4},
-    {"t":5.5,"type":"GLOBBO","px":-3.9,"pz":7.6,"speedMult":1.4},
-    {"t":7,"type":"GLOBBO","px":4.6,"pz":-7.2,"speedMult":1.4},
-    {"t":7,"type":"GLOBBO","px":-8.5,"pz":-0.4,"speedMult":1.4},
-    {"t":7,"type":"GLOBBO","px":3.9,"pz":7.6,"speedMult":1.4},
-    {"t":9,"type":"SLUDGE_CUBE","px":0,"pz":8.5,"speedMult":1.4},
-    {"t":10.5,"type":"SLUDGE_CUBE","px":0,"pz":-8.5,"speedMult":1.4},
-    {"t":12,"type":"SLUDGE_CUBE","px":4.2,"pz":-7.4,"speedMult":1.4},
-    {"t":13,"type":"YELA_CUBE","px":7.5,"pz":4.1,"speedMult":1.4},
-    {"t":13,"type":"YELA_CUBE","px":-7.3,"pz":4.4,"speedMult":1.4},
-    {"t":13,"type":"YELA_CUBE","px":-4.4,"pz":-7.3,"speedMult":1.4},
-    {"t":14.5,"type":"YELA_CUBE","px":-7.5,"pz":-4.1,"speedMult":1.4},
-    {"t":14.5,"type":"YELA_CUBE","px":7.3,"pz":-4.4,"speedMult":1.4},
-    {"t":14.5,"type":"YELA_CUBE","px":-4.1,"pz":7.5,"speedMult":1.4},
-    {"t":16,"type":"YELA_CUBE","px":8.5,"pz":0.2,"speedMult":1.6},
-    {"t":16,"type":"YELA_CUBE","px":-4.1,"pz":-7.5,"speedMult":1.6},
-    {"t":16,"type":"YELA_CUBE","px":4.1,"pz":7.5,"speedMult":1.6},
-    {"t":19,"type":"GLOBBO","px":-3.5,"pz":7.7,"speedMult":1.6},
-    {"t":19,"type":"GLOBBO","px":-4.9,"pz":-6.9,"speedMult":1.6},
-    {"t":19,"type":"GLOBBO","px":8.5,"pz":-0.8,"speedMult":1.6},
-    {"t":20.5,"type":"GLOBBO","px":3.5,"pz":-7.7,"speedMult":1.6},
-    {"t":20.5,"type":"GLOBBO","px":4.9,"pz":6.9,"speedMult":1.6},
-    {"t":20.5,"type":"GLOBBO","px":-8.5,"pz":0.8,"speedMult":1.6},
-    {"t":22,"type":"GLOBBO","px":-3.5,"pz":-7.7,"speedMult":1.6},
-    {"t":22,"type":"GLOBBO","px":-4.9,"pz":6.9,"speedMult":1.6},
-    {"t":22,"type":"GLOBBO","px":8.5,"pz":0.8,"speedMult":1.6},
-    {"t":25,"type":"SLUDGE_CUBE","px":2.3,"pz":8.2,"speedMult":1.6},
-    {"t":25,"type":"SLUDGE_CUBE","px":-2.3,"pz":-8.2,"speedMult":1.6},
-    {"t":26.5,"type":"SLUDGE_CUBE","px":2.1,"pz":-8.3,"speedMult":1.6},
-    {"t":26.5,"type":"SLUDGE_CUBE","px":-2.1,"pz":8.3,"speedMult":1.6},
-    {"t":28,"type":"SLUDGE_CUBE","px":6.1,"pz":-6,"speedMult":1.8},
-    {"t":28,"type":"SLUDGE_CUBE","px":-6.1,"pz":6,"speedMult":1.8},
-    {"t":31,"type":"YELA_CUBE","px":5.9,"pz":6.1,"speedMult":1.8},
-    {"t":31,"type":"YELA_CUBE","px":-8.2,"pz":2.1,"speedMult":1.8},
-    {"t":31,"type":"YELA_CUBE","px":-5.9,"pz":-6.1,"speedMult":1.8},
-    {"t":31,"type":"YELA_CUBE","px":8.2,"pz":-2.1,"speedMult":1.8},
-    {"t":32.5,"type":"YELA_CUBE","px":-8.2,"pz":-2.3,"speedMult":1.8},
-    {"t":32.5,"type":"YELA_CUBE","px":8.3,"pz":1.6,"speedMult":1.8},
-    {"t":34,"type":"YELA_CUBE","px":8.2,"pz":-2.3,"speedMult":1.8},
-    {"t":34,"type":"YELA_CUBE","px":-6.1,"pz":-5.9,"speedMult":1.8},
-    {"t":34,"type":"YELA_CUBE","px":-8.2,"pz":2.3,"speedMult":1.8},
-    {"t":34,"type":"YELA_CUBE","px":6.1,"pz":5.9,"speedMult":1.8}
+ "format": 2,
+ "id": "rink",
+ "name": "RINK",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 11
+   }
   ]
+ },
+ "duration": 40,
+ "goal": {
+  "type": "clear"
+ },
+ "plan": {
+  "world": 4,
+  "d": 6,
+  "teaches": "the dash's CUT"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": 8.66,
+   "pz": 3.66,
+   "speedMult": 0.9
+  },
+  {
+   "t": 2.1,
+   "type": "YELA_CUBE",
+   "px": -8.86,
+   "pz": 3.15,
+   "speedMult": 0.9
+  },
+  {
+   "t": 4.2,
+   "type": "GLOBBO",
+   "px": 4.4,
+   "pz": -8.3,
+   "speedMult": 0.9
+  },
+  {
+   "t": 6.3,
+   "type": "GLOBBO",
+   "px": 2.36,
+   "pz": 9.1,
+   "speedMult": 0.9
+  },
+  {
+   "t": 8.4,
+   "type": "YELA_CUBE",
+   "px": -7.89,
+   "pz": -5.11,
+   "speedMult": 0.9
+  },
+  {
+   "t": 10.5,
+   "type": "GLOBBO",
+   "px": 9.27,
+   "pz": -1.56,
+   "speedMult": 0.9
+  },
+  {
+   "t": 12.6,
+   "type": "GLOBBO",
+   "px": -5.78,
+   "pz": 7.41,
+   "speedMult": 0.9
+  },
+  {
+   "t": 14.7,
+   "type": "YELA_CUBE",
+   "px": -0.74,
+   "pz": -9.37,
+   "speedMult": 0.9
+  },
+  {
+   "t": 16.8,
+   "type": "GLOBBO",
+   "px": 6.88,
+   "pz": 6.41,
+   "speedMult": 0.9
+  },
+  {
+   "t": 18.9,
+   "type": "GLOBBO",
+   "px": -9.4,
+   "pz": -0.08,
+   "speedMult": 0.9
+  },
+  {
+   "t": 21,
+   "type": "YELA_CUBE",
+   "px": 6.98,
+   "pz": -6.29,
+   "speedMult": 0.9
+  },
+  {
+   "t": 23.1,
+   "type": "GLOBBO",
+   "px": -0.9,
+   "pz": 9.36,
+   "speedMult": 0.9
+  },
+  {
+   "t": 25.2,
+   "type": "GLOBBO",
+   "px": -5.66,
+   "pz": -7.51,
+   "speedMult": 0.9
+  },
+  {
+   "t": 27.3,
+   "type": "YELA_CUBE",
+   "px": 9.24,
+   "pz": 1.72,
+   "speedMult": 0.9
+  },
+  {
+   "t": 29.4,
+   "type": "GLOBBO",
+   "px": -7.97,
+   "pz": 4.98,
+   "speedMult": 0.9
+  }
+ ],
+ "mods": {
+  "noGun": true,
+  "dash": "cut"
+ },
+ "tiers": {
+  "S": 31.1,
+  "A": 33.5,
+  "B": 35.9,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
 }

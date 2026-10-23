@@ -1,0 +1,139 @@
+{
+ "format": 2,
+ "id": "breath",
+ "name": "BREATH",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 18,
+    "hz": 11,
+    "pulse": {
+     "from": 1,
+     "to": 0.55,
+     "period": 10,
+     "mode": "breathe"
+    }
+   }
+  ]
+ },
+ "duration": 40,
+ "goal": {
+  "type": "survive"
+ },
+ "plan": {
+  "world": 4,
+  "d": 8,
+  "teaches": "warden, bulwark"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "WARDEN",
+   "px": 0,
+   "pz": -8
+  },
+  {
+   "t": 2,
+   "type": "GLOBBO",
+   "px": 13.74,
+   "pz": 9.4
+  },
+  {
+   "t": 4,
+   "type": "BULWARK",
+   "px": -14,
+   "pz": 0
+  },
+  {
+   "t": 4,
+   "type": "BULWARK",
+   "px": 14,
+   "pz": 0
+  },
+  {
+   "t": 4.4,
+   "type": "YELA_CUBE",
+   "px": -16.4,
+   "pz": 2.34
+  },
+  {
+   "t": 6.8,
+   "type": "GLOBBO",
+   "px": 7.72,
+   "pz": -9.4
+  },
+  {
+   "t": 9.2,
+   "type": "YELA_CUBE",
+   "px": 0.51,
+   "pz": 9.4
+  },
+  {
+   "t": 11.6,
+   "type": "GLOBBO",
+   "px": -9.6,
+   "pz": -9.4
+  },
+  {
+   "t": 14,
+   "type": "YELA_CUBE",
+   "px": 16.4,
+   "pz": 0.55
+  },
+  {
+   "t": 16.4,
+   "type": "GLOBBO",
+   "px": -10.98,
+   "pz": 9.4
+  },
+  {
+   "t": 18.8,
+   "type": "YELA_CUBE",
+   "px": 1.14,
+   "pz": -9.4
+  },
+  {
+   "t": 21.2,
+   "type": "GLOBBO",
+   "px": 6.72,
+   "pz": 9.4
+  },
+  {
+   "t": 23.6,
+   "type": "YELA_CUBE",
+   "px": -16.4,
+   "pz": -3.47
+  },
+  {
+   "t": 26,
+   "type": "GLOBBO",
+   "px": 15.93,
+   "pz": -9.4
+  },
+  {
+   "t": 28.4,
+   "type": "YELA_CUBE",
+   "px": -2.87,
+   "pz": 9.4
+  },
+  {
+   "t": 30.8,
+   "type": "GLOBBO",
+   "px": -4.49,
+   "pz": -9.4
+  },
+  {
+   "t": 33.2,
+   "type": "YELA_CUBE",
+   "px": 16.4,
+   "pz": 6.62
+  }
+ ],
+ "tiers": {
+  "S": 1,
+  "A": 0.95,
+  "B": 0.88,
+  "source": "bot pass, 24 seeds a skill: got through sharp 67%, average 88%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

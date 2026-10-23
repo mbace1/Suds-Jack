@@ -19,154 +19,22 @@
     Never `--no-verify`.
 -->
 
-## v29 — 2026-10-23
-**Worlds 4-9 each have a gel of their own**
-- BUBBLA (THE CISTERN): a small gel inside a bubble that eats four shots; popped, it bolts, and the bubble grows back if you let it
-- STEAMA (THE BOILER ROOM): hisses, then vents a scalding cloud where it stands and throws a ring of six
-- SALMA (THE RIVER): darts and glides, working its way toward you against the current
-- SKATA (THE ICE SHEET): a puck of a cube that never stops, comes off every wall faster, and lines up on you every fourth bounce; a shot knocks it
-- GLOWA (THE DEEP): nearly the colour of the dark, holding a light out in front of it; come close to the light and it bites
-- MIRRA (THE CORE): stands at your mirror point and fires a volley every couple of seconds; you move it by moving
-- Each world draws its own about as often as three of the shared kinds, from its first wave; the GOT YOU card has a line for each in all three languages
+## v31 — 2026-10-23
+**THE CAMPAIGN, rebuilt: thirty rooms, thirty challenges, each with its chart, graded on tiers set by bot play**
+- Thirty short rooms in the six worlds (five each), from FIRST LIGHT to THE CORE: survive, kill counts, clear-them-all, gate runs, a no-gun room where only the gates kill, a swarm, a ring to hold that drifts on the current, a flawless lane, ONE BY ONE (only the lit body can be hurt), two bosses, a floor that closes in, a bullet curtain graded on hits, a heart to protect, splitters, a spike, a hunt for cloakers among decoys, a magna's pull, forty shots for the room, a floor of three orbiting circles, a dash-only rink, a streak to reach, a flawless bubble bath, orbs to collect among charging toros, a breathing floor, a clear against the clock, a room of elites, two rooms joined by a neck, a room that gets faster every ten seconds, and a gauntlet whose rule changes five times
+- Each room teaches something the arcade will later ask (its list entry says what), and the worlds' new gels (SKATA, BUBBLA, SALMA, STEAMA, MIRRA, GLOWA) appear in the later rooms
+- The room list draws each room's chart: what arrives over its clock, stacked and coloured by gel, with its gates, orbs, quota line, stages and moving floor over it; above the list, the route of all thirty by difficulty, each dot in the colour of your grade
+- In a room: the ring to hold and how full it is, the heart and its hp, the orbs, and a ring under the one body you may hurt; the HUD reads the goal's own count (GATES 2/5, HOLD 40%, PROTECT 9/12, AMMO 31…); a room whose clock runs out on its goal says TIME
+- Tiers from play: a bot plays every room at three skills (sharp, average, rough) over 24 seeds; S, A and B are their medians, at least 6% of the clock apart, and every room says so in its file. The rooms were retuned against it first: every room is cleared by the average bot, and the rough one stops in the last world (`node scripts/room-tiers.mjs`)
+- A level can name a 2.0 gel directly and give a body its own hp (the bosses)
 
-## v28 — 2026-10-23
-**Worlds 4-9 each have a floor of their own**
-- THE CISTERN: stone slabs under shallow water, light off the surface wandering over them, the column bases standing in it
-- THE BOILER ROOM: riveted steel plates, scorched, and grates the fire breathes through
-- THE RIVER: dark water running the long way with its streaks moving, pebbled banks at both edges
-- THE ICE SHEET: dark ice, deeper in places, cracked, frost along the cracks
-- THE DEEP: black silt in slow ripples, lit only by specks of living light (THE DEEP's dark rule closes in over it)
-- THE CORE: black, traced with circuitry; rings run out from the middle and light the traces as they pass
-- Each world's rail, landing front and drain rim wear its own colour; the floors were toned down from the first renders so the gels stay the brightest thing on them
-- Smoke: the world runs check each world's floor; the staged-pickups check clears the run's own gates first (a gate caught cooling down had its beam off, failing world 3 now and then)
-- Cache tokens `?v=27` → `?v=28`; HUD label → `2.0 · v28`
-
----
-
-## v27 — 2026-10-23
-**Arcade becomes nine worlds and can be won; the title is ARCADE with a HARD switch, and the campaign**
-- Title (owner, 2026-10-23): ARCADE beside INTRO, HARD · OFF/ON (on, ARCADE becomes HARDCADE and starts it; kept in `toko2.hard`), CAMPAIGN, OPTIONS. SURVIVAL is off the title (it still runs)
-- Arcade is nine worlds (owner: "let's do both and make it 9 worlds"): the grid, the driveway, the sewer, then THE CISTERN, THE BOILER ROOM, THE RIVER, THE ICE SHEET, THE DEEP and THE CORE, each opened by the boss before it. Worlds 4-9 have their own size and colours (their own floors and gels come next)
-- From the cistern on, each world plays under one of 1.x's world rules, as the campaign does: the cistern the line, the boiler room the updraft, the river the current, the ice sheet the slick floor, the deep the dark; THE CORE plays all five in turn, 20 s each
-- The ninth boss wins the run: RUN COMPLETE, with the score
-- Gates: `test/worlds.mjs` 29 (nine worlds, 3 → 4 under its rule, 9's boss wins, the core cycles); smoke checks the HARD switch, that SURVIVAL is off the title, and runs `world9`
-- Cache tokens `?v=26` → `?v=27`; HUD label → `2.0 · v27`
-
----
-
-## v26 — 2026-10-23
-**The campaign's six worlds wear their own floors and play by their one rule each, as in 1.x**
-- Each world's floor colour and rail are 1.x's depth looks: THE SURFACE, THE WELL (teal), THE VEIN (red), THE VOID (near-black), THE FOAM (pale aqua), THE KILN (amber)
-- ONE RULE PER WORLD (1.x v264, `js/sim/rules.js`), drawn from the run's own seed so a room replays exactly:
-  - THE WELL — the whole floor drifts on a current that slowly turns; you feel it as a lean to correct
-  - THE VEIN — the rail flashes, then fires a line of shots across the room with a gap in it to run to
-  - THE VOID — the dark closes in round you and opens again on a 9 s breath (gentler under REDUCE MOTION)
-  - THE FOAM — the floor is slick: the stick sets where you accelerate, so you slide on after letting go
-  - THE KILN — the rail flashes, then the floor shoves everything out from the middle
-  - THE SURFACE keeps none: it is where the game is taught
-- Gates: `test/campaign.mjs` 170 (+10: each rule does what it says, only in its world, and replays from the seed)
-- Cache tokens `?v=25` → `?v=26`; HUD label → `2.0 · v26`
-
----
-
-## v25 — 2026-10-23
-**THE CAMPAIGN, from 1.x: eighteen rooms in six worlds, each with its own clock and goal, graded S to F**
-- CAMPAIGN on the title opens the room list (1.x v263-v265): six worlds of three rooms, a world not reached yet one locked line, each room with what it asks and its best grade. A room opens when the one before it is graded above F
-- A room is 1.x's authored level, its file copied as written (`levels/*.json`): its bodies arrive where and when it says, on its own clock. Goals: SURVIVE the clock, KILL a count (the room ends the moment you have it), NO HITS (one hit ends it)
-- Grades are 1.x's: the share of the room's bodies put down, a step off for every hit (never below C); a quota by how far behind the arrivals you finished; F for a room you did not get through
-- Shaped rooms: 1.x's arena shapes (`js/sim/shape.js`, its arena.js) — circles and rectangles, joined or intersected. Every wall clamps to the shape, the floor stops at it and its edge is the world's rail. On a portrait phone a room is laid along the screen (x and z swap)
-- The HUD clock shows the goal and the seconds left; a clear goes back to the list with the grade, a death to the death screen with the grade, AGAIN and ROOMS. Progress is kept in `toko2.campaign`
-- Not yet: the worlds' looks and their one rule each (1.x's current, line, blink, skid, furnace) — every room plays on the grid for now; BOOST LANE's Rush rules (2.0 has no Rush), so it plays as an arcade room
-- Gates: `test/campaign.mjs` (160: every room both ways up plays to a grade, shaped rooms hold everything, the goals, 1.x's grades, the route); smoke opens the list and plays THREE RINGS to a grade
-- Cache tokens `?v=24` → `?v=25`; HUD label → `2.0 · v25`
-
----
-
-## v24 — 2026-10-23
-**1.x's settings in OPTIONS: LANGUAGE, VOLUME, the announcer with its own volume, and REDUCE MOTION**
-- LANGUAGE · ENGLISH / SUOMI / 日本語 (1.x's title chips): picked once, kept in `toko2.lang`, the whole game follows; the browser's language until then
-- VOLUME 0-100% in quarters (1.x v81), kept in `toko2.volume`; replaces SOUND ON/OFF (a saved SOUND OFF reads as 0%)
-- ANNOUNCER ON/OFF and ANNOUNCER VOL. (1.x v109, v137): 1.x's game-show lines through the browser's own speech, pitched down; off by default, as in 1.x. It calls the waves, the boss, clears, hits, streaks of five, pickups, bounties, a boss's turn, game over, and a new world (2.0's own lines). `js/announcer.js`
-- REDUCE MOTION ON/OFF (1.x v81): no camera shake; the device's setting until it is picked (`toko2.motion`)
-- Smoke walks LANGUAGE en → fi → ja → en and VOLUME through its quarters
-- Cache tokens `?v=23` → `?v=24`; HUD label → `2.0 · v24`
-
----
-
-## v23 — 2026-10-23
-**OPTIONS, like 1.x: the title keeps the modes, every switch moves to one page, and the pause menu and the death screen open it too**
-- Title: ARCADE / INTRO, HARDCADE, SURVIVAL, CAMPAIGN (soon), OPTIONS
-- OPTIONS: DASH and GEL HP, GELS and WORLDS, SOUND and SPLATTER, BACK. BACK, Esc or Circle returns to where it was opened, focus on OPTIONS. DASH and GEL HP take effect from the next run (said on the page), the rest at once
-- Pause: RESUME, OPTIONS, QUIT under the GOT YOU card; death screen: AGAIN, MENU, OPTIONS
-- Smoke walks into OPTIONS by keys and by pad, checks the title carries no switch, and opens OPTIONS from the pause menu and back
-- Cache tokens `?v=22` → `?v=23`; HUD label → `2.0 · v23`
-
----
-
-## v22 — 2026-10-23
-**Each new world has its own gel (HOPPA hops the driveway, WORMA swims under the sewer), and WORLDS · NEON on the title swaps in abstract floors**
-- HOPPA (driveway, lime): squats and glows, marks a ring on the floor where it will land, hops 2.6 u high to where you are heading and lands with a slow ring of 8 shots. In the air it is over your head: it cannot touch you and bullets pass under it
-- WORMA (sewer, pink): swims under the floor where nothing reaches it, only a bulge showing; comes up a few metres from you (the bulge swells and glows first), spits two fans of 5, and goes back down
-- The worlds' own species join the draw at 4× (driveway) and 3× (sewer) the weight of one of 1.x's; world 1 draws exactly as before
-- WORLDS · STREET / NEON on the title (kept in `toko2.worlds`, `?worlds=` for a link): NEON gives world 2 a hex lattice with waves pulsing out from the middle and world 3 the contour lines of a flowing current, both with 1.x's rail and nothing round them. STREET is the driveway and sewer as before. Takes effect at the next world change
-- The title's switches are three rows now: DASH and GEL HP; GELS and WORLDS; SOUND and SPLATTER
-- The GOT YOU card is back (1.x had it, v212): the death screen and the pause menu show the gel that landed the last hit — the real gel, alive and turning in its own box (rendered off-screen and drawn into the card, classic or SDF), its name in its colour, and one line on how to read it, in English, Finnish and Japanese (`js/gels-said.js`)
-- Fixed: v21 pasted the SPLATTER switch's function into two other functions as well (harmless, unused); gone
-- Gates: `test/species/hoppa.mjs` (16), `test/species/worma.mjs` (14); smoke has a `world2-neon` run (hex to tide), checks the WORLDS switch and the pause menu's GOT YOU card
-- Cache tokens `?v=21` → `?v=22`; HUD label → `2.0 · v22`
-
----
-
-## v21 — 2026-10-23
-**Splatter: kills throw real goo that pools, smears and dries on the floor — on by default, SPLATTER on the title turns it off**
-- `render/goo-sim.js` + `render/goo.js`: thrown droplets fly, land, slide and stamp a wet film on the floor (16 texels a metre, stepped 30×/s), which dries to a stain; bodies walking through it smear it. Hits, kills, lob landings and cuts all throw it
-- The floor reads the film in every world (grid, driveway, sewer, SURVIVAL), under the vortex hole and SURVIVAL's warning; a world change clears it with the floor
-- Title switch SPLATTER ON/OFF (fi ROISKEET, ja しぶき), kept in `toko2.goo`; `?goo=off|on` overrides it for a link. Off is 1.x's droplets and puddles, as before
-- Gates: `test/goo.mjs` (17); smoke checks the switch, that a kill lays film (and `?goo=off` lays none), and that no menu label is cut off
-- Cache tokens `?v=20` → `?v=21`; HUD label → `2.0 · v21`
-
----
-
-## v20 — 2026-10-23
-**SURVIVAL is back, and its floor changes size as you play**
-- **SURVIVAL's floor reshapes** (owner, 2026-10-23: "survival should be
-  changing level size, like Sektori game. Abstract grid type visuals ok for
-  that"). Sektori starts small and morphs every half minute or so; its floor
-  lights up where it will change, then the new shape slams in.
-  `js/sim/reshape.js` does that with the arena's rectangle:
-  - the run starts on 0.55 × 0.6 of the run's 1.x arena;
-  - 20 s in, and every 30 s after, the next size is picked, seeded and
-    never the one you are on, from nine sizes of 0.55 to 1.35 of the arena;
-  - the floor warns for 2.2 s: cyan where floor is coming, red where it is
-    going, pulsing;
-  - then the walls slam there in 0.45 s, carrying the hero and the bodies,
-    and dropping the bullets they leave outside.
-- The sim owns the walls (`w.hx`/`w.hz` wherever they are) and the events:
-  `reshapeWarn`, `reshape`, `reshaped`.
-- **How it looks**:
-  - the grid floor is built at its biggest, with the walls as a uniform
-    (`floor.js` `bounds`), so the grid stays put and only its edge moves;
-  - 1.x's rail rides the walls;
-  - the camera refits as they move, and past 1.x's arena size it follows
-    you, as on the later worlds;
-  - three warning blips and a slam with a shake;
-  - puddles left over the void are cleared.
-- **SURVIVAL is back on the title**, under HARDCADE.
-- Gates:
-  - `test/reshape.mjs` is new, with 14 checks in bare node: it starts
-    small; it holds until the first change, then warns; the walls move,
-    reach the size and carry the hero; every size is from the list and
-    never the same twice; bullets left outside go; ARCADE never changes
-    size; two runs from one seed are identical.
-  - The sim suite's "no body leaves the slab" reads the slab as it is now.
-  - The smoke's title wants SURVIVAL on it. Its landscape scenario plays
-    SURVIVAL to the first change and checks four things:
-    - the warning, the walls and the rail land on the new size;
-    - the floor fits on screen after the change;
-    - the warning goes out;
-    - ARCADE's floor is back on the title.
-- VERSIONS: v10–v19 rolled into the Archive.
-- Cache tokens `?v=19` → `?v=20`; HUD label → `2.0 · v20`
+## v30 — 2026-10-23
+**The campaign's framework: a room is a goal and its mods (CAMPAIGN_PLAN.md)**
+- New goals a room's level file can ask: CLEAR (every body, on the clock), GATES (dash through the room's own gates), HOLD (stand in a ring, which may move, until it fills), PROTECT (a heart that bodies and bullets hurt), ORDER (only the lit body can be hurt), HUNT (one kind, among decoys), COMBO (reach a streak), COLLECT (orbs on their times), BOSS, and GAUNTLET (the rule changes on the room's clock)
+- And mods: FLAWLESS, NO GUN, a room that asks for the CUT dash, AMMO (a fixed number of shots), ESCALATE (everything faster every few seconds), and a room's own rule instead of its world's
+- Floors that move: a part of a room may orbit, shrink in steps or breathe; the walls hold the room at every moment and what stands on it is carried in
+- A room is graded on its own number (time, hits, the heart, or the share put down) against tiers in its level file, which the bot pass will set; a timed goal not met when the clock runs out is a fail, F
+- The 18 rooms play exactly as before; nothing on screen changes yet (the rooms that use all this are next)
 
 ---
 
@@ -174,6 +42,16 @@
 
 One line per version; the full entries are in git history (`git log -p VERSIONS.md`).
 
+- **v29** (2026-10-23) — Worlds 4-9 each have a gel of their own
+- **v28** (2026-10-23) — Worlds 4-9 each have a floor of their own
+- **v27** (2026-10-23) — Arcade becomes nine worlds and can be won; the title is ARCADE with a HARD switch, and the campaign
+- **v26** (2026-10-23) — The campaign's six worlds wear their own floors and play by their one rule each, as in 1.x
+- **v25** (2026-10-23) — THE CAMPAIGN, from 1.x: eighteen rooms in six worlds, each with its own clock and goal, graded S to F
+- **v24** (2026-10-23) — 1.x's settings in OPTIONS: LANGUAGE, VOLUME, the announcer with its own volume, and REDUCE MOTION
+- **v23** (2026-10-23) — OPTIONS, like 1.x: the title keeps the modes, every switch moves to one page, and the pause menu and the death screen open it too
+- **v22** (2026-10-23) — Each new world has its own gel (HOPPA hops the driveway, WORMA swims under the sewer), and WORLDS · NEON on the title swaps in abstract floors
+- **v21** (2026-10-23) — Splatter: kills throw real goo that pools, smears and dries on the floor — on by default, SPLATTER on the title turns it off
+- **v20** (2026-10-23) — SURVIVAL is back, and its floor changes size as you play
 - **v19** (2026-10-23) — Worlds: the grid goes down a vortex to the driveway, the driveway down a drain to the sewer
 - **v18** (2026-10-23) — The flick dash; the arena bigger and the right way round
 - **v17** (2026-10-23) — Gates, pickups and the DASH pod; enemies dangerous on arrival; SDF gels on the title

@@ -9,19 +9,28 @@
 //   ruleFire  { kind }          it comes
 // and `w.rule.dark` (0..1) for the view, which draws THE VOID's dark closing in.
 // Every number is TUNING.campaign.rules.
-import { TUNING } from '../tuning.js?v=29';
+import { TUNING } from '../tuning.js?v=31';
 
 const T = TUNING, R = T.campaign.rules;
 
 // a campaign room plays its world's rule; an arcade run (v27) the rule of the
 // world it is in, from the fourth world on (TUNING.worlds.list)
-export const kindOf = (w) => (w.room ? T.campaign.worlds[w.room.world]?.rule ?? null
+export const kindOf = (w) => (w.room ? (w.room.level && 'rule' in w.room.level ? w.room.level.rule : T.campaign.worlds[w.room.world]?.rule ?? null)
   : T.worlds.modes.includes(w.mode) ? T.worlds.list[(w.world || 1) - 1]?.rule ?? null : null);
 
 export function create(w) {
   const kind = kindOf(w);
   w.rule = kind ? { kind, cycle: kind === 'cycle', t: 0, angle: w.rng.next() * Math.PI * 2, nextAt: 0, warnT: 0, pushT: 0, lane: 0, ang0: 0, dark: 0, fired: 0, ct: 0, ci: 0 } : null;
   if (w.rule?.cycle) { w.rule.kind = T.worlds.cycle.rules[0]; }
+}
+
+// a room's GAUNTLET changes the rule mid-room (sim/challenge.js): a fresh
+// state of the new kind, or none
+export function setKind(w, kind) {
+  const was = w.rule?.kind ?? null;
+  if (!kind) { w.rule = null; w.hero.slipX = w.hero.slipZ = 0; }
+  else w.rule = { kind, cycle: false, t: 0, angle: w.rule?.angle ?? w.rng.next() * Math.PI * 2, nextAt: 0, warnT: 0, pushT: 0, lane: 0, ang0: 0, dark: 0, fired: 0, ct: 0, ci: 0 };
+  if (kind !== was) { w.hero.slipX = w.hero.slipZ = 0; w.events.push({ type: 'ruleTurn', kind }); }
 }
 
 // before the bodies step: the current and the updraft move what stands on the floor

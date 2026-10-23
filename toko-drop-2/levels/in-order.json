@@ -1,0 +1,87 @@
+{
+ "format": 2,
+ "id": "in-order",
+ "name": "ONE BY ONE",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 15,
+    "hz": 10
+   }
+  ]
+ },
+ "duration": 40,
+ "goal": {
+  "type": "order"
+ },
+ "plan": {
+  "world": 1,
+  "d": 3,
+  "teaches": "weeva"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": -10,
+   "pz": -6,
+   "order": 1
+  },
+  {
+   "t": 0.3,
+   "type": "GLOBBO",
+   "px": 10,
+   "pz": 6,
+   "order": 2
+  },
+  {
+   "t": 0.6,
+   "type": "WEEVA",
+   "px": -10,
+   "pz": 6,
+   "order": 3
+  },
+  {
+   "t": 0.9,
+   "type": "GLOBBO",
+   "px": 10,
+   "pz": -6,
+   "order": 4
+  },
+  {
+   "t": 1.2,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": -7,
+   "order": 5
+  },
+  {
+   "t": 1.5,
+   "type": "WEEVA",
+   "px": 0,
+   "pz": 7,
+   "order": 6
+  },
+  {
+   "t": 1.8,
+   "type": "GLOBBO",
+   "px": -12,
+   "pz": 0,
+   "order": 7
+  },
+  {
+   "t": 2.1,
+   "type": "GLOBBO",
+   "px": 12,
+   "pz": 0,
+   "order": 8
+  }
+ ],
+ "tiers": {
+  "S": 3.5,
+  "A": 5.9,
+  "B": 8.3,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 79%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

@@ -30,9 +30,9 @@
 // from its seed, and a pickup roll never shifts the wave's schedule: the
 // director's w.rng stays in lockstep with 1.x's own source
 // (test/director.mjs's oracle neutralises exactly these draws).
-import { TUNING } from '../tuning.js?v=29';
-import { makeRng } from './rng.js?v=29';
-import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=29';
+import { TUNING } from '../tuning.js?v=31';
+import { makeRng } from './rng.js?v=31';
+import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=31';
 
 const T = TUNING, P = T.pickups, H = T.hero, G = P.gate, C = P.convoy, B = P.bounty;
 
@@ -117,6 +117,18 @@ function makeGate(w, k, risk, drift) {
               risk, green: true, alive: true, cd: 0, retireT: null, drift, dx: 0, dz: 0 };
   if (drift) { const da = r.next() * Math.PI * 2; g.dx = Math.cos(da) * G.drift.speed; g.dz = Math.sin(da) * G.drift.speed; }
   w.events.push({ type: 'gate', id: g.id, x, z, angle, risk, drift });
+  return g;
+}
+
+// a campaign room's own gate (sim/challenge.js): where and when the room says
+export function placeGate(w, x, z, angle, drift = false) {
+  const k = w.pk;
+  k.on = true;
+  const g = { id: k.nextId++, x, z, px: x, pz: z, angle, ax: -Math.sin(angle), az: Math.cos(angle),
+              risk: false, green: true, alive: true, cd: 0, retireT: null, drift, dx: 0, dz: 0 };
+  if (drift) { const da = k.rng.next() * Math.PI * 2; g.dx = Math.cos(da) * G.drift.speed; g.dz = Math.sin(da) * G.drift.speed; }
+  k.gates.push(g);
+  w.events.push({ type: 'gate', id: g.id, x, z, angle, risk: false, drift });
   return g;
 }
 
@@ -312,6 +324,7 @@ function gatesTouch(w, k, api) {
         break;                              // 1.x leaves the gate loop here (main.js:11173)
       }
       w.events.push({ type: 'gateDash', id: g.id, x: g.x, z: g.z, green: g.risk, banner: g.risk ? G.banner.green : 0 });
+      w.ch?.onGate?.(w);                  // a campaign room counting its gates (sim/challenge.js)
       w.events.push({ type: 'shake', amount: G.dashShake });
       const pick = () => ({ type: G.types[Math.floor(k.rng.next() * G.types.length)] });
       drop(w, k, g.x, g.z, pick(), G.dropLife);

@@ -2,14 +2,16 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=29';
-import { GEL_LINES } from './gels-said.js?v=29';
+import { TUNING } from './tuning.js?v=31';
+import { GEL_LINES } from './gels-said.js?v=31';
+import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=31';
+import { roomChart, routeChart, GRADE_COLORS } from './chart.js?v=31';
 
 const STR = {
   en: {
     intro: 'INTRO', introSub: 'watch it begin, then play',
     dash: 'DASH', push: 'PUSH', pushSub: 'shoves gels away', cut: 'CUT', cutSub: 'through them, and it hurts', gelHp: 'GEL HP', gelHpSub: 'tougher gels, same score',
-    arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'rooms with their own clock — cleared opens the next', goalSurvive: 'SURVIVE', goalQuota: 'KILL', goalFlawless: 'NO HITS', roomLocked: 'LOCKED', grade: 'GRADE', rooms: 'ROOMS', worldLocked: 'clear the world before it',
+    arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'rooms with their own clock — cleared opens the next', goalSurvive: 'SURVIVE', goalQuota: 'KILL', goalFlawless: 'NO HITS', gDodge: 'DODGE', gClear: 'CLEAR ALL', gGates: 'GATES', gHold: 'HOLD THE RING', gProtect: 'PROTECT THE HEART', gOrder: 'IN ORDER', gHunt: 'HUNT', gStreak: 'STREAK', gCollect: 'COLLECT', gBoss: 'BOSS', gGauntlet: 'GAUNTLET', mNoGun: 'NO GUN', mDash: 'DASH ONLY', mAmmo: 'AMMO', mFaster: 'FASTER', mMoving: 'MOVING FLOOR', hits: 'hits', timeUp: 'TIME', timeUpSub: 'the clock ran out', teaches: 'teaches', roomLocked: 'LOCKED', grade: 'GRADE', rooms: 'ROOMS', worldLocked: 'clear the world before it',
     best: 'BEST', hard: 'HARD', on: 'ON', off: 'OFF', hardSub: 'arcade becomes HARDCADE: the biters\' corpses shoot back', options: 'OPTIONS', optionsSub: 'dash, gels, worlds, sound, language', back: 'BACK', nextRun: 'from the next run', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', lastHit: 'LAST HIT BY', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
     wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', volume: 'VOLUME', annOn: 'ANNOUNCER ON', annOff: 'ANNOUNCER OFF', annVol: 'ANNOUNCER VOL.', motionOn: 'REDUCE MOTION ON', motionOff: 'REDUCE MOTION OFF', motionOnH: 'no camera shake', motionOffH: 'full screen-shake', langName: 'LANGUAGE · ENGLISH', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
@@ -24,7 +26,7 @@ const STR = {
   ja: {
     intro: 'イントロ', introSub: '始まりを見てからプレイ',
     dash: 'ダッシュ', push: '押す', pushSub: 'ゼリーを押しのける', cut: '貫く', cutSub: '貫いてダメージ', gelHp: 'ゼリー耐久', gelHpSub: '硬いゼリー、スコアは同じ',
-    arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: 'それぞれの制限時間を持つ部屋 — クリアで次が開く', goalSurvive: '生き残れ', goalQuota: '撃破', goalFlawless: 'ノーダメージ', roomLocked: 'ロック中', grade: '評価', rooms: '部屋', worldLocked: '前のワールドをクリア',
+    arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: 'それぞれの制限時間を持つ部屋 — クリアで次が開く', goalSurvive: '生き残れ', goalQuota: '撃破', goalFlawless: 'ノーダメージ', gDodge: '避けろ', gClear: '全滅させろ', gGates: 'ゲート', gHold: '輪に留まれ', gProtect: '心臓を守れ', gOrder: '順番に', gHunt: '狩れ', gStreak: '連鎖', gCollect: '集めろ', gBoss: 'ボス', gGauntlet: '試練', mNoGun: '銃なし', mDash: 'ダッシュのみ', mAmmo: '弾', mFaster: '加速', mMoving: '動く床', hits: '被弾', timeUp: '時間切れ', timeUpSub: '時計が尽きた', teaches: '教える', roomLocked: 'ロック中', grade: '評価', rooms: '部屋', worldLocked: '前のワールドをクリア',
     best: 'ベスト', hard: 'ハード', on: 'オン', off: 'オフ', hardSub: 'アーケードがHARDCADEに：噛みつく敵の残骸が撃ち返す', options: 'オプション', optionsSub: 'ダッシュ・ゼリー・ワールド・サウンド・言語', back: '戻る', nextRun: '次のプレイから', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', lastHit: '最後に当てた相手', time: 'タイム', newbest: '新記録', soon: '近日',
     wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', volume: '音量', annOn: 'アナウンサー オン', annOff: 'アナウンサー オフ', annVol: 'アナウンサー音量', motionOn: '手ぶれ軽減 オン', motionOff: '手ぶれ軽減 オフ', motionOnH: 'カメラ揺れなし', motionOffH: '画面揺れ演出あり', langName: '言語 · 日本語', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
@@ -39,7 +41,7 @@ const STR = {
   fi: {
     intro: 'INTRO', introSub: 'katso alku, sitten pelaa',
     dash: 'SYÖKSY', push: 'TÖNÄISY', pushSub: 'tönäisee geelit sivuun', cut: 'VIILTO', cutSub: 'läpi, ja se satuttaa', gelHp: 'GEELIN KESTO', gelHpSub: 'sitkeämmät geelit, samat pisteet',
-    arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'huoneita omalla kellollaan — läpäisy avaa seuraavan', goalSurvive: 'SELVIYDY', goalQuota: 'KAADA', goalFlawless: 'EI OSUMIA', roomLocked: 'LUKITTU', grade: 'ARVOSANA', rooms: 'HUONEET', worldLocked: 'läpäise edellinen maailma',
+    arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'huoneita omalla kellollaan — läpäisy avaa seuraavan', goalSurvive: 'SELVIYDY', goalQuota: 'KAADA', goalFlawless: 'EI OSUMIA', gDodge: 'VÄISTÄ', gClear: 'KAADA KAIKKI', gGates: 'PORTIT', gHold: 'PIDÄ RENGAS', gProtect: 'SUOJAA SYDÄN', gOrder: 'JÄRJESTYKSESSÄ', gHunt: 'METSÄSTÄ', gStreak: 'PUTKI', gCollect: 'KERÄÄ', gBoss: 'POMO', gGauntlet: 'KUJANJUOKSU', mNoGun: 'EI ASETTA', mDash: 'VAIN SYÖKSY', mAmmo: 'AMMUKSET', mFaster: 'KIIHTYY', mMoving: 'LIIKKUVA LATTIA', hits: 'osumaa', timeUp: 'AIKA', timeUpSub: 'kello loppui', teaches: 'opettaa', roomLocked: 'LUKITTU', grade: 'ARVOSANA', rooms: 'HUONEET', worldLocked: 'läpäise edellinen maailma',
     best: 'ENNÄTYS', hard: 'VAIKEA', on: 'PÄÄLLÄ', off: 'POIS', hardSub: 'arcadesta tulee HARDCADE: purijoiden raadot ampuvat takaisin', options: 'ASETUKSET', optionsSub: 'syöksy, geelit, maailmat, ääni, kieli', back: 'TAKAISIN', nextRun: 'seuraavasta pelistä', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', lastHit: 'VIIMEKSI OSUI', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
     wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', volume: 'ÄÄNENVOIMAKKUUS', annOn: 'SELOSTAJA PÄÄLLÄ', annOff: 'SELOSTAJA POIS', annVol: 'SELOSTAJAN ÄÄNI', motionOn: 'VÄHENNÄ LIIKETTÄ PÄÄLLÄ', motionOff: 'VÄHENNÄ LIIKETTÄ POIS', motionOnH: 'ei kameran tärinää', motionOffH: 'täysi ruudun tärinä', langName: 'KIELI · SUOMI', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
@@ -61,7 +63,35 @@ export const getLang = () => lang;
 export function setLang(l) { if (!STR[l]) return; lang = l; try { localStorage.setItem('toko2.lang', l); } catch { /* private mode */ } document.documentElement.lang = l; }
 export const t = (k) => STR[lang][k] ?? STR.en[k] ?? k;
 // what a campaign room asks, in the words the list and the HUD use (1.x goalLabel)
-export const goalText = (r) => (r.goal === 'quota' ? `${t('goalQuota')} ${r.kills}` : r.goal === 'flawless' ? t('goalFlawless') : t('goalSurvive'));
+// (sim/challenge.js): the goal, then what the room takes away. `r` carries its level when there is one.
+export function goalText(r) {
+  const g = goalOf(r), m = modsOf(r), L = r.level;
+  const kind = g.kind ? TUNING.species[speciesOf(g.kind)]?.name : '';
+  const head = {
+    survive: g.metric === 'hits' ? t('gDodge') : t('goalSurvive'), quota: `${t('goalQuota')} ${g.kills}`, clear: t('gClear'),
+    gates: `${t('gGates')} ${L?.gates?.length ?? ''}`, hold: t('gHold'), protect: t('gProtect'), order: t('gOrder'),
+    hunt: `${t('gHunt')} ${kind}`, combo: `${t('gStreak')} ${g.streak}`, collect: `${t('gCollect')} ${g.orbs?.length ?? ''}`,
+    boss: t('gBoss'), gauntlet: t('gGauntlet'),
+  }[g.type] ?? t('goalSurvive');
+  const tail = [m.flawless && t('goalFlawless'), m.dash && m.noGun ? t('mDash') : m.noGun && t('mNoGun'), m.ammo && `${t('mAmmo')} ${m.ammo}`,
+    m.escalate && t('mFaster'), (L?.arena?.shapes ?? []).some((p) => p.orbit || p.pulse) && t('mMoving')].filter(Boolean);
+  return [head.trim(), ...tail].join(' · ');
+}
+// the room's progress, for the HUD: the goal's count and what is left
+export function goalProgress(w) {
+  const ch = w.ch, g = ch?.goal;
+  if (!g) return goalText(w.room);
+  const n = Math.floor(ch.n + 1e-9), of = ch.of;
+  const head = {
+    survive: g.metric === 'hits' ? `${t('gDodge')} · ${w.hits || 0} ${t('hits')}` : t('goalSurvive'),
+    quota: `${t('goalQuota')} ${Math.min(w.kills, g.kills)}/${g.kills}`, clear: t('gClear'), gates: `${t('gGates')} ${n}/${of}`,
+    hold: `${t('gHold')} ${Math.round((100 * ch.n) / of)}%`, protect: `${t('gProtect')} ${Math.max(0, ch.heart?.hp ?? 0)}/${ch.heart?.max ?? 0}`,
+    order: `${t('gOrder')} ${n}/${of}`, hunt: `${t('gHunt')} ${n}/${of}`, combo: `${t('gStreak')} ${Math.max(w.streak, 0)}/${of}`,
+    collect: `${t('gCollect')} ${n}/${of}`, boss: t('gBoss'), gauntlet: `${t('gGauntlet')} ${Math.max(1, ch.stage + 1)}/${ch.stages?.length ?? 1}`,
+  }[g.type] ?? t('goalSurvive');
+  const ammo = w.gun && w.gun.ammo !== Infinity ? ` · ${t('mAmmo')} ${w.gun.ammo}` : '';
+  return `${ch.mods.flawless ? `${t('goalFlawless')} · ` : ''}${head}${ammo}`;
+}
 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
@@ -112,8 +142,8 @@ export class UI {
     }
     // a campaign room's clock is its goal and the seconds it has left (1.x v265)
     if (w.room && w.dir) {
-      const R = w.room, left = Math.max(0, Math.ceil(w.dir.duration - w.dir.t));
-      this.clockEl.textContent = R.goal === 'quota' ? `${t('goalQuota')} ${Math.min(w.kills, R.kills)}/${R.kills} · ${left}s` : `${goalText(R)} · ${left}s`;
+      const left = Math.max(0, Math.ceil(w.dir.duration - w.dir.t));
+      this.clockEl.textContent = `${goalProgress(w)} · ${left}s`;
     } else this.clockEl.textContent = timeText(w.time);
     this._effects(w);
   }
@@ -201,8 +231,12 @@ export class UI {
   // world not reached yet is one locked line. `played` is the room just left.
   campaign(list, played = null) {
     this.optBack = null;
-    const GC = { S: '#ffdd44', A: '#66ffcc', B: '#88ccff', C: '#bbbbdd', F: '#ff6655' };
+    const GC = GRADE_COLORS, flat = list.flatMap((wd) => wd.rooms);
     const items = [el('h2', null, 'CAMPAIGN'), el('p', 'mode', t('campaign'))];
+    // the route: thirty rooms, how hard each is, and what you have paid on it
+    const route = el('div', 'route-wrap');
+    route.append(routeChart(flat, { width: Math.min(560, Math.max(260, (window.innerWidth || 600) - 80)), height: 54, focus: played?.next ?? flat.find((r) => r.open && !r.grade)?.id }));
+    items.push(route);
     if (played) {
       const p = el('p', 'played', `${played.name} — ${t('grade')} ${played.grade} · ${played.kills} ${t('kills').toLowerCase()}`);
       p.style.color = GC[played.grade];
@@ -217,6 +251,8 @@ export class UI {
         const sub = r.open ? `${goalText(r)}${r.grade ? ` · ${t('grade')} ${r.grade}` : ''}` : t('roomLocked');
         const b = this._button(r.open ? r.name : '—', sub, () => r.open && this.h.onRoom?.(r.id), !r.open);
         if (r.grade) b.style.borderColor = GC[r.grade];
+        // the room's progression chart, and what it teaches the arcade
+        if (r.open && r.level) { b.append(roomChart(r.level)); if (r.level.plan?.teaches) b.append(el('span', 'teaches', `${t('teaches')}: ${r.level.plan.teaches}`)); }
         items.push(b);
       }
     }
@@ -308,7 +344,7 @@ export class UI {
     row(t('grazes'), String(r.grazes));
     const card = this._gelCard(r.gotYouKind, t('gotyou'));
     if (r.room) row(t('grade'), r.room.grade);
-    this._panel([el('h2', null, r.won ? t('won') : t('over')), el('p', 'mode', r.won ? `${r.mode.toUpperCase()} · ${t('wonSub')}` : r.room ? `${r.room.name} · ${goalText(r.room)}` : r.mode.toUpperCase()), ...(card ? [card] : []), rows,
+    this._panel([el('h2', null, r.won ? t('won') : r.room?.outcome === 'fail' ? t('timeUp') : t('over')), el('p', 'mode', r.won ? `${r.mode.toUpperCase()} · ${t('wonSub')}` : r.room ? `${r.room.name} · ${goalText(r.room)}` : r.mode.toUpperCase()), ...(card ? [card] : []), rows,
       this._button(t('again'), null, () => this.h.onAgain()), r.room ? this._button(t('rooms'), null, () => this.h.onCampaign?.()) : this._button(t('menu'), null, () => this.h.onMenu()),
       this._button(t('options'), null, () => this.openOptions(() => { this.results(r); this._focusOn(t('options')); }))]);
   }

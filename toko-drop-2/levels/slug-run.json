@@ -1,37 +1,82 @@
 {
-  "format": 1,
-  "id": "slug-run",
-  "name": "SLUG RUN",
-  "arena": {
-    "shapes": [
-      {
-        "kind": "rect",
-        "hx": 19,
-        "hz": 6
-      }
-    ]
-  },
-  "duration": 40,
-  "rules": {
-    "mode": "arcade",
-    "outside": "push"
-  },
-  "spawns": [
-    {"t":0,"type":"SLUG","px":-15,"pz":0,"speedMult":1.1},
-    {"t":5,"type":"GLOBBO","px":15,"pz":-4,"speedMult":1.1},
-    {"t":5,"type":"GLOBBO","px":15,"pz":4,"speedMult":1.1},
-    {"t":6.5,"type":"GLOBBO","px":-15,"pz":4,"speedMult":1.1},
-    {"t":6.5,"type":"GLOBBO","px":-15,"pz":-4,"speedMult":1.1},
-    {"t":10,"type":"RIBBON","px":0,"pz":-4,"speedMult":1.1},
-    {"t":11.5,"type":"RIBBON","px":0,"pz":4,"speedMult":1.1},
-    {"t":15,"type":"SLUG","px":15,"pz":0,"speedMult":1.1},
-    {"t":16.5,"type":"SLUG","px":-15,"pz":0,"speedMult":1.3},
-    {"t":20,"type":"GLOBBO","px":-15,"pz":-4,"speedMult":1.3},
-    {"t":20,"type":"GLOBBO","px":-15,"pz":4,"speedMult":1.3},
-    {"t":21.5,"type":"GLOBBO","px":15,"pz":-4,"speedMult":1.3},
-    {"t":25,"type":"RIBBON","px":0,"pz":4,"speedMult":1.3},
-    {"t":26.5,"type":"RIBBON","px":0,"pz":-4,"speedMult":1.3},
-    {"t":30,"type":"SLUG","px":-15,"pz":0,"speedMult":1.5},
-    {"t":31.5,"type":"SLUG","px":15,"pz":0,"speedMult":1.5}
+ "format": 2,
+ "id": "slug-run",
+ "name": "SLUG RUN",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 19,
+    "hz": 6
+   }
   ]
+ },
+ "duration": 30,
+ "goal": {
+  "type": "survive"
+ },
+ "plan": {
+  "world": 1,
+  "d": 5,
+  "teaches": "slug, ribbon"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "SLUG",
+   "px": 15,
+   "pz": 0
+  },
+  {
+   "t": 6,
+   "type": "RIBBON",
+   "px": -15,
+   "pz": 3
+  },
+  {
+   "t": 10,
+   "type": "RIBBON",
+   "px": -15,
+   "pz": -3
+  },
+  {
+   "t": 14,
+   "type": "SLUG",
+   "px": 15,
+   "pz": 3
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": 15,
+   "pz": 4
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": -15,
+   "pz": -4
+  },
+  {
+   "t": 22,
+   "type": "RIBBON",
+   "px": 15,
+   "pz": 0
+  },
+  {
+   "t": 24,
+   "type": "SLUG",
+   "px": -15,
+   "pz": 0
+  }
+ ],
+ "mods": {
+  "flawless": true
+ },
+ "tiers": {
+  "S": 1,
+  "A": 0.95,
+  "B": 0.9,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
 }

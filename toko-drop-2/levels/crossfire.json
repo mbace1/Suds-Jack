@@ -1,52 +1,86 @@
 {
-  "format": 1,
-  "id": "crossfire",
-  "name": "CROSSFIRE",
-  "arena": {
-    "combine": "union",
-    "shapes": [
-      {
-        "kind": "rect",
-        "hx": 19,
-        "hz": 5
-      },
-      {
-        "kind": "rect",
-        "hx": 6,
-        "hz": 11
-      }
-    ]
-  },
-  "duration": 40,
-  "rules": {
-    "mode": "arcade",
-    "outside": "push"
-  },
-  "spawns": [
-    {"t":0,"type":"GLOBBO","px":-16,"pz":0,"speedMult":1.1},
-    {"t":0,"type":"GLOBBO","px":16,"pz":0,"speedMult":1.1},
-    {"t":0,"type":"GLOBBO","px":0,"pz":-9,"speedMult":1.1},
-    {"t":0,"type":"GLOBBO","px":0,"pz":9,"speedMult":1.1},
-    {"t":1.5,"type":"GLOBBO","px":4.5,"pz":-7.8,"speedMult":1.1},
-    {"t":2,"type":"YELA_CUBE","px":-12,"pz":3,"speedMult":1.1},
-    {"t":2,"type":"YELA_CUBE","px":12,"pz":-3,"speedMult":1.1},
-    {"t":3.5,"type":"YELA_CUBE","px":11.9,"pz":3.4,"speedMult":1.1},
-    {"t":4,"type":"SPITTOR","px":-16,"pz":2,"speedMult":1.1,"intervalMult":0.8},
-    {"t":4,"type":"SPITTOR","px":16,"pz":-2,"speedMult":1.1,"intervalMult":0.8},
-    {"t":7,"type":"GLOBBO","px":-14,"pz":-3,"speedMult":1.1},
-    {"t":7,"type":"GLOBBO","px":14,"pz":3,"speedMult":1.1},
-    {"t":7,"type":"GLOBBO","px":-3,"pz":-8,"speedMult":1.1},
-    {"t":7,"type":"GLOBBO","px":3,"pz":8,"speedMult":1.1},
-    {"t":8.5,"type":"GLOBBO","px":1.4,"pz":-8.4,"speedMult":1.1},
-    {"t":10,"type":"PYRA","px":4.5,"pz":-7.8,"speedMult":1.1,"intervalMult":0.8},
-    {"t":12,"type":"YELA_CUBE","px":-15,"pz":0,"speedMult":1.1},
-    {"t":12,"type":"YELA_CUBE","px":15,"pz":0,"speedMult":1.1},
-    {"t":18,"type":"DRAPER","px":0,"pz":9,"speedMult":1.3,"intervalMult":0.8},
-    {"t":24,"type":"GLOBBO","px":-16,"pz":0,"speedMult":1.3},
-    {"t":24,"type":"GLOBBO","px":16,"pz":0,"speedMult":1.3},
-    {"t":30,"type":"SPITTOR","px":0,"pz":-9,"speedMult":1.4,"intervalMult":0.8},
-    {"t":30,"type":"SPITTOR","px":-4.5,"pz":7.8,"speedMult":1.4,"intervalMult":0.8},
-    {"t":31.5,"type":"SPITTOR","px":0,"pz":9,"speedMult":1.4,"intervalMult":0.8},
-    {"t":31.5,"type":"SPITTOR","px":-4.5,"pz":-7.8,"speedMult":1.4,"intervalMult":0.8}
+ "format": 2,
+ "id": "crossfire",
+ "name": "CROSSFIRE",
+ "arena": {
+  "combine": "union",
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 19,
+    "hz": 5
+   },
+   {
+    "kind": "rect",
+    "hx": 6,
+    "hz": 11
+   }
   ]
+ },
+ "duration": 30,
+ "goal": {
+  "type": "survive",
+  "metric": "hits"
+ },
+ "plan": {
+  "world": 2,
+  "d": 5,
+  "teaches": "the curtain wave"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "WEEVA",
+   "px": -16,
+   "pz": 0
+  },
+  {
+   "t": 0,
+   "type": "WEEVA",
+   "px": 16,
+   "pz": 0
+  },
+  {
+   "t": 4,
+   "type": "PYRA",
+   "px": 0,
+   "pz": -9
+  },
+  {
+   "t": 4,
+   "type": "PYRA",
+   "px": 0,
+   "pz": 9
+  },
+  {
+   "t": 10,
+   "type": "FANNER",
+   "px": -16,
+   "pz": 3
+  },
+  {
+   "t": 10,
+   "type": "FANNER",
+   "px": 16,
+   "pz": -3
+  },
+  {
+   "t": 22,
+   "type": "SPITTOR",
+   "px": 0,
+   "pz": -9
+  },
+  {
+   "t": 22,
+   "type": "SPITTOR",
+   "px": 0,
+   "pz": 9
+  }
+ ],
+ "tiers": {
+  "S": 0,
+  "A": 1,
+  "B": 2,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 88%, rough 17%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
 }

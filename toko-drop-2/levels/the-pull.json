@@ -1,67 +1,221 @@
 {
-  "format": 1,
-  "id": "the-pull",
-  "name": "THE PULL",
-  "arena": {
-    "shapes": [
-      {
-        "kind": "circle",
-        "c": [
-          0,
-          0
-        ],
-        "r": 11
-      }
-    ]
-  },
-  "duration": 40,
-  "rules": {
-    "mode": "arcade",
-    "outside": "push"
-  },
-  "spawns": [
-    {"t":0,"type":"MAGNA","px":0,"pz":-8.5,"speedMult":1.1},
-    {"t":1,"type":"GLOBBO","px":7,"pz":4.8,"speedMult":1.1},
-    {"t":1,"type":"GLOBBO","px":-2.4,"pz":8.2,"speedMult":1.1},
-    {"t":1,"type":"GLOBBO","px":-8.5,"pz":0.2,"speedMult":1.1},
-    {"t":1,"type":"GLOBBO","px":-2.9,"pz":-8,"speedMult":1.1},
-    {"t":1,"type":"GLOBBO","px":6.7,"pz":-5.2,"speedMult":1.1},
-    {"t":2.5,"type":"GLOBBO","px":-7,"pz":-4.8,"speedMult":1.1},
-    {"t":2.5,"type":"GLOBBO","px":8.1,"pz":-2.7,"speedMult":1.1},
-    {"t":2.5,"type":"GLOBBO","px":8.5,"pz":-0.2,"speedMult":1.1},
-    {"t":2.5,"type":"GLOBBO","px":2.9,"pz":8,"speedMult":1.1},
-    {"t":4,"type":"GLOBBO","px":-0.4,"pz":8.5,"speedMult":1.1},
-    {"t":4,"type":"GLOBBO","px":-7.6,"pz":3.9,"speedMult":1.1},
-    {"t":4,"type":"GLOBBO","px":-3.9,"pz":-7.6,"speedMult":1.1},
-    {"t":4,"type":"GLOBBO","px":4.6,"pz":-7.2,"speedMult":1.1},
-    {"t":4,"type":"GLOBBO","px":-8.5,"pz":-0.2,"speedMult":1.1},
-    {"t":5.5,"type":"GLOBBO","px":-7.2,"pz":-4.6,"speedMult":1.1},
-    {"t":5.5,"type":"GLOBBO","px":7.6,"pz":-3.9,"speedMult":1.1},
-    {"t":5.5,"type":"GLOBBO","px":3.9,"pz":7.6,"speedMult":1.1},
-    {"t":5.5,"type":"GLOBBO","px":-4.6,"pz":7.2,"speedMult":1.1},
-    {"t":7,"type":"SPLITTA","px":0,"pz":8.5,"speedMult":1.1},
-    {"t":7,"type":"GLOBBO","px":3.9,"pz":-7.6,"speedMult":1.1},
-    {"t":7,"type":"GLOBBO","px":7.6,"pz":3.9,"speedMult":1.1},
-    {"t":9,"type":"MAGNA","px":8.5,"pz":0,"speedMult":1.1},
-    {"t":10.5,"type":"MAGNA","px":-8.5,"pz":0,"speedMult":1.1},
-    {"t":11,"type":"GLOBBO","px":-6.3,"pz":5.7,"speedMult":1.1},
-    {"t":11,"type":"GLOBBO","px":2.6,"pz":-8.1,"speedMult":1.1},
-    {"t":11,"type":"GLOBBO","px":8.1,"pz":2.6,"speedMult":1.1},
-    {"t":12.5,"type":"GLOBBO","px":6.3,"pz":-5.7,"speedMult":1.1},
-    {"t":12.5,"type":"GLOBBO","px":1.8,"pz":8.3,"speedMult":1.1},
-    {"t":12.5,"type":"GLOBBO","px":-8.1,"pz":-2.6,"speedMult":1.1},
-    {"t":14,"type":"GLOBBO","px":-1.8,"pz":8.3,"speedMult":1.1},
-    {"t":18,"type":"YELA_CUBE","px":6.3,"pz":5.6,"speedMult":1.3},
-    {"t":18,"type":"YELA_CUBE","px":-6.3,"pz":-5.6,"speedMult":1.3},
-    {"t":19.5,"type":"YELA_CUBE","px":8,"pz":-2.7,"speedMult":1.3},
-    {"t":21,"type":"YELA_CUBE","px":-8,"pz":-2.7,"speedMult":1.3},
-    {"t":25,"type":"GLOBBO","px":1.4,"pz":8.4,"speedMult":1.3},
-    {"t":25,"type":"GLOBBO","px":-8,"pz":-2.9,"speedMult":1.3},
-    {"t":25,"type":"GLOBBO","px":6.5,"pz":-5.4,"speedMult":1.3},
-    {"t":26.5,"type":"GLOBBO","px":-1.4,"pz":-8.4,"speedMult":1.3},
-    {"t":26.5,"type":"GLOBBO","px":8,"pz":2.9,"speedMult":1.3},
-    {"t":26.5,"type":"GLOBBO","px":-6.5,"pz":5.4,"speedMult":1.3},
-    {"t":28,"type":"GLOBBO","px":6.5,"pz":5.4,"speedMult":1.4},
-    {"t":32,"type":"SPLITTA","px":-8.5,"pz":0,"speedMult":1.4}
+ "format": 2,
+ "id": "the-pull",
+ "name": "THE PULL",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 12
+   }
   ]
+ },
+ "duration": 40,
+ "goal": {
+  "type": "quota",
+  "kills": 18
+ },
+ "plan": {
+  "world": 3,
+  "d": 6,
+  "teaches": "magna"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "MAGNA",
+   "px": 0,
+   "pz": 0
+  },
+  {
+   "t": 1,
+   "type": "GLOBBO",
+   "px": 10.4,
+   "pz": 0
+  },
+  {
+   "t": 2.1,
+   "type": "GLOBBO",
+   "px": -7.67,
+   "pz": 7.03
+  },
+  {
+   "t": 3.2,
+   "type": "YELA_CUBE",
+   "px": 0.91,
+   "pz": -10.36
+  },
+  {
+   "t": 4.3,
+   "type": "SPITTOR",
+   "px": 6.33,
+   "pz": 8.25
+  },
+  {
+   "t": 5.4,
+   "type": "GLOBBO",
+   "px": -10.24,
+   "pz": -1.81
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": 8.77,
+   "pz": -5.58
+  },
+  {
+   "t": 7.6,
+   "type": "YELA_CUBE",
+   "px": -2.7,
+   "pz": 10.04
+  },
+  {
+   "t": 8.7,
+   "type": "SPITTOR",
+   "px": -4.79,
+   "pz": -9.23
+  },
+  {
+   "t": 9.8,
+   "type": "GLOBBO",
+   "px": 9.77,
+   "pz": 3.57
+  },
+  {
+   "t": 10.9,
+   "type": "GLOBBO",
+   "px": -9.61,
+   "pz": 3.97
+  },
+  {
+   "t": 12,
+   "type": "YELA_CUBE",
+   "px": 4.41,
+   "pz": -9.42
+  },
+  {
+   "t": 13.1,
+   "type": "SPITTOR",
+   "px": 3.11,
+   "pz": 9.92
+  },
+  {
+   "t": 14,
+   "type": "MAGNA",
+   "px": 6,
+   "pz": 6
+  },
+  {
+   "t": 14.2,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -5.21
+  },
+  {
+   "t": 15.3,
+   "type": "GLOBBO",
+   "px": 10.16,
+   "pz": -2.23
+  },
+  {
+   "t": 16.4,
+   "type": "YELA_CUBE",
+   "px": -5.98,
+   "pz": 8.51
+  },
+  {
+   "t": 17.5,
+   "type": "SPITTOR",
+   "px": -1.34,
+   "pz": -10.31
+  },
+  {
+   "t": 18.6,
+   "type": "GLOBBO",
+   "px": 7.95,
+   "pz": 6.7
+  },
+  {
+   "t": 19.7,
+   "type": "GLOBBO",
+   "px": -10.39,
+   "pz": 0.43
+  },
+  {
+   "t": 20.8,
+   "type": "YELA_CUBE",
+   "px": 7.37,
+   "pz": -7.34
+  },
+  {
+   "t": 21.9,
+   "type": "SPITTOR",
+   "px": -0.48,
+   "pz": 10.39
+  },
+  {
+   "t": 23,
+   "type": "GLOBBO",
+   "px": -6.66,
+   "pz": -7.98
+  },
+  {
+   "t": 24.1,
+   "type": "GLOBBO",
+   "px": 10.31,
+   "pz": 1.39
+  },
+  {
+   "t": 25.2,
+   "type": "YELA_CUBE",
+   "px": -8.54,
+   "pz": 5.94
+  },
+  {
+   "t": 26,
+   "type": "MAGNA",
+   "px": -6,
+   "pz": -6
+  },
+  {
+   "t": 26.3,
+   "type": "SPITTOR",
+   "px": 2.28,
+   "pz": -10.15
+  },
+  {
+   "t": 27.4,
+   "type": "GLOBBO",
+   "px": 5.17,
+   "pz": 9.02
+  },
+  {
+   "t": 28.5,
+   "type": "GLOBBO",
+   "px": -9.91,
+   "pz": -3.16
+  },
+  {
+   "t": 29.6,
+   "type": "YELA_CUBE",
+   "px": 9.44,
+   "pz": -4.36
+  },
+  {
+   "t": 30.7,
+   "type": "SPITTOR",
+   "px": -4.01,
+   "pz": 9.59
+  }
+ ],
+ "tiers": {
+  "S": 18.1,
+  "A": 20.5,
+  "B": 22.9,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 67%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
 }

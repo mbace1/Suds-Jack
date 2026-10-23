@@ -1,0 +1,130 @@
+{
+ "format": 2,
+ "id": "hands-up",
+ "name": "HANDS UP",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 15,
+    "hz": 9
+   }
+  ]
+ },
+ "duration": 30,
+ "goal": {
+  "type": "survive"
+ },
+ "plan": {
+  "world": 0,
+  "d": 2,
+  "teaches": "the gates as a weapon"
+ },
+ "spawns": [
+  {
+   "t": 1,
+   "type": "GLOBBO",
+   "px": 13.4,
+   "pz": 2.72,
+   "speedMult": 0.85
+  },
+  {
+   "t": 3.4,
+   "type": "GLOBBO",
+   "px": -12.3,
+   "pz": 7.4,
+   "speedMult": 0.85
+  },
+  {
+   "t": 5.8,
+   "type": "GLOBBO",
+   "px": 2.19,
+   "pz": -7.4,
+   "speedMult": 0.85
+  },
+  {
+   "t": 8.2,
+   "type": "GLOBBO",
+   "px": 3.61,
+   "pz": 7.4,
+   "speedMult": 0.85
+  },
+  {
+   "t": 10.6,
+   "type": "GLOBBO",
+   "px": -13.4,
+   "pz": -5.28,
+   "speedMult": 0.85
+  },
+  {
+   "t": 13,
+   "type": "GLOBBO",
+   "px": 13.4,
+   "pz": -5.14,
+   "speedMult": 0.85
+  },
+  {
+   "t": 15.4,
+   "type": "GLOBBO",
+   "px": -3.69,
+   "pz": 7.4,
+   "speedMult": 0.85
+  },
+  {
+   "t": 17.8,
+   "type": "GLOBBO",
+   "px": -2.12,
+   "pz": -7.4,
+   "speedMult": 0.85
+  },
+  {
+   "t": 20.2,
+   "type": "GLOBBO",
+   "px": 12.07,
+   "pz": 7.4,
+   "speedMult": 0.85
+  },
+  {
+   "t": 22.6,
+   "type": "GLOBBO",
+   "px": -13.4,
+   "pz": 2.6,
+   "speedMult": 0.85
+  }
+ ],
+ "mods": {
+  "noGun": true
+ },
+ "gates": [
+  {
+   "t": 0,
+   "x": -6,
+   "z": 0,
+   "angle": 0
+  },
+  {
+   "t": 0,
+   "x": 6,
+   "z": 0,
+   "angle": 0
+  },
+  {
+   "t": 12,
+   "x": 0,
+   "z": -4,
+   "angle": 1.5708
+  },
+  {
+   "t": 12,
+   "x": 0,
+   "z": 4,
+   "angle": 1.5708
+  }
+ ],
+ "tiers": {
+  "S": 1,
+  "A": 0.95,
+  "B": 0.9,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 63%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

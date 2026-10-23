@@ -1,0 +1,178 @@
+{
+ "format": 2,
+ "id": "spike",
+ "name": "SPIKE",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 19,
+    "hz": 11
+   }
+  ]
+ },
+ "duration": 35,
+ "goal": {
+  "type": "clear"
+ },
+ "plan": {
+  "world": 2,
+  "d": 7,
+  "teaches": "the spike wave"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": 17.21,
+   "pz": 9.4
+  },
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": -15.43,
+   "pz": 9.4
+  },
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": -0.22,
+   "pz": -9.4
+  },
+  {
+   "t": 6,
+   "type": "REDD_CUBE",
+   "px": 17.4,
+   "pz": 3.53
+  },
+  {
+   "t": 6,
+   "type": "REDD_CUBE",
+   "px": -1.91,
+   "pz": 9.4
+  },
+  {
+   "t": 6,
+   "type": "REDD_CUBE",
+   "px": -17.4,
+   "pz": -3.53
+  },
+  {
+   "t": 6,
+   "type": "REDD_CUBE",
+   "px": 1.91,
+   "pz": -9.4
+  },
+  {
+   "t": 6,
+   "type": "SHEPHERD",
+   "px": 6.04,
+   "pz": 9.4
+  },
+  {
+   "t": 6,
+   "type": "SHEPHERD",
+   "px": -6.04,
+   "pz": -9.4
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": 17.4,
+   "pz": 7.36
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": 3.81,
+   "pz": 9.4
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": -3.97,
+   "pz": 9.4
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": -17.4,
+   "pz": 7.06
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": -17.4,
+   "pz": -7.36
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": -3.81,
+   "pz": -9.4
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": 3.97,
+   "pz": -9.4
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": 17.4,
+   "pz": -7.06
+  },
+  {
+   "t": 7,
+   "type": "YELA_CUBE",
+   "px": 17.4,
+   "pz": 0
+  },
+  {
+   "t": 7,
+   "type": "YELA_CUBE",
+   "px": 0,
+   "pz": 9.4
+  },
+  {
+   "t": 7,
+   "type": "YELA_CUBE",
+   "px": -17.4,
+   "pz": 0
+  },
+  {
+   "t": 7,
+   "type": "YELA_CUBE",
+   "px": 0,
+   "pz": -9.4
+  },
+  {
+   "t": 7.5,
+   "type": "REDD_CUBE",
+   "px": 11.16,
+   "pz": 9.4,
+   "speedMult": 1.2
+  },
+  {
+   "t": 7.5,
+   "type": "REDD_CUBE",
+   "px": -17.4,
+   "pz": 6.3,
+   "speedMult": 1.2
+  },
+  {
+   "t": 7.5,
+   "type": "REDD_CUBE",
+   "px": 1.68,
+   "pz": -9.4,
+   "speedMult": 1.2
+  }
+ ],
+ "tiers": {
+  "S": 18.6,
+  "A": 21,
+  "B": 25.2,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 50%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

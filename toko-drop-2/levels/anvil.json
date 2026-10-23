@@ -1,71 +1,158 @@
 {
-  "format": 1,
-  "id": "anvil",
-  "name": "ANVIL",
-  "arena": {
-    "shapes": [
-      {
-        "kind": "rect",
-        "hx": 19,
-        "hz": 11
-      }
-    ]
-  },
-  "duration": 40,
-  "rules": {
-    "mode": "arcade",
-    "outside": "push"
-  },
-  "spawns": [
-    {"t":0,"type":"GLOBBO","px":-15,"pz":-7,"speedMult":1.3},
-    {"t":0,"type":"GLOBBO","px":15,"pz":-7,"speedMult":1.3},
-    {"t":0,"type":"GLOBBO","px":-15,"pz":7,"speedMult":1.3},
-    {"t":0,"type":"GLOBBO","px":15,"pz":7,"speedMult":1.3},
-    {"t":1.5,"type":"GLOBBO","px":16.5,"pz":-1.4,"speedMult":1.3},
-    {"t":1.5,"type":"GLOBBO","px":-16.5,"pz":-1.4,"speedMult":1.3},
-    {"t":1.5,"type":"GLOBBO","px":16.5,"pz":1.4,"speedMult":1.3},
-    {"t":1.5,"type":"GLOBBO","px":-16.5,"pz":1.4,"speedMult":1.3},
-    {"t":2,"type":"PURP_CUBE","px":0,"pz":-9,"speedMult":1.3,"intervalMult":0.6},
-    {"t":3,"type":"GLOBBO","px":15,"pz":7,"speedMult":1.3},
-    {"t":3,"type":"GLOBBO","px":-15,"pz":-7,"speedMult":1.3},
-    {"t":3,"type":"GLOBBO","px":15,"pz":-7,"speedMult":1.3},
-    {"t":3.5,"type":"PURP_CUBE","px":0,"pz":9,"speedMult":1.3,"intervalMult":0.6},
-    {"t":4,"type":"GLOBBO","px":-13.9,"pz":8,"speedMult":1.3},
-    {"t":4,"type":"GLOBBO","px":-13.1,"pz":-9.2,"speedMult":1.3},
-    {"t":4,"type":"GLOBBO","px":-4.5,"pz":7.8,"speedMult":1.3},
-    {"t":5,"type":"PURP_CUBE","px":4.5,"pz":7.8,"speedMult":1.3,"intervalMult":0.6},
-    {"t":5.5,"type":"GLOBBO","px":16,"pz":0,"speedMult":1.3},
-    {"t":5.5,"type":"GLOBBO","px":-16,"pz":0,"speedMult":1.3},
-    {"t":5.5,"type":"GLOBBO","px":4.5,"pz":-7.8,"speedMult":1.3},
-    {"t":6.5,"type":"BULWARK","px":-13.4,"pz":-5.2,"speedMult":1.3},
-    {"t":7,"type":"GLOBBO","px":13.9,"pz":8,"speedMult":1.3},
-    {"t":7,"type":"GLOBBO","px":-4.5,"pz":-7.8,"speedMult":1.3},
-    {"t":8,"type":"BULWARK","px":12,"pz":-8,"speedMult":1.3},
-    {"t":8.5,"type":"GLOBBO","px":-8,"pz":-9,"speedMult":1.3},
-    {"t":8.5,"type":"GLOBBO","px":8,"pz":-9,"speedMult":1.3},
-    {"t":8.5,"type":"GLOBBO","px":14.4,"pz":0.9,"speedMult":1.3},
-    {"t":9.5,"type":"BULWARK","px":-12,"pz":-8,"speedMult":1.3},
-    {"t":10,"type":"GLOBBO","px":8,"pz":9,"speedMult":1.3},
-    {"t":10,"type":"GLOBBO","px":-8,"pz":9,"speedMult":1.3},
-    {"t":10,"type":"GLOBBO","px":-14.4,"pz":-0.9,"speedMult":1.3},
-    {"t":11,"type":"PURP_CUBE","px":16,"pz":5,"speedMult":1.3,"intervalMult":0.6},
-    {"t":11.5,"type":"GLOBBO","px":-11.4,"pz":3.8,"speedMult":1.3},
-    {"t":11.5,"type":"GLOBBO","px":14.4,"pz":-0.9,"speedMult":1.3},
-    {"t":12.5,"type":"PURP_CUBE","px":-16,"pz":-5,"speedMult":1.3,"intervalMult":0.6},
-    {"t":14,"type":"PURP_CUBE","px":16,"pz":-5,"speedMult":1.3,"intervalMult":0.6},
-    {"t":16,"type":"TORO","px":0,"pz":9,"speedMult":1.5},
-    {"t":17.5,"type":"TORO","px":0,"pz":-9,"speedMult":1.5},
-    {"t":19,"type":"TORO","px":4.5,"pz":-7.8,"speedMult":1.5},
-    {"t":22,"type":"BULWARK","px":-16,"pz":0,"speedMult":1.5},
-    {"t":23.5,"type":"BULWARK","px":16,"pz":0,"speedMult":1.5},
-    {"t":25,"type":"BULWARK","px":-13.9,"pz":-8,"speedMult":1.5},
-    {"t":28,"type":"GLOBBO","px":-13.4,"pz":5.2,"speedMult":1.7},
-    {"t":28,"type":"GLOBBO","px":12,"pz":-8,"speedMult":1.7},
-    {"t":29.5,"type":"GLOBBO","px":12,"pz":8,"speedMult":1.7},
-    {"t":29.5,"type":"GLOBBO","px":-12,"pz":8,"speedMult":1.7},
-    {"t":31,"type":"GLOBBO","px":13.4,"pz":-5.2,"speedMult":1.7},
-    {"t":33,"type":"PURP_CUBE","px":0,"pz":-9,"speedMult":1.7,"intervalMult":0.6},
-    {"t":34.5,"type":"PURP_CUBE","px":0,"pz":9,"speedMult":1.7,"intervalMult":0.6},
-    {"t":36,"type":"PURP_CUBE","px":-4.5,"pz":7.8,"speedMult":1.7,"intervalMult":0.6}
+ "format": 2,
+ "id": "anvil",
+ "name": "ANVIL",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 19,
+    "hz": 11
+   }
   ]
+ },
+ "duration": 45,
+ "goal": {
+  "type": "quota",
+  "kills": 14
+ },
+ "plan": {
+  "world": 5,
+  "d": 8,
+  "teaches": "elites"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": 17.21,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 2.2,
+   "type": "YELA_CUBE",
+   "px": -17.4,
+   "pz": 4.29,
+   "elite": true
+  },
+  {
+   "t": 4.4,
+   "type": "FANNER",
+   "px": 6.26,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 6.6,
+   "type": "ORANGE_CUBE",
+   "px": 1.46,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 8.8,
+   "type": "GLOBBO",
+   "px": -11.74,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 11,
+   "type": "YELA_CUBE",
+   "px": 17.4,
+   "pz": -1.16,
+   "elite": true
+  },
+  {
+   "t": 13.2,
+   "type": "FANNER",
+   "px": -8.98,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 15.4,
+   "type": "ORANGE_CUBE",
+   "px": 0.2,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 17.6,
+   "type": "GLOBBO",
+   "px": 8.26,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 19.8,
+   "type": "YELA_CUBE",
+   "px": -17.4,
+   "pz": -1.9,
+   "elite": true
+  },
+  {
+   "t": 22,
+   "type": "FANNER",
+   "px": 12.81,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 24.2,
+   "type": "ORANGE_CUBE",
+   "px": -1.87,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 26.4,
+   "type": "GLOBBO",
+   "px": -5.71,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 28.6,
+   "type": "YELA_CUBE",
+   "px": 17.4,
+   "pz": 5.07,
+   "elite": true
+  },
+  {
+   "t": 30.8,
+   "type": "FANNER",
+   "px": -17.4,
+   "pz": 8.58,
+   "elite": true
+  },
+  {
+   "t": 33,
+   "type": "ORANGE_CUBE",
+   "px": 3.66,
+   "pz": -9.4,
+   "elite": true
+  },
+  {
+   "t": 35.2,
+   "type": "GLOBBO",
+   "px": 3.65,
+   "pz": 9.4,
+   "elite": true
+  },
+  {
+   "t": 37.4,
+   "type": "YELA_CUBE",
+   "px": -17.4,
+   "pz": -8.59,
+   "elite": true
+  }
+ ],
+ "tiers": {
+  "S": 30.8,
+  "A": 33.5,
+  "B": 36.2,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 96%, rough 21%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
 }

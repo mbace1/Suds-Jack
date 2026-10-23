@@ -67,6 +67,10 @@
       border: 1px solid var(--line); font: inherit; text-align: left; cursor: pointer; }
     #menu .item .label { display: block; font-size: 17px; letter-spacing: .2em; }
     #menu .item .sub { display: block; margin-top: 4px; font-size: 11px; font-weight: 400; color: var(--dim); letter-spacing: .04em; }
+    #menu .item .chart { display: block; width: 100%; max-width: 220px; height: 34px; margin: 6px auto 0; }
+    #menu .item .teaches { display: block; margin-top: 3px; font-size: 10px; font-weight: 400; color: var(--dim); opacity: .75; letter-spacing: .04em; }
+    #menu .route-wrap { display: flex; justify-content: center; width: 100%; margin: 2px 0 8px; }
+    #menu .route-wrap .route { display: block; max-width: 100%; margin: 0 auto; }
     #menu .item.focus { outline: 2px solid var(--gold); outline-offset: 2px; border-color: var(--gold); }
     #menu .item.focus .label { color: var(--gold); }
     #menu .item.off { opacity: .45; cursor: default; }
@@ -132,7 +136,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v29<span id="backend"></span></div>
+  <div id="ver">2.0 · v31<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -163,6 +167,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=29"></script>
+  <script type="module" src="js/main.js?v=31"></script>
 </body>
 </html>

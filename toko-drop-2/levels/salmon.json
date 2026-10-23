@@ -1,0 +1,140 @@
+{
+ "format": 2,
+ "id": "salmon",
+ "name": "SALMON",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 19,
+    "hz": 9
+   }
+  ]
+ },
+ "duration": 40,
+ "goal": {
+  "type": "collect",
+  "orbs": [
+   {
+    "t": 2,
+    "x": -14,
+    "z": -5
+   },
+   {
+    "t": 5,
+    "x": 14,
+    "z": 5
+   },
+   {
+    "t": 8,
+    "x": -14,
+    "z": 5
+   },
+   {
+    "t": 11,
+    "x": 14,
+    "z": -5
+   },
+   {
+    "t": 14,
+    "x": 0,
+    "z": 0
+   },
+   {
+    "t": 17,
+    "x": -7,
+    "z": 0
+   },
+   {
+    "t": 20,
+    "x": 7,
+    "z": 0
+   },
+   {
+    "t": 23,
+    "x": 0,
+    "z": -6
+   }
+  ]
+ },
+ "plan": {
+  "world": 4,
+  "d": 6,
+  "teaches": "toro; salma"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "TORO",
+   "px": 15,
+   "pz": 0,
+   "speedMult": 1.2
+  },
+  {
+   "t": 6,
+   "type": "salma",
+   "px": -15,
+   "pz": 4
+  },
+  {
+   "t": 6,
+   "type": "salma",
+   "px": -15,
+   "pz": -4
+  },
+  {
+   "t": 10,
+   "type": "TORO",
+   "px": -15,
+   "pz": 0
+  },
+  {
+   "t": 14,
+   "type": "salma",
+   "px": 15,
+   "pz": 4
+  },
+  {
+   "t": 16,
+   "type": "salma",
+   "px": 15,
+   "pz": -4
+  },
+  {
+   "t": 18,
+   "type": "TORO",
+   "px": 0,
+   "pz": 7
+  },
+  {
+   "t": 22,
+   "type": "salma",
+   "px": -15,
+   "pz": 0
+  },
+  {
+   "t": 24,
+   "type": "TORO",
+   "px": 15,
+   "pz": -6
+  },
+  {
+   "t": 26,
+   "type": "salma",
+   "px": 15,
+   "pz": 0
+  },
+  {
+   "t": 30,
+   "type": "TORO",
+   "px": -15,
+   "pz": 6
+  }
+ ],
+ "tiers": {
+  "S": 25.5,
+  "A": 27.9,
+  "B": 30.3,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

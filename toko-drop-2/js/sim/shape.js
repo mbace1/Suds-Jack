@@ -242,14 +242,42 @@ export class Arena {
 // A level's region (1.x level.js arenaShape, the authored form only), or null
 // for a plain rectangle. `turn` lays a landscape room along a portrait screen:
 // x and z swap, so the room fills the phone held either way up.
-export function levelShape(level, turn = false) {
+//
+// A part may MOVE (2.0, CAMPAIGN_PLAN.md: "moving changing abstract ones"):
+//   "orbit": { "r", "period", "phase"? }   a circle's centre goes round its c
+//   "pulse": { "from", "to", "period", "mode": "shrink" | "breathe", "steps"? }
+//     its size × a factor: shrink runs from → to once over the period (in
+//     `steps` jumps if given) and stays; breathe swings from → to → from.
+// `t` is the room's clock; at t = 0 (or with no motion) it is the still room.
+export function partAt(s, t = 0) {
+  let cx = s.c?.[0] ?? 0, cz = s.c?.[1] ?? 0, k = 1;
+  if (s.orbit) { const a = (s.orbit.phase ?? 0) + (t / s.orbit.period) * Math.PI * 2; cx += Math.cos(a) * s.orbit.r; cz += Math.sin(a) * s.orbit.r; }
+  if (s.pulse) {
+    const P = s.pulse;
+    let u = P.mode === 'breathe' ? 0.5 - 0.5 * Math.cos((t / P.period) * Math.PI * 2) : Math.min(1, t / P.period);
+    if (P.steps && P.mode !== 'breathe') u = Math.floor(u * P.steps + 1e-9) / P.steps;
+    k = P.from + (P.to - P.from) * u;
+  }
+  return s.kind === 'rect' ? { kind: 'rect', hx: s.hx * k, hz: s.hz * k } : { kind: 'circle', c: [cx, cz], r: s.r * k };
+}
+export function levelShape(level, turn = false, t = 0) {
   const A = level?.arena;
   if (!A || !Array.isArray(A.shapes) || !A.shapes.length) return null;
-  const parts = A.shapes.map((s) => s.kind === 'rect'
-    ? rectShape(turn ? s.hz : s.hx, turn ? s.hx : s.hz)
-    : circleShape(turn ? s.c[1] : s.c[0], turn ? s.c[0] : s.c[1], s.r));
+  const parts = A.shapes.map((s0) => {
+    const s = partAt(s0, t);
+    return s.kind === 'rect' ? rectShape(turn ? s.hz : s.hx, turn ? s.hx : s.hz) : circleShape(turn ? s.c[1] : s.c[0], turn ? s.c[0] : s.c[1], s.r);
+  });
   if (parts.length === 1) return parts[0];
   return A.combine === 'union' ? unionShape(...parts) : intersectShape(...parts);
+}
+// does any part move
+export const levelMoves = (level) => (level?.arena?.shapes ?? []).some((s) => s.orbit || s.pulse);
+// the box that holds a moving room at every moment of its clock (its walls)
+export function levelEnvelope(level, turn = false) {
+  let hx = 0, hz = 0;
+  const end = Math.max(level.duration ?? 60, 1);
+  for (let t = 0; t <= end + 1e-9; t += 0.25) { const b = levelShape(level, turn, t).aabb(); hx = Math.max(hx, b.halfX); hz = Math.max(hz, b.halfZ); }
+  return { hx, hz };
 }
 
 // The floor's four shape slots (1.x MAX_SHAPES): [kind, a, b, c] per slot —

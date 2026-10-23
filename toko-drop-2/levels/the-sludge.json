@@ -1,0 +1,96 @@
+{
+ "format": 2,
+ "id": "the-sludge",
+ "name": "THE SLUDGE",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 12
+   }
+  ]
+ },
+ "duration": 55,
+ "goal": {
+  "type": "boss"
+ },
+ "plan": {
+  "world": 1,
+  "d": 6,
+  "teaches": "the boss wave"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "sludge",
+   "px": 0,
+   "pz": -6,
+   "boss": true,
+   "hp": 130
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": 3.77,
+   "pz": 9.69
+  },
+  {
+   "t": 9,
+   "type": "YELA_CUBE",
+   "px": -9.33,
+   "pz": -4.6
+  },
+  {
+   "t": 14,
+   "type": "GLOBBO",
+   "px": 9.99,
+   "pz": -2.91
+  },
+  {
+   "t": 19,
+   "type": "YELA_CUBE",
+   "px": -5.4,
+   "pz": 8.89
+  },
+  {
+   "t": 24,
+   "type": "GLOBBO",
+   "px": -2.02,
+   "pz": -10.2
+  },
+  {
+   "t": 29,
+   "type": "YELA_CUBE",
+   "px": 8.38,
+   "pz": 6.16
+  },
+  {
+   "t": 34,
+   "type": "GLOBBO",
+   "px": -10.34,
+   "pz": 1.12
+  },
+  {
+   "t": 39,
+   "type": "YELA_CUBE",
+   "px": 6.87,
+   "pz": -7.81
+  },
+  {
+   "t": 44,
+   "type": "GLOBBO",
+   "px": 0.21,
+   "pz": 10.4
+  }
+ ],
+ "tiers": {
+  "S": 13.8,
+  "A": 17.1,
+  "B": 22.8,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

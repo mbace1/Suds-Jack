@@ -14,19 +14,19 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=29';
-import { makeRng } from './rng.js?v=29';
-import { BEHAVIOUR } from './species/index.js?v=29';
-import { DIRECTORS } from './director/index.js?v=29';
-import * as fire from './fire.js?v=29';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=29';
-import { swarmForces, resolveCrowd } from './crowd.js?v=29';
-import { revengeColor } from './color.js?v=29';
-import * as pickups from './pickups.js?v=29';
-import * as worlds from './worlds.js?v=29';
-import * as reshape from './reshape.js?v=29';
-import { Arena, levelShape, KIND } from './shape.js?v=29';
-import * as rules from './rules.js?v=29';
+import { TUNING } from '../tuning.js?v=31';
+import { makeRng } from './rng.js?v=31';
+import { BEHAVIOUR } from './species/index.js?v=31';
+import { DIRECTORS } from './director/index.js?v=31';
+import * as fire from './fire.js?v=31';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=31';
+import { swarmForces, resolveCrowd } from './crowd.js?v=31';
+import { revengeColor } from './color.js?v=31';
+import * as pickups from './pickups.js?v=31';
+import * as worlds from './worlds.js?v=31';
+import * as reshape from './reshape.js?v=31';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=31';
+import * as rules from './rules.js?v=31';
 
 const T = TUNING;
 
@@ -46,7 +46,10 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
   let region = null;
   if (room) {
     const sh = levelShape(room.level, room.turn);
-    if (sh) { region = new Arena(sh); arena = { hx: region.halfX, hz: region.halfZ }; if (sh.kind === KIND.RECT) region = null; }
+    // a moving floor keeps its region (even a rectangle: it changes size) and walls that hold it at every moment
+    const moves = levelMoves(room.level);
+    if (sh) { region = new Arena(sh); arena = moves ? levelEnvelope(room.level, room.turn) : { hx: region.halfX, hz: region.halfZ }; if (sh.kind === KIND.RECT && !moves) region = null; }
+    if (room.level?.mods?.dash) dashMode = 'cut';   // a room that asks for the CUT has it, whatever the title says
   }
   const w = {
     seed, mode, dashMode, hpMult, rng: makeRng(seed), rngFx: makeRng((seed ^ 0x5bd1e995) >>> 0), tick: 0, time: 0, over: false,
@@ -356,6 +359,8 @@ function heroBulletsHit(w) {
       const B = BEHAVIOUR[g.kind];
       const touching = B.hitTest ? B.hitTest(w, g, b.x, b.z, b.r) : Math.hypot(g.x - b.x, g.z - b.z) < b.r + g.r;
       if (!touching) continue;
+      // a campaign room's ORDER: not this one's turn, so the shot is spent on it and nothing else happens
+      if (g.locked) { b.dead = true; w.events.push({ type: 'block', x: b.x, z: b.z, id: g.id, by: 'locked' }); break; }
       const res = B.onHit?.(w, g, b, api);
       if (res === 'pass') continue;
       b.dead = true;

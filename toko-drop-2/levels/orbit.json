@@ -1,0 +1,248 @@
+{
+ "format": 2,
+ "id": "orbit",
+ "name": "ORBIT",
+ "arena": {
+  "combine": "intersect",
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 10,
+    "orbit": {
+     "r": 3.5,
+     "period": 14,
+     "phase": 0
+    }
+   },
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 10,
+    "orbit": {
+     "r": 3.5,
+     "period": 14,
+     "phase": 2.094
+    }
+   },
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 10,
+    "orbit": {
+     "r": 3.5,
+     "period": 14,
+     "phase": 4.189
+    }
+   }
+  ]
+ },
+ "duration": 35,
+ "goal": {
+  "type": "survive"
+ },
+ "plan": {
+  "world": 3,
+  "d": 7,
+  "teaches": "a floor that moves"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": 3,
+   "pz": 0,
+   "speedMult": 1.15
+  },
+  {
+   "t": 1.2,
+   "type": "YELA_CUBE",
+   "px": -2.21,
+   "pz": 2.03,
+   "speedMult": 1.15
+  },
+  {
+   "t": 2.4,
+   "type": "GLOBBO",
+   "px": 0.26,
+   "pz": -2.99,
+   "speedMult": 1.15
+  },
+  {
+   "t": 3.6,
+   "type": "SPITTOR",
+   "px": 1.83,
+   "pz": 2.38,
+   "speedMult": 1.15
+  },
+  {
+   "t": 4.8,
+   "type": "GLOBBO",
+   "px": -2.95,
+   "pz": -0.52,
+   "speedMult": 1.15
+  },
+  {
+   "t": 6,
+   "type": "YELA_CUBE",
+   "px": 2.53,
+   "pz": -1.61,
+   "speedMult": 1.15
+  },
+  {
+   "t": 7.2,
+   "type": "GLOBBO",
+   "px": -0.78,
+   "pz": 2.9,
+   "speedMult": 1.15
+  },
+  {
+   "t": 8.4,
+   "type": "SPITTOR",
+   "px": -1.38,
+   "pz": -2.66,
+   "speedMult": 1.15
+  },
+  {
+   "t": 9.6,
+   "type": "GLOBBO",
+   "px": 2.82,
+   "pz": 1.03,
+   "speedMult": 1.15
+  },
+  {
+   "t": 10.8,
+   "type": "YELA_CUBE",
+   "px": -2.77,
+   "pz": 1.14,
+   "speedMult": 1.15
+  },
+  {
+   "t": 12,
+   "type": "GLOBBO",
+   "px": 1.27,
+   "pz": -2.72,
+   "speedMult": 1.15
+  },
+  {
+   "t": 13.2,
+   "type": "SPITTOR",
+   "px": 0.9,
+   "pz": 2.86,
+   "speedMult": 1.15
+  },
+  {
+   "t": 14.4,
+   "type": "GLOBBO",
+   "px": -2.59,
+   "pz": -1.51,
+   "speedMult": 1.15
+  },
+  {
+   "t": 15.6,
+   "type": "YELA_CUBE",
+   "px": 2.93,
+   "pz": -0.64,
+   "speedMult": 1.15
+  },
+  {
+   "t": 16.8,
+   "type": "GLOBBO",
+   "px": -1.73,
+   "pz": 2.45,
+   "speedMult": 1.15
+  },
+  {
+   "t": 18,
+   "type": "SPITTOR",
+   "px": -0.38,
+   "pz": -2.98,
+   "speedMult": 1.15
+  },
+  {
+   "t": 19.2,
+   "type": "GLOBBO",
+   "px": 2.29,
+   "pz": 1.93,
+   "speedMult": 1.15
+  },
+  {
+   "t": 20.4,
+   "type": "YELA_CUBE",
+   "px": -3,
+   "pz": 0.12,
+   "speedMult": 1.15
+  },
+  {
+   "t": 21.6,
+   "type": "GLOBBO",
+   "px": 2.13,
+   "pz": -2.11,
+   "speedMult": 1.15
+  },
+  {
+   "t": 22.8,
+   "type": "SPITTOR",
+   "px": -0.14,
+   "pz": 3,
+   "speedMult": 1.15
+  },
+  {
+   "t": 24,
+   "type": "GLOBBO",
+   "px": -1.92,
+   "pz": -2.3,
+   "speedMult": 1.15
+  },
+  {
+   "t": 25.2,
+   "type": "YELA_CUBE",
+   "px": 2.97,
+   "pz": 0.4,
+   "speedMult": 1.15
+  },
+  {
+   "t": 26.4,
+   "type": "GLOBBO",
+   "px": -2.46,
+   "pz": 1.71,
+   "speedMult": 1.15
+  },
+  {
+   "t": 27.6,
+   "type": "SPITTOR",
+   "px": 0.66,
+   "pz": -2.93,
+   "speedMult": 1.15
+  },
+  {
+   "t": 28.8,
+   "type": "GLOBBO",
+   "px": 1.49,
+   "pz": 2.6,
+   "speedMult": 1.15
+  },
+  {
+   "t": 30,
+   "type": "YELA_CUBE",
+   "px": -2.86,
+   "pz": -0.91,
+   "speedMult": 1.15
+  }
+ ],
+ "tiers": {
+  "S": 1,
+  "A": 0.95,
+  "B": 0.9,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 92%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

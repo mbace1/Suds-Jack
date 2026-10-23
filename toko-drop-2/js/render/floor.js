@@ -21,8 +21,8 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=29';
-import { noise } from './scenery.js?v=29';
+import { GEL_TIME } from './gel.js?v=31';
+import { noise } from './scenery.js?v=31';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -63,13 +63,18 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   const bounds = hasBounds ? { cur: uniform(new THREE.Vector2(hx, hz)), next: uniform(new THREE.Vector2(hx, hz)), warn: uniform(0) } : null;
   const comeCol = uniform(new THREE.Color(0x40e8ff)), goCol = uniform(new THREE.Color(0xff3040));
   // the room's region, as a signed distance at a floor point (1.x arena.js)
+  // Each slot's numbers are uniforms, so a room whose floor MOVES (sim/shape.js
+  // orbit, pulse) redraws it every frame with setRegion; the kinds and how
+  // they combine are fixed for the room.
+  const regionU = region ? region.slots.map(([, a, b, c]) => uniform(new THREE.Vector3(a, b, c))) : null;
   const regionSdf = region ? (wp) => {
     let d = null;
-    for (const [k, a, b, c] of region.slots) {
-      if (!k) continue;
-      const di = k === 1 ? max(abs(wp.x).sub(a), abs(wp.y).sub(b)) : length(wp.sub(vec2(a, b))).sub(c);
+    region.slots.forEach(([k], i) => {
+      if (!k) return;
+      const u = regionU[i];
+      const di = k === 1 ? max(abs(wp.x).sub(u.x), abs(wp.y).sub(u.y)) : length(wp.sub(vec2(u.x, u.y))).sub(u.z);
       d = d === null ? di : region.combine === 1 ? max(d, di) : min(d, di);
-    }
+    });
     return d;
   } : null;
   const railCol = uniform(new THREE.Color(regionRail ?? F.rail));
@@ -440,6 +445,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     // the rail's colour, lerped toward white by k (a world rule's warning flash)
     setRail(hex, k = 0) { const c = railCol.value.setHex(hex).lerp(_white, Math.max(0, Math.min(1, k))); border.material.color.copy(c); },
     swirl: { k: swirl, at: swirlAt, r: swirlR, hole },
+    // a moving room's region, this frame (sim/shape.js slots())
+    setRegion(r) { if (!regionU) return; r.slots.forEach(([, a, b, c], i) => regionU[i]?.value.set(a, b, c)); },
     // the light pool follows the hero (world x, z → floor uv)
     setPlayer(x, z) { player.value.set((x + hx) / (2 * hx), (hz - z) / (2 * hz)); },
     // the film's current textures (they swap every film step) and its size in texels

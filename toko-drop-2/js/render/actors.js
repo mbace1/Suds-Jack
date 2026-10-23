@@ -15,16 +15,17 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=29';
+import { TUNING } from '../tuning.js?v=31';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=29';
-import { LOOKS } from './looks/index.js?v=29';
-import { JellyBody } from './jelly.js?v=29';
-import { Juice } from './juice.js?v=29';
-import { ArenaLight } from './light.js?v=29';
-import { toSdf } from './sdf.js?v=29';
-import { PickupView } from './pickups.js?v=29';
-import { Goo } from './goo.js?v=29';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=31';
+import { LOOKS } from './looks/index.js?v=31';
+import { JellyBody } from './jelly.js?v=31';
+import { Juice } from './juice.js?v=31';
+import { ArenaLight } from './light.js?v=31';
+import { toSdf } from './sdf.js?v=31';
+import { PickupView } from './pickups.js?v=31';
+import { ChallengeView } from './challenge.js?v=31';
+import { Goo } from './goo.js?v=31';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -55,6 +56,7 @@ export class Actors {
     this.juice = new Juice(scene);   // bullet comets, hit sparks, kill flashes and rings
     this.light = new ArenaLight();   // the light and shadow the floor reads (main.js draws it)
     this.pickups = new PickupView(scene, this);   // 1.x's drops, gates, convoy and bounty (render/pickups.js)
+    this.challenge = new ChallengeView(scene);    // a campaign room's ring, heart, orbs and lit body (render/challenge.js)
     // droplets and the floor's film (render/goo.js); main.js steps the film.
     // The kit is always built (the floor reads its film); `goo` is it while
     // the title's SPLATTER switch is on, and null while 1.x's puddles stand in
@@ -244,6 +246,7 @@ export class Actors {
     this.juice.reset();
     this.light.reset();
     this.pickups.reset();
+    this.challenge.reset();
     this.goo?.clear();
   }
 
@@ -435,6 +438,7 @@ export class Actors {
     this.juice.sync(w, alpha, BULLET_Y);
     this.light.sync(w, alpha, this.views);
     this.pickups.sync(w, alpha, time);
+    this.challenge.sync(w, alpha, time);
     this.goo?.setBodies(w, alpha);
 
     // lobs in flight, hazards on the floor (a slow pulse, fading out at the end)

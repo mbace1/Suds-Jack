@@ -21,9 +21,9 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=29';
-import { BEHAVIOUR } from './species/index.js?v=29';   // read at run time only (a species' hitTest)
-import { slip } from './rules.js?v=29';   // THE FOAM's slick floor
+import { TUNING } from '../tuning.js?v=31';
+import { BEHAVIOUR } from './species/index.js?v=31';   // read at run time only (a species' hitTest)
+import { slip } from './rules.js?v=31';   // THE FOAM's slick floor
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -140,7 +140,10 @@ export function heroStep(w, input, dt, api) {
   // dash and through mercy. A trigger let go keeps its timer running. With a
   // pod (h.weapon) the volley is its family's and the period × its rate.
   const al = Math.hypot(input.ax || 0, input.az || 0);
-  if (input.fire && input.aim && al > 1e-9 && h.fireCd <= 0) {
+  // a campaign room may take the gun away, or count its shots (sim/challenge.js)
+  const gun = w.gun, armed = !gun || (!gun.off && gun.ammo > 0);
+  if (armed && input.fire && input.aim && al > 1e-9 && h.fireCd <= 0) {
+    if (gun && gun.ammo !== Infinity) { gun.ammo--; if (gun.ammo <= 0) w.events.push({ type: 'dry' }); }
     const ax = input.ax / al, az = input.az / al;
     h.aimX = ax; h.aimZ = az;
     const fam = h.weapon ? H.weapons[h.weapon.fam][h.weapon.level >= 2 ? 'l2' : 'l1'] : null;
@@ -168,7 +171,7 @@ export function heroStep(w, input, dt, api) {
   else if (dashing && (h.dashLevel >= 1 || cutting)) {
     const R = H.dashKill.reach;
     for (const g of w.gels.slice()) {
-      if (g.state !== 'active' || !g.alive || g.dashedBy === h.dashId) continue;
+      if (g.state !== 'active' || !g.alive || g.dashedBy === h.dashId || g.locked) continue;
       const B = BEHAVIOUR[g.kind];
       if (!(B?.hitTest ? B.hitTest(w, g, h.x, h.z, R) : Math.hypot(g.x - h.x, g.z - h.z) < g.r + R)) continue;
       g.dashedBy = h.dashId;

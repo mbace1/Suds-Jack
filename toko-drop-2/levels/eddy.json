@@ -1,54 +1,137 @@
 {
-  "format": 1,
-  "id": "eddy",
-  "name": "EDDY",
-  "arena": {
-    "shapes": [
-      {
-        "kind": "circle",
-        "c": [
-          0,
-          0
-        ],
-        "r": 10.5
-      }
-    ]
-  },
-  "duration": 40,
-  "rules": {
-    "mode": "arcade",
-    "outside": "push"
-  },
-  "spawns": [
-    {"t":0,"type":"GLOBBO","px":8,"pz":0},
-    {"t":0,"type":"GLOBBO","px":0,"pz":8},
-    {"t":0,"type":"GLOBBO","px":-8,"pz":0},
-    {"t":0,"type":"GLOBBO","px":0,"pz":-8},
-    {"t":1.5,"type":"GLOBBO","px":4,"pz":-6.9},
-    {"t":1.5,"type":"GLOBBO","px":-4,"pz":6.9},
-    {"t":2.5,"type":"WEEVA","px":5.7,"pz":5.7,"intervalMult":0.9},
-    {"t":2.5,"type":"WEEVA","px":-5.7,"pz":-5.7,"intervalMult":0.9},
-    {"t":4,"type":"WEEVA","px":2.1,"pz":7.8,"intervalMult":0.9},
-    {"t":5,"type":"GLOBBO","px":7.4,"pz":3.1},
-    {"t":5,"type":"GLOBBO","px":-3.1,"pz":7.4},
-    {"t":5,"type":"GLOBBO","px":-7.4,"pz":-3.1},
-    {"t":5,"type":"GLOBBO","px":3.1,"pz":-7.4},
-    {"t":6.5,"type":"GLOBBO","px":6.4,"pz":-4.9},
-    {"t":6.5,"type":"GLOBBO","px":-6.4,"pz":4.9},
-    {"t":8,"type":"RIBBON","px":0,"pz":-8},
-    {"t":10,"type":"WEEVA","px":-5.7,"pz":5.7,"intervalMult":0.9},
-    {"t":10,"type":"WEEVA","px":5.7,"pz":-5.7,"intervalMult":0.9},
-    {"t":11.5,"type":"WEEVA","px":7.8,"pz":-2.1,"intervalMult":0.9},
-    {"t":14,"type":"GLOBBO","px":7.6,"pz":2.4},
-    {"t":14,"type":"GLOBBO","px":-7.8,"pz":1.7},
-    {"t":14,"type":"GLOBBO","px":-1.8,"pz":-7.8},
-    {"t":15.5,"type":"GLOBBO","px":-7.6,"pz":-2.4},
-    {"t":15.5,"type":"GLOBBO","px":1.8,"pz":7.8},
-    {"t":20,"type":"SPLITTA","px":0,"pz":8,"speedMult":1.2},
-    {"t":26,"type":"WEEVA","px":2.9,"pz":7.5,"speedMult":1.2,"intervalMult":0.9},
-    {"t":26,"type":"WEEVA","px":-2.9,"pz":-7.5,"speedMult":1.2,"intervalMult":0.9},
-    {"t":27.5,"type":"WEEVA","px":1.2,"pz":-7.9,"speedMult":1.2,"intervalMult":0.9},
-    {"t":32,"type":"RIBBON","px":0,"pz":8,"speedMult":1.4},
-    {"t":33.5,"type":"RIBBON","px":4,"pz":-6.9,"speedMult":1.4}
+ "format": 2,
+ "id": "eddy",
+ "name": "EDDY",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 11
+   }
   ]
+ },
+ "duration": 40,
+ "goal": {
+  "type": "hold",
+  "need": 10,
+  "zone": {
+   "x": 0,
+   "z": 0,
+   "r": 2.6,
+   "drift": true
+  }
+ },
+ "plan": {
+  "world": 1,
+  "d": 4,
+  "teaches": "where you stand"
+ },
+ "spawns": [
+  {
+   "t": 1,
+   "type": "GLOBBO",
+   "px": 7.19,
+   "pz": 6.06
+  },
+  {
+   "t": 3.2,
+   "type": "YELA_CUBE",
+   "px": -9.39,
+   "pz": 0.39
+  },
+  {
+   "t": 5.4,
+   "type": "GLOBBO",
+   "px": 6.66,
+   "pz": -6.63
+  },
+  {
+   "t": 7.6,
+   "type": "YELA_CUBE",
+   "px": -0.43,
+   "pz": 9.39
+  },
+  {
+   "t": 9.8,
+   "type": "GLOBBO",
+   "px": -6.02,
+   "pz": -7.22
+  },
+  {
+   "t": 12,
+   "type": "YELA_CUBE",
+   "px": 9.32,
+   "pz": 1.25
+  },
+  {
+   "t": 14.2,
+   "type": "GLOBBO",
+   "px": -7.71,
+   "pz": 5.37
+  },
+  {
+   "t": 16.4,
+   "type": "YELA_CUBE",
+   "px": 2.06,
+   "pz": -9.17
+  },
+  {
+   "t": 18.6,
+   "type": "GLOBBO",
+   "px": 4.68,
+   "pz": 8.15
+  },
+  {
+   "t": 20.8,
+   "type": "YELA_CUBE",
+   "px": -8.96,
+   "pz": -2.85
+  },
+  {
+   "t": 23,
+   "type": "GLOBBO",
+   "px": 8.53,
+   "pz": -3.95
+  },
+  {
+   "t": 25.2,
+   "type": "YELA_CUBE",
+   "px": -3.63,
+   "pz": 8.67
+  },
+  {
+   "t": 27.4,
+   "type": "GLOBBO",
+   "px": -3.18,
+   "pz": -8.84
+  },
+  {
+   "t": 29.6,
+   "type": "YELA_CUBE",
+   "px": 8.32,
+   "pz": 4.37
+  },
+  {
+   "t": 31.8,
+   "type": "GLOBBO",
+   "px": -9.09,
+   "pz": 2.4
+  },
+  {
+   "t": 34,
+   "type": "YELA_CUBE",
+   "px": 5.08,
+   "pz": -7.91
+  }
+ ],
+ "tiers": {
+  "S": 10,
+  "A": 12.4,
+  "B": 14.8,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
 }

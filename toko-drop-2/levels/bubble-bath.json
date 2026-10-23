@@ -1,42 +1,166 @@
 {
-  "format": 1,
-  "id": "bubble-bath",
-  "name": "BUBBLE BATH",
-  "arena": {
-    "combine": "union",
-    "shapes": [
-      {
-        "kind": "circle",
-        "c": [
-          -5,
-          0
-        ],
-        "r": 8
-      },
-      {
-        "kind": "circle",
-        "c": [
-          5,
-          0
-        ],
-        "r": 8
-      }
-    ]
-  },
-  "duration": 40,
-  "rules": {
-    "mode": "arcade",
-    "outside": "push"
-  },
-  "spawns": [
-    {"t":0,"type":"GLOBBO","px":-10,"pz":0},
-    {"t":0,"type":"GLOBBO","px":10,"pz":0},
-    {"t":6,"type":"SPLITTA","px":-5,"pz":-6},
-    {"t":12,"type":"GLOBBO","px":5,"pz":6},
-    {"t":12,"type":"GLOBBO","px":5,"pz":-6},
-    {"t":13.5,"type":"GLOBBO","px":-5,"pz":6},
-    {"t":18,"type":"SPLITTA","px":5,"pz":6,"speedMult":1.2},
-    {"t":24,"type":"SHEPHERD","px":-10,"pz":0,"speedMult":1.2},
-    {"t":30,"type":"SPLITTA","px":10,"pz":0,"speedMult":1.4}
+ "format": 2,
+ "id": "bubble-bath",
+ "name": "BUBBLE BATH",
+ "arena": {
+  "combine": "union",
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     -5,
+     0
+    ],
+    "r": 8
+   },
+   {
+    "kind": "circle",
+    "c": [
+     5,
+     0
+    ],
+    "r": 8
+   }
   ]
+ },
+ "duration": 35,
+ "goal": {
+  "type": "survive"
+ },
+ "plan": {
+  "world": 4,
+  "d": 7,
+  "teaches": "the swarm, bubbla"
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "bubbla",
+   "px": -7,
+   "pz": 0
+  },
+  {
+   "t": 0,
+   "type": "bubbla",
+   "px": 7,
+   "pz": 0
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": 7.4,
+   "pz": 0
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": 5.23,
+   "pz": 5.23
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": 7.4
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": -5.23,
+   "pz": 5.23
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": -7.4,
+   "pz": 0
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": -5.23,
+   "pz": -5.23
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": -7.4
+  },
+  {
+   "t": 4,
+   "type": "GLOBBO",
+   "px": 5.23,
+   "pz": -5.23
+  },
+  {
+   "t": 12,
+   "type": "bubbla",
+   "px": 0,
+   "pz": 5
+  },
+  {
+   "t": 12,
+   "type": "bubbla",
+   "px": 0,
+   "pz": -5
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": 6.82,
+   "pz": 2.88
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": 2.78,
+   "pz": 6.86
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": -2.88,
+   "pz": 6.82
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": -6.86,
+   "pz": 2.78
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": -6.82,
+   "pz": -2.88
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": -2.78,
+   "pz": -6.86
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": 2.88,
+   "pz": -6.82
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": 6.86,
+   "pz": -2.78
+  }
+ ],
+ "mods": {
+  "flawless": true
+ },
+ "tiers": {
+  "S": 1,
+  "A": 0.95,
+  "B": 0.9,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 33%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
 }

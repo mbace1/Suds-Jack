@@ -7,29 +7,29 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=29';
-import { buildFloor } from './render/floor.js?v=29';
-import { fitCamera, screenToWorld } from './render/view.js?v=29';
-import * as worldsSim from './sim/worlds.js?v=29';
-import * as reshapeSim from './sim/reshape.js?v=29';
-import { Scenery } from './render/scenery.js?v=29';
-import { Transit } from './render/transit.js?v=29';
-import { Splats } from './render/splats.js?v=29';
-import { Actors } from './render/actors.js?v=29';
-import { GEL_TIME } from './render/gel.js?v=29';
-import { studioEnvironment } from './render/env.js?v=29';
-import { Specimen } from './render/specimen.js?v=29';
-import { createWorld, step, api as simApi } from './sim/world.js?v=29';
-import { stage as stagePk } from './sim/pickups.js?v=29';
-import { Input } from './input.js?v=29';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=29';
-import { Announcer } from './announcer.js?v=29';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=29';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=29';
-import { Sound } from './audio.js?v=29';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=29';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=29';
-import { Readout } from './readout.js?v=29';
+import { TUNING } from './tuning.js?v=31';
+import { buildFloor } from './render/floor.js?v=31';
+import { fitCamera, screenToWorld } from './render/view.js?v=31';
+import * as worldsSim from './sim/worlds.js?v=31';
+import * as reshapeSim from './sim/reshape.js?v=31';
+import { Scenery } from './render/scenery.js?v=31';
+import { Transit } from './render/transit.js?v=31';
+import { Splats } from './render/splats.js?v=31';
+import { Actors } from './render/actors.js?v=31';
+import { GEL_TIME } from './render/gel.js?v=31';
+import { studioEnvironment } from './render/env.js?v=31';
+import { Specimen } from './render/specimen.js?v=31';
+import { createWorld, step, api as simApi } from './sim/world.js?v=31';
+import { stage as stagePk } from './sim/pickups.js?v=31';
+import { Input } from './input.js?v=31';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=31';
+import { Announcer } from './announcer.js?v=31';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=31';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=31';
+import { Sound } from './audio.js?v=31';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=31';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=31';
+import { Readout } from './readout.js?v=31';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -403,17 +403,18 @@ const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY)
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=29`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=31`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
 async function campaignList() {
   const p = campaignProgress(), all = campaignRooms();
-  const names = await Promise.all(all.map((r) => loadLevel(r.id).then((L) => L.name, () => r.id.toUpperCase())));
+  const lv = await Promise.all(all.map((r) => loadLevel(r.id).catch(() => null)));   // each room's level: its name, what it asks, its chart
   return T.campaign.worlds.map((wd, wi) => {
-    const mine = all.filter((r) => r.world === wi);
-    return { name: wd.name, rail: `#${wd.rail.toString(16).padStart(6, '0')}`, open: roomOpen(mine[0].index, p),
-      rooms: mine.map((r) => ({ ...r, name: names[r.index], open: roomOpen(r.index, p), grade: p[r.id]?.grade ?? null })) };
+    const mine = all.filter((r) => r.world === wi), rail = `#${wd.rail.toString(16).padStart(6, '0')}`;
+    return { name: wd.name, rail, open: roomOpen(mine[0].index, p),
+      rooms: mine.map((r) => ({ ...r, level: lv[r.index], name: lv[r.index]?.name ?? r.id.toUpperCase(), d: lv[r.index]?.plan?.d ?? 1, rail,
+        open: roomOpen(r.index, p), grade: p[r.id]?.grade ?? null })) };
   });
 }
 async function showCampaign(played = null) {
@@ -487,7 +488,7 @@ function finish() {
   if (newBest) store.set(k, world.score);
   ui.results({
     won: !!world.won,
-    room: R ? { ...world.room, name: world.room.level.name, grade: R.grade } : null,
+    room: R ? { ...world.room, name: world.room.level.name, grade: R.grade, outcome: R.outcome } : null,
     mode, score: world.score, best: Math.max(best, world.score), newBest,
     time: timeText(world.time), gotYou: world.killedBy ? T.species[world.killedBy]?.name : null, gotYouKind: !world.won && T.species[world.killedBy] ? world.killedBy : null,
     kills: world.kills, grazes: world.grazes,
@@ -743,6 +744,7 @@ function frame(now, dtFixed) {
     if (state !== 'paused' && !(state === 'play' && debug.hold)) { actors.stepFx(dt, time); splats.step(dt); }
     const h = world.hero;
     floor.setPlayer(h.px + (h.x - h.px) * a, h.pz + (h.z - h.pz) * a);
+    if (world.ch?.moving && world.region) floor.setRegion?.(regionSlots(world.region.shape));   // a campaign room's floor that moves (sim/shape.js)
     ui.hud(world);
   } else { floor.setPlayer(0, 0); actors.light.clear(); }
   transit.frame(world, floor);
