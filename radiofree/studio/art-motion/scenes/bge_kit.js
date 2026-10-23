@@ -476,7 +476,9 @@
   // and FINLAND on the corner tag. Shot 5 stamps it again and ends on frame 0's view, state and snow, so the film loops.
   // The moves here are a whole-picture VIEW (a true zoom): a stack camera's z only reaches a layer as 1 + (z-1)·d, which
   // at the case's depth (0.1) is a push of a few per cent.
-  const VIEW0 = { z: 1.04, fx: 560, fy: 1000 };                              // frame 0; bgev_tail ends on it
+  // frame 0; bgev_tail ends on it. Under a three-line caption (it ends at y 470) and above the corner tag (y 1564), the
+  // snowed case and its tag fit only up to about 1.06× (snowcap at ~490, tag foot at 1516): every push here stays inside that
+  const VIEW0 = { z: 1.0, fx: 560, fy: 1000, sy: 15 };
   const SNOW0 = 40;                                                          // the snowfall's clock on frame 0
   const AGED = { lamp: 1, dust: 0.62, snow: 58, ice: 1, web: 1 };           // the case as frame 0 shows it
   const STILL = { x: 0, y: 0, z: 1 };                                        // the stack camera where the loop joins
@@ -541,7 +543,7 @@
   // ═════════ V1 · bgev_hook: frame 0 is the case as it is now; a hit; on "never used" the stamp comes down again ═════════
   SCENES.bgev_hook = { draw(c, lt) {
     const id = 'bgev_hook', dd = dur(id), tH = at(id, 'hit', 0.035), tP = at(id, 'stamp', 0.72), f = lt - tP, M = aged();
-    const v = { z: VIEW0.z * (1 + kick(lt, tH, 0.03) + kick(lt, tP, 0.035)) * lerp(1, 1.05, ease.io(lt / dd)), fx: VIEW0.fx, fy: VIEW0.fy, sx: shakeAt(f) };
+    const v = { z: VIEW0.z * (1 + kick(lt, tH, 0.03) + kick(lt, tP, 0.035)) * lerp(1, 1.03, ease.io(lt / dd)), fx: VIEW0.fx, fy: VIEW0.fy, sx: shakeAt(f), sy: VIEW0.sy };
     // the stamp lifts a hair before the word and slams back on it
     const sc = f < -0.1 ? 1 : f < 0 ? 1 + 0.1 * ease.out((f + 0.1) / 0.1) : 1 + 0.1 * Math.exp(-f * 14) * Math.cos(f * 22);
     view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
@@ -581,14 +583,14 @@
   };
   SCENES.bgev_again = { draw(c, lt) {
     const id = 'bgev_again', dd = dur(id), tW1 = at(id, 'write1', 1.2), tW2 = at(id, 'write2', 1.8), M = marks3v(at(id, 'strike1', 0.55), tW1, tW2);
-    // a step in on each new year, but only to 1.1: any closer and the plate rides up behind the captions (above 1.12)
-    // while the tag's foot reaches the corner tag; the plate only leaves the frame above 1.8, where the sprites go soft
+    // a step in on each new year, but only to 1.07: any closer and the snowcap rides up behind the captions while the
+    // tag's foot reaches the corner tag; the plate only leaves the frame above 1.8×, where the sprites go soft
     const step = (t) => clamp(ease.back((lt - t) / 0.28), 0, 1.2);
-    const z = 1.0 + 0.04 * step(tW1) + 0.05 * step(tW2) + 0.01 * ease.io(clamp((lt - tW2 - 0.3) / Math.max(0.5, dd - tW2 - 0.3), 0, 1));
+    const z = 1.0 + 0.03 * step(tW1) + 0.03 * step(tW2) + 0.01 * ease.io(clamp((lt - tW2 - 0.3) / Math.max(0.5, dd - tW2 - 0.3), 0, 1));
     const grow = ease.io(clamp(lt / dd, 0, 1));
-    const v = { z: z * (1 + kick(lt, tW1, 0.02) + kick(lt, tW2, 0.03)), fx: 600, fy: 1250, sx: shakeAt(lt - tW2) * 0.8 + shakeAt(lt - tW1) * 0.4 };
+    const v = { z: z * (1 + kick(lt, tW1, 0.02) + kick(lt, tW2, 0.03)), fx: 640, fy: 990, sx: shakeAt(lt - tW2) * 0.8 + shakeAt(lt - tW1) * 0.4 };
     view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => days(g, lt, dd, ox, oy, 8) }, { d: 0.1, fn: (g, ox, oy) => {
-      const A = caseLayer(g, ox, oy, lt, { lamp: 1, dust: lerp(0.06, 0.5, grow), snow: lerp(4, 46, grow), ice: lerp(0, 0.8, grow), web: lerp(0, 0.8, grow), gleam: -1 });
+      const A = caseLayer(g, ox, oy, lt, { lamp: 1, dust: lerp(0.06, 0.5, grow), snow: lerp(4, 40, grow), ice: lerp(0, 0.8, grow), web: lerp(0, 0.8, grow), gleam: -1 });
       const T = { x: A[0], y: A[1], rot: swing(lt, [[M.s1.t0, 0.05], [tW2, 0.07]], 0.012), sc: 1 };
       const tip = drawTag(g, T, lt, { rows: [{ row: 0, t0: -10 }, { row: 1, t0: tW1 }, { row: 2, t0: M.w2 }], marks: [M.s1, M.s2] });
       const L = (p) => tagToLayer(T, p), rest = [W + 160 + ox, 2060 + oy];
@@ -639,8 +641,8 @@
   SCENES.bgev_tail = { draw(c, lt) {
     const id = 'bgev_tail', dd = dur(id), tS = at(id, 'stamp', 0.4), tG = at(id, 'gleam', 0.9), tM = at(id, 'mark', 1.75), M = marks5v(tM), A0 = aged();
     const endK = ease.io(clamp((lt - (dd - 0.7)) / 0.7, 0, 1)), f = lt - tS;
-    const zIn = lerp(1.1, 1.15, ease.io(clamp(lt / (dd - 0.7), 0, 1))) * (1 + kick(lt, tS, 0.035) + kick(lt, tM, 0.02));
-    const v = { z: VIEW0.z * lerp(zIn, 1, endK), fx: lerp(600, VIEW0.fx, endK), fy: lerp(1080, VIEW0.fy, endK), sx: shakeAt(f) * (1 - endK) };
+    const zIn = lerp(1.03, 1.06, ease.io(clamp(lt / (dd - 0.7), 0, 1))) * (1 + kick(lt, tS, 0.035) + kick(lt, tM, 0.02));
+    const v = { z: VIEW0.z * lerp(zIn, 1, endK), fx: lerp(600, VIEW0.fx, endK), fy: lerp(900, VIEW0.fy, endK), sx: shakeAt(f) * (1 - endK), sy: lerp(0, VIEW0.sy, endK) };
     const S = landing(lt, tS);
     view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
       const A = caseLayer(g, ox, oy, lt - dd, { ...AGED, gleam: (lt - tG) / 0.6 });

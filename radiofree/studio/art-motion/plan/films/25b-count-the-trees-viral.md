@@ -132,3 +132,65 @@ Preview: `previews/23-10-Count-the-Trees-VIRAL-en.mp4`.
    other. `until` went from end−0.2 to end−0.45; that is still 3.6 s on screen against 3.1 s of reading time.
 3. The hook went static for 2.5 s after "Gone.", so it now has a slow push-in (+2.5 %).
 4. The score's tail used to decay over 0.3 s. It now only fades in the last 0.3 s, so the riser runs into the loop.
+
+## v2 (23 Oct): the owner's notes on v1
+
+The notes: "Police car is too big, ending too abruptly", then "the visual seems small for 130ha", then "330 ha is huge".
+v2 is 56 beats at 140 BPM = **24.0 s**, plus the sign-off. It has six shots: hook 7 beats, **pitch 12**, EIA 8, police 8,
+world 6, end 15.
+
+**Scale, made felt (the new `cntv_pitch` shot).**
+- The shot opens close on ONE football pitch on the felled ground, tagged ONE FOOTBALL PITCH · 105 × 68 m, with a
+  referee's whistle.
+- The camera then pulls back while the pitches multiply outward until they tile the clearing. The last one lands on
+  the caption's pop word: "330 hectares: / about **460** / football pitches."
+- The arithmetic:
+  - A pitch is 105 × 68 m = 7,140 m² = 0.714 ha.
+  - 330 / 0.714 = 462, so the caption says "about 460".
+  - 130 / 0.714 = 182, so the label says "≈ 180".
+- The drawing is true to the clearing's own scale. The red-line polygon is 552,990 px² for ~330 ha, so 0.409 px/m, and
+  a pitch is 43.0 × 27.8 px. 463 grid cells have their centre inside the red line, and the planted 40 % holds ~185 of
+  them.
+- The trees, the road and the car are drawn at the map's illustrative scale. Only the area is to scale.
+
+**Three facts at most (a FAIL in the text checks).** The pitch caption became the third fact, so the "worldwide" beat
+lost its caption. It is a short captionless shot now: the six headline slips under a label, HEADLINES IN SIX LANGUAGES,
+where a caption would stand. The argument is rewritten around the pitches (34 words). `post.en` adds "about 460 football
+pitches" (273 characters).
+
+**Police.**
+- The car is drawn at 0.3× (≈ 26 × 55 px, about half the road's width and the size of a tree crown).
+- The blue light sweeps wider (radius 760).
+- The inquiry card is smaller (×0.92) and sits over the top of the site, so the stumps and the car on the road below
+  stay in view.
+
+**130 ha, made to read big; the proportion is unchanged at 40 % of the clearing.**
+- The camera comes in ×1.24 by the pop, then on to ×1.30 through the hold, so the clearing fills the frame.
+- The saplings are denser (16 px grid, ~860 of them), brighter, and planted across the clearing's full width. A solid
+  bright edge with a glow marks the patch.
+- The pitch grid lies faint over the whole clearing, so the patch reads as ~180 of the ~460.
+- The label (Doodle · PLANTING PLANNED · 130 ha · ≈ 180 FOOTBALL PITCHES) stands on the bare felled ground with an arrow
+  down into the patch, never on it.
+
+**The ending.**
+- The punchline caption holds 3.8 s after its pop (v1: 2.35 s), with the saplings still settling and a slow push-in.
+- On `back` the camera eases out to frame 0's framing over 1.8 s while the score's jingle lands and a held D-minor chord
+  rings.
+- The clipping rises into place on `clip`, after the caption has cleared.
+- The last 0.43 s is still, with the chord's tail. That is the join into the sign-off, and the join back to frame 0 in
+  the loop master.
+- A frame-level zoom (`camZ`) was added for these moves, because the stack's own per-layer zoom is ~10 % of `z` and
+  barely shows. It is 1 on frame 0 and on the last frame, so the loop still matches.
+
+**Build: PASSED.**
+- Text: 97 pass, 7 warn, 0 FAIL. The warnings are the fi/ja native reads and the fi/ja sidecar lengths.
+- Sound: 5 pass, 0 FAIL. −14.0 LUFS, −2.9 dBTP, LRA 2.4.
+
+**Looked at, and fixed:** the first v2 render opened the pitch shot at ×3.1. That blew the stumps up into blurred blobs
+and still showed the pitch small. It now opens at ×2.4, with heavier pitch lines and the tiles at 88 % so the felled
+ground shows through.
+
+**Previews:**
+- `previews/23-10-Count-the-Trees-VIRAL-v2-en.mp4` (27.0 s with the sign-off).
+- `previews/23-10-Count-the-Trees-VIRAL-v2-loop-en.mp4` (24.0 s, the film only, for platforms that loop).
+- The v1 viral preview is kept.
