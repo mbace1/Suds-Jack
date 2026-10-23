@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=25';
-import WAVES from './tuning/waves.js?v=25';
-import PICKUPS from './tuning/pickups.js?v=25';
+import { SPECIES } from './tuning/species/index.js?v=26';
+import WAVES from './tuning/waves.js?v=26';
+import PICKUPS from './tuning/pickups.js?v=26';
 
 export const TUNING = {
   render: {
@@ -461,12 +461,13 @@ export const TUNING = {
   // `name` is 1.x's depth look the world played in (its rule comes later).
   campaign: {
     worlds: [
-      { name: 'THE SURFACE', rail: 0x5555cc, rooms: [{ id: 'first-light' }, { id: 'three-rings' }, { id: 'boost-lane' }] },
-      { name: 'THE WELL', rail: 0x33ccbb, rooms: [{ id: 'undertow' }, { id: 'eddy', goal: 'quota', kills: 19 }, { id: 'slug-run', goal: 'flawless' }] },
-      { name: 'THE VEIN', rail: 0xdd3344, rooms: [{ id: 'pulse' }, { id: 'crossfire', goal: 'quota', kills: 18 }, { id: 'clot', goal: 'flawless' }] },
-      { name: 'THE VOID', rail: 0x8866cc, rooms: [{ id: 'lights-out' }, { id: 'the-pull', goal: 'quota', kills: 27 }, { id: 'siren-song' }] },
-      { name: 'THE FOAM', rail: 0x99ffee, rooms: [{ id: 'rink' }, { id: 'skate', goal: 'quota', kills: 30 }, { id: 'bubble-bath', goal: 'flawless' }] },
-      { name: 'THE KILN', rail: 0xffaa33, rooms: [{ id: 'bellows' }, { id: 'anvil', goal: 'quota', kills: 34 }, { id: 'forge' }] },
+      // `base` / `gridHi` are the floor's own colours (sRGB 0..1, 1.x verbatim), `rule` the one mechanic (TUNING.campaign.rules)
+      { name: 'THE SURFACE', rail: 0x5555cc, base: [0.079, 0.079, 0.169], gridHi: [0.0, 0.55, 0.50], rule: null, rooms: [{ id: 'first-light' }, { id: 'three-rings' }, { id: 'boost-lane' }] },
+      { name: 'THE WELL', rail: 0x33ccbb, base: [0.030, 0.105, 0.115], gridHi: [0.10, 0.70, 0.60], rule: 'current', rooms: [{ id: 'undertow' }, { id: 'eddy', goal: 'quota', kills: 19 }, { id: 'slug-run', goal: 'flawless' }] },
+      { name: 'THE VEIN', rail: 0xdd3344, base: [0.130, 0.030, 0.040], gridHi: [0.85, 0.16, 0.22], rule: 'sweep', rooms: [{ id: 'pulse' }, { id: 'crossfire', goal: 'quota', kills: 18 }, { id: 'clot', goal: 'flawless' }] },
+      { name: 'THE VOID', rail: 0x8866cc, base: [0.012, 0.012, 0.022], gridHi: [0.18, 0.10, 0.32], rule: 'dark', rooms: [{ id: 'lights-out' }, { id: 'the-pull', goal: 'quota', kills: 27 }, { id: 'siren-song' }] },
+      { name: 'THE FOAM', rail: 0x99ffee, base: [0.055, 0.105, 0.125], gridHi: [0.60, 1.00, 0.92], rule: 'slip', rooms: [{ id: 'rink' }, { id: 'skate', goal: 'quota', kills: 30 }, { id: 'bubble-bath', goal: 'flawless' }] },
+      { name: 'THE KILN', rail: 0xffaa33, base: [0.130, 0.060, 0.018], gridHi: [1.00, 0.62, 0.14], rule: 'updraft', rooms: [{ id: 'bellows' }, { id: 'anvil', goal: 'quota', kills: 34 }, { id: 'forge' }] },
     ],
     // survive / flawless: the SHARE of the room's bodies you put down; living
     // through it is a C on its own, S is every body
@@ -480,6 +481,19 @@ export const TUNING = {
              BOTFLY: 'botfly', TORO: 'toro', BULWARK: 'bulwark', WARDEN: 'warden', DRAPER: 'draper', SIREN: 'siren',
              CLOAKER: 'cloaker', MAGNA: 'magna', SHEPHERD: 'shepherd', RIBBON: 'ribbon', SLUG: 'slug' },
     endHold: 0.6,   // s the room holds on its last frame before the list comes back
+    // ONE RULE PER WORLD (1.x v264, tuning.js:217-232), as 1.x wrote them:
+    //   current  THE WELL: the whole floor drifts on a current that turns slowly
+    //   sweep    THE VEIN: the rail flashes, then fires a line across with a gap in it
+    //   dark     THE VOID: the dark closes in on you and opens again
+    //   slip     THE FOAM: the floor is slick; you carry momentum
+    //   updraft  THE KILN: every few seconds the floor shoves everything out from the middle
+    rules: {
+      current: { speed: 2.6, playerMult: 0.42, turn: 0.22 },
+      sweep: { every: 7.5, warn: 1.1, spacing: 2.6, gapSlots: 2, speed: 9, color: 0xff4466 },
+      dark: { period: 9, near: 6, far: 20 },   // at its darkest you see `near` to `far` units round you
+      slip: { accel: 3.2, drag: 0.9 },
+      updraft: { every: 6.5, warn: 0.8, push: 13, dur: 0.45, playerMult: 0.55 },
+    },
   },
   survival: {
     reshape: {

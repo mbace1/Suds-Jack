@@ -7,29 +7,29 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=25';
-import { buildFloor } from './render/floor.js?v=25';
-import { fitCamera, screenToWorld } from './render/view.js?v=25';
-import * as worldsSim from './sim/worlds.js?v=25';
-import * as reshapeSim from './sim/reshape.js?v=25';
-import { Scenery } from './render/scenery.js?v=25';
-import { Transit } from './render/transit.js?v=25';
-import { Splats } from './render/splats.js?v=25';
-import { Actors } from './render/actors.js?v=25';
-import { GEL_TIME } from './render/gel.js?v=25';
-import { studioEnvironment } from './render/env.js?v=25';
-import { Specimen } from './render/specimen.js?v=25';
-import { createWorld, step, api as simApi } from './sim/world.js?v=25';
-import { stage as stagePk } from './sim/pickups.js?v=25';
-import { Input } from './input.js?v=25';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=25';
-import { Announcer } from './announcer.js?v=25';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=25';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=25';
-import { Sound } from './audio.js?v=25';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=25';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=25';
-import { Readout } from './readout.js?v=25';
+import { TUNING } from './tuning.js?v=26';
+import { buildFloor } from './render/floor.js?v=26';
+import { fitCamera, screenToWorld } from './render/view.js?v=26';
+import * as worldsSim from './sim/worlds.js?v=26';
+import * as reshapeSim from './sim/reshape.js?v=26';
+import { Scenery } from './render/scenery.js?v=26';
+import { Transit } from './render/transit.js?v=26';
+import { Splats } from './render/splats.js?v=26';
+import { Actors } from './render/actors.js?v=26';
+import { GEL_TIME } from './render/gel.js?v=26';
+import { studioEnvironment } from './render/env.js?v=26';
+import { Specimen } from './render/specimen.js?v=26';
+import { createWorld, step, api as simApi } from './sim/world.js?v=26';
+import { stage as stagePk } from './sim/pickups.js?v=26';
+import { Input } from './input.js?v=26';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=26';
+import { Announcer } from './announcer.js?v=26';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=26';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=26';
+import { Sound } from './audio.js?v=26';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=26';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=26';
+import { Readout } from './readout.js?v=26';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -396,7 +396,7 @@ const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY)
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=25`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=26`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -430,13 +430,37 @@ function useRoom(w) {
   const hx = w.hx, hz = w.hz, sh = w.region?.shape;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
-  const rail = T.campaign.worlds[w.room.world]?.rail;
-  floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', film: actors.gooKit.film, region: sh ? regionSlots(sh) : null, regionRail: rail });
-  if (rail != null) floor.border.material.color.setHex(rail);
+  const WD = T.campaign.worlds[w.room.world], rail = WD?.rail;
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', film: actors.gooKit.film, region: sh ? regionSlots(sh) : null, regionRail: rail, colors: WD?.base ? { base: WD.base, gridHi: WD.gridHi } : null });
+  if (rail != null) floor.setRail(rail);
   scene.add(floor.group);
   scenery.build(1, hx, hz);
   camAt.set(0, 0, 0);
   resize();
+}
+
+// a campaign world's rule, as the view draws it (sim/rules.js): the rail
+// flashes while a sweep or an updraft is coming, and THE VOID's dark closes
+// in round the hero — the far side of the room goes black, as 1.x's fog did
+const darkEl = Object.assign(document.createElement('div'), { id: 'dark' });
+darkEl.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:1;opacity:0';
+document.body.appendChild(darkEl);
+const _hp = new THREE.Vector3(), _hq = new THREE.Vector3();
+function ruleFrame() {
+  const S = world?.rule, WD = world?.room ? T.campaign.worlds[world.room.world] : null;
+  if (!S || !WD || state === 'menu') { if (darkEl.style.opacity !== '0') darkEl.style.opacity = '0'; return; }
+  if (S.warnT > 0 && roomFloor) floor.setRail(WD.rail, 0.35 + 0.45 * Math.abs(Math.sin(S.warnT * 14)));
+  else if (roomFloor) floor.setRail(WD.rail);
+  if (S.kind === 'dark') {
+    const D = T.campaign.rules.dark, k = S.dark * (reduceMotion() ? 0.45 : 1), h = world.hero;
+    // world units to pixels at the hero, so the dark's radii are the room's
+    _hp.set(h.x, 0, h.z).project(camera); _hq.set(h.x + 1, 0, h.z).project(camera);
+    const W = innerWidth, H = innerHeight, px = (_hp.x * 0.5 + 0.5) * W, py = (0.5 - _hp.y * 0.5) * H, unit = Math.abs(_hq.x - _hp.x) * 0.5 * W;
+    const far = Math.max(W, H) * 1.2, near = D.near * unit, rim = D.far * unit;
+    const r0 = near + (far - near) * (1 - k), r1 = rim + (far * 1.4 - rim) * (1 - k);
+    darkEl.style.background = `radial-gradient(circle at ${px.toFixed(0)}px ${py.toFixed(0)}px, rgba(0,0,0,0) ${r0.toFixed(0)}px, rgba(1,1,4,0.94) ${Math.max(r0 + 1, r1).toFixed(0)}px)`;
+    darkEl.style.opacity = '1';
+  } else if (darkEl.style.opacity !== '0') darkEl.style.opacity = '0';
 }
 
 function pause() { if (state !== 'play') return; state = 'paused'; input.enabled = false; ui.pause(T.species[world?.killedBy] ? world.killedBy : null); }
@@ -589,7 +613,7 @@ const debug = {
   // stopped, so each touch event is delivered on its own rather than
   // coalesced behind a slow software-GPU frame
   loop(on) { capture.on = !on; },
-  start, pause, resume, toMenu, specimen,
+  start, pause, resume, toMenu, specimen, room: (id) => startRoom(id), get rule() { return world?.rule ?? null; },
   // the GELS style ('classic' | 'sdf'), for the smoke and the captures; the readout
   get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel(); }, readout,
   // Look checks for one species (test/lookshot.mjs): a quiet arena with only
@@ -716,6 +740,7 @@ function frame(now, dtFixed) {
   } else { floor.setPlayer(0, 0); actors.light.clear(); }
   transit.frame(world, floor);
   if (world && boundsFloor) survivalFrame();
+  ruleFrame();
   trauma = Math.max(0, trauma - T.shake.decay * dt);
   const m = trauma * trauma, A = T.shake.amp, F = T.shake.freq;
   follow(dt, world && state === 'play' ? acc / T.sim.dt : 1);

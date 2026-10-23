@@ -9,7 +9,7 @@
 // same to its region). It ends with
 //   roomEnd  { id, outcome: 'clear' | 'dead', grade, kills, hits, time, score }
 // and w.over, as a death does. Every number is TUNING.campaign.
-import { TUNING } from '../../tuning.js?v=25';
+import { TUNING } from '../../tuning.js?v=26';
 
 const T = TUNING, C = T.campaign, ORDER = ['F', 'C', 'B', 'A', 'S'];
 

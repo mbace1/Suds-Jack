@@ -14,18 +14,19 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=25';
-import { makeRng } from './rng.js?v=25';
-import { BEHAVIOUR } from './species/index.js?v=25';
-import { DIRECTORS } from './director/index.js?v=25';
-import * as fire from './fire.js?v=25';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=25';
-import { swarmForces, resolveCrowd } from './crowd.js?v=25';
-import { revengeColor } from './color.js?v=25';
-import * as pickups from './pickups.js?v=25';
-import * as worlds from './worlds.js?v=25';
-import * as reshape from './reshape.js?v=25';
-import { Arena, levelShape, KIND } from './shape.js?v=25';
+import { TUNING } from '../tuning.js?v=26';
+import { makeRng } from './rng.js?v=26';
+import { BEHAVIOUR } from './species/index.js?v=26';
+import { DIRECTORS } from './director/index.js?v=26';
+import * as fire from './fire.js?v=26';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=26';
+import { swarmForces, resolveCrowd } from './crowd.js?v=26';
+import { revengeColor } from './color.js?v=26';
+import * as pickups from './pickups.js?v=26';
+import * as worlds from './worlds.js?v=26';
+import * as reshape from './reshape.js?v=26';
+import { Arena, levelShape, KIND } from './shape.js?v=26';
+import * as rules from './rules.js?v=26';
 
 const T = TUNING;
 
@@ -64,6 +65,7 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
   // a run started in a later world rolls in at that world's first wave
   if (world > 1 && worlds.on(w)) { w.dir.wave = (world - 1) * T.waves.rhythm.bossEvery; w.dir.gapT = 1e-9; }
   if (reshape.on(w)) reshape.create(w);   // SURVIVAL starts small and changes size as you play
+  rules.create(w);                        // a campaign world's one rule (sim/rules.js)
   return w;
 }
 
@@ -139,6 +141,7 @@ export function step(w, input) {
     w.director.step(w, dt, api);
     pickups.afterDirector(w, dt);
     heroStep(w, input, dt, api);
+    rules.step(w, dt, api);
     swarmForces(w, dt);
     for (const g of w.gels.slice()) gelStep(w, g, dt);
     applyPull(w);
@@ -313,7 +316,7 @@ function bulletsStep(w, dt) {
       b.vx = Math.cos(a) * b.speed; b.vz = Math.sin(a) * b.speed;
     }
     b.x += b.vx * dt; b.z += b.vz * dt;
-    if ((b.life -= dt) <= 0 || Math.abs(b.x) > HX || Math.abs(b.z) > HZ || (w.region && w.region.sdf(b.x, b.z) > 1.5)) b.dead = true;
+    if ((b.life -= dt) <= 0 || Math.abs(b.x) > HX || Math.abs(b.z) > HZ || (w.region && b.src !== 'sweep' && w.region.sdf(b.x, b.z) > 1.5)) b.dead = true;
   }
 }
 

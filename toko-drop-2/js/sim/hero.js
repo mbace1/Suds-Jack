@@ -21,8 +21,9 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=25';
-import { BEHAVIOUR } from './species/index.js?v=25';   // read at run time only (a species' hitTest)
+import { TUNING } from '../tuning.js?v=26';
+import { BEHAVIOUR } from './species/index.js?v=26';   // read at run time only (a species' hitTest)
+import { slip } from './rules.js?v=26';   // THE FOAM's slick floor
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -112,8 +113,9 @@ export function heroStep(w, input, dt, api) {
     if ((h.ghostT -= dt) <= 0) { h.ghostT = L.ghost.every; w.events.push({ type: 'ghost', x: h.x, z: h.z, k: h.dashK }); }
     if (h.dash <= 0) h.dashCd = h.dashV > 0 ? h.dashCdNext : H.dashCooldown;
   } else {
-    // no acceleration: the stick is the velocity, even through mercy
-    h.x += mx * H.speed * dt; h.z += mz * H.speed * dt;
+    // no acceleration: the stick is the velocity, even through mercy — but
+    // on THE FOAM's slick floor the stick is where you accelerate (sim/rules.js)
+    if (!slip(w, mx, mz, H.speed, dt)) { h.x += mx * H.speed * dt; h.z += mz * H.speed * dt; }
   }
 
   // 4. mercy (player.js:326-333), the squash spring (362-365), the clamp (367-369)

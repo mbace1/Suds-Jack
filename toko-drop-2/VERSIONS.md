@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v26 — 2026-10-23
+**The campaign's six worlds wear their own floors and play by their one rule each, as in 1.x**
+- Each world's floor colour and rail are 1.x's depth looks: THE SURFACE, THE WELL (teal), THE VEIN (red), THE VOID (near-black), THE FOAM (pale aqua), THE KILN (amber)
+- ONE RULE PER WORLD (1.x v264, `js/sim/rules.js`), drawn from the run's own seed so a room replays exactly:
+  - THE WELL — the whole floor drifts on a current that slowly turns; you feel it as a lean to correct
+  - THE VEIN — the rail flashes, then fires a line of shots across the room with a gap in it to run to
+  - THE VOID — the dark closes in round you and opens again on a 9 s breath (gentler under REDUCE MOTION)
+  - THE FOAM — the floor is slick: the stick sets where you accelerate, so you slide on after letting go
+  - THE KILN — the rail flashes, then the floor shoves everything out from the middle
+  - THE SURFACE keeps none: it is where the game is taught
+- Gates: `test/campaign.mjs` 170 (+10: each rule does what it says, only in its world, and replays from the seed)
+- Cache tokens `?v=25` → `?v=26`; HUD label → `2.0 · v26`
+
+---
+
 ## v25 — 2026-10-23
 **THE CAMPAIGN, from 1.x: eighteen rooms in six worlds, each with its own clock and goal, graded S to F**
 - CAMPAIGN on the title opens the room list (1.x v263-v265): six worlds of three rooms, a world not reached yet one locked line, each room with what it asks and its best grade. A room opens when the one before it is graded above F

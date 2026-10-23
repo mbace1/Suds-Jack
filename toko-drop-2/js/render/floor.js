@@ -21,8 +21,10 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=25';
-import { noise } from './scenery.js?v=25';
+import { GEL_TIME } from './gel.js?v=26';
+import { noise } from './scenery.js?v=26';
+
+const _white = new THREE.Color(0xffffff);
 
 // `light` (optional) is the arena's light map (render/light.js): its rgb is
 // light thrown on the floor, its alpha the shadow of what stands on it.
@@ -37,13 +39,16 @@ import { noise } from './scenery.js?v=25';
 // up to four rects and circles, joined or intersected. Outside it the floor
 // is the void, and its edge is drawn as 1.x's rail (`regionRail`), the box's
 // rail hidden.
-export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds = false, film = null, region = null, regionRail = null } = {}) {
+// `colors` ({ base, gridHi } sRGB 0..1): a campaign world's own floor (1.x's depth looks).
+export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds = false, film = null, region = null, regionRail = null, colors = null } = {}) {
   const F = T.floor, LF = T.light.arena.floor;
   const group = new THREE.Group();
 
   const player = uniform(new THREE.Vector2(0.5, 0.5));   // the hero, in floor uv
   const gridX = uniform((hx * 2) / F.gridCell), gridZ = uniform((hz * 2) / F.gridCell);
   const base = uniform(new THREE.Color(F.base)), gridLo = uniform(new THREE.Color(F.gridLo)), gridHi = uniform(new THREE.Color(F.gridHi));
+  // 1.x's numbers are the screen's (sRGB 0..1: its SURFACE base is 2.0's own 0x14142b)
+  if (colors) { const sr = THREE.SRGBColorSpace; base.value.setRGB(...colors.base, sr); gridHi.value.setRGB(...colors.gridHi, sr); gridLo.value.setRGB(...colors.base.map((c) => Math.min(1, c * 1.6)), sr); }
   // The start intro (intro/intro.js) lets the floor RUN OUT of the drop that
   // lands on it: outside `revealR` (world units from `revealAt`) the floor is
   // the void, and a bright front rides the edge with the grid lit up behind
@@ -333,6 +338,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   return {
     group, arena, border, style, bounds,
     reveal: { at: revealAt, r: revealR, front: revealFront, void: voidCol },
+    // the rail's colour, lerped toward white by k (a world rule's warning flash)
+    setRail(hex, k = 0) { const c = railCol.value.setHex(hex).lerp(_white, Math.max(0, Math.min(1, k))); border.material.color.copy(c); },
     swirl: { k: swirl, at: swirlAt, r: swirlR, hole },
     // the light pool follows the hero (world x, z → floor uv)
     setPlayer(x, z) { player.value.set((x + hx) / (2 * hx), (hz - z) / (2 * hz)); },
