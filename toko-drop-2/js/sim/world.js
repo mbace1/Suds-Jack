@@ -14,15 +14,16 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=18';
-import { makeRng } from './rng.js?v=18';
-import { BEHAVIOUR } from './species/index.js?v=18';
-import { DIRECTORS } from './director/index.js?v=18';
-import * as fire from './fire.js?v=18';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=18';
-import { swarmForces, resolveCrowd } from './crowd.js?v=18';
-import { revengeColor } from './color.js?v=18';
-import * as pickups from './pickups.js?v=18';
+import { TUNING } from '../tuning.js?v=19';
+import { makeRng } from './rng.js?v=19';
+import { BEHAVIOUR } from './species/index.js?v=19';
+import { DIRECTORS } from './director/index.js?v=19';
+import * as fire from './fire.js?v=19';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=19';
+import { swarmForces, resolveCrowd } from './crowd.js?v=19';
+import { revengeColor } from './color.js?v=19';
+import * as pickups from './pickups.js?v=19';
+import * as worlds from './worlds.js?v=19';
 
 const T = TUNING;
 
@@ -31,9 +32,14 @@ const T = TUNING;
 // and every non-boss body's hit points ×
 // hpMult (the "bullet sponge" test; scores are unchanged). `gateUsed`: the
 // player has dashed a gate before, so no gate wears the DASH THROUGH! hint.
-export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, dashMode = 'pass', hpMult = 1, gateUsed = false } = {}) {
+// `shape` is the run's screen shape, which picks every later world's arena
+// as `arena` picks world 1's; `world` starts the run further on (a test, or
+// ?world=), at that world's first wave.
+export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landscape, shape = 'landscape', world = 1, dashMode = 'pass', hpMult = 1, gateUsed = false } = {}) {
+  if (world > 1) arena = worlds.arenaFor(world, shape);
   const w = {
     seed, mode, dashMode, hpMult, rng: makeRng(seed), rngFx: makeRng((seed ^ 0x5bd1e995) >>> 0), tick: 0, time: 0, over: false,
+    shape, world, trans: null, lastBoss: null,
     hx: arena.hx, hz: arena.hz, hero: makeHero(),
     gels: [], bullets: [], lobs: [], hazards: [], events: [],
     heroBullets: 0, gelBullets: 0, refused: 0,
@@ -43,6 +49,8 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
   w.pk = pickups.create(w, { gateUsed });   // 1.x's classic pickups (sim/pickups.js)
   w.director = DIRECTORS[mode] ?? DIRECTORS.arcade;
   w.dir = w.director.create(w, api);
+  // a run started in a later world rolls in at that world's first wave
+  if (world > 1 && worlds.on(w)) { w.dir.wave = (world - 1) * T.waves.rhythm.bossEvery; w.dir.gapT = 1e-9; }
   return w;
 }
 
@@ -57,12 +65,14 @@ export const api = {
   },
   spawn: (w, kind, x, z, opts) => spawn(w, kind, x, z, opts),
   // a point on the ellipse at `frac` of the arena, at `angle`; with
-  // `clear`, the farthest of a few tries from the hero
+  // `clear`, the farthest of a few tries from the hero. On a floor bigger
+  // than world 1's the ellipse is world 1's, round the hero (worlds.spawnFrame)
   ringPoint(w, angle, frac, clear = 0) {
     let best = null, bd = -1;
+    const F = worlds.spawnFrame(w);
     for (let i = 0; i < (clear ? 6 : 1); i++) {
       const a = i === 0 ? angle : w.rng.range(0, Math.PI * 2);
-      const x = Math.cos(a) * w.hx * frac, z = Math.sin(a) * w.hz * frac;
+      const x = F.cx + Math.cos(a) * F.hx * frac, z = F.cz + Math.sin(a) * F.hz * frac;
       const d = Math.hypot(x - w.hero.x, z - w.hero.z);
       if (d > bd) { bd = d; best = { x, z }; }
       if (d > clear) break;
@@ -110,22 +120,25 @@ export function step(w, input) {
   for (const b of w.bullets) { b.px = b.x; b.pz = b.z; }
   for (const l of w.lobs) { l.px = l.x; l.pz = l.z; }
 
-  w.director.step(w, dt, api);
-  pickups.afterDirector(w, dt);
-  heroStep(w, input, dt, api);
-  swarmForces(w, dt);
-  for (const g of w.gels.slice()) gelStep(w, g, dt);
-  applyPull(w);
-  resolveCrowd(w, dt);
-  for (const g of w.gels) { g.nudgedX += g.knockDX || 0; g.nudgedZ += g.knockDZ || 0; g.knockDX = g.knockDZ = 0; }
-  bulletsStep(w, dt);
-  lobsStep(w, dt);
-  hazardsStep(w, dt);
-  heroBulletsHit(w);
-  pickups.mothsHit(w);
-  gelBulletsHit(w);
-  contacts(w);
-  pickups.step(w, dt, api);
+  if (w.trans) worlds.step(w, dt);   // between two worlds the run is held, and the hero is the transition's
+  else {
+    w.director.step(w, dt, api);
+    pickups.afterDirector(w, dt);
+    heroStep(w, input, dt, api);
+    swarmForces(w, dt);
+    for (const g of w.gels.slice()) gelStep(w, g, dt);
+    applyPull(w);
+    resolveCrowd(w, dt);
+    for (const g of w.gels) { g.nudgedX += g.knockDX || 0; g.nudgedZ += g.knockDZ || 0; g.knockDX = g.knockDZ = 0; }
+    bulletsStep(w, dt);
+    lobsStep(w, dt);
+    hazardsStep(w, dt);
+    heroBulletsHit(w);
+    pickups.mothsHit(w);
+    gelBulletsHit(w);
+    contacts(w);
+    pickups.step(w, dt, api);
+  }
 
   // bookkeeping
   if (w.bullets.some((b) => b.dead)) {
@@ -146,19 +159,24 @@ function spawn(w, kind, x, z, o = {}) {
   if (o.variant === 'elite') { r *= V.elite.radius; if (!S.noHpMult) hp = Math.ceil(hp * V.elite.hp); }
   else if (o.variant === 'elitelite' && !S.noHpMult) hp = Math.ceil(hp * V.elitelite.hp);
   if (o.isBoss) r *= V.boss.radius;
+  // HEAVY (TUNING.worlds.heavy): a later world's bigger, tougher body
+  else if (o.heavy) { r *= T.worlds.heavy.radius; if (!S.noHpMult) hp = Math.ceil(hp * T.worlds.heavy.hp); }
   if (o.hp != null) hp = o.hp;
   if (!o.isBoss && w.hpMult !== 1) hp = Math.max(1, Math.round(hp * w.hpMult));
   const g = {
     id: w.nextId++, kind, x, z, px: x, pz: z, vx: 0, vz: 0, kx: 0, kz: 0, velX: 0, velZ: 0,
     r, hp, maxHp: hp, state: 'active', t: 0, alive: true,
     flash: 0, sq: 1, sqV: 0, speedMult: o.speedMult ?? 1, intervalMult: o.intervalMult ?? 1,
-    variant: o.variant ?? 'normal', affix: o.affix ?? null, anchored: o.affix === 'anchored', isBoss: !!o.isBoss, child: !!o.child,
+    variant: o.variant ?? 'normal', affix: o.affix ?? null, anchored: o.affix === 'anchored', isBoss: !!o.isBoss, child: !!o.child, heavy: !!o.heavy && !o.isBoss,
     shield: false, surgeT: 0, surgeMult: 1, cloak: 0, tell: 0, faceX: 0, faceZ: 1, dashedBy: -1, shovedBy: -1,
     dodgeCd: 0, dodgeT: 0, dodgeVx: 0, dodgeVz: 0, mvPhase: w.rngFx.range(0, Math.PI * 2), mvSide: w.rngFx.next() < 0.5 ? 1 : -1,
     nudgedX: 0, nudgedZ: 0, s: {},
   };
   w.gels.push(g);
   BEHAVIOUR[kind].init?.(w, g, api, o);
+  // a species that sizes itself (BAMBU's and SLUG's segments, PYRA's holes)
+  // throws a heavy spawn's size and hp away: it is not heavy, then
+  if (g.heavy && (g.r !== r || g.maxHp !== hp)) g.heavy = false;
   w.events.push({ type: 'spawn', id: g.id, x, z, kind, boss: g.isBoss, ping: !!o.ping });
   // dangerous from its first step, as 1.x's bodies were (owner, 2026-10-22):
   // it lands now, and its swell in (TUNING.gel.swell) is the view's alone. A
@@ -211,6 +229,7 @@ function kill(w, g, src = 'hero') {
   w.score += Math.round(T.score.perKill * w.streak * (hard ? T.revenge.scoreMult : 1) * pickups.scoreMult(w));
   pickups.onKill(w, g);             // the bounty pays (1.x main.js:4436-4448)
   w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src });
+  if (g.isBoss) w.lastBoss = { x: g.x, z: g.z };   // where a later world's drain opens
   BEHAVIOUR[g.kind].onKill?.(w, g, api, src);
   // a big death shakes the bodies around it (1.x main.js:4517-4540) — the ones
   // alive at the kill, so never a brood still waiting out a pop, this body's or

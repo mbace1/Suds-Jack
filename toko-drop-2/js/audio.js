@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=18';
+import { TUNING } from './tuning.js?v=19';
 
 const A = TUNING.audio;
 
@@ -73,6 +73,13 @@ export class Sound {
       case 'weapon': [0, 0.08, 0.16].forEach((w, i) => this._tone('square', 660 * [1, 1.25, 1.5][i], 660 * [1, 1.25, 1.5][i], 0.12, 0.06, w)); break;
       case 'curtainWarn': this._tone('sawtooth', 300, 420, 0.25, 0.12); break;
       case 'clear': this._tone('triangle', 520, 780, 0.3, 0.1); break;
+      // a world change (sim/worlds.js): the floor goes down the plughole —
+      // a long falling gurgle — and the droplet lands in the next world with
+      // a plop, and a rising three-note for the new place
+      case 'worldOut': this._hiss(2.4, 0.22, 1800, 90, 2); this._tone('sawtooth', 330, 38, 2.6, 0.1); this._tone('sine', 90, 30, 2.2, 0.16, 0.4); break;
+      case 'worldLand':
+        this._tone('sine', 640, 130, 0.2, 0.22); this._hiss(0.22, 0.14, 1400, 300);
+        [392, 523, 659].forEach((f, i) => this._tone('triangle', f, f, 0.22, 0.09, 0.25 + i * 0.12)); break;
       case 'hurt': this._tone('sawtooth', 160, 45, 0.4, 0.2); this._hiss(0.3, 0.2, 600, 120); break;
 
       // the pickups' voices, as 1.x reused them (audio.js:242-292, 374-377):

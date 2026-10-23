@@ -3,7 +3,7 @@
 // revengeColor is 1.x's corpse-fire palette (main.js:4338-4356): the species'
 // bullet colour (or its body colour) shifted in HSL, read in LINEAR space as
 // three's Color does, so a corpse's fire reads apart from the living fire.
-import { TUNING } from '../tuning.js?v=18';
+import { TUNING } from '../tuning.js?v=19';
 
 const toLin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
 const toSrgb = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);

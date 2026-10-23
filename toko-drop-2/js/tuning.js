@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=18';
-import WAVES from './tuning/waves.js?v=18';
-import PICKUPS from './tuning/pickups.js?v=18';
+import { SPECIES } from './tuning/species/index.js?v=19';
+import WAVES from './tuning/waves.js?v=19';
+import PICKUPS from './tuning/pickups.js?v=19';
 
 export const TUNING = {
   render: {
@@ -24,6 +24,56 @@ export const TUNING = {
     portrait:  { hx: 11, hz: 18, tiltDeg: 41.6 },   // 22 x 36; camera ray atan(24/27)
   },
 
+  // WORLDS (owner, 2026-10-23): ARCADE and HARDCADE go somewhere. Beat a
+  // world's boss (its last wave is its boss wave, every waves.rhythm.bossEvery)
+  // and the floor swallows the droplet: world 1's grid twists into a drain
+  // VORTEX, world 2's driveway opens a DRAIN where the boss died. The droplet
+  // goes down it and drops into the next world. 1.x's arena is world 1;
+  // the driveway is bigger than the screen, with a curb and the lawn beyond
+  // it, and the camera follows (owner: "bigger driveway, camera follows");
+  // the sewer is a long tunnel. From world 2 a share of the bodies arrive
+  // HEAVY (owner: "slightly bigger and more durable"): the gels you know,
+  // bigger, tougher and darker. Half sizes, per the run's screen shape; a
+  // world's tilt is its shape's own (the view fits the screen as world 1).
+  worlds: {
+    modes: ['arcade', 'hardcade'],
+    list: [
+      { id: 'grid', heavy: 0 },
+      { id: 'driveway', heavy: 0.35, arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
+      { id: 'sewer', heavy: 0.5, arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
+    ],
+    heavy: { radius: 1.3, hp: 2 },   // × a normal body's; not an elite's, a boss's or a child's
+    heavyLook: { darken: 0.55 },     // its colour (and what light becomes inside it) × this: denser
+    // the transition, in seconds: pulled round and in to the hole, sinking
+    // into it, the dark, the drop falling into the next world, the beat
+    // before the next wave's breather starts. `spin` turns the pull makes.
+    trans: { pull: 1.9, sink: 0.6, dark: 0.45, fall: 0.95, settle: 0.7, spin: 1.6, grace: 1.0, drainInset: 3 },
+    // how a world change looks (render/transit.js): the droplet falls from
+    // `fallH` m; the light comes back over `lightUp` of the fall; the floor
+    // runs out of it over `reveal` s; the vortex's hole and the drain's swirl
+    // and hole, in m; the drain rises out of the slab over `drainRise` s
+    view: { fallH: 14, splashRing: 4.5, banner: 2.4, vortexHole: 1.9, drainSwirl: 5.5, drainHole: 0.55, drainRise: 0.35, lightUp: 0.45, reveal: 1.3, sceneryAt: 0.45 },
+    // the floors (render/floor.js `style`), linear rgb. The swirl winds the
+    // floor `twist` rad at the drain, falling off as (1 − r/R)^falloff, and
+    // draws it `pull` × in toward it
+    floor: {
+      swirl: { falloff: 1.4, twist: 9, pull: 0.8 },
+      concrete: { lo: [0.03, 0.031, 0.034], hi: [0.075, 0.074, 0.076], speck: [0.028, 0.028, 0.03], oil: [0.012, 0.012, 0.014], oilDepth: 0.45,
+                  lip: [0.11, 0.11, 0.11], joint: 4.0, jointW: 0.025, flood: 0.85, ambient: 0.6, floodTint: [1.0, 0.6, 0.25] },
+      sewer: { stone: [0.034, 0.04, 0.046], groutCol: [0.007, 0.008, 0.01], water: [0.003, 0.011, 0.013], waterHi: [0.05, 0.17, 0.16],
+               kerb: [0.06, 0.06, 0.062], channel: 2.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9 },
+    },
+  },
+  // what stands round a world's floor (render/scenery.js). Colours are
+  // linear rgb; the lawn and the slab are pictures, the rest is lit.
+  scenery: {
+    driveway: { lawnOut: 12, bladeScale: 11, tuftScale: 1.1, stripe: 1.8, grassLo: [0.035, 0.085, 0.04], grassHi: [0.09, 0.19, 0.07], fade: 8,
+                curb: [0.5, 0.5, 0.48], curbWidth: 0.4, curbHeight: 0.2, curbJoint: 2.4 },
+    sewer: { brick: [0.44, 0.15], brickColor: [0.3, 0.15, 0.11], mortar: [0.07, 0.07, 0.08], damp: 0.7, wallHeight: 1.2, wallThick: 0.6, beyond: 4,
+             bar: 0x34383e, barR: 0.05, barGap: 0.42, barHeight: 1.7 },
+    drain: { r: 0.95, bars: 6, iron: 0x2a2d32 },
+  },
+
   // One fixed view of the whole arena, refitted on every resize and rotation.
   camera: {
     fov: 60,                // 1.x's vertical FOV
@@ -34,6 +84,12 @@ export const TUNING = {
     // the HUD sits over the far edge's empty corners and the pause button
     // was already over its middle, so a few px is all the arena needs
     margin: { x: 10, y: 8 },
+    // a world bigger than the screen (sim/worlds.js): the camera follows the
+    // hero, easing over `tau` s, and at a side shows `edge` m past the floor
+    // (the curb, the lawn) — no further
+    follow: { tau: 0.22, edge: 2.5 },
+    // and the bodies it leaves off screen: an arrow on the edge, `inset` px in
+    pips: { inset: 14, max: 40, fade: 0.8, minAlpha: 0.35 },
     searchMin: 5,
     searchMax: 200,
   },

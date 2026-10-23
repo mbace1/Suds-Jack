@@ -21,8 +21,8 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=18';
-import { BEHAVIOUR } from './species/index.js?v=18';   // read at run time only (a species' hitTest)
+import { TUNING } from '../tuning.js?v=19';
+import { BEHAVIOUR } from './species/index.js?v=19';   // read at run time only (a species' hitTest)
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -49,6 +49,7 @@ export function makeHero() {
     weapon: null,
     burst: [],                   // 1.x _burstQueue: a BURST's rounds still owed, { t, dx, dz }
     pullX: 0, pullZ: 0,          // MAGNA and friends add here; applied after the bodies move
+    sink: 0, fall: 0,            // between worlds (worlds.js): down the hole 0 → 1, then dropping in 1 → 0
   };
 }
 

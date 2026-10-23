@@ -7,21 +7,24 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=18';
-import { buildFloor } from './render/floor.js?v=18';
-import { fitCamera, screenToWorld } from './render/view.js?v=18';
-import { Splats } from './render/splats.js?v=18';
-import { Actors } from './render/actors.js?v=18';
-import { GEL_TIME } from './render/gel.js?v=18';
-import { studioEnvironment } from './render/env.js?v=18';
-import { createWorld, step, api as simApi } from './sim/world.js?v=18';
-import { stage as stagePk } from './sim/pickups.js?v=18';
-import { Input } from './input.js?v=18';
-import { UI, t, timeText } from './ui.js?v=18';
-import { Sound } from './audio.js?v=18';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=18';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=18';
-import { Readout } from './readout.js?v=18';
+import { TUNING } from './tuning.js?v=19';
+import { buildFloor } from './render/floor.js?v=19';
+import { fitCamera, screenToWorld } from './render/view.js?v=19';
+import * as worldsSim from './sim/worlds.js?v=19';
+import { Scenery } from './render/scenery.js?v=19';
+import { Transit } from './render/transit.js?v=19';
+import { Splats } from './render/splats.js?v=19';
+import { Actors } from './render/actors.js?v=19';
+import { GEL_TIME } from './render/gel.js?v=19';
+import { studioEnvironment } from './render/env.js?v=19';
+import { createWorld, step, api as simApi } from './sim/world.js?v=19';
+import { stage as stagePk } from './sim/pickups.js?v=19';
+import { Input } from './input.js?v=19';
+import { UI, t, timeText } from './ui.js?v=19';
+import { Sound } from './audio.js?v=19';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=19';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=19';
+import { Readout } from './readout.js?v=19';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -63,8 +66,13 @@ if (T.env.on) { scene.environment = studioEnvironment(); scene.environmentIntens
 
 const splats = new Splats(scene);
 const actors = new Actors(scene, splats);
+const scenery = new Scenery(scene, T);   // the curb and the lawn, the sewer's walls (render/scenery.js)
 const camera = new THREE.PerspectiveCamera();
 const camRest = new THREE.Vector3();
+// the point a bigger world's camera follows (zero while the whole arena is
+// on screen): the hero, eased, kept from showing more than T.camera.follow.edge
+// past the floor's edge
+const camAt = new THREE.Vector3();
 let trauma = 0;
 // 1.x's shake: trauma adds up to 1 and decays; the camera moves by its square
 const shake = (amount) => { if (!reduceMotion) trauma = Math.min(1, trauma + amount); };
@@ -88,13 +96,32 @@ const screenAngle = () => {
   try { const a = screen.orientation?.angle ?? window.orientation; return typeof a === 'number' ? a : 0; } catch { return 0; }
 };
 function useArena(name) {
-  if (name === arenaName) return;
+  if (name === arenaName && viewWorld === 1) return;
   arenaName = name; arena = T.arena[name]; angle0 = screenAngle();
+  useWorld(1, arena.hx, arena.hz);
+}
+// the floor of world n (sim/worlds.js), at its size: the view's half of a
+// world change. A world past the first is bigger than the screen, and the
+// camera follows (viewBox)
+let viewWorld = 1;
+const FLOOR_STYLE = ['grid', 'concrete', 'sewer'];   // world n's floor (render/floor.js)
+function useWorld(n, hx, hz) {
+  viewWorld = n;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
-  actors.setArena(arena.hx, arena.hz);
-  floor = buildFloor(T, arena.hx, arena.hz, actors.light.texture);
+  actors.setArena(hx, hz);
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[n - 1] ?? 'grid' });
   scene.add(floor.group);
+  scenery.build(n, hx, hz);
+  camAt.set(0, 0, 0);
   resize();
+}
+// what the camera fits: the whole arena, or on a bigger world's floor, a
+// box the size of the run's own 1.x arena, which it then carries round
+// after the hero (camAt) — so the bodies are the size they were in world 1
+function viewBox() {
+  const A = T.arena[arenaName];
+  if (!world || viewWorld === 1 || (world.hx <= A.hx && world.hz <= A.hz)) return null;
+  return new THREE.Box3(new THREE.Vector3(-A.hx, 0, -A.hz), new THREE.Vector3(A.hx, T.floor.railHeight, A.hz));
 }
 
 function resize() {
@@ -109,8 +136,41 @@ function resize() {
   }
   // a turned arena takes the tilt of the screen it is now on: it lies along
   // that screen's long side, as that screen's own arena would
-  fitCamera(camera, floor.arena, w / h, { ...T.camera, tiltDeg: T.arena[screenArena()].tiltDeg }, turn, { w, h });
+  following = viewBox();
+  fitCamera(camera, following ?? floor.arena, w / h, { ...T.camera, tiltDeg: T.arena[screenArena()].tiltDeg }, turn, { w, h });
   camRest.copy(camera.position);
+}
+let following = null;   // the box the camera carries when it follows; null when the whole arena is on screen
+
+// the bodies a following camera has left off the screen, as arrows on its
+// edge (ui.drawSticks): where the line from the middle of the screen to the
+// body leaves it, `inset` px in, fainter the further off it is
+const _pv = new THREE.Vector3(), _pips = [];
+function offscreen() {
+  const W = innerWidth, H = innerHeight, P = T.camera.pips, cx = W / 2, cy = H / 2;
+  _pips.length = 0;
+  for (const g of world.gels) {
+    if (!g.alive || g.state !== 'active') continue;
+    _pv.set(g.x, 0.5, g.z).project(camera);
+    if (Math.abs(_pv.x) <= 1 && Math.abs(_pv.y) <= 1) continue;
+    const sx = ((_pv.x + 1) / 2) * W, sy = ((1 - _pv.y) / 2) * H, dx = sx - cx, dy = sy - cy;
+    const k = Math.min((W / 2 - P.inset) / Math.max(1e-6, Math.abs(dx)), (H / 2 - P.inset) / Math.max(1e-6, Math.abs(dy)));
+    const off = Math.max(Math.abs(_pv.x), Math.abs(_pv.y)) - 1;
+    _pips.push({ x: cx + dx * k, y: cy + dy * k, a: Math.atan2(dy, dx), hex: T.species[g.kind].color, big: g.isBoss || g.heavy || g.r > 0.9, alpha: Math.max(P.minAlpha, 1 - off * P.fade) });
+    if (_pips.length >= P.max) break;
+  }
+  return _pips;
+}
+
+// the followed point this frame: the hero, eased, held so the view shows at
+// most `edge` of what lies past the floor (the curb and the lawn beyond it)
+function follow(dt, a) {
+  if (!following || !world) { camAt.set(0, 0, 0); return; }
+  const F = T.camera.follow, A = T.arena[arenaName], h = world.hero;
+  const ex = Math.max(0, world.hx - A.hx + F.edge), ez = Math.max(0, world.hz - A.hz + F.edge);
+  const tx = Math.max(-ex, Math.min(ex, h.px + (h.x - h.px) * a)), tz = Math.max(-ez, Math.min(ez, h.pz + (h.z - h.pz) * a));
+  const k = 1 - Math.exp(-dt / F.tau);
+  camAt.x += (tx - camAt.x) * k; camAt.z += (tz - camAt.z) * k;
 }
 
 // ── state ──────────────────────────────────────────────────────────
@@ -162,6 +222,8 @@ const ui = new UI({
   gels: () => gels(), onGels: () => flipGels(),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
+// the view of a world change: the swirl, the dark, the fall, the floor running out (render/transit.js)
+const transit = new Transit(T, { scenery, juice: actors.juice, ui, t });
 
 // The title's GELS switch (render/sdf.js): 'classic' meshes or 'sdf' fields,
 // localStorage toko2.gels. ?gels=sdf|classic overrides it for a link, until
@@ -204,6 +266,7 @@ addEventListener('keydown', skipIntro);
 const padPressed = () => { for (const p of navigator.getGamepads?.() ?? []) if (p?.buttons.some((b) => b.pressed)) return true; return false; };
 
 function toMenu() {
+  transit.reset(floor);
   state = 'menu'; input.enabled = false; ui.setHud(false);
   useArena(screenArena());
   showTitle();
@@ -216,8 +279,11 @@ function start(m, { intro: asked = false } = {}) {
   const test = tests();
   // toko2.gateUsed: this browser has dashed a gate, so the DASH THROUGH! tag
   // is not shown again (1.x's tokoDropGateUsed, main.js:5310, 11166)
-  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1 });
-  splats.clear(); actors.reset(); trauma = 0;
+  // ?world=2 or 3 starts the run in a later world (a test on the phone)
+  const startWorld = Math.max(1, Math.min(3, Number(params.get('world')) || 1));
+  world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, shape: arenaName, world: startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1 });
+  if (world.world > 1) useWorld(world.world, world.hx, world.hz);
+  splats.clear(); actors.reset(); trauma = 0; transit.reset(floor);
   acc = 0; pendingDash = false;
   sound.unlock();
   actors.setGels(gels()); setLabel();
@@ -259,6 +325,8 @@ function finish() {
 let podDown = { tick: -1, text: '' };   // this step's pod knock-down, for the dash's banner
 function onEvent(e) {
   if (e.type === 'dash') lastDash = e;
+  if (e.type === 'worldIn') { useWorld(e.world, e.hx, e.hz); splats.clear(); }   // the next world's floor, under the falling droplet; the last one's puddles went down the drain with it
+  if (e.type.startsWith('world')) transit.onEvent(e, floor, world);
   debug.counts[e.type] = (debug.counts[e.type] || 0) + 1;
   sound.event(e);
   input.feel?.(e);
@@ -332,6 +400,19 @@ const debug = {
   get arena() { return floor.arena; }, splats,
   frames: 0, ready: false, counts: {},
   get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
+  get following() { return !!following; }, get viewWorld() { return viewWorld; }, get floorStyle() { return floor?.style; }, camAt, scenery, transit,
+  arenaFor: (n, shape) => worldsSim.arenaFor(n, shape),
+  // straight on to the next world, as if its boss had just been cleared
+  // (the smoke and the look checks; ?world= starts a run there instead)
+  nextWorld() {
+    if (!world || world.trans || !worldsSim.on(world) || world.world >= worldsSim.last()) return false;
+    for (const g of world.gels) g.alive = false;
+    world.gels = []; world.dir.queue = []; world.dir.gapT = 0; world.dir.wave = world.world * T.waves.rhythm.bossEvery;
+    world.events.length = 0;
+    worldsSim.begin(world);
+    for (const e of world.events) onEvent(e);   // outside a step, so its events are handed on here
+    return true;
+  },
   // stop and restart the drawing: the smoke's flick is thrown with the loop
   // stopped, so each touch event is delivered on its own rather than
   // coalesced behind a slow software-GPU frame
@@ -452,11 +533,13 @@ function frame(now, dtFixed) {
     floor.setPlayer(h.px + (h.x - h.px) * a, h.pz + (h.z - h.pz) * a);
     ui.hud(world);
   } else { floor.setPlayer(0, 0); actors.light.clear(); }
+  transit.frame(world, floor);
   trauma = Math.max(0, trauma - T.shake.decay * dt);
   const m = trauma * trauma, A = T.shake.amp, F = T.shake.freq;
-  if (!debug.freeCam) camera.position.set(camRest.x + Math.sin(time * F[0]) * m * A[0], camRest.y + Math.sin(time * F[1]) * m * A[1], camRest.z + Math.sin(time * F[2]) * m * A[2]);
+  follow(dt, world && state === 'play' ? acc / T.sim.dt : 1);
+  if (!debug.freeCam) camera.position.set(camRest.x + camAt.x + Math.sin(time * F[0]) * m * A[0], camRest.y + Math.sin(time * F[1]) * m * A[1], camRest.z + camAt.z + Math.sin(time * F[2]) * m * A[2]);
   if (state === 'intro') intro.frame(introT, world);   // after sync: the intro poses the hero
-  ui.drawSticks(input);
+  ui.drawSticks(input, following && world && state === 'play' ? offscreen() : null);
   actors.light.render(renderer);   // the arena's light map, which the floor reads
   renderer.render(scene, state === 'intro' ? intro.cam : camera);
   readout.frame(now, state, world);

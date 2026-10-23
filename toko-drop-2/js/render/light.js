@@ -20,7 +20,7 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=18';
+import { TUNING } from '../tuning.js?v=19';
 
 const T = TUNING, A = T.light.arena;
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
@@ -106,7 +106,8 @@ export class ArenaLight {
     }
     let s = 0;
     const S = A.shadow, h = w.hero;
-    if (h.alive) this._put(this.shades, s++, h.px + (h.x - h.px) * alpha, h.pz + (h.z - h.pz) * alpha, T.hero.radius * S.r, 0, 0);
+    // the hero's shadow narrows as it falls into a world from high up, and goes with it down a drain
+    if (h.alive) this._put(this.shades, s++, h.px + (h.x - h.px) * alpha, h.pz + (h.z - h.pz) * alpha, T.hero.radius * S.r * (1 - 0.6 * (h.fall || 0)) * (1 - (h.sink || 0)), 0, 0);
     for (const g of w.gels) {
       if (s >= S.cap) break;
       if (g.state === 'appear' && g.t < 0) continue;              // a brood still waiting out its parent's pop is not there yet

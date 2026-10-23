@@ -21,7 +21,8 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=18';
+import { TUNING } from '../../tuning.js?v=19';
+import * as worlds from '../worlds.js?v=19';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -289,6 +290,9 @@ function pump(w, d, dt, api) {
     const o = { speedMult: s.speedMult, intervalMult: s.intervalMult, variant: s.variant, affix: s.affix,
                 ping: s.shooter || W.ping.includes(s.kind) };
     if (s.boss) { o.isBoss = true; o.hp = S.bossHp ?? (S.noHpMult ? S.hp : Math.ceil(S.hp * W.boss.hpMult)); }
+    // a later world's share of HEAVY bodies (TUNING.worlds): plain bodies
+    // only, and the roll is drawn only there, so world 1 replays as it was
+    else if ((s.variant ?? 'normal') === 'normal' && worlds.heavyShare(w) > 0 && w.rng.next() < worlds.heavyShare(w)) o.heavy = true;
     const g = api.spawn(w, s.kind, p.x + s.ox, p.z + s.oz, o);
     if (s.ox || s.oz) api.clamp(w, g);
     d.present = true;
@@ -364,7 +368,10 @@ function roundEnd(w, d, dt, api) {
     // every frame, so a clear that crosses one shows it here
     while (w.score >= w.nextMilestone) { w.events.push({ type: 'milestone', score: w.nextMilestone }); w.nextMilestone += T.score.milestone; }
     w.events.push({ type: 'clear', wave: d.wave, bonus, dur: W.clear.banner, color: W.clear.color, flash: W.clear.flash });
-    d.gapT = W.clear.breather;
+    // a world's boss wave cleared: the floor opens (sim/worlds.js), and the
+    // breather starts when the droplet has landed in the next world (onWorld)
+    if (worlds.endsWorld(w, d.wave)) { d.present = false; worlds.begin(w); }
+    else d.gapT = W.clear.breather;
   }
 }
 
@@ -390,4 +397,6 @@ export default {
   },
   // 1.x's clear waits for the dying to finish dying (enemy.js:3006-3007)
   onKill(w) { w.dir.dying = W.clear.dying; },
+  // the droplet has landed in the next world: the breather, then its first wave
+  onWorld(w) { w.dir.gapT = W.clear.breather; },
 };

@@ -13,15 +13,15 @@
 // species, so a gel's material is built once and reused, never compiled
 // mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=18';
+import { TUNING } from '../tuning.js?v=19';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=18';
-import { LOOKS } from './looks/index.js?v=18';
-import { JellyBody } from './jelly.js?v=18';
-import { Juice } from './juice.js?v=18';
-import { ArenaLight } from './light.js?v=18';
-import { toSdf } from './sdf.js?v=18';
-import { PickupView } from './pickups.js?v=18';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=19';
+import { LOOKS } from './looks/index.js?v=19';
+import { JellyBody } from './jelly.js?v=19';
+import { Juice } from './juice.js?v=19';
+import { ArenaLight } from './light.js?v=19';
+import { toSdf } from './sdf.js?v=19';
+import { PickupView } from './pickups.js?v=19';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -186,6 +186,20 @@ export class Actors {
     return true;
   }
 
+  // A HEAVY body (sim/worlds.js, from world 2): the gel you know, bigger
+  // (the sim's radius), and denser — a darker colour that light gets less
+  // far into. A pooled view is put back to its own colour for the next body.
+  // The SDF bodies share one material a species, so they are only bigger.
+  _heavy(v, on) {
+    const m = v.mat;
+    if (!m?.color || v.sdf) return;
+    if (!v.base) v.base = { color: m.color.clone(), att: m.attenuationColor?.clone(), dist: m.attenuationDistance };
+    const H = T.worlds.heavyLook;
+    m.color.copy(v.base.color);
+    if (v.base.att) m.attenuationColor.copy(v.base.att);
+    if (on) { m.color.multiplyScalar(H.darken); if (m.attenuationColor) m.attenuationColor.multiplyScalar(H.darken); }
+  }
+
   _take(kind) {
     const v = (this.gels === 'sdf' ? this.poolSdf : this.pool)[kind]?.pop() || this._makeGel(kind);
     v.vx = v.vz = 0; v.hit = 0; v.dyingT = 0;
@@ -292,7 +306,12 @@ export class Actors {
   sync(w, alpha, time) {
     // the hero
     const h = w.hero, hv = this.hero, L = T.heroLook;
-    hv.root.position.set(h.px + (h.x - h.px) * alpha, 0, h.pz + (h.z - h.pz) * alpha);
+    // between worlds (sim/worlds.js): shrinking down the hole, then falling
+    // into the next world from high above, drawn out long by the fall
+    const sink = h.sink || 0, fall = h.fall || 0;
+    hv.root.position.set(h.px + (h.x - h.px) * alpha, fall > 0 ? fall * fall * T.worlds.view.fallH : -sink * 0.5, h.pz + (h.z - h.pz) * alpha);
+    const sk = 1 - 0.9 * sink;
+    hv.root.scale.set(sk * (1 - 0.3 * fall), sk * (1 + 0.7 * fall), sk * (1 - 0.3 * fall));
     hv.squash.scale.set(1 / Math.sqrt(h.sq), h.sq, 1 / Math.sqrt(h.sq));
     hv.eyes.rotation.y = Math.atan2(h.aimX, h.aimZ);
     hv.root.visible = h.alive;
@@ -310,7 +329,7 @@ export class Actors {
     for (const g of w.gels) {
       seen.add(g.id);
       let v = this.views.get(g.id);
-      if (!v) { v = this._take(g.kind); this.views.set(g.id, v); }
+      if (!v) { v = this._take(g.kind); this._heavy(v, g.heavy); this.views.set(g.id, v); }
       v.r = g.r;                                   // its real size: an elite is ×1.2, a boss ×1.5
       const x = g.px + (g.x - g.px) * alpha, z = g.pz + (g.z - g.pz) * alpha;
       v.root.position.set(x, 0, z);

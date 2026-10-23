@@ -19,6 +19,77 @@
     Never `--no-verify`.
 -->
 
+## v19 — 2026-10-23
+**Worlds: the grid goes down a vortex to the driveway, the driveway down a drain to the sewer**
+- **ARCADE and HARDCADE go somewhere** (owner, 2026-10-23: after the first
+  boss the grid becomes a drain vortex and sucks the droplet down onto
+  concrete; after world 2's boss a drainage hole opens and it drops into a
+  new world). `js/sim/worlds.js` owns it, and nothing random enters, so a
+  seed still replays.
+  - A world ends with its boss wave (waves 8 and 16). The clear starts the
+    transition:
+    - the floor opens: world 1's grid at its middle, the driveway where the
+      boss died;
+    - whatever was in the air goes with it;
+    - the droplet is pulled round and in, sinks, and the screen goes dark;
+    - the next world's arena comes in under it, and it falls into it from
+      14 m and lands;
+    - a beat later the next wave's breather starts.
+  - The droplet can't be hurt or steered between worlds. World 3 is the
+    last for now: its boss clears into wave 25 there.
+- **World 2, the driveway** (owner: bigger, the camera follows): 55 × 32
+  instead of 1.x's 38 × 22 (upright, 32 × 55).
+  - The camera keeps world 1's scale and follows you, showing 2.5 m past
+    the floor at a side.
+  - There is a concrete curb along the far side and both long sides with
+    the lawn behind it; at the near side the lawn meets the slab.
+  - The concrete is a night slab: mottled, with aggregate, expansion joints
+    every 4 m, the odd oil stain, and a warm flood from the far end
+    (`render/floor.js` `style`).
+  - Bodies arrive round you as on 1.x's arena (`worlds.spawnFrame`), not
+    40 m away.
+  - Bodies off the screen show as arrows in their colour on its edge.
+- **World 3, the sewer** (owner's pick): a 60 × 22 tunnel.
+  - Wet dark flagstones, and a water channel running down its middle.
+  - Brick walls along both sides, iron bars across both ends, and dark
+    toward them.
+- **HEAVY bodies** (owner: "slightly bigger and more durable", the gels
+  you know): from world 2, a share of the plain bodies arrive at 1.3× the
+  size and 2× the hp, darker and denser.
+  - The share is 35% on the driveway and 50% in the sewer.
+  - Never an elite, a boss or a child, and never a species that sizes
+    itself (BAMBU, SLUG, PYRA).
+  - The roll is drawn only past world 1, so world 1 replays exactly as before.
+- **How it looks** (`render/transit.js`, `render/scenery.js`):
+  - the floor winds up into a vortex (a twist and a pull drawn in the floor
+    shader) round a hole with a lit lip; on the driveway an iron grate rises
+    out of the slab first;
+  - the droplet shrinks into the hole and its shadow goes with it;
+  - out of the dark it falls stretched long, its shadow growing under it,
+    and lands with a splat, a ring and a flash;
+  - the floor runs out of it as the grid ran out of the drop in the start
+    intro, the scenery comes with it, and the world's name shows in three
+    languages;
+  - a falling gurgle on the way down; a plop and three rising notes on
+    landing.
+- `?world=2` or `?world=3` starts a run there. `__toko.nextWorld()` goes
+  straight on.
+- Gates:
+  - `test/worlds.mjs` is new, with 26 checks in bare node: the vortex, the
+    pull, the dark, the swap, the landing, wave 9; world 2's heavy share
+    and sizes; the drain where the boss died; the sewer; the last world and
+    SURVIVAL as controls; two runs from one seed through the vortex
+    identical.
+  - The smoke grows two scenarios: `world2` and `world3`, the latter on
+    WebGL 2 and upright. They check the floor style, the following camera
+    and the scenery.
+  - The landscape and world scenarios each go straight on to the next world
+    and check one of each event, the new floor and the screen back from the
+    dark; world 3 is the control that does not go on.
+- Cache tokens `?v=18` → `?v=19`; HUD label → `2.0 · v19`
+
+---
+
 ## v18 — 2026-10-23
 **The flick dash; the arena bigger and the right way round**
 - **Only a FLICK of the aim stick dashes** (owner, 2026-10-23: a plain
