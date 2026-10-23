@@ -72,7 +72,7 @@
       "id": "last",
       "role": "punchline",
       "at": "s5+0.25",
-      "until": "end-0.2",
+      "until": "end-0.45",
       "hold": "end",
       "text": {
         "en": "Felled: ~330 ha. / Planting planned: / [130 ha].",

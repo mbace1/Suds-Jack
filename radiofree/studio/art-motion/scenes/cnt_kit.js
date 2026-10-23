@@ -359,9 +359,9 @@
     return { x: Math.sin(lt * 2.1) * amp * e, y: Math.cos(lt * 1.7 + 1.2) * amp * 0.8 * e, z: zz, fx: V.fx, fy: V.fy };
   };
   /** the big clipping on frame 0 (and on the last frame, in the same place): torn newsprint, label over the number */
-  function bigClip(c, label, value, { k = 1, a = 1 } = {}) {
+  function bigClip(c, label, value, { k = 1, a = 1, dy = 0 } = {}) {
     if (a <= 0) return;
-    const x = 130, y = 1398, w = 780, h = 206, sc = 1 + 0.05 * (1 - ease.out(k));
+    const x = 130, y = 1398 + dy, w = 780, h = 206, sc = 1 + 0.05 * (1 - ease.out(k));
     c.save(); c.globalAlpha = a; c.translate(x + w / 2, y + h / 2); c.rotate(-0.022); c.scale(sc, sc); c.translate(-w / 2, -h / 2);
     c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 18; c.shadowOffsetX = 9; c.shadowOffsetY = 13;
     c.fillStyle = C.news; c.beginPath(); c.moveTo(0, 0);
@@ -381,7 +381,7 @@
   //            clipping "TREES · THE GUARDIAN'S ESTIMATE / 250,000"; the last lane falls on "Gone." ═════════
   SCENES.cntv_hook = { draw(c, lt) {
     const id = 'cntv_hook', dd = dur(id), tP = at(id, 'gone', 0.7), t0 = tP - HOOK_LEAD;
-    const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)), hits: [tP], kick: 0.035 });
+    const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)) + 0.025 * ease.io((l - tP - 0.2) / (dd - tP - 0.2)), hits: [tP], kick: 0.035 });
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 },
       { d: 0.1, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); insideTrees(g, (t) => (lt - fellV(t, t0)) / 0.16); g.restore(); } },
       { sh: forest(), d: 0.1, lift: 0.9 },
@@ -511,7 +511,9 @@
         if (kL > 0) put(g, patchLabel(), 330, Y_PATCH - 196, { sc: ease.back(kL), rot: -0.03 + swing(lt, [[tH + 0.2, 0.04]]), lift: 1.0 });
         g.restore();
       } }], cam);
-    bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { a: clamp((lt - 0.05) / 0.3, 0, 1) });
+    // the clipping comes back up from below on "back", so the punchline has the frame to itself until then
+    const kC = clamp((lt - tB) / 0.32, 0, 1);
+    bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
     box(c);
   } };
 })();
