@@ -96,7 +96,7 @@ window.LSS = (() => {
   }
 
   // ── the wall of ten, five by two on two shelves ────────────────────────────────────────────────────────────────
-  const TVS = 1.3, COLS = [470, 760], ROWS = [600, 830, 1060, 1290, 1520];
+  const TVS = 1.3, COLS = [470, 760], ROWS = [560, 780, 1000, 1220, 1440];
   const SPOT = ROWS.flatMap((y) => COLS.map((x) => ({ x, y })));
   const LABELLED = [8, 9, 7];   // the three nearest the sheet, in the order they are labelled
   const shelves = () => sheet('lss_shelves', (g) => {
@@ -250,12 +250,12 @@ window.LSS = (() => {
   SCENES['lss_wall'] = { draw(c, lt) {
     const ID = 'lss_wall', tW = D.at(ID, 'wink', 1.6), dur = D.dur(ID);
     const wink = lt < tW ? 0 : Math.min(1, (lt - tW) / 0.12) * Math.exp(-Math.max(0, lt - tW - 0.5) * 1.4);
-    const cam = { x: Math.sin(lt * 0.33) * 6, y: 0, z: D.punch(lt, [tW], { kick: 0.025 }) * lerp(1.0, 1.05, D.ease.io(lt / dur)), fx: 615, fy: 1060 };
-    stack(c, [
+    const cam = { x: Math.sin(lt * 0.33) * 6, y: 0, z: D.punch(lt, [tW], { kick: 0.025 }) * lerp(1.0, 1.05, D.ease.io(lt / dur)), fx: 540, fy: 1000 };
+    stack(c, [                                                                                                   // the tower centred (x − 75): nothing else is in this shot
       { sh: D.room(), d: 0.03, lift: 0 },
-      { fn: (g, ox) => D.stripLight(g, ox, lt), d: 0.04 },
-      { sh: D.shelves(), d: 0.08, lift: 0.7 },
-      { fn: (g, ox) => D.wall(g, ox, lt, { wink }), d: 0.08 },
+      { fn: (g, ox) => D.stripLight(g, ox - 75, lt), d: 0.04 },
+      { sh: D.shelves(), d: 0.08, lift: 0.7, x: -75 },
+      { fn: (g, ox) => D.wall(g, ox - 75, lt, { wink }), d: 0.08 },
     ], cam);
     CW.tag(c, D.ui('tagMid', 'US MIDTERMS 2026'), lt, dur);
     box(c);
@@ -268,11 +268,11 @@ window.LSS = (() => {
     const k = D.ease.io(clamp(lt / 1.5, 0, 1)), M = D.MOS;
     const s = lerp(290 / M.pw, 0.98, k);
     const F = [lerp((M.home[0] + 0.5) * M.pw, (M.cols - 1) / 2 * M.pw, k), lerp((M.home[1] + 2) * M.ph, (M.rows - 1) / 2 * M.ph, k)];
-    const P = [lerp(615, 540, k), lerp(1060, 1080, k)];
+    const P = [540, lerp(1000, 1080, k)];
     const cam = { x: Math.sin(lt * 0.3) * 4, y: 0, z: D.punch(lt, [tN], { kick: 0.03 }), fx: 540, fy: 1000 };
     stack(c, [
       { sh: D.room(), d: 0.03, lift: 0 },
-      { fn: (g, ox) => D.stripLight(g, ox, lt), d: 0.04 },
+      { fn: (g, ox) => D.stripLight(g, ox - 75, lt), d: 0.04 },
       { fn: (g, ox) => {
         for (let r = 0; r < M.rows; r++) for (let q = 0; q < M.cols; q++) {
           const x = P[0] + (q * M.pw - F[0]) * s + ox, y = P[1] + (r * M.ph - F[1]) * s, sc = s * M.pw / 290 * D.TVS;
@@ -291,12 +291,12 @@ window.LSS = (() => {
 
   // 3 · The second fact. A gloved hand holds a sheet of ten MADE WITH AI stickers below the wall. Three fly off it
   // and slap onto three screens (the third on "3 in 10"); then the sheet goes down, into the pocket.
-  const SH = { x: 175, y: 1420, rot: 0.1, s: 0.86 };
+  const SH = { x: 168, y: 1200, rot: 0.1, s: 0.86 };
   const FLY = 0.34;
   SCENES['lss_labels'] = { draw(c, lt) {
     const ID = 'lss_labels', T = [D.at(ID, 'l1', 0.5), D.at(ID, 'l2', 0.9), D.at(ID, 'l3', 1.4)], tP = D.at(ID, 'pocket', 3.6), dur = D.dur(ID);
-    const kP = D.ease.in((lt - tP) / 0.7), shY = SH.y + 760 * kP;
-    const cam = { x: Math.sin(lt * 0.3) * 5, y: 0, z: D.punch(lt, T, { kick: 0.018 }) * lerp(1.0, 1.04, D.ease.io(lt / dur)), fx: 560, fy: 1300 };
+    const kP = D.ease.in((lt - tP) / 0.7), shY = SH.y + 900 * kP;
+    const cam = { x: Math.sin(lt * 0.3) * 5, y: 0, z: D.punch(lt, T, { kick: 0.018 }) * lerp(1.0, 1.04, D.ease.io(lt / dur)), fx: 560, fy: 1200 };
     const used = T.filter((t) => lt >= t - FLY).length;
     const labels = {}; T.forEach((t, n) => { if (lt >= t) labels[D.LABELLED[n]] = { k: 1 + 0.18 * Math.exp(-(lt - t) * 9) * Math.cos((lt - t) * 30), rot: [-0.12, -0.06, -0.15][n] }; });
     stack(c, [
@@ -345,7 +345,7 @@ window.LSS = (() => {
   SCENES['lss_end'] = { draw(c, lt) {
     const ID = 'lss_end', tM = D.at(ID, 'mark', 2.0), tS = D.at(ID, 'said', 3.4), dur = D.dur(ID), M = D.marks();
     const RING = 0.42, GAPR = 0.08, sched = [0, 1, 2].map((n) => tM + n * (RING + GAPR));
-    const cam = { x: Math.sin(lt * 0.26) * 5, y: 0, z: D.punch(lt, [tS], { kick: 0.03 }) * lerp(1.0, 1.05, D.ease.io(lt / dur)), fx: 600, fy: 1200 };
+    const cam = { x: Math.sin(lt * 0.26) * 5, y: 0, z: D.punch(lt, [tS], { kick: 0.03 }) * lerp(1.0, 1.05, D.ease.io(lt / dur)), fx: 600, fy: 1150 };
     const labels = { 8: { k: 1, rot: -0.12 }, 9: { k: 1, rot: -0.06 }, 7: { k: 1, rot: -0.15 } };
     stack(c, [
       { sh: D.room(), d: 0.03, lift: 0 },
@@ -365,7 +365,7 @@ window.LSS = (() => {
         if (pen && pen[1] < 1960) D.marker(g, pen[0], pen[1]);
       }, d: 0.08 },
       { fn: (g, ox) => {                                                                                       // the aide, cropped by the frame on the left
-        const x = 105 + ox, y = 1230, s = 1.08;
+        const x = 105 + ox, y = 1170, s = 1.08;
         RFP.walker(g, x, y, s, { ...AIDE, t: lt, look: 0.55, led: false, lift: 1.2 });
         D.stickerSheet(g, x + 58 * s, y + 248 * s, -0.3, 0.6, 3);
         g.fillStyle = AIDE.coat; g.beginPath(); g.roundRect(x - 6 * s, y + 262 * s, 146 * s, 120 * s, 10); g.fill();   // the pocket, over the sheet's lower half

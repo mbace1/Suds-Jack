@@ -76,7 +76,7 @@
       g.fillStyle = state === 'grey' ? C.grey : C.screen; g.fillRect(sx, sy, PH.sw, PH.sh);
       if (state !== 'grey') { g.fillStyle = C.screenD; g.fillRect(sx, sy, PH.sw, 16); }
       g.fillStyle = state === 'grey' ? C.greyD : C.digit; g.textAlign = 'center'; g.font = '400 132px "Anton-400"'; g.fillText(String(digit), 0, 46);
-      if (state === 'back') { g.strokeStyle = '#2f7d4f'; g.lineWidth = 9; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); g.moveTo(14, -70); g.lineTo(26, -58); g.lineTo(44, -82); g.stroke(); }
+      if (state === 'back') { g.fillStyle = '#2f7d4f'; g.beginPath(); g.arc(30, -66, 22, 0, TAU); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 7; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); g.moveTo(19, -66); g.lineTo(27, -57); g.lineTo(41, -76); g.stroke(); }
     } else if (state === 'alert') {
       g.fillStyle = C.alert; g.fillRect(sx, sy, PH.sw, PH.sh); g.fillStyle = C.alertD; g.fillRect(sx, sy + PH.sh - 40, PH.sw, 40);
       g.translate(0, -12); alertIcon(g, 0.95);
@@ -154,7 +154,7 @@
     g.fillStyle = K.ink; g.beginPath(); g.roundRect(px - 34 * p.ph, py + PH.h * 0.22 * p.ph, 68 * p.ph, 52 * p.ph, 16 * p.ph); g.fill();
     if (glowA > 0) glow(g, px, py, 210 * p.ph, state === 'alert' ? 'rgba(255,110,70,' : 'rgba(170,230,255,', glowA);
     if (id > 0) {
-      const ix = x - p.side * 150 * s, iy = y + lerp(320, -40, ease.back(id)) * s;
+      const ix = x - p.side * 140 * s, iy = y + lerp(320, -170, ease.back(id)) * s;
       const qx = x - p.side * 96 * s, qy = y + 56 * s, bx = ix - qx, by = iy + 40 * s - qy;
       g.save(); g.translate(qx, qy); g.rotate(Math.atan2(by, bx)); g.fillStyle = p.coat; g.beginPath(); g.roundRect(0, -24 * s, Math.hypot(bx, by), 48 * s, 18 * s); g.fill(); g.restore();
       put(g, idSp(), ix, iy, { sc: s * 1.25, rot: -p.side * 0.12, lift: 0.9 });
@@ -176,7 +176,7 @@
   // ═════════ 1 · e3_street: every phone shows one digit; on "work" they all light ═════════
   SCENES.e3_street = { draw(c, lt) {
     const id = 'e3_street', dd = dur(id), tW = at(id, 'work', 2.1);
-    const cam = { x: Math.sin(lt * 0.3) * 8, y: 0, z: punch(lt, [tW], { kick: 0.02 }) * lerp(1.0, 1.06, ease.io(lt / dd)), fx: 540, fy: 1250 };
+    const cam = { x: Math.sin(lt * 0.3) * 8, y: 0, z: punch(lt, [tW], { kick: 0.02 }) * lerp(1.07, 1.13, ease.io(lt / dd)), fx: 540, fy: 1300 };
     street(c, lt, cam, (i) => {
       const t = tW + (i % NB) * 0.045 + (i >= NB ? 0.02 : 0), on = lt >= t;
       return { state: on ? 'lit' : 'off', raise: 0.25 + 0.15 * Math.sin(lt * 0.8 + i), glowA: on ? 0.5 * Math.exp(-(lt - t) * 2) + 0.12 : 0, look: Math.sin(lt * 0.5 + i * 1.7) * 0.15 };
@@ -295,7 +295,7 @@
     return keys[keys.length - 1][1];
   }
   // the calendar: ten cells, a digit and its deadline (dd/mm), two rows of five; centred on CAL in layer coordinates
-  const CAL = { x: 540, y: 880, cw: 160, ch: 236, gx: 6, top: 150 };
+  const CAL = { x: 530, y: 880, cw: 148, ch: 236, gx: 6, top: 150 };
   const DATES = ['15/08', '31/08', '15/09', '30/09', '15/10', '31/10', '15/11', '30/11', '15/12', '31/12'];
   const cellAt = (d) => { const col = d % 5, row = Math.floor(d / 5), w5 = 5 * CAL.cw + 4 * CAL.gx; return [CAL.x - w5 / 2 + col * (CAL.cw + CAL.gx) + CAL.cw / 2, CAL.y - CAL.top + 40 + row * (CAL.ch + CAL.gx) + CAL.ch / 2]; };
   const calSp = () => sprite('e3_cal', 900, 760, 450, 260, (g) => {
@@ -388,7 +388,7 @@
   // ═════════ 5 · e3_alert: on "gets through" every phone lights with the alert, the grey ones too ═════════
   SCENES.e3_alert = { draw(c, lt) {
     const id = 'e3_alert', dd = dur(id), tA = at(id, 'alert', 2.6);
-    const cam = { x: Math.sin(lt * 0.3) * 8, y: 0, z: punch(lt, [tA], { kick: 0.03 }) * lerp(1.04, 1.0, ease.io(lt / dd)), fx: 540, fy: 1250 };
+    const cam = { x: Math.sin(lt * 0.3) * 8, y: 0, z: punch(lt, [tA], { kick: 0.03 }) * lerp(1.12, 1.07, ease.io(lt / dd)), fx: 540, fy: 1300 };
     const pulse = lt >= tA ? 0.5 + 0.5 * Math.cos((lt - tA) * Math.PI * 2 / 0.9) : 0;
     street(c, lt, cam, (i) => {
       const t = tA + (i % NB) * 0.02, on = lt >= t, cut = i === CUT[1];
