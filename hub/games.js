@@ -190,22 +190,22 @@ export const GAMES = [
     fi: {
       tagline: 'Uusi alku: 1.x:n hyytelö rakennettuna uudelleen WebGPU:lle — kaksi tattia 1.x:n omia aaltoja ja geelejä vastaan. Arcade, Hardcade (purijoiden raadot ampuvat takaisin) ja Survival; Campaign seuraavaksi.',
       lineage: 'Toko Drop / kahden tatin areena',
-      controls: 'vasen puoli liikkuu · oikea puoli tähtää ja ampuu, irrota = syöksy · WASD, hiiri tähtää, pidä = ammu, välilyönti = syöksy · ohjain: vasen tatti liikkuu, oikea tähtää ja ampuu, risti/R1/R2 = syöksy, Options = tauko',
-      note: 'v17: portit parantavat kuten 1.x:ssä (syöksy läpi), koisaattue pudottaa podeja ja koko saattueen ampuminen antaa SYÖKSY-podin, viholliset ovat vaarallisia heti saapuessaan, ja otsikon GEELIT · SDF piirtää geelit säteenseurannalla. v16: INTRO-nappi ARCADEn vieressä. Kaikki 1.x:n 27 geeliä; SYÖKSY · TÖNÄISY tai VIILTO, ja GEELIN KESTO.',
+      controls: 'vasen puoli liikkuu · oikea puoli tähtää ja ampuu, sipaisu = syöksy · WASD, hiiri tähtää, pidä = ammu, välilyönti = syöksy · ohjain: vasen tatti liikkuu, oikea tähtää ja ampuu, risti/R1/R2 = syöksy, Options = tauko',
+      note: 'v18: vain tähtäystatin sipaisu syöksyy — sipaisun pituus määrää matkan (jopa yli kaksi kertaa entistä pidemmälle) ja nopeus vauhdin, ja VIILTO leikkaa sitä syvemmälle, mitä nopeampi se on. Areena täyttää enemmän ruutua, ja kun puhelimen kääntää kesken pelin, areena kääntyy mukana. v17: portit parantavat kuten 1.x:ssä, koisaattue pudottaa podeja (koko saattue antaa SYÖKSY-podin), viholliset ovat vaarallisia heti saapuessaan, ja otsikossa on GEELIT · SDF. Kaikki 1.x:n 27 geeliä; SYÖKSY · TÖNÄISY tai VIILTO, ja GEELIN KESTO.',
     },
     ja: {
       tagline: 'リブート版：1.xのゼリーをWebGPUで作り直し——ツインスティックで1.xそのままのウェーブとゼリーに挑む。アーケード、ハードケード（噛みつく敵の残骸が撃ち返す）、サバイバル。キャンペーンは次。',
       lineage: 'トコドロップ / ツインスティック・アリーナ',
-      controls: '左半分で移動 · 右半分で狙って撃つ、離すとダッシュ · WASD・マウスで狙い・押し続けて射撃・スペースでダッシュ · パッド：左スティックで移動、右スティックで狙って射撃、×/R1/R2でダッシュ、OPTIONSでポーズ',
-      note: 'v17：ゲートを駆け抜けて回復（1.xどおり）、蛾の輸送隊がポッドを落とし、全滅させるとダッシュポッド、敵は現れた瞬間から危険、タイトルのSDFスイッチでゼリーをレイマーチ描画。v16：ARCADEの横にINTROボタン。1.xのゼリー全27種、ダッシュは押す／貫く、ゼリー耐久。',
+      controls: '左半分で移動 · 右半分で狙って撃つ、はじいてダッシュ · WASD・マウスで狙い・押し続けて射撃・スペースでダッシュ · パッド：左スティックで移動、右スティックで狙って射撃、×/R1/R2でダッシュ、OPTIONSでポーズ',
+      note: 'v18：ダッシュは照準スティックをはじいた時だけ。はじく長さで距離（最大で従来の2倍以上）、速さでスピードが決まり、速いほど「貫く」が深く切る。アリーナが画面をより広く使い、プレイ中にスマホを回すとアリーナも一緒に回る。v17：ゲートで回復（1.xどおり）、蛾の輸送隊がポッドを落とし（全滅でダッシュポッド）、敵は現れた瞬間から危険、タイトルにゼリー・SDF。1.xのゼリー全27種、ダッシュは押す／貫く、ゼリー耐久。',
     },
     status: 'active',
-    note: 'v17: gates heal as in 1.x (dash through them), the moth convoy drops pods and shooting a whole convoy gives a DASH pod, enemies are dangerous the moment they arrive, and GELS · SDF on the title draws the gels ray-marched. v16: an INTRO button beside ARCADE. All 27 of 1.x\'s gels; DASH · PUSH or CUT, and GEL HP.',
+    note: 'v18: only a flick of the aim stick dashes. How long the flick is sets how far (up to more than twice as far as before), how fast it is sets the speed, and CUT cuts deeper the faster it goes. The arena fills more of the screen, and turning the phone mid-run turns the arena with it. v17: gates heal as in 1.x, the moth convoy drops pods (a whole convoy gives a DASH pod), enemies are dangerous the moment they arrive, and GELS · SDF is on the title. All 27 of 1.x\'s gels; DASH · PUSH or CUT, and GEL HP.',
     title: 'Toko Drop 2.0',
     tagline: 'The reboot: 1.x\'s gelatin rebuilt for WebGPU — twin sticks against 1.x\'s own waves and gels. Arcade, Hardcade (the biters\' corpses shoot back) and Survival; Campaign next.',
     lineage: 'Toko Drop / twin-stick arena',
     tags: ['twin-stick', 'three.js', 'webgpu'],
-    controls: 'left half moves · right half aims and fires, let go to dash · keys: WASD, mouse aims, hold to fire, Space dashes · pad: left stick moves, right stick aims and fires, Cross/R1/R2 dash, Options pauses',
+    controls: 'left half moves · right half aims and fires, flick it to dash · keys: WASD, mouse aims, hold to fire, Space dashes · pad: left stick moves, right stick aims and fires, Cross/R1/R2 dash, Options pauses',
     // Played here, in the arcade: a deployed copy in toko-drop-2/, the way
     // toko-drop-godot/ is. The source is its own repository
     // (github.com/mbace1/toko-drop) and main does not carry the copy, so the
