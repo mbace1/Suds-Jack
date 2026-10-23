@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v24 — 2026-10-23
+**1.x's settings in OPTIONS: LANGUAGE, VOLUME, the announcer with its own volume, and REDUCE MOTION**
+- LANGUAGE · ENGLISH / SUOMI / 日本語 (1.x's title chips): picked once, kept in `toko2.lang`, the whole game follows; the browser's language until then
+- VOLUME 0-100% in quarters (1.x v81), kept in `toko2.volume`; replaces SOUND ON/OFF (a saved SOUND OFF reads as 0%)
+- ANNOUNCER ON/OFF and ANNOUNCER VOL. (1.x v109, v137): 1.x's game-show lines through the browser's own speech, pitched down; off by default, as in 1.x. It calls the waves, the boss, clears, hits, streaks of five, pickups, bounties, a boss's turn, game over, and a new world (2.0's own lines). `js/announcer.js`
+- REDUCE MOTION ON/OFF (1.x v81): no camera shake; the device's setting until it is picked (`toko2.motion`)
+- Smoke walks LANGUAGE en → fi → ja → en and VOLUME through its quarters
+- Cache tokens `?v=23` → `?v=24`; HUD label → `2.0 · v24`
+
+---
+
 ## v23 — 2026-10-23
 **OPTIONS, like 1.x: the title keeps the modes, every switch moves to one page, and the pause menu and the death screen open it too**
 - Title: ARCADE / INTRO, HARDCADE, SURVIVAL, CAMPAIGN (soon), OPTIONS

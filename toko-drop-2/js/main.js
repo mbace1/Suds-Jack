@@ -7,26 +7,27 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=23';
-import { buildFloor } from './render/floor.js?v=23';
-import { fitCamera, screenToWorld } from './render/view.js?v=23';
-import * as worldsSim from './sim/worlds.js?v=23';
-import * as reshapeSim from './sim/reshape.js?v=23';
-import { Scenery } from './render/scenery.js?v=23';
-import { Transit } from './render/transit.js?v=23';
-import { Splats } from './render/splats.js?v=23';
-import { Actors } from './render/actors.js?v=23';
-import { GEL_TIME } from './render/gel.js?v=23';
-import { studioEnvironment } from './render/env.js?v=23';
-import { Specimen } from './render/specimen.js?v=23';
-import { createWorld, step, api as simApi } from './sim/world.js?v=23';
-import { stage as stagePk } from './sim/pickups.js?v=23';
-import { Input } from './input.js?v=23';
-import { UI, t, timeText } from './ui.js?v=23';
-import { Sound } from './audio.js?v=23';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=23';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=23';
-import { Readout } from './readout.js?v=23';
+import { TUNING } from './tuning.js?v=24';
+import { buildFloor } from './render/floor.js?v=24';
+import { fitCamera, screenToWorld } from './render/view.js?v=24';
+import * as worldsSim from './sim/worlds.js?v=24';
+import * as reshapeSim from './sim/reshape.js?v=24';
+import { Scenery } from './render/scenery.js?v=24';
+import { Transit } from './render/transit.js?v=24';
+import { Splats } from './render/splats.js?v=24';
+import { Actors } from './render/actors.js?v=24';
+import { GEL_TIME } from './render/gel.js?v=24';
+import { studioEnvironment } from './render/env.js?v=24';
+import { Specimen } from './render/specimen.js?v=24';
+import { createWorld, step, api as simApi } from './sim/world.js?v=24';
+import { stage as stagePk } from './sim/pickups.js?v=24';
+import { Input } from './input.js?v=24';
+import { UI, t, timeText, LANGS, getLang, setLang } from './ui.js?v=24';
+import { Announcer } from './announcer.js?v=24';
+import { Sound } from './audio.js?v=24';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=24';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=24';
+import { Readout } from './readout.js?v=24';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -86,8 +87,9 @@ const camRest = new THREE.Vector3();
 const camAt = new THREE.Vector3();
 let trauma = 0;
 // 1.x's shake: trauma adds up to 1 and decays; the camera moves by its square
-const shake = (amount) => { if (!reduceMotion) trauma = Math.min(1, trauma + amount); };
-const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const shake = (amount) => { if (!reduceMotion()) trauma = Math.min(1, trauma + amount); };
+// REDUCE MOTION (1.x v81): OPTIONS' choice (toko2.motion), else the device's
+const reduceMotion = () => { const m = store.str('toko2.motion'); return m ? m === 'on' : matchMedia('(prefers-reduced-motion: reduce)').matches; };
 
 // ── the arena: 1.x's size for the screen's shape, chosen at each run start
 // (never mid-run), with the floor made to match ──────────────────────────
@@ -243,7 +245,15 @@ const refreshMenu = () => (ui.inOptions ? ui.openOptions() : showTitle(true));
 
 const input = new Input(document);
 const sound = new Sound();
-sound.on = store.num('toko2.mute') !== 1;
+// VOLUME (1.x v81): toko2.volume, 0..1 in quarters; a v23 SOUND OFF (toko2.mute) reads as 0
+const VOLUMES = [0, 0.25, 0.5, 0.75, 1];
+const savedVolume = () => { const v = store.str('toko2.volume'); return v !== '' ? Math.max(0, Math.min(1, Number(v))) : store.num('toko2.mute') === 1 ? 0 : 1; };
+sound.setVolume(savedVolume());
+const next = (list, v) => list[(list.findIndex((x) => Math.abs(x - v) < 1e-6) + 1) % list.length];
+// the announcer (1.x v109): off until OPTIONS turns it on, with its own volume
+const announcer = new Announcer();
+announcer.on = store.str('toko2.announcer') === 'on';
+announcer.volume = store.str('toko2.annVolume') !== '' ? Number(store.str('toko2.annVolume')) : 1;
 addEventListener('pointerdown', () => sound.unlock(), { once: true });
 addEventListener('keydown', () => sound.unlock(), { once: true });
 
@@ -254,7 +264,12 @@ const ui = new UI({
   onPause: () => pause(),
   onAgain: () => start(mode),
   onMenu: () => toMenu(),
-  onSound: () => { sound.setOn(!sound.on); store.set('toko2.mute', sound.on ? 0 : 1); refreshMenu(); },
+  onSound: () => { sound.setVolume(sound.volume > 0 ? 0 : 1); store.set('toko2.volume', sound.volume); refreshMenu(); },
+  onVolume: () => { sound.setVolume(next(VOLUMES, sound.volume)); store.set('toko2.volume', sound.volume); sound.unlock(); sound.event?.({ type: 'pickup', kind: 'score' }); refreshMenu(); },
+  onAnnouncer: () => { announcer.on = !announcer.on; store.set('toko2.announcer', announcer.on ? 'on' : 'off'); if (announcer.on) announcer.say('start'); else announcer.stop(); refreshMenu(); },
+  onAnnVolume: () => { announcer.volume = next(VOLUMES.slice(1), announcer.volume); store.set('toko2.annVolume', announcer.volume); announcer.last = -1e9; announcer.say('clear'); refreshMenu(); },
+  onMotion: () => { store.set('toko2.motion', reduceMotion() ? 'off' : 'on'); if (reduceMotion()) trauma = 0; refreshMenu(); },
+  onLang: () => { setLang(LANGS[(LANGS.indexOf(getLang()) + 1) % LANGS.length]); refreshMenu(); },
   onDash: () => { store.set('toko2.dash', DASHES[(DASHES.indexOf(tests().dash) + 1) % DASHES.length]); refreshMenu(); },
   onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); refreshMenu(); },
   gels: () => gels(), onGels: () => flipGels(),
@@ -262,7 +277,7 @@ const ui = new UI({
   worlds: () => worldsLook(), onWorlds: () => flipWorlds(),
   onSpecimen: (kind, box) => specimen.show(kind, box),
   onTitle: (keep) => showTitle(keep),
-  optionsState: () => ({ sound: sound.on, test: tests() }),
+  optionsState: () => ({ sound: sound.on, volume: sound.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests() }),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
 // the view of a world change: the swirl, the dark, the fall, the floor running out (render/transit.js)
@@ -361,6 +376,7 @@ function go() {
   state = 'play'; input.enabled = true;
   ui.hide(); ui.setHud(true);
   ui.banner(mode.toUpperCase(), 1.2);
+  announcer.say('start');
 }
 
 function pause() { if (state !== 'play') return; state = 'paused'; input.enabled = false; ui.pause(T.species[world?.killedBy] ? world.killedBy : null); }
@@ -392,6 +408,21 @@ function survivalFrame() {
   if (world.hx !== fitHx || world.hz !== fitHz) resize();
 }
 
+// what the announcer calls, off the sim's events (1.x main.js:2607-11424)
+function announce(e) {
+  if (!announcer.on) return;
+  if (e.type === 'wave') announcer.say(e.kind === 'boss' ? 'boss' : 'wave', e.wave);
+  else if (e.type === 'clear') announcer.say('clear');
+  else if (e.type === 'hurt' && e.lives > 0) announcer.say('ouch');
+  else if (e.type === 'over') announcer.say('gameover');
+  else if (e.type === 'kill' && world && world.streak > 0 && world.streak % 5 === 0) announcer.say('streak');
+  else if (e.type === 'pickup') announcer.say(e.kind === 'score' ? 'money' : e.kind === 'scoremult' ? 'mult' : 'prize');
+  else if (e.type === 'bounty') announcer.say('bounty');
+  else if (e.type === 'bountyPaid') announcer.say('money');
+  else if (e.type === 'phase') announcer.say('phase');
+  else if (e.type === 'worldLand') announcer.say('world');
+}
+
 function onEvent(e) {
   if (e.type === 'dash') lastDash = e;
   if (e.type === 'worldIn') { useWorld(e.world, e.hx, e.hz); splats.clear(); actors.goo?.clear(); }   // the next world's floor, under the falling droplet; the last one's puddles went down the drain with it
@@ -400,6 +431,7 @@ function onEvent(e) {
   if (e.type === 'reshaped') splats.prune(e.hx, e.hz);
   debug.counts[e.type] = (debug.counts[e.type] || 0) + 1;
   sound.event(e);
+  announce(e);
   input.feel?.(e);
   actors.onEvent(e, world);
   const K = T.shake;
@@ -470,7 +502,7 @@ const debug = {
   THREE, renderer, scene, camera, backend, input, ui, actors,
   get arena() { return arenaBox(); }, splats,
   frames: 0, ready: false, counts: {},
-  get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
+  announcer, get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
   floor: () => floor,
   get following() { return !!following; }, get viewWorld() { return viewWorld; }, get floorStyle() { return floor?.style; }, camAt, scenery, transit,
   arenaFor: (n, shape) => worldsSim.arenaFor(n, shape),

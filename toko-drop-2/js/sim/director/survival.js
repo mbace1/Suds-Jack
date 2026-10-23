@@ -4,7 +4,7 @@
 // unlocks along ARCADE's own table (tuning/waves.js pool), read as if a wave
 // passed every `secondsPerWave`; that same wave number drives the bodies'
 // speed and fire-rate escalation, the swarm's current and HARDCADE's caps.
-import { TUNING } from '../../tuning.js?v=23';
+import { TUNING } from '../../tuning.js?v=24';
 
 const T = TUNING;
 const lerp = (a, b, t) => a + (b - a) * t;

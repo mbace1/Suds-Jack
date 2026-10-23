@@ -1,12 +1,14 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=23';
+import { TUNING } from './tuning.js?v=24';
 
 const A = TUNING.audio;
 
 export class Sound {
-  constructor() { this.ctx = null; this.master = null; this.on = true; this._shot = 0; this._noise = null; }
+  // `volume` 0..1 scales the master (1.x's VOLUME, v81); 0 is silence
+  constructor() { this.ctx = null; this.master = null; this.on = true; this.volume = 1; this._shot = 0; this._noise = null; }
+  get level() { return this.on ? A.master * this.volume : 0; }
 
   unlock() {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
@@ -14,7 +16,7 @@ export class Sound {
     if (!AC) return;
     this.ctx = new AC();
     this.master = this.ctx.createGain();
-    this.master.gain.value = this.on ? A.master : 0;
+    this.master.gain.value = this.level;
     this.master.connect(this.ctx.destination);
     const n = this.ctx.sampleRate;
     this._noise = this.ctx.createBuffer(1, n, n);
@@ -22,7 +24,9 @@ export class Sound {
     for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
   }
 
-  setOn(on) { this.on = on; if (this.master) this.master.gain.setTargetAtTime(on ? A.master : 0, this.ctx.currentTime, 0.02); }
+  setOn(on) { this.on = on; this._apply(); }
+  setVolume(v) { this.volume = Math.max(0, Math.min(1, v)); this.on = this.volume > 0; this._apply(); }
+  _apply() { if (this.master) this.master.gain.setTargetAtTime(this.level, this.ctx.currentTime, 0.02); }
 
   _tone(type, f0, f1, dur, vol, when = 0) {
     if (!this.ctx) return;
