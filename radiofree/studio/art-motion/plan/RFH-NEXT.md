@@ -86,3 +86,11 @@ story. Irreversible was scrapped on 18 Oct, so it is the candidate for slot 3.
 5. **The Day After** for the midterm slot, or another Coxon story?
 6. **Native reads:** someone to read the Finnish and the Japanese, for Kill Switch's leaflet and for every
    sidecar file from now on.
+
+## Owner, 23 Oct: the scouts are the top of the list for new films
+
+- **The new films come first from `plan/GLOBAL-SCOUT.md`** (AI money, military AI, data-centre NDAs, GPU and memory
+  prices, whistleblowers), **then from `plan/HS-SCOUT.md`** (Finland). Both are followed twice a day (07:16 and 17:16
+  Helsinki), and a big development is flagged at once.
+- **Anthropic is covered like any company.** A film that touches Anthropic says on screen that it was made with
+  Anthropic's tools (Claude). Testing that disclosure is part of the film. The owner approves the wording.

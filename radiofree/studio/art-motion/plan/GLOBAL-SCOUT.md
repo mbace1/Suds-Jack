@@ -1,5 +1,14 @@
 # Global scout: documented contradictions in AI money, the military and chips (23 Oct 2026)
 
+> **Status (owner, 23 Oct): all candidates are top priority for new films and are followed in every check.** They may
+> develop fast, so a big development (a ruling, a filing, a response, a resignation) is flagged to the owner at once.
+>
+> **Anthropic is covered like every other company (owner, 23 Oct).** These films are made with Anthropic's tools
+> (Claude). Any film that touches Anthropic, including "Grade Your Own Homework" and the parked supply-chain-risk case,
+> **says so on screen**. This is a test of verbalising it, for example a line on the end card: *Made with Claude, by
+> Anthropic, one of the companies in this story.* The wording is to be tested and approved by the owner. The owner
+> decides the coverage, the facts are checked against primary sources the same way, and no lab is spared or singled out.
+
 **Owner, 23 Oct:** "Can we look for other edge cases globally. There are some things going on that may be corrupt,
 indicate hidden agendas, and so on. Look at AI, big investment, military, GPU price hike manufacturer, etc."
 
