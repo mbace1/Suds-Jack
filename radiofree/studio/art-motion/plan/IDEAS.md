@@ -299,6 +299,39 @@ restored, and the status of the plan.
 
 ---
 
+## Toko: making games with AI, a set (owner idea, 23 Oct; also for GLH)
+
+**Owner's idea, 23 Oct.** Indie and AAA developers use AI to make projects, prototypes and mods. They chat with Claude
+and the others all day, many run long loops, and they test the hard limits. Coders have an edge, many need good
+designers, small teams could have a multiplying impact, and AAA needs to restructure around expanding on prototypes.
+
+**Strand.** Toko (Toko Midori Games), on the Toko accounts, in Toko's own voice: *GO MAKE YOUR OWN*. Short pieces of
+the same set can be used as interstitials in **GLH**, the Gameplay Laboratory highlights compilations (owner).
+
+**The fact that keeps it honest:** the owner's "all" is the feeling on the floor, and the survey says something more
+interesting. In GDC's 2026 State of the Game Industry (over 2,300 respondents), 36 % use generative AI in their own job,
+and 52 % say it is harming the industry, up from 30 % the year before. That is a third using it and half saying it
+hurts. The set can live in that gap, or simply not claim "all". Sources, search summaries only, to be opened before a
+build: gamingonlinux.com (Jan 2026), gdconf.com (State of the Industry article), techspot.com/news/111128.
+
+**The set (4 films, ~15–20 s each; Toko as the developer, so no real people):**
+
+1. **One More Loop.** Toko at a desk at 03:00, in a chat with an AI, prompt after prompt. The build gets better, then
+   worse, then better. The clock jumps. Punch: *the prototype took an hour. The loop took the night.*
+2. **Needs a Designer.** Ten playable prototypes in a week, all of them working, none of them fun. Coders have the edge
+   on making; taste is the scarce part. Punch: *Making is cheap now. Knowing what to make isn't.*
+3. **Five Is the New Fifty.** A tiny team (five Tokos) ships what a hall of desks used to. The multiplier, shown as
+   scale, not as numbers we cannot source.
+4. **Prototype First.** A AAA org chart rebuilt around a playable thing instead of a document: the prototype in the
+   middle, everyone else expanding on it. Punch: *Build it, then plan it.*
+
+**Rules.**
+- If a film names Claude, it carries the house disclosure that it was made with Anthropic's tools (owner, 23 Oct).
+  Otherwise the AI is generic. GDC's survey has ChatGPT as the most used, at 74 %.
+- No real developer, studio or game is shown or named unless sourced.
+- The only numbers on screen are the GDC ones, dated.
+- Look: Toko clay (the Toko strand's medium), or papercut for GLH so it sits beside the gameplay clips. Owner picks.
+
 ## Parked (holds and weaker ones)
 
 - **The Typos Were the Security** (Coxon, demoted): a clear public-service film, but it only becomes "who decides?" with
