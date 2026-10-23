@@ -77,6 +77,75 @@ Port `cover-edges.js`, `directional-cover.mjs` and `design/C11_PORT_VECTORS.json
 New lab checkpoint version 4 / rules c11-v1; preserve campaign and Bear Path rules.
 Use resolved impact classifications for presentation; never reapply damage on recovery.
 
+## v4.71 — 2026-10-23
+
+**A fight happens where it starts.** Owner, 2026-10-23: *"start on map locations, battles, etc"*. Until now the nine door fights and four road fights borrowed one of three mission arenas and its named people. A crate skimmed at the Hakaniemi market was fought "at the bear" against the Karhupuisto pair, and a sale gone bad on the Sörnäinen quay was fought in the Suvilahti boiler hall.
+
+- **One fight place per active anchor** (`content/places-v1.json`, eleven places). Each has the plate it is fought on, cover markers on the board's cells (STAGE_SPEC 4.5: a marker, never snapped to the art), the way out, and the 3D kit Night Shift would stage there (CAMPAIGN.md P4, PR #102).
+- **Every plate holds the board** (STAGE_SPEC 5.2), checked with `stage-contact.mjs`. Piritori and Brahenkenttä are new to fights and pass.
+  - `karhupuisto-v01` ("not a battle floor") and `sornainen-docks-v02` (a perspective plate) are refused by the gate.
+  - Suvilahti fights on the service yard as a marked stand-in.
+  - Mäkelänsilta and Siltasaari have no plate that holds the board. They fight on a bare stage, and each names the plate it wants.
+- **Where.** A door fight is fought at the door. A road fight is fought where it happens: arriving, the place arrived at; in transit, the place just left (the first of the two that has a place). Mission battles keep their authored arenas.
+- **Who.** Each door and road fight names a side: the McCormicks' people, the Jade Lantern's people, or the locals.
+  - The people are generated (COMBAT.md §7.1) from the fight's own key. A reload shows the same faces, and the next retaliation brings new ones.
+  - A board shows first names, so no first name appears twice: not between two rivals, and not between a rival and your own crew.
+- **What does not move:** the shape. Format, roles, cells, weapons, negotiation, casualties and the day's two fights stay the battle the door names. Only the place, the people, the objective ("Behind the market hall. Make the Jade Lantern's people back off, or leave on a tram from the stop.") and the withdrawal cost change.
+- **Copy follows the place.** The fish stall, the yard van and the quay shift no longer name somewhere else. The McCormicks' retaliation says "Two of them", which is what the board shows.
+- **Deploy lists.** `build-hub-cabinet.mjs` and `deploy.yml` now ship the story, doors, road, families and places JSON. Before this, a cabinet built by the tool booted without them, quietly.
+- Cache: `app.js?v=37`, `places.js?v=1`, `v3.css?v=10`. Gates: `places.mjs` 183 (new, in gates.yml). `doors-browser` and `road-browser` now check where each fight is fought and by whom.
+
+### Port
+
+Ported in the same version. `PiritoriPlaces` (`godot/scripts/city/places.gd`) mirrors `places.js`. `ContentRegistry` loads and verifies `places-v1.json`. `BattleBuilder.build`, `entry_forecast` and `opponent_intents` and `FightManager.begin_canonical` take the staged definition. `app_shell._show_battle` stages door and road fights. Names come from the port's own `CrewGenerator`, as every generated name there does, so they differ from the web's; place, side and shape match. `test_story` +36. Godot's 3D fight stage does not draw a plate yet (ACT1_PLAN G13), so in Godot the place shows in the objective and forecast, not in the picture.
+
+## v4.70 — 2026-10-21
+
+**Toko Slomo acts, in cut card, behind his own counter.** Owner, 2026-10-21: *"Approved, put it in the game"*, and asked where, the paper Toko in the empty bar in place of the 3D speaker. That sets aside the 2026-08-24 3D-layer ruling for the counter scenes; Jaska and Arvo stay 3D.
+
+- **The approved v02 Toko, cut and rigged** (`scene-toko-rig-v01`, about 60 KB). Hood, brows, eyelids, torso and both forearms turn on hidden pivots (ART_BIBLE §14.2) at a 10 fps pose rhythm, over `scene-toko-noodles-empty-v01`. The counter in front of his waist is cut from the empty bar itself, which shares v02's counter line. Anything his pieces uncover is the painted room, not a fill.
+- **He acts on what you choose.** On arrival he dries the cloth round his fist, breathes, looks about and blinks, and 2.5 s later leans in and lowers his voice.
+  - BUY INFO: he slides the note across and the till rings €120.
+  - RISK SABOTAGE: he looks hard at the window and shakes his head.
+  - EAT AND LISTEN: he talks.
+  - LEAVE: he bows and waves the cloth.
+- **The same stage serves Tokon Ramen and the after-service visit.** A bowl passes the note across with €6 on the till, and a weapon is a tap, a ring and a nod.
+- **The room breathes:** steam off the pot, rain in the window, the street lamp and the tram's headlights. These are additive, STAGE_SPEC tier 0.
+- **Reduced motion** draws the rest pose, which is the painting as approved, and nothing loops. The stage draws at most 12 times a second and stops when its canvas leaves the page. If the rig fails to load, the empty bar shows as before.
+- Cache: `app.js?v=36`, `toko-stage.js?v=1`. Gates: `scene-content` checks the rig is registered, mounted and drawn over the empty bar, and `act1-scenes` waits for the Toko stage instead of the 3D speaker. `v3-playthrough`'s two Toko checks fail exactly as they did on main (QUEUE.md, scene_asset_id drift).
+
+### Port
+
+Godot still shows the 3D Toko at the counter. Porting means drawing the rig's eleven pieces (manifest `members[]`, with `x`, `y` and the `rig.pivots`) and the clip table in `web/js/v3/toko-stage.js` over the same plate. It is web-only for now.
+
+## v4.69 — 2026-10-11
+
+**Fight fixes: moving with purpose, shields that face the right way, and grief that stops.** Battle and movement fixes from #96–#99 and one new one. Stand-ins and the shared fight animation set are unchanged.
+
+- **A fighter who steps, steps somewhere useful (#96).** Every possible step used to score the same, so a fighter who had decided to move picked a direction at random. It now prefers a cell it can attack from, otherwise one that closes the gap to the enemy.
+- **An anchor shields the people behind them (#97).** The cover sat one cell toward the enemy instead of on the anchor's own back rank. Fixed in Godot, the Fight Module and Act I.
+- **The whole board is open for a move (#98).** Godot's list of free cells still stopped at the old three rows, so the fight screen never offered the neutral strip or the far colour.
+- **A step into the neutral strip can be queued (#99).** The fight offered that step and then refused it; the queue now asks the board whether the cell exists.
+- **A fall is felt once (new).** Seeing a lane-mate go down costs one nerve. The morale check charged it again every round the body stayed on the ground, so one fall could slowly rout a whole lane. Each fall now costs its witnesses once, and a saved fight remembers which falls were already felt.
+- Cache: `app.js?v=35`. Gates: `test_battle` 324 (one new check: a fall is witnessed once).
+
+### Port
+
+Godot only: the web fight has no witness morale, so the new fix has nothing to port. #97 landed in both builds; #96, #98 and #99 are Godot fixes (#98 also tidied the web scan).
+
+## v4.68 — 2026-10-02
+
+**Stand-ins are the only playable cast.** Owner: "Stand ins should be the only characters used until others are proven to work. Make this to all versions."
+
+- Act I, Fight Module, Bear Path, Arena Laboratory and Night Shift now instantiate deterministic procedural bodies only. The old 2D battle dolls stay hidden while the 3D stand-ins mount, so no legacy character flashes between renders.
+- The shared fight runtime no longer fetches F01/F02. Their meshes remain registered for inspection but are isolated on a page labelled **CANDIDATE REVIEW · NOT IN GAME**, which is no longer linked from the campaign entry.
+- Godot builds the same kind of neutral procedural bodies directly. Its imported role registry remains review evidence, and `USE_APPROVED_CHARACTER_MODELS` is hard-off until a later, explicit production promotion.
+- Cache: `render3d.js?v=12`, `app.js?v=34`, `v3.css?v=9`, shared `fight-module/main.js?v=35`, Night Shift `startup.js?v=9`.
+
+### Port
+
+Landed in both builds in this version. Character promotion is now a deliberate two-build change: a candidate must pass visual, rig, animation and in-game QA before either runtime may replace the stand-ins.
+
 ## v4.67 — 2026-09-30
 
 **The families' standing (H5).** The Long Game H5, greenlit 2026-09-29. Owner answer 27 (2026-09-30), "Let's forget postin people on the corner, that seems to advanced at this point": corners (H4) are shelved, and standing is built on its own.

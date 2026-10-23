@@ -21,10 +21,12 @@ import { wake as wakeSound, bell, till, steps, sting, arrival, soundOn, setSound
 import { board, exposureHere, markSeen, addFootprint, INFO } from './board.js?v=3';
 import { previewJourney, commitJourney } from './journey.js?v=2';
 import { buyBowl, bowlBlocker, BOWL_EUR, TOKO_ANCHOR, tokoWeapons, buyFromToko } from './toko.js?v=4';
+import { loadTokoStage } from './toko-stage.js?v=1';
 import { loadStory, caseBoard, keyCluesFound, caseBlocker, caseKnown, resolveCase, briefing, settleCut } from './story.js?v=4';
 import { turnPlan, nextChapter } from './chapter.js?v=1';
 import { loadDoors, offerDoors, takeDoor, doorBlocker, templateOf, registerTaken, doorFightEffects, canFight, isDoorBlock, escalation } from './doors.js?v=3';
 import { loadFamilies, standings, settleStanding } from './standing.js?v=1';
+import { loadPlaces, stageFight, doorFightStage, roadFightStage } from './places.js?v=1';
 import { loadRoadEvents, rollRoad, resolveRoad, pendingRoad, choiceOpen, clockLabel, forceRoad } from './road.js?v=5';
 import {
   createBattleState, attachGrowth, selectedUnit, selectUnit, selectAction, playerAttack, brace, useItem,
@@ -36,7 +38,7 @@ import {
 import { LANES, ROWS, totalRows, depthOf, parseSlotKey, slotKey, describeSlot } from './grid.js?v=2';
 import { boot as bootChrome } from './chrome.js?v=2';
 import { STANCE, STANCES } from './stance.js?v=2';
-import { mountBattleStage3D, disposeBattleStage3D, setBattleLights } from './render3d.js?v=11';
+import { mountBattleStage3D, disposeBattleStage3D, setBattleLights } from './render3d.js?v=12';
 import { positionBattleDOM } from './stage-camera.js?v=5';
 
 const $ = id => document.getElementById(id);
@@ -125,10 +127,37 @@ let state;
 // and a failed load leaves the city exactly as it was, with no events.
 // What Toko said at the last bowl ('' = nothing new, null = no bowl yet).
 let tokoTold = null;
+// Toko in cut card behind his counter (owner, 2026-10-21: "Approved, put it in the game"; placed in the empty bar in
+// place of the 3D speaker). One stage outlives every re-render; each render hands it the new canvas.
+let tokoStage = null, tokoStageLoad = null;
+const TOKO_CANVAS = '<canvas class="scene-image toko-stage" data-toko-stage width="1536" height="864" role="img" aria-label="Toko Slomo behind the counter"></canvas>';
+// What he does when you answer him. Anything unlisted gets a nod.
+const TOKO_CLIP = { 'buy-info': 'buy_info', 'risk-sabotage': 'sabotage', 'eat-and-listen': 'lean', leave: 'leave', 'toko-ordinary-evening': 'lean', 'toko-quiet-company': 'nod' };
+function tokoActs(clip, options) { tokoStage?.play(clip, options); }
+function mountTokoStage(root) {
+  const canvas = root.querySelector('[data-toko-stage]');
+  if (!canvas) return;
+  canvas.dataset.status = 'loading';
+  let context;
+  if (state.mode === 'ramen') context = { noteGone: state.tokoBowlAt === state.scheduleIndex };
+  else {
+    const encounter = state.mode === 'visit' ? activeVisit(state, data) : currentEncounter(state, data);
+    const resolved = encounter ? state.choices[encounter.id] : null;
+    context = { noteGone: resolved === 'buy-info', leanAfter: resolved ? null : 2.5 };   // he lowers his voice as you arrive
+  }
+  (tokoStageLoad ??= loadTokoStage(data, { reducedMotion })).then(stage => {
+    tokoStage = stage;
+    if (!canvas.isConnected) return;
+    if (!stage) { canvas.dataset.status = 'unavailable'; canvas.hidden = true; return; }   // the empty bar stays, as before the rig
+    stage.attach(canvas, context);
+  });
+}
 // The Thursday Load (story.js). Empty until loaded; a failed load hides it.
 let story = { missions: [], clues: [], case: null };
 let roadEvents = { rules: { first_story_block: Infinity }, events: [] };
 let doors = { rules: { offers_min: 0, offers_max: 0, scenes: {} }, templates: [] };
+// v4.71: where door and road fights happen (places.js). Empty: they keep the arena they name.
+let places = { rules: {}, places: [] };
 let routePlanning = false;
 let routeDraft = [];
 let observation = '';
@@ -340,6 +369,7 @@ function render() {
   if (root.dataset.shown !== state.mode) { root.scrollTop = 0; root.dataset.shown = state.mode; }
   const speakerHost = root.querySelector('[data-speaker]');
   if (speakerHost) mountSceneSpeaker(speakerHost, assetUrl(data, speakerHost.dataset.asset), speakerHost.dataset.speaker);
+  mountTokoStage(root);
 
   // DESIGN_AUTHORITY.md addendum 2026-08-28: real 3D, not just registered
   // meshes, is one of the parity gaps this build owes Godot. Mounted here
@@ -834,7 +864,7 @@ function renderEncounter() {
       <section class="paper-panel scene-card">
         <div class="scene-viewport ${isToko ? 'speaker-stage' : ''}">
           ${art ? `<img class="scene-image" src="${esc(art)}" alt="${esc(site?.label ?? anchor?.label)}">` : genericScene(encounter.site_id)}
-          ${isToko ? `<div class="scene-speaker toko-speaker" data-speaker="toko" data-asset="cast3d-toko-v01" aria-label="Toko Slomo behind the counter"></div><img class="counter-foreground" src="${esc(art)}" alt="" aria-hidden="true">` : ''}
+          ${isToko ? TOKO_CANVAS : ''}
           ${isJaska ? '<i class="jaska-contact" aria-hidden="true"></i><div class="scene-speaker jaska-standing" data-speaker="jaska" data-asset="cast3d-jaska-v01" aria-label="Jaska"></div>' : ''}
           ${ambientLayers(encounter)}
           <i class="scene-vignette"></i>
@@ -1235,8 +1265,7 @@ function renderRamen() {
     <section class="paper-panel scene-card">
       <div class="scene-viewport speaker-stage">
         ${art ? `<img class="scene-image" src="${esc(art)}" alt="Tokon Ramen, the counter">` : genericScene('toko_slomo_noodles')}
-        <div class="scene-speaker toko-speaker" data-speaker="toko" data-asset="cast3d-toko-v01" aria-label="Toko Slomo behind the counter"></div>
-        ${art ? `<img class="counter-foreground" src="${esc(art)}" alt="" aria-hidden="true">` : ''}
+        ${TOKO_CANVAS}
         <i class="scene-vignette"></i>
         <div class="scene-caption">
           <h2>TOKON RAMEN</h2>
@@ -1665,14 +1694,15 @@ function renderBattle() {
     </section>`;
   }
   const unit = selectedUnit(battle);
-  const scene = assetUrl(data, plateForBattleScene(battle.sceneAssetId));
+  // v4.71: a place with no plate that holds the board fights on a bare stage.
+  const scene = battle.sceneAssetId ? assetUrl(data, plateForBattleScene(battle.sceneAssetId)) : '';
   const negotiationReady = battle.round >= 2 || battle.enemies.filter(item => item.alive).reduce((sum, item) => sum + item.nerve, 0) <= 4;
   const preview = attackPreview(battle);
   const boardUnits = battle.players.concat(battle.enemies, battle.police ?? []);
   return `
     <div class="battle-layout">
-      <section class="battle-stage" aria-label="${esc(battle.format)} isometric formation battle">
-        <img class="scene-image" src="${scene}" alt="">
+      <section class="battle-stage${scene ? '' : ' bare-stage'}" aria-label="${esc(battle.format)} isometric formation battle${battle.place ? ` · ${esc(battle.place.name)}` : ''}"${battle.place ? ` data-place="${esc(battle.place.anchor)}"` : ''}>
+        ${scene ? `<img class="scene-image" src="${scene}" alt="">` : ''}
         <img class="weather-layer front" src="${assetUrl(data, 'weather-rain-fine-v01')}" alt="">
         <div class="stage3d-mount" id="stage3dMount" aria-hidden="true"></div>
         <p class="battle-objective"><b>${tr('objective')} · ${esc(battle.format)}</b><br>${esc(battle.objective)}</p>
@@ -1823,13 +1853,19 @@ function openEncounter() {
   render();
 }
 
-function startBattle(id) {
-  const definition = data.battles.get(id);
+/** v4.71: a door's fight is fought at the door; a road fight where it happened. */
+const doorStage = encounter => doorFightStage(encounter, encounter?.door ? templateOf(doors, encounter.door) : null);
+const roadStage = event => roadFightStage(state.road?.last, event, state.scheduleIndex, places);
+
+function startBattle(id, stage = null) {
+  const authored = data.battles.get(id);
   // Answer 24: Aatami fights the first fights, then steps back for good.
-  const beat = definition.training ? '' : stepBackIfReady(state, data.content);
-  const crew = definition.training ? deployedCrew(state, data) : fighters(state, data);
+  const beat = authored.training ? '' : stepBackIfReady(state, data.content);
+  const crew = authored.training ? deployedCrew(state, data) : fighters(state, data);
+  const definition = stage ? stageFight(authored, stage, places, crew.map(member => member.name)) : authored;
   try {
     state.battle = createBattleState(definition, crew, state, data);
+    if (definition.place) state.battle.place = definition.place;
     state.mode = 'battle';
     if (beat) { state.battle.log.unshift(beat); logToast(beat); }
     if (!state.battle.training) recordFight(state, data.content);
@@ -1900,7 +1936,7 @@ function recordBattleConsequences() {
     const retired = ageCrew(state, data, battle.players.map(p => p.id));
     for (const id of retired) logToast(`${crewRecord(state, data, id)?.name ?? id} retires after this one.`);
   }
-  state.battleHistory.push({ id: battle.id, result: battle.result, round: battle.round });
+  state.battleHistory.push({ id: battle.id, result: battle.result, round: battle.round, ...(battle.place ? { at: battle.place.anchor } : {}) });
   state.battle = null;
   state.battleOpeningNerve = 0;
   // A road fight has no mission behind it and does not turn the block.
@@ -1998,14 +2034,14 @@ function handleRootClick(event) {
     const choice = encounter.choices.find(item => item.id === target.dataset.choice);
     const result = state.mode === 'visit' ? chooseVisit(state, data, target.dataset.choice) : chooseEncounter(state, encounter, choice, data);
     if (!result.ok) logToast(result.reason);
-    else if (result.startBattle && startBattle(result.startBattle) && encounter.door) {
+    else if (result.startBattle && startBattle(result.startBattle, doorStage(encounter)) && encounter.door) {
       // A door fight has no mission behind it: its stakes are the door's own.
       state.battle.missionId = null;
       state.battle.door = encounter.door;
     } else if (!result.startBattle && encounter.door) {
       // Answer 25: a bad deal can turn into a fight.
       const bad = escalation(state, data, doors, encounter.door, choice.id);
-      if (bad?.battle && startBattle(bad.battle)) {
+      if (bad?.battle && startBattle(bad.battle, doorStage(encounter))) {
         state.battle.missionId = null;
         state.battle.door = encounter.door;
         state.lastOutcome = [...(state.lastOutcome ?? []), 'The deal goes bad. It is a fight now.'];
@@ -2013,6 +2049,10 @@ function handleRootClick(event) {
         applyEffects(state, bad.effects, data, `door:${encounter.door}:alone`);
         state.lastOutcome = ['The deal goes bad, and nobody was standing with Aatami.', ...(state.lastOutcome ?? [])];
       }
+    }
+    if (result.ok && encounter.participants?.includes('toko')) {
+      const clip = TOKO_CLIP[choice?.id] ?? 'nod';
+      tokoActs(clip, { then: clip === 'lean' ? 'lean' : 'idle', till: 120 });
     }
     persist(); render();
   } else if (action === 'take-door') {
@@ -2024,7 +2064,7 @@ function handleRootClick(event) {
   } else if (action === 'road-choose') {
     const result = resolveRoad(state, data, roadEvents, target.dataset.choice);
     if (!result.ok) { logToast(result.reason); render(); return; }
-    if (result.startBattle && startBattle(result.startBattle)) {
+    if (result.startBattle && startBattle(result.startBattle, roadStage(result.event))) {
       state.battle.missionId = null;
       state.battle.road = result.event.id;
     }
@@ -2076,12 +2116,14 @@ function handleRootClick(event) {
   } else if (action === 'buy-toko-weapon') {
     const result = buyFromToko(state, data, target.dataset.equipment);
     logToast(result.ok ? `Bought from Toko for ${money(result.paid)}.` : ({ cash: 'Not enough cash.', 'not-here': 'Toko is on Vaasankatu.' }[result.reason] ?? 'He does not sell that.'));
+    if (result.ok) tokoActs('sell', { till: result.paid });
     persist(); render();
   } else if (action === 'buy-bowl') {
     const result = buyBowl(state, data);
     if (!result.ok) logToast({ 'already-this-block': 'One bowl a block. He has other customers.', cash: `A bowl is ${money(BOWL_EUR)}.`, 'not-here': 'Toko is on Vaasankatu.' }[result.reason] ?? result.reason);
     else logToast(result.anchorId ? `Toko on ${data.anchors.get(result.anchorId)?.label}: a price range, on the board.` : 'Toko has nothing new tonight. The broth is good.');
     tokoTold = result.ok ? (result.anchorId ?? '') : tokoTold;
+    if (result.ok) tokoActs('buy_info', { till: BOWL_EUR, then: 'lean' });   // what he heard, passed across the counter
     persist(); render();
   } else if (action === 'buy-equipment') {
     const result = buyEquipment(state, data, target.dataset.equipment);
@@ -2187,6 +2229,7 @@ async function boot() {
     roadEvents = await loadRoadEvents().catch(() => roadEvents);
     story = await loadStory().catch(() => story);
     doors = await loadDoors().catch(() => doors);
+    places = await loadPlaces().catch(() => places);
     data.families = await loadFamilies().catch(() => null);
     const hasSave = Boolean(localStorage.getItem(SAVE_KEY));
     state = loadState(data.content);
@@ -2297,7 +2340,7 @@ async function boot() {
 
     const pause = createPauseMenu({
       root: $('pause'),
-      version: 'v4.67',
+      version: 'v4.69',
       jump: jumpTo,
       sound: { get: soundOn, set: setSound },
     });
@@ -2342,7 +2385,9 @@ async function boot() {
         state.deployed = slots;
         for (const id of slots) state.crewStatus[id].status = 'available';
         $('splash').hidden = true;
-        if (startBattle(wantBattle)) render();
+        // `&at=<anchor>&by=<side>` stages it the way a door fight is (v4.71).
+        const at = new URLSearchParams(location.search).get('at');
+        if (startBattle(wantBattle, at ? { anchor: at, by: new URLSearchParams(location.search).get('by'), key: 'debug' } : null)) render();
       }
     }
 
@@ -2354,7 +2399,7 @@ async function boot() {
       get sound() { return soundState(); },
       debug: {
         setState(next) { state = next; registerTaken(state, data, doors); attachGrowth(state.battle, state, data); persist(); render(); },
-        startBattle(id) { startBattle(id); persist(); render(); },
+        startBattle(id, stage) { startBattle(id, stage ?? null); persist(); render(); },
         setBattleLights,
         openEncounter,
         render,
