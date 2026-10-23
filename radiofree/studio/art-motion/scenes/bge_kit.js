@@ -493,24 +493,32 @@
   }
   const win = (lt, a, b) => clamp((lt - a) / 0.3, 0, 1) * clamp((b - lt) / 0.3, 0, 1);
 
-  /** NEVER USED: a red rubber stamp, double-ruled, with the grain a stamp leaves; flat ink, so no sprite and no lift */
+  /** NEVER USED: a red rubber stamp on a paper label stuck to the glass. The label covers the booklet's small print
+   *  under it (red ink straight on the booklet read as noise); the ink, double-ruled, carries the stamp's grain */
   let NUC = null;
   function neverUsed() {
     if (NUC) return NUC;
-    const w = 420, h = 300, cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d');
+    const w = 420, h = 290, mk = () => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; return cv; };
+    const ink = mk(), g = ink.getContext('2d');
     g.translate(w / 2, h / 2); g.strokeStyle = C.red; g.fillStyle = C.red;
-    g.lineWidth = 12; g.beginPath(); g.roundRect(-196, -136, 392, 272, 16); g.stroke();
-    g.lineWidth = 4; g.beginPath(); g.roundRect(-178, -118, 356, 236, 8); g.stroke();
+    g.lineWidth = 10; g.beginPath(); g.roundRect(-186, -122, 372, 244, 14); g.stroke();
+    g.lineWidth = 4; g.beginPath(); g.roundRect(-170, -106, 340, 212, 7); g.stroke();
     g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-    for (const [s, y] of [['NEVER', -8], ['USED', 104]]) { g.font = '400 112px "Anton-400"'; const fz = Math.min(112, 112 * 318 / g.measureText(s).width); g.font = `400 ${fz.toFixed(1)}px "Anton-400"`; g.fillText(s, 0, y); }
+    for (const [s, y] of [['NEVER', -6], ['USED', 92]]) { g.font = '400 112px "Anton-400"'; const fz = Math.min(112, 112 * 300 / g.measureText(s).width); g.font = `400 ${fz.toFixed(1)}px "Anton-400"`; g.fillText(s, 0, y); }
     g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'destination-out'; const r = U.rng(57);
-    for (let i = 0; i < 1100; i++) { g.globalAlpha = 0.25 + r() * 0.75; g.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 2); }
+    for (let i = 0; i < 1000; i++) { g.globalAlpha = 0.25 + r() * 0.75; g.fillRect(r() * w, r() * h, 1 + r() * 3, 1 + r() * 2); }
     for (let i = 0; i < 7; i++) { g.save(); g.globalAlpha = 0.55; g.translate(r() * w, r() * h); g.rotate(-0.3 + r() * 0.6); g.fillRect(-30 - r() * 50, -1, 60 + r() * 110, 2 + r() * 2.5); g.restore(); }
-    return (NUC = cv);
+    const out = mk(), o = out.getContext('2d');
+    o.fillStyle = '#f3ecda'; o.beginPath(); o.roundRect(8, 8, w - 16, h - 16, 6); o.fill();
+    o.fillStyle = 'rgba(120,100,70,.08)'; for (let i = 0; i < 60; i++) o.fillRect(8 + r() * (w - 16), 8 + r() * (h - 16), 10 + r() * 40, 1);
+    o.drawImage(ink, 0, 0);
+    return (NUC = out);
   }
   function stampNU(g, ox, oy, sc, a) {
     if (a <= 0) return; const cv = neverUsed();
-    g.save(); g.translate(NU.x + ox, NU.y + oy); g.rotate(NU.rot); g.scale(sc, sc); g.globalAlpha = 0.94 * clamp(a, 0, 1); g.drawImage(cv, -cv.width / 2, -cv.height / 2); g.restore();
+    g.save(); g.translate(NU.x + ox, NU.y + oy); g.rotate(NU.rot); g.scale(sc, sc); g.globalAlpha = clamp(a, 0, 1);
+    g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 12 * sc; g.shadowOffsetX = 6 + 6 * (sc - 1); g.shadowOffsetY = 9 + 10 * (sc - 1);
+    g.drawImage(cv, -cv.width / 2, -cv.height / 2); g.restore();
   }
   /** the stamp coming down at tS: in from 1.7× over 0.12 s, a small bounce after (score.py lands press_stamp on tS) */
   function landing(lt, tS) {
@@ -552,7 +560,8 @@
   SCENES.bgev_year = { draw(c, lt) {
     const id = 'bgev_year', dd = dur(id), tL = at(id, 'lamp', 0.3), tP = at(id, 'stop', 1.0), tT = at(id, 'tag', 2.4), kD = (lt - tT) / 0.32;
     const lampOn = lt < tL ? 0.15 : lt < tL + 0.2 ? 1 - (Math.floor((lt - tL) * 24) % 2) * 0.6 : 1;
-    const v = { z: lerp(1.0, 1.12, ease.io(lt / dd)) * (1 + kick(lt, tP, 0.025) + kick(lt, tT, 0.03)), fx: 640, fy: 1150 };
+    // no push-in: the caption runs to four lines, so the plate has to stay below it and the tag above the corner tag
+    const v = { z: lerp(1.0, 1.02, ease.io(lt / dd)) * (1 + kick(lt, tP, 0.025) + kick(lt, tT, 0.03)), fx: 560, fy: 1060, sy: 25 };
     view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => {
       const A = caseLayer(g, ox, oy, lt, { lamp: lampOn, dust: 0.03, gleam: (lt - tP) / 0.55 });
       if (kD > 0) drawTag(g, { x: A[0], y: A[1], rot: swing(lt, [[tT, 0.22]]), sc: ease.back(kD) }, lt, { rows: [{ row: 0, t0: -10 }] });
