@@ -4,9 +4,9 @@
 // the sea to the west and south, the mill's long sheds along the shore, a breakwater, forest to the east, a dashed
 // site boundary and, in yellow, the flying squirrel forest that was not to be cut. In 2018–19, 1.3 ha of it was felled
 // without a permit; Doodle asked the authority by email to keep the papers secret, and they were kept as trade secrets.
-// The film: frame 0 is the whole map blacked out, strip after strip, a flying squirrel peeking over one;
-// the bars lift (2007, the forest), the year turns (2021: halls, sand, the zones gone), the papers go into a folder and
-// a TRADE SECRET stamp comes down, and the stamp lands on the map itself; then the bars slide back: frame 0 again.
+// The film: frame 0 is the 2021 map coming clear out of a blur (it was asked to be kept secret), the clipping MAP: HIDDEN;
+// 2007 (the forest, the bare patch already there), the year turns (2021: halls, sand; the zones red where the clearing
+// covers them), the papers go into a folder, TRADE SECRET comes down on the map, and it blurs out: frame 0 again.
 // Fair on purpose: the map is illustrative, after the published graphic, not a survey; the zones felled on screen are
 // the ones the 2021 picture shows cleared; nobody is drawn; the authority is named on a tag, as HS names it.
 // Every scene is registered here ("scenes": [] in film.json). Times come from window.FILM_PLAN (pipeline/plan.mjs).
@@ -60,6 +60,8 @@
     .map(([x, y, w, h, r, col]) => [MX(x), MY(y), w * MS, h * MS, r, col]);
   /** the ground cleared by 2021: sand between the mill and the eastern forest */
   const CLEAR = poly([[395, 1000], [470, 960], [560, 990], [600, 1100], [612, 1270], [592, 1352], [566, 1404], [500, 1384], [420, 1332], [362, 1270], [342, 1150]]);
+  /** ground already open in 2007, east of the long zone (the bare patch in the 2007 photograph): treeless in both years */
+  const OPEN07 = poly([[482, 1004], [530, 990], [566, 1040], [580, 1150], [566, 1232], [528, 1240], [494, 1172], [478, 1082]]);
   /** the site boundary, dashed white, as on the published map */
   const BOUND = poly([[95, 738], [175, 790], [330, 860], [440, 830], [436, 738], [490, 694], [640, 772], [760, 940], [830, 1000], [820, 1150], [862, 1212], [800, 1290], [650, 1300], [596, 1284], [574, 1310], [540, 1420]]);
   /** the flying squirrel forest: seven yellow zones, after the published map. `gone`: cleared by the 2021 picture */
@@ -92,6 +94,7 @@
       if (r() < 0.05) continue;
       const patch = Math.sin(px * 0.013 + 1.3) + Math.sin(py * 0.011 - 0.4) + Math.sin((px + py) * 0.007);
       const kind = patch > 1.5 ? 'birch' : r() < 0.35 ? 'pine' : 'spruce';
+      if (inside(OPEN07, px, py)) continue;                  // already bare in 2007
       const z = inZone(px, py), clr = inside(CLEAR, px, py);
       out.push({ x: px, y: py, r: 9 + r() * 7, kind, v: (r() * 3) | 0, z, clr, k: r() });
     }
@@ -169,19 +172,19 @@
     ZONES.forEach((z, i) => {
       const s = state(i); if (!s.a) return; const gk = clamp(s.gone || 0, 0, 1), p = s.pulse ? 0.5 + 0.5 * Math.sin(lt * 7 + i) : 0;
       g.save(); g.globalAlpha = s.a; path(g, z.P);
-      g.lineJoin = 'round'; g.shadowColor = gk > 0.5 ? 'rgba(216,64,47,.8)' : 'rgba(255,214,80,.9)'; g.shadowBlur = 14 + 10 * p;
-      g.fillStyle = gk > 0 ? `rgba(216,64,47,${0.35 + 0.25 * gk})` : `rgba(242,194,48,${0.5 + 0.15 * p})`; g.fill(); g.shadowColor = 'transparent';
+      g.lineJoin = 'round'; g.shadowColor = 'rgba(255,214,80,.9)'; g.shadowBlur = 14 + 10 * p;
+      g.fillStyle = `rgba(242,194,48,${0.5 + 0.15 * p})`; g.fill(); g.shadowColor = 'transparent';
       g.strokeStyle = 'rgba(0,0,0,.5)'; g.lineWidth = 11; g.stroke();
-      g.strokeStyle = gk > 0.5 ? C.gone : C.zoneL; g.lineWidth = 6 + 2 * p; if (gk > 0.5) g.setLineDash([10, 7]); g.stroke();
+      g.strokeStyle = C.zoneL; g.lineWidth = 6 + 2 * p; g.stroke();
+      // the felled part: only where the 2021 clearing (traced from the 2021 photograph) covers the zone; no claim
+      // beyond the picture about which zone made up the 1.3 ha
+      if (gk > 0) { g.save(); path(g, CLEAR); g.clip(); g.globalAlpha = s.a * gk; path(g, z.P); g.fillStyle = 'rgba(216,64,47,.75)'; g.fill(); g.strokeStyle = C.gone; g.lineWidth = 7; g.setLineDash([10, 7]); g.stroke(); g.restore(); }
       g.restore();
     });
   }
+
   const ZC = ZONES.map((z) => { const xs = z.P.map((p) => p[0]), ys = z.P.map((p) => p[1]); return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2, w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) }; });
 
-  // ── the redaction: the WHOLE map is blacked out (owner, 23 Oct: the authority hid the whole map, not just the zones),
-  //    as a stack of black strips edge to edge, thin slivers of map showing between them. Laid out in SCREEN space at
-  //    frame 0's zoom and mapped back to map space (BARS is built once HZ and ZF exist, below)
-  let BARS = [];
   function bar(c, b, k = 1, dx = 0) {
     if (k <= 0) return; const kk = ease.back(clamp(k, 0, 1));
     c.save(); c.translate(b.x + dx, b.y); c.rotate(b.r); c.scale(lerp(1.25, 1, kk), lerp(1.25, 1, kk));
@@ -272,14 +275,7 @@
   const camZ = (c, z, fx = V.fx, fy = V.fy) => { if (z !== 1) { c.translate(fx, fy); c.scale(z, z); c.translate(-fx, -fy); } };
   const ZF = { x: MX(560), y: MY(1150) };                   // the zones' middle: where the shots push in
   const HZ = 1.3;                                            // frame 0's zoom, and the last frame's: the bars read big
-  {
-    const m = (sx, sy) => ({ x: ZF.x + (sx - ZF.x) / HZ, y: ZF.y + (sy - ZF.y) / HZ });
-    let r = 7; const rnd = () => ((r = (r * 16807) % 2147483647) / 2147483647);
-    for (let sy = -40, i = 0; sy < H + 80; sy += 166, i++) {
-      const x0 = -80 - rnd() * 60, x1 = W + 80 + rnd() * 60, c0 = m((x0 + x1) / 2, sy + 75);
-      BARS.push({ x: c0.x, y: c0.y, w: (x1 - x0) / HZ, h: 150 / HZ, r: (rnd() - 0.5) * 0.03 });
-    }
-  }
+
 
   /** the map, 2021 (frame 0's and the last frame's), or any state: halls k, cut trees gone(t), zones state */
   function map(c, lt, cam, { hallsK = 1, gone = () => 2, zstate, extra } = {}) {
@@ -288,20 +284,17 @@
       { sh: forest(), d: 0.1, lift: 0.9 },
       { d: 0.12, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); bound(g, 0.85); zones(g, lt, zstate); if (extra) extra(g); g.restore(); } }], cam);
   }
-  const PEEK = { x: ZF.x + (430 - ZF.x) / HZ, y: BARS[6].y - BARS[6].h / 2 + 4 };   // the squirrel looks over the top edge of a strip mid-frame (clear of the IG rail)
+  const BLUR = 16;                                           // frame 0's blur, and the last frame's: the map kept from view
 
   // ═════════ 1 · tsv_hook: frame 0 — the 2021 map, its yellow zones already under four black bars, a flying squirrel
   //            peeking over one; the clipping says MAP: HIDDEN. On "secret" the bars thump and the squirrel ducks ═════════
   SCENES.tsv_hook = { draw(c, lt) {
     const id = 'tsv_hook', dd = dur(id), tS = at(id, 'secret', 1.6);
     const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)), hits: [tS], kick: 0.035 });
-    c.save(); camZ(c, HZ * (1 + 0.04 * ease.io(lt / dd)), ZF.x, ZF.y);
-    map(c, lt, cam, { zstate: (i) => ({ a: 1, gone: ZONES[i].gone ? 1 : 0 }) });
-    // the squirrel peeks, ducks on the hit, and comes back up
-    const duck = lt > tS ? clamp(1 - Math.exp(-(lt - tS) * 9) * 1.4, 0, 1) * 0 + clamp((lt - tS - 0.55) / 0.3, 0, 1) : 1;
-    const up = ease.out(duck) * (1 + 0.04 * Math.sin(lt * 5));
-    BARS.forEach((b, i) => { const th = lt > tS ? Math.exp(-(lt - tS - i * 0.025) * 8) * clamp((lt - tS - i * 0.025) * 30, 0, 1) : 0; bar(c, b, 1 - 0.08 * th); });
-    c.save(); c.beginPath(); c.rect(0, 0, W, PEEK.y + 2); c.clip(); put(c, SQ_PEEK(), PEEK.x, PEEK.y + 110 * (1 - up), { sc: 0.9, lift: 0.4 }); c.restore();
+    // frame 0 opens on the map blurred (the last frame's state), it comes clear, and on "secret" it blurs again
+    const bl = BLUR * (1 - ease.io(lt / 0.6)) + (lt > tS ? 0.55 * BLUR * ease.out((lt - tS) / 0.35) : 0);
+    c.save(); camZ(c, HZ * (1 + 0.04 * ease.io(lt / dd)), ZF.x, ZF.y); if (bl > 0.3) c.filter = `blur(${bl.toFixed(1)}px)`;
+    map(c, lt, cam, { zstate: (i) => ({ a: 1, gone: 1 }) }); c.filter = 'none';
     c.restore();
     bigClip(c, ui('clipLabel', 'DOODLE DATA CENTRE · HAMINA, FINLAND'), ui('clipValue', 'MAP: HIDDEN'), { k: lt / 0.25, dy: 420 * ease.io((lt - dd + 0.55) / 0.5) });
     box(c);
@@ -314,7 +307,8 @@
     const cam = vcam(lt, dd, { z: () => 1, hits: [tN], kick: 0.03 });
     const Z = lerp(HZ * 1.04, 1.5, ease.io((lt - 0.2) / (dd - 0.3)));
     c.save(); camZ(c, Z, ZF.x, ZF.y);
-    map(c, lt, cam, { hallsK: 0, gone: () => -1, zstate: (i) => ({ a: 1, pulse: lt > 0.4 }) });
+    const bl2 = 0.55 * BLUR * (1 - ease.out(lt / 0.35)); if (bl2 > 0.3) c.filter = `blur(${bl2.toFixed(1)}px)`;
+    map(c, lt, cam, { hallsK: 0, gone: () => -1, zstate: (i) => ({ a: 1, pulse: lt > 0.4 }) }); c.filter = 'none';
     // the glide: from the ellipse by the bay to the long zone, over the forest, banking
     const kg = (lt - tG) / 1.3;
     if (kg > 0 && kg < 1) {
@@ -323,7 +317,6 @@
       put(c, SQ_GLIDE(), x, y, { sc: 0.42 * (1 + 0.25 * Math.sin(e * Math.PI)), rot: ang + Math.sin(kg * 9) * 0.08, lift: 2.2 });
     }
     // the bars leave: sliding off to the right and up, one after another
-    BARS.forEach((b, i) => { const k = ease.io((lt - 0.05 - i * 0.035) / 0.45); if (k < 1) bar(c, b, 1 - k * 0.2, (i % 2 ? -1 : 1) * k * 1100); });
     c.restore();
     yearCard(c, '2007', 210, 700, { a: clamp((lt - 0.35) / 0.25, 0, 1) });
     screenTag(c, ui('zoneTag', 'FLYING SQUIRREL FOREST'), 520, 1490, { a: clamp((lt - 0.5) / 0.3, 0, 1) * clamp((dd - 0.2 - lt) / 0.3, 0, 1), bg: C.zone, size: 40 });
@@ -338,7 +331,7 @@
     const cam = vcam(lt, dd, { z: () => 1, hits: [tP], kick: 0.03 });
     c.save(); camZ(c, lerp(1.5, 1.6, ease.io(lt / dd)), ZF.x, ZF.y);
     map(c, lt, cam, { hallsK: clamp((lt - tF - 0.5) / 0.9, 0, 1), gone: (t) => (lt - fellAt(t, tF)) / 0.18,
-      zstate: (i) => { const z = ZONES[i]; if (!z.gone) return { a: 1 }; const t0 = fellAt({ x: ZC[i].x, k: 0.5 }, tF) + 0.15; return { a: 1, gone: (lt - t0) / 0.2 }; },
+      zstate: (i) => { const t0 = fellAt({ x: ZC[i].x, k: 0.5 }, tF) + 0.15; return { a: 1, gone: (lt - t0) / 0.2 }; },
       extra: (g) => { for (const t of CUT) { const k = (lt - fellAt(t, tF) - 0.04) / 0.35; if (k <= 0 || k >= 1) continue; g.fillStyle = `rgba(230,205,150,${0.4 * (1 - k)})`; g.beginPath(); g.arc(t.x, t.y, 5 + 14 * k, 0, TAU); g.fill(); } } });
     c.restore();
     // the year card flips over on "year"
@@ -422,8 +415,9 @@
     const cam = vcam(lt, dd, { z: () => 1, hits: [tT], kick: 0.035, amp: 3 }); cam.x *= 1 - kR; cam.y *= 1 - kR; if (lt >= tL) { cam.x = cam.y = 0; cam.z = 1; }
     // in from the fell's framing to a closer one for the stamp, then home: frame 0's zoom (1 + 0.04 at its start = 1)
     const zIn = lerp(1.6, 1.42, ease.io(lt / (tT + 0.2))), Z = lt >= tL ? HZ : lerp(zIn, HZ, kR);
-    c.save(); camZ(c, Z, ZF.x, ZF.y);
-    map(c, lt, cam, { zstate: (i) => ({ a: 1, gone: ZONES[i].gone ? 1 : 0 }) });
+    const bl = lt >= tL ? BLUR : BLUR * ease.io((lt - tB - 0.2) / (tL - tB - 0.2));
+    c.save(); camZ(c, Z, ZF.x, ZF.y); if (bl > 0.3) c.filter = `blur(${bl.toFixed(1)}px)`;
+    map(c, lt, cam, { zstate: (i) => ({ a: 1, gone: 1 }) }); c.filter = 'none';
     c.restore();
     // the stamp on the map (screen space), and the squirrel looking out from under it
     // on "back" the stamp lifts off the paper: it rises a little toward the camera and fades (never through the caption)
@@ -435,12 +429,6 @@
       c.restore();
     }
     if (lt > tT) { const f = Math.exp(-(lt - tT) * 7) * 0.22; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
-    // the bars slide back in from the right, one after another, and settle exactly where frame 0 has them
-    c.save(); camZ(c, Z, ZF.x, ZF.y);
-    BARS.forEach((b, i) => { const k = ease.out((lt - tB - 0.25 - i * 0.05) / 0.4); if (k > 0) bar(c, b, 1, (i % 2 ? -1 : 1) * (1 - k) * 1100); });
-    // the squirrel back at its post (frame 0's peek), once the bars are home
-    const kq0 = clamp((lt - tB - 0.9) / 0.3, 0, 1); if (kq0 > 0) { c.save(); c.beginPath(); c.rect(0, 0, W, PEEK.y + 2); c.clip(); put(c, SQ_PEEK(), PEEK.x, PEEK.y + 110 * (1 - ease.out(kq0)), { sc: 0.9, lift: 0.4 }); c.restore(); }
-    c.restore();
     const kC = clamp((lt - tC + 0.32) / 0.32, 0, 1);
     bigClip(c, ui('clipLabel', 'DOODLE DATA CENTRE · HAMINA, FINLAND'), ui('clipValue', 'MAP: HIDDEN'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
     box(c);

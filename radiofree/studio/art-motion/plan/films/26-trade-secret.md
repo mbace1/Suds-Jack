@@ -70,3 +70,14 @@ Before posting, check the HS text for:
 - Two fixes came from the second look:
   - The email sat under the caption, so it moved down.
   - The stamp's exit flew up through the caption, so it now lifts and fades in place.
+
+## v3 (owner, 23 Oct): no blacking out; the map made faithful
+
+- Owner: the whole map was hidden, not just its zones. Then: the blacking serves no purpose; just say it was asked to
+  be kept secret, and blur at the end if anything. **The bars are gone.** Frame 0 is the 2021 map coming clear out of a
+  blur, and it blurs again on "secret". The end blurs the map out under MAP: HIDDEN, which gives a clean loop.
+- Accuracy pass, against the HS 2007 and 2021 photographs:
+  - 2007 now has the bare patch east of the long zone (`OPEN07`), which was already open then.
+  - A zone turns red only where the 2021 clearing (traced from the 2021 photograph) covers it. The film no longer
+    claims which zones made up the 1.3 ha.
+  - The zones are traced from the HS graphic, so their sizes are HS's own drawing.

@@ -4,12 +4,12 @@ the fi and ja masters are scored by this same file.
 
     uv run --with numpy --with soundfile python papercut/trade-secret/score.py <events.json> <out.wav> [<report.json> <stems>]
 
-1 · the hit; on "secret" the black bars thump down one after another (a felt-tip squeak for the squirrel ducking).
-2 · the bars slide away (paper slides); a gliding whistle for the flying squirrel; a chime on "No felling".
+1 · the hit; on "secret" the map blurs (one thump).
+2 · the map comes clear; a gliding whistle for the flying squirrel; a chime on "No felling".
 3 · the year card flips; a rustle-and-thump front across the clearing (ham_kit fellAt, mirrored); halls clunk up;
     "without a permit" slams.
 4 · the email slides in with a mail chirp; the folder closes; "trade secrets": the stamp.
-5 · "trade secret": the stamp on the map, a hit; the bed thins for the hold; the jingle lands on "back" as the bars
+5 · "trade secret": the stamp on the map, a hit; the bed thins for the hold; the jingle lands on "back" as the map
     slide back home, the clipping lands on "clip", and the last chord rings into frame 1's hit.
 """
 import sys, json
@@ -87,15 +87,13 @@ for i, t in enumerate(S[1:NS]):
 for cp in EV['captions']:
     last = max(w['t'] for w in EV['words'] if w['caption'] == cp['id']); s.duck(cp['t0'], last + 0.4, -3.5, why=f'caption {cp["id"]}')
 
-# ── 1 · "secret": the four bars thump, one after another; the squirrel ducks
-for i in range(4): s.fx(thump(), tS + i * 0.06, 0.2, -0.3 + 0.2 * i, name=f'bar {i + 1} thumps')
+# ── 1 · "secret": the map blurs (one thump)
+s.fx(thump(), tS, 0.25, 0, name='"secret": the map blurs')
 s.fx(foley('card', 'tap'), tS - 0.01, 0.45, 0, name='"secret"'); accent(tS, 0, 0.3, name='"secret"')
 s.note(sub_bass(38, 0.4), tS, 0.3, 0, 0, stem='bass', name='"secret": sub')
-s.fx(glide(1800, 900, 0.12), tS + 0.05, 0.08, 0.2, name='the squirrel ducks')
 
-# ── 2 · the bars slide away; the squirrel glides; "No felling"
+# ── 2 · the map comes clear; the squirrel glides; "No felling"
 t2 = S[1]
-for i in range(4): s.fx(paper_slide(0.3) * 4, t2 + 0.05 + i * 0.08, 0.18, 0.2 + 0.15 * i, name=f'bar {i + 1} slides away')
 tG, tN = c('tsv_map.glide'), c('tsv_map.cut')
 s.fx(glide(900, 2200, 1.2), tG, 0.08, -0.4, name='the squirrel glides')
 s.fx(whoosh(d=1.3, way='out', bright=0.6), tG, 0.12, -0.2, name='the glide: air')
@@ -121,11 +119,10 @@ s.fx(paper_slide(0.3) * 4, tC, 0.2, 0, name='the folder starts to close'); s.fx(
 s.fx(stamp(), tSe, 0.6, 0, name='"trade secrets": the stamp'); s.fx(press_stamp(1.0, seed=5), tSe + 0.01, 0.45, 0)
 s.note(kick_tight(1.0), tSe, 0.45, 0, 0, stem='drums', name='"secrets": kick'); accent(tSe, 3, name='"secrets"')
 
-# ── 5 · the stamp on the map; the hold; the bars slide home; the clipping; the last chord
+# ── 5 · the stamp on the map; the hold; the map blurs out; the clipping; the last chord
 hit(tT, (62, 65, 70, 74), 0.85, '"trade secret"'); s.fx(stamp(), tT, 0.55, 0, name='the stamp on the map')
 s.fx(chime(76, 0.5), tT + 0.02, 0.2, 0.1); s.fx(glide(1500, 2400, 0.1), tT + 0.55, 0.07, 0.25, name='the squirrel peeks')
 hook_land(tB, 0.26)
-for i in range(4): s.fx(paper_slide(0.3) * 4, tB + 0.25 + i * 0.12, 0.2, 0.5 - 0.2 * i, name=f'bar {i + 1} slides home')
 for j, n in enumerate((50, 57, 62, 65, 69, 76)):
     s.note(fm_ep(n, END - tB, 0.5, r=1.2), tB + 0.01 * j, 0.11, -0.35 + 0.14 * j, 0.45, stem='keys', name='the last chord')
 s.note(sub_bass(38, END - tB), tB, 0.22, 0, 0, stem='bass', name='the last chord: sub')
