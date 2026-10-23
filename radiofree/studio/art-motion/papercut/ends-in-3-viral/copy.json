@@ -1,0 +1,131 @@
+{
+  "film": "ends-in-3-viral",
+  "cut": "Global 2, VIRAL CUT v1 (23 Oct) of Ends in 3 — owner, 23 Oct: 'Test other 2 as well' (the viral format, plan/films/23b-ends-in-3-viral.md). The hook is frame 0; the last frame hands back to it.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Mexico cut off 2.2 million lines ending in 3 for not linking an ID, against extortion and fraud; the 5s are due 31 October; cut-off phones still get the earthquake alert.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.15",
+      "hold": "s2",
+      "text": {
+        "en": "[2.2 million] phone / lines cut off / in Mexico.",
+        "fi": "[2,2 miljoonaa] liittymää / katkaistiin / Meksikossa.",
+        "ja": "[220万] 回線が / メキシコで / 停止。"
+      },
+      "source": "CRT figures via El Financiero, 5 Oct 2026: 2,248,143 lines ending in 3 suspended after their deadline (30 Sep, grace to 3 Oct), as of 4 Oct; about 1.21 million reactivated by then. Search summaries, 23 Oct (plan/films/23-ends-in-3.md)."
+    },
+    {
+      "id": "rule",
+      "role": "evidence",
+      "at": "s2+0.25",
+      "until": "s3-0.15",
+      "hold": "s3",
+      "text": {
+        "en": "Every line needs / an ID. The reason: / [extortion, fraud].",
+        "fi": "Jokainen liittymä tarvitsee / tunnuksen. Syy: / [kiristys, petokset].",
+        "ja": "全回線に IDが 必要。 / 理由は [恐喝と 詐欺]。"
+      },
+      "source": "Mexico's telecom regulator, the CRT: since 9 Jan 2026 every mobile line must be linked to its holder's name and CURP (national ID number) through the phone company; the stated aim is to end the anonymous lines used for extortion and fraud (El Financiero, Mexico News Daily, Crónica; search summaries, 23 Oct)."
+    },
+    {
+      "id": "next",
+      "role": "evidence",
+      "at": "s3+0.25",
+      "until": "s4-0.15",
+      "hold": "s4",
+      "text": {
+        "en": "Ending in 4: cut. / Ending in 5: due / [31 October].",
+        "fi": "Loppunumero 4: katkaistu. / Loppunumero 5: määräaika / [31. lokakuuta].",
+        "ja": "末尾4は 停止。 / 末尾5の 期限は / [10月31日]。"
+      },
+      "source": "The CRT's calendar by last digit (0 on 15 Aug to 9 on 31 Dec). Lines ending in 4 were due 15 Oct and suspended about 72 hours later (Informador 19 Oct: more than a million); lines ending in 5 are due 31 Oct, with suspension about 72 hours after (Expansión, UnoTV, El Mañana, Récord; search summaries, 23 Oct)."
+    },
+    {
+      "id": "kept",
+      "role": "evidence",
+      "at": "s4+0.25",
+      "until": "s5-0.15",
+      "hold": "s5",
+      "text": {
+        "en": "No calls, no data. / Number kept till / you [link an ID].",
+        "fi": "Ei puheluita, ei dataa. / Numero säilyy, kunnes / [tunnus liitetään].",
+        "ja": "通話も データも 不可。 / 番号は 残る。 / [IDを 登録] すれば 戻る。"
+      },
+      "source": "CRT, as carried by El Universal, Milenio, Xataka, Ruptura360 and El Imparcial (search summaries, 23 Oct): a suspended line cannot make or receive ordinary calls, send texts or use data; it is not cancelled, the number is not lost, and service returns as soon as the line is linked."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.25",
+      "until": "end-0.15",
+      "hold": "end",
+      "text": {
+        "en": "No ID, no phone. / The quake alert / still [gets through].",
+        "fi": "Ei tunnusta, ei puhelinta. / Maanjäristysvaroitus / [menee silti läpi].",
+        "ja": "IDなし、 電話なし。 / それでも 地震警報は / [届く]。"
+      },
+      "source": "The station's line, over its own image. The fact under it: a suspended line still receives the seismic alert and can still call 911, other emergency and citizen-service numbers and its phone company (CRT via El Universal, Milenio, Xataka, ADN40, El Imparcial; search summaries, 23 Oct). Not a quote."
+    }
+  ],
+  "ui": {
+    "place": {
+      "en": "MEXICO · 2026",
+      "fi": "MEKSIKO · 2026",
+      "ja": "メキシコ · 2026"
+    },
+    "registry": {
+      "en": "CRT · LINE REGISTRY · 2026",
+      "fi": "CRT · LIITTYMÄREKISTERI · 2026",
+      "ja": "CRT · 回線登録 · 2026"
+    },
+    "calendar": {
+      "en": "CRT · DEADLINES BY LAST DIGIT",
+      "fi": "CRT · MÄÄRÄAJAT LOPPUNUMERON MUKAAN",
+      "ja": "CRT · 末尾の 数字ごとの 期限"
+    },
+    "kept": {
+      "en": "THE NUMBER IS KEPT",
+      "fi": "NUMERO SÄILYY",
+      "ja": "番号は 消えない"
+    }
+  },
+  "props": {
+    "digits": {
+      "en": "0–9 on the phones",
+      "why": "each phone shows the last digit of its line; numbers, the same in every master"
+    },
+    "calendar": {
+      "en": "2026 · 0–9 · 15/08 … 31/12",
+      "why": "the calendar of deadlines by last digit (CRT); digits and day/month dates, the same in every master"
+    },
+    "id": {
+      "en": "ID · CURP",
+      "why": "the card's band and the name of Mexico's national ID number; the photo is a mask, no face, no name"
+    },
+    "alert": {
+      "en": "a triangle with a seismograph trace",
+      "why": "the alert screen is an icon only, so no master says the wrong words; it shows an alert, never a quake"
+    }
+  },
+  "post": {
+    "en": "2.2 million phone lines cut off in Mexico. Every line must now be linked to its owner's ID, against extortion and fraud. Ending in 4: cut. Ending in 5: due 31 Oct. A cut-off phone still gets the earthquake alert. What does your number end in? #Mexico",
+    "es": "México suspendió 2,2 millones de líneas terminadas en 3: cada línea debe vincularse a la CURP de su titular, contra la extorsión y el fraude. Terminación 4: suspendidas. Terminación 5: vence el 31 de octubre. Aún reciben la alerta sísmica. ¿En qué termina la tuya?",
+    "fi": "Meksiko katkaisi 2,2 miljoonaa liittymää: jokainen liittymä on nyt sidottava omistajan henkilötunnukseen kiristyksen ja petosten torjumiseksi. Loppunumero 4: katkaistu. Loppunumero 5: määräaika 31.10. Katkaistu puhelin saa yhä maanjäristysvaroituksen. Mihin numerosi päättyy?",
+    "ja": "メキシコで220万回線が停止。全ての携帯回線を持ち主のIDに結びつける義務、狙いは恐喝と詐欺の対策。末尾4は停止済み、末尾5の期限は10月31日。停止された電話にも地震警報は届く。あなたの番号の末尾は？"
+  }
+}

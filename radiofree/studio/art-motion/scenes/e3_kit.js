@@ -398,4 +398,138 @@
     if (lt >= tA) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(232,69,44,${0.05 + 0.05 * pulse})`; c.fillRect(0, 0, W, H); c.restore(); }
     box(c);
   } };
+
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  // THE VIRAL CUT (papercut/ends-in-3-viral; plan/films/23b-ends-in-3-viral.md): five shots at 124 BPM, the e3v_*
+  // scenes below. Nothing above this line changes, so the v1 draft renders exactly as it did. The hook is frame 0: the
+  // street, every phone lit with its last digit, MEXICO on the tag from the first frame; on `dark` the unlinked 3s die
+  // at once (the third 3 stays lit: most lines ending in 3 were linked, and the film does not say otherwise). Shot 5
+  // ends on shot 1's own framing (V0) with the people back in their first-frame poses, so the film loops: the last
+  // frame, every phone showing the alert, hands back to the first, every phone showing its digit.
+  const V0 = { x: 0, y: 0, z: 1.1, fx: 540, fy: 1300 };
+  const pose0 = (i) => ({ raise: 0.25 + 0.15 * Math.sin(i), look: Math.sin(i * 1.7) * 0.15 });   // everyone at lt = 0
+  /** the tag, on from the very first frame (the hook has no time to fade one in) */
+  function tagNow(c, text, lt, dd, x = 110) {
+    const y = R.SAFE_B - 66, a = clamp((dd - 0.6 - lt) / 0.3, 0, 1); if (a <= 0) return;
+    c.save(); c.globalAlpha = a; c.font = `32px "ArchivoBlack-400", ${JP}`; const w = c.measureText(text).width + 44;
+    c.shadowColor = 'rgba(4,6,12,.6)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = K.ochre; c.beginPath(); c.roundRect(x, y, w, 66, 8); c.fill(); c.shadowColor = 'transparent';
+    c.fillStyle = K.ink; c.fillText(text, x + 22, y + 45); c.restore();
+  }
+  const isCut = (i) => CUT.includes(i);
+
+  // ═════════ V1 · e3v_hook: frame 0 is the street, every phone lit; on `dark` the unlinked 3s die at once ═════════
+  SCENES.e3v_hook = { draw(c, lt) {
+    const id = 'e3v_hook', dd = dur(id), tD = at(id, 'dark', 0.3), f = lt - tD;
+    const kick = f >= 0 ? 0.045 * Math.exp(-f * 5) * (1 - Math.exp(-f * 40)) : 0;
+    const shake = f >= 0 ? Math.exp(-f * 7) * Math.sin(f * 70) * 9 : 0;
+    const cam = { x: V0.x + shake, y: 0, z: (V0.z + kick) * lerp(1, 1.07, ease.io(lt / dd)), fx: V0.fx, fy: V0.fy };
+    street(c, lt, cam, (i) => {
+      // the 3s flicker as they die: on, off, on, gone
+      const cut = isCut(i), flick = cut && f >= 0 && f < 0.24 && Math.floor(f / 0.06) % 2 === 0, dead = cut && f >= 0 && !flick;
+      return { state: dead ? 'grey' : 'lit', raise: 0.25 + 0.15 * Math.sin(lt * 0.8 + i), glowA: dead ? 0 : cut && f >= 0 ? 0.5 : 0.16, look: Math.sin(lt * 0.5 + i * 1.7) * 0.15 };
+    });
+    if (f >= 0 && f < 0.3) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(216,64,47,${0.16 * (1 - f / 0.3)})`; c.fillRect(0, 0, W, H); c.restore(); }
+    tagNow(c, ui('place', 'MEXICO · 2026'), lt, dd);
+    box(c);
+  } };
+
+  // ═════════ V2 · e3v_rule: the registry, as e3_ledger, on this cut's own cues ═════════
+  SCENES.e3v_rule = { draw(c, lt) {
+    const id = 'e3v_rule', dd = dur(id), tL = at(id, 'lace', 2.0), tT = at(id, 'tie', 3.4);
+    const k = (lt - tL) / Math.max(0.5, tT - 0.2 - tL), tight = ease.back((lt - tT) / 0.3), bow = (lt - tT - 0.06) / 0.32;
+    const gap = lerp(0, 22, ease.out((lt - tT) / 0.25));
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tT], { kick: 0.04 }) * lerp(1.0, 1.08, ease.io(lt / dd)), fx: 540, fy: 1300 };
+    stack(c, [
+      { sh: office(), d: 0.05, lift: 0 },
+      { fn: (g, ox, oy) => { put(g, signSp(), 300 + ox, 560 + oy, { lift: 1.2, rot: -0.02 + Math.sin(lt * 0.9) * 0.01 }); glow(g, 540 + ox, 600 + oy, 640, 'rgba(255,230,180,', 0.1); }, d: 0.08 },
+      { fn: (g, ox, oy) => QUEUE.forEach((q, i) => {
+        walker(g, q.x + ox, q.y + oy, q.s, { coat: q.coat, scarf: K.red, t: lt + i, led: false, look: Math.sin(lt * 0.6 + i) * 0.2 });
+        const up = 0.5 + 0.5 * Math.sin(lt * 1.1 + i * 1.3), ix = q.x + ox + q.side * 70 * q.s, iy = q.y + oy + lerp(200, 110, up) * q.s;
+        put(g, idSp(), ix, iy, { sc: 0.62, rot: q.side * 0.1, lift: 0.8 });
+        g.fillStyle = K.ink; g.beginPath(); g.roundRect(ix - 22, iy + 26, 44, 34, 12); g.fill();
+      }), d: 0.14 },
+      { sh: counter(), d: 0.24, lift: 0.6 },
+      { d: 0.32, fn: (g, ox, oy) => {
+        const pa = [360 + gap + ox, 1340 + oy, 118], ca = [740 - gap + ox, 1352 + oy, 140];
+        put(g, bigPhone(), pa[0], pa[1], { rot: -0.07, sc: 0.95, lift: 0.5 });
+        glow(g, pa[0], pa[1], 220, 'rgba(170,230,255,', 0.18);
+        put(g, idSp(), ca[0], ca[1], { rot: 0.05, sc: 1.24, lift: 0.5 });
+        stringLoop(g, pa, ca, ease.io(k), clamp(tight, 0, 1.2), bow);
+      } },
+    ], cam);
+    tag(c, ui('registry', 'CRT · LINE REGISTRY · 2026'), lt, dd);
+    box(c);
+  } };
+
+  // ═════════ V3 · e3v_next: the escalation. 0–3 already crossed; the 4 crossed on "cut."; the 5 ringed on "31 October";
+  //            then 6, 7, 8 and 9 light in turn: it rolls on, digit by digit, to the end of the year ═════════
+  let MV = null;
+  const marksV = (t4, t5) => {
+    if (MV && MV.key === `${t4}|${t5}`) return MV;
+    const X = (d, t0, dd, seed) => { const [cx, cy] = cellAt(d), h = 74; return mkMark(t0, dd, [GEN().line(cx - h, cy - h * 1.2, cx + h, cy + h * 1.2, inkOf(seed)), GEN().line(cx + h, cy - h * 1.2, cx - h, cy + h * 1.2, inkOf(seed + 1))]); };
+    const old = [0, 1, 2, 3].map((d) => X(d, -10, 0.1, 10 + d * 3));
+    const four = X(4, t4 - 0.42, 0.42, 41);
+    const [c5x, c5y] = cellAt(5), ring5 = mkMark(t5 - 0.05, 0.42, [GEN().ellipse(c5x, c5y, 190, 270, inkOf(51, { strokeWidth: 8 }))]);
+    return (MV = { key: `${t4}|${t5}`, old, four, ring5 });
+  };
+  const ROLL = (t5, d) => t5 + 0.62 + (d - 6) * 0.22;      // when each later digit lights (score.py mirrors it)
+  SCENES.e3v_next = { draw(c, lt) {
+    const id = 'e3v_next', dd = dur(id), t4 = at(id, 'four', 1.0), t5 = at(id, 'five', 2.5), M = marksV(t4, t5);
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [t4, t5], { kick: 0.035 }) * lerp(1.0, 1.07, ease.io(lt / dd)), fx: 540, fy: 960 };
+    stack(c, [
+      { sh: cwall(), d: 0.05, lift: 0 },
+      { fn: (g, ox, oy) => glow(g, 540 + ox, 820 + oy, 760, 'rgba(255,220,160,', 0.12), d: 0.05 },
+      { d: 0.3, fn: (g, ox, oy) => {
+        g.save(); g.translate(ox, oy);
+        put(g, calSp(), CAL.x, CAL.y, { lift: 1.0, rot: -0.012 });
+        put(g, rings(), CAL.x, CAL.y - CAL.top - 60, { lift: 0.6 });
+        for (let d = 6; d <= 9; d++) {
+          const k = lt - ROLL(t5, d); if (k <= 0) continue;
+          const [cx, cy] = cellAt(d), a = 0.25 + 0.75 * Math.exp(-k * 2.4);
+          g.save(); g.globalAlpha = a; g.strokeStyle = C.red; g.lineWidth = 7; g.setLineDash([18, 12]); g.lineDashOffset = -k * 40;
+          g.beginPath(); g.roundRect(cx - CAL.cw / 2 + 8, cy - CAL.ch / 2 + 8, CAL.cw - 16, CAL.ch - 16, 10); g.stroke(); g.restore();
+        }
+        const tips = [];
+        for (const m of [...M.old, M.four, M.ring5]) { const k = (lt - m.t0) / m.dur; if (k <= 0) continue; const tp = drawMark(g, m, ease.out(k)); if (k < 1) tips.push(tp); }
+        g.restore();
+        const L = (p) => [p[0] + ox, p[1] + oy], REST = [1260, 2050];
+        const keys = [[0, L(REST)], [M.four.t0 - 0.35, L(M.four.start)], [M.four.t0, L(M.four.start)], [M.four.t0 + M.four.dur, L(M.four.end)],
+          [M.ring5.t0, L(M.ring5.start)], [M.ring5.t0 + M.ring5.dur, L(M.ring5.end)], [M.ring5.t0 + M.ring5.dur + 0.8, L(REST)]];
+        marker(g, tips.length ? L(tips[0]) : penAt(lt, keys), -0.55);
+      } },
+    ], cam);
+    tag(c, ui('calendar', 'CRT · DEADLINES BY LAST DIGIT'), lt, dd);
+    box(c);
+  } };
+
+  // ═════════ V4 · e3v_kept: the dead 3s stay grey; one owner taps, shows an ID card, and the phone comes back ═════════
+  SCENES.e3v_kept = { draw(c, lt) {
+    const id = 'e3v_kept', dd = dur(id), tT = at(id, 'tap', 0.25), tL = at(id, 'linked', 3.0);
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tL], { kick: 0.03 }) * lerp(1.2, 1.32, ease.io(lt / dd)), fx: 440, fy: 1300 };
+    street(c, lt, cam, (i) => {
+      let state = isCut(i) ? 'grey' : 'lit', idK = 0, tap = 0, glowA = isCut(i) ? 0 : 0.12;
+      if (i === BACKAGAIN) {
+        if (lt > tT && lt < tT + 0.6) tap = 1 - (lt - tT) / 0.6;
+        idK = clamp((lt - (tL - 0.5)) / 0.42, 0, 1);
+        if (lt >= tL) { state = 'back'; glowA = 0.5 * Math.exp(-(lt - tL) * 2.5) + 0.12; }
+      }
+      return { state, raise: 0.3, id: idK, tap, glowA, look: i === BACKAGAIN ? -0.3 * idK : Math.sin(lt * 0.5 + i * 1.7) * 0.15 };
+    });
+    tag(c, ui('kept', 'THE NUMBER IS KEPT'), lt, dd);
+    box(c);
+  } };
+
+  // ═════════ V5 · e3v_alert: on "gets through" every phone shows the alert, the grey one too; the camera ends on V0 ═════════
+  SCENES.e3v_alert = { draw(c, lt) {
+    const id = 'e3v_alert', dd = dur(id), tA = at(id, 'alert', 1.6), k = ease.io(clamp(lt / dd, 0, 1)), endK = ease.io(clamp((lt - (dd - 0.7)) / 0.7, 0, 1));
+    const hitZ = lt >= tA ? 0.03 * Math.exp(-(lt - tA) * 7) * (1 - Math.exp(-(lt - tA) * 60)) : 0;
+    const cam = { x: Math.sin(lt * 0.3) * 8 * (1 - k), y: 0, z: lerp(1.2, V0.z, k) + hitZ, fx: V0.fx, fy: V0.fy };
+    const pulse = lt >= tA ? 0.5 + 0.5 * Math.cos((lt - tA) * Math.PI * 2 / 0.9) : 0;
+    street(c, lt, cam, (i) => {
+      const t = tA + (i % NB) * 0.02, on = lt >= t, grey = i === CUT[1], p0 = pose0(i);   // the back row's 3 is still cut off
+      return { state: on ? 'alert' : grey ? 'grey' : 'lit', raise: lerp(on ? 0.45 : 0.3, p0.raise, endK), glowA: on ? 0.25 + 0.3 * pulse : grey ? 0 : 0.12, look: lerp(on ? 0 : Math.sin(lt * 0.5 + i * 1.7) * 0.15, p0.look, endK) };
+    });
+    if (lt >= tA) { c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = `rgba(232,69,44,${(0.05 + 0.05 * pulse) * (1 - 0.6 * endK)})`; c.fillRect(0, 0, W, H); c.restore(); }
+    box(c);
+  } };
 })();

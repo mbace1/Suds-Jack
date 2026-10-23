@@ -342,4 +342,176 @@
     counter(c, 120, 1410, ui('felledLabel', 'FELLED · ESTIMATE'), '≈250,000', { style: 'news', w: 420, a: clamp((lt - tF + 0.1) / 0.3, 0, 1), rot: -0.025 });
     box(c);
   } };
+
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  // THE VIRAL CUT (papercut/count-the-trees-viral, plan/films/25b-count-the-trees-viral.md). Owner, 23 Oct: "Doodle 5 is
+  // now becoming more of bigger news so we should highlight that and make it a viral video." The same map, the same
+  // helpers; five short shots at the Doodle tempo. Frame 0 IS the hook (the forest already going under a big clipping);
+  // the story escalates (before the assessment → a police inquiry → headlines in six languages) and the last frame
+  // hands back to the first: the camera ends exactly where frame 0 starts, the clipping in the same place, so a replay
+  // reads as one more turn of the same thing. v1's scenes above are untouched.
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  const V = { z0: 1.03, fx: 525, fy: 960 };                  // frame 0's camera, and the last frame's
+  /** a viral-cut camera: a drift that is 0 at both ends of the shot, a zoom path, and kicks on the hits */
+  const vcam = (lt, dd, { z = () => 1, hits = [], kick = 0.03, amp = 4 } = {}) => {
+    let zz = z(lt); for (const h of hits) if (lt >= h) zz += kick * Math.exp(-(lt - h) * 7) * (1 - Math.exp(-(lt - h) * 60));
+    const e = Math.sin(Math.PI * clamp(lt / dd, 0, 1));
+    return { x: Math.sin(lt * 2.1) * amp * e, y: Math.cos(lt * 1.7 + 1.2) * amp * 0.8 * e, z: zz, fx: V.fx, fy: V.fy };
+  };
+  /** the big clipping on frame 0 (and on the last frame, in the same place): torn newsprint, label over the number */
+  function bigClip(c, label, value, { k = 1, a = 1 } = {}) {
+    if (a <= 0) return;
+    const x = 130, y = 1398, w = 780, h = 206, sc = 1 + 0.05 * (1 - ease.out(k));
+    c.save(); c.globalAlpha = a; c.translate(x + w / 2, y + h / 2); c.rotate(-0.022); c.scale(sc, sc); c.translate(-w / 2, -h / 2);
+    c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 18; c.shadowOffsetX = 9; c.shadowOffsetY = 13;
+    c.fillStyle = C.news; c.beginPath(); c.moveTo(0, 0);
+    for (let i = 0; i <= 16; i++) c.lineTo((w * i) / 16, (i % 2) * 7);
+    c.lineTo(w, h); for (let i = 16; i >= 0; i--) c.lineTo((w * i) / 16, h - (i % 2) * 7); c.closePath(); c.fill();
+    c.shadowColor = 'transparent';
+    c.fillStyle = C.ink; c.textAlign = 'left'; c.font = `30px "ArchivoBlack-400", ${JP}`; c.fillText(label, 26, 46);
+    c.font = '400 150px "Anton-400"'; c.fillText(value, 24, 190);
+    c.fillStyle = 'rgba(21,18,15,.22)'; for (let i = 0; i < 5; i++) c.fillRect(w - 250, 78 + i * 22, 220 - (i % 2) * 40, 7);
+    c.restore();
+  }
+  /** the hook's felling front: faster than v1's, and already moving at frame 0 (t0 < 0) */
+  const fellV = (t, t0) => { const lane = Math.floor((t.x - BOX.x0) / 64), along = (BOX.y1 - t.y) / (BOX.y1 - BOX.y0); return t0 + lane * 0.075 + along * 0.2 + t.k * 0.06; };   // score.py mirrors this
+  const HOOK_LEAD = 1.05;                                    // the front finishes this long after it starts: on "Gone."
+
+  // ═════════ V1 · cntv_hook: frame 0 — the forest inside the red line is already going, lane by lane, under the
+  //            clipping "TREES · THE GUARDIAN'S ESTIMATE / 250,000"; the last lane falls on "Gone." ═════════
+  SCENES.cntv_hook = { draw(c, lt) {
+    const id = 'cntv_hook', dd = dur(id), tP = at(id, 'gone', 0.7), t0 = tP - HOOK_LEAD;
+    const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)), hits: [tP], kick: 0.035 });
+    stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 },
+      { d: 0.1, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); insideTrees(g, (t) => (lt - fellV(t, t0)) / 0.16); g.restore(); } },
+      { sh: forest(), d: 0.1, lift: 0.9 },
+      { d: 0.12, fn: (g, ox, oy) => {
+        g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false });
+        for (const t of IN) { const k = (lt - fellV(t, t0) - 0.04) / 0.35; if (k <= 0 || k >= 1) continue; g.fillStyle = `rgba(230,205,150,${0.4 * (1 - k)})`; g.beginPath(); g.arc(t.x, t.y, 6 + 18 * k, 0, TAU); g.fill(); }
+        // on "Gone.": the whole clearing flashes once, so the hit lands in the picture too
+        if (lt > tP) { const f = Math.exp(-(lt - tP) * 5) * 0.35; g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fillStyle = `rgba(255,236,190,${f})`; g.fill(); g.restore(); }
+        g.restore();
+      } }], cam);
+    bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { k: lt / 0.25 });
+    box(c);
+  } };
+
+  // ═════════ V2 · cntv_eia: the cleared site; on "assessment" the assessment card slams down on it, its box empty ═════════
+  SCENES.cntv_eia = { draw(c, lt) {
+    const id = 'cntv_eia', dd = dur(id), tE = at(id, 'eia', 1.3);
+    const cam = vcam(lt, dd, { z: (l) => lerp(1.02, 1.06, ease.io(l / dd)), hits: [tE], kick: 0.035 });
+    stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
+      { d: 0.12, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false, a: 0.9 }); g.restore(); } }], cam);
+    const k = (lt - tE + 0.1) / 0.22;
+    if (k > 0) { const sc = lerp(2.4, 1.55, ease.out(k)); put(c, eiaCard(), 540 - 190 * sc, 980 - 105 * sc + swing(lt, [[tE + 0.15, 5]]), { sc, rot: -0.04, lift: 1.4 * (1 - 0.6 * ease.out(k)) + 0.5 }); }
+    tag(c, ui('halt', 'LVV ORDERED A HALT · 6.10.2026'), lt, dd, 110, 0.35);
+    box(c);
+  } };
+
+  // ═════════ V3 · cntv_police: a patrol car comes along the road under the site, its light bar strobing blue over the
+  //            clearing; on "inquiry" the inquiry card slams down ═════════
+  const car = () => sprite('cntv_car', 110, 200, 55, 100, (g) => {
+    g.fillStyle = '#e9edf0'; g.beginPath(); g.roundRect(-44, -92, 88, 184, 24); g.fill();
+    g.fillStyle = '#2a5bb8'; g.fillRect(-44, -30, 88, 18); g.fillStyle = '#f2c230'; g.fillRect(-44, -12, 88, 8);
+    g.fillStyle = '#1d2733'; g.beginPath(); g.roundRect(-34, -70, 68, 30, 8); g.fill(); g.beginPath(); g.roundRect(-34, 50, 68, 26, 8); g.fill();
+    g.fillStyle = '#cfd6dc'; g.beginPath(); g.roundRect(-36, -38, 72, 84, 10); g.fill();
+    g.fillStyle = '#20262e'; g.fillRect(-30, -6, 60, 14);                     // the light bar, unlit; its lamps are drawn live
+  }, 6);
+  const inqCard = () => sprite('cntv_inq', 520, 240, 260, 120, (g) => {
+    g.fillStyle = C.cream; g.beginPath(); g.roundRect(-250, -112, 500, 224, 12); g.fill();
+    g.fillStyle = '#2a5bb8'; g.fillRect(-250, -112, 500, 52);
+    g.fillStyle = '#f6f2e8'; g.textAlign = 'left'; g.font = `30px "ArchivoBlack-400", ${JP}`; g.fillText(ui('policeHead', 'POLICE · OULU'), -226, -74);
+    g.fillStyle = C.ink; g.font = `400 52px "Anton-400", ${JP}`; g.fillText(ui('inqTitle', 'PRELIMINARY'), -226, 6); g.fillText(ui('inqTitle2', 'INQUIRY'), -226, 66);
+    g.fillStyle = 'rgba(21,18,15,.2)'; for (let i = 0; i < 3; i++) g.fillRect(40, -20 + i * 24, 180 - i * 30, 7);
+    g.fillStyle = '#9aa3ad'; g.fillRect(150, -128, 16, 64); g.strokeStyle = '#7d868f'; g.lineWidth = 5; g.beginPath(); g.roundRect(146, -132, 24, 72, 10); g.stroke();   // the paper clip
+  }, 6);
+  SCENES.cntv_police = { draw(c, lt) {
+    const id = 'cntv_police', dd = dur(id), tC = at(id, 'car', 0.1), tI = at(id, 'inq', 1.35);
+    const cam = vcam(lt, dd, { z: (l) => lerp(1.04, 1.08, ease.io(l / dd)), hits: [tI], kick: 0.03 });
+    // the car runs along the road and pulls up under the site by the time the card lands
+    const kc = ease.out((lt - tC) / Math.max(0.6, tI - tC - 0.1)), cx = lerp(-160, 470, kc), cy = roadY(cx) - 4, ang = Math.atan2(roadY(cx + 5) - roadY(cx - 5), 10) + Math.PI / 2;
+    const strobe = (lt * 8) % 1 < 0.5, on = lt > tC;
+    stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
+      { d: 0.12, fn: (g, ox, oy) => {
+        g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false, a: 0.9 });
+        if (on) {
+          // the blue light sweeping over the clearing from the car: two lobes, alternating
+          const R0 = 560, lx = cx + (strobe ? -40 : 40), ly = cy - 60, rg = g.createRadialGradient(lx, ly, 10, lx, ly, R0);
+          rg.addColorStop(0, 'rgba(70,130,255,.42)'); rg.addColorStop(1, 'rgba(70,130,255,0)');
+          g.save(); g.globalCompositeOperation = 'lighter'; g.fillStyle = rg; g.fillRect(lx - R0, ly - R0, R0 * 2, R0 * 2); g.restore();
+        }
+        put(g, car(), cx, cy, { rot: ang, lift: 0.8 });
+        if (on) { g.save(); g.translate(cx, cy); g.rotate(ang); for (const [dx, lit] of [[-18, strobe], [18, !strobe]]) { g.fillStyle = lit ? '#7fb2ff' : '#1d3a7a'; g.beginPath(); g.roundRect(dx - 12, -5, 24, 12, 3); g.fill(); if (lit) { g.globalCompositeOperation = 'lighter'; g.fillStyle = 'rgba(120,170,255,.55)'; g.beginPath(); g.arc(dx, 1, 26, 0, TAU); g.fill(); g.globalCompositeOperation = 'source-over'; } } g.restore(); }
+        g.restore();
+      } }], cam);
+    const k = (lt - tI + 0.1) / 0.22;
+    if (k > 0) { const sc = lerp(2.0, 1.25, ease.out(k)); put(c, inqCard(), 540, 930 + swing(lt, [[tI + 0.15, 5]]), { sc, rot: 0.035, lift: 1.4 * (1 - 0.6 * ease.out(k)) + 0.5 }); }
+    tag(c, ui('police', 'OULU, FINLAND · OCTOBER 2026'), lt, dd, 110, 0.35);
+    box(c);
+  } };
+
+  // ═════════ V4 · cntv_world: headlines in six languages land on the map, one after another; on "worldwide" the
+  //            seventh, the biggest, lands on top. Real reported phrasings; no mastheads, no outlet names ═════════
+  const HEADS = [   // [text, language chip, x, y, rot, size] — each phrase as reported (plan/films/25b, the re-check)
+    ['250 MIL ÁRVORES', 'PT', 128, 560, -0.05, 64],
+    ['SUTE DE MII DE COPACI', 'RO', 362, 718, 0.04, 54],
+    ['METSÄHAKKUUT MUHOKSELLA', 'FI', 120, 880, -0.03, 52],
+    ['500 FUSSBALLFELDER WALD', 'DE', 330, 1040, 0.035, 50],
+    ['CHOCA CON UN BOSQUE', 'ES', 140, 1200, -0.045, 56],
+    ['250,000 TREES', 'EN', 300, 1370, 0.03, 64],
+  ];
+  function headSlip(c, [text, chip, x, y, rot, size], { k = 1, sc = 1 } = {}) {
+    if (k <= 0) return;
+    c.save(); c.font = `400 ${size}px "Anton-400"`; const tw = c.measureText(text).width, w = Math.min(780, tw + 108), h = size + 92;
+    const x1 = Math.min(x, 905 - w * sc);                     // never into the right-hand rail
+    const kk = ease.out(k), dy = (1 - kk) * -260, s2 = sc * (1 + 0.5 * (1 - kk));
+    c.globalAlpha = clamp(k * 3, 0, 1); c.translate(x1 + w / 2, y + h / 2 + dy); c.rotate(rot + (1 - kk) * 0.4); c.scale(s2, s2); c.translate(-w / 2, -h / 2);
+    c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 14 + 20 * (1 - kk); c.shadowOffsetX = 7 + 14 * (1 - kk); c.shadowOffsetY = 10 + 20 * (1 - kk);
+    c.fillStyle = C.news; c.beginPath(); c.moveTo(0, 0); for (let i = 0; i <= 10; i++) c.lineTo((w * i) / 10, (i % 2) * 6); c.lineTo(w, h); for (let i = 10; i >= 0; i--) c.lineTo((w * i) / 10, h - (i % 2) * 6); c.closePath(); c.fill();
+    c.shadowColor = 'transparent';
+    c.fillStyle = C.ink; c.textAlign = 'left'; c.fillText(text, 24, size + 22);
+    c.fillStyle = 'rgba(21,18,15,.22)'; for (let i = 0; i < 2; i++) c.fillRect(24, size + 40 + i * 18, (w - 150) * (1 - i * 0.3), 6);
+    c.fillStyle = C.marker; c.beginPath(); c.roundRect(w - 92, h - 52, 68, 36, 6); c.fill();
+    c.fillStyle = '#fff'; c.font = '26px "ArchivoBlack-400"'; c.fillText(chip, w - 82, h - 24);
+    c.restore();
+  }
+  const SLIP_EVERY = 0.19;                                   // score.py mirrors this
+  SCENES.cntv_world = { draw(c, lt) {
+    const id = 'cntv_world', dd = dur(id), tS = at(id, 'slips', 0.05), tW = at(id, 'world', 1.5);
+    const cam = vcam(lt, dd, { z: (l) => lerp(1.02, 0.97, ease.io(l / dd)), hits: [tW], kick: 0.04 });
+    stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
+      { d: 0.12, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false, a: 0.8 }); g.restore(); } }], cam);
+    HEADS.slice(0, 5).forEach((hd, i) => headSlip(c, hd, { k: (lt - tS - i * SLIP_EVERY) / 0.2 }));
+    // the last, English, slip is the biggest and lands ON the pop word
+    headSlip(c, HEADS[5], { k: (lt - tW + 0.06) / 0.2, sc: 1.18 });
+    if (lt > tW) { const f = Math.exp(-(lt - tW) * 6) * 0.25; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
+    tag(c, ui('world', 'HEADLINES IN SIX LANGUAGES · OCTOBER 2026'), lt, dd, 110, tW + 0.3);
+    box(c);
+  } };
+
+  // ═════════ V5 · cntv_end: saplings across 40 % of the clearing, the label on "130 ha", then the camera comes back to
+  //            frame 0's exact framing, the clipping in the same place: the loop ═════════
+  SCENES.cntv_end = { draw(c, lt) {
+    const id = 'cntv_end', dd = dur(id), tPl = at(id, 'plant', 0.9), tH = at(id, 'ha', 1.5), tB = at(id, 'back', dd - 0.75);
+    // in on the patch for the pop, then back out to frame 0's camera by the last frame
+    const zIn = 1.03 + 0.06 * ease.io((lt - tPl + 0.3) / 0.6), zOut = lerp(zIn, V.z0, ease.io((lt - tB) / (dd - tB)));
+    const cam = vcam(lt, dd, { z: () => (lt < tB ? zIn : zOut), hits: [tH], kick: 0.03 });
+    if (lt >= dd - 1 / 60) { cam.x = 0; cam.y = 0; cam.z = V.z0; }
+    const kS = clamp((lt - tPl) / 0.9, 0, 1);
+    stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
+      { d: 0.12, fn: (g, ox, oy) => {
+        g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false });
+        if (kS > 0) { g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.clip(); g.fillStyle = `rgba(127,207,90,${0.18 * clamp(kS * 3, 0, 1)})`; g.fillRect(BOX.x0 - 10, Y_PATCH, BOX.x1 - BOX.x0 + 20, BOX.y1 - Y_PATCH + 10); g.strokeStyle = 'rgba(150,225,110,.9)'; g.lineWidth = 5; g.setLineDash([12, 9]); g.beginPath(); g.moveTo(BOX.x0 - 10, Y_PATCH); g.lineTo(BOX.x1 + 10, Y_PATCH); g.stroke(); g.restore(); }
+        for (const [x, y, row] of SAPS) {
+          const k = (kS * NROW - row) / 1.2; if (k <= 0) continue; const s = ease.back(clamp(k, 0, 1));
+          g.fillStyle = 'rgba(0,0,0,.45)'; g.beginPath(); g.arc(x + 2.5, y + 3.5, 7.5 * s, 0, TAU); g.fill();
+          g.fillStyle = C.sapD; g.beginPath(); g.arc(x, y, 8.5 * s, 0, TAU); g.fill(); g.fillStyle = C.sap; g.beginPath(); g.arc(x - 2, y - 2, 5.2 * s, 0, TAU); g.fill();
+        }
+        const kL = (lt - tH + 0.08) / 0.25;
+        if (kL > 0) put(g, patchLabel(), 330, Y_PATCH - 196, { sc: ease.back(kL), rot: -0.03 + swing(lt, [[tH + 0.2, 0.04]]), lift: 1.0 });
+        g.restore();
+      } }], cam);
+    bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { a: clamp((lt - 0.05) / 0.3, 0, 1) });
+    box(c);
+  } };
 })();

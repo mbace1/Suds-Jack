@@ -1,0 +1,113 @@
+{
+  "film": "label-sold-separately-viral",
+  "cut": "Coxon 12, VIRAL CUT v1 (23 Oct 2026). Owner: make a viral version (Doodle 5), 'test other 2 as well'. The hook is frame one; ~19 s; BIG captions; the 220 get their stickers in a ripple; the last frame hands back into the first.",
+  "series": "coxon",
+  "captionSize": "big",
+  "argument": "Spot the AI ad: all ten are. By 11 Oct about 220 US midterm ads made at least partly with AI had drawn over $137M, and only about 3 in 10 said so.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.2",
+      "hold": "s2",
+      "text": {
+        "en": "US midterms: / spot the [AI] ad.",
+        "fi": "USA:n välivaalit: / etsi [tekoälymainos].",
+        "ja": "米中間選挙。 / [AI] 広告は どれ？"
+      },
+      "source": "The hook. The ten sets stand for the ads the Wesleyan Media Project counts as made at least partly with AI in the 2026 US midterms (15 Oct release, data through 11 Oct). Not quoted."
+    },
+    {
+      "id": "all",
+      "role": "evidence",
+      "at": "s2+0.25",
+      "until": "s3-0.2",
+      "hold": "s3",
+      "text": {
+        "en": "Trick question. / [All ten] are.",
+        "fi": "Kuggakysymys. / [Kaikki kymmenen] ovat.",
+        "ja": "ひっかけ問題。 / [10本 全部] だ。"
+      },
+      "source": "The film's ten are all AI ads by construction: they stand for the ~220 ads Wesleyan identified as made at least partly with AI (15 Oct, through 11 Oct; Gizmodo, NYT via summaries). Re-checked 23 Oct: nothing newer found."
+    },
+    {
+      "id": "spent",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.2",
+      "hold": "s4",
+      "text": {
+        "en": "Over [$137M] / on 220 like them.",
+        "fi": "Yli [137 milj. $] / 220 tällaiseen.",
+        "ja": "こうした 220本に / [1億3700万ドル] 超。"
+      },
+      "source": "More than $137 million spent airing 220 ads made at least partly with AI, through 11 Oct 2026. Wesleyan Media Project release, 15 Oct (with AdImpact data), as reported by Gizmodo, the New York Times (via summaries) and others. The release itself was not opened. 'At least partly' is in the argument and the post; the film says 'like them' of ten ads already called AI ads."
+    },
+    {
+      "id": "labels",
+      "role": "evidence",
+      "at": "s4+0.3",
+      "until": "s5-0.2",
+      "hold": "s5",
+      "text": {
+        "en": "Labelled as AI: / about [3 in 10].",
+        "fi": "Tekoälystä kertoi / noin [3 kymmenestä].",
+        "ja": "AIと 表示したのは / 約 [10本に 3本]。"
+      },
+      "source": "Wesleyan, 15 Oct, as reported: Gizmodo 27% with an AI disclaimer; NYT (via summaries) about 70% with none; Wesleyan's 4 Sep update 31%. Hence 'about 3 in 10'; the ripple sticks 66 of 220 (30%)."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.3",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "Ten AI ads. / About three / [said so].",
+        "fi": "Kymmenen tekoälymainosta. / Noin kolme / [kertoi sen].",
+        "ja": "AI広告 10本。 / 明かしたのは / [約3本]。"
+      },
+      "source": "The station's line over its own image: about three in ten of Wesleyan's identified AI ads were labelled."
+    }
+  ],
+  "ui": {
+    "dateline": {
+      "en": "WESLEYAN MEDIA PROJECT · 15.10.2026",
+      "fi": "WESLEYAN MEDIA PROJECT · 15.10.2026",
+      "ja": "ウェズリアン・メディア・プロジェクト · 2026.10.15"
+    },
+    "count": {
+      "en": "$137,000,000",
+      "fi": "$137,000,000",
+      "ja": "$137,000,000"
+    },
+    "tagLabels": {
+      "en": "~3 IN 10 LABELLED · WESLEYAN",
+      "fi": "NOIN 3/10 MERKITTY · WESLEYAN",
+      "ja": "表示あり 約3割 · ウェズリアン"
+    }
+  },
+  "props": {
+    "label": {
+      "en": "MADE WITH AI",
+      "why": "the disclosure sticker on a US ad: an artefact, English in every master; the caption carries the meaning"
+    }
+  },
+  "post": {
+    "en": "Spot the AI ad. Trick question: all ten are. In the US midterms, about 220 ads made at least partly with AI drew over $137M in airtime by 11 Oct, per the Wesleyan Media Project. About 3 in 10 said so. Would you have known? #Midterms #AI",
+    "fi": "Löydä tekoälymainos. Kuggakysymys: kaikki kymmenen. Wesleyan Media Projectin mukaan USA:n välivaaleissa noin 220 ainakin osin tekoälyllä tehtyyn mainokseen käytettiin 11.10. mennessä yli 137 miljoonaa dollaria. Noin kolme kymmenestä kertoi sen. Olisitko tunnistanut?",
+    "ja": "AI広告はどれ？ ひっかけ問題、10本全部だ。ウェズリアン・メディア・プロジェクトによると、米中間選挙でAIを少なくとも一部に使った約220本の広告に10月11日までに1億3700万ドル超。AI使用を明かしたのは約3割。あなたは気づけた？"
+  }
+}

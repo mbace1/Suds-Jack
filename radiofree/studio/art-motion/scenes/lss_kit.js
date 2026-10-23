@@ -376,3 +376,137 @@ window.LSS = (() => {
     box(c);
   } };
 })();
+
+// ═══ THE VIRAL CUT (Coxon 12 viral, 23 Oct; papercut/label-sold-separately-viral): five fast scenes, lssv_* ═══════
+// The hook is the first frame: the wall of ten under "US midterms: spot the AI ad." The answer comes at once (all ten
+// are: every screen sparkles), then the scale (220 of them, $137M), the escalation (a ripple puts a sticker on 66 of
+// the 220, three in ten, and the 154 bare ones go dark), and the punchline on the wall again: the marker rings the
+// three, the seven stickers nobody used tumble down past the bare screens, and the frame eases back to the opening
+// one, so a replay is seamless. The wall sits 40 px lower than v1's so a three-line BIG caption clears the top shelf,
+// and the whole frame scales about (540, 600): 1.03 on the first frame, back to 1 by half a second, and back to 1.03
+// on the last. v1's scenes above are untouched.
+(() => {
+  const { W, H, stack, put, glow, box } = RFP, D = LSS, TAU = Math.PI * 2, { clamp, lerp } = U;
+  const DY = 40, OX = -75, PUNCH = 1.03, PX = 540, PY = 600, M = D.MOS;
+  /** the whole frame (not the box) scaled about (PX, PY) */
+  function framed(c, k, draw) { c.save(); if (k !== 1) { c.translate(PX, PY); c.scale(k, k); c.translate(-PX, -PY); } draw(); c.restore(); }
+  /** the wall of ten, centred and 40 px down */
+  const wallLayers = (lt, opts = {}, extra = []) => [
+    { sh: D.room(), d: 0.03, lift: 0 },
+    { fn: (g, ox) => { g.save(); g.translate(0, DY); D.stripLight(g, ox + OX, lt); g.restore(); }, d: 0.04 },
+    { sh: D.shelves(), d: 0.08, lift: 0.7, x: OX, y: DY },
+    { fn: (g, ox) => { g.save(); g.translate(0, DY); D.wall(g, ox + OX, lt, opts); g.restore(); }, d: 0.08 },
+    ...extra,
+  ];
+  const LABELS = { 8: { k: 1, rot: -0.12 }, 9: { k: 1, rot: -0.06 }, 7: { k: 1, rot: -0.15 } };
+
+  // ── the 220 ───────────────────────────────────────────────────────────────────────────────────────────────────
+  const isHome = (q, r) => q >= M.home[0] && q < M.home[0] + 2 && r >= M.home[1] && r < M.home[1] + 5;
+  const HOMEL = D.LABELLED.map((i) => `${M.home[0] + (i % 2)},${M.home[1] + Math.floor(i / 2)}`);
+  const STUCK = (() => {                                                                                         // 66 of 220: three in ten
+    const r = U.rng(220), cells = [];
+    for (let y = 0; y < M.rows; y++) for (let x = 0; x < M.cols; x++) if (!isHome(x, y)) cells.push(`${x},${y}`);
+    for (let i = cells.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [cells[i], cells[j]] = [cells[j], cells[i]]; }
+    return [...HOMEL, ...cells.slice(0, 63)];
+  })();
+  const RANK = new Map(STUCK.map((key) => { const [x, y] = key.split(',').map(Number); return [key, Math.hypot(x - (M.home[0] + 0.5), (y - (M.home[1] + 2)) * 1.25)]; })
+    .sort((a, b) => a[1] - b[1]).map(([key], n) => [key, n]));
+  /** the mosaic at pull-back k (0: the home ten big, 1: all 220 on screen); stickAt(key) → the sticker's k or 0 */
+  function mosaic(g, ox, lt, k, { stickAt = null, dim = 0, twinkle = 0 } = {}) {
+    const s = lerp(290 / M.pw, 0.98, k);
+    const F = [lerp((M.home[0] + 0.5) * M.pw, (M.cols - 1) / 2 * M.pw, k), lerp((M.home[1] + 2) * M.ph, (M.rows - 1) / 2 * M.ph, k)];
+    const P = [540, lerp(1012, 1080, k)];
+    for (let r = 0; r < M.rows; r++) for (let q = 0; q < M.cols; q++) {
+      const x = P[0] + (q * M.pw - F[0]) * s + ox, y = P[1] + (r * M.ph - F[1]) * s, sc = s * M.pw / 290 * D.TVS;
+      if (x < -160 || x > W + 160 || y < 250 || y > H + 100) continue;
+      const key = `${q},${r}`, home = isHome(q, r), i = home ? (r - M.home[1]) * 2 + (q - M.home[0]) : (q * 7 + r * 3) % 10;
+      put(g, D.tvCase(), x, y, { sc, lift: 0.6 * sc + 0.1 });
+      D.screen(g, x, y, sc, i, lt + q * 0.3 + r, { tiny: sc < 0.5, bright: 1 + 0.08 * Math.sin(lt * 6 + q * 1.7 + r * 2.3) });
+      const sk = stickAt ? stickAt(key) : 0;
+      if (dim > 0 && !RANK.has(key)) { g.fillStyle = `rgba(4,8,8,${0.62 * dim})`; g.fillRect(x - D.TV.w * sc / 2, y - D.TV.h * sc / 2, D.TV.w * sc, D.TV.h * sc); }
+      if (twinkle > 0) { const ph = ((q * 13 + r * 7) % 17) / 17, tw = Math.pow(Math.max(0, Math.sin(lt * 4.2 + ph * TAU)), 10) * twinkle; D.sparkle(g, x + 40 * sc, y - 40 * sc, Math.max(7, 26 * sc), tw); }
+      if (sk > 0) D.label(g, x - 36 * sc, y - 50 * sc, sk, -0.12 + ((q * 5 + r) % 5 - 2) * 0.05, sc * (sc < 0.5 ? 1.6 : 1));
+    }
+  }
+
+  // 1 · THE HOOK. Frame one is the wall of ten, every candidate mid-speech, under "US midterms: spot the AI ad." Nothing
+  // on the screens says which. The frame lands at 1.03 and settles back.
+  SCENES['lssv_hook'] = { draw(c, lt) {
+    const ID = 'lssv_hook', dur = D.dur(ID), k = 1 + (PUNCH - 1) * (1 - D.ease.out(lt / 0.5));
+    const cam = { x: Math.sin(lt * 0.33) * 6, y: 0, z: 1, fx: 540, fy: 1000 };
+    framed(c, k, () => stack(c, wallLayers(lt), cam));
+    box(c);
+  } };
+
+  // 2 · Trick question: all ten are. On the pop every screen sparkles at once, and keeps sparkling; a white flash.
+  SCENES['lssv_all'] = { draw(c, lt) {
+    const ID = 'lssv_all', tA = D.at(ID, 'all', 1.0);
+    const wink = lt < tA ? 0 : Math.min(1, (lt - tA) / 0.08) * (0.8 + 0.2 * Math.sin(lt * 8));
+    const cam = { x: Math.sin((lt + 3) * 0.33) * 6, y: 0, z: D.punch(lt, [tA], { open: 0, kick: 0.5 }), fx: 540, fy: 1000 };
+    framed(c, 1 + 0.02 * Math.exp(-Math.max(0, lt - tA) * 8) * (lt >= tA ? 1 : 0), () => stack(c, wallLayers(lt, { wink }), cam));
+    if (lt >= tA) { c.fillStyle = `rgba(255,252,240,${0.32 * Math.exp(-(lt - tA) * 9)})`; c.fillRect(0, 0, W, H); }
+    box(c);
+  } };
+
+  // 3 · Over $137M on 220 like them. The camera pulls back fast to the 220 (every screen twinkles now: all of them are
+  // AI ads), and the counter rolls up and lands on the pop.
+  SCENES['lssv_count'] = { draw(c, lt) {
+    const ID = 'lssv_count', tR = D.at(ID, 'roll', 0.15), tN = D.at(ID, 'count', 1.3), dur = D.dur(ID);
+    const k = D.ease.io(clamp(lt / 0.9, 0, 1));
+    const cam = { x: Math.sin(lt * 0.3) * 4, y: 0, z: D.punch(lt, [tN], { kick: 0.5 }), fx: 540, fy: 1000 };
+    framed(c, 1 + 0.025 * Math.exp(-Math.max(0, lt - tN) * 7) * (lt >= tN ? 1 : 0), () => stack(c, [
+      { sh: D.room(), d: 0.03, lift: 0 },
+      { fn: (g, ox) => mosaic(g, ox, lt, k, { twinkle: clamp((lt - 0.4) / 0.4, 0, 1) }), d: 0.08 },
+      { fn: (g, ox) => { if (lt < tR - 0.1) return; const a = clamp((lt - tR + 0.1) / 0.2, 0, 1);
+        g.save(); g.globalAlpha = a; D.counter(g, 540 + ox, 640, D.ui('count', '$137,000,000'), clamp((lt - tR) / Math.max(0.2, tN - tR), 0, 1), lt); g.restore(); }, d: 0.1 },
+    ], cam));
+    CW.tag(c, D.ui('dateline', 'WESLEYAN MEDIA PROJECT · 15.10.2026'), lt, dur);
+    box(c);
+  } };
+
+  // 4 · THE ESCALATION. Labelled as AI: about 3 in 10. A ripple runs out from the home ten and slaps a sticker on 66
+  // of the 220, landing on the pop; then the 154 with nothing go dark.
+  SCENES['lssv_ripple'] = { draw(c, lt) {
+    const ID = 'lssv_ripple', tA = D.at(ID, 'rip', 0.4), tB = D.at(ID, 'three', 1.6), dur = D.dur(ID), n = STUCK.length;
+    const stickAt = (key) => { if (!RANK.has(key)) return 0; const t = tA + (RANK.get(key) / (n - 1)) * (tB - tA); return D.pop(lt, t, 0.14); };
+    const dim = D.ease.out((lt - tB - 0.15) / 0.5);
+    const cam = { x: Math.sin(lt * 0.3) * 4, y: 0, z: D.punch(lt, [tB], { kick: 0.5 }), fx: 540, fy: 1000 };
+    framed(c, 1 + 0.025 * Math.exp(-Math.max(0, lt - tB) * 7) * (lt >= tB ? 1 : 0), () => stack(c, [
+      { sh: D.room(), d: 0.03, lift: 0 },
+      { fn: (g, ox) => mosaic(g, ox, lt, 1, { stickAt, dim, twinkle: 0.6 * (1 - dim) }), d: 0.08 },
+      { fn: (g, ox) => { g.save(); g.globalAlpha = 0.9; D.counter(g, 540 + ox, 640, D.ui('count', '$137,000,000'), 1, lt); g.restore(); }, d: 0.1 },
+    ], cam));
+    CW.tag(c, D.ui('tagLabels', '~3 IN 10 LABELLED · WESLEYAN'), lt, dur);
+    box(c);
+  } };
+
+  // 5 · THE PUNCHLINE. The wall again, three labelled. On "About three" the marker rings them; on "said so" the seven
+  // stickers nobody used tumble down past the seven bare screens and out of the frame; then the frame eases back to
+  // the opening one (1.03, the camera centred), so the end hands into the start.
+  const FALL = Array.from({ length: 7 }, (_, n) => ({ x: 330 + n * 78 + ((n * 37) % 23), dt: n * 0.085, rot: (n % 2 ? 1 : -1) * (0.4 + n * 0.11), spin: (n % 3 - 1) * 2.4 + (n % 2 ? 1.2 : -1.2), vx: ((n * 53) % 7 - 3) * 22 }));
+  SCENES['lssv_end'] = { draw(c, lt) {
+    const ID = 'lssv_end', tM = D.at(ID, 'mark', 1.4), tS = D.at(ID, 'said', 2.6), tF = D.at(ID, 'fall', tS + 0.15), dur = D.dur(ID), MK = D.marks();
+    const RING = 0.3, GAPR = 0.05, sched = [0, 1, 2].map((n) => tM + n * (RING + GAPR));
+    const back = D.ease.io(clamp((lt - (dur - 0.9)) / (0.9 - 1 / 30), 0, 1));                                    // the hand-off to frame one
+    const cam = { x: Math.sin(lt * 0.26) * 6 * (1 - back), y: 0, z: D.punch(lt, [tS], { kick: 0.5 }), fx: 540, fy: 1000 };
+    const ringLayer = { fn: (g, ox) => {
+      g.save(); g.translate(OX + ox, DY); let tip = null;
+      MK.forEach((m, n) => { const k = (lt - sched[n]) / RING; if (k <= 0) return; const t = D.drawMark(g, m, D.ease.out(k)); if (k < 1) tip = t; });
+      const last = sched[2] + RING, rest = [1080, 2000], RG = [7, 8, 9], near = (i) => [D.SPOT[i].x + 150, D.SPOT[i].y - 120];
+      let pen = null;
+      if (tip) pen = tip;
+      else if (lt < sched[0] && lt > sched[0] - 0.5) { const k = D.ease.out((lt - (sched[0] - 0.5)) / 0.5), q = near(RG[0]); pen = [lerp(rest[0], q[0], k), lerp(rest[1], q[1], k)]; }
+      else if (lt >= sched[0] && lt < last) { const n = sched.findIndex((t) => lt < t); if (n > 0) pen = near(RG[n]); }
+      else if (lt >= last) { const k = D.ease.out((lt - last) / 0.45), q = near(RG[2]); if (k < 1) pen = [lerp(q[0], rest[0], k), lerp(q[1] + 200, rest[1], k)]; }
+      if (pen && pen[1] < 1960) D.marker(g, pen[0], pen[1]);
+      g.restore();
+    }, d: 0.08 };
+    const fallLayer = { fn: (g, ox) => {
+      for (const f of FALL) { const t = lt - tF - f.dt; if (t <= 0) continue;
+        const y = -90 + 260 * t + 0.5 * 2900 * t * t; if (y > H + 120) continue;
+        D.label(g, f.x + f.vx * t + Math.sin(t * 5 + f.x) * 26 + ox, y, 1, f.rot + f.spin * t, D.TVS); }
+    }, d: 0.12 };
+    framed(c, lerp(1, PUNCH, back), () => stack(c, wallLayers(lt, { labels: LABELS }, [ringLayer, fallLayer]), cam));
+    box(c);
+  } };
+})();

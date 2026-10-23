@@ -1,0 +1,25 @@
+{
+ "kind": "engine",
+ "engine": "cnt",
+ "bpm": 140,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/bdf_kit.js",
+  "scenes/cnt_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  { "id": "cntv_hook", "beats": 8, "cues": { "gone": "word:pop" } },
+  { "id": "cntv_eia", "beats": 9, "cues": { "eia": "word:pop" } },
+  { "id": "cntv_police", "beats": 9, "cues": { "car": 0.1, "inq": "word:pop" } },
+  { "id": "cntv_world", "beats": 9, "cues": { "slips": 0.05, "world": "word:pop" } },
+  { "id": "cntv_end", "beats": 10, "cues": { "plant": "line:2.start", "ha": "word:pop", "back": 3.55 } }
+ ],
+ "quiet": [],
+ "keep": []
+}

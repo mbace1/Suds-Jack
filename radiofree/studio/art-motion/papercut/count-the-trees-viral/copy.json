@@ -1,0 +1,170 @@
+{
+  "film": "count-the-trees-viral",
+  "cut": "Doodle 5, VIRAL CUT v1 (23 Oct) — owner: 'Doodle 5 is now becoming more of bigger news so we should highlight that and make it a viral video'. Hook first, escalate (before the assessment → a police inquiry → headlines in six languages), punch, loop. The v1 draft (papercut/count-the-trees) is unchanged.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "About 250,000 trees, by the Guardian's estimate, were cleared for Doodle's Muhos data centre before the required assessment. Police opened a preliminary inquiry; it made headlines worldwide. Felled: about 330 hectares. Planting planned: 130.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "About 250,000 / trees. [Gone.]",
+        "fi": "Noin 250 000 / puuta. [Poissa.]",
+        "ja": "約25万本の 木が / [消えた]。"
+      },
+      "source": "The Guardian's investigation, 22 Oct 2026: an estimated 250,000 trees felled at Muhos (about 330 ha), as reported by follow-ups (Tom's Guide; Yahoo News; Timberbiz; Common Dreams headline). The original cannot be opened from this session; the clipping on screen credits it as the Guardian's estimate. Re-checked 23 Oct (plan/films/25b-count-the-trees-viral.md)."
+    },
+    {
+      "id": "eia",
+      "role": "evidence",
+      "at": "s2+0.25",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Cleared before / the required / [assessment].",
+        "fi": "Hakattu ennen / lain vaatimaa / [arviointia].",
+        "ja": "義務づけられた / [環境影響評価] の / 前に 伐採。"
+      },
+      "source": "LVV (Finland's licensing and supervisory agency), 6 Oct 2026: preparatory work at Muhos and Kajaani to stop until the environmental impact assessments are done, by 23 Oct at the latest (AFP; Al Jazeera 7 Oct; ORF; Euronews). Doodle says it stopped on receiving the letters on 6 Oct."
+    },
+    {
+      "id": "police",
+      "role": "evidence",
+      "at": "s3+0.25",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "Police opened a / preliminary / [inquiry].",
+        "fi": "Poliisi aloitti / [esiselvityksen].",
+        "ja": "警察が / [予備調査] を 開始。"
+      },
+      "source": "Oulu police have opened a preliminary inquiry (esiselvitys) into the preparatory work at Muhos, to establish whether there is reason to suspect a crime such as environmental damage; it followed a request filed by a private person on 2 Oct, and two requests in all. Iltalehti, as carried by Kaleva ('IL: Poliisi on aloittanut esiselvityksen Googlen Muhoksen datakeskuksen valmistelutöistä') and MTV Uutiset; Yle; Kaleva ('Oulun poliisille on tehty kaksi tutkintapyyntöä'). An esiselvitys is not a criminal investigation, and the film does not call it one."
+    },
+    {
+      "id": "world",
+      "role": "evidence",
+      "at": "s4+1.0",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": {
+        "en": "The story went / [worldwide].",
+        "fi": "Uutinen kiersi / [maailman].",
+        "ja": "ニュースは / [世界中] に。"
+      },
+      "source": "Coverage in at least six languages, 7–23 Oct 2026; each slip is a phrase as reported, with no masthead or outlet name: PT '250 mil árvores' (Amazonas Atual), RO 'sute de mii de copaci' (G4Media; GoNews), FI 'metsähakkuut Muhoksella' (Kaleva), DE '500 Fußballfelder Wald' (Pasquale Pillitteri, German edition), ES 'choca con un bosque' (Xataka), EN '250,000 trees' (Tom's Guide and others)."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.25",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "Felled: ~330 ha. / Planting planned: / [130 ha].",
+        "fi": "Hakattu: ~330 ha. / Istutus suunnitteilla: / [130 ha].",
+        "ja": "伐採： 約330ha。 / 植樹の 計画： / [130ha]。"
+      },
+      "source": "About 330 ha cleared at Muhos (the figure reported as Tuike Finland's own; the regulator says over 300). 130 ha: Doodle's own statement (AFP, about 7 Oct): its landscaping and biodiversity plans include tree planting across 130 hectares at Muhos. The sapling patch is drawn at 40 % of the clearing."
+    }
+  ],
+  "ui": {
+    "treesLabel": {
+      "en": "TREES · THE GUARDIAN’S ESTIMATE",
+      "fi": "PUITA · THE GUARDIANIN ARVIO",
+      "ja": "本数 · ガーディアン紙の推定"
+    },
+    "treesValue": {
+      "en": "250,000",
+      "fi": "250 000",
+      "ja": "25万本"
+    },
+    "halt": {
+      "en": "LVV ORDERED A HALT · 6.10.2026",
+      "fi": "LVV MÄÄRÄSI KESKEYTYKSEN · 6.10.2026",
+      "ja": "LVVが 作業中止を 命令 · 2026.10.6"
+    },
+    "police": {
+      "en": "OULU, FINLAND · OCTOBER 2026",
+      "fi": "OULU · LOKAKUU 2026",
+      "ja": "フィンランド・オウル · 2026年10月"
+    },
+    "policeHead": {
+      "en": "POLICE · OULU",
+      "fi": "POLIISI · OULU",
+      "ja": "警察 · オウル"
+    },
+    "inqTitle": {
+      "en": "PRELIMINARY",
+      "fi": "ESISELVITYS",
+      "ja": "予備"
+    },
+    "inqTitle2": {
+      "en": "INQUIRY",
+      "fi": "",
+      "ja": "調査"
+    },
+    "world": {
+      "en": "HEADLINES IN SIX LANGUAGES",
+      "fi": "OTSIKOITA KUUDELLA KIELELLÄ",
+      "ja": "6言語の 見出し"
+    },
+    "eiaTitle": {
+      "en": "ENVIRONMENTAL IMPACT",
+      "fi": "YMPÄRISTÖVAIKUTUSTEN",
+      "ja": "環境影響"
+    },
+    "eiaTitle2": {
+      "en": "ASSESSMENT",
+      "fi": "ARVIOINTI",
+      "ja": "評価"
+    },
+    "planting": {
+      "en": "PLANTING PLANNED",
+      "fi": "ISTUTUS SUUNNITTEILLA",
+      "ja": "植樹の 計画"
+    },
+    "patchHa": {
+      "en": "130 ha",
+      "fi": "130 ha",
+      "ja": "130 ha"
+    }
+  },
+  "props": {
+    "headlines": {
+      "en": "250 MIL ÁRVORES · SUTE DE MII DE COPACI · METSÄHAKKUUT MUHOKSELLA · 500 FUSSBALLFELDER WALD · CHOCA CON UN BOSQUE · 250,000 TREES",
+      "why": "the slips are the coverage itself, each in its own language in every master: phrases as reported, with no masthead, logo or outlet name (never a publication's look)"
+    },
+    "car": {
+      "en": "(a patrol car from above, no words)",
+      "why": "the police beat: a generic car in white and blue with a light bar; no insignia"
+    },
+    "inquiry": {
+      "en": "POLICE · OULU · PRELIMINARY INQUIRY",
+      "why": "the card for the inquiry; its words are in each language's ui"
+    },
+    "patch": {
+      "en": "Doodle · PLANTING PLANNED · 130 ha",
+      "why": "Doodle's own figure, without quote marks"
+    }
+  },
+  "post": {
+    "en": "About 250,000 trees, by the Guardian's estimate, cleared at Muhos, Finland, for a Doodle data centre, before the required environmental assessment. Police have opened a preliminary inquiry. Planting planned: 130 of ~330 hectares. Who counts the trees? #Finland #AI",
+    "fi": "Noin 250 000 puuta The Guardianin arvion mukaan: Muhoksella hakattiin Doodlen datakeskukselle ennen lain vaatimaa ympäristöarviointia. Poliisi aloitti esiselvityksen. Istutus suunnitteilla: 130 hehtaaria noin 330:sta. Kuka laskee puut?",
+    "ja": "ガーディアン紙の推定で約25万本。フィンランド・ムホスで、Doodleのデータセンターのため、義務づけられた環境影響評価の前に森が伐採された。警察が予備調査を開始。植樹の計画は約330ヘクタールのうち130。木は誰が数える？"
+  }
+}
