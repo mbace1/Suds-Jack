@@ -581,10 +581,12 @@
   };
   SCENES.bgev_again = { draw(c, lt) {
     const id = 'bgev_again', dd = dur(id), tW1 = at(id, 'write1', 1.2), tW2 = at(id, 'write2', 1.8), M = marks3v(at(id, 'strike1', 0.55), tW1, tW2);
+    // a step in on each new year, but only to 1.1: any closer and the plate rides up behind the captions (above 1.12)
+    // while the tag's foot reaches the corner tag; the plate only leaves the frame above 1.8, where the sprites go soft
     const step = (t) => clamp(ease.back((lt - t) / 0.28), 0, 1.2);
-    const z = 1.28 + 0.12 * step(tW1) + 0.14 * step(tW2) + 0.04 * ease.io(clamp((lt - tW2 - 0.3) / Math.max(0.5, dd - tW2 - 0.3), 0, 1));
+    const z = 1.0 + 0.04 * step(tW1) + 0.05 * step(tW2) + 0.01 * ease.io(clamp((lt - tW2 - 0.3) / Math.max(0.5, dd - tW2 - 0.3), 0, 1));
     const grow = ease.io(clamp(lt / dd, 0, 1));
-    const v = { z: z * (1 + kick(lt, tW2, 0.03)), fx: 760, fy: 1600, sx: shakeAt(lt - tW2) * 0.6 };
+    const v = { z: z * (1 + kick(lt, tW1, 0.02) + kick(lt, tW2, 0.03)), fx: 600, fy: 1250, sx: shakeAt(lt - tW2) * 0.8 + shakeAt(lt - tW1) * 0.4 };
     view(c, v, () => stack(c, [{ sh: wall(), d: 0.05, lift: 0 }, { d: 0.1, fn: (g, ox, oy) => days(g, lt, dd, ox, oy, 8) }, { d: 0.1, fn: (g, ox, oy) => {
       const A = caseLayer(g, ox, oy, lt, { lamp: 1, dust: lerp(0.06, 0.5, grow), snow: lerp(4, 46, grow), ice: lerp(0, 0.8, grow), web: lerp(0, 0.8, grow), gleam: -1 });
       const T = { x: A[0], y: A[1], rot: swing(lt, [[M.s1.t0, 0.05], [tW2, 0.07]], 0.012), sc: 1 };
@@ -605,7 +607,7 @@
     if (M4V && M4V.key === tN) return M4V;
     const m = document.createElement('canvas').getContext('2d'); m.font = '700 26px "LibreBaskerville-700"';
     const x0 = -236 + m.measureText('CHANGES TO CONTENT:  ').width, wN = m.measureText('NONE').width;
-    const ring = mkMark(Math.max(0.22, tN - 0.2), 0.42, [GEN().ellipse(x0 + wN / 2, -109, wN + 52, 58, ink(83, { strokeWidth: 6 }))]);
+    const ring = mkMark(Math.max(0.22, tN - 0.2), 0.42, [GEN().ellipse(x0 + wN / 2 + 6, -109, wN + 36, 56, ink(83, { strokeWidth: 6 }))]);
     return (M4V = { key: tN, ring });
   };
   const billToLayer = (p, ox, oy) => [BILL.x + ox + Math.cos(BILL.rot) * p[0] - Math.sin(BILL.rot) * p[1], BILL.y + oy + Math.sin(BILL.rot) * p[0] + Math.cos(BILL.rot) * p[1]];

@@ -395,7 +395,7 @@
   const pitchSp = () => sprite('cntv_pitch', PW * PS, PH * PS, (PW * PS) / 2, (PH * PS) / 2, (g) => {
     const w = PW * PS, h = PH * PS, m = PXM * PS; g.translate(-w / 2, -h / 2);
     for (let i = 0; i < 10; i++) { g.fillStyle = i % 2 ? '#4f8f38' : '#5da043'; g.fillRect((w * i) / 10, 0, w / 10 + 0.6, h); }
-    g.strokeStyle = '#f5f2e6'; g.lineWidth = 3; const L = 1.5 * m;
+    g.strokeStyle = '#f5f2e6'; g.lineWidth = 4; const L = 1.5 * m;
     g.strokeRect(L, L, w - 2 * L, h - 2 * L); g.beginPath(); g.moveTo(w / 2, L); g.lineTo(w / 2, h - L); g.stroke();
     g.beginPath(); g.arc(w / 2, h / 2, 9.15 * m, 0, TAU); g.stroke();
     for (const side of [0, 1]) {
@@ -407,7 +407,7 @@
   function tilePitches(g, kAt) {
     g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.clip();
     const sp = pitchSp();
-    for (const p of PITCHES) { const k = kAt(p); if (k <= 0) continue; put(g, sp, p.x, p.y, { sc: ease.back(clamp(k, 0, 1)) / PS, lift: 0 }); }
+    g.globalAlpha = 0.88; for (const p of PITCHES) { const k = kAt(p); if (k <= 0) continue; put(g, sp, p.x, p.y, { sc: ease.back(clamp(k, 0, 1)) / PS, lift: 0 }); }
     g.restore();
   }
   /** a tag in screen space, centred: newsprint, one line */
@@ -443,7 +443,7 @@
   //            while it multiplies outward until the clearing is tiled, ~460 of them, the last landing on "460" ═════════
   SCENES.cntv_pitch = { draw(c, lt) {
     const id = 'cntv_pitch', dd = dur(id), tOne = at(id, 'pitch', 0.1), tT = at(id, 'tile', 1.15), tN = at(id, 'n', 2.2);
-    const kB = ease.io((lt - tT + 0.15) / (tN - tT + 0.55)), Z = lerp(3.1, 1.12, kB) * (1 + 0.012 * ease.io((lt - tN) / (dd - tN)));
+    const kB = ease.io((lt - tT + 0.15) / (tN - tT + 0.55)), Z = lerp(2.4, 1.12, kB) * (1 + 0.012 * ease.io((lt - tN) / (dd - tN)));
     const cam = vcam(lt, dd, { z: () => 1.03, hits: [tN], kick: 0.03, amp: 2 });
     c.save(); camZ(c, Z, P0.x, P0.y);
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
