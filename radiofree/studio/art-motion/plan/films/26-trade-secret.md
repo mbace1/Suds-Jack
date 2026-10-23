@@ -81,3 +81,13 @@ Before posting, check the HS text for:
   - A zone turns red only where the 2021 clearing (traced from the 2021 photograph) covers it. The film no longer
     claims which zones made up the 1.3 ha.
   - The zones are traced from the HS graphic, so their sizes are HS's own drawing.
+
+## Full HS article read (owner pasted it, 23 Oct): Aino Heikkonen, HS, 23 Oct 13:20, updated 14:23
+
+| film says | article | status |
+|---|---|---|
+| Doodle asked officials to keep this map secret | In spring 2020 Olavi Kemppi, representing Tuike (signature: Google Hamina), sent the report to the ELY Centre from a Google email address. He asked that its four attachments be kept confidential and secret, and gave no reason. The attachments were photos, the landscape-work permit, the building permit and the detailed plan, which is the map. | CONFIRMED. The map was one of four attachments. |
+| The map marked flying squirrel forest. No felling. | The plan in force marked the important nature areas with black text and a dashed line. The trees there should have been kept, or managed so the nest trees stay protected and the squirrel can move. HS's lede: the areas that should not have been felled. | CONFIRMED, as HS's own summary. |
+| Felled in 2018–19: 1.3 ha, without a permit | 1.3 ha of flying squirrel forest was destroyed at Tuike's site at Summa, 2018–2019. HS's headline calls the felling unauthorised. In early 2020 Tuike's representative admitted the destruction. | CONFIRMED. |
+| The authority kept the papers as trade secrets | The ELY Centre kept them secret. LVV gave the trade-secret grounds: Publicity Act §24, points 17 and 20. | CONFIRMED. NEW: **LVV lifted the secrecy and sent the attachments after the story was published** (update, 23 Oct 14:23). The city of Hamina had already released the same documents to HS as fully public. |
+| Planted punch: a felled forest, filed as a trade secret | The authority judged the felling an accident and made no criminal report. | True of 2020–2026. The post copy now says the papers were secret "for years, until a newspaper asked". The film itself does not mention the lifting; offered to the owner as a v4 end beat. |
