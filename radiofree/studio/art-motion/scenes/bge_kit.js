@@ -626,7 +626,7 @@
       const kS = (lt - tP + 0.22) / 0.22, kU = (lt - tP - 0.18) / 0.35;
       if (kS > 0 && kU < 1) { const h = kS < 1 ? lerp(-520, 0, ease.io(kS)) : lerp(0, -560, ease.io(kU)), a = kU > 0 ? 1 - ease.io(kU) : clamp(kS * 3, 0, 1); g.save(); g.globalAlpha = a; put(g, stampTool(), STAMP[0] + ox, STAMP[1] + oy + 70 + h, { sc: 0.9, lift: 0.6 - h / 60 }); g.restore(); }
       // the two DISSENT cards slide in from the right, low on the proposal and clear of the rail
-      [[0.55, 730, 1080, 0.08], [0.85, 712, 1222, -0.06]].forEach(([d, x, y, r]) => { const kc = ease.out((lt - tP - d) / 0.3); if (kc > 0) put(g, dissentCard(), lerp(W + 200, x, kc) + ox, y + oy, { rot: r, lift: 0.5 }); });
+      [[0.55, 676, 1080, 0.08], [0.85, 660, 1222, -0.06]].forEach(([d, x, y, r]) => { const kc = ease.out((lt - tP - d) / 0.3); if (kc > 0) put(g, dissentCard(), lerp(W + 200, x, kc) + ox, y + oy, { rot: r, lift: 0.5 }); });
     } }], { x: Math.sin(lt * 0.3) * 6, y: 0, z: 1 }));
     corner(c, ui('committee', 'COMMITTEE STATEMENT · 16.10.2026'), win(lt, 0.35, dd - 0.3));
     box(c);
@@ -653,7 +653,7 @@
       if (lt > tM - 0.6 && lt < tM + 1.2) marker(g, pen, -0.62);
     } }, { d: 0.3, fn: (g, ox, oy) => snowfall(g, SNOW0 - dd + lt, ox, oy, { n: 120, sz: 1.3, a: 0.7, wind: 26 }) }], STILL));
     flash(c, f);
-    corner(c, ui('vote', 'PLENARY VOTE: STILL TO COME'), win(lt, tM + 0.3, dd - 1.2));
+    corner(c, ui('vote', 'PLENARY VOTE: STILL TO COME'), win(lt, tM - 0.1, dd - 0.95));       // with "Proposed till 2028."
     corner(c, ui('act', 'FINLAND · TEMPORARY MEASURES ACT'), clamp((lt - (dd - 0.75)) / 0.3, 0, 1));
     box(c);
   } };
