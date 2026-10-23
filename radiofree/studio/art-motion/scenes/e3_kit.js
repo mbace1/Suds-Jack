@@ -466,7 +466,7 @@
       }), d: 0.14 },
       { sh: counter(), d: 0.24, lift: 0.6 },
       { d: 0.32, fn: (g, ox, oy) => {
-        const pa = [360 + gap + ox, 1340 + oy, 118], ca = [740 - gap + ox, 1352 + oy, 140];
+        const pa = [325 + gap + ox, 1340 + oy, 118], ca = [695 - gap + ox, 1352 + oy, 140];   // 35–45 px left of v1's: the card was under the right rail
         put(g, bigPhoneV('grey'), pa[0], pa[1], { rot: -0.07, sc: 0.95, lift: 0.5 });
         if (on > 0) { g.save(); g.globalAlpha = on; put(g, bigPhoneV('back'), pa[0], pa[1], { rot: -0.07, sc: 0.95, lift: 0.5 }); g.restore(); glow(g, pa[0], pa[1], 240, 'rgba(170,230,255,', 0.3 * on * (0.6 + 0.4 * Math.exp(-(lt - tT) * 3))); }
         put(g, idSp(), ca[0], ca[1], { rot: 0.05, sc: 1.24, lift: 0.5 });

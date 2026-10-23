@@ -667,7 +667,7 @@
   // ═════════ V4 · osv_map: v1's map, faster — the warning on the grid operator's name, the turbine that is not
   //            built drawn on the condition, and the four price tags on "nationwide"; the whole map sits MAPDY lower than
   //            v1's, under a four-line caption ═════════
-  const MAPDY = 50;
+  const MAPDY = 30;                                            // SE4's price tag stays clear of the corner tag
   SCENES.osv_map = { draw(c, lt) {
     const id = 'osv_map', dd = dur(id), tW = at(id, 'warn', 0.6), tB = at(id, 'built', 1.0), tN = at(id, 'nation', 2.2);
     const cam = vcam(lt, dd, { z: (l) => lerp(1.0, 1.06, ease.io(l / dd)), hits: [tW, tN], kick: 0.03, fx: 600, fy: 1000 });

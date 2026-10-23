@@ -60,3 +60,39 @@ single-source.
   one has none, so a replay shows the clean wall again.
 - The papercut sign-off follows the film, so a platform's own loop goes through the sign-off.
 - fi/ja are drafts (`native_read` false).
+
+## VIRAL v2 (23 Oct): clarity of messaging
+
+Owner on viral v1: "needs clarity of messaging". So v2 has no riddle, and every caption makes sense on its own to a
+cold viewer. "Trick question. All ten are." and "220 like them" are gone. The hook-first opening and the loop stay.
+
+- **Source:** `papercut/label-sold-separately-viral-v2/`, engine key `lssv2`.
+- **Scenes:** `lssv2_*` in the same block of `scenes/lss_kit.js`. The `lssv_*` scenes and v1 are unchanged.
+- **Length:** 42 beats at 124 BPM = 20.3 s, plus the papercut sign-off.
+- **Previews:**
+  - `previews/23-10-Label-Sold-Separately-VIRAL-v2-en.mp4`: with the sign-off, 23.3 s.
+  - `previews/23-10-Label-Sold-Separately-VIRAL-v2-loop-en.mp4`: no sign-off, 20.3 s, for platform looping.
+- The first viral previews are kept as they were.
+
+| # | id | beats | caption (en, BIG) | picture | cues |
+|---|---|---|---|---|---|
+| 1 | `lssv2_hook` | 10 | US midterms: / 220 political ads / made using [AI]. | Frame one is the wall of ten. On "220 political ads" the camera pulls back, the shelves fall away and the other 210 sets pop in round the ten. On "AI" every one of the 220 lights with the AI sparkle, in a wave. From here on the sparkle means "made using AI". | `hit` 0, `pull` = line 2, `ai` = pop |
+| 2 | `lssv2_count` | 9 | Over [$137 million] / spent airing them. | The 220 hold, all lit. The counter rolls and lands on $137,000,000 on the pop. Tag: WESLEYAN MEDIA PROJECT · 15.10.2026. | `roll` 0.1, `count` = pop |
+| 3 | `lssv2_ripple` | 10 | How many tell you / they used AI? / About [3 in 10]. | The counter goes. A ripple puts a MADE WITH AI sticker on 66 of the 220 (30%), landing on the pop. The 154 with nothing go dark. Tag: ~3 IN 10 LABELLED · WESLEYAN. | `rip` = line 2, `three` = pop |
+| 4 | `lssv2_end` | 13 | Ten AI ads. / Three told you. / [Seven didn't]. | The wall again with its three stickers. The marker rings the three on "Three told you.", and the seven bare screens flare with the sparkle on "Seven didn't." (AI, no label). The frame eases back to frame one. | `mark` = line 2, `seven` = pop |
+
+- **"Over":** the spine said "[$137 million] spent". Wesleyan's figure is *more than* $137M, so the caption keeps "Over".
+- **What was cut:** v1-viral's falling stickers (a metaphor to decode). The seven are shown as what they are instead:
+  lit as AI, with no sticker.
+- **Post (en, 233 characters):** "US midterms: 220 political ads made using AI had aired by 11 Oct, with over $137M spent
+  airing them, per the Wesleyan Media Project. How many told viewers they used AI? About 3 in 10. Would you have
+  spotted the other 7? #Midterms #AI"
+- **Build:** PASSED, 0 fail and 5 warnings: the fi/ja native reads, plus three ja sidecars that need 0.2–0.35 s more
+  than the en master gives. Loudness:
+  - the film master: −13.7 LUFS / −2.7 dBTP
+  - with the sign-off: −13.9 LUFS / −1.7 dBTP
+- **Risks:**
+  - Frame 0 has no words. A caption cannot start before 0 s, so pick the ~2 s frame as the cover.
+  - The ten stand in for the ~220; "Ten AI ads… Seven didn't" is a proportion, not ten real ads.
+  - fi uses "noin 30 %" for "about 3 in 10" (a draft; it is not native-read).
+  - The loop is a near-loop: the last frame keeps the three stickers and rings.
