@@ -7,29 +7,29 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=28';
-import { buildFloor } from './render/floor.js?v=28';
-import { fitCamera, screenToWorld } from './render/view.js?v=28';
-import * as worldsSim from './sim/worlds.js?v=28';
-import * as reshapeSim from './sim/reshape.js?v=28';
-import { Scenery } from './render/scenery.js?v=28';
-import { Transit } from './render/transit.js?v=28';
-import { Splats } from './render/splats.js?v=28';
-import { Actors } from './render/actors.js?v=28';
-import { GEL_TIME } from './render/gel.js?v=28';
-import { studioEnvironment } from './render/env.js?v=28';
-import { Specimen } from './render/specimen.js?v=28';
-import { createWorld, step, api as simApi } from './sim/world.js?v=28';
-import { stage as stagePk } from './sim/pickups.js?v=28';
-import { Input } from './input.js?v=28';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=28';
-import { Announcer } from './announcer.js?v=28';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=28';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=28';
-import { Sound } from './audio.js?v=28';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=28';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=28';
-import { Readout } from './readout.js?v=28';
+import { TUNING } from './tuning.js?v=29';
+import { buildFloor } from './render/floor.js?v=29';
+import { fitCamera, screenToWorld } from './render/view.js?v=29';
+import * as worldsSim from './sim/worlds.js?v=29';
+import * as reshapeSim from './sim/reshape.js?v=29';
+import { Scenery } from './render/scenery.js?v=29';
+import { Transit } from './render/transit.js?v=29';
+import { Splats } from './render/splats.js?v=29';
+import { Actors } from './render/actors.js?v=29';
+import { GEL_TIME } from './render/gel.js?v=29';
+import { studioEnvironment } from './render/env.js?v=29';
+import { Specimen } from './render/specimen.js?v=29';
+import { createWorld, step, api as simApi } from './sim/world.js?v=29';
+import { stage as stagePk } from './sim/pickups.js?v=29';
+import { Input } from './input.js?v=29';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=29';
+import { Announcer } from './announcer.js?v=29';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=29';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=29';
+import { Sound } from './audio.js?v=29';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=29';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=29';
+import { Readout } from './readout.js?v=29';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -403,7 +403,7 @@ const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY)
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=28`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=29`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades

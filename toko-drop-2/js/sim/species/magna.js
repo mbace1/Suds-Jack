@@ -47,7 +47,7 @@
 // knock is the core's (g.kx/g.kz on top of the walk's g.vx/g.vz); a CUT
 // dash's damage is the core's too. Neither changes the hold: any dash is a
 // dash to 1.x's clock.
-import { TUNING } from '../../tuning.js?v=28';
+import { TUNING } from '../../tuning.js?v=29';
 
 // read back, not tuned here: the hero's own numbers (1.x player.js:8, 17)
 const COOLDOWN = TUNING.hero.dashCooldown;           // DASH_CD 0.75, from the dash's end

@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v29 — 2026-10-23
+**Worlds 4-9 each have a gel of their own**
+- BUBBLA (THE CISTERN): a small gel inside a bubble that eats four shots; popped, it bolts, and the bubble grows back if you let it
+- STEAMA (THE BOILER ROOM): hisses, then vents a scalding cloud where it stands and throws a ring of six
+- SALMA (THE RIVER): darts and glides, working its way toward you against the current
+- SKATA (THE ICE SHEET): a puck of a cube that never stops, comes off every wall faster, and lines up on you every fourth bounce; a shot knocks it
+- GLOWA (THE DEEP): nearly the colour of the dark, holding a light out in front of it; come close to the light and it bites
+- MIRRA (THE CORE): stands at your mirror point and fires a volley every couple of seconds; you move it by moving
+- Each world draws its own about as often as three of the shared kinds, from its first wave; the GOT YOU card has a line for each in all three languages
+
 ## v28 — 2026-10-23
 **Worlds 4-9 each have a floor of their own**
 - THE CISTERN: stone slabs under shallow water, light off the surface wandering over them, the column bases standing in it

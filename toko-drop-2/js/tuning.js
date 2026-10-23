@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=28';
-import WAVES from './tuning/waves.js?v=28';
-import PICKUPS from './tuning/pickups.js?v=28';
+import { SPECIES } from './tuning/species/index.js?v=29';
+import WAVES from './tuning/waves.js?v=29';
+import PICKUPS from './tuning/pickups.js?v=29';
 
 export const TUNING = {
   render: {
@@ -45,17 +45,17 @@ export const TUNING = {
       // the pipes, then out to sea. Each world past the sewer plays under one
       // of 1.x's world rules (sim/rules.js; TUNING.campaign.rules), and has a
       // floor of its own (render/floor.js, TUNING.worlds.floor[id])
-      { id: 'cistern', heavy: 0.5, rule: 'sweep', rail: 0x3fb8d0,
+      { id: 'cistern', heavy: 0.5, species: [['bubbla', 0, 3]], speciesWeight: 3, rule: 'sweep', rail: 0x3fb8d0,
         arena: { landscape: { hx: 26, hz: 14 }, portrait: { hx: 14, hz: 26 } } },
-      { id: 'boiler', heavy: 0.55, rule: 'updraft', rail: 0xff8a33,
+      { id: 'boiler', heavy: 0.55, species: [['steama', 0, 3]], speciesWeight: 3, rule: 'updraft', rail: 0xff8a33,
         arena: { landscape: { hx: 23, hz: 14 }, portrait: { hx: 14, hz: 23 } } },
-      { id: 'river', heavy: 0.55, rule: 'current', rail: 0x44ddbb,
+      { id: 'river', heavy: 0.55, species: [['salma', 0, 3]], speciesWeight: 3, rule: 'current', rail: 0x44ddbb,
         arena: { landscape: { hx: 34, hz: 12 }, portrait: { hx: 12, hz: 34 } } },
-      { id: 'ice', heavy: 0.6, rule: 'slip', rail: 0xbfe6ff,
+      { id: 'ice', heavy: 0.6, species: [['skata', 0, 3]], speciesWeight: 3, rule: 'slip', rail: 0xbfe6ff,
         arena: { landscape: { hx: 28, hz: 17 }, portrait: { hx: 17, hz: 28 } } },
-      { id: 'deep', heavy: 0.6, rule: 'dark', rail: 0x4455cc,
+      { id: 'deep', heavy: 0.6, species: [['glowa', 0, 3]], speciesWeight: 3, rule: 'dark', rail: 0x4455cc,
         arena: { landscape: { hx: 24, hz: 16 }, portrait: { hx: 16, hz: 24 } } },
-      { id: 'core', heavy: 0.65, rule: 'cycle', rail: 0xee44dd,
+      { id: 'core', heavy: 0.65, species: [['mirra', 0, 3]], speciesWeight: 3, rule: 'cycle', rail: 0xee44dd,
         arena: { landscape: { hx: 19, hz: 11 }, portrait: { hx: 11, hz: 19 } } },
     ],
     // THE CORE plays every rule in turn, `cycleEvery` s each
