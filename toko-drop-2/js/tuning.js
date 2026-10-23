@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=21';
-import WAVES from './tuning/waves.js?v=21';
-import PICKUPS from './tuning/pickups.js?v=21';
+import { SPECIES } from './tuning/species/index.js?v=22';
+import WAVES from './tuning/waves.js?v=22';
+import PICKUPS from './tuning/pickups.js?v=22';
 
 export const TUNING = {
   render: {
@@ -39,8 +39,8 @@ export const TUNING = {
     modes: ['arcade', 'hardcade'],
     list: [
       { id: 'grid', heavy: 0 },
-      { id: 'driveway', heavy: 0.35, arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
-      { id: 'sewer', heavy: 0.5, arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
+      { id: 'driveway', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 4, arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
+      { id: 'sewer', heavy: 0.5, species: [['worma', 0, 3]], speciesWeight: 3, arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
     ],
     heavy: { radius: 1.3, hp: 2 },   // × a normal body's; not an elite's, a boss's or a child's
     heavyLook: { darken: 0.55 },     // its colour (and what light becomes inside it) × this: denser
@@ -62,6 +62,11 @@ export const TUNING = {
                   lip: [0.11, 0.11, 0.11], joint: 4.0, jointW: 0.025, flood: 0.85, ambient: 0.6, floodTint: [1.0, 0.6, 0.25] },
       sewer: { stone: [0.034, 0.04, 0.046], groutCol: [0.007, 0.008, 0.01], water: [0.003, 0.011, 0.013], waterHi: [0.05, 0.17, 0.16],
                kerb: [0.06, 0.06, 0.062], channel: 2.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9 },
+      // WORLDS · NEON (v23): the abstract floors
+      hex: { cell: 1.8, line: 0.035, waveK: 0.55, waveHz: 2.2, base: [0.02, 0.012, 0.035], cell2: [0.09, 0.02, 0.08],
+             lineLo: [0.35, 0.03, 0.3], lineHi: [1.0, 0.35, 0.75] },
+      tide: { scale: 0.11, flow: 0.12, bands: 7, line: 0.06, grid: 2.2, lo: [0.004, 0.01, 0.02], hi: [0.01, 0.04, 0.06],
+              lineCol: [0.15, 0.85, 0.8], gridCol: [0.03, 0.06, 0.12] },
     },
   },
   // what stands round a world's floor (render/scenery.js). Colours are
@@ -157,6 +162,9 @@ export const TUNING = {
   // the room's dark gradient, a soft box overhead that slides across every
   // crown, and strip lights on the horizon that catch the sides (one in the
   // grid's teal, one warm opposite). `intensity` is scene.environmentIntensity.
+  // the live portrait on the death screen and the pause menu (render/specimen.js):
+  // the camera in body radii, a slow turn, the card's own dark behind it
+  specimen: { fov: 30, dist: 5.2, up: 2.0, look: 0.35, turn: 0.6, turnHz: 0.7, back: 0x0b0b18, hz: 20, margin: 0.95 },
   env: {
     on: true, size: 512, intensity: 0.9,
     zenith: 0x1a1c33, horizon: 0x2a2d4a, floor: 0x0d0d1a,

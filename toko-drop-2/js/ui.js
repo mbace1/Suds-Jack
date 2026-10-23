@@ -2,7 +2,8 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=21';
+import { TUNING } from './tuning.js?v=22';
+import { GEL_LINES } from './gels-said.js?v=22';
 
 const STR = {
   en: {
@@ -10,7 +11,7 @@ const STR = {
     dash: 'DASH', push: 'PUSH', pushSub: 'shoves gels away', cut: 'CUT', cutSub: 'through them, and it hurts', gelHp: 'GEL HP', gelHpSub: 'tougher gels, same score',
     arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'Rooms with their own clock — coming next.',
     best: 'BEST', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
-    over: 'GAME OVER', gotyou: 'GOT YOU', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
+    over: 'GAME OVER', gotyou: 'GOT YOU', lastHit: 'LAST HIT BY', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
     wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
     greenRush: 'GREEN RUSH! DOUBLE PRIZE', dud: 'DUD! GREEN MEANS GO', dashThrough: 'DASH THROUGH!', gateChain: 'GATE CHAIN', bounty: 'BOUNTY',
     world2: 'WORLD 2 · THE DRIVEWAY', world3: 'WORLD 3 · THE SEWER',
@@ -18,14 +19,14 @@ const STR = {
     hintTouch: 'LEFT THUMB MOVES · RIGHT THUMB AIMS AND FIRES · FLICK TO DASH',
     hintKeys: 'WASD MOVES · MOUSE AIMS · HOLD CLICK TO FIRE · SPACE DASHES · ESC PAUSES',
     hintPad: 'LEFT STICK MOVES · RIGHT STICK AIMS AND FIRES · A DASHES · START PAUSES',
-    gels: 'GELS', classic: 'CLASSIC', sdf: 'SDF', classicSub: 'mesh gels, as they are', sdfSub: 'ray-marched fields',
+    gels: 'GELS', worlds: 'WORLDS', street: 'STREET', neon: 'NEON', streetSub: 'driveway, then sewer', neonSub: 'abstract hex, then tide', classic: 'CLASSIC', sdf: 'SDF', classicSub: 'mesh gels, as they are', sdfSub: 'ray-marched fields',
   },
   ja: {
     intro: 'イントロ', introSub: '始まりを見てからプレイ',
     dash: 'ダッシュ', push: '押す', pushSub: 'ゼリーを押しのける', cut: '貫く', cutSub: '貫いてダメージ', gelHp: 'ゼリー耐久', gelHpSub: '硬いゼリー、スコアは同じ',
     arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: '制限時間のある部屋 — 次の版で。',
     best: 'ベスト', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
-    over: 'ゲームオーバー', gotyou: 'やられた相手', time: 'タイム', newbest: '新記録', soon: '近日',
+    over: 'ゲームオーバー', gotyou: 'やられた相手', lastHit: '最後に当てた相手', time: 'タイム', newbest: '新記録', soon: '近日',
     wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
     greenRush: 'グリーンラッシュ！賞品2倍', dud: 'ハズレ！緑で行け', dashThrough: 'ダッシュで抜けろ！', gateChain: 'ゲートチェーン', bounty: '賞金首',
     world2: 'ワールド2 · ドライブウェイ', world3: 'ワールド3 · 下水道',
@@ -33,14 +34,14 @@ const STR = {
     hintTouch: '左手で移動 · 右手でエイムと射撃 · はじいてダッシュ',
     hintKeys: 'WASDで移動 · マウスでエイム · クリック長押しで射撃 · スペースでダッシュ · ESCで一時停止',
     hintPad: '左スティックで移動 · 右スティックでエイムと射撃 · Aでダッシュ · STARTで一時停止',
-    gels: 'ゼリー', classic: 'クラシック', sdf: 'SDF', classicSub: 'いつものメッシュ', sdfSub: 'レイマーチの距離場',
+    gels: 'ゼリー', worlds: 'ワールド', street: 'ストリート', neon: 'ネオン', streetSub: 'ドライブウェイ、そして下水道', neonSub: '抽象の六角、そして潮流', classic: 'クラシック', sdf: 'SDF', classicSub: 'いつものメッシュ', sdfSub: 'レイマーチの距離場',
   },
   fi: {
     intro: 'INTRO', introSub: 'katso alku, sitten pelaa',
     dash: 'SYÖKSY', push: 'TÖNÄISY', pushSub: 'tönäisee geelit sivuun', cut: 'VIILTO', cutSub: 'läpi, ja se satuttaa', gelHp: 'GEELIN KESTO', gelHpSub: 'sitkeämmät geelit, samat pisteet',
     arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'Huoneita omalla kellollaan — seuraavaksi.',
     best: 'ENNÄTYS', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
-    over: 'PELI OHI', gotyou: 'KAATAJA', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
+    over: 'PELI OHI', gotyou: 'KAATAJA', lastHit: 'VIIMEKSI OSUI', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
     wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
     greenRush: 'VIHREÄ RYNTÄYS! TUPLAPALKINTO', dud: 'SUUTARI! VIHREÄLLÄ MENNÄÄN', dashThrough: 'SYÖKSY LÄPI!', gateChain: 'PORTTIKETJU', bounty: 'PALKKIO',
     world2: 'MAAILMA 2 · PIHATIE', world3: 'MAAILMA 3 · VIEMÄRI',
@@ -48,7 +49,7 @@ const STR = {
     hintTouch: 'VASEN PEUKALO LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · SIPAISE SYÖKSYÄKSESI',
     hintKeys: 'WASD LIIKKUU · HIIRI TÄHTÄÄ · PIDÄ PAINIKE POHJASSA AMPUAKSESI · VÄLILYÖNTI SYÖKSYY · ESC TAUKO',
     hintPad: 'VASEN TATTI LIIKKUU · OIKEA TÄHTÄÄ JA AMPUU · A SYÖKSYY · START TAUKO',
-    gels: 'GEELIT', classic: 'KLASSINEN', sdf: 'SDF', classicSub: 'tavalliset verkkogeelit', sdfSub: 'säteenmarssatut kentät',
+    gels: 'GEELIT', worlds: 'MAAILMAT', street: 'KATU', neon: 'NEON', streetSub: 'pihatie, sitten viemäri', neonSub: 'abstrakti kenno, sitten virta', classic: 'KLASSINEN', sdf: 'SDF', classicSub: 'tavalliset verkkogeelit', sdfSub: 'säteenmarssatut kentät',
   },
 };
 const lang = (() => { const l = (navigator.language || 'en').slice(0, 2).toLowerCase(); return STR[l] ? l : 'en'; })();
@@ -177,26 +178,46 @@ export class UI {
       ...TITLE_MODES.filter((m) => m !== 'arcade').map((m) => this._button(m.toUpperCase(), `${t(m)} ${fmt(best[m])}`, () => this.h.onStart(m))),
       this._button(`CAMPAIGN · ${t('soon')}`, t('campaign'), () => {}, true),
       switches,
-      this._gelsRow(sound),
+      ...this._gelsRow(sound),
       hint,
     ]);
     if (keep && prev > 0 && prev < this.buttons.length) { this.focusIndex = prev; this._focus(); }
   }
 
   // the GELS switch (render/sdf.js) beside SOUND: how the gels are drawn;
-  // and SPLATTER (render/goo.js), off for a phone that cannot carry it
+  // WORLDS (v23): which look worlds 2 and 3 wear; and below them SOUND and
+  // SPLATTER (render/goo.js), off for a phone that cannot carry it
   _gelsRow(sound) {
-    const g = this.h.gels?.() === 'sdf' ? 'sdf' : 'classic', row = el('div', 'row');
+    const g = this.h.gels?.() === 'sdf' ? 'sdf' : 'classic', wl = this.h.worlds?.() === 'neon' ? 'neon' : 'street';
+    const row = el('div', 'row'), row2 = el('div', 'row');
     row.append(
       this._button(`${t('gels')} · ${t(g)}`, t(`${g}Sub`), () => this.h.onGels?.()),
+      this._button(`${t('worlds')} · ${t(wl)}`, t(`${wl}Sub`), () => this.h.onWorlds?.()),
+    );
+    row2.append(
       this._button(sound ? t('soundOn') : t('soundOff'), null, () => this.h.onSound()),
       this._button(this.h.goo?.() === false ? t('gooOff') : t('gooOn'), null, () => this.h.onGoo?.()),
     );
-    return row;
+    return [row, row2];
   }
 
-  pause() {
-    this._panel([el('h2', null, t('paused')), this._button(t('resume'), null, () => this.h.onResume()), this._button(t('quit'), null, () => this.h.onMenu())]);
+  // the card for the gel that got you (or, paused, the last to land a hit):
+  // its name, a box main.js draws the gel itself into (render/specimen.js),
+  // and one line on how to read it next time
+  _gelCard(kind, head) {
+    const S = kind && TUNING.species[kind];
+    if (!S) return null;
+    const card = el('div', 'gelcard'), box = el('div', 'specimen'), words = el('div', 'words');
+    words.append(el('p', 'head', head), el('p', 'name', S.name), el('p', 'line', GEL_LINES[lang]?.[kind] ?? GEL_LINES.en[kind] ?? ''));
+    card.append(box, words);
+    card.style.setProperty('--gel', `#${S.color.toString(16).padStart(6, '0')}`);
+    queueMicrotask(() => this.h.onSpecimen?.(kind, box));
+    return card;
+  }
+
+  pause(lastHit = null) {
+    const card = this._gelCard(lastHit, t('lastHit'));
+    this._panel([el('h2', null, t('paused')), ...(card ? [card] : []), this._button(t('resume'), null, () => this.h.onResume()), this._button(t('quit'), null, () => this.h.onMenu())]);
   }
 
   results(r) {
@@ -205,10 +226,11 @@ export class UI {
     row(t('score'), r.score.toLocaleString('en-US') + (r.newBest ? `  ${t('newbest')}` : ''));
     row(t('best'), r.best.toLocaleString('en-US'));
     row(t('time'), r.time);
-    if (r.gotYou) row(t('gotyou'), r.gotYou);
+    if (r.gotYou && !r.gotYouKind) row(t('gotyou'), r.gotYou);
     row(t('kills'), String(r.kills));
     row(t('grazes'), String(r.grazes));
-    this._panel([el('h2', null, t('over')), el('p', 'mode', r.mode.toUpperCase()), rows,
+    const card = this._gelCard(r.gotYouKind, t('gotyou'));
+    this._panel([el('h2', null, t('over')), el('p', 'mode', r.mode.toUpperCase()), ...(card ? [card] : []), rows,
       this._button(t('again'), null, () => this.h.onAgain()), this._button(t('menu'), null, () => this.h.onMenu())]);
   }
 

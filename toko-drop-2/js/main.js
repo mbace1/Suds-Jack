@@ -7,25 +7,26 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=21';
-import { buildFloor } from './render/floor.js?v=21';
-import { fitCamera, screenToWorld } from './render/view.js?v=21';
-import * as worldsSim from './sim/worlds.js?v=21';
-import * as reshapeSim from './sim/reshape.js?v=21';
-import { Scenery } from './render/scenery.js?v=21';
-import { Transit } from './render/transit.js?v=21';
-import { Splats } from './render/splats.js?v=21';
-import { Actors } from './render/actors.js?v=21';
-import { GEL_TIME } from './render/gel.js?v=21';
-import { studioEnvironment } from './render/env.js?v=21';
-import { createWorld, step, api as simApi } from './sim/world.js?v=21';
-import { stage as stagePk } from './sim/pickups.js?v=21';
-import { Input } from './input.js?v=21';
-import { UI, t, timeText } from './ui.js?v=21';
-import { Sound } from './audio.js?v=21';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=21';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=21';
-import { Readout } from './readout.js?v=21';
+import { TUNING } from './tuning.js?v=22';
+import { buildFloor } from './render/floor.js?v=22';
+import { fitCamera, screenToWorld } from './render/view.js?v=22';
+import * as worldsSim from './sim/worlds.js?v=22';
+import * as reshapeSim from './sim/reshape.js?v=22';
+import { Scenery } from './render/scenery.js?v=22';
+import { Transit } from './render/transit.js?v=22';
+import { Splats } from './render/splats.js?v=22';
+import { Actors } from './render/actors.js?v=22';
+import { GEL_TIME } from './render/gel.js?v=22';
+import { studioEnvironment } from './render/env.js?v=22';
+import { Specimen } from './render/specimen.js?v=22';
+import { createWorld, step, api as simApi } from './sim/world.js?v=22';
+import { stage as stagePk } from './sim/pickups.js?v=22';
+import { Input } from './input.js?v=22';
+import { UI, t, timeText } from './ui.js?v=22';
+import { Sound } from './audio.js?v=22';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=22';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=22';
+import { Readout } from './readout.js?v=22';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -114,14 +115,21 @@ function useArena(name) {
 // world change. A world past the first is bigger than the screen, and the
 // camera follows (viewBox)
 let viewWorld = 1, boundsFloor = false;
-const FLOOR_STYLE = ['grid', 'concrete', 'sewer'];   // world n's floor (render/floor.js)
+// world n's floor (render/floor.js), per the title's WORLDS look (v23):
+// STREET is the driveway and the sewer with their lawn and walls; NEON is
+// two abstract floors in the grid's own language, with 1.x's rail. The look
+// is kept in toko2.worlds; ?worlds=street|neon overrides it for a link
+const FLOOR_STYLE = { street: ['grid', 'concrete', 'sewer'], neon: ['grid', 'hex', 'tide'] };
+const WORLD_LOOKS = ['street', 'neon'];
+let urlWorlds = WORLD_LOOKS.includes(params.get('worlds')) ? params.get('worlds') : null;
+const worldsLook = () => urlWorlds ?? (WORLD_LOOKS.includes(store.str('toko2.worlds')) ? store.str('toko2.worlds') : 'street');
 function useWorld(n, hx, hz) {
   viewWorld = n; boundsFloor = false;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
-  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[n - 1] ?? 'grid', film: actors.gooKit.film });
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[worldsLook()][n - 1] ?? 'grid', film: actors.gooKit.film });
   scene.add(floor.group);
-  scenery.build(n, hx, hz);
+  scenery.build(worldsLook() === 'street' ? n : 1, hx, hz);   // NEON stands nothing round its floors
   camAt.set(0, 0, 0);
   resize();
 }
@@ -249,10 +257,14 @@ const ui = new UI({
   onGelHp: () => { const h = tests().hp; store.set('toko2.gelHp', HP_STEPS[(HP_STEPS.indexOf(h) + 1) % HP_STEPS.length]); showTitle(true); },
   gels: () => gels(), onGels: () => flipGels(),
   goo: () => gooOn(), onGoo: () => flipGoo(),
+  worlds: () => worldsLook(), onWorlds: () => flipWorlds(),
+  onSpecimen: (kind, box) => specimen.show(kind, box),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
 // the view of a world change: the swirl, the dark, the fall, the floor running out (render/transit.js)
 const transit = new Transit(T, { scenery, juice: actors.juice, ui, t });
+// the GOT YOU card's live gel (render/specimen.js)
+const specimen = new Specimen(T, actors, scene.environment);
 
 // The title's GELS switch (render/sdf.js): 'classic' meshes or 'sdf' fields,
 // localStorage toko2.gels. ?gels=sdf|classic overrides it for a link, until
@@ -270,6 +282,11 @@ function flipGels() {
   actors.setGels(g); setLabel(); showTitle(true);
 }
 actors.setGels(gels()); setLabel();
+function flipWorlds() {
+  store.set('toko2.worlds', worldsLook() === 'neon' ? 'street' : 'neon');
+  if (urlWorlds) { urlWorlds = null; const u = new URL(location.href); u.searchParams.delete('worlds'); history.replaceState(history.state, '', u); }
+  showTitle(true);   // it takes effect at the next world change
+}
 function flipGoo() {
   const on = !gooOn();
   store.set('toko2.goo', on ? 'on' : 'off');
@@ -323,12 +340,6 @@ function start(m, { intro: asked = false } = {}) {
   acc = 0; pendingDash = false;
   sound.unlock();
   actors.setGels(gels()); setLabel();
-function flipGoo() {
-  const on = !gooOn();
-  store.set('toko2.goo', on ? 'on' : 'off');
-  if (urlGoo) { urlGoo = null; const u = new URL(location.href); u.searchParams.delete('goo'); history.replaceState(history.state, '', u); }
-  actors.setGoo(on); actors.gooKit.render(renderer); floor.setFilm(actors.gooKit.film); splats.clear(); showTitle(true);
-}
   ui.hide();
   if (introWanted(asked)) {
     state = 'intro'; input.enabled = false; ui.setHud(false);
@@ -348,7 +359,7 @@ function go() {
   ui.banner(mode.toUpperCase(), 1.2);
 }
 
-function pause() { if (state !== 'play') return; state = 'paused'; input.enabled = false; ui.pause(); }
+function pause() { if (state !== 'play') return; state = 'paused'; input.enabled = false; ui.pause(T.species[world?.killedBy] ? world.killedBy : null); }
 function resume() { if (state !== 'paused') return; state = 'play'; input.enabled = true; ui.hide(); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
@@ -359,7 +370,7 @@ function finish() {
   ui.setHud(false);
   ui.results({
     mode, score: world.score, best: Math.max(best, world.score), newBest,
-    time: timeText(world.time), gotYou: world.killedBy ? T.species[world.killedBy]?.name : null,
+    time: timeText(world.time), gotYou: world.killedBy ? T.species[world.killedBy]?.name : null, gotYouKind: T.species[world.killedBy] ? world.killedBy : null,
     kills: world.kills, grazes: world.grazes,
   });
 }
@@ -474,15 +485,9 @@ const debug = {
   // stopped, so each touch event is delivered on its own rather than
   // coalesced behind a slow software-GPU frame
   loop(on) { capture.on = !on; },
-  start, pause, resume, toMenu,
+  start, pause, resume, toMenu, specimen,
   // the GELS style ('classic' | 'sdf'), for the smoke and the captures; the readout
-  get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel();
-function flipGoo() {
-  const on = !gooOn();
-  store.set('toko2.goo', on ? 'on' : 'off');
-  if (urlGoo) { urlGoo = null; const u = new URL(location.href); u.searchParams.delete('goo'); history.replaceState(history.state, '', u); }
-  actors.setGoo(on); actors.gooKit.render(renderer); floor.setFilm(actors.gooKit.film); splats.clear(); showTitle(true);
-} }, readout,
+  get gels() { return actors.gels; }, setGels(g) { urlGels = GELS.includes(g) ? g : null; actors.setGels(gels()); setLabel(); }, readout,
   // Look checks for one species (test/lookshot.mjs): a quiet arena with only
   // these bodies in it, the hero standing below them.
   showcase(kinds, { spacing = 4, heroZ = 0.6 } = {}) {
@@ -616,6 +621,7 @@ function frame(now, dtFixed) {
   actors.light.render(renderer);   // the arena's light map, which the floor reads
   if (actors.goo) { actors.goo.render(renderer); floor.setFilm(actors.goo.film); }   // the goo's film steps (render/goo.js), and the floor reads where it now is
   renderer.render(scene, state === 'intro' ? intro.cam : camera);
+  if (state === 'paused' || state === 'over') specimen.render(renderer, time); else specimen.hide();   // the GOT YOU card's gel, over its box
   readout.frame(now, state, world);
   debug.frames++;
 }

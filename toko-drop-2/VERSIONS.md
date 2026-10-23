@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v22 — 2026-10-23
+**Each new world has its own gel (HOPPA hops the driveway, WORMA swims under the sewer), and WORLDS · NEON on the title swaps in abstract floors**
+- HOPPA (driveway, lime): squats and glows, marks a ring on the floor where it will land, hops 2.6 u high to where you are heading and lands with a slow ring of 8 shots. In the air it is over your head: it cannot touch you and bullets pass under it
+- WORMA (sewer, pink): swims under the floor where nothing reaches it, only a bulge showing; comes up a few metres from you (the bulge swells and glows first), spits two fans of 5, and goes back down
+- The worlds' own species join the draw at 4× (driveway) and 3× (sewer) the weight of one of 1.x's; world 1 draws exactly as before
+- WORLDS · STREET / NEON on the title (kept in `toko2.worlds`, `?worlds=` for a link): NEON gives world 2 a hex lattice with waves pulsing out from the middle and world 3 the contour lines of a flowing current, both with 1.x's rail and nothing round them. STREET is the driveway and sewer as before. Takes effect at the next world change
+- The title's switches are three rows now: DASH and GEL HP; GELS and WORLDS; SOUND and SPLATTER
+- The GOT YOU card is back (1.x had it, v212): the death screen and the pause menu show the gel that landed the last hit — the real gel, alive and turning in its own box (rendered off-screen and drawn into the card, classic or SDF), its name in its colour, and one line on how to read it, in English, Finnish and Japanese (`js/gels-said.js`)
+- Fixed: v21 pasted the SPLATTER switch's function into two other functions as well (harmless, unused); gone
+- Gates: `test/species/hoppa.mjs` (16), `test/species/worma.mjs` (14); smoke has a `world2-neon` run (hex to tide), checks the WORLDS switch and the pause menu's GOT YOU card
+- Cache tokens `?v=21` → `?v=22`; HUD label → `2.0 · v22`
+
+---
+
 ## v21 — 2026-10-23
 **Splatter: kills throw real goo that pools, smears and dries on the floor — on by default, SPLATTER on the title turns it off**
 - `render/goo-sim.js` + `render/goo.js`: thrown droplets fly, land, slide and stamp a wet film on the floor (16 texels a metre, stepped 30×/s), which dries to a stain; bodies walking through it smear it. Hits, kills, lob landings and cuts all throw it

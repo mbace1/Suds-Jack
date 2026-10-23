@@ -21,8 +21,8 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=21';
-import * as worlds from '../worlds.js?v=21';
+import { TUNING } from '../../tuning.js?v=22';
+import * as worlds from '../worlds.js?v=22';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -97,13 +97,19 @@ export const escortsFor = (wave) => Math.max(0, Math.min(W.boss.escort.max, Math
 // Returns the wave's sorted entries { kind, t, variant, affix?, count?,
 // shooter?, slot?, boss?, front? } and the numbers that built them. Pure but
 // for `rng`, which it draws from in 1.x's order.
-export function schedule(wave, rng, seed) {
+// `world` (sim/worlds.js): a later world adds its own species to the draw
+// ([key, minWave, cost], TUNING.worlds.list[n].species); world 1 draws as 1.x
+export function schedule(wave, rng, seed, world = 1) {
   const r = () => rng.next();
   const pick = (list) => list[Math.floor(r() * list.length)];
   const kind = waveKind(wave), swarm = kind === 'swarm', curtain = kind === 'curtain', boss = kind === 'boss';
   const budget = budgetFor(wave), cap = entryCap(wave), V = W.variants, SP = W.shooterPlan;
 
-  const available = W.pool.filter(([, min]) => wave >= min);
+  // each of the world's own as often as `speciesWeight` of 1.x's, so it is the world's
+  const own = T.worlds.list[world - 1], extra = [];
+  for (let i = 0; i < (own?.speciesWeight ?? 1); i++) extra.push(...(own?.species ?? []));
+  const pool = world > 1 ? W.pool.concat(extra) : W.pool;
+  const available = pool.filter(([, min]) => wave >= min);
   const SHOOT = new Set(W.shooters);
   const mobPool = available.filter(([k]) => !SHOOT.has(k));
   const shootPool = available.filter(([k]) => SHOOT.has(k));
@@ -246,7 +252,7 @@ export function armCurtain(wave, kind, rng) {
 function startWave(w, d, carry) {
   d.wave++;
   w.wave = d.wave;
-  const plan = schedule(d.wave, w.rng, w.seed);
+  const plan = schedule(d.wave, w.rng, w.seed, worlds.on(w) ? w.world : 1);
   d.kind = plan.kind; d.plan = plan;
   d.roundLen = plan.roundLen; d.waveT = 0; d.frontLandedAt = W.pulses.landedInit;
   d.liveCap = plan.liveCap; d.childCap = plan.liveCap * W.caps.childMult; d.held = 0;

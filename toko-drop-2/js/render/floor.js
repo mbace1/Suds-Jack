@@ -20,9 +20,9 @@
 // vortex (sim/worlds.js's transition: `swirl` 0 → 1 winds it up round
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
-import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=21';
-import { noise } from './scenery.js?v=21';
+import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=22';
+import { noise } from './scenery.js?v=22';
 
 // `light` (optional) is the arena's light map (render/light.js): its rgb is
 // light thrown on the floor, its alpha the shadow of what stands on it.
@@ -46,10 +46,10 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   // it. At rest revealR is huge and the front is off, so play is unchanged.
   // A droplet landing in a new world reveals that world's floor the same way.
   const revealAt = uniform(new THREE.Vector2(0, 0)), revealR = uniform(1e4), revealFront = uniform(0);
-  const voidCol = uniform(new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color(style === 'grid' ? 0x5f8cff : style === 'concrete' ? 0xffd9a0 : 0x7fd8d0));
+  const voidCol = uniform(new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color({ grid: 0x5f8cff, concrete: 0xffd9a0, sewer: 0x7fd8d0, hex: 0xff5fd0, tide: 0x5fffe8 }[style] ?? 0x5f8cff));
   // the drain's swirl
   const swirl = uniform(0), swirlAt = uniform(new THREE.Vector2(0, 0)), swirlR = uniform(8), hole = uniform(0);
-  const holeRim = uniform(new THREE.Color(style === 'grid' ? 0x2fe0ff : style === 'concrete' ? 0x9fd6ff : 0x6fffe0));
+  const holeRim = uniform(new THREE.Color({ grid: 0x2fe0ff, concrete: 0x9fd6ff, sewer: 0x6fffe0, hex: 0xff7fe0, tide: 0x7ffff0 }[style] ?? 0x2fe0ff));
   const W = T.worlds.floor;
   const bounds = hasBounds ? { cur: uniform(new THREE.Vector2(hx, hz)), next: uniform(new THREE.Vector2(hx, hz)), warn: uniform(0) } : null;
   const comeCol = uniform(new THREE.Color(0x40e8ff)), goCol = uniform(new THREE.Color(0xff3040));
@@ -202,7 +202,46 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     return { col, mask: grout.mul(float(1).sub(inCh)).add(inCh.mul(rip).mul(1.5)), lineCol: vec3(...S.waterHi), wet: wet.add(inCh) };
   };
 
-  const surface = style === 'concrete' ? concrete : style === 'sewer' ? sewer : grid;
+  // ── the NEON worlds (the title's WORLDS · NEON, v23): abstract floors in
+  // the grid's own language, for the driveway and the sewer ──
+  // world 2: a hex lattice, its lines pulsing out from the middle in waves,
+  // a cell here and there lit from under
+  const hex = (p, w) => {
+    const H = W.hex, q = w.div(H.cell), R = vec2(1, 1.7320508), h = R.mul(0.5);
+    const a = mod(q, R).sub(h), b = mod(q.sub(h), R).sub(h);
+    const gv = select(dot(a, a).lessThan(dot(b, b)), a, b), id = q.sub(gv);
+    const hd = max(dot(abs(gv), vec2(0.5, 0.8660254)), abs(gv.x));
+    const d = float(0.5).sub(hd), aa = max(fwidth(d), 1e-4);
+    const line = float(1).sub(smoothstep(float(H.line).sub(aa), float(H.line).add(aa), d));
+    const r = length(w);
+    const wave = pow(sin(r.mul(H.waveK).sub(GEL_TIME.mul(H.waveHz))).mul(0.5).add(0.5), float(6));
+    const lit = smoothstep(0.82, 0.9, noise(id.mul(0.71).add(GEL_TIME.mul(0.05))));
+    const rim = smoothstep(0.55, 1.0, length(p.sub(0.5)).div(0.7071));
+    const lineCol = mix(vec3(...H.lineLo), vec3(...H.lineHi), wave);
+    let col = vec3(...H.base).add(vec3(...H.cell2).mul(lit.mul(float(1).sub(d.mul(1.6)))));
+    col = mix(col, lineCol, line.mul(float(0.45).add(wave.mul(0.55))).mul(float(1).sub(rim.mul(0.5))));
+    const pool = float(1).sub(smoothstep(0, F.poolRadius * 0.7, length(p.sub(player))));
+    return { col: col.mul(float(1).sub(rim.mul(0.45))).add(lineCol.mul(pool).mul(0.06)), mask: line, lineCol };
+  };
+  // world 3: contour lines of a field that flows down the long way, like a
+  // map of a current, over a faint square grid
+  const tide = (p, w) => {
+    const D = W.tide, alongX = hx >= hz, a = alongX ? w.x : w.y, c = alongX ? w.y : w.x;
+    const f = noise(vec2(a.mul(D.scale).sub(GEL_TIME.mul(D.flow)), c.mul(D.scale * 1.6))).mul(0.7)
+      .add(noise(vec2(a.mul(D.scale * 2.3).sub(GEL_TIME.mul(D.flow * 1.7)), c.mul(D.scale * 3.1).add(5.2))).mul(0.3));
+    const band = f.mul(D.bands), fb = abs(fract(band).sub(0.5)), aa = max(fwidth(band), 1e-4);
+    const line = float(1).sub(smoothstep(float(D.line).sub(aa), float(D.line).add(aa), float(0.5).sub(fb)));   // fb is 0.5 on a contour
+    const gx = abs(fract(w.x.div(D.grid)).sub(0.5)), gz = abs(fract(w.y.div(D.grid)).sub(0.5));
+    const gd = float(0.5).sub(max(gx, gz)), ga = max(fwidth(gd), 1e-4);
+    const grid = float(1).sub(smoothstep(float(0.012).sub(ga), float(0.012).add(ga), gd));
+    const deep = smoothstep(0.2, 0.8, f);
+    const L = alongX ? hx : hz, end = smoothstep(float(L * 0.6), float(L * 1.05), abs(a));
+    let col = mix(vec3(...D.lo), vec3(...D.hi), deep);
+    col = mix(col, vec3(...D.lineCol), line.mul(0.75)).add(vec3(...D.gridCol).mul(grid.mul(0.5)));
+    return { col: col.mul(float(1).sub(end.mul(0.7))), mask: line.add(grid.mul(0.4)), lineCol: vec3(...D.lineCol) };
+  };
+
+  const surface = { concrete, sewer, hex, tide }[style] ?? grid;
 
   const mat = new THREE.MeshBasicNodeMaterial();
   mat.colorNode = Fn(() => {
@@ -264,7 +303,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     new THREE.LineBasicNodeMaterial({ color: F.rail, transparent: true }),   // transparent: the intro fades it in
   );
   border.position.y = F.railHeight / 2;
-  border.visible = style === 'grid';
+  border.visible = style === 'grid' || style === 'hex' || style === 'tide';   // the abstract floors keep 1.x's rail
   group.add(border);
 
   // what the camera must hold: the floor and its rail
