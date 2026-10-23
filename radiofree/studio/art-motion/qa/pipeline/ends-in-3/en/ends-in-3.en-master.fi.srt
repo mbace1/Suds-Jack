@@ -1,0 +1,24 @@
+1
+00:00:00,500 --> 00:00:06,079
+Pitäisikö puhelimen vaatia omistajan
+henkilötunnus toimiakseen?
+
+2
+00:00:07,029 --> 00:00:12,507
+Meksiko sitoo nyt jokaisen liittymän omistajan
+tunnukseen kiristystä ja petoksia vastaan.
+
+3
+00:00:13,457 --> 00:00:18,936
+Rekisteröimättömät katkaistaan loppunumeron
+mukaan. Loppu 3: 2,2 miljoonaa liittymää.
+
+4
+00:00:19,886 --> 00:00:25,364
+Puhelut, viestit, data: poikki. Numero
+säilyy, kunnes liittymä on rekisteröity.
+
+5
+00:00:26,214 --> 00:00:31,943
+Ei tunnusta, ei puhelinta.
+Maanjäristysvaroitus menee silti läpi.

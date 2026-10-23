@@ -146,6 +146,10 @@
     ({ x: Math.sin(lt * 0.31) * 5, y: Math.cos(lt * 0.27) * 4, z: punch(lt, hits, { kick }) * lerp(z0, z1, ease.io(lt / dd)), fx, fy });
   /** the inside crowns: present until they are felled at their own time `gone(t)` */
   function insideTrees(g, gone) {
+    // the forest floor under every crown still standing, so the stumps in the ground sheet do not show through the gaps
+    g.save(); g.beginPath(); SITE.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.clip();
+    for (const t of IN) { const a = 1 - clamp(gone(t) + 0.15, 0, 1); if (a <= 0) continue; g.fillStyle = `rgba(18,26,20,${a})`; g.beginPath(); g.arc(t.x, t.y, 24, 0, TAU); g.fill(); }
+    g.restore();
     for (const t of IN) {
       const tg = gone(t), k = clamp(tg, 0, 1);
       if (k >= 1) continue;
@@ -178,12 +182,12 @@
     g.fillStyle = '#e8e2d4'; g.fillRect(26, -14, 120, 28); g.fillStyle = C.marker; g.fillRect(146, -15, 40, 30); g.fillStyle = 'rgba(255,255,255,.4)'; g.fillRect(30, -12, 114, 6);
     g.restore();
   }
-  /** when a crown inside the site goes: a front sweeping the clearing in lanes, from the road side, finishing on the pop */
-  const fellAt = (t, tP) => { const lane = Math.floor((t.x - BOX.x0) / 64), along = (BOX.y1 - t.y) / (BOX.y1 - BOX.y0); return tP - 0.75 + lane * 0.06 + along * 0.22 + t.k * 0.06; };
+  /** when a crown inside the site goes: from the pop, a front sweeping the clearing lane by lane from the road side */
+  const fellAt = (t, tP) => { const lane = Math.floor((t.x - BOX.x0) / 64), along = (BOX.y1 - t.y) / (BOX.y1 - BOX.y0); return tP - 0.05 + lane * 0.1 + along * 0.28 + t.k * 0.08; };   // score.py mirrors this
   SCENES.cnt_wood = { draw(c, lt) {
     const id = 'cnt_wood', dd = dur(id), tR = at(id, 'ring', 2.0), tP = at(id, 'gone', 3.0);
     const cam = camOf(lt, dd, [tP], { z0: 1.0, z1: 1.05, kick: 0.03 });
-    const kRing = ease.io((lt - 0.35) / Math.max(0.6, tR - 0.35));
+    const kRing = ease.io((lt - 0.12) / Math.max(0.6, tP - 0.17));   // the boundary closes on the pop
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 },
       { d: 0.1, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); insideTrees(g, (t) => (lt - fellAt(t, tP)) / 0.18); g.restore(); } },
       { sh: forest(), d: 0.1, lift: 0.9 },
@@ -218,7 +222,7 @@
   const eiaCard = () => sprite('cnt_eia', 380, 210, 0, 0, (g) => {
     g.fillStyle = C.cream; g.beginPath(); g.roundRect(0, 0, 370, 200, 10); g.fill();
     g.fillStyle = C.blue; g.fillRect(0, 0, 370, 14);
-    g.fillStyle = C.ink; g.textAlign = 'left'; g.font = `400 34px "Anton-400"`;
+    g.fillStyle = C.ink; g.textAlign = 'left'; g.font = `400 34px "Anton-400", ${JP}`;
     g.fillText(ui('eiaTitle', 'ENVIRONMENTAL IMPACT'), 22, 62); g.fillText(ui('eiaTitle2', 'ASSESSMENT'), 22, 102);
     g.fillStyle = 'rgba(21,18,15,.18)'; for (let i = 0; i < 2; i++) g.fillRect(22, 126 + i * 20, 210, 5);
     g.strokeStyle = C.ink; g.lineWidth = 5; g.strokeRect(278, 120, 58, 58);
@@ -231,7 +235,7 @@
       { d: 0.12, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); hectares(g, kG, flash); ringTo(g, 1, { pen: false, a: 0.85 }); g.restore(); } }], cam);
     counter(c, 120, 1410, ui('haLabel', 'HECTARES'), kG >= 1 ? '300+' : fmt(300 * kG), { a: clamp((lt - tG + 0.2) / 0.3, 0, 1) });
     const kE = (lt - tE + 0.12) / 0.4;
-    if (kE > 0) put(c, eiaCard(), lerp(1120, 540, ease.back(kE)), 1404 + swing(lt, [[tE + 0.3, 6]]), { rot: 0.03, lift: 1.1 });
+    if (kE > 0) put(c, eiaCard(), lerp(1120, 560, ease.back(kE)), 1352 + swing(lt, [[tE + 0.3, 6]]), { rot: 0.03, lift: 1.1 });
     tag(c, ui('halt', 'LVV ORDERED A HALT · 6.10.2026'), lt, dd, 110, 0.6);
     box(c);
   } };
@@ -242,12 +246,13 @@
   SCENES.cnt_trees = { draw(c, lt) {
     const id = 'cnt_trees', dd = dur(id), tL = at(id, 'loupe', 0.6), tC = at(id, 'count', 3.0);
     const cam = camOf(lt, dd, [tC], { z0: 1.24, z1: 1.32, fx: 520, fy: 960, kick: 0.02 });
-    const [lx, ly] = LOUPE(lt, tL - 0.2, tC + 0.3), LR = 120, MAG = 2.0;
+    const tEnd = dd - 0.3, [lx, ly] = LOUPE(lt, tL - 0.2, tEnd), LR = 120, MAG = 2.0;
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
       { d: 0.12, fn: (g, ox, oy) => {
         g.save(); g.translate(ox, oy);
-        // every stump the loupe has passed keeps an ochre tick
-        for (const t of IN) { const hit = passed(t, lt, tL - 0.2, tC + 0.3, LR); if (!hit) continue; g.strokeStyle = K.ochre; g.lineWidth = 3; g.beginPath(); g.moveTo(t.x - 5, t.y); g.lineTo(t.x - 1, t.y + 4); g.lineTo(t.x + 6, t.y - 5); g.stroke(); }
+        // every stump the loupe has passed keeps an ochre ring: counted
+        g.strokeStyle = 'rgba(255,192,74,.95)'; g.lineWidth = 2.5;
+        for (const t of IN) { if (!passed(t, lt, tL - 0.2, tEnd, LR)) continue; g.beginPath(); g.arc(t.x, t.y, 7.5, 0, TAU); g.stroke(); }
         // the lens: the ground under it, twice the size, and its brass rim and handle
         if (lt > tL - 0.3) {
           const sh = ground(); g.save(); g.beginPath(); g.arc(lx, ly, LR, 0, TAU); g.clip();
@@ -285,7 +290,7 @@
   SCENES.cnt_names = { draw(c, lt) {
     const id = 'cnt_names', dd = dur(id), tS = at(id, 'snow', 0.6), tN = at(id, 'names', 3.0);
     const cam = camOf(lt, dd, [tN], { z0: 0.98, z1: 1.01, kick: 0.02 });
-    const span = Math.max(1.0, tN - tS + 0.15);
+    const span = Math.max(1.6, tN - tS + 0.9);                // the snow keeps falling past the pop
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
       { d: 0.12, fn: (g, ox, oy) => {
         g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false, a: 0.6 });
@@ -306,17 +311,17 @@
   //            come up in rows across 40 % of the clearing; on "130 hectares" its label lands, with the wordmark ═════════
   const SAPS = (() => { const out = []; let row = 0; for (let y = Y_PATCH + 10; y < BOX.y1; y += 22, row++) for (let x = BOX.x0 + 8 + (row % 2) * 11; x < BOX.x1; x += 22) if (inPatch(x, y)) out.push([x, y, row]); return out; })();
   const NROW = SAPS.reduce((m, s) => Math.max(m, s[2]), 0) + 1;
-  const patchLabel = () => sprite('cnt_patch', 420, 150, 0, 0, (g) => {
-    g.fillStyle = C.cream; g.beginPath(); g.roundRect(0, 0, 410, 140, 10); g.fill();
-    BDF.doodleLogo(g, 22, 48, 34);
-    g.fillStyle = C.ink; g.textAlign = 'left'; g.font = `24px "ArchivoBlack-400", ${JP}`; g.fillText(ui('planting', 'PLANTING PLANNED'), 140, 42);
-    g.font = '400 64px "Anton-400"'; g.fillText(ui('patchHa', '130 ha'), 22, 120);
-    g.fillStyle = C.sapD; g.fillRect(0, 130, 410, 10);
+  const patchLabel = () => sprite('cnt_patch', 400, 200, 0, 0, (g) => {
+    g.fillStyle = C.cream; g.beginPath(); g.roundRect(0, 0, 390, 190, 10); g.fill();
+    BDF.doodleLogo(g, 22, 50, 38);
+    g.fillStyle = C.ink; g.textAlign = 'left'; g.font = `26px "ArchivoBlack-400", ${JP}`; g.fillText(ui('planting', 'PLANTING PLANNED'), 22, 92);
+    g.font = '400 70px "Anton-400"'; g.fillText(ui('patchHa', '130 ha'), 22, 168);
+    g.fillStyle = C.sapD; g.fillRect(0, 180, 390, 10);
   }, 6);
   SCENES.cnt_end = { draw(c, lt) {
     const id = 'cnt_end', dd = dur(id), tF = at(id, 'felled', 0.5), tPl = at(id, 'plant', 1.8), tH = at(id, 'ha', 3.0);
     const cam = camOf(lt, dd, [tH], { z0: 1.02, z1: 1.07, fy: 1000, kick: 0.03 });
-    const kS = clamp((lt - tPl) / Math.max(0.6, tH - tPl - 0.05), 0, 1);
+    const kS = clamp((lt - tPl) / 1.5, 0, 1);                // the rows keep coming up past the pop
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
       { d: 0.12, fn: (g, ox, oy) => {
         g.save(); g.translate(ox, oy);
@@ -329,7 +334,7 @@
           g.fillStyle = C.sapD; g.beginPath(); g.arc(x, y, 6 * s, 0, TAU); g.fill(); g.fillStyle = C.sap; g.beginPath(); g.arc(x - 1.5, y - 1.5, 3.6 * s, 0, TAU); g.fill();
         }
         const kL = (lt - tH + 0.1) / 0.35;
-        if (kL > 0) put(g, patchLabel(), 300, Y_PATCH + 40, { sc: ease.back(kL), rot: -0.03 + swing(lt, [[tH + 0.25, 0.04]]), lift: 1.0 });
+        if (kL > 0) put(g, patchLabel(), 330, Y_PATCH + 30, { sc: ease.back(kL), rot: -0.03 + swing(lt, [[tH + 0.25, 0.04]]), lift: 1.0 });
         g.restore();
       } }], cam);
     counter(c, 120, 1410, ui('felledLabel', 'FELLED · ESTIMATE'), '≈250,000', { style: 'news', w: 420, a: clamp((lt - tF + 0.1) / 0.3, 0, 1), rot: -0.025 });

@@ -1,0 +1,24 @@
+1
+00:00:00,500 --> 00:00:06,079
+Should a phone need its owner's ID to
+work?
+
+2
+00:00:07,029 --> 00:00:12,507
+Mexico now ties every phone line to its
+owner's ID, against extortion and fraud.
+
+3
+00:00:13,457 --> 00:00:18,936
+Unlinked lines are cut off by last digit.
+Ending in 3: 2.2 million lines.
+
+4
+00:00:19,886 --> 00:00:25,364
+Calls, texts, data: off. The number is
+kept until the line is linked.
+
+5
+00:00:26,214 --> 00:00:31,943
+No ID, no phone. The earthquake alert
+still gets through.

@@ -75,3 +75,30 @@ carry the rest: dark, lit, grey, back, and finally all the same red, which is th
 ## Build notes (draft v1, 23 Oct)
 - Engine film, `papercut/ends-in-3/{film.json, copy.json, score.py}`, kit `scenes/e3_kit.js` with every scene in it,
   rough.js from `scenes/vendor/`. English master only; no shared file changed.
+- The phones' lighting ripple, the string's winding, the tally's roll (0.7 s, landing on the pop), the 4's cross
+  (pop + 0.85 s), the 5's ring (pop + 1.55 s) and the two power-downs (0.35 s apart from line 1) are mirrored in
+  `score.py`, so the sound lands on the picture in every language.
+- **Result:** PASSED (83 pass, 12 warn: unread fi/ja and their sidecar timings on the English master), 32.14 s + 3 s
+  sign-off, −14.0 LUFS, −3.8 dBTP (−14.2 LUFS and −4.1 dBTP with the sign-off). Preview
+  `previews/23-10-Ends-in-3-DRAFT-en.mp4` (35.1 s, 4.5 MB). Reports: `qa/pipeline/ends-in-3/en/`.
+- **Fixed after looking:**
+  - **The street was a cramped strip.** People alternated hands, so the phones bunched in pairs ("3 5", "0 3") and
+    covered the masks. Now there are three people at the back, standing between the four in front. Every phone is
+    in the right hand at chest height, under the mask. Everyone is bigger, and the camera sits closer and lower.
+  - **The tally showed a lone "0" in a small box before it rolled,** and grew wider as the number did. Its label was
+    ochre on the calendar's cream, unreadable. Now it is a fixed row of wheels from 0,000,000, it comes in just
+    before it rolls, and the label sits inside the dark box.
+  - **The calendar's right column touched the box frame.** The cells are narrower now.
+  - **The raised ID card covered its owner's mask, and then the phone that comes back.** It now goes up high and to
+    the side, clear of the head. The returning phone's tick is a green disc that reads at phone size.
+  - **The registry card slid over the 3 when the string was pulled tight, and the bow was a speck.** The two start
+    further apart and close less, and the bow is 1.6× bigger.
+  - **Sound:** the first power-down sat 0.15 s after its cue, which failed the coverage check (a cue with no sound
+    within 40 ms). The first 3 now goes grey on the cue itself, in picture and sound.
+  - The argument was 36 words (the limit is 35), and the en post was 306 characters, over X's 280. Both are trimmed.
+    The post is now 267 characters.
+- **Open:**
+  - Re-check the 31 Oct deadline and the latest count on the morning of posting.
+  - The fi and ja copy needs a native read. Their sidecars need 0.2–1.7 s more than the English master gives three
+    lines; a fi or ja master inserts the holds by itself.
+  - A Spanish post line would suit the 00:50 Americas window.

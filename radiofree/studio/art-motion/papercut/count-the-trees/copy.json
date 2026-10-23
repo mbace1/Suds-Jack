@@ -1,0 +1,170 @@
+{
+  "film": "count-the-trees",
+  "cut": "Doodle 5, DRAFT v1 (23 Oct) — one question: how do you count a forest that is gone? Everyone counts in their own unit: the regulator in hectares, a newspaper in trees, citizens in names, Doodle in what it will plant. (owner, 23 Oct: 'What about a new Doodle video'; the Guardian's investigation of 22 Oct, shared by the owner, is the peg)",
+  "series": "rfh",
+  "captionSize": "house",
+  "argument": "Doodle's Muhos data-centre site was cleared before the required environmental assessment: over 300 hectares by the regulator's count, about 250,000 trees by the Guardian's estimate. Citizens gathered over 50,000 names for data-centre rules in days. Doodle plans tree planting across 130 hectares.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "question",
+      "role": "setup",
+      "at": "s1+0.5",
+      "until": "s2-0.35",
+      "hold": "s2",
+      "text": {
+        "en": "How do you count / a forest that is [gone]?",
+        "fi": "Miten lasketaan metsä, / joka on jo [kaadettu]?",
+        "ja": "もう ない 森を / どう [数える]？"
+      },
+      "source": "The station's question (plan/films/25-count-the-trees.md). The site is Doodle's planned data centre at Muhos (Pyhänsivu–Leppiniemi), cleared in 2026."
+    },
+    {
+      "id": "hectares",
+      "role": "evidence",
+      "at": "s2+0.6",
+      "until": "s3-0.35",
+      "hold": "s3",
+      "text": {
+        "en": "The regulator counts / hectares: over 300, cleared / before the [assessment].",
+        "fi": "Valvoja laskee hehtaareja: / yli 300, hakattu ennen / [ympäristöarviointia].",
+        "ja": "監督機関は ヘクタールで： / 300超。 [環境影響評価] より / 先に 伐採。"
+      },
+      "source": "LVV (Finland's licensing and supervisory agency), 6 Oct 2026: preparatory work at Muhos and Kajaani to stop until the environmental impact assessments are done; more than 300 hectares cleared at Muhos (AFP; Al Jazeera 7 Oct; TechSpot). About 330 ha is the figure reported as Tuike Finland's own; 'over 300' is the regulator's. Re-checked 23 Oct (plan/films/25-count-the-trees.md)."
+    },
+    {
+      "id": "trees",
+      "role": "evidence",
+      "at": "s3+0.6",
+      "until": "s4-0.35",
+      "hold": "s4",
+      "text": {
+        "en": "A newspaper counted trees: / an estimated [250,000].",
+        "fi": "Sanomalehti laski puut: / arviolta [250 000].",
+        "ja": "新聞は 木を 数えた： / 推定 [25万本]。"
+      },
+      "source": "The Guardian's investigation, 22 Oct 2026 (environment, ng-interactive): an estimated 250,000 trees felled at Muhos, as reported by follow-ups (Tom's Guide; Yahoo News; Shopifreaks: 'an estimated 250,000 trees'; Timberbiz). The original could not be opened from this session; the figure is attributed as the Guardian's estimate on screen (the tag) and never as a count by the station."
+    },
+    {
+      "id": "names",
+      "role": "evidence",
+      "at": "s4+0.6",
+      "until": "s5-0.35",
+      "hold": "s5",
+      "text": {
+        "en": "Citizens count names: / over 50,000 in days, / for data-centre [rules].",
+        "fi": "Kansalaiset laskevat nimiä: / yli 50 000 päivissä / datakeskusten [sääntelylle].",
+        "ja": "市民は 署名を 数える： / 数日で 5万超、 データセンターの / [規制] を 求めて。"
+      },
+      "source": "Citizens' initiative 'Datakeskukset kuriin' (opened 15 Sep 2026): grid-connection conditions for data centres and a data-centre fee; passed the 50,000 signatures that send an initiative to Parliament within days (Yle 'Datakeskuksille rajoituksia vaativa kansalaisaloite etenee eduskuntaan'; Kaleva; Maaseudun Tulevaisuus). Later counts vary (nearly 80,000 in about two weeks; 93,000 in the Guardian follow-ups), so the film says 'over 50,000'. The initiative is about data centres generally; its organiser said the Muhos felling news raised interest."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s5+0.5",
+      "until": "end-0.2",
+      "hold": "end",
+      "text": {
+        "en": "Felled: about 250,000 trees. / Planting planned: [130 hectares].",
+        "fi": "Kaadettu: noin 250 000 puuta. / Istutus suunnitteilla: [130 hehtaaria].",
+        "ja": "伐採： 約25万本。 / 植樹の 計画： [130ヘクタール]。"
+      },
+      "source": "The station's line, two units on purpose. 130 ha: Doodle's own statement (AFP, about 7 Oct): its landscaping and biodiversity plans include tree planting across 130 hectares at Muhos. The sapling patch is drawn at 40 % of the clearing (130 of about 330 ha)."
+    }
+  ],
+  "ui": {
+    "place": {
+      "en": "MUHOS, FINLAND",
+      "fi": "MUHOS",
+      "ja": "ムホス（フィンランド）"
+    },
+    "halt": {
+      "en": "LVV ORDERED A HALT · 6.10.2026",
+      "fi": "LVV MÄÄRÄSI KESKEYTYKSEN · 6.10.2026",
+      "ja": "LVVが 作業中止を 命令 · 2026.10.6"
+    },
+    "guardian": {
+      "en": "THE GUARDIAN'S ESTIMATE · 22.10.2026",
+      "fi": "THE GUARDIANIN ARVIO · 22.10.2026",
+      "ja": "ガーディアン紙の 推定 · 2026.10.22"
+    },
+    "initiative": {
+      "en": "CITIZENS' INITIATIVE · 15.9.2026",
+      "fi": "KANSALAISALOITE · 15.9.2026",
+      "ja": "市民イニシアチブ · 2026.9.15"
+    },
+    "haLabel": {
+      "en": "HECTARES",
+      "fi": "HEHTAARIA",
+      "ja": "ヘクタール"
+    },
+    "treesLabel": {
+      "en": "TREES · ESTIMATE",
+      "fi": "PUITA · ARVIO",
+      "ja": "本数 · 推定"
+    },
+    "namesLabel": {
+      "en": "NAMES",
+      "fi": "NIMIÄ",
+      "ja": "署名"
+    },
+    "felledLabel": {
+      "en": "FELLED · ESTIMATE",
+      "fi": "KAADETTU · ARVIO",
+      "ja": "伐採 · 推定"
+    },
+    "eiaTitle": {
+      "en": "ENVIRONMENTAL IMPACT",
+      "fi": "YMPÄRISTÖVAIKUTUSTEN",
+      "ja": "環境影響"
+    },
+    "eiaTitle2": {
+      "en": "ASSESSMENT",
+      "fi": "ARVIOINTI",
+      "ja": "評価"
+    },
+    "planting": {
+      "en": "PLANTING PLANNED",
+      "fi": "ISTUTUS SUUNNITTEILLA",
+      "ja": "植樹の 計画"
+    },
+    "patchHa": {
+      "en": "130 ha",
+      "fi": "130 ha",
+      "ja": "130 ha"
+    }
+  },
+  "props": {
+    "boundary": {
+      "en": "(a red marker line, no words)",
+      "why": "the site's boundary, drawn by hand: no words"
+    },
+    "eia": {
+      "en": "ENVIRONMENTAL IMPACT ASSESSMENT · □",
+      "why": "the assessment card with its empty tick box; its title is in each language's ui"
+    },
+    "counters": {
+      "en": "HECTARES 300+ · TREES · ESTIMATE ≈250,000 · NAMES 50,000+ · FELLED · ESTIMATE",
+      "why": "the cards that count; their labels are in each language's ui, the numbers are numbers"
+    },
+    "patch": {
+      "en": "Doodle · PLANTING PLANNED · 130 ha",
+      "why": "the label on the sapling patch: Doodle's own figure, said without quote marks; the caption carries it in each language"
+    }
+  },
+  "post": {
+    "en": "Muhos, Finland: Doodle's data-centre site was cleared before the required environmental assessment. Over 300 hectares; about 250,000 trees, by the Guardian's estimate. Doodle plans tree planting across 130 hectares. How do you count a forest? #Finland #datacenter",
+    "fi": "Muhos: Doodlen datakeskustontti hakattiin ennen lain vaatimaa ympäristövaikutusten arviointia. Valvojan mukaan yli 300 hehtaaria; The Guardianin arvion mukaan noin 250 000 puuta. Doodle suunnittelee puiden istutusta 130 hehtaarille. Miten metsä lasketaan?",
+    "ja": "フィンランド・ムホス：Doodleのデータセンター用地は、法が求める環境影響評価の前に伐採された。監督機関によれば300ヘクタール超、ガーディアン紙の推定では約25万本。Doodleは130ヘクタールへの植樹を計画している。森はどう数える？"
+  }
+}

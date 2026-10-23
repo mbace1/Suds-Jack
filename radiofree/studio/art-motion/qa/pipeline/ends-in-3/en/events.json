@@ -1,0 +1,418 @@
+{
+ "s1": 0,
+ "s2": 6.428571428571429,
+ "s3": 12.857142857142858,
+ "s4": 19.285714285714285,
+ "s5": 25.714285714285715,
+ "end": 32.142857142857146,
+ "e3_street.work": 1.8036,
+ "e3_ledger.lace": 7.8849,
+ "e3_ledger.tie": 8.8322,
+ "e3_cal.cross": 13.4571,
+ "e3_cal.count": 15.1471,
+ "e3_grey.grey": 19.8857,
+ "e3_grey.linked": 21.7348,
+ "e3_alert.alert": 27.6543,
+ "lang": "en",
+ "holds": [],
+ "cues": {
+  "e3_street.work": 1.8036,
+  "e3_ledger.lace": 7.8849,
+  "e3_ledger.tie": 8.8322,
+  "e3_cal.cross": 13.4571,
+  "e3_cal.count": 15.1471,
+  "e3_grey.grey": 19.8857,
+  "e3_grey.linked": 21.7348,
+  "e3_alert.alert": 27.6543
+ },
+ "words": [
+  {
+   "w": "Should",
+   "t": 0.5,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "a",
+   "t": 0.659,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "phone",
+   "t": 0.705,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "need",
+   "t": 0.841,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "its",
+   "t": 1.175,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "owner's",
+   "t": 1.265,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "ID",
+   "t": 1.447,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "to",
+   "t": 1.735,
+   "pop": false,
+   "caption": "question"
+  },
+  {
+   "w": "work?",
+   "t": 1.804,
+   "pop": true,
+   "caption": "question"
+  },
+  {
+   "w": "Mexico",
+   "t": 7.029,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "now",
+   "t": 7.188,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "ties",
+   "t": 7.279,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "every",
+   "t": 7.392,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "phone",
+   "t": 7.529,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "line",
+   "t": 7.885,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "to",
+   "t": 7.999,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "its",
+   "t": 8.067,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "owner's",
+   "t": 8.158,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "ID,",
+   "t": 8.339,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "against",
+   "t": 8.65,
+   "pop": false,
+   "caption": "rule"
+  },
+  {
+   "w": "extortion",
+   "t": 8.832,
+   "pop": true,
+   "caption": "rule"
+  },
+  {
+   "w": "and",
+   "t": 9.059,
+   "pop": true,
+   "caption": "rule"
+  },
+  {
+   "w": "fraud.",
+   "t": 9.15,
+   "pop": true,
+   "caption": "rule"
+  },
+  {
+   "w": "Unlinked",
+   "t": 13.457,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "lines",
+   "t": 13.662,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "are",
+   "t": 13.798,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "cut",
+   "t": 13.889,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "off",
+   "t": 13.98,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "by",
+   "t": 14.291,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "last",
+   "t": 14.359,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "digit.",
+   "t": 14.473,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "Ending",
+   "t": 14.632,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "in",
+   "t": 14.791,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "3:",
+   "t": 14.859,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "2.2",
+   "t": 15.147,
+   "pop": true,
+   "caption": "cut"
+  },
+  {
+   "w": "million",
+   "t": 15.238,
+   "pop": true,
+   "caption": "cut"
+  },
+  {
+   "w": "lines.",
+   "t": 15.42,
+   "pop": false,
+   "caption": "cut"
+  },
+  {
+   "w": "Calls,",
+   "t": 19.886,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "texts,",
+   "t": 20.045,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "data:",
+   "t": 20.204,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "off.",
+   "t": 20.34,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "The",
+   "t": 20.674,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "number",
+   "t": 20.765,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "is",
+   "t": 20.924,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "kept",
+   "t": 20.992,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "until",
+   "t": 21.106,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "the",
+   "t": 21.462,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "line",
+   "t": 21.553,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "is",
+   "t": 21.667,
+   "pop": false,
+   "caption": "kept"
+  },
+  {
+   "w": "linked.",
+   "t": 21.735,
+   "pop": true,
+   "caption": "kept"
+  },
+  {
+   "w": "No",
+   "t": 26.214,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "ID,",
+   "t": 26.282,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "no",
+   "t": 26.373,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "phone.",
+   "t": 26.442,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "The",
+   "t": 26.821,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "earthquake",
+   "t": 26.912,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "alert",
+   "t": 27.162,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "still",
+   "t": 27.518,
+   "pop": false,
+   "caption": "last"
+  },
+  {
+   "w": "gets",
+   "t": 27.654,
+   "pop": true,
+   "caption": "last"
+  },
+  {
+   "w": "through.",
+   "t": 27.768,
+   "pop": true,
+   "caption": "last"
+  }
+ ],
+ "captions": [
+  {
+   "id": "question",
+   "t0": 0.5,
+   "t1": 6.079
+  },
+  {
+   "id": "rule",
+   "t0": 7.029,
+   "t1": 12.507
+  },
+  {
+   "id": "cut",
+   "t0": 13.457,
+   "t1": 18.936
+  },
+  {
+   "id": "kept",
+   "t0": 19.886,
+   "t1": 25.364
+  },
+  {
+   "id": "last",
+   "t0": 26.214,
+   "t1": 31.943
+  }
+ ],
+ "quiet": []
+}

@@ -96,7 +96,7 @@ window.LSS = (() => {
   }
 
   // ── the wall of ten, five by two on two shelves ────────────────────────────────────────────────────────────────
-  const TVS = 1.3, COLS = [470, 760], ROWS = [560, 780, 1000, 1220, 1440];
+  const TVS = 1.3, COLS = [470, 760], ROWS = [572, 792, 1012, 1232, 1452];
   const SPOT = ROWS.flatMap((y) => COLS.map((x) => ({ x, y })));
   const LABELLED = [8, 9, 7];   // the three nearest the sheet, in the order they are labelled
   const shelves = () => sheet('lss_shelves', (g) => {
@@ -227,9 +227,10 @@ window.LSS = (() => {
     }
     return tip;
   }
-  /** the marker in a gloved hand: tip at (x, y), body running down-right through the fist */
-  function marker(g, x, y) {
-    const rot = -0.5, ax = Math.sin(-rot), ay = Math.cos(rot);
+  /** the marker in a gloved hand: tip at (x, y), body running down-right through the fist (steep enough that the
+   *  sleeve passes right of the tower, not across the set under the one being ringed) */
+  function marker(g, x, y, rot = -0.78) {
+    const ax = Math.sin(-rot), ay = Math.cos(rot);
     g.save(); g.translate(x, y); g.rotate(rot);
     g.fillStyle = C.red; g.beginPath(); g.moveTo(0, 0); g.lineTo(-11, 28); g.lineTo(11, 28); g.closePath(); g.fill();
     g.fillStyle = '#2a2420'; g.fillRect(-17, 28, 34, 196); g.fillStyle = C.red; g.fillRect(-17, 200, 34, 24); g.fillStyle = 'rgba(255,255,255,.2)'; g.fillRect(-12, 34, 6, 160); g.restore();
@@ -268,7 +269,7 @@ window.LSS = (() => {
     const k = D.ease.io(clamp(lt / 1.5, 0, 1)), M = D.MOS;
     const s = lerp(290 / M.pw, 0.98, k);
     const F = [lerp((M.home[0] + 0.5) * M.pw, (M.cols - 1) / 2 * M.pw, k), lerp((M.home[1] + 2) * M.ph, (M.rows - 1) / 2 * M.ph, k)];
-    const P = [540, lerp(1000, 1080, k)];
+    const P = [540, lerp(1012, 1080, k)];
     const cam = { x: Math.sin(lt * 0.3) * 4, y: 0, z: D.punch(lt, [tN], { kick: 0.03 }), fx: 540, fy: 1000 };
     stack(c, [
       { sh: D.room(), d: 0.03, lift: 0 },

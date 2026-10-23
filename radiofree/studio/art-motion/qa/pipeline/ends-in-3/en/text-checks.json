@@ -1,0 +1,477 @@
+[
+ {
+  "check": "copy question.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy question source",
+  "result": "pass",
+  "why": "The station's question (research-global-next.md §2; plan/films/23-ends-in-3.md)."
+ },
+ {
+  "check": "copy question pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy rule.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy rule.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy rule.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy rule source",
+  "result": "pass",
+  "why": "Mexico's telecom regulator, the CRT: since 9 Jan 2026 every mobile line must be "
+ },
+ {
+  "check": "copy rule pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy cut.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy cut.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy cut.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy cut source",
+  "result": "pass",
+  "why": "CRT figures via El Financiero, 5 Oct 2026: 2,248,143 lines ending in 3 suspended"
+ },
+ {
+  "check": "copy cut pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy kept.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy kept.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy kept.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy kept source",
+  "result": "pass",
+  "why": "CRT, as carried by El Universal, Milenio, Xataka and Récord (search summaries, 2"
+ },
+ {
+  "check": "copy kept pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy last.en",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.fi",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last.ja",
+  "result": "pass",
+  "why": "present"
+ },
+ {
+  "check": "copy last source",
+  "result": "pass",
+  "why": "The station's line, over its own image. The fact under it: a suspended line stil"
+ },
+ {
+  "check": "copy last pop word",
+  "result": "pass",
+  "why": "every language marks one"
+ },
+ {
+  "check": "copy ui.place",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.registry",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.dateline",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.cutoff",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "copy ui.kept",
+  "result": "pass",
+  "why": "all languages"
+ },
+ {
+  "check": "message: argument",
+  "result": "pass",
+  "why": "33 words: Mexico ties every mobile line to its owner's ID number, against extortion and fraud. Unlin"
+ },
+ {
+  "check": "message: one sentence",
+  "result": "pass",
+  "why": "33 words (at most 35)"
+ },
+ {
+  "check": "message: roles",
+  "result": "pass",
+  "why": "setup → evidence → evidence → evidence → punchline"
+ },
+ {
+  "check": "message: asked first",
+  "result": "pass",
+  "why": "the first caption is the one setup"
+ },
+ {
+  "check": "message: answered last",
+  "result": "pass",
+  "why": "the last caption is the one punchline"
+ },
+ {
+  "check": "message: three facts at most",
+  "result": "pass",
+  "why": "3 evidence captions (at most 3)"
+ },
+ {
+  "check": "message: question early en",
+  "result": "pass",
+  "why": "the first caption is up at 0.50 s (by 1.5 s)"
+ },
+ {
+  "check": "width en:question",
+  "result": "pass",
+  "why": "widest line 501 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:question",
+  "result": "pass",
+  "why": "box {'x': 279, 'y': 191, 'w': 523, 'h': 247}"
+ },
+ {
+  "check": "reading time en:question",
+  "result": "pass",
+  "why": "on screen 5.58 s, needs 3.15 s (43 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:question",
+  "result": "pass",
+  "why": "last word up 4.27 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:question",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:question",
+  "result": "pass",
+  "why": "picture behind: edge 0.18 → scrim 0.0"
+ },
+ {
+  "check": "width en:rule",
+  "result": "pass",
+  "why": "widest line 693 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:rule",
+  "result": "pass",
+  "why": "box {'x': 183, 'y': 191, 'w': 715, 'h': 247}"
+ },
+ {
+  "check": "reading time en:rule",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 5.00 s (80 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:rule",
+  "result": "pass",
+  "why": "last word up 3.36 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:rule",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:rule",
+  "result": "pass",
+  "why": "picture behind: edge 0.28 → scrim 0.0"
+ },
+ {
+  "check": "width en:cut",
+  "result": "pass",
+  "why": "widest line 592 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:cut",
+  "result": "pass",
+  "why": "box {'x': 233, 'y': 191, 'w': 614, 'h': 247}"
+ },
+ {
+  "check": "reading time en:cut",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.65 s (73 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:cut",
+  "result": "pass",
+  "why": "last word up 3.52 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:cut",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:cut",
+  "result": "pass",
+  "why": "picture behind: edge 0.38 → scrim 0.0"
+ },
+ {
+  "check": "width en:kept",
+  "result": "pass",
+  "why": "widest line 581 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:kept",
+  "result": "pass",
+  "why": "box {'x': 238, 'y': 191, 'w': 603, 'h': 247}"
+ },
+ {
+  "check": "reading time en:kept",
+  "result": "pass",
+  "why": "on screen 5.48 s, needs 4.45 s (69 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:kept",
+  "result": "pass",
+  "why": "last word up 3.63 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:kept",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:kept",
+  "result": "pass",
+  "why": "picture behind: edge 0.22 → scrim 0.0"
+ },
+ {
+  "check": "width en:last",
+  "result": "pass",
+  "why": "widest line 508 px (limit 800)"
+ },
+ {
+  "check": "safe zone en:last",
+  "result": "pass",
+  "why": "box {'x': 275, 'y': 191, 'w': 530, 'h': 247}"
+ },
+ {
+  "check": "reading time en:last",
+  "result": "pass",
+  "why": "on screen 5.73 s, needs 3.85 s (57 chars at 20/s + 1 s)"
+ },
+ {
+  "check": "last word en:last",
+  "result": "pass",
+  "why": "last word up 4.18 s (at least 0.8)"
+ },
+ {
+  "check": "key detail en:last",
+  "result": "pass",
+  "why": "covers nothing the shot needs"
+ },
+ {
+  "check": "scrim en:last",
+  "result": "pass",
+  "why": "picture behind: edge 0.23 → scrim 0.0"
+ },
+ {
+  "check": "native read en",
+  "result": "pass",
+  "why": "read by a native speaker"
+ },
+ {
+  "check": "native read fi",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "native read ja",
+  "result": "warn",
+  "why": "NOT yet read by a native speaker"
+ },
+ {
+  "check": "sidecar lines en:question",
+  "result": "pass",
+  "why": "Should a phone need its owner's ID to | work?"
+ },
+ {
+  "check": "sidecar lines en:rule",
+  "result": "pass",
+  "why": "Mexico now ties every phone line to its | owner's ID, against extortion and fraud."
+ },
+ {
+  "check": "sidecar lines en:cut",
+  "result": "pass",
+  "why": "Unlinked lines are cut off by last digit. | Ending in 3: 2.2 million lines."
+ },
+ {
+  "check": "sidecar lines en:kept",
+  "result": "pass",
+  "why": "Calls, texts, data: off. The number is | kept until the line is linked."
+ },
+ {
+  "check": "sidecar lines en:last",
+  "result": "pass",
+  "why": "No ID, no phone. The earthquake alert | still gets through."
+ },
+ {
+  "check": "sidecar fi:question",
+  "result": "pass",
+  "why": "5.58 s on this master, fi needs 4.71 s"
+ },
+ {
+  "check": "sidecar lines fi:question",
+  "result": "pass",
+  "why": "Pitäisikö puhelimen vaatia omistajan | henkilötunnus toimiakseen?"
+ },
+ {
+  "check": "sidecar fi:rule",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 6.24 s"
+ },
+ {
+  "check": "sidecar lines fi:rule",
+  "result": "warn",
+  "why": "Meksiko sitoo nyt jokaisen liittymän omistajan | tunnukseen kiristystä ja petoksia vastaan."
+ },
+ {
+  "check": "sidecar fi:cut",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 6.00 s"
+ },
+ {
+  "check": "sidecar lines fi:cut",
+  "result": "warn",
+  "why": "Rekisteröimättömät katkaistaan loppunumeron | mukaan. Loppu 3: 2,2 miljoonaa liittymää."
+ },
+ {
+  "check": "sidecar fi:kept",
+  "result": "warn",
+  "why": "5.48 s on this master, fi needs 5.65 s"
+ },
+ {
+  "check": "sidecar lines fi:kept",
+  "result": "pass",
+  "why": "Puhelut, viestit, data: poikki. Numero | säilyy, kunnes liittymä on rekisteröity."
+ },
+ {
+  "check": "sidecar fi:last",
+  "result": "pass",
+  "why": "5.73 s on this master, fi needs 4.82 s"
+ },
+ {
+  "check": "sidecar lines fi:last",
+  "result": "pass",
+  "why": "Ei tunnusta, ei puhelinta. | Maanjäristysvaroitus menee silti läpi."
+ },
+ {
+  "check": "sidecar ja:question",
+  "result": "pass",
+  "why": "5.58 s on this master, ja needs 4.67 s"
+ },
+ {
+  "check": "sidecar lines ja:question",
+  "result": "pass",
+  "why": "電話が使えるのに持ち主のIDが | 必要だろうか？"
+ },
+ {
+  "check": "sidecar ja:rule",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 7.17 s"
+ },
+ {
+  "check": "sidecar lines ja:rule",
+  "result": "warn",
+  "why": "メキシコは全ての携帯回線を持ち主の | IDに結びつけた。狙いは恐喝と詐欺対策。"
+ },
+ {
+  "check": "sidecar ja:cut",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 5.83 s"
+ },
+ {
+  "check": "sidecar lines ja:cut",
+  "result": "pass",
+  "why": "未登録の回線は末尾の数字ごとに | 停止。末尾3は220万回線。"
+ },
+ {
+  "check": "sidecar ja:kept",
+  "result": "warn",
+  "why": "5.48 s on this master, ja needs 6.17 s"
+ },
+ {
+  "check": "sidecar lines ja:kept",
+  "result": "warn",
+  "why": "通話・SMS・データは停止。 | 番号は残り、登録すれば回線は戻る。"
+ },
+ {
+  "check": "sidecar ja:last",
+  "result": "pass",
+  "why": "5.73 s on this master, ja needs 4.67 s"
+ },
+ {
+  "check": "sidecar lines ja:last",
+  "result": "pass",
+  "why": "IDなし、電話なし。それでも | 地震警報は届く。"
+ }
+]

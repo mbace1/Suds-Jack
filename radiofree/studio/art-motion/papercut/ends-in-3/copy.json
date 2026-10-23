@@ -1,6 +1,6 @@
 {
   "film": "ends-in-3",
-  "cut": "Global 2, DRAFT v1 (23 Oct) — one question: should a phone need its owner's ID to work?",
+  "cut": "Global 2, DRAFT v1 (23 Oct) — one question: should a phone need its owner's ID to work? | 22-23 Oct parent: Mexico named in the question (the owner's note on Per Caller and Wednesday: say where, or Radio Free Helsinki reads as local)",
   "series": "rfh",
   "captionSize": "house",
   "argument": "Mexico ties every mobile line to its owner's ID number, against extortion and fraud. Unlinked lines are cut off by last digit, 2.2 million ending in 3, yet still get the earthquake alert.",
@@ -23,9 +23,9 @@
       "until": "s2-0.35",
       "hold": "s2",
       "text": {
-        "en": "Should a phone need / its owner's ID / to [work]?",
-        "fi": "Pitäisikö puhelimen / vaatia omistajan henkilötunnus / [toimiakseen]?",
-        "ja": "電話が 使えるのに / 持ち主の IDが / [必要] だろうか？"
+        "en": "In Mexico, should a phone / need its owner's ID / to [work]?",
+        "fi": "Pitäisikö Meksikossa puhelimen / vaatia omistajan henkilötunnus / [toimiakseen]?",
+        "ja": "メキシコでは 電話が 使えるのに / 持ち主の IDが / [必要] だろうか？"
       },
       "source": "The station's question (research-global-next.md §2; plan/films/23-ends-in-3.md)."
     },
@@ -132,7 +132,7 @@
     }
   },
   "post": {
-    "en": "Mexico now ties every mobile line to its owner's ID number, against extortion and fraud. Unlinked lines are cut off by last digit: 2,248,143 ending in 3, by the regulator's count on 4 Oct. A cut-off phone keeps its number and still gets the earthquake alert. Lines ending in 5: due 31 Oct. #Mexico #privacy",
+    "en": "Mexico now ties every mobile line to its owner's ID number, against extortion and fraud. Unlinked lines are cut off by last digit: 2,248,143 ending in 3 (regulator's count, 4 Oct). A cut-off phone keeps its number and still gets the earthquake alert. #Mexico #privacy",
     "fi": "Meksiko sitoo nyt jokaisen matkapuhelinliittymän omistajan henkilötunnukseen kiristyksen ja petosten torjumiseksi. Rekisteröimättömät liittymät katkaistaan loppunumeron mukaan: viranomaisen mukaan 2 248 143 numeroon 3 päättyvää 4.10. Katkaistu puhelin säilyttää numeronsa ja saa yhä maanjäristysvaroituksen.",
     "ja": "メキシコは全ての携帯回線を持ち主のID番号に結びつけた。狙いは恐喝と詐欺の対策。未登録の回線は末尾の数字ごとに停止され、規制当局によると10月4日時点で末尾3の回線は224万8143件。停止された電話も番号は残り、地震警報は届く。"
   }
