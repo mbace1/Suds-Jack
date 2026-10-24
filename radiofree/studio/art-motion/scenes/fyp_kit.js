@@ -139,7 +139,18 @@
     g.fillStyle = '#2c2420'; g.fillRect(cx - 34, HZ - 150, 68, 110); g.fillStyle = C.win; g.fillRect(cx - 28, HZ - 144, 56, 10);
     for (let i = 0; i < 3; i++) { g.fillStyle = i % 2 ? C.step : C.hallD; g.fillRect(cx - w / 2 - 20 - i * 14, HZ - 40 + i * 14, w + 40 + i * 28, 16); }
     g.strokeStyle = '#3a3a3a'; g.lineWidth = 6; g.beginPath(); g.moveTo(cx + w / 2 + 40, HZ); g.lineTo(cx + w / 2 + 40, top - 140); g.stroke();
-    g.fillStyle = '#3d5e86'; g.fillRect(cx + w / 2 + 43, top - 140, 80, 50); g.fillStyle = '#b8402f'; for (let i = 0; i < 3; i++) g.fillRect(cx + w / 2 + 43, top - 128 + i * 14, 80, 6);
+    // the Stars and Stripes (owner, v2: a proper US flag): 13 stripes, red top and bottom, a blue canton over the top
+    // seven with a simplified star field (alternating rows of 6 and 5); a soft shadow and a slight wave so it is paper
+    {
+      const fx = cx + w / 2 + 43, fy = top - 140, fw = 132, fh = 78, sh = fh / 13, cw = fw * 0.42, ch = sh * 7;
+      const wave = (x) => Math.sin((x / fw) * Math.PI * 1.6) * 3;
+      g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(fx + 6, fy + 8, fw, fh);
+      for (let i = 0; i < 13; i++) for (let x = 0; x < fw; x += 4) { g.fillStyle = i % 2 ? '#f1ece0' : '#b8312f'; g.fillRect(fx + x, fy + i * sh + wave(x), 4.5, sh + 0.6); }
+      for (let x = 0; x < cw; x += 4) { g.fillStyle = '#2c3f73'; g.fillRect(fx + x, fy + wave(x), 4.5, ch + 0.4); }
+      g.fillStyle = '#f1ece0';
+      for (let r = 0; r < 9; r++) { const n = r % 2 ? 5 : 6, off = r % 2 ? cw / 12 : 0; for (let j = 0; j < n; j++) { const sx = fx + 4 + off + j * (cw - 8) / 6 + (cw - 8) / 12, sy = fy + 3 + r * (ch - 6) / 9 + (ch - 6) / 18; g.beginPath(); g.arc(sx, sy + wave(sx - fx), 1.7, 0, TAU); g.fill(); } }
+      g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 1.5; g.strokeRect(fx, fy, fw, fh);
+    }
     g.font = '400 30px "Anton-400"'; g.fillStyle = C.ink; g.textAlign = 'center'; g.fillText('TOWN HALL', cx, top + 22);
   }, 14);
   const streetSheet = () => sheet('fyp_street', (g) => {
@@ -304,11 +315,11 @@
     box(c);
   } };
 
-  // ═════════ 5 · fyp_end: back in the town (frame 0's framing); on "banned" the envelope tears in two and VOID is
+  // ═════════ 5 · fyp_end: back in the town (frame 0's framing); on "void" the envelope tears in two and VOID is
   //            stamped; the tag names the law; the clipping rises on "clip": NDA: VOID, where frame 0 says SIGNED ═════════
   SCENES.fyp_end = { draw(c, lt) {
     const id = 'fyp_end', dd = dur(id), tB = at(id, 'tear', 1.2), tC = at(id, 'clip', dd - 1.0);
-    const tL = Math.min(dd - 0.35, tC + 0.3), kR = ease.io((lt - tB - 0.6) / (tL - tB - 0.6));
+    const tH = tB + 3.6, tL = Math.min(dd - 0.35, tC + 0.3), kR = ease.io((lt - tH) / (tL - tH));   // hold 3.6 s on the punchline, then ease home
     const cam = vcam(lt, dd, { hits: [tB], kick: 0.04 }); cam.x *= 1 - kR; cam.y *= 1 - kR; if (lt >= tL) { cam.x = cam.y = 0; cam.z = 1; }
     town(c, lt, cam);
     const k = clamp((lt - tB + 0.05) / 0.4, 0, 1), e = ease.out(k), z = ESC, ex = ENVPOS.x, ey = ENVPOS.y;

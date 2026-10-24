@@ -1,6 +1,6 @@
 {
   "film": "for-your-protection",
-  "cut": "RFH global, VIRAL CUT v1 (24 Oct): towns sign secrecy deals (NDAs) about data centres in their own town. Hook first (the sealed NDA envelope on the town hall steps); the blank data centre rises behind the houses; Virginia, 25 of 31 places checked; the developers' stated reason, insider trading rules; Delaware banned them in August, the envelope tears: loop.",
+  "cut": "RFH global, VIRAL CUT v1 (24 Oct): towns sign secrecy deals (NDAs) about data centres in their own town. Hook first (the sealed NDA envelope on the town hall steps); the blank data centre rises behind the houses; Virginia, 25 of 31 places checked; the developers' stated reason, insider trading rules; Delaware banned them in August, the envelope tears: loop. | v2 (24 Oct, owner): a proper US flag; the ending says what the deals do (kept from the people next door) and what Delaware did; a 3.6 s hold on the punchline before the loop eases home.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "Towns sign secrecy deals with data-centre developers about buildings in their own town; Virginia records requests found them in 25 of 31 places, developers cite insider trading rules, and Delaware banned them in August 2026.",
@@ -75,11 +75,11 @@
       "until": "end-1.1",
       "hold": "end",
       "text": {
-        "en": "Delaware: county / secrecy deals / now [void].",
-        "fi": "Delaware: piirikuntien / salassapitosopimukset / nyt [mitättömiä].",
-        "ja": "デラウェア州： 郡の 秘密保持契約は / いまや [無効]。"
+        "en": "Kept from the people / who live next to it. / Delaware made them [void].",
+        "fi": "Salassa niiltä, / jotka asuvat vieressä. / Delaware [mitätöi] ne.",
+        "ja": "隣に 住む 人々には 秘密。 / デラウェア州は それを / [無効] に した。"
       },
-      "source": "Delaware state law (Del. Code title 9, ch. 4, as found by search; the enacted text could not be opened from this session): a county may not enter an NDA that restricts public disclosure about large-scale data-centre development (100 MW or more); such NDAs are void. Passed by the legislature (June 2026; MLex, 21 Aug, says it cleared the legislature). The signing date and any wider scope (state agencies, municipalities) are NOT confirmed, so the film says only county deals, and no date."
+      "source": "Delaware state law (Del. Code title 9, ch. 4, as found by search; the enacted text could not be opened from this session): a county may not enter an NDA that restricts public disclosure about large-scale data-centre development (100 MW or more); such NDAs are void. Passed by the legislature (June 2026; MLex, 21 Aug, says it cleared the legislature). The signing date and any wider scope (state agencies, municipalities) are NOT confirmed, so the film says only county deals, and no date. v2 (owner, 24 Oct: the ending needs clarity): the line now says what the deals do (they keep the project from the residents next to it: the NDAs bind officials not to disclose, Virginia Mercury, Bloomberg Law, Spotlight PA) and what Delaware did. 'Them' is scoped on screen by the tag DELAWARE LAW · COUNTY NDAs · DATA CENTRES 100 MW+ and the clipping DELAWARE LAW · COUNTY DEALS."
     }
   ],
   "ui": {
@@ -162,8 +162,8 @@
     }
   },
   "post": {
-    "en": "Towns sign secrecy deals about data centres in their own town. In Virginia, records requests found them in 25 of 31 places checked. The developers' reason, as reported: insider trading rules. Delaware made county deals void for data centres of 100 MW+. Did your town sign one?",
-    "fi": "Kunnat allekirjoittavat salassapitosopimuksia datakeskusrakennuttajien kanssa omista hankkeistaan. Virginiassa sopimus löytyi 25 paikasta 31:stä. Rakennuttajien perustelu uutisten mukaan: sisäpiirisäännöt. Delawaressa piirikuntien sopimukset ovat nyt mitättömiä yli 100 MW:n datakeskuksissa. Allekirjoittiko sinun kuntasi?",
-    "ja": "データセンター開発業者と、地元の建物について秘密保持契約を結ぶ町がある。バージニア州では調べた31か所中25か所で見つかった。報道によれば開発業者の理由はインサイダー取引規制。デラウェア州では100MW以上のデータセンターをめぐる郡の契約が無効に。あなたの町は？"
+    "en": "Towns sign secrecy deals about data centres in their own town, so the people next door aren't told. Virginia records requests found them in 25 of 31 places checked. Developers cite insider trading rules. Delaware made county deals void for 100 MW+ sites. Did your town sign one?",
+    "fi": "Kunnat allekirjoittavat salassapitosopimuksia datakeskushankkeista, eikä naapureille kerrota. Virginiassa sopimus löytyi 25 paikasta 31:stä. Rakennuttajat vetoavat sisäpiirisääntöihin. Delaware mitätöi piirikuntien sopimukset yli 100 MW:n hankkeissa. Allekirjoittiko kuntasi?",
+    "ja": "データセンターについて秘密保持契約を結び、隣に住む人々に知らせない町がある。バージニア州では調べた31か所中25か所で見つかった。開発業者の理由はインサイダー取引規制。デラウェア州は100MW以上の案件で郡の契約を無効にした。あなたの町は？"
   }
 }

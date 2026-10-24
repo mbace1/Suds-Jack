@@ -5,7 +5,7 @@ Finnish and Japanese masters are scored by this same file.
 Frame 1 is a hit: a thump and a knock, the town's murmur and its lamps under it. On "deal" the sealed envelope thumps.
 The data centre rises behind the houses with a low hum and a groan of card, and lands on "in your town". Virginia: 31
 pins tick on, 25 envelopes drop with a soft paper tap each, the counter clicks up and lands on 25. The reason: a quiet
-room, the board flips on "insider trading" (a card flip, a knock). The end: on "banned" the envelope tears and VOID is
+room, the board flips on "insider trading" (a card flip, a knock). The end: on "void" the envelope tears and VOID is
 stamped; the clipping rises on "clip"; the station's sting closes it.
 The schedules here mirror scenes/fyp_kit.js (the fyp_* scenes).
 
@@ -88,7 +88,7 @@ s.fx(office_hum(S[4] - S[3]) * 0.5, S[3], 0.08, 0, name='the briefing room')
 s.fx(foley('card', 'slide'), tF - 0.1, 0.35, -0.2, name='the board flips'); s.fx(knock(0.8), tF, 0.4, -0.1, name='"insider trading"')
 accent(s, tF, S[0], 0.3, S=RFHV, name='insider trading')
 
-# ── 5 · on "banned" the envelope tears and VOID is stamped; the clipping rises on "clip"; the sting
+# ── 5 · on "void" the envelope tears and VOID is stamped; the clipping rises on "clip"; the sting
 tB, tC = c('fyp_end.tear'), c('fyp_end.clip')
 s.fx(tear(0.34), tB - 0.06, 0.5, 0, name='"banned": the envelope tears')
 s.fx(thump(), tB + 0.12, 0.55, 0, name='VOID: the stamp'); s.fx(pencil(0.2, seed=9), tB + 0.12, 0.3, 0.15)
