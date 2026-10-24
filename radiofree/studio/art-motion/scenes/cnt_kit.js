@@ -597,14 +597,17 @@
   }, 6);
   // v4 (owner: "What's the end learning?"): the label says the learning, 130 OF ~330 ha · UNDER HALF, in place of
   //    the pitches line, and a second, red-edged tag pops on the bare part on "half" (the rest of the clearing)
-  const patchLabelV4 = () => sprite('cntv_patch4', 430, 250, 0, 0, (g) => {
-    g.fillStyle = C.cream; g.beginPath(); g.roundRect(0, 0, 420, 240, 10); g.fill();
+  const patchLabelV4 = () => sprite('cntv_patch4', 430, 300, 0, 0, (g) => {
+    g.fillStyle = C.cream; g.beginPath(); g.roundRect(0, 0, 420, 290, 10); g.fill();
     BDF.doodleLogo(g, 22, 50, 38);
     g.fillStyle = C.ink; g.textAlign = 'left'; g.font = `26px "ArchivoBlack-400", ${JP}`; g.fillText(ui('planting', 'PLANTING PLANNED'), 22, 92);
     g.font = '400 70px "Anton-400"'; g.fillText(ui('patchHa', '130 ha'), 22, 166);
-    g.fillStyle = '#b8321f'; let fs = 26; g.font = `${fs}px "ArchivoBlack-400", ${JP}`; const t = ui('underHalf', '130 OF ~330 ha · UNDER HALF');
-    while (g.measureText(t).width > 380 && fs > 16) { fs -= 1; g.font = `${fs}px "ArchivoBlack-400", ${JP}`; } g.fillText(t, 22, 212);
-    g.fillStyle = C.sapD; g.fillRect(0, 230, 420, 10);
+    const w130 = g.measureText(ui('patchHa', '130 ha')).width;
+    g.fillStyle = '#5b5446'; let fs = 26; g.font = `${fs}px "ArchivoBlack-400", ${JP}`; const t = ui('ofFelled', 'OF ~330 ha FELLED');
+    while (g.measureText(t).width > 380 - w130 - 18 && fs > 15) { fs -= 1; g.font = `${fs}px "ArchivoBlack-400", ${JP}`; } g.fillText(t, 22 + w130 + 16, 162);
+    g.fillStyle = '#b8321f'; let f2 = 64; g.font = `400 ${f2}px "Anton-400", ${JP}`; const u = ui('underHalfBig', 'UNDER HALF');
+    while (g.measureText(u).width > 376 && f2 > 30) { f2 -= 2; g.font = `400 ${f2}px "Anton-400", ${JP}`; } g.fillText(u, 22, 250);
+    g.fillStyle = C.sapD; g.fillRect(0, 280, 420, 10);
   }, 6);
   SCENES.cntv_end = { draw(c, lt) {
     const id = 'cntv_end', dd = dur(id), tPl = at(id, 'plant', 0.9), tH = at(id, 'ha', 1.5), tB = at(id, 'back', dd - 2.6), tC = at(id, 'clip', dd - 1.1);

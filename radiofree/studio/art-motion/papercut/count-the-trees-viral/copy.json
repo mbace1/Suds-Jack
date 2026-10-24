@@ -163,10 +163,15 @@
       "fi": "N UUSI DATAKESKUS · MUHOS",
       "ja": "の新データセンター · フィンランド・ムホス"
     },
-    "underHalf": {
-      "en": "130 OF ~330 ha · UNDER HALF",
-      "fi": "130 / ~330 ha · ALLE PUOLET",
-      "ja": "約330haのうち130ha · 半分以下"
+    "ofFelled": {
+      "en": "OF ~330 ha FELLED",
+      "fi": "/ ~330 ha HAKATTU",
+      "ja": "/ 伐採 約330ha"
+    },
+    "underHalfBig": {
+      "en": "UNDER HALF",
+      "fi": "ALLE PUOLET",
+      "ja": "半分以下"
     }
   },
   "props": {
