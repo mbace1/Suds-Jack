@@ -139,20 +139,45 @@
     g.fillStyle = '#2c2420'; g.fillRect(cx - 34, HZ - 150, 68, 110); g.fillStyle = C.win; g.fillRect(cx - 28, HZ - 144, 56, 10);
     for (let i = 0; i < 3; i++) { g.fillStyle = i % 2 ? C.step : C.hallD; g.fillRect(cx - w / 2 - 20 - i * 14, HZ - 40 + i * 14, w + 40 + i * 28, 16); }
     g.strokeStyle = '#3a3a3a'; g.lineWidth = 6; g.beginPath(); g.moveTo(cx + w / 2 + 40, HZ); g.lineTo(cx + w / 2 + 40, top - 140); g.stroke();
-    // the Stars and Stripes (owner, v2: a proper US flag): 13 stripes, red top and bottom, a blue canton over the top
-    // seven with a simplified star field (alternating rows of 6 and 5); a soft shadow and a slight wave so it is paper
-    {
-      const fx = cx + w / 2 + 43, fy = top - 140, fw = 132, fh = 78, sh = fh / 13, cw = fw * 0.42, ch = sh * 7;
-      const wave = (x) => Math.sin((x / fw) * Math.PI * 1.6) * 3;
-      g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(fx + 6, fy + 8, fw, fh);
-      for (let i = 0; i < 13; i++) for (let x = 0; x < fw; x += 4) { g.fillStyle = i % 2 ? '#f1ece0' : '#b8312f'; g.fillRect(fx + x, fy + i * sh + wave(x), 4.5, sh + 0.6); }
-      for (let x = 0; x < cw; x += 4) { g.fillStyle = '#2c3f73'; g.fillRect(fx + x, fy + wave(x), 4.5, ch + 0.4); }
-      g.fillStyle = '#f1ece0';
-      for (let r = 0; r < 9; r++) { const n = r % 2 ? 5 : 6, off = r % 2 ? cw / 12 : 0; for (let j = 0; j < n; j++) { const sx = fx + 4 + off + j * (cw - 8) / 6 + (cw - 8) / 12, sy = fy + 3 + r * (ch - 6) / 9 + (ch - 6) / 18; g.beginPath(); g.arc(sx, sy + wave(sx - fx), 1.7, 0, TAU); g.fill(); } }
-      g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 1.5; g.strokeRect(fx, fy, fw, fh);
-    }
     g.font = '400 30px "Anton-400"'; g.fillStyle = C.ink; g.textAlign = 'center'; g.fillText('TOWN HALL', cx, top + 22);
   }, 14);
+  /** the Stars and Stripes, live (owner, v3: "make the flag wave"): 13 stripes, red top and bottom, a blue canton over
+   *  the top seven with a simplified star field. Every vertical slice rides a sine travelling from the hoist to the fly,
+   *  its amplitude growing toward the fly; crests lighten and troughs darken (paper folds). Everything is a function of
+   *  the phase `ph` alone, so a shot that starts at ph 0 and one that ends at ph 0 meet without a jump (the loop) */
+  const FLAG = { x: 540 + 170 + 43, y: 820 - 140, w: 132, h: 78 };
+  function flag(g, ox, oy, ph) {
+    const { w: fw, h: fh } = FLAG, fx = FLAG.x + ox, fy = FLAG.y + oy, sh = fh / 13, cw = fw * 0.42, ch = sh * 7, SL = 3;
+    const gust = 0.82 + 0.18 * Math.sin(ph * 0.31);
+    const off = (x) => { const u = x / fw; return (1.2 + 7.5 * u * u) * gust * Math.sin(u * Math.PI * 2.2 - ph); };
+    const slope = (x) => { const u = x / fw; return Math.cos(u * Math.PI * 2.2 - ph) * Math.min(1, u * 3 + 0.15); };
+    const sq = (x) => 1 - 0.04 * (x / fw) * (1 - slope(x)) * gust;   // the fly draws in a touch on each fold
+    g.save();
+    // shadow on the wall behind, following the cloth
+    g.fillStyle = 'rgba(0,0,0,.28)';
+    for (let x = 0; x < fw; x += SL) g.fillRect(fx + 6 + x * sq(x), fy + 8 + off(x), SL + 0.8, fh);
+    for (let x = 0; x < fw; x += SL) {
+      const X = fx + x * sq(x), Y = fy + off(x), inC = x < cw;
+      for (let i = 0; i < 13; i++) {
+        if (inC && i < 7) continue;
+        g.fillStyle = i % 2 ? '#f1ece0' : '#b8312f'; g.fillRect(X, Y + i * sh, SL + 0.8, sh + 0.6);
+      }
+      if (inC) { g.fillStyle = '#2c3f73'; g.fillRect(X, Y, SL + 0.8, ch + 0.4); }
+      // the fold: crests catch the light, troughs fall into shade
+      const s0 = slope(x);
+      g.fillStyle = s0 > 0 ? `rgba(255,248,230,${0.16 * s0})` : `rgba(10,8,20,${-0.22 * s0})`; g.fillRect(X, Y, SL + 0.8, fh);
+    }
+    g.fillStyle = '#f1ece0';
+    for (let r = 0; r < 9; r++) { const n = r % 2 ? 5 : 6, o = r % 2 ? cw / 12 : 0; for (let j = 0; j < n; j++) { const sx = 4 + o + j * (cw - 8) / 6 + (cw - 8) / 12, sy = 3 + r * (ch - 6) / 9 + (ch - 6) / 18; g.beginPath(); g.arc(fx + sx * sq(sx), fy + sy + off(sx), 1.7, 0, TAU); g.fill(); } }
+    // the hoist edge on the pole, and a paper edge along the top and bottom
+    g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 1.5; g.beginPath();
+    for (let x = 0; x <= fw; x += SL) { const X = fx + x * sq(x), Y = fy + off(x); x ? g.lineTo(X, Y) : g.moveTo(X, Y); }
+    g.stroke(); g.beginPath();
+    for (let x = 0; x <= fw; x += SL) { const X = fx + x * sq(x), Y = fy + fh + off(x); x ? g.lineTo(X, Y) : g.moveTo(X, Y); }
+    g.stroke();
+    g.restore();
+  }
+  const FLAG_W = Math.PI * 2 * 1.05;   // rad/s: about one wave a second
   const streetSheet = () => sheet('fyp_street', (g) => {
     g.fillStyle = C.curb; g.fillRect(-90, HZ + 30, W + 180, 22);
     g.fillStyle = C.street; g.fillRect(-90, HZ + 52, W + 180, H);
@@ -193,12 +218,12 @@
   }, 8);
 
   /** the town, with the data centre at rise k (0 hidden below the house line, 1 up) */
-  function town(c, lt, cam, { dcK = 0, glow = 1 } = {}) {
+  function town(c, lt, cam, { dcK = 0, glow = 1, ph = lt * FLAG_W } = {}) {
     const dy = (1 - ease.out(dcK)) * 520;
     c.save(); c.translate(540, 1040); c.scale(TZ, TZ); c.translate(-540, -1040);
     stack(c, [{ sh: skySheet(), d: 0.02, lift: 0 }, { sh: hillSheet(), d: 0.04, lift: 0.3 },
       { d: 0.06, fn: (g, ox, oy) => { if (dcK <= 0) return; const s = dcSheet(); g.save(); g.beginPath(); g.rect(-100, -100, W + 200, HZ - 40 + 100); g.clip(); g.globalAlpha = 0.5; g.drawImage(s.s, ox - s.m + 12, oy - s.m + 16 + dy); g.globalAlpha = 1; g.drawImage(s.c, ox - s.m, oy - s.m + dy); g.restore(); } },
-      { sh: houseSheet(), d: 0.08, lift: 0.8 }, { sh: hallSheet(), d: 0.1, lift: 1 }, { sh: streetSheet(), d: 0.12, lift: 0.6 },
+      { sh: houseSheet(), d: 0.08, lift: 0.8 }, { sh: hallSheet(), d: 0.1, lift: 1 }, { d: 0.1, fn: (g, ox, oy) => flag(g, ox, oy, ph) }, { sh: streetSheet(), d: 0.12, lift: 0.6 },
       { d: 0.12, fn: () => lampGlow(c, glow) }], cam);
     c.restore();
   }
@@ -315,22 +340,23 @@
     box(c);
   } };
 
-  // ═════════ 5 · fyp_end: back in the town (frame 0's framing); on "void" the envelope tears in two and VOID is
-  //            stamped; the tag names the law; the clipping rises on "clip": NDA: VOID, where frame 0 says SIGNED ═════════
+  // ═════════ 5 · fyp_end: back in the town (frame 0's framing); on "bans" the envelope tears in two and BANNED is
+  //            stamped (v3, owner: "void" was jargon); the tag names the law and its scope; the clipping rises on
+  //            "clip": NDA: BANNED, where frame 0 says SIGNED ═════════
   SCENES.fyp_end = { draw(c, lt) {
     const id = 'fyp_end', dd = dur(id), tB = at(id, 'tear', 1.2), tC = at(id, 'clip', dd - 1.0);
     const tH = tB + 3.6, tL = Math.min(dd - 0.35, tC + 0.3), kR = ease.io((lt - tH) / (tL - tH));   // hold 3.6 s on the punchline, then ease home
     const cam = vcam(lt, dd, { hits: [tB], kick: 0.04 }); cam.x *= 1 - kR; cam.y *= 1 - kR; if (lt >= tL) { cam.x = cam.y = 0; cam.z = 1; }
-    town(c, lt, cam);
+    town(c, lt, cam, { ph: (lt - dd) * FLAG_W });   // the flag's phase reaches 0 on the last frame: frame 0's flag, the loop
     const k = clamp((lt - tB + 0.05) / 0.4, 0, 1), e = ease.out(k), z = ESC, ex = ENVPOS.x, ey = ENVPOS.y;
     if (k <= 0) put(c, ENV(), ex, ey, { sc: z, rot: -0.05, lift: 1.4 });
     else { put(c, ENV_HALF(-1), ex - 50 * e, ey + 18 * e, { sc: z, rot: -0.05 - 0.28 * e, lift: 1.4 }); put(c, ENV_HALF(1), ex + 50 * e, ey + 10 * e, { sc: z, rot: -0.05 + 0.22 * e, lift: 1.4 });
       for (let i = 0; i < 10; i++) { const r = U.rng(i * 7 + 1), a = r() * TAU, d = 60 + r() * 140; c.fillStyle = `rgba(234,208,140,${1 - k})`; c.save(); c.translate(ex + Math.cos(a) * d * e, ey + Math.sin(a) * d * e - 40 * e); c.rotate(r() * 3 + k * 4); c.fillRect(-7, -4, 14, 8); c.restore(); } }
-    stampMark(c, ui('void', 'VOID'), ex, ey - 190, { k: (lt - tB - 0.15) / 0.16, rot: -0.12, size: 110 });
+    stampMark(c, ui('banned', 'BANNED'), ex, ey - 190, { k: (lt - tB - 0.15) / 0.16, rot: -0.12, size: 110 });
     if (lt > tB) { const f = Math.exp(-(lt - tB) * 7) * 0.2; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
     screenTag(c, ui('deTag', 'DELAWARE · SB 312 · SIGNED 26.8.2026'), 540, 520, { a: clamp((lt - tB - 0.2) / 0.25, 0, 1) * clamp((tC - 0.2 - lt) / 0.3, 0, 1), bg: K.ochre, size: 34 });
     const kC = clamp((lt - tC + 0.32) / 0.32, 0, 1);
-    bigClip(c, ui('clipLabel2', 'DELAWARE · AUGUST 2026'), ui('clipValue2', 'NDA: VOID'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)), red: true });
+    bigClip(c, ui('clipLabel2', 'DELAWARE · AUGUST 2026'), ui('clipValue2', 'NDA: BANNED'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)), red: true });
     box(c);
   } };
 })();
