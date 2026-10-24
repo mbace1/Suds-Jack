@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=42';
-import WAVES from './tuning/waves.js?v=42';
-import PICKUPS from './tuning/pickups.js?v=42';
+import { SPECIES } from './tuning/species/index.js?v=43';
+import WAVES from './tuning/waves.js?v=43';
+import PICKUPS from './tuning/pickups.js?v=43';
 
 export const TUNING = {
   render: {
@@ -21,7 +21,11 @@ export const TUNING = {
   // the screen's shape. Half sizes.
   arena: {
     landscape: { hx: 19, hz: 11, tiltDeg: 28.2 },   // 38 x 22; camera ray atan(11/20.5)
-    portrait:  { hx: 11, hz: 18, tiltDeg: 41.6 },   // 22 x 36; camera ray atan(24/27)
+    // v43 (owner, 2026-10-24: "make the portrait mode levels a bit bigger"):
+    // 41.6° → 30°, near landscape's 28.2. The floor is fitted to the phone's
+    // WIDTH either way, so a flatter camera gives it more of the height (43% → 52%
+    // of a 412 × 915 phone, measured) and a wider far edge; the floor is the same
+    portrait:  { hx: 11, hz: 18, tiltDeg: 30 },     // 22 x 36
   },
 
   // WORLDS (owner, 2026-10-23): ARCADE and HARDCADE go somewhere. Beat a
@@ -106,6 +110,43 @@ export const TUNING = {
     sewer: { brick: [0.44, 0.15], brickColor: [0.3, 0.15, 0.11], mortar: [0.07, 0.07, 0.08], damp: 0.7, wallHeight: 1.2, wallThick: 0.6, beyond: 4,
              bar: 0x34383e, barR: 0.05, barGap: 0.42, barHeight: 1.7 },
     drain: { r: 0.95, bars: 6, iron: 0x2a2d32 },
+    // v43: round every other world's floor (render/scenery.js _surround). A
+    // ground `out` m past the floor fading out over `fade` m (`line`/`cell`
+    // draw a grid or traces on it), a glowing `edge` where the floor stops (the
+    // grid has 1.x's rail instead), and `props` along the far side and the two
+    // sides: `every` m apart, `out` [min, max] m past the edge, `h`/`r`/`w`
+    // [min, max] in m, a `glow` colour at `glowI`
+    surround: {
+      // the grid runs on past its rail, much fainter than the floor's own, and
+      // short bollards with lit tops stand along it like a runway's lights
+      // (tall neon posts were tried first: seen from above they streak out
+      // from the floor like a starburst)
+      grid: { ground: { lo: [0.006, 0.007, 0.02], hi: [0.014, 0.016, 0.04], scale: 0.35, line: [0.012, 0.024, 0.06], cell: 1.286, out: 18, fade: 8 },
+              props: [{ shape: 'post', every: 2.6, out: [1.4, 1.4], h: [0.35, 0.35], w: 0.16, color: 0x0b0d18, glow: 0x5f8cff, glowI: 3.0, rough: 0.5, jitter: 0 },
+                      { shape: 'post', every: 5.2, out: [4.2, 4.2], h: [0.55, 0.55], w: 0.2, color: 0x0b0d18, glow: 0xb26bff, glowI: 2.4, rough: 0.5, jitter: 0 }] },
+      cistern: { ground: { lo: [0.004, 0.018, 0.026], hi: [0.016, 0.06, 0.075], scale: 0.5, out: 18, fade: 11 },
+                 edge: { color: 0x3fb8d0, glow: 1.6, width: 0.12, height: 0.05 },
+                 props: [{ shape: 'column', every: 4.4, out: [1.9, 2.1], h: [5.5, 5.5], r: 0.62, color: 0x8a8272, rough: 0.9 },
+                         { shape: 'column', every: 4.4, out: [6.2, 6.4], h: [5.5, 5.5], r: 0.62, color: 0x5e584e, rough: 0.9 }] },
+      boiler: { ground: { lo: [0.025, 0.02, 0.016], hi: [0.06, 0.045, 0.032], scale: 0.9, line: [0.05, 0.03, 0.015], cell: 2.2, out: 16, fade: 10 },
+                edge: { color: 0xff8a33, glow: 1.8, width: 0.12, height: 0.05 },
+                props: [{ shape: 'pipe', out: [1.1, 1.1], r: 0.42, y: 0.5, every: 3.2, color: 0x4a3f38, band: 0x7a6650 },
+                        { shape: 'stack', every: 6.5, out: [3.8, 4.6], h: [3.0, 5.5], r: [0.55, 0.8], color: 0x2c2826, glow: 0xff7a22, glowI: 2.2, metal: 0.6, rough: 0.5 }] },
+      river: { ground: { lo: [0.03, 0.045, 0.025], hi: [0.075, 0.1, 0.05], scale: 0.7, out: 16, fade: 10 },
+               edge: { color: 0x44ddbb, glow: 1.3, width: 0.1, height: 0.04 },
+               props: [{ shape: 'rock', every: 2.3, out: [1.0, 4.5], h: [0.4, 1.1], r: [0.5, 1.1], color: 0x6b695e, tilt: 0.5 },
+                       { shape: 'reed', every: 0.8, out: [0.5, 2.6], h: [0.8, 1.9], r: 0.05, color: 0x4a6a2e, tilt: 0.35 }] },
+      ice: { ground: { lo: [0.07, 0.09, 0.13], hi: [0.15, 0.19, 0.25], scale: 0.6, out: 16, fade: 10 },
+             edge: { color: 0xbfe6ff, glow: 1.2, width: 0.1, height: 0.04 },
+             props: [{ shape: 'shard', every: 1.7, out: [1.0, 5.0], h: [0.8, 3.4], r: [0.25, 0.6], color: 0x8fbad6, glow: 0x6fb8ff, glowI: 0.25, metal: 0.1, rough: 0.2, tilt: 0.45 }] },
+      deep: { ground: { lo: [0.004, 0.008, 0.02], hi: [0.014, 0.03, 0.06], scale: 0.5, out: 18, fade: 11 },
+              edge: { color: 0x5577ff, glow: 2.2, width: 0.12, height: 0.05 },
+              props: [{ shape: 'rock', every: 3.4, out: [1.6, 6.0], h: [1.4, 3.6], r: [0.7, 1.4], color: 0x1c2232, tilt: 0.3 },
+                      { shape: 'kelp', every: 1.5, out: [0.8, 4.2], h: [1.6, 4.6], r: 0.07, color: 0x0d3324, glow: 0x33ffaa, glowI: 1.2, tilt: 0.25 }] },
+      core: { ground: { lo: [0.008, 0.004, 0.016], hi: [0.03, 0.008, 0.05], scale: 0.4, line: [0.13, 0.02, 0.11], cell: 2.6, out: 18, fade: 9 },
+              edge: { color: 0xff55ee, glow: 2.0, width: 0.12, height: 0.05 },
+              props: [{ shape: 'tower', every: 3.6, out: [1.6, 5.0], h: [1.4, 5.2], w: [0.6, 1.4], color: 0x120818, glow: 0xff44dd, glowI: 1.8, stripes: 3, rough: 0.4, metal: 0.5 }] },
+    },
   },
 
   // One fixed view of the whole arena, refitted on every resize and rotation.

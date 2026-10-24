@@ -8,6 +8,16 @@
 //            and grass behind it, or just grass as the limit")
 //   world 3  the sewer: brick walls along the tunnel's two long sides, iron
 //            bars across its two ends, and the dark past them
+//   the rest a SURROUND (v43, owner, 2026-10-24: "make the portrait mode
+//            levels a bit bigger and put graphics on the sides"): a ground
+//            that goes on past the floor and fades into the dark, a thin
+//            glowing edge in the world's rail colour where the floor stops,
+//            and props standing along the far side and the two sides — the
+//            grid's neon posts, the cistern's columns, the boiler's pipes and
+//            stacks, the river's rocks and reeds, the ice's shards, the
+//            deep's spires and kelp, the core's towers. Never along the near
+//            side: nothing stands between you and the fight. One builder,
+//            every number in TUNING.scenery.surround[world id]
 //
 // The floor itself is floor.js (its `style`); this is the rest. The camera
 // follows the hero on worlds 2 and 3 and shows T.camera.follow.edge m past
@@ -16,7 +26,7 @@
 // bars stand up, so they are lit by the scene's lights. Every number is
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, clamp, max, length, select } from 'three/tsl';
+import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, clamp, max, min, length, select } from 'three/tsl';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -37,11 +47,19 @@ export class Scenery {
     scene.add(this.drain);
   }
 
-  // world n's surroundings for an arena of half sizes hx × hz
-  build(n, hx, hz) {
+  // world n's surroundings for an arena of half sizes hx × hz: the driveway's
+  // lawn and curb and the sewer's walls on the STREET look, a surround for
+  // every other floor (`id` names it: a world's id, or 'grid' for world 1,
+  // NEON's floors, SURVIVAL and the campaign's rooms)
+  build(n, hx, hz, { look = 'street', id = null } = {}) {
     this.clear();
-    if (n === 2) this._driveway(hx, hz);
-    else if (n === 3) this._sewer(hx, hz);
+    // what was built, for the smoke: 'driveway', 'sewer', or 'surround:<the spec it used>'
+    if (look === 'street' && n === 2) { this._driveway(hx, hz); this.kind = 'driveway'; }
+    else if (look === 'street' && n === 3) { this._sewer(hx, hz); this.kind = 'sewer'; }
+    else {
+      const want = id ?? this.T.worlds.list[n - 1]?.id ?? 'grid', got = this.T.scenery.surround[want] ? want : 'grid';
+      this._surround(got, hx, hz); this.kind = `surround:${got}`;
+    }
     this.drain.visible = false;
   }
 
@@ -138,6 +156,102 @@ export class Scenery {
     for (const s of [-1, 1]) {
       const rail = this._add(new THREE.Mesh(alongX ? new THREE.BoxGeometry(0.12, 0.12, 2 * Wd) : new THREE.BoxGeometry(2 * Wd, 0.12, 0.12), barMat.clone()));
       if (alongX) rail.position.set(s * (L + S.barR), S.barHeight, 0); else rail.position.set(0, S.barHeight, s * (L + S.barR));
+    }
+  }
+
+  // ── every other world: a ground past the floor, its edge, props round it ──
+  _surround(id, hx, hz) {
+    const S = this.T.scenery.surround[id];
+    const G = S.ground, out = G.out;
+    // the ground: two tones of noise, a grid or traces if the world has one,
+    // falling into the dark the further it lies from the floor
+    const groundMat = new THREE.MeshBasicNodeMaterial();
+    groundMat.colorNode = Fn(() => {
+      const p = positionWorld.xz;
+      const n1 = noise(p.mul(G.scale ?? 0.6)), n2 = noise(p.mul((G.scale ?? 0.6) * 4.1).add(5.7));
+      let col = mix(vec3(...G.lo), vec3(...G.hi), n1.mul(0.7).add(n2.mul(0.3)));
+      if (G.line) {
+        const c = p.div(G.cell), f = abs(fract(c).sub(0.5)).mul(2);
+        const ln = smoothstep(0.92, 0.985, max(f.x, f.y));
+        col = col.add(vec3(...G.line).mul(ln));
+      }
+      const dx = max(abs(p.x).sub(hx), 0), dz = max(abs(p.y).sub(hz), 0);
+      const far = clamp(length(vec2(dx, dz)).div(G.fade), 0, 1);
+      return col.mul(float(1).sub(far.mul(far).mul(0.97)));
+    })();
+    const ground = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), groundMat));
+    ground.position.y = -0.03; ground.renderOrder = -2;
+
+    // the edge: a thin line glowing in the world's rail colour, all four sides
+    if (S.edge) {
+      const E = S.edge, mat = new THREE.MeshBasicNodeMaterial({ color: new THREE.Color(E.color).multiplyScalar(E.glow ?? 1) });
+      const w = E.width;
+      for (const [sx, sz, x, z] of [[2 * hx + 2 * w, w, 0, -(hz + w / 2)], [2 * hx + 2 * w, w, 0, hz + w / 2], [w, 2 * hz, -(hx + w / 2), 0], [w, 2 * hz, hx + w / 2, 0]]) {
+        const m = this._add(new THREE.Mesh(new THREE.BoxGeometry(sx, E.height, sz), mat.clone()));
+        m.position.set(x, E.height / 2, z);
+      }
+    }
+
+    // the props: placed by a fixed hash, so a world stands the same every time
+    let seed = [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+    const rnd = () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const range = (v) => (Array.isArray(v) ? v[0] + rnd() * (v[1] - v[0]) : v);
+    for (const P of S.props ?? []) {
+      if (P.shape === 'pipe') { this._pipes(P, hx, hz); continue; }
+      // stations along the left side, the right side and the far side
+      const spots = [];
+      for (const side of ['left', 'right', 'far']) {
+        const len = side === 'far' ? 2 * (hx + (P.out[1] ?? P.out[0])) : 2 * hz + (P.out[1] ?? P.out[0]);
+        const n = Math.max(1, Math.floor(len / P.every));
+        for (let i = 0; i < n; i++) {
+          const along = -len / 2 + (i + 0.5 + (rnd() - 0.5) * (P.jitter ?? 0.6)) * (len / n), off = range(P.out);
+          if (side === 'far') spots.push([along, -(hz + off)]);
+          else spots.push([(side === 'left' ? -1 : 1) * (hx + off), along - (P.out[1] ?? P.out[0]) / 2]);
+        }
+      }
+      const geo = {
+        post: () => new THREE.BoxGeometry(1, 1, 1), tower: () => new THREE.BoxGeometry(1, 1, 1),
+        column: () => new THREE.CylinderGeometry(1, 1.12, 1, 14), stack: () => new THREE.CylinderGeometry(1, 1, 1, 16),
+        rock: () => new THREE.DodecahedronGeometry(1, 0), reed: () => new THREE.ConeGeometry(1, 1, 5), shard: () => new THREE.ConeGeometry(1, 1, 5),
+        kelp: () => new THREE.CylinderGeometry(0.55, 1, 1, 6),
+      }[P.shape]();
+      const mat = new THREE.MeshStandardNodeMaterial({ color: P.color, roughness: P.rough ?? 0.8, metalness: P.metal ?? 0, flatShading: P.shape === 'rock' || P.shape === 'shard' });
+      if (P.glow != null) {
+        // posts and kelp glow toward their tops, stacks in a band under the rim,
+        // towers in stripes, shards all over and faintly
+        const y = positionLocal.y.add(0.5), g = vec3(...new THREE.Color(P.glow).toArray()).mul(P.glowI ?? 1);
+        mat.emissiveNode = P.shape === 'tower' ? g.mul(float(1).sub(smoothstep(0.06, 0.1, abs(fract(y.mul(P.stripes ?? 6)).sub(0.5)))))
+          : P.shape === 'stack' ? g.mul(smoothstep(0.78, 0.84, y).mul(float(1).sub(smoothstep(0.9, 0.95, y))))
+          : P.shape === 'shard' ? g
+          : g.mul(smoothstep(0.35, 1.0, y));
+      }
+      const inst = this._add(new THREE.InstancedMesh(geo, mat, spots.length));
+      const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), t = new THREE.Vector3();
+      spots.forEach(([x, z], i) => {
+        const h = range(P.h), r = range(P.r ?? P.w ?? 0.5);
+        e.set(P.tilt ? (rnd() - 0.5) * P.tilt : 0, rnd() * Math.PI * 2, P.tilt ? (rnd() - 0.5) * P.tilt : 0);
+        q.setFromEuler(e);
+        s.set(r, h, r);
+        t.set(x, P.shape === 'rock' ? h * 0.35 : h / 2, z);
+        m.compose(t, q, s);
+        inst.setMatrixAt(i, m);
+      });
+    }
+  }
+
+  // the boiler's pipes: one long run down each side, banded every few metres
+  _pipes(P, hx, hz) {
+    const mat = new THREE.MeshStandardNodeMaterial({ color: P.color, roughness: 0.45, metalness: 0.75 });
+    const band = new THREE.MeshStandardNodeMaterial({ color: P.band ?? 0x6a5a48, roughness: 0.4, metalness: 0.8 });
+    const len = 2 * (hz + 14);
+    for (const s of [-1, 1]) for (const [k, off] of P.out.entries()) {
+      const r = P.r * (k ? 0.7 : 1), x = s * (hx + off), y = P.y + k * P.r * 1.9;
+      const pipe = this._add(new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 18).rotateX(Math.PI / 2), mat.clone()));
+      pipe.position.set(x, y, 0);
+      const n = Math.floor(len / P.every);
+      const rings = this._add(new THREE.InstancedMesh(new THREE.CylinderGeometry(r * 1.18, r * 1.18, 0.22, 18).rotateX(Math.PI / 2), band.clone(), n));
+      const m = new THREE.Matrix4();
+      for (let i = 0; i < n; i++) { m.makeTranslation(x, y, -len / 2 + (i + 0.5) * P.every); rings.setMatrixAt(i, m); }
     }
   }
 

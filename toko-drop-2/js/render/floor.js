@@ -21,8 +21,8 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=42';
-import { noise } from './scenery.js?v=42';
+import { GEL_TIME } from './gel.js?v=43';
+import { noise } from './scenery.js?v=43';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -300,7 +300,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const rivet = float(1).sub(smoothstep(0.05, 0.075, rv));
     const tone = noise(tfloor(u).mul(2.3)).mul(0.35).add(0.75);
     let col = v3(B.steel).mul(tone).add(v3(B.rivet).mul(rivet.mul(0.8)));
-    col = mix(col, v3(B.scorch), smoothstep(0.55, 0.8, noise(w.mul(0.21).add(3.3))).mul(0.8));
+    // soot, not the shadow of something standing there (v43: at 0.8 it read as a hole in the floor)
+    col = mix(col, v3(B.scorch), smoothstep(0.6, 0.85, noise(w.mul(0.21).add(3.3))).mul(0.4));
     col = col.mul(float(1).sub(seam.mul(0.7)));
     // the grates: slots with the fire under them, breathing
     const gq = fract(w.div(B.grate).add(0.5)).sub(0.5).mul(B.grate);

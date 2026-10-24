@@ -19,6 +19,18 @@
     Never `--no-verify`.
 -->
 
+## v43 — 2026-10-24
+**Portrait levels are bigger on the phone, and every world has something round its floor: a ground that fades into the dark, a glowing edge, and its own things standing along the sides**
+- Owner, 2026-10-24, looking at all nine worlds side by side: *"Make the portrait mode levels a bit bigger and put graphics on the sides."*
+- BIGGER: the portrait camera is flatter, 41.6° → 30° (landscape's is 28.2°). The floor is fitted to the phone's width either way, so the flatter view gives it more of the height — world 1 went from 43% to 52% of a 412 × 915 phone, measured, with a wider far edge — and nothing about the level changes: the same floor, the same campaign rooms, the same balance. A steeper camera was measured too and made the floor SMALLER (35%); a longer floor (22 × 48) was bigger still but changes the game, so it was left alone.
+- THE SIDES (`render/scenery.js`, `_surround`; numbers in `TUNING.scenery.surround`): every floor that had nothing round it gets a ground running 16–18 m past it and fading into the dark, and props along the far side and the two sides — never the near side, nothing stands between you and the fight. The grid: its lines go on past the rail, far fainter than its own, with rows of short lit bollards like a runway's lights (tall neon posts were tried first and, seen from above, streaked out from the floor like a starburst). The cistern: two rows of stone columns in dark water. The boiler: pipes down both sides and stacks glowing under their rims. The river: rocks and reeds on its banks. The ice: shards. The deep: rock spires and glowing kelp (the dark rule hides them until you go near — by design). The core: towers in magenta bands over dim traces. Placed by a fixed hash, so a world stands the same every time.
+- THE EDGE: worlds 4–9 had no rail, so on the driveway-sized floors you could not see where the floor stopped. Each now has a thin line glowing in its own rail colour all the way round.
+- The boiler's soot is half as dark: at full strength it read as the shadow of something standing on the floor.
+- NEON's floors, SURVIVAL and the campaign's rooms get the grid's surround.
+- Cache tokens `?v=42` → `?v=43`; HUD label → `2.0 · v43`
+
+---
+
 ## v42 — 2026-10-24
 **Arcade boss waves are fought like the campaign's boss rooms: the boss's health on screen, a clock and a grade, and the wave over when the boss is down**
 - Owner, 2026-10-24, picking from the plan: boss waves fought like the campaign boss rooms (CAMPAIGN_PLAN.md step 5).
