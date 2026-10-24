@@ -9,6 +9,7 @@
 // would have nothing to draw.
 //
 // No DOM beyond the canvas it is handed, no network, no fonts to fetch.
+import { tr } from './lang.js?v=1';
 export const W = 1080, H = 1350;
 export const DAY_COLOURS = ['#e2683c', '#5aa860', '#2f9fb8', '#e0b43c', '#9b59b6'];
 const GRID = { ok: '#5aa860', late: '#e0b43c', none: '#3a4148' };
@@ -38,7 +39,7 @@ export function drawPoster(canvas, { week, layers = [], rent = 0, verdict = null
   ctx.fillStyle = '#15262b'; ctx.fillRect(0, 0, W, H);
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
   ctx.fillStyle = '#fffdf7'; ctx.font = '900 76px ui-monospace, monospace'; ctx.fillText(title, 60, 120);
-  ctx.fillStyle = '#9fb0b6'; ctx.font = '700 30px ui-monospace, monospace'; ctx.fillText(`WEEK ${week?.seed ?? ''} · HELSINKI · MON–FRI`, 64, 164);
+  ctx.fillStyle = '#9fb0b6'; ctx.font = '700 30px ui-monospace, monospace'; ctx.fillText(tr(`WEEK ${week?.seed ?? ''} · HELSINKI · MON–FRI`), 64, 164);
   const frame = { x: 40, y: 200, w: W - 80, h: 820 };
   ctx.fillStyle = '#1b2f35'; ctx.beginPath(); ctx.roundRect(frame.x, frame.y, frame.w, frame.h, 24); ctx.fill();
   const box = bounds(week, layers);
@@ -61,13 +62,13 @@ export function drawPoster(canvas, { week, layers = [], rent = 0, verdict = null
   // five days: name, grid, money
   const cw = (W - 80) / 5, y0 = 1070;
   (week?.shifts || []).forEach((s, i) => { const x = 40 + i * cw + cw / 2, col = DAY_COLOURS[i % 5];
-    ctx.textAlign = 'center'; ctx.fillStyle = col; ctx.font = '900 30px ui-monospace, monospace'; ctx.fillText((s?.name || '').slice(0, 3), x, y0);
+    ctx.textAlign = 'center'; ctx.fillStyle = col; ctx.font = '900 30px ui-monospace, monospace'; ctx.fillText(tr((s?.name || '').slice(0, 3)), x, y0);
     const r = s?.results || []; for (let k = 0; k < 3; k++) { ctx.fillStyle = GRID[r[k]] || GRID.none; ctx.beginPath(); ctx.roundRect(x - 52 + k * 36, y0 + 18, 30, 30, 6); ctx.fill(); }
     ctx.fillStyle = '#fffdf7'; ctx.font = '800 32px ui-monospace, monospace'; ctx.fillText(`€${s?.euros ?? 0}${s?.left ? '*' : ''}`, x, y0 + 92); });
   ctx.textAlign = 'left'; const v = verdict;
   if (v) { ctx.fillStyle = v.paid ? '#7ac478' : '#e2683c'; ctx.font = '900 44px ui-monospace, monospace';
-    ctx.fillText(v.paid ? `RENT PAID · €${v.over} OVER` : `SHORT €${-v.over} ON THE RENT`, 60, 1260); }
-  ctx.fillStyle = '#9fb0b6'; ctx.font = '700 26px ui-monospace, monospace'; ctx.fillText(`rent €${rent} · €${v?.total ?? 0} earned`, 62, 1300);
+    ctx.fillText(tr(v.paid ? `RENT PAID · €${v.over} OVER` : `SHORT €${-v.over} ON THE RENT`), 60, 1260); }
+  ctx.fillStyle = '#9fb0b6'; ctx.font = '700 26px ui-monospace, monospace'; ctx.fillText(tr(`rent €${rent} · €${v?.total ?? 0} earned`), 62, 1300);
   if (kit.length) { ctx.textAlign = 'right'; ctx.font = '44px sans-serif'; ctx.fillText(kit.join(' '), W - 60, 1296); }
   return canvas;
 }

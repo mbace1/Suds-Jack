@@ -16,6 +16,7 @@
 // the last frame and turns the difference into effects, so it cannot disagree
 // with the numbers — it is drawn FROM them. Under prefers-reduced-motion the
 // coins, the shake and the punch are dropped and the words stay.
+import { tr } from './lang.js?v=1';
 const reduced = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 const LIFE = { deliver: 1.4, late: 1.5, drop: 0.95, mult: 0.9 };
 
@@ -77,7 +78,7 @@ export function mountJuice(tm) {
       }
       if (f.kind !== 'mult') {
         // the fee, rising
-        const txt = `${f.kind === 'late' ? 'LATE ' : ''}+${f.amount}`, y = p.y - (f.kind === 'deliver' ? 52 : f.kind === 'late' ? 48 : 26) * dpr - 18 * dpr * k;
+        const txt = `${f.kind === 'late' ? tr('LATE') + ' ' : ''}+${f.amount}`, y = p.y - (f.kind === 'deliver' ? 52 : f.kind === 'late' ? 48 : 26) * dpr - 18 * dpr * k;
         ctx.globalAlpha = Math.max(0, 1 - Math.max(0, k - 0.55) / 0.45); ctx.font = `900 ${Math.round((f.kind === 'drop' ? 11 : 15) * dpr)}px ui-monospace,monospace`;
         ctx.lineWidth = 4 * dpr; ctx.strokeStyle = '#fffdf7'; ctx.strokeText(txt, p.x, y); ctx.fillStyle = f.kind === 'late' ? '#b34a36' : f.kind === 'drop' ? '#3f7a45' : '#233d4d'; ctx.fillText(txt, p.x, y); ctx.globalAlpha = 1;
       } else {

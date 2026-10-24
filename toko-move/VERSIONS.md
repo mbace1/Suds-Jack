@@ -1,5 +1,45 @@
 # Toko Move — versions
 
+## v2.66 — 2026-10-24
+
+**SUOMEKSI** (roadmap M5: *"Finnish and English at least"*). The game plays in
+Finnish: a Finnish browser lands in it, `?lang=fi` / `?lang=en` choose, the
+choice is remembered, and the title card carries one link to the other
+language (SUOMEKSI / IN ENGLISH).
+
+**How, and why that way.** The words live where they are drawn — templates
+and data tables in about twenty modules — so `js/lang.js` translates at the
+one place every word passes through: the DOM. English stays the source,
+written inline as before; a MutationObserver swaps each text node, aria-label
+and title for its Finnish, English the per-string fallback (the house
+convention). A line is looked up whole, then fact by fact across the game's
+own " · " separator, then by pattern for the lines that carry names and
+numbers ("in 5 min", "BOARD ONE OF 3", "to Kamppi"). **Place names are never
+inflected**: a pattern puts a stop where Finnish needs no case ending
+("kohde Kamppi", "vaihto: Eira"), because a wrong ending on a stop's name is
+worse than a plainer sentence. Canvas text has no node, so the map's
+TAP · GET OFF and WALK labels, the LATE floater, the week poster and both
+share texts call `tr()` where they draw.
+
+**What a DOM translator could break, held.** The catch panel is rebuilt only
+when what it says changes, so a press in flight lands (v2.4x); a translator
+that made every render look different would undo that. One place compared
+`innerHTML` to decide whether to repaint (the drops on the way) and now
+compares what it last wrote instead. `test/lang.cjs` checks that a lit CATCH
+is the same button while the clock runs under it, in Finnish.
+
+**`test/lang.cjs`** (18, in CI) plays two fixed shifts, today's daily and a
+week through its kit pick in Finnish, tapping only what lights, opens the map
+panel, and fails on any string the table missed that still reads as English;
+it also holds the switch both ways, the remembered choice, a Finnish browser,
+and English untouched. Its first run left 26 strings and a second found
+"beat him" hiding behind a leading separator; the zoom rail reads LÄHI /
+REITTI / KOKO because KAUPUNKI did not fit 44 px.
+
+The Finnish is a **draft in the game's register, not a native read** — the
+same caveat Toko's counter packs carry. Japanese, the arcade's third
+language, is not started.
+
 ## v2.65 — 2026-10-24
 
 **THE FIRST MINUTES FOR A STRANGER** (roadmap M4; owner: *"Go 5 then 6 then

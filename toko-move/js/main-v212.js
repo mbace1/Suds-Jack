@@ -1,5 +1,7 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
-import './core-v212.js?v=66';
+// first, so every word the modules below draw passes through it (v2.66)
+import {tr} from './lang.js?v=1';
+import './core-v212.js?v=67';
 import './route-choice.js?v=26';
 import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=15';
 import {hidden as fogHides} from './weather.js?v=1';
@@ -7,7 +9,7 @@ import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} 
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=4';
 import {MobilityController} from './mobility-v212.js?v=11';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
-import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=26';
+import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=27';
 import {mountEvents} from './events.js?v=5';
 import {mountRival} from './rival.js?v=4';
 import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=3';
@@ -16,11 +18,11 @@ import {ShiftLog} from './shiftlog.js?v=4';
 import {Trails} from './trails.js?v=2';
 import {mountHubTactics} from './hub-tactics-v212.js?v=6';
 import {mountSkillMoments} from './moments-v212.js?v=2';
-import {mountJuice} from './juice.js?v=1';
+import {mountJuice} from './juice.js?v=2';
 import {mountTestCard} from './testcard.js?v=3';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=2';
-const BUILD_VERSION='2.65';
+const BUILD_VERSION='2.66';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
@@ -81,7 +83,7 @@ tm.focusLines=()=>{const s=new Set(),ch=tm.challenge,st=tm.mobility?.status?.();
   if(st?.kind==='riding'||st?.kind==='getoff'){add(st.ride?.line);for(const leg of ch?.selectedPlan?.legs||[])add(leg?.line);return s;}
   if(ch?.active){for(const c of document.getElementById('routeChoices')?._choices||[])for(const leg of c?.legs||[])add(leg?.line);return s;}
   for(const l of document.getElementById('jobBoard')?._lines||[])add(l);return s;};
-const drawInterception=()=>{const hit=bestInterception(tm);if(!hit)return;const b=nodePoint(hit.hub);if(!b)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1;ctx.save();ctx.fillStyle='#fffdf7';ctx.strokeStyle=hit.layer?.colour||'#233d4d';ctx.lineWidth=2*d;ctx.font=`bold ${Math.round(11*d)}px ui-monospace,monospace`;const text=`WALK ${about(hit.walkTicks,tm)} → ${hit.line.label} ${inMinutes(hit.waitTicks,tm)}`,pad=6*d,w=ctx.measureText(text).width+pad*2,h=22*d,x=b.x-w/2,y=b.y-34*d;ctx.beginPath();ctx.roundRect(x,y,w,h,4*d);ctx.fill();ctx.stroke();ctx.fillStyle='#15262b';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,b.x,y+h/2);ctx.restore();};// THE COURIER IS A FIGURE, AND IS ON THE BOARD WHENEVER YOU ARE. It used to
+const drawInterception=()=>{const hit=bestInterception(tm);if(!hit)return;const b=nodePoint(hit.hub);if(!b)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1;ctx.save();ctx.fillStyle='#fffdf7';ctx.strokeStyle=hit.layer?.colour||'#233d4d';ctx.lineWidth=2*d;ctx.font=`bold ${Math.round(11*d)}px ui-monospace,monospace`;const text=tr(`WALK ${about(hit.walkTicks,tm)} → ${hit.line.label} ${inMinutes(hit.waitTicks,tm)}`),pad=6*d,w=ctx.measureText(text).width+pad*2,h=22*d,x=b.x-w/2,y=b.y-34*d;ctx.beginPath();ctx.roundRect(x,y,w,h,4*d);ctx.fill();ctx.stroke();ctx.fillStyle='#15262b';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,b.x,y+h/2);ctx.restore();};// THE COURIER IS A FIGURE, AND IS ON THE BOARD WHENEVER YOU ARE. It used to
 // be a navy dot marked W, and only while walking — standing at a stop you were
 // nowhere on the map at all, which is most of the shift and most of "I don't
 // know how to move". A flat fill inside a hard line, the house register: head,
@@ -115,7 +117,7 @@ const drawRival=()=>{const r=tm.rival,p=r?.position?.();if(!p)return;const d=tm.
 // tap on it gets you off — the map's half of the GET OFF button.
 const drawGetOff=()=>{const st=tm.mobility?.status?.();if(st?.kind!=='getoff')return;const p=nodePoint(st.at);if(!p)return;const d=tm.renderer?.dpr||window.devicePixelRatio||1,pulse=0.5+0.5*Math.sin(performance.now()/160);
   ctx.save();ctx.strokeStyle=`rgba(35,61,77,${(0.6+0.4*pulse).toFixed(2)})`;ctx.lineWidth=(3+2*pulse)*d;ctx.beginPath();ctx.arc(p.x,p.y,(14+5*pulse)*d,0,Math.PI*2);ctx.stroke();
-  ctx.font=`bold ${Math.round(10*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=3*d;ctx.strokeStyle='#fffdf7';ctx.strokeText('TAP · GET OFF',p.x,p.y-(24*d));ctx.fillStyle='#233d4d';ctx.fillText('TAP · GET OFF',p.x,p.y-(24*d));ctx.restore();};
+  ctx.font=`bold ${Math.round(10*d)}px ui-monospace,monospace`;ctx.textAlign='center';ctx.lineJoin='round';ctx.lineWidth=3*d;ctx.strokeStyle='#fffdf7';ctx.strokeText(tr('TAP · GET OFF'),p.x,p.y-(24*d));ctx.fillStyle='#233d4d';ctx.fillText(tr('TAP · GET OFF'),p.x,p.y-(24*d));ctx.restore();};
 const drawCourier=()=>{const st=tm.mobility?.status?.();if(!st||st.kind==='riding'||st.kind==='getoff')return;
   let x,y,walking=false;const d=tm.renderer?.dpr||window.devicePixelRatio||1;
   if(st.kind==='walking'){
