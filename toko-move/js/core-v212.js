@@ -2,31 +2,31 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {tr} from './lang.js?v=1';
+import {tr} from './lang.js?v=2';
 const trLines=t=>String(t).split('\n').map(l=>tr(l)).join('\n');
 import {shareUrl,STORE} from './platform.js?v=1';
-import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=26';
+import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=27';
 import {TransitLayers} from './transit-layers.js?v=10';
 import {buildRealHelsinki} from './real-helsinki.js?v=5';
 import {boardBox,boardFit,roadPaths,lineFamily,ROAD_INK,ROAD_INK_MAJOR,ROAD_INK_MID,ROAD_INK_MINOR,HUB_INK,NIGHT} from './board.js?v=8';
 import {TRANSFER_HUBS} from './hubs-walking.js?v=4';
-import {SHIFT} from './live-network.js?v=15';
+import {SHIFT} from './live-network.js?v=16';
 import {Camera,SCALES,FLEET_RADIUS_M,metresBetween} from './camera.js?v=1';
 import {loadGround,STREET_TIERS} from './ground.js?v=12';
 import {dots,minutes} from './ui.js?v=2';
 import {landmarkPoints,drawLandmarks} from './landmarks.js?v=3';
 import {drawCityEvent,family as dayFamily} from './city-events.js?v=1';
-import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as dailyGrid} from './daily.js?v=1';
-import * as Week from './week.js?v=3';
+import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as dailyGrid} from './daily.js?v=2';
+import * as Week from './week.js?v=4';
 import * as Kit from './kit.js?v=1';
 import {drawWeather} from './weather.js?v=1';
-import {drawPoster} from './poster.js?v=2';
+import {drawPoster} from './poster.js?v=3';
 import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.66';
+const BUILD_VERSION='2.67';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -94,7 +94,9 @@ function publish(){window.__tm={...(window.__tm||{}),walkLine,walkProgress,live:
 // scale and is not once a camera makes the answer change continuously. It is
 // memoised on the only five numbers it depends on.
 let _proj=null,_base=null,_pw=0,_ph=0,_pz=-1,_px=0,_py=0;
-function projection(){const c=$('map'),z=camera?camera.zoom:1,cx=camera?camera.cx:0,cy=camera?camera.cy:0;
+// the canvas is looked up once, not on every projected point (v2.67)
+let _mapEl=null;
+function projection(){const c=_mapEl?.isConnected?_mapEl:(_mapEl=$('map')),z=camera?camera.zoom:1,cx=camera?camera.cx:0,cy=camera?camera.cy:0;
   if(!_proj||_pw!==c.width||_ph!==c.height||_pz!==z||_px!==cx||_py!==cy){
     _base=boardFit(box,c.width,c.height);_proj=camera?camera.apply(_base,c.width,c.height):_base;
     _pw=c.width;_ph=c.height;_pz=z;_px=cx;_py=cy;}
@@ -536,8 +538,12 @@ function sheetSlot(id){if(id===undefined)return SHEET_SLOTS.slice();const sheet=
   for(const s of SHEET_SLOTS){let el=document.getElementById(s);
     if(!el){el=document.createElement('section');el.id=s;sheet.append(el);}
     else if(el.parentElement!==sheet)sheet.append(el);}
-  // re-assert the order, cheaply: appendChild moves an existing node
-  for(const s of SHEET_SLOTS)sheet.append(document.getElementById(s));
+  // re-assert the order — but only when it is wrong (v2.67). This runs every
+  // frame (the ride panel asks for its slot from the draw loop), and moving
+  // nine sections that are already in place still costs a style pass each
+  // time, and in Finnish it reads to lang.js as nine sections of new text.
+  const tail=[...sheet.children].slice(-SHEET_SLOTS.length).map(e=>e.id);
+  if(tail.join()!==SHEET_SLOTS.join())for(const s of SHEET_SLOTS)sheet.append(document.getElementById(s));
   return document.getElementById(id);}
 
 function paintSheet(){if(!challenge)return;const b=sheetSlot('jobHead');if(!b)return;if(!challenge.active){b.innerHTML='';return;}const j=challenge.active,c=challenge.cargoRule(),constrained=c.modes||c.fragile||c.freshness||c.express;b.innerHTML=`<div class="jobTop" style="align-items:center"><span class="cargoBadge">${parcelHtml(j.cargo,{title:c.rule})}</span><div style="flex:1;min-width:0"><h2 style="font-size:14px">${esc(challenge.name(challenge.currentTo()))}</h2><p class="hint">from ${esc(challenge.name(challenge.currentFrom()))} · ${minutes(challenge.remaining())} left${constrained?` · ${esc(c.rule.toLowerCase().split(';')[0].split(' — ')[0])}`:''}</p></div></div><div class="meter"><i style="width:${Math.max(0,Math.min(100,100*challenge.remaining()/j.limit))}%;background:${cargoColour(j.cargo)}"></i></div>`;}
@@ -830,6 +836,17 @@ addEventListener('resize',()=>{renderer?.resize();_railAt='';placeRail();});
 const LIVE_SPEED=1/15;
 $('play').onclick=()=>{if(!flow)return;if(WEEK){Week.begin(WEEK);Week.saveWeek(WEEK);}$('title').hidden=true;if(LIVE){flow.clock.setSpeed(LIVE_SPEED);const sp=$('speed');if(sp){sp.disabled=true;sp.textContent='LIVE';}}flow.clock.setPaused(false);};
 $('pause').onclick=()=>{if(!flow)return;flow.clock.setPaused(!flow.clock.paused);$('pause').textContent=flow.clock.paused?'▶':'❚❚';};
+// LEAVING MID-SHIFT (v2.67). A phone that locks or switches apps stops the
+// animation frames, and the clock's catch-up cap already keeps a hidden tab
+// from fast-forwarding — but nothing said so: the player came back to the shift
+// running again under their thumb. Hidden now PAUSES the way the button does,
+// and coming back shows a card that waits to be tapped. LIVE is real time and
+// cannot wait, so it is left alone; a shift already paused by hand stays the
+// player's own pause and gets no card.
+function shiftRunning(){return !!flow&&!flow.clock.paused&&!LIVE&&!done&&$('title')?.hidden&&$('end')?.hidden;}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='hidden'||!shiftRunning())return;
+  flow.clock.setPaused(true);$('pause').textContent='▶';$('paused').hidden=false;});
+$('resume').onclick=()=>{$('paused').hidden=true;if(!flow||done)return;flow.clock.setPaused(false);$('pause').textContent='❚❚';};
 $('speed').onclick=()=>{if(!flow||LIVE)return;const s=flow.clock.speed>=4?1:flow.clock.speed*2;flow.clock.setSpeed(s);$('speed').textContent=`×${s}`;};
 $('again').onclick=()=>{
   // RUN THE DAY AGAIN used to boot a fresh flow and challenge in place — and

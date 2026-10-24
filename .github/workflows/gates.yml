@@ -490,6 +490,9 @@ jobs:
       - name: the game in Finnish — played, and nothing left in English
         run: NODE_PATH=$(npm root -g) node toko-move/test/lang.cjs
 
+      - name: the ship bar — the week to the rent, leaving mid-shift, hostile storage, sideways phones, sound, credits
+        run: NODE_PATH=$(npm root -g) node toko-move/test/ship.cjs
+
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
       # is broken if fewer than 40% of them get three deliveries home.

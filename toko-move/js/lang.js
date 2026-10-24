@@ -198,6 +198,9 @@ export const FI = new Map(Object.entries({
   'A NEW WEEK': 'UUSI VIIKKO', 'KIT': 'VARUSTEET', 'SECOND JOB ONBOARD': 'TOINEN KEIKKA MUKANA', 'SHARE THE WEEK AS TEXT': 'JAA VIIKKO TEKSTINÄ',
   'LIVE · CONNECTING': 'LIVE · YHDISTETÄÄN', 'LIVE · QUIET · TIMETABLE': 'LIVE · HILJAISTA · AIKATAULU', 'LIVE · UNAVAILABLE · TIMETABLE': 'LIVE · EI SAATAVILLA · AIKATAULU',
   'CONNECTING': 'YHDISTETÄÄN', 'QUIET': 'HILJAISTA', 'UNAVAILABLE': 'EI SAATAVILLA', 'TIMETABLE': 'AIKATAULU', 'FEED LOST': 'YHTEYS POIKKI', 'NO FEED': 'EI YHTEYTTÄ',
+  'sound on': 'ääni päällä', 'sound off': 'ääni pois', 'PAUSED': 'TAUOLLA', 'RESUME': 'JATKA', 'The shift waits while the game is in the background.': 'Vuoro odottaa, kun peli on taustalla.',
+  'Transit data: Helsinki Regional Transport Authority (HSL), CC BY 4.0': 'Liikennetiedot: Helsingin seudun liikenne (HSL), CC BY 4.0',
+  'Map: © OpenStreetMap contributors, ODbL 1.0': 'Kartta: © OpenStreetMapin tekijät, ODbL 1.0', 'Districts: City of Helsinki': 'Kaupunginosat: Helsingin kaupunki',
   // the playtest card (the arcade build only)
   'Cross the Crown Bridge': 'Ylitä Kruunusillat', 'Deliver to Kruunuvuori': 'Toimita Kruunuvuoreen', 'Tap the tram': 'Napauta ratikkaa', 'Tell Toko': 'Kerro Tokolle',
   'A new stop across the bridge. No walk reaches it — only the tram.': 'Uusi pysäkki sillan takana. Sinne ei kävele — vain ratikalla.',

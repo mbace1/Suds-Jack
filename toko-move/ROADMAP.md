@@ -64,6 +64,18 @@ board — shift 1's first delivery 29 → 9.7 min — a stale "nothing to catch"
 "get off here" at the boarding stop, LIVE on the store title) and holds all
 four.
 
+**The ship bar (v2.67, owner: "a shippable Toko Move before considering
+itch.io").** Before the store, the game has to survive what a stranger's phone
+does to it. Seven items, each measured before it was fixed, held by
+`test/ship.cjs`:
+S1 the whole week plays by tapping, Monday to the rent, with memory flat ·
+S2 leaving mid-shift pauses and says so · S3 storage that throws, and saves
+in the wrong shape · S4 phone landscape and 320px phones · S5 frame cost
+(measured; headless cannot speak for a phone GPU, so M6 confirms it) ·
+S6 sound with a kept mute · S7 credits in the game. What the bar does NOT
+claim: that the game is fun enough to sell — that is a playtest, and the
+owner's call.
+
 **M5 · Language.** Finnish and English at least, the arcade's house
 convention (fi/en/ja) as the target; Toko Move is English-only today.
 *Done in v2.66 for Finnish:* `js/lang.js` translates at the DOM, `test/lang.cjs`
