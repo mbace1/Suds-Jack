@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v44 — 2026-10-24
+**Three arcade worlds have a wave whose floor moves: the river's banks breathe, the ice breaks into a drifting floe, the core splits into two discs going round each other**
+- Owner, 2026-10-24, picking from the plan: breathing and orbiting floors as arcade world events (CAMPAIGN_PLAN.md step 5, the campaign's `breath`, `orbit` and `pulse` rooms).
+- `sim/floorshift.js`: a world with a `shift` (TUNING.worlds.list) has one wave — its third, never a challenge's or a boss's — whose floor is a shape on a clock. A banner warns (`THE BANKS BREATHE` / `THE ICE BREAKS UP` / `THE FLOOR SPLITS IN TWO`), 1.6 s later the floor takes the shape and every wall clamps to it (`w.region`, as a campaign room's), and at the next wave the floor is whole again. Sizes are fractions of the world's own floor, so one spec fits either orientation, and a shift begun while a challenge still has the walls closed in is sized off the floor, not the walls.
+- The river breathes from its whole floor to 58% and back over 9 s; the ice is a disc 78% of its shorter side, its centre going round a 32% orbit every 16 s; the core is two discs of 55% going round each other on a 42% orbit every 14 s — cross when they meet.
+- The view: the floor shader fixes what kind each part of a shape is when it is built, so a shift world's floor is built able to take its shift and opened out to the whole floor until the shift is on (a rectangle at full size, a circle 10 km wide). The floor never rebuilds mid-wave. The edge of a shifted floor is the world's rail colour.
+- `test/floorshift.mjs` (in the smoke): which waves, never a challenge or a boss, the warning before it moves, the floor really moving, the hero held on it while leaning on its edge for 12 s, whole again at the next wave, sized off the floor under a squeeze, and the same seed giving the same floor.
+- Cache tokens `?v=43` → `?v=44`; HUD label → `2.0 · v44`
+
+---
+
 ## v43 — 2026-10-24
 **Portrait levels are bigger on the phone, and every world has something round its floor: a ground that fades into the dark, a glowing edge, and its own things standing along the sides**
 - Owner, 2026-10-24, looking at all nine worlds side by side: *"Make the portrait mode levels a bit bigger and put graphics on the sides."*

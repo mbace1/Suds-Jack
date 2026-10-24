@@ -7,30 +7,31 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=43';
-import { buildFloor } from './render/floor.js?v=43';
-import { fitCamera, screenToWorld } from './render/view.js?v=43';
-import * as worldsSim from './sim/worlds.js?v=43';
-import * as reshapeSim from './sim/reshape.js?v=43';
-import { Scenery } from './render/scenery.js?v=43';
-import { Transit } from './render/transit.js?v=43';
-import { Splats } from './render/splats.js?v=43';
-import { Actors } from './render/actors.js?v=43';
-import { GEL_TIME } from './render/gel.js?v=43';
-import { studioEnvironment } from './render/env.js?v=43';
-import { Specimen } from './render/specimen.js?v=43';
-import { createWorld, step, api as simApi } from './sim/world.js?v=43';
-import { stage as stagePk } from './sim/pickups.js?v=43';
-import { Input } from './input.js?v=43';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=43';
-import { Announcer } from './announcer.js?v=43';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=43';
-import { metricOf } from './sim/challenge.js?v=43';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=43';
-import { Sound } from './audio.js?v=43';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=43';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=43';
-import { Readout } from './readout.js?v=43';
+import { TUNING } from './tuning.js?v=44';
+import { buildFloor } from './render/floor.js?v=44';
+import { fitCamera, screenToWorld } from './render/view.js?v=44';
+import * as worldsSim from './sim/worlds.js?v=44';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=44';
+import * as reshapeSim from './sim/reshape.js?v=44';
+import { Scenery } from './render/scenery.js?v=44';
+import { Transit } from './render/transit.js?v=44';
+import { Splats } from './render/splats.js?v=44';
+import { Actors } from './render/actors.js?v=44';
+import { GEL_TIME } from './render/gel.js?v=44';
+import { studioEnvironment } from './render/env.js?v=44';
+import { Specimen } from './render/specimen.js?v=44';
+import { createWorld, step, api as simApi } from './sim/world.js?v=44';
+import { stage as stagePk } from './sim/pickups.js?v=44';
+import { Input } from './input.js?v=44';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=44';
+import { Announcer } from './announcer.js?v=44';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=44';
+import { metricOf } from './sim/challenge.js?v=44';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=44';
+import { Sound } from './audio.js?v=44';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=44';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=44';
+import { Readout } from './readout.js?v=44';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -119,7 +120,7 @@ function useArena(name) {
 // the floor of world n (sim/worlds.js), at its size: the view's half of a
 // world change. A world past the first is bigger than the screen, and the
 // camera follows (viewBox)
-let viewWorld = 1, boundsFloor = false, roomFloor = false;   // roomFloor: a campaign room's floor is down (useRoom)
+let viewWorld = 1, boundsFloor = false, roomFloor = false, shiftOpen = null;   // shiftOpen: a shift world's floor, whole (useWorld)   // roomFloor: a campaign room's floor is down (useRoom)
 // world n's floor (render/floor.js), per the title's WORLDS look (v23):
 // STREET is the driveway and the sewer with their lawn and walls; NEON is
 // two abstract floors in the grid's own language, with 1.x's rail. The look
@@ -136,7 +137,13 @@ function useWorld(n, hx, hz) {
   actors.setArena(hx, hz);
   const WD = T.worlds.list[n - 1];
   // a world whose walls close in for its challenge (v37, `squeeze`) is built with bounds, at its full size
-  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[worldsLook()][n - 1] ?? 'grid', film: actors.gooKit.film, bounds: !!WD?.squeeze });
+  // a world whose floor moves for a wave (v44, sim/floorshift.js) is built able to take
+  // the shift's shape — the shader fixes each part's kind — and opened out to the whole
+  // floor until the shift is on (shiftOpen), so the floor never rebuilds mid-wave
+  shiftOpen = WD?.shift ? { slots: [0, 1, 2, 3].map((i) => { const p = WD.shift.parts[i]; return !p ? [0, 0, 0, 0] : p.kind === 'rect' ? [1, hx, hz, 0] : [2, 0, 0, 1e4]; }), combine: WD.shift.combine === 'intersect' ? 1 : 0 } : null;
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[worldsLook()][n - 1] ?? 'grid', film: actors.gooKit.film, bounds: !!WD?.squeeze,
+    region: WD?.shift ? regionSlots(shiftShape({ hx, hz }, WD.shift, 0)) : null, regionRail: WD?.rail });
+  if (shiftOpen) floor.setRegion(shiftOpen);
   floorFull = { hx, hz };
   if (WD?.rail != null) floor.setRail(WD.rail);
   scene.add(floor.group);
@@ -152,7 +159,7 @@ let floorFull = null;   // a world floor's own size, which its walls close in fr
 function useSurvival() {
   survivalMax = reshapeSim.maxSize(arenaName);
   const { hx, hz } = survivalMax;
-  viewWorld = 1; boundsFloor = true; roomFloor = false;
+  viewWorld = 1; boundsFloor = true; roomFloor = false; shiftOpen = null;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
   floor = buildFloor(T, hx, hz, actors.light.texture, { style: 'grid', bounds: true, film: actors.gooKit.film });
@@ -410,7 +417,7 @@ const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY)
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=43`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=44`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -441,6 +448,7 @@ async function startRoom(id) {
 }
 // a room's floor: its box, and when it is not a rectangle its shape (render/floor.js `region`)
 function useRoom(w) {
+  shiftOpen = null;   // a room's floor moves by its own region (ch.moving), not a world's shift
   viewWorld = 1; boundsFloor = false; roomFloor = true;
   const hx = w.hx, hz = w.hz, sh = w.region?.shape;
   if (floor) { scene.remove(floor.group); floor.dispose(); }
@@ -550,6 +558,7 @@ function onEvent(e) {
   if (e.type === 'worldIn') { useWorld(e.world, e.hx, e.hz); splats.clear(); actors.goo?.clear(); }   // the next world's floor, under the falling droplet; the last one's puddles went down the drain with it
   if (e.type.startsWith('world')) transit.onEvent(e, floor, world);
   if (e.type === 'reshape') shake(T.survival.reshape.shake);
+  if (e.type === 'shift') shake(T.survival.reshape.shake);
   if (e.type === 'reshaped') splats.prune(e.hx, e.hz);
   debug.counts[e.type] = (debug.counts[e.type] || 0) + 1;
   sound.event(e);
@@ -574,6 +583,8 @@ function onEvent(e) {
   else if (e.type === 'trial') ui.banner(`${t('wave')} ${e.wave} · ${t('trial')}: ${t(`trial_${e.kind}`)}`, 2.2);
   // a boss wave's fight over (v42): the boss, its grade and what it paid
   else if (e.type === 'bossDown') ui.banner(`${bossName(e.kind)} ${t('bossDown')} · ${e.grade} · +${e.bonus.toLocaleString('en-US')}`, 2.2);
+  // a world's floor about to move for a wave (v44, sim/floorshift.js)
+  else if (e.type === 'shiftWarn') ui.banner(t(`shift_${e.kind}`), 2.0);
   else if (e.type === 'trialEnd') ui.banner(e.met ? `${t('trialMet')} +${e.bonus.toLocaleString('en-US')}` : t('trialMissed'), 1.6);
   else if (e.type === 'curtainWarn') ui.banner(`${String(e.style || '').toUpperCase()} ${t('curtain')}`, e.t ?? 1.1);
   else if (e.type === 'weapon') {
@@ -786,6 +797,8 @@ function frame(now, dtFixed) {
     const h = world.hero;
     floor.setPlayer(h.px + (h.x - h.px) * a, h.pz + (h.z - h.pz) * a);
     if (world.ch?.moving && world.region) floor.setRegion?.(regionSlots(world.region.shape));   // a campaign room's floor that moves (sim/shape.js)
+    // an arcade world's floor moving for a wave (v44), and whole again after it
+    else if (shiftOpen) floor.setRegion?.(world.shift?.phase === 'on' && world.region ? regionSlots(world.region.shape) : shiftOpen);
     ui.hud(world);
   } else { floor.setPlayer(0, 0); actors.light.clear(); }
   transit.frame(world, floor);
