@@ -169,7 +169,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v39<span id="backend"></span></div>
+  <div id="ver">2.0 · v40<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -179,49 +179,89 @@
     // Each message shows once, and the box stops growing after 40: an error
     // that repeats every frame must not flood the page it is reporting on.
     (function () {
-      var box = document.getElementById('fault'), seen = Object.create(null), shown = 0;
+      var box = document.getElementById('fault'), seen = Object.create(null), lines = [], status = '', button = null;
+      function render() {
+        box.hidden = !lines.length && !status;
+        box.textContent = lines.join('\n') + (status ? (lines.length ? '\n' : '') + status : '');
+        if (button) box.appendChild(button);
+      }
       function fault(msg) {
         msg = String(msg);
-        if (seen[msg] || shown >= 40) return;
-        seen[msg] = true; shown++;
-        box.hidden = false;
-        box.textContent += msg + '\n';
+        if (seen[msg] || lines.length >= 40) return;
+        seen[msg] = true; lines.push(msg); render();
       }
+      function say(msg) { status = msg; render(); }
       window.__fault = fault;
-      // A module that fails says only that it failed. So find out: walk its
-      // imports and fetch each one past the cache, and name the first that
-      // does not come back 200 (a file the deploy left out, or a 404 the CDN
-      // cached while the deploy was landing); then import it once more past
-      // the cache, which either starts the game (a stale 404 that has since
-      // healed) or puts the browser's own reason on screen (a syntax error).
-      function diagnose(src) {
-        var seenUrl = Object.create(null), q = [src], bad = null;
-        function next() {
-          if (bad || !q.length) return Promise.resolve(bad);
-          var u = q.shift();
-          if (seenUrl[u]) return next();
-          seenUrl[u] = true;
-          return fetch(u, { cache: 'no-store' }).then(function (r) {
-            if (!r.ok) { bad = r.status + ' ' + u; return next(); }
-            return r.text().then(function (t) {
-              var re = /(?:import|export)[^'"]*?from\s*['"](\.{1,2}\/[^'"]+)['"]|import\s*['"](\.{1,2}\/[^'"]+)['"]/g, m;
-              while ((m = re.exec(t))) q.push(new URL(m[1] || m[2], u).href);
-              return next();
-            });
-          }, function (err) { bad = 'network ' + u + ' (' + err.message + ')'; return next(); });
-        }
-        return next().then(function (b) {
-          fault(b ? 'the file that failed: ' + b : 'every file it needs is there now; trying again');
-          return import(src + (src.indexOf('?') < 0 ? '?' : '&') + 'retry=' + Date.now()).then(
-            function () { box.hidden = true; box.textContent = ''; },
-            function (err) { fault('why: ' + (err && err.message ? err.message : err)); });
+      // A game of ~200 modules is ~200 downloads, and ONE that drops on a
+      // phone's connection fails the whole load. The browser then remembers
+      // that failure for the life of the page, so importing again here cannot
+      // recover; only a fresh page can. So: check every file at once, past the
+      // cache (which also replaces a bad copy the cache may hold), and reload,
+      // at most twice in two minutes. Past that, name the file and offer the
+      // button (v40; the phone hit this at v31 and v39).
+      var KEY = 'toko2.reloads';
+      function reloads() { try { var r = JSON.parse(sessionStorage.getItem(KEY) || 'null'); return r && Date.now() - r.t < 120000 ? r.n : 0; } catch (e) { return 9; } }
+      function reloadSoon(ms) {
+        var n = reloads();
+        if (n >= 2) return false;
+        try { sessionStorage.setItem(KEY, JSON.stringify({ n: n + 1, t: Date.now() })); } catch (e) { return false; }
+        setTimeout(function () { location.reload(); }, ms);
+        return true;
+      }
+      function offerReload() {
+        button = document.createElement('button');
+        button.textContent = 'RELOAD';
+        button.style.cssText = 'display:block;margin-top:10px;min-height:44px;padding:0 18px;font:inherit;letter-spacing:.14em;color:inherit;background:none;border:1px solid currentColor';
+        button.onclick = function () { try { sessionStorage.removeItem(KEY); } catch (e) {} location.reload(); };
+        render();
+      }
+      // (main.js clears the count once the game is up)
+      function check(src) {
+        var urls = Object.create(null), queue = [], bad = [], active = 0, done = 0, total = 0;
+        return new Promise(function (resolve) {
+          function add(u) { if (urls[u]) return; urls[u] = true; total++; queue.push(u); }
+          function pump() {
+            while (active < 6 && queue.length) one(queue.shift());
+            if (!active && !queue.length) resolve(bad);
+          }
+          function one(u) {
+            active++;
+            var ctl = window.AbortController ? new AbortController() : null, timer = setTimeout(function () { if (ctl) ctl.abort(); }, 15000);
+            fetch(u, { cache: 'reload', signal: ctl ? ctl.signal : undefined }).then(function (r) {
+              if (!r.ok) { bad.push(r.status + ' ' + u); return; }
+              return r.text().then(function (t) {
+                var re = /(?:import|export)[^'"]*?from\s*['"](\.{1,2}\/[^'"]+)['"]|import\s*['"](\.{1,2}\/[^'"]+)['"]/g, m;
+                while ((m = re.exec(t))) add(new URL(m[1] || m[2], u).href);
+              });
+            }).catch(function (err) { bad.push('no answer: ' + u + ' (' + (err && err.message ? err.message : err) + ')'); })
+              .then(function () { clearTimeout(timer); active--; done++; say('checking the files: ' + done + ' / ' + total); pump(); });
+          }
+          add(src);
+          // and what the import map points bare names at (three), which no relative import names
+          try { var map = JSON.parse(document.querySelector('script[type="importmap"]').textContent).imports; for (var k in map) add(new URL(map[k], location.href).href); } catch (er) {}
+          pump();
         });
       }
       addEventListener('error', function (e) {
         var el = e.target;
         if (el && el !== window && (el.src || el.href)) {
-          fault('failed to load ' + (el.src || el.href));
-          if (el.type === 'module' && el.src && !el.dataset.diagnosed) { el.dataset.diagnosed = '1'; diagnose(el.src); }
+          var u = el.src || el.href;
+          if (el.type === 'module' && el.src && !el.dataset.checked) {
+            el.dataset.checked = '1';
+            var again = reloads();
+            fault((again ? 'it failed again (' + (again + 1) + ' tries): ' : 'a file did not arrive: ') + u.split('/').slice(-2).join('/'));
+            // which browser, and whether the arcade's worker stood in the way: what a screenshot needs to say
+            var ua = navigator.userAgent, ver = (ua.match(/(?:Chrome|Firefox|Version)\/(\d+)/) || [])[1] || '?';
+            fault('browser: ' + (/; wv\)/.test(ua) ? 'in-app WebView ' : /CriOS|Chrome/.test(ua) ? 'Chrome ' : /Firefox/.test(ua) ? 'Firefox ' : /Safari/.test(ua) ? 'Safari ' : '') + ver +
+              ((navigator.serviceWorker && navigator.serviceWorker.controller) ? ' · the arcade\'s worker' : '') + (navigator.onLine === false ? ' · offline' : ''));
+            check(u).then(function (bad) {
+              bad.slice(0, 3).forEach(function (b) { fault('the file that failed: ' + b); });
+              if (reloadSoon(bad.length ? 1500 : 300)) say(bad.length ? 'loading again…' : 'every file is there now — loading again…');
+              else { say(bad.length ? 'still failing — check the connection, then' : 'every file is there now'); offerReload(); }
+            });
+            return;
+          }
+          fault('failed to load ' + u);
           return;
         }
         var where = e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '';
@@ -233,6 +273,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=39"></script>
+  <script type="module" src="js/main.js?v=40"></script>
 </body>
 </html>
