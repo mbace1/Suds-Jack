@@ -18,7 +18,10 @@
  "plan": {
   "world": 0,
   "d": 1,
-  "teaches": "wave 1"
+  "teaches": "wave 1",
+  "strategy": [
+   "position"
+  ]
  },
  "spawns": [
   {

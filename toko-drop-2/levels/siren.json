@@ -21,7 +21,12 @@
  "plan": {
   "world": 3,
   "d": 8,
-  "teaches": "siren, purp"
+  "teaches": "siren, purp",
+  "strategy": [
+   "priority",
+   "movement",
+   "aim"
+  ]
  },
  "spawns": [
   {

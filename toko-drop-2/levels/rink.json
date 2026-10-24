@@ -21,7 +21,12 @@
  "plan": {
   "world": 4,
   "d": 6,
-  "teaches": "the dash's CUT"
+  "teaches": "the dash's CUT",
+  "strategy": [
+   "movement",
+   "risk",
+   "priority"
+  ]
  },
  "spawns": [
   {
@@ -29,105 +34,168 @@
    "type": "GLOBBO",
    "px": 8.66,
    "pz": 3.66,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 2.1,
+   "t": 1.45,
    "type": "YELA_CUBE",
    "px": -8.86,
    "pz": 3.15,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 4.2,
+   "t": 2.9,
    "type": "GLOBBO",
    "px": 4.4,
    "pz": -8.3,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 6.3,
+   "t": 4.35,
    "type": "GLOBBO",
    "px": 2.36,
    "pz": 9.1,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 8.4,
+   "t": 5.8,
    "type": "YELA_CUBE",
    "px": -7.89,
    "pz": -5.11,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 10.5,
+   "t": 7.25,
    "type": "GLOBBO",
    "px": 9.27,
    "pz": -1.56,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 12.6,
+   "t": 8.7,
    "type": "GLOBBO",
    "px": -5.78,
    "pz": 7.41,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 14.7,
+   "t": 10.15,
    "type": "YELA_CUBE",
    "px": -0.74,
    "pz": -9.37,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 16.8,
+   "t": 11.6,
    "type": "GLOBBO",
    "px": 6.88,
    "pz": 6.41,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 18.9,
+   "t": 13.05,
    "type": "GLOBBO",
    "px": -9.4,
    "pz": -0.08,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 21,
+   "t": 14.5,
    "type": "YELA_CUBE",
    "px": 6.98,
    "pz": -6.29,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 23.1,
+   "t": 15.95,
    "type": "GLOBBO",
    "px": -0.9,
    "pz": 9.36,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 25.2,
+   "t": 17.4,
    "type": "GLOBBO",
    "px": -5.66,
    "pz": -7.51,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 27.3,
+   "t": 18.85,
    "type": "YELA_CUBE",
    "px": 9.24,
    "pz": 1.72,
-   "speedMult": 0.9
+   "speedMult": 1.2
   },
   {
-   "t": 29.4,
+   "t": 20.3,
    "type": "GLOBBO",
    "px": -7.97,
    "pz": 4.98,
-   "speedMult": 0.9
+   "speedMult": 1.2
+  },
+  {
+   "t": 21.75,
+   "type": "GLOBBO",
+   "px": 2.52,
+   "pz": -9.06,
+   "speedMult": 1.2
+  },
+  {
+   "t": 23.2,
+   "type": "YELA_CUBE",
+   "px": 4.26,
+   "pz": 8.38,
+   "speedMult": 1.2
+  },
+  {
+   "t": 24.65,
+   "type": "GLOBBO",
+   "px": -8.8,
+   "pz": -3.3,
+   "speedMult": 1.2
+  },
+  {
+   "t": 26.1,
+   "type": "GLOBBO",
+   "px": 8.72,
+   "pz": -3.51,
+   "speedMult": 1.2
+  },
+  {
+   "t": 27.55,
+   "type": "YELA_CUBE",
+   "px": -4.06,
+   "pz": 8.48,
+   "speedMult": 1.2
+  },
+  {
+   "t": 29,
+   "type": "GLOBBO",
+   "px": -2.74,
+   "pz": -8.99,
+   "speedMult": 1.2
+  },
+  {
+   "t": 30.45,
+   "type": "GLOBBO",
+   "px": 8.09,
+   "pz": 4.78,
+   "speedMult": 1.2
+  },
+  {
+   "t": 31.9,
+   "type": "YELA_CUBE",
+   "px": -9.2,
+   "pz": 1.94,
+   "speedMult": 1.2
+  },
+  {
+   "t": 33.35,
+   "type": "GLOBBO",
+   "px": 5.47,
+   "pz": -7.64,
+   "speedMult": 1.2
   }
  ],
  "mods": {
@@ -135,9 +203,9 @@
   "dash": "cut"
  },
  "tiers": {
-  "S": 31.1,
-  "A": 33.5,
-  "B": 35.9,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 35.2,
+  "A": 37.6,
+  "B": 40,
+  "source": "bot pass, 24 seeds a skill: got through sharp 96%, average 100%, rough 88%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

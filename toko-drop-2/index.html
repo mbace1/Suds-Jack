@@ -49,11 +49,14 @@
     #vignette.on { animation: vig .32s linear forwards; }
     @keyframes vig { from { opacity: 1; } to { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { #vignette.on { animation: none; } }
-    #banner { position: fixed; left: 0; right: 0; top: 26%; padding: 0 16px; text-align: center; text-wrap: balance; font-size: clamp(22px, 5vw, 40px); letter-spacing: min(.3em, 1.1vw); color: var(--amber);
-      pointer-events: none; z-index: 5; text-shadow: 0 0 18px rgba(255, 180, 104, .45); }
+    /* the banner sits in the band under the HUD, clear of the pause button and
+       of the floor — never over the middle of the fight (owner, 2026-10-24) */
+    #banner { position: fixed; left: 50%; transform: translateX(-50%); top: calc(max(12px, env(safe-area-inset-top)) + 46px); width: max-content; max-width: min(64vw, 720px);
+      padding: 3px 14px; text-align: center; text-wrap: balance; font-size: clamp(13px, 2.4vw, 20px); letter-spacing: min(.22em, .8vw); color: var(--amber);
+      background: rgba(8, 8, 16, .55); border-radius: 3px; pointer-events: none; z-index: 5; text-shadow: 0 0 10px rgba(255, 180, 104, .35); }
     #banner[hidden] { display: none; }
     #banner.pop { animation: pop .5s ease-out; }
-    @keyframes pop { from { transform: scale(1.25); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes pop { from { transform: translateX(-50%) translateY(-6px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
     #menu { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; width: min(92vw, 460px); max-height: 92vh; overflow-y: auto;
       padding: 18px 18px 14px; background: rgba(5, 5, 6, .82); border: 1px solid var(--line); text-align: center; touch-action: pan-y; }
     #menu[hidden] { display: none; }
@@ -84,7 +87,8 @@
     #menu h2.card { color: var(--amber); }
     #menu .goal { letter-spacing: .14em; margin: 2px 0 8px; }
     #menu canvas.chart { display: block; margin: 4px auto 6px; max-width: 100%; }
-    #menu > .teaches { font-size: 10px; color: var(--dim); letter-spacing: .04em; margin: 0 0 8px; }
+    #menu > .teaches { font-size: 10px; color: var(--dim); letter-spacing: .04em; margin: 0 0 4px; }
+    #menu > .skills { font-size: 11px; color: var(--amber); letter-spacing: .06em; margin: 0 0 8px; }
     #menu .tiers { display: grid; grid-template-columns: auto auto; gap: 3px 14px; justify-content: center; text-align: left; margin: 4px 0 8px; font-size: 13px; }
     #menu .tiers .tg { font-weight: 800; }
     #menu .best { margin: 4px 0 6px; letter-spacing: .1em; font-size: 12px; }
@@ -103,7 +107,7 @@
        (the test switches included) shows without scrolling */
     @media (orientation: landscape) and (max-height: 520px) {
       #menu { width: min(94vw, 820px); display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; align-content: start; }
-      #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard, #menu > .grid, #menu > .route-wrap, #menu > .goal, #menu > canvas.chart, #menu > .teaches, #menu > .tiers, #menu > .best { grid-column: 1 / -1; }
+      #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard, #menu > .grid, #menu > .route-wrap, #menu > .goal, #menu > canvas.chart, #menu > .teaches, #menu > .skills, #menu > .tiers, #menu > .best { grid-column: 1 / -1; }
       #menu .logo { margin: 0 0 4px; }
       #menu .item { margin: 5px 0; }
       #menu .hint { margin-top: 6px; }
@@ -160,7 +164,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v34<span id="backend"></span></div>
+  <div id="ver">2.0 · v37<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -224,6 +228,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=34"></script>
+  <script type="module" src="js/main.js?v=37"></script>
 </body>
 </html>

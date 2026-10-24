@@ -130,6 +130,20 @@ export default {
   // 1.0 s in #66ffcc (main.js:11438-11440).
   clear: { perWave: 500, breather: 1.5, dying: 0.28, banner: 1.0, color: 0x66ffcc, flash: 0.4 },
 
+  // CHALLENGE WAVES (v36, sim/challenge.js): the campaign's goals asked of an
+  // arcade wave — from wave `from`, every `every`th, never a boss wave (those
+  // fall on multiples of 8, these on 5, 9, 13…). Met pays `bonus` × the wave
+  // and a pod; missed pays nothing. Each kind's numbers, and `limit` its seconds.
+  trial: {
+    on: true, from: 5, every: 4, bonus: 500,
+    gates: { count: 3, limit: 22 },
+    hold: { need: 6, r: 2.6, limit: 22 },
+    collect: { count: 5, every: 2.5, limit: 22 },
+    combo: { streak: 8, perWave: 0.25, limit: 25 },
+    protect: { hp: 6, r: 1.4, limit: 20 },
+    squeeze: { warn: 1.2, move: 0.8 },   // a world's walls closing in for its challenge (TUNING.worlds.list `squeeze`)
+  },
+
   // the wave banner, by kind (1.x WAVE_BANNER, main.js:6996-7001; 2.0 s for a
   // boss, else 1.4: main.js:8323). A curtain wave has no row and shows as normal.
   banner: { normal: { label: null, color: 0xffdd44, dur: 1.4 },

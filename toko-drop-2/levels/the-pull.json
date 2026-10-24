@@ -22,7 +22,12 @@
  "plan": {
   "world": 3,
   "d": 6,
-  "teaches": "magna"
+  "teaches": "magna",
+  "strategy": [
+   "position",
+   "aim",
+   "priority"
+  ]
  },
  "spawns": [
   {

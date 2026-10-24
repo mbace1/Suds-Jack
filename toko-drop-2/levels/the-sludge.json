@@ -21,7 +21,11 @@
  "plan": {
   "world": 1,
   "d": 6,
-  "teaches": "the boss wave"
+  "teaches": "the boss wave",
+  "strategy": [
+   "priority",
+   "movement"
+  ]
  },
  "spawns": [
   {
@@ -30,67 +34,118 @@
    "px": 0,
    "pz": -6,
    "boss": true,
-   "hp": 130
+   "hp": 150
   },
   {
-   "t": 4,
+   "t": 3,
    "type": "GLOBBO",
    "px": 3.77,
-   "pz": 9.69
+   "pz": 9.69,
+   "speedMult": 1.1
   },
   {
-   "t": 9,
+   "t": 6.2,
    "type": "YELA_CUBE",
    "px": -9.33,
-   "pz": -4.6
+   "pz": -4.6,
+   "speedMult": 1.1
   },
   {
-   "t": 14,
-   "type": "GLOBBO",
+   "t": 9.4,
+   "type": "SPITTOR",
    "px": 9.99,
-   "pz": -2.91
+   "pz": -2.91,
+   "speedMult": 1.1
+  },
+  {
+   "t": 12.6,
+   "type": "GLOBBO",
+   "px": -5.4,
+   "pz": 8.89,
+   "speedMult": 1.1
+  },
+  {
+   "t": 15.8,
+   "type": "YELA_CUBE",
+   "px": -2.02,
+   "pz": -10.2,
+   "speedMult": 1.1
   },
   {
    "t": 19,
-   "type": "YELA_CUBE",
-   "px": -5.4,
-   "pz": 8.89
-  },
-  {
-   "t": 24,
-   "type": "GLOBBO",
-   "px": -2.02,
-   "pz": -10.2
-  },
-  {
-   "t": 29,
-   "type": "YELA_CUBE",
+   "type": "SPITTOR",
    "px": 8.38,
-   "pz": 6.16
+   "pz": 6.16,
+   "speedMult": 1.1
   },
   {
-   "t": 34,
+   "t": 22.2,
    "type": "GLOBBO",
    "px": -10.34,
-   "pz": 1.12
+   "pz": 1.12,
+   "speedMult": 1.1
   },
   {
-   "t": 39,
+   "t": 25.4,
    "type": "YELA_CUBE",
    "px": 6.87,
-   "pz": -7.81
+   "pz": -7.81,
+   "speedMult": 1.1
   },
   {
-   "t": 44,
-   "type": "GLOBBO",
+   "t": 28.6,
+   "type": "SPITTOR",
    "px": 0.21,
-   "pz": 10.4
+   "pz": 10.4,
+   "speedMult": 1.1
+  },
+  {
+   "t": 31.8,
+   "type": "GLOBBO",
+   "px": -7.18,
+   "pz": -7.52,
+   "speedMult": 1.1
+  },
+  {
+   "t": 35,
+   "type": "YELA_CUBE",
+   "px": 10.38,
+   "pz": 0.69,
+   "speedMult": 1.1
+  },
+  {
+   "t": 38.2,
+   "type": "SPITTOR",
+   "px": -8.12,
+   "pz": 6.5,
+   "speedMult": 1.1
+  },
+  {
+   "t": 41.4,
+   "type": "GLOBBO",
+   "px": 1.6,
+   "pz": -10.28,
+   "speedMult": 1.1
+  },
+  {
+   "t": 44.6,
+   "type": "YELA_CUBE",
+   "px": 5.76,
+   "pz": 8.66,
+   "speedMult": 1.1
+  },
+  {
+   "t": 47.8,
+   "type": "SPITTOR",
+   "px": -10.1,
+   "pz": -2.49,
+   "speedMult": 1.1
   }
  ],
  "tiers": {
-  "S": 13.8,
-  "A": 17.1,
-  "B": 22.8,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 16.1,
+  "A": 19.4,
+  "B": 27.8,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 96%, rough 63%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

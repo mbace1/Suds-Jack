@@ -30,9 +30,9 @@
 // from its seed, and a pickup roll never shifts the wave's schedule: the
 // director's w.rng stays in lockstep with 1.x's own source
 // (test/director.mjs's oracle neutralises exactly these draws).
-import { TUNING } from '../tuning.js?v=34';
-import { makeRng } from './rng.js?v=34';
-import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=34';
+import { TUNING } from '../tuning.js?v=37';
+import { makeRng } from './rng.js?v=37';
+import { equipWeapon, grantInvincibility, grantRapid } from './hero.js?v=37';
 
 const T = TUNING, P = T.pickups, H = T.hero, G = P.gate, C = P.convoy, B = P.bounty;
 
@@ -179,6 +179,13 @@ function drop(w, k, x, z, what, life = P.life, vx = 0, vz = 0) {
   k.items.push(it);
   w.events.push({ type: 'drop', id: it.id, kind: it.type, fam: it.fam, x, z });
   return it;
+}
+
+// a challenge met (sim/challenge.js, v36): a pod, a step from where you are
+export function reward(w, x, z) {
+  const k = w.pk;
+  if (!k) return null;
+  return drop(w, k, x + 1.2, z, { type: 'pod', fam: randomPod(w, k) }, P.life);
 }
 
 // a drop put down by hand (the tests, a look check)

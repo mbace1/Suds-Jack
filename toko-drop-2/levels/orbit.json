@@ -53,196 +53,271 @@
  "plan": {
   "world": 3,
   "d": 7,
-  "teaches": "a floor that moves"
+  "teaches": "a floor that moves",
+  "strategy": [
+   "position",
+   "movement",
+   "risk"
+  ]
  },
  "spawns": [
   {
    "t": 0,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": 3,
    "pz": 0,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 1.2,
-   "type": "YELA_CUBE",
+   "t": 1,
+   "type": "SPITTOR",
    "px": -2.21,
    "pz": 2.03,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 2.4,
+   "t": 2,
    "type": "GLOBBO",
    "px": 0.26,
    "pz": -2.99,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 3.6,
-   "type": "SPITTOR",
+   "t": 3,
+   "type": "ORANGE_CUBE",
    "px": 1.83,
    "pz": 2.38,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 4.8,
-   "type": "GLOBBO",
+   "t": 4,
+   "type": "FANNER",
    "px": -2.95,
    "pz": -0.52,
-   "speedMult": 1.15
+   "speedMult": 1.6
+  },
+  {
+   "t": 5,
+   "type": "SPITTOR",
+   "px": 2.53,
+   "pz": -1.61,
+   "speedMult": 1.6
   },
   {
    "t": 6,
-   "type": "YELA_CUBE",
-   "px": 2.53,
-   "pz": -1.61,
-   "speedMult": 1.15
-  },
-  {
-   "t": 7.2,
    "type": "GLOBBO",
    "px": -0.78,
    "pz": 2.9,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 8.4,
-   "type": "SPITTOR",
+   "t": 7,
+   "type": "ORANGE_CUBE",
    "px": -1.38,
    "pz": -2.66,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 9.6,
-   "type": "GLOBBO",
+   "t": 8,
+   "type": "FANNER",
    "px": 2.82,
    "pz": 1.03,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 10.8,
-   "type": "YELA_CUBE",
+   "t": 9,
+   "type": "SPITTOR",
    "px": -2.77,
    "pz": 1.14,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 12,
+   "t": 10,
    "type": "GLOBBO",
    "px": 1.27,
    "pz": -2.72,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 13.2,
-   "type": "SPITTOR",
+   "t": 11,
+   "type": "ORANGE_CUBE",
    "px": 0.9,
    "pz": 2.86,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 14.4,
-   "type": "GLOBBO",
+   "t": 12,
+   "type": "FANNER",
    "px": -2.59,
    "pz": -1.51,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 15.6,
-   "type": "YELA_CUBE",
+   "t": 13,
+   "type": "SPITTOR",
    "px": 2.93,
    "pz": -0.64,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 16.8,
+   "t": 14,
    "type": "GLOBBO",
    "px": -1.73,
    "pz": 2.45,
-   "speedMult": 1.15
+   "speedMult": 1.6
+  },
+  {
+   "t": 15,
+   "type": "ORANGE_CUBE",
+   "px": -0.38,
+   "pz": -2.98,
+   "speedMult": 1.6
+  },
+  {
+   "t": 16,
+   "type": "FANNER",
+   "px": 2.29,
+   "pz": 1.93,
+   "speedMult": 1.6
+  },
+  {
+   "t": 17,
+   "type": "SPITTOR",
+   "px": -3,
+   "pz": 0.12,
+   "speedMult": 1.6
   },
   {
    "t": 18,
-   "type": "SPITTOR",
-   "px": -0.38,
-   "pz": -2.98,
-   "speedMult": 1.15
-  },
-  {
-   "t": 19.2,
-   "type": "GLOBBO",
-   "px": 2.29,
-   "pz": 1.93,
-   "speedMult": 1.15
-  },
-  {
-   "t": 20.4,
-   "type": "YELA_CUBE",
-   "px": -3,
-   "pz": 0.12,
-   "speedMult": 1.15
-  },
-  {
-   "t": 21.6,
    "type": "GLOBBO",
    "px": 2.13,
    "pz": -2.11,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 22.8,
-   "type": "SPITTOR",
+   "t": 19,
+   "type": "ORANGE_CUBE",
    "px": -0.14,
    "pz": 3,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 24,
-   "type": "GLOBBO",
+   "t": 20,
+   "type": "FANNER",
    "px": -1.92,
    "pz": -2.3,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 25.2,
-   "type": "YELA_CUBE",
+   "t": 21,
+   "type": "SPITTOR",
    "px": 2.97,
    "pz": 0.4,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 26.4,
+   "t": 22,
    "type": "GLOBBO",
    "px": -2.46,
    "pz": 1.71,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 27.6,
-   "type": "SPITTOR",
+   "t": 23,
+   "type": "ORANGE_CUBE",
    "px": 0.66,
    "pz": -2.93,
-   "speedMult": 1.15
+   "speedMult": 1.6
   },
   {
-   "t": 28.8,
-   "type": "GLOBBO",
+   "t": 24,
+   "type": "FANNER",
    "px": 1.49,
    "pz": 2.6,
-   "speedMult": 1.15
+   "speedMult": 1.6
+  },
+  {
+   "t": 25,
+   "type": "SPITTOR",
+   "px": -2.86,
+   "pz": -0.91,
+   "speedMult": 1.6
+  },
+  {
+   "t": 26,
+   "type": "GLOBBO",
+   "px": 2.72,
+   "pz": -1.26,
+   "speedMult": 1.6
+  },
+  {
+   "t": 27,
+   "type": "ORANGE_CUBE",
+   "px": -1.16,
+   "pz": 2.77,
+   "speedMult": 1.6
+  },
+  {
+   "t": 28,
+   "type": "FANNER",
+   "px": -1.01,
+   "pz": -2.82,
+   "speedMult": 1.6
+  },
+  {
+   "t": 29,
+   "type": "SPITTOR",
+   "px": 2.65,
+   "pz": 1.4,
+   "speedMult": 1.6
   },
   {
    "t": 30,
-   "type": "YELA_CUBE",
-   "px": -2.86,
-   "pz": -0.91,
-   "speedMult": 1.15
+   "type": "GLOBBO",
+   "px": -2.9,
+   "pz": 0.76,
+   "speedMult": 1.6
+  },
+  {
+   "t": 31,
+   "type": "ORANGE_CUBE",
+   "px": 1.63,
+   "pz": -2.52,
+   "speedMult": 1.6
+  },
+  {
+   "t": 32,
+   "type": "FANNER",
+   "px": 0.5,
+   "pz": 2.96,
+   "speedMult": 1.6
+  },
+  {
+   "t": 33,
+   "type": "SPITTOR",
+   "px": -2.37,
+   "pz": -1.84,
+   "speedMult": 1.6
+  },
+  {
+   "t": 34,
+   "type": "GLOBBO",
+   "px": 2.99,
+   "pz": -0.24,
+   "speedMult": 1.6
+  },
+  {
+   "t": 35,
+   "type": "ORANGE_CUBE",
+   "px": -2.04,
+   "pz": 2.2,
+   "speedMult": 1.6
   }
  ],
  "tiers": {
-  "S": 1,
-  "A": 0.95,
-  "B": 0.9,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 92%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 0.97,
+  "A": 0.92,
+  "B": 0.87,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 54%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

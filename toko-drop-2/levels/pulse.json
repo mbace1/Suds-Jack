@@ -25,7 +25,11 @@
  "plan": {
   "world": 2,
   "d": 4,
-  "teaches": "a floor that closes in"
+  "teaches": "a floor that closes in",
+  "strategy": [
+   "position",
+   "aim"
+  ]
  },
  "spawns": [
   {

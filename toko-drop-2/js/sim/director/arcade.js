@@ -21,8 +21,10 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=34';
-import * as worlds from '../worlds.js?v=34';
+import { TUNING } from '../../tuning.js?v=37';
+import * as worlds from '../worlds.js?v=37';
+import * as challenge from '../challenge.js?v=37';
+import { makeRng } from '../rng.js?v=37';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -265,6 +267,14 @@ function startWave(w, d, carry) {
   const B = W.banner[plan.kind] ?? W.banner.normal, K = W.calls;
   const call = d.wave >= K.from ? (plan.kind === 'curtain' ? 'curtain' : K.archs[(d.wave + w.seed) % K.archs.length]) : null;
   w.events.push({ type: 'wave', wave: d.wave, label: B.label, kind: plan.kind, color: B.color, dur: B.dur, carry, call });
+  // a challenge wave (sim/challenge.js, v36): a goal on top of the wave's bodies,
+  // drawn from its own dice so the waves replay as they did without it
+  const trial = challenge.trialFor(d.wave, w.seed, worlds.on(w) ? w.world : 1);
+  if (trial) {
+    if (w.ch?.arcade) challenge.endTrial(w, false);
+    d.trialRng ||= makeRng((w.seed ^ 0x7f4a7c15) >>> 0);
+    challenge.startTrial(w, trial, d.trialRng);
+  }
 }
 
 // the round pump (main.js:9318-9437)
@@ -397,6 +407,8 @@ export default {
     else roundEnd(w, d, dt, api);
     d.waveT += dt;                           // main.js:9321
     pump(w, d, dt, api);
+    if (w.ch?.arcade) challenge.step(w, dt, api);   // a challenge wave's goal (v36)
+    if (w.squeeze) challenge.squeezeStep(w, dt);   // a world's walls closing in for it (v37)
     // the death beat runs down with the frame's bodies (1.x updateDeath,
     // enemy.js:2967-2993, called from the enemy loop at main.js:10408), so
     // the next step's round end sees it as 1.x's end-of-frame check does: a

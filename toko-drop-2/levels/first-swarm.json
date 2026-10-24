@@ -21,7 +21,10 @@
  "plan": {
   "world": 0,
   "d": 4,
-  "teaches": "the swarm wave"
+  "teaches": "the swarm wave",
+  "strategy": [
+   "aim"
+  ]
  },
  "spawns": [
   {

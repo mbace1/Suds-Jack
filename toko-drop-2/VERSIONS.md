@@ -19,6 +19,27 @@
     Never `--no-verify`.
 -->
 
+## v37 — 2026-10-24
+**Each arcade world asks its own challenge, three of them close their walls in for it, and the banners move off the fight**
+- A world's challenge waves ask its SIGNATURE: THE DRIVEWAY dash the gates, THE SEWER hold the ring, THE CISTERN collect the orbs, THE BOILER ROOM protect the heart, THE RIVER hold the ring on its current, THE ICE SHEET keep a streak, THE DEEP collect the orbs in the dark; the first world and THE CORE go round them all
+- THE CISTERN, THE BOILER ROOM and THE CORE close in for theirs: the floor that is going burns red, the walls come in (to 72%, 78% and 70%) and carry whatever stands in their way, and they go back out when the challenge ends — what the challenge puts down is always inside them
+- Banners (WAVE, CHALLENGE, CLEAR, pickups) sit in a slim band under the HUD instead of large across the middle of the arena (owner: "can the text not be on top and in the middle?")
+
+## v36 — 2026-10-24
+**The arcade's challenge waves: what the campaign teaches, the arcade asks**
+- From wave 5, every fourth wave (5, 9, 13 … never a boss wave) carries a CHALLENGE on top of its bodies, one of the campaign's goals in turn: DASH THE GATES (three of them), HOLD THE RING (it drifts on THE RIVER's current), COLLECT THE ORBS, KEEP A STREAK, PROTECT THE HEART
+- The wave's banner names it, the HUD carries its count and its seconds, and the ring, the heart and the orbs are drawn as in the campaign
+- Met: 500 × the wave and a pod. Missed: nothing — a challenge is never a way to lose, in HARDCADE either
+- It draws from its own dice, so every wave is the wave its seed always drew (a gate holds that)
+
+## v35 — 2026-10-24
+**The strategy curve: every room names the skills it asks for, and the rooms climb in measured steps**
+- Five skills — positioning, target priority, aim economy, movement, risk. THE SURFACE teaches one a room and all five; THE WELL and THE VEIN pair them, each of the ten pairs once; the last three worlds ask for three or more under their rule, and the last two rooms for four and five. The room card says which (a gate holds the shape)
+- The bot pass now has a target band per difficulty — how often the average and the rough bot should get through — and fails a room outside it. Sixteen rooms were outside on the first run and were retuned, mostly the middle and late ones made harder (EDDY's ring smaller and its clock shorter, THE SLUDGE's adds faster, ORBIT, RINK, SKATE, SALMON, BELLOWS and FORGE denser and quicker) and three made easier (HANDS UP, CROSSFIRE's guns slower, SIX SHOTS a few more shots)
+- Now the rough bot gets through every room of THE SURFACE and none of the last two; the average bot every room at least half the time
+- BREATH is the one room outside its band on purpose, and says so: its bulwarks turn a spray back on you, so the rough bot's shorter range does better there than the average bot's
+- Every room's S/A/B lines were set again from the new pass
+
 ## v34 — 2026-10-24
 **Grades you can read: the HUD says which grade you are on course for, the results put your number against the lines, and an F says why**
 - In a room the HUD's clock line ends with the grade still within reach, in its colour: in a timed room the line you are racing and the seconds it has left (S 16s, then A once S has gone); in a room graded on hits, the heart or the share, the grade those stand at now (a hit takes a share room from S to A)

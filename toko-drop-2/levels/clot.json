@@ -21,13 +21,17 @@
    "x": 0,
    "z": 0,
    "r": 1.4,
-   "hp": 12
+   "hp": 10
   }
  },
  "plan": {
   "world": 2,
   "d": 6,
-  "teaches": "holding a crowd"
+  "teaches": "holding a crowd",
+  "strategy": [
+   "risk",
+   "priority"
+  ]
  },
  "spawns": [
   {
@@ -37,148 +41,172 @@
    "pz": 0
   },
   {
-   "t": 1.5,
+   "t": 1.3,
    "type": "GLOBBO",
    "px": -7.67,
    "pz": 7.03
   },
   {
-   "t": 3,
+   "t": 2.6,
    "type": "YELA_CUBE",
    "px": 0.91,
    "pz": -10.36
   },
   {
-   "t": 4.5,
-   "type": "GLOBBO",
+   "t": 3.9,
+   "type": "REDD_CUBE",
    "px": 6.33,
    "pz": 8.25
   },
   {
-   "t": 6,
+   "t": 5.2,
    "type": "GLOBBO",
    "px": -10.24,
    "pz": -1.81
   },
   {
-   "t": 7.5,
-   "type": "YELA_CUBE",
+   "t": 6.5,
+   "type": "GLOBBO",
    "px": 8.77,
    "pz": -5.58
   },
   {
-   "t": 9,
-   "type": "GLOBBO",
+   "t": 7.8,
+   "type": "YELA_CUBE",
    "px": -2.7,
    "pz": 10.04
   },
   {
-   "t": 10.5,
-   "type": "GLOBBO",
+   "t": 9.1,
+   "type": "REDD_CUBE",
    "px": -4.79,
    "pz": -9.23
   },
   {
-   "t": 12,
-   "type": "YELA_CUBE",
+   "t": 10.4,
+   "type": "GLOBBO",
    "px": 9.77,
    "pz": 3.57
   },
   {
-   "t": 13.5,
+   "t": 11.7,
    "type": "GLOBBO",
    "px": -9.61,
    "pz": 3.97
   },
   {
-   "t": 15,
-   "type": "GLOBBO",
+   "t": 13,
+   "type": "YELA_CUBE",
    "px": 4.41,
    "pz": -9.42
   },
   {
-   "t": 16.5,
-   "type": "YELA_CUBE",
+   "t": 14.3,
+   "type": "REDD_CUBE",
    "px": 3.11,
    "pz": 9.92
   },
   {
-   "t": 18,
+   "t": 15.6,
    "type": "GLOBBO",
    "px": -9,
    "pz": -5.21
   },
   {
-   "t": 19.5,
+   "t": 16.9,
    "type": "GLOBBO",
    "px": 10.16,
    "pz": -2.23
   },
   {
-   "t": 21,
+   "t": 18.2,
    "type": "YELA_CUBE",
    "px": -5.98,
    "pz": 8.51
   },
   {
-   "t": 22.5,
-   "type": "GLOBBO",
+   "t": 19.5,
+   "type": "REDD_CUBE",
    "px": -1.34,
    "pz": -10.31
   },
   {
-   "t": 24,
+   "t": 20.8,
    "type": "GLOBBO",
    "px": 7.95,
    "pz": 6.7
   },
   {
-   "t": 25.5,
-   "type": "YELA_CUBE",
+   "t": 22.1,
+   "type": "GLOBBO",
    "px": -10.39,
    "pz": 0.43
   },
   {
-   "t": 27,
-   "type": "GLOBBO",
+   "t": 23.4,
+   "type": "YELA_CUBE",
    "px": 7.37,
    "pz": -7.34
   },
   {
-   "t": 28.5,
-   "type": "GLOBBO",
+   "t": 24.7,
+   "type": "REDD_CUBE",
    "px": -0.48,
    "pz": 10.39
   },
   {
-   "t": 30,
-   "type": "YELA_CUBE",
+   "t": 26,
+   "type": "GLOBBO",
    "px": -6.66,
    "pz": -7.98
   },
   {
-   "t": 31.5,
+   "t": 27.3,
    "type": "GLOBBO",
    "px": 10.31,
    "pz": 1.39
   },
   {
-   "t": 33,
-   "type": "GLOBBO",
+   "t": 28.6,
+   "type": "YELA_CUBE",
    "px": -8.54,
    "pz": 5.94
   },
   {
-   "t": 34.5,
-   "type": "YELA_CUBE",
+   "t": 29.9,
+   "type": "REDD_CUBE",
    "px": 2.28,
    "pz": -10.15
+  },
+  {
+   "t": 31.2,
+   "type": "GLOBBO",
+   "px": 5.17,
+   "pz": 9.02
+  },
+  {
+   "t": 32.5,
+   "type": "GLOBBO",
+   "px": -9.91,
+   "pz": -3.16
+  },
+  {
+   "t": 33.8,
+   "type": "YELA_CUBE",
+   "px": 9.44,
+   "pz": -4.36
+  },
+  {
+   "t": 35.1,
+   "type": "REDD_CUBE",
+   "px": -4.01,
+   "pz": 9.59
   }
  ],
  "tiers": {
-  "S": 0.75,
-  "A": 0.67,
-  "B": 0.62,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 0.7,
+  "A": 0.65,
+  "B": 0.4,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 75%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

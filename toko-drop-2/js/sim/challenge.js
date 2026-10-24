@@ -32,10 +32,10 @@
 //   chStep   { what, n, of }   progress the HUD reads: a gate, a lit body, an orb
 //   heart    { hp, x, z }      the heart was hurt
 // Pure: no DOM, no clock, w.rng only.
-import { TUNING } from '../tuning.js?v=34';
-import { levelShape, KIND } from './shape.js?v=34';
-import * as pickups from './pickups.js?v=34';
-import * as rules from './rules.js?v=34';
+import { TUNING } from '../tuning.js?v=37';
+import { levelShape, KIND } from './shape.js?v=37';
+import * as pickups from './pickups.js?v=37';
+import * as rules from './rules.js?v=37';
 
 const T = TUNING, C = T.campaign;
 
@@ -134,7 +134,7 @@ export function step(w, dt, api) {
     const Z = ch.zone, O = Z.orbit;
     if (O) { const a = (O.phase ?? 0) + (ch.t / O.period) * Math.PI * 2; Z.x = Z.x0 + Math.cos(a) * O.r; Z.z = Z.z0 + Math.sin(a) * O.r; }
     if (w.rule?.kind === 'current' && G.zone?.drift) { const Rc = C.rules.current; Z.x += Math.cos(w.rule.angle) * Rc.speed * Rc.playerMult * dt; Z.z += Math.sin(w.rule.angle) * Rc.speed * Rc.playerMult * dt; clampPoint(w, Z, Z.r); }
-    Z.inside = h.alive && Math.hypot(h.x - Z.x, h.z - Z.z) < Z.r;
+    Z.inside = !!h?.alive && Math.hypot(h.x - Z.x, h.z - Z.z) < Z.r;
     if (Z.inside) Z.fill = Math.min(G.need, Z.fill + dt);
     ch.n = Z.fill;
   }
@@ -143,23 +143,26 @@ export function step(w, dt, api) {
   if (ch.heart) {
     const H = ch.heart;
     if (H.cd > 0) H.cd -= dt;
-    if (H.cd <= 0) for (const g of w.gels) {
+    if (H.cd <= 0) for (const g of w.gels ?? []) {
       if (!g.alive || g.state !== 'active' || Math.hypot(g.x - H.x, g.z - H.z) > g.r + H.r) continue;
       hurtHeart(w, H, 1); H.cd = C.heart.bite; break;
     }
-    for (const b of w.bullets) if (!b.hero && !b.dead && Math.hypot(b.x - H.x, b.z - H.z) < b.r + H.r) { b.dead = true; hurtHeart(w, H, 1); }
+    for (const b of w.bullets ?? []) if (!b.hero && !b.dead && Math.hypot(b.x - H.x, b.z - H.z) < b.r + H.r) { b.dead = true; hurtHeart(w, H, 1); }
   }
 
   // COLLECT: the orbs come out on their times; walking over one takes it
   if (ch.orbs) for (const o of ch.orbs) {
     if (!o.out && o.t <= ch.t + 1e-9) { o.out = true; w.events.push({ type: 'orb', i: o.i, x: o.x, z: o.z }); }
-    if (o.out && !o.taken && h.alive && Math.hypot(h.x - o.x, h.z - o.z) < C.orb.reach + T.hero.radius) {
+    if (o.out && !o.taken && h?.alive && Math.hypot(h.x - o.x, h.z - o.z) < C.orb.reach + T.hero.radius) {
       o.taken = true; ch.n++; w.events.push({ type: 'chStep', what: 'orb', x: o.x, z: o.z, n: ch.n, of: ch.of });
     }
   }
 
-  if (G.type === 'combo') { ch.best = Math.max(ch.best, w.streak); ch.n = ch.best; }
-  return outcome(w);
+  if (G.type === 'combo') {
+    if (ch.arcade) { if (w.streak < ch.prev) ch.base = 0; ch.prev = w.streak; ch.n = Math.max(0, w.streak - ch.base); ch.best = Math.max(ch.best, ch.n); }
+    else { ch.best = Math.max(ch.best, w.streak); ch.n = ch.best; }
+  }
+  return ch.arcade ? trialStep(w, api) : outcome(w);
 }
 
 // a body the room brings in: its order number, and the escalation so far
@@ -184,6 +187,90 @@ export function onGate(w) {
   const ch = w.ch;
   if (!ch || ch.goal.type !== 'gates') return;
   ch.n++; w.events.push({ type: 'chStep', what: 'gate', n: ch.n, of: ch.of });
+}
+
+// ── THE ARCADE'S CHALLENGE WAVES (v36, CAMPAIGN_PLAN.md step 4) ────────
+// The campaign's goals asked of an arcade wave: from wave TUNING.waves.trial
+// `from`, every `every`th wave carries one on top of its bodies — dash the
+// gates, hold the ring, collect the orbs, a streak, protect the heart. It is
+// a bonus, never a fail: met, it pays `bonus` × the wave and drops a pod;
+// missed, nothing (HARDCADE too). Its draws come from its own dice, so the
+// waves' own schedule replays exactly as it did without it.
+export const TRIALS = ['gates', 'hold', 'collect', 'combo', 'protect'];
+// A world of its own (v37) asks its SIGNATURE — TUNING.worlds.list `trial` —
+// on every challenge wave in it; the first world, and the last, go round them all.
+export function trialFor(wave, seed, world = 1) {
+  const Q = T.waves.trial;
+  if (!Q.on || wave < Q.from || (wave - Q.from) % Q.every !== 0) return null;
+  return T.worlds.list[world - 1]?.trial ?? TRIALS[(Math.floor((wave - Q.from) / Q.every) + (seed >>> 0)) % TRIALS.length];
+}
+export function startTrial(w, kind, rng) {
+  const Q = T.waves.trial, K = Q[kind], R = () => rng.next();
+  // a world that closes in for its challenge (v37, `squeeze`): the walls come in
+  // while it runs and go back when it ends, and what it puts down is inside them
+  const k = T.worlds.modes.includes(w.mode) ? T.worlds.list[(w.world || 1) - 1]?.squeeze : null;
+  if (k && !w.squeeze) squeezeTo(w, { hx: w.hx * k, hz: w.hz * k }, { hx: w.hx, hz: w.hz });
+  const hx = w.squeeze?.to.hx ?? w.hx, hz = w.squeeze?.to.hz ?? w.hz;
+  const at = (frac) => { const a = R() * Math.PI * 2, r = frac * (0.4 + 0.6 * R()); return { x: Math.cos(a) * hx * r, z: Math.sin(a) * hz * r }; };
+  const goal = { type: kind };
+  const ch = w.ch = { goal, mods: {}, arcade: true, kind, t: 0, limit: K.limit, done: false, n: 0, of: 0, best: 0, esc: 1, escN: 0, lit: null, gates: [], wave: w.wave };
+  ch.onGate = onGate;
+  if (kind === 'gates' && w.pk) { for (let i = 0; i < K.count; i++) { const p = at(0.7); pickups.placeGate(w, p.x, p.z, R() * Math.PI); } ch.of = K.count; }
+  if (kind === 'hold') { const p = at(0.5); goal.need = K.need; goal.zone = { drift: true }; ch.zone = { x: p.x, z: p.z, x0: p.x, z0: p.z, r: K.r, orbit: null, fill: 0, inside: false }; ch.of = K.need; }
+  if (kind === 'collect') { goal.orbs = Array.from({ length: K.count }, (_, i) => ({ t: i * K.every, ...at(0.8) })); ch.orbs = goal.orbs.map((o, i) => ({ ...o, i, out: false, taken: false })); ch.of = K.count; }
+  if (kind === 'combo') { goal.streak = K.streak + Math.floor(w.wave * K.perWave); ch.of = goal.streak; ch.base = w.streak; ch.prev = w.streak; }
+  if (kind === 'protect') { ch.heart = { x: 0, z: 0, r: K.r, hp: K.hp, max: K.hp, cd: 0 }; }
+  w.events.push({ type: 'trial', kind, wave: w.wave, of: ch.of, limit: ch.limit });
+}
+// a trial's end: met (bonus + a pod where it was met), or missed
+function trialStep(w) {
+  const ch = w.ch, G = ch.goal;
+  let met = false;
+  switch (G.type) {
+    case 'gates': case 'collect': met = ch.n >= ch.of; break;
+    case 'hold': met = ch.zone.fill >= G.need; break;
+    case 'combo': met = ch.best >= G.streak; break;
+    case 'protect': met = ch.t >= ch.limit && ch.heart.hp > 0; break;
+  }
+  if (met) { endTrial(w, true); return null; }
+  if (ch.t >= ch.limit || (ch.heart && ch.heart.hp <= 0)) endTrial(w, false);
+  return null;
+}
+export function endTrial(w, met) {
+  const ch = w.ch;
+  if (!ch?.arcade || ch.done) return;
+  ch.done = true;
+  const bonus = met ? T.waves.trial.bonus * ch.wave : 0;
+  if (met) { w.score += bonus; if (w.hero) pickups.reward(w, w.hero.x, w.hero.z); }
+  w.events.push({ type: 'trialEnd', kind: ch.kind, met, bonus });
+  w.ch = null;
+  if (w.squeeze && !w.squeeze.back) squeezeTo(w, w.squeeze.home, w.squeeze.home, true);
+}
+
+// The walls closing in and going back out (v37): SURVIVAL's reshape
+// (sim/reshape.js), the same events so the view draws it the same way — the
+// floor lights where it is about to go, then the walls move and carry
+// whatever stands in their way.
+function squeezeTo(w, to, home, back = false) {
+  const S = T.waves.trial.squeeze;
+  w.squeeze = { phase: 'warn', t: 0, from: { hx: w.hx, hz: w.hz }, to, home, back, world: w.world };
+  w.events.push({ type: 'reshapeWarn', hx: to.hx, hz: to.hz, from: w.squeeze.from, t: S.warn });
+}
+export function squeezeStep(w, dt) {
+  const Z = w.squeeze, S = T.waves.trial.squeeze;
+  if (!Z) return;
+  if (Z.world !== w.world) { w.squeeze = null; return; }   // the world went down its drain: its walls went with it
+  Z.t += dt;
+  if (Z.phase === 'warn' && Z.t >= S.warn) { Z.phase = 'move'; Z.t = 0; w.events.push({ type: 'reshape', hx: Z.to.hx, hz: Z.to.hz }); }
+  else if (Z.phase === 'move') {
+    const u = Math.min(1, Z.t / S.move), e = 1 - (1 - u) * (1 - u) * (1 - u);
+    w.hx = Z.from.hx + (Z.to.hx - Z.from.hx) * e; w.hz = Z.from.hz + (Z.to.hz - Z.from.hz) * e;
+    if (u >= 1) {
+      w.hx = Z.to.hx; w.hz = Z.to.hz; Z.phase = 'hold';
+      w.events.push({ type: 'reshaped', hx: w.hx, hz: w.hz });
+      if (Z.back) w.squeeze = null;
+    }
+  }
 }
 
 // is the room won, lost or going on (null)

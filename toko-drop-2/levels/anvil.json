@@ -19,7 +19,12 @@
  "plan": {
   "world": 5,
   "d": 8,
-  "teaches": "elites"
+  "teaches": "elites",
+  "strategy": [
+   "priority",
+   "aim",
+   "risk"
+  ]
  },
  "spawns": [
   {

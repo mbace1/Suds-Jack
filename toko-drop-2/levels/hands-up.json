@@ -18,7 +18,10 @@
  "plan": {
   "world": 0,
   "d": 2,
-  "teaches": "the gates as a weapon"
+  "teaches": "the gates as a weapon",
+  "strategy": [
+   "risk"
+  ]
  },
  "spawns": [
   {
@@ -26,70 +29,56 @@
    "type": "GLOBBO",
    "px": 13.4,
    "pz": 2.72,
-   "speedMult": 0.85
+   "speedMult": 0.75
   },
   {
-   "t": 3.4,
+   "t": 3.8,
    "type": "GLOBBO",
    "px": -12.3,
    "pz": 7.4,
-   "speedMult": 0.85
+   "speedMult": 0.75
   },
   {
-   "t": 5.8,
+   "t": 6.6,
    "type": "GLOBBO",
    "px": 2.19,
    "pz": -7.4,
-   "speedMult": 0.85
+   "speedMult": 0.75
   },
   {
-   "t": 8.2,
+   "t": 9.4,
    "type": "GLOBBO",
    "px": 3.61,
    "pz": 7.4,
-   "speedMult": 0.85
+   "speedMult": 0.75
   },
   {
-   "t": 10.6,
+   "t": 12.2,
    "type": "GLOBBO",
    "px": -13.4,
    "pz": -5.28,
-   "speedMult": 0.85
+   "speedMult": 0.75
   },
   {
-   "t": 13,
+   "t": 15,
    "type": "GLOBBO",
    "px": 13.4,
    "pz": -5.14,
-   "speedMult": 0.85
-  },
-  {
-   "t": 15.4,
-   "type": "GLOBBO",
-   "px": -3.69,
-   "pz": 7.4,
-   "speedMult": 0.85
+   "speedMult": 0.75
   },
   {
    "t": 17.8,
    "type": "GLOBBO",
+   "px": -3.69,
+   "pz": 7.4,
+   "speedMult": 0.75
+  },
+  {
+   "t": 20.6,
+   "type": "GLOBBO",
    "px": -2.12,
    "pz": -7.4,
-   "speedMult": 0.85
-  },
-  {
-   "t": 20.2,
-   "type": "GLOBBO",
-   "px": 12.07,
-   "pz": 7.4,
-   "speedMult": 0.85
-  },
-  {
-   "t": 22.6,
-   "type": "GLOBBO",
-   "px": -13.4,
-   "pz": 2.6,
-   "speedMult": 0.85
+   "speedMult": 0.75
   }
  ],
  "mods": {
@@ -125,6 +114,6 @@
   "S": 1,
   "A": 0.95,
   "B": 0.9,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 63%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 88%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

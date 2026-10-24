@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=34';
-import WAVES from './tuning/waves.js?v=34';
-import PICKUPS from './tuning/pickups.js?v=34';
+import { SPECIES } from './tuning/species/index.js?v=37';
+import WAVES from './tuning/waves.js?v=37';
+import PICKUPS from './tuning/pickups.js?v=37';
 
 export const TUNING = {
   render: {
@@ -39,26 +39,28 @@ export const TUNING = {
     modes: ['arcade', 'hardcade'],
     list: [
       { id: 'grid', heavy: 0 },
-      { id: 'driveway', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 4, arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
-      { id: 'sewer', heavy: 0.5, species: [['worma', 0, 3]], speciesWeight: 3, arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
+      { id: 'driveway', trial: 'gates', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 4, arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
+      { id: 'sewer', trial: 'hold', heavy: 0.5, species: [['worma', 0, 3]], speciesWeight: 3, arena: { landscape: { hx: 30, hz: 11 }, portrait: { hx: 11, hz: 30 } } },
       // v27 (owner, 2026-10-23: "let's do both and make it 9 worlds"): down
       // the pipes, then out to sea. Each world past the sewer plays under one
       // of 1.x's world rules (sim/rules.js; TUNING.campaign.rules), and has a
       // floor of its own (render/floor.js, TUNING.worlds.floor[id])
-      { id: 'cistern', heavy: 0.5, species: [['bubbla', 0, 3]], speciesWeight: 3, rule: 'sweep', rail: 0x3fb8d0,
+      { id: 'cistern', trial: 'collect', squeeze: 0.72, heavy: 0.5, species: [['bubbla', 0, 3]], speciesWeight: 3, rule: 'sweep', rail: 0x3fb8d0,
         arena: { landscape: { hx: 26, hz: 14 }, portrait: { hx: 14, hz: 26 } } },
-      { id: 'boiler', heavy: 0.55, species: [['steama', 0, 3]], speciesWeight: 3, rule: 'updraft', rail: 0xff8a33,
+      { id: 'boiler', trial: 'protect', squeeze: 0.78, heavy: 0.55, species: [['steama', 0, 3]], speciesWeight: 3, rule: 'updraft', rail: 0xff8a33,
         arena: { landscape: { hx: 23, hz: 14 }, portrait: { hx: 14, hz: 23 } } },
-      { id: 'river', heavy: 0.55, species: [['salma', 0, 3]], speciesWeight: 3, rule: 'current', rail: 0x44ddbb,
+      { id: 'river', trial: 'hold', heavy: 0.55, species: [['salma', 0, 3]], speciesWeight: 3, rule: 'current', rail: 0x44ddbb,
         arena: { landscape: { hx: 34, hz: 12 }, portrait: { hx: 12, hz: 34 } } },
-      { id: 'ice', heavy: 0.6, species: [['skata', 0, 3]], speciesWeight: 3, rule: 'slip', rail: 0xbfe6ff,
+      { id: 'ice', trial: 'combo', heavy: 0.6, species: [['skata', 0, 3]], speciesWeight: 3, rule: 'slip', rail: 0xbfe6ff,
         arena: { landscape: { hx: 28, hz: 17 }, portrait: { hx: 17, hz: 28 } } },
-      { id: 'deep', heavy: 0.6, species: [['glowa', 0, 3]], speciesWeight: 3, rule: 'dark', rail: 0x4455cc,
+      { id: 'deep', trial: 'collect', heavy: 0.6, species: [['glowa', 0, 3]], speciesWeight: 3, rule: 'dark', rail: 0x4455cc,
         arena: { landscape: { hx: 24, hz: 16 }, portrait: { hx: 16, hz: 24 } } },
-      { id: 'core', heavy: 0.65, species: [['mirra', 0, 3]], speciesWeight: 3, rule: 'cycle', rail: 0xee44dd,
+      { id: 'core', squeeze: 0.7, heavy: 0.65, species: [['mirra', 0, 3]], speciesWeight: 3, rule: 'cycle', rail: 0xee44dd,
         arena: { landscape: { hx: 19, hz: 11 }, portrait: { hx: 11, hz: 19 } } },
     ],
     // THE CORE plays every rule in turn, `cycleEvery` s each
+    // a world's `trial` is its SIGNATURE, the challenge its challenge waves ask
+    // (sim/challenge.js, v37); `squeeze` closes its walls in for them, to that share
     cycle: { rules: ['current', 'sweep', 'dark', 'slip', 'updraft'], every: 20 },
     heavy: { radius: 1.3, hp: 2 },   // × a normal body's; not an elite's, a boss's or a child's
     heavyLook: { darken: 0.55 },     // its colour (and what light becomes inside it) × this: denser

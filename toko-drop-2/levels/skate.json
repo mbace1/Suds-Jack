@@ -14,12 +14,17 @@
  "duration": 45,
  "goal": {
   "type": "combo",
-  "streak": 20
+  "streak": 25
  },
  "plan": {
   "world": 4,
   "d": 7,
-  "teaches": "the streak; skata"
+  "teaches": "the streak; skata",
+  "strategy": [
+   "risk",
+   "aim",
+   "movement"
+  ]
  },
  "spawns": [
   {
@@ -36,7 +41,7 @@
   },
   {
    "t": 1.3,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": -15.62,
    "pz": 9.4
   },
@@ -54,7 +59,7 @@
   },
   {
    "t": 5.2,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": -17.4,
    "pz": -6.85
   },
@@ -78,7 +83,7 @@
   },
   {
    "t": 9.1,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": -2.69,
    "pz": -9.4
   },
@@ -96,7 +101,7 @@
   },
   {
    "t": 13,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": 6.96,
    "pz": -9.4
   },
@@ -120,7 +125,7 @@
   },
   {
    "t": 16.9,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": 17.4,
    "pz": -0.29
   },
@@ -137,8 +142,14 @@
    "pz": -9.4
   },
   {
+   "t": 20,
+   "type": "skata",
+   "px": 12,
+   "pz": 5
+  },
+  {
    "t": 20.8,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": 7.46,
    "pz": 9.4
   },
@@ -162,9 +173,15 @@
   },
   {
    "t": 24.7,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": -2.36,
    "pz": 9.4
+  },
+  {
+   "t": 26,
+   "type": "skata",
+   "px": 0,
+   "pz": -7
   },
   {
    "t": 26,
@@ -180,7 +197,7 @@
   },
   {
    "t": 28.6,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": -17.4,
    "pz": 7.52
   },
@@ -191,6 +208,12 @@
    "pz": -9.4
   },
   {
+   "t": 30,
+   "type": "skata",
+   "px": 12,
+   "pz": -5
+  },
+  {
    "t": 31.2,
    "type": "GLOBBO",
    "px": 3.12,
@@ -198,15 +221,21 @@
   },
   {
    "t": 32.5,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": -16.85,
    "pz": -9.4
+  },
+  {
+   "t": 34,
+   "type": "skata",
+   "px": -12,
+   "pz": 5
   }
  ],
  "tiers": {
-  "S": 21.2,
-  "A": 23.9,
-  "B": 26.6,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 92%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 25.9,
+  "A": 28.6,
+  "B": 31.5,
+  "source": "bot pass, 24 seeds a skill: got through sharp 96%, average 67%, rough 8%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

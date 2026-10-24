@@ -19,7 +19,11 @@
  "plan": {
   "world": 2,
   "d": 4,
-  "teaches": "splitta"
+  "teaches": "splitta",
+  "strategy": [
+   "priority",
+   "aim"
+  ]
  },
  "spawns": [
   {

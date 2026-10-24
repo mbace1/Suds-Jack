@@ -25,62 +25,60 @@
  "plan": {
   "world": 2,
   "d": 5,
-  "teaches": "the curtain wave"
+  "teaches": "the curtain wave",
+  "strategy": [
+   "movement",
+   "aim"
+  ]
  },
  "spawns": [
   {
    "t": 0,
    "type": "WEEVA",
    "px": -16,
-   "pz": 0
+   "pz": 0,
+   "intervalMult": 1.4
   },
   {
    "t": 0,
    "type": "WEEVA",
    "px": 16,
-   "pz": 0
+   "pz": 0,
+   "intervalMult": 1.4
   },
   {
    "t": 4,
    "type": "PYRA",
    "px": 0,
-   "pz": -9
+   "pz": -9,
+   "intervalMult": 1.4
   },
   {
    "t": 4,
    "type": "PYRA",
    "px": 0,
-   "pz": 9
+   "pz": 9,
+   "intervalMult": 1.4
   },
   {
    "t": 10,
    "type": "FANNER",
    "px": -16,
-   "pz": 3
+   "pz": 3,
+   "intervalMult": 1.4
   },
   {
    "t": 10,
    "type": "FANNER",
    "px": 16,
-   "pz": -3
-  },
-  {
-   "t": 22,
-   "type": "SPITTOR",
-   "px": 0,
-   "pz": -9
-  },
-  {
-   "t": 22,
-   "type": "SPITTOR",
-   "px": 0,
-   "pz": 9
+   "pz": -3,
+   "intervalMult": 1.4
   }
  ],
  "tiers": {
   "S": 0,
   "A": 1,
   "B": 2,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 88%, rough 17%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 92%, rough 33%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

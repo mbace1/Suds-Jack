@@ -19,7 +19,12 @@
  "plan": {
   "world": 3,
   "d": 5,
-  "teaches": "cloaker"
+  "teaches": "cloaker",
+  "strategy": [
+   "priority",
+   "position",
+   "risk"
+  ]
  },
  "spawns": [
   {

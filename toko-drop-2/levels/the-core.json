@@ -44,7 +44,14 @@
  "plan": {
   "world": 5,
   "d": 10,
-  "teaches": "everything; mirra, glowa"
+  "teaches": "everything; mirra, glowa",
+  "strategy": [
+   "position",
+   "priority",
+   "aim",
+   "movement",
+   "risk"
+  ]
  },
  "spawns": [
   {

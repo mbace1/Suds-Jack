@@ -7,30 +7,30 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=34';
-import { buildFloor } from './render/floor.js?v=34';
-import { fitCamera, screenToWorld } from './render/view.js?v=34';
-import * as worldsSim from './sim/worlds.js?v=34';
-import * as reshapeSim from './sim/reshape.js?v=34';
-import { Scenery } from './render/scenery.js?v=34';
-import { Transit } from './render/transit.js?v=34';
-import { Splats } from './render/splats.js?v=34';
-import { Actors } from './render/actors.js?v=34';
-import { GEL_TIME } from './render/gel.js?v=34';
-import { studioEnvironment } from './render/env.js?v=34';
-import { Specimen } from './render/specimen.js?v=34';
-import { createWorld, step, api as simApi } from './sim/world.js?v=34';
-import { stage as stagePk } from './sim/pickups.js?v=34';
-import { Input } from './input.js?v=34';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=34';
-import { Announcer } from './announcer.js?v=34';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=34';
-import { metricOf } from './sim/challenge.js?v=34';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=34';
-import { Sound } from './audio.js?v=34';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=34';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=34';
-import { Readout } from './readout.js?v=34';
+import { TUNING } from './tuning.js?v=37';
+import { buildFloor } from './render/floor.js?v=37';
+import { fitCamera, screenToWorld } from './render/view.js?v=37';
+import * as worldsSim from './sim/worlds.js?v=37';
+import * as reshapeSim from './sim/reshape.js?v=37';
+import { Scenery } from './render/scenery.js?v=37';
+import { Transit } from './render/transit.js?v=37';
+import { Splats } from './render/splats.js?v=37';
+import { Actors } from './render/actors.js?v=37';
+import { GEL_TIME } from './render/gel.js?v=37';
+import { studioEnvironment } from './render/env.js?v=37';
+import { Specimen } from './render/specimen.js?v=37';
+import { createWorld, step, api as simApi } from './sim/world.js?v=37';
+import { stage as stagePk } from './sim/pickups.js?v=37';
+import { Input } from './input.js?v=37';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=37';
+import { Announcer } from './announcer.js?v=37';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=37';
+import { metricOf } from './sim/challenge.js?v=37';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=37';
+import { Sound } from './audio.js?v=37';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=37';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=37';
+import { Readout } from './readout.js?v=37';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -135,7 +135,9 @@ function useWorld(n, hx, hz) {
   if (floor) { scene.remove(floor.group); floor.dispose(); }
   actors.setArena(hx, hz);
   const WD = T.worlds.list[n - 1];
-  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[worldsLook()][n - 1] ?? 'grid', film: actors.gooKit.film });
+  // a world whose walls close in for its challenge (v37, `squeeze`) is built with bounds, at its full size
+  floor = buildFloor(T, hx, hz, actors.light.texture, { style: FLOOR_STYLE[worldsLook()][n - 1] ?? 'grid', film: actors.gooKit.film, bounds: !!WD?.squeeze });
+  floorFull = { hx, hz };
   if (WD?.rail != null) floor.setRail(WD.rail);
   scene.add(floor.group);
   scenery.build(worldsLook() === 'street' && n <= 3 ? n : 1, hx, hz);   // NEON stands nothing round its floors
@@ -145,6 +147,7 @@ function useWorld(n, hx, hz) {
 // SURVIVAL's floor (sim/reshape.js): the grid built at its biggest, with
 // the walls wherever they are now (floor.js `bounds`), its light map as big
 let survivalMax = null;
+let floorFull = null;   // a world floor's own size, which its walls close in from (squeezeFrame)
 function useSurvival() {
   survivalMax = reshapeSim.maxSize(arenaName);
   const { hx, hz } = survivalMax;
@@ -404,7 +407,7 @@ const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY)
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=34`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=37`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -513,6 +516,17 @@ function survivalFrame() {
   if (world.hx !== fitHx || world.hz !== fitHz) resize();
 }
 
+// a world's walls closing in for its challenge (sim/challenge.js squeeze, v37):
+// the same floor bounds SURVIVAL draws, on the world's own floor; the camera
+// keeps its place
+function squeezeFrame() {
+  const Z = world.squeeze, B = floor.bounds, S = T.waves.trial.squeeze;
+  B.cur.value.set(world.hx, world.hz);
+  if (Z && Z.phase !== 'hold') B.next.value.set(Z.to.hx, Z.to.hz); else B.next.value.set(world.hx, world.hz);
+  B.warn.value = !Z ? 0 : Z.phase === 'warn' ? Math.min(1, Z.t / 0.25) : Z.phase === 'move' ? 1 - Z.t / S.move : 0;
+  if (floorFull) floor.border.scale.set(world.hx / floorFull.hx, 1, world.hz / floorFull.hz);
+}
+
 // what the announcer calls, off the sim's events (1.x main.js:2607-11424)
 function announce(e) {
   if (!announcer.on) return;
@@ -551,6 +565,9 @@ function onEvent(e) {
   else if (e.type === 'phase') ui.banner(e.label ?? 'BOSS PHASE!', e.dur ?? 1.1);
   else if (e.type === 'wave') ui.banner(`${t('wave')} ${e.wave}${e.label ? ` · ${e.label}` : ''}`, e.dur ?? 1.4);
   else if (e.type === 'clear') ui.banner(`${t('wave')} ${e.wave} ${t('clear')} +${e.bonus.toLocaleString('en-US')}`, e.dur ?? 1.0);
+  // a challenge wave (v36): what it asks, over the wave's own banner, and how it went
+  else if (e.type === 'trial') ui.banner(`${t('wave')} ${e.wave} · ${t('trial')}: ${t(`trial_${e.kind}`)}`, 2.2);
+  else if (e.type === 'trialEnd') ui.banner(e.met ? `${t('trialMet')} +${e.bonus.toLocaleString('en-US')}` : t('trialMissed'), 1.6);
   else if (e.type === 'curtainWarn') ui.banner(`${String(e.style || '').toUpperCase()} ${t('curtain')}`, e.t ?? 1.1);
   else if (e.type === 'weapon') {
     const text = e.down ? `${e.fam.toUpperCase()} ${t('podDown')}` : e.up ? `${e.fam.toUpperCase()} ${t('podUp')}` : `${e.fam.toUpperCase()} ${t('pod')}`;
@@ -754,6 +771,7 @@ function frame(now, dtFixed) {
   } else { floor.setPlayer(0, 0); actors.light.clear(); }
   transit.frame(world, floor);
   if (world && boundsFloor) survivalFrame();
+  else if (world && floor.bounds && !world.room) squeezeFrame();
   ruleFrame();
   trauma = Math.max(0, trauma - T.shake.decay * dt);
   const m = trauma * trauma, A = T.shake.amp, F = T.shake.freq;

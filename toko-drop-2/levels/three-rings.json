@@ -39,7 +39,10 @@
  "plan": {
   "world": 0,
   "d": 2,
-  "teaches": "spittor, fanner"
+  "teaches": "spittor, fanner",
+  "strategy": [
+   "priority"
+  ]
  },
  "spawns": [
   {
