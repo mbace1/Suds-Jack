@@ -8,6 +8,6 @@
 // PURP, it is not drawn while it waits out its parent's 0.28 s pop: 1.x built
 // the brood only when the pop ended, at full size (enemy.js:2992-3000,
 // main.js:10586-10620).
-import { cubeLook } from './redd.js?v=40';
+import { cubeLook } from './redd.js?v=41';
 
 export default cubeLook({ unborn: true });

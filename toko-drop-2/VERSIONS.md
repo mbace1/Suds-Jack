@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v41 — 2026-10-24
+**The game loads on the live site again: `_base.js` is `base.js`, because GitHub Pages leaves out every file whose name starts with "_"**
+- Owner's phone on v40, from the arcade: *"the file that failed: 404 …/toko-drop-2/js/sim/species/_base.js?v=40"* — v40's own report, and the whole cause. The arcade is served by GitHub Pages, whose Jekyll build drops any file or folder whose name starts with `_` (there is no `.nojekyll` at the site root, and adding one would change how every game on the site is built, which is not this game's call). Every local server serves the file, so the smoke, the site smoke and the hub route check were all green against a game the live site could not load.
+- `js/sim/species/_base.js` → `base.js`; HOPPA, WORMA, STEAMA, BUBBLA and GLOWA import it by the new name.
+- A gate in `scripts/check-syntax.sh` (run by the pre-commit hook and the smoke): no shipped page or file under `js/`, `vendor/` or `levels/` may have a name starting with `_` or `.`. Checked both ways: a stray `js/_probe.js` fails it.
+- The load box tells a 404 from a dropped connection: *"that file is missing from the site — a bug"*, not *"check the connection"*.
+- Cache tokens `?v=40` → `?v=41`; HUD label → `2.0 · v41`
+
+---
+
 ## v40 — 2026-10-24
 **A file that drops on the way no longer stops the game: the page checks every file and loads itself again**
 - Owner's phone, 2026-10-24: *"failed to load …/toko-drop-2/js/main.js?v=39"* — an hour after the deploy, with every file on the live branch and the same tree passing the smoke. The same box came up once at v31, and v32–v38 then loaded. So it was not a missing file: the game is ~210 module downloads, and one that drops on a phone's connection fails the whole load.

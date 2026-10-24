@@ -169,7 +169,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v40<span id="backend"></span></div>
+  <div id="ver">2.0 · v41<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -257,7 +257,12 @@
             check(u).then(function (bad) {
               bad.slice(0, 3).forEach(function (b) { fault('the file that failed: ' + b); });
               if (reloadSoon(bad.length ? 1500 : 300)) say(bad.length ? 'loading again…' : 'every file is there now — loading again…');
-              else { say(bad.length ? 'still failing — check the connection, then' : 'every file is there now'); offerReload(); }
+              else {
+                // a 404 is the site missing a file, not the phone's connection: say so
+                say(bad.some(function (b) { return /^404 /.test(b); }) ? 'that file is missing from the site — a bug: send a screenshot of this'
+                  : bad.length ? 'still failing — check the connection, then' : 'every file is there now');
+                offerReload();
+              }
             });
             return;
           }
@@ -273,6 +278,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=40"></script>
+  <script type="module" src="js/main.js?v=41"></script>
 </body>
 </html>

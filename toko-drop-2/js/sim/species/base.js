@@ -1,4 +1,4 @@
-// _base.js — what every species can lean on, and the stand-in behaviour a
+// base.js — what every species can lean on, and the stand-in behaviour a
 // species has until its 1.x port lands: walk at the hero, and if it has a
 // fire interval, an aimed shot on it. The contract is docs/SIM_CONTRACT.md.
 
