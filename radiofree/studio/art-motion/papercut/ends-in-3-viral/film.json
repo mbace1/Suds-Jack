@@ -30,11 +30,16 @@
    }
   },
   {
-   "id": "e3v_how",
-   "beats": 11,
+   "id": "e3v4_digit",
+   "beats": 10,
    "cues": {
-    "three": "line:2.start",
-    "four": "line:2",
+    "ring": "word:pop"
+   }
+  },
+  {
+   "id": "e3v4_cal",
+   "beats": 9,
+   "cues": {
     "five": "word:pop"
    }
   },

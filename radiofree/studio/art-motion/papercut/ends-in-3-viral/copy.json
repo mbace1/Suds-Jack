@@ -43,22 +43,35 @@
       "source": "CRT figures via El Financiero, 5 Oct 2026: 2,248,143 lines ending in 3 suspended after their deadline (30 Sep, grace to 3 Oct), as of 4 Oct; about 1.21 million reactivated by then. 'One round' = the batch of lines ending in 3 (the next caption explains the rounds go by last digit). NOT used: a cumulative '3.5 million'. The ending-4 figure of ~1.3 million in the earlier notes could not be confirmed as suspensions on 24 Oct: search summaries give it as the CRT's projection of further REACTIVATIONS for the 4s (CRT, 18 Oct: 9,928,170 lines ending in 4 linked, 88.2 % of 11.2 million; 1,021,939 reactivated). The 2.2 million is therefore one round only, and the caption says so."
     },
     {
-      "id": "how",
+      "id": "digit",
       "role": "evidence",
       "at": "s3+0.25",
       "until": "s4-0.15",
       "hold": "s4",
       "text": {
-        "en": "Cut by last digit: / 3s, then 4s. / [5s] on 31 Oct.",
-        "fi": "Katkaisu loppunumeron mukaan: / 3:t, sitten 4:t. / [5:t] 31.10.",
-        "ja": "末尾の 数字順に 停止: / 3、 次に 4。 / [5] は 10月31日。"
+        "en": "Each number has / its own deadline, / set by its [last digit].",
+        "fi": "Jokaisella numerolla / on oma määräaikansa: / sen [viimeinen numero].",
+        "ja": "番号ごとに 期限が 違う。 / 決めるのは / [末尾の 数字]。"
       },
-      "source": "The CRT's calendar by the line's last digit (0 on 15 Aug to 9 on 31 Dec). Lines ending in 3: due 30 Sep (grace to 3 Oct), 2,248,143 suspended as of 4 Oct (El Financiero, 5 Oct). Ending in 4: due 15 Oct, suspended within 72 hours, 1,328,000 by 19 Oct (Informador). Ending in 5: due 31 Oct, not moved as of 23 Oct (Excélsior, Xataka, N+, UnoTV; search summaries, 23 Oct). The 0s to 2s went before; the calendar shows them crossed. Re-checked 24 Oct (search summaries: El CEO, Fox Sports MX, N+): ending in 5 still due 31 Oct 2026; suspension follows 72 hours after a deadline."
+      "source": "The CRT's calendar by the line's last digit: 0 due 15 Aug through 9 due 31 Dec 2026 (one deadline per final digit). The CRT's calendar by the line's last digit (0 on 15 Aug to 9 on 31 Dec). Lines ending in 3: due 30 Sep (grace to 3 Oct), 2,248,143 suspended as of 4 Oct (El Financiero, 5 Oct). Ending in 4: due 15 Oct, suspended within 72 hours, 1,328,000 by 19 Oct (Informador). Ending in 5: due 31 Oct, not moved as of 23 Oct (Excélsior, Xataka, N+, UnoTV; search summaries, 23 Oct). The 0s to 2s went before; the calendar shows them crossed. Re-checked 24 Oct (search summaries: El CEO, Fox Sports MX, N+): ending in 5 still due 31 Oct 2026; suspension follows 72 hours after a deadline."
+    },
+    {
+      "id": "how",
+      "role": "evidence",
+      "at": "s4+0.25",
+      "until": "s5-0.15",
+      "hold": "s5",
+      "text": {
+        "en": "Number ends in 5? / Link it by / [31 Oct].",
+        "fi": "Numero päättyy 5:een? / Liitä se / [31.10.] mennessä.",
+        "ja": "末尾が 5なら / 期限は / [10月31日]。"
+      },
+      "source": "Lines ending in 5: due 31 Oct 2026, re-checked 24 Oct (Infobae, El Imparcial 17 Oct, N+; search summaries); suspension within 72 h after the deadline. 0–4 have passed and those unlinked were suspended. The CRT's calendar by the line's last digit (0 on 15 Aug to 9 on 31 Dec). Lines ending in 3: due 30 Sep (grace to 3 Oct), 2,248,143 suspended as of 4 Oct (El Financiero, 5 Oct). Ending in 4: due 15 Oct, suspended within 72 hours, 1,328,000 by 19 Oct (Informador). Ending in 5: due 31 Oct, not moved as of 23 Oct (Excélsior, Xataka, N+, UnoTV; search summaries, 23 Oct). The 0s to 2s went before; the calendar shows them crossed. Re-checked 24 Oct (search summaries: El CEO, Fox Sports MX, N+): ending in 5 still due 31 Oct 2026; suspension follows 72 hours after a deadline."
     },
     {
       "id": "last",
       "role": "punchline",
-      "at": "s4+0.25",
+      "at": "s5+0.25",
       "until": "end-0.15",
       "hold": "end",
       "text": {
@@ -84,6 +97,21 @@
       "en": "CRT · DEADLINES BY LAST DIGIT",
       "fi": "CRT · MÄÄRÄAJAT LOPPUNUMERON MUKAAN",
       "ja": "CRT · 末尾の 数字ごとの 期限"
+    },
+    "deadline": {
+      "en": "DEADLINE",
+      "fi": "MÄÄRÄAIKA",
+      "ja": "期限"
+    },
+    "date5": {
+      "en": "31 OCT",
+      "fi": "31.10.",
+      "ja": "10月31日"
+    },
+    "cutoff": {
+      "en": "CUT OFF",
+      "fi": "KATKAISTU",
+      "ja": "停止"
     }
   },
   "props": {
@@ -109,9 +137,9 @@
     }
   },
   "post": {
-    "en": "Mexico requires every phone line to be linked to its owner's ID, a rule against extortion and fraud. No link, no service: 2.2 million lines ending in 3 were cut in one round. 5s are due 31 Oct. Lines return once linked, and quake alerts still get through. What does yours end in?",
-    "es": "México exige vincular cada línea a la CURP de su titular, contra la extorsión y el fraude. Sin vínculo, sin servicio: 2,2 millones de líneas con terminación 3 se suspendieron en una ronda. El 5 vence el 31 de octubre. La alerta sísmica sí llega. ¿En qué termina la tuya?",
-    "fi": "Meksikossa jokainen liittymä on liitettävä omistajan henkilötunnukseen: sääntö kiristystä ja petoksia vastaan. Ilman liitosta ei palvelua: 2,2 miljoonaa 3:een päättyvää liittymää katkaistiin yhdellä kierroksella. 5:t 31.10. Liittymä palaa, kun se liitetään, ja maanjäristysvaroitus menee silti läpi. Mihin numerosi päättyy?",
-    "ja": "メキシコでは、すべての携帯回線を持ち主のIDに登録することが義務に。恐喝と詐欺対策のルールだ。未登録なら停止：末尾3の回線は1回で220万回線が止まった。末尾5の期限は10月31日。登録すれば戻り、停止中でも地震警報は届く。あなたの番号の末尾は？"
+    "en": "Mexico requires every phone line to be linked to its owner's ID, against extortion and fraud. Each number's deadline is set by its last digit. 2.2 million ending in 3 were cut in one round; numbers ending in 5 are due 31 Oct. Quake alerts still get through. What does yours end in?",
+    "es": "México exige vincular cada línea a la CURP de su titular, contra la extorsión y el fraude. El plazo depende del último dígito del número. Con terminación 3 se suspendieron 2,2 millones en una ronda; el 5 vence el 31 de octubre. La alerta sísmica sí llega. ¿En qué termina la tuya?",
+    "fi": "Meksikossa jokainen liittymä on liitettävä omistajan henkilötunnukseen, kiristystä ja petoksia vastaan. Kunkin numeron määräaika riippuu sen viimeisestä numerosta. 3:een päättyviä katkaistiin 2,2 miljoonaa; 5:een päättyvien määräaika on 31.10. Maanjäristysvaroitus menee silti läpi. Mihin omasi päättyy?",
+    "ja": "メキシコでは、すべての携帯回線を持ち主のIDに登録する義務がある。恐喝と詐欺対策だ。期限は番号の末尾の数字で決まる。末尾3は1回で220万回線が停止。末尾5の期限は10月31日。停止中でも地震警報は届く。あなたの番号の末尾は？"
   }
 }

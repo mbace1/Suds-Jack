@@ -546,6 +546,111 @@
     box(c);
   } };
 
+  // ═════════ v4 · e3v4_digit (owner, 24 Oct: the calendar beat was confusing): EACH NUMBER HAS ITS OWN DEADLINE, set
+  //            by its last digit. One full number on a big card; on "last digit" the marker rings the LAST digit, an
+  //            arrow drops from it to a date chip (31 OCT), and the other digits fade back so only the last one counts ═════════
+  const BIG = { x: 540, y: 760, w: 940, h: 230 };
+  const NUMS = ['5', '5', ' ', '1', '2', '3', '4', ' ', '5', '6', '7', '5'];
+  const bigSp = () => sprite('e3v4_card', BIG.w + 24, BIG.h + 24, BIG.w / 2 + 12, BIG.h / 2 + 12, (g) => {
+    g.fillStyle = C.calPaperD; g.beginPath(); g.roundRect(-BIG.w / 2 + 6, -BIG.h / 2 + 8, BIG.w, BIG.h, 16); g.fill();
+    g.fillStyle = C.calPaper; g.beginPath(); g.roundRect(-BIG.w / 2, -BIG.h / 2, BIG.w, BIG.h, 16); g.fill();
+    g.fillStyle = '#6f6650'; g.textAlign = 'left'; g.font = `400 30px "ArchivoBlack-400", ${JP}`; g.fillText('+52', -BIG.w / 2 + 34, -BIG.h / 2 + 50);
+  }, 8);
+  const digitX = (i) => BIG.x - BIG.w / 2 + 70 + i * 68;   // 12 slots: '55 1234 5675'
+  let MD = null;
+  const marksD = (tR) => {
+    if (MD && MD.key === tR) return MD;
+    const lx = digitX(11), ly = BIG.y + 22;
+    const ring = mkMark(tR - 0.05, 0.4, [GEN().ellipse(lx, ly, 104, 170, inkOf(61, { strokeWidth: 9 }))]);
+    const arrow = mkMark(tR + 0.4, 0.3, [GEN().line(lx, ly + 92, lx - 10, ly + 330, inkOf(63)), GEN().line(lx - 10, ly + 330, lx - 44, ly + 290, inkOf(64)), GEN().line(lx - 10, ly + 330, lx + 26, ly + 292, inkOf(65))]);
+    return (MD = { key: tR, ring, arrow });
+  };
+  SCENES.e3v4_digit = { draw(c, lt) {
+    const id = 'e3v4_digit', dd = dur(id), tR = at(id, 'ring', 2.2), M = marksD(tR);
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tR], { kick: 0.03 }) * lerp(1.0, 1.05, ease.io(lt / dd)), fx: 540, fy: 900 };
+    const fade = ease.io((lt - tR) / 0.4);                 // the other digits step back once the last one is ringed
+    stack(c, [
+      { sh: cwall(), d: 0.05, lift: 0 },
+      { fn: (g, ox, oy) => glow(g, 540 + ox, 860 + oy, 760, 'rgba(255,220,160,', 0.12), d: 0.05 },
+      { d: 0.3, fn: (g, ox, oy) => {
+        put(g, bigSp(), BIG.x + ox, BIG.y + oy, { lift: 1.0, rot: -0.008 });
+        g.save(); g.translate(ox, oy);
+        g.textAlign = 'center'; g.font = '400 132px "Anton-400"';
+        NUMS.forEach((d, i) => { if (d === ' ') return; const last = i === 11; g.fillStyle = last ? (lt >= tR ? C.red : C.ink) : `rgba(21,18,15,${1 - 0.65 * fade})`; g.fillText(d, digitX(i), BIG.y + 70); });
+        const tips = [];
+        for (const m of [M.ring, M.arrow]) { const k = (lt - m.t0) / m.dur; if (k <= 0) continue; const tp = drawMark(g, m, ease.out(k)); if (k < 1) tips.push(tp); }
+        // the date chip under the arrow
+        const kc = ease.back((lt - (tR + 0.7)) / 0.3);
+        if (kc > 0) {
+          const cx = digitX(11) - 60, cy = BIG.y + 420;
+          g.save(); g.translate(cx, cy); g.scale(kc, kc);
+          g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.roundRect(-190 + 6, -64 + 8, 380, 128, 14); g.fill();
+          g.fillStyle = C.calPaper; g.beginPath(); g.roundRect(-190, -64, 380, 128, 14); g.fill();
+          g.fillStyle = C.calHead; g.fillRect(-190, -64, 380, 34);
+          g.fillStyle = C.calPaper; g.font = `400 24px "ArchivoBlack-400", ${JP}`; g.fillText(ui('deadline', 'DEADLINE'), 0, -38);
+          g.fillStyle = C.ink; g.font = '400 70px "Anton-400"'; g.fillText(ui('date5', '31 OCT'), 0, 50);
+          g.restore();
+        }
+        g.restore();
+        const L = (p) => [p[0] + ox, p[1] + oy], REST = [1260, 2050];
+        const keys = [[0, L(REST)], [M.ring.t0 - 0.4, L(M.ring.start)], [M.ring.t0, L(M.ring.start)], [M.ring.t0 + M.ring.dur, L(M.ring.end)], [M.arrow.t0, L(M.arrow.start)], [M.arrow.t0 + M.arrow.dur, L(M.arrow.end)], [M.arrow.t0 + M.arrow.dur + 0.8, L(REST)]];
+        marker(g, tips.length ? L(tips[0]) : penAt(lt, keys), -0.55);
+      } },
+    ], cam);
+    tag(c, ui('calendar', 'CRT · DEADLINES BY LAST DIGIT'), lt, dd);
+    box(c);
+  } };
+
+  // ═════════ v4 · e3v4_cal: NUMBER ENDS IN 5? LINK IT BY 31 OCT. The slip shows a number ending in 5; on the calendar
+  //            0–4 are already crossed (each with a small CUT OFF), and on "31 Oct" the 5 is ringed; 6–9 light after ═════════
+  let MC = null;
+  const marksC = (t5) => {
+    if (MC && MC.key === t5) return MC;
+    const X = (d, seed) => { const [cx, cy] = cellAt(d), h = 74; return mkMark(-10, 0.1, [GEN().line(cx - h, cy - h * 1.2, cx + h, cy + h * 1.2, inkOf(seed)), GEN().line(cx + h, cy - h * 1.2, cx - h, cy + h * 1.2, inkOf(seed + 1))]); };
+    const old = [0, 1, 2, 3, 4].map((d) => X(d, 10 + d * 3));
+    const [c5x, c5y] = cellAt(5), ring5 = mkMark(t5 - 0.04, 0.36, [GEN().ellipse(c5x, c5y, 190, 270, inkOf(51, { strokeWidth: 8 }))]);
+    return (MC = { key: t5, old, ring5 });
+  };
+  SCENES.e3v4_cal = { draw(c, lt) {
+    const id = 'e3v4_cal', dd = dur(id), t5 = at(id, 'five', 1.6), M = marksC(t5);
+    const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [t5], { kick: 0.03 }) * lerp(1.0, 1.06, ease.io(lt / dd)), fx: 540, fy: 960 };
+    stack(c, [
+      { sh: cwall(), d: 0.05, lift: 0 },
+      { fn: (g, ox, oy) => glow(g, 540 + ox, 860 + oy, 760, 'rgba(255,220,160,', 0.12), d: 0.05 },
+      { d: 0.24, fn: (g, ox, oy) => { put(g, slipSp(), NUM.x + ox, NUM.y + oy, { lift: 0.9, rot: 0.01 }); g.save(); g.translate(ox, oy); slipDigit(g, lt, -2, -1); g.restore(); } },
+      { d: 0.3, fn: (g, ox, oy) => {
+        g.save(); g.translate(540, 960); g.scale(0.93, 0.93); g.translate(-540, -960 + CDY);
+        g.save(); g.translate(ox, oy);
+        put(g, calSp(), CAL.x, CAL.y, { lift: 1.0, rot: -0.012 });
+        put(g, rings(), CAL.x, CAL.y - CAL.top - 60, { lift: 0.6 });
+        for (let d = 6; d <= 9; d++) {
+          const k = lt - ROLL(t5, d); if (k <= 0) continue;
+          const [cx, cy] = cellAt(d), a = 0.25 + 0.75 * Math.exp(-k * 2.4);
+          g.save(); g.globalAlpha = a; g.strokeStyle = C.red; g.lineWidth = 7; g.setLineDash([18, 12]); g.lineDashOffset = -k * 40;
+          g.beginPath(); g.roundRect(cx - CAL.cw / 2 + 8, cy - CAL.ch / 2 + 8, CAL.cw - 16, CAL.ch - 16, 10); g.stroke(); g.restore();
+        }
+        const tips = [];
+        for (const m of [...M.old, M.ring5]) { const k = (lt - m.t0) / m.dur; if (k <= 0) continue; const tp = drawMark(g, m, ease.out(k)); if (k < 1) tips.push(tp); }
+        // CUT OFF under each crossed digit: a small red stamp over its date
+        for (let d = 0; d <= 4; d++) {
+          const [cx, cy] = cellAt(d);
+          g.save(); g.translate(cx, cy - 92); g.rotate(-0.06);
+          g.fillStyle = C.calPaper; g.fillRect(-64, -26, 128, 36);
+          g.strokeStyle = C.red; g.lineWidth = 3; g.strokeRect(-62, -24, 124, 32);
+          g.fillStyle = C.red; g.textAlign = 'center'; g.font = `400 22px "ArchivoBlack-400", ${JP}`; g.fillText(ui('cutoff', 'CUT OFF'), 0, 0);
+          g.restore();
+        }
+        g.restore();
+        const L = (p) => [p[0] + ox, p[1] + oy], REST = [1260, 2050];
+        const keys = [[0, L(REST)], [M.ring5.t0 - 0.45, L(M.ring5.start)], [M.ring5.t0, L(M.ring5.start)], [M.ring5.t0 + M.ring5.dur, L(M.ring5.end)], [M.ring5.t0 + M.ring5.dur + 0.8, L(REST)]];
+        marker(g, tips.length ? L(tips[0]) : penAt(lt, keys), -0.55);
+        g.restore();
+      } },
+    ], cam);
+    tag(c, ui('calendar', 'CRT · DEADLINES BY LAST DIGIT'), lt, dd);
+    box(c);
+  } };
+
   // ═════════ V4 · e3v_alert: "No calls, no texts": the cut-off phones stay grey and a thumb taps one; on "gets
   //            through" every phone shows the alert, the grey ones too. The camera ends on V0 (the loop) ═════════
   SCENES.e3v_alert = { draw(c, lt) {
