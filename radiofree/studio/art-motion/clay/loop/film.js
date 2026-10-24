@@ -31,7 +31,7 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadow
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace; renderer.toneMapping = THREE.NoToneMapping;
 document.body.appendChild(renderer.domElement); renderer.domElement.style.width = '100%';
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(40, W / H, 2, 4000);
+const camera = new THREE.PerspectiveCamera(40, W / H, 0.6, 4000);   // v3: near 2 → 0.6, so a shoulder close to the lens is not cut open
 const post = new Post(renderer, W, H);
 const out2d = canvas(W, H), g2d = out2d.getContext('2d');
 const mesh = (g, m, o = {}) => mesh0(g, m, { parent: scene, ...o });
@@ -62,7 +62,9 @@ const M = {
   bin: C('#2f4a3a', { rough: 0.5, tool: 0.6 }), binLid: C('#22352a', { rough: 0.5 }),
   thermos: GLAZE('#c94a2a'), thermosCap: C('#2a2a2c', { rough: 0.4 }),
   phone: C(MAG, { rough: 0.42, thumb: 0.014, thumbCell: 1.2, specks: 0.15, clearcoat: 0.5, clearcoatRough: 0.25 }),
-  phoneEdge: C('#1a1a1d', { rough: 0.3, thumb: 0.006, specks: 0 }),
+  // v3: the bezel is plain, not clay: the clay shader displaces vertices with a noise that boils every other frame, and
+  // it pushed the bezel's face through the screen in a clean diagonal (the grey slab the owner saw as the game glitching)
+  phoneEdge: new THREE.MeshStandardMaterial({ color: '#1a1a1d', roughness: 0.3 }),
   droneBody: C('#2c2f34', { rough: 0.55, thumb: 0.02, thumbCell: 1.2, specks: 0.15, mottle: 0.06 }),
   droneArm: C('#1f2125', { rough: 0.5, thumb: 0.015 }),
   rotor: new THREE.MeshStandardMaterial({ color: '#3a3d42', roughness: 0.6, transparent: true, opacity: 0.35, depthWrite: false }),
@@ -215,9 +217,10 @@ function add3(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
 // the phone: a magenta case, a black edge, the screen a canvas the AI's chat is drawn on
 const PHONE = new THREE.Group(); scene.add(PHONE);
 mesh0(lumpy(new RoundedBoxGeometry(4.8, 9.2, 0.7, 3, 0.4), 0.02, 1, 80), M.phone, { parent: PHONE });
-mesh0(new RoundedBoxGeometry(4.5, 8.9, 0.12, 2, 0.3), M.phoneEdge, { pos: [0, 0, 0.32], parent: PHONE, cast: false });
+// v3: screen and bezel sit proud of the case (whose clay surface boils)
+mesh0(new RoundedBoxGeometry(4.5, 8.9, 0.12, 2, 0.3), M.phoneEdge, { pos: [0, 0, 0.62], parent: PHONE, cast: false });
 const UW = 400, UH = 800, uiCan = canvas(UW, UH), ui = uiCan.getContext('2d'), uiTex = tex(uiCan);
-const SCREEN = mesh0(new THREE.PlaneGeometry(4.2, 8.4), new THREE.MeshBasicMaterial({ map: uiTex, color: new THREE.Color(1.15, 1.15, 1.15), toneMapped: false }), { pos: [0, 0, 0.4], parent: PHONE, cast: false });
+const SCREEN = mesh0(new THREE.PlaneGeometry(4.2, 8.4), new THREE.MeshBasicMaterial({ map: uiTex, color: new THREE.Color(1.15, 1.15, 1.15), toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }), { pos: [0, 0, 0.7], parent: PHONE, cast: false });
 const phoneLight = new THREE.PointLight('#cfe0ff', 0, 60, 2); scene.add(phoneLight);
 // the thermos on the bench beside him (it tips over on the third jump)
 const THERMOS = new THREE.Group(); scene.add(THERMOS); THERMOS.position.set(BX + 14, SEAT + 0.2, BZ + 0.6);
@@ -227,42 +230,35 @@ mesh0(lumpy(lathe([[0, 0], [2.2, 0], [2.3, 2.6], [0, 2.8]], 28), 0.02, 1, 91), M
 // ------------------------------------------------------------------ the phone's screen: the prototype, the chat, the ask
 const P_UI = {};   // filled from the plan below (translated strings)
 function drawGame(g, x, y, w, h, t, v = 0) {
-  // the prototype: a magenta drop dodging falling dots. v2 (owner: "game visuals glitch"): v1 wrapped every dot from the
-  // bottom back to the top (dots popped), the drop swung on a sine straight through them, and the score wrapped every 3 s.
-  // Now everything on this screen is a pure function of the film's time t: dots fall down five lanes on a fixed schedule,
-  // fade in at the top and leave at the bottom; the drop steps between lanes by a deterministic dodge; the score only
-  // climbs. v = which iteration (Faster / More fun / Make it feel right), each adding something on top of the last.
+  // the prototype: a magenta drop dodging falling dots. v3 (owner, twice: "game visuals glitch"): v1 wrapped dots in
+  // view and swung the drop through them; v2's lane schedule rebuilt itself whenever the round (v) changed, because v
+  // seeded the lanes and the speed, so every cut between rounds rearranged the screen. Now the layout never depends on v
+  // or on the shot: six dots in fixed lanes fall at one constant speed, each wrapping only when fully off screen (faded
+  // at both edges); the drop slides between lanes on a fixed clock with easing; the score climbs one every 0.3 s.
+  // v only adds decoration (a trail, a glow, a colour). A pure function of the film's time, the same in every shot.
   g.save(); g.beginPath(); g.roundRect(x, y, w, h, 18); g.clip();
   const bg = ['#141a2e', '#1a1430', '#10241f', '#231a10'][v % 4]; g.fillStyle = bg; g.fillRect(x, y, w, h);
-  const NL = 5, lane = (L) => x + w * (L + 0.5) / NL, sp = 1 + v * 0.35, speed = h * 0.62 * sp, dt = 0.42 / sp, rad = 7 + v;
-  const hash = (j) => { let a = (j * 2654435761 + v * 97) >>> 0; a ^= a >>> 15; a = Math.imul(a, 2246822519) >>> 0; a ^= a >>> 13; return a >>> 0; };
-  const laneOf = (j) => hash(j) % NL, yd = y + h - 46, travel = (yd - y) / speed;
-  // the dodge: at each decision step the drop moves to the free lane nearest the one it is in
-  let L = 2, prev = 2; const steps = Math.floor(t / dt);
-  for (let i = 0; i <= steps; i++) {
-    const ti = i * dt, bad = new Set();
-    for (let j = Math.floor((ti - travel - 0.3) / dt); j <= Math.ceil((ti + dt - travel + 0.3) / dt); j++) if (j >= 0) bad.add(laneOf(j));
-    let best = L, bd = 99; for (let c = 0; c < NL; c++) if (!bad.has(c) && Math.abs(c - L) < bd) { bd = Math.abs(c - L); best = c; }
-    prev = L; L = best;
-  }
-  const kmove = ease.io(clamp((t - steps * dt) / (dt * 0.45)));
-  const px = lerp(lane(prev), lane(L), kmove), py = yd;
-  // v ≥ 2: a trail behind the drop
-  if (v >= 2) for (let k = 1; k <= 4; k++) { g.globalAlpha = 0.18 / k; g.fillStyle = MAG; g.beginPath(); g.arc(px, py + 10 + k * 7, 14 - k * 2, 0, TAU); g.fill(); } g.globalAlpha = 1;
-  // the dots: every one that is on screen at t, from its own spawn time
+  const NL = 6, lane = (L) => x + w * (L + 0.5) / NL, rad = 8, speed = 70, M = 30, span = h + 2 * M;
+  const OFF = [0.05, 0.55, 0.25, 0.8, 0.4, 0.95];
+  // the drop: every 1.4 s it eases to the next lane in a fixed sequence
+  const SEQ = [2, 4, 1, 3, 5, 0, 3, 1, 4, 2], STEP = 1.4, si = Math.floor(t / STEP), k = ease.io(clamp((t - si * STEP) / 0.55));
+  const L0 = SEQ[((si - 1) % SEQ.length + SEQ.length) % SEQ.length], L1 = SEQ[si % SEQ.length];
+  const px = lerp(lane(L0), lane(L1), k), py = y + h - 46;
+  if (v >= 2) for (let q = 1; q <= 4; q++) { g.globalAlpha = 0.18 / q; g.fillStyle = MAG; g.beginPath(); g.arc(px, py + 10 + q * 7, 14 - q * 2, 0, TAU); g.fill(); }
+  g.globalAlpha = 1;
   const col = ['#ffffff', '#ffd84a', '#5ad7ff', '#ff8a3a'][v % 4];
-  for (let j = Math.max(0, Math.floor((t - (h + 40) / speed) / dt)); j <= Math.floor(t / dt); j++) {
-    const age = t - j * dt, dy = y + age * speed; if (dy > y + h + rad) continue;
-    g.globalAlpha = clamp(age / 0.18); g.fillStyle = col; g.beginPath(); g.arc(lane(laneOf(j)), dy, rad, 0, TAU); g.fill();
-    if (v >= 3) { g.globalAlpha *= 0.35; g.beginPath(); g.arc(lane(laneOf(j)), dy, rad * 1.8, 0, TAU); g.fill(); }
+  for (let L = 0; L < NL; L++) {
+    const yy = ((t * speed + OFF[L] * span) % span) - M, dy = y + yy;
+    const a = clamp((yy + M) / 40) * clamp((h + M - yy) / 40);
+    g.globalAlpha = a; g.fillStyle = col; g.beginPath(); g.arc(lane(L), dy, rad, 0, TAU); g.fill();
+    if (v >= 3) { g.globalAlpha = a * 0.35; g.beginPath(); g.arc(lane(L), dy, rad * 1.8, 0, TAU); g.fill(); }
   }
   g.globalAlpha = 1;
-  // the drop
-  const sq = 1 + 0.12 * Math.sin(kmove * Math.PI);
+  const sq = 1 + 0.1 * Math.sin(k * Math.PI);
   g.save(); g.translate(px, py); g.scale(1 / sq, sq); g.translate(-px, -py);
   g.fillStyle = MAG; g.beginPath(); g.moveTo(px, py - 26); g.bezierCurveTo(px + 18, py - 4, px + 18, py + 18, px, py + 18); g.bezierCurveTo(px - 18, py + 18, px - 18, py - 4, px, py - 26); g.fill();
   g.fillStyle = '#fff'; g.beginPath(); g.arc(px - 6, py + 2, 3, 0, TAU); g.arc(px + 6, py + 2, 3, 0, TAU); g.fill(); g.restore();
-  g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '700 22px Inter'; g.textAlign = 'right'; g.fillText(String(100 + Math.floor(t * 14) + v * 200), x + w - 14, y + 32);
+  g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '700 22px Inter'; g.textAlign = 'right'; g.fillText(String(100 + Math.floor(t / 0.3)), x + w - 14, y + 32);
   g.restore();
 }
 function bubble(g, x, y, w, text, mine, fs = 26) {
@@ -300,13 +296,15 @@ function drawUI(mode, t, o = {}) {
     const n = o.n ?? 1, k = o.k ?? 1, LINES = [P_UI.c1, P_UI.c2, P_UI.c3];
     const yAsk = h - 176, yGame = yAsk - 14 - 290, yMe = yGame - 14 - 78, yPrev = yMe - 14 - 78;
     askChip(g, 20, yAsk, w - 40, (k - 0.35) * 1.4, o.sel ?? -1);
-    if (k > 0.15) { g.globalAlpha = ease.out((k - 0.15) / 0.3); drawGame(g, 20, yGame, w - 40, 290, t, n); g.globalAlpha = 1; }
+    // v3: the game never leaves the screen between rounds (it is one continuous run; only its colours change round to
+    // round), so a cut to the next round does not blank it and bring it back
+    drawGame(g, 20, yGame, w - 40, 290, t, n);
     bubble(g, 20, yMe, w - 40, LINES[n - 1], true);
     g.globalAlpha = 0.4; bubble(g, 20, yPrev, w - 40, n > 1 ? LINES[n - 2] : P_UI.ask, true); g.globalAlpha = 1;
     const fade = g.createLinearGradient(0, 50, 0, 200); fade.addColorStop(0, '#0f0e14'); fade.addColorStop(1, 'rgba(15,14,20,0)'); g.fillStyle = fade; g.fillRect(0, 50, w, 150);
     g.fillStyle = '#fff'; g.font = '800 40px Inter'; g.textAlign = 'left'; g.fillText(o.time, 24, 46);
   } else if (mode === 'ask') {
-    g.globalAlpha = 0.5; drawGame(g, 20, 70, w - 40, 420, t * 0.2, 3); g.globalAlpha = 1;
+    g.globalAlpha = 0.5; drawGame(g, 20, 70, w - 40, 420, t, 3); g.globalAlpha = 1;
     const pulse = 0.85 + 0.15 * Math.sin(t * 4); g.globalAlpha = pulse; askChip(g, 20, 520, w - 40, 1); g.globalAlpha = 1;
   }
   g.restore(); uiTex.needsUpdate = true;
@@ -360,7 +358,8 @@ const PATHS = {
 
 // ------------------------------------------------------------------ the shots
 const LOOK0 = { pos: V([14, 31, 120]), at: V([-6, 41, -40]), fov: 38 };     // frame 0's composition, which the dawn returns to
-const headW = () => TOKO.mask.getWorldPosition(new THREE.Vector3());
+let HEAD_S = null;   // v3: the head where the camera and the phone aim, from the pose on ONES (Toko himself is drawn on twos)
+const headW = () => (HEAD_S ? HEAD_S.clone() : TOKO.mask.getWorldPosition(new THREE.Vector3()));
 const SHOT = [
   { // 1 · dusk wide: the lamp comes on, the drones cross; on "hour" the phone comes up and the prototype runs
     t0: () => T.s1, t1: () => T.s2, hour: 'dusk',
@@ -370,17 +369,17 @@ const SHOT = [
     cam(t, lt, d) { const k = ease.io(lt / d); return { pos: LOOK0.pos.clone().add(V([-4 * k, -1 * k, -10 * k])), at: LOOK0.at.clone().add(V([0, -2 * k, 0])), fov: LOOK0.fov - 2 * k, focus: 104 - 10 * k, ap: 3.2 }; } },
   { // 2 · night, over his right shoulder onto the phone: One more change? Yes. Three rounds, three times; the thermos tips
     t0: () => T.s2, t1: () => T.s3, hour: 'night', lamp: () => 1,
-    pose(t) { return sitPose({ lift: 0.72, lean: 0.38, hp: 0.62, breathe: Math.sin(t * 1.4) }); },
-    // his left hand leaves the edge, comes onto the screen over Yes, presses, and goes back to its grip
-    grip(t) { const k = Math.max(...[EV.tap1, EV.tap2].map((x) => Math.sin(Math.PI * clamp((t - x + 0.32) / 0.6)))); return { tap: k }; },
+    pose(t) { return sitPose({ lift: 0.72, lean: 0.38, hp: 0.62, breathe: 0.4 * Math.sin(t * 1.4) }); },
+    // v3 (owner: "thumbs are weird"): no hand comes onto the screen; Yes simply flashes pressed on the tap moment
     ui(t) { const n = t < EV.j2 ? 1 : t < EV.j3 ? 2 : 3, t0 = [EV.j1, EV.j2, EV.j3][n - 1], k = clamp((t - t0) / 0.9), sel = (n === 1 && t > EV.tap1) || (n === 2 && t > EV.tap2) ? 0 : -1;
       drawUI('chat', t, { n, k, sel, time: [P_UI.t1, P_UI.t2, P_UI.t3][n - 1] }); },
     thermos: (t) => ease.out((t - EV.tip) / 0.35),
     cam(t, lt, d) { // his point of view, from just beside the mask: the screen big, his gloves at its sides
       // over his right shoulder, wide enough of the mask to clear it: the screen big, a glove at its edge
       const k = ease.io(lt / d), ph = WRAP.localToWorld(V(at(this.pose(t)._phone))), n = headW().sub(ph).normalize(), side = V([-1, 0, 0]);
-      const pos = ph.clone().addScaledVector(n, lerp(15.5, 14.5, k)).addScaledVector(side, 11).add(V([0, 2, 0]));
-      return { pos, at: ph.clone().add(V([-0.3, 2.4, 0])), fov: 42, focus: pos.distanceTo(ph), ap: 6 }; } },
+      // v3: further from his shoulder; at 15.5→14.5 the near plane cut through the hoodie and a grey slab crossed the screen
+      const pos = ph.clone().addScaledVector(n, lerp(17.5, 16.5, k)).addScaledVector(side, 12.5).add(V([0, 2.6, 0]));
+      return { pos, at: ph.clone().add(V([-0.3, 2.4, 0])), fov: 38, focus: pos.distanceTo(ph), ap: 6 }; } },
   { // 3 · close on the mask, lit by the phone; the drones' red lights cross the dark behind him; he slumps a little each pose
     t0: () => T.s3, t1: () => T.s4, hour: 'night', lamp: () => 1,
     pose(t) { const s = ease.io((t - EV.slump) / (T.s4 - EV.slump)); return sitPose({ lift: 0.62 - 0.15 * s, lean: 0.4 + 0.12 * s, hp: 0.4 + 0.12 * s, hr: 0.08 * s, breathe: Math.sin(t * 1.1) }); },
@@ -425,16 +424,18 @@ function frame(t, captions = true) {
   const grade0 = setHour(S.hour, S.lamp(t)), grade = i === 2 ? { ...grade0, exposure: grade0.exposure * 1.45, lift: [0.014, 0.014, 0.026] } : grade0;
   if (i === 2) hemi.intensity *= 1.8;
   // Toko, on twos
+  // v3: the phone and the camera follow the pose evaluated on ONES, so they move smoothly with the screen's content;
+  // v2 took both from the pose on twos, so the phone (and the over-the-shoulder camera) stepped every other frame
+  const pzS = S.pose(t); TOKO.pose(pzS); WRAP.updateMatrixWorld(true);
+  HEAD_S = null; const ph = WRAP.localToWorld(V(at(pzS._phone))), head = headW(); HEAD_S = head.clone();
   const pz = S.pose(tq); TOKO.pose(pz); WRAP.updateMatrixWorld(true);
-  const ph = WRAP.localToWorld(V(at(pz._phone))), head = headW();
   PHONE.position.copy(ph); PHONE.lookAt(head); PHONE.rotateY(0); PHONE.updateMatrixWorld(true);
   // v2 (owner: "his hands aren't on the phone"): the hands are placed ON the phone. Each mitt wraps a long edge from
-  // behind, its front face over the screen's edge like a thumb; the phone's +x is his right. A tap brings the left mitt
-  // onto the screen over Yes (canvas 115,708 → local -0.89,-3.23) and back.
+  // behind, clear of the screen; the phone's +x is his right.
   { const gr = S.grip ? S.grip(tq) : {}, tap = gr.tap || 0, loose = S.bird ? 1 : 0;
     const toL = (v) => TOKO.group.worldToLocal(PHONE.localToWorld(V(v)));
-    const gR = [3.15, -1.6 - loose * 0.6, -0.85], gL0 = [-3.15, -1.6 - loose * 0.6, -0.85], yes = [-0.95, -4.0, 0.7];
-    const gL = lerp3(gL0, yes, tap);
+    // v3: the mitts hold the sides and the back, clear of the screen
+    const gR = [3.35, -1.8 - loose * 0.6, -1.0], gL = [-3.35, -1.8 - loose * 0.6, -1.0];
     const c = toL([0, -1.4, -0.5]), hR = toL(gR), hL = toL(gL), inR = c.clone().sub(hR).normalize(), inL = (tap > 0.5 ? toL([0, 0, -2]) : c).clone().sub(hL).normalize();
     pz.hdR = hR.toArray(); pz.hdL = hL.toArray(); pz.palm = [inR.toArray(), inL.toArray()];
     TOKO.pose(pz); WRAP.updateMatrixWorld(true); }
