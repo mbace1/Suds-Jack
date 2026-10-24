@@ -39,11 +39,13 @@
     #mult { margin-left: 8px; color: var(--amber); font-size: 15px; }
     #lives { display: flex; gap: 6px; margin-top: 6px; }
     #lives i { width: 10px; height: 10px; border-radius: 50%; background: #f2efe6; box-shadow: 0 0 6px rgba(242, 239, 230, .6); }
-    #fx { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; max-width: min(56vw, 420px); font-size: 11px; letter-spacing: .08em; }
+    #fx { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; max-width: min(48vw, 420px); font-size: 11px; letter-spacing: .08em; }
     #fx span { white-space: nowrap; text-shadow: 0 0 6px currentColor; }
-    #clock { position: absolute; right: max(14px, env(safe-area-inset-right)); top: max(12px, env(safe-area-inset-top)); font-size: 16px; letter-spacing: .1em; color: var(--amber); }
-    #pausebtn { position: absolute; left: 50%; top: max(6px, env(safe-area-inset-top)); transform: translateX(-50%); pointer-events: auto;
-      width: 64px; height: 44px; background: none; border: 1px solid var(--line); color: var(--ink); font: inherit; font-size: 14px; letter-spacing: .1em; }
+    /* MENU sits where 1.x had it, over the clock, top right; the clock under it (owner, 2026-10-24) */
+    #clock { position: absolute; right: max(14px, env(safe-area-inset-right)); top: calc(max(6px, env(safe-area-inset-top)) + 52px); font-size: 16px; letter-spacing: .1em; color: var(--amber); text-align: right; max-width: 44vw; }
+    @media (max-width: 480px) { #clock { font-size: 13px; letter-spacing: .05em; } }
+    #pausebtn { position: absolute; right: max(10px, env(safe-area-inset-right)); top: max(6px, env(safe-area-inset-top)); pointer-events: auto;
+      min-width: 64px; height: 44px; padding: 0 14px; background: rgba(8, 8, 16, .45); border: 1px solid var(--line); color: var(--ink); font: inherit; font-size: 14px; letter-spacing: .14em; }
     #vignette { position: fixed; inset: 0; pointer-events: none; opacity: 0;
       background: radial-gradient(ellipse at center, rgba(255,20,20,0) 35%, rgba(255,20,20,.55) 105%); }
     #vignette.on { animation: vig .32s linear forwards; }
@@ -51,7 +53,7 @@
     @media (prefers-reduced-motion: reduce) { #vignette.on { animation: none; } }
     /* the banner sits in the band under the HUD, clear of the pause button and
        of the floor — never over the middle of the fight (owner, 2026-10-24) */
-    #banner { position: fixed; left: 50%; transform: translateX(-50%); top: calc(max(12px, env(safe-area-inset-top)) + 46px); width: max-content; max-width: min(64vw, 720px);
+    #banner { position: fixed; left: 50%; transform: translateX(-50%); top: calc(max(12px, env(safe-area-inset-top)) + 84px); width: max-content; max-width: min(64vw, 720px);
       padding: 3px 14px; text-align: center; text-wrap: balance; font-size: clamp(13px, 2.4vw, 20px); letter-spacing: min(.22em, .8vw); color: var(--amber);
       background: rgba(8, 8, 16, .55); border-radius: 3px; pointer-events: none; z-index: 5; text-shadow: 0 0 10px rgba(255, 180, 104, .35); }
     #banner[hidden] { display: none; }
@@ -103,11 +105,14 @@
     #menu .row.start .item .label { font-size: 17px; letter-spacing: .2em; }
     #menu .row.start .item.narrow { flex: 0 0 34%; }
     #menu .row.start .item.narrow .label { font-size: 15px; letter-spacing: .16em; }
+    #menu .row.start .item.hard { flex: 0 0 42%; }
+    #menu .row.start .item.hard .label { font-size: 13px; letter-spacing: .08em; white-space: nowrap; }
+    #menu .row.start .item.hard .sub { font-size: 10px; }
     /* a phone held sideways is ~400 px tall: two columns, so the whole title
        (the test switches included) shows without scrolling */
     @media (orientation: landscape) and (max-height: 520px) {
       #menu { width: min(94vw, 820px); display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; align-content: start; }
-      #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard, #menu > .grid, #menu > .route-wrap, #menu > .goal, #menu > canvas.chart, #menu > .teaches, #menu > .skills, #menu > .tiers, #menu > .best { grid-column: 1 / -1; }
+      #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard, #menu > .grid, #menu > .route-wrap, #menu > .goal, #menu > canvas.chart, #menu > .teaches, #menu > .skills, #menu > .tiers, #menu > .best, #menu > .row.start { grid-column: 1 / -1; }
       #menu .logo { margin: 0 0 4px; }
       #menu .item { margin: 5px 0; }
       #menu .hint { margin-top: 6px; }
@@ -158,13 +163,13 @@
   <canvas id="sticks"></canvas>
   <div id="hud" hidden>
     <div id="scorebox"><span id="score">0</span><span id="mult"></span><div id="lives"></div><div id="fx"></div></div>
-    <button id="pausebtn" aria-label="pause">II</button>
+    <button id="pausebtn" aria-label="menu">≡ MENU</button>
     <div id="clock"></div>
   </div>
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v37<span id="backend"></span></div>
+  <div id="ver">2.0 · v38<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -228,6 +233,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=37"></script>
+  <script type="module" src="js/main.js?v=38"></script>
 </body>
 </html>

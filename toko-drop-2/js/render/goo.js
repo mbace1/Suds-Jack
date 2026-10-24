@@ -44,8 +44,8 @@ import {
   Fn, uniform, attribute, texture, uv, vec2, vec3, vec4, float, normalize, dot, length, max, min, clamp, pow, sqrt,
   mix, cameraViewMatrix, varying, select, positionGeometry, step, smoothstep, mrt,
 } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=37';
-import { GooSim, BODY, STAMP } from './goo-sim.js?v=37';
+import { TUNING } from '../tuning.js?v=38';
+import { GooSim, BODY, STAMP } from './goo-sim.js?v=38';
 
 const T = TUNING, G = T.goo;
 const MAX_BODIES = 256;

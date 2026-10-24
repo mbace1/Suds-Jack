@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v38 — 2026-10-24
+**The start screen is ARCADE with HARD beside it, CAMPAIGN and MENU, and a MENU button stays at the top right while you play**
+- Owner, 2026-10-24: *"no need for a intro button. On the start screen it should have arcade button with hard toggle, campaign button, and menu button. Always when playing there should be a menu button at the top. In 1.x it was over the clock."*
+- The title: ARCADE (HARDCADE while HARD is on) with the HARD switch on the same row, then CAMPAIGN, then MENU — what OPTIONS was, renamed for what it is. A phone held sideways puts ARCADE + HARD across the top and CAMPAIGN | MENU under it.
+- INTRO is gone from the title. The film still plays before a run when the address carries `?intro`.
+- In play the pause button is `≡ MENU`, top right where 1.x had it, with the clock under it instead of the old `II` at top centre. On a narrow phone the clock drops to 13 px so a campaign room's line (`SURVIVE · 23s · S`) stays on one row.
+- The banner band moves down to sit under the clock.
+- Cache tokens `?v=37` → `?v=38`; HUD label → `2.0 · v38`
+
+---
+
 ## v37 — 2026-10-24
 **Each arcade world asks its own challenge, three of them close their walls in for it, and the banners move off the fight**
 - A world's challenge waves ask its SIGNATURE: THE DRIVEWAY dash the gates, THE SEWER hold the ring, THE CISTERN collect the orbs, THE BOILER ROOM protect the heart, THE RIVER hold the ring on its current, THE ICE SHEET keep a streak, THE DEEP collect the orbs in the dark; the first world and THE CORE go round them all
