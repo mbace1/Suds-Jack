@@ -1,8 +1,8 @@
 {
   "film": "one-more-loop",
-  "cut": "v1 (owner, 23 Oct: 'Clay polished and planned well'; the park and the drones are the owner's own idea) — Toko set 1/4: the prototype took an hour, the loop took the night",
+  "cut": "v2 (owner, 24 Oct: 'It's good. His hands aren't on the phone and game visuals glitch'): the hands grip the phone, the game is a pure function of time, the offer off the bottom edge, the clock clear of the caption, the close-up brighter, captions at the big size. v1 (23 Oct): Toko set 1/4",
   "series": "toko",
-  "captionSize": "house",
+  "captionSize": "big",
   "argument": "With an AI, a working game prototype takes an hour, but the AI always offers one more change, and that loop can eat the whole night; only the person can say enough.",
   "langs": [
     "en",
@@ -23,9 +23,9 @@
       "until": "s2-0.3",
       "hold": "s2",
       "text": {
-        "en": "Toko asked an AI / for a game prototype. / It took an [hour].",
-        "fi": "Toko pyysi tekoälyltä / peliprototyypin. / Siihen meni [tunti].",
-        "ja": "Tokoは AIに / ゲームの 試作を 頼んだ。 / かかったのは [1時間]。"
+        "en": "Toko asked an AI / for a game / prototype. / It took an [hour].",
+        "fi": "Toko pyysi / tekoälyltä / peliprototyypin. / Siihen meni [tunti].",
+        "ja": "Tokoは AIに / ゲームの 試作を / 頼んだ。 / かかったのは [1時間]。"
       },
       "source": "Observed, not reported: the film shows one way of working, Toko's own. No product is named or shown; the chat on the phone is drawn for the film."
     },
@@ -36,9 +36,9 @@
       "until": "s3-0.3",
       "hold": "s3",
       "text": {
-        "en": "Then: one more change. / And one [more].",
-        "fi": "Sitten: vielä yksi muutos. / Ja vielä [yksi].",
-        "ja": "それから もう1つ 変更。 / さらに [もう1つ]。"
+        "en": "Then: one / more change. / And one [more].",
+        "fi": "Sitten: vielä / yksi muutos. / Ja vielä [yksi].",
+        "ja": "それから / もう1つ 変更。 / さらに [もう1つ]。"
       },
       "source": "The film's own picture: the phone's clock jumps 23:40, 01:55, 03:10 while he taps yes."
     },
@@ -50,8 +50,8 @@
       "hold": "s4",
       "text": {
         "en": "It always offers / one more [change].",
-        "fi": "Se tarjoaa aina / vielä yhden [muutoksen].",
-        "ja": "AIは いつも / [もう1つ] 提案してくる。"
+        "fi": "Se tarjoaa aina / vielä yhden / [muutoksen].",
+        "ja": "AIは いつも / [もう1つ] / 提案してくる。"
       },
       "source": "The generic shape of a chat assistant's reply, which commonly ends by offering a further iteration; written for the film and attributed to no product."
     },
@@ -62,8 +62,8 @@
       "until": "s5-0.2",
       "hold": "s5",
       "text": {
-        "en": "The prototype took an hour. / The loop took the [night].",
-        "fi": "Prototyyppiin meni tunti. / Kierteeseen koko [yö].",
+        "en": "The prototype / took an hour. / The loop took / the [night].",
+        "fi": "Prototyyppiin / meni tunti. / Kierteeseen / koko [yö].",
         "ja": "試作は 1時間。 / ループは [ひと晩]。"
       },
       "source": "The station's line, over the dawn: the same bench, the phone still asking."
@@ -125,11 +125,31 @@
       "fi": "Tee siitä oikean tuntuinen.",
       "ja": "しっくり くるように。"
     },
-    "t0": { "en": "22:10", "fi": "22.10", "ja": "22:10" },
-    "t1": { "en": "23:40", "fi": "23.40", "ja": "23:40" },
-    "t2": { "en": "01:55", "fi": "1.55", "ja": "1:55" },
-    "t3": { "en": "03:10", "fi": "3.10", "ja": "3:10" },
-    "t4": { "en": "06:20", "fi": "6.20", "ja": "6:20" }
+    "t0": {
+      "en": "22:10",
+      "fi": "22.10",
+      "ja": "22:10"
+    },
+    "t1": {
+      "en": "23:40",
+      "fi": "23.40",
+      "ja": "23:40"
+    },
+    "t2": {
+      "en": "01:55",
+      "fi": "1.55",
+      "ja": "1:55"
+    },
+    "t3": {
+      "en": "03:10",
+      "fi": "3.10",
+      "ja": "3:10"
+    },
+    "t4": {
+      "en": "06:20",
+      "fi": "6.20",
+      "ja": "6:20"
+    }
   },
   "props": {
     "chat": {

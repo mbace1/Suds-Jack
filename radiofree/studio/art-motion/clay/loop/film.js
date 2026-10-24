@@ -227,16 +227,42 @@ mesh0(lumpy(lathe([[0, 0], [2.2, 0], [2.3, 2.6], [0, 2.8]], 28), 0.02, 1, 91), M
 // ------------------------------------------------------------------ the phone's screen: the prototype, the chat, the ask
 const P_UI = {};   // filled from the plan below (translated strings)
 function drawGame(g, x, y, w, h, t, v = 0) {
-  // the prototype: a magenta drop dodging falling dots, v = which iteration (its colours and speed shift)
+  // the prototype: a magenta drop dodging falling dots. v2 (owner: "game visuals glitch"): v1 wrapped every dot from the
+  // bottom back to the top (dots popped), the drop swung on a sine straight through them, and the score wrapped every 3 s.
+  // Now everything on this screen is a pure function of the film's time t: dots fall down five lanes on a fixed schedule,
+  // fade in at the top and leave at the bottom; the drop steps between lanes by a deterministic dodge; the score only
+  // climbs. v = which iteration (Faster / More fun / Make it feel right), each adding something on top of the last.
   g.save(); g.beginPath(); g.roundRect(x, y, w, h, 18); g.clip();
   const bg = ['#141a2e', '#1a1430', '#10241f', '#231a10'][v % 4]; g.fillStyle = bg; g.fillRect(x, y, w, h);
-  const sp = 1 + v * 0.45, r = rng(7 + v);
-  for (let i = 0; i < 9; i++) { const dx = x + 20 + r() * (w - 40), dy = y + ((r() * h + t * 120 * sp) % h);
-    g.fillStyle = ['#ffd84a', '#5ad7ff', '#ffffff', '#ff8a3a'][v % 4]; g.beginPath(); g.arc(dx, dy, 7 + v, 0, TAU); g.fill(); }
-  const px = x + w / 2 + Math.sin(t * 3.1 * sp) * (w * 0.32), py = y + h - 46;
+  const NL = 5, lane = (L) => x + w * (L + 0.5) / NL, sp = 1 + v * 0.35, speed = h * 0.62 * sp, dt = 0.42 / sp, rad = 7 + v;
+  const hash = (j) => { let a = (j * 2654435761 + v * 97) >>> 0; a ^= a >>> 15; a = Math.imul(a, 2246822519) >>> 0; a ^= a >>> 13; return a >>> 0; };
+  const laneOf = (j) => hash(j) % NL, yd = y + h - 46, travel = (yd - y) / speed;
+  // the dodge: at each decision step the drop moves to the free lane nearest the one it is in
+  let L = 2, prev = 2; const steps = Math.floor(t / dt);
+  for (let i = 0; i <= steps; i++) {
+    const ti = i * dt, bad = new Set();
+    for (let j = Math.floor((ti - travel - 0.3) / dt); j <= Math.ceil((ti + dt - travel + 0.3) / dt); j++) if (j >= 0) bad.add(laneOf(j));
+    let best = L, bd = 99; for (let c = 0; c < NL; c++) if (!bad.has(c) && Math.abs(c - L) < bd) { bd = Math.abs(c - L); best = c; }
+    prev = L; L = best;
+  }
+  const kmove = ease.io(clamp((t - steps * dt) / (dt * 0.45)));
+  const px = lerp(lane(prev), lane(L), kmove), py = yd;
+  // v ≥ 2: a trail behind the drop
+  if (v >= 2) for (let k = 1; k <= 4; k++) { g.globalAlpha = 0.18 / k; g.fillStyle = MAG; g.beginPath(); g.arc(px, py + 10 + k * 7, 14 - k * 2, 0, TAU); g.fill(); } g.globalAlpha = 1;
+  // the dots: every one that is on screen at t, from its own spawn time
+  const col = ['#ffffff', '#ffd84a', '#5ad7ff', '#ff8a3a'][v % 4];
+  for (let j = Math.max(0, Math.floor((t - (h + 40) / speed) / dt)); j <= Math.floor(t / dt); j++) {
+    const age = t - j * dt, dy = y + age * speed; if (dy > y + h + rad) continue;
+    g.globalAlpha = clamp(age / 0.18); g.fillStyle = col; g.beginPath(); g.arc(lane(laneOf(j)), dy, rad, 0, TAU); g.fill();
+    if (v >= 3) { g.globalAlpha *= 0.35; g.beginPath(); g.arc(lane(laneOf(j)), dy, rad * 1.8, 0, TAU); g.fill(); }
+  }
+  g.globalAlpha = 1;
+  // the drop
+  const sq = 1 + 0.12 * Math.sin(kmove * Math.PI);
+  g.save(); g.translate(px, py); g.scale(1 / sq, sq); g.translate(-px, -py);
   g.fillStyle = MAG; g.beginPath(); g.moveTo(px, py - 26); g.bezierCurveTo(px + 18, py - 4, px + 18, py + 18, px, py + 18); g.bezierCurveTo(px - 18, py + 18, px - 18, py - 4, px, py - 26); g.fill();
-  g.fillStyle = '#fff'; g.beginPath(); g.arc(px - 6, py + 2, 3, 0, TAU); g.arc(px + 6, py + 2, 3, 0, TAU); g.fill();
-  g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '700 22px Inter'; g.textAlign = 'right'; g.fillText(String(120 + v * 340 + Math.floor(t * 30) % 90), x + w - 14, y + 32);
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(px - 6, py + 2, 3, 0, TAU); g.arc(px + 6, py + 2, 3, 0, TAU); g.fill(); g.restore();
+  g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '700 22px Inter'; g.textAlign = 'right'; g.fillText(String(100 + Math.floor(t * 14) + v * 200), x + w - 14, y + 32);
   g.restore();
 }
 function bubble(g, x, y, w, text, mine, fs = 26) {
@@ -272,9 +298,9 @@ function drawUI(mode, t, o = {}) {
     // newest at the bottom: his line, the AI's reply with the next prototype, and the offer
     // bottom up: the offer, the new prototype, his request; the round before, ghosted, above
     const n = o.n ?? 1, k = o.k ?? 1, LINES = [P_UI.c1, P_UI.c2, P_UI.c3];
-    const yAsk = h - 144, yGame = yAsk - 14 - 300, yMe = yGame - 14 - 78, yPrev = yMe - 14 - 78;
+    const yAsk = h - 176, yGame = yAsk - 14 - 290, yMe = yGame - 14 - 78, yPrev = yMe - 14 - 78;
     askChip(g, 20, yAsk, w - 40, (k - 0.35) * 1.4, o.sel ?? -1);
-    if (k > 0.15) { g.globalAlpha = ease.out((k - 0.15) / 0.3); drawGame(g, 20, yGame, w - 40, 300, t, n); g.globalAlpha = 1; }
+    if (k > 0.15) { g.globalAlpha = ease.out((k - 0.15) / 0.3); drawGame(g, 20, yGame, w - 40, 290, t, n); g.globalAlpha = 1; }
     bubble(g, 20, yMe, w - 40, LINES[n - 1], true);
     g.globalAlpha = 0.4; bubble(g, 20, yPrev, w - 40, n > 1 ? LINES[n - 2] : P_UI.ask, true); g.globalAlpha = 1;
     const fade = g.createLinearGradient(0, 50, 0, 200); fade.addColorStop(0, '#0f0e14'); fade.addColorStop(1, 'rgba(15,14,20,0)'); g.fillStyle = fade; g.fillRect(0, 50, w, 150);
@@ -344,16 +370,17 @@ const SHOT = [
     cam(t, lt, d) { const k = ease.io(lt / d); return { pos: LOOK0.pos.clone().add(V([-4 * k, -1 * k, -10 * k])), at: LOOK0.at.clone().add(V([0, -2 * k, 0])), fov: LOOK0.fov - 2 * k, focus: 104 - 10 * k, ap: 3.2 }; } },
   { // 2 · night, over his right shoulder onto the phone: One more change? Yes. Three rounds, three times; the thermos tips
     t0: () => T.s2, t1: () => T.s3, hour: 'night', lamp: () => 1,
-    pose(t) { const tap = [EV.tap1, EV.tap2].some((x) => t > x - 0.12 && t < x + 0.12) ? 1 : 0;
-      const p = sitPose({ lift: 0.72, lean: 0.38, hp: 0.62, breathe: Math.sin(t * 1.4) }); p.hdL = at(add3(p._phone, [2.7, -1.6 + tap * 0.5, -0.6 + tap * 0.5])); return p; },
+    pose(t) { return sitPose({ lift: 0.72, lean: 0.38, hp: 0.62, breathe: Math.sin(t * 1.4) }); },
+    // his left hand leaves the edge, comes onto the screen over Yes, presses, and goes back to its grip
+    grip(t) { const k = Math.max(...[EV.tap1, EV.tap2].map((x) => Math.sin(Math.PI * clamp((t - x + 0.32) / 0.6)))); return { tap: k }; },
     ui(t) { const n = t < EV.j2 ? 1 : t < EV.j3 ? 2 : 3, t0 = [EV.j1, EV.j2, EV.j3][n - 1], k = clamp((t - t0) / 0.9), sel = (n === 1 && t > EV.tap1) || (n === 2 && t > EV.tap2) ? 0 : -1;
       drawUI('chat', t, { n, k, sel, time: [P_UI.t1, P_UI.t2, P_UI.t3][n - 1] }); },
     thermos: (t) => ease.out((t - EV.tip) / 0.35),
     cam(t, lt, d) { // his point of view, from just beside the mask: the screen big, his gloves at its sides
       // over his right shoulder, wide enough of the mask to clear it: the screen big, a glove at its edge
-      const k = ease.io(lt / d), ph = PHONE.position.clone(), n = headW().sub(ph).normalize(), side = V([-1, 0, 0]);
-      const pos = ph.clone().addScaledVector(n, lerp(14.5, 13.5, k)).addScaledVector(side, 11).add(V([0, 2, 0]));
-      return { pos, at: ph.clone().add(V([-0.3, 1.4, 0])), fov: 38, focus: pos.distanceTo(ph), ap: 6 }; } },
+      const k = ease.io(lt / d), ph = WRAP.localToWorld(V(at(this.pose(t)._phone))), n = headW().sub(ph).normalize(), side = V([-1, 0, 0]);
+      const pos = ph.clone().addScaledVector(n, lerp(15.5, 14.5, k)).addScaledVector(side, 11).add(V([0, 2, 0]));
+      return { pos, at: ph.clone().add(V([-0.3, 2.4, 0])), fov: 42, focus: pos.distanceTo(ph), ap: 6 }; } },
   { // 3 · close on the mask, lit by the phone; the drones' red lights cross the dark behind him; he slumps a little each pose
     t0: () => T.s3, t1: () => T.s4, hour: 'night', lamp: () => 1,
     pose(t) { const s = ease.io((t - EV.slump) / (T.s4 - EV.slump)); return sitPose({ lift: 0.62 - 0.15 * s, lean: 0.4 + 0.12 * s, hp: 0.4 + 0.12 * s, hr: 0.08 * s, breathe: Math.sin(t * 1.1) }); },
@@ -395,13 +422,24 @@ function frame(t, captions = true) {
   const i = shotAt(t), S = SHOT[i], t0 = S.t0(), d = S.t1() - t0, lt = t - t0, tq = twos(t);
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.filter = 'none';
   setBoil(Math.floor(t * 12));
-  const grade = setHour(S.hour, S.lamp(t));
+  const grade0 = setHour(S.hour, S.lamp(t)), grade = i === 2 ? { ...grade0, exposure: grade0.exposure * 1.45, lift: [0.014, 0.014, 0.026] } : grade0;
+  if (i === 2) hemi.intensity *= 1.8;
   // Toko, on twos
   const pz = S.pose(tq); TOKO.pose(pz); WRAP.updateMatrixWorld(true);
   const ph = WRAP.localToWorld(V(at(pz._phone))), head = headW();
   PHONE.position.copy(ph); PHONE.lookAt(head); PHONE.rotateY(0); PHONE.updateMatrixWorld(true);
+  // v2 (owner: "his hands aren't on the phone"): the hands are placed ON the phone. Each mitt wraps a long edge from
+  // behind, its front face over the screen's edge like a thumb; the phone's +x is his right. A tap brings the left mitt
+  // onto the screen over Yes (canvas 115,708 → local -0.89,-3.23) and back.
+  { const gr = S.grip ? S.grip(tq) : {}, tap = gr.tap || 0, loose = S.bird ? 1 : 0;
+    const toL = (v) => TOKO.group.worldToLocal(PHONE.localToWorld(V(v)));
+    const gR = [3.15, -1.6 - loose * 0.6, -0.85], gL0 = [-3.15, -1.6 - loose * 0.6, -0.85], yes = [-0.95, -4.0, 0.7];
+    const gL = lerp3(gL0, yes, tap);
+    const c = toL([0, -1.4, -0.5]), hR = toL(gR), hL = toL(gL), inR = c.clone().sub(hR).normalize(), inL = (tap > 0.5 ? toL([0, 0, -2]) : c).clone().sub(hL).normalize();
+    pz.hdR = hR.toArray(); pz.hdL = hL.toArray(); pz.palm = [inR.toArray(), inL.toArray()];
+    TOKO.pose(pz); WRAP.updateMatrixWorld(true); }
   S.ui(t);
-  const glow = S.hour === 'night' ? (i === 2 ? 55 : 90) : S.hour === 'dusk' ? 40 : 18;
+  const glow = S.hour === 'night' ? (i === 2 ? 150 : 90) : S.hour === 'dusk' ? 40 : 18;
   phoneLight.position.copy(ph).add(head.clone().sub(ph).normalize().multiplyScalar(3.5)); phoneLight.intensity = glow * (1 + Math.sin(t * 7) * 0.04);
   const th = typeof S.thermos === 'function' ? S.thermos(tq) : S.thermos; THERMOS.rotation.set(0, 0.3, -th * 1.45); THERMOS.position.y = SEAT + 0.2 + th * 2.2;
   TOKO.hood.visible = i !== 1;                                                   // the hood's strings would hang across the screen over his shoulder
