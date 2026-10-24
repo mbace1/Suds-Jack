@@ -1,69 +1,75 @@
 # Toko Move — roadmap after v2.36
 
-## Owner direction, 2026-10-23 — publishing order: Toko Move is the front for Piritori
+## Owner direction, 2026-10-24 — publish Toko Move first; Piritori is its spin-off
 
-*"Plan Toko Move to be the front for Piritori, so that it will first appear in
-that game or adjacent to it and later become the main title. The designs are
-already planned, but this is the order the games need to be published."*
+*"Toko Move is the thing we publish first and then Piritori is a spin-off that
+becomes the bigger game. I have Toko Move approved in my contract but not
+Piritori, so it has to be Toko Move: Piritori and then we rebrand."* And on
+the first draft of the order: *"Toko Move has none of Piritori assets. It's a
+simple transportation simulator game with missions"*; *"We are looking at
+platform publishing like itch.io"*. (Supersedes the 2026-10-23 draft and the
+2026-09-27 "two modes" note.)
 
-This supersedes the 2026-09-27 note (two modes, Piritori "maybe later") on
-**order**, not on design: both games' designs stand. Toko Move publishes first
-and is the way in; Piritori **appears inside it, then beside it, then becomes
-the main title**, with Toko Move kept as its daytime front.
+### The release order
 
-### Where the two stand (2026-10-23)
+1. **Toko Move** — published first, on itch.io, under the title the contract
+   approves. A transport simulator with missions on the real Helsinki network.
+   **It carries nothing of Piritori**: no characters, art, name, door or code.
+2. **Toko Move: Piritori** — the spin-off, published under the approved title
+   as its own itch.io project with its own adult-content rating. Built in its
+   own lane (`mbace1/piritori-eden`); Piritori's canon stands untouched —
+   separate products sharing only the neutral city engine (`flow-core`).
+3. **Piritori** — the rebrand, once the spin-off has outgrown the name; it
+   becomes the bigger title and the top of the publisher page. Toko Move stays
+   published and maintained beside it.
 
-- **Toko Move — v2.63, live since 2026-09-26.** Real HSL network incl. the
-  Crown Bridges, daily shift, five-shift week with rent, LIVE (unverified
-  against the real broker), test card. No release since. The nightly HSL
-  refresh **validates every night and fails only on opening its PR** (Actions
-  may not create PRs here); the feed has moved again since v2.63.
-- **Piritori — source in `mbace1/piritori-eden`, v4.70 (2026-10-22), Act I.**
-  Three cabinets live (`piritori` JS campaign at v4.67 on the site, the C.18/C.19
-  crew-run, the Godot port). Its own plan (`ACTIVE_CONTEXT.md`) is
-  readability, then one connected city → contact → mission → consequence loop,
-  then a short 6–8-anchor chapter; owner and physical-device acceptance of C.19
-  are still OPEN. **Toko Slomo** — Toko's Kallio-noir persona — runs a noodle
-  counter on Vaasankatu, in approved cut-card art (v4.70).
+Two things to settle outside the code before step 2: that the contract's
+approval of *Toko Move* covers a spin-off of this kind under that name, and
+the spin-off's itch.io URL — give it a neutral slug (`…/piritori`) from day
+one so the rebrand changes a title, not an address.
 
-### The order (revised 2026-10-24 with the owner's answers)
+### Toko Move's road to the store — milestones
 
-The owner, on the first draft: *"Toko Move has none of Piritori assets. It's a
-simple transportation simulator game with missions"*, and *"We are looking at
-platform publishing like itch.io"*. So the games never mix. **Toko Move carries
-nothing of Piritori** — no characters, art, name or door — and Piritori's own
-canon (`DESIGN_AUTHORITY.md`, GDD §21, `SHARED_ENGINE.md`: separate products,
-shared neutral engine only) stands untouched. "First in or adjacent" is about
-**where they are published**: the same publisher page, Toko Move first.
+**M1 · Current network + the rival fix (v2.64, 2026-10-24).** The feed the
+nightly refresh has validated since; the rival no longer loses his walk to a
+race abandoned a tick later. `tools/fingerprint.mjs` makes every future
+adoption one command.
 
-**Phase 0 — Toko Move ships, on the arcade (now).** v2.64 on the network the
-nightly refresh has been validating; the owner's phone pass on the test card;
-the Actions setting so the refresh can open its own PR.
+**M2 · The store build (v2.64).** One shipping tree, two places it is
+published. `js/platform.js` is the seam: a packaged build declares
+`TOKO_PLATFORM` and the game then shares the STORE PAGE rather than the frame
+it is playing in, and leaves out the playtest test card.
+`tools/package-itch.mjs` builds the upload — `toko-move/` beside the parts of
+`flow-core/` it imports, a root `index.html` that steps into it, no arcade
+HOME button, no tests or tools — refuses any path that would reach outside the
+package, and zips it. `test/itch.cjs` unzips that file, serves it ALONE, and
+plays a shift through it.
 
-**Phase 1 — Toko Move ships on a platform (itch.io).** The first public
-release under the studio's page. What a standalone HTML5 upload needs, from
-what the build reaches outside its folder today:
-- **`flow-core/`** — `sim.js`, `render.js`, `input.js` and
-  `data/kallio-water-v1.json` — packaged alongside, so the zip is
-  self-contained;
-- **`../hub/shell.js`** (the arcade's HOME button) — not shipped; the itch
-  build has no arcade to go home to;
-- **the test card's "Tell Toko"** (`../#tokomove/feedback`) — pointed at the
-  itch page's comments, or the card left out of the platform build;
-- a packaging script that builds the zip from the shipping tree (no build
-  step in the game itself; the script only copies and rewrites those paths),
-  and a gate that boots the zip with nothing else served beside it;
-- the store page: the Crown Bridges film (`tools/film.cjs`) as the trailer,
-  HSL (CC BY 4.0) and OpenStreetMap (ODbL) credits.
+**M3 · The store page kit.** `store/ITCH.md` (title, short and long
+description, controls, tags, credits, embed settings); the Crown Bridges film
+(`tools/film.cjs`) as the trailer; stills from the same harness.
 
-**Phase 2 — Piritori published adjacent.** Its own release, on the same
-publisher page, when Piritori's lane is ready to ship it — its own build, its
-own audience and content notice, decided in that lane.
+**M4 · First minutes for a stranger.** Until now every player had the arcade
+around them and a test card telling them what to try. A store player arrives
+cold: the first shift has to teach the loop — take a job, catch a tram, get
+off, deliver — without a page of text. Measure it (the shift bot's "naive"
+player and a timed first-delivery) before building it.
 
-**Phase 3 — Piritori becomes the main title.** When its own exit criteria
-close (C.19 owner and physical-device acceptance, the connected city/contact/
-mission loop, the short chapter), it takes the top of the publisher page.
-Toko Move stays published and maintained beside it.
+**M5 · Language.** Finnish and English at least, the arcade's house
+convention (fi/en/ja) as the target; Toko Move is English-only today.
+
+**M6 · LIVE on a real phone.** LIVE has never met HSL's broker from here; it
+needs the owner's phone (or a network that reaches `mqtt.hsl.fi`) before a
+store page may name it.
+
+**M7 · 1.0 on itch.io.** Owner uploads the M2 zip (or `butler` with the
+owner's key — not available here), embed 405×720 with fullscreen, mobile
+friendly, the M3 page. Every later release: the same package script, the same
+gate, `VERSIONS.md` as the changelog.
+
+Owner actions outside the code: the GitHub Actions setting so the nightly
+network refresh opens its own PR; the phone pass on the test card; the
+itch.io account and page.
 
 The kids' mode stays withdrawn (2026-09-27).
 

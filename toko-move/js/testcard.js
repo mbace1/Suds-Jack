@@ -12,6 +12,7 @@
 //
 // Pure where it can be: the list, the save and `tick` are testable in bare
 // node (test/testcard.mjs); `mountTestCard` is the DOM half.
+import { STORE } from './platform.js?v=1';
 export const KEY = 'tokoMoveTests';
 
 // The current build's missions. `href` is the way in — a query on this page,
@@ -53,8 +54,10 @@ export function cardHtml(state, m = MISSIONS) {
 }
 
 // The DOM half: the card on the title, and the ticks during play.
-export function mountTestCard(tm, { el = null, poll = 500 } = {}) {
+export function mountTestCard(tm, { el = null, poll = 500, store = STORE } = {}) {
   if (tm.testcard) return tm.testcard;
+  // a playtest tool for the arcade; a store build leaves the card off (platform.js)
+  if (store) { const box = el || document.getElementById('testCard'); if (box) box.hidden = true; return null; }
   const state = load();
   const paint = () => { const box = el || document.getElementById('testCard'); if (box) { box.innerHTML = cardHtml(state); box.hidden = false; } };
   const done = id => { if (!tick(state, id)) return false; save(state); paint();

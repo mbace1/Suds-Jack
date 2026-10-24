@@ -481,6 +481,9 @@ jobs:
       - name: the map names its hubs — a passing tram no longer hides the main station
         run: NODE_PATH=$(npm root -g) node toko-move/test/labels.cjs
 
+      - name: the itch.io upload, unzipped and played alone — no arcade, nothing outside the zip
+        run: NODE_PATH=$(npm root -g) node toko-move/test/itch.cjs
+
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
       # is broken if fewer than 40% of them get three deliveries home.
