@@ -1,28 +1,29 @@
 // Toko Move v2.12.2 runtime — clean HSL core + transfer hubs + walking/interception + two-job carry.
 // first, so every word the modules below draw passes through it (v2.66)
-import {tr} from './lang.js?v=1';
-import './core-v212.js?v=67';
-import './route-choice.js?v=26';
-import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=15';
+import {tr} from './lang.js?v=2';
+import './core-v212.js?v=68';
+import './route-choice.js?v=27';
+import {LiveNetwork,HEADWAY_MIN,MODE_KMH} from './live-network.js?v=16';
 import {hidden as fogHides} from './weather.js?v=1';
 import {mountCity,headwayFor,walkFactor,encounterCount,goodwillFactor,marketOf} from './city-events.js?v=1';
 import {TRANSFER_HUBS,WALK_STREETS,walksFrom} from './hubs-walking.js?v=4';
 import {MobilityController} from './mobility-v212.js?v=11';
 import {interceptionOptions,bestInterception} from './interception-v212.js?v=2';
-import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=27';
+import {mountJobBoard,reachableSoon,planCost,alongOffersFor} from './job-board-v212.js?v=28';
 import {mountEvents} from './events.js?v=5';
 import {mountRival} from './rival.js?v=4';
-import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=3';
+import {loadVisited,saveVisited,visit,teach,progress,streetsAt} from './knowledge.js?v=4';
 import {planEstimate} from './timetable.js?v=2';
 import {ShiftLog} from './shiftlog.js?v=4';
 import {Trails} from './trails.js?v=2';
-import {mountHubTactics} from './hub-tactics-v212.js?v=6';
+import {mountHubTactics} from './hub-tactics-v212.js?v=7';
 import {mountSkillMoments} from './moments-v212.js?v=2';
-import {mountJuice} from './juice.js?v=2';
+import {mountJuice} from './juice.js?v=3';
+import {mountAudio} from './audio.js?v=1';
 import {mountTestCard} from './testcard.js?v=3';
 import {mountRecovery} from './recovery-v212.js?v=3';
 import {about,inMinutes} from './ui.js?v=2';
-const BUILD_VERSION='2.66';
+const BUILD_VERSION='2.67';
 function mount(){const tm=window.__tm;if(!tm?.transit||!tm?.flow||!tm?.city){setTimeout(mount,50);return;}tm.version=BUILD_VERSION;// THE DAY IS DRAWN BEFORE THE FLEET, because one of the four is a timetable:
 // QUIET SUNDAY provisions fewer trams, and a fleet cannot be re-provisioned
 // after its vehicles exist without every phase in it moving under the player.
@@ -41,7 +42,7 @@ tm.liveNetwork=new LiveNetwork(tm.transit,{headwayMinutes:headwayFor(tm.cityDay,
 // swallowed on failure — a feed that cannot connect leaves the timetable
 // running and the HUD saying so, never a blank board.
 if(tm.live){tm.liveFeed={state:'connecting',label:'LIVE · CONNECTING',count:0};
- Promise.all([import('./hfp.js?v=2'),import('./mqtt-ws.js?v=1')]).then(([H,M])=>{
+ Promise.all([import('./hfp.js?v=3'),import('./mqtt-ws.js?v=1')]).then(([H,M])=>{
   const fleet=new H.LiveFleet(tm.liveNetwork),feed=tm.liveFeed;tm.liveFleet=fleet;let heardAt=0;
   const riding=()=>tm.mobility?.status?.()?.ride?.vehicleId||tm.liveNetwork.selectedVehicleId||null;
   const set=(state,label)=>{feed.state=state;feed.label=label;};
@@ -62,7 +63,7 @@ tm.visitHere=id=>{if(!visit(tm.visited,id))return false;saveVisited(tm.visited);
   tm.challenge.say?.(`FIRST TIME AT ${tm.challenge.name(id)}${st.length?` · ${st.join(', ')}`:''} · ${p.known}/${p.total} walks open`);return true;};
 tm.teachStreet=seed=>{const id=teach(tm.visited,seed);if(id){saveVisited(tm.visited);tm.challenge.say?.(`SHOWN THE WAY · ${tm.challenge.name(id)} is walkable from here`);}return id;};
 tm.visitHere(tm.challenge.currentFrom?.()||'lasipalatsi');
-tm.alongOffers=()=>alongOffersFor(tm);mountJobBoard(tm);mountHubTactics(tm);mountSkillMoments(tm);mountJuice(tm);mountTestCard(tm);mountRecovery(tm);mountCity(tm);mountEvents(tm,tm.shiftSeed??7,{encounters:encounterCount(tm.cityDay,null),goodwill:goodwillFactor(tm.cityDay)});mountRival(tm,tm.shiftSeed??7);const canvas=document.getElementById('map'),ctx=canvas?.getContext('2d');if(!canvas||!ctx)return;const project=(lat,lon)=>tm.project(lat,lon);const nodePoint=id=>{const n=tm.city.resolved?.[id];return n?project(n.lat,n.lon):null;};const drawTransitLayer=()=>{if(document.body.classList.contains('transit-view')||!tm.transit)return;tm.transit.draw(ctx,canvas.width,canvas.height,{fit:project,alpha:.96,lineWidth:2.5*(tm.renderer?.dpr||window.devicePixelRatio||1)});};// Which lines are any use to you RIGHT NOW: the one you are on, the one your plan
+tm.alongOffers=()=>alongOffersFor(tm);mountJobBoard(tm);mountHubTactics(tm);mountSkillMoments(tm);mountJuice(tm);mountAudio(tm);mountTestCard(tm);mountRecovery(tm);mountCity(tm);mountEvents(tm,tm.shiftSeed??7,{encounters:encounterCount(tm.cityDay,null),goodwill:goodwillFactor(tm.cityDay)});mountRival(tm,tm.shiftSeed??7);const canvas=document.getElementById('map'),ctx=canvas?.getContext('2d');if(!canvas||!ctx)return;const project=(lat,lon)=>tm.project(lat,lon);const nodePoint=id=>{const n=tm.city.resolved?.[id];return n?project(n.lat,n.lon):null;};const drawTransitLayer=()=>{if(document.body.classList.contains('transit-view')||!tm.transit)return;tm.transit.draw(ctx,canvas.width,canvas.height,{fit:project,alpha:.96,lineWidth:2.5*(tm.renderer?.dpr||window.devicePixelRatio||1)});};// Which lines are any use to you RIGHT NOW: the one you are on, the one your plan
 // says to take, and the ones the board is offering. Those keep a readable badge in a
 // crowd; everything else yields to a dot. Without this the declutter would be
 // arbitrary about which tram it silenced, and the silenced one is often yours.
@@ -155,8 +156,8 @@ const drawCourier=()=>{const st=tm.mobility?.status?.();if(!st||st.kind==='ridin
 // and the countdown; this slot used to say ON TRAM 1H a second time above it.
 // It now carries only the one thing that card does not: a second job aboard.
 const rideStatus=()=>{const ch=tm.challenge,el=tm.sheetSlot?.('rideStatus');if(!el)return;const st=tm.mobility?.status?.();
-  if(!ch?.active||st?.kind!=='riding'||!ch.queued){if(el.innerHTML)el.innerHTML='';return;}
+  if(!ch?.active||st?.kind!=='riding'||!ch.queued){if(el.innerHTML){el.innerHTML='';el.dataset.html='';}return;}
   const html=`<div style="margin-top:8px;padding:8px;border:2px solid #e2683c;border-radius:8px;background:#fff8ef;font-size:11px"><b>SECOND JOB ONBOARD</b> → ${ch.name(ch.queued.originalStops?.[1]||ch.queued.stops[1])}</div>`;
-  if(el.innerHTML!==html)el.innerHTML=html;};
-const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),lit=new Set((tm.catchables?.()||[]).map(x=>x.vehicle.id)),foc=tm.focusLines?.(),dim=foc&&foc.size?(l=>!foc.has(l?.name)&&!foc.has(l?.id)):null,boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,dim,priority:(l,v)=>lit.has(v?.id)?2.5:rel.has(l?.name)||rel.has(l?.id)?2:1,budget,lit,now:performance.now(),full:tm.rushOn?tm.isFull:null})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();drawGetOff();tm.juice?.draw(ctx,project,dpr);rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
+  if(el.dataset.html!==html){el.innerHTML=html;el.dataset.html=html;}};
+const draw=()=>{tm.shiftLog?.poll();if(!document.body.classList.contains('transit-view')){const dpr=tm.renderer?.dpr||window.devicePixelRatio||1,base=tm.fleetFilter?.(),here=tm.weather?.fogM?tm.courierLatLon?.():null,filter=here?(lat,lon,l,v)=>(!base||base(lat,lon,l,v))&&(v?.id===tm.liveNetwork?.selectedVehicleId||!fogHides(tm.weather,here,{lat,lon})):base;/* FOG: nothing past its reach but the ride you are on */tm.trails?.update(ctx,tm.liveNetwork,tm.flow.clock.tick,project,dpr,filter);const rel=relevantLines(),budget=Math.max(10,Math.min(32,Math.round((canvas.width/dpr)*(canvas.height/dpr)/11000))),lit=new Set((tm.catchables?.()||[]).map(x=>x.vehicle.id)),foc=tm.focusLines?.(),dim=foc&&foc.size?(l=>!foc.has(l?.name)&&!foc.has(l?.id)):null,boxes=tm.liveNetwork?.draw(ctx,tm.flow.clock.tick,project,dpr,{filter,dim,priority:(l,v)=>lit.has(v?.id)?2.5:rel.has(l?.name)||rel.has(l?.id)?2:1,budget,lit,now:performance.now(),full:tm.rushOn?tm.isFull:null})||[];tm.drawStopLabels?.(boxes);drawRival();drawCourier();drawInterception();drawGetOff();tm.juice?.draw(ctx,project,dpr);tm.audio?.poll();rideStatus();}requestAnimationFrame(draw);};requestAnimationFrame(draw);}
 mount();

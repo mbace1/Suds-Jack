@@ -9,7 +9,7 @@
 // would have nothing to draw.
 //
 // No DOM beyond the canvas it is handed, no network, no fonts to fetch.
-import { tr } from './lang.js?v=1';
+import { tr } from './lang.js?v=2';
 export const W = 1080, H = 1350;
 export const DAY_COLOURS = ['#e2683c', '#5aa860', '#2f9fb8', '#e0b43c', '#9b59b6'];
 const GRID = { ok: '#5aa860', late: '#e0b43c', none: '#3a4148' };

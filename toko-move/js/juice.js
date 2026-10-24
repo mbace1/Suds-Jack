@@ -16,7 +16,7 @@
 // the last frame and turns the difference into effects, so it cannot disagree
 // with the numbers — it is drawn FROM them. Under prefers-reduced-motion the
 // coins, the shake and the punch are dropped and the words stay.
-import { tr } from './lang.js?v=1';
+import { tr } from './lang.js?v=2';
 const reduced = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 const LIFE = { deliver: 1.4, late: 1.5, drop: 0.95, mult: 0.9 };
 

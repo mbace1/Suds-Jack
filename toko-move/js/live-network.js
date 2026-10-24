@@ -104,7 +104,15 @@ export class LiveNetwork{
  heldNow(layer,tick){return (this.holds||[]).find(h=>h.layerId===layer.id&&tick>=h.from&&tick<h.until)||null;}
  effectiveTick(layer,tick){let t=tick;for(const h of this.holds||[]){if(h.layerId!==layer.id)continue;const a=Math.min(tick,h.until),b=h.from;if(a>b)t-=(a-b);}return t;}
  position(v,tick){const path=v.layer.path||[];if(path.length<2)return null;tick=this.effectiveTick(v.layer,tick);const cycle=(v.phase+tick*v.speed)%2,q=cycle<=1?cycle:2-cycle,at=q*(path.length-1),i=Math.min(path.length-2,Math.floor(at)),f=at-i,a=path[i],b=path[i+1];return{lat:a[0]+(b[0]-a[0])*f,lon:a[1]+(b[1]-a[1])*f,pathIndex:at,direction:cycle<=1?1:-1};}
- vehicle(id){return this.vehicles.find(v=>v.id===id)||null;}
+ // THE FLEET BY LINE (v2.67). Every catch, every interception forecast and the
+ // board's wait times ask "the vehicles on this one line", and each asked it by
+ // walking every vehicle in the city — inside a search that steps forward tick
+ // by tick. On a phone-speed CPU that walk was the largest piece of JavaScript
+ // in a frame. The index is rebuilt whenever the array is replaced or grows or
+ // shrinks (LIVE does both), so no caller can see a stale one.
+ index(){const vs=this.vehicles;if(this._ix&&this._ix.of===vs&&this._ix.n===vs.length)return this._ix;const byLayer=new Map(),byId=new Map();for(const v of vs){byId.set(v.id,v);const k=v.layer.id;let a=byLayer.get(k);if(!a)byLayer.set(k,a=[]);a.push(v);}return this._ix={of:vs,n:vs.length,byLayer,byId};}
+ onLayer(layer){return this.index().byLayer.get(layer.id)||[];}
+ vehicle(id){return this.index().byId.get(id)||null;}
  // Unit screen-space direction of travel at a vehicle, from the path tangent
  // around its index and the sign of the leg it is on; null on a degenerate path.
  heading(v,p,project){const path=v.layer.path||[];if(!p||path.length<2)return null;const i=Math.max(0,Math.min(path.length-2,Math.floor(p.pathIndex)));const a=project(path[i][0],path[i][1]),b=project(path[i+1][0],path[i+1][1]);let dx=(b.x-a.x)*(p.direction>=0?1:-1),dy=(b.y-a.y)*(p.direction>=0?1:-1);const L=Math.hypot(dx,dy);if(L<1e-6)return null;return{x:dx/L,y:dy/L};}
@@ -116,7 +124,7 @@ export class LiveNetwork{
   return Math.max(2,Math.round(cycle/(want*perMin)));}
  // The timetable's own headway on a line, in ticks — what "every N minutes"
  // means here, for anything that wants to say it out loud.
- headwayTicks(layer){const vs=this.vehicles.filter(v=>v.layer.id===layer.id);if(!vs.length)return null;return (2/vs[0].speed)/vs.length;}
+ headwayTicks(layer){const vs=this.onLayer(layer);if(!vs.length)return null;return (2/vs[0].speed)/vs.length;}
  select(id){this.selectedVehicleId=this.vehicle(id)?.id||null;return this.vehicle(this.selectedVehicleId);}
  clearSelection(){this.selectedVehicleId=null;}
   // How near counts as AT THE STOP. The window was a raw path-index distance,
@@ -132,7 +140,7 @@ export class LiveNetwork{
  // The window is SECONDS of wall time: callers still pass 2.2, and 2.2 seconds
  // is inside Loop 18's 2-8 second catch window. Ten ticks a second is flow-core's
  // TICK_MS, and it is the one rate that does not change with the day length.
- nearestTo(layer,nodePathIndex,tick,maxSeconds=2.2,direction=null){const maxTicks=maxSeconds*10;let best=null;for(const v of this.vehicles){if(v.layer.id!==layer.id)continue;const p=this.position(v,tick);if(!p||(direction&&p.direction!==direction))continue;const d=Math.abs(p.pathIndex-nodePathIndex)*this.ticksPerIndex(v);if(d<=maxTicks&&(!best||d<best.distance))best={vehicle:v,position:p,distance:d};}return best;}
+ nearestTo(layer,nodePathIndex,tick,maxSeconds=2.2,direction=null){const maxTicks=maxSeconds*10;let best=null;for(const v of this.onLayer(layer)){const p=this.position(v,tick);if(!p||(direction&&p.direction!==direction))continue;const d=Math.abs(p.pathIndex-nodePathIndex)*this.ticksPerIndex(v);if(d<=maxTicks&&(!best||d<best.distance))best={vehicle:v,position:p,distance:d};}return best;}
  // WHAT GETS A BADGE. `filter` is the camera's near-rule (camera.js's fleetRule,
  // applied in core's fleetFilter) and it decides visibility, not existence: the
  // route each hidden vehicle runs on is still drawn under it at full length, so
@@ -166,7 +174,7 @@ export class LiveNetwork{
   const n=Math.max(1,(layer.path?.length||2)-1),q=Math.max(0,Math.min(1,nodePathIndex/n));
   const targets=direction===1?[q]:direction===-1?[2-q]:[q,2-q];
   let best=null;
-  for(const v of this.vehicles){if(v.layer.id!==layer.id)continue;
+  for(const v of this.onLayer(layer)){
    const cur=(v.phase+tick*v.speed)%2;
    for(const t of targets){let d=(t-cur)%2;if(d<0)d+=2;const dt=d/v.speed;if(best===null||dt<best)best=dt;}}
   return best===null?null:Math.round(best);}

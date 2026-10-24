@@ -1,5 +1,62 @@
 # Toko Move — versions
 
+## v2.67 — 2026-10-24
+
+**THE SHIP BAR** (owner: *"We need a shippable Toko Move before considering
+itch.io"*). Shippable was defined first, as seven things a stranger's phone
+does to a game that no feature test does on purpose (ROADMAP.md, "The ship
+bar"); an audit measured each one before anything was built, and
+`test/ship.cjs` (23, in CI) now holds them. Three reverted fixes at once fail
+it exactly where they should.
+
+- **S3 — storage that throws stopped the game loading at all.** A private
+  window or blocked site data makes even *reading* `localStorage` throw, and
+  `regulars.js` and `knowledge.js` read it in a default parameter, outside
+  their try. Both guarded. And a week save that was valid JSON in the wrong
+  shape loaded (it only had to HAVE a shifts array) and crashed at the kit
+  night several screens later; `wellFormed()` now decides, and a save that is
+  not a week is a fresh week. The daily's record for today is checked the
+  same way.
+- **S2 — leaving mid-shift was silent.** The clock's catch-up cap already kept
+  a hidden tab from fast-forwarding, but nothing said so and the shift resumed
+  under the player's thumb. Hidden now pauses, and coming back shows PAUSED
+  with RESUME. LIVE is real time and is left alone; a pause made by hand gets
+  no card.
+- **S4 — a phone held sideways got a 195px strip of map** and the CATCH row at
+  the bottom edge. Short landscape screens now get the side-by-side layout the
+  tablet already had. At 320px the cost column no longer squeezes the
+  destination into a column one word wide.
+- **S6 — the game made no sound.** `js/audio.js`: synthesised (never sampled,
+  nothing fetched), one master gain, a ♪ mute in the HUD that is kept.
+  It watches the game the way juice.js does — catch, get-off, delivery, late,
+  drop, chain, event card, miss, end of shift — so it cannot ring for
+  something that did not happen. Nothing before the first touch.
+- **S7 — the credits were only on the map canvas.** The title card now names
+  HSL (CC BY 4.0), OpenStreetMap contributors (ODbL 1.0) and the City of
+  Helsinki, in both languages.
+- **S1 — nothing had ever played a whole week.** The gate now plays Monday to
+  Friday's rent by tapping what lights: 3/3 deliveries every day, RENT PAID,
+  the page and the heap flat across all five (DOM 492 → 483, 11.2 → 11.2 MB).
+- **S5 — frame cost, measured, and two fixes.** Profiled on a phone viewport,
+  the largest JavaScript in a frame was `nearestTo` walking every vehicle in
+  the city to find the few on one line, inside a search that steps tick by
+  tick: the fleet is indexed by line now (rebuilt whenever LIVE replaces or
+  grows the array), 133–169 ms → 39 ms per 4 s. Next, `projection()` looked
+  the canvas up by id once per drawn point, and `sheetSlot()` re-appended all
+  nine sheet sections every frame — a style pass each time, and in Finnish
+  nine sections of "new" text for lang.js to walk. The canvas is cached and
+  the sections move only when their order is wrong. At 4× CPU throttle the
+  median frame went 150 → 100 ms; the rest of that is headless Chromium
+  compositing in software (2.5 s of every 3 s is "Commit"), which a phone's
+  GPU does, so it is reported, not gated. The game's own per-frame work is
+  ~2.2 ms at 1×.
+
+Two more places compared `innerHTML` (the second-job banner, drawn from the
+frame loop) or `textContent` (the catch hint) with English to decide whether
+to repaint — in Finnish they repainted every time; they compare what they
+last wrote now. The hub-tactics panel emptied its section instead of
+deleting it, so `sheetSlot` no longer recreated it every frame.
+
 ## v2.66 — 2026-10-24
 
 **SUOMEKSI** (roadmap M5: *"Finnish and English at least"*). The game plays in

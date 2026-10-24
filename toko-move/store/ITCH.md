@@ -27,7 +27,7 @@ real phone; the page must never sell a mode nobody has played.
 | Tags | `transport`, `trains`, `trams`, `helsinki`, `city`, `strategy`, `puzzle`, `real-time`, `mobile`, `minimalist` |
 | Content | no mature content (the spin-off *Toko Move: Piritori* is a separate project with its own rating) |
 | Languages | English, Finnish (a Finnish browser starts in Finnish; the title card switches) |
-| Inputs | mouse, touchscreen |
+| Inputs | mouse, touchscreen (sound is synthesised in the page; the ♪ in the HUD mutes it) |
 
 ## Short description (one line)
 

@@ -116,7 +116,7 @@ function refreshArrivals(tm){const box=document.getElementById('routeChoices');
   const choices=box?._choices;if(!box||!choices)return;
   // The first-delivery hint is about the rows under it, so it moves with them
   // (v2.65): a stranger read "Nothing to catch yet" over a lit CATCH.
-  {const hint=box.querySelector('.catchHint');if(hint){const t=catchHintText(tm,choices);if(hint.textContent!==t)hint.textContent=t;}}
+  {const hint=box.querySelector('.catchHint');if(hint){const t=catchHintText(tm,choices);if(hint.dataset.en!==t){hint.dataset.en=t;hint.textContent=t;}}}
   for(const btn of box.querySelectorAll('.catchChoice')){
     const c=choices[Number(btn.dataset.choice)];if(!c)continue;
     const a=arrivalState(tm,c),head=btn.querySelector('.catchHead'),verb=btn.querySelector('.catchVerb');
