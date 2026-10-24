@@ -484,6 +484,9 @@ jobs:
       - name: the itch.io upload, unzipped and played alone — no arcade, nothing outside the zip
         run: NODE_PATH=$(npm root -g) node toko-move/test/itch.cjs
 
+      - name: a stranger who only taps what lights finishes a shift — and is never told two things at once
+        run: NODE_PATH=$(npm root -g) node toko-move/test/stranger.cjs
+
       # Nothing had ever finished a shift. Forty random-but-sane bots through
       # the real timetable and the real challenge; the fleet or the dispatcher
       # is broken if fewer than 40% of them get three deliveries home.

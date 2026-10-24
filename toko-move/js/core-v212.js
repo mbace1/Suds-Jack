@@ -2,7 +2,7 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
-import {shareUrl} from './platform.js?v=1';
+import {shareUrl,STORE} from './platform.js?v=1';
 import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=26';
 import {TransitLayers} from './transit-layers.js?v=10';
 import {buildRealHelsinki} from './real-helsinki.js?v=5';
@@ -24,7 +24,7 @@ import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.64';
+const BUILD_VERSION='2.65';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -725,7 +725,9 @@ function paintDayCard(){const el=$('dayCard');if(!el)return;
     if(SHIFT_INFO.kind==='week'&&Week.pending(WEEK)){n.insertAdjacentHTML('beforeend',kitPicker());wireKitPicker(n);const pl=$('play');pl.disabled=true;pl.textContent='TAKE ONE FIRST';}
     const wl=$('weekLink');if(wl){const w=SHIFT_INFO.kind==='week'?null:Week.loadWeek();wl.hidden=SHIFT_INFO.kind==='week';
       wl.innerHTML=w&&!Week.isOver(w)&&w.shifts.length?`CONTINUE THE WEEK · ${Week.DAY_NAMES[w.day]} · €${Week.total(w)}/€${Week.RENT}`:`OR THE WEEK · five shifts, rent due Friday`;}
-    const ll=$('liveLink');if(ll)ll.hidden=SHIFT_INFO.kind==='week'||LIVE;}
+    // LIVE stays off a store build until it has been seen working on a real
+    // phone (roadmap M6) — the store page must never sell a mode nobody played.
+    const ll=$('liveLink');if(ll)ll.hidden=SHIFT_INFO.kind==='week'||LIVE||STORE;}
   const wx=WEATHER&&WEATHER.id!=='clear'?`<div class="dayCard wxCard"><span class="dayGlyph">${WEATHER.glyph}</span><div><b>${esc(WEATHER.name)}</b><p>${esc(WEATHER.blurb)}</p></div></div>`:'';
   const live=LIVE?`<div class="dayCard"><span class="dayGlyph">●</span><div><b>LIVE · THE REAL MORNING</b><p>Every tram and metro train on the board is where HSL says it is right now. Real time: seventy-five minutes is seventy-five minutes. Nothing is recorded.</p></div></div>`:'';
   if(!cityDay){el.innerHTML=live+wx;return;}

@@ -38,7 +38,9 @@ export class MobilityController{
   const net=this.tm.liveNetwork,v=net?.vehicle?.(this.ride.vehicleId),p=v&&net.position(v,this.tm.flow.clock.tick);
   if(!v||!p)return[];
   const here=this.stopHere(v,p);
-  if(!here||here===this.ride.to||here===this.ch.currentTo())return[];
+  // Never the stop you just boarded at (v2.65): "get off here" one tap after
+  // CATCH reads as the game contradicting itself, and a stranger takes it.
+  if(!here||here===this.ride.from||here===this.ride.to||here===this.ch.currentTo())return[];
   const cost=this.tm.planCostFrom?.(here,this.ch.currentTo());
   if(!Number.isFinite(cost))return[];
   const stay=this.stayCost(v,p);
