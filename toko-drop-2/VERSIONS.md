@@ -19,6 +19,11 @@
     Never `--no-verify`.
 -->
 
+## v32 — 2026-10-24
+**A game that fails to load says which file failed and why, and tries once more**
+- On the phone the page stopped at "failed to load js/main.js?v=31", which names only the first link of the chain. Now it walks main.js's imports, fetches each past the cache and names the first that does not come back (with its status), then imports the game once more past the cache: a 404 the CDN cached while the deploy was landing heals itself, and anything else puts the browser's own reason on screen
+- INTRO leads into the mode the title shows: with HARD on it played the film and then started a plain ARCADE run
+
 ## v31 — 2026-10-23
 **THE CAMPAIGN, rebuilt: thirty rooms, thirty challenges, each with its chart, graded on tiers set by bot play**
 - Thirty short rooms in the six worlds (five each), from FIRST LIGHT to THE CORE: survive, kill counts, clear-them-all, gate runs, a no-gun room where only the gates kill, a swarm, a ring to hold that drifts on the current, a flawless lane, ONE BY ONE (only the lit body can be hurt), two bosses, a floor that closes in, a bullet curtain graded on hits, a heart to protect, splitters, a spike, a hunt for cloakers among decoys, a magna's pull, forty shots for the room, a floor of three orbiting circles, a dash-only rink, a streak to reach, a flawless bubble bath, orbs to collect among charging toros, a breathing floor, a clear against the clock, a room of elites, two rooms joined by a neck, a room that gets faster every ten seconds, and a gauntlet whose rule changes five times

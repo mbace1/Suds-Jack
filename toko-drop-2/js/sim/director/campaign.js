@@ -11,8 +11,8 @@
 // and w.over, as a death does. What the room ASKS — its goal and its mods —
 // is sim/challenge.js (CAMPAIGN_PLAN.md); `fail` is a room whose clock ran
 // out on a goal it did not meet. Every number is TUNING.campaign.
-import { TUNING } from '../../tuning.js?v=31';
-import * as challenge from '../challenge.js?v=31';
+import { TUNING } from '../../tuning.js?v=32';
+import * as challenge from '../challenge.js?v=32';
 
 const T = TUNING, C = T.campaign, ORDER = ['F', 'C', 'B', 'A', 'S'];
 

@@ -136,7 +136,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v31<span id="backend"></span></div>
+  <div id="ver">2.0 · v32<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -155,9 +155,42 @@
         box.textContent += msg + '\n';
       }
       window.__fault = fault;
+      // A module that fails says only that it failed. So find out: walk its
+      // imports and fetch each one past the cache, and name the first that
+      // does not come back 200 (a file the deploy left out, or a 404 the CDN
+      // cached while the deploy was landing); then import it once more past
+      // the cache, which either starts the game (a stale 404 that has since
+      // healed) or puts the browser's own reason on screen (a syntax error).
+      function diagnose(src) {
+        var seenUrl = Object.create(null), q = [src], bad = null;
+        function next() {
+          if (bad || !q.length) return Promise.resolve(bad);
+          var u = q.shift();
+          if (seenUrl[u]) return next();
+          seenUrl[u] = true;
+          return fetch(u, { cache: 'no-store' }).then(function (r) {
+            if (!r.ok) { bad = r.status + ' ' + u; return next(); }
+            return r.text().then(function (t) {
+              var re = /(?:import|export)[^'"]*?from\s*['"](\.{1,2}\/[^'"]+)['"]|import\s*['"](\.{1,2}\/[^'"]+)['"]/g, m;
+              while ((m = re.exec(t))) q.push(new URL(m[1] || m[2], u).href);
+              return next();
+            });
+          }, function (err) { bad = 'network ' + u + ' (' + err.message + ')'; return next(); });
+        }
+        return next().then(function (b) {
+          fault(b ? 'the file that failed: ' + b : 'every file it needs is there now; trying again');
+          return import(src + (src.indexOf('?') < 0 ? '?' : '&') + 'retry=' + Date.now()).then(
+            function () { box.hidden = true; box.textContent = ''; },
+            function (err) { fault('why: ' + (err && err.message ? err.message : err)); });
+        });
+      }
       addEventListener('error', function (e) {
         var el = e.target;
-        if (el && el !== window && (el.src || el.href)) { fault('failed to load ' + (el.src || el.href)); return; }
+        if (el && el !== window && (el.src || el.href)) {
+          fault('failed to load ' + (el.src || el.href));
+          if (el.type === 'module' && el.src && !el.dataset.diagnosed) { el.dataset.diagnosed = '1'; diagnose(el.src); }
+          return;
+        }
         var where = e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '';
         fault((e.message || 'error') + where);
       }, true);
@@ -167,6 +200,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=31"></script>
+  <script type="module" src="js/main.js?v=32"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 // (bullets-graze.md §5.1). "Aim" is the angle from (x, z) to the hero at the
 // moment of firing. Bullets spawn at the body's centre; speed is the base
 // gel bullet speed × speedMult (1.x never escalates bullet speed by wave).
-import { TUNING } from '../tuning.js?v=31';
+import { TUNING } from '../tuning.js?v=32';
 
 const B = TUNING.bullets;
 
