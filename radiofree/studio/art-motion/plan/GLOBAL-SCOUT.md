@@ -382,6 +382,32 @@ not passed.
 Search terms: `AI whistleblower testimony Senate <year>`, `whistleblower retaliation letter Grassley <company>`,
 `former employee alleges <company> filing`, `AI Whistleblower Protection Act vote`.
 
+## Check · Sat 24 Oct 2026, 07:16 Helsinki
+
+**Verification:** every item comes from search summaries only.
+
+- **1 The Panel:** nothing new after 6 Oct. All the coverage found is syndicated copies of the same NPR story. The new
+  detail is that the Pentagon says MITRE is responsible for the analysis and applies conflict-of-interest safeguards.
+  If the film is built, use that as the official line. Newt Gingrich is named as a third leader, so the "three people,
+  two sell to it" framing still holds.
+- **3 For Your Protection:** more of the same trend.
+  - Pennsylvania (Gov. Shapiro, EO 2026-05) and Massachusetts (Gov. Healey) bar data-centre NDAs, and Delaware acted
+    earlier.
+  - Citrus County, Fla. directed staff to draft a ban.
+  - Champaign County, Ill. is considering one.
+  - Monroe County, Ga. refused an NDA with Google.
+  - No October vote has been confirmed. Sources: govtech.com, chronicleonline.com, Bloomberg Law, AI Now.
+- **5 Short Supply:** no October development found.
+  - The DRAM class action (N.D. Cal., 3:26-cv-06345, filed 25 Jun) is still at the allegation stage.
+  - The three makers pleaded guilty to fixing DRAM prices in 1998–2002. That is a documented precedent and the
+    strongest safe fact. A 2018 suit was dismissed.
+- **Whistleblowers / Meta:** no reply from Meta to Grassley's 22 Jul letter has been found; the deadline was 5 Aug.
+  - The two whistleblowers are named in Grassley's letter (Joshua DeFriez, William Sevedge). Use them only if they
+    went public themselves; that is unconfirmed.
+  - Grassley's letter (primary): https://www.grassley.senate.gov/imo/media/doc/grassley_to_meta_-_wb_retaliation_cont.pdf
+- **Cross-over with the HS scout:** the LVV police request on Muhos (HS-SCOUT, 24 Oct) is the Finnish twin of "For
+  Your Protection": public authorities keeping data-centre facts secret.
+
 ## Watch list (for the twice-daily check)
 
 - **Whistleblowers:** the cases in the table above (Meta's reply, the AI WPA vote, new testimony).

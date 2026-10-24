@@ -246,6 +246,37 @@ to compensate.
 
 ---
 
+## Check · Sat 24 Oct 2026, 07:16 Helsinki
+
+**Verification:** every item comes from search summaries only. Kaleva, Yle, MT and Kainuun Sanomat could not be
+opened from here.
+
+- **NEW · BIG · Secret Inquiry (Muhos).** LVV itself filed an investigation request with the police about Google's
+  Muhos data-centre project (press release, about 22 Oct). LVV will not comment further, because the matter is
+  confidential under the Publicity Act. That is the second secrecy beat in two days, after Hamina.
+  - **The other numbers:** LVV wants a more detailed water-management plan by 5 Nov. The drainage ditches need a Water
+    Act permit. Google's own monitoring shows changes pointing to acidification, and the site lies in a black-schist
+    deposit's impact area.
+  - **Oversight:** per Yle, LVV learned of the felling only at the end of August, ordered the halt on 6 Oct, and says
+    it will review its own supervision.
+  - **Sources:** Kaleva https://www.kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712 ;
+    MT https://www.maaseuduntulevaisuus.fi/uutiset/656d00a6-6a46-4479-a214-0a73c03a8ee2 ;
+    Yle https://yle.fi/uutiset/lyhyesti/74-20252848 ; Yle https://yle.fi/a/74-20253046 ; Kainuun Sanomat (STT).
+  - **Conflict:** Kaleva says the police have started a preliminary investigation; Yle quotes the police saying it has
+    not started yet.
+  - **Pitch:** a Doodle 7 or a Count the Trees follow-up. *The authority asked the police to investigate. Why? That's
+    secret.* Possible punchline: *Even the investigation is classified.*
+  - **Risk:** the investigation's status is disputed; the facts are search summaries only. HS's own version has not
+    been found.
+- **Trade Secret (Hamina), reactions.**
+  - Yle re-reported it on 23 Oct ("Ely-keskus salasi tietoja…", https://yle.fi/a/74-20253090). LVV group head Anu
+    Lillunen said, per the summary, that publicity can be reassessed when information is requested, and the papers
+    became public after HS's request. That is consistent with the film.
+  - One Yle version gives the felling dates as 2019–2020; HS and Yle's main story say 2018–2019. The film follows HS, so
+    no change.
+  - SLL Kymenlaakso still plans a police request; nothing filed was found.
+- **No new HS-own candidates found this round.** No HS article was reachable; hs.fi was not in the results.
+
 ## Not used
 
 - **Helsinki's mayor and AI:** the city is ready to use AI widely and will not refill some posts; social assistance

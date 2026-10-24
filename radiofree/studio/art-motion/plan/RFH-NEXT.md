@@ -94,3 +94,16 @@ story. Irreversible was scrapped on 18 Oct, so it is the candidate for slot 3.
   Helsinki), and a big development is flagged at once.
 - **Anthropic is covered like any company.** A film that touches Anthropic says on screen that it was made with
   Anthropic's tools (Claude). Testing that disclosure is part of the film. The owner approves the wording.
+
+## Pre-posting check · Sat 24 Oct, 07:16 (daily check)
+
+- **Trade Secret (Doodle 6), 00:52 tonight: CLEAR.** Nothing since HS's 14:23 update contradicts the film or the copy.
+  Yle confirms that LVV made the papers public after HS's request.
+- **Break Glass:** the plenary vote on extending to 2028 is still pending. The constitutional law committee cleared it
+  about 16–17 Oct, with dissent from the Left Alliance and the Greens. The 168–29 figure in some results is the June
+  2025 vote, not this one. "Proposed: 2028" and "plenary vote: still to come" still hold.
+- **Ends in 3:** the CRT calendar still has numbers ending in 5 on 31 Oct and 6 on 15 Nov, with no extension. The
+  captions hold.
+- **Count the Trees (Muhos):** still accurate. New since then: LVV filed its own police request and keeps it secret.
+  Police status is disputed (Kaleva: started; Yle: not yet). The film says "preliminary inquiry", meaning the
+  esiselvitys, which still stands. The post copy needs no change.
