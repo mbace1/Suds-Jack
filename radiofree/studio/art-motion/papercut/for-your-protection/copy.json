@@ -1,0 +1,169 @@
+{
+  "film": "for-your-protection",
+  "cut": "RFH global, VIRAL CUT v1 (24 Oct): towns sign secrecy deals (NDAs) about data centres in their own town. Hook first (the sealed NDA envelope on the town hall steps); the blank data centre rises behind the houses; Virginia, 25 of 31 places checked; the developers' stated reason, insider trading rules; Delaware banned them in August, the envelope tears: loop.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Towns sign secrecy deals with data-centre developers about buildings in their own town; Virginia records requests found them in 25 of 31 places, developers cite insider trading rules, and Delaware banned them in August 2026.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "Your town signed / a secrecy [deal].",
+        "fi": "Kuntasi allekirjoitti / [salassapitosopimuksen].",
+        "ja": "あなたの町が / [秘密保持契約] に 署名。"
+      },
+      "source": "Framing of the record below: local governments in several US states have signed NDAs with data-centre developers (Virginia Mercury 25 Oct 2024; Bloomberg Government 2026; Wisconsin Watch Jan 2026; Spotlight PA Aug 2026; NPR 26 Aug 2026). 'Your town' is the address to the viewer, not a claim about any one town."
+    },
+    {
+      "id": "build",
+      "role": "evidence",
+      "at": "s2+0.15",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "About a building / [in your town].",
+        "fi": "Rakennuksesta / [omassa kunnassasi].",
+        "ja": "あなたの町の / [建物] について。"
+      },
+      "source": "The NDAs cover proposed or existing data-centre projects in the signing locality (Virginia Mercury 25 Oct 2024: NDAs signed by Fredericksburg, Stafford, Caroline, Louisa, Orange and Culpeper with data-centre developers; Bloomberg Government)."
+    },
+    {
+      "id": "va",
+      "role": "evidence",
+      "at": "s3+0.15",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "Virginia: secrecy deals / in [25 of 31] / places checked.",
+        "fi": "Virginia: sopimus / [25:ssä 31:stä] / tarkistetusta paikasta.",
+        "ja": "バージニア州： 調べた / 31か所中 [25か所] で / 秘密保持契約。"
+      },
+      "source": "Eric Bonds (University of Mary Washington) and students sent public records requests in 2025 to every Virginia locality with a proposed or existing data-centre project; reported results: 25 of 31 had NDAs. Outlets word the unit as localities (Yahoo/Newsweek) or as proposed projects (Bloomberg Government), hence 'places checked'. Search summaries only; the study itself not opened."
+    },
+    {
+      "id": "why",
+      "role": "evidence",
+      "at": "s4+0.15",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": {
+        "en": "The developers' reason: / [insider trading] rules.",
+        "fi": "Rakennuttajien perustelu: / [sisäpiirikauppa]säännöt.",
+        "ja": "開発業者の 理由： / [インサイダー取引] 規制。"
+      },
+      "source": "Tom's Hardware: a developer argues the NDAs are important to avoid running afoul of insider-trading rules ('Many talks between data center developers and local governments are under NDA…'). Attributed as the developers' stated reason, as reported; a tag says AS REPORTED. Search summary only."
+    },
+    {
+      "id": "end",
+      "role": "punchline",
+      "at": "s5+0.25",
+      "until": "end-1.1",
+      "hold": "end",
+      "text": {
+        "en": "Delaware [banned] them / in August.",
+        "fi": "Delaware [kielsi] ne / elokuussa.",
+        "ja": "デラウェア州は 8月に / [禁止]。"
+      },
+      "source": "Delaware SB 312 (2026), signed 26 Aug 2026 (legis.delaware.gov bill page): prohibits state agencies, counties and municipalities from entering NDAs that restrict public access to information about potential or actual large-scale data-centre development (100 MW or more); such NDAs void and unenforceable. Search summaries of the bill page, WHYY, DelCOG; the enacted text not opened."
+    }
+  ],
+  "ui": {
+    "clipLabel": {
+      "en": "DATA CENTRE DEAL · YOUR TOWN",
+      "fi": "DATAKESKUSSOPIMUS · KUNTASI",
+      "ja": "データセンター契約 · あなたの町"
+    },
+    "clipValue": {
+      "en": "NDA: SIGNED",
+      "fi": "NDA: ALLEKIRJOITETTU",
+      "ja": "NDA：署名済み"
+    },
+    "clipLabel2": {
+      "en": "DELAWARE · AUGUST 2026",
+      "fi": "DELAWARE · ELOKUU 2026",
+      "ja": "デラウェア州 · 2026年8月"
+    },
+    "clipValue2": {
+      "en": "NDA: VOID",
+      "fi": "NDA: MITÄTÖN",
+      "ja": "NDA：無効"
+    },
+    "dcTag": {
+      "en": "DATA CENTRE",
+      "fi": "DATAKESKUS",
+      "ja": "データセンター"
+    },
+    "vaTag": {
+      "en": "PUBLIC RECORDS REQUESTS · 2025",
+      "fi": "ASIAKIRJAPYYNNÖT · 2025",
+      "ja": "情報公開請求 · 2025年"
+    },
+    "whyQ": {
+      "en": "WHY KEEP IT / SECRET?",
+      "fi": "MIKSI / SALATA?",
+      "ja": "なぜ / 秘密に？"
+    },
+    "whyA": {
+      "en": "INSIDER TRADING / RULES",
+      "fi": "SISÄPIIRI- / SÄÄNNÖT",
+      "ja": "インサイダー / 取引規制"
+    },
+    "whyTag": {
+      "en": "THE DEVELOPERS' REASON · AS REPORTED",
+      "fi": "RAKENNUTTAJIEN PERUSTELU · UUTISTEN MUKAAN",
+      "ja": "開発業者の 説明 · 報道より"
+    },
+    "void": {
+      "en": "VOID",
+      "fi": "MITÄTÖN",
+      "ja": "無効"
+    },
+    "deTag": {
+      "en": "DELAWARE · SB 312 · SIGNED 26.8.2026",
+      "fi": "DELAWARE · SB 312 · 26.8.2026",
+      "ja": "デラウェア州 · SB 312 · 2026.8.26"
+    }
+  },
+  "props": {
+    "town": {
+      "en": "a small town at dusk: houses, a town hall, lamps; no named place",
+      "why": "'your town' is the viewer's; nothing identifies a real town"
+    },
+    "datacentre": {
+      "en": "a vast windowless box with roof fans rising behind the houses, labelled DATA CENTRE only",
+      "why": "no company is named: the deals are many developers'"
+    },
+    "envelope": {
+      "en": "a manila envelope, red wax seal, NDA",
+      "why": "the secrecy deal as an object; torn in the punchline"
+    },
+    "map": {
+      "en": "Virginia drawn as cut card from rough coordinates, 31 illustrative pins, 25 with envelopes",
+      "why": "the count is the record; pin places are illustrative"
+    },
+    "figure": {
+      "en": "a faceless cut-card figure in a suit at a lectern",
+      "why": "house rule: real people have no faces; the figure stands for developers in general"
+    }
+  },
+  "post": {
+    "en": "Towns sign secrecy deals with data-centre developers about buildings in their own town. In Virginia, records requests found them in 25 of 31 places checked. The developers' reason, as reported: insider trading rules. Delaware banned them in August. Did your town sign one?",
+    "fi": "Kunnat allekirjoittavat salassapitosopimuksia datakeskusrakennuttajien kanssa omista hankkeistaan. Virginiassa sopimus löytyi 25 paikasta 31:stä. Rakennuttajien perustelu uutisten mukaan: sisäpiirisäännöt. Delaware kielsi ne elokuussa. Allekirjoittiko sinun kuntasi?",
+    "ja": "データセンター開発業者と、地元の建物について秘密保持契約を結ぶ町がある。バージニア州では調べた31か所中25か所で見つかった。報道によれば開発業者の理由はインサイダー取引規制。デラウェア州は8月に禁止した。あなたの町は？"
+  }
+}
