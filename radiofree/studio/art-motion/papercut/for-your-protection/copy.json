@@ -23,9 +23,9 @@
       "until": "s2-0.3",
       "hold": "s2",
       "text": {
-        "en": "Your town signed / a secrecy [deal].",
-        "fi": "Kuntasi allekirjoitti / [salassapitosopimuksen].",
-        "ja": "あなたの町が / [秘密保持契約] に 署名。"
+        "en": "Your town signed / a secrecy deal / on a [data centre].",
+        "fi": "Kuntasi allekirjoitti / salassapitosopimuksen / [datakeskuksesta].",
+        "ja": "あなたの町が データセンターの / [秘密保持契約] に 署名。"
       },
       "source": "Framing of the record below: local governments in several US states have signed NDAs with data-centre developers (Virginia Mercury 25 Oct 2024; Bloomberg Government 2026; Wisconsin Watch Jan 2026; Spotlight PA Aug 2026; NPR 26 Aug 2026). 'Your town' is the address to the viewer, not a claim about any one town."
     },
@@ -36,11 +36,11 @@
       "until": "s3-0.3",
       "hold": "s3",
       "text": {
-        "en": "About a building / [in your town].",
-        "fi": "Rakennuksesta / [omassa kunnassasi].",
-        "ja": "あなたの町の / [建物] について。"
+        "en": "Kept secret from / the people who / [live next to it].",
+        "fi": "Salassa niiltä, / jotka asuvat / [aivan vieressä].",
+        "ja": "すぐ隣に 住む / 人々には / [秘密]。"
       },
-      "source": "The NDAs cover proposed or existing data-centre projects in the signing locality (Virginia Mercury 25 Oct 2024: NDAs signed by Fredericksburg, Stafford, Caroline, Louisa, Orange and Culpeper with data-centre developers; Bloomberg Government)."
+      "source": "What an NDA does here: it binds the officials not to disclose the project, so residents next to the site are not told while it is negotiated (Virginia Mercury 25 Oct 2024; Bloomberg Law; Spotlight PA; NPR, Louisiana, 26 Aug 2026). v2 (owner, 24 Oct): replaces 'About a building in your town' so the film says what the deal does."
     },
     {
       "id": "va",
@@ -75,9 +75,9 @@
       "until": "end-1.1",
       "hold": "end",
       "text": {
-        "en": "Kept from the people / who live next to it. / Delaware made them [void].",
-        "fi": "Salassa niiltä, / jotka asuvat vieressä. / Delaware [mitätöi] ne.",
-        "ja": "隣に 住む 人々には 秘密。 / デラウェア州は それを / [無効] に した。"
+        "en": "Delaware made / these deals [void].",
+        "fi": "Delaware / [mitätöi] ne.",
+        "ja": "デラウェア州は それを / [無効] に した。"
       },
       "source": "Delaware state law (Del. Code title 9, ch. 4, as found by search; the enacted text could not be opened from this session): a county may not enter an NDA that restricts public disclosure about large-scale data-centre development (100 MW or more); such NDAs are void. Passed by the legislature (June 2026; MLex, 21 Aug, says it cleared the legislature). The signing date and any wider scope (state agencies, municipalities) are NOT confirmed, so the film says only county deals, and no date. v2 (owner, 24 Oct: the ending needs clarity): the line now says what the deals do (they keep the project from the residents next to it: the NDAs bind officials not to disclose, Virginia Mercury, Bloomberg Law, Spotlight PA) and what Delaware did. 'Them' is scoped on screen by the tag DELAWARE LAW · COUNTY NDAs · DATA CENTRES 100 MW+ and the clipping DELAWARE LAW · COUNTY DEALS."
     }
