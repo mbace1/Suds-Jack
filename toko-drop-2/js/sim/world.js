@@ -14,19 +14,19 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=44';
-import { makeRng } from './rng.js?v=44';
-import { BEHAVIOUR } from './species/index.js?v=44';
-import { DIRECTORS } from './director/index.js?v=44';
-import * as fire from './fire.js?v=44';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=44';
-import { swarmForces, resolveCrowd } from './crowd.js?v=44';
-import { revengeColor } from './color.js?v=44';
-import * as pickups from './pickups.js?v=44';
-import * as worlds from './worlds.js?v=44';
-import * as reshape from './reshape.js?v=44';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=44';
-import * as rules from './rules.js?v=44';
+import { TUNING } from '../tuning.js?v=45';
+import { makeRng } from './rng.js?v=45';
+import { BEHAVIOUR } from './species/index.js?v=45';
+import { DIRECTORS } from './director/index.js?v=45';
+import * as fire from './fire.js?v=45';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=45';
+import { swarmForces, resolveCrowd } from './crowd.js?v=45';
+import { revengeColor } from './color.js?v=45';
+import * as pickups from './pickups.js?v=45';
+import * as worlds from './worlds.js?v=45';
+import * as reshape from './reshape.js?v=45';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=45';
+import * as rules from './rules.js?v=45';
 
 const T = TUNING;
 

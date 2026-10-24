@@ -2,12 +2,12 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=44';
-import { GEL_LINES } from './gels-said.js?v=44';
-import { goalOf, modsOf, speciesOf, metricOf } from './sim/challenge.js?v=44';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=44';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=44';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=44';
+import { TUNING } from './tuning.js?v=45';
+import { GEL_LINES } from './gels-said.js?v=45';
+import { goalOf, modsOf, speciesOf, metricOf } from './sim/challenge.js?v=45';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=45';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=45';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=45';
 
 const STR = {
   en: {
@@ -185,7 +185,7 @@ export class UI {
       this.bossBarEl.hidden = !bar;
       if (bar) {
         const k = Math.max(0, Math.min(1, F.hp / F.max)), fill = this.bossBarEl.firstElementChild;
-        if (fill) { fill.style.width = `${(k * 100).toFixed(1)}%`; fill.style.background = `#${(TUNING.species[F.kind]?.color ?? 0xff5566).toString(16).padStart(6, '0')}`; }
+        if (fill) { fill.style.width = `${(k * 100).toFixed(1)}%`; fill.style.background = `#${(TUNING.species[F.kind]?.barColor ?? TUNING.species[F.kind]?.color ?? 0xff5566).toString(16).padStart(6, '0')}`; }
       }
     }
     this._effects(w);

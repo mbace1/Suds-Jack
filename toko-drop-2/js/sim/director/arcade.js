@@ -21,12 +21,12 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=44';
-import * as worlds from '../worlds.js?v=44';
-import * as challenge from '../challenge.js?v=44';
-import { makeRng } from '../rng.js?v=44';
-import * as bossfight from '../bossfight.js?v=44';
-import * as floorshift from '../floorshift.js?v=44';
+import { TUNING } from '../../tuning.js?v=45';
+import * as worlds from '../worlds.js?v=45';
+import * as challenge from '../challenge.js?v=45';
+import { makeRng } from '../rng.js?v=45';
+import * as bossfight from '../bossfight.js?v=45';
+import * as floorshift from '../floorshift.js?v=45';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -91,8 +91,11 @@ export function shooterPlan(wave) {
 }
 
 // the boss wave's headliner (main.js:255-261): the TWIN PRISMS on an even
-// (cycle + seed parity), else OMEGA — so wave 8 is PRISMS on an odd seed
-export function headliner(wave, seed) {
+// (cycle + seed parity), else OMEGA — so wave 8 is PRISMS on an odd seed. A
+// run in the worlds (`world`, v45) meets that world's own boss instead
+export function headliner(wave, seed, world = 0) {
+  const own = world && W.boss.worlds?.[world - 1];
+  if (own) return W.boss[own] ?? { kind: own, t: [0] };
   return (Math.floor(wave / W.boss.cycle) + (seed % 2)) % 2 === 0 ? W.boss.prism : W.boss.omega;
 }
 export const escortsFor = (wave) => Math.max(0, Math.min(W.boss.escort.max, Math.floor(wave / W.boss.cycle) - W.boss.escort.cycleOffset));
@@ -103,7 +106,7 @@ export const escortsFor = (wave) => Math.max(0, Math.min(W.boss.escort.max, Math
 // for `rng`, which it draws from in 1.x's order.
 // `world` (sim/worlds.js): a later world adds its own species to the draw
 // ([key, minWave, cost], TUNING.worlds.list[n].species); world 1 draws as 1.x
-export function schedule(wave, rng, seed, world = 1) {
+export function schedule(wave, rng, seed, world = 1, bossWorld = 0) {
   const r = () => rng.next();
   const pick = (list) => list[Math.floor(r() * list.length)];
   const kind = waveKind(wave), swarm = kind === 'swarm', curtain = kind === 'curtain', boss = kind === 'boss';
@@ -130,7 +133,7 @@ export function schedule(wave, rng, seed, world = 1) {
   // are its first entries: front 0, 4.48 s into a boss round) — ported as
   // the code runs, not as its comment reads.
   if (boss) {
-    const H = headliner(wave, seed);
+    const H = headliner(wave, seed, bossWorld);
     for (const t of H.t) list.push({ kind: H.kind, t, variant: 'normal', boss: true });
     spent += W.boss.cost;
     const E = W.boss.escort;
@@ -256,7 +259,9 @@ export function armCurtain(wave, kind, rng) {
 function startWave(w, d, carry) {
   d.wave++;
   w.wave = d.wave;
-  const plan = schedule(d.wave, w.rng, w.seed, worlds.on(w) ? w.world : 1);
+  // the world's own boss only in a run that has one (the 1.x oracle's has no w.world)
+  const bossWorld = worlds.on(w) && w.world ? w.world : 0;
+  const plan = schedule(d.wave, w.rng, w.seed, worlds.on(w) ? w.world : 1, bossWorld);
   d.kind = plan.kind; d.plan = plan;
   d.roundLen = plan.roundLen; d.waveT = 0; d.frontLandedAt = W.pulses.landedInit;
   d.liveCap = plan.liveCap; d.childCap = plan.liveCap * W.caps.childMult; d.held = 0;
@@ -270,7 +275,7 @@ function startWave(w, d, carry) {
   const call = d.wave >= K.from ? (plan.kind === 'curtain' ? 'curtain' : K.archs[(d.wave + w.seed) % K.archs.length]) : null;
   w.events.push({ type: 'wave', wave: d.wave, label: B.label, kind: plan.kind, color: B.color, dur: B.dur, carry, call });
   // a boss wave is a fight on the clock (sim/bossfight.js, v42): its headliner's health on screen, over when it is down
-  if (plan.kind === 'boss' && W.bossFight.on) bossfight.start(w, headliner(d.wave, w.seed).kind); else w.fight = null;
+  if (plan.kind === 'boss' && W.bossFight.on) bossfight.start(w, headliner(d.wave, w.seed, bossWorld).kind); else w.fight = null;
   // a challenge wave (sim/challenge.js, v36): a goal on top of the wave's bodies,
   // drawn from its own dice so the waves replay as they did without it
   const trial = challenge.trialFor(d.wave, w.seed, worlds.on(w) ? w.world : 1);
@@ -312,7 +317,11 @@ function pump(w, d, dt, api) {
     const S = T.species[s.kind];
     const o = { speedMult: s.speedMult, intervalMult: s.intervalMult, variant: s.variant, affix: s.affix,
                 ping: s.shooter || W.ping.includes(s.kind) };
-    if (s.boss) { o.isBoss = true; o.hp = S.bossHp ?? (S.noHpMult ? S.hp : Math.ceil(S.hp * W.boss.hpMult)); }
+    if (s.boss) {
+      o.isBoss = true; o.hp = S.bossHp ?? (S.noHpMult ? S.hp : Math.ceil(S.hp * W.boss.hpMult));
+      // in the worlds 1.x's own bosses are fought as long as theirs (v45)
+      if (worlds.on(w) && w.world) o.hp = Math.round(o.hp * (W.boss.worldHp?.[s.kind] ?? 1));
+    }
     // a later world's share of HEAVY bodies (TUNING.worlds): plain bodies
     // only, and the roll is drawn only there, so world 1 replays as it was
     else if ((s.variant ?? 'normal') === 'normal' && worlds.heavyShare(w) > 0 && w.rng.next() < worlds.heavyShare(w)) o.heavy = true;

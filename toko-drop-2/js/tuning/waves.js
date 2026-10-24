@@ -117,6 +117,15 @@ export default {
   boss: { cycle: 8, cost: 10,                              // ceil(4 × 2.5), main.js:262
           prism: { kind: 'prism', t: [0, 0.4] },            // main.js:257-258
           omega: { kind: 'omega', t: [0] },                 // main.js:260
+          // 2.0 (v45): in ARCADE and HARDCADE every world ends on a boss of its
+          // own — the TWIN PRISMS open the run, OMEGA closes it, and the worlds
+          // between have theirs, each its world's gel grown up. null: 1.x's
+          // alternation by seed, as the oracle and a run with no world have it
+          worlds: ['prism', 'curbking', 'maw', 'blister', 'kettle', 'pike', 'berg', 'angler', 'omega'],
+          // and there 1.x's two get the health a fight on the clock needs (v45):
+          // at 1.x's 9 and 15 a player who fires all the time has them down in
+          // three seconds. The worlds' own bosses carry theirs in bossHp
+          worldHp: { prism: 4, omega: 12 },
           hpMult: 3,                                        // main.js:9384 (the gauntlet's 5 is cabinet-only)
           // 1.x's escort t = 2.0 + 1.5k is overwritten by the fronts (they carry
           // no boss flag, main.js:269 vs 344), so it is not ported

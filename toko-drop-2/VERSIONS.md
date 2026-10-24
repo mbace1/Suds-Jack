@@ -19,6 +19,24 @@
     Never `--no-verify`.
 -->
 
+## v45 — 2026-10-24
+**Every arcade world ends on a boss of its own: CURB KING, MAW, BLISTER, KETTLE, PIKE, BERG and ANGLER between the TWIN PRISMS and OMEGA**
+- Owner, 2026-10-24: "More content please". Worlds 2-8 had all ended on the TWIN PRISMS or OMEGA by the seed's parity; now each ends on its own world's gel grown up (`TUNING.waves.boss.worlds`, `headliner(wave, seed, world)`), the TWIN PRISMS open the run and OMEGA closes it. Outside the worlds (and in the 1.x oracle, whose world has none) the alternation stands.
+- Each fights one way, then at half its health rages, once, with a banner and a harder pattern (`sim/species/bosskit.js`), under the boss ring 1.x hung under every boss (`render/looks/bossaura.js`):
+  - **CURB KING** (the driveway, HOPPA's): squats, marks its landing, leaps over your head and lands with a shockwave ring. Raging: two hops at a time, the ring doubled, HOPPA shaken loose.
+  - **MAW** (the sewer, WORMA's): under the floor out of reach, comes up near you with a ring, sprays a turning three-arm spiral while it stands. Raging: up sooner, and every hole it goes down fills with sludge.
+  - **BLISTER** (the cistern, BUBBLA's): its bubble takes ten shots and pops; the gel inside is bare for four seconds and panics with fast fans. It blows big slow bubbles that burst into rings. Raging: more of them, bursting into more.
+  - **KETTLE** (the boiler, STEAMA's): builds pressure and vents three turning jets and scalding steam; every second vent it stalls red-hot and every shot does double. Raging: four jets, turning either way.
+  - **PIKE** (the river, SALMA's): circles, lights its lane to the wall, charges along it leaving a wake either side; a charge into a wall stuns it. Raging: three charges in a row.
+  - **BERG** (the ice, SKATA's): a block of ice that slides and never slows, a fan of shards off every wall; stops, frosts over, fires walls of icicles four ways. Raging: calves two SKATA, slides faster, icicles eight ways.
+  - **ANGLER** (the deep, GLOWA's): creeps at you holding its lure out; near the light it lunges and bursts a ring of lights, and it lets slow lanterns go that follow you. Raging: two GLOWA come out of the dark. Its health bar is drawn in its lure's light (`barColor`): its own colour is the dark's.
+- A fight on the clock now lasts one: the boss pass's bot had held its fire past 7 u in the arcade (the rule is for the campaign's ammo rooms; the arcade sets no gun), and a health pod capped its 99 lives back at 3. Fixed (`scripts/bot.mjs`, `scripts/boss-tiers.mjs`), 1.x's TWIN PRISMS and OMEGA go down in three seconds at 1.x's 9 and 15, so in the worlds they are fought ×4 and ×12 (`waves.boss.worldHp`), and the new seven carry their own `bossHp`: from about ten seconds for the sharp bot in world 1 to about thirty in world 9. The grade lines are re-measured, one boss a world (`tuning/bossfights.js`).
+- Their big moments have a voice (a landing's thud, an eruption, a vent's hiss, a charge, a stall's clank, a pop, a bite); the world gels that share those events stay as quiet as they were. The got-you card has a line for each, in en, fi and ja.
+- Tests: `test/species/<boss>.mjs` for all seven (`test/lib/boss.mjs`: seeded, its look, its world's boss wave, the rage at half and only for a boss, the replay); `test/bossfight.mjs` checks every world's boss wave brings its own boss at its health and that outside the worlds 1.x's alternation stands.
+- Cache tokens `?v=44` → `?v=45`; HUD label → `2.0 · v45`
+
+---
+
 ## v44 — 2026-10-24
 **Three arcade worlds have a wave whose floor moves: the river's banks breathe, the ice breaks into a drifting floe, the core splits into two discs going round each other**
 - Owner, 2026-10-24, picking from the plan: breathing and orbiting floors as arcade world events (CAMPAIGN_PLAN.md step 5, the campaign's `breath`, `orbit` and `pulse` rooms).

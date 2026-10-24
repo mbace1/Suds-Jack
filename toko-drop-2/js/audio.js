@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=44';
+import { TUNING } from './tuning.js?v=45';
 
 const A = TUNING.audio;
 
@@ -69,6 +69,16 @@ export class Sound {
         break;
       }
       case 'lobLand': this._tone('sine', 150, 55, 0.28, 0.2); this._hiss(0.16, 0.12, 900, 300); break;   // 1.x lobSplash
+      // the worlds' own bosses (v45): their big moments have a voice; the
+      // world gels that share these events stay as quiet as they were
+      case 'hopLand': if (e.big) { this._tone('sine', 120, 38, 0.4, 0.32); this._hiss(0.25, 0.14, 700, 120); } break;
+      case 'wormUp': if (e.big) { this._tone('sawtooth', 70, 160, 0.35, 0.18); this._hiss(0.35, 0.12, 400, 1400); } break;
+      case 'vent': if (e.big) this._hiss(0.8, 0.16, 2400, 900, 0.7); break;
+      case 'stall': this._tone('square', 300, 90, 0.3, 0.14); this._tone('square', 240, 70, 0.3, 0.12, 0.12); break;
+      case 'charge': this._tone('sawtooth', 220, 520, 0.25, 0.14); this._hiss(0.3, 0.1, 600, 2600); break;
+      case 'bite': if (e.big) this._tone('square', 520, 120, 0.16, 0.18); break;
+      case 'skid': if (e.big) { this._tone('triangle', 900, 300, 0.12, 0.12); this._hiss(0.12, 0.1, 3000, 1500); } break;
+      case 'bubble': if (e.big) this._tone('sine', 700, 1400, 0.12, 0.2); break;
       case 'dashBoom': this._hiss(0.25, 0.3, 2200, 200, 1); this._tone('square', 220, 60, 0.2, 0.2); break;
       // 1.x's tinks: a WARDEN's aura (shieldTink, audio.js:255), else a plate (plateTink, audio.js:266)
       case 'block': if (e.by === 'aura') this._tone('triangle', 1900, 1400, 0.05, 0.10); else this._tone('square', 720, 480, 0.06, 0.15); break;
