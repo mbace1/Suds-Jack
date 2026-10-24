@@ -66,6 +66,9 @@ four.
 
 **M5 · Language.** Finnish and English at least, the arcade's house
 convention (fi/en/ja) as the target; Toko Move is English-only today.
+*Done in v2.66 for Finnish:* `js/lang.js` translates at the DOM, `test/lang.cjs`
+plays in Finnish and fails on any English left. Needs a native read; Japanese
+not started.
 
 **M6 · LIVE on a real phone.** LIVE has never met HSL's broker from here; it
 needs the owner's phone (or a network that reaches `mqtt.hsl.fi`) before a

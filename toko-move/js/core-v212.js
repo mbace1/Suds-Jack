@@ -2,6 +2,8 @@
 import {createFlow} from '../../flow-core/sim.js?v=2';
 import {FlowRenderer} from '../../flow-core/render.js?v=3';
 import {THEME} from './palette.js?v=1';
+import {tr} from './lang.js?v=1';
+const trLines=t=>String(t).split('\n').map(l=>tr(l)).join('\n');
 import {shareUrl,STORE} from './platform.js?v=1';
 import {DeliveryChallenge,DELIVERY_TARGET} from './deliveries.js?v=26';
 import {TransitLayers} from './transit-layers.js?v=10';
@@ -18,13 +20,13 @@ import {dailyName,resolveShift,todayRecord,recordDaily,streak,shareText,grid as 
 import * as Week from './week.js?v=3';
 import * as Kit from './kit.js?v=1';
 import {drawWeather} from './weather.js?v=1';
-import {drawPoster} from './poster.js?v=1';
+import {drawPoster} from './poster.js?v=2';
 import * as WalkPath from './walkpath.js?v=1';
 import * as Rush from './rush.js?v=1';
 import {colourOf,parcelHtml,bagHtml} from './parcels.js?v=1';
 
 const $=id=>document.getElementById(id);
-const BUILD_VERSION='2.65';
+const BUILD_VERSION='2.66';
 const MAP_THEME={...THEME,latent:THEME.paper,hideQueues:true,hideLoadMarks:true,hideCarriers:true,modeColours:{metro:'rgba(0,0,0,0)',tram:'rgba(0,0,0,0)',car:'rgba(0,0,0,0)'}};
 const cargoColour=colourOf;   // ONE palette: this file and the job board drew the same parcel in two different colours until v2.43
 const esc=s=>String(s??'').replace(/[&<>\"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[ch]||ch));
@@ -551,7 +553,7 @@ function paintDaily(){const box=$('endStats');if(!box)return;
   if(SHIFT_INFO.kind!=='daily'){if(again)again.textContent=LIVE?'ANOTHER LIVE SHIFT':'RUN THIS SHIFT AGAIN';return;}
   const res={results:[...(challenge.results||[])],target:challenge.target,drops:challenge.drops||0,score:challenge.score,delivered:challenge.index,day:cityDay?.id||null};
   const r=recordDaily(SHIFT_INFO.key,res),rec=r.record,run=streak(SHIFT_INFO.key);
-  const text=shareText({number:SHIFT_INFO.number,label:SHIFT_INFO.label,dayName:cityDay?.name||'',results:rec.results,target:rec.target,drops:rec.drops,score:rec.score,url:shareUrl()});
+  const text=trLines(shareText({number:SHIFT_INFO.number,label:SHIFT_INFO.label,dayName:cityDay?.name||'',results:rec.results,target:rec.target,drops:rec.drops,score:rec.score,url:shareUrl()}));
   box.insertAdjacentHTML('afterbegin',`<div class="dailyBox"><p class="dailyHead">${esc(shiftLabel())}${cityDay?` · ${esc(cityDay.name)}`:''}</p><p class="dailyGrid">${dailyGrid(rec.results,rec.target)}${rec.drops?` <small>+${rec.drops} drops</small>`:''}</p>${r.first?`<p class="hint">today's result${run>1?` · ${run} days running`:''}</p>`:`<p class="hint">practice — today's result stands at ${Number(rec.score).toLocaleString('en-US')}${run>1?` · ${run} days running`:''}</p>`}<button class="btn prime wide" id="share">SHARE TODAY'S</button><pre class="shareText" id="shareText" hidden></pre><a class="btn wide ghost" href="?shift=random">A RANDOM SHIFT</a></div>`);
   // One loud button on this card, and it is SHARE. Replaying today is allowed
   // and is practice, so it steps down to the quiet style beside it.
@@ -601,7 +603,7 @@ function paintWeek(box,again){const w=WEEK;
     const sp=$('savePoster');if(sp)sp.onclick=()=>{const pc2=$('poster');if(!pc2)return;pc2.toBlob(async blob=>{if(!blob)return;const name=`toko-move-week-${w.seed}.png`;
       try{const file=new File([blob],name,{type:'image/png'});if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:'Toko Move · the week'});sp.textContent='SHARED';return;}}catch(e){if(e?.name==='AbortError')return;}
       const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);sp.textContent='SAVED';},'image/png');};}
-  if(over){const text=Week.shareText(w,shareUrl('?week'));const btn=$('share');if(btn)btn.onclick=async()=>{
+  if(over){const text=trLines(Week.shareText(w,shareUrl('?week')));const btn=$('share');if(btn)btn.onclick=async()=>{
     try{if(navigator.share){await navigator.share({text});btn.textContent='SHARED';return;}}catch(e){if(e?.name==='AbortError')return;}
     try{await navigator.clipboard.writeText(text);btn.textContent='COPIED';return;}catch{}
     const pre=$('shareText');if(pre){pre.textContent=text;pre.hidden=false;}btn.textContent='COPY THIS';};}}
