@@ -45,7 +45,11 @@ export class Rival{
  step(){const tick=this.tm.flow.clock.tick,ch=this.tm.challenge,g=this.seg;
   if(tick>=g.t1&&g.kind!=='race'){if(g.kind==='leg'||g.carrying)this.delivered++;this.at=g.b?.id||this.to;this.to=this.nextHub(this.delivered);this.leftAt=tick;this.go(this.node(this.to),tick+this.legTicks,'leg');}
   // Put a claim on one ordinary offer, once there is a board to claim from.
-  const drop=()=>{if(this.claim){this.claim=null;if(this.seg.kind==='race')this.go(this.node(this.to),tick+this.legTicks,'leg');}};
+  // v2.64: a race given up RESUMES the walk it interrupted, with the time that
+  // walk had left. It used to start a fresh 260-tick leg, so a player who took
+  // each new job a tick after it appeared reset him every time and a quick
+  // shift ended with the other courier having delivered nothing at all.
+  const drop=()=>{if(this.claim){this.claim=null;if(this.seg.kind==='race'){const left=this.resumeLeft??this.legTicks;this.resumeLeft=null;this.go(this.node(this.to),tick+Math.max(1,left),'leg');}}};
   if(ch?.active||!ch?.offers?.length){drop();return false;}
   const ordinary=ch.offers.filter(o=>!o.handoff);
   if(!ordinary.length||ch.index>=ch.target-1){drop();return false;}
@@ -57,6 +61,7 @@ export class Rival{
    const pick=ordinary[hash(`claim:${this.seed}:${ch.index}`)%ordinary.length];
    this.claim={id:pick.id,to:pick.stops[1],pickup:pick.stops[0],from:tick+GRACE,at:tick+GRACE+CLAIM_WINDOW};
    // he turns for your stop, and will be standing on it when the claim runs out
+   if(this.seg.kind==='leg')this.resumeLeft=Math.max(0,this.seg.t1-tick);
    this.go(this.node(pick.stops[0]),this.claim.at,'race');return false;}
   if(tick>=this.claim.at){const gone=ch.offers.find(o=>o.id===this.claim.id);
    if(gone){ch.offers=ch.offers.filter(o=>o.id!==this.claim.id);this.taken.push(ch.name(this.claim.to));
