@@ -5,9 +5,9 @@
 // stages as seams, a quota's line, a floor's size as it moves, and the clock
 // speeding up. And the ROUTE: the thirty rooms' difficulty as one line, each
 // room a dot in the colour of the grade you have paid on it.
-import { TUNING } from './tuning.js?v=32';
-import { speciesOf, goalOf, modsOf } from './sim/challenge.js?v=32';
-import { levelShape } from './sim/shape.js?v=32';
+import { TUNING } from './tuning.js?v=34';
+import { speciesOf, goalOf, modsOf } from './sim/challenge.js?v=34';
+import { levelShape } from './sim/shape.js?v=34';
 
 const T = TUNING;
 export const GRADE_COLORS = { S: '#ffdd44', A: '#66ffcc', B: '#88ccff', C: '#bbbbdd', F: '#ff6655' };
@@ -95,5 +95,38 @@ export function routeChart(rooms, { width = 300, height = 46, focus = null } = {
     if (r.id === focus) { g.strokeStyle = '#ffffff'; g.lineWidth = 1; g.stroke(); }
   });
   c.className = 'route';
+  return c;
+}
+
+// A room's goal as a small picture for its tile in the grid: a clock to
+// survive, a crosshair to kill a count, a burst to clear, two posts and a
+// beam for gates, a ring for hold, a heart, numbered steps for one by one,
+// an eye for a hunt, a rising zigzag for a streak, orbs, a crown for a boss,
+// stacked bars for a gauntlet — and a lock while the room is shut.
+export function goalGlyph(type, { size = 30, color = '#e8e6f0', locked = false } = {}) {
+  const { c, g } = canvas(size, size), s = size, m = s / 2;
+  g.strokeStyle = g.fillStyle = locked ? 'rgba(232,230,240,0.45)' : color;
+  g.lineWidth = Math.max(1.5, s / 16); g.lineCap = 'round'; g.lineJoin = 'round';
+  const circle = (x, y, r, fill = false) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); fill ? g.fill() : g.stroke(); };
+  const line = (...p) => { g.beginPath(); g.moveTo(p[0], p[1]); for (let i = 2; i < p.length; i += 2) g.lineTo(p[i], p[i + 1]); g.stroke(); };
+  if (locked) {
+    g.strokeRect(s * 0.28, s * 0.45, s * 0.44, s * 0.36);
+    g.beginPath(); g.arc(m, s * 0.45, s * 0.14, Math.PI, 0); g.stroke();
+  } else switch (type) {
+    case 'survive': circle(m, m, s * 0.34); line(m, m, m, s * 0.3); line(m, m, s * 0.68, m); break;
+    case 'quota': circle(m, m, s * 0.26); line(m, s * 0.1, m, s * 0.34); line(m, s * 0.66, m, s * 0.9); line(s * 0.1, m, s * 0.34, m); line(s * 0.66, m, s * 0.9, m); break;
+    case 'clear': for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; line(m + Math.cos(a) * s * 0.14, m + Math.sin(a) * s * 0.14, m + Math.cos(a) * s * 0.38, m + Math.sin(a) * s * 0.38); } break;
+    case 'gates': circle(s * 0.22, m, s * 0.08, true); circle(s * 0.78, m, s * 0.08, true); g.globalAlpha = 0.7; line(s * 0.3, m, s * 0.7, m); g.globalAlpha = 1; line(m, s * 0.2, m, s * 0.34); line(m, s * 0.66, m, s * 0.8); break;
+    case 'hold': circle(m, m, s * 0.34); circle(m, m, s * 0.12, true); break;
+    case 'protect': g.beginPath(); g.moveTo(m, s * 0.8); g.bezierCurveTo(s * 0.1, s * 0.5, s * 0.22, s * 0.16, m, s * 0.34); g.bezierCurveTo(s * 0.78, s * 0.16, s * 0.9, s * 0.5, m, s * 0.8); g.fill(); break;
+    case 'order': for (let i = 0; i < 3; i++) circle(s * (0.22 + i * 0.28), s * (0.72 - i * 0.22), s * 0.09, i === 0); break;
+    case 'hunt': g.beginPath(); g.moveTo(s * 0.12, m); g.quadraticCurveTo(m, s * 0.18, s * 0.88, m); g.quadraticCurveTo(m, s * 0.82, s * 0.12, m); g.stroke(); circle(m, m, s * 0.1, true); break;
+    case 'combo': line(s * 0.14, s * 0.78, s * 0.36, s * 0.52, s * 0.52, s * 0.66, s * 0.84, s * 0.22); line(s * 0.62, s * 0.22, s * 0.84, s * 0.22, s * 0.84, s * 0.44); break;
+    case 'collect': circle(s * 0.28, s * 0.62, s * 0.1, true); circle(m, s * 0.36, s * 0.1, true); circle(s * 0.72, s * 0.62, s * 0.1, true); break;
+    case 'boss': line(s * 0.16, s * 0.74, s * 0.16, s * 0.32, s * 0.36, s * 0.5, m, s * 0.24, s * 0.64, s * 0.5, s * 0.84, s * 0.32, s * 0.84, s * 0.74, s * 0.16, s * 0.74); break;
+    case 'gauntlet': for (let i = 0; i < 3; i++) g.fillRect(s * (0.18 + i * 0.24), s * (0.62 - i * 0.18), s * 0.16, s * (0.18 + i * 0.18)); break;
+    default: circle(m, m, s * 0.3);
+  }
+  c.className = 'glyph';
   return c;
 }

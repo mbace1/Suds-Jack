@@ -71,6 +71,24 @@
     #menu .item .teaches { display: block; margin-top: 3px; font-size: 10px; font-weight: 400; color: var(--dim); opacity: .75; letter-spacing: .04em; }
     #menu .route-wrap { display: flex; justify-content: center; width: 100%; margin: 2px 0 8px; }
     #menu .route-wrap .route { display: block; max-width: 100%; margin: 0 auto; }
+    /* the campaign's grid: a row per world, its name then its five rooms */
+    #menu .grid { display: grid; grid-template-columns: minmax(56px, auto) repeat(5, minmax(42px, 68px)); gap: 6px; justify-content: center; align-items: center; margin: 4px 0 10px; }
+    #menu .grid .wname { font-size: 9px; letter-spacing: .12em; text-align: right; padding-right: 4px; line-height: 1.25; max-width: 96px; }
+    #menu .tile { position: relative; aspect-ratio: 1; min-height: 42px; padding: 0; background: rgba(255,255,255,.03); color: var(--ink); border: 1px solid rgba(255,255,255,.22); font: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    #menu .tile .num { position: absolute; left: 4px; top: 2px; font-size: 9px; color: var(--dim); }
+    #menu .tile .grade { position: absolute; right: 4px; bottom: 1px; font-size: 13px; font-weight: 800; }
+    #menu .tile.off { opacity: .35; cursor: default; }
+    #menu .tile.focus { outline: 2px solid var(--gold); outline-offset: 2px; border-color: var(--gold); }
+    @media (max-width: 480px) { #menu .grid { grid-template-columns: repeat(5, minmax(40px, 1fr)); } #menu .grid .wname { grid-column: 1 / -1; text-align: left; margin-top: 2px; max-width: none; } }
+    /* a room's card: what it asks, its chart, its lines, START */
+    #menu h2.card { color: var(--amber); }
+    #menu .goal { letter-spacing: .14em; margin: 2px 0 8px; }
+    #menu canvas.chart { display: block; margin: 4px auto 6px; max-width: 100%; }
+    #menu > .teaches { font-size: 10px; color: var(--dim); letter-spacing: .04em; margin: 0 0 8px; }
+    #menu .tiers { display: grid; grid-template-columns: auto auto; gap: 3px 14px; justify-content: center; text-align: left; margin: 4px 0 8px; font-size: 13px; }
+    #menu .tiers .tg { font-weight: 800; }
+    #menu .best { margin: 4px 0 6px; letter-spacing: .1em; font-size: 12px; }
+    #menu .item.go .label { font-size: 22px; letter-spacing: .3em; }
     #menu .item.focus { outline: 2px solid var(--gold); outline-offset: 2px; border-color: var(--gold); }
     #menu .item.focus .label { color: var(--gold); }
     #menu .item.off { opacity: .45; cursor: default; }
@@ -85,10 +103,16 @@
        (the test switches included) shows without scrolling */
     @media (orientation: landscape) and (max-height: 520px) {
       #menu { width: min(94vw, 820px); display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; align-content: start; }
-      #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard { grid-column: 1 / -1; }
+      #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard, #menu > .grid, #menu > .route-wrap, #menu > .goal, #menu > canvas.chart, #menu > .teaches, #menu > .tiers, #menu > .best { grid-column: 1 / -1; }
       #menu .logo { margin: 0 0 4px; }
       #menu .item { margin: 5px 0; }
       #menu .hint { margin-top: 6px; }
+      /* the campaign's six rows fit a phone held sideways without scrolling */
+      #menu .grid { grid-template-columns: minmax(56px, auto) repeat(5, 42px); gap: 4px; margin: 2px 0 6px; }
+      #menu > .mode.camp { display: none; }
+      #menu h2 { margin: 0 0 4px; }
+      #menu .tile { min-height: 0; }
+      #menu > .mode { margin-bottom: 4px; }
     }
     #menu .hint { margin-top: 12px; font-size: 10px; font-weight: 400; line-height: 1.5; color: var(--dim); letter-spacing: .06em; }
     #menu .stats { display: grid; grid-template-columns: auto auto; gap: 6px 16px; justify-content: center; margin: 4px 0 12px; text-align: left; }
@@ -136,7 +160,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v32<span id="backend"></span></div>
+  <div id="ver">2.0 · v34<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -200,6 +224,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=32"></script>
+  <script type="module" src="js/main.js?v=34"></script>
 </body>
 </html>

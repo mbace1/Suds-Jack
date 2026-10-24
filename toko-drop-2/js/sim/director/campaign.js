@@ -7,12 +7,13 @@
 // `level` the parsed levels/<id>.json and `turn` true when a portrait screen
 // lays it along its length (x and z swap; sim/shape.js levelShape does the
 // same to its region). It ends with
-//   roomEnd  { id, outcome: 'clear' | 'dead' | 'fail', grade, kills, hits, time, score, value }
+//   roomEnd  { id, outcome: 'clear' | 'dead' | 'fail', grade, kills, hits, time, score, value, why }
+// `why` says what an F was: 'died', 'hit' (a no-hits room), 'heart', 'clock'.
 // and w.over, as a death does. What the room ASKS — its goal and its mods —
 // is sim/challenge.js (CAMPAIGN_PLAN.md); `fail` is a room whose clock ran
 // out on a goal it did not meet. Every number is TUNING.campaign.
-import { TUNING } from '../../tuning.js?v=32';
-import * as challenge from '../challenge.js?v=32';
+import { TUNING } from '../../tuning.js?v=34';
+import * as challenge from '../challenge.js?v=34';
 
 const T = TUNING, C = T.campaign, ORDER = ['F', 'C', 'B', 'A', 'S'];
 
@@ -25,26 +26,57 @@ export const roomBodies = (level) => level.spawns.filter((s) => s.kind !== 'pick
 // a share room grades 1.x's way and a timed room on fractions of its clock.
 export function grade(room, level, result) {
   if (result.outcome !== 'clear') return 'F';
-  const m = challenge.metricOf({ ...room, level }), tiers = level.tiers;
+  const m = challenge.metricOf({ ...room, level });
   if (m.name === 'share') {
-    const share = Math.min(1, result.kills / Math.max(1, roomBodies(level))), H = tiers ?? C.share;
+    const share = Math.min(1, result.kills / Math.max(1, roomBodies(level))), H = tiersFor(room, level);
     const base = share >= H.S - 1e-9 ? 4 : share >= H.A - 1e-9 ? 3 : share >= H.B - 1e-9 ? 2 : 1;
     return ORDER[Math.max(1, base - (result.hits || 0) * C.hitCost)];
   }
   const v = result.value ?? result.time;
-  if (!tiers && (room.goal === 'quota' || level.goal?.type === 'quota') && m.name === 'time') {
-    // 1.x's quota: seconds BEHIND the arrival of the last body the count needs
+  const tt = tiersFor(room, level);
+  if (!tt) {
+    // 1.x's quota with no tiers: seconds BEHIND the arrival of the last body the count needs
     const kills = level.goal?.kills ?? room.kills;
     if (result.kills < kills) return 'F';
     const ts = level.spawns.filter((s) => s.kind !== 'pickup').map((s) => s.t).sort((a, b) => a - b);
     const lag = v - (ts[Math.min(ts.length, kills) - 1] ?? 0), Q = C.quotaLag;
     return lag <= Q.S ? 'S' : lag <= Q.A ? 'A' : lag <= Q.B ? 'B' : 'C';
   }
-  const D = level.duration, tt = tiers ?? (m.name === 'time' ? { S: D * C.timeTiers.S, A: D * C.timeTiers.A, B: D * C.timeTiers.B }
-    : m.name === 'hits' ? { S: 0, A: 1, B: 3 } : { S: 1, A: 0.7, B: 0.4 });
   if (m.low) return v <= tt.S + 1e-9 ? 'S' : v <= tt.A + 1e-9 ? 'A' : v <= tt.B + 1e-9 ? 'B' : 'C';
   return v >= tt.S - 1e-9 ? 'S' : v >= tt.A - 1e-9 ? 'A' : v >= tt.B - 1e-9 ? 'B' : 'C';
 }
+
+// the lines a room is graded against, in its own number (the room card shows
+// them): its level's tiers, else the defaults; null for 1.x's quota, which
+// grades on the lag behind its last needed body and has no fixed lines
+export function tiersFor(room, level) {
+  const m = challenge.metricOf({ ...room, level });
+  if (level.tiers) return level.tiers;
+  if (m.name === 'share') return C.share;
+  if (m.name === 'time' && (room.goal === 'quota' || level.goal?.type === 'quota')) return null;
+  const D = level.duration;
+  return m.name === 'time' ? { S: D * C.timeTiers.S, A: D * C.timeTiers.A, B: D * C.timeTiers.B } : m.name === 'hits' ? { S: 0, A: 1, B: 3 } : { S: 1, A: 0.7, B: 0.4 };
+}
+// The grade a room is ON COURSE for while it runs (the HUD reads it): the
+// best one still within reach, and for a timed room the seconds left before
+// that line goes. A room graded on a share can still put every body down, so
+// it is on course for S less a grade a hit; on hits or the heart, the grade
+// those stand at now.
+export function onCourse(w) {
+  const R = w.room, d = w.dir;
+  if (!R || !d) return null;
+  const L = R.level, m = challenge.metricOf(R), H = tiersFor(R, L);
+  if (!H) return null;
+  if (m.name === 'time') {
+    for (const g of ['S', 'A', 'B']) if (d.t <= H[g] + 1e-9) return { grade: g, left: H[g] - d.t };
+    return { grade: 'C', left: null };
+  }
+  if (m.name === 'share') return { grade: ORDER[Math.max(1, 4 - (w.hits || 0) * C.hitCost)], left: null };
+  const v = m.name === 'hits' ? w.hits || 0 : w.ch?.heart ? Math.max(0, w.ch.heart.hp) / w.ch.heart.max : 1;
+  const g = m.low ? (v <= H.S ? 'S' : v <= H.A ? 'A' : v <= H.B ? 'B' : 'C') : (v >= H.S - 1e-9 ? 'S' : v >= H.A - 1e-9 ? 'A' : v >= H.B - 1e-9 ? 'B' : 'C');
+  return { grade: g, left: null };
+}
+
 export const better = (a, b) => ORDER.indexOf(a) > ORDER.indexOf(b);
 
 // the rooms in play order, which is also the order they open in
@@ -100,6 +132,7 @@ export function end(w, outcome) {
   d.ended = true;
   const result = { outcome, kills: w.kills, hits: w.hits || 0, time: Math.round(d.t * 10) / 10, score: w.score };
   result.value = challenge.measure(w, result);
+  result.why = outcome === 'clear' ? null : w.ch?.why ?? (outcome === 'fail' ? 'clock' : 'died');
   const g = grade(R, R.level, result);
   w.roomResult = { id: R.id, grade: g, ...result };
   w.events.push({ type: 'roomEnd', id: R.id, grade: g, ...result });

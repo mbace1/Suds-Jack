@@ -32,10 +32,10 @@
 //   chStep   { what, n, of }   progress the HUD reads: a gate, a lit body, an orb
 //   heart    { hp, x, z }      the heart was hurt
 // Pure: no DOM, no clock, w.rng only.
-import { TUNING } from '../tuning.js?v=32';
-import { levelShape, KIND } from './shape.js?v=32';
-import * as pickups from './pickups.js?v=32';
-import * as rules from './rules.js?v=32';
+import { TUNING } from '../tuning.js?v=34';
+import { levelShape, KIND } from './shape.js?v=34';
+import * as pickups from './pickups.js?v=34';
+import * as rules from './rules.js?v=34';
 
 const T = TUNING, C = T.campaign;
 
@@ -189,8 +189,8 @@ export function onGate(w) {
 // is the room won, lost or going on (null)
 function outcome(w) {
   const ch = w.ch, G = ch.goal, d = w.dir;
-  if (ch.mods.flawless && (w.hits || 0) > 0) return 'dead';
-  if (ch.heart && ch.heart.hp <= 0) return 'dead';
+  if (ch.mods.flawless && (w.hits || 0) > 0) { ch.why = 'hit'; return 'dead'; }
+  if (ch.heart && ch.heart.hp <= 0) { ch.why = 'heart'; return 'dead'; }
   const all = d.queue.length === 0, live = w.gels.some((g) => g.alive);
   let won = false;
   switch (G.type) {
@@ -204,7 +204,7 @@ function outcome(w) {
     case 'boss': won = (ch.bossDown || 0) > 0 && !d.queue.some((q) => q.boss) && !w.gels.some((g) => g.alive && g.isBoss); break;   // the boss, not its adds
   }
   if (won) return 'clear';
-  if (d.t >= d.duration - 1e-9) return TIMED.has(G.type) ? 'fail' : 'clear';
+  if (d.t >= d.duration - 1e-9) { if (TIMED.has(G.type)) { ch.why = 'clock'; return 'fail'; } return 'clear'; }
   return null;
 }
 

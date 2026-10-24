@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v34 — 2026-10-24
+**Grades you can read: the HUD says which grade you are on course for, the results put your number against the lines, and an F says why**
+- In a room the HUD's clock line ends with the grade still within reach, in its colour: in a timed room the line you are racing and the seconds it has left (S 16s, then A once S has gone); in a room graded on hits, the heart or the share, the grade those stand at now (a hit takes a share room from S to A)
+- The results of a room list its lines — S, A and B in its own number, C for getting through, F — with a marker and your number on the one you landed on
+- An F names what it was: you went down, a hit in a no-hits room, the heart was lost, or the clock ran out first
+- After a clear the grid's top line gives your number and, short of an S, the S line to beat
+
+## v33 — 2026-10-24
+**The campaign is a grid of thirty tiles, and every room has a card with START**
+- The room list becomes one GRID: a row per world in its colour, five tiles each — the room's number, its goal as a picture (a clock, a crosshair, gates, a ring, a heart, steps, an eye, a crown…), the grade it has paid, or a lock. All thirty fit on a phone held either way
+- A tile opens the room's CARD: what it asks, its chart, what it teaches, the lines it is graded on in its own number (S ≤ 21.1 s, A ≤ 23.2 s…, or the hits, the heart, the share), C for getting through and F for dying or the clock, your best grade and number, and START. Rooms start only from the card
+- Pad, keys and touch walk the grid in two directions; B or Esc goes back from the card to the grid (on the room you were on), and from the grid to the title
+- A room keeps your best number as well as your best grade, and a better time on the same grade replaces it
+- Any menu now scrolls to keep the focused button in view
+
 ## v32 — 2026-10-24
 **A game that fails to load says which file failed and why, and tries once more**
 - On the phone the page stopped at "failed to load js/main.js?v=31", which names only the first link of the chain. Now it walks main.js's imports, fetches each past the cache and names the first that does not come back (with its status), then imports the game once more past the cache: a 404 the CDN cached while the deploy was landing heals itself, and anything else puts the browser's own reason on screen
