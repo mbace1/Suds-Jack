@@ -3,7 +3,7 @@
 // on the floor where it stands (api.fire.hazard: it hurts to stand in) and a
 // slow ring of shots. Its cloud is what makes it a place rather than a body:
 // kill it in the open, or fight round the steam. Seeded: w.rng only.
-import { steerTo } from './base.js?v=41';
+import { steerTo } from './base.js?v=42';
 
 const range = (w, [a, b]) => a + w.rng.next() * (b - a);
 

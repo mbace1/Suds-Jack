@@ -44,6 +44,11 @@
     /* MENU sits where 1.x had it, over the clock, top right; the clock under it (owner, 2026-10-24) */
     #clock { position: absolute; right: max(14px, env(safe-area-inset-right)); top: calc(max(6px, env(safe-area-inset-top)) + 52px); font-size: 16px; letter-spacing: .1em; color: var(--amber); text-align: right; max-width: 44vw; }
     @media (max-width: 480px) { #clock { font-size: 13px; letter-spacing: .05em; } }
+    /* a boss wave's health (v42): under the clock, every boss of the wave in one bar */
+    #bossbar { position: absolute; right: max(14px, env(safe-area-inset-right)); top: calc(max(6px, env(safe-area-inset-top)) + 76px);
+      width: min(44vw, 240px); height: 6px; border: 1px solid var(--line); background: rgba(8, 8, 16, .5); }
+    #bossbar[hidden] { display: none; }
+    #bossbar i { display: block; height: 100%; width: 100%; transition: width .15s linear; }
     #pausebtn { position: absolute; right: max(10px, env(safe-area-inset-right)); top: max(6px, env(safe-area-inset-top)); pointer-events: auto;
       min-width: 64px; height: 44px; padding: 0 14px; background: rgba(8, 8, 16, .45); border: 1px solid var(--line); color: var(--ink); font: inherit; font-size: 14px; letter-spacing: .14em; }
     #vignette { position: fixed; inset: 0; pointer-events: none; opacity: 0;
@@ -165,11 +170,12 @@
     <div id="scorebox"><span id="score">0</span><span id="mult"></span><div id="lives"></div><div id="fx"></div></div>
     <button id="pausebtn" aria-label="menu">≡ MENU</button>
     <div id="clock"></div>
+    <div id="bossbar" hidden><i></i></div>
   </div>
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v41<span id="backend"></span></div>
+  <div id="ver">2.0 · v42<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -278,6 +284,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=41"></script>
+  <script type="module" src="js/main.js?v=42"></script>
 </body>
 </html>

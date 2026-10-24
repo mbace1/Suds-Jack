@@ -128,6 +128,12 @@ export default {
   // removes a body the step it dies, so the director holds that beat itself.
   // The white flash is 0.4 s (main.js:11393), the "WAVE N CLEAR" banner
   // 1.0 s in #66ffcc (main.js:11438-11440).
+  // a boss wave fought on the clock (v42, sim/bossfight.js): the grade pays
+  // its share of perWave × the wave (a wave-8 S is 8000, a clear's 4000 on
+  // top); the lines are measured (tuning/bossfights.js, scripts/boss-tiers.mjs)
+  // `on: false` is 1.x's boss wave (the 1.x oracle in test/director.mjs runs it so)
+  bossFight: { on: true, perWave: 1000, share: { S: 1, A: 0.6, B: 0.35, C: 0.15 } },
+
   clear: { perWave: 500, breather: 1.5, dying: 0.28, banner: 1.0, color: 0x66ffcc, flash: 0.4 },
 
   // CHALLENGE WAVES (v36, sim/challenge.js): the campaign's goals asked of an

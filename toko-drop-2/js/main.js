@@ -7,30 +7,30 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=41';
-import { buildFloor } from './render/floor.js?v=41';
-import { fitCamera, screenToWorld } from './render/view.js?v=41';
-import * as worldsSim from './sim/worlds.js?v=41';
-import * as reshapeSim from './sim/reshape.js?v=41';
-import { Scenery } from './render/scenery.js?v=41';
-import { Transit } from './render/transit.js?v=41';
-import { Splats } from './render/splats.js?v=41';
-import { Actors } from './render/actors.js?v=41';
-import { GEL_TIME } from './render/gel.js?v=41';
-import { studioEnvironment } from './render/env.js?v=41';
-import { Specimen } from './render/specimen.js?v=41';
-import { createWorld, step, api as simApi } from './sim/world.js?v=41';
-import { stage as stagePk } from './sim/pickups.js?v=41';
-import { Input } from './input.js?v=41';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText } from './ui.js?v=41';
-import { Announcer } from './announcer.js?v=41';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=41';
-import { metricOf } from './sim/challenge.js?v=41';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=41';
-import { Sound } from './audio.js?v=41';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=41';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=41';
-import { Readout } from './readout.js?v=41';
+import { TUNING } from './tuning.js?v=42';
+import { buildFloor } from './render/floor.js?v=42';
+import { fitCamera, screenToWorld } from './render/view.js?v=42';
+import * as worldsSim from './sim/worlds.js?v=42';
+import * as reshapeSim from './sim/reshape.js?v=42';
+import { Scenery } from './render/scenery.js?v=42';
+import { Transit } from './render/transit.js?v=42';
+import { Splats } from './render/splats.js?v=42';
+import { Actors } from './render/actors.js?v=42';
+import { GEL_TIME } from './render/gel.js?v=42';
+import { studioEnvironment } from './render/env.js?v=42';
+import { Specimen } from './render/specimen.js?v=42';
+import { createWorld, step, api as simApi } from './sim/world.js?v=42';
+import { stage as stagePk } from './sim/pickups.js?v=42';
+import { Input } from './input.js?v=42';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=42';
+import { Announcer } from './announcer.js?v=42';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=42';
+import { metricOf } from './sim/challenge.js?v=42';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=42';
+import { Sound } from './audio.js?v=42';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=42';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=42';
+import { Readout } from './readout.js?v=42';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -409,7 +409,7 @@ const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY)
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=41`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=42`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -566,9 +566,13 @@ function onEvent(e) {
   // a boss's act change or the surviving twin's rage: 1.x's 1.1 s popup (main.js:10398-10407); the 0.3 shake comes as its own event
   else if (e.type === 'phase') ui.banner(e.label ?? 'BOSS PHASE!', e.dur ?? 1.1);
   else if (e.type === 'wave') ui.banner(`${t('wave')} ${e.wave}${e.label ? ` · ${e.label}` : ''}`, e.dur ?? 1.4);
+  // a boss wave's clear comes a beat after its fight's banner: it joins it rather than writing over it (v42)
+  else if (e.type === 'clear' && world?.fight?.done) ui.banner(`${bossName(world.fight.kind)} ${t('bossDown')} · ${world.fight.grade} · +${(world.fight.bonus + e.bonus).toLocaleString('en-US')}`, 2.2);
   else if (e.type === 'clear') ui.banner(`${t('wave')} ${e.wave} ${t('clear')} +${e.bonus.toLocaleString('en-US')}`, e.dur ?? 1.0);
   // a challenge wave (v36): what it asks, over the wave's own banner, and how it went
   else if (e.type === 'trial') ui.banner(`${t('wave')} ${e.wave} · ${t('trial')}: ${t(`trial_${e.kind}`)}`, 2.2);
+  // a boss wave's fight over (v42): the boss, its grade and what it paid
+  else if (e.type === 'bossDown') ui.banner(`${bossName(e.kind)} ${t('bossDown')} · ${e.grade} · +${e.bonus.toLocaleString('en-US')}`, 2.2);
   else if (e.type === 'trialEnd') ui.banner(e.met ? `${t('trialMet')} +${e.bonus.toLocaleString('en-US')}` : t('trialMissed'), 1.6);
   else if (e.type === 'curtainWarn') ui.banner(`${String(e.style || '').toUpperCase()} ${t('curtain')}`, e.t ?? 1.1);
   else if (e.type === 'weapon') {
@@ -630,6 +634,16 @@ const debug = {
   floor: () => floor,
   get following() { return !!following; }, get viewWorld() { return viewWorld; }, get floorStyle() { return floor?.style; }, camAt, scenery, transit,
   arenaFor: (n, shape) => worldsSim.arenaFor(n, shape),
+  // the run straight to its world's boss wave, the floor emptied (the smoke's
+  // boss-fight check, v42), and the bosses put down by hand
+  bossWave() {
+    if (!world || !world.dir || world.room) return false;
+    for (const g of world.gels) g.alive = false;
+    world.gels = []; world.dir.queue = []; world.dir.gapT = 1e-9;
+    world.dir.wave = (worldsSim.on(world) ? world.world : 1) * T.waves.rhythm.bossEvery - 1;
+    return true;
+  },
+  killBosses() { let n = 0; for (const g of world?.gels ?? []) if (g.alive && g.isBoss) { simApi.kill(world, g); n++; } return n; },
   // straight on to the next world, as if its boss had just been cleared
   // (the smoke and the look checks; ?world= starts a run there instead)
   nextWorld() {

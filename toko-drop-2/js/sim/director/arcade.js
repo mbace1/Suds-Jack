@@ -21,10 +21,11 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=41';
-import * as worlds from '../worlds.js?v=41';
-import * as challenge from '../challenge.js?v=41';
-import { makeRng } from '../rng.js?v=41';
+import { TUNING } from '../../tuning.js?v=42';
+import * as worlds from '../worlds.js?v=42';
+import * as challenge from '../challenge.js?v=42';
+import { makeRng } from '../rng.js?v=42';
+import * as bossfight from '../bossfight.js?v=42';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -267,6 +268,8 @@ function startWave(w, d, carry) {
   const B = W.banner[plan.kind] ?? W.banner.normal, K = W.calls;
   const call = d.wave >= K.from ? (plan.kind === 'curtain' ? 'curtain' : K.archs[(d.wave + w.seed) % K.archs.length]) : null;
   w.events.push({ type: 'wave', wave: d.wave, label: B.label, kind: plan.kind, color: B.color, dur: B.dur, carry, call });
+  // a boss wave is a fight on the clock (sim/bossfight.js, v42): its headliner's health on screen, over when it is down
+  if (plan.kind === 'boss' && W.bossFight.on) bossfight.start(w, headliner(d.wave, w.seed).kind); else w.fight = null;
   // a challenge wave (sim/challenge.js, v36): a goal on top of the wave's bodies,
   // drawn from its own dice so the waves replay as they did without it
   const trial = challenge.trialFor(d.wave, w.seed, worlds.on(w) ? w.world : 1);
@@ -403,6 +406,10 @@ export default {
   },
   step(w, dt, api) {
     const d = w.dir;
+    // a boss wave on the clock (sim/bossfight.js, v42) is settled FIRST: the
+    // boss going down pops what it brought, so the round end below sees an
+    // empty floor and clears, rather than carrying the adds into the next wave
+    if (w.fight) bossfight.step(w, dt, api);
     if (!d.wave) startWave(w, d, false);     // startGame → spawnWave (main.js:8833-8834)
     else roundEnd(w, d, dt, api);
     d.waveT += dt;                           // main.js:9321

@@ -19,6 +19,18 @@
     Never `--no-verify`.
 -->
 
+## v42 — 2026-10-24
+**Arcade boss waves are fought like the campaign's boss rooms: the boss's health on screen, a clock and a grade, and the wave over when the boss is down**
+- Owner, 2026-10-24, picking from the plan: boss waves fought like the campaign boss rooms (CAMPAIGN_PLAN.md step 5).
+- `sim/bossfight.js`: a boss wave is a fight ON A CLOCK from the wave's start. The clock line under MENU names the boss and the grade it is on course for with that line's seconds (`OMEGA · S 29s`, as a room's HUD does), and a bar under it is the boss's health — every boss of the wave in one bar, in its colour (the TWIN PRISMS are one fight).
+- The boss down ends the wave: what it brought is POPPED (`api.pop`: it bursts as a kill does but pays nothing, keeps no streak, splits into nothing and fires no corpse in HARDCADE), the enemy bullets go with it, nothing more comes, and the wave clears. 1.x let the round's clock carry the adds into the next wave; that is still the behaviour with `waves.bossFight.on = false`, which the 1.x oracle in `test/director.mjs` now runs with, so it still proves everything else is 1.x's.
+- Graded S/A/B on lines the bot measured, as the rooms were: `scripts/boss-tiers.mjs` fights every world's boss wave with both headliners at three skills over 24 seeds and writes `tuning/bossfights.js` (S the sharp bot's median, A the average's, B the rough's, a floor between the steps). The bot cannot dodge a boss as well as it shoots one, so it fights with lives to spare and the hits it took are reported beside the times. The grade pays its share of 1000 × the wave (S 1, A 0.6, B 0.35, C 0.15 — an S on wave 8 is 8,000, with the clear's 4,000 on top), and an S or an A drops a pod where the boss fell. One banner says it: `TWIN PRISMS DOWN · S · +12,000` (the clear's bonus joins it rather than writing over it).
+- The bot moved out of `scripts/room-tiers.mjs` into `scripts/bot.mjs` so both passes play the same game; the room pass's output is byte-identical across the move.
+- Found on the way: the first cut settled the fight after the round end, so a boss killed past its round's clock let the adds carry into the next wave and the fight never ended. The fight is settled first now, and `test/bossfight.mjs` (in the smoke) holds that case, the pops paying nothing, HARDCADE's pops firing nothing, and an S's pod. The smoke checks the HUD: the clock line, the bar under it, and the banner.
+- Cache tokens `?v=41` → `?v=42`; HUD label → `2.0 · v42`
+
+---
+
 ## v41 — 2026-10-24
 **The game loads on the live site again: `_base.js` is `base.js`, because GitHub Pages leaves out every file whose name starts with "_"**
 - Owner's phone on v40, from the arcade: *"the file that failed: 404 …/toko-drop-2/js/sim/species/_base.js?v=40"* — v40's own report, and the whole cause. The arcade is served by GitHub Pages, whose Jekyll build drops any file or folder whose name starts with `_` (there is no `.nojekyll` at the site root, and adding one would change how every game on the site is built, which is not this game's call). Every local server serves the file, so the smoke, the site smoke and the hub route check were all green against a game the live site could not load.

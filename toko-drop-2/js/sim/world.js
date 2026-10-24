@@ -14,19 +14,19 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=41';
-import { makeRng } from './rng.js?v=41';
-import { BEHAVIOUR } from './species/index.js?v=41';
-import { DIRECTORS } from './director/index.js?v=41';
-import * as fire from './fire.js?v=41';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=41';
-import { swarmForces, resolveCrowd } from './crowd.js?v=41';
-import { revengeColor } from './color.js?v=41';
-import * as pickups from './pickups.js?v=41';
-import * as worlds from './worlds.js?v=41';
-import * as reshape from './reshape.js?v=41';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=41';
-import * as rules from './rules.js?v=41';
+import { TUNING } from '../tuning.js?v=42';
+import { makeRng } from './rng.js?v=42';
+import { BEHAVIOUR } from './species/index.js?v=42';
+import { DIRECTORS } from './director/index.js?v=42';
+import * as fire from './fire.js?v=42';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=42';
+import { swarmForces, resolveCrowd } from './crowd.js?v=42';
+import { revengeColor } from './color.js?v=42';
+import * as pickups from './pickups.js?v=42';
+import * as worlds from './worlds.js?v=42';
+import * as reshape from './reshape.js?v=42';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=42';
+import * as rules from './rules.js?v=42';
 
 const T = TUNING;
 
@@ -108,6 +108,7 @@ export const api = {
     w.heroBullets++;
   },
   kill: (w, g, src) => kill(w, g, src),
+  pop: (w, g) => pop(w, g),
   clamp(w, g) { if (!g) return; g.x = clamp(g.x, -w.hx + g.r, w.hx - g.r); g.z = clamp(g.z, -w.hz + g.r, w.hz - g.r); inRegion(w, g, g.r); },
   // points from anything but a kill or a graze (a wave's clear bonus), with
   // the milestones that follow
@@ -255,6 +256,16 @@ export function inRegion(w, o, r) {
   return true;
 }
 const _rp = { x: 0, z: 0 };
+
+// a body put away without a fight (v42: what a boss leaves on the floor when
+// it goes down, sim/bossfight.js): it bursts as a kill does, but pays nothing,
+// keeps no streak, splits into nothing and fires no corpse
+function pop(w, g) {
+  if (!g.alive) return;
+  g.alive = false;
+  w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: T.species[g.kind].color, big: false, boss: false, src: 'pop' });
+  w.director.onKill?.(w, g, api);
+}
 
 function kill(w, g, src = 'hero') {
   if (!g.alive) return;
