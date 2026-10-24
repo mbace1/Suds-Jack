@@ -117,9 +117,11 @@ server.listen(0, '127.0.0.1', async () => {
       const t = await page.evaluate(() => { const b = document.getElementById('play').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; });
       await page.tap('#play'); await page.waitForTimeout(200); await page.tap('#jobBoard .jobOffer:not([disabled])');
       for (let i = 0; i < 300 && !(await page.evaluate(() => !!document.querySelector('.catchChoice.lit'))); i++) await page.evaluate(() => window.__tm.flow.runTicks(3));
-      const g = await page.evaluate(() => { const c = document.querySelector('.catchChoice.lit')?.getBoundingClientRect(), m = document.getElementById('map').getBoundingClientRect();
+      // the board's FIRST row — rows light in place (v2.4x, so a press in flight
+      // lands), so whichever is lit first can be the third; layout owns the first
+      const g = await page.evaluate(() => { const c = document.querySelector('.catchChoice')?.getBoundingClientRect(), m = document.getElementById('map').getBoundingClientRect();
         return { catchIn: !!c && c.top >= 0 && c.bottom <= innerHeight, map: Math.round(m.height), hscroll: document.documentElement.scrollWidth > innerWidth + 1 }; });
-      ok(`S4 ${name}: START on screen, a lit CATCH on screen, the map ${g.map}px tall, no sideways scroll`, t && g.catchIn && g.map >= 240 && !g.hscroll, JSON.stringify(g));
+      ok(`S4 ${name}: START on screen, the first CATCH row on screen, the map ${g.map}px tall, no sideways scroll`, t && g.catchIn && g.map >= 240 && !g.hscroll, JSON.stringify(g));
       await ctx.close();
     }
     // ── S7: the credits, in both languages ───────────────────────────────

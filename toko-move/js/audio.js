@@ -79,7 +79,9 @@ export function mountAudio(tm, { button = 'sound' } = {}) {
 
   function setOn(v) {
     on = !!v; try { store()?.setItem(KEY, on ? 'on' : 'off'); } catch {}
-    if (master && ctx) master.gain.setValueAtTime(on ? LEVEL : 0, ctx.currentTime);
+    // .value, not an automation event: a scheduled change lands on the audio
+    // thread a render quantum later, and a mute has to be a mute now
+    if (master && ctx) { try { master.gain.cancelScheduledValues(ctx.currentTime); } catch {} master.gain.value = on ? LEVEL : 0; }
     paint();
   }
   function paint() {
