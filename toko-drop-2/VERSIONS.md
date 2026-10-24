@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v39 — 2026-10-24
+**The intro plays every time a run starts from the title, and never on a retry**
+- Owner, 2026-10-24: *"Intro should be played every time you start the game from the start menu, not when you retry after a run."*
+- ARCADE or HARDCADE from the title plays the intro film first, every time; any press skips it into the run. AGAIN on the results goes straight back in. A campaign room has no film.
+- `?nointro` turns it off (the smoke boots every scenario that way and checks the film once, in the landscape scenario: title → intro → a press skips → run ends → AGAIN → straight into play); `?intro` still plays it on every start.
+- Cache tokens `?v=38` → `?v=39`; HUD label → `2.0 · v39`
+
+---
+
 ## v38 — 2026-10-24
 **The start screen is ARCADE with HARD beside it, CAMPAIGN and MENU, and a MENU button stays at the top right while you play**
 - Owner, 2026-10-24: *"no need for a intro button. On the start screen it should have arcade button with hard toggle, campaign button, and menu button. Always when playing there should be a menu button at the top. In 1.x it was over the clock."*
