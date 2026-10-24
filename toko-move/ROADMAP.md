@@ -1,17 +1,77 @@
 # Toko Move — roadmap after v2.36
 
-## Owner direction, 2026-09-26 — one city, two faces, chosen by who plays
+## Owner direction, 2026-10-24 — publish Toko Move first; Piritori is its spin-off
 
-*"Toko Move turns into Piritori stories or a kids game depending on the user."*
-(Part of a wider line: *"We are the game that feels evolving"* — see CLAUDE.md.)
+*"Toko Move is the thing we publish first and then Piritori is a spin-off that
+becomes the bigger game. I have Toko Move approved in my contract but not
+Piritori, so it has to be Toko Move: Piritori and then we rebrand."* And on
+the first draft of the order: *"Toko Move has none of Piritori assets. It's a
+simple transportation simulator game with missions"*; *"We are looking at
+platform publishing like itch.io"*. (Supersedes the 2026-10-23 draft and the
+2026-09-27 "two modes" note.)
 
-Toko Move and Piritori already stand on the same Helsinki city core (flow-core,
-the recovered map packs). The direction is that the same board becomes either
-Piritori's Kallio stories or a kids' game, depending on who is playing — not a
-menu of modes, an adaptation. Open questions for the owner before any build:
-what "depending on the user" reads (an explicit choice, the player's history in
-`hub/playlog.js`, Toko asking), and what the kids' version keeps of the delivery
-loop. Nothing here is built yet.
+### The release order
+
+1. **Toko Move** — published first, on itch.io, under the title the contract
+   approves. A transport simulator with missions on the real Helsinki network.
+   **It carries nothing of Piritori**: no characters, art, name, door or code.
+2. **Toko Move: Piritori** — the spin-off, published under the approved title
+   as its own itch.io project with its own adult-content rating. Built in its
+   own lane (`mbace1/piritori-eden`); Piritori's canon stands untouched —
+   separate products sharing only the neutral city engine (`flow-core`).
+3. **Piritori** — the rebrand, once the spin-off has outgrown the name; it
+   becomes the bigger title and the top of the publisher page. Toko Move stays
+   published and maintained beside it.
+
+Two things to settle outside the code before step 2: that the contract's
+approval of *Toko Move* covers a spin-off of this kind under that name, and
+the spin-off's itch.io URL — give it a neutral slug (`…/piritori`) from day
+one so the rebrand changes a title, not an address.
+
+### Toko Move's road to the store — milestones
+
+**M1 · Current network + the rival fix (v2.64, 2026-10-24).** The feed the
+nightly refresh has validated since; the rival no longer loses his walk to a
+race abandoned a tick later. `tools/fingerprint.mjs` makes every future
+adoption one command.
+
+**M2 · The store build (v2.64).** One shipping tree, two places it is
+published. `js/platform.js` is the seam: a packaged build declares
+`TOKO_PLATFORM` and the game then shares the STORE PAGE rather than the frame
+it is playing in, and leaves out the playtest test card.
+`tools/package-itch.mjs` builds the upload — `toko-move/` beside the parts of
+`flow-core/` it imports, a root `index.html` that steps into it, no arcade
+HOME button, no tests or tools — refuses any path that would reach outside the
+package, and zips it. `test/itch.cjs` unzips that file, serves it ALONE, and
+plays a shift through it.
+
+**M3 · The store page kit.** `store/ITCH.md` (title, short and long
+description, controls, tags, credits, embed settings); the Crown Bridges film
+(`tools/film.cjs`) as the trailer; stills from the same harness.
+
+**M4 · First minutes for a stranger.** Until now every player had the arcade
+around them and a test card telling them what to try. A store player arrives
+cold: the first shift has to teach the loop — take a job, catch a tram, get
+off, deliver — without a page of text. Measure it (the shift bot's "naive"
+player and a timed first-delivery) before building it.
+
+**M5 · Language.** Finnish and English at least, the arcade's house
+convention (fi/en/ja) as the target; Toko Move is English-only today.
+
+**M6 · LIVE on a real phone.** LIVE has never met HSL's broker from here; it
+needs the owner's phone (or a network that reaches `mqtt.hsl.fi`) before a
+store page may name it.
+
+**M7 · 1.0 on itch.io.** Owner uploads the M2 zip (or `butler` with the
+owner's key — not available here), embed 405×720 with fullscreen, mobile
+friendly, the M3 page. Every later release: the same package script, the same
+gate, `VERSIONS.md` as the changelog.
+
+Owner actions outside the code: the GitHub Actions setting so the nightly
+network refresh opens its own PR; the phone pass on the test card; the
+itch.io account and page.
+
+The kids' mode stays withdrawn (2026-09-27).
 
 
 Owner direction, 2026-09-17, in their words: *"Disruptions is good, feels like

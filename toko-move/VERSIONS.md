@@ -1,5 +1,56 @@
 # Toko Move — versions
 
+## v2.64 — 2026-10-24
+
+**THE STORE BUILD, AND THE NETWORK HSL HAS BEEN RUNNING SINCE SEPTEMBER**
+(owner, 2026-10-24: *"Toko Move is the thing we publish first and then
+Piritori is a spin-off that becomes the bigger game"* — ROADMAP.md has the
+order and the milestones to an itch.io 1.0).
+
+**The network.** The nightly refresh has validated every night since v2.63 and
+failed only on opening its PR (the repo does not let Actions open one), so
+this takes its newest pack, `automation/toko-move-hsl-40079925291`, byte for
+byte. HSL reroutes trams **2, 4 and H** (4 now runs Katajanokka → Hakaniemi →
+Kallio → Meilahti; Ooppera ↔ Meilahti has no tram) and adds **7B and 9B** —
+B-lines are usually works diversions, so expect them to change back; the
+board follows the feed either way. Every stop moved by the same 3 m, which is
+the board's corner, not the stops. **`tools/fingerprint.mjs`** prints what a
+refresh moved and `--write` accepts it — adopting a network is now one command
+(the September adoption used a scratch script that died with its container).
+
+**The rival kept losing his walk.** A claim on a new job turned him towards
+your stop; if you took the job a tick later the claim dropped and he started a
+FRESH 260-tick walk. A player who takes each job as it appears reset him every
+time, and a quick shift ended with the other courier having delivered nothing
+(the shift gate caught it on the new network: 39 of 40). A race given up now
+resumes the walk it interrupted, with the time that walk had left.
+
+**The store build (roadmap M2).** One shipping tree, two homes.
+`js/platform.js` is the seam: a packaged build declares `TOKO_PLATFORM` and
+the game then shares the STORE PAGE rather than the frame itch.io plays it in,
+and leaves the playtest card off. **`tools/package-itch.mjs`** builds the
+upload from what git tracks — `toko-move/` beside `flow-core/` so every path
+resolves unchanged, a root `index.html` that steps in, no arcade HOME button,
+no tests, tools or design notes — and refuses any path that would reach
+outside the package (an import resolves against its file, a `fetch` against
+the page; it accepts either). **`test/itch.cjs`** unzips the result into an
+empty folder, serves it alone and plays a delivery through it: 11 checks, and
+it fails both ways it was mutated (the HOME button left in is stopped by the
+packager itself; a new module not yet in git is a 404 from the zip). 74 files,
+0.47 MB. **`store/ITCH.md`** is the page kit: settings, copy (only what the
+build does — LIVE stays off the page until M6), controls, credits, media.
+
+**Rent is NOT re-set, and should be** (`--kitweeks=20`): on this network €400
+is paid by the earner **95%**, the sensible player **90%** and the naive
+player **70%** of weeks (v2.63: 90 / 70 / 60). That is outside the 20-week
+noise, and the rule the rent was set by (earner ~80%, sensible ~55%) now reads
+**€500** (75% / 50%). Left at €400 for the owner to decide: it is the biggest
+balance change since the week shipped, and the diversions may change back.
+
+The avoid-a-passed-stop gate (v2.62) no longer names a route — the one it
+named went with tram 4 — and checks every pair instead: 0 leaks, and it fails
+without the rule.
+
 ## v2.63 — 2026-09-26
 
 **LAAJASALO, AND THE MAP NAMES ITS HUBS.**
