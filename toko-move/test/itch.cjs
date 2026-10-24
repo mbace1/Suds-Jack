@@ -47,9 +47,10 @@ server.listen(0, '127.0.0.1', async () => {
     await page.goto(`${base}/`, { waitUntil: 'load' });
     await page.waitForFunction(() => window.__tm?.flow && !document.getElementById('play').disabled, null, { timeout: 30000 });
     ok('the zip root steps into the game', /\/toko-move\/(index\.html)?$/.test(new URL(page.url()).pathname), page.url());
-    const shell = await page.evaluate(() => ({ home: !!document.querySelector('.arcade-home'), card: (() => { const c = document.getElementById('testCard'); return !!c && !c.hidden && c.offsetParent !== null; })(), platform: window.TOKO_PLATFORM }));
+    const shell = await page.evaluate(() => ({ home: !!document.querySelector('.arcade-home'), card: (() => { const c = document.getElementById('testCard'); return !!c && !c.hidden && c.offsetParent !== null; })(), platform: window.TOKO_PLATFORM, live: (() => { const l = document.getElementById('liveLink'); return !!l && !l.hidden && l.offsetParent !== null; })() }));
     ok('no arcade HOME button on a store page', !shell.home);
     ok('no playtest card on a store page', !shell.card);
+    ok('no LIVE on a store build until a real phone has seen it work (M6)', !shell.live);
     ok('the build says where it is published', shell.platform?.name === 'itch' && shell.platform?.page === PAGE, JSON.stringify(shell.platform));
     const share = await page.evaluate(async () => { const m = await import('./js/platform.js?v=1'); return { store: m.STORE, url: m.shareUrl('?week') }; });
     ok(`a share line links the store page, not the frame (${share.url})`, share.store === true && share.url === PAGE);
