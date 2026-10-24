@@ -67,7 +67,7 @@ const look = page => page.evaluate(() => {
   if (q('#getOff').length) return { phase: 'getoff', sel: '#getOff' };
   if (q('.catchChoice.lit').length) return { phase: 'catch', sel: '.catchChoice.lit:not([disabled])' };
   if (!ch.active && q('#jobBoard .jobOffer:not([disabled])').length) return { phase: 'jobs', sel: '#jobBoard .jobOffer:not([disabled])' };
-  return { phase: 'wait' };
+  { const st = tm.mobility?.status?.(), due = (tm.catchables?.().length || st?.kind === 'getoff' || tm.events?.pending || (!ch.active && (ch.offers || []).length)); return { phase: 'wait', due: !!due }; }
 });
 const settle = page => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
 
@@ -88,11 +88,18 @@ server.listen(0, '127.0.0.1', async () => {
   // Play by tapping what lights; `want` names the screens to keep, first sight of each.
   const play = async (page, want, maxSteps = 5000) => {
     const got = new Set();
-    for (let i = 0; i < maxSteps; i++) {
+    let held = 0;  // see below: waiting for the panel to show what the game says is there
+      for (let i = 0; i < maxSteps; i++) {
       const s = await look(page);
       if (want[s.phase] && !got.has(s.phase)) { got.add(s.phase); await shoot(page, want[s.phase]); }
       if (s.phase === 'end') return got;
       if (s.sel) { await page.tap(s.sel, { timeout: 1500 }).catch(() => {}); await page.waitForTimeout(60); continue; }
+      // The panel repaints every 250ms of WALL time; this harness moves the clock
+      // far faster, so a catch window (~22 ticks) could open and close between two
+      // repaints and never be seen lit. When the game says something is there to
+      // tap, wait for the panel to show it, as a person would, before ticking on.
+      if (s.due && held++ < 8) { await page.waitForTimeout(80); continue; }
+      held = 0;
       await page.evaluate(() => window.__tm.flow.runTicks(3));
     }
     return got;

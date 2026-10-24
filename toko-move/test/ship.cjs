@@ -43,15 +43,22 @@ const look = page => page.evaluate(() => {
   if (q('#getOff').length) return { phase: 'getoff', sel: '#getOff' };
   if (q('.catchChoice.lit').length) return { phase: 'catch', sel: '.catchChoice.lit:not([disabled])' };
   if (!ch.active && q('#jobBoard .jobOffer:not([disabled])').length) return { phase: 'jobs', sel: '#jobBoard .jobOffer:not([disabled])' };
-  return { phase: 'wait' };
+  { const st = tm.mobility?.status?.(), due = (tm.catchables?.().length || st?.kind === 'getoff' || tm.events?.pending || (!ch.active && (ch.offers || []).length)); return { phase: 'wait', due: !!due }; }
 });
 // tap what lights until the shift ends (or `until` deliveries are made)
 const play = async (page, until = 99) => {
-  for (let i = 0; i < 6000; i++) {
+  let held = 0;  // see below: waiting for the panel to show what the game says is there
+      for (let i = 0; i < 6000; i++) {
     const s = await look(page);
     if (s.phase === 'end') return s;
     if (await page.evaluate(() => window.__tm.challenge.index) >= until) return { phase: 'delivered' };
     if (s.sel) { await page.tap(s.sel, { timeout: 1500 }).catch(() => {}); await page.waitForTimeout(50); continue; }
+    // The panel repaints every 250ms of WALL time; this harness moves the clock
+    // far faster, so a catch window (~22 ticks) could open and close between two
+    // repaints and never be seen lit. When the game says something is there to
+    // tap, wait for the panel to show it, as a person would, before ticking on.
+    if (s.due && held++ < 8) { await page.waitForTimeout(80); continue; }
+    held = 0;
     await page.evaluate(() => window.__tm.flow.runTicks(3));
   }
   return { phase: 'stuck' };
@@ -116,7 +123,7 @@ server.listen(0, '127.0.0.1', async () => {
       const ctx = await browser.newContext({ viewport: vp, hasTouch: true, isMobile: true }); const { page } = await boot(ctx, '?shift=1&day=none');
       const t = await page.evaluate(() => { const b = document.getElementById('play').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; });
       await page.tap('#play'); await page.waitForTimeout(200); await page.tap('#jobBoard .jobOffer:not([disabled])');
-      for (let i = 0; i < 300 && !(await page.evaluate(() => !!document.querySelector('.catchChoice.lit'))); i++) await page.evaluate(() => window.__tm.flow.runTicks(3));
+      for (let i = 0; i < 300 && !(await page.evaluate(() => !!document.querySelector('.catchChoice'))); i++) await page.evaluate(() => window.__tm.flow.runTicks(3));
       // the board's FIRST row — rows light in place (v2.4x, so a press in flight
       // lands), so whichever is lit first can be the third; layout owns the first
       const g = await page.evaluate(() => { const c = document.querySelector('.catchChoice')?.getBoundingClientRect(), m = document.getElementById('map').getBoundingClientRect();

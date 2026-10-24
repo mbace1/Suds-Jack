@@ -50,6 +50,7 @@ server.listen(0, '127.0.0.1', async () => {
       await page.evaluate(() => window.__tm.flow.clock.setPaused(true));
       const label = q || '(today)';
       let start = null, firstDelivery = null, taps = 0, lies = [], selfExits = [], phases = new Set(), end = null;
+      let held = 0;  // see below: waiting for the panel to show what the game says is there
       for (let i = 0; i < 6000; i++) {
         // look at the screen the way a person would: what is lit, what it says
         const s = await page.evaluate(() => {
@@ -67,7 +68,7 @@ server.listen(0, '127.0.0.1', async () => {
           if (q('#getOff').length) return { ...out, phase: 'getoff', sel: '#getOff' };
           if (lit.length) return { ...out, phase: 'catch', sel: '.catchChoice.lit:not([disabled])' };
           if (!ch.active && q('#jobBoard .jobOffer:not([disabled])').length) return { ...out, phase: 'jobs', sel: '#jobBoard .jobOffer:not([disabled])' };
-          return { ...out, phase: 'wait:' + (st?.kind || '?') };
+          { const due = (tm.catchables?.().length || st?.kind === 'getoff' || tm.events?.pending || (!ch.active && (ch.offers || []).length)); return { ...out, phase: 'wait:' + (st?.kind || '?'), due: !!due }; }
         });
         phases.add(s.phase);
         if (s.lie) lies.push(`t${s.tick} "${s.lie}"`);
@@ -78,6 +79,12 @@ server.listen(0, '127.0.0.1', async () => {
           if (s.phase === 'jobs' && start == null) start = s.tick;
           if (await page.tap(s.sel, { timeout: 1500 }).then(() => true, () => false)) taps++; await page.waitForTimeout(60); continue;
         }
+        // The panel repaints every 250ms of WALL time; this harness moves the clock
+        // far faster, so a catch window (~22 ticks) could open and close between two
+        // repaints and never be seen lit. When the game says something is there to
+        // tap, wait for the panel to show it, as a person would, before ticking on.
+        if (s.due && held++ < 8) { await page.waitForTimeout(80); continue; }
+        held = 0;
         await page.evaluate(() => window.__tm.flow.runTicks(3));
       }
       // ticks per game minute, the way js/ui.js reads it
