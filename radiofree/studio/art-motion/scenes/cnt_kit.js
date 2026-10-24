@@ -592,8 +592,19 @@
     BDF.doodleLogo(g, 22, 50, 38);
     g.fillStyle = C.ink; g.textAlign = 'left'; g.font = `26px "ArchivoBlack-400", ${JP}`; g.fillText(ui('planting', 'PLANTING PLANNED'), 22, 92);
     g.font = '400 70px "Anton-400"'; g.fillText(ui('patchHa', '130 ha'), 22, 166);
-    g.fillStyle = '#2f6b26'; g.font = `24px "ArchivoBlack-400", ${JP}`; g.fillText(ui('pitches', '≈ 180 FOOTBALL PITCHES'), 22, 212);
+    g.fillStyle = '#2f6b26'; g.font = `24px "ArchivoBlack-400", ${JP}`; g.fillText(ui('pitches', '≈ 180 FOOTBALL PITCHES'), 22, 212);   // v2/v3 label (kept for older builds)
     g.fillStyle = C.sapD; g.fillRect(0, 230, 390, 10);
+  }, 6);
+  // v4 (owner: "What's the end learning?"): the label says the learning, 130 OF ~330 ha · UNDER HALF, in place of
+  //    the pitches line, and a second, red-edged tag pops on the bare part on "half" (the rest of the clearing)
+  const patchLabelV4 = () => sprite('cntv_patch4', 430, 250, 0, 0, (g) => {
+    g.fillStyle = C.cream; g.beginPath(); g.roundRect(0, 0, 420, 240, 10); g.fill();
+    BDF.doodleLogo(g, 22, 50, 38);
+    g.fillStyle = C.ink; g.textAlign = 'left'; g.font = `26px "ArchivoBlack-400", ${JP}`; g.fillText(ui('planting', 'PLANTING PLANNED'), 22, 92);
+    g.font = '400 70px "Anton-400"'; g.fillText(ui('patchHa', '130 ha'), 22, 166);
+    g.fillStyle = '#b8321f'; let fs = 26; g.font = `${fs}px "ArchivoBlack-400", ${JP}`; const t = ui('underHalf', '130 OF ~330 ha · UNDER HALF');
+    while (g.measureText(t).width > 380 && fs > 16) { fs -= 1; g.font = `${fs}px "ArchivoBlack-400", ${JP}`; } g.fillText(t, 22, 212);
+    g.fillStyle = C.sapD; g.fillRect(0, 230, 420, 10);
   }, 6);
   SCENES.cntv_end = { draw(c, lt) {
     const id = 'cntv_end', dd = dur(id), tPl = at(id, 'plant', 0.9), tH = at(id, 'ha', 1.5), tB = at(id, 'back', dd - 2.6), tC = at(id, 'clip', dd - 1.1);
@@ -634,7 +645,7 @@
         const kL = (lt - tH + 0.08) / 0.25;
         if (kL > 0) {
           const ax = 525, a0 = Y_PATCH - 62, a1 = Y_PATCH + 40, kA = clamp((lt - tH - 0.1) / 0.25, 0, 1);
-          put(g, patchLabelV(), 365, Y_PATCH - 262, { sc: 0.82 * ease.back(kL), rot: -0.02 + swing(lt, [[tH + 0.2, 0.03]]), lift: 1.0 });
+          put(g, patchLabelV4(), 350, Y_PATCH - 262, { sc: 0.82 * ease.back(kL), rot: -0.02 + swing(lt, [[tH + 0.2, 0.03]]), lift: 1.0 });
           if (kA > 0) { const y1 = lerp(a0, a1, ease.out(kA)); g.save(); g.strokeStyle = C.cream; g.fillStyle = C.cream; g.lineWidth = 7; g.lineCap = 'round'; g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 8; g.shadowOffsetX = 4; g.shadowOffsetY = 6; g.beginPath(); g.moveTo(ax, a0); g.lineTo(ax, y1 - 14); g.stroke(); g.beginPath(); g.moveTo(ax - 17, y1 - 20); g.lineTo(ax + 17, y1 - 20); g.lineTo(ax, y1 + 4); g.closePath(); g.fill(); g.restore(); }
         }
         g.restore();

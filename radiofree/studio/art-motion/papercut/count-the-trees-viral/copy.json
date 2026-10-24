@@ -1,6 +1,6 @@
 {
   "film": "count-the-trees-viral",
-  "cut": "Doodle 5, VIRAL CUT v2 (23 Oct). Owner on v1: 'Police car is too big, ending too abruptly', 'the visual seems small for 130ha', '330 ha is huge'. Hook first; one pitch, then ~460 of them; before the assessment → a police inquiry → headlines in six languages; punch on 130 ha (≈ 180 pitches), hold, ease back, loop. The v1 draft (papercut/count-the-trees) is unchanged. v3 (24 Oct): owner asked if this was the Hamina case and wanted where and when: the hook names Muhos, Finland, 2026; a tag NEW Doodle DATA CENTRE · MUHOS, FINLAND sits above the clipping on frame 0 and on the last frame; the post says it is a different site from Hamina.",
+  "cut": "Doodle 5, VIRAL CUT v2 (23 Oct). Owner on v1: 'Police car is too big, ending too abruptly', 'the visual seems small for 130ha', '330 ha is huge'. Hook first; one pitch, then ~460 of them; before the assessment → a police inquiry → headlines in six languages; punch on 130 ha (≈ 180 pitches), hold, ease back, loop. The v1 draft (papercut/count-the-trees) is unchanged. v3 (24 Oct): owner asked if this was the Hamina case and wanted where and when: the hook names Muhos, Finland, 2026; a tag NEW Doodle DATA CENTRE · MUHOS, FINLAND sits above the clipping on frame 0 and on the last frame; the post says it is a different site from Hamina. v4 (24 Oct): owner 'Trees end is too fast and needs clarity. What's the end learning?' The punchline says it: 130 ha planned of ~330 ha felled, under half; the label pops on 'half', a ≥3.5 s hold, then a slower ease back.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "About 250,000 trees (by the Guardian's estimate), some 330 hectares or 460 football pitches, were cleared for Doodle's Muhos data centre before the required assessment. Police opened a preliminary inquiry. Planting planned: 130 hectares.",
@@ -75,11 +75,11 @@
       "until": "end-1.1",
       "hold": "end",
       "text": {
-        "en": "Felled: ~330 ha. / Planting planned: / [130 ha].",
-        "fi": "Hakattu: ~330 ha. / Istutus suunnitteilla: / [130 ha].",
-        "ja": "伐採： 約330ha。 / 植樹の 計画： / [130ha]。"
+        "en": "Felled: ~330 ha. / Planting planned: / 130 ha. Under [half].",
+        "fi": "Hakattu: ~330 ha. / Istutus suunnitteilla: / 130 ha. Alle [puolet].",
+        "ja": "伐採： 約330ha。 / 植樹の 計画： 130ha。 / [半分以下]。"
       },
-      "source": "About 330 ha cleared at Muhos (the figure reported as Tuike Finland's own; the regulator says over 300). 130 ha: Doodle's own statement (AFP, about 7 Oct): its landscaping and biodiversity plans include tree planting across 130 hectares at Muhos. The sapling patch is drawn at 40 % of the clearing."
+      "source": "About 330 ha cleared at Muhos (the figure reported as Tuike Finland's own; the regulator says over 300). 130 ha: Doodle's own statement (AFP, about 7 Oct): its landscaping and biodiversity plans include tree planting across 130 hectares at Muhos. The sapling patch is drawn at 40 % of the clearing. v4 (owner, 24 Oct: 'What's the end learning?'): 130 of ~330 is 39 %, so 'under half' is arithmetic on the two sourced figures: 130 ha is Doodle's own planned planting at Muhos (AFP, ~7 Oct: tree planting across 130 hectares at Muhos); ~330 ha is the figure reported as Tuike's own felled area."
     }
   ],
   "ui": {
@@ -162,6 +162,11 @@
       "en": " DATA CENTRE · MUHOS, FINLAND",
       "fi": "N UUSI DATAKESKUS · MUHOS",
       "ja": "の新データセンター · フィンランド・ムホス"
+    },
+    "underHalf": {
+      "en": "130 OF ~330 ha · UNDER HALF",
+      "fi": "130 / ~330 ha · ALLE PUOLET",
+      "ja": "約330haのうち130ha · 半分以下"
     }
   },
   "props": {

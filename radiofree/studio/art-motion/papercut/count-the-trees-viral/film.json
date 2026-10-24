@@ -14,12 +14,55 @@
  ],
  "scenes": [],
  "shots": [
-  { "id": "cntv_hook", "beats": 7, "cues": { "gone": "word:pop" } },
-  { "id": "cntv_pitch", "beats": 12, "cues": { "pitch": 0.1, "tile": 1.15, "n": "word:pop" } },
-  { "id": "cntv_eia", "beats": 8, "cues": { "eia": "word:pop" } },
-  { "id": "cntv_police", "beats": 8, "cues": { "car": 0.1, "inq": "word:pop" } },
-  { "id": "cntv_world", "beats": 6, "cues": { "slips": 0.05, "world": 1.1 } },
-  { "id": "cntv_end", "beats": 15, "cues": { "plant": "line:2.start", "ha": "word:pop", "back": 4.2, "clip": 5.65 } }
+  {
+   "id": "cntv_hook",
+   "beats": 7,
+   "cues": {
+    "gone": "word:pop"
+   }
+  },
+  {
+   "id": "cntv_pitch",
+   "beats": 12,
+   "cues": {
+    "pitch": 0.1,
+    "tile": 1.15,
+    "n": "word:pop"
+   }
+  },
+  {
+   "id": "cntv_eia",
+   "beats": 8,
+   "cues": {
+    "eia": "word:pop"
+   }
+  },
+  {
+   "id": "cntv_police",
+   "beats": 8,
+   "cues": {
+    "car": 0.1,
+    "inq": "word:pop"
+   }
+  },
+  {
+   "id": "cntv_world",
+   "beats": 6,
+   "cues": {
+    "slips": 0.05,
+    "world": 1.1
+   }
+  },
+  {
+   "id": "cntv_end",
+   "beats": 20,
+   "cues": {
+    "plant": "line:2.start",
+    "ha": "word:pop",
+    "back": 6.3,
+    "clip": 7.95
+   }
+  }
  ],
  "quiet": [],
  "keep": []

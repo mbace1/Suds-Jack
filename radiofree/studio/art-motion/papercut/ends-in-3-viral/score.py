@@ -1,4 +1,4 @@
-"""Ends in 3 (Global 2), VIRAL CUT v2 — the cue sheet. The RFH bed driven at 124 BPM (the cut's grid, not the house
+"""Ends in 3 (Global 2), VIRAL CUT v4 (v3 registry hook; v4 splits HOW into the last digit and the 31 Oct deadline) — the cue sheet. The RFH bed driven at 124 BPM (the cut's grid, not the house
 112), level 2 from the first beat, and the library's sounds against the plan's events (pipeline/plan.mjs), so the Finnish
 and Japanese masters are scored by this same file.
 
@@ -32,7 +32,7 @@ EV = json.load(open(sys.argv[1])); OUT = sys.argv[2]
 REP = sys.argv[3] if len(sys.argv) > 3 else None; STEMS = sys.argv[4] if len(sys.argv) > 4 else None
 END = EV['end']; s = Session(END + 0.5, RFHV)
 Q = EV['cues']; c = lambda k: Q[k]
-S = [EV[f's{i}'] for i in range(1, 5)]
+S = [EV[f's{i}'] for i in range(1, 6)]
 quiet = [(q['t0'], q['t1']) for q in EV.get('quiet', [])]
 B = RFHV.B
 
@@ -78,18 +78,22 @@ for j in range(2): s.fx(ui_tick(2600 - j * 500), tD + j * 0.12, 0.16, 0, name=f'
 s.fx(phone_buzz(0.25), tD, 0.1, 0, name='"Cut off.": the screens go'); s.fx(knock(0.8), tD, 0.4, 0, name='"Cut off."')
 accent(s, tD, S[0], 0.3, S=RFHV, name='cut off')
 
-# ── 3 · HOW, by last digit: X on the 3 on "3s", X on the 4 on "4s", the 5 ringed on "5s" (the slip's digit flips with
-#      each); then 6, 7, 8, 9 light in turn: e3_kit.js ROLL(t5, d) = t5 + 0.62 + (d - 6) * 0.22
-t3, t4, t5 = c('e3v_how.three'), c('e3v_how.four'), c('e3v_how.five')
-s.fx(pencil(0.26, seed=3), t3 - 0.26, 0.7, 0.15, name='the marker: an X over the 3')
-s.fx(knock(0.8), t3, 0.45, 0, name='"3s": out'); s.fx(ui_tick(1800), t3, 0.14, 0, name='the slip shows 3')
-s.fx(pencil(max(0.12, t4 - max(t3 + 0.02, t4 - 0.24)), seed=4), max(t3 + 0.02, t4 - 0.24), 0.7, 0.2, name='an X over the 4')
-s.fx(knock(0.9), t4, 0.45, 0.05, name='"4s": out'); s.fx(ui_tick(2100), t4, 0.14, 0, name='the slip flips to 4')
+# ── 3 · v4, the last digit (owner, 24 Oct: the calendar beat was confusing): the full number on a card; on "last
+#      digit" the marker rings the final digit, an arrow drops to the date chip (31 OCT): e3_kit.js e3v4_digit
+tR = c('e3v4_digit.ring')
+s.fx(pencil(0.4, seed=5), tR - 0.05, 0.7, 0.2, name='the last digit ringed')
+s.fx(knock(0.85), tR, 0.4, 0, name='"last digit"'); accent(s, tR, S[0], 0.3, S=RFHV, name='last digit')
+s.fx(pencil(0.3, seed=6), tR + 0.4, 0.6, 0.15, name='the arrow down')
+s.fx(pop(1.0), tR + 0.75, 0.3, 0.1, name='the date chip lands'); s.fx(ui_tick(2200), tR + 0.78, 0.14, 0.1)
+
+# ── 4 · v4, ends in 5? 0–4 already crossed (CUT OFF); the 5 ringed on "31 Oct"; then 6, 7, 8, 9 light in turn:
+#      e3_kit.js ROLL(t5, d) = t5 + 0.62 + (d - 6) * 0.22
+t5 = c('e3v4_cal.five')
 s.fx(pencil(0.36, seed=7), t5 - 0.04, 0.7, 0.2, name='the 5 ringed')
-s.fx(chime(88, 0.6), t5, 0.22, 0.1, name='"5s": next'); s.fx(ui_tick(2400), t5, 0.14, 0, name='the slip flips to 5'); accent(s, t5, S[0], 0.3, S=RFHV, name='5s')
+s.fx(chime(88, 0.6), t5, 0.22, 0.1, name='"31 Oct": the deadline'); accent(s, t5, S[0], 0.3, S=RFHV, name='31 Oct')
 for d in range(6, 10): s.fx(tick(d - 6, down=False), t5 + 0.62 + (d - 6) * 0.22, 0.35, -0.3 + 0.2 * (d - 6), name=f'the {d} lights: it rolls on')
 
-# ── 4 · the alert: "No calls" — two dull taps on a dead screen; on "get through" every phone at once, a soft warble
+# ── 5 · the alert: "No calls" — two dull taps on a dead screen; on "get through" every phone at once, a soft warble
 tP, tA = c('e3v_alert.tap'), c('e3v_alert.alert')
 for j in range(2): s.fx(tap(dull=True), tP + j * 0.16, 0.28, -0.2, name=f'a tap on a dead screen {j + 1}')
 s.fx(warble(3), tA, 0.24, 0, name='"get through": the alert, on every phone')
