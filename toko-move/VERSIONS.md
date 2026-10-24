@@ -1,5 +1,42 @@
 # Toko Move — versions
 
+## v2.65 — 2026-10-24
+
+**THE FIRST MINUTES FOR A STRANGER** (roadmap M4; owner: *"Go 5 then 6 then
+7"*). Measured first, as the milestone says: `test/stranger.cjs` is a player
+who knows nothing but what the screen offers — tap the first job, wait until a
+row says CATCH and tap it, tap GET OFF when it lights, answer any card — with
+no debug hook moving them. On v2.64 that player always finished, and on the
+way read four things wrong. Each is fixed and each is asserted, and the gate
+was run against the old code to prove it fails there.
+
+- **The dispatch quoted a plan the catch board did not offer.** Shift 1's first
+  job read "2 · change · ~10 min"; the board under it listed the first three
+  routes the router found, none on the 2, and the one lit row was an
+  18-minute loop via Eira. The stranger took it — anyone would — and the first
+  delivery took **29 game minutes**. The board now shows the three QUICKEST
+  door to door out of the same six the dispatch ranks by (still lit first):
+  **9.7 minutes**. Today's daily 8.6, shift 2 6.3; the gate's bar is 20.
+- **"Nothing to catch yet" stayed above a lit CATCH.** The rows refresh in
+  place every tick (v2.4x, so a press in flight still lands); the first-job
+  hint above them did not. It refreshes with them now.
+- **"Get off here" at the stop you just boarded.** One tap after CATCH the ride
+  panel offered an early exit at the boarding stop ("saves ~1 min") — the game
+  contradicting the advice it had just given. The boarding stop is never an
+  exit.
+- **LIVE on the store build's title card.** The store page rule is to sell
+  only what has been played; LIVE waits for M6. Hidden when `STORE`, and
+  `test/itch.cjs` checks it.
+
+**The store page's pictures** (roadmap M3): `tools/stills.cjs` renders the
+630×500 cover and six phone stills from the store build, entered by tapping
+START and played by tapping what lights; `store/ITCH.md` names them.
+
+Gates: `stranger.cjs` (18, new, in CI) and `itch.cjs` (12). `misses.cjs`
+watches 1400 ticks instead of 700 — with only the quickest plans on the board
+fewer lines light, and 700 ticks saw two misses where the check needs three
+(both judged correct).
+
 ## v2.64 — 2026-10-24
 
 **THE STORE BUILD, AND THE NETWORK HSL HAS BEEN RUNNING SINCE SEPTEMBER**

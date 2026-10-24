@@ -74,11 +74,13 @@ beats waiting. STOP / ROUTE / CITY change the zoom; pinch and drag on a phone.
 - **Trailer:** the Crown Bridges film, made from the real game —
   `FFMPEG=/path/to/ffmpeg NODE_PATH=$(npm root -g) node toko-move/tools/film.cjs toko-move-crown-bridges.mp4`
   (1080 × 1920, H.264; upload to YouTube and paste the link, or attach).
-- **Cover image:** 630 × 500 — the board at night with a tram crossing the
-  water (a still from the film, cropped).
-- **Screenshots:** three to five phone stills from the film harness: the
-  dispatch board, a tram over the Crown Bridge, the event card, the week's
-  rent card, the daily result.
+- **Cover image and screenshots:** all from the real game, the store build,
+  on a phone —
+  `NODE_PATH=$(npm root -g) node toko-move/tools/stills.cjs out/`
+  writes `cover.png` (630 × 500, plus `cover@2x.png`) — tram 12 crossing the
+  water to Kruunuvuori under the name — and six 1080 × 1920 stills:
+  `01-dispatch`, `02-catch`, `03-crown-bridge`, `04-event`, `05-week`,
+  `06-daily`. Upload the cover and any five; `03` and `05` say the most.
 
 ## Credits (must appear on the page)
 

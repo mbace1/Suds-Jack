@@ -87,7 +87,9 @@ server.listen(0, '127.0.0.1', async () => {
           if (!btn.disabled) now.push(lab);
         }
         out.lit.push({ tick, lines: now });
-        if (out.ticks > 700) { done(); return; }
+        // v2.65: the board shows the three QUICKEST plans now, so fewer lines
+        // light and misses come slower — 700 ticks saw two, and the check wants three.
+        if (out.ticks > 1400) { done(); return; }
         requestAnimationFrame(step);
       };
       requestAnimationFrame(step);

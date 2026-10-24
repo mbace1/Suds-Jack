@@ -48,12 +48,21 @@ plays a shift through it.
 **M3 · The store page kit.** `store/ITCH.md` (title, short and long
 description, controls, tags, credits, embed settings); the Crown Bridges film
 (`tools/film.cjs`) as the trailer; stills from the same harness.
+*Done in v2.65:* `tools/stills.cjs` renders six phone stills and the 630×500
+cover from the store build (dispatch, a lit catch, tram 12 over the Crown
+Bridge, an event card, the week's rent, the daily result).
 
 **M4 · First minutes for a stranger.** Until now every player had the arcade
 around them and a test card telling them what to try. A store player arrives
 cold: the first shift has to teach the loop — take a job, catch a tram, get
 off, deliver — without a page of text. Measure it (the shift bot's "naive"
 player and a timed first-delivery) before building it.
+*Done in v2.65:* `test/stranger.cjs` taps only what lights. It finished every
+shift already, so nothing was built that the measurement did not ask for; it
+found four things a stranger reads wrong (a quoted plan missing from the catch
+board — shift 1's first delivery 29 → 9.7 min — a stale "nothing to catch",
+"get off here" at the boarding stop, LIVE on the store title) and holds all
+four.
 
 **M5 · Language.** Finnish and English at least, the arcade's house
 convention (fi/en/ja) as the target; Toko Move is English-only today.
