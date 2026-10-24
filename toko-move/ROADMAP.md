@@ -26,54 +26,44 @@ the main title**, with Toko Move kept as its daytime front.
   are still OPEN. **Toko Slomo** — Toko's Kallio-noir persona — runs a noodle
   counter on Vaasankatu, in approved cut-card art (v4.70).
 
-### The order
+### The order (revised 2026-10-24 with the owner's answers)
 
-**Phase 0 — Toko Move is the front (now).** Ship v2.64 on the network the
-refresh has been validating; the owner's phone pass on the test card; turn on
-"Allow GitHub Actions to create and approve pull requests" so the network stops
-needing hands. The arcade bills Toko Move ahead of the Piritori cabinets (the
-catalogue order only — Piritori's cabinets are its lane's and stay up).
+The owner, on the first draft: *"Toko Move has none of Piritori assets. It's a
+simple transportation simulator game with missions"*, and *"We are looking at
+platform publishing like itch.io"*. So the games never mix. **Toko Move carries
+nothing of Piritori** — no characters, art, name or door — and Piritori's own
+canon (`DESIGN_AUTHORITY.md`, GDD §21, `SHARED_ENGINE.md`: separate products,
+shared neutral engine only) stands untouched. "First in or adjacent" is about
+**where they are published**: the same publisher page, Toko Move first.
 
-**Phase 1 — Piritori appears IN Toko Move, by day.** Toko Slomo becomes the
-seventh regular: his noodle counter on Vaasankatu is a Kallio delivery stop
-(Toko Move has no Kallio regular yet — the six are Ooppera, Hakaniemi, West
-Harbour, Meilahti, Kauppatori and Arabia). Supplies in the morning, a bowl and
-a line when you deliver, standing like any regular, drawn in Piritori's own
-approved cut-card art. **Daytime only, and nothing of Piritori's systems** — no
-market, debt, heat or anything his counter really sells after dark. He is the
-first face from Piritori a player meets, in a game they already play.
+**Phase 0 — Toko Move ships, on the arcade (now).** v2.64 on the network the
+nightly refresh has been validating; the owner's phone pass on the test card;
+the Actions setting so the refresh can open its own PR.
 
-**Phase 2 — Piritori ADJACENT, by night.** When the week is done (Friday's rent
-paid), the end card turns to Kallio after dark: Slomo's counter lit, and a door
-— *Piritori → Eden* — into Piritori's own build, behind an adult-content notice.
-Separate bundle, separate save; Toko Move carries a link and a teaser, never
-Piritori's code (the shared-engine rule stands for code). On the arcade the
-Piritori cabinets are grouped under Toko Move as *the same city, at night*.
+**Phase 1 — Toko Move ships on a platform (itch.io).** The first public
+release under the studio's page. What a standalone HTML5 upload needs, from
+what the build reaches outside its folder today:
+- **`flow-core/`** — `sim.js`, `render.js`, `input.js` and
+  `data/kallio-water-v1.json` — packaged alongside, so the zip is
+  self-contained;
+- **`../hub/shell.js`** (the arcade's HOME button) — not shipped; the itch
+  build has no arcade to go home to;
+- **the test card's "Tell Toko"** (`../#tokomove/feedback`) — pointed at the
+  itch page's comments, or the card left out of the platform build;
+- a packaging script that builds the zip from the shipping tree (no build
+  step in the game itself; the script only copies and rewrites those paths),
+  and a gate that boots the zip with nothing else served beside it;
+- the store page: the Crown Bridges film (`tools/film.cjs`) as the trailer,
+  HSL (CC BY 4.0) and OpenStreetMap (ODbL) credits.
 
-**Phase 3 — Piritori becomes the main title.** When Piritori's own exit
-criteria close — C.19 owner and physical-device acceptance, the connected
-city/contact/mission loop, the short chapter — it takes the arcade's top
-billing and Toko Move becomes its **front**: the daytime city you enter through,
-with the night door into Piritori. Toko Move keeps shipping as that front.
+**Phase 2 — Piritori published adjacent.** Its own release, on the same
+publisher page, when Piritori's lane is ready to ship it — its own build, its
+own audience and content notice, decided in that lane.
 
-### What this changes in Piritori's locks (the owner's to sign there)
-
-Piritori's canon says the opposite of Phase 1–2 in three places, so the
-Piritori lane needs this direction recorded in `mbace1/piritori-eden` before
-either phase ships: `DESIGN_AUTHORITY.md` ("Toko Move shares the neutral flow
-engine, not Piritori's adult content, factions, economy or narrative data"),
-`GAME_DESIGN_DOCUMENT.md` §21 ("a separate family-friendly product") and
-`SHARED_ENGINE.md`'s acceptance line "no Piritori term appears in the Toko Move
-bundle or UI". Proposed amendment: Toko Move may carry Piritori's **characters
-by day, its name and a door**; never its adult systems, content or code.
-
-### Open, for the owner
-
-1. The Phase 2 door: a plain adult-content notice, or an age confirmation.
-2. During Phase 2, keep Piritori's standalone cabinets on the floor, or reach
-   Piritori only through Toko Move.
-3. Slomo's art: reuse Piritori's cut-card rig as is (proposed), or a daytime
-   variant.
+**Phase 3 — Piritori becomes the main title.** When its own exit criteria
+close (C.19 owner and physical-device acceptance, the connected city/contact/
+mission loop, the short chapter), it takes the top of the publisher page.
+Toko Move stays published and maintained beside it.
 
 The kids' mode stays withdrawn (2026-09-27).
 
