@@ -342,3 +342,25 @@ deepfake of a Finnish minister; an Imatra groundwater initiative; data-centre co
 
 **For RFH:** the window for a film is the first 24–48 hours, when the authority's move gives the story its own twist.
 Lifted the day the story ran is the model.
+
+## Check, Sat 24 Oct, evening (17:16 Helsinki)
+
+Everything below comes from search summaries. No article was opened.
+
+- **New, secondary (MTV Uutiset):** *Kunta voi rikkoa lakia tietämättään: datakeskuksista linjataan usein piilossa*
+  ("a municipality can break the law without knowing it: data-centre decisions are often made in hiding").
+  - Professor Tomi Voutilainen reviewed decisions in Tuusula, Vaala and Lapinlahti. They were prepared well before they
+    were made public.
+  - In Vaala, the matter was handled in a closed council session.
+  - This strengthens the **Vaala, "Size: Confidential"** candidate and pairs with Trade Secret.
+  - https://www.mtvuutiset.fi/artikkeli/kunta-voi-rikkoa-lakia-tietamattaan-datakeskuksista-linjataan-usein-piilossa/9397194
+- **New, background (HS via Verkkouutiset):** *HS: Venäjä käyttää datakeskuksia vakoiluun* ("HS: Russia uses data
+  centres for spying"). Current regulation does not give the authorities timely information on data centres and their
+  significant customers. Date unclear. Brink strand, if it holds up.
+- **Muhos (Count the Trees), reactions:** nothing new since the morning.
+  - Oulu police opened a preliminary inquiry (esiselvitys) after a private person's request, and asked LVV for a
+    statement (Iltalehti via Kaleva and MTV).
+  - Kaleva reports two requests in all.
+  - LVV's own police request (~22 Oct) stands as reported in the morning check.
+  - Still not settled: Kaleva says the police have started, Yle says not yet.
+- **Hamina (Trade Secret):** posted 24 Oct ~12:52. No new follow-up found.

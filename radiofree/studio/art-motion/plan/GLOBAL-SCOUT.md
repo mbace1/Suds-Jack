@@ -434,3 +434,28 @@ Search terms: `AI whistleblower testimony Senate <year>`, `whistleblower retalia
 - `Nvidia OpenAI financing guarantee circular`
 
 These worked less well: anything with "corrupt" or "hidden agenda". They return opinion and blogs, not records.
+
+## Check, Sat 24 Oct, evening (17:16 Helsinki)
+
+Everything below comes from search summaries. No article was opened.
+
+- **#1 The Panel (Project Meridian):** no new record since the NPR story of 6 Oct. The Pentagon line is unchanged: MITRE
+  will apply conflict-of-interest safeguards. The Pentagon has still not said whether Musk and Luckey are special
+  government employees.
+- **#3 For Your Protection, Delaware:** a scope and date caveat for the film being rendered.
+  - LegiScan: SB 312 passed the Senate 20–0 on 11 Jun and the House 37–3 on 24 Jun 2026.
+  - MLex, 21 Aug: Delaware is the only state where such a measure has cleared the legislature.
+  - The Delaware Code now has Title 9, Ch. 4 (85 Del. Laws c. 447). Per the summary, it bars **counties** from NDAs that
+    restrict disclosure on data centres of 100 MW or more, and makes such NDAs void.
+  - **Not confirmed in this check:** the signing date of 26 Aug, and coverage of state agencies and municipalities.
+    "Banned them in August" needs the signing date checked. The safest wording is "Delaware law: county NDAs on 100 MW+
+    data centres are void".
+- **#3, more places, background with unclear dates:**
+  - Pima County, Ariz. (Sep 2026): NDAs need approval every six months, with a two-year maximum.
+  - Indiana County, Pa.: commissioners voted to explore an NDA ban.
+  - Rock County, Wis.: a committee voted down an NDA ban (26 Mar).
+  - Lincoln County, S.D.: an NDA-ban amendment was proposed alongside a moratorium.
+  - **Harford County, Md.:** voted 7–0 to ban data centres from every zoning district. This is a data-centre ban, not an
+    NDA ban.
+- **Whistleblowers:** no Meta reply to Grassley found. No new congressional testimony found since 30 Sep. The 5 Oct NYC
+  Council hearing is already in our films (Coxon 2).

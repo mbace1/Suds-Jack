@@ -107,3 +107,17 @@ story. Irreversible was scrapped on 18 Oct, so it is the candidate for slot 3.
 - **Count the Trees (Muhos):** still accurate. New since then: LVV filed its own police request and keeps it secret.
   Police status is disputed (Kaleva: started; Yle: not yet). The film says "preliminary inquiry", meaning the
   esiselvitys, which still stands. The post copy needs no change.
+
+## Daily check, Sat 24 Oct evening: facts the films in progress depend on
+
+- **For Your Protection.**
+  - The Delaware signing date "26 Aug" is not confirmed: passage was 11 and 24 Jun, and MLex (21 Aug) says the measure
+    cleared the legislature.
+  - The code text found covers **counties**, at 100 MW+.
+  - Before posting, either confirm the signing and full scope, or word it as "Delaware law: county NDAs on 100 MW+ data
+    centres are void".
+- **Ends in 3 v3.** 31 Oct for lines ending in 5 stands, though no newer source than early Sep was found in this check.
+  The morning check confirmed it was not moved. Suspension comes 72 h after the deadline.
+- **Count the Trees v3.** Muhos police status is unchanged: a preliminary inquiry on a private request, with an LVV
+  statement requested, and Kaleva and Yle still differ. The "Police opened a preliminary inquiry" caption stays accurate.
+- **Break Glass.** No plenary vote reported. Still held.
