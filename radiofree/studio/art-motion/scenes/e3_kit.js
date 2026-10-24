@@ -450,9 +450,10 @@
     if (state === 'back') { g.fillStyle = '#2f7d4f'; g.beginPath(); g.arc(30, -66, 22, 0, TAU); g.fill(); g.strokeStyle = '#fff'; g.lineWidth = 7; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); g.moveTo(19, -66); g.lineTo(27, -57); g.lineTo(41, -76); g.stroke(); }
     g.restore();
   }, 9);
-  SCENES.e3v_why = { draw(c, lt) {
-    const id = 'e3v_why', dd = dur(id), tL = at(id, 'lace', 1.6), tT = at(id, 'tie', 2.6);
-    const k = (lt - tL) / Math.max(0.5, tT - 0.2 - tL), tight = ease.back((lt - tT) / 0.3), bow = (lt - tT - 0.06) / 0.32;
+  function drawWhy(c, lt, id, { k0 = 0, now = false } = {}) {
+    const dd = dur(id), tL = at(id, 'lace', 1.6), tT = at(id, 'tie', 2.6);
+    const k = k0 ? k0 + (1 - k0) * clamp(lt / Math.max(0.5, tT - 0.2), 0, 1) : (lt - tL) / Math.max(0.5, tT - 0.2 - tL),   // v3's hook: already partly wound on frame 0
+      tight = ease.back((lt - tT) / 0.3), bow = (lt - tT - 0.06) / 0.32;
     const gap = lerp(-40, 22, ease.out((lt - tT) / 0.25)), on = clamp((lt - tT - 0.08) / 0.12, 0, 1);   // apart (unlinked) until the tie
     const cam = { x: Math.sin(lt * 0.3) * 6, y: 0, z: punch(lt, [tT], { kick: 0.04 }) * lerp(1.0, 1.08, ease.io(lt / dd)), fx: 540, fy: 1300 };
     stack(c, [
@@ -473,9 +474,15 @@
         stringLoop(g, pa, ca, ease.io(k), clamp(tight, 0, 1.2), bow);
       } },
     ], cam);
-    tag(c, ui('registry', 'CRT · LINE REGISTRY · 2026'), lt, dd);
+    if (now) tagNow(c, ui('place', 'MEXICO · 2026'), lt, dd); else tag(c, ui('registry', 'CRT · LINE REGISTRY · 2026'), lt, dd);
     box(c);
-  } };
+  }
+  SCENES.e3v_why = { draw(c, lt) { drawWhy(c, lt, 'e3v_why'); } };
+  // v3 (owner, 24 Oct: "You have to have ID linked or it doesn't work?"): the registry IS the hook. Frame 0 already
+  // shows the phone, the ID card and the red string a third wound round both, so it reads as "phone + ID = linked"
+  // with the sound off; the string is pulled tight on "ID". The street (e3v_hook) becomes shot 2, its 3s dying on
+  // "Cut off."
+  SCENES.e3v3_hook = { draw(c, lt) { drawWhy(c, lt, 'e3v3_hook', { k0: 0.35, now: true }); } };
 
   // ═════════ V3 · e3v_how: HOW — by the number's last digit. A slip with a phone number, its last digit boxed, flips
   //            3 → 4 → 5 with the caption; under it the calendar of last digits: 0–2 already crossed, the 3 crossed on

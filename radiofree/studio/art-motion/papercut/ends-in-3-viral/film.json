@@ -1,7 +1,52 @@
-{"kind":"engine","engine":"e3","bpm":124,"fps":30,
- "libs":["scenes/rfa_kit.js","scenes/toko_master.js","scenes/rfm_kit.js","scenes/rfp_kit.js","scenes/rfp_clean.js","scenes/vendor/rough-4.6.6.js","scenes/e3_kit.js"],
- "scenes":[],"shots":[
-  {"id":"e3v_hook","beats":8,"cues":{"hit":0.035,"dark":"word:pop"}},
-  {"id":"e3v_why","beats":10,"cues":{"lace":"line:2.start","tie":"word:pop"}},
-  {"id":"e3v_how","beats":11,"cues":{"three":"line:2.start","four":"line:2","five":"word:pop"}},
-  {"id":"e3v_alert","beats":11,"cues":{"tap":"line:1.start","alert":"word:pop"}}],"quiet":[],"keep":[]}
+{
+ "kind": "engine",
+ "engine": "e3",
+ "bpm": 124,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/vendor/rough-4.6.6.js",
+  "scenes/e3_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  {
+   "id": "e3v3_hook",
+   "beats": 10,
+   "cues": {
+    "hit": 0.035,
+    "tie": "word:pop"
+   }
+  },
+  {
+   "id": "e3v_hook",
+   "beats": 9,
+   "cues": {
+    "dark": "word:pop"
+   }
+  },
+  {
+   "id": "e3v_how",
+   "beats": 11,
+   "cues": {
+    "three": "line:2.start",
+    "four": "line:2",
+    "five": "word:pop"
+   }
+  },
+  {
+   "id": "e3v_alert",
+   "beats": 11,
+   "cues": {
+    "tap": "line:1.start",
+    "alert": "word:pop"
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}

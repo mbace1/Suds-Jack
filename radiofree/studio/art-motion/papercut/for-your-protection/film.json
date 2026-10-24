@@ -16,7 +16,7 @@
   { "id": "fyp_hook", "beats": 7, "cues": { "deal": "word:pop" } },
   { "id": "fyp_build", "beats": 9, "cues": { "rise": 0.15, "in": 1.7 } },
   { "id": "fyp_va", "beats": 10, "cues": { "pins": 0.15, "n": 2.9 } },
-  { "id": "fyp_why", "beats": 9, "cues": { "flip": 1.6 } },
+  { "id": "fyp_why", "beats": 9, "cues": { "flip": "word:pop" } },
   { "id": "fyp_end", "beats": 13, "cues": { "tear": "word:pop", "clip": 4.6 } }
  ],
  "quiet": [],

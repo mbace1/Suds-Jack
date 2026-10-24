@@ -1,6 +1,6 @@
 {
   "film": "count-the-trees-viral",
-  "cut": "Doodle 5, VIRAL CUT v2 (23 Oct). Owner on v1: 'Police car is too big, ending too abruptly', 'the visual seems small for 130ha', '330 ha is huge'. Hook first; one pitch, then ~460 of them; before the assessment → a police inquiry → headlines in six languages; punch on 130 ha (≈ 180 pitches), hold, ease back, loop. The v1 draft (papercut/count-the-trees) is unchanged.",
+  "cut": "Doodle 5, VIRAL CUT v2 (23 Oct). Owner on v1: 'Police car is too big, ending too abruptly', 'the visual seems small for 130ha', '330 ha is huge'. Hook first; one pitch, then ~460 of them; before the assessment → a police inquiry → headlines in six languages; punch on 130 ha (≈ 180 pitches), hold, ease back, loop. The v1 draft (papercut/count-the-trees) is unchanged. v3 (24 Oct): owner asked if this was the Hamina case and wanted where and when: the hook names Muhos, Finland, 2026; a tag NEW Doodle DATA CENTRE · MUHOS, FINLAND sits above the clipping on frame 0 and on the last frame; the post says it is a different site from Hamina.",
   "series": "rfh",
   "captionSize": "big",
   "argument": "About 250,000 trees (by the Guardian's estimate), some 330 hectares or 460 football pitches, were cleared for Doodle's Muhos data centre before the required assessment. Police opened a preliminary inquiry. Planting planned: 130 hectares.",
@@ -23,11 +23,11 @@
       "until": "s2-0.3",
       "hold": "s2",
       "text": {
-        "en": "About 250,000 / trees. [Gone.]",
-        "fi": "Noin 250 000 / puuta. [Poissa.]",
-        "ja": "約25万本の 木が / [消えた]。"
+        "en": "Muhos, 2026: / about 250,000 / trees. [Gone.]",
+        "fi": "Muhos, 2026: / noin 250 000 / puuta. [Poissa.]",
+        "ja": "2026年 フィンランド・ムホス： / 約25万本の 木が / [消えた]。"
       },
-      "source": "The Guardian's investigation, 22 Oct 2026: an estimated 250,000 trees felled at Muhos (about 330 ha), as reported by follow-ups (Tom's Guide; Yahoo News; Timberbiz; Common Dreams headline). The original cannot be opened from this session; the clipping on screen credits it as the Guardian's estimate. Re-checked 23 Oct (plan/films/25b-count-the-trees-viral.md)."
+      "source": "The Guardian's investigation, 22 Oct 2026: an estimated 250,000 trees felled at Muhos (about 330 ha), as reported by follow-ups (Tom's Guide; Yahoo News; Timberbiz; Common Dreams headline). The original cannot be opened from this session; the clipping on screen credits it as the Guardian's estimate. Re-checked 23 Oct (plan/films/25b-count-the-trees-viral.md). v3 (24 Oct): place and year added to the hook (owner: 'where and when ... more clarity'). Muhos is a planned new Doodle data-centre site near Oulu, northern Finland; the felling was done in 2026 before the environmental impact assessment, and LVV ordered the preparatory work stopped on 6 Oct 2026 (AFP; Al Jazeera 7 Oct; DCD). It is a different site from Hamina (Doodle 6)."
     },
     {
       "id": "pitch",
@@ -152,6 +152,16 @@
       "en": "≈ 180 FOOTBALL PITCHES",
       "fi": "≈ 180 JALKAPALLOKENTTÄÄ",
       "ja": "サッカー場 約180面分"
+    },
+    "placePre": {
+      "en": "NEW ",
+      "fi": "",
+      "ja": ""
+    },
+    "placePost": {
+      "en": " DATA CENTRE · MUHOS, FINLAND",
+      "fi": "N UUSI DATAKESKUS · MUHOS",
+      "ja": "の新データセンター · フィンランド・ムホス"
     }
   },
   "props": {
@@ -177,8 +187,8 @@
     }
   },
   "post": {
-    "en": "About 250,000 trees, by the Guardian's estimate: ~330 ha, about 460 football pitches, cleared at Muhos, Finland, for a Doodle data centre before the required environmental assessment. Police have opened a preliminary inquiry. Planting planned: 130 ha. Who counts the trees?",
-    "fi": "Noin 250 000 puuta The Guardianin arvion mukaan: noin 330 hehtaaria, noin 460 jalkapallokenttää, hakattiin Muhoksella Doodlen datakeskukselle ennen lain vaatimaa ympäristöarviointia. Poliisi aloitti esiselvityksen. Istutus suunnitteilla: 130 ha. Kuka laskee puut?",
+    "en": "Muhos, northern Finland: about 250,000 trees (the Guardian's estimate), ~330 ha, cleared in 2026 for a planned new Doodle data centre, before the required environmental assessment. Police opened a preliminary inquiry. A different site from Hamina. Who counts the trees?",
+    "fi": "Muhos, Pohjois-Suomi: noin 250 000 puuta (The Guardianin arvio), noin 330 hehtaaria, hakattiin 2026 Doodlen suunnitellulle uudelle datakeskukselle ennen lain vaatimaa ympäristöarviointia. Poliisi aloitti esiselvityksen. Eri paikka kuin Hamina. Kuka laskee puut?",
     "ja": "ガーディアン紙の推定で約25万本。約330ヘクタール、サッカー場約460面分の森が、フィンランド・ムホスでDoodleのデータセンターのため、義務づけられた環境影響評価の前に伐採された。警察が予備調査を開始。植樹の計画は130ヘクタール。木は誰が数える？"
   }
 }

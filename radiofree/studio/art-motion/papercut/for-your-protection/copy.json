@@ -49,7 +49,7 @@
       "until": "s4-0.3",
       "hold": "s4",
       "text": {
-        "en": "Virginia: secrecy deals / in [25 of 31] / places checked.",
+        "en": "Virginia: secrecy / deals in [25 of 31] / places checked.",
         "fi": "Virginia: sopimus / [25:ssä 31:stä] / tarkistetusta paikasta.",
         "ja": "バージニア州： 調べた / 31か所中 [25か所] で / 秘密保持契約。"
       },
@@ -62,7 +62,7 @@
       "until": "s5-0.3",
       "hold": "s5",
       "text": {
-        "en": "The developers' reason: / [insider trading] rules.",
+        "en": "Developers cite / [insider trading] / rules.",
         "fi": "Rakennuttajien perustelu: / [sisäpiirikauppa]säännöt.",
         "ja": "開発業者の 理由： / [インサイダー取引] 規制。"
       },
@@ -75,7 +75,7 @@
       "until": "end-1.1",
       "hold": "end",
       "text": {
-        "en": "Delaware [banned] them / in August.",
+        "en": "Delaware [banned] / them in August.",
         "fi": "Delaware [kielsi] ne / elokuussa.",
         "ja": "デラウェア州は 8月に / [禁止]。"
       },
@@ -134,9 +134,9 @@
       "ja": "無効"
     },
     "deTag": {
-      "en": "DELAWARE · SB 312 · SIGNED 26.8.2026",
-      "fi": "DELAWARE · SB 312 · 26.8.2026",
-      "ja": "デラウェア州 · SB 312 · 2026.8.26"
+      "en": "DELAWARE · SB 312 · DATA CENTRES 100 MW+ · 26.8.2026",
+      "fi": "DELAWARE · SB 312 · DATAKESKUKSET 100 MW+ · 26.8.2026",
+      "ja": "デラウェア州 · SB 312 · 100MW以上のデータセンター · 2026.8.26"
     }
   },
   "props": {
@@ -162,7 +162,7 @@
     }
   },
   "post": {
-    "en": "Towns sign secrecy deals with data-centre developers about buildings in their own town. In Virginia, records requests found them in 25 of 31 places checked. The developers' reason, as reported: insider trading rules. Delaware banned them in August. Did your town sign one?",
+    "en": "Towns sign secrecy deals about data centres in their own town. In Virginia, records requests found them in 25 of 31 places checked. The developers' reason, as reported: insider trading rules. Delaware banned them in August, for data centres of 100 MW+. Did your town sign one?",
     "fi": "Kunnat allekirjoittavat salassapitosopimuksia datakeskusrakennuttajien kanssa omista hankkeistaan. Virginiassa sopimus löytyi 25 paikasta 31:stä. Rakennuttajien perustelu uutisten mukaan: sisäpiirisäännöt. Delaware kielsi ne elokuussa. Allekirjoittiko sinun kuntasi?",
     "ja": "データセンター開発業者と、地元の建物について秘密保持契約を結ぶ町がある。バージニア州では調べた31か所中25か所で見つかった。報道によれば開発業者の理由はインサイダー取引規制。デラウェア州は8月に禁止した。あなたの町は？"
   }

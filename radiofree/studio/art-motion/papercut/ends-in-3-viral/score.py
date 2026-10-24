@@ -49,8 +49,9 @@ def warble(cycles=3, f=(784.0, 988.0), half=0.21):
 # ── under everything: the bed from the first beat (35 ms in, never on the first sample: the sign-off join's limiter),
 #    driving at level 2; the street's murmur and its lamps under shot 1
 bed(s, S[0] + B, END - 0.6, quiet, level=2, S=RFHV)
-s.fx(crowd(S[1] - S[0] - 0.2) * 0.3, S[0] + 0.1, 0.08, 0, name='the street: a low murmur')
-s.fx(hum(60, S[1] - S[0]) * 0.5, S[0], 0.05, 0, name='the lamps')
+s.fx(office_hum(S[1] - S[0]) * 0.5, S[0], 0.1, 0, name='the registry: fluorescent hum (v3: the hook)')
+s.fx(crowd(S[2] - S[1] - 0.2) * 0.3, S[1] + 0.1, 0.08, 0, name='the street: a low murmur')
+s.fx(hum(60, S[2] - S[1]) * 0.5, S[1], 0.05, 0, name='the lamps')
 for cp in EV['captions']:
     last = max(w['t'] for w in EV['words'] if w['caption'] == cp['id'])
     s.duck(cp['t0'], last + 0.4, -3.0, why=f'caption {cp["id"]} reveal')
@@ -58,23 +59,24 @@ for i, t in enumerate(S[1:]):
     s.fx(whoosh('short', 'in'), t - WHOOSH['short'] * 0.8, 0.32, 0, at=t, name=f'cut {i + 2}')
     s.fx(thump(), t, 0.22, 0, name=f'cut {i + 2}: a beat on the cut')
 
-# ── 1 · the hook: the hit on frame 1, then on "2.2 million" the unlinked 3s die at once (flicker on, off, on, gone)
-tH, tD = c('e3v_hook.hit'), c('e3v_hook.dark')
+# ── 1 · v3 hook, the registry (owner, 24 Oct: the rule first): the hit on frame 1; the string, a third wound already,
+#      winds on and is pulled tight on "ID"; the phone comes back on (linked = it works)
+tH, tT = c('e3v3_hook.hit'), c('e3v3_hook.tie')
 s.fx(thump(), tH, 0.75, 0, name='frame 1: the hit'); s.fx(knock(0.9), tH, 0.45, 0, name='frame 1: the knock')
 accent(s, tH, S[0], 0.3, S=RFHV, name='frame 1')
+wind = max(0.5, tT - 0.2)
+for j in range(int(wind / 0.24) + 1): s.fx(swish(), 0.15 + j * 0.24, 0.12, -0.3 + 0.2 * (j % 4), name=f'the string wound round {j + 1}')
+s.fx(foley('card', 'slide'), tT - 0.05, 0.4, 0, name='phone and card pulled together')
+s.fx(thump(), tT, 0.45, 0, name='"ID": the knot'); s.fx(pop(1.1), tT + 0.06, 0.3, 0.1, name='the bow')
+s.fx(glide(400, 1800, 0.25), tT + 0.08, 0.16, -0.2, name='linked: the phone comes back'); s.fx(chime(91, 0.5), tT + 0.14, 0.14, -0.2)
+accent(s, tT, S[0], 0.3, S=RFHV, name='ID')
+
+# ── 2 · the street: on "Cut off." the unlinked 3s die at once (flicker on, off, on, gone)
+tD = c('e3v_hook.dark')
 for j, side in enumerate((-0.35, 0.35)): s.fx(glide(1500, 180, 0.3), tD + 0.18 + j * 0.02, 0.2, side, name=f'a 3 dies {j + 1}')
 for j in range(2): s.fx(ui_tick(2600 - j * 500), tD + j * 0.12, 0.16, 0, name=f'the 3s flicker {j + 1}')
-s.fx(phone_buzz(0.25), tD, 0.1, 0, name='"dark": the screens go')
-
-# ── 2 · WHY, the registry: the string wound on from line 2, pulled tight on "extortion"; the phone comes back on
-tL, tT = c('e3v_why.lace'), c('e3v_why.tie')
-s.fx(office_hum(S[2] - S[1]) * 0.5, S[1], 0.1, 0, name='the registry: fluorescent hum')
-wind = max(0.5, tT - 0.2 - tL)
-for j in range(int(wind / 0.24) + 1): s.fx(swish(), tL + j * 0.24, 0.12, -0.3 + 0.2 * (j % 4), name=f'the string wound round {j + 1}')
-s.fx(foley('card', 'slide'), tT - 0.05, 0.4, 0, name='phone and card pulled together')
-s.fx(thump(), tT, 0.45, 0, name='"extortion": the knot'); s.fx(pop(1.1), tT + 0.06, 0.3, 0.1, name='the bow')
-s.fx(glide(400, 1800, 0.25), tT + 0.08, 0.16, -0.2, name='linked: the phone comes back'); s.fx(chime(91, 0.5), tT + 0.14, 0.14, -0.2)
-accent(s, tT, S[0], 0.3, S=RFHV, name='extortion')
+s.fx(phone_buzz(0.25), tD, 0.1, 0, name='"Cut off.": the screens go'); s.fx(knock(0.8), tD, 0.4, 0, name='"Cut off."')
+accent(s, tD, S[0], 0.3, S=RFHV, name='cut off')
 
 # ── 3 · HOW, by last digit: X on the 3 on "3s", X on the 4 on "4s", the 5 ringed on "5s" (the slip's digit flips with
 #      each); then 6, 7, 8, 9 light in turn: e3_kit.js ROLL(t5, d) = t5 + 0.62 + (d - 6) * 0.22

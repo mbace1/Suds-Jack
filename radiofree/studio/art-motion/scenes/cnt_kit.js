@@ -418,6 +418,25 @@
     c.shadowColor = 'transparent'; c.fillStyle = C.ink; c.textAlign = 'center'; c.fillText(text, x, y + size * 0.36); c.restore();
   }
 
+  /** v3 (owner, 24 Oct: "where and when ... more clarity"): the place, on a newsprint tag above the clipping, with
+   *  Doodle in its own colours (BDF.doodleLogo, as in Trade Secret): NEW Doodle DATA CENTRE · MUHOS, FINLAND */
+  function placeTag(c, { a = 1, dy = 0 } = {}) {
+    if (a <= 0) return;
+    const pre = ui('placePre', 'NEW '), post = ui('placePost', ' DATA CENTRE · MUHOS, FINLAND'), size = 30, ls = size * 1.32;
+    c.save(); c.globalAlpha = a; c.font = `${size}px "ArchivoBlack-400", ${JP}`;
+    const wPre = pre ? c.measureText(pre).width : 0, wPost = c.measureText(post).width;
+    c.font = ls + 'px "Poppins-600"'; const wLogo = c.measureText('Doodle').width - ls * 0.1;
+    const w = wPre + wLogo + wPost + 48, h = size + 34, x = 130 + 8, y = 1398 - 20 + dy - h;
+    c.save(); c.translate(x, y); c.rotate(-0.022);
+    c.shadowColor = 'rgba(4,6,12,.6)'; c.shadowBlur = 12; c.shadowOffsetX = 6; c.shadowOffsetY = 9; c.fillStyle = C.news; c.beginPath(); c.roundRect(0, 0, w, h, 8); c.fill();
+    c.shadowColor = 'transparent'; c.fillStyle = C.ink; c.textAlign = 'left'; c.font = `${size}px "ArchivoBlack-400", ${JP}`;
+    const by = h / 2 + size * 0.36; let px = 24;
+    if (pre) { c.fillText(pre, px, by); px += wPre; }
+    BDF.doodleLogo(c, px, by + 1, ls); px += wLogo;
+    c.fillStyle = C.ink; c.font = `${size}px "ArchivoBlack-400", ${JP}`; c.fillText(post, px, by);
+    c.restore(); c.restore();
+  }
+
   // ═════════ V1 · cntv_hook: frame 0 — the forest inside the red line is already going, lane by lane, under the
   //            clipping "TREES · THE GUARDIAN'S ESTIMATE / 250,000"; the last lane falls on "Gone." ═════════
   SCENES.cntv_hook = { draw(c, lt) {
@@ -435,6 +454,7 @@
         g.restore();
       } }], cam);
     c.restore();
+    placeTag(c);
     bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { k: lt / 0.25 });
     box(c);
   } };
@@ -622,6 +642,7 @@
     c.restore();
     // the clipping comes back up from below and lands on "clip", so the punchline has the frame to itself until then
     const kC = clamp((lt - tC + 0.32) / 0.32, 0, 1);
+    placeTag(c, { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
     bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
     box(c);
   } };

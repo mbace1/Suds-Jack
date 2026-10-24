@@ -100,6 +100,16 @@
     g.fillStyle = C.dc; g.fillRect(x0, y0, x1 - x0, y1 - y0);
     // panel seams and a light top edge
     g.fillStyle = 'rgba(0,0,0,.08)'; for (let x = x0 + 50; x < x1; x += 50) g.fillRect(x, y0, 2, y1 - y0);
+    // cladding: three horizontal bands of slightly different card, each with a shadow lip
+    for (let i = 0; i < 3; i++) { const by = y0 + 30 + i * 140; g.fillStyle = i % 2 ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.05)'; g.fillRect(x0, by, x1 - x0, 140); g.fillStyle = 'rgba(0,0,0,.14)'; g.fillRect(x0, by + 136, x1 - x0, 4); }
+    // louvre vents: rows of dark slats in grey frames, high on the wall
+    for (let i = 0; i < 7; i++) { const vx = x0 + 70 + i * 135, vy = y0 + 60; g.fillStyle = C.dcD; g.fillRect(vx - 4, vy - 4, 96, 70); g.fillStyle = '#5c6268'; g.fillRect(vx, vy, 88, 62); g.fillStyle = '#3c4146'; for (let j = 0; j < 6; j++) g.fillRect(vx + 4, vy + 4 + j * 10, 80, 5); }
+    // a pipe run along the wall, with brackets
+    g.fillStyle = '#8c9298'; g.fillRect(x0, y0 + 190, x1 - x0, 14); g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(x0, y0 + 204, x1 - x0, 4);
+    g.fillStyle = '#6a7076'; for (let x = x0 + 40; x < x1; x += 110) g.fillRect(x, y0 + 186, 8, 24);
+    // service doors and a loading bay, low down (mostly behind the town, but they give the wall a scale)
+    for (const dx of [x0 + 120, x1 - 180]) { g.fillStyle = C.dcD; g.fillRect(dx, y1 - 170, 60, 150); g.fillStyle = '#e8402f'; g.fillRect(dx + 22, y1 - 186, 16, 8); }
+    g.fillStyle = '#7e848a'; g.fillRect(x0 + 380, y1 - 200, 220, 180); g.fillStyle = 'rgba(0,0,0,.12)'; for (let j = 0; j < 9; j++) g.fillRect(x0 + 380, y1 - 196 + j * 20, 220, 3);
     g.fillStyle = C.dcL; g.fillRect(x0, y0, x1 - x0, 10);
     // the roof units: rows of fans
     for (let i = 0; i < 10; i++) { const fx = x0 + 60 + i * 94; g.fillStyle = C.dcD; g.fillRect(fx - 34, y0 - 46, 68, 46); g.fillStyle = '#7e848a'; g.beginPath(); g.arc(fx - 14, y0 - 24, 13, 0, TAU); g.arc(fx + 16, y0 - 24, 13, 0, TAU); g.fill(); g.fillStyle = '#3a3f44'; g.beginPath(); g.arc(fx - 14, y0 - 24, 4, 0, TAU); g.arc(fx + 16, y0 - 24, 4, 0, TAU); g.fill(); }
@@ -209,15 +219,15 @@
 
   // ══ VIRGINIA ═══════════════════════════════════════════════════════════════════════════════════════════════
   // rough outline from (lon, lat), projected flat: about 101 px a degree of longitude, 128 a degree of latitude
-  const VX = (lon) => 70 + (lon + 83.9) * 106, VY = (lat) => 640 + (39.6 - lat) * 134;
+  const VX = (lon) => 70 + (lon + 83.9) * 106, VY = (lat) => 790 + (39.6 - lat) * 134;   // v2: lower, nearer the counter
   const V = (pts) => pts.map(([lo, la]) => [VX(lo), VY(la)]);
   const VA = V([[-83.68, 36.6], [-81.68, 36.59], [-80.0, 36.54], [-78.0, 36.54], [-75.87, 36.55], [-75.97, 36.9], [-76.3, 37.0], [-76.25, 37.2], [-76.3, 37.6], [-76.25, 37.9], [-76.5, 38.15],
     [-77.0, 38.4], [-77.25, 38.6], [-77.05, 38.85], [-77.45, 39.2], [-77.75, 39.32], [-78.35, 39.45], [-78.9, 38.9], [-79.45, 38.45], [-79.8, 38.1], [-80.3, 37.5], [-80.85, 37.4],
     [-81.4, 37.25], [-81.95, 37.53], [-82.3, 37.3], [-82.9, 37.0]]);
   const VA_E = V([[-75.24, 38.03], [-75.66, 37.95], [-75.9, 37.6], [-76.02, 37.15], [-75.95, 37.12], [-75.6, 37.5]]);
   const inside = (P, x, y) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; };
-  // 31 illustrative pins (the count is the record; the places are not), weighted to the north, where most are
-  const PINS = (() => { const r = U.rng(77), out = []; while (out.length < 31) { const x = VX(-83.4 + r() * 7.3), y = VY(36.7 + Math.pow(r(), 0.6) * 2.6); if (inside(VA, x, y)) out.push({ x, y, nda: false, k: r() }); } const order = out.map((p, i) => i).sort((a, b) => out[a].k - out[b].k); order.slice(0, 25).forEach((i, n) => { out[i].nda = true; out[i].n = n; }); return out; })();
+  // 31 illustrative pins (the count is the record; the places are not), spread across the state, kept apart
+  const PINS = (() => { const r = U.rng(77), out = []; let guard = 0; while (out.length < 31 && guard++ < 20000) { const x = VX(-83.4 + r() * 7.3), y = VY(36.65 + r() * 2.7); if (inside(VA, x, y) && out.every((p) => Math.hypot(p.x - x, p.y - y) > 46)) out.push({ x, y, nda: false, k: r() }); } const order = out.map((p, i) => i).sort((a, b) => out[a].k - out[b].k); order.slice(0, 25).forEach((i, n) => { out[i].nda = true; out[i].n = n; }); return out; })();
   const vaSheet = () => sheet('fyp_va', (g) => {
     g.fillStyle = C.table; g.fillRect(-90, -90, W + 180, H + 180);
     const r = U.rng(3); for (let i = 0; i < 60; i++) { g.fillStyle = C.tableL; g.fillRect(r() * W, r() * H, 80 + r() * 200, 2); }
