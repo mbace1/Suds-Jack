@@ -3,43 +3,42 @@
  "id": "three-rings",
  "name": "THREE RINGS",
  "arena": {
-  "combine": "intersect",
+  "combine": "union",
   "shapes": [
    {
     "kind": "circle",
     "c": [
-     -3,
+     -11,
      0
     ],
-    "r": 9
-   },
-   {
-    "kind": "circle",
-    "c": [
-     3,
-     0
-    ],
-    "r": 9
+    "r": 7
    },
    {
     "kind": "circle",
     "c": [
      0,
-     3
+     0
     ],
-    "r": 9
+    "r": 7
+   },
+   {
+    "kind": "circle",
+    "c": [
+     11,
+     0
+    ],
+    "r": 7
    }
   ]
  },
  "duration": 35,
  "goal": {
-  "type": "quota",
-  "kills": 10
+  "type": "survive"
  },
  "plan": {
   "world": 0,
-  "d": 2,
-  "teaches": "spittor, fanner",
+  "d": 4,
+  "teaches": "shooters first: the one that fires, before the ones that walk",
   "strategy": [
    "priority"
   ]
@@ -47,93 +46,413 @@
  "spawns": [
   {
    "t": 0,
-   "type": "GLOBBO",
-   "px": 0,
-   "pz": -4
-  },
-  {
-   "t": 1.5,
-   "type": "GLOBBO",
-   "px": 3,
-   "pz": 3
-  },
-  {
-   "t": 3,
-   "type": "GLOBBO",
-   "px": -3,
-   "pz": 3
-  },
-  {
-   "t": 6,
    "type": "SPITTOR",
-   "px": 0,
-   "pz": 5
+   "px": -15.5,
+   "pz": 2,
+   "intervalMult": 2.6
   },
   {
-   "t": 9,
+   "t": 1.2,
    "type": "GLOBBO",
-   "px": 4,
+   "px": -9,
+   "pz": -2.2
+  },
+  {
+   "t": 1.65,
+   "type": "GLOBBO",
+   "px": -10.2,
    "pz": 0
   },
   {
-   "t": 9,
+   "t": 2.1,
    "type": "GLOBBO",
-   "px": -4,
+   "px": -9,
+   "pz": 2.2
+  },
+  {
+   "t": 2.6,
+   "type": "SPITTOR",
+   "px": 15.5,
+   "pz": -2,
+   "intervalMult": 2.6
+  },
+  {
+   "t": 3.8,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -2.2
+  },
+  {
+   "t": 4.25,
+   "type": "GLOBBO",
+   "px": 10.2,
    "pz": 0
   },
   {
-   "t": 13,
+   "t": 4.7,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 2.2
+  },
+  {
+   "t": 5.2,
    "type": "FANNER",
-   "px": 0,
-   "pz": -4
+   "px": -15.5,
+   "pz": -1,
+   "intervalMult": 3.2
   },
   {
-   "t": 17,
-   "type": "YELA_CUBE",
-   "px": 3,
-   "pz": 3
-  },
-  {
-   "t": 17,
-   "type": "YELA_CUBE",
-   "px": -3,
-   "pz": 3
-  },
-  {
-   "t": 21,
+   "t": 6.4,
    "type": "GLOBBO",
-   "px": 0,
-   "pz": -5
+   "px": -9,
+   "pz": -2.2
   },
   {
-   "t": 21,
+   "t": 6.85,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": 0
+  },
+  {
+   "t": 7.3,
    "type": "GLOBBO",
-   "px": 2,
-   "pz": 4
+   "px": -9,
+   "pz": 2.2
   },
   {
-   "t": 25,
+   "t": 7.8,
+   "type": "FANNER",
+   "px": 15.5,
+   "pz": 1,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 9,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -2.2
+  },
+  {
+   "t": 9.45,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": 0
+  },
+  {
+   "t": 9.9,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 2.2
+  },
+  {
+   "t": 10.4,
    "type": "SPITTOR",
-   "px": -2,
-   "pz": 4
+   "px": -15.5,
+   "pz": 0,
+   "intervalMult": 2.6
   },
   {
-   "t": 25,
+   "t": 11.6,
+   "type": "YELA_CUBE",
+   "px": -9,
+   "pz": -2.2
+  },
+  {
+   "t": 12.05,
    "type": "GLOBBO",
-   "px": 4,
-   "pz": -1
+   "px": -10.2,
+   "pz": 0
+  },
+  {
+   "t": 12.5,
+   "type": "YELA_CUBE",
+   "px": -9,
+   "pz": 2.2
+  },
+  {
+   "t": 13.2,
+   "type": "FANNER",
+   "px": 15.5,
+   "pz": 0,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 14.4,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -3.3
+  },
+  {
+   "t": 14.85,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 15.3,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 1.1
+  },
+  {
+   "t": 15.75,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 16.2,
+   "type": "FANNER",
+   "px": -15.5,
+   "pz": 2,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 17.4,
+   "type": "YELA_CUBE",
+   "px": -9,
+   "pz": -3.3
+  },
+  {
+   "t": 17.85,
+   "type": "GLOBBO",
+   "px": -10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 18.3,
+   "type": "YELA_CUBE",
+   "px": -9,
+   "pz": 1.1
+  },
+  {
+   "t": 18.75,
+   "type": "GLOBBO",
+   "px": -10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 19.4,
+   "type": "SPITTOR",
+   "px": 15.5,
+   "pz": -2,
+   "intervalMult": 2.6
+  },
+  {
+   "t": 20.6,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -3.3
+  },
+  {
+   "t": 21.05,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 21.5,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 1.1
+  },
+  {
+   "t": 21.95,
+   "type": "YELA_CUBE",
+   "px": 10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 22.5,
+   "type": "SPITTOR",
+   "px": -15.5,
+   "pz": -2,
+   "intervalMult": 2.6
+  },
+  {
+   "t": 23.1,
+   "type": "FANNER",
+   "px": 15.5,
+   "pz": 2,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 23.7,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -2.2
+  },
+  {
+   "t": 24.15,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": 0
+  },
+  {
+   "t": 24.3,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": -2.2
+  },
+  {
+   "t": 24.6,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 2.2
+  },
+  {
+   "t": 24.75,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": 0
+  },
+  {
+   "t": 25.2,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 2.2
+  },
+  {
+   "t": 26.8,
+   "type": "FANNER",
+   "px": -15.5,
+   "pz": 2,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 27.4,
+   "type": "SPITTOR",
+   "px": 15.5,
+   "pz": -2,
+   "intervalMult": 2.6
   },
   {
    "t": 28,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -3.3
+  },
+  {
+   "t": 28.45,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 28.6,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": -3.3
+  },
+  {
+   "t": 28.9,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 1.1
+  },
+  {
+   "t": 29.05,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": -1.1
+  },
+  {
+   "t": 29.35,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 29.5,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 1.1
+  },
+  {
+   "t": 29.95,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": 3.3
+  },
+  {
+   "t": 30.6,
    "type": "FANNER",
-   "px": 0,
-   "pz": 5
+   "px": -15.5,
+   "pz": 0,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 31,
+   "type": "FANNER",
+   "px": 15.5,
+   "pz": 0,
+   "intervalMult": 3.2
+  },
+  {
+   "t": 31.8,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": -4.4
+  },
+  {
+   "t": 32.2,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": -4.4
+  },
+  {
+   "t": 32.25,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": -2.2
+  },
+  {
+   "t": 32.65,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": -2.2
+  },
+  {
+   "t": 32.7,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 0
+  },
+  {
+   "t": 33.1,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 0
+  },
+  {
+   "t": 33.15,
+   "type": "YELA_CUBE",
+   "px": -10.2,
+   "pz": 2.2
+  },
+  {
+   "t": 33.55,
+   "type": "GLOBBO",
+   "px": 10.2,
+   "pz": 2.2
+  },
+  {
+   "t": 33.6,
+   "type": "GLOBBO",
+   "px": -9,
+   "pz": 4.4
+  },
+  {
+   "t": 34,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 4.4
   }
  ],
  "tiers": {
-  "S": 21.1,
-  "A": 23.2,
-  "B": 25.3,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 0.97,
+  "A": 0.92,
+  "B": 0.87,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 79%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

@@ -24,7 +24,7 @@
  },
  "plan": {
   "world": 2,
-  "d": 5,
+  "d": 6,
   "teaches": "the curtain wave",
   "strategy": [
    "movement",

@@ -17,7 +17,7 @@
  },
  "plan": {
   "world": 3,
-  "d": 5,
+  "d": 6,
   "teaches": "aiming",
   "strategy": [
    "aim",

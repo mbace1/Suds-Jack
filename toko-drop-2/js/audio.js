@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=45';
+import { TUNING } from './tuning.js?v=46';
 
 const A = TUNING.audio;
 
@@ -69,6 +69,12 @@ export class Sound {
         break;
       }
       case 'lobLand': this._tone('sine', 150, 55, 0.28, 0.2); this._hiss(0.16, 0.12, 900, 300); break;   // 1.x lobSplash
+      // a campaign room's goal moving on (v46): a step made chimes, an orb gone out falls, the heart hurt thumps
+      case 'chStep':
+        if (e.what === 'orbLost') this._tone('triangle', 520, 180, 0.22, 0.12);
+        else if (['gate', 'orb', 'hill', 'leg', 'order', 'hunt'].includes(e.what)) { this._tone('sine', 660, 990, 0.12, 0.12); if (e.n >= e.of) this._tone('sine', 990, 1320, 0.18, 0.12, 0.1); }
+        break;
+      case 'heart': this._tone('sine', 140, 70, 0.18, 0.2); break;
       // the worlds' own bosses (v45): their big moments have a voice; the
       // world gels that share these events stay as quiet as they were
       case 'hopLand': if (e.big) { this._tone('sine', 120, 38, 0.4, 0.32); this._hiss(0.25, 0.14, 700, 120); } break;

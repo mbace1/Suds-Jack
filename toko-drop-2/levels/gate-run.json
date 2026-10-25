@@ -17,7 +17,7 @@
  },
  "plan": {
   "world": 0,
-  "d": 3,
+  "d": 2,
   "teaches": "the gates, the dash",
   "strategy": [
    "movement"

@@ -1,0 +1,696 @@
+{
+ "format": 2,
+ "id": "high-ground",
+ "name": "HIGH GROUND",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 15,
+    "hz": 9
+   }
+  ]
+ },
+ "duration": 45,
+ "goal": {
+  "type": "hills",
+  "zones": [
+   {
+    "x": -8,
+    "z": -3,
+    "r": 2.2
+   },
+   {
+    "x": 8,
+    "z": 3,
+    "r": 2.1
+   },
+   {
+    "x": 0,
+    "z": 0,
+    "r": 2,
+    "orbit": {
+     "r": 6,
+     "period": 14,
+     "phase": 2.6
+    }
+   },
+   {
+    "x": 0,
+    "z": 0,
+    "r": 1.9,
+    "orbit": {
+     "r": 6,
+     "period": 10,
+     "phase": 0
+    }
+   },
+   {
+    "x": 0,
+    "z": 0,
+    "r": 1.8,
+    "orbit": {
+     "r": 5,
+     "period": 7.5,
+     "phase": 3.14
+    }
+   }
+  ],
+  "need": 4.2,
+  "drain": 3
+ },
+ "plan": {
+  "world": 0,
+  "d": 3,
+  "teaches": "where to stand",
+  "strategy": [
+   "position"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": -5.17
+  },
+  {
+   "t": 0.5,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": -3.02
+  },
+  {
+   "t": 0.5,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 7.55
+  },
+  {
+   "t": 1,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": -0.99
+  },
+  {
+   "t": 1,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 7.55
+  },
+  {
+   "t": 3,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": 4.61,
+   "elite": true
+  },
+  {
+   "t": 3.4,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 2.5
+  },
+  {
+   "t": 3.8,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": 2.5,
+   "elite": true
+  },
+  {
+   "t": 4.2,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 4.61
+  },
+  {
+   "t": 5.5,
+   "type": "GLOBBO",
+   "px": -3.82,
+   "pz": 8.2
+  },
+  {
+   "t": 5.9,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": 8.2
+  },
+  {
+   "t": 6.3,
+   "type": "GLOBBO",
+   "px": 3.82,
+   "pz": 8.2
+  },
+  {
+   "t": 6.5,
+   "type": "GLOBBO",
+   "px": 3.82,
+   "pz": -8.2
+  },
+  {
+   "t": 6.9,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": -8.2
+  },
+  {
+   "t": 7.3,
+   "type": "GLOBBO",
+   "px": -3.82,
+   "pz": -8.2
+  },
+  {
+   "t": 9,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": 3.54,
+   "elite": true
+  },
+  {
+   "t": 9.4,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": 6.03
+  },
+  {
+   "t": 9.8,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": 5.17
+  },
+  {
+   "t": 10.2,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": 4.34,
+   "elite": true
+  },
+  {
+   "t": 10.6,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": 6.93
+  },
+  {
+   "t": 12,
+   "type": "GLOBBO",
+   "px": -3.82,
+   "pz": 8.2
+  },
+  {
+   "t": 12.4,
+   "type": "YELA_CUBE",
+   "px": 1.2,
+   "pz": 8.2
+  },
+  {
+   "t": 12.5,
+   "type": "GLOBBO",
+   "px": 3.82,
+   "pz": -8.2
+  },
+  {
+   "t": 12.8,
+   "type": "GLOBBO",
+   "px": 1.2,
+   "pz": 8.2
+  },
+  {
+   "t": 12.9,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": -8.2
+  },
+  {
+   "t": 13.2,
+   "type": "YELA_CUBE",
+   "px": -3.82,
+   "pz": 8.2
+  },
+  {
+   "t": 13.3,
+   "type": "GLOBBO",
+   "px": -3.82,
+   "pz": -8.2
+  },
+  {
+   "t": 15,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": -3.54,
+   "elite": true
+  },
+  {
+   "t": 15.4,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": -6.2
+  },
+  {
+   "t": 15.8,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": -4.83
+  },
+  {
+   "t": 16.2,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": -4.83,
+   "elite": true
+  },
+  {
+   "t": 16.6,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": -6.2
+  },
+  {
+   "t": 17,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": -3.54
+  },
+  {
+   "t": 18,
+   "type": "GLOBBO",
+   "px": 3.82,
+   "pz": -8.2
+  },
+  {
+   "t": 18.4,
+   "type": "YELA_CUBE",
+   "px": -1.2,
+   "pz": -8.2
+  },
+  {
+   "t": 18.5,
+   "type": "GLOBBO",
+   "px": -3.82,
+   "pz": 8.2
+  },
+  {
+   "t": 18.8,
+   "type": "GLOBBO",
+   "px": -1.2,
+   "pz": -8.2
+  },
+  {
+   "t": 18.9,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": 8.2
+  },
+  {
+   "t": 19.2,
+   "type": "YELA_CUBE",
+   "px": 3.82,
+   "pz": -8.2
+  },
+  {
+   "t": 19.3,
+   "type": "GLOBBO",
+   "px": 3.82,
+   "pz": 8.2
+  },
+  {
+   "t": 21,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 1.49
+  },
+  {
+   "t": 21,
+   "type": "GLOBBO",
+   "px": -0.86,
+   "pz": 8.2
+  },
+  {
+   "t": 21,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": -1.49
+  },
+  {
+   "t": 21,
+   "type": "GLOBBO",
+   "px": 0.86,
+   "pz": -8.2
+  },
+  {
+   "t": 21.4,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": 0,
+   "elite": true
+  },
+  {
+   "t": 21.4,
+   "type": "YELA_CUBE",
+   "px": 0,
+   "pz": 8.2,
+   "elite": true
+  },
+  {
+   "t": 21.4,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": 0,
+   "elite": true
+  },
+  {
+   "t": 21.4,
+   "type": "YELA_CUBE",
+   "px": 0,
+   "pz": -8.2,
+   "elite": true
+  },
+  {
+   "t": 21.8,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": -1.49
+  },
+  {
+   "t": 21.8,
+   "type": "GLOBBO",
+   "px": 0.86,
+   "pz": 8.2
+  },
+  {
+   "t": 21.8,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": 1.49
+  },
+  {
+   "t": 21.8,
+   "type": "GLOBBO",
+   "px": -0.86,
+   "pz": -8.2
+  },
+  {
+   "t": 25,
+   "type": "GLOBBO",
+   "px": 5.74,
+   "pz": 8.2
+  },
+  {
+   "t": 25.35,
+   "type": "YELA_CUBE",
+   "px": 10.13,
+   "pz": 8.2
+  },
+  {
+   "t": 25.5,
+   "type": "GLOBBO",
+   "px": -5.74,
+   "pz": -8.2
+  },
+  {
+   "t": 25.7,
+   "type": "GLOBBO",
+   "px": 7.65,
+   "pz": 8.2
+  },
+  {
+   "t": 25.85,
+   "type": "YELA_CUBE",
+   "px": -10.13,
+   "pz": -8.2
+  },
+  {
+   "t": 26.05,
+   "type": "YELA_CUBE",
+   "px": 7.65,
+   "pz": 8.2
+  },
+  {
+   "t": 26.2,
+   "type": "GLOBBO",
+   "px": -7.65,
+   "pz": -8.2
+  },
+  {
+   "t": 26.4,
+   "type": "GLOBBO",
+   "px": 10.13,
+   "pz": 8.2
+  },
+  {
+   "t": 26.55,
+   "type": "YELA_CUBE",
+   "px": -7.65,
+   "pz": -8.2
+  },
+  {
+   "t": 26.75,
+   "type": "YELA_CUBE",
+   "px": 5.74,
+   "pz": 8.2
+  },
+  {
+   "t": 26.9,
+   "type": "GLOBBO",
+   "px": -10.13,
+   "pz": -8.2
+  },
+  {
+   "t": 27.25,
+   "type": "YELA_CUBE",
+   "px": -5.74,
+   "pz": -8.2
+  },
+  {
+   "t": 29,
+   "type": "GLOBBO",
+   "px": -11.71,
+   "pz": 8.2
+  },
+  {
+   "t": 29.35,
+   "type": "YELA_CUBE",
+   "px": -6.64,
+   "pz": 8.2,
+   "elite": true
+  },
+  {
+   "t": 29.5,
+   "type": "GLOBBO",
+   "px": 11.71,
+   "pz": -8.2
+  },
+  {
+   "t": 29.7,
+   "type": "YELA_CUBE",
+   "px": -8.79,
+   "pz": 8.2
+  },
+  {
+   "t": 29.85,
+   "type": "YELA_CUBE",
+   "px": 6.64,
+   "pz": -8.2,
+   "elite": true
+  },
+  {
+   "t": 30.05,
+   "type": "GLOBBO",
+   "px": -8.79,
+   "pz": 8.2
+  },
+  {
+   "t": 30.2,
+   "type": "YELA_CUBE",
+   "px": 8.79,
+   "pz": -8.2
+  },
+  {
+   "t": 30.4,
+   "type": "YELA_CUBE",
+   "px": -6.64,
+   "pz": 8.2,
+   "elite": true
+  },
+  {
+   "t": 30.55,
+   "type": "GLOBBO",
+   "px": 8.79,
+   "pz": -8.2
+  },
+  {
+   "t": 30.75,
+   "type": "YELA_CUBE",
+   "px": -11.71,
+   "pz": 8.2
+  },
+  {
+   "t": 30.9,
+   "type": "YELA_CUBE",
+   "px": 6.64,
+   "pz": -8.2,
+   "elite": true
+  },
+  {
+   "t": 31.25,
+   "type": "YELA_CUBE",
+   "px": 11.71,
+   "pz": -8.2
+  },
+  {
+   "t": 33,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 2.5
+  },
+  {
+   "t": 33.35,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": -1.49
+  },
+  {
+   "t": 33.5,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": -2.5
+  },
+  {
+   "t": 33.7,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 0.5
+  },
+  {
+   "t": 33.85,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": 1.49
+  },
+  {
+   "t": 34.05,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": 0.5
+  },
+  {
+   "t": 34.2,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": -0.5
+  },
+  {
+   "t": 34.4,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": -1.49
+  },
+  {
+   "t": 34.55,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": -0.5
+  },
+  {
+   "t": 34.75,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": 2.5
+  },
+  {
+   "t": 34.9,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": 1.49
+  },
+  {
+   "t": 35.25,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": -2.5
+  },
+  {
+   "t": 37,
+   "type": "GLOBBO",
+   "px": -1.45,
+   "pz": 8.2
+  },
+  {
+   "t": 37.35,
+   "type": "YELA_CUBE",
+   "px": 0.86,
+   "pz": 8.2,
+   "elite": true
+  },
+  {
+   "t": 37.5,
+   "type": "GLOBBO",
+   "px": 1.45,
+   "pz": -8.2
+  },
+  {
+   "t": 37.7,
+   "type": "YELA_CUBE",
+   "px": -0.29,
+   "pz": 8.2
+  },
+  {
+   "t": 37.85,
+   "type": "YELA_CUBE",
+   "px": -0.86,
+   "pz": -8.2,
+   "elite": true
+  },
+  {
+   "t": 38.05,
+   "type": "GLOBBO",
+   "px": -0.29,
+   "pz": 8.2
+  },
+  {
+   "t": 38.2,
+   "type": "YELA_CUBE",
+   "px": 0.29,
+   "pz": -8.2
+  },
+  {
+   "t": 38.4,
+   "type": "YELA_CUBE",
+   "px": 0.86,
+   "pz": 8.2,
+   "elite": true
+  },
+  {
+   "t": 38.55,
+   "type": "GLOBBO",
+   "px": 0.29,
+   "pz": -8.2
+  },
+  {
+   "t": 38.75,
+   "type": "YELA_CUBE",
+   "px": -1.45,
+   "pz": 8.2
+  },
+  {
+   "t": 38.9,
+   "type": "YELA_CUBE",
+   "px": -0.86,
+   "pz": -8.2,
+   "elite": true
+  },
+  {
+   "t": 39.25,
+   "type": "YELA_CUBE",
+   "px": 1.45,
+   "pz": -8.2
+  }
+ ],
+ "tiers": {
+  "S": 29.2,
+  "A": 31.9,
+  "B": 34.6,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 83%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

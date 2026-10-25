@@ -52,7 +52,7 @@
  },
  "plan": {
   "world": 3,
-  "d": 7,
+  "d": 4,
   "teaches": "a floor that moves",
   "strategy": [
    "position",

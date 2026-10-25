@@ -24,7 +24,7 @@
  },
  "plan": {
   "world": 2,
-  "d": 4,
+  "d": 3,
   "teaches": "a floor that closes in",
   "strategy": [
    "position",

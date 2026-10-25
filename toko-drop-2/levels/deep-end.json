@@ -1,0 +1,289 @@
+{
+ "format": 2,
+ "id": "deep-end",
+ "name": "THE DEEP END",
+ "arena": {
+  "combine": "union",
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     -12.5,
+     0
+    ],
+    "r": 4.75
+   },
+   {
+    "kind": "rect",
+    "hx": 12,
+    "hz": 1.4
+   },
+   {
+    "kind": "circle",
+    "c": [
+     6,
+     0
+    ],
+    "r": 10
+   }
+  ]
+ },
+ "duration": 45,
+ "goal": {
+  "type": "boss"
+ },
+ "plan": {
+  "world": 3,
+  "d": 8,
+  "teaches": "angler; a boss too big for the channel",
+  "strategy": [
+   "risk",
+   "position",
+   "priority"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "angler",
+   "px": -13.5,
+   "pz": 0,
+   "boss": true,
+   "hp": 150
+  },
+  {
+   "t": 0,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 0
+  },
+  {
+   "t": 0.5,
+   "type": "GLOBBO",
+   "px": 12,
+   "pz": -6
+  },
+  {
+   "t": 1,
+   "type": "GLOBBO",
+   "px": 12,
+   "pz": 6
+  },
+  {
+   "t": 2.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -2
+  },
+  {
+   "t": 3.2,
+   "type": "GLOBBO",
+   "px": 15,
+   "pz": 2
+  },
+  {
+   "t": 3.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": -5.5
+  },
+  {
+   "t": 3.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5
+  },
+  {
+   "t": 11.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": 5.5
+  },
+  {
+   "t": 12.2,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -8
+  },
+  {
+   "t": 12.7,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 8
+  },
+  {
+   "t": 12.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5
+  },
+  {
+   "t": 13.2,
+   "type": "GLOBBO",
+   "px": 4,
+   "pz": -7
+  },
+  {
+   "t": 13.5,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0
+  },
+  {
+   "t": 20.7,
+   "type": "YELA_CUBE",
+   "px": 4,
+   "pz": 7
+  },
+  {
+   "t": 21.2,
+   "type": "GLOBBO",
+   "px": 15,
+   "pz": -2
+  },
+  {
+   "t": 21.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 2
+  },
+  {
+   "t": 21.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5
+  },
+  {
+   "t": 22.2,
+   "type": "GLOBBO",
+   "px": 13,
+   "pz": -5.5
+  },
+  {
+   "t": 22.5,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5
+  },
+  {
+   "t": 22.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": 5.5
+  },
+  {
+   "t": 23.1,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0
+  },
+  {
+   "t": 29.7,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": -8
+  },
+  {
+   "t": 30.2,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": 8
+  },
+  {
+   "t": 30.7,
+   "type": "YELA_CUBE",
+   "px": 4,
+   "pz": -7
+  },
+  {
+   "t": 30.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5
+  },
+  {
+   "t": 31.2,
+   "type": "GLOBBO",
+   "px": 4,
+   "pz": 7
+  },
+  {
+   "t": 31.5,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5
+  },
+  {
+   "t": 31.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -2
+  },
+  {
+   "t": 32.1,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0
+  },
+  {
+   "t": 38.7,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 2
+  },
+  {
+   "t": 39.2,
+   "type": "GLOBBO",
+   "px": 13,
+   "pz": -5.5
+  },
+  {
+   "t": 39.7,
+   "type": "YELA_CUBE",
+   "px": 13,
+   "pz": 5.5
+  },
+  {
+   "t": 39.9,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": -2.5
+  },
+  {
+   "t": 40.2,
+   "type": "GLOBBO",
+   "px": 9,
+   "pz": -8
+  },
+  {
+   "t": 40.5,
+   "type": "GLOBBO",
+   "px": -11.5,
+   "pz": 2.5
+  },
+  {
+   "t": 40.7,
+   "type": "YELA_CUBE",
+   "px": 9,
+   "pz": 8
+  },
+  {
+   "t": 41.1,
+   "type": "GLOBBO",
+   "px": -14.5,
+   "pz": 0
+  },
+  {
+   "t": 41.2,
+   "type": "GLOBBO",
+   "px": 4,
+   "pz": -7
+  }
+ ],
+ "tiers": {
+  "S": 21.1,
+  "A": 23.8,
+  "B": 26.5,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 88%, rough 33%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

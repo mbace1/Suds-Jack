@@ -1,0 +1,462 @@
+{
+ "format": 2,
+ "id": "boil-over",
+ "name": "BOIL OVER",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "circle",
+    "c": [
+     0,
+     0
+    ],
+    "r": 12
+   }
+  ]
+ },
+ "duration": 45,
+ "goal": {
+  "type": "boss"
+ },
+ "plan": {
+  "world": 5,
+  "d": 9,
+  "teaches": "kettle; the red-hot stall",
+  "strategy": [
+   "priority",
+   "risk",
+   "position",
+   "aim"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0.6,
+   "type": "GLOBBO",
+   "px": 9.58,
+   "pz": 4.05
+  },
+  {
+   "t": 0.9,
+   "type": "GLOBBO",
+   "px": -9.58,
+   "pz": -4.05
+  },
+  {
+   "t": 2,
+   "type": "GLOBBO",
+   "px": -9.8,
+   "pz": 3.48
+  },
+  {
+   "t": 2.3,
+   "type": "GLOBBO",
+   "px": 9.8,
+   "pz": -3.48
+  },
+  {
+   "t": 3,
+   "type": "kettle",
+   "px": 0,
+   "pz": -9.5,
+   "boss": true,
+   "hp": 125
+  },
+  {
+   "t": 4.4,
+   "type": "GLOBBO",
+   "px": 4.87,
+   "pz": -9.19
+  },
+  {
+   "t": 4.7,
+   "type": "steama",
+   "px": -4.87,
+   "pz": 9.19
+  },
+  {
+   "t": 5.8,
+   "type": "GLOBBO",
+   "px": 2.61,
+   "pz": 10.07
+  },
+  {
+   "t": 6.1,
+   "type": "GLOBBO",
+   "px": -2.61,
+   "pz": -10.07
+  },
+  {
+   "t": 7.9,
+   "type": "GLOBBO",
+   "px": -8.73,
+   "pz": -5.66
+  },
+  {
+   "t": 8.2,
+   "type": "GLOBBO",
+   "px": 5.66,
+   "pz": -8.73
+  },
+  {
+   "t": 8.5,
+   "type": "GLOBBO",
+   "px": 8.73,
+   "pz": 5.66
+  },
+  {
+   "t": 8.8,
+   "type": "GLOBBO",
+   "px": -5.66,
+   "pz": 8.73
+  },
+  {
+   "t": 10.4,
+   "type": "GLOBBO",
+   "px": 10.26,
+   "pz": -1.72
+  },
+  {
+   "t": 10.7,
+   "type": "GLOBBO",
+   "px": -10.26,
+   "pz": 1.72
+  },
+  {
+   "t": 11.8,
+   "type": "GLOBBO",
+   "px": -6.4,
+   "pz": 8.2
+  },
+  {
+   "t": 12.1,
+   "type": "steama",
+   "px": 6.4,
+   "pz": -8.2
+  },
+  {
+   "t": 14.4,
+   "type": "GLOBBO",
+   "px": -0.82,
+   "pz": -10.37
+  },
+  {
+   "t": 14.7,
+   "type": "GLOBBO",
+   "px": 9.61,
+   "pz": -3.98
+  },
+  {
+   "t": 15,
+   "type": "steama",
+   "px": 6.76,
+   "pz": 7.91
+  },
+  {
+   "t": 15.3,
+   "type": "GLOBBO",
+   "px": -5.43,
+   "pz": 8.87
+  },
+  {
+   "t": 15.6,
+   "type": "GLOBBO",
+   "px": -10.11,
+   "pz": -2.43
+  },
+  {
+   "t": 17,
+   "type": "GLOBBO",
+   "px": 7.61,
+   "pz": 7.09
+  },
+  {
+   "t": 17.3,
+   "type": "GLOBBO",
+   "px": -9.95,
+   "pz": 3.04
+  },
+  {
+   "t": 17.6,
+   "type": "GLOBBO",
+   "px": 2.34,
+   "pz": -10.13
+  },
+  {
+   "t": 20.9,
+   "type": "GLOBBO",
+   "px": -10.4,
+   "pz": -0.09
+  },
+  {
+   "t": 21.2,
+   "type": "GLOBBO",
+   "px": -5.12,
+   "pz": -9.05
+  },
+  {
+   "t": 21.5,
+   "type": "steama",
+   "px": 5.28,
+   "pz": -8.96
+  },
+  {
+   "t": 21.8,
+   "type": "GLOBBO",
+   "px": 10.4,
+   "pz": 0.09
+  },
+  {
+   "t": 22.1,
+   "type": "GLOBBO",
+   "px": 5.12,
+   "pz": 9.05
+  },
+  {
+   "t": 22.4,
+   "type": "steama",
+   "px": -5.28,
+   "pz": 8.96
+  },
+  {
+   "t": 23.4,
+   "type": "GLOBBO",
+   "px": 7.73,
+   "pz": -6.96
+  },
+  {
+   "t": 23.7,
+   "type": "GLOBBO",
+   "px": 2.16,
+   "pz": 10.17
+  },
+  {
+   "t": 24,
+   "type": "GLOBBO",
+   "px": -9.89,
+   "pz": -3.22
+  },
+  {
+   "t": 25,
+   "type": "GLOBBO",
+   "px": -1,
+   "pz": 10.35
+  },
+  {
+   "t": 25.3,
+   "type": "GLOBBO",
+   "px": 1,
+   "pz": -10.35
+  },
+  {
+   "t": 27.4,
+   "type": "GLOBBO",
+   "px": -6.25,
+   "pz": -8.31
+  },
+  {
+   "t": 27.7,
+   "type": "GLOBBO",
+   "px": 2.6,
+   "pz": -10.07
+  },
+  {
+   "t": 28,
+   "type": "steama",
+   "px": 9.49,
+   "pz": -4.25
+  },
+  {
+   "t": 28.3,
+   "type": "GLOBBO",
+   "px": 9.24,
+   "pz": 4.77
+  },
+  {
+   "t": 28.6,
+   "type": "GLOBBO",
+   "px": 2.03,
+   "pz": 10.2
+  },
+  {
+   "t": 28.9,
+   "type": "steama",
+   "px": -6.71,
+   "pz": 7.95
+  },
+  {
+   "t": 29.2,
+   "type": "GLOBBO",
+   "px": -10.4,
+   "pz": -0.29
+  },
+  {
+   "t": 29.9,
+   "type": "GLOBBO",
+   "px": 10.22,
+   "pz": 1.9
+  },
+  {
+   "t": 30.2,
+   "type": "GLOBBO",
+   "px": -6.76,
+   "pz": 7.9
+  },
+  {
+   "t": 30.5,
+   "type": "GLOBBO",
+   "px": -3.46,
+   "pz": -9.81
+  },
+  {
+   "t": 31.5,
+   "type": "GLOBBO",
+   "px": -8.83,
+   "pz": 5.5
+  },
+  {
+   "t": 31.8,
+   "type": "GLOBBO",
+   "px": 8.83,
+   "pz": -5.5
+  },
+  {
+   "t": 33.9,
+   "type": "GLOBBO",
+   "px": 2.79,
+   "pz": -10.02
+  },
+  {
+   "t": 34.2,
+   "type": "GLOBBO",
+   "px": 9.57,
+   "pz": -4.06
+  },
+  {
+   "t": 34.5,
+   "type": "steama",
+   "px": 9.15,
+   "pz": 4.95
+  },
+  {
+   "t": 34.8,
+   "type": "GLOBBO",
+   "px": 1.83,
+   "pz": 10.24
+  },
+  {
+   "t": 35.1,
+   "type": "GLOBBO",
+   "px": -6.86,
+   "pz": 7.82
+  },
+  {
+   "t": 35.4,
+   "type": "steama",
+   "px": -10.39,
+   "pz": -0.49
+  },
+  {
+   "t": 35.7,
+   "type": "GLOBBO",
+   "px": -6.09,
+   "pz": -8.43
+  },
+  {
+   "t": 36.4,
+   "type": "GLOBBO",
+   "px": 4.71,
+   "pz": 9.27
+  },
+  {
+   "t": 36.7,
+   "type": "GLOBBO",
+   "px": -10.39,
+   "pz": -0.56
+  },
+  {
+   "t": 37,
+   "type": "GLOBBO",
+   "px": 5.68,
+   "pz": -8.71
+  },
+  {
+   "t": 38,
+   "type": "GLOBBO",
+   "px": -9.74,
+   "pz": -3.66
+  },
+  {
+   "t": 38.3,
+   "type": "GLOBBO",
+   "px": 9.74,
+   "pz": 3.66
+  },
+  {
+   "t": 40.4,
+   "type": "GLOBBO",
+   "px": 9.65,
+   "pz": -3.88
+  },
+  {
+   "t": 40.7,
+   "type": "GLOBBO",
+   "px": 9.05,
+   "pz": 5.13
+  },
+  {
+   "t": 41,
+   "type": "steama",
+   "px": 1.64,
+   "pz": 10.27
+  },
+  {
+   "t": 41.3,
+   "type": "GLOBBO",
+   "px": -7.01,
+   "pz": 7.68
+  },
+  {
+   "t": 41.6,
+   "type": "GLOBBO",
+   "px": -10.38,
+   "pz": -0.69
+  },
+  {
+   "t": 41.9,
+   "type": "steama",
+   "px": -5.93,
+   "pz": -8.54
+  },
+  {
+   "t": 42.2,
+   "type": "GLOBBO",
+   "px": 2.98,
+   "pz": -9.96
+  },
+  {
+   "t": 42.9,
+   "type": "GLOBBO",
+   "px": -4.49,
+   "pz": 9.38
+  },
+  {
+   "t": 43.2,
+   "type": "GLOBBO",
+   "px": -5.87,
+   "pz": -8.58
+  },
+  {
+   "t": 43.5,
+   "type": "GLOBBO",
+   "px": 10.37,
+   "pz": -0.8
+  }
+ ],
+ "tiers": {
+  "S": 16.7,
+  "A": 19.7,
+  "B": 22.4,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 71%, rough 0%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

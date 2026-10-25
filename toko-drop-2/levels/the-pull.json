@@ -21,7 +21,7 @@
  },
  "plan": {
   "world": 3,
-  "d": 6,
+  "d": 3,
   "teaches": "magna",
   "strategy": [
    "position",

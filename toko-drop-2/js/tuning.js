@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=45';
-import WAVES from './tuning/waves.js?v=45';
-import PICKUPS from './tuning/pickups.js?v=45';
+import { SPECIES } from './tuning/species/index.js?v=46';
+import WAVES from './tuning/waves.js?v=46';
+import PICKUPS from './tuning/pickups.js?v=46';
 
 export const TUNING = {
   render: {
@@ -540,12 +540,12 @@ export const TUNING = {
   campaign: {
     worlds: [
       // `base` / `gridHi` are the floor's own colours (sRGB 0..1, 1.x verbatim), `rule` the one mechanic (TUNING.campaign.rules)
-      { name: 'THE SURFACE', rail: 0x5555cc, base: [0.079, 0.079, 0.169], gridHi: [0.0, 0.55, 0.50], rule: null, rooms: [{ id: 'first-light' }, { id: 'three-rings' }, { id: 'gate-run' }, { id: 'hands-up' }, { id: 'first-swarm' }] },
-      { name: 'THE WELL', rail: 0x33ccbb, base: [0.030, 0.105, 0.115], gridHi: [0.10, 0.70, 0.60], rule: 'current', rooms: [{ id: 'undertow' }, { id: 'eddy' }, { id: 'slug-run' }, { id: 'in-order' }, { id: 'the-sludge' }] },
-      { name: 'THE VEIN', rail: 0xdd3344, base: [0.130, 0.030, 0.040], gridHi: [0.85, 0.16, 0.22], rule: 'sweep', rooms: [{ id: 'pulse' }, { id: 'crossfire' }, { id: 'clot' }, { id: 'splitter' }, { id: 'spike' }] },
-      { name: 'THE VOID', rail: 0x8866cc, base: [0.012, 0.012, 0.022], gridHi: [0.18, 0.10, 0.32], rule: 'dark', rooms: [{ id: 'lights-out' }, { id: 'the-pull' }, { id: 'six-shots' }, { id: 'orbit' }, { id: 'siren' }] },
-      { name: 'THE FOAM', rail: 0x99ffee, base: [0.055, 0.105, 0.125], gridHi: [0.60, 1.00, 0.92], rule: 'slip', rooms: [{ id: 'rink' }, { id: 'skate' }, { id: 'bubble-bath' }, { id: 'salmon' }, { id: 'breath' }] },
-      { name: 'THE KILN', rail: 0xffaa33, base: [0.130, 0.060, 0.018], gridHi: [1.00, 0.62, 0.14], rule: 'updraft', rooms: [{ id: 'bellows' }, { id: 'anvil' }, { id: 'forge' }, { id: 'crucible' }, { id: 'the-core' }] },
+      { name: 'THE SURFACE', rail: 0x5555cc, base: [0.079, 0.079, 0.169], gridHi: [0.0, 0.55, 0.50], rule: null, rooms: [{ id: 'first-light' }, { id: 'gate-run' }, { id: 'hands-up' }, { id: 'high-ground' }, { id: 'three-rings' }, { id: 'first-swarm' }] },
+      { name: 'THE WELL', rail: 0x33ccbb, base: [0.030, 0.105, 0.115], gridHi: [0.10, 0.70, 0.60], rule: 'current', rooms: [{ id: 'eddy' }, { id: 'in-order' }, { id: 'undertow' }, { id: 'the-sludge' }, { id: 'flotsam' }, { id: 'slug-run' }] },
+      { name: 'THE VEIN', rail: 0xdd3344, base: [0.130, 0.030, 0.040], gridHi: [0.85, 0.16, 0.22], rule: 'sweep', rooms: [{ id: 'pulse' }, { id: 'clot' }, { id: 'splitter' }, { id: 'crossfire' }, { id: 'spike' }, { id: 'needle' }] },
+      { name: 'THE VOID', rail: 0x8866cc, base: [0.012, 0.012, 0.022], gridHi: [0.18, 0.10, 0.32], rule: 'dark', rooms: [{ id: 'the-pull' }, { id: 'orbit' }, { id: 'six-shots' }, { id: 'lights-out' }, { id: 'deep-end' }, { id: 'siren' }] },
+      { name: 'THE FOAM', rail: 0x99ffee, base: [0.055, 0.105, 0.125], gridHi: [0.60, 1.00, 0.92], rule: 'slip', rooms: [{ id: 'rink' }, { id: 'salmon' }, { id: 'pack-ice' }, { id: 'breath' }, { id: 'skate' }, { id: 'bubble-bath' }] },
+      { name: 'THE KILN', rail: 0xffaa33, base: [0.130, 0.060, 0.018], gridHi: [1.00, 0.62, 0.14], rule: 'updraft', rooms: [{ id: 'forge' }, { id: 'anvil' }, { id: 'bellows' }, { id: 'crucible' }, { id: 'boil-over' }, { id: 'the-core' }] },
     ],
     // survive / flawless: the SHARE of the room's bodies you put down; living
     // through it is a C on its own, S is every body

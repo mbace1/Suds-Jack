@@ -1,0 +1,290 @@
+{
+ "format": 2,
+ "id": "pack-ice",
+ "name": "PACK ICE",
+ "arena": {
+  "shapes": [
+   {
+    "kind": "rect",
+    "hx": 17,
+    "hz": 10
+   }
+  ]
+ },
+ "duration": 40,
+ "goal": {
+  "type": "boss"
+ },
+ "plan": {
+  "world": 4,
+  "d": 8,
+  "teaches": "berg; between its lines",
+  "strategy": [
+   "movement",
+   "priority",
+   "position"
+  ]
+ },
+ "spawns": [
+  {
+   "t": 0,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 0.35,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 3,
+   "type": "berg",
+   "px": -15.5,
+   "pz": -9,
+   "boss": true,
+   "hp": 65
+  },
+  {
+   "t": 3,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 3.35,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -8
+  },
+  {
+   "t": 5.5,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -8
+  },
+  {
+   "t": 5.85,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": -8
+  },
+  {
+   "t": 6.2,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 8,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": -8
+  },
+  {
+   "t": 8.35,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 8.7,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 10.5,
+   "type": "REDD_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 10.85,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 11.2,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -8
+  },
+  {
+   "t": 13,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 13.35,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -8
+  },
+  {
+   "t": 13.7,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": -8
+  },
+  {
+   "t": 14.05,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 15.5,
+   "type": "REDD_CUBE",
+   "px": 15,
+   "pz": -8
+  },
+  {
+   "t": 15.85,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": -8
+  },
+  {
+   "t": 16.2,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 16.55,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 18,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": -8
+  },
+  {
+   "t": 18.35,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 18.7,
+   "type": "REDD_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 19.05,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -8
+  },
+  {
+   "t": 20.5,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 20.85,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 21.2,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -8
+  },
+  {
+   "t": 21.55,
+   "type": "REDD_CUBE",
+   "px": -15,
+   "pz": -8
+  },
+  {
+   "t": 23,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 23.35,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": -8
+  },
+  {
+   "t": 23.7,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": -8
+  },
+  {
+   "t": 24.05,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 25.5,
+   "type": "REDD_CUBE",
+   "px": 15,
+   "pz": -8
+  },
+  {
+   "t": 25.85,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": -8
+  },
+  {
+   "t": 26.2,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 26.55,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 28,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": -8
+  },
+  {
+   "t": 28.35,
+   "type": "YELA_CUBE",
+   "px": 15,
+   "pz": 8
+  },
+  {
+   "t": 28.7,
+   "type": "YELA_CUBE",
+   "px": -15,
+   "pz": 8
+  },
+  {
+   "t": 29.05,
+   "type": "REDD_CUBE",
+   "px": 15,
+   "pz": -8
+  }
+ ],
+ "tiers": {
+  "S": 15.1,
+  "A": 18.3,
+  "B": 20.7,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 88%, rough 21%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ }
+}

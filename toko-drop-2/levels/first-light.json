@@ -6,101 +6,551 @@
   "shapes": [
    {
     "kind": "rect",
-    "hx": 15,
-    "hz": 9
+    "hx": 14,
+    "hz": 8
    }
   ]
  },
- "duration": 25,
+ "duration": 30,
  "goal": {
   "type": "survive"
  },
  "plan": {
   "world": 0,
-  "d": 1,
-  "teaches": "wave 1",
+  "d": 2,
+  "teaches": "wave 1: the next front does not wait",
   "strategy": [
-   "position"
+   "aim"
   ]
  },
  "spawns": [
   {
    "t": 0,
    "type": "GLOBBO",
-   "px": 13.4,
+   "px": 12.4,
+   "pz": -3.56
+  },
+  {
+   "t": 0.12,
+   "type": "GLOBBO",
+   "px": 12.4,
    "pz": 0
   },
   {
-   "t": 0,
+   "t": 0.24,
    "type": "GLOBBO",
-   "px": -13.4,
+   "px": 12.4,
+   "pz": 3.56
+  },
+  {
+   "t": 0.4,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": 3.56
+  },
+  {
+   "t": 0.52,
+   "type": "GLOBBO",
+   "px": -12.4,
    "pz": 0
   },
   {
-   "t": 3,
+   "t": 0.64,
    "type": "GLOBBO",
-   "px": 4.75,
-   "pz": 7.4
+   "px": -12.4,
+   "pz": -3.56
   },
   {
-   "t": 5.2,
+   "t": 1.2,
    "type": "GLOBBO",
-   "px": -13.4,
-   "pz": -3.54
+   "px": -5.18,
+   "pz": 6.4
   },
   {
-   "t": 7.4,
+   "t": 1.32,
    "type": "GLOBBO",
-   "px": 13.4,
-   "pz": -7.03
+   "px": -9.14,
+   "pz": 6.4
   },
   {
-   "t": 9.6,
+   "t": 2.45,
    "type": "GLOBBO",
-   "px": -2.67,
-   "pz": 7.4
+   "px": -0.45,
+   "pz": -6.4
   },
   {
-   "t": 11.8,
+   "t": 2.57,
    "type": "GLOBBO",
-   "px": -3.09,
-   "pz": -7.4
+   "px": 1.36,
+   "pz": -6.4
   },
   {
-   "t": 14,
+   "t": 3.7,
    "type": "GLOBBO",
-   "px": 13.4,
-   "pz": 6.2
+   "px": 6.86,
+   "pz": 6.4
+  },
+  {
+   "t": 3.82,
+   "type": "GLOBBO",
+   "px": 3.85,
+   "pz": 6.4
+  },
+  {
+   "t": 4.95,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": 0
+  },
+  {
+   "t": 5.07,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": -3.56
+  },
+  {
+   "t": 6.2,
+   "type": "GLOBBO",
+   "px": 5.18,
+   "pz": -6.4
+  },
+  {
+   "t": 6.32,
+   "type": "GLOBBO",
+   "px": 9.14,
+   "pz": -6.4
+  },
+  {
+   "t": 6.44,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": -4.27
+  },
+  {
+   "t": 7.45,
+   "type": "GLOBBO",
+   "px": 0.45,
+   "pz": 6.4
+  },
+  {
+   "t": 7.57,
+   "type": "GLOBBO",
+   "px": -1.36,
+   "pz": 6.4
+  },
+  {
+   "t": 7.69,
+   "type": "GLOBBO",
+   "px": -3.4,
+   "pz": 6.4
+  },
+  {
+   "t": 8.7,
+   "type": "GLOBBO",
+   "px": -6.86,
+   "pz": -6.4
+  },
+  {
+   "t": 8.82,
+   "type": "GLOBBO",
+   "px": -3.85,
+   "pz": -6.4
+  },
+  {
+   "t": 8.94,
+   "type": "GLOBBO",
+   "px": -1.71,
+   "pz": -6.4
+  },
+  {
+   "t": 9.95,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": 0
+  },
+  {
+   "t": 10.07,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": 3.56
+  },
+  {
+   "t": 10.19,
+   "type": "GLOBBO",
+   "px": 10.24,
+   "pz": 6.4
+  },
+  {
+   "t": 11.2,
+   "type": "GLOBBO",
+   "px": -6.86,
+   "pz": 6.4
+  },
+  {
+   "t": 11.32,
+   "type": "YELA_CUBE",
+   "px": -12.4,
+   "pz": 6.32
+  },
+  {
+   "t": 11.44,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": 2.41
+  },
+  {
+   "t": 12.45,
+   "type": "GLOBBO",
+   "px": -0.45,
+   "pz": -6.4
+  },
+  {
+   "t": 12.57,
+   "type": "GLOBBO",
+   "px": 1.36,
+   "pz": -6.4
+  },
+  {
+   "t": 12.69,
+   "type": "GLOBBO",
+   "px": 3.4,
+   "pz": -6.4
+  },
+  {
+   "t": 12.81,
+   "type": "GLOBBO",
+   "px": 6.18,
+   "pz": -6.4
+  },
+  {
+   "t": 13.7,
+   "type": "GLOBBO",
+   "px": 6.86,
+   "pz": 6.4
+  },
+  {
+   "t": 13.82,
+   "type": "GLOBBO",
+   "px": 3.85,
+   "pz": 6.4
+  },
+  {
+   "t": 13.94,
+   "type": "YELA_CUBE",
+   "px": 1.71,
+   "pz": 6.4
+  },
+  {
+   "t": 14.06,
+   "type": "GLOBBO",
+   "px": -0.11,
+   "pz": 6.4
+  },
+  {
+   "t": 14.95,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": 0
+  },
+  {
+   "t": 15.07,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": -3.56
+  },
+  {
+   "t": 15.19,
+   "type": "GLOBBO",
+   "px": -10.24,
+   "pz": -6.4
+  },
+  {
+   "t": 15.31,
+   "type": "GLOBBO",
+   "px": -5.76,
+   "pz": -6.4
   },
   {
    "t": 16.2,
    "type": "GLOBBO",
-   "px": -13.4,
+   "px": 6.86,
+   "pz": -6.4
+  },
+  {
+   "t": 16.32,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": -6.32
+  },
+  {
+   "t": 16.44,
+   "type": "YELA_CUBE",
+   "px": 12.4,
+   "pz": -2.41
+  },
+  {
+   "t": 16.56,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": 1.08
+  },
+  {
+   "t": 17.45,
+   "type": "GLOBBO",
+   "px": -0.45,
+   "pz": 6.4
+  },
+  {
+   "t": 17.57,
+   "type": "GLOBBO",
+   "px": -2.33,
+   "pz": 6.4
+  },
+  {
+   "t": 17.69,
+   "type": "GLOBBO",
+   "px": -4.65,
+   "pz": 6.4
+  },
+  {
+   "t": 17.81,
+   "type": "GLOBBO",
+   "px": -8.19,
+   "pz": 6.4
+  },
+  {
+   "t": 18.7,
+   "type": "GLOBBO",
+   "px": -5.18,
+   "pz": -6.4
+  },
+  {
+   "t": 18.82,
+   "type": "GLOBBO",
+   "px": -2.72,
+   "pz": -6.4
+  },
+  {
+   "t": 18.94,
+   "type": "YELA_CUBE",
+   "px": -0.79,
+   "pz": -6.4
+  },
+  {
+   "t": 19.06,
+   "type": "GLOBBO",
+   "px": 1.01,
+   "pz": -6.4
+  },
+  {
+   "t": 19.95,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": 1.74
+  },
+  {
+   "t": 20.07,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": 5.52
+  },
+  {
+   "t": 20.19,
+   "type": "GLOBBO",
+   "px": 7.63,
+   "pz": 6.4
+  },
+  {
+   "t": 20.31,
+   "type": "GLOBBO",
+   "px": 4.32,
+   "pz": 6.4
+  },
+  {
+   "t": 21.2,
+   "type": "GLOBBO",
+   "px": -9.14,
+   "pz": 6.4
+  },
+  {
+   "t": 21.32,
+   "type": "GLOBBO",
+   "px": -12.4,
    "pz": 4.27
   },
   {
-   "t": 18.4,
-   "type": "GLOBBO",
-   "px": 4.25,
-   "pz": -7.4
+   "t": 21.44,
+   "type": "YELA_CUBE",
+   "px": -12.4,
+   "pz": 0.65
   },
   {
-   "t": 20.6,
+   "t": 21.56,
    "type": "GLOBBO",
-   "px": 1.66,
-   "pz": 7.4
+   "px": -12.4,
+   "pz": -2.86
   },
   {
-   "t": 22.8,
+   "t": 23,
    "type": "GLOBBO",
-   "px": -10.62,
-   "pz": -7.4
+   "px": 12.4,
+   "pz": 0
+  },
+  {
+   "t": 23,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": 6.4
+  },
+  {
+   "t": 23,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": 0
+  },
+  {
+   "t": 23,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": -6.4
+  },
+  {
+   "t": 23.1,
+   "type": "GLOBBO",
+   "px": 6.4,
+   "pz": 6.4
+  },
+  {
+   "t": 23.1,
+   "type": "GLOBBO",
+   "px": -6.4,
+   "pz": 6.4
+  },
+  {
+   "t": 23.1,
+   "type": "GLOBBO",
+   "px": -6.4,
+   "pz": -6.4
+  },
+  {
+   "t": 23.1,
+   "type": "GLOBBO",
+   "px": 6.4,
+   "pz": -6.4
+  },
+  {
+   "t": 24.5,
+   "type": "YELA_CUBE",
+   "px": 12.4,
+   "pz": 5.01
+  },
+  {
+   "t": 24.5,
+   "type": "GLOBBO",
+   "px": -2.59,
+   "pz": 6.4
+  },
+  {
+   "t": 24.5,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": -5.01
+  },
+  {
+   "t": 24.5,
+   "type": "GLOBBO",
+   "px": 2.59,
+   "pz": -6.4
+  },
+  {
+   "t": 24.6,
+   "type": "YELA_CUBE",
+   "px": 2.72,
+   "pz": 6.4
+  },
+  {
+   "t": 24.6,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": 5.26
+  },
+  {
+   "t": 24.6,
+   "type": "GLOBBO",
+   "px": -2.72,
+   "pz": -6.4
+  },
+  {
+   "t": 24.6,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": -5.26
+  },
+  {
+   "t": 26,
+   "type": "GLOBBO",
+   "px": 6.4,
+   "pz": 6.4
+  },
+  {
+   "t": 26,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": 3.32
+  },
+  {
+   "t": 26,
+   "type": "GLOBBO",
+   "px": 1.71,
+   "pz": -6.4
+  },
+  {
+   "t": 26.1,
+   "type": "GLOBBO",
+   "px": -1.71,
+   "pz": 6.4
+  },
+  {
+   "t": 26.1,
+   "type": "GLOBBO",
+   "px": -6.4,
+   "pz": -6.4
+  },
+  {
+   "t": 26.1,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": -3.32
+  },
+  {
+   "t": 27.4,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": 6.4
+  },
+  {
+   "t": 27.4,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": -6.4
+  },
+  {
+   "t": 27.5,
+   "type": "GLOBBO",
+   "px": -12.4,
+   "pz": 0
+  },
+  {
+   "t": 27.5,
+   "type": "GLOBBO",
+   "px": 12.4,
+   "pz": 0
   }
  ],
  "tiers": {
   "S": 1,
   "A": 0.95,
   "B": 0.9,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 88%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

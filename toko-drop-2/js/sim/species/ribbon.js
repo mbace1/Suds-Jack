@@ -47,7 +47,7 @@
 // after it, on top of the steer, through the same wall clamp. The PUSH dash's
 // shove is measured from the head only (hero.js), so it moves a RIBBON by its
 // head.
-import { TUNING } from '../../tuning.js?v=45';
+import { TUNING } from '../../tuning.js?v=46';
 
 const TAU = Math.PI * 2;
 

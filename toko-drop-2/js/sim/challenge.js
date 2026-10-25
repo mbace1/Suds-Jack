@@ -14,7 +14,15 @@
 //           { "type": "order" }                   only the lit body can be hurt, in turn
 //           { "type": "hunt", "kind": "cloaker" } put down every one of that kind
 //           { "type": "combo", "streak": 12 }     reach that streak
-//           { "type": "collect", "orbs": [{ "t", "x", "z" }] }
+//           { "type": "collect", "orbs": [{ "t", "x", "z", "life"? }], "life"?, "need"? }
+//                                                 walk over the orbs; with a `life` an orb goes out
+//                                                 when it is not taken in time, and `need` of them do
+//           { "type": "escort", "heart": { "x", "z", "r", "hp" }, "path": [[x, z], …], "speed": 2 }
+//                                                 the heart walks the path; get it to the end alive
+//                                                 (graded on what it keeps, as a protect)
+//           { "type": "hills", "zones": [{ "x", "z", "r" }, …], "need": 4, "drain"? }
+//                                                 hold each ring in turn until it fills (`need` s
+//                                                 each); out of it, it drains `drain` a second
 //           { "type": "boss" }                    put down the boss
 //           { "type": "gauntlet", "stages": [{ "at": 0, "rule": "current" }, …] }
 //                                                 last the clock while the rule changes
@@ -32,15 +40,15 @@
 //   chStep   { what, n, of }   progress the HUD reads: a gate, a lit body, an orb
 //   heart    { hp, x, z }      the heart was hurt
 // Pure: no DOM, no clock, w.rng only.
-import { TUNING } from '../tuning.js?v=45';
-import { levelShape, KIND } from './shape.js?v=45';
-import * as pickups from './pickups.js?v=45';
-import * as rules from './rules.js?v=45';
+import { TUNING } from '../tuning.js?v=46';
+import { levelShape, KIND } from './shape.js?v=46';
+import * as pickups from './pickups.js?v=46';
+import * as rules from './rules.js?v=46';
 
 const T = TUNING, C = T.campaign;
 
 // the goals graded on time (lower is better); the rest on a share (higher)
-const TIMED = new Set(['quota', 'clear', 'gates', 'hold', 'order', 'hunt', 'combo', 'collect', 'boss']);
+const TIMED = new Set(['quota', 'clear', 'gates', 'hold', 'hills', 'order', 'hunt', 'combo', 'collect', 'boss']);
 
 // a level's body type: 1.x's name (TUNING.campaign.kinds) or a 2.0 species key
 export const speciesOf = (type) => C.kinds[type] ?? (T.species[type] ? type : null);
@@ -56,7 +64,7 @@ export const modsOf = (room) => {
 export function metricOf(room) {
   const g = goalOf(room);
   if (g.type === 'survive' && g.metric === 'hits') return { name: 'hits', low: true };
-  if (g.type === 'protect') return { name: 'heart', low: false };
+  if (g.type === 'protect' || g.type === 'escort') return { name: 'heart', low: false };
   if (TIMED.has(g.type)) return { name: 'time', low: true };
   return { name: 'share', low: false };
 }
@@ -72,9 +80,13 @@ export function create(w) {
   ch.gates = (L.gates ?? []).map((g) => sw(g)).sort((a, b) => a.t - b.t);
   if (ch.gates.length) w.pk.on = true;
   if (goal.type === 'gates') ch.of = ch.gates.length;
-  if (goal.type === 'collect') { ch.orbs = (goal.orbs ?? []).map((o, i) => ({ ...sw(o), i, out: false, taken: false })); ch.of = ch.orbs.length; }
+  if (goal.type === 'collect') { ch.orbs = (goal.orbs ?? []).map((o, i) => ({ ...sw(o), i, out: false, taken: false, lost: false, life: o.life ?? goal.life ?? null })); ch.of = Math.min(ch.orbs.length, goal.need ?? ch.orbs.length); ch.lost = 0; }
   if (goal.type === 'hold') { const z = sw(goal.zone ?? {}); ch.zone = { x: z.x ?? 0, z: z.z ?? 0, x0: z.x ?? 0, z0: z.z ?? 0, r: z.r ?? 3, orbit: z.orbit ?? null, fill: 0, inside: false }; ch.of = goal.need; }
-  if (goal.type === 'protect') { const H = sw(goal.heart ?? {}); ch.heart = { x: H.x ?? 0, z: H.z ?? 0, r: H.r ?? 1.4, hp: H.hp ?? 10, max: H.hp ?? 10, cd: 0 }; }
+  if (goal.type === 'protect' || goal.type === 'escort') { const H = sw(goal.heart ?? {}); ch.heart = { x: H.x ?? 0, z: H.z ?? 0, r: H.r ?? 1.4, hp: H.hp ?? 10, max: H.hp ?? 10, cd: 0 }; }
+  // ESCORT: the heart walks its path, leg by leg, at `speed`
+  if (goal.type === 'escort') { Object.assign(ch.heart, { path: (goal.path ?? []).map(([x, z]) => sw({ x, z })), leg: 0, speed: goal.speed ?? 2, arrived: false }); ch.of = ch.heart.path.length; }
+  // HILLS: the rings one after another, each filled in turn
+  if (goal.type === 'hills') { ch.hills = (goal.zones ?? []).map((z) => sw(z)); ch.zi = 0; ch.of = ch.hills.length; ch.zone = hillZone(ch.hills[0]); }
   if (goal.type === 'hunt') ch.of = goal.kills ?? L.spawns.filter((s) => speciesOf(s.type) === speciesOf(goal.kind)).length;
   if (goal.type === 'quota') ch.of = goal.kills;
   if (goal.type === 'combo') ch.of = goal.streak;
@@ -83,6 +95,8 @@ export function create(w) {
   ch.moving = !!w.region && (L.arena?.shapes ?? []).some((s) => s.orbit || s.pulse);
   if (goal.type === 'gauntlet') { ch.stages = goal.stages ?? []; ch.stage = -1; }
 }
+
+const hillZone = (z) => ({ x: z.x ?? 0, z: z.z ?? 0, x0: z.x ?? 0, z0: z.z ?? 0, r: z.r ?? 2.5, orbit: z.orbit ?? null, fill: 0, inside: false });
 
 // the room's region at time t (a moving floor)
 export function regionAt(w, t) { return levelShape(w.room.level, !!w.room.turn, t); }
@@ -136,12 +150,33 @@ export function step(w, dt, api) {
     if (w.rule?.kind === 'current' && G.zone?.drift) { const Rc = C.rules.current; Z.x += Math.cos(w.rule.angle) * Rc.speed * Rc.playerMult * dt; Z.z += Math.sin(w.rule.angle) * Rc.speed * Rc.playerMult * dt; clampPoint(w, Z, Z.r); }
     Z.inside = !!h?.alive && Math.hypot(h.x - Z.x, h.z - Z.z) < Z.r;
     if (Z.inside) Z.fill = Math.min(G.need, Z.fill + dt);
+    else if (G.drain) Z.fill = Math.max(0, Z.fill - G.drain * dt);
     ch.n = Z.fill;
+    // HILLS: a full ring gives way to the next
+    if (ch.hills) {
+      if (Z.fill >= G.need - 1e-9) {
+        ch.zi++;
+        w.events.push({ type: 'chStep', what: 'hill', x: Z.x, z: Z.z, n: ch.zi, of: ch.of });
+        if (ch.zi < ch.hills.length) ch.zone = hillZone(ch.hills[ch.zi]);
+      }
+      ch.n = ch.zi + (ch.zi < ch.hills.length ? ch.zone.fill / G.need : 0);
+    }
   }
 
   // PROTECT: a body on the heart bites it; a gel's bullet that reaches it lands
   if (ch.heart) {
     const H = ch.heart;
+    // ESCORT: it walks on, leg by leg, while it lives
+    if (H.path && !H.arrived && H.hp > 0) {
+      let step = H.speed * dt;
+      while (step > 0 && H.leg < H.path.length) {
+        const P = H.path[H.leg], dx = P.x - H.x, dz = P.z - H.z, d = Math.hypot(dx, dz);
+        if (d <= step) { H.x = P.x; H.z = P.z; step -= d; H.leg++; w.events.push({ type: 'chStep', what: 'leg', x: H.x, z: H.z, n: H.leg, of: H.path.length }); }
+        else { H.x += (dx / d) * step; H.z += (dz / d) * step; step = 0; }
+      }
+      ch.n = H.leg;
+      if (H.leg >= H.path.length) H.arrived = true;
+    }
     if (H.cd > 0) H.cd -= dt;
     if (H.cd <= 0) for (const g of w.gels ?? []) {
       if (!g.alive || g.state !== 'active' || Math.hypot(g.x - H.x, g.z - H.z) > g.r + H.r) continue;
@@ -150,9 +185,12 @@ export function step(w, dt, api) {
     for (const b of w.bullets ?? []) if (!b.hero && !b.dead && Math.hypot(b.x - H.x, b.z - H.z) < b.r + H.r) { b.dead = true; hurtHeart(w, H, 1); }
   }
 
-  // COLLECT: the orbs come out on their times; walking over one takes it
+  // COLLECT: the orbs come out on their times; walking over one takes it; one
+  // with a life goes out if it is not taken in time
   if (ch.orbs) for (const o of ch.orbs) {
     if (!o.out && o.t <= ch.t + 1e-9) { o.out = true; w.events.push({ type: 'orb', i: o.i, x: o.x, z: o.z }); }
+    if (o.out && !o.taken && !o.lost && o.life != null && ch.t >= o.t + o.life - 1e-9) { o.lost = true; ch.lost++; w.events.push({ type: 'chStep', what: 'orbLost', x: o.x, z: o.z, n: ch.n, of: ch.of }); continue; }
+    if (o.lost) continue;
     if (o.out && !o.taken && h?.alive && Math.hypot(h.x - o.x, h.z - o.z) < C.orb.reach + T.hero.radius) {
       o.taken = true; ch.n++; w.events.push({ type: 'chStep', what: 'orb', x: o.x, z: o.z, n: ch.n, of: ch.of });
     }
@@ -285,13 +323,17 @@ function outcome(w) {
     case 'clear': case 'order': won = all && !live; break;
     case 'gates': won = ch.of > 0 && ch.n >= ch.of; break;
     case 'hold': won = ch.zone.fill >= G.need; break;
+    case 'hills': won = ch.zi >= ch.of; break;
+    case 'escort': won = !!ch.heart?.arrived; break;
     case 'hunt': won = ch.n >= ch.of; break;
     case 'combo': won = ch.best >= G.streak; break;
     case 'collect': won = ch.n >= ch.of; break;
     case 'boss': won = (ch.bossDown || 0) > 0 && !d.queue.some((q) => q.boss) && !w.gels.some((g) => g.alive && g.isBoss); break;   // the boss, not its adds
   }
   if (won) return 'clear';
-  if (d.t >= d.duration - 1e-9) { if (TIMED.has(G.type)) { ch.why = 'clock'; return 'fail'; } return 'clear'; }
+  // too many orbs gone out for the room's need to be met
+  if (ch.orbs && ch.orbs.length - ch.lost < ch.of) { ch.why = 'orbs'; return 'fail'; }
+  if (d.t >= d.duration - 1e-9) { if (TIMED.has(G.type) || G.type === 'escort') { ch.why = 'clock'; return 'fail'; } return 'clear'; }
   return null;
 }
 

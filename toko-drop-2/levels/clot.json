@@ -26,7 +26,7 @@
  },
  "plan": {
   "world": 2,
-  "d": 6,
+  "d": 3,
   "teaches": "holding a crowd",
   "strategy": [
    "risk",

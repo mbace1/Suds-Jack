@@ -3,11 +3,11 @@
 // stacked in two-second bins and coloured by gel (a boss outlined in gold),
 // and over it what the room asks — its gates and orbs as ticks, a gauntlet's
 // stages as seams, a quota's line, a floor's size as it moves, and the clock
-// speeding up. And the ROUTE: the thirty rooms' difficulty as one line, each
+// speeding up. And the ROUTE: every room's difficulty as one line, each
 // room a dot in the colour of the grade you have paid on it.
-import { TUNING } from './tuning.js?v=45';
-import { speciesOf, goalOf, modsOf } from './sim/challenge.js?v=45';
-import { levelShape } from './sim/shape.js?v=45';
+import { TUNING } from './tuning.js?v=46';
+import { speciesOf, goalOf, modsOf } from './sim/challenge.js?v=46';
+import { levelShape } from './sim/shape.js?v=46';
 
 const T = TUNING;
 export const GRADE_COLORS = { S: '#ffdd44', A: '#66ffcc', B: '#88ccff', C: '#bbbbdd', F: '#ff6655' };
@@ -74,7 +74,9 @@ export function roomChart(level, { width = 220, height = 34 } = {}) {
     g.strokeStyle = 'rgba(255,255,255,0.8)'; g.setLineDash([2, 2]); g.beginPath(); g.moveTo(x(at), top); g.lineTo(x(at), base); g.stroke(); g.setLineDash([]);
   }
   if (goal.type === 'hold') { g.fillStyle = 'rgba(68,255,204,0.5)'; g.fillRect(0, base - 2, x(goal.need), 2); }
-  if (goal.type === 'protect') { g.fillStyle = '#ff3355'; g.beginPath(); g.arc(width - 6, top + 5, 3, 0, Math.PI * 2); g.fill(); }
+  if (goal.type === 'protect' || goal.type === 'escort') { g.fillStyle = '#ff3355'; g.beginPath(); g.arc(width - 6, top + 5, 3, 0, Math.PI * 2); g.fill(); }
+  // HILLS: a ring's worth of the clock for each ring, end to end
+  if (goal.type === 'hills') { g.fillStyle = 'rgba(68,255,204,0.5)'; (goal.zones ?? []).forEach((_, i) => g.fillRect(x(i * goal.need) + 1, base - 2, x(goal.need) - 2, 2)); }
   c.className = 'chart';
   return c;
 }
@@ -123,6 +125,9 @@ export function goalGlyph(type, { size = 30, color = '#e8e6f0', locked = false }
     case 'hunt': g.beginPath(); g.moveTo(s * 0.12, m); g.quadraticCurveTo(m, s * 0.18, s * 0.88, m); g.quadraticCurveTo(m, s * 0.82, s * 0.12, m); g.stroke(); circle(m, m, s * 0.1, true); break;
     case 'combo': line(s * 0.14, s * 0.78, s * 0.36, s * 0.52, s * 0.52, s * 0.66, s * 0.84, s * 0.22); line(s * 0.62, s * 0.22, s * 0.84, s * 0.22, s * 0.84, s * 0.44); break;
     case 'collect': circle(s * 0.28, s * 0.62, s * 0.1, true); circle(m, s * 0.36, s * 0.1, true); circle(s * 0.72, s * 0.62, s * 0.1, true); break;
+    // ESCORT: a small heart on a dotted path; HILLS: two rings in a row, the first filled
+    case 'escort': for (let i = 0; i < 4; i++) circle(s * (0.14 + i * 0.12), s * 0.74, s * 0.03, true); g.beginPath(); g.moveTo(s * 0.68, s * 0.72); g.bezierCurveTo(s * 0.44, s * 0.52, s * 0.52, s * 0.28, s * 0.68, s * 0.4); g.bezierCurveTo(s * 0.84, s * 0.28, s * 0.92, s * 0.52, s * 0.68, s * 0.72); g.fill(); break;
+    case 'hills': circle(s * 0.3, s * 0.62, s * 0.18); circle(s * 0.3, s * 0.62, s * 0.08, true); circle(s * 0.72, s * 0.38, s * 0.18); line(s * 0.44, s * 0.52, s * 0.58, s * 0.46); break;
     case 'boss': line(s * 0.16, s * 0.74, s * 0.16, s * 0.32, s * 0.36, s * 0.5, m, s * 0.24, s * 0.64, s * 0.5, s * 0.84, s * 0.32, s * 0.84, s * 0.74, s * 0.16, s * 0.74); break;
     case 'gauntlet': for (let i = 0; i < 3; i++) g.fillRect(s * (0.18 + i * 0.24), s * (0.62 - i * 0.18), s * 0.16, s * (0.18 + i * 0.18)); break;
     default: circle(m, m, s * 0.3);

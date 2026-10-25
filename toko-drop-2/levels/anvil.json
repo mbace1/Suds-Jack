@@ -18,7 +18,7 @@
  },
  "plan": {
   "world": 5,
-  "d": 8,
+  "d": 7,
   "teaches": "elites",
   "strategy": [
    "priority",

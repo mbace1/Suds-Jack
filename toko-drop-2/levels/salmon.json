@@ -59,7 +59,7 @@
  },
  "plan": {
   "world": 4,
-  "d": 6,
+  "d": 5,
   "teaches": "toro; salma",
   "strategy": [
    "movement",

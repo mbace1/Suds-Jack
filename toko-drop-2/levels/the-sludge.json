@@ -20,7 +20,7 @@
  },
  "plan": {
   "world": 1,
-  "d": 6,
+  "d": 5,
   "teaches": "the boss wave",
   "strategy": [
    "priority",

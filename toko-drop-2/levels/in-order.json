@@ -17,7 +17,7 @@
  },
  "plan": {
   "world": 1,
-  "d": 3,
+  "d": 2,
   "teaches": "weeva",
   "strategy": [
    "priority",

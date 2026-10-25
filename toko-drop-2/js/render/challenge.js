@@ -4,7 +4,7 @@
 // that says it is the one that can be hurt. Reads w.ch and nothing else; the
 // gates are pickups.js's, a moving floor is floor.js's.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=45';
+import { TUNING } from '../tuning.js?v=46';
 
 const V = TUNING.campaign.view;
 const flat = (g) => g.rotateX(-Math.PI / 2);
@@ -86,8 +86,14 @@ export class ChallengeView {
       }
       ch.orbs.forEach((s, i) => {
         const o = this.orbs[i];
-        o.visible = s.out && !s.taken;
-        if (o.visible) { o.position.set(s.x, V.orb.y + 0.12 * Math.sin(time * 3 + i), s.z); o.children[1].scale.setScalar(1 + 0.15 * Math.sin(time * 7 + i)); }
+        o.visible = s.out && !s.taken && !s.lost;
+        if (o.visible) {
+          o.position.set(s.x, V.orb.y + 0.12 * Math.sin(time * 3 + i), s.z); o.children[1].scale.setScalar(1 + 0.15 * Math.sin(time * 7 + i));
+          // an orb with a life: its halo closes in as the time runs out, and flickers at the end
+          const left = s.life ? Math.max(0, 1 - (ch.t - s.t) / s.life) : 1;
+          o.children[0].scale.setScalar(s.life ? 0.35 + 0.65 * left : 1);
+          if (s.life && left < 0.25) o.visible = Math.sin(time * 30) > -0.3;
+        }
       });
     }
   }
