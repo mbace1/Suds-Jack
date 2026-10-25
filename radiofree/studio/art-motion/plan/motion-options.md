@@ -77,3 +77,5 @@ field, bloom and a grade.
 - **Cap and OpenCut:** human tools. The owner could use OpenCut to trim the Gameplay Laboratory clips by hand.
 - **Figma MCP:** only if there are Figma files to import.
 - **Kokoro:** still held. It has no Finnish voice, and the station's rule is three languages or none.
+
+**Blender verdict (owner, 25 Oct): no.** The test still is kept in `previews/25-10-Blender-test-side-by-side.png`. The clay films stay on three.js.
