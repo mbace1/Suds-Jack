@@ -1,50 +1,45 @@
-# PROGRESS — Toko Move (store path)
-**Updated:** 2026-10-25 22:04 EET  
-**Lane:** Toko Move store readiness, then Helsinki content, then Nagoya  
+# PROGRESS — Toko Move
+**Updated:** 2026-10-25 22:13 EET  
+**Lane:** Helsinki content first (main focus), store in parallel, Nagoya later  
 **Owner direction:** ROADMAP.md (2026-10-24) — publish Toko Move first.  
-**Content direction (2026-10-25):**
-1. UI and touch areas are not always clear. Needs better clarity and instructions. Overall UI is quite basic.
-2. More missions to unlock, more ways to move, different strategies. Bigger inventory. Other types of challenges. Goal: easy to approach, hard to put down.
-3. Four cities planned (CAMPAIGN.md): Helsinki → Nagoya → New York → Tokyo.
-4. **Start builds on Nagoya only after Helsinki feels feature-complete.**
+**Priority (2026-10-25, clarified):**
+1. **Main focus:** more missions to unlock, more ways to move, different strategies, bigger inventory, other challenge types. Easy to approach, hard to put down. UI/touch clarity supports this.
+2. **Nagoya (and later cities) only after the Helsinki map is a real game, polished and working nicely.**
+3. **Platform order:** mobile first, tablet second.
 
 ## Goal
-Shippable Toko Move on itch.io. Then finish Helsinki so it feels feature-complete (clearer UI, unlockable progression, more movement and challenge variety). Only then begin the Nagoya pack and definition. Later cities inherit the improved systems.
+Make the Helsinki map a real, polished, mobile-first game that is easy to start and hard to put down. Then (and only then) begin Nagoya. Store upload can happen in parallel once the phone pass is done.
 
 ## Done
 - v2.64–v2.67: network, packaging, stranger first minutes, Finnish draft, ship bar. On main.
-- Walking, event deck, hand-offs, regulars, kit, week+rent, rival, city days exist.
-- City pipeline is data-driven (`js/city-build.js`). Helsinki is chapter 1. Nagoya / New York / Tokyo are defined by what their networks teach; packs not yet fetched.
+- Walking, events, hand-offs, regulars, kit, week+rent, rival, city days exist.
+- City pipeline is data-driven. Helsinki is the only playable city. Nagoya / New York / Tokyo are planned (CAMPAIGN.md).
 
 ## Next
-**Immediate (store Exit):**
-1. Real-phone LIVE (M6).
-2. Native Finnish read.
-3. itch.io upload.
+**Main focus — Helsinki content (mobile first):**
+1. UI clarity + touch pass on phone: obvious targets, short instructions that fade, less basic feel. Measure on a real phone first.
+2. Unlockable missions and progression.
+3. More ways to move and real strategic differences.
+4. Bigger inventory that changes decisions.
+5. Other challenge types beyond the basic three-delivery shift.
+6. Tablet layout and touch only after the phone version feels good.
 
-**Helsinki content phase (until feature-complete):**
-1. UI clarity + touch pass (instructions that fade, clearer targets, phone + tablet).
-2. Unlockable progression (missions, movement options, inventory).
-3. More ways to move and bigger inventory so strategies diverge.
-4. Challenge variety beyond the basic three-delivery shift.
+**Store (parallel, not blocking content):**
+- Real-phone LIVE check, native Finnish read, itch.io upload when ready.
 
-**Nagoya (starts only after Helsinki feels feature-complete):**
-- Fetch the pack (GTFS / ODPT — needs real network access).
-- Write `cities/nagoya.city.js` definition (anchors, walks, mode table).
-- Teach the Meijō loop / direction choice.
-- Reuse the improved UI, unlocks, inventory, and challenge systems. No Helsinki-only features.
-
-New York and Tokyo stay planned; same rule — after the previous city feels complete enough to carry the systems forward.
+**Nagoya (blocked):**
+- Do not fetch the pack or write the definition until the Helsinki map is polished and working nicely on mobile (owner call).
+- When it starts: real pack, `cities/nagoya.city.js`, Meijō loop / direction choice, reusing the improved systems.
 
 ## Exit
-- Store: zip plays alone, phone confirmed, itch page live.
-- Helsinki feature-complete: owner plays phone + tablet and says the UI is clearer and there is more reason to keep going; at least one unlock path and one new challenge type are gated and green.
-- Nagoya start: Helsinki Exit above is met; then pack + definition + one playable shift on the real Nagoya network.
+- Helsinki main-focus Exit: owner plays on a phone and says it is clearer, more varied, and hard to put down; at least one unlock path and one new challenge type are gated and green. Tablet is secondary.
+- Nagoya start: Helsinki map is a real polished working game (owner call). Then pack + definition + one playable shift.
+- Store: zip plays alone, phone confirmed, itch page live (can happen before or after content Exit).
 
 ## Open questions for owner
-- Which UI clarity problems are worst right now?
-- What should unlock first?
-- What does “Helsinki feels feature-complete” mean to you (specific systems, or just a play session where you’re happy to stop)?
+- Which phone UI/touch problems are worst right now?
+- What should unlock first (missions, walking, inventory, challenge types)?
+- What does “polished and working nicely” mean for the Helsinki map (specific systems, or a play session you’re happy with)?
 
 ## Gates
 ```bash
@@ -56,7 +51,7 @@ node toko-move/test/shifts.cjs
 ```
 
 ## Notes
-- Do not start Nagoya pack or definition work until Helsinki feature-complete Exit is met or the owner explicitly redirects.
+- Content on Helsinki is the main focus. Do not start Nagoya until the Helsinki map is polished and working nicely.
+- Mobile first, tablet second.
 - New systems stay inside existing verbs and city-data shape.
-- Four-city plan lives in CAMPAIGN.md.
 - One ?v= token per module.
