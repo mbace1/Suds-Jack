@@ -1,3 +1,4 @@
+import { sdfSkullsEnabled, setSdfSkullsEnabled, setSdfLighting } from './sdf-skull.js?v=3';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -10,7 +11,7 @@ import { Player } from './player.js?v=85';
 import { DaggerPool } from './daggers.js?v=85';
 import { GemPool } from './gems.js?v=85';
 import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode, voxelOverrides, modelFor, getVoxelStyle, setVoxelStyle, setRosterPalette } from './voxel.js?v=85';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=107';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=113';
 import { OrbPool } from './bullets.js?v=85';
 import { AudioKit } from './audio.js?v=85';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=85';
@@ -19,7 +20,7 @@ import { HyperEnvironment } from './environment.js?v=85';
 import { Backdrop } from './backdrop.js?v=107';
 import { Walls } from './walls.js?v=85';
 import { MODES, modeById, nextModeId, applyAbilities, abilitiesOf } from './modes.js?v=109';
-import { TruckTrack } from './truck.js?v=107';
+import { TruckTrack } from './truck.js?v=113';
 import { GazeLock } from './gaze.js?v=85';
 import { PhysGibs } from './gibs.js?v=85';
 import { SEASONS, seasonById, nextSeasonId, GEL_MOUND_SAMPLE } from './seasons.js?v=110';
@@ -34,6 +35,8 @@ import { preloadMeshEnemies, meshSkinState, setMeshSkins, meshSkinsOn, setRoster
 import { openTable } from '../../toko/js/table.js?v=1';   // v48 (theirs): Toko opens over the paused run
 
 const ARENA_R = 26;
+const SDF_TEST_REQUESTED = new URLSearchParams(location.search).get('sdfTest') === '1';
+function isSdfTestArena() { return SDF_TEST_REQUESTED && S().id === 'void'; }
 // v41: the season's weapon PROFILE overlays T.weapon — wpn(key) is the
 // profile's value where it has one and the dagger's otherwise. applySeason
 // swaps it; the fire sites ask wpn() and never T.weapon directly for
@@ -525,6 +528,7 @@ const floorMat = new THREE.ShaderMaterial({
     uGlint: { value: 0 },
     uGlintCol: { value: new THREE.Color(1, 0.8, 0.4) },
     uSunDirF: { value: new THREE.Vector3(0, 0.12, -1).normalize() },
+    uSdfInlays: { value: 0 },
     uDark: { value: 1 },   // v52: how much of the floor texture's own grain survives
   },
   vertexShader: /* glsl */`
@@ -547,6 +551,7 @@ const floorMat = new THREE.ShaderMaterial({
     uniform vec3 uGlintCol;
     uniform vec3 uSunDirF;
     uniform float uDark;
+    uniform float uSdfInlays;
     varying vec2 vUv;
     varying vec2 vWorld;
     void main() {
@@ -593,6 +598,18 @@ const floorMat = new THREE.ShaderMaterial({
         float g = max(dot(R, uSunDirF), 0.0);
         float rip = 0.55 + 0.45 * sin(vWorld.x * 2.7 + uTime * 1.3) * sin(vWorld.y * 3.3 - uTime * 1.7);
         col += uGlintCol * (pow(g, 90.0) * 2.4 + pow(g, 9.0) * 0.35) * rip * uGlint;
+      }
+      if (uSdfInlays > .5) {
+        // Signed distances to broken annular grooves; a material engraving,
+        // not new collision or an illuminated grid over the playfield.
+        float radius=length(vWorld), angle=atan(vWorld.y,vWorld.x);
+        float groove=min(abs(radius-7.6),abs(radius-15.2))-.055;
+        groove=max(groove,(.28-abs(sin(angle*3.0)))*.24);
+        float width=max(fwidth(groove),.012);
+        float cut=1.0-smoothstep(-width,width,groove);
+        float bevel=1.0-smoothstep(0.0,.055,abs(groove));
+        col*=1.0-cut*.65;
+        col+=uTint*bevel*.035*(.7+uPulse*.3);
       }
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
@@ -1282,6 +1299,8 @@ function S() { return seasonById(season); }
  *  buildSeasonArena, off the run's own rng. */
 function applySeason() {
   const sn = S();
+  setSdfLighting(sn.sky.sunDir || [-.5,.8,1], sn.sky.horizon || [.8,.08,.02]);
+  floorMat.uniforms.uSdfInlays.value=sdfSkullsEnabled?1:0;
   skyMat.uniforms.uVoid.value.setRGB(...sn.sky.void);
   skyMat.uniforms.uBand.value = sn.sky.band;
   skyMat.uniforms.uStars.value = sn.sky.stars;
@@ -1475,6 +1494,7 @@ async function boardReport(date, m, t) {
 
 /** Menu extra: today's global best for the selected mode (daily view only). */
 async function menuBoardLine() {
+  if(isSdfTestArena()) return;
   if (!BOARD_ENDPOINT || runKind !== 'daily') return;
   try {
     const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${M().id}&season=${S().id}`);
@@ -1522,6 +1542,15 @@ function previewSeason(id) {
 
 function selectSeason(id) {
   if (state !== 'menu') return;
+  // The test arena is a page pinned by its link (?season=void&mode=hyper&
+  // sdfTest=1), and a ?mode= pin outranks every season's own (M()). A season
+  // picked there is a way OUT of the arena: remember it and load the plain
+  // page, or HAUL would play its rules on a disc with no convoy (#628 review).
+  if (isSdfTestArena()) {
+    if (!seasonById(id).hidden) localStorage.setItem(SEASON_KEY, seasonById(id).id);
+    location.href = './';
+    return;
+  }
   previewSeason(id);
   showMenu();
 }
@@ -1572,16 +1601,17 @@ function menuKeysLine() {
   }
   if (input.gamepad) {
     return [`<b>A</b> jump${jumps}`, gun ? '<b>hold RT</b> fire' : 'look at a skull to fire', ab.dash ? '<b>B</b> dash' : '',
-      ab.reap ? '<b>X</b> reap' : ''].filter(Boolean).join(' &middot; ') + '<br><b>&#9664; &#9654;</b> season &middot; <b>A</b> start';
+      ab.reap ? '<b>X</b> reap' : ''].filter(Boolean).join(' &middot; ') + '<br><b>&#9664; &#9654;</b> season &middot; <b>&#9650; &#9660;</b> render &middot; <b>A</b> start';
   }
   return ['WASD move', gun ? '<b>hold click</b> fire' : 'look at a skull to fire', `<b>Space</b> jump${jumps}`,
     ab.dash ? '<b>Shift</b> dash' : '', ab.reap ? '<b>R</b> reap' : ''].filter(Boolean).join(' &middot; ')
-    + '<br><b>&larr; &rarr;</b> season &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
+    + '<br><b>&larr; &rarr;</b> season &middot; <b>R</b> render &middot; <b>ENTER</b> start &middot; <b>ESC</b> options';
 }
 
 /** The best to beat, labelled with the MODE it is filed under: seasons 1
  *  and 2 both play HYPER and share its best, so a per-season label would lie. */
 function bestLine() {
+  if(isSdfTestArena()) return 'TEST ARENA · separate records · no daily board';
   const m = M().name;
   if (runKind === 'daily') {
     const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), M().id)) || '0');
@@ -1591,6 +1621,7 @@ function bestLine() {
 }
 
 function showMenu() {
+  floorMat.uniforms.uSdfInlays.value=sdfSkullsEnabled?1:0;
   setRunFrame(false);
   // a link to a hidden season (the gate's VOID) is kept; a saved one is not
   if (menuBuilt !== season) previewSeason(season);
@@ -1604,7 +1635,9 @@ function showMenu() {
     `<div class="mn" style="--acc:${card.accent}">
        <header class="mn-head">
          <h1 class="mn-mark">HYPER DAGGER</h1>
-         <p class="mn-sub">survive &middot; time is the score</p>
+         <p class="mn-sub">${isSdfTestArena() ? 'SDF TEST ARENA · WATCHER + TOTEM' : 'survive &middot; time is the score'}</p>
+         ${isSdfTestArena() ? '<a class="mn-test" data-sdf-arena href="./">LEAVE THE TEST ARENA</a>'
+           : sdfSkullsEnabled ? '<a class="mn-test" data-sdf-arena href="./?skull=sdf&season=void&mode=hyper&sdfTest=1">TEST ARENA &middot; WATCHER + TOTEM</a>' : ''}
        </header>
        <section class="mn-foot">
          <div class="mn-seasons" role="tablist" aria-label="season">
@@ -1616,11 +1649,32 @@ function showMenu() {
            ${card.rules.length ? `<ul class="mn-rules">${card.rules.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
            <p class="mn-best"><span id="menuBoard"></span>${bestLine()}</p>
          </div>
+         <div class="mn-render" role="group" aria-label="Enemy renderer">
+           <span class="mn-render-l">RENDER</span>
+           <button data-renderer="classic" aria-pressed="${!sdfSkullsEnabled}" title="The voxel enemies the game ships with">CLASSIC</button>
+           <button data-renderer="sdf" aria-pressed="${sdfSkullsEnabled}" title="The skull family, the Watcher and the Totem raymarched as signed distance fields, with carved wounds; the rest keep their art">SDF</button>
+         </div>
          <button id="startBtn" class="mn-start">START</button>
          <p class="mn-keys">${menuKeysLine()}</p>
        </section>
      </div>`;
   menuBoardLine();
+  const arenaLink=elMsg.querySelector('[data-sdf-arena]');
+  if(arenaLink){
+    arenaLink.addEventListener('pointerdown',e=>e.stopPropagation());
+    const open=e=>{e.preventDefault();e.stopPropagation();location.href=arenaLink.href;};
+    arenaLink.addEventListener('pointerup',open);
+    arenaLink.addEventListener('touchend',open,{passive:false});
+  }
+  // The renderer is picked the way a season is: one press, on the menu,
+  // saved, and never a start. The bodies built from then on wear it.
+  for (const b of elMsg.querySelectorAll('[data-renderer]')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      setSdfSkullsEnabled(b.dataset.renderer === 'sdf');
+      showMenu();
+    });
+  }
   for (const b of elMsg.querySelectorAll('button.mn-season')) {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
@@ -1639,8 +1693,10 @@ function showMenu() {
 window.addEventListener('keydown', e => {
   if (state === 'tips' && !e.repeat && (e.code === 'Enter' || e.code === 'Space')) { e.preventDefault(); startGame(); lockPointer(input.touchMode ? null : { pointerType: 'mouse' }); return; }
   if (state !== 'menu' || e.repeat || !elMsg.classList.contains('menu')) return;
+  if(e.target.closest?.('[data-sdf-arena]') && (e.code==='Enter'||e.code==='Space')) {e.preventDefault();location.href=e.target.closest('[data-sdf-arena]').href;return;}
   const list = menuSeasons();
-  if (e.code === 'ArrowLeft' || e.code === 'KeyA') stepSeason(-1);
+  if (e.code === 'KeyR') { e.preventDefault(); setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
+  else if (e.code === 'ArrowLeft' || e.code === 'KeyA') stepSeason(-1);
   else if (e.code === 'ArrowRight' || e.code === 'KeyD') stepSeason(1);
   else if (/^Digit[1-9]$/.test(e.code) && list[+e.code.slice(5) - 1]) selectSeason(list[+e.code.slice(5) - 1].id);
   else if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); menuStart(input.touchMode ? null : { pointerType: 'mouse' }); }
@@ -1665,7 +1721,7 @@ function showTips() {
      <p class="go">click / tap / press &#10005; to descend</p>`;
 }
 
-function hiKey() { return M().hiKey ?? 'hyperDaggerHiNone'; }
+function hiKey() { return isSdfTestArena() ? `hyperDaggerSdfTest:${M().id}` : (M().hiKey ?? 'hyperDaggerHiNone'); }
 
 /** Time tiers. Below A is a fail for ranking. S is the aspirational ceiling. */
 function timeTier(t) {
@@ -1678,7 +1734,7 @@ function timeTier(t) {
 
 
 // last-10 run history (all modes together), most recent first
-const HISTORY_KEY = 'hyperDaggerHistory';
+const HISTORY_KEY = SDF_TEST_REQUESTED ? 'hyperDaggerSdfTestHistory' : 'hyperDaggerHistory';
 
 function pushRunHistory(entry) {
   let hist = [];
@@ -1692,7 +1748,7 @@ function pushRunHistory(entry) {
 // Run telemetry (toko-drop's hit-log pattern): one record per death, capped
 // at 40 runs, powering __hd.debug.report() so balance tuning works from data
 // instead of guesses. Local only — nothing leaves the browser.
-const RUNLOG_KEY = 'hyperDaggerRunLog';
+const RUNLOG_KEY = SDF_TEST_REQUESTED ? 'hyperDaggerSdfTestLog' : 'hyperDaggerRunLog';
 
 function pushRunLog(timedOut, complete = false) {
   let log = [];
@@ -1831,7 +1887,7 @@ function clearEnemies() {
 
 function resetRun() {
   runDate = todayStr();
-  runKindLive = runKind;
+  runKindLive = isSdfTestArena() ? 'free' : runKind;
   if (runKindLive === 'daily') {
     runSeed = fnv1a(runDate + ':' + M().id);
     rng.next = mulberry32(runSeed);
@@ -1916,6 +1972,10 @@ function resetRun() {
   if (onTrack) truck.reset(player); else truck.clear();
   if (M().arena === 'court') walls.court(16, 12, 5); else walls.clear();
   buildSeasonArena(); // the season's rock and slabs, after the court's walls
+  if (isSdfTestArena()) {
+    enemies.push(new Watcher(scene, new THREE.Vector3(0,2.2,-8), ARENA_R-1));
+    enemies.push(new Totem(scene, new THREE.Vector3(8,0,-10), 3.4));
+  }
 }
 
 function goFullscreen() {
@@ -3553,7 +3613,7 @@ function updateCombat(dt) {
         }
       }
       e.maxHp ??= e.hp;
-      e.hit(d.damage ?? 1, _hitDir);
+      e.hit(d.damage ?? 1, _hitDir, d.m.position);
       // enemies may name their own hit voice (husk plating swallows daggers)
       audio[e.hitSound && audio[e.hitSound] ? e.hitSound : 'hit']();
       spawnSpark(d.m.position, e.hp <= 0);
@@ -4070,6 +4130,7 @@ function gamepadMenu() {
     // HD-019: the main menu is one choice and one button — left/right is the
     // season, A or START plays it; up, down and B have nothing to move
     gfocus = -1;
+    if (ui.up || ui.down) { setSdfSkullsEnabled(!sdfSkullsEnabled); showMenu(); }
     if (ui.left) stepSeason(-1);
     else if (ui.right) stepSeason(1);
     if (ui.a || ui.start) menuStart(null);
@@ -4536,6 +4597,7 @@ window.__hd = {
     setPerfTier(t) { setPerfTier(t); },
     perfTuning,
     pulseInfo(n) { const k = pulseKind(n ?? pulseN); return { kind: k, budget: pulseBudget(n ?? pulseN, k) }; },
+    getSdfState() { return { enabled:sdfSkullsEnabled, inlays:floorMat.uniforms.uSdfInlays.value }; },
     getState() { return { mode: M().id, lifeT, gameTime, mercyT, state, weaponLv, gemCount, homingAmmo }; },
     getSchedule() {
       return {

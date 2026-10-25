@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS, modelFor } from './voxel.js?v=85';
+import { createSdfSkull, carveSdfImpact, sdfSkullsEnabled } from './sdf-skull.js?v=3';
+import { VoxelSprite, MODELS, modelFor, getRosterPalette } from './voxel.js?v=85';
 import { MESH_FOR_TYPE, cloneMeshEnemy, flashMeshRoot, updateMeshRoot } from './mesh-enemies.js?v=107';
 
 // fraction of the lattice lost before the mesh skin comes off (v4.35: ~22%)
@@ -27,7 +28,7 @@ class VoxelEnemy {
   center(out) { return out.copy(this.pos); }
 
   tryMeshVisual(type) {
-    if (this.meshRoot || this.skinShed) return true;
+    if (this.sdfRoot || this.meshRoot || this.skinShed) return true;
     const kind = MESH_FOR_TYPE[type] ?? type;
     const root = cloneMeshEnemy(kind, !!this.sprite.def.voxels);
     if (!root) return false;
@@ -55,6 +56,22 @@ class VoxelEnemy {
     }
   }
 
+  useSdfVisual(variant) {
+    if (!sdfSkullsEnabled) return;
+    const bone = new THREE.Color(...(variant==='totem'?[.075,.065,.06]:variant==='watcher'?[.32,.29,.25]:[.72,.66,.55])), eyes = new THREE.Color(4.4,.12,.025);
+    const palette = getRosterPalette();
+    if (palette) {
+      palette(bone, { x: 0, y: 0, z: 0 }, .14);
+      palette(eyes, { x: 0, y: 0, z: 0 }, .14);
+    }
+    this.sdfRoot = createSdfSkull({ variant, bone, eyes });
+    this.group.add(this.sdfRoot);
+    for (const part of this.parts) {
+      part.mesh.visible = false;
+      if (part.hull) part.hull.visible = false;
+    }
+  }
+
   baseUpdate(dt) {
     if (this.spawnK < 1) {
       this.spawnK = Math.min(1, this.spawnK + dt * 2.4);
@@ -67,12 +84,21 @@ class VoxelEnemy {
       if (part.hull) part.hull.layers.enable(2);
     }
     updateMeshRoot(this.meshRoot, dt);
+    if (this.sdfRoot) {
+      const u=this.sdfRoot.material.uniforms;
+      u.time.value+=dt;u.flash.value=Math.max(0,u.flash.value-dt*8);
+      for(const part of this.parts){part.mesh.visible=false;if(part.hull)part.hull.visible=false;}
+    }
   }
 
-  hit(dmg, dir) {
+  hit(dmg, dir, impact) {
     this.hp -= dmg;
     for (const part of this.parts) part.flash();
     flashMeshRoot(this.meshRoot);
+    if (this.sdfRoot) {
+      this.sdfRoot.material.uniforms.flash.value = 1;
+      carveSdfImpact(this.sdfRoot, impact || this.pos, dir, dmg);
+    }
   }
 
   deathVoxels() { return this.parts.flatMap(part => part.worldVoxels()); }
@@ -83,6 +109,10 @@ class VoxelEnemy {
     scene.remove(this.group);
     for (const part of this.parts) part.dispose();
     this.meshRoot = null;
+    if (this.sdfRoot) {
+      this.sdfRoot.material.dispose();
+      this.sdfRoot = null;
+    }
   }
 }
 
@@ -118,6 +148,10 @@ export class Skull extends VoxelEnemy {
       this.jawT = Math.random() * Math.PI * 2;
       this.jawOpen = 0;
     }
+    // Subclasses select their own profile after their gameplay fields are set.
+    if (sdfSkullsEnabled && new.target === Skull) {
+      this.useSdfVisual('skull');
+    }
     this.type = 'skull';
     this.hp = 1;
     this.radius = 0.75;
@@ -146,6 +180,15 @@ export class Skull extends VoxelEnemy {
         this.jawPivot.position.z = -0.05 + this.jawOpen * 0.08;
       }
     }
+    if (this.sdfRoot) {
+      this.sdfRoot.material.uniforms.jawOpen.value = this.jawOpen || (.08+.16*(.5+.5*Math.sin(this.bobT*2.7)));
+
+      // VoxelSprite lazily creates a hull during update; it must stay hidden too.
+      for (const part of this.parts) {
+        part.mesh.visible = false;
+        if (part.hull) part.hull.visible = false;
+      }
+    }
     _dir.y += Math.sin(this.bobT) * 0.5;
     _dir.normalize();
     this.vel.addScaledVector(_dir, this.accel * dt);
@@ -156,8 +199,8 @@ export class Skull extends VoxelEnemy {
     this.group.lookAt(playerEye);
   }
 
-  hit(dmg, dir) {
-    super.hit(dmg, dir);
+  hit(dmg, dir, impact) {
+    super.hit(dmg, dir, impact);
     this.vel.addScaledVector(dir, this.knock);
   }
 }
@@ -243,8 +286,8 @@ export class Revenant extends VoxelEnemy {
     this.pos.addScaledVector(this.vel, dt);
     this.pos.y = 1.05 + Math.sin(this.bobT) * 0.08;
   }
-  hit(dmg, dir) {
-    super.hit(dmg, dir);
+  hit(dmg, dir, impact) {
+    super.hit(dmg, dir, impact);
     this.vel.addScaledVector(dir, this.knock);
   }
 }
@@ -255,6 +298,7 @@ export class Wraith extends Skull {
     this.hp = 2;
     this.score = 2;
     this.accel = 18;
+    this.useSdfVisual('wraith');
   }
 }
 
@@ -266,6 +310,7 @@ export class Splitter extends Skull {
     this.score = 2;
     this.knock = 4;
     this.splits = true;
+    this.useSdfVisual('splitter');
   }
 }
 
@@ -278,6 +323,7 @@ export class DreadSkull extends Skull {
     this.score = 5;
     this.accel = 22;
     this.knock = 2;
+    this.useSdfVisual('dread');
   }
 }
 
@@ -287,6 +333,7 @@ export class MiniSkull extends Skull {
     this.radius = 0.45;
     this.accel = 20;
     this.knock = 11;
+    this.useSdfVisual('mini');
   }
 }
 
@@ -306,6 +353,7 @@ export class Watcher extends VoxelEnemy {
     this.warnReq = false;
     this.volley = null;
     this._warned = false;
+    this.useSdfVisual('watcher');
   }
   update(dt, playerEye) {
     this.baseUpdate(dt);
@@ -326,6 +374,7 @@ export class Watcher extends VoxelEnemy {
     this.group.lookAt(playerEye);
     if (this.spawnK < 1) return;
     this.fireT -= dt;
+    if(this.sdfRoot)this.sdfRoot.material.uniforms.charge.value=Math.min(1,Math.max(0,1-this.fireT/.7));
     if (this.fireT <= 0.7) {
       if (!this._warned) { this._warned = true; this.warnReq = true; }
       this.sprite.flash(1.8);
@@ -342,7 +391,7 @@ export class Watcher extends VoxelEnemy {
       this.volley = dirs;
     }
   }
-  hit(dmg, dir) { super.hit(dmg, dir); this.vel.addScaledVector(dir, 5); }
+  hit(dmg, dir, impact) { super.hit(dmg, dir, impact); this.vel.addScaledVector(dir, 5); }
 }
 
 export class Blinker extends VoxelEnemy {
@@ -445,6 +494,7 @@ export class Totem extends VoxelEnemy {
     this.orbitA = Math.atan2(pos.z, pos.x);
     this.ringTimer = 5 + Math.random() * 3;
     this.ringReq = false;
+    this.useSdfVisual('totem');
   }
   center(out) { return out.set(this.pos.x, this.hitY, this.pos.z); }
   mouthPos(out) { return out.set(this.pos.x, 2.9, this.pos.z); }
@@ -457,6 +507,7 @@ export class Totem extends VoxelEnemy {
     this.pos.z = Math.sin(this.orbitA) * this.orbitR;
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) { this.spawnTimer = this.interval; this.emit = true; }
+    if(this.sdfRoot)this.sdfRoot.material.uniforms.charge.value=Math.max(0,1-this.spawnTimer/.8);
     if (this.ddTier) return;
     this.ringTimer -= dt;
     if (this.ringTimer <= 0) { this.ringTimer = 6; this.ringReq = true; }
@@ -523,8 +574,8 @@ export class Spider extends VoxelEnemy {
     _c.y = this.pos.y;
     this.group.lookAt(_c);
   }
-  hit(dmg, dir) {
-    super.hit(dmg, dir);
+  hit(dmg, dir, impact) {
+    super.hit(dmg, dir, impact);
     this.vel.addScaledVector(dir, 4);
     this.vel.y = 0;
   }
