@@ -41,6 +41,9 @@ const lerp3 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2],
 const ease = { out: (k) => 1 - Math.pow(1 - clamp(k), 3), in: (k) => Math.pow(clamp(k), 3), io: (k) => { k = clamp(k); return k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; },
   back: (k) => { k = clamp(k); const s = 1.7; return 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2); } };
 const MAG = '#f0027f';
+// soft light through the thin clay (owner, 25 Oct: borrow the Blender test's soft look). ?sss=0 renders the old look
+const SSS = Q.get('sss') === '0' ? 0 : 0.35;
+const SK = (o = {}) => ({ sss: SSS, sssTint: '#ff9a6a', ...o });
 
 // ------------------------------------------------------------------ clays (the house plasticine: Welcome Home v4 / Deer v6's recipe)
 const C = (color, o = {}) => surface({ color, wrap: 0.4, wrapTint: '#ffd8b8', rough: 0.68, bump: 1, lump: 0.04, lumpF: 0.45, thumb: 0.03, thumbCell: 2.2, ridge: 0.12, tool: 0.7, grain: 0.004, grainF: 8, mottle: 0.08, specks: 0.35, roughVar: 0.1, ...o });
@@ -72,13 +75,13 @@ const M = {
 };
 // Toko's own clothes: a deep teal hoodie, dark jeans, pale trainers; the canon magenta disc and magenta hands
 const TM = {
-  hoodie: C('#26404a', { thumbCell: 1.6, thumb: 0.035, tool: 1.0, mottle: 0.06 }), jeans: C('#2f3646', { thumbCell: 1.8, tool: 0.7 }),
-  shoes: C('#e8e1d2', { rough: 0.45 }), sole: C('#cfc6b4', { thumb: 0.02 }), glove: C(MAG, { thumbCell: 1.2, thumb: 0.03, specks: 0.2 }),
-  hair: C('#2a211c', { tool: 1.3, thumbCell: 0.9, thumb: 0.045 }),
-  maskDisc: C(MAG, { rough: 0.5, thumb: 0.02, thumbCell: 1.5, mottle: 0.04, specks: 0.2 }), maskInk: C('#fff8f0', { rough: 0.5, thumb: 0.012, thumbCell: 0.9 }),
+  hoodie: C('#26404a', SK({ thumbCell: 1.6, thumb: 0.035, tool: 1.0, mottle: 0.06, sssTint: '#7aa6b8' })), jeans: C('#2f3646', SK({ thumbCell: 1.8, tool: 0.7, sssTint: '#8a96b8' })),
+  shoes: C('#e8e1d2', { rough: 0.45 }), sole: C('#cfc6b4', { thumb: 0.02 }), glove: C(MAG, SK({ thumbCell: 1.2, thumb: 0.03, specks: 0.2 })),
+  hair: C('#2a211c', SK({ tool: 1.3, thumbCell: 0.9, thumb: 0.045, sss: SSS * 0.5, sssTint: '#a06a4a' })),
+  maskDisc: C(MAG, SK({ rough: 0.5, thumb: 0.02, thumbCell: 1.5, mottle: 0.04, specks: 0.2 })), maskInk: C('#fff8f0', { rough: 0.5, thumb: 0.012, thumbCell: 0.9 }),
   strap: C('#2a2523', { thumb: 0.01, rough: 0.5 }), string: C('#f4efe4'), aglet: C('#cfc6b4'),
 };
-TM.hoodie2 = TM.hoodie; TM.arms = TM.hoodie; TM.cuff = C('#21363f', { thumbCell: 1.2 });
+TM.hoodie2 = TM.hoodie; TM.arms = TM.hoodie; TM.cuff = C('#21363f', SK({ thumbCell: 1.2, sssTint: '#7aa6b8' }));
 
 // ------------------------------------------------------------------ the park (cm, puppet scale: Toko stands 46; ground y = 0; the bench faces +z)
 const SEAT = 11, BX = 0, BZ = 0;
@@ -223,7 +226,7 @@ mesh0(lumpy(new RoundedBoxGeometry(4.8, 9.2, 0.7, 3, 0.4), 0.02, 1, 80), M.phone
 mesh0(new RoundedBoxGeometry(4.5, 8.9, 0.12, 2, 0.3), M.phoneEdge, { pos: [0, 0, 0.62], parent: PHONE, cast: false });
 const UW = 400, UH = 800, uiCan = canvas(UW, UH), ui = uiCan.getContext('2d'), uiTex = tex(uiCan);
 const SCREEN = mesh0(new THREE.PlaneGeometry(4.2, 8.4), new THREE.MeshBasicMaterial({ map: uiTex, color: new THREE.Color(1.15, 1.15, 1.15), toneMapped: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }), { pos: [0, 0, 0.7], parent: PHONE, cast: false });
-const phoneLight = new THREE.PointLight('#cfe0ff', 0, 60, 2); scene.add(phoneLight);
+const phoneLight = new THREE.PointLight('#cfe0ff', 0, SSS ? 80 : 60, 2); scene.add(phoneLight);
 // the thermos on the bench beside him (it tips over on the third jump)
 const THERMOS = new THREE.Group(); scene.add(THERMOS); THERMOS.position.set(BX + 14, SEAT + 0.2, BZ + 0.6);
 mesh0(lumpy(lathe([[0, 0], [2.1, 0], [2.3, 0.6], [2.3, 10.6], [1.9, 11.4], [0, 11.4]], 28), 0.02, 1, 90), M.thermos, { parent: THERMOS });
@@ -447,7 +450,7 @@ function frame(t, captions = true) {
     TOKO.pose(pz); WRAP.updateMatrixWorld(true); }
   S.ui(t);
   const glow = S.hour === 'night' ? (i === 2 ? 150 : 90) : S.hour === 'dusk' ? 40 : 18;
-  phoneLight.position.copy(ph).add(head.clone().sub(ph).normalize().multiplyScalar(3.5)); phoneLight.intensity = glow * (1 + Math.sin(t * 7) * 0.04);
+  phoneLight.position.copy(ph).add(head.clone().sub(ph).normalize().multiplyScalar(3.5)); phoneLight.intensity = glow * (1 + SSS * 0.6) * (1 + Math.sin(t * 7) * 0.04);
   const th = typeof S.thermos === 'function' ? S.thermos(tq) : S.thermos; THERMOS.rotation.set(0, 0.3, -th * 1.45); THERMOS.position.y = SEAT + 0.2 + th * 2.2;
   TOKO.hood.visible = i !== 1;                                                   // the hood's strings would hang across the screen over his shoulder
   BIRD.visible = !!S.bird; if (S.bird) BIRD.rotation.y = 0.9 + (Math.sin(tq * 2.3) > 0.7 ? 0.5 : 0);

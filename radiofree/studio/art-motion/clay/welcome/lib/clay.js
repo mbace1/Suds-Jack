@@ -150,7 +150,8 @@ export function setBoil(e) {
 /**
  * opts: color, rough, metal, bump, surf ('clay'|'felt'|'knit'), lump, lumpF,
  * thumb, thumbCell, ridge, tool, grain, grainF, mottle, specks, sheen,
- * sheenColor, knitW, knitH, knitAxis, fibre, fibreF, emissive, cavity
+ * sheenColor, knitW, knitH, knitAxis, fibre, fibreF, emissive, cavity,
+ * sss, sssTint (opt-in: soft light through thin clay; off by default, so other films render as before)
  */
 export function surface(opts = {}) {
   const surf = { clay: 0, felt: 1, knit: 2 }[opts.surf || 'clay'];
@@ -186,11 +187,13 @@ export function surface(opts = {}) {
     uRoughVar: { value: opts.roughVar ?? 0.1 },
     uGlow: { value: new THREE.Color(opts.glow ?? '#000000') }, uGlowPow: { value: opts.glowPow ?? 2 },
     uWrap: { value: opts.wrap ?? 0.0 }, uWrapTint: { value: new THREE.Color(opts.wrapTint ?? '#ffffff') },
+    uSss: { value: opts.sss ?? 0.0 }, uSssTint: { value: new THREE.Color(opts.sssTint ?? '#ff9a6a') },
     // tabby: painted bands across an axis, warped so they read as fur markings, not a barcode
     uStripe: { value: opts.stripe ?? 0 }, uStripeF: { value: opts.stripeF ?? 0.5 },
     uStripeAxis: { value: new THREE.Vector3(...(opts.stripeAxis ?? [0, 0, 1])) }, uStripeCol: { value: new THREE.Color(opts.stripeColor ?? '#2a2018') },
   };
-  const key = `surf${surf}-${phys}-${opts.eps ?? 0.02}`;
+  const sss = (opts.sss ?? 0) > 0;
+  const key = `surf${surf}-${phys}-${opts.eps ?? 0.02}${sss ? '-sss' : ''}`;
   uid++;
   mat.userData.U = U;
   mat.customProgramCacheKey = () => key;
@@ -210,7 +213,7 @@ transformed += objectNormal * bn(transformed * 0.75 + uBoil) * uBoilAmp * (1.0 -
 vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
 vM0 = modelMatrix[0].xyz; vM1 = modelMatrix[1].xyz; vM2 = modelMatrix[2].xyz;`);
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\n#define SURF ${surf}\n#define BUMP_EPS ${(opts.eps ?? 0.02).toFixed(4)}\nvarying vec3 vM0; varying vec3 vM1; varying vec3 vM2;\nuniform float uBump, uMottle, uSpecks, uCavity, uRoughVar, uGlowPow, uWrap, uNoBoil, uStripe, uStripeF;\nuniform vec3 uSpeckCol, uGlow, uWrapTint, uBoilFrag, uStripeAxis, uStripeCol;\n${NOISE}\n${HEIGHTS}`)
+      .replace('#include <common>', `#include <common>\n#define SURF ${surf}\n${sss ? '#define CLAY_SSS\n' : ''}#define BUMP_EPS ${(opts.eps ?? 0.02).toFixed(4)}\nvarying vec3 vM0; varying vec3 vM1; varying vec3 vM2;\nuniform float uBump, uMottle, uSpecks, uCavity, uRoughVar, uGlowPow, uWrap, uNoBoil, uStripe, uStripeF;\nuniform float uSss; uniform vec3 uSssTint;\nuniform vec3 uSpeckCol, uGlow, uWrapTint, uBoilFrag, uStripeAxis, uStripeCol;\n${NOISE}\n${HEIGHTS}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
         {
           float m = fbm3(vOPos * 0.35 + uSeed) * 1.4;
@@ -233,7 +236,17 @@ vM0 = modelMatrix[0].xyz; vM1 = modelMatrix[1].xyz; vM2 = modelMatrix[2].xyz;`);
         // wrapped diffuse: light creeps past the terminator the way it does into wax
         `float dW = saturate((dot(geometryNormal, directLight.direction) + uWrap) / (1.0 + uWrap));
          vec3 wrapCol = mix(vec3(1.0), uWrapTint, saturate(dW - dotNL) * 2.0);
-         reflectedLight.directDiffuse += dW * directLight.color * wrapCol * BRDF_Lambert( material.diffuseColor );`))
+         reflectedLight.directDiffuse += dW * directLight.color * wrapCol * BRDF_Lambert( material.diffuseColor );
+         #ifdef CLAY_SSS
+         // soft light through thin clay: light seen through the body from behind (distorted by the normal),
+         // plus a warm glow at the silhouette where the clay is thinnest to the eye
+         {
+           vec3 Lt = directLight.direction + geometryNormal * 0.4;
+           float back = pow(saturate(dot(geometryViewDir, -Lt)), 3.0);
+           float rimT = pow(1.0 - saturate(dot(geometryNormal, geometryViewDir)), 2.5) * saturate(dot(geometryNormal, directLight.direction) + 0.6);
+           reflectedLight.directDiffuse += uSss * uSssTint * directLight.color * material.diffuseColor * (back * 0.9 + rimT * 0.6);
+         }
+         #endif`))
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nroughnessFactor = clamp(roughnessFactor + gnoise(vOPos * 0.9 + 4.0) * uRoughVar, 0.05, 1.0);`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\nfloat clayHeight = 0.0;\n${BUMP}\n diffuseColor.rgb *= 1.0 - uCavity * clamp(-clayHeight * 12.0, 0.0, 0.6);`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
