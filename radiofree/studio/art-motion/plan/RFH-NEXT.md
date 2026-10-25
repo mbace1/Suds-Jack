@@ -121,3 +121,19 @@ story. Irreversible was scrapped on 18 Oct, so it is the candidate for slot 3.
 - **Count the Trees v3.** Muhos police status is unchanged: a preliminary inquiry on a private request, with an LVV
   statement requested, and Kaleva and Yle still differ. The "Police opened a preliminary inquiry" caption stays accurate.
 - **Break Glass.** No plenary vote reported. Still held.
+
+## Daily check, Sun 25 Oct 08:16 (search summaries only; no article opened)
+
+- **FLAG: Count the Trees v4, posting today at 12:52.** Its police caption says "Police opened a preliminary inquiry."
+  Yle (~22 Oct, yle.fi/a/74-20252848) quotes the police: no preliminary inquiry (esiselvitys) has been started yet on
+  **either** request, LVV's or the private one. They are still waiting for LVV's statement, among other things. The
+  earlier Iltalehti and MTV reports said one had been opened. The sources conflict, and the newest one says no. **Hold,
+  or change the caption** to something both sources support, e.g. "Two requests / filed with / the [police]." Post
+  copy: "Police opened a preliminary inquiry" needs the same fix.
+- For Your Protection posted 25 Oct ~06:50 (IG, X, YT; per POSTED.md, Grok Bot).
+- **Ends in 3 (Mon 00:52): OK.** Lines ending in 5 are still due 31 Oct, and the rule is prepaid only (postpaid already
+  linked). Most sources are from summer, and no extension was found.
+- **For Your Protection (posted):** new context. Pennsylvania's governor signed Executive Order 2026-05 on 18 Aug,
+  saying NDAs with data-centre projects are not permissible (search summary). The film's "One US state, Delaware, now
+  bans them" doesn't claim it was the only one, so it stays accurate. Note it for any follow-up.
+- **Global:** no big change. Project Meridian still has no ethics review or recusal reported (NPR, 5–6 Oct).

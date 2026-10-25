@@ -364,3 +364,11 @@ Everything below comes from search summaries. No article was opened.
   - LVV's own police request (~22 Oct) stands as reported in the morning check.
   - Still not settled: Kaleva says the police have started, Yle says not yet.
 - **Hamina (Trade Secret):** posted 24 Oct ~12:52. No new follow-up found.
+
+### Update, 25 Oct morning (search summaries)
+- **Muhos (Count the Trees, Secret Inquiry):** Yle quotes the police: no preliminary inquiry has been started yet on
+  either request (LVV's or the private person's); they are waiting for LVV's statement, among other things. If they
+  proceed, the cases go to economic-crime investigators. LVV says the site is in a black-shale zone, and Doodle's own
+  monitoring already shows acidification-related changes; a water plan is due 5 Nov. Tuike's reply concerns the felling
+  at Muhos and Kajaani. Sources: Yle 74-20252848, Kaleva/Lapin Kansa 13720712, MT.
+- No new HS candidate found this morning.

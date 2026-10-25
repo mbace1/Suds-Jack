@@ -459,3 +459,12 @@ Everything below comes from search summaries. No article was opened.
     NDA ban.
 - **Whistleblowers:** no Meta reply to Grassley found. No new congressional testimony found since 30 Sep. The 5 Oct NYC
   Council hearing is already in our films (Coxon 2).
+
+### Update, 25 Oct morning (search summaries)
+- **For Your Protection (#3, posted 25 Oct):** Pennsylvania Executive Order 2026-05 (18 Aug) says NDAs with
+  data-centre projects are not permissible. Rock County (WI) committee voted down an NDA ban; Indiana County (PA) is
+  exploring one, with a vote on 18 Nov; St. Louis County (MN) motion failed for lack of a second; Lincoln County (SD) is
+  proposed. Sources: gazettextra.com (Rock County), indianagazette.com, duluthnewstribune.com, pebblous summary of the PA
+  order.
+- **The Panel (#1):** no change since 6 Oct; MITRE runs the study, with conflict-of-interest safeguards per the DoD
+  spokesperson. No recusal, ethics review or congressional letter found.
