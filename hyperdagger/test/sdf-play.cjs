@@ -181,6 +181,54 @@ s.listen(0, '127.0.0.1', async () => {
       ok(`${sn}: zero page or console errors`, errs.length === 0, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
+    // build 3's test arena, reached the way a player reaches it: the header
+    // chip on the menu (shown while SDF is on), then START. It opens with a
+    // Watcher and a Totem, both SDF since build 3.
+    {
+      const ctx = await b.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+      const p = await ctx.newPage(); p.setDefaultTimeout(120000);
+      const errs = [];
+      p.on('pageerror', e => errs.push('pageerror: ' + e.message));
+      p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+      await p.addInitScript(() => { if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
+        localStorage.setItem('hyperDaggerSeenTips', '1'); localStorage.setItem('hyperDaggerRunKind', 'free'); localStorage.setItem('hyperDaggerRenderer', 'sdf'); });
+      await p.goto(base + '/hyperdagger/?assets=0', { waitUntil: 'load' });
+      await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 120000 });
+      const chip = await p.locator('[data-sdf-arena]').boundingBox();
+      const start0 = await p.locator('#startBtn').boundingBox();
+      ok('test arena: the chip is on the SDF menu, 44 px tall, and START is still whole on the screen',
+        !!chip && Math.round(chip.height) >= 44 && start0 && start0.y + start0.height <= 390, JSON.stringify({ chip, start0 }));
+      await Promise.all([p.waitForNavigation({ waitUntil: 'load' }), p.touchscreen.tap(chip.x + chip.width / 2, chip.y + chip.height / 2)]);
+      await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 120000 });
+      const there = await p.evaluate(() => ({ url: location.search, sub: document.querySelector('#msg .mn-sub')?.textContent ?? '', state: window.__hd.debug.getState().state }));
+      ok('test arena: the chip opens the SDF test arena on its menu', /sdfTest=1/.test(there.url) && /SDF TEST ARENA/.test(there.sub) && there.state === 'menu', JSON.stringify(there));
+      const sb = await p.locator('#startBtn').boundingBox();
+      await p.touchscreen.tap(sb.x + sb.width / 2, sb.y + sb.height / 2);
+      await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing');
+      const arena = await p.evaluate(async () => {
+        const d = window.__hd.debug, hd = window.__hd, f = () => new Promise(r => requestAnimationFrame(r));
+        d.setInvulnerable(true);
+        const body = t => hd.enemies.find(e => e.alive && e.type === t);
+        const w = body('watcher'), t = body('totem');
+        const variants = { watcher: w?.sdfRoot?.userData.sdfVariant ?? null, totem: t?.sdfRoot?.userData.sdfVariant ?? null };
+        // a wound: one shot's worth into the totem carves the shader and leaves it standing
+        const hp0 = t.hp, dir = t.pos.clone().sub(hd.player.camera.position).normalize();
+        t.hit(1, dir, t.pos.clone().addScaledVector(dir, -0.4));
+        await f();
+        const wound = { wounds: t.sdfRoot.material.uniforms.woundCount.value, hp: [hp0, t.hp], alive: t.alive };
+        // the watcher still does its job: an aimed volley within a few seconds
+        let orbs = 0; const t0 = d.getState().gameTime;
+        for (let i = 0; i < 4000 && d.getState().gameTime - t0 < 9 && !orbs; i++) { await f(); orbs = hd.orbs.active.length; }
+        d.killEnemy(w); d.killEnemy(t); for (let i = 0; i < 3; i++) await f();
+        return { variants, wound, orbs, t: +(d.getState().gameTime - t0).toFixed(1), released: w.sdfRoot === null && t.sdfRoot === null };
+      });
+      ok('test arena: the run opens with an SDF Watcher and an SDF Totem', arena.variants.watcher === 'watcher' && arena.variants.totem === 'totem', JSON.stringify(arena.variants));
+      ok('test arena: a hit carves a wound into the Totem and leaves it standing', arena.wound.wounds >= 1 && arena.wound.hp[1] < arena.wound.hp[0] && arena.wound.alive, JSON.stringify(arena.wound));
+      ok('test arena: the SDF Watcher still fires its aimed volley', arena.orbs > 0, JSON.stringify({ orbs: arena.orbs, t: arena.t }));
+      ok('test arena: both die and release their shaders', arena.released, JSON.stringify(arena));
+      ok('test arena: zero page or console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
+      await ctx.close();
+    }
   } catch (e) {
     ok('the run completed', false, e.stack || String(e));
   }
