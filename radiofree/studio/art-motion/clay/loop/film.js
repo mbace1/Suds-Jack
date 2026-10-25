@@ -42,7 +42,7 @@ const ease = { out: (k) => 1 - Math.pow(1 - clamp(k), 3), in: (k) => Math.pow(cl
   back: (k) => { k = clamp(k); const s = 1.7; return 1 + (s + 1) * Math.pow(k - 1, 3) + s * Math.pow(k - 1, 2); } };
 const MAG = '#f0027f';
 // soft light through the thin clay (owner, 25 Oct: borrow the Blender test's soft look). ?sss=0 renders the old look
-const SSS = Q.get('sss') === '0' ? 0 : 0.35;
+const SSS = Q.get('sss') ? +Q.get('sss') : 0;   // off by default: the owner approved the original look (25 Oct); ?sss=0.35 to test
 const SK = (o = {}) => ({ sss: SSS, sssTint: '#ff9a6a', ...o });
 
 // ------------------------------------------------------------------ clays (the house plasticine: Welcome Home v4 / Deer v6's recipe)
