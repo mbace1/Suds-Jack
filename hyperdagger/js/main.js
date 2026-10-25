@@ -1542,6 +1542,15 @@ function previewSeason(id) {
 
 function selectSeason(id) {
   if (state !== 'menu') return;
+  // The test arena is a page pinned by its link (?season=void&mode=hyper&
+  // sdfTest=1), and a ?mode= pin outranks every season's own (M()). A season
+  // picked there is a way OUT of the arena: remember it and load the plain
+  // page, or HAUL would play its rules on a disc with no convoy (#628 review).
+  if (isSdfTestArena()) {
+    if (!seasonById(id).hidden) localStorage.setItem(SEASON_KEY, seasonById(id).id);
+    location.href = './';
+    return;
+  }
   previewSeason(id);
   showMenu();
 }
@@ -1627,7 +1636,8 @@ function showMenu() {
        <header class="mn-head">
          <h1 class="mn-mark">HYPER DAGGER</h1>
          <p class="mn-sub">${isSdfTestArena() ? 'SDF TEST ARENA · WATCHER + TOTEM' : 'survive &middot; time is the score'}</p>
-         ${sdfSkullsEnabled && !isSdfTestArena() ? '<a class="mn-test" data-sdf-arena href="./?skull=sdf&season=void&mode=hyper&sdfTest=1">TEST ARENA &middot; WATCHER + TOTEM</a>' : ''}
+         ${isSdfTestArena() ? '<a class="mn-test" data-sdf-arena href="./">LEAVE THE TEST ARENA</a>'
+           : sdfSkullsEnabled ? '<a class="mn-test" data-sdf-arena href="./?skull=sdf&season=void&mode=hyper&sdfTest=1">TEST ARENA &middot; WATCHER + TOTEM</a>' : ''}
        </header>
        <section class="mn-foot">
          <div class="mn-seasons" role="tablist" aria-label="season">

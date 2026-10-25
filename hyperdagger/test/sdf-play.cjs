@@ -8,11 +8,11 @@
 //   - skull, splitter and dread come up as their own profiles;
 //   - an SDF skull in front of the eye is actually drawn (the frame with it
 //     against the same frame without it);
-//   - a kill throws its voxels as a classic skull does (physical gibs, and
-//     the spray; on season 3's road only the spray) and releases the shader;
-//     a splitter splits into SDF minis;
-//   - season 3, which has no gun: the look locks an SDF skull and the missiles
-//     kill it;
+//   - the season's own weapon kills them: a finger held on the right stick in
+//     Ember and Inca, the look and its missiles in season 3 (debug calls only
+//     set the scene up — #628 review). The death throws the skull's voxels
+//     (physical gibs, and the spray; on season 3's road only the spray) and
+//     releases the shader, and a splitter splits into SDF minis;
 //   - END RUN, RENDER · CLASSIC, START: the skulls are voxels again.
 // Phone landscape with touch, the view where the menu is tightest. Waits are
 // on game time, not frames (a ~4 fps software renderer).
@@ -127,43 +127,49 @@ s.listen(0, '127.0.0.1', async () => {
       }, [shotWith, shotWithout]);
       ok(`${sn}: an SDF skull in front of the eye is drawn — bone where the frame without it has none`, drawn.share > 0.05 && drawn.bone > 0.03, JSON.stringify(drawn));
 
-      const kill = await p.evaluate(async () => {
-        const d = window.__hd.debug, hd = window.__hd, f = () => new Promise(r => requestAnimationFrame(r));
-        const sk = window.__parked;
-        // a death hands its voxels to the physical gibs and the rest to the
-        // debris spray; on season 3's road the gibs are off by design and the
-        // spray takes all of them, so count both
-        const g0 = d.getGibs().n; let spray = 0;
-        const burst = hd.debris.burst.bind(hd.debris);
-        hd.debris.burst = (vox, ...rest) => { spray += vox.length; return burst(vox, ...rest); };
-        d.killEnemy(sk); for (let i = 0; i < 3; i++) await f();
-        hd.debris.burst = burst;
-        const g1 = d.getGibs().n;
-        d.spawnSplitter(); await f();
-        const sp = hd.enemies.find(e => e.alive && e.sdfRoot?.userData.sdfVariant === 'splitter');
-        d.killEnemy(sp); for (let i = 0; i < 4; i++) await f();
-        const minis = hd.enemies.filter(e => e.alive && e.radius < 0.5).map(e => e.sdfRoot?.userData.sdfVariant ?? null);
-        return { gibs: [g0, g1], spray, released: sk.sdfRoot === null, minis };
-      });
-      ok(`${sn}: a dead SDF skull throws its voxels (gibs, spray) and releases its shader`, kill.gibs[1] - kill.gibs[0] + kill.spray > 0 && kill.released, JSON.stringify(kill));
-      ok(`${sn}: a dead SDF splitter splits into SDF minis`, kill.minis.length >= 2 && kill.minis.every(v => v === 'mini'), JSON.stringify(kill.minis));
-
-      if (sn === 'haul') {
-        const gaze = await p.evaluate(async () => {
+      // THE KILLS ARE REAL (#628 review). Debug calls only set the scene up;
+      // the death comes from the season's own weapon: a finger held on the
+      // right stick streams daggers in Ember and Inca, and in season 3, which
+      // has no gun, the look locks the skull and the missiles kill it.
+      const gun = sn !== 'haul';
+      const cdp = await ctx.newCDPSession(p);
+      const hold = () => cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 640, y: 260, id: 7 }] });
+      const lift = () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      const killByPlay = async (setup, sec) => {
+        if (gun) await hold();
+        const r = await p.evaluate(async ([setup, sec]) => {
           const d = window.__hd.debug, hd = window.__hd, f = () => new Promise(r => requestAnimationFrame(r));
-          for (const e of [...hd.enemies]) if (e.alive) d.killEnemy(e);
-          for (let i = 0; i < 4; i++) await f();
-          const sk = d.spawnSkull(); sk.update = function (dt) { this.baseUpdate(dt); };   // alive, held in the look
-          const cam = hd.player.camera; const fwd = new cam.position.constructor(0, 0, -1).applyQuaternion(cam.quaternion);
+          const cam = hd.player.camera;
+          const fwd = () => new cam.position.constructor(0, 0, -1).applyQuaternion(cam.quaternion);
+          const e = setup === 'parked' ? window.__parked : (() => { d.spawnSplitter(); const sp = hd.enemies.at(-1); sp.update = function (dt) { this.baseUpdate(dt); }; sp.spawnK = 1; sp.group.scale.setScalar(1); return sp; })();
+          // a death hands its voxels to the physical gibs and the rest to the
+          // debris spray; on season 3's road the gibs are off by design and
+          // the spray takes all of them, so count both
+          const g0 = d.getGibs().n; let spray = 0;
+          const burst = hd.debris.burst.bind(hd.debris);
+          hd.debris.burst = (vox, ...rest) => { spray += vox.length; return burst(vox, ...rest); };
           const t0 = d.getState().gameTime;
-          for (let i = 0; i < 4000 && sk.alive && d.getState().gameTime - t0 < 8; i++) {
-            sk.pos.copy(cam.position).addScaledVector(fwd, 9); sk.group.position.copy(sk.pos);
+          for (let i = 0; i < 6000 && e.alive && d.getState().gameTime - t0 < sec; i++) {
+            e.pos.copy(cam.position).addScaledVector(fwd(), 6); e.group.position.copy(e.pos); e.group.lookAt(cam.position);   // held in the eye line
             await f();
           }
-          return { sdf: sk.sdfRoot !== undefined, dead: !sk.alive, t: +(d.getState().gameTime - t0).toFixed(1) };
-        });
-        ok('haul: the look locks an SDF skull and the missiles kill it', gaze.sdf && gaze.dead, JSON.stringify(gaze));
-      }
+          // the minis are counted the moment the parent dies: the stream is
+          // still running, and a few frames later it has killed some of them
+          const minis = hd.enemies.filter(x => x.alive && x.radius < 0.5).map(x => x.sdfRoot?.userData.sdfVariant ?? null);
+          for (let i = 0; i < 3; i++) await f();
+          hd.debris.burst = burst;
+          return { variant: e.sdfRoot?.userData.sdfVariant ?? 'released', dead: !e.alive, t: +(d.getState().gameTime - t0).toFixed(1), gibs: [g0, d.getGibs().n], spray, released: e.sdfRoot === null, minis };
+        }, [setup, sec]);
+        if (gun) await lift();
+        return r;
+      };
+      const how = gun ? 'a finger held on the right stick' : 'the look and its missiles';
+      const kill = await killByPlay('parked', 15);
+      ok(`${sn}: ${how} kills an SDF skull`, kill.dead, JSON.stringify(kill));
+      ok(`${sn}: that death throws the skull's voxels (gibs, spray) and releases its shader`, kill.dead && kill.gibs[1] - kill.gibs[0] + kill.spray > 0 && kill.released, JSON.stringify(kill));
+      await p.evaluate(async () => { const d = window.__hd.debug; for (const e of [...window.__hd.enemies]) if (e.alive) d.killEnemy(e); for (let i = 0; i < 4; i++) await new Promise(r => requestAnimationFrame(r)); });   // setup: a clear field
+      const split = await killByPlay('splitter', 25);
+      ok(`${sn}: ${how} kills an SDF splitter, and it splits into SDF minis`, split.dead && split.minis.length >= 2 && split.minis.every(v => v === 'mini'), JSON.stringify(split));
 
       await p.evaluate(async () => {
         const f = () => new Promise(r => requestAnimationFrame(r));
@@ -205,27 +211,59 @@ s.listen(0, '127.0.0.1', async () => {
       const sb = await p.locator('#startBtn').boundingBox();
       await p.touchscreen.tap(sb.x + sb.width / 2, sb.y + sb.height / 2);
       await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing');
-      const arena = await p.evaluate(async () => {
-        const d = window.__hd.debug, hd = window.__hd, f = () => new Promise(r => requestAnimationFrame(r));
+      const cdp = await ctx.newCDPSession(p);
+      const hold = () => cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 640, y: 260, id: 7 }] });
+      const lift = () => cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      const bodies = await p.evaluate(() => {
+        const d = window.__hd.debug, hd = window.__hd;
         d.setInvulnerable(true);
         const body = t => hd.enemies.find(e => e.alive && e.type === t);
-        const w = body('watcher'), t = body('totem');
-        const variants = { watcher: w?.sdfRoot?.userData.sdfVariant ?? null, totem: t?.sdfRoot?.userData.sdfVariant ?? null };
-        // a wound: one shot's worth into the totem carves the shader and leaves it standing
-        const hp0 = t.hp, dir = t.pos.clone().sub(hd.player.camera.position).normalize();
-        t.hit(1, dir, t.pos.clone().addScaledVector(dir, -0.4));
-        await f();
-        const wound = { wounds: t.sdfRoot.material.uniforms.woundCount.value, hp: [hp0, t.hp], alive: t.alive };
-        // the watcher still does its job: an aimed volley within a few seconds
+        window.__w = body('watcher'); window.__t = body('totem');
+        return { watcher: window.__w?.sdfRoot?.userData.sdfVariant ?? null, totem: window.__t?.sdfRoot?.userData.sdfVariant ?? null };
+      });
+      // the Watcher still does its job: an aimed volley within a few seconds
+      const volley = await p.evaluate(async () => {
+        const d = window.__hd.debug, hd = window.__hd, f = () => new Promise(r => requestAnimationFrame(r));
         let orbs = 0; const t0 = d.getState().gameTime;
         for (let i = 0; i < 4000 && d.getState().gameTime - t0 < 9 && !orbs; i++) { await f(); orbs = hd.orbs.active.length; }
-        d.killEnemy(w); d.killEnemy(t); for (let i = 0; i < 3; i++) await f();
-        return { variants, wound, orbs, t: +(d.getState().gameTime - t0).toFixed(1), released: w.sdfRoot === null && t.sdfRoot === null };
+        return { orbs, t: +(d.getState().gameTime - t0).toFixed(1) };
       });
-      ok('test arena: the run opens with an SDF Watcher and an SDF Totem', arena.variants.watcher === 'watcher' && arena.variants.totem === 'totem', JSON.stringify(arena.variants));
-      ok('test arena: a hit carves a wound into the Totem and leaves it standing', arena.wound.wounds >= 1 && arena.wound.hp[1] < arena.wound.hp[0] && arena.wound.alive, JSON.stringify(arena.wound));
-      ok('test arena: the SDF Watcher still fires its aimed volley', arena.orbs > 0, JSON.stringify({ orbs: arena.orbs, t: arena.t }));
-      ok('test arena: both die and release their shaders', arena.released, JSON.stringify(arena));
+      // held fire at a body that moves on its own: the CAMERA is turned to it
+      // each frame (setup of the aim), and the daggers do the rest
+      const fireAt = (name, until, sec) => p.evaluate(async ([name, until, sec]) => {
+        const d = window.__hd.debug, hd = window.__hd, f = () => new Promise(r => requestAnimationFrame(r));
+        const e = window['__' + name], pl = hd.player, c = new pl.camera.position.constructor();
+        const hp0 = e.hp, t0 = d.getState().gameTime;
+        const done = () => until === 'wound' ? e.sdfRoot && e.sdfRoot.material.uniforms.woundCount.value > 0 : !e.alive;
+        for (let i = 0; i < 8000 && !done() && d.getState().gameTime - t0 < sec; i++) {
+          e.center(c); const o = pl.camera.position, dx = c.x - o.x, dy = c.y - o.y, dz = c.z - o.z;
+          pl.yaw = Math.atan2(-dx, -dz); pl.pitch = Math.atan2(dy, Math.hypot(dx, dz)); pl._sync();
+          await f();
+        }
+        return { hp: [hp0, e.hp], wounds: e.sdfRoot ? e.sdfRoot.material.uniforms.woundCount.value : null, alive: e.alive, released: e.sdfRoot === null, t: +(d.getState().gameTime - t0).toFixed(1) };
+      }, [name, until, sec]);
+      await hold(); const wound = await fireAt('t', 'wound', 15); await lift();
+      await hold(); const deadT = await fireAt('t', 'dead', 40); const deadW = await fireAt('w', 'dead', 25); await lift();
+      ok('test arena: the run opens with an SDF Watcher and an SDF Totem', bodies.watcher === 'watcher' && bodies.totem === 'totem', JSON.stringify(bodies));
+      ok('test arena: the SDF Watcher still fires its aimed volley', volley.orbs > 0, JSON.stringify(volley));
+      ok('test arena: held fire carves a wound into the Totem and leaves it standing', wound.wounds >= 1 && wound.hp[1] < wound.hp[0] && wound.alive, JSON.stringify(wound));
+      ok('test arena: held fire kills the Totem and the Watcher, and both release their shaders', !deadT.alive && deadT.released && !deadW.alive && deadW.released, JSON.stringify({ deadT, deadW }));
+      // a season picked in the test arena is a way OUT of it (#628 review):
+      // the arena's link pins ?mode=hyper, and HAUL must not play that on a disc
+      await p.evaluate(async () => {
+        const f = () => new Promise(r => requestAnimationFrame(r));
+        document.getElementById('pauseBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        await f(); await f();
+        document.getElementById('endBtn').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+        for (let i = 0; i < 4; i++) await f();
+      });
+      const leave = await p.evaluate(() => ({ chip: document.querySelector('[data-sdf-arena]')?.textContent ?? '', href: document.querySelector('[data-sdf-arena]')?.getAttribute('href') }));
+      ok('test arena: its menu offers LEAVE THE TEST ARENA back to the plain page', /LEAVE THE TEST ARENA/.test(leave.chip) && leave.href === './', JSON.stringify(leave));
+      const tab = await p.locator('#msg button.mn-season[data-season="haul"]').boundingBox();
+      await Promise.all([p.waitForNavigation({ waitUntil: 'load' }), p.touchscreen.tap(tab.x + tab.width / 2, tab.y + tab.height / 2)]);
+      await p.waitForFunction(() => window.__hd && window.__hd.debug, null, { timeout: 120000 });
+      const out = await p.evaluate(() => ({ url: location.search, state: window.__hd.debug.getState().state, mode: window.__hd.debug.getState().mode, on: document.querySelector('#msg button.mn-season.on')?.dataset.season }));
+      ok('test arena: picking HAUL there leaves it — the plain page, season 3, TRUCK rules', !/sdfTest|mode=/.test(out.url) && out.state === 'menu' && out.on === 'haul' && out.mode === 'truck', JSON.stringify(out));
       ok('test arena: zero page or console errors', errs.length === 0, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
