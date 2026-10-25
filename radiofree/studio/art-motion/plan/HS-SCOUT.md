@@ -372,3 +372,6 @@ Everything below comes from search summaries. No article was opened.
   monitoring already shows acidification-related changes; a water plan is due 5 Nov. Tuike's reply concerns the felling
   at Muhos and Kajaani. Sources: Yle 74-20252848, Kaleva/Lapin Kansa 13720712, MT.
 - No new HS candidate found this morning.
+
+
+**Check 25 Oct 17:16:** no new HS candidate. Hamina has no follow-up since 23 Oct. Muhos: Kaleva reports two requests to investigate; IL/MTV (7 Oct) say a preliminary inquiry was opened on a private request; Yle (~22 Oct) says none has started. No new LVV or Doodle statement. Search summaries only.

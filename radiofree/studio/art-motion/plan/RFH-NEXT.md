@@ -137,3 +137,21 @@ story. Irreversible was scrapped on 18 Oct, so it is the candidate for slot 3.
   saying NDAs with data-centre projects are not permissible (search summary). The film's "One US state, Delaware, now
   bans them" doesn't claim it was the only one, so it stays accurate. Note it for any follow-up.
 - **Global:** no big change. Project Meridian still has no ethics review or recusal reported (NPR, 5–6 Oct).
+
+## Daily check, Sun 25 Oct 17:16 (run ~22:15 Helsinki)
+
+All facts below come from search summaries; no article was opened.
+
+- **Posted today, per Grok Bot in POSTED.md:**
+  - For Your Protection, ~06:50.
+  - Ends in 3 v4, ~12:48. It moved up under the 6 h cadence, and the 31 Oct deadline was re-checked on the CRT site. It no longer needs a Mon 00:52 check.
+- **Count the Trees v5:** approved by Mikael ~19:48 ("Count the trees approved") and queued for the next slot. Its row reads "Sun 25 Oct ~00:52 next", so it is probably meant as Mon 26 Oct 00:52; confirm.
+  - The police line, "two requests filed with the police", still holds under every account. Kaleva reports two requests to investigate (https://www.kaleva.fi/oulun-poliisille-on-tehty-kaksi-tutkintapyyntoa-go/13709521).
+  - IL/MTV (7 Oct) say a preliminary inquiry was opened on a private person's request (https://www.kaleva.fi/il-poliisi-on-aloittanut-esiselvityksen-googlen-mu/13700493, https://www.mtvuutiset.fi/artikkeli/il-poliisi-kaynnisti-esiselvityksen-googlen-datakeskuksesta/9403560). Yle (~22 Oct) quotes the police saying none has started yet.
+  - No new statement from LVV or Doodle was found today.
+- **Trade Secret / Hamina:** no follow-up found since 23 Oct.
+- **Global:** no big development.
+  - **Project Meridian:** still no word on whether Musk and Luckey are special government employees or contractors; the DoD line is "MITRE applies conflict-of-interest safeguards" (NPR, 6 Oct).
+  - **Meta/Grassley:** Meta's reply to the 22 Jul letter (deadline 5 Aug) still not found.
+- **NDA bans:** St. Louis County (MN) failed to second a proposed ban on elected officials signing NDAs. Minnesota's state bill was awaiting a Senate floor vote (April report). The others are as logged before. The film is unaffected.
+- **Break Glass:** no plenary vote found.

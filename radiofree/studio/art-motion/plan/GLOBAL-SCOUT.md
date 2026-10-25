@@ -468,3 +468,6 @@ Everything below comes from search summaries. No article was opened.
   order.
 - **The Panel (#1):** no change since 6 Oct; MITRE runs the study, with conflict-of-interest safeguards per the DoD
   spokesperson. No recusal, ethics review or congressional letter found.
+
+
+**Check 25 Oct 17:16:** no big development. Meridian still has no SGE/contractor answer. Meta's reply to Grassley (22 Jul) is still not found. NDA watch: St. Louis County (MN) failed to second a ban, and Minnesota's state bill awaits a Senate floor vote (April report). Search summaries only.
