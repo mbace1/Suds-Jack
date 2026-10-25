@@ -105,7 +105,7 @@ function drawBox(b, o) {
     g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 2; g.strokeRect(58, w - 28, 62, 16);
     if (m > 0) { g.fillStyle = m >= 1 ? '#ffd23a' : MAG; g.fillRect(60, w - 26, 58 * m, 12); }
   }
-  if (o.glow > 0) { g.globalAlpha = o.glow * 0.9; const gr = g.createRadialGradient(64, 60, 4, 64, 60, 70); gr.addColorStop(0, '#fff3c0'); gr.addColorStop(1, 'rgba(255,200,60,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w);
+  if (o.glow > 0) { g.globalAlpha = o.glow * 0.6; const gr = g.createRadialGradient(64, 60, 4, 64, 60, 70); gr.addColorStop(0, '#fff3c0'); gr.addColorStop(1, 'rgba(255,200,60,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, w);
     g.fillStyle = '#ffd23a'; for (let k = 0; k < 6; k++) { const an = o.t * 1.5 + k; g.beginPath(); g.arc(64 + Math.cos(an) * 40, 60 + Math.sin(an) * 30, 4, 0, TAU); g.fill(); } g.globalAlpha = 1; }
   b.t.needsUpdate = true;
 }
@@ -176,7 +176,7 @@ function boxState(i, t) {
   }
   return { pos, rot, sq, face, vis };
 }
-const HOLD = [0, DESK.y + 4.6, 10.2], REST = [0, DESK.y + BOX / 2 + 0.05, 9.8], ASIDE = [6.5, DESK.y + BOX / 2, 25];
+const HOLD = [-6, DESK.y + 6.5, 10.5], REST = [-12, DESK.y + BOX / 2 + 0.05, 12.5], ASIDE = [6.5, DESK.y + BOX / 2, 25];   // HOLD and REST sit left of the laptop, where the lid cannot hide them
 
 // the drones outside the window (world; far beyond the glass, crossing slowly)
 const PATHS = { 0: [[[-120, 70, -120], [60, 78, -130], T.s1 - 1, T.s2 + 1], null], 3: [[[70, 66, -120], [-130, 74, -110], T.s4 - 0.5, T.end + 3], [[-110, 88, -150], [40, 84, -150], T.s4 + 1.0, T.end + 6]] };
@@ -205,14 +205,16 @@ const SHOT = [
       const wR = kp < 1 ? lerp3([-3.2, DESK.y + 1.9, 13.2], side(-1), kp) : side(-1), wL = kp < 1 ? lerp3([3.2, DESK.y + 1.9, 13.2], side(1), kp) : side(1);
       return handsTo(pz, wR, wL, [1, 0, 0], [-1, 0, 0]); },
     screen(t) { drawScreen(t, 10); },
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V([lerp(7, 5, k), lerp(34, 33, k), lerp(46, 40, k)]), at: V([0, DESK.y + 7, 7]), fov: 32, focus: lerp(38, 32, k), ap: 7 }; } },
+    // from his left-front, clear of the lid: the box in his paddles, the mask above it
+    cam(t, lt, d) { const k = ease.io(lt / d), tgt = V([-5, DESK.y + 8, 8]), pos = V([lerp(-18, -16.5, k), lerp(43, 42, k), lerp(48, 44, k)]); return { pos, at: tgt, fov: 32, focus: pos.distanceTo(tgt), ap: 7 }; } },
   { // 4 · the desk again: the crate of nine, the one glowing under his hands
     t0: () => T.s4, t1: () => T.end,
     pose(t) { const pz = basePose({ lean: 0.36, hp: 0.5, breathe: Math.sin(t * 1.2) }), b = boxState(9, t), sq = b.sq;
       const side = (s) => [b.pos[0] + s * (BOX / 2 * sq[0] + 1.05), b.pos[1] - 0.2, b.pos[2] - 0.2];
       return handsTo(pz, side(-1), side(1), [1, 0, 0], [-1, 0, 0]); },
     screen(t) { drawScreen(t, 10); },
-    cam(t, lt, d) { const k = ease.io((t - T.s4) / (T.s5 - T.s4 + 1)); return { pos: LOOK0.pos.clone().add(V([4 * (1 - k), 2 * (1 - k), 10 * (1 - k)])), at: LOOK0.at.clone(), fov: LOOK0.fov, focus: 88, ap: 2.6 }; } },
+    // a touch left and higher than frame 0's, so the box beside the laptop and the mask over the lid both read
+    cam(t, lt, d) { const k = ease.io((t - T.s4) / (T.s5 - T.s4 + 1)); return { pos: V([lerp(14, 11, k), lerp(54, 52, k), lerp(96, 90, k)]), at: V([7, 28, 8]), fov: 50, focus: 86, ap: 2.6 }; } },   // wide enough for the crate of nine and the one
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 
@@ -248,10 +250,11 @@ function frame(t, captions = true) {
     drawBox(b, st.face);
   }
   Sh.screen(t);
+  S.THERMOS.visible = S.LAMP.visible = i !== 2;                       // shot 3's camera stands where they are
   S.drones(t, PATHS[i] || []);
   S.screenLight.intensity = 50 + Math.sin(t * 7) * 2;
   // the glow of the one that's fun lights his mask and hands
-  const lit = clamp((t - EV.fun + 0.15) / 0.4); boxLight.position.set(...boxState(9, t).pos).add(V([0, 1, 2])); boxLight.intensity = 90 * lit;
+  const lit = clamp((t - EV.fun + 0.15) / 0.4); boxLight.position.set(...boxState(9, t).pos).add(V([0, 1, 2])); boxLight.intensity = 45 * lit;
   scene.updateMatrixWorld(true);
   const L = Sh.cam(t, lt, d); camera.fov = L.fov; camera.position.copy(L.pos); camera.lookAt(L.at); camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
   post.render(scene, camera, { focus: L.focus, aperture: Q.get('nodof') ? 0 : L.ap, maxBlur: 30, radScale: 0.9,

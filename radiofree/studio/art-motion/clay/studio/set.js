@@ -33,9 +33,9 @@ function paintPark(hour) {
   for (let x = 0; x <= 1024; x += 8) { const sp = r() < 0.4, h = sp ? 150 + r() * 120 : 90 + r() * 50; g.lineTo(x, 560 - h * 0.6); if (sp) g.lineTo(x + 4, 560 - h * 0.6 - 50 - r() * 30); }
   g.lineTo(1024, 768); g.fill();
   // nearer birches, yellow crowns caught by the low sun
-  for (let i = 0; i < 7; i++) { const x = 60 + i * 150 + r() * 40, top = 300 + r() * 80;
+  for (let i = 0; i < 5; i++) { const x = 90 + i * 200 + r() * 40, top = 420 + r() * 60;   // birches: crowns kept low, so the window frame does not cut them into drips
     g.fillStyle = hour === 'night' ? '#2a2a30' : '#e9e4d8'; g.fillRect(x, top, 9, 768 - top);
-    for (let j = 0; j < 9; j++) { g.fillStyle = hour === 'night' ? '#14161c' : (r() < 0.25 ? '#c9772e' : '#d9a93a'); g.beginPath(); g.arc(x + (r() - 0.5) * 90, top + (r() - 0.5) * 70, 26 + r() * 22, 0, TAU); g.fill(); } }
+    for (let j = 0; j < 6; j++) { g.fillStyle = hour === 'night' ? '#14161c' : (r() < 0.25 ? '#c9772e' : '#d9a93a'); g.beginPath(); g.arc(x + (r() - 0.5) * 90, top + (r() - 0.5) * 70, 26 + r() * 22, 0, TAU); g.fill(); } }
   // the grass and the gravel path
   g.fillStyle = hour === 'night' ? '#0d120c' : '#3e4a2c'; g.fillRect(0, 610, 1024, 160);
   g.fillStyle = hour === 'night' ? '#26242a' : '#a89c88'; g.fillRect(0, 668, 1024, 34);
