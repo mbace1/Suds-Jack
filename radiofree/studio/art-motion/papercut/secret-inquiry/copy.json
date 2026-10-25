@@ -1,0 +1,148 @@
+{
+  "film": "secret-inquiry",
+  "cut": "Doodle 7, VIRAL CUT, stills checkpoint (25 Oct). The Muhos site from Count the Trees, already cleared; LVV's request to the police lands on it as a sealed folder; why? secret; the stream beside the site turns rust-brown on 'acidification'; punch: the reasons are secret, the water is everyone's. Loops to frame 0's framing.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Finland's licensing authority asked the police to investigate Doodle's Muhos data-centre site, keeps its reasons secret, and has seen signs of acidification in the water nearby.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "Muhos, Finland: / the authority asked / police to [investigate].",
+        "fi": "Muhos: / viranomainen pyysi / poliisia [tutkimaan].",
+        "ja": "フィンランド・ムホス： / 当局が 警察に / [捜査を] 要請。"
+      },
+      "source": "LVV (Finland's licensing and supervisory agency) has filed a request with the police to investigate Doodle's (Google's) Muhos data-centre project, and says the matter is secret under the Publicity Act, so it will not comment further (Kaleva/STT ~22 Oct 2026, https://www.kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712 ; Maaseudun Tulevaisuus, https://www.maaseuduntulevaisuus.fi/uutiset/656d00a6-6a46-4479-a214-0a73c03a8ee2 ; Yle, https://yle.fi/a/74-20252848). Search summaries only; originals not opened. The caption says only that the authority ASKED: Yle quotes the police saying no preliminary inquiry has started, Kaleva/IL earlier said one had (on a private person's request), so the film claims neither."
+    },
+    {
+      "id": "why",
+      "role": "evidence",
+      "at": "s2+0.15",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Why? / The details are / [secret].",
+        "fi": "Miksi? / Tiedot ovat / [salaisia].",
+        "ja": "理由は？ / 詳細は / [非公開]。"
+      },
+      "source": "LVV says the matter is secret under the Publicity Act and will not comment (Kaleva/STT, Yle, ~22 Oct 2026; search summaries). Paraphrase, no quote marks."
+    },
+    {
+      "id": "acid",
+      "role": "evidence",
+      "at": "s3+0.15",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "Water by the site: / signs of / [acidification].",
+        "fi": "Vesi työmaan luona: / merkkejä / [happamoitumisesta].",
+        "ja": "現場の そばの 水に / [酸性化の] / 兆候。"
+      },
+      "source": "LVV: monitoring results supplied by Doodle's Finnish subsidiary show changes pointing to acidification in the Muhos data-centre area, which lies in the influence zone of a black-shale deposit; Doodle must submit a detailed water plan by 5 Nov 2026, and a fine may follow (Kaleva/STT, MT, Yle ~22 Oct; search summaries). The film draws the stream beside the site rust-brown as an illustration, not a measurement; which water was sampled is not stated on screen."
+    },
+    {
+      "id": "last",
+      "role": "punchline",
+      "at": "s4+0.25",
+      "until": "end-1.1",
+      "hold": "end",
+      "text": {
+        "en": "Reasons: secret. / The water: / [everyone's].",
+        "fi": "Syyt: salaisia. / Vesi: / [kaikkien].",
+        "ja": "理由は 非公開。 / 水は / [みんなの もの]。"
+      },
+      "source": "The station's own line, drawn from the two facts above: LVV's reasons are secret; the water in question is public (a stream/ground water is not anyone's trade secret). Opinion, framed as the punchline."
+    }
+  ],
+  "ui": {
+    "placePre": {
+      "en": "NEW ",
+      "fi": "",
+      "ja": ""
+    },
+    "placePost": {
+      "en": " DATA CENTRE · MUHOS, FINLAND",
+      "fi": "N UUSI DATAKESKUS · MUHOS",
+      "ja": "の新データセンター · フィンランド・ムホス"
+    },
+    "clipLabel": {
+      "en": "LVV’S REQUEST TO THE POLICE",
+      "fi": "LVV:N TUTKINTAPYYNTÖ POLIISILLE",
+      "ja": "LVVから 警察への 捜査要請"
+    },
+    "clipValue": {
+      "en": "SECRET",
+      "fi": "SALAINEN",
+      "ja": "非公開"
+    },
+    "folderHead": {
+      "en": "POLICE · OULU",
+      "fi": "POLIISI · OULU",
+      "ja": "警察 · オウル"
+    },
+    "folderTitle": {
+      "en": "REQUEST",
+      "fi": "TUTKINTA-",
+      "ja": "捜査"
+    },
+    "folderTitle2": {
+      "en": "FROM LVV",
+      "fi": "PYYNTÖ · LVV",
+      "ja": "要請 · LVV"
+    },
+    "seal": {
+      "en": "SECRET",
+      "fi": "SALAINEN",
+      "ja": "非公開"
+    },
+    "date": {
+      "en": "MUHOS, FINLAND · 22.10.2026",
+      "fi": "MUHOS · 22.10.2026",
+      "ja": "フィンランド・ムホス · 2026.10.22"
+    },
+    "waterPlan": {
+      "en": "LVV: WATER PLAN DUE 5.11.2026",
+      "fi": "LVV: VESISUUNNITELMA 5.11.2026 MENNESSÄ",
+      "ja": "LVV：水の計画を 2026.11.5までに"
+    },
+    "reasons": {
+      "en": "REASONS: SECRET",
+      "fi": "SYYT: SALAISIA",
+      "ja": "理由：非公開"
+    },
+    "water": {
+      "en": "THE WATER",
+      "fi": "VESI",
+      "ja": "水"
+    }
+  },
+  "props": {
+    "folder": {
+      "en": "POLICE · OULU · REQUEST FROM LVV, sealed SECRET",
+      "why": "LVV's request to the police, which LVV keeps secret; generic folder, no insignia"
+    },
+    "stream": {
+      "en": "(the stream beside the site, turning rust-brown)",
+      "why": "an illustration of LVV's acidification finding; not a measurement of a named water body"
+    }
+  },
+  "post": {
+    "en": "Muhos, Finland: the authority asked the police to investigate Doodle's data-centre site, and says the details are secret. It also found signs of acidification nearby and wants a water plan by 5 Nov. Reasons: secret. The water: everyone's. Whose secret is it?",
+    "fi": "Muhos: LVV pyysi poliisia tutkimaan Doodlen datakeskustyömaan ja kertoo asian olevan salainen. Työmaan alueella on merkkejä happamoitumisesta, ja vesisuunnitelma vaaditaan 5.11. mennessä. Syyt: salaisia. Vesi: kaikkien. Kenen salaisuus?"
+  }
+}

@@ -660,4 +660,157 @@
     bigClip(c, ui('treesLabel', 'TREES · THE GUARDIAN’S ESTIMATE'), ui('treesValue', '250,000'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
     box(c);
   } };
+
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  // SECRET INQUIRY (Doodle 7, papercut/secret-inquiry, engine key "sci"): the same Muhos map, already cleared. LVV's
+  // request to the police lands on the site as a sealed folder (the request is real; its reasons LVV keeps secret);
+  // the seal stamps SECRET; the stream beside the site turns rust-brown on "acidification" (LVV's own finding, drawn as
+  // an illustration); and the last shot names the two halves: the reasons, secret; the water, everyone's. The scenes
+  // above are untouched. Frame 0 and the last frame share the camera, the folder and the clipping.
+  // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+  const F0 = { x: 520, y: 905 };                              // where the folder lies on the site
+  const folder = () => sprite('sci_folder', 560, 420, 280, 210, (g) => {
+    // a manila folder, its tab, a red tape tied across, a typed label
+    g.fillStyle = '#b8933f'; g.beginPath(); g.roundRect(-250, -176, 170, 40, 8); g.fill();
+    g.fillStyle = '#d6b25c'; g.beginPath(); g.roundRect(-262, -150, 524, 330, 10); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(-262, -150, 524, 10);
+    g.fillStyle = '#f3ecd8'; g.beginPath(); g.roundRect(-232, -122, 330, 128, 6); g.fill();
+    g.fillStyle = '#2a5bb8'; g.fillRect(-232, -122, 330, 40);
+    g.fillStyle = '#f6f2e8'; g.textAlign = 'left'; g.font = `26px "ArchivoBlack-400", ${JP}`; g.fillText(ui('folderHead', 'POLICE · OULU'), -214, -93);
+    g.fillStyle = C.ink; g.font = `400 40px "Anton-400", ${JP}`; g.fillText(ui('folderTitle', 'REQUEST'), -214, -44); g.fillText(ui('folderTitle2', 'FROM LVV'), -214, -2);
+    g.fillStyle = 'rgba(21,18,15,.18)'; for (let i = 0; i < 4; i++) g.fillRect(-232, 40 + i * 26, 300 - (i % 2) * 70, 8);
+    // the red tape, round the folder both ways
+    g.fillStyle = '#b8322a'; g.fillRect(-262, 70, 524, 22); g.fillRect(130, -150, 22, 330);
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(-262, 72, 524, 4); g.fillRect(132, -150, 4, 330);
+  }, 6);
+  /** the wax seal over the tape's crossing: k 0..1 drops it in; flat red disc, ragged rim, the word round it */
+  function seal(g, x, y, k, { sc = 1 } = {}) {
+    if (k <= 0) return; const kk = ease.back(clamp(k, 0, 1)), s = sc * lerp(1.8, 1, kk);
+    g.save(); g.translate(x, y); g.rotate(-0.12); g.scale(s, s); g.globalAlpha = clamp(k * 4, 0, 1);
+    g.fillStyle = 'rgba(0,0,0,.45)'; g.beginPath(); g.arc(5, 7, 66, 0, TAU); g.fill();
+    g.fillStyle = '#a3241d'; g.beginPath(); for (let i = 0; i <= 28; i++) { const a = (i / 28) * TAU, r = 64 + (i % 2 ? 5 : -2) + Math.sin(i * 2.3) * 2; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath(); g.fill();
+    g.fillStyle = '#c4382e'; g.beginPath(); g.arc(-4, -4, 50, 0, TAU); g.fill();
+    g.strokeStyle = '#7e1812'; g.lineWidth = 4; g.beginPath(); g.arc(0, 0, 44, 0, TAU); g.stroke();
+    g.fillStyle = '#f6e7d8'; g.textAlign = 'center'; g.font = `400 30px "Anton-400", ${JP}`; g.fillText(ui('seal', 'SECRET'), 0, 11);
+    g.restore();
+  }
+  /** the drainage ditches from the site's edge to the stream, and the stream's tint (k 0..1); rust-brown, spreading down */
+  const DITCH = [[882, 740], [872, 1060], [838, 1310]];
+  function acidWater(g, lt, tA, k) {
+    if (k <= 0) return;
+    g.save(); g.lineCap = 'round';
+    for (const [x, y] of DITCH) {
+      const xs = streamX(y) - 14, kd = clamp(k * 1.6, 0, 1);
+      g.strokeStyle = `rgba(150,90,40,${0.9 * kd})`; g.lineWidth = 9; g.beginPath(); g.moveTo(x, y); g.lineTo(lerp(x, xs, kd), y + 8 * kd); g.stroke();
+      g.strokeStyle = `rgba(214,140,60,${0.8 * kd})`; g.lineWidth = 3; g.setLineDash([10, 12]); g.lineDashOffset = -lt * 40; g.beginPath(); g.moveTo(x, y); g.lineTo(lerp(x, xs, kd), y + 8 * kd); g.stroke(); g.setLineDash([]);
+    }
+    // the stream: rust spreading up and down from each ditch's mouth
+    for (let y = -90; y <= H + 90; y += 10) {
+      const d = Math.min(...DITCH.map(([, yy]) => Math.abs(y - yy)));
+      const a = clamp(k * 2.2 - d / 700, 0, 1); if (a <= 0) continue;
+      const x = streamX(y);
+      g.fillStyle = `rgba(168,92,34,${0.85 * a})`; g.beginPath(); g.ellipse(x, y, 17, 8, 0, 0, TAU); g.fill();
+      g.fillStyle = `rgba(226,150,70,${0.55 * a})`; g.beginPath(); g.ellipse(x - 5, y, 5, 4, 0, 0, TAU); g.fill();
+    }
+    g.restore();
+  }
+  /** the cleared map: ground (stumps in the site), the forest round it, the red line; extra(g) drawn on top */
+  function sciMap(c, cam, extra) {
+    stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
+      { d: 0.12, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false, a: 0.9 }); if (extra) extra(g); g.restore(); } }], cam);
+  }
+  /** the police light sweeping over the site: two lobes alternating, from below the frame */
+  function strobe(c, lt, a) {
+    if (a <= 0) return; const on = (lt * 8) % 1 < 0.5, lx = on ? 330 : 730, ly = 1500, R0 = 900;
+    const rg = c.createRadialGradient(lx, ly, 6, lx, ly, R0);
+    rg.addColorStop(0, `rgba(70,130,255,${0.45 * a})`); rg.addColorStop(0.4, `rgba(70,130,255,${0.16 * a})`); rg.addColorStop(1, 'rgba(70,130,255,0)');
+    c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = rg; c.fillRect(0, 0, W, H); c.restore();
+  }
+  const sealPos = () => ({ x: F0.x + 141, y: F0.y + 81 });
+
+  // ═════════ S1 · sci_hook: frame 0 — the cleared site, the sealed folder already on it, the clipping LVV'S REQUEST
+  //            TO THE POLICE / SECRET; police light flickers; on "investigate" the folder slams (a hop and dust) ═════════
+  SCENES.sci_hook = { draw(c, lt) {
+    const id = 'sci_hook', dd = dur(id), tI = at(id, 'inv', 2.2);
+    const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)), hits: [tI], kick: 0.035 });
+    const hop = lt < tI ? Math.sin(clamp((lt - tI + 0.32) / 0.32, 0, 1) * Math.PI) * 60 : 0, squash = lt > tI ? Math.exp(-(lt - tI) * 9) * 0.06 : 0;
+    c.save(); camZ(c, 1 + 0.03 * ease.io(lt / dd), V.fx, 950);
+    sciMap(c, cam, (g) => {
+      put(g, folder(), F0.x, F0.y - hop, { sc: 0.92 * (1 + squash), rot: -0.04, lift: 1 + hop / 40 });
+      seal(g, sealPos().x, sealPos().y - hop, 1, { sc: 0.92 });
+      if (lt > tI) { const k = (lt - tI) / 0.5; if (k < 1) for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU, r = 240 + 120 * k; g.fillStyle = `rgba(214,190,150,${0.4 * (1 - k)})`; g.beginPath(); g.arc(F0.x + Math.cos(a) * r, F0.y + Math.sin(a) * r * 0.6, 14 + 18 * k, 0, TAU); g.fill(); } }
+    });
+    c.restore();
+    strobe(c, lt, clamp((lt - tI + 0.2) / 0.3, 0, 1) * 0.9);
+    placeTag(c);
+    bigClip(c, ui('clipLabel', 'LVV’S REQUEST TO THE POLICE'), ui('clipValue', 'SECRET'), { k: lt / 0.25, dy: 420 * ease.io((lt - dd + 0.55) / 0.5) });
+    box(c);
+  } };
+
+  // ═════════ S2 · sci_why: in close on the folder; a hand-lens slides over it and finds only the tape; on "secret" the
+  //            seal comes down again, hard, with a flash ═════════
+  SCENES.sci_why = { draw(c, lt) {
+    const id = 'sci_why', dd = dur(id), tS = at(id, 'seal', 1.9);
+    const Z = lerp(1.15, 1.9, ease.io(lt / (tS + 0.2))) * (1 + 0.02 * ease.io((lt - tS) / (dd - tS)));
+    const cam = vcam(lt, dd, { z: () => 1, hits: [tS], kick: 0.04, amp: 2 });
+    const sp = sealPos(), kSeal = lt < tS - 0.05 ? 0 : (lt - tS + 0.05) / 0.16;
+    c.save(); camZ(c, Z, F0.x + 40, F0.y - 10);
+    sciMap(c, cam, (g) => {
+      put(g, folder(), F0.x, F0.y, { sc: 0.92, rot: -0.04, lift: 1 });
+      // the old seal lifts off first, so the new one has somewhere to land
+      if (kSeal <= 0) seal(g, sp.x, sp.y, 1, { sc: 0.92 }); else seal(g, sp.x, sp.y, kSeal, { sc: 0.92 });
+      // a loupe crossing the label: the lens shows the same tape, bigger, and nothing else
+      const kL = ease.io(clamp((lt - 0.2) / (tS - 0.4), 0, 1)), lx = lerp(F0.x - 260, F0.x + 60, kL), ly = F0.y - 40 + Math.sin(kL * 5) * 30, la = clamp((tS - lt) / 0.25, 0, 1);
+      if (la > 0) { g.save(); g.globalAlpha = la; g.strokeStyle = '#3a3026'; g.lineWidth = 16; g.lineCap = 'round'; g.beginPath(); g.moveTo(lx + 60, ly + 60); g.lineTo(lx + 150, ly + 150); g.stroke(); g.strokeStyle = '#c9a24a'; g.lineWidth = 10; g.beginPath(); g.arc(lx, ly, 80, 0, TAU); g.stroke(); g.fillStyle = 'rgba(220,235,255,.18)'; g.beginPath(); g.arc(lx, ly, 74, 0, TAU); g.fill(); g.restore(); }
+    });
+    c.restore();
+    if (lt > tS) { const f = Math.exp(-(lt - tS) * 7) * 0.25; c.fillStyle = `rgba(255,236,190,${f})`; c.fillRect(0, 0, W, H); }
+    tag(c, ui('date', 'MUHOS, FINLAND · 22.10.2026'), lt, dd, 110, 0.35);
+    box(c);
+  } };
+
+  // ═════════ S3 · sci_acid: the camera pans right to the stream beside the site; the ditches run to it; on
+  //            "acidification" the stream turns rust-brown, spreading from each ditch; tag: WATER PLAN DUE 5.11.2026 ═════════
+  SCENES.sci_acid = { draw(c, lt) {
+    const id = 'sci_acid', dd = dur(id), tD = at(id, 'ditch', 0.3), tA = at(id, 'acid', 2.6);
+    const kP = ease.io(clamp(lt / 1.0, 0, 1)), Z = lerp(1.0, 1.32, kP), px = lerp(V.fx, 735, kP), py = 1010;   // px ≤ 755 at Z 1.32 keeps the map past the right edge
+    const cam = vcam(lt, dd, { z: () => 1, hits: [tA], kick: 0.03, amp: 2 });
+    const kW = clamp((lt - tA + 0.15) / 1.6, 0, 1), kDitch = clamp((lt - tD) / 1.2, 0, 1) * 0.35 + kW * 0.65;
+    c.save(); c.translate(W / 2, py); c.scale(Z, Z); c.translate(-px, -py);
+    sciMap(c, cam, (g) => {
+      put(g, folder(), F0.x, F0.y, { sc: 0.92, rot: -0.04, lift: 1 }); seal(g, sealPos().x, sealPos().y, 1, { sc: 0.92 });
+      acidWater(g, lt, tA, kDitch);
+    });
+    c.restore();
+    tag(c, ui('waterPlan', 'LVV: WATER PLAN DUE 5.11.2026'), lt, dd, 110, tA + 0.2);
+    box(c);
+  } };
+
+  // ═════════ S4 · sci_end: the whole site again, the folder sealed, the stream rust; on the punch two tags name the
+  //            halves (REASONS: SECRET on the folder; THE WATER, an arrow to the stream); hold; then home to frame 0 ═════════
+  SCENES.sci_end = { draw(c, lt) {
+    const id = 'sci_end', dd = dur(id), tP = at(id, 'punch', 1.4), tB = at(id, 'back', dd - 2.4), tC = at(id, 'clip', dd - 0.9);
+    const tL = Math.min(dd - 0.35, tC + 0.3), kR = ease.io((lt - tB) / (tL - tB));
+    const cam = vcam(lt, dd, { z: () => 1, hits: [tP], kick: 0.03, amp: 3 }); cam.x *= 1 - kR; cam.y *= 1 - kR; if (lt >= tL) { cam.x = cam.y = 0; cam.z = 1; }
+    const zIn = lerp(1.12, 1.05, ease.io(lt / (tP + 0.3))), Z = lt >= tL ? 1.03 : lerp(zIn, 1.03, kR);
+    c.save(); camZ(c, Z, V.fx, 950);
+    sciMap(c, cam, (g) => {
+      put(g, folder(), F0.x, F0.y, { sc: 0.92, rot: -0.04, lift: 1 }); seal(g, sealPos().x, sealPos().y, 1, { sc: 0.92 });
+      acidWater(g, lt, 0, 1);
+    });
+    c.restore();
+    const kT = clamp((lt - tP + 0.05) / 0.25, 0, 1) * clamp((tB + 0.4 - lt) / 0.4, 0, 1);
+    if (kT > 0) {
+      screenTag(c, ui('reasons', 'REASONS: SECRET'), 470, 640, { a: kT, size: 40 });
+      // THE WATER, with an arrow to the stream
+      screenTag(c, ui('water', 'THE WATER'), 820, 1230, { a: kT, size: 40 });
+      c.save(); c.globalAlpha = kT; c.strokeStyle = C.cream; c.fillStyle = C.cream; c.lineWidth = 7; c.lineCap = 'round'; c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 8;
+      const x0 = 900, y0 = 1180, x1 = 990, y1 = 1080; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1 + 14); c.stroke();
+      c.beginPath(); c.moveTo(x1 - 6, y1 - 6); c.lineTo(x1 + 14, y1 + 20); c.lineTo(x1 - 16, y1 + 18); c.closePath(); c.fill(); c.restore();
+    }
+    const kC = clamp((lt - tC + 0.32) / 0.32, 0, 1);
+    placeTag(c, { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
+    bigClip(c, ui('clipLabel', 'LVV’S REQUEST TO THE POLICE'), ui('clipValue', 'SECRET'), { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });
+    box(c);
+  } };
 })();
