@@ -51,3 +51,29 @@ Put **1 (physics)** and **4 (marks)** into the next papercut films, because they
 - *Label Sold Separately*: the marker circles the one ad in three that says "AI".
 
 Keep **2** for a document story. Keep **3** for a punchline that is a change of shape.
+
+## Second look, 25 Oct: the "20 open-source stacks" list (owner)
+
+Each tool is checked against what the studio already has. Our pipeline already renders deterministically and
+headlessly, and it already writes captions, sidecars, a sound mix with loudness checks and three languages. The clay
+films already have a hand-written camera back (`clay/welcome/lib/post.js`): ambient occlusion (GTAO), bokeh depth of
+field, bloom and a grade.
+
+**Worth trying:**
+
+| Tool | What it would add | Where |
+|---|---|---|
+| **Blender (headless, Cycles)**: the job Blender MCP does, without the MCP | Real light bounce, subsurface clay and true soft shadows: the Aardman look that WebGL fakes. This is the biggest possible step up for the Toko clay set. | A test: one still of Toko on the bench in Blender, next to the three.js frame. Cost: Blender in the container, about 300 MB, plus porting the sculpt kit. |
+| **GSAP plugins** (SplitText, DrawSVG, MorphSVG), free since 2025 | Kinetic captions split by letter, line drawing and shape morphs, all seekable frame by frame | Papercut punchlines. Already noted on 19 Oct as "only if we want its plugins". |
+| **whisper.cpp** | Captions from speech | Only for the Gameplay Laboratory compilation, if its clips have commentary. Our films have no voice-over. |
+| **Rive / Lottie** | Interactive, state-driven vector animation for apps | Not for films. It suits the arcade games and the Toko Drop menus. |
+
+**Already covered, or not for us:**
+- **Already in the pipeline:** Remotion, HyperFrames, Motion Canvas, Manim, FFmpeg and three.js. Remotion also needs a
+  company licence above three employees.
+- **pmndrs postprocessing and React Three Fiber:** our post chain already has these passes.
+- **ShaderGradient:** Paper Shaders, noted on 19 Oct, covers this.
+- **Theatre.js:** dormant.
+- **Cap and OpenCut:** human tools. The owner could use OpenCut to trim the Gameplay Laboratory clips by hand.
+- **Figma MCP:** only if there are Figma files to import.
+- **Kokoro:** still held. It has no Finnish voice, and the station's rule is three languages or none.
