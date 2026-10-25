@@ -200,6 +200,8 @@ function placeDrones(t, paths) {
 const TOKO = new Toko(TM), WRAP = new THREE.Group(); WRAP.add(TOKO.group); scene.add(WRAP);
 TOKO.parts.armL.material = TOKO.parts.armR.material = TM.arms; TOKO.hood.visible = true; TOKO.pocket.visible = true;
 TOKO.head.children[4].visible = false;   // no bun
+// v4 (owner: "thumbs are there in the park scene"): the hands are plain rounded paddles; the shared Toko mitt's thumb lobe is hidden here only
+TOKO.hands.forEach((h) => { h.children[1].visible = false; });
 WRAP.position.set(BX - 4, 0, BZ + 0.6);
 const HIP = [0, SEAT + 1.2, 0], at = (v) => [HIP[0] + v[0], HIP[1] + v[1], HIP[2] + v[2]];
 const SIT = { knee: [0, -0.8, 11], foot: [0, -(SEAT + 1.2) + 0.75, 12.6], shoePitch: 0 };
@@ -435,7 +437,11 @@ function frame(t, captions = true) {
   { const gr = S.grip ? S.grip(tq) : {}, tap = gr.tap || 0, loose = S.bird ? 1 : 0;
     const toL = (v) => TOKO.group.worldToLocal(PHONE.localToWorld(V(v)));
     // v3: the mitts hold the sides and the back, clear of the screen
-    const gR = [3.35, -1.8 - loose * 0.6, -1.0], gL = [-3.35, -1.8 - loose * 0.6, -1.0];
+    let gR = [3.35, -1.8 - loose * 0.6, -1.0], gL = [-3.35, -1.8 - loose * 0.6, -1.0];
+    // v4: the park wides. Dusk: both paddles wrap the phone's lower corners from the back (the side the camera sees), so it
+    // reads as held. Dawn: the phone lies back on both loosened paddles, cupped under its lower half. The close-ups keep v3's grip.
+    if (i === 0) { gR = [2.05, -2.5, -1.05]; gL = [-2.05, -2.5, -1.05]; }
+    if (i === 3) { gR = [1.55, -2.3, -1.25]; gL = [-1.55, -2.3, -1.25]; }
     const c = toL([0, -1.4, -0.5]), hR = toL(gR), hL = toL(gL), inR = c.clone().sub(hR).normalize(), inL = (tap > 0.5 ? toL([0, 0, -2]) : c).clone().sub(hL).normalize();
     pz.hdR = hR.toArray(); pz.hdL = hL.toArray(); pz.palm = [inR.toArray(), inL.toArray()];
     TOKO.pose(pz); WRAP.updateMatrixWorld(true); }
@@ -462,5 +468,5 @@ window.__film = { fps: FPS, frames: Math.round(DUR * FPS), events: EVENTS, lang:
   report: { ...CAP.report(g2d, P, { keep, busy: BUSY || {} }), ui: cardReport },
   frame(i, q = 0.92) { return frame(i / FPS).toDataURL('image/jpeg', q); },
   still(t) { return frame(t).toDataURL("image/png"); },
-  dbg(t) { frame(t, false); return { cam: camera.position.toArray(), ph: PHONE.position.toArray(), head: headW().toArray(), shot: shotAt(t) }; } };
+  dbg(t) { frame(t, false); return { cam: camera.position.toArray(), ph: PHONE.position.toArray(), head: headW().toArray(), shot: shotAt(t), hands: TOKO.hands.map((h) => h.getWorldPosition(new THREE.Vector3()).toArray()), phX: V([1, 0, 0]).applyQuaternion(PHONE.quaternion).toArray(), phY: V([0, 1, 0]).applyQuaternion(PHONE.quaternion).toArray() }; } };
 window.__ready = true;
