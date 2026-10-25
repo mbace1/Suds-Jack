@@ -1,9 +1,9 @@
 {
   "film": "count-the-trees-viral",
-  "cut": "Doodle 5, VIRAL CUT v2 (23 Oct). Owner on v1: 'Police car is too big, ending too abruptly', 'the visual seems small for 130ha', '330 ha is huge'. Hook first; one pitch, then ~460 of them; before the assessment → a police inquiry → headlines in six languages; punch on 130 ha (≈ 180 pitches), hold, ease back, loop. The v1 draft (papercut/count-the-trees) is unchanged. v3 (24 Oct): owner asked if this was the Hamina case and wanted where and when: the hook names Muhos, Finland, 2026; a tag NEW Doodle DATA CENTRE · MUHOS, FINLAND sits above the clipping on frame 0 and on the last frame; the post says it is a different site from Hamina. v4 (24 Oct): owner 'Trees end is too fast and needs clarity. What's the end learning?' The punchline says it: 130 ha planned of ~330 ha felled, under half; the label pops on 'half', a ≥3.5 s hold, then a slower ease back.",
+  "cut": "Doodle 5, VIRAL CUT v2 (23 Oct). Owner on v1: 'Police car is too big, ending too abruptly', 'the visual seems small for 130ha', '330 ha is huge'. Hook first; one pitch, then ~460 of them; before the assessment → a police inquiry → headlines in six languages; punch on 130 ha (≈ 180 pitches), hold, ease back, loop. The v1 draft (papercut/count-the-trees) is unchanged. v3 (24 Oct): owner asked if this was the Hamina case and wanted where and when: the hook names Muhos, Finland, 2026; a tag NEW Doodle DATA CENTRE · MUHOS, FINLAND sits above the clipping on frame 0 and on the last frame; the post says it is a different site from Hamina. v4 (24 Oct): owner 'Trees end is too fast and needs clarity. What's the end learning?' The punchline says it: 130 ha planned of ~330 ha felled, under half; the label pops on 'half', a ≥3.5 s hold, then a slower ease back. v5 (25 Oct): police beat corrected to the two requests filed (Yle quotes the police: no preliminary inquiry started yet).",
   "series": "rfh",
   "captionSize": "big",
-  "argument": "About 250,000 trees (by the Guardian's estimate), some 330 hectares or 460 football pitches, were cleared for Doodle's Muhos data centre before the required assessment. Police opened a preliminary inquiry. Planting planned: 130 hectares.",
+  "argument": "About 250,000 trees, some 330 hectares, were cleared for Doodle's Muhos data centre before the required assessment; two requests went to the police; planting planned: 130 hectares.",
   "langs": [
     "en",
     "fi",
@@ -62,11 +62,11 @@
       "until": "s5-0.3",
       "hold": "s5",
       "text": {
-        "en": "Police opened a / preliminary / [inquiry].",
-        "fi": "Poliisi aloitti / [esiselvityksen].",
-        "ja": "警察が / [予備調査] を 開始。"
+        "en": "Two requests / filed with the / [police].",
+        "fi": "Poliisille / kaksi / [tutkintapyyntöä].",
+        "ja": "警察に 2件の / [捜査要請]。"
       },
-      "source": "Oulu police have opened a preliminary inquiry (esiselvitys) into the preparatory work at Muhos, to establish whether there is reason to suspect a crime such as environmental damage; it followed a request filed by a private person on 2 Oct, and two requests in all. Iltalehti, as carried by Kaleva ('IL: Poliisi on aloittanut esiselvityksen Googlen Muhoksen datakeskuksen valmistelutöistä') and MTV Uutiset; Yle; Kaleva ('Oulun poliisille on tehty kaksi tutkintapyyntöä'). An esiselvitys is not a criminal investigation, and the film does not call it one."
+      "source": "v5 (25 Oct): changed from 'Police opened a preliminary inquiry', which the sources dispute. Two requests to investigate the Muhos preparatory work have been filed with Oulu police: one by a private person on 2 Oct, and one by LVV itself (~22 Oct). Kaleva ('Oulun poliisille on tehty kaksi tutkintapyyntöä'; 'LVV on tehnyt poliisille tutkintapyynnön', https://www.kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712) and Iltalehti/MTV earlier reported an esiselvitys had begun; Yle (~22 Oct, https://yle.fi/a/74-20252848) quotes the police saying no preliminary inquiry has been started on either request and they await LVV's statement. The caption claims only the two requests, which both accounts agree on. Search summaries only; the originals were not opened."
     },
     {
       "id": "last",
@@ -109,14 +109,14 @@
       "ja": "警察 · オウル"
     },
     "inqTitle": {
-      "en": "PRELIMINARY",
-      "fi": "ESISELVITYS",
-      "ja": "予備"
+      "en": "REQUESTS TO",
+      "fi": "TUTKINTA-",
+      "ja": "捜査の"
     },
     "inqTitle2": {
-      "en": "INQUIRY",
-      "fi": "",
-      "ja": "調査"
+      "en": "INVESTIGATE: 2",
+      "fi": "PYYNTÖJÄ: 2",
+      "ja": "要請 · 2件"
     },
     "world": {
       "en": "HEADLINES IN SIX LANGUAGES",
@@ -184,7 +184,7 @@
       "why": "the police beat: a generic car in white and blue with a light bar; no insignia"
     },
     "inquiry": {
-      "en": "POLICE · OULU · PRELIMINARY INQUIRY",
+      "en": "POLICE · OULU · REQUESTS TO INVESTIGATE: 2",
       "why": "the card for the inquiry; its words are in each language's ui"
     },
     "patch": {
@@ -197,8 +197,8 @@
     }
   },
   "post": {
-    "en": "Muhos, northern Finland: about 250,000 trees (the Guardian's estimate), ~330 ha, cleared in 2026 for a planned new Doodle data centre, before the required environmental assessment. Police opened a preliminary inquiry. A different site from Hamina. Who counts the trees?",
-    "fi": "Muhos, Pohjois-Suomi: noin 250 000 puuta (The Guardianin arvio), noin 330 hehtaaria, hakattiin 2026 Doodlen suunnitellulle uudelle datakeskukselle ennen lain vaatimaa ympäristöarviointia. Poliisi aloitti esiselvityksen. Eri paikka kuin Hamina. Kuka laskee puut?",
+    "en": "Muhos, northern Finland: about 250,000 trees (the Guardian's estimate), ~330 ha, cleared in 2026 for a planned new Doodle data centre, before the required environmental assessment. Two requests have been filed with the police. A different site from Hamina. Who counts the trees?",
+    "fi": "Muhos, Pohjois-Suomi: noin 250 000 puuta (The Guardianin arvio), noin 330 hehtaaria, hakattiin 2026 Doodlen suunnitellulle uudelle datakeskukselle ennen lain vaatimaa ympäristöarviointia. Poliisille on tehty kaksi tutkintapyyntöä. Eri paikka kuin Hamina. Kuka laskee puut?",
     "ja": "ガーディアン紙の推定で約25万本。約330ヘクタール、サッカー場約460面分の森が、フィンランド・ムホスでDoodleのデータセンターのため、義務づけられた環境影響評価の前に伐採された。警察が予備調査を開始。植樹の計画は130ヘクタール。木は誰が数える？"
   }
 }

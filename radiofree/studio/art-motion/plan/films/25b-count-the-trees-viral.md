@@ -194,3 +194,17 @@ ground shows through.
 - `previews/23-10-Count-the-Trees-VIRAL-v2-en.mp4` (27.0 s with the sign-off).
 - `previews/23-10-Count-the-Trees-VIRAL-v2-loop-en.mp4` (24.0 s, the film only, for platforms that loop).
 - The v1 viral preview is kept.
+
+## v5 (25 Oct): the police beat corrected (v4 held before posting)
+
+- The daily check found that Yle (~22 Oct, https://yle.fi/a/74-20252848) quotes the police saying **no preliminary
+  inquiry has been started on either request**: the private request of 2 Oct, and LVV's own of ~22 Oct. The police are
+  waiting for LVV's statement. Kaleva (https://www.kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+  and Iltalehti/MTV had reported that an esiselvitys had begun.
+- So the caption now claims only what both accounts agree on: **Two requests / filed with the / [police].**
+  - fi: *Poliisille / kaksi / [tutkintapyyntöä].*
+  - ja: *警察に 2件の / [捜査要請]。*
+- The card is now POLICE · OULU / REQUESTS TO / INVESTIGATE: 2, with the same change in fi and ja. The patrol car is
+  unchanged.
+- The post copy now says "Two requests have been filed with the police." (en, 278 characters), and the fi equivalent.
+- Everything else is as in v4. The facts above come from search summaries only.
