@@ -1,0 +1,45 @@
+{
+  "renderer": "Chromium 153 / SwiftShader",
+  "woundPixelBefore": [
+    140,
+    128,
+    107
+  ],
+  "woundPixelAfter": [
+    0,
+    255,
+    0
+  ],
+  "cutCap": 6,
+  "coreIdle": [
+    143,
+    18,
+    4
+  ],
+  "coreCharged": [
+    255,
+    56,
+    14
+  ],
+  "floorClassic": [
+    153,
+    153,
+    153
+  ],
+  "floorSdf": [
+    54,
+    54,
+    54
+  ],
+  "realInput": [
+    "START",
+    "Watcher charge/three-orb volley",
+    "held-fire geometric wound",
+    "held-fire kill/dispose",
+    "Totem emits SDF skulls",
+    "natural timeout saves isolated test records"
+  ],
+  "errors": [],
+  "hardwarePerformance": "not measured",
+  "fullHistoricalSmoke": "not run"
+}
