@@ -4,12 +4,12 @@ first frame. Placed by seconds from the plan's events, so the fi and ja masters 
 
     uv run --with numpy --with soundfile python papercut/secret-inquiry/score.py <events.json> <out.wav> [<report.json> <stems>]
 
-1 · the hit; a low siren in whoops under the light bar from frame 0; the folder hops and slams on "investigate"
+1 · the hit; the folder hops and slams on "investigate"
     (a stamp, a thump, dust).
 2 · a loupe glides over the label; on "secret" the old seal lifts and the new one comes down hard (a wax stamp, a hit).
 3 · the camera pans to the stream; water trickles down the ditches; on "acidification" a sour, falling bend and a
     murky low chord as the stream turns rust.
-4 · the two tags pop on the punch; the bed thins for the hold; the jingle lands on "back", the last chord rings out
+4 · on "clean" the blue ghost line runs down the stream and the water-plan card pins on; the bed thins for the hold; the jingle lands on "back", the last chord rings out
     under the clipping's return.
 """
 import sys, json
@@ -79,12 +79,7 @@ for i, t in enumerate(S[1:NS]):
 for cp in EV['captions']:
     last = max(w['t'] for w in EV['words'] if w['caption'] == cp['id']); s.duck(cp['t0'], last + 0.4, -3.5, why=f'caption {cp["id"]}')
 
-# ── 1 · the light bar from frame 0 (a low siren), the folder hops and slams on "investigate"
-n = max(2, int((tI + 0.8) / 0.34))
-for i in range(n):
-    t = 0.12 + i * 0.34; up = i % 2 == 0
-    s.fx(glide(600, 1150, 0.3) if up else glide(1150, 600, 0.3), t, 0.07 if t < tI else 0.12, -0.2, name='siren' if i == 0 else f'siren {i + 1}')
-s.fx(led_flicker(min(2.4, tI + 0.8), rate=16), 0.05, 0.35, 0.2, name='the light bar')
+# ── 1 · the folder hops and slams on "investigate" (v2: the police light and its siren are cut, owner 26 Oct)
 s.fx(paper_slide(0.3) * 4, tI - 0.32, 0.2, 0, name='the folder lifts')
 s.fx(stamp(), tI, 0.55, 0, name='"investigate": the folder slams'); s.fx(thump(), tI + 0.01, 0.3, 0)
 s.fx(rustle(0.3), tI + 0.05, 0.18, 0.1, name='dust'); accent(tI, 0, 0.26, name='"investigate"')
@@ -103,8 +98,8 @@ s.fx(glide(520, 340, 1.1), tA, 0.12, 0.3, name='"acidification": the sour bend')
 for j, n in enumerate((50, 53, 56)): s.note(fm_ep(n, 1.4, 0.5), tA + 0.02, 0.1, -0.2 + 0.2 * j, 0.4, stem='keys', name='murky chord')
 s.note(sub_bass(37, 0.6), tA, 0.28, 0, 0, stem='bass', name='"acidification": sub'); accent(tA, 2, 0.2, name='"acidification"')
 
-# ── 4 · the two tags on the punch; the hold; the jingle lands on "back"; the last chord rings under the clipping
-s.fx(tag_pop(900), tP, 0.45, -0.1, name='REASONS: SECRET'); s.fx(tag_pop(1100), tP + 0.18, 0.4, 0.3, name='THE WATER')
+# ── 4 · the ghost line and the water-plan card on "clean"; the hold; the jingle lands on "back"; the last chord rings under the clipping
+s.fx(glide(700, 1500, 0.7), tP, 0.07, 0.35, name='"clean": the ghost line runs down the stream'); s.fx(tag_pop(1000), tP + 0.05, 0.45, -0.1, name='the water-plan card'); s.fx(foley('card', 'tap'), tP + 0.12, 0.3, 0.2, name='the pin')
 s.note(kick_tight(1.0), tP, 0.45, 0, 0, stem='drums', name='punch: kick'); accent(tP, NS - 1, 0.24, name='punch')
 hook_land(tB, 0.26)
 s.fx(whoosh(d=tCl - tB + 0.3, way='out', bright=0.4), tB, 0.12, 0, name='"back": home to frame 0')

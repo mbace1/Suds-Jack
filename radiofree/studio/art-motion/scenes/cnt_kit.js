@@ -719,22 +719,11 @@
     stack(c, [{ sh: ground(), d: 0.08, lift: 0.2 }, { sh: forest(), d: 0.1, lift: 0.9 },
       { d: 0.12, fn: (g, ox, oy) => { g.save(); g.translate(ox, oy); ringTo(g, 1, { pen: false, a: 0.9 }); if (extra) extra(g); g.restore(); } }], cam);
   }
-  /** the police light sweeping over the site: two lobes alternating, from below the frame */
-  function strobe(c, lt, a) {
-    if (a <= 0) return; const on = (lt * 8) % 1 < 0.5, lx = on ? 300 : 760, ly = 1450, R0 = 1050;
-    const col = on ? '60,120,255' : '255,60,70';
-    const rg = c.createRadialGradient(lx, ly, 6, lx, ly, R0);
-    rg.addColorStop(0, `rgba(${col},${0.8 * a})`); rg.addColorStop(0.35, `rgba(${col},${0.32 * a})`); rg.addColorStop(1, `rgba(${col},0)`);
-    c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = rg; c.fillRect(0, 0, W, H);
-    // a hard sweep beam, so it reads as a light bar, not a glow
-    c.globalAlpha = 0.22 * a; c.fillStyle = `rgb(${col})`; c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx + (on ? -420 : 420), 0); c.lineTo(lx + (on ? -150 : 150), 0); c.closePath(); c.fill();
-    c.restore();
-  }
   const sealPos = () => ({ x: F0.x + 141, y: F0.y + 81 });
   const SHIFT = -85;                                           // shots 1 and 4: the stream (x≈1010) clear of the IG rail
 
   // ═════════ S1 · sci_hook: frame 0 — the cleared site, the sealed folder already on it, the clipping LVV'S REQUEST
-  //            TO THE POLICE / SECRET; police light flickers; on "investigate" the folder slams (a hop and dust) ═════════
+  //            TO THE POLICE / SECRET; on "investigate" the folder slams (a hop and dust) ═════════
   SCENES.sci_hook = { draw(c, lt) {
     const id = 'sci_hook', dd = dur(id), tI = at(id, 'inv', 2.2);
     const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)), hits: [tI], kick: 0.035 });
@@ -746,7 +735,6 @@
       if (lt > tI) { const k = (lt - tI) / 0.5; if (k < 1) for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU, r = 240 + 120 * k; g.fillStyle = `rgba(214,190,150,${0.4 * (1 - k)})`; g.beginPath(); g.arc(F0.x + Math.cos(a) * r, F0.y + Math.sin(a) * r * 0.6, 14 + 18 * k, 0, TAU); g.fill(); } }
     });
     c.restore();
-    strobe(c, lt, 0.35 + 0.65 * clamp((lt - tI + 0.2) / 0.3, 0, 1));
     placeTag(c);
     bigClip(c, ui('clipLabel', 'LVV’S REQUEST TO THE POLICE'), ui('clipValue', 'SECRET'), { k: lt / 0.25, dy: 420 * ease.io((lt - dd + 0.55) / 0.5) });
     box(c);
@@ -791,8 +779,8 @@
     box(c);
   } };
 
-  // ═════════ S4 · sci_end: the whole site again, the folder sealed, the stream rust; on the punch two tags name the
-  //            halves (REASONS: SECRET on the folder; THE WATER, an arrow to the stream); hold; then home to frame 0 ═════════
+  // ═════════ S4 · sci_end: the whole site again, the folder sealed, the stream rust; on "clean" a blue ghost line
+  //            traces what the stream must be and LVV's water-plan card pins to it (v2, owner 26 Oct); hold; home ═════════
   SCENES.sci_end = { draw(c, lt) {
     const id = 'sci_end', dd = dur(id), tP = at(id, 'punch', 1.4), tB = at(id, 'back', dd - 2.4), tC = at(id, 'clip', dd - 0.9);
     const tL = Math.min(dd - 0.35, tC + 0.3), kR = ease.io((lt - tB) / (tL - tB));
@@ -802,16 +790,34 @@
     sciMap(c, cam, (g) => {
       put(g, folder(), F0.x, F0.y, { sc: 0.92, rot: -0.04, lift: 1 }); seal(g, sealPos().x, sealPos().y, 1, { sc: 0.92 });
       acidWater(g, lt, 0, 1);
+      // v2 (owner, 26 Oct): what the water must be, not what it is. A clean-blue ghost line traces the stream on "clean"
+      // and runs down it; the rust stays underneath, because nothing has been cleaned
+      const kG = clamp((lt - tP + 0.05) / 0.7, 0, 1) * clamp((tB + 0.5 - lt) / 0.5, 0, 1);
+      if (kG > 0) {
+        const y0 = 620, y1 = lerp(y0, 1560, ease.out(kG));
+        g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+        for (const [w, col] of [[26, `rgba(110,195,255,${0.45 * kG})`], [9, `rgba(215,242,255,${kG})`]]) {
+          g.strokeStyle = col; g.lineWidth = w; g.setLineDash([22, 14]); g.lineDashOffset = -lt * 30;
+          g.beginPath(); for (let y = y0; y <= y1; y += 12) { const x = streamX(y) + 4; y === y0 ? g.moveTo(x, y) : g.lineTo(x, y); } g.stroke();
+        }
+        g.restore();
+      }
     });
     c.restore();
+    // the water-plan card pinned to the stream on "clean", a string from its pin to the water; the folder stays sealed
     const kT = clamp((lt - tP + 0.05) / 0.25, 0, 1) * clamp((tB + 0.4 - lt) / 0.4, 0, 1);
     if (kT > 0) {
-      screenTag(c, ui('reasons', 'REASONS: SECRET'), 470, 640, { a: kT, size: 40 });
-      // THE WATER, with an arrow to the stream
-      screenTag(c, ui('water', 'THE WATER'), 760, 1230, { a: kT, size: 40 });
-      c.save(); c.globalAlpha = kT; c.strokeStyle = C.cream; c.fillStyle = C.cream; c.lineWidth = 7; c.lineCap = 'round'; c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 8;
-      const x0 = 840, y0 = 1180, x1 = 912, y1 = 1080; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1 + 14); c.stroke();
-      c.beginPath(); c.moveTo(x1 - 6, y1 - 6); c.lineTo(x1 + 14, y1 + 20); c.lineTo(x1 - 16, y1 + 18); c.closePath(); c.fill(); c.restore();
+      const cx = 640, cy = 1200, sx = 905, sy = 1095;
+      c.save(); c.globalAlpha = kT; c.strokeStyle = '#efe6cf'; c.lineWidth = 5; c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 6; c.beginPath(); c.moveTo(cx + 150, cy - 60); c.quadraticCurveTo((cx + sx) / 2 + 40, cy - 40, sx, sy); c.stroke();
+      c.fillStyle = '#c4382e'; c.beginPath(); c.arc(sx, sy, 9, 0, TAU); c.fill(); c.restore();
+      c.save(); c.globalAlpha = kT; const sc = 0.9 + 0.1 * ease.back(kT); c.translate(cx, cy); c.rotate(-0.04 + swing(lt, [[tP + 0.15, 0.03]])); c.scale(sc, sc);
+      c.shadowColor = 'rgba(0,0,0,.6)'; c.shadowBlur = 14; c.shadowOffsetX = 7; c.shadowOffsetY = 10; c.fillStyle = C.cream; c.beginPath(); c.roundRect(-190, -88, 380, 176, 10); c.fill();
+      c.shadowColor = 'transparent'; c.fillStyle = '#4f9fd6'; c.fillRect(-190, -88, 380, 16);
+      c.fillStyle = C.ink; c.textAlign = 'left';
+      const fit = (t, size, tmpl) => { let fs = size; do { c.font = tmpl.replace('$px', fs + 'px'); fs -= 2; } while (c.measureText(t).width > 340 && fs > 10); };
+      fit(ui('planHead', 'LVV · WATER PLAN'), 30, `$px "ArchivoBlack-400", ${JP}`); c.fillText(ui('planHead', 'LVV · WATER PLAN'), -166, -26);
+      fit(ui('planDue', 'DUE 5.11.2026'), 64, `400 $px "Anton-400", ${JP}`); c.fillText(ui('planDue', 'DUE 5.11.2026'), -166, 50);
+      c.fillStyle = '#c4382e'; c.beginPath(); c.arc(150, -60, 10, 0, TAU); c.fill(); c.restore();
     }
     const kC = clamp((lt - tC + 0.32) / 0.32, 0, 1);
     placeTag(c, { a: clamp(kC * 2.5, 0, 1), dy: 320 * (1 - ease.out(kC)) });

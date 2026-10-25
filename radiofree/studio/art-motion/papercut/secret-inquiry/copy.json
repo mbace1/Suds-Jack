@@ -62,11 +62,11 @@
       "until": "end-1.1",
       "hold": "end",
       "text": {
-        "en": "Reasons: secret. / The water: / [everyone's].",
-        "fi": "Syyt: salaisia. / Vesi: / [kaikkien].",
-        "ja": "理由は 非公開。 / 水は / [みんなの もの]。"
+        "en": "The papers can / stay secret. / The water must / stay [clean].",
+        "fi": "Paperit voivat olla / salaisia. Veden / on pysyttävä [puhtaana].",
+        "ja": "書類は 非公開で いい。 / 水は きれいで なければ / [ならない]。"
       },
-      "source": "The station's own line, drawn from the two facts above: LVV's reasons are secret; the water in question is public (a stream/ground water is not anyone's trade secret). Opinion, framed as the punchline."
+      "source": "v2 (owner, 26 Oct: 'find a better way to say that the water shouldn't be polluted'). The station's own line, drawn from two documented facts: LVV keeps its reasons secret under the Publicity Act (Kaleva/STT, Yle, ~22 Oct 2026), and LVV demanded a water plan by 5 Nov 2026 after monitoring showed signs of acidification near the site (Kaleva, Maaseudun Tulevaisuus, Yle). 'Must stay clean' is the purpose of that demand, i.e. the authority's requirement; it does NOT claim the water is polluted beyond the signs of acidification stated in the caption before. On screen the stream stays rust (nothing has been cleaned) and a blue ghost line shows what it must be. Search summaries only; no primary source opened."
     }
   ],
   "ui": {
@@ -120,15 +120,15 @@
       "fi": "LVV: VESISUUNNITELMA 5.11.2026 MENNESSÄ",
       "ja": "LVV：水の計画を 2026.11.5までに"
     },
-    "reasons": {
-      "en": "REASONS: SECRET",
-      "fi": "SYYT: SALAISIA",
-      "ja": "理由：非公開"
+    "planHead": {
+      "en": "LVV · WATER PLAN",
+      "fi": "LVV · VESISUUNNITELMA",
+      "ja": "LVV · 水の 計画"
     },
-    "water": {
-      "en": "THE WATER",
-      "fi": "VESI",
-      "ja": "水"
+    "planDue": {
+      "en": "DUE 5.11.2026",
+      "fi": "5.11.2026 MENNESSÄ",
+      "ja": "2026.11.5 まで"
     }
   },
   "props": {
@@ -142,7 +142,7 @@
     }
   },
   "post": {
-    "en": "New in Muhos, Finland: the authority itself has asked the police to investigate Doodle's data-centre site. Its reasons are secret. It found signs of acidification in the water nearby and wants a water plan by 5 Nov. The reasons: secret. The water: everyone's. Whose secret is it?",
-    "fi": "Uutta Muhokselta: LVV itse pyysi poliisia tutkimaan Doodlen datakeskustyömaan. Perusteet ovat salaisia. Lähivesissä on merkkejä happamoitumisesta, ja vesisuunnitelma vaaditaan 5.11. mennessä. Perusteet: salaisia. Vesi: kaikkien. Kenen salaisuus se on?"
+    "en": "New in Muhos, Finland: the authority itself has asked the police to investigate Doodle's data-centre site, and keeps its reasons secret. It also found signs of acidification in nearby water and wants a water plan by 5 Nov. The papers can stay secret. Can the water stay clean?",
+    "fi": "Uutta Muhokselta: LVV itse pyysi poliisia tutkimaan Doodlen datakeskustyömaan, ja perusteet ovat salaisia. Lähivesissä on merkkejä happamoitumisesta, ja vesisuunnitelma vaaditaan 5.11. mennessä. Paperit voivat olla salaisia. Pysyykö vesi puhtaana?"
   }
 }
