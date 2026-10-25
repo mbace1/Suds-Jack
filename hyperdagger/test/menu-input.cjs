@@ -84,7 +84,7 @@ s.listen(0, '127.0.0.1', async () => {
         skulls: [...document.querySelectorAll('#msg [data-renderer]')].map(b => b.dataset.renderer + ':' + b.getAttribute('aria-pressed')),
         others: [...document.querySelectorAll('#msg button')].filter(b => !b.matches('.mn-season, #startBtn, [data-renderer]')).map(b => b.id || b.textContent),
         start: !!document.getElementById('startBtn'), menu: window.__menu() }));
-      ok('the menu offers seasons 1-3, SKULLS · CLASSIC | SDF and START, nothing else (no VOID, no mode row, no RUN)', shape.tabs.join(',') === 'ember,inca,haul' && shape.skulls.join(',') === 'classic:true,sdf:false' && shape.start && shape.others.length === 0, JSON.stringify(shape));
+      ok('the menu offers seasons 1-3, RENDER · CLASSIC | SDF and START, nothing else (no VOID, no mode row, no RUN)', shape.tabs.join(',') === 'ember,inca,haul' && shape.skulls.join(',') === 'classic:true,sdf:false' && shape.start && shape.others.length === 0, JSON.stringify(shape));
       ok('the menu plays the season it shows: season 1 is HYPER, not the saved PURE', shape.menu.mode === 'hyper', JSON.stringify(shape.menu));
       let c = await center(q, '#msg button.mn-season[data-season="inca"]');
       if (!c) throw new Error('SEASON 2 is not reachable on screen');

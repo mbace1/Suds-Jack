@@ -2,7 +2,7 @@
 // each of the three seasons.   NODE_PATH=$(npm root -g) node hyperdagger/test/sdf-play.cjs
 //
 // sdf-menu.cjs proves the switch and sdf-skull.cjs the shader. This one proves
-// the choice reaches the game: a finger picks SKULLS · SDF and the season on
+// the choice reaches the game: a finger picks RENDER · SDF and the season on
 // the menu, START plays it, and then, in that run:
 //   - the skulls the season's own director spawns are SDF skulls, never skinned;
 //   - skull, splitter and dread come up as their own profiles;
@@ -13,7 +13,7 @@
 //     a splitter splits into SDF minis;
 //   - season 3, which has no gun: the look locks an SDF skull and the missiles
 //     kill it;
-//   - END RUN, SKULLS · CLASSIC, START: the skulls are voxels again.
+//   - END RUN, RENDER · CLASSIC, START: the skulls are voxels again.
 // Phone landscape with touch, the view where the menu is tightest. Waits are
 // on game time, not frames (a ~4 fps software renderer).
 const { chromium } = require('playwright');
@@ -64,7 +64,7 @@ s.listen(0, '127.0.0.1', async () => {
       await tap(`#msg button.mn-season[data-season="${sn}"]`);
       await tap('[data-renderer="sdf"]');
       const picked = await p.evaluate(() => ({ state: window.__hd.debug.getState().state, on: document.querySelector('[data-renderer="sdf"]').getAttribute('aria-pressed'), saved: localStorage.getItem('hyperDaggerRenderer') }));
-      ok(`${sn}: a finger on SKULLS · SDF picks it, saves it, and starts nothing`, picked.state === 'menu' && picked.on === 'true' && picked.saved === 'sdf', JSON.stringify(picked));
+      ok(`${sn}: a finger on RENDER · SDF picks it, saves it, and starts nothing`, picked.state === 'menu' && picked.on === 'true' && picked.saved === 'sdf', JSON.stringify(picked));
       await tap('#startBtn');
       await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing');
 
@@ -177,7 +177,7 @@ s.listen(0, '127.0.0.1', async () => {
       await tap('#startBtn');
       await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing');
       const classic = await p.evaluate(async () => { const d = window.__hd.debug; d.freezeDirector(true); const sk = d.spawnSkull(); await new Promise(r => requestAnimationFrame(r)); return { sdf: !!sk.sdfRoot, saved: localStorage.getItem('hyperDaggerRenderer') }; });
-      ok(`${sn}: END RUN, SKULLS · CLASSIC, START — the skulls are voxels again`, back === 'menu' && !classic.sdf && classic.saved === 'classic', JSON.stringify({ back, classic }));
+      ok(`${sn}: END RUN, RENDER · CLASSIC, START — the skulls are voxels again`, back === 'menu' && !classic.sdf && classic.saved === 'classic', JSON.stringify({ back, classic }));
       ok(`${sn}: zero page or console errors`, errs.length === 0, errs.slice(0, 3).join(' | '));
       await ctx.close();
     }
