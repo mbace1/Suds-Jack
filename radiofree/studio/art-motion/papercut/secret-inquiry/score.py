@@ -96,6 +96,7 @@ hit(tS, (62, 65, 68, 74), 0.85, '"secret": the seal'); s.fx(press_stamp(1.0, see
 s.fx(bonk(70), tS + 0.25, 0.2, 0.2, name='nothing under the lens')
 
 # ── 3 · the ditches trickle to the stream; "acidification" bends sour and sinks
+s.fx(paper_slide(0.25) * 3, tD, 0.18, 0.3, name='the ditches start')
 for i in range(6):
     s.fx(chime(88 - i, 0.25), tD + 0.2 + i * 0.22, 0.06, 0.4, name='trickle' if i == 0 else f'trickle {i + 1}')
 s.fx(glide(520, 340, 1.1), tA, 0.12, 0.3, name='"acidification": the sour bend')

@@ -1,0 +1,109 @@
+{
+  "film": "needs-a-designer",
+  "cut": "v1 stills (25 Oct): Toko set 2/4, the shared studio (clay/studio/set.js)",
+  "series": "toko",
+  "captionSize": "big",
+  "argument": "With AI, working prototypes are cheap and fast, but none is fun until someone shapes one; knowing what to make is the scarce part now.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "ten",
+      "role": "setup",
+      "at": "s1+0.6",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "Ten prototypes / in a [week].",
+        "fi": "Kymmenen prototyyppiä / [viikossa].",
+        "ja": "1週間で 試作が / [10本]。"
+      },
+      "source": "Observed, not reported: the film shows one way of working, Toko's own. No product or tool is named; the boxes are drawn for the film."
+    },
+    {
+      "id": "work",
+      "role": "evidence",
+      "at": "s2+0.3",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "All of them work. / None is [fun].",
+        "fi": "Kaikki toimivat. / Yksikään ei ole [hauska].",
+        "ja": "全部 動く。 / でも [楽しくない]。"
+      },
+      "source": "The film's own picture: each box plays for a moment, gets a WORKS tick, and its FUN meter stays empty."
+    },
+    {
+      "id": "fun",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "He reshaped one. / Now it's [fun].",
+        "fi": "Hän muotoili yhden. / Nyt se on [hauska].",
+        "ja": "1本を 作り直した。 / 今は [楽しい]。"
+      },
+      "source": "The film's own picture: Toko squeezes one box into a new shape and its FUN meter fills."
+    },
+    {
+      "id": "isnt",
+      "role": "punchline",
+      "at": "s4+0.3",
+      "until": "s5-0.2",
+      "hold": "s5",
+      "text": {
+        "en": "Making is cheap now. / Knowing what to make / [isn't].",
+        "fi": "Tekeminen on halpaa. / Tietää, mitä tehdä, / [ei ole].",
+        "ja": "作るのは 安い。 / 何を作るかは / [安くない]。"
+      },
+      "source": "The station's line, over the crate of nine and the one on the desk."
+    }
+  ],
+  "ui": {
+    "card1": {
+      "en": "WE BUILD FAST.",
+      "fi": "RAKENNAMME NOPEASTI.",
+      "ja": "作るのは 速い。"
+    },
+    "card2": {
+      "en": "WE STILL DECIDE WHAT.",
+      "fi": "PÄÄTÄMME YHÄ, MITÄ.",
+      "ja": "何を作るかは 自分で。"
+    },
+    "name": {
+      "en": "TOKO MIDORI · THE GAME CREATOR",
+      "fi": "TOKO MIDORI · PELINTEKIJÄ",
+      "ja": "美鳥十湖 · ゲームクリエイター"
+    },
+    "works": {
+      "en": "WORKS",
+      "fi": "TOIMII",
+      "ja": "動く"
+    },
+    "funL": {
+      "en": "FUN",
+      "fi": "HAUSKA",
+      "ja": "楽しさ"
+    },
+    "proto": {
+      "en": "PROTOTYPE",
+      "fi": "PROTOTYYPPI",
+      "ja": "試作"
+    }
+  },
+  "post": {
+    "en": "Ten prototypes in a week. All of them work. None is fun, until someone shapes one. Making is cheap now. Knowing what to make isn't. #gamedev #indiedev #AI #claymation",
+    "fi": "Kymmenen prototyyppiä viikossa. Kaikki toimivat. Yksikään ei ole hauska, ennen kuin joku muotoilee yhden. Tekeminen on halpaa. Tietää, mitä tehdä, ei ole. #pelinkehitys #indiedev #tekoäly",
+    "ja": "1週間で試作10本。全部動く。でも楽しくない。誰かが形にするまでは。作るのは安い。何を作るかは安くない。#ゲーム開発 #インディーゲーム #AI"
+  }
+}
