@@ -7,31 +7,31 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=47';
-import { buildFloor } from './render/floor.js?v=47';
-import { fitCamera, screenToWorld } from './render/view.js?v=47';
-import * as worldsSim from './sim/worlds.js?v=47';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=47';
-import * as reshapeSim from './sim/reshape.js?v=47';
-import { Scenery } from './render/scenery.js?v=47';
-import { Transit } from './render/transit.js?v=47';
-import { Splats } from './render/splats.js?v=47';
-import { Actors } from './render/actors.js?v=47';
-import { GEL_TIME } from './render/gel.js?v=47';
-import { studioEnvironment } from './render/env.js?v=47';
-import { Specimen } from './render/specimen.js?v=47';
-import { createWorld, step, api as simApi } from './sim/world.js?v=47';
-import { stage as stagePk } from './sim/pickups.js?v=47';
-import { Input } from './input.js?v=47';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=47';
-import { Announcer } from './announcer.js?v=47';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=47';
-import { metricOf } from './sim/challenge.js?v=47';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=47';
-import { Sound } from './audio.js?v=47';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=47';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=47';
-import { Readout } from './readout.js?v=47';
+import { TUNING } from './tuning.js?v=48';
+import { buildFloor } from './render/floor.js?v=48';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=48';
+import * as worldsSim from './sim/worlds.js?v=48';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=48';
+import * as reshapeSim from './sim/reshape.js?v=48';
+import { Scenery } from './render/scenery.js?v=48';
+import { Transit } from './render/transit.js?v=48';
+import { Splats } from './render/splats.js?v=48';
+import { Actors } from './render/actors.js?v=48';
+import { GEL_TIME } from './render/gel.js?v=48';
+import { studioEnvironment } from './render/env.js?v=48';
+import { Specimen } from './render/specimen.js?v=48';
+import { createWorld, step, api as simApi } from './sim/world.js?v=48';
+import { stage as stagePk } from './sim/pickups.js?v=48';
+import { Input } from './input.js?v=48';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=48';
+import { Announcer } from './announcer.js?v=48';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=48';
+import { metricOf } from './sim/challenge.js?v=48';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=48';
+import { Sound } from './audio.js?v=48';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=48';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=48';
+import { Readout } from './readout.js?v=48';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -85,6 +85,10 @@ const actors = new Actors(scene, splats, { goo: gooOn() });
 const scenery = new Scenery(scene, T);   // the curb and the lawn, the sewer's walls (render/scenery.js)
 const camera = new THREE.PerspectiveCamera();
 const camRest = new THREE.Vector3();
+// the ground the screen shows round the followed point (measureSeen)
+const seen = { x0: 0, x1: 0, z0: 0, z1: 0, ok: false };
+// one ray onto the floor, shared by measureSeen and the pointer
+const _ray = new THREE.Raycaster(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3(), _ndc = new THREE.Vector2();
 // the point a bigger world's camera follows (zero while the whole arena is
 // on screen): the hero, eased, kept from showing more than T.camera.follow.edge
 // past the floor's edge
@@ -200,6 +204,22 @@ function resize() {
   fitCamera(camera, following ?? arenaBox(), w / h, { ...T.camera, tiltDeg: T.arena[screenArena()].tiltDeg }, turn, { w, h });
   fitHx = world?.hx ?? 0; fitHz = world?.hz ?? 0;
   camRest.copy(camera.position);
+  measureSeen();
+}
+// how far the ground the screen shows reaches from the followed point, each
+// way (v48): the middle of each screen edge cast onto the floor. The view box
+// is fitted to the screen's narrow side, so on a phone held upright it does
+// not reach the long side's edges, and a clamp that assumed it did let the
+// camera show a quarter of a screen of void past the sewer's end
+function measureSeen() {
+  camera.updateMatrixWorld();
+  seen.x0 = seen.z0 = Infinity; seen.x1 = seen.z1 = -Infinity; seen.ok = true;
+  for (const [nx, ny] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+    _ray.setFromCamera(_ndc.set(nx, ny), camera);
+    if (!_ray.ray.intersectPlane(_plane, _hit)) { seen.ok = false; return; }
+    seen.x0 = Math.min(seen.x0, _hit.x); seen.x1 = Math.max(seen.x1, _hit.x);
+    seen.z0 = Math.min(seen.z0, _hit.z); seen.z1 = Math.max(seen.z1, _hit.z);
+  }
 }
 let following = null;   // the box the camera carries when it follows; null when the whole arena is on screen
 
@@ -228,8 +248,16 @@ function offscreen() {
 function follow(dt, a) {
   if (!following || !world) { camAt.set(0, 0, 0); return; }
   const F = T.camera.follow, A = T.arena[arenaName], h = world.hero;
-  const ex = Math.max(0, world.hx - A.hx + F.edge), ez = Math.max(0, world.hz - A.hz + F.edge);
-  const tx = Math.max(-ex, Math.min(ex, h.px + (h.x - h.px) * a)), tz = Math.max(-ez, Math.min(ez, h.pz + (h.z - h.pz) * a));
+  // the followed point may go only so far that the screen's bottom and sides
+  // show no more than `edge` past the floor; its top looks out past the far
+  // end in any perspective view, which is where the world's surround stands,
+  // so that side keeps the old rule. A floor shorter than the screen that way
+  // stays centred
+  const [dx, dz] = screenDown(turn), ox = world.hx - A.hx + F.edge, oz = world.hz - A.hz + F.edge;
+  const side = (lo, hi, oLo, oHi, upLo, upHi) => { if (!seen.ok) return [oLo, oHi]; const a = upLo ? oLo : lo, b = upHi ? oHi : hi; return a > b ? [(a + b) / 2, (a + b) / 2] : [a, b]; };
+  const [x0, x1] = side(-world.hx - F.edge - seen.x0, world.hx + F.edge - seen.x1, -ox, ox, dx === 1, dx === -1);
+  const [z0, z1] = side(-world.hz - F.edge - seen.z0, world.hz + F.edge - seen.z1, -oz, oz, dz === 1, dz === -1);
+  const tx = Math.max(x0, Math.min(x1, h.px + (h.x - h.px) * a)), tz = Math.max(z0, Math.min(z1, h.pz + (h.z - h.pz) * a));
   const k = 1 - Math.exp(-dt / F.tau);
   camAt.x += (tx - camAt.x) * k; camAt.z += (tz - camAt.z) * k;
 }
@@ -417,7 +445,7 @@ const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY)
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=47`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=48`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -606,7 +634,6 @@ function onEvent(e) {
 // the top, so screen-down is +z (unless the view is turned: screenToWorld);
 // the mouse aims at the floor under it, and
 // a cursor within the hero's own radius gives no aim (1.x main.js:9228-9237).
-const _ray = new THREE.Raycaster(), _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _hit = new THREE.Vector3(), _ndc = new THREE.Vector2();
 function toWorld(inp) {
   const [mx, mz] = screenToWorld(turn, inp.mx, inp.my), [ax, az] = screenToWorld(turn, inp.ax, inp.ay);
   const out = { mx, mz, ax, az, aim: inp.aim, fire: inp.fire, dash: false };

@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v48 — 2026-10-25
+**A phone held upright shows floor to the bottom of the screen in every world, the ice's cracks sit under the fight instead of over it, and DASH THROUGH! tags one gate rather than all of them**
+- From rendering all nine arcade worlds both ways up, mid-fight.
+- PORTRAIT: on the worlds bigger than the screen (driveway, sewer, core) the camera follows the hero and stops so it shows at most `camera.follow.edge` (2.5 m) past the floor. That stop assumed the fitted view box reached the screen's top and bottom; on an upright phone the fit is set by the screen's WIDTH, so it does not, and at the sewer's near end a quarter of the screen was void. The camera now casts the middle of each screen edge onto the floor once per resize and stops on what it actually sees, on the bottom and the sides. The top keeps the old rule: in any perspective view the top of the screen looks out past the far end, which is where each world's surround stands. A floor shorter than the screen that way stays centred.
+- THE ICE: its cracks were drawn at full line strength and were the loudest thing on screen, a white web the white droplet and the gels' splats were lost in. They are at 45% now, a shade darker, and the finer second set of cracks is fainter.
+- THE GATES: until a player's first dash through one (1.x's teaching rule, kept per browser) every live gate carried DASH THROUGH!, three or four tags crowding the HUD's own line. Only the nearest live gate carries it now.
+- Cache tokens `?v=47` → `?v=48`; HUD label → `2.0 · v48`
+
+---
+
 ## v47 — 2026-10-25
 **Thirteen more campaign rooms tuned until the floor is never empty for long and a sharp player clearly beats a rough one; the campaign re-measured and re-ordered**
 - After v46, fifteen of the twenty-four older rooms still failed one of `scripts/room-eval.mjs`'s five checks. Thirteen now pass all five; every room keeps its idea and its id:

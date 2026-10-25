@@ -27,9 +27,9 @@
 // go through the actors' own chunks.
 import * as THREE from 'three/webgpu';
 import { texture } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=47';
-import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=47';
-import { t as say } from '../ui.js?v=47';
+import { TUNING } from '../tuning.js?v=48';
+import { itemLook, gateLook, glyphOf, colorOf } from '../sim/pickups.js?v=48';
+import { t as say } from '../ui.js?v=48';
 
 const T = TUNING, P = T.pickups, G = P.gate, C = P.convoy, B = P.bounty;
 const POOLS = 96;   // pools of light a frame: the drops, the beams, the moths
@@ -252,6 +252,9 @@ export class PickupView {
     // gates
     i = 0;
     const hintTex = k.gateUsed ? null : labelTexture(say('dashThrough'), G.hint.color, G.hint.glow);
+    // v48: the tag over the nearest live gate only; on every gate at once it crowded the HUD
+    let near = null, nd = Infinity;
+    if (hintTex) for (const g of k.gates) { const d = g.alive ? Math.hypot(g.x - w.hero.x, g.z - w.hero.z) : Infinity; if (d < nd) { nd = d; near = g; } }
     for (const g of k.gates) {
       const v = this._gate(i++), look = gateLook(g, time), x = lerp(g, 'x'), z = lerp(g, 'z');
       const dx = Math.cos(g.angle + Math.PI / 2) * G.half, dz = Math.sin(g.angle + Math.PI / 2) * G.half;
@@ -263,8 +266,8 @@ export class PickupView {
       v.laserMat.opacity = look.laser; v.glowMat.opacity = look.glow;
       v.postMat.opacity = look.fade;
       if (g.alive) pool(x, z, P.light.laser.r, look.color, P.light.laser.k * look.fade, g.angle, G.half * 2 + P.light.laser.r);
-      // the teaching tag over every live gate (main.js:5891-5906)
-      const tag = hintTex && g.alive && w.hero.alive && this.playing;
+      // the teaching tag (main.js:5891-5906), over the nearest live gate
+      const tag = hintTex && g === near && w.hero.alive && this.playing;
       v.hint.visible = !!tag;
       if (tag) {
         setPicture(v.hint, hintTex);

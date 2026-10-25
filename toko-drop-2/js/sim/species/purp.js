@@ -68,7 +68,7 @@
 // shockwave rattles it while it waits, its own or another's: the core's shock
 // skips a body in the wait, as 1.x had nothing there yet to rattle
 // (main.js:4518-4529).
-import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=47';
+import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=48';
 
 const TAU = Math.PI * 2;
 

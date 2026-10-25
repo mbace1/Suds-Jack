@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=47';
-import WAVES from './tuning/waves.js?v=47';
-import PICKUPS from './tuning/pickups.js?v=47';
+import { SPECIES } from './tuning/species/index.js?v=48';
+import WAVES from './tuning/waves.js?v=48';
+import PICKUPS from './tuning/pickups.js?v=48';
 
 export const TUNING = {
   render: {
@@ -105,7 +105,7 @@ export const TUNING = {
       boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.05, 0.04, 0.035], rivet: [0.16, 0.12, 0.09], grate: 6.4, grateW: [1.4, 0.5],
                 glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6 },
       river: { water: [0.004, 0.025, 0.03], waterHi: [0.08, 0.35, 0.3], flow: 1.6, bank: 0.78, pebble: [0.05, 0.05, 0.045], foam: [0.5, 0.75, 0.7] },
-      ice: { base: [0.055, 0.085, 0.125], deep: [0.02, 0.035, 0.07], crack: [0.85, 0.95, 1.0], scale: 0.35, frost: [0.6, 0.75, 0.85] },
+      ice: { base: [0.055, 0.085, 0.125], deep: [0.02, 0.035, 0.07], crack: [0.6, 0.72, 0.85], lines: 0.45, scale: 0.35, frost: [0.6, 0.75, 0.85] },
       deep: { silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6 },
       core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5 },
     },

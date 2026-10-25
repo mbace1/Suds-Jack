@@ -21,8 +21,8 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=47';
-import { noise } from './scenery.js?v=47';
+import { GEL_TIME } from './gel.js?v=48';
+import { noise } from './scenery.js?v=48';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -332,12 +332,13 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const I = W.ice, n = noise(w.mul(I.scale)), n2 = noise(w.mul(I.scale * 2.7).add(9.1));
     const r1 = abs(n.sub(0.5)), r2 = abs(n2.sub(0.5));
     const aa1 = max(fwidth(r1), 1e-4), aa2 = max(fwidth(r2), 1e-4);
-    const crack = float(1).sub(smoothstep(0.004, float(0.012).add(aa1), r1)).add(float(1).sub(smoothstep(0.003, float(0.008).add(aa2), r2)).mul(0.6));
+    const crack = float(1).sub(smoothstep(0.004, float(0.012).add(aa1), r1)).add(float(1).sub(smoothstep(0.003, float(0.008).add(aa2), r2)).mul(0.35));
     const frost = float(1).sub(smoothstep(0, 0.06, r1)).mul(noise(w.mul(9)).mul(0.6).add(0.4));
     const depth = noise(w.mul(0.12).add(4.4));
     let col = mix(v3(I.deep), v3(I.base), depth.mul(0.7).add(0.3));
     col = col.add(v3(I.frost).mul(frost.mul(0.1))).add(v3(I.crack).mul(min(crack, 1).mul(0.3)));
-    return { col, mask: min(crack, 1), lineCol: v3(I.crack), wet: float(0.6) };
+    // the cracks are a texture under the fight, not lines across it (v48: at full strength they were the loudest thing on screen)
+    return { col, mask: min(crack, 1).mul(I.lines), lineCol: v3(I.crack), wet: float(0.6) };
   };
   // THE DEEP: black silt in slow ripples, lit only by what lives in it
   const deep = (p, w) => {
