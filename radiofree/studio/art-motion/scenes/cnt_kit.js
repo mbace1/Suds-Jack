@@ -721,12 +721,17 @@
   }
   /** the police light sweeping over the site: two lobes alternating, from below the frame */
   function strobe(c, lt, a) {
-    if (a <= 0) return; const on = (lt * 8) % 1 < 0.5, lx = on ? 330 : 730, ly = 1500, R0 = 900;
+    if (a <= 0) return; const on = (lt * 8) % 1 < 0.5, lx = on ? 300 : 760, ly = 1450, R0 = 1050;
+    const col = on ? '60,120,255' : '255,60,70';
     const rg = c.createRadialGradient(lx, ly, 6, lx, ly, R0);
-    rg.addColorStop(0, `rgba(70,130,255,${0.45 * a})`); rg.addColorStop(0.4, `rgba(70,130,255,${0.16 * a})`); rg.addColorStop(1, 'rgba(70,130,255,0)');
-    c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = rg; c.fillRect(0, 0, W, H); c.restore();
+    rg.addColorStop(0, `rgba(${col},${0.8 * a})`); rg.addColorStop(0.35, `rgba(${col},${0.32 * a})`); rg.addColorStop(1, `rgba(${col},0)`);
+    c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = rg; c.fillRect(0, 0, W, H);
+    // a hard sweep beam, so it reads as a light bar, not a glow
+    c.globalAlpha = 0.22 * a; c.fillStyle = `rgb(${col})`; c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx + (on ? -420 : 420), 0); c.lineTo(lx + (on ? -150 : 150), 0); c.closePath(); c.fill();
+    c.restore();
   }
   const sealPos = () => ({ x: F0.x + 141, y: F0.y + 81 });
+  const SHIFT = -85;                                           // shots 1 and 4: the stream (x≈1010) clear of the IG rail
 
   // ═════════ S1 · sci_hook: frame 0 — the cleared site, the sealed folder already on it, the clipping LVV'S REQUEST
   //            TO THE POLICE / SECRET; police light flickers; on "investigate" the folder slams (a hop and dust) ═════════
@@ -734,14 +739,14 @@
     const id = 'sci_hook', dd = dur(id), tI = at(id, 'inv', 2.2);
     const cam = vcam(lt, dd, { z: (l) => 1 + 0.03 * (1 - ease.out(l / 0.4)), hits: [tI], kick: 0.035 });
     const hop = lt < tI ? Math.sin(clamp((lt - tI + 0.32) / 0.32, 0, 1) * Math.PI) * 60 : 0, squash = lt > tI ? Math.exp(-(lt - tI) * 9) * 0.06 : 0;
-    c.save(); camZ(c, 1 + 0.03 * ease.io(lt / dd), V.fx, 950);
+    c.save(); c.translate(SHIFT, 0); camZ(c, 1 + 0.03 * ease.io(lt / dd), V.fx, 950);
     sciMap(c, cam, (g) => {
       put(g, folder(), F0.x, F0.y - hop, { sc: 0.92 * (1 + squash), rot: -0.04, lift: 1 + hop / 40 });
       seal(g, sealPos().x, sealPos().y - hop, 1, { sc: 0.92 });
       if (lt > tI) { const k = (lt - tI) / 0.5; if (k < 1) for (let i = 0; i < 10; i++) { const a = (i / 10) * TAU, r = 240 + 120 * k; g.fillStyle = `rgba(214,190,150,${0.4 * (1 - k)})`; g.beginPath(); g.arc(F0.x + Math.cos(a) * r, F0.y + Math.sin(a) * r * 0.6, 14 + 18 * k, 0, TAU); g.fill(); } }
     });
     c.restore();
-    strobe(c, lt, clamp((lt - tI + 0.2) / 0.3, 0, 1) * 0.9);
+    strobe(c, lt, 0.35 + 0.65 * clamp((lt - tI + 0.2) / 0.3, 0, 1));
     placeTag(c);
     bigClip(c, ui('clipLabel', 'LVV’S REQUEST TO THE POLICE'), ui('clipValue', 'SECRET'), { k: lt / 0.25, dy: 420 * ease.io((lt - dd + 0.55) / 0.5) });
     box(c);
@@ -793,7 +798,7 @@
     const tL = Math.min(dd - 0.35, tC + 0.3), kR = ease.io((lt - tB) / (tL - tB));
     const cam = vcam(lt, dd, { z: () => 1, hits: [tP], kick: 0.03, amp: 3 }); cam.x *= 1 - kR; cam.y *= 1 - kR; if (lt >= tL) { cam.x = cam.y = 0; cam.z = 1; }
     const zIn = lerp(1.12, 1.05, ease.io(lt / (tP + 0.3))), Z = lt >= tL ? 1.03 : lerp(zIn, 1.03, kR);
-    c.save(); camZ(c, Z, V.fx, 950);
+    c.save(); c.translate(SHIFT, 0); camZ(c, Z, V.fx, 950);
     sciMap(c, cam, (g) => {
       put(g, folder(), F0.x, F0.y, { sc: 0.92, rot: -0.04, lift: 1 }); seal(g, sealPos().x, sealPos().y, 1, { sc: 0.92 });
       acidWater(g, lt, 0, 1);
@@ -803,9 +808,9 @@
     if (kT > 0) {
       screenTag(c, ui('reasons', 'REASONS: SECRET'), 470, 640, { a: kT, size: 40 });
       // THE WATER, with an arrow to the stream
-      screenTag(c, ui('water', 'THE WATER'), 820, 1230, { a: kT, size: 40 });
+      screenTag(c, ui('water', 'THE WATER'), 760, 1230, { a: kT, size: 40 });
       c.save(); c.globalAlpha = kT; c.strokeStyle = C.cream; c.fillStyle = C.cream; c.lineWidth = 7; c.lineCap = 'round'; c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = 8;
-      const x0 = 900, y0 = 1180, x1 = 990, y1 = 1080; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1 + 14); c.stroke();
+      const x0 = 840, y0 = 1180, x1 = 912, y1 = 1080; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1 + 14); c.stroke();
       c.beginPath(); c.moveTo(x1 - 6, y1 - 6); c.lineTo(x1 + 14, y1 + 20); c.lineTo(x1 - 16, y1 + 18); c.closePath(); c.fill(); c.restore();
     }
     const kC = clamp((lt - tC + 0.32) / 0.32, 0, 1);
