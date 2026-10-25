@@ -24,7 +24,7 @@
  },
  "plan": {
   "world": 2,
-  "d": 3,
+  "d": 5,
   "teaches": "a floor that closes in",
   "strategy": [
    "position",
@@ -39,124 +39,214 @@
    "pz": 5.07
   },
   {
-   "t": 1.8,
+   "t": 1.15,
    "type": "YELA_CUBE",
    "px": -16.4,
    "pz": 7.75
   },
   {
-   "t": 3.6,
+   "t": 2.3,
    "type": "REDD_CUBE",
    "px": 3.84,
    "pz": -9.4
   },
   {
-   "t": 5.4,
+   "t": 3.45,
    "type": "GLOBBO",
    "px": 3.48,
    "pz": 9.4
   },
   {
-   "t": 7.2,
-   "type": "YELA_CUBE",
+   "t": 4.6,
+   "type": "GLOBBO",
    "px": -16.4,
    "pz": -8.44
   },
   {
-   "t": 9,
-   "type": "REDD_CUBE",
+   "t": 5.75,
+   "type": "YELA_CUBE",
    "px": 16.4,
    "pz": -4.48
   },
   {
-   "t": 10.8,
-   "type": "GLOBBO",
+   "t": 6.9,
+   "type": "REDD_CUBE",
    "px": -5.93,
    "pz": 9.4
   },
   {
-   "t": 12.6,
-   "type": "YELA_CUBE",
+   "t": 8.05,
+   "type": "GLOBBO",
    "px": -1.7,
    "pz": -9.4
   },
   {
-   "t": 14.4,
-   "type": "REDD_CUBE",
+   "t": 9.2,
+   "type": "GLOBBO",
    "px": 12.36,
    "pz": 9.4
   },
   {
-   "t": 16.2,
-   "type": "GLOBBO",
+   "t": 10.35,
+   "type": "YELA_CUBE",
    "px": -16.4,
    "pz": 1.5
   },
   {
-   "t": 18,
-   "type": "YELA_CUBE",
+   "t": 11.5,
+   "type": "REDD_CUBE",
    "px": 8.54,
    "pz": -9.4
   },
   {
-   "t": 19.8,
-   "type": "REDD_CUBE",
+   "t": 12.65,
+   "type": "GLOBBO",
    "px": 0.04,
    "pz": 9.4
   },
   {
-   "t": 21.6,
+   "t": 13.8,
    "type": "GLOBBO",
    "px": -8.68,
    "pz": -9.4
   },
   {
-   "t": 23.4,
+   "t": 14.95,
    "type": "YELA_CUBE",
    "px": 16.4,
    "pz": 1.37
   },
   {
-   "t": 25.2,
+   "t": 16.1,
    "type": "REDD_CUBE",
    "px": -12.16,
    "pz": 9.4
   },
   {
-   "t": 27,
+   "t": 17.25,
    "type": "GLOBBO",
    "px": 1.62,
    "pz": -9.4
   },
   {
-   "t": 28.8,
-   "type": "YELA_CUBE",
+   "t": 18.4,
+   "type": "GLOBBO",
    "px": 6.03,
    "pz": 9.4
   },
   {
-   "t": 30.6,
-   "type": "REDD_CUBE",
+   "t": 19.55,
+   "type": "YELA_CUBE",
    "px": -16.4,
    "pz": -4.34
   },
   {
-   "t": 32.4,
-   "type": "GLOBBO",
+   "t": 20.7,
+   "type": "REDD_CUBE",
    "px": 16.4,
    "pz": -8.6
   },
   {
-   "t": 34.2,
-   "type": "YELA_CUBE",
+   "t": 21.85,
+   "type": "GLOBBO",
    "px": -3.39,
    "pz": 9.4
+  },
+  {
+   "t": 23,
+   "type": "GLOBBO",
+   "px": -3.92,
+   "pz": -9.4
+  },
+  {
+   "t": 24.15,
+   "type": "YELA_CUBE",
+   "px": 16.4,
+   "pz": 7.59
+  },
+  {
+   "t": 25.3,
+   "type": "REDD_CUBE",
+   "px": -16.4,
+   "pz": 5.22
+  },
+  {
+   "t": 26.45,
+   "type": "GLOBBO",
+   "px": 5.4,
+   "pz": -9.4
+  },
+  {
+   "t": 27.6,
+   "type": "GLOBBO",
+   "px": 2.11,
+   "pz": 9.4
+  },
+  {
+   "t": 28.75,
+   "type": "YELA_CUBE",
+   "px": -13.49,
+   "pz": -9.4
+  },
+  {
+   "t": 29.9,
+   "type": "REDD_CUBE",
+   "px": 16.4,
+   "pz": -2.19
+  },
+  {
+   "t": 31.05,
+   "type": "GLOBBO",
+   "px": -7.86,
+   "pz": 9.4
+  },
+  {
+   "t": 32.2,
+   "type": "GLOBBO",
+   "px": -0.43,
+   "pz": -9.4
+  },
+  {
+   "t": 33.35,
+   "type": "YELA_CUBE",
+   "px": 9.43,
+   "pz": 9.4
+  },
+  {
+   "t": 34.5,
+   "type": "REDD_CUBE",
+   "px": -16.4,
+   "pz": -0.69
+  },
+  {
+   "t": 35.65,
+   "type": "GLOBBO",
+   "px": 11.17,
+   "pz": -9.4
+  },
+  {
+   "t": 36.8,
+   "type": "GLOBBO",
+   "px": -1.23,
+   "pz": 9.4
+  },
+  {
+   "t": 37.95,
+   "type": "YELA_CUBE",
+   "px": -6.6,
+   "pz": -9.4
+  },
+  {
+   "t": 39.1,
+   "type": "REDD_CUBE",
+   "px": 16.4,
+   "pz": 3.62
   }
  ],
  "tiers": {
   "S": 1,
   "A": 0.95,
   "B": 0.9,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 92%, rough 83%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 83%, rough 58%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v47 — 2026-10-25
+**Thirteen more campaign rooms tuned until the floor is never empty for long and a sharp player clearly beats a rough one; the campaign re-measured and re-ordered**
+- After v46, fifteen of the twenty-four older rooms still failed one of `scripts/room-eval.mjs`'s five checks. Thirteen now pass all five; every room keeps its idea and its id:
+  - fuller floors: ORBIT (its gels came one a second from the middle and died on arrival, the floor empty 56% of the clock; now threes round the moving floor), UNDERTOW, PULSE, CROSSFIRE (a second curtain wave and walkers), THE PULL, CRUCIBLE;
+  - a real gap between a sharp and a rough player: GATE RUN (shooters among the walkers and two more gates), HANDS UP, CLOT (the heart takes 8 bites, not 10), SPLITTER (walkers and fanners between the splittas);
+  - EDDY's ring now goes round the room (radius 6, every 9 s) and drains while you are out of it, so following it is the room;
+  - LIGHTS OUT sends all five CLOAKERs in its first ten seconds, so hunting them fast is what grades you; SIREN's FANNERs come later in its stream, so nobody dies in its first quarter.
+- The bot in a HUNT room now shoots a body already on top of it instead of walking through it after the quarry (only LIGHTS OUT hunts).
+- RINK and SALMON still miss the skill check: in both, every bot runs the same route (a dash-only room; orbs on a fixed clock), so the bot cannot show the gap a person would. Pushing harder made them unwinnable, so they stay as they were (7.9 and 8.4).
+- All thirty-six played again at three skills over 32 seeds; `plan.d` and each world's order come from that (FIRST LIGHT still opens, THE CORE still closes). Many moved: GATE RUN and HANDS UP now close THE SURFACE, CROSSFIRE closes THE VEIN, ORBIT sits next to the VOID's bosses, LIGHTS OUT is the VOID's second room.
+- Cache tokens `?v=46` → `?v=47`; HUD label → `2.0 · v47`
+
+---
+
 ## v46 — 2026-10-25
 **The campaign is thirty-six rooms: the six that scored under 7 rebuilt from nothing, six new ones, and every world walked from its easiest room to its hardest as the bot measured them**
 - Owner, 2026-10-25, after the rooms were scored out of ten: *"Redesign the ones under 7 completely from scratch… Then make more challenges and place them into the right order of difficulty."*

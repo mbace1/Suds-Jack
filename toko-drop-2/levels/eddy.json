@@ -21,13 +21,18 @@
   "zone": {
    "x": 0,
    "z": 0,
-   "r": 2,
-   "drift": true
-  }
+   "r": 1.9,
+   "orbit": {
+    "r": 6,
+    "period": 9,
+    "phase": 0
+   }
+  },
+  "drain": 2
  },
  "plan": {
   "world": 1,
-  "d": 1,
+  "d": 2,
   "teaches": "where you stand",
   "strategy": [
    "position",
@@ -219,9 +224,9 @@
   }
  ],
  "tiers": {
-  "S": 15,
-  "A": 16.4,
-  "B": 17.8,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 83%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 15.8,
+  "A": 17.2,
+  "B": 20.2,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 67%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

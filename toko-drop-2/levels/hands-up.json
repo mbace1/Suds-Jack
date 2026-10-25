@@ -17,7 +17,7 @@
  },
  "plan": {
   "world": 0,
-  "d": 2,
+  "d": 5,
   "teaches": "the gates as a weapon",
   "strategy": [
    "risk"
@@ -29,56 +29,140 @@
    "type": "GLOBBO",
    "px": 13.4,
    "pz": 2.72,
-   "speedMult": 0.75
+   "speedMult": 0.72
   },
   {
-   "t": 3.8,
+   "t": 2.45,
    "type": "GLOBBO",
    "px": -12.3,
    "pz": 7.4,
-   "speedMult": 0.75
+   "speedMult": 0.72
   },
   {
-   "t": 6.6,
+   "t": 3.9,
    "type": "GLOBBO",
    "px": 2.19,
    "pz": -7.4,
-   "speedMult": 0.75
+   "speedMult": 0.72
   },
   {
-   "t": 9.4,
+   "t": 5.35,
    "type": "GLOBBO",
    "px": 3.61,
    "pz": 7.4,
-   "speedMult": 0.75
+   "speedMult": 0.72
   },
   {
-   "t": 12.2,
+   "t": 6.8,
    "type": "GLOBBO",
    "px": -13.4,
    "pz": -5.28,
-   "speedMult": 0.75
+   "speedMult": 0.72
   },
   {
-   "t": 15,
+   "t": 8.25,
    "type": "GLOBBO",
    "px": 13.4,
    "pz": -5.14,
-   "speedMult": 0.75
+   "speedMult": 0.72
   },
   {
-   "t": 17.8,
+   "t": 9.7,
    "type": "GLOBBO",
    "px": -3.69,
    "pz": 7.4,
-   "speedMult": 0.75
+   "speedMult": 0.72
   },
   {
-   "t": 20.6,
+   "t": 11.15,
    "type": "GLOBBO",
    "px": -2.12,
    "pz": -7.4,
-   "speedMult": 0.75
+   "speedMult": 0.72
+  },
+  {
+   "t": 12.6,
+   "type": "GLOBBO",
+   "px": 12.07,
+   "pz": 7.4,
+   "speedMult": 0.72
+  },
+  {
+   "t": 14.05,
+   "type": "GLOBBO",
+   "px": -13.4,
+   "pz": 2.6,
+   "speedMult": 0.72
+  },
+  {
+   "t": 15.5,
+   "type": "GLOBBO",
+   "px": 5.48,
+   "pz": -7.4,
+   "speedMult": 0.72
+  },
+  {
+   "t": 16.95,
+   "type": "GLOBBO",
+   "px": 0.77,
+   "pz": 7.4,
+   "speedMult": 0.72
+  },
+  {
+   "t": 18.4,
+   "type": "GLOBBO",
+   "px": -8.35,
+   "pz": -7.4,
+   "speedMult": 0.72
+  },
+  {
+   "t": 19.85,
+   "type": "GLOBBO",
+   "px": 13.4,
+   "pz": -0.22,
+   "speedMult": 0.72
+  },
+  {
+   "t": 21.3,
+   "type": "GLOBBO",
+   "px": -7.82,
+   "pz": 7.4,
+   "speedMult": 0.72
+  },
+  {
+   "t": 22.75,
+   "type": "GLOBBO",
+   "px": 0.53,
+   "pz": -7.4,
+   "speedMult": 0.72
+  },
+  {
+   "t": 24.2,
+   "type": "GLOBBO",
+   "px": 5.87,
+   "pz": 7.4,
+   "speedMult": 0.72
+  },
+  {
+   "t": 25.65,
+   "type": "GLOBBO",
+   "px": -13.4,
+   "pz": -2.14,
+   "speedMult": 0.72
+  },
+  {
+   "t": 27.1,
+   "type": "GLOBBO",
+   "px": 11.22,
+   "pz": -7.4,
+   "speedMult": 0.72
+  },
+  {
+   "t": 28.55,
+   "type": "GLOBBO",
+   "px": -1.86,
+   "pz": 7.4,
+   "speedMult": 0.72
   }
  ],
  "mods": {
@@ -111,9 +195,9 @@
   }
  ],
  "tiers": {
-  "S": 1,
-  "A": 0.95,
-  "B": 0.9,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 88%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 0.9,
+  "A": 0.85,
+  "B": 0.8,
+  "source": "bot pass, 24 seeds a skill: got through sharp 96%, average 92%, rough 50%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

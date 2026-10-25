@@ -17,7 +17,7 @@
  },
  "plan": {
   "world": 2,
-  "d": 7,
+  "d": 6,
   "teaches": "the spike wave",
   "strategy": [
    "risk",

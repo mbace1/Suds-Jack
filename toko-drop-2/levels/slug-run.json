@@ -17,7 +17,7 @@
  },
  "plan": {
   "world": 1,
-  "d": 6,
+  "d": 5,
   "teaches": "slug, ribbon: route round long bodies",
   "strategy": [
    "movement",

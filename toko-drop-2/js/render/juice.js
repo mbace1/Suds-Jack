@@ -20,7 +20,7 @@
 // TUNING.juice.
 import * as THREE from 'three/webgpu';
 import { uv, float, vec2, length, smoothstep, clamp, abs, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=46';
+import { TUNING } from '../tuning.js?v=47';
 
 const T = TUNING, J = T.juice;
 const rand = (a, b) => a + Math.random() * (b - a);

@@ -93,7 +93,7 @@
  },
  "plan": {
   "world": 1,
-  "d": 5,
+  "d": 4,
   "teaches": "sink a raft before it fires",
   "strategy": [
    "priority",

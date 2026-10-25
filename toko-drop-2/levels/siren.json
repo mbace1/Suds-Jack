@@ -20,7 +20,7 @@
  },
  "plan": {
   "world": 3,
-  "d": 9,
+  "d": 8,
   "teaches": "siren, purp",
   "strategy": [
    "priority",
@@ -51,7 +51,7 @@
   },
   {
    "t": 6.4,
-   "type": "FANNER",
+   "type": "GLOBBO",
    "px": 9.04,
    "pz": 5.14
   },
@@ -63,19 +63,19 @@
   },
   {
    "t": 10.8,
-   "type": "PURP_CUBE",
+   "type": "FANNER",
    "px": 5.91,
    "pz": -8.56
   },
   {
    "t": 13,
-   "type": "GLOBBO",
+   "type": "PURP_CUBE",
    "px": 1.42,
    "pz": 10.3
   },
   {
    "t": 15.2,
-   "type": "FANNER",
+   "type": "GLOBBO",
    "px": -8.01,
    "pz": -6.63
   },
@@ -87,19 +87,19 @@
   },
   {
    "t": 19.6,
-   "type": "PURP_CUBE",
+   "type": "GLOBBO",
    "px": -7.31,
    "pz": 7.4
   },
   {
    "t": 21.8,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": 0.39,
    "pz": -10.39
   },
   {
    "t": 24,
-   "type": "FANNER",
+   "type": "PURP_CUBE",
    "px": 6.73,
    "pz": 7.93
   },
@@ -111,7 +111,7 @@
   },
   {
    "t": 28.4,
-   "type": "PURP_CUBE",
+   "type": "GLOBBO",
    "px": 8.49,
    "pz": -6.01
   },
@@ -129,13 +129,13 @@
   },
   {
    "t": 35,
-   "type": "GLOBBO",
+   "type": "PURP_CUBE",
    "px": 9.93,
    "pz": 3.08
   },
   {
    "t": 37.2,
-   "type": "PURP_CUBE",
+   "type": "GLOBBO",
    "px": -9.4,
    "pz": 4.44
   },
@@ -147,13 +147,13 @@
   },
   {
    "t": 41.6,
-   "type": "FANNER",
+   "type": "GLOBBO",
    "px": 3.6,
    "pz": 9.76
   },
   {
    "t": 43.8,
-   "type": "GLOBBO",
+   "type": "FANNER",
    "px": -9.25,
    "pz": -4.76
   },
@@ -171,9 +171,9 @@
   }
  ],
  "tiers": {
-  "S": 24.1,
-  "A": 27.4,
-  "B": 30.7,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 75%, rough 0%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 23.1,
+  "A": 26.4,
+  "B": 29.7,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 83%, rough 29%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

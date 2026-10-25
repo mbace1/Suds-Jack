@@ -17,7 +17,7 @@
  },
  "plan": {
   "world": 0,
-  "d": 2,
+  "d": 6,
   "teaches": "the gates, the dash",
   "strategy": [
    "movement"
@@ -25,57 +25,171 @@
  },
  "spawns": [
   {
-   "t": 1,
+   "t": 0.5,
    "type": "GLOBBO",
    "px": 15.4,
    "pz": 6.51
   },
   {
-   "t": 4.5,
-   "type": "GLOBBO",
+   "t": 1.7,
+   "type": "FANNER",
    "px": -15.4,
    "pz": 5.48
   },
   {
-   "t": 8,
+   "t": 2.9,
    "type": "YELA_CUBE",
    "px": 4.45,
    "pz": -8.4
   },
   {
-   "t": 11.5,
-   "type": "GLOBBO",
+   "t": 4.1,
+   "type": "SPITTOR",
    "px": 2.18,
    "pz": 8.4
   },
   {
-   "t": 15,
+   "t": 5.3,
    "type": "GLOBBO",
    "px": -12.96,
    "pz": -8.4
   },
   {
-   "t": 18.5,
-   "type": "YELA_CUBE",
+   "t": 6.5,
+   "type": "FANNER",
    "px": 15.4,
    "pz": -2.59
   },
   {
-   "t": 22,
-   "type": "GLOBBO",
+   "t": 7.7,
+   "type": "YELA_CUBE",
    "px": -6.55,
    "pz": 8.4
   },
   {
-   "t": 25.5,
-   "type": "GLOBBO",
+   "t": 8.9,
+   "type": "SPITTOR",
    "px": -0.67,
    "pz": -8.4
   },
   {
-   "t": 29,
-   "type": "YELA_CUBE",
+   "t": 10.1,
+   "type": "GLOBBO",
    "px": 9.01,
+   "pz": 8.4
+  },
+  {
+   "t": 11.3,
+   "type": "FANNER",
+   "px": -15.4,
+   "pz": -0.13
+  },
+  {
+   "t": 12.5,
+   "type": "YELA_CUBE",
+   "px": 9.33,
+   "pz": -8.4
+  },
+  {
+   "t": 13.7,
+   "type": "SPITTOR",
+   "px": -0.81,
+   "pz": 8.4
+  },
+  {
+   "t": 14.9,
+   "type": "GLOBBO",
+   "px": -6.33,
+   "pz": -8.4
+  },
+  {
+   "t": 16.1,
+   "type": "FANNER",
+   "px": 15.4,
+   "pz": 2.86
+  },
+  {
+   "t": 17.3,
+   "type": "YELA_CUBE",
+   "px": -13.46,
+   "pz": 8.4
+  },
+  {
+   "t": 18.5,
+   "type": "SPITTOR",
+   "px": 2.33,
+   "pz": -8.4
+  },
+  {
+   "t": 19.7,
+   "type": "GLOBBO",
+   "px": 4.27,
+   "pz": 8.4
+  },
+  {
+   "t": 20.9,
+   "type": "FANNER",
+   "px": -15.4,
+   "pz": -5.77
+  },
+  {
+   "t": 22.1,
+   "type": "YELA_CUBE",
+   "px": 15.4,
+   "pz": -6.2
+  },
+  {
+   "t": 23.3,
+   "type": "SPITTOR",
+   "px": -4.02,
+   "pz": 8.4
+  },
+  {
+   "t": 24.5,
+   "type": "GLOBBO",
+   "px": -2.56,
+   "pz": -8.4
+  },
+  {
+   "t": 25.7,
+   "type": "FANNER",
+   "px": 14.22,
+   "pz": 8.4
+  },
+  {
+   "t": 26.9,
+   "type": "YELA_CUBE",
+   "px": -15.4,
+   "pz": 3.25
+  },
+  {
+   "t": 28.1,
+   "type": "SPITTOR",
+   "px": 6.01,
+   "pz": -8.4
+  },
+  {
+   "t": 29.3,
+   "type": "GLOBBO",
+   "px": 1.02,
+   "pz": 8.4
+  },
+  {
+   "t": 30.5,
+   "type": "FANNER",
+   "px": -9.8,
+   "pz": -8.4
+  },
+  {
+   "t": 31.7,
+   "type": "YELA_CUBE",
+   "px": 15.4,
+   "pz": -0.51
+  },
+  {
+   "t": 32.9,
+   "type": "SPITTOR",
+   "px": -8.58,
    "pz": 8.4
   }
  ],
@@ -109,12 +223,24 @@
    "x": 10,
    "z": 5,
    "angle": 2.3
+  },
+  {
+   "t": 24,
+   "x": -12,
+   "z": 6,
+   "angle": 0.4
+  },
+  {
+   "t": 24,
+   "x": 4,
+   "z": -6,
+   "angle": 1.2
   }
  ],
  "tiers": {
-  "S": 23.1,
-  "A": 25.2,
-  "B": 27.3,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 100%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 28.6,
+  "A": 30.7,
+  "B": 32.8,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 88%, rough 33%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

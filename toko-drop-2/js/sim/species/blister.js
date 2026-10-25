@@ -10,7 +10,7 @@
 //
 // g.s.shell is the bubble's hits left (the look reads it, bubbla's look).
 // Numbers: js/tuning/species/blister.js. Seeded: w.rng only.
-import { rage, range, toHero } from './bosskit.js?v=46';
+import { rage, range, toHero } from './bosskit.js?v=47';
 
 export default {
   init(w, g, api) {

@@ -17,7 +17,7 @@
  },
  "plan": {
   "world": 4,
-  "d": 8,
+  "d": 7,
   "teaches": "berg; between its lines",
   "strategy": [
    "movement",
