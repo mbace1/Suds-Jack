@@ -471,3 +471,5 @@ Everything below comes from search summaries. No article was opened.
 
 
 **Check 25 Oct 17:16:** no big development. Meridian still has no SGE/contractor answer. Meta's reply to Grassley (22 Jul) is still not found. NDA watch: St. Louis County (MN) failed to second a ban, and Minnesota's state bill awaits a Senate floor vote (April report). Search summaries only.
+
+**26 Oct 07:16 check:** no change. Project Meridian: the Pentagon still has not said whether Musk and Luckey count as special government employees or contractors; MITRE safeguards is still its only line (NPR/OPB, 6 Oct). Meta whistleblowers: no reply to Grassley found. Search summaries only.

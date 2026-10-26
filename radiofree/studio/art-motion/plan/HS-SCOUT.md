@@ -375,3 +375,5 @@ Everything below comes from search summaries. No article was opened.
 
 
 **Check 25 Oct 17:16:** no new HS candidate. Hamina has no follow-up since 23 Oct. Muhos: Kaleva reports two requests to investigate; IL/MTV (7 Oct) say a preliminary inquiry was opened on a private request; Yle (~22 Oct) says none has started. No new LVV or Doodle statement. Search summaries only.
+
+**26 Oct 07:16 check:** no new HS candidate. Muhos (Secret Inquiry): unchanged since 22 Oct; LVV also asked for a moor frog site status report (Kaleva, search summary). Break Glass: no plenary vote on HE 148/2026 yet.

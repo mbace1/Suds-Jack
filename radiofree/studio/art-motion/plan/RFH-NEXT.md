@@ -155,3 +155,26 @@ All facts below come from search summaries; no article was opened.
   - **Meta/Grassley:** Meta's reply to the 22 Jul letter (deadline 5 Aug) still not found.
 - **NDA bans:** St. Louis County (MN) failed to second a proposed ban on elected officials signing NDAs. Minnesota's state bill was awaiting a Senate floor vote (April report). The others are as logged before. The film is unaffected.
 - **Break Glass:** no plenary vote found.
+
+## Daily check, Mon 26 Oct 07:16 (since Sun 17:16; search summaries only)
+
+**Posted overnight (POSTED.md):**
+- Count the Trees v5: posted ~00:47.
+- Toko 5, One More Loop: the row still reads NOW, with no posted link recorded yet.
+
+**Secret Inquiry v2 still holds.** No change since 22 Oct (Yle, Kaleva, MT, Lapin Kansa):
+- LVV's police request on Muhos stands, and LVV gives no comment because the matter is secret.
+- The police status is still disputed.
+- The water plan is due 5 Nov.
+- New detail, not in the film: LVV also asked Tuike for a status report on the moor frog (*viitasammakko*) breeding and resting site.
+
+**Break Glass:**
+- No plenary vote reported yet on HE 148/2026, which would extend the law to 31.12.2028 and needs a 5/6 majority.
+- Verkkouutiset reports a plenary debate and a Harakka piece.
+- The 167–31 and 168–29 tallies in results are earlier votes. Keep the film held.
+
+**Global: no change.**
+- Project Meridian: the Pentagon still hasn't said whether Musk and Luckey count as special government employees or contractors.
+- Meta: no reply to Grassley found (his 22 Jul letter set a 5 Aug deadline).
+
+**Finland:** no new HS candidate. The Kaleva item "HS: Google laittoi datakeskushankkeen jäihin veronkiristyksen vuoksi" is older background, not new.
