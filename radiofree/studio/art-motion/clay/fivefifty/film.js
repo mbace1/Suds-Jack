@@ -71,6 +71,9 @@ const LAPS = TEAM.map((m, i) => (m.x === 0 ? { LAPTOP: S.LAPTOP, LID: S.LID, SCR
 // his lamp and thermos move to the far end, out of the line of five; the phone stays in his pocket
 S.THERMOS.position.set(-46, DESK.y, 25); S.PHONE.visible = false; S.LAMP.position.set(-52, DESK.y, 31);
 S.lampLight.position.set(-42, DESK.y + 18, 26); S.lampLight.target.position.set(-6, DESK.y, 14);
+// the back wall is already faintly see-through: the hall shows behind it from frame 0 (its own material, film 2's is untouched)
+const WALL_SEE = S.M.wall.clone(); WALL_SEE.transparent = true; WALL_SEE.opacity = 0.72;
+S.WALL.traverse((o) => { if (o.isMesh && o.material === S.M.wall) o.material = WALL_SEE; });
 const FOG = new THREE.Color('#4a4458'); scene.fog = new THREE.FogExp2(FOG, 0.0016); scene.background = FOG.clone();
 
 const PUPS = TEAM.map((m, i) => {
@@ -98,7 +101,7 @@ function typing(P, pz, t, sync = 1) {
   const ph = sync ? 0 : P.i * 0.9, tap = (k) => Math.max(0, Math.sin((t / B) * Math.PI + k + ph)) * 0.55;
   return handsTo(P, pz, [P.x - 3.2, DESK.y + 1.9 + tap(0), 13.2], [P.x + 3.2, DESK.y + 1.9 + tap(Math.PI), 13.2], [0.2, -1, 0.2], [-0.2, -1, 0.2]);
 }
-const yawTo = (P, x, z) => clamp(-Math.atan2(x - P.x, z - 0) * 0.6, -0.55, 0.55);   // + is toward −x (as film 2's −0.3 looked to +x)
+const yawTo = (P, x, z) => clamp(Math.atan2(x - P.x, z - 0) * 0.85, -0.8, 0.8);   // + turns the face toward +x (probed: dbg(t).faces)
 
 // ------------------------------------------------------------------ the ghost hall: ~50 empty desks, cold and translucent, into fog
 const GHOST = new THREE.Group(); scene.add(GHOST);
@@ -126,6 +129,7 @@ mesh0(new THREE.PlaneGeometry(520, 520).rotateX(-Math.PI / 2), new THREE.MeshSta
 const CARD = C('#c49a62', { tool: 1.1, thumbCell: 1.6, thumb: 0.03, mottle: 0.14, specks: 0.5, speckColor: '#8a6a3e' });
 const CARD_D = C('#a8814e', { tool: 1.1, thumbCell: 1.6, mottle: 0.14 });
 const CAB = [0, DESK.y, 14];                                    // where his laptop stood
+const K = 0.74;                                                 // a desk-sized model: below his face, so the camera finds him over it
 const CORE = new THREE.Group(); scene.add(CORE); CORE.position.set(...CAB);
 mesh0(lumpy(new RoundedBoxGeometry(8, 13, 7, 3, 0.4), 0.03, 0.8, 1801), CARD, { pos: [0, 6.5, 0], parent: CORE });
 // the screen in the core's front: dark until the cabinet is whole, then the game (a pure function of t)
@@ -135,24 +139,29 @@ mesh0(lumpy(new RoundedBoxGeometry(7.0, 5.9, 0.4, 2, 0.15), 0.02, 1, 1802), CARD
 // the four parts, each from a teammate's laptop: two sides, the control deck, the marquee. `slot` is its place on the core
 const mCan = canvas(256, 80), mTex = tex(mCan);
 const PARTS = [
-  { who: 0, name: 'sideL', size: [0.7, 15, 9], slot: [-4.4, 7.5, 0.6], rot: [0, 0, 0] },
-  { who: 4, name: 'sideR', size: [0.7, 15, 9], slot: [4.4, 7.5, 0.6], rot: [0, 0, 0] },
+  { who: 0, name: 'sideL', size: [0.7, 15, 9], slot: [-4.4, 7.5, 0.6], rot: [0, 0, 0], flat: [0, 0, -Math.PI / 2] },
+  { who: 4, name: 'sideR', size: [0.7, 15, 9], slot: [4.4, 7.5, 0.6], rot: [0, 0, 0], flat: [0, 0, Math.PI / 2] },
   { who: 1, name: 'deck', size: [8.6, 0.8, 4.2], slot: [0, 6.0, 5.0], rot: [0.32, 0, 0] },
   { who: 3, name: 'marquee', size: [8.6, 2.8, 2.4], slot: [0, 14.2, 2.4], rot: [0, 0, 0] },
 ].map((p, k) => {
-  const g = new THREE.Group(); scene.add(g);
-  mesh0(lumpy(new RoundedBoxGeometry(...p.size, 2, 0.2), 0.03, 0.8, 1810 + k), CARD, { parent: g });
+  const g = new THREE.Group(); scene.add(g); g.scale.setScalar(K);
+  const m = TEAM[p.who], ink = C(m.col, { rough: 0.5, thumb: 0.02, thumbCell: 1.5, mottle: 0.05, specks: 0.2 });   // each part carries its maker's colour
+  mesh0(lumpy(new RoundedBoxGeometry(...p.size, 2, 0.2), 0.03, 0.8, 1810 + k), p.name === 'marquee' ? ink : CARD, { parent: g });
   if (p.name === 'deck') {   // the joystick and two buttons
     mesh0(new THREE.CylinderGeometry(0.22, 0.22, 1.8, 10), C('#1e1e22'), { pos: [-2.2, 1.2, 0], parent: g });
     mesh0(ball(0.7, 1, 1, 1, 14), C('#e0141b', { rough: 0.35, clearcoat: 0.6 }), { pos: [-2.2, 2.2, 0], parent: g });
+    mesh0(lumpy(new RoundedBoxGeometry(8.0, 0.3, 3.6, 2, 0.12), 0.02, 1, 1830), ink, { pos: [0, 0.4, 0], parent: g });   // the play surface
     for (const [bx, col] of [[1.4, '#f5c400'], [3.0, '#4cb7e2']]) mesh0(new THREE.CylinderGeometry(0.6, 0.6, 0.5, 16), C(col, { rough: 0.35, clearcoat: 0.6 }), { pos: [bx, 0.6, 0.2], parent: g });
   }
   if (p.name === 'marquee') mesh0(new THREE.PlaneGeometry(8.0, 2.3), new THREE.MeshBasicMaterial({ map: mTex, toneMapped: false }), { pos: [0, 0, p.size[2] / 2 + 0.03], parent: g, cast: false });
   if (p.name === 'sideL' || p.name === 'sideR') {   // a cut-out curve on the side, drawn as a darker card strip
-    mesh0(new THREE.BoxGeometry(0.2, 9, 0.6), CARD_D, { pos: [(p.name === 'sideL' ? -1 : 1) * 0.42, 6, 4.2], parent: g });
+    const o = p.name === 'sideL' ? -1 : 1;
+    mesh0(new THREE.BoxGeometry(0.2, 9, 0.6), CARD_D, { pos: [o * 0.42, 6, 4.2], parent: g });
+    mesh0(lumpy(new RoundedBoxGeometry(0.24, 6.5, 8.2, 2, 0.1), 0.02, 1, 1840 + k), ink, { pos: [o * 0.4, -3.6, 0], parent: g });   // side art: a field of colour on the outer face
+    mesh0(lumpy(new RoundedBoxGeometry(0.24, 0.9, 8.2, 2, 0.1), 0.02, 1, 1850 + k), ink, { pos: [o * 0.4, 0.9, 0], parent: g });
+    mesh0(lumpy(new RoundedBoxGeometry(1.0, 15.2, 0.5, 2, 0.2), 0.02, 1, 1860 + k), ink, { pos: [0, 0, 4.45], parent: g });   // T-molding: the front edge reads from the front
   }
-  const m = TEAM[p.who];
-  return { ...p, g, mouth: [m.x, DESK.y + 11.2, 16.4], rest: [m.x * 0.92, DESK.y + Math.min(...p.size) / 2 + 0.05, 29] };
+  return { ...p, g, mouth: [m.x, DESK.y + 11.2, 16.4], rest: [m.x * 0.92, DESK.y + (Math.min(...p.size) / 2 + 0.3) * K, 29] };
 });
 
 // ------------------------------------------------------------------ the timeline: 112 BPM; captions planned by the pipeline
@@ -171,7 +180,7 @@ EV.ots = T.s3 + 1.6;                                             // the over-sho
 EV.close = T.s3 + 1.7; EV.push = EV.close + 0.45;                // he shuts the lid and pushes it away
 EV.core = EV.push + 0.45;                                        // the box unfolds where it stood
 EV.fly = (k) => EV.core + 0.45 + k * 0.32;                       // the four parts fly in
-const SIDES_HOME = EV.fly(1) + 0.6;                              // both sides are home
+const SIDES_HOME = EV.fly(1) + 0.45;                              // both sides are home
 EV.dark = (r) => T.s3 + 0.4 + (ROWS - 1 - r) * ((T.s4 - T.s3 - 0.6) / ROWS);   // ghost monitors off, back row first
 EV.lit = popOf('deciding') - 0.25;                               // the cabinet comes alive on "deciding"
 EV.flyIn = T.s5 - 1.6;                                           // the wall flies back in before the card
@@ -187,10 +196,10 @@ function partState(p, k, t) {
   const vis = t >= tPop - 0.02, kOut = clamp((t - tPop) / 0.6);
   let pos = lerp3(p.mouth, p.rest, ease.io(kOut)); pos[1] += Math.sin(kOut * Math.PI) * 10;
   // lying flat in front of its laptop: the tall sides lie down on their faces
-  const flat = p.name.startsWith('side') ? [0, 0, Math.PI / 2] : [0, 0, 0];
+  const flat = p.flat || [0, 0, 0];   // colour side up
   let rot = [flat[0] + (1 - ease.out(kOut)) * 2.0, flat[1], flat[2]];
   const kIn = clamp((t - tFly) / 0.55);
-  if (kIn > 0) { const slot = [CAB[0] + p.slot[0], CAB[1] + p.slot[1], CAB[2] + p.slot[2]];
+  if (kIn > 0) { const slot = [CAB[0] + p.slot[0] * K, CAB[1] + p.slot[1] * K, CAB[2] + p.slot[2] * K];
     pos = lerp3(p.rest, slot, ease.io(kIn)); pos[1] += Math.sin(kIn * Math.PI) * 9;
     rot = lerp3(flat, p.rot, ease.io(kIn)); }
   return { pos, rot, vis };
@@ -201,7 +210,7 @@ function tokoLaptop(t) {
   return { lid: lerp(0.18, -1.52, kc), pos: [0, DESK.y, lerp(15, 25.5, kp)] };
 }
 /** where a paddle presses a side panel home: just outside the panel's outer face */
-const SIDE = (s) => [CAB[0] + s * 5.85, CAB[1] + 7.0, CAB[2] + 0.4];
+const SIDE = (s) => [CAB[0] + s * (4.75 * K + 1.1), CAB[1] + 7.0 * K, CAB[2] + 0.4 * K];
 /** the core box: flat-packed, it pops up and unfolds */
 const coreK = (t) => ease.back((t - EV.core) / 0.45);
 
@@ -233,8 +242,8 @@ function drawGame(t, on) {      // the cabinet's game: a drop dodging falling bl
     g.fillStyle = MAG; g.beginPath(); g.arc(w / 2 + Math.sin(t * 2.2) * 70, h - 34, 13, 0, TAU); g.fill();
     g.fillStyle = '#fff'; g.font = '800 22px Inter'; g.textAlign = 'right'; g.fillText(String(Math.floor(Math.max(0, t - EV.lit) * 37)).padStart(4, '0'), w - 12, 26); g.globalAlpha = 1; }
   gTex.needsUpdate = true;
-  const m = mCan.getContext('2d'); m.fillStyle = on > 0 ? MAG : '#7a5a34'; m.fillRect(0, 0, 256, 80);
-  m.fillStyle = on > 0 ? '#fff8f0' : '#5a4024'; m.font = '800 50px Anton-400'; m.textAlign = 'center'; m.fillText(UI.play, 128, 60); mTex.needsUpdate = true;
+  const m = mCan.getContext('2d'); m.fillStyle = on > 0 ? MAG : '#26261e'; m.fillRect(0, 0, 256, 80);
+  m.fillStyle = on > 0 ? '#fff8f0' : 'rgba(255,248,240,.3)'; m.font = '800 50px Anton-400'; m.textAlign = 'center'; m.fillText(UI.play, 128, 60); mTex.needsUpdate = true;
 }
 
 // the drones outside the window, before the wall goes, and after it comes back
@@ -261,34 +270,34 @@ function pose(Pp, t, sh) {
       const kr = clamp((t - EV.close + 0.25) / 0.25), wR = lerp3([-3.2, DESK.y + 1.9, 13.2], e(-4.2), kr), wL = lerp3([3.2, DESK.y + 1.9, 13.2], e(4.2), kr);
       return handsTo(Pp, pz, wR, wL, [0, -0.4, 1], [0, -0.4, 1]); }
     // paddles on the box's top while the two sides fly in past them; then onto the sides, pressing them home
-    const ck = Math.max(0.02, coreK(t)), top = (s) => [CAB[0] + s * 2.0, CAB[1] + 13 * ck + 1.0, CAB[2] - 0.5];
+    const ck = Math.max(0.02, coreK(t)), top = (s) => [CAB[0] + s * 2.0 * K, CAB[1] + 13 * K * ck + 1.0, CAB[2] - 0.5 * K];
     const kh = ease.io((t - EV.core - 0.05) / 0.3), last = (s) => LAPS[2].LID.localToWorld(V([s * 4.2, 9.4, -0.9])).toArray();
-    const ks = ease.io((t - SIDES_HOME) / 0.3);
+    const ks = ease.io((t - SIDES_HOME) / 0.22);
     const tgt = (s) => ks > 0 ? lerp3(top(s), SIDE(s), ks) : lerp3(last(s), top(s), kh);
     const nrm = (s) => ks > 0.5 ? [-s, 0, 0] : [0, -1, 0];
     return handsTo(Pp, pz, tgt(-1), tgt(1), nrm(-1), nrm(1));
   }
   // shot 4: everyone turns to the cabinet. Toko's paddles on its sides; the team's on their own laptops' edges, still
-  if (Pp.i === 2) { const pz = basePose({ lean: 0.4, hp: 0.5, breathe: br });
+  if (Pp.i === 2) { const pz = basePose({ lean: 0.32, hp: 0.22, breathe: br });   // head up over the marquee, so the camera finds his face
     return handsTo(Pp, pz, SIDE(-1), SIDE(1), [1, 0, 0], [-1, 0, 0]); }
   const look = ease.io((t - T.s4 - 0.2) / 0.5), nod = Math.max(0, Math.sin((t - EV.lit) * 6)) * clamp((t - EV.lit) / 0.2) * (1 - clamp((t - EV.lit - 1.1) / 0.3)) * 0.12;
-  const pz = basePose({ lean: 0.3, hp: 0.4 + nod, hy: look * yawTo(Pp, CAB[0], CAB[2]), breathe: br });
+  const pz = basePose({ lean: 0.3, hp: 0.4 - look * 0.22 + nod, hy: look * yawTo(Pp, CAB[0], CAB[2]), breathe: br });
   return handsTo(Pp, pz, [Pp.x - 6.0, DESK.y + 1.3, 15], [Pp.x + 6.0, DESK.y + 1.3, 15], [0.6, -1, 0], [-0.6, -1, 0]);   // paddles on the laptop base's two ends
 }
 
 // ------------------------------------------------------------------ the shots
-const LOOK0 = { pos: [74, 54, 96], at: [-6, 28, 4], fov: 42 };
+const LOOK0 = { pos: [150, 110, 120], at: [2, 30, 4], fov: 36 };   // down the desk's length on a long lens, so all five fit a vertical frame
 const SHOT = [
   { t0: () => T.s1, t1: () => T.s2,   // 1 · frame 0: down the desk's length, five typing in sync
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3(LOOK0.pos, [70, 52, 88], k)), at: V(LOOK0.at), fov: LOOK0.fov, focus: 96, ap: 2.2 }; } },
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3(LOOK0.pos, [142, 104, 113], k)), at: V(LOOK0.at), fov: LOOK0.fov, focus: 200, ap: 1.4 }; } },
   { t0: () => T.s2, t1: () => T.s3,   // 2 · up and back as the wall flies: the hall, the five small against it
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([74, 60, 104], [86, 78, 128], k)), at: V(lerp3([-6, 32, 0], [-14, 34, -40], k)), fov: lerp(44, 50, k), focus: lerp(110, 150, k), ap: 1.6 }; } },
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([150, 116, 126], [132, 112, 150], k)), at: V(lerp3([2, 32, 0], [-4, 30, -20], k)), fov: lerp(37, 40, k), focus: lerp(200, 190, k), ap: 1.2 }; } },
   { t0: () => T.s3, t1: () => T.s4,   // 3 · over his shoulder on the chip; then close on the desk's middle: the shut, the push, the box
     cam(t, lt, d) {
-      if (t < EV.ots) { const k = ease.io(lt / (EV.ots - T.s3)); const pos = V([lerp(7, 6, k), lerp(44, 43, k), lerp(-12, -10, k)]), tgt = V([0, DESK.y + 5.6, 17]); return { pos, at: tgt, fov: 38, focus: pos.distanceTo(tgt), ap: 6 }; }
+      if (t < EV.ots) { const k = ease.io(lt / (EV.ots - T.s3)); const pos = V([lerp(20, 19, k), lerp(58, 57, k), lerp(-14, -12, k)]), tgt = V([3, DESK.y + 5.4, 16]); return { pos, at: tgt, fov: 34, focus: pos.distanceTo(tgt), ap: 6 }; }
       const k = ease.io((t - EV.ots) / (T.s4 - EV.ots)); const pos = V([lerp(30, 26, k), lerp(46, 44, k), lerp(62, 56, k)]), tgt = V([-2, DESK.y + 7, 12]); return { pos, at: tgt, fov: 40, focus: pos.distanceTo(tgt), ap: 4 }; } },
   { t0: () => T.s4, t1: () => T.end,  // 4 · wide again: the cabinet lit, five turned to it; the wall flies back in; frame 0's framing for the card
-    cam(t, lt, d) { const k = ease.io((t - T.s4) / (T.s5 - T.s4)); return { pos: V(lerp3([50, 52, 84], LOOK0.pos, k)), at: V(lerp3([-2, 30, 8], LOOK0.at, k)), fov: lerp(40, LOOK0.fov, k), focus: 90, ap: 2.2 }; } },
+    cam(t, lt, d) { const k = ease.io((t - T.s4 - 0.9) / 1.6); return { pos: V(lerp3([30, 64, 82], LOOK0.pos, k)), at: V(lerp3([-1, 31, 10], LOOK0.at, k)), fov: lerp(40, LOOK0.fov, k), focus: lerp(90, 200, k), ap: lerp(2.2, 1.4, k) }; } },
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 
@@ -318,18 +327,18 @@ function setWorld(t) {
   const grade = S.setHour('dusk');
   // the wall and the hall
   const wk = wallK(t); S.WALL.position.set(0, wk * 210, -wk * 30); S.WALL.rotation.x = -wk * 0.35; S.WALL.visible = wk < 0.999;
-  GHOST.visible = wk > 0.001;
+  const gk = Math.max(wk, 0.7);   // the hall: faint through the wall, full once it has gone
   GROWS.forEach((r, k) => { const off = clamp((t - EV.dark(k)) / 0.12) * (1 - clamp((t - EV.flyIn) / 0.6));
-    r.m.opacity = r.op * wk; r.sm.opacity = (1 - off * 0.85) * wk * lerp(0.95, 0.35, k / (ROWS - 1)); r.sm.color.copy(screenOn).lerp(screenOff, off); });
+    r.m.opacity = r.op * gk; r.sm.opacity = (1 - off * 0.85) * gk * lerp(0.95, 0.35, k / (ROWS - 1)); r.sm.color.copy(screenOn).lerp(screenOff, off); });
   // Toko's laptop (shut and pushed in shot 3; stays pushed after)
   const L = tokoLaptop(tq); LAPS[2].LAPTOP.position.set(...L.pos); LAPS[2].LID.rotation.x = L.lid;   // on twos: only his paddles move it
   // the five, on twos; each pose reads the props it touches at the same (twos) time
   for (const Pp of PUPS) { Pp.T.pose(pose(Pp, tq, i)); Pp.WR.updateMatrixWorld(true); }
   // the core and the parts (on ones), the core unfolding
-  const ck = coreK(t); CORE.visible = ck > 0.001; CORE.scale.set(lerp(0.7, 1, clamp(ck)), Math.max(0.02, ck), lerp(0.7, 1, clamp(ck)));
+  const ck = coreK(t); CORE.visible = ck > 0.001; CORE.scale.set(K * lerp(0.7, 1, clamp(ck)), K * Math.max(0.02, ck), K * lerp(0.7, 1, clamp(ck)));
   PARTS.forEach((p, k) => { const st = partState(p, k, t); p.g.visible = st.vis; p.g.position.set(...st.pos); p.g.rotation.set(...st.rot); });
   const on = clamp((t - EV.lit) / 0.35); drawGame(t, on);
-  cabLight.position.set(CAB[0], CAB[1] + 12, CAB[2] + 6); cabLight.intensity = 70 * on;
+  cabLight.position.set(CAB[0], CAB[1] + 12 * K, CAB[2] + 6); cabLight.intensity = 70 * on;
   PUPS.forEach((Pp) => { if (Pp.i !== 2) drawCode(Pp, t); }); drawTokoScreen(t);
   S.drones(t, PATHS[i] || []);
   S.screenLight.intensity = 50 + Math.sin(t * 7) * 2;
@@ -363,5 +372,26 @@ window.__film = { fps: FPS, frames: Math.round(DUR * FPS), events: EVENTS, lang:
   still(t) { return frame(t).toDataURL('image/png'); },
   camStill(t, c) { CAMO = c; const u = frame(t, false).toDataURL('image/jpeg', 0.85); CAMO = null; return u; },
   hands: handsOnScreen,
-  dbg(t) { frame(t, false); return { shot: shotAt(t), hands: PUPS.map((Pp) => Pp.T.hands.map((h) => h.getWorldPosition(new THREE.Vector3()).toArray())) }; } };
+  dbg(t) { setWorld(t); scene.updateMatrixWorld(true); const v = (o, l) => o.localToWorld(V(l)).toArray().map((x) => +x.toFixed(1));
+    return { shot: shotAt(t), hands: PUPS.map((Pp) => Pp.T.hands.map((h) => v(h, [0, 0, 0]))), faces: PUPS.map((Pp) => { const o = v(Pp.T.head, [0, 0, 0]), f = v(Pp.T.head, [0, 0, 10]); return [Pp.name, o, f.map((x, k) => +(x - o[k]).toFixed(1))]; }) }; },
+  /** the clipping probe (Welcome Home's): pose frame t, sample every visible mesh's vertices in world space, and report each
+   *  pair of things whose surfaces come within one 0.6-unit cell. A figure's hands are their own thing, so a paddle resting
+   *  on its own laptop or (Toko's) on the cabinet is contact, not a clip; everything else is a clip. */
+  clip(t, split = false) {
+    setWorld(t); scene.updateMatrixWorld(true); const v = new THREE.Vector3(), seen = (o) => { for (let p = o; p; p = p.parent) if (!p.visible) return false; return true; };
+    const pts = (root, skip = new Set()) => { const a = []; root.traverse((m) => { if (!m.isMesh || !seen(m)) return; for (let p = m; p; p = p.parent) if (skip.has(p)) return;
+      const A = m.geometry.attributes.position, st = Math.max(1, Math.floor(A.count / 3000)); for (let i = 0; i < A.count; i += st) { v.fromBufferAttribute(A, i).applyMatrix4(m.matrixWorld); a.push(v.x, v.y, v.z); } }); return a; };
+    const G = {}; PUPS.forEach((Pp, i) => { const own = Object.values(Pp.T.parts), hs = [...Pp.T.hands, ...Pp.T.cuffs];   // a cuff is the wrist: it goes with the hand
+      if (split) { G[Pp.name] = pts(Pp.WR, new Set([...hs, ...own])); for (const [k, m] of Object.entries(Pp.T.parts)) G[Pp.name + ':' + k] = pts(m); }
+      else G[Pp.name] = pts(Pp.WR, new Set(hs));
+      G[Pp.name + '.hands'] = hs.flatMap((h) => pts(h)); G['lap.' + Pp.name] = pts(LAPS[i].LAPTOP); });
+    G.cabinet = [...pts(CORE), ...PARTS.flatMap((p) => pts(p.g))];
+    const R = 0.6, key = (x, y, z) => Math.floor(x / R) + ',' + Math.floor(y / R) + ',' + Math.floor(z / R), H = {};
+    for (const [k, a] of Object.entries(G)) { const h = new Set(); for (let i = 0; i < a.length; i += 3) h.add(key(a[i], a[i + 1], a[i + 2])); H[k] = h; }
+    const who = (k) => k.replace(/^lap\./, '').replace(/\.hands$/, '').replace(/:.*$/, ''), ok = (a, b) => who(a) === who(b) || (a === 'toko.hands' && b === 'cabinet') || (b === 'toko.hands' && a === 'cabinet');
+    const out = [], ks = Object.keys(G);
+    for (let i = 0; i < ks.length; i++) for (let j = i + 1; j < ks.length; j++) { const a = ks[i], b = ks[j]; if (ok(a, b)) continue;
+      let n = 0; const A = G[a]; for (let q = 0; q < A.length; q += 3) if (H[b].has(key(A[q], A[q + 1], A[q + 2]))) n++; if (n) out.push([a, b, n]); }
+    return out;
+  } };
 window.__ready = true;
