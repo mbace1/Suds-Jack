@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Shader Looks — Suds Jack</title>
+  <meta name="description" content="WebGPU looks from the shaders library, one stack per cabinet." />
+  <meta name="theme-color" content="#06070a" />
+  <meta name="color-scheme" content="dark" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #06070a; color: #e7e4dc; font-family: ui-monospace, "IBM Plex Mono", monospace; }
+    body { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; }
+    header, footer { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; padding: 0.9rem 1rem; }
+    h1 { font-family: Georgia, serif; font-weight: 500; font-size: 1.6rem; margin: 0.1rem 0 0; }
+    a { color: #35e8d8; }
+    .kicker { margin: 0; letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.68rem; color: #35e8d8; }
+    #stage { position: relative; margin: 0 0.75rem; min-height: 52dvh; border-radius: 1rem; overflow: hidden; border: 1px solid #2c2b28; }
+    #grade, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .copy { position: absolute; left: 0; right: 0; bottom: 0; padding: 2rem 1rem 1rem; background: linear-gradient(to top, #06070ae6, transparent); }
+    .copy p { margin: 0.25rem 0 0; font-size: 0.78rem; line-height: 1.45; max-width: 36rem; }
+    .where { letter-spacing: 0.14em; text-transform: uppercase; font-size: 0.68rem; color: #35e8d8; }
+    .chips { display: flex; gap: 0.4rem; overflow-x: auto; padding: 0.8rem 0.75rem 1rem; }
+    button { min-height: 44px; border-radius: 999px; border: 1px solid #2c2b28; background: transparent; color: #e7e4dc; font: inherit; font-size: 0.75rem; padding: 0 0.9rem; }
+    button[aria-selected="true"] { background: #e7e4dc; color: #06070a; }
+    .note { margin: 0; color: #9c978e; font-size: 0.68rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <p class="kicker">Suds Jack</p>
+      <h1>Shader Looks</h1>
+    </div>
+    <a href="../index.html">Arcade</a>
+  </header>
+  <div id="stage">
+    <div id="grade"></div>
+    <div class="copy">
+      <div class="where" id="where"></div>
+      <p id="use"></p>
+    </div>
+  </div>
+  <div>
+    <div class="chips" id="chips" role="tablist"></div>
+    <footer>
+      <p class="note">shaders · WebGPU. Titles and floors, not the playfield. Godot and Unity keep their own materials.</p>
+    </footer>
+  </div>
+  <script type="module">
+    import { LOOKS } from "./deck.js";
+    const grade = document.getElementById("grade");
+    const where = document.getElementById("where");
+    const use = document.getElementById("use");
+    const chips = document.getElementById("chips");
+    let shader = null;
+    let current = 0;
+
+    let createShader = null;
+    try {
+      ({ createShader } = await import("https://esm.sh/shaders@4.0.0/js"));
+    } catch {
+      createShader = null;
+    }
+
+    async function show(index) {
+      current = index;
+      const look = LOOKS[index];
+      grade.style.background = look.grade;
+      where.textContent = look.where;
+      use.textContent = look.title + " — " + look.use;
+      [...chips.children].forEach((button, i) => button.setAttribute("aria-selected", String(i === index)));
+      if (!createShader) return;
+      try {
+        if (shader) shader.destroy?.();
+        shader = await createShader(grade, { components: look.layers });
+      } catch {
+        shader = null;
+      }
+    }
+
+    for (const [index, look] of LOOKS.entries()) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = look.title;
+      button.setAttribute("role", "tab");
+      button.onclick = () => show(index);
+      chips.append(button);
+    }
+    await show(0);
+  </script>
+</body>
+</html>
