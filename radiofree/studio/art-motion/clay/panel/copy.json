@@ -1,0 +1,109 @@
+{
+  "film": "the-panel",
+  "cut": "v1 stills (26 Oct): clay, in the manner of Digger (pale, wide, deep focus, grain, floating camera); a Strangelove war room",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "The Pentagon asked three people to lead a study of the future of war; two founded companies that sell to it, and the Pentagon has not said which ethics rules apply.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "study",
+      "role": "setup",
+      "at": "s1+0.4",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "The Pentagon / wants a study of / the [future of war].",
+        "fi": "Pentagon haluaa / selvityksen sodan / [tulevaisuudesta].",
+        "ja": "国防総省が 未来の / 戦争の [研究を] 依頼。"
+      },
+      "source": "Project Meridian: Defense Secretary Hegseth announced a 120-day study of future warfare around 30 Sep 2026 (Axios 30 Sep; Northeast Times 1 Oct; OPB/NPR 6 Oct). Its stated job is to identify the domains the military must win and the capabilities it must master, not to make policy (CNBC, as summarised). MITRE does the analysis, commissioned through the Pentagon's CTO. The brief's 'AI weapons' was too narrow: the scope is the future of war. Search summaries only."
+    },
+    {
+      "id": "three",
+      "role": "evidence",
+      "at": "s2+0.3",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Three people / will [lead] it.",
+        "fi": "Sitä [johtaa] / kolme ihmistä.",
+        "ja": "率いるのは / [3人]。"
+      },
+      "source": "Newt Gingrich, Elon Musk and Palmer Luckey are named as its three leaders (OPB/NPR 6 Oct; Axios 30 Sep). Names in the post copy only; on screen three empty chairs."
+    },
+    {
+      "id": "sell",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "Two of them / founded firms / that [sell] to it.",
+        "fi": "Kaksi heistä / perusti yhtiöt, / jotka [myyvät] sille.",
+        "ja": "うち2人は 国防総省に / [売る] 会社の 創業者。"
+      },
+      "source": "Musk founded SpaceX (launches, satellites for the Pentagon); Luckey co-founded Anduril (defence systems). NPR (6 Oct) reports a former senior Defense official noting both have billions of dollars in current defence contracts. 'Sell to it', not 'sell it weapons': SpaceX's sales are launch and satellite services. 'Founded', not 'run': Luckey is Anduril's founder, not its CEO."
+    },
+    {
+      "id": "advice",
+      "role": "punchline",
+      "at": "s4+0.4",
+      "until": "end-0.6",
+      "hold": "end",
+      "text": {
+        "en": "The buyer asked / the sellers / for [advice].",
+        "fi": "Ostaja kysyi / myyjiltä / [neuvoa].",
+        "ja": "買い手が 売り手に / [助言を] 求めた。"
+      },
+      "source": "The station's line. The buyer: the Pentagon, which buys from SpaceX and Anduril. The sellers: two of its three study leads. The advice: the study. No claim of wrongdoing; the tag beside it is the fact: the Pentagon has not said whether Musk and Luckey are special government employees or contractors, which decides which federal ethics law applies (OPB/NPR 6 Oct)."
+    }
+  ],
+  "ui": {
+    "board1": {
+      "en": "THE FUTURE OF WAR",
+      "fi": "SODAN TULEVAISUUS",
+      "ja": "戦争の未来"
+    },
+    "board2": {
+      "en": "STUDY · 120 DAYS",
+      "fi": "SELVITYS · 120 PÄIVÄÄ",
+      "ja": "研究 · 120日間"
+    },
+    "folder": {
+      "en": "CONTRACTS",
+      "fi": "SOPIMUKSET",
+      "ja": "契約"
+    },
+    "tag1": {
+      "en": "PENTAGON STUDY · ANNOUNCED SEPT 2026",
+      "fi": "PENTAGONIN SELVITYS · SYYSKUU 2026",
+      "ja": "国防総省の研究 · 2026年9月発表"
+    },
+    "tag2": {
+      "en": "DEFENCE CONTRACTS · AS REPORTED BY NPR",
+      "fi": "PUOLUSTUSSOPIMUKSET · NPR:N MUKAAN",
+      "ja": "防衛契約 · NPR報道"
+    },
+    "tag3": {
+      "en": "WHICH ETHICS RULES APPLY? NOT DISCLOSED",
+      "fi": "MITKÄ EETTISET SÄÄNNÖT PÄTEVÄT? EI KERROTTU",
+      "ja": "どの倫理規則が適用？ 非公表"
+    }
+  },
+  "post": {
+    "en": "The Pentagon asked three people to lead a 120-day study of the future of war: Newt Gingrich, Elon Musk and Palmer Luckey. Two of them founded companies that sell to the Pentagon. It hasn't said which ethics rules apply to them. Who advises the buyer?",
+    "fi": "Pentagon pyysi kolmea johtamaan 120 päivän selvitystä sodan tulevaisuudesta: Newt Gingrich, Elon Musk ja Palmer Luckey. Kaksi heistä perusti yhtiöt, jotka myyvät Pentagonille. Mitkä eettiset säännöt heitä koskevat, sitä Pentagon ei ole kertonut. Kuka neuvoo ostajaa?",
+    "ja": "国防総省は、120日間の戦争の未来の研究を3人に率いさせる。ニュート・ギングリッチ、イーロン・マスク、パーマー・ラッキー。うち2人は国防総省に売る会社の創業者。どの倫理規則が適用されるかは非公表。買い手に助言するのは誰？"
+  }
+}
