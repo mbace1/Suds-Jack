@@ -473,3 +473,11 @@ Everything below comes from search summaries. No article was opened.
 **Check 25 Oct 17:16:** no big development. Meridian still has no SGE/contractor answer. Meta's reply to Grassley (22 Jul) is still not found. NDA watch: St. Louis County (MN) failed to second a ban, and Minnesota's state bill awaits a Senate floor vote (April report). Search summaries only.
 
 **26 Oct 07:16 check:** no change. Project Meridian: the Pentagon still has not said whether Musk and Luckey count as special government employees or contractors; MITRE safeguards is still its only line (NPR/OPB, 6 Oct). Meta whistleblowers: no reply to Grassley found. Search summaries only.
+
+### Reactions, Mon 26 Oct 17:16 (search summaries only)
+- **Project Meridian:** no new reporting after NPR (6 Oct). Musk's and Luckey's status as special government employees or contractors is still not stated.
+  https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/
+- **Meta whistleblowers:** no Meta reply to Grassley's 22 Jul letter has been found. The deadline was 5 Aug.
+  https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers
+- **NDA bans:** no vote dated 26 Oct was found. Rock County rejected one (a revised proposal is due), St. Louis County found no seconder, Citrus County is drafting one, and Indiana County is exploring one (vote 18 Nov). Lincoln County (SD) is pairing an NDA amendment with a data-centre moratorium, outcome unknown.
+  https://www.keloland.com/news/local-news/joint-meeting-in-lincoln-co-pause-on-data-centers/amp/

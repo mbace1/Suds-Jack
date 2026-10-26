@@ -178,3 +178,12 @@ All facts below come from search summaries; no article was opened.
 - Meta: no reply to Grassley found (his 22 Jul letter set a 5 Aug deadline).
 
 **Finland:** no new HS candidate. The Kaleva item "HS: Google laittoi datakeskushankkeen jäihin veronkiristyksen vuoksi" is older background, not new.
+
+### Daily check, Mon 26 Oct 17:16 (search summaries only)
+- **Toko 5, One More Loop:** POSTED.md still reads "NOW" with no link, so Grok Bot has not posted it yet.
+- **Secret Inquiry v2:** still accurate. Nothing newer was found than the 7–22 Oct reports. Kaleva and MTV
+  (IL) say an esiselvitys was started on a private request, and Kaleva says two requests were made. Yle (~22 Oct) says
+  none has started. The film says only that the authority asked the police, so it holds. No new LVV statement; the 5 Nov water plan is still pending.
+- **Break Glass: keep held.** The constitutional law committee's statement (~16 Oct) is on the 2028 extension,
+  but no plenary vote was found. It needs a five-sixths majority.
+- **No film needs a fix.**
