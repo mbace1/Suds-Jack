@@ -172,3 +172,79 @@ to be added as `?clean=1`), with the GLH's own sound bed. That waits until GLH's
 - **Score:** lo-fi night at 84 BPM in F (`LOFI` in `score.py`). The phone's chiptune and chimes are the only electronic
   sounds. Crickets until dawn, then birds. The drones are faint filtered whirs. The card opens on `logo_toko`, the blink,
   over a held Fmaj9.
+
+## Film 3: Five Is the New Fifty (26 Oct)
+
+The owner said yes on 26 Oct: "Work out the details, look for news on similar topics". This section replaces the draft
+above. There is no build and no render yet; stills come first, in the studio set (`clay/studio/set.js`).
+
+**Argument:** with AI tools, a team of five ships what used to fill a floor. The headcount shrinks, but the deciding
+doesn't. "Fifty" is the title's figure of speech, never a number on screen. The film is observed, not reported, so it
+carries no number at all (set rule, line 30).
+
+### The news around it (26 Oct)
+
+All of these come from search summaries only. WebFetch could not reach gdconf.com, businesswire.com or
+mobilegamer.biz, so none of the primaries were opened. None is used on screen.
+
+| # | date | outlet | claim | use |
+|---|---|---|---|---|
+| 1 | 29 Jan 2026 | GDC State of the Game Industry, press release on BusinessWire; also GameDiscoverCo's Substack, GamesBeat and Outlook Respawn | Over 2,300 respondents. **28%** were laid off in the past two years (33% in the US); **two-thirds** of AAA respondents report layoffs at their company, against a third at indie studios; **36%** use generative AI in their work; **52%** say it harms the industry (30% the year before); 7% call it positive. One Substack summary says 52% use AI, which contradicts its own header, so the primary must be opened. | Background. Its numbers are allowed on screen once the primary is opened, but not yet. https://www.businesswire.com/news/home/20260129438528/en/ · https://gamesbeat.com/state-of-game-industry-survey-sheds-light-on-layoffs-genai-views-unionization-and-tariffs-gdc-survey/ |
+| 2 | Aug 2026 | Gamescom Dev Speaker Survey (100 conference speakers), reported by GamesBeat, PocketGamer.biz and Game Developer | **33%** expect AI to make teams smaller; 36% expect it to change roles instead; 14% expect more output per person; **37%** call smaller teams the biggest opportunity of the next three years. Caveat: the respondents are speakers, not a random sample, and these are expectations, not measurements. | **The best dated hook, for the post copy only:** "A third of the speakers in Gamescom's 2026 developer survey expect AI to make teams smaller." Using it on screen needs the owner's OK, because the set rule allows GDC numbers only. https://gamesbeat.com/game-devs-focus-on-ai-smaller-teams-and-leadership-gamescom-dev-survey/ · https://pocketgamer.biz/gamescom-dev-survey-puts-ai-and-smaller-teams-at-centre-of-industry-change |
+| 3 | 14 Jan 2026 (SEC filing) | Playtika; reported by Insider Gaming, mobilegamer.biz and CTech | About 15% of staff cut (450–525 people, sources differ) at a cost of $12–15M. The CEO's memo, as reported, describes moving away from headcount-heavy operations toward streamlined teams powered by AI and automation. | Context only: a real company, so it is not named in the film. https://insider-gaming.com/mobile-developer-playtika-holds-mass-layoffs-will-leverage-ai/ · https://www.calcalistech.com/ctechnews/article/skmtlvlr11x |
+| 4 | Apr 2026 | Bloomberg Opinion (Dave Lee), on PitchBook data, syndicated by Advisor Perspectives | Average headcount of companies that became unicorns: 1,128 (2023), 544 (2025), 323 (2026 so far); 172 in the US. The column argues AI productivity is **not** the main driver; venture dynamics and AI hype are. | It gives the film a fair counterweight: the shrink is real, but the cause is argued. https://www.advisorperspectives.com/articles/2026/04/18/tech-unicorn-mix-workers-ai-hype |
+| 5 | Mar 2026 | cinevva.com roundup | Solo developers shipping games built with AI coding agents, e.g. a bullet-hell platformer said to have shipped in 10 days with eight parallel agents. No sales figures are given. | Atmosphere only. It is a single trade blog and the product names are AI-specific, so it is not on screen. https://app.cinevva.com/news/2026-03-22-solo-devs-shipping-games-with-ai |
+| 6 | Jul 2026 | trade reports (search summary) | Microsoft reportedly cut ~3,200 more Xbox roles through FY27 and parted with four studios; Take-Two reportedly dissolved its AI department in a restructuring. | Context. Unverified, and not for screen. |
+
+**What the news says, honestly:** layoffs are documented (GDC, Playtika). That AI makes teams smaller is mostly an
+**expectation** (Gamescom) and a **company's stated aim** (Playtika), and the strongest data point (PitchBook) comes with
+an argument that AI isn't the main cause. Nothing sourced shows a five-person AI team out-shipping fifty. So the film
+shows a way of working, as the set promises, and claims no trend.
+
+### The five
+
+Toko sits at the centre desk, **magenta** as always. The four teammates have the **same face in four carrier colours**
+from `STICKER`, one flat each, never mixed. BRAND §2c allows this: the original Toko can be any of the nine carriers,
+and other colours carry context. Here the context is "the team".
+
+The plan's line 26 rule says "magenta every time" for Toko himself, and it still holds for him. **The owner approves
+the carriers.** The alternative, five magenta Tokos, reads as clones of one man, which argues the wrong thing.
+
+The set is the studio's long desk, extended to fit five (`DESK.x0/x1` widened, chairs re-spaced). The four carriers
+reuse Toko's rig and differ only in colour and pose. Hands are the **paddles with no thumbs**, always touching what
+they hold (laptop edge, cardboard, mug). The clipping probe (`__film.clip(t)`) is wired in from this film. The window
+onto the park stays, with the drones passing as usual.
+
+### Shot table
+
+Grid: 112 BPM (B = 0.536 s). Shots at s1 0, s2 8B, s3 16B, s4 24B, card 30B, end 38B, which is **20.4 s** with the
+card. Captions are at the big size, every line within 800 px, and each reads cold.
+
+| # | beats | picture | caption (en) | role | sound |
+|---|---|---|---|---|---|
+| 1 | s1 | **Frame 0 hook:** a frontal medium-wide shot of five Tokos at one long desk, typing in sync. The keyboards are the beat. Behind them, the back wall is already faintly see-through: grey-blue ghost desks recede into fog. | A team of [five]. | setup | five keyboards on the beat (felt clicks as hats), felt piano, room tone |
+| 2 | s2 | **The back wall tips forward and down like a theatre flat** and lands flat on the floor. Behind it is a ghost hall of empty desks and chairs, about fifty, translucent and cold, receding into fog. Each Toko's laptop puts out a cardboard part: a side panel, a screen, a joystick, a coin door, a marquee. | Doing work that / once filled a [floor]. | evidence | a big soft wood thud as the flat lands; a cold reverb hum for the ghost hall; cardboard pops, one per laptop |
+| 3 | s3 | The five assemble **one cardboard arcade cabinet** in the middle of the floor, each paddle pressing a part home. The callback gag: the AI on the magenta laptop offers *One more change?* (film 1's chip), Toko shakes his head and closes the lid. In the ghost hall, the monitors **switch off row by row**, back to front. | The tools do / the [typing]. | evidence | cardboard taps; the "one more change?" chime from film 1, then a lid click; a descending run of monitor-off clicks |
+| 4 | s4 | All five paddles on the finished cabinet; its marquee lights magenta. The ghost hall fades to nothing. Hold, then ease back to the frame-0 composition with the cabinet gone through the door and the wall standing again, faintly see-through: the next game. | The five do / the [deciding]. | punchline | the cabinet's chiptune jingle; the piano resolves; a door bump |
+| card | card | **Toko's card** over the studio, blurred: the badge, then **SMALL TEAMS. / BIG DECISIONS.** and TOKO MIDORI · THE GAME CREATOR. Held at least 4 s. | (card) | — | `logo_toko` blink, a held chord |
+
+**The loop:** the last frame matches frame 0's framing, five at the desk with the ghost wall faint behind them.
+
+**The gags** stay small and readable:
+- the wall falling like a flat;
+- five laptops putting out five different cardboard parts;
+- film 1's "One more change?" refused;
+- ghost monitors clicking off row by row.
+
+**GLH sting (5 s):** the wall falls onto the ghost hall, from the clean render.
+
+**Post copy (draft, en, ~200 chars):** "Five people. Work that once filled a floor. The tools do the typing; the five do the
+deciding. #gamedev #indiedev #AI". With the owner's OK, add the dated Gamescom line (row 2) instead of the hashtags.
+
+**Risks:**
+- **The number of desks.** "Fifty" in the picture is a metaphor. If a viewer reads it as a claim, cut the hall to an
+  uncountable fog.
+- **Render cost.** Five puppets plus fifty ghost desks. The ghost desks are instanced and unlit (one material, fog),
+  and the puppets act on twos.
+- **The carriers need the owner's OK.**
+- **Finnish and Japanese** are drafts until a native read.
