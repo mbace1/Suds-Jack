@@ -61,8 +61,38 @@ export function drone(scene, C, seed) {
   return g;
 }
 
-export function buildStudio(scene, C) {
-  const mesh = (gm, m, o = {}) => mesh0(gm, m, { parent: scene, ...o });
+/** a laptop on the desk at `pos` (world), the lid up and facing its user (−z), the badge sticker on its back (+z).
+ *  Used once by the studio (film 2) and five times by film 3. `M` needs laptop + keys; `seed` keeps each one's lumps its own */
+export function laptopAt(scene, M, pos, seed = 960) {
+  const LAPTOP = new THREE.Group(); scene.add(LAPTOP); LAPTOP.position.set(...pos);
+  mesh0(lumpy(new RoundedBoxGeometry(15, 0.9, 10, 3, 0.4), 0.02, 1, seed), M.laptop, { pos: [0, 0.45, 0], parent: LAPTOP });
+  mesh0(new RoundedBoxGeometry(13, 0.2, 5.2, 2, 0.1), M.keys, { pos: [0, 0.95, -1.4], parent: LAPTOP, cast: false });
+  const LID = new THREE.Group(); LID.position.set(0, 0.9, 4.8); LID.rotation.x = 0.18; LAPTOP.add(LID);   // hinge at the far edge, leaning back
+  mesh0(lumpy(new RoundedBoxGeometry(15, 9.6, 0.6, 3, 0.35), 0.02, 1, seed + 1), M.laptop, { pos: [0, 4.8, 0], parent: LID });
+  // the screen (faces him, −z) and the sticker on the back (faces camera, +z)
+  const SW = 512, SH = 320, scrCan = canvas(SW, SH), scrTex = tex(scrCan);
+  const SCREEN = mesh0(new THREE.PlaneGeometry(13.4, 8.4), new THREE.MeshBasicMaterial({ map: scrTex, toneMapped: false }), { pos: [0, 4.8, -0.32], rot: [0, Math.PI, 0], parent: LID, cast: false });
+  const stCan = canvas(256, 256), sg = stCan.getContext('2d'); drawMasterBadge(sg, 128, 128, 110, { ground: MAG, ink: '#fff8f0' });
+  mesh0(new THREE.CircleGeometry(2.2, 40), new THREE.MeshStandardMaterial({ map: tex(stCan), roughness: 0.4, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 }), { pos: [0, 5.2, 0.32], parent: LID, cast: false });
+  return { LAPTOP, LID, SCREEN, scrCan, scrTex };
+}
+
+/** a chair at x (seat and low back, the stem and the foot), seats as in film 2 */
+export function chairAt(scene, M, x, seed = 950) {
+  const mesh = (gm, m, q = {}) => mesh0(gm, m, { parent: scene, ...q });
+  mesh(lumpy(new RoundedBoxGeometry(14, 1.6, 12, 3, 0.7), 0.05, 0.5, seed), M.chair, { pos: [x, SEAT - 1, -1] });
+  mesh(lumpy(new RoundedBoxGeometry(13, 10, 1.6, 3, 0.7), 0.05, 0.5, seed + 1), M.chair, { pos: [x, SEAT + 7, -8.5], rot: [-0.12, 0, 0] });
+  mesh(lumpy(lathe([[0, 0], [1.0, 0], [1.0, SEAT - 2], [0, SEAT - 2]], 14), 0.02, 1, seed + 2), M.lampArm, { pos: [x, 0, -1] });
+  mesh(lumpy(lathe([[0, 0], [7, 0], [6.4, 0.9], [0, 1.2]], 24), 0.03, 1, seed + 3), M.lampArm, { pos: [x, 0, -1] });
+}
+
+/** o.desk: override the desk's extents (film 3 seats five); o.chair === false: no solo chair (film 3 seats its own).
+ *  Everything on the back wall (wall, window, sill, plant, the park card) hangs from WALL, so a film can fly it out. */
+export function buildStudio(scene, C, o = {}) {
+  const mesh = (gm, m, q = {}) => mesh0(gm, m, { parent: scene, ...q });
+  const D = { ...DESK, ...(o.desk || {}) };
+  const WALL = new THREE.Group(); scene.add(WALL);
+  const wmesh = (gm, m, q = {}) => mesh0(gm, m, { parent: WALL, ...q });
   const M = {
     floor: C('#8a6644', { tool: 1.2, thumbCell: 2.4, mottle: 0.14, noBoil: true }), floorB: C('#7a583a', { tool: 1.2, thumbCell: 2.4, mottle: 0.14, noBoil: true }),
     wall: C('#d9cdb8', { thumbCell: 3.0, thumb: 0.03, mottle: 0.1, specks: 0.25, noBoil: true }), skirting: C('#b8a990', { tool: 0.8 }),
@@ -80,45 +110,33 @@ export function buildStudio(scene, C) {
   for (let i = 0; i < 14; i++) mesh(lumpy(new RoundedBoxGeometry(14, 1, 220, 2, 0.4), 0.05, 0.4, 900 + i), i % 2 ? M.floor : M.floorB, { pos: [-98 + i * 14.1, -0.5, 40], cast: false });
   // the back wall behind him, with the window
   const WZ = -26, WIN = { x0: -38, x1: 14, y0: 30, y1: 86 };
-  const wallPart = (x0, x1, y0, y1) => mesh(lumpy(new RoundedBoxGeometry(x1 - x0, y1 - y0, 3, 2, 0.6), 0.1, 0.3, 910 + x0 + y0), M.wall, { pos: [(x0 + x1) / 2, (y0 + y1) / 2, WZ], cast: false });
+  const wallPart = (x0, x1, y0, y1) => wmesh(lumpy(new RoundedBoxGeometry(x1 - x0, y1 - y0, 3, 2, 0.6), 0.1, 0.3, 910 + x0 + y0), M.wall, { pos: [(x0 + x1) / 2, (y0 + y1) / 2, WZ], cast: false });
   wallPart(-160, WIN.x0, 0, 160); wallPart(WIN.x1, 160, 0, 160); wallPart(WIN.x0, WIN.x1, 0, WIN.y0); wallPart(WIN.x0, WIN.x1, WIN.y1, 160);
-  mesh(lumpy(new RoundedBoxGeometry(320, 5, 1.6, 2, 0.5), 0.04, 0.5, 915), M.skirting, { pos: [0, 2.5, WZ + 2.2], cast: false });
+  wmesh(lumpy(new RoundedBoxGeometry(320, 5, 1.6, 2, 0.5), 0.04, 0.5, 915), M.skirting, { pos: [0, 2.5, WZ + 2.2], cast: false });
   // the window frame: a cross of mullions, a sill
-  const fr = (w, h, x, y) => mesh(lumpy(new RoundedBoxGeometry(w, h, 2.4, 2, 0.5), 0.04, 0.6, 920 + x + y), M.frame, { pos: [x, y, WZ + 0.6] });
+  const fr = (w, h, x, y) => wmesh(lumpy(new RoundedBoxGeometry(w, h, 2.4, 2, 0.5), 0.04, 0.6, 920 + x + y), M.frame, { pos: [x, y, WZ + 0.6] });
   fr(WIN.x1 - WIN.x0 + 4, 2.4, (WIN.x0 + WIN.x1) / 2, WIN.y1); fr(WIN.x1 - WIN.x0 + 4, 2.4, (WIN.x0 + WIN.x1) / 2, WIN.y0);
   fr(2.4, WIN.y1 - WIN.y0, WIN.x0, (WIN.y0 + WIN.y1) / 2); fr(2.4, WIN.y1 - WIN.y0, WIN.x1, (WIN.y0 + WIN.y1) / 2);
   fr(1.6, WIN.y1 - WIN.y0, (WIN.x0 + WIN.x1) / 2, (WIN.y0 + WIN.y1) / 2); fr(WIN.x1 - WIN.x0, 1.6, (WIN.x0 + WIN.x1) / 2, (WIN.y0 + WIN.y1) / 2 + 6);
-  mesh(lumpy(new RoundedBoxGeometry(WIN.x1 - WIN.x0 + 10, 1.6, 7, 2, 0.5), 0.04, 0.5, 930), M.sill, { pos: [(WIN.x0 + WIN.x1) / 2, WIN.y0 - 1.2, WZ + 3] });
+  wmesh(lumpy(new RoundedBoxGeometry(WIN.x1 - WIN.x0 + 10, 1.6, 7, 2, 0.5), 0.04, 0.5, 930), M.sill, { pos: [(WIN.x0 + WIN.x1) / 2, WIN.y0 - 1.2, WZ + 3] });
   // a little plant on the sill
-  mesh(lumpy(lathe([[0, 0], [2.4, 0], [3.0, 4.2], [0, 4.4]], 20), 0.04, 0.6, 931), M.pot, { pos: [WIN.x1 - 8, WIN.y0, WZ + 3] });
-  for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; mesh(lumpy(ball(1.6, 0.6, 1.6, 0.4, 12), 0.08, 0.6, 932 + i), M.plant, { pos: [WIN.x1 - 8 + Math.cos(a) * 1.2, WIN.y0 + 6 + (i % 2) * 1.5, WZ + 3 + Math.sin(a) * 1.2], rot: [Math.sin(a) * 0.5, a, Math.cos(a) * 0.5] }); }
+  wmesh(lumpy(lathe([[0, 0], [2.4, 0], [3.0, 4.2], [0, 4.4]], 20), 0.04, 0.6, 931), M.pot, { pos: [WIN.x1 - 8, WIN.y0, WZ + 3] });
+  for (let i = 0; i < 6; i++) { const a = i / 6 * TAU; wmesh(lumpy(ball(1.6, 0.6, 1.6, 0.4, 12), 0.08, 0.6, 932 + i), M.plant, { pos: [WIN.x1 - 8 + Math.cos(a) * 1.2, WIN.y0 + 6 + (i % 2) * 1.5, WZ + 3 + Math.sin(a) * 1.2], rot: [Math.sin(a) * 0.5, a, Math.cos(a) * 0.5] }); }
   // the park beyond the glass: a painted card, lit by itself (the hour sets its paint)
-  const parkCan = canvas(1024, 768), parkTex = tex(parkCan), park = mesh(new THREE.PlaneGeometry(150, 112), new THREE.MeshBasicMaterial({ map: parkTex, fog: false }), { pos: [(WIN.x0 + WIN.x1) / 2, 62, -88], cast: false, recv: false });
+  const parkCan = canvas(1024, 768), parkTex = tex(parkCan), park = wmesh(new THREE.PlaneGeometry(150, 112), new THREE.MeshBasicMaterial({ map: parkTex, fog: false }), { pos: [(WIN.x0 + WIN.x1) / 2, 62, -88], cast: false, recv: false });
   const paint = (hour) => { const p = paintPark(hour); parkCan.getContext('2d').drawImage(p, 0, 0); parkTex.needsUpdate = true; };
   paint('dusk');
 
   // the desk: a thick top on four legs
-  const DW = DESK.x1 - DESK.x0, DD = DESK.z1 - DESK.z0;
-  mesh(lumpy(new RoundedBoxGeometry(DW, 2.2, DD, 3, 0.8), 0.05, 0.4, 940), M.desk, { pos: [0, DESK.y - 1.1, (DESK.z0 + DESK.z1) / 2] });
-  for (const [x, z] of [[DESK.x0 + 2, DESK.z0 + 2], [DESK.x1 - 2, DESK.z0 + 2], [DESK.x0 + 2, DESK.z1 - 2], [DESK.x1 - 2, DESK.z1 - 2]])
-    mesh(lumpy(new RoundedBoxGeometry(2.2, DESK.y - 2.2, 2.2, 2, 0.6), 0.03, 0.6, 941 + x + z), M.deskLeg, { pos: [x, (DESK.y - 2.2) / 2, z] });
+  const DW = D.x1 - D.x0, DD = D.z1 - D.z0;
+  mesh(lumpy(new RoundedBoxGeometry(DW, 2.2, DD, 3, 0.8), 0.05, 0.4, 940), M.desk, { pos: [(D.x0 + D.x1) / 2, D.y - 1.1, (D.z0 + D.z1) / 2] });
+  for (const [x, z] of [[D.x0 + 2, D.z0 + 2], [D.x1 - 2, D.z0 + 2], [D.x0 + 2, D.z1 - 2], [D.x1 - 2, D.z1 - 2]])
+    mesh(lumpy(new RoundedBoxGeometry(2.2, D.y - 2.2, 2.2, 2, 0.6), 0.03, 0.6, 941 + x + z), M.deskLeg, { pos: [x, (D.y - 2.2) / 2, z] });
   // his chair: a seat and a low back behind him
-  mesh(lumpy(new RoundedBoxGeometry(14, 1.6, 12, 3, 0.7), 0.05, 0.5, 950), M.chair, { pos: [0, SEAT - 1, -1] });
-  mesh(lumpy(new RoundedBoxGeometry(13, 10, 1.6, 3, 0.7), 0.05, 0.5, 951), M.chair, { pos: [0, SEAT + 7, -8.5], rot: [-0.12, 0, 0] });
-  mesh(lumpy(lathe([[0, 0], [1.0, 0], [1.0, SEAT - 2], [0, SEAT - 2]], 14), 0.02, 1, 952), M.lampArm, { pos: [0, 0, -1] });
-  mesh(lumpy(lathe([[0, 0], [7, 0], [6.4, 0.9], [0, 1.2]], 24), 0.03, 1, 953), M.lampArm, { pos: [0, 0, -1] });
+  if (o.chair !== false) chairAt(scene, M, 0);
 
   // the laptop: base on the desk in front of him, the lid up and facing him (its back, with the badge sticker, to camera)
-  const LAPTOP = new THREE.Group(); scene.add(LAPTOP); LAPTOP.position.set(0, DESK.y, 15);
-  mesh0(lumpy(new RoundedBoxGeometry(15, 0.9, 10, 3, 0.4), 0.02, 1, 960), M.laptop, { pos: [0, 0.45, 0], parent: LAPTOP });
-  mesh0(new RoundedBoxGeometry(13, 0.2, 5.2, 2, 0.1), M.keys, { pos: [0, 0.95, -1.4], parent: LAPTOP, cast: false });
-  const LID = new THREE.Group(); LID.position.set(0, 0.9, 4.8); LID.rotation.x = 0.18; LAPTOP.add(LID);   // hinge at the far edge, leaning back
-  mesh0(lumpy(new RoundedBoxGeometry(15, 9.6, 0.6, 3, 0.35), 0.02, 1, 961), M.laptop, { pos: [0, 4.8, 0], parent: LID });
-  // the screen (faces him, −z) and the sticker on the back (faces camera, +z)
-  const SW = 512, SH = 320, scrCan = canvas(SW, SH), scrTex = tex(scrCan);
-  const SCREEN = mesh0(new THREE.PlaneGeometry(13.4, 8.4), new THREE.MeshBasicMaterial({ map: scrTex, toneMapped: false }), { pos: [0, 4.8, -0.32], rot: [0, Math.PI, 0], parent: LID, cast: false });
-  const stCan = canvas(256, 256), sg = stCan.getContext('2d'); drawMasterBadge(sg, 128, 128, 110, { ground: MAG, ink: '#fff8f0' });
-  mesh0(new THREE.CircleGeometry(2.2, 40), new THREE.MeshStandardMaterial({ map: tex(stCan), roughness: 0.4, transparent: true, polygonOffset: true, polygonOffsetFactor: -2 }), { pos: [0, 5.2, 0.32], parent: LID, cast: false });
+  const { LAPTOP, LID, SCREEN, scrCan, scrTex } = laptopAt(scene, M, [0, DESK.y, 15], 960);
   // the thermos (film 1's) and the phone face down, the desk lamp, a sheet of paper
   const THERMOS = new THREE.Group(); scene.add(THERMOS); THERMOS.position.set(-22, DESK.y, 24);
   mesh0(lumpy(lathe([[0, 0], [2.1, 0], [2.3, 0.6], [2.3, 10.6], [1.9, 11.4], [0, 11.4]], 28), 0.02, 1, 962), M.thermos, { parent: THERMOS });
@@ -163,5 +181,5 @@ export function buildStudio(scene, C) {
     winLight.color.set(h.win[0]); winLight.intensity = h.win[1]; lampLight.intensity = h.lamp;
     return h.grade;
   }
-  return { M, DESK, SEAT, LAPTOP, LID, SCREEN, scrCan, scrTex, THERMOS, PHONE, LAMP, bulb, WIN, WZ, hemi, lampLight, winLight, fill, screenLight, drones, setHour };
+  return { M, WALL, park, DESK: D, SEAT, LAPTOP, LID, SCREEN, scrCan, scrTex, THERMOS, PHONE, LAMP, bulb, WIN, WZ, hemi, lampLight, winLight, fill, screenLight, drones, setHour };
 }

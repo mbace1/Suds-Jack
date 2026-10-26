@@ -1,0 +1,117 @@
+{
+  "film": "five-is-the-new-fifty",
+  "cut": "v1 stills (26 Oct): Toko set 3/4, the shared studio (clay/studio/set.js) widened for five",
+  "series": "toko",
+  "captionSize": "big",
+  "argument": "With AI tools a team of five does what used to fill a floor; the tools do the typing, the five still do the deciding.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "five",
+      "role": "setup",
+      "at": "s1+0.3",
+      "until": "s2-0.2",
+      "hold": "s2",
+      "text": {
+        "en": "A team of [five].",
+        "fi": "[Viiden] tiimi.",
+        "ja": "チームは [5人]。"
+      },
+      "source": "Observed, not reported: the film shows a way of working, Toko's own. No number on screen; 'fifty' is the title's figure of speech, the ghost hall is uncounted."
+    },
+    {
+      "id": "floor",
+      "role": "evidence",
+      "at": "s2+0.3",
+      "until": "s3-0.2",
+      "hold": "s3",
+      "text": {
+        "en": "Doing work that / once filled a [floor].",
+        "fi": "Työtä, joka ennen / täytti [kerroksen].",
+        "ja": "かつて フロア 一つ分の / [仕事]を こなす。"
+      },
+      "source": "The film's picture (the wall flies out on a ghost hall of empty desks). Background, not on screen: layoffs are documented (GDC 2026 State of the Industry; Playtika's Jan 2026 filing), and that AI makes teams smaller is so far an expectation (Gamescom 2026 speaker survey) - plan/films/27-toko-ai-dev-set.md, film 3."
+    },
+    {
+      "id": "typing",
+      "role": "evidence",
+      "at": "s3+0.3",
+      "until": "s4-0.2",
+      "hold": "s4",
+      "text": {
+        "en": "The tools do / the [typing].",
+        "fi": "Työkalut hoitavat / [näpyttelyn].",
+        "ja": "打つのは / [ツール]。"
+      },
+      "source": "The film's picture: the laptops keep typing; Toko refuses film 1's 'One more change?' and builds with his hands."
+    },
+    {
+      "id": "deciding",
+      "role": "punchline",
+      "at": "s4+0.3",
+      "until": "s5-0.2",
+      "hold": "s5",
+      "text": {
+        "en": "The five do / the [deciding].",
+        "fi": "Viisi tekee / [päätökset].",
+        "ja": "決めるのは / [5人]。"
+      },
+      "source": "The station's line, over the finished cabinet with all five turned to it."
+    }
+  ],
+  "ui": {
+    "card1": {
+      "en": "SMALL TEAMS.",
+      "fi": "PIENET TIIMIT.",
+      "ja": "小さな チーム。"
+    },
+    "card2": {
+      "en": "BIG DECISIONS.",
+      "fi": "ISOT PÄÄTÖKSET.",
+      "ja": "大きな 決断。"
+    },
+    "name": {
+      "en": "TOKO MIDORI · THE GAME CREATOR",
+      "fi": "TOKO MIDORI · PELINTEKIJÄ",
+      "ja": "美鳥十湖 · ゲームクリエイター"
+    },
+    "more": {
+      "en": "One more change?",
+      "fi": "Vielä yksi muutos?",
+      "ja": "もう一回 変える？"
+    },
+    "yes": {
+      "en": "Yes",
+      "fi": "Kyllä",
+      "ja": "はい"
+    },
+    "no": {
+      "en": "No",
+      "fi": "Ei",
+      "ja": "いいえ"
+    },
+    "play": {
+      "en": "PLAY",
+      "fi": "PELAA",
+      "ja": "PLAY"
+    }
+  },
+  "post": {
+    "en": "A team of five, doing work that once filled a floor. In Gamescom's 2026 survey of its developer speakers, a third expect AI to make teams smaller. The tools do the typing. The five do the deciding. #gamedev #indiedev #AI",
+    "fi": "Viiden tiimi tekee työtä, joka ennen täytti kerroksen. Gamescomin vuoden 2026 kyselyssä kolmannes kehittäjäpuhujista odottaa tekoälyn pienentävän tiimejä. Työkalut näpyttelevät. Viisi päättää. #pelinkehitys #indiedev #tekoäly",
+    "ja": "5人のチームが、かつてフロア一つ分だった仕事をこなす。Gamescom 2026の開発者スピーカー調査では、3人に1人がAIでチームは小さくなると予想。打つのはツール。決めるのは5人。#ゲーム開発 #インディーゲーム #AI"
+  },
+  "facts": {
+    "gamescom": "Post copy only (owner OK, 26 Oct). Gamescom Dev Speaker Survey 2026 (100 conference speakers): 33% expect AI to make teams smaller. SEARCH-SUMMARY ONLY (GamesBeat, PocketGamer.biz, Game Developer); primary not opened. Respondents are speakers, not a random sample; an expectation, not a measurement. Never on screen."
+  }
+}
