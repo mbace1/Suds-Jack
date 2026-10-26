@@ -203,10 +203,20 @@
    "pz": 9.59
   }
  ],
+ "hard": {
+  "cap": 4,
+  "near": 4
+ },
  "tiers": {
   "S": 0.63,
   "A": 0.58,
   "B": 0.38,
   "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 54%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ },
+ "tiersHard": {
+  "S": 0.25,
+  "A": 0.2,
+  "B": 0.13,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 88%, average 67%, rough 8%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

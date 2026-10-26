@@ -12,8 +12,8 @@
 // and w.over, as a death does. What the room ASKS — its goal and its mods —
 // is sim/challenge.js (CAMPAIGN_PLAN.md); `fail` is a room whose clock ran
 // out on a goal it did not meet. Every number is TUNING.campaign.
-import { TUNING } from '../../tuning.js?v=48';
-import * as challenge from '../challenge.js?v=48';
+import { TUNING } from '../../tuning.js?v=49';
+import * as challenge from '../challenge.js?v=49';
 
 const T = TUNING, C = T.campaign, ORDER = ['F', 'C', 'B', 'A', 'S'];
 
@@ -51,6 +51,7 @@ export function grade(room, level, result) {
 // grades on the lag behind its last needed body and has no fixed lines
 export function tiersFor(room, level) {
   const m = challenge.metricOf({ ...room, level });
+  if (room?.hard && level.tiersHard) return level.tiersHard;   // a HARD room's own lines (v49)
   if (level.tiers) return level.tiers;
   if (m.name === 'share') return C.share;
   if (m.name === 'time' && (room.goal === 'quota' || level.goal?.type === 'quota')) return null;
@@ -85,11 +86,13 @@ export function rooms() {
   C.worlds.forEach((wd, wi) => wd.rooms.forEach((r, ri) => out.push({ ...r, goal: r.goal ?? 'survive', world: wi, index: out.length, first: ri === 0 })));
   return out;
 }
-// a room is open when the one before it has a grade above F
-export function isOpen(i, progress) {
-  if (i === 0) return true;
-  const prev = rooms()[i - 1], g = prev && progress[prev.id]?.grade;
-  return !!g && g !== 'F';
+// a room is open when the one before it has a grade above F. A HARD room
+// (v49) also needs its own room cleared on the normal route (`normal`, that
+// route's progress): you play a room before you play it hard
+const passed = (progress, id) => { const g = progress?.[id]?.grade; return !!g && g !== 'F'; };
+export function isOpen(i, progress, normal = null) {
+  if (normal && !passed(normal, rooms()[i]?.id)) return false;
+  return i === 0 || passed(progress, rooms()[i - 1]?.id);
 }
 
 export default {

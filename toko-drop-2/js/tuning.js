@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=48';
-import WAVES from './tuning/waves.js?v=48';
-import PICKUPS from './tuning/pickups.js?v=48';
+import { SPECIES } from './tuning/species/index.js?v=49';
+import WAVES from './tuning/waves.js?v=49';
+import PICKUPS from './tuning/pickups.js?v=49';
 
 export const TUNING = {
   render: {
@@ -795,5 +795,12 @@ export const TUNING = {
     palette: { yellowLo: 0.10, yellowHi: 0.22, poisonHue: 0.285, poisonSatMin: 0.75, poisonL: 0.42,
                warmHiCut: 0.92, satMul: 1.2, darkL: 0.55, coolL: 0.5, lFloor: 0.30 },
     scoreMult: 1.5,          // 2.0 keeps HARDCADE's higher score (DIRECTION)
+    // the HARD CAMPAIGN (v49): the same rooms, and EVERY corpse fires back —
+    // a biter in its own dialect, the rest a small ring — from the first
+    // body (a room has no waves to wait for), under a fixed cap. `others`
+    // scales the ring of a body that is not a biter; a corpse within `near`
+    // of you does not fire (a dash kill is point-blank: its ring would land
+    // on you before it could be seen)
+    room: { who: 'all', density: 0.4, others: 0.25, near: 3, cap: 6 },   // a level's own `hard` overrides these
   },
 };

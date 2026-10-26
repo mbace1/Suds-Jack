@@ -92,6 +92,7 @@
     @media (max-width: 480px) { #menu .grid { grid-template-columns: repeat(var(--cols, 6), minmax(40px, 1fr)); } #menu .grid .wname { grid-column: 1 / -1; text-align: left; margin-top: 2px; max-width: none; } }
     /* a room's card: what it asks, its chart, its lines, START */
     #menu h2.card { color: var(--amber); }
+    #menu h2.hard { color: #ff6a5a; }   /* the HARD CAMPAIGN's grid (v49) */
     #menu .goal { letter-spacing: .14em; margin: 2px 0 8px; }
     #menu canvas.chart { display: block; margin: 4px auto 6px; max-width: 100%; }
     #menu > .teaches { font-size: 10px; color: var(--dim); letter-spacing: .04em; margin: 0 0 4px; }
@@ -111,7 +112,22 @@
     #menu .row.start .item.narrow { flex: 0 0 34%; }
     #menu .row.start .item.narrow .label { font-size: 15px; letter-spacing: .16em; }
     #menu .row.start .item.hard { flex: 0 0 42%; }
-    #menu .row.start .item.hard .label { font-size: 13px; letter-spacing: .08em; white-space: nowrap; }
+    #menu .row.start .item.hard { position: relative; padding-right: 60px; }
+    #menu .row.start .item.hard .label { font-size: 15px; letter-spacing: .16em; white-space: nowrap; }
+    /* the HARD switch: a track and a knob, red when on (v49) */
+    #menu .item .switch { position: absolute; top: 10px; right: 10px; width: 42px; height: 22px; border-radius: 11px;
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.28); transition: background .18s, border-color .18s; }
+    #menu .item .switch .knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
+      background: var(--dim); transition: transform .18s ease-out, background .18s; }
+    #menu .item .switch.on { background: #ff6a5a; border-color: #ff6a5a; box-shadow: 0 0 10px rgba(255,106,90,.45); }
+    #menu .item .switch.on .knob { transform: translateX(20px); background: #fff; }
+    #menu .item .switch.flip .knob { animation: knob-off .18s ease-out; }
+    #menu .item .switch.on.flip .knob { animation: knob-on .18s ease-out; }
+    @keyframes knob-on { from { transform: translateX(0); } }
+    @keyframes knob-off { from { transform: translateX(20px); } }
+    #menu .item.focus .switch { border-color: var(--gold); }
+    #menu .item.focus .switch:not(.on) .knob { background: var(--gold); }
+    @media (prefers-reduced-motion: reduce) { #menu .item .switch, #menu .item .switch .knob { transition: none; animation: none !important; } }
     #menu .row.start .item.hard .sub { font-size: 10px; }
     /* a phone held sideways is ~400 px tall: two columns, so the whole title
        (the test switches included) shows without scrolling */
@@ -175,7 +191,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v48<span id="backend"></span></div>
+  <div id="ver">2.0 · v49<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -284,6 +300,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=48"></script>
+  <script type="module" src="js/main.js?v=49"></script>
 </body>
 </html>

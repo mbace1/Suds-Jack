@@ -14,19 +14,19 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=48';
-import { makeRng } from './rng.js?v=48';
-import { BEHAVIOUR } from './species/index.js?v=48';
-import { DIRECTORS } from './director/index.js?v=48';
-import * as fire from './fire.js?v=48';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=48';
-import { swarmForces, resolveCrowd } from './crowd.js?v=48';
-import { revengeColor } from './color.js?v=48';
-import * as pickups from './pickups.js?v=48';
-import * as worlds from './worlds.js?v=48';
-import * as reshape from './reshape.js?v=48';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=48';
-import * as rules from './rules.js?v=48';
+import { TUNING } from '../tuning.js?v=49';
+import { makeRng } from './rng.js?v=49';
+import { BEHAVIOUR } from './species/index.js?v=49';
+import { DIRECTORS } from './director/index.js?v=49';
+import * as fire from './fire.js?v=49';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=49';
+import { swarmForces, resolveCrowd } from './crowd.js?v=49';
+import { revengeColor } from './color.js?v=49';
+import * as pickups from './pickups.js?v=49';
+import * as worlds from './worlds.js?v=49';
+import * as reshape from './reshape.js?v=49';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=49';
+import * as rules from './rules.js?v=49';
 
 const T = TUNING;
 
@@ -270,7 +270,7 @@ function pop(w, g) {
 function kill(w, g, src = 'hero') {
   if (!g.alive) return;
   g.alive = false;
-  const S = T.species[g.kind], hard = w.mode === 'hardcade';
+  const S = T.species[g.kind], hard = w.mode === 'hardcade' || !!w.room?.hard;
   w.kills++; w.streak++;
   w.score += Math.round(T.score.perKill * w.streak * (hard ? T.revenge.scoreMult : 1) * pickups.scoreMult(w));
   pickups.onKill(w, g);             // the bounty pays (1.x main.js:4436-4448)
@@ -297,16 +297,20 @@ function kill(w, g, src = 'hero') {
 // before `fromWave`, and not while the floor already holds `fieldCap` live
 // corpse bullets (a bloom that starts under the cap lands whole).
 function revenge(w, g) {
-  const R = T.revenge, S = T.species[g.kind];
-  if (!(g.isBoss || S.revenge || R.who === 'all') || w.wave < R.fromWave) return;
+  // a HARD campaign room (v49): every corpse, from the first, under the room's own cap
+  const room = !!w.room?.hard, R = room ? { ...T.revenge, ...T.revenge.room, ...(w.room.level?.hard ?? {}) } : T.revenge, S = T.species[g.kind];
+  if (!(g.isBoss || S.revenge || R.who === 'all') || (!room && w.wave < R.fromWave)) return;
   let live = 0;
   for (const b of w.bullets) if (b.revenge && !b.dead) live++;
-  if (live >= Math.min(R.fieldCap.max, Math.round(R.fieldCap.base + w.wave * R.fieldCap.per)) || w.gelBullets >= R.poolGate) return;
+  const cap = room ? R.cap : Math.min(R.fieldCap.max, Math.round(R.fieldCap.base + w.wave * R.fieldCap.per));
+  if (live >= cap || w.gelBullets >= R.poolGate) return;
   const h = w.hero, near = Math.hypot(h.x - g.x, h.z - g.z) < 0.001;
+  if (room && Math.hypot(h.x - g.x, h.z - g.z) < R.near) return;
   const aim = near ? w.rngFx.range(0, Math.PI * 2) : Math.atan2(h.z - g.z, h.x - g.x);
   const opts = { speedMult: R.speedMult, color: revengeColor(g.kind), src: g.kind, revenge: true };
   const dialect = g.isBoss ? 'RING' : (S.revenge ?? 'RING');
-  const n = (c) => Math.max(1, Math.round(c * R.density));
+  const dens = room && !(g.isBoss || S.revenge) ? R.others : R.density;
+  const n = (c) => Math.max(1, Math.round(c * dens));
   if (dialect === 'AIMED') fire.fanStep(w, g.x, g.z, aim, n(R.aimed.count), R.aimed.spread, opts);
   else if (dialect === 'FAN') fire.fanStep(w, g.x, g.z, aim, n(R.fan.count), R.fan.spread, opts);
   else fire.ring(w, g.x, g.z, n(g.isBoss ? R.ring.boss : g.r > R.ring.bigRadius ? R.ring.big : R.ring.small), w.rngFx.range(0, Math.PI * 2), opts);
@@ -401,7 +405,7 @@ function gelBulletsHit(w) {
     }
     if (!b.grazed && d < T.graze.radius) {
       b.grazed = true; w.grazes++;
-      w.score += T.graze.points * (w.mode === 'hardcade' ? T.revenge.scoreMult : 1) * pickups.scoreMult(w);   // × 2 under the multiplier (1.x main.js:10860)
+      w.score += T.graze.points * (w.mode === 'hardcade' || w.room?.hard ? T.revenge.scoreMult : 1) * pickups.scoreMult(w);   // × 2 under the multiplier (1.x main.js:10860)
       w.events.push({ type: 'graze', x: b.x, z: b.z });
       milestones(w);
     }

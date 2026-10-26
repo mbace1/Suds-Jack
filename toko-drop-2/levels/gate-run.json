@@ -242,5 +242,11 @@
   "A": 30.7,
   "B": 32.8,
   "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 88%, rough 33%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+ },
+ "tiersHard": {
+  "S": 28.6,
+  "A": 30.7,
+  "B": 32.8,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 63%, rough 17%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
  }
 }

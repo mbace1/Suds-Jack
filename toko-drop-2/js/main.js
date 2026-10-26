@@ -7,31 +7,31 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=48';
-import { buildFloor } from './render/floor.js?v=48';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=48';
-import * as worldsSim from './sim/worlds.js?v=48';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=48';
-import * as reshapeSim from './sim/reshape.js?v=48';
-import { Scenery } from './render/scenery.js?v=48';
-import { Transit } from './render/transit.js?v=48';
-import { Splats } from './render/splats.js?v=48';
-import { Actors } from './render/actors.js?v=48';
-import { GEL_TIME } from './render/gel.js?v=48';
-import { studioEnvironment } from './render/env.js?v=48';
-import { Specimen } from './render/specimen.js?v=48';
-import { createWorld, step, api as simApi } from './sim/world.js?v=48';
-import { stage as stagePk } from './sim/pickups.js?v=48';
-import { Input } from './input.js?v=48';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=48';
-import { Announcer } from './announcer.js?v=48';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=48';
-import { metricOf } from './sim/challenge.js?v=48';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=48';
-import { Sound } from './audio.js?v=48';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=48';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=48';
-import { Readout } from './readout.js?v=48';
+import { TUNING } from './tuning.js?v=49';
+import { buildFloor } from './render/floor.js?v=49';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=49';
+import * as worldsSim from './sim/worlds.js?v=49';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=49';
+import * as reshapeSim from './sim/reshape.js?v=49';
+import { Scenery } from './render/scenery.js?v=49';
+import { Transit } from './render/transit.js?v=49';
+import { Splats } from './render/splats.js?v=49';
+import { Actors } from './render/actors.js?v=49';
+import { GEL_TIME } from './render/gel.js?v=49';
+import { studioEnvironment } from './render/env.js?v=49';
+import { Specimen } from './render/specimen.js?v=49';
+import { createWorld, step, api as simApi } from './sim/world.js?v=49';
+import { stage as stagePk } from './sim/pickups.js?v=49';
+import { Input } from './input.js?v=49';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=49';
+import { Announcer } from './announcer.js?v=49';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade, roomBodies } from './sim/director/campaign.js?v=49';
+import { metricOf } from './sim/challenge.js?v=49';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=49';
+import { Sound } from './audio.js?v=49';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=49';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=49';
+import { Readout } from './readout.js?v=49';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -434,29 +434,32 @@ function go() {
   if (state === 'intro') { introSfx?.stop(); introSfx = null; intro.finish(); }
   state = 'play'; input.enabled = true;
   ui.hide(); ui.setHud(true);
-  ui.banner(world?.room ? `${world.room.level.name} · ${goalText(world.room)}` : mode.toUpperCase(), world?.room ? 1.8 : 1.2);
+  ui.banner(world?.room ? `${world.room.hard ? `${t('hardTag')} · ` : ''}${world.room.level.name} · ${goalText(world.room)}` : mode.toUpperCase(), world?.room ? 1.8 : 1.2);
   announcer.say('start');
 }
 
 // ── THE CAMPAIGN (sim/director/campaign.js) ─────────────────────────
 // progress is one object in localStorage, a room's best grade by id (1.x tokoDropCampaign)
-const CAMPAIGN_KEY = 'toko2.campaign';
-const campaignProgress = () => { try { return JSON.parse(store.str(CAMPAIGN_KEY) || '{}') || {}; } catch { return {}; } };
+// and the HARD CAMPAIGN's (v49, the title's HARD switch) is another, its own grades
+const CAMPAIGN_KEY = 'toko2.campaign', HARD_KEY = 'toko2.campaign.hard';
+const hardOn = () => store.str('toko2.hard') === 'on';
+const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(hard ? HARD_KEY : CAMPAIGN_KEY) || '{}') || {}; } catch { return {}; } };
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=48`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=49`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
 async function campaignList() {
-  const p = campaignProgress(), all = campaignRooms();
+  // a HARD room opens when the one before it is past F on the HARD route AND it is itself past F on the normal one
+  const hard = hardOn(), p = campaignProgress(hard), normal = hard ? campaignProgress(false) : null, all = campaignRooms();
   const lv = await Promise.all(all.map((r) => loadLevel(r.id).catch(() => null)));   // each room's level: its name, what it asks, its chart
   return T.campaign.worlds.map((wd, wi) => {
     const mine = all.filter((r) => r.world === wi), rail = `#${wd.rail.toString(16).padStart(6, '0')}`;
-    return { name: wd.name, rail, open: roomOpen(mine[0].index, p),
+    return { name: wd.name, rail, open: roomOpen(mine[0].index, p, normal),
       rooms: mine.map((r) => ({ ...r, level: lv[r.index], name: lv[r.index]?.name ?? r.id.toUpperCase(), d: lv[r.index]?.plan?.d ?? 1, rail,
-        open: roomOpen(r.index, p), grade: p[r.id]?.grade ?? null, best: p[r.id]?.value ?? null })) };
+        hard, open: roomOpen(r.index, p, normal), grade: p[r.id]?.grade ?? null, best: p[r.id]?.value ?? null })) };
   });
 }
 async function showCampaign(played = null) {
@@ -472,7 +475,7 @@ async function startRoom(id) {
   const r = campaignRooms().find((x) => x.id === id);
   if (!r) return;
   const level = await loadLevel(id);
-  start('campaign', { room: { id, goal: r.goal, kills: r.kills, world: r.world, level } });
+  start('campaign', { room: { id, goal: r.goal, kills: r.kills, world: r.world, level, hard: hardOn() } });
 }
 // a room's floor: its box, and when it is not a rectangle its shape (render/floor.js `region`)
 function useRoom(w) {
@@ -523,11 +526,11 @@ function finish() {
   // a room: its grade is kept; a clear goes back to the rooms, a death to the death screen
   const R = world.roomResult;
   if (R) {
-    const p = campaignProgress(), was = p[R.id]?.grade;
+    const hard = !!world.room.hard, p = campaignProgress(hard), was = p[R.id]?.grade;
     // the best: a better grade, or the same grade on a better number (the room card shows both)
     const m = metricOf(world.room), val = R.value ?? Math.min(1, R.kills / Math.max(1, roomBodies(world.room.level)));
     const old = p[R.id], sameBetter = old && old.grade === R.grade && R.grade !== 'F' && (old.value == null || (m.low ? val < old.value : val > old.value));
-    if (!was || betterGrade(R.grade, was) || sameBetter) { p[R.id] = { grade: R.grade, score: R.score, kills: R.kills, value: R.grade === 'F' ? null : val }; store.set(CAMPAIGN_KEY, JSON.stringify(p)); }
+    if (!was || betterGrade(R.grade, was) || sameBetter) { p[R.id] = { grade: R.grade, score: R.score, kills: R.kills, value: R.grade === 'F' ? null : val }; store.set(hard ? HARD_KEY : CAMPAIGN_KEY, JSON.stringify(p)); }
     if (R.outcome === 'clear') { showCampaign({ id: R.id, name: world.room.level.name, grade: R.grade, kills: R.kills, value: val }); return; }
   }
   const k = bestKey(mode), best = store.num(k), newBest = world.score > best;

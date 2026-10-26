@@ -19,6 +19,19 @@
     Never `--no-verify`.
 -->
 
+## v49 — 2026-10-26
+**The HARD CAMPAIGN: the title's HARD switch turns the thirty-six rooms into their hard versions, where every corpse fires back, on their own grades and their own route**
+- Owner, 2026-10-26: "Do the HARD campaign next" (CAMPAIGN_PLAN.md step 6: the HARDCADE switch applied to the rooms, with their own grades).
+- THE SWITCH: HARD on the title already made ARCADE into HARDCADE; it now also makes CAMPAIGN into HARD CAMPAIGN (the title, the grid's heading in red, a HARD tag on the room's banner). Its grades are kept apart (`toko2.campaign.hard`), and a HARD room opens when the one before it is past F on the HARD route and it is itself past F on the normal one: you play a room before you play it hard.
+- THE RULE: HARDCADE's corpse fire is for biters and starts at wave 3; eleven rooms have no biter in them, so that rule alone would leave them as they are. In a HARD room EVERY corpse fires back from the first: a biter in its own dialect (a burst, a fan, a ring), anything else a small ring (`TUNING.revenge.room`). A corpse within 3 m of you does not fire: a dash kill is point-blank, and its ring would land on you before it could be seen (in RINK, where every kill is a dash, the sharp bot got through 0% without it). At most six corpse bullets are on the floor at once.
+- TUNED AGAINST THE BOT: at full HARDCADE density the sharp bot failed whole rooms, so the room rule is 0.4 of it (a quarter for the rings of bodies that are not biters), and four rooms carry their own (`hard` in the level): CLOT {cap 4, near 4}, ORBIT {cap 4}, SKATE {cap 2}, FLOTSAM {cap 2}. Measured at 24 seeds: the sharp bot gets through every HARD room at least 88% of the time; the average bot's median room 75%; six rooms (CROSSFIRE, ORBIT, BREATH, SKATE, FORGE, THE CORE) are under half for it, which is the mode you chose to be hard in.
+- THE SWITCH LOOKS LIKE ONE (owner, 2026-10-26: "make the intro screen toggle nicer looking, like an actual toggle"): HARD on the title is a track and a knob now, not "HARD · ON/OFF" text. The knob sits left on a dim track when off and slides right on a red, glowing track when on. It is a `role="switch"` button with `aria-checked`, its knob turns gold under the focus ring, and the slide is still under reduced motion. The title is rebuilt on every flip, so the slide is a keyframe from the side the knob was on, and it only plays on a real flip, never when coming back from MENU.
+- THE LINES: every room has `tiersHard` beside `tiers`, from `scripts/room-tiers.mjs --hard --write` (and `scripts/room-eval.mjs --hard` measures one). Where the average bot rarely gets through, its missing lines come from how the sharp bot spreads, rather than the room going ungraded. The room card, the HUD's on-course grade and the results all read the HARD lines in a HARD room.
+- Tests: `test/campaign.mjs` — a corpse that is not a biter fires in a HARD room, not when killed within reach, never on the normal route; every room has HARD lines and a HARD room is graded on them; the HARD route opens as described and the normal one is unchanged. The smoke turns HARD on and opens HARD CAMPAIGN with only the normally cleared room open.
+- Cache tokens `?v=48` → `?v=49`; HUD label → `2.0 · v49`
+
+---
+
 ## v48 — 2026-10-25
 **A phone held upright shows floor to the bottom of the screen in every world, the ice's cracks sit under the fight instead of over it, and DASH THROUGH! tags one gate rather than all of them**
 - From rendering all nine arcade worlds both ways up, mid-fight.
