@@ -481,3 +481,12 @@ Everything below comes from search summaries. No article was opened.
   https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers
 - **NDA bans:** no vote dated 26 Oct was found. Rock County rejected one (a revised proposal is due), St. Louis County found no seconder, Citrus County is drafting one, and Indiana County is exploring one (vote 18 Nov). Lincoln County (SD) is pairing an NDA amendment with a data-centre moratorium, outcome unknown.
   https://www.keloland.com/news/local-news/joint-meeting-in-lincoln-co-pause-on-data-centers/amp/
+
+### Check Tue 27 Oct 07:16 (search summaries only)
+- **The Panel / Project Meridian:** no new statement since 6 Oct. NPR (republished, e.g. [OPB](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)) says the study is "Project Meridian: The Future of Warfare", focused on automated and AI-powered weapons, with Gingrich, Musk and Luckey as co-leads. The Pentagon has still not said whether Musk and Luckey are special government employees. The film's captions ("study of the future of war", "founded firms that sell to it") still hold.
+- **Meta / Grassley:** still no published Meta reply to the July letter, whose 5 Aug deadline has passed. [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
+- **NDA bans:**
+  - **New item:** Champaign County, Illinois is considering an ordinance barring county NDAs, plus a resolution against tax incentives for hyperscale data centres. No final action yet. [GovTech](https://govtech.com/artificial-intelligence/illinois-county-consider-banning-ndas-incentives-for-data-centers)
+  - **North Dakota:** its Senate rejected a ban 32–15 on 4 Sep. [Valley News Live](https://www.valleynewslive.com/2026/09/04/nd-lawmakers-reject-ban-data-center-non-disclosure-agreements/)
+  - **Posted film:** For Your Protection is unaffected.
+- **Big development:** none.

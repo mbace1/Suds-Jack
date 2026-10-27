@@ -187,3 +187,9 @@ All facts below come from search summaries; no article was opened.
 - **Break Glass: keep held.** The constitutional law committee's statement (~16 Oct) is on the 2028 extension,
   but no plenary vote was found. It needs a five-sixths majority.
 - **No film needs a fix.**
+
+## Daily check, Tue 27 Oct 07:16
+- **Posted** per POSTED.md: Count the Trees v5 (Mon ~00:47) and Toko 5 (per Mikael; the link is not yet recorded).
+- **Secret Inquiry v2:** still accurate. "The authority asked police" holds under every account, and the water plan is due 5 Nov. Re-check on 5–6 Nov for whether the plan was filed.
+- **The Panel:** still accurate. There is still no Pentagon word on the co-leads' status or ethics rules.
+- **Break Glass:** keep held. No plenary vote found; the last report (~30 Sep) had the bill still in committee, and it needs a five-sixths majority. [Verkkouutiset](https://www.verkkouutiset.fi/a/tata-mielta-timo-harakka-on-nyt-rajalaista-nosti-esiin-martin-scheininin-kirjoituksen/)
