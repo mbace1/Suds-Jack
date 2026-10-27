@@ -109,6 +109,9 @@
     /* a room's card: what it asks, its chart, its lines, START */
     #menu h2.card { color: var(--amber); }
     #menu h2.hard { color: #ff6a5a; }   /* the HARD CAMPAIGN's grid (v49) */
+    /* v54: the campaign's S tally, a crowned world, the end screen */
+    #menu h2 .stally { color: var(--gold); font-size: 14px; letter-spacing: .12em; }
+    #menu .grid .wname.crown { color: var(--gold); text-shadow: 0 0 8px rgba(240,192,64,.5); }
     #menu .goal { letter-spacing: .14em; margin: 2px 0 8px; }
     #menu canvas.chart { display: block; margin: 4px auto 6px; max-width: 100%; }
     #menu > .teaches { font-size: 10px; color: var(--dim); letter-spacing: .04em; margin: 0 0 4px; }
@@ -233,7 +236,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v53<span id="backend"></span></div>
+  <div id="ver">2.0 · v54<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -342,6 +345,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=53"></script>
+  <script type="module" src="js/main.js?v=54"></script>
 </body>
 </html>

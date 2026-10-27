@@ -30,13 +30,15 @@ export default {
   airborne: 1.4,           // u: above this it is over your head
   crouchSquash: -1.0, launchSquash: 0.9, landSquash: -1.3,
   // the landing
-  ring: { count: 16, speed: 0.75 },      // the shockwave
-  ring2: { count: 16, speed: 0.5 },      // raging: a second, slower ring, turned half a step
+  // v54: 10 a ring, not 16 — at 16 the slow rings closed into a wall and the
+  // world 2 boss cost the average bot 11.5 lives against world 1's 3.7 and world 3's 5.2
+  ring: { count: 10, speed: 0.75 },      // the shockwave
+  ring2: { count: 10, speed: 0.5 },      // raging: a second, slower ring, turned half a step
   landShake: 0.25,
 
   rage: { at: 0.5, label: 'THE KING HOPS TWICE!', banner: 1.4, shake: 0.35,
           crouch: 0.45, rest: [0.7, 1.0],        // quicker, and…
-          brood: { every: 3, n: 2, kind: 'hoppa' } },   // …every third landing shakes HOPPA loose
+          brood: { every: 5, n: 2, kind: 'hoppa' } },   // …every fifth landing shakes HOPPA loose (v54: was every third)
 
   look: { marker: 0.9, stretch: 0.3, crown: 0xffd23a },
 };

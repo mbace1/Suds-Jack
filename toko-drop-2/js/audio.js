@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=53';
+import { TUNING } from './tuning.js?v=54';
 
 const A = TUNING.audio;
 
@@ -68,6 +68,7 @@ export class Sound {
         if (e.up) { const f = 440 * 2 ** ((e.mult - 2) * 2 / 12); this._tone('triangle', f, f * 1.5, 0.12, 0.08); }
         else if (e.hit) this._tone('triangle', 900, 180, 0.35, 0.1);
         break;
+      case 'heal': [523, 659, 784, 1047].forEach((f, i) => this._tone('sine', f, f, 0.14, 0.1, i * 0.07)); break;
       case 'bank': [659, 880, 1175].forEach((f, i) => this._tone('triangle', f, f, 0.1, 0.12, i * 0.05)); break;
       case 'potLost': this._tone('sawtooth', 500, 90, 0.4, 0.1); break;
       case 'scream': {   // 1.x sirenScream (audio.js:258-263), from the species' own tuning

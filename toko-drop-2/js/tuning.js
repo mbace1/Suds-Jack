@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=53';
-import WAVES from './tuning/waves.js?v=53';
-import PICKUPS from './tuning/pickups.js?v=53';
+import { SPECIES } from './tuning/species/index.js?v=54';
+import WAVES from './tuning/waves.js?v=54';
+import PICKUPS from './tuning/pickups.js?v=54';
 
 export const TUNING = {
   render: {
@@ -41,6 +41,9 @@ export const TUNING = {
   // world's tilt is its shape's own (the view fits the screen as world 1).
   worlds: {
     modes: ['arcade', 'hardcade'],
+    // v54 (owner: "gentler ramp"): a world's boss beaten gives lives back as the
+    // next world opens — ARCADE all of them, HARDCADE one (sim/worlds.js swap)
+    heal: { arcade: 3, hardcade: 1 },
     // a world's floor that moves for a wave (`shift` below; sim/floorshift.js, v44): warned this long first
     shift: { warn: 1.6 },
     list: [

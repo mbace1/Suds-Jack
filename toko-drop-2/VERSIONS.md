@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v54 — 2026-10-27
+**The campaign has an ending and a crown for an all-S world; the arcade ramps gentler and gives lives back between worlds**
+- Owner, 2026-10-27: "rate the completion of arcade and campaign separately with % of completion with every check-in" — `docs/COMPLETION.md` is the scorecard those numbers come from; and for the arcade, "Gentler ramp".
+- CAMPAIGN CLEAR: the room that puts all thirty-six past F, on a route, for the first time, opens an end screen before the grid: CAMPAIGN CLEAR (or HARD PAIN CLEAR), the S/A/B/C tally, the total points, how many rooms are still short of S (or "every room an S"), and on the normal route the pointer to HARD PAIN. In fi/ja/en.
+- A reward for S: the grid's heading counts the S rooms (`· S 14/36`), and a world whose six rooms are all S is crowned (♛, its name in gold).
+- PRESSURE: in ARCADE's worlds, past wave 4 a wave's bodies press as wave 4 + (wave − 4) × ½ (HARDCADE × ¾): how many, how fast, how often they fire. The wave's kind (boss, swarm, curtain), its clock and who may be drawn stay its own. 1.x's oracle (no worlds) presses as written, and still runs in lockstep.
+- LIVES BACK: a world's boss beaten gives every life back as the next world opens (HARDCADE: one), with a banner and a chime.
+- CURB KING, the world 2 boss, was the cliff: in isolation it cost the average bot 11.5 lives against world 1's 3.7 and world 3's 5.2. Its landing rings are 10 bullets, not 16, and its rage shakes HOPPA loose every fifth landing, not every third: 3.9 now. Every world's boss lines re-measured (`scripts/boss-tiers.mjs --write`).
+- MEASURED, AND NOT THERE YET: the bots still end most runs at wave 16, inside the world 2 boss wave at full lives. Pressure, lives back, five lives, score extends and lighter bosses each moved the median a little or not at all. The bot's dodging is the limit (`boss-tiers.mjs` notes it already: the sharp bot loses three lives to OMEGA in eight seconds), so whether a person reaches world 5 is not something this bot can answer.
+- Tests: `test/worlds.mjs` (the pressure by mode, the oracle untouched, a wave keeps its kind, lives back in ARCADE and HARDCADE), the smoke (the last room's clear shows CAMPAIGN CLEAR with its tally, then the grid with its S count), `test/species/curbking.mjs` (the brood follows its tuning). `test/trials.mjs` and `test/floorshift.mjs` hold to 1.x's pressure: they watch a wave for longer than a lighter one lasts.
+- The smoke's wait for a campaign room's results is 30 s, not 15: the death beat is 14 frames at the 0.1 s frame cap, and a room under SwiftShader draws about one a second, so it was failing on frame time alone (14 frames counted in the 15 s).
+- Cache tokens `?v=53` → `?v=54`; HUD label → `2.0 · v54`
+
+---
+
 ## v53 — 2026-10-27
 **HEAT holds through a lull, and the kill that empties the floor heats a level: the arcade shows HEAT from its first waves**
 - Owner, 2026-10-27: "Go" on the fix the v52 playtest proposed. Played through the hub with real touch, a whole first minute of ARCADE averaged ×1.02 and never passed ×2: the early waves come in small groups with gaps, and heat drained away in the gaps.

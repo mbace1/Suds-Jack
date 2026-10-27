@@ -7,30 +7,30 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=53';
-import { buildFloor } from './render/floor.js?v=53';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=53';
-import * as worldsSim from './sim/worlds.js?v=53';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=53';
-import * as reshapeSim from './sim/reshape.js?v=53';
-import { Scenery } from './render/scenery.js?v=53';
-import { Transit } from './render/transit.js?v=53';
-import { Splats } from './render/splats.js?v=53';
-import { Actors } from './render/actors.js?v=53';
-import { GEL_TIME } from './render/gel.js?v=53';
-import { studioEnvironment } from './render/env.js?v=53';
-import { Specimen } from './render/specimen.js?v=53';
-import { createWorld, step, api as simApi } from './sim/world.js?v=53';
-import { stage as stagePk } from './sim/pickups.js?v=53';
-import { Input } from './input.js?v=53';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=53';
-import { Announcer } from './announcer.js?v=53';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=53';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=53';
-import { Sound } from './audio.js?v=53';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=53';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=53';
-import { Readout } from './readout.js?v=53';
+import { TUNING } from './tuning.js?v=54';
+import { buildFloor } from './render/floor.js?v=54';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=54';
+import * as worldsSim from './sim/worlds.js?v=54';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=54';
+import * as reshapeSim from './sim/reshape.js?v=54';
+import { Scenery } from './render/scenery.js?v=54';
+import { Transit } from './render/transit.js?v=54';
+import { Splats } from './render/splats.js?v=54';
+import { Actors } from './render/actors.js?v=54';
+import { GEL_TIME } from './render/gel.js?v=54';
+import { studioEnvironment } from './render/env.js?v=54';
+import { Specimen } from './render/specimen.js?v=54';
+import { createWorld, step, api as simApi } from './sim/world.js?v=54';
+import { stage as stagePk } from './sim/pickups.js?v=54';
+import { Input } from './input.js?v=54';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=54';
+import { Announcer } from './announcer.js?v=54';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=54';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=54';
+import { Sound } from './audio.js?v=54';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=54';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=54';
+import { Readout } from './readout.js?v=54';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -448,7 +448,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=53`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=54`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -462,6 +462,13 @@ async function campaignList() {
       rooms: mine.map((r) => ({ ...r, level: lv[r.index], name: lv[r.index]?.name ?? r.id.toUpperCase(), d: lv[r.index]?.plan?.d ?? 1, rail,
         hard, open: roomOpen(r.index, p, normal), grade: p[r.id]?.grade ?? null, best: p[r.id]?.pts ?? null })) };
   });
+}
+// the campaign's end (v54): what every room paid, then the rooms
+function campaignDone(p, hard, played) {
+  const all = campaignRooms(), tally = { S: 0, A: 0, B: 0, C: 0 };
+  for (const r of all) { const g = p[r.id]?.grade; if (g in tally) tally[g]++; }
+  const pts = all.reduce((n, r) => n + (p[r.id]?.pts || 0), 0);
+  ui.campaignDone({ hard, tally, pts, rooms: all.length }, () => showCampaign(played));
 }
 async function showCampaign(played = null) {
   if (world && state !== 'menu') { state = 'menu'; input.enabled = false; ui.setHud(false); }
@@ -528,12 +535,18 @@ function finish() {
   const R = world.roomResult;
   if (R) {
     const hard = !!world.room.hard, p = campaignProgress(hard), was = p[R.id]?.grade;
+    // v54: the campaign's end — every room past F on this route, for the first time
+    const cleared = (q) => campaignRooms().every((r) => q[r.id]?.grade && q[r.id].grade !== 'F'), doneBefore = cleared(p);
     // the best: a better grade, or a better score (v51: a room is graded on its
     // score; `pts` is a v51 score — an older save's numbers were another scale)
     const val = R.score, old = p[R.id];
     const better = !was || betterGrade(R.grade, was) || (R.grade !== 'F' && !(old?.pts >= val));
     if (better) { p[R.id] = { grade: betterGrade(was ?? 'F', R.grade) ? was : R.grade, pts: R.grade === 'F' ? old?.pts ?? null : Math.max(val, old?.pts ?? 0), kills: R.kills }; store.set(hard ? HARD_KEY : CAMPAIGN_KEY, JSON.stringify(p)); }
-    if (R.outcome === 'clear' && R.grade !== 'F') { showCampaign({ id: R.id, name: world.room.level.name, grade: R.grade, kills: R.kills, value: val }); return; }
+    if (R.outcome === 'clear' && R.grade !== 'F') {
+      const played = { id: R.id, name: world.room.level.name, grade: R.grade, kills: R.kills, value: val };
+      if (!doneBefore && cleared(p)) { campaignDone(p, hard, played); return; }
+      showCampaign(played); return;
+    }
   }
   const k = bestKey(mode), best = store.num(k), newBest = world.score > best;
   if (newBest) store.set(k, world.score);
@@ -580,6 +593,7 @@ function announce(e) {
   // HEAT (v51): the announcer calls the multiplier as it climbs (it called every fifth kill of the streak)
   else if (e.type === 'heat' && e.up && e.mult >= 3) { announcer.say('streak'); ui.heatPop(e.mult); }
   else if (e.type === 'heat' && e.hit) ui.heatPop(1, true);
+  else if (e.type === 'heal') ui.banner(`${t('livesBack')} +${e.n}`, 1.2);
   else if (e.type === 'bank') ui.banner(`${t('banked')} +${e.n.toLocaleString('en-US')}`, 0.9);
   else if (e.type === 'potLost') ui.banner(`${t('potLost')} −${e.n.toLocaleString('en-US')}`, 1.1);
   else if (e.type === 'pickup') announcer.say(e.kind === 'score' ? 'money' : e.kind === 'scoremult' ? 'mult' : 'prize');
@@ -751,6 +765,8 @@ const debug = {
   // Look checks: one of every pickup round the hero (sim/pickups.js stage),
   // drawn from the next frame on
   stagePickups() { return world ? stagePk(world) : null; },
+  // the campaign's end screen as the saves stand (v54), for the smoke and look checks
+  campaignDone(hard = false) { campaignDone(campaignProgress(hard), hard, null); },
   freeCam: false, hold: false,
   intro, INTRO,
   capBegin(m = 'arcade') { capture.on = true; capture.bot = true; start(m, { intro: true }); introT0 = 0; last = 0; return state; },

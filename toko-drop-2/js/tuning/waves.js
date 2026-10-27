@@ -42,6 +42,11 @@ export default {
     speed: { base: 1.1, ramp: 0.09, post: 0.02, max: 2.4, easeUntil: 6, ease: 0.012 },
     interval: { base: 1.0, ramp: 0.055, post: 0.010, min: 0.35 } },
 
+  // v54 (owner, 2026-10-27: "gentler ramp"): in the worlds, from wave `from`
+  // the bodies press as wave from + (wave − from) × slope (HARDCADE: `hard`),
+  // so the 72 waves can be lived through. sim/director/arcade.js pressure()
+  gentle: { from: 4, slope: 0.5, hard: 0.75 },
+
   // 1.x waveKind (main.js:129-136; tuning.js:355). Precedence
   // boss > spike > curtain > swarm; a normal wave after any other is a breather
   rhythm: { bossEvery: 8, spikeEvery: 4, curtainEvery: 6, curtainFrom: 6, swarmEvery: 3, swarmFrom: 3 },
