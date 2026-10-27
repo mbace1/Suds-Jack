@@ -39,3 +39,7 @@ show it briefly, the owner approves, then render.
   the authority's own request and the water.
 - **The right-hand rail:** the stream sits near the right edge in shots 1 and 4. The THE WATER tag and its arrow are
   inside the frame, but close to the platform's button rail.
+
+## SCRAPPED (owner, 27 Oct): "Scrap this."
+
+It was too close to Count the Trees (the same Muhos site, map and police angle) and to Trade Secret (the same secrecy joke). The files are kept as a record. Do not post it. A follow-up comes only if the 5 Nov water plan or the police produce real news, and it gets a fresh pitch.
