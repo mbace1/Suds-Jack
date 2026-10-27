@@ -262,8 +262,7 @@ function frame(t, captions = true) {
   // the glow of the one that's fun lights his mask and hands
   const lit = clamp((t - EV.fun + 0.15) / 0.4); boxLight.position.set(...boxState(9, t).pos).add(V([0, 1, 2])); boxLight.intensity = 45 * lit * (Sh.boxLight ?? 1);
   scene.updateMatrixWorld(true);
-  const L = Sh.cam(t, lt, d); if (Q.get('cam') && i === +(Q.get('camshot') || 2)) { const c = Q.get('cam').split(',').map(Number); L.pos = V(c.slice(0, 3)); L.at = V(c.slice(3, 6)); L.fov = c[6]; L.focus = L.pos.distanceTo(L.at); }   // DEBUG-CAM
-  camera.fov = L.fov; camera.position.copy(L.pos); camera.lookAt(L.at); camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
+  const L = Sh.cam(t, lt, d); camera.fov = L.fov; camera.position.copy(L.pos); camera.lookAt(L.at); camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
   post.render(scene, camera, { focus: L.focus, aperture: Q.get('nodof') ? 0 : L.ap, maxBlur: 30, radScale: 0.9,
     threshold: 1.1, knee: 0.5, bloomA: 0.3, bloomB: 0.22, vignette: 0.3, grain: 0.025, seed: Math.floor(t * 12), contrast: 1.06, toe: 0.04, ...grade, ...(Sh.post || {}) });
   if (t >= EV.card) { const k = clamp((t - EV.card) / 0.6); g2d.filter = `blur(${(k * 10).toFixed(1)}px)`; }
