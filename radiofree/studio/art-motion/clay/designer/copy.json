@@ -1,6 +1,6 @@
 {
   "film": "needs-a-designer",
-  "cut": "v1 stills (25 Oct): Toko set 2/4, the shared studio (clay/studio/set.js)",
+  "cut": "v1 render (27 Oct): Toko set 2/4, the shared studio (clay/studio/set.js); the owner's still notes taken — shot 3 full face with less bloom, shot 4's box bigger and set by the crate, drones flying in front of the park card",
   "series": "toko",
   "captionSize": "big",
   "argument": "With AI, working prototypes are cheap and fast, but none is fun until someone shapes one; knowing what to make is the scarce part now.",
@@ -24,7 +24,7 @@
       "hold": "s2",
       "text": {
         "en": "Ten prototypes / in a [week].",
-        "fi": "Kymmenen prototyyppiä / [viikossa].",
+        "fi": "Kymmenen / prototyyppiä / [viikossa].",
         "ja": "1週間で 試作が / [10本]。"
       },
       "source": "Observed, not reported: the film shows one way of working, Toko's own. No product or tool is named; the boxes are drawn for the film."
@@ -37,7 +37,7 @@
       "hold": "s3",
       "text": {
         "en": "All of them work. / None is [fun].",
-        "fi": "Kaikki toimivat. / Yksikään ei ole [hauska].",
+        "fi": "Kaikki toimivat. / Yksikään ei ole / [hauska].",
         "ja": "全部 動く。 / でも [楽しくない]。"
       },
       "source": "The film's own picture: each box plays for a moment, gets a WORKS tick, and its FUN meter stays empty."
@@ -50,7 +50,7 @@
       "hold": "s4",
       "text": {
         "en": "He reshaped one. / Now it's [fun].",
-        "fi": "Hän muotoili yhden. / Nyt se on [hauska].",
+        "fi": "Hän muotoili / yhden. / Nyt se on [hauska].",
         "ja": "1本を 作り直した。 / 今は [楽しい]。"
       },
       "source": "The film's own picture: Toko squeezes one box into a new shape and its FUN meter fills."
@@ -62,8 +62,8 @@
       "until": "s5-0.2",
       "hold": "s5",
       "text": {
-        "en": "Making is cheap now. / Knowing what to make / [isn't].",
-        "fi": "Tekeminen on halpaa. / Tietää, mitä tehdä, / [ei ole].",
+        "en": "Making is / cheap now. / Knowing what / to make [isn't].",
+        "fi": "Tekeminen on / halpaa. / Tietää, mitä / tehdä, [ei ole].",
         "ja": "作るのは 安い。 / 何を作るかは / [安くない]。"
       },
       "source": "The station's line, over the crate of nine and the one on the desk."
