@@ -14,7 +14,7 @@
    }
   ]
  },
- "duration": 55,
+ "duration": 60,
  "goal": {
   "type": "boss"
  },
@@ -143,15 +143,17 @@
   }
  ],
  "tiers": {
-  "S": 16.1,
-  "A": 19.4,
-  "B": 27.8,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 96%, rough 63%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 11000,
+  "A": 9900,
+  "B": 8900,
+  "C": 8000,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 96%, rough 63%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 16.4,
-  "A": 19.7,
-  "B": 26.7,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 58%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 17000,
+  "A": 15000,
+  "B": 14000,
+  "C": 13000,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 58%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

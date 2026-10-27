@@ -235,16 +235,23 @@
  "hard": {
   "cap": 2
  },
+ "score": {
+  "mutators": [
+   "coldgun"
+  ]
+ },
  "tiers": {
-  "S": 25.9,
-  "A": 28.6,
-  "B": 31.5,
-  "source": "bot pass, 24 seeds a skill: got through sharp 96%, average 67%, rough 8%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 7300,
+  "A": 6600,
+  "B": 5900,
+  "C": 5300,
+  "source": "bot pass, 24 seeds a skill: got through sharp 96%, average 67%, rough 8%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 26.2,
-  "A": 28.9,
-  "B": 31.6,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 29%, rough 0%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 11000,
+  "A": 9900,
+  "B": 8900,
+  "C": 8000,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 29%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

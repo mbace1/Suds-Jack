@@ -11,7 +11,7 @@
    }
   ]
  },
- "duration": 45,
+ "duration": 60,
  "goal": {
   "type": "hills",
   "zones": [
@@ -685,18 +685,199 @@
    "type": "YELA_CUBE",
    "px": 1.45,
    "pz": -8.2
+  },
+  {
+   "t": 45,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": -5.17,
+   "speedMult": 1
+  },
+  {
+   "t": 45.5,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": -3.02,
+   "speedMult": 1
+  },
+  {
+   "t": 45.5,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 7.55,
+   "speedMult": 1
+  },
+  {
+   "t": 46,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": -0.99,
+   "speedMult": 1
+  },
+  {
+   "t": 46,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 7.55,
+   "speedMult": 1
+  },
+  {
+   "t": 48,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": 4.61,
+   "elite": true,
+   "speedMult": 1
+  },
+  {
+   "t": 48.4,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 2.5,
+   "speedMult": 1
+  },
+  {
+   "t": 48.8,
+   "type": "YELA_CUBE",
+   "px": 14.2,
+   "pz": 2.5,
+   "elite": true,
+   "speedMult": 1
+  },
+  {
+   "t": 49.2,
+   "type": "GLOBBO",
+   "px": 14.2,
+   "pz": 4.61,
+   "speedMult": 1
+  },
+  {
+   "t": 50.5,
+   "type": "GLOBBO",
+   "px": -3.82,
+   "pz": 8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 50.9,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": 8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 51.3,
+   "type": "GLOBBO",
+   "px": 3.82,
+   "pz": 8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 51.5,
+   "type": "GLOBBO",
+   "px": 3.82,
+   "pz": -8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 51.9,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": -8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 52.3,
+   "type": "GLOBBO",
+   "px": -3.82,
+   "pz": -8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 54,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": 3.54,
+   "elite": true,
+   "speedMult": 1
+  },
+  {
+   "t": 54.4,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": 6.03,
+   "speedMult": 1
+  },
+  {
+   "t": 54.8,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": 5.17,
+   "speedMult": 1
+  },
+  {
+   "t": 55.2,
+   "type": "YELA_CUBE",
+   "px": -14.2,
+   "pz": 4.34,
+   "elite": true,
+   "speedMult": 1
+  },
+  {
+   "t": 55.6,
+   "type": "GLOBBO",
+   "px": -14.2,
+   "pz": 6.93,
+   "speedMult": 1
+  },
+  {
+   "t": 57,
+   "type": "GLOBBO",
+   "px": -3.82,
+   "pz": 8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 57.4,
+   "type": "YELA_CUBE",
+   "px": 1.2,
+   "pz": 8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 57.5,
+   "type": "GLOBBO",
+   "px": 3.82,
+   "pz": -8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 57.8,
+   "type": "GLOBBO",
+   "px": 1.2,
+   "pz": 8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 57.9,
+   "type": "GLOBBO",
+   "px": 0,
+   "pz": -8.2,
+   "speedMult": 1
   }
  ],
  "tiers": {
-  "S": 29.2,
-  "A": 31.9,
-  "B": 34.6,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 83%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 69000,
+  "A": 62000,
+  "B": 56000,
+  "C": 50000,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 83%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 30.6,
-  "A": 33.3,
-  "B": 36,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 71%, rough 25%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 100000,
+  "A": 90000,
+  "B": 81000,
+  "C": 73000,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 71%, rough 25%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

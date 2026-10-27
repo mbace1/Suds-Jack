@@ -11,7 +11,7 @@
    }
   ]
  },
- "duration": 30,
+ "duration": 45,
  "goal": {
   "type": "survive"
  },
@@ -156,18 +156,90 @@
    "type": "GLOBBO",
    "px": 17.4,
    "pz": 2.34
+  },
+  {
+   "t": 30,
+   "type": "GLOBBO",
+   "px": 17.4,
+   "pz": 0,
+   "speedMult": 1
+  },
+  {
+   "t": 31.3,
+   "type": "GLOBBO",
+   "px": -10.26,
+   "pz": 9.4,
+   "speedMult": 1
+  },
+  {
+   "t": 32.6,
+   "type": "FANNER",
+   "px": 0.82,
+   "pz": -9.4,
+   "speedMult": 1
+  },
+  {
+   "t": 33.9,
+   "type": "GLOBBO",
+   "px": 7.21,
+   "pz": 9.4,
+   "speedMult": 1
+  },
+  {
+   "t": 35.2,
+   "type": "GLOBBO",
+   "px": -17.4,
+   "pz": -3.08,
+   "speedMult": 1
+  },
+  {
+   "t": 36.5,
+   "type": "FANNER",
+   "px": 14.78,
+   "pz": -9.4,
+   "speedMult": 1
+  },
+  {
+   "t": 37.8,
+   "type": "GLOBBO",
+   "px": -2.53,
+   "pz": 9.4,
+   "speedMult": 1
+  },
+  {
+   "t": 39.1,
+   "type": "GLOBBO",
+   "px": -4.88,
+   "pz": -9.4,
+   "speedMult": 1
+  },
+  {
+   "t": 40.4,
+   "type": "FANNER",
+   "px": 17.4,
+   "pz": 6.35,
+   "speedMult": 1
+  },
+  {
+   "t": 41.7,
+   "type": "GLOBBO",
+   "px": -17.4,
+   "pz": 7.18,
+   "speedMult": 1
   }
  ],
  "tiers": {
-  "S": 1,
-  "A": 0.95,
-  "B": 0.9,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 96%, rough 25%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 3200,
+  "A": 2900,
+  "B": 2600,
+  "C": 2300,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 79%, rough 21%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 1,
-  "A": 0.95,
-  "B": 0.9,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 67%, rough 17%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 4800,
+  "A": 4300,
+  "B": 3900,
+  "C": 3500,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 58%, rough 13%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

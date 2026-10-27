@@ -14,7 +14,7 @@
    }
   ]
  },
- "duration": 44,
+ "duration": 60,
  "goal": {
   "type": "escort",
   "heart": {
@@ -325,21 +325,119 @@
    "px": 2.21,
    "pz": 1.17,
    "intervalMult": 1.2
+  },
+  {
+   "t": 44,
+   "type": "PYRA",
+   "px": -8.23,
+   "pz": 4.75,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 44.3,
+   "type": "PYRA",
+   "px": 3.25,
+   "pz": 8.93,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 47.5,
+   "type": "PYRA",
+   "px": 0.13,
+   "pz": 2.5,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 47.8,
+   "type": "PYRA",
+   "px": -0.13,
+   "pz": -2.5,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 48.1,
+   "type": "PYRA",
+   "px": 9.49,
+   "pz": -0.5,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 51,
+   "type": "PYRA",
+   "px": -2.43,
+   "pz": 1.77,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 51.3,
+   "type": "PYRA",
+   "px": 2.74,
+   "pz": 1.22,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 51.6,
+   "type": "PYRA",
+   "px": -0.32,
+   "pz": -2.98,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 54.5,
+   "type": "PYRA",
+   "px": -1.97,
+   "pz": 0.32,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 54.8,
+   "type": "PYRA",
+   "px": 1.97,
+   "pz": -0.32,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 55.1,
+   "type": "PYRA",
+   "px": 8.15,
+   "pz": 4.88,
+   "intervalMult": 1.2,
+   "speedMult": 1
+  },
+  {
+   "t": 55.4,
+   "type": "PYRA",
+   "px": 6.22,
+   "pz": -7.18,
+   "intervalMult": 1.2,
+   "speedMult": 1
   }
  ],
  "hard": {
   "cap": 2
  },
  "tiers": {
-  "S": 1,
-  "A": 0.9,
-  "B": 0.7,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 42%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 21000,
+  "A": 19000,
+  "B": 17000,
+  "C": 15000,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 42%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 0.8,
-  "A": 0.6,
-  "B": 0.4,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 63%, rough 0%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 30000,
+  "A": 24000,
+  "B": 22000,
+  "C": 20000,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 63%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

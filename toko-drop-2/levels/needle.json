@@ -11,92 +11,92 @@
    }
   ]
  },
- "duration": 44,
+ "duration": 40,
  "goal": {
   "type": "collect",
   "orbs": [
    {
-    "t": 1.1,
+    "t": 1,
     "x": -6,
     "z": -4
    },
    {
-    "t": 3.6,
+    "t": 3.27,
     "x": 6,
     "z": 4
    },
    {
-    "t": 6.1,
+    "t": 5.55,
     "x": -6,
     "z": 4
    },
    {
-    "t": 8.6,
+    "t": 7.82,
     "x": 6,
     "z": -4
    },
    {
-    "t": 11.1,
+    "t": 10.09,
     "x": -6,
     "z": 0
    },
    {
-    "t": 13.6,
+    "t": 12.36,
     "x": 6,
     "z": 0
    },
    {
-    "t": 16.1,
+    "t": 14.64,
     "x": -6,
     "z": -4
    },
    {
-    "t": 18.6,
+    "t": 16.91,
     "x": 6,
     "z": 4
    },
    {
-    "t": 21.1,
+    "t": 19.18,
     "x": -6,
     "z": 4
    },
    {
-    "t": 23.6,
+    "t": 21.45,
     "x": 6,
     "z": -4
    },
    {
-    "t": 26.1,
+    "t": 23.73,
     "x": -6,
     "z": 0
    },
    {
-    "t": 28.6,
+    "t": 26,
     "x": 6,
     "z": 0
    },
    {
-    "t": 31.1,
+    "t": 28.27,
     "x": -6,
     "z": -4
    },
    {
-    "t": 33.6,
+    "t": 30.55,
     "x": 6,
     "z": 4
    },
    {
-    "t": 36.1,
+    "t": 32.82,
     "x": -6,
     "z": 4
    },
    {
-    "t": 38.6,
+    "t": 35.09,
     "x": 6,
     "z": -4
    }
   ],
-  "life": 2.5,
+  "life": 2.27,
   "need": 12
  },
  "plan": {
@@ -122,76 +122,78 @@
    "pz": 7
   },
   {
-   "t": 9,
+   "t": 8.18,
    "type": "hoppa",
    "px": 13,
    "pz": 6
   },
   {
-   "t": 9,
+   "t": 8.18,
    "type": "hoppa",
    "px": -13,
    "pz": -6
   },
   {
-   "t": 14,
+   "t": 12.73,
    "type": "hoppa",
    "px": 0,
    "pz": 8
   },
   {
-   "t": 18,
+   "t": 16.36,
    "type": "hoppa",
    "px": 13,
    "pz": -6
   },
   {
-   "t": 18,
+   "t": 16.36,
    "type": "hoppa",
    "px": -13,
    "pz": 6
   },
   {
-   "t": 27,
+   "t": 24.55,
    "type": "hoppa",
    "px": 13,
    "pz": 6
   },
   {
-   "t": 27,
+   "t": 24.55,
    "type": "hoppa",
    "px": -13,
    "pz": -6
   },
   {
-   "t": 32,
+   "t": 29.09,
    "type": "hoppa",
    "px": 0,
    "pz": 8
   },
   {
-   "t": 36,
+   "t": 32.73,
    "type": "hoppa",
    "px": 13,
    "pz": -6
   },
   {
-   "t": 36,
+   "t": 32.73,
    "type": "hoppa",
    "px": -13,
    "pz": 6
   }
  ],
  "tiers": {
-  "S": 30.6,
-  "A": 33.2,
-  "B": 35.8,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 92%, rough 33%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 7300,
+  "A": 6600,
+  "B": 5900,
+  "C": 5300,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 75%, rough 8%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 30.6,
-  "A": 33.2,
-  "B": 35.8,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 79%, rough 38%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 11000,
+  "A": 9900,
+  "B": 8900,
+  "C": 8000,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 54%, rough 8%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

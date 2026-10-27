@@ -14,7 +14,7 @@
    }
   ]
  },
- "duration": 45,
+ "duration": 75,
  "goal": {
   "type": "boss"
  },
@@ -451,18 +451,279 @@
    "type": "GLOBBO",
    "px": 10.37,
    "pz": -0.8
+  },
+  {
+   "t": 45.6,
+   "type": "GLOBBO",
+   "px": 9.58,
+   "pz": 4.05,
+   "speedMult": 1
+  },
+  {
+   "t": 45.9,
+   "type": "GLOBBO",
+   "px": -9.58,
+   "pz": -4.05,
+   "speedMult": 1
+  },
+  {
+   "t": 47,
+   "type": "GLOBBO",
+   "px": -9.8,
+   "pz": 3.48,
+   "speedMult": 1
+  },
+  {
+   "t": 47.3,
+   "type": "GLOBBO",
+   "px": 9.8,
+   "pz": -3.48,
+   "speedMult": 1
+  },
+  {
+   "t": 49.4,
+   "type": "GLOBBO",
+   "px": 4.87,
+   "pz": -9.19,
+   "speedMult": 1
+  },
+  {
+   "t": 49.7,
+   "type": "steama",
+   "px": -4.87,
+   "pz": 9.19,
+   "speedMult": 1
+  },
+  {
+   "t": 50.8,
+   "type": "GLOBBO",
+   "px": 2.61,
+   "pz": 10.07,
+   "speedMult": 1
+  },
+  {
+   "t": 51.1,
+   "type": "GLOBBO",
+   "px": -2.61,
+   "pz": -10.07,
+   "speedMult": 1
+  },
+  {
+   "t": 52.9,
+   "type": "GLOBBO",
+   "px": -8.73,
+   "pz": -5.66,
+   "speedMult": 1
+  },
+  {
+   "t": 53.2,
+   "type": "GLOBBO",
+   "px": 5.66,
+   "pz": -8.73,
+   "speedMult": 1
+  },
+  {
+   "t": 53.5,
+   "type": "GLOBBO",
+   "px": 8.73,
+   "pz": 5.66,
+   "speedMult": 1
+  },
+  {
+   "t": 53.8,
+   "type": "GLOBBO",
+   "px": -5.66,
+   "pz": 8.73,
+   "speedMult": 1
+  },
+  {
+   "t": 55.4,
+   "type": "GLOBBO",
+   "px": 10.26,
+   "pz": -1.72,
+   "speedMult": 1
+  },
+  {
+   "t": 55.7,
+   "type": "GLOBBO",
+   "px": -10.26,
+   "pz": 1.72,
+   "speedMult": 1
+  },
+  {
+   "t": 56.8,
+   "type": "GLOBBO",
+   "px": -6.4,
+   "pz": 8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 57.1,
+   "type": "steama",
+   "px": 6.4,
+   "pz": -8.2,
+   "speedMult": 1
+  },
+  {
+   "t": 59.4,
+   "type": "GLOBBO",
+   "px": -0.82,
+   "pz": -10.37,
+   "speedMult": 1
+  },
+  {
+   "t": 59.7,
+   "type": "GLOBBO",
+   "px": 9.61,
+   "pz": -3.98,
+   "speedMult": 1
+  },
+  {
+   "t": 60,
+   "type": "steama",
+   "px": 6.76,
+   "pz": 7.91,
+   "speedMult": 1
+  },
+  {
+   "t": 60.3,
+   "type": "GLOBBO",
+   "px": -5.43,
+   "pz": 8.87,
+   "speedMult": 1
+  },
+  {
+   "t": 60.6,
+   "type": "GLOBBO",
+   "px": -10.11,
+   "pz": -2.43,
+   "speedMult": 1
+  },
+  {
+   "t": 62,
+   "type": "GLOBBO",
+   "px": 7.61,
+   "pz": 7.09,
+   "speedMult": 1
+  },
+  {
+   "t": 62.3,
+   "type": "GLOBBO",
+   "px": -9.95,
+   "pz": 3.04,
+   "speedMult": 1
+  },
+  {
+   "t": 62.6,
+   "type": "GLOBBO",
+   "px": 2.34,
+   "pz": -10.13,
+   "speedMult": 1
+  },
+  {
+   "t": 65.9,
+   "type": "GLOBBO",
+   "px": -10.4,
+   "pz": -0.09,
+   "speedMult": 1
+  },
+  {
+   "t": 66.2,
+   "type": "GLOBBO",
+   "px": -5.12,
+   "pz": -9.05,
+   "speedMult": 1
+  },
+  {
+   "t": 66.5,
+   "type": "steama",
+   "px": 5.28,
+   "pz": -8.96,
+   "speedMult": 1
+  },
+  {
+   "t": 66.8,
+   "type": "GLOBBO",
+   "px": 10.4,
+   "pz": 0.09,
+   "speedMult": 1
+  },
+  {
+   "t": 67.1,
+   "type": "GLOBBO",
+   "px": 5.12,
+   "pz": 9.05,
+   "speedMult": 1
+  },
+  {
+   "t": 67.4,
+   "type": "steama",
+   "px": -5.28,
+   "pz": 8.96,
+   "speedMult": 1
+  },
+  {
+   "t": 68.4,
+   "type": "GLOBBO",
+   "px": 7.73,
+   "pz": -6.96,
+   "speedMult": 1
+  },
+  {
+   "t": 68.7,
+   "type": "GLOBBO",
+   "px": 2.16,
+   "pz": 10.17,
+   "speedMult": 1
+  },
+  {
+   "t": 69,
+   "type": "GLOBBO",
+   "px": -9.89,
+   "pz": -3.22,
+   "speedMult": 1
+  },
+  {
+   "t": 70,
+   "type": "GLOBBO",
+   "px": -1,
+   "pz": 10.35,
+   "speedMult": 1
+  },
+  {
+   "t": 70.3,
+   "type": "GLOBBO",
+   "px": 1,
+   "pz": -10.35,
+   "speedMult": 1
+  },
+  {
+   "t": 72.4,
+   "type": "GLOBBO",
+   "px": -6.25,
+   "pz": -8.31,
+   "speedMult": 1
+  },
+  {
+   "t": 72.7,
+   "type": "GLOBBO",
+   "px": 2.6,
+   "pz": -10.07,
+   "speedMult": 1
   }
  ],
  "tiers": {
-  "S": 16.7,
-  "A": 19.7,
-  "B": 22.4,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 71%, rough 0%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 16000,
+  "A": 14000,
+  "B": 13000,
+  "C": 12000,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 71%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 16.6,
-  "A": 19.3,
-  "B": 22,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 58%, rough 4%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 25000,
+  "A": 23000,
+  "B": 21000,
+  "C": 19000,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 58%, rough 4%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

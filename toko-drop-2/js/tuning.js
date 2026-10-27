@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=50';
-import WAVES from './tuning/waves.js?v=50';
-import PICKUPS from './tuning/pickups.js?v=50';
+import { SPECIES } from './tuning/species/index.js?v=51';
+import WAVES from './tuning/waves.js?v=51';
+import PICKUPS from './tuning/pickups.js?v=51';
 
 export const TUNING = {
   render: {
@@ -503,6 +503,18 @@ export const TUNING = {
   // 1.x's score (main.js:4421-4453): every kill pays 100 × the streak, and the
   // streak only resets when you are hit. A banner every 25,000; no extra lives.
   score: { perKill: 100, milestone: 25000 },
+  // HEAT (v51, sim/heat.js): the score's one multiplier, in every mode. A kill
+  // pays perKill × (1 + floor(heat)), ×1 … ×`levels`. Heat comes from the
+  // risky things — a kill (`kill`, and up to ×k0 that for one made close: the
+  // extra falls as (1 − u)^pow from r0 m to nothing at r1 m; a dash kill is point-blank), a graze, a room's goal
+  // taken — holds for `grace` s after each, then drains `drain` + `drainPer` ×
+  // the level a second. A hit keeps `hitKeep` of it (none). COLD GUN, a room's
+  // mutator, takes `coldShot` a shot.
+  heat: {
+    levels: 8, kill: 0.2, near: { r0: 2, r1: 6, k0: 4, pow: 2 }, graze: 0.08,
+    grace: 0.4, drain: 0.45, drainPer: 0.08, hitKeep: 0, coldShot: 0.012,
+    goal: { gate: 0.6, orb: 0.3, hill: 0.6, leg: 0.3 },
+  },
 
   gel: {
     // 1.x: a bullet never moves a body. Knock (kx, kz) is for whatever throws
@@ -547,18 +559,22 @@ export const TUNING = {
       { name: 'THE FOAM', rail: 0x99ffee, base: [0.055, 0.105, 0.125], gridHi: [0.60, 1.00, 0.92], rule: 'slip', rooms: [{ id: 'rink' }, { id: 'salmon' }, { id: 'pack-ice' }, { id: 'breath' }, { id: 'skate' }, { id: 'bubble-bath' }] },
       { name: 'THE KILN', rail: 0xffaa33, base: [0.130, 0.060, 0.018], gridHi: [1.00, 0.62, 0.14], rule: 'updraft', rooms: [{ id: 'forge' }, { id: 'anvil' }, { id: 'bellows' }, { id: 'boil-over' }, { id: 'crucible' }, { id: 'the-core' }] },
     ],
-    // survive / flawless: the SHARE of the room's bodies you put down; living
-    // through it is a C on its own, S is every body
-    share: { B: 0.6, A: 0.85, S: 1.0 },
-    hitCost: 1,   // each hit taken costs a grade step (never below C)
-    // a timed room with no tiers yet: S within this share of its clock, A, B (the bot pass replaces these)
-    timeTiers: { S: 0.5, A: 0.7, B: 0.9 },
+    // A ROOM IS GRADED ON ITS SCORE (v51, owner 2026-10-27: "Campaign room
+    // goals should be score based"; "F is a small but still challenging
+    // score"). Its level's `tiers` are score lines S/A/B/C from bot play
+    // (scripts/room-tiers.mjs); under C, or losing the room's own way (dying,
+    // the heart, the orbs, the clock on a goal), is F. What a room's goal pays,
+    // each × the heat: a gate, an orb, a ring filled (hills), a second in the
+    // ring (hold), a leg the heart walks, a hunted body on top of its kill.
+    // When a room is won early, every second left on its clock pays `timeLeft`
+    // (flat), and a heart pays `heart` × the share of it kept.
+    points: { gate: 500, orb: 300, hill: 1000, holdPerS: 60, leg: 300, hunt: 300, timeLeft: 250, heart: 4000 },
+    // a room with no tiers yet: lines at these points a second of its clock
+    scoreRate: { S: 900, A: 600, B: 400, C: 200 },
     heart: { bite: 0.6 },   // PROTECT: a body on the heart takes one of its hp a this many s
     orb: { reach: 0.9 },    // COLLECT: the hero takes an orb within this + its radius
     // how a room's asks are drawn (render/challenge.js)
     view: { zone: 0x44ffcc, heart: 0xff3355, lit: 0xffee66, orb: { r: 0.35, y: 0.7, color: 0xffcc44 } },
-    // quota: seconds BEHIND, from the arrival of the last body the count needs to having them all
-    quotaLag: { S: 1.5, A: 3, B: 6 },
     // 1.x's level type names → 2.0's species keys (a level may also name a 2.0 key itself)
     kinds: { GLOBBO: 'globbo', YELA_CUBE: 'yela', SPITTOR: 'spittor', FANNER: 'fanner', ORANGE_CUBE: 'orange', WEEVA: 'weeva',
              SLUDGE_CUBE: 'sludge', BAMBU: 'bambu', SPLITTA: 'splitta', REDD_CUBE: 'redd', PURP_CUBE: 'purp', PYRA: 'pyra',

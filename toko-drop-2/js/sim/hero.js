@@ -21,9 +21,10 @@
 // (dashPlan). 1.x fires only
 // while the aim is valid AND the trigger is held: a touch or pad aim stick is
 // both at once, a mouse aims all the time and fires only while held.
-import { TUNING } from '../tuning.js?v=50';
-import { BEHAVIOUR } from './species/index.js?v=50';   // read at run time only (a species' hitTest)
-import { slip } from './rules.js?v=50';   // THE FOAM's slick floor
+import { TUNING } from '../tuning.js?v=51';
+import * as heat from './heat.js?v=51';
+import { BEHAVIOUR } from './species/index.js?v=51';   // read at run time only (a species' hitTest)
+import { slip } from './rules.js?v=51';   // THE FOAM's slick floor
 
 const T = TUNING, H = T.hero, L = T.heroLook;
 
@@ -360,6 +361,7 @@ export function hurtHero(w, by) {
   if (!h.alive || invincible(h)) return false;
   h.lives--;
   w.streak = 0;                     // 1.x: the streak resets only on a hit, the fatal one too
+  heat.hit(w);                      // and the heat with it, and an unbanked pot (v51)
   w.killedBy = by;                  // the last one to land is what got you (main.js:4810)
   w.hits = (w.hits || 0) + 1;       // a campaign room grades on it (sim/director/campaign.js)
   w.events.push({ type: 'hurt', x: h.x, z: h.z, by, lives: h.lives });

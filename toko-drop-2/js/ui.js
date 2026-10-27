@@ -2,18 +2,19 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=50';
-import { GEL_LINES } from './gels-said.js?v=50';
-import { goalOf, modsOf, speciesOf, metricOf } from './sim/challenge.js?v=50';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=50';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=50';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=50';
+import { TUNING } from './tuning.js?v=51';
+import { GEL_LINES } from './gels-said.js?v=51';
+import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=51';
+import { mult as heatMult } from './sim/heat.js?v=51';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=51';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=51';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=51';
 
 const STR = {
   en: {
     intro: 'INTRO', introSub: 'watch it begin, then play',
     dash: 'DASH', push: 'PUSH', pushSub: 'shoves gels away', cut: 'CUT', cutSub: 'through them, and it hurts', gelHp: 'GEL HP', gelHpSub: 'tougher gels, same score',
-    arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'rooms with their own clock — cleared opens the next', goalSurvive: 'SURVIVE', goalQuota: 'KILL', goalFlawless: 'NO HITS', bossDown: 'DOWN', shift_breathe: 'THE BANKS BREATHE', shift_floe: 'THE ICE BREAKS UP', shift_twins: 'THE FLOOR SPLITS IN TWO', menuBtn: 'MENU', menuSub: 'settings, sound, language', trial: 'CHALLENGE', trial_gates: 'DASH THE GATES', trial_hold: 'HOLD THE RING', trial_collect: 'COLLECT THE ORBS', trial_combo: 'KEEP A STREAK', trial_protect: 'PROTECT THE HEART', trialMet: 'CHALLENGE MET', trialMissed: 'CHALLENGE MISSED', skills: 'asks for', sk_position: 'positioning', sk_priority: 'target priority', sk_aim: 'aim economy', sk_movement: 'movement', sk_risk: 'risk', whyDied: 'you went down', whyHit: 'a hit in a no-hits room', whyHeart: 'the heart was lost', whyClock: 'the clock ran out first', yours: 'yours', start: 'START', tierC: 'getting through', tierF: 'dying, or the clock', hitCost: 'each hit costs a grade', downShare: 'put down', yourBest: 'your best', notPlayed: 'not played yet', gDodge: 'DODGE', gClear: 'CLEAR ALL', gGates: 'GATES', gHold: 'HOLD THE RING', gProtect: 'PROTECT THE HEART', gOrder: 'IN ORDER', gHunt: 'HUNT', gStreak: 'STREAK', gCollect: 'COLLECT', gBoss: 'BOSS', gGauntlet: 'GAUNTLET', gEscort: 'ESCORT THE HEART', gHills: 'HOLD THE RINGS', whyOrbs: 'too many orbs went out', mNoGun: 'NO GUN', mDash: 'DASH ONLY', mAmmo: 'AMMO', mFaster: 'FASTER', mMoving: 'MOVING FLOOR', hits: 'hits', timeUp: 'TIME', timeUpSub: 'the clock ran out', teaches: 'teaches', roomLocked: 'LOCKED', grade: 'GRADE', rooms: 'ROOMS', worldLocked: 'clear the world before it',
+    arcade: '1.x waves: three lives, every kill pays × your heat.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'rooms with their own clock — cleared opens the next', goalSurvive: 'SURVIVE', goalQuota: 'KILL', goalFlawless: 'NO HITS', bossDown: 'DOWN', shift_breathe: 'THE BANKS BREATHE', shift_floe: 'THE ICE BREAKS UP', shift_twins: 'THE FLOOR SPLITS IN TWO', menuBtn: 'MENU', menuSub: 'settings, sound, language', trial: 'CHALLENGE', trial_gates: 'DASH THE GATES', trial_hold: 'HOLD THE RING', trial_collect: 'COLLECT THE ORBS', trial_combo: 'KEEP A STREAK', trial_protect: 'PROTECT THE HEART', trialMet: 'CHALLENGE MET', trialMissed: 'CHALLENGE MISSED', skills: 'asks for', sk_position: 'positioning', sk_priority: 'target priority', sk_aim: 'aim economy', sk_movement: 'movement', sk_risk: 'risk', whyDied: 'you went down', whyHit: 'a hit in a no-hits room', whyHeart: 'the heart was lost', whyClock: 'the clock ran out first', yours: 'yours', start: 'START', tierC: 'getting through', tierF: 'dying, or the clock', hitCost: 'each hit costs a grade', downShare: 'put down', yourBest: 'your best', notPlayed: 'not played yet', gDodge: 'DODGE', gClear: 'CLEAR ALL', gGates: 'GATES', gHold: 'HOLD THE RING', gProtect: 'PROTECT THE HEART', gOrder: 'IN ORDER', gHunt: 'HUNT', gStreak: 'STREAK', gCollect: 'COLLECT', gBoss: 'BOSS', gGauntlet: 'GAUNTLET', gEscort: 'ESCORT THE HEART', gHills: 'HOLD THE RINGS', whyOrbs: 'too many orbs went out', mNoGun: 'NO GUN', mDash: 'DASH ONLY', mAmmo: 'AMMO', mFaster: 'FASTER', mMoving: 'MOVING FLOOR', hits: 'hits', timeUp: 'TIME', timeUpSub: 'the clock ran out', teaches: 'teaches', roomLocked: 'LOCKED', grade: 'GRADE', rooms: 'ROOMS', worldLocked: 'clear the world before it', tierFScore: 'under C, dying, or the clock', whyScore: 'through, but under the C line', pts: 'pts', mBank: 'BANK — points wait in a pot until your heat cools; a hit loses the pot', mCold: 'COLD GUN — every shot cools your heat', heatHint: 'kill close and fast to heat the ×; a hit cools it', banked: 'BANKED', potLost: 'POT LOST',
     best: 'BEST', hard: 'HARD', on: 'ON', off: 'OFF', hardSub: 'ARCADE becomes HARDCADE and CAMPAIGN becomes HARD PAIN: corpses shoot back', campaignHard: 'the same rooms, and every corpse shoots back — clear a room to open it here', hardTag: 'HARD', options: 'OPTIONS', optionsSub: 'dash, gels, worlds, sound, language', back: 'BACK', nextRun: 'from the next run', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', lastHit: 'LAST HIT BY', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
     wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', volume: 'VOLUME', annOn: 'ANNOUNCER ON', annOff: 'ANNOUNCER OFF', annVol: 'ANNOUNCER VOL.', motionOn: 'REDUCE MOTION ON', motionOff: 'REDUCE MOTION OFF', motionOnH: 'no camera shake', motionOffH: 'full screen-shake', langName: 'LANGUAGE · ENGLISH', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
@@ -28,7 +29,7 @@ const STR = {
   ja: {
     intro: 'イントロ', introSub: '始まりを見てからプレイ',
     dash: 'ダッシュ', push: '押す', pushSub: 'ゼリーを押しのける', cut: '貫く', cutSub: '貫いてダメージ', gelHp: 'ゼリー耐久', gelHpSub: '硬いゼリー、スコアは同じ',
-    arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: 'それぞれの制限時間を持つ部屋 — クリアで次が開く', goalSurvive: '生き残れ', goalQuota: '撃破', goalFlawless: 'ノーダメージ', bossDown: '撃破', shift_breathe: '岸が呼吸する', shift_floe: '氷が割れる', shift_twins: '床がふたつに割れる', menuBtn: 'メニュー', menuSub: '設定・サウンド・言語', trial: 'チャレンジ', trial_gates: 'ゲートを抜けろ', trial_hold: '輪に留まれ', trial_collect: 'オーブを集めろ', trial_combo: '連鎖を保て', trial_protect: '心臓を守れ', trialMet: 'チャレンジ達成', trialMissed: 'チャレンジ失敗', skills: '求めるもの', sk_position: '位置取り', sk_priority: '優先順位', sk_aim: '照準の節約', sk_movement: '機動', sk_risk: 'リスク', whyDied: '倒れた', whyHit: 'ノーダメージの部屋で被弾', whyHeart: '心臓を失った', whyClock: '先に時間切れ', yours: 'あなた', start: 'スタート', tierC: 'クリア', tierF: '倒れるか時間切れ', hitCost: '被弾ごとに1段階下がる', downShare: '撃破', yourBest: '自己ベスト', notPlayed: '未プレイ', gDodge: '避けろ', gClear: '全滅させろ', gGates: 'ゲート', gHold: '輪に留まれ', gProtect: '心臓を守れ', gOrder: '順番に', gHunt: '狩れ', gStreak: '連鎖', gCollect: '集めろ', gBoss: 'ボス', gGauntlet: '試練', gEscort: '心臓を送り届けろ', gHills: '輪を順に守れ', whyOrbs: 'オーブを逃しすぎた', mNoGun: '銃なし', mDash: 'ダッシュのみ', mAmmo: '弾', mFaster: '加速', mMoving: '動く床', hits: '被弾', timeUp: '時間切れ', timeUpSub: '時計が尽きた', teaches: '教える', roomLocked: 'ロック中', grade: '評価', rooms: '部屋', worldLocked: '前のワールドをクリア',
+    arcade: '1.xのウェーブ：ライフ3つ、撃破はヒートの×で加点。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: 'それぞれの制限時間を持つ部屋 — クリアで次が開く', goalSurvive: '生き残れ', goalQuota: '撃破', goalFlawless: 'ノーダメージ', bossDown: '撃破', shift_breathe: '岸が呼吸する', shift_floe: '氷が割れる', shift_twins: '床がふたつに割れる', menuBtn: 'メニュー', menuSub: '設定・サウンド・言語', trial: 'チャレンジ', trial_gates: 'ゲートを抜けろ', trial_hold: '輪に留まれ', trial_collect: 'オーブを集めろ', trial_combo: '連鎖を保て', trial_protect: '心臓を守れ', trialMet: 'チャレンジ達成', trialMissed: 'チャレンジ失敗', skills: '求めるもの', sk_position: '位置取り', sk_priority: '優先順位', sk_aim: '照準の節約', sk_movement: '機動', sk_risk: 'リスク', whyDied: '倒れた', whyHit: 'ノーダメージの部屋で被弾', whyHeart: '心臓を失った', whyClock: '先に時間切れ', yours: 'あなた', start: 'スタート', tierC: 'クリア', tierF: '倒れるか時間切れ', hitCost: '被弾ごとに1段階下がる', downShare: '撃破', yourBest: '自己ベスト', notPlayed: '未プレイ', gDodge: '避けろ', gClear: '全滅させろ', gGates: 'ゲート', gHold: '輪に留まれ', gProtect: '心臓を守れ', gOrder: '順番に', gHunt: '狩れ', gStreak: '連鎖', gCollect: '集めろ', gBoss: 'ボス', gGauntlet: '試練', gEscort: '心臓を送り届けろ', gHills: '輪を順に守れ', whyOrbs: 'オーブを逃しすぎた', mNoGun: '銃なし', mDash: 'ダッシュのみ', mAmmo: '弾', mFaster: '加速', mMoving: '動く床', hits: '被弾', timeUp: '時間切れ', timeUpSub: '時計が尽きた', teaches: '教える', roomLocked: 'ロック中', grade: '評価', rooms: '部屋', worldLocked: '前のワールドをクリア', tierFScore: 'C未満、倒れるか時間切れ', whyScore: 'クリアしたがCライン未満', pts: '点', mBank: 'バンク — 点数はヒートが冷めるまでポットに貯まる。被弾でポットを失う', mCold: 'コールドガン — 撃つたびにヒートが下がる', heatHint: '近くで素早く倒すと×が上がる。被弾で冷める', banked: 'バンク', potLost: 'ポット喪失',
     best: 'ベスト', hard: 'ハード', on: 'オン', off: 'オフ', hardSub: 'アーケードはHARDCADEに、キャンペーンはHARD PAINに：残骸が撃ち返す', campaignHard: '同じ部屋で、倒した敵がすべて撃ち返す — 通常でクリアした部屋がここで開く', hardTag: 'ハード', options: 'オプション', optionsSub: 'ダッシュ・ゼリー・ワールド・サウンド・言語', back: '戻る', nextRun: '次のプレイから', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', lastHit: '最後に当てた相手', time: 'タイム', newbest: '新記録', soon: '近日',
     wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', volume: '音量', annOn: 'アナウンサー オン', annOff: 'アナウンサー オフ', annVol: 'アナウンサー音量', motionOn: '手ぶれ軽減 オン', motionOff: '手ぶれ軽減 オフ', motionOnH: 'カメラ揺れなし', motionOffH: '画面揺れ演出あり', langName: '言語 · 日本語', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
@@ -43,7 +44,7 @@ const STR = {
   fi: {
     intro: 'INTRO', introSub: 'katso alku, sitten pelaa',
     dash: 'SYÖKSY', push: 'TÖNÄISY', pushSub: 'tönäisee geelit sivuun', cut: 'VIILTO', cutSub: 'läpi, ja se satuttaa', gelHp: 'GEELIN KESTO', gelHpSub: 'sitkeämmät geelit, samat pisteet',
-    arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'huoneita omalla kellollaan — läpäisy avaa seuraavan', goalSurvive: 'SELVIYDY', goalQuota: 'KAADA', goalFlawless: 'EI OSUMIA', bossDown: 'KAATUI', shift_breathe: 'RANNAT HENGITTÄVÄT', shift_floe: 'JÄÄ LOHKEAA', shift_twins: 'LATTIA HALKEAA KAHTIA', menuBtn: 'VALIKKO', menuSub: 'asetukset, ääni, kieli', trial: 'HAASTE', trial_gates: 'SYÖKSY PORTEISTA', trial_hold: 'PIDÄ RENGAS', trial_collect: 'KERÄÄ PALLOT', trial_combo: 'PIDÄ PUTKI', trial_protect: 'SUOJAA SYDÄN', trialMet: 'HAASTE SUORITETTU', trialMissed: 'HAASTE JÄI', skills: 'vaatii', sk_position: 'sijoittuminen', sk_priority: 'kohteiden järjestys', sk_aim: 'tähtäyksen säästö', sk_movement: 'liike', sk_risk: 'riski', whyDied: 'kaaduit', whyHit: 'osuma huoneessa ilman osumia', whyHeart: 'sydän menetettiin', whyClock: 'kello loppui ensin', yours: 'sinun', start: 'ALOITA', tierC: 'läpäisy', tierF: 'kuolema tai kello', hitCost: 'jokainen osuma vie arvosanan', downShare: 'kaadettu', yourBest: 'paras', notPlayed: 'ei vielä pelattu', gDodge: 'VÄISTÄ', gClear: 'KAADA KAIKKI', gGates: 'PORTIT', gHold: 'PIDÄ RENGAS', gProtect: 'SUOJAA SYDÄN', gOrder: 'JÄRJESTYKSESSÄ', gHunt: 'METSÄSTÄ', gStreak: 'PUTKI', gCollect: 'KERÄÄ', gBoss: 'POMO', gGauntlet: 'KUJANJUOKSU', gEscort: 'SAATA SYDÄN', gHills: 'PIDÄ RENKAAT', whyOrbs: 'liian moni pallo sammui', mNoGun: 'EI ASETTA', mDash: 'VAIN SYÖKSY', mAmmo: 'AMMUKSET', mFaster: 'KIIHTYY', mMoving: 'LIIKKUVA LATTIA', hits: 'osumaa', timeUp: 'AIKA', timeUpSub: 'kello loppui', teaches: 'opettaa', roomLocked: 'LUKITTU', grade: 'ARVOSANA', rooms: 'HUONEET', worldLocked: 'läpäise edellinen maailma',
+    arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa lämpösi × verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'huoneita omalla kellollaan — läpäisy avaa seuraavan', goalSurvive: 'SELVIYDY', goalQuota: 'KAADA', goalFlawless: 'EI OSUMIA', bossDown: 'KAATUI', shift_breathe: 'RANNAT HENGITTÄVÄT', shift_floe: 'JÄÄ LOHKEAA', shift_twins: 'LATTIA HALKEAA KAHTIA', menuBtn: 'VALIKKO', menuSub: 'asetukset, ääni, kieli', trial: 'HAASTE', trial_gates: 'SYÖKSY PORTEISTA', trial_hold: 'PIDÄ RENGAS', trial_collect: 'KERÄÄ PALLOT', trial_combo: 'PIDÄ PUTKI', trial_protect: 'SUOJAA SYDÄN', trialMet: 'HAASTE SUORITETTU', trialMissed: 'HAASTE JÄI', skills: 'vaatii', sk_position: 'sijoittuminen', sk_priority: 'kohteiden järjestys', sk_aim: 'tähtäyksen säästö', sk_movement: 'liike', sk_risk: 'riski', whyDied: 'kaaduit', whyHit: 'osuma huoneessa ilman osumia', whyHeart: 'sydän menetettiin', whyClock: 'kello loppui ensin', yours: 'sinun', start: 'ALOITA', tierC: 'läpäisy', tierF: 'kuolema tai kello', hitCost: 'jokainen osuma vie arvosanan', downShare: 'kaadettu', yourBest: 'paras', notPlayed: 'ei vielä pelattu', gDodge: 'VÄISTÄ', gClear: 'KAADA KAIKKI', gGates: 'PORTIT', gHold: 'PIDÄ RENGAS', gProtect: 'SUOJAA SYDÄN', gOrder: 'JÄRJESTYKSESSÄ', gHunt: 'METSÄSTÄ', gStreak: 'PUTKI', gCollect: 'KERÄÄ', gBoss: 'POMO', gGauntlet: 'KUJANJUOKSU', gEscort: 'SAATA SYDÄN', gHills: 'PIDÄ RENKAAT', whyOrbs: 'liian moni pallo sammui', mNoGun: 'EI ASETTA', mDash: 'VAIN SYÖKSY', mAmmo: 'AMMUKSET', mFaster: 'KIIHTYY', mMoving: 'LIIKKUVA LATTIA', hits: 'osumaa', timeUp: 'AIKA', timeUpSub: 'kello loppui', teaches: 'opettaa', roomLocked: 'LUKITTU', grade: 'ARVOSANA', rooms: 'HUONEET', worldLocked: 'läpäise edellinen maailma', tierFScore: 'alle C, kuolema tai kello', whyScore: 'läpi, mutta alle C-rajan', pts: 'p', mBank: 'PANKKI — pisteet odottavat potissa, kunnes lämpö laskee; osuma vie potin', mCold: 'KYLMÄ ASE — jokainen laukaus viilentää lämpöä', heatHint: 'kaada läheltä ja nopeasti, niin × lämpenee; osuma viilentää', banked: 'PANKKIIN', potLost: 'POTTI MENI',
     best: 'ENNÄTYS', hard: 'VAIKEA', on: 'PÄÄLLÄ', off: 'POIS', hardSub: 'arcadesta tulee HARDCADE ja kampanjasta HARD PAIN: raadot ampuvat takaisin', campaignHard: 'samat huoneet, ja jokainen raato ampuu takaisin — läpäise huone ensin tavallisena', hardTag: 'VAIKEA', options: 'ASETUKSET', optionsSub: 'syöksy, geelit, maailmat, ääni, kieli', back: 'TAKAISIN', nextRun: 'seuraavasta pelistä', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', lastHit: 'VIIMEKSI OSUI', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
     wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', volume: 'ÄÄNENVOIMAKKUUS', annOn: 'SELOSTAJA PÄÄLLÄ', annOff: 'SELOSTAJA POIS', annVol: 'SELOSTAJAN ÄÄNI', motionOn: 'VÄHENNÄ LIIKETTÄ PÄÄLLÄ', motionOff: 'VÄHENNÄ LIIKETTÄ POIS', motionOnH: 'ei kameran tärinää', motionOffH: 'täysi ruudun tärinä', langName: 'KIELI · SUOMI', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
@@ -97,6 +98,8 @@ export function goalProgress(w) {
   return `${ch.mods.flawless ? `${t('goalFlawless')} · ` : ''}${head}${ammo}`;
 }
 
+// a score as it reads on a line or the HUD (v51)
+const pts = (v) => Math.round(v ?? 0).toLocaleString('en-US');
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
 // The modes the title offers, top to bottom. SURVIVAL was off it from v17
@@ -123,6 +126,8 @@ export class UI {
     this.hudEl = document.getElementById('hud');
     this.scoreEl = document.getElementById('score');
     this.multEl = document.getElementById('mult');
+    this.heatEl = document.getElementById('heat');
+    this.potEl = document.getElementById('pot');
     this.livesEl = document.getElementById('lives');
     this.clockEl = document.getElementById('clock');
     this.bossBarEl = document.getElementById('bossbar');
@@ -148,7 +153,13 @@ export class UI {
 
   hud(w) {
     this.scoreEl.textContent = w.score.toLocaleString('en-US');
-    this.multEl.textContent = w.streak > 1 ? `×${w.streak}` : '';     // 1.x: every kill pays 100 × the streak
+    // HEAT (v51): the × every point is paid at, a bar for how far into it you
+    // are (it drains when you go quiet), and BANK's unbanked pot
+    const m = heatMult(w), into = Math.max(0, Math.min(1, (w.heat || 0) - (m - 1)));
+    const mt = m > 1 || w.heat > 0 ? `×${m}` : '';
+    if (this._mult !== mt) { this._mult = mt; this.multEl.textContent = mt; this.multEl.dataset.m = String(m); }
+    if (this.heatEl) { this.heatEl.hidden = !(w.heat > 0); this.heatEl.firstElementChild.style.width = `${(into * 100).toFixed(0)}%`; this.heatEl.dataset.m = String(m); }
+    if (this.potEl) { const pt = w.pot > 0 ? `+${pts(w.pot)}` : ''; if (this.potEl.textContent !== pt) this.potEl.textContent = pt; }
     if (this._lives !== w.hero.lives) {
       this._lives = w.hero.lives;
       this.livesEl.replaceChildren(...Array.from({ length: Math.max(0, w.hero.lives) }, () => el('i')));
@@ -157,7 +168,8 @@ export class UI {
     if (w.room && w.dir) {
       const left = Math.max(0, Math.ceil(w.dir.duration - w.dir.t));
       // and the grade it is on course for: for a timed room, how long that line has left
-      const oc = onCourse(w), tag = oc ? `${oc.grade}${oc.left != null ? ` ${Math.ceil(oc.left)}s` : ''}` : '';
+      const k = (v) => (v >= 10000 ? `${Math.round(v / 1000)}k` : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(Math.ceil(v)));
+      const oc = onCourse(w), tag = oc ? `${oc.grade}${oc.next ? ` → ${oc.next} ${k(oc.need)}` : ''}` : '';
       const str = `${goalProgress(w)} · ${left}s`;
       if (this._clockStr !== str + tag) {
         this._clockStr = str + tag;
@@ -297,9 +309,9 @@ export class UI {
     items.push(route);
     if (played?.grade) {
       // the room just cleared: its grade, its number, and the S line when it is not an S yet
-      const pr = flat.find((r) => r.id === played.id), m = pr ? metricOf(pr) : null, H = pr?.level ? tiersFor(pr, pr.level) : null;
-      const num = played.value == null || !m ? `${played.kills} ${t('kills').toLowerCase()}` : m.name === 'time' ? `${(+played.value).toFixed(1)} s` : m.name === 'hits' ? `${played.value} ${t('hits')}` : `${Math.round(played.value * 100)}%`;
-      const toS = played.grade !== 'S' && H && m ? ` · S ${m.name === 'time' ? `≤ ${(+H.S).toFixed(1)} s` : m.name === 'hits' ? `≤ ${H.S} ${t('hits')}` : `≥ ${Math.round(H.S * 100)}%`}` : '';
+      const pr = flat.find((r) => r.id === played.id), H = pr?.level ? tiersFor(pr, pr.level) : null;
+      const num = `${pts(played.value)} ${t('pts')}`;
+      const toS = played.grade !== 'S' && H ? ` · S ${pts(H.S)}` : '';
       const p = el('p', 'played', `${played.name} — ${t('grade')} ${played.grade} · ${num}${toS}`);
       p.style.color = GC[played.grade];
       items.push(p);
@@ -335,16 +347,16 @@ export class UI {
   roomCard(r, wd) {
     const GC = GRADE_COLORS, L = r.level;
     this.optBack = () => this.campaign(this._list, { focus: r.id });
-    const m = metricOf(r), tiers = L ? tiersFor(r, L) : null;
-    const fmt = (v) => (m.name === 'time' ? `≤ ${(+v).toFixed(1)} s` : m.name === 'hits' ? `≤ ${v} ${t('hits')}` : m.name === 'heart' ? `♥ ≥ ${Math.round(v * 100)}%` : `≥ ${Math.round(v * 100)}% ${t('downShare')}`);
+    const tiers = L ? tiersFor(r, L) : null;
+    const fmt = (v) => `≥ ${pts(v)}`;
     const rows = el('div', 'tiers');
     const line = (g, text) => { const k = el('span', 'tg', g); k.style.color = GC[g]; rows.append(k, el('span', 'tt', text)); };
-    if (tiers) for (const g of ['S', 'A', 'B']) line(g, fmt(tiers[g]));
-    line('C', t('tierC'));
-    line('F', t('tierF'));
+    // v51: a room is graded on its score — four lines, and F under C
+    if (tiers) for (const g of ['S', 'A', 'B', 'C']) line(g, fmt(tiers[g]));
+    line('F', t('tierFScore'));
     const head = el('p', 'mode', `${wd?.name ?? ''} · ${r.index + 1} / ${this._list?.reduce((n, w) => n + w.rooms.length, 0) ?? ''}`);
     head.style.color = wd?.rail ?? '';
-    const best = r.grade ? `${t('yourBest')}: ${r.grade}${r.best != null ? ` · ${m.name === 'time' ? `${(+r.best).toFixed(1)} s` : m.name === 'hits' ? `${r.best} ${t('hits')}` : `${Math.round(r.best * 100)}%`}` : ''}` : t('notPlayed');
+    const best = r.grade ? `${t('yourBest')}: ${r.grade}${r.best != null ? ` · ${pts(r.best)} ${t('pts')}` : ''}` : t('notPlayed');
     const bestEl = el('p', 'best', best);
     if (r.grade) bestEl.style.color = GC[r.grade];
     const chart = L ? roomChart(L, { width: 300, height: 56 }) : null;
@@ -357,7 +369,7 @@ export class UI {
     this._panel([...tag, el('h2', r.hard ? 'card hard' : 'card', r.name), head, el('p', 'goal', goalText(r)), ...(chart ? [chart] : []),
       ...(L?.plan?.teaches ? [el('p', 'teaches', `${t('teaches')}: ${L.plan.teaches}`)] : []),
       ...(L?.plan?.strategy ? [el('p', 'skills', `${t('skills')}: ${L.plan.strategy.map((k) => t(`sk_${k}`)).join(' · ')}`)] : []),
-      rows, ...(m.name === 'share' ? [el('p', 'hint', t('hitCost'))] : []), bestEl,
+      rows, ...(L?.score?.mutators ?? []).map((k) => el('p', 'mutator', t(k === 'bank' ? 'mBank' : 'mCold'))), bestEl,
       startBtn, this._button(t('back'), null, () => this.closeOptions())]);
   }
 
@@ -454,17 +466,15 @@ export class UI {
   // with a marker on the line you landed on and your number beside it; an F
   // says why (`why` from sim/director/campaign.js end()).
   _roomLines(room) {
-    const GC = GRADE_COLORS, L = room.level, m = metricOf(room), H = L ? tiersFor(room, L) : null;
+    const GC = GRADE_COLORS, L = room.level, H = L ? tiersFor(room, L) : null;
     const box = el('div', 'tiers result');
-    const num = (v) => (v == null ? '' : m.name === 'time' ? `${(+v).toFixed(1)} s` : m.name === 'hits' ? `${v} ${t('hits')}` : m.name === 'heart' ? `♥ ${Math.round(v * 100)}%` : `${Math.round(v * 100)}%`);
-    const fmt = (v) => (m.name === 'time' ? `≤ ${(+v).toFixed(1)} s` : m.name === 'hits' ? `≤ ${v} ${t('hits')}` : m.name === 'heart' ? `♥ ≥ ${Math.round(v * 100)}%` : `≥ ${Math.round(v * 100)}% ${t('downShare')}`);
-    const why = { died: t('whyDied'), hit: t('whyHit'), heart: t('whyHeart'), clock: t('whyClock'), orbs: t('whyOrbs') }[room.why] ?? t('tierF');
-    const text = { C: t('tierC'), F: room.grade === 'F' ? why : t('tierF') };
+    const why = { died: t('whyDied'), hit: t('whyHit'), heart: t('whyHeart'), clock: t('whyClock'), orbs: t('whyOrbs'), score: t('whyScore') }[room.why] ?? t('tierFScore');
     for (const g of ['S', 'A', 'B', 'C', 'F']) {
-      if (!H && 'SAB'.includes(g)) continue;
+      if (!H && g !== 'F') continue;
       const k = el('span', 'tg', g); k.style.color = GC[g];
       const here = room.grade === g;
-      const line = el('span', 'tt', `${'SAB'.includes(g) ? fmt(H[g]) : text[g]}${here ? `  ◀ ${t('yours')}${room.grade !== 'F' && room.value != null ? ` ${num(room.value)}` : ''}` : ''}`);
+      const mine = here && room.value != null && (g !== 'F' || room.why === 'score') ? ` ${pts(room.value)}` : '';
+      const line = el('span', 'tt', `${g !== 'F' ? `≥ ${pts(H[g])}` : room.grade === 'F' ? why : t('tierFScore')}${here ? `  ◀ ${t('yours')}${mine}` : ''}`);
       if (here) { line.style.color = GC[g]; line.style.fontWeight = '700'; }
       box.append(k, line);
     }

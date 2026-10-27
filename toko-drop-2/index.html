@@ -37,6 +37,16 @@
     #scorebox { position: absolute; left: max(14px, env(safe-area-inset-left)); top: max(10px, env(safe-area-inset-top)); }
     #score { font-size: 22px; letter-spacing: .06em; }
     #mult { margin-left: 8px; color: var(--amber); font-size: 15px; }
+    /* HEAT (v51): the ×, hotter as it climbs, a bar for how far into it you are, and BANK's pot */
+    #mult[data-m="3"], #mult[data-m="4"] { color: #ff9a4a; }
+    #mult[data-m="5"], #mult[data-m="6"] { color: #ff6a3a; font-size: 17px; }
+    #mult[data-m="7"], #mult[data-m="8"] { color: #ff4a4a; font-size: 19px; text-shadow: 0 0 10px rgba(255,80,60,.7); }
+    #pot { margin-left: 8px; color: var(--gold); font-size: 13px; }
+    #heat { width: 92px; height: 3px; margin: 3px 0 2px; background: rgba(255,255,255,.12); }
+    #heat > i { display: block; height: 100%; width: 0; background: var(--amber); }
+    #heat[data-m="5"] > i, #heat[data-m="6"] > i { background: #ff6a3a; }
+    #heat[data-m="7"] > i, #heat[data-m="8"] > i { background: #ff4a4a; }
+    #menu .mutator { font-size: 11px; color: var(--gold); letter-spacing: .04em; margin: 2px 0 4px; }
     #lives { display: flex; gap: 6px; margin-top: 6px; }
     #lives i { width: 10px; height: 10px; border-radius: 50%; background: #f2efe6; box-shadow: 0 0 6px rgba(242, 239, 230, .6); }
     #fx { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; max-width: min(48vw, 420px); font-size: 11px; letter-spacing: .08em; }
@@ -209,7 +219,7 @@
   <div id="stage"></div>
   <canvas id="sticks"></canvas>
   <div id="hud" hidden>
-    <div id="scorebox"><span id="score">0</span><span id="mult"></span><div id="lives"></div><div id="fx"></div></div>
+    <div id="scorebox"><span id="score">0</span><span id="mult"></span><span id="pot"></span><div id="heat" hidden><i></i></div><div id="lives"></div><div id="fx"></div></div>
     <button id="pausebtn" aria-label="menu">≡ MENU</button>
     <div id="clock"></div>
     <div id="bossbar" hidden><i></i></div>
@@ -217,7 +227,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v50<span id="backend"></span></div>
+  <div id="ver">2.0 · v51<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -326,6 +336,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=50"></script>
+  <script type="module" src="js/main.js?v=51"></script>
 </body>
 </html>

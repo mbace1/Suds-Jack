@@ -11,7 +11,7 @@
    }
   ]
  },
- "duration": 45,
+ "duration": 30,
  "goal": {
   "type": "quota",
   "kills": 14
@@ -35,119 +35,119 @@
    "elite": true
   },
   {
-   "t": 2.2,
+   "t": 1.47,
    "type": "YELA_CUBE",
    "px": -17.4,
    "pz": 4.29,
    "elite": true
   },
   {
-   "t": 4.4,
+   "t": 2.93,
    "type": "FANNER",
    "px": 6.26,
    "pz": -9.4,
    "elite": true
   },
   {
-   "t": 6.6,
+   "t": 4.4,
    "type": "ORANGE_CUBE",
    "px": 1.46,
    "pz": 9.4,
    "elite": true
   },
   {
-   "t": 8.8,
+   "t": 5.87,
    "type": "GLOBBO",
    "px": -11.74,
    "pz": -9.4,
    "elite": true
   },
   {
-   "t": 11,
+   "t": 7.33,
    "type": "YELA_CUBE",
    "px": 17.4,
    "pz": -1.16,
    "elite": true
   },
   {
-   "t": 13.2,
+   "t": 8.8,
    "type": "FANNER",
    "px": -8.98,
    "pz": 9.4,
    "elite": true
   },
   {
-   "t": 15.4,
+   "t": 10.27,
    "type": "ORANGE_CUBE",
    "px": 0.2,
    "pz": -9.4,
    "elite": true
   },
   {
-   "t": 17.6,
+   "t": 11.73,
    "type": "GLOBBO",
    "px": 8.26,
    "pz": 9.4,
    "elite": true
   },
   {
-   "t": 19.8,
+   "t": 13.2,
    "type": "YELA_CUBE",
    "px": -17.4,
    "pz": -1.9,
    "elite": true
   },
   {
-   "t": 22,
+   "t": 14.67,
    "type": "FANNER",
    "px": 12.81,
    "pz": -9.4,
    "elite": true
   },
   {
-   "t": 24.2,
+   "t": 16.13,
    "type": "ORANGE_CUBE",
    "px": -1.87,
    "pz": 9.4,
    "elite": true
   },
   {
-   "t": 26.4,
+   "t": 17.6,
    "type": "GLOBBO",
    "px": -5.71,
    "pz": -9.4,
    "elite": true
   },
   {
-   "t": 28.6,
+   "t": 19.07,
    "type": "YELA_CUBE",
    "px": 17.4,
    "pz": 5.07,
    "elite": true
   },
   {
-   "t": 30.8,
+   "t": 20.53,
    "type": "FANNER",
    "px": -17.4,
    "pz": 8.58,
    "elite": true
   },
   {
-   "t": 33,
+   "t": 22,
    "type": "ORANGE_CUBE",
    "px": 3.66,
    "pz": -9.4,
    "elite": true
   },
   {
-   "t": 35.2,
+   "t": 23.47,
    "type": "GLOBBO",
    "px": 3.65,
    "pz": 9.4,
    "elite": true
   },
   {
-   "t": 37.4,
+   "t": 24.93,
    "type": "YELA_CUBE",
    "px": -17.4,
    "pz": -8.59,
@@ -155,15 +155,17 @@
   }
  ],
  "tiers": {
-  "S": 30.8,
-  "A": 33.5,
-  "B": 36.2,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 96%, rough 21%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 3400,
+  "A": 3100,
+  "B": 2800,
+  "C": 2500,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 13%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 30.8,
-  "A": 33.5,
-  "B": 36.2,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 92%, rough 8%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 5100,
+  "A": 4600,
+  "B": 4100,
+  "C": 3700,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 96%, average 92%, rough 4%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

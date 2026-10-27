@@ -11,7 +11,7 @@
    }
   ]
  },
- "duration": 40,
+ "duration": 30,
  "goal": {
   "type": "order"
  },
@@ -33,49 +33,49 @@
    "order": 1
   },
   {
-   "t": 0.3,
+   "t": 0.22,
    "type": "GLOBBO",
    "px": 10,
    "pz": 6,
    "order": 2
   },
   {
-   "t": 0.6,
+   "t": 0.45,
    "type": "WEEVA",
    "px": -10,
    "pz": 6,
    "order": 3
   },
   {
-   "t": 0.9,
+   "t": 0.68,
    "type": "GLOBBO",
    "px": 10,
    "pz": -6,
    "order": 4
   },
   {
-   "t": 1.2,
+   "t": 0.9,
    "type": "GLOBBO",
    "px": 0,
    "pz": -7,
    "order": 5
   },
   {
-   "t": 1.5,
+   "t": 1.12,
    "type": "WEEVA",
    "px": 0,
    "pz": 7,
    "order": 6
   },
   {
-   "t": 1.8,
+   "t": 1.35,
    "type": "GLOBBO",
    "px": -12,
    "pz": 0,
    "order": 7
   },
   {
-   "t": 2.1,
+   "t": 1.58,
    "type": "GLOBBO",
    "px": 12,
    "pz": 0,
@@ -83,15 +83,17 @@
   }
  ],
  "tiers": {
-  "S": 3.5,
-  "A": 5.9,
-  "B": 8.3,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 79%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 7700,
+  "A": 6900,
+  "B": 6200,
+  "C": 5600,
+  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 67%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 3.6,
-  "A": 6,
-  "B": 8.4,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 83%. S, A and B the three skills' medians, best first, at least 6% of the clock apart (scripts/room-tiers.mjs)"
+  "S": 11000,
+  "A": 9900,
+  "B": 8900,
+  "C": 8000,
+  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 79%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

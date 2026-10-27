@@ -14,19 +14,20 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=50';
-import { makeRng } from './rng.js?v=50';
-import { BEHAVIOUR } from './species/index.js?v=50';
-import { DIRECTORS } from './director/index.js?v=50';
-import * as fire from './fire.js?v=50';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=50';
-import { swarmForces, resolveCrowd } from './crowd.js?v=50';
-import { revengeColor } from './color.js?v=50';
-import * as pickups from './pickups.js?v=50';
-import * as worlds from './worlds.js?v=50';
-import * as reshape from './reshape.js?v=50';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=50';
-import * as rules from './rules.js?v=50';
+import { TUNING } from '../tuning.js?v=51';
+import { makeRng } from './rng.js?v=51';
+import { BEHAVIOUR } from './species/index.js?v=51';
+import { DIRECTORS } from './director/index.js?v=51';
+import * as fire from './fire.js?v=51';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=51';
+import { swarmForces, resolveCrowd } from './crowd.js?v=51';
+import { revengeColor } from './color.js?v=51';
+import * as pickups from './pickups.js?v=51';
+import * as worlds from './worlds.js?v=51';
+import * as reshape from './reshape.js?v=51';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=51';
+import * as rules from './rules.js?v=51';
+import * as heat from './heat.js?v=51';
 
 const T = TUNING;
 
@@ -62,6 +63,7 @@ export function createWorld({ seed = 1, mode = 'arcade', arena = T.arena.landsca
   };
   // the hero starts at the middle, or where a room's region has room for it
   if (region && !region.contains(0, 0, T.hero.radius)) { const p = region.clamp(0, 0, T.hero.radius + 0.05, { x: 0, z: 0 }); w.hero.x = w.hero.px = p.x; w.hero.z = w.hero.pz = p.z; }
+  heat.create(w);   // the score's multiplier and the room's mutators (v51)
   w.pk = pickups.create(w, { gateUsed });   // 1.x's classic pickups (sim/pickups.js)
   w.director = DIRECTORS[mode] ?? DIRECTORS.arcade;
   w.dir = w.director.create(w, api);
@@ -106,6 +108,7 @@ export const api = {
     w.bullets.push({ x, z, px: x, pz: z, vx: Math.cos(angle) * s, vz: Math.sin(angle) * s, speed: s, r: T.bullets.heroRadius,
       life: T.bullets.life, hero: true, color: T.bullets.heroColor, src: null, revenge: false, homing: 0, grazed: false, dead: false });
     w.heroBullets++;
+    heat.shot(w);   // COLD GUN: a shot costs heat
   },
   kill: (w, g, src) => kill(w, g, src),
   pop: (w, g) => pop(w, g),
@@ -159,6 +162,7 @@ export function step(w, input) {
     gelBulletsHit(w);
     contacts(w);
     pickups.step(w, dt, api);
+    heat.step(w, dt);
   }
   // a death in a campaign room ends the room (sim/director/campaign.js)
   if (w.over && w.director.onOver) w.director.onOver(w);
@@ -272,7 +276,9 @@ function kill(w, g, src = 'hero') {
   g.alive = false;
   const S = T.species[g.kind], hard = w.mode === 'hardcade' || !!w.room?.hard;
   w.kills++; w.streak++;
-  w.score += Math.round(T.score.perKill * w.streak * (hard ? T.revenge.scoreMult : 1) * pickups.scoreMult(w));
+  // HEAT (v51): the kill heats you up by how close it was, then pays at the heat
+  // (1.x paid 100 × the streak, which compounded without a ceiling)
+  heat.gain(w, heat.killHeat(w, g, src)); heat.pay(w, T.score.perKill * pickups.scoreMult(w), hard);   // a gate's or a hazard's kill pays, but heats nothing
   pickups.onKill(w, g);             // the bounty pays (1.x main.js:4436-4448)
   w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src });
   if (g.isBoss) w.lastBoss = { x: g.x, z: g.z };   // where a later world's drain opens
@@ -405,7 +411,7 @@ function gelBulletsHit(w) {
     }
     if (!b.grazed && d < T.graze.radius) {
       b.grazed = true; w.grazes++;
-      w.score += T.graze.points * (w.mode === 'hardcade' || w.room?.hard ? T.revenge.scoreMult : 1) * pickups.scoreMult(w);   // × 2 under the multiplier (1.x main.js:10860)
+      heat.gain(w, T.heat.graze); heat.pay(w, T.graze.points * pickups.scoreMult(w), w.mode === 'hardcade' || !!w.room?.hard);   // × 2 under the pod (1.x main.js:10860), × the heat
       w.events.push({ type: 'graze', x: b.x, z: b.z });
       milestones(w);
     }

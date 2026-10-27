@@ -40,15 +40,18 @@
 //   chStep   { what, n, of }   progress the HUD reads: a gate, a lit body, an orb
 //   heart    { hp, x, z }      the heart was hurt
 // Pure: no DOM, no clock, w.rng only.
-import { TUNING } from '../tuning.js?v=50';
-import { levelShape, KIND } from './shape.js?v=50';
-import * as pickups from './pickups.js?v=50';
-import * as rules from './rules.js?v=50';
+import { TUNING } from '../tuning.js?v=51';
+import { levelShape, KIND } from './shape.js?v=51';
+import * as pickups from './pickups.js?v=51';
+import * as rules from './rules.js?v=51';
+import * as heat from './heat.js?v=51';
 
-const T = TUNING, C = T.campaign;
+const T = TUNING, C = T.campaign, P = C.points, HG = T.heat.goal;
+// a room's goal taken pays its points × the heat, and heats you (v51)
+const take = (w, pts, h = 0) => { if (h) heat.gain(w, h); return heat.pay(w, pts, !!w.room?.hard); };
 
 // the goals graded on time (lower is better); the rest on a share (higher)
-const TIMED = new Set(['quota', 'clear', 'gates', 'hold', 'hills', 'order', 'hunt', 'combo', 'collect', 'boss']);
+export const TIMED = new Set(['quota', 'clear', 'gates', 'hold', 'hills', 'order', 'hunt', 'combo', 'collect', 'boss']);
 
 // a level's body type: 1.x's name (TUNING.campaign.kinds) or a 2.0 species key
 export const speciesOf = (type) => C.kinds[type] ?? (T.species[type] ? type : null);
@@ -149,13 +152,14 @@ export function step(w, dt, api) {
     if (O) { const a = (O.phase ?? 0) + (ch.t / O.period) * Math.PI * 2; Z.x = Z.x0 + Math.cos(a) * O.r; Z.z = Z.z0 + Math.sin(a) * O.r; }
     if (w.rule?.kind === 'current' && G.zone?.drift) { const Rc = C.rules.current; Z.x += Math.cos(w.rule.angle) * Rc.speed * Rc.playerMult * dt; Z.z += Math.sin(w.rule.angle) * Rc.speed * Rc.playerMult * dt; clampPoint(w, Z, Z.r); }
     Z.inside = !!h?.alive && Math.hypot(h.x - Z.x, h.z - Z.z) < Z.r;
-    if (Z.inside) Z.fill = Math.min(G.need, Z.fill + dt);
+    if (Z.inside) { Z.fill = Math.min(G.need, Z.fill + dt); if (!ch.arcade && G.type === 'hold') take(w, P.holdPerS * dt); }
     else if (G.drain) Z.fill = Math.max(0, Z.fill - G.drain * dt);
     ch.n = Z.fill;
     // HILLS: a full ring gives way to the next
     if (ch.hills) {
       if (Z.fill >= G.need - 1e-9) {
         ch.zi++;
+        take(w, P.hill, HG.hill);
         w.events.push({ type: 'chStep', what: 'hill', x: Z.x, z: Z.z, n: ch.zi, of: ch.of });
         if (ch.zi < ch.hills.length) ch.zone = hillZone(ch.hills[ch.zi]);
       }
@@ -171,7 +175,7 @@ export function step(w, dt, api) {
       let step = H.speed * dt;
       while (step > 0 && H.leg < H.path.length) {
         const P = H.path[H.leg], dx = P.x - H.x, dz = P.z - H.z, d = Math.hypot(dx, dz);
-        if (d <= step) { H.x = P.x; H.z = P.z; step -= d; H.leg++; w.events.push({ type: 'chStep', what: 'leg', x: H.x, z: H.z, n: H.leg, of: H.path.length }); }
+        if (d <= step) { H.x = P.x; H.z = P.z; step -= d; H.leg++; take(w, C.points.leg, HG.leg); w.events.push({ type: 'chStep', what: 'leg', x: H.x, z: H.z, n: H.leg, of: H.path.length }); }
         else { H.x += (dx / d) * step; H.z += (dz / d) * step; step = 0; }
       }
       ch.n = H.leg;
@@ -192,7 +196,7 @@ export function step(w, dt, api) {
     if (o.out && !o.taken && !o.lost && o.life != null && ch.t >= o.t + o.life - 1e-9) { o.lost = true; ch.lost++; w.events.push({ type: 'chStep', what: 'orbLost', x: o.x, z: o.z, n: ch.n, of: ch.of }); continue; }
     if (o.lost) continue;
     if (o.out && !o.taken && h?.alive && Math.hypot(h.x - o.x, h.z - o.z) < C.orb.reach + T.hero.radius) {
-      o.taken = true; ch.n++; w.events.push({ type: 'chStep', what: 'orb', x: o.x, z: o.z, n: ch.n, of: ch.of });
+      o.taken = true; ch.n++; if (!ch.arcade) take(w, P.orb, HG.orb); w.events.push({ type: 'chStep', what: 'orb', x: o.x, z: o.z, n: ch.n, of: ch.of });
     }
   }
 
@@ -216,7 +220,7 @@ export function onKill(w, g) {
   if (!ch) return;
   const G = ch.goal;
   if (G.type === 'order' && g.order != null) { ch.n++; w.events.push({ type: 'chStep', what: 'order', n: ch.n, of: ch.of }); }
-  if (G.type === 'hunt' && g.kind === speciesOf(G.kind)) { ch.n++; w.events.push({ type: 'chStep', what: 'hunt', n: ch.n, of: ch.of }); }
+  if (G.type === 'hunt' && g.kind === speciesOf(G.kind)) { ch.n++; take(w, P.hunt); w.events.push({ type: 'chStep', what: 'hunt', n: ch.n, of: ch.of }); }
   if (G.type === 'boss' && g.isBoss) ch.bossDown = (ch.bossDown || 0) + 1;
 }
 
@@ -224,7 +228,7 @@ export function onKill(w, g) {
 export function onGate(w) {
   const ch = w.ch;
   if (!ch || ch.goal.type !== 'gates') return;
-  ch.n++; w.events.push({ type: 'chStep', what: 'gate', n: ch.n, of: ch.of });
+  ch.n++; if (!ch.arcade) take(w, P.gate, HG.gate); w.events.push({ type: 'chStep', what: 'gate', n: ch.n, of: ch.of });
 }
 
 // ── THE ARCADE'S CHALLENGE WAVES (v36, CAMPAIGN_PLAN.md step 4) ────────
