@@ -42,6 +42,12 @@
     #mult[data-m="5"], #mult[data-m="6"] { color: #ff6a3a; font-size: 17px; }
     #mult[data-m="7"], #mult[data-m="8"] { color: #ff4a4a; font-size: 19px; text-shadow: 0 0 10px rgba(255,80,60,.7); }
     #pot { margin-left: 8px; color: var(--gold); font-size: 13px; }
+    #mult { display: inline-block; transform-origin: left center; }
+    #mult.pop { animation: heat-pop .32s ease-out; }
+    #mult.cold { animation: heat-cold .6s ease-out; }
+    @keyframes heat-pop { 0% { transform: scale(1.9); } 100% { transform: scale(1); } }
+    @keyframes heat-cold { 0% { color: #8fd8ff; transform: scale(1.4); text-shadow: 0 0 12px #6cf; } 100% { transform: scale(1); } }
+    @media (prefers-reduced-motion: reduce) { #mult.pop, #mult.cold { animation: none; } }
     #heat { width: 92px; height: 3px; margin: 3px 0 2px; background: rgba(255,255,255,.12); }
     #heat > i { display: block; height: 100%; width: 0; background: var(--amber); }
     #heat[data-m="5"] > i, #heat[data-m="6"] > i { background: #ff6a3a; }
@@ -227,7 +233,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v51<span id="backend"></span></div>
+  <div id="ver">2.0 · v52<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -336,6 +342,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=51"></script>
+  <script type="module" src="js/main.js?v=52"></script>
 </body>
 </html>

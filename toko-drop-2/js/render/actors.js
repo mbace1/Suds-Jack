@@ -15,17 +15,17 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=51';
+import { TUNING } from '../tuning.js?v=52';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=51';
-import { LOOKS } from './looks/index.js?v=51';
-import { JellyBody } from './jelly.js?v=51';
-import { Juice } from './juice.js?v=51';
-import { ArenaLight } from './light.js?v=51';
-import { toSdf } from './sdf.js?v=51';
-import { PickupView } from './pickups.js?v=51';
-import { ChallengeView } from './challenge.js?v=51';
-import { Goo } from './goo.js?v=51';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=52';
+import { LOOKS } from './looks/index.js?v=52';
+import { JellyBody } from './jelly.js?v=52';
+import { Juice } from './juice.js?v=52';
+import { ArenaLight } from './light.js?v=52';
+import { toSdf } from './sdf.js?v=52';
+import { PickupView } from './pickups.js?v=52';
+import { ChallengeView } from './challenge.js?v=52';
+import { Goo } from './goo.js?v=52';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -111,6 +111,11 @@ export class Actors {
     const ghosts = Array.from({ length: L.ghost.count }, () => { const m = new THREE.Mesh(this.geo.hero, ghostMat.clone()); m.visible = false; m.scale.setScalar(r); this.scene.add(m); return { mesh: m, life: 0 }; });
     const muzzle = new THREE.Mesh(this.geo.eye, new THREE.MeshBasicNodeMaterial({ color: L.muzzle.color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
     muzzle.visible = false; this.scene.add(muzzle);
+    // HEAT (v52): a soft halo on the floor under the hero, warmer and wider as the multiplier climbs
+    const haloMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+    haloMat.opacityNode = TSL.smoothstep(TSL.float(0.5), TSL.float(0.0), TSL.length(TSL.uv().sub(TSL.vec2(0.5, 0.5)))).pow(TSL.float(1.6));
+    const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), haloMat);
+    halo.visible = false; halo.renderOrder = 1; this.scene.add(halo);
     // 1.x's black oval eyes, facing the last shot. 1.x sat them a little
     // inside the body, so they vanished whenever it stretched toward its aim;
     // these stand just proud of the surface, with the glint in front.
@@ -128,7 +133,7 @@ export class Actors {
       eyes.add(eye);
     }
     root.add(eyes);
-    return { root, squash, body, mat, eyes, ghosts, muzzle, muzzleT: 0 };
+    return { root, squash, body, mat, eyes, ghosts, muzzle, halo, muzzleT: 0 };
   }
 
   _makeGel(kind) {
@@ -386,7 +391,18 @@ export class Actors {
     // blinks base + amp·|sin(rate·t)| and glows red; a dash blinks faster
     const blink = (B) => B.base + B.amp * Math.abs(Math.sin(time * B.rate));
     hv.mat.opacity = h.mercy > 0 ? blink(L.mercyBlink) : h.dash > 0 ? blink(L.dashBlink) : L.opacity;
-    if (h.mercy > 0) hv.mat.emissive.setHex(L.flashColor); else hv.mat.emissive.setScalar(0);
+    // HEAT (v52): the halo under you and a tint in the gel, warmer as the multiplier climbs
+    const HV = T.heat.view, m = 1 + Math.min(T.heat.levels - 1, Math.floor(w.heat || 0)), hot = m > 1 && h.alive;
+    hv.halo.visible = hot;
+    if (hot) {
+      const c = HV.colors[Math.min(HV.colors.length - 1, m - 2)], into = (w.heat || 0) - (m - 1), pulse = 0.85 + 0.15 * Math.sin(time * (4 + m));
+      hv.halo.position.set(hv.root.position.x, 0.03, hv.root.position.z);
+      hv.halo.scale.setScalar(HV.halo.r * 2 * (1 + HV.halo.per * (m - 2 + into)));
+      hv.halo.material.color.setHex(c).multiplyScalar((HV.halo.alpha + HV.halo.perAlpha * (m - 2)) * pulse);
+    }
+    if (h.mercy > 0) hv.mat.emissive.setHex(L.flashColor);
+    else if (hot) hv.mat.emissive.setHex(HV.colors[Math.min(HV.colors.length - 1, m - 2)]).multiplyScalar(HV.tint * (m - 1));
+    else hv.mat.emissive.setScalar(0);
     // the lunge the sim keeps (hero.stretch), into the gel's stretch
     hv.mat.gel.stretch.value = h.stretch || 0;
     hv.mat.gel.stretchDir.value.set(h.stretchX || 0, h.stretchZ || 0);

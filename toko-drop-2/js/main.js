@@ -7,30 +7,30 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=51';
-import { buildFloor } from './render/floor.js?v=51';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=51';
-import * as worldsSim from './sim/worlds.js?v=51';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=51';
-import * as reshapeSim from './sim/reshape.js?v=51';
-import { Scenery } from './render/scenery.js?v=51';
-import { Transit } from './render/transit.js?v=51';
-import { Splats } from './render/splats.js?v=51';
-import { Actors } from './render/actors.js?v=51';
-import { GEL_TIME } from './render/gel.js?v=51';
-import { studioEnvironment } from './render/env.js?v=51';
-import { Specimen } from './render/specimen.js?v=51';
-import { createWorld, step, api as simApi } from './sim/world.js?v=51';
-import { stage as stagePk } from './sim/pickups.js?v=51';
-import { Input } from './input.js?v=51';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=51';
-import { Announcer } from './announcer.js?v=51';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=51';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=51';
-import { Sound } from './audio.js?v=51';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=51';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=51';
-import { Readout } from './readout.js?v=51';
+import { TUNING } from './tuning.js?v=52';
+import { buildFloor } from './render/floor.js?v=52';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=52';
+import * as worldsSim from './sim/worlds.js?v=52';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=52';
+import * as reshapeSim from './sim/reshape.js?v=52';
+import { Scenery } from './render/scenery.js?v=52';
+import { Transit } from './render/transit.js?v=52';
+import { Splats } from './render/splats.js?v=52';
+import { Actors } from './render/actors.js?v=52';
+import { GEL_TIME } from './render/gel.js?v=52';
+import { studioEnvironment } from './render/env.js?v=52';
+import { Specimen } from './render/specimen.js?v=52';
+import { createWorld, step, api as simApi } from './sim/world.js?v=52';
+import { stage as stagePk } from './sim/pickups.js?v=52';
+import { Input } from './input.js?v=52';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=52';
+import { Announcer } from './announcer.js?v=52';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=52';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=52';
+import { Sound } from './audio.js?v=52';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=52';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=52';
+import { Readout } from './readout.js?v=52';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -267,7 +267,9 @@ function follow(dt, a) {
 // survival for now"), but SURVIVAL still runs from here, as
 // __toko.start('survival') does, and keeps its best.
 const MODES = ['arcade', 'hardcade', 'survival', 'campaign'];
-const bestKey = (m) => `toko2.best.${m}`;
+// v52: HEAT scores keep their own bests — 1.x's streak scores (`toko2.best.*`)
+// were another scale, and stay in storage untouched, but are no longer shown
+const bestKey = (m) => `toko2.heat.best.${m}`;
 const bests = () => Object.fromEntries(MODES.map((m) => [m, store.num(bestKey(m))]));
 // The title's two test switches (owner, 2026-10-22: "the pushing dash should
 // be tested as it may be a better dynamic, allowing for more bullet sponge
@@ -446,7 +448,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=51`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=52`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -576,7 +578,8 @@ function announce(e) {
   else if (e.type === 'hurt' && e.lives > 0) announcer.say('ouch');
   else if (e.type === 'over') announcer.say('gameover');
   // HEAT (v51): the announcer calls the multiplier as it climbs (it called every fifth kill of the streak)
-  else if (e.type === 'heat' && e.up && e.mult >= 3) announcer.say('streak');
+  else if (e.type === 'heat' && e.up && e.mult >= 3) { announcer.say('streak'); ui.heatPop(e.mult); }
+  else if (e.type === 'heat' && e.hit) ui.heatPop(1, true);
   else if (e.type === 'bank') ui.banner(`${t('banked')} +${e.n.toLocaleString('en-US')}`, 0.9);
   else if (e.type === 'potLost') ui.banner(`${t('potLost')} −${e.n.toLocaleString('en-US')}`, 1.1);
   else if (e.type === 'pickup') announcer.say(e.kind === 'score' ? 'money' : e.kind === 'scoremult' ? 'mult' : 'prize');

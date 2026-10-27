@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=51';
-import WAVES from './tuning/waves.js?v=51';
-import PICKUPS from './tuning/pickups.js?v=51';
+import { SPECIES } from './tuning/species/index.js?v=52';
+import WAVES from './tuning/waves.js?v=52';
+import PICKUPS from './tuning/pickups.js?v=52';
 
 export const TUNING = {
   render: {
@@ -514,6 +514,12 @@ export const TUNING = {
     levels: 8, kill: 0.2, near: { r0: 2, r1: 6, k0: 4, pow: 2 }, graze: 0.08,
     grace: 0.4, drain: 0.45, drainPer: 0.08, hitKeep: 0, coldShot: 0.012,
     goal: { gate: 0.6, orb: 0.3, hill: 0.6, leg: 0.3 },
+    // what you see and hear of it (v52): a halo on the floor under you and a
+    // tint in the gel, from `colors[0]` at ×2 to the last at ×8, growing with
+    // the level; every kill's voice up `pitch` a level; a chime as a level is
+    // crossed, a fall when a hit throws it away
+    view: { colors: [0xffc040, 0xffa030, 0xff8028, 0xff6020, 0xff4a20, 0xff3020, 0xff2050], halo: { r: 1.9, per: 0.22, alpha: 0.32, perAlpha: 0.05 }, tint: 0.07 },
+    sound: { pitch: 0.05 },
   },
 
   gel: {
