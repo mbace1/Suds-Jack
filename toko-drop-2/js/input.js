@@ -31,8 +31,8 @@
 // world, because only it knows where the camera is. `dash` is false, true
 // (a button: 1.x's own dash) or a flick's gesture { kind: 'flick', sL, sV,
 // dirX, dirY }, its direction in screen axes too.
-import { TUNING } from './tuning.js?v=49';
-import { analyseTouch } from './flick.js?v=49';
+import { TUNING } from './tuning.js?v=50';
+import { analyseTouch } from './flick.js?v=50';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)
@@ -79,9 +79,16 @@ export class Input {
     // switching apps hides the page; 1.x reset on neither: trap T11)
     addEventListener('blur', () => this.reset());
     addEventListener('visibilitychange', () => { if (typeof document !== 'undefined' && document.hidden) this.reset(); });
-    target.addEventListener('mousemove', (e) => { this.mouse.x = e.clientX; this.mouse.y = e.clientY; this.mouse.seen = true; this.source = 'keys'; });
+    // a tap anywhere, a menu button included, is the touch scheme; and a
+    // phone follows every tap with mouse events of its own, which would turn
+    // the hints to WASD and the mouse (v50: the title said "WASD MOVES" on a
+    // phone), so a mouse event this soon after a touch is not a mouse
+    this._touchT = -1e9;
+    addEventListener('touchstart', () => { this.source = 'touch'; this._touchT = performance.now(); }, { capture: true, passive: true });
+    const fromTouch = (e) => e.sourceCapabilities?.firesTouchEvents || performance.now() - this._touchT < 1200;
+    target.addEventListener('mousemove', (e) => { if (fromTouch(e)) return; this.mouse.x = e.clientX; this.mouse.y = e.clientY; this.mouse.seen = true; this.source = 'keys'; });
     // any button fires (1.x input.js:51-52)
-    target.addEventListener('mousedown', (e) => { if (ui(e)) return; this.mouse.down = true; this.mouse.seen = true; this.source = 'keys'; });
+    target.addEventListener('mousedown', (e) => { if (ui(e) || fromTouch(e)) return; this.mouse.down = true; this.mouse.seen = true; this.source = 'keys'; });
     addEventListener('mouseup', () => { this.mouse.down = false; });
     target.addEventListener('contextmenu', (e) => { if (this.enabled) e.preventDefault(); });   // the right button is a trigger in play
   }

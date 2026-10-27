@@ -2,19 +2,19 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=49';
-import { GEL_LINES } from './gels-said.js?v=49';
-import { goalOf, modsOf, speciesOf, metricOf } from './sim/challenge.js?v=49';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=49';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=49';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=49';
+import { TUNING } from './tuning.js?v=50';
+import { GEL_LINES } from './gels-said.js?v=50';
+import { goalOf, modsOf, speciesOf, metricOf } from './sim/challenge.js?v=50';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=50';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=50';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=50';
 
 const STR = {
   en: {
     intro: 'INTRO', introSub: 'watch it begin, then play',
     dash: 'DASH', push: 'PUSH', pushSub: 'shoves gels away', cut: 'CUT', cutSub: 'through them, and it hurts', gelHp: 'GEL HP', gelHpSub: 'tougher gels, same score',
     arcade: '1.x waves: three lives, every kill pays your streak.', hardcade: 'Arcade, and the biters\' corpses shoot back.', survival: 'Endless. It only gets worse.', campaign: 'rooms with their own clock — cleared opens the next', goalSurvive: 'SURVIVE', goalQuota: 'KILL', goalFlawless: 'NO HITS', bossDown: 'DOWN', shift_breathe: 'THE BANKS BREATHE', shift_floe: 'THE ICE BREAKS UP', shift_twins: 'THE FLOOR SPLITS IN TWO', menuBtn: 'MENU', menuSub: 'settings, sound, language', trial: 'CHALLENGE', trial_gates: 'DASH THE GATES', trial_hold: 'HOLD THE RING', trial_collect: 'COLLECT THE ORBS', trial_combo: 'KEEP A STREAK', trial_protect: 'PROTECT THE HEART', trialMet: 'CHALLENGE MET', trialMissed: 'CHALLENGE MISSED', skills: 'asks for', sk_position: 'positioning', sk_priority: 'target priority', sk_aim: 'aim economy', sk_movement: 'movement', sk_risk: 'risk', whyDied: 'you went down', whyHit: 'a hit in a no-hits room', whyHeart: 'the heart was lost', whyClock: 'the clock ran out first', yours: 'yours', start: 'START', tierC: 'getting through', tierF: 'dying, or the clock', hitCost: 'each hit costs a grade', downShare: 'put down', yourBest: 'your best', notPlayed: 'not played yet', gDodge: 'DODGE', gClear: 'CLEAR ALL', gGates: 'GATES', gHold: 'HOLD THE RING', gProtect: 'PROTECT THE HEART', gOrder: 'IN ORDER', gHunt: 'HUNT', gStreak: 'STREAK', gCollect: 'COLLECT', gBoss: 'BOSS', gGauntlet: 'GAUNTLET', gEscort: 'ESCORT THE HEART', gHills: 'HOLD THE RINGS', whyOrbs: 'too many orbs went out', mNoGun: 'NO GUN', mDash: 'DASH ONLY', mAmmo: 'AMMO', mFaster: 'FASTER', mMoving: 'MOVING FLOOR', hits: 'hits', timeUp: 'TIME', timeUpSub: 'the clock ran out', teaches: 'teaches', roomLocked: 'LOCKED', grade: 'GRADE', rooms: 'ROOMS', worldLocked: 'clear the world before it',
-    best: 'BEST', hard: 'HARD', on: 'ON', off: 'OFF', hardSub: 'ARCADE becomes HARDCADE and CAMPAIGN its HARD rooms: corpses shoot back', campaignHard: 'the same rooms, and every corpse shoots back — clear a room to open it here', hardTag: 'HARD', options: 'OPTIONS', optionsSub: 'dash, gels, worlds, sound, language', back: 'BACK', nextRun: 'from the next run', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
+    best: 'BEST', hard: 'HARD', on: 'ON', off: 'OFF', hardSub: 'ARCADE becomes HARDCADE and CAMPAIGN becomes HARD PAIN: corpses shoot back', campaignHard: 'the same rooms, and every corpse shoots back — clear a room to open it here', hardTag: 'HARD', options: 'OPTIONS', optionsSub: 'dash, gels, worlds, sound, language', back: 'BACK', nextRun: 'from the next run', resume: 'RESUME', quit: 'QUIT', again: 'AGAIN', menu: 'MENU', paused: 'PAUSED',
     over: 'GAME OVER', gotyou: 'GOT YOU', lastHit: 'LAST HIT BY', time: 'TIME', newbest: 'NEW BEST', soon: 'SOON',
     wave: 'WAVE', clear: 'CLEAR', curtain: 'CURTAIN!', pod: 'POD', podUp: 'POD LV2!', podDown: 'POD KNOCKED DOWN TO LV1', soundOn: 'SOUND ON', volume: 'VOLUME', annOn: 'ANNOUNCER ON', annOff: 'ANNOUNCER OFF', annVol: 'ANNOUNCER VOL.', motionOn: 'REDUCE MOTION ON', motionOff: 'REDUCE MOTION OFF', motionOnH: 'no camera shake', motionOffH: 'full screen-shake', langName: 'LANGUAGE · ENGLISH', gooOn: 'SPLATTER ON', gooOff: 'SPLATTER OFF', soundOff: 'SOUND OFF', score: 'SCORE', kills: 'KILLS', grazes: 'GRAZES',
     greenRush: 'GREEN RUSH! DOUBLE PRIZE', dud: 'DUD! GREEN MEANS GO', dashThrough: 'DASH THROUGH!', gateChain: 'GATE CHAIN', bounty: 'BOUNTY',
@@ -29,7 +29,7 @@ const STR = {
     intro: 'イントロ', introSub: '始まりを見てからプレイ',
     dash: 'ダッシュ', push: '押す', pushSub: 'ゼリーを押しのける', cut: '貫く', cutSub: '貫いてダメージ', gelHp: 'ゼリー耐久', gelHpSub: '硬いゼリー、スコアは同じ',
     arcade: '1.xのウェーブ：ライフ3つ、撃破は連鎖分のスコア。', hardcade: 'アーケード、噛みつく敵の残骸が撃ち返してくる。', survival: '終わりなし。ひたすら厳しくなる。', campaign: 'それぞれの制限時間を持つ部屋 — クリアで次が開く', goalSurvive: '生き残れ', goalQuota: '撃破', goalFlawless: 'ノーダメージ', bossDown: '撃破', shift_breathe: '岸が呼吸する', shift_floe: '氷が割れる', shift_twins: '床がふたつに割れる', menuBtn: 'メニュー', menuSub: '設定・サウンド・言語', trial: 'チャレンジ', trial_gates: 'ゲートを抜けろ', trial_hold: '輪に留まれ', trial_collect: 'オーブを集めろ', trial_combo: '連鎖を保て', trial_protect: '心臓を守れ', trialMet: 'チャレンジ達成', trialMissed: 'チャレンジ失敗', skills: '求めるもの', sk_position: '位置取り', sk_priority: '優先順位', sk_aim: '照準の節約', sk_movement: '機動', sk_risk: 'リスク', whyDied: '倒れた', whyHit: 'ノーダメージの部屋で被弾', whyHeart: '心臓を失った', whyClock: '先に時間切れ', yours: 'あなた', start: 'スタート', tierC: 'クリア', tierF: '倒れるか時間切れ', hitCost: '被弾ごとに1段階下がる', downShare: '撃破', yourBest: '自己ベスト', notPlayed: '未プレイ', gDodge: '避けろ', gClear: '全滅させろ', gGates: 'ゲート', gHold: '輪に留まれ', gProtect: '心臓を守れ', gOrder: '順番に', gHunt: '狩れ', gStreak: '連鎖', gCollect: '集めろ', gBoss: 'ボス', gGauntlet: '試練', gEscort: '心臓を送り届けろ', gHills: '輪を順に守れ', whyOrbs: 'オーブを逃しすぎた', mNoGun: '銃なし', mDash: 'ダッシュのみ', mAmmo: '弾', mFaster: '加速', mMoving: '動く床', hits: '被弾', timeUp: '時間切れ', timeUpSub: '時計が尽きた', teaches: '教える', roomLocked: 'ロック中', grade: '評価', rooms: '部屋', worldLocked: '前のワールドをクリア',
-    best: 'ベスト', hard: 'ハード', on: 'オン', off: 'オフ', hardSub: 'アーケードはHARDCADEに、キャンペーンはHARDの部屋に：残骸が撃ち返す', campaignHard: '同じ部屋で、倒した敵がすべて撃ち返す — 通常でクリアした部屋がここで開く', hardTag: 'ハード', options: 'オプション', optionsSub: 'ダッシュ・ゼリー・ワールド・サウンド・言語', back: '戻る', nextRun: '次のプレイから', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
+    best: 'ベスト', hard: 'ハード', on: 'オン', off: 'オフ', hardSub: 'アーケードはHARDCADEに、キャンペーンはHARD PAINに：残骸が撃ち返す', campaignHard: '同じ部屋で、倒した敵がすべて撃ち返す — 通常でクリアした部屋がここで開く', hardTag: 'ハード', options: 'オプション', optionsSub: 'ダッシュ・ゼリー・ワールド・サウンド・言語', back: '戻る', nextRun: '次のプレイから', resume: '再開', quit: 'やめる', again: 'もう一度', menu: 'メニュー', paused: '一時停止',
     over: 'ゲームオーバー', gotyou: 'やられた相手', lastHit: '最後に当てた相手', time: 'タイム', newbest: '新記録', soon: '近日',
     wave: 'ウェーブ', clear: 'クリア', curtain: 'カーテン！', pod: 'ポッド', podUp: 'ポッド LV2！', podDown: 'ポッドが LV1 に', soundOn: 'サウンド オン', volume: '音量', annOn: 'アナウンサー オン', annOff: 'アナウンサー オフ', annVol: 'アナウンサー音量', motionOn: '手ぶれ軽減 オン', motionOff: '手ぶれ軽減 オフ', motionOnH: 'カメラ揺れなし', motionOffH: '画面揺れ演出あり', langName: '言語 · 日本語', gooOn: 'しぶき オン', gooOff: 'しぶき オフ', soundOff: 'サウンド オフ', score: 'スコア', kills: '撃破', grazes: 'グレイズ',
     greenRush: 'グリーンラッシュ！賞品2倍', dud: 'ハズレ！緑で行け', dashThrough: 'ダッシュで抜けろ！', gateChain: 'ゲートチェーン', bounty: '賞金首',
@@ -44,7 +44,7 @@ const STR = {
     intro: 'INTRO', introSub: 'katso alku, sitten pelaa',
     dash: 'SYÖKSY', push: 'TÖNÄISY', pushSub: 'tönäisee geelit sivuun', cut: 'VIILTO', cutSub: 'läpi, ja se satuttaa', gelHp: 'GEELIN KESTO', gelHpSub: 'sitkeämmät geelit, samat pisteet',
     arcade: '1.x:n aallot: kolme elämää, jokainen kaato maksaa putkesi verran.', hardcade: 'Arcade, ja purijoiden raadot ampuvat takaisin.', survival: 'Loputon. Pahenee vain.', campaign: 'huoneita omalla kellollaan — läpäisy avaa seuraavan', goalSurvive: 'SELVIYDY', goalQuota: 'KAADA', goalFlawless: 'EI OSUMIA', bossDown: 'KAATUI', shift_breathe: 'RANNAT HENGITTÄVÄT', shift_floe: 'JÄÄ LOHKEAA', shift_twins: 'LATTIA HALKEAA KAHTIA', menuBtn: 'VALIKKO', menuSub: 'asetukset, ääni, kieli', trial: 'HAASTE', trial_gates: 'SYÖKSY PORTEISTA', trial_hold: 'PIDÄ RENGAS', trial_collect: 'KERÄÄ PALLOT', trial_combo: 'PIDÄ PUTKI', trial_protect: 'SUOJAA SYDÄN', trialMet: 'HAASTE SUORITETTU', trialMissed: 'HAASTE JÄI', skills: 'vaatii', sk_position: 'sijoittuminen', sk_priority: 'kohteiden järjestys', sk_aim: 'tähtäyksen säästö', sk_movement: 'liike', sk_risk: 'riski', whyDied: 'kaaduit', whyHit: 'osuma huoneessa ilman osumia', whyHeart: 'sydän menetettiin', whyClock: 'kello loppui ensin', yours: 'sinun', start: 'ALOITA', tierC: 'läpäisy', tierF: 'kuolema tai kello', hitCost: 'jokainen osuma vie arvosanan', downShare: 'kaadettu', yourBest: 'paras', notPlayed: 'ei vielä pelattu', gDodge: 'VÄISTÄ', gClear: 'KAADA KAIKKI', gGates: 'PORTIT', gHold: 'PIDÄ RENGAS', gProtect: 'SUOJAA SYDÄN', gOrder: 'JÄRJESTYKSESSÄ', gHunt: 'METSÄSTÄ', gStreak: 'PUTKI', gCollect: 'KERÄÄ', gBoss: 'POMO', gGauntlet: 'KUJANJUOKSU', gEscort: 'SAATA SYDÄN', gHills: 'PIDÄ RENKAAT', whyOrbs: 'liian moni pallo sammui', mNoGun: 'EI ASETTA', mDash: 'VAIN SYÖKSY', mAmmo: 'AMMUKSET', mFaster: 'KIIHTYY', mMoving: 'LIIKKUVA LATTIA', hits: 'osumaa', timeUp: 'AIKA', timeUpSub: 'kello loppui', teaches: 'opettaa', roomLocked: 'LUKITTU', grade: 'ARVOSANA', rooms: 'HUONEET', worldLocked: 'läpäise edellinen maailma',
-    best: 'ENNÄTYS', hard: 'VAIKEA', on: 'PÄÄLLÄ', off: 'POIS', hardSub: 'arcadesta tulee HARDCADE ja kampanjasta sen VAIKEAT huoneet: raadot ampuvat takaisin', campaignHard: 'samat huoneet, ja jokainen raato ampuu takaisin — läpäise huone ensin tavallisena', hardTag: 'VAIKEA', options: 'ASETUKSET', optionsSub: 'syöksy, geelit, maailmat, ääni, kieli', back: 'TAKAISIN', nextRun: 'seuraavasta pelistä', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
+    best: 'ENNÄTYS', hard: 'VAIKEA', on: 'PÄÄLLÄ', off: 'POIS', hardSub: 'arcadesta tulee HARDCADE ja kampanjasta HARD PAIN: raadot ampuvat takaisin', campaignHard: 'samat huoneet, ja jokainen raato ampuu takaisin — läpäise huone ensin tavallisena', hardTag: 'VAIKEA', options: 'ASETUKSET', optionsSub: 'syöksy, geelit, maailmat, ääni, kieli', back: 'TAKAISIN', nextRun: 'seuraavasta pelistä', resume: 'JATKA', quit: 'LOPETA', again: 'UUDESTAAN', menu: 'VALIKKO', paused: 'TAUKO',
     over: 'PELI OHI', gotyou: 'KAATAJA', lastHit: 'VIIMEKSI OSUI', time: 'AIKA', newbest: 'UUSI ENNÄTYS', soon: 'TULOSSA',
     wave: 'AALTO', clear: 'TYHJÄ', curtain: 'VERHO!', pod: 'KAPSELI', podUp: 'KAPSELI LV2!', podDown: 'KAPSELI PUTOSI LV1:EEN', soundOn: 'ÄÄNI PÄÄLLÄ', volume: 'ÄÄNENVOIMAKKUUS', annOn: 'SELOSTAJA PÄÄLLÄ', annOff: 'SELOSTAJA POIS', annVol: 'SELOSTAJAN ÄÄNI', motionOn: 'VÄHENNÄ LIIKETTÄ PÄÄLLÄ', motionOff: 'VÄHENNÄ LIIKETTÄ POIS', motionOnH: 'ei kameran tärinää', motionOffH: 'täysi ruudun tärinä', langName: 'KIELI · SUOMI', gooOn: 'ROISKEET PÄÄLLÄ', gooOff: 'ROISKEET POIS', soundOff: 'ÄÄNI POIS', score: 'PISTEET', kills: 'KAATOJA', grazes: 'HIPAISUJA',
     greenRush: 'VIHREÄ RYNTÄYS! TUPLAPALKINTO', dud: 'SUUTARI! VIHREÄLLÄ MENNÄÄN', dashThrough: 'SYÖKSY LÄPI!', gateChain: 'PORTTIKETJU', bounty: 'PALKKIO',
@@ -223,6 +223,7 @@ export class UI {
 
   // ── panels ─────────────────────────────────────────────────────
   _panel(children) {
+    this.menuEl.classList.remove('hardmode');
     this.menuEl.replaceChildren(...children);
     this.menuEl.hidden = false;
     this.buttons = [...this.menuEl.querySelectorAll('button')];
@@ -250,29 +251,31 @@ export class UI {
     const logo = el('div', 'logo'); logo.append(el('span', 'name', 'TOKO DROP'), el('span', 'num', '2.0'));
     const hint = el('p', 'hint', t(source === 'pad' ? 'hintPad' : source === 'keys' ? 'hintKeys' : 'hintTouch'));
     const fmt = (v) => (v ? `${t('best')} ${v.toLocaleString('en-US')}` : '');
-    // the start screen (owner, 2026-10-24): ARCADE with the HARD switch
-    // beside it, CAMPAIGN, and MENU — every setting is behind MENU. The intro
-    // film is not on it (?intro still plays it, for a look check)
+    // the start screen (owner, 2026-10-27): two big buttons, ARCADE and
+    // CAMPAIGN, a small HARD switch between them, and a small MENU under them.
+    // HARD turns them into HARDCADE and HARD PAIN, and the screen goes red.
+    // Every setting is behind MENU; the intro film is not here (?intro still
+    // plays it, for a look check)
     const startRow = el('div', 'row start');
     const hard = !!this.h.hard?.(), m = hard ? 'hardcade' : 'arcade';
     // HARD is a switch, drawn as one (owner, 2026-10-26: "like an actual
     // toggle"): a track and a knob, lit red when on. The title is rebuilt on
     // every flip, so the knob's slide is a keyframe from the side it was on
-    const hardBtn = this._button(t('hard'), t('hardSub'), () => this.h.onHard?.());
+    const hardBtn = this._button(t('hard'), null, () => this.h.onHard?.());
     hardBtn.classList.add('hard');
-    hardBtn.setAttribute('role', 'switch'); hardBtn.setAttribute('aria-checked', String(hard));
+    hardBtn.setAttribute('role', 'switch'); hardBtn.setAttribute('aria-checked', String(hard)); hardBtn.title = t('hardSub');
     const sw = el('span', `switch${hard ? ' on' : ''}${this._hardWas !== undefined && this._hardWas !== hard ? ' flip' : ''}`);
     sw.setAttribute('aria-hidden', 'true'); sw.append(el('span', 'knob'));
     hardBtn.append(sw); this._hardWas = hard;
-    startRow.append(this._button(m.toUpperCase(), `${t(m)} ${fmt(best[m])}`, () => this.h.onStart(m)), hardBtn);
+    const arcadeBtn = this._button(m.toUpperCase(), `${t(m)} ${fmt(best[m])}`, () => this.h.onStart(m));
+    const campBtn = this._button(hard ? 'HARD PAIN' : 'CAMPAIGN', t(hard ? 'campaignHard' : 'campaign'), () => this.h.onCampaign?.());
+    arcadeBtn.classList.add('big'); campBtn.classList.add('big');
+    startRow.append(arcadeBtn, hardBtn, campBtn);
+    const menuBtn = this._button(t('menuBtn'), null, () => this.openOptions(() => { this.h.onTitle?.(); this._focusOn(t('menuBtn')); }));
+    menuBtn.classList.add('small');
     this.optBack = null;
-    this._panel([
-      logo,
-      startRow,
-      this._button(hard ? 'HARD CAMPAIGN' : 'CAMPAIGN', t(hard ? 'campaignHard' : 'campaign'), () => this.h.onCampaign?.()),
-      this._button(t('menuBtn'), t('menuSub'), () => this.openOptions(() => { this.h.onTitle?.(); this._focusOn(t('menuBtn')); })),
-      hint,
-    ]);
+    this._panel([logo, startRow, menuBtn, hint]);
+    this.menuEl.classList.toggle('hardmode', hard);
     if (keep && prev > 0 && prev < this.buttons.length) { this.focusIndex = prev; this._focus(); }
   }
 
@@ -286,7 +289,7 @@ export class UI {
     const GC = GRADE_COLORS, flat = list.flatMap((wd) => wd.rooms);
     // the HARD CAMPAIGN (v49): the same grid on its own grades, behind the title's HARD switch
     const hard = !!this.h.hard?.();
-    const items = [el('h2', hard ? 'hard' : null, hard ? 'HARD CAMPAIGN' : 'CAMPAIGN'), el('p', 'mode camp', t(hard ? 'campaignHard' : 'campaign'))];
+    const items = [el('h2', hard ? 'hard' : null, hard ? 'HARD PAIN' : 'CAMPAIGN'), el('p', 'mode camp', t(hard ? 'campaignHard' : 'campaign'))];
     const at = played?.focus ?? played?.next ?? flat.find((r) => r.open && !r.grade)?.id ?? flat[0]?.id;
     // the route: every room, how hard each is, and what you have paid on it
     const route = el('div', 'route-wrap');
@@ -347,7 +350,11 @@ export class UI {
     const chart = L ? roomChart(L, { width: 300, height: 56 }) : null;
     const startBtn = this._button(t('start'), `${L?.duration ?? ''} s`, () => this.h.onRoom?.(r.id));
     startBtn.classList.add('go');
-    this._panel([el('h2', 'card', r.name), head, el('p', 'goal', goalText(r)), ...(chart ? [chart] : []),
+    // a HARD PAIN room says so on its card (owner, 2026-10-27): a tag over its
+    // name, and the card in red, so nobody starts the wrong one
+    const tag = r.hard ? [el('p', 'hardtag', 'HARD PAIN')] : [];
+    if (r.hard) startBtn.classList.add('hard-go');
+    this._panel([...tag, el('h2', r.hard ? 'card hard' : 'card', r.name), head, el('p', 'goal', goalText(r)), ...(chart ? [chart] : []),
       ...(L?.plan?.teaches ? [el('p', 'teaches', `${t('teaches')}: ${L.plan.teaches}`)] : []),
       ...(L?.plan?.strategy ? [el('p', 'skills', `${t('skills')}: ${L.plan.strategy.map((k) => t(`sk_${k}`)).join(' · ')}`)] : []),
       rows, ...(m.name === 'share' ? [el('p', 'hint', t('hitCost'))] : []), bestEl,

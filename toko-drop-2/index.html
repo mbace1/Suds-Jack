@@ -111,11 +111,25 @@
     #menu .row.start .item .label { font-size: 17px; letter-spacing: .2em; }
     #menu .row.start .item.narrow { flex: 0 0 34%; }
     #menu .row.start .item.narrow .label { font-size: 15px; letter-spacing: .16em; }
-    #menu .row.start .item.hard { flex: 0 0 42%; }
-    #menu .row.start .item.hard { position: relative; padding-right: 60px; }
-    #menu .row.start .item.hard .label { font-size: 15px; letter-spacing: .16em; white-space: nowrap; }
+    /* the title (v50): ARCADE and CAMPAIGN big, the HARD switch small between them, MENU small below */
+    #menu .row.start { align-items: stretch; }
+    #menu .row.start .item.big { flex: 1 1 0; min-height: 92px; padding: 14px 14px; }
+    #menu .row.start .item.big .label { font-size: 18px; letter-spacing: .14em; white-space: nowrap; }
+    #menu .row.start .item.hard { flex: 0 0 74px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; padding: 8px 4px; text-align: center; }
+    #menu .row.start .item.hard .label { font-size: 12px; letter-spacing: .2em; }
+    #menu .item.small { display: block; width: auto; min-width: 140px; min-height: 44px; margin: 4px auto 0; padding: 8px 22px; text-align: center; }
+    #menu .item.small .label { font-size: 13px; letter-spacing: .24em; }
+    /* a phone held upright: the two big buttons are ~150 px each, so their names shrink to fit */
+    @media (max-width: 560px) {
+      #menu .row.start { gap: 6px; }
+      #menu .row.start .item.big { padding: 12px 9px; min-height: 104px; }
+      #menu .row.start .item.big .label { font-size: 15px; letter-spacing: .08em; white-space: nowrap; }
+      #menu .row.start .item.big .sub { font-size: 10px; }
+      #menu .row.start .item.hard { flex-basis: 62px; }
+      #menu .row.start .item.hard .label { font-size: 11px; letter-spacing: .12em; }
+    }
     /* the HARD switch: a track and a knob, red when on (v49) */
-    #menu .item .switch { position: absolute; top: 10px; right: 10px; width: 42px; height: 22px; border-radius: 11px;
+    #menu .item .switch { position: relative; display: block; width: 42px; height: 22px; border-radius: 11px;
       background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.28); transition: background .18s, border-color .18s; }
     #menu .item .switch .knob { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%;
       background: var(--dim); transition: transform .18s ease-out, background .18s; }
@@ -127,13 +141,25 @@
     @keyframes knob-off { from { transform: translateX(20px); } }
     #menu .item.focus .switch { border-color: var(--gold); }
     #menu .item.focus .switch:not(.on) .knob { background: var(--gold); }
+    /* HARD on: the title goes red (HARDCADE, HARD PAIN) */
+    #menu.hardmode .logo .num { color: #ff6a5a; text-shadow: 0 0 12px rgba(255,90,70,.6); }
+    #menu.hardmode .logo .name { text-shadow: 0 0 18px rgba(255,70,50,.35); }
+    #menu.hardmode .row.start .item.big { border-color: rgba(255,106,90,.6); background: linear-gradient(180deg, rgba(255,70,50,.10), rgba(255,70,50,.02)); box-shadow: inset 0 0 18px rgba(255,70,50,.12); }
+    #menu.hardmode .row.start .item.big .label { color: #ff8070; }
+    #menu.hardmode .row.start .item.big.focus { border-color: var(--gold); }
+    #menu.hardmode .row.start .item.big.focus .label { color: var(--gold); }
+    /* a HARD PAIN room's card */
+    #menu .hardtag { margin: 0 0 2px; font-size: 11px; letter-spacing: .4em; font-weight: 800; color: #ff6a5a; }
+    #menu h2.card.hard { color: #ff8070; }
+    #menu .item.go.hard-go { border-color: rgba(255,106,90,.6); }
     @media (prefers-reduced-motion: reduce) { #menu .item .switch, #menu .item .switch .knob { transition: none; animation: none !important; } }
-    #menu .row.start .item.hard .sub { font-size: 10px; }
     /* a phone held sideways is ~400 px tall: two columns, so the whole title
        (the test switches included) shows without scrolling */
     @media (orientation: landscape) and (max-height: 520px) {
       #menu { width: min(94vw, 820px); display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; align-content: start; }
-      #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard, #menu > .grid, #menu > .route-wrap, #menu > .goal, #menu > canvas.chart, #menu > .teaches, #menu > .skills, #menu > .tiers, #menu > .best, #menu > .row.start { grid-column: 1 / -1; }
+      #menu > .logo, #menu > .hint, #menu > h2, #menu > .mode, #menu > .stats, #menu > .world, #menu > .played, #menu > .gelcard, #menu > .grid, #menu > .route-wrap, #menu > .goal, #menu > canvas.chart, #menu > .teaches, #menu > .skills, #menu > .tiers, #menu > .best, #menu > .row.start, #menu > .hardtag { grid-column: 1 / -1; }
+      #menu > .item.small { grid-column: 1 / -1; justify-self: center; }
+      #menu .row.start .item.big .label { font-size: 21px; letter-spacing: .2em; }
       #menu .logo { margin: 0 0 4px; }
       #menu .item { margin: 5px 0; }
       #menu .hint { margin-top: 6px; }
@@ -191,7 +217,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v49<span id="backend"></span></div>
+  <div id="ver">2.0 · v50<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -300,6 +326,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=49"></script>
+  <script type="module" src="js/main.js?v=50"></script>
 </body>
 </html>

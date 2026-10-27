@@ -40,10 +40,10 @@
 //   chStep   { what, n, of }   progress the HUD reads: a gate, a lit body, an orb
 //   heart    { hp, x, z }      the heart was hurt
 // Pure: no DOM, no clock, w.rng only.
-import { TUNING } from '../tuning.js?v=49';
-import { levelShape, KIND } from './shape.js?v=49';
-import * as pickups from './pickups.js?v=49';
-import * as rules from './rules.js?v=49';
+import { TUNING } from '../tuning.js?v=50';
+import { levelShape, KIND } from './shape.js?v=50';
+import * as pickups from './pickups.js?v=50';
+import * as rules from './rules.js?v=50';
 
 const T = TUNING, C = T.campaign;
 
