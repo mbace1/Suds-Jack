@@ -70,6 +70,10 @@ function basePose(o = {}) {
   return { hip: HIP, yaw: 0, lean: o.lean ?? 0.3, side: o.side ?? 0, ...SIT, hp: o.hp ?? 0.35, hr: o.hr ?? 0, hy: o.hy ?? 0, breathe: o.breathe ?? 0,
     elR: at([-6.2, 5.0, 7.5]), elL: at([6.2, 5.0, 7.5]), hdR: at([-3, 8, 12]), hdL: at([3, 8, 12]), palm: [[0.4, 1, 0.1], [-0.4, 1, 0.1]] };
 }
+// his shoulders (from Toko.pose at this lean) and the default elbows, which tuck under the desk edge for typing
+const SHO = [[-5.1, 27.5, 1.8], [5.1, 27.5, 1.8]], EL0 = [at([-6.2, 5.0, 7.5]), at([6.2, 5.0, 7.5])];
+/** elbows for raised hands: hung a little below the shoulder-to-hand line, so a lifted arm never dips under the desk */
+const elbowsFor = (wR, wL, k = 1) => [[wR, -1], [wL, 1]].map(([w, s], j) => { const m = lerp3(SHO[j], w, 0.5); return lerp3(EL0[j], [m[0] + s, m[1] - 2.8, m[2] + 0.6], k); });
 /** set the hands to WORLD targets (each touching something), the palms facing the given world directions */
 function handsTo(pz, wR, wL, nR = [1, 0, 0], nL = [-1, 0, 0], elbows = null) {
   WRAP.updateMatrixWorld(true);
@@ -145,7 +149,7 @@ const EV = { card: T.s5, fun: popOf('fun') };
 EV.out = (i) => T.s1 + 0.55 + i * ((T.s2 - T.s1 - 1.3) / 9);
 EV.test = (k) => T.s2 + 0.35 + k * ((T.s3 - T.s2 - 0.8) / 9);   // k: 0..8, the nine that go in the crate (box k)
 EV.pick = T.s3 + 0.15; EV.squeeze = EV.fun - 0.75;
-const EVENTS = { ...T, lang: LANG, holds: P.holds, ...Object.fromEntries(Object.entries(EV).filter(([, v]) => typeof v === 'number')), ...CAP.events(P), quiet: [] };
+const EVENTS = { ...T, lang: LANG, ...Object.fromEntries([...Array(10).keys()].map((i) => ['out' + i, EV.out(i)])), ...Object.fromEntries([...Array(9).keys()].map((k) => ['test' + k, EV.test(k)])), holds: P.holds, ...Object.fromEntries(Object.entries(EV).filter(([, v]) => typeof v === 'number')), ...CAP.events(P), quiet: [] };
 const twos = (t) => Math.floor(t * 12) / 12;
 
 /** where box i is, its turn and squash, and its face, at time t */
@@ -166,20 +170,22 @@ function boxState(i, t) {
     if (m > 0) { const dst = inCrate(i); pos = lerp3(seat, dst, ease.io(m)); pos[1] += Math.sin(m * Math.PI) * 5; rot = [0, 0, -m * 0.6 * (i % 2 ? 1 : -1)]; }
   } else {       // the one he keeps: into his hands, squeezed, alive
     const tp = EV.pick, kp = ease.io((t - tp) / 0.6);
-    const held = lerp3(seat, HOLD, kp); if (kp > 0) pos = held;
+    const held = lerp3(seat, HOLD, kp); held[1] += Math.sin(kp * Math.PI) * 9; if (kp > 0) pos = held;   // a hop over the lid, never through it
     const s = clamp((t - EV.squeeze) / 0.5), s2 = clamp((t - EV.squeeze - 0.5) / 0.35);
     if (s > 0) sq = [1 + 0.35 * Math.sin(s * Math.PI) * (1 - s2) + 0.18 * s2, 1 - 0.3 * Math.sin(s * Math.PI) * (1 - s2) - 0.16 * s2, 1 + 0.12 * s2];   // squeezed, and set into its new shape
-    const lit = clamp((t - EV.fun + 0.15) / 0.4);
+    const lit = clamp((t - EV.fun + 0.15) / 0.4), G = 1 + GROW * ease.back(lit); sq = sq.map((v) => v * G);   // owner: the glowing one reads bigger
     face = { t, play: t > tOut + 0.6 && t < T.s3 ? 0.4 : lit, works: t > T.s3 ? 1 : 0, meter: t > T.s3 - 0.4 ? lit : undefined, glow: lit };
     // shot 4: set down on the desk in front of the laptop, his hands still round it
-    const kd = ease.io((t - T.s4 - 0.1) / 0.6); if (kd > 0) pos = lerp3(HOLD, REST, kd);
+    const kd = ease.io((t - T.s4 - 0.1) / 0.6); if (kd > 0) { pos = lerp3(HOLD, REST, kd); pos[1] = lerp(HOLD[1], DESK.y + BOX / 2 * sq[1] + 0.05, kd); }
   }
   return { pos, rot, sq, face, vis };
 }
-const HOLD = [-6, DESK.y + 6.5, 10.5], REST = [-12, DESK.y + BOX / 2 + 0.05, 12.5], ASIDE = [6.5, DESK.y + BOX / 2, 25];   // HOLD and REST sit left of the laptop, where the lid cannot hide them
+const GROW = 0.8, HOLD = [10, DESK.y + 11, 12], REST = [15, DESK.y + BOX / 2 + 0.05, 14], ASIDE = [6.5, DESK.y + BOX / 2, 25];   // HOLD (up by his face) and REST (by the crate) sit to his left of the laptop, where the lid cannot hide them
 
 // the drones outside the window (world; far beyond the glass, crossing slowly)
-const PATHS = { 0: [[[-120, 70, -120], [60, 78, -130], T.s1 - 1, T.s2 + 1], null], 3: [[[70, 66, -120], [-130, 74, -110], T.s4 - 0.5, T.end + 3], [[-110, 88, -150], [40, 84, -150], T.s4 + 1.0, T.end + 6]] };
+// z must sit between the window (z −26) and the park card (z −88): behind the card a drone is hidden, which is why the stills had none
+// and low enough to cross the skyline UNDER the captions, not behind them
+const PATHS = { 0: [[[-80, 40, -56], [40, 44, -60], T.s1 + 0.4, T.s2 + 0.6], null], 3: [[[40, 33, -60], [-85, 36, -64], T.s4 + 0.3, T.s4 + 4.6], [[-90, 31, -74], [30, 29, -72], T.s4 + 1.4, T.end + 2]] };
 
 // ------------------------------------------------------------------ the shots
 const LOOK0 = { pos: V([18, 46, 92]), at: V([4, 30, 4]), fov: 36 };
@@ -198,23 +204,24 @@ const SHOT = [
     cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V([lerp(30, 28, k), 36, lerp(64, 58, k)]), at: V([19, DESK.y + 5, 22]), fov: 34, focus: lerp(48, 42, k), ap: 6 }; } },
   { // 3 · close: the last box in both paddles; the squeeze; it lights
     t0: () => T.s3, t1: () => T.s4,
-    pose(t) { const pz = basePose({ lean: 0.38, hp: 0.62, breathe: Math.sin(t * 1.4) }), b = boxState(9, t), sq = b.sq;
+    pose(t) { const pz = basePose({ lean: 0.3, hp: 0, hy: 0.25, breathe: Math.sin(t * 1.4) }), b = boxState(9, t), sq = b.sq;
       const kp = ease.io((t - EV.pick) / 0.6);
       // before he has it: his hands go to it on the stack; after: both paddles press its sides
       const side = (s) => [b.pos[0] + s * (BOX / 2 * sq[0] + 1.05), b.pos[1] - 0.2, b.pos[2] - 0.2];
       const wR = kp < 1 ? lerp3([-3.2, DESK.y + 1.9, 13.2], side(-1), kp) : side(-1), wL = kp < 1 ? lerp3([3.2, DESK.y + 1.9, 13.2], side(1), kp) : side(1);
-      return handsTo(pz, wR, wL, [1, 0, 0], [-1, 0, 0]); },
+      return handsTo(pz, wR, wL, [1, 0, 0], [-1, 0, 0], elbowsFor(wR, wL, kp)); },
     screen(t) { drawScreen(t, 10); },
-    // from his left-front, clear of the lid: the box in his paddles, the mask above it
-    cam(t, lt, d) { const k = ease.io(lt / d), tgt = V([-5, DESK.y + 8, 8]), pos = V([lerp(-18, -16.5, k), lerp(43, 42, k), lerp(48, 44, k)]); return { pos, at: tgt, fov: 32, focus: pos.distanceTo(tgt), ap: 7 }; } },
+    // owner (stills): turn him to the lens. From his left-front, the mask full face and the box up beside it, over the lid
+    cam(t, lt, d) { const k = ease.io(lt / d), tgt = V([6, 31, 10]), pos = V([lerp(17, 15.5, k), lerp(36.5, 35.8, k), lerp(63, 58, k)]); return { pos, at: tgt, fov: 40, focus: pos.distanceTo(tgt), ap: 5 }; },
+    post: { threshold: 1.6, bloomA: 0.12, bloomB: 0.08 }, boxLight: 0.4 },
   { // 4 · the desk again: the crate of nine, the one glowing under his hands
     t0: () => T.s4, t1: () => T.end,
     pose(t) { const pz = basePose({ lean: 0.36, hp: 0.5, breathe: Math.sin(t * 1.2) }), b = boxState(9, t), sq = b.sq;
       const side = (s) => [b.pos[0] + s * (BOX / 2 * sq[0] + 1.05), b.pos[1] - 0.2, b.pos[2] - 0.2];
-      return handsTo(pz, side(-1), side(1), [1, 0, 0], [-1, 0, 0]); },
+      return handsTo(pz, side(-1), side(1), [1, 0, 0], [-1, 0, 0], elbowsFor(side(-1), side(1))); },
     screen(t) { drawScreen(t, 10); },
     // a touch left and higher than frame 0's, so the box beside the laptop and the mask over the lid both read
-    cam(t, lt, d) { const k = ease.io((t - T.s4) / (T.s5 - T.s4 + 1)); return { pos: V([lerp(14, 11, k), lerp(54, 52, k), lerp(96, 90, k)]), at: V([7, 28, 8]), fov: 50, focus: 86, ap: 2.6 }; } },   // wide enough for the crate of nine and the one
+    cam(t, lt, d) { const k = ease.io((t - T.s4) / (T.s5 - T.s4 + 1)); return { pos: V([lerp(17, 15.5, k), lerp(51, 49.5, k), lerp(88, 82, k)]), at: V([11, 27, 15]), fov: 46, focus: 70, ap: 2.6 }; } },   // wide enough for the crate of nine and the one
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 
@@ -254,11 +261,12 @@ function frame(t, captions = true) {
   S.drones(t, PATHS[i] || []);
   S.screenLight.intensity = 50 + Math.sin(t * 7) * 2;
   // the glow of the one that's fun lights his mask and hands
-  const lit = clamp((t - EV.fun + 0.15) / 0.4); boxLight.position.set(...boxState(9, t).pos).add(V([0, 1, 2])); boxLight.intensity = 45 * lit;
+  const lit = clamp((t - EV.fun + 0.15) / 0.4); boxLight.position.set(...boxState(9, t).pos).add(V([0, 1, 2])); boxLight.intensity = 45 * lit * (Sh.boxLight ?? 1);
   scene.updateMatrixWorld(true);
-  const L = Sh.cam(t, lt, d); camera.fov = L.fov; camera.position.copy(L.pos); camera.lookAt(L.at); camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
+  const L = Sh.cam(t, lt, d); if (Q.get('cam') && i === +(Q.get('camshot') || 2)) { const c = Q.get('cam').split(',').map(Number); L.pos = V(c.slice(0, 3)); L.at = V(c.slice(3, 6)); L.fov = c[6]; L.focus = L.pos.distanceTo(L.at); }   // DEBUG-CAM
+  camera.fov = L.fov; camera.position.copy(L.pos); camera.lookAt(L.at); camera.updateProjectionMatrix(); scene.updateMatrixWorld(true);
   post.render(scene, camera, { focus: L.focus, aperture: Q.get('nodof') ? 0 : L.ap, maxBlur: 30, radScale: 0.9,
-    threshold: 1.1, knee: 0.5, bloomA: 0.3, bloomB: 0.22, vignette: 0.3, grain: 0.025, seed: Math.floor(t * 12), contrast: 1.06, toe: 0.04, ...grade });
+    threshold: 1.1, knee: 0.5, bloomA: 0.3, bloomB: 0.22, vignette: 0.3, grain: 0.025, seed: Math.floor(t * 12), contrast: 1.06, toe: 0.04, ...grade, ...(Sh.post || {}) });
   if (t >= EV.card) { const k = clamp((t - EV.card) / 0.6); g2d.filter = `blur(${(k * 10).toFixed(1)}px)`; }
   g2d.drawImage(renderer.domElement, 0, 0); g2d.filter = 'none';
   card(g2d, t);

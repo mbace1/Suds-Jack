@@ -130,6 +130,7 @@ const CARD = C('#c49a62', { tool: 1.1, thumbCell: 1.6, thumb: 0.03, mottle: 0.14
 const CARD_D = C('#a8814e', { tool: 1.1, thumbCell: 1.6, mottle: 0.14 });
 const CAB = [0, DESK.y, 14];                                    // where his laptop stood
 const K = 0.74;                                                 // a desk-sized model: below his face, so the camera finds him over it
+const POPK = 1.4;                                              // a part's scale while it pops out and rests in front of its maker
 const CORE = new THREE.Group(); scene.add(CORE); CORE.position.set(...CAB);
 mesh0(lumpy(new RoundedBoxGeometry(8, 13, 7, 3, 0.4), 0.03, 0.8, 1801), CARD, { pos: [0, 6.5, 0], parent: CORE });
 // the screen in the core's front: dark until the cabinet is whole, then the game (a pure function of t)
@@ -161,7 +162,11 @@ const PARTS = [
     mesh0(lumpy(new RoundedBoxGeometry(0.24, 0.9, 8.2, 2, 0.1), 0.02, 1, 1850 + k), ink, { pos: [o * 0.4, 0.9, 0], parent: g });
     mesh0(lumpy(new RoundedBoxGeometry(1.0, 15.2, 0.5, 2, 0.2), 0.02, 1, 1860 + k), ink, { pos: [0, 0, 4.45], parent: g });   // T-molding: the front edge reads from the front
   }
-  return { ...p, g, mouth: [m.x, DESK.y + 11.2, 16.4], rest: [m.x * 0.92, DESK.y + (Math.min(...p.size) / 2 + 0.3) * K, 29] };
+  // owner (27 Oct, on the stills): the four parts must read in shot 2, so they pop out big and lit in their maker's colour,
+  // rest big, and only shrink to the cabinet's scale as they fly in
+  const light = new THREE.PointLight(m.col, 0, 40, 2); scene.add(light);
+  const rx = { sideL: -32, sideR: 32, deck: -14, marquee: 14 }[p.name];   // spaced so the big parts never touch each other or the thermos
+  return { ...p, g, light, col: m.col, mouth: [m.x, DESK.y + 11.2, 16.4], rest: [rx, DESK.y + (Math.min(...p.size) / 2 + 0.3) * POPK, 27] };
 });
 
 // ------------------------------------------------------------------ the timeline: 112 BPM; captions planned by the pipeline
@@ -184,6 +189,8 @@ const SIDES_HOME = EV.fly(1) + 0.45;                              // both sides 
 EV.dark = (r) => T.s3 + 0.4 + (ROWS - 1 - r) * ((T.s4 - T.s3 - 0.6) / ROWS);   // ghost monitors off, back row first
 EV.lit = popOf('deciding') - 0.25;                               // the cabinet comes alive on "deciding"
 EV.flyIn = T.s5 - 1.6;                                           // the wall flies back in before the card
+for (let k = 0; k < 4; k++) { EV['pop' + k] = EV.pop(k); EV['fly' + k] = EV.fly(k); }
+for (let r = 0; r < ROWS; r++) EV['dark' + r] = EV.dark(r);
 const EVENTS = { ...T, lang: LANG, holds: P.holds, ...Object.fromEntries(Object.entries(EV).filter(([, v]) => typeof v === 'number')), ...CAP.events(P), quiet: [] };
 const twos = (t) => Math.floor(t * 12) / 12;
 
@@ -194,15 +201,18 @@ const wallK = (t) => ease.io((t - EV.flyOut) / 1.2) * (1 - ease.io((t - EV.flyIn
 function partState(p, k, t) {
   const tPop = EV.pop(k), tFly = EV.fly(k);
   const vis = t >= tPop - 0.02, kOut = clamp((t - tPop) / 0.6);
-  let pos = lerp3(p.mouth, p.rest, ease.io(kOut)); pos[1] += Math.sin(kOut * Math.PI) * 10;
+  let pos = lerp3(p.mouth, p.rest, ease.io(kOut)); pos[1] += Math.sin(kOut * Math.PI) * 14;
+  let sc = lerp(K, POPK, ease.back(kOut));
   // lying flat in front of its laptop: the tall sides lie down on their faces
   const flat = p.flat || [0, 0, 0];   // colour side up
   let rot = [flat[0] + (1 - ease.out(kOut)) * 2.0, flat[1], flat[2]];
   const kIn = clamp((t - tFly) / 0.55);
   if (kIn > 0) { const slot = [CAB[0] + p.slot[0] * K, CAB[1] + p.slot[1] * K, CAB[2] + p.slot[2] * K];
     pos = lerp3(p.rest, slot, ease.io(kIn)); pos[1] += Math.sin(kIn * Math.PI) * 9;
-    rot = lerp3(flat, p.rot, ease.io(kIn)); }
-  return { pos, rot, vis };
+    rot = lerp3(flat, p.rot, ease.io(kIn)); sc = lerp(POPK, K, ease.io(kIn)); }
+  // the pop: a flash in the maker's colour that settles to a glow while it waits, and goes out as it flies in
+  const glow = vis ? (700 * Math.exp(-Math.max(0, t - tPop) / 0.5) + 140) * (1 - clamp(kIn)) : 0;
+  return { pos, rot, vis, sc, glow };
 }
 /** Toko's laptop: lid open → shut, then pushed forward out of the way */
 function tokoLaptop(t) {
@@ -275,10 +285,12 @@ function pose(Pp, t, sh) {
     const ks = ease.io((t - SIDES_HOME) / 0.22);
     const tgt = (s) => ks > 0 ? lerp3(top(s), SIDE(s), ks) : lerp3(last(s), top(s), kh);
     const nrm = (s) => ks > 0.5 ? [-s, 0, 0] : [0, -1, 0];
+    const ke = ease.io((t - EV.core) / 0.3); pz.elR = lerp3(pz.elR, at([-9.5, 11, 6.5]), ke); pz.elL = lerp3(pz.elL, at([9.5, 11, 6.5]), ke);   // elbows up over the desk
     return handsTo(Pp, pz, tgt(-1), tgt(1), nrm(-1), nrm(1));
   }
   // shot 4: everyone turns to the cabinet. Toko's paddles on its sides; the team's on their own laptops' edges, still
   if (Pp.i === 2) { const pz = basePose({ lean: 0.32, hp: 0.22, breathe: br });   // head up over the marquee, so the camera finds his face
+    pz.elR = at([-9.5, 11, 6.5]); pz.elL = at([9.5, 11, 6.5]);
     return handsTo(Pp, pz, SIDE(-1), SIDE(1), [1, 0, 0], [-1, 0, 0]); }
   const look = ease.io((t - T.s4 - 0.2) / 0.5), nod = Math.max(0, Math.sin((t - EV.lit) * 6)) * clamp((t - EV.lit) / 0.2) * (1 - clamp((t - EV.lit - 1.1) / 0.3)) * 0.12;
   const pz = basePose({ lean: 0.3, hp: 0.4 - look * 0.22 + nod, hy: look * yawTo(Pp, CAB[0], CAB[2]), breathe: br });
@@ -286,18 +298,20 @@ function pose(Pp, t, sh) {
 }
 
 // ------------------------------------------------------------------ the shots
-const LOOK0 = { pos: [150, 110, 120], at: [2, 30, 4], fov: 36 };   // down the desk's length on a long lens, so all five fit a vertical frame
+const LOOK0 = { pos: [150, 110, 120], at: [2, 30, 4], fov: 36 };
+const NEAR4 = +(Q.get('near4') || 0.74);   // shot 4's close: how far along frame 0's line (1 = frame 0 itself)   // down the desk's length on a long lens, so all five fit a vertical frame
 const SHOT = [
   { t0: () => T.s1, t1: () => T.s2,   // 1 · frame 0: down the desk's length, five typing in sync
     cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3(LOOK0.pos, [142, 104, 113], k)), at: V(LOOK0.at), fov: LOOK0.fov, focus: 200, ap: 1.4 }; } },
   { t0: () => T.s2, t1: () => T.s3,   // 2 · up and back as the wall flies: the hall, the five small against it
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([150, 116, 126], [132, 112, 150], k)), at: V(lerp3([2, 32, 0], [-4, 30, -20], k)), fov: lerp(37, 40, k), focus: lerp(200, 190, k), ap: 1.2 }; } },
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([150, 116, 126], [132, 112, 150], k)), at: V(lerp3([-6, 32, 4], [-12, 30, -16], k)), fov: lerp(37, 40, k), focus: lerp(200, 190, k), ap: 1.2 }; } },
   { t0: () => T.s3, t1: () => T.s4,   // 3 · over his shoulder on the chip; then close on the desk's middle: the shut, the push, the box
     cam(t, lt, d) {
       if (t < EV.ots) { const k = ease.io(lt / (EV.ots - T.s3)); const pos = V([lerp(20, 19, k), lerp(58, 57, k), lerp(-14, -12, k)]), tgt = V([3, DESK.y + 5.4, 16]); return { pos, at: tgt, fov: 34, focus: pos.distanceTo(tgt), ap: 6 }; }
       const k = ease.io((t - EV.ots) / (T.s4 - EV.ots)); const pos = V([lerp(30, 26, k), lerp(46, 44, k), lerp(62, 56, k)]), tgt = V([-2, DESK.y + 7, 12]); return { pos, at: tgt, fov: 40, focus: pos.distanceTo(tgt), ap: 4 }; } },
   { t0: () => T.s4, t1: () => T.end,  // 4 · wide again: the cabinet lit, five turned to it; the wall flies back in; frame 0's framing for the card
-    cam(t, lt, d) { const k = ease.io((t - T.s4 - 0.9) / 1.6); return { pos: V(lerp3([30, 64, 82], LOOK0.pos, k)), at: V(lerp3([-1, 31, 10], LOOK0.at, k)), fov: lerp(40, LOOK0.fov, k), focus: lerp(90, 200, k), ap: lerp(2.2, 1.4, k) }; } },
+    cam(t, lt, d) { const k = ease.io((t - T.s4 - 0.9) / 1.6), near = lerp3(LOOK0.at, LOOK0.pos, NEAR4), at4 = [0, 31, 8];   // owner: all five in the close
+      return { pos: V(lerp3(near, LOOK0.pos, k)), at: V(lerp3(at4, LOOK0.at, k)), fov: lerp(38, LOOK0.fov, k), focus: lerp(150, 200, k), ap: lerp(1.6, 1.4, k) }; } },
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 
@@ -336,7 +350,8 @@ function setWorld(t) {
   for (const Pp of PUPS) { Pp.T.pose(pose(Pp, tq, i)); Pp.WR.updateMatrixWorld(true); }
   // the core and the parts (on ones), the core unfolding
   const ck = coreK(t); CORE.visible = ck > 0.001; CORE.scale.set(K * lerp(0.7, 1, clamp(ck)), K * Math.max(0.02, ck), K * lerp(0.7, 1, clamp(ck)));
-  PARTS.forEach((p, k) => { const st = partState(p, k, t); p.g.visible = st.vis; p.g.position.set(...st.pos); p.g.rotation.set(...st.rot); });
+  PARTS.forEach((p, k) => { const st = partState(p, k, t); p.g.visible = st.vis; p.g.position.set(...st.pos); p.g.rotation.set(...st.rot); p.g.scale.setScalar(st.sc);
+    p.light.position.set(st.pos[0], st.pos[1] + 7, st.pos[2] + 4); p.light.intensity = st.glow; });
   const on = clamp((t - EV.lit) / 0.35); drawGame(t, on);
   cabLight.position.set(CAB[0], CAB[1] + 12 * K, CAB[2] + 6); cabLight.intensity = 70 * on;
   PUPS.forEach((Pp) => { if (Pp.i !== 2) drawCode(Pp, t); }); drawTokoScreen(t);
