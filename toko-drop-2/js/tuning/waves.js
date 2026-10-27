@@ -43,9 +43,12 @@ export default {
     interval: { base: 1.0, ramp: 0.055, post: 0.010, min: 0.35 } },
 
   // v54 (owner, 2026-10-27: "gentler ramp"): in the worlds, from wave `from`
-  // the bodies press as wave from + (wave − from) × slope (HARDCADE: `hard`),
-  // so the 72 waves can be lived through. sim/director/arcade.js pressure()
-  gentle: { from: 4, slope: 0.5, hard: 0.75 },
+  // the bodies press as wave from + (wave − from) × slope, so the 72 waves can
+  // be lived through. HARDCADE presses on `hard` (v55, owner: "Hardcade should
+  // be harder"): a quarter STEEPER than 1.x's own curve, where ARCADE is half.
+  // Measured with the expert bot (scripts/reach.mjs): ARCADE's median run ends
+  // in world 7, HARDCADE's in world 4. sim/director/arcade.js pressure()
+  gentle: { from: 4, slope: 0.5, hard: 1.25 },
 
   // 1.x waveKind (main.js:129-136; tuning.js:355). Precedence
   // boss > spike > curtain > swarm; a normal wave after any other is a breather

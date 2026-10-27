@@ -6,7 +6,7 @@
 //
 // g.s.shell is the bubble's hits left (the look reads it); g.s.bolt the
 // seconds of running left. Seeded: w.rng only.
-import { steerTo } from './base.js?v=54';
+import { steerTo } from './base.js?v=55';
 
 export default {
   init(w, g, api) {

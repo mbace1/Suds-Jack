@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v55 — 2026-10-27
+**HARDCADE is harder, and a bot that looks ahead shows the arcade can be finished**
+- Owner, 2026-10-27, on v54's finding that the bots could not get past world 2: "Or maybe better bots", and "Hardcade should be harder".
+- THE EXPERT (`scripts/bot.mjs`, skill `expert`): the three skills react to what is within a few metres and step sideways from it. The expert projects everything that can hurt it 0.9 s ahead (each gel bullet along its line, each body that hurts to touch along its velocity, a hopper that has squatted or taken off where it will land, its ring as a softer keep-away, a lob where it comes down, a puddle where it lies), prices each way it could walk and each dash (whose i-frames carry it through what is on the way), and takes the clearest that goes where it wants. Per boss fight it takes 0 to 1 hits where the sharp bot took 2 to 8 (ANGLER and OMEGA still cost it about 2).
+- It measures, it does not set lines: the grade lines and the boss lines are still drawn from sharp/average/rough (`LINE_SKILLS`), whose play is unchanged to the byte (a v54 run replays to the same wave and score). `room-tiers`, `boss-tiers` and `room-eval` play only those three.
+- `scripts/reach.mjs`: a bot plays a whole ARCADE or HARDCADE run per seed and says where it ended and what took its lives. With the expert, 12 seeds: ARCADE's median run ends at wave 48 (world 6) and one run won all 72 waves; HARDCADE's median ends at wave 32 (world 4), none won. The sharp bot still ends at wave 16.
+- HARDCADE HARDER: its bodies press on a slope a quarter STEEPER than 1.x's own curve past wave 4 (v54 had eased it to three quarters; ARCADE stays at half), and a beaten boss gives no lives back (v54: one): your three lives last the run. Measured with the expert over 8 seeds a variant, median wave: v54's HARDCADE 43; 1.x's slope and no lives back 35; this 31; a slope of 1½ 21. Corpse fire, made faster, from wave 1, or from every corpse, moved the expert by no more than run-to-run noise, so its rules stay 1.x's.
+- The title's HARDCADE line says so (fi/ja/en), and docs/ITCH.md.
+- THE CAMPAIGN'S LINES, against the expert (8 seeds a room): it reaches S at least once in 32 of 36 rooms, so v53's worry that UNDERTOW's and THE CORE's S sat out of reach is withdrawn (2 of 8 and 6 of 8). Never reached: LIGHTS OUT and RINK; FIRST LIGHT and FIRST SWARM miss by about 2%, where the sharp bot's closer, greedier play out-scores the expert's caution. HARD PAIN: 34 of 36, never SIREN or RINK, and FORGE's S line is broken low (4.9k against 58k for a clean run: the sharp bot that drew it usually loses its BANK pot to corpse fire). Reported, not changed here.
+- Tests: `test/bot.mjs` (new, in the smoke: the expert steps off a bullet's line and not toward it, dashes out of a ring too tight to walk through and not while the dash cools, is out from under a hopper before it lands, and plays forty seconds of ARCADE with every input a number; the three line skills never plan), `test/worlds.mjs` (HARDCADE steeper than 1.x, no lives back).
+- Cache tokens `?v=54` → `?v=55`; HUD label → `2.0 · v55`
+
+---
+
 ## v54 — 2026-10-27
 **The campaign has an ending and a crown for an all-S world; the arcade ramps gentler and gives lives back between worlds**
 - Owner, 2026-10-27: "rate the completion of arcade and campaign separately with % of completion with every check-in" — `docs/COMPLETION.md` is the scorecard those numbers come from; and for the arcade, "Gentler ramp".
