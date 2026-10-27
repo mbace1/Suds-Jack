@@ -1,3 +1,37 @@
+## v4.84 — candidate, 2026-10-27
+
+Enemy routes stop at the first obstruction; rivals move along the unblocked
+portion and attack their original target only when that target remains in
+range and sight. Preview and resolution use the same route; there is no
+retargeting. C.19 test build, not deployed; owner device acceptance pending.
+Godot paused. Cache: tactics v9, fight resolver v9, session v20, run v16,
+crew UI v24, tactical UI v12, fight main v46, startup v20, Act I app v52;
+campaign state v11, battle v15, Toko v6, campaign adapter v10.
+
+`fight-balance.mjs`, 12 seeds, 15 fights at heat 0 and 2, with Aatami in
+Chapter 1: careless fight wins 100% → 95.45%, rounds 2.00 → 2.09, HP lost
+0 → 1.09, downed 0 → 0. Straight-out getaways win 87.5% → 87.5%, rounds
+2.25 → 2.25, HP lost 0 → 0.5. A single lever; the fights remain too easy.
+
+## v4.83 — candidate, 2026-10-27
+
+Chapter 1 now always includes Aatami in campaign fights, even with three crew;
+older Chapter 1 saves clear an invalid early step-back flag. After Chapter 1
+the existing three-available-crew withdrawal and permanent memory remain.
+This is a rule correction, not combat tuning. Owner Pixel playtest and 3D
+visual acceptance are pending. Godot paused. Cache: app v50; state v11;
+doors v5; road and visits v7; story v6.
+
+`fight-balance.mjs`, 12 seeds, 15 fights, heat 0 and 2: the careless fight
+policy changes from 95.45% wins, 2.09 rounds and 0.09 HP lost to 100%, 2.00
+rounds and 0 HP; straightforward getaways change from 100% wins, 2.00 rounds,
+0.25 HP lost to 87.5%, 2.25 rounds and 0 HP. These are simulation averages,
+not human acceptance; combat is still too easy and needs G1 tuning.
+
+## v4.82 — candidate, 2026-10-27
+
+City memory shows encounter choices without internal `enc-` identifiers, including entries already in saved games. Campaign data and rules are unchanged. Cache: `app.js?v=49`. Owner device playtest and deployment are pending; this entry does not assert a release. Godot paused.
+
 # C.19 — Night Shift battlefield clarity
 
 Focused fighter labels, full statistics in VIEW, selected/target rings, labelled south exit, and honest rescue guidance. Enemy plans, action costs, rules, campaign settlement and procedural characters remain unchanged. Physical Pixel/iPad and owner visual acceptance remain pending. Source and tested head `69b23168`; live on the hub as `piritori-c17/web/crew-run/?campaign=1&release=19` (its `release.json` holds the file hashes). This entry was written into the source log at the C.19 → main merge (2026-09-23): until then only the generated copy inside the deployed package said C.19, and this file stopped at C.18. See design/C19_READABILITY.md and design/C19_ACCEPTANCE.md.
@@ -77,6 +111,47 @@ Port `cover-edges.js`, `directional-cover.mjs` and `design/C11_PORT_VECTORS.json
 New lab checkpoint version 4 / rules c11-v1; preserve campaign and Bear Path rules.
 Use resolved impact classifications for presentation; never reapply damage on recovery.
 
+## v4.81 — 2026-10-25
+
+**The playtest (ROADMAP.md G0): three links, each one tap from a fight.** Owner, 2026-10-25: *"Go, make the play card."* ("Card" was only the name for a one-page sheet of links; in the game it is called the playtest.) G0 is the owner playing one door fight, one getaway and the Bear Path on the Pixel. It takes about twenty minutes and ends in two answers: did any fight make you decide something, and did anything break on the device?
+
+- **Three links, from a cold start:**
+  - `?play=g0-door`: *The Card Game's Ledger* in the Torkkelinmäki courtyard, day 8 night, three crew, so Aatami has stepped back. *"Take it off the table, with the crew"* goes straight into Night Shift. The job is a fight.
+  - `?play=g0-getaway`: *The Quay Shift*, day 8 night, with two packs on you. *"Sell two, and stay a minute too long"* goes bad on that block by the door's own roll (0.06 against 40%), so it becomes the getaway on the quay.
+  - `?play=g0-bear`: the Bear Path, day 5, two crew, so Aatami still fights. *"Hold the path"* is fought in the park.
+- **The same three lead THINGS TO TEST** in the pause menu, each with what to look for and the two questions. Approving one removes it, so the list is the playtest's checklist.
+- **Your campaign is kept.** A Night Shift fight hands over through the save, so a playtest plays a fresh campaign that saves. The campaign you had is set aside first, once, and never a playtest's own. **RESTORE YOUR CAMPAIGN** on the title screen puts it back.
+- **A new jump, and nothing about the fights changed.** A door is offered and taken through `doors.js` exactly as the board does it, at a named block. Any jump can bring the crew its fight needs and the stock its deal needs.
+- Cache: `app.js?v=48`, `pause.js?v=5`, `testlist.js?v=4`. Gates: `play-card.cjs` (new, 26 checks, in the Act I browser job). Each link lands on its encounter with its fight open, hands over to Night Shift at the right place with the right job, and RESTORE gives your campaign back. `v3-contract` and `scene-content` follow the tokens.
+- **Owner played: pending.** This is the playtest for it.
+
+### Port
+
+Nothing to port. Godot has no Night Shift (CAMPAIGN G8), and ROADMAP §6 recommends pausing it until G4.
+
+## v4.80 — 2026-10-25
+
+**Characters talk as waist-up cut-ins.** Owner, 2026-10-23: NPCs *"zoomed from waist up layered over with a text bubble and talk options"*, the level behind them, and *"the player character profile can be shown when he talks"*. They *"don't need to be 3d"*. The rulings are in DESIGN_AUTHORITY.md, 2026-10-23/24.
+
+- **The cut-in player** (`web/js/v3/cutin-stage.js`, new). An approved painting is cut into paper pieces and acted the way Toko is (v4.70): head on a neck pivot, the torso breathing, eyelids that blink, poses held at 10 fps, the rest pose under reduced motion.
+  - A location speaker stands waist-up, bottom left, over the scene's own plate, dimmed. The bubble sits above him, and its short tail has one side square to the bubble and points toward his mouth.
+  - The words and the buttons are HTML laid over the canvas, so they wrap and scale. Buttons keep the 44 px floor.
+- **Four rigs, about 150 KB together** (`art/v3/cutins/`, made by `art-src/cutins/cut.py` and `publish.py`, both offline):
+  - Jaska, from concept v03. Owner-approved.
+  - Aatami, front: study 06 from PR #108, looking near the camera.
+  - Aatami, side: the young final, kept for a later layout with both speakers on one screen.
+  - Arvo, from the approved v05, with a jaw so he can read aloud.
+- **Jaska's encounters and his visit open as his cut-in.** The opening is in his bubble and the choices are the talk options, with the same requirements and reasons as the cards. LOOK AROUND sets it aside for the ordinary screen.
+  - A choice goes through the very handler the choice cards use: applied, saved and rendered exactly as before.
+  - Aatami's profile then says it, and Jaska nods or shakes his head by the choice's relationship effect and gives the outcome. CONTINUE does what the outcome card does.
+  - The 3D Jaska under the overlay is disposed while it is open.
+- **The slice has no spoken lines yet.** Jaska's bubble carries the encounter's opening, and Aatami's carries the choice label (QUEUE).
+- **Phone debug entries.** `?encounter=<id>` stands a fresh campaign at that encounter with saving off for the session (`debugSession`). `?cutin=jaska|aatami|arvo` previews a speaker; Arvo reads the day-3 markka bulletin one source-status card at a time.
+- Cache: `app.js?v=47`, `cutin-stage.js?v=4`, `v3.css?v=12`. Gates: `scene-content` checks every cut-in is a registered rig with its pieces and that `?cutin=` exists. `act1-scenes` waits for Jaska's cut-in and answers his visit in it. `v3-contract` follows the tokens.
+
+### Port
+
+Godot still shows the 3D Jaska. Porting means drawing each `cutin-rig` asset's pieces (manifest `members[]` with `x`, `y`, and `rig.pivots` / `rig.lids`) with the clip table in `cutin-stage.js` (PERSON for Jaska and Aatami; Arvo's own). The conversation flow is the `openTalk()` block in `app.js`, and the bubble and options boxes are `CUTINS[who].bubble` on a 1080×1920 frame. Landscape framing is Godot's own call, since web leads and Godot follows.
 ## v4.79 — 2026-10-25
 
 **The two mission battles are fought in Night Shift** (`C19_CAMPAIGN_FIGHTS.md` §6.4 step 5), and a board battle survives a reload.
