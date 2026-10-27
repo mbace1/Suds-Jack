@@ -2,6 +2,10 @@
 // untouched. v2: one saturated colour, ORANGE, on what matters (the folders, the sellers' tags, the bell, the board's key
 // word) in an otherwise pale, near-grey room; wingback chairs on a dais, low and big from frame 0; haze in the light;
 // darkness beyond the table; tumbling folders; taller towers; a clean board.
+// v3 (owner: "I see no orange", then "I meant general lights, bloom, etc."): the orange is in the LIGHT now. The ring,
+// the chair spots, a back light behind the three, the haze and the bloom are safety orange against teal-grey shadows;
+// the props are #ff6a00 with an emissive lift, and a hue-vs-hue keep after the grade (orangeKeep) holds every warm
+// pixel at ~30°, because ACES plus a pale grade had walked them all to rust at 10–15°.
 // THE PANEL — RFH (Brink/Coxon), clay, in the manner of *Digger* (Iñárritu / Lubezki on VistaVision, 2026): a pale,
 // washed-out grade, very wide lenses with everything in focus, heavy grain and a camera that floats, with the absurd
 // calm of a Strangelove war room. The feel only: no frame, character or logo of that film. plan/films/30-the-panel.md
@@ -30,7 +34,7 @@ renderer.setPixelRatio(1); renderer.setSize(W, H, false);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace; renderer.toneMapping = THREE.NoToneMapping;
 document.body.appendChild(renderer.domElement); renderer.domElement.style.width = '100%';
-const scene = new THREE.Scene(); scene.fog = new THREE.Fog('#141414', 260, 720);
+const scene = new THREE.Scene(); scene.fog = new THREE.Fog('#0f1517', 260, 720);
 const camera = new THREE.PerspectiveCamera(80, W / H, 2, 4000);
 const post = new Post(renderer, W, H);
 const out2d = canvas(W, H), g2d = out2d.getContext('2d');
@@ -46,8 +50,9 @@ const M = {
   felt: C('#7b8076', { surf: 'felt', rough: 0.95, thumb: 0.015, thumbCell: 8, mottle: 0.06 }), rim: C('#2e2a27', { rough: 0.45, thumbCell: 5, tool: 1.2 }),
   wood: C('#3a3532', { rough: 0.5, thumbCell: 4, tool: 1.2 }), dais: C('#2a2725', { rough: 0.55, thumbCell: 6, tool: 1.3 }),
   leather: C('#8c857a', { rough: 0.4, thumbCell: 3.2, thumb: 0.035, mottle: 0.08 }), leatherDim: C('#3a3836', { rough: 0.5, thumbCell: 3.2 }),
-  metal: C('#8a8780', { rough: 0.35, metal: 0.4, thumb: 0.015 }), folder: C('#e2661a', { emissive: '#6a2404', emissiveIntensity: 0.55, rough: 0.75, thumbCell: 2.2, thumb: 0.02, mottle: 0.07, specks: 0.15 }),
-  folderEdge: C('#b44e16', { emissive: '#4a1803', emissiveIntensity: 0.5, rough: 0.85, thumbCell: 2 }), orange: C('#ee6c18', { rough: 0.32, thumbCell: 2.4, thumb: 0.02, mottle: 0.05 }),
+  metal: C('#8a8780', { rough: 0.35, metal: 0.4, thumb: 0.015 }), folder: C('#ff6a00', { emissive: '#ff8a20', emissiveIntensity: 0.3, rough: 0.75, thumbCell: 2.2, thumb: 0.02, mottle: 0.07, specks: 0.15 }),
+  folderEdge: C('#f05c00', { emissive: '#ff7a14', emissiveIntensity: 0.24, rough: 0.85, thumbCell: 2 }),
+  orange: C('#ff6a00', { emissive: '#ff8a20', emissiveIntensity: 0.3, rough: 0.32, thumbCell: 2.4, thumb: 0.02, mottle: 0.05 }),
 };
 
 // ------------------------------------------------------------------ the room
@@ -78,8 +83,8 @@ function drawBoard(t) {
   g.font = `${LANG === 'ja' ? '800 76px NotoSansJP-800' : '82px Anton-400'}`; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
   const tw = g.measureText(txt).width, x0 = BW / 2 - tw / 2;
   g.fillStyle = 'rgba(236,232,220,.94)'; g.fillText(txt, x0, 92);
-  if (ki >= 0) { g.fillStyle = '#ff7a1e'; g.fillText(key, x0 + g.measureText(txt.slice(0, ki)).width, 92); }
-  g.fillStyle = '#ff7a1e'; g.fillRect(BW / 2 - 140, 112, 280, 5);
+  if (ki >= 0) { g.fillStyle = '#ff8a1a'; g.fillText(key, x0 + g.measureText(txt.slice(0, ki)).width, 92); }
+  g.fillStyle = '#ff8a1a'; g.fillRect(BW / 2 - 140, 112, 280, 5);
   g.font = `${LANG === 'ja' ? '800 30px NotoSansJP-800' : '700 30px Inter'}`; g.textAlign = 'center'; g.fillStyle = 'rgba(236,232,220,.55)'; g.fillText(P_UI.board2 || '', BW / 2, 158);
   boardTex.needsUpdate = true;
 }
@@ -98,7 +103,7 @@ mesh0(new THREE.SphereGeometry(0.9, 12, 8), M.metal, { pos: [0, 6.6, 0], parent:
 
 // the ring light over the table: a plain HDR hoop, the thing everyone remembers about such rooms
 const RY = 146;   // high enough that its far edge clears the board's title in every shot
-const RING = mesh0(new THREE.TorusGeometry(126, 2.2, 16, 220).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 2.5, 2.25) }), { pos: [0, RY, 0], parent: scene, cast: false });
+const RING = mesh0(new THREE.TorusGeometry(126, 2.2, 16, 220).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(3.4, 1.15, 0.2) }), { pos: [0, RY, 0], parent: scene, cast: false });
 for (let k = 0; k < 6; k++) { const a = k / 6 * TAU;   // its hangers
   mesh0(new THREE.CylinderGeometry(0.35, 0.35, 280, 6), M.metal, { pos: [Math.cos(a) * 126, RY + 140, Math.sin(a) * 126], parent: scene, cast: false }); }
 
@@ -146,7 +151,7 @@ for (let k = 0; k < 20; k++) { const a = -Math.PI / 2 + 0.62 + k * 0.255; if (a 
 
 // the towers: manila folders, dropped one by one onto two of the three seats
 const FOLD = 58, FH = 1.3, FCAN = canvas(256, 128), FTEX = tex(FCAN);
-function drawFolderLabel() { const g = FCAN.getContext('2d'); g.fillStyle = '#e2661a'; g.fillRect(0, 0, 256, 128);
+function drawFolderLabel() { const g = FCAN.getContext('2d'); g.fillStyle = '#ff6a00'; g.fillRect(0, 0, 256, 128);
   g.strokeStyle = '#1e1a18'; g.lineWidth = 7; g.strokeRect(22, 30, 212, 68); g.fillStyle = '#1e1a18'; g.textAlign = 'center';
   g.font = LANG === 'ja' ? '800 50px NotoSansJP-800' : '50px Anton-400'; g.fillText(P_UI.folder || '', 128, 84); FTEX.needsUpdate = true; }
 const TOWERS = [0, 2].map((ci, ti) => {
@@ -177,21 +182,26 @@ function hazeTex() { const c = canvas(4, 256), g = c.getContext('2d'), gr = g.cr
   gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.15, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0.15)'); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); return tex(c); }
 const HZT = hazeTex();
 const hazeMat = (c, o) => new THREE.MeshBasicMaterial({ color: c, map: HZT, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false });
-const BEAM = mesh0(new THREE.CylinderGeometry(120, 150, 270, 96, 1, true), hazeMat('#fff1dc', 0.055), { pos: [0, 30 + 135, -10], parent: scene, cast: false, recv: false });
-const CONES = PANEL.map((c) => { const m = mesh0(new THREE.CylinderGeometry(4, 40, 300, 48, 1, true), hazeMat('#fff6e6', 0), { pos: [c.pos[0] * 0.96, 30 + 150, c.pos[2] * 0.96], parent: scene, cast: false, recv: false }); return m; });
+const BEAM = mesh0(new THREE.CylinderGeometry(120, 150, 270, 96, 1, true), hazeMat('#ff8a2a', 0.08), { pos: [0, 30 + 135, -10], parent: scene, cast: false, recv: false });
+const CONES = PANEL.map((c) => { const m = mesh0(new THREE.CylinderGeometry(4, 40, 300, 48, 1, true), hazeMat('#ff7a1a', 0), { pos: [c.pos[0] * 0.96, 30 + 150, c.pos[2] * 0.96], parent: scene, cast: false, recv: false }); return m; });
 const DUST = (() => { const r = rng(77), n = 320, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) { const a = r() * TAU, d = Math.sqrt(r()) * 150; pos.set([Math.cos(a) * d, 32 + r() * 200, -10 + Math.sin(a) * d], i * 3); }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const p = new THREE.Points(geo, new THREE.PointsMaterial({ color: '#fff3e0', size: 0.45, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, toneMapped: false }));
+  const p = new THREE.Points(geo, new THREE.PointsMaterial({ color: '#ffb070', size: 0.45, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, toneMapped: false }));
   scene.add(p); return p; })();
 
 // ------------------------------------------------------------------ light: a pool from the ring, a spot per chair, a dim room
-const hemi = new THREE.HemisphereLight('#c4ccd4', '#4a4038', 0.1); scene.add(hemi);
-const pool = new THREE.SpotLight('#fff1dc', 2600, 0, 0.55, 0.6, 1.25); pool.position.set(0, 300, 30); pool.target.position.set(0, TY, -10);
+// v3: everything that is a lamp is orange; everything that is not (the hemi, the fill, the board's glow) is teal-grey,
+// so the shadows go cold and the orange is the only warm thing in the frame
+const hemi = new THREE.HemisphereLight('#7fa6ae', '#1e2a2c', 0.16); scene.add(hemi);
+const pool = new THREE.SpotLight('#ff9a48', 3400, 0, 0.55, 0.6, 1.25); pool.position.set(0, 300, 30); pool.target.position.set(0, TY, -10);
 pool.castShadow = true; pool.shadow.mapSize.set(2048, 2048); pool.shadow.bias = -0.0004; scene.add(pool, pool.target);
-const boardGlow = new THREE.PointLight('#bcd0d8', 900, 0, 1.4); boardGlow.position.set(0, 205, -330); scene.add(boardGlow);
-const fill = new THREE.DirectionalLight('#a8b8d0', 0.22); fill.position.set(200, 160, 400); scene.add(fill);
-const CHAIRSPOT = PANEL.map((c) => { const s = new THREE.SpotLight('#fff6e6', 0, 0, 0.2, 0.45, 1.2); s.position.set(c.pos[0] * 0.96, 330, c.pos[2] * 0.96); s.target.position.set(c.pos[0], 50, c.pos[2]); s.castShadow = true; s.shadow.mapSize.set(1024, 1024); scene.add(s, s.target); return s; });
+const boardGlow = new THREE.PointLight('#8fc4cc', 900, 0, 1.4); boardGlow.position.set(0, 205, -330); scene.add(boardGlow);
+const fill = new THREE.DirectionalLight('#5f9fae', 0.3); fill.position.set(200, 160, 400); scene.add(fill);
+// the back light: one orange spot low behind the three, so every chair and tower carries a hot rim against the dark
+const backLight = new THREE.SpotLight('#ff6a10', 16000, 0, 0.62, 0.55, 1.2); backLight.position.set(0, 240, -372); backLight.target.position.set(0, 70, -165);
+backLight.castShadow = true; backLight.shadow.mapSize.set(1024, 1024); backLight.shadow.bias = -0.0004; scene.add(backLight, backLight.target);
+const CHAIRSPOT = PANEL.map((c) => { const s = new THREE.SpotLight('#ff8a35', 0, 0, 0.2, 0.45, 1.2); s.position.set(c.pos[0] * 0.96, 330, c.pos[2] * 0.96); s.target.position.set(c.pos[0], 50, c.pos[2]); s.castShadow = true; s.shadow.mapSize.set(1024, 1024); scene.add(s, s.target); return s; });
 
 // ------------------------------------------------------------------ the timeline: 100 BPM; captions planned by the pipeline
 await CAP.loadFonts(FONT_DIR);
@@ -249,8 +259,33 @@ function tag(g, text, a) {
 }
 
 // ------------------------------------------------------------------ the Digger grade: pale, lifted, split warm/cold, grainy
-const DIGGER = { sat: 0.82, contrast: 1.14, lift: [0.055, 0.06, 0.072], gain: [1.03, 1.0, 0.94], tint: [0.98, 1.0, 1.03], toe: 0.0,
-  exposure: 0.98, vignette: 0.42, grain: 0.08, threshold: 1.25, knee: 0.5, bloomA: 0.28, bloomB: 0.2, aberration: 0.0016 };
+// v3: desaturation eased (0.82 → 0.95) so the orange light reads; a teal lift in the blacks; the bloom lower and stronger
+const DIGGER = { sat: 0.95, contrast: 1.12, lift: [0.034, 0.06, 0.066], gain: [1.04, 1.0, 0.94], tint: [1.0, 1.0, 1.0], toe: 0.0,
+  exposure: 0.98, vignette: 0.42, grain: 0.08, threshold: 0.9, knee: 0.5, bloomA: 0.5, bloomB: 0.36, aberration: 0.0016 };
+
+// the orange keep: a colourist's hue-vs-hue curve, run on the graded frame before the captions. Every warm, chromatic
+// pixel is pulled into the safety-orange band (~30°) and the already-saturated ones (the props) are pushed further,
+// because ACES's toe and the pale grade turn a dim orange to rust. Grey, teal and white are untouched. ?keep=0 skips it.
+const KEEP = { hue: 30, pull: 0.85, boost: 0.55 };
+const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a)); return k * k * (3 - 2 * k); };
+function orangeKeep(g) {
+  const im = g.getImageData(0, 0, W, H), d = im.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], gr = d[i + 1], b = d[i + 2];
+    if (r < 40 || r <= gr || r <= b) continue;                 // red must lead
+    const mn = gr < b ? gr : b, c = r - mn, s = c / r;
+    if (s < 0.2) continue;
+    const h = 60 * (gr - b) / c;                               // −60…60 when red leads
+    const wh = h < -24 ? 0 : h < -8 ? (h + 24) / 16 : h <= 46 ? 1 : h < 58 ? (58 - h) / 12 : 0;
+    const w = wh * smooth(0.2, 0.4, s) * smooth(40, 72, r); if (w <= 0) continue;
+    const h2 = h + (KEEP.hue - h) * KEEP.pull * w;
+    const s2 = Math.min(1, s + (1 - s) * KEEP.boost * w * smooth(0.5, 0.8, s));
+    const v = Math.min(255, r * (1 + 0.1 * w)), lo = v * (1 - s2);
+    d[i] = v; d[i + 1] = lo + (v - lo) * h2 / 60; d[i + 2] = lo;
+  }
+  g.putImageData(im, 0, 0);
+}
+const KEEP_ON = Q.get('keep') !== '0';
 
 // ------------------------------------------------------------------ one frame
 function frame(t, captions = true) {
@@ -258,7 +293,7 @@ function frame(t, captions = true) {
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.filter = 'none';
   setBoil(Math.floor(t * 12));
   drawBoard(t); towers(t);
-  CHAIRSPOT.forEach((s, k) => { const on = 0.2 + 0.8 * ease.out((t - EV.lit(k)) / 0.25); s.intensity = 11000 * on; CONES[k].material.opacity = 0.05 * on; });   // a glimmer from frame 0, so the hook shows the three; full on in turn
+  CHAIRSPOT.forEach((s, k) => { const on = 0.2 + 0.8 * ease.out((t - EV.lit(k)) / 0.25); s.intensity = 11000 * on; CONES[k].material.opacity = 0.085 * on; });   // a glimmer from frame 0, so the hook shows the three; full on in turn
   TAGS.forEach((p, ti) => { const k = clamp((t - EV.drop0 - 0.1 - ti * 0.25) / 0.6); p.scale.setScalar(k > 0 ? 1 : 0.001); p.rotation.z = (1 - ease.out(k)) * (ti ? -1.2 : 1.2) + Math.sin(t * 2.1 + ti) * 0.05 * k; });
   DUST.rotation.y = t * 0.03; DUST.position.y = Math.sin(t * 0.4) * 3;
   // the bell rings on the punch word: a small hop
@@ -268,6 +303,7 @@ function frame(t, captions = true) {
   // deep focus (the wide-lens look): no depth-of-field blur at all
   post.render(scene, camera, { focus: 200, aperture: 0, maxBlur: 1, seed: Math.floor(t * 24), ...DIGGER });
   g2d.drawImage(renderer.domElement, 0, 0);
+  if (KEEP_ON) orangeKeep(g2d);
   CAP.bug(g2d);
   // the tags: when the study is named; when the towers stand; on the punchline
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);
