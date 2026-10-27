@@ -1,8 +1,8 @@
 // blister.js — how BLISTER looks: BUBBLA's look (a gel inside a clear
 // bubble that thins with each hit and is gone while popped), at a boss's size,
 // with the boss ring under it.
-import bubbla from './bubbla.js?v=51';
-import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=51';
+import bubbla from './bubbla.js?v=52';
+import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=52';
 
 export default {
   build(ctx) { return { ...bubbla.build(ctx), ...auraBuild(ctx) }; },

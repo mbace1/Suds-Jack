@@ -31,8 +31,8 @@
 // world, because only it knows where the camera is. `dash` is false, true
 // (a button: 1.x's own dash) or a flick's gesture { kind: 'flick', sL, sV,
 // dirX, dirY }, its direction in screen axes too.
-import { TUNING } from './tuning.js?v=51';
-import { analyseTouch } from './flick.js?v=51';
+import { TUNING } from './tuning.js?v=52';
+import { analyseTouch } from './flick.js?v=52';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)

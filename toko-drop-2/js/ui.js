@@ -2,13 +2,13 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=51';
-import { GEL_LINES } from './gels-said.js?v=51';
-import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=51';
-import { mult as heatMult } from './sim/heat.js?v=51';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=51';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=51';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=51';
+import { TUNING } from './tuning.js?v=52';
+import { GEL_LINES } from './gels-said.js?v=52';
+import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=52';
+import { mult as heatMult } from './sim/heat.js?v=52';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=52';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=52';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=52';
 
 const STR = {
   en: {
@@ -145,6 +145,13 @@ export class UI {
     addEventListener('keydown', (e) => this._menuKey(e));
   }
 
+  // HEAT (v52): the × pops as it climbs a level; a hit that throws it away flashes it cold
+  heatPop(m, cold = false) {
+    const el2 = this.multEl;
+    if (!el2) return;
+    if (cold) { el2.textContent = '×1'; this._mult = '×1'; }
+    el2.classList.remove('pop', 'cold'); void el2.offsetWidth; el2.classList.add(cold ? 'cold' : 'pop');
+  }
   // the HUD; the MENU button on it is always there while you play, in the language you play in
   setHud(visible) {
     this.hudEl.hidden = !visible;

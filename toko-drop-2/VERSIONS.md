@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v52 — 2026-10-27
+**HEAT you can see and hear, its own best scores, and S lines set by a bot that plays for it**
+- Owner, 2026-10-27: "Go" on the next steps after v51 — make HEAT readable before tuning on top of it, and set the lines with a bot that takes the risk HEAT pays for.
+- SEEN: a soft halo on the floor under you, amber at ×2 and growing and reddening to a deep red at ×8, pulsing faster the hotter it is, and a tint in the gel the same colour (`TUNING.heat.view`). The × on the HUD pops each time it climbs a level and flashes cold blue when a hit throws it away.
+- HEARD: every kill's voice rides up 5% a level (`TUNING.heat.sound.pitch`; the kill event carries its multiplier), a chime a step up the scale as each level is crossed, a falling sweep when a hit takes it, three notes when BANK banks and a fall when a pot is lost. The announcer still calls it from ×3.
+- BEST SCORES: HEAT scores keep their own bests (`toko2.heat.best.*`). 1.x's streak scores were another scale; they stay in storage untouched but are no longer shown, so the first HEAT run sets the new best.
+- THE LINES: the sharp bot now plays for heat (`greed` in `scripts/bot.mjs`, the campaign only): when the floor is quiet enough (a few bodies, no gel bullet within 4.5 m) it closes to about 2.6 m and kills there; never at a boss or a big body (pressing THE SLUDGE's boss cost it seven runs of eight). The average and rough bots still play safe at range. So S is a score that took the risk, and A to C are clean play. Re-measured at 24 seeds, normal and HARD: S rose where HEAT pays (THREE RINGS +36%, CLOT +39%, PULSE +27%, LIGHTS OUT +60%, SLUG RUN +87%, BREATH +81%) and stayed where the room is one body at a time. A half-greedy average bot was tried and dropped: it died in the five hardest rooms more than half the time.
+- Cache tokens `?v=51` → `?v=52`; HUD label → `2.0 · v52`
+
+---
+
 ## v51 — 2026-10-27
 **HEAT: one multiplier for the whole game, paid for risk; campaign rooms graded on their score; and room clocks from 20 s to 100 s**
 - Owner, 2026-10-27: "Campaign room goals should be score based and the times should change per room. We also need a multiplier dynamic that allows for better scores with higher risk." On the choices: F is "a small but still challenging score"; a wider spread of clocks; "Heat in general, maybe some levels bank … one base one and there may be mutators"; HEAT in the arcade too. Rush's juggle (the gun costing heat) is "good for a room or two, likely not main system".

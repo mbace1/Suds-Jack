@@ -387,17 +387,17 @@
   }
  ],
  "tiers": {
-  "S": 15000,
-  "A": 14000,
-  "B": 13000,
-  "C": 12000,
+  "S": 24000,
+  "A": 15000,
+  "B": 14000,
+  "C": 13000,
   "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 100%, rough 13%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 23000,
-  "A": 21000,
-  "B": 19000,
-  "C": 17000,
+  "S": 29000,
+  "A": 22000,
+  "B": 20000,
+  "C": 18000,
   "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 71%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

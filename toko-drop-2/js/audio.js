@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=51';
+import { TUNING } from './tuning.js?v=52';
 
 const A = TUNING.audio;
 
@@ -56,12 +56,20 @@ export class Sound {
       // 1.x's death voices by family (main.js:4476-4480, audio.js:243-249): a
       // blob, a cube's crunch, and a species' own where it has one (TORO, BAMBU)
       case 'kill': {
-        const S = TUNING.species[e.kind], d = S?.deathSound;
-        if (d) { this._tone(d.wave, d.f0, d.f1, d.dur, d.vol); if (d.noiseVol) this._hiss(d.noiseDur, d.noiseVol, 1400, 200, 1.2); }
-        else if (S?.family === 'cube') { this._tone('square', 380, 55, 0.18, 0.22); this._hiss(0.13, 0.09, 1400, 200, 1.2); }
-        else this._tone('sine', 420, 75, 0.22, 0.22);
+        // HEAT (v52): every kill's voice rides up with the multiplier it was made at
+        const S = TUNING.species[e.kind], d = S?.deathSound, k = 1 + TUNING.heat.sound.pitch * ((e.m || 1) - 1);
+        if (d) { this._tone(d.wave, d.f0 * k, d.f1 * k, d.dur, d.vol); if (d.noiseVol) this._hiss(d.noiseDur, d.noiseVol, 1400 * k, 200, 1.2); }
+        else if (S?.family === 'cube') { this._tone('square', 380 * k, 55 * k, 0.18, 0.22); this._hiss(0.13, 0.09, 1400 * k, 200, 1.2); }
+        else this._tone('sine', 420 * k, 75 * k, 0.22, 0.22);
         break;
       }
+      // a heat level crossed: a chime a step up the scale each level; thrown away by a hit, a fall
+      case 'heat':
+        if (e.up) { const f = 440 * 2 ** ((e.mult - 2) * 2 / 12); this._tone('triangle', f, f * 1.5, 0.12, 0.08); }
+        else if (e.hit) this._tone('triangle', 900, 180, 0.35, 0.1);
+        break;
+      case 'bank': [659, 880, 1175].forEach((f, i) => this._tone('triangle', f, f, 0.1, 0.12, i * 0.05)); break;
+      case 'potLost': this._tone('sawtooth', 500, 90, 0.4, 0.1); break;
       case 'scream': {   // 1.x sirenScream (audio.js:258-263), from the species' own tuning
         const s = TUNING.species[e.kind]?.sound;
         for (const v of s?.scream ?? []) this._tone(v.wave, v.from, v.to, v.dur, v.vol);

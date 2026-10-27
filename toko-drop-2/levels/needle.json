@@ -183,8 +183,8 @@
   }
  ],
  "tiers": {
-  "S": 7300,
-  "A": 6600,
+  "S": 7200,
+  "A": 6500,
   "B": 5900,
   "C": 5300,
   "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 75%, rough 8%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"

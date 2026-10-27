@@ -14,20 +14,20 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=51';
-import { makeRng } from './rng.js?v=51';
-import { BEHAVIOUR } from './species/index.js?v=51';
-import { DIRECTORS } from './director/index.js?v=51';
-import * as fire from './fire.js?v=51';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=51';
-import { swarmForces, resolveCrowd } from './crowd.js?v=51';
-import { revengeColor } from './color.js?v=51';
-import * as pickups from './pickups.js?v=51';
-import * as worlds from './worlds.js?v=51';
-import * as reshape from './reshape.js?v=51';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=51';
-import * as rules from './rules.js?v=51';
-import * as heat from './heat.js?v=51';
+import { TUNING } from '../tuning.js?v=52';
+import { makeRng } from './rng.js?v=52';
+import { BEHAVIOUR } from './species/index.js?v=52';
+import { DIRECTORS } from './director/index.js?v=52';
+import * as fire from './fire.js?v=52';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=52';
+import { swarmForces, resolveCrowd } from './crowd.js?v=52';
+import { revengeColor } from './color.js?v=52';
+import * as pickups from './pickups.js?v=52';
+import * as worlds from './worlds.js?v=52';
+import * as reshape from './reshape.js?v=52';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=52';
+import * as rules from './rules.js?v=52';
+import * as heat from './heat.js?v=52';
 
 const T = TUNING;
 
@@ -280,7 +280,7 @@ function kill(w, g, src = 'hero') {
   // (1.x paid 100 × the streak, which compounded without a ceiling)
   heat.gain(w, heat.killHeat(w, g, src)); heat.pay(w, T.score.perKill * pickups.scoreMult(w), hard);   // a gate's or a hazard's kill pays, but heats nothing
   pickups.onKill(w, g);             // the bounty pays (1.x main.js:4436-4448)
-  w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src });
+  w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src, m: heat.mult(w) });
   if (g.isBoss) w.lastBoss = { x: g.x, z: g.z };   // where a later world's drain opens
   BEHAVIOUR[g.kind].onKill?.(w, g, api, src);
   // a big death shakes the bodies around it (1.x main.js:4517-4540) — the ones
