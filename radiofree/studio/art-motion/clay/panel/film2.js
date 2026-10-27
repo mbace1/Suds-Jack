@@ -182,8 +182,8 @@ function hazeTex() { const c = canvas(4, 256), g = c.getContext('2d'), gr = g.cr
   gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.15, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0.15)'); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); return tex(c); }
 const HZT = hazeTex();
 const hazeMat = (c, o) => new THREE.MeshBasicMaterial({ color: c, map: HZT, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false });
-const BEAM = mesh0(new THREE.CylinderGeometry(120, 150, 270, 96, 1, true), hazeMat('#ff8a2a', 0.03), { pos: [0, 30 + 135, -10], parent: scene, cast: false, recv: false });
-const CONES = PANEL.map((c) => { const m = mesh0(new THREE.CylinderGeometry(4, 40, 300, 48, 1, true), hazeMat('#ff7a1a', 0), { pos: [c.pos[0] * 0.96, 30 + 150, c.pos[2] * 0.96], parent: scene, cast: false, recv: false }); return m; });
+const BEAM = mesh0(new THREE.CylinderGeometry(120, 150, 270, 96, 1, true), hazeMat('#ffa048', 0.03), { pos: [0, 30 + 135, -10], parent: scene, cast: false, recv: false });
+const CONES = PANEL.map((c) => { const m = mesh0(new THREE.CylinderGeometry(4, 40, 300, 48, 1, true), hazeMat('#ff9a40', 0), { pos: [c.pos[0] * 0.96, 30 + 150, c.pos[2] * 0.96], parent: scene, cast: false, recv: false }); return m; });
 const DUST = (() => { const r = rng(77), n = 320, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) { const a = r() * TAU, d = Math.sqrt(r()) * 150; pos.set([Math.cos(a) * d, 32 + r() * 200, -10 + Math.sin(a) * d], i * 3); }
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -273,16 +273,18 @@ function orangeKeep(g) {
   const im = g.getImageData(0, 0, W, H), d = im.data;
   for (let i = 0; i < d.length; i += 4) {
     const r = d[i], gr = d[i + 1], b = d[i + 2];
-    if (r < 40 || r <= gr || r <= b) continue;                 // red must lead
+    if (r < 24 || r <= gr || r <= b) continue;                 // red must lead
     const mn = gr < b ? gr : b, c = r - mn, s = c / r;
-    if (s < 0.3) continue;
+    if (s < 0.25) continue;
     const h = 60 * (gr - b) / c;                               // −60…60 when red leads
     const wh = h < -24 ? 0 : h < -8 ? (h + 24) / 16 : h <= 46 ? 1 : h < 58 ? (58 - h) / 12 : 0;
-    const w = wh * smooth(0.35, 0.6, s) * smooth(40, 72, r); if (w <= 0) continue;
+    // the hue pull reaches down into dim haze (where ACES's toe reddens most); the saturation push is for the props only
+    const w = wh * smooth(0.25, 0.45, s) * smooth(24, 56, r); if (w <= 0) continue;
+    const wb = wh * smooth(0.6, 0.85, s) * smooth(40, 72, r);
     const h2 = h + (KEEP.hue - h) * KEEP.pull * w;
-    const s2 = Math.min(1, s + (1 - s) * KEEP.boost * w * smooth(0.6, 0.85, s));
-    const v = Math.min(255, r * (1 + 0.03 * w)), lo = v * (1 - s2);
-    d[i] = v; d[i + 1] = lo + (v - lo) * h2 / 60; d[i + 2] = lo;
+    const s2 = Math.min(1, s + (1 - s) * KEEP.boost * wb);
+    const v = Math.min(255, r * (1 + 0.03 * wb)), lo = v * (1 - s2);
+    d[i] = v; d[i + 1] = h2 >= 0 ? lo + (v - lo) * h2 / 60 : lo; d[i + 2] = h2 >= 0 ? lo : lo - (v - lo) * h2 / 60;
   }
   g.putImageData(im, 0, 0);
 }
