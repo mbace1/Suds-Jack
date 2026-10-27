@@ -220,7 +220,7 @@ const SHOT = [
       const side = (s) => [b.pos[0] + s * (BOX / 2 * sq[0] + 1.05), b.pos[1] - 0.2, b.pos[2] - 0.2];
       return handsTo(pz, side(-1), side(1), [1, 0, 0], [-1, 0, 0], elbowsFor(side(-1), side(1))); },
     screen(t) { drawScreen(t, 10); },
-    // a touch left and higher than frame 0's, so the box beside the laptop and the mask over the lid both read
+    // right of frame 0's: the mask over the lid, the one on the desk by his left hand, the crate of nine beside it
     cam(t, lt, d) { const k = ease.io((t - T.s4) / (T.s5 - T.s4 + 1)); return { pos: V([lerp(17, 15.5, k), lerp(51, 49.5, k), lerp(88, 82, k)]), at: V([11, 27, 15]), fov: 46, focus: 70, ap: 2.6 }; } },   // wide enough for the crate of nine and the one
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
@@ -257,7 +257,6 @@ function frame(t, captions = true) {
     drawBox(b, st.face);
   }
   Sh.screen(t);
-  S.THERMOS.visible = S.LAMP.visible = i !== 2;                       // shot 3's camera stands where they are
   S.drones(t, PATHS[i] || []);
   S.screenLight.intensity = 50 + Math.sin(t * 7) * 2;
   // the glow of the one that's fun lights his mask and hands

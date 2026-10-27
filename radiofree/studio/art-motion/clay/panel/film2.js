@@ -46,8 +46,8 @@ const M = {
   felt: C('#7b8076', { surf: 'felt', rough: 0.95, thumb: 0.015, thumbCell: 8, mottle: 0.06 }), rim: C('#2e2a27', { rough: 0.45, thumbCell: 5, tool: 1.2 }),
   wood: C('#3a3532', { rough: 0.5, thumbCell: 4, tool: 1.2 }), dais: C('#2a2725', { rough: 0.55, thumbCell: 6, tool: 1.3 }),
   leather: C('#8c857a', { rough: 0.4, thumbCell: 3.2, thumb: 0.035, mottle: 0.08 }), leatherDim: C('#3a3836', { rough: 0.5, thumbCell: 3.2 }),
-  metal: C('#8a8780', { rough: 0.35, metal: 0.4, thumb: 0.015 }), folder: C('#e2661a', { rough: 0.75, thumbCell: 2.2, thumb: 0.02, mottle: 0.07, specks: 0.15 }),
-  folderEdge: C('#b44e16', { rough: 0.85, thumbCell: 2 }), orange: C('#ee6c18', { rough: 0.32, thumbCell: 2.4, thumb: 0.02, mottle: 0.05 }),
+  metal: C('#8a8780', { rough: 0.35, metal: 0.4, thumb: 0.015 }), folder: C('#e2661a', { emissive: '#6a2404', emissiveIntensity: 0.55, rough: 0.75, thumbCell: 2.2, thumb: 0.02, mottle: 0.07, specks: 0.15 }),
+  folderEdge: C('#b44e16', { emissive: '#4a1803', emissiveIntensity: 0.5, rough: 0.85, thumbCell: 2 }), orange: C('#ee6c18', { rough: 0.32, thumbCell: 2.4, thumb: 0.02, mottle: 0.05 }),
 };
 
 // ------------------------------------------------------------------ the room
@@ -97,7 +97,7 @@ mesh0(new THREE.CylinderGeometry(0.5, 0.5, 1.6, 12), M.metal, { pos: [0, 5.8, 0]
 mesh0(new THREE.SphereGeometry(0.9, 12, 8), M.metal, { pos: [0, 6.6, 0], parent: BELL });
 
 // the ring light over the table: a plain HDR hoop, the thing everyone remembers about such rooms
-const RY = 138;   // high enough that its far edge clears the board's title in every shot
+const RY = 146;   // high enough that its far edge clears the board's title in every shot
 const RING = mesh0(new THREE.TorusGeometry(126, 2.2, 16, 220).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 2.5, 2.25) }), { pos: [0, RY, 0], parent: scene, cast: false });
 for (let k = 0; k < 6; k++) { const a = k / 6 * TAU;   // its hangers
   mesh0(new THREE.CylinderGeometry(0.35, 0.35, 280, 6), M.metal, { pos: [Math.cos(a) * 126, RY + 140, Math.sin(a) * 126], parent: scene, cast: false }); }
@@ -226,10 +226,10 @@ const drift = (t, a = 1) => V([Math.sin(t * 0.37) * 2.2 * a, Math.sin(t * 0.53 +
 const SHOT = [
   { // 1 · low over the felt, close: the three wingbacks big against the ring light and the board
     t0: () => T.s1, t1: () => T.s2,
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 33, 18], [0, 34, -8], k)).add(drift(t, 0.4)), at: V([0, 96, -190]), fov: 72 }; } },
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 33, 18], [0, 34, -8], k)).add(drift(t, 0.4)), at: V([0, 103, -190]), fov: 72 }; } },
   { // 2 · the three, square on; their spots come on in turn
     t0: () => T.s2, t1: () => T.s3,
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 40, 10], [0, 42, -14], k)).add(drift(t, 0.4)), at: V([0, 97, -190]), fov: 70 }; } },
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 40, 10], [0, 42, -14], k)).add(drift(t, 0.4)), at: V([0, 103, -190]), fov: 70 }; } },
   { // 3 · the towers: a little left and low, so both stacks and the tumbling folders read against the dark
     t0: () => T.s3, t1: () => T.s4,
     cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-36, 38, 16], [-30, 40, -6], k)).add(drift(t, 0.4)), at: V([0, 101, -188]), fov: 72 }; } },
