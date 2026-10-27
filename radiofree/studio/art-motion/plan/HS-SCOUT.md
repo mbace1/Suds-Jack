@@ -387,3 +387,5 @@ Everything below comes from search summaries. No article was opened.
 - **Finland:** no new HS candidate. Searches for HS data-centre or secrecy stories returned nothing new since 23 Oct.
 - **Muhos:** nothing new since 22–23 Oct. Kaleva still reports two police requests; MTV (7 Oct) reports an inquiry started on the private request; Yle (~22 Oct) says none has started. No new LVV statement. The water plan is still due 5 Nov. [Kaleva](https://www.kaleva.fi/oulun-poliisille-on-tehty-kaksi-tutkintapyyntoa-go/13709521), [MTV](https://www.mtvuutiset.fi/artikkeli/il-poliisi-kaynnisti-esiselvityksen-googlen-datakeskuksesta/9403560)
 - **Hamina / Trade Secret:** no follow-up found.
+
+- **27 Oct 17:16 (search summaries):** no new HS candidate. Muhos: nothing new; the water plan is due 5 Nov (a conditional fine is possible per Kaleva). Hamina: no follow-up.

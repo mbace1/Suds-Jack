@@ -193,3 +193,20 @@ All facts below come from search summaries; no article was opened.
 - **Secret Inquiry v2:** still accurate. "The authority asked police" holds under every account, and the water plan is due 5 Nov. Re-check on 5–6 Nov for whether the plan was filed.
 - **The Panel:** still accurate. There is still no Pentagon word on the co-leads' status or ethics rules.
 - **Break Glass:** keep held. No plenary vote found; the last report (~30 Sep) had the bill still in committee, and it needs a five-sixths majority. [Verkkouutiset](https://www.verkkouutiset.fi/a/tata-mielta-timo-harakka-on-nyt-rajalaista-nosti-esiin-martin-scheininin-kirjoituksen/)
+
+## Daily check, Tue 27 Oct 17:16 (search summaries only)
+- **The Panel:** still accurate, nothing newer than NPR's 6 Oct story.
+  - The Pentagon still hasn't said whether Musk and Luckey are special government employees or contractors.
+  - A DOD spokesperson said MITRE will apply conflict-of-interest safeguards.
+  - SpaceX and Anduril did not comment.
+  - Source: [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/).
+- **Break Glass:** keep held. No plenary vote found on extending the law to 31.12.2028.
+  - The 168–29 and 167–31 results in searches are earlier votes.
+  - The bill needs a 5/6 majority, so 9 SDP MPs voting against would sink it.
+  - Source: [Verkkouutiset](https://www.verkkouutiset.fi/a/yhdeksan-sdpn-kansanedustajan-vastustus-riittaa-kaatamaan-rajaturvallisuuden-lain/).
+- **Muhos (light watch; Secret Inquiry is scrapped):** no new LVV or police news. The water plan is due 5 Nov, and if it isn't filed it can be demanded under a conditional fine (per Kaleva). Re-check 5–6 Nov. Source: [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712).
+- **Global:** no change.
+  - Meta: no reply to Grassley's 22 Jul letter found.
+  - NDA bans: no vote today. Indiana County, PA, votes 18 Nov.
+- **Finland:** no new HS candidate.
+- **No film needs a fix.**

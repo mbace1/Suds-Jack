@@ -490,3 +490,5 @@ Everything below comes from search summaries. No article was opened.
   - **North Dakota:** its Senate rejected a ban 32–15 on 4 Sep. [Valley News Live](https://www.valleynewslive.com/2026/09/04/nd-lawmakers-reject-ban-data-center-non-disclosure-agreements/)
   - **Posted film:** For Your Protection is unaffected.
 - **Big development:** none.
+
+- **27 Oct 17:16 (search summaries):** no change on The Panel: the co-leads' SGE/contractor status is still undisclosed, and MITRE safeguards are the only DOD line. Meta: still no reply to Grassley. NDA bans: no new vote; Indiana County, PA, votes 18 Nov.
