@@ -7,9 +7,9 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=52';
-import WAVES from './tuning/waves.js?v=52';
-import PICKUPS from './tuning/pickups.js?v=52';
+import { SPECIES } from './tuning/species/index.js?v=53';
+import WAVES from './tuning/waves.js?v=53';
+import PICKUPS from './tuning/pickups.js?v=53';
 
 export const TUNING = {
   render: {
@@ -508,11 +508,13 @@ export const TUNING = {
   // risky things — a kill (`kill`, and up to ×k0 that for one made close: the
   // extra falls as (1 − u)^pow from r0 m to nothing at r1 m; a dash kill is point-blank), a graze, a room's goal
   // taken — holds for `grace` s after each, then drains `drain` + `drainPer` ×
-  // the level a second. A hit keeps `hitKeep` of it (none). COLD GUN, a room's
+  // the level a second, and only while there is something on the floor to kill
+  // (v53: an empty floor holds it); the kill that empties the floor heats
+  // `clear` more. A hit keeps `hitKeep` of it (none). COLD GUN, a room's
   // mutator, takes `coldShot` a shot.
   heat: {
     levels: 8, kill: 0.2, near: { r0: 2, r1: 6, k0: 4, pow: 2 }, graze: 0.08,
-    grace: 0.4, drain: 0.45, drainPer: 0.08, hitKeep: 0, coldShot: 0.012,
+    grace: 0.4, drain: 0.45, drainPer: 0.08, clear: 0.8, hitKeep: 0, coldShot: 0.012,
     goal: { gate: 0.6, orb: 0.3, hill: 0.6, leg: 0.3 },
     // what you see and hear of it (v52): a halo on the floor under you and a
     // tint in the gel, from `colors[0]` at ×2 to the last at ×8, growing with

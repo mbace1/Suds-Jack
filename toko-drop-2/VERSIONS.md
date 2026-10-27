@@ -19,6 +19,18 @@
     Never `--no-verify`.
 -->
 
+## v53 — 2026-10-27
+**HEAT holds through a lull, and the kill that empties the floor heats a level: the arcade shows HEAT from its first waves**
+- Owner, 2026-10-27: "Go" on the fix the v52 playtest proposed. Played through the hub with real touch, a whole first minute of ARCADE averaged ×1.02 and never passed ×2: the early waves come in small groups with gaps, and heat drained away in the gaps.
+- HOLDS: heat drains only while there is something on the floor to kill (a body that has landed and is not locked). Between waves, on a floor just emptied, while the next ones are still arriving, it holds: you cannot be out-paced by a lull you did not make.
+- CLEARS: the kill that empties the floor heats `TUNING.heat.clear` (0.8) more. A small wave ends that way all the time; a room's stream rarely does, so in the rooms it rewards killing fast enough to keep the floor clear. A longer grace was tried first and dropped: it lifted the arcade but let safe play in the rooms catch up with risky play (THREE RINGS 35k safe against 40k pressed, where v52 had 21k against 30k).
+- PAID, THEN HEATED: a kill is paid at the heat it was made at, then adds its own; before, it counted its own heat first. The kill event's multiplier is the one it was paid at.
+- Measured (the bot, 4 minutes of ARCADE on two seeds): the sharp bot averages ×3.1 and ×5.3 (v52: ×1.4 and ×3.5), the average bot ×1.5 and ×3.4 (v52: ×1.0 and ×1.3). In the rooms the gap between safe and pressed play holds or widens (THREE RINGS at 0.5: 40k pressed, 25k safe). Every room re-tiered at 24 seeds, normal and HARD.
+- Tests: `test/campaign.mjs` (an empty floor holds the heat; the kill that empties it heats `clear` more), `test/sim.mjs` (a lone kill heats the next a level); the tests that pay exact sums keep a bystander on the floor.
+- Cache tokens `?v=52` → `?v=53`; HUD label → `2.0 · v53`
+
+---
+
 ## v52 — 2026-10-27
 **HEAT you can see and hear, its own best scores, and S lines set by a bot that plays for it**
 - Owner, 2026-10-27: "Go" on the next steps after v51 — make HEAT readable before tuning on top of it, and set the lines with a bot that takes the risk HEAT pays for.

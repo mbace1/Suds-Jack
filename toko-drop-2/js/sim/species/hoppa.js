@@ -12,7 +12,7 @@
 //           `height`; above `airborne` it is untouchable
 //   land    a squash, a ring of `ringCount` shots, then REST
 // Numbers: js/tuning/species/hoppa.js. Seeded: w.rng only.
-import { steerTo } from './base.js?v=52';
+import { steerTo } from './base.js?v=53';
 
 const range = (w, [a, b]) => a + w.rng.next() * (b - a);
 

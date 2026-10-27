@@ -14,20 +14,20 @@
 // moves, then everything is tested, against post-move positions.
 //
 // Modes: 'arcade', 'hardcade' (corpses fire back) and 'survival'.
-import { TUNING } from '../tuning.js?v=52';
-import { makeRng } from './rng.js?v=52';
-import { BEHAVIOUR } from './species/index.js?v=52';
-import { DIRECTORS } from './director/index.js?v=52';
-import * as fire from './fire.js?v=52';
-import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=52';
-import { swarmForces, resolveCrowd } from './crowd.js?v=52';
-import { revengeColor } from './color.js?v=52';
-import * as pickups from './pickups.js?v=52';
-import * as worlds from './worlds.js?v=52';
-import * as reshape from './reshape.js?v=52';
-import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=52';
-import * as rules from './rules.js?v=52';
-import * as heat from './heat.js?v=52';
+import { TUNING } from '../tuning.js?v=53';
+import { makeRng } from './rng.js?v=53';
+import { BEHAVIOUR } from './species/index.js?v=53';
+import { DIRECTORS } from './director/index.js?v=53';
+import * as fire from './fire.js?v=53';
+import { makeHero, heroStep, applyPull, hurtHero, invincible } from './hero.js?v=53';
+import { swarmForces, resolveCrowd } from './crowd.js?v=53';
+import { revengeColor } from './color.js?v=53';
+import * as pickups from './pickups.js?v=53';
+import * as worlds from './worlds.js?v=53';
+import * as reshape from './reshape.js?v=53';
+import { Arena, levelShape, levelMoves, levelEnvelope, KIND } from './shape.js?v=53';
+import * as rules from './rules.js?v=53';
+import * as heat from './heat.js?v=53';
 
 const T = TUNING;
 
@@ -278,9 +278,13 @@ function kill(w, g, src = 'hero') {
   w.kills++; w.streak++;
   // HEAT (v51): the kill heats you up by how close it was, then pays at the heat
   // (1.x paid 100 × the streak, which compounded without a ceiling)
-  heat.gain(w, heat.killHeat(w, g, src)); heat.pay(w, T.score.perKill * pickups.scoreMult(w), hard);   // a gate's or a hazard's kill pays, but heats nothing
+  // paid at the heat it was made at, then it heats you (v53): by how close it was, and more for
+  // the kill that empties the floor; a gate's or a hazard's kill pays, but heats nothing
+  const m0 = heat.mult(w);
+  heat.pay(w, T.score.perKill * pickups.scoreMult(w), hard);
+  heat.gain(w, heat.killHeat(w, g, src) + (src !== 'env' && heat.lull(w) ? T.heat.clear : 0));
   pickups.onKill(w, g);             // the bounty pays (1.x main.js:4436-4448)
-  w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src, m: heat.mult(w) });
+  w.events.push({ type: 'kill', id: g.id, x: g.x, z: g.z, kind: g.kind, r: g.r, color: S.color, big: g.r >= T.death.big, boss: g.isBoss, src, m: m0 });
   if (g.isBoss) w.lastBoss = { x: g.x, z: g.z };   // where a later world's drain opens
   BEHAVIOUR[g.kind].onKill?.(w, g, api, src);
   // a big death shakes the bodies around it (1.x main.js:4517-4540) — the ones

@@ -3,7 +3,7 @@
 // look). When you come within `bite.range` of the light it tells for
 // `bite.tell` s and lunges along that line at `bite.speed`; then it rests.
 // Seeded: w.rng only.
-import { steerTo } from './base.js?v=52';
+import { steerTo } from './base.js?v=53';
 
 export default {
   init(w, g, api) { const s = g.s; s.state = 'creep'; s.t = 0; s.lx = g.x; s.lz = g.z; s.dx = 0; s.dz = 1; },

@@ -7,7 +7,8 @@
 //
 // HEAT climbs on the risky things — a kill, more for one made close (a dash
 // kill is point-blank), a bullet grazed, a room's goal taken — and drains
-// once you go quiet for `grace` seconds, faster the hotter it is. A hit
+// once you go quiet for `grace` seconds while there is something to kill,
+// faster the hotter it is (an empty floor holds it, v53). A hit
 // throws it away. Every point is paid at 1 + floor(heat): ×1 … ×levels.
 //
 // A room may add MUTATORS (`score: { mutators: [...] }` in its level):
@@ -16,7 +17,7 @@
 //   coldgun  every shot costs heat: the gun is the safe way, and it cools you
 //            (Rush's juggle, for a room or two — not the base)
 // Pure: no DOM, no clock.
-import { TUNING } from '../tuning.js?v=52';
+import { TUNING } from '../tuning.js?v=53';
 
 const T = TUNING, H = T.heat;
 
@@ -54,9 +55,15 @@ export function pay(w, points, hard = false) {
   return n;
 }
 
+// v53: it drains only while there is something on the floor to kill. Through
+// a lull — between waves, a floor emptied, bodies not yet down from their
+// arrival — it HOLDS: you cannot be out-paced by a lull you did not make (the
+// v52 playtest: the arcade's early waves came in small groups with gaps, and
+// a whole first minute averaged ×1.02)
+export const lull = (w) => !w.gels.some((g) => g.alive && g.state === 'active' && !g.locked);
 export function step(w, dt) {
   if (w.heatT > 0) { w.heatT -= dt; return; }
-  if (!(w.heat > 0)) return;
+  if (!(w.heat > 0) || lull(w)) return;
   const was = mult(w);
   w.heat = Math.max(0, w.heat - (H.drain + H.drainPer * Math.floor(w.heat)) * dt);
   const m = mult(w);

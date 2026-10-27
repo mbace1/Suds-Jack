@@ -8,7 +8,7 @@
 //
 // Every number is TUNING.specimen.
 import * as THREE from 'three/webgpu';
-import { createWorld, api } from '../sim/world.js?v=52';
+import { createWorld, api } from '../sim/world.js?v=53';
 
 export class Specimen {
   constructor(T, actors, environment) {
