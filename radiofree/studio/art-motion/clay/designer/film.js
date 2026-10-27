@@ -73,7 +73,7 @@ function basePose(o = {}) {
 // his shoulders (from Toko.pose at this lean) and the default elbows, which tuck under the desk edge for typing
 const SHO = [[-5.1, 27.5, 1.8], [5.1, 27.5, 1.8]], EL0 = [at([-6.2, 5.0, 7.5]), at([6.2, 5.0, 7.5])];
 /** elbows for raised hands: hung a little below the shoulder-to-hand line, so a lifted arm never dips under the desk */
-const elbowsFor = (wR, wL, k = 1) => [[wR, -1], [wL, 1]].map(([w, s], j) => { const m = lerp3(SHO[j], w, 0.5); return lerp3(EL0[j], [m[0] + s, m[1] - 2.8, m[2] + 0.6], k); });
+const elbowsFor = (wR, wL, k = 1, sag = [2.8, 2.8]) => [[wR, -1], [wL, 1]].map(([w, s], j) => { const m = lerp3(SHO[j], w, 0.5); return lerp3(EL0[j], [m[0] + s, m[1] - sag[j], m[2] + 0.6], k); });
 /** set the hands to WORLD targets (each touching something), the palms facing the given world directions */
 function handsTo(pz, wR, wL, nR = [1, 0, 0], nL = [-1, 0, 0], elbows = null) {
   WRAP.updateMatrixWorld(true);
@@ -180,7 +180,7 @@ function boxState(i, t) {
   }
   return { pos, rot, sq, face, vis };
 }
-const GROW = 0.8, HOLD = [10, DESK.y + 11, 12], REST = [15, DESK.y + BOX / 2 + 0.05, 14], ASIDE = [6.5, DESK.y + BOX / 2, 25];   // HOLD (up by his face) and REST (by the crate) sit to his left of the laptop, where the lid cannot hide them
+const GROW = 0.8, HOLD = [12, DESK.y + 10, 12], REST = [15, DESK.y + BOX / 2 + 0.05, 14], ASIDE = [6.5, DESK.y + BOX / 2, 25];   // HOLD (up by his face) and REST (by the crate) sit to his left of the laptop, where the lid cannot hide them
 
 // the drones outside the window (world; far beyond the glass, crossing slowly)
 // z must sit between the window (z −26) and the park card (z −88): behind the card a drone is hidden, which is why the stills had none
@@ -209,10 +209,10 @@ const SHOT = [
       // before he has it: his hands go to it on the stack; after: both paddles press its sides
       const side = (s) => [b.pos[0] + s * (BOX / 2 * sq[0] + 1.05), b.pos[1] - 0.2, b.pos[2] - 0.2];
       const wR = kp < 1 ? lerp3([-3.2, DESK.y + 1.9, 13.2], side(-1), kp) : side(-1), wL = kp < 1 ? lerp3([3.2, DESK.y + 1.9, 13.2], side(1), kp) : side(1);
-      return handsTo(pz, wR, wL, [1, 0, 0], [-1, 0, 0], elbowsFor(wR, wL, kp)); },
+      return handsTo(pz, wR, wL, [1, 0, 0], [-1, 0, 0], elbowsFor(wR, wL, kp, [6, 2.8])); },   // the right forearm comes up from BELOW, never across the mask
     screen(t) { drawScreen(t, 10); },
     // owner (stills): turn him to the lens. From his left-front, the mask full face and the box up beside it, over the lid
-    cam(t, lt, d) { const k = ease.io(lt / d), tgt = V([6, 31, 10]), pos = V([lerp(17, 15.5, k), lerp(36.5, 35.8, k), lerp(63, 58, k)]); return { pos, at: tgt, fov: 40, focus: pos.distanceTo(tgt), ap: 5 }; },
+    cam(t, lt, d) { const k = ease.io(lt / d), tgt = V([7.5, 31, 10]), pos = V([lerp(18.5, 17, k), lerp(36.5, 35.8, k), lerp(63, 58, k)]); return { pos, at: tgt, fov: 40, focus: pos.distanceTo(tgt), ap: 5 }; },
     post: { threshold: 1.6, bloomA: 0.12, bloomB: 0.08 }, boxLight: 0.4 },
   { // 4 · the desk again: the crate of nine, the one glowing under his hands
     t0: () => T.s4, t1: () => T.end,
