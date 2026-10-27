@@ -182,7 +182,7 @@ function hazeTex() { const c = canvas(4, 256), g = c.getContext('2d'), gr = g.cr
   gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.15, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0.15)'); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); return tex(c); }
 const HZT = hazeTex();
 const hazeMat = (c, o) => new THREE.MeshBasicMaterial({ color: c, map: HZT, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false });
-const BEAM = mesh0(new THREE.CylinderGeometry(120, 150, 270, 96, 1, true), hazeMat('#ff8a2a', 0.045), { pos: [0, 30 + 135, -10], parent: scene, cast: false, recv: false });
+const BEAM = mesh0(new THREE.CylinderGeometry(120, 150, 270, 96, 1, true), hazeMat('#ff8a2a', 0.03), { pos: [0, 30 + 135, -10], parent: scene, cast: false, recv: false });
 const CONES = PANEL.map((c) => { const m = mesh0(new THREE.CylinderGeometry(4, 40, 300, 48, 1, true), hazeMat('#ff7a1a', 0), { pos: [c.pos[0] * 0.96, 30 + 150, c.pos[2] * 0.96], parent: scene, cast: false, recv: false }); return m; });
 const DUST = (() => { const r = rng(77), n = 320, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) { const a = r() * TAU, d = Math.sqrt(r()) * 150; pos.set([Math.cos(a) * d, 32 + r() * 200, -10 + Math.sin(a) * d], i * 3); }
@@ -194,11 +194,11 @@ const DUST = (() => { const r = rng(77), n = 320, pos = new Float32Array(n * 3);
 // v3: the lamps are orange where you SEE them (the ring, the haze in every beam, the back light's rim, the bloom) and a
 // pale amber where they land, so the chairs stay pale and the orange folders still stand off them; everything that is
 // not a lamp (the hemi, the fill, the board's glow) is teal-grey, so the shadows go cold
-const hemi = new THREE.HemisphereLight('#6f9ca8', '#1a2628', 0.3); scene.add(hemi);
-const pool = new THREE.SpotLight('#ffdcb8', 2600, 0, 0.55, 0.6, 1.25); pool.position.set(0, 300, 30); pool.target.position.set(0, TY, -10);
+const hemi = new THREE.HemisphereLight('#6f9ca8', '#1a2628', 0.45); scene.add(hemi);
+const pool = new THREE.SpotLight('#f6ebe0', 2400, 0, 0.55, 0.6, 1.25); pool.position.set(0, 300, 30); pool.target.position.set(0, TY, -10);
 pool.castShadow = true; pool.shadow.mapSize.set(2048, 2048); pool.shadow.bias = -0.0004; scene.add(pool, pool.target);
 const boardGlow = new THREE.PointLight('#8fc4cc', 900, 0, 1.4); boardGlow.position.set(0, 205, -330); scene.add(boardGlow);
-const fill = new THREE.DirectionalLight('#5f9fae', 0.45); fill.position.set(200, 160, 400); scene.add(fill);
+const fill = new THREE.DirectionalLight('#5f9fae', 0.55); fill.position.set(200, 160, 400); scene.add(fill);
 // the back light: one orange spot low behind the three, so every chair and tower carries a hot rim against the dark
 const backLight = new THREE.SpotLight('#ff6a10', 16000, 0, 0.62, 0.55, 1.2); backLight.position.set(0, 240, -372); backLight.target.position.set(0, 70, -165);
 backLight.castShadow = true; backLight.shadow.mapSize.set(1024, 1024); backLight.shadow.bias = -0.0004; scene.add(backLight, backLight.target);
@@ -261,13 +261,13 @@ function tag(g, text, a) {
 
 // ------------------------------------------------------------------ the Digger grade: pale, lifted, split warm/cold, grainy
 // v3: desaturation eased (0.82 → 0.95) so the orange light reads; a teal lift in the blacks; the bloom lower and stronger
-const DIGGER = { sat: 0.95, contrast: 1.12, lift: [0.034, 0.06, 0.066], gain: [1.04, 1.0, 0.94], tint: [1.0, 1.0, 1.0], toe: 0.0,
-  exposure: 0.98, vignette: 0.42, grain: 0.08, threshold: 1.05, knee: 0.5, bloomA: 0.42, bloomB: 0.3, aberration: 0.0016 };
+const DIGGER = { sat: 0.95, contrast: 1.12, lift: [0.03, 0.062, 0.072], gain: [1.04, 1.0, 0.94], tint: [1.0, 1.0, 1.0], toe: 0.0,
+  exposure: 0.98, vignette: 0.42, grain: 0.08, threshold: 1.05, knee: 0.5, bloomA: 0.42, bloomB: 0.24, aberration: 0.0016 };
 
 // the orange keep: a colourist's hue-vs-hue curve, run on the graded frame before the captions. Every warm, chromatic
 // pixel is pulled into the safety-orange band (~30°) and the already-saturated ones (the props) are pushed further,
 // because ACES's toe and the pale grade turn a dim orange to rust. Grey, teal and white are untouched. ?keep=0 skips it.
-const KEEP = { hue: 30, pull: 0.85, boost: 0.55 };
+const KEEP = { hue: 30, pull: 0.85, boost: 0.45 };
 const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a)); return k * k * (3 - 2 * k); };
 function orangeKeep(g) {
   const im = g.getImageData(0, 0, W, H), d = im.data;
@@ -278,10 +278,10 @@ function orangeKeep(g) {
     if (s < 0.3) continue;
     const h = 60 * (gr - b) / c;                               // −60…60 when red leads
     const wh = h < -24 ? 0 : h < -8 ? (h + 24) / 16 : h <= 46 ? 1 : h < 58 ? (58 - h) / 12 : 0;
-    const w = wh * smooth(0.3, 0.55, s) * smooth(40, 72, r); if (w <= 0) continue;
+    const w = wh * smooth(0.35, 0.6, s) * smooth(40, 72, r); if (w <= 0) continue;
     const h2 = h + (KEEP.hue - h) * KEEP.pull * w;
     const s2 = Math.min(1, s + (1 - s) * KEEP.boost * w * smooth(0.6, 0.85, s));
-    const v = Math.min(255, r * (1 + 0.1 * w)), lo = v * (1 - s2);
+    const v = Math.min(255, r * (1 + 0.03 * w)), lo = v * (1 - s2);
     d[i] = v; d[i + 1] = lo + (v - lo) * h2 / 60; d[i + 2] = lo;
   }
   g.putImageData(im, 0, 0);
