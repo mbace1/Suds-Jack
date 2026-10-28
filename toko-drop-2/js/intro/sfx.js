@@ -133,8 +133,12 @@ export async function renderIntroSfxWav(seconds, gain = 0.5, rate = 48000) {
   const ctx = new OfflineAudioContext(2, Math.ceil(seconds * rate), rate);
   const g = ctx.createGain(); g.gain.value = gain; g.connect(ctx.destination);
   scheduleIntroSfx(ctx, g, 0.05);
-  const buf = await ctx.startRendering();
-  const n = buf.length, out = new DataView(new ArrayBuffer(44 + n * 4));
+  return wavBytes(await ctx.startRendering());
+}
+
+// a rendered stereo AudioBuffer as 16-bit WAV bytes (music.js renders through it too)
+export function wavBytes(buf) {
+  const rate = buf.sampleRate, n = buf.length, out = new DataView(new ArrayBuffer(44 + n * 4));
   const str = (o, s) => { for (let i = 0; i < s.length; i++) out.setUint8(o + i, s.charCodeAt(i)); };
   str(0, 'RIFF'); out.setUint32(4, 36 + n * 4, true); str(8, 'WAVEfmt '); out.setUint32(16, 16, true);
   out.setUint16(20, 1, true); out.setUint16(22, 2, true); out.setUint32(24, rate, true); out.setUint32(28, rate * 4, true);

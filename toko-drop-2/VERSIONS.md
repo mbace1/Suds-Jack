@@ -19,6 +19,24 @@
     Never `--no-verify`.
 -->
 
+## v58 — 2026-10-28
+**Music: a song for every world, layered by your heat; and the sound no longer clips**
+- Owner, 2026-10-28: "Continue" — the biggest gap left that needs no person: ARCADE's A9 sat at 5/10 for "no music". 2.0 had none, and 1.x's v267 world beds were ambience, not music.
+- `js/music.js` plays `js/tuning/music.js`: ten songs, synthesised in the intro's 16-bit register (pulse waves at 12.5 / 25 / 50 %, a triangle bass, a noise kit, two-operator FM for bells and brass, an echo), every note laid down in audio time a little ahead of the clock, never on a timer:
+  - the title, TOKO DROP (C major, 100 bpm), on the menus;
+  - THE GRID NEON DROP (A minor, 124), THE DRIVEWAY CURB APPEAL (E Dorian, swung, 112), THE SEWER DRIP FEED (D minor dub, 94), THE CISTERN SWEEP LINE (F# Phrygian, 128), THE BOILER PRESSURE (C minor, FM brass and metal hits, 136), THE RIVER UNDERCURRENT (G Lydian in 12/8, 84), THE ICE BLACK ICE (B minor, FM bells, 104), THE DEEP LIGHTS OUT (C# minor, a sonar ping, 84), THE CORE OMEGA (A harmonic minor, 146);
+  - each is two eight-bar sections and a four-bar boss section on its own chords. The campaign's six worlds play the arcade song that shares their rule.
+- **The music is your heat.** An empty floor with no heat: the harmony alone. ×1: kick, bass, the arpeggio, and the tune quietly. ×2: the full kit and the tune forward. ×3: the extras. ×5: the tune doubled an octave up. A level rises at the next half bar and falls at a bar line a bar later, so it never flickers, and a hit throws it down at the next bar line. An empty floor rests the drums and keeps the tune; a boss takes the song to its boss section at level 3 at least; a room's last 10 s double the hats.
+  - The tune is there from ×1 because the line bots say a first-timer spends most of a world at ×1–×2 (the good and ordinary bots ×3 and up): with the tune from ×2 only, a new player would hardly have heard it.
+- **Its cues are information**, as 1.x's beds were: a sweep or an updraft coming swells a riser into its hit; THE DEEP's dark closes the music's filter with it; THE RIVER's current carries the arpeggio across the speakers; a hit makes the music flinch. Stings in the song's key: a boss down or a room cleared, a room lost, game over, the last world won. Silent under the intro and while the floor swallows the droplet; ducked and muffled while paused.
+- **Mixed by measurement, through a phone's speaker** (`scripts/music-render.mjs`: songs rendered in an OfflineAudioContext, a 300 Hz high-pass standing in for the phone). Each part measured on its own against the tune: the drums were 19–42 dB under it at first. At ×2 and up the ten songs sit within 4.4 dB of each other, 7.5–12 dB under a kill and 2.5–7 dB under a hit taken.
+- **The sound clipped, before any music**: replaying a bot's run found 21 arrivals' thuds in one instant summing past full scale (147 samples). One sound now plays at most a few times in 40 ms (`TUNING.audio.gate`), and the master runs through a limiter only a pile-up reaches: 0 samples at full scale in the same run.
+- OPTIONS: MUSIC beside VOLUME (`toko2.music`, in quarters, the music's alone); SPLATTER moves down beside REDUCE MOTION.
+- Tests: `test/music.mjs`, 87 checks in bare node on a fake audio context (`test/lib/fakeaudio.mjs`): every song reads and every bar adds up; no held note grinds a semitone over its chord; the layers stack; nothing is laid down in the past or left running; every voice goes through the music's bus; a hidden tab comes back without a burst; MUSIC off makes nothing; a song changing fades out and goes; and the cues. The smoke checks that the menus play the title, every run plays its world's song, MUSIC steps and is kept, and the pause ducks.
+- Cache tokens `?v=57` → `?v=58`; HUD label → `2.0 · v58`
+
+---
+
 ## v57 — 2026-10-28
 **Ten rooms retuned into their difficulty bands: all 36 now sit where their difficulty says, measured by v56's bots**
 - Owner, 2026-10-28: "Retune" — v56's bots, which play like people, found ten rooms outside the band their difficulty `d` asks for (`scripts/lines.mjs` BANDS), which would have cost the campaign's difficulty-curve score. v56 and v57 ship together.

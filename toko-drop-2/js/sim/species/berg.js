@@ -9,7 +9,7 @@
 //
 //   SLIDE → FREEZE (tell) → FIRE (hold) → SLIDE
 // Numbers: js/tuning/species/berg.js. Seeded: w.rng only.
-import { rage, range, toHero, inside } from './bosskit.js?v=57';
+import { rage, range, toHero, inside } from './bosskit.js?v=58';
 
 function slideAt(w, g, sp) { const { ux, uz } = toHero(w, g.x, g.z); g.s.vx = ux * sp; g.s.vz = uz * sp; }
 

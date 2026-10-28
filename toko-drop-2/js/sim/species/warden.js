@@ -25,7 +25,7 @@
 // per-bullet `w.alive`.
 //
 // Numbers: js/tuning/species/warden.js. Contract: docs/SIM_CONTRACT.md.
-import { TUNING } from '../../tuning.js?v=57';
+import { TUNING } from '../../tuning.js?v=58';
 
 export default {
   init(w, g) {

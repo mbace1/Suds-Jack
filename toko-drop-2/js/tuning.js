@@ -7,9 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=57';
-import WAVES from './tuning/waves.js?v=57';
-import PICKUPS from './tuning/pickups.js?v=57';
+import { SPECIES } from './tuning/species/index.js?v=58';
+import WAVES from './tuning/waves.js?v=58';
+import PICKUPS from './tuning/pickups.js?v=58';
+import MUSIC from './tuning/music.js?v=58';
 
 export const TUNING = {
   render: {
@@ -802,7 +803,12 @@ export const TUNING = {
   // 1.x's camera shake (main.js:665-737): trauma adds, decays, and moves the
   // camera by trauma squared
   shake: { decay: 2.8, amp: [1.8, 1.2, 1.2], freq: [41, 37, 43], kill: 0.07, killPerRadius: 0.13, hurt: 0.38, bigKill: 0.1 },
-  audio: { master: 0.5 },
+  // v58: one sound at most this many times in `window` s (a pile-up's
+  // rest is not heard), and the limiter on the master only a pile-up reaches
+  audio: { master: 0.5, gate: { window: 0.04, land: 3, spawn: 3, kill: 4, hit: 4, lobLand: 3, mothShot: 3 },
+    limit: { threshold: -3, ratio: 20, attack: 0.002, release: 0.12 } },
+  // the music (tuning/music.js, v58): a song a world, layered by the heat
+  music: MUSIC,
   flow: { deathBeat: 1.4 },                 // seconds the last hit holds the screen before the results
 
   // HARDCADE's corpse fire, as 1.x had it (tuning.js:486-526, main.js:4390-4420):

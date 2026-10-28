@@ -1,7 +1,7 @@
 // audio.js — synthesised, never sampled. Every voice goes through one master
 // gain, so mute really mutes and a sound added later inherits it. Browsers
 // keep audio asleep until a gesture; unlock() is called from the first one.
-import { TUNING } from './tuning.js?v=57';
+import { TUNING } from './tuning.js?v=58';
 
 const A = TUNING.audio;
 
@@ -14,14 +14,31 @@ export class Sound {
     if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    this.ctx = new AC();
-    this.master = this.ctx.createGain();
+    this.attach(new AC());
+  }
+  // the master on `ctx` (the live context, or an offline one for a render):
+  // through a limiter (v58) that only a pile-up ever reaches
+  attach(ctx) {
+    this.ctx = ctx;
+    this.master = ctx.createGain();
     this.master.gain.value = this.level;
-    this.master.connect(this.ctx.destination);
-    const n = this.ctx.sampleRate;
-    this._noise = this.ctx.createBuffer(1, n, n);
+    const L = A.limit, lim = ctx.createDynamicsCompressor();
+    lim.threshold.value = L.threshold; lim.knee.value = 0; lim.ratio.value = L.ratio; lim.attack.value = L.attack; lim.release.value = L.release;
+    this.master.connect(lim); lim.connect(ctx.destination);
+    const n = ctx.sampleRate;
+    this._noise = ctx.createBuffer(1, n, n);
     const d = this._noise.getChannelData(0);
     for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  }
+  // many of one sound at once (a brood landing, a dash boom's kills): the
+  // first few are heard and the rest would only pile up past full scale —
+  // twenty-one arrivals' thuds in one instant clipped (v58, measured)
+  _gate(type) {
+    const max = A.gate[type];
+    if (!max || !this.ctx) return true;
+    const t = this.ctx.currentTime, g = (this._gates ??= {})[type] ??= { t: -1, n: 0 };
+    if (t - g.t > A.gate.window) { g.t = t; g.n = 0; }
+    return ++g.n <= max;
   }
 
   setOn(on) { this.on = on; this._apply(); }
@@ -46,6 +63,7 @@ export class Sound {
 
   // one call per sim event
   event(e) {
+    if (!this._gate(e.type)) return;
     switch (e.type) {
       case 'shot': if ((this._shot++ & 1) === 0) this._tone('square', 1500, 900, 0.035, 0.035); break;
       // 1.x's gels fire silently; a quiet tick is 2.0's, and a WEEVA's spiral

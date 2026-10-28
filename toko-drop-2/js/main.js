@@ -7,30 +7,31 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=57';
-import { buildFloor } from './render/floor.js?v=57';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=57';
-import * as worldsSim from './sim/worlds.js?v=57';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=57';
-import * as reshapeSim from './sim/reshape.js?v=57';
-import { Scenery } from './render/scenery.js?v=57';
-import { Transit } from './render/transit.js?v=57';
-import { Splats } from './render/splats.js?v=57';
-import { Actors } from './render/actors.js?v=57';
-import { GEL_TIME } from './render/gel.js?v=57';
-import { studioEnvironment } from './render/env.js?v=57';
-import { Specimen } from './render/specimen.js?v=57';
-import { createWorld, step, api as simApi } from './sim/world.js?v=57';
-import { stage as stagePk } from './sim/pickups.js?v=57';
-import { Input } from './input.js?v=57';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=57';
-import { Announcer } from './announcer.js?v=57';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=57';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=57';
-import { Sound } from './audio.js?v=57';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=57';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=57';
-import { Readout } from './readout.js?v=57';
+import { TUNING } from './tuning.js?v=58';
+import { buildFloor } from './render/floor.js?v=58';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=58';
+import * as worldsSim from './sim/worlds.js?v=58';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=58';
+import * as reshapeSim from './sim/reshape.js?v=58';
+import { Scenery } from './render/scenery.js?v=58';
+import { Transit } from './render/transit.js?v=58';
+import { Splats } from './render/splats.js?v=58';
+import { Actors } from './render/actors.js?v=58';
+import { GEL_TIME } from './render/gel.js?v=58';
+import { studioEnvironment } from './render/env.js?v=58';
+import { Specimen } from './render/specimen.js?v=58';
+import { createWorld, step, api as simApi } from './sim/world.js?v=58';
+import { stage as stagePk } from './sim/pickups.js?v=58';
+import { Input } from './input.js?v=58';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=58';
+import { Announcer } from './announcer.js?v=58';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=58';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=58';
+import { Sound } from './audio.js?v=58';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=58';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=58';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=58';
+import { Readout } from './readout.js?v=58';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -297,6 +298,10 @@ const VOLUMES = [0, 0.25, 0.5, 0.75, 1];
 const savedVolume = () => { const v = store.str('toko2.volume'); return v !== '' ? Math.max(0, Math.min(1, Number(v))) : store.num('toko2.mute') === 1 ? 0 : 1; };
 sound.setVolume(savedVolume());
 const next = (list, v) => list[(list.findIndex((x) => Math.abs(x - v) < 1e-6) + 1) % list.length];
+// the music (v58, music.js): on the sound's context, under its master, so VOLUME
+// and the sound's mute reach it too; OPTIONS' MUSIC (toko2.music) scales it alone
+const music = new Music();
+music.setVolume(store.str('toko2.music') !== '' ? Math.max(0, Math.min(1, Number(store.str('toko2.music')))) : 1);
 // the announcer (1.x v109): off until OPTIONS turns it on, with its own volume
 const announcer = new Announcer();
 announcer.on = store.str('toko2.announcer') === 'on';
@@ -316,6 +321,7 @@ const ui = new UI({
   onMenu: () => toMenu(),
   onSound: () => { sound.setVolume(sound.volume > 0 ? 0 : 1); store.set('toko2.volume', sound.volume); refreshMenu(); },
   onVolume: () => { sound.setVolume(next(VOLUMES, sound.volume)); store.set('toko2.volume', sound.volume); sound.unlock(); sound.event?.({ type: 'pickup', kind: 'score' }); refreshMenu(); },
+  onMusic: () => { music.setVolume(next(VOLUMES, music.volume)); store.set('toko2.music', music.volume); sound.unlock(); refreshMenu(); },
   onAnnouncer: () => { announcer.on = !announcer.on; store.set('toko2.announcer', announcer.on ? 'on' : 'off'); if (announcer.on) announcer.say('start'); else announcer.stop(); refreshMenu(); },
   onAnnVolume: () => { announcer.volume = next(VOLUMES.slice(1), announcer.volume); store.set('toko2.annVolume', announcer.volume); announcer.last = -1e9; announcer.say('clear'); refreshMenu(); },
   onMotion: () => { store.set('toko2.motion', reduceMotion() ? 'off' : 'on'); if (reduceMotion()) trauma = 0; refreshMenu(); },
@@ -329,7 +335,7 @@ const ui = new UI({
   onTitle: (keep) => (world?.room ? toMenu() : showTitle(keep)),
   onCampaign: () => showCampaign(),
   onRoom: (id) => startRoom(id),
-  optionsState: () => ({ sound: sound.on, volume: sound.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests() }),
+  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests() }),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
 // the view of a world change: the swirl, the dark, the fall, the floor running out (render/transit.js)
@@ -448,7 +454,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=57`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=58`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -612,6 +618,8 @@ function onEvent(e) {
   if (e.type === 'reshaped') splats.prune(e.hx, e.hz);
   debug.counts[e.type] = (debug.counts[e.type] || 0) + 1;
   sound.event(e);
+  const cue = cueFor(e);   // the music's answer (music.js): a rule's warning and hit, a hit's flinch, the stings
+  if (cue) music.cue(cue[0], cue[1]);
   announce(e);
   input.feel?.(e);
   actors.onEvent(e, world);
@@ -650,6 +658,21 @@ function onEvent(e) {
   // hurtHero) says both in one banner, rather than the second hiding the first
   else if (e.type === 'dashLevel') ui.banner(e.down ? (podDown.tick === world.tick ? `${podDown.text} · ${t('dashDown')}` : t('dashDown')) : `${t('dashUp')} · LV${e.level}`, 1.2);
   else if (e.type === 'gateUsed') store.set('toko2.gateUsed', 1);
+}
+
+// the music's say this frame (music.js): the title's on the menus, the run's
+// own while it plays (worldWant: its song, its heat's level, a boss, the
+// rule), ducked while paused, and nothing under the intro, while a run dies
+// (its sting has the floor) or on its results
+const MUSIC_TITLE = { song: 'title', level: 3, lull: false, boss: false, urgent: false, dark: 0, pan: 0, fade: null };
+const MUSIC_QUIET = { song: null, fade: null };
+function musicFrame() {
+  if (sound.ctx && !music.ctx) music.attach(sound.ctx, sound.master);
+  if (!music.ctx) return;
+  const run = world && (state === 'play' || state === 'paused');
+  music.set(state === 'menu' ? MUSIC_TITLE : run ? worldWant(world) : MUSIC_QUIET);
+  music.set({ duck: state === 'paused', silent: sound.volume <= 0 });
+  music.frame();
 }
 
 // screen-axis input → the world. The camera looks down with the far edge at
@@ -691,7 +714,7 @@ const debug = {
   THREE, renderer, scene, camera, backend, input, ui, actors,
   get arena() { return arenaBox(); }, splats,
   frames: 0, ready: false, counts: {},
-  announcer, get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
+  announcer, music, get world() { return world; }, get state() { return state; }, get turn() { return turn; }, get lastDash() { return lastDash; },
   floor: () => floor,
   get following() { return !!following; }, get viewWorld() { return viewWorld; }, get floorStyle() { return floor?.style; }, camAt, scenery, transit,
   arenaFor: (n, shape) => worldsSim.arenaFor(n, shape),
@@ -771,6 +794,8 @@ const debug = {
   intro, INTRO,
   capBegin(m = 'arcade') { capture.on = true; capture.bot = true; start(m, { intro: true }); introT0 = 0; last = 0; return state; },
   capFrame(t) { frame(t * 1000, 1 / 30); return { state, t }; },
+  // a song rendered offline (music.js renderMusicWav), as base64 WAV: the review films and marketing cuts
+  async musicWav(id, o) { const b = await renderMusicWav(id, o); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(s); },
   async introWav(seconds = INTRO.end + 0.5) { const b = await renderIntroSfxWav(seconds, T.audio.master); let s = ''; for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000)); return btoa(s); },
   // Look checks: run the game ahead under a simple bot (shoot the nearest
   // gel, back away from it) with every event handled, so a screenshot can be
@@ -856,6 +881,7 @@ function frame(now, dtFixed) {
   if (world && boundsFloor) survivalFrame();
   else if (world && floor.bounds && !world.room) squeezeFrame();
   ruleFrame();
+  musicFrame();
   trauma = Math.max(0, trauma - T.shake.decay * dt);
   const m = trauma * trauma, A = T.shake.amp, F = T.shake.freq;
   follow(dt, world && state === 'play' ? acc / T.sim.dt : 1);
