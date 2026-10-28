@@ -47,320 +47,368 @@
    "t": 0,
    "type": "bubbla",
    "px": 15,
-   "pz": 2
+   "pz": 2,
+   "intervalMult": 0.65
   },
   {
    "t": 0.4,
    "type": "bubbla",
    "px": -15,
-   "pz": -2
+   "pz": -2,
+   "intervalMult": 0.65
   },
   {
    "t": 3,
    "type": "bubbla",
    "px": 15,
-   "pz": -2
+   "pz": -2,
+   "intervalMult": 0.65
   },
   {
    "t": 3.4,
    "type": "bubbla",
    "px": -15,
-   "pz": 2
+   "pz": 2,
+   "intervalMult": 0.65
   },
   {
    "t": 6,
    "type": "bubbla",
    "px": 15,
-   "pz": 2
+   "pz": 2,
+   "intervalMult": 0.65
   },
   {
    "t": 6.4,
    "type": "bubbla",
    "px": -15,
-   "pz": -2
+   "pz": -2,
+   "intervalMult": 0.65
   },
   {
    "t": 8.5,
    "type": "SPITTOR",
    "px": 16.5,
-   "pz": 0
+   "pz": 0,
+   "intervalMult": 0.65
   },
   {
    "t": 9.5,
    "type": "bubbla",
    "px": 15,
-   "pz": -2
+   "pz": -2,
+   "intervalMult": 0.65
   },
   {
    "t": 9.9,
    "type": "bubbla",
    "px": -15,
-   "pz": 2
+   "pz": 2,
+   "intervalMult": 0.65
   },
   {
    "t": 12,
    "type": "bubbla",
    "px": 15,
-   "pz": 2
+   "pz": 2,
+   "intervalMult": 0.65
   },
   {
    "t": 12.4,
    "type": "bubbla",
    "px": -15,
-   "pz": -2
+   "pz": -2,
+   "intervalMult": 0.65
   },
   {
    "t": 12.5,
    "type": "SPITTOR",
    "px": -16.5,
-   "pz": 0
+   "pz": 0,
+   "intervalMult": 0.65
   },
   {
    "t": 14.5,
    "type": "bubbla",
    "px": 15,
-   "pz": -2
+   "pz": -2,
+   "intervalMult": 0.65
   },
   {
    "t": 14.9,
    "type": "bubbla",
    "px": -15,
-   "pz": 2
+   "pz": 2,
+   "intervalMult": 0.65
   },
   {
    "t": 17,
    "type": "bubbla",
    "px": 15,
-   "pz": 2
+   "pz": 2,
+   "intervalMult": 0.65
   },
   {
    "t": 17,
    "type": "SPITTOR",
    "px": 16.5,
-   "pz": 4
+   "pz": 4,
+   "intervalMult": 0.65
   },
   {
    "t": 17.4,
    "type": "bubbla",
    "px": -15,
-   "pz": -2
+   "pz": -2,
+   "intervalMult": 0.65
   },
   {
    "t": 19.5,
    "type": "bubbla",
    "px": 15,
-   "pz": -2
+   "pz": -2,
+   "intervalMult": 0.65
   },
   {
    "t": 19.9,
    "type": "bubbla",
    "px": -15,
-   "pz": 2
+   "pz": 2,
+   "intervalMult": 0.65
   },
   {
    "t": 22,
    "type": "bubbla",
    "px": 15,
-   "pz": -3
+   "pz": -3,
+   "intervalMult": 0.65
   },
   {
    "t": 22.3,
    "type": "bubbla",
    "px": 15,
-   "pz": 3
+   "pz": 3,
+   "intervalMult": 0.65
   },
   {
    "t": 22.4,
    "type": "bubbla",
    "px": -15,
-   "pz": -3
+   "pz": -3,
+   "intervalMult": 0.65
   },
   {
    "t": 22.7,
    "type": "bubbla",
    "px": -15,
-   "pz": 3
+   "pz": 3,
+   "intervalMult": 0.65
   },
   {
    "t": 24,
    "type": "SPITTOR",
    "px": 16.5,
    "pz": -4,
-   "intervalMult": 1.2
+   "intervalMult": 0.78
   },
   {
    "t": 24,
    "type": "SPITTOR",
    "px": -16.5,
    "pz": 4,
-   "intervalMult": 1.2
+   "intervalMult": 0.78
   },
   {
    "t": 25.5,
    "type": "bubbla",
    "px": 15,
-   "pz": -3
+   "pz": -3,
+   "intervalMult": 0.65
   },
   {
    "t": 25.8,
    "type": "bubbla",
    "px": 15,
-   "pz": 3
+   "pz": 3,
+   "intervalMult": 0.65
   },
   {
    "t": 25.9,
    "type": "bubbla",
    "px": -15,
-   "pz": -3
+   "pz": -3,
+   "intervalMult": 0.65
   },
   {
    "t": 26.2,
    "type": "bubbla",
    "px": -15,
-   "pz": 3
+   "pz": 3,
+   "intervalMult": 0.65
   },
   {
    "t": 29,
    "type": "bubbla",
    "px": 15,
-   "pz": -3
+   "pz": -3,
+   "intervalMult": 0.65
   },
   {
    "t": 29.3,
    "type": "bubbla",
    "px": 15,
-   "pz": 3
+   "pz": 3,
+   "intervalMult": 0.65
   },
   {
    "t": 29.4,
    "type": "bubbla",
    "px": -15,
-   "pz": -3
+   "pz": -3,
+   "intervalMult": 0.65
   },
   {
    "t": 29.7,
    "type": "bubbla",
    "px": -15,
-   "pz": 3
+   "pz": 3,
+   "intervalMult": 0.65
   },
   {
    "t": 35,
    "type": "bubbla",
    "px": 15,
    "pz": 2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 35.4,
    "type": "bubbla",
    "px": -15,
    "pz": -2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 38,
    "type": "bubbla",
    "px": 15,
    "pz": -2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 38.4,
    "type": "bubbla",
    "px": -15,
    "pz": 2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 41,
    "type": "bubbla",
    "px": 15,
    "pz": 2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 41.4,
    "type": "bubbla",
    "px": -15,
    "pz": -2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 43.5,
    "type": "SPITTOR",
    "px": 16.5,
    "pz": 0,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 44.5,
    "type": "bubbla",
    "px": 15,
    "pz": -2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 44.9,
    "type": "bubbla",
    "px": -15,
    "pz": 2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 47,
    "type": "bubbla",
    "px": 15,
    "pz": 2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 47.4,
    "type": "bubbla",
    "px": -15,
    "pz": -2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 47.5,
    "type": "SPITTOR",
    "px": -16.5,
    "pz": 0,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 49.5,
    "type": "bubbla",
    "px": 15,
    "pz": -2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 49.9,
    "type": "bubbla",
    "px": -15,
    "pz": 2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 52,
    "type": "bubbla",
    "px": 15,
    "pz": 2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 52,
    "type": "SPITTOR",
    "px": 16.5,
    "pz": 4,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   },
   {
    "t": 52.4,
    "type": "bubbla",
    "px": -15,
    "pz": -2,
-   "speedMult": 1
+   "speedMult": 1,
+   "intervalMult": 0.65
   }
  ],
  "score": {
@@ -372,14 +420,14 @@
   "S": 4900,
   "A": 4400,
   "B": 4000,
-  "C": 3500,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 50%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "C": 3600,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 79%, rough 4%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 7100,
-  "A": 6400,
-  "B": 5100,
-  "C": 4600,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 96%, average 21%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "S": 7400,
+  "A": 6700,
+  "B": 6000,
+  "C": 5400,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 96%, average 79%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

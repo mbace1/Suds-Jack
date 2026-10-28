@@ -17,7 +17,7 @@
 //   coldgun  every shot costs heat: the gun is the safe way, and it cools you
 //            (Rush's juggle, for a room or two — not the base)
 // Pure: no DOM, no clock.
-import { TUNING } from '../tuning.js?v=55';
+import { TUNING } from '../tuning.js?v=57';
 
 const T = TUNING, H = T.heat;
 

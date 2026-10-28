@@ -19,6 +19,42 @@
     Never `--no-verify`.
 -->
 
+## v57 — 2026-10-28
+**Ten rooms retuned into their difficulty bands: all 36 now sit where their difficulty says, measured by v56's bots**
+- Owner, 2026-10-28: "Retune" — v56's bots, which play like people, found ten rooms outside the band their difficulty `d` asks for (`scripts/lines.mjs` BANDS), which would have cost the campaign's difficulty-curve score. v56 and v57 ship together.
+- One table, `RETUNE` in `scripts/campaign-rooms.py`, applied after the clocks; each change measured at room-tiers' 24 seeds, never by eye. Through, sharp / ordinary / first-timer, before → after:
+  - CROSSFIRE (d9): its shooters fire about twice as often (`intervalMult` × 0.55): 100/92/4% → 100/79/4%.
+  - BUBBLE BATH (d10): fire × 0.65: 100/92/4% → 100/79/4%.
+  - SKATE (d9): its FANNERs fire about twice as often (× 0.45) — the ordinary player was never hit once in 24 runs: 100/100/13% → 100/79/0%.
+  - BREATH (d9): a quarter more bodies (every fourth comes with a twin from the other side of the room, 0.4 s later): 100/100/13% → 100/75/0%.
+  - THE CORE (d10): half again as many bodies: 100/100/0% → 100/58/0%.
+  - CRUCIBLE (d10): half again as many, one in three elite, and it speeds up faster (0.17 → 0.24 a step): 100/100/13% → 100/79/0%.
+  - THE POUR (d4): bodies 25% faster: a first-timer 96% → 83%.
+  - HANDS UP (d5): bodies 60% faster: 100% → 71%.
+  - SIX SHOTS (d5): ammo 60 → 55: 96% → 75%.
+  - RINK (d1) was the bot's, not the room's: in the one CUT room the planner treated the body it meant to dash through as a threat and hung back beside it (every skill died there, the sharp one 5 times in 24). With the dash ready that body is now the point, not a threat: 79/75/63% → 100/96/71%, the room untouched.
+- Measured speed alone could not do it: the ordinary player out-dodges faster bodies; more bodies, faster shooters and elites are what moved the hardest rooms.
+- Lines redrawn for the ten (both routes). All 36 rooms sit in their band; the good player clears every room at least 95% of the time. On HARD PAIN (no band) the retune made SKATE harder for a good player (100% → 79%): its faster FANNERs and the corpse fire together; THE CORE's ordinary player gets through 13%.
+- Tests: `test/bot.mjs` (12: in a CUT room, with the dash ready, it walks straight in at the body it is cutting, against a control that hangs back).
+- Cache tokens `?v=56` → `?v=57`; HUD label → `2.0 · v57`
+
+---
+
+## v56 — 2026-10-28
+**Every grade line redrawn by bots that play like people: S holds, A/B/C ask about a tenth more, HARD PAIN's FORGE is fixed**
+- Owner, 2026-10-28, choosing "Better line bots": rebuild sharp/average/rough as look-ahead players with human limits, redraw every campaign and boss line from them, and show how the lines move before shipping. The comparison is `docs/LINES.md` (`node scripts/lines-diff.mjs <rev>` draws it for any two versions).
+- THE BOTS (`scripts/bot.mjs`): all three look ahead with v55's planner; the human part is one table — reaction time (0.2 / 0.4 / 0.65 s before something new is taken in), the chance a VOLLEY is noticed at all (97 / 85 / 45%, everything one source fired from one spot within half a second, caught or missed together), how many bullets it tracks at once (24 / 10 / 5, the most urgent first), how far ahead it thinks (0.8 / 0.5 / 0.3 s), how often it decides (20 / 10 / 6 a second), how far its thumb is off (up to 3° / 11° / 23°), how readily it dashes, and whether it reads a hopper's or a lob's tell (always / 6 in 10 / never). Average's and rough's numbers were set once for every room to come closest to the campaign's difficulty bands, never per room; a per-bullet coin flip and an attention limit alone were each tried and dropped (the first ignored bullets in a stream a person is watching, the second left a first-timer clearing 57% of the hardest rooms).
+- What they now know that the old bots did not: THE VOID's dark limits what they see (the view's gradient: clear to 6 u and black by 20 at its darkest, the whole floor when it opens; they see 60% of the way down the fade), THE FOAM's slick floor carries them (the stick is acceleration), THE WELL's current pushes them, and they keep about 3 u from bodies. The expert keeps perfect sight and attention and only measures.
+- A BUG IN EVERY BOT: when a room asks for a dash (a gate, a CUT), a dash and a walk the same way scored the same and the walk won the tie, so the bot walked up to the gate and back; v55's expert got through GATE RUN 2 times in 8. A wanted dash now wins.
+- THE LINES (24 seeds a skill, every room, both routes; `docs/LINES.md` has each): CAMPAIGN S median change 0% (5 rooms up more than 10%, 2 down), A +10%, B +8%, C +7%; HARD PAIN S +5%, A +8%, B +9%, C +9%. The new ordinary player gets through 97% of rooms (the old bot 87%), the first-timer 55% (33%). HARD PAIN FORGE: S 4.9k → 57k, where a clean run scores about 58k.
+- THE CURVE, as the new bots read it: the 4 rooms out of their difficulty band before (EDDY, UNDERTOW, CLOT, LIGHTS OUT) are in band; 10 are out — the hardest rooms an ordinary player now clears nearly every time (CROSSFIRE, BREATH, SKATE, BUBBLE BATH, CRUCIBLE, THE CORE), RINK harder than its difficulty 1, and three a first-timer finds easier than meant (THE POUR, HANDS UP, SIX SHOTS). Reported, not retuned here.
+- THE BOSSES (`tuning/bossfights.js`, re-measured): most S lines move a second or two; BERG and ANGLER 4-5 s quicker; CURB KING 23 → 30 s (a player who reads its hops keeps away). The sharp bot takes 0.2 to 2.9 hits a boss where the old one took about 2 to 10.
+- THE EXPERT, re-measured with the corrected floor model (12 seeds): ARCADE median wave 48 (world 6), one run won all 72; HARDCADE median wave 36 (world 5). Against the new S lines it reaches S at least once in 35 of 36 rooms (HARD PAIN 33).
+- Scripts: the difficulty bands are drawn once, in `scripts/lines.mjs` (room-tiers and room-eval each kept a copy); `room-tiers.mjs --part i/n` splits a pass over cores; `scripts/lines-diff.mjs` is new. Tests: `test/bot.mjs` (11: the human part bites — a bullet younger than the reaction time is not there yet, a missed volley is missed whole, attention takes the most urgent first, the dark hides a bullet past the light but not from the expert).
+- Cache tokens `?v=55` → `?v=56`; HUD label → `2.0 · v56`
+
+---
+
 ## v55 — 2026-10-27
 **HARDCADE is harder, and a bot that looks ahead shows the arcade can be finished**
 - Owner, 2026-10-27, on v54's finding that the bots could not get past world 2: "Or maybe better bots", and "Hardcade should be harder".

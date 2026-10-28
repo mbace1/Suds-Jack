@@ -67,6 +67,12 @@
    "pz": 4.76
   },
   {
+   "t": 1.9,
+   "type": "GLOBBO",
+   "px": -15.4,
+   "pz": -4.76
+  },
+  {
    "t": 2.8,
    "type": "YELA_CUBE",
    "px": -15.4,
@@ -77,6 +83,12 @@
    "type": "glowa",
    "px": 3.43,
    "pz": -8.4
+  },
+  {
+   "t": 4.5,
+   "type": "glowa",
+   "px": -3.43,
+   "pz": 8.4
   },
   {
    "t": 5.4,
@@ -91,6 +103,12 @@
    "pz": -7.92
   },
   {
+   "t": 7.1,
+   "type": "GLOBBO",
+   "px": 15.4,
+   "pz": 7.92
+  },
+  {
    "t": 8,
    "type": "REDD_CUBE",
    "px": 15.4,
@@ -101,6 +119,12 @@
    "type": "FANNER",
    "px": -5.3,
    "pz": 8.4
+  },
+  {
+   "t": 9.7,
+   "type": "FANNER",
+   "px": 5.3,
+   "pz": -8.4
   },
   {
    "t": 10.6,
@@ -115,6 +139,12 @@
    "pz": 8.4
   },
   {
+   "t": 12.3,
+   "type": "YELA_CUBE",
+   "px": -11.05,
+   "pz": -8.4
+  },
+  {
    "t": 13.2,
    "type": "glowa",
    "px": -15.4,
@@ -127,6 +157,12 @@
    "pz": -8.4
   },
   {
+   "t": 14.9,
+   "type": "SPITTOR",
+   "px": -7.63,
+   "pz": 8.4
+  },
+  {
    "t": 15.8,
    "type": "GLOBBO",
    "px": 0.03,
@@ -137,6 +173,12 @@
    "type": "REDD_CUBE",
    "px": -7.76,
    "pz": -8.4
+  },
+  {
+   "t": 17.5,
+   "type": "REDD_CUBE",
+   "px": 7.76,
+   "pz": 8.4
   },
   {
    "t": 18.4,
@@ -157,10 +199,22 @@
    "pz": 7
   },
   {
+   "t": 20.1,
+   "type": "GLOBBO",
+   "px": 10.87,
+   "pz": -8.4
+  },
+  {
    "t": 21,
    "type": "YELA_CUBE",
    "px": 1.45,
    "pz": -8.4
+  },
+  {
+   "t": 21.4,
+   "type": "YELA_CUBE",
+   "px": -1.45,
+   "pz": 8.4
   },
   {
    "t": 22.3,
@@ -175,6 +229,12 @@
    "pz": -4.07
   },
   {
+   "t": 24,
+   "type": "SPITTOR",
+   "px": 15.4,
+   "pz": 4.07
+  },
+  {
    "t": 24.9,
    "type": "GLOBBO",
    "px": 15.4,
@@ -185,6 +245,12 @@
    "type": "REDD_CUBE",
    "px": -3.03,
    "pz": 8.4
+  },
+  {
+   "t": 26.6,
+   "type": "REDD_CUBE",
+   "px": 3.03,
+   "pz": -8.4
   },
   {
    "t": 27.5,
@@ -199,6 +265,12 @@
    "pz": 7.13
   },
   {
+   "t": 29.2,
+   "type": "GLOBBO",
+   "px": -15.4,
+   "pz": -7.13
+  },
+  {
    "t": 30.1,
    "type": "YELA_CUBE",
    "px": -15.4,
@@ -209,6 +281,12 @@
    "type": "glowa",
    "px": 4.82,
    "pz": -8.4
+  },
+  {
+   "t": 31.8,
+   "type": "glowa",
+   "px": -4.82,
+   "pz": 8.4
   },
   {
    "t": 32.7,
@@ -223,6 +301,12 @@
    "pz": -8.4
   },
   {
+   "t": 34.4,
+   "type": "GLOBBO",
+   "px": 12.05,
+   "pz": 8.4
+  },
+  {
    "t": 35.3,
    "type": "REDD_CUBE",
    "px": 15.4,
@@ -233,6 +317,12 @@
    "type": "FANNER",
    "px": -7.02,
    "pz": 8.4
+  },
+  {
+   "t": 37,
+   "type": "FANNER",
+   "px": 7.02,
+   "pz": -8.4
   },
   {
    "t": 37.9,
@@ -247,6 +337,12 @@
    "pz": 8.4
   },
   {
+   "t": 39.6,
+   "type": "YELA_CUBE",
+   "px": -8.43,
+   "pz": -8.4
+  },
+  {
    "t": 40,
    "type": "mirra",
    "px": -12,
@@ -257,6 +353,12 @@
    "type": "glowa",
    "px": -15.4,
    "pz": -0.65
+  },
+  {
+   "t": 40.9,
+   "type": "glowa",
+   "px": 15.4,
+   "pz": 0.65
   },
   {
    "t": 41.8,
@@ -271,6 +373,12 @@
    "pz": 8.4
   },
   {
+   "t": 43.5,
+   "type": "GLOBBO",
+   "px": 1.1,
+   "pz": -8.4
+  },
+  {
    "t": 44.4,
    "type": "REDD_CUBE",
    "px": -5.9,
@@ -281,6 +389,12 @@
    "type": "FANNER",
    "px": 15.4,
    "pz": 3.4
+  },
+  {
+   "t": 46.1,
+   "type": "FANNER",
+   "px": -15.4,
+   "pz": -3.4
   },
   {
    "t": 47,
@@ -295,6 +409,12 @@
    "pz": -8.4
   },
   {
+   "t": 48.7,
+   "type": "YELA_CUBE",
+   "px": -2.64,
+   "pz": 8.4
+  },
+  {
    "t": 49.6,
    "type": "glowa",
    "px": 3.92,
@@ -305,6 +425,12 @@
    "type": "SPITTOR",
    "px": -15.4,
    "pz": -6.37
+  },
+  {
+   "t": 51.3,
+   "type": "SPITTOR",
+   "px": 15.4,
+   "pz": 6.37
   },
   {
    "t": 52.2,
@@ -319,6 +445,12 @@
    "pz": 8.4
   },
   {
+   "t": 53.9,
+   "type": "REDD_CUBE",
+   "px": 4.37,
+   "pz": -8.4
+  },
+  {
    "t": 54.8,
    "type": "FANNER",
    "px": -2.25,
@@ -329,6 +461,13 @@
    "type": "mirra",
    "px": 0,
    "pz": -7,
+   "speedMult": 1
+  },
+  {
+   "t": 60.4,
+   "type": "mirra",
+   "px": 0,
+   "pz": 7,
    "speedMult": 1
   },
   {
@@ -346,6 +485,13 @@
    "speedMult": 1
   },
   {
+   "t": 63.2,
+   "type": "YELA_CUBE",
+   "px": 15.4,
+   "pz": -7.28,
+   "speedMult": 1
+  },
+  {
    "t": 64.1,
    "type": "glowa",
    "px": 3.43,
@@ -357,6 +503,13 @@
    "type": "SPITTOR",
    "px": 3.11,
    "pz": 8.4,
+   "speedMult": 1
+  },
+  {
+   "t": 65.8,
+   "type": "SPITTOR",
+   "px": -3.11,
+   "pz": -8.4,
    "speedMult": 1
   },
   {
@@ -374,6 +527,13 @@
    "speedMult": 1
   },
   {
+   "t": 68.4,
+   "type": "REDD_CUBE",
+   "px": -15.4,
+   "pz": 4.21,
+   "speedMult": 1
+  },
+  {
    "t": 69.3,
    "type": "FANNER",
    "px": -5.3,
@@ -385,6 +545,13 @@
    "type": "GLOBBO",
    "px": -1.52,
    "pz": -8.4,
+   "speedMult": 1
+  },
+  {
+   "t": 71,
+   "type": "GLOBBO",
+   "px": 1.52,
+   "pz": 8.4,
    "speedMult": 1
   },
   {
@@ -402,6 +569,13 @@
    "speedMult": 1
   },
   {
+   "t": 73.6,
+   "type": "glowa",
+   "px": 15.4,
+   "pz": -1.41,
+   "speedMult": 1
+  },
+  {
    "t": 74.5,
    "type": "SPITTOR",
    "px": 7.63,
@@ -413,6 +587,13 @@
    "type": "GLOBBO",
    "px": 0.03,
    "pz": 8.4,
+   "speedMult": 1
+  },
+  {
+   "t": 76.2,
+   "type": "GLOBBO",
+   "px": -0.03,
+   "pz": -8.4,
    "speedMult": 1
   },
   {
@@ -430,6 +611,13 @@
    "speedMult": 1
   },
   {
+   "t": 78.8,
+   "type": "FANNER",
+   "px": -15.4,
+   "pz": -1.29,
+   "speedMult": 1
+  },
+  {
    "t": 79.7,
    "type": "GLOBBO",
    "px": -10.87,
@@ -441,6 +629,13 @@
    "type": "mirra",
    "px": 0,
    "pz": 7,
+   "speedMult": 1
+  },
+  {
+   "t": 80.4,
+   "type": "mirra",
+   "px": 0,
+   "pz": -7,
    "speedMult": 1
   },
   {
@@ -458,6 +653,13 @@
    "speedMult": 1
   },
   {
+   "t": 82.7,
+   "type": "glowa",
+   "px": -5.39,
+   "pz": -8.4,
+   "speedMult": 1
+  },
+  {
    "t": 83.6,
    "type": "SPITTOR",
    "px": -15.4,
@@ -469,6 +671,13 @@
    "type": "GLOBBO",
    "px": 15.4,
    "pz": -8.08,
+   "speedMult": 1
+  },
+  {
+   "t": 85.3,
+   "type": "GLOBBO",
+   "px": -15.4,
+   "pz": 8.08,
    "speedMult": 1
   },
   {
@@ -486,6 +695,13 @@
    "speedMult": 1
   },
   {
+   "t": 87.9,
+   "type": "FANNER",
+   "px": 3.51,
+   "pz": 8.4,
+   "speedMult": 1
+  },
+  {
    "t": 88.8,
    "type": "GLOBBO",
    "px": 15.4,
@@ -497,6 +713,13 @@
    "type": "YELA_CUBE",
    "px": -15.4,
    "pz": 4.9,
+   "speedMult": 1
+  },
+  {
+   "t": 90.5,
+   "type": "YELA_CUBE",
+   "px": 15.4,
+   "pz": -4.9,
    "speedMult": 1
   },
   {
@@ -514,6 +737,13 @@
    "speedMult": 1
   },
   {
+   "t": 93.1,
+   "type": "SPITTOR",
+   "px": -1.88,
+   "pz": -8.4,
+   "speedMult": 1
+  },
+  {
    "t": 94,
    "type": "GLOBBO",
    "px": -12.05,
@@ -525,6 +755,13 @@
    "type": "REDD_CUBE",
    "px": 15.4,
    "pz": -2.06,
+   "speedMult": 1
+  },
+  {
+   "t": 95.7,
+   "type": "REDD_CUBE",
+   "px": -15.4,
+   "pz": 2.06,
    "speedMult": 1
   },
   {
@@ -543,17 +780,17 @@
   }
  ],
  "tiers": {
-  "S": 74000,
-  "A": 23000,
-  "B": 21000,
-  "C": 17000,
-  "source": "bot pass, 24 seeds a skill: got through sharp 100%, average 54%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "S": 110000,
+  "A": 66000,
+  "B": 59000,
+  "C": 53000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 58%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 99000,
-  "A": 89000,
-  "B": 80000,
-  "C": 72000,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 100%, average 8%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "S": 170000,
+  "A": 150000,
+  "B": 140000,
+  "C": 130000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 13%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }

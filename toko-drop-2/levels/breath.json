@@ -60,6 +60,12 @@
    "pz": -10.06
   },
   {
+   "t": 1,
+   "type": "GLOBBO",
+   "px": -3.34,
+   "pz": 10.06
+  },
+  {
    "t": 1.5,
    "type": "GLOBBO",
    "px": 5.73,
@@ -97,6 +103,13 @@
    "pz": 3.33
   },
   {
+   "t": 5.7,
+   "type": "BULWARK",
+   "px": -10.06,
+   "pz": 3.33,
+   "speedMult": 0.7
+  },
+  {
    "t": 6.5,
    "type": "GLOBBO",
    "px": 9.39,
@@ -107,6 +120,12 @@
    "type": "GLOBBO",
    "px": -3.59,
    "pz": 9.97
+  },
+  {
+   "t": 9.4,
+   "type": "GLOBBO",
+   "px": 3.59,
+   "pz": -9.97
   },
   {
    "t": 10,
@@ -139,6 +158,12 @@
    "pz": 0.65
   },
   {
+   "t": 11,
+   "type": "GLOBBO",
+   "px": 9.84,
+   "pz": -3.95
+  },
+  {
    "t": 11.5,
    "type": "GLOBBO",
    "px": -4.09,
@@ -164,6 +189,12 @@
    "speedMult": 0.7
   },
   {
+   "t": 15.4,
+   "type": "WARDEN",
+   "px": -0.01,
+   "pz": -10
+  },
+  {
    "t": 15.45,
    "type": "BULWARK",
    "px": 1.7,
@@ -181,6 +212,12 @@
    "type": "GLOBBO",
    "px": -4.89,
    "pz": 9.41
+  },
+  {
+   "t": 16.15,
+   "type": "GLOBBO",
+   "px": 4.89,
+   "pz": -9.41
   },
   {
    "t": 16.5,
@@ -219,6 +256,12 @@
    "pz": -3.12
   },
   {
+   "t": 20.7,
+   "type": "GLOBBO",
+   "px": 9.99,
+   "pz": -3.55
+  },
+  {
    "t": 20.75,
    "type": "GLOBBO",
    "px": -8.64,
@@ -235,6 +278,12 @@
    "type": "YELA_CUBE",
    "px": -3.26,
    "pz": -10.09
+  },
+  {
+   "t": 21.3,
+   "type": "GLOBBO",
+   "px": 6.27,
+   "pz": 8.55
   },
   {
    "t": 21.5,
@@ -262,6 +311,12 @@
    "speedMult": 0.7
   },
   {
+   "t": 25.4,
+   "type": "WARDEN",
+   "px": -8.25,
+   "pz": 5.65
+  },
+  {
    "t": 25.45,
    "type": "YELA_CUBE",
    "px": 6.42,
@@ -284,6 +339,12 @@
    "type": "GLOBBO",
    "px": 10.59,
    "pz": 0.42
+  },
+  {
+   "t": 26.15,
+   "type": "SPITTOR",
+   "px": -10.19,
+   "pz": 2.93
   },
   {
    "t": 26.5,
@@ -309,6 +370,12 @@
    "px": 0.54,
    "pz": 10.59,
    "speedMult": 0.7
+  },
+  {
+   "t": 30.4,
+   "type": "WARDEN",
+   "px": 4.16,
+   "pz": -9.09
   },
   {
    "t": 30.45,
@@ -348,6 +415,12 @@
    "pz": -9.88
   },
   {
+   "t": 31,
+   "type": "GLOBBO",
+   "px": 5.89,
+   "pz": -8.81
+  },
+  {
    "t": 31.1,
    "type": "GLOBBO",
    "px": 6.75,
@@ -358,6 +431,12 @@
    "type": "GLOBBO",
    "px": -0.48,
    "pz": -10.59
+  },
+  {
+   "t": 31.5,
+   "type": "GLOBBO",
+   "px": -6.75,
+   "pz": 8.17
   },
   {
    "t": 34,
@@ -376,6 +455,12 @@
    "type": "GLOBBO",
    "px": 8.11,
    "pz": -6.83
+  },
+  {
+   "t": 39.4,
+   "type": "GLOBBO",
+   "px": -8.11,
+   "pz": 6.83
   },
   {
    "t": 40,
@@ -403,6 +488,13 @@
    "type": "GLOBBO",
    "px": 3.34,
    "pz": -10.06,
+   "speedMult": 1
+  },
+  {
+   "t": 41,
+   "type": "GLOBBO",
+   "px": -3.34,
+   "pz": 10.06,
    "speedMult": 1
   },
   {
@@ -448,6 +540,13 @@
    "speedMult": 1
   },
   {
+   "t": 45.7,
+   "type": "BULWARK",
+   "px": -10.06,
+   "pz": 3.33,
+   "speedMult": 0.7
+  },
+  {
    "t": 46.5,
    "type": "GLOBBO",
    "px": 9.39,
@@ -456,17 +555,17 @@
   }
  ],
  "tiers": {
-  "S": 47000,
-  "A": 24000,
-  "B": 21000,
-  "C": 17000,
-  "source": "bot pass, 24 seeds a skill: got through sharp 92%, average 50%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "S": 54000,
+  "A": 37000,
+  "B": 30000,
+  "C": 26000,
+  "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 75%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
-  "S": 68000,
-  "A": 35000,
-  "B": 30000,
-  "C": 27000,
-  "source": "HARD bot pass, 24 seeds a skill: got through sharp 96%, average 29%, rough 4%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+  "S": 83000,
+  "A": 55000,
+  "B": 49000,
+  "C": 43000,
+  "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 54%, rough 0%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  }
 }
