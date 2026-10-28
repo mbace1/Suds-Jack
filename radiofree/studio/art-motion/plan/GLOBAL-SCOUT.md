@@ -507,3 +507,33 @@ Everything below comes from search summaries. No article was opened.
 - **GPU / DRAM:** no October-dated item. Reports describe a third 2026 GeForce price rise, and the latest data point is TrendForce's 27 Jul graphics DRAM report. Undated; do not use without a dated source.
 - **Circular deals:** no new deal found this week. Results were the October 2025 Nvidia, AMD and Oracle structures.
 - **Big development:** none.
+
+### Check Wed 28 Oct 17:16 (search summaries only; no article opened; sfsimplified.com and yle.fi do not resolve from this session)
+- **The Panel / Project Meridian:** no change since 6 Oct. The Pentagon has still not said whether Musk and Luckey are
+  special government employees or contractors. No recusal or ethics review was found. MITRE's "conflict-of-interest and
+  information safeguards" is still its only line. One German outlet (RT DE) claims leadership "moved to MITRE" after the
+  criticism; it is uncorroborated and **not to be used**. [NPR](https://www.npr.org/2026/10/06/nx-s1-5991899/elon-musk-palmer-luckey-pentagon-drones-ai), [CNBC, 30 Sep](https://www.cnbc.com/2026/09/30/musk-luckey-gingrich-pentagon-hegseth-.html)
+- **Lincoln County / Sioux Falls forum (27 Oct): it happened.**
+  - **What happened:** hundreds came to Carnegie Town Hall for 3+ hours: an hour of small groups, then more than an
+    hour of public comment. Councillors and commissioners acknowledged broad agreement that residents don't want
+    hyperscale data centres. Commissioner Joel Arends called the opposition "the one issue that unites people."
+    Officials said they still don't know how new rules would affect the proposed Gemini data centre.
+  - **No vote and no NDA decision.** City input closes 27 Nov.
+  - **"Gemini" is not Google's:** it is Gemini Data Center SD LLC, tied to a California family office, and its tenant
+    is undisclosed. **Do not let a film imply Google.**
+  - Sources: [SF Simplified](https://www.sfsimplified.com/hundreds-turn-out-to-talk-data-centers-with-city-county-officials/), [Sioux Falls Live (Aug)](https://www.siouxfallslive.com/news/sioux-falls/lincoln-county-data-center-moratorium-fails-in-messy-joint-meeting-with-sioux-falls-city-council), [Cleanview](https://www.cleanview.co/data-centers/south-dakota/2028/gemini-data-center-sioux-falls)
+  - **Reaction:** a large turnout, cross-party opposition, no decision. This is the pattern For Your Protection already
+    covers, so there is no new film here.
+- **Meta / Grassley:** still no published Meta reply to the 22 Jul letter. [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
+- **AI Whistleblower Protection Act:** nothing after Deseret's 25 Sep piece (Grassley pushing to pass it before the
+  midterms; at least six co-sponsors). No floor or committee action found. [Deseret](https://www.deseret.com/politics/2026/09/25/john-curtis-back-bill-protecting-ai-whistleblower/)
+- **OpenAI / Anthropic testimony:** nothing new. The 5 Oct NYC Council hearing is still single-sourced (CryptoBriefing)
+  and must be checked against Council records before any use.
+- **Military AI contracts:** no new award found. Results were the July 2025 CDAO $200M-ceiling awards to Anthropic,
+  Google, OpenAI and xAI, which are old.
+- **GPU / DRAM:** still no October-dated item. Results were AMD adding US$10 per 8 GB of VRAM (Guru3D, undated) and
+  the TechPowerUp 172 % year-on-year DRAM figure (undated). **Not usable without a dated primary.**
+- **Circular deals:** no new deal. The latest is still Nvidia's $30B into OpenAI (Feb 2026) within $40B+ of 2026 AI
+  equity bets. [TNW](https://thenextweb.com/news/nvidia-40bn-ai-equity-investments-2026)
+- **Anthropic:** no new dated item in this sweep.
+- **Big development:** none.

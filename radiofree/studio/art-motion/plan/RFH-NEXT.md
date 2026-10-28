@@ -220,3 +220,21 @@ All facts below come from search summaries; no article was opened.
 - **Global:** no big development. New date to watch: the Lincoln County/Sioux Falls data-centre forum (27 Oct), with outcome not yet reported.
 - **Finland:** no new HS candidate.
 - **No film needs a fix.**
+
+## Daily check, Wed 28 Oct 17:16 (evening; search summaries only)
+- **Global:** no big development.
+  - **The Panel:** still accurate on all four captions and the post copy. Musk's and Luckey's status is still
+    undisclosed, and there is no recusal. **It is finished and waiting for the owner's approval.**
+  - **Lincoln County / Sioux Falls forum (27 Oct):** it took place, with hundreds attending and broad opposition, but
+    no vote. Its "Gemini" is a Sioux Falls developer, not Google.
+  - **Meta / Grassley:** still no reply.
+- **Finland:** no new HS story.
+  - **New secondary candidate: Vaasa–Mustasaari / Microsoft (Yle).** The towns were bound by an NDA, and Yle reports
+    groundwork began before Microsoft owned the land or had a permit. It is dated summer, so verify before pitching.
+- **Ends in 3:** no correction. Digit 5 is still due **31 Oct**, suspension after 72 h; prepaid only, postpaid already
+  linked. Re-check 31 Oct and 1 Nov. [Récord, 21 Oct](https://www.record.com.mx/historia/registro-de-celulares-2026-estas-lineas-deben-vincularse-antes-del-31-de-octubre-2026102118570431167)
+- **Break Glass:** keep held. No result of the plenary vote on extending the border law to 31.12.2028 (five-sixths
+  needed) was found.
+- **Count the Trees:** still right, since "Two requests filed with the police" makes no claim about an inquiry.
+  **Trade Secret:** no follow-up.
+- **No film needs a fix.**

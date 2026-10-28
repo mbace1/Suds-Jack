@@ -394,3 +394,42 @@ Everything below comes from search summaries. No article was opened.
 - **Finland:** no new HS candidate. Searches on HS data-centre, secret-agreement and AI stories returned only older material from other outlets: Yle on the Muhos €26M land-use deal, Yle on Nebius in Lappeenranta, Kaleva on Verda in Pyhäjoki.
 - **Muhos (light watch):** nothing new since 22–23 Oct. Kaleva still has LVV's police request and a police esiselvitys. The water plan is still due 5 Nov; re-check 5–6 Nov. [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
 - **Hamina / Trade Secret:** no follow-up found.
+
+### Check Wed 28 Oct 17:16 (search summaries only; yle.fi does not resolve from this session, so nothing was opened)
+- **HS, last ~2 days:** no new HS candidate. Searches on HS + trade secret / municipality / data centre / AI found
+  nothing dated 27–28 Oct.
+- **New secondary candidate: "Ground Broken" (Vaasa–Mustasaari, Microsoft) · *Yle, Ilkka-Pohjalainen* · Nordic · Med
+  (verify; dated summer, new to this file)**
+  - **The NDA:** Yle reports that Vaasa, Mustasaari and the project's other parties were bound by a confidentiality
+    agreement while the data-centre companies had not announced the project.
+  - **Groundwork first:** Yle later reports that Microsoft began ground preparation with the municipal technical
+    director's permission, before it owned the land or had a building permit.
+  - **Scale:** Microsoft's preliminary deal covers ~190 ha at GigaVaasa, about 2/3 in Vaasa and 1/3 in Mustasaari.
+    Ilkka reports a land price of "nearly €100M".
+  - **Permits:** Mustasaari's permit was granted 16 Sep 2026; Vaasa's was still pending.
+  - **The twist** is "secret, then dug before it was theirs". Open the two Yle pieces (74-20233163, 74-20239822)
+    before any use; dates come from search summaries only.
+  - Sources: [Yle, cluster/NDA](https://yle.fi/a/74-20233163), [Yle, groundwork](https://yle.fi/a/74-20239822),
+    [Microsoft Source EMEA, Jun 2026](https://news.microsoft.com/source/emea/2026/06/microsoft-solmi-esisopimuksen-noin-190-hehtaarin-maakaupoista-vaasassa-ja-mustasaaressa/?lang=fi),
+    [Ilkka-Pohjalainen](https://www.ilkkapohjalainen.fi/microsoft-vaasa-ja-mustasaari-solmivat-esisopimuks/13527331),
+    [Kuntamonitori](https://kuntamonitori.fi/en/data-centre/microsoft-vaasa-mustasaari-gigavaasa)
+  - **Reactions:** not yet looked up.
+- **Also seen, low:** Kitee granted a deviation permit for a data centre planned at 61,090 m² of floor area, where the
+  zoning allows 15,000 (about 4×). [Yle](https://yle.fi/a/74-20235376) It is undated in the summary; verify before use.
+- **Reactions on the current candidates:**
+  - **#1 Humppila:** no new step found. The deputy Ombudsman's own-initiative inquiry (Lindroos-Hovinheimo) is still
+    open, and there is no decision.
+  - **#2–#7:** nothing new found.
+- **Muhos / Count the Trees:** no new fact.
+  - The police status still differs by outlet: Yle (~22 Oct) says no esiselvitys has started on either request, while
+    Lapin Kansa/Kaleva say one has. Oulu police (Sipilä) say they are waiting for LVV's statement, and the requests will
+    move to the economic-crime unit.
+  - LVV says the case is secret under the Publicity Act and won't comment further. The water plan is due 5 Nov.
+  - **The film's "Two requests filed with the police" is still exactly right.** It claims no inquiry, so the
+    discrepancy doesn't touch it.
+  - [Yle](https://yle.fi/a/74-20252848), [Lapin Kansa](https://www.lapinkansa.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Hamina / Trade Secret:** no follow-up beyond the 23 Oct lift. Google's Sep 2026 purchase of the 56.4 ha Summa
+  extension (€10.7M, build not yet decided) is background only. [Yle](https://yle.fi/a/74-20253285)
+- **Pattern note:** Vaasa adds a variant to the pattern. Here the NDA is signed **before** the story, and the absurdity
+  is the company acting before ownership, rather than the authority's secrecy afterwards. If the groundwork fact holds,
+  it is closer to Muhos (felled before the EIA) than to Hamina.
