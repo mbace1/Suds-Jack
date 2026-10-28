@@ -161,8 +161,8 @@ function boxState(i, t) {
   if (i === 9) { const ka = ease.io((t - T.s2 - 0.05) / 0.4); if (ka > 0) { seat = lerp3(STACK[9], ASIDE, ka); seat[1] += Math.sin(ka * Math.PI) * 3; } }
   let pos, rot = [0, 0, 0], sq = [1, 1, 1], face = { t, play: 0, works: 0 }, vis = t >= tOut - 0.02;
   // out of the laptop, up and over, onto the stack
-  const k = clamp((t - tOut) / 0.55), arc = Math.sin(k * Math.PI) * 9;
-  pos = lerp3(MOUTH, seat, ease.io(k)); pos[1] += arc; rot = [0, 0, (1 - ease.out(k)) * 2.4];
+  const k = clamp((t - tOut) / 0.55), arc = Math.sin(k * Math.PI) * 6;
+  pos = lerp3(MOUTH, seat, ease.out(k)); pos[1] = lerp(MOUTH[1], seat[1], ease.io(k)) + arc;   // v2: away to the right at once, so it never rises beside his mask rot = [0, 0, (1 - ease.out(k)) * 2.4];
   if (k > 0.9 && k < 1) sq = [1.1, 0.86, 1.1];
   if (k < 0.3) sq = sq.map((v) => v * lerp(0.15, 1, ease.out(k / 0.3)));   // v2: it grows as it clears the lid
   if (i < 9) {   // tested, ticked, into the crate
