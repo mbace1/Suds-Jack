@@ -249,3 +249,32 @@ typing. The five do the deciding. #gamedev #indiedev #AI". The Gamescom line is 
   and the puppets act on twos.
 - **The carriers need the owner's OK.**
 - **Finnish and Japanese** are drafts until a native read.
+
+## Revisions, 28 Oct (owner's notes on the finished films 2 and 3)
+
+**Owner:** "Five has the window and desks look on top of each other and it should be clearer, either or." "Needs a
+designer slogan should be 'Build faster, but don't forget the fun'." "Both have some glitches."
+
+### Five Is the New Fifty v2
+- **Either/or.** v1's back wall was 72 % opaque from frame 0, so the park window and the ghost hall showed at once. The
+  wall is solid now and the hall exists only while the wall is (partly) out: the studio and its window while the wall
+  stands, the empty hall once it has flown out, the window again when it flies back for the card.
+- **Glitches found and fixed** (measured with `__film.clip(t)` at 0.05 s, and by eye on full-size frames):
+  - When he shut the lid, his paddles held its screen side, which ends up underneath: they sank into the shut laptop
+    and vanished, and his arms lay flat across the desk. The paddles now reach over the top and hold the lid's back.
+  - They stay on the shut laptop while the box pops up and the sides drop in, then slide back along the sides' outer
+    faces to press them home. v1 parked them on the box's top, so a side came down through his forearm (26 cells).
+  - Parts popped out of the laptops full size and stood through the lids (17 cells); they now start small and grow.
+  - The fly-in arc rose 9 units and swept through laptops and arms; it rises 24 now and drops onto the box.
+  - The cabinet's black screen z-fought the lumpy box front and flickered as a black triangle; it stands proud now.
+  - Left: one-cell grazes as his right arm brushes the left side panel (12.2–12.45 s). That is contact, not a clip.
+
+### Needs a Designer v2
+- **The card:** BUILD FASTER, / BUT DON'T FORGET THE FUN. (fi RAKENNA NOPEAMMIN, / MUTTA ÄLÄ UNOHDA HAUSKUUTTA.;
+  ja もっと速く作ろう。/ でも、楽しさを忘れずに。). All six lines fit within 760 px; fi and ja still need a native read.
+- **Glitches found and fixed:**
+  - Box after box came out over the middle of the lid's top edge, which is right in front of his mask, so they crossed
+    his face. They now come out small from behind the lid's right edge and arc away to the stack.
+  - The keeper lifted before his paddles reached it and floated beside his face. The paddles reach it first now, and
+    it waits on the desk beside the laptop on his side (v1 had it in front of the lid, so the lift had to hop it).
+  - In shot 4 the box sat so far to the side that his arm stretched like a noodle; it rests nearer now.

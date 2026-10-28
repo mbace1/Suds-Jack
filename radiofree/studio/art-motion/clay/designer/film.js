@@ -122,8 +122,9 @@ const inCrate = (k) => { const r = rng(990 + k); return [CRATE.x - 3.4 + (k % 3)
 // the stack: a pyramid 4-3-2-1 beside the laptop; box 9 (the top) is the one he keeps
 const STACK = (() => { const out = [], x0 = 13.4, z0 = 20; let i = 0;
   for (let row = 0; row < 4; row++) for (let c = 0; c < 4 - row; c++) { out[i++] = [x0 + (c - (3 - row) / 2) * (BOX + 0.15), DESK.y + BOX / 2 + row * BOX, z0]; } return out; })();
-// where the boxes come out: just over the lid's top edge
-const MOUTH = [0, DESK.y + 11.2, 16.4];
+// where the boxes come out: v2 (owner, 28 Oct, "glitches") from behind the lid's RIGHT edge, small, and away to the stack;
+// v1 came out over the middle of the top edge, which is right in front of his mask, so box after box crossed his face
+const MOUTH = [7.2, DESK.y + 6.5, 21.6];
 
 // ------------------------------------------------------------------ the laptop's screen: the AI generic, prototype after prototype
 const P_UI = {};
@@ -163,14 +164,16 @@ function boxState(i, t) {
   const k = clamp((t - tOut) / 0.55), arc = Math.sin(k * Math.PI) * 9;
   pos = lerp3(MOUTH, seat, ease.io(k)); pos[1] += arc; rot = [0, 0, (1 - ease.out(k)) * 2.4];
   if (k > 0.9 && k < 1) sq = [1.1, 0.86, 1.1];
+  if (k < 0.3) sq = sq.map((v) => v * lerp(0.15, 1, ease.out(k / 0.3)));   // v2: it grows as it clears the lid
   if (i < 9) {   // tested, ticked, into the crate
     const tt = EV.test(8 - i), pl = clamp((t - tt) / 0.18) * (1 - clamp((t - tt - 0.32) / 0.1));
     face = { t, play: pl, works: clamp((t - tt - 0.28) / 0.12), meter: t > tt + 0.3 ? 0 : undefined };
     const m = clamp((t - tt - 0.42) / 0.35);
     if (m > 0) { const dst = inCrate(i); pos = lerp3(seat, dst, ease.io(m)); pos[1] += Math.sin(m * Math.PI) * 5; rot = [0, 0, -m * 0.6 * (i % 2 ? 1 : -1)]; }
   } else {       // the one he keeps: into his hands, squeezed, alive
-    const tp = EV.pick, kp = ease.io((t - tp) / 0.6);
-    const held = lerp3(seat, HOLD, kp); held[1] += Math.sin(kp * Math.PI) * 9; if (kp > 0) pos = held;   // a hop over the lid, never through it
+    // v2: his paddles reach it first (0.25 s), THEN it lifts between them: v1 lifted it before they arrived, so it floated
+    const tp = EV.pick + 0.25, kp = ease.io((t - tp) / 0.45);
+    const held = lerp3(seat, HOLD, kp); held[1] += Math.sin(kp * Math.PI) * 1.5; if (kp > 0) pos = held;   // set aside clear of the lid, so it lifts straight up
     const s = clamp((t - EV.squeeze) / 0.5), s2 = clamp((t - EV.squeeze - 0.5) / 0.35);
     if (s > 0) sq = [1 + 0.35 * Math.sin(s * Math.PI) * (1 - s2) + 0.18 * s2, 1 - 0.3 * Math.sin(s * Math.PI) * (1 - s2) - 0.16 * s2, 1 + 0.12 * s2];   // squeezed, and set into its new shape
     const lit = clamp((t - EV.fun + 0.15) / 0.4), G = 1 + GROW * ease.back(lit); sq = sq.map((v) => v * G);   // owner: the glowing one reads bigger
@@ -180,7 +183,9 @@ function boxState(i, t) {
   }
   return { pos, rot, sq, face, vis };
 }
-const GROW = 0.8, HOLD = [12, DESK.y + 10, 12], REST = [15, DESK.y + BOX / 2 + 0.05, 14], ASIDE = [6.5, DESK.y + BOX / 2, 25];   // HOLD (up by his face) and REST (by the crate) sit to his left of the laptop, where the lid cannot hide them
+const GROW = 0.8, HOLD = [12, DESK.y + 10, 12], REST = [11.5, DESK.y + BOX / 2 + 0.05, 13.5], ASIDE = [10.8, DESK.y + BOX / 2, 14.5];
+// v2: ASIDE beside the laptop on HIS side (v1's was in front of the lid, so the lift had to hop it, arms and all), and
+// REST nearer, so shot 4's reach is an arm and not a noodle   // HOLD (up by his face) and REST (by the crate) sit to his left of the laptop, where the lid cannot hide them
 
 // the drones outside the window (world; far beyond the glass, crossing slowly)
 // z must sit between the window (z −26) and the park card (z −88): behind the card a drone is hidden, which is why the stills had none
@@ -205,7 +210,7 @@ const SHOT = [
   { // 3 · close: the last box in both paddles; the squeeze; it lights
     t0: () => T.s3, t1: () => T.s4,
     pose(t) { const pz = basePose({ lean: 0.3, hp: 0, hy: 0.25, breathe: Math.sin(t * 1.4) }), b = boxState(9, t), sq = b.sq;
-      const kp = ease.io((t - EV.pick) / 0.6);
+      const kp = ease.io((t - EV.pick) / 0.25);   // the reach; the box waits for it (boxState)
       // before he has it: his hands go to it on the stack; after: both paddles press its sides
       const side = (s) => [b.pos[0] + s * (BOX / 2 * sq[0] + 1.05), b.pos[1] - 0.2, b.pos[2] - 0.2];
       const wR = kp < 1 ? lerp3([-3.2, DESK.y + 1.9, 13.2], side(-1), kp) : side(-1), wL = kp < 1 ? lerp3([3.2, DESK.y + 1.9, 13.2], side(1), kp) : side(1);

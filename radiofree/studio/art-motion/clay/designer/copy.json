@@ -1,6 +1,6 @@
 {
   "film": "needs-a-designer",
-  "cut": "v1 render (27 Oct): Toko set 2/4, the shared studio (clay/studio/set.js); the owner's still notes taken — shot 3 full face with less bloom, shot 4's box bigger and set by the crate, drones flying in front of the park card",
+  "cut": "v1 render (27 Oct): Toko set 2/4, the shared studio (clay/studio/set.js); the owner's still notes taken — shot 3 full face with less bloom, shot 4's box bigger and set by the crate, drones flying in front of the park card · v2 (28 Oct): the owner's slogan on the card; boxes out from behind the lid's edge; the keeper is reached before it lifts",
   "series": "toko",
   "captionSize": "big",
   "argument": "With AI, working prototypes are cheap and fast, but none is fun until someone shapes one; knowing what to make is the scarce part now.",
@@ -71,14 +71,14 @@
   ],
   "ui": {
     "card1": {
-      "en": "WE BUILD FAST.",
-      "fi": "RAKENNAMME NOPEASTI.",
-      "ja": "作るのは 速い。"
+      "en": "BUILD FASTER,",
+      "fi": "RAKENNA NOPEAMMIN,",
+      "ja": "もっと速く作ろう。"
     },
     "card2": {
-      "en": "WE STILL DECIDE WHAT.",
-      "fi": "PÄÄTÄMME YHÄ, MITÄ.",
-      "ja": "何を作るかは 自分で。"
+      "en": "BUT DON'T FORGET THE FUN.",
+      "fi": "MUTTA ÄLÄ UNOHDA HAUSKUUTTA.",
+      "ja": "でも、楽しさを忘れずに。"
     },
     "name": {
       "en": "TOKO MIDORI · THE GAME CREATOR",

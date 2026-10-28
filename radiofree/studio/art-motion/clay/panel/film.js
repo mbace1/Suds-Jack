@@ -1,3 +1,11 @@
+// THE PANEL v2 (owner, 27 Oct: "maybe needs some orange or other strong color. Push the look further"). v1 is film.js,
+// untouched. v2: one saturated colour, ORANGE, on what matters (the folders, the sellers' tags, the bell, the board's key
+// word) in an otherwise pale, near-grey room; wingback chairs on a dais, low and big from frame 0; haze in the light;
+// darkness beyond the table; tumbling folders; taller towers; a clean board.
+// v3 (owner: "I see no orange", then "I meant general lights, bloom, etc."): the orange is in the LIGHT now. The ring,
+// the chair spots, a back light behind the three, the haze and the bloom are safety orange against teal-grey shadows;
+// the props are #ff6a00 with an emissive lift, and a hue-vs-hue keep after the grade (orangeKeep) holds every warm
+// pixel at ~30°, because ACES plus a pale grade had walked them all to rust at 10–15°.
 // THE PANEL — RFH (Brink/Coxon), clay, in the manner of *Digger* (Iñárritu / Lubezki on VistaVision, 2026): a pale,
 // washed-out grade, very wide lenses with everything in focus, heavy grain and a camera that floats, with the absurd
 // calm of a Strangelove war room. The feel only: no frame, character or logo of that film. plan/films/30-the-panel.md
@@ -26,7 +34,7 @@ renderer.setPixelRatio(1); renderer.setSize(W, H, false);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.LinearSRGBColorSpace; renderer.toneMapping = THREE.NoToneMapping;
 document.body.appendChild(renderer.domElement); renderer.domElement.style.width = '100%';
-const scene = new THREE.Scene();
+const scene = new THREE.Scene(); scene.fog = new THREE.Fog('#0f1517', 260, 720);
 const camera = new THREE.PerspectiveCamera(80, W / H, 2, 4000);
 const post = new Post(renderer, W, H);
 const out2d = canvas(W, H), g2d = out2d.getContext('2d');
@@ -38,12 +46,13 @@ const ease = { out: (k) => 1 - Math.pow(1 - clamp(k), 3), in: (k) => Math.pow(cl
 // ------------------------------------------------------------------ clays: the house plasticine, scaled up for a room
 const C = (color, o = {}) => surface({ color, wrap: 0.35, wrapTint: '#ffe0c8', rough: 0.7, bump: 1, lump: 0.04, lumpF: 0.45, thumb: 0.03, thumbCell: 4.5, ridge: 0.1, tool: 0.8, grain: 0.004, grainF: 6, mottle: 0.08, specks: 0.3, roughVar: 0.1, ...o });
 const M = {
-  floor: C('#5a5650', { thumbCell: 9, tool: 1.4, mottle: 0.12, rough: 0.6 }), wall: C('#4a4844', { thumbCell: 12, tool: 1.6, mottle: 0.14 }),
-  felt: C('#6b7a62', { surf: 'felt', rough: 0.95, thumb: 0.015, thumbCell: 8, mottle: 0.06 }), rim: C('#3a2e26', { rough: 0.45, thumbCell: 5, tool: 1.2 }),
-  wood: C('#4a3a2e', { rough: 0.5, thumbCell: 4, tool: 1.2 }),
-  leather: C('#6a2a24', { rough: 0.42, thumbCell: 3.2, thumb: 0.035, mottle: 0.1 }), leatherDim: C('#4e3c34', { rough: 0.5, thumbCell: 3.2 }),
-  metal: C('#8a8780', { rough: 0.35, metal: 0.4, thumb: 0.015 }), folder: C('#c9ae78', { rough: 0.8, thumbCell: 2.2, thumb: 0.02, mottle: 0.1, specks: 0.2 }),
-  folderEdge: C('#a88a56', { rough: 0.85, thumbCell: 2 }),
+  floor: C('#34322f', { thumbCell: 9, tool: 1.4, mottle: 0.12, rough: 0.6 }), wall: C('#2c2b29', { thumbCell: 12, tool: 1.6, mottle: 0.14 }),
+  felt: C('#7b8076', { surf: 'felt', rough: 0.95, thumb: 0.015, thumbCell: 8, mottle: 0.06 }), rim: C('#2e2a27', { rough: 0.45, thumbCell: 5, tool: 1.2 }),
+  wood: C('#3a3532', { rough: 0.5, thumbCell: 4, tool: 1.2 }), dais: C('#2a2725', { rough: 0.55, thumbCell: 6, tool: 1.3 }),
+  leather: C('#8c857a', { rough: 0.4, thumbCell: 3.2, thumb: 0.035, mottle: 0.08 }), leatherDim: C('#3a3836', { rough: 0.5, thumbCell: 3.2 }),
+  metal: C('#8a8780', { rough: 0.35, metal: 0.4, thumb: 0.015 }), folder: C('#ff6a00', { emissive: '#ff8a20', emissiveIntensity: 0.3, rough: 0.75, thumbCell: 2.2, thumb: 0.02, mottle: 0.07, specks: 0.15 }),
+  folderEdge: C('#f05c00', { emissive: '#ff7a14', emissiveIntensity: 0.24, rough: 0.85, thumbCell: 2 }),
+  orange: C('#ff6a00', { emissive: '#ff8a20', emissiveIntensity: 0.3, rough: 0.32, thumbCell: 2.4, thumb: 0.02, mottle: 0.05 }),
 };
 
 // ------------------------------------------------------------------ the room
@@ -57,26 +66,26 @@ mesh0(new THREE.PlaneGeometry(1400, 1400).rotateX(Math.PI / 2), M.wall, { pos: [
 
 // the big board: a slate screen, a grid of dull dots and a few that blink, and the study's name across the top
 const BW = 1024, BH = 480, boardCan = canvas(BW, BH), boardTex = tex(boardCan);
-const BOARD = mesh0(new THREE.PlaneGeometry(330, 155), new THREE.MeshBasicMaterial({ map: boardTex, toneMapped: false }), { pos: [0, 140, -376], parent: scene, cast: false });
-mesh0(lumpy(new RoundedBoxGeometry(346, 170, 6, 3, 2), 0.3, 0.2, 51), M.rim, { pos: [0, 140, -380], parent: scene });
+const BOARD = mesh0(new THREE.PlaneGeometry(420, 197), new THREE.MeshBasicMaterial({ map: boardTex, toneMapped: false, fog: false }), { pos: [0, 205, -376], parent: scene, cast: false });
+mesh0(lumpy(new RoundedBoxGeometry(436, 212, 6, 3, 2), 0.3, 0.2, 51), M.rim, { pos: [0, 205, -380], parent: scene });
 const P_UI = {};
+const KEY = { en: 'WAR', fi: 'SODAN', ja: '戦争' };
 function drawBoard(t) {
-  const g = boardCan.getContext('2d'), r = rng(9);
-  g.fillStyle = '#1c2226'; g.fillRect(0, 0, BW, BH);
-  g.strokeStyle = 'rgba(200,220,230,.08)'; g.lineWidth = 2;
-  for (let x = 0; x <= BW; x += 64) { g.beginPath(); g.moveTo(x, 110); g.lineTo(x, BH); g.stroke(); }
-  for (let y = 110; y <= BH; y += 46) { g.beginPath(); g.moveTo(0, y); g.lineTo(BW, y); g.stroke(); }
-  // landmasses as fields of dots: drawn for the film, no real map
-  for (let i = 0; i < 520; i++) {
-    const cx = [230, 520, 800][i % 3], cy = [300, 260, 330][i % 3], a = r() * TAU, d = Math.sqrt(r()) * [150, 120, 130][i % 3];
-    const x = cx + Math.cos(a) * d * 1.3, y = cy + Math.sin(a) * d * 0.7;
-    g.fillStyle = 'rgba(190,210,200,.16)'; g.beginPath(); g.arc(x, y, 3.2, 0, TAU); g.fill();
-  }
-  for (let i = 0; i < 9; i++) { const x = 140 + r() * 760, y = 180 + r() * 250, on = (Math.sin(t * 2.2 + i * 1.7) > 0.2) ? 1 : 0.15;
-    g.fillStyle = `rgba(255,214,150,${on})`; g.beginPath(); g.arc(x, y, 7, 0, TAU); g.fill(); }
-  g.fillStyle = 'rgba(240,236,224,.92)'; g.textAlign = 'center';
-  g.font = `${LANG === 'ja' ? '800 64px NotoSansJP-800' : '64px Anton-400'}`; g.fillText(P_UI.board1 || '', BW / 2, 74);
-  g.font = `${LANG === 'ja' ? '800 30px NotoSansJP-800' : '700 30px Inter'}`; g.fillStyle = 'rgba(240,236,224,.6)'; g.fillText(P_UI.board2 || '', BW / 2, 104);
+  const g = boardCan.getContext('2d');
+  g.fillStyle = '#16191b'; g.fillRect(0, 0, BW, BH);
+  g.strokeStyle = 'rgba(200,215,220,.07)'; g.lineWidth = 2;
+  for (let x = 0; x <= BW; x += 64) { g.beginPath(); g.moveTo(x, 140); g.lineTo(x, BH); g.stroke(); }
+  for (let y = 140; y <= BH; y += 48) { g.beginPath(); g.moveTo(0, y); g.lineTo(BW, y); g.stroke(); }
+  // one calm sweep line, no sparkle
+  const sx = ((t * 0.08) % 1) * BW; g.fillStyle = 'rgba(200,215,220,.06)'; g.fillRect(sx - 40, 140, 80, BH - 140);
+  // the title: pale, with the key word in orange
+  const txt = P_UI.board1 || '', key = KEY[LANG] || '', ki = key ? txt.indexOf(key) : -1;
+  g.font = `${LANG === 'ja' ? '800 76px NotoSansJP-800' : '82px Anton-400'}`; g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  const tw = g.measureText(txt).width, x0 = BW / 2 - tw / 2;
+  g.fillStyle = 'rgba(236,232,220,.94)'; g.fillText(txt, x0, 92);
+  if (ki >= 0) { g.fillStyle = '#ff8a1a'; g.fillText(key, x0 + g.measureText(txt.slice(0, ki)).width, 92); }
+  g.fillStyle = '#ff8a1a'; g.fillRect(BW / 2 - 140, 112, 280, 5);
+  g.font = `${LANG === 'ja' ? '800 30px NotoSansJP-800' : '700 30px Inter'}`; g.textAlign = 'center'; g.fillStyle = 'rgba(236,232,220,.55)'; g.fillText(P_UI.board2 || '', BW / 2, 158);
   boardTex.needsUpdate = true;
 }
 
@@ -86,63 +95,114 @@ mesh0(lumpy(new THREE.TorusGeometry(RT + 1.5, 3.4, 18, 200).rotateX(Math.PI / 2)
 mesh0(lumpy(new THREE.CylinderGeometry(RT - 4, RT - 10, 6, 120, 1), 0.3, 0.05, 63), M.wood, { pos: [0, TY - 6, 0], parent: scene });
 mesh0(lumpy(new THREE.CylinderGeometry(30, 42, TY - 8, 48, 2), 0.4, 0.08, 64), M.wood, { pos: [0, (TY - 8) / 2, 0], parent: scene });
 // a service bell at the head of the table, in front of the three: the room's one joke prop
-const BELL = new THREE.Group(); scene.add(BELL); BELL.position.set(0, TY, -112);
+const BELL = new THREE.Group(); scene.add(BELL); BELL.position.set(0, TY, -112); BELL.scale.setScalar(1.3);
 mesh0(lumpy(new THREE.CylinderGeometry(4.6, 5.2, 1.4, 32), 0.05, 0.5, 71), M.wood, { pos: [0, 0.7, 0], parent: BELL });
-mesh0(lumpy(new THREE.SphereGeometry(4.2, 32, 16, 0, TAU, 0, Math.PI / 2), 0.04, 0.5, 72), M.metal, { pos: [0, 1.4, 0], parent: BELL });
+mesh0(lumpy(new THREE.SphereGeometry(4.2, 32, 16, 0, TAU, 0, Math.PI / 2), 0.04, 0.5, 72), M.orange, { pos: [0, 1.4, 0], parent: BELL });
 mesh0(new THREE.CylinderGeometry(0.5, 0.5, 1.6, 12), M.metal, { pos: [0, 5.8, 0], parent: BELL });
 mesh0(new THREE.SphereGeometry(0.9, 12, 8), M.metal, { pos: [0, 6.6, 0], parent: BELL });
 
 // the ring light over the table: a plain HDR hoop, the thing everyone remembers about such rooms
-const RING = mesh0(new THREE.TorusGeometry(126, 2.2, 16, 220).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.6, 2.5, 2.25) }), { pos: [0, 128, 0], parent: scene, cast: false });
+const RY = 146;   // high enough that its far edge clears the board's title in every shot
+const RING = mesh0(new THREE.TorusGeometry(126, 2.2, 16, 220).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: new THREE.Color(3.4, 1.15, 0.2) }), { pos: [0, RY, 0], parent: scene, cast: false });
 for (let k = 0; k < 6; k++) { const a = k / 6 * TAU;   // its hangers
-  mesh0(new THREE.CylinderGeometry(0.35, 0.35, 280, 6), M.metal, { pos: [Math.cos(a) * 126, 128 + 140, Math.sin(a) * 126], parent: scene, cast: false }); }
+  mesh0(new THREE.CylinderGeometry(0.35, 0.35, 280, 6), M.metal, { pos: [Math.cos(a) * 126, RY + 140, Math.sin(a) * 126], parent: scene, cast: false }); }
 
 // ------------------------------------------------------------------ the chairs
-function chair(pos, tall, mat, seed) {
+function chair(pos, tall, mat, seed, base = 0) {
   const g = new THREE.Group(); scene.add(g);
-  const sy = 19, bh = tall ? 66 : 30, bw = tall ? 30 : 24;
-  mesh0(lumpy(new RoundedBoxGeometry(bw, 6, 24, 3, 2.2), 0.12, 0.3, seed), mat, { pos: [0, sy, 0], parent: g });
-  mesh0(lumpy(new RoundedBoxGeometry(bw + 2, bh, 7, 3, 2.6), 0.14, 0.25, seed + 1), mat, { pos: [0, sy + 3 + bh / 2, -11], parent: g });
-  if (tall) for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++)   // buttoned, like a club chair
-    mesh0(new THREE.SphereGeometry(0.7, 8, 6), M.metal, { pos: [-9 + j * 9, sy + 14 + i * 9, -7.3], parent: g, cast: false });
-  for (const s of [-1, 1]) mesh0(lumpy(sausage([[s * (bw / 2 + 1.2), sy + 3, -10], [s * (bw / 2 + 1.6), sy + 9, -4], [s * (bw / 2 + 1.6), sy + 9, 9]], [2.2, 2.4, 2.2], { steps: 24 }), 0.06, 0.6, seed + 2 + s), mat, { parent: g });
-  mesh0(lumpy(new THREE.CylinderGeometry(2.2, 3.2, sy - 3, 16), 0.06, 0.5, seed + 4), M.metal, { pos: [0, (sy - 3) / 2, 0], parent: g });
-  mesh0(lumpy(new THREE.CylinderGeometry(11, 12, 1.6, 24), 0.06, 0.5, seed + 5), M.metal, { pos: [0, 0.8, 0], parent: g });
-  g.position.set(...pos); g.rotation.y = Math.atan2(-pos[0], -pos[2]);     // facing the table's centre
+  if (!tall) {   // everyone else's: low, plain, dim
+    const sy = 19, bh = 30, bw = 24;
+    mesh0(lumpy(new RoundedBoxGeometry(bw, 6, 24, 3, 2.2), 0.12, 0.3, seed), mat, { pos: [0, sy, 0], parent: g });
+    mesh0(lumpy(new RoundedBoxGeometry(bw + 2, bh, 7, 3, 2.6), 0.14, 0.25, seed + 1), mat, { pos: [0, sy + 3 + bh / 2, -11], parent: g });
+    mesh0(lumpy(new THREE.CylinderGeometry(2.2, 3.2, sy - 3, 16), 0.06, 0.5, seed + 4), M.metal, { pos: [0, (sy - 3) / 2, 0], parent: g });
+  } else {       // the three: wingbacks, tall and buttoned, with wings and rolled arms: a silhouette you read at a glance
+    const sy = 20, bh = 96, bw = 38;
+    mesh0(lumpy(new RoundedBoxGeometry(bw, 9, 28, 3, 3), 0.14, 0.3, seed), mat, { pos: [0, sy, 0], parent: g });                         // seat cushion
+    mesh0(lumpy(new RoundedBoxGeometry(bw + 4, sy - 4, 26, 3, 3), 0.12, 0.3, seed + 7), mat, { pos: [0, (sy - 4) / 2 + 3, -1], parent: g });  // skirt
+    const back = new THREE.Group(); g.add(back); back.position.set(0, sy + 4, -13); back.rotation.x = -0.1;
+    mesh0(lumpy(new RoundedBoxGeometry(bw + 4, bh, 9, 4, 4.2), 0.16, 0.25, seed + 1), mat, { pos: [0, bh / 2, 0], parent: back });
+    // a crest: the back's top rolls a little higher in the middle
+    mesh0(lumpy(sausage([[-(bw / 2 + 1), bh - 2, 0], [0, bh + 5, 0], [bw / 2 + 1, bh - 2, 0]], [4.8, 5.6, 4.8], { steps: 32 }), 0.08, 0.5, seed + 8), mat, { parent: back });
+    // tufting: a diamond grid of buttons with a dimple each
+    for (let i = 0; i < 8; i++) for (let j = 0; j < 4 - (i % 2); j++) {
+      const x = -13.5 + j * 9 + (i % 2) * 4.5, y = 18 + i * 9.5;
+      mesh0(new THREE.SphereGeometry(0.85, 8, 6), M.leatherDim, { pos: [x, y, 4.7], parent: back, cast: false }); }
+    // the wings: two flat, flared panels at the top of the back, swept forward
+    for (const s of [-1, 1]) {
+      const w = new THREE.Group(); back.add(w); w.position.set(s * (bw / 2 + 2), bh * 0.58, 0); w.rotation.y = s * 0.42;
+      mesh0(lumpy(new RoundedBoxGeometry(5, bh * 0.62, 20, 3, 2.2), 0.12, 0.3, seed + 3 + s), mat, { pos: [0, 0, 9], parent: w });
+      // rolled arms down from the wings
+      mesh0(lumpy(new RoundedBoxGeometry(6, 13, 26, 3, 2.4), 0.1, 0.4, seed + 5 + s), mat, { pos: [s * (bw / 2 + 2.5), sy + 8, 0], parent: g });
+    }
+    for (const [x, z] of [[-15, -10], [15, -10], [-15, 10], [15, 10]])   // four short dark legs
+      mesh0(lumpy(new THREE.CylinderGeometry(1.4, 1, 4, 10), 0.04, 0.5, seed + 9), M.wood, { pos: [x, 2, z], parent: g });
+  }
+  g.position.set(pos[0], base, pos[2]); g.rotation.y = Math.atan2(-pos[0], -pos[2]);     // facing the table's centre
   return g;
 }
 const RC = 172;
 // the three: tall, buttoned, at the head of the table (the far side, −z)
-const PANEL = [-0.3, 0, 0.3].map((d, i) => { const a = -Math.PI / 2 + d; const pos = [Math.cos(a) * RC, 0, Math.sin(a) * RC]; return { g: chair(pos, true, M.leather, 100 + i * 10), pos }; });
+const DAIS = 10;   // the three sit on a low dais behind the head of the table, so their seats clear its edge
+mesh0(lumpy(new THREE.CylinderGeometry(RC + 34, RC + 38, DAIS, 160, 1, false, Math.PI + 0.5, Math.PI - 1.0), 0.3, 0.05, 81), M.dais, { pos: [0, DAIS / 2, 0], parent: scene });
+const PANEL = [-0.34, 0, 0.34].map((d, i) => { const a = -Math.PI / 2 + d; const pos = [Math.cos(a) * RC, 0, Math.sin(a) * RC]; return { g: chair(pos, true, M.leather, 100 + i * 10, DAIS), pos }; });
 // everyone else's: low, dim, round the rest of the table, with a gap where the camera comes in
 for (let k = 0; k < 20; k++) { const a = -Math.PI / 2 + 0.62 + k * 0.255; if (a > Math.PI / 2 - 0.55 && a < Math.PI / 2 + 0.55) continue; if (a > 3 * Math.PI / 2 - 0.62) continue;
   chair([Math.cos(a) * (RC - 6), 0, Math.sin(a) * (RC - 6)], false, M.leatherDim, 200 + k * 7); }
 
 // the towers: manila folders, dropped one by one onto two of the three seats
-const FOLD = 34, FH = 1.25, FCAN = canvas(256, 128), FTEX = tex(FCAN);
-function drawFolderLabel() { const g = FCAN.getContext('2d'); g.fillStyle = '#c9ae78'; g.fillRect(0, 0, 256, 128);
-  g.strokeStyle = '#a8322a'; g.lineWidth = 7; g.strokeRect(22, 30, 212, 68); g.fillStyle = '#a8322a'; g.textAlign = 'center';
+const FOLD = 58, FH = 1.3, FCAN = canvas(256, 128), FTEX = tex(FCAN);
+function drawFolderLabel() { const g = FCAN.getContext('2d'); g.fillStyle = '#ff6a00'; g.fillRect(0, 0, 256, 128);
+  g.strokeStyle = '#1e1a18'; g.lineWidth = 7; g.strokeRect(22, 30, 212, 68); g.fillStyle = '#1e1a18'; g.textAlign = 'center';
   g.font = LANG === 'ja' ? '800 50px NotoSansJP-800' : '50px Anton-400'; g.fillText(P_UI.folder || '', 128, 84); FTEX.needsUpdate = true; }
 const TOWERS = [0, 2].map((ci, ti) => {
-  const c = PANEL[ci], grp = new THREE.Group(); c.g.add(grp); grp.position.set(0, 22.2, 1);
+  const c = PANEL[ci], grp = new THREE.Group(); c.g.add(grp); grp.position.set(0, 25, 1);
   const r = rng(300 + ti), folders = [];
   for (let k = 0; k < FOLD; k++) {
     const f = new THREE.Group(); grp.add(f);
     mesh0(lumpy(new RoundedBoxGeometry(21, FH, 15.5, 2, 0.5), 0.03, 0.8, 310 + ti * 50 + k), k % 5 === 4 ? M.folderEdge : M.folder, { parent: f });
-    folders.push({ f, rot: (r() - 0.5) * 0.22, dx: (r() - 0.5) * 1.6, dz: (r() - 0.5) * 1.4 });
+    folders.push({ f, rot: (r() - 0.5) * 0.22, dx: (r() - 0.5) * 1.6, dz: (r() - 0.5) * 1.4, sx: (r() - 0.5) * 2, sz: (r() - 0.5) * 2, ox: (r() - 0.5) * 36, oz: (r() - 0.5) * 20, h: 120 + r() * 80 });
   }
   // the top one carries the stamp, facing the table (the chair's +z)
   const lab = mesh0(new THREE.PlaneGeometry(13, 6.5), new THREE.MeshBasicMaterial({ map: FTEX, toneMapped: false }), { pos: [0, FH / 2 + 0.05, 1], rot: [-Math.PI / 2, 0, 0], parent: folders[FOLD - 1].f, cast: false });
   return { ci, grp, folders, lab };
 });
 
+const TAGS = TOWERS.map(({ ci }, ti) => {
+  const c = PANEL[ci], pivot = new THREE.Group(); c.g.add(pivot); pivot.position.set((ti ? -1 : 1) * 24, DAIS + 10 + 94, -6);
+  mesh0(new THREE.CylinderGeometry(0.18, 0.18, 14, 6), M.leatherDim, { pos: [0, -7, 0], parent: pivot, cast: false });   // the string
+  const tagG = new THREE.Group(); pivot.add(tagG); tagG.position.set(0, -14, 0);
+  const shape = new THREE.Shape(); shape.moveTo(-5, 0); shape.lineTo(5, 0); shape.lineTo(5, -14); shape.lineTo(-5, -14); shape.lineTo(-5, 0);
+  mesh0(lumpy(new THREE.ExtrudeGeometry(shape, { depth: 0.8, bevelEnabled: true, bevelSize: 0.5, bevelThickness: 0.4, bevelSegments: 2 }), 0.05, 0.6, 400 + ti), M.orange, { pos: [0, 0, 0], parent: tagG });
+  mesh0(new THREE.TorusGeometry(1.1, 0.35, 8, 16), M.leatherDim, { pos: [0, -2.4, 1.2], parent: tagG, cast: false });  // the eyelet
+  return pivot;
+});
+
+// ------------------------------------------------------------------ haze: the ring light's beam, the chair spots' cones, dust
+function hazeTex() { const c = canvas(4, 256), g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.15, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0.15)'); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); return tex(c); }
+const HZT = hazeTex();
+const hazeMat = (c, o) => new THREE.MeshBasicMaterial({ color: c, map: HZT, transparent: true, opacity: o, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false });
+const BEAM = mesh0(new THREE.CylinderGeometry(120, 150, 270, 96, 1, true), hazeMat('#ffa048', 0.03), { pos: [0, 30 + 135, -10], parent: scene, cast: false, recv: false });
+const CONES = PANEL.map((c) => { const m = mesh0(new THREE.CylinderGeometry(4, 40, 300, 48, 1, true), hazeMat('#ff9a40', 0), { pos: [c.pos[0] * 0.96, 30 + 150, c.pos[2] * 0.96], parent: scene, cast: false, recv: false }); return m; });
+const DUST = (() => { const r = rng(77), n = 320, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const a = r() * TAU, d = Math.sqrt(r()) * 150; pos.set([Math.cos(a) * d, 32 + r() * 200, -10 + Math.sin(a) * d], i * 3); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(geo, new THREE.PointsMaterial({ color: '#ffb070', size: 0.45, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, toneMapped: false }));
+  scene.add(p); return p; })();
+
 // ------------------------------------------------------------------ light: a pool from the ring, a spot per chair, a dim room
-const hemi = new THREE.HemisphereLight('#c4ccd4', '#4a4038', 0.22); scene.add(hemi);
-const pool = new THREE.SpotLight('#fff1dc', 2600, 0, 0.55, 0.6, 1.25); pool.position.set(0, 300, 30); pool.target.position.set(0, TY, -10);
+// v3: the lamps are orange where you SEE them (the ring, the haze in every beam, the back light's rim, the bloom) and a
+// pale amber where they land, so the chairs stay pale and the orange folders still stand off them; everything that is
+// not a lamp (the hemi, the fill, the board's glow) is teal-grey, so the shadows go cold
+const hemi = new THREE.HemisphereLight('#6f9ca8', '#1a2628', 0.45); scene.add(hemi);
+const pool = new THREE.SpotLight('#f6ebe0', 2400, 0, 0.55, 0.6, 1.25); pool.position.set(0, 300, 30); pool.target.position.set(0, TY, -10);
 pool.castShadow = true; pool.shadow.mapSize.set(2048, 2048); pool.shadow.bias = -0.0004; scene.add(pool, pool.target);
-const boardGlow = new THREE.PointLight('#bcd0d8', 900, 0, 1.4); boardGlow.position.set(0, 140, -330); scene.add(boardGlow);
-const fill = new THREE.DirectionalLight('#a8b8d0', 0.45); fill.position.set(200, 160, 400); scene.add(fill);
-const CHAIRSPOT = PANEL.map((c) => { const s = new THREE.SpotLight('#fff6e6', 0, 0, 0.2, 0.45, 1.2); s.position.set(c.pos[0] * 0.92, 330, c.pos[2] * 0.92); s.target.position.set(c.pos[0], 40, c.pos[2]); s.castShadow = true; s.shadow.mapSize.set(1024, 1024); scene.add(s, s.target); return s; });
+const boardGlow = new THREE.PointLight('#8fc4cc', 900, 0, 1.4); boardGlow.position.set(0, 205, -330); scene.add(boardGlow);
+const fill = new THREE.DirectionalLight('#5f9fae', 0.55); fill.position.set(200, 160, 400); scene.add(fill);
+// the back light: one orange spot low behind the three, so every chair and tower carries a hot rim against the dark
+const backLight = new THREE.SpotLight('#ff6a10', 16000, 0, 0.62, 0.55, 1.2); backLight.position.set(0, 240, -372); backLight.target.position.set(0, 70, -165);
+backLight.castShadow = true; backLight.shadow.mapSize.set(1024, 1024); backLight.shadow.bias = -0.0004; scene.add(backLight, backLight.target);
+const CHAIRSPOT = PANEL.map((c) => { const s = new THREE.SpotLight('#ffcf9e', 0, 0, 0.2, 0.45, 1.2); s.position.set(c.pos[0] * 0.96, 330, c.pos[2] * 0.96); s.target.position.set(c.pos[0], 50, c.pos[2]); s.castShadow = true; s.shadow.mapSize.set(1024, 1024); scene.add(s, s.target); return s; });
 
 // ------------------------------------------------------------------ the timeline: 100 BPM; captions planned by the pipeline
 await CAP.loadFonts(FONT_DIR);
@@ -162,10 +222,12 @@ function towers(t) {
   for (const [ti, tw] of TOWERS.entries()) {
     const span = EV.dropN - EV.drop0;
     tw.folders.forEach((fd, k) => {
-      const tl = EV.drop0 + ti * 0.18 + (k / FOLD) * (span - 0.18), kf = clamp((t - tl + 0.32) / 0.32);
+      const tl = EV.drop0 + ti * 0.18 + (k / FOLD) * (span - 0.18), kf = clamp((t - tl + 0.5) / 0.5);
       fd.f.visible = kf > 0;
-      const y = k * FH + (1 - ease.in(kf)) * 90, wob = (1 - kf) * 0.6;
-      fd.f.position.set(fd.dx, y, fd.dz); fd.f.rotation.set(wob * 0.4, fd.rot + wob, wob * 0.3);
+      // a folder tumbles in from above and off to one side, spinning end over end, and slaps flat onto the pile
+      const u = 1 - ease.in(kf), y = k * FH + u * fd.h;
+      fd.f.position.set(fd.dx + u * fd.ox, y, fd.dz + u * fd.oz);
+      fd.f.rotation.set(u * fd.sx * 3.2, fd.rot + u * 1.4, u * fd.sz * 2.4);
     });
   }
 }
@@ -173,18 +235,18 @@ function towers(t) {
 // ------------------------------------------------------------------ the shots: a wide lens throughout, the camera floating
 const drift = (t, a = 1) => V([Math.sin(t * 0.37) * 2.2 * a, Math.sin(t * 0.53 + 1) * 1.4 * a, Math.cos(t * 0.29) * 1.8 * a]);
 const SHOT = [
-  { // 1 · over the felt, low, towards the three and the board
+  { // 1 · low over the felt, close: the three wingbacks big against the ring light and the board
     t0: () => T.s1, t1: () => T.s2,
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 42, 112], [0, 42, 36], k)).add(drift(t)), at: V([0, 66, -200]), fov: 80 }; } },
-  { // 2 · the three chairs, square on; their spots come on in turn
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 33, 18], [0, 34, -8], k)).add(drift(t, 0.4)), at: V([0, 103, -190]), fov: 72 }; } },
+  { // 2 · the three, square on; their spots come on in turn
     t0: () => T.s2, t1: () => T.s3,
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 62, 30], [0, 60, 8], k)).add(drift(t, 0.7)), at: V([0, 74, -172]), fov: 74 }; } },
-  { // 3 · the towers: from a little left and lower, so both stacks clear the table's edge
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 40, 10], [0, 42, -14], k)).add(drift(t, 0.4)), at: V([0, 103, -190]), fov: 70 }; } },
+  { // 3 · the towers: a little left and low, so both stacks and the tumbling folders read against the dark
     t0: () => T.s3, t1: () => T.s4,
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-26, 50, 18], [-20, 52, 0], k)).add(drift(t, 0.7)), at: V([0, 72, -172]), fov: 74 }; } },
-  { // 4 · up and back, wide: the ring, the round table, two towers and one bare chair
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-36, 38, 16], [-30, 40, -6], k)).add(drift(t, 0.4)), at: V([0, 101, -188]), fov: 72 }; } },
+  { // 4 · up and back: the ring, the round table, two orange towers and one bare chair, the room falling away into dark
     t0: () => T.s4, t1: () => T.end,
-    cam(t, lt, d) { const k = ease.io(lt / (d - 0.8)); return { pos: V(lerp3([0, 66, 120], [0, 118, 262], k)).add(drift(t)), at: V(lerp3([0, 50, -160], [0, 40, -130], k)), fov: lerp(78, 84, k) }; } },
+    cam(t, lt, d) { const k = ease.io(lt / (d - 0.8)); return { pos: V(lerp3([0, 52, 20], [0, 100, 180], k)).add(drift(t)), at: V(lerp3([0, 104, -180], [0, 120, -140], k)), fov: lerp(74, 80, k) }; } },
 ];
 const shotAt = (t) => { for (let i = SHOT.length - 1; i >= 0; i--) if (t >= SHOT[i].t0()) return i; return 0; };
 
@@ -198,8 +260,35 @@ function tag(g, text, a) {
 }
 
 // ------------------------------------------------------------------ the Digger grade: pale, lifted, split warm/cold, grainy
-const DIGGER = { sat: 0.42, contrast: 1.08, lift: [0.065, 0.07, 0.085], gain: [1.03, 1.0, 0.93], tint: [0.98, 1.0, 1.04], toe: 0.0,
-  exposure: 0.95, vignette: 0.22, grain: 0.075, threshold: 1.25, knee: 0.5, bloomA: 0.28, bloomB: 0.2, aberration: 0.0016 };
+// v3: desaturation eased (0.82 → 0.95) so the orange light reads; a teal lift in the blacks; the bloom lower and stronger
+const DIGGER = { sat: 0.95, contrast: 1.12, lift: [0.03, 0.062, 0.072], gain: [1.04, 1.0, 0.94], tint: [1.0, 1.0, 1.0], toe: 0.0,
+  exposure: 0.98, vignette: 0.42, grain: 0.08, threshold: 1.05, knee: 0.5, bloomA: 0.42, bloomB: 0.24, aberration: 0.0016 };
+
+// the orange keep: a colourist's hue-vs-hue curve, run on the graded frame before the captions. Every warm, chromatic
+// pixel is pulled into the safety-orange band (~30°) and the already-saturated ones (the props) are pushed further,
+// because ACES's toe and the pale grade turn a dim orange to rust. Grey, teal and white are untouched. ?keep=0 skips it.
+const KEEP = { hue: 30, pull: 0.85, boost: 0.45 };
+const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a)); return k * k * (3 - 2 * k); };
+function orangeKeep(g) {
+  const im = g.getImageData(0, 0, W, H), d = im.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], gr = d[i + 1], b = d[i + 2];
+    if (r < 24 || r <= gr || r <= b) continue;                 // red must lead
+    const mn = gr < b ? gr : b, c = r - mn, s = c / r;
+    if (s < 0.25) continue;
+    const h = 60 * (gr - b) / c;                               // −60…60 when red leads
+    const wh = h < -24 ? 0 : h < -8 ? (h + 24) / 16 : h <= 46 ? 1 : h < 58 ? (58 - h) / 12 : 0;
+    // the hue pull reaches down into dim haze (where ACES's toe reddens most); the saturation push is for the props only
+    const w = wh * smooth(0.25, 0.45, s) * smooth(24, 56, r); if (w <= 0) continue;
+    const wb = wh * smooth(0.6, 0.85, s) * smooth(40, 72, r);
+    const h2 = h + (KEEP.hue - h) * KEEP.pull * w;
+    const s2 = Math.min(1, s + (1 - s) * KEEP.boost * wb);
+    const v = Math.min(255, r * (1 + 0.03 * wb)), lo = v * (1 - s2);
+    d[i] = v; d[i + 1] = h2 >= 0 ? lo + (v - lo) * h2 / 60 : lo; d[i + 2] = h2 >= 0 ? lo : lo - (v - lo) * h2 / 60;
+  }
+  g.putImageData(im, 0, 0);
+}
+const KEEP_ON = Q.get('keep') !== '0';
 
 // ------------------------------------------------------------------ one frame
 function frame(t, captions = true) {
@@ -207,7 +296,9 @@ function frame(t, captions = true) {
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.filter = 'none';
   setBoil(Math.floor(t * 12));
   drawBoard(t); towers(t);
-  CHAIRSPOT.forEach((s, k) => { s.intensity = 9000 * (0.16 + 0.84 * ease.out((t - EV.lit(k)) / 0.25)); });   // a glimmer from frame 0, so the hook shows the three; full on in turn
+  CHAIRSPOT.forEach((s, k) => { const on = 0.2 + 0.8 * ease.out((t - EV.lit(k)) / 0.25); s.intensity = 11000 * on; CONES[k].material.opacity = 0.085 * on; });   // a glimmer from frame 0, so the hook shows the three; full on in turn
+  TAGS.forEach((p, ti) => { const k = clamp((t - EV.drop0 - 0.1 - ti * 0.25) / 0.6); p.scale.setScalar(k > 0 ? 1 : 0.001); p.rotation.z = (1 - ease.out(k)) * (ti ? -1.2 : 1.2) + Math.sin(t * 2.1 + ti) * 0.05 * k; });
+  DUST.rotation.y = t * 0.03; DUST.position.y = Math.sin(t * 0.4) * 3;
   // the bell rings on the punch word: a small hop
   const db = clamp((t - EV.ding) / 0.25); BELL.position.y = TY + Math.sin(db * Math.PI) * 1.2;
   scene.updateMatrixWorld(true);
@@ -215,6 +306,7 @@ function frame(t, captions = true) {
   // deep focus (the wide-lens look): no depth-of-field blur at all
   post.render(scene, camera, { focus: 200, aperture: 0, maxBlur: 1, seed: Math.floor(t * 24), ...DIGGER });
   g2d.drawImage(renderer.domElement, 0, 0);
+  if (KEEP_ON) orangeKeep(g2d);
   CAP.bug(g2d);
   // the tags: when the study is named; when the towers stand; on the punchline
   const tg = (a0, a1) => clamp((t - a0) / 0.3) * clamp((a1 - t) / 0.3);

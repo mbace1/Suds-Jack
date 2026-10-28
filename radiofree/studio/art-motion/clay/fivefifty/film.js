@@ -71,9 +71,8 @@ const LAPS = TEAM.map((m, i) => (m.x === 0 ? { LAPTOP: S.LAPTOP, LID: S.LID, SCR
 // his lamp and thermos move to the far end, out of the line of five; the phone stays in his pocket
 S.THERMOS.position.set(-46, DESK.y, 25); S.PHONE.visible = false; S.LAMP.position.set(-52, DESK.y, 31);
 S.lampLight.position.set(-42, DESK.y + 18, 26); S.lampLight.target.position.set(-6, DESK.y, 14);
-// the back wall is already faintly see-through: the hall shows behind it from frame 0 (its own material, film 2's is untouched)
-const WALL_SEE = S.M.wall.clone(); WALL_SEE.transparent = true; WALL_SEE.opacity = 0.72;
-S.WALL.traverse((o) => { if (o.isMesh && o.material === S.M.wall) o.material = WALL_SEE; });
+// owner (28 Oct): the window and the desks read on top of each other, make it either/or. So the wall is solid: while it
+// stands you see the studio and its window onto the park, and only once it has flown out do you see the hall
 const FOG = new THREE.Color('#4a4458'); scene.fog = new THREE.FogExp2(FOG, 0.0016); scene.background = FOG.clone();
 
 const PUPS = TEAM.map((m, i) => {
@@ -135,8 +134,8 @@ const CORE = new THREE.Group(); scene.add(CORE); CORE.position.set(...CAB);
 mesh0(lumpy(new RoundedBoxGeometry(8, 13, 7, 3, 0.4), 0.03, 0.8, 1801), CARD, { pos: [0, 6.5, 0], parent: CORE });
 // the screen in the core's front: dark until the cabinet is whole, then the game (a pure function of t)
 const GS = 256, gCan = canvas(GS, GS * 0.8), gTex = tex(gCan);
-mesh0(new THREE.PlaneGeometry(6.2, 4.96), new THREE.MeshBasicMaterial({ map: gTex, toneMapped: false }), { pos: [0, 9.6, 3.52], parent: CORE, cast: false });
-mesh0(lumpy(new RoundedBoxGeometry(7.0, 5.9, 0.4, 2, 0.15), 0.02, 1, 1802), CARD_D, { pos: [0, 9.6, 3.32], parent: CORE });
+mesh0(new THREE.PlaneGeometry(6.2, 4.96), new THREE.MeshBasicMaterial({ map: gTex, toneMapped: false }), { pos: [0, 9.6, 3.95], parent: CORE, cast: false });
+mesh0(lumpy(new RoundedBoxGeometry(7.0, 5.9, 0.4, 2, 0.15), 0.02, 1, 1802), CARD_D, { pos: [0, 9.6, 3.72], parent: CORE });
 // the four parts, each from a teammate's laptop: two sides, the control deck, the marquee. `slot` is its place on the core
 const mCan = canvas(256, 80), mTex = tex(mCan);
 const PARTS = [
@@ -166,7 +165,7 @@ const PARTS = [
   // rest big, and only shrink to the cabinet's scale as they fly in
   const light = new THREE.PointLight(m.col, 0, 40, 2); scene.add(light);
   const rx = { sideL: -32, sideR: 32, deck: -14, marquee: 14 }[p.name];   // spaced so the big parts never touch each other or the thermos
-  return { ...p, g, light, col: m.col, mouth: [m.x, DESK.y + 11.2, 16.4], rest: [rx, DESK.y + (Math.min(...p.size) / 2 + 0.3) * POPK, 27] };
+  return { ...p, g, light, col: m.col, mouth: [m.x, DESK.y + 11.2, 16.4], rest: [rx, DESK.y + (Math.min(...p.size) / 2 + 0.3) * POPK, p.flat ? 28.5 : 27] };   // v2: the long sides lie clear of the lids they rise past
 });
 
 // ------------------------------------------------------------------ the timeline: 112 BPM; captions planned by the pipeline
@@ -202,13 +201,13 @@ function partState(p, k, t) {
   const tPop = EV.pop(k), tFly = EV.fly(k);
   const vis = t >= tPop - 0.02, kOut = clamp((t - tPop) / 0.6);
   let pos = lerp3(p.mouth, p.rest, ease.io(kOut)); pos[1] += Math.sin(kOut * Math.PI) * 14;
-  let sc = lerp(K, POPK, ease.back(kOut));
+  let sc = lerp(0.12, POPK, ease.back(kOut));   // v2: from small, so a tall side never stands through its laptop
   // lying flat in front of its laptop: the tall sides lie down on their faces
   const flat = p.flat || [0, 0, 0];   // colour side up
   let rot = [flat[0] + (1 - ease.out(kOut)) * 2.0, flat[1], flat[2]];
   const kIn = clamp((t - tFly) / 0.55);
   if (kIn > 0) { const slot = [CAB[0] + p.slot[0] * K, CAB[1] + p.slot[1] * K, CAB[2] + p.slot[2] * K];
-    pos = lerp3(p.rest, slot, ease.io(kIn)); pos[1] += Math.sin(kIn * Math.PI) * 9;
+    pos = lerp3(p.rest, slot, ease.io(kIn)); pos[1] += Math.sin(kIn * Math.PI) * 24;   // v2: high, then down onto the box
     rot = lerp3(flat, p.rot, ease.io(kIn)); sc = lerp(POPK, K, ease.io(kIn)); }
   // the pop: a flash in the maker's colour that settles to a glow while it waits, and goes out as it flies in
   const glow = vis ? (700 * Math.exp(-Math.max(0, t - tPop) / 0.5) + 140) * (1 - clamp(kIn)) : 0;
@@ -274,18 +273,22 @@ function pose(Pp, t, sh) {
     const shake = clamp((t - EV.shake) / 0.7), hy = Math.sin(shake * Math.PI * 3) * 0.32 * Math.sin(shake * Math.PI);
     const pz = basePose({ lean: 0.38, hp: 0.4, hy, breathe: br }), L = tokoLaptop(t);
     if (t < EV.close - 0.25) return typing(Pp, pz, tq, 0);
-    if (t < EV.core + 0.1) {   // on the lid while it shuts and while it slides: the paddles ride its top edge
+    // v2: on the lid's BACK, near its top edge: reached over the screen while it is up, on top of the shut laptop after
+    // (v1 held the screen side, which ends up underneath when shut: the paddles sank into the laptop and vanished)
+    const e = (sx) => LAPS[2].LID.localToWorld(V([sx, 8.6, 1.5])).toArray();
+    const lidN = (kc) => [0, lerp(-0.4, -1, kc), lerp(1, 0.15, kc)];
+    if (t < SIDES_HOME) {   // on the lid while it shuts, while it slides, and while the box pops up and the sides drop in
       LAPS[2].LAPTOP.position.set(...L.pos); LAPS[2].LID.rotation.x = L.lid; LAPS[2].LAPTOP.updateMatrixWorld(true);
-      const e = (sx) => LAPS[2].LID.localToWorld(V([sx, 9.4, -0.9])).toArray();
-      const kr = clamp((t - EV.close + 0.25) / 0.25), wR = lerp3([-3.2, DESK.y + 1.9, 13.2], e(-4.2), kr), wL = lerp3([3.2, DESK.y + 1.9, 13.2], e(4.2), kr);
-      return handsTo(Pp, pz, wR, wL, [0, -0.4, 1], [0, -0.4, 1]); }
-    // paddles on the box's top while the two sides fly in past them; then onto the sides, pressing them home
-    const ck = Math.max(0.02, coreK(t)), top = (s) => [CAB[0] + s * 2.0 * K, CAB[1] + 13 * K * ck + 1.0, CAB[2] - 0.5 * K];
-    const kh = ease.io((t - EV.core - 0.05) / 0.3), last = (s) => LAPS[2].LID.localToWorld(V([s * 4.2, 9.4, -0.9])).toArray();
-    const ks = ease.io((t - SIDES_HOME) / 0.22);
-    const tgt = (s) => ks > 0 ? lerp3(top(s), SIDE(s), ks) : lerp3(last(s), top(s), kh);
-    const nrm = (s) => ks > 0.5 ? [-s, 0, 0] : [0, -1, 0];
-    const ke = ease.io((t - EV.core) / 0.3); pz.elR = lerp3(pz.elR, at([-9.5, 11, 6.5]), ke); pz.elL = lerp3(pz.elL, at([9.5, 11, 6.5]), ke);   // elbows up over the desk
+      const kr = clamp((t - EV.close + 0.25) / 0.25), lift = Math.sin(kr * Math.PI) * 8;   // up and over the screen's top edge
+      const wR = lerp3([-3.2, DESK.y + 1.9, 13.2], e(-5.4), ease.io(kr)), wL = lerp3([3.2, DESK.y + 1.9, 13.2], e(5.4), ease.io(kr)); wR[1] += lift; wL[1] += lift;
+      const kc = ease.io((t - EV.close) / 0.4);
+      return handsTo(Pp, pz, wR, wL, lidN(kc), lidN(kc)); }
+    // v2: then straight from the shut laptop to the two sides, sliding back along their outer faces, and pressing them home.
+    // (v1 parked the paddles on the box's top while the sides dropped in, so a side came down through his forearm)
+    const ks = ease.io((t - SIDES_HOME) / 0.3);
+    const tgt = (s) => { const p = lerp3(e(s * 5.4), SIDE(s), ks); p[0] += s * Math.sin(ks * Math.PI) * 1.2; p[1] += Math.sin(ks * Math.PI) * 1.5; return p; };
+    const nrm = (s) => ks > 0.5 ? [-s, 0, 0] : lidN(1);
+    const ke = ease.io((t - SIDES_HOME) / 0.3); pz.elR = lerp3(pz.elR, at([-9.5, 11, 6.5]), ke); pz.elL = lerp3(pz.elL, at([9.5, 11, 6.5]), ke);   // elbows up over the desk
     return handsTo(Pp, pz, tgt(-1), tgt(1), nrm(-1), nrm(1));
   }
   // shot 4: everyone turns to the cabinet. Toko's paddles on its sides; the team's on their own laptops' edges, still
@@ -341,7 +344,7 @@ function setWorld(t) {
   const grade = S.setHour('dusk');
   // the wall and the hall
   const wk = wallK(t); S.WALL.position.set(0, wk * 210, -wk * 30); S.WALL.rotation.x = -wk * 0.35; S.WALL.visible = wk < 0.999;
-  const gk = Math.max(wk, 0.7);   // the hall: faint through the wall, full once it has gone
+  const gk = wk; GHOST.visible = wk > 0.001;   // the hall exists only while the wall is (partly) out
   GROWS.forEach((r, k) => { const off = clamp((t - EV.dark(k)) / 0.12) * (1 - clamp((t - EV.flyIn) / 0.6));
     r.m.opacity = r.op * gk; r.sm.opacity = (1 - off * 0.85) * gk * lerp(0.95, 0.35, k / (ROWS - 1)); r.sm.color.copy(screenOn).lerp(screenOff, off); });
   // Toko's laptop (shut and pushed in shot 3; stays pushed after)

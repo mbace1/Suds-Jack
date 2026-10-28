@@ -110,3 +110,18 @@ review. Both are on the twice-daily check's watch list.
 - The chairs were invisible at frame 0. A dim spot is now on from the start.
 
 **Not built yet:** `score.py`, the full render, and the owner's ruling on the hook and the chairs.
+
+## v3 to full render (28 Oct)
+
+**Owner, 28 Oct, on the v3 stills (orange lighting):** "Start." So v3 is the film now:
+
+- **Files.** `film.js` is v3 (the orange-light build that was `film2.js`); v1 is kept as `film-v1.js`. `film.html` loads
+  `film.js`, so the pipeline builds v3.
+- **Sound:** `score.py`, on the RFH bed, kept light under the push and the chairs and wide shot, with the full groove
+  for the towers:
+  - three heavy spotlight clunks, one per chair, panned left to right;
+  - a paper avalanche that thickens as the CONTRACTS towers fill, and a card tap for the top folder;
+  - the service bell on "advice", once, polite, with a deadpan sting after it.
+- **Build:** `pipeline/build.py clay/panel --lang en --jobs 3 --signoff previews/signoff-papercut.mp4`.
+- **Before posting:** re-check that the Pentagon has still not stated Musk's and Luckey's employment status, and whether
+  any recusal or ethics review has come out. Both are on the twice-daily check.
