@@ -492,3 +492,18 @@ Everything below comes from search summaries. No article was opened.
 - **Big development:** none.
 
 - **27 Oct 17:16 (search summaries):** no change on The Panel: the co-leads' SGE/contractor status is still undisclosed, and MITRE safeguards are the only DOD line. Meta: still no reply to Grassley. NDA bans: no new vote; Indiana County, PA, votes 18 Nov.
+
+### Check Wed 28 Oct 07:16 (search summaries only; no article opened)
+- **The Panel / Project Meridian:** no change since NPR, 6 Oct. The Pentagon still hasn't said whether Musk and Luckey are special government employees or contractors. MITRE safeguards are still its only line. [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **Meta / Grassley:** still no published Meta reply to the 22 Jul letter (deadline 5 Aug). [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
+- **AI Whistleblower Protection Act:** no 2026 movement found; the bill still sits with Senate HELP. [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/support-grows-for-ai-whistleblower-protection-act)
+- **NDA bans / town deals, new date:**
+  - Lincoln County (SD) and Sioux Falls planned a public forum on hyperscale data centres for **Tue 27 Oct, 7 pm**. No coverage of it found yet.
+  - The commission voted down the moratorium and NDA ban 3–2 in August.
+  - The Sioux Falls Regulatory Oversight Committee meets in Nov and Jan. Proposed ordinances are due **27 Nov**.
+  - Watch: re-check 29–30 Oct for the forum's outcome.
+  - Sources: [SF Simplified](https://www.sfsimplified.com/meeting-over-moratorium-where-lincoln-county-stands-on-data-centers/), [Dakota News Now, 13 Oct](https://www.dakotanewsnow.com/2026/10/13/city-leaders-consider-future-data-center-development/)
+- **Other NDA items:** Indiana County (PA) still votes 18 Nov. Champaign County (IL) has taken no final action.
+- **GPU / DRAM:** no October-dated item. Reports describe a third 2026 GeForce price rise, and the latest data point is TrendForce's 27 Jul graphics DRAM report. Undated; do not use without a dated source.
+- **Circular deals:** no new deal found this week. Results were the October 2025 Nvidia, AMD and Oracle structures.
+- **Big development:** none.

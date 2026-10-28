@@ -210,3 +210,13 @@ All facts below come from search summaries; no article was opened.
   - NDA bans: no vote today. Indiana County, PA, votes 18 Nov.
 - **Finland:** no new HS candidate.
 - **No film needs a fix.**
+
+## Daily check, Wed 28 Oct 07:16 (search summaries only)
+- **Posted** per POSTED.md: Ends in 3 (Sun 25 Oct) and Toko 5 (per Mikael; link still to record).
+- **Ends in 3:** no correction needed. Digit 5 is still due **31 Oct**, with suspension within 72 h. No new CRT extension was found; the latest dated source is from Aug 2026. Re-check 31 Oct and 1 Nov. Sources: [El CEO](https://elceo.com/actualidad/si-habra-prorroga-para-el-registro-de-lineas-telefonicas-crt-anuncia-nueva-fecha-limite/), [Milenio](https://www.milenio.com/comunidad/registro-linea-telefonica-calendario-oficial-nuevas-fechas)
+- **The Panel:** still accurate. There is nothing newer than NPR, 6 Oct; the co-leads' status remains undisclosed.
+- **Break Glass:** keep held. No plenary vote yet on the extension to 31.12.2028, which needs a five-sixths majority. Kari says SDP will ensure it passes, but the six earlier SDP dissenters haven't all said how they will vote. [Verkkouutiset](https://www.verkkouutiset.fi/a/mika-kari-sdp-tulee-varmistamaan-rajalain-lapimenon/)
+- **Muhos:** light watch, nothing new; the water plan is due 5 Nov.
+- **Global:** no big development. New date to watch: the Lincoln County/Sioux Falls data-centre forum (27 Oct), with outcome not yet reported.
+- **Finland:** no new HS candidate.
+- **No film needs a fix.**

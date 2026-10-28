@@ -389,3 +389,8 @@ Everything below comes from search summaries. No article was opened.
 - **Hamina / Trade Secret:** no follow-up found.
 
 - **27 Oct 17:16 (search summaries):** no new HS candidate. Muhos: nothing new; the water plan is due 5 Nov (a conditional fine is possible per Kaleva). Hamina: no follow-up.
+
+### Check Wed 28 Oct 07:16 (search summaries only)
+- **Finland:** no new HS candidate. Searches on HS data-centre, secret-agreement and AI stories returned only older material from other outlets: Yle on the Muhos €26M land-use deal, Yle on Nebius in Lappeenranta, Kaleva on Verda in Pyhäjoki.
+- **Muhos (light watch):** nothing new since 22–23 Oct. Kaleva still has LVV's police request and a police esiselvitys. The water plan is still due 5 Nov; re-check 5–6 Nov. [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Hamina / Trade Secret:** no follow-up found.
