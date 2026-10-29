@@ -21,12 +21,12 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=58';
-import * as worlds from '../worlds.js?v=58';
-import * as challenge from '../challenge.js?v=58';
-import { makeRng } from '../rng.js?v=58';
-import * as bossfight from '../bossfight.js?v=58';
-import * as floorshift from '../floorshift.js?v=58';
+import { TUNING } from '../../tuning.js?v=59';
+import * as worlds from '../worlds.js?v=59';
+import * as challenge from '../challenge.js?v=59';
+import { makeRng } from '../rng.js?v=59';
+import * as bossfight from '../bossfight.js?v=59';
+import * as floorshift from '../floorshift.js?v=59';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -50,11 +50,16 @@ export const isBreather = (wave) => waveKind(wave) === 'normal' && waveKind(wave
 // clock) and who may be drawn stay the real wave's; only how many, how fast
 // and how often they fire follow the pressure. The 1.x oracle has no worlds
 // and presses as written.
+// v59, the curve on purpose (scripts/curve.mjs measures it a world at a time):
+// every world opens on a breather — its first waves press `entry` lower, so the
+// new floor and its rule are learned before the climb — and a world's own
+// `world` offset sets where it sits against its neighbours
 export function pressure(w, wave) {
   const G = W.gentle;
   if (!G || !worlds.on(w) || !w.world) return wave;
-  const k = w.mode === 'hardcade' ? G.hard : G.slope;
-  return wave <= G.from ? wave : G.from + (wave - G.from) * k;
+  const k = w.mode === 'hardcade' ? G.hard : G.slope, n = wave - (w.world - 1) * W.rhythm.bossEvery;
+  const base = wave <= G.from ? wave : G.from + (wave - G.from) * k;
+  return Math.max(1, base - (G.entry?.[n - 1] ?? 0) + (G.world?.[w.world - 1] ?? 0));
 }
 
 // 1.x waveScaleFor (main.js:92-105): the bodies' speed and fire-clock multipliers
@@ -94,13 +99,14 @@ export const liveCapFor = (wave, press = wave) => Math.max(W.caps.liveMin, Math.
 export const roundLenFor = (wave) => W.round[waveKind(wave)] ?? W.round.normal;
 
 // the shooter plan's seats and spend (main.js:281-286)
-export function shooterPlan(wave, press = wave) {
+export function shooterPlan(wave, press = wave, room = 1) {
   const SP = W.shooterPlan, kind = waveKind(wave), curtain = kind === 'curtain';
   let cap = Math.min(SP.capBase + Math.floor(press / SP.capPerWaves), SP.capMax);
   if (kind === 'swarm') cap = SP.swarmCap;
   if (kind === 'boss') cap = Math.min(cap, SP.bossCap);
   if (curtain) cap += SP.curtainCapBonus;
-  return { cap, budget: Math.floor(budgetFor(wave, press) * (curtain ? SP.curtainShare : SP.budgetShare)) };
+  if (room < 1) cap = Math.max(1, Math.round(cap * room));
+  return { cap, budget: Math.floor(budgetFor(wave, press) * room * (curtain ? SP.curtainShare : SP.budgetShare)) };
 }
 
 // the boss wave's headliner (main.js:255-261): the TWIN PRISMS on an even
@@ -118,12 +124,15 @@ export const escortsFor = (wave) => Math.max(0, Math.min(W.boss.escort.max, Math
 // shooter?, slot?, boss?, front? } and the numbers that built them. Pure but
 // for `rng`, which it draws from in 1.x's order.
 // `world` (sim/worlds.js): a later world adds its own species to the draw
-// ([key, minWave, cost], TUNING.worlds.list[n].species); world 1 draws as 1.x
-export function schedule(wave, rng, seed, world = 1, bossWorld = 0, press = wave) {
+// ([key, minWave, cost], TUNING.worlds.list[n].species); world 1 draws as 1.x.
+// `room` (v59): the share of the bodies a smaller floor holds — a world's
+// moving-floor wave (sim/floorshift.js `room`) scales its budget, its caps
+// and its shooters by it; 1 is a whole floor, as 1.x
+export function schedule(wave, rng, seed, world = 1, bossWorld = 0, press = wave, room = 1) {
   const r = () => rng.next();
   const pick = (list) => list[Math.floor(r() * list.length)];
   const kind = waveKind(wave), swarm = kind === 'swarm', curtain = kind === 'curtain', boss = kind === 'boss';
-  const budget = budgetFor(wave, press), cap = entryCap(wave, press), V = W.variants, SP = W.shooterPlan;
+  const budget = Math.floor(budgetFor(wave, press) * room), cap = Math.max(1, Math.round(entryCap(wave, press) * room)), V = W.variants, SP = W.shooterPlan;
 
   // each of the world's own as often as `speciesWeight` of 1.x's, so it is the world's
   const own = T.worlds.list[world - 1], extra = [];
@@ -155,7 +164,7 @@ export function schedule(wave, rng, seed, world = 1, bossWorld = 0, press = wave
 
   // the deliberate shooters (main.js:279-297): no variant, spaced in time
   {
-    const sp = shooterPlan(wave, press);
+    const sp = shooterPlan(wave, press, room);
     let sSpent = 0, k = 0, st = SP.first;
     while (shootPool.length && k < sp.cap && sSpent < sp.budget) {
       const [type, , cost] = pick(shootPool);
@@ -216,8 +225,8 @@ export function schedule(wave, rng, seed, world = 1, bossWorld = 0, press = wave
 
   list.sort((a, b) => a.t - b.t);
   if (!list.length) list.push({ kind: W.empty, t: 0, variant: 'normal' });
-  const sp = shooterPlan(wave, press);
-  return { wave, press, kind, breather: isBreather(wave), budget, spent, cap, liveCap: liveCapFor(wave, press), roundLen,
+  const sp = shooterPlan(wave, press, room);
+  return { wave, press, kind, breather: isBreather(wave), budget, spent, cap, liveCap: Math.round(liveCapFor(wave, press) * room), roundLen,
            shooterCap: sp.cap, shooterBudget: sp.budget, fronts: cnt, list };
 }
 
@@ -274,7 +283,10 @@ function startWave(w, d, carry) {
   w.wave = d.wave;
   // the world's own boss only in a run that has one (the 1.x oracle's has no w.world)
   const bossWorld = worlds.on(w) && w.world ? w.world : 0;
-  const plan = schedule(d.wave, w.rng, w.seed, worlds.on(w) ? w.world : 1, bossWorld, pressure(w, d.wave));
+  // a moving-floor wave holds fewer bodies on the smaller floor it leaves (v59, the shift's
+  // `room`); a world's own `room` is a trial knob for scripts/curve.mjs --rooms, unset (1)
+  const shift = floorshift.shiftFor(w, d.wave), own = worlds.on(w) ? T.worlds.list[w.world - 1]?.room ?? 1 : 1;
+  const plan = schedule(d.wave, w.rng, w.seed, worlds.on(w) ? w.world : 1, bossWorld, pressure(w, d.wave), own * (shift?.room ?? 1));
   d.kind = plan.kind; d.plan = plan;
   d.roundLen = plan.roundLen; d.waveT = 0; d.frontLandedAt = W.pulses.landedInit;
   d.liveCap = plan.liveCap; d.childCap = plan.liveCap * W.caps.childMult; d.held = 0;
@@ -298,7 +310,6 @@ function startWave(w, d, carry) {
     challenge.startTrial(w, trial, d.trialRng);
   }
   // a world's floor that moves for a wave (sim/floorshift.js, v44); any other wave has it whole
-  const shift = floorshift.shiftFor(w, d.wave);
   if (shift) floorshift.start(w, shift); else floorshift.end(w);
 }
 

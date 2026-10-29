@@ -46,9 +46,15 @@ export default {
   // the bodies press as wave from + (wave − from) × slope, so the 72 waves can
   // be lived through. HARDCADE presses on `hard` (v55, owner: "Hardcade should
   // be harder"): a quarter STEEPER than 1.x's own curve, where ARCADE is half.
-  // Measured with the expert bot (scripts/reach.mjs): ARCADE's median run ends
-  // in world 7, HARDCADE's in world 4. sim/director/arcade.js pressure()
-  gentle: { from: 4, slope: 0.5, hard: 1.25 },
+  // Measured with the expert bot (scripts/reach.mjs, 12 seeds, v59): ARCADE's
+  // runs reach wave 49 on average (two of twelve won), HARDCADE's wave 31.
+  // sim/director/arcade.js pressure()
+  gentle: { from: 4, slope: 0.5, hard: 1.25,
+    // v59, the curve on purpose (scripts/curve.mjs, docs/CURVE.md): a world's first two
+    // waves press 2 and 1 waves lower, a breather after the fall. `world` is each world's
+    // own offset in waves of pressure, all 0: a weak knob (two waves easier everywhere moved
+    // a world's clears by 2-3 points), kept for curve.mjs --offsets trials
+    entry: [2, 1], world: [0, 0, 0, 0, 0, 0, 0, 0, 0] },
 
   // 1.x waveKind (main.js:129-136; tuning.js:355). Precedence
   // boss > spike > curtain > swarm; a normal wave after any other is a breather

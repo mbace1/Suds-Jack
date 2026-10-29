@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=58';
-import WAVES from './tuning/waves.js?v=58';
-import PICKUPS from './tuning/pickups.js?v=58';
-import MUSIC from './tuning/music.js?v=58';
+import { SPECIES } from './tuning/species/index.js?v=59';
+import WAVES from './tuning/waves.js?v=59';
+import PICKUPS from './tuning/pickups.js?v=59';
+import MUSIC from './tuning/music.js?v=59';
 
 export const TUNING = {
   render: {
@@ -46,8 +46,18 @@ export const TUNING = {
     // next world opens — ARCADE all of them; HARDCADE none (v55: "Hardcade
     // should be harder"), your three lives last the whole run (sim/worlds.js swap)
     heal: { arcade: 3, hardcade: 0 },
-    // a world's floor that moves for a wave (`shift` below; sim/floorshift.js, v44): warned this long first
-    shift: { warn: 1.6 },
+    // v59, the curve on purpose: a world's `room` would be the share of its waves' bodies its floor holds
+    // (1 if unset; sim/director/arcade.js startWave). None is set. Started with the bare gun, the worlds
+    // asked for 0.85-1.07; walked into with the pod and DASH level a run carries to the door (the way a
+    // player arrives, scripts/curve.mjs), every world's own crowd already falls in the right order, and
+    // those numbers bent it out of order again. It is a knob for `curve.mjs --rooms`, not a setting
+    // a world's floor that moves for a wave (`shift` below; sim/floorshift.js, v44): warned this long first.
+    // v59: a shift's `room` is the share of the wave's bodies its smaller floor holds — the square root
+    // of the share of the floor left (the ice's floe leaves 29%, the core's twins 26%, the river's
+    // breathing banks 65% on average), so it is denser than a whole floor but not three times as crowded.
+    // Measured (scripts/curve.mjs): with the whole wave on it the ice's floe wave took 40% of the six
+    // skilled bots' lives in its world; with this and the floe moved, no wave but a boss takes a third
+    shift: { warn: 1.6, close: 1.2 },   // `close`: s the floor takes to close in on its shape (v59)
     list: [
       { id: 'grid', heavy: 0 },
       { id: 'driveway', trial: 'gates', heavy: 0.35, species: [['hoppa', 0, 3]], speciesWeight: 4, arena: { landscape: { hx: 27.5, hz: 16 }, portrait: { hx: 16, hz: 27.5 } } },
@@ -62,17 +72,20 @@ export const TUNING = {
         arena: { landscape: { hx: 23, hz: 14 }, portrait: { hx: 14, hz: 23 } } },
       { id: 'river', trial: 'hold', heavy: 0.55, species: [['salma', 0, 3]], speciesWeight: 3, rule: 'current', rail: 0x44ddbb,
         // its third wave the banks breathe in and out (sim/floorshift.js, v44)
-        shift: { at: 3, kind: 'breathe', parts: [{ kind: 'rect', hx: 1, hz: 1, pulse: { from: 1, to: 0.58, period: 9, mode: 'breathe' } }] },
+        shift: { at: 3, kind: 'breathe', room: 0.8, parts: [{ kind: 'rect', hx: 1, hz: 1, pulse: { from: 1, to: 0.58, period: 9, mode: 'breathe' } }] },
         arena: { landscape: { hx: 34, hz: 12 }, portrait: { hx: 12, hz: 34 } } },
       { id: 'ice', trial: 'combo', heavy: 0.6, species: [['skata', 0, 3]], speciesWeight: 3, rule: 'slip', rail: 0xbfe6ff,
-        // its third wave the floor is a round floe drifting round the middle
-        shift: { at: 3, kind: 'floe', parts: [{ kind: 'circle', c: [0, 0], r: 0.78, orbit: { r: 0.32, period: 16 } }] },
+        // its seventh wave, the breather before its boss, the floor is a round floe drifting round the
+        // middle (v59: it was the third, a swarm — on a third of the floor, on ice, that one wave took 40%
+        // of the six skilled bots' lives in the world, 62% of the expert's; the river's and the core's
+        // shifts fall on breathers too)
+        shift: { at: 7, kind: 'floe', room: 0.54, parts: [{ kind: 'circle', c: [0, 0], r: 0.78, orbit: { r: 0.32, period: 16 } }] },
         arena: { landscape: { hx: 28, hz: 17 }, portrait: { hx: 17, hz: 28 } } },
       { id: 'deep', trial: 'collect', heavy: 0.6, species: [['glowa', 0, 3]], speciesWeight: 3, rule: 'dark', rail: 0x4455cc,
         arena: { landscape: { hx: 24, hz: 16 }, portrait: { hx: 16, hz: 24 } } },
       { id: 'core', squeeze: 0.7, heavy: 0.65, species: [['mirra', 0, 3]], speciesWeight: 3, rule: 'cycle', rail: 0xee44dd,
         // its third wave the floor is two discs going round each other: cross the gap when they meet
-        shift: { at: 3, kind: 'twins', combine: 'union', parts: [{ kind: 'circle', r: 0.55, orbit: { r: 0.42, period: 14 } }, { kind: 'circle', r: 0.55, orbit: { r: 0.42, period: 14, phase: 3.14159 } }] },
+        shift: { at: 3, kind: 'twins', room: 0.51, combine: 'union', parts: [{ kind: 'circle', r: 0.55, orbit: { r: 0.42, period: 14 } }, { kind: 'circle', r: 0.55, orbit: { r: 0.42, period: 14, phase: 3.14159 } }] },
         arena: { landscape: { hx: 19, hz: 11 }, portrait: { hx: 11, hz: 19 } } },
     ],
     // THE CORE plays every rule in turn, `cycleEvery` s each

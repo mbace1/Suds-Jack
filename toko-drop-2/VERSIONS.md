@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v59 — 2026-10-29
+**The arcade's curve, on purpose: each world measured by eight bots that play eight ways, walking in with what a run carries; the ice's one cliff wave gone, and a moving floor that closes in instead of snapping onto you**
+- Owner, 2026-10-29: "Continue", then "Keep testing with different bots". The scorecard's A7 said the middle worlds were "not shaped on purpose". A whole run blurs where a world stands, so `scripts/curve.mjs` plays each world on its own with the three lives ARCADE gives back, to its boss: clears, lives, the wave each death falls on, what kills. docs/CURVE.md has the tables.
+- **Four new bots that play differently**, with the good player's hands (`scripts/bot.mjs`): *close* plays for HEAT, *kite* keeps its distance and circles, *still* holds the middle, *dasher* dashes at the first sign of trouble. With the expert and the three line bots that is eight; a world hard for one way of playing and not the others shows as that.
+- **A world is walked into, not started bare.** The weapon pod and the DASH level last the whole run, so each seed plays its worlds in order and walks each one in with the kit its run carried to the door. On v58, started bare, the good bot cleared the boiler room 8 times in 24; arriving from the cistern, 15 times in 18. A first tuning set against the bare numbers (five worlds given a share of the bodies for their floor, 0.85-1.07) bent the walked-in curve out of order in three places, and is gone; the knob stays for `curve.mjs --rooms` trials.
+- **The ice's floe sat on a swarm**: world 7's third wave, dozens of fast bodies on a third of the floor, on ice, took 40% of the six skilled bots' lives in the world (62% of the expert's), the arcade's one cliff. The floe moved to the seventh wave, the breather before the boss (the river's and the core's shifts already fall on breathers), and a shift wave holds fewer bodies: the square root of the floor it leaves (the floe 0.54, the twins 0.51, the banks 0.8).
+- **A moving floor snapped onto you.** The floe, the core's twin discs and the river's banks became the floor in one step, and every body outside was clamped onto the new edge at once — onto the hero, for 12 of the 32 lives the good bot lost on the floe in one measurement. The floor now closes in on its shape over 1.2 s.
+- **Every world opens on a breather**: its first two waves press 2 and 1 waves lower (`TUNING.waves.gentle.entry`). A small effect: wave pressure is a weak knob, the bodies on a floor a strong one.
+- **The result** (the six skilled bots' mean, each world walked in, 24 seeds a cell): 99, 96, 82, 83, 75, 65, 58, 52, 29% → 99, 92, 87, 79, 71, 63, 59, 55, 34%: every world harder than the one before, ending at a third. For the six together no wave but a boss takes more than 22% of a world's lives (the floe's took 40%). Whole runs (12 seeds): the expert's ARCADE runs reach wave 49 on average as before and win 2 of 12 (1 before); the good bot's go from wave 37 to 45 and win 2 of 12 (none before); HARDCADE's expert as before, wave 31.
+- Tests: floorshift checks the floor closes in rather than snapping, and watches a shift for as long as its wave lasts (a smaller floor's wave can end inside the watch).
+- Cache tokens `?v=58` → `?v=59`; HUD label → `2.0 · v59`
+
+---
+
 ## v58 — 2026-10-28
 **Music: a song for every world, layered by your heat; and the sound no longer clips**
 - Owner, 2026-10-28: "Continue" — the biggest gap left that needs no person: ARCADE's A9 sat at 5/10 for "no music". 2.0 had none, and 1.x's v267 world beds were ambience, not music.

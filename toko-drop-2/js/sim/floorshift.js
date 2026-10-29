@@ -13,8 +13,8 @@
 //
 //   w.shift  { spec, t, phase: 'warn' | 'on', box: the floor it is sized off }
 //   events   shiftWarn { kind } · shift { kind } · shiftEnd { kind }
-import { TUNING } from '../tuning.js?v=58';
-import { Arena, rectShape, circleShape, unionShape, intersectShape, partAt } from './shape.js?v=58';
+import { TUNING } from '../tuning.js?v=59';
+import { Arena, rectShape, circleShape, unionShape, intersectShape, partAt } from './shape.js?v=59';
 
 const T = TUNING;
 
@@ -27,15 +27,17 @@ export function shiftFor(w, wave) {
 
 // the shape at `t` seconds into the shift, in the run's units, sized off `box`:
 // the world's own floor, not its walls (a challenge that closed them in can
-// still be running when the shift begins)
-export function shapeAt(box, spec, t) {
-  const w = box, m = Math.min(w.hx, w.hz);
+// still be running when the shift begins). `k` is how far the floor has closed
+// in on it (v59), 0 the whole floor to 1 the shape: a circle grows in from one
+// round the whole floor, a side in from the floor's own
+export function shapeAt(box, spec, t, k = 1) {
+  const w = box, m = Math.min(w.hx, w.hz), e = k >= 1 ? 1 : Math.max(0, k) ** 2 * (3 - 2 * Math.max(0, k)), R = Math.hypot(w.hx, w.hz);
   const parts = spec.parts.map((p0) => {
     const p = p0.kind === 'rect'
       ? { ...p0, hx: p0.hx * w.hx, hz: p0.hz * w.hz }
       : { ...p0, c: [(p0.c?.[0] ?? 0) * w.hx, (p0.c?.[1] ?? 0) * w.hz], r: p0.r * m, orbit: p0.orbit && { ...p0.orbit, r: p0.orbit.r * m } };
     const s = partAt(p, t);
-    return s.kind === 'rect' ? rectShape(s.hx, s.hz) : circleShape(s.c[0], s.c[1], s.r);
+    return s.kind === 'rect' ? rectShape(w.hx + (s.hx - w.hx) * e, w.hz + (s.hz - w.hz) * e) : circleShape(s.c[0] * e, s.c[1] * e, R + (s.r - R) * e);
   });
   if (parts.length === 1) return parts[0];
   return spec.combine === 'intersect' ? intersectShape(...parts) : unionShape(...parts);
@@ -51,11 +53,14 @@ export function step(w, dt) {
   const S = w.shift;
   if (!S) return;
   S.t += dt;
+  // the floor closes in on its shape over `close` s (v59): snapped in one step, every body
+  // outside it was clamped onto its edge at once — onto the hero, in a fifth of the
+  // ice's floe deaths (scripts/curve.mjs)
   if (S.phase === 'warn' && S.t >= T.worlds.shift.warn) {
     S.phase = 'on'; S.t = 0;
-    w.region = new Arena(shapeAt(S.box, S.spec, 0));
+    w.region = new Arena(shapeAt(S.box, S.spec, 0, 0));
     w.events.push({ type: 'shift', kind: S.spec.kind });
-  } else if (S.phase === 'on') w.region.setShape(shapeAt(S.box, S.spec, S.t));
+  } else if (S.phase === 'on') w.region.setShape(shapeAt(S.box, S.spec, S.t, S.t / T.worlds.shift.close));
 }
 
 // the wave is over (or the world): the floor is whole again

@@ -1,7 +1,7 @@
 // kettle.js — how KETTLE looks: the gel dome in hot iron, an iron lid on top
 // that rattles as the pressure builds (the sim's s.p) and a spout turned at
 // you; red-hot while it stalls (s.hot). The boss ring under it.
-import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=58';
+import { auraBuild, auraUpdate, auraReset } from './bossaura.js?v=59';
 
 export default {
   build(ctx) {

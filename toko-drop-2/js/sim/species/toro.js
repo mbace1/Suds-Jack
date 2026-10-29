@@ -48,7 +48,7 @@
 // Not ported: the CLOSE COMBAT boss's enrage (≤ 33% hp: creep 1.5, rev
 // ×0.625, idle ×0.45, 1.x enemy.js:1688-1696, 2571, 2580, 2642) — in classic
 // a TORO is never a boss (1.x main.js:239-262).
-import { TUNING } from '../../tuning.js?v=58';
+import { TUNING } from '../../tuning.js?v=59';
 
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
