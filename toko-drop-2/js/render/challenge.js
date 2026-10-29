@@ -4,7 +4,7 @@
 // that says it is the one that can be hurt. Reads w.ch and nothing else; the
 // gates are pickups.js's, a moving floor is floor.js's.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=60';
+import { TUNING } from '../tuning.js?v=61';
 
 const V = TUNING.campaign.view;
 const flat = (g) => g.rotateX(-Math.PI / 2);

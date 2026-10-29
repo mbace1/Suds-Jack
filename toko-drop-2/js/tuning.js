@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=60';
-import WAVES from './tuning/waves.js?v=60';
-import PICKUPS from './tuning/pickups.js?v=60';
-import MUSIC from './tuning/music.js?v=60';
+import { SPECIES } from './tuning/species/index.js?v=61';
+import WAVES from './tuning/waves.js?v=61';
+import PICKUPS from './tuning/pickups.js?v=61';
+import MUSIC from './tuning/music.js?v=61';
 
 export const TUNING = {
   render: {
@@ -530,6 +530,9 @@ export const TUNING = {
   // (v53: an empty floor holds it); the kill that empties the floor heats
   // `clear` more. A hit keeps `hitKeep` of it (none). COLD GUN, a room's
   // mutator, takes `coldShot` a shot.
+  // the play record (js/record.js, v61): the newest this many finished rooms and runs are kept
+  record: { cap: 400 },
+
   heat: {
     levels: 8, kill: 0.2, near: { r0: 2, r1: 6, k0: 4, pow: 2 }, graze: 0.08,
     grace: 0.4, drain: 0.45, drainPer: 0.08, clear: 0.8, hitKeep: 0, coldShot: 0.012,

@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v61 — 2026-10-29
+**PLAY RECORD: every room and run you play is kept on your phone, and one tap copies it to send**
+- Owner, 2026-10-29: "Continue". Everything the scorecard still lacks waits on a person — the grade lines, the curve, HEAT, the mutators against someone's runs (docs/COMPLETION.md) — and a person's runs only count once they are written down.
+- `js/record.js`: every finished campaign room (room, HARD or not, grade, score, how it ended, time, hits) and every arcade run (world and wave reached, score, won, and each life lost with its wave and what took it) is kept in this browser, the newest 400 (`TUNING.record.cap`), with the version, the time, the input (touch, pad or keys) and which way up the screen was. A room or run left from the pause menu is kept too, as a quit: where a person stops is not where they lose. Nothing leaves the phone on its own.
+- OPTIONS → **PLAY RECORD · n** copies it as text to paste into a message (else the phone's share sheet, else a file), and says what it did.
+- `scripts/record.mjs` reads a pasted record against the bots: per room, the first try's grade and the best, the score against today's lines, and two flags — an S on a first try (lines that may sit low) and three tries never past F (a room that may ask too much); per arcade world, how often a run got through it beside the six skilled bots' curve (docs/CURVE.md), where the lives went, and where runs and rooms were left.
+- Tests: `test/record.mjs` (in the smoke): what it keeps and drops, a real room's and a real run's entry, a quit, and the text reading back out of a message.
+- Cache tokens `?v=60` → `?v=61`; HUD label → `2.0 · v61`
+
+---
+
 ## v60 — 2026-10-29
 **WHITE HEAT: in two rooms the multiplier climbs past ×8 to ×16; THE BRAID banks; and every campaign world has a room with a mutator**
 - Owner, 2026-10-29: "Continue". The scorecard's C5 said the campaign had two mutators on five rooms and "the owner left room for more"; its first two worlds had none.

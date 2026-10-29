@@ -7,31 +7,32 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=60';
-import { buildFloor } from './render/floor.js?v=60';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=60';
-import * as worldsSim from './sim/worlds.js?v=60';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=60';
-import * as reshapeSim from './sim/reshape.js?v=60';
-import { Scenery } from './render/scenery.js?v=60';
-import { Transit } from './render/transit.js?v=60';
-import { Splats } from './render/splats.js?v=60';
-import { Actors } from './render/actors.js?v=60';
-import { GEL_TIME } from './render/gel.js?v=60';
-import { studioEnvironment } from './render/env.js?v=60';
-import { Specimen } from './render/specimen.js?v=60';
-import { createWorld, step, api as simApi } from './sim/world.js?v=60';
-import { stage as stagePk } from './sim/pickups.js?v=60';
-import { Input } from './input.js?v=60';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=60';
-import { Announcer } from './announcer.js?v=60';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=60';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=60';
-import { Sound } from './audio.js?v=60';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=60';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=60';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=60';
-import { Readout } from './readout.js?v=60';
+import { TUNING } from './tuning.js?v=61';
+import { buildFloor } from './render/floor.js?v=61';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=61';
+import * as worldsSim from './sim/worlds.js?v=61';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=61';
+import * as reshapeSim from './sim/reshape.js?v=61';
+import { Scenery } from './render/scenery.js?v=61';
+import { Transit } from './render/transit.js?v=61';
+import { Splats } from './render/splats.js?v=61';
+import { Actors } from './render/actors.js?v=61';
+import { GEL_TIME } from './render/gel.js?v=61';
+import { studioEnvironment } from './render/env.js?v=61';
+import { Specimen } from './render/specimen.js?v=61';
+import { createWorld, step, api as simApi } from './sim/world.js?v=61';
+import { stage as stagePk } from './sim/pickups.js?v=61';
+import { Input } from './input.js?v=61';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=61';
+import { Announcer } from './announcer.js?v=61';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=61';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=61';
+import { Sound } from './audio.js?v=61';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=61';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=61';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=61';
+import { Readout } from './readout.js?v=61';
+import * as record from './record.js?v=61';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -290,6 +291,33 @@ const tests = () => {
 const showTitle = (keep = false) => ui.title(bests(), sound.on, input.source, tests(), keep);
 // a switch flipped: redraw the menu it is on (OPTIONS, or the title)
 const refreshMenu = () => (ui.inOptions ? ui.openOptions() : showTitle(true));
+// PLAY RECORD (OPTIONS, v61): the record as text a person can paste into a
+// message — the clipboard first, else the phone's share sheet, else a file
+let lost = [], recordSaid = null;
+async function shareRecord() {
+  const list = record.read(store);
+  if (!list.length) { recordSaid = 'recordEmpty'; refreshMenu(); return; }
+  const text = record.pack(list, new Date());
+  try { await navigator.clipboard.writeText(text); recordSaid = 'recordCopied'; }
+  catch {
+    try { await navigator.share({ title: 'Toko Drop 2.0 · play record', text }); recordSaid = 'recordShared'; }
+    catch (e) {
+      if (e?.name === 'AbortError') recordSaid = null;   // the share sheet was closed
+      else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' })); a.download = 'toko-drop-play-record.txt';
+        document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        recordSaid = 'recordSaved';
+      }
+    }
+  }
+  refreshMenu();
+}
+// a room or a run left from the pause menu goes in the record as a quit (js/record.js)
+function recordQuit() {
+  if (!world || world.over || (state !== 'paused' && state !== 'play')) return;
+  record.add(store, record.entryFor(world, mode, lost, { input: input.source, screen: arenaName, date: new Date() }, true), T.record.cap);
+}
 
 const input = new Input(document);
 const sound = new Sound();
@@ -318,7 +346,7 @@ const ui = new UI({
   onResume: () => resume(),
   onPause: () => pause(),
   onAgain: () => start(mode, { room: lastRoom }),
-  onMenu: () => toMenu(),
+  onMenu: () => { recordQuit(); toMenu(); },
   onSound: () => { sound.setVolume(sound.volume > 0 ? 0 : 1); store.set('toko2.volume', sound.volume); refreshMenu(); },
   onVolume: () => { sound.setVolume(next(VOLUMES, sound.volume)); store.set('toko2.volume', sound.volume); sound.unlock(); sound.event?.({ type: 'pickup', kind: 'score' }); refreshMenu(); },
   onMusic: () => { music.setVolume(next(VOLUMES, music.volume)); store.set('toko2.music', music.volume); sound.unlock(); refreshMenu(); },
@@ -335,7 +363,9 @@ const ui = new UI({
   onTitle: (keep) => (world?.room ? toMenu() : showTitle(keep)),
   onCampaign: () => showCampaign(),
   onRoom: (id) => startRoom(id),
-  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests() }),
+  optionsState: () => ({ sound: sound.on, volume: sound.volume, music: music.volume, announcer: announcer.on, annVolume: announcer.volume, reduceMotion: reduceMotion(), test: tests(),
+    records: record.read(store).length, recordSaid }),
+  onRecord: () => shareRecord(),
   onBack: () => { if (state === 'paused') resume(); else if (state === 'over') toMenu(); },
 });
 // the view of a world change: the swirl, the dark, the fall, the floor running out (render/transit.js)
@@ -418,6 +448,7 @@ function start(m, { intro: asked = false, room = null } = {}) {
   const turnRoom = arenaName === 'portrait';   // a room lies along the phone, either way up
   world = createWorld({ seed: (Math.random() * 2 ** 32) >>> 0, mode, arena, shape: arenaName, world: mode === 'campaign' ? 1 : startWorld, dashMode: test.dash, hpMult: test.hp, gateUsed: store.num('toko2.gateUsed') === 1,
     room: mode === 'campaign' ? { ...room, turn: turnRoom } : null });
+  lost = [];
   if (world.room) useRoom(world);
   else if (world.world > 1) useWorld(world.world, world.hx, world.hz);
   if (world.shapeT) useSurvival();
@@ -454,7 +485,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=60`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=61`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -537,6 +568,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) pause
 function finish() {
   state = 'over'; input.enabled = false;
   ui.setHud(false);
+  // the play record (js/record.js, v61): every finished room and run, on this phone only
+  record.add(store, record.entryFor(world, mode, lost, { input: input.source, screen: arenaName, date: new Date() }), T.record.cap);
   // a room: its grade is kept; a clear goes back to the rooms, a death to the death screen
   const R = world.roomResult;
   if (R) {
@@ -611,6 +644,7 @@ function announce(e) {
 
 function onEvent(e) {
   if (e.type === 'dash') lastDash = e;
+  if (e.type === 'hurt' && world) lost.push([world.wave, e.by ?? '?']);   // the play record's lives lost (js/record.js)
   if (e.type === 'worldIn') { useWorld(e.world, e.hx, e.hz); splats.clear(); actors.goo?.clear(); }   // the next world's floor, under the falling droplet; the last one's puddles went down the drain with it
   if (e.type.startsWith('world')) transit.onEvent(e, floor, world);
   if (e.type === 'reshape') shake(T.survival.reshape.shake);
