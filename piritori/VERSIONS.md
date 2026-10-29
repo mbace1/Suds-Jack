@@ -1,3 +1,16 @@
+## v4.86 — 2026-10-29
+
+**The courtyard holds together (ROADMAP milestone 3, the first place).** Owner, 2026-10-27: *"Arenas need polish: the current 3D blocks do not always fit together."* The audit is in ROADMAP.md (the courtyard, four faults); the picture is `design/COURTYARD_PASS.jpg`, before on the left, after on the right, at the same cameras. Everything below reuses the kit; nothing new was modelled.
+
+- **The blank end has a face.** The left building ended in 8 m of bare plaster facing the camera. It now turns the corner: three bays of street front and a stone pier on the corner, like the wing's.
+- **The pale caps are gone.** The kit's cornice top (6.44 m) stood above every roof's eave (6.3 m), so from above each wall wore a white stripe. A zinc coping now sits over every façade module in every place (the street, the yard and the quay rows too). From the front it is a thin dark line on the cornice.
+- **The back is one roof.** Its right block and the bridge over the passage turned their ridges 90° against the left block's; all three now run along the building.
+- **Nothing stands alone.** A run can be `with` another building's run. It shares that run's cutaway, so the corner bay goes with the wing and the new street front goes with the left building. Seen from behind, the one-bay return used to stay standing on its own.
+- **Three buildings, three plasters** (`tint`): ochre at the back, pale green on the left, salmon on the wing. A per-instance colour on the kit's plaster and a vertex colour on the boxes behind; the windows, stone and cornices keep their own.
+- **Not fixed:** from behind, every wall is lifted and the board stands on bare paving. That is the cutaway rule, not a broken join, and it is the next arena question.
+- **Gates:** `level-layout` 917 (was 870). A run `with` another must name a building's own run, and its ends may rest on that building. Rendered before and after at desktop, wide and phone sizes and in all eight rotations, with no page errors.
+- **Cache:** `layouts.js?v=4`, `locations.js?v=8`, crew `ui.js?v=25`, fight `main.js?v=47`, `startup.js?v=21`; `app.js?v=54` for the label.
+- **Owner played: pending.** Godot paused.
 ## v4.85 — 2026-10-27
 
 **The UI diet, step 1: the meeting's decision is on the first screen.** Owner, 2026-10-26: *"Analyze current UI and elements like character names in general. These aren't needed, so we need to optimize."* Then, on the analysis (`design/UI_DIET.md`): *"Go, start with the meeting."*
@@ -11,7 +24,7 @@
 - **Measured at 412 × 915**, the first open choice ends on the first screen in all five meetings checked: door 842, getaway 725, Bear Path 881, Toko 666, first purchase 709 (it was up to 1111). The picture is `design/UI_DIET_MEETING.jpg`.
 - Cache: `app.js?v=53`, `v3.css?v=13`, `pause.js?v=5`. Gates: `play-card.cjs` checks the first open choice is on the first screen; `doors-browser` checks a door plays as a scene with no step list.
 - **Owner played: pending.** Godot paused.
-## v4.84 — candidate, 2026-10-27
+## v4.84 — 2026-10-27 (a candidate then; on the hub inside v4.85, 2026-10-29)
 
 Enemy routes stop at the first obstruction; rivals move along the unblocked
 portion and attack their original target only when that target remains in
@@ -26,7 +39,7 @@ Chapter 1: careless fight wins 100% → 95.45%, rounds 2.00 → 2.09, HP lost
 0 → 1.09, downed 0 → 0. Straight-out getaways win 87.5% → 87.5%, rounds
 2.25 → 2.25, HP lost 0 → 0.5. A single lever; the fights remain too easy.
 
-## v4.83 — candidate, 2026-10-27
+## v4.83 — 2026-10-27 (a candidate then; on the hub inside v4.85, 2026-10-29)
 
 Chapter 1 now always includes Aatami in campaign fights, even with three crew;
 older Chapter 1 saves clear an invalid early step-back flag. After Chapter 1
@@ -41,7 +54,7 @@ rounds and 0 HP; straightforward getaways change from 100% wins, 2.00 rounds,
 0.25 HP lost to 87.5%, 2.25 rounds and 0 HP. These are simulation averages,
 not human acceptance; combat is still too easy and needs G1 tuning.
 
-## v4.82 — candidate, 2026-10-27
+## v4.82 — 2026-10-27 (a candidate then; on the hub inside v4.85, 2026-10-29)
 
 City memory shows encounter choices without internal `enc-` identifiers, including entries already in saved games. Campaign data and rules are unchanged. Cache: `app.js?v=49`. Owner device playtest and deployment are pending; this entry does not assert a release. Godot paused.
 
