@@ -238,3 +238,23 @@ All facts below come from search summaries; no article was opened.
 - **Count the Trees:** still right, since "Two requests filed with the police" makes no claim about an inquiry.
   **Trade Secret:** no follow-up.
 - **No film needs a fix.**
+
+## Daily check, Thu 29 Oct 07:16 (morning; search summaries only)
+- **Global, one new record: Anthropic's S-1 (filed 26 Oct)** → new candidate 12 in GLOBAL-SCOUT.md.
+  - **Reported figures:** H1 revenue $16.3B; net loss ~$80.7B, mostly a non-cash charge.
+  - **The angle:** Reuters reported ≥$518B of mostly non-cancellable compute commitments, much of it with Google and
+    Amazon, which are also its investors.
+  - **Before pitching:** open the filing. A film would need the Anthropic disclosure, with the wording approved by
+    the owner.
+- **The Panel:** still accurate on all four captions and the post copy; still no word on Musk's and Luckey's status,
+  and no recusal.
+  - **Optional add for the post copy:** the Navy's up-to-$2.9B Anduril submarine-parts contract, announced 6 Oct,
+    six days after the study (Defense News).
+  - **Waiting for the owner's approval.**
+- **Ends in 3:** no correction. Digit 5 is still due **31 Oct**; suspension after 72 h; prepaid only. No newer change
+  found. Re-check 31 Oct and 1 Nov.
+- **Break Glass:** keep held; no 2026 plenary result found (the five-sixths urgency vote is still to come).
+- **Count the Trees:** still right. **Trade Secret:** no follow-up.
+- **Finland:** no new HS candidate. **Correction:** yesterday's Vaasa "NDA" is not confirmed; the record is a permit to
+  dig before a permit application, by an official's decision (Yle, 29 Jun). Downgraded to Med-low.
+- **No film needs a fix.**

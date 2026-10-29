@@ -537,3 +537,43 @@ Everything below comes from search summaries. No article was opened.
   equity bets. [TNW](https://thenextweb.com/news/nvidia-40bn-ai-equity-investments-2026)
 - **Anthropic:** no new dated item in this sweep.
 - **Big development:** none.
+
+### Check Thu 29 Oct 07:16 (search summaries only; no article or filing opened)
+- **NEW CANDIDATE · 12. The Supplier Invested (Anthropic's S-1) · Coxon/Global · peg 26 Oct (S-1 public) · MED-HIGH
+  (Anthropic: on-screen disclosure required, wording for the owner)**
+  - **The record:** Anthropic filed its S-1 with the SEC on **26 Oct 2026** for a Nasdaq listing as "ANT".
+    Reported figures: first-half 2026 revenue $16.3B (from about $1.2B a year earlier); a net loss of about $80.7B,
+    mostly a non-cash fair-value charge on convertible notes, derivatives and SAFEs; and an operating loss of $693M.
+    Price range still blank; listing reportedly mid-Nov (unconfirmed).
+  - **The circular angle:**
+    - Reuters (29 Sep, from the confidential draft) reported at least **$518B** of infrastructure commitments over
+      about a decade with six partners, ~80% non-cancellable: Google $111.1B, Amazon $110B, Microsoft $31.4B.
+    - Google and Amazon are also Anthropic's investors, so the money goes round.
+    - A shortfall clause is reported for Google ("If our actual spend falls short, we must pay Google the
+      difference"), with similar terms for Amazon. **Quote it only from the filing itself.**
+    - Sources disagree on whether $161.2B of Broadcom equipment leases sit inside the $518B.
+  - **Before any pitch:** open the S-1 on EDGAR and check every number and the shortfall wording; the figures above are
+    press accounts. No wrongdoing is alleged anywhere; the absurdity, if it holds, is structural (the investor is
+    also the landlord, and the rent is owed whether or not the house is used).
+  - **Rule:** a film on this names Anthropic, so it must carry the on-screen disclosure that it was made with
+    Anthropic's tools. The owner approves the wording.
+  - Sources: [Fortune, 27 Oct](https://fortune.com/2026/10/27/anthropic-ipo-s-1-investors-81-billion-loss/),
+    [Yahoo Finance live](https://finance.yahoo.com/technology/live/anthropic-ipo-live-updates-frontier-ai-lab-discloses-revenue-and-risks-in-highly-anticipated-s-1-filing-141702607.html),
+    [BusinessDay/Reuters, 29 Sep](https://www.businessday.co.za/world/international-companies/2026-09-29-anthropic-plans-518bn-ai-infrastructure-spend-80-non-cancellable/)
+- **The Panel / Project Meridian:** still no disclosure of Musk's and Luckey's status (SGE or contractor) and no
+  recusal found; the latest dated items are the Washington Times (13 Oct, the study's scope) and an opinion piece in The
+  Hill. **Supporting fact, not yet used:** on 6 Oct, six days after the study was announced, the Navy announced a
+  contract worth up to **$2.9B** to Anduril for Virginia-class submarine parts, alongside Anduril's $3.7B Maryland
+  shipyard (Defense News). Al Jazeera's headline links the two ("after boss joins war study"); Luckey is Anduril's
+  founder, not its CEO, so "boss" stays theirs. Could strengthen the post copy if the owner wants it. [Defense News](https://www.defensenews.com/industry/techwatch/2026/10/06/anduril-us-navy-invest-66-billion-to-boost-submarine-parts-production/),
+  [Al Jazeera](https://www.aljazeera.com/amp/news/2026/10/6/us-firm-gets-2-9bn-sub-deal-after-boss-joins-war-study-with-musk),
+  [NPR/KPBS](https://www.kpbs.org/news/national/2026/10/06/elon-musk-and-palmer-luckeys-new-pentagon-roles-raise-ethics-worries)
+- **Meta / Grassley:** still no published Meta reply to the 22 Jul letter; Grassley's 29 Jul follow-up said Meta had not
+  fully answered. [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-probes-meta-on-disclosures-alleging-company-disregarded-child-safety-risks-and-retaliated-against-whistleblowers)
+- **AI Whistleblower Protection Act:** no action found; still with Senate HELP.
+- **South Dakota:** nothing new since the 27 Oct forum; the city's input window runs to 27 Nov.
+- **NDA bans:** no new vote found dated 27–29 Oct. Background only: Hubbard (OH) 12-month moratorium after a mayor's
+  NDA came out; Salem (OR) exploring an NDA ban; Hamilton (ON) moratorium after a city corporation's NDA.
+- **DRAM class action (N.D. Cal., Garciaguirre v. Samsung):** no new docket item found; Micron disputes the claims.
+- **Circular deals (others):** nothing new dated this week beyond Anthropic's filing.
+- **Big development:** Anthropic's public S-1 (26 Oct) is the one new documented AI-money record this week.

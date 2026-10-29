@@ -433,3 +433,41 @@ Everything below comes from search summaries. No article was opened.
 - **Pattern note:** Vaasa adds a variant to the pattern. Here the NDA is signed **before** the story, and the absurdity
   is the company acting before ownership, rather than the authority's secrecy afterwards. If the groundwork fact holds,
   it is closer to Muhos (felled before the EIA) than to Hamina.
+
+### Check Thu 29 Oct 07:16 (search summaries only; yle.fi does not resolve, so nothing was opened)
+- **HS, last ~2 days:** no new HS candidate. Searches on HS + data centre / trade secret / municipality / AI found
+  nothing dated 27–29 Oct.
+- **CORRECTION to "Ground Broken" (Vaasa–Mustasaari, Microsoft), added 28 Oct evening:**
+  - **The NDA is NOT confirmed.** What the summaries actually show (Yle, 29 Jun 2026, "Microsoft sai luvan aloittaa
+    datakeskuksen valmistelun Mustasaaressa") is that the earthworks plans, schedules and other details were not made
+    public at that stage and would become public only if a building permit application was filed. That is
+    non-disclosure by the municipality, not a signed NDA. Do not say "NDA" unless a source says so.
+  - **What holds:** Mustasaari's technical director (Ben Antell) granted Microsoft 3465 Finland permission, by an
+    official's decision, to start earthworks for a 400 kW substation **before a building permit had even been applied
+    for**. He called starting earthworks before a permit application rare. The permission runs to the end of Mar 2027.
+  - **Land:** Microsoft's deal for ~190 ha was a **preliminary** agreement (5 Jun 2026); "before it owned the land" is
+    plausible but no summary says it outright. Do not use it.
+  - **Later dates:** pre-construction began mid-July (DCD; Destia as contractor); the permit applications came in
+    mid-August (Vaasa: 4 Sep); Mustasaari approved the permit unanimously on 16 Sep with immediate start against a
+    €850,000 security; Vaasa's was still pending. Yle also reports traffic controllers being recruited for the site
+    while there is still no permit in Vaasa (74-20248259; date not in the summary).
+  - **Verdict:** Med-low as a film. The twist ("dug before the permit was applied for") is real but small, and it is
+    months old; it repeats the Muhos pattern without its numbers. Keep it on file.
+  - Sources: [Yle 74-20233922](https://yle.fi/a/74-20233922), [Yle 74-20246675](https://yle.fi/a/74-20246675),
+    [Yle 74-20248259](https://yle.fi/a/74-20248259), [DCD](https://www.datacenterdynamics.com/en/news/pre-constructino/),
+    [Microsoft, 5 Jun](https://news.microsoft.com/source/emea/2026/06/microsoft-solmi-esisopimuksen-noin-190-hehtaarin-maakaupoista-vaasassa-ja-mustasaaressa/?lang=fi)
+- **Reactions on the current candidates:**
+  - **#1 Humppila:** no decision. The deputy Ombudsman's own-initiative inquiry is still open; the former administrative
+    director has taken the case to the administrative court and says a criminal complaint was filed (commentary only;
+    no ruling found).
+  - **#2 Vaala / #3 Muhos comment rule:** MTV reports the professor (Voutilainen) arguing that a whole meeting cannot be
+    kept secret and that trade secrets are invoked too easily; nothing new on either case.
+  - **#4–#7:** nothing new found. Tuusula (Jokela): a residents' initiative to disclose its data-centre documents is
+    pending (Keski-Uusimaa, ~late Sep). Background only.
+- **Muhos / Count the Trees:** no new fact. The police status still differs by outlet (esiselvitys per IL/Kaleva/MTV;
+  "not started" per Yle ~22 Oct). The water plan is due 5 Nov. **The film's "Two requests filed with the police" is
+  still exactly right.** [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712),
+  [MTV](https://www.mtvuutiset.fi/artikkeli/il-poliisi-kaynnisti-esiselvityksen-googlen-datakeskuksesta/9403560)
+- **Hamina / Trade Secret:** no follow-up found.
+- **Pattern note:** the correction above is the lesson. A summary that says "secret" does not say "NDA"; the first
+  record to open is the decision itself. Same rule as the Muhos police status.
