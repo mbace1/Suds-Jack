@@ -41,6 +41,7 @@
     #mult[data-m="3"], #mult[data-m="4"] { color: #ff9a4a; }
     #mult[data-m="5"], #mult[data-m="6"] { color: #ff6a3a; font-size: 17px; }
     #mult[data-m="7"], #mult[data-m="8"] { color: #ff4a4a; font-size: 19px; text-shadow: 0 0 10px rgba(255,80,60,.7); }
+    #mult[data-m="w"] { color: #fff; font-size: 21px; text-shadow: 0 0 12px rgba(255,235,220,.85), 0 0 3px #ff6a3a; }
     #pot { margin-left: 8px; color: var(--gold); font-size: 13px; }
     #mult { display: inline-block; transform-origin: left center; }
     #mult.pop { animation: heat-pop .32s ease-out; }
@@ -52,6 +53,7 @@
     #heat > i { display: block; height: 100%; width: 0; background: var(--amber); }
     #heat[data-m="5"] > i, #heat[data-m="6"] > i { background: #ff6a3a; }
     #heat[data-m="7"] > i, #heat[data-m="8"] > i { background: #ff4a4a; }
+    #heat[data-m="w"] > i { background: #fff; }
     #menu .mutator { font-size: 11px; color: var(--gold); letter-spacing: .04em; margin: 2px 0 4px; }
     #lives { display: flex; gap: 6px; margin-top: 6px; }
     #lives i { width: 10px; height: 10px; border-radius: 50%; background: #f2efe6; box-shadow: 0 0 6px rgba(242, 239, 230, .6); }
@@ -236,7 +238,7 @@
   <div id="banner" hidden></div>
   <div id="vignette" aria-hidden="true"></div>
   <div id="menu" class="menu" hidden></div>
-  <div id="ver">2.0 · v59<span id="backend"></span></div>
+  <div id="ver">2.0 · v60<span id="backend"></span></div>
   <pre id="fault" hidden></pre>
   <script>
     // A failure must be visible on the phone: there is no console there.
@@ -345,6 +347,6 @@
       });
     })();
   </script>
-  <script type="module" src="js/main.js?v=59"></script>
+  <script type="module" src="js/main.js?v=60"></script>
 </body>
 </html>

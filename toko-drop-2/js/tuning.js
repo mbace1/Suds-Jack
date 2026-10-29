@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=59';
-import WAVES from './tuning/waves.js?v=59';
-import PICKUPS from './tuning/pickups.js?v=59';
-import MUSIC from './tuning/music.js?v=59';
+import { SPECIES } from './tuning/species/index.js?v=60';
+import WAVES from './tuning/waves.js?v=60';
+import PICKUPS from './tuning/pickups.js?v=60';
+import MUSIC from './tuning/music.js?v=60';
 
 export const TUNING = {
   render: {
@@ -533,12 +533,16 @@ export const TUNING = {
   heat: {
     levels: 8, kill: 0.2, near: { r0: 2, r1: 6, k0: 4, pow: 2 }, graze: 0.08,
     grace: 0.4, drain: 0.45, drainPer: 0.08, clear: 0.8, hitKeep: 0, coldShot: 0.012,
+    // WHITE HEAT, a room's mutator (v60): the multiplier's ceiling, ×levels in its rooms. Above ×8
+    // the drain is drainPer × the level on top of `drain`, so ×16 holds only while you keep killing
+    white: { levels: 16 },
     goal: { gate: 0.6, orb: 0.3, hill: 0.6, leg: 0.3 },
     // what you see and hear of it (v52): a halo on the floor under you and a
     // tint in the gel, from `colors[0]` at ×2 to the last at ×8, growing with
     // the level; every kill's voice up `pitch` a level; a chime as a level is
-    // crossed, a fall when a hit throws it away
-    view: { colors: [0xffc040, 0xffa030, 0xff8028, 0xff6020, 0xff4a20, 0xff3020, 0xff2050], halo: { r: 1.9, per: 0.22, alpha: 0.32, perAlpha: 0.05 }, tint: 0.07 },
+    // crossed, a fall when a hit throws it away. Past ×8 (WHITE HEAT, v60) the
+    // halo stops growing, and it and the tint go `white` of the way to white by the ceiling
+    view: { colors: [0xffc040, 0xffa030, 0xff8028, 0xff6020, 0xff4a20, 0xff3020, 0xff2050], halo: { r: 1.9, per: 0.22, alpha: 0.32, perAlpha: 0.05 }, tint: 0.07, white: 0.85 },
     sound: { pitch: 0.05 },
   },
 

@@ -16,13 +16,18 @@
 //            drains out (or the room is cleared), and a hit loses the pot
 //   coldgun  every shot costs heat: the gun is the safe way, and it cools you
 //            (Rush's juggle, for a room or two — not the base)
+//   white    (v60) WHITE HEAT: the ceiling is ×`white.levels`, not ×levels —
+//            past ×8 it burns white, and only a run that keeps killing without
+//            a hit gets there; the hit that ends it throws away the most
 // Pure: no DOM, no clock.
-import { TUNING } from '../tuning.js?v=59';
+import { TUNING } from '../tuning.js?v=60';
 
 const T = TUNING, H = T.heat;
 
-export const mult = (w) => 1 + Math.min(H.levels - 1, Math.floor(w.heat || 0));
 export const has = (w, m) => !!w.mutators?.includes(m);
+// the top of the multiplier: ×levels, or WHITE HEAT's
+export const ceiling = (w) => (has(w, 'white') ? H.white.levels : H.levels);
+export const mult = (w) => 1 + Math.min(ceiling(w) - 1, Math.floor(w.heat || 0));
 
 export function create(w) {
   w.heat = 0; w.heatT = 0; w.pot = 0;
@@ -42,7 +47,7 @@ export function killHeat(w, g, src) {
 export function gain(w, n) {
   if (!(n > 0) || !w.hero?.alive) return;
   const was = mult(w);
-  w.heat = Math.min(H.levels - 1e-6, (w.heat || 0) + n);
+  w.heat = Math.min(ceiling(w) - 1e-6, (w.heat || 0) + n);
   w.heatT = H.grace;
   const m = mult(w);
   if (m > was) w.events.push({ type: 'heat', mult: m, up: true });

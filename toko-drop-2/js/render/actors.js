@@ -15,17 +15,18 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=59';
+import { TUNING } from '../tuning.js?v=60';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=59';
-import { LOOKS } from './looks/index.js?v=59';
-import { JellyBody } from './jelly.js?v=59';
-import { Juice } from './juice.js?v=59';
-import { ArenaLight } from './light.js?v=59';
-import { toSdf } from './sdf.js?v=59';
-import { PickupView } from './pickups.js?v=59';
-import { ChallengeView } from './challenge.js?v=59';
-import { Goo } from './goo.js?v=59';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=60';
+import { LOOKS } from './looks/index.js?v=60';
+import { JellyBody } from './jelly.js?v=60';
+import { Juice } from './juice.js?v=60';
+import { ArenaLight } from './light.js?v=60';
+import { toSdf } from './sdf.js?v=60';
+import { PickupView } from './pickups.js?v=60';
+import { ChallengeView } from './challenge.js?v=60';
+import { Goo } from './goo.js?v=60';
+import { mult as heatMult } from '../sim/heat.js?v=60';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -391,17 +392,19 @@ export class Actors {
     // blinks base + amp·|sin(rate·t)| and glows red; a dash blinks faster
     const blink = (B) => B.base + B.amp * Math.abs(Math.sin(time * B.rate));
     hv.mat.opacity = h.mercy > 0 ? blink(L.mercyBlink) : h.dash > 0 ? blink(L.dashBlink) : L.opacity;
-    // HEAT (v52): the halo under you and a tint in the gel, warmer as the multiplier climbs
-    const HV = T.heat.view, m = 1 + Math.min(T.heat.levels - 1, Math.floor(w.heat || 0)), hot = m > 1 && h.alive;
+    // HEAT (v52): the halo under you and a tint in the gel, warmer as the multiplier climbs.
+    // Past ×8 (WHITE HEAT, v60) the halo holds its ×8 size and burns toward white instead
+    const HV = T.heat.view, m = heatMult(w), hot = m > 1 && h.alive, top = T.heat.levels;
+    const hk = Math.min(m, top), white = m > top ? HV.white * (m - top) / (T.heat.white.levels - top) : 0;
     hv.halo.visible = hot;
     if (hot) {
-      const c = HV.colors[Math.min(HV.colors.length - 1, m - 2)], into = (w.heat || 0) - (m - 1), pulse = 0.85 + 0.15 * Math.sin(time * (4 + m));
+      const c = HV.colors[Math.min(HV.colors.length - 1, hk - 2)], into = m < top ? (w.heat || 0) - (m - 1) : 0, pulse = 0.85 + 0.15 * Math.sin(time * (4 + m));
       hv.halo.position.set(hv.root.position.x, 0.03, hv.root.position.z);
-      hv.halo.scale.setScalar(HV.halo.r * 2 * (1 + HV.halo.per * (m - 2 + into)));
-      hv.halo.material.color.setHex(c).multiplyScalar((HV.halo.alpha + HV.halo.perAlpha * (m - 2)) * pulse);
+      hv.halo.scale.setScalar(HV.halo.r * 2 * (1 + HV.halo.per * (hk - 2 + into)));
+      hv.halo.material.color.setHex(c).lerp(_white, white).multiplyScalar((HV.halo.alpha + HV.halo.perAlpha * (hk - 2)) * pulse);
     }
     if (h.mercy > 0) hv.mat.emissive.setHex(L.flashColor);
-    else if (hot) hv.mat.emissive.setHex(HV.colors[Math.min(HV.colors.length - 1, m - 2)]).multiplyScalar(HV.tint * (m - 1));
+    else if (hot) hv.mat.emissive.setHex(HV.colors[Math.min(HV.colors.length - 1, hk - 2)]).lerp(_white, white).multiplyScalar(HV.tint * (hk - 1));
     else hv.mat.emissive.setScalar(0);
     // the lunge the sim keeps (hero.stretch), into the gel's stretch
     hv.mat.gel.stretch.value = h.stretch || 0;

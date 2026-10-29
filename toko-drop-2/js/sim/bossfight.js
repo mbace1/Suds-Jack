@@ -10,9 +10,9 @@
 //
 //   w.fight  { kind, t, seen, done, tiers, hp, max, ids, x, z, grade, bonus }
 //   events   bossDown { kind, grade, time, bonus, tiers }
-import { TUNING } from '../tuning.js?v=59';
-import { BOSS_TIERS } from '../tuning/bossfights.js?v=59';
-import * as pickups from './pickups.js?v=59';
+import { TUNING } from '../tuning.js?v=60';
+import { BOSS_TIERS } from '../tuning/bossfights.js?v=60';
+import * as pickups from './pickups.js?v=60';
 
 const T = TUNING;
 const ORDER = ['S', 'A', 'B', 'C'];

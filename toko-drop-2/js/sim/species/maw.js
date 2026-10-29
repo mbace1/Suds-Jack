@@ -13,8 +13,8 @@
 //   SINK   `sink` s going down, still hittable, then UNDER
 // g.s.up is how far out of the floor it stands (0..1), for the look (worma's).
 // Numbers: js/tuning/species/maw.js. Seeded: w.rng only.
-import { steerTo } from './base.js?v=59';
-import { rage, range, inside } from './bosskit.js?v=59';
+import { steerTo } from './base.js?v=60';
+import { rage, range, inside } from './bosskit.js?v=60';
 
 function aim(w, g, S) {
   const h = w.hero, a = Math.atan2(g.z - h.z, g.x - h.x) + (w.rng.next() - 0.5) * 1.8, d = range(w, S.surface);

@@ -287,16 +287,21 @@
  ],
  "tiers": {
   "S": 12000,
-  "A": 6900,
-  "B": 6200,
-  "C": 5500,
+  "A": 6800,
+  "B": 5700,
+  "C": 3500,
   "source": "bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 100%, rough 71%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
  },
  "tiersHard": {
   "S": 14000,
-  "A": 11000,
-  "B": 8400,
-  "C": 7600,
+  "A": 8400,
+  "B": 5900,
+  "C": 3500,
   "source": "HARD bot pass (v56 look-ahead bots), 24 seeds a skill: got through sharp 100%, average 92%, rough 29%. score lines: S the sharp median, A the average median, B the average's weaker quarter, C the rough median or the average's weakest tenth (scripts/lines.mjs)"
+ },
+ "score": {
+  "mutators": [
+   "bank"
+  ]
  }
 }
