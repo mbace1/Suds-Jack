@@ -125,3 +125,16 @@ review. Both are on the twice-daily check's watch list.
 - **Build:** `pipeline/build.py clay/panel --lang en --jobs 3 --signoff previews/signoff-papercut.mp4`.
 - **Before posting:** re-check that the Pentagon has still not stated Musk's and Luckey's employment status, and whether
   any recusal or ethics review has come out. Both are on the twice-daily check.
+
+## v4: the three named (29 Oct)
+
+**Owner, 29 Oct:** "The panel video needs to mention the people." v3 kept the names to the post copy. Now:
+
+- **Caption 2:** Gingrich, Musk / and Luckey / will [lead] it.
+- **Caption 3:** Musk and Luckey / founded firms / that [sell] to it.
+- **Place cards:** a stencilled surname card stands on the felt in front of each empty chair: MUSK (left), GINGRICH
+  (middle), LUCKEY (right). The two CONTRACTS towers stand behind the two founders, and Gingrich's chair stays bare. Each
+  card brightens when its chair's spot comes on.
+- **Unchanged:** no figure and no face. Sources as before (OPB/NPR 6 Oct; Axios 30 Sep).
+- **The bell:** in front of the cards, on a camera this low, it hid the middle name. It stands just behind the middle
+  card now, scaled up so its dome rises over the card.

@@ -95,7 +95,7 @@ mesh0(lumpy(new THREE.TorusGeometry(RT + 1.5, 3.4, 18, 200).rotateX(Math.PI / 2)
 mesh0(lumpy(new THREE.CylinderGeometry(RT - 4, RT - 10, 6, 120, 1), 0.3, 0.05, 63), M.wood, { pos: [0, TY - 6, 0], parent: scene });
 mesh0(lumpy(new THREE.CylinderGeometry(30, 42, TY - 8, 48, 2), 0.4, 0.08, 64), M.wood, { pos: [0, (TY - 8) / 2, 0], parent: scene });
 // a service bell at the head of the table, in front of the three: the room's one joke prop
-const BELL = new THREE.Group(); scene.add(BELL); BELL.position.set(0, TY, -112); BELL.scale.setScalar(1.3);
+const BELL = new THREE.Group(); scene.add(BELL); BELL.position.set(0, TY, -134); BELL.scale.setScalar(1.75);   // v4: just BEHIND the middle place card, big enough that its dome rises over it (in front, on a camera this low, it hid the name)
 mesh0(lumpy(new THREE.CylinderGeometry(4.6, 5.2, 1.4, 32), 0.05, 0.5, 71), M.wood, { pos: [0, 0.7, 0], parent: BELL });
 mesh0(lumpy(new THREE.SphereGeometry(4.2, 32, 16, 0, TAU, 0, Math.PI / 2), 0.04, 0.5, 72), M.orange, { pos: [0, 1.4, 0], parent: BELL });
 mesh0(new THREE.CylinderGeometry(0.5, 0.5, 1.6, 12), M.metal, { pos: [0, 5.8, 0], parent: BELL });
@@ -177,6 +177,27 @@ const TAGS = TOWERS.map(({ ci }, ti) => {
   return pivot;
 });
 
+// v4 (owner, 29 Oct: "The panel video needs to mention the people"): a place card on the felt in front of each of the
+// three chairs, with the surname in a war-room stencil. Still no figure and no face: the chairs stay empty all film.
+// Order by chair: 0 left MUSK, 1 middle GINGRICH, 2 right LUCKEY, so the two CONTRACTS towers stand behind the two founders
+const NCARDS = PANEL.map((c, k) => {
+  const a = -Math.PI / 2 + [-0.34, 0, 0.34][k] * 0.6, R = 122, g = new THREE.Group(); scene.add(g);   // drawn in toward the middle, so the close shots never crop an end card
+  g.position.set(Math.cos(a) * R, TY, Math.sin(a) * R); g.rotation.y = Math.atan2(-g.position.x, -g.position.z);
+  const tilt = new THREE.Group(); g.add(tilt); tilt.rotation.x = -0.16;
+  mesh0(lumpy(new RoundedBoxGeometry(22, 8, 1.2, 2, 0.35), 0.04, 0.6, 450 + k), C('#e9e2d0', { rough: 0.8, thumbCell: 2.5, mottle: 0.05 }), { pos: [0, 4, 0], parent: tilt });
+  const can = canvas(640, 228), tx = tex(can);
+  const lab = mesh0(new THREE.PlaneGeometry(20.6, 7.3), new THREE.MeshBasicMaterial({ map: tx, toneMapped: false, transparent: true }), { pos: [0, 4, 0.65], parent: tilt, cast: false });
+  return { g, can, tx, lab };
+});
+function drawNameCards() {
+  NCARDS.forEach((n, k) => { const g = n.can.getContext('2d'), w = n.can.width, h = n.can.height, txt = P_UI['name' + k] || '';
+    g.clearRect(0, 0, w, h); g.fillStyle = '#ece6d6'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#1e1a18'; g.lineWidth = 8; g.strokeRect(14, 14, w - 28, h - 28);
+    let fs = LANG === 'ja' ? 104 : 132; const fam = LANG === 'ja' ? 'NotoSansJP-800' : 'Anton-400';
+    g.font = `${LANG === 'ja' ? '800 ' : ''}${fs}px ${fam}`; while (g.measureText(txt).width > w - 80 && fs > 40) { fs -= 4; g.font = `${LANG === 'ja' ? '800 ' : ''}${fs}px ${fam}`; }
+    g.fillStyle = '#1e1a18'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, w / 2, h / 2 + 6); n.tx.needsUpdate = true; });
+}
+
 // ------------------------------------------------------------------ haze: the ring light's beam, the chair spots' cones, dust
 function hazeTex() { const c = canvas(4, 256), g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
   gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.15, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0.15)'); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); return tex(c); }
@@ -211,7 +232,7 @@ const B = 60 / 100, FPS = 30;
 const BEATS = [['s1', 0], ['s2', 9 * B], ['s3', 17 * B], ['s4', 27 * B], ['end', 40 * B]];
 const P = CAP.plan(COPY, LANG, BEATS, { snap: B }), T = P.T, DUR = T.end;
 Object.assign(P_UI, P.ui);
-drawFolderLabel();
+drawFolderLabel(); drawNameCards();
 const capOf = (id) => P.captions.find((c) => c.id === id);
 const popOf = (id) => { const c = capOf(id); return (c.words.find((w) => w.pop) || c.words[0]).t; };
 const EV = { lit: (k) => T.s2 + 0.45 + k * 0.62, drop0: T.s3 + 0.25, dropN: popOf('sell') - 0.1, ding: popOf('advice') };
@@ -296,7 +317,7 @@ function frame(t, captions = true) {
   g2d.setTransform(1, 0, 0, 1, 0, 0); g2d.filter = 'none';
   setBoil(Math.floor(t * 12));
   drawBoard(t); towers(t);
-  CHAIRSPOT.forEach((s, k) => { const on = 0.2 + 0.8 * ease.out((t - EV.lit(k)) / 0.25); s.intensity = 11000 * on; CONES[k].material.opacity = 0.085 * on; });   // a glimmer from frame 0, so the hook shows the three; full on in turn
+  CHAIRSPOT.forEach((s, k) => { const on = 0.2 + 0.8 * ease.out((t - EV.lit(k)) / 0.25); NCARDS[k].lab.material.color.setScalar(0.55 + 0.45 * (on - 0.2) / 0.8); s.intensity = 11000 * on; CONES[k].material.opacity = 0.085 * on; });   // a glimmer from frame 0, so the hook shows the three; full on in turn
   TAGS.forEach((p, ti) => { const k = clamp((t - EV.drop0 - 0.1 - ti * 0.25) / 0.6); p.scale.setScalar(k > 0 ? 1 : 0.001); p.rotation.z = (1 - ease.out(k)) * (ti ? -1.2 : 1.2) + Math.sin(t * 2.1 + ti) * 0.05 * k; });
   DUST.rotation.y = t * 0.03; DUST.position.y = Math.sin(t * 0.4) * 3;
   // the bell rings on the punch word: a small hop

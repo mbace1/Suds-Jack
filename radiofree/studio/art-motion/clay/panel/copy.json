@@ -1,6 +1,6 @@
 {
   "film": "the-panel",
-  "cut": "v1 stills (26 Oct): clay, in the manner of Digger (pale, wide, deep focus, grain, floating camera); a Strangelove war room",
+  "cut": "v4 (29 Oct): the three named, in the captions and on place cards; v3 orange light",
   "series": "rfh",
   "captionSize": "big",
   "argument": "The Pentagon asked three people to lead a study of the future of war; two founded companies that sell to it, and the Pentagon has not said which ethics rules apply.",
@@ -36,11 +36,11 @@
       "until": "s3-0.3",
       "hold": "s3",
       "text": {
-        "en": "Three people / will [lead] it.",
-        "fi": "Sitä [johtaa] / kolme ihmistä.",
-        "ja": "率いるのは / [3人]。"
+        "en": "Gingrich, Musk / and Luckey / will [lead] it.",
+        "fi": "Sitä [johtavat] / Gingrich, Musk / ja Luckey.",
+        "ja": "率いるのは ギングリッチ、 / マスク、ラッキーの [3人]。"
       },
-      "source": "Newt Gingrich, Elon Musk and Palmer Luckey are named as its three leaders (OPB/NPR 6 Oct; Axios 30 Sep). Names in the post copy only; on screen three empty chairs."
+      "source": "Newt Gingrich, Elon Musk and Palmer Luckey are named as its three leaders (OPB/NPR 6 Oct; Axios 30 Sep). v4 (owner, 29 Oct: \"The panel video needs to mention the people\"): named on screen, in the caption and on a place card in front of each empty chair. Still no faces."
     },
     {
       "id": "sell",
@@ -49,9 +49,9 @@
       "until": "s4-0.3",
       "hold": "s4",
       "text": {
-        "en": "Two of them / founded firms / that [sell] to it.",
-        "fi": "Kaksi heistä / perusti yhtiöt, / jotka [myyvät] sille.",
-        "ja": "うち2人は 国防総省に / [売る] 会社の 創業者。"
+        "en": "Musk and Luckey / founded firms / that [sell] to it.",
+        "fi": "Musk ja Luckey / perustivat yhtiöt, / jotka [myyvät] sille.",
+        "ja": "マスクとラッキーは 国防総省に / [売る] 会社の 創業者。"
       },
       "source": "Musk founded SpaceX (launches, satellites for the Pentagon); Luckey co-founded Anduril (defence systems). NPR (6 Oct) reports a former senior Defense official noting both have billions of dollars in current defence contracts. 'Sell to it', not 'sell it weapons': SpaceX's sales are launch and satellite services. 'Founded', not 'run': Luckey is Anduril's founder, not its CEO."
     },
@@ -99,6 +99,21 @@
       "en": "WHICH ETHICS RULES APPLY? NOT DISCLOSED",
       "fi": "MITKÄ EETTISET SÄÄNNÖT PÄTEVÄT? EI KERROTTU",
       "ja": "どの倫理規則が適用？ 非公表"
+    },
+    "name0": {
+      "en": "MUSK",
+      "fi": "MUSK",
+      "ja": "マスク"
+    },
+    "name1": {
+      "en": "GINGRICH",
+      "fi": "GINGRICH",
+      "ja": "ギングリッチ"
+    },
+    "name2": {
+      "en": "LUCKEY",
+      "fi": "LUCKEY",
+      "ja": "ラッキー"
     }
   },
   "post": {
