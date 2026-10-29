@@ -47,7 +47,8 @@ export default {
   // be lived through. HARDCADE presses on `hard` (v55, owner: "Hardcade should
   // be harder"): a quarter STEEPER than 1.x's own curve, where ARCADE is half.
   // Measured with the expert bot (scripts/reach.mjs, 12 seeds, v59): ARCADE's
-  // runs reach wave 49 on average (two of twelve won), HARDCADE's wave 31.
+  // runs reach wave 49 on average (two of twelve won), HARDCADE's wave 35
+  // (v62, with a life back per world; 31 with none).
   // sim/director/arcade.js pressure()
   gentle: { from: 4, slope: 0.5, hard: 1.25,
     // v59, the curve on purpose (scripts/curve.mjs, docs/CURVE.md): a world's first two

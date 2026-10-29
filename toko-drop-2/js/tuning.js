@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=61';
-import WAVES from './tuning/waves.js?v=61';
-import PICKUPS from './tuning/pickups.js?v=61';
-import MUSIC from './tuning/music.js?v=61';
+import { SPECIES } from './tuning/species/index.js?v=62';
+import WAVES from './tuning/waves.js?v=62';
+import PICKUPS from './tuning/pickups.js?v=62';
+import MUSIC from './tuning/music.js?v=62';
 
 export const TUNING = {
   render: {
@@ -43,9 +43,10 @@ export const TUNING = {
   worlds: {
     modes: ['arcade', 'hardcade'],
     // v54 (owner: "gentler ramp"): a world's boss beaten gives lives back as the
-    // next world opens — ARCADE all of them; HARDCADE none (v55: "Hardcade
-    // should be harder"), your three lives last the whole run (sim/worlds.js swap)
-    heal: { arcade: 3, hardcade: 0 },
+    // next world opens — ARCADE all of them; HARDCADE one (v62, owner: "Give back
+    // a life per world in Hardcade"; v55 gave none, and a good player's run mostly
+    // ended in world 3 on the lives it had left), up to T.hero.lives (sim/worlds.js swap)
+    heal: { arcade: 3, hardcade: 1 },
     // v59, the curve on purpose: a world's `room` would be the share of its waves' bodies its floor holds
     // (1 if unset; sim/director/arcade.js startWave). None is set. Started with the bare gun, the worlds
     // asked for 0.85-1.07; walked into with the pod and DASH level a run carries to the door (the way a

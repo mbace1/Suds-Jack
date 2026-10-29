@@ -7,32 +7,32 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=61';
-import { buildFloor } from './render/floor.js?v=61';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=61';
-import * as worldsSim from './sim/worlds.js?v=61';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=61';
-import * as reshapeSim from './sim/reshape.js?v=61';
-import { Scenery } from './render/scenery.js?v=61';
-import { Transit } from './render/transit.js?v=61';
-import { Splats } from './render/splats.js?v=61';
-import { Actors } from './render/actors.js?v=61';
-import { GEL_TIME } from './render/gel.js?v=61';
-import { studioEnvironment } from './render/env.js?v=61';
-import { Specimen } from './render/specimen.js?v=61';
-import { createWorld, step, api as simApi } from './sim/world.js?v=61';
-import { stage as stagePk } from './sim/pickups.js?v=61';
-import { Input } from './input.js?v=61';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=61';
-import { Announcer } from './announcer.js?v=61';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=61';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=61';
-import { Sound } from './audio.js?v=61';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=61';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=61';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=61';
-import { Readout } from './readout.js?v=61';
-import * as record from './record.js?v=61';
+import { TUNING } from './tuning.js?v=62';
+import { buildFloor } from './render/floor.js?v=62';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=62';
+import * as worldsSim from './sim/worlds.js?v=62';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=62';
+import * as reshapeSim from './sim/reshape.js?v=62';
+import { Scenery } from './render/scenery.js?v=62';
+import { Transit } from './render/transit.js?v=62';
+import { Splats } from './render/splats.js?v=62';
+import { Actors } from './render/actors.js?v=62';
+import { GEL_TIME } from './render/gel.js?v=62';
+import { studioEnvironment } from './render/env.js?v=62';
+import { Specimen } from './render/specimen.js?v=62';
+import { createWorld, step, api as simApi } from './sim/world.js?v=62';
+import { stage as stagePk } from './sim/pickups.js?v=62';
+import { Input } from './input.js?v=62';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=62';
+import { Announcer } from './announcer.js?v=62';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=62';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=62';
+import { Sound } from './audio.js?v=62';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=62';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=62';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=62';
+import { Readout } from './readout.js?v=62';
+import * as record from './record.js?v=62';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -485,7 +485,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=61`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=62`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -632,7 +632,7 @@ function announce(e) {
   // HEAT (v51): the announcer calls the multiplier as it climbs (it called every fifth kill of the streak)
   else if (e.type === 'heat' && e.up && e.mult >= 3) { announcer.say('streak'); ui.heatPop(e.mult); }
   else if (e.type === 'heat' && e.hit) ui.heatPop(1, true);
-  else if (e.type === 'heal') ui.banner(`${t('livesBack')} +${e.n}`, 1.2);
+  else if (e.type === 'heal') ui.banner(`${t(e.n === 1 ? 'lifeBack' : 'livesBack')} +${e.n}`, 1.2);   // HARDCADE's one (v62), ARCADE's all
   else if (e.type === 'bank') ui.banner(`${t('banked')} +${e.n.toLocaleString('en-US')}`, 0.9);
   else if (e.type === 'potLost') ui.banner(`${t('potLost')} −${e.n.toLocaleString('en-US')}`, 1.1);
   else if (e.type === 'pickup') announcer.say(e.kind === 'score' ? 'money' : e.kind === 'scoremult' ? 'mult' : 'prize');

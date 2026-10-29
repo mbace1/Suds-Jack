@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v62 — 2026-10-29
+**HARDCADE gives a life back at every world's door, up to three**
+- Owner, 2026-10-29: "Give back a life per world in Hardcade". Measured world by world (docs/CURVE.md), HARDCADE gave no lives back and a good player's run mostly ended in world 3: the good bot walked into the sewer with about one life and got through it 17% of the time.
+- `TUNING.worlds.heal.hardcade` 0 → 1: as each world opens, one life comes back, never past three (sim/worlds.js swap). ARCADE still gives them all back. The banner says A LIFE BACK +1 for one, LIVES BACK for more; the title's HARDCADE line says one life comes back a world, in all three languages, and so does the itch text.
+- Measured (scripts/curve.mjs, eight bots, 24 seeds, each world walked into with the lives and kit a run carries — the chain now gives the life back at each door as the game does): the six skilled bots' mean through each world 94, 79, 41, 30, 28, 20, 22, 16, 13% → 94, 85, 53, 41, 33, 21, 31, 20, 13%; the good bot through the sewer 17% → 33%. Whole runs (12 seeds): the expert's HARDCADE runs reach wave 35 on average (31), the good bot's 25; ARCADE's twelve are the same, wave for wave.
+- Tests: test/worlds.mjs — HARDCADE gives one life back and says so, and a full hand stays full.
+- Cache tokens `?v=61` → `?v=62`; HUD label → `2.0 · v62`
+
+---
+
 ## v61 — 2026-10-29
 **PLAY RECORD: every room and run you play is kept on your phone, and one tap copies it to send**
 - Owner, 2026-10-29: "Continue". Everything the scorecard still lacks waits on a person — the grade lines, the curve, HEAT, the mutators against someone's runs (docs/COMPLETION.md) — and a person's runs only count once they are written down.
