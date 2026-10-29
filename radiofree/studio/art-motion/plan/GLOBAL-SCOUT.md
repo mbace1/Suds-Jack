@@ -577,3 +577,75 @@ Everything below comes from search summaries. No article was opened.
 - **DRAM class action (N.D. Cal., Garciaguirre v. Samsung):** no new docket item found; Micron disputes the claims.
 - **Circular deals (others):** nothing new dated this week beyond Anthropic's filing.
 - **Big development:** Anthropic's public S-1 (26 Oct) is the one new documented AI-money record this week.
+
+### Check Thu 29 Oct 17:16 (search summaries only; www.sec.gov, cnbc.com and fortune.com do not resolve from this session, so nothing was opened)
+- **12 The Supplier Invested (Anthropic's S-1): still NOT verified from the primary.** EDGAR cannot be reached from this
+  session; `www.sec.gov` has to be allowed in the session's network settings, or someone opens the filing. Named
+  outlets quoting the filing:
+  - **Figures, consistent across outlets:** H1 2026 revenue $16.286B; net loss $80.748B, of which ~$72.4B is non-cash
+    revaluation of convertible notes and similar instruments; operating loss $693M; H1 compute and infrastructure
+    spend $8.945B.
+  - **Supplier AND investor:** confirmed by several named outlets.
+    - GeekWire: Amazon and Google own stakes and lend it money, and all three hyperscalers resell its models and bill
+      for it.
+    - Reuters (via BusinessDay): at least $518B over about a decade with six partners, ~80% non-cancellable.
+  - **The shortfall clause:** GeekWire attributes it to the company: "If our actual spend falls short, we must pay
+    Google the difference", with similar terms for Amazon. Microsoft's commitment is non-cancellable except for
+    Microsoft's uncured material breach. **Still to be quoted only from the filing itself.**
+  - **Amounts conflict between outlets:**
+    - Google: $111.1B (Reuters) or $114.5B (others), through Jul 2033.
+    - Amazon: $110B, May 2026 to Apr 2036.
+    - Microsoft: $31.4B (Reuters) or $44.9B (FXStreet).
+  - **Stakes conflict even more:**
+    - Amazon: ~21% in one account, 15–21% in another.
+    - Google: ~15% in one account; another analysis says the S-1 names only 6.2%; PitchBook estimates ~5.6%.
+    - **No percentage goes on screen.**
+  - **Caveat:** GeekWire notes some coverage rests on the June confidential draft (Reuters, WSJ, FT), not the
+    26 Oct public S-1.
+  - **Verdict:** the circular structure ("the investor is also the landlord, and the rent is owed either way") is
+    consistent across named outlets. Every number is pending the filing. Disclosure rule unchanged.
+  - Sources: [GeekWire](https://www.geekwire.com/2026/whos-getting-anthropics-compute-spending-ipo-filing-shows-where-the-tech-giants-really-stand),
+    [InvestmentNews](https://investmentnews.com/equities/anthropics-landmark-ipo-filing-shows-12-fold-revenue-jump-518b-compute-bill/268391),
+    [BusinessDay/Reuters, 29 Sep](https://www.businessday.co.za/world/international-companies/2026-09-29-anthropic-plans-518bn-ai-infrastructure-spend-80-non-cancellable/),
+    [HackerNoon](https://hackernoon.com/anthropics-s-1-shows-$163b-in-half-year-revenue-a-900percent-nrr-and-an-$807b-loss-that-mostly-isnt),
+    [OfficeChai](https://officechai.com/ai/amazon-and-googles-stake-in-anthropic-explained/),
+    [FXStreet](https://www.fxstreet.com/analysis/anthropic-pledged-270-billion-to-amazon-google-and-microsoft-heres-who-actually-gets-paid-202610271751)
+- **1 The Panel / Project Meridian:** no change since NPR, 6 Oct.
+  - The Pentagon still hasn't said whether Musk and Luckey are special government employees or contractors.
+  - No recusal found. MITRE's safeguards are still the official line.
+  - The NPR summary adds a GAO official's view: participants are expected to sign safeguards keeping them away from
+    procurement, and the findings will still need close scrutiny. That is background; the captions are unaffected.
+  - Source: [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **Navy–Anduril, up to $2.9B (6 Oct): confirmed by several named outlets** (summaries; Anduril's own 6 Oct
+  statement is cited).
+  - **The contract:** up to $2.9B for Virginia-class components and large assemblies, delivered to General Dynamics
+    Electric Boat and HII Newport News.
+  - **The terms:** payments are tied to production outcomes, with Anduril carrying most of the execution risk.
+  - **The yard:** a separate, privately funded $3.7B "Arsenal-2" shipyard at Tradepoint Atlantic, Baltimore County.
+    Hiring from 2029, operations from 2030.
+  - **Two headline errors not to copy:**
+    - TechRadar's headline calls Luckey "CEO"; he is Anduril's founder.
+    - DroneXL notes the President told the crowd the yard would build autonomous subs, which Anduril's announcement
+      does not say.
+  - **Usable for The Panel's post copy only as dated fact:** "Six days after the study was announced, the Navy
+    announced an Anduril contract worth up to $2.9B." It implies no link.
+  - Sources: [Janes](https://www.janes.com/defence-intelligence-insights/defence-news/industry/anduril-industries-awarded-usd29-billion-us-navy-contract-for-submarine-work),
+    [Baird Maritime](https://www.bairdmaritime.com/security/naval/naval-submersibles/anduril-maryland-submarine-shipyard-components),
+    [Al Jazeera](https://www.aljazeera.com/news/2026/10/6/us-firm-gets-2-9bn-sub-deal-after-boss-joins-war-study-with-musk),
+    [DroneXL](https://dronexl.co/2026/10/07/anduril-arsenal-2-maryland-shipyard-autonomous-subs/)
+- **Meta / Grassley:** still no published reply from Meta to the 22 Jul letter. The whistleblowers' counsel
+  (Whistleblower Aid) describes the two as former UX researchers; that is one party's account.
+  [Grassley letter](https://www.grassley.senate.gov/imo/media/doc/grassley_to_meta_-_wb_retaliation_cont.pdf)
+- **AI Whistleblower Protection Act (S. 1792):** still referred to Senate HELP; no markup or vote found.
+  [Senate Judiciary](https://www.judiciary.senate.gov/press/rep/releases/grassley-introduces-ai-whistleblower-protection-act)
+- **NDA bans:** no vote dated 27–29 Oct.
+  - Champaign County (IL): still at committee of the whole.
+  - Rock County (WI): a staff-NDA ban was postponed indefinitely (undated in the summary).
+  - Utah SB0318 (2026 session): would bar state agencies, cities, towns and counties from data-centre NDAs. New to
+    this file; check its status before use.
+  - Sources: [GovTech](https://govtech.com/artificial-intelligence/illinois-county-consider-banning-ndas-incentives-for-data-centers),
+    [GazetteXtra](https://www.gazettextra.com/news/local/rock-county-committee-indefinitely-postpones-nda-ban/article_1d879ab4-542b-412f-8cd6-88005f8d799d.html),
+    [Utah SB0318](https://le.utah.gov/Session/2026/bills/introduced/SB0318.pdf)
+- **GPU / DRAM:** still no October-dated item. The latest dated item is TrendForce (Jul): Q3 contract DRAM +13–18% QoQ,
+  with Samsung seeking up to 20%. [EMSNow/TrendForce](https://www.emsnow.com/?p=55125)
+- **Big development:** none. The S-1 remains the one live AI-money record, still pending the primary.

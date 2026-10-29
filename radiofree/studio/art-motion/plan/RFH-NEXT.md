@@ -258,3 +258,27 @@ All facts below come from search summaries; no article was opened.
 - **Finland:** no new HS candidate. **Correction:** yesterday's Vaasa "NDA" is not confirmed; the record is a permit to
   dig before a permit application, by an official's decision (Yle, 29 Jun). Downgraded to Med-low.
 - **No film needs a fix.**
+
+## Daily check, Thu 29 Oct 17:16 (evening; search summaries only)
+- **Global: no big development.**
+  - **Anthropic S-1 (candidate 12): still not verified from the primary.** EDGAR (`www.sec.gov`) does not resolve
+    from this session, and neither do CNBC or Fortune.
+    - The headline figures (H1 revenue $16.3B; net loss ~$80.7B, mostly non-cash) and the supplier-and-investor
+      structure are consistent across named outlets (GeekWire, Reuters).
+    - Commitment amounts and equity stakes still conflict between outlets.
+    - Not ready to pitch until the filing is opened. The disclosure rule applies.
+  - **Navy–Anduril, up to $2.9B (6 Oct): confirmed** by Janes and others, citing Anduril's 6 Oct statement. It is
+    usable as the optional dated line in The Panel's post copy. Luckey is Anduril's founder, not its CEO.
+- **The Panel:** still accurate, both captions and post copy. There is still no word on Musk's and Luckey's status and
+  no recusal. **Waiting for the owner's approval.**
+- **Ends in 3:** no correction. Digit 5 is still due **31 Oct**, with suspension within 72 h; no new extension found.
+  Re-check 31 Oct and 1 Nov.
+  [Excélsior](https://www.excelsior.com.mx/nacional/calendario-prorroga-registro-lineas-celulares-mexico),
+  [Milenio](https://www.milenio.com/comunidad/registro-linea-telefonica-calendario-oficial-nuevas-fechas)
+- **Break Glass:** keep held. The only results are the earlier 168–29 vote (the current law runs to end-2026); no
+  plenary result was found for the extension to 31.12.2028.
+  [Verkkouutiset](https://www.verkkouutiset.fi/a/eduskunta-hyvaksyi-rajalain-jatkon-aanin-168-29/)
+- **Count the Trees:** still right. **Trade Secret:** no follow-up.
+- **Finland:** no new HS candidate. Vaasa–Mustasaari stays Med-low; the Yle explainer's YVA detail needs the decision
+  itself.
+- **No film needs a fix.**

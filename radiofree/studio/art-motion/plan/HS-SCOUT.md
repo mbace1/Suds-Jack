@@ -471,3 +471,35 @@ Everything below comes from search summaries. No article was opened.
 - **Hamina / Trade Secret:** no follow-up found.
 - **Pattern note:** the correction above is the lesson. A summary that says "secret" does not say "NDA"; the first
   record to open is the decision itself. Same rule as the Muhos police status.
+
+### Check Thu 29 Oct 17:16 (search summaries only; yle.fi does not resolve, so nothing was opened)
+- **HS, last ~2 days:** no new HS candidate. Searches on HS + municipality + trade secret / AI / data centre found
+  nothing dated 28–29 Oct.
+- **"Ground Broken" (Vaasa–Mustasaari, Microsoft): no new dated fact.**
+  - One more detail from the Yle explainer "Tämä tiedetään…" (74-20232883, undated in the summary):
+    - the environmental authority (LVV) concluded the project's effects were not significant enough to need a full
+      environmental assessment (YVA), though the summary is internally contradictory;
+    - about 39 backup generators totalling 295 MW;
+    - acid sulphate soils named as the main environmental risk.
+  - **Open the decision before using any of it.** The verdict stays Med-low.
+  - [Yle](https://yle.fi/a/74-20232883)
+- **Reactions on the current candidates:**
+  - **#1 Humppila:** no Ombudsman decision found.
+    - The former administrative director's court appeal and criminal complaint are known only from a LinkedIn post,
+      so they are not to be used.
+    - Background: the Ministry of Justice has started a preliminary study on AI in authority decision-making, with an
+      interim report due by end-2026.
+    - Sources: [Suomenmaa](https://www.suomenmaa.fi/uutiset/apulaisoikeusasiamies-aloitti-selvityksen-kun-kunta-kertoi-korvanneensa-kaksi-johtajavirkaa-tekoalylla-herattaa-kysymyksia/),
+      [Valtioneuvosto](https://valtioneuvosto.fi/-/1410853/tekoalyn-kayttoa-viranomaisasioissa-selvitetaan)
+  - **Reader reaction on #1:** a vauva.fi thread titled "HS: Kunnanjohtaja antoi johtajien työt tekoälylle" exists, so
+    the story crossed into general forums. Comment count and themes were not visible in the summary.
+  - **#2–#7:** nothing new found.
+- **Muhos / Count the Trees:** no new fact.
+  - The police status still differs by outlet: an esiselvitys per IL, Kaleva and MTV; "not started" per Yle, ~22 Oct.
+  - LVV still says the case is secret.
+  - The water plan is due 5 Nov.
+  - **The film's "Two requests filed with the police" is still exactly right.**
+  - [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Hamina / Trade Secret:** no follow-up found.
+- **Pattern note:** the second week after an HS story is quiet. Every live Finnish thread is waiting on an authority's
+  formal step: the Ombudsman, the police, LVV's 5 Nov water plan. The next check that matters is 5–6 Nov.
