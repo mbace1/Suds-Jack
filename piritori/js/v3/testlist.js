@@ -42,6 +42,42 @@ export const APPROVAL_KEY = 'piritori-to-eden:approvals:v1';
  * does not know what it was supposed to prove.
  */
 export const TESTS = [
+  // ── ROADMAP.md G0, the playtest ────────────────────────────────────────
+  // Three fights, about twenty minutes on the Pixel, then two answers: did any
+  // fight make you decide something, and did anything break on the device?
+  // Owner, 2026-10-26: "Too much text on those cards, simple UI is better" — so
+  // each says what to tap and nothing else; the questions are on the picture
+  // (design/G0_PLAYTEST.jpg).
+  // Each also opens from a cold start with `?play=<id>`. A Night Shift fight
+  // hands over through the save, so a playtest plays a fresh campaign; the
+  // one you had is set aside first and the title screen offers it back.
+  {
+    id: 'g0-door',
+    rev: 1,
+    build: 'js',
+    title: 'Playtest 1/3 · Door fight',
+    where: 'Courtyard · day 8 night',
+    note: 'Tap "Take it off the table", then Fight.',
+    jump: { kind: 'door', id: 'hit-courtyard-ledger', block: 15, crew: 3 },
+  },
+  {
+    id: 'g0-getaway',
+    rev: 1,
+    build: 'js',
+    title: 'Playtest 2/3 · Getaway',
+    where: 'Quay · day 8 night',
+    note: 'Tap "Sell two", then Fight. Get everyone out.',
+    jump: { kind: 'door', id: 'sale-quay-shift', block: 15, crew: 3, stock: 2 },
+  },
+  {
+    id: 'g0-bear',
+    rev: 1,
+    build: 'js',
+    title: 'Playtest 3/3 · Bear Path',
+    where: 'Park · day 5',
+    note: 'Tap "Hold the path", then Fight.',
+    jump: { kind: 'encounter', id: 'enc-bear-path', crew: 2 },
+  },
   {
     id: 'counter-toko',
     rev: 4,

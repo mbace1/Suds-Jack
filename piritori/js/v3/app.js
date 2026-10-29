@@ -1,4 +1,4 @@
-import { availableVisits, openVisit, activeVisit, chooseVisit, leaveVisit } from './visits.js?v=6';
+import { availableVisits, openVisit, activeVisit, chooseVisit, leaveVisit } from './visits.js?v=7';
 import { mountSceneSpeaker, disposeSceneSpeaker } from './scene-speaker.js?v=2';
 import { renderChapterPeople } from './chapter-narrative.js?v=1';
 import { loadGameData, shortestPath, assetUrl } from './content.js?v=2';
@@ -15,27 +15,29 @@ import {
   canShopHere, buyOf, buyEquipment,
   arrestCrew, chapterProgress, chapterGoalMet, chapterEndingAvailable, attemptChapterEnding,
   forecastEnding, recordFight, fightsToday, fighters, stepBackIfReady,
-} from './state.js?v=10';
-import { createPauseMenu } from './pause.js?v=4';
+} from './state.js?v=11';
+import { createPauseMenu } from './pause.js?v=5';
+import { TESTS } from './testlist.js?v=4';
 import { wake as wakeSound, bell, till, steps, sting, arrival, soundOn, setSound, soundState } from './sound.js?v=1';
 import { board, exposureHere, markSeen, addFootprint, INFO } from './board.js?v=3';
 import { previewJourney, commitJourney } from './journey.js?v=2';
-import { buyBowl, bowlBlocker, BOWL_EUR, TOKO_ANCHOR, tokoWeapons, buyFromToko } from './toko.js?v=5';
+import { buyBowl, bowlBlocker, BOWL_EUR, TOKO_ANCHOR, tokoWeapons, buyFromToko } from './toko.js?v=6';
 import { loadTokoStage } from './toko-stage.js?v=1';
-import { loadStory, caseBoard, keyCluesFound, caseBlocker, caseKnown, resolveCase, briefing, settleCut } from './story.js?v=5';
+import { loadCutin, CUTINS, W as CUTIN_W, H as CUTIN_H } from './cutin-stage.js?v=4';
+import { loadStory, caseBoard, keyCluesFound, caseBlocker, caseKnown, resolveCase, briefing, settleCut } from './story.js?v=6';
 import { turnPlan, nextChapter } from './chapter.js?v=1';
-import { loadDoors, offerDoors, takeDoor, doorBlocker, templateOf, registerTaken, doorFightEffects, canFight, isDoorBlock, escalation } from './doors.js?v=4';
+import { loadDoors, offerDoors, takeDoor, doorBlocker, templateOf, registerTaken, doorFightEffects, canFight, isDoorBlock, escalation } from './doors.js?v=5';
 import { loadFamilies, standings, settleStanding } from './standing.js?v=1';
 import { loadPlaces, stageFight, doorFightStage, roadFightStage, placeAt } from './places.js?v=1';
 import { doorOuting, roadOuting, missionOuting, missionStakes, outingUrl, openOuting, settledOuting, outingLines, settledFlag } from './outing.js?v=5';
-import { loadRoadEvents, rollRoad, resolveRoad, pendingRoad, choiceOpen, clockLabel, forceRoad } from './road.js?v=6';
+import { loadRoadEvents, rollRoad, resolveRoad, pendingRoad, choiceOpen, clockLabel, forceRoad } from './road.js?v=7';
 import {
   createBattleState, attachGrowth, selectedUnit, selectUnit, selectAction, playerAttack, brace, useItem,
   validMoveCells, moveUnit, endPlayerPhase, autoCommand, withdrawBattle,
   negotiateBattle, resultEffects, injuredPlayers, selectStance,
   policeAwaitingPosture, choosePolicePosture, takenByPolice, savedFromPolice, POLICE_POSTURE,
   attackTargets, syncAlliesFor, coverStandingLine, coverAttackLine,
-} from './battle.js?v=14';
+} from './battle.js?v=15';
 import { LANES, ROWS, totalRows, depthOf, parseSlotKey, slotKey, describeSlot } from './grid.js?v=2';
 import { boot as bootChrome } from './chrome.js?v=2';
 import { STANCE, STANCES } from './stance.js?v=2';
@@ -153,6 +155,152 @@ function mountTokoStage(root) {
     stage.attach(canvas, context);
   });
 }
+// Waist-up cut-ins (cutin-stage.js; owner, 2026-10-23: NPCs "zoomed from waist up layered over with a text bubble and
+// talk options", the level behind). For now a PREVIEW reached by ?cutin=<who> (CLAUDE.md rule 6, the phone debug rule):
+// the words come from the authored slice, a choice makes the speaker react and says what it would do, and nothing is
+// applied or saved. The slice has no spoken lines for Jaska yet, so his bubble carries the encounter's opening.
+const CUTIN_TABS = ['#C5A044', '#38B8C8', '#676B6B'];
+const CUTIN_TAGS = { DOCUMENTED: '#C5A044', INFERENCE: '#38B8C8', ACCUSATION: '#B5523B', FICTION: '#676B6B' };
+const CUTIN_SCRIPT = {
+  jaska: () => { const e = data.encounters.get('enc-jaska-receipt'); return e && { plateId: e.scene_asset_id,
+    lines: [{ text: e.opening, clip: 'talk' }],
+    choices: e.choices.map(c => ({ label: c.label, reply: c.forecast, clip: c.effects.some(x => /^relationship:jaska:-/.test(x)) ? 'shake' : 'nod' })) }; },
+  // Aatami's side of the same conversation: the choices are what he says
+  aatami: () => { const e = data.encounters.get('enc-jaska-receipt'); return e && { plateId: e.scene_asset_id,
+    lines: e.choices.map(c => ({ text: c.label, clip: 'talk' })) }; },
+  arvo: () => { const n = data.news.get('news-markka-afterlife'); return n && { lines: [
+    { tag: 'ARVO LINDE', text: n.arvo_copy, clip: 'read' }, { tag: 'DOCUMENTED', text: n.documented, clip: 'glance' },
+    { tag: 'INFERENCE', text: n.inference, clip: 'gesture' }, n.accusation && { tag: 'ACCUSATION', text: n.accusation, clip: 'read' },
+    { tag: 'FICTION', text: n.fiction, clip: 'nod' }].filter(Boolean) }; },
+};
+// The overlay both uses share: a 9:16 canvas, the words laid over the speaker's bubble or copy card, the buttons.
+function cutinShell(label, onClose) {
+  const el = document.createElement('div');
+  el.className = 'cutin'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', label);
+  el.innerHTML = '<div class="cutin-frame"><canvas class="cutin-canvas" aria-hidden="true"></canvas><div class="cutin-words" aria-live="polite"></div><div class="cutin-options"></div></div>';
+  document.body.append(el);
+  const canvas = el.querySelector('canvas'), words = el.querySelector('.cutin-words'), options = el.querySelector('.cutin-options');
+  const pct = (v, of) => `${(v / of * 100).toFixed(3)}%`;
+  const box = b => `left:${pct(b.x, CUTIN_W)};top:${pct(b.y, CUTIN_H)};width:${pct(b.w, CUTIN_W)};height:${pct(b.h, CUTIN_H)}`;
+  const onKey = event => { if (event.key === 'Escape') onClose(); };
+  addEventListener('keydown', onKey);
+  let current = null;
+  return {
+    el,
+    /** Put this speaker on the canvas and show a line; buttons are [label, action, { disabled, note }]. */
+    show(stage, line, buttons) {
+      if (current !== stage) { current?.detach(); stage.attach(canvas); current = stage; }
+      const cast = stage.cast, news = cast.layout === 'news';
+      words.className = `cutin-words cutin-${cast.layout}`; words.style.cssText = box(news ? cast.copy : cast.bubble);
+      options.style.cssText = box(news ? { x: 600, y: 1784, w: 440, h: 110 } : { x: 470, y: 1500, w: 580, h: 394 });
+      words.style.setProperty('--tag', CUTIN_TAGS[line.tag] ?? '#676B6B');
+      words.innerHTML = `<b>${esc(line.tag ?? cast.name)}</b><p>${esc(line.text)}</p>`;
+      options.innerHTML = buttons.map(([text, , o = {}], i) => `<button type="button" data-i="${i}" style="--tab:${CUTIN_TABS[Math.min(i, 2)]}" ${o.disabled ? 'disabled' : ''}><i></i><span>${esc(text)}${o.note ? `<small>${esc(o.note)}</small>` : ''}</span></button>`).join('');
+      options.querySelectorAll('button').forEach(b => { b.onclick = () => buttons[Number(b.dataset.i)][1](); });
+      if (line.clip) stage.play(line.clip);
+      options.querySelector('button:not([disabled])')?.focus();
+    },
+    close() { current?.detach(); current = null; el.remove(); removeEventListener('keydown', onKey); },
+  };
+}
+async function openCutin(who) {
+  const script = CUTIN_SCRIPT[who]?.();
+  if (!script) { logToast(`unknown cut-in '${who}'`); return; }
+  const stage = await loadCutin(data, who, { reducedMotion, plateId: script.plateId });
+  if (!stage) { logToast(`cut-in '${who}' is not registered or failed to load`); return; }
+  const shell = cutinShell(stage.cast.name, () => shell.close()), close = () => shell.close();
+  shell.el.dataset.cutin = who;
+  const leave = ['Leave', close];
+  if (!script.choices) {
+    const next = i => shell.show(stage, script.lines[i], [i + 1 < script.lines.length ? ['Next', () => next(i + 1)] : ['Close', close]]);
+    next(0);
+  } else {
+    shell.show(stage, script.lines[0], [...script.choices.map(c => [c.label, () => shell.show(stage, { text: c.reply, clip: c.clip }, [leave])]), leave]);
+  }
+}
+
+// The conversation, for real (owner, 2026-10-23: "the player character profile can be shown when he talks"). An
+// encounter whose speaker has a cut-in opens as that cut-in over the scene, once, until answered or set aside:
+// the opening in the speaker's bubble, the choices as talk options. A choice goes through the very same handler as
+// the choice cards (applied, saved, rendered); Aatami's profile says it; the speaker reacts with the outcome, and
+// CONTINUE does what the outcome card's button does. LOOK AROUND sets it aside for the ordinary screen.
+let talk = null;
+const talkSetAside = new Set();
+function talkSpeaker(encounter) { return encounter?.participants?.find(p => p !== 'aatami' && CUTINS[p]) ?? null; }
+function closeTalk() { talk?.shell?.close(); talk = null; }
+function mountTalk() {
+  if (!['encounter', 'visit'].includes(state.mode)) { closeTalk(); return; }
+  if (!$('splash').hidden) return;                       // the title screen first: RESUME re-renders and the talk opens then
+  const encounter = state.mode === 'visit' ? activeVisit(state, data) : currentEncounter(state, data), who = talkSpeaker(encounter);
+  if (talk) { if (talk.id !== encounter?.id) closeTalk(); else { disposeSceneSpeaker(); return; } }
+  if (!who || state.choices[encounter.id] || talkSetAside.has(encounter.id)) return;
+  if (state.battle?.status === 'active' || (state.mode === 'encounter' && !presentAtLead())) return;
+  openTalk(encounter, who);
+}
+async function openTalk(encounter, who) {
+  const mine = talk = { id: encounter.id };
+  const [speaker, aatami] = await Promise.all([loadCutin(data, who, { reducedMotion, plateId: encounter.scene_asset_id }), loadCutin(data, 'aatami', { reducedMotion, plateId: encounter.scene_asset_id })]);
+  if (talk !== mine) return;
+  if (!speaker || !aatami) { talk = null; return; }    // the ordinary screen stays, as before cut-ins
+  disposeSceneSpeaker();                                 // the 3D figure under the overlay would only cost frames
+  const dispatch = (action, choice) => { const b = document.createElement('button'); b.dataset.action = action; if (choice) b.dataset.choice = choice; handleRootClick({ target: b }); };
+  const shell = talk.shell = cutinShell(speaker.cast.name, () => setAside());
+  shell.el.dataset.talk = encounter.id;
+  function setAside() { talkSetAside.add(encounter.id); closeTalk(); render(); }
+  function ask() {
+    shell.show(speaker, { text: encounter.opening, clip: 'talk' }, [
+      ...encounter.choices.map(choice => { const status = choiceStatus(choice, state, data);
+        return [choice.label, () => answer(choice), { disabled: !status.ok, note: status.ok ? '' : status.reasons.map(readableReason).join(' · ') }]; }),
+      ['Look around', setAside]]);
+  }
+  function answer(choice) {
+    dispatch('choose', choice.id);                       // applied, persisted and rendered exactly as a choice card
+    if (!state.choices[encounter.id]) return;            // refused: the reason is already a toast; still asking
+    const outcome = state.lastOutcome?.length ? state.lastOutcome.join(' ') : choice.forecast;
+    const pendingBattle = state.battle?.status === 'active', visit = state.mode === 'visit';
+    const reaction = choice.effects?.some(x => x.startsWith(`relationship:${who}:-`)) ? 'shake' : 'nod';
+    shell.show(aatami, { text: choice.label, clip: 'talk' }, []);
+    setTimeout(() => { if (talk?.shell !== shell) return;
+      shell.show(speaker, { text: outcome, clip: reaction }, [[pendingBattle ? 'Fight' : 'Continue', () => {
+        closeTalk(); if (pendingBattle) dispatch('show-battle'); else if (visit) dispatch('leave-visit'); else dispatch('advance'); }]]);
+    }, reducedMotion ? 600 : 1900);
+  }
+  ask();
+}
+// ── The playtest links (ROADMAP.md G0) ────────────────────────────────────────────
+// A playtest plays a fresh campaign, and it has to save: a Night Shift fight hands over through the save. So the
+// campaign you had is kept aside first, and the title screen's RESTORE YOUR CAMPAIGN puts it back. A playtest's own
+// campaign is marked, so a second playtest never sets it aside in place of yours.
+const SET_ASIDE_KEY = `${SAVE_KEY}:set-aside`, PLAY_CARD_KEY = `${SAVE_KEY}:play-card`;
+function setCampaignAside() {
+  try {
+    const saved = localStorage.getItem(SAVE_KEY), yours = saved && !localStorage.getItem(PLAY_CARD_KEY);
+    if (yours) localStorage.setItem(SET_ASIDE_KEY, saved);
+    localStorage.setItem(PLAY_CARD_KEY, '1');
+    return Boolean(yours);
+  } catch { return false; }
+}
+function restoreCampaign() {
+  try {
+    const kept = localStorage.getItem(SET_ASIDE_KEY);
+    if (kept) localStorage.setItem(SAVE_KEY, kept);
+    localStorage.removeItem(SET_ASIDE_KEY);
+    localStorage.removeItem(PLAY_CARD_KEY);
+  } catch { /* private mode: nothing was kept */ }
+  location.replace(location.pathname);
+}
+// The crew a jump's fight needs, fielded the way ?battle= fields them. Only the newly recruited are made available,
+// so a jump from the pause menu never heals somebody in a real campaign.
+function fieldCrew(n) {
+  for (const crew of data.content.crew) {
+    if (state.recruited.length >= n) break;
+    if (state.recruited.includes(crew.id)) continue;
+    state.recruited.push(crew.id);
+    if (state.crewStatus[crew.id]) state.crewStatus[crew.id].status = 'available';
+  }
+  state.deployed = state.recruited.slice(0, 3);
+}
+
 // The Thursday Load (story.js). Empty until loaded; a failed load hides it.
 let story = { missions: [], clues: [], case: null };
 let roadEvents = { rules: { first_story_block: Infinity }, events: [] };
@@ -169,7 +317,9 @@ function tr(key, ...args) {
   for (const a of args) s = String(s).replace('%d', String(a));
   return s;
 }
-function persist() { saveState(state); }
+// A debug jump (?encounter=) plays a throwaway campaign: it must never overwrite the real save.
+let debugSession = false;
+function persist() { if (!debugSession) saveState(state); }
 
 // ── M1: where the player is LOOKING is not where Aatami IS ─────────────
 // (design/CLAUDE_MAP_MISSION_NEXT_STEPS.md §1.) `state.selectedAnchor` stays
@@ -328,7 +478,6 @@ function renderHud() {
   $('intelValue').textContent = state.intel;
   const clock = clockLabel(state, currentSchedule(state, data.content), roadEvents);
   $('blockLabel').textContent = formatBlock(state, data.content) + (clock ? ` · ${clock}` : '');
-  $('localeButton').textContent = state.locale.toUpperCase();
   $('eraLabel').textContent = state.locale === 'fi'
     ? '2003 · AATAMI · ERA I · UI FI / TARINA EN (ALFA)'
     : '2003 · AATAMI · ERA I';
@@ -375,6 +524,7 @@ function render() {
   const speakerHost = root.querySelector('[data-speaker]');
   if (speakerHost) mountSceneSpeaker(speakerHost, assetUrl(data, speakerHost.dataset.asset), speakerHost.dataset.speaker);
   mountTokoStage(root);
+  mountTalk();
 
   // DESIGN_AUTHORITY.md addendum 2026-08-28: real 3D, not just registered
   // meshes, is one of the parity gaps this build owes Godot. Mounted here
@@ -729,7 +879,7 @@ function renderRoute() {
         <section class="paper-panel">${routeInfo}</section>
         <section class="paper-panel">
           <p class="section-label">CITY MEMORY</p>
-          <ul class="log-list">${state.logs.slice(0, 5).map(item => `<li>${esc(item)}</li>`).join('')}</ul>
+          <ul class="log-list">${state.logs.slice(0, 5).map(item => `<li>${esc(item.replace(/^enc-[a-z0-9-]+:\s*/, ''))}</li>`).join('')}</ul>
         </section>
       </aside>
       ${renderNextStep(slot)}
@@ -874,25 +1024,38 @@ function renderEncounter() {
           ${isJaska ? '<i class="jaska-contact" aria-hidden="true"></i><div class="scene-speaker jaska-standing" data-speaker="jaska" data-asset="cast3d-jaska-v01" aria-label="Jaska"></div>' : ''}
           ${ambientLayers(encounter)}
           <i class="scene-vignette"></i>
-          <div class="scene-caption">
-            <h2>${esc(site?.label ?? anchor?.label)}</h2>
-            <p>${esc(anchor?.label)} · ${esc(slot.block.toUpperCase())} · ${encounter.source_status === 'fiction' ? 'FICTIONAL COMPOSITE' : 'MIXED SOURCE'}</p>
-          </div>
         </div>
       </section>
       <section class="paper-panel encounter-copy">
-        <p class="section-label">${formatBlock(state, data.content)} · ${esc(anchor?.label)}</p>
+        <p class="section-label">${formatBlock(state, data.content)} · ${esc(anchor?.label)}${encounter.source_status === 'fiction' ? '' : ' · MIXED SOURCE'}</p>
         <h2 class="section-title">${esc(encounterTitle(encounter))}</h2>
         <p class="encounter-opening">${esc(encounter.opening)}</p>
-        ${encounter.door ? (() => { const t = templateOf(doors, encounter.door); return `<ol class="mission-steps">${(t?.steps ?? []).map(step => `<li>${esc(step)}</li>`).join('')}</ol><p class="consequence-strip">${esc(t?.stakes ?? '')}</p>`; })() : ''}
-        <div class="inspectables" aria-label="Inspect scene">
-          ${encounter.inspectables.map((item, index) => `<button class="paper-button inspect-button" data-action="inspect" data-index="${index}" type="button">${esc(item)}</button>`).join('')}
-        </div>
-        <p class="observation" aria-live="polite">${esc(observation)}</p>
+        ${encounterTags(encounter)}
         ${resolved ? renderEncounterOutcome(choice, pendingBattle) : renderChoices(encounter)}
         ${state.mode === 'visit' && !resolved ? '<button class="paper-button" data-action="leave-visit">LEAVE WITHOUT CHOOSING</button>' : ''}
+        ${lookAround(encounter)}
       </section>
     </div>`;
+}
+
+// The UI diet (design/UI_DIET.md; owner, 2026-10-26: "These aren't needed, so we need to optimize"). The meeting keeps
+// the decision on the first screen: the place is named once (the label line), a door's step list and stakes sentence
+// become two short tags drawn from its data, and the things to look at fold into one LOOK AROUND below the choices.
+// A source label shows only when the scene cites real events (GDD: "source status if it references real events").
+function encounterTags(encounter) {
+  const t = encounter.door ? templateOf(doors, encounter.door) : null;
+  const tags = [t?.fight && 'CAN TURN INTO A FIGHT', t?.late && 'GONE AFTER 22:00'].filter(Boolean);
+  return tags.length ? `<p class="encounter-tags">${tags.map(tag => `<span>${esc(tag)}</span>`).join('')}</p>` : '';
+}
+function lookAround(encounter) {
+  if (!encounter.inspectables?.length) return '';
+  return `<details class="look-around"${observation ? ' open' : ''}>
+    <summary class="paper-button inspect-button">LOOK AROUND</summary>
+    <div class="inspectables" aria-label="Inspect scene">
+      ${encounter.inspectables.map((item, index) => `<button class="paper-button inspect-button" data-action="inspect" data-index="${index}" type="button">${esc(item)}</button>`).join('')}
+    </div>
+    <p class="observation" aria-live="polite">${esc(observation)}</p>
+  </details>`;
 }
 
 function encounterTitle(encounter) {
@@ -922,9 +1085,10 @@ function encounterTitle(encounter) {
 function renderChoices(encounter) {
   return `<div class="choice-list">${encounter.choices.map(choice => {
     const status = choiceStatus(choice, state, data);
-    return `<button class="choice-card" type="button" data-action="choose" data-choice="${esc(choice.id)}" ${status.ok ? '' : 'disabled'}>
+    // The UI diet: a choice you cannot take yet is one line, its label and why, so it does not push the open ones off the screen.
+    return `<button class="choice-card${status.ok ? '' : ' locked'}" type="button" data-action="choose" data-choice="${esc(choice.id)}" ${status.ok ? '' : 'disabled'}>
       <strong>${esc(choice.label)}</strong>
-      <span>${esc(choice.forecast)}</span>
+      ${status.ok ? `<span>${esc(choice.forecast)}</span>` : ''}
       ${choice.escalates ? `<small class="road-time">CAN GO BAD · ${Math.round(choice.escalates * 100)}%</small>` : ''}
       ${status.ok ? '' : `<em>${esc(status.reasons.map(readableReason).join(' · '))}</em>`}
     </button>`;
@@ -2337,7 +2501,7 @@ function inspectionCopy(item) {
 }
 
 function resetCampaign() {
-  if (!confirm('Reset the seven-day campaign and remove its local save?')) return;
+  if (!confirm('Start over? This campaign\'s save is removed.')) return;
   localStorage.removeItem(SAVE_KEY);
   state = createState(data.content);
   routePlanning = false;
@@ -2363,9 +2527,12 @@ async function boot() {
     attachGrowth(state.battle, state, data); // a saved fight comes back without its live campaign link
     if (settleReturnedOuting()) persist(); // a fight that came back from Night Shift (v4.74)
     $('resumeButton').hidden = !hasSave;
+    $('restoreButton').hidden = !localStorage.getItem(SET_ASIDE_KEY);
+    $('restoreButton').addEventListener('click', restoreCampaign);
     $('beginButton').addEventListener('click', () => {
       wakeSound();
       if (hasSave) state = createState(data.content);
+      try { localStorage.removeItem(PLAY_CARD_KEY); } catch { /* private mode */ }
       resetInspection();
       persist();
       $('splash').hidden = true;
@@ -2382,11 +2549,6 @@ async function boot() {
       render();
       $('modeRoot').focus();
     });
-    $('localeButton').addEventListener('click', () => {
-      state.locale = state.locale === 'en' ? 'fi' : 'en';
-      persist(); render();
-    });
-    $('resetButton').addEventListener('click', resetCampaign);
     $('modeNav').addEventListener('click', event => {
       const button = event.target.closest('[data-mode-target]');
       if (!button) return;
@@ -2411,6 +2573,8 @@ async function boot() {
     function jumpTo(target) {
       if (!target) return;
       resetInspection();
+      if (target.crew) fieldCrew(target.crew);
+      if (target.stock) state.stock.piri = Math.max(state.stock.piri ?? 0, target.stock);
       if (target.kind === 'encounter') {
         // Walk the schedule to the block this encounter belongs to, so the
         // screen arrives with the state around it rather than out of context —
@@ -2434,6 +2598,23 @@ async function boot() {
           if (!state.recruited.includes(crew.id)) state.recruited.push(crew.id);
         }
         if (!startBattle(target.id)) return;
+      } else if (target.kind === 'door') {
+        // A door, taken, with Aatami standing at it (the playtest, ROADMAP G0). `block` names the door block; a late
+        // door needs a night. The door is offered and taken through doors.js, exactly as the board does it.
+        const t = templateOf(doors, target.id);
+        const index = target.block ?? data.content.schedule.findIndex(slot => slot.door && (!t?.late || slot.block === 'night'));
+        if (!t || !data.content.schedule[index]?.door) { logToast(`cannot stage door '${target.id}'`); return; }
+        const anchor = target.anchor ?? t.anchors[0];
+        state.scheduleIndex = index;
+        state.doors ??= { offers: {}, taken: {} };
+        state.doors.offers = { ...(state.doors.offers ?? {}), [index]: [{ template: t.id, anchor }] };
+        state.doors.taken = { ...(state.doors.taken ?? {}) };
+        delete state.doors.taken[index];
+        const taken = takeDoor(state, data, doors, t.id, roadEvents);
+        if (!taken.ok) { logToast(`door '${t.id}': ${taken.reason}`); return; }
+        state.selectedAnchor = anchor;
+        state.mode = 'encounter';
+        observation = '';
       } else if (target.kind === 'news') {
         state.newsSeen = state.newsSeen.filter(id => id !== target.id);
         state.newsReturnMode = 'route';
@@ -2467,9 +2648,12 @@ async function boot() {
 
     const pause = createPauseMenu({
       root: $('pause'),
-      version: 'v4.79',
+      version: 'v4.85',
       jump: jumpTo,
       sound: { get: soundOn, set: setSound },
+      // The UI diet: language and starting over live here, not on every screen's header.
+      language: { get: () => state.locale, toggle: () => { state.locale = state.locale === 'en' ? 'fi' : 'en'; persist(); render(); } },
+      reset: resetCampaign,
     });
     $('pauseButton').addEventListener('click', () => pause.toggle());
     // Esc pauses from anywhere. The menu handles Esc itself once it is open,
@@ -2525,6 +2709,40 @@ async function boot() {
         if (startBattle(wantBattle, at ? { anchor: at, by: new URLSearchParams(location.search).get('by'), key: 'debug' } : null)) render();
       }
     }
+
+    // ?encounter=<id> — a fresh, unsaved campaign stood at that encounter's story lead, its scene open (CLAUDE.md
+    // rule 6, the phone debug rule). Saving is off for the whole session: a debug jump must not overwrite a real save.
+    const wantEncounter = new URLSearchParams(location.search).get('encounter');
+    if (wantEncounter) {
+      const index = data.content.schedule.findIndex(slot => slot.encounter_id === wantEncounter);
+      if (index < 0) logToast(`unknown encounter '${wantEncounter}'`);
+      else {
+        debugSession = true;
+        state = createState(data.content);
+        state.scheduleIndex = index;
+        state.selectedAnchor = storyLeadId();
+        state.mode = 'encounter';
+        $('splash').hidden = true;
+        render();
+      }
+    }
+    // ?play=<id> — the playtest links (ROADMAP.md G0): a THINGS TO TEST item opened from a cold start, as a fresh
+    // campaign. It saves (Night Shift needs it), so the campaign you had is set aside first; see setCampaignAside().
+    const wantPlay = new URLSearchParams(location.search).get('play');
+    if (wantPlay) {
+      const item = TESTS.find(test => test.id === wantPlay && test.jump);
+      if (!item) logToast(`unknown playtest '${wantPlay}'`);
+      else {
+        const keptYours = setCampaignAside();
+        state = createState(data.content);
+        $('splash').hidden = true;
+        jumpTo(item.jump);
+        if (keptYours) logToast('Your campaign is kept. Restore it from the title screen.');
+      }
+    }
+    // ?cutin=<who> — a waist-up cut-in preview over whatever is on screen (jaska and aatami at the Scene Club, arvo on the news)
+    const wantCutin = new URLSearchParams(location.search).get('cutin');
+    if (wantCutin) openCutin(wantCutin);
 
     window.__ptv3 = {
       get data() { return data; },
