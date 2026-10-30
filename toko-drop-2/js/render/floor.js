@@ -8,7 +8,9 @@
 // That is `style: 'grid'`. The others (owner, 2026-10-23):
 //   'concrete'  world 2, the driveway: a night slab under a warm flood from
 //               the far end, aggregate and mottling in it, expansion joints
-//               cut every few metres, an old oil stain or two
+//               cut every few metres, an old oil stain or two; since v65
+//               (the owner's module sheet) hairline cracks in some slabs and
+//               a storm drain toward the far right corner
 //   'sewer'     world 3: wet dark flagstones in running bond, the tunnel's
 //               water channel down its long middle, flowing
 //
@@ -21,8 +23,8 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=64';
-import { noise } from './scenery.js?v=64';
+import { GEL_TIME } from './gel.js?v=65';
+import { noise, grate, cells } from './scenery.js?v=65';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -186,12 +188,26 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const groove = float(1).sub(smoothstep(float(C.jointW).sub(aa), float(C.jointW).add(aa), jd));
     const lip = max(float(1).sub(smoothstep(C.jointW, C.jointW * 3, jd)).sub(groove), 0);
     col = col.mul(float(1).sub(groove.mul(0.62))).add(vec3(...C.lip).mul(lip.mul(0.25)));
+    // hairline cracks (v65): the edges of a cell network, jagged by a fine
+    // wobble, broken off so they stop mid-slab, only in some of the slabs, and
+    // faint — a texture under the fight (v48's lesson)
+    const jag = vec2(noise(w.mul(5.3)), noise(w.mul(5.3).add(vec2(1.7, 9.2)))).sub(0.5).mul(C.crackJag);
+    const edge = cells(w.mul(C.crackScale).add(jag)), eaa = max(fwidth(edge), 1e-4), cwid = float(C.crackW * C.crackScale * 2);
+    const crack = float(1).sub(smoothstep(cwid, cwid.add(eaa), edge))
+      .mul(smoothstep(0.42, 0.56, noise(w.mul(C.crackBreak).add(vec2(11.1, 2.3)))))
+      .mul(smoothstep(0.5, 0.64, noise(w.mul(C.crackPatch).add(vec2(5.2, 1.7)))));
+    col = col.mul(float(1).sub(crack.mul(C.crackDepth)));
+    // the storm drain (v65), set in the slab toward the far right corner: an iron
+    // frame round rows of slots (the slots below, past the flood: no light
+    // reaches the bottom of a drain)
+    const G = C.grate, g = grate(w.sub(vec2(hx - G.at[0], -hz + G.at[1])).div(G.r));
+    col = mix(col, mix(vec3(...G.iron), vec3(...G.frame), g.z), g.x);
     // the flood from the far end (the garage), warm, falling off toward the
     // street; the near end in the cold
     const flood = smoothstep(float(hz * 2.2), float(-hz * 0.2), w.y.add(hz)).mul(C.flood);
-    col = col.mul(float(C.ambient).add(flood)).add(vec3(...C.floodTint).mul(flood.mul(0.06)));
+    col = mix(col.mul(float(C.ambient).add(flood)).add(vec3(...C.floodTint).mul(flood.mul(0.06))), vec3(...G.slot), g.y);
     const pool = float(1).sub(smoothstep(0, F.poolRadius * 0.6, length(p.sub(player))));
-    return { col: col.add(col.mul(pool).mul(0.35)), mask: groove.add(lip.mul(0.5)), lineCol: vec3(...C.lip) };
+    return { col: col.add(col.mul(pool).mul(0.35)), mask: groove.add(lip.mul(0.5)).add(crack.mul(float(1).sub(g.x)).mul(0.3)).add(g.z.mul(0.4)), lineCol: vec3(...C.lip) };
   };
 
   const sewer = (p, w) => {

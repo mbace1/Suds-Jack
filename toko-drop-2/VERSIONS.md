@@ -19,6 +19,22 @@
     Never `--no-verify`.
 -->
 
+## v65 — 2026-10-30
+**World 2 built to the owner's curb and lawn sheet: curb pieces, corners, rounded ends, grass tufts, cracks, the storm drain**
+- Of the concept pack in PR #630 the owner approved one sheet, "World 2 — curb / lawn modules" (eight drawings), and nothing else. Built in the game's own look (its light, its night slab), not in the sheet's ink and wash (art-ref/README.md: mood and design, not a style to copy):
+  1. **Straight curb**: pieces about 2.2 m long, the top rounded off at both edges, a seam between them (a real 3 cm gap, darkened a few cm either side) and each a shade of its own. It was one box a side with painted joints; it is 0.55 m wide and 0.34 m tall now (was 0.4 × 0.2), so it reads from the play camera.
+  2. **Corner**: an L at each far corner, two 1.1 m arms mitred where they meet.
+  3. **Open near-side end**: each long curb ends rounded down into the grass, a quarter circle 0.34 m long. The near side stays open.
+  4. **Grass tufts**: clumps of tapering blades bent out from the middle, along the outside of the curb (some left out), three to each far corner and one beside each near end. Never along the near side.
+  5. **Lawn**: as it was, with the curb's shadow on the grass along its outside.
+  6. **Concrete with cracks**: hairline, jagged and branching, stopping mid-slab, in some of the slabs and faint (v48's lesson on the ice: a texture under the fight, never lines across it). They are the edges of a cell network (`cells` in scenery.js), jagged by a fine wobble.
+  7. **Storm drain grate**: a round iron frame round 26 capsule slots in rows of 4 6 6 6 4, set in the slab toward the far right corner (clear of the HUD). The drain that opens where the boss went down, the way to the sewer, is the same grate now; it was a square of six bars.
+  8. **Arena layout**: the curb round the far side and both long sides, the slab inside it.
+- The curb is one mesh (three runs, each piece built from its cross-section) and the tufts one instanced mesh; the cracks and the grate are part of the floor's picture, so the floor's light lies on them and they turn with the slab when the drain opens. Every number is TUNING.scenery.driveway and TUNING.worlds.floor.concrete.
+- Cache tokens `?v=64` → `?v=65`; HUD label → `2.0 · v65`
+
+---
+
 ## v64 — 2026-10-30
 **PLAY RECORD copies inside itch's frame too**
 - Getting the itch build ready (v63's zip, checked in an itch-style frame on another site) turned up that OPTIONS → PLAY RECORD could not copy there: a game on itch runs in a frame from another site, and inside such a frame the clipboard API is blocked unless the frame is allowed `clipboard-write`. With itch's allow list it threw "blocked because of a permissions policy", and the record fell through to a downloaded file, which on a phone is a long way round to a message. Measured with a real tap: in a frame without `clipboard-write` the API fails and the older copy command (`execCommand('copy')`) works; with it, both work.

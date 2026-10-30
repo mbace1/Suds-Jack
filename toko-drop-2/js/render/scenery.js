@@ -5,7 +5,14 @@
 //   world 2  the driveway: a concrete curb along the far side and the two
 //            long ones with the lawn behind it, and the lawn meeting the
 //            slab straight at the near side ("you can see there is a curb
-//            and grass behind it, or just grass as the limit")
+//            and grass behind it, or just grass as the limit"). Since v65
+//            built to the owner's module sheet: the curb in pieces with a
+//            rounded top and a seam between them, an L at each far corner,
+//            a rounded end where it stops at the near side, its shadow on
+//            the grass, and tufts of grass against it, thickest at the
+//            corners. The sheet's cracks and storm drain are the floor's
+//            (floor.js), and the drain that opens for the way down is this
+//            file's, drawn as the same grate
 //   world 3  the sewer: brick walls along the tunnel's two long sides, iron
 //            bars across its two ends, and the dark past them
 //   the rest a SURROUND (v43, owner, 2026-10-24: "make the portrait mode
@@ -26,7 +33,7 @@
 // bars stand up, so they are lit by the scene's lights. Every number is
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
-import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, clamp, max, min, length, select } from 'three/tsl';
+import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -35,6 +42,41 @@ export const noise = Fn(([p]) => {
   const a = hash(i), b = hash(i.add(vec2(1, 0))), c = hash(i.add(vec2(0, 1))), d = hash(i.add(vec2(1, 1)));
   return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 });
+
+// how far p is from the nearest edge between the cells of a jittered grid,
+// as F2 − F1 (0 on an edge): a network of straight runs meeting in threes,
+// which is how concrete cracks (v65, the floor's cracks)
+export const cells = Fn(([p]) => {
+  const i = tfloor(p), f = fract(p), d1 = float(8).toVar(), d2 = float(8).toVar();
+  for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) {
+    const o = vec2(x, y), c = i.add(o), d = length(o.add(vec2(hash(c), hash(c.add(vec2(57.1, 13.7))))).sub(f));
+    d2.assign(min(max(d1, d), d2)); d1.assign(min(d1, d));
+  }
+  return d2.sub(d1);
+});
+
+// the storm drain's grate (v65, the owner's world-2 sheet), in its own units
+// (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
+// capsule slots, 4 6 6 6 4 as the sheet has them, every one whole inside
+// the frame. The floor draws one into the slab, and the drain the way down
+// opens through is the same
+export const grate = Fn(([q]) => {
+  const r = length(q), aa = max(fwidth(r), 1e-4);
+  const disc = float(1).sub(smoothstep(float(1).sub(aa), float(1).add(aa), r));
+  const frame = smoothstep(float(0.84).sub(aa), float(0.84).add(aa), r).mul(disc);
+  const cx = tfloor(q.x.div(0.23)).add(0.5).mul(0.23), cy = tfloor(q.y.div(0.25).add(0.5)).mul(0.25);
+  const keep = float(1).sub(step(0.74, length(vec2(abs(cx).add(0.085), abs(cy).add(0.06)))));
+  const f = q.sub(vec2(cx, cy)), d = length(vec2(max(abs(f.x).sub(0.025), 0), f.y)).sub(0.06), da = max(fwidth(d), 1e-4);
+  return vec3(disc, float(1).sub(smoothstep(da.negate(), da, d)).mul(keep).mul(disc), frame);
+});
+
+// a seeded stream of numbers in [0, 1), so a world stands the same every time
+const seeded = (seed) => () => {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
 
 export class Scenery {
   constructor(scene, T) {
@@ -70,9 +112,9 @@ export class Scenery {
 
   _add(mesh) { this.group.add(mesh); this.parts.push(mesh); return mesh; }
 
-  // ── world 2: the lawn round the slab, and the curb on three sides ──
+  // ── world 2: the lawn round the slab, the curb on three sides, the tufts ──
   _driveway(hx, hz) {
-    const S = this.T.scenery.driveway, out = S.lawnOut;
+    const S = this.T.scenery.driveway, out = S.lawnOut, W = S.curbWidth;
     const lawnMat = new THREE.MeshBasicNodeMaterial();
     lawnMat.colorNode = Fn(() => {
       const p = positionWorld.xz;
@@ -81,38 +123,125 @@ export class Scenery {
       const stripe = smoothstep(-0.15, 0.15, sin(p.x.mul(Math.PI / S.stripe)));
       const lo = vec3(...S.grassLo), hi = vec3(...S.grassHi);
       const col = mix(lo, hi, blade.mul(0.55).add(tuft.mul(0.25)).add(stripe.mul(0.2)));
+      // the curb's shadow on the grass along its outside, as far as its near ends
+      const past = length(max(vec2(abs(p.x).sub(hx + W), p.y.negate().sub(hz + W)), 0));
+      const shade = float(1).sub(smoothstep(0, S.curbShadowW, past)).mul(float(1).sub(smoothstep(hz - S.curbNose, hz + 0.1, p.y)));
       // it falls into the night the further it is from the slab
       const dx = max(abs(p.x).sub(hx), 0), dz = max(abs(p.y).sub(hz), 0);
       const far = clamp(length(vec2(dx, dz)).div(S.fade), 0, 1);
-      return col.mul(float(1).sub(far.mul(0.85)));
+      return col.mul(float(1).sub(shade.mul(S.curbShadow))).mul(float(1).sub(far.mul(0.85)));
     })();
     const lawn = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), lawnMat));
     lawn.position.y = -0.02; lawn.renderOrder = -2;
+    this._curb(S, hx, hz);
+    this._tufts(S, hx, hz);
+  }
 
-    // the curb: a low concrete kerb just outside the slab, its top rounded
-    // off by a narrower cap; none along the near side
-    const curbMat = new THREE.MeshStandardNodeMaterial({ roughness: 0.9, metalness: 0 });
-    curbMat.colorNode = Fn(() => {
-      const p = positionWorld;
+  // the curb (v65, the owner's module sheet): straight pieces with the top
+  // rounded off and a seam between them, an L at each far corner (two arms
+  // mitred where they meet), and the end rounded down to the grass where it
+  // stops at the open near side. One mesh: three runs, each in its own frame
+  // — out from the slab's edge (u), up (v) and along it (s, N × up, so every
+  // run winds its faces the same way)
+  _curb(S, hx, hz) {
+    const W = S.curbWidth, H = S.curbHeight, R = S.curbRound, gap = S.curbGap, E = 0.05, rnd = seeded(65);
+    // the cross-section, from the slab's side over the top to the grass's
+    const prof = [[0, 0]];
+    for (let i = 0; i <= 4; i++) { const a = (i / 4) * (Math.PI / 2); prof.push([R - R * Math.cos(a), H - R + R * Math.sin(a)]); }
+    for (let i = 0; i <= 4; i++) { const a = (i / 4) * (Math.PI / 2); prof.push([W - R + R * Math.sin(a), H - R + R * Math.cos(a)]); }
+    prof.push([W, 0]);
+    const np = prof.length, pos = [], kerb = [], idx = [];
+    // a piece from s0 to s1 of a run; each end 'joint' (square, a seam to the
+    // next), 'mitre' (the corner's other arm) or 'nose' (rounded down). A ring
+    // is the cross-section at s (a function of u at a mitre), its height × k,
+    // and e: 0 at a seam, 1 a few cm in, which the colour darkens toward
+    const piece = (run, s0, s1, a, b) => {
+      const nose = (from, dir) => Array.from({ length: 6 }, (_, i) => { const f = (i / 5) * (Math.PI / 2); return { s: from + dir * S.curbNose * (1 - Math.cos(f)), k: Math.sin(f), e: 1 }; });
+      const end = (at, dir, kind) => kind === 'nose' ? nose(at, dir)
+        : kind === 'mitre' ? [{ s: (u) => at - dir * (u - gap * 0.71), k: 1, e: 0 }, { s: (u) => at - dir * (u - gap * 0.71 - E), k: 1, e: 1 }]
+          : [{ s: at + dir * (gap / 2), k: 1, e: 0 }, { s: at + dir * (gap / 2 + E), k: 1, e: 1 }];
+      const rings = [...end(s0, 1, a), ...end(s1, -1, b).reverse()], tone = rnd() * 2 - 1;
+      const put = (g) => { for (const [u, v] of prof) { const s = typeof g.s === 'function' ? g.s(u) : g.s; pos.push(run.o[0] + run.n[0] * u + run.a[0] * s, v * g.k, run.o[1] + run.n[1] * u + run.a[1] * s); kerb.push(g.e, tone); } };
+      const at = pos.length / 3;
+      rings.forEach(put);
+      for (let j = 0; j < rings.length - 1; j++) for (let i = 0; i < np - 1; i++) { const p = at + j * np + i, q = p + np; idx.push(p, q + 1, p + 1, p, q, q + 1); }
+      // a square end gets a face of its own (its own vertices, so the edge stays hard)
+      for (const [g, back] of [[a !== 'nose' && rings[0], false], [b !== 'nose' && rings[rings.length - 1], true]]) {
+        if (!g) continue;
+        const c = pos.length / 3;
+        put({ ...g, e: 0 });
+        for (let i = 1; i < np - 1; i++) back ? idx.push(c, c + i + 1, c + i) : idx.push(c, c + i, c + i + 1);
+      }
+    };
+    // the pieces between s0 and s1, about curbJoint m each
+    const pieces = (run, s0, s1, a, b) => {
+      const n = Math.max(1, Math.round((s1 - s0) / S.curbJoint)), l = (s1 - s0) / n;
+      for (let i = 0; i < n; i++) piece(run, s0 + i * l, s0 + (i + 1) * l, i ? 'joint' : a, i < n - 1 ? 'joint' : b);
+    };
+    const arm = S.curbArm, far = { o: [-hx, -hz], n: [0, -1], a: [1, 0] }, right = { o: [hx, -hz], n: [1, 0], a: [0, 1] }, left = { o: [-hx, hz], n: [-1, 0], a: [0, -1] };
+    piece(far, 0, arm, 'mitre', 'joint'); pieces(far, arm, 2 * hx - arm, 'joint', 'joint'); piece(far, 2 * hx - arm, 2 * hx, 'joint', 'mitre');
+    piece(right, 0, arm, 'mitre', 'joint'); pieces(right, arm, 2 * hz, 'joint', 'nose');
+    pieces(left, 0, 2 * hz - arm, 'nose', 'joint'); piece(left, 2 * hz - arm, 2 * hz, 'joint', 'mitre');
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('kerb', new THREE.Float32BufferAttribute(kerb, 2));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardNodeMaterial({ roughness: 0.9, metalness: 0 });
+    mat.colorNode = Fn(() => {
+      const p = positionWorld, k = attribute('kerb', 'vec2');
       const grit = noise(vec2(p.x.add(p.y.mul(3)), p.z).mul(9)).mul(0.12);
-      // a joint every curbJoint m along it: the distance to the nearest, in m
-      const along = select(abs(p.x).greaterThan(hx), p.z, p.x);
-      const toJoint = float(0.5).sub(abs(fract(along.div(S.curbJoint)).sub(0.5))).mul(S.curbJoint);
-      const joint = float(1).sub(smoothstep(0.012, 0.03, toJoint));
-      return vec3(...S.curb).mul(float(0.92).add(grit)).mul(mix(float(1), float(0.5), joint));
+      // each piece a shade of its own, dark toward its seams and where it stands in the grass
+      const seam = mix(float(0.5), float(1), smoothstep(0.1, 1, k.x)), foot = mix(float(1 - S.curbShade), float(1), smoothstep(0, 0.14, p.y));
+      return vec3(...S.curb).mul(float(0.92).add(grit)).mul(k.y.mul(S.curbTone).add(1)).mul(seam).mul(foot);
     })();
-    const W = S.curbWidth, H = S.curbHeight;
-    const sides = [
-      [2 * (hx + W), W, 0, -(hz + W / 2)],          // the far side
-      [W, 2 * hz + W, -(hx + W / 2), -W / 2],       // left
-      [W, 2 * hz + W, hx + W / 2, -W / 2],          // right
-    ];
-    for (const [sx, sz, x, z] of sides) {
-      const body = this._add(new THREE.Mesh(new THREE.BoxGeometry(sx, H * 0.8, sz), curbMat.clone()));
-      body.position.set(x, H * 0.4, z);
-      const cap = this._add(new THREE.Mesh(new THREE.BoxGeometry(sx - (sx === W ? W * 0.3 : 0.04), H * 0.2, sz - (sz === W ? W * 0.3 : 0.04)), curbMat.clone()));
-      cap.position.set(x, H * 0.9, z);
+    this._add(new THREE.Mesh(geo, mat));
+  }
+
+  // grass tufts against the curb's outside (v65): one clump of tapering
+  // blades bent out from its middle, instanced along the curb, gathered at its
+  // corners and beside its near ends — never along the near side
+  _tufts(S, hx, hz) {
+    const U = S.tuft, W = S.curbWidth, rnd = seeded(2);
+    // the clump is made a metre tall and scaled to each tuft's height
+    const pos = [], uvs = [], idx = [];
+    for (let b = 0; b < U.blades; b++) {
+      // where it grows in the clump, which way it bends (out from the middle) and how far
+      const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * U.r, h = 0.55 + rnd() * 0.45, lean = U.bend * (0.4 + rnd() * 0.8);
+      const ox = Math.cos(a), oz = Math.sin(a), tw = (rnd() - 0.5) * 0.6, wx = -oz * Math.cos(tw) - ox * Math.sin(tw), wz = ox * Math.cos(tw) - oz * Math.sin(tw);
+      for (let r = 0; r <= 3; r++) {
+        const t = r / 3, hw = (U.w / 2) * (1 - 0.9 * t), bend = lean * t * t * h;
+        for (const sd of [-1, 1]) { pos.push(ox * d + wx * sd * hw + ox * bend, t * h, oz * d + wz * sd * hw + oz * bend); uvs.push((sd + 1) / 2, t); }
+      }
+      for (let r = 0; r < 3; r++) { const p = b * 8 + r * 2; idx.push(p, p + 1, p + 3, p, p + 3, p + 2); }
     }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 0.85, metalness: 0 });
+    mat.colorNode = mix(vec3(...U.lo), vec3(...U.hi), uv().y);   // dark at the root, light at the tip
+    // where: along the outside of the far curb and the two long ones, a few
+    // left out; three to a far corner; one beside each near end
+    const spots = [], off = () => U.out[0] + rnd() * (U.out[1] - U.out[0]);
+    const line = (len, put) => { const n = Math.floor(len / U.every); for (let i = 0; i < n; i++) if (rnd() > U.skip) put(-len / 2 + (i + 0.5 + (rnd() - 0.5) * 0.7) * (len / n), 0.8 + rnd() * 0.4); };
+    line(2 * (hx + W), (x, k) => spots.push([x, -(hz + W + off()), k]));
+    for (const sx of [-1, 1]) {
+      line(2 * hz + W, (z, k) => spots.push([sx * (hx + W + off()), z - W / 2, k]));
+      for (const [dx, dz, k] of [[0.15, 0.15, 1.35], [0.65, 0.05, 1.1], [0.05, 0.7, 1.15]]) spots.push([sx * (hx + W + dx), -(hz + W + dz), k]);
+      spots.push([sx * (hx + W * 0.4), hz + 0.25, 1.1]);
+    }
+    const inst = this._add(new THREE.InstancedMesh(geo, mat, spots.length));
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), t = new THREE.Vector3(), c = new THREE.Color();
+    spots.forEach(([x, z, k], i) => {
+      e.set(0, rnd() * Math.PI * 2, 0); q.setFromEuler(e);
+      const size = (U.h[0] + rnd() * (U.h[1] - U.h[0])) * k;
+      s.set(size, size, size); t.set(x, 0, z);
+      inst.setMatrixAt(i, m.compose(t, q, s));
+      const v = 0.85 + rnd() * 0.3;
+      inst.setColorAt(i, c.setRGB(v * (1 + (rnd() - 0.5) * 0.2), v, v * 0.9));
+    });
   }
 
   // ── world 3: the tunnel's walls and the bars across its ends ──
@@ -193,8 +322,7 @@ export class Scenery {
     }
 
     // the props: placed by a fixed hash, so a world stands the same every time
-    let seed = [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
-    const rnd = () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const rnd = seeded([...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7));
     const range = (v) => (Array.isArray(v) ? v[0] + rnd() * (v[1] - v[0]) : v);
     for (const P of S.props ?? []) {
       if (P.shape === 'pipe') { this._pipes(P, hx, hz); continue; }
@@ -255,23 +383,19 @@ export class Scenery {
     }
   }
 
-  // ── the drain that opens where world 2's boss went down ──
+  // ── the drain that opens where world 2's boss went down: the storm drain's
+  // grate (v65, the owner's sheet; it was a square of six bars), a round iron
+  // frame round rows of slots, set a little proud of the slab ──
   _drain() {
     const D = this.T.scenery.drain, g = new THREE.Group();
-    const iron = new THREE.MeshStandardNodeMaterial({ color: D.iron, roughness: 0.55, metalness: 0.7 });
-    const frame = new THREE.Mesh(new THREE.RingGeometry(D.r * 0.82, D.r, 4, 1).rotateX(-Math.PI / 2).rotateY(Math.PI / 4), iron);
-    frame.position.y = 0.02;
-    g.add(frame);
-    const slot = D.r * 1.15 / D.bars;
-    for (let i = 0; i < D.bars; i++) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(slot * 0.42, 0.05, D.r * 1.16), iron);
-      bar.position.set(-D.r * 0.575 + slot * (i + 0.5), 0.03, 0);
-      g.add(bar);
-    }
-    // the dark under the bars
-    const hole = new THREE.Mesh(new THREE.PlaneGeometry(D.r * 1.16, D.r * 1.16).rotateX(-Math.PI / 2), new THREE.MeshBasicNodeMaterial({ color: 0x020306 }));
-    hole.position.y = 0.012;
-    g.add(hole);
+    const mat = new THREE.MeshStandardNodeMaterial({ roughness: 0.55, metalness: 0.7 });
+    const c = (hex) => vec3(...new THREE.Color(hex).toArray());
+    mat.colorNode = Fn(() => {
+      const k = grate(vec2(positionLocal.x, positionLocal.z).div(D.r));
+      return mix(mix(c(D.iron), c(D.frame), k.z), c(D.slot), k.y);
+    })();
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(D.r, D.r * 1.04, 0.05, 48), mat);
+    g.add(disc);
     return g;
   }
 

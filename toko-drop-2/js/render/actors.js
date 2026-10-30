@@ -15,18 +15,18 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=64';
+import { TUNING } from '../tuning.js?v=65';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=64';
-import { LOOKS } from './looks/index.js?v=64';
-import { JellyBody } from './jelly.js?v=64';
-import { Juice } from './juice.js?v=64';
-import { ArenaLight } from './light.js?v=64';
-import { toSdf } from './sdf.js?v=64';
-import { PickupView } from './pickups.js?v=64';
-import { ChallengeView } from './challenge.js?v=64';
-import { Goo } from './goo.js?v=64';
-import { mult as heatMult } from '../sim/heat.js?v=64';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=65';
+import { LOOKS } from './looks/index.js?v=65';
+import { JellyBody } from './jelly.js?v=65';
+import { Juice } from './juice.js?v=65';
+import { ArenaLight } from './light.js?v=65';
+import { toSdf } from './sdf.js?v=65';
+import { PickupView } from './pickups.js?v=65';
+import { ChallengeView } from './challenge.js?v=65';
+import { Goo } from './goo.js?v=65';
+import { mult as heatMult } from '../sim/heat.js?v=65';
 
 const T = TUNING;
 const B = T.blob, D = T.death;

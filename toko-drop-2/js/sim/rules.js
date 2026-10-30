@@ -9,7 +9,7 @@
 //   ruleFire  { kind }          it comes
 // and `w.rule.dark` (0..1) for the view, which draws THE VOID's dark closing in.
 // Every number is TUNING.campaign.rules.
-import { TUNING } from '../tuning.js?v=64';
+import { TUNING } from '../tuning.js?v=65';
 
 const T = TUNING, R = T.campaign.rules;
 

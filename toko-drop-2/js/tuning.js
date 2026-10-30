@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=64';
-import WAVES from './tuning/waves.js?v=64';
-import PICKUPS from './tuning/pickups.js?v=64';
-import MUSIC from './tuning/music.js?v=64';
+import { SPECIES } from './tuning/species/index.js?v=65';
+import WAVES from './tuning/waves.js?v=65';
+import PICKUPS from './tuning/pickups.js?v=65';
+import MUSIC from './tuning/music.js?v=65';
 
 export const TUNING = {
   render: {
@@ -110,7 +110,16 @@ export const TUNING = {
     floor: {
       swirl: { falloff: 1.4, twist: 9, pull: 0.8 },
       concrete: { lo: [0.03, 0.031, 0.034], hi: [0.075, 0.074, 0.076], speck: [0.028, 0.028, 0.03], oil: [0.012, 0.012, 0.014], oilDepth: 0.45,
-                  lip: [0.11, 0.11, 0.11], joint: 4.0, jointW: 0.025, flood: 0.85, ambient: 0.6, floodTint: [1.0, 0.6, 0.25] },
+                  lip: [0.11, 0.11, 0.11], joint: 4.0, jointW: 0.025, flood: 0.85, ambient: 0.6, floodTint: [1.0, 0.6, 0.25],
+                  // v65 (the owner's world-2 sheet): hairline cracks, a few to a slab and faint
+                  // (the ice's lesson, v48: a texture under the fight, never lines across it):
+                  // cells `crackScale` to the m (how far a crack runs before it forks),
+                  // `crackJag` how jagged, `crackBreak` the scale they stop at, `crackPatch`
+                  // the scale of the slabs that have them, `crackW` m wide, `crackDepth` how dark
+                  crackScale: 0.6, crackJag: 0.07, crackBreak: 0.8, crackPatch: 0.2, crackW: 0.006, crackDepth: 0.45,
+                  // and the storm drain set in the slab, `at` m in from the far right corner
+                  // (x left, z toward you: clear of the HUD in the corner), `r` m across its frame
+                  grate: { at: [2.2, 5.5], r: 0.75, iron: [0.022, 0.023, 0.026], frame: [0.08, 0.08, 0.085], slot: [0.002, 0.002, 0.003] } },
       sewer: { stone: [0.034, 0.04, 0.046], groutCol: [0.007, 0.008, 0.01], water: [0.003, 0.011, 0.013], waterHi: [0.05, 0.17, 0.16],
                kerb: [0.06, 0.06, 0.062], channel: 2.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9 },
       // WORLDS · NEON (v23): the abstract floors
@@ -132,11 +141,24 @@ export const TUNING = {
   // what stands round a world's floor (render/scenery.js). Colours are
   // linear rgb; the lawn and the slab are pictures, the rest is lit.
   scenery: {
+    // v65 (the owner's world-2 module sheet): the curb in PIECES — a rounded top
+    // (`curbRound` m off each edge), `curbJoint` m long with a `curbGap` m seam
+    // between them, an L at each far corner with arms `curbArm` m along the
+    // slab, and a rounded end `curbNose` m long where it stops at the open near
+    // side; `curbTone` how much one piece differs from the next, `curbShade` how
+    // much darker it is where it meets the grass, and `curbShadow` the grass's
+    // shadow along it (`curbShadowW` m out). Grass TUFTS against it, thickest at
+    // the corners: one every `every` m (`skip` of them left out), `out` m past
+    // the curb, `h` m tall, of `blades` blades in a clump `r` × its height
+    // across, each `w` × its height wide and bent out `bend` × its height
     driveway: { lawnOut: 12, bladeScale: 11, tuftScale: 1.1, stripe: 1.8, grassLo: [0.035, 0.085, 0.04], grassHi: [0.09, 0.19, 0.07], fade: 8,
-                curb: [0.5, 0.5, 0.48], curbWidth: 0.4, curbHeight: 0.2, curbJoint: 2.4 },
+                curb: [0.5, 0.5, 0.48], curbWidth: 0.55, curbHeight: 0.34, curbRound: 0.12, curbJoint: 2.2, curbGap: 0.03, curbArm: 1.1, curbNose: 0.34,
+                curbTone: 0.08, curbShade: 0.35, curbShadow: 0.45, curbShadowW: 0.35,
+                tuft: { every: 3.2, skip: 0.3, out: [0.15, 1.2], h: [0.3, 0.6], blades: 30, r: 0.8, w: 0.15, bend: 0.35,
+                        lo: [0.03, 0.08, 0.03], hi: [0.16, 0.36, 0.1] } },
     sewer: { brick: [0.44, 0.15], brickColor: [0.3, 0.15, 0.11], mortar: [0.07, 0.07, 0.08], damp: 0.7, wallHeight: 1.2, wallThick: 0.6, beyond: 4,
              bar: 0x34383e, barR: 0.05, barGap: 0.42, barHeight: 1.7 },
-    drain: { r: 0.95, bars: 6, iron: 0x2a2d32 },
+    drain: { r: 0.95, iron: 0x2a2d32, frame: 0x484b52, slot: 0x020306 },
     // v43: round every other world's floor (render/scenery.js _surround). A
     // ground `out` m past the floor fading out over `fade` m (`line`/`cell`
     // draw a grid or traces on it), a glowing `edge` where the floor stops (the
