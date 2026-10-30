@@ -4,7 +4,7 @@
 // from, at least $114.5B and $110B, owed even if the computing goes unused. Two cut-card data-centre towers and one
 // card box; between each tower and the box a loop of dashed track: money goes down one side, and comes back up the
 // other. Frame 0: money bags already falling from the towers into the box; the end: the same money going round.
-// Fair on purpose: no wrongdoing is drawn or claimed; no real logo (Google and Amazon in plain type; no
+// Fair on purpose: no wrongdoing is drawn or claimed; no real logo (Google, Amazon and
 // Anthropic are plain type); every number is on a tag, as reported from the filing; nobody is drawn.
 // The disclosure (MADE WITH ANTHROPIC'S TOOLS) is the tag on the hook. Its wording is the owner's to approve.
 // Every scene is registered here ("scenes": [] in film.json). Times come from window.FILM_PLAN (pipeline/plan.mjs).
