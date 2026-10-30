@@ -649,3 +649,50 @@ Everything below comes from search summaries. No article was opened.
 - **GPU / DRAM:** still no October-dated item. The latest dated item is TrendForce (Jul): Q3 contract DRAM +13–18% QoQ,
   with Samsung seeking up to 20%. [EMSNow/TrendForce](https://www.emsnow.com/?p=55125)
 - **Big development:** none. The S-1 remains the one live AI-money record, still pending the primary.
+
+### Check Fri 30 Oct 07:16 (search summaries only; EDGAR still returns 403 through this session's proxy, so nothing was opened)
+- **12 The Supplier Invested (Anthropic's S-1): still NOT verified from the primary.**
+  - **The filing's URL is now known:** `sec.gov/Archives/edgar/data/0002130357/000162828026067168/anthropicpbc-sx1.htm`.
+    A direct fetch still fails (proxy CONNECT 403). `www.sec.gov` has to be allowed in the session's network settings.
+  - **Why the totals disagree, settled as far as summaries allow.** Outlets count different things:
+    - $245B: the filing's own "aggregate future minimum payment obligations" for new and amended compute and
+      infrastructure agreements, plus ~$21B of short-term non-cancellable contracts. Quoted in a search summary
+      attributed to the S-1; not opened.
+    - ~$417B: future obligations to providers.
+    - $518B: Reuters, 29 Sep, at least six partners, ~80% non-cancellable.
+    - $602B / $750B / $807B: including chip leases and other capacity.
+    - **No total goes on screen until the filing is read.** The per-provider minimums are the safer figures:
+      Google ≥ $114.5B (Apr 2026–Jul 2033; Reuters says $111.1B) and Amazon ≥ $110B (May 2026–Apr 2036), both
+      reported as owed regardless of use.
+  - **Stakes:** the S-1 reportedly says Amazon and Google will EACH hold more than 5% after conversion, in non-voting
+    Class N stock, and that Google's 2023/24 notes have fully converted. Amazon still holds notes, reportedly capped
+    at ~12%. **Still no exact percentage; none on screen.**
+  - **New quote attributed to the S-1** (Motley Fool, via summary): "We must grow our customer base and expand
+    revenue rapidly in order to generate the cash flows necessary to satisfy these commitments." Quote it only from
+    the filing.
+  - **Verdict unchanged:** the investor-is-also-the-landlord structure is consistent across named outlets; the
+    numbers are pending the filing; the disclosure rule applies.
+  - Sources: [Motley Fool, 29 Oct](https://www.fool.com/investing/2026/10/29/alphabet-amazon-spacex-microsoft-broadcom-and-amd/),
+    [Motley Fool, 26 Oct](https://www.fool.com/investing/2026/10/26/5-key-numbers-from-anthropic-s-s-1-filing/),
+    [Yahoo Finance](https://finance.yahoo.com/technology/ai/articles/anthropic-1-518-billion-commitment-165731037.html),
+    [9fin](https://www.9fin.com/insights/anthropic-s-1-revenue-gains-looming-infrastructure-bill),
+    [Benzinga](https://www.benzinga.com/markets/ipos/26/10/62609946/anthropics-ipo-filing-reveals-over-500-billion-ai-compute-spending-across-amzn-googl-msft-avgo-and-spcx-top-analyst-says-it-has-barely-started),
+    [EDGAR (not reachable)](https://www.sec.gov/Archives/edgar/data/0002130357/000162828026067168/anthropicpbc-sx1.htm)
+- **1 The Panel / Project Meridian:** no change since NPR, 6 Oct.
+  - All three are still the named leads: Gingrich; Musk, SpaceX's founder and CEO; Luckey, Anduril's co-founder.
+  - Both firms sell to the Pentagon: SpaceX's launches and satellites, and Anduril's contracts, including the Navy's
+    up to $2.9B on 6 Oct.
+  - Their status (special government employees or contractors) is still undisclosed; no recusal found.
+  - **v4's on-screen names and both captions are correct.**
+  - [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **Meta / Grassley:** still no published Meta reply to the 22 Jul letter (deadline was 4 Aug).
+  [Grassley letter](https://www.grassley.senate.gov/imo/media/doc/grassley_to_meta_-_wb_retaliation_cont.pdf)
+- **AI Whistleblower Protection Act (S. 1792):** no vote found.
+  - Deseret (25 Sep) reported a possible unanimous-consent push before the Senate's 2 Oct recess; the Senate returns
+    9 Nov.
+  - Re-check after 9 Nov.
+  - [Deseret](https://www.deseret.com/politics/2026/09/25/john-curtis-back-bill-protecting-ai-whistleblower/)
+- **5 Short Supply (DRAM):** nothing new in October.
+  - The latest step: on 22 Sep, the plaintiffs opposed the motion to dismiss (MLex).
+  - Micron denies the claims. No class is certified.
+  - [MLex](https://www.mlex.com/mlex/articles/2529683)

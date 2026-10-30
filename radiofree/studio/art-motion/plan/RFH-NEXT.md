@@ -282,3 +282,27 @@ All facts below come from search summaries; no article was opened.
 - **Finland:** no new HS candidate. Vaasa–Mustasaari stays Med-low; the Yle explainer's YVA detail needs the decision
   itself.
 - **No film needs a fix.**
+
+## Daily check, Fri 30 Oct 07:16 (morning; search summaries only)
+- **Global: no big development.**
+  - **Anthropic S-1 (candidate 12): still not verified from the primary.** The EDGAR URL is now known, but the proxy
+    returns 403.
+  - The different totals ($245B to $807B) come from outlets counting different things.
+  - The safest figures are the per-provider minimums: Google ≥ $114.5B and Amazon ≥ $110B, each owed regardless of use.
+  - Stakes: each above 5%, non-voting; no exact percentage.
+  - Not ready to pitch until the filing is read. The disclosure rule applies.
+- **The Panel v4 (names on screen): still accurate.**
+  - Gingrich, Musk and Luckey are still the named leads.
+  - Musk founded SpaceX; Luckey co-founded Anduril; both firms sell to the Pentagon.
+  - Status is still undisclosed; no recusal.
+  - **Waiting for the owner's approval.**
+- **Ends in 3:** no correction. Digit 5 is due **31 Oct (tomorrow)**, with suspension 72 h after, and digit 6 on
+  15 Nov. No new extension found. Re-check 31 Oct and 1 Nov.
+  [Milenio](https://www.milenio.com/comunidad/registro-linea-telefonica-calendario-oficial-nuevas-fechas)
+- **Break Glass:** keep held. No plenary result was found for the extension to end-2028; the constitutional law
+  committee sees no obstacle, and the five-sixths urgency vote is still to come.
+  [Kaleva](https://www.kaleva.fi/perustuslakivaliokunta-nayttaa-vihreaa-valoa-rajat/13712254)
+- **Count the Trees:** still right. **Trade Secret:** no follow-up.
+- **Finland:** no new HS candidate.
+- **AI Whistleblower Protection Act:** no vote found; the Senate is out until 9 Nov.
+- **No film needs a fix.**

@@ -503,3 +503,17 @@ Everything below comes from search summaries. No article was opened.
 - **Hamina / Trade Secret:** no follow-up found.
 - **Pattern note:** the second week after an HS story is quiet. Every live Finnish thread is waiting on an authority's
   formal step: the Ombudsman, the police, LVV's 5 Nov water plan. The next check that matters is 5–6 Nov.
+
+### Check Fri 30 Oct 07:16 (search summaries only; nothing opened)
+- **HS, last ~2 days:** no new HS candidate. Searches on HS + salattu / liikesalaisuus / datakeskus found nothing
+  dated 29–30 Oct.
+- **Muhos / Count the Trees: no new fact.**
+  - LVV's own police request (Kaleva 13720712, ~22 Oct) was logged before the film posted, as part of the same
+    picture. The police status is still an esiselvitys.
+  - LVV's water plan is due 5 Nov.
+  - **"Two requests filed with the police" stays right.**
+  - [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Hamina / Trade Secret:** no follow-up found.
+- **#1–#7:** nothing new found.
+- **Pattern note:** still the quiet second week. The next dated Finnish steps are LVV's water plan (5 Nov) and any
+  Ombudsman decision on Humppila.
