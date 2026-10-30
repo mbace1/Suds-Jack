@@ -138,3 +138,27 @@ review. Both are on the twice-daily check's watch list.
 - **Unchanged:** no figure and no face. Sources as before (OPB/NPR 6 Oct; Axios 30 Sep).
 - **The bell:** in front of the cards, on a camera this low, it hid the middle name. It stands just behind the middle
   card now, scaled up so its dome rises over the card.
+
+## v5 plan: a clear ending and full names (30 Oct)
+
+**Owner, 30 Oct:** "Panel messaging at end is still not clear. Please also use full names at some point. Plan this
+better."
+
+**What was unclear.** "The buyer asked the sellers for advice" makes a cold viewer solve two metaphors (who is the buyer?
+who are the sellers?) in the last second. The story has to say it in order: who leads the study; that two of them sell to
+the Pentagon; therefore sellers will advise their customer. Then one fact, on the tag.
+
+| beat | caption (en) | picture | tag |
+|---|---|---|---|
+| 1 setup | The Pentagon / wants a study of / the [future of war]. | The push over the felt to three empty chairs; three name cards. | PENTAGON STUDY · ANNOUNCED SEPT 2026 |
+| 2 evidence | Newt Gingrich, / Elon Musk and / Palmer Luckey / will [lead] it. | The three spots come on in turn; each name card lights with its chair. | none |
+| 3 evidence | Musk and Luckey / founded firms / that [sell] / to the Pentagon. | CONTRACTS folders rain onto the two founders' chairs; Gingrich's stays bare. | SPACEX · ANDURIL: DEFENCE CONTRACTS (NPR) |
+| 4 punchline | So two sellers / will [advise] / their customer. | The wide shot: the bell rings on "advise". | ETHICS RULES FOR THEM? NOT DISCLOSED |
+
+- **Full names:** in caption 2, and on every name card (first name small over the surname).
+- **Firms:** named on the tag in beat 3. Their founders are named in the caption.
+- **Post copy (280 chars):** ends on the question "Should sellers advise their customer?"
+- **Facts:** unchanged. The punchline is the station's line. The sellers are Musk and Luckey (their firms sell to the
+  Pentagon). The customer is the Pentagon. "Advise" fits because they lead its advisory study. No wrongdoing is claimed.
+- **Fit:** every line fits 800 px in en, fi and ja (pipeline pre-flight). fi and ja hold for 0.6 s and 1.2 s more on
+  beat 2.

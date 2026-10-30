@@ -1,6 +1,6 @@
 {
   "film": "the-panel",
-  "cut": "v4 (29 Oct): the three named, in the captions and on place cards; v3 orange light",
+  "cut": "v5 plan (30 Oct): full names on the cards and in caption 2; the firms named; a plain punchline",
   "series": "rfh",
   "captionSize": "big",
   "argument": "The Pentagon asked three people to lead a study of the future of war; two founded companies that sell to it, and the Pentagon has not said which ethics rules apply.",
@@ -36,8 +36,8 @@
       "until": "s3-0.3",
       "hold": "s3",
       "text": {
-        "en": "Gingrich, Musk / and Luckey / will [lead] it.",
-        "fi": "Sitä [johtavat] / Gingrich, Musk / ja Luckey.",
+        "en": "Newt Gingrich, / Elon Musk and / Palmer Luckey / will [lead] it.",
+        "fi": "Sitä [johtavat] / Newt Gingrich, / Elon Musk ja / Palmer Luckey.",
         "ja": "ギングリッチ、 / マスク、ラッキーの / [3人]が 率いる。"
       },
       "source": "Newt Gingrich, Elon Musk and Palmer Luckey are named as its three leaders (OPB/NPR 6 Oct; Axios 30 Sep). v4 (owner, 29 Oct: \"The panel video needs to mention the people\"): named on screen, in the caption and on a place card in front of each empty chair. Still no faces."
@@ -49,8 +49,8 @@
       "until": "s4-0.3",
       "hold": "s4",
       "text": {
-        "en": "Musk and Luckey / founded firms / that [sell] to it.",
-        "fi": "Musk ja Luckey / perustivat yhtiöt, / jotka [myyvät] sille.",
+        "en": "Musk and Luckey / founded firms / that [sell] / to the Pentagon.",
+        "fi": "Musk ja Luckey / perustivat yhtiöt, / jotka [myyvät] / Pentagonille.",
         "ja": "マスクとラッキーは / 国防総省に [売る] / 会社の 創業者。"
       },
       "source": "Musk founded SpaceX (launches, satellites for the Pentagon); Luckey co-founded Anduril (defence systems). NPR (6 Oct) reports a former senior Defense official noting both have billions of dollars in current defence contracts. 'Sell to it', not 'sell it weapons': SpaceX's sales are launch and satellite services. 'Founded', not 'run': Luckey is Anduril's founder, not its CEO."
@@ -62,11 +62,11 @@
       "until": "end-0.6",
       "hold": "end",
       "text": {
-        "en": "The buyer asked / the sellers / for [advice].",
-        "fi": "Ostaja kysyi / myyjiltä / [neuvoa].",
-        "ja": "買い手が 売り手に / [助言を] 求めた。"
+        "en": "So two sellers / will [advise] / their customer.",
+        "fi": "Kaksi myyjää / [neuvoo] nyt / asiakastaan.",
+        "ja": "売り手 2人が / 顧客に [助言]する。"
       },
-      "source": "The station's line. The buyer: the Pentagon, which buys from SpaceX and Anduril. The sellers: two of its three study leads. The advice: the study. No claim of wrongdoing; the tag beside it is the fact: the Pentagon has not said whether Musk and Luckey are special government employees or contractors, which decides which federal ethics law applies (OPB/NPR 6 Oct)."
+      "source": "The station's line, v5 (owner, 30 Oct: the v4 ending 'The buyer asked the sellers for advice' was not clear). Sellers: Musk and Luckey, whose firms SpaceX and Anduril sell to the Pentagon (caption 3). Customer: the Pentagon. Advise: they lead its study, whose stated job is advisory (the domains the military must win and the capabilities it must master; not policy). No claim of wrongdoing; the tag beside it is the fact: the Pentagon has not said which ethics rules apply (OPB/NPR 6 Oct)."
     }
   ],
   "ui": {
@@ -91,14 +91,14 @@
       "ja": "国防総省の研究 · 2026年9月発表"
     },
     "tag2": {
-      "en": "DEFENCE CONTRACTS · AS REPORTED BY NPR",
-      "fi": "PUOLUSTUSSOPIMUKSET · NPR:N MUKAAN",
-      "ja": "防衛契約 · NPR報道"
+      "en": "SPACEX · ANDURIL: DEFENCE CONTRACTS (NPR)",
+      "fi": "SPACEX · ANDURIL: PUOLUSTUSSOPIMUKSIA (NPR)",
+      "ja": "SpaceX・Anduril：防衛契約（NPR報道）"
     },
     "tag3": {
-      "en": "WHICH ETHICS RULES APPLY? NOT DISCLOSED",
-      "fi": "MITKÄ EETTISET SÄÄNNÖT PÄTEVÄT? EI KERROTTU",
-      "ja": "どの倫理規則が適用？ 非公表"
+      "en": "ETHICS RULES FOR THEM? NOT DISCLOSED",
+      "fi": "HEIDÄN EETTISET SÄÄNNÖT? EI KERROTTU",
+      "ja": "2人の倫理規則は？ 非公表"
     },
     "name0": {
       "en": "MUSK",
@@ -114,10 +114,25 @@
       "en": "LUCKEY",
       "fi": "LUCKEY",
       "ja": "ラッキー"
+    },
+    "first0": {
+      "en": "ELON",
+      "fi": "ELON",
+      "ja": "イーロン"
+    },
+    "first1": {
+      "en": "NEWT",
+      "fi": "NEWT",
+      "ja": "ニュート"
+    },
+    "first2": {
+      "en": "PALMER",
+      "fi": "PALMER",
+      "ja": "パーマー"
     }
   },
   "post": {
-    "en": "The Pentagon asked three people to lead a 120-day study of the future of war: Newt Gingrich, Elon Musk and Palmer Luckey. Two of them founded companies that sell to the Pentagon. It hasn't said which ethics rules apply to them. Who advises the buyer?",
+    "en": "The Pentagon asked three people to lead a 120-day study of the future of war: Newt Gingrich, Elon Musk and Palmer Luckey. Musk and Luckey founded SpaceX and Anduril, which sell to the Pentagon. It hasn't said which ethics rules apply to them. Should sellers advise their customer?",
     "fi": "Pentagon pyysi kolmea johtamaan 120 päivän selvitystä sodan tulevaisuudesta: Newt Gingrich, Elon Musk ja Palmer Luckey. Kaksi heistä perusti yhtiöt, jotka myyvät Pentagonille. Mitkä eettiset säännöt heitä koskevat, sitä Pentagon ei ole kertonut. Kuka neuvoo ostajaa?",
     "ja": "国防総省は、120日間の戦争の未来の研究を3人に率いさせる。ニュート・ギングリッチ、イーロン・マスク、パーマー・ラッキー。うち2人は国防総省に売る会社の創業者。どの倫理規則が適用されるかは非公表。買い手に助言するのは誰？"
   }

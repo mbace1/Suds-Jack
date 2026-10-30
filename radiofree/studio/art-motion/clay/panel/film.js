@@ -184,18 +184,20 @@ const NCARDS = PANEL.map((c, k) => {
   const a = -Math.PI / 2 + [-0.34, 0, 0.34][k] * 0.6, R = 122, g = new THREE.Group(); scene.add(g);   // drawn in toward the middle, so the close shots never crop an end card
   g.position.set(Math.cos(a) * R, TY, Math.sin(a) * R); g.rotation.y = Math.atan2(-g.position.x, -g.position.z);
   const tilt = new THREE.Group(); g.add(tilt); tilt.rotation.x = -0.16;
-  mesh0(lumpy(new RoundedBoxGeometry(22, 8, 1.2, 2, 0.35), 0.04, 0.6, 450 + k), C('#e9e2d0', { rough: 0.8, thumbCell: 2.5, mottle: 0.05 }), { pos: [0, 4, 0], parent: tilt });
-  const can = canvas(640, 228), tx = tex(can);
-  const lab = mesh0(new THREE.PlaneGeometry(20.6, 7.3), new THREE.MeshBasicMaterial({ map: tx, toneMapped: false, transparent: true }), { pos: [0, 4, 0.65], parent: tilt, cast: false });
+  mesh0(lumpy(new RoundedBoxGeometry(22, 10, 1.2, 2, 0.35), 0.04, 0.6, 450 + k), C('#e9e2d0', { rough: 0.8, thumbCell: 2.5, mottle: 0.05 }), { pos: [0, 5, 0], parent: tilt });
+  const can = canvas(640, 284), tx = tex(can);
+  const lab = mesh0(new THREE.PlaneGeometry(20.6, 9.15), new THREE.MeshBasicMaterial({ map: tx, toneMapped: false, transparent: true }), { pos: [0, 5, 0.65], parent: tilt, cast: false });
   return { g, can, tx, lab };
 });
-function drawNameCards() {
-  NCARDS.forEach((n, k) => { const g = n.can.getContext('2d'), w = n.can.width, h = n.can.height, txt = P_UI['name' + k] || '';
+function drawNameCards() {   // v5 (owner, 30 Oct: "use full names"): the first name small over the surname
+  NCARDS.forEach((n, k) => { const g = n.can.getContext('2d'), w = n.can.width, h = n.can.height, first = P_UI['first' + k] || '', txt = P_UI['name' + k] || '';
     g.clearRect(0, 0, w, h); g.fillStyle = '#ece6d6'; g.fillRect(0, 0, w, h);
     g.strokeStyle = '#1e1a18'; g.lineWidth = 8; g.strokeRect(14, 14, w - 28, h - 28);
-    let fs = LANG === 'ja' ? 104 : 132; const fam = LANG === 'ja' ? 'NotoSansJP-800' : 'Anton-400';
-    g.font = `${LANG === 'ja' ? '800 ' : ''}${fs}px ${fam}`; while (g.measureText(txt).width > w - 80 && fs > 40) { fs -= 4; g.font = `${LANG === 'ja' ? '800 ' : ''}${fs}px ${fam}`; }
-    g.fillStyle = '#1e1a18'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, w / 2, h / 2 + 6); n.tx.needsUpdate = true; });
+    const fam = LANG === 'ja' ? 'NotoSansJP-800' : 'Anton-400', wt = LANG === 'ja' ? '800 ' : '';
+    const fit = (t, fs) => { g.font = `${wt}${fs}px ${fam}`; while (g.measureText(t).width > w - 80 && fs > 30) { fs -= 4; g.font = `${wt}${fs}px ${fam}`; } };
+    g.fillStyle = '#1e1a18'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    fit(first, LANG === 'ja' ? 54 : 64); g.fillText(first, w / 2, 76);
+    fit(txt, LANG === 'ja' ? 100 : 128); g.fillText(txt, w / 2, 182); n.tx.needsUpdate = true; });
 }
 
 // ------------------------------------------------------------------ haze: the ring light's beam, the chair spots' cones, dust
@@ -261,10 +263,10 @@ const SHOT = [
     cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 33, 18], [0, 34, -8], k)).add(drift(t, 0.4)), at: V([0, 103, -190]), fov: 72 }; } },
   { // 2 · the three, square on; their spots come on in turn
     t0: () => T.s2, t1: () => T.s3,
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 40, 10], [0, 42, -14], k)).add(drift(t, 0.4)), at: V([0, 103, -190]), fov: 70 }; } },
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([0, 40, 10], [0, 42, -14], k)).add(drift(t, 0.4)), at: V([0, 112, -190]), fov: 70 }; } },   // v5: aimed higher, so a four-line caption clears the board
   { // 3 · the towers: a little left and low, so both stacks and the tumbling folders read against the dark
     t0: () => T.s3, t1: () => T.s4,
-    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-36, 38, 16], [-30, 40, -6], k)).add(drift(t, 0.4)), at: V([0, 101, -188]), fov: 72 }; } },
+    cam(t, lt, d) { const k = ease.io(lt / d); return { pos: V(lerp3([-36, 38, 16], [-30, 40, -6], k)).add(drift(t, 0.4)), at: V([0, 106, -188]), fov: 72 }; } },   // v5: a touch higher, so "to the Pentagon." clears the title; not so high the cards meet the tag
   { // 4 · up and back: the ring, the round table, two orange towers and one bare chair, the room falling away into dark
     t0: () => T.s4, t1: () => T.end,
     cam(t, lt, d) { const k = ease.io(lt / (d - 0.8)); return { pos: V(lerp3([0, 52, 20], [0, 100, 180], k)).add(drift(t)), at: V(lerp3([0, 104, -180], [0, 120, -140], k)), fov: lerp(74, 80, k) }; } },
