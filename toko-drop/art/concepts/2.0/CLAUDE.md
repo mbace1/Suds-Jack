@@ -43,3 +43,11 @@ All of these are concept drafts only — Mikael rejected for mesh (31 Oct):
 2. Do **not** mesh hose, hydrant, sidewalk, fence, cone, hero, cubes, or anything under `elements/` or `modules/` until marked APPROVED.  
 3. Do **not** use Midori Edition / 4.0 Drive kit as 2.0.  
 4. No World 1 neon drafts; no social posts.
+
+## Style instructions (art direction)
+
+`STYLE_INSTRUCTIONS.jpg` — camera, scale, hero eyes, summer, materials, do-not list. Follow for any new concept work. Still **not** a mesh source by itself.
+
+## Pending concepts (awaiting Mikael approval)
+
+`world-2/pending/` — hose/spigot, sidewalk/drain, hero+cubes (+ module refreshes). **Do not mesh.**
