@@ -19,6 +19,18 @@
     Never `--no-verify`.
 -->
 
+## v63 — 2026-10-30
+**PLAY RECORD measures the phone: every room and run says how the phone ran it, and how the flicks read**
+- The scorecard's A10 (runs well and controls well on real phones) waited on a device measurement; a person's play record is one now. `js/meter.js` keeps a histogram of a run's frame intervals while playing (a tenth of a millisecond a bin; past 100 ms the slow frames' own mean) and the game time they moved, at no cost worth measuring. Each entry carries `f`: the median and 95th percentile frame in ms, the share of frames late (past one and a half refreshes), the refresh (the fastest 5% of frames, as `?fps` reads it) and the game's speed (under 1, the phone could not keep up); and `dv`, the phone in a few words: its kind, the canvas and pixel ratio, WebGPU or WebGL 2, the gel style, the goo.
+- On touch the entry counts the aim stick's let-gos as js/flick.js read them (`fl`): flicks that dashed, NEAR flicks (fast somewhere in the stroke, but slowed before the lift or too short: no dash), plain let-gos and taps — the flicks a thumb meant and the reader did not take.
+- OPTIONS → PLAY RECORD has a row of its own and a line for the last run: "last run: 60 Hz · 1.4% frames late", with "· game at 0.9×" when the phone could not keep up, in all three languages. (The panel already scrolled on a 375 × 667 phone, 32 px; it scrolls 75.)
+- `scripts/record.mjs` reads it: THE PHONE, per phone the frame median and 95th, the late frames, the refresh and the lowest game speed, flagging a stutter (more than 1 frame in 20 late), a game that slowed and a phone held to 30 Hz; and the aim stick's let-gos, flagging near flicks at a fifth or more of the fast strokes (the flick's floors may sit high for that thumb, TUNING.input.flick).
+- Headless Chromium on SwiftShader, a software GPU at about two frames a second, reads `[487, 487, 86.4, 60, 0.18]`: a machine that cannot keep up reads as one.
+- Tests: test/record.mjs (32: the meter on a 60 Hz phone, a 120 Hz one, one that cannot keep up and one with every frame slow (a frame over 100 ms is late on any screen); the phone in a few words; the entry's new fields, and none when there is nothing to say), test/hero.mjs (a fast stroke too short to dash counts as a near flick; the counts start again with each run).
+- Cache tokens `?v=62` → `?v=63`; HUD label → `2.0 · v63`
+
+---
+
 ## v62 — 2026-10-29
 **HARDCADE gives a life back at every world's door, up to three**
 - Owner, 2026-10-29: "Give back a life per world in Hardcade". Measured world by world (docs/CURVE.md), HARDCADE gave no lives back and a good player's run mostly ended in world 3: the good bot walked into the sewer with about one life and got through it 17% of the time.

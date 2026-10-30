@@ -31,8 +31,8 @@
 // world, because only it knows where the camera is. `dash` is false, true
 // (a button: 1.x's own dash) or a flick's gesture { kind: 'flick', sL, sV,
 // dirX, dirY }, its direction in screen axes too.
-import { TUNING } from './tuning.js?v=62';
-import { analyseTouch } from './flick.js?v=62';
+import { TUNING } from './tuning.js?v=63';
+import { analyseTouch } from './flick.js?v=63';
 
 const I = TUNING.input;
 // the standard Gamepad mapping, bound as 1.x bound it (input.js:135-150)
@@ -44,6 +44,7 @@ export class Input {
     this.left = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0, hist: [], wander: 0 };
     this.right = { active: false, id: null, ox: 0, oy: 0, dx: 0, dy: 0, hist: [], wander: 0 };
     this.lastGesture = null;     // the aim stick's last let-go as flick.js read it (the ?fps readout, the tests)
+    this.resetCounts();
     this.keys = new Set();
     this.mouse = { x: 0, y: 0, down: false, seen: false };
     this.pad = { mx: 0, my: 0, ax: 0, ay: 0 };
@@ -93,6 +94,12 @@ export class Input {
     target.addEventListener('contextmenu', (e) => { if (this.enabled) e.preventDefault(); });   // the right button is a trigger in play
   }
 
+  // the aim stick's let-gos since the run began, as flick.js read them, for the
+  // play record (v63): a NEAR flick was fast somewhere in its stroke and did
+  // not dash (it slowed before the lift, or was short) — the flicks a thumb
+  // meant and the reader did not take
+  resetCounts() { this.letGos = { flick: 0, near: 0, release: 0, tap: 0 }; }
+
   _release(s) { s.active = false; s.id = null; s.dx = 0; s.dy = 0; s.hist = []; s.wander = 0; }
 
   // keys, buttons and sticks let go of; a stick let go of this way is no dash
@@ -138,6 +145,7 @@ export class Input {
     g.lenPx = g.L * I.stickRadius; g.pxPerMs = (g.V * I.stickRadius) / 1000;   // for the ?fps readout, in the units a thumb knows
     if (g.kind === 'tap' && s.wander > F.tapPx) g.kind = 'release';
     this.lastGesture = g;
+    this.letGos[g.kind === 'release' && g.V >= F.peakFloor ? 'near' : g.kind]++;
     if (g.kind === 'flick' || (g.kind === 'tap' && F.tap)) this._dash = g.kind === 'flick' ? g : true;
   }
 

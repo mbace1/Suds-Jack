@@ -16,6 +16,9 @@
 // k keys and mouse), or the screen (l landscape, p portrait). A room or a run
 // left from the pause menu is kept too: a room as o: 'quit' with no grade, a
 // run with q: 1 — where a person stops is not where they lose.
+// Since v63 both say how the phone ran it (js/meter.js): f [p50, p95 ms,
+// late frames %, refresh Hz, game speed], dv the phone in a few words, and on
+// touch fl [flicks, near flicks, let-gos, taps], the aim stick's let-gos.
 // Pure: the store is handed in (main.js's), no DOM, no clock but the date given.
 
 const KEY = 'toko2.record', HEAD = 'TOKO DROP 2.0 · PLAY RECORD';
@@ -42,9 +45,12 @@ export const stamp = (d) => `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d
 
 // the entry for a finished attempt (or, `quit`, one left from the pause
 // menu): `w` the sim's world, `mode` the run's, `lost` the lives it lost as
-// [wave, what], `how` { input, screen, date }
+// [wave, what], `how` { input, screen, date, and since v63 frames (a Meter's
+// summary), device, letGos (input.js's counts) }
 export function entryFor(w, mode, lost, how, quit = false) {
-  const base = { v: VERSION, at: stamp(how.date), i: how.input?.[0] ?? '?', or: how.screen === 'portrait' ? 'p' : 'l' };
+  const G = how.letGos, fl = G ? [G.flick, G.near, G.release, G.tap] : null;
+  const base = { v: VERSION, at: stamp(how.date), i: how.input?.[0] ?? '?', or: how.screen === 'portrait' ? 'p' : 'l',
+    ...(how.frames ? { f: how.frames } : {}), ...(how.device ? { dv: how.device } : {}), ...(fl?.some((n) => n > 0) ? { fl } : {}) };
   const R = w.roomResult, h = w.room?.hard ? 1 : 0;
   if (R) return { k: 'r', id: R.id, h, g: R.grade, s: R.score, o: R.outcome, y: R.why ?? null, t: R.time, x: R.hits, kl: R.kills, ...base };
   if (w.room) return { k: 'r', id: w.room.id, h, g: null, s: w.score, o: 'quit', y: null, t: Math.round((w.dir?.t ?? w.time) * 10) / 10, x: w.hits || 0, kl: w.kills, ...base };
@@ -56,6 +62,9 @@ export function pack(list, date) {
   const rooms = list.filter((e) => e.k === 'r').length, runs = list.length - rooms;
   return `${HEAD}\n${rooms} rooms · ${runs} arcade runs · v${VERSION} · ${stamp(date)}\n${JSON.stringify({ v: VERSION, runs: list })}`;
 }
+
+// the newest entry's frames (OPTIONS shows how the last run went on this phone)
+export const lastFrames = (list) => { for (let i = list.length - 1; i >= 0; i--) if (list[i].f) return list[i].f; return null; };
 
 // …and reading it back (scripts/record.mjs): the JSON after the two lines,
 // whatever a chat did to the lines around it
