@@ -75,5 +75,6 @@ Approval of the three v2 drafts (Tailgated, Per Caller, That's a Wednesday): Mik
 
 ## Waiting
 
+- Toko set film 3, Five Is the New Fifty (v2, 28 Oct), was shelved by the owner on 30 Oct (glitches; quality mediocre).
 - Genius, The Newsreader Was Fake, Doodle 3 (Irreversible, 18 Oct), Nordic 2 (The Scoreboard, 18 Oct) and Secret Inquiry (Doodle 7 draft, 27 Oct: too close to Count the Trees and Trade Secret) were scrapped.
 - ~~Grok Bot: delete the duplicate Committee of the Whole post on RFH X (owner OK, 18 Oct; link above).~~ Done: deleted 18 Oct (per Grok Bot).

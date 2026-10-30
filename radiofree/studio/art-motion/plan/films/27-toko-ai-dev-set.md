@@ -278,3 +278,11 @@ designer slogan should be 'Build faster, but don't forget the fun'." "Both have 
   - The keeper lifted before his paddles reached it and floated beside his face. The paddles reach it first now, and
     it waits on the desk beside the laptop on his side (v1 had it in front of the lid, so the lift had to hop it).
   - In shot 4 the box sat so far to the side that his arm stretched like a noodle; it rests nearer now.
+
+## Five Is the New Fifty: SHELVED (owner, 30 Oct)
+
+**Owner, 30 Oct:** "Five is ok, but has glitches and otherwise quality is mediocre, so not approved". Then, on the rework plan:
+"didn't we already agree to shelf?" Shelved, like Secret Inquiry.
+- **Kept, not deleted:** the code (`clay/fivefifty/`) and the v2 render (`previews/28-10-Toko-Five-Is-the-New-Fifty-v2-en.mp4`).
+- **The lesson for the set:** a film that builds its point out of many small flying parts reads as glitches at phone
+  size. Keep each beat to one big, close, readable action.
