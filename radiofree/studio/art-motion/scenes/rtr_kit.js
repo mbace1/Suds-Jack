@@ -58,7 +58,7 @@
   function stampMark(c, text, x, y, { k = 1, sc = 1, rot = -0.2, size = 92 } = {}) {
     if (k <= 0) return; const kk = ease.out(clamp(k, 0, 1)), s = sc * lerp(1.9, 1, kk);
     c.save(); c.translate(x, y); c.rotate(rot); c.scale(s, s); c.globalAlpha = clamp(k * 3, 0, 1) * 0.92;
-    fitFont(c, text, size, 420, `400 $px "Anton-400", ${JP}`); const tw = c.measureText(text).width, fs = parseFloat(c.font), w = tw + 60, h = fs + 50;
+    fitFont(c, text, size, 230, `400 $px "Anton-400", ${JP}`); const tw = c.measureText(text).width, fs = parseFloat(c.font), w = tw + 60, h = fs + 50;   // narrow enough for KÄYTTÄMÄTTÄ on a tower
     c.strokeStyle = C.stamp; c.lineWidth = 8; c.beginPath(); c.roundRect(-w / 2, -h / 2, w, h, 12); c.stroke();
     c.lineWidth = 3; c.beginPath(); c.roundRect(-w / 2 + 12, -h / 2 + 12, w - 24, h - 24, 6); c.stroke();
     c.fillStyle = C.stamp; c.textAlign = 'center'; c.fillText(text, 0, fs * 0.36);
