@@ -30,7 +30,7 @@ Folder: `world-2/elements/`
 
 Scale: hero/enemies are Micro Machines tiny vs props. Camera: ~30° top-down isometric twin-stick.
 
-Hero: white gel dome/blob; eyes a bit more defined (readable dots/shapes, not soft closed curves).
+Hero: white gel dome/blob; eyes = Japanese Kirby style — elongated black oval dots with a small white highlight circle.
 
 ## World progression (context, not art)
 
