@@ -1,0 +1,52 @@
+{
+ "kind": "engine",
+ "engine": "gyh",
+ "bpm": 140,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/gyh_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  {
+   "id": "gyh_hook",
+   "beats": 9,
+   "cues": {
+    "four": "word:pop"
+   }
+  },
+  {
+   "id": "gyh_task",
+   "beats": 11,
+   "cues": {
+    "slide": 0.1,
+    "mark": "word:pop"
+   }
+  },
+  {
+   "id": "gyh_critic",
+   "beats": 10,
+   "cues": {
+    "flip": 0.15,
+    "red": "word:pop"
+   }
+  },
+  {
+   "id": "gyh_end",
+   "beats": 17,
+   "cues": {
+    "ticks": 0.35,
+    "grade": "word:pop",
+    "stamp": 2.6,
+    "disclose": 4.6
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}

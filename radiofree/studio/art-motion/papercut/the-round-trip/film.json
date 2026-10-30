@@ -1,0 +1,59 @@
+{
+ "kind": "engine",
+ "engine": "rtr",
+ "bpm": 140,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/bdf_kit.js",
+  "scenes/rtr_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  {
+   "id": "rtr_hook",
+   "beats": 8,
+   "cues": {
+    "drop": "word:pop"
+   }
+  },
+  {
+   "id": "rtr_owe",
+   "beats": 9,
+   "cues": {
+    "file": 0.2,
+    "chips": "word:pop"
+   }
+  },
+  {
+   "id": "rtr_sum",
+   "beats": 10,
+   "cues": {
+    "iou1": "word:pop",
+    "iou2": "line:3.start"
+   }
+  },
+  {
+   "id": "rtr_idle",
+   "beats": 9,
+   "cues": {
+    "dark": 0.3,
+    "stamp": "word:pop"
+   }
+  },
+  {
+   "id": "rtr_end",
+   "beats": 18,
+   "cues": {
+    "back": "word:pop",
+    "clip": 6.4
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}

@@ -1,0 +1,167 @@
+{
+  "film": "grade-your-own-homework",
+  "cut": "RFH Brink/Coxon, VIRAL CUT v1 stills (30 Oct). Pentagon frontier-AI contracts ask the four AI companies to forecast the risks of their own models. A contract folder stamped PENTAGON; four contracts (LAB A-D, no names); the clause RISK FORECASTING · THREAT IDEATION highlighted; the page becomes an exam the company marks itself: ticks, A+, SELF-GRADED. Disclosure tag at the end: made with Anthropic's tools, Anthropic is one of the four.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "The Pentagon's July 2025 frontier-AI contracts (up to $200M each, four companies) ask each company to forecast the risks of its own AI; critics, among them the AI Now Institute, call relying on vendors to assess their own products a conflict of interest.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
+  },
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "The Pentagon / bought AI from / [four] companies.",
+        "fi": "Pentagon osti / tekoälyä / [neljältä] yhtiöltä.",
+        "ja": "国防総省は [4社]から / AIを 購入。"
+      },
+      "source": "CDAO release (ai.mil, July 2025) and DefenseScoop 14 Jul 2025: contracts with a ceiling of up to $200M each to Anthropic, Google, OpenAI and xAI, to develop agentic AI workflows. 'Bought AI' = contracts for AI prototypes and services; the ceiling is a maximum, not a confirmed payout (tag says UP TO). Breaking Defense dates OpenAI's award a month earlier (June 2025); the tag says JULY 2025, as The Intercept and most coverage do."
+    },
+    {
+      "id": "task",
+      "role": "evidence",
+      "at": "s2+0.15",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Each must / [forecast] the risks / of its own AI.",
+        "fi": "Kunkin pitää / [ennustaa] oman / tekoälynsä riskit.",
+        "ja": "各社は 自社AIの / リスクを [予測]する。"
+      },
+      "source": "The Intercept, 8 Sep 2026 (theintercept.com/2026/09/08/military-ai-weapons-contracts-openai-anthropic-google/), from 400+ pages obtained in a FOIA lawsuit: the contracts require each company to supply 'risk forecasting' and 'threat ideation' on dangers its own future products might pose. Multiple outlets carrying the story agree (IBTimes, AI Weekly, heise). Verified from search summaries only; the article itself was not opened (no fetch tool in this session). DoD and OpenAI say certain OpenAI pages (the 'minimal refusal rates' wording) were drafts incorrectly provided; that dispute is not about this clause and the film does not use those pages."
+    },
+    {
+      "id": "critic",
+      "role": "evidence",
+      "at": "s3+0.15",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "Critics call it / a conflict / of [interest].",
+        "fi": "Kriitikoiden / mukaan se on / [eturistiriita].",
+        "ja": "批判派は / [利益相反]と 指摘。"
+      },
+      "source": "Heidy Khlaaf, AI Now Institute (chief AI scientist), quoted by The Intercept and in AI Now's own press note (ainowinstitute.org/news/press/ai-giants-work-hand-in-hand-with-the-pentagon-contracts-reveal): relying on the vendors to assess their own products' risks is a conflict of interest. A paraphrase: no quote marks on screen. 'Critics' (plural) because the tag names one: AI Now; other watchdogs have pressed for oversight (Warren letters, Jul 2026)."
+    },
+    {
+      "id": "end",
+      "role": "punchline",
+      "at": "s4+0.25",
+      "until": "end-1.1",
+      "hold": "end",
+      "text": {
+        "en": "They grade / their own / [homework].",
+        "fi": "Ne tarkastavat / itse omat / [läksynsä].",
+        "ja": "自分の [宿題]を / 自分で 採点。"
+      },
+      "source": "The station's line: the companies forecast the risks of their own products for the buyer (caption 2). A metaphor, not a claim about grades or scores in the contracts."
+    }
+  ],
+  "ui": {
+    "folder": {
+      "en": "PENTAGON · AI CONTRACTS",
+      "fi": "PENTAGON · TEKOÄLYSOPIMUKSET",
+      "ja": "国防総省 · AI契約"
+    },
+    "lab": {
+      "en": "AI LAB",
+      "fi": "YHTIÖ",
+      "ja": "AI企業"
+    },
+    "contract": {
+      "en": "CONTRACT · UP TO $200M",
+      "fi": "SOPIMUS · ENINTÄÄN 200 M$",
+      "ja": "契約 · 最大2億ドル"
+    },
+    "tag1": {
+      "en": "JULY 2025 · UP TO $200M EACH",
+      "fi": "HEINÄKUU 2025 · ENINTÄÄN 200 M$ KUKIN",
+      "ja": "2025年7月 · 各最大2億ドル"
+    },
+    "clause": {
+      "en": "RISK FORECASTING · THREAT IDEATION",
+      "fi": "RISKIENNUSTEET · UHKIEN IDEOINTI",
+      "ja": "リスク予測 · 脅威の想定"
+    },
+    "tag2": {
+      "en": "CONTRACTS WON IN A FOIA LAWSUIT · THE INTERCEPT",
+      "fi": "SOPIMUKSET JULKI TIETOPYYNTÖKANTEELLA · THE INTERCEPT",
+      "ja": "情報公開訴訟で開示 · The Intercept"
+    },
+    "tag3": {
+      "en": "CRITIC: AI NOW INSTITUTE",
+      "fi": "KRIITIKKO: AI NOW INSTITUTE",
+      "ja": "批判：AI Now Institute"
+    },
+    "exam": {
+      "en": "EXAM: HOW RISKY IS YOUR OWN AI?",
+      "fi": "KOE: KUINKA RISKIALTIS ON OMA TEKOÄLYSI?",
+      "ja": "試験：自社AIの危険度は？"
+    },
+    "grade": {
+      "en": "A+",
+      "fi": "10+",
+      "ja": "A+"
+    },
+    "stamp": {
+      "en": "SELF-GRADED",
+      "fi": "ITSE ARVIOITU",
+      "ja": "自己採点"
+    },
+    "disclose": {
+      "en": "MADE WITH ANTHROPIC'S TOOLS · ANTHROPIC IS ONE OF THE FOUR",
+      "fi": "TEHTY ANTHROPICIN TYÖKALUILLA · ANTHROPIC ON YKSI NELJÄSTÄ",
+      "ja": "Anthropicのツールで制作 · Anthropicは4社の1つ"
+    },
+    "student": {
+      "en": "STUDENT:",
+      "fi": "OPPILAS:",
+      "ja": "受験者："
+    },
+    "marker": {
+      "en": "MARKED BY:",
+      "fi": "ARVIOIJA:",
+      "ja": "採点者："
+    },
+    "labFmt": {
+      "en": "AI LAB {L}",
+      "fi": "YHTIÖ {L}",
+      "ja": "{L}社"
+    }
+  },
+  "props": {
+    "folder": {
+      "en": "PENTAGON · AI CONTRACTS",
+      "why": "the four contracts are the Pentagon's (CDAO awards); a manila folder, illustrative"
+    },
+    "labs": {
+      "en": "AI LAB A / B / C / D (no names, no logos, all four alike)",
+      "why": "the contracts are the subject; one of the four is the maker of the tools making this film, so all four are treated alike and none is named on screen"
+    },
+    "clause": {
+      "en": "RISK FORECASTING · THREAT IDEATION (the clause heading only; the rest of the page is blank lines)",
+      "why": "the two terms are the contract's own words as reported by The Intercept; no other text is quoted"
+    },
+    "exam": {
+      "en": "an exam sheet the company's own hand marks: ticks, A+, a SELF-GRADED stamp",
+      "why": "the station's metaphor for self-assessment, said as a metaphor in caption 4"
+    }
+  },
+  "post": {
+    "en": "Pentagon AI deals with OpenAI, Anthropic, Google and xAI (up to $200M each) ask each to forecast the risks of its own AI, per contracts The Intercept won in a FOIA suit. Critics call it a conflict of interest. Made with Anthropic's tools; Anthropic is one of the four. Who checks?",
+    "fi": "Pentagonin tekoälysopimukset OpenAI:n, Anthropicin, Googlen ja xAI:n kanssa (enintään 200 M$) vaativat kutakin ennustamaan oman tekoälynsä riskit (The Intercept). Kriitikot puhuvat eturistiriidasta. Tehty Anthropicin työkaluilla; Anthropic on yksi neljästä. Kuka tarkastaa?",
+    "ja": "国防総省のAI契約（OpenAI、Anthropic、Google、xAI、各最大2億ドル）は、各社に自社AIのリスク予測を求める。The Interceptが情報公開訴訟で入手した文書による。批判派は利益相反と指摘。本作はAnthropicのツールで制作。Anthropicは4社の1つ。誰が確かめる？"
+  }
+}
