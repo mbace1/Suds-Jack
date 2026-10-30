@@ -1,0 +1,59 @@
+{
+ "kind": "engine",
+ "engine": "ssu",
+ "bpm": 140,
+ "fps": 30,
+ "libs": [
+  "scenes/rfa_kit.js",
+  "scenes/toko_master.js",
+  "scenes/rfm_kit.js",
+  "scenes/rfp_kit.js",
+  "scenes/rfp_clean.js",
+  "scenes/ssu_kit.js"
+ ],
+ "scenes": [],
+ "shots": [
+  {
+   "id": "ssu_hook",
+   "beats": 9,
+   "cues": {
+    "flip": "word:pop"
+   }
+  },
+  {
+   "id": "ssu_ai",
+   "beats": 9,
+   "cues": {
+    "carts": 0.1,
+    "ai": "word:pop"
+   }
+  },
+  {
+   "id": "ssu_suit",
+   "beats": 9,
+   "cues": {
+    "doc": 0.1,
+    "stamp": "word:pop"
+   }
+  },
+  {
+   "id": "ssu_dismiss",
+   "beats": 9,
+   "cues": {
+    "motion": 0.15,
+    "cal": 1.0,
+    "thud": "word:pop"
+   }
+  },
+  {
+   "id": "ssu_end",
+   "beats": 15,
+   "cues": {
+    "pay": "word:pop",
+    "back": 5.6
+   }
+  }
+ ],
+ "quiet": [],
+ "keep": []
+}

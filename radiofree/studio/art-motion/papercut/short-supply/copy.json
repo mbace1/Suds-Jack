@@ -1,0 +1,164 @@
+{
+ "film": "short-supply",
+ "cut": "Global 3 draft v1 (30 Oct): VIRAL cut from its first version. A graphics card on a store shelf, $570 in June, $805 in August; memory carted off from the DRAM works to an AI data centre; a lawsuit alleges the shortage was planned (stamped ALLEGED); the makers ask the court to dismiss it, hearing 13 Nov; back on the shelf, the receipt prints $805; the clipping turns back to June: loop.",
+ "series": "rfh",
+ "captionSize": "big",
+ "argument": "A graphics card rose from $570 to $805 in two months as memory makers moved to AI chips; a lawsuit alleges the shortage was planned, and the makers ask the court to dismiss it.",
+ "langs": [
+  "en",
+  "fi",
+  "ja"
+ ],
+ "native_read": {
+  "en": true,
+  "fi": false,
+  "ja": false
+ },
+ "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+ "captions": [
+  {
+   "id": "price",
+   "role": "setup",
+   "at": "s1",
+   "until": "s2-0.3",
+   "hold": "s2",
+   "text": {
+    "en": "A graphics card: / $570 in June, / [$805] in August.",
+    "fi": "Näytönohjain: / 570 $ kesäkuussa, / [805 $] elokuussa.",
+    "ja": "グラフィックボード / 6月は 570ドル、 / 8月は [805ドル]。"
+   },
+   "source": "Tom's Hardware's Newegg tracking, Aug 2026, as reported by TweakTown, PCGamesN, Digital Citizen and VGTimes (the Tom's Hardware original not opened): the US Newegg median price of the RTX 5060 Ti 16GB rose from $569.99 in June 2026 to $804.99 in August 2026; NVIDIA's list prices did not change; Tom's Hardware attributed the rise to memory demand outstripping supply, driven by AI. Rounded to $570 and $805 on screen. The card is named on the clipping."
+  },
+  {
+   "id": "ai",
+   "role": "evidence",
+   "at": "s2+0.15",
+   "until": "s3-0.3",
+   "hold": "s3",
+   "text": {
+    "en": "Memory makers / moved production / to [AI] chips.",
+    "fi": "Muistitehtaat / siirtyivät / [tekoälysiruihin].",
+    "ja": "メモリ各社は / 生産を [AI]向けへ。"
+   },
+   "source": "Samsung, SK hynix and Micron have shifted DRAM capacity to high-bandwidth memory (HBM) for AI accelerators, which earns higher margins (trade reporting through 2026: Network World on Samsung's warning; TrendForce; Tom's Hardware's attribution of the GPU price rise). The class action itself describes the shift to HBM (and calls it a pretext; that is the allegation in caption 3, not this one)."
+  },
+  {
+   "id": "suit",
+   "role": "evidence",
+   "at": "s3+0.15",
+   "until": "s4-0.3",
+   "hold": "s4",
+   "text": {
+    "en": "A lawsuit alleges / the shortage / was [planned].",
+    "fi": "Kanteen mukaan / pula oli / [suunniteltu].",
+    "ja": "訴訟は 品不足が / [計画的]だったと 主張。"
+   },
+   "source": "Garciaguirre et al. v. Samsung Electronics Co. et al., No. 3:26-cv-06345 (or 5:26-cv-06345), N.D. Cal., filed 25 June 2026 (CourtListener and PacerMonitor dockets; Tom's Hardware, TrendForce, PC Gamer, Quartz): 17 individuals and small businesses ALLEGE that Samsung, SK hynix and Micron coordinated to restrict conventional DRAM supply and that the HBM shift was a pretext, citing a roughly 700% rise over four years. Allegations only, unproven. 'Planned' is the plain word for the complaint's 'coordinated restriction of supply'."
+  },
+  {
+   "id": "dismiss",
+   "role": "evidence",
+   "at": "s4+0.15",
+   "until": "s5-0.3",
+   "hold": "s5",
+   "text": {
+    "en": "The makers / ask the court / to [dismiss] it.",
+    "fi": "Valmistajat / pyytävät oikeutta / [hylkäämään] sen.",
+    "ja": "メーカー側は / 訴えの [却下]を 求める。"
+   },
+   "source": "The CourtListener docket for 3:26-cv-06345 (search summary, not opened): Micron, SK hynix and the Samsung entities filed a motion to dismiss; plaintiffs opposed; defendants replied on 7 Oct; the hearing was reset to 13 Nov 2026, 9:00, San Jose, before Judge Noël Wise. Micron, in a statement to Moneywise: it competes vigorously, fairly and in compliance with all applicable laws, and will defend itself against the claims (paraphrase, not quoted). Samsung and SK hynix: no public comment found; SK hynix disclosed the suit in its amended F-1."
+  },
+  {
+   "id": "pay",
+   "role": "punchline",
+   "at": "s5+0.3",
+   "until": "end-0.7",
+   "hold": "end",
+   "text": {
+    "en": "Planned or not, / you pay [$805].",
+    "fi": "Tahallaan tai ei, / maksat [805 $].",
+    "ja": "意図的でも なくても / 払うのは [805ドル]。"
+   },
+   "source": "The station's line. 'Planned or not' keeps the allegation open: the court has not ruled. '$805' is the August median from caption 1."
+  }
+ ],
+ "ui": {
+  "clipLabelA": {
+   "en": "GRAPHICS CARD · JUNE 2026",
+   "fi": "NÄYTÖNOHJAIN · KESÄKUU 2026",
+   "ja": "グラフィックボード · 2026年6月"
+  },
+  "clipLabelB": {
+   "en": "GRAPHICS CARD · AUGUST 2026",
+   "fi": "NÄYTÖNOHJAIN · ELOKUU 2026",
+   "ja": "グラフィックボード · 2026年8月"
+  },
+  "clipSub": {
+   "en": "RTX 5060 TI 16GB · NEWEGG MEDIAN (TOM'S HARDWARE)",
+   "fi": "RTX 5060 TI 16GB · NEWEGGIN MEDIAANI (TOM'S HARDWARE)",
+   "ja": "RTX 5060 Ti 16GB · Newegg中央値（Tom's Hardware）"
+  },
+  "aiTag": {
+   "en": "MEMORY LINES MOVED TO AI MEMORY (HBM)",
+   "fi": "MUISTILINJAT SIIRTYIVÄT AI-MUISTIIN (HBM)",
+   "ja": "メモリ生産は AI用（HBM）へ"
+  },
+  "aiSign": {
+   "en": "AI",
+   "fi": "AI",
+   "ja": "AI"
+  },
+  "suitTag": {
+   "en": "CLASS ACTION · N.D. CALIFORNIA · FILED 25 JUNE 2026",
+   "fi": "RYHMÄKANNE · KALIFORNIA · JÄTETTY 25.6.2026",
+   "ja": "集団訴訟 · カリフォルニア北部地裁 · 2026年6月25日"
+  },
+  "alleged": {
+   "en": "ALLEGED",
+   "fi": "VÄITE",
+   "ja": "主張"
+  },
+  "dismissTag": {
+   "en": "MICRON DENIES THE CLAIMS · HEARING 13 NOV 2026",
+   "fi": "MICRON KIISTÄÄ · KÄSITTELY 13.11.2026",
+   "ja": "マイクロンは否定 · 審理は11月13日"
+  },
+  "calMonth": {
+   "en": "NOV",
+   "fi": "MARRAS",
+   "ja": "11月"
+  },
+  "calNote": {
+   "en": "HEARING",
+   "fi": "KÄSITTELY",
+   "ja": "審理"
+  }
+ },
+ "props": {
+  "box": {
+   "en": "16GB · GRAPHICS CARD (a generic box: no maker's logo)",
+   "why": "the card is named on the clipping; the box is illustrative"
+  },
+  "dram": {
+   "en": "DRAM (the factory's sign)",
+   "why": "a technical term, the same in every language"
+  },
+  "complaint": {
+   "en": "UNITED STATES DISTRICT COURT · NORTHERN DISTRICT OF CALIFORNIA · CLASS ACTION COMPLAINT · Case No. 3:26-cv-06345",
+   "why": "an American court paper, in its own language; the body lines are blank"
+  },
+  "motion": {
+   "en": "MOTION TO DISMISS",
+   "why": "the defendants' filing, in its own language; the body lines are blank"
+  },
+  "receipt": {
+   "en": "GRAPHICS CARD 16GB · TOTAL $805.00",
+   "why": "a US store's receipt, in its own language and currency"
+  }
+ },
+ "post": {
+  "en": "A graphics card went from $570 to $805 in two months (US median, RTX 5060 Ti 16GB). Memory makers moved production to AI chips. A lawsuit alleges the shortage was planned; the makers ask the court to dismiss it. Hearing: 13 Nov. What did your last upgrade cost?",
+  "fi": "Näytönohjain nousi kahdessa kuukaudessa 570 dollarista 805 dollariin (USA:n mediaani, RTX 5060 Ti 16GB). Muistitehtaat siirtyivät tekoälysiruihin. Kanne väittää pulan olleen suunniteltu; valmistajat pyytävät hylkäämään sen. Käsittely 13.11. Paljonko viimeisin päivityksesi maksoi?",
+  "ja": "グラフィックボードが2か月で570ドルから805ドルに（米国中央値、RTX 5060 Ti 16GB）。メモリ各社は生産をAI向けへ。訴訟は品不足が計画的だったと主張し、メーカー側は却下を求めている。審理は11月13日。最後のアップグレード、いくらだった？"
+ }
+}
