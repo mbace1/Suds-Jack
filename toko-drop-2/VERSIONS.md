@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v64 — 2026-10-30
+**PLAY RECORD copies inside itch's frame too**
+- Getting the itch build ready (v63's zip, checked in an itch-style frame on another site) turned up that OPTIONS → PLAY RECORD could not copy there: a game on itch runs in a frame from another site, and inside such a frame the clipboard API is blocked unless the frame is allowed `clipboard-write`. With itch's allow list it threw "blocked because of a permissions policy", and the record fell through to a downloaded file, which on a phone is a long way round to a message. Measured with a real tap: in a frame without `clipboard-write` the API fails and the older copy command (`execCommand('copy')`) works; with it, both work.
+- `shareRecord` (main.js) now tries the copy command when the API fails, before the share sheet and the file. On the arcade's own page nothing changes: the API works there as before.
+- `scripts/itch-check.mjs` hands the record over from inside the frame: the room it plays leaves an entry, a real tap (a mouse event at the button, as a finger is) on OPTIONS → PLAY RECORD copies it, and the host page reads the clipboard back. Checked both ways: the v63 build fails it (the button says SAVED AS A FILE, the clipboard is empty), this one passes. (Two traps in the harness, not the game: the campaign grid a room's result opens builds after its levels load and can replace OPTIONS a moment later; and a headless window is smaller than the 960 × 540 frame, so scrolling a button into view scrolls the host page too, and a tap must be placed where the frame sits now.)
+- meter.js: a comment said `drop %` for what the record calls the late share.
+- Cache tokens `?v=63` → `?v=64`; HUD label → `2.0 · v64`
+
+---
+
 ## v63 — 2026-10-30
 **PLAY RECORD measures the phone: every room and run says how the phone ran it, and how the flicks read**
 - The scorecard's A10 (runs well and controls well on real phones) waited on a device measurement; a person's play record is one now. `js/meter.js` keeps a histogram of a run's frame intervals while playing (a tenth of a millisecond a bin; past 100 ms the slow frames' own mean) and the game time they moved, at no cost worth measuring. Each entry carries `f`: the median and 95th percentile frame in ms, the share of frames late (past one and a half refreshes), the refresh (the fastest 5% of frames, as `?fps` reads it) and the game's speed (under 1, the phone could not keep up); and `dv`, the phone in a few words: its kind, the canvas and pixel ratio, WebGPU or WebGL 2, the gel style, the goo.

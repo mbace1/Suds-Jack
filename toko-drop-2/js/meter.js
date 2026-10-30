@@ -40,7 +40,7 @@ export class Meter {
     return this.slow / this.h[BINS];
   }
 
-  // [p50, p95, drop %, hz, sim] for the record, or null for fewer than
+  // [p50, p95, late %, hz, sim] for the record, or null for fewer than
   // `least` frames (a run left in its first second says nothing)
   summary(least = 60) {
     if (this.n < least) return null;

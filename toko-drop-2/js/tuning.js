@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=63';
-import WAVES from './tuning/waves.js?v=63';
-import PICKUPS from './tuning/pickups.js?v=63';
-import MUSIC from './tuning/music.js?v=63';
+import { SPECIES } from './tuning/species/index.js?v=64';
+import WAVES from './tuning/waves.js?v=64';
+import PICKUPS from './tuning/pickups.js?v=64';
+import MUSIC from './tuning/music.js?v=64';
 
 export const TUNING = {
   render: {

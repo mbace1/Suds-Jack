@@ -7,33 +7,33 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=63';
-import { buildFloor } from './render/floor.js?v=63';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=63';
-import * as worldsSim from './sim/worlds.js?v=63';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=63';
-import * as reshapeSim from './sim/reshape.js?v=63';
-import { Scenery } from './render/scenery.js?v=63';
-import { Transit } from './render/transit.js?v=63';
-import { Splats } from './render/splats.js?v=63';
-import { Actors } from './render/actors.js?v=63';
-import { GEL_TIME } from './render/gel.js?v=63';
-import { studioEnvironment } from './render/env.js?v=63';
-import { Specimen } from './render/specimen.js?v=63';
-import { createWorld, step, api as simApi } from './sim/world.js?v=63';
-import { stage as stagePk } from './sim/pickups.js?v=63';
-import { Input } from './input.js?v=63';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=63';
-import { Announcer } from './announcer.js?v=63';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=63';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=63';
-import { Sound } from './audio.js?v=63';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=63';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=63';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=63';
-import { Readout } from './readout.js?v=63';
-import { Meter, device } from './meter.js?v=63';
-import * as record from './record.js?v=63';
+import { TUNING } from './tuning.js?v=64';
+import { buildFloor } from './render/floor.js?v=64';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=64';
+import * as worldsSim from './sim/worlds.js?v=64';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=64';
+import * as reshapeSim from './sim/reshape.js?v=64';
+import { Scenery } from './render/scenery.js?v=64';
+import { Transit } from './render/transit.js?v=64';
+import { Splats } from './render/splats.js?v=64';
+import { Actors } from './render/actors.js?v=64';
+import { GEL_TIME } from './render/gel.js?v=64';
+import { studioEnvironment } from './render/env.js?v=64';
+import { Specimen } from './render/specimen.js?v=64';
+import { createWorld, step, api as simApi } from './sim/world.js?v=64';
+import { stage as stagePk } from './sim/pickups.js?v=64';
+import { Input } from './input.js?v=64';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=64';
+import { Announcer } from './announcer.js?v=64';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=64';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=64';
+import { Sound } from './audio.js?v=64';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=64';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=64';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=64';
+import { Readout } from './readout.js?v=64';
+import { Meter, device } from './meter.js?v=64';
+import * as record from './record.js?v=64';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -295,12 +295,26 @@ const refreshMenu = () => (ui.inOptions ? ui.openOptions() : showTitle(true));
 // PLAY RECORD (OPTIONS, v61): the record as text a person can paste into a
 // message — the clipboard first, else the phone's share sheet, else a file
 let lost = [], recordSaid = null;
+// the copy command the clipboard API replaced: inside another site's frame the
+// API is blocked unless that frame is allowed clipboard-write, and itch's frame
+// is not (v64, measured in scripts/itch-check.mjs); this one needs only the tap
+function copyByCommand(text) {
+  const t = document.createElement('textarea');
+  t.value = text; t.readOnly = true; t.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+  document.body.append(t); t.select(); t.setSelectionRange(0, text.length);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch { /* no copy command here */ }
+  t.remove();
+  return ok;
+}
 async function shareRecord() {
   const list = record.read(store);
   if (!list.length) { recordSaid = 'recordEmpty'; refreshMenu(); return; }
   const text = record.pack(list, new Date());
-  try { await navigator.clipboard.writeText(text); recordSaid = 'recordCopied'; }
-  catch {
+  let copied = false;
+  try { await navigator.clipboard.writeText(text); copied = true; } catch { copied = copyByCommand(text); }
+  if (copied) recordSaid = 'recordCopied';
+  else {
     try { await navigator.share({ title: 'Toko Drop 2.0 · play record', text }); recordSaid = 'recordShared'; }
     catch (e) {
       if (e?.name === 'AbortError') recordSaid = null;   // the share sheet was closed
@@ -494,7 +508,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=63`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=64`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
