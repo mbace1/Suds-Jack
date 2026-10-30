@@ -30,3 +30,17 @@ More concepts and meshes are coming from Grok (owner, 2026-10-30). For meshes:
 GLB is the easiest to bring in (three's own GLTF loader would be vendored with
 the rest of three); eyes as separate parts, so they can follow the hero; a few
 thousand triangles each is plenty at the play camera's distance.
+
+## concept-yela-orange.jpg
+
+The owner's design sheet for two cubes (shared 2026-10-30), set against the
+game as it is:
+
+- **YELA CUBE**: a yellow cube with a drip, its notes "slime trail" and
+  "diagonal movement", drawn stepping corner to corner across a grid. The game
+  has the slime trail (sim/species/yela.js, from 1.x); its tumble runs on the
+  four straight axes only, where the sheet moves it on the diagonals.
+- **ORANGE CUBE**: "row shots", red shots laid in rows. The game's ORANGE lays
+  a wall of 6 to 12 parallel shots on the compass heading nearest you, and
+  tumbles freely, diagonals included.
+- The hero, a white drop, at the sheet's left edge.
