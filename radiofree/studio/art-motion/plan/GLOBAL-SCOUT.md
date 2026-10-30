@@ -696,3 +696,40 @@ Everything below comes from search summaries. No article was opened.
   - The latest step: on 22 Sep, the plaintiffs opposed the motion to dismiss (MLex).
   - Micron denies the claims. No class is certified.
   - [MLex](https://www.mlex.com/mlex/articles/2529683)
+
+### Check Fri 30 Oct 17:16 (search summaries only; EDGAR still fails with a proxy CONNECT 403, so nothing was opened)
+- **12 The Supplier Invested (Anthropic's S-1): still NOT verified from the primary.**
+  - **Microsoft's minimum is settled as far as summaries allow.** GeekWire, writing on the filing, gives the
+    per-provider minimums as Google ≥ $114.5B, Amazon ≥ $110.0B and Microsoft ≥ $44.9B, payable "regardless of actual
+    usage". Reuters' earlier $31B was based on a draft.
+  - **Stakes:** the filing gives no ownership percentages for Amazon, Google or Microsoft (GeekWire; Khaleej
+    Times/Reuters). Amazon's notes carry a 12% cap that Amazon can waive.
+  - **Totals:** the $637B figure circulating is an analyst's own arithmetic, not the filing's. Still, no total goes on
+    screen.
+  - **Verdict unchanged:** pending the filing; the disclosure rule applies.
+  - [GeekWire](https://www.geekwire.com/2026/whos-getting-anthropics-compute-spending-ipo-filing-shows-where-the-tech-giants-really-stand),
+    [Khaleej Times/Reuters](https://www.khaleejtimes.com/business/anthropic-ipo-prospectus-lays-bare-deep-dependence-on-big-tech-partners),
+    [ppc.land](https://ppc.land/amazon-google-and-microsoft-hold-269bn-of-anthropic-compute-contracts/)
+- **1 The Panel / Project Meridian: no change since NPR, 6 Oct. Every v5 line re-checked against NPR:**
+  - Gingrich is a former House Speaker, Musk is SpaceX's CEO (and founder), and Luckey is Anduril's co-founder.
+  - Both men have billions of dollars in current defence contracts, via a former senior DoD official in NPR. That
+    supports "SPACEX · ANDURIL: DEFENCE CONTRACTS (NPR)".
+  - The study "could also shape the types of munitions the U.S. buys". That supports "So two sellers will advise their
+    customer."
+  - Their SGE or contractor status is still undisclosed, and that decides which ethics law applies. That supports
+    "ETHICS RULES FOR THEM? NOT DISCLOSED".
+  - No recusal found. The DoD's only line is still that MITRE does the analysis, with conflict-of-interest safeguards.
+  - [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/)
+- **Meta / Grassley:** still no published Meta reply to the 22 Jul letter (its deadline was 4 Aug).
+  [Grassley letter](https://www.grassley.senate.gov/imo/media/doc/grassley_to_meta_-_wb_retaliation_cont.pdf)
+- **NDA bans, new and dated (single advocacy source):** the Sierra Club's New Jersey chapter reports that a bill
+  ending municipal data-centre NDAs passed a NJ Senate committee (post dated Oct 2026). Get the legislature's own bill
+  record before using it.
+  [Sierra Club NJ](https://www.sierraclub.org/new-jersey/blog/2026/10/data-center-transparency-bill-eliminating-ndas-municipalities-passes-senate)
+- **Pentagon lab contracts:** no new round found; the CDAO's up-to-$200M awards to Anthropic, Google, OpenAI and xAI
+  (2025) are still the record.
+- **AI money / circular deals:** nothing dated 29–30 Oct found.
+- **5 Short Supply (DRAM):** nothing new; the class action (N.D. Cal. 3:26-cv-06345, filed 25 Jun) is pending, with
+  the allegations unproven.
+- **AI Whistleblower Protection Act:** no vote; the Senate returns 9 Nov.
+- **Big development:** none.

@@ -306,3 +306,30 @@ All facts below come from search summaries; no article was opened.
 - **Finland:** no new HS candidate.
 - **AI Whistleblower Protection Act:** no vote found; the Senate is out until 9 Nov.
 - **No film needs a fix.**
+
+## Daily check, Fri 30 Oct 17:16 (evening; search summaries only)
+- **Global: no big development.**
+  - **Anthropic S-1:** still not verified from the primary; EDGAR is still blocked (proxy 403).
+    - GeekWire's per-provider minimums: Google ≥ $114.5B, Amazon ≥ $110.0B, Microsoft ≥ $44.9B, payable regardless
+      of usage.
+    - The filing gives no ownership percentages.
+    - Not ready to pitch.
+  - **NDA bans, new:** the Sierra Club NJ chapter reports that a NJ Senate committee passed a bill ending municipal
+    data-centre NDAs. One advocacy source; get the bill record first.
+- **The Panel v5 plan: every line re-checked against NPR (6 Oct), all correct.**
+  - Gingrich, Musk and Luckey are the leads.
+  - Musk founded SpaceX and Luckey co-founded Anduril. Both have billions in current defence contracts.
+  - The study could shape which munitions the US buys.
+  - Their status is still undisclosed, with no recusal.
+  - **Waiting for the owner's approval of the plan.**
+- **Toko 6, Needs a Designer:** nothing drastic. It posts tonight.
+- **Ends in 3:** no correction.
+  - Digit 5 is due **31 Oct (tomorrow)**, with suspension 72 h after. No extension found; the authorities say there
+    are no extra extensions, though lines can be recovered after suspension.
+  - Re-check 1 Nov.
+  - [Excélsior](https://www.excelsior.com.mx/nacional/calendario-prorroga-registro-lineas-celulares-mexico),
+    [N+](https://www.nmas.com.mx/sociedad/cuando-suspenden-tu-linea-si-tu-numero-termina-4-5-nuevas-fechas-registro-estos-usuarios/)
+- **Break Glass:** keep held. No plenary result was found for the extension to end-2028.
+- **Count the Trees:** still right. **Trade Secret:** no follow-up.
+- **Finland:** no new HS candidate.
+- **No film needs a fix.**

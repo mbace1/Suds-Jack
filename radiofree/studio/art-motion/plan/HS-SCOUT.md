@@ -517,3 +517,26 @@ Everything below comes from search summaries. No article was opened.
 - **#1–#7:** nothing new found.
 - **Pattern note:** still the quiet second week. The next dated Finnish steps are LVV's water plan (5 Nov) and any
   Ombudsman decision on Humppila.
+
+### Check Fri 30 Oct 17:16 (search summaries only; nothing opened)
+- **HS, last ~2 days:** no new candidate. Searches on HS + salattu / liikesalaisuus / datakeskus / "viranomainen salasi"
+  found nothing dated 29–30 Oct.
+- **Muhos / Count the Trees: no new fact.**
+  - The police esiselvitys (IL, via Kaleva) and LVV's own investigation request are both still open, with no outcome
+    reported.
+  - LVV's water plan is due 5 Nov.
+  - **"Two requests filed with the police" stays right.**
+  - [Kaleva](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712)
+- **Hamina / Trade Secret:** no follow-up found.
+- **"Ground Broken" (Vaasa–Mustasaari, Microsoft) · *Yle* · Med-low, unchanged.**
+  - Microsoft's own project page still says both permit applications are "in process". The page looks stale against
+    the 16 Sep Mustasaari approval logged earlier.
+  - Its 13 Jul construction update points to Destia's pre-construction at Tuotantotie 15.
+  - Yle: the regional environmental unit wanted a full YVA, and the project did not get one. Acid sulfate soils are the
+    main risk.
+  - Still needs the decision documents.
+  - [Microsoft local](https://local.microsoft.com/communities/emea/suomidc/), [Yle](https://yle.fi/a/74-20232883)
+- **#1–#7:** nothing new found.
+- **Reactions:** no visible comment counts through search for any thread.
+- **Pattern note:** still the quiet second week. The next dated steps are LVV's water plan (5 Nov) and the Ombudsman
+  on Humppila.
