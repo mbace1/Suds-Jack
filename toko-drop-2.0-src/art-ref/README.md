@@ -1,5 +1,10 @@
 # art-ref — reference art
 
+**How to use it (owner, 2026-10-30): as mood art and design, not as a style to
+copy.** The game keeps its own look (its worlds, its gels, its light); what
+these give is the mood (playful, the arena as a toy, the giant blobs watching)
+and the designs (what each body does: YELA's trail, ORANGE's rows of shots).
+
 Reference art for Toko Drop's look. Never shipped: the game, the Pages deploy
 and the itch zip copy only `index.html`, `js/`, `vendor/` and `levels/`, and the
 commit hook does not count this folder as game files.
