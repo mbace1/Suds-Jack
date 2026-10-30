@@ -1,13 +1,15 @@
-# Toko Drop 2.0 — Mesh brief
+# Mesh brief
 
-## Mesh NOW — approved only
+## Materials → LOOK.md
 
-Source: `world-2/02-curb-lawn-modules-APPROVED.png`
+Not cel-shaded. Jelly/gel + simple readable lighting. Watercolor sheets = geo reference only.
 
-Straight / corner / open-end curb, grass corner tuft, lawn strip, concrete cracks, storm drain. Arena layout = guide, not a mesh.
+## Mesh NOW
 
-Scales: `curbWidth 0.4`, `curbHeight 0.2`, `curbJoint 2.4`, `lawnOut 12` in `TUNING.scenery.driveway`.
+`world-2/02-curb-lawn-modules-APPROVED.png` — curb / grass / lawn / cracks / drain.
 
-## Everything else
+Scales: `curbWidth 0.4`, `curbHeight 0.2`, `curbJoint 2.4`, `lawnOut 12`.
 
-`world-2/elements/` and `world-2/modules/` are **not approved**. Do not mesh. Wait for sheets marked APPROVED.
+## Do not mesh
+
+`elements/`, `modules/`, `pending/` until APPROVED.
