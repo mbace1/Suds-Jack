@@ -1,10 +1,10 @@
 // THE KIT for "The Round Trip" (RFH global/Coxon): the papercut box in CLEAN LIGHT (rfp_clean.js), made by the pipeline,
 // a VIRAL cut from its first version (plan/films/33-the-round-trip.md). Anthropic's IPO filing (S-1, public 26 Oct 2026):
-// two of its investors, Doodle (the house parody of Google) and Amazon, are also the suppliers it must buy computing
+// two of its investors, Google and Amazon (owner, 30 Oct: the real name, not the Doodle parody), are also the suppliers it must buy computing
 // from, at least $114.5B and $110B, owed even if the computing goes unused. Two cut-card data-centre towers and one
 // card box; between each tower and the box a loop of dashed track: money goes down one side, and comes back up the
 // other. Frame 0: money bags already falling from the towers into the box; the end: the same money going round.
-// Fair on purpose: no wrongdoing is drawn or claimed; no real logo (Doodle's wordmark is the parody's, Amazon and
+// Fair on purpose: no wrongdoing is drawn or claimed; no real logo (Google and Amazon in plain type; no
 // Anthropic are plain type); every number is on a tag, as reported from the filing; nobody is drawn.
 // The disclosure (MADE WITH ANTHROPIC'S TOOLS) is the tag on the hook. Its wording is the owner's to approve.
 // Every scene is registered here ("scenes": [] in film.json). Times come from window.FILM_PLAN (pipeline/plan.mjs).
@@ -97,8 +97,8 @@
       g.fillStyle = C.roof; g.fillRect(x - 14, TY0 - 26, w + 28, 30);
       for (let i = 0; i < 4; i++) { g.fillStyle = C.towerD; g.fillRect(x + 20 + i * 60, TY0 - 52, 40, 26); }
       g.fillStyle = C.plate; g.beginPath(); g.roundRect(x + 18, TY0 + 28, w - 36, 74, 8); g.fill();
-      if (t.key === 'doodle') BDF.doodleLogo(g, x + w / 2, TY0 + 84, 50, { align: 'center' });
-      else { g.fillStyle = C.ink; g.font = '400 56px "Anton-400"'; g.textAlign = 'center'; g.fillText(ui('amazon', 'AMAZON'), x + w / 2, TY0 + 86); }
+      // owner, 30 Oct: "use Google" (the real name, plain type like Amazon's, no logo; not the Doodle parody)
+      g.fillStyle = C.ink; g.font = '400 56px "Anton-400"'; g.textAlign = 'center'; g.fillText(t.key === 'doodle' ? ui('google', 'GOOGLE') : ui('amazon', 'AMAZON'), x + w / 2, TY0 + 86);
       // the server floors: rows of racks with small lights
       const r = U.rng(t.x);
       for (let row = 0; row < 8; row++) for (let col = 0; col < 4; col++) {
@@ -253,7 +253,7 @@
     box(c);
   } };
 
-  // ═════════ 3 · rtr_sum: the price tags swing down from the roofs: ≥ $114.5B on Doodle's tower on the pop word,
+  // ═════════ 3 · rtr_sum: the price tags swing down from the roofs: ≥ $114.5B on Google's tower on the pop word,
   //            ≥ $110B on Amazon's on line 3; coins keep climbing ═════════
   SCENES.rtr_sum = { draw(c, lt) {
     const id = 'rtr_sum', dd = dur(id), t1 = at(id, 'iou1', 0.8), t2 = at(id, 'iou2', 2.2);
@@ -288,7 +288,7 @@
   } };
 
   // ═════════ 5 · rtr_end: the lights come back; the whole round trip runs: bags down one side of each loop, coins
-  //            up the other, the track bold and marching; on "back" a coin lands in Doodle's tower; the clipping
+  //            up the other, the track bold and marching; on "back" a coin lands in Google's tower; the clipping
   //            rises on "clip": ROUND TRIP ═════════
   SCENES.rtr_end = { draw(c, lt) {
     const id = 'rtr_end', dd = dur(id), tB = at(id, 'back', 1.0), tC = at(id, 'clip', dd - 1.2);

@@ -83,3 +83,9 @@ blocks `www.sec.gov`). **Every line below is as reported by outlets quoting the 
    structure is shown plainly, with no softening and no praise. "Their money comes back" claims no wrongdoing.
 5. **Peg:** the S-1 went public on 26 Oct and the listing is reportedly mid-November. A price-range amendment would be a
    second peg, with a re-check of the figures.
+
+## Owner, 30 Oct: "use Google"
+
+Google is named plainly, like Amazon and Microsoft, in the captions, on its tower (plain type, no logo) and in the post.
+The Doodle parody is not used in this film. Still HELD until the S-1 itself is read. The disclosure wording has not
+been ruled on yet.

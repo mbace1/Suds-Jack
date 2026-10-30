@@ -1,179 +1,184 @@
 {
- "film": "the-round-trip",
- "cut": "v1 stills (30 Oct): RFH global/Coxon, papercut, VIRAL cut. Anthropic's S-1 (public 26 Oct 2026): two of its investors are also its biggest computing suppliers, with minimum commitments owed whether or not the computing is used. Frame 0 is money bags dropping from two towers into Anthropic's box; the end is the same money going back round the loop. The disclosure tag (MADE WITH ANTHROPIC'S TOOLS) is on the hook; its wording is the owner's to approve.",
- "series": "rfh",
- "captionSize": "big",
- "argument": "Doodle (Google) and Amazon invested in Anthropic; its IPO filing shows it must buy at least $114.5B of computing from Doodle and $110B from Amazon, owed even if unused, so the investors' money comes back to them as payments. No wrongdoing is claimed.",
- "langs": [
-  "en",
-  "fi",
-  "ja"
- ],
- "native_read": {
-  "en": true,
-  "fi": false,
-  "ja": false
- },
- "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
- "disclosure": {
-  "en": "MADE WITH ANTHROPIC'S TOOLS",
-  "why": "owner, 23 Oct: a film on Anthropic says on screen that it was made with Anthropic's tools; the owner approves the wording (pending)"
- },
- "props": {
-  "towers": {
-   "en": "two cut-card data-centre towers: DOODLE (the Doodle wordmark in its colours, the house parody of Google) and AMAZON (plain type, no logo)",
-   "why": "house convention: Google appears as Doodle; Amazon is named plainly; no real logos"
+  "film": "the-round-trip",
+  "cut": "v1 stills (30 Oct): RFH global/Coxon, papercut, VIRAL cut. Anthropic's S-1 (public 26 Oct 2026): two of its investors are also its biggest computing suppliers, with minimum commitments owed whether or not the computing is used. Frame 0 is money bags dropping from two towers into Anthropic's box; the end is the same money going back round the loop. The disclosure tag (MADE WITH ANTHROPIC'S TOOLS) is on the hook; its wording is the owner's to approve.",
+  "series": "rfh",
+  "captionSize": "big",
+  "argument": "Google and Amazon invested in Anthropic; its IPO filing shows it must buy at least $114.5B of computing from Google and $110B from Amazon, owed even if unused, so the investors' money comes back to them as payments. No wrongdoing is claimed.",
+  "langs": [
+    "en",
+    "fi",
+    "ja"
+  ],
+  "native_read": {
+    "en": true,
+    "fi": false,
+    "ja": false
   },
-  "box": {
-   "en": "a cream card box labelled ANTHROPIC in plain type; no logo",
-   "why": "the company is named plainly, as any other company would be"
+  "syntax": "'/' breaks a line, [word] is the pop word; in Japanese a space marks a reveal segment and is never drawn",
+  "disclosure": {
+    "en": "MADE WITH ANTHROPIC'S TOOLS",
+    "why": "owner, 23 Oct: a film on Anthropic says on screen that it was made with Anthropic's tools; the owner approves the wording (pending)"
   },
-  "money": {
-   "en": "cut-card money bags and coins; compute as small chip cards",
-   "why": "the money and the computing as objects; amounts are on tags, never on the props"
+  "props": {
+    "towers": {
+      "en": "two cut-card data-centre towers: GOOGLE (plain type, no logo) and AMAZON (plain type, no logo)",
+      "why": "owner, 30 Oct: \"use Google\": both named plainly; no real logos"
+    },
+    "box": {
+      "en": "a cream card box labelled ANTHROPIC in plain type; no logo",
+      "why": "the company is named plainly, as any other company would be"
+    },
+    "money": {
+      "en": "cut-card money bags and coins; compute as small chip cards",
+      "why": "the money and the computing as objects; amounts are on tags, never on the props"
+    },
+    "loop": {
+      "en": "a dashed track with arrowheads round the three, the money riding it",
+      "why": "the station's line, the round trip, drawn: no wrongdoing claimed"
+    }
   },
-  "loop": {
-   "en": "a dashed track with arrowheads round the three, the money riding it",
-   "why": "the station's line, the round trip, drawn: no wrongdoing claimed"
+  "captions": [
+    {
+      "id": "hook",
+      "role": "setup",
+      "at": "s1",
+      "until": "s2-0.3",
+      "hold": "s2",
+      "text": {
+        "en": "Google and / Amazon [invested] / in Anthropic.",
+        "fi": "Google ja Amazon / [sijoittivat] / Anthropiciin.",
+        "ja": "GoogleとAmazonが / Anthropicに [出資]。"
+      },
+      "source": "Anthropic's S-1 (public 26 Oct 2026) says Amazon and Google will each hold more than 5% of its stock after conversion, in non-voting Class N shares (as reported by Bernama and The Next Web, citing the filing; share counts are blank in this version)."
+    },
+    {
+      "id": "owe",
+      "role": "evidence",
+      "at": "s2+0.15",
+      "until": "s3-0.3",
+      "hold": "s3",
+      "text": {
+        "en": "Its IPO filing: / it must pay them / for [computing].",
+        "fi": "Pörssiesite: / se maksaa niille / [laskennasta].",
+        "ja": "上場申請書では / 両社に [計算資源]の / 支払い義務。"
+      },
+      "source": "The S-1 lists minimum compute commitments to Google, Amazon and Microsoft (GeekWire; Motley Fool 29 Oct; ppc.land; all citing the filing). The filing itself could not be opened from this session (EDGAR blocked by the proxy)."
+    },
+    {
+      "id": "sum",
+      "role": "evidence",
+      "at": "s3+0.15",
+      "until": "s4-0.3",
+      "hold": "s4",
+      "text": {
+        "en": "At least [$114.5B] / to Google, / $110B to Amazon.",
+        "fi": "Googlelle / väh. [114,5 mrd $], / Amazonille / 110 mrd $.",
+        "ja": "Googleに / [1145億ドル]以上、 / Amazonに / 1100億ドル。"
+      },
+      "source": "GeekWire and Motley Fool (29 Oct), on the S-1: minimums of at least $114.5B to Google (Apr 2026 to Jul 2033) and at least $110.0B to Amazon (May 2026 to Apr 2036). Reuters' earlier $111.1B for Google came from the June confidential draft. Microsoft's minimum ($44.9B) is in the post copy, not on screen: Microsoft's stake is not confirmed here."
+    },
+    {
+      "id": "idle",
+      "role": "evidence",
+      "at": "s4+0.15",
+      "until": "s5-0.3",
+      "hold": "s5",
+      "text": {
+        "en": "Owed even if / it goes [unused].",
+        "fi": "Maksettava, / vaikka se jäisi / [käyttämättä].",
+        "ja": "使わなくても / [支払う] 義務。"
+      },
+      "source": "Reported from the S-1: the Google and Amazon commitments are payable regardless of actual usage; if spend falls short Anthropic generally pays the difference, subject to contractual adjustments (GeekWire; Motley Fool; ppc.land). To be quoted only from the filing itself."
+    },
+    {
+      "id": "end",
+      "role": "punchline",
+      "at": "s5+0.25",
+      "until": "end-1.1",
+      "hold": "end",
+      "text": {
+        "en": "Their money / comes [back].",
+        "fi": "Raha / [palaa] / takaisin.",
+        "ja": "お金は / [戻って]くる。"
+      },
+      "source": "The station's line, true as stated: the two investors are also the suppliers the filing commits Anthropic to pay. No wrongdoing is claimed; the structure is the story."
+    }
+  ],
+  "ui": {
+    "discl": {
+      "en": "MADE WITH ANTHROPIC'S TOOLS",
+      "fi": "TEHTY ANTHROPICIN TYÖKALUILLA",
+      "ja": "Anthropicのツールで制作"
+    },
+    "anthropic": {
+      "en": "ANTHROPIC",
+      "fi": "ANTHROPIC",
+      "ja": "ANTHROPIC"
+    },
+    "amazon": {
+      "en": "AMAZON",
+      "fi": "AMAZON",
+      "ja": "AMAZON"
+    },
+    "investor": {
+      "en": "INVESTOR",
+      "fi": "SIJOITTAJA",
+      "ja": "出資者"
+    },
+    "supplier": {
+      "en": "SUPPLIER",
+      "fi": "TOIMITTAJA",
+      "ja": "供給元"
+    },
+    "filing": {
+      "en": "S-1 · IPO FILING",
+      "fi": "S-1 · PÖRSSIESITE",
+      "ja": "S-1・上場申請書"
+    },
+    "fileTag": {
+      "en": "ANTHROPIC S-1 · PUBLIC 26.10.2026",
+      "fi": "ANTHROPICIN S-1 · JULKINEN 26.10.2026",
+      "ja": "Anthropic S-1・2026年10月26日公開"
+    },
+    "iou1": {
+      "en": "≥ $114.5B",
+      "fi": "≥ 114,5 MRD $",
+      "ja": "1145億ドル以上"
+    },
+    "iou2": {
+      "en": "≥ $110B",
+      "fi": "≥ 110 MRD $",
+      "ja": "1100億ドル以上"
+    },
+    "sumTag": {
+      "en": "MINIMUM COMMITMENTS · AS REPORTED",
+      "fi": "VÄHIMMÄISSITOUMUKSET · UUTISTEN MUKAAN",
+      "ja": "最低購入額・報道による"
+    },
+    "unused": {
+      "en": "UNUSED",
+      "fi": "KÄYTTÄMÄTTÄ",
+      "ja": "未使用"
+    },
+    "clipLabel2": {
+      "en": "ANTHROPIC IPO FILING · 26.10.2026",
+      "fi": "ANTHROPICIN PÖRSSIESITE · 26.10.2026",
+      "ja": "Anthropic上場申請・2026年10月26日"
+    },
+    "clipValue2": {
+      "en": "ROUND TRIP",
+      "fi": "MENOPALUU",
+      "ja": "往復"
+    },
+    "google": {
+      "en": "GOOGLE",
+      "fi": "GOOGLE",
+      "ja": "GOOGLE"
+    }
+  },
+  "post": {
+    "en": "Google and Amazon invested in Anthropic. Its IPO filing commits it to buy at least $114.5B of computing from Google and $110B from Amazon, owed even if unused (and $44.9B from Microsoft). Made with Anthropic's tools. Who's paying whom?",
+    "fi": "Google ja Amazon sijoittivat Anthropiciin. Sen pörssiesite sitoo sen ostamaan laskentaa vähintään 114,5 mrd $:lla Googlelta ja 110 mrd $:lla Amazonilta, maksettava vaikka jäisi käyttämättä (ja 44,9 mrd $:lla Microsoftilta). Tehty Anthropicin työkaluilla. Kuka maksaa kenelle?",
+    "ja": "GoogleとAmazonはAnthropicに出資。その上場申請書によると、Googleから1145億ドル以上、Amazonから1100億ドルの計算資源を買う義務があり、使わなくても支払う（Microsoftには449億ドル）。Anthropicのツールで制作。誰が誰に払っている？"
   }
- },
- "captions": [
-  {
-   "id": "hook",
-   "role": "setup",
-   "at": "s1",
-   "until": "s2-0.3",
-   "hold": "s2",
-   "text": {
-    "en": "Doodle and / Amazon [invested] / in Anthropic.",
-    "fi": "Doodle ja Amazon / [sijoittivat] / Anthropiciin.",
-    "ja": "DoodleとAmazonが / Anthropicに [出資]。"
-   },
-   "source": "Anthropic's S-1 (public 26 Oct 2026) says Amazon and Google will each hold more than 5% of its stock after conversion, in non-voting Class N shares (as reported by Bernama and The Next Web, citing the filing; share counts are blank in this version). Doodle is the station's parody of Google."
-  },
-  {
-   "id": "owe",
-   "role": "evidence",
-   "at": "s2+0.15",
-   "until": "s3-0.3",
-   "hold": "s3",
-   "text": {
-    "en": "Its IPO filing: / it must pay them / for [computing].",
-    "fi": "Pörssiesite: / se maksaa niille / [laskennasta].",
-    "ja": "上場申請書では / 両社に [計算資源]の / 支払い義務。"
-   },
-   "source": "The S-1 lists minimum compute commitments to Google, Amazon and Microsoft (GeekWire; Motley Fool 29 Oct; ppc.land; all citing the filing). The filing itself could not be opened from this session (EDGAR blocked by the proxy)."
-  },
-  {
-   "id": "sum",
-   "role": "evidence",
-   "at": "s3+0.15",
-   "until": "s4-0.3",
-   "hold": "s4",
-   "text": {
-    "en": "At least [$114.5B] / to Doodle, / $110B to Amazon.",
-    "fi": "Doodlelle / väh. [114,5 mrd $], / Amazonille / 110 mrd $.",
-    "ja": "Doodleに / [1145億ドル]以上、 / Amazonに / 1100億ドル。"
-   },
-   "source": "GeekWire and Motley Fool (29 Oct), on the S-1: minimums of at least $114.5B to Google (Apr 2026 to Jul 2033) and at least $110.0B to Amazon (May 2026 to Apr 2036). Reuters' earlier $111.1B for Google came from the June confidential draft. Microsoft's minimum ($44.9B) is in the post copy, not on screen: Microsoft's stake is not confirmed here."
-  },
-  {
-   "id": "idle",
-   "role": "evidence",
-   "at": "s4+0.15",
-   "until": "s5-0.3",
-   "hold": "s5",
-   "text": {
-    "en": "Owed even if / it goes [unused].",
-    "fi": "Maksettava, / vaikka se jäisi / [käyttämättä].",
-    "ja": "使わなくても / [支払う] 義務。"
-   },
-   "source": "Reported from the S-1: the Google and Amazon commitments are payable regardless of actual usage; if spend falls short Anthropic generally pays the difference, subject to contractual adjustments (GeekWire; Motley Fool; ppc.land). To be quoted only from the filing itself."
-  },
-  {
-   "id": "end",
-   "role": "punchline",
-   "at": "s5+0.25",
-   "until": "end-1.1",
-   "hold": "end",
-   "text": {
-    "en": "Their money / comes [back].",
-    "fi": "Raha / [palaa] / takaisin.",
-    "ja": "お金は / [戻って]くる。"
-   },
-   "source": "The station's line, true as stated: the two investors are also the suppliers the filing commits Anthropic to pay. No wrongdoing is claimed; the structure is the story."
-  }
- ],
- "ui": {
-  "discl": {
-   "en": "MADE WITH ANTHROPIC'S TOOLS",
-   "fi": "TEHTY ANTHROPICIN TYÖKALUILLA",
-   "ja": "Anthropicのツールで制作"
-  },
-  "anthropic": {
-   "en": "ANTHROPIC",
-   "fi": "ANTHROPIC",
-   "ja": "ANTHROPIC"
-  },
-  "amazon": {
-   "en": "AMAZON",
-   "fi": "AMAZON",
-   "ja": "AMAZON"
-  },
-  "investor": {
-   "en": "INVESTOR",
-   "fi": "SIJOITTAJA",
-   "ja": "出資者"
-  },
-  "supplier": {
-   "en": "SUPPLIER",
-   "fi": "TOIMITTAJA",
-   "ja": "供給元"
-  },
-  "filing": {
-   "en": "S-1 · IPO FILING",
-   "fi": "S-1 · PÖRSSIESITE",
-   "ja": "S-1・上場申請書"
-  },
-  "fileTag": {
-   "en": "ANTHROPIC S-1 · PUBLIC 26.10.2026",
-   "fi": "ANTHROPICIN S-1 · JULKINEN 26.10.2026",
-   "ja": "Anthropic S-1・2026年10月26日公開"
-  },
-  "iou1": {
-   "en": "≥ $114.5B",
-   "fi": "≥ 114,5 MRD $",
-   "ja": "1145億ドル以上"
-  },
-  "iou2": {
-   "en": "≥ $110B",
-   "fi": "≥ 110 MRD $",
-   "ja": "1100億ドル以上"
-  },
-  "sumTag": {
-   "en": "MINIMUM COMMITMENTS · AS REPORTED",
-   "fi": "VÄHIMMÄISSITOUMUKSET · UUTISTEN MUKAAN",
-   "ja": "最低購入額・報道による"
-  },
-  "unused": {
-   "en": "UNUSED",
-   "fi": "KÄYTTÄMÄTTÄ",
-   "ja": "未使用"
-  },
-  "clipLabel2": {
-   "en": "ANTHROPIC IPO FILING · 26.10.2026",
-   "fi": "ANTHROPICIN PÖRSSIESITE · 26.10.2026",
-   "ja": "Anthropic上場申請・2026年10月26日"
-  },
-  "clipValue2": {
-   "en": "ROUND TRIP",
-   "fi": "MENOPALUU",
-   "ja": "往復"
-  }
- },
- "post": {
-  "en": "Doodle and Amazon invested in Anthropic. Its IPO filing commits it to buy at least $114.5B of computing from Doodle and $110B from Amazon, owed even if unused (and $44.9B from Microsoft). Made with Anthropic's tools. Who's paying whom?",
-  "fi": "Doodle ja Amazon sijoittivat Anthropiciin. Sen pörssiesite sitoo sen ostamaan laskentaa vähintään 114,5 mrd $:lla Doodlelta ja 110 mrd $:lla Amazonilta, maksettava vaikka jäisi käyttämättä (ja 44,9 mrd $:lla Microsoftilta). Tehty Anthropicin työkaluilla. Kuka maksaa kenelle?",
-  "ja": "DoodleとAmazonはAnthropicに出資。その上場申請書によると、Doodleから1145億ドル以上、Amazonから1100億ドルの計算資源を買う義務があり、使わなくても支払う（Microsoftには449億ドル）。Anthropicのツールで制作。誰が誰に払っている？"
- }
 }
