@@ -7,33 +7,33 @@
 // The rules live in sim/ and run on a fixed step; this file feeds them input,
 // hands their events to the view and the sound, and draws in between steps.
 import * as THREE from 'three/webgpu';
-import { TUNING } from './tuning.js?v=68';
-import { buildFloor } from './render/floor.js?v=68';
-import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=68';
-import * as worldsSim from './sim/worlds.js?v=68';
-import { shapeAt as shiftShape } from './sim/floorshift.js?v=68';
-import * as reshapeSim from './sim/reshape.js?v=68';
-import { Scenery } from './render/scenery.js?v=68';
-import { Transit } from './render/transit.js?v=68';
-import { Splats } from './render/splats.js?v=68';
-import { Actors } from './render/actors.js?v=68';
-import { GEL_TIME } from './render/gel.js?v=68';
-import { studioEnvironment } from './render/env.js?v=68';
-import { Specimen } from './render/specimen.js?v=68';
-import { createWorld, step, api as simApi } from './sim/world.js?v=68';
-import { stage as stagePk } from './sim/pickups.js?v=68';
-import { Input } from './input.js?v=68';
-import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=68';
-import { Announcer } from './announcer.js?v=68';
-import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=68';
-import { levelShape, slots as regionSlots } from './sim/shape.js?v=68';
-import { Sound } from './audio.js?v=68';
-import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=68';
-import { Intro, CUES as INTRO } from './intro/intro.js?v=68';
-import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=68';
-import { Readout } from './readout.js?v=68';
-import { Meter, device } from './meter.js?v=68';
-import * as record from './record.js?v=68';
+import { TUNING } from './tuning.js?v=69';
+import { buildFloor } from './render/floor.js?v=69';
+import { fitCamera, screenToWorld, screenDown } from './render/view.js?v=69';
+import * as worldsSim from './sim/worlds.js?v=69';
+import { shapeAt as shiftShape } from './sim/floorshift.js?v=69';
+import * as reshapeSim from './sim/reshape.js?v=69';
+import { Scenery } from './render/scenery.js?v=69';
+import { Transit } from './render/transit.js?v=69';
+import { Splats } from './render/splats.js?v=69';
+import { Actors } from './render/actors.js?v=69';
+import { GEL_TIME } from './render/gel.js?v=69';
+import { studioEnvironment } from './render/env.js?v=69';
+import { Specimen } from './render/specimen.js?v=69';
+import { createWorld, step, api as simApi } from './sim/world.js?v=69';
+import { stage as stagePk } from './sim/pickups.js?v=69';
+import { Input } from './input.js?v=69';
+import { UI, t, timeText, LANGS, getLang, setLang, goalText, bossName } from './ui.js?v=69';
+import { Announcer } from './announcer.js?v=69';
+import { rooms as campaignRooms, isOpen as roomOpen, better as betterGrade } from './sim/director/campaign.js?v=69';
+import { levelShape, slots as regionSlots } from './sim/shape.js?v=69';
+import { Sound } from './audio.js?v=69';
+import { Music, worldWant, cueFor, renderMusicWav } from './music.js?v=69';
+import { Intro, CUES as INTRO } from './intro/intro.js?v=69';
+import { scheduleIntroSfx, renderIntroSfxWav } from './intro/sfx.js?v=69';
+import { Readout } from './readout.js?v=69';
+import { Meter, device } from './meter.js?v=69';
+import * as record from './record.js?v=69';
 
 const T = TUNING;
 const params = new URLSearchParams(location.search);
@@ -510,7 +510,7 @@ const campaignProgress = (hard = false) => { try { return JSON.parse(store.str(h
 let lastRoom = null;   // AGAIN replays it
 const levels = new Map();
 async function loadLevel(id) {
-  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=68`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
+  if (!levels.has(id)) levels.set(id, fetch(new URL(`../levels/${id}.json?v=69`, import.meta.url)).then((r) => { if (!r.ok) throw new Error(`levels/${id}.json ${r.status}`); return r.json(); }));
   return levels.get(id);
 }
 // the list the room screen draws: worlds, their rooms, open or not, best grades
@@ -587,7 +587,16 @@ function ruleFrame() {
   } else if (darkEl.style.opacity !== '0') darkEl.style.opacity = '0';
 }
 
-function pause() { if (state !== 'play') return; state = 'paused'; input.enabled = false; ui.pause(T.species[world?.killedBy] ? world.killedBy : null); }
+// what got you, for the cards (v69): a species shows its own card, and so does
+// a corpse's shot back (HARDCADE's revenge, "its last shot"); the arena's
+// curtain and a world's sweeping lines, which are nobody's, are named. They
+// used to show nothing, and a run that ended on one said nothing about why
+function killer(by) {
+  if (!by) return { kind: null, name: null, revenge: false };
+  const revenge = by.startsWith('revenge:'), k = revenge ? by.slice(8) : by;
+  return T.species[k] ? { kind: k, name: T.species[k].name, revenge } : { kind: null, name: t(`by_${k}`), revenge: false };
+}
+function pause() { if (state !== 'play') return; state = 'paused'; input.enabled = false; const K = killer(world?.killedBy); ui.pause(K.kind, K.revenge); }
 function resume() { if (state !== 'paused') return; state = 'play'; input.enabled = true; ui.hide(); }
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
@@ -619,7 +628,7 @@ function finish() {
     won: !!world.won,
     room: R ? { ...world.room, name: world.room.level.name, grade: R.grade, outcome: R.outcome, why: R.why, value: R.score } : null,
     mode, score: world.score, best: Math.max(best, world.score), newBest,
-    time: timeText(world.time), gotYou: world.killedBy ? T.species[world.killedBy]?.name : null, gotYouKind: !world.won && T.species[world.killedBy] ? world.killedBy : null,
+    time: timeText(world.time), ...(({ kind, name, revenge }) => ({ gotYou: name, gotYouKind: world.won ? null : kind, gotYouRevenge: revenge }))(killer(world.killedBy)),
     kills: world.kills, grazes: world.grazes,
   });
 }

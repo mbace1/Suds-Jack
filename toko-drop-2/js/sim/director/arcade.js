@@ -21,12 +21,12 @@
 // runs down in its enemy loop — the same sequence 1.x runs, with the seam in
 // a different place. test/director.mjs holds all of it in lockstep with 1.x's
 // own loop source.
-import { TUNING } from '../../tuning.js?v=68';
-import * as worlds from '../worlds.js?v=68';
-import * as challenge from '../challenge.js?v=68';
-import { makeRng } from '../rng.js?v=68';
-import * as bossfight from '../bossfight.js?v=68';
-import * as floorshift from '../floorshift.js?v=68';
+import { TUNING } from '../../tuning.js?v=69';
+import * as worlds from '../worlds.js?v=69';
+import * as challenge from '../challenge.js?v=69';
+import { makeRng } from '../rng.js?v=69';
+import * as bossfight from '../bossfight.js?v=69';
+import * as floorshift from '../floorshift.js?v=69';
 
 const T = TUNING, W = T.waves, TAU = Math.PI * 2;
 
@@ -378,7 +378,7 @@ function fireCurtain(w, api, style, forceSide) {
   // on the middle slot, which is what fire.curtain lays out
   const mid = -span + A.inset + (n * A.spacing) / 2;
   api.fire.curtain(w, horiz ? mid : edge, horiz ? edge : mid, horiz ? 1 : 0, horiz ? 0 : 1, dx, dz, n + 1, A.spacing, gaps,
-    { speedMult: A.speedMult, color: A.color, src: null });
+    { speedMult: A.speedMult, color: A.color, src: 'curtain' });   // named, so the death card can say so (v69)
   w.events.push({ type: 'curtain', side, style });
   return side;
 }

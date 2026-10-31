@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v69 — 2026-10-31
+**The death screen always says what got you**
+- Found by the arcade curve's bots (scripts/curve.mjs), which record what each life was lost to: some read "?". The arena's CURTAIN, the wall of shots that marches in from one side on a curtain wave, fired bullets with no source, so a life lost to it had no killer; and the results screen and the pause card named a killer only when it was a species. So three things got you and said nothing: the curtain, a world's SWEEPING LINES (world 4's rule) and, in HARDCADE, a corpse's shot back (`revenge:<kind>`).
+- The curtain's bullets carry `src: 'curtain'` now (test/director.mjs checks it).
+- `killer()` in main.js says what got you: a species shows its card as before; a corpse's shot back shows the card of the gel that fired it, headed GOT YOU · ITS LAST SHOT (on the pause card LAST HIT BY · ITS LAST SHOT); the curtain and the sweeping lines, which are nobody's, are named in the results: GOT YOU · THE CURTAIN, A SWEEPING LINE. In English, Finnish and Japanese. The smoke checks the revenge card.
+- Cache tokens `?v=68` → `?v=69`; HUD label → `2.0 · v69`
+
+---
+
 ## v68 — 2026-10-31
 **World 2 costs less to draw**
 - v65-v67 made world 2's frame dearer. Measured under SwiftShader (the same held scene, a camera over the slab, three runs each): v64 130 ms, v67 162 ms, v67 with the cracks taken out 141 ms. The cracks' cell network is the dearest thing in the floor's picture, and the bigger daylit lawn added the rest.

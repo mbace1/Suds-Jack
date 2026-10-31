@@ -20,7 +20,7 @@
 //            past ×8 it burns white, and only a run that keeps killing without
 //            a hit gets there; the hit that ends it throws away the most
 // Pure: no DOM, no clock.
-import { TUNING } from '../tuning.js?v=68';
+import { TUNING } from '../tuning.js?v=69';
 
 const T = TUNING, H = T.heat;
 

@@ -25,7 +25,7 @@
 // One thing the contract cannot say: 1.x's mini throws 2–3 chunks of 0.12
 // when it dies, not every cube's 5–6 of 0.18 (enemy.js:3035-3037); the
 // number is in its tuning (deathChunks) for the core to read.
-import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=68';
+import { cubeInit, cubeCarry, cubeFlop } from './redd.js?v=69';
 
 export default {
   init(w, g, api) { cubeInit(w, g, api); },
