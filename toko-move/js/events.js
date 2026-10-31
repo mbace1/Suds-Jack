@@ -33,6 +33,14 @@ export const ENCOUNTERS=[
   options:[{label:'Lift it aboard',cost:20,goodwill:1,score:10},{label:'Look at your phone',cost:0}]},
  {id:'friend',where:'aboard',glyph:'🧑',text:'Someone from school gets on. It has been years.',
   options:[{label:'Catch up',cost:0,goodwill:1,score:5,note:'you nearly miss your stop'},{label:'Nod and look away',cost:0}]},
+ // Walking-focused (content phase, 2026-10-31). Use the street network as a verb.
+ {id:'shortcut',where:'walking',glyph:'👣',text:'A local points at a side street. It is shorter if you know it.',
+  options:[{label:'Take the tip',cost:20,goodwill:1,score:15,teaches:true},{label:'Stay on the main street',cost:0}]},
+ {id:'handoff-walk',where:'walking',glyph:'📦',text:'Someone is walking the other way with a small package. They will trade stops.',
+  options:[{label:'Swap packages',cost:40,goodwill:1,score:20},{label:'Keep walking',cost:0}]},
+ // Cargo choice. Fragile pays for care; ignoring it is free but costs goodwill.
+ {id:'fragile-care',where:'stop',glyph:'💌',text:'The fragile parcel is shifting. You can pad it or leave it.',
+  options:[{label:'Pad it properly',cost:50,needs:'fragile',goodwill:1,score:25},{label:'Leave it',cost:0}]},
 ];
 // A held line: every vehicle on it stands where it is for `minutes`.
 export const DISRUPTIONS=[
@@ -77,7 +85,7 @@ export class EventDirector{
 // THE CARD. A face, one line, the options as rows priced in seconds; a held
 // line as a banner that clears when the hold lifts. Same slot discipline as
 // every other panel: it writes only into `eventCard`, first on the sheet.
-const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]||c));
+const esc=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&','<':'<','>':'>','"':'"'}[c]||c));
 export function mountEvents(tm,seed=7,opts={}){const dir=new EventDirector(tm,seed,opts);tm.events=dir;
  const ch=tm.challenge;const prev=ch.step;ch.step=()=>{const a=prev?prev():false;const b=dir.step();return a||b;};
  let last='';const render=()=>{const slot=tm.sheetSlot?.('eventCard');if(!slot)return;const p=dir.pending,holds=dir.activeHolds(),tick=tm.flow.clock.tick,busy=dir.busy();
