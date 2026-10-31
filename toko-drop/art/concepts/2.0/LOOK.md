@@ -14,9 +14,14 @@ Default placeholder meshes can stay simple/readable until Mikael picks a style f
 
 ## Mesh sources
 
-Approved geo only: `world-2/02-curb-lawn-modules-APPROVED.png`.  
-`elements/`, `modules/`, `pending/` = not approved until marked APPROVED.
+Approved geo:
+- `world-2/02-curb-lawn-modules-APPROVED.png`
+- `world-3/03-sewer-modules-APPROVED.png`
+
+`elements/`, `modules/`, `pending/`, extra “more” sheets, arena mood pieces = not approved until marked APPROVED.
 
 ## Scales
 
-`curbWidth 0.4`, `curbHeight 0.2`, `curbJoint 2.4`, `lawnOut 12`.
+World 2: `curbWidth 0.4`, `curbHeight 0.2`, `curbJoint 2.4`, `lawnOut 12`.
+
+World 3: tunnel 60×22 m; wall 3×1.2×0.6 m; channel 2.4 m; slabs 1.7×0.85 m; near walls ≤1.2 m.
