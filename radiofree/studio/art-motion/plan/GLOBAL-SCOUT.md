@@ -792,3 +792,57 @@ Everything below comes from search summaries. No article was opened.
 - **Pentagon lab contracts / AI money / GPU probes:** nothing new dated 30–31 Oct. **AI Whistleblower Protection Act:**
   no vote; the Senate returns 9 Nov.
 - **Big development:** none.
+
+### Check Sat 31 Oct 17:16 (search summaries only; EDGAR tried once with a generic user agent and no personal data, still a proxy CONNECT 403, so nothing was opened)
+- **FLAG for Coxon 13, Grade Your Own Homework (posts 18:52 today): Anthropic's July 2025 contract was later lost.**
+  - Several outlets report that Anthropic lost its up-to-$200M CDAO deal and OpenAI took it over. The timing is
+    reported both ways: a breakdown in Sept 2025 and a cancellation after the supply-chain-risk designation of
+    Feb–Mar 2026.
+  - The legal fight over the designation has gone both ways. A district judge set the designation aside. A DC appeals
+    court upheld the Pentagon's blacklisting, reportedly on 25 Sep 2026 (CNBC). The DoD used two designations,
+    litigated in two courts.
+  - **What the film says:** the captions date the contracts (tag "JULY 2025 · UP TO $200M EACH") and the clause is the
+    contract term The Intercept published, so the award and the clause stay true as history.
+  - **What could mislead:** caption 2 ("Each must forecast…") and the post ("…deals with OpenAI, Anthropic, Google and
+    xAI … ask each…") are in the present tense. One of the four, the maker of our tools, no longer holds the deal.
+  - **Suggested minimal fix, the post only (no re-render), for the owner to decide:** past tense plus one clause, e.g.
+    "The Pentagon's 2025 AI deals with OpenAI, Anthropic, Google and xAI (up to $200M each) asked each to forecast the
+    risks of its own AI, per contracts The Intercept won via FOIA. Anthropic's deal was later cancelled. Critics call
+    it a conflict of interest. Made with Anthropic's tools. Who checks?" Re-count to 280 before use.
+  - [Fortune 28 Feb](https://fortune.com/2026/02/28/openai-pentagon-deal-anthropic-designated-supply-chain-risk-unprecedented-action-damage-its-growth/),
+    [CNBC 25 Sep](https://www.cnbc.com/2026/09/25/pentagon-anthropic-ai-risk-appeals-court.html),
+    [Quartz](https://qz.com/pentagon-anthropic-supply-chain-risk-designation-090326),
+    [techbuzz](https://www.techbuzz.ai/articles/anthropic-loses-200m-pentagon-deal-openai-steps-in)
+- **12 The Round Trip (Anthropic S-1): still HOLD.**
+  - No S-1/A with a price range found. Trackers say none had been filed as of 29 Oct, and the roadshow cannot start
+    before 10 Nov.
+  - The S-1 leaves the price range and share count blank. The WSJ's $1.5–2T valuation talk is unconfirmed by Anthropic.
+  - The Google minimum is still split (≥ $114.5B vs ~$111.1B).
+  - [Leverage Shares tracker](https://leverageshares.com/us/anthropic-ipo-tracker/),
+    [TradingView/Invezz](https://www.tradingview.com/news/invezz:abbe38240094b:0-anthropic-ipo-valuation-explained-what-the-s-1-tells-us/)
+- **1 The Panel / Project Meridian (posted IG + X 31 Oct ~00:41):** no change.
+  - Status as SGE or contractor is still undisclosed; no recusal found. The DoD did not answer NPR's conflict questions.
+  - New, advocacy and not verified: a Democracy Defenders Fund report urges barring contractors from serving as SGEs.
+    Not for a film.
+  - [OPB/NPR](https://www.opb.org/article/2026/10/06/pentagon-taps-elon-musk-and-palmer-luckey-for-strategy-study/),
+    [Democracy Defenders Fund](https://www.democracydefendersfund.org/resource/trump-and-musk-17-months-later/)
+- **3 NDA bans / NJ S4304 (A2774):** no floor vote found.
+  - Released from the Senate Community and Urban Affairs Committee on 1 Oct (Sierra Club). Trackers list it as
+    introduced on 18 May 2026. The Assembly summary deems such agreements against public policy and unenforceable.
+  - njleg.gov not opened.
+  - [policyrisk](https://policyrisk.com/state-bill/NJ-S4304-2026-2027),
+    [fastdemocracy](https://fastdemocracy.com/bill/nj/2026-2027/bills/NJB00075280/)
+- **5 Short Supply / DRAM suit (film posted IG + X 31 Oct ~12:45):**
+  - Garciaguirre v. Samsung Electronics (N.D. Cal., Judge Noel Wise). The joint motion to dismiss was filed 2 Sep; no
+    ruling.
+  - **No hearing date found** in today's results. The film's tag "HEARING 13 NOV 2026" still rests only on the earlier
+    docket summary, so re-check before 13 Nov.
+  - Prices: nothing dated late October; the Aug rises (Nvidia bundles +20–30%, AMD +10%) are the latest.
+  - [MLex](https://www.mlex.com/mlex/articles/2521308),
+    [Law Street](https://lawstreetmedia.com/news/tech/antitrust-class-action-accuses-micron-samsung-and-sk-hynix-of-manipulating-dram-market/)
+- **Meta / Grassley:** still no published Meta reply to the 22 Jul letter (DeFriez, Sevedge; deadline 4 Aug).
+  [Grassley letter](https://www.grassley.senate.gov/imo/media/doc/grassley_to_meta_-_wb_retaliation_cont.pdf)
+- **Whistleblowers / AI money / data-centre NDAs:** nothing new dated 30–31 Oct from a reliable outlet.
+- **Reactions to our own posts (The Panel, Short Supply):** not visible through search. Grok Bot's links are in
+  POSTED.md, and opening IG or X is outside this check's search-only method.
+- **Big development:** none. One pre-posting flag (Grade Your Own Homework, above).

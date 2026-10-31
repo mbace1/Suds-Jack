@@ -560,3 +560,19 @@ Everything below comes from search summaries. No article was opened.
 - **#1–#7:** nothing new found.
 - **Reactions:** no visible comment counts through search for any thread.
 - **Pattern note:** still the quiet second week; the next dated Finnish step is LVV's water plan (5 Nov).
+
+### Check Sat 31 Oct 17:16 (search summaries only; nothing opened)
+- **HS, last ~2 days:** no new candidate. Searches on HS + datakeskus / salassa found nothing dated 30–31 Oct. The
+  Hyperco/Espoo item (undated Yle roundup, likely June) is still not new.
+- **Muhos / Count the Trees:** no new fact.
+  - Police esiselvitys and LVV's own investigation request are still open (Kaleva, IL via MTV).
+  - LVV's halt order of 6 Oct stands. The water management plan is due 5 Nov, with a possible fine if not delivered.
+  - Google says it fell short of its own standards and plans to replant 130 ha in Muhos.
+  - **"Two requests filed with the police" stays right.**
+  - [Kaleva LVV](https://kaleva.fi/lvv-on-tehnyt-poliisille-tutkintapyynnon-googlen-m/13720712),
+    [MTV/IL](https://www.mtvuutiset.fi/artikkeli/il-poliisi-kaynnisti-esiselvityksen-googlen-datakeskuksesta/9403560)
+- **Hamina / Trade Secret:** no follow-up on the flying-squirrel papers. Only general expansion news turned up.
+- **"Ground Broken" (Vaasa–Mustasaari, Microsoft) · *Yle*:** nothing new.
+- **#1–#7:** nothing new found.
+- **Reactions:** no visible comment counts through search for any thread.
+- **Pattern note:** unchanged. The next dated Finnish step is LVV's water plan (5 Nov).

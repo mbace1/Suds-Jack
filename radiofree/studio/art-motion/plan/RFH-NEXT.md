@@ -358,3 +358,29 @@ All facts below come from search summaries; no article was opened.
 - **Count the Trees:** still right. **Trade Secret:** no follow-up.
 - **Finland:** no new HS candidate.
 - **No film needs a fix.**
+
+## Daily check, Sat 31 Oct 17:16 (evening; search summaries only)
+- **FLAG, Coxon 13 Grade Your Own Homework (18:52 today): Anthropic's July 2025 Pentagon deal was later lost.**
+  - Reporting (Fortune 28 Feb; CNBC 25 Sep; Quartz) says Anthropic's up-to-$200M deal was cancelled and OpenAI took it.
+    The timing is reported as Sept 2025 or after the Feb–Mar 2026 supply-chain-risk designation.
+  - The film's tags date the contracts (JULY 2025), so the award and the clause stay true as history.
+  - But caption 2 and the post are in the present tense ("must", "ask each"), and the disclosure says "Anthropic is
+    one of the four".
+  - **Owner to decide before 18:52:** post as is, or swap the post copy to the past tense plus "Anthropic's deal was
+    later cancelled." (draft in GLOBAL-SCOUT, 31 Oct 17:16; no re-render needed). The safest call is to hold the
+    18:52 slot until the owner answers.
+- **Global 3, Short Supply:** posted IG + X 31 Oct ~12:45; YouTube pending (RFH Google sign-in).
+  - The motion to dismiss is pending, with no ruling.
+  - The 13 Nov hearing date is still single-source; re-check before 13 Nov.
+- **Brink 4, The Panel:** posted IG + X ~00:41; YouTube pending. Facts unchanged: status undisclosed, no recusal.
+- **The Round Trip:** HOLD. No S-1/A yet (roadshow not before 10 Nov); EDGAR still blocked.
+- **Ends in 3:** today is the digit-5 deadline; no extension found. Suspension follows 72 h after (about 3 Nov). The
+  posted copy stays true.
+- **Break Glass:** keep held.
+  - The constitutional law committee's statement (16–17 Oct) cleared the extension to 31 Dec 2028 as an exceptive law.
+  - No 2026 plenary result was found. The 168–29 vote in search results is the June 2025 vote, which extended the act
+    to the end of 2026.
+  - [Yle](https://yle.fi/a/74-20251787?origin=rss), [Uutispeili 17 Oct](https://www.uutispeili.fi/index.php/2026/10/17/perustuslakivaliokunnan-lausunto-ns-rajaturvallisuuslain-voimassaolon-jatkamisesta-valmistui/)
+- **Count the Trees:** still right. **Trade Secret:** no follow-up.
+- **Finland:** no new HS candidate.
+- **Reactions to our posts:** not visible through search.
