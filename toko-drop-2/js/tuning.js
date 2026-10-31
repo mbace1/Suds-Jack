@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=77';
-import WAVES from './tuning/waves.js?v=77';
-import PICKUPS from './tuning/pickups.js?v=77';
-import MUSIC from './tuning/music.js?v=77';
+import { SPECIES } from './tuning/species/index.js?v=78';
+import WAVES from './tuning/waves.js?v=78';
+import PICKUPS from './tuning/pickups.js?v=78';
+import MUSIC from './tuning/music.js?v=78';
 
 export const TUNING = {
   render: {
@@ -149,7 +149,14 @@ export const TUNING = {
                   grate: { at: [2.4, 5.5], r: 0.95, iron: [0.03, 0.031, 0.034], frame: [0.12, 0.12, 0.125], slot: [0.002, 0.002, 0.003] } },
       sewer: { stone: [0.034, 0.04, 0.046], groutCol: [0.007, 0.008, 0.01], water: [0.003, 0.011, 0.013], waterHi: [0.05, 0.17, 0.16],
                kerb: [0.06, 0.06, 0.062], channel: 2.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9,
-               sky: [0.005, 0.014, 0.017] },   // v70: the dark past the walls and the gates, a deep teal
+               sky: [0.005, 0.014, 0.017],   // v70: the dark past the walls and the gates, a deep teal
+               // v78 (owner, 2026-10-31: the waters must differ): PUDDLES on the flagstones —
+               // `scale` cells/m, more of them the lower `t`, the stone `dark` under them and the
+               // vault's `sky` reflected `reflect` of the way, a meniscus `rim` in `rimCol`; and the
+               // channel's MURK: streaks `stretch`:1 along the flow at `scale`, lifting the water
+               // `lift` toward waterHi, foam `foamW` m in from each kerb in `foam`
+               puddle: { scale: 0.7, t: 0.7, soft: 0.03, dark: 0.55, sky: [0.035, 0.07, 0.08], reflect: 0.4, rim: 0.3, rimCol: [0.3, 0.38, 0.4] },
+               murk: { stretch: 7, scale: 1.6, lift: 0.55, foamW: 0.25, foam: [0.35, 0.42, 0.4] } },
       // WORLDS · NEON (v23): the abstract floors
       hex: { cell: 1.8, line: 0.035, waveK: 0.55, waveHz: 2.2, base: [0.02, 0.012, 0.035], cell2: [0.09, 0.02, 0.08],
              lineLo: [0.35, 0.03, 0.3], lineHi: [1.0, 0.35, 0.75] },
@@ -164,8 +171,15 @@ export const TUNING = {
                  stump: 0.82, stumpTone: [0.075, 0.08, 0.078],
                  drip: { cell: 6, period: 3.6, reach: 1.5, width: 0.035, gain: 0.32 } },
       boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.05, 0.04, 0.035], rivet: [0.16, 0.12, 0.09], grate: 6.4, grateW: [1.4, 0.5],
-                glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6, sky: [0.012, 0.008, 0.006] },
-      river: { water: [0.004, 0.025, 0.03], waterHi: [0.08, 0.35, 0.3], flow: 1.6, bank: 0.78, pebble: [0.05, 0.05, 0.045], foam: [0.5, 0.75, 0.7], sky: [0.006, 0.012, 0.012] },
+                glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6, sky: [0.012, 0.008, 0.006],
+                // v78: oily PUDDLES within `band` m of the long sides, under the pipe runs: the steel
+                // `dark` under a film with a `sheen` (a thin-film rainbow), the grates' `fire` in them
+                puddle: { scale: 0.45, t: 0.69, soft: 0.03, band: 3.0, dark: 0.3, sheen: 0.07, fire: 0.6, rim: 0.3 } },
+      river: { water: [0.004, 0.025, 0.03], waterHi: [0.08, 0.35, 0.3], flow: 1.6, bank: 0.78, pebble: [0.05, 0.05, 0.045], foam: [0.5, 0.75, 0.7], sky: [0.006, 0.012, 0.012],
+               // v78: a river that RUNS — streaks `stretch`:1 along the flow at `scale`, lifting the water
+               // `lift` toward waterHi; `deep` down the middle (`deepK` of the way), the bed showing
+               // through the shallows from `shallow` of the half width to the bank, tinted `shallowTint`
+               run: { stretch: 11, scale: 1.2, lift: 0.5, shallow: 0.55, deep: [0.002, 0.012, 0.018], deepK: 0.5, shallowTint: 0.55 } },
       ice: { base: [0.055, 0.085, 0.125], deep: [0.02, 0.035, 0.07], crack: [0.6, 0.72, 0.85], lines: 0.45, scale: 0.35, frost: [0.6, 0.75, 0.85],
              // v72: frost in from the floor's edge over `edgeFrost` m, and air caught in the ice: in one
              // `bubble.cell` m cell in `keep` a bubble `r` m round; the dark past the snowfield

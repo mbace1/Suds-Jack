@@ -24,9 +24,9 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=77';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=77';
-import { lilyPads, DRIFT } from './kit.js?v=77';
+import { GEL_TIME } from './gel.js?v=78';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=78';
+import { lilyPads, DRIFT } from './kit.js?v=78';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -240,14 +240,19 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const grout = float(1).sub(smoothstep(float(S.grout).sub(aa), float(S.grout).add(aa), gd));
     const tone = noise(vec2(tfloor(u.add(off)), row).mul(1.9)).mul(0.5).add(noise(w.mul(3.1)).mul(0.25)).add(0.55);
     let stone = vec3(...S.stone).mul(tone);
-    // wet: dark puddles standing in the hollows
-    const wet = smoothstep(0.72, 0.8, noise(w.mul(0.55).add(9.1))).mul(smoothstep(0.35, 0.6, noise(w.mul(2.3))));
-    stone = mix(stone, stone.mul(0.62), wet);
-    stone = mix(stone, vec3(...S.groutCol), grout);
-    // the water: dark and deep, its ripples running down the channel
-    const flow = a.sub(GEL_TIME.mul(S.flow));
-    const rip = smoothstep(0.9, 1.0, sin(flow.mul(3.0).add(noise(vec2(flow.mul(0.5), c.mul(1.6))).mul(3.5))).mul(0.5).add(0.5));
-    const water = mix(vec3(...S.water), vec3(...S.waterHi), rip.mul(0.35).add(noise(vec2(flow.mul(1.1), c.mul(2.4))).mul(0.18)));
+    // v78: puddles standing in the hollows (they were a darkening): the stone dark
+    // and the vault's dim teal reflected in them, a bright meniscus at the rim
+    const PD = S.puddle, pd = puddles(w, PD), wet = pd.mask;
+    stone = mix(stone, mix(stone.mul(PD.dark), vec3(...PD.sky), PD.reflect), wet).add(vec3(...PD.rimCol).mul(pd.rim.mul(PD.rim)));
+    stone = mix(stone, vec3(...S.groutCol), grout.mul(float(1).sub(wet.mul(0.7))));
+    // v78: the channel's water is murky and RUNS (it wore the cistern's net): streaks
+    // stretched along the flow, foam along the kerbs, flecks going by
+    const flow = a.sub(GEL_TIME.mul(S.flow)), M = S.murk;
+    const st = streaks(a, c, S.flow, M.stretch, M.scale);
+    const foamLine = smoothstep(S.channel / 2 - M.foamW, S.channel / 2 - 0.02, abs(c)).mul(smoothstep(0.45, 0.75, noise(vec2(flow.mul(0.8), c.mul(6)))));
+    const flecks = smoothstep(0.82, 0.9, noise(vec2(flow.mul(1.6), c.mul(2.2)).add(7.7)));
+    const rip = smoothstep(0.55, 0.85, st).mul(0.7).add(foamLine).add(flecks.mul(0.6));
+    const water = mix(vec3(...S.water), vec3(...S.waterHi), st.mul(M.lift)).add(vec3(...M.foam).mul(foamLine.mul(0.5).add(flecks.mul(0.35))));
     let col = mix(stone, water, inCh).add(vec3(...S.kerb).mul(kerb.mul(0.35)));
     // v70: the pipes' rivulets, green water from each mouth in the wall across
     // the floor to the channel, glinting as it runs (scenery.js sewerSpots)
@@ -274,7 +279,7 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const sq = vec2(a.sub(pk.sub((np - 1) / 2).mul(U.every)), c.sub(ps.mul(U.c))).div(U.r);
     const sun = grate(sq).y.mul(U.gain).add(float(1).sub(smoothstep(0, U.halo / U.r, length(sq))).mul(U.haloGain));
     col = col.add(vec3(...U.color).mul(sun));
-    return { col, mask: grout.mul(float(1).sub(inCh)).add(inCh.mul(rip).mul(1.5)).add(riv.mul(glint)), lineCol: vec3(...S.waterHi), wet: wet.add(inCh).add(riv) };
+    return { col, mask: grout.mul(float(1).sub(inCh)).add(inCh.mul(rip).mul(1.5)).add(riv.mul(glint)).add(pd.rim.mul(wet.oneMinus()).mul(0.3)), lineCol: vec3(...S.waterHi), wet: wet.mul(0.9).add(inCh).add(riv) };
   };
 
   // ── the NEON worlds (the title's WORLDS · NEON, v23): abstract floors in
@@ -319,6 +324,21 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   // ── worlds 4-9 (v28): each world's own floor ──────────────────────
   const v3 = (a) => vec3(...a);
   const along = (w) => (hx >= hz ? w.x : w.y), across = (w) => (hx >= hz ? w.y : w.x);
+  // v78 (owner: "all the water in the levels looks the same"): PUDDLES standing
+  // in a floor's hollows, a mask with a soft edge and the thin bright meniscus
+  // at its rim (`scale` cells to the metre, `t` the threshold — more puddle
+  // the lower — `soft` the edge); and water RUNNING one way: noise stretched
+  // `stretch` to one along `a`, two layers moving at different speeds
+  const puddles = (w, P) => {
+    const n = noise(w.mul(P.scale)).mul(0.65).add(noise(w.mul(P.scale * 2.7).add(5.3)).mul(0.35));
+    const mask = smoothstep(P.t - P.soft, P.t + P.soft, n);
+    const rim = float(1).sub(smoothstep(0, P.soft * 1.6, abs(n.sub(P.t)))).mul(float(1).sub(mask.mul(0.5)));
+    return { mask, rim };
+  };
+  const streaks = (a, c, speed, stretch, scale) => {
+    const f1 = a.sub(GEL_TIME.mul(speed)), f2 = a.sub(GEL_TIME.mul(speed * 0.6));
+    return noise(vec2(f1.mul(scale / stretch), c.mul(scale))).mul(0.6).add(noise(vec2(f2.mul((scale * 1.7) / stretch).add(3.3), c.mul(scale * 1.9))).mul(0.4));
+  };
   // THE CISTERN: a flooded vault — stone slabs under shallow water, the
   // light off the surface wandering over them, the bases of the columns
   const cistern = (p, w) => {
@@ -368,6 +388,12 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     // soot, not the shadow of something standing there (v43: at 0.8 it read as a hole in the floor)
     col = mix(col, v3(B.scorch), smoothstep(0.6, 0.85, noise(w.mul(0.21).add(3.3))).mul(0.4));
     col = col.mul(float(1).sub(seam.mul(0.7)));
+    // v78: oily puddles standing on the plate along the long sides, under the pipe
+    // runs: the steel dark under a film with a sheen on it, and the grates' fire in them
+    const PD = B.puddle, pd = puddles(w.add(2.2), PD), half = hx >= hz ? hz : hx;
+    const pud = pd.mask.mul(smoothstep(half - PD.band - 1.2, half - PD.band, abs(across(w))));
+    const hue = noise(w.mul(1.3).add(1.7)).mul(6.283), sheen = vec3(sin(hue), sin(hue.add(2.1)), sin(hue.add(4.2))).mul(0.5).add(0.5);
+    col = mix(col, col.mul(PD.dark).add(sheen.mul(PD.sheen)), pud).add(v3(B.rivet).mul(pd.rim.mul(pud.oneMinus()).mul(PD.rim * 0.5)));
     // the grates: slots with the fire under them, breathing
     const gq = fract(w.div(B.grate).add(0.5)).sub(0.5).mul(B.grate);
     const inG = float(1).sub(smoothstep(0, 0.05, max(abs(gq.x).sub(B.grateW[0]), abs(gq.y).sub(B.grateW[1]))));
@@ -375,26 +401,33 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const pulse = float(0.55).add(sin(GEL_TIME.mul(B.pulse).add(noise(tfloor(w.div(B.grate)).mul(3)).mul(6))).mul(0.45));
     const fire = inG.mul(float(1).sub(slot)).mul(pulse);
     col = mix(col, v3(B.glow).mul(0.6), fire).add(v3(B.glow).mul(inG.mul(0.08)));
-    return { col, mask: seam.mul(0.4).add(fire), lineCol: v3(B.glow) };
+    col = col.add(v3(B.glow).mul(pud.mul(fire).mul(PD.fire)));   // v78: the fire in the puddles
+    return { col, mask: seam.mul(0.4).add(fire), lineCol: v3(B.glow), wet: pud };
   };
   // THE RIVER: dark water running the long way, its streaks moving with it,
   // pebbled banks at both edges
   const river = (p, w) => {
-    const R = W.river, a = along(w), c = across(w), half = hx >= hz ? hz : hx;
+    const R = W.river, a = along(w), c = across(w), half = hx >= hz ? hz : hx, U = R.run;
     const flow = a.sub(GEL_TIME.mul(R.flow));
-    const streak = smoothstep(0.88, 1.0, sin(flow.mul(1.1).add(noise(vec2(flow.mul(0.25), c.mul(0.7))).mul(7)).add(noise(w.mul(0.9)).mul(2))).mul(0.5).add(0.5));
-    const swirl = noise(vec2(flow.mul(0.6), c.mul(1.4))).mul(0.4);
-    let col = mix(v3(R.water), v3(R.waterHi), streak.mul(0.14).add(swirl.mul(0.18)));
+    // v78: a river that FLOWS (it wore the cistern's net): streaks stretched along the
+    // current in two layers, dark and deep down the middle, the bed showing through
+    // the shallows toward the banks, foam along the banks' edge and flecks going by
+    const st = streaks(a, c, R.flow, U.stretch, U.scale);
+    const depth = float(1).sub(smoothstep(half * U.shallow, half * R.bank, abs(c)));   // 1 down the middle, 0 at the bank
+    const peb = noise(w.mul(2.8)).mul(0.6).add(noise(w.mul(7.1)).mul(0.4));
+    const stones = v3(R.pebble).mul(peb.mul(0.8).add(0.45));
+    let col = mix(v3(R.water), v3(R.waterHi), smoothstep(0.35, 0.8, st).mul(U.lift).mul(depth.mul(0.6).add(0.4)));
+    col = mix(col, v3(U.deep), depth.mul(U.deepK));
+    col = mix(mix(stones, col, U.shallowTint), col, depth);
     // v72: lily pads near the banks, drifting the way the current rule pushes (kit.js DRIFT)
     const Pd = T.scenery.river.pads, lp = lilyPads(w.sub(DRIFT), Pd.cell, Pd.keep);
     const near = smoothstep(half * 0.42, half * 0.52, abs(c)).mul(smoothstep(half * R.bank, half * (R.bank - 0.06), abs(c)));
     col = mix(col, mix(v3(Pd.lo), v3(Pd.hi), lp.y), lp.x.mul(near)).add(v3(Pd.flower).mul(lp.z.mul(near)));
     const bank = smoothstep(half * R.bank, half * (R.bank + 0.08), abs(c));
-    const peb = noise(w.mul(2.8)).mul(0.6).add(noise(w.mul(7.1)).mul(0.4));
-    const stones = v3(R.pebble).mul(peb.mul(0.8).add(0.45));
-    const foam = float(1).sub(smoothstep(0, 0.35, abs(abs(c).sub(half * R.bank)))).mul(noise(vec2(flow.mul(1.5), c)).mul(0.6).add(0.4));
-    col = mix(col, stones, bank).add(v3(R.foam).mul(foam.mul(0.35)));
-    return { col, mask: streak.mul(float(1).sub(bank)).add(foam), lineCol: v3(R.waterHi), wet: float(1).sub(bank) };
+    const foam = float(1).sub(smoothstep(0, 0.45, abs(abs(c).sub(half * R.bank)))).mul(smoothstep(0.4, 0.7, noise(vec2(flow.mul(1.5), c.mul(4)))));
+    const flecks = smoothstep(0.86, 0.93, noise(vec2(flow.mul(2.2), c.mul(1.4)).add(4.4))).mul(depth);
+    col = mix(col, stones, bank).add(v3(R.foam).mul(foam.mul(0.4).add(flecks.mul(0.5))));
+    return { col, mask: smoothstep(0.5, 0.85, st).mul(float(1).sub(bank)).mul(0.6).add(foam).add(flecks), lineCol: v3(R.waterHi), wet: float(1).sub(bank) };
   };
   // THE ICE SHEET: pale ice, darker where it is deep, cracked, frost along the cracks
   const ice = (p, w) => {

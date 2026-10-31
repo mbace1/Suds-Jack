@@ -19,6 +19,20 @@
     Never `--no-verify`.
 -->
 
+## v78 — 2026-10-31
+**The waters differ: puddles on the sewer's flagstones and oil under the boiler's pipes, a murky channel, a river that flows; only the cistern keeps its sheet of water**
+- The owner, 2026-10-31: "all the water in the levels looks the same. Some can have puddles, one this look but after that we need to differentiate." The sewer's channel, the cistern's floor and the river all drew their water the same way — a sine of a noise field, which makes the wavy caustic net — so three worlds and two campaign worlds (THE WELL, THE VEIN) read as one. Now (render/floor.js):
+  - **The cistern keeps the net**: a flooded floor under a sheet of still water is what that look is.
+  - **The sewer's flagstones have puddles** — real ones, where they had a darkening: standing in the hollows, the stone dark under them, the vault's dim teal reflected in them, a bright meniscus at the rim, and the light map's glow (bullets, kills) reflected in them through `wet`. **Its channel runs murky**: streaks stretched along the flow in two layers, foam along the kerbs, flecks going by.
+  - **The river flows**: streaks stretched eleven to one along the current in two layers moving at different speeds, dark and deep down the middle, the pebble bed showing through the shallows toward the banks, foam along the banks' edge and flecks drifting; the lily pads stay.
+  - **The boiler room has oily puddles** along its long sides under the pipe runs: the plate dark under a film with a faint thin-film sheen, the grates' fire reflected in them.
+  - The deep stays silt. THE WELL and THE VEIN follow the river and the cistern.
+- Shared pieces: `puddles(w, P)` (a mask with a soft edge and its meniscus) and `streaks(a, c, speed, stretch, scale)` (water running one way). Every number TUNING.worlds.floor.{sewer.puddle, sewer.murk, river.run, boiler.puddle}.
+- Tuned on renders: the first puddles covered a third of the sewer in pale blotches (fewer, smaller and darker now), the oil's rainbow sheen was loud (0.18 → 0.07), the river's bands were stripes under the fight (softer and longer now).
+- Cache tokens `?v=77` → `?v=78`; HUD label → `2.0 · v78`
+
+---
+
 ## v77 — 2026-10-31
 **World particles: embers over the boilers, snow on the ice, dust in the sewer's sun shafts, motes in the cistern's lamps, fireflies over the river, marine snow in the deep**
 - The owner's third visual pick. One helper (kit.js `motes`): specks afloat in boxes of a world's own, each on a loop of its own up or down the box (embers and fireflies rise, snow, dust and marine snow fall), swaying, fading in at the foot of the loop and out at the top, lit in the world's colour; one instanced draw a world, 24 to 160 specks. Where they are is the point: the embers rise off the boilers along the far side and over the pipe runs down the sides and never over the floor; the dust falls only inside the sun shafts; the lamp motes hang in each lamp's light; the fireflies blink over the banks. The snow and the marine snow fall over the whole view, since that is what they do. Every number TUNING.scenery.<world>.motes.
