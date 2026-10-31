@@ -8,6 +8,7 @@
 
 - `world-2/02-curb-lawn-modules-APPROVED.png` (+ v2.jpg)
 - `world-3/03-sewer-modules-APPROVED.png` (+ v3.jpg)
+- `world-4/04-cistern-modules-APPROVED.png` (+ arena complete)
 
 Shape from art; style from LOOK.md picker.
 
