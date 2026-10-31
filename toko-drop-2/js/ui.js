@@ -2,13 +2,13 @@
 // crisp vector type on near-black (DIRECTION). Menus are pad-first — a d-pad
 // or arrow keys move a gold focus ring (1.x v134), A / Enter picks, B / Esc
 // backs out — and a tap or click works on every button just the same.
-import { TUNING } from './tuning.js?v=67';
-import { GEL_LINES } from './gels-said.js?v=67';
-import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=67';
-import { mult as heatMult } from './sim/heat.js?v=67';
-import { tiersFor, onCourse } from './sim/director/campaign.js?v=67';
-import { onCourse as fightCourse } from './sim/bossfight.js?v=67';
-import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=67';
+import { TUNING } from './tuning.js?v=68';
+import { GEL_LINES } from './gels-said.js?v=68';
+import { goalOf, modsOf, speciesOf } from './sim/challenge.js?v=68';
+import { mult as heatMult } from './sim/heat.js?v=68';
+import { tiersFor, onCourse } from './sim/director/campaign.js?v=68';
+import { onCourse as fightCourse } from './sim/bossfight.js?v=68';
+import { roomChart, routeChart, goalGlyph, GRADE_COLORS } from './chart.js?v=68';
 
 const STR = {
   en: {

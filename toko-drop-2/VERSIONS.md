@@ -19,6 +19,16 @@
     Never `--no-verify`.
 -->
 
+## v68 — 2026-10-31
+**World 2 costs less to draw**
+- v65-v67 made world 2's frame dearer. Measured under SwiftShader (the same held scene, a camera over the slab, three runs each): v64 130 ms, v67 162 ms, v67 with the cracks taken out 141 ms. The cracks' cell network is the dearest thing in the floor's picture, and the bigger daylit lawn added the rest.
+- The crack network is worked out only inside the slabs that have cracks: a branch that is the same over a whole patch of the screen, which a phone's GPU skips a group of pixels at a time. Its line's antialiasing is taken outside the branch, from how fast the floor moves under a pixel, since a derivative may not sit in a branch. The cracks look the same.
+- The lawn round world 2's slab, and every other world's ground round its floor, are drawn after the floor instead of before it, so the depth test throws away the grass and the ground under the floor before they are shaded. Nothing on screen changes.
+- Measured the same way: world 2 at 147 ms (v67 162). SwiftShader is a CPU, so this is a direction, not a phone's number: a PLAY RECORD sent from a phone is that (A10).
+- Cache tokens `?v=67` → `?v=68`; HUD label → `2.0 · v68`
+
+---
+
 ## v67 — 2026-10-31
 **YELA tumbles on the diagonals too (owner)**
 - The owner's YELA sketch (art-ref/concept-yela-orange.jpg) says "diagonal movement", and on 2026-10-31 they chose it for the game: YELA CUBE picks from eight headings now, where 1.x's had the four cardinals.

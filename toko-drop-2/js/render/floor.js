@@ -23,9 +23,9 @@
 // vortex (sim/worlds.js's transition: `swirl` 0 → 1 winds it up round
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
-import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=67';
-import { noise, grate, cells } from './scenery.js?v=67';
+import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=68';
+import { noise, grate, cells } from './scenery.js?v=68';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -192,12 +192,19 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     col = col.mul(float(1).sub(groove.mul(0.62))).add(vec3(...C.lip).mul(lip.mul(0.25)));
     // hairline cracks (v65): the edges of a cell network, jagged by a fine
     // wobble, broken off so they stop mid-slab, only in some of the slabs, and
-    // faint — a texture under the fight (v48's lesson)
-    const jag = vec2(noise(w.mul(5.3)), noise(w.mul(5.3).add(vec2(1.7, 9.2)))).sub(0.5).mul(C.crackJag);
-    const edge = cells(w.mul(C.crackScale).add(jag)), eaa = max(fwidth(edge), 1e-4), cwid = float(C.crackW * C.crackScale * 2);
-    const crack = float(1).sub(smoothstep(cwid, cwid.add(eaa), edge))
-      .mul(smoothstep(0.42, 0.56, noise(w.mul(C.crackBreak).add(vec2(11.1, 2.3)))))
-      .mul(smoothstep(0.54, 0.68, noise(w.mul(C.crackPatch).add(vec2(5.2, 1.7)))));
+    // faint — a texture under the fight (v48's lesson). The network is the
+    // dearest thing in the floor, so it is worked out only inside the slabs
+    // that have cracks (v68): the branch is the same for a whole patch of
+    // screen, and the line's antialiasing is taken outside it, from how fast
+    // the floor moves under a pixel (a derivative may not sit in a branch)
+    const patch = smoothstep(0.54, 0.68, noise(w.mul(C.crackPatch).add(vec2(5.2, 1.7))));
+    const eaa = max(length(fwidth(w)).mul(C.crackScale * 2), 1e-4), cwid = float(C.crackW * C.crackScale * 2);
+    const crack = float(0).toVar();
+    If(patch.greaterThan(0), () => {
+      const jag = vec2(noise(w.mul(5.3)), noise(w.mul(5.3).add(vec2(1.7, 9.2)))).sub(0.5).mul(C.crackJag);
+      const edge = cells(w.mul(C.crackScale).add(jag));
+      crack.assign(float(1).sub(smoothstep(cwid, cwid.add(eaa), edge)).mul(smoothstep(0.42, 0.56, noise(w.mul(C.crackBreak).add(vec2(11.1, 2.3))))).mul(patch));
+    });
     col = col.mul(float(1).sub(crack.mul(C.crackDepth)));
     // the storm drain (v65), set in the slab toward the far right corner: an iron
     // frame round rows of slots (the slots below, past the flood: no light

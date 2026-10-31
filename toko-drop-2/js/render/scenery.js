@@ -133,7 +133,9 @@ export class Scenery {
       return mix(col.mul(float(1).sub(shade.mul(S.curbShadow))), vec3(...S.haze), far.mul(S.fadeTo));
     })();
     const lawn = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), lawnMat));
-    lawn.position.y = -0.02; lawn.renderOrder = -2;
+    // drawn after the floor (v68; it was drawn first), so the depth test throws
+    // away the grass under the slab before it is shaded
+    lawn.position.y = -0.02; lawn.renderOrder = 1;
     this._curb(S, hx, hz);
     this._tufts(S, hx, hz);
   }
@@ -311,7 +313,7 @@ export class Scenery {
       return col.mul(float(1).sub(far.mul(far).mul(0.97)));
     })();
     const ground = this._add(new THREE.Mesh(new THREE.PlaneGeometry(2 * (hx + out), 2 * (hz + out)).rotateX(-Math.PI / 2), groundMat));
-    ground.position.y = -0.03; ground.renderOrder = -2;
+    ground.position.y = -0.03; ground.renderOrder = 1;   // after the floor, as the lawn (v68)
 
     // the edge: a thin line glowing in the world's rail colour, all four sides
     if (S.edge) {
