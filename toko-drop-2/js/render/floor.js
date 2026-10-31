@@ -23,9 +23,10 @@
 // vortex (sim/worlds.js's transition: `swirl` 0 → 1 winds it up round
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
-import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=71';
-import { noise, grate, cells, sewerSpots } from './scenery.js?v=71';
+import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, step, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=72';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=72';
+import { lilyPads, DRIFT } from './kit.js?v=72';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -58,8 +59,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   // it. At rest revealR is huge and the front is off, so play is unchanged.
   // A droplet landing in a new world reveals that world's floor the same way.
   const revealAt = uniform(new THREE.Vector2(0, 0)), revealR = uniform(1e4), revealFront = uniform(0);
-  // the void past the floor: the night, world 2's summer haze (v66), world 3's deep teal (v70)
-  const voidCol = uniform(style === 'concrete' || style === 'sewer' ? new THREE.Color(...T.worlds.floor[style].sky) : new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color({ grid: 0x5f8cff, concrete: 0xffd9a0, sewer: 0x7fd8d0, hex: 0xff5fd0, tide: 0x5fffe8, cistern: 0x7fe8ff, boiler: 0xffb060, river: 0x7fffe0, ice: 0xe0f4ff, deep: 0x6688ff, core: 0xff66ee }[style] ?? 0x5f8cff));
+  // the void past the floor: the night, world 2's summer haze (v66), world 3's deep teal (v70), a world's own dark (v72)
+  const voidCol = uniform(T.worlds.floor[style]?.sky ? new THREE.Color(...T.worlds.floor[style].sky) : new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color({ grid: 0x5f8cff, concrete: 0xffd9a0, sewer: 0x7fd8d0, hex: 0xff5fd0, tide: 0x5fffe8, cistern: 0x7fe8ff, boiler: 0xffb060, river: 0x7fffe0, ice: 0xe0f4ff, deep: 0x6688ff, core: 0xff66ee }[style] ?? 0x5f8cff));
   // the drain's swirl
   const swirl = uniform(0), swirlAt = uniform(new THREE.Vector2(0, 0)), swirlR = uniform(8), hole = uniform(0);
   const holeRim = uniform(new THREE.Color({ grid: 0x2fe0ff, concrete: 0x9fd6ff, sewer: 0x6fffe0, hex: 0xff7fe0, tide: 0x7ffff0, cistern: 0x6fefff, boiler: 0xffaa44, river: 0x6fffdd, ice: 0xcff0ff, deep: 0x5577ff, core: 0xff55ee }[style] ?? 0x2fe0ff));
@@ -384,6 +385,10 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const streak = smoothstep(0.88, 1.0, sin(flow.mul(1.1).add(noise(vec2(flow.mul(0.25), c.mul(0.7))).mul(7)).add(noise(w.mul(0.9)).mul(2))).mul(0.5).add(0.5));
     const swirl = noise(vec2(flow.mul(0.6), c.mul(1.4))).mul(0.4);
     let col = mix(v3(R.water), v3(R.waterHi), streak.mul(0.14).add(swirl.mul(0.18)));
+    // v72: lily pads near the banks, drifting the way the current rule pushes (kit.js DRIFT)
+    const Pd = T.scenery.river.pads, lp = lilyPads(w.sub(DRIFT), Pd.cell, Pd.keep);
+    const near = smoothstep(half * 0.42, half * 0.52, abs(c)).mul(smoothstep(half * R.bank, half * (R.bank - 0.06), abs(c)));
+    col = mix(col, mix(v3(Pd.lo), v3(Pd.hi), lp.y), lp.x.mul(near)).add(v3(Pd.flower).mul(lp.z.mul(near)));
     const bank = smoothstep(half * R.bank, half * (R.bank + 0.08), abs(c));
     const peb = noise(w.mul(2.8)).mul(0.6).add(noise(w.mul(7.1)).mul(0.4));
     const stones = v3(R.pebble).mul(peb.mul(0.8).add(0.45));
@@ -401,6 +406,14 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const depth = noise(w.mul(0.12).add(4.4));
     let col = mix(v3(I.deep), v3(I.base), depth.mul(0.7).add(0.3));
     col = col.add(v3(I.frost).mul(frost.mul(0.1))).add(v3(I.crack).mul(min(crack, 1).mul(0.3)));
+    // v72: frost creeping in from the floor's edge, and air caught in the ice, both faint
+    const e = min(float(hx).sub(abs(w.x)), float(hz).sub(abs(w.y)));
+    col = col.add(v3(I.frost).mul(smoothstep(I.edgeFrost, 0, e).mul(noise(w.mul(5.3)).mul(0.6).add(0.4)).mul(I.edgeFrostGain)));
+    const Bb = I.bubble, bc = tfloor(w.div(Bb.cell)), bh = noise(bc.mul(1.7).add(0.5));
+    const bq = fract(w.div(Bb.cell)).sub(0.5).sub(vec2(noise(bc.add(3.1)), noise(bc.add(7.7))).sub(0.5).mul(0.5)).mul(Bb.cell);
+    const br = bh.mul(Bb.r[1] - Bb.r[0]).add(Bb.r[0]), bd = length(bq);
+    const bubble = float(1).sub(smoothstep(0.015, 0.035, abs(bd.sub(br)))).add(smoothstep(br, br.mul(0.5), bd).mul(0.3)).mul(step(1 - Bb.keep, noise(bc.mul(2.3).add(9.9))));
+    col = col.add(v3(I.crack).mul(bubble.mul(Bb.gain)));
     // the cracks are a texture under the fight, not lines across it (v48: at full strength they were the loudest thing on screen)
     return { col, mask: min(crack, 1).mul(I.lines), lineCol: v3(I.crack), wet: float(0.6) };
   };

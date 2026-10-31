@@ -19,6 +19,21 @@
     Never `--no-verify`.
 -->
 
+## v72 — 2026-10-31
+**Worlds 5 to 9 built as places: the boiler room, the river, the ice, the deep and the core, each from a brief of its own**
+- The owner, 2026-10-31: "you can build all levels/worlds now". Built as worlds 3 and 4 were, from a brief per world written for Grok in the World 2 sheet's format (art-ref/briefs/world-5-boiler.md … world-9-core.md, eight modules each), in the game's own look. Each world has a set of its own in `js/render/sets/`; nothing stands along the near side.
+  - **5, the boiler room**: riveted boilers along the far side, each a drum with a domed top, its arched firebox door glowing and throwing its light on the deck, a stack out of its dome with steam going up; down the sides a run of two flanged steam pipes with red valve wheels that let off steam now and then, and smaller tanks behind; a yellow-and-black hazard band round the floor and tread plate past it.
+  - **6, the river**: the river runs on past both ends of the floor between its pebbled banks, rows of old piles across it with the water foaming round them; past the banks wet mud and grass, rounded stones with moss on their tops, reeds with cattails, logs washed up. **Lily pads** float near the banks and drift the way the current rule pushes the gels (`DRIFT`, added up in main.js), so the push, which turns, is something you can see.
+  - **7, the ice**: a snowfield ribbed by the wind with snow blowing over it; clusters of six-sided ice crystals leaning out from one root, lit from inside and brighter at the edge; drifts banked at their feet, rocks with snow on their tops. On the floor, frost in from its edges and rings of air caught in the ice, both faint.
+  - **8, the deep**: the seabed in slow ripples; kelp in clumps, ribbons swaying with beads of light down their middles; boulders with barnacles on their tops and anemones at their feet, their tentacles' tips lit pink or blue; vents breathing bubbles up out of the silt.
+  - **9, the core**: a traced deck with power running in along the traces toward the floor; towers with lit window bands and caps, antennas blinking on some, a neon ring with a light chasing round the tallest; light pillars along the far side pulsing down the row; the floor's edge with light running round it.
+- Each world's dark past its ground is its own now (`sky` in TUNING.worlds.floor[id]), as worlds 2 and 3 had.
+- What the sets share is `js/render/kit.js` (out of scenery.js: the noise, the seeded numbers, the stations round a floor, stones, blade clumps, things that rise, the frame round a floor as one mesh). Their numbers are TUNING.scenery.boiler/river/ice/deep/core. The surround builder (v43) now stands only round the grid's floors. Still reported to the smoke as `surround:<id>`.
+- What it costs, under SwiftShader (a CPU, not a phone's GPU, so only a guide): the scenery takes 22–52 ms of a 117–181 ms frame where the old props took 11–16, about half in the props' shapes and half in their shading. The edge and the hazard band are drawn as one mesh each. A PLAY RECORD from a phone will say what it really costs.
+- Cache tokens `?v=71` → `?v=72`; HUD label → `2.0 · v72`
+
+---
+
 ## v71 — 2026-10-31
 **World 4, the cistern: stone columns standing in dark water, lamps at their feet, column stumps and drip rings on the floor**
 - The owner, 2026-10-31: "continue", after world 3. Built the same way, from a brief written for Grok in the World 2 sheet's format (art-ref/briefs/world-4-cistern.md, eight modules), in the game's own look:

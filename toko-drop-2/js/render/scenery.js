@@ -21,16 +21,22 @@
 //            with a green trickle out of each (the floor runs it on to the
 //            channel), and shafts of sunlight through the street grates over
 //            the pools of it the floor draws
+//   world 4  the cistern (v71, its brief): stone columns standing in dark water,
+//            lamps at the inner row's feet
+//   worlds 5-9 (v72, a brief each, art-ref/briefs/): a SET of their own in
+//            render/sets/ — the boiler room's boilers, pipes and steam; the
+//            river running on past the floor with its stones, reeds and piles,
+//            lily pads drifting the way the current pushes; the ice's crystal
+//            clusters and drifts; the deep's kelp, boulders, anemones and
+//            bubbles; the core's towers, rings and beams
 //   the rest a SURROUND (v43, owner, 2026-10-24: "make the portrait mode
 //            levels a bit bigger and put graphics on the sides"): a ground
 //            that goes on past the floor and fades into the dark, a thin
 //            glowing edge in the world's rail colour where the floor stops,
 //            and props standing along the far side and the two sides — the
-//            grid's neon posts, the cistern's columns, the boiler's pipes and
-//            stacks, the river's rocks and reeds, the ice's shards, the
-//            deep's spires and kelp, the core's towers. Never along the near
-//            side: nothing stands between you and the fight. One builder,
-//            every number in TUNING.scenery.surround[world id]
+//            grid's lit bollards, now (world 1, NEON's floors, SURVIVAL).
+//            Never along the near side: nothing stands between you and the
+//            fight. One builder, every number in TUNING.scenery.surround[id]
 //
 // The floor itself is floor.js (its `style`); this is the rest. The camera
 // follows the hero on worlds 2 and 3 and shows T.camera.follow.edge m past
@@ -40,27 +46,20 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, normalView, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=71';
+import { GEL_TIME } from './gel.js?v=72';
+import { hash, noise, seeded } from './kit.js?v=72';
+import { boiler } from './sets/boiler.js?v=72';
+import { river } from './sets/river.js?v=72';
+import { ice } from './sets/ice.js?v=72';
+import { deep } from './sets/deep.js?v=72';
+import { core } from './sets/core.js?v=72';
 
-// a hash and value noise on the world plane, cheap enough for a picture
-const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
-export const noise = Fn(([p]) => {
-  const i = tfloor(p), f = fract(p), u = f.mul(f).mul(float(3).sub(f.mul(2)));
-  const a = hash(i), b = hash(i.add(vec2(1, 0))), c = hash(i.add(vec2(0, 1))), d = hash(i.add(vec2(1, 1)));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
-});
+// worlds 5-9 (v72): a set of their own each, built to its brief (render/sets/)
+const SETS = { boiler, river, ice, deep, core };
 
-// how far p is from the nearest edge between the cells of a jittered grid,
-// as F2 − F1 (0 on an edge): a network of straight runs meeting in threes,
-// which is how concrete cracks (v65, the floor's cracks)
-export const cells = Fn(([p]) => {
-  const i = tfloor(p), f = fract(p), d1 = float(8).toVar(), d2 = float(8).toVar();
-  for (let y = -1; y <= 1; y++) for (let x = -1; x <= 1; x++) {
-    const o = vec2(x, y), c = i.add(o), d = length(o.add(vec2(hash(c), hash(c.add(vec2(57.1, 13.7))))).sub(f));
-    d2.assign(min(max(d1, d), d2)); d1.assign(min(d1, d));
-  }
-  return d2.sub(d1);
-});
+// the noise, the cracks and the seeded numbers are the kit's (v72: render/kit.js),
+// and the floor still takes them from here
+export { noise, cells } from './kit.js?v=72';
 
 // the storm drain's grate (v65, the owner's world-2 sheet), in its own units
 // (q, its frame's radius 1): x the grate, y a slot, z the frame. Rows of
@@ -89,14 +88,6 @@ export function sewerSpots(T, hx, hz) {
   for (const side of [-1, 1]) for (let j = 0; j < m; j++) pipes.push({ a: (j - (m - 1) / 2) * S.pipe.every + (side * S.pipe.every) / 4, side });
   return { alongX, L, Wd, pools, pipes, perSide: m };
 }
-
-// a seeded stream of numbers in [0, 1), so a world stands the same every time
-const seeded = (seed) => () => {
-  seed = (seed + 0x6d2b79f5) | 0;
-  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-};
 
 export class Scenery {
   constructor(scene, T) {
@@ -359,6 +350,7 @@ export class Scenery {
   // ── every other world: a ground past the floor, its edge, props round it ──
   _surround(id, hx, hz) {
     if (id === 'cistern') { this._cistern(hx, hz); return; }   // v71: built to its brief, as worlds 2 and 3
+    if (SETS[id]) { SETS[id](this, hx, hz); return; }           // v72: worlds 5-9, the same
     const S = this.T.scenery.surround[id];
     const G = S.ground, out = G.out;
     // the ground: two tones of noise, a grid or traces if the world has one,

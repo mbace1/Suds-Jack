@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=71';
-import WAVES from './tuning/waves.js?v=71';
-import PICKUPS from './tuning/pickups.js?v=71';
-import MUSIC from './tuning/music.js?v=71';
+import { SPECIES } from './tuning/species/index.js?v=72';
+import WAVES from './tuning/waves.js?v=72';
+import PICKUPS from './tuning/pickups.js?v=72';
+import MUSIC from './tuning/music.js?v=72';
 
 export const TUNING = {
   render: {
@@ -144,11 +144,14 @@ export const TUNING = {
                  stump: 0.82, stumpTone: [0.075, 0.08, 0.078],
                  drip: { cell: 6, period: 3.6, reach: 1.5, width: 0.035, gain: 0.32 } },
       boiler: { plate: [3.2, 2.1], seam: 0.035, steel: [0.05, 0.04, 0.035], rivet: [0.16, 0.12, 0.09], grate: 6.4, grateW: [1.4, 0.5],
-                glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6 },
-      river: { water: [0.004, 0.025, 0.03], waterHi: [0.08, 0.35, 0.3], flow: 1.6, bank: 0.78, pebble: [0.05, 0.05, 0.045], foam: [0.5, 0.75, 0.7] },
-      ice: { base: [0.055, 0.085, 0.125], deep: [0.02, 0.035, 0.07], crack: [0.6, 0.72, 0.85], lines: 0.45, scale: 0.35, frost: [0.6, 0.75, 0.85] },
-      deep: { silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6 },
-      core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5 },
+                glow: [1.0, 0.35, 0.06], scorch: [0.012, 0.008, 0.006], pulse: 1.6, sky: [0.012, 0.008, 0.006] },
+      river: { water: [0.004, 0.025, 0.03], waterHi: [0.08, 0.35, 0.3], flow: 1.6, bank: 0.78, pebble: [0.05, 0.05, 0.045], foam: [0.5, 0.75, 0.7], sky: [0.006, 0.012, 0.012] },
+      ice: { base: [0.055, 0.085, 0.125], deep: [0.02, 0.035, 0.07], crack: [0.6, 0.72, 0.85], lines: 0.45, scale: 0.35, frost: [0.6, 0.75, 0.85],
+             // v72: frost in from the floor's edge over `edgeFrost` m, and air caught in the ice: in one
+             // `bubble.cell` m cell in `keep` a bubble `r` m round; the dark past the snowfield
+             edgeFrost: 1.6, edgeFrostGain: 0.16, bubble: { cell: 2.2, keep: 0.35, r: [0.12, 0.3], gain: 0.22 }, sky: [0.008, 0.012, 0.022] },
+      deep: { silt: [0.006, 0.008, 0.02], ripple: [0.012, 0.018, 0.04], glow: [0.2, 0.5, 1.0], glow2: [0.5, 1.0, 0.7], specks: 2.6, sky: [0.002, 0.004, 0.01] },
+      core: { base: [0.004, 0.0, 0.008], line: [0.8, 0.1, 0.7], pulse: [0.3, 0.9, 1.0], cell: 1.6, ringEvery: 2.4, ringSpeed: 4.5, sky: [0.006, 0.002, 0.01] },
     },
   },
   // what stands round a world's floor (render/scenery.js). Colours are
@@ -204,6 +207,84 @@ export const TUNING = {
                ripple: { r: 1.25, period: 3.4, color: [0.45, 0.75, 0.78], gain: 0.22 },
                kerb: { w: 0.5, h: 0.18, color: [0.1, 0.11, 0.11] }, edge: { color: 0x3fb8d0, glow: 1.6, width: 0.12, height: 0.05 },
                water: { out: 24, fade: 15, lo: [0.003, 0.013, 0.019], hi: [0.012, 0.048, 0.06], scale: 0.32 } },
+    // v72 (owner, 2026-10-31: "you can build all levels/worlds now"; from the
+    // World 5 brief, art-ref/briefs/world-5-boiler.md): THE BOILER ROOM. Boilers
+    // along the far side, `every` m apart and `side` m past its corners, `out` m
+    // out, each a drum `r` m round and `h` m to its `dome`, banded at `bands`
+    // with `rivets` round each; a firebox door (`door` m) at its foot, its fire
+    // breathing and its light thrown `pool` m on the deck; a stack out of its
+    // dome with `steam` going up. Down the sides a `pipe` run (two pipes, `r`,
+    // at `y`, flanged every `every` m) with a red `valve` wheel every `every` m
+    // venting now and then, and `tank`s behind. A hazard `band` `w` m wide round
+    // the floor, tread plate (`deck`, lugs `tread` m) past it into the dark
+    boiler: { deck: { out: 16, fade: 10, tread: 0.42, lo: [0.022, 0.019, 0.016], hi: [0.055, 0.046, 0.038] },
+              edge: { color: 0xff8a33, glow: 1.8, width: 0.12, height: 0.05 },
+              band: { w: 0.55, stripe: 0.8, yellow: [0.4, 0.26, 0.02], black: [0.018, 0.016, 0.014], worn: [0.1, 0.085, 0.07] },
+              boiler: { every: 7.2, side: 2.5, out: 3.4, r: 1.3, h: 3.2, dome: 0.85, bands: [0.55, 1.6, 2.65], rivets: 40,
+                        iron: [0.12, 0.1, 0.085], rust: [0.16, 0.07, 0.03], rivet: [0.26, 0.22, 0.18], stackColor: [0.05, 0.045, 0.04],
+                        stackR: 0.22, stack: 2.4, door: [0.95, 0.9], doorY: 0.72, frame: [0.025, 0.022, 0.02],
+                        fireHi: [1.0, 0.75, 0.25], fireLo: [1.0, 0.32, 0.06], fireGlow: 2.2, pool: 2.6, poolGain: 0.32 },
+              steam: { per: 6, period: 4.2, rise: 3.2, r: [0.28, 0.85], sway: 0.35, gain: 0.32, color: [0.55, 0.53, 0.5] },
+              pipe: { out: 1.1, r: [0.42, 0.3], y: [0.5, 1.3], every: 3.2, back: 7, front: 14, color: [0.1, 0.085, 0.075], flange: [0.17, 0.14, 0.11] },
+              valve: { every: 7, h: 0.55, r: 0.26, color: [0.36, 0.035, 0.02] },
+              vent: { per: 4, period: 2.2, rise: 1.6, r: [0.12, 0.5], sway: 0.2, gain: 0.3, color: [0.6, 0.6, 0.58], duty: 0.55, dutyRate: 0.45 },
+              tank: { every: 6, out: 3.6, r: 0.8, h: 2.0, dome: 0.5, bands: [0.5, 1.3] } },
+    // v72 (from the World 6 brief, art-ref/briefs/world-6-river.md): THE RIVER
+    // runs on past both ends of the floor (`ground`: past the banks `mudW` m of
+    // mud, then grass), `pile`s across it at `at` m past each end with `foam`
+    // round them; `stone`s along the banks `out` m clear of the floor, `inWater`
+    // more past each end; `reed` clumps with cattails (`tails`) along the banks;
+    // a `log` or two washed up; lily `pads` (one in `keep` of the `cell` m cells)
+    // drifting the way the current rule pushes. Never along the near side
+    river: { ground: { out: 18, fade: 11, grassLo: [0.022, 0.045, 0.014], grassHi: [0.05, 0.09, 0.028], mud: [0.035, 0.028, 0.02], mudW: 1.2 },
+             edge: { color: 0x44ddbb, glow: 1.3, width: 0.1, height: 0.04 },
+             pads: { cell: 3.2, keep: 0.4, lo: [0.018, 0.05, 0.014], hi: [0.05, 0.11, 0.03], flower: [0.5, 0.32, 0.38] },
+             stone: { every: 2.6, past: 4, skip: 0.25, out: [0.15, 2.4], r: [0.45, 1.25], inWater: 5, waterPast: 7, wetR: [0.35, 0.8],
+                      lo: [0.07, 0.068, 0.06], hi: [0.16, 0.15, 0.13], moss: [0.06, 0.11, 0.025] },
+             reed: { every: 1.5, past: 6, skip: 0.35, out: [0.25, 1.8], h: [1.1, 2.0], blades: 16, r: 0.3, w: 0.07, bend: 0.1, tails: 3,
+                     lo: [0.03, 0.06, 0.02], hi: [0.12, 0.17, 0.05], head: [0.08, 0.04, 0.018] },
+             log: { per: 2, out: [2.4, 3.6], len: [2.8, 4.6], r: [0.3, 0.45], bark: [0.05, 0.035, 0.022], barkHi: [0.09, 0.07, 0.05], wood: [0.28, 0.2, 0.12] },
+             pile: { at: [1.6, 4.5], every: 1.5, skip: 0.3, h: [0.6, 1.6], r: [0.13, 0.2], wood: [0.13, 0.095, 0.06], wet: [0.03, 0.03, 0.025] },
+             foam: { r: 1.6, period: 2.2, gain: 0.35, color: [0.55, 0.75, 0.72] } },
+    // v72 (from the World 7 brief, art-ref/briefs/world-7-ice.md): THE ICE. A
+    // snowfield (`ground`: ribbed by the wind, snow blowing over it at `wind`
+    // m/s) round the floor; ice `crystal` clusters along the far side and
+    // the two sides, every `every` m `out` m clear of the floor, `n` prisms each
+    // (the tallest `h` m, the rest leaning out `lean` rad), lit from inside
+    // (`inner`) and brighter at the edge (`rim`); snow `drift`s banked against
+    // their feet, snow-capped `rock`s between. Never along the near side
+    ice: { ground: { out: 16, fade: 10, lo: [0.06, 0.075, 0.1], hi: [0.13, 0.15, 0.19], wind: 1.1, wisp: [0.4, 0.45, 0.5], wispGain: 0.18 },
+           edge: { color: 0xbfe6ff, glow: 1.2, width: 0.1, height: 0.04 },
+           crystal: { every: 4.2, out: [2.0, 5.0], n: [3, 6], h: [1.6, 3.6], lean: [0.25, 0.7], spread: 0.6, thick: [0.12, 0.2],
+                      deep: [0.08, 0.16, 0.28], pale: [0.45, 0.62, 0.78], glow: [0.35, 0.65, 1.0], rim: 0.5, inner: 0.12 },
+           drift: { chance: 0.75, len: [1.4, 2.6], w: 0.35, h: 0.55, lo: [0.32, 0.38, 0.46], hi: [0.6, 0.66, 0.74] },
+           rock: { every: 5.5, out: [1.6, 5.5], r: [0.4, 1.0], lo: [0.06, 0.065, 0.075], snow: [0.55, 0.6, 0.68] } },
+    // v72 (from the World 8 brief, art-ref/briefs/world-8-deep.md): THE DEEP. The
+    // seabed (`ground`) round the floor; `kelp` in clumps every `every` m (`n`
+    // ribbons `h` m tall, twisting `twist` rad up their length, swaying `sway`
+    // m at the top, `beads` of light down their middles); `boulder`s with barnacles on their
+    // tops, an `anemone` at the feet of some (`n` tentacles, tips lit); `vent`s
+    // breathing `bubbles` up out of the silt. Never along the near side
+    deep: { ground: { out: 18, fade: 11, lo: [0.004, 0.008, 0.02], hi: [0.014, 0.028, 0.055] },
+            edge: { color: 0x5577ff, glow: 2.2, width: 0.12, height: 0.05 },
+            kelp: { every: 2.8, out: [1.2, 4.8], n: [2, 5], h: [1.8, 4.6], w: 0.22, twist: 2.6, sway: 0.22, speed: 0.7, beads: 9,
+                    lo: [0.02, 0.045, 0.025], hi: [0.06, 0.13, 0.06], glow: [0.2, 1.0, 0.65], glowI: 1.4 },
+            boulder: { every: 5, out: [1.6, 5.5], r: [0.7, 1.5], barnacles: 5, lo: [0.03, 0.035, 0.05], hi: [0.07, 0.08, 0.1], barnacle: [0.22, 0.22, 0.2], anemone: 0.6 },
+            anemone: { n: 12, r: 0.06, h: [0.8, 1.3], sway: 0.08, speed: 1.3, lo: [0.12, 0.03, 0.08], hi: [0.3, 0.08, 0.2], glow: [1.0, 0.3, 0.7], glow2: [0.3, 0.9, 1.0], glowI: 2.2 },
+            vent: { every: 9, out: [1.2, 3.5], color: [0.02, 0.025, 0.035] },
+            bubbles: { per: 8, period: 3.6, rise: 4.5, r: [0.08, 0.17], sway: 0.12, wobble: 9, gain: 1.0, color: [0.35, 0.65, 1.0], rim: true, add: true, fade: 0.8 } },
+    // v72 (from the World 9 brief, art-ref/briefs/world-9-core.md): THE CORE. A
+    // traced deck (`ground`: a grid every `cell` m, power running in toward the
+    // floor in rings `pulseEvery` m apart); `tower`s along the far side and the
+    // sides, windows lit in `bands`, capped, an `antenna` blinking on some, a
+    // neon `ring` a light chases round on the tallest; light `pillar`s along the
+    // far side pulsing down the row; the `edge` with light running round it
+    core: { ground: { out: 18, fade: 9, lo: [0.006, 0.003, 0.012], hi: [0.022, 0.006, 0.036], cell: 2.6, line: [0.11, 0.02, 0.1], pulse: [0.4, 0.9, 1.0], pulseEvery: 6, pulseSpeed: 0.35 },
+            edge: { color: 0xff55ee, glow: 1.6, width: 0.12, height: 0.05, dash: 3, speed: 0.6, dashGlow: 2.2 },
+            tower: { every: 3.6, out: [1.6, 5.0], h: [1.4, 5.2], w: [0.6, 1.4], color: [0.03, 0.012, 0.04], cap: [0.08, 0.05, 0.1], bands: 3, windows: 3, glow: 0xff44dd, glowI: 1.8 },
+            antenna: { chance: 0.4, h: [0.8, 1.8], color: 0xffffff, glow: 2.5, rate: 2.2 },
+            ring: { minH: 3.8, r: 1.15, tube: 0.04, at: 0.62, color: 0x44e0ff, glow: 0.8, chaseGlow: 3, speed: 0.4, bob: 1.1 },
+            pillar: { every: 6, out: 3.2, r: 0.32, h: 4.5, color: 0xff55ee, alpha: 0.28, padGlow: 1.6, speed: 1.6, lag: 0.7 } },
     drain: { r: 0.95, iron: 0x2a2d32, frame: 0x484b52, slot: 0x020306 },
     // v43: round every other world's floor (render/scenery.js _surround). A
     // ground `out` m past the floor fading out over `fade` m (`line`/`cell`
