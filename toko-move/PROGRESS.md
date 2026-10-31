@@ -1,5 +1,5 @@
 # PROGRESS — Toko Move
-**Updated:** 2026-10-31 10:51 EET  
+**Updated:** 2026-10-31 12:45 EET  
 **Lane:** Helsinki content first (main focus), store in parallel, Nagoya later  
 **Owner direction:** ROADMAP.md (2026-10-24) — publish Toko Move first.  
 **Priority (2026-10-25, clarified):**
@@ -13,34 +13,32 @@ Make the Helsinki map a real, polished, mobile-first game that is easy to start 
 ## Done
 - v2.64–v2.67: network, packaging, stranger first minutes, Finnish draft, ship bar. On main.
 - Walking, events, hand-offs, regulars, kit, week+rent, rival, city days exist.
-- City pipeline is data-driven. Helsinki is the only playable city. Nagoya / New York / Tokyo are planned (CAMPAIGN.md).
-- **Mobile clarity pass started (2026-10-31):** first job shows a short instructional hint and the first available offer is marked primary. Job rows 56 px on narrow screens.
-- **First content slice (2026-10-31):** three new encounter cards in `js/events.js` — shortcut tip while walking, package hand-off on foot, and a fragile-cargo care choice. Deck remains seeded and budget-capped (still at most three encounters per shift).
+- City pipeline is data-driven. Helsinki is the only playable city.
+- Mobile clarity pass started (first-job hint + primary row, 56 px rows).
+- First content slice: three new encounter cards (walking shortcut, walking hand-off, fragile care).
+- **Feature plan written:** `toko-move/FEATURES.md` — Phase A (unlocks + more missions), Phase B (challenge variety), Phase C (strategic depth), Phase D (later cities, blocked).
 
 ## Next
-**Main focus — Helsinki content (mobile first):**
-1. **Real-phone measurement** of the new hint + primary row, and of the new encounters when they appear.
-2. **Unlock gate.** Make some cards (or the bigger bag) appear only after N on-time deliveries or goodwill, so the deck grows.
-3. Bigger inventory that changes decisions (capacity 6 as an unlock, not only a kit choice).
-4. More ways to move and real strategic differences.
-5. Other challenge types beyond the basic three-delivery shift.
-6. Tablet layout and touch only after the phone version feels good.
+**Follow FEATURES.md, starting at Phase A:**
+1. Unlock gate so some encounter cards only appear after N on-time deliveries or goodwill.
+2. Bigger bag (capacity 6) as a progression unlock, not only a kit choice.
+3. More walking missions and one regular-request type.
+4. Then Phase B challenge types (inventory pressure, multi-stop, restricted, timed burst).
+5. Real-phone measurement after each slice.
 
-**Store (parallel, not blocking content):**
-- Real-phone LIVE check, native Finnish read, itch.io upload when ready.
+**Store (parallel):** real-phone LIVE, native Finnish read, itch upload when ready.
 
-**Nagoya (blocked):**
-- Do not fetch the pack or write the definition until the Helsinki map is polished and working nicely on mobile (owner call).
+**Nagoya:** blocked until Helsinki is polished and working nicely on mobile.
 
 ## Exit
-- Helsinki main-focus Exit: owner plays on a phone and says it is clearer, more varied, and hard to put down; at least one unlock path and one new challenge type are gated and green. Tablet is secondary.
+- Helsinki: owner plays on a phone and says it is clearer, more varied, and hard to put down; at least one unlock path and one new challenge type are gated and green.
 - Nagoya start: Helsinki map is a real polished working game (owner call).
 - Store: zip plays alone, phone confirmed, itch page live.
 
 ## Open questions for owner
 - After a phone play, what still feels unclear or missing?
-- Should the bigger bag unlock after a fixed number of deliveries, or stay a kit choice?
-- Preferred next challenge type (timed, multi-stop, inventory pressure, restricted modes)?
+- Confirm bigger bag unlocks after a fixed number of deliveries (suggested) vs staying kit-only.
+- Preferred first challenge type from Phase B.
 
 ## Gates
 ```bash
@@ -52,7 +50,7 @@ node toko-move/test/shifts.cjs
 ```
 
 ## Notes
-- Content on Helsinki is the main focus. Do not start Nagoya until the Helsinki map is polished and working nicely.
-- Mobile first, tablet second.
+- Content on Helsinki is the main focus. Feature plan lives in FEATURES.md.
+- Mobile first, tablet second. Do not start Nagoya until Helsinki is polished.
 - New systems stay inside existing verbs and city-data shape.
-- One ?v= token per module. events.js, job-board-v212.js and index.html need a token bump on next real release.
+- One ?v= token per module.
