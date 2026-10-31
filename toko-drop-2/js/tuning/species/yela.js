@@ -29,13 +29,15 @@ export default {
     shareOfCycle: 0.65,    // … 0.65 × cycle), cycle = 2L / spd (1.x tuning.js:60 flopShareOfCycle, enemy.js:1538)
     restMin: 0.02,         // then it rests max(0.02 s, cycle − flop) (1.x enemy.js:1564)
     minSpeed: 0.01,        // cycle = 2L / max(spd, 0.01) (1.x enemy.js:1501)
+    diagTime: 2,           // v67: a diagonal flop (a half roll over its corner) may take 2 × timeMax, a half turn where a cardinal makes a quarter
     // the wall it turns back from stands at `radius` above — the CFG radius,
     // not an elite's ×1.2 (1.x enemy.js:1495 `radius = CFG[type].radius`, 1527)
     landSquish: -0.32,     // every landing kicks the squash spring flat: `_sqV −= 0.32` (1.x tuning.js:59, enemy.js:1561)
     firstRest: [0, 0.25],  // the first rest is U·0.25 s, staggering a wave's first flops (1.x enemy.js:1213)
-    // the heading roll when a rest runs out (1.x enemy.js:1514-1519): the
-    // cardinal of the larger axis toward you below 0.70, its last direction
-    // below 0.90, else any of the four cardinals
+    // the heading roll when a rest runs out (1.x enemy.js:1514-1519): toward
+    // you below 0.70, its last direction below 0.90, else any heading. Since
+    // v67 the headings are eight (owner: "diagonal movement") and toward you
+    // is the nearest of them; 1.x had the four, toward you the larger axis
     toward: 0.70,          // (1.x enemy.js:1519 `r < 0.70 ? toward`)
     keep: 0.90,            // (1.x enemy.js:1519 `r < 0.90 ? this._flopDir`)
     idleKeep: 0.7,         // with no heading at all (on top of you) it keeps its line 70% of the time (1.x enemy.js:1521)

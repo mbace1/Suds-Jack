@@ -10,9 +10,13 @@
 // above the floor, and it is turned (135° − ang) about the ground axis
 // (dir.z, 0, −dir.x). The angle is read back from where the view stands on
 // the flop line, not from the sim's last step, so the edge stays planted
-// between steps too (the view interpolates the position). At rest it stands
-// upright on its bottom face and carries the squash spring and a 0.10 breath
-// (enemy.js:2770-2777); it never turns to its heading.
+// between steps too (the view interpolates the position). A DIAGONAL flop
+// (v67, 2.0's own) is a half roll about the ground axis across its line,
+// over its corner, an edge and the next corner, read back the same way: its
+// centre at the height that keeps the lowest corner on the floor and turned
+// π × how far along the line it stands, so it lands as itself. At rest it
+// stands upright on its bottom face and carries the squash spring and a 0.10
+// breath (enemy.js:2770-2777); it never turns to its heading.
 //
 // THE SLIME TRAIL (main.js:1547-1578, 10466-10471; the bubbles 2443-2489).
 // Every splat the sim lays (g.s.slime) becomes a flat yellow-green disc,
@@ -58,7 +62,15 @@ export default {
     const r = g.r * grow, L = F.halfExtent * r;
     v.rNow = r; b.userData.view = v;
     v.squash.scale.set(1, 1, 1);           // the spring is drawn here: about the floor at rest, not at all mid-flop
-    if (s.tumble) {
+    if (s.tumble && s.dirX !== 0 && s.dirZ !== 0) {
+      // the diagonal half roll (v67): how far along the line, 0 → 1
+      const along = ((v.root.position.x - s.x0) * s.dirX + (v.root.position.z - s.z0) * s.dirZ) / Math.SQRT2;
+      const phi = Math.PI * clamp(along / (2 * L * Math.SQRT2), 0, 1);
+      b.scale.setScalar(r);
+      b.position.set(0, L * (Math.abs(Math.cos(phi)) + Math.SQRT2 * Math.abs(Math.sin(phi))), 0);
+      b.quaternion.setFromAxisAngle(v.axis.set(s.dirZ, 0, -s.dirX).normalize(), phi);
+      v.upright = false;
+    } else if (s.tumble) {
       const D = L * Math.SQRT2, a0 = F.arcStartDeg * DEG, a1 = F.arcEndDeg * DEG;
       const along = (v.root.position.x - s.x0) * s.dirX + (v.root.position.z - s.z0) * s.dirZ;
       const ang = Math.acos(clamp((clamp(along, 0, 2 * L) - L) / D, -1, 1));

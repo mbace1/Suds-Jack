@@ -24,8 +24,8 @@
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
 import { Fn, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=66';
-import { noise, grate, cells } from './scenery.js?v=66';
+import { GEL_TIME } from './gel.js?v=67';
+import { noise, grate, cells } from './scenery.js?v=67';
 
 const _white = new THREE.Color(0xffffff);
 

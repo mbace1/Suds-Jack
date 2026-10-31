@@ -19,6 +19,17 @@
     Never `--no-verify`.
 -->
 
+## v67 — 2026-10-31
+**YELA tumbles on the diagonals too (owner)**
+- The owner's YELA sketch (art-ref/concept-yela-orange.jpg) says "diagonal movement", and on 2026-10-31 they chose it for the game: YELA CUBE picks from eight headings now, where 1.x's had the four cardinals.
+- The heading, when a rest runs out: toward you is the nearest of the eight (1.x took the cardinal of the larger axis, a staircase on a diagonal) 70%, its last heading 20%, any of the eight 10%. Into a wall a cardinal turns back along its axis as before; a diagonal turns back on the axis it would cross, either or both, as a ball off a cushion.
+- A diagonal flop is a half roll over its corner, about the ground axis across its line: corner, edge, corner. A cube turned 180° about a face's diagonal is itself again, so it lands on a face, one face on along each axis, its lowest corner on the floor all the way. Its cycle is its longer run at the same speed (2L√2 / spd), and its flop may take twice a cardinal's 0.30 s cap (`flop.diagTime`): a half turn where a cardinal makes a quarter. Its average speed is unchanged.
+- Measured: the arcade curve re-run (scripts/curve.mjs, two bots, 24 seeds a world). YELA took 17 lives before and 17 after; the worlds' clear rates move both ways, within the noise of a run's random stream, which YELA's rolls reshuffle.
+- test/species/yela.mjs: 122 checks, the eight headings, the diagonal flop, the cushion turn and the half roll drawn among them.
+- Cache tokens `?v=66` → `?v=67`; HUD label → `2.0 · v67`
+
+---
+
 ## v66 — 2026-10-31
 **World 2 in summer daylight, its curb taller than the hero (owner)**
 - The owner's answers on v65 (2026-10-31): the curb "taller than the hero", the style sheet's Micro Machines scale (PR #630: the hero tiny against the curb), and world 2 in summer daylight instead of at night.
