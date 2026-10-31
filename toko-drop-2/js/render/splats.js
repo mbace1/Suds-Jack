@@ -6,7 +6,7 @@
 // When the pool is full, the one with the least life left makes room.
 import * as THREE from 'three/webgpu';
 import { attribute } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=69';
+import { TUNING } from '../tuning.js?v=70';
 
 const S = TUNING.splats;
 

@@ -15,7 +15,12 @@
 //            (floor.js), and the drain that opens for the way down is this
 //            file's, drawn as the same grate
 //   world 3  the sewer: brick walls along the tunnel's two long sides, iron
-//            bars across its two ends, and the dark past them
+//            bars across its two ends, and the dark past them. Since v70 built
+//            to the World 3 brief: the walls in pieces under a stone capstone,
+//            a pier at each corner, the gates framed, pipe mouths in the walls
+//            with a green trickle out of each (the floor runs it on to the
+//            channel), and shafts of sunlight through the street grates over
+//            the pools of it the floor draws
 //   the rest a SURROUND (v43, owner, 2026-10-24: "make the portrait mode
 //            levels a bit bigger and put graphics on the sides"): a ground
 //            that goes on past the floor and fades into the dark, a thin
@@ -35,6 +40,7 @@
 // TUNING.scenery.
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, dot, floor as tfloor, mix, smoothstep, abs, positionWorld, positionLocal, normalWorld, clamp, max, min, length, step, fwidth, uv, attribute } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=70';
 
 // a hash and value noise on the world plane, cheap enough for a picture
 const hash = (p) => fract(sin(dot(p, vec2(127.1, 311.7))).mul(43758.5453));
@@ -70,6 +76,19 @@ export const grate = Fn(([q]) => {
   const f = q.sub(vec2(cx, cy)), d = length(vec2(max(abs(f.x).sub(0.025), 0), f.y)).sub(0.06), da = max(fwidth(d), 1e-4);
   return vec3(disc, float(1).sub(smoothstep(da.negate(), da, d)).mul(keep).mul(disc), frame);
 });
+
+// where world 3's sunlight falls and its pipes run out (v70): the scenery
+// stands the shafts and the pipe mouths on these, and the floor lays the
+// pools of light and the rivulets on the same, so the two cannot disagree.
+// `a` runs along the tunnel, `c` across it
+export function sewerSpots(T, hx, hz) {
+  const S = T.scenery.sewer, alongX = hx >= hz, L = alongX ? hx : hz, Wd = alongX ? hz : hx;
+  const n = Math.max(1, Math.floor((2 * L) / S.sun.every));
+  const pools = Array.from({ length: n }, (_, k) => ({ a: (k - (n - 1) / 2) * S.sun.every, c: (k % 2 ? 1 : -1) * S.sun.c }));
+  const m = Math.max(1, Math.floor((2 * L) / S.pipe.every - 0.5)), pipes = [];
+  for (const side of [-1, 1]) for (let j = 0; j < m; j++) pipes.push({ a: (j - (m - 1) / 2) * S.pipe.every + (side * S.pipe.every) / 4, side });
+  return { alongX, L, Wd, pools, pipes, perSide: m };
+}
 
 // a seeded stream of numbers in [0, 1), so a world stands the same every time
 const seeded = (seed) => () => {
@@ -248,11 +267,13 @@ export class Scenery {
     });
   }
 
-  // ── world 3: the tunnel's walls and the bars across its ends ──
+  // ── world 3: the tunnel (v70, the World 3 brief): its walls in pieces under
+  // a capstone, a pier at each corner, the gates framed across its ends, pipe
+  // mouths with a trickle out of each, and shafts of sunlight ──
   _sewer(hx, hz) {
-    const S = this.T.scenery.sewer;
-    // the tunnel runs along the arena's long axis
-    const alongX = hx >= hz, L = alongX ? hx : hz, Wd = alongX ? hz : hx;
+    const S = this.T.scenery.sewer, sp = sewerSpots(this.T, hx, hz), { alongX, L, Wd } = sp;
+    // a point of the tunnel, `a` along it, `c` across, `y` up, in the world
+    const at = (a, c, y) => (alongX ? [a, y, c] : [c, y, a]);
     const brick = new THREE.MeshStandardNodeMaterial({ roughness: 0.85, metalness: 0 });
     brick.colorNode = Fn(() => {
       const p = positionWorld;
@@ -265,31 +286,74 @@ export class Scenery {
       const col = vec3(...S.brickColor).mul(tone).mul(float(1).sub(damp));
       return mix(col, vec3(...S.mortar), mortar);
     })();
-    const H = S.wallHeight, T2 = S.wallThick, len = 2 * (L + S.beyond);
-    for (const s of [-1, 1]) {
-      const geo = alongX ? new THREE.BoxGeometry(len, H, T2) : new THREE.BoxGeometry(T2, H, len);
-      const wall = this._add(new THREE.Mesh(geo, brick.clone()));
-      if (alongX) wall.position.set(0, H / 2, s * (Wd + T2 / 2)); else wall.position.set(s * (Wd + T2 / 2), H / 2, 0);
+    const stone = new THREE.MeshStandardNodeMaterial({ roughness: 0.9, metalness: 0 });
+    stone.colorNode = Fn(() => vec3(...S.cap.color).mul(noise(positionWorld.xz.mul(7)).mul(0.25).add(0.85)))();
+    const iron = new THREE.MeshStandardNodeMaterial({ color: S.bar, roughness: 0.5, metalness: 0.6 });
+    const box = () => new THREE.BoxGeometry(1, 1, 1), m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), t = new THREE.Vector3();
+    // a box `la` long down the tunnel, `h` tall and `lc` across it, its middle at (a, c, y)
+    const place = (inst, i, a, c, y, la, h, lc) => { t.set(...at(a, c, y)); sc.set(alongX ? la : lc, h, alongX ? lc : la); inst.setMatrixAt(i, m.compose(t, q.identity(), sc)); };
+    const T2 = S.wallThick, Hc = S.cap.h, Hb = S.wallHeight - Hc, P = S.pier;
+    // the walls: pieces `segment` m long with a seam between, a capstone over each
+    const n = Math.max(1, Math.round((2 * L) / S.segment)), l = (2 * L) / n;
+    const walls = this._add(new THREE.InstancedMesh(box(), brick, 2 * n));
+    const caps = this._add(new THREE.InstancedMesh(box(), stone, 2 * n + 4));
+    let i = 0;
+    for (const s of [-1, 1]) for (let k = 0; k < n; k++, i++) {
+      const a = -L + (k + 0.5) * l, c = s * (Wd + T2 / 2);
+      place(walls, i, a, c, Hb / 2, l - S.seam, Hb, T2);
+      place(caps, i, a, c, Hb + Hc / 2, l - S.seam, Hc, T2 + 2 * S.cap.over);
     }
-    // the bars: iron, upright, across each end, the dark showing through them
-    const barMat = new THREE.MeshStandardNodeMaterial({ color: S.bar, roughness: 0.5, metalness: 0.6 });
-    const n = Math.ceil((2 * Wd) / S.barGap);
-    const geo = new THREE.CylinderGeometry(S.barR, S.barR, S.barHeight, 8);
-    for (const s of [-1, 1]) {
-      const bars = this._add(new THREE.InstancedMesh(geo.clone(), barMat.clone(), n + 1));
-      const m = new THREE.Matrix4();
-      for (let i = 0; i <= n; i++) {
-        const t = -Wd + (i * 2 * Wd) / n;
-        m.makeTranslation(alongX ? s * (L + S.barR) : t, S.barHeight / 2, alongX ? t : s * (L + S.barR));
-        bars.setMatrixAt(i, m);
-      }
+    // a pier where each wall meets a gate, capped
+    const piers = this._add(new THREE.InstancedMesh(box(), brick.clone(), 4));
+    i = 0;
+    for (const sa of [-1, 1]) for (const s of [-1, 1]) {
+      const a = sa * (L + P.w / 2 - 0.05), c = s * (Wd + P.w / 2);   // flush with the wall's face
+      place(piers, i, a, c, (P.h - P.cap) / 2, P.w, P.h - P.cap, P.w);
+      place(caps, 2 * n + i, a, c, P.h - P.cap / 2, P.w + 0.1, P.cap, P.w + 0.1);
+      i++;
     }
-    geo.dispose();
-    // and a rail across the top of each, so they read as a grate and not a fence
-    for (const s of [-1, 1]) {
-      const rail = this._add(new THREE.Mesh(alongX ? new THREE.BoxGeometry(0.12, 0.12, 2 * Wd) : new THREE.BoxGeometry(2 * Wd, 0.12, 0.12), barMat.clone()));
-      if (alongX) rail.position.set(s * (L + S.barR), S.barHeight, 0); else rail.position.set(0, S.barHeight, s * (L + S.barR));
+    // the gates: iron bars between posts, a rail along the top and the foot, the dark through them
+    const G = S.gate, np = Math.max(1, Math.round((2 * Wd) / G.every)), nb = Math.ceil((2 * Wd) / S.barGap);
+    const posts = this._add(new THREE.InstancedMesh(box(), iron, 2 * (np + 1)));
+    const rails = this._add(new THREE.InstancedMesh(box(), iron.clone(), 4));
+    const bars = this._add(new THREE.InstancedMesh(new THREE.CylinderGeometry(S.barR, S.barR, S.barHeight, 8), iron.clone(), 2 * (nb + 1)));
+    let ip = 0, ir = 0, ib = 0;
+    for (const sa of [-1, 1]) {
+      const a = sa * (L + S.barR);
+      for (let k = 0; k <= np; k++) place(posts, ip++, a, -Wd + (k * 2 * Wd) / np, (S.barHeight + 0.1) / 2, G.post, S.barHeight + 0.1, G.post);
+      place(rails, ir++, a, 0, S.barHeight, G.rail, G.rail, 2 * Wd);
+      place(rails, ir++, a, 0, 0.16, G.rail, G.rail, 2 * Wd);
+      for (let k = 0; k <= nb; k++) { t.set(...at(a, -Wd + (k * 2 * Wd) / nb, S.barHeight / 2)); bars.setMatrixAt(ib++, m.makeTranslation(t.x, t.y, t.z)); }
     }
+    // the pipe mouths: a short pipe out of the wall's face, a lip round it, dark
+    // inside, and a trickle of green water from its lip down to the floor
+    const R = S.pipe, N = sp.pipes.length, len = R.out + T2 / 2;
+    const pipeMat = new THREE.MeshStandardNodeMaterial({ color: R.color, roughness: 0.75, metalness: 0.1, side: THREE.DoubleSide });
+    const pipes = this._add(new THREE.InstancedMesh(new THREE.CylinderGeometry(R.r, R.r, len, 20, 1, true), pipeMat, N));
+    const lips = this._add(new THREE.InstancedMesh(new THREE.TorusGeometry(R.r, R.wall, 8, 24), pipeMat.clone(), N));
+    const holes = this._add(new THREE.InstancedMesh(new THREE.CircleGeometry(R.r * 0.98, 20), new THREE.MeshBasicNodeMaterial({ color: 0x020505 }), N));
+    const trickle = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
+    trickle.colorNode = vec3(...R.trickle);
+    trickle.opacityNode = Fn(() => { const v = uv(); return noise(vec2(v.x.mul(5), v.y.mul(3).add(GEL_TIME.mul(2.4)))).mul(0.5).add(0.25).mul(smoothstep(0, 0.2, v.x).mul(smoothstep(1, 0.8, v.x))); })();
+    const falls = this._add(new THREE.InstancedMesh(new THREE.PlaneGeometry(R.trickleW, R.y - R.r), trickle, N));
+    const up = new THREE.Vector3(0, 1, 0), across = alongX ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0), face = new THREE.Vector3();
+    sp.pipes.forEach(({ a, side }, k) => {
+      face.copy(across).multiplyScalar(-side);   // the way its mouth looks: into the tunnel
+      t.set(...at(a, side * (Wd - R.out + len / 2), R.y)); q.setFromUnitVectors(up, face); pipes.setMatrixAt(k, m.compose(t, q, sc.set(1, 1, 1)));
+      const into = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), face);
+      t.set(...at(a, side * (Wd - R.out), R.y)); lips.setMatrixAt(k, m.compose(t, into, sc));
+      t.set(...at(a, side * (Wd - R.out * 0.35), R.y)); holes.setMatrixAt(k, m.compose(t, into, sc));
+      t.set(...at(a, side * (Wd - R.out - 0.03), (R.y - R.r) / 2)); falls.setMatrixAt(k, m.compose(t, into, sc));
+    });
+    // the sunlight: a shaft over each pool of it the floor draws, leaning toward the sun
+    const U = S.sun;
+    const shaftMat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    shaftMat.colorNode = vec3(...U.color);
+    shaftMat.opacityNode = Fn(() => { const y = uv().y; return float(U.shaftAlpha).mul(smoothstep(0, 0.1, y)).mul(float(1).sub(smoothstep(0.3, 1, y))); })();
+    const shafts = this._add(new THREE.InstancedMesh(new THREE.CylinderGeometry(U.shaftR * 1.3, U.shaftR, U.shaft, 24, 1, true), shaftMat, sp.pools.length));
+    q.setFromEuler(new THREE.Euler(U.tilt, 0, -U.tilt));
+    const lift = new THREE.Vector3(0, U.shaft / 2, 0).applyQuaternion(q);
+    sp.pools.forEach(({ a, c }, k) => { t.set(...at(a, c, 0)).add(lift); shafts.setMatrixAt(k, m.compose(t, q, sc.set(1, 1, 1))); });
   }
 
   // ── every other world: a ground past the floor, its edge, props round it ──

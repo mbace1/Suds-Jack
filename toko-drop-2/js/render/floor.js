@@ -23,9 +23,9 @@
 // vortex (sim/worlds.js's transition: `swirl` 0 → 1 winds it up round
 // `swirlAt`, out to `swirlR`, and opens a hole of `hole` m in the middle).
 import * as THREE from 'three/webgpu';
-import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
-import { GEL_TIME } from './gel.js?v=69';
-import { noise, grate, cells } from './scenery.js?v=69';
+import { Fn, If, uv, uniform, float, abs, fract, min, max, sin, cos, length, smoothstep, mix, fwidth, texture, clamp, vec2, vec3, pow, floor as tfloor, round, select, mod, dFdx, dFdy, exp, normalize, dot, cameraPosition, positionWorld } from 'three/tsl';
+import { GEL_TIME } from './gel.js?v=70';
+import { noise, grate, cells, sewerSpots } from './scenery.js?v=70';
 
 const _white = new THREE.Color(0xffffff);
 
@@ -58,8 +58,8 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
   // it. At rest revealR is huge and the front is off, so play is unchanged.
   // A droplet landing in a new world reveals that world's floor the same way.
   const revealAt = uniform(new THREE.Vector2(0, 0)), revealR = uniform(1e4), revealFront = uniform(0);
-  // the void past the floor: the night, or world 2's summer haze (v66)
-  const voidCol = uniform(style === 'concrete' ? new THREE.Color(...T.worlds.floor.concrete.sky) : new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color({ grid: 0x5f8cff, concrete: 0xffd9a0, sewer: 0x7fd8d0, hex: 0xff5fd0, tide: 0x5fffe8, cistern: 0x7fe8ff, boiler: 0xffb060, river: 0x7fffe0, ice: 0xe0f4ff, deep: 0x6688ff, core: 0xff66ee }[style] ?? 0x5f8cff));
+  // the void past the floor: the night, world 2's summer haze (v66), world 3's deep teal (v70)
+  const voidCol = uniform(style === 'concrete' || style === 'sewer' ? new THREE.Color(...T.worlds.floor[style].sky) : new THREE.Color(T.render.clearColor)), frontCol = uniform(new THREE.Color({ grid: 0x5f8cff, concrete: 0xffd9a0, sewer: 0x7fd8d0, hex: 0xff5fd0, tide: 0x5fffe8, cistern: 0x7fe8ff, boiler: 0xffb060, river: 0x7fffe0, ice: 0xe0f4ff, deep: 0x6688ff, core: 0xff66ee }[style] ?? 0x5f8cff));
   // the drain's swirl
   const swirl = uniform(0), swirlAt = uniform(new THREE.Vector2(0, 0)), swirlR = uniform(8), hole = uniform(0);
   const holeRim = uniform(new THREE.Color({ grid: 0x2fe0ff, concrete: 0x9fd6ff, sewer: 0x6fffe0, hex: 0xff7fe0, tide: 0x7ffff0, cistern: 0x6fefff, boiler: 0xffaa44, river: 0x6fffdd, ice: 0xcff0ff, deep: 0x5577ff, core: 0xff55ee }[style] ?? 0x2fe0ff));
@@ -248,11 +248,32 @@ export function buildFloor(T, hx, hz, light, { style = 'grid', bounds: hasBounds
     const rip = smoothstep(0.9, 1.0, sin(flow.mul(3.0).add(noise(vec2(flow.mul(0.5), c.mul(1.6))).mul(3.5))).mul(0.5).add(0.5));
     const water = mix(vec3(...S.water), vec3(...S.waterHi), rip.mul(0.35).add(noise(vec2(flow.mul(1.1), c.mul(2.4))).mul(0.18)));
     let col = mix(stone, water, inCh).add(vec3(...S.kerb).mul(kerb.mul(0.35)));
+    // v70: the pipes' rivulets, green water from each mouth in the wall across
+    // the floor to the channel, glinting as it runs (scenery.js sewerSpots)
+    const SP = sewerSpots(T, hx, hz), Rp = T.scenery.sewer.pipe, pm = SP.perSide;
+    const ac = abs(c), sd = select(c.greaterThan(0), float(1), float(-1));
+    const ap = a.sub(sd.mul(Rp.every / 4)).add(((pm - 1) / 2) * Rp.every);
+    const pj = clamp(round(ap.div(Rp.every)), 0, pm - 1), pa = ap.sub(pj.mul(Rp.every));
+    // it spreads where it falls, at the wall, and thins and dries out over `reach` m
+    const fromWall = float(SP.Wd).sub(ac), wob = noise(vec2(ac.mul(0.9), pj.mul(7.3).add(sd.mul(3.1)))).sub(0.5).mul(0.9), raa = max(fwidth(pa), 1e-4);
+    const half = float(Rp.rivulet / 2).mul(float(1.8).sub(smoothstep(0, 1.2, fromWall).mul(1.1)));
+    const riv = float(1).sub(smoothstep(half.sub(raa), half.add(raa), abs(pa.sub(wob)))).mul(float(1).sub(smoothstep(Rp.reach * 0.4, Rp.reach, fromWall))).mul(smoothstep(-0.05, 0.1, fromWall));
+    const glint = smoothstep(0.8, 1, sin(ac.add(GEL_TIME.mul(Rp.flow)).mul(9).add(noise(vec2(ac.mul(3), pa.mul(9))).mul(3))).mul(0.5).add(0.5));
+    // wet stone, a little green, catching the light where it runs
+    col = mix(col, col.mul(0.55).add(vec3(...Rp.trickle).mul(float(0.025).add(glint.mul(0.12)))), riv);
     // the tunnel goes dark toward its ends
     const L = alongX ? hx : hz;
     const end = smoothstep(float(L * 0.55), float(L * 1.05), abs(a));
     col = col.mul(float(1).sub(end.mul(0.75)));
-    return { col, mask: grout.mul(float(1).sub(inCh)).add(inCh.mul(rip).mul(1.5)), lineCol: vec3(...S.waterHi), wet: wet.add(inCh) };
+    // v70: sunlight through the street grates above, world 2's grate you came
+    // down: its slots of light on the floor, side to side down the tunnel, and
+    // a faint glow round each (after the dark: it is the day's, not the tunnel's)
+    const U = T.scenery.sewer.sun, np = SP.pools.length;
+    const pk = clamp(round(a.div(U.every).add((np - 1) / 2)), 0, np - 1), ps = select(mod(pk, 2).greaterThan(0.5), float(1), float(-1));
+    const sq = vec2(a.sub(pk.sub((np - 1) / 2).mul(U.every)), c.sub(ps.mul(U.c))).div(U.r);
+    const sun = grate(sq).y.mul(U.gain).add(float(1).sub(smoothstep(0, U.halo / U.r, length(sq))).mul(U.haloGain));
+    col = col.add(vec3(...U.color).mul(sun));
+    return { col, mask: grout.mul(float(1).sub(inCh)).add(inCh.mul(rip).mul(1.5)).add(riv.mul(glint)), lineCol: vec3(...S.waterHi), wet: wet.add(inCh).add(riv) };
   };
 
   // ── the NEON worlds (the title's WORLDS · NEON, v23): abstract floors in

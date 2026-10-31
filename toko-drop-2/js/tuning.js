@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=69';
-import WAVES from './tuning/waves.js?v=69';
-import PICKUPS from './tuning/pickups.js?v=69';
-import MUSIC from './tuning/music.js?v=69';
+import { SPECIES } from './tuning/species/index.js?v=70';
+import WAVES from './tuning/waves.js?v=70';
+import PICKUPS from './tuning/pickups.js?v=70';
+import MUSIC from './tuning/music.js?v=70';
 
 export const TUNING = {
   render: {
@@ -128,7 +128,8 @@ export const TUNING = {
                   // (x left, z toward you: clear of the HUD in the corner), `r` m across its frame
                   grate: { at: [2.4, 5.5], r: 0.95, iron: [0.03, 0.031, 0.034], frame: [0.12, 0.12, 0.125], slot: [0.002, 0.002, 0.003] } },
       sewer: { stone: [0.034, 0.04, 0.046], groutCol: [0.007, 0.008, 0.01], water: [0.003, 0.011, 0.013], waterHi: [0.05, 0.17, 0.16],
-               kerb: [0.06, 0.06, 0.062], channel: 2.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9 },
+               kerb: [0.06, 0.06, 0.062], channel: 2.4, slab: [1.7, 0.85], grout: 0.035, flow: 1.2, wetLight: 0.9,
+               sky: [0.005, 0.014, 0.017] },   // v70: the dark past the walls and the gates, a deep teal
       // WORLDS · NEON (v23): the abstract floors
       hex: { cell: 1.8, line: 0.035, waveK: 0.55, waveHz: 2.2, base: [0.02, 0.012, 0.035], cell2: [0.09, 0.02, 0.08],
              lineLo: [0.35, 0.03, 0.3], lineHi: [1.0, 0.35, 0.75] },
@@ -168,8 +169,21 @@ export const TUNING = {
                 curbTone: 0.08, curbShade: 0.3, curbShadow: 0.4, curbShadowW: 0.9,
                 tuft: { every: 3.6, skip: 0.3, out: [0.2, 2.0], h: [0.5, 1.0], blades: 30, r: 0.8, w: 0.15, bend: 0.35,
                         lo: [0.04, 0.12, 0.03], hi: [0.2, 0.48, 0.1] } },
-    sewer: { brick: [0.44, 0.15], brickColor: [0.3, 0.15, 0.11], mortar: [0.07, 0.07, 0.08], damp: 0.7, wallHeight: 1.2, wallThick: 0.6, beyond: 4,
-             bar: 0x34383e, barR: 0.05, barGap: 0.42, barHeight: 1.7 },
+    // v70 (owner, 2026-10-31: "continue with world 3", from the World 3 brief,
+    // art-ref/briefs/world-3-sewer.md): the walls in pieces `segment` m long
+    // with a `seam`, a stone capstone (`cap`: m tall, m over each face) up to
+    // `wallHeight`; a brick pier at each corner; the gates framed by posts
+    // every `gate.every` m and rails top and bottom; a pipe mouth in the walls
+    // every `pipe.every` m (staggered side to side), `pipe.r` m across, with a
+    // green trickle down the wall that runs on over the floor to the channel;
+    // and SUNLIGHT through a street grate every `sun.every` m, `sun.c` m off
+    // the channel's middle (side to side), a shaft of it standing over each
+    sewer: { brick: [0.44, 0.15], brickColor: [0.3, 0.15, 0.11], mortar: [0.07, 0.07, 0.08], damp: 0.7, wallHeight: 1.2, wallThick: 0.6,
+             segment: 3, seam: 0.05, cap: { h: 0.14, over: 0.06, color: [0.3, 0.3, 0.28] },
+             pier: { w: 0.95, h: 1.55, cap: 0.16 },
+             bar: 0x34383e, barR: 0.05, barGap: 0.42, barHeight: 1.7, gate: { every: 3.7, post: 0.2, rail: 0.1 },
+             pipe: { every: 10, r: 0.34, wall: 0.06, y: 0.62, out: 0.2, color: 0x4b5053, trickle: [0.3, 0.85, 0.55], trickleW: 0.16, rivulet: 0.34, reach: 4.5, flow: 0.9 },
+             sun: { every: 12, c: 5.5, r: 1.1, color: [1.0, 0.82, 0.55], gain: 0.5, halo: 2.4, haloGain: 0.07, shaft: 7, shaftR: 0.95, shaftAlpha: 0.03, tilt: 0.05 } },
     drain: { r: 0.95, iron: 0x2a2d32, frame: 0x484b52, slot: 0x020306 },
     // v43: round every other world's floor (render/scenery.js _surround). A
     // ground `out` m past the floor fading out over `fade` m (`line`/`cell`
