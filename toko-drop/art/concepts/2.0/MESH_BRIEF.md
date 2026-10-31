@@ -12,4 +12,6 @@ Mesh NOW (APPROVED only):
 
 - World 6: `world-6/06-river-modules-APPROVED.png` — ~68×24 m; teal water/banks/foam.
 
+- World 7: `world-7/07-ice-modules-APPROVED.png` — ~56×34 m; ice/frost/floe.
+
 Do not mesh `elements/`, `modules/`, `pending/`, or `*-more-*` / arena complete pieces until APPROVED.

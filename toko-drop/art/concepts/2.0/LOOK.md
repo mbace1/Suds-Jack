@@ -20,6 +20,7 @@ Approved geo:
 - `world-4/04-cistern-modules-APPROVED.png`
 - `world-5/05-boiler-modules-APPROVED.png`
 - `world-6/06-river-modules-APPROVED.png`
+- `world-7/07-ice-modules-APPROVED.png`
 
 `elements/`, `modules/`, `pending/`, extra “more” sheets, arena mood pieces = not approved until marked APPROVED.
 
