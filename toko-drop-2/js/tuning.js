@@ -7,10 +7,10 @@
 // things that work"). The arena is 1.x's, so every 1.x number ports as it is
 // instead of through a rescale. Axes: x across the screen (right +), y up,
 // z toward the bottom of the screen. The arena is centred on the origin.
-import { SPECIES } from './tuning/species/index.js?v=75';
-import WAVES from './tuning/waves.js?v=75';
-import PICKUPS from './tuning/pickups.js?v=75';
-import MUSIC from './tuning/music.js?v=75';
+import { SPECIES } from './tuning/species/index.js?v=76';
+import WAVES from './tuning/waves.js?v=76';
+import PICKUPS from './tuning/pickups.js?v=76';
+import MUSIC from './tuning/music.js?v=76';
 
 export const TUNING = {
   render: {
@@ -395,6 +395,17 @@ export const TUNING = {
       },
       shadow: { cap: 300, r: 1.35, strength: 0.6 },
       floor: { spill: 0.18, grid: 0.9 },
+      // v76 (the owner's second visual pick): CAUSTICS — light focused through
+      // the jelly onto the floor round every body's foot, in the body's own
+      // colour (render/actors.js, an additive decal on the floor; it was tried
+      // in the light map first, where the body covered it and the floor showed
+      // it only on its lines). A quad `r` × the body's radius (× its squash: a
+      // landed body spreads it): a `core` under the body, a `ring` [where,
+      // width, strength] of the quad's half size that shimmers round in
+      // `lobes` arcs at `shimmer` rad/s, and a faint `glow` out to the edge;
+      // `k` the alpha (a heavy body's × `heavy`, a boss's × `boss`), slid
+      // `offset` × r away from the world's sun, `y` m over the floor
+      caustic: { cap: 200, r: 1.7, k: 0.65, core: 0.4, ring: [0.62, 0.1, 1.0], lobes: 3, shimmer: 4, glow: 0.3, offset: 0.25, heavy: 0.8, boss: 1.4, y: 0.012 },
     },
   },
 
@@ -513,7 +524,11 @@ export const TUNING = {
     // opacity 0.45·t and scale 0.6 + 0.4·t (player.js:13-15, 70-78, 284-294, 336-348)
     // 2.0 pools 10, not 7: a long flick dash lays a ghost every 2 steps for
     // up to 24, and with 0.28 s lives as many as 9 are up at once
-    ghost: { count: 10, every: 0.03, life: 0.28, color: 0x88bbff, opacity: 0.45, scale: 0.6 },
+    ghost: { count: 10, every: 0.03, life: 0.28, color: 0x88bbff, opacity: 0.45, scale: 0.6,
+             // v76: a ghost keeps the body's squash of the moment and is lit at its rim (`rim`
+             // × the fresnel), and each lays light on the floor under it that fades with it
+             // (`streak`: r m, k strength, life s) — the dash leaves a streak of light
+             rim: 1.4, streak: { r: 1.3, k: 0.5, life: 0.3 } },
     // the muzzle pop (player.js:99-108, 351-359, 467-474): at radius + 0.35
     // along the shot, y 0.3, 0.05 s, opacity 0.9 → 0 while it swells 0.6 → 1.4
     muzzle: { r: 0.2, color: 0xaaffcc, life: 0.05, opacity: 0.9, scale: [0.6, 1.4], offset: 0.35, y: 0.3 },

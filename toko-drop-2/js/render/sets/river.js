@@ -8,8 +8,8 @@
 // side. Every number TUNING.scenery.river; the water's own TUNING.worlds.floor.river
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, fract, sin, abs, max, mix, smoothstep, length, atan, uv, clamp, positionWorld, positionGeometry, normalGeometry, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=75';
-import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT } from '../kit.js?v=75';
+import { GEL_TIME } from '../gel.js?v=76';
+import { noise, hash, seeded, put, groundPlane, edgeLine, stoneGeometry, bladeClump, lilyPads, DRIFT } from '../kit.js?v=76';
 
 const v3 = (a) => vec3(...a);
 

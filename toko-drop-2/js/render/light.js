@@ -20,7 +20,7 @@
 // TUNING.light.arena.
 import * as THREE from 'three/webgpu';
 import { uv, vec2, vec3, float, length, clamp, pow } from 'three/tsl';
-import { TUNING } from '../tuning.js?v=75';
+import { TUNING } from '../tuning.js?v=76';
 
 const T = TUNING, A = T.light.arena;
 const smooth = (t) => { t = Math.min(1, Math.max(0, t)); return t * t * (3 - 2 * t); };
@@ -53,11 +53,19 @@ export class ArenaLight {
     this.pools = quads(A.cap, lightMat);
     this.shades = quads(A.shadow.cap, shadeMat);
     this.scene.add(this.shades, this.pools);
+    this.sunOff = { x: 0, z: 0 };   // where a caustic slides to, away from the world's sun (setSun)
     this.bursts = [];   // { x, z, r, k, life, max, hex }
     this._m = new THREE.Matrix4(); this._c = new THREE.Color(); this._prev = new THREE.Color();
   }
 
   get texture() { return this.rt.texture; }
+
+  // the world's sun stands at (x, y, z) (main.js applyLight): a caustic (actors.js)
+  // slides `offset` × its radius away from it along the floor
+  setSun(x, y, z) {
+    const l = Math.hypot(x, z) || 1, lean = l / (Math.abs(y) || 1);
+    this.sunOff.x = (-x / l) * Math.min(1, lean) * A.caustic.offset; this.sunOff.z = (-z / l) * Math.min(1, lean) * A.caustic.offset;
+  }
 
   // the map covers the arena exactly, at A.perMetre texels a metre
   setArena(hx, hz) {

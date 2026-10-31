@@ -7,8 +7,8 @@
 // Every number TUNING.scenery.ice; the floor's frost and bubbles are floor.js
 import * as THREE from 'three/webgpu';
 import { Fn, float, vec2, vec3, sin, abs, max, mix, smoothstep, length, clamp, positionWorld, positionGeometry, normalView, normalWorld } from 'three/tsl';
-import { GEL_TIME } from '../gel.js?v=75';
-import { noise, seeded, put, stations, groundPlane, edgeLine, stoneGeometry } from '../kit.js?v=75';
+import { GEL_TIME } from '../gel.js?v=76';
+import { noise, seeded, put, stations, groundPlane, edgeLine, stoneGeometry } from '../kit.js?v=76';
 
 const v3 = (a) => vec3(...a);
 

@@ -19,6 +19,15 @@
     Never `--no-verify`.
 -->
 
+## v76 — 2026-10-31
+**Caustics under every gel, and the dash's ghosts lit at the rim and leaving light on the floor**
+- The owner's second visual pick ("gel caustics + dash ghosts"). **Caustics**: light focused through the jelly onto the floor round each body's foot, in the body's own colour — a core under it, a ring of three shimmering arcs at its edge and a faint glow out to 1.7 × its radius, slid a little away from the world's sun (v75's), spreading with the body's squash, a boss's brighter and a heavy body's dimmer (`TUNING.light.arena.caustic`; render/actors.js, one additive instanced decal). It was built in the arena light map first, where it belonged by nature, and could not be seen: the body covers the spot and the floor shows the map's light on its lines, so a render with it on and off differed by one outline. On the floor as its own decal it reads as a coloured pool of light under every body, kept modest so a crowd stays readable.
+- **Dash ghosts**: 1.x's blue copies of the body laid every 0.03 s of a dash now keep the body's squash of the moment, are lit at their rim (a fresnel over their opacity) so they read as the outline left behind rather than a blot, and each lays a burst of light on the floor under it that fades with it — the dash leaves a streak of light (`heroLook.ghost.rim`, `.streak`).
+- Look checks: `t.advance()` steps the sim without the view, so a frame held after it has an empty light map; the look scripts sync the view once after it now (the game's own frames always do).
+- Cache tokens `?v=75` → `?v=76`; HUD label → `2.0 · v76`
+
+---
+
 ## v75 — 2026-10-31
 **Each world lit in its own light**
 - The owner, 2026-10-31: "upgrade visuals and vfx" — the first of four picks (then gel caustics and dash ghosts, world particles, and bloom last, off by default). 1.x lit every world with one white sun and a white ambient; now the sun's colour, strength and place, the ambient's, and how much the jelly reflects are the world's (`TUNING.worlds.light`): the driveway's summer sun high and warm-white, the sewer's cool green from the grates above, the cistern's lamp-warm light low from the far side, firelight low from the boiler room's far side, the river's dusk from the side, a cold moon on the ice, the surface's blue from straight above in the deep, the core's magenta. The gels and the sets take it; the floors are pictures and keep their own. A campaign room is lit as the world its look comes from; the grid, NEON's abstract floors and SURVIVAL keep 1.x's light. Set as the floor is built, which for a world change is under the dark.

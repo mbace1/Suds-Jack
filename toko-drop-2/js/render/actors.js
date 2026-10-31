@@ -15,18 +15,18 @@
 // that springs in and fades (splats.js). Views are pooled per species, so a
 // gel's material is built once and reused, never compiled mid-fight.
 import * as THREE from 'three/webgpu';
-import { TUNING } from '../tuning.js?v=75';
+import { TUNING } from '../tuning.js?v=76';
 import * as TSL from 'three/tsl';
-import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=75';
-import { LOOKS } from './looks/index.js?v=75';
-import { JellyBody } from './jelly.js?v=75';
-import { Juice } from './juice.js?v=75';
-import { ArenaLight } from './light.js?v=75';
-import { toSdf } from './sdf.js?v=75';
-import { PickupView } from './pickups.js?v=75';
-import { ChallengeView } from './challenge.js?v=75';
-import { Goo } from './goo.js?v=75';
-import { mult as heatMult } from '../sim/heat.js?v=75';
+import { gelMaterial, domeGeometry, cubeGeometry, heroGeometry, GEL_TIME } from './gel.js?v=76';
+import { LOOKS } from './looks/index.js?v=76';
+import { JellyBody } from './jelly.js?v=76';
+import { Juice } from './juice.js?v=76';
+import { ArenaLight } from './light.js?v=76';
+import { toSdf } from './sdf.js?v=76';
+import { PickupView } from './pickups.js?v=76';
+import { ChallengeView } from './challenge.js?v=76';
+import { Goo } from './goo.js?v=76';
+import { mult as heatMult } from '../sim/heat.js?v=76';
 
 const T = TUNING;
 const B = T.blob, D = T.death;
@@ -66,6 +66,23 @@ export class Actors {
 
     const sphere = new THREE.SphereGeometry(1, 10, 8);
     this.bullets = new THREE.InstancedMesh(sphere, new THREE.MeshBasicNodeMaterial(), T.bullets.maxHero + T.bullets.maxGel);
+    // v76: the caustics — light focused through each body onto the floor round its foot
+    // (TUNING.light.arena.caustic): an additive quad per body in its colour, a core under
+    // it, a shimmering ring of arcs at its edge and a faint glow out to the quad's rim
+    {
+      const C = T.light.arena.caustic, q = TSL.uv().sub(0.5).mul(2), d = TSL.length(q), ang = TSL.atan(q.y, q.x);
+      const ph = TSL.fract(TSL.instanceIndex.toFloat().mul(0.618)).mul(6.2832);
+      const core = TSL.pow(TSL.clamp(TSL.float(1).sub(d.div(C.core)), 0, 1), 2);
+      const arcs = TSL.sin(ang.mul(C.lobes).add(GEL_TIME.mul(C.shimmer)).add(ph)).mul(0.5).add(0.5);
+      const ring = TSL.float(1).sub(TSL.smoothstep(0, C.ring[1], TSL.abs(d.sub(C.ring[0])))).mul(C.ring[2]).mul(arcs.mul(0.7).add(0.3));
+      const glow = TSL.pow(TSL.clamp(TSL.float(1).sub(d), 0, 1), 3).mul(C.glow);
+      const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+      mat.opacityNode = core.add(ring).add(glow).mul(C.k);
+      this.caustics = new THREE.InstancedMesh(new THREE.PlaneGeometry(2, 2).rotateX(-Math.PI / 2), mat, C.cap);
+      this.caustics.instanceMatrix.setUsage(THREE.DynamicDrawUsage); this.caustics.setColorAt(0, new THREE.Color());
+      this.caustics.count = 0; this.caustics.frustumCulled = false; this.caustics.renderOrder = 1;
+      scene.add(this.caustics);
+    }
     this.bullets.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.bullets.setColorAt(0, new THREE.Color());
     this.bullets.count = 0; this.bullets.frustumCulled = false;
@@ -108,8 +125,15 @@ export class Actors {
     body.scale.setScalar(r);
     squash.add(body); root.add(squash);
     // 1.x's dash ghosts and muzzle pop (player.js:70-78, 99-108), pooled
+    // v76: a ghost is lit at its rim (the fresnel × `rim` over its opacity), so it reads as
+    // the body's outline left behind rather than a blue blot, and keeps the body's squash
     const ghostMat = new THREE.MeshBasicNodeMaterial({ color: L.ghost.color, transparent: true, opacity: 0, depthWrite: false });
-    const ghosts = Array.from({ length: L.ghost.count }, () => { const m = new THREE.Mesh(this.geo.hero, ghostMat.clone()); m.visible = false; m.scale.setScalar(r); this.scene.add(m); return { mesh: m, life: 0 }; });
+    const ghosts = Array.from({ length: L.ghost.count }, () => {
+      const mat = ghostMat.clone(), fade = TSL.uniform(0);
+      mat.opacityNode = fade.mul(TSL.float(1).add(TSL.float(1).sub(TSL.normalView.z.abs()).pow(2).mul(L.ghost.rim)));
+      const m = new THREE.Mesh(this.geo.hero, mat); m.visible = false; m.scale.setScalar(r); this.scene.add(m);
+      return { mesh: m, life: 0, fade, sq: new THREE.Vector3(1, 1, 1) };
+    });
     const muzzle = new THREE.Mesh(this.geo.eye, new THREE.MeshBasicNodeMaterial({ color: L.muzzle.color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
     muzzle.visible = false; this.scene.add(muzzle);
     // HEAT (v52): a soft halo on the floor under the hero, warmer and wider as the multiplier climbs
@@ -282,6 +306,7 @@ export class Actors {
     this.jellies.length = 0;
     this.juice.reset();
     this.light.reset();
+    this.caustics.count = 0;
     this.pickups.reset();
     this.challenge.reset();
     this.goo?.clear();
@@ -296,6 +321,8 @@ export class Actors {
     if (e.type === 'ghost') {
       const G = T.heroLook.ghost, slot = this.hero.ghosts.reduce((a, b) => (a.life <= b.life ? a : b));
       slot.life = G.life; slot.mesh.position.set(e.x, 0, e.z); slot.mesh.visible = true;
+      slot.sq.copy(this.hero.squash.scale);   // v76: the body's squash of the moment
+      if (this.light.bursts.length < T.light.arena.burstCap) this.light.bursts.push({ x: e.x, z: e.z, r: G.streak.r, k: G.streak.k, life: G.streak.life, max: G.streak.life, hex: G.color });   // and light on the floor under it
     } else if (e.type === 'shot' && !e.round) {
       const M = T.heroLook.muzzle, hv = this.hero;
       hv.muzzle.position.set(e.x, M.y, e.z); hv.muzzleT = M.life; hv.muzzle.visible = true;
@@ -487,6 +514,26 @@ export class Actors {
     if (bm.instanceColor) bm.instanceColor.needsUpdate = true;
     this.juice.sync(w, alpha, BULLET_Y);
     this.light.sync(w, alpha, this.views);
+    // v76: a caustic under every body, in its colour, slid away from the sun
+    {
+      const C = T.light.arena.caustic, O = this.light.sunOff, cm = this.caustics, M = this._cm ||= new THREE.Matrix4(), col = this._cc ||= new THREE.Color();
+      let c = 0;
+      for (const g of w.gels) {
+        if (c >= C.cap) break;
+        if (!g.alive || (g.state === 'appear' && g.t < 0)) continue;
+        const v = this.views.get(g.id);
+        if (!v || !v.root.visible) continue;
+        const grow = g.child || !(g.t < T.gel.swell) ? 1 : smooth(g.t / T.gel.swell);
+        const spread = Math.max(0.6, Math.min(1.6, v.squash.scale.x));
+        const r = g.r * C.r * grow * spread * (v.shadow ?? 1);
+        if (r < 0.1) continue;
+        M.makeScale(r, 1, r).setPosition(g.px + (g.x - g.px) * alpha + O.x * r, C.y, g.pz + (g.z - g.pz) * alpha + O.z * r);
+        cm.setMatrixAt(c, M);
+        col.setHex(T.species[g.kind]?.color ?? 0xffffff).multiplyScalar((g.isBoss ? C.boss : 1) * (g.heavy ? C.heavy : 1) / Math.sqrt(spread));
+        cm.setColorAt(c++, col);
+      }
+      cm.count = c; cm.instanceMatrix.needsUpdate = true; if (cm.instanceColor) cm.instanceColor.needsUpdate = true;
+    }
     this.pickups.sync(w, alpha, time);
     this.challenge.sync(w, alpha, time);
     this.goo?.setBodies(w, alpha);
@@ -570,9 +617,9 @@ export class Actors {
     for (const g of hv.ghosts) {
       if (g.life <= 0) continue;
       g.life -= dt;
-      const t = Math.max(0, g.life / L.ghost.life);
-      g.mesh.material.opacity = L.ghost.opacity * t;
-      g.mesh.scale.setScalar(T.hero.radius * (L.ghost.scale + (1 - L.ghost.scale) * t));
+      const t = Math.max(0, g.life / L.ghost.life), k = T.hero.radius * (L.ghost.scale + (1 - L.ghost.scale) * t);
+      g.fade.value = L.ghost.opacity * t;
+      g.mesh.scale.set(k * g.sq.x, k * g.sq.y, k * g.sq.z);
       g.mesh.visible = g.life > 0;
     }
     if (hv.muzzleT > 0) {
